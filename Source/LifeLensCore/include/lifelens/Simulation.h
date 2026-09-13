@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <vector>
 #include "DecisionExecution.h"
+#include "ObserverReadModel.h"
 #include "Planner.h"
 namespace lifelens {
 class Simulation {
@@ -20,6 +21,8 @@ public:
     RelationshipBook& relationships(){return relationships_;}
     const RelationshipBook& relationships() const{return relationships_;}
     const std::vector<std::string>& logs() const{return logs_;}
+    ResidentObservation observeResident(CharacterId id) const;
+    std::vector<ResidentObservation> observeAllResidents() const;
 private:
     struct Runtime {
         Goal goal=Goal::Idle;
@@ -32,6 +35,9 @@ private:
         int consecutiveFailures=0;
         int penaltyUntilMinute=0;
         int socialCooldownUntilMinute=0;
+        bool socialActive=false;
+        SocialIntent socialIntent=SocialIntent::None;
+        CharacterId socialTarget=0;
     };
     World world_;
     RelationshipBook relationships_;

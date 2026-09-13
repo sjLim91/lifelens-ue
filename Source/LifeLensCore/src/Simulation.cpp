@@ -60,6 +60,41 @@ void Simulation::setupSocialDemo(){
     emit("social simulation start seed="+std::to_string(world_.seed));
 }
 
+ResidentObservation Simulation::observeResident(CharacterId id) const{
+    const Character* character=findObservedCharacter(world_,id);
+    if(!character) return ResidentObservation{};
+
+    bool hasPhysicalAction=false;
+    Goal physicalGoal=Goal::Idle;
+    bool socialActive=false;
+    SocialIntent socialIntent=SocialIntent::None;
+    CharacterId socialTarget=0;
+
+    const auto it=runtime_.find(id);
+    if(it!=runtime_.end()){
+        const Runtime& r=it->second;
+        hasPhysicalAction=!r.plan.empty() && !r.socialActive;
+        physicalGoal=r.goal;
+        socialActive=r.socialActive;
+        socialIntent=r.socialIntent;
+        socialTarget=r.socialTarget;
+    }
+
+    return buildResidentObservation(
+        world_,relationships_,*character,
+        hasPhysicalAction,physicalGoal,
+        socialActive,socialIntent,socialTarget);
+}
+
+std::vector<ResidentObservation> Simulation::observeAllResidents() const{
+    std::vector<ResidentObservation> result;
+    result.reserve(world_.characters.size());
+    for(const auto& character:world_.characters){
+        result.push_back(observeResident(character.id));
+    }
+    return result;
+}
+
 std::string Simulation::stamp() const{
     const int absolute=world_.minute; const int day=absolute/(24*60)+1; const int md=absolute%(24*60);
     std::ostringstream s; s<<"[Day "<<day<<" "<<std::setfill('0')<<std::setw(2)<<(md/60)<<":"<<std::setw(2)<<(md%60)<<"] "; return s.str();
@@ -67,7 +102,7 @@ std::string Simulation::stamp() const{
 void Simulation::emit(const std::string& message){ const std::string line=stamp()+message; logs_.push_back(line); for(auto& cb:callbacks_) cb(line); }
 void Simulation::onEvent(EventCallback cb){ callbacks_.push_back(std::move(cb)); }
 SmartObject* Simulation::objectById(ObjectId id){ for(auto& o:world_.objects) if(o.id==id) return &o; return nullptr; }
-void Simulation::failPlan(Runtime& r){ r.plan.clear(); r.actionIndex=0; r.announced=false; ++r.consecutiveFailures; if(r.consecutiveFailures>=3){r.penaltyUntilMinute=world_.minute+30;r.consecutiveFailures=0;} }
+void Simulation::failPlan(Runtime& r){ r.plan.clear(); r.actionIndex=0; r.announced=false; r.socialActive=false; r.socialIntent=SocialIntent::None; r.socialTarget=0; ++r.consecutiveFailures; if(r.consecutiveFailures>=3){r.penaltyUntilMinute=world_.minute+30;r.consecutiveFailures=0;} }
 
 bool Simulation::trySocialDecision(Character& c,Runtime& r){
     if(world_.minute<r.socialCooldownUntilMinute) return false;
@@ -85,6 +120,9 @@ bool Simulation::trySocialDecision(Character& c,Runtime& r){
     else if(decision.social.intent==SocialIntent::Repair) cooldown=30;
     else if(decision.social.intent==SocialIntent::Comfort) cooldown=25;
     r.socialCooldownUntilMinute=world_.minute+cooldown;
+    r.socialActive=true;
+    r.socialIntent=decision.social.intent;
+    r.socialTarget=decision.social.target;
 
     std::ostringstream s;
     s<<c.name<<" -> "<<socialIntentName(decision.social.intent)<<" "<<targetName
@@ -101,6 +139,10 @@ bool Simulation::trySocialDecision(Character& c,Runtime& r){
 
 void Simulation::beginPlan(Character& c,Runtime& r){
     if(world_.minute>=r.penaltyUntilMinute && trySocialDecision(c,r)) return;
+
+    r.socialActive=false;
+    r.socialIntent=SocialIntent::None;
+    r.socialTarget=0;
 
     Goal chosen=(world_.minute<r.penaltyUntilMinute)?Goal::Idle:chooseGoal(world_,c);
     if(chosen==r.lastGoal){ ++r.repeatCount; } else { r.lastGoal=chosen; r.repeatCount=1; }
@@ -136,7 +178,14 @@ void Simulation::advanceAction(Character& c,Runtime& r){
         case ActionType::Idle:
             if(--a.remainingTicks<=0){ ++r.actionIndex; r.announced=false; } break;
     }
-    if(r.actionIndex>=r.plan.size()){ r.plan.clear(); r.actionIndex=0; }
+    if(r.actionIndex>=r.plan.size()){
+        r.plan.clear(); r.actionIndex=0;
+        if(r.socialActive){
+            r.socialActive=false;
+            r.socialIntent=SocialIntent::None;
+            r.socialTarget=0;
+        }
+    }
 }
 
 void Simulation::step(){
