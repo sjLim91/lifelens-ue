@@ -69,34 +69,44 @@ public:
     bool registerBirth(CharacterId child,CharacterId parentA,CharacterId parentB)
     {
         if(!canRegisterBirth(child,parentA,parentB)) return false;
-        GenealogyNode& childNode=getOrCreate(child);
-        genealogyAddUnique(childNode.parents,parentA);
-        genealogyAddUnique(childNode.parents,parentB);
-        GenealogyNode& a=getOrCreate(parentA);
-        GenealogyNode& b=getOrCreate(parentB);
-        genealogyAddUnique(a.children,child);
-        genealogyAddUnique(b.children,child);
+
+        // Ensure every node exists first. Creating a later node can reallocate the
+        // vector, so references/pointers are acquired only after all growth is done.
+        getOrCreate(child);
+        getOrCreate(parentA);
+        getOrCreate(parentB);
+
+        GenealogyNode* childNode=findMutable(child);
+        GenealogyNode* a=findMutable(parentA);
+        GenealogyNode* b=findMutable(parentB);
+        if(childNode==nullptr || a==nullptr || b==nullptr) return false;
+
+        genealogyAddUnique(childNode->parents,parentA);
+        genealogyAddUnique(childNode->parents,parentB);
+        genealogyAddUnique(a->children,child);
+        genealogyAddUnique(b->children,child);
         return true;
     }
 
     bool linkSpouses(CharacterId a,CharacterId b)
     {
         if(a==0 || b==0 || a==b) return false;
-        GenealogyNode& first=getOrCreate(a);
-        GenealogyNode& second=getOrCreate(b);
-        genealogyAddUnique(first.spouses,b);
-        genealogyAddUnique(second.spouses,a);
+
+        getOrCreate(a);
+        getOrCreate(b);
+        GenealogyNode* first=findMutable(a);
+        GenealogyNode* second=findMutable(b);
+        if(first==nullptr || second==nullptr) return false;
+
+        genealogyAddUnique(first->spouses,b);
+        genealogyAddUnique(second->spouses,a);
         return true;
     }
 
     bool unlinkSpouses(CharacterId a,CharacterId b)
     {
-        GenealogyNode* first=nullptr;
-        GenealogyNode* second=nullptr;
-        for(auto& node:nodes_){
-            if(node.characterId==a) first=&node;
-            if(node.characterId==b) second=&node;
-        }
+        GenealogyNode* first=findMutable(a);
+        GenealogyNode* second=findMutable(b);
         if(first==nullptr || second==nullptr) return false;
         const auto eraseId=[](std::vector<CharacterId>& ids,CharacterId id){
             const auto old=ids.size();
@@ -174,6 +184,12 @@ public:
     const std::vector<GenealogyNode>& all() const { return nodes_; }
 
 private:
+    GenealogyNode* findMutable(CharacterId id)
+    {
+        for(auto& node:nodes_) if(node.characterId==id) return &node;
+        return nullptr;
+    }
+
     bool isInLaw(CharacterId a,CharacterId b) const
     {
         const GenealogyNode* first=find(a);
