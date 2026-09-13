@@ -493,6 +493,19 @@
 - 상대가 알아야 할 점:
   - DebugBody는 파일상 그대로이며 표현 컴포넌트가 `SetVisibility(false)`로 숨김. 탭 바운즈(`GetActorBounds`)에는 숨긴 컴포넌트도 포함됨.
 
+### Character Presentation v1 — 화면 확인 결과
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/character-presentation-v1`, PR #29
+- 커밋: `9dafb6f`
+- 상태: `REVIEW / 검증 대기`
+- 변경 범위:
+  - 코드 변경 없음
+- 검증 상태:
+  - 화면 확인(`9dafb6f`, 로컬 PIE): 실루엣·링·라벨 표시. 실루엣 크기가 DebugBody 바운즈와 일치. LEVEL 2 탭 패널 정상 표시
+  - GitHub Actions: 검증 대기
+- 상대가 알아야 할 점:
+  - 관찰 카메라 거리(약 1900유닛, FOV 55)에서 주민 크기가 커 보이는지 판단 요청. 카메라 위치/FOV는 `Core/LLLifeLensGameMode.cpp` 소유자 영역.
+
 ---
 
 ## 다음 인수인계 포인트
