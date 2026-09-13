@@ -207,6 +207,27 @@
   - 지지/반박 증거를 동시에 보존하므로 믿음이 단순 true/false로 고정되지 않는다.
   - 기본 Observer HUD에는 Belief 전체를 노출하지 않고, 캐릭터 상세/디버그 계층에서 필요 시 read DTO를 제공한다.
 
+### Social Cognition Core v1 완료
+- 작성자: 쭌 측 AI
+- 브랜치/PR: `jjun/social-cognition-v1`, PR #9
+- 상태: `DONE / main 병합 완료`
+- 변경:
+  - SocialEvent / SocialEventType 및 `processSocialEvent` 추가
+  - 처리 순서: `Emotion → Memory → Belief → Relationship`
+  - 직접 당함 / 직접 목격 / 전해 들음 / 추론을 perception scale로 차등 처리
+  - MemorySource 신뢰도가 Belief confidence 및 Relationship 변화 강도에 이어지도록 연결
+  - 제3자 목격은 개인 당사자보다 약한 observational Relationship 변화 적용
+  - Intimacy/Rejection처럼 상충되는 사회 증거를 support/contradiction으로 함께 보존
+  - `test_social_cognition` 추가
+- 검증:
+  - LifeLens Core Tests PASS
+  - LifeLens Preflight PASS
+- 병합 커밋: `4622760cc7025e88746240f2ff151bd5d01d6568`
+- 상대가 알아야 할 점:
+  - 관계 UI는 사건 하나가 즉시 단일 친밀도 숫자를 바꾸는 구조로 가정하면 안 된다.
+  - 향후 상세 패널에서 직접 경험/소문/추론 여부를 표현할 수 있도록 read DTO 계층에서 source/confidence를 선택적으로 제공할 수 있다.
+  - TASK_03 Bridge/Build와 다겸 UI 파일은 수정하지 않았다.
+
 ---
 
 ## 다음 인수인계 포인트
@@ -215,7 +236,7 @@
 - PR #2 실제 UHT/UBT 결과
 - Core Bridge가 `main`에 병합되면 다겸 UI에서 사용 가능한 읽기 API 목록
 - Android fast pipeline의 seed/fast 실제 성공 여부와 사용법
-- Relationship / Emotion / Memory / Belief Core가 Bridge에 연결될 때 UI용 read DTO/API 목록
+- Relationship / Emotion / Memory / Belief / Social Cognition Core가 Bridge에 연결될 때 UI용 read DTO/API 목록
 
 ### 다겸 측이 쭌 측에 제공해야 하는 것
 - `dagyeom/observer-ui-v2`에서 수정한 파일 목록
