@@ -41,19 +41,19 @@ Last reconciled: 2026-09-13 KST
 - Work item: Observer LEVEL 0 overview / LEVEL 1 quick inspector / LEVEL 2 detail tabs
 - Last known HEAD: `3b578c67528c564064c73a76c1eb4f16f25e489f`
 - PR: #17 `[UI] Observer HUD v2: LEVEL 0 overview, LEVEL 1 quick inspector, LEVEL 2 detail tabs`
-- Status: `BLOCKED`
+- Status: `IN_PROGRESS`
 - CI:
   - latest observed LifeLens Preflight Run `34756163064` — PASS
-  - PR body records structural preflight PASS
   - actual UHT/UBT / 화면 동작 검증 — PENDING
 - Last verified fact:
-  - branch is 13 commits ahead of current product main snapshot at reconciliation time
-  - UI files plus `tasks/TEAM_BOARD.md` / `tasks/HANDOFF_LOG.md` are modified on this branch
-  - 관계/가족/감정/SocialIntent 일부는 read API 부족으로 PR 본문에 미구현/대기 명시
-- Blocker / interruption: actual Unreal compile/runtime verification and requested read APIs are pending.
-- Exact next action: 다겸 AI는 작업 재개 전 최신 `main`의 `docs/STATE_MANAGEMENT.md` + `tasks/WORK_STATE.md`를 읽고 branch/PR mergeability를 다시 확인. Shared docs를 덮어쓰지 말고 최신 main 변경과 조정. UI 자체는 쭌 측에서 임의 수정하지 않음.
+  - PR #17은 열려 있고 structural preflight는 통과함
+  - UI branch는 실제 기능 커밋 13개를 포함하며 다겸 쪽 작업은 존재함
+  - 감정/관계/가족/SocialIntent/월드 집계 일부는 쭌 측 Unreal read API 대기
+  - 이 API 대기는 다겸 전체 작업 BLOCK이 아니라 `BLOCKED-BY-JJUN` 항목으로 분리함
+- Blocker / interruption: PR #17 merge 자체는 actual UHT/UBT 및 shared-doc reconciliation이 필요하지만, 다겸은 별도 READY NOW 작업을 계속할 수 있음.
+- Exact next action: `tasks/DAGYEOM_READY_QUEUE.md`에서 READY NOW 작업을 하나 선택해 새 `dagyeom/*` 브랜치에서 착수. PR #17 파일과 겹치면 stacked branch로 분리.
 - Handoff safety: `CONDITIONAL`
-- Shared-file impact: `tasks/TEAM_BOARD.md`, `tasks/HANDOFF_LOG.md` 변경 있음. 병합 전 main 최신 상태와 충돌 확인 필요.
+- Shared-file impact: PR #17에 `tasks/TEAM_BOARD.md`, `tasks/HANDOFF_LOG.md` 변경 있음. 최신 main 상태 문서를 덮어쓰지 않도록 병합 전 reconciliation 필요.
 
 ### 3. TASK_03 Core ↔ Unreal / Android validation
 
@@ -77,6 +77,24 @@ Last reconciled: 2026-09-13 KST
 
 ---
 
+## Dagyeom READY NOW
+
+정식 큐: `tasks/DAGYEOM_READY_QUEUE.md`
+
+현재 즉시 가능한 작업:
+
+1. `dagyeom/ui-foundation-v1` — Android landscape typography / spacing / safe-area / icon / font foundation
+2. `dagyeom/character-presentation-v1` — nameplate / LifeStage badge / selected-focus feedback / display LOD
+3. `dagyeom/observer-ux-polish-v1` — World→Quick→Detail 전환, 뒤로가기/선택해제/empty-state 정리
+4. `dagyeom/mobile-touch-v1` — hit target / safe-area / 작은 화면 scroll/overflow/tab UX
+5. `dagyeom/visual-feedback-v1` — 선택/관찰 레벨/주목 대상의 비침투적 시각 피드백
+
+`BLOCKED-BY-JJUN`: Relationship / Emotion / SocialIntent / Family summary / World aggregate Unreal read APIs. 이것들은 쭌 측 backlog이며 다겸이 Core를 직접 수정하지 않는다.
+
+READY NOW가 0개가 되면 다겸 측은 `할 일 없음`으로 종료하지 않고 `NEEDS_ASSIGNMENT`로 보고 SPEC의 UI/Observer/Character presentation 범위에서 다음 작업을 즉시 채운다.
+
+---
+
 ## Recently completed product milestones
 
 - P11 Romance Core — `DONE`, main merged.
@@ -96,6 +114,7 @@ P18 first Core test attempt failed only in `test_genealogy` because `std::vector
 
 - `docs/STATE_MANAGEMENT.md` — current protocol.
 - `tasks/WORK_STATE.md` — this live state file.
+- `tasks/DAGYEOM_READY_QUEUE.md` — 다겸 즉시 실행 큐.
 - `tasks/TEAM_BOARD.md` — ownership / locks / integration requests.
 - `tasks/HANDOFF_LOG.md` — append-only history.
 
