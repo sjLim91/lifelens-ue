@@ -31,3 +31,7 @@ add_test(NAME test_determinism COMMAND test_determinism)
 add_executable(test_relationship tests/test_relationship.cpp)
 target_link_libraries(test_relationship PRIVATE lifelens_core)
 add_test(NAME test_relationship COMMAND test_relationship)
+
+add_executable(test_emotion tests/test_emotion.cpp)
+target_link_libraries(test_emotion PRIVATE lifelens_core)
+add_test(NAME test_emotion COMMAND test_emotion)
