@@ -63,3 +63,7 @@ add_test(NAME test_simulation_social_loop COMMAND test_simulation_social_loop)
 add_executable(test_observer_read_model tests/test_observer_read_model.cpp)
 target_link_libraries(test_observer_read_model PRIVATE lifelens_core)
 add_test(NAME test_observer_read_model COMMAND test_observer_read_model)
+
+add_executable(test_romance tests/test_romance.cpp)
+target_link_libraries(test_romance PRIVATE lifelens_core)
+add_test(NAME test_romance COMMAND test_romance)
