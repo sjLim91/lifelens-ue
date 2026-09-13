@@ -390,6 +390,22 @@
   - 현재행동의 SocialIntent(Approach / Repair / Comfort / Avoid): 읽기 API 제공 전까지 미구현. Integration Request 기록.
   - TEAM_WORKFLOW 10절 "Character visual proxy/표현 개선": `Content/Characters/**` 에셋 필요. 로컬 Unreal Editor 없음. 착수 불가.
 
+### World overview 정보 계층 v1
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/observer-ui-v2`, PR #17
+- 커밋: `2fcf04e`
+- 상태: `REVIEW / 검증 대기`
+- 변경 범위:
+  - `Source/LifeLens/UI/LLObserverHUD.h`, `.cpp`: World overview 패널 (SPEC 61). LEVEL 0에서 상단 개요 띠 탭으로 열고 닫음. 날짜/시간, 인구, 생애단계별 인원.
+  - `Source/LifeLens/UI/LLObserverLabels.h`: World overview 문구.
+- 검증 상태:
+  - structural preflight PASS (`Tools/validate_bootstrap.py`)
+  - 실제 UHT/UBT: 검증 대기
+  - 화면/동작 확인: 검증 대기
+- 상대가 알아야 할 점:
+  - 사용 읽기 API: `ULLSimulationSubsystem::GetResidents`, `GetSimulationMinute`, `FLLResidentData::LifeStage`.
+  - Households / Couples / Married Couples / Pregnancies / Major Events: 읽기 API 제공 전까지 미표시. Integration Request 기록.
+
 ---
 
 ## 다음 인수인계 포인트
