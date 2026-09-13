@@ -75,3 +75,7 @@ add_test(NAME test_household COMMAND test_household)
 add_executable(test_marriage tests/test_marriage.cpp)
 target_link_libraries(test_marriage PRIVATE lifelens_core)
 add_test(NAME test_marriage COMMAND test_marriage)
+
+add_executable(test_pregnancy tests/test_pregnancy.cpp)
+target_link_libraries(test_pregnancy PRIVATE lifelens_core)
+add_test(NAME test_pregnancy COMMAND test_pregnancy)
