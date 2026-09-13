@@ -52,6 +52,14 @@ assert 'lifelens::Simulation' in bridge_cpp
 assert 'setupDemo()' in bridge_cpp
 assert 'runMinutes' in bridge_cpp
 
+# LifeLensCore must stay Unreal-independent so it remains buildable by CMake/Termux.
+for path in (root / 'Source/LifeLensCore').rglob('*'):
+    if not path.is_file() or path.suffix not in {'.h', '.hpp', '.cpp'}:
+        continue
+    text = path.read_text(encoding='utf-8')
+    for forbidden in ('CoreMinimal.h', 'UObject', 'TArray<', 'FString', 'FName'):
+        assert forbidden not in text, f'Unreal dependency leaked into LifeLensCore: {path} -> {forbidden}'
+
 sim_h = (root / 'Source/LifeLens/Simulation/LLSimulationSubsystem.h').read_text(encoding='utf-8')
 assert 'TArray<FLLResidentData> GetResidents() const' in sim_h
 assert 'const TArray<FLLResidentData>& GetResidents() const' not in sim_h
