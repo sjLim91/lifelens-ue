@@ -28,7 +28,10 @@ public:
     void AdvanceSimulationMinutes(int32 Minutes);
 
     UFUNCTION(BlueprintPure, Category="LifeLens|Simulation")
-    const TArray<FLLResidentData>& GetResidents() const { return Residents; }
+    TArray<FLLResidentData> GetResidents() const { return Residents; }
+
+    UFUNCTION(BlueprintPure, Category="LifeLens|Simulation")
+    TArray<FLLRelationshipData> GetRelationships() const { return Relationships; }
 
     UFUNCTION(BlueprintPure, Category="LifeLens|Simulation")
     int32 GetWorldSeed() const { return WorldSeed; }
@@ -38,6 +41,9 @@ public:
 
     UFUNCTION(BlueprintCallable, Category="LifeLens|Simulation")
     bool FindResidentById(FGuid ResidentId, FLLResidentData& OutResident) const;
+
+    UFUNCTION(BlueprintCallable, Category="LifeLens|Simulation")
+    bool ApplyActionOutcome(FGuid ResidentId, ELLActionIntent Intent, float Strength = 1.0f);
 
     UFUNCTION(BlueprintCallable, Category="LifeLens|Social")
     bool GetRelationship(FGuid A, FGuid B, FLLRelationshipData& OutRelationship) const;
@@ -52,6 +58,7 @@ private:
     void GenerateInitialPopulation();
     FLLResidentData GenerateAdult(FRandomStream& Random, ELLSex Sex, TSet<FString>& UsedNames);
     void GenerateInitialRelationships();
+    FLLResidentData* FindMutableResident(FGuid ResidentId);
     static FGuid MakeDeterministicGuid(FRandomStream& Random);
     static float RollPercent(FRandomStream& Random, float Min = 15.0f, float Max = 85.0f);
 
