@@ -1,5 +1,6 @@
 #include "UI/LLObserverPlayerController.h"
 #include "UI/LLObservationSubsystem.h"
+#include "UI/LLObserverHUD.h"
 #include "Characters/LLResidentCharacter.h"
 #include "Components/InputComponent.h"
 #include "Engine/GameInstance.h"
@@ -32,31 +33,32 @@ void ALLObserverPlayerController::SetupInputComponent()
 
 void ALLObserverPlayerController::HandlePrimarySelect()
 {
+    float MouseX = 0.0f;
+    float MouseY = 0.0f;
+    GetMousePosition(MouseX, MouseY);
+    const FVector2D ScreenPosition(MouseX, MouseY);
+
     FHitResult Hit;
-    if (GetHitResultUnderCursor(ECC_Pawn, true, Hit))
+    if (!GetHitResultUnderCursor(ECC_Pawn, true, Hit))
     {
-        ApplySelectionFromHit(Hit);
+        Hit = FHitResult();
     }
-    else
-    {
-        ApplySelectionFromHit(FHitResult());
-    }
+    ApplyTap(ScreenPosition, Hit);
 }
 
 void ALLObserverPlayerController::HandleTouchPressed(ETouchIndex::Type FingerIndex, FVector Location)
 {
+    const FVector2D ScreenPosition(Location.X, Location.Y);
+
     FHitResult Hit;
-    if (GetHitResultUnderFinger(FingerIndex, ECC_Pawn, true, Hit))
+    if (!GetHitResultUnderFinger(FingerIndex, ECC_Pawn, true, Hit))
     {
-        ApplySelectionFromHit(Hit);
+        Hit = FHitResult();
     }
-    else
-    {
-        ApplySelectionFromHit(FHitResult());
-    }
+    ApplyTap(ScreenPosition, Hit);
 }
 
-void ALLObserverPlayerController::ApplySelectionFromHit(const FHitResult& Hit)
+void ALLObserverPlayerController::ApplyTap(const FVector2D& ScreenPosition, const FHitResult& Hit)
 {
     UGameInstance* GameInstance = GetGameInstance();
     ULLObservationSubsystem* Observation = GameInstance ? GameInstance->GetSubsystem<ULLObservationSubsystem>() : nullptr;
@@ -65,12 +67,22 @@ void ALLObserverPlayerController::ApplySelectionFromHit(const FHitResult& Hit)
         return;
     }
 
+    // 1. HUD chrome (quick inspector card, detail tabs).
+    if (ALLObserverHUD* ObserverHUD = GetHUD<ALLObserverHUD>())
+    {
+        if (ObserverHUD->HandleTap(ScreenPosition))
+        {
+            return;
+        }
+    }
+
+    // 2. A resident in the world.
     if (const ALLResidentCharacter* Resident = Cast<ALLResidentCharacter>(Hit.GetActor()))
     {
         Observation->ObserveResident(Resident->GetResidentId());
+        return;
     }
-    else
-    {
-        Observation->ClearObservedResident();
-    }
+
+    // 3. Empty space: one level back (LEVEL 2 -> 1 -> 0).
+    Observation->StepBack();
 }

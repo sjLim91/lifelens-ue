@@ -5,6 +5,10 @@
 #include "GameFramework/PlayerController.h"
 #include "LLObserverPlayerController.generated.h"
 
+// Routes a single tap/click:
+//   1. HUD chrome first (quick inspector card, detail tabs) - consumed there.
+//   2. A resident actor under the pointer - select it.
+//   3. Empty space - step one observation level back.
 UCLASS()
 class LIFELENS_API ALLObserverPlayerController : public APlayerController
 {
@@ -20,5 +24,5 @@ protected:
 private:
     void HandlePrimarySelect();
     void HandleTouchPressed(ETouchIndex::Type FingerIndex, FVector Location);
-    void ApplySelectionFromHit(const FHitResult& Hit);
+    void ApplyTap(const FVector2D& ScreenPosition, const FHitResult& Hit);
 };

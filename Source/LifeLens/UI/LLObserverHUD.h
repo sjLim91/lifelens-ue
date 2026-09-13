@@ -8,14 +8,31 @@ class ULLSimulationSubsystem;
 class ULLObservationSubsystem;
 struct FLLResidentData;
 
-// Observer-first HUD (SPEC 53-56, 81).
+// Tabs of the LEVEL 2 detail panel (SPEC 57). Only tabs backed by a read API
+// exist; Emotion / Memory / Relationships / Family etc. are added when the
+// simulation side exposes their data.
+UENUM()
+enum class ELLDetailTab : uint8
+{
+    Overview,
+    Needs,
+    Personality,
+    TraitsSkills,
+
+    Count UMETA(Hidden)
+};
+
+// Observer-first HUD (SPEC 53-57, 81).
 //
 // LEVEL 0: nothing selected. A thin status line plus a faint strip of
 //          residents and their current action. No need or relationship values.
 // LEVEL 1: one resident selected. A compact quick inspector: name and age,
 //          current action, one-line status summary, one line of personality
-//          words. Numbers are never shown here.
-// LEVEL 2 (full detail) is not implemented yet.
+//          words. Numbers are never shown here. Tapping the card opens LEVEL 2.
+// LEVEL 2: tabbed detail panel. Overview / Needs / Personality / Traits & Skills.
+//
+// The HUD owns the on-screen rectangles of its own chrome so the player
+// controller can ask whether a tap landed on UI before hit-testing the world.
 UCLASS()
 class LIFELENS_API ALLObserverHUD : public AHUD
 {
@@ -23,6 +40,11 @@ class LIFELENS_API ALLObserverHUD : public AHUD
 
 public:
     virtual void DrawHUD() override;
+
+    // Returns true if the tap landed on HUD chrome and was handled here.
+    bool HandleTap(const FVector2D& ScreenPosition);
+
+    static constexpr int32 DetailTabCount = 4; // keep equal to ELLDetailTab::Count
 
 private:
     // Uniform scale so text stays readable on phones and desktops alike.
@@ -35,8 +57,21 @@ private:
     // LEVEL 1. TopY is the Y just below the overview band.
     void DrawQuickInspector(const FLLResidentData& Resident, float UIScale, float TopY);
 
+    // LEVEL 2. TopY is the Y just below the overview band.
+    void DrawDetailPanel(const FLLResidentData& Resident, float UIScale, float TopY);
+
     // Greedy word wrap against MaxWidth using the HUD font metrics.
     TArray<FString> WrapText(const FString& Text, float MaxWidth, float Scale) const;
 
     FString CurrentActionFor(const FLLResidentData& Resident) const;
+
+    ULLObservationSubsystem* GetObservation() const;
+
+    // Chrome rectangles from the last DrawHUD, in canvas pixels.
+    FBox2D QuickInspectorRect;
+    FBox2D DetailPanelRect;
+    FBox2D DetailTabRects[DetailTabCount];
+
+    ELLDetailTab ActiveTab = ELLDetailTab::Overview;
+    FGuid LastDetailResidentId;
 };

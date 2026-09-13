@@ -27,6 +27,47 @@ namespace LLObserverText
     inline const TCHAR* const SummaryJoin        = TEXT(" · ");
     inline const TCHAR* const SummaryAllGood     = TEXT("Doing well");
     inline const TCHAR* const PersonalityFallback = TEXT("Even-tempered");
+    inline const TCHAR* const DetailsHint        = TEXT("Details ›"); // "Details ›"
+
+    // ---- LEVEL 2 detail panel ------------------------------------------------
+    inline const TCHAR* const TabOverview        = TEXT("Overview");
+    inline const TCHAR* const TabNeeds           = TEXT("Needs");
+    inline const TCHAR* const TabPersonality     = TEXT("Personality");
+    inline const TCHAR* const TabTraitsSkills    = TEXT("Traits & Skills");
+
+    inline const TCHAR* const SectionTraits      = TEXT("Traits");
+    inline const TCHAR* const SectionSkills      = TEXT("Skills");
+    inline const TCHAR* const SectionLikes       = TEXT("Likes");
+    inline const TCHAR* const BackgroundPrefix   = TEXT("Background: ");
+    inline const TCHAR* const NoneListed         = TEXT("None listed");
+
+    inline const TCHAR* const NeedNameHunger     = TEXT("Hunger");
+    inline const TCHAR* const NeedNameEnergy     = TEXT("Energy");
+    inline const TCHAR* const NeedNameSocial     = TEXT("Social");
+    inline const TCHAR* const NeedNameHygiene    = TEXT("Hygiene");
+    inline const TCHAR* const NeedNameBladder    = TEXT("Bladder");
+    inline const TCHAR* const NeedNameFun        = TEXT("Fun");
+
+    inline const TCHAR* const AxisExtraversion      = TEXT("Extraversion");
+    inline const TCHAR* const AxisAgreeableness     = TEXT("Agreeableness");
+    inline const TCHAR* const AxisConscientiousness = TEXT("Conscientiousness");
+    inline const TCHAR* const AxisOpenness          = TEXT("Openness");
+    inline const TCHAR* const AxisStability         = TEXT("Emotional stability");
+    inline const TCHAR* const AxisBalanced          = TEXT("Balanced");
+
+    inline const TCHAR* const SexMale            = TEXT("Male");
+    inline const TCHAR* const SexFemale          = TEXT("Female");
+    inline const TCHAR* const StageInfant        = TEXT("Infant");
+    inline const TCHAR* const StageChild         = TEXT("Child");
+    inline const TCHAR* const StageTeen          = TEXT("Teen");
+    inline const TCHAR* const StageAdult         = TEXT("Adult");
+    inline const TCHAR* const StageElder         = TEXT("Elder");
+
+    // Skill levels (value is 0..100).
+    inline const TCHAR* const SkillExpert        = TEXT("Skilled");
+    inline const TCHAR* const SkillCapable       = TEXT("Capable");
+    inline const TCHAR* const SkillNovice        = TEXT("Novice");
+    inline const TCHAR* const SkillBeginner      = TEXT("Beginner");
 
     // ---- Action intent -----------------------------------------------------
     inline const TCHAR* const ActionEat          = TEXT("Eating");
@@ -70,8 +111,51 @@ namespace LLObserverLabels
     constexpr float PersonalityHighMin = 65.0f;
     constexpr float PersonalityLowMax  = 35.0f;
 
+    // Skill thresholds (inclusive lower bounds). 0..100.
+    constexpr float SkillExpertMin  = 70.0f;
+    constexpr float SkillCapableMin = 40.0f;
+    constexpr float SkillNoviceMin  = 20.0f;
+
     constexpr int32 MaxSummaryPhrases   = 3;
     constexpr int32 MaxPersonalityWords = 3;
+
+    // A named need with its value, for tabular display.
+    struct FNeedRow
+    {
+        const TCHAR* Name;
+        float Value;
+    };
+
+    inline TArray<FNeedRow> NeedRows(const FLLNeedState& Needs)
+    {
+        return {
+            { LLObserverText::NeedNameHunger,  Needs.Hunger },
+            { LLObserverText::NeedNameEnergy,  Needs.Energy },
+            { LLObserverText::NeedNameSocial,  Needs.Social },
+            { LLObserverText::NeedNameHygiene, Needs.Hygiene },
+            { LLObserverText::NeedNameBladder, Needs.Bladder },
+            { LLObserverText::NeedNameFun,     Needs.Fun },
+        };
+    }
+
+    // A named personality axis with its value and high/low word pair.
+    struct FPersonalityAxisRow
+    {
+        const TCHAR* Name;
+        float Value;
+        const TCHAR* const* Words;
+    };
+
+    inline TArray<FPersonalityAxisRow> PersonalityAxisRows(const FLLPersonality& P)
+    {
+        return {
+            { LLObserverText::AxisExtraversion,      P.Extraversion,       LLObserverText::ExtraversionWords },
+            { LLObserverText::AxisAgreeableness,     P.Agreeableness,      LLObserverText::AgreeablenessWords },
+            { LLObserverText::AxisConscientiousness, P.Conscientiousness,  LLObserverText::ConscientiousnessWords },
+            { LLObserverText::AxisOpenness,          P.Openness,           LLObserverText::OpennessWords },
+            { LLObserverText::AxisStability,         P.EmotionalStability, LLObserverText::StabilityWords },
+        };
+    }
 
     enum class ENeedLevel : uint8
     {
@@ -117,6 +201,55 @@ namespace LLObserverLabels
     inline FLinearColor NeedColor(float Value)
     {
         return NeedColorForLevel(NeedLevel(Value));
+    }
+
+    // High word / low word / "Balanced" for one personality axis.
+    inline FString PersonalityAxisLabel(float Value, const TCHAR* const* Words)
+    {
+        if (Value >= PersonalityHighMin) return Words[0];
+        if (Value <= PersonalityLowMax)  return Words[1];
+        return LLObserverText::AxisBalanced;
+    }
+
+    inline FString SkillLabel(float Value)
+    {
+        if (Value >= SkillExpertMin)  return LLObserverText::SkillExpert;
+        if (Value >= SkillCapableMin) return LLObserverText::SkillCapable;
+        if (Value >= SkillNoviceMin)  return LLObserverText::SkillNovice;
+        return LLObserverText::SkillBeginner;
+    }
+
+    inline FString SexToString(ELLSex Sex)
+    {
+        return Sex == ELLSex::Female ? LLObserverText::SexFemale : LLObserverText::SexMale;
+    }
+
+    inline FString LifeStageToString(ELLLifeStage Stage)
+    {
+        switch (Stage)
+        {
+            case ELLLifeStage::Infant: return LLObserverText::StageInfant;
+            case ELLLifeStage::Child:  return LLObserverText::StageChild;
+            case ELLLifeStage::Teen:   return LLObserverText::StageTeen;
+            case ELLLifeStage::Elder:  return LLObserverText::StageElder;
+            case ELLLifeStage::Adult:
+            default:                   return LLObserverText::StageAdult;
+        }
+    }
+
+    // "Alpha · Beta · Gamma" from a name list, or NoneListed.
+    inline FString JoinNames(const TArray<FName>& Names)
+    {
+        TArray<FString> Parts;
+        Parts.Reserve(Names.Num());
+        for (const FName& Name : Names)
+        {
+            if (!Name.IsNone())
+            {
+                Parts.Add(Name.ToString());
+            }
+        }
+        return Parts.Num() > 0 ? FString::Join(Parts, LLObserverText::SummaryJoin) : FString(LLObserverText::NoneListed);
     }
 
     inline FString IntentToString(ELLActionIntent Intent)
