@@ -30,6 +30,8 @@ struct Character {
     bool hasBirthMinute=false;
     int birthMinute=0;
     LifeStage lifeStage=LifeStage::Adult;
+    bool alive=true;
+    int deathMinute=-1;
     double baseMetabolism=1.0;
     double baseSleepTendency=1.0;
     double metabolism=1.0;
