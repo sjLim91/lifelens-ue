@@ -51,3 +51,27 @@ add_test(NAME test_social_cognition COMMAND test_social_cognition)
 add_executable(test_social_utility tests/test_social_utility.cpp)
 target_link_libraries(test_social_utility PRIVATE lifelens_core)
 add_test(NAME test_social_utility COMMAND test_social_utility)
+
+add_executable(test_decision_execution tests/test_decision_execution.cpp)
+target_link_libraries(test_decision_execution PRIVATE lifelens_core)
+add_test(NAME test_decision_execution COMMAND test_decision_execution)
+
+add_executable(test_simulation_social_loop tests/test_simulation_social_loop.cpp)
+target_link_libraries(test_simulation_social_loop PRIVATE lifelens_core)
+add_test(NAME test_simulation_social_loop COMMAND test_simulation_social_loop)
+
+add_executable(test_observer_read_model tests/test_observer_read_model.cpp)
+target_link_libraries(test_observer_read_model PRIVATE lifelens_core)
+add_test(NAME test_observer_read_model COMMAND test_observer_read_model)
+
+add_executable(test_romance tests/test_romance.cpp)
+target_link_libraries(test_romance PRIVATE lifelens_core)
+add_test(NAME test_romance COMMAND test_romance)
+
+add_executable(test_household tests/test_household.cpp)
+target_link_libraries(test_household PRIVATE lifelens_core)
+add_test(NAME test_household COMMAND test_household)
+
+add_executable(test_marriage tests/test_marriage.cpp)
+target_link_libraries(test_marriage PRIVATE lifelens_core)
+add_test(NAME test_marriage COMMAND test_marriage)

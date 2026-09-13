@@ -5,7 +5,7 @@ namespace lifelens {
 Simulation::Simulation(std::uint64_t seed):world_(seed){}
 
 void Simulation::setupDemo(){
-    world_.characters.clear(); world_.objects.clear(); runtime_.clear(); logs_.clear(); world_.minute=7*60;
+    world_.characters.clear(); world_.objects.clear(); relationships_=RelationshipBook{}; runtime_.clear(); logs_.clear(); world_.minute=7*60;
     Character c; c.id=1; c.name="DevResident"; c.personality=Personality::generate(world_.rng);
     std::uniform_real_distribution<double> start(0.10,0.42);
     c.needs={start(world_.rng),start(world_.rng),start(world_.rng),start(world_.rng),start(world_.rng)};
@@ -21,6 +21,80 @@ void Simulation::setupDemo(){
     emit("simulation start seed="+std::to_string(world_.seed));
 }
 
+void Simulation::setupSocialDemo(){
+    world_.characters.clear(); world_.objects.clear(); relationships_=RelationshipBook{}; runtime_.clear(); logs_.clear(); world_.minute=7*60;
+
+    Character a;
+    a.id=1; a.name="SocialA";
+    a.needs={0.10,0.10,0.10,0.10,0.10};
+    a.personality.sociability=0.94;
+    a.personality.curiosity=0.72;
+    a.personality.introversion=0.08;
+    a.personality.agreeableness=0.82;
+    a.personality.empathy=0.80;
+    a.personality.patience=0.76;
+
+    Character b;
+    b.id=2; b.name="SocialB";
+    b.needs={0.11,0.10,0.10,0.10,0.10};
+    b.personality.sociability=0.82;
+    b.personality.curiosity=0.60;
+    b.personality.introversion=0.18;
+    b.personality.agreeableness=0.78;
+    b.personality.empathy=0.84;
+    b.personality.patience=0.74;
+
+    world_.characters={a,b};
+    world_.objects.push_back({1,ObjectKind::Bed,{1,1},std::nullopt,{0,0,-0.055,0,0},16});
+    world_.objects.push_back({2,ObjectKind::Toilet,{4,1},std::nullopt,{0,0,0,-0.12,0},7});
+    world_.objects.push_back({3,ObjectKind::Sink,{4,3},std::nullopt,{0,-0.085,0,0,-0.055},8});
+    world_.objects.push_back({4,ObjectKind::Fridge,{1,4},std::nullopt,{-0.075,0,0,0,0},9});
+
+    Relationship& aToB=relationships_.getOrCreate(1,2);
+    aToB.affection=0.84; aToB.trust=0.82; aToB.comfort=0.80; aToB.familiarity=0.88;
+    Relationship& bToA=relationships_.getOrCreate(2,1);
+    bToA.affection=0.72; bToA.trust=0.74; bToA.comfort=0.70; bToA.familiarity=0.82;
+
+    runtime_[a.id]=Runtime{};
+    runtime_[b.id]=Runtime{};
+    emit("social simulation start seed="+std::to_string(world_.seed));
+}
+
+ResidentObservation Simulation::observeResident(CharacterId id) const{
+    const Character* character=findObservedCharacter(world_,id);
+    if(!character) return ResidentObservation{};
+
+    bool hasPhysicalAction=false;
+    Goal physicalGoal=Goal::Idle;
+    bool socialActive=false;
+    SocialIntent socialIntent=SocialIntent::None;
+    CharacterId socialTarget=0;
+
+    const auto it=runtime_.find(id);
+    if(it!=runtime_.end()){
+        const Runtime& r=it->second;
+        hasPhysicalAction=!r.plan.empty() && !r.socialActive;
+        physicalGoal=r.goal;
+        socialActive=r.socialActive;
+        socialIntent=r.socialIntent;
+        socialTarget=r.socialTarget;
+    }
+
+    return buildResidentObservation(
+        world_,relationships_,*character,
+        hasPhysicalAction,physicalGoal,
+        socialActive,socialIntent,socialTarget);
+}
+
+std::vector<ResidentObservation> Simulation::observeAllResidents() const{
+    std::vector<ResidentObservation> result;
+    result.reserve(world_.characters.size());
+    for(const auto& character:world_.characters){
+        result.push_back(observeResident(character.id));
+    }
+    return result;
+}
+
 std::string Simulation::stamp() const{
     const int absolute=world_.minute; const int day=absolute/(24*60)+1; const int md=absolute%(24*60);
     std::ostringstream s; s<<"[Day "<<day<<" "<<std::setfill('0')<<std::setw(2)<<(md/60)<<":"<<std::setw(2)<<(md%60)<<"] "; return s.str();
@@ -28,9 +102,48 @@ std::string Simulation::stamp() const{
 void Simulation::emit(const std::string& message){ const std::string line=stamp()+message; logs_.push_back(line); for(auto& cb:callbacks_) cb(line); }
 void Simulation::onEvent(EventCallback cb){ callbacks_.push_back(std::move(cb)); }
 SmartObject* Simulation::objectById(ObjectId id){ for(auto& o:world_.objects) if(o.id==id) return &o; return nullptr; }
-void Simulation::failPlan(Runtime& r){ r.plan.clear(); r.actionIndex=0; r.announced=false; ++r.consecutiveFailures; if(r.consecutiveFailures>=3){r.penaltyUntilMinute=world_.minute+30;r.consecutiveFailures=0;} }
+void Simulation::failPlan(Runtime& r){ r.plan.clear(); r.actionIndex=0; r.announced=false; r.socialActive=false; r.socialIntent=SocialIntent::None; r.socialTarget=0; ++r.consecutiveFailures; if(r.consecutiveFailures>=3){r.penaltyUntilMinute=world_.minute+30;r.consecutiveFailures=0;} }
+
+bool Simulation::trySocialDecision(Character& c,Runtime& r){
+    if(world_.minute<r.socialCooldownUntilMinute) return false;
+
+    const UnifiedUtilityDecision decision=chooseUnifiedUtilityDecision(world_,c,relationships_);
+    if(decision.kind!=UnifiedDecisionKind::Social || decision.social.intent==SocialIntent::None) return false;
+
+    const Character* targetBefore=findCharacter(world_,decision.social.target);
+    const std::string targetName=targetBefore?targetBefore->name:std::to_string(decision.social.target);
+    const DecisionExecutionResult result=executeSocialDecision(world_,relationships_,c.id,decision.social,"simulation");
+    if(!result.socialExecuted) return false;
+
+    int cooldown=20;
+    if(decision.social.intent==SocialIntent::Avoid) cooldown=15;
+    else if(decision.social.intent==SocialIntent::Repair) cooldown=30;
+    else if(decision.social.intent==SocialIntent::Comfort) cooldown=25;
+    r.socialCooldownUntilMinute=world_.minute+cooldown;
+    r.socialActive=true;
+    r.socialIntent=decision.social.intent;
+    r.socialTarget=decision.social.target;
+
+    std::ostringstream s;
+    s<<c.name<<" -> "<<socialIntentName(decision.social.intent)<<" "<<targetName
+     <<" (social utility "<<std::fixed<<std::setprecision(2)<<decision.social.utility<<")";
+    emit(s.str());
+
+    r.goal=Goal::Idle;
+    r.plan={{ActionType::Idle,0,5}};
+    r.actionIndex=0;
+    r.announced=false;
+    r.consecutiveFailures=0;
+    return true;
+}
 
 void Simulation::beginPlan(Character& c,Runtime& r){
+    if(world_.minute>=r.penaltyUntilMinute && trySocialDecision(c,r)) return;
+
+    r.socialActive=false;
+    r.socialIntent=SocialIntent::None;
+    r.socialTarget=0;
+
     Goal chosen=(world_.minute<r.penaltyUntilMinute)?Goal::Idle:chooseGoal(world_,c);
     if(chosen==r.lastGoal){ ++r.repeatCount; } else { r.lastGoal=chosen; r.repeatCount=1; }
     if(r.repeatCount>=5){ chosen=Goal::Idle; r.repeatCount=0; }
@@ -65,7 +178,14 @@ void Simulation::advanceAction(Character& c,Runtime& r){
         case ActionType::Idle:
             if(--a.remainingTicks<=0){ ++r.actionIndex; r.announced=false; } break;
     }
-    if(r.actionIndex>=r.plan.size()){ r.plan.clear(); r.actionIndex=0; }
+    if(r.actionIndex>=r.plan.size()){
+        r.plan.clear(); r.actionIndex=0;
+        if(r.socialActive){
+            r.socialActive=false;
+            r.socialIntent=SocialIntent::None;
+            r.socialTarget=0;
+        }
+    }
 }
 
 void Simulation::step(){
