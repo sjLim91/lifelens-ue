@@ -82,6 +82,28 @@
   - 역할 분담은 `docs/LIFELENS_SPEC_v1.1.md` 요구사항을 축소하지 않는다.
   - 공용 파일 및 상대 `DOING` 파일은 임의 수정 금지.
 
+### Parallel Relationship Core v1 시작
+- 작성자: 쭌 측 AI
+- 브랜치: `jjun/relationship-core-v1`
+- 상태: `DOING / 검증 대기`
+- 목적:
+  - TASK_03 Android 빌드를 기다리지 않고 제품 기능 개발을 병렬 진행.
+  - MASTER SPEC 31의 단일 친밀도 금지 원칙과 13개 Relationship 차원을 Core에 반영.
+- 변경 범위:
+  - `Source/LifeLensCore/include/lifelens/Relationship.h`
+  - `Source/LifeLensCore/tests/test_relationship.cpp`
+  - `Source/LifeLensCore/CMakeLists.txt`
+- 구현 내용:
+  - Affection, Trust, Respect, Comfort, Familiarity, Attraction, RomanticInterest, SexualAttraction, Commitment, Conflict, Jealousy, Fear, Grudge
+  - 방향성 관계(`from -> to`)로 모델링하여 두 사람의 감정이 자동 대칭이 되지 않음.
+  - 사건 기반 RelationshipDelta와 0~1 clamp.
+  - socialBond / romancePotential 파생 점수는 의사결정 보조값일 뿐 원본 13차원을 대체하지 않음.
+- 검증:
+  - Core CI를 PR에서 실행 예정. 아직 PASS로 간주하지 않음.
+- 상대가 알아야 할 점:
+  - 다겸 UI에서 향후 관계를 표시할 때 단일 `affinity`가 아니라 위 다차원 데이터가 기준이 된다.
+  - 현재 다겸 UI 브랜치와 파일 충돌 없음. `Source/LifeLens/UI/**`는 수정하지 않음.
+
 ---
 
 ## 다음 인수인계 포인트
@@ -90,6 +112,7 @@
 - PR #2 실제 UHT/UBT 결과
 - Core Bridge가 `main`에 병합되면 다겸 UI에서 사용 가능한 읽기 API 목록
 - Android fast pipeline의 seed/fast 실제 성공 여부와 사용법
+- Relationship Core v1이 병합되면 UI용 Relationship read DTO/API 요청 형식
 
 ### 다겸 측이 쭌 측에 제공해야 하는 것
 - `dagyeom/observer-ui-v2`에서 수정한 파일 목록
