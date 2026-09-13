@@ -17,6 +17,11 @@ inline double clampRomance(double value)
 
 enum class RomanceStage {
     Dating,
+    Engaged,
+    Married,
+    Separated,
+    Divorced,
+    Widowed,
     FormerPartners
 };
 
@@ -26,6 +31,8 @@ struct RomancePair {
     CharacterId initiator=0;
     RomanceStage stage=RomanceStage::Dating;
     int startedMinute=0;
+    int engagedMinute=-1;
+    int marriedMinute=-1;
     int endedMinute=-1;
 
     bool contains(CharacterId id) const
@@ -47,7 +54,10 @@ struct RomancePair {
 
     bool active() const
     {
-        return stage==RomanceStage::Dating;
+        return stage==RomanceStage::Dating ||
+               stage==RomanceStage::Engaged ||
+               stage==RomanceStage::Married ||
+               stage==RomanceStage::Separated;
     }
 };
 
@@ -75,6 +85,22 @@ public:
         return nullptr;
     }
 
+    RomancePair* findActivePair(CharacterId a,CharacterId b)
+    {
+        for(auto it=items_.rbegin();it!=items_.rend();++it){
+            if(it->active() && it->matches(a,b)) return &(*it);
+        }
+        return nullptr;
+    }
+
+    const RomancePair* findActivePair(CharacterId a,CharacterId b) const
+    {
+        for(auto it=items_.rbegin();it!=items_.rend();++it){
+            if(it->active() && it->matches(a,b)) return &(*it);
+        }
+        return nullptr;
+    }
+
     bool startDating(CharacterId a,CharacterId b,CharacterId initiator,int minute)
     {
         if(a==0 || b==0 || a==b) return false;
@@ -90,16 +116,61 @@ public:
         return true;
     }
 
+    bool engage(CharacterId a,CharacterId b,int minute)
+    {
+        RomancePair* pair=findActivePair(a,b);
+        if(pair==nullptr || pair->stage!=RomanceStage::Dating) return false;
+        pair->stage=RomanceStage::Engaged;
+        pair->engagedMinute=std::max(pair->startedMinute,minute);
+        return true;
+    }
+
+    bool marry(CharacterId a,CharacterId b,int minute)
+    {
+        RomancePair* pair=findActivePair(a,b);
+        if(pair==nullptr || pair->stage!=RomanceStage::Engaged) return false;
+        pair->stage=RomanceStage::Married;
+        const int floorMinute=pair->engagedMinute>=0 ? pair->engagedMinute : pair->startedMinute;
+        pair->marriedMinute=std::max(floorMinute,minute);
+        return true;
+    }
+
+    bool separate(CharacterId a,CharacterId b,int minute)
+    {
+        RomancePair* pair=findActivePair(a,b);
+        if(pair==nullptr || pair->stage!=RomanceStage::Married) return false;
+        pair->stage=RomanceStage::Separated;
+        (void)minute;
+        return true;
+    }
+
+    bool divorce(CharacterId a,CharacterId b,int minute)
+    {
+        RomancePair* pair=findActivePair(a,b);
+        if(pair==nullptr || (pair->stage!=RomanceStage::Married && pair->stage!=RomanceStage::Separated)) return false;
+        pair->stage=RomanceStage::Divorced;
+        const int floorMinute=pair->marriedMinute>=0 ? pair->marriedMinute : pair->startedMinute;
+        pair->endedMinute=std::max(floorMinute,minute);
+        return true;
+    }
+
+    bool markWidowed(CharacterId survivingPartner,CharacterId deceasedPartner,int minute)
+    {
+        RomancePair* pair=findActivePair(survivingPartner,deceasedPartner);
+        if(pair==nullptr || (pair->stage!=RomanceStage::Married && pair->stage!=RomanceStage::Separated)) return false;
+        pair->stage=RomanceStage::Widowed;
+        const int floorMinute=pair->marriedMinute>=0 ? pair->marriedMinute : pair->startedMinute;
+        pair->endedMinute=std::max(floorMinute,minute);
+        return true;
+    }
+
     bool endDating(CharacterId a,CharacterId b,int minute)
     {
-        for(auto it=items_.rbegin();it!=items_.rend();++it){
-            if(it->active() && it->matches(a,b)){
-                it->stage=RomanceStage::FormerPartners;
-                it->endedMinute=std::max(it->startedMinute,minute);
-                return true;
-            }
-        }
-        return false;
+        RomancePair* pair=findActivePair(a,b);
+        if(pair==nullptr || (pair->stage!=RomanceStage::Dating && pair->stage!=RomanceStage::Engaged)) return false;
+        pair->stage=RomanceStage::FormerPartners;
+        pair->endedMinute=std::max(pair->startedMinute,minute);
+        return true;
     }
 
     const std::vector<RomancePair>& all() const { return items_; }
