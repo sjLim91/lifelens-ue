@@ -26,6 +26,8 @@ struct Character {
     bool hasBirthMinute=false;
     int birthMinute=0;
     LifeStage lifeStage=LifeStage::Adult;
+    double baseMetabolism=1.0;
+    double baseSleepTendency=1.0;
     double metabolism=1.0;
     double sleepTendency=1.0;
 };
