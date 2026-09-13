@@ -11,6 +11,7 @@
 | 담당 | 브랜치 | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
 | 쭌 + 쭌 AI | `task/03-fast-test` | LifeLensCore ↔ Unreal bridge 실제 UE/Android 검증 + 재빌드 방지 파이프라인 | `Source/LifeLens/Simulation/**`, build/CI | DOING |
+| 쭌 + 쭌 AI | `jjun/social-cognition-v1` | Social Event → Emotion → Memory → Belief → Relationship 연결 계층 + 테스트 | `Source/LifeLensCore/**` 중 SocialCognition 전용 파일/테스트 | DOING |
 | 다겸 + 다겸 AI | `dagyeom/observer-ui-v2` | Observer HUD v2 + 선택 주민 상세 패널 + 관찰 UX | `Source/LifeLens/UI/**`, UI/Character presentation | TODO |
 
 ## 완료된 병렬 작업
@@ -29,14 +30,14 @@
 - 현재 Android Run `34739283266`은 SHA `4a8b8d494d7e953d0eb98c2f322cdec3595a45e2` 기준이라 이후 CI 변경은 포함하지 않는다.
 - PR #3 Android fast-reuse는 `task/03-fast-test`에 병합 완료. `seed / fast / full` 모드로 분리하고 fast에서는 엔진 전체 재컴파일을 금지한다.
 - PR #4 Relationship, PR #6 Emotion, PR #7 Memory, PR #8 Belief Core v1은 모두 Core CI + Preflight PASS 후 `main` 병합 완료.
-- TASK_03 장시간 빌드와 별개로 제품 기능 개발은 계속 병렬 진행한다.
+- TASK_03 장시간 빌드와 별개로 `jjun/social-cognition-v1`에서 인지/관계 연결 계층을 병렬 진행한다. TASK_03 Bridge/Build와 다겸 UI 파일은 수정하지 않는다.
 - 자세한 변경 이유/검증 상태는 `tasks/HANDOFF_LOG.md`를 기준으로 한다.
 
 ## 쭌 측 다음 작업
 
 1. 현재 TASK_03 실제 UHT/UBT 결과 확인.
 2. 컴파일 오류가 있으면 첫 실제 compiler error만 수정하고 재검증.
-3. 다음 Core 단위는 Social Event / Relationship / Emotion / Memory / Belief 연결 계층으로 진행.
+3. `jjun/social-cognition-v1`에서 Social Event가 Emotion/Memory/Belief/Relationship에 일관되게 반영되는 처리기와 테스트 구현.
 4. Core Bridge 검증 후 PR #2 통합.
 5. Android fast pipeline의 `seed` 1회 생성 및 `fast` 실제 검증.
 
@@ -88,6 +89,7 @@
 
 - PR #2 `[UE] Bridge LifeLensCore into Unreal runtime` — 쭌 측, 실제 UHT/UBT 검증 후 merge.
 - PR #3 `[CI] Reuse compiled UE Android engine outputs` — PR #2 브랜치에 병합 완료, main 반영은 PR #2와 함께 진행.
+- `jjun/social-cognition-v1` Social Cognition Core PR — 구현/코어 테스트 후 생성 예정.
 - 다겸 Observer UI PR — 아직 생성 전.
 
 ## 완료/인수인계 규칙
