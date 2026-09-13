@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "InputCoreTypes.h"
 #include "GameFramework/PlayerController.h"
 #include "LLObserverPlayerController.generated.h"
 
