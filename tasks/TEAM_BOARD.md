@@ -1,6 +1,8 @@
 # LifeLens Team Board
 
-이 파일은 쭌(sjLim91)과 다겸(STILLofficial), 그리고 각자의 AI 에이전트가 동시에 작업할 때 사용하는 간단한 작업 잠금/분배 보드다.
+이 파일은 쭌(sjLim91)과 다겸(STILLofficial), 그리고 각자의 AI 에이전트가 동시에 작업할 때 사용하는 작업 잠금/분배 보드다.
+
+**필수 동기화:** 작업 시작 전에 `tasks/HANDOFF_LOG.md` 최신 기록을 읽고, 의미 있는 코드/설정/워크플로우/API 변경이 끝나면 같은 파일에 append-only 인수인계를 남긴다. 상대 AI가 모르는 변경을 남기지 않는다.
 
 상태: `TODO` / `DOING` / `REVIEW` / `DONE` / `BLOCKED`
 
@@ -8,25 +10,34 @@
 
 | 담당 | 브랜치 | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | `task/03-fast-test` | LifeLensCore ↔ Unreal bridge, 실제 UE 컴파일, Android FAST TEST | `Source/LifeLensCore/**`, `Source/LifeLens/Simulation/**`, build/CI | DOING |
+| 쭌 + 쭌 AI | `task/03-fast-test` | LifeLensCore ↔ Unreal bridge 실제 UE/Android 검증 + 재빌드 방지 파이프라인 | `Source/LifeLensCore/**`, `Source/LifeLens/Simulation/**`, build/CI | DOING |
 | 다겸 + 다겸 AI | `dagyeom/observer-ui-v2` | Observer HUD v2 + 선택 주민 상세 패널 + 관찰 UX | `Source/LifeLens/UI/**`, UI/Character presentation | TODO |
+
+## 쭌 측 현재 공유사항
+
+- PR #1 TASK_02 LifeLensCore는 `main` 병합 완료, Core CI PASS.
+- PR #2 TASK_03 Core ↔ Unreal Bridge는 structural preflight PASS, 실제 Android UHT/UBT 검증 중.
+- 현재 Android Run `34739283266`은 SHA `4a8b8d494d7e953d0eb98c2f322cdec3595a45e2` 기준이라 이후 CI 변경은 포함하지 않는다.
+- PR #3 Android fast-reuse는 `task/03-fast-test`에 병합 완료. `seed / fast / full` 모드로 분리하고 fast에서는 엔진 전체 재컴파일을 금지한다.
+- 자세한 변경 이유/검증 상태는 `tasks/HANDOFF_LOG.md`를 기준으로 한다.
 
 ## 쭌 측 다음 작업
 
-1. 현재 `task/03-fast-test` UHT/UBT 검증 완료.
+1. 현재 TASK_03 실제 UHT/UBT 결과 확인.
 2. 컴파일 오류가 있으면 첫 실제 compiler error만 수정하고 재검증.
 3. Core Bridge 검증 후 PR #2 통합.
-4. Android FAST TEST APK 산출물 확인.
+4. Android fast pipeline의 `seed` 1회 생성 및 `fast` 실제 검증.
 5. 이후 Core 관계/감정/기억 확장 작업을 새 브랜치에서 시작.
 
 ## 다겸 측 다음 작업
 
-1. `main` 최신 기준으로 `dagyeom/observer-ui-v2` 브랜치 생성.
-2. 기본 HUD는 전체 개요만 간결하게 유지.
+1. 작업 시작 전 `tasks/HANDOFF_LOG.md`와 이 보드 최신 상태 확인.
+2. `dagyeom/observer-ui-v2`에서 기본 HUD는 전체 개요만 간결하게 유지.
 3. 주민 선택 시 상세 패널 확장: 이름/나이/현재행동/욕구/성격/관계.
 4. Simulation/Core 데이터는 읽기 API로만 사용하고 직접 변경 금지.
 5. UI에 필요한 데이터가 부족하면 아래 Integration Request에 기록.
 6. PR 생성 후 structural preflight 결과와 화면/동작 확인 내용을 PR 본문에 적기.
+7. 작업 종료 시 `tasks/HANDOFF_LOG.md`에 변경 파일/검증/쭌 측 영향도를 기록.
 
 ## Shared File Lock
 
@@ -65,8 +76,11 @@
 ## Merge Queue
 
 - PR #2 `[UE] Bridge LifeLensCore into Unreal runtime` — 쭌 측, 실제 UHT/UBT 검증 후 merge.
+- PR #3 `[CI] Reuse compiled UE Android engine outputs` — PR #2 브랜치에 병합 완료, main 반영은 PR #2와 함께 진행.
 - 다겸 Observer UI PR — 아직 생성 전.
 
-## 완료 후 규칙
+## 완료/인수인계 규칙
 
 작업이 merge되면 해당 행을 `DONE`으로 바꾸고 다음 작업은 새 브랜치에서 시작한다. 오래된 `DOING` 항목이 있으면 새 작업 전에 실제 브랜치/PR 상태를 확인한다.
+
+모든 실제 변경은 상대 AI가 추적 가능하도록 `tasks/HANDOFF_LOG.md`에 남긴다. **커밋/PR이 있는데 HANDOFF가 없으면 작업 완료로 보지 않는다.**
