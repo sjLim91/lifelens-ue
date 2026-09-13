@@ -1,0 +1,1 @@
+// LifeLensCore bridge implementation
