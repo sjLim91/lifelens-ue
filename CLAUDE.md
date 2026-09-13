@@ -10,8 +10,11 @@
 4. `BUILD_LESSONS.md`
 5. `docs/TEAM_WORKFLOW.md`
 6. `tasks/TEAM_BOARD.md`
-7. 해당 `tasks/TASK_*.md`
-8. 로컬 빌드 작업일 때만 `tasks/COWORK_LOCAL_BUILD.md`
+7. `tasks/HANDOFF_LOG.md`
+8. 해당 `tasks/TASK_*.md`
+9. 로컬 빌드 작업일 때만 `tasks/COWORK_LOCAL_BUILD.md`
+
+`tasks/HANDOFF_LOG.md`는 양쪽 AI의 공용 인수인계장이다. 작업 시작 전에 최신 기록을 읽고, 코드/설정/워크플로우/API를 의미 있게 변경했으면 작업 종료 전에 자신의 변경 파일, 브랜치/PR, 검증 상태, 상대 영향도를 append-only로 기록한다. 상대 AI가 모르는 변경을 남기지 않는다.
 
 다겸 측 기본 담당은 Observer/UI/Character presentation이다. `Source/LifeLensCore/**`, `Source/LifeLens/AI/**`, `Source/LifeLens/Simulation/**`, build/CI/Config는 쭌 측 소유 영역이므로 직접 수정하지 않는다. 필요한 데이터/API가 있으면 `tasks/TEAM_BOARD.md`의 Integration Request에 기록한다.
 
