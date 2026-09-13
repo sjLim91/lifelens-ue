@@ -51,9 +51,11 @@ void ALLLifeLensGameMode::SpawnRuntimeFloor()
         return;
     }
 
+    UStaticMeshComponent* FloorComponent = Floor->GetStaticMeshComponent();
+    FloorComponent->SetMobility(EComponentMobility::Movable);
+    FloorComponent->SetStaticMesh(RuntimeFloorMesh);
+    FloorComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
     Floor->SetActorScale3D(FVector(14.0f, 14.0f, 0.1f));
-    Floor->GetStaticMeshComponent()->SetStaticMesh(RuntimeFloorMesh);
-    Floor->GetStaticMeshComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 }
 
 void ALLLifeLensGameMode::SpawnObserverCamera()
