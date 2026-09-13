@@ -1,8 +1,8 @@
 #include "UI/LLObserverPlayerController.h"
 #include "UI/LLObservationSubsystem.h"
 #include "Characters/LLResidentCharacter.h"
+#include "Components/InputComponent.h"
 #include "Engine/GameInstance.h"
-#include "InputCoreTypes.h"
 
 ALLObserverPlayerController::ALLObserverPlayerController()
 {
