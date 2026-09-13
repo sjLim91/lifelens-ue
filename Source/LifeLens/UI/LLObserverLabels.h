@@ -32,6 +32,8 @@ namespace LLObserverText
     inline const TCHAR* const SummaryAllGood     = TEXT("Doing well");
     inline const TCHAR* const PersonalityFallback = TEXT("Even-tempered");
     inline const TCHAR* const DetailsHint        = TEXT("Details ›"); // "Details ›"
+    inline const TCHAR* const BackHint           = TEXT("‹ Back");  // "‹ Back"
+    inline const TCHAR* const NoResidents        = TEXT("No residents yet");
 
     // ---- LEVEL 2 detail panel ------------------------------------------------
     inline const TCHAR* const TabOverview        = TEXT("Overview");

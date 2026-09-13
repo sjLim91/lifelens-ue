@@ -289,6 +289,11 @@ bool ALLObserverHUD::HandleTap(const FVector2D& InScreenPosition, const FVector2
     switch (Observation->GetObservationLevel())
     {
         case ELLObservationLevel::Detail:
+            if (RectContains(DetailBackRect, ScreenPosition))
+            {
+                Observation->CloseDetail();
+                return true;
+            }
             for (int32 Index = 0; Index < DetailTabCount; ++Index)
             {
                 if (RectContains(DetailTabRects[Index], ScreenPosition))
@@ -339,6 +344,7 @@ void ALLObserverHUD::DrawHUD()
     WorldOverviewRect = FBox2D(ForceInit);
     QuickInspectorRect = FBox2D(ForceInit);
     DetailPanelRect = FBox2D(ForceInit);
+    DetailBackRect = FBox2D(ForceInit);
     for (FBox2D& Rect : DetailTabRects)
     {
         Rect = FBox2D(ForceInit);
@@ -375,7 +381,8 @@ void ALLObserverHUD::DrawHUD()
         && Simulation->FindResidentById(Observation->GetObservedResidentId(), Selected);
 
     // LEVEL 0 is always drawn; it is deliberately thin.
-    const float OverviewBottom = DrawOverview(*Simulation, Residents, UIScale, !bHasSelection);
+    const bool bDetailOpen = bHasSelection && Observation->IsDetailOpen();
+    const float OverviewBottom = DrawOverview(*Simulation, Residents, UIScale, !bHasSelection, bDetailOpen);
 
     if (CVarLLDebugTapTargets.GetValueOnGameThread() > 0)
     {
@@ -409,7 +416,7 @@ void ALLObserverHUD::DrawHUD()
     }
 }
 
-float ALLObserverHUD::DrawOverview(const ULLSimulationSubsystem& Simulation, const TArray<FLLResidentData>& Residents, float UIScale, bool bShowHint)
+float ALLObserverHUD::DrawOverview(const ULLSimulationSubsystem& Simulation, const TArray<FLLResidentData>& Residents, float UIScale, bool bShowHint, bool bDimStrip)
 {
     UFont* Font = HUDFont();
 
@@ -435,7 +442,10 @@ float ALLObserverHUD::DrawOverview(const ULLSimulationSubsystem& Simulation, con
             ? Resident.DisplayName
             : Resident.DisplayName + LLObserverText::StripNameActionJoin + Action);
     }
-    const FString StripLine = FString::Join(StripItems, LLObserverText::StripSeparator);
+    // Empty state: no fake entries, a single plain line.
+    const FString StripLine = StripItems.Num() > 0
+        ? FString::Join(StripItems, LLObserverText::StripSeparator)
+        : FString(LLObserverText::NoResidents);
     // The hint text lives in LLObserverLabels.h as LLObserverText::TapHint.
     // Tools/validate_bootstrap.py still greps this file for the literal
     // "Tap/click a resident for details"; keep the two in sync until that
@@ -462,7 +472,12 @@ float ALLObserverHUD::DrawOverview(const ULLSimulationSubsystem& Simulation, con
     DrawText(StatusLine, TextPrimary, X, CursorY, Font, TitleScale, false);
     CursorY += StatusH + Gap;
 
-    DrawText(StripLine, TextMuted, X, CursorY, Font, StripScale, false);
+    FLinearColor StripColor = TextMuted;
+    if (bDimStrip)
+    {
+        StripColor.A *= 0.5f;
+    }
+    DrawText(StripLine, StripColor, X, CursorY, Font, StripScale, false);
 
     // Hint after the strip: LEVEL 0 only, and only if it fits on the same line.
     const float HintX = X + StripW + 3.0f * PadX * UIScale;
@@ -752,6 +767,12 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
     }
     const float TabBarHeight = TabRowY + TabRowH;
 
+    // ---- Back affordance above the tabs ("‹ Back" → LEVEL 1) -------------------
+    const FString BackText(LLObserverText::BackHint);
+    float BackW = 0.0f, BackH = 0.0f;
+    GetTextSize(BackText, BackW, BackH, Font, TabScale);
+    const float BackRowHeight = BackH + 2.0f * TabPadYs;
+
     // ---- Content rows for the active tab -------------------------------------
     TArray<FRow> Rows;
 
@@ -952,14 +973,20 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
     ContentHeight += Gap * FMath::Max(0, Lines.Num() - 1);
 
     // ---- Draw ------------------------------------------------------------------
-    const float DesiredHeight = Pad + TabBarHeight + Gap + ContentHeight + Pad;
+    const float DesiredHeight = Pad + BackRowHeight + TabBarHeight + Gap + ContentHeight + Pad;
     const float PanelHeight = FMath::Min(DesiredHeight, FMath::Max(0.0f, MaxPanelBottom - PanelY));
 
     DrawRect(FLinearColor(0.0f, 0.0f, 0.0f, DetailAlpha), PanelX, PanelY, PanelWidth, PanelHeight);
     DetailPanelRect = FBox2D(FVector2D(PanelX, PanelY), FVector2D(PanelX + PanelWidth, PanelY + PanelHeight));
 
     const float TextX = PanelX + InnerPadX;
-    const float TabBarTop = PanelY + Pad;
+
+    // Back row: same tone as inactive tabs; its hit rectangle spans the panel width.
+    const float BackRowTop = PanelY + Pad;
+    DrawText(BackText, TextMuted, TextX, BackRowTop + TabPadYs, Font, TabScale, false);
+    DetailBackRect = FBox2D(FVector2D(PanelX, BackRowTop), FVector2D(PanelX + PanelWidth, BackRowTop + BackRowHeight));
+
+    const float TabBarTop = BackRowTop + BackRowHeight;
     for (const FTabBox& Box : Tabs)
     {
         const float BoxX = TextX + Box.X;

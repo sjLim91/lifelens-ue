@@ -72,7 +72,9 @@ private:
 
     // LEVEL 0. Returns the Y just below the drawn overview. The selection hint is
     // only drawn when nothing is selected.
-    float DrawOverview(const ULLSimulationSubsystem& Simulation, const TArray<FLLResidentData>& Residents, float UIScale, bool bShowHint);
+    // bDimStrip lowers the resident strip while LEVEL 2 is open so the detail
+    // panel is the clear focus.
+    float DrawOverview(const ULLSimulationSubsystem& Simulation, const TArray<FLLResidentData>& Residents, float UIScale, bool bShowHint, bool bDimStrip);
 
     // World overview panel (SPEC 61). Opened by tapping the overview band at
     // LEVEL 0. Only values available from the read API are drawn.
@@ -100,6 +102,7 @@ private:
     FBox2D WorldOverviewRect;
     FBox2D QuickInspectorRect;
     FBox2D DetailPanelRect;
+    FBox2D DetailBackRect; // "‹ Back" affordance at the top of the detail panel
     FBox2D DetailTabRects[DetailTabCount];
 
     ELLDetailTab ActiveTab = ELLDetailTab::Overview;
