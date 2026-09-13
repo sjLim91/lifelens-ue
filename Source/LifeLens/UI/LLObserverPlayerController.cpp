@@ -15,6 +15,15 @@ ALLObserverPlayerController::ALLObserverPlayerController()
 void ALLObserverPlayerController::BeginPlay()
 {
     Super::BeginPlay();
+
+    // Observer game: visible cursor, no viewport lock, capture only while a
+    // button is held. Permanent capture hides the cursor and switches Slate to
+    // high-precision (relative) mouse mode, which freezes the cached cursor
+    // position used by GetMousePosition / GetHitResultUnderCursor.
+    FInputModeGameAndUI InputMode;
+    InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+    InputMode.SetHideCursorDuringCapture(false);
+    SetInputMode(InputMode);
     bShowMouseCursor = true;
 }
 
@@ -67,10 +76,15 @@ void ALLObserverPlayerController::ApplyTap(const FVector2D& ScreenPosition, cons
         return;
     }
 
-    // 1. HUD chrome (quick inspector card, detail tabs).
+    // 1. HUD chrome (quick inspector card, detail tabs). The viewport size is
+    //    passed so the HUD can map the tap into its canvas space if the two
+    //    ever differ.
     if (ALLObserverHUD* ObserverHUD = GetHUD<ALLObserverHUD>())
     {
-        if (ObserverHUD->HandleTap(ScreenPosition))
+        int32 ViewportX = 0;
+        int32 ViewportY = 0;
+        GetViewportSize(ViewportX, ViewportY);
+        if (ObserverHUD->HandleTap(ScreenPosition, FVector2D(ViewportX, ViewportY)))
         {
             return;
         }

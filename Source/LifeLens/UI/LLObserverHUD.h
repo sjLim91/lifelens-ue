@@ -42,7 +42,9 @@ public:
     virtual void DrawHUD() override;
 
     // Returns true if the tap landed on HUD chrome and was handled here.
-    bool HandleTap(const FVector2D& ScreenPosition);
+    // ScreenPosition is in viewport pixels; ViewportSize (if non-zero) is the
+    // viewport the position was measured in, used to map into canvas space.
+    bool HandleTap(const FVector2D& ScreenPosition, const FVector2D& ViewportSize = FVector2D::ZeroVector);
 
     static constexpr int32 DetailTabCount = 4; // keep equal to ELLDetailTab::Count
 
@@ -81,4 +83,7 @@ private:
     ELLDetailTab ActiveTab = ELLDetailTab::Overview;
     FGuid LastDetailResidentId;
     bool bWorldOverviewOpen = false;
+
+    // Canvas size of the last DrawHUD, for mapping tap coordinates.
+    FVector2D LastCanvasSize = FVector2D::ZeroVector;
 };
