@@ -186,6 +186,27 @@
   - 다겸 UI 영역 및 TASK_03 Bridge/Build 파일은 수정하지 않는다.
   - Belief는 향후 상세 주민 패널의 고급 정보가 될 수 있으나 기본 HUD에는 노출하지 않는다.
 
+### Belief Core v1 완료
+- 작성자: 쭌 측 AI
+- 브랜치/PR: `jjun/belief-core-v1`, PR #8
+- 상태: `DONE / main 병합 완료`
+- 변경:
+  - subject + proposition 기반 BeliefRecord
+  - stance [-1,1], confidence [0,1]
+  - supportWeight / contradictionWeight 분리 및 evidence count
+  - Memory effectiveConfidence + importance 기반 evidence strength
+  - MemorySource 신뢰도 차이가 Belief confidence에 연결
+  - Character에 BeliefState 추가
+  - `test_belief` 추가
+- 검증:
+  - LifeLens Core Tests PASS
+  - LifeLens Preflight PASS
+- 병합 커밋: `0295715f7449d76340c7244efd948afcf8aff74c`
+- 상대가 알아야 할 점:
+  - NPC가 Memory를 실제로 ingest하지 않으면 해당 Belief가 생기지 않는다.
+  - 지지/반박 증거를 동시에 보존하므로 믿음이 단순 true/false로 고정되지 않는다.
+  - 기본 Observer HUD에는 Belief 전체를 노출하지 않고, 캐릭터 상세/디버그 계층에서 필요 시 read DTO를 제공한다.
+
 ---
 
 ## 다음 인수인계 포인트
