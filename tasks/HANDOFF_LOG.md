@@ -458,6 +458,23 @@
   - `Characters/**` 미수정. 참고(다겸 영역 아님, 기록만): 주민 액터가 카메라 거리(약 1900유닛)에서 큐브 55유닛 ≈ 80px로 작게 보임. 이름 라벨이 원점 위 125유닛.
   - `ll.DebugTapTargets 1`로 투영 사각형을 화면에서 대조 가능.
 
+### Observer UX Polish v1 (DQ-03)
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/observer-ux-polish-v1` (base `dagyeom/observer-ui-v2` `dc3351e`), PR 생성 예정
+- 커밋: `ca31938`
+- 상태: `IN_PROGRESS / 검증 대기`
+- 변경 범위:
+  - `Source/LifeLens/UI/LLObserverHUD.h`, `.cpp`: LEVEL 2 패널 상단 `‹ Back` 행(탭 → LEVEL 1), LEVEL 2 열림 중 주민 스트립 알파 절반, 주민 0명일 때 스트립 `No residents yet`
+  - `Source/LifeLens/UI/LLObserverLabels.h`: `BackHint`, `NoResidents`
+- 검증 상태:
+  - 로컬 `Build.sh LifeLensEditor Mac Development`: Result: Succeeded
+  - structural preflight PASS (로컬)
+  - GitHub Actions: 검증 대기
+  - 화면/동작 확인: 검증 대기
+- 상대가 알아야 할 점:
+  - UI 파일만 변경. 빈 곳 탭 동작(2 → 1 → 0)은 유지.
+  - 이 브랜치에는 `tasks/WORK_STATE.md`가 없음(base가 해당 파일 추가 이전). WORK_STATE 항목은 main 병합 시 추가.
+
 ---
 
 ## 다음 인수인계 포인트
