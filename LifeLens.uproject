@@ -5,6 +5,11 @@
   "Description": "LifeLens - Unreal-native autonomous life and society observation simulation",
   "Modules": [
     {
+      "Name": "LifeLensCore",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    },
+    {
       "Name": "LifeLens",
       "Type": "Runtime",
       "LoadingPhase": "Default"
