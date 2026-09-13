@@ -99,12 +99,17 @@ inline BirthOutcome performBirth(
     Character child;
     child.id=childId;
     child.name=childName;
+    child.hasBirthMinute=true;
     child.birthMinute=currentMinute;
+    child.lifeStage=LifeStage::Baby;
+    const LifeStageProfile newbornProfile=lifeStageProfile(LifeStage::Baby);
+    child.metabolism=newbornProfile.metabolismMultiplier;
+    child.sleepTendency=newbornProfile.sleepTendencyMultiplier;
     child.parentIds={gestationalParent.id,geneticPartner.id};
     child.genetics=inheritGenetics(
         gestationalParent.genetics,geneticPartner.genetics,rng,geneticVariation);
     child.lifeHistory.push_back(LifeHistoryEntry{
-        LifeEventType::Birth,currentMinute,{gestationalParent.id,geneticPartner.id}});
+        LifeEventType::Birth,currentMinute,{gestationalParent.id,geneticPartner.id},0});
 
     HouseholdId householdId=0;
     const Household* home=households.householdOf(gestationalParent.id);
