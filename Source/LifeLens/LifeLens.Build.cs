@@ -21,7 +21,8 @@ public class LifeLens : ModuleRules
             "InputCore",
             "UMG",
             "AIModule",
-            "NavigationSystem"
+            "NavigationSystem",
+            "LifeLensCore"
         });
 
         PrivateDependencyModuleNames.AddRange(new string[]
