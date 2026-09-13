@@ -406,6 +406,24 @@
   - 사용 읽기 API: `ULLSimulationSubsystem::GetResidents`, `GetSimulationMinute`, `FLLResidentData::LifeStage`.
   - Households / Couples / Married Couples / Pregnancies / Major Events: 읽기 API 제공 전까지 미표시. Integration Request 기록.
 
+### Observer HUD v2 — 로컬 화면 확인 및 탭 판정/커서 수정
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/observer-ui-v2`, PR #17
+- 커밋: `845eb28`
+- 상태: `REVIEW / 검증 대기`
+- 변경 범위:
+  - `Source/LifeLens/UI/LLObserverPlayerController.cpp`: BeginPlay에서 `FInputModeGameAndUI`(DoNotLock, 캡처 중 커서 숨김 해제) 적용, HUD 탭 판정에 viewport 크기 전달
+  - `Source/LifeLens/UI/LLObserverHUD.h`, `.cpp`: 탭 좌표를 마지막 DrawHUD 캔버스 크기로 매핑, 탭 로그 1줄
+- 검증 상태:
+  - 로컬 `Build.sh LifeLensEditor Mac Development` (`3b578c6`): Result: Succeeded → 에디터 PIE 화면 확인: LEVEL 0 정상(띠, 스트립, 한글 이름), LEVEL 1 정상(이름·나이·Now·요약·성격·Details). LEVEL 1 카드 클릭 시 LEVEL 2 미진입, LEVEL 0으로 복귀. PIE에서 마우스가 뷰포트에 갇히고 커서 미표시.
+  - 원인: `Config/DefaultInput.ini`의 `DefaultViewportMouseCaptureMode=CapturePermanently_IncludingInitialMouseDown`, `DefaultViewportMouseLockMode=LockOnCapture`로 커서가 숨겨지고 Slate high-precision 마우스 모드가 되어 `FSceneViewport::CachedCursorPos`가 첫 클릭 위치에서 갱신되지 않음. `GetMousePosition` / `GetHitResultUnderCursor`가 첫 클릭 위치를 반환하여 카드 클릭이 빈 곳으로 판정됨.
+  - 수정 후 로컬 `Build.sh LifeLensEditor Mac Development` (`845eb28`): Result: Succeeded. structural preflight PASS.
+  - 수정 후 화면/동작 재확인: 검증 대기
+- 상대가 알아야 할 점:
+  - `Config/**`는 수정하지 않음. 커서/잠금은 PlayerController의 `SetInputMode`로 런타임에 덮어씀.
+  - 참고(다겸 영역 아님, 기록만): PIE 맵에 라이트 없음. 주민 액터가 매우 작게 보임. 모바일 가상 조이스틱 표시됨(`DefaultInput.ini` `DefaultTouchInterface=/Engine/MobileResources/HUD/DefaultVirtualJoysticks`).
+  - 에디터 실행 시 `Config/DefaultEngine.ini`, `Config/DefaultInput.ini`가 자동 수정됨. 커밋하지 않고 폐기함.
+
 ---
 
 ## 다음 인수인계 포인트
