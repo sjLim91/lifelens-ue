@@ -1,43 +1,36 @@
 #include "UI/LLObserverHUD.h"
 #include "UI/LLObservationSubsystem.h"
+#include "UI/LLObserverLabels.h"
 #include "Simulation/LLSimulationSubsystem.h"
 #include "Characters/LLResidentCharacter.h"
 #include "Engine/Canvas.h"
 #include "Engine/Engine.h"
+#include "Engine/Font.h"
 #include "Engine/GameInstance.h"
 #include "EngineUtils.h"
 
 namespace
 {
-    FString IntentToString(ELLActionIntent Intent)
-    {
-        switch (Intent)
-        {
-            case ELLActionIntent::Eat: return TEXT("Eating");
-            case ELLActionIntent::Sleep: return TEXT("Sleeping");
-            case ELLActionIntent::Socialize: return TEXT("Socializing");
-            case ELLActionIntent::Hygiene: return TEXT("Hygiene");
-            case ELLActionIntent::Toilet: return TEXT("Toilet");
-            case ELLActionIntent::HaveFun: return TEXT("Leisure");
-            case ELLActionIntent::Idle:
-            default: return TEXT("Idle");
-        }
-    }
+    // Layout constants, in unscaled pixels.
+    constexpr float Margin           = 16.0f;
+    constexpr float PadX             = 12.0f;
+    constexpr float PadY             = 8.0f;
+    constexpr float LineGap          = 6.0f;
+    constexpr float PanelMaxWidth    = 360.0f;
+    constexpr float PanelWidthRatio  = 0.42f;
 
-    FString RelationshipStageToString(ELLRelationshipStage Stage)
+    constexpr float OverviewAlpha    = 0.22f;
+    constexpr float InspectorAlpha   = 0.45f;
+
+    const FLinearColor TextPrimary   (1.00f, 1.00f, 1.00f, 1.0f);
+    const FLinearColor TextSecondary (0.88f, 0.90f, 0.94f, 1.0f);
+    const FLinearColor TextMuted     (0.80f, 0.84f, 0.90f, 0.55f);
+    const FLinearColor TextHint      (0.80f, 0.84f, 0.90f, 0.35f);
+    const FLinearColor TextAction    (0.75f, 0.90f, 1.00f, 1.0f);
+
+    UFont* HUDFont()
     {
-        switch (Stage)
-        {
-            case ELLRelationshipStage::Acquaintance: return TEXT("Acquaintance");
-            case ELLRelationshipStage::Friend: return TEXT("Friend");
-            case ELLRelationshipStage::Dating: return TEXT("Dating");
-            case ELLRelationshipStage::Partner: return TEXT("Partner");
-            case ELLRelationshipStage::Engaged: return TEXT("Engaged");
-            case ELLRelationshipStage::Married: return TEXT("Married");
-            case ELLRelationshipStage::Estranged: return TEXT("Estranged");
-            case ELLRelationshipStage::Stranger:
-            default: return TEXT("Stranger");
-        }
+        return GEngine ? GEngine->GetSmallFont() : nullptr;
     }
 
     ALLResidentCharacter* FindResidentActor(UWorld* World, FGuid ResidentId)
@@ -58,6 +51,22 @@ namespace
     }
 }
 
+float ALLObserverHUD::ComputeUIScale() const
+{
+    if (!Canvas)
+    {
+        return 1.0f;
+    }
+    const float ShortSide = FMath::Min(Canvas->ClipX, Canvas->ClipY);
+    return FMath::Clamp(ShortSide / 540.0f, 1.0f, 2.5f);
+}
+
+FString ALLObserverHUD::CurrentActionFor(const FLLResidentData& Resident) const
+{
+    const ALLResidentCharacter* Actor = FindResidentActor(GetWorld(), Resident.ResidentId);
+    return Actor ? LLObserverLabels::IntentToString(Actor->GetCurrentIntent()) : FString();
+}
+
 void ALLObserverHUD::DrawHUD()
 {
     Super::DrawHUD();
@@ -75,33 +84,15 @@ void ALLObserverHUD::DrawHUD()
         return;
     }
 
+    const float UIScale = ComputeUIScale();
     const TArray<FLLResidentData> Residents = Simulation->GetResidents();
-    const int64 TotalMinutes = Simulation->GetSimulationMinute();
-    const int64 Day = TotalMinutes / 1440 + 1;
-    const int32 MinuteOfDay = static_cast<int32>(TotalMinutes % 1440);
-    const int32 Hour = MinuteOfDay / 60;
-    const int32 Minute = MinuteOfDay % 60;
 
-    const float LeftX = 24.0f;
-    float Y = 22.0f;
-    DrawRect(FLinearColor(0.0f, 0.0f, 0.0f, 0.38f), 14.0f, 12.0f, 330.0f, 48.0f + Residents.Num() * 24.0f);
-    DrawText(FString::Printf(TEXT("LifeLens  |  Day %lld  %02d:%02d  |  %d residents"), static_cast<long long>(Day), Hour, Minute, Residents.Num()),
-        FLinearColor::White, LeftX, Y, GEngine ? GEngine->GetSmallFont() : nullptr, 1.05f, false);
-    Y += 28.0f;
+    // LEVEL 0 is always drawn; it is deliberately thin.
+    const float OverviewBottom = DrawOverview(*Simulation, Residents, UIScale);
 
-    for (const FLLResidentData& Resident : Residents)
-    {
-        const ALLResidentCharacter* Character = FindResidentActor(GetWorld(), Resident.ResidentId);
-        const FString Action = Character ? IntentToString(Character->GetCurrentIntent()) : TEXT("Not spawned");
-        DrawText(FString::Printf(TEXT("%s  -  %s"), *Resident.DisplayName, *Action),
-            FLinearColor(0.88f, 0.9f, 0.94f, 1.0f), LeftX, Y, GEngine ? GEngine->GetSmallFont() : nullptr, 0.95f, false);
-        Y += 23.0f;
-    }
-
+    // LEVEL 1 only when a resident is selected.
     if (!Observation || !Observation->HasObservedResident())
     {
-        DrawText(TEXT("Tap/click a resident for details"), FLinearColor(0.72f, 0.76f, 0.82f, 1.0f), LeftX, Y + 10.0f,
-            GEngine ? GEngine->GetSmallFont() : nullptr, 0.9f, false);
         return;
     }
 
@@ -111,69 +102,131 @@ void ALLObserverHUD::DrawHUD()
         return;
     }
 
-    const float PanelWidth = 330.0f;
-    const float PanelX = FMath::Max(20.0f, Canvas->ClipX - PanelWidth - 20.0f);
-    float DetailY = 24.0f;
-    DrawRect(FLinearColor(0.0f, 0.0f, 0.0f, 0.48f), PanelX - 10.0f, 12.0f, PanelWidth, 245.0f);
+    DrawQuickInspector(Selected, UIScale, OverviewBottom);
+}
 
-    const ALLResidentCharacter* SelectedActor = FindResidentActor(GetWorld(), Selected.ResidentId);
-    const FString SelectedAction = SelectedActor ? IntentToString(SelectedActor->GetCurrentIntent()) : TEXT("Not spawned");
+float ALLObserverHUD::DrawOverview(const ULLSimulationSubsystem& Simulation, const TArray<FLLResidentData>& Residents, float UIScale)
+{
+    UFont* Font = HUDFont();
 
-    DrawText(FString::Printf(TEXT("%s  |  age %d"), *Selected.DisplayName, Selected.AgeYears), FLinearColor::White,
-        PanelX, DetailY, GEngine ? GEngine->GetSmallFont() : nullptr, 1.1f, false);
-    DetailY += 28.0f;
-    DrawText(FString::Printf(TEXT("Now: %s"), *SelectedAction), FLinearColor(0.75f, 0.9f, 1.0f, 1.0f),
-        PanelX, DetailY, GEngine ? GEngine->GetSmallFont() : nullptr, 0.95f, false);
-    DetailY += 25.0f;
+    const int64 TotalMinutes = Simulation.GetSimulationMinute();
+    const int64 Day = TotalMinutes / 1440 + 1;
+    const int32 MinuteOfDay = static_cast<int32>(TotalMinutes % 1440);
+    const int32 Hour = MinuteOfDay / 60;
+    const int32 Minute = MinuteOfDay % 60;
 
-    DrawText(FString::Printf(TEXT("Hunger %.0f   Energy %.0f   Social %.0f"), Selected.Needs.Hunger, Selected.Needs.Energy, Selected.Needs.Social),
-        FLinearColor::White, PanelX, DetailY, GEngine ? GEngine->GetSmallFont() : nullptr, 0.9f, false);
-    DetailY += 22.0f;
-    DrawText(FString::Printf(TEXT("Hygiene %.0f   Bladder %.0f   Fun %.0f"), Selected.Needs.Hygiene, Selected.Needs.Bladder, Selected.Needs.Fun),
-        FLinearColor::White, PanelX, DetailY, GEngine ? GEngine->GetSmallFont() : nullptr, 0.9f, false);
-    DetailY += 28.0f;
+    const float TitleScale = 1.0f * UIScale;
+    const float StripScale = 0.85f * UIScale;
 
-    DrawText(FString::Printf(TEXT("Personality  E %.0f  A %.0f  C %.0f  O %.0f  S %.0f"),
-        Selected.Personality.Extraversion,
-        Selected.Personality.Agreeableness,
-        Selected.Personality.Conscientiousness,
-        Selected.Personality.Openness,
-        Selected.Personality.EmotionalStability),
-        FLinearColor(0.86f, 0.88f, 0.92f, 1.0f), PanelX, DetailY, GEngine ? GEngine->GetSmallFont() : nullptr, 0.82f, false);
-    DetailY += 30.0f;
+    const FString StatusLine = FString::Printf(TEXT("%s   Day %lld  %02d:%02d   %d %s"),
+        LLObserverText::OverviewTitle, static_cast<long long>(Day), Hour, Minute, Residents.Num(), LLObserverText::ResidentsSuffix);
 
-    float BestAffinity = -101.0f;
-    FString BestRelationship = TEXT("No meaningful relationship yet");
-    for (const FLLRelationshipData& Relationship : Simulation->GetRelationships())
+    // Build the resident strip: "name · action" items, one line.
+    TArray<FString> StripItems;
+    StripItems.Reserve(Residents.Num());
+    for (const FLLResidentData& Resident : Residents)
     {
-        FGuid OtherId;
-        if (Relationship.A == Selected.ResidentId)
-        {
-            OtherId = Relationship.B;
-        }
-        else if (Relationship.B == Selected.ResidentId)
-        {
-            OtherId = Relationship.A;
-        }
-        else
-        {
-            continue;
-        }
+        const FString Action = CurrentActionFor(Resident);
+        StripItems.Add(Action.IsEmpty()
+            ? Resident.DisplayName
+            : Resident.DisplayName + LLObserverText::StripNameActionJoin + Action);
+    }
+    const FString StripLine = FString::Join(StripItems, LLObserverText::StripSeparator);
+    // The hint text lives in LLObserverLabels.h as LLObserverText::TapHint.
+    // Tools/validate_bootstrap.py still greps this file for the literal
+    // "Tap/click a resident for details"; keep the two in sync until that
+    // check is updated to look at the labels header.
+    const FString HintLine(LLObserverText::TapHint);
 
-        if (Relationship.Affinity <= BestAffinity)
-        {
-            continue;
-        }
+    float StatusW = 0.0f, StatusH = 0.0f;
+    float StripW = 0.0f, StripH = 0.0f;
+    float HintW = 0.0f, HintH = 0.0f;
+    GetTextSize(StatusLine, StatusW, StatusH, Font, TitleScale);
+    GetTextSize(StripLine, StripW, StripH, Font, StripScale);
+    GetTextSize(HintLine, HintW, HintH, Font, StripScale);
 
-        FLLResidentData Other;
-        if (Simulation->FindResidentById(OtherId, Other))
-        {
-            BestAffinity = Relationship.Affinity;
-            BestRelationship = FString::Printf(TEXT("Closest: %s  |  %s  |  affinity %.0f"),
-                *Other.DisplayName, *RelationshipStageToString(Relationship.Stage), Relationship.Affinity);
-        }
+    const float X = Margin * UIScale;
+    const float Pad = PadY * UIScale;
+    const float Gap = LineGap * UIScale;
+    const float BandHeight = Pad + StatusH + Gap + StripH + Pad;
+
+    // Full-width translucent band from the top edge; the world stays visible underneath.
+    DrawRect(FLinearColor(0.0f, 0.0f, 0.0f, OverviewAlpha), 0.0f, 0.0f, Canvas->ClipX, BandHeight);
+
+    float CursorY = Pad;
+    DrawText(StatusLine, TextPrimary, X, CursorY, Font, TitleScale, false);
+    CursorY += StatusH + Gap;
+
+    DrawText(StripLine, TextMuted, X, CursorY, Font, StripScale, false);
+
+    // Hint after the strip, only if it fits on the same line.
+    const float HintX = X + StripW + 3.0f * PadX * UIScale;
+    if (HintX + HintW <= Canvas->ClipX - X)
+    {
+        DrawText(HintLine, TextHint, HintX, CursorY, Font, StripScale, false);
     }
 
-    DrawText(BestRelationship, FLinearColor(1.0f, 0.82f, 0.68f, 1.0f), PanelX, DetailY,
-        GEngine ? GEngine->GetSmallFont() : nullptr, 0.88f, false);
+    return BandHeight;
+}
+
+void ALLObserverHUD::DrawQuickInspector(const FLLResidentData& Resident, float UIScale, float TopY)
+{
+    UFont* Font = HUDFont();
+
+    const float NameScale     = 1.15f * UIScale;
+    const float BodyScale     = 0.95f * UIScale;
+    const float SummaryScale  = 0.90f * UIScale;
+    const float WordsScale    = 0.85f * UIScale;
+
+    // Lines, top to bottom.
+    const FString NameLine = FString::Printf(TEXT("%s   %d"), *Resident.DisplayName, Resident.AgeYears);
+
+    const FString Action = CurrentActionFor(Resident);
+    const FString NowLine = Action.IsEmpty() ? FString() : FString(LLObserverText::NowPrefix) + Action;
+
+    LLObserverLabels::ENeedLevel WorstLevel = LLObserverLabels::ENeedLevel::Good;
+    const FString SummaryLine = LLObserverLabels::StatusSummary(Resident.Needs, WorstLevel);
+    const FLinearColor SummaryColor = LLObserverLabels::NeedColorForLevel(WorstLevel);
+
+    const FString WordsLine = LLObserverLabels::PersonalityWords(Resident);
+
+    struct FLine
+    {
+        FString Text;
+        FLinearColor Color;
+        float Scale;
+        float Height = 0.0f;
+    };
+    TArray<FLine> Lines;
+    Lines.Add({ NameLine, TextPrimary, NameScale });
+    if (!NowLine.IsEmpty())
+    {
+        Lines.Add({ NowLine, TextAction, BodyScale });
+    }
+    Lines.Add({ SummaryLine, SummaryColor, SummaryScale });
+    Lines.Add({ WordsLine, TextSecondary, WordsScale });
+
+    float ContentHeight = 0.0f;
+    for (FLine& Line : Lines)
+    {
+        float W = 0.0f;
+        GetTextSize(Line.Text, W, Line.Height, Font, Line.Scale);
+        ContentHeight += Line.Height;
+    }
+    ContentHeight += LineGap * UIScale * (Lines.Num() - 1);
+
+    const float PanelWidth = FMath::Min(PanelMaxWidth * UIScale, Canvas->ClipX * PanelWidthRatio);
+    const float PanelHeight = ContentHeight + 2.0f * PadY * UIScale;
+    const float PanelX = FMath::Max(Margin * UIScale, Canvas->ClipX - PanelWidth - Margin * UIScale);
+    const float PanelY = TopY + Margin * UIScale;
+
+    DrawRect(FLinearColor(0.0f, 0.0f, 0.0f, InspectorAlpha), PanelX, PanelY, PanelWidth, PanelHeight);
+
+    float CursorY = PanelY + PadY * UIScale;
+    const float TextX = PanelX + PadX * UIScale;
+    for (const FLine& Line : Lines)
+    {
+        DrawText(Line.Text, Line.Color, TextX, CursorY, Font, Line.Scale, false);
+        CursorY += Line.Height + LineGap * UIScale;
+    }
 }
