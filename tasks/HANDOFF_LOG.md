@@ -475,6 +475,19 @@
   - UI 파일만 변경. 빈 곳 탭 동작(2 → 1 → 0)은 유지.
   - 이 브랜치에는 `tasks/WORK_STATE.md`가 없음(base가 해당 파일 추가 이전). WORK_STATE 항목은 main 병합 시 추가.
 
+### Observer UX Polish v1 — 화면 확인 결과
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/observer-ux-polish-v1`, PR #30
+- 커밋: `9839fcf`
+- 상태: `REVIEW / 검증 대기`
+- 변경 범위:
+  - 코드 변경 없음
+- 검증 상태:
+  - 화면 확인(로컬 PIE): `‹ Back` 표시, LEVEL 2에서 스트립 흐려짐, Back 클릭과 빈 곳 클릭 단계 이동 정상
+  - GitHub Actions: 검증 대기
+- 상대가 알아야 할 점:
+  - 없음
+
 ---
 
 ## 다음 인수인계 포인트
