@@ -95,3 +95,7 @@ add_test(NAME test_parenting COMMAND test_parenting)
 add_executable(test_genealogy tests/test_genealogy.cpp)
 target_link_libraries(test_genealogy PRIVATE lifelens_core)
 add_test(NAME test_genealogy COMMAND test_genealogy)
+
+add_executable(test_aging tests/test_aging.cpp)
+target_link_libraries(test_aging PRIVATE lifelens_core)
+add_test(NAME test_aging COMMAND test_aging)
