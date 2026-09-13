@@ -2,8 +2,15 @@
 #include "UI/LLObservationSubsystem.h"
 #include "UI/LLObserverHUD.h"
 #include "Characters/LLResidentCharacter.h"
+#include "Blueprint/WidgetLayoutLibrary.h"
 #include "Components/InputComponent.h"
 #include "Engine/GameInstance.h"
+#include "EngineUtils.h"
+
+namespace
+{
+    constexpr float TouchTargetLogicalPixels = 48.0f;
+}
 
 ALLObserverPlayerController::ALLObserverPlayerController()
 {
@@ -19,7 +26,7 @@ void ALLObserverPlayerController::BeginPlay()
     // Observer game: visible cursor, no viewport lock, capture only while a
     // button is held. Permanent capture hides the cursor and switches Slate to
     // high-precision (relative) mouse mode, which freezes the cached cursor
-    // position used by GetMousePosition / GetHitResultUnderCursor.
+    // position used by GetMousePosition.
     FInputModeGameAndUI InputMode;
     InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
     InputMode.SetHideCursorDuringCapture(false);
@@ -44,30 +51,74 @@ void ALLObserverPlayerController::HandlePrimarySelect()
 {
     float MouseX = 0.0f;
     float MouseY = 0.0f;
-    GetMousePosition(MouseX, MouseY);
-    const FVector2D ScreenPosition(MouseX, MouseY);
+    if (!GetMousePosition(MouseX, MouseY))
+    {
+        return;
+    }
 
     FHitResult Hit;
-    if (!GetHitResultUnderCursor(ECC_Pawn, true, Hit))
+    ALLResidentCharacter* ExactHit = nullptr;
+    if (GetHitResultUnderCursor(ECC_Pawn, true, Hit))
     {
-        Hit = FHitResult();
+        ExactHit = Cast<ALLResidentCharacter>(Hit.GetActor());
     }
-    ApplyTap(ScreenPosition, Hit);
+    ApplyTap(FVector2D(MouseX, MouseY), ExactHit);
 }
 
 void ALLObserverPlayerController::HandleTouchPressed(ETouchIndex::Type FingerIndex, FVector Location)
 {
-    const FVector2D ScreenPosition(Location.X, Location.Y);
-
     FHitResult Hit;
-    if (!GetHitResultUnderFinger(FingerIndex, ECC_Pawn, true, Hit))
+    ALLResidentCharacter* ExactHit = nullptr;
+    if (GetHitResultUnderFinger(FingerIndex, ECC_Pawn, true, Hit))
     {
-        Hit = FHitResult();
+        ExactHit = Cast<ALLResidentCharacter>(Hit.GetActor());
     }
-    ApplyTap(ScreenPosition, Hit);
+    ApplyTap(FVector2D(Location.X, Location.Y), ExactHit);
 }
 
-void ALLObserverPlayerController::ApplyTap(const FVector2D& ScreenPosition, const FHitResult& Hit)
+float ALLObserverPlayerController::TouchRadiusPixels() const
+{
+    const float DPIScale = FMath::Max(1.0f, UWidgetLayoutLibrary::GetViewportScale(this));
+    return TouchTargetLogicalPixels * DPIScale;
+}
+
+ALLResidentCharacter* ALLObserverPlayerController::FindResidentNearScreenPosition(const FVector2D& ScreenPosition, float RadiusPixels, float& OutDistance) const
+{
+    OutDistance = -1.0f;
+    ALLResidentCharacter* Nearest = nullptr;
+
+    UWorld* World = GetWorld();
+    if (!World)
+    {
+        return nullptr;
+    }
+
+    for (TActorIterator<ALLResidentCharacter> It(World); It; ++It)
+    {
+        ALLResidentCharacter* Resident = *It;
+        if (!Resident)
+        {
+            continue;
+        }
+
+        FVector2D Projected;
+        if (!ProjectWorldLocationToScreen(Resident->GetActorLocation(), Projected, false))
+        {
+            continue;
+        }
+
+        const float Distance = static_cast<float>(FVector2D::Distance(Projected, ScreenPosition));
+        if (OutDistance < 0.0f || Distance < OutDistance)
+        {
+            OutDistance = Distance;
+            Nearest = Resident;
+        }
+    }
+
+    return (Nearest && OutDistance <= RadiusPixels) ? Nearest : nullptr;
+}
+
+void ALLObserverPlayerController::ApplyTap(const FVector2D& ScreenPosition, ALLResidentCharacter* ExactHit)
 {
     UGameInstance* GameInstance = GetGameInstance();
     ULLObservationSubsystem* Observation = GameInstance ? GameInstance->GetSubsystem<ULLObservationSubsystem>() : nullptr;
@@ -76,24 +127,36 @@ void ALLObserverPlayerController::ApplyTap(const FVector2D& ScreenPosition, cons
         return;
     }
 
-    // 1. HUD chrome (quick inspector card, detail tabs). The viewport size is
-    //    passed so the HUD can map the tap into its canvas space if the two
-    //    ever differ.
-    if (ALLObserverHUD* ObserverHUD = GetHUD<ALLObserverHUD>())
+    ALLObserverHUD* ObserverHUD = GetHUD<ALLObserverHUD>();
+
+    int32 ViewportX = 0;
+    int32 ViewportY = 0;
+    GetViewportSize(ViewportX, ViewportY);
+    const FVector2D ViewportSize(ViewportX, ViewportY);
+
+    const float Radius = TouchRadiusPixels();
+    float NearestDistance = -1.0f;
+    ALLResidentCharacter* NearResident = FindResidentNearScreenPosition(ScreenPosition, Radius, NearestDistance);
+
+    const FVector2D CanvasPosition = ObserverHUD ? ObserverHUD->ViewportToCanvas(ScreenPosition, ViewportSize) : ScreenPosition;
+
+    // 1. HUD chrome (quick inspector card, detail tabs).
+    const bool bHUDConsumed = ObserverHUD && ObserverHUD->HandleTap(ScreenPosition, ViewportSize);
+
+    UE_LOG(LogTemp, Log, TEXT("LLObserver tap viewport (%.0f, %.0f) canvas (%.0f, %.0f) viewportSize (%.0f, %.0f) level %d hud %s nearestResident %.0f px radius %.0f px exactHit %s"),
+        ScreenPosition.X, ScreenPosition.Y, CanvasPosition.X, CanvasPosition.Y, ViewportSize.X, ViewportSize.Y,
+        static_cast<int32>(Observation->GetObservationLevel()), bHUDConsumed ? TEXT("consumed") : TEXT("none"),
+        NearestDistance, Radius, ExactHit ? TEXT("yes") : TEXT("no"));
+
+    if (bHUDConsumed)
     {
-        int32 ViewportX = 0;
-        int32 ViewportY = 0;
-        GetViewportSize(ViewportX, ViewportY);
-        if (ObserverHUD->HandleTap(ScreenPosition, FVector2D(ViewportX, ViewportY)))
-        {
-            return;
-        }
+        return;
     }
 
-    // 2. A resident in the world.
-    if (const ALLResidentCharacter* Resident = Cast<ALLResidentCharacter>(Hit.GetActor()))
+    // 2. A resident within the touch target, else the resident directly under the pointer.
+    if (ALLResidentCharacter* Picked = NearResident ? NearResident : ExactHit)
     {
-        Observation->ObserveResident(Resident->GetResidentId());
+        Observation->ObserveResident(Picked->GetResidentId());
         return;
     }
 

@@ -8,6 +8,7 @@
 #include "Engine/Font.h"
 #include "Engine/GameInstance.h"
 #include "EngineUtils.h"
+#include "SceneView.h"
 
 static_assert(static_cast<int32>(ELLDetailTab::Count) == ALLObserverHUD::DetailTabCount, "DetailTabCount must match ELLDetailTab::Count");
 
@@ -161,6 +162,22 @@ TArray<FString> ALLObserverHUD::WrapText(const FString& Text, float MaxWidth, fl
 // Input
 // ---------------------------------------------------------------------------
 
+FVector2D ALLObserverHUD::ViewportToCanvas(const FVector2D& ViewportPosition, const FVector2D& ViewportSize) const
+{
+    if (bLastViewRectKnown)
+    {
+        return ViewportPosition - LastViewRectMin;
+    }
+
+    // Fallback: assume a centred letterbox / pillarbox.
+    if (ViewportSize.X > 0.0 && ViewportSize.Y > 0.0 && LastCanvasSize.X > 0.0 && LastCanvasSize.Y > 0.0)
+    {
+        const FVector2D Offset = (ViewportSize - LastCanvasSize) * 0.5;
+        return ViewportPosition - Offset;
+    }
+    return ViewportPosition;
+}
+
 bool ALLObserverHUD::HandleTap(const FVector2D& InScreenPosition, const FVector2D& ViewportSize)
 {
     ULLObservationSubsystem* Observation = GetObservation();
@@ -169,19 +186,8 @@ bool ALLObserverHUD::HandleTap(const FVector2D& InScreenPosition, const FVector2
         return false;
     }
 
-    // Map into the canvas space the chrome rectangles were recorded in.
-    FVector2D ScreenPosition = InScreenPosition;
-    if (ViewportSize.X > 0.0 && ViewportSize.Y > 0.0 && LastCanvasSize.X > 0.0 && LastCanvasSize.Y > 0.0
-        && !ViewportSize.Equals(LastCanvasSize, 0.5))
-    {
-        ScreenPosition.X = InScreenPosition.X * (LastCanvasSize.X / ViewportSize.X);
-        ScreenPosition.Y = InScreenPosition.Y * (LastCanvasSize.Y / ViewportSize.Y);
-    }
-
-    UE_LOG(LogTemp, Log, TEXT("LLObserverHUD tap (%.0f, %.0f) viewport (%.0f, %.0f) canvas (%.0f, %.0f) level %d quick [%s]"),
-        ScreenPosition.X, ScreenPosition.Y, ViewportSize.X, ViewportSize.Y, LastCanvasSize.X, LastCanvasSize.Y,
-        static_cast<int32>(Observation->GetObservationLevel()),
-        QuickInspectorRect.bIsValid ? *FString::Printf(TEXT("%.0f,%.0f-%.0f,%.0f"), QuickInspectorRect.Min.X, QuickInspectorRect.Min.Y, QuickInspectorRect.Max.X, QuickInspectorRect.Max.Y) : TEXT("none"));
+    // Chrome rectangles are recorded in canvas space.
+    const FVector2D ScreenPosition = ViewportToCanvas(InScreenPosition, ViewportSize);
 
     switch (Observation->GetObservationLevel())
     {
@@ -257,6 +263,15 @@ void ALLObserverHUD::DrawHUD()
     const float UIScale = ComputeUIScale();
     const TArray<FLLResidentData> Residents = Simulation->GetResidents();
     LastCanvasSize = FVector2D(Canvas->ClipX, Canvas->ClipY);
+    if (Canvas->SceneView)
+    {
+        LastViewRectMin = FVector2D(Canvas->SceneView->UnscaledViewRect.Min.X, Canvas->SceneView->UnscaledViewRect.Min.Y);
+        bLastViewRectKnown = true;
+    }
+    else
+    {
+        bLastViewRectKnown = false;
+    }
 
     FLLResidentData Selected;
     const bool bHasSelection = Observation && Observation->HasObservedResident()
