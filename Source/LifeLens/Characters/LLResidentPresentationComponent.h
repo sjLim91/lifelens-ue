@@ -31,30 +31,42 @@ public:
     virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
     // ---- Silhouette (adult, unscaled; multiplied by the LifeStage factor) ----
-    // Engine Cylinder is 100 tall with radius 50; Sphere radius 50.
-    static constexpr float TorsoHeight       = 138.0f;
-    static constexpr float TorsoRadiusMale   = 31.0f;
-    static constexpr float TorsoRadiusFemale = 28.0f;
-    static constexpr float HeadRadius        = 17.0f;
+    // Reference is the DebugBody cube: 55 x 55 x 90, centred on the actor
+    // origin. Adult silhouette height (torso + head) equals 90 and its width
+    // stays inside 55. Engine Cylinder is 100 tall with radius 50; Sphere radius 50.
+    static constexpr float ReferenceBodyHeight = 90.0f;
+    static constexpr float ReferenceBodyWidth  = 55.0f;
+    // The silhouette occupies the DebugBody's box (origin-centred), so the
+    // opaque cube is hidden at runtime while the silhouette is shown. The
+    // character's DebugBody component itself is untouched.
+    static constexpr bool bHideDebugBody = true;
+    static constexpr float SilhouetteBaseZ = -ReferenceBodyHeight * 0.5f; // -45, cube bottom
+    static constexpr float HeadRadius        = 8.0f;
+    static constexpr float TorsoHeight       = ReferenceBodyHeight - 2.0f * HeadRadius; // 74
+    static constexpr float TorsoRadiusMale   = 19.0f;
+    static constexpr float TorsoRadiusFemale = 17.0f;
 
     // Height factor per LifeStage (index = ELLLifeStage).
     static constexpr float StageHeightFactor[5] = { 0.45f, 0.65f, 0.85f, 1.0f, 0.95f };
 
     // ---- Selection ring ------------------------------------------------------
-    static constexpr float RingOuterRadius = 65.0f;
-    static constexpr float RingInnerRadius = 53.0f;
+    static constexpr float RingOuterRadius = 36.0f;
+    static constexpr float RingInnerRadius = 29.0f;
     static constexpr float RingThickness   = 2.0f;
     static constexpr float RingQuickIntensity  = 0.55f;
     static constexpr float RingDetailIntensity = 1.0f;
 
     // ---- Name label LOD (camera distance, world units) ----------------------
-    static constexpr float LabelNearDistance = 2400.0f; // name + LifeStage badge
-    static constexpr float LabelMidDistance  = 4500.0f; // name only; beyond: hidden
+    // Near: "name · LifeStage" on one line. Mid: name. Beyond: hidden.
+    // The default observer camera sits about 1900 units away, so it shows
+    // the name only; the badge appears when the camera comes closer.
+    static constexpr float LabelNearDistance = 1500.0f;
+    static constexpr float LabelMidDistance  = 4500.0f;
     static constexpr float LabelReferenceDistance = 1900.0f;
-    static constexpr float LabelBaseWorldSize = 28.0f;
+    static constexpr float LabelBaseWorldSize = 14.0f; // proportional to the 90-unit body
     static constexpr float LabelMinScale = 0.6f;
     static constexpr float LabelMaxScale = 2.0f;
-    static constexpr float LabelAboveHead = 30.0f;
+    static constexpr float LabelAboveHead = 10.0f;
 
     static constexpr float DataRefreshSeconds = 1.0f;
 
@@ -67,7 +79,8 @@ private:
     void UpdateRing();
     void UpdateLabel();
 
-    float FeetOffset() const; // distance from the actor origin down to the feet
+    float FeetOffset() const; // distance from the actor origin down to the feet (ring placement)
+    void HideDebugBody();
     static FString LifeStageBadge(ELLLifeStage Stage);
 
     UPROPERTY()

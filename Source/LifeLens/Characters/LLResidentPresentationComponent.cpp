@@ -56,10 +56,33 @@ void ULLResidentPresentationComponent::BeginPlay()
 
     BuildSilhouette();
     BuildRing();
+    HideDebugBody();
     RefreshResidentData();
     ApplySilhouetteScale();
     UpdateRing();
     UpdateLabel();
+}
+
+void ULLResidentPresentationComponent::HideDebugBody()
+{
+    if (!bHideDebugBody || !Torso)
+    {
+        return;
+    }
+    AActor* Owner = GetOwner();
+    if (!Owner)
+    {
+        return;
+    }
+    TArray<UStaticMeshComponent*> Meshes;
+    Owner->GetComponents<UStaticMeshComponent>(Meshes);
+    for (UStaticMeshComponent* Mesh : Meshes)
+    {
+        if (Mesh && Mesh->GetFName() == TEXT("DebugBody"))
+        {
+            Mesh->SetVisibility(false);
+        }
+    }
 }
 
 void ULLResidentPresentationComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -175,25 +198,27 @@ void ULLResidentPresentationComponent::RefreshResidentData()
 
 void ULLResidentPresentationComponent::ApplySilhouetteScale()
 {
-    const float Feet = FeetOffset();
+    // Silhouette stands on the DebugBody's bottom face; LifeStage scales the
+    // height from that base.
+    const float Base = SilhouetteBaseZ;
     const float S = StageFactor;
     const float TorsoRadius = (Sex == ELLSex::Female ? TorsoRadiusFemale : TorsoRadiusMale) * S;
     const float Height = TorsoHeight * S;
+    const float Radius = HeadRadius * S;
 
     if (Torso)
     {
         Torso->SetRelativeScale3D(FVector(TorsoRadius / 50.0f, TorsoRadius / 50.0f, Height / 100.0f));
-        Torso->SetRelativeLocation(FVector(0.0f, 0.0f, -Feet + Height * 0.5f));
+        Torso->SetRelativeLocation(FVector(0.0f, 0.0f, Base + Height * 0.5f));
     }
     if (Head)
     {
-        const float Radius = HeadRadius * S;
         Head->SetRelativeScale3D(FVector(Radius / 50.0f));
-        Head->SetRelativeLocation(FVector(0.0f, 0.0f, -Feet + Height + Radius));
+        Head->SetRelativeLocation(FVector(0.0f, 0.0f, Base + Height + Radius));
     }
     if (Label)
     {
-        Label->SetRelativeLocation(FVector(0.0f, 0.0f, -Feet + Height + 2.0f * HeadRadius * S + LabelAboveHead));
+        Label->SetRelativeLocation(FVector(0.0f, 0.0f, Base + Height + 2.0f * Radius + LabelAboveHead));
     }
 }
 
@@ -263,22 +288,24 @@ void ULLResidentPresentationComponent::UpdateLabel()
     }
     Label->SetVisibility(true);
 
-    // Text content by LOD.
-    const FString Name = bResidentDataValid ? DisplayName : Label->Text.ToString();
-    const FString Wanted = Distance <= LabelNearDistance
-        ? Name + TEXT("\n") + LifeStageBadge(LifeStage)
-        : Name;
-    if (!Label->Text.ToString().Equals(Wanted))
+    // Text content by LOD: one line, badge appended only when near.
+    if (bResidentDataValid)
     {
-        Label->SetText(FText::FromString(Wanted));
+        const FString Wanted = Distance <= LabelNearDistance
+            ? DisplayName + TEXT(" · ") + LifeStageBadge(LifeStage)
+            : DisplayName;
+        if (!Label->Text.ToString().Equals(Wanted))
+        {
+            Label->SetText(FText::FromString(Wanted));
+        }
     }
 
-    // Face the camera; scale with distance.
+    // Face the camera; size proportional to the silhouette height and distance.
     const FVector ToCamera = CameraLocation - LabelLocation;
     if (!ToCamera.IsNearlyZero())
     {
         Label->SetWorldRotation(FRotationMatrix::MakeFromX(ToCamera).Rotator());
     }
     const float Scale = FMath::Clamp(Distance / LabelReferenceDistance, LabelMinScale, LabelMaxScale);
-    Label->SetWorldSize(LabelBaseWorldSize * Scale);
+    Label->SetWorldSize(LabelBaseWorldSize * StageFactor * Scale);
 }
