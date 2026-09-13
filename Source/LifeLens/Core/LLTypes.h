@@ -33,6 +33,18 @@ enum class ELLRelationshipStage : uint8
     Estranged
 };
 
+UENUM(BlueprintType)
+enum class ELLActionIntent : uint8
+{
+    Idle,
+    Eat,
+    Sleep,
+    Socialize,
+    Hygiene,
+    Toilet,
+    HaveFun
+};
+
 USTRUCT(BlueprintType)
 struct FLLNeedState
 {
