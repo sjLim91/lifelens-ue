@@ -14,25 +14,20 @@ Last reconciled: 2026-09-13 KST
 
 ## Active / unresolved work
 
-### 1. P19 Aging Core v1
+### 1. P20 Death Core v1
 
 - Owner: 쭌 + 쭌 AI
-- Branch: `jjun/life-aging-v1`
-- Work item: SPEC 42 Aging — 생애단계 이후 지속 노화, 건강/에너지/이동/일/외형/가족역할/임신 가능성 영향
-- Last known HEAD: `e8ce9639434e7fa5682c7325c5570b718f17a406`
-- PR: #23 `[CORE] Add aging condition and fertility effects`
-- Status: `READY_TO_MERGE`
-- CI:
-  - LifeLens Core Tests Run `34756119806` — PASS
-  - Build — PASS
-  - Test — PASS
-  - Deterministic harness smoke — PASS
-  - LifeLens Preflight Run `34756119798` — PASS
-- Last verified fact: PR #23 is open and mergeable; required lightweight Core/Preflight validation passed.
-- Blocker / interruption: 없음. 직전 대화 타임아웃으로 병합 직전 흐름만 중단됨.
-- Exact next action: 실제 PR #23 head가 위 SHA와 동일한지 재확인 후 `main` 병합 → merge SHA 기록 → `DONE` 전환 → P20은 새 브랜치에서 시작.
+- Branch: `jjun/death-core-v1`
+- Work item: SPEC 43 Death — 사망 상태, LifeHistory, grief/memory/social impact, 배우자 사별, 세대교체 기반
+- Last known HEAD: `82b4001058332656b08f13a47728079172b10962` (branch creation checkpoint)
+- PR: 없음 — 구현 전
+- Status: `IN_PROGRESS`
+- CI: 미실행
+- Last verified fact: P19 Aging PR #23 was squash-merged into `main` as `82b4001058332656b08f13a47728079172b10962`; `jjun/death-core-v1` was created from that exact merge SHA.
+- Blocker / interruption: 없음.
+- Exact next action: Death state/model 구현 → grief/LifeHistory/relationship-family effects 연결 → C++17 test 등록 → PR → Core CI + Preflight.
 - Handoff safety: `SAFE`
-- Shared-file impact: 없음. `Source/LifeLensCore/**` + Core test only.
+- Shared-file impact: `Source/LifeLensCore/**` + Core tests only. TASK_03 / 다겸 UI 파일 건드리지 않음.
 
 ### 2. Observer HUD v2
 
@@ -105,6 +100,7 @@ READY NOW가 0개가 되면 다겸 측은 `할 일 없음`으로 종료하지 �
 - P16 Lifecycle Growth — `DONE`, main merged.
 - P17 Parenting / Child Development — `DONE`, main merged.
 - P18 Genealogy / Kinship — `DONE`, main merged as `d1324c766749847c9fc85ea69af60c23c293da31`.
+- P19 Aging Core — `DONE`, Core CI + Preflight PASS; PR #23 squash-merged as `82b4001058332656b08f13a47728079172b10962`.
 
 P18 first Core test attempt failed only in `test_genealogy` because `std::vector` growth invalidated stored references in spouse/birth registration. The bug was fixed, rerun Core Tests + deterministic harness + Preflight all passed, then PR #22 was merged.
 
