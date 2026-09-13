@@ -6,6 +6,8 @@
 #include "LLResidentCharacter.generated.h"
 
 class ULLDecisionComponent;
+class UStaticMeshComponent;
+class UTextRenderComponent;
 
 UCLASS(Blueprintable)
 class LIFELENS_API ALLResidentCharacter : public ACharacter
@@ -14,9 +16,19 @@ class LIFELENS_API ALLResidentCharacter : public ACharacter
 
 public:
     ALLResidentCharacter();
+    virtual void Tick(float DeltaSeconds) override;
 
     UFUNCTION(BlueprintCallable, Category="LifeLens|Resident")
     void BindResident(const FLLResidentData& ResidentData);
+
+    UFUNCTION(BlueprintCallable, Category="LifeLens|Resident")
+    void SetMovementTarget(const FVector& TargetLocation);
+
+    UFUNCTION(BlueprintCallable, Category="LifeLens|Resident")
+    void ClearMovementTarget();
+
+    UFUNCTION(BlueprintPure, Category="LifeLens|Resident")
+    bool HasReachedMovementTarget() const;
 
     UFUNCTION(BlueprintPure, Category="LifeLens|Resident")
     FGuid GetResidentId() const { return ResidentId; }
@@ -24,13 +36,38 @@ public:
     UFUNCTION(BlueprintPure, Category="LifeLens|Resident")
     FText GetResidentDisplayName() const { return ResidentDisplayName; }
 
+    UFUNCTION(BlueprintPure, Category="LifeLens|Resident")
+    ELLActionIntent GetCurrentIntent() const { return CurrentIntent; }
+
+    UFUNCTION(BlueprintCallable, Category="LifeLens|Resident")
+    void SetCurrentIntent(ELLActionIntent NewIntent) { CurrentIntent = NewIntent; }
+
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="LifeLens|AI")
     TObjectPtr<ULLDecisionComponent> DecisionComponent;
 
 protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="LifeLens|Resident")
+    TObjectPtr<UStaticMeshComponent> DebugBody;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="LifeLens|Resident")
+    TObjectPtr<UTextRenderComponent> NameLabel;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="LifeLens|Resident")
     FGuid ResidentId;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="LifeLens|Resident")
     FText ResidentDisplayName;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="LifeLens|Resident")
+    ELLActionIntent CurrentIntent = ELLActionIntent::Idle;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="LifeLens|Movement")
+    float RuntimeMoveSpeed = 180.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="LifeLens|Movement")
+    float TargetAcceptanceRadius = 45.0f;
+
+private:
+    FVector MovementTarget = FVector::ZeroVector;
+    bool bHasMovementTarget = false;
 };
