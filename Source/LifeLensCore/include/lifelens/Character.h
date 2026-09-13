@@ -8,6 +8,7 @@
 #include "Memory.h"
 #include "Belief.h"
 #include "Genetics.h"
+#include "LifeHistory.h"
 namespace lifelens {
 struct Character {
     CharacterId id=0;
@@ -20,6 +21,7 @@ struct Character {
     GeneticsProfile genetics;
     std::vector<CharacterId> parentIds;
     std::vector<CharacterId> childrenIds;
+    std::vector<LifeHistoryEntry> lifeHistory;
     int birthMinute=0;
     double metabolism=1.0;
     double sleepTendency=1.0;
