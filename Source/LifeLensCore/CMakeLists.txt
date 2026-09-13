@@ -103,3 +103,7 @@ add_test(NAME test_aging COMMAND test_aging)
 add_executable(test_death tests/test_death.cpp)
 target_link_libraries(test_death PRIVATE lifelens_core)
 add_test(NAME test_death COMMAND test_death)
+
+add_executable(test_life_history tests/test_life_history.cpp)
+target_link_libraries(test_life_history PRIVATE lifelens_core)
+add_test(NAME test_life_history COMMAND test_life_history)
