@@ -10,6 +10,7 @@
 #include "Genetics.h"
 #include "LifeHistory.h"
 #include "LifeStage.h"
+#include "Development.h"
 namespace lifelens {
 struct Character {
     CharacterId id=0;
@@ -20,6 +21,7 @@ struct Character {
     MemoryState memory;
     BeliefState beliefs;
     GeneticsProfile genetics;
+    ChildDevelopment development;
     std::vector<CharacterId> parentIds;
     std::vector<CharacterId> childrenIds;
     std::vector<LifeHistoryEntry> lifeHistory;
