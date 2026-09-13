@@ -458,6 +458,27 @@
   - `Characters/**` 미수정. 참고(다겸 영역 아님, 기록만): 주민 액터가 카메라 거리(약 1900유닛)에서 큐브 55유닛 ≈ 80px로 작게 보임. 이름 라벨이 원점 위 125유닛.
   - `ll.DebugTapTargets 1`로 투영 사각형을 화면에서 대조 가능.
 
+### Character Presentation v1 (DQ-02)
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/character-presentation-v1` (base `dagyeom/observer-ui-v2` `dc3351e`), PR 생성 예정
+- 커밋: `9ed96d3`
+- 상태: `IN_PROGRESS / 검증 대기`
+- 변경 범위:
+  - `Source/LifeLens/Characters/LLResidentPresentationComponent.h`, `.cpp` (신규): Cylinder 몸통 + Sphere 머리 실루엣, `EmissiveMeshMaterial` Unlit 단색. 생애단계 키 계수 0.45/0.65/0.85/1.0/0.95, 성별 몸통 반경 31/28. 발밑 선택 링(납작 Cylinder 2개), 선택 시만 표시, Quick 0.55 / Detail 1.0 밝기. 이름 라벨 거리 LOD(≤2400 이름+LifeStage 배지, ≤4500 이름, 이상 숨김), 카메라 정면, 거리 비례 크기
+  - `Source/LifeLens/Characters/LLResidentCharacter.h`, `.cpp`: `PresentationComponent` 추가만 (전방 선언, UPROPERTY, `CreateDefaultSubobject`). DebugBody, 캡슐, 이동, `BindResident`, `SetCurrentIntent` 미수정
+- 검증 상태:
+  - 로컬 `Build.sh LifeLensEditor Mac Development`: Result: Succeeded
+  - structural preflight PASS (로컬)
+  - GitHub Actions: 검증 대기
+  - 화면/동작 확인: 검증 대기
+- 상대가 알아야 할 점:
+  - `Source/LifeLens/Characters/**`는 CODEOWNERS 공동 소유. SHARED FILE CHANGE. 추가만.
+  - 사용 읽기 API: `ULLSimulationSubsystem::FindResidentById`(LifeStage, Sex, DisplayName), `ULLObservationSubsystem`(선택 주민, Detail 여부).
+  - 실루엣은 DebugBody 큐브(55×55×90)를 감싸는 크기. 성인 기준 몸통 138 높이. Infant/Child 계수에서는 큐브가 실루엣 위로 노출됨. DebugBody 제거 여부는 소유자 판단.
+  - 엔진 에셋 참조: `/Engine/BasicShapes/Cylinder`, `/Engine/BasicShapes/Sphere`, `/Engine/EngineMaterials/EmissiveMeshMaterial` (`ConstructorHelpers::FObjectFinder`, 쿠킹 포함).
+  - PR #17 UI 코드(관측 단계, `ll.DebugTapTargets`)에 의존하여 stacked branch. PR #17 merge 후 base를 `main`으로 변경.
+  - 이 브랜치에는 `tasks/WORK_STATE.md`가 없음(base가 해당 파일 추가 이전). WORK_STATE 항목은 main 병합 시 추가.
+
 ---
 
 ## 다음 인수인계 포인트
