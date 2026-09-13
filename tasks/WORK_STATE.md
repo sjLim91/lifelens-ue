@@ -14,18 +14,18 @@ Last reconciled: 2026-09-13 KST
 
 ## Active / unresolved work
 
-### 1. P20 Death Core v1
+### 1. P21 LifeHistory Core v1
 
 - Owner: 쭌 + 쭌 AI
-- Branch: `jjun/death-core-v1`
-- Work item: SPEC 43 Death — 사망 상태, LifeHistory, grief/memory/social impact, 배우자 사별, 세대교체 기반
-- Last known HEAD: `7636765174066b10657beb2b11dacd756e152966`
-- PR: #25 `[CORE] Add death, bereavement and continuity state`
-- Status: `WAITING_CI`
-- CI: PR 생성 완료, Core Tests / Preflight 결과 대기
-- Last verified fact: persistent death state, bereavement, widow/former-partner closure, population continuity helper and `test_death` are committed; PR #25 head is the SHA above.
+- Branch: `jjun/life-history-v1`
+- Work item: SPEC 44 LifeHistory — 주요 생애사건 taxonomy + 기록/조회 기반
+- Last known HEAD: `d7126e27b0d16b854532a00089781ddb8656304f`
+- PR: 없음 — 구현 중
+- Status: `IN_PROGRESS`
+- CI: 미실행
+- Last verified fact: LifeEventType가 연애/약혼/결혼/동거/임신/출산/양육/별거/이혼/사별/가구변경/사망/애도로 확장됐고 record/count/latest/name helper가 branch에 저장됨.
 - Blocker / interruption: 없음.
-- Exact next action: PR #25 Core Tests + deterministic harness + Preflight 확인 → 실패 시 첫 실제 원인만 수정 → PASS 시 `READY_TO_MERGE` → main 병합.
+- Exact next action: LifeHistory helper test + CMake 등록 → PR → Core CI + Preflight → PASS 시 main 병합. 이후 별도 wiring branch에서 기존 Romance/Marriage/Pregnancy/Birth/Death 흐름에 자동 기록 연결.
 - Handoff safety: `SAFE`
 - Shared-file impact: `Source/LifeLensCore/**` + Core tests only. TASK_03 / 다겸 UI 파일 건드리지 않음.
 
@@ -101,8 +101,7 @@ READY NOW가 0개가 되면 다겸 측은 `할 일 없음`으로 종료하지 �
 - P17 Parenting / Child Development — `DONE`, main merged.
 - P18 Genealogy / Kinship — `DONE`, main merged as `d1324c766749847c9fc85ea69af60c23c293da31`.
 - P19 Aging Core — `DONE`, Core CI + Preflight PASS; PR #23 squash-merged as `82b4001058332656b08f13a47728079172b10962`.
-
-P18 first Core test attempt failed only in `test_genealogy` because `std::vector` growth invalidated stored references in spouse/birth registration. The bug was fixed, rerun Core Tests + deterministic harness + Preflight all passed, then PR #22 was merged.
+- P20 Death Core — `DONE`, Core CI + deterministic harness + Preflight PASS; PR #25 squash-merged as `07509a73f235928c16bf9b26f8b13c689b6a030b`.
 
 ---
 
