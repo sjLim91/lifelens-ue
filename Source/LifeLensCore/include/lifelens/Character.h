@@ -9,6 +9,7 @@
 #include "Belief.h"
 #include "Genetics.h"
 #include "LifeHistory.h"
+#include "LifeStage.h"
 namespace lifelens {
 struct Character {
     CharacterId id=0;
@@ -22,7 +23,11 @@ struct Character {
     std::vector<CharacterId> parentIds;
     std::vector<CharacterId> childrenIds;
     std::vector<LifeHistoryEntry> lifeHistory;
+    bool hasBirthMinute=false;
     int birthMinute=0;
+    LifeStage lifeStage=LifeStage::Adult;
+    double baseMetabolism=1.0;
+    double baseSleepTendency=1.0;
     double metabolism=1.0;
     double sleepTendency=1.0;
 };

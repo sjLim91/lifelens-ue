@@ -6,13 +6,15 @@
 namespace lifelens {
 
 enum class LifeEventType {
-    Birth
+    Birth,
+    LifeStageChanged
 };
 
 struct LifeHistoryEntry {
     LifeEventType type=LifeEventType::Birth;
     int minute=0;
     std::vector<CharacterId> relatedCharacters;
+    int value=0;
 };
 
 } // namespace lifelens

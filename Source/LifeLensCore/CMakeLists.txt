@@ -83,3 +83,7 @@ add_test(NAME test_pregnancy COMMAND test_pregnancy)
 add_executable(test_birth_genetics tests/test_birth_genetics.cpp)
 target_link_libraries(test_birth_genetics PRIVATE lifelens_core)
 add_test(NAME test_birth_genetics COMMAND test_birth_genetics)
+
+add_executable(test_lifecycle_growth tests/test_lifecycle_growth.cpp)
+target_link_libraries(test_lifecycle_growth PRIVATE lifelens_core)
+add_test(NAME test_lifecycle_growth COMMAND test_lifecycle_growth)
