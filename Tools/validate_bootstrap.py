@@ -27,6 +27,10 @@ if missing:
 project = json.loads((root / 'LifeLens.uproject').read_text(encoding='utf-8'))
 assert project['Modules'][0]['Name'] == 'LifeLens'
 
+build_rules = (root / 'Source/LifeLens/LifeLens.Build.cs').read_text(encoding='utf-8')
+assert 'PublicIncludePaths.Add(ModuleDirectory);' in build_rules
+assert 'PrivateIncludePaths.Add(ModuleDirectory);' in build_rules
+
 sim_h = (root / 'Source/LifeLens/Simulation/LLSimulationSubsystem.h').read_text(encoding='utf-8')
 assert 'TArray<FLLResidentData> GetResidents() const' in sim_h
 assert 'const TArray<FLLResidentData>& GetResidents() const' not in sim_h
