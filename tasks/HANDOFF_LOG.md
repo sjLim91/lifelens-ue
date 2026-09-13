@@ -441,6 +441,23 @@
   - `Config/**`, `Characters/**`, `Core/LLLifeLensGameMode.cpp` 미수정. 레터박스 원인은 GameMode의 관찰 카메라 aspect 제약이며 UI 쪽 좌표 매핑으로 대응함.
   - `Tools/validate_bootstrap.py`의 `GetHitResultUnderCursor` / `GetHitResultUnderFinger` 검사에 맞춰 정확 히트 경로 유지.
 
+### Observer HUD v2 — 주민 선택을 렌더 바운즈 투영 사각형으로 변경, ll.DebugTapTargets
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/observer-ui-v2`, PR #17
+- 커밋: `50beab0`
+- 상태: `REVIEW / 검증 대기`
+- 변경 범위:
+  - `Source/LifeLens/UI/LLObserverHUD.h`, `.cpp`: `ProjectResidentTapRect`(액터 렌더 바운즈 8꼭짓점 투영 → 뷰포트 픽셀 사각형, 터치 반경만큼 확장), `TouchTargetRadiusPixels`, 콘솔 변수 `ll.DebugTapTargets`(기본 0, 1이면 바운즈 노란색·탭 사각형 청록색·원점 십자 빨간색 표시)
+  - `Source/LifeLens/UI/LLObserverPlayerController.h`, `.cpp`: 탭이 확장 사각형 안에 들면 선택, 여러 개면 바운즈에 가장 가까운 주민. 정확 트레이스 히트는 2차 판정 유지
+- 검증 상태:
+  - 재확인(`9512618`): 주민 클릭 시 LEVEL 1 미표시. 로그 `nearestResident 130~194 px radius 76 px exactHit no`
+  - 원인: `ALLResidentCharacter`의 보이는 컴포넌트는 액터 원점 중심의 DebugBody 큐브(55×55×90)와 원점 위 125유닛의 NameLabel 텍스트. 카메라 거리에서 125유닛 ≈ 180px라 이름 텍스트 클릭이 원점 투영 기준 반경(76px)을 벗어남. `ProjectWorldLocationToScreen`은 레터박스 view rect 오프셋을 포함하므로 좌표계는 일치
+  - 수정 후 로컬 `Build.sh LifeLensEditor Mac Development` (`50beab0`): Result: Succeeded. structural preflight PASS
+  - 수정 후 화면/동작 재확인: 검증 대기
+- 상대가 알아야 할 점:
+  - `Characters/**` 미수정. 참고(다겸 영역 아님, 기록만): 주민 액터가 카메라 거리(약 1900유닛)에서 큐브 55유닛 ≈ 80px로 작게 보임. 이름 라벨이 원점 위 125유닛.
+  - `ll.DebugTapTargets 1`로 투영 사각형을 화면에서 대조 가능.
+
 ---
 
 ## 다음 인수인계 포인트
