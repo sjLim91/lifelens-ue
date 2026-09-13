@@ -24,9 +24,10 @@
 2. `docs/LIFELENS_SPEC_v1.1.md`
 3. `docs/STATE_MANAGEMENT.md`
 4. `tasks/WORK_STATE.md`
-5. `tasks/TEAM_BOARD.md`
-6. `tasks/HANDOFF_LOG.md`
-7. 실제 대상 branch HEAD / PR / CI 상태
+5. 역할별 READY 큐 (`tasks/DAGYEOM_READY_QUEUE.md` 등)
+6. `tasks/TEAM_BOARD.md`
+7. `tasks/HANDOFF_LOG.md`
+8. 실제 대상 branch HEAD / PR / CI 상태
 
 기억, 이전 채팅, 로컬 작업 폴더만 믿고 이어가지 않는다.
 
@@ -143,7 +144,19 @@ CI 통과 시:
 
 PR이 닫히거나 보류되면 그 이유와 재개 조건을 상태판에 남긴다.
 
-## 11. 절대 하지 않는 것
+## 11. No-idle / Capacity 규칙
+
+한 사람의 현재 PR이나 기능이 `BLOCKED`, `WAITING_CI`, `FROZEN`이라고 해서 그 사람 전체가 유휴 상태가 되어서는 안 된다.
+
+- 각 담당자는 자신의 소유 범위에서 **최소 1개의 `READY NOW` 작업**을 유지한다.
+- API/데이터 의존 때문에 진행 불가한 항목은 담당자의 `할 일 없음`으로 처리하지 않고 `BLOCKED-BY-<OWNER>`로 분리한다.
+- 다겸 측 READY 작업은 `tasks/DAGYEOM_READY_QUEUE.md`를 기준으로 한다.
+- 다겸 READY NOW가 0개면 `NEEDS_ASSIGNMENT`로 간주하고, SPEC의 Observer/UI/Character presentation 범위에서 다음 작업을 즉시 채운다.
+- 쭌 측은 자신 때문에 막힌 Integration Request를 별도 backlog로 유지하고, API 제공 시 해당 UI 작업을 READY NOW로 승격시킨다.
+- 대기 중인 PR에 무관한 새 작업은 별도 브랜치로 진행한다. 기존 PR에 무한히 기능을 누적하지 않는다.
+- 상대가 "할 일 없음"이라고 보고하면, 새 기능 구현보다 먼저 READY 큐와 BLOCKED-BY 소유자를 점검한다.
+
+## 12. 절대 하지 않는 것
 
 - 이전 채팅만 보고 현재 branch 상태를 추측하지 않는다.
 - `TEAM_BOARD`의 오래된 상태만 믿고 실제 PR/branch 확인을 생략하지 않는다.
@@ -151,3 +164,4 @@ PR이 닫히거나 보류되면 그 이유와 재개 조건을 상태판에 남�
 - CI가 실패했는데 `DONE`으로 표시하지 않는다.
 - 타임아웃 후 동일 명령을 무조건 다시 실행하지 않는다.
 - 오래된 branch를 최신 main인 것처럼 취급하지 않는다.
+- 한 작업이 BLOCKED라는 이유만으로 담당자 전체를 `할 일 없음`으로 종료하지 않는다.
