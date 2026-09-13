@@ -28,11 +28,15 @@ private:
     // Uniform scale so text stays readable on phones and desktops alike.
     float ComputeUIScale() const;
 
-    // LEVEL 0. Returns the Y just below the drawn overview.
-    float DrawOverview(const ULLSimulationSubsystem& Simulation, const TArray<FLLResidentData>& Residents, float UIScale);
+    // LEVEL 0. Returns the Y just below the drawn overview. The selection hint is
+    // only drawn when nothing is selected.
+    float DrawOverview(const ULLSimulationSubsystem& Simulation, const TArray<FLLResidentData>& Residents, float UIScale, bool bShowHint);
 
     // LEVEL 1. TopY is the Y just below the overview band.
     void DrawQuickInspector(const FLLResidentData& Resident, float UIScale, float TopY);
+
+    // Greedy word wrap against MaxWidth using the HUD font metrics.
+    TArray<FString> WrapText(const FString& Text, float MaxWidth, float Scale) const;
 
     FString CurrentActionFor(const FLLResidentData& Resident) const;
 };

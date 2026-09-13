@@ -17,6 +17,7 @@ namespace
     constexpr float PadY             = 8.0f;
     constexpr float LineGap          = 6.0f;
     constexpr float PanelMaxWidth    = 360.0f;
+    constexpr float PanelMinWidth    = 200.0f;
     constexpr float PanelWidthRatio  = 0.42f;
 
     constexpr float OverviewAlpha    = 0.22f;
@@ -87,25 +88,57 @@ void ALLObserverHUD::DrawHUD()
     const float UIScale = ComputeUIScale();
     const TArray<FLLResidentData> Residents = Simulation->GetResidents();
 
+    FLLResidentData Selected;
+    const bool bHasSelection = Observation && Observation->HasObservedResident()
+        && Simulation->FindResidentById(Observation->GetObservedResidentId(), Selected);
+
     // LEVEL 0 is always drawn; it is deliberately thin.
-    const float OverviewBottom = DrawOverview(*Simulation, Residents, UIScale);
+    const float OverviewBottom = DrawOverview(*Simulation, Residents, UIScale, !bHasSelection);
 
     // LEVEL 1 only when a resident is selected.
-    if (!Observation || !Observation->HasObservedResident())
+    if (bHasSelection)
     {
-        return;
+        DrawQuickInspector(Selected, UIScale, OverviewBottom);
     }
-
-    FLLResidentData Selected;
-    if (!Simulation->FindResidentById(Observation->GetObservedResidentId(), Selected))
-    {
-        return;
-    }
-
-    DrawQuickInspector(Selected, UIScale, OverviewBottom);
 }
 
-float ALLObserverHUD::DrawOverview(const ULLSimulationSubsystem& Simulation, const TArray<FLLResidentData>& Residents, float UIScale)
+TArray<FString> ALLObserverHUD::WrapText(const FString& Text, float MaxWidth, float Scale) const
+{
+    TArray<FString> Lines;
+    UFont* Font = HUDFont();
+
+    TArray<FString> Words;
+    Text.ParseIntoArray(Words, TEXT(" "), true);
+    if (Words.Num() == 0)
+    {
+        Lines.Add(Text);
+        return Lines;
+    }
+
+    FString Current;
+    for (const FString& Word : Words)
+    {
+        const FString Candidate = Current.IsEmpty() ? Word : Current + TEXT(" ") + Word;
+        float W = 0.0f, H = 0.0f;
+        GetTextSize(Candidate, W, H, Font, Scale);
+        if (W <= MaxWidth || Current.IsEmpty())
+        {
+            Current = Candidate;
+        }
+        else
+        {
+            Lines.Add(Current);
+            Current = Word;
+        }
+    }
+    if (!Current.IsEmpty())
+    {
+        Lines.Add(Current);
+    }
+    return Lines;
+}
+
+float ALLObserverHUD::DrawOverview(const ULLSimulationSubsystem& Simulation, const TArray<FLLResidentData>& Residents, float UIScale, bool bShowHint)
 {
     UFont* Font = HUDFont();
 
@@ -159,9 +192,9 @@ float ALLObserverHUD::DrawOverview(const ULLSimulationSubsystem& Simulation, con
 
     DrawText(StripLine, TextMuted, X, CursorY, Font, StripScale, false);
 
-    // Hint after the strip, only if it fits on the same line.
+    // Hint after the strip: LEVEL 0 only, and only if it fits on the same line.
     const float HintX = X + StripW + 3.0f * PadX * UIScale;
-    if (HintX + HintW <= Canvas->ClipX - X)
+    if (bShowHint && HintX + HintW <= Canvas->ClipX - X)
     {
         DrawText(HintLine, TextHint, HintX, CursorY, Font, StripScale, false);
     }
@@ -190,43 +223,72 @@ void ALLObserverHUD::DrawQuickInspector(const FLLResidentData& Resident, float U
 
     const FString WordsLine = LLObserverLabels::PersonalityWords(Resident);
 
+    struct FEntry
+    {
+        FString Text;
+        FLinearColor Color;
+        float Scale;
+    };
+    TArray<FEntry> Entries;
+    Entries.Add({ NameLine, TextPrimary, NameScale });
+    if (!NowLine.IsEmpty())
+    {
+        Entries.Add({ NowLine, TextAction, BodyScale });
+    }
+    Entries.Add({ SummaryLine, SummaryColor, SummaryScale });
+    Entries.Add({ WordsLine, TextSecondary, WordsScale });
+
+    // Panel width follows the measured content, bounded by the viewport so the
+    // card never covers more than PanelWidthRatio of the screen. Anything wider
+    // than that is word-wrapped below.
+    const float Gap = LineGap * UIScale;
+    const float Pad = PadY * UIScale;
+    const float InnerPadX = PadX * UIScale;
+    const float MaxPanelWidth = FMath::Min(PanelMaxWidth * UIScale, Canvas->ClipX * PanelWidthRatio);
+    const float MinPanelWidth = FMath::Min(PanelMinWidth * UIScale, MaxPanelWidth);
+
+    float WidestLine = 0.0f;
+    for (const FEntry& Entry : Entries)
+    {
+        float W = 0.0f, H = 0.0f;
+        GetTextSize(Entry.Text, W, H, Font, Entry.Scale);
+        WidestLine = FMath::Max(WidestLine, W);
+    }
+    const float PanelWidth = FMath::Clamp(WidestLine + 2.0f * InnerPadX, MinPanelWidth, MaxPanelWidth);
+    const float TextMaxWidth = PanelWidth - 2.0f * InnerPadX;
+
     struct FLine
     {
         FString Text;
         FLinearColor Color;
         float Scale;
-        float Height = 0.0f;
+        float Height;
     };
     TArray<FLine> Lines;
-    Lines.Add({ NameLine, TextPrimary, NameScale });
-    if (!NowLine.IsEmpty())
-    {
-        Lines.Add({ NowLine, TextAction, BodyScale });
-    }
-    Lines.Add({ SummaryLine, SummaryColor, SummaryScale });
-    Lines.Add({ WordsLine, TextSecondary, WordsScale });
-
     float ContentHeight = 0.0f;
-    for (FLine& Line : Lines)
+    for (const FEntry& Entry : Entries)
     {
-        float W = 0.0f;
-        GetTextSize(Line.Text, W, Line.Height, Font, Line.Scale);
-        ContentHeight += Line.Height;
+        for (const FString& Wrapped : WrapText(Entry.Text, TextMaxWidth, Entry.Scale))
+        {
+            float W = 0.0f, H = 0.0f;
+            GetTextSize(Wrapped, W, H, Font, Entry.Scale);
+            Lines.Add({ Wrapped, Entry.Color, Entry.Scale, H });
+            ContentHeight += H;
+        }
     }
-    ContentHeight += LineGap * UIScale * (Lines.Num() - 1);
+    ContentHeight += Gap * FMath::Max(0, Lines.Num() - 1);
 
-    const float PanelWidth = FMath::Min(PanelMaxWidth * UIScale, Canvas->ClipX * PanelWidthRatio);
-    const float PanelHeight = ContentHeight + 2.0f * PadY * UIScale;
+    const float PanelHeight = ContentHeight + 2.0f * Pad;
     const float PanelX = FMath::Max(Margin * UIScale, Canvas->ClipX - PanelWidth - Margin * UIScale);
     const float PanelY = TopY + Margin * UIScale;
 
     DrawRect(FLinearColor(0.0f, 0.0f, 0.0f, InspectorAlpha), PanelX, PanelY, PanelWidth, PanelHeight);
 
-    float CursorY = PanelY + PadY * UIScale;
-    const float TextX = PanelX + PadX * UIScale;
+    float CursorY = PanelY + Pad;
+    const float TextX = PanelX + InnerPadX;
     for (const FLine& Line : Lines)
     {
         DrawText(Line.Text, Line.Color, TextX, CursorY, Font, Line.Scale, false);
-        CursorY += Line.Height + LineGap * UIScale;
+        CursorY += Line.Height + Gap;
     }
 }
