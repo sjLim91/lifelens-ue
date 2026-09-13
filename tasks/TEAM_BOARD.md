@@ -10,7 +10,8 @@
 
 | 담당 | 브랜치 | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | `task/03-fast-test` | LifeLensCore ↔ Unreal bridge 실제 UE/Android 검증 + 재빌드 방지 파이프라인 | `Source/LifeLens/Simulation/**`, build/CI | DOING |
+| 쭌 + 쭌 AI | `jjun/genealogy-core-v1`, PR #22 | SPEC 41 Genealogy / Kinship Core v1 | `Source/LifeLensCore/**` | REVIEW |
+| 쭌 + 쭌 AI | `task/03-fast-test`, PR #2 | LifeLensCore ↔ Unreal Android 검증 | Bridge/build | BLOCKED — 기존 Run 실패 상태 보존, 재실행 안 함 |
 | 다겸 + 다겸 AI | `dagyeom/observer-ui-v2` | Observer HUD v2 + 선택 주민 상세 패널 + 관찰 UX | `Source/LifeLens/UI/**`, UI/Character presentation | TODO |
 
 ## 완료된 병렬 작업
@@ -26,30 +27,36 @@
 | 쭌 + 쭌 AI | `jjun/social-execution-v1`, PR #11 | Approach/Repair/Comfort/Avoid 실제 Core 상태/사회 사건 실행 | Core CI + Preflight PASS, `main` 병합 완료 |
 | 쭌 + 쭌 AI | `jjun/simulation-social-loop-v1`, PR #12 | SocialIntent를 실제 `Simulation::step()`에 연결 | Core CI + Preflight PASS, `main` 병합 완료 |
 | 쭌 + 쭌 AI | `jjun/observer-read-model-v1`, PR #13 | Observer/UI용 Core read DTO + 현재행동/관계 13차원 노출 | Core CI + Preflight PASS, `main` 병합 완료 |
+| 쭌 + 쭌 AI | `jjun/romance-core-v1`, PR #14 | SPEC 32 Romance: 독립 고백/수락 판단 및 연애 상태 | Core CI + Preflight PASS, `main` 병합 완료 |
+| 쭌 + 쭌 AI | `jjun/household-core-v1`, PR #15 | SPEC 35 Household/Cohabitation | Core CI + Preflight PASS, `main` 병합 완료 |
+| 쭌 + 쭌 AI | `jjun/marriage-core-v1`, PR #16 | SPEC 34 약혼/결혼/별거/이혼/사별 상태 | Core CI + Preflight PASS, `main` 병합 완료 |
+| 쭌 + 쭌 AI | `jjun/pregnancy-core-v1`, PR #18 | SPEC 36 Pregnancy: 의향/생물학/임신 진행/Needs 영향 | Core CI + Preflight PASS, `main` 병합 완료 |
+| 쭌 + 쭌 AI | `jjun/birth-genetics-core-v1`, PR #19 | SPEC 37~38 Birth/Genetics + 부모/Household/LifeHistory 연결 | Core CI + Preflight PASS, `main` 병합 완료 |
+| 쭌 + 쭌 AI | `jjun/lifecycle-growth-v1`, PR #20 | SPEC 39 Baby→Elderly 성장 단계/행동 권한/LifeHistory | Core CI + Preflight PASS, `main` 병합 완료 |
+| 쭌 + 쭌 AI | `jjun/parenting-core-v1`, PR #21 | SPEC 40 자율 Parenting + 아동 발달 상태 | Core CI + Preflight PASS, `main` 병합 완료 |
 
 ## 쭌 측 현재 공유사항
 
-- PR #1 TASK_02 LifeLensCore는 `main` 병합 완료, Core CI PASS.
-- PR #2 TASK_03 Core ↔ Unreal Bridge는 structural preflight PASS, 실제 Android UHT/UBT 검증 중.
-- Android Run `34739283266`은 SHA `4a8b8d494d7e953d0eb98c2f322cdec3595a45e2` 기준이며 이후 Core/CI 변경은 포함하지 않는다.
-- PR #3 Android fast-reuse는 `task/03-fast-test`에 병합 완료. `seed / fast / full` 모드로 분리하고 fast에서는 엔진 전체 재컴파일을 금지한다.
-- PR #4 Relationship, #6 Emotion, #7 Memory, #8 Belief, #9 Social Cognition, #10 Social Utility, #11 Social Execution, #12 Simulation Social Loop, #13 Observer Read Model은 모두 Core CI + Preflight PASS 후 `main` 병합 완료.
-- Core에서는 이제 Physical Needs와 Social Cognition이 같은 tick에서 경쟁하고, Observer read DTO로 이름/Needs/감정/현재행동/관계 데이터를 안전하게 읽을 수 있다.
-- 자세한 변경 이유/검증 상태는 `tasks/HANDOFF_LOG.md`를 기준으로 한다.
+- TASK_03 Android Run `34739283266`은 실제 Android UBT에서 실패했고 Cook/Package/APK 단계에는 도달하지 못했다. 사용자 지시에 따라 실패 상태 그대로 보존하며 재실행하지 않는다.
+- P11~P17 life progression Core가 `main`에 병합되어 Romance → Cohabitation → Marriage → Pregnancy → Birth/Genetics → Growth → Parenting 기반이 연결되어 있다.
+- `Character`에는 Genetics, 부모/자녀 링크, LifeHistory, LifeStage, ChildDevelopment가 추가되어 있다.
+- Parenting은 Feed/Sleep/Bathe/Hold/Play/Educate/Discipline/Comfort/HealthCare를 상황에 따라 평가하며 양육 품질이 Attachment/Trust/Confidence/Stress/SocialSkill/Personality Development에 영향을 준다.
+- 현재 PR #22에서 Genealogy / Kinship graph를 검증 중이다.
+- Core/Simulation 데이터는 다겸 UI에서 직접 수정하지 않고 읽기 API/DTO를 통해 소비한다.
 
 ## 쭌 측 다음 작업
 
-1. 현재 TASK_03 실제 UHT/UBT 결과 확인.
-2. 컴파일 오류가 있으면 첫 실제 compiler error만 수정하고 재검증.
-3. Core Bridge에 `ResidentObservation` 변환/read API를 연결해 다겸 UI가 Unreal 계층에서 사용 가능하게 한다.
-4. Core Bridge 검증 후 PR #2 통합.
-5. Android fast pipeline의 `seed` 1회 생성 및 `fast` 실제 검증.
+1. PR #22 Genealogy Core CI/Preflight 통과 시 `main` 병합.
+2. SPEC 42 Aging: Health/Energy/Movement/Fertility/LifeGoal/FamilyRole 영향 확장.
+3. SPEC 43 Death: 사망 상태, grief/memory/social impact, 세대교체 기반.
+4. SPEC 44 LifeHistory 이벤트 범위 확장.
+5. 이후 최신 Core를 Unreal Bridge에 다시 연결할 때 기존 TASK_03 실패 원인을 반영한 새 검증 브랜치를 사용하고, 실패 Run 자체는 재실행하지 않는다.
 
 ## 다겸 측 다음 작업
 
 1. 작업 시작 전 `tasks/HANDOFF_LOG.md`와 이 보드 최신 상태 확인.
 2. `dagyeom/observer-ui-v2`에서 기본 HUD는 전체 개요만 간결하게 유지.
-3. 주민 선택 시 상세 패널 확장: 이름/나이/현재행동/욕구/성격/관계.
+3. 주민 선택 시 상세 패널 확장: 이름/나이/LifeStage/현재행동/욕구/성격/감정/관계/가족 요약.
 4. Simulation/Core 데이터는 읽기 API로만 사용하고 직접 변경 금지.
 5. UI에 필요한 데이터가 부족하면 아래 Integration Request에 기록.
 6. PR 생성 후 structural preflight 결과와 화면/동작 확인 내용을 PR 본문에 적기.
@@ -91,8 +98,8 @@
 
 ## Merge Queue
 
-- PR #2 `[UE] Bridge LifeLensCore into Unreal runtime` — 쭌 측, 실제 UHT/UBT 검증 후 merge.
-- PR #3 `[CI] Reuse compiled UE Android engine outputs` — PR #2 브랜치에 병합 완료, main 반영은 PR #2와 함께 진행.
+- PR #22 `[CORE] Add genealogy and kinship graph` — 쭌 측, Core CI/Preflight 검증 중.
+- PR #2 `[UE] Bridge LifeLensCore into Unreal runtime` — 기존 Android 검증 실패로 BLOCKED. 실패 Run 재실행 금지.
 - 다겸 Observer UI PR — 아직 생성 전.
 
 ## 완료/인수인계 규칙
