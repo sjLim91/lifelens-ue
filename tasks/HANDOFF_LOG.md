@@ -352,6 +352,17 @@
   - 한글 폰트 에셋 필요: `Content/UI`.
   - 보드 다겸 측 다음 작업 3의 "관계" 항목 미포함.
 
+### Integration Request 기록
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/observer-ui-v2`, PR #17
+- 상태: `REVIEW / 검증 대기`
+- 변경 범위:
+  - `tasks/TEAM_BOARD.md` Integration Requests: 다차원 Relationship 읽기 API, `Tools/validate_bootstrap.py` 65행 검사 대상
+- 검증 상태:
+  - 코드 변경 없음
+- 상대가 알아야 할 점:
+  - 상세 패널 "관계" 항목은 Relationship 읽기 API 제공 전까지 미구현.
+
 ---
 
 ## 다음 인수인계 포인트

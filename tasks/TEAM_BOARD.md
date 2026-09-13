@@ -87,7 +87,21 @@
 관련 브랜치:
 ```
 
-현재 열린 요청: 없음.
+```text
+[OPEN] 요청자: 다겸
+필요 API/데이터: 선택 주민의 다차원 Relationship 읽기 API (SPEC 31 차원, 대상 주민 ID/이름 포함)
+사용 목적: 상세 패널 "관계" 항목 (보드 다겸 측 다음 작업 3)
+희망 반환형/방향: Unreal USTRUCT read DTO, `ULLSimulationSubsystem` 또는 Core Bridge의 BlueprintPure 조회 함수. UI는 읽기만.
+관련 브랜치: `dagyeom/observer-ui-v2`
+```
+
+```text
+[OPEN] 요청자: 다겸
+필요 API/데이터: `Tools/validate_bootstrap.py` 65행 문자열 검사 대상을 `Source/LifeLens/UI/LLObserverHUD.cpp`에서 `Source/LifeLens/UI/LLObserverLabels.h`로 변경
+사용 목적: 관측용 문구를 `LLObserverLabels.h`에 유지
+희망 반환형/방향: 스크립트 수정 (쭌 측 소유 파일)
+관련 브랜치: `dagyeom/observer-ui-v2`
+```
 
 ## Merge Queue
 
