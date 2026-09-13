@@ -363,6 +363,33 @@
 - 상대가 알아야 할 점:
   - 상세 패널 "관계" 항목은 Relationship 읽기 API 제공 전까지 미구현.
 
+### TEAM_BOARD 충돌 처리
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/observer-ui-v2`, PR #17
+- 커밋: `26e919d`
+- 상태: `REVIEW / 검증 대기`
+- 변경 범위:
+  - `tasks/TEAM_BOARD.md`: origin/main `6ce0dd8` 내용 유지. 다겸 행 상태 `REVIEW`, Merge Queue PR #17 항목, Integration Request 재적용 및 추가.
+- 검증 상태:
+  - 코드 변경 없음
+- 상대가 알아야 할 점:
+  - 쭌 측 섹션(Active Work 쭌 행, 완료된 병렬 작업, 쭌 측 현재 공유사항, 쭌 측 다음 작업, 다겸 측 다음 작업)은 origin/main 그대로.
+  - Integration Request 추가: SocialIntent 현재행동 DTO, 감정 읽기 API, 가족 요약 읽기 API, World overview 집계 읽기 API.
+
+### Observer HUD v2 — 보드 다겸 측 다음 작업 3 갱신 반영 정정
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/observer-ui-v2`, PR #17
+- 상태: `REVIEW / 검증 대기`
+- 변경 범위:
+  - 코드 변경 없음
+- 검증 상태:
+  - 해당 없음
+- 상대가 알아야 할 점:
+  - LifeStage: LEVEL 2 Overview 탭에 표시됨 (`FLLResidentData::LifeStage`).
+  - 감정 / 관계 / 가족 요약: 읽기 API 제공 전까지 미구현. Integration Request 기록.
+  - 현재행동의 SocialIntent(Approach / Repair / Comfort / Avoid): 읽기 API 제공 전까지 미구현. Integration Request 기록.
+  - TEAM_WORKFLOW 10절 "Character visual proxy/표현 개선": `Content/Characters/**` 에셋 필요. 로컬 Unreal Editor 없음. 착수 불가.
+
 ---
 
 ## 다음 인수인계 포인트
