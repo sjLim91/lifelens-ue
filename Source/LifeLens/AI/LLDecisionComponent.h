@@ -5,18 +5,6 @@
 #include "Core/LLTypes.h"
 #include "LLDecisionComponent.generated.h"
 
-UENUM(BlueprintType)
-enum class ELLActionIntent : uint8
-{
-    Idle,
-    Eat,
-    Sleep,
-    Socialize,
-    Hygiene,
-    Toilet,
-    HaveFun
-};
-
 USTRUCT(BlueprintType)
 struct FLLDecisionResult
 {
