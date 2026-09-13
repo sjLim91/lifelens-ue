@@ -329,6 +329,29 @@
   - 한글 폰트 에셋 필요 (`Content/UI`). 주민 이름이 한글이라 `GEngine->GetSmallFont()`로는 깨질 수 있음. 로컬 에디터가 없어 아직 에셋을 만들지 못함.
   - PR #13 `ResidentObservation` / `RelationshipObservation`이 Unreal Bridge read API로 나오면 LEVEL 2에 Relationships / Emotion 탭 추가 예정.
 
+### Observer HUD v2 PR 생성 — 정정
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/observer-ui-v2`, PR #17
+- 커밋: `82f126d`, `9941d77`, `2c4b25c`, `cc7f876`
+- 상태: `REVIEW / 검증 대기`
+- 변경 범위:
+  - `Source/LifeLens/UI/LLObserverHUD.h`, `.cpp`
+  - `Source/LifeLens/UI/LLObserverLabels.h`
+  - `Source/LifeLens/UI/LLObservationSubsystem.h`, `.cpp`
+  - `Source/LifeLens/UI/LLObserverPlayerController.h`, `.cpp`
+  - `tasks/TEAM_BOARD.md`, `tasks/HANDOFF_LOG.md`
+- 검증 상태:
+  - `core-tests.yml` PASS
+  - structural preflight PASS
+  - 실제 UHT/UBT: 검증 대기
+  - 화면/동작 확인: 검증 대기
+- 상대가 알아야 할 점:
+  - `tasks/TEAM_BOARD.md` 변경 포함. SHARED FILE CHANGE. 영향 범위: 다겸 행 상태, Merge Queue 항목.
+  - 이전 항목의 "공유 파일 변경 없음"은 이 항목으로 정정.
+  - `Tools/validate_bootstrap.py` 65행 문자열 검사 대상: `LLObserverHUD.cpp`. 동일 문자열을 cpp 주석에 유지.
+  - 한글 폰트 에셋 필요: `Content/UI`.
+  - 보드 다겸 측 다음 작업 3의 "관계" 항목 미포함.
+
 ---
 
 ## 다음 인수인계 포인트
