@@ -13,6 +13,7 @@
 | 쭌 + 쭌 AI | `jjun/genealogy-core-v1`, PR #22 | SPEC 41 Genealogy / Kinship Core v1 | `Source/LifeLensCore/**` | REVIEW |
 | 쭌 + 쭌 AI | `task/03-fast-test`, PR #2 | LifeLensCore ↔ Unreal Android 검증 | Bridge/build | BLOCKED — 기존 Run 실패 상태 보존, 재실행 안 함 |
 | 다겸 + 다겸 AI | `dagyeom/observer-ui-v2` | Observer HUD v2 + 선택 주민 상세 패널 + 관찰 UX | `Source/LifeLens/UI/**`, UI/Character presentation | TODO |
+| 다겸 + 다겸 AI | `dagyeom/ui-foundation-v1` | Issue #24 UI Foundation v1 — Android landscape observer foundation (DQ-01) | `Source/LifeLens/UI/LLObserverUIFoundation.*`, `Content/UI/**` | DOING |
 
 ## 완료된 병렬 작업
 

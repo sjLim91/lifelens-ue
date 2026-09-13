@@ -305,6 +305,26 @@
   - 현재 DTO에는 Core가 가진 이름/Needs/감정/현재행동/관계가 포함된다. 나이/성별 등 Unreal ResidentData 전용 필드는 Bridge에서 기존 데이터와 합쳐 제공해야 한다.
   - 다음 쭌 측 통합 작업은 TASK_03 Bridge에서 이 DTO를 Unreal USTRUCT/읽기 API로 변환하는 것이다.
 
+## 2026-09-13 — 다겸 측 AI
+
+### UI Foundation v1 (Issue #24 / DQ-01)
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/ui-foundation-v1`, PR 생성 예정
+- 커밋: `f836cdf`
+- 상태: `IN_PROGRESS / 검증 대기`
+- 변경 범위:
+  - `Source/LifeLens/UI/LLObserverUIFoundation.h`, `.cpp` (신규)
+  - `tasks/WORK_STATE.md`, `tasks/TEAM_BOARD.md`, `tasks/HANDOFF_LOG.md` 행/항목 추가
+- 검증 상태:
+  - 로컬 `Build.sh LifeLensEditor Mac Development`: Result: Succeeded
+  - structural preflight PASS (로컬)
+  - GitHub Actions: 검증 대기
+  - 화면/동작 확인: 검증 대기
+- 상대가 알아야 할 점:
+  - 기존 파일 수정 없음. PR #17 파일과 겹치지 않음.
+  - HUD 폰트 에셋 경로 `/Game/UI/Fonts/F_LifeLensHUD`. 에셋 미생성 시 `GEngine->GetSmallFont()` fallback.
+  - 다겸 맥 로컬 컴파일 환경: UE 5.6.1, Xcode 허용 범위.
+
 ---
 
 ## 다음 인수인계 포인트
