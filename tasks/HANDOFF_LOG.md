@@ -479,6 +479,20 @@
   - PR #17 UI 코드(관측 단계, `ll.DebugTapTargets`)에 의존하여 stacked branch. PR #17 merge 후 base를 `main`으로 변경.
   - 이 브랜치에는 `tasks/WORK_STATE.md`가 없음(base가 해당 파일 추가 이전). WORK_STATE 항목은 main 병합 시 추가.
 
+### Character Presentation v1 — 크기·라벨 정정
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/character-presentation-v1`, PR #29
+- 커밋: `9dafb6f`
+- 상태: `REVIEW / 검증 대기`
+- 변경 범위:
+  - `Source/LifeLens/Characters/LLResidentPresentationComponent.h`, `.cpp`: 성인 실루엣 높이 90(몸통 74 + 머리 16), 폭 55 이내(몸통 반경 19/17), DebugBody 아래면(-45) 기준. 링 반경 36/29. 실루엣 표시 중 DebugBody를 런타임에 숨김(`bHideDebugBody`, 캐릭터 파일 미수정). 라벨 한 줄 `이름 · LifeStage`(≤1500), 이름만(≤4500), 크기 14 × 생애계수 × 거리 비율
+- 검증 상태:
+  - 화면 확인(`9ed96d3`): 실루엣·링·라벨 표시됨. LEVEL 2 탭 패널 정상. 실루엣이 DebugBody보다 약 2배 큼. 근거리에서 이름/배지 겹침, 다른 주민 라벨과 겹침
+  - 수정 후 로컬 `Build.sh LifeLensEditor Mac Development` (`9dafb6f`): Result: Succeeded. structural preflight PASS
+  - 수정 후 화면/동작 재확인: 검증 대기
+- 상대가 알아야 할 점:
+  - DebugBody는 파일상 그대로이며 표현 컴포넌트가 `SetVisibility(false)`로 숨김. 탭 바운즈(`GetActorBounds`)에는 숨긴 컴포넌트도 포함됨.
+
 ---
 
 ## 다음 인수인계 포인트
