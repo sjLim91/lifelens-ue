@@ -127,30 +127,40 @@ struct EmotionState {
 };
 
 inline EmotionDelta emotionDeltaForEvent(EmotionEventType event) {
+    EmotionDelta d;
     switch (event) {
         case EmotionEventType::PositiveSocial:
-            return {.joy = 0.18, .affection = 0.12, .relief = 0.04};
+            d.joy = 0.18; d.affection = 0.12; d.relief = 0.04;
+            break;
         case EmotionEventType::Comfort:
-            return {.joy = 0.06, .sadness = -0.10, .fear = -0.08,
-                    .affection = 0.15, .anxiety = -0.12, .relief = 0.18};
+            d.joy = 0.06; d.sadness = -0.10; d.fear = -0.08;
+            d.affection = 0.15; d.anxiety = -0.12; d.relief = 0.18;
+            break;
         case EmotionEventType::Success:
-            return {.joy = 0.20, .pride = 0.22, .relief = 0.08};
+            d.joy = 0.20; d.pride = 0.22; d.relief = 0.08;
+            break;
         case EmotionEventType::RomanticCloseness:
-            return {.joy = 0.16, .affection = 0.24, .anxiety = -0.03};
+            d.joy = 0.16; d.affection = 0.24; d.anxiety = -0.03;
+            break;
         case EmotionEventType::Rejection:
-            return {.sadness = 0.18, .embarrassment = 0.16,
-                    .affection = -0.06, .anxiety = 0.12};
+            d.sadness = 0.18; d.embarrassment = 0.16;
+            d.affection = -0.06; d.anxiety = 0.12;
+            break;
         case EmotionEventType::Conflict:
-            return {.sadness = 0.08, .anger = 0.20, .anxiety = 0.08};
+            d.sadness = 0.08; d.anger = 0.20; d.anxiety = 0.08;
+            break;
         case EmotionEventType::Betrayal:
-            return {.sadness = 0.14, .anger = 0.24, .jealousy = 0.14,
-                    .affection = -0.18, .anxiety = 0.10};
+            d.sadness = 0.14; d.anger = 0.24; d.jealousy = 0.14;
+            d.affection = -0.18; d.anxiety = 0.10;
+            break;
         case EmotionEventType::Threat:
-            return {.fear = 0.24, .anxiety = 0.20};
+            d.fear = 0.24; d.anxiety = 0.20;
+            break;
         case EmotionEventType::Loss:
-            return {.sadness = 0.24, .anxiety = 0.08, .grief = 0.32};
+            d.sadness = 0.24; d.anxiety = 0.08; d.grief = 0.32;
+            break;
     }
-    return {};
+    return d;
 }
 
 inline void applyEmotionEvent(
