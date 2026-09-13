@@ -11,6 +11,9 @@ required = [
     'Source/LifeLens/Core/LLLifeLensGameMode.cpp',
     'Source/LifeLens/Simulation/LLSimulationSubsystem.h',
     'Source/LifeLens/Simulation/LLSimulationSubsystem.cpp',
+    'Source/LifeLens/Simulation/LLCoreBridgeSubsystem.h',
+    'Source/LifeLens/Simulation/LLCoreBridgeSubsystem.cpp',
+    'Source/LifeLens/Simulation/LLCoreCompileUnit.cpp',
     'Source/LifeLens/Save/LLSaveGame.h',
     'Source/LifeLens/AI/LLDecisionComponent.cpp',
     'Source/LifeLens/Characters/LLResidentCharacter.cpp',
@@ -19,6 +22,9 @@ required = [
     'Source/LifeLens/UI/LLObservationSubsystem.h',
     'Source/LifeLens/UI/LLObserverPlayerController.cpp',
     'Source/LifeLens/UI/LLObserverHUD.cpp',
+    'Source/LifeLensCore/CMakeLists.txt',
+    'Source/LifeLensCore/include/lifelens/Simulation.h',
+    'Source/LifeLensCore/src/Simulation.cpp',
 ]
 missing = [p for p in required if not (root / p).exists()]
 if missing:
@@ -26,10 +32,25 @@ if missing:
 
 project = json.loads((root / 'LifeLens.uproject').read_text(encoding='utf-8'))
 assert project['Modules'][0]['Name'] == 'LifeLens'
+assert len(project['Modules']) == 1
 
 build_rules = (root / 'Source/LifeLens/LifeLens.Build.cs').read_text(encoding='utf-8')
 assert 'PublicIncludePaths.Add(ModuleDirectory);' in build_rules
 assert 'PrivateIncludePaths.Add(ModuleDirectory);' in build_rules
+assert 'LifeLensCore' in build_rules
+assert 'CppStandardVersion.Cpp17' in build_rules
+
+core_compile = (root / 'Source/LifeLens/Simulation/LLCoreCompileUnit.cpp').read_text(encoding='utf-8')
+assert 'LifeLensCore/src/Simulation.cpp' in core_compile
+
+bridge_h = (root / 'Source/LifeLens/Simulation/LLCoreBridgeSubsystem.h').read_text(encoding='utf-8')
+bridge_cpp = (root / 'Source/LifeLens/Simulation/LLCoreBridgeSubsystem.cpp').read_text(encoding='utf-8')
+assert 'StartFastTest' in bridge_h
+assert 'AdvanceCoreMinutes' in bridge_h
+assert 'GetRecentCoreEvents' in bridge_h
+assert 'lifelens::Simulation' in bridge_cpp
+assert 'setupDemo()' in bridge_cpp
+assert 'runMinutes' in bridge_cpp
 
 sim_h = (root / 'Source/LifeLens/Simulation/LLSimulationSubsystem.h').read_text(encoding='utf-8')
 assert 'TArray<FLLResidentData> GetResidents() const' in sim_h
@@ -81,4 +102,4 @@ for target in ('Source/LifeLens.Target.cs', 'Source/LifeLensEditor.Target.cs'):
     assert 'EngineIncludeOrderVersion.Unreal5_6' in target_text
     assert 'ExtraModuleNames.Add("LifeLens")' in target_text
 
-print('LifeLens autonomous observer structural validation: PASS')
+print('LifeLens autonomous observer + core bridge structural validation: PASS')
