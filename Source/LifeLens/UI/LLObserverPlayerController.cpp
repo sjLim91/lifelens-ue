@@ -2,15 +2,9 @@
 #include "UI/LLObservationSubsystem.h"
 #include "UI/LLObserverHUD.h"
 #include "Characters/LLResidentCharacter.h"
-#include "Blueprint/WidgetLayoutLibrary.h"
 #include "Components/InputComponent.h"
 #include "Engine/GameInstance.h"
 #include "EngineUtils.h"
-
-namespace
-{
-    constexpr float TouchTargetLogicalPixels = 48.0f;
-}
 
 ALLObserverPlayerController::ALLObserverPlayerController()
 {
@@ -76,16 +70,11 @@ void ALLObserverPlayerController::HandleTouchPressed(ETouchIndex::Type FingerInd
     ApplyTap(FVector2D(Location.X, Location.Y), ExactHit);
 }
 
-float ALLObserverPlayerController::TouchRadiusPixels() const
-{
-    const float DPIScale = FMath::Max(1.0f, UWidgetLayoutLibrary::GetViewportScale(this));
-    return TouchTargetLogicalPixels * DPIScale;
-}
-
-ALLResidentCharacter* ALLObserverPlayerController::FindResidentNearScreenPosition(const FVector2D& ScreenPosition, float RadiusPixels, float& OutDistance) const
+ALLResidentCharacter* ALLObserverPlayerController::FindResidentAtScreenPosition(const FVector2D& ScreenPosition, float RadiusPixels, float& OutDistance) const
 {
     OutDistance = -1.0f;
-    ALLResidentCharacter* Nearest = nullptr;
+    ALLResidentCharacter* Picked = nullptr;
+    float PickedDistance = -1.0f;
 
     UWorld* World = GetWorld();
     if (!World)
@@ -96,26 +85,27 @@ ALLResidentCharacter* ALLObserverPlayerController::FindResidentNearScreenPositio
     for (TActorIterator<ALLResidentCharacter> It(World); It; ++It)
     {
         ALLResidentCharacter* Resident = *It;
-        if (!Resident)
+        FBox2D Bounds;
+        FBox2D Tap;
+        if (!Resident || !ALLObserverHUD::ProjectResidentTapRect(this, Resident, RadiusPixels, Bounds, Tap))
         {
             continue;
         }
 
-        FVector2D Projected;
-        if (!ProjectWorldLocationToScreen(Resident->GetActorLocation(), Projected, false))
-        {
-            continue;
-        }
-
-        const float Distance = static_cast<float>(FVector2D::Distance(Projected, ScreenPosition));
+        const float Distance = static_cast<float>(FMath::Sqrt(Bounds.ComputeSquaredDistanceToPoint(ScreenPosition)));
         if (OutDistance < 0.0f || Distance < OutDistance)
         {
             OutDistance = Distance;
-            Nearest = Resident;
+        }
+
+        if (Tap.IsInside(ScreenPosition) && (PickedDistance < 0.0f || Distance < PickedDistance))
+        {
+            Picked = Resident;
+            PickedDistance = Distance;
         }
     }
 
-    return (Nearest && OutDistance <= RadiusPixels) ? Nearest : nullptr;
+    return Picked;
 }
 
 void ALLObserverPlayerController::ApplyTap(const FVector2D& ScreenPosition, ALLResidentCharacter* ExactHit)
@@ -134,9 +124,9 @@ void ALLObserverPlayerController::ApplyTap(const FVector2D& ScreenPosition, ALLR
     GetViewportSize(ViewportX, ViewportY);
     const FVector2D ViewportSize(ViewportX, ViewportY);
 
-    const float Radius = TouchRadiusPixels();
+    const float Radius = ALLObserverHUD::TouchTargetRadiusPixels(this);
     float NearestDistance = -1.0f;
-    ALLResidentCharacter* NearResident = FindResidentNearScreenPosition(ScreenPosition, Radius, NearestDistance);
+    ALLResidentCharacter* NearResident = FindResidentAtScreenPosition(ScreenPosition, Radius, NearestDistance);
 
     const FVector2D CanvasPosition = ObserverHUD ? ObserverHUD->ViewportToCanvas(ScreenPosition, ViewportSize) : ScreenPosition;
 

@@ -6,6 +6,7 @@
 
 class ULLSimulationSubsystem;
 class ULLObservationSubsystem;
+class ALLResidentCharacter;
 struct FLLResidentData;
 
 // Tabs of the LEVEL 2 detail panel (SPEC 57). Only tabs backed by a read API
@@ -51,6 +52,18 @@ public:
     // ratio (letterbox); its origin is the view rect's top-left.
     FVector2D ViewportToCanvas(const FVector2D& ViewportPosition, const FVector2D& ViewportSize) const;
 
+    // ---- Tap-target helpers shared with the player controller -------------
+    // All rectangles are in viewport pixels.
+
+    // Touch-target radius: 48 logical px times the Slate DPI scale.
+    static float TouchTargetRadiusPixels(const UObject* WorldContext);
+
+    // Projects the resident's render bounds (all visible components) to a
+    // screen-space rectangle, and the same rectangle grown by RadiusPixels.
+    // Returns false when the resident is off screen or behind the camera.
+    static bool ProjectResidentTapRect(const APlayerController* PlayerController, const ALLResidentCharacter* Resident,
+        float RadiusPixels, FBox2D& OutBoundsRect, FBox2D& OutTapRect);
+
     static constexpr int32 DetailTabCount = 4; // keep equal to ELLDetailTab::Count
 
 private:
@@ -73,6 +86,10 @@ private:
 
     // Greedy word wrap against MaxWidth using the HUD font metrics.
     TArray<FString> WrapText(const FString& Text, float MaxWidth, float Scale) const;
+
+    // ll.DebugTapTargets: outlines of each resident's projected bounds and tap
+    // rectangle, for checking the pick against what is rendered.
+    void DrawDebugTapTargets(const FVector2D& ViewportSize);
 
     FString CurrentActionFor(const FLLResidentData& Resident) const;
 

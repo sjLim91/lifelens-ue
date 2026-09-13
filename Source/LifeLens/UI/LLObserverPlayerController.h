@@ -32,10 +32,9 @@ private:
     // resident is within the touch-target radius.
     void ApplyTap(const FVector2D& ScreenPosition, ALLResidentCharacter* ExactHit);
 
-    // Touch-target radius in viewport pixels (48 logical px times the Slate DPI scale).
-    float TouchRadiusPixels() const;
-
-    // Nearest resident by projected screen distance. OutDistance is the
-    // distance to that resident in pixels, or -1 when no resident projects.
-    ALLResidentCharacter* FindResidentNearScreenPosition(const FVector2D& ScreenPosition, float RadiusPixels, float& OutDistance) const;
+    // Resident whose projected render bounds, grown by RadiusPixels, contain
+    // the tap; the closest bounds rectangle wins. OutDistance is the distance
+    // from the tap to the nearest resident's bounds rectangle in pixels
+    // (0 when inside), or -1 when no resident projects on screen.
+    ALLResidentCharacter* FindResidentAtScreenPosition(const FVector2D& ScreenPosition, float RadiusPixels, float& OutDistance) const;
 };

@@ -9,11 +9,21 @@
 #include "Engine/GameInstance.h"
 #include "EngineUtils.h"
 #include "SceneView.h"
+#include "Blueprint/WidgetLayoutLibrary.h"
+#include "GameFramework/PlayerController.h"
+#include "HAL/IConsoleManager.h"
 
 static_assert(static_cast<int32>(ELLDetailTab::Count) == ALLObserverHUD::DetailTabCount, "DetailTabCount must match ELLDetailTab::Count");
 
+static TAutoConsoleVariable<int32> CVarLLDebugTapTargets(
+    TEXT("ll.DebugTapTargets"),
+    0,
+    TEXT("1: draw each resident's projected bounds (yellow) and tap rectangle (cyan) on the observer HUD."),
+    ECVF_Default);
+
 namespace
 {
+    constexpr float TouchTargetLogicalPixels = 48.0f;
     // Layout constants, in unscaled pixels.
     constexpr float Margin           = 16.0f;
     constexpr float PadX             = 12.0f;
@@ -162,6 +172,93 @@ TArray<FString> ALLObserverHUD::WrapText(const FString& Text, float MaxWidth, fl
 // Input
 // ---------------------------------------------------------------------------
 
+float ALLObserverHUD::TouchTargetRadiusPixels(const UObject* WorldContext)
+{
+    const float DPIScale = WorldContext ? FMath::Max(1.0f, UWidgetLayoutLibrary::GetViewportScale(WorldContext)) : 1.0f;
+    return TouchTargetLogicalPixels * DPIScale;
+}
+
+bool ALLObserverHUD::ProjectResidentTapRect(const APlayerController* PlayerController, const ALLResidentCharacter* Resident,
+    float RadiusPixels, FBox2D& OutBoundsRect, FBox2D& OutTapRect)
+{
+    OutBoundsRect = FBox2D(ForceInit);
+    OutTapRect = FBox2D(ForceInit);
+    if (!PlayerController || !Resident)
+    {
+        return false;
+    }
+
+    // Render bounds of every component, colliding or not (the debug body has
+    // no collision and the name label is a text render component).
+    FVector Origin = FVector::ZeroVector;
+    FVector Extent = FVector::ZeroVector;
+    Resident->GetActorBounds(false, Origin, Extent, false);
+
+    for (int32 Corner = 0; Corner < 8; ++Corner)
+    {
+        const FVector World(
+            Origin.X + ((Corner & 1) ? Extent.X : -Extent.X),
+            Origin.Y + ((Corner & 2) ? Extent.Y : -Extent.Y),
+            Origin.Z + ((Corner & 4) ? Extent.Z : -Extent.Z));
+
+        FVector2D Screen;
+        if (!PlayerController->ProjectWorldLocationToScreen(World, Screen, false))
+        {
+            return false;
+        }
+        OutBoundsRect += Screen;
+    }
+
+    OutTapRect = OutBoundsRect.ExpandBy(FVector2D(RadiusPixels, RadiusPixels));
+    return true;
+}
+
+void ALLObserverHUD::DrawDebugTapTargets(const FVector2D& ViewportSize)
+{
+    const APlayerController* PlayerController = GetOwningPlayerController();
+    if (!PlayerController || !GetWorld())
+    {
+        return;
+    }
+
+    const float Radius = TouchTargetRadiusPixels(this);
+    const FLinearColor BoundsColor(1.0f, 0.9f, 0.2f, 0.9f);
+    const FLinearColor TapColor(0.3f, 0.9f, 1.0f, 0.7f);
+    const FLinearColor OriginColor(1.0f, 0.4f, 0.4f, 0.9f);
+
+    auto DrawRectOutline = [this](const FBox2D& Rect, const FLinearColor& Color)
+    {
+        DrawLine(Rect.Min.X, Rect.Min.Y, Rect.Max.X, Rect.Min.Y, Color, 1.0f);
+        DrawLine(Rect.Max.X, Rect.Min.Y, Rect.Max.X, Rect.Max.Y, Color, 1.0f);
+        DrawLine(Rect.Max.X, Rect.Max.Y, Rect.Min.X, Rect.Max.Y, Color, 1.0f);
+        DrawLine(Rect.Min.X, Rect.Max.Y, Rect.Min.X, Rect.Min.Y, Color, 1.0f);
+    };
+
+    for (TActorIterator<ALLResidentCharacter> It(GetWorld()); It; ++It)
+    {
+        FBox2D Bounds;
+        FBox2D Tap;
+        if (!ProjectResidentTapRect(PlayerController, *It, Radius, Bounds, Tap))
+        {
+            continue;
+        }
+
+        // Rectangles are viewport pixels; the canvas origin is the view rect origin.
+        const FBox2D BoundsCanvas(ViewportToCanvas(Bounds.Min, ViewportSize), ViewportToCanvas(Bounds.Max, ViewportSize));
+        const FBox2D TapCanvas(ViewportToCanvas(Tap.Min, ViewportSize), ViewportToCanvas(Tap.Max, ViewportSize));
+        DrawRectOutline(TapCanvas, TapColor);
+        DrawRectOutline(BoundsCanvas, BoundsColor);
+
+        FVector2D OriginScreen;
+        if (PlayerController->ProjectWorldLocationToScreen(It->GetActorLocation(), OriginScreen, false))
+        {
+            const FVector2D O = ViewportToCanvas(OriginScreen, ViewportSize);
+            DrawLine(O.X - 6.0f, O.Y, O.X + 6.0f, O.Y, OriginColor, 1.0f);
+            DrawLine(O.X, O.Y - 6.0f, O.X, O.Y + 6.0f, OriginColor, 1.0f);
+        }
+    }
+}
+
 FVector2D ALLObserverHUD::ViewportToCanvas(const FVector2D& ViewportPosition, const FVector2D& ViewportSize) const
 {
     if (bLastViewRectKnown)
@@ -279,6 +376,17 @@ void ALLObserverHUD::DrawHUD()
 
     // LEVEL 0 is always drawn; it is deliberately thin.
     const float OverviewBottom = DrawOverview(*Simulation, Residents, UIScale, !bHasSelection);
+
+    if (CVarLLDebugTapTargets.GetValueOnGameThread() > 0)
+    {
+        int32 ViewportX = 0;
+        int32 ViewportY = 0;
+        if (APlayerController* PlayerController = GetOwningPlayerController())
+        {
+            PlayerController->GetViewportSize(ViewportX, ViewportY);
+        }
+        DrawDebugTapTargets(FVector2D(ViewportX, ViewportY));
+    }
 
     if (!bHasSelection)
     {
