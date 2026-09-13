@@ -107,3 +107,7 @@ add_test(NAME test_death COMMAND test_death)
 add_executable(test_life_history tests/test_life_history.cpp)
 target_link_libraries(test_life_history PRIVATE lifelens_core)
 add_test(NAME test_life_history COMMAND test_life_history)
+
+add_executable(test_life_history_wiring tests/test_life_history_wiring.cpp)
+target_link_libraries(test_life_history_wiring PRIVATE lifelens_core)
+add_test(NAME test_life_history_wiring COMMAND test_life_history_wiring)
