@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <limits>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "Ids.h"
@@ -106,6 +107,9 @@ struct MemoryRecord {
     }
 };
 
+// Compatibility name retained for earlier Core code/tests.
+using MemoryEntry = MemoryRecord;
+
 struct MemoryState {
     std::vector<MemoryRecord> entries;
 
@@ -144,7 +148,7 @@ struct MemoryState {
                 result.push_back(&memory);
             }
         }
-        std::sort(result.begin(), result.end(), [=](const MemoryRecord* a, const MemoryRecord* b) {
+        std::sort(result.begin(), result.end(), [&](const MemoryRecord* a, const MemoryRecord* b) {
             return a->recallScore(currentMinute, relatedWho, queryTags) >
                    b->recallScore(currentMinute, relatedWho, queryTags);
         });
