@@ -7,6 +7,7 @@
 
 #include "Character.h"
 #include "Genetics.h"
+#include "Genealogy.h"
 #include "Household.h"
 #include "Pregnancy.h"
 
@@ -18,6 +19,7 @@ enum class BirthResult {
     NotDue,
     WrongPartner,
     DuplicateChild,
+    GenealogyConflict,
     Success
 };
 
@@ -72,13 +74,18 @@ inline BirthOutcome performBirth(
     BirthBook& births,
     std::mt19937_64& rng,
     int currentMinute,
-    double geneticVariation=0.08)
+    double geneticVariation=0.08,
+    GenealogyBook* genealogy=nullptr)
 {
     BirthOutcome outcome;
     if(gestationalParent.id==0 || geneticPartner.id==0 || childId==0 ||
        gestationalParent.id==geneticPartner.id || childName.empty()) return outcome;
     if(childId==gestationalParent.id || childId==geneticPartner.id || births.find(childId)!=nullptr){
         outcome.result=BirthResult::DuplicateChild;
+        return outcome;
+    }
+    if(genealogy!=nullptr && !genealogy->canRegisterBirth(childId,gestationalParent.id,geneticPartner.id)){
+        outcome.result=BirthResult::GenealogyConflict;
         return outcome;
     }
 
@@ -143,6 +150,11 @@ inline BirthOutcome performBirth(
         gestationalParent.childrenIds.push_back(child.id);
     if(!containsCharacterId(geneticPartner.childrenIds,child.id))
         geneticPartner.childrenIds.push_back(child.id);
+
+    if(genealogy!=nullptr){
+        // Prevalidated above, so a successful birth cannot create a contradictory family edge.
+        genealogy->registerBirth(child.id,gestationalParent.id,geneticPartner.id);
+    }
 
     applyEmotionEvent(gestationalParent.emotion,EmotionEventType::PositiveSocial,0.8);
     applyEmotionEvent(geneticPartner.emotion,EmotionEventType::PositiveSocial,0.7);
