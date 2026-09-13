@@ -149,6 +149,43 @@
   - 다겸 UI 파일과 충돌하지 않으며 Core 내부 전용 작업이다.
   - Memory read API는 TASK_03 Bridge 통합 후 별도 요청/노출한다.
 
+### Memory Core v1 완료
+- 작성자: 쭌 측 AI
+- 브랜치/PR: `jjun/memory-core-v1`, PR #7
+- 상태: `DONE / main 병합 완료`
+- 변경:
+  - MemoryRecord: Who / What / Where / When / Emotion / Importance / Confidence / Witnessed / Source / Decay / Tags
+  - MemorySource: DirectWitness / ToldByOther / Inferred
+  - 중요도·감정강도에 따른 시간 감쇠 보호
+  - source reliability를 반영한 effectiveConfidence
+  - 인물/태그/최근성/중요도/감정강도 기반 recallScore
+  - bestRecall / recallAbove
+  - 기존 `MemoryEntry` 이름은 alias로 호환 유지
+  - `test_memory` 추가
+- 검증:
+  - LifeLens Core Tests PASS
+  - LifeLens Preflight PASS
+- 병합 커밋: `e60127e0f910c075ff824ae088304080c6e84f80`
+- 상대가 알아야 할 점:
+  - NPC는 직접 본 것, 전해 들은 것, 추론한 것을 동일한 확신도로 취급하지 않는다.
+  - Memory 원본은 Core가 소유하고 UI에는 Bridge/read DTO를 통해 노출한다.
+
+### Belief Core v1 시작
+- 작성자: 쭌 측 AI
+- 브랜치: `jjun/belief-core-v1`
+- 상태: `DOING / 검증 대기`
+- 목적:
+  - SPEC 30의 `Memory → Belief → Relationship → Decision` 중 Memory에서 Belief로 가는 첫 연결 계층 구축.
+- 예정 범위:
+  - subject + proposition 단위 BeliefRecord
+  - 지지/반박 evidence 누적
+  - Memory effectiveConfidence / importance 기반 evidence strength
+  - belief stance/confidence 계산 및 시간 갱신
+  - C++17 Core 테스트
+- 상대가 알아야 할 점:
+  - 다겸 UI 영역 및 TASK_03 Bridge/Build 파일은 수정하지 않는다.
+  - Belief는 향후 상세 주민 패널의 고급 정보가 될 수 있으나 기본 HUD에는 노출하지 않는다.
+
 ---
 
 ## 다음 인수인계 포인트
@@ -157,7 +194,7 @@
 - PR #2 실제 UHT/UBT 결과
 - Core Bridge가 `main`에 병합되면 다겸 UI에서 사용 가능한 읽기 API 목록
 - Android fast pipeline의 seed/fast 실제 성공 여부와 사용법
-- Relationship / Emotion / Memory Core가 Bridge에 연결될 때 UI용 read DTO/API 목록
+- Relationship / Emotion / Memory / Belief Core가 Bridge에 연결될 때 UI용 read DTO/API 목록
 
 ### 다겸 측이 쭌 측에 제공해야 하는 것
 - `dagyeom/observer-ui-v2`에서 수정한 파일 목록
