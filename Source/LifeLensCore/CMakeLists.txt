@@ -55,3 +55,7 @@ add_test(NAME test_social_utility COMMAND test_social_utility)
 add_executable(test_decision_execution tests/test_decision_execution.cpp)
 target_link_libraries(test_decision_execution PRIVATE lifelens_core)
 add_test(NAME test_decision_execution COMMAND test_decision_execution)
+
+add_executable(test_simulation_social_loop tests/test_simulation_social_loop.cpp)
+target_link_libraries(test_simulation_social_loop PRIVATE lifelens_core)
+add_test(NAME test_simulation_social_loop COMMAND test_simulation_social_loop)
