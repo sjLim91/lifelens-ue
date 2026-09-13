@@ -54,6 +54,10 @@ private:
     // only drawn when nothing is selected.
     float DrawOverview(const ULLSimulationSubsystem& Simulation, const TArray<FLLResidentData>& Residents, float UIScale, bool bShowHint);
 
+    // World overview panel (SPEC 61). Opened by tapping the overview band at
+    // LEVEL 0. Only values available from the read API are drawn.
+    void DrawWorldOverview(const ULLSimulationSubsystem& Simulation, const TArray<FLLResidentData>& Residents, float UIScale, float TopY);
+
     // LEVEL 1. TopY is the Y just below the overview band.
     void DrawQuickInspector(const FLLResidentData& Resident, float UIScale, float TopY);
 
@@ -68,10 +72,13 @@ private:
     ULLObservationSubsystem* GetObservation() const;
 
     // Chrome rectangles from the last DrawHUD, in canvas pixels.
+    FBox2D OverviewBandRect;
+    FBox2D WorldOverviewRect;
     FBox2D QuickInspectorRect;
     FBox2D DetailPanelRect;
     FBox2D DetailTabRects[DetailTabCount];
 
     ELLDetailTab ActiveTab = ELLDetailTab::Overview;
     FGuid LastDetailResidentId;
+    bool bWorldOverviewOpen = false;
 };

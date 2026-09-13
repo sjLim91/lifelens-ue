@@ -195,6 +195,17 @@ bool ALLObserverHUD::HandleTap(const FVector2D& ScreenPosition)
 
         case ELLObservationLevel::World:
         default:
+            if (RectContains(OverviewBandRect, ScreenPosition))
+            {
+                bWorldOverviewOpen = !bWorldOverviewOpen;
+                return true;
+            }
+            if (bWorldOverviewOpen)
+            {
+                // Inside the panel: swallowed. Outside: close it.
+                bWorldOverviewOpen = false;
+                return true;
+            }
             return false;
     }
 }
@@ -207,6 +218,8 @@ void ALLObserverHUD::DrawHUD()
 {
     Super::DrawHUD();
 
+    OverviewBandRect = FBox2D(ForceInit);
+    WorldOverviewRect = FBox2D(ForceInit);
     QuickInspectorRect = FBox2D(ForceInit);
     DetailPanelRect = FBox2D(ForceInit);
     for (FBox2D& Rect : DetailTabRects)
@@ -239,8 +252,14 @@ void ALLObserverHUD::DrawHUD()
 
     if (!bHasSelection)
     {
+        if (bWorldOverviewOpen)
+        {
+            DrawWorldOverview(*Simulation, Residents, UIScale, OverviewBottom);
+        }
         return;
     }
+
+    bWorldOverviewOpen = false;
 
     if (Observation->IsDetailOpen())
     {
@@ -299,6 +318,7 @@ float ALLObserverHUD::DrawOverview(const ULLSimulationSubsystem& Simulation, con
 
     // Full-width translucent band from the top edge; the world stays visible underneath.
     DrawRect(FLinearColor(0.0f, 0.0f, 0.0f, OverviewAlpha), 0.0f, 0.0f, Canvas->ClipX, BandHeight);
+    OverviewBandRect = FBox2D(FVector2D(0.0f, 0.0f), FVector2D(Canvas->ClipX, BandHeight));
 
     float CursorY = Pad;
     DrawText(StatusLine, TextPrimary, X, CursorY, Font, TitleScale, false);
@@ -314,6 +334,116 @@ float ALLObserverHUD::DrawOverview(const ULLSimulationSubsystem& Simulation, con
     }
 
     return BandHeight;
+}
+
+void ALLObserverHUD::DrawWorldOverview(const ULLSimulationSubsystem& Simulation, const TArray<FLLResidentData>& Residents, float UIScale, float TopY)
+{
+    UFont* Font = HUDFont();
+
+    const float TitleScale = 1.05f * UIScale;
+    const float RowScale   = 0.90f * UIScale;
+    const float Gap = LineGap * UIScale;
+    const float Pad = PadY * UIScale;
+    const float InnerPadX = PadX * UIScale;
+
+    const int64 TotalMinutes = Simulation.GetSimulationMinute();
+    const int64 Day = TotalMinutes / 1440 + 1;
+    const int32 MinuteOfDay = static_cast<int32>(TotalMinutes % 1440);
+    const int32 Hour = MinuteOfDay / 60;
+    const int32 Minute = MinuteOfDay % 60;
+
+    int32 StageCounts[5] = { 0, 0, 0, 0, 0 };
+    for (const FLLResidentData& Resident : Residents)
+    {
+        const int32 Index = static_cast<int32>(Resident.LifeStage);
+        if (Index >= 0 && Index < 5)
+        {
+            ++StageCounts[Index];
+        }
+    }
+
+    // Rows: title, day/time, population, one row per life stage.
+    TArray<FRow> Rows;
+    {
+        FRow Title;
+        Title.Left = LLObserverText::WorldOverviewTitle;
+        Title.LeftColor = TextPrimary;
+        Title.Scale = TitleScale;
+        Rows.Add(Title);
+
+        FRow Clock;
+        Clock.Left = FString::Printf(TEXT("Day %lld  %02d:%02d"), static_cast<long long>(Day), Hour, Minute);
+        Clock.LeftColor = TextSecondary;
+        Clock.Scale = RowScale;
+        Rows.Add(Clock);
+
+        FRow Population;
+        Population.Left = LLObserverText::PopulationLabel;
+        Population.Right = FString::FromInt(Residents.Num());
+        Population.RightColor = TextPrimary;
+        Population.Scale = RowScale;
+        Population.GapBefore = SectionGap;
+        Rows.Add(Population);
+
+        const ELLLifeStage Stages[5] = { ELLLifeStage::Infant, ELLLifeStage::Child, ELLLifeStage::Teen, ELLLifeStage::Adult, ELLLifeStage::Elder };
+        for (int32 Index = 0; Index < 5; ++Index)
+        {
+            FRow Row;
+            Row.Left = LLObserverLabels::LifeStageToString(Stages[Index]);
+            Row.Right = FString::FromInt(StageCounts[static_cast<int32>(Stages[Index])]);
+            Row.RightColor = TextPrimary;
+            Row.Scale = RowScale;
+            Rows.Add(Row);
+        }
+    }
+
+    float WidestLeft = 0.0f;
+    float WidestRight = 0.0f;
+    float ContentHeight = 0.0f;
+    TArray<float> Heights;
+    for (const FRow& Row : Rows)
+    {
+        float W = 0.0f, H = 0.0f;
+        GetTextSize(Row.Left, W, H, Font, Row.Scale);
+        Heights.Add(H);
+        ContentHeight += H + Row.GapBefore * UIScale;
+        if (!Row.Right.IsEmpty())
+        {
+            WidestLeft = FMath::Max(WidestLeft, W);
+            float RW = 0.0f, RH = 0.0f;
+            GetTextSize(Row.Right, RW, RH, Font, Row.Scale);
+            WidestRight = FMath::Max(WidestRight, RW);
+        }
+        else
+        {
+            WidestLeft = FMath::Max(WidestLeft, W);
+        }
+    }
+    ContentHeight += Gap * FMath::Max(0, Rows.Num() - 1);
+
+    const float RightColumnX = WidestLeft + 2.0f * InnerPadX;
+    const float MaxPanelWidth = FMath::Min(PanelMaxWidth * UIScale, Canvas->ClipX * PanelWidthRatio);
+    const float PanelWidth = FMath::Clamp(RightColumnX + WidestRight + 2.0f * InnerPadX, FMath::Min(PanelMinWidth * UIScale, MaxPanelWidth), MaxPanelWidth);
+    const float PanelHeight = ContentHeight + 2.0f * Pad;
+    const float PanelX = Margin * UIScale;
+    const float PanelY = TopY + Margin * UIScale;
+
+    DrawRect(FLinearColor(0.0f, 0.0f, 0.0f, InspectorAlpha), PanelX, PanelY, PanelWidth, PanelHeight);
+    WorldOverviewRect = FBox2D(FVector2D(PanelX, PanelY), FVector2D(PanelX + PanelWidth, PanelY + PanelHeight));
+
+    float CursorY = PanelY + Pad;
+    const float TextX = PanelX + InnerPadX;
+    for (int32 Index = 0; Index < Rows.Num(); ++Index)
+    {
+        const FRow& Row = Rows[Index];
+        CursorY += Row.GapBefore * UIScale;
+        DrawText(Row.Left, Row.LeftColor, TextX, CursorY, Font, Row.Scale, false);
+        if (!Row.Right.IsEmpty())
+        {
+            DrawText(Row.Right, Row.RightColor, TextX + RightColumnX, CursorY, Font, Row.Scale, false);
+        }
+        CursorY += Heights[Index] + Gap;
+    }
 }
 
 void ALLObserverHUD::DrawQuickInspector(const FLLResidentData& Resident, float UIScale, float TopY)

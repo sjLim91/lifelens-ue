@@ -22,6 +22,10 @@ namespace LLObserverText
     // with the note there until the check is moved to this header.
     inline const TCHAR* const TapHint            = TEXT("Tap/click a resident for details");
 
+    // ---- World overview (SPEC 61) -----------------------------------------
+    inline const TCHAR* const WorldOverviewTitle = TEXT("World");
+    inline const TCHAR* const PopulationLabel    = TEXT("Population");
+
     // ---- LEVEL 1 quick inspector -------------------------------------------
     inline const TCHAR* const NowPrefix          = TEXT("Now: ");
     inline const TCHAR* const SummaryJoin        = TEXT(" · ");
