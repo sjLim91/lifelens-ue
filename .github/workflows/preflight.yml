@@ -1,0 +1,35 @@
+name: LifeLens Preflight
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  structural-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate LifeLens bootstrap
+        run: python Tools/validate_bootstrap.py
+
+      - name: Verify Unreal project metadata
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = json.loads(Path('LifeLens.uproject').read_text(encoding='utf-8'))
+          assert p['EngineAssociation'] == '5.6'
+          assert any(m['Name'] == 'LifeLens' and m['Type'] == 'Runtime' for m in p['Modules'])
+          print('Unreal metadata preflight: PASS')
+          PY
