@@ -75,9 +75,9 @@ Last reconciled: 2026-09-13 KST
 - Owner: 다겸 + 다겸 AI
 - Branch: `dagyeom/ui-foundation-v1`
 - Work item: Issue #24 `[DAGYEOM] UI Foundation v1 — Android landscape observer foundation`
-- Last known HEAD: `f836cdf`
-- PR: 생성 예정
-- Status: `IN_PROGRESS`
+- Last known HEAD: `b512f54`
+- PR: #26 `[UI] UI Foundation v1 — Android landscape observer foundation (Issue #24)`
+- Status: `WAITING_CI`
 - CI:
   - 로컬 `Build.sh LifeLensEditor Mac Development` — Result: Succeeded (UE 5.6.1, Xcode 허용 범위)
   - 로컬 `Tools/validate_bootstrap.py` — PASS
