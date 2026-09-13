@@ -5,53 +5,83 @@
 ## 기준 문서
 
 - `docs/LIFELENS_SPEC_v1.1.md` — 제품 설계 기준. 요구사항을 사용자에게 다시 묻지 말고 이 문서를 기준으로 진행한다.
-- `docs/BUILD_STRATEGY_v1.2.md` — 빌드/검증 전략. SPEC 72~76절(빌드 전략, Phase 완료 조건)과 충돌하면 **이 문서가 우선**한다.
-- `tasks/` — 실제 작업 지시서. 번호 순서대로 진행한다. 지시서 하나가 끝나기 전에 다음 지시서를 시작하지 않는다.
+- `docs/BUILD_STRATEGY_v1.2.md` — 빌드/검증 전략의 기본 원칙.
+- `BUILD_LESSONS.md` — 실제 빌드에서 확인된 성공/실패 사실. 빌드 전략 문서와 충돌하면 **실제 검증 결과가 우선**한다.
+- `docs/TEAM_WORKFLOW.md` — 쭌/다겸 2인 협업, 코드 소유권, 충돌 방지 규칙.
+- `tasks/TEAM_BOARD.md` — 현재 담당자/브랜치/작업 잠금 상태. 작업 시작 전에 반드시 확인한다.
+- `tasks/` — 실제 작업 지시서. 같은 담당 영역에서는 번호 순서를 따른다.
 
 ## 절대 규칙
 
-1. **Unreal Engine 소스를 컴파일하지 않는다.** 엔진은 Epic 프리빌드 컨테이너 이미지로만 가져온다. `Engine/Build/BatchFiles/Build.sh`나 `Setup.sh`, `GenerateProjectFiles.sh`를 엔진 저장소에 대해 실행하는 워크플로우를 작성하지 않는다.
-2. **APK 빌드는 확인 수단이 아니다.** 로직 검증은 `Source/LifeLensCore` 의 콘솔 하네스와 테스트로 한다. Android 패키징은 `workflow_dispatch`(수동)로만 실행한다.
-3. **`LifeLensCore`는 Unreal에 의존하지 않는다.** `#include "CoreMinimal.h"` 같은 엔진 헤더, `UObject`, `TArray`, `FString`을 코어에서 사용하지 않는다. 표준 C++17만 사용한다. 이 라이브러리는 Termux(Android clang)에서도 컴파일되어야 한다.
-4. 캐릭터 이름을 ID로 쓰지 않는다. 모든 캐릭터는 GUID(코어에서는 `uint64_t` 또는 128bit 구조체)를 가진다.
+1. **장시간 Unreal 빌드를 맹목적으로 반복하지 않는다.** Core 테스트와 Preflight를 먼저 사용한다. Android는 `dev-slim-5.6.0`에 Android target이 없다는 실제 실패가 확인되었으므로, APK 경로에서는 동일 방식을 반복하지 않는다. 필요할 때만 검증된 UE 5.6 source-build 경로를 사용한다.
+2. **APK 빌드는 일상 로직 확인 수단이 아니다.** 로직 검증은 `Source/LifeLensCore`의 콘솔 하네스와 테스트를 우선한다. Android 패키징은 수동 마일스톤 검증으로 사용한다.
+3. **`LifeLensCore`는 Unreal에 의존하지 않는다.** `#include "CoreMinimal.h"`, `UObject`, `TArray`, `FString` 등 엔진 타입을 코어에서 사용하지 않는다. 표준 C++17만 사용하고 Termux(Android clang)에서도 컴파일 가능해야 한다.
+4. 캐릭터 이름을 ID로 쓰지 않는다. 모든 캐릭터는 GUID 또는 코어의 독립 ID를 가진다.
 5. Relationship을 숫자 하나로 표현하지 않는다. SPEC 31절의 다차원 구조를 따른다.
 6. 무료 범위를 벗어나는 서비스(유료 CI, 유료 API, 유료 클라우드)를 필수 의존성으로 넣지 않는다.
+7. `main`에 직접 기능 개발하지 않는다. 자신의 작업 브랜치에서 구현하고 PR로 통합한다.
+8. 상대 담당 영역과 `tasks/TEAM_BOARD.md`에서 `DOING`으로 잠긴 파일을 임의로 수정하지 않는다.
+9. 공동 소유 파일을 변경하면 PR에 `SHARED FILE CHANGE`와 영향 범위를 명시한다.
+10. 실제 artifact가 없으면 APK/패키징 성공이라고 말하지 않는다.
 
 ## 작업 방식
 
-- 계획만 서술하지 말고 실제 파일을 생성/수정한다.
-- 한 번의 작업은 하나의 지시서 범위를 넘지 않는다. 지시서에 없는 기능을 "겸사겸사" 추가하지 않는다.
-- 변경 후 반드시 해당 지시서의 "완료 조건"을 스스로 확인하고, 확인 방법(실행한 명령과 결과)을 커밋 메시지 또는 PR 본문에 적는다.
-- 워크플로우 YAML을 수정할 때는 무거운 잡(패키징) 이전에 반드시 Preflight 잡(도구 버전 확인, 디스크 확인)이 실행되게 한다.
-- 에러가 나면 로그 전체를 요약해 원인을 특정한 뒤 고친다. "다시 실행해 보세요"로 끝내지 않는다.
+- 계획만 서술하지 말고 가능한 범위에서 실제 파일을 생성/수정한다.
+- 작업 시작 전에 `tasks/TEAM_BOARD.md`의 현재 브랜치/담당 범위를 확인한다.
+- 한 번의 작업은 하나의 명확한 목적을 가진다. 지시서에 없는 기능을 겸사겸사 추가하지 않는다.
+- 상대 영역의 데이터/API가 필요하면 직접 내부 구현을 건드리지 말고 `tasks/TEAM_BOARD.md`의 Integration Request에 남긴다.
+- 변경 후 반드시 완료 조건을 확인하고 실행한 테스트/검증 결과를 커밋 메시지 또는 PR 본문에 적는다.
+- 워크플로우 YAML을 수정할 때는 무거운 잡 전에 짧은 사전 검증을 둔다.
+- 에러가 나면 정확한 실패 Step과 첫 실제 원인을 확인한 뒤 고친다. 같은 실패를 확인 없이 재실행하지 않는다.
+
+## 담당 영역
+
+### 쭌 / sjLim91 / 쭌 측 AI
+
+- `Source/LifeLensCore/**`
+- `Source/LifeLens/AI/**`
+- `Source/LifeLens/Simulation/**`
+- `Source/LifeLens/World/**`
+- Save/Load, 관계/연애/가족/세대 로직
+- Core ↔ Unreal bridge
+- Android build / CI / 테스트 / 통합
+
+### 다겸 / STILLofficial / 다겸 측 AI
+
+- `Source/LifeLens/UI/**`
+- Character 외형/표현 계층
+- `Content/UI/**`
+- `Content/Characters/**`
+- Observer HUD / 주민 상세 패널 / 관찰 UX
+- 카메라/표현/레이아웃/시각 피드백
+
+세부 규칙과 공동 소유 파일은 `docs/TEAM_WORKFLOW.md`를 따른다.
 
 ## 커밋 / 브랜치
 
-- `main`은 항상 코어 테스트가 통과하는 상태를 유지한다.
-- 지시서 단위로 브랜치를 만든다: `task/01-ci-prebuilt-engine`, `task/02-core-sim`, ...
-- 커밋 메시지 접두어: `core:`, `ue:`, `ci:`, `docs:`
+- `main`은 항상 통합 가능한 안정 상태를 유지한다.
+- 쭌: `jjun/<scope>-<task>` 또는 기존 `task/<number>-...`
+- 다겸: `dagyeom/<scope>-<task>`
+- 커밋 메시지 접두어: `core:`, `ue:`, `ui:`, `ci:`, `docs:`, `fix:`
 
 ## 디렉터리
 
-```
+```text
 lifelens-ue/
   AGENTS.md
+  BUILD_LESSONS.md
   docs/
     LIFELENS_SPEC_v1.1.md
     BUILD_STRATEGY_v1.2.md
+    TEAM_WORKFLOW.md
   tasks/
+    TEAM_BOARD.md
   Source/
     LifeLensCore/        # 순수 C++ 시뮬레이션 (Unreal 무관)
-      include/
-      src/
-      harness/           # 콘솔 관찰 하네스
-      tests/
-      CMakeLists.txt
-    LifeLens/            # Unreal 게임 모듈 (LifeLensCore를 링크)
-  LifeLens.uproject
+    LifeLens/            # Unreal 게임 모듈
   Config/
   Content/
-  .github/workflows/
-    core-tests.yml       # push마다, ~1분
-    android-package.yml  # 수동 실행만
+  .github/
+    CODEOWNERS
+    workflows/
 ```
