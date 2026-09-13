@@ -39,3 +39,7 @@ add_test(NAME test_emotion COMMAND test_emotion)
 add_executable(test_memory tests/test_memory.cpp)
 target_link_libraries(test_memory PRIVATE lifelens_core)
 add_test(NAME test_memory COMMAND test_memory)
+
+add_executable(test_belief tests/test_belief.cpp)
+target_link_libraries(test_belief PRIVATE lifelens_core)
+add_test(NAME test_belief COMMAND test_belief)
