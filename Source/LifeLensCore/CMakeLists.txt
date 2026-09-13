@@ -27,3 +27,7 @@ add_test(NAME test_utility COMMAND test_utility)
 add_executable(test_determinism tests/test_determinism.cpp)
 target_link_libraries(test_determinism PRIVATE lifelens_core)
 add_test(NAME test_determinism COMMAND test_determinism)
+
+add_executable(test_relationship tests/test_relationship.cpp)
+target_link_libraries(test_relationship PRIVATE lifelens_core)
+add_test(NAME test_relationship COMMAND test_relationship)
