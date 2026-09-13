@@ -11,7 +11,7 @@
 | 담당 | 브랜치 | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
 | 쭌 + 쭌 AI | `task/03-fast-test` | LifeLensCore ↔ Unreal bridge 실제 UE/Android 검증 + 재빌드 방지 파이프라인 | `Source/LifeLens/Simulation/**`, build/CI | DOING |
-| 쭌 + 쭌 AI | `jjun/social-execution-v1` | Unified Utility Decision의 SocialIntent 실제 실행 계층 + 테스트 | `Source/LifeLensCore/**` 중 DecisionExecution 전용 파일/테스트 | DOING |
+| 쭌 + 쭌 AI | `jjun/simulation-social-loop-v1` | Unified Utility의 SocialIntent를 실제 `Simulation::step()` 루프에서 실행 + 회귀 테스트 | `Source/LifeLensCore/**` 중 Simulation/Core social loop | DOING |
 | 다겸 + 다겸 AI | `dagyeom/observer-ui-v2` | Observer HUD v2 + 선택 주민 상세 패널 + 관찰 UX | `Source/LifeLens/UI/**`, UI/Character presentation | TODO |
 
 ## 완료된 병렬 작업
@@ -24,22 +24,23 @@
 | 쭌 + 쭌 AI | `jjun/belief-core-v1`, PR #8 | SPEC 30 Memory→Belief Core v1 | Core CI + Preflight PASS, `main` 병합 완료 |
 | 쭌 + 쭌 AI | `jjun/social-cognition-v1`, PR #9 | Social Event→Emotion→Memory→Belief→Relationship 연결 | Core CI + Preflight PASS, `main` 병합 완료 |
 | 쭌 + 쭌 AI | `jjun/social-utility-v1`, PR #10 | Relationship/Emotion/Memory/Belief를 Unified Utility Decision에 반영 | Core CI + Preflight PASS, `main` 병합 완료 |
+| 쭌 + 쭌 AI | `jjun/social-execution-v1`, PR #11 | Approach/Repair/Comfort/Avoid 실제 Core 상태/사회 사건 실행 | Core CI + Preflight PASS, `main` 병합 완료 |
 
 ## 쭌 측 현재 공유사항
 
 - PR #1 TASK_02 LifeLensCore는 `main` 병합 완료, Core CI PASS.
 - PR #2 TASK_03 Core ↔ Unreal Bridge는 structural preflight PASS, 실제 Android UHT/UBT 검증 중.
-- 현재 Android Run `34739283266`은 SHA `4a8b8d494d7e953d0eb98c2f322cdec3595a45e2` 기준이라 이후 CI 변경은 포함하지 않는다.
+- Android Run `34739283266`은 SHA `4a8b8d494d7e953d0eb98c2f322cdec3595a45e2` 기준이며 여전히 `in_progress`; 이후 Core/CI 변경은 포함하지 않는다.
 - PR #3 Android fast-reuse는 `task/03-fast-test`에 병합 완료. `seed / fast / full` 모드로 분리하고 fast에서는 엔진 전체 재컴파일을 금지한다.
-- PR #4 Relationship, #6 Emotion, #7 Memory, #8 Belief, #9 Social Cognition, #10 Social Utility는 모두 Core CI + Preflight PASS 후 `main` 병합 완료.
-- TASK_03 장시간 빌드와 별개로 `jjun/social-execution-v1`에서 SocialIntent가 실제 상태 변화/사회 사건으로 실행되도록 병렬 진행한다.
+- PR #4 Relationship, #6 Emotion, #7 Memory, #8 Belief, #9 Social Cognition, #10 Social Utility, #11 Social Execution은 모두 Core CI + Preflight PASS 후 `main` 병합 완료.
+- TASK_03 장시간 빌드와 별개로 `jjun/simulation-social-loop-v1`에서 SocialIntent를 실제 Simulation tick에 연결한다.
 - 자세한 변경 이유/검증 상태는 `tasks/HANDOFF_LOG.md`를 기준으로 한다.
 
 ## 쭌 측 다음 작업
 
 1. 현재 TASK_03 실제 UHT/UBT 결과 확인.
 2. 컴파일 오류가 있으면 첫 실제 compiler error만 수정하고 재검증.
-3. `jjun/social-execution-v1`에서 Approach/Repair/Comfort/Avoid 실행 결과를 Core 상태에 반영하는 실행기와 테스트 구현.
+3. `jjun/simulation-social-loop-v1`에서 `Simulation::step()`이 SocialIntent를 실제 실행하고 로그/Memory/Relationship을 변화시키는지 테스트.
 4. Core Bridge 검증 후 PR #2 통합.
 5. Android fast pipeline의 `seed` 1회 생성 및 `fast` 실제 검증.
 
@@ -91,7 +92,7 @@
 
 - PR #2 `[UE] Bridge LifeLensCore into Unreal runtime` — 쭌 측, 실제 UHT/UBT 검증 후 merge.
 - PR #3 `[CI] Reuse compiled UE Android engine outputs` — PR #2 브랜치에 병합 완료, main 반영은 PR #2와 함께 진행.
-- `jjun/social-execution-v1` Social Execution Core PR — 구현/코어 테스트 후 생성 예정.
+- `jjun/simulation-social-loop-v1` Simulation Social Loop PR — 구현/코어 테스트 후 생성 예정.
 - 다겸 Observer UI PR — 아직 생성 전.
 
 ## 완료/인수인계 규칙
