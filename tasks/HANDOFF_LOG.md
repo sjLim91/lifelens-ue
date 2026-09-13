@@ -104,6 +104,51 @@
   - 다겸 UI에서 향후 관계를 표시할 때 단일 `affinity`가 아니라 위 다차원 데이터가 기준이 된다.
   - 현재 다겸 UI 브랜치와 파일 충돌 없음. `Source/LifeLens/UI/**`는 수정하지 않음.
 
+### Relationship Core v1 완료
+- 작성자: 쭌 측 AI
+- 브랜치/PR: `jjun/relationship-core-v1`, PR #4
+- 상태: `DONE / main 병합 완료`
+- 검증:
+  - LifeLens Core Tests PASS
+  - LifeLens Preflight PASS
+- 병합 커밋: `a6e1c75d8f72ecd5aef0854525d1c9135d2dfc0d`
+- 상대가 알아야 할 점:
+  - Relationship 원본 상태는 13차원이며 UI/AI에서 단일 affinity로 축약해 원본을 대체하면 안 된다.
+  - 읽기 DTO/API는 TASK_03 Bridge 통합 후 별도 노출한다.
+
+### Emotion Core v1 완료
+- 작성자: 쭌 측 AI
+- 브랜치/PR: `jjun/emotion-core-v1`, PR #6
+- 상태: `DONE / main 병합 완료`
+- 변경:
+  - Joy, Sadness, Anger, Fear, Embarrassment, Pride, Jealousy, Affection, Anxiety, Relief, Grief 11개 감정 차원
+  - 사건 기반 EmotionEventType / EmotionDelta
+  - 시간 감쇠 decay
+  - 기존 요약 채널 valence/arousal 유지
+  - `test_emotion` 추가
+- 검증:
+  - LifeLens Core Tests PASS
+  - LifeLens Preflight PASS
+- 병합 커밋: `c58b03a840c43be57c4a7b4173cd4b1b2aec3542`
+- 상대가 알아야 할 점:
+  - UI는 필요에 따라 세부 감정 또는 valence/arousal 요약을 표시할 수 있지만, 세부 감정 원본을 잃지 않는다.
+  - TASK_03 Bridge/Build 및 다겸 UI 파일은 수정하지 않았다.
+
+### Memory Core v1 시작
+- 작성자: 쭌 측 AI
+- 브랜치: `jjun/memory-core-v1`
+- 상태: `DOING / 검증 대기`
+- 목적:
+  - MASTER SPEC 29~30의 Memory → Belief → Relationship → Decision 기반을 만들기 위한 기억 데이터 모델 구축.
+- 예정 범위:
+  - Who / What / Where / When / Emotion / Importance / Confidence / Witnessed / Source / Decay / Tags
+  - 기억 신뢰도/중요도 시간 감쇠
+  - 태그/인물/최근성 기반 recall score
+  - C++17 Core 테스트
+- 상대가 알아야 할 점:
+  - 다겸 UI 파일과 충돌하지 않으며 Core 내부 전용 작업이다.
+  - Memory read API는 TASK_03 Bridge 통합 후 별도 요청/노출한다.
+
 ---
 
 ## 다음 인수인계 포인트
@@ -112,7 +157,7 @@
 - PR #2 실제 UHT/UBT 결과
 - Core Bridge가 `main`에 병합되면 다겸 UI에서 사용 가능한 읽기 API 목록
 - Android fast pipeline의 seed/fast 실제 성공 여부와 사용법
-- Relationship Core v1이 병합되면 UI용 Relationship read DTO/API 요청 형식
+- Relationship / Emotion / Memory Core가 Bridge에 연결될 때 UI용 read DTO/API 목록
 
 ### 다겸 측이 쭌 측에 제공해야 하는 것
 - `dagyeom/observer-ui-v2`에서 수정한 파일 목록
