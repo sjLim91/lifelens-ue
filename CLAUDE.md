@@ -11,12 +11,15 @@
 5. `docs/TEAM_WORKFLOW.md`
 6. `docs/STATE_MANAGEMENT.md`
 7. `tasks/WORK_STATE.md`
-8. `tasks/TEAM_BOARD.md`
-9. `tasks/HANDOFF_LOG.md`
-10. 해당 `tasks/TASK_*.md`
-11. 로컬 빌드 작업일 때만 `tasks/COWORK_LOCAL_BUILD.md`
+8. `tasks/DAGYEOM_READY_QUEUE.md`
+9. `tasks/TEAM_BOARD.md`
+10. `tasks/HANDOFF_LOG.md`
+11. 해당 `tasks/TASK_*.md`
+12. 로컬 빌드 작업일 때만 `tasks/COWORK_LOCAL_BUILD.md`
 
 `tasks/WORK_STATE.md`가 현재 작업 상태의 단일 기준판이다. 작업 시작/재개 전 branch HEAD, PR, CI 상태를 실제 GitHub와 대조한다. 타임아웃, 세션 종료, 도구 오류, 수동 중단 후에는 이전 행동이 성공했다고 가정하지 말고 `docs/STATE_MANAGEMENT.md`의 복구 절차대로 실제 GitHub 상태를 먼저 확인한다.
+
+`tasks/DAGYEOM_READY_QUEUE.md`는 다겸 측의 **즉시 실행 가능한 작업 큐**다. 현재 PR이나 Core API가 BLOCKED여도 READY NOW 항목이 있으면 작업을 계속한다. READY NOW가 0개라면 "할 일 없음"으로 종료하지 말고 `NEEDS_ASSIGNMENT`로 판단하고 제품 SPEC의 다겸 소유 범위에서 다음 작업을 채운다. `BLOCKED-BY-JJUN` 항목은 다겸이 Core/Simulation을 직접 고치지 않고 쭌 측 API 제공을 기다린다.
 
 `tasks/HANDOFF_LOG.md`는 양쪽 AI의 append-only 인수인계 이력이다. 성공뿐 아니라 실패/중단/정정도 남긴다. 단, 상대 branch가 같은 shared file을 수정 중이면 내용을 덮어쓰지 말고 우선 `WORK_STATE` 및 PR 코멘트로 공유한 뒤 merge 시 조정한다.
 
