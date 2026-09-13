@@ -15,10 +15,13 @@ ALLResidentCharacter::ALLResidentCharacter()
     DebugBody->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     DebugBody->SetRelativeScale3D(FVector(0.55f, 0.55f, 0.9f));
 
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> CapsuleMesh(TEXT("/Engine/BasicShapes/Capsule.Capsule"));
-    if (CapsuleMesh.Succeeded())
+    // /Engine/BasicShapes/Capsule is not present in the UE 5.6 slim build image.
+    // Cube is a stable engine asset already used by the runtime smoke world, so
+    // keep the placeholder body dependency-free until real character meshes land.
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> BodyMesh(TEXT("/Engine/BasicShapes/Cube.Cube"));
+    if (BodyMesh.Succeeded())
     {
-        DebugBody->SetStaticMesh(CapsuleMesh.Object);
+        DebugBody->SetStaticMesh(BodyMesh.Object);
     }
 
     NameLabel = CreateDefaultSubobject<UTextRenderComponent>(TEXT("NameLabel"));
