@@ -19,13 +19,13 @@ Last reconciled: 2026-09-13 KST
 - Owner: 쭌 + 쭌 AI
 - Branch: `jjun/death-core-v1`
 - Work item: SPEC 43 Death — 사망 상태, LifeHistory, grief/memory/social impact, 배우자 사별, 세대교체 기반
-- Last known HEAD: `82b4001058332656b08f13a47728079172b10962` (branch creation checkpoint)
-- PR: 없음 — 구현 전
-- Status: `IN_PROGRESS`
-- CI: 미실행
-- Last verified fact: P19 Aging PR #23 was squash-merged into `main` as `82b4001058332656b08f13a47728079172b10962`; `jjun/death-core-v1` was created from that exact merge SHA.
+- Last known HEAD: `7636765174066b10657beb2b11dacd756e152966`
+- PR: #25 `[CORE] Add death, bereavement and continuity state`
+- Status: `WAITING_CI`
+- CI: PR 생성 완료, Core Tests / Preflight 결과 대기
+- Last verified fact: persistent death state, bereavement, widow/former-partner closure, population continuity helper and `test_death` are committed; PR #25 head is the SHA above.
 - Blocker / interruption: 없음.
-- Exact next action: Death state/model 구현 → grief/LifeHistory/relationship-family effects 연결 → C++17 test 등록 → PR → Core CI + Preflight.
+- Exact next action: PR #25 Core Tests + deterministic harness + Preflight 확인 → 실패 시 첫 실제 원인만 수정 → PASS 시 `READY_TO_MERGE` → main 병합.
 - Handoff safety: `SAFE`
 - Shared-file impact: `Source/LifeLensCore/**` + Core tests only. TASK_03 / 다겸 UI 파일 건드리지 않음.
 
