@@ -284,6 +284,27 @@
   - 향후 Unreal Bridge는 이 로그/현재 SocialIntent/관계·감정 read DTO를 노출하면 Observer UI가 소비할 수 있다.
   - TASK_03 Android Run `34739283266`은 이 변경보다 이전 SHA로 시작했으므로 현재 실행에는 포함되지 않는다.
 
+### Observer Read Model v1 완료
+- 작성자: 쭌 측 AI
+- 브랜치/PR: `jjun/observer-read-model-v1`, PR #13
+- 상태: `DONE / main 병합 완료`
+- 변경:
+  - `ObserverReadModel.h` 추가
+  - `ResidentObservation`: id/name/Needs/emotion valence·arousal·intensity/current activity/target 제공
+  - `RelationshipObservation`: 13개 관계 차원 + socialBond/romancePotential + targetName 제공
+  - `Simulation::observeResident()` / `observeAllResidents()` 추가
+  - Social action 실행 중 `Social + intent + target` 상태를 보존하고 action 종료 시 해제
+  - `test_observer_read_model` 추가
+- 검증:
+  - LifeLens Core Tests PASS
+  - LifeLens Preflight PASS
+  - Deterministic harness PASS
+- 병합 커밋: `1887fd8b816900123856b74828237dcf9ec14ad1`
+- 상대가 알아야 할 점:
+  - 다겸 UI는 Core 내부 포인터/컨테이너 대신 이 read DTO를 기준으로 표시 로직을 설계하면 된다.
+  - 현재 DTO에는 Core가 가진 이름/Needs/감정/현재행동/관계가 포함된다. 나이/성별 등 Unreal ResidentData 전용 필드는 Bridge에서 기존 데이터와 합쳐 제공해야 한다.
+  - 다음 쭌 측 통합 작업은 TASK_03 Bridge에서 이 DTO를 Unreal USTRUCT/읽기 API로 변환하는 것이다.
+
 ---
 
 ## 다음 인수인계 포인트
@@ -292,7 +313,7 @@
 - PR #2 실제 UHT/UBT 결과
 - Core Bridge가 `main`에 병합되면 다겸 UI에서 사용 가능한 읽기 API 목록
 - Android fast pipeline의 seed/fast 실제 성공 여부와 사용법
-- Relationship / Emotion / Memory / Belief / Social Cognition / Social Utility / Social Execution Core의 UI용 read DTO/API 목록
+- `ResidentObservation`을 Unreal Bridge에서 변환한 UI용 read DTO/API 목록
 
 ### 다겸 측이 쭌 측에 제공해야 하는 것
 - `dagyeom/observer-ui-v2`에서 수정한 파일 목록
