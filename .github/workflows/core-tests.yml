@@ -1,0 +1,39 @@
+name: LifeLens Core Tests
+
+on:
+  push:
+    paths:
+      - 'Source/LifeLensCore/**'
+      - '.github/workflows/core-tests.yml'
+  pull_request:
+    paths:
+      - 'Source/LifeLensCore/**'
+      - '.github/workflows/core-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  core-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -S Source/LifeLensCore -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build -j2
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Deterministic harness smoke
+        run: |
+          ./build/ll_harness --days 1 --seed 42 > /tmp/run-a.log
+          ./build/ll_harness --days 1 --seed 42 > /tmp/run-b.log
+          diff -u /tmp/run-a.log /tmp/run-b.log
+          tail -20 /tmp/run-a.log
