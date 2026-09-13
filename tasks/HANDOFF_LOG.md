@@ -228,6 +228,62 @@
   - 향후 상세 패널에서 직접 경험/소문/추론 여부를 표현할 수 있도록 read DTO 계층에서 source/confidence를 선택적으로 제공할 수 있다.
   - TASK_03 Bridge/Build와 다겸 UI 파일은 수정하지 않았다.
 
+### Social Utility Core v1 완료
+- 작성자: 쭌 측 AI
+- 브랜치/PR: `jjun/social-utility-v1`, PR #10
+- 상태: `DONE / main 병합 완료`
+- 변경:
+  - SocialIntent: Approach / Avoid / Repair / Comfort
+  - Relationship / Emotion / Memory / Belief / Personality를 종합한 social utility 계산
+  - 기존 Physical Goal score와 Social Utility를 비교하는 Unified Utility Decision 추가
+  - 긴급 Needs는 Social보다 우선할 수 있도록 유지
+  - `test_social_utility` 추가
+- 검증:
+  - LifeLens Core Tests PASS
+  - LifeLens Preflight PASS
+- 병합 커밋: `20e1537bbf0fee603203d484a48a712d7538336c`
+- 상대가 알아야 할 점:
+  - 캐릭터 현재행동 UI는 앞으로 Physical Goal만 가정하면 안 되고 SocialIntent도 표현할 수 있어야 한다.
+  - 기본 Observer 화면에는 요약 행동만 표시하고 세부 utility는 디버그/상세 계층에서만 필요하다.
+
+### Social Execution Core v1 완료
+- 작성자: 쭌 측 AI
+- 브랜치/PR: `jjun/social-execution-v1`, PR #11
+- 상태: `DONE / main 병합 완료`
+- 변경:
+  - `DecisionExecution.h` 추가
+  - Approach → PositiveInteraction, Repair → Apology, Comfort → Comfort 사건 실행
+  - Avoid는 상대에게 가짜 Memory를 생성하지 않고 actor의 fear/anxiety를 일부 완화
+  - Physical 선택은 기존 Planner 경로로 넘길 수 있도록 분리 유지
+  - `test_decision_execution` 추가
+- 검증:
+  - LifeLens Core Tests PASS
+  - LifeLens Preflight PASS
+- 병합 커밋: `8123a6904afff5a0dcfd550536d2b8c81280f350`
+- 상대가 알아야 할 점:
+  - SocialIntent는 이제 점수만 있는 값이 아니라 실제 Core 상태/사회 사건을 바꾸는 실행 단위다.
+  - 다겸 UI가 현재행동을 표시할 때 Approach/Repair/Comfort/Avoid 상태를 받을 수 있도록 Bridge DTO가 필요하다.
+
+### Simulation Social Loop v1 완료
+- 작성자: 쭌 측 AI
+- 브랜치/PR: `jjun/simulation-social-loop-v1`, PR #12
+- 상태: `DONE / main 병합 완료`
+- 변경:
+  - `Simulation`이 `RelationshipBook`을 소유하도록 확장
+  - 기존 1인 물리행동 `setupDemo()` 유지 + `setupSocialDemo()` 별도 추가
+  - 5분 의사결정 루프에서 Unified Utility가 Social을 고르면 실제 SocialIntent 실행
+  - social cooldown으로 반복 상호작용 스팸 방지
+  - Social action 로그에 intent/target/utility 기록
+  - `test_simulation_social_loop` 추가, 같은 seed 결정론 확인
+- 검증:
+  - LifeLens Core Tests PASS
+  - LifeLens Preflight PASS
+- 병합 커밋: `c4d946e0e70f2b4125648890b82c8f5e3fb81d5e`
+- 상대가 알아야 할 점:
+  - Core Simulation 자체에서 이제 Physical Needs와 Social Cognition이 같은 tick 흐름 안에서 경쟁하고 실제 행동으로 이어진다.
+  - 향후 Unreal Bridge는 이 로그/현재 SocialIntent/관계·감정 read DTO를 노출하면 Observer UI가 소비할 수 있다.
+  - TASK_03 Android Run `34739283266`은 이 변경보다 이전 SHA로 시작했으므로 현재 실행에는 포함되지 않는다.
+
 ---
 
 ## 다음 인수인계 포인트
@@ -236,7 +292,7 @@
 - PR #2 실제 UHT/UBT 결과
 - Core Bridge가 `main`에 병합되면 다겸 UI에서 사용 가능한 읽기 API 목록
 - Android fast pipeline의 seed/fast 실제 성공 여부와 사용법
-- Relationship / Emotion / Memory / Belief / Social Cognition Core가 Bridge에 연결될 때 UI용 read DTO/API 목록
+- Relationship / Emotion / Memory / Belief / Social Cognition / Social Utility / Social Execution Core의 UI용 read DTO/API 목록
 
 ### 다겸 측이 쭌 측에 제공해야 하는 것
 - `dagyeom/observer-ui-v2`에서 수정한 파일 목록
