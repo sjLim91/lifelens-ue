@@ -14,18 +14,18 @@ Last reconciled: 2026-09-13 KST
 
 ## Active / unresolved work
 
-### 1. P21 LifeHistory Core v1
+### 1. P22 LifeHistory Wiring v1
 
 - Owner: 쭌 + 쭌 AI
-- Branch: `jjun/life-history-v1`
-- Work item: SPEC 44 LifeHistory — 주요 생애사건 taxonomy + 기록/조회 기반
-- Last known HEAD: `d7126e27b0d16b854532a00089781ddb8656304f`
-- PR: 없음 — 구현 중
+- Branch: `jjun/life-history-wiring-v1`
+- Work item: 기존 Romance / Marriage / Pregnancy / Birth / Death 흐름을 LifeHistory 자동 기록에 연결
+- Last known HEAD: `b46869acc62830c432bb5b3693f98535c37f2e0a` (branch creation checkpoint)
+- PR: 없음 — 구현 전
 - Status: `IN_PROGRESS`
 - CI: 미실행
-- Last verified fact: LifeEventType가 연애/약혼/결혼/동거/임신/출산/양육/별거/이혼/사별/가구변경/사망/애도로 확장됐고 record/count/latest/name helper가 branch에 저장됨.
+- Last verified fact: P21 LifeHistory Core PR #27은 Core Tests + deterministic harness + Preflight PASS 후 `main`에 squash-merge 완료. `jjun/life-history-wiring-v1`는 그 merge SHA에서 생성됨.
 - Blocker / interruption: 없음.
-- Exact next action: LifeHistory helper test + CMake 등록 → PR → Core CI + Preflight → PASS 시 main 병합. 이후 별도 wiring branch에서 기존 Romance/Marriage/Pregnancy/Birth/Death 흐름에 자동 기록 연결.
+- Exact next action: DatingStarted / Engaged / Married / PregnancyStarted / ChildBorn / PartnerWidowed / Bereavement 자동 기록 연결 → 회귀 테스트 → PR → Core CI + Preflight.
 - Handoff safety: `SAFE`
 - Shared-file impact: `Source/LifeLensCore/**` + Core tests only. TASK_03 / 다겸 UI 파일 건드리지 않음.
 
@@ -102,6 +102,7 @@ READY NOW가 0개가 되면 다겸 측은 `할 일 없음`으로 종료하지 �
 - P18 Genealogy / Kinship — `DONE`, main merged as `d1324c766749847c9fc85ea69af60c23c293da31`.
 - P19 Aging Core — `DONE`, Core CI + Preflight PASS; PR #23 squash-merged as `82b4001058332656b08f13a47728079172b10962`.
 - P20 Death Core — `DONE`, Core CI + deterministic harness + Preflight PASS; PR #25 squash-merged as `07509a73f235928c16bf9b26f8b13c689b6a030b`.
+- P21 LifeHistory Core — `DONE`, Core CI + deterministic harness + Preflight PASS; PR #27 squash-merged as `b46869acc62830c432bb5b3693f98535c37f2e0a`.
 
 ---
 
