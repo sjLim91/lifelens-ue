@@ -7,7 +7,9 @@ namespace lifelens {
 
 enum class LifeEventType {
     Birth,
-    LifeStageChanged
+    LifeStageChanged,
+    Death,
+    Bereavement
 };
 
 struct LifeHistoryEntry {
