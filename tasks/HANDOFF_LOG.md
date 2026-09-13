@@ -305,6 +305,30 @@
   - 현재 DTO에는 Core가 가진 이름/Needs/감정/현재행동/관계가 포함된다. 나이/성별 등 Unreal ResidentData 전용 필드는 Bridge에서 기존 데이터와 합쳐 제공해야 한다.
   - 다음 쭌 측 통합 작업은 TASK_03 Bridge에서 이 DTO를 Unreal USTRUCT/읽기 API로 변환하는 것이다.
 
+## 2026-09-13 — 다겸 측 AI
+
+### Observer HUD v2 PR 생성
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/observer-ui-v2`, PR #17
+- 상태: `REVIEW / 실제 UHT·UBT 검증 대기`
+- 변경:
+  - `Source/LifeLens/UI/LLObserverHUD.h/.cpp` 재작성: LEVEL 0 개요 띠 + 주민 스트립, LEVEL 1 Quick Inspector(이름/나이/현재행동/상태 요약/성격 단어), LEVEL 2 상세 패널(Overview / Needs / Personality / Traits & Skills 탭)
+  - `Source/LifeLens/UI/LLObserverLabels.h` 추가: 관측용 문구와 Needs/Personality/Skill 라벨 변환
+  - `Source/LifeLens/UI/LLObservationSubsystem.h/.cpp`: 관측 단계(World / Quick / Detail), `OpenDetail` / `CloseDetail` / `StepBack`, `OnObservationLevelChanged`
+  - `Source/LifeLens/UI/LLObserverPlayerController.h/.cpp`: 탭 라우팅(HUD 크롬 → 주민 액터 → 빈 곳은 한 단계 뒤로)
+  - 욕구/관계 수치는 화면에 표시하지 않고 Good / Fine / Low / Very low 라벨만 사용
+  - 관계 표시는 제외 (다차원 Relationship read DTO 이후 추가 예정)
+  - Codex 리뷰 2건 반영 (선택 중 힌트 숨김, 카드 폭/줄바꿈)
+- 검증:
+  - Structural preflight PASS (`Tools/validate_bootstrap.py`, 로컬 + CI)
+  - LifeLens Core Tests PASS (CI, Core 미변경)
+  - 실제 UHT/UBT 미실행. 다겸 맥에 Unreal Engine 미설치. CI 또는 쭌 측 확인 필요.
+- 상대가 알아야 할 점:
+  - `Source/LifeLens/UI/**`만 수정. 공유 파일 변경 없음.
+  - `Tools/validate_bootstrap.py` 65행이 `LLObserverHUD.cpp`에서 `Tap/click a resident for details` 문자열을 확인함. 문구를 `LLObserverLabels.h`로 옮겼으므로 검사 대상을 헤더로 바꿔 주면 좋겠음. 그때까지 cpp 주석에 동일 문장 유지.
+  - 한글 폰트 에셋 필요 (`Content/UI`). 주민 이름이 한글이라 `GEngine->GetSmallFont()`로는 깨질 수 있음. 로컬 에디터가 없어 아직 에셋을 만들지 못함.
+  - PR #13 `ResidentObservation` / `RelationshipObservation`이 Unreal Bridge read API로 나오면 LEVEL 2에 Relationships / Emotion 탭 추가 예정.
+
 ---
 
 ## 다음 인수인계 포인트

@@ -11,7 +11,7 @@
 | 담당 | 브랜치 | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
 | 쭌 + 쭌 AI | `task/03-fast-test` | LifeLensCore ↔ Unreal bridge 실제 UE/Android 검증 + 재빌드 방지 파이프라인 | `Source/LifeLens/Simulation/**`, build/CI | DOING |
-| 다겸 + 다겸 AI | `dagyeom/observer-ui-v2` | Observer HUD v2 + 선택 주민 상세 패널 + 관찰 UX | `Source/LifeLens/UI/**`, UI/Character presentation | TODO |
+| 다겸 + 다겸 AI | `dagyeom/observer-ui-v2` | Observer HUD v2 + 선택 주민 상세 패널 + 관찰 UX | `Source/LifeLens/UI/**`, UI/Character presentation | REVIEW |
 
 ## 완료된 병렬 작업
 
@@ -93,7 +93,7 @@
 
 - PR #2 `[UE] Bridge LifeLensCore into Unreal runtime` — 쭌 측, 실제 UHT/UBT 검증 후 merge.
 - PR #3 `[CI] Reuse compiled UE Android engine outputs` — PR #2 브랜치에 병합 완료, main 반영은 PR #2와 함께 진행.
-- 다겸 Observer UI PR — 아직 생성 전.
+- PR #17 `[UI] Observer HUD v2` — 다겸 측, structural preflight PASS, 실제 UHT/UBT 검증 후 merge.
 
 ## 완료/인수인계 규칙
 
