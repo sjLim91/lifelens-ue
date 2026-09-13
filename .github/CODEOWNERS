@@ -1,0 +1,30 @@
+# LifeLens ownership map
+# Shared integration/build files require visibility from both collaborators.
+
+# Default
+* @sjLim91 @STILLofficial
+
+# Simulation / AI / integration — 쭌 side
+/Source/LifeLensCore/** @sjLim91
+/Source/LifeLens/AI/** @sjLim91
+/Source/LifeLens/Simulation/** @sjLim91
+/Source/LifeLens/World/** @sjLim91
+/Source/LifeLens/Save/** @sjLim91
+
+# Observer / presentation — 다겸 side
+/Source/LifeLens/UI/** @STILLofficial
+/Content/UI/** @STILLofficial
+/Content/Characters/** @STILLofficial
+
+# Character runtime touches both simulation binding and presentation
+/Source/LifeLens/Characters/** @sjLim91 @STILLofficial
+
+# Shared high-risk files
+/LifeLens.uproject @sjLim91 @STILLofficial
+/Source/LifeLens/LifeLens.Build.cs @sjLim91 @STILLofficial
+/Source/LifeLens/Core/LLTypes.h @sjLim91 @STILLofficial
+/Config/** @sjLim91 @STILLofficial
+/.github/workflows/** @sjLim91 @STILLofficial
+/Tools/validate_bootstrap.py @sjLim91 @STILLofficial
+/docs/TEAM_WORKFLOW.md @sjLim91 @STILLofficial
+/tasks/TEAM_BOARD.md @sjLim91 @STILLofficial
