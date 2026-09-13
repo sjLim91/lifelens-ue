@@ -87,3 +87,11 @@ add_test(NAME test_birth_genetics COMMAND test_birth_genetics)
 add_executable(test_lifecycle_growth tests/test_lifecycle_growth.cpp)
 target_link_libraries(test_lifecycle_growth PRIVATE lifelens_core)
 add_test(NAME test_lifecycle_growth COMMAND test_lifecycle_growth)
+
+add_executable(test_parenting tests/test_parenting.cpp)
+target_link_libraries(test_parenting PRIVATE lifelens_core)
+add_test(NAME test_parenting COMMAND test_parenting)
+
+add_executable(test_genealogy tests/test_genealogy.cpp)
+target_link_libraries(test_genealogy PRIVATE lifelens_core)
+add_test(NAME test_genealogy COMMAND test_genealogy)
