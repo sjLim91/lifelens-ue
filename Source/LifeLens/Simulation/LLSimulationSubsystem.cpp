@@ -100,6 +100,46 @@ bool ULLSimulationSubsystem::FindResidentById(FGuid ResidentId, FLLResidentData&
     return false;
 }
 
+bool ULLSimulationSubsystem::ApplyActionOutcome(FGuid ResidentId, ELLActionIntent Intent, float Strength)
+{
+    FLLResidentData* Resident = FindMutableResident(ResidentId);
+    if (!Resident)
+    {
+        return false;
+    }
+
+    const float Scale = FMath::Clamp(Strength, 0.1f, 2.0f);
+    switch (Intent)
+    {
+        case ELLActionIntent::Eat:
+            Resident->Needs.Hunger = FMath::Clamp(Resident->Needs.Hunger + 55.0f * Scale, 0.0f, 100.0f);
+            break;
+        case ELLActionIntent::Sleep:
+            Resident->Needs.Energy = FMath::Clamp(Resident->Needs.Energy + 65.0f * Scale, 0.0f, 100.0f);
+            break;
+        case ELLActionIntent::Socialize:
+            Resident->Needs.Social = FMath::Clamp(Resident->Needs.Social + 40.0f * Scale, 0.0f, 100.0f);
+            Resident->Needs.Fun = FMath::Clamp(Resident->Needs.Fun + 10.0f * Scale, 0.0f, 100.0f);
+            break;
+        case ELLActionIntent::Hygiene:
+            Resident->Needs.Hygiene = FMath::Clamp(Resident->Needs.Hygiene + 70.0f * Scale, 0.0f, 100.0f);
+            break;
+        case ELLActionIntent::Toilet:
+            Resident->Needs.Bladder = FMath::Clamp(Resident->Needs.Bladder + 80.0f * Scale, 0.0f, 100.0f);
+            break;
+        case ELLActionIntent::HaveFun:
+            Resident->Needs.Fun = FMath::Clamp(Resident->Needs.Fun + 55.0f * Scale, 0.0f, 100.0f);
+            break;
+        case ELLActionIntent::Idle:
+        default:
+            Resident->Needs.Energy = FMath::Clamp(Resident->Needs.Energy + 3.0f * Scale, 0.0f, 100.0f);
+            break;
+    }
+
+    OnSimulationStateChanged.Broadcast();
+    return true;
+}
+
 bool ULLSimulationSubsystem::GetRelationship(FGuid A, FGuid B, FLLRelationshipData& OutRelationship) const
 {
     for (const FLLRelationshipData& Relation : Relationships)
@@ -145,6 +185,11 @@ bool ULLSimulationSubsystem::ApplySocialInteraction(FGuid A, FGuid B, float Affi
             && Relation.Affinity >= 55.0f && Relation.Trust >= 35.0f && Relation.Romance >= 45.0f)
         {
             Relation.Stage = ELLRelationshipStage::Dating;
+        }
+        if (Relation.Stage == ELLRelationshipStage::Dating
+            && Relation.Affinity >= 70.0f && Relation.Trust >= 55.0f && Relation.Romance >= 60.0f)
+        {
+            Relation.Stage = ELLRelationshipStage::Partner;
         }
 
         OnSimulationStateChanged.Broadcast();
@@ -253,6 +298,18 @@ void ULLSimulationSubsystem::GenerateInitialRelationships()
             Relationships.Add(Relation);
         }
     }
+}
+
+FLLResidentData* ULLSimulationSubsystem::FindMutableResident(FGuid ResidentId)
+{
+    for (FLLResidentData& Resident : Residents)
+    {
+        if (Resident.ResidentId == ResidentId)
+        {
+            return &Resident;
+        }
+    }
+    return nullptr;
 }
 
 FGuid ULLSimulationSubsystem::MakeDeterministicGuid(FRandomStream& Random)
