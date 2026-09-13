@@ -42,6 +42,7 @@ int main()
     assert(receiverToActor != nullptr);
     assert(receiverToActor->trust > 0.0);
     assert(receiverToActor->respect > 0.0);
+    const double receiverTrustAfterHelp = receiverToActor->trust;
 
     // A third-party direct witness can form a belief, but the personal relationship
     // effect is deliberately weaker than being the recipient of the action.
@@ -52,7 +53,7 @@ int main()
     const Relationship* witnessToActor = relationships.find(3, 1);
     assert(witnessToActor != nullptr);
     assert(witnessToActor->respect > 0.0);
-    assert(witnessToActor->trust < receiverToActor->trust);
+    assert(witnessToActor->trust < receiverTrustAfterHelp);
     assert(witnessResult.perspectiveScale < helpResult.perspectiveScale);
 
     // Betrayal should affect emotion, memory, belief and relationship in one pass.
