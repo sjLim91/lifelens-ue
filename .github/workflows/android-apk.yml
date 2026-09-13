@@ -1,17 +1,23 @@
-name: LifeLens UE 5.6 Android APK
+name: LifeLens UE 5.6 Android Build
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/android-apk.yml'
   workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Build mode: fast reuses the encrypted engine cache; seed creates it once; full is the slow fallback.'
+        required: true
+        default: fast
+        type: choice
+        options:
+          - fast
+          - seed
+          - full
 
 permissions:
   contents: write
 
 concurrency:
-  group: lifelens-android-apk
+  group: lifelens-android-${{ inputs.mode }}
   cancel-in-progress: true
 
 jobs:
@@ -28,6 +34,8 @@ jobs:
       UE_ROOT: ${{ github.workspace }}/UnrealEngine
       BUILD_OUTPUT: ${{ github.workspace }}/AndroidOutput
       DIAGNOSTICS: ${{ github.workspace }}/Diagnostics
+      ENGINE_REUSE_DIR: ${{ github.workspace }}/EngineReuse
+      ENGINE_REUSE_FILE: ${{ github.workspace }}/EngineReuse/ue56-android-engine-v1.tar.zst.enc
 
     steps:
       - name: Checkout LifeLens source
@@ -35,18 +43,17 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Enforce zero-cost public runner and reclaim disk
+      - name: Enforce zero-cost runner and reclaim disk
         shell: bash
         run: |
           set -euo pipefail
           test '${{ github.event.repository.private }}' = 'false'
           test '${{ runner.os }}' = 'Linux'
-          echo 'ZERO COST: standard public GitHub-hosted Ubuntu runner only.'
+          echo "BUILD_MODE=${{ inputs.mode }}"
           sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/local/lib/node_modules || true
           sudo apt-get clean || true
           sudo docker system prune -af || true
-          test -d /usr/local/lib/android/sdk
-          mkdir -p "$DIAGNOSTICS"
+          mkdir -p "$DIAGNOSTICS" "$ENGINE_REUSE_DIR"
           test -f "$PROJECT_ROOT/LifeLens.uproject"
           echo "LIFELENS_SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
           df -h /
@@ -80,16 +87,15 @@ jobs:
             echo "NDKROOT=$ANDROID_HOME/ndk/${ANDROID_NDK_VERSION}"
             echo "NDK_ROOT=$ANDROID_HOME/ndk/${ANDROID_NDK_VERSION}"
           } >> "$GITHUB_ENV"
-          cat "$ANDROID_HOME/ndk/${ANDROID_NDK_VERSION}/source.properties"
-          java -version
 
-      - name: Verify Epic UE 5.6 source access
+      - name: Resolve exact Epic UE 5.6 revision
+        id: epic
         shell: bash
         env:
           EPIC_GITHUB_PAT: ${{ secrets.EPIC_GHCR_PAT }}
         run: |
           set -euo pipefail
-          test -n "$EPIC_GITHUB_PAT" || { echo 'EPIC_GHCR_PAT secret is missing in lifelens-ue'; exit 91; }
+          test -n "$EPIC_GITHUB_PAT" || { echo 'EPIC_GHCR_PAT secret is missing'; exit 91; }
           ASKPASS="$RUNNER_TEMP/epic-git-askpass.sh"
           cat > "$ASKPASS" <<'EOF'
           #!/bin/sh
@@ -101,8 +107,27 @@ jobs:
           chmod 700 "$ASKPASS"
           export GIT_ASKPASS="$ASKPASS"
           export GIT_TERMINAL_PROMPT=0
-          git ls-remote --exit-code https://github.com/EpicGames/UnrealEngine.git "refs/heads/${UE_BRANCH}" >/dev/null
+          UE_SHA=$(git ls-remote --exit-code https://github.com/EpicGames/UnrealEngine.git "refs/heads/${UE_BRANCH}" | awk '{print $1}')
+          test -n "$UE_SHA"
+          echo "ue_sha=$UE_SHA" >> "$GITHUB_OUTPUT"
+          echo "UE_SOURCE_SHA=$UE_SHA" >> "$GITHUB_ENV"
           echo 'EPIC_UE56_SOURCE_ACCESS=OK'
+
+      - name: Restore encrypted compiled-engine cache
+        id: engine-cache
+        if: ${{ inputs.mode == 'fast' }}
+        uses: actions/cache/restore@v4
+        with:
+          path: EngineReuse/ue56-android-engine-v1.tar.zst.enc
+          key: lifelens-ue56-android-r25b-${{ steps.epic.outputs.ue_sha }}-v1
+
+      - name: Require cache in fast mode
+        if: ${{ inputs.mode == 'fast' && steps.engine-cache.outputs.cache-hit != 'true' }}
+        shell: bash
+        run: |
+          echo 'FAST_ENGINE_CACHE_MISS'
+          echo 'Run this workflow once with mode=seed. Fast mode never falls back to a full engine rebuild.'
+          exit 42
 
       - name: Clone Unreal Engine 5.6 source
         shell: bash
@@ -115,10 +140,9 @@ jobs:
           export GIT_TERMINAL_PROMPT=0
           rm -rf "$UE_ROOT"
           git clone --depth 1 --single-branch --branch "$UE_BRANCH" https://github.com/EpicGames/UnrealEngine.git "$UE_ROOT"
+          test "$(git -C "$UE_ROOT" rev-parse HEAD)" = "$UE_SOURCE_SHA"
           rm -f "$ASKPASS"
-          test -x "$UE_ROOT/Setup.sh"
           du -sh "$UE_ROOT"
-          df -h /
 
       - name: Align known AutomationTool package dependencies
         shell: bash
@@ -184,7 +208,6 @@ jobs:
             echo 'ENGINE_DEPENDENCY_SETUP_FAILED'
             exit 47
           fi
-          df -h /
 
       - name: Generate Unreal Engine project files
         timeout-minutes: 30
@@ -194,20 +217,84 @@ jobs:
           cd "$UE_ROOT"
           ./GenerateProjectFiles.sh 2>&1 | tee "$DIAGNOSTICS/generate-project-files.log"
           test -f Engine/Binaries/DotNET/UnrealBuildTool/UnrealBuildTool.dll
-          echo 'UE56_PROJECT_FILES_READY'
-          df -h /
 
-      - name: Compile LifeLens Android Development
-        timeout-minutes: 110
+      - name: Restore compiled engine files into source tree
+        if: ${{ inputs.mode == 'fast' }}
+        shell: bash
+        env:
+          ENGINE_CACHE_SECRET: ${{ secrets.EPIC_GHCR_PAT }}
+        run: |
+          set -euo pipefail
+          test -s "$ENGINE_REUSE_FILE"
+          openssl enc -d -aes-256-cbc -pbkdf2 \
+            -pass env:ENGINE_CACHE_SECRET \
+            -in "$ENGINE_REUSE_FILE" \
+            | tar --zstd -xf - -C "$UE_ROOT"
+          echo 'ENGINE_COMPILE_CACHE_RESTORED'
+          du -sh "$ENGINE_REUSE_FILE"
+
+      - name: Seed Linux cook tools
+        if: ${{ inputs.mode == 'seed' }}
+        timeout-minutes: 120
         shell: bash
         run: |
           set -euo pipefail
           cd "$UE_ROOT"
+          ./Engine/Build/BatchFiles/Linux/Build.sh UnrealEditor Linux Development -WaitMutex \
+            2>&1 | tee "$DIAGNOSTICS/seed-unreal-editor.log"
+          ./Engine/Build/BatchFiles/Linux/Build.sh ShaderCompileWorker Linux Development -WaitMutex \
+            2>&1 | tee "$DIAGNOSTICS/seed-shader-worker.log"
+
+      - name: Compile LifeLens Android Development
+        timeout-minutes: 120
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$UE_ROOT"
+          EXTRA_ARGS=()
+          if [ '${{ inputs.mode }}' = 'fast' ]; then
+            EXTRA_ARGS+=('-NoEngineChanges')
+          fi
           ./Engine/Build/BatchFiles/Linux/Build.sh \
-            LifeLens Android Development "$PROJECT_ROOT/LifeLens.uproject" -WaitMutex \
+            LifeLens Android Development "$PROJECT_ROOT/LifeLens.uproject" -WaitMutex "${EXTRA_ARGS[@]}" \
             2>&1 | tee "$DIAGNOSTICS/android-compile.log"
-          echo 'LIFELENS_ANDROID_COMPILE_PASS'
-          df -h /
+          echo "LIFELENS_ANDROID_COMPILE_PASS mode=${{ inputs.mode }}"
+
+      - name: Create encrypted engine compile cache
+        if: ${{ inputs.mode == 'seed' }}
+        timeout-minutes: 40
+        shell: bash
+        env:
+          ENGINE_CACHE_SECRET: ${{ secrets.EPIC_GHCR_PAT }}
+        run: |
+          set -euo pipefail
+          LIST="$RUNNER_TEMP/engine-cache-paths.txt"
+          cd "$UE_ROOT"
+          {
+            find Engine -type d -path '*/Binaries/Linux' -prune -print
+            find Engine -type d -path '*/Binaries/Android' -prune -print
+            find Engine -type d -path '*/Intermediate/Build/Android' -prune -print
+          } | sort -u > "$LIST"
+          test -s "$LIST"
+          mkdir -p "$ENGINE_REUSE_DIR"
+          tar -I 'zstd -T0 -3' -cf - -T "$LIST" \
+            | openssl enc -aes-256-cbc -pbkdf2 -salt \
+                -pass env:ENGINE_CACHE_SECRET \
+                -out "$ENGINE_REUSE_FILE"
+          SIZE=$(stat -c '%s' "$ENGINE_REUSE_FILE")
+          echo "ENGINE_CACHE_BYTES=$SIZE"
+          du -sh "$ENGINE_REUSE_FILE"
+          if [ "$SIZE" -gt 9000000000 ]; then
+            echo 'ENGINE_CACHE_TOO_LARGE_FOR_DEFAULT_ZERO_COST_CACHE_LIMIT'
+            exit 48
+          fi
+
+      - name: Save encrypted engine compile cache
+        if: ${{ inputs.mode == 'seed' }}
+        uses: actions/cache/save@v4
+        with:
+          path: EngineReuse/ue56-android-engine-v1.tar.zst.enc
+          key: lifelens-ue56-android-r25b-${{ steps.epic.outputs.ue_sha }}-v1
 
       - name: Cook and package LifeLens APK
         timeout-minutes: 80
@@ -217,13 +304,19 @@ jobs:
           rm -rf "$BUILD_OUTPUT"
           mkdir -p "$BUILD_OUTPUT"
           cd "$UE_ROOT"
+          BUILD_ARGS=()
+          if [ '${{ inputs.mode }}' != 'fast' ]; then
+            BUILD_ARGS+=('-build')
+          else
+            BUILD_ARGS+=('-nocompileeditor')
+          fi
           ./Engine/Build/BatchFiles/RunUAT.sh \
             BuildCookRun \
             -project="$PROJECT_ROOT/LifeLens.uproject" \
             -targetplatform=Android \
             -cookflavor=ASTC \
             -clientconfig=Development \
-            -build -cook -stage -pak -package -archive \
+            "${BUILD_ARGS[@]}" -cook -stage -pak -package -archive \
             -archivedirectory="$BUILD_OUTPUT" \
             -noP4 -unattended -utf8output \
             2>&1 | tee "$DIAGNOSTICS/android-package.log"
@@ -238,12 +331,12 @@ jobs:
           cp "$APK" "$GITHUB_WORKSPACE/LifeLens-Android-Development-arm64.apk"
           sha256sum "$GITHUB_WORKSPACE/LifeLens-Android-Development-arm64.apk" > "$GITHUB_WORKSPACE/LifeLens-Android-Development-arm64.sha256"
           ls -lh "$GITHUB_WORKSPACE/LifeLens-Android-Development-arm64.apk"
-          echo 'LIFELENS_APK_PIPELINE_PASS'
+          echo "LIFELENS_APK_PIPELINE_PASS mode=${{ inputs.mode }}"
 
       - name: Upload LifeLens APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: LifeLens-Android-APK
+          name: LifeLens-Android-APK-${{ inputs.mode }}
           path: |
             LifeLens-Android-Development-arm64.apk
             LifeLens-Android-Development-arm64.sha256
@@ -254,7 +347,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: LifeLens-Android-Diagnostics
+          name: LifeLens-Android-Diagnostics-${{ inputs.mode }}
           path: Diagnostics/
           if-no-files-found: ignore
           retention-days: 7
@@ -265,9 +358,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          TAG="lifelens-android-${GITHUB_RUN_NUMBER}"
+          TAG="lifelens-android-${{ inputs.mode }}-${GITHUB_RUN_NUMBER}"
           gh release create "$TAG" \
             LifeLens-Android-Development-arm64.apk \
             LifeLens-Android-Development-arm64.sha256 \
-            --title "LifeLens Android build #${GITHUB_RUN_NUMBER}" \
-            --notes "LifeLens UE 5.6 Android Development APK. Source: ${LIFELENS_SOURCE_SHA}. Standard public GitHub-hosted runner only; no paid service."
+            --title "LifeLens Android ${{ inputs.mode }} build #${GITHUB_RUN_NUMBER}" \
+            --notes "UE 5.6 Android Development APK. Source: ${LIFELENS_SOURCE_SHA}. Engine revision: ${UE_SOURCE_SHA}. Mode: ${{ inputs.mode }}. Standard public GitHub-hosted runner only."
