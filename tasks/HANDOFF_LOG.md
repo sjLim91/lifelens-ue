@@ -424,6 +424,23 @@
   - 참고(다겸 영역 아님, 기록만): PIE 맵에 라이트 없음. 주민 액터가 매우 작게 보임. 모바일 가상 조이스틱 표시됨(`DefaultInput.ini` `DefaultTouchInterface=/Engine/MobileResources/HUD/DefaultVirtualJoysticks`).
   - 에디터 실행 시 `Config/DefaultEngine.ini`, `Config/DefaultInput.ini`가 자동 수정됨. 커밋하지 않고 폐기함.
 
+### Observer HUD v2 — 탭 좌표계 통일 및 주민 선택 반경
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/observer-ui-v2`, PR #17
+- 커밋: `9512618`
+- 상태: `REVIEW / 검증 대기`
+- 변경 범위:
+  - `Source/LifeLens/UI/LLObserverHUD.h`, `.cpp`: DrawHUD에서 scene view rect 원점 기록, `ViewportToCanvas`로 뷰포트 픽셀→캔버스 픽셀 매핑
+  - `Source/LifeLens/UI/LLObserverPlayerController.h`, `.cpp`: 주민 선택을 화면 투영 위치 기준 반경(48 논리픽셀 × Slate DPI 배율)으로 판정, 정확 트레이스 히트는 2차 판정. 탭 로그에 최종 좌표·최근접 주민 거리·반경 기록
+- 검증 상태:
+  - 재확인(`845eb28`): 마우스 창 밖 이동 정상. 주민 클릭 시 LEVEL 1 미표시. 로그 `tap (1479, 603) viewport (2846, 1712) canvas (2846, 1601)`
+  - 원인: 관찰 카메라(`ACameraActor`, aspect 제약)로 HUD 캔버스가 뷰포트 안 16:9 view rect(2846×1601)이며 원점이 레터박스만큼 어긋남. 마우스/터치/투영 좌표는 뷰포트 픽셀. 주민 액터가 화면에서 매우 작아 정확 트레이스 히트가 빗나감
+  - 수정 후 로컬 `Build.sh LifeLensEditor Mac Development` (`9512618`): Result: Succeeded. structural preflight PASS
+  - 수정 후 화면/동작 재확인: 검증 대기
+- 상대가 알아야 할 점:
+  - `Config/**`, `Characters/**`, `Core/LLLifeLensGameMode.cpp` 미수정. 레터박스 원인은 GameMode의 관찰 카메라 aspect 제약이며 UI 쪽 좌표 매핑으로 대응함.
+  - `Tools/validate_bootstrap.py`의 `GetHitResultUnderCursor` / `GetHitResultUnderFinger` 검사에 맞춰 정확 히트 경로 유지.
+
 ---
 
 ## 다음 인수인계 포인트
