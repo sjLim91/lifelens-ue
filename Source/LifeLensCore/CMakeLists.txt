@@ -43,3 +43,7 @@ add_test(NAME test_memory COMMAND test_memory)
 add_executable(test_belief tests/test_belief.cpp)
 target_link_libraries(test_belief PRIVATE lifelens_core)
 add_test(NAME test_belief COMMAND test_belief)
+
+add_executable(test_social_cognition tests/test_social_cognition.cpp)
+target_link_libraries(test_social_cognition PRIVATE lifelens_core)
+add_test(NAME test_social_cognition COMMAND test_social_cognition)
