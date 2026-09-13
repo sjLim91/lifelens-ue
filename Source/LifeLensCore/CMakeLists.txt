@@ -67,3 +67,7 @@ add_test(NAME test_observer_read_model COMMAND test_observer_read_model)
 add_executable(test_romance tests/test_romance.cpp)
 target_link_libraries(test_romance PRIVATE lifelens_core)
 add_test(NAME test_romance COMMAND test_romance)
+
+add_executable(test_household tests/test_household.cpp)
+target_link_libraries(test_household PRIVATE lifelens_core)
+add_test(NAME test_household COMMAND test_household)
