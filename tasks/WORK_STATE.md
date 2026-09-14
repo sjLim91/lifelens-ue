@@ -3,6 +3,7 @@
 > 실제 GitHub 상태가 항상 최우선 진실이다.
 > 제품 기준: `docs/LIFELENS_SPEC_v1.1.md` + `docs/CIVILIZATION_PROGRESSION_v1.md`
 > World affordance / 환경 consequence 기준: `docs/WORLD_AFFORDANCE_ENVIRONMENT_v1.md`
+> World visual presentation 기준: `docs/WORLD_VISUAL_ENVIRONMENT_v1.md`
 > 캐릭터 외형/표현 기준: `docs/CHARACTER_APPEARANCE_ROADMAP.md`
 > 협업 기준: `docs/STATE_MANAGEMENT.md` + `docs/INTEGRATION_SPRINT.md`
 
@@ -114,22 +115,58 @@ Rules:
 - use the merged PR #65 appearance projection contract instead of inventing a second authority.
 - if new authoritative appearance/genetics/save data is required, add an Integration Request to `TEAM_BOARD.md`.
 
-### Character Motion & Context v1 — READY_AFTER_#67
+### Character Motion Bootstrap — READY_AFTER_#67
 
-Owner: 다겸 / 다겸 AI, with Jjun Bridge review/support only if an actual Core/Bridge blocker is found.
+Owner: 다겸 / 다겸 AI.
 
-Dagyeom requested immediate READY_NOW promotion because UAL motion assets are already imported and current movement visually slides in Idle. The request is accepted in principle, but execution remains gated by the existing completion rule: Character Appearance v1 must be validated and merged first.
-
-On PR #67 merge + live-doc sync, promote this item to `READY_NOW` without a new product-design review.
+After PR #67 merge + live-doc sync, run a deliberately small first slice of Character Motion & Context before the visual environment milestone.
 
 Minimum:
 - Core-directive-driven Idle / Walk / Jog or Run locomotion
-- turn-in-place / orientation smoothing
+- basic orientation smoothing
+- remove current Idle-sliding presentation
+- no Character-side competing action authority
+
+This bootstrap is intentionally small; full sit/lie/gaze/IK work is deferred until after the visual environment baseline.
+
+### World Visual Environment v1 — READY_AFTER_MOTION_BOOTSTRAP / HIGH PRIORITY
+
+Owner: 다겸 / 다겸 AI.
+
+Canonical: `docs/WORLD_VISUAL_ENVIRONMENT_v1.md`.
+
+Purpose:
+- promote the visible world/background much earlier than the old roadmap
+- create a natural, non-placeholder environment without inventing civilization infrastructure
+- keep environment visuals separate from authoritative Core/World state
+
+Dagyeom presentation ownership:
+- `Content/Environment/**`
+- `Content/Maps/**`
+- `Content/WorldPresentation/**`
+
+Minimum:
+- terrain / ground baseline
+- sky / lighting / atmosphere
+- trees / grass / rocks / natural dressing
+- Observer readability preserved
+- Android-friendly LOD / instancing / material budget
+- no automatic modern buildings/facilities
+- asset provenance recorded
+
+Do not modify `Source/LifeLensCore/**` or authoritative `Source/LifeLens/World/**` for presentation convenience. If a new read API is needed, use an Integration Request.
+
+### Character Motion & Context v1 — REMAINDER AFTER WORLD VISUAL v1
+
+Owner: 다겸 / 다겸 AI, with Jjun Bridge review/support only if an actual Core/Bridge blocker is found.
+
+Remaining scope:
+- turn-in-place refinement
 - sit / stand / lie / wake context transitions
 - gaze/head tracking
 - context interaction hooks
 - basic IK / transition smoothing
-- no competing Character-side action authority
+- visual action stays consistent with Core action directive
 
 ### Jjun lane — OWN TRACK / REVIEW SUPPORT
 
@@ -148,6 +185,7 @@ Rules:
 - Emergency fallback must generally be less effective or more costly than purpose-built affordances.
 - Environmental consequence with simulation impact belongs to Core authority and Save/Load.
 - Technology/progress is emergent from need, observation, knowledge and resources, not a forced global tech unlock.
+- World Visual Environment is presentation-only until a visual element is explicitly linked to authoritative World state.
 
 ## Canonical execution order
 
@@ -156,16 +194,18 @@ Rules:
 3. Character Appearance v1 — ACTIVE / PR #67 CLOSEOUT. (Dagyeom lane)
 4. World Affordance Fallback v1 — DONE via PR #66. (Jjun lane)
 5. Environmental Residue v1 — READY_NOW. (Jjun lane)
-6. Character Motion & Context v1 minimum — READY_AFTER_#67; auto-promote to READY_NOW after Appearance merge.
-7. PR #30 Observer UX Polish — AFTER Human Character minimum.
-8. PR #36 Mobile Touch — AFTER #30.
-9. PR #38 Visual Feedback — AFTER #36.
-10. Core + Observer + Human Character integrated runtime verification.
-11. Android smoke APK + profiling.
-12. MetaHuman comparison / upgrade decision.
-13. Appearance Genetics & Lifecycle.
-14. Clothing/Equipment civilization linkage.
-15. Resume deeper civilization production chains.
+6. Character Motion Bootstrap — READY_AFTER_#67.
+7. **World Visual Environment v1 — HIGH PRIORITY / READY_AFTER_MOTION_BOOTSTRAP.**
+8. Character Motion & Context v1 remaining scope.
+9. PR #30 Observer UX Polish — AFTER Human Character + World Visual minimum.
+10. PR #36 Mobile Touch — AFTER #30.
+11. PR #38 Visual Feedback — AFTER #36.
+12. Core + Observer + Human Character + World Visual integrated runtime verification.
+13. Android smoke APK + profiling.
+14. MetaHuman comparison / upgrade decision.
+15. Appearance Genetics & Lifecycle.
+16. Clothing/Equipment civilization linkage.
+17. Resume deeper civilization production chains.
 
 ## Completed checkpoints
 
