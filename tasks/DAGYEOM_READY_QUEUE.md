@@ -73,29 +73,66 @@ Additional skin-tone/detail variety beyond the minimum distinctness bar may be a
 
 ## READY_AFTER_#67
 
-### Character Motion & Context v1 minimum
+### Character Motion Bootstrap — first slice of Motion & Context v1
 
-Dagyeom's promotion request is accepted in principle. This item becomes `READY_NOW` automatically after PR #67 is validated, merged, and live docs are synchronized.
+Dagyeom's Motion promotion request is accepted in principle. After PR #67 is validated, merged, and live docs are synchronized, start a **small locomotion slice first** instead of the full Motion milestone.
 
-Expected start branch after promotion: `dagyeom/character-motion-v1` from latest `main`.
+Expected branch: `dagyeom/character-motion-v1` from latest `main`.
+
+Minimum bootstrap:
+- Core-directive-driven Idle / Walk / Jog or Run transition
+- basic orientation smoothing
+- remove the current "Idle while sliding" presentation
+- no competing Character-side action chooser or simulation authority
+
+The bootstrap should stay intentionally small so visual environment work can begin early.
+
+## READY_AFTER_MOTION_BOOTSTRAP — HIGH PRIORITY
+
+### World Visual Environment v1
+
+Canonical: `docs/WORLD_VISUAL_ENVIRONMENT_v1.md`.
+
+This milestone is intentionally promoted ahead of the remaining deep Motion/Context work.
+
+Expected branch: `dagyeom/world-visual-environment-v1` from the latest merged `main` after the locomotion bootstrap checkpoint.
+
+Dagyeom-owned presentation paths:
+- `Content/Environment/**`
+- `Content/Maps/**`
+- `Content/WorldPresentation/**`
 
 Minimum:
-- Core-directive-driven Idle / Walk / Jog or Run transition
-- turn-in-place / orientation smoothing
+- non-placeholder natural terrain / ground
+- sky / lighting / atmosphere baseline
+- trees / grass / rocks / natural dressing
+- observer readability for resident labels and selection rings
+- Android-friendly LOD / instancing / material budget
+- no automatic modern infrastructure
+- visual-only decor must not become a second world authority
+- external asset source/version/license provenance recorded
+
+Do not edit `Source/LifeLensCore/**` or authoritative `Source/LifeLens/World/**` for visual convenience. If the environment presentation needs a new Core/World read API, add an Integration Request to `TEAM_BOARD.md`.
+
+## AFTER WORLD VISUAL ENVIRONMENT v1
+
+### Character Motion & Context v1 — remaining scope
+
+Continue the rest of the Motion milestone after the visual environment baseline:
+- turn-in-place refinement
 - sit / stand / lie / wake
 - gaze/head tracking
 - context interaction hook
 - basic IK / transition smoothing
 - visual action stays consistent with Core action directive
-- no competing Character-side action chooser or simulation authority
 
-Imported UAL animations may be reused if their exact provenance/license remains recorded. The current "Idle while sliding" symptom belongs to this milestone, not Appearance presentation code.
+Imported UAL animations may be reused if their exact provenance/license remains recorded.
 
-## AFTER HUMAN CHARACTER MINIMUM
+## AFTER HUMAN CHARACTER + WORLD VISUAL MINIMUM
 
 ### PR #30 Observer UX Polish
 
-Proceed only after Human Character Appearance/Motion minimum checkpoint.
+Proceed after the Human Character minimum and World Visual Environment v1 baseline.
 
 ### PR #36 Mobile Touch
 
@@ -122,19 +159,21 @@ Jjun default support = `REVIEW_ONLY`.
 1. Character Presentation v1 — DONE.
 2. Appearance data/projection support — DONE via PR #65.
 3. Character Appearance v1 — ACTIVE / PR #67 CLOSEOUT.
-4. Character Motion & Context v1 minimum — READY_AFTER_#67.
-5. PR #30 Observer UX Polish.
-6. PR #36 Mobile Touch.
-7. PR #38 Visual Feedback.
-8. Core + Observer + Human Character integrated runtime verification.
-9. Android smoke APK + profiling.
-10. MetaHuman comparison / upgrade decision.
-11. Appearance Genetics & Lifecycle.
-12. Clothing/Equipment civilization linkage.
-13. deeper civilization production chains.
+4. Character Motion Bootstrap — READY_AFTER_#67.
+5. **World Visual Environment v1 — HIGH PRIORITY / READY_AFTER_MOTION_BOOTSTRAP.**
+6. Character Motion & Context v1 remaining scope.
+7. PR #30 Observer UX Polish.
+8. PR #36 Mobile Touch.
+9. PR #38 Visual Feedback.
+10. Core + Observer + Human Character + World Visual integrated runtime verification.
+11. Android smoke APK + profiling.
+12. MetaHuman comparison / upgrade decision.
+13. Appearance Genetics & Lifecycle.
+14. Clothing/Equipment civilization linkage.
+15. deeper civilization production chains.
 
 ## Canonical product direction
 
 `Need / Curiosity → Gather → Store → Experiment → Discovery → Personal Knowledge → Craft/Build → Teach/Imitate → Culture → Specialization → Generational Civilization`
 
-Character/UI presentation은 원시 자원·도구부터 이후 기술까지 수용 가능하게 유지한다.
+Character/UI/environment presentation은 원시 자원·도구부터 이후 기술까지 수용 가능하게 유지하며, 실제 세계 상태의 authority는 Core/World에 둔다.
