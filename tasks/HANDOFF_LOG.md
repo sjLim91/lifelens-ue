@@ -518,6 +518,22 @@
 - 상대가 알아야 할 점:
   - 세로 비율 창에서 관찰 카메라의 16:9 aspect 제약으로 상하 레터박스가 크고 HUD 배율이 작아짐. 목표는 가로 모드이므로 참고만. 카메라 설정은 `Core/LLLifeLensGameMode.cpp` 소유자 영역.
 
+### Visual Feedback v1 (DQ-05)
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/visual-feedback-v1` (base `dagyeom/mobile-touch-v1` `15eec5b`), PR 생성 예정
+- 커밋: `f72f967`
+- 상태: `IN_PROGRESS / 검증 대기`
+- 변경 범위:
+  - `Source/LifeLens/UI/LLObserverHUD.h`, `.cpp`: 관측 단계 전환 시 Quick/Detail 패널 0.18초 페이드인. 새 선택 시 주민 투영 바운즈 주위로 0.45초 확장·소멸 외곽선. LEVEL 1/2 동안 주민 아래 얇은 밑줄. LEVEL 0 스트립에서 선택 주민 항목을 약간 밝게. Core 값 추가 없음, Simulation 미변경
+- 검증 상태:
+  - 로컬 `Build.sh LifeLensEditor Mac Development`: Result: Succeeded
+  - structural preflight PASS (로컬)
+  - GitHub Actions: 검증 대기
+  - 화면/동작 확인: 검증 대기
+- 상대가 알아야 할 점:
+  - UI 파일만 변경. `ULLObservationSubsystem`과 주민 액터 바운즈 투영만 읽음.
+  - 이 브랜치에는 `tasks/WORK_STATE.md`가 없음. main 병합 시 항목 추가.
+
 ---
 
 ## 다음 인수인계 포인트

@@ -15,6 +15,7 @@
 | 다겸 + 다겸 AI | `dagyeom/observer-ui-v2` | Observer HUD v2 + 선택 주민 상세 패널 + 관찰 UX | `Source/LifeLens/UI/**`, UI/Character presentation | REVIEW |
 | 다겸 + 다겸 AI | `dagyeom/observer-ux-polish-v1` | DQ-03 Observer UX Polish v1 — 뒤로가기 / 위계 / empty-state | `Source/LifeLens/UI/**` | DOING |
 | 다겸 + 다겸 AI | `dagyeom/mobile-touch-v1` | DQ-04 Mobile Touch v1 — 터치 타깃 / safe-area / 잘림 방지 | `Source/LifeLens/UI/**` | DOING |
+| 다겸 + 다겸 AI | `dagyeom/visual-feedback-v1` | DQ-05 Visual Feedback v1 — 선택/레벨 전환/관심 대상 피드백 | `Source/LifeLens/UI/**` | DOING |
 
 ## 완료된 병렬 작업
 
