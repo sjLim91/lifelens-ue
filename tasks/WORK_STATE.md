@@ -5,7 +5,7 @@
 > 캐릭터 외형/표현 순서는 `docs/CHARACTER_APPEARANCE_ROADMAP.md`가 우선한다.
 > 협업 기준: `docs/STATE_MANAGEMENT.md` + `docs/INTEGRATION_SPRINT.md`
 
-Last reconciled: 2026-09-14 KST — PR #17 is merged and PR #26 UI Foundation reconcile is active.
+Last reconciled: 2026-09-14 KST — PR #26 UI Foundation reconcile is complete; PR #29 is next.
 
 ## Mandatory sync gate
 
@@ -28,7 +28,7 @@ Last reconciled: 2026-09-14 KST — PR #17 is merged and PR #26 UI Foundation re
 ### 1. Integration Sprint — ACTIVE
 
 - Owner: 쭌 + 다겸, 기존 소유권 유지
-- Status: `IN_PROGRESS / PR #26 UI FOUNDATION RECONCILE`
+- Status: `IN_PROGRESS / NEXT: PR #29 CHARACTER PRESENTATION FOUNDATION`
 - 큰 신규 Jjun Core slice는 integration checkpoint 동안 보류
 - Dagyeom-owned 수정은 `docs/INTEGRATION_SPRINT.md` 규칙에 따른다.
 
@@ -40,39 +40,36 @@ Last reconciled: 2026-09-14 KST — PR #17 is merged and PR #26 UI Foundation re
 - unresolved review threads: 0
 - Observer assist locks released
 
-### 3. PR #26 UI Foundation — DOING
+### 3. PR #26 UI Foundation — DONE
 
 - Original branch: `dagyeom/ui-foundation-v1`
 - Original head: `70dfa5ebeabf24b661c9f9fd0bc63e3ad01ac180`
-- Original PR #26: OPEN / stale-base path superseded by current integration helper once validated
-- Active lock: `ASSIST_LOCK-26-R1`
+- Original PR #26: CLOSED / NOT MERGED / superseded
+- `ASSIST_LOCK-26-R1`: RELEASED
 - Helper: `integration/dagyeom-ui-foundation-r1-assist`
-- Helper PR: **#61**
+- Helper PR #61: MERGED `7826aaa917b4877bdd3b5ebbd6d5bfd139309b9b`
 - Helper scope: only `LLObserverUIFoundation.h/.cpp` on current main
-- Old branch state-doc changes intentionally not replayed
 - Helper Preflight: PASS `34840301429`
-- Verify-only branch: `integration/dagyeom-ui-foundation-r1-verify`
-- Verify-only PR: **#62**
+- Verify-only PR #62: CLOSED / NOT MERGED
 - Verify Preflight: PASS `34840467738`
-- Unreal Linux Compile Run #21: `34840467864` IN PROGRESS
-- Next: verify actual UE 5.6 UHT/UBT/link → close #62 without merge → merge #61 → close/supersede original #26 → unlock
+- Unreal Linux Compile Run #21: `34840467864` PASS including UHT/UBT/link
+- Next: PR #29 Character Presentation Foundation reconcile
 
 ### 4. Dagyeom integration queue
 
 캐릭터 관련 상세 완료조건은 `docs/CHARACTER_APPEARANCE_ROADMAP.md`를 따른다.
 
-1. PR #26 UI Foundation — **DOING**.
-2. PR #29 Character Presentation Foundation.
-3. Character Appearance v1.
-4. Character Motion & Context v1 minimum.
-5. PR #30 Observer UX Polish.
-6. PR #36 Mobile Touch — after #30.
-7. PR #38 Visual Feedback — after #36.
-8. Integrated runtime verification.
-9. Android smoke APK.
-10. Appearance Genetics & Lifecycle.
-11. Clothing/Equipment civilization linkage.
-12. Resume deeper civilization production chains.
+1. PR #29 Character Presentation Foundation — **NEXT**.
+2. Character Appearance v1.
+3. Character Motion & Context v1 minimum.
+4. PR #30 Observer UX Polish.
+5. PR #36 Mobile Touch — after #30.
+6. PR #38 Visual Feedback — after #36.
+7. Integrated runtime verification.
+8. Android smoke APK.
+9. Appearance Genetics & Lifecycle.
+10. Clothing/Equipment civilization linkage.
+11. Resume deeper civilization production chains.
 
 Parent-first; mass force-rebase 금지.
 
