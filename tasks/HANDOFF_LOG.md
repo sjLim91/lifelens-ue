@@ -491,3 +491,29 @@
   - old TASK_03 PR #2 / Run `34739283266`은 계속 FROZEN이다.
 - 다음 쭌 측 잠금:
   - **Autonomous Civilization Action Loop v1** — Core에서 Needs / curiosity / inventory / personal knowledge / world resources를 바탕으로 Gather / Store / Experiment / Craft를 자율 선택·실행하도록 연결한다. 이후 knowledge transmission과 Observer read DTO로 이어간다.
+
+### 2026-09-14 — Autonomous Civilization Action Loop completion
+
+- 작성자: 쭌 측 AI
+- PR #51: `jjun/autonomous-civilization-loop-v1`, feature head `729536ac3f8f2222e68c0d0d1a1726c98ffe19fa`, merge `55d5211160c8edad32b01177e2b9326a9faa2b78`.
+- 변경 범위:
+  - pure-Core `CivilizationIntent` Gather / Store / Experiment / Craft를 Physical/Social과 분리된 세 번째 utility 축으로 추가.
+  - 긴급 Needs가 있으면 생존이 문명보다 우선하며, 문명 행동은 15분 decision slot에서만 경쟁하여 기존 생활/사회 루프를 굶기지 않는다.
+  - Gather는 실제 finite ResourceNode를 감소시키고 Inventory와 gathering skill을 갱신한다.
+  - Store는 carrying pressure가 높을 때 surplus를 shared StorageSite로 옮긴다.
+  - Experiment는 개인 Knowledge/prerequisite/material을 검사하며 실패 시 재료 소모 + Hypothesized, 성공 시 해당 주민 개인만 Reproducible discovery를 얻는다.
+  - Craft는 개인 Reproducible 기술과 실제 입력재료가 있을 때만 재현된다.
+  - WorldSeed + CharacterId 기반 개인 preference와 simulation minute 기반 experiment roll로 별도 persisted counter 없이 결정론을 유지한다.
+  - renewable ResourceNode는 일 단위로 재생되고, repeated NEW GAME는 resource/storage를 초기 상태로 reset한다.
+  - Civilization event는 Core log에 deterministic하게 기록한다.
+- 검증:
+  - Core Tests `34811869666` PASS: Configure / Build / 전체 Test / deterministic harness smoke.
+  - Structural Preflight `34811869612` PASS.
+  - 전용 테스트는 urgent hunger survival priority, personal knowledge divergence, autonomous Store, Experiment→Discovery→Craft, 20,000분 NEW GAME 진행, same-seed canonical bytes, Save/Load 후 추가 2,500분 exact continuation, repeated NEW GAME reset을 검증한다.
+- 상대가 알아야 할 점:
+  - 이제 문명 기능은 데이터만 존재하는 것이 아니라 실제 Core residents가 자율적으로 실행한다.
+  - Civilization을 SocialIntent에 섞지 않았으므로 기존 Observer의 Social 의미가 오염되지 않는다.
+  - 아직 Civilization current-action/read DTO는 Unreal/UI에 공개하지 않았으므로 다겸 UI는 placeholder를 만들지 않는다.
+  - old TASK_03 PR #2 / Run `34739283266`은 계속 FROZEN이다.
+- 다음 쭌 측 잠금:
+  - **Civilization Knowledge Transmission v1** — 발견/제작 지식이 개인에게 고립되지 않도록 #47 Witness/Rumor provenance를 재사용해 목격·모방·직접 교육으로 불완전하게 전파한다.
