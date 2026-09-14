@@ -51,7 +51,7 @@ inline std::uint64_t environmentalMix(std::uint64_t value)
 inline GridPos deterministicOutdoorReliefPosition(
     std::uint64_t worldSeed,
     CharacterId character,
-    GridPos settlementOrigin={})
+    GridPos /*currentPosition*/={})
 {
     const std::uint64_t mixed=environmentalMix((worldSeed?worldSeed:1)^environmentalMix(character));
     static const GridPos directions[8]={
@@ -59,10 +59,10 @@ inline GridPos deterministicOutdoorReliefPosition(
     };
     const GridPos direction=directions[mixed%8ULL];
     const int distance=5+static_cast<int>((mixed>>8)%3ULL);
-    return {
-        settlementOrigin.x+direction.x*distance,
-        settlementOrigin.y+direction.y*distance
-    };
+    // v1 has no authoritative settlement transform yet. Use Core grid origin as
+    // the settlement reference so each resident gets one stable outdoor site;
+    // repeated use accumulates instead of drifting farther away every visit.
+    return {direction.x*distance,direction.y*distance};
 }
 
 class EnvironmentalResidueField {
