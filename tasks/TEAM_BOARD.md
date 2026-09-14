@@ -22,8 +22,10 @@
 | 쭌 + 쭌 AI | PR #66 | World Affordance Fallback v1 | `Source/LifeLens/World/**` + canonical docs | DONE / MERGED `0ad8d6b...` |
 | 쭌 + 쭌 AI | PR #68 / `jjun/environmental-residue-v1` | Environmental Residue v1 | Core/Simulation/World/SaveLoad | ACTIVE / VALIDATION |
 | 쭌 + 쭌 AI | PR #65 | Deterministic Appearance projection contract | `Source/LifeLens/Simulation/**` + docs | DONE / MERGED `86663cb...` |
-| 다겸 + 쭌 Bridge support as needed | `dagyeom/character-motion-v1` after #67 | Character Motion & Context v1 | Character presentation/animation | READY_AFTER_#67 |
-| 다겸 + 다겸 AI | PR #30 | Observer UX Polish | `Source/LifeLens/UI/**` | AFTER HUMAN CHARACTER MINIMUM |
+| 다겸 + 다겸 AI | `dagyeom/character-motion-v1` after #67 | Character Motion Bootstrap | Character locomotion presentation | READY_AFTER_#67 |
+| 다겸 + 다겸 AI | `dagyeom/world-visual-environment-v1` after Motion bootstrap | World Visual Environment v1 | `Content/Environment/**`, `Content/Maps/**`, `Content/WorldPresentation/**` | HIGH PRIORITY / READY_AFTER_MOTION_BOOTSTRAP |
+| 다겸 + 쭌 Bridge support as needed | continue Motion branch after environment baseline | Character Motion & Context remainder | Character presentation/animation | AFTER WORLD VISUAL v1 |
+| 다겸 + 다겸 AI | PR #30 | Observer UX Polish | `Source/LifeLens/UI/**` | AFTER HUMAN + WORLD VISUAL MINIMUM |
 | 다겸 + 다겸 AI | PR #36 | Mobile Touch v1 | `Source/LifeLens/UI/**` | AFTER #30 |
 | 다겸 + 다겸 AI | PR #38 | Visual Feedback v1 | `Source/LifeLens/UI/**` | AFTER #36 |
 | 쭌 + 쭌 AI | PR #2 | old Android validation | Bridge/build | FROZEN |
@@ -34,7 +36,8 @@
 
 ## World Affordance / Environment — canonical
 
-Canonical design: `docs/WORLD_AFFORDANCE_ENVIRONMENT_v1.md`.
+Simulation/environment consequence canonical: `docs/WORLD_AFFORDANCE_ENVIRONMENT_v1.md`.
+World visual presentation canonical: `docs/WORLD_VISUAL_ENVIRONMENT_v1.md`.
 
 Rules:
 - initial world must not silently spawn beds/toilets/showers/tables or other civilization infrastructure
@@ -44,6 +47,7 @@ Rules:
 - Eat/Drink fallback never creates food/water
 - environmental consequence with simulation impact belongs to Core authority and Save/Load
 - environment problems may feed Memory / Health / Avoidance / Knowledge / Civilization discovery
+- visual environment must not become a second world authority
 
 ### PR #66 — DONE
 
@@ -78,6 +82,32 @@ Current verified state:
 Causal direction:
 
 `Need → fallback action → environment consequence → experience/problem → observation/knowledge → primitive solution → improved facility → culture/civilization`
+
+### World Visual Environment v1 — HIGH PRIORITY
+
+Canonical: `docs/WORLD_VISUAL_ENVIRONMENT_v1.md`.
+
+Decision:
+- elevate visual background work much earlier than the old roadmap
+- do not start by stacking it on unfinished PR #67
+- after #67 merge, first remove the obvious Idle-sliding problem with a small Motion bootstrap
+- then start World Visual Environment v1 before the remaining deep Motion/Context work
+
+Dagyeom owns presentation-only paths:
+- `Content/Environment/**`
+- `Content/Maps/**`
+- `Content/WorldPresentation/**`
+
+Minimum visual baseline:
+- terrain / ground
+- sky / lighting / atmosphere
+- trees / grass / rocks / natural dressing
+- Observer readability
+- Android-friendly LOD / instancing / material budget
+- no implicit modern infrastructure
+- asset provenance
+
+Authoritative Core/World source remains Jjun-owned. If the background needs authoritative read data, add an Integration Request rather than duplicating state.
 
 ### Completed support — Appearance data contract v1
 
@@ -160,7 +190,10 @@ Final direction:
 - paid runtime/API dependency 없음
 - asset license/provenance 기록
 
-After Appearance, Character Motion & Context v1 minimum adds locomotion, turn, sit/stand/lie, gaze, context hooks, basic IK and transition smoothing driven by Core directives.
+After Appearance, Character Motion & Context is split intentionally:
+1. small locomotion bootstrap: Idle / Walk / Jog + basic orientation
+2. World Visual Environment v1
+3. remaining motion/context: sit/stand/lie, gaze, IK, interaction transitions
 
 ## Dagyeom API / design handoff
 
@@ -198,6 +231,9 @@ Dagyeom default:
 - Character appearance/presentation
 - `Content/UI/**`
 - `Content/Characters/**`
+- `Content/Environment/**`
+- `Content/Maps/**`
+- `Content/WorldPresentation/**`
 
 ## Integration Requests
 
@@ -215,8 +251,9 @@ Request:
 Resolution:
 - no additional Core/Bridge API blocker is known
 - status is `READY_AFTER_#67`, not immediate `READY_NOW`
-- after PR #67 is validated, merged, and live docs synced, Motion & Context auto-promotes to READY_NOW without another design review
-- this preserves the project completion rule and avoids stacking Motion changes on an unfinished Appearance product branch
+- after PR #67 is validated, merged, and live docs synced, Motion bootstrap auto-promotes to READY_NOW without another design review
+- first slice is intentionally limited to Idle/Walk/Jog + basic orientation
+- after that small checkpoint, World Visual Environment v1 takes priority before deep Motion/Context work
 
 ### Dagyeom request — clothing / skin variety
 
@@ -227,6 +264,16 @@ Resolution:
 - additional skin-tone/detail variety may be queued as a follow-up once minimum visual distinctness is met
 - every additional asset pack must have its exact source/version/license verified; do not infer CC0 from the publisher name alone
 
+### User priority decision — World Visual Environment
+
+**Decision: PROMOTED.**
+
+- World/background work is no longer postponed until after all Motion/UX work.
+- Canonical milestone: `docs/WORLD_VISUAL_ENVIRONMENT_v1.md`.
+- Status: `HIGH PRIORITY / READY_AFTER_MOTION_BOOTSTRAP`.
+- Dagyeom can begin it after #67 closes and the minimal Idle/Walk/Jog bootstrap is merged.
+- remaining Motion/Context work moves behind the visual environment baseline.
+
 ## Merge / reconciliation queue
 
 1. Character Presentation v1 — DONE via PR #63.
@@ -234,16 +281,18 @@ Resolution:
 3. Character Appearance v1 — ACTIVE / PR #67 CLOSEOUT. (Dagyeom)
 4. World Affordance Fallback v1 — DONE via PR #66. (Jjun)
 5. Environmental Residue v1 — ACTIVE / PR #68 VALIDATION. (Jjun)
-6. Character Motion & Context v1 minimum — READY_AFTER_#67; auto-promote after #67 merge.
-7. PR #30 Observer UX Polish.
-8. PR #36 Mobile Touch.
-9. PR #38 Visual Feedback.
-10. Core + Observer + Human Character integrated runtime verification.
-11. Android smoke APK + profiling.
-12. MetaHuman comparison / upgrade decision.
-13. Appearance Genetics & Lifecycle.
-14. Clothing/Equipment civilization linkage.
-15. Resume deeper civilization production chains.
+6. Character Motion Bootstrap — READY_AFTER_#67.
+7. **World Visual Environment v1 — HIGH PRIORITY / READY_AFTER_MOTION_BOOTSTRAP.**
+8. Character Motion & Context remaining scope.
+9. PR #30 Observer UX Polish.
+10. PR #36 Mobile Touch.
+11. PR #38 Visual Feedback.
+12. Core + Observer + Human Character + World Visual integrated runtime verification.
+13. Android smoke APK + profiling.
+14. MetaHuman comparison / upgrade decision.
+15. Appearance Genetics & Lifecycle.
+16. Clothing/Equipment civilization linkage.
+17. Resume deeper civilization production chains.
 
 ## Completion rule
 
