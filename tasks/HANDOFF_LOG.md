@@ -533,3 +533,24 @@
 - 현재 행동은 Core resident observation 우선, legacy actor intent는 transitional fallback.
 - UI는 read-only presentation이며 simulation authority/cache를 새로 만들지 않음.
 - 상대가 알아야 할 점: 쭌 측 Observer blocker 0개. 다음 순서 PR #26 → #29/#30 → #36 → #38 → integrated runtime → Android smoke APK.
+
+## 2026-09-14 — 다겸 측 AI — Sync checkpoint + Character Appearance v1 PREP_ONLY 시작
+
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/character-appearance-prep-v1` (base `main` `d275ecd`), PR 생성 예정 (docs only)
+- 상태: `PREP_ONLY / PARALLEL_SAFE_NOW`
+- Sync 결과 (실제 GitHub, 2026-09-14 21:40 KST):
+  - `main` HEAD `d275ecd`
+  - PR #63 OPEN, head `b9d22d4`, structural-preflight SUCCESS, compile-linux SUCCESS
+  - Unreal Linux Compile Run `34843425495`: **completed / success** (문서에는 IN_PROGRESS로 기록됨 → 본 항목으로 실제 상태 기록. lock 해제 조건 1 충족 여부 판단과 `ASSIST_LOCK-29-R1` 해제는 lock owner(쭌 측 assist) 권한이므로 변경하지 않음)
+  - PR #29 OPEN (base `dagyeom/observer-ui-v2`), PR #17 MERGED `aa194db`
+  - 로컬 다겸 branch 중 `dagyeom/observer-ui-v2`의 DQ-R1 로컬 reconcile은 #17 merge로 불필요해짐. 해당 branch의 Integration Request(`ObserverReadModelV2.h` shadow)는 main `PR #54 macOS clang shadow hotfix`로 해소된 것으로 WORK_STATE에 기록됨
+- 변경 범위:
+  - 코드 변경 없음. `ASSIST_LOCK-29-R1` locked 4개 파일 미접촉
+  - 이 항목(HANDOFF append)만
+- 진행 중인 PREP_ONLY 작업:
+  - 무료·상업 이용·재배포 가능 humanoid asset 후보 조사 및 license/provenance 정리 (출처 URL 포함)
+  - common skeleton / modular appearance 구조, AppearanceProfile 요구 필드 초안, Android LOD/mobile fallback 계획
+  - 산출물 문서 경로/파일명은 STATE_MANAGEMENT/READY_QUEUE에 규칙이 없어 사용자 결정 대기
+- 상대가 알아야 할 점:
+  - Core/Bridge API 추가 요청 없음(현 단계). AppearanceProfile용 authoritative data가 필요해지면 Integration Request로 등록 예정.
