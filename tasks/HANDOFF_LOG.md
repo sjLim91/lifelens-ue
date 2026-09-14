@@ -533,3 +533,26 @@
 - 현재 행동은 Core resident observation 우선, legacy actor intent는 transitional fallback.
 - UI는 read-only presentation이며 simulation authority/cache를 새로 만들지 않음.
 - 상대가 알아야 할 점: 쭌 측 Observer blocker 0개. 다음 순서 PR #26 → #29/#30 → #36 → #38 → integrated runtime → Android smoke APK.
+
+## 2026-09-14 — 다겸 측 AI — Character Appearance v1 checkpoint
+
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/character-appearance-v1` (base `main` `9db79b8`), PR 생성 예정
+- 커밋: `7ffa58c` (content), `a1f4bd3` (code)
+- 상태: `IN_PROGRESS / 검증 대기`
+- 변경 범위:
+  - `Content/Characters/Quaternius/**`: Universal Base Characters [Standard] + Universal Animation Library [Standard] 임포트(83 에셋). `PROVENANCE.md`에 팩 버전·zip 크기·다운로드 날짜·URL·zip 내 CC0 문구·사용 파일 기록. `Import/import_quaternius.py`로 headless Interchange 임포트(공유 스켈레톤 1개, 43 애니 시퀀스, 헤어 8, 라이트 스킨 텍스처 2)
+  - `Source/LifeLens/Characters/LLResidentAppearanceInputs.h/.cpp` (신규): `FLLResidentAppearanceInputs`(#65 `FLLAppearanceProfile` 필드 구조와 동일), `Resolve()` 단일 교체 지점. 현재는 `hash(WorldSeed, ResidentId)` 임시 표현용 시드(코드 주석 명시, 권위 데이터 아님, 저장 안 함)
+  - `Source/LifeLens/Characters/LLResidentAppearanceComponent.h/.cpp` (신규): 성별 스켈레탈 메시, 피부 텍스처 변형+틴트, 눈·눈썹 틴트, 헤어 스타일/색(Head 본 부착), 수염 변형, LifeStage·키·체형 스케일, Idle_Loop
+  - `LLResidentPresentationComponent`: 실루엣은 에셋 없을 때 fallback, 라벨은 인체 위로, DebugBody 숨김. 선택 링·라벨 LOD 유지
+  - `LLResidentCharacter`: `AppearanceComponent` 추가만
+- 검증 상태:
+  - 로컬 `Build.sh LifeLensEditor Mac Development`: Result: Succeeded
+  - structural preflight PASS (로컬)
+  - 임포트 커맨드렛 exit 0, Python 오류 없음
+  - GitHub Actions: 검증 대기. 화면/동작 확인: 검증 대기
+- 상대가 알아야 할 점:
+  - Core/Bridge 읽기만: `ULLCoreBridgeSubsystem::GetRuntimeSeed/GetResidentObservation`, fallback `ULLSimulationSubsystem`. 새 authoritative 필드 없음
+  - #65 merge 후 `ULLResidentAppearanceInputSource::Resolve`를 `ULLAppearanceProfileLibrary::MakeDeterministicAppearanceProfile`로 교체 예정(단일 지점)
+  - 임포트 산출물 중 `UAL/UAL1_Standard/Materials/M_Joints, M_Main`은 마네킹 재질(미사용). `Import/IP_*` 파이프라인 에셋은 재임포트용
+  - Android LOD/fallback: 에셋은 ~13k tri, 머티리얼 슬롯 3(+헤어 1). 별도 LOD 생성은 후속

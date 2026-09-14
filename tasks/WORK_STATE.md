@@ -52,6 +52,21 @@ Rules:
 - if new authoritative appearance/genetics/save data is required, add an Integration Request to `TEAM_BOARD.md` for Jjun Core/Bridge support.
 - Jjun side does not push directly to `dagyeom/*`.
 
+#### 다겸 진행 행 (다겸 측 AI 추가, 2026-09-14)
+
+- Owner: 다겸 + 다겸 AI
+- Branch: `dagyeom/character-appearance-v1` (base `main` `9db79b8`)
+- Work item: Character Appearance v1 — Track B Quaternius CC0
+- Last known HEAD: `a1f4bd3`
+- PR: 생성 예정
+- Status: `IN_PROGRESS`
+- CI: 로컬 `Build.sh LifeLensEditor Mac Development` Result: Succeeded; 로컬 `Tools/validate_bootstrap.py` PASS; GitHub Actions 대기
+- Last verified fact: UBC/UAL 에셋 83개 임포트(`Content/Characters/Quaternius/**`, PROVENANCE.md), `LLResidentAppearanceComponent` + `LLResidentAppearanceInputs`(임시 시드, #65 교체 지점 분리), Presentation 연동. 화면/동작 확인 대기
+- Blocker / interruption: 없음
+- Exact next action: PIE 화면 확인 → PR 생성 → `WAITING_CI` → #65 merge 시 `ULLResidentAppearanceInputSource::Resolve`를 `FLLAppearanceProfile`로 교체
+- Handoff safety: `SAFE`
+- Shared-file impact: 없음 (Characters/Content/docs만)
+
 ### Jjun lane — REVIEW/INTEGRATION SUPPORT
 
 - Default: REVIEW_ONLY.
