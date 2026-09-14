@@ -21,12 +21,12 @@ Last reconciled: 2026-09-14 KST — session recovery; GitHub branch/PR/Actions r
 - Work item: Emotion / family summary / world aggregate Core read DTOs.
 - Last known HEAD: `86b916aef27e5df7c6d5e9a30f49c61a25fd971c`
 - PR: #34 `[CORE] Expand observer read model for family and world overview`
-- Status: `WAITING_CI`
-- CI: refreshed Core Tests Run `34794030200` IN_PROGRESS; Preflight Run `34794030209` PASS.
+- Status: `READY_TO_MERGE`
+- CI: refreshed Core Tests Run `34794030200` PASS; Preflight Run `34794030209` PASS.
 - Last verified fact: 27/27 local CMake Release tests (assertions enabled), deterministic seed 42 harness and structural preflight passed. Remote tree `516e33a` equals the tested local merge tree.
-- Blocker / interruption: CI pending. Prior validation defect was fixed by PR #35.
+- Blocker / interruption: None. Both refreshed checks passed; PR head and mergeability reverified.
 - Exact next action: Read PR #34 head and Run `34794030200`; if unchanged and PASS, verify mergeability and merge with expected head `86b916aef27e5df7c6d5e9a30f49c61a25fd971c`. Record merge SHA, then start a separate observer-runtime integration task.
-- Handoff safety: `CONDITIONAL` — all work saved remotely; CI is the remaining gate.
+- Handoff safety: `SAFE` — verified remote HEAD, checks and next action.
 - Shared-file impact: Core DTO/test/CMake + append-only HANDOFF_LOG. No UI/TASK_03 changes. Unreal bridge is not implemented by this PR.
 - Contract notes: `majorLifeEvents` is per-character LifeHistory record count, not unique events; GenerationContinuity still uses its separate API.
 
