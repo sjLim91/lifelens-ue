@@ -4,7 +4,7 @@
 >
 > 제품 기준: `docs/LIFELENS_SPEC_v1.1.md` + **`docs/CIVILIZATION_PROGRESSION_v1.md`** · 상태 규칙: `docs/STATE_MANAGEMENT.md` · 역할/잠금: `tasks/TEAM_BOARD.md` · 이력: `tasks/HANDOFF_LOG.md`
 
-Last reconciled: 2026-09-14 KST — actual `main` includes PR #52 merge `b90da9242003fbc0cbc553605b9abc46a17aa044` plus state commits. **Civilization Observer Read DTOs v1** is open as PR #53 on `jjun/civilization-observer-read-v1`, head `c7753047a28ea3b1dae75c4e6abae7e1f289f962`. Final push Core Run `34819660707` PASS (38/38 + deterministic harness). PR Core `34819825563`, Preflight `34819825627`, Unreal Linux Compile Run #15 `34819825591` are in progress.
+Last reconciled: 2026-09-14 KST — actual `main` includes PR #52 merge `b90da9242003fbc0cbc553605b9abc46a17aa044` plus current state reconciliation commits. **Civilization Observer Read DTOs v1** is open as PR #53 on `jjun/civilization-observer-read-v1`, head `c7753047a28ea3b1dae75c4e6abae7e1f289f962`. Final push Core Run `34819660707` PASS (38/38 + deterministic harness). PR Core `34819825563` PASS and Preflight `34819825627` PASS. Unreal Linux Compile Run #15 `34819825591` FAILED at final link after UHT succeeded: `LLCoreCompileUnit.cpp` omitted `CivilizationKnowledgeTransmission.cpp`, leaving `processCivilizationKnowledgeEvent(...)` and `advanceCivilizationKnowledgeTeaching()` undefined. Fix/revalidation is the only active Jjun task before merge.
 
 ## Mandatory sync gate
 
@@ -34,10 +34,20 @@ Rules:
 ### 1. Civilization Observer Read DTOs v1 — Jjun
 
 - Owner: 쭌 + 쭌 AI
-- Status: `REVIEW / CI_RUNNING`
+- Status: `REVIEW / CI_FIXING`
 - Branch/PR: `jjun/civilization-observer-read-v1`, PR #53
-- Head: `c7753047a28ea3b1dae75c4e6abae7e1f289f962`
-- Validation: final push Core `34819660707` PASS 38/38 + deterministic harness; PR Core `34819825563` IN PROGRESS; Preflight `34819825627` IN PROGRESS; UE Linux Compile Run #15 `34819825591` IN PROGRESS.
+- Head before fix: `c7753047a28ea3b1dae75c4e6abae7e1f289f962`
+- Validation:
+  - final push Core `34819660707` PASS 38/38 + deterministic harness;
+  - PR Core `34819825563` PASS;
+  - Preflight `34819825627` PASS;
+  - UE Linux Compile Run #15 `34819825591` FAILED at **link** after UHT passed.
+- Run #15 root cause:
+  - `Source/LifeLens/Simulation/LLCoreCompileUnit.cpp` includes Core implementation `.cpp` files manually for Unreal;
+  - it did not include `Source/LifeLensCore/src/CivilizationKnowledgeTransmission.cpp`;
+  - therefore linker could not resolve `Simulation::processCivilizationKnowledgeEvent(...)` and `Simulation::advanceCivilizationKnowledgeTeaching()`;
+  - this is not a `dev-slim-5.6.0`, Android SDK, UHT, or DTO design failure.
+- Exact next action: add the missing compile-unit include, add structural validator coverage so it cannot regress, then run one latest-head UE 5.6 UHT/UBT validation.
 - Goal: expose authoritative civilization state to Observer/Unreal without leaking mutable Core internals or inventing strategy-game authority in UI.
 - Implemented v1 scope:
   1. separate Core `ResidentCivilizationObservation` and `CivilizationWorldObservation` read models;
@@ -99,11 +109,12 @@ Rules:
 
 ## Next sequencing
 
-1. Finish/merge Civilization Observer Read DTOs v1 PR #53.
-2. Unreal natural-resource affordances + held tool/item presentation.
-3. Deeper production chains: stable fire, improved stone tools, containers, construction, agriculture, metallurgy.
-4. Economy/specialization after production and knowledge flow are real.
-5. Android smoke APK once the new survival/civilization runtime is observable.
+1. Fix/revalidate/merge Civilization Observer Read DTOs v1 PR #53.
+2. **Integration Sprint:** pause new large Jjun Core slices while Dagyeom PR #17 catches up to latest main and binds the published Observer/Bridge APIs.
+3. Reconcile Dagyeom PR #26 independently, then stacked #29/#30 → #36 → #38.
+4. Verify one integrated runtime slice with Core civilization + Observer UI + character presentation.
+5. Android smoke APK after the integrated slice is observable.
+6. Resume deeper civilization production chains (fire, improved stone tools, containers, construction, agriculture, metallurgy) after the integration checkpoint.
 
 ---
 
