@@ -38,6 +38,7 @@ enum class ELLActionIntent : uint8
 {
     Idle,
     Eat,
+    Drink,
     Sleep,
     Socialize,
     Hygiene,
