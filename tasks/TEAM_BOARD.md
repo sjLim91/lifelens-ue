@@ -12,7 +12,7 @@
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | `jjun/autonomous-family-progression-v1`, PR #43 | Autonomous Family Progression v1 | `Source/LifeLensCore/**`, Core tests/CMake only | READY_TO_MERGE — head `81dbb57d...`, Core + deterministic + Preflight PASS |
+| 쭌 + 쭌 AI | next latest-main branch | Full Core Save/Load v1 | `Source/LifeLensCore/**`, then bounded Unreal Save adapter | TODO — start only after sync from actual main |
 | 쭌 + 쭌 AI | `task/03-fast-test`, PR #2 | old Android validation | Bridge/build | FROZEN — Run `34739283266` 재실행/수정/병합 금지 |
 | 다겸 + 다겸 AI | `dagyeom/observer-ui-v2`, PR #17 | Observer HUD v2 + Core Observer Bridge binding | `Source/LifeLens/UI/**` | REVIEW / RECOVERING — latest main reconcile 필요 |
 | 다겸 + 다겸 AI | `dagyeom/ui-foundation-v1`, PR #26 | Android landscape UI foundation | UI foundation | REVIEW |
@@ -21,30 +21,28 @@
 | 다겸 + 다겸 AI | `dagyeom/mobile-touch-v1`, PR #36 | Mobile Touch v1 | `Source/LifeLens/UI/**` | REVIEW — stacked on #30 |
 | 다겸 + 다겸 AI | `dagyeom/visual-feedback-v1`, PR #38 | Visual Feedback v1 | `Source/LifeLens/UI/**` | REVIEW — stacked on #36 |
 
-## Current Jjun lock — PR #43 Autonomous Family Progression v1
-
-- Branch/PR: `jjun/autonomous-family-progression-v1`, PR #43.
-- Current head: `81dbb57d190810cc3318e82ba952064d50fd8fdc`.
-- Allowed scope: `Source/LifeLensCore/**` and Core tests/CMake only.
-- Product behavior:
-  - no hard-coded founder couples;
-  - relationship/social state + personality compatibility can gradually create romantic chemistry;
-  - deterministic daily candidate evaluation;
-  - minimum 30 dating days before cohabitation;
-  - minimum 90 dating days plus 30 mature cohabitation days before engagement;
-  - minimum 60 engagement days before marriage;
-  - minimum 30 marriage days before weekly pregnancy attempts;
-  - same-sex romance allowed; biological pregnancy follows current reproductive eligibility model;
-  - pregnancies advance and due pregnancy creates real child resident with genetics/genealogy/household/LifeHistory/runtime state;
-  - marriage links Genealogy spouses;
-  - daily Aging is integrated.
-- Validation on current head:
-  - Core Tests Run `34801572846` PASS including Configure / Build / Test / Deterministic harness smoke.
-  - Structural Preflight Run `34801572858` PASS.
-  - supersedes first failed Build Run `34801444613` caused by a duplicate helper name.
-- Before merge: verify changed files remain Core-only, then merge with expected head SHA.
-
 ## Latest completed Jjun work
+
+### PR #43 — Autonomous Family Progression v1
+
+- Status: DONE
+- Feature HEAD: `81dbb57d190810cc3318e82ba952064d50fd8fdc`
+- Merge: `179e3a65aaa6ff8d2243117c7aebfd760812c73d`
+- Validation:
+  - Core Tests `34801572846` PASS including Configure / Build / Test / Deterministic harness smoke.
+  - Structural Preflight `34801572858` PASS.
+- Scope: exactly 5 files under `Source/LifeLensCore/**`; no Unreal/UI/Character/Content files.
+- Product behavior now on main:
+  - no hard-coded initial couple;
+  - social/relationship/personality state can gradually form romantic chemistry;
+  - deterministic daily dating selection;
+  - dating→cohabitation→engagement→marriage with minimum stage durations;
+  - same-sex romance supported;
+  - current biological pregnancy model applies when reproductive eligibility exists;
+  - pregnancy advances to due birth;
+  - newborn becomes a real World resident with inherited genetics, genealogy, household membership, LifeHistory and runtime state;
+  - Simulation owns BirthBook and successful marriages link spouse genealogy;
+  - Aging participates in ongoing lifecycle progression.
 
 ### PR #42 — Production NEW GAME Unreal Runtime Integration
 
@@ -61,9 +59,23 @@
 - PR #39 authoritative Family Runtime State — merge `612229cc610d2ea6283e080309bdee58ef42d1db`; Core `34796213647` PASS.
 - PR #40 Family + World Observer Bridge — merge `9261581df3abd5332d92855628fd7d03203748af`; Preflight `34796892593`, Unreal UHT/UBT `34796892609` PASS.
 
+## Next Jjun lock to establish
+
+Next bounded task: **Full Core Save/Load v1**.
+
+Goal:
+- persist and restore the actual evolved Core world rather than replaying only seed+minute;
+- preserve residents, lifecycle, relationships, memory/belief/emotion, family books, pregnancies/births/genealogy and deterministic continuation;
+- prove roundtrip equality and continuation determinism in Core tests before Unreal SaveGame becomes the adapter;
+- keep Dagyeom UI/Character presentation untouched.
+
 ## Dagyeom API handoff
 
-Former six `BLOCKED-BY-JJUN` items remain RESOLVED / READY FOR BINDING via #37/#39/#40. PR #42 additionally exposes founder Sex/Age/LifeStage/Personality through the same Core resident DTO.
+Former six `BLOCKED-BY-JJUN` items remain RESOLVED / READY FOR BINDING via #37/#39/#40.
+
+Additional main capabilities:
+- #42: founder Sex/Age/LifeStage/Personality in Core resident DTO.
+- #43: family/romance/pregnancy/birth state now evolves autonomously in Core, so existing observer family/world APIs can reflect real progression rather than only seeded test state.
 
 If a new concrete API gap is found, add a new Integration Request rather than reopening the old six.
 
@@ -79,7 +91,7 @@ Current open requests: **none**.
 
 ## Merge / reconciliation queue
 
-1. PR #43 — READY_TO_MERGE after final changed-file scope check.
+1. Jjun Full Core Save/Load v1 — next branch from actual latest main, not yet started.
 2. Dagyeom PR #17 — reconcile latest main + bind current Core Bridge + review fixes + verify.
 3. Dagyeom PR #26 — reconcile latest main independently.
 4. After #17: #29/#30 → #36 → #38.
