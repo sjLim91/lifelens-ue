@@ -2,9 +2,9 @@
 
 > **현재 진행 상태의 단일 기준판.** 쭌/다겸/양쪽 AI는 기능 작업보다 먼저 실제 GitHub 상태와 이 문서를 맞춘다.
 >
-> 제품 기준: `docs/LIFELENS_SPEC_v1.1.md` + **`docs/CIVILIZATION_PROGRESSION_v1.md`** · 상태 규칙: `docs/STATE_MANAGEMENT.md` · 역할/잠금: `tasks/TEAM_BOARD.md` · 이력: `tasks/HANDOFF_LOG.md`
+> 제품 기준: `docs/LIFELENS_SPEC_v1.1.md` + **`docs/CIVILIZATION_PROGRESSION_v1.md`** · 상태 규칙: `docs/STATE_MANAGEMENT.md` · 통합 지원 규칙: **`docs/INTEGRATION_SPRINT.md`** · 역할/잠금: `tasks/TEAM_BOARD.md` · 이력: `tasks/HANDOFF_LOG.md`
 
-Last reconciled: 2026-09-14 KST — actual `main` includes PR #52 merge `b90da9242003fbc0cbc553605b9abc46a17aa044` plus current state reconciliation commits. **Civilization Observer Read DTOs v1** is open as PR #53 on `jjun/civilization-observer-read-v1`, head `c7753047a28ea3b1dae75c4e6abae7e1f289f962`. Final push Core Run `34819660707` PASS (38/38 + deterministic harness). PR Core `34819825563` PASS and Preflight `34819825627` PASS. Unreal Linux Compile Run #15 `34819825591` FAILED at final link after UHT succeeded: `LLCoreCompileUnit.cpp` omitted `CivilizationKnowledgeTransmission.cpp`, leaving `processCivilizationKnowledgeEvent(...)` and `advanceCivilizationKnowledgeTeaching()` undefined. Fix/revalidation is the only active Jjun task before merge.
+Last reconciled: 2026-09-14 KST — actual `main` contains PR #52 merge plus current collaboration-state commits. **Civilization Observer Read DTOs v1** remains open as PR #53 on `jjun/civilization-observer-read-v1`, latest head `e3a9f6611118866a6c79eb300a7b6ab2d5ffaf31`. Run #15 `34819825591` failed at Unreal final link after UHT PASS because `LLCoreCompileUnit.cpp` omitted `CivilizationKnowledgeTransmission.cpp`. Fix commit `e3a9f661...` adds the missing compile-unit include and a structural validator guard. Latest-head Core `34821150702` PASS including tests + deterministic harness, Preflight `34821150693` PASS, Unreal Linux Compile Run #16 `34821150704` is the only remaining external gate.
 
 ## Mandatory sync gate
 
@@ -13,6 +13,7 @@ Last reconciled: 2026-09-14 KST — actual `main` includes PR #52 merge `b90da92
 3. 다르면 **코드보다 문서를 먼저 갱신**한다.
 4. branch 생성, PR 생성, CI 결과, 실패 원인 확정, merge 등 의미 있는 checkpoint마다 즉시 갱신한다.
 5. GitHub 실제 상태가 항상 stale 문서보다 우선한다.
+6. 쭌이 다겸 소유 작업을 돕는 경우 **`docs/INTEGRATION_SPRINT.md`를 반드시 먼저 적용한다.**
 
 ---
 
@@ -34,52 +35,62 @@ Rules:
 ### 1. Civilization Observer Read DTOs v1 — Jjun
 
 - Owner: 쭌 + 쭌 AI
-- Status: `REVIEW / CI_FIXING`
+- Status: `WAITING_CI`
 - Branch/PR: `jjun/civilization-observer-read-v1`, PR #53
-- Head before fix: `c7753047a28ea3b1dae75c4e6abae7e1f289f962`
+- Latest head: `e3a9f6611118866a6c79eb300a7b6ab2d5ffaf31`
 - Validation:
-  - final push Core `34819660707` PASS 38/38 + deterministic harness;
-  - PR Core `34819825563` PASS;
-  - Preflight `34819825627` PASS;
-  - UE Linux Compile Run #15 `34819825591` FAILED at **link** after UHT passed.
-- Run #15 root cause:
-  - `Source/LifeLens/Simulation/LLCoreCompileUnit.cpp` includes Core implementation `.cpp` files manually for Unreal;
-  - it did not include `Source/LifeLensCore/src/CivilizationKnowledgeTransmission.cpp`;
-  - therefore linker could not resolve `Simulation::processCivilizationKnowledgeEvent(...)` and `Simulation::advanceCivilizationKnowledgeTeaching()`;
-  - this is not a `dev-slim-5.6.0`, Android SDK, UHT, or DTO design failure.
-- Exact next action: add the missing compile-unit include, add structural validator coverage so it cannot regress, then run one latest-head UE 5.6 UHT/UBT validation.
+  - latest Core `34821150702` PASS including Build / full tests / deterministic harness;
+  - latest Preflight `34821150693` PASS including the new compile-unit regression guard;
+  - UE Linux Compile Run #16 `34821150704` IN PROGRESS and is the only valid remaining gate.
+- Superseded failure: Run #15 `34819825591` failed at **link** after UHT PASS because `Source/LifeLens/Simulation/LLCoreCompileUnit.cpp` omitted `CivilizationKnowledgeTransmission.cpp`; unresolved symbols were `Simulation::processCivilizationKnowledgeEvent(...)` and `Simulation::advanceCivilizationKnowledgeTeaching()`.
+- Fix: head `e3a9f661...` includes `CivilizationKnowledgeTransmission.cpp` in Unreal compile unit and Preflight now enforces that include.
+- Exact next action: do not modify the head while Run #16 is active. When the user reports/when checked after completion, verify UHT+UBT result. If green, merge PR #53 and reconcile state docs. If red, inspect the first new root cause before any rerun.
 - Goal: expose authoritative civilization state to Observer/Unreal without leaking mutable Core internals or inventing strategy-game authority in UI.
 - Implemented v1 scope:
   1. separate Core `ResidentCivilizationObservation` and `CivilizationWorldObservation` read models;
   2. inventory/resource/storage deterministic summaries;
   3. personal technique level/confidence/practice and gathering/crafting/learning skills;
   4. provenance summary as SelfDiscovery / DirectWitness / Teaching with origin/immediate-source/fact/hop/minute;
-  5. recent actual discovery summaries while repeated craft demonstrations are excluded from major discovery list;
+  5. recent actual discovery summaries while repeated Craft demonstrations are excluded from major discovery list;
   6. separate Unreal `LLCivilizationReadTypes.h` USTRUCT/UENUM layer;
   7. read-only `GetResidentCivilizationObservation` / `GetCivilizationWorldObservation` Bridge getters using stable FGuid identity;
   8. no second authority/cache; post-load reads rebuilt from current Core;
   9. no UI/Character Presentation files changed.
-- Intermediate Core Run `34819279308` failure was test-only: fixture recorded knowledge events in future minutes; Snapshot validator correctly rejected it. Fixed fixture; final push run passes.
-- Required merge gates: PR Core full suite + deterministic harness + Structural Preflight + actual UE 5.6 UHT/UBT.
 
-### 2. Observer HUD v2 — Dagyeom
+### 2. Post-#53 Integration Sprint — Jjun assists Dagyeom
+
+- Status: `PLANNED / START AFTER #53 MERGE`
+- Protocol: `docs/INTEGRATION_SPRINT.md`
+- Purpose: close the gap between the fast-moving Core/Bridge main and Dagyeom UI/Presentation PR chain before more large Jjun features are added.
+- Default support mode: `REVIEW_ONLY`.
+- If the user asks Jjun to modify Dagyeom-owned code: register `ASSIST_LOCK` in TEAM_BOARD, create `integration/dagyeom-<scope>-assist` from the exact target branch HEAD, and **never push directly to `dagyeom/*`**.
+- Parent-first order:
+  1. PR #17 Observer HUD v2 latest-main reconciliation + current Bridge/civilization binding + review fixes;
+  2. PR #26 UI Foundation latest-main reconciliation independently where safe;
+  3. #29/#30 after #17;
+  4. #36 after #30;
+  5. #38 after #36.
+- Large new Jjun Core feature slices are paused during this integration checkpoint except blocker/API/CI/runtime integration fixes.
+
+### 3. Observer HUD v2 — Dagyeom
 
 - Owner: 다겸 + 다겸 AI
 - Branch/PR: `dagyeom/observer-ui-v2`, PR #17
 - Status: `RECOVERING`
 - Existing legacy Observer blockers remain 0.
 - Civilization UI binding becomes READY only after PR #53 merges; current PR #17 reconciliation work can continue independently.
+- Jjun assistance must follow `docs/INTEGRATION_SPRINT.md`; no direct writes to Dagyeom branch.
 
-### 3. Dagyeom stacked UI / presentation chain
+### 4. Dagyeom stacked UI / presentation chain
 
 - #26 UI foundation — reconcile latest main independently.
 - #29 Character Presentation — stacked on #17.
 - #30 Observer UX Polish — stacked on #17.
 - #36 Mobile Touch — stacked on #30.
 - #38 Visual Feedback — stacked on #36.
-- Jjun does not modify/flatten these branches.
+- Do not mass-rebase/force-update this chain. Parent-first reconciliation only.
 
-### 4. Old Android validation
+### 5. Old Android validation
 
 - `task/03-fast-test`, PR #2: **FROZEN**.
 - Run `34739283266`: FAILURE; Cook/Package/APK not reached.
@@ -109,12 +120,13 @@ Rules:
 
 ## Next sequencing
 
-1. Fix/revalidate/merge Civilization Observer Read DTOs v1 PR #53.
-2. **Integration Sprint:** pause new large Jjun Core slices while Dagyeom PR #17 catches up to latest main and binds the published Observer/Bridge APIs.
-3. Reconcile Dagyeom PR #26 independently, then stacked #29/#30 → #36 → #38.
-4. Verify one integrated runtime slice with Core civilization + Observer UI + character presentation.
-5. Android smoke APK after the integrated slice is observable.
-6. Resume deeper civilization production chains (fire, improved stone tools, containers, construction, agriculture, metallurgy) after the integration checkpoint.
+1. Finish latest-head Run #16 and merge PR #53 if UHT/UBT green.
+2. Enter **Integration Sprint** under `docs/INTEGRATION_SPRINT.md`; pause new large Jjun Core slices.
+3. Help reconcile Dagyeom PR #17 first without direct writes to `dagyeom/*`; use REVIEW_ONLY or explicit ASSIST_LOCK + `integration/*-assist`.
+4. Reconcile PR #26 independently where file locks do not overlap; then parent-first #29/#30 → #36 → #38.
+5. Verify one integrated runtime slice with Core civilization + Observer UI + Character Presentation.
+6. Android smoke APK after the integrated slice is observable.
+7. Resume deeper civilization production chains only after the integration checkpoint.
 
 ---
 
