@@ -32,6 +32,32 @@ inline NeedsDelta emergencyUseEffectPerTick(Goal g)
     }
 }
 
+inline int facilityUseDurationTicks(Goal g)
+{
+    switch(g){
+        case Goal::Eat: return 9;
+        case Goal::Drink: return 8;
+        case Goal::Sleep: return 16;
+        case Goal::UseToilet: return 7;
+        case Goal::Wash: return 8;
+        case Goal::Idle:
+        default: return 1;
+    }
+}
+
+inline NeedsDelta facilityUseEffectPerTick(Goal g)
+{
+    switch(g){
+        case Goal::Eat: return {-0.075,0,0,0,0};
+        case Goal::Drink: return {0,-0.085,0,0,0};
+        case Goal::Sleep: return {0,0,-0.055,0,0};
+        case Goal::UseToilet: return {0,0,0,-0.12,0};
+        case Goal::Wash: return {0,0,0,0,-0.055};
+        case Goal::Idle:
+        default: return {};
+    }
+}
+
 inline std::vector<Action> buildPlan(const World& w,Character& c,Goal g,GridPos from={}) {
     if(g==Goal::Idle) return {{ActionType::Idle,0,5}};
 
@@ -60,8 +86,6 @@ inline std::vector<Action> buildPlan(const World& w,Character& c,Goal g,GridPos 
     }
 
     if(hasObject){
-        // The non-external object path returned from the loop above. This is only
-        // reachable if the object list changed during an unusual caller flow.
         for(const auto& o:w.objects){
             if(o.kind==kind && (!o.reservedBy || *o.reservedBy==c.id)){
                 const int travel=std::max(1,manhattan(from,o.pos));
