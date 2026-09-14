@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <vector>
 #include "Birth.h"
+#include "CivilizationKnowledgeTransmission.h"
 #include "DecisionExecution.h"
 #include "ObserverReadModelV2.h"
 #include "Planner.h"
@@ -35,6 +36,8 @@ public:
     const PregnancyBook& pregnancies() const{return pregnancies_;}
     BirthBook& births(){return births_;}
     const BirthBook& births() const{return births_;}
+    SocialKnowledgeBook& socialKnowledge(){return socialKnowledge_;}
+    const SocialKnowledgeBook& socialKnowledge() const{return socialKnowledge_;}
     const std::vector<std::string>& logs() const{return logs_;}
     ResidentObservation observeResident(CharacterId id) const;
     std::vector<ResidentObservation> observeAllResidents() const;
@@ -63,6 +66,7 @@ private:
     HouseholdBook households_;
     PregnancyBook pregnancies_;
     BirthBook births_;
+    SocialKnowledgeBook socialKnowledge_;
     std::unordered_map<CharacterId,Runtime> runtime_;
     std::vector<EventCallback> callbacks_;
     std::vector<std::string> logs_;
@@ -74,6 +78,8 @@ private:
     void failPlan(Runtime& r);
     bool tryCivilizationDecision(Character& c,Runtime& r);
     bool trySocialDecision(Character& c,Runtime& r);
+    void processCivilizationKnowledgeEvent(Character& actor,const CivilizationEvent& event);
+    void advanceCivilizationKnowledgeTeaching();
     void advanceAutonomousFamilyProgression();
     void updatePregnanciesAndBirths();
     void evaluateDailyFamilyTransitions();
