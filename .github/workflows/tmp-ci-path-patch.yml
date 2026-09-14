@@ -1,0 +1,40 @@
+name: LifeLens temporary UI CI path patch
+
+on:
+  push:
+    branches:
+      - jjun/unreal-ui-ci-paths-v1
+
+permissions:
+  contents: write
+
+jobs:
+  patch_paths:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jjun/unreal-ui-ci-paths-v1
+          fetch-depth: 0
+      - name: Patch path filters and remove temporary workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('.github/workflows/unreal-linux-compile.yml')
+          s = p.read_text()
+          needle = "      - 'Source/LifeLens/World/**'\n"
+          addition = needle + "      - 'Source/LifeLens/UI/**'\n      - 'Source/LifeLens/Characters/**'\n"
+          if "Source/LifeLens/UI/**" not in s:
+              if needle not in s:
+                  raise SystemExit('expected World path filter not found')
+              s = s.replace(needle, addition, 1)
+              p.write_text(s)
+          PY
+          git rm .github/workflows/tmp-ci-path-patch.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows/unreal-linux-compile.yml
+          git commit -m 'ci: compile Unreal for UI and character code changes'
+          git push origin HEAD:jjun/unreal-ui-ci-paths-v1
