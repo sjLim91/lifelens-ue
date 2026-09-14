@@ -9,7 +9,7 @@
 namespace lifelens {
 namespace {
 
-Character* findMutableCharacter(World& world,CharacterId id)
+Character* findFamilyCharacter(World& world,CharacterId id)
 {
     for(auto& character:world.characters) if(character.id==id) return &character;
     return nullptr;
@@ -343,10 +343,12 @@ void Simulation::updatePregnanciesAndBirths()
         PregnancyState* pregnancy=pregnancies_.activeFor(gestationalId);
         if(pregnancy==nullptr || world_.minute<pregnancy->dueMinute) continue;
         const CharacterId partnerId=pregnancy->geneticPartner;
-        Character* gestationalParent=findMutableCharacter(world_,gestationalId);
-        Character* partner=findMutableCharacter(world_,partnerId);
+        Character* gestationalParent=findFamilyCharacter(world_,gestationalId);
+        Character* partner=findFamilyCharacter(world_,partnerId);
         if(gestationalParent==nullptr || partner==nullptr) continue;
 
+        const std::string gestationalName=gestationalParent->name;
+        const std::string partnerName=partner->name;
         const CharacterId childId=nextCharacterId();
         const Sex childSex=deterministicFamilyRoll(world_.seed,gestationalId,partnerId,childId)<0.5
             ? Sex::Male : Sex::Female;
@@ -385,9 +387,9 @@ void Simulation::updatePregnanciesAndBirths()
             }
         }
 
+        emit("birth: "+childName+" child of "+gestationalName+" and "+partnerName);
         world_.characters.push_back(std::move(outcome.child));
         runtime_[childId]=Runtime{};
-        emit("birth: "+childName+" child of "+gestationalParent->name+" and "+partner->name);
     }
 }
 
@@ -444,8 +446,8 @@ void Simulation::evaluateDailyFamilyTransitions()
 
     for(const DatingCandidate& candidate:candidates){
         if(!romances_.isAvailable(candidate.first) || !romances_.isAvailable(candidate.second)) continue;
-        Character* first=findMutableCharacter(world_,candidate.first);
-        Character* second=findMutableCharacter(world_,candidate.second);
+        Character* first=findFamilyCharacter(world_,candidate.first);
+        Character* second=findFamilyCharacter(world_,candidate.second);
         if(first==nullptr || second==nullptr) continue;
         Relationship& firstToSecond=relationships_.getOrCreate(first->id,second->id);
         Relationship& secondToFirst=relationships_.getOrCreate(second->id,first->id);
@@ -472,8 +474,8 @@ void Simulation::evaluateDailyFamilyTransitions()
     const std::vector<RomancePair> stagePairs=romances_.all();
     for(const RomancePair& snapshot:stagePairs){
         if(!snapshot.active()) continue;
-        Character* first=findMutableCharacter(world_,snapshot.first);
-        Character* second=findMutableCharacter(world_,snapshot.second);
+        Character* first=findFamilyCharacter(world_,snapshot.first);
+        Character* second=findFamilyCharacter(world_,snapshot.second);
         if(first==nullptr || second==nullptr || !first->alive || !second->alive) continue;
         Relationship& firstToSecond=relationships_.getOrCreate(first->id,second->id);
         Relationship& secondToFirst=relationships_.getOrCreate(second->id,first->id);
@@ -522,6 +524,7 @@ void Simulation::evaluateDailyFamilyTransitions()
                     *first,*second,firstToSecond,secondToFirst,
                     firstContext,secondContext,romances_,households_,world_.minute,householdId);
                 if(outcome.result==MarriageDecisionResult::Married){
+                    genealogy_.linkSpouses(first->id,second->id);
                     recordPairLifeEvent(*first,*second,LifeEventType::Married,world_.minute);
                     emit(first->name+" and "+second->name+" got married");
                 }
@@ -535,8 +538,8 @@ void Simulation::evaluateDailyFamilyTransitions()
         const int daysSinceMarriage=(world_.minute-pair.marriedMinute)/FamilyProgressionDayMinutes;
         if(daysSinceMarriage<30 || ((daysSinceMarriage-30)%FamilyPregnancyAttemptIntervalDays)!=0) continue;
 
-        Character* first=findMutableCharacter(world_,pair.first);
-        Character* second=findMutableCharacter(world_,pair.second);
+        Character* first=findFamilyCharacter(world_,pair.first);
+        Character* second=findFamilyCharacter(world_,pair.second);
         if(first==nullptr || second==nullptr || !first->alive || !second->alive) continue;
         if(first->sex==second->sex) continue;
 
