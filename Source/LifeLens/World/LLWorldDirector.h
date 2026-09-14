@@ -43,6 +43,7 @@ protected:
 
 private:
     void CollectActivityAnchors();
+    void EnsureBootstrapActivityAnchors();
     void SpawnResidents();
     void UpdateResident(ALLResidentCharacter& Character, float DeltaSeconds);
     void ApplyCoreDirective(
