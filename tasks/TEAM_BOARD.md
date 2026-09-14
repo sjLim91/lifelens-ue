@@ -18,7 +18,7 @@
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
 | 쭌 + 다겸 | Integration Sprint | Core/Bridge ↔ UI/Presentation 합류 | REVIEW/ASSIST only | DOING |
-| 다겸 + 다겸 AI | `dagyeom/observer-ui-v2`, PR #17 | Observer HUD v2 + latest main reconcile + Bridge binding | `Source/LifeLens/UI/**` | READY / R1 RESUME |
+| 다겸 + 다겸 AI | `dagyeom/observer-ui-v2`, PR #17 | Observer HUD v2 + current Bridge/civilization binding | `Source/LifeLens/UI/**` | R1 DONE / R2 DOING |
 | 다겸 + 다겸 AI | `dagyeom/ui-foundation-v1`, PR #26 | Android landscape UI foundation | UI foundation | REVIEW |
 | 다겸 + 다겸 AI | `dagyeom/character-presentation-v1`, PR #29 | Character Presentation v1 | Character presentation | REVIEW — stacked on #17 |
 | 다겸 + 다겸 AI | `dagyeom/observer-ux-polish-v1`, PR #30 | Observer UX Polish | `Source/LifeLens/UI/**` | REVIEW — stacked on #17 |
@@ -28,25 +28,32 @@
 
 ## Current Assist Locks
 
-### ASSIST_LOCK-17-R1 — Observer HUD v2 reconciliation
+### ASSIST_LOCK-17-R2 — Observer Bridge / civilization binding
 
 - Mode: active integration assist
 - Target owner: 다겸 / STILLofficial
 - Target PR: #17 `dagyeom/observer-ui-v2`
-- Base HEAD: `71b900e1a67dc8e5e9643b3cf5d404470a0791dc`
-- Helper branch: `integration/dagyeom-observer-r1-assist`
+- Base HEAD: `0716a95eb4b6000c7098f8c0bb812bd622afa6a3`
+- Helper branch: `integration/dagyeom-observer-r2-assist`
 - Locked paths:
-  - `Source/LifeLens/UI/LLObservationSubsystem.cpp`
-  - `Source/LifeLens/UI/LLObservationSubsystem.h`
   - `Source/LifeLens/UI/LLObserverHUD.cpp`
   - `Source/LifeLens/UI/LLObserverHUD.h`
   - `Source/LifeLens/UI/LLObserverLabels.h`
-  - `Source/LifeLens/UI/LLObserverPlayerController.cpp`
-  - `Source/LifeLens/UI/LLObserverPlayerController.h`
-- Reason: latest-main reconcile + current Core/Bridge binding + close stale review findings without concurrent edits.
-- Status: `LOCKED / JJUN ASSIST STARTING`
-- Unlock condition: helper branch handoff is validated and integrated into PR #17, or user explicitly cancels the assist.
-- While locked, Dagyeom side should not edit the same seven UI files.
+- Reason: bind current authoritative Core Observer/Family/Action/Civilization read APIs into selected-resident/detail presentation without creating UI authority.
+- Status: `LOCKED / JJUN ASSIST R2`
+- Unlock condition: R2 helper handoff is validated and integrated into PR #17, or user explicitly cancels the assist.
+- While locked, Dagyeom side should not edit the same three UI files.
+
+### Completed assist — ASSIST_LOCK-17-R1
+
+- Base HEAD: `71b900e1a67dc8e5e9643b3cf5d404470a0791dc`
+- Helper PR #56 merged into `dagyeom/observer-ui-v2`
+- Resulting PR #17 HEAD: `0716a95eb4b6000c7098f8c0bb812bd622afa6a3`
+- Verify-only PR #57 closed without merge.
+- Preflight `34824371968` PASS.
+- Unreal Linux Compile Run #17 `34824371965` PASS including UHT + UBT + link.
+- Former Codex review threads resolved.
+- Status: `DONE / UNLOCKED`
 
 ## Canonical direction — autonomous civilization
 
@@ -59,6 +66,13 @@
 - 원시 자원/도구부터 현대 기술까지 수용 가능한 presentation 유지
 
 ## Latest completed Jjun work
+
+### Integration R1 — PR #17 latest-main reconciliation
+- DONE
+- Helper PR #56 merge `0716a95eb4b6000c7098f8c0bb812bd622afa6a3` into Dagyeom branch
+- PR #17 now mergeable against main
+- Preflight PASS + actual UE 5.6 UHT/UBT/link PASS on verify Run #17
+- review findings closed
 
 ### PR #54 — macOS clang shadow hotfix
 - DONE / MERGED `3b649b900c44a4e48bb89171b38f5e685e757b14`
@@ -98,7 +112,7 @@
 
 Current Observer blockers from Jjun: **0**.
 
-PR #17 may now bind:
+PR #17 may bind:
 - `GetWorldObservation()`
 - `GetResidentObservations()`
 - `GetResidentObservation(...)`
@@ -140,13 +154,13 @@ ASSIST_LOCK은 임시이며 해제 후 원래 소유권으로 복귀한다.
 - File: `ObserverReadModelV2.h`
 - Status: **DONE / RESOLVED**
 - Resolution: PR #54 merge `3b649b900c44a4e48bb89171b38f5e685e757b14`
-- Dagyeom R1 may resume
+- Dagyeom R1 resumed and completed
 
 Current open requests: **none**.
 
 ## Merge / reconciliation queue
 
-1. PR #17 latest-main reconciliation + current Bridge/civilization binding + review fixes.
+1. PR #17 current Bridge/civilization binding (R2), then close R3 docs/review state.
 2. PR #26 where independent.
 3. #29/#30 after #17.
 4. #36 after #30.
