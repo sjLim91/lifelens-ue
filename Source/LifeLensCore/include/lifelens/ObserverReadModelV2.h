@@ -138,10 +138,10 @@ inline FamilyObservation buildFamilyObservation(
         dto.expectingChild=true;
         dto.pregnancyPartnerId=pregnancy->geneticPartner;
     } else {
-        for(const auto& pregnancy:pregnancies.all()){
-            if(pregnancy.active() && pregnancy.geneticPartner==character.id){
+        for(const auto& entry:pregnancies.all()){
+            if(entry.active() && entry.geneticPartner==character.id){
                 dto.expectingChild=true;
-                dto.pregnancyPartnerId=pregnancy.gestationalParent;
+                dto.pregnancyPartnerId=entry.gestationalParent;
                 break;
             }
         }
