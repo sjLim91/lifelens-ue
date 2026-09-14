@@ -1,11 +1,85 @@
 #include "Simulation/LLSimulationSubsystem.h"
+
+#include "Simulation/LLCoreBridgeSubsystem.h"
 #include "Save/LLSaveGame.h"
+#include "Engine/GameInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/DateTime.h"
+#include "Subsystems/SubsystemCollection.h"
+
+namespace
+{
+float ToLegacyNeed(float CoreDeficit)
+{
+    return FMath::Clamp((1.0f - CoreDeficit) * 100.0f, 0.0f, 100.0f);
+}
+
+ELLSex ToLegacySex(ELLCoreSex Sex)
+{
+    return Sex == ELLCoreSex::Female ? ELLSex::Female : ELLSex::Male;
+}
+
+ELLLifeStage ToLegacyLifeStage(ELLCoreLifeStage Stage)
+{
+    switch (Stage)
+    {
+        case ELLCoreLifeStage::Baby:
+        case ELLCoreLifeStage::Toddler:
+            return ELLLifeStage::Infant;
+        case ELLCoreLifeStage::Child:
+            return ELLLifeStage::Child;
+        case ELLCoreLifeStage::Teen:
+            return ELLLifeStage::Teen;
+        case ELLCoreLifeStage::YoungAdult:
+        case ELLCoreLifeStage::Adult:
+        case ELLCoreLifeStage::MiddleAge:
+            return ELLLifeStage::Adult;
+        case ELLCoreLifeStage::Elderly:
+            return ELLLifeStage::Elder;
+    }
+    return ELLLifeStage::Adult;
+}
+
+ELLRelationshipStage ToLegacyRelationshipStage(ELLCoreRomanceStage Stage)
+{
+    switch (Stage)
+    {
+        case ELLCoreRomanceStage::Dating: return ELLRelationshipStage::Dating;
+        case ELLCoreRomanceStage::Engaged: return ELLRelationshipStage::Engaged;
+        case ELLCoreRomanceStage::Married: return ELLRelationshipStage::Married;
+        case ELLCoreRomanceStage::Separated:
+        case ELLCoreRomanceStage::Divorced:
+        case ELLCoreRomanceStage::Widowed:
+        case ELLCoreRomanceStage::FormerPartners:
+            return ELLRelationshipStage::Estranged;
+        case ELLCoreRomanceStage::None:
+        default:
+            return ELLRelationshipStage::Stranger;
+    }
+}
+
+const FLLCoreRelationshipSnapshot* FindCoreRelationship(
+    const FLLCoreResidentObservation& Observation,
+    const FGuid& TargetResidentId)
+{
+    return Observation.Relationships.FindByPredicate(
+        [&TargetResidentId](const FLLCoreRelationshipSnapshot& Relationship)
+        {
+            return Relationship.TargetResidentId == TargetResidentId;
+        });
+}
+}
 
 void ULLSimulationSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
+    Collection.InitializeDependency<ULLCoreBridgeSubsystem>();
+}
+
+ULLCoreBridgeSubsystem* ULLSimulationSubsystem::GetCoreBridge() const
+{
+    UGameInstance* GameInstance = GetGameInstance();
+    return GameInstance ? GameInstance->GetSubsystem<ULLCoreBridgeSubsystem>() : nullptr;
 }
 
 void ULLSimulationSubsystem::NewGame(int32 OptionalSeed)
@@ -13,23 +87,42 @@ void ULLSimulationSubsystem::NewGame(int32 OptionalSeed)
     WorldSeed = OptionalSeed != 0
         ? OptionalSeed
         : static_cast<int32>(FDateTime::UtcNow().GetTicks() & 0x7fffffff);
-
     if (WorldSeed == 0)
     {
         WorldSeed = 1;
     }
 
-    SimulationMinute = 8 * 60; // Day 1, 08:00
-    Residents.Reset();
-    Relationships.Reset();
+    ULLCoreBridgeSubsystem* CoreBridge = GetCoreBridge();
+    if (!CoreBridge)
+    {
+        UE_LOG(LogTemp, Error, TEXT("LifeLens NewGame failed: Core bridge subsystem unavailable."));
+        bCoreAuthoritativeRuntime = false;
+        Residents.Reset();
+        Relationships.Reset();
+        return;
+    }
 
-    GenerateInitialPopulation();
-    GenerateInitialRelationships();
+    CoreBridge->StartCoreNewGame(WorldSeed);
+    bCoreAuthoritativeRuntime = RefreshProjectionFromCore();
+    if (!bCoreAuthoritativeRuntime)
+    {
+        UE_LOG(LogTemp, Error, TEXT("LifeLens NewGame failed: Core founder projection unavailable."));
+        return;
+    }
+
     OnSimulationStateChanged.Broadcast();
 }
 
 bool ULLSimulationSubsystem::SaveGame(const FString& SlotName)
 {
+    if (!bCoreAuthoritativeRuntime || !GetCoreBridge() || !GetCoreBridge()->IsCoreRunning())
+    {
+        return false;
+    }
+
+    // Transitional deterministic checkpoint. Residents/relationships are kept
+    // for file compatibility/inspection, but LoadGame reconstructs Core from
+    // WorldSeed + SimulationMinute rather than treating these arrays as truth.
     ULLSaveGame* SaveObject = Cast<ULLSaveGame>(UGameplayStatics::CreateSaveGameObject(ULLSaveGame::StaticClass()));
     if (!SaveObject)
     {
@@ -51,15 +144,34 @@ bool ULLSimulationSubsystem::LoadGame(const FString& SlotName)
     }
 
     ULLSaveGame* SaveObject = Cast<ULLSaveGame>(UGameplayStatics::LoadGameFromSlot(SlotName, 0));
-    if (!SaveObject)
+    ULLCoreBridgeSubsystem* CoreBridge = GetCoreBridge();
+    if (!SaveObject || !CoreBridge || SaveObject->WorldSeed == 0)
     {
         return false;
     }
 
+    // Current autonomous Core is deterministic from WorldSeed. Until the full
+    // Core snapshot serializer lands, reload by replaying from formal NEW GAME
+    // instead of reviving the legacy independently-generated resident arrays.
     WorldSeed = SaveObject->WorldSeed;
-    SimulationMinute = SaveObject->SimulationMinute;
-    Residents = SaveObject->Residents;
-    Relationships = SaveObject->Relationships;
+    CoreBridge->StartCoreNewGame(WorldSeed);
+
+    const int64 StartMinute = CoreBridge->GetWorldObservation().SimulationMinute;
+    const int64 TargetMinute = FMath::Max(StartMinute, SaveObject->SimulationMinute);
+    int64 RemainingMinutes = TargetMinute - StartMinute;
+    while (RemainingMinutes > 0)
+    {
+        const int32 Chunk = static_cast<int32>(FMath::Min<int64>(RemainingMinutes, 1440));
+        CoreBridge->AdvanceCoreMinutes(Chunk);
+        RemainingMinutes -= Chunk;
+    }
+
+    bCoreAuthoritativeRuntime = RefreshProjectionFromCore();
+    if (!bCoreAuthoritativeRuntime)
+    {
+        return false;
+    }
+
     OnSimulationStateChanged.Broadcast();
     return true;
 }
@@ -71,20 +183,131 @@ void ULLSimulationSubsystem::AdvanceSimulationMinutes(int32 Minutes)
         return;
     }
 
-    SimulationMinute += Minutes;
-
-    const float Hours = static_cast<float>(Minutes) / 60.0f;
-    for (FLLResidentData& Resident : Residents)
+    ULLCoreBridgeSubsystem* CoreBridge = GetCoreBridge();
+    if (!bCoreAuthoritativeRuntime || !CoreBridge || !CoreBridge->IsCoreRunning())
     {
-        Resident.Needs.Hunger = FMath::Clamp(Resident.Needs.Hunger - (2.0f * Hours), 0.0f, 100.0f);
-        Resident.Needs.Energy = FMath::Clamp(Resident.Needs.Energy - (1.25f * Hours), 0.0f, 100.0f);
-        Resident.Needs.Hygiene = FMath::Clamp(Resident.Needs.Hygiene - (0.75f * Hours), 0.0f, 100.0f);
-        Resident.Needs.Bladder = FMath::Clamp(Resident.Needs.Bladder - (3.0f * Hours), 0.0f, 100.0f);
-        Resident.Needs.Social = FMath::Clamp(Resident.Needs.Social - (0.8f * Hours), 0.0f, 100.0f);
-        Resident.Needs.Fun = FMath::Clamp(Resident.Needs.Fun - (0.6f * Hours), 0.0f, 100.0f);
+        return;
     }
 
-    OnSimulationStateChanged.Broadcast();
+    CoreBridge->AdvanceCoreMinutes(Minutes);
+    if (RefreshProjectionFromCore())
+    {
+        OnSimulationStateChanged.Broadcast();
+    }
+}
+
+bool ULLSimulationSubsystem::RefreshProjectionFromCore()
+{
+    ULLCoreBridgeSubsystem* CoreBridge = GetCoreBridge();
+    if (!CoreBridge || !CoreBridge->IsCoreRunning())
+    {
+        return false;
+    }
+
+    const FLLCoreWorldObservation CoreWorld = CoreBridge->GetWorldObservation();
+    const TArray<FLLCoreResidentObservation> CoreResidents = CoreBridge->GetResidentObservations();
+    if (CoreResidents.Num() == 0)
+    {
+        return false;
+    }
+
+    WorldSeed = CoreBridge->GetRuntimeSeed();
+    SimulationMinute = CoreWorld.SimulationMinute;
+    Residents.Reset(CoreResidents.Num());
+    Relationships.Reset();
+
+    for (const FLLCoreResidentObservation& CoreResident : CoreResidents)
+    {
+        FLLResidentData Resident;
+        Resident.ResidentId = CoreResident.ResidentId;
+        Resident.DisplayName = CoreResident.DisplayName;
+        Resident.Sex = ToLegacySex(CoreResident.Sex);
+        Resident.LifeStage = ToLegacyLifeStage(CoreResident.LifeStage);
+        Resident.AgeYears = CoreResident.AgeYears;
+
+        Resident.Personality.Extraversion = FMath::Clamp(
+            (CoreResident.Personality.Sociability + (1.0f - CoreResident.Personality.Introversion)) * 50.0f,
+            0.0f, 100.0f);
+        Resident.Personality.Agreeableness = FMath::Clamp(CoreResident.Personality.Agreeableness * 100.0f, 0.0f, 100.0f);
+        Resident.Personality.Conscientiousness = FMath::Clamp(CoreResident.Personality.Conscientiousness * 100.0f, 0.0f, 100.0f);
+        Resident.Personality.Openness = FMath::Clamp(CoreResident.Personality.Openness * 100.0f, 0.0f, 100.0f);
+        Resident.Personality.EmotionalStability = FMath::Clamp(CoreResident.Personality.EmotionalStability * 100.0f, 0.0f, 100.0f);
+
+        Resident.Needs.Hunger = ToLegacyNeed(CoreResident.Needs.Hunger);
+        Resident.Needs.Energy = ToLegacyNeed(CoreResident.Needs.Sleep);
+        Resident.Needs.Hygiene = ToLegacyNeed(CoreResident.Needs.Hygiene);
+        Resident.Needs.Bladder = ToLegacyNeed(CoreResident.Needs.Bladder);
+        // Core social cognition is relationship/emotion driven rather than a
+        // single legacy bar. Keep these compatibility-only values neutral.
+        Resident.Needs.Social = 65.0f;
+        Resident.Needs.Fun = 60.0f;
+
+        FLLCoreFamilyObservation Family;
+        if (CoreBridge->GetFamilyObservation(CoreResident.ResidentId, Family))
+        {
+            Resident.PartnerId = Family.bHasActivePartner ? Family.PartnerResidentId : FGuid();
+            Resident.bPregnant = Family.bGestationalParent;
+            for (const FLLCoreFamilyMemberSnapshot& Parent : Family.Parents)
+            {
+                if (Parent.ResidentId.IsValid()) Resident.ParentIds.Add(Parent.ResidentId);
+            }
+            for (const FLLCoreFamilyMemberSnapshot& Child : Family.Children)
+            {
+                if (Child.ResidentId.IsValid()) Resident.ChildIds.Add(Child.ResidentId);
+            }
+        }
+
+        Residents.Add(MoveTemp(Resident));
+    }
+
+    // Build one symmetric compatibility row per resident pair from the two
+    // directional Core relationships. Core remains the original 13D source.
+    for (int32 I = 0; I < CoreResidents.Num(); ++I)
+    {
+        for (int32 J = I + 1; J < CoreResidents.Num(); ++J)
+        {
+            const FLLCoreResidentObservation& A = CoreResidents[I];
+            const FLLCoreResidentObservation& B = CoreResidents[J];
+            const FLLCoreRelationshipSnapshot* AToB = FindCoreRelationship(A, B.ResidentId);
+            const FLLCoreRelationshipSnapshot* BToA = FindCoreRelationship(B, A.ResidentId);
+
+            FLLRelationshipData Relation;
+            Relation.A = A.ResidentId;
+            Relation.B = B.ResidentId;
+
+            if (AToB || BToA)
+            {
+                const float Affection = ((AToB ? AToB->Affection : 0.0f) + (BToA ? BToA->Affection : 0.0f)) * 0.5f;
+                const float Trust = ((AToB ? AToB->Trust : 0.0f) + (BToA ? BToA->Trust : 0.0f)) * 0.5f;
+                const float Romance = ((AToB ? AToB->RomanticInterest : 0.0f) + (BToA ? BToA->RomanticInterest : 0.0f)) * 0.5f;
+                const float Familiarity = ((AToB ? AToB->Familiarity : 0.0f) + (BToA ? BToA->Familiarity : 0.0f)) * 0.5f;
+
+                Relation.Affinity = FMath::Clamp(Affection * 100.0f, -100.0f, 100.0f);
+                Relation.Trust = FMath::Clamp(Trust * 100.0f, -100.0f, 100.0f);
+                Relation.Romance = FMath::Clamp(Romance * 100.0f, -100.0f, 100.0f);
+                if (Familiarity >= 0.10f)
+                {
+                    Relation.Stage = ELLRelationshipStage::Acquaintance;
+                }
+                if (Relation.Affinity >= 35.0f && Relation.Trust >= 20.0f)
+                {
+                    Relation.Stage = ELLRelationshipStage::Friend;
+                }
+            }
+
+            FLLCoreFamilyObservation FamilyA;
+            if (CoreBridge->GetFamilyObservation(A.ResidentId, FamilyA)
+                && FamilyA.bHasActivePartner
+                && FamilyA.PartnerResidentId == B.ResidentId)
+            {
+                Relation.Stage = ToLegacyRelationshipStage(FamilyA.PartnerStage);
+            }
+
+            Relationships.Add(MoveTemp(Relation));
+        }
+    }
+
+    return true;
 }
 
 bool ULLSimulationSubsystem::FindResidentById(FGuid ResidentId, FLLResidentData& OutResident) const
@@ -108,32 +331,22 @@ bool ULLSimulationSubsystem::ApplyActionOutcome(FGuid ResidentId, ELLActionInten
         return false;
     }
 
+    // Physical WorldDirector compatibility only. Core remains authoritative and
+    // the next AdvanceSimulationMinutes refresh replaces these projected values.
     const float Scale = FMath::Clamp(Strength, 0.1f, 2.0f);
     switch (Intent)
     {
-        case ELLActionIntent::Eat:
-            Resident->Needs.Hunger = FMath::Clamp(Resident->Needs.Hunger + 55.0f * Scale, 0.0f, 100.0f);
-            break;
-        case ELLActionIntent::Sleep:
-            Resident->Needs.Energy = FMath::Clamp(Resident->Needs.Energy + 65.0f * Scale, 0.0f, 100.0f);
-            break;
+        case ELLActionIntent::Eat: Resident->Needs.Hunger = FMath::Clamp(Resident->Needs.Hunger + 55.0f * Scale, 0.0f, 100.0f); break;
+        case ELLActionIntent::Sleep: Resident->Needs.Energy = FMath::Clamp(Resident->Needs.Energy + 65.0f * Scale, 0.0f, 100.0f); break;
         case ELLActionIntent::Socialize:
             Resident->Needs.Social = FMath::Clamp(Resident->Needs.Social + 40.0f * Scale, 0.0f, 100.0f);
             Resident->Needs.Fun = FMath::Clamp(Resident->Needs.Fun + 10.0f * Scale, 0.0f, 100.0f);
             break;
-        case ELLActionIntent::Hygiene:
-            Resident->Needs.Hygiene = FMath::Clamp(Resident->Needs.Hygiene + 70.0f * Scale, 0.0f, 100.0f);
-            break;
-        case ELLActionIntent::Toilet:
-            Resident->Needs.Bladder = FMath::Clamp(Resident->Needs.Bladder + 80.0f * Scale, 0.0f, 100.0f);
-            break;
-        case ELLActionIntent::HaveFun:
-            Resident->Needs.Fun = FMath::Clamp(Resident->Needs.Fun + 55.0f * Scale, 0.0f, 100.0f);
-            break;
+        case ELLActionIntent::Hygiene: Resident->Needs.Hygiene = FMath::Clamp(Resident->Needs.Hygiene + 70.0f * Scale, 0.0f, 100.0f); break;
+        case ELLActionIntent::Toilet: Resident->Needs.Bladder = FMath::Clamp(Resident->Needs.Bladder + 80.0f * Scale, 0.0f, 100.0f); break;
+        case ELLActionIntent::HaveFun: Resident->Needs.Fun = FMath::Clamp(Resident->Needs.Fun + 55.0f * Scale, 0.0f, 100.0f); break;
         case ELLActionIntent::Idle:
-        default:
-            Resident->Needs.Energy = FMath::Clamp(Resident->Needs.Energy + 3.0f * Scale, 0.0f, 100.0f);
-            break;
+        default: Resident->Needs.Energy = FMath::Clamp(Resident->Needs.Energy + 3.0f * Scale, 0.0f, 100.0f); break;
     }
 
     OnSimulationStateChanged.Broadcast();
@@ -144,8 +357,7 @@ bool ULLSimulationSubsystem::GetRelationship(FGuid A, FGuid B, FLLRelationshipDa
 {
     for (const FLLRelationshipData& Relation : Relationships)
     {
-        const bool bSamePair = (Relation.A == A && Relation.B == B) || (Relation.A == B && Relation.B == A);
-        if (bSamePair)
+        if ((Relation.A == A && Relation.B == B) || (Relation.A == B && Relation.B == A))
         {
             OutRelationship = Relation;
             return true;
@@ -163,12 +375,13 @@ bool ULLSimulationSubsystem::ApplySocialInteraction(FGuid A, FGuid B, float Affi
 
     for (FLLRelationshipData& Relation : Relationships)
     {
-        const bool bSamePair = (Relation.A == A && Relation.B == B) || (Relation.A == B && Relation.B == A);
-        if (!bSamePair)
+        if (!((Relation.A == A && Relation.B == B) || (Relation.A == B && Relation.B == A)))
         {
             continue;
         }
 
+        // Transitional visual compatibility only; Core social cognition remains
+        // authoritative and will replace this projection at the next Core tick.
         Relation.Affinity = FMath::Clamp(Relation.Affinity + AffinityDelta, -100.0f, 100.0f);
         Relation.Trust = FMath::Clamp(Relation.Trust + TrustDelta, -100.0f, 100.0f);
         Relation.Romance = FMath::Clamp(Relation.Romance + RomanceDelta, -100.0f, 100.0f);
@@ -181,123 +394,11 @@ bool ULLSimulationSubsystem::ApplySocialInteraction(FGuid A, FGuid B, float Affi
         {
             Relation.Stage = ELLRelationshipStage::Friend;
         }
-        if ((Relation.Stage == ELLRelationshipStage::Friend || Relation.Stage == ELLRelationshipStage::Acquaintance)
-            && Relation.Affinity >= 55.0f && Relation.Trust >= 35.0f && Relation.Romance >= 45.0f)
-        {
-            Relation.Stage = ELLRelationshipStage::Dating;
-        }
-        if (Relation.Stage == ELLRelationshipStage::Dating
-            && Relation.Affinity >= 70.0f && Relation.Trust >= 55.0f && Relation.Romance >= 60.0f)
-        {
-            Relation.Stage = ELLRelationshipStage::Partner;
-        }
 
         OnSimulationStateChanged.Broadcast();
         return true;
     }
     return false;
-}
-
-void ULLSimulationSubsystem::GenerateInitialPopulation()
-{
-    FRandomStream Random(WorldSeed);
-    TSet<FString> UsedNames;
-
-    Residents.Reserve(4);
-    Residents.Add(GenerateAdult(Random, ELLSex::Male, UsedNames));
-    Residents.Add(GenerateAdult(Random, ELLSex::Male, UsedNames));
-    Residents.Add(GenerateAdult(Random, ELLSex::Female, UsedNames));
-    Residents.Add(GenerateAdult(Random, ELLSex::Female, UsedNames));
-}
-
-FLLResidentData ULLSimulationSubsystem::GenerateAdult(FRandomStream& Random, ELLSex Sex, TSet<FString>& UsedNames)
-{
-    static const TArray<FString> MaleNames = {
-        TEXT("민준"), TEXT("도윤"), TEXT("서준"), TEXT("지호"), TEXT("현우"), TEXT("태윤"), TEXT("준호"), TEXT("시우")
-    };
-    static const TArray<FString> FemaleNames = {
-        TEXT("서윤"), TEXT("하윤"), TEXT("지아"), TEXT("수아"), TEXT("민서"), TEXT("예린"), TEXT("채원"), TEXT("나은")
-    };
-    static const TArray<FName> TraitPool = {
-        TEXT("Calm"), TEXT("Ambitious"), TEXT("Romantic"), TEXT("Curious"), TEXT("Practical"), TEXT("Playful"), TEXT("Independent"), TEXT("Empathetic")
-    };
-    static const TArray<FName> PreferencePool = {
-        TEXT("Nature"), TEXT("Music"), TEXT("Fitness"), TEXT("Cooking"), TEXT("Games"), TEXT("Reading"), TEXT("Travel"), TEXT("Socializing")
-    };
-    static const TArray<FString> BackgroundPool = {
-        TEXT("Urban"), TEXT("Suburban"), TEXT("Rural"), TEXT("Academic"), TEXT("WorkingClass"), TEXT("Creative")
-    };
-
-    const TArray<FString>& NamePool = Sex == ELLSex::Male ? MaleNames : FemaleNames;
-
-    FString Name;
-    for (int32 Attempt = 0; Attempt < 16; ++Attempt)
-    {
-        Name = NamePool[Random.RandRange(0, NamePool.Num() - 1)];
-        if (!UsedNames.Contains(Name))
-        {
-            break;
-        }
-    }
-    if (UsedNames.Contains(Name))
-    {
-        Name += FString::Printf(TEXT("%02d"), Random.RandRange(10, 99));
-    }
-    UsedNames.Add(Name);
-
-    FLLResidentData Resident;
-    Resident.ResidentId = MakeDeterministicGuid(Random);
-    Resident.DisplayName = Name;
-    Resident.Sex = Sex;
-    Resident.LifeStage = ELLLifeStage::Adult;
-    Resident.AgeYears = Random.RandRange(20, 34);
-
-    Resident.Personality.Extraversion = RollPercent(Random);
-    Resident.Personality.Agreeableness = RollPercent(Random);
-    Resident.Personality.Conscientiousness = RollPercent(Random);
-    Resident.Personality.Openness = RollPercent(Random);
-    Resident.Personality.EmotionalStability = RollPercent(Random);
-
-    TArray<FName> ShuffledTraits = TraitPool;
-    for (int32 Index = ShuffledTraits.Num() - 1; Index > 0; --Index)
-    {
-        ShuffledTraits.Swap(Index, Random.RandRange(0, Index));
-    }
-    Resident.Traits.Append(ShuffledTraits.GetData(), 3);
-
-    Resident.Skills.Add(TEXT("Social"), RollPercent(Random, 20.0f, 80.0f));
-    Resident.Skills.Add(TEXT("Cooking"), RollPercent(Random, 10.0f, 75.0f));
-    Resident.Skills.Add(TEXT("Fitness"), RollPercent(Random, 10.0f, 75.0f));
-    Resident.Skills.Add(TEXT("Career"), RollPercent(Random, 15.0f, 85.0f));
-
-    TArray<FName> ShuffledPreferences = PreferencePool;
-    for (int32 Index = ShuffledPreferences.Num() - 1; Index > 0; --Index)
-    {
-        ShuffledPreferences.Swap(Index, Random.RandRange(0, Index));
-    }
-    Resident.Preferences.Append(ShuffledPreferences.GetData(), 3);
-
-    Resident.BackgroundTag = BackgroundPool[Random.RandRange(0, BackgroundPool.Num() - 1)];
-    return Resident;
-}
-
-void ULLSimulationSubsystem::GenerateInitialRelationships()
-{
-    Relationships.Reset();
-    for (int32 I = 0; I < Residents.Num(); ++I)
-    {
-        for (int32 J = I + 1; J < Residents.Num(); ++J)
-        {
-            FLLRelationshipData Relation;
-            Relation.A = Residents[I].ResidentId;
-            Relation.B = Residents[J].ResidentId;
-            Relation.Affinity = 0.0f;
-            Relation.Trust = 0.0f;
-            Relation.Romance = 0.0f;
-            Relation.Stage = ELLRelationshipStage::Stranger;
-            Relationships.Add(Relation);
-        }
-    }
 }
 
 FLLResidentData* ULLSimulationSubsystem::FindMutableResident(FGuid ResidentId)
@@ -310,18 +411,4 @@ FLLResidentData* ULLSimulationSubsystem::FindMutableResident(FGuid ResidentId)
         }
     }
     return nullptr;
-}
-
-FGuid ULLSimulationSubsystem::MakeDeterministicGuid(FRandomStream& Random)
-{
-    return FGuid(
-        static_cast<uint32>(Random.GetUnsignedInt()),
-        static_cast<uint32>(Random.GetUnsignedInt()),
-        static_cast<uint32>(Random.GetUnsignedInt()),
-        static_cast<uint32>(Random.GetUnsignedInt()));
-}
-
-float ULLSimulationSubsystem::RollPercent(FRandomStream& Random, float Min, float Max)
-{
-    return Random.FRandRange(Min, Max);
 }
