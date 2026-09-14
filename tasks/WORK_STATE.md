@@ -4,7 +4,7 @@
 >
 > 제품 기준: `docs/LIFELENS_SPEC_v1.1.md` · 상태 규칙: `docs/STATE_MANAGEMENT.md` · 역할/잠금: `tasks/TEAM_BOARD.md` · 이력: `tasks/HANDOFF_LOG.md`
 
-Last reconciled: 2026-09-14 KST — PR #46 Core Decision → Unreal Physical Action Bridge v1 latest head is `f3a5d47ca17f19928b1438fbe423ee6912a14f01`. A compatibility review fixed `ELLActionIntent` ordinal stability before Unreal compile: existing values remain 0–6 and new `Drink` is appended as 7. Superseded Unreal Run `34805435883` was automatically cancelled by workflow concurrency; latest-head CI is running.
+Last reconciled: 2026-09-14 KST — PR #46 Core Decision → Unreal Physical Action Bridge v1 latest head is `31c00cb0d751bb33825df31c7e758e60ff54402c`. Existing `ELLActionIntent` ordinals 0–6 are preserved and new `Drink` appends as ordinal 7. Latest Core Tests and Structural Preflight PASS; actual UE 5.6 Linux UHT/UBT is the only remaining merge gate.
 
 ## Mandatory sync gate
 
@@ -23,27 +23,29 @@ Last reconciled: 2026-09-14 KST — PR #46 Core Decision → Unreal Physical Act
 - Owner: 쭌 + 쭌 AI
 - Branch: `jjun/core-physical-action-bridge-v1`
 - PR: #46 `[UE] Drive physical world actions from authoritative Core decisions`
-- Head: `f3a5d47ca17f19928b1438fbe423ee6912a14f01`
-- Status: `WAITING_LATEST_HEAD_CI`
+- Head: `31c00cb0d751bb33825df31c7e758e60ff54402c`
+- Status: `WAITING_UNREAL_COMPILE`
 - Implemented:
   - pure Core `ResidentObservation` exposes typed `physicalGoal` / `socialIntent` rather than requiring label parsing;
   - Core observer test locks typed action authority;
   - Unreal `FLLCoreActionDirective` carries physical/social typed intent + stable target ResidentId;
   - `ULLCoreBridgeSubsystem::GetResidentActionDirective()` maps authoritative Core runtime state into Unreal;
-  - `ELLActionIntent` persisted/Blueprint ordinals explicitly preserved: Idle=0, Eat=1, Sleep=2, Socialize=3, Hygiene=4, Toilet=5, HaveFun=6; new Drink=7;
+  - `ELLActionIntent` persisted/Blueprint ordinals preserved: Idle=0, Eat=1, Sleep=2, Socialize=3, Hygiene=4, Toilet=5, HaveFun=6; appended Drink resolves to 7;
   - `ALLWorldDirector` no longer calls legacy `DecisionComponent->ChooseAction()` for life actions;
   - WorldDirector no longer calls `ApplyActionOutcome()` / `ApplySocialInteraction()` as a second state authority;
   - physical Eat/Drink/Sleep/Toilet/Hygiene and social Approach/Avoid/Repair/Comfort are presented from Core directives;
   - social Avoid moves away; other social intents approach/face the Core-selected target;
   - Structural Preflight prevents reintroduction of competing WorldDirector decision authority.
 - Scope: Jjun-owned Core/Simulation/World/validator only; no Dagyeom UI/Character presentation/Content edits.
-- Latest-head validation runs:
-  - Core Tests `34805764836` IN PROGRESS at last check.
-  - Structural Preflight `34805764910` QUEUED at last check.
-  - Unreal Linux Compile `34805764898` PENDING at last check.
-  - Superseded Unreal Run `34805435883` CANCELLED by `cancel-in-progress` after head moved; its UHT/UBT step never ran.
-- Required validation: Core Release full suite + deterministic harness, Structural Preflight, actual UE 5.6 Linux UHT/UBT; targeted runtime/PIE where available.
-- Exact next action: inspect latest-head PR #46 Actions. On failure, fix only the first root cause; on all PASS, verify changed-file scope and merge.
+- Latest-head validation:
+  - Core Tests `34805882778` PASS including Configure / Build / Test / deterministic harness.
+  - Structural Preflight `34805882776` PASS.
+  - Unreal Linux Compile `34805882789` IN PROGRESS; actual UHT/UBT pending.
+- Superseded validation history:
+  - Preflight `34805764910` failed only because its validator expected literal `Drink,` while the compatibility-safe enum used explicit assignment; corrected in head `31c00cb0...` without changing ordinal semantics.
+  - Superseded Unreal Runs `34805435883` and `34805764898` were automatically cancelled by workflow concurrency before UHT/UBT after the PR head moved.
+- Required validation: actual UE 5.6 Linux UHT/UBT, then targeted runtime/PIE where available.
+- Exact next action: inspect Run `34805882789`; on failure, fix only the first real UHT/UBT root cause; on PASS, verify PR scope/head/mergeability and merge.
 
 ### 2. Observer HUD v2 — Dagyeom
 
@@ -80,32 +82,11 @@ Last reconciled: 2026-09-14 KST — PR #46 Core Decision → Unreal Physical Act
 - Feature HEAD: `547b3f94e0c3df6df15d723e72c8084cd10a7c29`
 - Merge SHA: `3c646ba331b8199a295fd6f2e9cac1235d844679`
 - Changed files: exactly 10 Jjun-owned Save/Simulation/Core/validator files; UI/Characters/Content untouched.
-- Implemented:
-  - pure Core persistent binary snapshot codec with magic `LLSNAP01` and explicit binary/Core snapshot versions;
-  - canonical CharacterId ordering for runtime-map serialization;
-  - full World/RNG/Character/SmartObject/Relationship/Genealogy/Romance/Household/Pregnancy/Birth/runtime/log state encoding;
-  - malformed/corrupt/truncated/trailing payload rejection;
-  - Core Bridge `CaptureCoreSnapshotBytes` / `RestoreCoreSnapshotBytes`;
-  - restore validates against a temporary Core candidate before replacing the live world;
-  - `ULLSaveGame` v2 stores `CoreSnapshotBytes` as authoritative simulation truth;
-  - v2 Load restores Core directly and rebuilds compatibility projection;
-  - v1 legacy save migration retains seed+minute replay only; legacy resident/relationship arrays never become authority.
-- Validation:
-  - Core Tests `34803226434` PASS: Configure / Build / Test / deterministic harness.
-  - Structural Preflight `34803226458` PASS.
-  - Unreal Linux Compile `34803226433` PASS including actual UE 5.6 UHT + UBT.
-  - binary codec roundtrip/canonical bytes/corrupt payload/10,000-minute continuation tests PASS.
+- Validation: Core `34803226434` PASS; Preflight `34803226458` PASS; Unreal `34803226433` PASS including UE 5.6 UHT/UBT.
 
 ## Previous completed milestone — Full Core Save/Load v1
 
-### PR #44 `[CORE] Add authoritative full-state snapshot save/load v1`
-
-- Status: `DONE`
-- Feature HEAD: `64d2fb25f6453112aabaef2d809b0528c9dc4566`
-- Merge SHA: `2b3f9882703ed73cb8318ae262f26bebb995c209`
-- Core Tests `34802611336` PASS incl Configure / Build / Test / deterministic harness.
-- Structural Preflight `34802611299` PASS.
-- Rich deep roundtrip and exact 10,000-minute post-load continuation PASS.
+- PR #44 merge `2b3f9882703ed73cb8318ae262f26bebb995c209`; Core `34802611336` PASS incl deterministic harness; Preflight `34802611299` PASS.
 
 ## Earlier completed milestones
 
