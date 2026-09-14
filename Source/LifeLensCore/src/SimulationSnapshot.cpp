@@ -1,0 +1,159 @@
+#include "lifelens/Simulation.h"
+
+#include <unordered_set>
+
+namespace lifelens {
+namespace {
+
+bool snapshotHasCharacter(const SimulationStateSnapshot& snapshot,CharacterId id)
+{
+    if(id==0) return false;
+    for(const auto& character:snapshot.world.characters){
+        if(character.id==id) return true;
+    }
+    return false;
+}
+
+bool validateSnapshot(const SimulationStateSnapshot& snapshot,std::string* error)
+{
+    const auto fail=[&](const char* message){
+        if(error) *error=message;
+        return false;
+    };
+
+    if(snapshot.version!=SimulationSnapshotVersion) return fail("unsupported snapshot version");
+    if(snapshot.world.seed==0) return fail("snapshot world seed must be nonzero");
+    if(snapshot.world.minute<0) return fail("snapshot minute must be nonnegative");
+
+    std::unordered_set<CharacterId> characterIds;
+    for(const auto& character:snapshot.world.characters){
+        if(character.id==0) return fail("snapshot contains zero character id");
+        if(!characterIds.insert(character.id).second) return fail("snapshot contains duplicate character id");
+    }
+
+    for(const auto& item:snapshot.runtime){
+        if(characterIds.count(item.first)==0) return fail("runtime references missing character");
+        if(item.second.actionIndex>item.second.plan.size()) return fail("runtime action index exceeds plan size");
+        if(item.second.socialTarget!=0 && characterIds.count(item.second.socialTarget)==0)
+            return fail("runtime social target is missing");
+    }
+    for(CharacterId id:characterIds){
+        if(snapshot.runtime.find(id)==snapshot.runtime.end()) return fail("character is missing runtime state");
+    }
+
+    for(const auto& relationship:snapshot.relationships.all()){
+        if(characterIds.count(relationship.from)==0 || characterIds.count(relationship.to)==0)
+            return fail("relationship references missing character");
+        if(relationship.from==relationship.to) return fail("self relationship is invalid");
+    }
+
+    for(const auto& node:snapshot.genealogy.all()){
+        if(characterIds.count(node.characterId)==0) return fail("genealogy node references missing character");
+        for(CharacterId id:node.parents) if(characterIds.count(id)==0) return fail("genealogy parent is missing");
+        for(CharacterId id:node.children) if(characterIds.count(id)==0) return fail("genealogy child is missing");
+        for(CharacterId id:node.spouses) if(characterIds.count(id)==0) return fail("genealogy spouse is missing");
+    }
+
+    for(const auto& pair:snapshot.romances.all()){
+        if(characterIds.count(pair.first)==0 || characterIds.count(pair.second)==0)
+            return fail("romance references missing character");
+    }
+
+    for(const auto& household:snapshot.households.all()){
+        if(household.id==0) return fail("household id must be nonzero");
+        for(const auto& member:household.members){
+            if(characterIds.count(member.characterId)==0) return fail("household member is missing");
+        }
+    }
+
+    for(const auto& pregnancy:snapshot.pregnancies.all()){
+        if(characterIds.count(pregnancy.gestationalParent)==0 || characterIds.count(pregnancy.geneticPartner)==0)
+            return fail("pregnancy references missing character");
+    }
+
+    for(const auto& birth:snapshot.births.all()){
+        if(characterIds.count(birth.childId)==0 || characterIds.count(birth.parentA)==0 || characterIds.count(birth.parentB)==0)
+            return fail("birth record references missing character");
+    }
+
+    return true;
+}
+
+} // namespace
+
+SimulationStateSnapshot Simulation::captureSnapshot() const
+{
+    SimulationStateSnapshot snapshot;
+    snapshot.version=SimulationSnapshotVersion;
+    snapshot.world=world_;
+    snapshot.relationships=relationships_;
+    snapshot.genealogy=genealogy_;
+    snapshot.romances=romances_;
+    snapshot.households=households_;
+    snapshot.pregnancies=pregnancies_;
+    snapshot.births=births_;
+    snapshot.logs=logs_;
+
+    snapshot.runtime.reserve(runtime_.size());
+    for(const auto& item:runtime_){
+        const Runtime& source=item.second;
+        SimulationRuntimeSnapshot target;
+        target.goal=source.goal;
+        target.plan=source.plan;
+        target.actionIndex=source.actionIndex;
+        target.pos=source.pos;
+        target.announced=source.announced;
+        target.lastGoal=source.lastGoal;
+        target.repeatCount=source.repeatCount;
+        target.consecutiveFailures=source.consecutiveFailures;
+        target.penaltyUntilMinute=source.penaltyUntilMinute;
+        target.socialCooldownUntilMinute=source.socialCooldownUntilMinute;
+        target.socialActive=source.socialActive;
+        target.socialIntent=source.socialIntent;
+        target.socialTarget=source.socialTarget;
+        snapshot.runtime.emplace(item.first,std::move(target));
+    }
+    return snapshot;
+}
+
+bool Simulation::restoreSnapshot(const SimulationStateSnapshot& snapshot,std::string* error)
+{
+    if(!validateSnapshot(snapshot,error)) return false;
+
+    std::unordered_map<CharacterId,Runtime> restoredRuntime;
+    restoredRuntime.reserve(snapshot.runtime.size());
+    for(const auto& item:snapshot.runtime){
+        const SimulationRuntimeSnapshot& source=item.second;
+        Runtime target;
+        target.goal=source.goal;
+        target.plan=source.plan;
+        target.actionIndex=source.actionIndex;
+        target.pos=source.pos;
+        target.announced=source.announced;
+        target.lastGoal=source.lastGoal;
+        target.repeatCount=source.repeatCount;
+        target.consecutiveFailures=source.consecutiveFailures;
+        target.penaltyUntilMinute=source.penaltyUntilMinute;
+        target.socialCooldownUntilMinute=source.socialCooldownUntilMinute;
+        target.socialActive=source.socialActive;
+        target.socialIntent=source.socialIntent;
+        target.socialTarget=source.socialTarget;
+        restoredRuntime.emplace(item.first,std::move(target));
+    }
+
+    // Commit only after validation/conversion succeeds. Event callbacks are an
+    // external runtime attachment and intentionally survive a state restore.
+    world_=snapshot.world;
+    relationships_=snapshot.relationships;
+    genealogy_=snapshot.genealogy;
+    romances_=snapshot.romances;
+    households_=snapshot.households;
+    pregnancies_=snapshot.pregnancies;
+    births_=snapshot.births;
+    runtime_=std::move(restoredRuntime);
+    logs_=snapshot.logs;
+    if(error) error->clear();
+    return true;
+}
+
+} // namespace lifelens
