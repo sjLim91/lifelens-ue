@@ -3,18 +3,22 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Core/LLTypes.h"
+#include "Simulation/LLCoreActionTypes.h"
 #include "LLWorldDirector.generated.h"
 
 class ALLActivityAnchor;
 class ALLResidentCharacter;
 class ULLSimulationSubsystem;
+class ULLCoreBridgeSubsystem;
 
 struct FLLResidentRuntimeState
 {
+    bool bInitialized = false;
     bool bPerformingAction = false;
-    float ActionSecondsRemaining = 0.0f;
-    float DecisionCooldown = 0.0f;
-    FGuid SocialTargetId;
+    ELLCoreObservedActivityKind LastActivityKind = ELLCoreObservedActivityKind::Idle;
+    ELLCorePhysicalIntent LastPhysicalIntent = ELLCorePhysicalIntent::None;
+    ELLCoreSocialIntent LastSocialIntent = ELLCoreSocialIntent::None;
+    FGuid LastTargetId;
 };
 
 UCLASS()
@@ -39,14 +43,22 @@ private:
     void CollectActivityAnchors();
     void SpawnResidents();
     void UpdateResident(ALLResidentCharacter& Character, float DeltaSeconds);
-    void StartNextAction(ALLResidentCharacter& Character, FLLResidentRuntimeState& Runtime);
-    void CompleteAction(ALLResidentCharacter& Character, FLLResidentRuntimeState& Runtime);
-    ALLResidentCharacter* ChooseSocialTarget(const ALLResidentCharacter& Character) const;
+    void ApplyCoreDirective(
+        ALLResidentCharacter& Character,
+        FLLResidentRuntimeState& Runtime,
+        const FLLCoreActionDirective& Directive);
+    ELLActionIntent ToPresentationIntent(ELLCorePhysicalIntent Intent) const;
     FVector ResolveTargetLocation(ELLActionIntent Intent, FGuid ResidentId) const;
-    float GetActionDuration(ELLActionIntent Intent) const;
+    FVector ResolveSocialTargetLocation(
+        const ALLResidentCharacter& Character,
+        const ALLResidentCharacter& Target,
+        ELLCoreSocialIntent SocialIntent) const;
 
     UPROPERTY()
     TObjectPtr<ULLSimulationSubsystem> Simulation;
+
+    UPROPERTY()
+    TObjectPtr<ULLCoreBridgeSubsystem> CoreBridge;
 
     UPROPERTY()
     TArray<TObjectPtr<ALLResidentCharacter>> SpawnedResidents;

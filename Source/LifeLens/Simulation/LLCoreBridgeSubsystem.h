@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Simulation/LLCoreReadTypes.h"
+#include "Simulation/LLCoreActionTypes.h"
 #include "LLCoreBridgeSubsystem.generated.h"
 
 namespace lifelens { class Simulation; }
@@ -50,6 +51,9 @@ public:
 
     UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Observer")
     bool GetResidentObservation(FGuid ResidentId, FLLCoreResidentObservation& OutObservation) const;
+
+    UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Action")
+    bool GetResidentActionDirective(FGuid ResidentId, FLLCoreActionDirective& OutDirective) const;
 
     UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Observer")
     bool GetFamilyObservation(FGuid ResidentId, FLLCoreFamilyObservation& OutObservation) const;

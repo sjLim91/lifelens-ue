@@ -1,7 +1,7 @@
 #include "World/LLWorldDirector.h"
 #include "World/LLActivityAnchor.h"
 #include "Characters/LLResidentCharacter.h"
-#include "AI/LLDecisionComponent.h"
+#include "Simulation/LLCoreBridgeSubsystem.h"
 #include "Simulation/LLSimulationSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
@@ -18,7 +18,8 @@ void ALLWorldDirector::BeginPlay()
 
     UGameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
     Simulation = GameInstance ? GameInstance->GetSubsystem<ULLSimulationSubsystem>() : nullptr;
-    if (!Simulation)
+    CoreBridge = GameInstance ? GameInstance->GetSubsystem<ULLCoreBridgeSubsystem>() : nullptr;
+    if (!Simulation || !CoreBridge)
     {
         return;
     }
@@ -36,7 +37,7 @@ void ALLWorldDirector::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
 
-    if (!Simulation)
+    if (!Simulation || !CoreBridge)
     {
         return;
     }
@@ -131,162 +132,137 @@ void ALLWorldDirector::SpawnResidents()
 
 void ALLWorldDirector::UpdateResident(ALLResidentCharacter& Character, float DeltaSeconds)
 {
+    (void)DeltaSeconds;
+
     FLLResidentRuntimeState* Runtime = RuntimeStates.Find(Character.GetResidentId());
-    if (!Runtime)
+    if (!Runtime || !CoreBridge)
     {
         return;
     }
 
-    Runtime->DecisionCooldown = FMath::Max(0.0f, Runtime->DecisionCooldown - DeltaSeconds);
-
-    if (Runtime->bPerformingAction)
+    FLLCoreActionDirective Directive;
+    if (!CoreBridge->GetResidentActionDirective(Character.GetResidentId(), Directive))
     {
-        Runtime->ActionSecondsRemaining -= DeltaSeconds;
-        if (Runtime->ActionSecondsRemaining <= 0.0f)
-        {
-            CompleteAction(Character, *Runtime);
-        }
+        Character.ClearMovementTarget();
+        Character.SetCurrentIntent(ELLActionIntent::Idle);
+        Runtime->bPerformingAction = false;
         return;
     }
 
-    if (Character.GetCurrentIntent() == ELLActionIntent::Socialize && Runtime->SocialTargetId.IsValid())
-    {
-        if (ALLResidentCharacter* Target = FindResidentActor(Runtime->SocialTargetId))
-        {
-            const FVector Approach = Target->GetActorLocation() + FVector(85.0f, 0.0f, 0.0f);
-            Character.SetMovementTarget(Approach);
-        }
-        else
-        {
-            Runtime->SocialTargetId.Invalidate();
-            Character.ClearMovementTarget();
-            Character.SetCurrentIntent(ELLActionIntent::Idle);
-        }
-    }
-
-    if (Character.GetCurrentIntent() != ELLActionIntent::Idle && Character.HasReachedMovementTarget())
-    {
-        Runtime->bPerformingAction = true;
-        Runtime->ActionSecondsRemaining = GetActionDuration(Character.GetCurrentIntent());
-        return;
-    }
-
-    if (Character.GetCurrentIntent() == ELLActionIntent::Idle && Runtime->DecisionCooldown <= 0.0f)
-    {
-        StartNextAction(Character, *Runtime);
-    }
+    ApplyCoreDirective(Character, *Runtime, Directive);
 }
 
-void ALLWorldDirector::StartNextAction(ALLResidentCharacter& Character, FLLResidentRuntimeState& Runtime)
+void ALLWorldDirector::ApplyCoreDirective(
+    ALLResidentCharacter& Character,
+    FLLResidentRuntimeState& Runtime,
+    const FLLCoreActionDirective& Directive)
 {
-    if (!Simulation || !Character.DecisionComponent)
+    const bool bDirectiveChanged =
+        !Runtime.bInitialized
+        || Runtime.LastActivityKind != Directive.ActivityKind
+        || Runtime.LastPhysicalIntent != Directive.PhysicalIntent
+        || Runtime.LastSocialIntent != Directive.SocialIntent
+        || Runtime.LastTargetId != Directive.TargetResidentId;
+
+    if (bDirectiveChanged)
     {
+        Runtime.bInitialized = true;
+        Runtime.bPerformingAction = false;
+        Runtime.LastActivityKind = Directive.ActivityKind;
+        Runtime.LastPhysicalIntent = Directive.PhysicalIntent;
+        Runtime.LastSocialIntent = Directive.SocialIntent;
+        Runtime.LastTargetId = Directive.TargetResidentId;
+        Character.ClearMovementTarget();
+    }
+
+    if (!Directive.bAlive || Directive.ActivityKind == ELLCoreObservedActivityKind::Idle)
+    {
+        Runtime.bPerformingAction = false;
+        Character.ClearMovementTarget();
+        Character.SetCurrentIntent(ELLActionIntent::Idle);
         return;
     }
 
-    FLLResidentData Resident;
-    if (!Simulation->FindResidentById(Character.GetResidentId(), Resident))
+    if (Directive.ActivityKind == ELLCoreObservedActivityKind::Physical)
     {
-        return;
-    }
+        const ELLActionIntent Intent = ToPresentationIntent(Directive.PhysicalIntent);
+        Character.SetCurrentIntent(Intent);
 
-    const FLLDecisionResult Decision = Character.DecisionComponent->ChooseAction(Resident);
-    ELLActionIntent Intent = Decision.Intent;
-
-    Runtime.SocialTargetId.Invalidate();
-    Character.SetCurrentIntent(Intent);
-
-    if (Intent == ELLActionIntent::Socialize)
-    {
-        ALLResidentCharacter* SocialTarget = ChooseSocialTarget(Character);
-        if (SocialTarget)
+        if (Intent == ELLActionIntent::Idle)
         {
-            Runtime.SocialTargetId = SocialTarget->GetResidentId();
-            Character.SetMovementTarget(SocialTarget->GetActorLocation() + FVector(85.0f, 0.0f, 0.0f));
+            Runtime.bPerformingAction = false;
+            Character.ClearMovementTarget();
             return;
         }
 
-        Intent = ELLActionIntent::HaveFun;
-        Character.SetCurrentIntent(Intent);
-    }
-
-    if (Intent == ELLActionIntent::Idle)
-    {
-        Character.ClearMovementTarget();
-        Runtime.bPerformingAction = true;
-        Runtime.ActionSecondsRemaining = GetActionDuration(Intent);
-        return;
-    }
-
-    Character.SetMovementTarget(ResolveTargetLocation(Intent, Character.GetResidentId()));
-}
-
-void ALLWorldDirector::CompleteAction(ALLResidentCharacter& Character, FLLResidentRuntimeState& Runtime)
-{
-    if (!Simulation)
-    {
-        return;
-    }
-
-    const ELLActionIntent CompletedIntent = Character.GetCurrentIntent();
-
-    if (CompletedIntent == ELLActionIntent::Socialize && Runtime.SocialTargetId.IsValid())
-    {
-        ALLResidentCharacter* TargetCharacter = FindResidentActor(Runtime.SocialTargetId);
-        if (TargetCharacter && FVector::DistSquared2D(Character.GetActorLocation(), TargetCharacter->GetActorLocation()) <= FMath::Square(300.0f))
+        if (!Runtime.bPerformingAction && (bDirectiveChanged || Character.HasReachedMovementTarget()))
         {
-            FLLResidentData A;
-            FLLResidentData B;
-            if (Simulation->FindResidentById(Character.GetResidentId(), A)
-                && Simulation->FindResidentById(TargetCharacter->GetResidentId(), B))
+            if (bDirectiveChanged)
             {
-                const float Agreeability = (A.Personality.Agreeableness + B.Personality.Agreeableness) / 200.0f;
-                const float Stability = (A.Personality.EmotionalStability + B.Personality.EmotionalStability) / 200.0f;
-                const float OpennessCompatibility = 1.0f - FMath::Abs(A.Personality.Openness - B.Personality.Openness) / 100.0f;
+                Character.SetMovementTarget(ResolveTargetLocation(Intent, Character.GetResidentId()));
+            }
 
-                Simulation->ApplySocialInteraction(
-                    A.ResidentId,
-                    B.ResidentId,
-                    2.5f + Agreeability * 4.0f,
-                    1.5f + Stability * 3.0f,
-                    0.2f + FMath::Clamp(OpennessCompatibility, 0.0f, 1.0f) * 1.2f);
+            if (Character.HasReachedMovementTarget())
+            {
+                Character.ClearMovementTarget();
+                Runtime.bPerformingAction = true;
+            }
+        }
+        return;
+    }
 
-                Simulation->ApplyActionOutcome(B.ResidentId, ELLActionIntent::Socialize, 0.55f);
+    if (Directive.ActivityKind == ELLCoreObservedActivityKind::Social)
+    {
+        Character.SetCurrentIntent(ELLActionIntent::Socialize);
+
+        ALLResidentCharacter* Target = FindResidentActor(Directive.TargetResidentId);
+        if (!Target || Directive.SocialIntent == ELLCoreSocialIntent::None)
+        {
+            Runtime.bPerformingAction = false;
+            Character.ClearMovementTarget();
+            return;
+        }
+
+        const FVector DesiredLocation = ResolveSocialTargetLocation(Character, *Target, Directive.SocialIntent);
+        const float DistanceToDesired = FVector::DistSquared2D(Character.GetActorLocation(), DesiredLocation);
+        const bool bAtDesiredLocation = DistanceToDesired <= FMath::Square(110.0f);
+
+        if (!bAtDesiredLocation)
+        {
+            Runtime.bPerformingAction = false;
+            Character.SetMovementTarget(DesiredLocation);
+        }
+        else
+        {
+            Runtime.bPerformingAction = true;
+            Character.ClearMovementTarget();
+
+            if (Directive.SocialIntent != ELLCoreSocialIntent::Avoid)
+            {
+                FVector LookDirection = Target->GetActorLocation() - Character.GetActorLocation();
+                LookDirection.Z = 0.0f;
+                if (!LookDirection.IsNearlyZero())
+                {
+                    Character.SetActorRotation(FRotator(0.0f, LookDirection.Rotation().Yaw, 0.0f));
+                }
             }
         }
     }
-
-    Simulation->ApplyActionOutcome(Character.GetResidentId(), CompletedIntent);
-
-    Runtime.bPerformingAction = false;
-    Runtime.ActionSecondsRemaining = 0.0f;
-    Runtime.DecisionCooldown = 0.8f;
-    Runtime.SocialTargetId.Invalidate();
-    Character.ClearMovementTarget();
-    Character.SetCurrentIntent(ELLActionIntent::Idle);
 }
 
-ALLResidentCharacter* ALLWorldDirector::ChooseSocialTarget(const ALLResidentCharacter& Character) const
+ELLActionIntent ALLWorldDirector::ToPresentationIntent(ELLCorePhysicalIntent Intent) const
 {
-    ALLResidentCharacter* BestTarget = nullptr;
-    float BestDistanceSquared = TNumericLimits<float>::Max();
-
-    for (ALLResidentCharacter* Candidate : SpawnedResidents)
+    switch (Intent)
     {
-        if (!IsValid(Candidate) || Candidate == &Character)
-        {
-            continue;
-        }
-
-        const float DistanceSquared = FVector::DistSquared2D(Character.GetActorLocation(), Candidate->GetActorLocation());
-        if (DistanceSquared < BestDistanceSquared)
-        {
-            BestDistanceSquared = DistanceSquared;
-            BestTarget = Candidate;
-        }
+        case ELLCorePhysicalIntent::Eat: return ELLActionIntent::Eat;
+        case ELLCorePhysicalIntent::Drink: return ELLActionIntent::Drink;
+        case ELLCorePhysicalIntent::Sleep: return ELLActionIntent::Sleep;
+        case ELLCorePhysicalIntent::Toilet: return ELLActionIntent::Toilet;
+        case ELLCorePhysicalIntent::Hygiene: return ELLActionIntent::Hygiene;
+        case ELLCorePhysicalIntent::None:
+        default:
+            return ELLActionIntent::Idle;
     }
-
-    return BestTarget;
 }
 
 FVector ALLWorldDirector::ResolveTargetLocation(ELLActionIntent Intent, FGuid ResidentId) const
@@ -303,6 +279,7 @@ FVector ALLWorldDirector::ResolveTargetLocation(ELLActionIntent Intent, FGuid Re
     switch (Intent)
     {
         case ELLActionIntent::Eat: Base = FVector(-520.0f, -300.0f, 90.0f); break;
+        case ELLActionIntent::Drink: Base = FVector(-520.0f, 300.0f, 90.0f); break;
         case ELLActionIntent::Sleep: Base = FVector(520.0f, -300.0f, 90.0f); break;
         case ELLActionIntent::Hygiene: Base = FVector(-520.0f, 300.0f, 90.0f); break;
         case ELLActionIntent::Toilet: Base = FVector(520.0f, 300.0f, 90.0f); break;
@@ -316,17 +293,24 @@ FVector ALLWorldDirector::ResolveTargetLocation(ELLActionIntent Intent, FGuid Re
     return GetActorLocation() + Base + FVector(0.0f, LaneOffset, 0.0f);
 }
 
-float ALLWorldDirector::GetActionDuration(ELLActionIntent Intent) const
+FVector ALLWorldDirector::ResolveSocialTargetLocation(
+    const ALLResidentCharacter& Character,
+    const ALLResidentCharacter& Target,
+    ELLCoreSocialIntent SocialIntent) const
 {
-    switch (Intent)
+    FVector AwayDirection = Character.GetActorLocation() - Target.GetActorLocation();
+    AwayDirection.Z = 0.0f;
+    if (AwayDirection.IsNearlyZero())
     {
-        case ELLActionIntent::Sleep: return 4.5f;
-        case ELLActionIntent::Eat: return 2.5f;
-        case ELLActionIntent::Socialize: return 3.0f;
-        case ELLActionIntent::Hygiene: return 2.8f;
-        case ELLActionIntent::Toilet: return 1.8f;
-        case ELLActionIntent::HaveFun: return 3.5f;
-        case ELLActionIntent::Idle:
-        default: return 1.2f;
+        const bool bPositive = (GetTypeHash(Character.GetResidentId()) & 1u) == 0u;
+        AwayDirection = bPositive ? FVector(1.0f, 0.0f, 0.0f) : FVector(0.0f, 1.0f, 0.0f);
     }
+    AwayDirection.Normalize();
+
+    if (SocialIntent == ELLCoreSocialIntent::Avoid)
+    {
+        return Character.GetActorLocation() + AwayDirection * 420.0f;
+    }
+
+    return Target.GetActorLocation() + AwayDirection * 120.0f;
 }

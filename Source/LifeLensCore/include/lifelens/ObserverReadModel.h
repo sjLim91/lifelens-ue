@@ -49,6 +49,8 @@ struct ResidentObservation {
 
     ObservedActivityKind activityKind = ObservedActivityKind::Idle;
     std::string activityLabel = "Idle";
+    Goal physicalGoal = Goal::Idle;
+    SocialIntent socialIntent = SocialIntent::None;
     CharacterId activityTargetId = 0;
     std::string activityTargetName;
 
@@ -111,6 +113,7 @@ inline ResidentObservation buildResidentObservation(
     if (socialActive && socialIntent != SocialIntent::None) {
         dto.activityKind = ObservedActivityKind::Social;
         dto.activityLabel = socialIntentName(socialIntent);
+        dto.socialIntent = socialIntent;
         dto.activityTargetId = socialTarget;
         if (const Character* target = findObservedCharacter(world, socialTarget)) {
             dto.activityTargetName = target->name;
@@ -118,6 +121,7 @@ inline ResidentObservation buildResidentObservation(
     } else if (hasPhysicalAction && physicalGoal != Goal::Idle) {
         dto.activityKind = ObservedActivityKind::Physical;
         dto.activityLabel = goalName(physicalGoal);
+        dto.physicalGoal = physicalGoal;
     } else {
         dto.activityKind = ObservedActivityKind::Idle;
         dto.activityLabel = "Idle";
