@@ -466,3 +466,28 @@
   - old TASK_03 PR #2 / Run `34739283266`은 계속 FROZEN이다.
 - 다음 쭌 측 후보:
   - Physical Interaction / Smart Object Execution v1 또는 Witness / Rumor Runtime Wiring v1. 새 작업은 state lock + 별도 branch 생성 전까지 시작된 것으로 간주하지 않는다.
+
+### 2026-09-14 — World Affordance + Civilization Foundation + Persistence completion
+
+- 작성자: 쭌 측 AI
+- PR #48: `jjun/physical-smart-object-v1`, feature head `505e356d277cb0896109f6d4cdd75bcf06cdab54`, merge `a90ff6a5d870858a9e555ddf1e6e526bb7aa34e1`.
+- PR #49: `jjun/civilization-foundation-v1`, feature head `ac8e0868f819a49d8b2c0aec947978258da56028`, merge `36bd1ac81192bc689c1e811553f068f255642508`.
+- PR #50: `jjun/civilization-runtime-state-v1`, feature head `543ee006a48d8a97d7cf37de65f03c74c1b60e3e`, merge `c31c422c305a3a79a9553d37ac86247aa31d1853`.
+- 변경 범위:
+  - #48: reservable World Affordance execution infrastructure. Current modern-looking bootstrap anchors are development-only and the same reservation/use layer is intended for resource nodes, fires, work surfaces, storage, crafting stations, tools, machines and furniture.
+  - #49: pure-Core material/resource/inventory/storage/personal-knowledge/experiment/discovery/crafting foundation. Technology begins as individual knowledge; no global recipe unlock or forced era gate.
+  - #50: `Character` owns authoritative `IndividualCivilizationState`; `World` owns ResourceNode/StorageSite collections. NEW GAME natural resource substrate includes Stone / Flint / Wood / Fiber / Clay / Water / PlantFood.
+  - #50 snapshot binary format v2 persists resource depletion, resident inventory, personal Knowledge level/confidence/practice and shared storage. Legacy binary v1 decode remains supported with deterministic civilization migration.
+  - `docs/CIVILIZATION_PROGRESSION_v1.md` is canonical alongside the original master spec.
+- 검증:
+  - #48 Structural Preflight `34808292399` PASS; Unreal Linux Compile Run #14 `34808292682` PASS including actual UE 5.6 UHT+UBT.
+  - #49 Core Tests `34809360826` PASS incl Configure / Build / Test / deterministic harness; Preflight `34809360739` PASS.
+  - #50 Core Tests `34810329867` PASS incl Configure / Build / Test / deterministic harness; Preflight `34810329862` PASS.
+- 상대가 알아야 할 점:
+  - LifeLens는 완성된 현대 가정에서 시작하는 게임으로 고정하지 않는다. 장기 방향은 자원 채집 → 저장 → 실험/발견 → 개인 지식 → 제작 → 지식 전파 → 세대 누적 문명이다.
+  - 다겸 UI/Character Presentation은 원시 자원/도구부터 이후 기술까지 수용 가능한 데이터 주도형 표현을 유지한다.
+  - #50의 Inventory/Knowledge/Resource 상태는 Core 내부 권위 상태로 존재하지만 아직 Observer/Unreal read DTO로 노출되지 않았으므로 UI에서 placeholder를 만들지 않는다.
+  - 현재 main HUD는 계속 observer-first로 단순하게 유지한다.
+  - old TASK_03 PR #2 / Run `34739283266`은 계속 FROZEN이다.
+- 다음 쭌 측 잠금:
+  - **Autonomous Civilization Action Loop v1** — Core에서 Needs / curiosity / inventory / personal knowledge / world resources를 바탕으로 Gather / Store / Experiment / Craft를 자율 선택·실행하도록 연결한다. 이후 knowledge transmission과 Observer read DTO로 이어간다.
