@@ -35,7 +35,9 @@ int main()
     assert(pending.physicalGoal==Goal::UseToilet);
     assert(emergency.observeEnvironment().humanWasteResidues==0);
 
-    assert(emergency.completeExternalPhysicalAction(emergencyActorId,true));
+    const GridPos emergencyResolvedPosition{7,-4};
+    assert(emergency.completeExternalPhysicalAction(
+        emergencyActorId,true,emergencyResolvedPosition));
     assert(emergency.observeResident(emergencyActorId).activityKind==ObservedActivityKind::Idle);
 
     const EnvironmentObservation emergencyEnvironment=emergency.observeEnvironment();
@@ -44,13 +46,16 @@ int main()
     for(const auto& residue:emergencyEnvironment.residues){
         if(residue.sourceCharacter==emergencyActorId){
             foundActorResidue=true;
+            assert(residue.pos.x==emergencyResolvedPosition.x);
+            assert(residue.pos.y==emergencyResolvedPosition.y);
             break;
         }
     }
     assert(foundActorResidue);
 
     const std::size_t residueCountAfterCompletion=emergencyEnvironment.totalResidues;
-    assert(!emergency.completeExternalPhysicalAction(emergencyActorId,true));
+    assert(!emergency.completeExternalPhysicalAction(
+        emergencyActorId,true,emergencyResolvedPosition));
     assert(emergency.observeEnvironment().totalResidues==residueCountAfterCompletion);
 
     // An authored toilet/latrine/world affordance must satisfy the same Core
@@ -58,7 +63,9 @@ int main()
     Simulation facility=makeUrgentToiletSimulation(9192);
     const CharacterId facilityActorId=facility.world().characters.front().id;
     const double bladderBeforeFacility=facility.world().characters.front().needs.bladder;
-    assert(facility.completeExternalPhysicalAction(facilityActorId,false));
+    const GridPos facilityResolvedPosition{2,3};
+    assert(facility.completeExternalPhysicalAction(
+        facilityActorId,false,facilityResolvedPosition));
     assert(facility.observeEnvironment().humanWasteResidues==0);
     assert(facility.world().characters.front().needs.bladder<bladderBeforeFacility);
 
