@@ -51,7 +51,7 @@ inline std::uint64_t environmentalMix(std::uint64_t value)
 inline GridPos deterministicOutdoorReliefPosition(
     std::uint64_t worldSeed,
     CharacterId character,
-    GridPos origin)
+    GridPos settlementOrigin={})
 {
     const std::uint64_t mixed=environmentalMix((worldSeed?worldSeed:1)^environmentalMix(character));
     static const GridPos directions[8]={
@@ -59,7 +59,10 @@ inline GridPos deterministicOutdoorReliefPosition(
     };
     const GridPos direction=directions[mixed%8ULL];
     const int distance=5+static_cast<int>((mixed>>8)%3ULL);
-    return {origin.x+direction.x*distance,origin.y+direction.y*distance};
+    return {
+        settlementOrigin.x+direction.x*distance,
+        settlementOrigin.y+direction.y*distance
+    };
 }
 
 class EnvironmentalResidueField {
