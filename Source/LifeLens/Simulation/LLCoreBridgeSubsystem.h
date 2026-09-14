@@ -54,6 +54,11 @@ public:
     UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Observer")
     bool GetFamilyObservation(FGuid ResidentId, FLLCoreFamilyObservation& OutObservation) const;
 
+    // Native persistence bridge. Unreal SaveGame stores these bytes; it never
+    // serializes the compatibility resident projection as a second authority.
+    bool CaptureCoreSnapshotBytes(TArray<uint8>& OutBytes, FString& OutError) const;
+    bool RestoreCoreSnapshotBytes(const TArray<uint8>& Bytes, FString& OutError);
+
     UFUNCTION(BlueprintPure, Category="LifeLens|Core|Observer")
     TArray<FString> GetRecentCoreEvents() const { return RecentEvents; }
 
