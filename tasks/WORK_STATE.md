@@ -4,7 +4,7 @@
 >
 > 제품 요구사항은 `docs/LIFELENS_SPEC_v1.1.md`, 상태관리 규칙은 `docs/STATE_MANAGEMENT.md`, 역할/잠금은 `tasks/TEAM_BOARD.md`, 변경 이력은 `tasks/HANDOFF_LOG.md`를 따른다.
 
-Last reconciled: 2026-09-14 KST — P24 merge confirmed; observer runtime bridge task started from current main
+Last reconciled: 2026-09-14 KST — Observer Runtime Bridge v1 PR #37 opened; structural Preflight PASS; Unreal compile validation pending
 
 ## Status legend
 
@@ -87,21 +87,27 @@ Last reconciled: 2026-09-14 KST — P24 merge confirmed; observer runtime bridge
 - Branch: `jjun/observer-runtime-bridge-v1`
 - Work item: Expose authoritative LifeLensCore resident observation data to Unreal without modifying the frozen TASK_03 branch or 다겸 UI files.
 - Base: current `main` at P24 merge `b4403faf138c153bcd83be266cde5026ea53b831`.
-- PR: not opened yet.
+- Last verified feature HEAD: `1cd3139d4756386d4bd4ee3a3b59d2c74467ed7a` (subsequent commits are state/handoff docs only).
+- PR: #37 `[UE] Expose LifeLensCore observer runtime read API`
 - Status: `IN_PROGRESS`
-- CI: not started yet.
-- Last verified fact: current main already contains Core SocialEvent → Emotion → Memory → Belief → Relationship processing plus Observer Read Model v1/v2. Unreal `ULLSimulationSubsystem` is still a separate legacy state store, so live Core state is not yet exposed to Observer UI.
-- Scope:
-  - add a new Core bridge on latest main, not by reviving PR #2
-  - deterministic Core CharacterId ↔ Unreal FGuid mapping; names are never identifiers
-  - read-only resident needs, full emotion axes, current activity/SocialIntent target, 13D directional relationships, memory/belief counts and basic world counts
-  - Core remains pure C++17; Unreal types stay in `Source/LifeLens/**`
-  - do not modify `Source/LifeLens/UI/**`
+- CI: LifeLens Preflight Run `34794889890` PASS at feature HEAD `1cd3139d...`; latest documentation-only head will receive the same PR Preflight gate.
+- Last verified fact:
+  - actual bridge implementation exists on remote branch and PR #37
+  - structural preflight checks required bridge files/contracts and rejects Unreal reflection leakage into `Source/LifeLensCore/**`
+  - branch was 7 commits ahead / 0 behind main at feature checkpoint; no Dagyeom UI file and no TASK_03 workflow/branch file was changed
+- Implemented scope:
+  - new Core bridge on latest main, not by reviving PR #2
+  - deterministic `(WorldSeed, Core CharacterId)` → Unreal `FGuid`; names are display-only and never identifiers
+  - read-only resident Needs; 11 Emotion axes + summaries; current Physical/Social activity and target; 13D directional Relationship + derived scores; Memory/Belief counts; simulation minute/living counts
+  - `OnCoreRuntimeStateChanged` for Observer consumers
+  - Core remains pure C++17; Unreal reflection/types stay in `Source/LifeLens/**`
+  - no modification to `Source/LifeLens/UI/**`
 - Explicit non-goal: do not present P24 family/household/romance/pregnancy aggregates as live until Core `Simulation` owns authoritative `GenealogyBook` / `RomanceBook` / `HouseholdBook` / `PregnancyBook` state.
-- Blocker / interruption: None at task start. Actual UHT/UBT remains a later validation gate; no APK claim.
-- Exact next action: implement Unreal read DTO + bridge compile unit/include path, run structural preflight through PR CI, then expose the API contract to 다겸 integration queue.
-- Handoff safety: `SAFE` at documented checkpoint; no feature commit yet.
-- Shared-file impact: `Source/LifeLens/LifeLens.Build.cs`, `Source/LifeLens/Simulation/**`, state/handoff docs only. No UI/TASK_03 workflow edits.
+- Validation gap: actual Unreal UHT/UBT compile has **not** been run for PR #37 yet; structural PASS is not treated as compile/APK success. Local container could not clone GitHub because outbound DNS is unavailable.
+- Blocker / interruption: no product-code blocker. Need a separate latest-main Unreal compile validation path that does not modify/revive frozen TASK_03 or blindly repeat its long failed build.
+- Exact next action: inspect available current-main CI/cache paths and choose the shortest isolated UHT/UBT compile validation for PR #37. Do not start full APK/package work merely to validate this bridge. After compile PASS, mark READY_TO_MERGE and publish the API contract to Dagyeom integration queue.
+- Handoff safety: `SAFE` — remote branch, PR, feature SHA, Preflight Run and remaining validation gap are explicit.
+- Shared-file impact: `Source/LifeLens/LifeLens.Build.cs`, `Source/LifeLens/Simulation/**`, `Tools/validate_bootstrap.py`, `tasks/WORK_STATE.md`, append-only `tasks/HANDOFF_LOG.md`. No UI/TASK_03 workflow edits.
 
 ---
 
@@ -115,7 +121,7 @@ Last reconciled: 2026-09-14 KST — P24 merge confirmed; observer runtime bridge
 4. `dagyeom/mobile-touch-v1` — hit target / safe-area / 작은 화면 scroll/overflow/tab UX
 5. `dagyeom/visual-feedback-v1` — 선택/관찰 레벨/주목 대상의 비침투적 시각 피드백
 
-`BLOCKED-BY-JJUN`: Unreal-facing Relationship / Emotion / SocialIntent / Family summary / World aggregate read APIs. Core Relationship/SocialIntent/basic emotion DTO는 이미 존재한다. Observer Runtime Bridge v1에서 resident/emotion/relationship/activity를 먼저 해소하고, Family/World family aggregates는 authoritative family-state integration 후 해소한다.
+`BLOCKED-BY-JJUN`: Family summary / family-derived World aggregate live Unreal read APIs remain blocked on authoritative family-state ownership. Resident Relationship / Emotion / SocialIntent/current activity/basic World resident counts are implemented in PR #37 and become READY for Dagyeom binding after Unreal compile validation + merge.
 
 ---
 
