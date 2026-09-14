@@ -8,7 +8,7 @@
 
 namespace lifelens {
 
-constexpr std::uint32_t SimulationSnapshotBinaryFormatVersion=3;
+constexpr std::uint32_t SimulationSnapshotBinaryFormatVersion=4;
 constexpr std::uint32_t MinimumSupportedSimulationSnapshotBinaryFormatVersion=1;
 
 bool encodeSimulationSnapshot(
