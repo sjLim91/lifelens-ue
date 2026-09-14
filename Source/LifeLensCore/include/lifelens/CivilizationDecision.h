@@ -158,9 +158,7 @@ inline double materialProgressDemand(const Character& self,MaterialKind material
     }
 }
 
-inline void considerCivilizationDecision(
-    CivilizationUtilityDecision& best,
-    const CivilizationUtilityDecision& candidate)
+inline void considerCivilizationDecision(CivilizationUtilityDecision& best,const CivilizationUtilityDecision& candidate)
 {
     if(candidate.intent==CivilizationIntent::None || candidate.utility<=0.0) return;
     if(candidate.utility>best.utility+1e-12) best=candidate;
@@ -174,19 +172,12 @@ inline CivilizationUtilityDecision bestGatherDecision(const World& world,const C
         const int held=self.civilization.inventory.count(ItemKind::RawMaterial,node.material);
         const int stored=storageCountForMaterial(world,node.material);
         const int target=(node.material==MaterialKind::Water || node.material==MaterialKind::PlantFood) ? 4 : 5;
-        const double gap=clampCivilization01(
-            static_cast<double>(std::max(0,target-held-std::min(stored,2)))/static_cast<double>(target));
+        const double gap=clampCivilization01(static_cast<double>(std::max(0,target-held-std::min(stored,2)))/static_cast<double>(target));
         const double demand=materialProgressDemand(self,node.material);
-        const double preference=civilizationPreference(
-            world.seed,self.id,100ULL+static_cast<std::uint64_t>(node.material));
+        const double preference=civilizationPreference(world.seed,self.id,100ULL+static_cast<std::uint64_t>(node.material));
         const double score=clampCivilization01(
-            0.07
-            +0.12*self.personality.curiosity
-            +0.05*self.personality.adaptability
-            +0.08*self.civilization.gatheringSkill
-            +0.16*demand
-            +0.13*gap
-            +0.07*preference);
+            0.07+0.12*self.personality.curiosity+0.05*self.personality.adaptability+
+            0.08*self.civilization.gatheringSkill+0.16*demand+0.13*gap+0.07*preference);
         CivilizationUtilityDecision candidate;
         candidate.intent=CivilizationIntent::Gather;
         candidate.utility=score;
@@ -203,12 +194,8 @@ inline CivilizationUtilityDecision bestExperimentDecision(const World& world,con
 {
     CivilizationUtilityDecision best;
     const std::array<ExperimentKind,5> experiments={
-        ExperimentKind::StrikeStone,
-        ExperimentKind::HaftSharpFlake,
-        ExperimentKind::FrictionWood,
-        ExperimentKind::TwistFiber,
-        ExperimentKind::ShapeClay
-    };
+        ExperimentKind::StrikeStone,ExperimentKind::HaftSharpFlake,ExperimentKind::FrictionWood,
+        ExperimentKind::TwistFiber,ExperimentKind::ShapeClay};
 
     for(const ExperimentKind kind:experiments){
         const TechniqueId technique=experimentTechnique(kind);
@@ -231,18 +218,11 @@ inline CivilizationUtilityDecision bestExperimentDecision(const World& world,con
         if(experimentBaseChance(kind,context.material)<=0.0) continue;
 
         const KnowledgeLevel level=self.civilization.knowledge.level(technique);
-        const double hypothesisBoost=level==KnowledgeLevel::Hypothesized ? 0.08 :
-            (level==KnowledgeLevel::Understood ? 0.05 : 0.0);
-        const double preference=civilizationPreference(
-            world.seed,self.id,200ULL+static_cast<std::uint64_t>(kind));
+        const double hypothesisBoost=level==KnowledgeLevel::Hypothesized ? 0.08 : (level==KnowledgeLevel::Understood ? 0.05 : 0.0);
+        const double preference=civilizationPreference(world.seed,self.id,200ULL+static_cast<std::uint64_t>(kind));
         const double score=clampCivilization01(
-            0.11
-            +0.22*self.personality.curiosity
-            +0.10*self.personality.openness
-            +0.07*self.personality.patience
-            +0.12*self.civilization.learningSkill
-            +0.08*preference
-            +hypothesisBoost);
+            0.11+0.22*self.personality.curiosity+0.10*self.personality.openness+
+            0.07*self.personality.patience+0.12*self.civilization.learningSkill+0.08*preference+hypothesisBoost);
 
         CivilizationUtilityDecision candidate;
         candidate.intent=CivilizationIntent::Experiment;
@@ -270,13 +250,7 @@ inline int desiredTechniqueOutputStock(TechniqueId technique)
 inline CivilizationUtilityDecision bestCraftDecision(const World& world,const Character& self)
 {
     CivilizationUtilityDecision best;
-    const std::array<TechniqueId,5> techniques={
-        TechniqueId::SharpFlake,
-        TechniqueId::ChippedStoneTool,
-        TechniqueId::FireMaking,
-        TechniqueId::FiberCordage,
-        TechniqueId::SimpleContainer
-    };
+    const std::array<TechniqueId,5> techniques={TechniqueId::SharpFlake,TechniqueId::ChippedStoneTool,TechniqueId::FireMaking,TechniqueId::FiberCordage,TechniqueId::SimpleContainer};
 
     for(const TechniqueId technique:techniques){
         if(!self.civilization.knowledge.knowsAtLeast(technique,KnowledgeLevel::Reproducible)) continue;
@@ -296,16 +270,10 @@ inline CivilizationUtilityDecision bestCraftDecision(const World& world,const Ch
         const double practiceNeed=successfulUses<3 ? 1.0 : (successfulUses<12 ? 0.35 : 0.0);
         if(stockNeed<=0.0 && practiceNeed<=0.0) continue;
 
-        const double preference=civilizationPreference(
-            world.seed,self.id,300ULL+static_cast<std::uint64_t>(technique));
+        const double preference=civilizationPreference(world.seed,self.id,300ULL+static_cast<std::uint64_t>(technique));
         const double score=clampCivilization01(
-            0.08
-            +0.11*self.civilization.craftingSkill
-            +0.08*self.personality.conscientiousness
-            +0.05*self.personality.curiosity
-            +0.05*preference
-            +0.15*stockNeed
-            +0.07*practiceNeed);
+            0.08+0.11*self.civilization.craftingSkill+0.08*self.personality.conscientiousness+
+            0.05*self.personality.curiosity+0.05*preference+0.15*stockNeed+0.07*practiceNeed);
 
         CivilizationUtilityDecision candidate;
         candidate.intent=CivilizationIntent::Craft;
@@ -332,14 +300,10 @@ inline CivilizationUtilityDecision bestStoreDecision(const World& world,const Ch
         const int surplus=stack.quantity-keep;
         if(surplus<=0) continue;
         const double fullness=clampCivilization01(static_cast<double>(std::max(0,total-6))/10.0);
-        const double preference=civilizationPreference(
-            world.seed,self.id,400ULL+static_cast<std::uint64_t>(stack.kind)*32ULL+static_cast<std::uint64_t>(stack.material));
+        const double preference=civilizationPreference(world.seed,self.id,400ULL+static_cast<std::uint64_t>(stack.kind)*32ULL+static_cast<std::uint64_t>(stack.material));
         const double score=clampCivilization01(
-            0.07
-            +0.15*self.personality.orderliness
-            +0.09*self.personality.conscientiousness
-            +0.13*fullness
-            +0.04*preference);
+            0.07+0.15*self.personality.orderliness+0.09*self.personality.conscientiousness+
+            0.13*fullness+0.04*preference);
 
         CivilizationUtilityDecision candidate;
         candidate.intent=CivilizationIntent::Store;
@@ -356,6 +320,7 @@ inline CivilizationUtilityDecision bestStoreDecision(const World& world,const Ch
 inline CivilizationUtilityDecision chooseCivilizationUtilityDecision(const World& world,const Character& self)
 {
     CivilizationUtilityDecision best;
+    if(self.id==0 || self.civilization.character!=self.id) return best;
     considerCivilizationDecision(best,bestExperimentDecision(world,self));
     considerCivilizationDecision(best,bestCraftDecision(world,self));
     considerCivilizationDecision(best,bestStoreDecision(world,self));
@@ -375,10 +340,7 @@ inline StorageSite* findCivilizationStorage(World& world,StorageId id)
     return nullptr;
 }
 
-inline CivilizationExecutionResult executeCivilizationDecision(
-    World& world,
-    Character& self,
-    const CivilizationUtilityDecision& decision)
+inline CivilizationExecutionResult executeCivilizationDecision(World& world,Character& self,const CivilizationUtilityDecision& decision)
 {
     CivilizationExecutionResult result;
     switch(decision.intent){
@@ -388,17 +350,13 @@ inline CivilizationExecutionResult executeCivilizationDecision(
             result.event=gatherResource(self.civilization,*node,std::max(1,decision.quantity));
             result.executed=result.event.quantity>0;
             result.success=result.executed;
-            if(result.executed){
-                self.civilization.gatheringSkill=clampCivilization01(
-                    self.civilization.gatheringSkill+0.0015*static_cast<double>(result.event.quantity));
-            }
+            if(result.executed) self.civilization.gatheringSkill=clampCivilization01(self.civilization.gatheringSkill+0.0015*static_cast<double>(result.event.quantity));
             return result;
         }
         case CivilizationIntent::Store: {
             StorageSite* storage=findCivilizationStorage(world,decision.storage);
             if(!storage) return result;
-            result.event=storeItems(
-                self.civilization,*storage,decision.item,decision.material,std::max(1,decision.quantity));
+            result.event=storeItems(self.civilization,*storage,decision.item,decision.material,std::max(1,decision.quantity));
             result.executed=result.event.quantity>0;
             result.success=result.executed;
             return result;
@@ -413,28 +371,19 @@ inline CivilizationExecutionResult executeCivilizationDecision(
             context.learningSkill=self.civilization.learningSkill;
             context.curiosity=self.personality.curiosity;
             context.patience=self.personality.patience;
-            result.experiment=attemptExperiment(
-                context,self.civilization.inventory,self.civilization.knowledge);
+            result.experiment=attemptExperiment(context,self.civilization.inventory,self.civilization.knowledge);
             result.executed=result.experiment.attempted;
             result.success=result.experiment.success;
             result.event=result.experiment.event;
-            if(result.executed){
-                self.civilization.learningSkill=clampCivilization01(
-                    self.civilization.learningSkill+(result.success ? 0.006 : 0.0025));
-            }
+            if(result.executed) self.civilization.learningSkill=clampCivilization01(self.civilization.learningSkill+(result.success ? 0.006 : 0.0025));
             return result;
         }
         case CivilizationIntent::Craft: {
-            result.craft=reproduceTechnique(
-                self.id,decision.technique,self.civilization.inventory,
-                self.civilization.knowledge,self.civilization.craftingSkill);
+            result.craft=reproduceTechnique(self.id,decision.technique,self.civilization.inventory,self.civilization.knowledge,self.civilization.craftingSkill);
             result.executed=result.craft.success;
             result.success=result.craft.success;
             result.event=result.craft.event;
-            if(result.success){
-                self.civilization.craftingSkill=clampCivilization01(
-                    self.civilization.craftingSkill+0.004);
-            }
+            if(result.success) self.civilization.craftingSkill=clampCivilization01(self.civilization.craftingSkill+0.004);
             return result;
         }
         case CivilizationIntent::None:
