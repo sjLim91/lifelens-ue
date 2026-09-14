@@ -5,8 +5,18 @@
 #include "Core/LLTypes.h"
 #include "LLSimulationSubsystem.generated.h"
 
+class ULLCoreBridgeSubsystem;
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FLLSimulationStateChanged);
 
+/**
+ * Compatibility/runtime projection used by the current WorldDirector.
+ *
+ * Production NEW GAME identity/state is authored by LifeLensCore through
+ * ULLCoreBridgeSubsystem. This subsystem no longer randomizes a second founder
+ * population. Its FLLResidentData/FLLRelationshipData arrays are projections
+ * retained while the physical WorldDirector is migrated to Core DTOs.
+ */
 UCLASS()
 class LIFELENS_API ULLSimulationSubsystem : public UGameInstanceSubsystem
 {
@@ -39,9 +49,14 @@ public:
     UFUNCTION(BlueprintPure, Category="LifeLens|Simulation")
     int64 GetSimulationMinute() const { return SimulationMinute; }
 
+    UFUNCTION(BlueprintPure, Category="LifeLens|Simulation")
+    bool IsCoreAuthoritativeRuntime() const { return bCoreAuthoritativeRuntime; }
+
     UFUNCTION(BlueprintCallable, Category="LifeLens|Simulation")
     bool FindResidentById(FGuid ResidentId, FLLResidentData& OutResident) const;
 
+    // Transitional physical-world compatibility. These mutate only the local
+    // projection; the next Core tick refreshes authoritative Needs/relationships.
     UFUNCTION(BlueprintCallable, Category="LifeLens|Simulation")
     bool ApplyActionOutcome(FGuid ResidentId, ELLActionIntent Intent, float Strength = 1.0f);
 
@@ -55,18 +70,18 @@ public:
     FLLSimulationStateChanged OnSimulationStateChanged;
 
 private:
-    void GenerateInitialPopulation();
-    FLLResidentData GenerateAdult(FRandomStream& Random, ELLSex Sex, TSet<FString>& UsedNames);
-    void GenerateInitialRelationships();
+    ULLCoreBridgeSubsystem* GetCoreBridge() const;
+    bool RefreshProjectionFromCore();
     FLLResidentData* FindMutableResident(FGuid ResidentId);
-    static FGuid MakeDeterministicGuid(FRandomStream& Random);
-    static float RollPercent(FRandomStream& Random, float Min = 15.0f, float Max = 85.0f);
 
     UPROPERTY()
     int32 WorldSeed = 0;
 
     UPROPERTY()
     int64 SimulationMinute = 0;
+
+    UPROPERTY()
+    bool bCoreAuthoritativeRuntime = false;
 
     UPROPERTY()
     TArray<FLLResidentData> Residents;
