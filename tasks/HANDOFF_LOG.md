@@ -534,6 +534,20 @@
   - UI 파일만 변경. `ULLObservationSubsystem`과 주민 액터 바운즈 투영만 읽음.
   - 이 브랜치에는 `tasks/WORK_STATE.md`가 없음. main 병합 시 항목 추가.
 
+### Visual Feedback v1 — 화면 확인 및 밑줄/플래시 위치 정정
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/visual-feedback-v1`, PR #38
+- 커밋: `308d88f`
+- 상태: `REVIEW / 검증 대기`
+- 변경 범위:
+  - `Source/LifeLens/UI/LLObserverHUD.cpp`: 밑줄을 액터 원점 투영 위치 아래(터치 반경의 절반), 폭은 터치 반경으로. 선택 플래시를 원점 기준 작은 사각형으로. 렌더 바운즈(이름표 포함) 기준 제거
+- 검증 상태:
+  - 화면 확인(`2add82f`): 스트립 선택 주민 강조 확인. 밑줄은 표시되나 바운즈 아래변에 그려져 실제 주민 표시에서 약 250px 아래에 길게 나타남. 페이드인/플래시: 미기록
+  - 수정 후 로컬 `Build.sh LifeLensEditor Mac Development` (`308d88f`): Result: Succeeded. structural preflight PASS
+  - 수정 후 화면/동작 재확인: 검증 대기
+- 상대가 알아야 할 점:
+  - 없음
+
 ---
 
 ## 다음 인수인계 포인트
