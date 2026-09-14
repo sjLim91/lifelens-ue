@@ -331,3 +331,13 @@
 - Read-only discovery also confirmed open Dagyeom PRs #17, #26, #29, #30. Their branches are not ours to change.
 - Next checkpoint: review P24 code/tests, then record merge SHA; new integration work starts on a separate branch.
 - Interruption policy: push each coherent change before external waits, record exact branch/HEAD/PR/check IDs/next command. Chat availability does not imply a background AI is still working; re-read GitHub on resume.
+
+
+### 2026-09-14 — P24 merge held: assertions exposed a Core memory defect
+
+- Author: 쭌 측 AI; branch `jjun/core-validation-recovery-v1` (base `6ee98d6`).
+- CMake is absent locally; used installed g++ C++17 with assertions enabled. `test_observer_read_model_v2` passed, but `test_relationship` aborted at line 16 after reverse-relation insertion.
+- Root cause: RelationshipBook::getOrCreate returns a vector element reference, then subsequent insertion reallocates it. Existing test holds both directions. This is a real dangling reference, not a P24 DTO failure.
+- CI root cause: core-tests.yml configures Release; CMake defines NDEBUG, eliminating legacy assert checks (including expressions with side effects). Old PASS cannot establish assertion-based correctness.
+- Changed priority: repair this bounded Core/validation defect before merging P24 or starting Unreal read APIs. TASK_03 remains FROZEN.
+- Next: reference-stable storage, Release assertion guard, full tests and targeted ASan/UBSan, then PR/CI and durable checkpoint.

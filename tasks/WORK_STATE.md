@@ -21,11 +21,11 @@ Last reconciled: 2026-09-14 KST — session recovery; GitHub branch/PR/Actions r
 - Work item: 다겸 UI의 `BLOCKED-BY-JJUN` 데이터 병목 해소 — 세부 Emotion, Family summary, World aggregate를 Core read DTO로 제공
 - Last known HEAD: `48d6142834ad2fe2b34b228cec57e092e0577e36`
 - PR: #34 `[CORE] Expand observer read model for family and world overview`
-- Status: `RECOVERING`
+- Status: `BLOCKED`
 - CI: Core Tests Run `34792467903` PASS; Preflight Run `34792467916` PASS (PR head `48d6142`).
 - Last verified fact: PR #34 is open and mergeable; three Core files add Emotion/Family/World DTOs and a test. Prior session stopped after successful CI but before state synchronization. No code was lost. `main` remains `4e8f50d`.
-- Blocker / interruption: 없음.
-- Exact next action: Review PR #34 read-model semantics and run local C++17 checks; fix verified defects on its branch if needed, record exact CI results, then merge. Follow with a separate current-main Unreal observer bridge task; do not reuse TASK_03.
+- Blocker / interruption: Existing Core tests fail with assertions enabled; CI Release builds define NDEBUG and skip assertions. Fix validation/references before merging P24.
+- Exact next action: Finish Core validation recovery below; update PR #34 with that verified baseline, run full tests, then merge. Unreal bridge follows after this gate.
 - Handoff safety: `CONDITIONAL` — CI passed; code review/reconciliation in progress.
 - Shared-file impact: `Source/LifeLensCore/**` + Core tests only. Unreal USTRUCT/Blueprint bridge는 별도 후속 integration task로 분리.
 
@@ -62,6 +62,24 @@ Last reconciled: 2026-09-14 KST — session recovery; GitHub branch/PR/Actions r
 - Exact next action: **없음. 자동 재실행/수정 금지.** 최신 main 기반 새 integration task는 TASK_03 자체와 분리해서 진행.
 - Handoff safety: `SAFE`
 - Shared-file impact: 오래된 Build/Simulation/shared files 포함. main에 그대로 병합 금지.
+
+---
+
+
+### 4. Core validation recovery v1
+
+- Owner: 쭌 + 쭌 AI
+- Branch: `jjun/core-validation-recovery-v1`
+- Work item: Restore real Release assertions and fix invalidated RelationshipBook references.
+- Last known HEAD: `6ee98d62fefd11cac6be224337fcb732d00d1865` (base; implementation not yet committed)
+- PR: not created
+- Status: `IN_PROGRESS`
+- CI: pending; old Release green checks are insufficient for assertion-based tests.
+- Last verified fact: Local g++ C++17 (assertions enabled) reproduced `test_relationship.cpp:16`: `aToB.from==10 && aToB.to==20` fails after creating reverse relation. RelationshipBook stores returned references in a growing vector; second insertion invalidates the first. Local CMake unavailable, g++ available.
+- Blocker / interruption: code defect + test configuration defect; unrelated to UE setup or P24 DTOs.
+- Exact next action: Stabilize relationship references while preserving insertion order; guarantee assertions in every CMake test target including Release; add a configuration guard; run full Core tests, targeted sanitizers, and deterministic harness; create PR and record CI IDs.
+- Handoff safety: `CONDITIONAL` — base and cause saved; next implementation checkpoint pending.
+- Shared-file impact: Core headers/tests/CMake plus status docs only; no UI/TASK_03 changes.
 
 ---
 
