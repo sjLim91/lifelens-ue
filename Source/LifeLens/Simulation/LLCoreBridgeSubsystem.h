@@ -20,6 +20,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FLLCoreRuntimeStateChanged);
  * The Core simulation owns its relationship and family-state books. This
  * adapter only projects those authoritative states into read-only Unreal DTOs;
  * UI code never mutates Core state through the observer API.
+ * Family/world reads remain observer-only so UI consumers cannot become state owners.
  */
 UCLASS()
 class LIFELENS_API ULLCoreBridgeSubsystem : public UGameInstanceSubsystem
