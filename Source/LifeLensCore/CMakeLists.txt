@@ -115,3 +115,7 @@ add_test(NAME test_life_history_wiring COMMAND test_life_history_wiring)
 add_executable(test_generation_continuity tests/test_generation_continuity.cpp)
 target_link_libraries(test_generation_continuity PRIVATE lifelens_core)
 add_test(NAME test_generation_continuity COMMAND test_generation_continuity)
+
+add_executable(test_observer_read_model_v2 tests/test_observer_read_model_v2.cpp)
+target_link_libraries(test_observer_read_model_v2 PRIVATE lifelens_core)
+add_test(NAME test_observer_read_model_v2 COMMAND test_observer_read_model_v2)
