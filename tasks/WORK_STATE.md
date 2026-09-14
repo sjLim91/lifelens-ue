@@ -4,7 +4,7 @@
 >
 > 제품 요구사항은 `docs/LIFELENS_SPEC_v1.1.md`, 상태관리 규칙은 `docs/STATE_MANAGEMENT.md`, 역할/잠금은 `tasks/TEAM_BOARD.md`, 변경 이력은 `tasks/HANDOFF_LOG.md`를 따른다.
 
-Last reconciled: 2026-09-14 KST
+Last reconciled: 2026-09-14 KST — session recovery; GitHub branch/PR/Actions rechecked
 
 ## Status legend
 
@@ -19,14 +19,14 @@ Last reconciled: 2026-09-14 KST
 - Owner: 쭌 + 쭌 AI
 - Branch: `jjun/observer-read-model-v2`
 - Work item: 다겸 UI의 `BLOCKED-BY-JJUN` 데이터 병목 해소 — 세부 Emotion, Family summary, World aggregate를 Core read DTO로 제공
-- Last known HEAD: `37bc2e7af7924fdf8a262d086426e15f2c3e2db3` (branch synchronized checkpoint)
-- PR: 없음 — 구현 전
-- Status: `IN_PROGRESS`
-- CI: 미실행
-- Last verified fact: 기존 Core `ObserverReadModel.h`에는 Relationship 13차원, SocialIntent/대상, emotion valence/arousal/intensity가 이미 존재함. `jjun/observer-read-model-v2`는 ahead commit이 없는 빈 과거 브랜치여서 P23 merge SHA까지 안전하게 fast-forward함.
+- Last known HEAD: `48d6142834ad2fe2b34b228cec57e092e0577e36`
+- PR: #34 `[CORE] Expand observer read model for family and world overview`
+- Status: `RECOVERING`
+- CI: Core Tests Run `34792467903` PASS; Preflight Run `34792467916` PASS (PR head `48d6142`).
+- Last verified fact: PR #34 is open and mergeable; three Core files add Emotion/Family/World DTOs and a test. Prior session stopped after successful CI but before state synchronization. No code was lost. `main` remains `4e8f50d`.
 - Blocker / interruption: 없음.
-- Exact next action: 11개 세부 감정축 DTO + Partner/Parents/Children/Siblings 및 혼인/동거/임신 상태 + World overview 집계(Households/Couples/Married/Pregnancies/Major Events/continuity) 추가 → C++17 테스트 → PR → Core CI + Preflight.
-- Handoff safety: `SAFE`
+- Exact next action: Review PR #34 read-model semantics and run local C++17 checks; fix verified defects on its branch if needed, record exact CI results, then merge. Follow with a separate current-main Unreal observer bridge task; do not reuse TASK_03.
+- Handoff safety: `CONDITIONAL` — CI passed; code review/reconciliation in progress.
 - Shared-file impact: `Source/LifeLensCore/**` + Core tests only. Unreal USTRUCT/Blueprint bridge는 별도 후속 integration task로 분리.
 
 ### 2. Observer HUD v2

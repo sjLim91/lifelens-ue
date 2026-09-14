@@ -320,3 +320,14 @@
 - UI가 추가로 필요로 하는 Simulation/Core read API
 - 화면/터치/관찰 UX 확인 결과
 - PR 생성 시 shared file 포함 여부
+
+
+## 2026-09-14 — usage-limit interruption recovery
+
+- Author: 쭌 측 AI.
+- Verified remote main `4e8f50d92bb7eb08884122a001ac73174d057703` and P24 branch `48d6142834ad2fe2b34b228cec57e092e0577e36`.
+- PR #34 is open/mergeable; Core Tests `34792467903` and Preflight `34792467916` succeeded. WORK_STATE incorrectly said implementation had not started; corrected before further code edits.
+- TASK_03 PR #2 remains FROZEN. Run `34739283266` is completed/failure; no rerun or branch changes.
+- Read-only discovery also confirmed open Dagyeom PRs #17, #26, #29, #30. Their branches are not ours to change.
+- Next checkpoint: review P24 code/tests, then record merge SHA; new integration work starts on a separate branch.
+- Interruption policy: push each coherent change before external waits, record exact branch/HEAD/PR/check IDs/next command. Chat availability does not imply a background AI is still working; re-read GitHub on resume.
