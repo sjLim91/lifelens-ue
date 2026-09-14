@@ -571,3 +571,19 @@
 - 상대가 알아야 할 점:
   - 의상은 UBC Standard tier 미포함. Quaternius Modular Character Outfits(CC0 명시 확인 후) 또는 후속 팩으로 보강 예정. 로드맵 Phase C "최소 기본 의상 세트"는 미충족
   - Save/Load 연속성은 임시 시드가 `WorldSeed + ResidentId` 순수 함수이므로 설계상 유지되나 실기 확인 필요
+
+### 다겸 측 AI — Appearance inputs를 #65 계약에 연결
+
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/character-appearance-v1`, PR #67
+- 커밋: `26ec3b9` (latest main `2510cce` merge 포함)
+- 상태: `WAITING_CI / 검증 대기`
+- 변경 범위:
+  - `Source/LifeLens/Characters/LLResidentAppearanceInputs.cpp/.h`: `Resolve()`가 `ULLAppearanceProfileLibrary::MakeDeterministicAppearanceProfile` 1:1 매핑. 임시 해시 시드는 ResidentId 무효 시 fallback만
+  - `tasks/WORK_STATE.md`: origin/main 유지 + 다겸 행(merge 충돌 해결)
+- 검증 상태:
+  - 로컬 `Build.sh LifeLensEditor Mac Development`: Result: Succeeded
+  - structural preflight PASS (로컬)
+  - GitHub Actions: 검증 대기. PIE 재확인: 검증 대기
+- 상대가 알아야 할 점:
+  - 표현 계층은 계약 필드만 소비. 에셋 ID는 `LLResidentAppearanceComponent` 내부에만 있음

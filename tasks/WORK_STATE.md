@@ -113,13 +113,13 @@ Rules:
 - Owner: 다겸 + 다겸 AI
 - Branch: `dagyeom/character-appearance-v1` (base `main` `9db79b8`, latest main merge 진행)
 - Work item: Character Appearance v1 — Track B Quaternius CC0
-- Last known HEAD: `d4f6a24`
+- Last known HEAD: `26ec3b9`
 - PR: #67 `[UI] Character Appearance v1 — Quaternius CC0 human body, deterministic look (Track B)`
 - Status: `WAITING_CI`
 - CI: 로컬 `Build.sh LifeLensEditor Mac Development` Result: Succeeded; 로컬 `Tools/validate_bootstrap.py` PASS; GitHub Actions 대기
 - Last verified fact: UBC/UAL 83 에셋 임포트, Appearance/Inputs 컴포넌트, PIE 화면 확인(4명 휴머노이드, 남녀 구분, 헤어·피부 차이, 라벨·링·LEVEL 1 정상; 의상 없음, Idle 외 애니 미연결, Save/Load 미확인)
 - Blocker / interruption: 없음
-- Exact next action: PR #65 계약(`ULLAppearanceProfileLibrary`)으로 `ULLResidentAppearanceInputSource::Resolve` 교체 → 로컬 컴파일 → push → CI → Save/Load 확인
+- Exact next action: CI 확인 → PIE 재확인(외형 유지, Save/Load 연속성) → 의상 세트 보강(후속)
 - Handoff safety: `SAFE`
 - Shared-file impact: 없음
 
