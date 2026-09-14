@@ -1,4 +1,5 @@
 #pragma once
+#include <algorithm>
 #include <functional>
 #include <string>
 #include <unordered_map>
@@ -23,7 +24,10 @@ public:
     void runMinutes(int minutes);
     void setExternalPhysicalExecution(bool enabled){ world_.externalPhysicalExecution=enabled; }
     bool externalPhysicalExecutionEnabled() const{return world_.externalPhysicalExecution;}
-    bool completeExternalPhysicalAction(CharacterId id,bool emergencyFallback);
+    bool completeExternalPhysicalAction(
+        CharacterId id,
+        bool emergencyFallback,
+        GridPos resolvedPosition);
     void onEvent(EventCallback cb);
     SimulationStateSnapshot captureSnapshot() const;
     bool restoreSnapshot(const SimulationStateSnapshot& snapshot,std::string* error=nullptr);
@@ -108,7 +112,10 @@ private:
     std::string makeChildName(Sex sex,CharacterId childId) const;
 };
 
-inline bool Simulation::completeExternalPhysicalAction(CharacterId id,bool emergencyFallback)
+inline bool Simulation::completeExternalPhysicalAction(
+    CharacterId id,
+    bool emergencyFallback,
+    GridPos resolvedPosition)
 {
     if(!world_.externalPhysicalExecution) return false;
 
@@ -142,13 +149,13 @@ inline bool Simulation::completeExternalPhysicalAction(CharacterId id,bool emerg
         character->needs.apply(effect);
     }
 
-    // Only a true emergency outdoor toilet fallback creates the v1 sanitation
-    // residue. A resident that reached an authored toilet/latrine/other actual
-    // affordance must not be reinterpreted as having defecated outdoors.
+    // World is the physical resolver, so Core records environmental consequence
+    // at the actual acknowledged world-grid position rather than independently
+    // choosing a second position that could disagree with what the player saw.
+    runtime.pos=resolvedPosition;
     if(emergencyFallback && runtime.goal==Goal::UseToilet){
-        runtime.pos=deterministicOutdoorReliefPosition(world_.seed,character->id,runtime.pos);
         const auto& residue=world_.environmentalResidues.deposit(
-            EnvironmentalResidueKind::HumanWaste,runtime.pos,character->id,
+            EnvironmentalResidueKind::HumanWaste,resolvedPosition,character->id,
             world_.minute,1.0,0.42,3);
         character->needs.hygiene=Needs::clamp01(character->needs.hygiene+0.025);
         emit(character->name+" left sanitation residue id="+std::to_string(residue.id));
