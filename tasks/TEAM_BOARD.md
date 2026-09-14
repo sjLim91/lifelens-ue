@@ -12,7 +12,7 @@
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | `jjun/production-new-game-runtime-v1` | Production NEW GAME Unreal Runtime Integration | `Source/LifeLens/Simulation/**`, Core↔Unreal read adapter, 필요 시 쭌 소유 Core read model | DOING — Core founder source를 Unreal production start path에 연결 |
+| 쭌 + 쭌 AI | `jjun/production-new-game-runtime-v1`, PR #42 | Production NEW GAME Unreal Runtime Integration | `Source/LifeLens/Simulation/**`, Core↔Unreal read adapter, `Tools/validate_bootstrap.py` | REVIEW / WAITING_CI — head `5f61ce04...`; Preflight + actual UHT/UBT running |
 | 쭌 + 쭌 AI | `task/03-fast-test`, PR #2 | old Android validation | Bridge/build | FROZEN — Run `34739283266` 재실행/수정/병합 금지 |
 | 다겸 + 다겸 AI | `dagyeom/observer-ui-v2`, PR #17 | Observer HUD v2 + Core Observer Bridge binding | `Source/LifeLens/UI/**` | REVIEW / RECOVERING — latest main reconcile 필요 |
 | 다겸 + 다겸 AI | `dagyeom/ui-foundation-v1`, PR #26 | Android landscape UI foundation | UI foundation | REVIEW |
@@ -21,24 +21,21 @@
 | 다겸 + 다겸 AI | `dagyeom/mobile-touch-v1`, PR #36 | Mobile Touch v1 | `Source/LifeLens/UI/**` | REVIEW — stacked on #30 |
 | 다겸 + 다겸 AI | `dagyeom/visual-feedback-v1`, PR #38 | Visual Feedback v1 | `Source/LifeLens/UI/**` | REVIEW — stacked on #36 |
 
-## Current Jjun lock — Production NEW GAME Unreal Runtime Integration
+## Current Jjun lock — PR #42
 
 - Branch: `jjun/production-new-game-runtime-v1`
-- Base at branch creation: `3f1848873e38325b6aa240f061d1035a5f9c4665`
-- Allowed scope: Jjun-owned `Source/LifeLens/Simulation/**`, Core↔Unreal bridge/read DTO, narrowly required Core read fields/tests.
-- Forbidden scope in this task: `Source/LifeLens/UI/**`, Dagyeom Character presentation, Content UI/Characters, old TASK_03.
-- Verified starting gap:
-  - Core Bridge only starts demo/social demo today.
-  - Production Core `setupNewGame()` from PR #41 is not yet exposed to Unreal.
-  - Core resident Unreal DTO lacks Sex/AgeYears/LifeStage founder identity.
-  - legacy `ULLSimulationSubsystem::NewGame()` independently randomizes another 2M+2F population.
-- Target:
-  - production bridge start calls Core `setupNewGame()`;
-  - stable WorldSeed + CharacterId GUID mapping preserved;
-  - founder identity projected read-only to Unreal;
-  - no new second randomization in the production path;
-  - validate Structural Preflight + actual UE 5.6 Linux UHT/UBT before merge.
-- Save/Load is not silently claimed solved here; persistent Core-state save can be a following bounded task.
+- Head: `5f61ce04963166af418fb672fb4442a6cf0598e6`
+- Product purpose: make formal Unreal NEW GAME consume Core founder state from PR #41 instead of randomizing a second population.
+- Changed scope:
+  - `LLCoreReadTypes.h`: Sex/Age/LifeStage/Personality founder identity DTO.
+  - `LLCoreBridgeSubsystem.h/.cpp`: production `StartCoreNewGame` + identity projection.
+  - `LLSimulationSubsystem.h/.cpp`: compatibility projection over Core instead of founder generator; Core tick forwarding; deterministic seed/minute replay load.
+  - `Tools/validate_bootstrap.py`: enforce new contract and forbid legacy generator source-of-truth patterns.
+- No `Source/LifeLens/UI/**`, Character presentation, Content, Config, Android workflow, or frozen TASK_03 changes.
+- Transitional limitation: current WorldDirector still executes presentation/physical legacy actions against the projection. Core remains authoritative and refreshes projection on each Core advance. Core-action→physical-world presentation is a separate follow-up.
+- Required gates before merge:
+  - Preflight Run `34799244015`.
+  - Unreal Linux Compile Run `34799244011` including actual UHT/UBT.
 
 ## Latest completed Jjun work
 
@@ -51,7 +48,7 @@
 
 Former six `BLOCKED-BY-JJUN` items remain RESOLVED / READY FOR BINDING via #37/#39/#40: Relationship 13D + target, Emotion details, SocialIntent+target, Family summary, World aggregates, read-only Blueprint/USTRUCT Bridge.
 
-If a new concrete API gap is found, add a new Integration Request rather than reopening the old six.
+PR #42 additionally exposes founder Sex/Age/LifeStage/Personality through the same Core resident DTO if it passes and merges.
 
 ## Shared File Lock
 
@@ -65,7 +62,7 @@ Current open requests: **none**.
 
 ## Merge / reconciliation queue
 
-1. Jjun `jjun/production-new-game-runtime-v1` — DOING.
+1. PR #42 — WAITING_CI; do not merge without actual UHT/UBT PASS.
 2. Dagyeom PR #17 — reconcile latest main + bind current Core Bridge + review fixes + verify.
 3. Dagyeom PR #26 — reconcile latest main independently.
 4. After #17: #29/#30 → #36 → #38.
