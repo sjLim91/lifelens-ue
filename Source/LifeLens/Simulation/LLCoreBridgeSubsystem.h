@@ -4,6 +4,7 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Simulation/LLCoreReadTypes.h"
 #include "Simulation/LLCoreActionTypes.h"
+#include "Simulation/LLCivilizationReadTypes.h"
 #include "LLCoreBridgeSubsystem.generated.h"
 
 namespace lifelens { class Simulation; }
@@ -57,6 +58,14 @@ public:
 
     UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Observer")
     bool GetFamilyObservation(FGuid ResidentId, FLLCoreFamilyObservation& OutObservation) const;
+
+    UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Civilization")
+    bool GetResidentCivilizationObservation(
+        FGuid ResidentId,
+        FLLCoreResidentCivilizationObservation& OutObservation) const;
+
+    UFUNCTION(BlueprintPure, Category="LifeLens|Core|Civilization")
+    FLLCoreCivilizationWorldObservation GetCivilizationWorldObservation(int32 MaxRecentDiscoveries = 16) const;
 
     // Native persistence bridge. Unreal SaveGame stores these bytes; it never
     // serializes the compatibility resident projection as a second authority.
