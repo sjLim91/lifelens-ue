@@ -14,6 +14,7 @@
 문서가 GitHub와 다르면 코드보다 문서를 먼저 고친다.
 
 제품 방향은 `docs/LIFELENS_SPEC_v1.1.md` + `docs/CIVILIZATION_PROGRESSION_v1.md`.
+캐릭터 외형/표현 구현은 **`docs/CHARACTER_APPEARANCE_ROADMAP.md`가 canonical 실행 기준**이다.
 쭌이 다겸 작업을 도울 때는 `docs/INTEGRATION_SPRINT.md`를 따른다.
 
 ## Current product checkpoints
@@ -36,33 +37,76 @@
   - `Source/LifeLens/UI/LLObserverUIFoundation.cpp`
   - `Source/LifeLens/UI/LLObserverUIFoundation.h`
 - Reconcile strategy: latest main + the two Foundation files only; stale old shared-state docs are not replayed.
-- Preserve merged PR #17 Observer hierarchy/Core authority.
-- Next gate: structural Preflight + actual UE 5.6 UHT/UBT/link.
+- Helper PR #61 Preflight `34840301429` PASS.
+- Verify-only PR #62 Preflight `34840467738` PASS.
+- Unreal Run #21 `34840467864` 진행 중. 마지막 확인은 UE 5.6 image pull 단계.
 - While lock is active, Dagyeom side should not edit the two Foundation files.
 
-### DQ-02 — PR #29 Character Presentation — READY AFTER #26 CHECKPOINT
+### DQ-02 — PR #29 Character Presentation Foundation — NEXT AFTER #26
 
-- #17 dependency is cleared.
-- Reconcile parent/base before code changes.
-- Consume Core action intent for visuals only.
-- Keep appearance/equipment hooks data-driven from primitive resources/tools through later technology.
+현재 PR #29의 Cylinder 몸통 + Sphere 머리 + 단색 material은 **개발용 placeholder**다. 최종 사람 스킨이 아니다.
 
-### DQ-03 — PR #30 Observer UX Polish — READY AFTER #26 CHECKPOINT
+#29에서는 먼저 다음 기반만 current main에 안정화한다:
+- PresentationComponent
+- selection ring
+- label LOD
+- life-stage scale hook
+- real human mesh로 교체 가능한 구조
+- Core action/identity를 표현만 하는 presentation contract
 
-- Reconcile to merged #17 baseline.
-- Preserve Level 0 cleanliness and current Core-backed detail tabs.
+### DQ-03 — Character Appearance v1 — NEW HIGH PRIORITY
 
-### DQ-04 — PR #36 Mobile Touch
+**#29 직후 시작하며 #30/#36/#38 UI polish보다 우선한다.**
+
+상세 기준: `docs/CHARACTER_APPEARANCE_ROADMAP.md`
+
+최소 목표:
+- real humanoid skeletal mesh
+- skin / face / eyes / hair / default clothing
+- shared skeleton + modular appearance
+- deterministic `AppearanceProfile` from WorldSeed + CharacterId
+- NEW GAME마다 서로 다른 초기 4명 외형
+- Save/Load 후 동일 외형 유지
+- Android LOD/mobile fallback
+- asset license/provenance 기록
+
+### DQ-04 — Character Motion & Context v1 — AFTER APPEARANCE
+
+최소 세트:
+- idle / walk / run
+- turn-in-place
+- sit / stand / lie / wake
+- gaze/head tracking
+- context interaction hook
+- basic IK / transition smoothing
+- Core action과 화면 행동이 모순되지 않게 유지
+
+### DQ-05 — PR #30 Observer UX Polish
+
+- Human Character Appearance/Motion 최소 checkpoint 이후 진행.
+- merged #17의 Level 0 cleanliness와 Core-backed detail tabs 유지.
+
+### DQ-06 — PR #36 Mobile Touch
 - after #30
 
-### DQ-05 — PR #38 Visual Feedback
+### DQ-07 — PR #38 Visual Feedback
 - after #36
+
+## LATER CHARACTER MILESTONES
+
+- Appearance Genetics & Lifecycle v1
+  - 부모 외형 parameter 조합
+  - child → teen → adult → elder 성장 표현
+  - family resemblance / aging
+- Clothing/Equipment civilization linkage
+  - 개인 소유/제작/지식 상태를 기반으로 의상/도구 표현
+  - 전역 시대 unlock 금지
 
 ## BLOCKED-BY-JJUN
 
 **0개.**
 
-새 API gap이 실제 발견될 때만 `TEAM_BOARD.md`에 Integration Request를 만든다.
+새 API/SaveLoad gap이 실제 발견될 때만 `TEAM_BOARD.md`에 Integration Request를 만든다.
 
 ## Integration Sprint rule
 
@@ -70,13 +114,20 @@ Jjun default support = `REVIEW_ONLY`.
 실제 Dagyeom-owned 수정은 exact HEAD 확인 → `ASSIST_LOCK` → `integration/dagyeom-<scope>-assist` → 검증/handoff → lock 해제 순서다.
 `dagyeom/*` branch에 Jjun AI direct push 금지.
 
-Parent-first order:
-1. #26 current
-2. #29/#30 from merged #17 baseline
-3. #36 after #30
-4. #38 after #36
-5. integrated runtime verification
-6. Android smoke APK
+## Canonical order
+
+1. #26 UI Foundation
+2. #29 Character Presentation Foundation
+3. **Character Appearance v1**
+4. **Character Motion & Context v1 minimum**
+5. #30 Observer UX Polish
+6. #36 Mobile Touch
+7. #38 Visual Feedback
+8. Core + Observer + Human Character integrated runtime verification
+9. Android smoke APK
+10. Appearance Genetics & Lifecycle
+11. Clothing/Equipment civilization linkage
+12. deeper civilization production chains
 
 ## Canonical product direction
 
