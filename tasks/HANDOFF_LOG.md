@@ -587,3 +587,17 @@
   - GitHub Actions: 검증 대기. PIE 재확인: 검증 대기
 - 상대가 알아야 할 점:
   - 표현 계층은 계약 필드만 소비. 에셋 ID는 `LLResidentAppearanceComponent` 내부에만 있음
+
+### 다겸 측 AI — Character Appearance v1 재확인 결과
+
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/character-appearance-v1`, PR #67
+- 커밋: `e8300ec`
+- 상태: `WAITING_CI / 검증 대기`
+- 검증 상태:
+  - 화면 재확인(로컬 PIE): 주민 4명 외형 정상 표시, #65 계약 교체 후 조합 유지
+  - PIE 재시작 후 동일 주민 동일 외형: 미기록
+  - 관찰: 이동 시 걷기 애니메이션 없이 Idle 상태로 미끄러짐 (Character Motion & Context v1 범위, 대기열 AFTER라 미착수)
+  - GitHub Actions: 검증 대기
+- 상대가 알아야 할 점:
+  - 다겸 READY_NOW 잔여 항목 없음. Motion & Context v1이 READY_NOW로 승격되면 locomotion(Idle/Walk/Jog)부터 착수 가능. UAL Standard에 Idle_Loop / Walk_Loop / Jog_Fwd_Loop / Sprint_Loop / Sitting_* / Interact / PickUp_Table 포함
