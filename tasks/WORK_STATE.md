@@ -4,7 +4,7 @@
 >
 > 제품 기준: `docs/LIFELENS_SPEC_v1.1.md` · 상태 규칙: `docs/STATE_MANAGEMENT.md` · 역할/잠금: `tasks/TEAM_BOARD.md` · 이력: `tasks/HANDOFF_LOG.md`
 
-Last reconciled: 2026-09-14 KST — PR #41 merged as `1b6f349f03db6f3bb1f95cf9387ef994a68c5d68`; new runtime integration branch `jjun/production-new-game-runtime-v1` created from current main `3f1848873e38325b6aa240f061d1035a5f9c4665`.
+Last reconciled: 2026-09-14 KST — PR #42 opened at head `5f61ce04963166af418fb672fb4442a6cf0598e6`; Structural Preflight and Unreal 5.6 Linux Compile are running.
 
 ## Mandatory sync gate
 
@@ -22,24 +22,24 @@ Last reconciled: 2026-09-14 KST — PR #41 merged as `1b6f349f03db6f3bb1f95cf938
 
 - Owner: 쭌 + 쭌 AI
 - Branch: `jjun/production-new-game-runtime-v1`
-- Base at creation: `3f1848873e38325b6aa240f061d1035a5f9c4665`
-- PR: not opened yet.
-- Status: `IN_PROGRESS`
-- Goal: PR #41의 authoritative Core `Simulation::setupNewGame()`을 Unreal runtime의 실제 NEW GAME 시작 경로에 연결하고, legacy `ULLSimulationSubsystem`의 별도 2M+2F 생성기가 두 번째 진실이 되지 않도록 정리한다.
-- Initial verified gap:
-  - `ULLCoreBridgeSubsystem` currently exposes only `StartCoreObserverDemo()` and calls `setupSocialDemo()` / `setupDemo()`.
-  - `FLLCoreResidentObservation` currently lacks founder Sex / AgeYears / LifeStage identity fields.
-  - legacy `ULLSimulationSubsystem::NewGame()` still owns a separate four-resident generator and legacy SaveGame arrays.
-- Required contract:
-  - WorldSeed 하나가 Core Simulation의 founder 생성 원천.
-  - Core CharacterId + WorldSeed → 기존 stable Unreal `FGuid` 규칙 유지.
-  - production bridge path calls `Simulation::setupNewGame()`.
-  - Unreal read DTO exposes enough founder identity (Sex/Age/LifeStage) for runtime/presentation consumption without leaking Core types.
-  - no independent second founder randomization in the production path.
-  - Dagyeom `Source/LifeLens/UI/**` / Character presentation files are untouched.
-- Validation: structural preflight + actual UE 5.6 Linux UHT/UBT required for any Unreal-side changes. Core tests required if Core files change.
-- Exact next action: inspect all legacy `ULLSimulationSubsystem` callers/usages → choose bounded adapter strategy → implement production start/read identity path → validate before any Save/Load follow-on.
-- Handoff safety: `SAFE` while confined to Jjun-owned Simulation/Core adapter files.
+- PR: #42 `[UE] Make production New Game Core-authoritative`
+- Head: `5f61ce04963166af418fb672fb4442a6cf0598e6`
+- Status: `WAITING_CI`
+- Implemented scope:
+  - `ULLCoreBridgeSubsystem::StartCoreNewGame(Seed)` → Core `setupNewGame()`.
+  - Core resident read DTO now exposes Sex, AgeYears, 8-stage LifeStage, 14-axis Personality.
+  - `ULLSimulationSubsystem::NewGame()` no longer generates a second population; it starts Core and projects the Core founders into compatibility `FLLResidentData`.
+  - `AdvanceSimulationMinutes()` advances Core then refreshes the compatibility projection.
+  - compatibility relationship rows are projected from Core directional Relationship data.
+  - Save writes seed/minute + projection for compatibility; Load ignores legacy resident arrays as authority and reconstructs Core deterministically from WorldSeed + SimulationMinute replay.
+  - old `GenerateInitialPopulation`, `GenerateAdult`, `MakeDeterministicGuid` production path removed.
+  - Dagyeom UI/Character presentation files untouched.
+- Transitional limitation (explicit): current `WorldDirector` physical movement/action layer still uses compatibility projection; `ApplyActionOutcome` / `ApplySocialInteraction` are presentation compatibility only and Core next tick overwrites them. Full Core-action→world-presentation integration is a later bounded task.
+- Validation currently running:
+  - LifeLens Preflight Run `34799244015` — in progress.
+  - LifeLens Unreal Linux Compile Run `34799244011` — in progress; actual UHT/UBT required before merge.
+- Exact next action: inspect both CI results. If failure, fetch exact job logs and fix first root cause only. If both PASS, reconcile latest main/state docs, verify changed-file scope, then merge #42.
+- Handoff safety: `CONDITIONAL` until actual UHT/UBT PASS.
 
 ### 2. Observer HUD v2 — Dagyeom
 
@@ -75,7 +75,7 @@ Last reconciled: 2026-09-14 KST — PR #41 merged as `1b6f349f03db6f3bb1f95cf938
 - Merge `1b6f349f03db6f3bb1f95cf9387ef994a68c5d68`
 - Core Tests `34798427843` PASS including deterministic harness.
 - Structural Preflight `34798427848` PASS.
-- Main now has Core Sex identity, deterministic exact 2M+2F founder generation, lifecycle birth times, neutral initial relationships, and `Simulation::setupNewGame()`.
+- Main has Core Sex identity, deterministic exact 2M+2F founders, lifecycle birth times, neutral initial relationships, and `Simulation::setupNewGame()`.
 
 ---
 
