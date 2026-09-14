@@ -2,6 +2,7 @@
 
 > 실제 GitHub 상태가 항상 최우선 진실이다.
 > 제품 기준: `docs/LIFELENS_SPEC_v1.1.md` + `docs/CIVILIZATION_PROGRESSION_v1.md`
+> World affordance / 환경 consequence 기준: `docs/WORLD_AFFORDANCE_ENVIRONMENT_v1.md`
 > 캐릭터 외형/표현 기준: `docs/CHARACTER_APPEARANCE_ROADMAP.md`
 > 협업 기준: `docs/STATE_MANAGEMENT.md` + `docs/INTEGRATION_SPRINT.md`
 
@@ -38,6 +39,52 @@ Last reconciled: 2026-09-14 KST
 - Dagyeom Character/UI/Content files were not modified.
 - Jjun proactive Character Appearance support is complete; further support only on explicit Integration Request/blocker.
 
+### World Affordance Fallback v1 — ACTIVE / PR #66
+
+Owner: 쭌 / 쭌 AI.
+
+Branch: `jjun/world-affordance-fallback-v1-r1`.
+PR: #66 `[WORLD] Add tiered affordance fallback v1`.
+Canonical design: `docs/WORLD_AFFORDANCE_ENVIRONMENT_v1.md`.
+
+Scope:
+- remove automatic bootstrap beds/toilets/eat/hygiene facilities
+- choose actual world affordances by `Preferred → Primitive → Natural → Emergency`
+- never create civilization facilities just to satisfy an intent
+- emergency Eat/Drink must not create resources
+- expose active affordance tier / emergency state
+
+Validation:
+- Structural Preflight Run `34847764909`: PASS
+- Unreal Linux Compile Run `34847764900`: pending/in progress at last reconciliation
+
+Important boundary:
+- PR #66 is **action/affordance fallback only**.
+- It is NOT considered to have implemented authoritative environmental residue/contamination yet.
+
+### Environmental Residue v1 — NEXT AFTER #66
+
+Owner: 쭌 / 쭌 AI.
+
+Canonical requirements: `docs/WORLD_AFFORDANCE_ENVIRONMENT_v1.md`.
+
+Minimum next slice:
+- outdoor toilet completion becomes an actual environment consequence
+- Core-owned residue state
+- location / amount / intensity / decay
+- accumulation when repeated
+- Save/Load continuity
+- Observer/World read path
+- query contract for Hygiene / Health risk / discomfort / avoidance
+- no Unreal-only authoritative contamination cache
+
+Later extension:
+- weather/water/soil influence
+- cleanup/burial/disposal
+- hygiene knowledge and discovery
+- primitive latrine → improved toilet/drainage progression
+- visual residue/VFX driven from Core state
+
 ### Character Appearance v1 — READY_NOW
 
 Owner: 다겸 / 다겸 AI.
@@ -67,24 +114,37 @@ Rules:
 
 - Character Appearance proactive support is DONE via PR #65.
 - Default for Dagyeom work returns to REVIEW_ONLY.
-- Jjun may resume non-overlapping Core/World/build/runtime work.
+- Jjun owns non-overlapping Core/World/build/runtime work.
+- Current Jjun product path: #66 Affordance fallback → Environmental Residue v1.
 - Create ASSIST_LOCK only when Dagyeom-owned code actually needs integration help.
+
+## World / civilization causal rule
+
+`Need → Intent → current-world affordance → action result → environment consequence → experience/memory/health input → problem recognition → experiment/discovery → better affordance → culture/civilization`
+
+Rules:
+- World absence must remain visible; do not hide missing infrastructure with implicit spawns.
+- Emergency fallback must generally be less effective or more costly than purpose-built affordances.
+- Environmental consequence with simulation impact belongs to Core authority and Save/Load.
+- Technology/progress is emergent from need, observation, knowledge and resources, not a forced global tech unlock.
 
 ## Canonical execution order
 
 1. Character Presentation v1 — DONE via PR #63.
 2. Appearance data/projection support — DONE via PR #65.
-3. Character Appearance v1 — READY_NOW / Track B Quaternius CC0.
-4. Character Motion & Context v1 minimum — AFTER Appearance.
-5. PR #30 Observer UX Polish — AFTER Human Character minimum.
-6. PR #36 Mobile Touch — AFTER #30.
-7. PR #38 Visual Feedback — AFTER #36.
-8. Core + Observer + Human Character integrated runtime verification.
-9. Android smoke APK + profiling.
-10. MetaHuman comparison / upgrade decision.
-11. Appearance Genetics & Lifecycle.
-12. Clothing/Equipment civilization linkage.
-13. Resume deeper civilization production chains.
+3. Character Appearance v1 — READY_NOW / Track B Quaternius CC0. (Dagyeom lane)
+4. World Affordance Fallback v1 — ACTIVE / PR #66. (Jjun lane, parallel-safe)
+5. Environmental Residue v1 — AFTER #66. (Jjun lane)
+6. Character Motion & Context v1 minimum — AFTER Appearance.
+7. PR #30 Observer UX Polish — AFTER Human Character minimum.
+8. PR #36 Mobile Touch — AFTER #30.
+9. PR #38 Visual Feedback — AFTER #36.
+10. Core + Observer + Human Character integrated runtime verification.
+11. Android smoke APK + profiling.
+12. MetaHuman comparison / upgrade decision.
+13. Appearance Genetics & Lifecycle.
+14. Clothing/Equipment civilization linkage.
+15. Resume deeper civilization production chains.
 
 ## Completed checkpoints
 

@@ -6,7 +6,6 @@
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
-#include "UObject/UObjectGlobals.h"
 
 ALLWorldDirector::ALLWorldDirector()
 {
@@ -30,8 +29,9 @@ void ALLWorldDirector::BeginPlay()
         Simulation->NewGame();
     }
 
+    // World affordances must come from the actual world/civilization state.
+    // Never synthesize beds, toilets, food stations, etc. just to satisfy an intent.
     CollectActivityAnchors();
-    EnsureBootstrapActivityAnchors();
     SpawnResidents();
 }
 
@@ -92,90 +92,24 @@ ELLActionIntent ALLWorldDirector::GetResidentIntent(FGuid ResidentId) const
     return Character ? Character->GetCurrentIntent() : ELLActionIntent::Idle;
 }
 
+ELLWorldAffordanceTier ALLWorldDirector::GetResidentAffordanceTier(FGuid ResidentId) const
+{
+    const FLLResidentRuntimeState* Runtime = RuntimeStates.Find(ResidentId);
+    return Runtime ? Runtime->ActiveAffordanceTier : ELLWorldAffordanceTier::Unavailable;
+}
+
+bool ALLWorldDirector::IsResidentUsingEmergencyFallback(FGuid ResidentId) const
+{
+    const FLLResidentRuntimeState* Runtime = RuntimeStates.Find(ResidentId);
+    return Runtime && Runtime->bUsingEmergencyFallback;
+}
+
 void ALLWorldDirector::CollectActivityAnchors()
 {
     ActivityAnchors.Reset();
     for (TActorIterator<ALLActivityAnchor> It(GetWorld()); It; ++It)
     {
         ActivityAnchors.Add(*It);
-    }
-}
-
-void ALLWorldDirector::EnsureBootstrapActivityAnchors()
-{
-    if (!GetWorld())
-    {
-        return;
-    }
-
-    struct FBootstrapAnchorSpec
-    {
-        ELLActionIntent PrimaryIntent;
-        ELLActionIntent AdditionalIntent;
-        int32 DesiredCount;
-        FVector BaseOffset;
-        FVector StepOffset;
-        FRotator Rotation;
-    };
-
-    const FBootstrapAnchorSpec Specs[] = {
-        { ELLActionIntent::Eat,     ELLActionIntent::Idle, 1, FVector(-520.0f, -300.0f, 90.0f), FVector::ZeroVector,            FRotator(0.0f,   0.0f, 0.0f) },
-        { ELLActionIntent::Sleep,   ELLActionIntent::Idle, 4, FVector( 520.0f, -450.0f, 90.0f), FVector(0.0f, 300.0f, 0.0f),  FRotator(0.0f, 180.0f, 0.0f) },
-        { ELLActionIntent::Toilet,  ELLActionIntent::Idle, 2, FVector( 320.0f,  520.0f, 90.0f), FVector(220.0f, 0.0f, 0.0f),  FRotator(0.0f, -90.0f, 0.0f) },
-        { ELLActionIntent::Hygiene, ELLActionIntent::Drink,2, FVector(-520.0f,  300.0f, 90.0f), FVector(0.0f, 220.0f, 0.0f),  FRotator(0.0f,   0.0f, 0.0f) }
-    };
-
-    const auto CountCapability = [this](ELLActionIntent Intent)
-    {
-        int32 Count = 0;
-        for (ALLActivityAnchor* Anchor : ActivityAnchors)
-        {
-            if (IsValid(Anchor) && Anchor->bEnabled && Anchor->SupportsIntent(Intent))
-            {
-                ++Count;
-            }
-        }
-        return Count;
-    };
-
-    for (const FBootstrapAnchorSpec& Spec : Specs)
-    {
-        const int32 ExistingPrimary = CountCapability(Spec.PrimaryIntent);
-        const int32 ExistingAdditional = Spec.AdditionalIntent == ELLActionIntent::Idle
-            ? Spec.DesiredCount
-            : CountCapability(Spec.AdditionalIntent);
-        const int32 MissingPrimary = FMath::Max(0, Spec.DesiredCount - ExistingPrimary);
-        const int32 MissingAdditional = FMath::Max(0, Spec.DesiredCount - ExistingAdditional);
-        const int32 SpawnCount = FMath::Max(MissingPrimary, MissingAdditional);
-
-        for (int32 NewIndex = 0; NewIndex < SpawnCount; ++NewIndex)
-        {
-            const int32 SlotIndex = ExistingPrimary + NewIndex;
-            FActorSpawnParameters Params;
-            Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-            Params.Name = MakeUniqueObjectName(
-                GetWorld(),
-                ALLActivityAnchor::StaticClass(),
-                FName(TEXT("LLBootstrapActivityAnchor")));
-
-            ALLActivityAnchor* Anchor = GetWorld()->SpawnActor<ALLActivityAnchor>(
-                ALLActivityAnchor::StaticClass(),
-                GetActorLocation() + Spec.BaseOffset + Spec.StepOffset * static_cast<float>(SlotIndex),
-                Spec.Rotation,
-                Params);
-
-            if (!Anchor)
-            {
-                continue;
-            }
-
-            Anchor->SupportedIntent = Spec.PrimaryIntent;
-            if (Spec.AdditionalIntent != ELLActionIntent::Idle)
-            {
-                Anchor->AdditionalSupportedIntents.AddUnique(Spec.AdditionalIntent);
-            }
-            ActivityAnchors.Add(Anchor);
-        }
     }
 }
 
@@ -293,14 +227,21 @@ void ALLWorldDirector::ApplyCoreDirective(
         }
 
         ALLActivityAnchor* Anchor = EnsurePhysicalReservation(Character, Runtime, Intent);
-        if (!Anchor)
+        FTransform UseTransform = FTransform::Identity;
+        const bool bUsesAnchor = Anchor != nullptr;
+
+        if (bUsesAnchor)
+        {
+            UseTransform = Anchor->GetUseTransform();
+        }
+        else if (!EnsureEmergencyFallback(Character, Runtime, Intent, UseTransform))
         {
             Runtime.bPerformingAction = false;
+            Runtime.ActiveAffordanceTier = ELLWorldAffordanceTier::Unavailable;
             Character.ClearMovementTarget();
             return;
         }
 
-        const FTransform UseTransform = Anchor->GetUseTransform();
         const FVector DesiredLocation = UseTransform.GetLocation();
         const double DistanceSquared = FVector::DistSquared2D(Character.GetActorLocation(), DesiredLocation);
         const bool bAtUsePoint = DistanceSquared <= FMath::Square(110.0);
@@ -313,7 +254,7 @@ void ALLWorldDirector::ApplyCoreDirective(
         }
 
         Character.ClearMovementTarget();
-        if (!Anchor->MarkInUse(Character.GetResidentId()))
+        if (bUsesAnchor && !Anchor->MarkInUse(Character.GetResidentId()))
         {
             ReleasePhysicalReservation(Character.GetResidentId(), Runtime);
             Runtime.bPerformingAction = false;
@@ -384,9 +325,11 @@ ELLActionIntent ALLWorldDirector::ToPresentationIntent(ELLCorePhysicalIntent Int
 
 ALLActivityAnchor* ALLWorldDirector::FindBestUsableAnchor(
     const ALLResidentCharacter& Character,
-    ELLActionIntent Intent) const
+    ELLActionIntent Intent,
+    ELLWorldAffordanceTier& OutTier) const
 {
     ALLActivityAnchor* BestAnchor = nullptr;
+    ELLWorldAffordanceTier BestTier = ELLWorldAffordanceTier::Unavailable;
     double BestDistanceSquared = TNumericLimits<double>::Max();
     FString BestPath;
 
@@ -394,27 +337,37 @@ ALLActivityAnchor* ALLWorldDirector::FindBestUsableAnchor(
     {
         if (!IsValid(Anchor)
             || !Anchor->SupportsIntent(Intent)
-            || !Anchor->CanBeUsedBy(Character.GetResidentId()))
+            || !Anchor->CanBeUsedBy(Character.GetResidentId())
+            || Anchor->AffordanceTier == ELLWorldAffordanceTier::Unavailable)
         {
             continue;
         }
 
+        const ELLWorldAffordanceTier CandidateTier = Anchor->AffordanceTier;
         const double DistanceSquared = FVector::DistSquared2D(
             Character.GetActorLocation(), Anchor->GetUseLocation());
         const FString AnchorPath = Anchor->GetPathName();
-        const bool bCloser = DistanceSquared + KINDA_SMALL_NUMBER < BestDistanceSquared;
+
+        const uint8 CandidateTierValue = static_cast<uint8>(CandidateTier);
+        const uint8 BestTierValue = static_cast<uint8>(BestTier);
+        const bool bBetterTier = CandidateTierValue < BestTierValue;
+        const bool bSameTier = CandidateTier == BestTier;
+        const bool bCloser = bSameTier && DistanceSquared + KINDA_SMALL_NUMBER < BestDistanceSquared;
         const bool bStableTieBreak =
-            FMath::IsNearlyEqual(DistanceSquared, BestDistanceSquared)
+            bSameTier
+            && FMath::IsNearlyEqual(DistanceSquared, BestDistanceSquared)
             && (BestAnchor == nullptr || AnchorPath.Compare(BestPath, ESearchCase::CaseSensitive) < 0);
 
-        if (bCloser || bStableTieBreak)
+        if (bBetterTier || bCloser || bStableTieBreak)
         {
             BestAnchor = Anchor;
+            BestTier = CandidateTier;
             BestDistanceSquared = DistanceSquared;
             BestPath = AnchorPath;
         }
     }
 
+    OutTier = BestTier;
     return BestAnchor;
 }
 
@@ -431,13 +384,16 @@ ALLActivityAnchor* ALLWorldDirector::EnsurePhysicalReservation(
             && Existing->IsClaimedBy(Character.GetResidentId())
             && Existing->CanBeUsedBy(Character.GetResidentId()))
         {
+            Runtime.ActiveAffordanceTier = Existing->AffordanceTier;
+            Runtime.bUsingEmergencyFallback = false;
             return Existing;
         }
 
         ReleasePhysicalReservation(Character.GetResidentId(), Runtime);
     }
 
-    ALLActivityAnchor* Candidate = FindBestUsableAnchor(Character, Intent);
+    ELLWorldAffordanceTier CandidateTier = ELLWorldAffordanceTier::Unavailable;
+    ALLActivityAnchor* Candidate = FindBestUsableAnchor(Character, Intent, CandidateTier);
     if (!Candidate || !Candidate->TryReserve(Character.GetResidentId()))
     {
         return nullptr;
@@ -445,7 +401,82 @@ ALLActivityAnchor* ALLWorldDirector::EnsurePhysicalReservation(
 
     Runtime.ReservedAnchor = Candidate;
     Runtime.ReservedIntent = Intent;
+    Runtime.ActiveAffordanceTier = CandidateTier;
+    Runtime.bUsingEmergencyFallback = false;
+    Runtime.EmergencyUseTransform = FTransform::Identity;
     return Candidate;
+}
+
+bool ALLWorldDirector::EnsureEmergencyFallback(
+    const ALLResidentCharacter& Character,
+    FLLResidentRuntimeState& Runtime,
+    ELLActionIntent Intent,
+    FTransform& OutUseTransform) const
+{
+    if (!SupportsEmergencyFallback(Intent))
+    {
+        Runtime.ActiveAffordanceTier = ELLWorldAffordanceTier::Unavailable;
+        Runtime.bUsingEmergencyFallback = false;
+        return false;
+    }
+
+    if (!Runtime.bUsingEmergencyFallback || Runtime.ReservedIntent != Intent)
+    {
+        Runtime.ReservedIntent = Intent;
+        Runtime.ActiveAffordanceTier = ELLWorldAffordanceTier::Emergency;
+        Runtime.bUsingEmergencyFallback = true;
+        Runtime.EmergencyUseTransform = ResolveEmergencyFallbackTransform(Character, Intent);
+    }
+
+    OutUseTransform = Runtime.EmergencyUseTransform;
+    return true;
+}
+
+bool ALLWorldDirector::SupportsEmergencyFallback(ELLActionIntent Intent) const
+{
+    switch (Intent)
+    {
+        case ELLActionIntent::Eat:
+        case ELLActionIntent::Drink:
+        case ELLActionIntent::Sleep:
+        case ELLActionIntent::Toilet:
+        case ELLActionIntent::Hygiene:
+            return true;
+        case ELLActionIntent::Idle:
+        case ELLActionIntent::Socialize:
+        case ELLActionIntent::HaveFun:
+        default:
+            return false;
+    }
+}
+
+FTransform ALLWorldDirector::ResolveEmergencyFallbackTransform(
+    const ALLResidentCharacter& Character,
+    ELLActionIntent Intent) const
+{
+    FVector Location = Character.GetActorLocation();
+    FRotator Rotation = Character.GetActorRotation();
+
+    if (Intent == ELLActionIntent::Toilet)
+    {
+        // Until terrain/resource semantics are available, pick a deterministic
+        // outdoor fallback point away from the settlement origin. This is not a
+        // toilet object and therefore does not fake civilization progress.
+        const uint32 StableHash = HashCombine(
+            GetTypeHash(Character.GetResidentId()),
+            static_cast<uint32>(Intent));
+        const float AngleDegrees = static_cast<float>(StableHash % 360u);
+        const float AngleRadians = FMath::DegreesToRadians(AngleDegrees);
+        const FVector Direction(FMath::Cos(AngleRadians), FMath::Sin(AngleRadians), 0.0f);
+        Location = GetActorLocation() + Direction * 650.0f;
+        Location.Z = Character.GetActorLocation().Z;
+        Rotation = Direction.Rotation();
+    }
+
+    // Sleep -> ground rest in place.
+    // Eat/Drink -> consume what Core has already made available, in place.
+    // Hygiene -> minimal no-facility fallback in place.
+    return FTransform(Rotation, Location, FVector::OneVector);
 }
 
 void ALLWorldDirector::ReleasePhysicalReservation(
@@ -456,8 +487,12 @@ void ALLWorldDirector::ReleasePhysicalReservation(
     {
         Runtime.ReservedAnchor->Release(ResidentId);
     }
+
     Runtime.ReservedAnchor.Reset();
     Runtime.ReservedIntent = ELLActionIntent::Idle;
+    Runtime.ActiveAffordanceTier = ELLWorldAffordanceTier::Unavailable;
+    Runtime.bUsingEmergencyFallback = false;
+    Runtime.EmergencyUseTransform = FTransform::Identity;
 }
 
 FVector ALLWorldDirector::ResolveSocialTargetLocation(

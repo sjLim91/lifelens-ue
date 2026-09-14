@@ -19,8 +19,9 @@
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
 | 다겸 + 다겸 AI | NEW milestone | Character Appearance v1 | Character appearance/presentation + `Content/Characters/**` | READY_NOW / Track B |
+| 쭌 + 쭌 AI | PR #66 | World Affordance Fallback v1 | `Source/LifeLens/World/**` + canonical docs | ACTIVE / PARALLEL_SAFE_NOW |
+| 쭌 + 쭌 AI | NEXT after #66 | Environmental Residue v1 | Core/Simulation/World/SaveLoad | AFTER #66 |
 | 쭌 + 쭌 AI | PR #65 | Deterministic Appearance projection contract | `Source/LifeLens/Simulation/**` + docs | DONE / MERGED `86663cb...` |
-| 쭌 + 쭌 AI | Own track | Non-overlapping Core/World/build/runtime work | Jjun-owned scope | READY_NOW |
 | 다겸 + 쭌 Bridge support as needed | NEW milestone | Character Motion & Context v1 | Character presentation/animation | AFTER APPEARANCE |
 | 다겸 + 다겸 AI | PR #30 | Observer UX Polish | `Source/LifeLens/UI/**` | AFTER HUMAN CHARACTER MINIMUM |
 | 다겸 + 다겸 AI | PR #36 | Mobile Touch v1 | `Source/LifeLens/UI/**` | AFTER #30 |
@@ -30,6 +31,48 @@
 ## Current Assist Locks
 
 **0개. `ASSIST_LOCK-29-R1`은 RELEASED.**
+
+## World Affordance / Environment — canonical
+
+Canonical design: `docs/WORLD_AFFORDANCE_ENVIRONMENT_v1.md`.
+
+Rules:
+- initial world must not silently spawn beds/toilets/showers/tables or other civilization infrastructure
+- Core decides intent; World chooses the best actually available affordance
+- fallback order: `Preferred → Primitive → Natural → Emergency → Unavailable`
+- Emergency is not equal-quality convenience; it may be less effective or have costs/consequences
+- Eat/Drink fallback never creates food/water
+- environmental consequence with simulation impact belongs to Core authority and Save/Load
+- environment problems may feed Memory / Health / Avoidance / Knowledge / Civilization discovery
+
+### PR #66 — ACTIVE
+
+`[WORLD] Add tiered affordance fallback v1`
+
+- branch: `jjun/world-affordance-fallback-v1-r1`
+- auto bootstrap living facilities removed
+- tiered actual-world affordance selection
+- emergency fallback without implicit world-object creation
+- active affordance tier/emergency read state
+- Preflight `34847764909`: PASS
+- Unreal Compile `34847764900`: pending/in progress at last reconciliation
+
+Boundary: #66 does **not** claim authoritative environmental residue/contamination implementation.
+
+### Environmental Residue v1 — AFTER #66
+
+Minimum:
+- outdoor toilet completion becomes environment consequence
+- Core-owned residue record with location / amount / intensity / decay
+- repeated use accumulates
+- Save/Load continuity
+- Observer/World read path
+- queries usable by Hygiene / Health risk / discomfort / avoidance
+- future weather/water/cleanup/sanitation progression hooks
+
+Causal direction:
+
+`Need → fallback action → environment consequence → experience/problem → observation/knowledge → primitive solution → improved facility → culture/civilization`
 
 ### Completed support — Appearance data contract v1
 
@@ -146,17 +189,19 @@ Current open requests: **none**.
 
 1. Character Presentation v1 — DONE via PR #63.
 2. Appearance data/projection support — DONE via PR #65.
-3. Character Appearance v1 — READY_NOW / Track B Quaternius CC0.
-4. Character Motion & Context v1 minimum.
-5. PR #30 Observer UX Polish.
-6. PR #36 Mobile Touch.
-7. PR #38 Visual Feedback.
-8. Core + Observer + Human Character integrated runtime verification.
-9. Android smoke APK + profiling.
-10. MetaHuman comparison / upgrade decision.
-11. Appearance Genetics & Lifecycle.
-12. Clothing/Equipment civilization linkage.
-13. Resume deeper civilization production chains.
+3. Character Appearance v1 — READY_NOW / Track B Quaternius CC0. (Dagyeom)
+4. World Affordance Fallback v1 — ACTIVE / PR #66. (Jjun, parallel-safe)
+5. Environmental Residue v1 — AFTER #66. (Jjun)
+6. Character Motion & Context v1 minimum.
+7. PR #30 Observer UX Polish.
+8. PR #36 Mobile Touch.
+9. PR #38 Visual Feedback.
+10. Core + Observer + Human Character integrated runtime verification.
+11. Android smoke APK + profiling.
+12. MetaHuman comparison / upgrade decision.
+13. Appearance Genetics & Lifecycle.
+14. Clothing/Equipment civilization linkage.
+15. Resume deeper civilization production chains.
 
 ## Completion rule
 
