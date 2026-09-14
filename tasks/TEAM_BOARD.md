@@ -18,11 +18,11 @@
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 다겸 + 다겸 AI | NEW milestone | Character Appearance v1 | Character appearance/presentation + `Content/Characters/**` | READY_NOW / Track B |
+| 다겸 + 다겸 AI | PR #67 / `dagyeom/character-appearance-v1` | Character Appearance v1 | Character appearance/presentation + `Content/Characters/**` | ACTIVE / CLOSEOUT |
 | 쭌 + 쭌 AI | PR #66 | World Affordance Fallback v1 | `Source/LifeLens/World/**` + canonical docs | DONE / MERGED `0ad8d6b...` |
-| 쭌 + 쭌 AI | NEW milestone | Environmental Residue v1 | Core/Simulation/World/SaveLoad | READY_NOW / PARALLEL_SAFE_NOW |
+| 쭌 + 쭌 AI | PR #68 / `jjun/environmental-residue-v1` | Environmental Residue v1 | Core/Simulation/World/SaveLoad | ACTIVE / VALIDATION |
 | 쭌 + 쭌 AI | PR #65 | Deterministic Appearance projection contract | `Source/LifeLens/Simulation/**` + docs | DONE / MERGED `86663cb...` |
-| 다겸 + 쭌 Bridge support as needed | NEW milestone | Character Motion & Context v1 | Character presentation/animation | AFTER APPEARANCE |
+| 다겸 + 쭌 Bridge support as needed | `dagyeom/character-motion-v1` after #67 | Character Motion & Context v1 | Character presentation/animation | READY_AFTER_#67 |
 | 다겸 + 다겸 AI | PR #30 | Observer UX Polish | `Source/LifeLens/UI/**` | AFTER HUMAN CHARACTER MINIMUM |
 | 다겸 + 다겸 AI | PR #36 | Mobile Touch v1 | `Source/LifeLens/UI/**` | AFTER #30 |
 | 다겸 + 다겸 AI | PR #38 | Visual Feedback v1 | `Source/LifeLens/UI/**` | AFTER #36 |
@@ -59,7 +59,7 @@ Rules:
 
 Boundary: #66 does **not** claim authoritative environmental residue/contamination implementation.
 
-### Environmental Residue v1 — READY_NOW
+### Environmental Residue v1 — ACTIVE / PR #68
 
 Minimum:
 - outdoor toilet completion becomes environment consequence
@@ -69,6 +69,11 @@ Minimum:
 - Observer/World read path
 - queries usable by Hygiene / Health risk / discomfort / avoidance
 - future weather/water/cleanup/sanitation progression hooks
+
+Current verified state:
+- latest Structural Preflight PASS
+- latest Core Tests 39/39 PASS
+- final UE 5.6 compile/result remains the merge gate
 
 Causal direction:
 
@@ -107,7 +112,7 @@ Causal direction:
 - Corrected Unreal Run `34833994155` PASS including UHT/UBT/link.
 - Observer assist locks released.
 
-## Character Appearance v1 — READY_NOW
+## Character Appearance v1 — ACTIVE / PR #67 CLOSEOUT
 
 Canonical acceptance criteria: `docs/CHARACTER_APPEARANCE_ROADMAP.md`.
 Canonical asset decision: `docs/CHARACTER_ASSET_TRACK.md`.
@@ -115,7 +120,20 @@ Canonical asset decision: `docs/CHARACTER_ASSET_TRACK.md`.
 Default asset track: **Track B — Quaternius packs whose exact source/version explicitly states CC0.**
 MetaHuman is an upgrade/comparison path after Android smoke/performance validation.
 
-Minimum:
+Current PR #67 reports:
+- real humanoid residents visible in PIE
+- deterministic #65 AppearanceProfile mapping in use
+- hair / skin variation present
+- UAL animations imported
+- current movement still slides while Idle because Motion & Context is not wired
+
+Remaining completion gates:
+- required CI / Unreal compile result recorded
+- Save/Load appearance continuity explicitly verified
+- minimum default clothing set present
+- final review + merge + docs sync
+
+The existing minimum still includes:
 - real humanoid skeletal mesh
 - skin / face / eyes / hair / default clothing
 - shared/common skeleton + modular appearance
@@ -183,16 +201,40 @@ Dagyeom default:
 
 ## Integration Requests
 
-Current open requests: **none**.
+Current open blockers from Jjun: **0**.
+
+### Dagyeom request — Motion & Context READY promotion
+
+**Decision: ACCEPTED WITH EXISTING GATE.**
+
+Request:
+- promote Character Motion & Context v1 to READY_NOW
+- use imported UAL locomotion assets to fix current Idle-sliding presentation
+- planned branch: `dagyeom/character-motion-v1`
+
+Resolution:
+- no additional Core/Bridge API blocker is known
+- status is `READY_AFTER_#67`, not immediate `READY_NOW`
+- after PR #67 is validated, merged, and live docs synced, Motion & Context auto-promotes to READY_NOW without another design review
+- this preserves the project completion rule and avoids stacking Motion changes on an unfinished Appearance product branch
+
+### Dagyeom request — clothing / skin variety
+
+**Decision: PARTIALLY ACCEPTED / SPLIT BY ACCEPTANCE CRITERION.**
+
+- minimum default clothing is already part of Character Appearance v1 acceptance criteria; underwear-only residents remain a PR #67 closeout gap rather than a deferred optional enhancement
+- additional clothing variety beyond the minimum may be queued later
+- additional skin-tone/detail variety may be queued as a follow-up once minimum visual distinctness is met
+- every additional asset pack must have its exact source/version/license verified; do not infer CC0 from the publisher name alone
 
 ## Merge / reconciliation queue
 
 1. Character Presentation v1 — DONE via PR #63.
 2. Appearance data/projection support — DONE via PR #65.
-3. Character Appearance v1 — READY_NOW / Track B Quaternius CC0. (Dagyeom)
+3. Character Appearance v1 — ACTIVE / PR #67 CLOSEOUT. (Dagyeom)
 4. World Affordance Fallback v1 — DONE via PR #66. (Jjun)
-5. Environmental Residue v1 — READY_NOW / PARALLEL_SAFE_NOW. (Jjun)
-6. Character Motion & Context v1 minimum.
+5. Environmental Residue v1 — ACTIVE / PR #68 VALIDATION. (Jjun)
+6. Character Motion & Context v1 minimum — READY_AFTER_#67; auto-promote after #67 merge.
 7. PR #30 Observer UX Polish.
 8. PR #36 Mobile Touch.
 9. PR #38 Visual Feedback.
