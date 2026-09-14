@@ -23,6 +23,9 @@ jobs:
       - name: Validate LifeLens bootstrap
         run: python Tools/validate_bootstrap.py
 
+      - name: Validate civilization observer read contract
+        run: python Tools/validate_civilization_observer.py
+
       - name: Verify Unreal project metadata
         run: |
           python - <<'PY'

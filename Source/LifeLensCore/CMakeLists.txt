@@ -105,3 +105,5 @@ lifelens_add_test(test_civilization_persistence)
 lifelens_add_test(test_autonomous_civilization_loop)
 
 lifelens_add_test(test_civilization_knowledge_transmission)
+
+lifelens_add_test(test_civilization_observer_read_model)

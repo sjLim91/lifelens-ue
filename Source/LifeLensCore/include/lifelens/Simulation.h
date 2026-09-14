@@ -5,6 +5,7 @@
 #include <vector>
 #include "Birth.h"
 #include "CivilizationKnowledgeTransmission.h"
+#include "CivilizationObserverReadModel.h"
 #include "DecisionExecution.h"
 #include "ObserverReadModelV2.h"
 #include "Planner.h"
@@ -43,6 +44,15 @@ public:
     std::vector<ResidentObservation> observeAllResidents() const;
     FamilyObservation observeFamily(CharacterId id) const;
     WorldOverviewObservation observeWorldOverview() const;
+    ResidentCivilizationObservation observeResidentCivilization(CharacterId id) const {
+        const Character* character=findObservedCharacter(world_,id);
+        return character==nullptr
+            ? ResidentCivilizationObservation{}
+            : buildResidentCivilizationObservation(world_,socialKnowledge_,*character);
+    }
+    CivilizationWorldObservation observeCivilizationWorld(std::size_t maxRecentDiscoveries=32) const {
+        return buildCivilizationWorldObservation(world_,socialKnowledge_,maxRecentDiscoveries);
+    }
 private:
     struct Runtime {
         Goal goal=Goal::Idle;
