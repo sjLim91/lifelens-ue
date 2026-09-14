@@ -12,7 +12,7 @@
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | `jjun/core-save-load-v1`, PR #44 | Full Core Save/Load v1 | `Source/LifeLensCore/**` | READY_TO_MERGE — Core suite/harness + Preflight PASS |
+| 쭌 + 쭌 AI | `jjun/unreal-savegame-adapter-v1` | Unreal SaveGame Adapter v1 | `Source/LifeLens/Simulation/**`, narrowly required Core snapshot serialization helpers | STARTING — use PR #44 snapshot as single persistence truth |
 | 쭌 + 쭌 AI | `task/03-fast-test`, PR #2 | old Android validation | Bridge/build | FROZEN — Run `34739283266` 재실행/수정/병합 금지 |
 | 다겸 + 다겸 AI | `dagyeom/observer-ui-v2`, PR #17 | Observer HUD v2 + Core Observer Bridge binding | `Source/LifeLens/UI/**` | REVIEW / RECOVERING — latest main reconcile 필요 |
 | 다겸 + 다겸 AI | `dagyeom/ui-foundation-v1`, PR #26 | Android landscape UI foundation | UI foundation | REVIEW |
@@ -21,27 +21,30 @@
 | 다겸 + 다겸 AI | `dagyeom/mobile-touch-v1`, PR #36 | Mobile Touch v1 | `Source/LifeLens/UI/**` | REVIEW — stacked on #30 |
 | 다겸 + 다겸 AI | `dagyeom/visual-feedback-v1`, PR #38 | Visual Feedback v1 | `Source/LifeLens/UI/**` | REVIEW — stacked on #36 |
 
-## Current Jjun lock — PR #44 Full Core Save/Load v1
+## Current Jjun lock — Unreal SaveGame Adapter v1
 
-- Branch/head: `jjun/core-save-load-v1` / `64d2fb25f6453112aabaef2d809b0528c9dc4566`.
-- Scope verification: exactly 5 changed files, all under `Source/LifeLensCore/**`.
-- Snapshot contract captures World/RNG, complete Character state, all relationship/family books, Simulation runtime state and logs.
-- Restore validates version/IDs/cross references before committing state.
-- Test proves immediate deep equality and deterministic equality after another 10,000 simulated minutes.
-- Core Tests `34802611336` PASS including deterministic harness.
-- Preflight `34802611299` PASS.
-- Next: merge #44, sync docs/handoff, then start bounded Unreal SaveGame adapter integration over this Core contract.
+- Planned branch: `jjun/unreal-savegame-adapter-v1` from latest main after this state update.
+- Must consume `SimulationStateSnapshot` from PR #44; Unreal compatibility `FLLResidentData` must never become a second source of truth.
+- Target:
+  - Save Core snapshot through Unreal persistence;
+  - Load restores Core snapshot directly, not seed+minute replay;
+  - projection rebuilt only after Core restore;
+  - stable resident identity/GUID mapping preserved.
+- Allowed scope: Jjun-owned `Source/LifeLens/Simulation/**`, narrowly required Core snapshot serialization helper/tests.
+- Forbidden scope: `Source/LifeLens/UI/**`, Dagyeom Character presentation, old TASK_03.
+- Required gates: Structural Preflight + actual UE 5.6 Linux UHT/UBT; targeted save/load contract verification before merge.
 
 ## Latest completed Jjun work
 
-- PR #43 Autonomous Family Progression v1 — merge `179e3a65aaa6ff8d2243117c7aebfd760812c73d`; Core `34801572846` PASS incl deterministic harness; Preflight `34801572858` PASS.
+- PR #44 Full Core Save/Load v1 — merge `2b3f9882703ed73cb8318ae262f26bebb995c209`; Core `34802611336` PASS incl deterministic harness; Preflight `34802611299` PASS.
+- PR #43 Autonomous Family Progression v1 — merge `179e3a65aaa6ff8d2243117c7aebfd760812c73d`; Core `34801572846` PASS; Preflight `34801572858` PASS.
 - PR #42 Production NEW GAME Unreal Runtime Integration — merge `5c6f2c071ca00bcd4b26d6e002bf5c618d02ff1e`; Preflight `34799244015`; Unreal UHT/UBT `34799244011` PASS.
 - PR #41 Production NEW GAME Core v1 — merge `1b6f349f03db6f3bb1f95cf9387ef994a68c5d68`; Core `34798427843` PASS; Preflight `34798427848` PASS.
 - #37/#39/#40 Observer/family runtime bridge chain remains merged and validated.
 
 ## Dagyeom API handoff
 
-Former six `BLOCKED-BY-JJUN` items remain RESOLVED / READY FOR BINDING. Main supports growing population through autonomous birth; UI must not assume resident count remains four.
+Former six `BLOCKED-BY-JJUN` items remain RESOLVED / READY FOR BINDING. Main supports autonomous population growth and full Core snapshot restoration; UI must stay read-only over Core/Bridge state.
 
 ## Shared File Lock
 
@@ -55,7 +58,7 @@ Current open requests: **none**.
 
 ## Merge / reconciliation queue
 
-1. PR #44 — READY_TO_MERGE.
+1. Jjun Unreal SaveGame Adapter v1 — STARTING.
 2. Dagyeom PR #17 — reconcile latest main + bind current Core Bridge + review fixes + verify.
 3. Dagyeom PR #26 — reconcile latest main independently.
 4. After #17: #29/#30 → #36 → #38.
