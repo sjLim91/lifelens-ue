@@ -19,7 +19,7 @@
 |---|---|---|---|---|
 | 쭌 + 다겸 | Integration Sprint | Core/Bridge ↔ UI/Presentation 합류 | REVIEW/ASSIST only | DOING |
 | 다겸 + 다겸 AI | PR #17 | Observer HUD v2 + Core/civilization binding | `Source/LifeLens/UI/**` | DONE / MERGED `aa194db7...` |
-| 다겸 + 다겸 AI | `dagyeom/ui-foundation-v1`, PR #26 | Android landscape UI foundation | UI foundation | NEXT / REVIEW |
+| 다겸 + 쭌 assist | `dagyeom/ui-foundation-v1`, PR #26 | Android landscape UI foundation | `LLObserverUIFoundation.*` | DOING / ASSIST_LOCK-26-R1 |
 | 다겸 + 다겸 AI | `dagyeom/character-presentation-v1`, PR #29 | Character Presentation v1 | Character presentation | READY — #17 dependency cleared |
 | 다겸 + 다겸 AI | `dagyeom/observer-ux-polish-v1`, PR #30 | Observer UX Polish | `Source/LifeLens/UI/**` | READY — #17 dependency cleared |
 | 다겸 + 다겸 AI | `dagyeom/mobile-touch-v1`, PR #36 | Mobile Touch v1 | `Source/LifeLens/UI/**` | REVIEW — stacked on #30 |
@@ -28,7 +28,20 @@
 
 ## Current Assist Locks
 
-**0개.**
+### ASSIST_LOCK-26-R1 — UI Foundation latest-main reconcile
+
+- Mode: active integration assist
+- Target owner: 다겸 / STILLofficial
+- Target PR: #26 `dagyeom/ui-foundation-v1`
+- Base HEAD: `70dfa5ebeabf24b661c9f9fd0bc63e3ad01ac180`
+- Planned helper branch: `integration/dagyeom-ui-foundation-r1-assist`
+- Locked paths:
+  - `Source/LifeLens/UI/LLObserverUIFoundation.cpp`
+  - `Source/LifeLens/UI/LLObserverUIFoundation.h`
+- Reason: preserve the two UI Foundation files while reconciling PR #26 onto current main, discarding stale shared-state docs from the old branch, then validate UE 5.6 UHT/UBT/link before handoff.
+- Status: `LOCKED / JJUN ASSIST R1`
+- While locked, Dagyeom side should not edit these two files.
+- Unlock condition: validated helper is integrated into PR #26 or user explicitly cancels the assist.
 
 ### Completed assist — PR #17 R1/R2
 
@@ -120,7 +133,7 @@ Current open requests: **none**.
 
 ## Merge / reconciliation queue
 
-1. PR #26 UI Foundation reconcile.
+1. PR #26 UI Foundation reconcile — **DOING / ASSIST_LOCK-26-R1**.
 2. #29 Character Presentation and #30 Observer UX Polish parent-first from the now-merged #17 baseline.
 3. #36 after #30.
 4. #38 after #36.
