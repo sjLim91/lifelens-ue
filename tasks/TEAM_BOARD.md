@@ -19,8 +19,8 @@
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
 | 다겸 + 다겸 AI | NEW milestone | Character Appearance v1 | Character appearance/presentation + `Content/Characters/**` | READY_NOW / Track B |
-| 쭌 + 쭌 AI | PR #66 | World Affordance Fallback v1 | `Source/LifeLens/World/**` + canonical docs | ACTIVE / PARALLEL_SAFE_NOW |
-| 쭌 + 쭌 AI | NEXT after #66 | Environmental Residue v1 | Core/Simulation/World/SaveLoad | AFTER #66 |
+| 쭌 + 쭌 AI | PR #66 | World Affordance Fallback v1 | `Source/LifeLens/World/**` + canonical docs | DONE / MERGED `0ad8d6b...` |
+| 쭌 + 쭌 AI | NEW milestone | Environmental Residue v1 | Core/Simulation/World/SaveLoad | READY_NOW / PARALLEL_SAFE_NOW |
 | 쭌 + 쭌 AI | PR #65 | Deterministic Appearance projection contract | `Source/LifeLens/Simulation/**` + docs | DONE / MERGED `86663cb...` |
 | 다겸 + 쭌 Bridge support as needed | NEW milestone | Character Motion & Context v1 | Character presentation/animation | AFTER APPEARANCE |
 | 다겸 + 다겸 AI | PR #30 | Observer UX Polish | `Source/LifeLens/UI/**` | AFTER HUMAN CHARACTER MINIMUM |
@@ -45,21 +45,21 @@ Rules:
 - environmental consequence with simulation impact belongs to Core authority and Save/Load
 - environment problems may feed Memory / Health / Avoidance / Knowledge / Civilization discovery
 
-### PR #66 — ACTIVE
+### PR #66 — DONE
 
 `[WORLD] Add tiered affordance fallback v1`
 
-- branch: `jjun/world-affordance-fallback-v1-r1`
+- main merge: `0ad8d6b4c80c134832fcad9bf9b34dcfabf2b68a`
 - auto bootstrap living facilities removed
 - tiered actual-world affordance selection
 - emergency fallback without implicit world-object creation
 - active affordance tier/emergency read state
-- Preflight `34847764909`: PASS
-- Unreal Compile `34847764900`: pending/in progress at last reconciliation
+- latest-head Preflight `34848772905`: PASS
+- latest-head Unreal Compile `34848772895`: PASS including actual UE 5.6 UHT/UBT/link
 
 Boundary: #66 does **not** claim authoritative environmental residue/contamination implementation.
 
-### Environmental Residue v1 — AFTER #66
+### Environmental Residue v1 — READY_NOW
 
 Minimum:
 - outdoor toilet completion becomes environment consequence
@@ -190,8 +190,8 @@ Current open requests: **none**.
 1. Character Presentation v1 — DONE via PR #63.
 2. Appearance data/projection support — DONE via PR #65.
 3. Character Appearance v1 — READY_NOW / Track B Quaternius CC0. (Dagyeom)
-4. World Affordance Fallback v1 — ACTIVE / PR #66. (Jjun, parallel-safe)
-5. Environmental Residue v1 — AFTER #66. (Jjun)
+4. World Affordance Fallback v1 — DONE via PR #66. (Jjun)
+5. Environmental Residue v1 — READY_NOW / PARALLEL_SAFE_NOW. (Jjun)
 6. Character Motion & Context v1 minimum.
 7. PR #30 Observer UX Polish.
 8. PR #36 Mobile Touch.
