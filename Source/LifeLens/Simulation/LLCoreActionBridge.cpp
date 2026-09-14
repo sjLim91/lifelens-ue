@@ -43,7 +43,9 @@ void ULLCoreBridgeSubsystem::SetExternalPhysicalExecutionEnabled(bool bEnabled)
     }
 }
 
-bool ULLCoreBridgeSubsystem::CompleteResidentPhysicalAction(FGuid ResidentId)
+bool ULLCoreBridgeSubsystem::CompleteResidentPhysicalAction(
+    FGuid ResidentId,
+    bool bEmergencyFallback)
 {
     if (!CoreSimulation || !ResidentId.IsValid())
     {
@@ -57,7 +59,8 @@ bool ULLCoreBridgeSubsystem::CompleteResidentPhysicalAction(FGuid ResidentId)
     }
 
     const bool bCompleted = CoreSimulation->completeExternalPhysicalAction(
-        static_cast<lifelens::CharacterId>(*CoreCharacterId));
+        static_cast<lifelens::CharacterId>(*CoreCharacterId),
+        bEmergencyFallback);
     if (bCompleted)
     {
         RebuildGuidIndex();
