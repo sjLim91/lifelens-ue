@@ -62,6 +62,14 @@ void ALLWorldDirector::Tick(float DeltaSeconds)
             UpdateResident(*Character, DeltaSeconds);
         }
     }
+
+    for (auto& Pair : RuntimeStates)
+    {
+        if (!FindResidentActor(Pair.Key))
+        {
+            ReleasePhysicalReservation(Pair.Key, Pair.Value);
+        }
+    }
 }
 
 ALLResidentCharacter* ALLWorldDirector::FindResidentActor(FGuid ResidentId) const
@@ -214,8 +222,8 @@ void ALLWorldDirector::ApplyCoreDirective(
 
         const FTransform UseTransform = Anchor->GetUseTransform();
         const FVector DesiredLocation = UseTransform.GetLocation();
-        const float DistanceSquared = FVector::DistSquared2D(Character.GetActorLocation(), DesiredLocation);
-        const bool bAtUsePoint = DistanceSquared <= FMath::Square(110.0f);
+        const double DistanceSquared = FVector::DistSquared2D(Character.GetActorLocation(), DesiredLocation);
+        const bool bAtUsePoint = DistanceSquared <= FMath::Square(110.0);
 
         if (!bAtUsePoint)
         {
@@ -253,8 +261,8 @@ void ALLWorldDirector::ApplyCoreDirective(
         }
 
         const FVector DesiredLocation = ResolveSocialTargetLocation(Character, *Target, Directive.SocialIntent);
-        const float DistanceToDesired = FVector::DistSquared2D(Character.GetActorLocation(), DesiredLocation);
-        const bool bAtDesiredLocation = DistanceToDesired <= FMath::Square(110.0f);
+        const double DistanceToDesired = FVector::DistSquared2D(Character.GetActorLocation(), DesiredLocation);
+        const bool bAtDesiredLocation = DistanceToDesired <= FMath::Square(110.0);
 
         if (!bAtDesiredLocation)
         {
@@ -314,7 +322,7 @@ ALLActivityAnchor* ALLWorldDirector::FindBestUsableAnchor(
         const double DistanceSquared = FVector::DistSquared2D(
             Character.GetActorLocation(), Anchor->GetUseLocation());
         const FString AnchorPath = Anchor->GetPathName();
-        const bool bCloser = DistanceSquared + UE_KINDA_SMALL_NUMBER < BestDistanceSquared;
+        const bool bCloser = DistanceSquared + KINDA_SMALL_NUMBER < BestDistanceSquared;
         const bool bStableTieBreak =
             FMath::IsNearlyEqual(DistanceSquared, BestDistanceSquared)
             && (BestAnchor == nullptr || AnchorPath.Compare(BestPath, ESearchCase::CaseSensitive) < 0);
