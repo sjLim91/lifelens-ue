@@ -21,6 +21,9 @@ public:
     void setupNewGame();
     void step();
     void runMinutes(int minutes);
+    void setExternalPhysicalExecution(bool enabled){ externalPhysicalExecution_=enabled; }
+    bool externalPhysicalExecutionEnabled() const{return externalPhysicalExecution_;}
+    bool completeExternalPhysicalAction(CharacterId id);
     void onEvent(EventCallback cb);
     SimulationStateSnapshot captureSnapshot() const;
     bool restoreSnapshot(const SimulationStateSnapshot& snapshot,std::string* error=nullptr);
@@ -87,6 +90,7 @@ private:
     std::unordered_map<CharacterId,Runtime> runtime_;
     std::vector<EventCallback> callbacks_;
     std::vector<std::string> logs_;
+    bool externalPhysicalExecution_=false;
     void emit(const std::string& message);
     std::string stamp() const;
     SmartObject* objectById(ObjectId id);
