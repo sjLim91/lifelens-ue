@@ -20,6 +20,8 @@ Current product checkpoints known to this queue:
 - PR #43 merge `179e3a65aaa6ff8d2243117c7aebfd760812c73d` — autonomous family progression is on main; Core full tests + deterministic harness + Preflight PASS.
 - PR #44 merge `2b3f9882703ed73cb8318ae262f26bebb995c209` — full authoritative Core snapshot capture/restore + deterministic continuation PASS.
 - PR #45 merge `3c646ba331b8199a295fd6f2e9cac1235d844679` — Unreal SaveGame v2 now persists/restores the authoritative Core snapshot; Core/Preflight/actual UE 5.6 UHT+UBT all PASS.
+- PR #47 merge `f1aab37f6f8abad1217783cc1d168cbdd2e0c20c` — pure-Core Witness/Rumor/Social Knowledge v1 is available; no UI binding required yet because live Simulation/read DTO wiring is deferred.
+- PR #46 merge `753df19657ea634ea2fa7c2ac935f6273ce14c10` — Core-authoritative physical/social action directive bridge is on main; Run #10 (`34805882789`) actual UE 5.6 UHT+UBT PASS.
 
 ---
 
@@ -29,7 +31,7 @@ Current product checkpoints known to this queue:
 
 - Branch/PR: `dagyeom/observer-ui-v2`, PR #17
 - Last verified historical HEAD: `dc3351ea9025ee33ea70f8ce1026100070c20092` — **re-fetch before work**.
-- Current product main has advanced through #42/#43/#44/#45 since the old branch snapshot.
+- Current product main has advanced through #42/#43/#44/#45/#47/#46 since the old branch snapshot.
 - Do first:
   1. fetch latest main;
   2. reconcile branch with current main without overwriting current shared-state docs;
@@ -45,6 +47,7 @@ Available read surfaces:
 - `ULLCoreBridgeSubsystem::GetResidentObservations()`
 - `ULLCoreBridgeSubsystem::GetResidentObservation(...)`
 - `ULLCoreBridgeSubsystem::GetFamilyObservation(...)`
+- `ULLCoreBridgeSubsystem::GetResidentActionDirective(...)`
 - `ULLCoreBridgeSubsystem::GetRecentCoreEvents()`
 - `OnCoreRuntimeStateChanged`
 
@@ -52,6 +55,7 @@ Available data includes:
 - Relationship 13 dimensions + target + derived scores
 - Emotion 11 dimensions + valence/arousal/intensity
 - Physical/Social activity + SocialIntent + target
+- typed current action directive from #46: physical Eat/Drink/Sleep/Toilet/Hygiene or social Approach/Avoid/Repair/Comfort + stable target ResidentId
 - Family Partner/Parents/Children/Siblings
 - romance/marriage/cohabitation/pregnancy state
 - population/life-stage/household/couple/pregnancy/major-LifeHistory aggregate data
@@ -60,6 +64,8 @@ Available data includes:
 Important runtime facts:
 - PR #43: family progression is live; residents can date/cohabit/engage/marry, pregnancies can progress, and births add real World residents. Never hard-code population to 4.
 - PR #45: SaveGame v2 restores the authoritative Core state directly. After load, UI should refresh from Bridge/read DTOs and must not treat cached UI-side resident arrays as simulation truth.
+- PR #46: WorldDirector no longer chooses covered life actions independently; Core is the authority and Unreal mirrors typed action directives. UI/presentation must not reintroduce a competing action chooser.
+- PR #47: witness/rumor provenance exists in pure Core, but runtime/Observer exposure is not wired yet; do not invent rumor UI fields until an actual read API exists.
 
 Binding rules:
 - UI reads only; do not modify Core/Simulation state.
@@ -93,6 +99,7 @@ After latest-main reconciliation + Bridge binding, run local/CI UHT/UBT and PIE 
 - Branch: `dagyeom/character-presentation-v1`
 - Historical HEAD `a4d47b9f69c9270665a8e2613b7863c40bf0f83e`; stacked on PR #17.
 - Current action: reconcile after #17 latest-main resolution, then retarget and verify.
+- Important #46 constraint: Character Presentation may consume current intent/action for visuals, but must not become a second simulation decision authority.
 - Jjun decision request remains: camera distance/FOV visual size and whether legacy DebugBody should be removed from file rather than runtime-hidden.
 
 ### DQ-03 Observer UX Polish v1 — PR #30
@@ -128,6 +135,7 @@ Resolved surfaces now include:
 6. Blueprint/USTRUCT read-only Core Bridge
 7. Founder Sex/Age/LifeStage/Personality identity fields
 8. Post-load authoritative Core restoration through SaveGame v2
+9. Typed Core current action directive for physical/social presentation
 
 A new blocker is valid only if Dagyeom identifies a concrete missing data/API after using latest `main`. Record requested field, usage and related PR in `TEAM_BOARD.md`.
 
@@ -151,5 +159,7 @@ Do not collapse the whole chain into one giant PR merely to make merging easier.
 - Immediate task is **reconciliation + binding + verification**, not Core modification.
 - Main now starts at four founders but may gain descendants; UI must remain population-dynamic.
 - Save/load no longer reconstructs the world from UI compatibility data; after load, read current Bridge state.
+- Current physical/social action presentation can read #46 typed directives; do not make presentation code choose competing simulation actions.
+- Witness/rumor UI is not READY yet because #47 is domain-only until runtime/read-model wiring exists.
 - Jjun should not edit Dagyeom UI/Character presentation branches without a new explicit coordination request.
 - Every checkpoint synchronizes `WORK_STATE.md` / this queue / `TEAM_BOARD.md`; meaningful completion/failure/dependency changes also require handoff recording.
