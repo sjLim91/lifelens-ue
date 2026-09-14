@@ -28,6 +28,9 @@ public:
     FTransform GetUseTransform() const;
 
     UFUNCTION(BlueprintPure, Category="LifeLens|World")
+    bool SupportsIntent(ELLActionIntent Intent) const;
+
+    UFUNCTION(BlueprintPure, Category="LifeLens|World")
     bool CanBeUsedBy(FGuid ResidentId) const;
 
     UFUNCTION(BlueprintPure, Category="LifeLens|World")
@@ -39,6 +42,9 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="LifeLens|World")
     ELLActionIntent SupportedIntent = ELLActionIntent::Idle;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="LifeLens|World")
+    TArray<ELLActionIntent> AdditionalSupportedIntents;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="LifeLens|World")
     bool bEnabled = true;
