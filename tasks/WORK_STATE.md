@@ -4,7 +4,7 @@
 >
 > 제품 기준: `docs/LIFELENS_SPEC_v1.1.md` + **`docs/CIVILIZATION_PROGRESSION_v1.md`** · 상태 규칙: `docs/STATE_MANAGEMENT.md` · 통합 지원 규칙: **`docs/INTEGRATION_SPRINT.md`** · 역할/잠금: `tasks/TEAM_BOARD.md` · 이력: `tasks/HANDOFF_LOG.md`
 
-Last reconciled: 2026-09-14 KST — actual `main` contains PR #52 merge plus current collaboration-state commits. **Civilization Observer Read DTOs v1** remains open as PR #53 on `jjun/civilization-observer-read-v1`, latest head `e3a9f6611118866a6c79eb300a7b6ab2d5ffaf31`. Run #15 `34819825591` failed at Unreal final link after UHT PASS because `LLCoreCompileUnit.cpp` omitted `CivilizationKnowledgeTransmission.cpp`. Fix commit `e3a9f661...` adds the missing compile-unit include and a structural validator guard. Latest-head Core `34821150702` PASS including tests + deterministic harness, Preflight `34821150693` PASS, Unreal Linux Compile Run #16 `34821150704` is the only remaining external gate.
+Last reconciled: 2026-09-14 KST — actual `main` now includes macOS clang shadow hotfix PR #54 merge `3b649b900c44a4e48bb89171b38f5e685e757b14` plus blocker-release state docs. **Civilization Observer Read DTOs v1** remains open as PR #53 on `jjun/civilization-observer-read-v1`, head `e3a9f6611118866a6c79eb300a7b6ab2d5ffaf31`. Latest Core `34821150702` PASS, Preflight `34821150693` PASS, and Unreal Linux Compile Run #16 `34821150704` PASS including actual UE 5.6 UHT + UBT + final link. PR #53 is not currently mergeable only because main advanced through collaboration docs and the isolated #54 hotfix after the feature branch split; feature validation itself is green.
 
 ## Mandatory sync gate
 
@@ -35,16 +35,16 @@ Rules:
 ### 1. Civilization Observer Read DTOs v1 — Jjun
 
 - Owner: 쭌 + 쭌 AI
-- Status: `WAITING_CI`
+- Status: `READY_TO_MERGE / NEEDS_MAIN_RECONCILE`
 - Branch/PR: `jjun/civilization-observer-read-v1`, PR #53
 - Latest head: `e3a9f6611118866a6c79eb300a7b6ab2d5ffaf31`
 - Validation:
   - latest Core `34821150702` PASS including Build / full tests / deterministic harness;
-  - latest Preflight `34821150693` PASS including the new compile-unit regression guard;
-  - UE Linux Compile Run #16 `34821150704` IN PROGRESS and is the only valid remaining gate.
-- Superseded failure: Run #15 `34819825591` failed at **link** after UHT PASS because `Source/LifeLens/Simulation/LLCoreCompileUnit.cpp` omitted `CivilizationKnowledgeTransmission.cpp`; unresolved symbols were `Simulation::processCivilizationKnowledgeEvent(...)` and `Simulation::advanceCivilizationKnowledgeTeaching()`.
-- Fix: head `e3a9f661...` includes `CivilizationKnowledgeTransmission.cpp` in Unreal compile unit and Preflight now enforces that include.
-- Exact next action: do not modify the head while Run #16 is active. When the user reports/when checked after completion, verify UHT+UBT result. If green, merge PR #53 and reconcile state docs. If red, inspect the first new root cause before any rerun.
+  - latest Preflight `34821150693` PASS including the compile-unit regression guard;
+  - UE Linux Compile Run #16 `34821150704` PASS including actual UE 5.6 UHT / UBT / final link.
+- Superseded failure: Run #15 `34819825591` failed at **link** after UHT PASS because `Source/LifeLens/Simulation/LLCoreCompileUnit.cpp` omitted `CivilizationKnowledgeTransmission.cpp`; fixed in the current feature head.
+- Current merge blocker: main advanced after the PR split through docs/state commits and isolated PR #54 Core warning hotfix. Current main-side changes do not overlap PR #53 feature files except normal repository history divergence.
+- Exact next action: reconcile PR #53 with latest main while preserving the validated feature tree and PR #54 hotfix, confirm the resulting diff has no unintended changes, then merge #53. Do not rerun long UE compile unless the reconcile materially changes Unreal/feature code.
 - Goal: expose authoritative civilization state to Observer/Unreal without leaking mutable Core internals or inventing strategy-game authority in UI.
 - Implemented v1 scope:
   1. separate Core `ResidentCivilizationObservation` and `CivilizationWorldObservation` read models;
@@ -76,9 +76,10 @@ Rules:
 
 - Owner: 다겸 + 다겸 AI
 - Branch/PR: `dagyeom/observer-ui-v2`, PR #17
-- Status: `RECOVERING`
+- Status: `RECOVERING / READY_TO_RESUME_R1`
 - Existing legacy Observer blockers remain 0.
-- Civilization UI binding becomes READY only after PR #53 merges; current PR #17 reconciliation work can continue independently.
+- macOS clang `-Wshadow -Werror` Core blocker was resolved by PR #54 merge `3b649b900c44a4e48bb89171b38f5e685e757b14`; PR #17 may resume latest-main reconciliation now.
+- Civilization UI binding becomes READY only after PR #53 merges; current PR #17 reconciliation work is not blocked by Jjun.
 - Jjun assistance must follow `docs/INTEGRATION_SPRINT.md`; no direct writes to Dagyeom branch.
 
 ### 4. Dagyeom stacked UI / presentation chain
@@ -100,6 +101,13 @@ Rules:
 
 ## Latest completed milestones
 
+### PR #54 — macOS clang shadow hotfix
+- Merge: `3b649b900c44a4e48bb89171b38f5e685e757b14`.
+- Change: behavior-neutral range-for variable rename `pregnancy` → `entry` in `ObserverReadModelV2.h` to satisfy macOS clang `-Wshadow -Werror`.
+- Preflight `34822441249` PASS.
+- Core `34822441296` PASS including Build / tests / deterministic harness.
+- Dagyeom PR #17 R1 blocker released and PR #17 comment posted.
+
 ### PR #52 — Civilization Knowledge Transmission v1
 - Merge: `b90da9242003fbc0cbc553605b9abc46a17aa044`
 - Feature head: `8fe9369682834a3fae44bb6605f0d872bb80b971`
@@ -120,9 +128,9 @@ Rules:
 
 ## Next sequencing
 
-1. Finish latest-head Run #16 and merge PR #53 if UHT/UBT green.
+1. Reconcile latest main into PR #53 safely and merge the already-green Civilization Observer Read DTOs v1.
 2. Enter **Integration Sprint** under `docs/INTEGRATION_SPRINT.md`; pause new large Jjun Core slices.
-3. Help reconcile Dagyeom PR #17 first without direct writes to `dagyeom/*`; use REVIEW_ONLY or explicit ASSIST_LOCK + `integration/*-assist`.
+3. Dagyeom resumes PR #17 R1 from latest main; Jjun support is REVIEW_ONLY by default or explicit ASSIST_LOCK + `integration/*-assist` for code edits.
 4. Reconcile PR #26 independently where file locks do not overlap; then parent-first #29/#30 → #36 → #38.
 5. Verify one integrated runtime slice with Core civilization + Observer UI + Character Presentation.
 6. Android smoke APK after the integrated slice is observable.
