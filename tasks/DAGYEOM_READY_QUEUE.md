@@ -15,13 +15,41 @@
 
 문서가 GitHub와 다르면 **코드 수정 전에 문서부터 최신화**한다.
 
+제품 방향 기준은 `docs/LIFELENS_SPEC_v1.1.md`와 **`docs/CIVILIZATION_PROGRESSION_v1.md`**를 함께 읽는다.
+
 Current product checkpoints known to this queue:
 - PR #42 merge `5c6f2c071ca00bcd4b26d6e002bf5c618d02ff1e` — production New Game is Core-authoritative; actual Unreal 5.6 Linux UHT/UBT PASS.
-- PR #43 merge `179e3a65aaa6ff8d2243117c7aebfd760812c73d` — autonomous family progression is on main; Core full tests + deterministic harness + Preflight PASS.
+- PR #43 merge `179e3a65aaa6ff8d2243117c7aebfd760812c73d` — autonomous family progression on main; Core full tests + deterministic harness + Preflight PASS.
 - PR #44 merge `2b3f9882703ed73cb8318ae262f26bebb995c209` — full authoritative Core snapshot capture/restore + deterministic continuation PASS.
-- PR #45 merge `3c646ba331b8199a295fd6f2e9cac1235d844679` — Unreal SaveGame v2 now persists/restores the authoritative Core snapshot; Core/Preflight/actual UE 5.6 UHT+UBT all PASS.
-- PR #47 merge `f1aab37f6f8abad1217783cc1d168cbdd2e0c20c` — pure-Core Witness/Rumor/Social Knowledge v1 is available; no UI binding required yet because live Simulation/read DTO wiring is deferred.
-- PR #46 merge `753df19657ea634ea2fa7c2ac935f6273ce14c10` — Core-authoritative physical/social action directive bridge is on main; Run #10 (`34805882789`) actual UE 5.6 UHT+UBT PASS.
+- PR #45 merge `3c646ba331b8199a295fd6f2e9cac1235d844679` — Unreal SaveGame v2 persists/restores authoritative Core snapshot; Core/Preflight/UE compile PASS.
+- PR #47 merge `f1aab37f6f8abad1217783cc1d168cbdd2e0c20c` — pure-Core Witness/Rumor/Social Knowledge v1; future discovery/knowledge transmission substrate.
+- PR #46 merge `753df19657ea634ea2fa7c2ac935f6273ce14c10` — Core-authoritative physical/social action directive bridge; Unreal Run #10 PASS.
+- PR #48 is Jjun-side World Affordance/physical reservation execution work, currently external UE compile validation.
+- `docs/CIVILIZATION_PROGRESSION_v1.md` adds autonomous resource/discovery/crafting/knowledge/civilization progression as a top-level product direction.
+
+---
+
+## NEW CANONICAL PRODUCT DIRECTION — read before UI/Presentation work
+
+LifeLens is **not** only a modern-household autonomous life simulator.
+
+Long-term product flow:
+
+`Need / Curiosity → Observe → Gather → Carry/Store → Experiment → Discovery → Personal Knowledge → Craft/Build → Teach/Imitate → Shared Culture → Specialization/Exchange → Generational Civilization`
+
+Important implications for Dagyeom-owned presentation/UI:
+
+- Do not permanently theme the game around a finished modern house or modern appliances.
+- Character Presentation should remain generic enough for primitive resources/tools, crafted objects, work surfaces and later technologies.
+- A stone shard, branch, fire, basket, storage pile, bronze tool and modern device are all possible future held/used objects.
+- Do not assume technology is globally unlocked. Knowledge can differ per resident.
+- Main Observer HUD stays clean; do **not** turn Level 0 into a strategy-game resource/tech dashboard.
+- Future Resident Detail may expose Inventory / Known Techniques / Skill / Current Experiment when real read APIs exist.
+- Future World/Civilization Detail may expose major discoveries, shortages, shared/cultural knowledge and historical technology milestones.
+- Major discoveries should be suitable for observer notifications/cinematic follow, e.g. first stable fire, first cutting tool, first successful metallurgy.
+- Current Eat/Drink/Sleep/Toilet/Hygiene runtime anchors are development affordances, not proof that final NEW GAME starts with refrigerators or a complete modern home.
+
+Do not invent placeholder civilization fields in UI before a real Bridge/read DTO exists.
 
 ---
 
@@ -31,11 +59,11 @@ Current product checkpoints known to this queue:
 
 - Branch/PR: `dagyeom/observer-ui-v2`, PR #17
 - Last verified historical HEAD: `dc3351ea9025ee33ea70f8ce1026100070c20092` — **re-fetch before work**.
-- Current product main has advanced through #42/#43/#44/#45/#47/#46 since the old branch snapshot.
+- Main has advanced substantially; always reconcile from actual current main.
 - Do first:
   1. fetch latest main;
-  2. reconcile branch with current main without overwriting current shared-state docs;
-  3. confirm UI-owned code conflicts separately from shared-doc conflicts;
+  2. reconcile branch without overwriting current shared-state docs;
+  3. confirm UI-owned conflicts separately from shared-doc conflicts;
   4. only then continue UI feature edits.
 
 ### DQ-R2 Bind current Core Observer Bridge into Observer HUD
@@ -55,24 +83,25 @@ Available data includes:
 - Relationship 13 dimensions + target + derived scores
 - Emotion 11 dimensions + valence/arousal/intensity
 - Physical/Social activity + SocialIntent + target
-- typed current action directive from #46: physical Eat/Drink/Sleep/Toilet/Hygiene or social Approach/Avoid/Repair/Comfort + stable target ResidentId
+- typed current action directive from #46
 - Family Partner/Parents/Children/Siblings
 - romance/marriage/cohabitation/pregnancy state
 - population/life-stage/household/couple/pregnancy/major-LifeHistory aggregate data
-- founder Sex / AgeYears / LifeStage / 14-axis Personality from PR #42
+- founder Sex / AgeYears / LifeStage / 14-axis Personality
 
 Important runtime facts:
-- PR #43: family progression is live; residents can date/cohabit/engage/marry, pregnancies can progress, and births add real World residents. Never hard-code population to 4.
-- PR #45: SaveGame v2 restores the authoritative Core state directly. After load, UI should refresh from Bridge/read DTOs and must not treat cached UI-side resident arrays as simulation truth.
-- PR #46: WorldDirector no longer chooses covered life actions independently; Core is the authority and Unreal mirrors typed action directives. UI/presentation must not reintroduce a competing action chooser.
-- PR #47: witness/rumor provenance exists in pure Core, but runtime/Observer exposure is not wired yet; do not invent rumor UI fields until an actual read API exists.
+- family progression is live and population can grow; never hard-code 4 residents.
+- SaveGame v2 restores authoritative Core state directly; rebuild UI from Bridge/read DTOs after load.
+- Core owns covered life decisions; presentation must not reintroduce a competing chooser.
+- Witness/rumor provenance exists in Core but runtime/Observer exposure is not wired yet.
+- Civilization Foundation fields are **not UI-ready yet**. Wait for actual read APIs.
 
 Binding rules:
 - UI reads only; do not modify Core/Simulation state.
 - Do not invent placeholder values for absent data.
 - Names are display data, never identity keys.
 - Never hard-code the resident list to 4 entries.
-- On load/state-change events, rebuild visible UI state from current Bridge data.
+- On load/state-change events, rebuild visible UI from current Bridge data.
 - If a genuinely missing API/field is found, add a **new** Integration Request to `TEAM_BOARD.md`.
 
 ### DQ-R3 Resolve PR #17 Dagyeom-owned review findings
@@ -90,34 +119,34 @@ After latest-main reconciliation + Bridge binding, run local/CI UHT/UBT and PIE 
 ### DQ-01 UI Foundation / Android landscape — PR #26
 
 - Branch: `dagyeom/ui-foundation-v1`
-- PR #26 OPEN, historical HEAD `70dfa5ebeabf24b661c9f9fd0bc63e3ad01ac180`; re-fetch before work.
+- PR #26 OPEN; re-fetch current head before work.
 - Core API dependency: none.
 - Current action: reconcile with latest main; preserve newest shared-state docs; verify display metrics/safe layout.
 
 ### DQ-02 Character Presentation v1 — PR #29
 
 - Branch: `dagyeom/character-presentation-v1`
-- Historical HEAD `a4d47b9f69c9270665a8e2613b7863c40bf0f83e`; stacked on PR #17.
+- Stacked on PR #17; re-fetch current head.
 - Current action: reconcile after #17 latest-main resolution, then retarget and verify.
-- Important #46 constraint: Character Presentation may consume current intent/action for visuals, but must not become a second simulation decision authority.
-- Jjun decision request remains: camera distance/FOV visual size and whether legacy DebugBody should be removed from file rather than runtime-hidden.
+- Presentation may consume current intent/action but must not become a second simulation decision authority.
+- New direction: keep presentation equipment/held-object hooks data-driven; avoid hard-wiring a modern-appliance-only visual model.
 
 ### DQ-03 Observer UX Polish v1 — PR #30
 
 - Branch: `dagyeom/observer-ux-polish-v1`
-- Historical HEAD `c420457c3ddbc73ac2ddbfe692dd20ce63edf45e`; stacked on PR #17.
+- Stacked on PR #17.
 - Current action: reconcile after #17, retarget, verify.
 
 ### DQ-04 Mobile Touch v1 — PR #36
 
 - Branch: `dagyeom/mobile-touch-v1`
-- Historical HEAD `15eec5b9216d6a30655f59450e410f0f80bb0343`; stacked on #30.
+- Stacked on #30.
 - Current action: reconcile after parent chain; verify safe-area/touch behavior and CI.
 
 ### DQ-05 Visual Feedback v1 — PR #38
 
 - Branch: `dagyeom/visual-feedback-v1`
-- Historical HEAD `ffbc32c0cc9465a46feb1491f0bb7d5e0d1cd57a`; stacked on #36.
+- Stacked on #36.
 - Current action: verify panel fade / selection flash / underline / strip highlight after parent chain reconciliation.
 
 ---
@@ -126,18 +155,18 @@ After latest-main reconciliation + Bridge binding, run local/CI UHT/UBT and PIE 
 
 **현재 기존 Observer read 관련 BLOCKED-BY-JJUN 항목은 0개다.**
 
-Resolved surfaces now include:
-1. Relationship 13D + target resident ID/name
+Resolved surfaces include:
+1. Relationship 13D + target
 2. Emotion detailed axes + summaries
 3. SocialIntent + target
 4. Family summary + marriage/cohabitation/pregnancy
 5. World family/lifecycle aggregates
 6. Blueprint/USTRUCT read-only Core Bridge
-7. Founder Sex/Age/LifeStage/Personality identity fields
+7. Founder Sex/Age/LifeStage/Personality
 8. Post-load authoritative Core restoration through SaveGame v2
-9. Typed Core current action directive for physical/social presentation
+9. Typed Core current action directive
 
-A new blocker is valid only if Dagyeom identifies a concrete missing data/API after using latest `main`. Record requested field, usage and related PR in `TEAM_BOARD.md`.
+Future civilization Inventory/Knowledge/Discovery UI is not a blocker for current Dagyeom work. It becomes READY only when Jjun publishes read DTOs.
 
 ---
 
@@ -155,11 +184,9 @@ Do not collapse the whole chain into one giant PR merely to make merging easier.
 
 ## Current Dagyeom state summary
 
-- Dagyeom is **not waiting for Jjun API implementation** for the previous Observer items.
-- Immediate task is **reconciliation + binding + verification**, not Core modification.
-- Main now starts at four founders but may gain descendants; UI must remain population-dynamic.
-- Save/load no longer reconstructs the world from UI compatibility data; after load, read current Bridge state.
-- Current physical/social action presentation can read #46 typed directives; do not make presentation code choose competing simulation actions.
-- Witness/rumor UI is not READY yet because #47 is domain-only until runtime/read-model wiring exists.
-- Jjun should not edit Dagyeom UI/Character presentation branches without a new explicit coordination request.
-- Every checkpoint synchronizes `WORK_STATE.md` / this queue / `TEAM_BOARD.md`; meaningful completion/failure/dependency changes also require handoff recording.
+- Dagyeom is **not waiting for Jjun API implementation** for current Observer items.
+- Immediate task remains reconciliation + binding + verification.
+- New civilization direction is canonical now, but no new Dagyeom blocker is introduced.
+- Main UI remains human/world first; civilization complexity goes into deeper layers when APIs arrive.
+- Jjun should not edit Dagyeom UI/Character presentation branches without explicit coordination.
+- Every checkpoint synchronizes `WORK_STATE.md` / this queue / `TEAM_BOARD.md`; meaningful completion/failure/dependency changes require handoff recording.
