@@ -10,13 +10,13 @@
 
 상태: `TODO` / `DOING` / `REVIEW` / `DONE` / `BLOCKED` / `FROZEN`
 
-Current reconciled main checkpoint: `9261581df3abd5332d92855628fd7d03203748af` (PR #40 merge; 이후 상태문서 전용 commit은 제품 checkpoint를 바꾸지 않음).
+Product integration checkpoint: `9261581df3abd5332d92855628fd7d03203748af` (PR #40 merge). Later main commits may be state/collaboration-only; always fetch current main before work.
 
 ## Active Work
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | next branch TBD | Production NEW GAME / WorldSeed / 2M+2F authoritative runtime integration | `Source/LifeLensCore/**`, `Source/LifeLens/Simulation/**`, Save/Load | TODO — 상태문서 동기화 완료 후 새 브랜치 시작 |
+| 쭌 + 쭌 AI | `jjun/production-new-game-core-v1` | Production NEW GAME Core v1: WorldSeed → exact 2M+2F authoritative founders | `Source/LifeLensCore/**` only for this first PR | DOING — Core identity/founder generation + deterministic tests |
 | 쭌 + 쭌 AI | `task/03-fast-test`, PR #2 | old Android validation | Bridge/build | FROZEN — Run `34739283266` 실패 상태 보존, 수정/재실행/병합 금지 |
 | 다겸 + 다겸 AI | `dagyeom/observer-ui-v2`, PR #17 | Observer HUD v2 + Core Observer Bridge binding | `Source/LifeLens/UI/**` | REVIEW / RECOVERING — latest main과 reconcile 필요 |
 | 다겸 + 다겸 AI | `dagyeom/ui-foundation-v1`, PR #26 | Android landscape UI foundation | UI foundation | REVIEW — latest main reconcile 필요 |
@@ -24,6 +24,21 @@ Current reconciled main checkpoint: `9261581df3abd5332d92855628fd7d03203748af` (
 | 다겸 + 다겸 AI | `dagyeom/observer-ux-polish-v1`, PR #30 | Observer UX Polish | `Source/LifeLens/UI/**` | REVIEW — stacked on #17 |
 | 다겸 + 다겸 AI | `dagyeom/mobile-touch-v1`, PR #36 | Mobile Touch v1 | `Source/LifeLens/UI/**` | REVIEW — stacked on #30 |
 | 다겸 + 다겸 AI | `dagyeom/visual-feedback-v1`, PR #38 | Visual Feedback v1 | `Source/LifeLens/UI/**` | REVIEW — stacked on #36 |
+
+## Current Jjun lock — Production NEW GAME Core v1
+
+- Branch: `jjun/production-new-game-core-v1`
+- Purpose: authoritative Core founder generation for SPEC 9~18 / 78.
+- Allowed files for this first slice: `Source/LifeLensCore/**` and its tests/CMake.
+- Explicitly not touching in this slice: `Source/LifeLens/UI/**`, Dagyeom Character presentation, Unreal legacy `ULLSimulationSubsystem` generation, Save/Load, Android workflows.
+- Required behavior:
+  - same WorldSeed → same four founder identities/traits;
+  - different seed → meaningfully different founder output;
+  - exactly 4 adults, exactly 2 male + 2 female;
+  - stable unique Core IDs and unique display names;
+  - generated personality/genetics/needs and birth time compatible with lifecycle aging;
+  - initial relationships remain stranger/low familiarity, with no forced couple/family/pregnancy.
+- After this PR: separate integration work will map Core founders into Unreal runtime/Save data rather than maintaining two competing generators.
 
 ## Latest verified Dagyeom PR chain
 
@@ -43,10 +58,6 @@ Current reconciled main checkpoint: `9261581df3abd5332d92855628fd7d03203748af` (
 | 쭌 + 쭌 AI | `jjun/observer-runtime-bridge-v1`, PR #37 | Core Observer Runtime Bridge | `main` merge `938d0a2798e600929b4ccc755b48bcd39026ac75`; Unreal 5.6 Linux UHT/UBT Run `34796067278` PASS |
 | 쭌 + 쭌 AI | `jjun/family-runtime-state-v1`, PR #39 | authoritative Family/Romance/Household/Pregnancy ownership in Core Simulation | `main` merge `612229cc610d2ea6283e080309bdee58ef42d1db`; Core Run `34796213647` PASS |
 | 쭌 + 쭌 AI | `jjun/family-observer-bridge-v1`, PR #40 | Family + World aggregate Observer read API | `main` merge `9261581df3abd5332d92855628fd7d03203748af`; Preflight `34796892593` PASS; Unreal UHT/UBT `34796892609` PASS |
-
-## Completed Core milestones
-
-Relationship #4, Emotion #6, Memory #7, Belief #8, Social Cognition #9, Social Utility #10, Social Execution #11, Simulation Social Loop #12, Observer Read Model #13, Romance #14, Household #15, Marriage #16, Pregnancy #18, Birth/Genetics #19, Growth #20, Parenting #21, Genealogy, Aging #23, Death #25, LifeHistory #27, LifeHistory Wiring #32, Generation Continuity #33, Observer Read Model v2 #34, Core validation recovery #35 are all `main`-integrated and recorded in `WORK_STATE.md`.
 
 ## Jjun → Dagyeom API handoff — all previous blockers released
 
@@ -71,10 +82,10 @@ If Dagyeom discovers a **new concrete missing field/API**, add a new Integration
 
 ## 쭌 측 next actions
 
-1. Keep collaboration docs synced before code work.
-2. Do not touch Dagyeom UI/Character presentation branches while they reconcile latest main.
-3. Start a new latest-main branch for production NEW GAME / WorldSeed / 2M+2F authoritative runtime integration.
-4. Follow with full Core Save/Load and 4-person runtime integration.
+1. Complete `jjun/production-new-game-core-v1` with Core tests/CI only.
+2. Keep Dagyeom UI/Character presentation untouched while their branches reconcile.
+3. After founder generation merges, start a separate latest-main runtime/Save integration branch.
+4. Full Core Save/Load follows authoritative runtime integration.
 5. Android smoke APK only after current Linux gates remain clean; old TASK_03 stays frozen.
 
 ## 다겸 측 next actions
@@ -109,26 +120,17 @@ State-only shared docs may be updated directly on `main` under `docs/STATE_MANAG
 
 ## Integration Requests
 
-Format:
-
-```text
-[OPEN] requester: Jjun/Dagyeom
-needed API/data:
-usage:
-expected return/direction:
-related branch/PR:
-```
-
 Current open requests: **none**.
 
 Resolved 2026-09-14: the six Observer read requests formerly marked `BLOCKED-BY-JJUN` were completed by PR #37/#39/#40 and are now READY FOR DAGYEOM BINDING.
 
 ## Merge / reconciliation queue
 
-1. Dagyeom PR #17 — reconcile latest main + bind current Observer Bridge + UI review fixes + verify.
-2. Dagyeom PR #26 — reconcile latest main and verify independently.
-3. After #17: PR #29 and #30 retarget/reconcile; then #36; then #38.
-4. PR #2 remains FROZEN and is not part of this queue.
+1. Jjun Production NEW GAME Core v1 — new branch active; PR to be opened after first verified checkpoint.
+2. Dagyeom PR #17 — reconcile latest main + bind current Observer Bridge + UI review fixes + verify.
+3. Dagyeom PR #26 — reconcile latest main and verify independently.
+4. After #17: PR #29 and #30 retarget/reconcile; then #36; then #38.
+5. PR #2 remains FROZEN and is not part of this queue.
 
 ## 완료/인수인계 규칙
 
