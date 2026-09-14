@@ -4,7 +4,7 @@
 >
 > 제품 요구사항은 `docs/LIFELENS_SPEC_v1.1.md`, 상태관리 규칙은 `docs/STATE_MANAGEMENT.md`, 역할/잠금은 `tasks/TEAM_BOARD.md`, 변경 이력은 `tasks/HANDOFF_LOG.md`를 따른다.
 
-Last reconciled: 2026-09-14 KST — actual `main` `9261581df3abd5332d92855628fd7d03203748af`; PR #37/#39/#40 merged; Unreal 5.6 Linux UHT/UBT PASS; Dagyeom Core/API blockers released.
+Last product-state reconciled: 2026-09-14 KST — product integration checkpoint `9261581df3abd5332d92855628fd7d03203748af` (PR #40 merge), followed only by collaboration/state-document sync commits; PR #37/#39/#40 merged; Unreal 5.6 Linux UHT/UBT PASS; Dagyeom Core/API blockers released. **Always fetch the actual current `main` HEAD before work.**
 
 ## Status legend
 
@@ -40,7 +40,7 @@ GitHub 실제 상태가 항상 문서보다 우선하며, 문서가 stale인 상
 - Current GitHub fact: PR is OPEN, non-draft, currently `mergeable=false`; reviewer is `sjLim91`.
 - Important change since PR body was written: all six former `BLOCKED-BY-JJUN` observer read requirements are now available on `main` via PR #37/#39/#40.
 - Existing UI review findings remain Dagyeom-owned: selection hint visibility and narrow-panel text overflow among others.
-- Exact next action: Dagyeom side first reconciles PR #17 with latest `main` `9261581d...`, then binds the newly available Core Observer Bridge APIs, addresses its UI review items, runs local/CI UHT/UBT + PIE verification, and updates state before merge.
+- Exact next action: Dagyeom side first reconciles PR #17 with the **actual latest `main`** (which includes product checkpoint `9261581d...` plus later state-doc sync commits), then binds the newly available Core Observer Bridge APIs, addresses its UI review items, runs local/CI UHT/UBT + PIE verification, and updates state before merge.
 - Handoff safety: `CONDITIONAL` — current branch is older than latest main and must be reconciled before feature edits/merge.
 
 ### 2. Dagyeom stacked UI / presentation PR chain
@@ -100,7 +100,7 @@ These are active and must not be flattened or modified by Jjun without coordinat
 
 - Branch: `jjun/family-observer-bridge-v1`
 - Status: `DONE`
-- Merge SHA / current main checkpoint: `9261581df3abd5332d92855628fd7d03203748af`
+- Merge SHA / product checkpoint: `9261581df3abd5332d92855628fd7d03203748af`
 - Final head: `816bb0021b45390e96c4497611970484c9c96879`
 - Validation:
   - Structural Preflight Run `34796892593` PASS.
