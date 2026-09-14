@@ -34,7 +34,9 @@ assert project['Modules'][0]['Name'] == 'LifeLens'
 build_rules = (root / 'Source/LifeLens/LifeLens.Build.cs').read_text(encoding='utf-8')
 assert 'PublicIncludePaths.Add(ModuleDirectory);' in build_rules
 assert 'PrivateIncludePaths.Add(ModuleDirectory);' in build_rules
-assert 'CppStandardVersion.Cpp17' in build_rules
+# UE 5.6 module headers require C++20. LifeLensCore remains pure/portable and
+# is validated separately below to ensure no Unreal dependency leaks into it.
+assert 'CppStandardVersion.Cpp20' in build_rules
 assert 'LifeLensCore' in build_rules and 'include' in build_rules
 
 sim_h = (root / 'Source/LifeLens/Simulation/LLSimulationSubsystem.h').read_text(encoding='utf-8')
@@ -92,8 +94,9 @@ for token in (
 compile_unit = (root / 'Source/LifeLens/Simulation/LLCoreCompileUnit.cpp').read_text(encoding='utf-8')
 assert '#include "../../LifeLensCore/src/Simulation.cpp"' in compile_unit
 
-# The simulation core must remain standard C++17. The bridge is one-way:
-# Unreal may include Core, but Core must never include Unreal reflection/types.
+# The simulation core remains standard-library C++ with a C++17 baseline. The
+# bridge is one-way: Unreal may include Core, but Core must never include Unreal
+# reflection/types. The UE module itself compiles as C++20 for UE 5.6 headers.
 forbidden_core_tokens = (
     '#include "CoreMinimal.h"',
     'UCLASS(',
