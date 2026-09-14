@@ -81,7 +81,9 @@ int main()
     CHECK(hungry.kind==UnifiedDecisionKind::Physical);
     CHECK(hungry.physicalGoal==Goal::Eat);
 
-    // Personal knowledge changes autonomous priorities; there is no global era/recipe unlock.
+    // Personal knowledge and inventory change autonomous priorities. The novice
+    // still gathers, while only the resident who personally knows SharpFlake and
+    // owns the needed parts can attempt the next ChippedStoneTool experiment.
     World divergenceWorld(818181);
     Character novice=utilityActor;
     novice.id=101;
@@ -92,15 +94,20 @@ int main()
     Character flintKnower=novice;
     flintKnower.id=102;
     flintKnower.civilization.character=flintKnower.id;
+    flintKnower.personality.curiosity=1.0;
+    flintKnower.personality.openness=1.0;
+    flintKnower.personality.patience=1.0;
+    flintKnower.civilization.learningSkill=1.0;
     flintKnower.civilization.knowledge.learn(TechniqueId::SharpFlake,KnowledgeLevel::Reproducible,0.9);
+    flintKnower.civilization.inventory.add({ItemKind::SharpFlake,MaterialKind::Flint,1,0.7,1.0});
+    flintKnower.civilization.inventory.add({ItemKind::RawMaterial,MaterialKind::Wood,1,0.5,1.0});
 
     const CivilizationUtilityDecision noviceDecision=chooseCivilizationUtilityDecision(divergenceWorld,novice);
     const CivilizationUtilityDecision knowerDecision=chooseCivilizationUtilityDecision(divergenceWorld,flintKnower);
     CHECK(noviceDecision.intent==CivilizationIntent::Gather);
-    CHECK(knowerDecision.intent==CivilizationIntent::Gather);
-    CHECK(noviceDecision.material!=MaterialKind::Unknown);
-    CHECK(knowerDecision.material!=MaterialKind::Unknown);
-    CHECK(noviceDecision.material!=knowerDecision.material || noviceDecision.resourceNode!=knowerDecision.resourceNode);
+    CHECK(knowerDecision.intent==CivilizationIntent::Experiment);
+    CHECK(knowerDecision.technique==TechniqueId::ChippedStoneTool);
+    CHECK(!novice.civilization.knowledge.knowsAtLeast(TechniqueId::SharpFlake,KnowledgeLevel::Reproducible));
 
     // Store is an autonomous option once personal carrying pressure is high.
     Character storer=novice;
