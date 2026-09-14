@@ -2,6 +2,7 @@
 
 > 현재 진행 상태의 단일 기준판. 실제 GitHub 상태가 항상 우선한다.
 > 제품 기준: `docs/LIFELENS_SPEC_v1.1.md` + `docs/CIVILIZATION_PROGRESSION_v1.md`
+> 캐릭터 외형/표현 순서는 `docs/CHARACTER_APPEARANCE_ROADMAP.md`가 우선한다.
 > 협업 기준: `docs/STATE_MANAGEMENT.md` + `docs/INTEGRATION_SPRINT.md`
 
 Last reconciled: 2026-09-14 KST — PR #17 is merged and PR #26 UI Foundation reconcile is active.
@@ -52,19 +53,26 @@ Last reconciled: 2026-09-14 KST — PR #17 is merged and PR #26 UI Foundation re
 - Helper Preflight: PASS `34840301429`
 - Verify-only branch: `integration/dagyeom-ui-foundation-r1-verify`
 - Verify-only PR: **#62**
-- Verify Preflight: `34840467738` IN PROGRESS
+- Verify Preflight: PASS `34840467738`
 - Unreal Linux Compile Run #21: `34840467864` IN PROGRESS
 - Next: verify actual UE 5.6 UHT/UBT/link → close #62 without merge → merge #61 → close/supersede original #26 → unlock
 
 ### 4. Dagyeom integration queue
 
+캐릭터 관련 상세 완료조건은 `docs/CHARACTER_APPEARANCE_ROADMAP.md`를 따른다.
+
 1. PR #26 UI Foundation — **DOING**.
-2. PR #29 Character Presentation — after #26 checkpoint.
-3. PR #30 Observer UX Polish — after #26 checkpoint.
-4. PR #36 Mobile Touch — after #30.
-5. PR #38 Visual Feedback — after #36.
-6. Integrated runtime verification.
-7. Android smoke APK.
+2. PR #29 Character Presentation Foundation.
+3. Character Appearance v1.
+4. Character Motion & Context v1 minimum.
+5. PR #30 Observer UX Polish.
+6. PR #36 Mobile Touch — after #30.
+7. PR #38 Visual Feedback — after #36.
+8. Integrated runtime verification.
+9. Android smoke APK.
+10. Appearance Genetics & Lifecycle.
+11. Clothing/Equipment civilization linkage.
+12. Resume deeper civilization production chains.
 
 Parent-first; mass force-rebase 금지.
 
@@ -96,15 +104,6 @@ Parent-first; mass force-rebase 금지.
 - #48 `a90ff6a5d870858a9e555ddf1e6e526bb7aa34e1`
 - #47 `f1aab37f6f8abad1217783cc1d168cbdd2e0c20c`
 - #46 `753df19657ea634ea2fa7c2ac935f6273ce14c10`
-
-## Next sequencing
-
-1. Complete PR #26 UI Foundation reconcile.
-2. Reconcile #29/#30 parent-first.
-3. #36 after #30, then #38 after #36.
-4. Integrated runtime verification with current Core + Observer UI + Character Presentation.
-5. Android smoke APK.
-6. Resume deeper civilization production chains.
 
 ## Recovery rule
 
