@@ -4,7 +4,7 @@
 >
 > 제품 기준: `docs/LIFELENS_SPEC_v1.1.md` · 상태 규칙: `docs/STATE_MANAGEMENT.md` · 역할/잠금: `tasks/TEAM_BOARD.md` · 이력: `tasks/HANDOFF_LOG.md`
 
-Last reconciled: 2026-09-14 KST — PR #42 merged as `5c6f2c071ca00bcd4b26d6e002bf5c618d02ff1e`. PR #43 current head `81dbb57d190810cc3318e82ba952064d50fd8fdc` passed full Core Release CI + deterministic harness + Structural Preflight and is READY_TO_MERGE.
+Last reconciled: 2026-09-14 KST — PR #43 merged as `179e3a65aaa6ff8d2243117c7aebfd760812c73d` after full Core Release tests + deterministic harness + Structural Preflight PASS. PR #42 remains the latest Unreal runtime integration checkpoint with actual UHT/UBT PASS.
 
 ## Mandatory sync gate
 
@@ -18,43 +18,33 @@ Last reconciled: 2026-09-14 KST — PR #42 merged as `5c6f2c071ca00bcd4b26d6e002
 
 ## Active / unresolved work
 
-### 1. Autonomous Family Progression v1 — Jjun
+### 1. Full Core Save/Load v1 — Jjun
 
 - Owner: 쭌 + 쭌 AI
-- Branch: `jjun/autonomous-family-progression-v1`
-- PR: #43 `[CORE] Wire autonomous family progression into Simulation`
-- Current head: `81dbb57d190810cc3318e82ba952064d50fd8fdc`
-- Status: `READY_TO_MERGE`
-- Scope: Core only — `FamilyProgression.h`, `Simulation.h/.cpp`, Core CMake, `test_autonomous_family_progression.cpp`.
-- Implemented:
-  - state-driven romantic chemistry from familiarity/social bond/personality compatibility;
-  - daily deterministic family-decision cadence;
-  - mutual-readiness dating candidate ranking without hard-coded founder couples;
-  - dating→cohabitation minimum 30 days;
-  - dating→engagement minimum 90 days plus mature cohabitation;
-  - engagement→marriage minimum 60 days;
-  - marriage→pregnancy minimum 30 days with weekly deterministic attempts;
-  - same-sex romance remains valid; current biological pregnancy follows existing gestational/genetic eligibility;
-  - active pregnancy advances with simulation time;
-  - due pregnancy creates real child Character with genetics, genealogy, household membership, parent/child links, LifeHistory and runtime state;
-  - Simulation now owns authoritative BirthBook;
-  - successful marriage links spouses in Genealogy;
-  - daily Aging is wired into lifecycle progression.
-- Validation on head `81dbb57d...`:
-  - LifeLens Core Tests Run `34801572846` — PASS: Configure / Build / Test / Deterministic harness smoke.
-  - LifeLens Preflight Run `34801572858` — PASS.
-  - first failed run `34801444613` was a bounded helper-name collision and is superseded by the successful head.
-- Exact next action: verify changed-file scope remains Core-only, then merge #43 with expected head SHA and immediately sync docs/HANDOFF.
-- Handoff safety: `SAFE` — no Dagyeom or Unreal runtime files changed.
+- Status: `PLANNED`
+- Branch: not created yet; must branch from actual latest `main` when work starts.
+- Goal: replace transitional seed+minute replay persistence with a true authoritative Core snapshot that restores the exact evolved world.
+- Required snapshot scope includes at minimum:
+  - world seed + simulation minute + deterministic RNG continuation state;
+  - all Character identity/lifecycle/Needs/Personality/Emotion/Memory/Belief/Genetics/LifeCondition/LifeHistory state;
+  - directional RelationshipBook;
+  - Genealogy / Romance / Household / Pregnancy / Birth state;
+  - runtime decision/cooldown state needed for continuity or an explicitly deterministic reconstruction contract;
+  - stable resident identity mapping semantics across save/load.
+- Required verification: save an evolved world after social/family progression, load into a fresh simulation, compare authoritative state, then continue both worlds and prove deterministic continuation.
+- Unreal SaveGame adapter integration should follow the Core serializer contract rather than serializing a second independent resident truth.
+- Exact next action when started: sync actual main/docs → create new Core Save/Load branch → define versioned snapshot DTO/serialization boundary → roundtrip + continuation tests before Unreal adapter changes.
 
 ### 2. Observer HUD v2 — Dagyeom
 
 - Owner: 다겸 + 다겸 AI
 - Branch/PR: `dagyeom/observer-ui-v2`, PR #17
 - Status: `RECOVERING`
-- Former six `BLOCKED-BY-JJUN` observer requirements are available on main via #37/#39/#40.
-- PR #42 is merged and additionally exposes founder Sex / AgeYears / LifeStage / 14-axis Personality through the Core resident DTO.
-- Exact next action: reconcile actual latest main, bind current Core Observer Bridge, address Dagyeom-owned UI review findings, verify UHT/UBT + PIE, update state before merge.
+- Former six `BLOCKED-BY-JJUN` Observer requirements remain resolved.
+- Main now additionally provides:
+  - PR #42: founder Sex / AgeYears / LifeStage / 14-axis Personality through Core resident DTO;
+  - PR #43: Romance/Household/Marriage/Pregnancy/Birth state is no longer test-only state; it can evolve autonomously in Core and newborns enter the real World resident list.
+- Exact next action: reconcile actual latest main, bind Core Observer Bridge, address Dagyeom-owned UI review findings, verify UHT/UBT + PIE, update state before merge.
 
 ### 3. Dagyeom stacked UI / presentation chain
 
@@ -74,12 +64,36 @@ Last reconciled: 2026-09-14 KST — PR #42 merged as `5c6f2c071ca00bcd4b26d6e002
 
 ---
 
-## Latest completed milestone — Production NEW GAME Unreal Runtime Integration
+## Latest completed milestone — Autonomous Family Progression v1
+
+### PR #43 `[CORE] Wire autonomous family progression into Simulation`
+
+- Status: `DONE`
+- Feature HEAD: `81dbb57d190810cc3318e82ba952064d50fd8fdc`
+- Merge SHA: `179e3a65aaa6ff8d2243117c7aebfd760812c73d`
+- Changed files: exactly 5 under `Source/LifeLensCore/**` including Core CMake/test; no Unreal/UI/Character/Content files.
+- Implemented:
+  - gradual state-driven romantic chemistry;
+  - deterministic daily mutual dating selection;
+  - no forced founder couples;
+  - dating→cohabitation→engagement→marriage minimum-duration progression;
+  - valid same-sex romance while current biological pregnancy retains gestational/genetic eligibility rules;
+  - marriage→periodic deterministic pregnancy attempts;
+  - pregnancy advancement and due birth;
+  - newborn becomes real Character/World resident with inherited genetics, genealogy, household membership, parent-child relationships, LifeHistory and runtime state;
+  - authoritative Simulation-owned BirthBook;
+  - spouse links in Genealogy;
+  - daily Aging lifecycle update.
+- Validation:
+  - Core Tests Run `34801572846` PASS: Configure / Build / Test / Deterministic harness smoke.
+  - Structural Preflight Run `34801572858` PASS.
+  - first run `34801444613` failed only on duplicate helper-name compilation; fixed in final head and superseded by the PASS run.
+
+## Previous completed milestone — Production NEW GAME Unreal Runtime Integration
 
 ### PR #42 `[UE] Make production New Game Core-authoritative`
 
 - Status: `DONE`
-- Feature HEAD: `5f61ce04963166af418fb672fb4442a6cf0598e6`
 - Merge SHA: `5c6f2c071ca00bcd4b26d6e002bf5c618d02ff1e`
 - Validation: Structural Preflight `34799244015` PASS; Unreal Linux Compile `34799244011` PASS including actual UHT/UBT.
 - Main uses Core founders as the single production New Game population source and projects Core identity/state into Unreal compatibility data.
