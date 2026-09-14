@@ -12,7 +12,7 @@
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | `jjun/physical-smart-object-v1`, PR #48 | Physical Interaction / Smart Object Execution v1 | Jjun-owned World + narrow Unreal compile workflow trigger | REVIEW / WAITING_UNREAL_COMPILE — head `cda509956feddacf9c159e998b79d631713a8e45`; Preflight PASS; Unreal Run #11 in progress |
+| 쭌 + 쭌 AI | `jjun/physical-smart-object-v1`, PR #48 | Physical Interaction / Smart Object Execution v1 | Jjun-owned World + narrow Unreal compile workflow trigger | REVIEW / WAITING_UNREAL_COMPILE — head `505e356d277cb0896109f6d4cdd75bcf06cdab54`; Preflight PASS; Unreal Run #14 in progress |
 | 쭌 + 쭌 AI | `task/03-fast-test`, PR #2 | old Android validation | Bridge/build | FROZEN — Run `34739283266` 재실행/수정/병합 금지 |
 | 다겸 + 다겸 AI | `dagyeom/observer-ui-v2`, PR #17 | Observer HUD v2 + Core Observer Bridge binding | `Source/LifeLens/UI/**` | REVIEW / RECOVERING — latest main reconcile 필요 |
 | 다겸 + 다겸 AI | `dagyeom/ui-foundation-v1`, PR #26 | Android landscape UI foundation | UI foundation | REVIEW |
@@ -23,19 +23,20 @@
 
 ## Current Jjun lock — PR #48 Physical Interaction / Smart Object Execution v1
 
-- Branch/head: `jjun/physical-smart-object-v1` / `cda509956feddacf9c159e998b79d631713a8e45`.
+- Branch/head: `jjun/physical-smart-object-v1` / `505e356d277cb0896109f6d4cdd75bcf06cdab54`.
 - Core remains the sole decision authority; Unreal chooses only where/how to execute the Core-selected physical intent.
 - Implemented physical intents: Eat / Drink / Sleep / Toilet / Hygiene.
-- `ALLActivityAnchor` now has `Available → Reserved → InUse`, stable ResidentId ownership, use transform offset/rotation, exclusive reservation and release.
+- `ALLActivityAnchor` now has `Available → Reserved → InUse`, stable ResidentId ownership, use transform offset/rotation, exclusive reservation/release, and multi-capability matching.
 - WorldDirector selects the nearest usable capability-matched anchor with a stable path tie-break, holds the reservation across movement/use, and releases it on directive changes, idle/death, bridge loss, invalid target, despawn, or action transition.
 - Generic coordinate fallback for covered physical intents is removed.
-- Current Entry runtime has no placed anchors, so missing intent types get one bootstrap reservable anchor. Placed anchors remain preferred when present.
+- Runtime bootstrap mirrors Core New Game interaction capacity: Sleep 4, Toilet 2, shared Hygiene+Drink sink-like anchors 2, Eat/Fridge 1. Existing enabled placed anchors count toward capacity so only deficits are bootstrapped.
 - CI discovery: Unreal compile workflow previously ignored `Source/LifeLens/World/**`; PR #48 adds that path so World changes now receive actual UHT/UBT validation.
 - Scope at latest checkpoint: 4 World files + `.github/workflows/unreal-linux-compile.yml`; no UI, Character presentation, Content, pure Core, or frozen PR #2 edits.
 - Validation:
-  - Structural Preflight `34808013903` PASS on latest head.
-  - Unreal Linux Compile `34808013906` / Run #11 IN PROGRESS.
-- Merge gate: actual UE 5.6 image verification + UHT + UBT must PASS before merge.
+  - Structural Preflight `34808292399` PASS on latest head.
+  - Unreal Linux Compile `34808292682` / Run #14 IN PROGRESS; latest observed stage = prebuilt UE 5.6 Linux image pull.
+  - earlier Run #11–#13 are superseded and are not merge evidence.
+- Merge gate: actual UE 5.6 image verification + UHT + UBT must PASS on head `505e356d...` before merge.
 
 ## Latest completed Jjun work
 
@@ -48,11 +49,7 @@
 - Covered physical intents: Eat / Drink / Sleep / Toilet / Hygiene; covered social intents: Approach / Avoid / Repair / Comfort.
 - Legacy WorldDirector `ChooseAction()` authority and projection-only outcome mutation were removed for covered actions.
 - Existing `ELLActionIntent` ordinal values remain 0–6; appended `Drink` resolves to 7.
-- Validation:
-  - Core Tests `34805882778` PASS incl deterministic harness.
-  - Structural Preflight `34805882776` PASS.
-  - Unreal Linux Compile `34805882789` / Run #10 PASS incl actual UE 5.6 UHT + UBT.
-- Scope: exactly 9 Jjun-owned Core/Simulation/World/validator files; no Dagyeom UI/Character presentation/Content edits.
+- Validation: Core `34805882778` PASS incl deterministic harness; Preflight `34805882776` PASS; Unreal Run #10 `34805882789` PASS incl actual UE 5.6 UHT + UBT.
 
 ### PR #47 — Witness / Rumor / Social Knowledge v1
 
@@ -78,7 +75,7 @@ Current open requests: **none**.
 
 ## Merge / reconciliation queue
 
-1. PR #48 — wait for Run #11 actual UHT/UBT result; merge only on PASS.
+1. PR #48 — wait for Run #14 actual UHT/UBT result; merge only on PASS.
 2. Dagyeom PR #17 — reconcile latest main + bind current Core Bridge + review fixes + verify.
 3. Dagyeom PR #26 — reconcile latest main independently.
 4. After #17: #29/#30 → #36 → #38.
