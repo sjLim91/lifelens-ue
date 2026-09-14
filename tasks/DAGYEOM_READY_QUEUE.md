@@ -21,33 +21,33 @@
 - #53 Civilization Observer Read DTOs — merged `ec30d80b2986247f0f16572efb2c082a933d796d`, Unreal Run #16 PASS
 - #54 macOS clang shadow hotfix — merged `3b649b900c44a4e48bb89171b38f5e685e757b14`
 - #17 Observer HUD v2 — **DONE / MERGED `aa194db7c5b500cdf5041fd6d43b25f97b9dd0b6`**
-  - R1 helper #56 merged, verify-only #57 closed
-  - R1 Preflight `34824371968` PASS
-  - R1 Unreal Run #17 `34824371965` PASS including UHT/UBT/link
-  - R2 helper #58 merged, verify-only #59 closed
-  - corrected R2 Preflight `34833994138` PASS
   - corrected R2 Unreal Run #20 `34833994155` PASS including UHT/UBT/link
   - unresolved review threads: 0
-  - all Observer assist locks released
+  - Observer assist locks released
 
 ## HIGHEST PRIORITY
 
-### DQ-01 — PR #26 UI Foundation — NEXT
+### DQ-01 — PR #26 UI Foundation — DOING
 
-- Re-fetch exact PR #26 / branch HEAD before work.
-- Reconcile against actual latest main, which now includes PR #17.
-- Preserve PR #17 Observer hierarchy and Core authority.
-- Validate Android landscape/safe-area/typography behavior.
-- If Jjun assistance edits Dagyeom-owned files: create a new ASSIST_LOCK and a fresh `integration/dagyeom-...-assist` branch first.
+- Original branch/head: `dagyeom/ui-foundation-v1` / `70dfa5ebeabf24b661c9f9fd0bc63e3ad01ac180`
+- Active lock: `ASSIST_LOCK-26-R1`
+- Helper: `integration/dagyeom-ui-foundation-r1-assist`
+- Locked files:
+  - `Source/LifeLens/UI/LLObserverUIFoundation.cpp`
+  - `Source/LifeLens/UI/LLObserverUIFoundation.h`
+- Reconcile strategy: latest main + the two Foundation files only; stale old shared-state docs are not replayed.
+- Preserve merged PR #17 Observer hierarchy/Core authority.
+- Next gate: structural Preflight + actual UE 5.6 UHT/UBT/link.
+- While lock is active, Dagyeom side should not edit the two Foundation files.
 
-### DQ-02 — PR #29 Character Presentation — READY AFTER #17
+### DQ-02 — PR #29 Character Presentation — READY AFTER #26 CHECKPOINT
 
-- PR #17 dependency is now cleared.
+- #17 dependency is cleared.
 - Reconcile parent/base before code changes.
 - Consume Core action intent for visuals only.
 - Keep appearance/equipment hooks data-driven from primitive resources/tools through later technology.
 
-### DQ-03 — PR #30 Observer UX Polish — READY AFTER #17
+### DQ-03 — PR #30 Observer UX Polish — READY AFTER #26 CHECKPOINT
 
 - Reconcile to merged #17 baseline.
 - Preserve Level 0 cleanliness and current Core-backed detail tabs.
@@ -71,7 +71,7 @@ Jjun default support = `REVIEW_ONLY`.
 `dagyeom/*` branch에 Jjun AI direct push 금지.
 
 Parent-first order:
-1. #26 next
+1. #26 current
 2. #29/#30 from merged #17 baseline
 3. #36 after #30
 4. #38 after #36
