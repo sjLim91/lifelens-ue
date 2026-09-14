@@ -12,6 +12,26 @@ enum class ELLCoreObservedActivityKind : uint8
 };
 
 UENUM(BlueprintType)
+enum class ELLCoreSex : uint8
+{
+    Male,
+    Female
+};
+
+UENUM(BlueprintType)
+enum class ELLCoreLifeStage : uint8
+{
+    Baby,
+    Toddler,
+    Child,
+    Teen,
+    YoungAdult,
+    Adult,
+    MiddleAge,
+    Elderly
+};
+
+UENUM(BlueprintType)
 enum class ELLCoreRomanceStage : uint8
 {
     None,
@@ -35,6 +55,27 @@ struct FLLCoreNeedSnapshot
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float Sleep = 0.0f;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float Bladder = 0.0f;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float Hygiene = 0.0f;
+};
+
+USTRUCT(BlueprintType)
+struct FLLCorePersonalitySnapshot
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float Introversion = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float Conscientiousness = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float Openness = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float Agreeableness = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float EmotionalStability = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float Empathy = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float Impulsiveness = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float RiskTolerance = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float Ambition = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float Patience = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float Sociability = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float Curiosity = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float Orderliness = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float Adaptability = 0.5f;
 };
 
 USTRUCT(BlueprintType)
@@ -123,7 +164,11 @@ struct FLLCoreResidentObservation
 
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") FGuid ResidentId;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") FString DisplayName;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") ELLCoreSex Sex = ELLCoreSex::Male;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") int32 AgeYears = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") ELLCoreLifeStage LifeStage = ELLCoreLifeStage::Adult;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") bool bAlive = true;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") FLLCorePersonalitySnapshot Personality;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") FLLCoreNeedSnapshot Needs;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") FLLCoreEmotionSnapshot Emotion;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") ELLCoreObservedActivityKind ActivityKind = ELLCoreObservedActivityKind::Idle;

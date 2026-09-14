@@ -34,27 +34,38 @@ assert project['Modules'][0]['Name'] == 'LifeLens'
 build_rules = (root / 'Source/LifeLens/LifeLens.Build.cs').read_text(encoding='utf-8')
 assert 'PublicIncludePaths.Add(ModuleDirectory);' in build_rules
 assert 'PrivateIncludePaths.Add(ModuleDirectory);' in build_rules
-# UE 5.6 module headers require C++20. LifeLensCore remains pure/portable and
-# is validated separately below to ensure no Unreal dependency leaks into it.
 assert 'CppStandardVersion.Cpp20' in build_rules
 assert 'LifeLensCore' in build_rules and 'include' in build_rules
 
 sim_h = (root / 'Source/LifeLens/Simulation/LLSimulationSubsystem.h').read_text(encoding='utf-8')
 assert 'TArray<FLLResidentData> GetResidents() const' in sim_h
-assert 'const TArray<FLLResidentData>& GetResidents() const' not in sim_h
 assert 'TArray<FLLRelationshipData> GetRelationships() const' in sim_h
+assert 'IsCoreAuthoritativeRuntime' in sim_h
+assert 'RefreshProjectionFromCore' in sim_h
+assert 'GenerateInitialPopulation' not in sim_h
+assert 'GenerateAdult' not in sim_h
 
 sim = (root / 'Source/LifeLens/Simulation/LLSimulationSubsystem.cpp').read_text(encoding='utf-8')
-assert sim.count('Residents.Add(GenerateAdult(Random, ELLSex::Male') == 2
-assert sim.count('Residents.Add(GenerateAdult(Random, ELLSex::Female') == 2
-assert 'SaveObject->Residents = Residents;' in sim
-assert 'Residents = SaveObject->Residents;' in sim
-assert 'MakeDeterministicGuid(Random)' in sim
-assert 'ApplyActionOutcome' in sim
-assert 'ApplySocialInteraction' in sim
+for token in (
+    'StartCoreNewGame(WorldSeed)',
+    'GetResidentObservations()',
+    'GetFamilyObservation',
+    'AdvanceCoreMinutes',
+    'RefreshProjectionFromCore',
+    'SaveObject->WorldSeed = WorldSeed;',
+    'SaveObject->SimulationMinute = SimulationMinute;',
+    'TargetMinute - StartMinute',
+    'ApplyActionOutcome',
+    'ApplySocialInteraction',
+):
+    assert token in sim, f'Missing Core-authoritative runtime contract: {token}'
+assert 'Residents.Add(GenerateAdult' not in sim
+assert 'Residents = SaveObject->Residents' not in sim
+assert 'MakeDeterministicGuid(Random)' not in sim
 
 bridge_h = (root / 'Source/LifeLens/Simulation/LLCoreBridgeSubsystem.h').read_text(encoding='utf-8')
 for token in (
+    'StartCoreNewGame',
     'StartCoreObserverDemo',
     'AdvanceCoreMinutes',
     'GetWorldObservation',
@@ -68,10 +79,15 @@ for token in (
 
 bridge_cpp = (root / 'Source/LifeLens/Simulation/LLCoreBridgeSubsystem.cpp').read_text(encoding='utf-8')
 for token in (
+    'CoreSimulation->setupNewGame()',
     'observeResident',
     'makeEmotionObservation',
     'observeFamily',
     'observeWorldOverview',
+    'OutObservation.Sex',
+    'OutObservation.AgeYears',
+    'OutObservation.LifeStage',
+    'OutObservation.Personality',
     'RomanticInterest',
     'SexualAttraction',
     'Commitment',
@@ -85,11 +101,13 @@ for token in (
     'MajorLifeEventRecords',
 ):
     assert token in bridge_cpp, f'Missing Core observer projection: {token}'
-assert 'DisplayName' in bridge_cpp
 assert 'MakeStableResidentGuid(CoreCharacterId)' in bridge_cpp
 
 read_types = (root / 'Source/LifeLens/Simulation/LLCoreReadTypes.h').read_text(encoding='utf-8')
 for token in (
+    'ELLCoreSex',
+    'ELLCoreLifeStage',
+    'FLLCorePersonalitySnapshot',
     'FLLCoreEmotionSnapshot',
     'FLLCoreRelationshipSnapshot',
     'FLLCoreFamilyMemberSnapshot',
@@ -97,6 +115,9 @@ for token in (
     'ELLCoreRomanceStage',
     'FLLCoreResidentObservation',
     'FLLCoreWorldObservation',
+    'AgeYears',
+    'LifeStage',
+    'Personality',
     'ActivityTargetResidentId',
     'PartnerResidentId',
     'PregnancyPartnerResidentId',
@@ -111,9 +132,7 @@ for token in (
 compile_unit = (root / 'Source/LifeLens/Simulation/LLCoreCompileUnit.cpp').read_text(encoding='utf-8')
 assert '#include "../../LifeLensCore/src/Simulation.cpp"' in compile_unit
 
-# The simulation core remains standard-library C++ with a C++17 baseline. The
-# bridge is one-way: Unreal may include Core, but Core must never include Unreal
-# reflection/types. The UE module itself compiles as C++20 for UE 5.6 headers.
+# The simulation core remains standard-library C++ with a C++17 baseline.
 forbidden_core_tokens = (
     '#include "CoreMinimal.h"',
     'UCLASS(',

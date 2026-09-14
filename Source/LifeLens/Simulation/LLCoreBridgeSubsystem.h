@@ -12,15 +12,9 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FLLCoreRuntimeStateChanged);
 /**
  * Read-only Unreal adapter for the pure C++ LifeLensCore simulation.
  *
- * The bridge intentionally does not expose Core implementation types to UHT or
- * Blueprint. Character names are display data only; a deterministic Unreal
- * FGuid is derived from (world seed, Core CharacterId) and remains stable for
- * that simulated world.
- *
- * The Core simulation owns its relationship and family-state books. This
- * adapter only projects those authoritative states into read-only Unreal DTOs;
- * UI code never mutates Core state through the observer API.
- * Family/world reads remain observer-only so UI consumers cannot become state owners.
+ * Character names are display data only. Stable Unreal identity is derived
+ * from (WorldSeed, Core CharacterId). The production NEW GAME entry point is
+ * StartCoreNewGame(); demo entry points remain available only for development.
  */
 UCLASS()
 class LIFELENS_API ULLCoreBridgeSubsystem : public UGameInstanceSubsystem
@@ -29,6 +23,9 @@ class LIFELENS_API ULLCoreBridgeSubsystem : public UGameInstanceSubsystem
 
 public:
     virtual void Deinitialize() override;
+
+    UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Runtime")
+    void StartCoreNewGame(int32 Seed);
 
     UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Observer")
     void StartCoreObserverDemo(int32 Seed = 42, bool bSocialDemo = true);
@@ -74,7 +71,6 @@ private:
     lifelens::Simulation* CoreSimulation = nullptr;
     int32 ActiveSeed = 0;
 
-    // Adapter-only identity index. Core remains independent from Unreal types.
     TMap<uint64, FGuid> CoreToGuid;
     TMap<FGuid, uint64> GuidToCore;
 

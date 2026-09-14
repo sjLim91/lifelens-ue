@@ -1,5 +1,6 @@
 #include "Simulation/LLCoreBridgeSubsystem.h"
 
+#include "lifelens/Aging.h"
 #include "lifelens/ObserverReadModelV2.h"
 #include "lifelens/Simulation.h"
 
@@ -23,6 +24,27 @@ int32 SafeCount(std::size_t Count)
     return Count > static_cast<std::size_t>(MAX_int32)
         ? MAX_int32
         : static_cast<int32>(Count);
+}
+
+ELLCoreSex ToUnrealSex(lifelens::Sex Sex)
+{
+    return Sex == lifelens::Sex::Female ? ELLCoreSex::Female : ELLCoreSex::Male;
+}
+
+ELLCoreLifeStage ToUnrealLifeStage(lifelens::LifeStage Stage)
+{
+    switch (Stage)
+    {
+        case lifelens::LifeStage::Baby: return ELLCoreLifeStage::Baby;
+        case lifelens::LifeStage::Toddler: return ELLCoreLifeStage::Toddler;
+        case lifelens::LifeStage::Child: return ELLCoreLifeStage::Child;
+        case lifelens::LifeStage::Teen: return ELLCoreLifeStage::Teen;
+        case lifelens::LifeStage::YoungAdult: return ELLCoreLifeStage::YoungAdult;
+        case lifelens::LifeStage::Adult: return ELLCoreLifeStage::Adult;
+        case lifelens::LifeStage::MiddleAge: return ELLCoreLifeStage::MiddleAge;
+        case lifelens::LifeStage::Elderly: return ELLCoreLifeStage::Elderly;
+    }
+    return ELLCoreLifeStage::Adult;
 }
 
 ELLCoreRomanceStage ToUnrealRomanceStage(lifelens::RomanceStage Stage)
@@ -64,6 +86,24 @@ void ULLCoreBridgeSubsystem::Deinitialize()
 {
     ResetRuntime();
     Super::Deinitialize();
+}
+
+void ULLCoreBridgeSubsystem::StartCoreNewGame(int32 Seed)
+{
+    ResetRuntime();
+
+    ActiveSeed = Seed == 0 ? 1 : Seed;
+    const uint64 CoreSeed = static_cast<uint64>(static_cast<uint32>(ActiveSeed));
+
+    CoreSimulation = new lifelens::Simulation(CoreSeed);
+    CoreSimulation->onEvent([this](const std::string& Line)
+    {
+        PushCoreEvent(UTF8_TO_TCHAR(Line.c_str()));
+    });
+    CoreSimulation->setupNewGame();
+
+    RebuildGuidIndex();
+    OnCoreRuntimeStateChanged.Broadcast();
 }
 
 void ULLCoreBridgeSubsystem::StartCoreObserverDemo(int32 Seed, bool bSocialDemo)
@@ -293,7 +333,27 @@ bool ULLCoreBridgeSubsystem::BuildResidentObservation(
     OutObservation = FLLCoreResidentObservation{};
     OutObservation.ResidentId = MakeStableResidentGuid(CoreCharacterId);
     OutObservation.DisplayName = UTF8_TO_TCHAR(CoreObservation.name.c_str());
+    OutObservation.Sex = ToUnrealSex(CoreCharacter->sex);
+    OutObservation.AgeYears = CoreCharacter->hasBirthMinute
+        ? lifelens::ageYearsFromMinutes(CoreCharacter->birthMinute, CoreSimulation->world().minute)
+        : 0;
+    OutObservation.LifeStage = ToUnrealLifeStage(CoreCharacter->lifeStage);
     OutObservation.bAlive = CoreCharacter->alive;
+
+    OutObservation.Personality.Introversion = CoreScalar(CoreCharacter->personality.introversion);
+    OutObservation.Personality.Conscientiousness = CoreScalar(CoreCharacter->personality.conscientiousness);
+    OutObservation.Personality.Openness = CoreScalar(CoreCharacter->personality.openness);
+    OutObservation.Personality.Agreeableness = CoreScalar(CoreCharacter->personality.agreeableness);
+    OutObservation.Personality.EmotionalStability = CoreScalar(CoreCharacter->personality.emotionalStability);
+    OutObservation.Personality.Empathy = CoreScalar(CoreCharacter->personality.empathy);
+    OutObservation.Personality.Impulsiveness = CoreScalar(CoreCharacter->personality.impulsiveness);
+    OutObservation.Personality.RiskTolerance = CoreScalar(CoreCharacter->personality.riskTolerance);
+    OutObservation.Personality.Ambition = CoreScalar(CoreCharacter->personality.ambition);
+    OutObservation.Personality.Patience = CoreScalar(CoreCharacter->personality.patience);
+    OutObservation.Personality.Sociability = CoreScalar(CoreCharacter->personality.sociability);
+    OutObservation.Personality.Curiosity = CoreScalar(CoreCharacter->personality.curiosity);
+    OutObservation.Personality.Orderliness = CoreScalar(CoreCharacter->personality.orderliness);
+    OutObservation.Personality.Adaptability = CoreScalar(CoreCharacter->personality.adaptability);
 
     OutObservation.Needs.Hunger = CoreScalar(CoreObservation.needs.hunger);
     OutObservation.Needs.Thirst = CoreScalar(CoreObservation.needs.thirst);
