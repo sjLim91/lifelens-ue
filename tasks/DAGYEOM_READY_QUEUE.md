@@ -19,72 +19,54 @@
 
 ## Current product checkpoints
 
-- #53 Civilization Observer Read DTOs — merged `ec30d80b2986247f0f16572efb2c082a933d796d`, Unreal Run #16 PASS
-- #54 macOS clang shadow hotfix — merged `3b649b900c44a4e48bb89171b38f5e685e757b14`
-- #17 Observer HUD v2 — **DONE / MERGED `aa194db7c5b500cdf5041fd6d43b25f97b9dd0b6`**
-  - corrected R2 Unreal Run #20 `34833994155` PASS including UHT/UBT/link
-  - unresolved review threads: 0
-  - Observer assist locks released
+- #17 Observer HUD v2 — DONE / MERGED `aa194db7c5b500cdf5041fd6d43b25f97b9dd0b6`
+- #26 UI Foundation — DONE via Integration PR #61
+  - merge `7826aaa917b4877bdd3b5ebbd6d5bfd139309b9b`
+  - Preflight `34840301429` PASS
+  - verify-only #62 CLOSED / NOT MERGED
+  - Unreal Run #21 `34840467864` PASS including UHT/UBT/link
+  - `ASSIST_LOCK-26-R1` released
 
 ## HIGHEST PRIORITY
 
-### DQ-01 — PR #26 UI Foundation — DOING
+### DQ-02 — PR #29 Character Presentation Foundation — NEXT
 
-- Original branch/head: `dagyeom/ui-foundation-v1` / `70dfa5ebeabf24b661c9f9fd0bc63e3ad01ac180`
-- Active lock: `ASSIST_LOCK-26-R1`
-- Helper: `integration/dagyeom-ui-foundation-r1-assist`
-- Locked files:
-  - `Source/LifeLens/UI/LLObserverUIFoundation.cpp`
-  - `Source/LifeLens/UI/LLObserverUIFoundation.h`
-- Reconcile strategy: latest main + the two Foundation files only; stale old shared-state docs are not replayed.
-- Helper PR #61 Preflight `34840301429` PASS.
-- Verify-only PR #62 Preflight `34840467738` PASS.
-- Unreal Run #21 `34840467864` 진행 중. 마지막 확인은 UE 5.6 image pull 단계.
-- While lock is active, Dagyeom side should not edit the two Foundation files.
+- Re-fetch exact PR #29 / branch HEAD before work.
+- Reconcile onto actual latest main, which now includes #17 + UI Foundation #61.
+- Current Cylinder body + Sphere head + flat material are **development placeholders**, not final graphics.
+- Preserve PresentationComponent / selection ring / label LOD / life-stage hooks.
+- Keep presentation read-only with respect to Core action/identity.
+- Goal is a clean foundation that can immediately receive actual human character assets.
 
-### DQ-02 — PR #29 Character Presentation Foundation — NEXT AFTER #26
+### DQ-03 — Character Appearance v1 — HIGH PRIORITY AFTER #29
 
-현재 PR #29의 Cylinder 몸통 + Sphere 머리 + 단색 material은 **개발용 placeholder**다. 최종 사람 스킨이 아니다.
+Detailed acceptance criteria: `docs/CHARACTER_APPEARANCE_ROADMAP.md`
 
-#29에서는 먼저 다음 기반만 current main에 안정화한다:
-- PresentationComponent
-- selection ring
-- label LOD
-- life-stage scale hook
-- real human mesh로 교체 가능한 구조
-- Core action/identity를 표현만 하는 presentation contract
-
-### DQ-03 — Character Appearance v1 — NEW HIGH PRIORITY
-
-**#29 직후 시작하며 #30/#36/#38 UI polish보다 우선한다.**
-
-상세 기준: `docs/CHARACTER_APPEARANCE_ROADMAP.md`
-
-최소 목표:
+Minimum:
 - real humanoid skeletal mesh
 - skin / face / eyes / hair / default clothing
 - shared skeleton + modular appearance
-- deterministic `AppearanceProfile` from WorldSeed + CharacterId
-- NEW GAME마다 서로 다른 초기 4명 외형
-- Save/Load 후 동일 외형 유지
+- deterministic AppearanceProfile from WorldSeed + CharacterId
+- NEW GAME residents visually distinct
+- Save/Load appearance continuity
 - Android LOD/mobile fallback
-- asset license/provenance 기록
+- asset license/provenance documented
 
 ### DQ-04 — Character Motion & Context v1 — AFTER APPEARANCE
 
-최소 세트:
+Minimum:
 - idle / walk / run
 - turn-in-place
 - sit / stand / lie / wake
 - gaze/head tracking
 - context interaction hook
 - basic IK / transition smoothing
-- Core action과 화면 행동이 모순되지 않게 유지
+- Core action and visual action remain consistent
 
 ### DQ-05 — PR #30 Observer UX Polish
 
-- Human Character Appearance/Motion 최소 checkpoint 이후 진행.
-- merged #17의 Level 0 cleanliness와 Core-backed detail tabs 유지.
+- After Human Character Appearance/Motion minimum checkpoint.
+- Preserve Level 0 cleanliness and current Core-backed detail tabs.
 
 ### DQ-06 — PR #36 Mobile Touch
 - after #30
@@ -95,12 +77,7 @@
 ## LATER CHARACTER MILESTONES
 
 - Appearance Genetics & Lifecycle v1
-  - 부모 외형 parameter 조합
-  - child → teen → adult → elder 성장 표현
-  - family resemblance / aging
 - Clothing/Equipment civilization linkage
-  - 개인 소유/제작/지식 상태를 기반으로 의상/도구 표현
-  - 전역 시대 unlock 금지
 
 ## BLOCKED-BY-JJUN
 
@@ -116,18 +93,17 @@ Jjun default support = `REVIEW_ONLY`.
 
 ## Canonical order
 
-1. #26 UI Foundation
-2. #29 Character Presentation Foundation
-3. **Character Appearance v1**
-4. **Character Motion & Context v1 minimum**
-5. #30 Observer UX Polish
-6. #36 Mobile Touch
-7. #38 Visual Feedback
-8. Core + Observer + Human Character integrated runtime verification
-9. Android smoke APK
-10. Appearance Genetics & Lifecycle
-11. Clothing/Equipment civilization linkage
-12. deeper civilization production chains
+1. #29 Character Presentation Foundation
+2. **Character Appearance v1**
+3. **Character Motion & Context v1 minimum**
+4. #30 Observer UX Polish
+5. #36 Mobile Touch
+6. #38 Visual Feedback
+7. Core + Observer + Human Character integrated runtime verification
+8. Android smoke APK
+9. Appearance Genetics & Lifecycle
+10. Clothing/Equipment civilization linkage
+11. deeper civilization production chains
 
 ## Canonical product direction
 
