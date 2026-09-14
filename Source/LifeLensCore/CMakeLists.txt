@@ -9,6 +9,7 @@ enable_testing()
 
 add_library(lifelens_core STATIC
     src/Simulation.cpp
+    src/CivilizationKnowledgeTransmission.cpp
     src/SimulationSnapshot.cpp
     src/SimulationSnapshotCodec.cpp
 )
@@ -102,3 +103,5 @@ lifelens_add_test(test_civilization_foundation)
 lifelens_add_test(test_civilization_persistence)
 
 lifelens_add_test(test_autonomous_civilization_loop)
+
+lifelens_add_test(test_civilization_knowledge_transmission)

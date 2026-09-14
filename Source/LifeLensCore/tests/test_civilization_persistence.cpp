@@ -17,12 +17,6 @@ using namespace lifelens;
     } \
 } while(false)
 
-static const ResourceNode* findResource(const World& world,ResourceNodeId id)
-{
-    for(const auto& node:world.resourceNodes) if(node.id==id) return &node;
-    return nullptr;
-}
-
 static ResourceNode* findResource(World& world,ResourceNodeId id)
 {
     for(auto& node:world.resourceNodes) if(node.id==id) return &node;
@@ -132,7 +126,7 @@ int main()
     CHECK(encodeSimulationSnapshot(snapshot,bytes,&error));
     CHECK(error.empty());
     CHECK(bytes.size()>32);
-    CHECK(bytes[8]==2 && bytes[9]==0 && bytes[10]==0 && bytes[11]==0);
+    CHECK(bytes[8]==3 && bytes[9]==0 && bytes[10]==0 && bytes[11]==0);
 
     SimulationStateSnapshot decoded;
     CHECK(decodeSimulationSnapshot(bytes,decoded,&error));
@@ -143,9 +137,8 @@ int main()
     CHECK(encodeSimulationSnapshot(decoded,reencoded,&error));
     CHECK(bytes==reencoded);
 
-    // Reconstruct an authentic legacy-v1-shaped payload by removing the v2
-    // extension and changing only the 4-byte format header. The preserved body
-    // is byte-for-byte the legacy codec layout.
+    // Reconstruct an authentic legacy-v1-shaped payload by removing all modern
+    // extensions at the civilization marker and changing only the format header.
     const auto marker=std::find_end(
         bytes.begin()+12,bytes.end(),
         CivilizationSnapshotExtensionMagic,
@@ -160,17 +153,18 @@ int main()
     CHECK(migrated.world.characters.size()==snapshot.world.characters.size());
     CHECK(migrated.world.resourceNodes.size()==7);
     CHECK(migrated.world.storageSites.size()==1);
+    CHECK(migrated.socialKnowledge.facts().empty());
+    CHECK(migrated.socialKnowledge.receipts().empty());
     for(const Character& character:migrated.world.characters){
         CHECK(character.civilization.character==character.id);
         CHECK(character.civilization.inventory.stacks().empty());
         CHECK(character.civilization.knowledge.all().empty());
     }
 
-    std::vector<std::uint8_t> migratedV2;
-    CHECK(encodeSimulationSnapshot(migrated,migratedV2,&error));
-    CHECK(!migratedV2.empty() && migratedV2[8]==2);
+    std::vector<std::uint8_t> migratedV3;
+    CHECK(encodeSimulationSnapshot(migrated,migratedV3,&error));
+    CHECK(!migratedV3.empty() && migratedV3[8]==3);
 
-    // Validation rejects corrupt authoritative civilization identity/state.
     SimulationStateSnapshot bad=snapshot;
     bad.world.characters[0].civilization.character=999999;
     Simulation untouched(123);
@@ -184,7 +178,7 @@ int main()
     bad.world.resourceNodes.push_back(bad.world.resourceNodes[0]);
     CHECK(!untouched.restoreSnapshot(bad,&error));
 
-    // Future continuation stays byte-identical after a full v2 restore.
+    // Future continuation stays byte-identical after a full current-format restore.
     Simulation continuation(1);
     CHECK(continuation.restoreSnapshot(decoded,&error));
     source.runMinutes(2500);

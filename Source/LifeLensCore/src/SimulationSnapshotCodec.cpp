@@ -1,5 +1,6 @@
 #include "lifelens/SimulationSnapshotCodec.h"
 #include "lifelens/CivilizationSnapshotCodec.h"
+#include "lifelens/SocialKnowledgeSnapshotCodec.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -7,9 +8,6 @@
 #include <utility>
 #include <vector>
 
-// Preserve the battle-tested v1 body codec verbatim, but rename its public
-// entrypoints inside this translation unit. The v2 wrapper below appends a
-// versioned civilization extension while continuing to decode legacy v1 bytes.
 #define encodeSimulationSnapshot encodeSimulationSnapshotLegacyBody
 #define decodeSimulationSnapshot decodeSimulationSnapshotLegacyBody
 #include "SimulationSnapshotCodecLegacy.cpp"
@@ -75,6 +73,54 @@ bool validateCivilizationWorldForCodec(const World& world,std::string* error)
     return true;
 }
 
+bool validateSocialKnowledgeForCodec(
+    const SocialKnowledgeBook& book,
+    const World& world,
+    std::string* error)
+{
+    SocialKnowledgeBook rebuilt;
+    if(!rebuilt.restoreState(book.facts(),book.receipts())){
+        setError(error,"invalid social knowledge state");
+        return false;
+    }
+
+    std::unordered_set<CharacterId> characterIds;
+    for(const Character& character:world.characters) characterIds.insert(character.id);
+
+    for(const SocialFact& fact:book.facts()){
+        if(characterIds.count(fact.subject)==0 || fact.eventMinute<0 || fact.eventMinute>world.minute){
+            setError(error,"social knowledge fact references invalid character or minute");
+            return false;
+        }
+    }
+    for(const KnowledgeReceipt& receipt:book.receipts()){
+        if(characterIds.count(receipt.holder)==0 ||
+           characterIds.count(receipt.originWitness)==0 ||
+           characterIds.count(receipt.immediateSource)==0 ||
+           characterIds.count(receipt.subject)==0 ||
+           receipt.learnedMinute<0 || receipt.learnedMinute>world.minute){
+            setError(error,"social knowledge receipt references invalid character or minute");
+            return false;
+        }
+        for(CharacterId id:receipt.transmissionPath){
+            if(characterIds.count(id)==0){
+                setError(error,"social knowledge path references invalid character");
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool decodeLegacyBodyForVersion(
+    std::vector<std::uint8_t> legacyBody,
+    SimulationStateSnapshot& decoded,
+    std::string* error)
+{
+    patchBinaryFormatVersion(legacyBody,SimulationSnapshotBinaryFormatVersion);
+    return decodeSimulationSnapshotLegacyBody(legacyBody,decoded,error);
+}
+
 } // namespace
 
 bool encodeSimulationSnapshot(
@@ -83,15 +129,19 @@ bool encodeSimulationSnapshot(
     std::string* error)
 {
     if(!validateCivilizationWorldForCodec(snapshot.world,error)) return false;
+    if(!validateSocialKnowledgeForCodec(snapshot.socialKnowledge,snapshot.world,error)) return false;
 
     std::vector<std::uint8_t> body;
     if(!encodeSimulationSnapshotLegacyBody(snapshot,body,error)) return false;
 
-    // The preserved body uses the current header constant, so it already emits
-    // binary format v2. Civilization data is appended after the exact v1 body.
-    Writer extension;
-    writeCivilizationSnapshotExtension(extension,snapshot.world);
-    body.insert(body.end(),extension.bytes.begin(),extension.bytes.end());
+    Writer civilizationExtension;
+    writeCivilizationSnapshotExtension(civilizationExtension,snapshot.world);
+    body.insert(body.end(),civilizationExtension.bytes.begin(),civilizationExtension.bytes.end());
+
+    Writer knowledgeExtension;
+    writeSocialKnowledgeSnapshotExtension(knowledgeExtension,snapshot.socialKnowledge);
+    body.insert(body.end(),knowledgeExtension.bytes.begin(),knowledgeExtension.bytes.end());
+
     outBytes=std::move(body);
     if(error) error->clear();
     return true;
@@ -110,41 +160,62 @@ bool decodeSimulationSnapshot(
     }
 
     if(binaryVersion==1){
-        // v1 and v2 share the exact legacy body. The preserved legacy decoder
-        // now expects the current header version, so patch only the temporary
-        // header before decoding; authoritative payload bytes remain untouched.
-        std::vector<std::uint8_t> migratedBytes=bytes;
-        patchBinaryFormatVersion(migratedBytes,SimulationSnapshotBinaryFormatVersion);
         SimulationStateSnapshot decoded;
-        if(!decodeSimulationSnapshotLegacyBody(migratedBytes,decoded,error)) return false;
+        if(!decodeLegacyBodyForVersion(bytes,decoded,error)) return false;
         initializeLegacyCivilizationState(decoded.world);
+        decoded.socialKnowledge.clear();
         if(!validateCivilizationWorldForCodec(decoded.world,error)) return false;
         outSnapshot=std::move(decoded);
         if(error) error->clear();
         return true;
     }
 
-    const auto marker=std::find_end(
+    const auto civilizationMarker=std::find_end(
         bytes.begin()+12,bytes.end(),
         CivilizationSnapshotExtensionMagic,
         CivilizationSnapshotExtensionMagic+sizeof(CivilizationSnapshotExtensionMagic));
-    if(marker==bytes.end()){
+    if(civilizationMarker==bytes.end()){
         setError(error,"missing civilization snapshot extension");
         return false;
     }
 
-    std::vector<std::uint8_t> legacyBody(bytes.begin(),marker);
-    std::vector<std::uint8_t> extensionBytes(marker,bytes.end());
+    auto socialMarker=bytes.end();
+    if(binaryVersion>=3){
+        socialMarker=std::find_end(
+            civilizationMarker,bytes.end(),
+            SocialKnowledgeSnapshotExtensionMagic,
+            SocialKnowledgeSnapshotExtensionMagic+sizeof(SocialKnowledgeSnapshotExtensionMagic));
+        if(socialMarker==bytes.end() || socialMarker<=civilizationMarker){
+            setError(error,"missing social knowledge snapshot extension");
+            return false;
+        }
+    }
+
+    const auto civilizationEnd=binaryVersion>=3 ? socialMarker : bytes.end();
+    std::vector<std::uint8_t> legacyBody(bytes.begin(),civilizationMarker);
+    std::vector<std::uint8_t> civilizationBytes(civilizationMarker,civilizationEnd);
 
     SimulationStateSnapshot decoded;
-    if(!decodeSimulationSnapshotLegacyBody(legacyBody,decoded,error)) return false;
+    if(!decodeLegacyBodyForVersion(std::move(legacyBody),decoded,error)) return false;
 
-    Reader extensionReader(extensionBytes);
-    if(!readCivilizationSnapshotExtension(extensionReader,decoded.world) || !extensionReader.done()){
+    Reader civilizationReader(civilizationBytes);
+    if(!readCivilizationSnapshotExtension(civilizationReader,decoded.world) || !civilizationReader.done()){
         setError(error,"invalid civilization snapshot extension");
         return false;
     }
     if(!validateCivilizationWorldForCodec(decoded.world,error)) return false;
+
+    if(binaryVersion>=3){
+        std::vector<std::uint8_t> knowledgeBytes(socialMarker,bytes.end());
+        Reader knowledgeReader(knowledgeBytes);
+        if(!readSocialKnowledgeSnapshotExtension(knowledgeReader,decoded.socialKnowledge) || !knowledgeReader.done()){
+            setError(error,"invalid social knowledge snapshot extension");
+            return false;
+        }
+        if(!validateSocialKnowledgeForCodec(decoded.socialKnowledge,decoded.world,error)) return false;
+    }else{
+        decoded.socialKnowledge.clear();
+    }
 
     outSnapshot=std::move(decoded);
     if(error) error->clear();

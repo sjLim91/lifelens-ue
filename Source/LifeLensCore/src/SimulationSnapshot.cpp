@@ -96,6 +96,29 @@ bool validateSnapshot(const SimulationStateSnapshot& snapshot,std::string* error
             return fail("birth record references missing character");
     }
 
+    SocialKnowledgeBook validatedKnowledge;
+    if(!validatedKnowledge.restoreState(
+        snapshot.socialKnowledge.facts(),snapshot.socialKnowledge.receipts()))
+        return fail("snapshot contains invalid social knowledge state");
+
+    for(const SocialFact& fact:snapshot.socialKnowledge.facts()){
+        if(characterIds.count(fact.subject)==0) return fail("social fact subject is missing");
+        if(fact.eventMinute<0 || fact.eventMinute>snapshot.world.minute)
+            return fail("social fact minute is invalid");
+    }
+    for(const KnowledgeReceipt& receipt:snapshot.socialKnowledge.receipts()){
+        if(characterIds.count(receipt.holder)==0 ||
+           characterIds.count(receipt.originWitness)==0 ||
+           characterIds.count(receipt.immediateSource)==0 ||
+           characterIds.count(receipt.subject)==0)
+            return fail("knowledge receipt references missing character");
+        if(receipt.learnedMinute<0 || receipt.learnedMinute>snapshot.world.minute)
+            return fail("knowledge receipt minute is invalid");
+        for(CharacterId id:receipt.transmissionPath){
+            if(characterIds.count(id)==0) return fail("knowledge path references missing character");
+        }
+    }
+
     return true;
 }
 
@@ -106,9 +129,6 @@ SimulationStateSnapshot Simulation::captureSnapshot() const
     SimulationStateSnapshot snapshot;
     snapshot.version=SimulationSnapshotVersion;
     snapshot.world=world_;
-    // Older demo/test setup paths predate civilization ownership. Canonicalize
-    // only an unset identity on the value snapshot; a nonzero mismatch remains
-    // visible to validation rather than silently hiding corruption.
     for(auto& character:snapshot.world.characters){
         if(character.civilization.character==0) character.civilization.character=character.id;
     }
@@ -118,6 +138,7 @@ SimulationStateSnapshot Simulation::captureSnapshot() const
     snapshot.households=households_;
     snapshot.pregnancies=pregnancies_;
     snapshot.births=births_;
+    snapshot.socialKnowledge=socialKnowledge_;
     snapshot.logs=logs_;
 
     snapshot.runtime.reserve(runtime_.size());
@@ -167,8 +188,6 @@ bool Simulation::restoreSnapshot(const SimulationStateSnapshot& snapshot,std::st
         restoredRuntime.emplace(item.first,std::move(target));
     }
 
-    // Commit only after validation/conversion succeeds. Event callbacks are an
-    // external runtime attachment and intentionally survive a state restore.
     world_=snapshot.world;
     relationships_=snapshot.relationships;
     genealogy_=snapshot.genealogy;
@@ -176,6 +195,7 @@ bool Simulation::restoreSnapshot(const SimulationStateSnapshot& snapshot,std::st
     households_=snapshot.households;
     pregnancies_=snapshot.pregnancies;
     births_=snapshot.births;
+    socialKnowledge_=snapshot.socialKnowledge;
     runtime_=std::move(restoredRuntime);
     logs_=snapshot.logs;
     if(error) error->clear();
