@@ -4,7 +4,7 @@
 >
 > 제품 요구사항은 `docs/LIFELENS_SPEC_v1.1.md`, 상태관리 규칙은 `docs/STATE_MANAGEMENT.md`, 역할/잠금은 `tasks/TEAM_BOARD.md`, 변경 이력은 `tasks/HANDOFF_LOG.md`를 따른다.
 
-Last reconciled: 2026-09-13 KST
+Last reconciled: 2026-09-14 KST
 
 ## Status legend
 
@@ -14,18 +14,18 @@ Last reconciled: 2026-09-13 KST
 
 ## Active / unresolved work
 
-### 1. P22 LifeHistory Wiring v1
+### 1. P23 Generation Continuity Core v1
 
 - Owner: 쭌 + 쭌 AI
-- Branch: `jjun/life-history-wiring-v1`
-- Work item: 기존 Romance / Marriage / Pregnancy / Birth / Death 흐름을 LifeHistory 자동 기록에 연결
-- Last known HEAD: `b46869acc62830c432bb5b3693f98535c37f2e0a` (branch creation checkpoint)
+- Branch: `jjun/generation-continuity-v1`
+- Work item: 세대교체 / Population Continuity — 사망·출생·성장·가계도 기반으로 사회가 다음 세대로 이어질 수 있는지 평가하는 Core 모델
+- Last known HEAD: `8454c0c91e1770e2e503d52d5489446beafe6535` (branch creation checkpoint)
 - PR: 없음 — 구현 전
 - Status: `IN_PROGRESS`
 - CI: 미실행
-- Last verified fact: P21 LifeHistory Core PR #27은 Core Tests + deterministic harness + Preflight PASS 후 `main`에 squash-merge 완료. `jjun/life-history-wiring-v1`는 그 merge SHA에서 생성됨.
+- Last verified fact: P22 LifeHistory Wiring PR #32는 Core Tests + deterministic harness + Preflight PASS 후 `main`에 squash-merge 완료. `jjun/generation-continuity-v1`은 그 merge SHA에서 생성됐고 `generation` / `continuity` / `population` 이름의 선행 브랜치는 없음.
 - Blocker / interruption: 없음.
-- Exact next action: DatingStarted / Engaged / Married / PregnancyStarted / ChildBorn / PartnerWidowed / Bereavement 자동 기록 연결 → 회귀 테스트 → PR → Core CI + Preflight.
+- Exact next action: 현재 생존 인구/성인/미성년/세대 깊이/임신·출산 가능성으로 continuity state 평가 → extinction-risk/stable/transition 상태 및 결정 근거 추가 → C++17 테스트 → PR → Core CI + Preflight.
 - Handoff safety: `SAFE`
 - Shared-file impact: `Source/LifeLensCore/**` + Core tests only. TASK_03 / 다겸 UI 파일 건드리지 않음.
 
@@ -65,7 +65,7 @@ Last reconciled: 2026-09-13 KST
   - Cook/Package never started
   - APK artifact 없음
 - Last verified root cause: 오래된 TASK_03 branch의 `LLCoreBridgeSubsystem`에서 Core `lifelens` namespace와 Unreal `LifeLens` symbol 경계 관련 실제 UBT compile conflict가 발생.
-- Blocker / interruption: 사용자가 TASK_03 실패 상태를 그대로 두고 다음 기능으로 진행하라고 명시함.
+- Blocker / interruption: 사용자 지시에 따라 실패 상태 그대로 보존.
 - Exact next action: **없음. 자동 재실행/수정 금지.** 사용자가 TASK_03 재개를 명시하거나 최신 main 기반 새 integration task를 시작할 때만 별도 복구 계획 작성.
 - Handoff safety: `SAFE`
 - Shared-file impact: branch가 오래되었고 Build/Simulation/shared files를 포함하므로 main에 그대로 병합 금지.
@@ -103,6 +103,7 @@ READY NOW가 0개가 되면 다겸 측은 `할 일 없음`으로 종료하지 �
 - P19 Aging Core — `DONE`, Core CI + Preflight PASS; PR #23 squash-merged as `82b4001058332656b08f13a47728079172b10962`.
 - P20 Death Core — `DONE`, Core CI + deterministic harness + Preflight PASS; PR #25 squash-merged as `07509a73f235928c16bf9b26f8b13c689b6a030b`.
 - P21 LifeHistory Core — `DONE`, Core CI + deterministic harness + Preflight PASS; PR #27 squash-merged as `b46869acc62830c432bb5b3693f98535c37f2e0a`.
+- P22 LifeHistory Wiring — `DONE`, Core CI + deterministic harness + Preflight PASS; PR #32 squash-merged as `8454c0c91e1770e2e503d52d5489446beafe6535`.
 
 ---
 
