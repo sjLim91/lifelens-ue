@@ -1,4 +1,5 @@
 #include "lifelens/Simulation.h"
+#include "lifelens/CivilizationSnapshotCodec.h"
 
 #include <unordered_set>
 
@@ -29,6 +30,25 @@ bool validateSnapshot(const SimulationStateSnapshot& snapshot,std::string* error
     for(const auto& character:snapshot.world.characters){
         if(character.id==0) return fail("snapshot contains zero character id");
         if(!characterIds.insert(character.id).second) return fail("snapshot contains duplicate character id");
+        if(!validateIndividualCivilizationState(character.civilization,character.id))
+            return fail("snapshot contains invalid character civilization state");
+    }
+
+    std::unordered_set<ResourceNodeId> resourceIds;
+    for(const auto& node:snapshot.world.resourceNodes){
+        if(node.id==0) return fail("snapshot contains zero resource node id");
+        if(!resourceIds.insert(node.id).second) return fail("snapshot contains duplicate resource node id");
+        if(!validMaterialKind(node.material) || node.material==MaterialKind::Unknown)
+            return fail("snapshot contains invalid resource material");
+        if(node.quantity<0 || node.maxQuantity<node.quantity || node.regenerationPerDay<0)
+            return fail("snapshot contains invalid resource quantity");
+    }
+
+    std::unordered_set<StorageId> storageIds;
+    for(const auto& storage:snapshot.world.storageSites){
+        if(storage.id==0) return fail("snapshot contains zero storage id");
+        if(!storageIds.insert(storage.id).second) return fail("snapshot contains duplicate storage id");
+        if(!validateInventoryState(storage.inventory)) return fail("snapshot contains invalid storage inventory");
     }
 
     for(const auto& item:snapshot.runtime){
@@ -86,6 +106,12 @@ SimulationStateSnapshot Simulation::captureSnapshot() const
     SimulationStateSnapshot snapshot;
     snapshot.version=SimulationSnapshotVersion;
     snapshot.world=world_;
+    // Older demo/test setup paths predate civilization ownership. Canonicalize
+    // only an unset identity on the value snapshot; a nonzero mismatch remains
+    // visible to validation rather than silently hiding corruption.
+    for(auto& character:snapshot.world.characters){
+        if(character.civilization.character==0) character.civilization.character=character.id;
+    }
     snapshot.relationships=relationships_;
     snapshot.genealogy=genealogy_;
     snapshot.romances=romances_;

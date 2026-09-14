@@ -41,6 +41,20 @@ inline Character generateFounder(
     founder.metabolism=founder.baseMetabolism;
     founder.sleepTendency=founder.baseSleepTendency;
 
+    // Civilization starts as personal capability, not globally unlocked recipes.
+    // Skills are deterministic derivatives of the founder's own traits; all
+    // technique knowledge remains Unknown at New Game.
+    founder.civilization.character=id;
+    founder.civilization.gatheringSkill=clampFounderValue(
+        0.30+founder.personality.patience*0.24+founder.personality.adaptability*0.22+
+        founder.personality.conscientiousness*0.14,0.18,0.90);
+    founder.civilization.craftingSkill=clampFounderValue(
+        0.24+founder.personality.openness*0.22+founder.personality.patience*0.22+
+        founder.personality.conscientiousness*0.18,0.16,0.90);
+    founder.civilization.learningSkill=clampFounderValue(
+        0.24+founder.genetics.learningPotential*0.24+founder.personality.curiosity*0.22+
+        founder.personality.openness*0.18,0.18,0.94);
+
     // Formal New Game founders start as independent adults. Keeping the birth
     // minute authoritative lets the existing Growth/Aging system advance them
     // naturally instead of storing a separate mutable age field.
