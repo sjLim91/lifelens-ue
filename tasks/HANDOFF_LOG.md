@@ -413,3 +413,29 @@
   - old TASK_03 PR #2 / Run `34739283266`은 FROZEN 그대로다.
 - 다음 쭌 측 우선순위:
   - Full Core Save/Load v1: 진화된 전체 Core 상태를 snapshot/restore하고 load 후 deterministic continuation을 검증한 뒤 Unreal SaveGame을 adapter로 전환한다.
+
+### 2026-09-14 — Full Core Save/Load + Unreal SaveGame v2 completion
+
+- 작성자: 쭌 측 AI
+- PR #44: `jjun/core-save-load-v1`, feature head `64d2fb25f6453112aabaef2d809b0528c9dc4566`, merge `2b3f9882703ed73cb8318ae262f26bebb995c209`.
+- PR #45: `jjun/unreal-savegame-adapter-v1`, feature head `547b3f94e0c3df6df15d723e72c8084cd10a7c29`, merge `3c646ba331b8199a295fd6f2e9cac1235d844679`.
+- 변경 범위:
+  - #44: `SimulationStateSnapshot v1`로 World/RNG/Character 전체 상태, Relationship/Genealogy/Romance/Household/Pregnancy/Birth books, runtime plan/cooldown/position/social state, Core logs를 capture/restore.
+  - #45: versioned Core binary codec(`LLSNAP01`)과 Unreal SaveGame v2 adapter를 추가하여 실제 파일 저장 경로가 Core snapshot bytes를 권위 상태로 저장/복원.
+  - v2 Load는 임시 Core candidate에서 decode+restore 검증 후 live world를 교체하고, compatibility projection/GUID index를 복원된 Core에서 다시 생성.
+  - v1 old save는 migration 용도로만 seed+minute replay를 유지하며 legacy Residents/Relationships 배열은 권위 상태로 복원하지 않음.
+  - UI/Characters/Content 파일은 수정하지 않음.
+- 검증:
+  - #44 Core Tests `34802611336` PASS incl Configure / Build / Test / deterministic harness; Preflight `34802611299` PASS.
+  - #44 rich-state deep roundtrip + unsupported-version rejection + load 후 추가 10,000분 deterministic continuation PASS.
+  - #45 Core Tests `34803226434` PASS incl deterministic harness.
+  - #45 Structural Preflight `34803226458` PASS.
+  - #45 Unreal Linux Compile `34803226433` PASS including actual UE 5.6 UHT + UBT.
+  - snapshot binary canonical roundtrip, corrupt/truncated/trailing payload rejection, post-load continuation test PASS.
+- 상대가 알아야 할 점:
+  - 저장/로드 후 UI는 cached compatibility 배열이 아니라 현재 `ULLCoreBridgeSubsystem` read DTO를 다시 읽어 화면을 구성해야 한다.
+  - `(WorldSeed, Core CharacterId) -> FGuid` 안정 식별 의미는 restore 후에도 유지된다.
+  - NEW GAME 4명 고정 가정은 금지이며 출산/세대 진행으로 주민 수가 증가할 수 있다.
+  - old TASK_03 PR #2 / Run `34739283266`은 계속 FROZEN이다.
+- 다음 쭌 측 우선순위:
+  - Core Decision → Unreal Physical Action Bridge v1: Core가 결정한 물리/사회 행동을 Unreal World/AI가 실행·표현하게 하여 남아 있는 split-brain을 제거한다.
