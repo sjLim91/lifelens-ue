@@ -44,17 +44,28 @@ void ALLWorldDirector::Tick(float DeltaSeconds)
         return;
     }
 
+    bool bAdvancedSimulation = false;
     SimulationClockAccumulator += DeltaSeconds;
     const float StepSeconds = FMath::Max(0.1f, RealSecondsPerSimulationMinute);
     while (SimulationClockAccumulator >= StepSeconds)
     {
         SimulationClockAccumulator -= StepSeconds;
         Simulation->AdvanceSimulationMinutes(1);
+        bAdvancedSimulation = true;
 
         if ((Simulation->GetSimulationMinute() % 60) == 0)
         {
             Simulation->SaveGame();
         }
+    }
+
+    if (bAdvancedSimulation)
+    {
+        // Core may create residents (births) and civilization/world presentation may
+        // add/remove physical affordances at runtime. Reconcile both after each
+        // simulation advance instead of treating BeginPlay as a permanent snapshot.
+        CollectActivityAnchors();
+        SpawnResidents();
     }
 
     for (ALLResidentCharacter* Character : SpawnedResidents)
@@ -109,28 +120,31 @@ void ALLWorldDirector::CollectActivityAnchors()
     ActivityAnchors.Reset();
     for (TActorIterator<ALLActivityAnchor> It(GetWorld()); It; ++It)
     {
-        ActivityAnchors.Add(*It);
+        if (IsValid(*It))
+        {
+            ActivityAnchors.Add(*It);
+        }
     }
 }
 
 void ALLWorldDirector::SpawnResidents()
 {
-    for (auto& Pair : RuntimeStates)
-    {
-        ReleasePhysicalReservation(Pair.Key, Pair.Value);
-    }
-
-    SpawnedResidents.Reset();
-    RuntimeStates.Reset();
-
     if (!Simulation || !GetWorld())
     {
         return;
     }
 
+    SpawnedResidents.RemoveAll([](const TObjectPtr<ALLResidentCharacter>& Character)
+    {
+        return !IsValid(Character.Get());
+    });
+
     const TArray<FLLResidentData> Residents = Simulation->GetResidents();
+    TSet<FGuid> ProjectedResidentIds;
+    ProjectedResidentIds.Reserve(Residents.Num());
+
     const FVector Base = GetActorLocation() + FVector(0.0f, 0.0f, 90.0f);
-    const TArray<FVector> SpawnOffsets = {
+    const TArray<FVector> FounderSpawnOffsets = {
         FVector(-240.0f, -160.0f, 0.0f),
         FVector( 240.0f, -160.0f, 0.0f),
         FVector(-240.0f,  160.0f, 0.0f),
@@ -139,21 +153,93 @@ void ALLWorldDirector::SpawnResidents()
 
     for (int32 Index = 0; Index < Residents.Num(); ++Index)
     {
+        const FLLResidentData& Resident = Residents[Index];
+        if (!Resident.ResidentId.IsValid())
+        {
+            continue;
+        }
+
+        ProjectedResidentIds.Add(Resident.ResidentId);
+
+        if (ALLResidentCharacter* Existing = FindResidentActor(Resident.ResidentId))
+        {
+            Existing->BindResident(Resident);
+            RuntimeStates.FindOrAdd(Resident.ResidentId);
+            continue;
+        }
+
+        FVector SpawnOffset = FVector::ZeroVector;
+        if (Index < FounderSpawnOffsets.Num())
+        {
+            SpawnOffset = FounderSpawnOffsets[Index];
+        }
+        else
+        {
+            // New generations must never wrap back onto the original four spawn
+            // points. Allocate stable expanding rings so load/reconciliation can
+            // represent populations larger than the founder set without overlap.
+            const int32 ExtraIndex = Index - FounderSpawnOffsets.Num();
+            const int32 Ring = (ExtraIndex / 8) + 1;
+            const int32 Slot = ExtraIndex % 8;
+            const float AngleDegrees = static_cast<float>(Slot) * 45.0f
+                + ((Ring % 2) == 1 ? 22.5f : 0.0f);
+            const float AngleRadians = FMath::DegreesToRadians(AngleDegrees);
+            const float Radius = 520.0f + static_cast<float>(Ring - 1) * 180.0f;
+            SpawnOffset = FVector(
+                FMath::Cos(AngleRadians) * Radius,
+                FMath::Sin(AngleRadians) * Radius,
+                0.0f);
+        }
+
         FActorSpawnParameters Params;
         Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
-        const FVector SpawnLocation = Base + SpawnOffsets[Index % SpawnOffsets.Num()];
         ALLResidentCharacter* Character = GetWorld()->SpawnActor<ALLResidentCharacter>(
-            ALLResidentCharacter::StaticClass(), SpawnLocation, FRotator::ZeroRotator, Params);
-
+            ALLResidentCharacter::StaticClass(), Base + SpawnOffset, FRotator::ZeroRotator, Params);
         if (!Character)
         {
             continue;
         }
 
-        Character->BindResident(Residents[Index]);
+        Character->BindResident(Resident);
         SpawnedResidents.Add(Character);
-        RuntimeStates.Add(Residents[Index].ResidentId, FLLResidentRuntimeState());
+        RuntimeStates.FindOrAdd(Resident.ResidentId);
+    }
+
+    // If a projection ever removes a resident entirely, clean up the presentation
+    // actor and any outstanding reservation. Existing living/deceased Core residents
+    // remain projected, so this is identity reconciliation rather than a death policy.
+    for (int32 Index = SpawnedResidents.Num() - 1; Index >= 0; --Index)
+    {
+        ALLResidentCharacter* Character = SpawnedResidents[Index].Get();
+        if (!IsValid(Character))
+        {
+            SpawnedResidents.RemoveAtSwap(Index);
+            continue;
+        }
+
+        const FGuid ResidentId = Character->GetResidentId();
+        if (ProjectedResidentIds.Contains(ResidentId))
+        {
+            continue;
+        }
+
+        if (FLLResidentRuntimeState* Runtime = RuntimeStates.Find(ResidentId))
+        {
+            ReleasePhysicalReservation(ResidentId, *Runtime);
+        }
+        RuntimeStates.Remove(ResidentId);
+        Character->Destroy();
+        SpawnedResidents.RemoveAtSwap(Index);
+    }
+
+    for (auto It = RuntimeStates.CreateIterator(); It; ++It)
+    {
+        if (!ProjectedResidentIds.Contains(It.Key()))
+        {
+            ReleasePhysicalReservation(It.Key(), It.Value());
+            It.RemoveCurrent();
+        }
     }
 }
 
