@@ -14,7 +14,7 @@
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | branch pending from latest main | Civilization Observer Read DTOs v1 | `Source/LifeLensCore/**`, `Source/LifeLens/Simulation/**`, validator/build only if required | PLANNED / STATE_LOCKED |
+| 쭌 + 쭌 AI | `jjun/civilization-observer-read-v1` | Civilization Observer Read DTOs v1 | `Source/LifeLensCore/**`, `Source/LifeLens/Simulation/**`, validator/build only if required | DOING / STATE_LOCKED |
 | 쭌 + 쭌 AI | `task/03-fast-test`, PR #2 | old Android validation | Bridge/build | FROZEN — Run `34739283266` 재실행/수정/병합 금지 |
 | 다겸 + 다겸 AI | `dagyeom/observer-ui-v2`, PR #17 | Observer HUD v2 + Core Observer Bridge binding | `Source/LifeLens/UI/**` | REVIEW / RECOVERING — latest main reconcile 필요 |
 | 다겸 + 다겸 AI | `dagyeom/ui-foundation-v1`, PR #26 | Android landscape UI foundation | UI foundation | REVIEW |
@@ -37,7 +37,7 @@ Rules:
 
 ## Current Jjun lock — Civilization Observer Read DTOs v1
 
-- Start only from actual latest main after state reconciliation.
+- Branch: `jjun/civilization-observer-read-v1`, base `46e43cca88ffed21a6d2238efb571f02069d5d2b`.
 - Publish **read-only** civilization observer contracts; UI must never mutate Core civilization state.
 - Required Core summaries:
   - resident inventory stacks/total carrying;
@@ -58,7 +58,7 @@ Rules:
 ### PR #52 — Civilization Knowledge Transmission v1
 - DONE / MERGED `b90da9242003fbc0cbc553605b9abc46a17aa044`
 - Feature head `8fe9369682834a3fae44bb6605f0d872bb80b971`.
-- Discovery/Craft facts now spread through deterministic witness/imitation/teaching without global unlock.
+- Discovery/Craft facts spread through deterministic witness/imitation/teaching without global unlock.
 - `SocialKnowledgeBook` provenance is authoritative Simulation state and persists in snapshot binary v3; v1/v2 remain readable.
 - PR Core `34814310235` PASS incl 37/37 + deterministic harness; Preflight `34814310291` PASS.
 
@@ -77,7 +77,7 @@ Rules:
 Former Observer blockers remain RESOLVED / READY FOR BINDING.
 
 Civilization status relevant to Dagyeom:
-- Core now owns Inventory / personal Knowledge / skills / ResourceNode / StorageSite / autonomous civilization decisions / transmission provenance.
+- Core owns Inventory / personal Knowledge / skills / ResourceNode / StorageSite / autonomous civilization decisions / transmission provenance.
 - These civilization fields are **not yet UI-ready** until the current Jjun read DTO/Bridge slice lands.
 - Do not invent placeholders or duplicate authority in UI.
 - Character Presentation should remain generic for primitive resources/tools through later technology.
