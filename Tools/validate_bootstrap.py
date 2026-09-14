@@ -11,6 +11,10 @@ required = [
     'Source/LifeLens/Core/LLLifeLensGameMode.cpp',
     'Source/LifeLens/Simulation/LLSimulationSubsystem.h',
     'Source/LifeLens/Simulation/LLSimulationSubsystem.cpp',
+    'Source/LifeLens/Simulation/LLCoreReadTypes.h',
+    'Source/LifeLens/Simulation/LLCoreBridgeSubsystem.h',
+    'Source/LifeLens/Simulation/LLCoreBridgeSubsystem.cpp',
+    'Source/LifeLens/Simulation/LLCoreCompileUnit.cpp',
     'Source/LifeLens/Save/LLSaveGame.h',
     'Source/LifeLens/AI/LLDecisionComponent.cpp',
     'Source/LifeLens/Characters/LLResidentCharacter.cpp',
@@ -30,6 +34,8 @@ assert project['Modules'][0]['Name'] == 'LifeLens'
 build_rules = (root / 'Source/LifeLens/LifeLens.Build.cs').read_text(encoding='utf-8')
 assert 'PublicIncludePaths.Add(ModuleDirectory);' in build_rules
 assert 'PrivateIncludePaths.Add(ModuleDirectory);' in build_rules
+assert 'CppStandardVersion.Cpp17' in build_rules
+assert 'LifeLensCore' in build_rules and 'include' in build_rules
 
 sim_h = (root / 'Source/LifeLens/Simulation/LLSimulationSubsystem.h').read_text(encoding='utf-8')
 assert 'TArray<FLLResidentData> GetResidents() const' in sim_h
@@ -44,6 +50,64 @@ assert 'Residents = SaveObject->Residents;' in sim
 assert 'MakeDeterministicGuid(Random)' in sim
 assert 'ApplyActionOutcome' in sim
 assert 'ApplySocialInteraction' in sim
+
+bridge_h = (root / 'Source/LifeLens/Simulation/LLCoreBridgeSubsystem.h').read_text(encoding='utf-8')
+for token in (
+    'StartCoreObserverDemo',
+    'AdvanceCoreMinutes',
+    'GetWorldObservation',
+    'GetResidentObservations',
+    'GetResidentObservation',
+    'MakeStableResidentGuid',
+    'OnCoreRuntimeStateChanged',
+):
+    assert token in bridge_h, f'Missing Core bridge contract: {token}'
+
+bridge_cpp = (root / 'Source/LifeLens/Simulation/LLCoreBridgeSubsystem.cpp').read_text(encoding='utf-8')
+for token in (
+    'observeResident',
+    'makeEmotionObservation',
+    'RomanticInterest',
+    'SexualAttraction',
+    'Commitment',
+    'Conflict',
+    'Grudge',
+    'MemoryCount',
+    'BeliefCount',
+):
+    assert token in bridge_cpp, f'Missing Core observer projection: {token}'
+assert 'DisplayName' in bridge_cpp
+assert 'MakeStableResidentGuid(CoreCharacterId)' in bridge_cpp
+
+read_types = (root / 'Source/LifeLens/Simulation/LLCoreReadTypes.h').read_text(encoding='utf-8')
+for token in (
+    'FLLCoreEmotionSnapshot',
+    'FLLCoreRelationshipSnapshot',
+    'FLLCoreResidentObservation',
+    'FLLCoreWorldObservation',
+    'ActivityTargetResidentId',
+):
+    assert token in read_types, f'Missing Unreal read DTO: {token}'
+
+compile_unit = (root / 'Source/LifeLens/Simulation/LLCoreCompileUnit.cpp').read_text(encoding='utf-8')
+assert '#include "../../LifeLensCore/src/Simulation.cpp"' in compile_unit
+
+# The simulation core must remain standard C++17. The bridge is one-way:
+# Unreal may include Core, but Core must never include Unreal reflection/types.
+forbidden_core_tokens = (
+    '#include "CoreMinimal.h"',
+    'UCLASS(',
+    'USTRUCT(',
+    'UPROPERTY(',
+    'UFUNCTION(',
+    'GENERATED_BODY(',
+)
+for path in (root / 'Source/LifeLensCore').rglob('*'):
+    if path.suffix not in {'.h', '.hpp', '.cpp', '.cc'}:
+        continue
+    text = path.read_text(encoding='utf-8')
+    leaked = [token for token in forbidden_core_tokens if token in text]
+    assert not leaked, f'Unreal dependency leaked into pure Core: {path.relative_to(root)} {leaked}'
 
 world = (root / 'Source/LifeLens/World/LLWorldDirector.cpp').read_text(encoding='utf-8')
 assert 'SpawnResidents()' in world
