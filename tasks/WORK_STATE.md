@@ -4,7 +4,7 @@
 >
 > 제품 기준: `docs/LIFELENS_SPEC_v1.1.md` + **`docs/CIVILIZATION_PROGRESSION_v1.md`** · 상태 규칙: `docs/STATE_MANAGEMENT.md` · 역할/잠금: `tasks/TEAM_BOARD.md` · 이력: `tasks/HANDOFF_LOG.md`
 
-Last reconciled: 2026-09-14 KST — actual `main` HEAD `36bd1ac81192bc689c1e811553f068f255642508` verified. PR #48 World Affordance Execution v1 and PR #49 Civilization Foundation v1 are both merged and validated. Next Jjun slice is state-locked as **Civilization Runtime State + Persistence v1**.
+Last reconciled: 2026-09-14 KST — actual `main` HEAD `c31c422c305a3a79a9553d37ac86247aa31d1853` verified. PR #50 Civilization Runtime State + Persistence v1 is MERGED and validated. Next Jjun slice is state-locked as **Autonomous Civilization Action Loop v1**.
 
 ## Mandatory sync gate
 
@@ -36,30 +36,35 @@ Rules:
 
 ## Active / unresolved work
 
-### 1. Civilization Runtime State + Persistence v1 — Jjun
+### 1. Autonomous Civilization Action Loop v1 — Jjun
 
 - Owner: 쭌 + 쭌 AI
 - Status: `DOING / STATE_LOCKED`
-- Planned branch: `jjun/civilization-runtime-state-v1` from actual latest main.
-- Goal: move PR #49's tested civilization domain from standalone types into authoritative LifeLens resident/world state without losing Save/Load determinism.
-- Bounded scope:
-  1. each Character owns `IndividualCivilizationState` (inventory + personal knowledge + relevant skills) keyed by stable CharacterId;
-  2. World owns finite `ResourceNode` / shared `StorageSite` collections;
-  3. NEW GAME seeds a minimal natural-resource starting world, **not a finished modern household as canonical content**;
-  4. Core snapshot capture/restore includes civilization state automatically or explicitly;
-  5. binary snapshot codec persists civilization state with a format-version migration strategy;
-  6. restore validation checks resource/storage/character civilization consistency;
-  7. deep roundtrip + deterministic continuation tests cover inventory/knowledge/resources.
-- Explicitly out of this slice: autonomous Gather/Craft decision selection, Unreal resource visuals, teaching UI, agriculture/metallurgy chain.
-- Required gates: Core full suite + deterministic harness + Preflight. Unreal UHT/UBT only if Unreal-side compile surfaces are touched.
+- Branch: create from actual latest main after this state checkpoint.
+- Goal: make residents autonomously choose and execute the first civilization loop using the authoritative state merged in #50.
+- Bounded v1 scope:
+  1. CivilizationIntent / decision result separate from physical/social intent;
+  2. utility based on Needs, curiosity, inventory, known techniques, available resources and storage pressure;
+  3. autonomous Gather from finite ResourceNode;
+  4. autonomous Store into shared StorageSite;
+  5. autonomous Experiment when a resident has usable material and lacks a reproducible technique;
+  6. autonomous Craft when a known reproducible technique and required inputs exist;
+  7. failures consume resources where the domain contract says they should;
+  8. successful discovery remains personal, never global unlock;
+  9. deterministic event/log output suitable for later Observer read DTOs;
+  10. deterministic Core tests proving multi-resident divergence and repeated progression.
+- Authority rule: Core decides WHAT. This slice is pure Core decision/execution first; Unreal resource navigation/presentation comes later.
+- Explicitly out of scope: teaching/imitation, agriculture/metallurgy chains, economy/professions, Unreal resource actors, UI fields.
+- Required gates: Core full suite + deterministic harness + Preflight.
 
 ### 2. Observer HUD v2 — Dagyeom
 
 - Owner: 다겸 + 다겸 AI
 - Branch/PR: `dagyeom/observer-ui-v2`, PR #17
 - Status: `RECOVERING`
-- Existing `BLOCKED-BY-JJUN` Observer requirements remain 0.
-- Civilization note: keep Level 0 clean; future Inventory/Knowledge/Discovery belongs in resident/world detail only after real read DTOs exist.
+- Existing Observer blockers remain 0.
+- Civilization fields are not UI-ready until Jjun publishes read DTOs.
+- Keep Level 0 clean; Inventory/Knowledge/Discovery belongs in deeper resident/world views.
 
 ### 3. Dagyeom stacked UI / presentation chain
 
@@ -81,25 +86,31 @@ Rules:
 
 ## Latest completed milestones
 
+### PR #50 — Civilization Runtime State + Persistence v1
+- Merge: `c31c422c305a3a79a9553d37ac86247aa31d1853`
+- Feature head: `543ee006a48d8a97d7cf37de65f03c74c1b60e3e`
+- Pure Core 11-file scope; no Dagyeom UI/Character/Unreal World edits.
+- Character now owns authoritative `IndividualCivilizationState`; World owns authoritative ResourceNode/StorageSite state.
+- Natural-resource starting world includes Stone / Flint / Wood / Fiber / Clay / Water / PlantFood.
+- Binary snapshot format v2 persists resource depletion, inventory, personal knowledge/confidence/practice and storage.
+- Legacy binary v1 decode remains supported with deterministic civilization migration.
+- Core Tests `34810329867` PASS: Configure / Build / Test / deterministic harness.
+- Structural Preflight `34810329862` PASS.
+
 ### PR #49 — Civilization Foundation v1
 - Merge: `36bd1ac81192bc689c1e811553f068f255642508`
 - Feature head: `ac8e0868f819a49d8b2c0aec947978258da56028`
-- Pure Core 3-file scope: `Civilization.h`, test, CMake registration.
-- Implemented material properties, finite/renewable resources, inventory/storage transfer, personal knowledge levels, deterministic experiment/discovery, personal craft reproduction, prerequisite chains and civilization events.
-- Core Tests `34809360826` PASS: Configure / Build / Test / Deterministic harness.
-- Preflight `34809360739` PASS.
+- Material/resource + inventory/storage + personal knowledge + deterministic experiment/discovery + craft domain.
+- Core Tests `34809360826` PASS incl deterministic harness; Preflight `34809360739` PASS.
 
 ### PR #48 — World Affordance / reservable physical execution v1
 - Merge: `a90ff6a5d870858a9e555ddf1e6e526bb7aa34e1`
-- Feature head: `505e356d277cb0896109f6d4cdd75bcf06cdab54`
-- Structural Preflight `34808292399` PASS.
-- Unreal Linux Compile Run #14 `34808292682` PASS including actual UE 5.6 image verification + UHT + UBT.
-- `ActivityAnchor` reservation/use-transform/multi-capability layer is now treated as generic World Affordance infrastructure for future resource nodes, fires, work surfaces, storage, crafting stations, tools, machines and furniture.
+- Preflight `34808292399` PASS; Unreal Linux Compile Run #14 `34808292682` PASS incl actual UE 5.6 UHT + UBT.
+- Generic reservation/use infrastructure for future resources, storage, crafting stations, tools, machines and furniture.
 
 ### PR #47 — Witness / Rumor / Social Knowledge v1
 - Merge: `f1aab37f6f8abad1217783cc1d168cbdd2e0c20c`
 - Core `34806559374` PASS; Preflight `34806559379` PASS.
-- Future discovery/knowledge transmission substrate.
 
 ### PR #46 — Core-authoritative physical action bridge
 - Merge: `753df19657ea634ea2fa7c2ac935f6273ce14c10`
@@ -114,12 +125,12 @@ Rules:
 
 ## Next sequencing
 
-1. Civilization Runtime State + Persistence v1.
-2. Autonomous Gather / Store / Experiment / Craft decision loop.
-3. Knowledge transmission: witness/imitation/teaching + observer events.
+1. Autonomous Civilization Action Loop v1.
+2. Knowledge transmission: witness / imitation / teaching + observer events.
+3. Civilization Observer read DTOs.
 4. Unreal natural-resource affordances + held tool/item presentation.
 5. Deeper production chains: fire, improved stone tools, containers, construction, agriculture, metallurgy.
-6. Android smoke APK once this new survival/civilization runtime slice is visible.
+6. Android smoke APK once the new survival/civilization runtime slice is observable.
 
 ---
 
