@@ -12,7 +12,7 @@
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | `jjun/core-save-load-v1`, PR #44 | Full Core Save/Load v1 | `Source/LifeLensCore/**` | REVIEW / WAITING_CI — head `64d2fb25...`; Core suite + Preflight required |
+| 쭌 + 쭌 AI | `jjun/core-save-load-v1`, PR #44 | Full Core Save/Load v1 | `Source/LifeLensCore/**` | READY_TO_MERGE — Core suite/harness + Preflight PASS |
 | 쭌 + 쭌 AI | `task/03-fast-test`, PR #2 | old Android validation | Bridge/build | FROZEN — Run `34739283266` 재실행/수정/병합 금지 |
 | 다겸 + 다겸 AI | `dagyeom/observer-ui-v2`, PR #17 | Observer HUD v2 + Core Observer Bridge binding | `Source/LifeLens/UI/**` | REVIEW / RECOVERING — latest main reconcile 필요 |
 | 다겸 + 다겸 AI | `dagyeom/ui-foundation-v1`, PR #26 | Android landscape UI foundation | UI foundation | REVIEW |
@@ -23,14 +23,14 @@
 
 ## Current Jjun lock — PR #44 Full Core Save/Load v1
 
-- Branch: `jjun/core-save-load-v1`
-- Head: `64d2fb25f6453112aabaef2d809b0528c9dc4566`
-- Scope: `Source/LifeLensCore/**` only.
+- Branch/head: `jjun/core-save-load-v1` / `64d2fb25f6453112aabaef2d809b0528c9dc4566`.
+- Scope verification: exactly 5 changed files, all under `Source/LifeLensCore/**`.
 - Snapshot contract captures World/RNG, complete Character state, all relationship/family books, Simulation runtime state and logs.
 - Restore validates version/IDs/cross references before committing state.
 - Test proves immediate deep equality and deterministic equality after another 10,000 simulated minutes.
-- Unreal SaveGame adapter is deliberately excluded until this Core contract is validated and merged.
-- Required gates before merge: Core Release full suite + deterministic harness + Structural Preflight.
+- Core Tests `34802611336` PASS including deterministic harness.
+- Preflight `34802611299` PASS.
+- Next: merge #44, sync docs/handoff, then start bounded Unreal SaveGame adapter integration over this Core contract.
 
 ## Latest completed Jjun work
 
@@ -55,7 +55,7 @@ Current open requests: **none**.
 
 ## Merge / reconciliation queue
 
-1. PR #44 — WAITING_CI; merge only after required Core + Preflight PASS.
+1. PR #44 — READY_TO_MERGE.
 2. Dagyeom PR #17 — reconcile latest main + bind current Core Bridge + review fixes + verify.
 3. Dagyeom PR #26 — reconcile latest main independently.
 4. After #17: #29/#30 → #36 → #38.
