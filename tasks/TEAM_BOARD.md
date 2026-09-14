@@ -16,10 +16,11 @@
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | `jjun/civilization-observer-read-v1`, PR #53 | Civilization Observer Read DTOs v1 | `Source/LifeLensCore/**`, `Source/LifeLens/Simulation/**`, validator/preflight | WAITING_CI — latest head `e3a9f661...`; Core+Preflight PASS; UE Run #16 pending |
-| 쭌 + 쭌 AI | post-#53 | Integration Sprint support for Dagyeom | review/assist only under `docs/INTEGRATION_SPRINT.md` | PLANNED — start only after #53 merge |
+| 쭌 + 쭌 AI | `jjun/civilization-observer-read-v1`, PR #53 | Civilization Observer Read DTOs v1 | `Source/LifeLensCore/**`, `Source/LifeLens/Simulation/**`, validator/preflight | READY_TO_MERGE after reconcile — Core+Preflight PASS; UE Run #16 PASS; branch diverged only because main docs advanced |
+| 쭌 + 쭌 AI | `jjun/mac-clang-shadow-hotfix` | macOS clang `-Wshadow` unblock for Dagyeom R1 | `Source/LifeLensCore/include/lifelens/ObserverReadModelV2.h` | DOING — minimal owner-side hotfix |
+| 쭌 + 쭌 AI | post-#53 | Integration Sprint support for Dagyeom | review/assist only under `docs/INTEGRATION_SPRINT.md` | PLANNED — start after #53 merge |
 | 쭌 + 쭌 AI | `task/03-fast-test`, PR #2 | old Android validation | Bridge/build | FROZEN — Run `34739283266` 재실행/수정/병합 금지 |
-| 다겸 + 다겸 AI | `dagyeom/observer-ui-v2`, PR #17 | Observer HUD v2 + Core Observer Bridge binding | `Source/LifeLens/UI/**` | REVIEW / RECOVERING — latest main reconcile 필요 |
+| 다겸 + 다겸 AI | `dagyeom/observer-ui-v2`, PR #17 | Observer HUD v2 + Core Observer Bridge binding | `Source/LifeLens/UI/**` | REVIEW / RECOVERING — latest main reconcile blocked by IR-MAC-SHADOW-01 until Jjun hotfix lands |
 | 다겸 + 다겸 AI | `dagyeom/ui-foundation-v1`, PR #26 | Android landscape UI foundation | UI foundation | REVIEW |
 | 다겸 + 다겸 AI | `dagyeom/character-presentation-v1`, PR #29 | Character Presentation v1 | Character presentation | REVIEW — stacked on #17 |
 | 다겸 + 다겸 AI | `dagyeom/observer-ux-polish-v1`, PR #30 | Observer UX Polish | `Source/LifeLens/UI/**` | REVIEW — stacked on #17 |
@@ -44,9 +45,9 @@ Rules:
 - Latest head: `e3a9f6611118866a6c79eb300a7b6ab2d5ffaf31`.
 - Core `34821150702`: PASS including Build / tests / deterministic harness.
 - Preflight `34821150693`: PASS, including regression guard that requires `CivilizationKnowledgeTransmission.cpp` in Unreal compile unit.
-- Unreal Linux Compile Run #16 `34821150704`: IN PROGRESS; this is the only valid remaining gate.
+- Unreal Linux Compile Run #16 `34821150704`: **PASS including actual UE 5.6 UHT + UBT + final link**.
 - Superseded Run #15 `34819825591`: FAILED at linker after UHT PASS because `LLCoreCompileUnit.cpp` omitted `CivilizationKnowledgeTransmission.cpp`; fixed in latest head.
-- Do not modify PR head while Run #16 is active; do not launch duplicate builds.
+- PR is temporarily non-mergeable only because main received state/integration docs after the feature branch split; current main changes since PR base are docs-only.
 - Published read-only contracts:
   - resident inventory stacks/total carrying;
   - resident technique level/confidence/practice + gathering/crafting/learning skills;
@@ -83,7 +84,7 @@ Canonical protocol: `docs/INTEGRATION_SPRINT.md`.
 
 ### Current Assist Locks
 
-현재 **없음**. #53 merge 전에는 다겸 civilization binding용 ASSIST_LOCK을 만들지 않는다.
+현재 **없음**. IR-MAC-SHADOW-01은 Jjun 소유 Core 파일 hotfix라 ASSIST_LOCK이 필요하지 않다.
 
 ### Planned parent-first assist order
 
@@ -116,12 +117,12 @@ Canonical protocol: `docs/INTEGRATION_SPRINT.md`.
 
 ## Dagyeom API / design handoff
 
-Former Observer blockers remain RESOLVED / READY FOR BINDING.
+Former Observer blockers remain RESOLVED / READY FOR BINDING except the temporary macOS compile issue IR-MAC-SHADOW-01 below.
 
 Civilization status relevant to Dagyeom:
 - Core owns Inventory / personal Knowledge / skills / ResourceNode / StorageSite / autonomous decisions / transmission provenance.
 - PR #53 publishes the real civilization Bridge read contract but **do not bind it until #53 is merged and green**.
-- Existing PR #17 reconciliation can proceed independently.
+- Existing PR #17 reconciliation can proceed after the macOS Core compile hotfix lands.
 - Do not invent placeholders or duplicate authority in UI.
 - Character Presentation should remain generic for primitive resources/tools through later technology.
 - main HUD remains observer-first, not a strategy resource dashboard.
@@ -136,19 +137,31 @@ ASSIST_LOCK은 기본 소유권을 영구 변경하지 않는다. lock 해제 �
 
 ## Integration Requests
 
-Current open requests: **none**.
+### IR-MAC-SHADOW-01 — Dagyeom R1 macOS compile unblock
+
+- Mode: owner-side hotfix request
+- Requester: 다겸 / STILLofficial / Claude
+- Target owner: 쭌
+- Target PR/work: PR #17 latest-main reconciliation (R1)
+- File: `Source/LifeLensCore/include/lifelens/ObserverReadModelV2.h`
+- Reported issue: macOS clang with `-Wshadow -Werror` rejects the range-for variable `pregnancy` because it shadows the earlier `const PregnancyState* pregnancy` in the same `if/else` scope.
+- Linux CI status: passes; this is a compiler-warning-policy difference, not a runtime logic failure.
+- Requested fix: rename only the loop variable, e.g. `entry`, without changing behavior.
+- Status: `DOING-BY-JJUN`
+- Unlock condition: minimal rename merged to `main`; then Dagyeom immediately resumes R1.
 
 새 요청 형식은 `docs/INTEGRATION_SPRINT.md`의 Mode / Target owner / Target PR / Base HEAD / Locked paths / Helper branch / Reason / Status / Unlock condition 필드를 따른다.
 
 ## Merge / reconciliation queue
 
-1. Finish latest-head Run #16 and merge PR #53 if green.
-2. Enter Integration Sprint; Jjun pauses new large Core slices.
-3. PR #17 latest-main reconcile + current Bridge/civilization binding + review fixes + verify.
-4. PR #26 latest-main reconciliation/verification where locks do not overlap.
-5. After #17: #29/#30 → #36 → #38.
-6. Integrated runtime check → Android smoke APK.
-7. PR #2 remains FROZEN.
+1. Land IR-MAC-SHADOW-01 owner-side Core hotfix to unblock Dagyeom R1.
+2. Reconcile and merge PR #53 now that Run #16 is green.
+3. Enter Integration Sprint; Jjun pauses new large Core slices.
+4. PR #17 latest-main reconcile + current Bridge/civilization binding + review fixes + verify.
+5. PR #26 latest-main reconciliation/verification where locks do not overlap.
+6. After #17: #29/#30 → #36 → #38.
+7. Integrated runtime check → Android smoke APK.
+8. PR #2 remains FROZEN.
 
 ## Completion rule
 
