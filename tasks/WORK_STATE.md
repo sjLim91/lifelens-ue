@@ -4,7 +4,7 @@
 >
 > 제품 기준: `docs/LIFELENS_SPEC_v1.1.md` · 상태 규칙: `docs/STATE_MANAGEMENT.md` · 역할/잠금: `tasks/TEAM_BOARD.md` · 이력: `tasks/HANDOFF_LOG.md`
 
-Last reconciled: 2026-09-14 KST — PR #45 Unreal SaveGame Adapter v1 merged as `3c646ba331b8199a295fd6f2e9cac1235d844679`. Core Tests `34803226434`, Structural Preflight `34803226458`, Unreal Linux Compile `34803226433` all PASS, including actual UE 5.6 UHT/UBT.
+Last reconciled: 2026-09-14 KST — actual `main` HEAD `7f7777cd9d30ca06f486ffe5130d691ff9ff4c58` verified. Core Decision → Unreal Physical Action Bridge v1 is now starting as the active Jjun task; state lock is being established before branch/code work.
 
 ## Mandatory sync gate
 
@@ -21,16 +21,23 @@ Last reconciled: 2026-09-14 KST — PR #45 Unreal SaveGame Adapter v1 merged as 
 ### 1. Core Decision → Unreal Physical Action Bridge v1 — Jjun
 
 - Owner: 쭌 + 쭌 AI
-- Status: `PLANNED`
-- Branch: not created yet; must branch from actual latest `main` after next sync.
+- Status: `DOING / STATE_LOCKED`
+- Planned branch: `jjun/core-physical-action-bridge-v1` from the actual latest main after this state update.
 - Goal: remove the remaining split-brain between authoritative Core decisions/state and the physical 3D WorldDirector behavior.
 - Required direction:
   - Core remains the only source of Needs/social/family/decision truth;
   - Unreal World/AI executes or presents Core-selected actions rather than independently choosing a competing life decision;
   - preserve current stable resident GUID mapping and post-load continuity;
   - do not modify Dagyeom UI or Character appearance/presentation without a new explicit coordination request.
-- Initial bounded scope should focus on existing physical intents such as Eat/Sleep/Toilet/Hygiene/Idle and current SocialIntent presentation, using Jjun-owned `Simulation/AI/World` boundaries.
+- Initial bounded scope:
+  - map Core physical decisions for Eat / Sleep / Toilet / Hygiene / Idle into Unreal execution intent;
+  - map current SocialIntent + target into Unreal presentation/execution routing without a competing legacy chooser;
+  - reuse existing WorldDirector movement/action plumbing where safe, but legacy `ULLDecisionComponent` must not remain decision authority for covered intents;
+  - keep SaveGame v2 restore continuity intact.
+- Allowed scope: Jjun-owned `Source/LifeLens/Simulation/**`, `Source/LifeLens/AI/**`, `Source/LifeLens/World/**`, narrowly required Core read DTO/validator/tests.
+- Forbidden scope: `Source/LifeLens/UI/**`, Dagyeom Character appearance/presentation, `Content/UI/**`, `Content/Characters/**`, frozen PR #2.
 - Required verification: structural contract + actual UE 5.6 UHT/UBT, then targeted runtime/PIE verification where available.
+- Exact next action: create `jjun/core-physical-action-bridge-v1` from the latest main after state-doc commits, inspect current Core observation/action DTO and WorldDirector/DecisionComponent execution path, then implement the smallest authority handoff first.
 
 ### 2. Observer HUD v2 — Dagyeom
 
