@@ -115,6 +115,14 @@ inline BirthOutcome performBirth(
     child.parentIds={gestationalParent.id,geneticPartner.id};
     child.genetics=inheritGenetics(
         gestationalParent.genetics,geneticPartner.genetics,rng,geneticVariation);
+    child.civilization.character=childId;
+    // A newborn starts without technique knowledge. Capacity develops from
+    // inherited learning potential and later upbringing/practice rather than
+    // automatically inheriting the parents' recipes.
+    child.civilization.gatheringSkill=0.10;
+    child.civilization.craftingSkill=0.08;
+    child.civilization.learningSkill=std::max(0.12,std::min(0.55,
+        0.12+child.genetics.learningPotential*0.35));
     child.lifeHistory.push_back(LifeHistoryEntry{
         LifeEventType::Birth,currentMinute,{gestationalParent.id,geneticPartner.id},0});
 

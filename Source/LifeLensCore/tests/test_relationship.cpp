@@ -18,6 +18,18 @@ int main()
     assert(book.find(10,20)!=nullptr);
     assert(book.find(10,30)==nullptr);
 
+    // Social/family interactions may create other relationships while a caller
+    // holds both directional records. Growth must not invalidate either one.
+    const Relationship* original=book.find(10,20);
+    for(CharacterId id=100;id<1100;++id) book.getOrCreate(id,id+1);
+    assert(&aToB==original);
+    assert(book.find(10,20)==original);
+    assert(aToB.from==10 && aToB.to==20);
+    assert(bToA.from==20 && bToA.to==10);
+    assert(&book.getOrCreate(10,20)==original);
+    assert(book.size()==1002);
+    assert(book.all().front().from==10 && book.all().back().from==1099);
+
     aToB.apply(relationshipDeltaFor(RelationshipEvent::SharedPositiveExperience));
     assert(aToB.affection>0.0);
     assert(aToB.comfort>0.0);

@@ -1,163 +1,160 @@
 # LifeLens Team Board
 
-이 파일은 쭌(sjLim91)과 다겸(STILLofficial), 그리고 각자의 AI 에이전트가 동시에 작업할 때 사용하는 작업 잠금/분배 보드다.
+이 파일은 쭌(sjLim91), 다겸(STILLofficial), 양쪽 AI의 작업 잠금/분배 보드다.
 
-**필수 동기화:** 작업 시작 전에 `tasks/HANDOFF_LOG.md` 최신 기록을 읽고, 의미 있는 코드/설정/워크플로우/API 변경이 끝나면 같은 파일에 append-only 인수인계를 남긴다. 상대 AI가 모르는 변경을 남기지 않는다.
+## 최우선 규칙
 
-상태: `TODO` / `DOING` / `REVIEW` / `DONE` / `BLOCKED`
+- 실제 `main` / branch / PR / Actions가 문서보다 우선한다.
+- 기능 작업 전에 `WORK_STATE.md` → 역할별 READY queue → 이 보드 → `HANDOFF_LOG.md`를 맞춘다.
+- 제품 방향은 `docs/LIFELENS_SPEC_v1.1.md` + `docs/CIVILIZATION_PROGRESSION_v1.md`.
+- 쭌이 다겸 작업을 도울 때는 `docs/INTEGRATION_SPRINT.md` 필수.
+- 기본 지원은 `REVIEW_ONLY`.
+- 실제 다겸 소유 코드 수정은 `ASSIST_LOCK` + `integration/dagyeom-<scope>-assist`; `dagyeom/*` direct push 금지.
+
+상태: `TODO` / `DOING` / `REVIEW` / `DONE` / `BLOCKED` / `FROZEN`
 
 ## Active Work
 
-| 담당 | 브랜치 | 작업 | 소유 범위 | 상태 |
+| 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | `jjun/genealogy-core-v1`, PR #22 | SPEC 41 Genealogy / Kinship Core v1 | `Source/LifeLensCore/**` | REVIEW |
-| 쭌 + 쭌 AI | `task/03-fast-test`, PR #2 | LifeLensCore ↔ Unreal Android 검증 | Bridge/build | BLOCKED — 기존 Run 실패 상태 보존, 재실행 안 함 |
-| 다겸 + 다겸 AI | `dagyeom/observer-ui-v2` | Observer HUD v2 + 선택 주민 상세 패널 + 관찰 UX | `Source/LifeLens/UI/**`, UI/Character presentation | REVIEW |
+| 쭌 + 다겸 | Integration Sprint | Core/Bridge ↔ UI/Presentation 합류 | REVIEW/ASSIST only | DOING |
+| 다겸 + 다겸 AI | `dagyeom/observer-ui-v2`, PR #17 | Observer HUD v2 + latest main reconcile + Bridge binding | `Source/LifeLens/UI/**` | READY / R1 RESUME |
+| 다겸 + 다겸 AI | `dagyeom/ui-foundation-v1`, PR #26 | Android landscape UI foundation | UI foundation | REVIEW |
+| 다겸 + 다겸 AI | `dagyeom/character-presentation-v1`, PR #29 | Character Presentation v1 | Character presentation | REVIEW — stacked on #17 |
+| 다겸 + 다겸 AI | `dagyeom/observer-ux-polish-v1`, PR #30 | Observer UX Polish | `Source/LifeLens/UI/**` | REVIEW — stacked on #17 |
+| 다겸 + 다겸 AI | `dagyeom/mobile-touch-v1`, PR #36 | Mobile Touch v1 | `Source/LifeLens/UI/**` | REVIEW — stacked on #30 |
+| 다겸 + 다겸 AI | `dagyeom/visual-feedback-v1`, PR #38 | Visual Feedback v1 | `Source/LifeLens/UI/**` | REVIEW — stacked on #36 |
+| 쭌 + 쭌 AI | `task/03-fast-test`, PR #2 | old Android validation | Bridge/build | FROZEN |
 
-## 완료된 병렬 작업
+## Current Assist Locks
 
-| 담당 | 브랜치/PR | 작업 | 결과 |
-|---|---|---|---|
-| 쭌 + 쭌 AI | `jjun/relationship-core-v1`, PR #4 | SPEC 31 다차원 Relationship Core v1 | Core CI + Preflight PASS, `main` 병합 완료 |
-| 쭌 + 쭌 AI | `jjun/emotion-core-v1`, PR #6 | SPEC 25 다차원 Emotion Core v1 | Core CI + Preflight PASS, `main` 병합 완료 |
-| 쭌 + 쭌 AI | `jjun/memory-core-v1`, PR #7 | SPEC 29~30 구조화 Memory Core v1 | Core CI + Preflight PASS, `main` 병합 완료 |
-| 쭌 + 쭌 AI | `jjun/belief-core-v1`, PR #8 | SPEC 30 Memory→Belief Core v1 | Core CI + Preflight PASS, `main` 병합 완료 |
-| 쭌 + 쭌 AI | `jjun/social-cognition-v1`, PR #9 | Social Event→Emotion→Memory→Belief→Relationship 연결 | Core CI + Preflight PASS, `main` 병합 완료 |
-| 쭌 + 쭌 AI | `jjun/social-utility-v1`, PR #10 | Relationship/Emotion/Memory/Belief를 Unified Utility Decision에 반영 | Core CI + Preflight PASS, `main` 병합 완료 |
-| 쭌 + 쭌 AI | `jjun/social-execution-v1`, PR #11 | Approach/Repair/Comfort/Avoid 실제 Core 상태/사회 사건 실행 | Core CI + Preflight PASS, `main` 병합 완료 |
-| 쭌 + 쭌 AI | `jjun/simulation-social-loop-v1`, PR #12 | SocialIntent를 실제 `Simulation::step()`에 연결 | Core CI + Preflight PASS, `main` 병합 완료 |
-| 쭌 + 쭌 AI | `jjun/observer-read-model-v1`, PR #13 | Observer/UI용 Core read DTO + 현재행동/관계 13차원 노출 | Core CI + Preflight PASS, `main` 병합 완료 |
-| 쭌 + 쭌 AI | `jjun/romance-core-v1`, PR #14 | SPEC 32 Romance: 독립 고백/수락 판단 및 연애 상태 | Core CI + Preflight PASS, `main` 병합 완료 |
-| 쭌 + 쭌 AI | `jjun/household-core-v1`, PR #15 | SPEC 35 Household/Cohabitation | Core CI + Preflight PASS, `main` 병합 완료 |
-| 쭌 + 쭌 AI | `jjun/marriage-core-v1`, PR #16 | SPEC 34 약혼/결혼/별거/이혼/사별 상태 | Core CI + Preflight PASS, `main` 병합 완료 |
-| 쭌 + 쭌 AI | `jjun/pregnancy-core-v1`, PR #18 | SPEC 36 Pregnancy: 의향/생물학/임신 진행/Needs 영향 | Core CI + Preflight PASS, `main` 병합 완료 |
-| 쭌 + 쭌 AI | `jjun/birth-genetics-core-v1`, PR #19 | SPEC 37~38 Birth/Genetics + 부모/Household/LifeHistory 연결 | Core CI + Preflight PASS, `main` 병합 완료 |
-| 쭌 + 쭌 AI | `jjun/lifecycle-growth-v1`, PR #20 | SPEC 39 Baby→Elderly 성장 단계/행동 권한/LifeHistory | Core CI + Preflight PASS, `main` 병합 완료 |
-| 쭌 + 쭌 AI | `jjun/parenting-core-v1`, PR #21 | SPEC 40 자율 Parenting + 아동 발달 상태 | Core CI + Preflight PASS, `main` 병합 완료 |
+### ASSIST_LOCK-17-R1 — Observer HUD v2 reconciliation
 
-## 쭌 측 현재 공유사항
+- Mode: active integration assist
+- Target owner: 다겸 / STILLofficial
+- Target PR: #17 `dagyeom/observer-ui-v2`
+- Base HEAD: `71b900e1a67dc8e5e9643b3cf5d404470a0791dc`
+- Helper branch: `integration/dagyeom-observer-r1-assist`
+- Locked paths:
+  - `Source/LifeLens/UI/LLObservationSubsystem.cpp`
+  - `Source/LifeLens/UI/LLObservationSubsystem.h`
+  - `Source/LifeLens/UI/LLObserverHUD.cpp`
+  - `Source/LifeLens/UI/LLObserverHUD.h`
+  - `Source/LifeLens/UI/LLObserverLabels.h`
+  - `Source/LifeLens/UI/LLObserverPlayerController.cpp`
+  - `Source/LifeLens/UI/LLObserverPlayerController.h`
+- Reason: latest-main reconcile + current Core/Bridge binding + close stale review findings without concurrent edits.
+- Status: `LOCKED / JJUN ASSIST STARTING`
+- Unlock condition: helper branch handoff is validated and integrated into PR #17, or user explicitly cancels the assist.
+- While locked, Dagyeom side should not edit the same seven UI files.
 
-- TASK_03 Android Run `34739283266`은 실제 Android UBT에서 실패했고 Cook/Package/APK 단계에는 도달하지 못했다. 사용자 지시에 따라 실패 상태 그대로 보존하며 재실행하지 않는다.
-- P11~P17 life progression Core가 `main`에 병합되어 Romance → Cohabitation → Marriage → Pregnancy → Birth/Genetics → Growth → Parenting 기반이 연결되어 있다.
-- `Character`에는 Genetics, 부모/자녀 링크, LifeHistory, LifeStage, ChildDevelopment가 추가되어 있다.
-- Parenting은 Feed/Sleep/Bathe/Hold/Play/Educate/Discipline/Comfort/HealthCare를 상황에 따라 평가하며 양육 품질이 Attachment/Trust/Confidence/Stress/SocialSkill/Personality Development에 영향을 준다.
-- 현재 PR #22에서 Genealogy / Kinship graph를 검증 중이다.
-- Core/Simulation 데이터는 다겸 UI에서 직접 수정하지 않고 읽기 API/DTO를 통해 소비한다.
+## Canonical direction — autonomous civilization
 
-## 쭌 측 다음 작업
+`Need / Curiosity → Observe → Gather → Store → Experiment → Discovery → Personal Knowledge → Craft/Build → Teach/Imitate → Shared Culture → Specialization/Exchange → Generational Civilization`
 
-1. PR #22 Genealogy Core CI/Preflight 통과 시 `main` 병합.
-2. SPEC 42 Aging: Health/Energy/Movement/Fertility/LifeGoal/FamilyRole 영향 확장.
-3. SPEC 43 Death: 사망 상태, grief/memory/social impact, 세대교체 기반.
-4. SPEC 44 LifeHistory 이벤트 범위 확장.
-5. 이후 최신 Core를 Unreal Bridge에 다시 연결할 때 기존 TASK_03 실패 원인을 반영한 새 검증 브랜치를 사용하고, 실패 Run 자체는 재실행하지 않는다.
+- 전역 tech unlock 금지
+- 시대 gate 강제 금지
+- 개인 지식/출처/전파를 Core가 권위 상태로 소유
+- Observer HUD Level 0은 계속 단순하게 유지
+- 원시 자원/도구부터 현대 기술까지 수용 가능한 presentation 유지
 
-## 다겸 측 다음 작업
+## Latest completed Jjun work
 
-1. 작업 시작 전 `tasks/HANDOFF_LOG.md`와 이 보드 최신 상태 확인.
-2. `dagyeom/observer-ui-v2`에서 기본 HUD는 전체 개요만 간결하게 유지.
-3. 주민 선택 시 상세 패널 확장: 이름/나이/LifeStage/현재행동/욕구/성격/감정/관계/가족 요약.
-4. Simulation/Core 데이터는 읽기 API로만 사용하고 직접 변경 금지.
-5. UI에 필요한 데이터가 부족하면 아래 Integration Request에 기록.
-6. PR 생성 후 structural preflight 결과와 화면/동작 확인 내용을 PR 본문에 적기.
-7. 작업 종료 시 `tasks/HANDOFF_LOG.md`에 변경 파일/검증/쭌 측 영향도를 기록.
+### PR #54 — macOS clang shadow hotfix
+- DONE / MERGED `3b649b900c44a4e48bb89171b38f5e685e757b14`
+- `ObserverReadModelV2.h` loop variable rename only
+- Preflight + Core full tests + deterministic harness PASS
+- IR-MAC-SHADOW-01 resolved
+
+### PR #53 — Civilization Observer Read DTOs v1
+- DONE / MERGED `ec30d80b2986247f0f16572efb2c082a933d796d`
+- Feature head `e3a9f6611118866a6c79eb300a7b6ab2d5ffaf31`
+- Core `34821150702` PASS
+- Preflight `34821150693` PASS
+- Unreal Linux Compile Run #16 `34821150704` PASS including UHT + UBT + final link
+- Published getters:
+  - `GetResidentCivilizationObservation(...)`
+  - `GetCivilizationWorldObservation(...)`
+- Published data:
+  - inventory/carrying
+  - technique level/confidence/practice
+  - gathering/crafting/learning skill
+  - SelfDiscovery / DirectWitness / Teaching provenance
+  - ResourceNode / StorageSite summaries
+  - civilization aggregates / recent discoveries
+- UI/Character files untouched
+- Core remains sole authority
+
+### PR #52 → #46
+- #52 Knowledge Transmission: `b90da9242003fbc0cbc553605b9abc46a17aa044`
+- #51 Autonomous Civilization Loop: `55d5211160c8edad32b01177e2b9326a9faa2b78`
+- #50 Runtime/Persistence: `c31c422c305a3a79a9553d37ac86247aa31d1853`
+- #49 Civilization Foundation: `36bd1ac81192bc689c1e811553f068f255642508`
+- #48 World Affordance: `a90ff6a5d870858a9e555ddf1e6e526bb7aa34e1`
+- #47 Witness/Rumor: `f1aab37f6f8abad1217783cc1d168cbdd2e0c20c`
+- #46 Physical Action Bridge: `753df19657ea634ea2fa7c2ac935f6273ce14c10`
+
+## Dagyeom API / design handoff
+
+Current Observer blockers from Jjun: **0**.
+
+PR #17 may now bind:
+- `GetWorldObservation()`
+- `GetResidentObservations()`
+- `GetResidentObservation(...)`
+- `GetFamilyObservation(...)`
+- `GetResidentActionDirective(...)`
+- `GetRecentCoreEvents()`
+- `OnCoreRuntimeStateChanged`
+- `GetResidentCivilizationObservation(...)`
+- `GetCivilizationWorldObservation(...)`
+
+Rules:
+- never hard-code population to 4 after runtime starts
+- UI rebuilds from Bridge after load
+- presentation does not choose competing actions
+- civilization detail belongs in selected resident/detail/major-discovery layers, not a Level 0 strategy dashboard
 
 ## Shared File Lock
 
-다음 파일은 현재 기본 소유자가 쭌 측이다. 다겸 측에서 변경하지 말고 요청을 남긴다.
-
-- `LifeLens.uproject`
-- `Source/LifeLens/LifeLens.Build.cs`
-- `Source/LifeLens/Core/LLTypes.h`
-- `Source/LifeLens/Simulation/**`
+Jjun default:
 - `Source/LifeLensCore/**`
-- `Config/**`
-- `.github/workflows/**`
-- `Tools/validate_bootstrap.py`
+- `Source/LifeLens/AI/**`
+- `Source/LifeLens/Simulation/**`
+- `Source/LifeLens/World/**`
+- Save/Load, Bridge, CI/build
 
-반대로 아래는 다겸 측 작업 중 쭌 측에서 가능한 한 건드리지 않는다.
-
+Dagyeom default:
 - `Source/LifeLens/UI/**`
-- Character의 외형/표현 전용 코드
+- Character appearance/presentation
 - `Content/UI/**`
 - `Content/Characters/**`
 
+ASSIST_LOCK은 임시이며 해제 후 원래 소유권으로 복귀한다.
+
 ## Integration Requests
 
-새 요청은 아래 형식으로 추가한다.
+### IR-MAC-SHADOW-01
+- Requester: Dagyeom/Claude
+- Target owner: Jjun
+- File: `ObserverReadModelV2.h`
+- Status: **DONE / RESOLVED**
+- Resolution: PR #54 merge `3b649b900c44a4e48bb89171b38f5e685e757b14`
+- Dagyeom R1 may resume
 
-```text
-[OPEN] 요청자: 쭌/다겸
-필요 API/데이터:
-사용 목적:
-희망 반환형/방향:
-관련 브랜치:
-```
+Current open requests: **none**.
 
-```text
-[OPEN] 요청자: 다겸
-필요 API/데이터: 선택 주민의 다차원 Relationship 읽기 API (SPEC 31 차원, 대상 주민 ID/이름 포함)
-사용 목적: 상세 패널 "관계" 항목 (보드 다겸 측 다음 작업 3)
-희망 반환형/방향: Unreal USTRUCT read DTO, `ULLSimulationSubsystem` 또는 Core Bridge의 BlueprintPure 조회 함수. UI는 읽기만.
-관련 브랜치: `dagyeom/observer-ui-v2`
-```
+## Merge / reconciliation queue
 
-```text
-[OPEN] 요청자: 다겸
-필요 API/데이터: `Tools/validate_bootstrap.py` 65행 문자열 검사 대상을 `Source/LifeLens/UI/LLObserverHUD.cpp`에서 `Source/LifeLens/UI/LLObserverLabels.h`로 변경
-사용 목적: 관측용 문구를 `LLObserverLabels.h`에 유지
-희망 반환형/방향: 스크립트 수정 (쭌 측 소유 파일)
-관련 브랜치: `dagyeom/observer-ui-v2`
-```
+1. PR #17 latest-main reconciliation + current Bridge/civilization binding + review fixes.
+2. PR #26 where independent.
+3. #29/#30 after #17.
+4. #36 after #30.
+5. #38 after #36.
+6. Integrated runtime verification.
+7. Android smoke APK.
+8. Then resume deeper civilization production chains.
 
-```text
-[OPEN] 요청자: 다겸
-필요 API/데이터: 선택 주민의 현재행동 DTO에 SocialIntent(Approach / Repair / Comfort / Avoid)와 대상 주민 ID/이름 포함
-사용 목적: 상세 패널 "현재행동" 항목 (HANDOFF "Social Execution Core v1 완료" 상대가 알아야 할 점)
-희망 반환형/방향: Unreal USTRUCT read DTO, BlueprintPure 조회 함수. UI는 읽기만.
-관련 브랜치: `dagyeom/observer-ui-v2`
-```
+## Completion rule
 
-```text
-[OPEN] 요청자: 다겸
-필요 API/데이터: 선택 주민의 감정 읽기 API (valence / arousal / intensity 요약 및 SPEC 25 세부 감정 차원)
-사용 목적: 상세 패널 "감정" 항목 (보드 다겸 측 다음 작업 3)
-희망 반환형/방향: Unreal USTRUCT read DTO, BlueprintPure 조회 함수. UI는 읽기만.
-관련 브랜치: `dagyeom/observer-ui-v2`
-```
-
-```text
-[OPEN] 요청자: 다겸
-필요 API/데이터: 선택 주민의 가족 요약 읽기 API (Partner / Parents / Children / Siblings, 각 주민 ID/이름, 혼인·동거·임신 상태)
-사용 목적: 상세 패널 "가족 요약" 항목 (보드 다겸 측 다음 작업 3)
-희망 반환형/방향: Unreal USTRUCT read DTO, BlueprintPure 조회 함수. UI는 읽기만.
-관련 브랜치: `dagyeom/observer-ui-v2`
-```
-
-```text
-[OPEN] 요청자: 다겸
-필요 API/데이터: World overview 집계 읽기 API (Households, Couples, Married Couples, Pregnancies, Major Events)
-사용 목적: World overview 정보 계층 (SPEC 61, TEAM_WORKFLOW 10절 다겸 측)
-희망 반환형/방향: Unreal USTRUCT read DTO 또는 `ULLSimulationSubsystem` BlueprintPure 집계 함수. UI는 읽기만.
-관련 브랜치: `dagyeom/observer-ui-v2`
-```
-
-```text
-[OPEN] 요청자: 다겸
-필요 API/데이터: `Source/LifeLensCore/include/lifelens/ObserverReadModelV2.h` 141행 `for(const auto& pregnancy:pregnancies.all())`가 136행 `const PregnancyState* pregnancy` 를 가려 Mac clang `-Werror -Wshadow`에서 컴파일 실패 (`LLCoreCompileUnit.cpp` 경유). 변수명 분리 요청
-사용 목적: `dagyeom/observer-ui-v2`의 latest-main reconcile(DQ-R1) 로컬 `Build.sh LifeLensEditor Mac Development` 통과
-희망 반환형/방향: 소유자 수정 (`Source/LifeLensCore/**`, @sjLim91). origin/main `b4403fa` 이후 코드
-관련 브랜치: `dagyeom/observer-ui-v2`
-```
-
-## Merge Queue
-
-- PR #22 `[CORE] Add genealogy and kinship graph` — 쭌 측, Core CI/Preflight 검증 중.
-- PR #2 `[UE] Bridge LifeLensCore into Unreal runtime` — 기존 Android 검증 실패로 BLOCKED. 실패 Run 재실행 금지.
-- PR #17 `[UI] Observer HUD v2` — 다겸 측, structural preflight PASS, 실제 UHT/UBT 검증 후 merge.
-
-## 완료/인수인계 규칙
-
-작업이 merge되면 해당 행을 `DONE`으로 바꾸고 다음 작업은 새 브랜치에서 시작한다. 오래된 `DOING` 항목이 있으면 새 작업 전에 실제 브랜치/PR 상태를 확인한다.
-
-모든 실제 변경은 상대 AI가 추적 가능하도록 `tasks/HANDOFF_LOG.md`에 남긴다. **커밋/PR이 있는데 HANDOFF가 없으면 작업 완료로 보지 않는다.**
+검증 + merge + 상태 동기화까지 완료되어야 DONE이다.

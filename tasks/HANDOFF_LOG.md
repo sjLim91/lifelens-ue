@@ -305,173 +305,6 @@
   - 현재 DTO에는 Core가 가진 이름/Needs/감정/현재행동/관계가 포함된다. 나이/성별 등 Unreal ResidentData 전용 필드는 Bridge에서 기존 데이터와 합쳐 제공해야 한다.
   - 다음 쭌 측 통합 작업은 TASK_03 Bridge에서 이 DTO를 Unreal USTRUCT/읽기 API로 변환하는 것이다.
 
-## 2026-09-13 — 다겸 측 AI
-
-### Observer HUD v2 PR 생성
-- 작성자: 다겸 측 AI
-- 브랜치/PR: `dagyeom/observer-ui-v2`, PR #17
-- 상태: `REVIEW / 실제 UHT·UBT 검증 대기`
-- 변경:
-  - `Source/LifeLens/UI/LLObserverHUD.h/.cpp` 재작성: LEVEL 0 개요 띠 + 주민 스트립, LEVEL 1 Quick Inspector(이름/나이/현재행동/상태 요약/성격 단어), LEVEL 2 상세 패널(Overview / Needs / Personality / Traits & Skills 탭)
-  - `Source/LifeLens/UI/LLObserverLabels.h` 추가: 관측용 문구와 Needs/Personality/Skill 라벨 변환
-  - `Source/LifeLens/UI/LLObservationSubsystem.h/.cpp`: 관측 단계(World / Quick / Detail), `OpenDetail` / `CloseDetail` / `StepBack`, `OnObservationLevelChanged`
-  - `Source/LifeLens/UI/LLObserverPlayerController.h/.cpp`: 탭 라우팅(HUD 크롬 → 주민 액터 → 빈 곳은 한 단계 뒤로)
-  - 욕구/관계 수치는 화면에 표시하지 않고 Good / Fine / Low / Very low 라벨만 사용
-  - 관계 표시는 제외 (다차원 Relationship read DTO 이후 추가 예정)
-  - Codex 리뷰 2건 반영 (선택 중 힌트 숨김, 카드 폭/줄바꿈)
-- 검증:
-  - Structural preflight PASS (`Tools/validate_bootstrap.py`, 로컬 + CI)
-  - LifeLens Core Tests PASS (CI, Core 미변경)
-  - 실제 UHT/UBT 미실행. 다겸 맥에 Unreal Engine 미설치. CI 또는 쭌 측 확인 필요.
-- 상대가 알아야 할 점:
-  - `Source/LifeLens/UI/**`만 수정. 공유 파일 변경 없음.
-  - `Tools/validate_bootstrap.py` 65행이 `LLObserverHUD.cpp`에서 `Tap/click a resident for details` 문자열을 확인함. 문구를 `LLObserverLabels.h`로 옮겼으므로 검사 대상을 헤더로 바꿔 주면 좋겠음. 그때까지 cpp 주석에 동일 문장 유지.
-  - 한글 폰트 에셋 필요 (`Content/UI`). 주민 이름이 한글이라 `GEngine->GetSmallFont()`로는 깨질 수 있음. 로컬 에디터가 없어 아직 에셋을 만들지 못함.
-  - PR #13 `ResidentObservation` / `RelationshipObservation`이 Unreal Bridge read API로 나오면 LEVEL 2에 Relationships / Emotion 탭 추가 예정.
-
-### Observer HUD v2 PR 생성 — 정정
-- 작성자: 다겸 측 AI
-- 브랜치/PR: `dagyeom/observer-ui-v2`, PR #17
-- 커밋: `82f126d`, `9941d77`, `2c4b25c`, `cc7f876`
-- 상태: `REVIEW / 검증 대기`
-- 변경 범위:
-  - `Source/LifeLens/UI/LLObserverHUD.h`, `.cpp`
-  - `Source/LifeLens/UI/LLObserverLabels.h`
-  - `Source/LifeLens/UI/LLObservationSubsystem.h`, `.cpp`
-  - `Source/LifeLens/UI/LLObserverPlayerController.h`, `.cpp`
-  - `tasks/TEAM_BOARD.md`, `tasks/HANDOFF_LOG.md`
-- 검증 상태:
-  - `core-tests.yml` PASS
-  - structural preflight PASS
-  - 실제 UHT/UBT: 검증 대기
-  - 화면/동작 확인: 검증 대기
-- 상대가 알아야 할 점:
-  - `tasks/TEAM_BOARD.md` 변경 포함. SHARED FILE CHANGE. 영향 범위: 다겸 행 상태, Merge Queue 항목.
-  - 이전 항목의 "공유 파일 변경 없음"은 이 항목으로 정정.
-  - `Tools/validate_bootstrap.py` 65행 문자열 검사 대상: `LLObserverHUD.cpp`. 동일 문자열을 cpp 주석에 유지.
-  - 한글 폰트 에셋 필요: `Content/UI`.
-  - 보드 다겸 측 다음 작업 3의 "관계" 항목 미포함.
-
-### Integration Request 기록
-- 작성자: 다겸 측 AI
-- 브랜치/PR: `dagyeom/observer-ui-v2`, PR #17
-- 상태: `REVIEW / 검증 대기`
-- 변경 범위:
-  - `tasks/TEAM_BOARD.md` Integration Requests: 다차원 Relationship 읽기 API, `Tools/validate_bootstrap.py` 65행 검사 대상
-- 검증 상태:
-  - 코드 변경 없음
-- 상대가 알아야 할 점:
-  - 상세 패널 "관계" 항목은 Relationship 읽기 API 제공 전까지 미구현.
-
-### TEAM_BOARD 충돌 처리
-- 작성자: 다겸 측 AI
-- 브랜치/PR: `dagyeom/observer-ui-v2`, PR #17
-- 커밋: `26e919d`
-- 상태: `REVIEW / 검증 대기`
-- 변경 범위:
-  - `tasks/TEAM_BOARD.md`: origin/main `6ce0dd8` 내용 유지. 다겸 행 상태 `REVIEW`, Merge Queue PR #17 항목, Integration Request 재적용 및 추가.
-- 검증 상태:
-  - 코드 변경 없음
-- 상대가 알아야 할 점:
-  - 쭌 측 섹션(Active Work 쭌 행, 완료된 병렬 작업, 쭌 측 현재 공유사항, 쭌 측 다음 작업, 다겸 측 다음 작업)은 origin/main 그대로.
-  - Integration Request 추가: SocialIntent 현재행동 DTO, 감정 읽기 API, 가족 요약 읽기 API, World overview 집계 읽기 API.
-
-### Observer HUD v2 — 보드 다겸 측 다음 작업 3 갱신 반영 정정
-- 작성자: 다겸 측 AI
-- 브랜치/PR: `dagyeom/observer-ui-v2`, PR #17
-- 상태: `REVIEW / 검증 대기`
-- 변경 범위:
-  - 코드 변경 없음
-- 검증 상태:
-  - 해당 없음
-- 상대가 알아야 할 점:
-  - LifeStage: LEVEL 2 Overview 탭에 표시됨 (`FLLResidentData::LifeStage`).
-  - 감정 / 관계 / 가족 요약: 읽기 API 제공 전까지 미구현. Integration Request 기록.
-  - 현재행동의 SocialIntent(Approach / Repair / Comfort / Avoid): 읽기 API 제공 전까지 미구현. Integration Request 기록.
-  - TEAM_WORKFLOW 10절 "Character visual proxy/표현 개선": `Content/Characters/**` 에셋 필요. 로컬 Unreal Editor 없음. 착수 불가.
-
-### World overview 정보 계층 v1
-- 작성자: 다겸 측 AI
-- 브랜치/PR: `dagyeom/observer-ui-v2`, PR #17
-- 커밋: `2fcf04e`
-- 상태: `REVIEW / 검증 대기`
-- 변경 범위:
-  - `Source/LifeLens/UI/LLObserverHUD.h`, `.cpp`: World overview 패널 (SPEC 61). LEVEL 0에서 상단 개요 띠 탭으로 열고 닫음. 날짜/시간, 인구, 생애단계별 인원.
-  - `Source/LifeLens/UI/LLObserverLabels.h`: World overview 문구.
-- 검증 상태:
-  - structural preflight PASS (`Tools/validate_bootstrap.py`)
-  - 실제 UHT/UBT: 검증 대기
-  - 화면/동작 확인: 검증 대기
-- 상대가 알아야 할 점:
-  - 사용 읽기 API: `ULLSimulationSubsystem::GetResidents`, `GetSimulationMinute`, `FLLResidentData::LifeStage`.
-  - Households / Couples / Married Couples / Pregnancies / Major Events: 읽기 API 제공 전까지 미표시. Integration Request 기록.
-
-### Observer HUD v2 — 로컬 화면 확인 및 탭 판정/커서 수정
-- 작성자: 다겸 측 AI
-- 브랜치/PR: `dagyeom/observer-ui-v2`, PR #17
-- 커밋: `845eb28`
-- 상태: `REVIEW / 검증 대기`
-- 변경 범위:
-  - `Source/LifeLens/UI/LLObserverPlayerController.cpp`: BeginPlay에서 `FInputModeGameAndUI`(DoNotLock, 캡처 중 커서 숨김 해제) 적용, HUD 탭 판정에 viewport 크기 전달
-  - `Source/LifeLens/UI/LLObserverHUD.h`, `.cpp`: 탭 좌표를 마지막 DrawHUD 캔버스 크기로 매핑, 탭 로그 1줄
-- 검증 상태:
-  - 로컬 `Build.sh LifeLensEditor Mac Development` (`3b578c6`): Result: Succeeded → 에디터 PIE 화면 확인: LEVEL 0 정상(띠, 스트립, 한글 이름), LEVEL 1 정상(이름·나이·Now·요약·성격·Details). LEVEL 1 카드 클릭 시 LEVEL 2 미진입, LEVEL 0으로 복귀. PIE에서 마우스가 뷰포트에 갇히고 커서 미표시.
-  - 원인: `Config/DefaultInput.ini`의 `DefaultViewportMouseCaptureMode=CapturePermanently_IncludingInitialMouseDown`, `DefaultViewportMouseLockMode=LockOnCapture`로 커서가 숨겨지고 Slate high-precision 마우스 모드가 되어 `FSceneViewport::CachedCursorPos`가 첫 클릭 위치에서 갱신되지 않음. `GetMousePosition` / `GetHitResultUnderCursor`가 첫 클릭 위치를 반환하여 카드 클릭이 빈 곳으로 판정됨.
-  - 수정 후 로컬 `Build.sh LifeLensEditor Mac Development` (`845eb28`): Result: Succeeded. structural preflight PASS.
-  - 수정 후 화면/동작 재확인: 검증 대기
-- 상대가 알아야 할 점:
-  - `Config/**`는 수정하지 않음. 커서/잠금은 PlayerController의 `SetInputMode`로 런타임에 덮어씀.
-  - 참고(다겸 영역 아님, 기록만): PIE 맵에 라이트 없음. 주민 액터가 매우 작게 보임. 모바일 가상 조이스틱 표시됨(`DefaultInput.ini` `DefaultTouchInterface=/Engine/MobileResources/HUD/DefaultVirtualJoysticks`).
-  - 에디터 실행 시 `Config/DefaultEngine.ini`, `Config/DefaultInput.ini`가 자동 수정됨. 커밋하지 않고 폐기함.
-
-### Observer HUD v2 — 탭 좌표계 통일 및 주민 선택 반경
-- 작성자: 다겸 측 AI
-- 브랜치/PR: `dagyeom/observer-ui-v2`, PR #17
-- 커밋: `9512618`
-- 상태: `REVIEW / 검증 대기`
-- 변경 범위:
-  - `Source/LifeLens/UI/LLObserverHUD.h`, `.cpp`: DrawHUD에서 scene view rect 원점 기록, `ViewportToCanvas`로 뷰포트 픽셀→캔버스 픽셀 매핑
-  - `Source/LifeLens/UI/LLObserverPlayerController.h`, `.cpp`: 주민 선택을 화면 투영 위치 기준 반경(48 논리픽셀 × Slate DPI 배율)으로 판정, 정확 트레이스 히트는 2차 판정. 탭 로그에 최종 좌표·최근접 주민 거리·반경 기록
-- 검증 상태:
-  - 재확인(`845eb28`): 마우스 창 밖 이동 정상. 주민 클릭 시 LEVEL 1 미표시. 로그 `tap (1479, 603) viewport (2846, 1712) canvas (2846, 1601)`
-  - 원인: 관찰 카메라(`ACameraActor`, aspect 제약)로 HUD 캔버스가 뷰포트 안 16:9 view rect(2846×1601)이며 원점이 레터박스만큼 어긋남. 마우스/터치/투영 좌표는 뷰포트 픽셀. 주민 액터가 화면에서 매우 작아 정확 트레이스 히트가 빗나감
-  - 수정 후 로컬 `Build.sh LifeLensEditor Mac Development` (`9512618`): Result: Succeeded. structural preflight PASS
-  - 수정 후 화면/동작 재확인: 검증 대기
-- 상대가 알아야 할 점:
-  - `Config/**`, `Characters/**`, `Core/LLLifeLensGameMode.cpp` 미수정. 레터박스 원인은 GameMode의 관찰 카메라 aspect 제약이며 UI 쪽 좌표 매핑으로 대응함.
-  - `Tools/validate_bootstrap.py`의 `GetHitResultUnderCursor` / `GetHitResultUnderFinger` 검사에 맞춰 정확 히트 경로 유지.
-
-### Observer HUD v2 — 주민 선택을 렌더 바운즈 투영 사각형으로 변경, ll.DebugTapTargets
-- 작성자: 다겸 측 AI
-- 브랜치/PR: `dagyeom/observer-ui-v2`, PR #17
-- 커밋: `50beab0`
-- 상태: `REVIEW / 검증 대기`
-- 변경 범위:
-  - `Source/LifeLens/UI/LLObserverHUD.h`, `.cpp`: `ProjectResidentTapRect`(액터 렌더 바운즈 8꼭짓점 투영 → 뷰포트 픽셀 사각형, 터치 반경만큼 확장), `TouchTargetRadiusPixels`, 콘솔 변수 `ll.DebugTapTargets`(기본 0, 1이면 바운즈 노란색·탭 사각형 청록색·원점 십자 빨간색 표시)
-  - `Source/LifeLens/UI/LLObserverPlayerController.h`, `.cpp`: 탭이 확장 사각형 안에 들면 선택, 여러 개면 바운즈에 가장 가까운 주민. 정확 트레이스 히트는 2차 판정 유지
-- 검증 상태:
-  - 재확인(`9512618`): 주민 클릭 시 LEVEL 1 미표시. 로그 `nearestResident 130~194 px radius 76 px exactHit no`
-  - 원인: `ALLResidentCharacter`의 보이는 컴포넌트는 액터 원점 중심의 DebugBody 큐브(55×55×90)와 원점 위 125유닛의 NameLabel 텍스트. 카메라 거리에서 125유닛 ≈ 180px라 이름 텍스트 클릭이 원점 투영 기준 반경(76px)을 벗어남. `ProjectWorldLocationToScreen`은 레터박스 view rect 오프셋을 포함하므로 좌표계는 일치
-  - 수정 후 로컬 `Build.sh LifeLensEditor Mac Development` (`50beab0`): Result: Succeeded. structural preflight PASS
-  - 수정 후 화면/동작 재확인: 검증 대기
-- 상대가 알아야 할 점:
-  - `Characters/**` 미수정. 참고(다겸 영역 아님, 기록만): 주민 액터가 카메라 거리(약 1900유닛)에서 큐브 55유닛 ≈ 80px로 작게 보임. 이름 라벨이 원점 위 125유닛.
-  - `ll.DebugTapTargets 1`로 투영 사각형을 화면에서 대조 가능.
-
-### DQ-R1 latest-main reconcile — 중단
-- 작성자: 다겸 측 AI
-- 브랜치/PR: `dagyeom/observer-ui-v2`, PR #17
-- 커밋: `dc3351e` (merge 미커밋, `git merge --abort`로 되돌림)
-- 상태: `RECOVERING / BLOCKED`
-- 변경 범위:
-  - 코드 변경 없음. `tasks/TEAM_BOARD.md` Integration Request 1건 추가
-- 검증 상태:
-  - origin/main `87c8ede` merge 시도: 코드 충돌 없음, `tasks/TEAM_BOARD.md` 충돌만(origin/main 기준 해결 예정)
-  - 로컬 `Build.sh LifeLensEditor Mac Development`: Result: Failed. `Source/LifeLensCore/include/lifelens/ObserverReadModelV2.h:141:25: error: declaration shadows a local variable [-Werror,-Wshadow]` (136행 `pregnancy` 선언과 충돌). `LLCoreCompileUnit.cpp`가 Core를 Unreal 모듈에 포함하여 발생
-  - structural preflight PASS
-- 상대가 알아야 할 점:
-  - 원인 파일은 `Source/LifeLensCore/**` 소유자 영역. CI Linux 컴파일과 Mac clang의 경고 플래그 차이로 보임. 수정 전까지 PR #17 reconcile 및 이후 DQ-R2/R3, DQ-01~05 reconcile 대기.
-
 ---
 
 ## 다음 인수인계 포인트
@@ -487,3 +320,200 @@
 - UI가 추가로 필요로 하는 Simulation/Core read API
 - 화면/터치/관찰 UX 확인 결과
 - PR 생성 시 shared file 포함 여부
+
+
+## 2026-09-14 — usage-limit interruption recovery
+
+- Author: 쭌 측 AI.
+- Verified remote main `4e8f50d92bb7eb08884122a001ac73174d057703` and P24 branch `48d6142834ad2fe2b34b228cec57e092e0577e36`.
+- PR #34 is open/mergeable; Core Tests `34792467903` and Preflight `34792467916` succeeded. WORK_STATE incorrectly said implementation had not started; corrected before further code edits.
+- TASK_03 PR #2 remains FROZEN. Run `34739283266` is completed/failure; no rerun or branch changes.
+- Read-only discovery also confirmed open Dagyeom PRs #17, #26, #29, #30. Their branches are not ours to change.
+- Next checkpoint: review P24 code/tests, then record merge SHA; new integration work starts on a separate branch.
+- Interruption policy: push each coherent change before external waits, record exact branch/HEAD/PR/check IDs/next command. Chat availability does not imply a background AI is still working; re-read GitHub on resume.
+
+
+### 2026-09-14 — P24 merge held: assertions exposed a Core memory defect
+
+- Author: 쭌 측 AI; branch `jjun/core-validation-recovery-v1` (base `6ee98d6`).
+- CMake is absent locally; used installed g++ C++17 with assertions enabled. `test_observer_read_model_v2` passed, but `test_relationship` aborted at line 16 after reverse-relation insertion.
+- Root cause: RelationshipBook::getOrCreate returns a vector element reference, then subsequent insertion reallocates it. Existing test holds both directions. This is a real dangling reference, not a P24 DTO failure.
+- CI root cause: core-tests.yml configures Release; CMake defines NDEBUG, eliminating legacy assert checks (including expressions with side effects). Old PASS cannot establish assertion-based correctness.
+- Changed priority: repair this bounded Core/validation defect before merging P24 or starting Unreal read APIs. TASK_03 remains FROZEN.
+- Next: reference-stable storage, Release assertion guard, full tests and targeted ASan/UBSan, then PR/CI and durable checkpoint.
+
+### Core validation recovery — first implementation checkpoint
+
+- RelationshipBook now uses insertion-ordered `std::deque`; returned references/pointers survive subsequent insertions. Iterators still must not span insertions. All existing `all()` consumers use range iteration; no explicit vector consumers were found.
+- Added growth regression with 1,000 inserted relationships and both directed references retained. Original code reproduced AddressSanitizer `heap-use-after-free`; corrected targeted ASan/UBSan run passed.
+- All Core test targets use `lifelens_add_test`, which undefines NDEBUG even in Release. A new `test_assertions_enabled` fails compilation if this guarantee disappears.
+- Structural preflight PASS. Full CMake Release suite and deterministic harness pending at this checkpoint; local CMake was installed in scratch to validate the actual configuration.
+- Next: full Release CTest, confirm optimized test flags include `-UNDEBUG`, PR/CI. No Unreal/UI/TASK_03 files changed.
+
+### P24 Observer Read Model v2 — refreshed validation checkpoint
+
+- PR #35 merged as `31b2263de3f4a9c80650d1139213d0c38acc8058`; main Core CI `34793860254` and Preflight `34793860178` passed.
+- Merged main checkpoint `bccb8b149877b87146700a7fdf5aacf12e9c0a84` into P24, resolving the CMake conflict by keeping every main test and registering `test_observer_read_model_v2` with `lifelens_add_test`.
+- 27/27 local CMake Release tests passed; all 27 compiled with assertions active. Same-seed one-day harness and structural preflight passed. P24 head CI is the next gate.
+- P24 provides 11 emotion axes plus summaries; family partner/history/cohabitation/pregnancy/parent-child-sibling copies; population/life-stage/household/couple/pregnancy counts and major LifeHistory record count.
+- Scope: these are Core read DTOs, not a live Unreal bridge. `majorLifeEvents` counts individual LifeHistory entries, not deduplicated world events. The DTO does not yet expose GenerationContinuity; the separate existing assessment API remains available.
+- Integration finding: Core `Simulation` currently owns World/RelationshipBook but no family books; Unreal `ULLSimulationSubsystem` still owns its separate resident/save data. A future bridge must first establish authoritative state and GUID mapping, preserve save/load identity, and avoid presenting absent Core data as a real empty family.
+- Frozen TASK_03 and all Dagyeom branches remain untouched. Next: PR #34 refreshed CI → merge → record exact next integration task in main.
+
+### 2026-09-14 — Observer Runtime Bridge v1 checkpoint
+
+- 작성자: 쭌 측 AI
+- 브랜치/PR: `jjun/observer-runtime-bridge-v1`, PR #37
+- 기준: P24가 병합된 `main` merge SHA `b4403faf138c153bcd83be266cde5026ea53b831`에서 분리 시작.
+- 변경 범위:
+  - `Source/LifeLens/Simulation/LLCoreReadTypes.h`
+  - `Source/LifeLens/Simulation/LLCoreBridgeSubsystem.h/.cpp`
+  - `Source/LifeLens/Simulation/LLCoreCompileUnit.cpp`
+  - `Source/LifeLens/LifeLens.Build.cs`
+  - `Tools/validate_bootstrap.py`
+  - 상태/인수인계 문서
+- 구현:
+  - 최신 LifeLensCore `ResidentObservation` / P24 emotion observation을 Unreal Blueprint/read DTO로 투영.
+  - Needs, 11개 Emotion 축, valence/arousal/intensity, Physical/Social activity와 target, 방향성 Relationship 13차원, socialBond/romancePotential, Memory/Belief count, 기본 world resident count를 읽기 전용으로 제공.
+  - 식별은 이름이 아니라 `(WorldSeed, Core CharacterId)`로 결정론적 `FGuid`를 생성해 유지.
+  - Core는 표준 C++17로 유지하고 Unreal reflection/type은 Bridge 쪽에만 둠.
+  - 현재 Core `Simulation`이 family books를 권위 상태로 소유하지 않으므로 Family/Household/Romance/Pregnancy aggregate를 가짜 빈 데이터로 노출하지 않음.
+- 검증:
+  - PR #37 head `1cd3139d4756386d4bd4ee3a3b59d2c74467ed7a` 기준 LifeLens Preflight Run `34794889890` PASS.
+  - Preflight는 Core/Unreal 경계 역침투 검사와 필수 Bridge 계약을 포함함.
+  - 현재 세션 로컬 컨테이너는 외부 GitHub DNS가 차단되어 checkout 검증은 실행하지 못했음; 코드 실패가 아님.
+  - 실제 Unreal UHT/UBT는 아직 PENDING이며 APK/패키징 성공을 주장하지 않음.
+- 상대가 알아야 할 점:
+  - `Source/LifeLens/UI/**`는 수정하지 않았고 다겸 UI 브랜치와 직접 충돌시키지 않음.
+  - 다겸은 이 PR 병합/컴파일 검증 후 `GetResidentObservations`, `GetResidentObservation`, `GetWorldObservation`을 소비할 수 있음.
+  - 기존 TASK_03 PR #2와 Android Run `34739283266`은 사용자 지시대로 FROZEN 상태 그대로이며 수정/재실행하지 않았음.
+- 다음 행동:
+  - 문서 checkpoint 반영 후 최신 PR head의 Preflight를 다시 확인.
+  - UHT/UBT 검증 경로는 FROZEN TASK_03을 되살리지 않고 별도 최신-main 검증 작업으로 처리.
+
+### 2026-09-14 — Production New Game + Autonomous Family progression completion
+
+- 작성자: 쭌 측 AI
+- PR #42: `jjun/production-new-game-runtime-v1`, merge `5c6f2c071ca00bcd4b26d6e002bf5c618d02ff1e`.
+- PR #43: `jjun/autonomous-family-progression-v1`, feature head `81dbb57d190810cc3318e82ba952064d50fd8fdc`, merge `179e3a65aaa6ff8d2243117c7aebfd760812c73d`.
+- 변경 범위:
+  - #42: production New Game를 Core-authoritative로 전환하고 founder Sex/Age/LifeStage/Personality를 Unreal read DTO에 노출.
+  - #43: Core-only family progression. 관계/성격 기반 chemistry → dating → cohabitation → engagement → marriage → pregnancy → birth를 `Simulation` runtime에 연결.
+  - 출산된 child는 실제 World resident가 되며 genetics / genealogy / household / parent-child links / LifeHistory / runtime state를 보유.
+  - marriage는 Genealogy spouse link를 갱신하고 Simulation은 authoritative BirthBook을 소유.
+- 검증:
+  - #42 Preflight `34799244015` PASS; Unreal Linux Compile `34799244011` PASS including actual UHT/UBT.
+  - #43 Core Tests `34801572846` PASS including Configure / Build / Test / Deterministic harness smoke.
+  - #43 Preflight `34801572858` PASS.
+  - #43 first failed Core run `34801444613` was a duplicate helper-name compile collision only; fixed in final head and superseded by the passing run.
+- 상대가 알아야 할 점:
+  - NEW GAME는 4명으로 시작하지만 이제 출산으로 `World::characters`가 증가할 수 있으므로 UI/Presentation에서 인구 4명 고정을 가정하면 안 된다.
+  - 기존 Observer family/world read API는 실제 자동 진행 상태를 읽게 된다.
+  - 다겸 영역 파일은 #42/#43에서 수정하지 않았다.
+  - old TASK_03 PR #2 / Run `34739283266`은 FROZEN 그대로다.
+- 다음 쭌 측 우선순위:
+  - Full Core Save/Load v1: 진화된 전체 Core 상태를 snapshot/restore하고 load 후 deterministic continuation을 검증한 뒤 Unreal SaveGame을 adapter로 전환한다.
+
+### 2026-09-14 — Full Core Save/Load + Unreal SaveGame v2 completion
+
+- 작성자: 쭌 측 AI
+- PR #44: `jjun/core-save-load-v1`, feature head `64d2fb25f6453112aabaef2d809b0528c9dc4566`, merge `2b3f9882703ed73cb8318ae262f26bebb995c209`.
+- PR #45: `jjun/unreal-savegame-adapter-v1`, feature head `547b3f94e0c3df6df15d723e72c8084cd10a7c29`, merge `3c646ba331b8199a295fd6f2e9cac1235d844679`.
+- 변경 범위:
+  - #44: `SimulationStateSnapshot v1`로 World/RNG/Character 전체 상태, Relationship/Genealogy/Romance/Household/Pregnancy/Birth books, runtime plan/cooldown/position/social state, Core logs를 capture/restore.
+  - #45: versioned Core binary codec(`LLSNAP01`)과 Unreal SaveGame v2 adapter를 추가하여 실제 파일 저장 경로가 Core snapshot bytes를 권위 상태로 저장/복원.
+  - v2 Load는 임시 Core candidate에서 decode+restore 검증 후 live world를 교체하고, compatibility projection/GUID index를 복원된 Core에서 다시 생성.
+  - v1 old save는 migration 용도로만 seed+minute replay를 유지하며 legacy Residents/Relationships 배열은 권위 상태로 복원하지 않음.
+  - UI/Characters/Content 파일은 수정하지 않음.
+- 검증:
+  - #44 Core Tests `34802611336` PASS incl Configure / Build / Test / deterministic harness; Preflight `34802611299` PASS.
+  - #44 rich-state deep roundtrip + unsupported-version rejection + load 후 추가 10,000분 deterministic continuation PASS.
+  - #45 Core Tests `34803226434` PASS incl deterministic harness.
+  - #45 Structural Preflight `34803226458` PASS.
+  - #45 Unreal Linux Compile `34803226433` PASS including actual UE 5.6 UHT + UBT.
+  - snapshot binary canonical roundtrip, corrupt/truncated/trailing payload rejection, post-load continuation test PASS.
+- 상대가 알아야 할 점:
+  - 저장/로드 후 UI는 cached compatibility 배열이 아니라 현재 `ULLCoreBridgeSubsystem` read DTO를 다시 읽어 화면을 구성해야 한다.
+  - `(WorldSeed, Core CharacterId) -> FGuid` 안정 식별 의미는 restore 후에도 유지된다.
+  - NEW GAME 4명 고정 가정은 금지이며 출산/세대 진행으로 주민 수가 증가할 수 있다.
+  - old TASK_03 PR #2 / Run `34739283266`은 계속 FROZEN이다.
+- 다음 쭌 측 우선순위:
+  - Core Decision → Unreal Physical Action Bridge v1: Core가 결정한 물리/사회 행동을 Unreal World/AI가 실행·표현하게 하여 남아 있는 split-brain을 제거한다.
+
+### 2026-09-14 — Core Physical Action Bridge + Witness/Rumor completion
+
+- 작성자: 쭌 측 AI
+- PR #47: `jjun/witness-rumor-core-v1`, feature head `8c03b349d8489a847b4e4fb7e22dc974e91be8cf`, merge `f1aab37f6f8abad1217783cc1d168cbdd2e0c20c`.
+- PR #46: `jjun/core-physical-action-bridge-v1`, feature head `31c00cb0d751bb33825df31c7e758e60ff54402c`, merge `753df19657ea634ea2fa7c2ac935f6273ce14c10`.
+- 변경 범위:
+  - #47: pure-Core `SocialFact`, `KnowledgeReceipt`, `SocialStatement`, `SocialKnowledgeBook`와 direct/heard provenance, deterministic retell attenuation/distortion, trust-sensitive acceptance, duplicate/loop suppression, Memory/Belief integration을 추가.
+  - #46: Core `ResidentObservation`의 typed physical/social authority를 Unreal `FLLCoreActionDirective`로 투영하고, `ALLWorldDirector`가 legacy `ChooseAction()` 및 projection-only outcome mutation 대신 Core directive를 미러하도록 전환.
+  - #46 physical intents: Eat / Drink / Sleep / Toilet / Hygiene. Social intents: Approach / Avoid / Repair / Comfort.
+  - 기존 `ELLActionIntent` ordinal 0–6은 보존하고 `Drink`는 7로 append하여 Blueprint/persisted compatibility를 유지.
+  - #46 changed files는 9개 Jjun-owned Core/Simulation/World/validator이며 Dagyeom UI/Character presentation/Content는 수정하지 않음.
+  - #47 changed files는 정확히 3개 pure-Core 파일이며 #46과 파일 중첩 없음.
+- 검증:
+  - #47 Core Tests `34806559374` PASS incl Configure / Build / Test / deterministic harness.
+  - #47 Structural Preflight `34806559379` PASS.
+  - #46 Core Tests `34805882778` PASS incl deterministic harness.
+  - #46 Structural Preflight `34805882776` PASS.
+  - #46 Unreal Linux Compile `34805882789` / Run #10 PASS; UE 5.6 image verify, UHT, UBT 전부 SUCCESS.
+- 상대가 알아야 할 점:
+  - 현재 행동의 simulation authority는 covered intents에 대해 Core이며, UI/Character presentation에서 별도 action chooser를 만들면 안 된다.
+  - 다겸은 `ULLCoreBridgeSubsystem::GetResidentActionDirective()`로 typed current action + stable target ResidentId를 읽을 수 있다.
+  - #47은 아직 domain-only이므로 rumor/witness UI 필드를 가정하면 안 된다. live Simulation/read DTO wiring은 후속 작업이다.
+  - #46은 compile 검증까지 완료했지만 실제 PIE/실기기에서 이동/anchor/animation 상호작용 품질 검증은 후속 runtime QA가 필요하다.
+  - old TASK_03 PR #2 / Run `34739283266`은 계속 FROZEN이다.
+- 다음 쭌 측 후보:
+  - Physical Interaction / Smart Object Execution v1 또는 Witness / Rumor Runtime Wiring v1. 새 작업은 state lock + 별도 branch 생성 전까지 시작된 것으로 간주하지 않는다.
+
+### 2026-09-14 — World Affordance + Civilization Foundation + Persistence completion
+
+- 작성자: 쭌 측 AI
+- PR #48: `jjun/physical-smart-object-v1`, feature head `505e356d277cb0896109f6d4cdd75bcf06cdab54`, merge `a90ff6a5d870858a9e555ddf1e6e526bb7aa34e1`.
+- PR #49: `jjun/civilization-foundation-v1`, feature head `ac8e0868f819a49d8b2c0aec947978258da56028`, merge `36bd1ac81192bc689c1e811553f068f255642508`.
+- PR #50: `jjun/civilization-runtime-state-v1`, feature head `543ee006a48d8a97d7cf37de65f03c74c1b60e3e`, merge `c31c422c305a3a79a9553d37ac86247aa31d1853`.
+- 변경 범위:
+  - #48: reservable World Affordance execution infrastructure. Current modern-looking bootstrap anchors are development-only and the same reservation/use layer is intended for resource nodes, fires, work surfaces, storage, crafting stations, tools, machines and furniture.
+  - #49: pure-Core material/resource/inventory/storage/personal-knowledge/experiment/discovery/crafting foundation. Technology begins as individual knowledge; no global recipe unlock or forced era gate.
+  - #50: `Character` owns authoritative `IndividualCivilizationState`; `World` owns ResourceNode/StorageSite collections. NEW GAME natural resource substrate includes Stone / Flint / Wood / Fiber / Clay / Water / PlantFood.
+  - #50 snapshot binary format v2 persists resource depletion, resident inventory, personal Knowledge level/confidence/practice and shared storage. Legacy binary v1 decode remains supported with deterministic civilization migration.
+  - `docs/CIVILIZATION_PROGRESSION_v1.md` is canonical alongside the original master spec.
+- 검증:
+  - #48 Structural Preflight `34808292399` PASS; Unreal Linux Compile Run #14 `34808292682` PASS including actual UE 5.6 UHT+UBT.
+  - #49 Core Tests `34809360826` PASS incl Configure / Build / Test / deterministic harness; Preflight `34809360739` PASS.
+  - #50 Core Tests `34810329867` PASS incl Configure / Build / Test / deterministic harness; Preflight `34810329862` PASS.
+- 상대가 알아야 할 점:
+  - LifeLens는 완성된 현대 가정에서 시작하는 게임으로 고정하지 않는다. 장기 방향은 자원 채집 → 저장 → 실험/발견 → 개인 지식 → 제작 → 지식 전파 → 세대 누적 문명이다.
+  - 다겸 UI/Character Presentation은 원시 자원/도구부터 이후 기술까지 수용 가능한 데이터 주도형 표현을 유지한다.
+  - #50의 Inventory/Knowledge/Resource 상태는 Core 내부 권위 상태로 존재하지만 아직 Observer/Unreal read DTO로 노출되지 않았으므로 UI에서 placeholder를 만들지 않는다.
+  - 현재 main HUD는 계속 observer-first로 단순하게 유지한다.
+  - old TASK_03 PR #2 / Run `34739283266`은 계속 FROZEN이다.
+- 다음 쭌 측 잠금:
+  - **Autonomous Civilization Action Loop v1** — Core에서 Needs / curiosity / inventory / personal knowledge / world resources를 바탕으로 Gather / Store / Experiment / Craft를 자율 선택·실행하도록 연결한다. 이후 knowledge transmission과 Observer read DTO로 이어간다.
+
+### 2026-09-14 — Autonomous Civilization Action Loop completion
+
+- 작성자: 쭌 측 AI
+- PR #51: `jjun/autonomous-civilization-loop-v1`, feature head `729536ac3f8f2222e68c0d0d1a1726c98ffe19fa`, merge `55d5211160c8edad32b01177e2b9326a9faa2b78`.
+- 변경 범위:
+  - pure-Core `CivilizationIntent` Gather / Store / Experiment / Craft를 Physical/Social과 분리된 세 번째 utility 축으로 추가.
+  - 긴급 Needs가 있으면 생존이 문명보다 우선하며, 문명 행동은 15분 decision slot에서만 경쟁하여 기존 생활/사회 루프를 굶기지 않는다.
+  - Gather는 실제 finite ResourceNode를 감소시키고 Inventory와 gathering skill을 갱신한다.
+  - Store는 carrying pressure가 높을 때 surplus를 shared StorageSite로 옮긴다.
+  - Experiment는 개인 Knowledge/prerequisite/material을 검사하며 실패 시 재료 소모 + Hypothesized, 성공 시 해당 주민 개인만 Reproducible discovery를 얻는다.
+  - Craft는 개인 Reproducible 기술과 실제 입력재료가 있을 때만 재현된다.
+  - WorldSeed + CharacterId 기반 개인 preference와 simulation minute 기반 experiment roll로 별도 persisted counter 없이 결정론을 유지한다.
+  - renewable ResourceNode는 일 단위로 재생되고, repeated NEW GAME는 resource/storage를 초기 상태로 reset한다.
+  - Civilization event는 Core log에 deterministic하게 기록한다.
+- 검증:
+  - Core Tests `34811869666` PASS: Configure / Build / 전체 Test / deterministic harness smoke.
+  - Structural Preflight `34811869612` PASS.
+  - 전용 테스트는 urgent hunger survival priority, personal knowledge divergence, autonomous Store, Experiment→Discovery→Craft, 20,000분 NEW GAME 진행, same-seed canonical bytes, Save/Load 후 추가 2,500분 exact continuation, repeated NEW GAME reset을 검증한다.
+- 상대가 알아야 할 점:
+  - 이제 문명 기능은 데이터만 존재하는 것이 아니라 실제 Core residents가 자율적으로 실행한다.
+  - Civilization을 SocialIntent에 섞지 않았으므로 기존 Observer의 Social 의미가 오염되지 않는다.
+  - 아직 Civilization current-action/read DTO는 Unreal/UI에 공개하지 않았으므로 다겸 UI는 placeholder를 만들지 않는다.
+  - old TASK_03 PR #2 / Run `34739283266`은 계속 FROZEN이다.
+- 다음 쭌 측 잠금:
+  - **Civilization Knowledge Transmission v1** — 발견/제작 지식이 개인에게 고립되지 않도록 #47 Witness/Rumor provenance를 재사용해 목격·모방·직접 교육으로 불완전하게 전파한다.

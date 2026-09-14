@@ -36,13 +36,15 @@ enum class ELLRelationshipStage : uint8
 UENUM(BlueprintType)
 enum class ELLActionIntent : uint8
 {
-    Idle,
-    Eat,
-    Sleep,
-    Socialize,
-    Hygiene,
-    Toilet,
-    HaveFun
+    // Keep persisted/Blueprint ordinals stable. New intents append only.
+    Idle = 0,
+    Eat = 1,
+    Sleep = 2,
+    Socialize = 3,
+    Hygiene = 4,
+    Toilet = 5,
+    HaveFun = 6,
+    Drink,
 };
 
 USTRUCT(BlueprintType)
