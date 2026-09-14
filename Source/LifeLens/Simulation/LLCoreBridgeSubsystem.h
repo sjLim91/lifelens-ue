@@ -43,7 +43,7 @@ public:
     void SetExternalPhysicalExecutionEnabled(bool bEnabled);
 
     UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Action")
-    bool CompleteResidentPhysicalAction(FGuid ResidentId);
+    bool CompleteResidentPhysicalAction(FGuid ResidentId, bool bEmergencyFallback);
 
     UFUNCTION(BlueprintPure, Category="LifeLens|Core|Observer")
     bool IsCoreRunning() const { return CoreSimulation != nullptr; }
