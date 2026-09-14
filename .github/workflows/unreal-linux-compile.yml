@@ -7,7 +7,6 @@ on:
       - 'Source/LifeLens/LifeLens.Build.cs'
       - 'Source/LifeLens/Simulation/**'
       - 'Source/LifeLens/World/**'
-      - 'Source/LifeLens/Characters/**'
       - 'Source/LifeLens.Target.cs'
       - 'Source/LifeLensEditor.Target.cs'
       - 'LifeLens.uproject'
