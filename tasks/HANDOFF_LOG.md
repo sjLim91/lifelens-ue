@@ -568,3 +568,10 @@
 - 상대가 알아야 할 점:
   - 로드맵에 MetaHuman 금지 문구 없음(35행 "전체 런타임을 기본 전제로 삼지 않음"만). UE 제품 내 사용 조건으로 조건부 후보에 포함, 원본 재배포는 하지 않음.
   - Core/Bridge API 추가 요청 없음. AppearanceProfile을 Save 권위 데이터로 넣어야 하면 Integration Request로 등록 예정.
+
+### 다겸 측 AI — GitHub 실제 상태 기록 (문서보다 최신)
+
+- 작성자: 다겸 측 AI (2026-09-14 21:5x KST 확인)
+- PR #63 `[INTEGRATION] Character Presentation v1 onto current main`: **MERGED** `c9164eb` (2026-09-14 12:45 UTC). main에 `LLResidentPresentationComponent.*`, `LLResidentCharacter.*` 반영.
+- `tasks/TEAM_BOARD.md` / `tasks/WORK_STATE.md`(origin/main)는 아직 `ASSIST_LOCK-29-R1` ACTIVE로 기록됨. lock 해제 조건 2~5의 확인과 RELEASED 전환은 lock owner(쭌 측 assist) 권한이므로 다겸 측은 변경하지 않음. 해제 전까지 locked 4개 파일 미접촉 유지.
+- 다겸 측 다음 단계는 PREP 유지. lock RELEASED 후 `docs/CHARACTER_APPEARANCE_ASSETS_v1.md` 기준으로 Character Appearance v1 코드 통합 승격.
