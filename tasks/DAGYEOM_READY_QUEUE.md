@@ -27,8 +27,13 @@
 - Character Presentation v1 — DONE via integration PR #63.
   - main merge `c9164ebf3cc70a194d3f8f6e50dcfb3c9df2a986`
   - Preflight `34843425475` PASS
-  - Unreal Linux Compile `34843425495` PASS including actual UE 5.6 UHT/UBT/link
+  - Unreal Linux Compile `34843425495` PASS
   - `ASSIST_LOCK-29-R1` RELEASED
+- Character Appearance projection support — DONE via PR #65.
+  - main merge `86663cb10f245bf185984a3622e4a86596e14923`
+  - Preflight `34845789763` PASS
+  - Unreal Linux Compile `34845789757` PASS including actual UE 5.6 UHT/UBT/link
+  - use `FLLAppearanceProfile` / `ULLAppearanceProfileLibrary::MakeDeterministicAppearanceProfile(...)`
 
 ## ACTIVE LOCK
 
@@ -38,10 +43,11 @@
 
 ### Character Appearance v1
 
-Start from current latest `main` at or after `c9164ebf3cc70a194d3f8f6e50dcfb3c9df2a986`.
+Start from current latest `main` at or after `86663cb10f245bf185984a3622e4a86596e14923`.
 
 Detailed acceptance criteria: `docs/CHARACTER_APPEARANCE_ROADMAP.md`.
 Canonical asset decision: `docs/CHARACTER_ASSET_TRACK.md`.
+Appearance projection contract: `docs/CHARACTER_APPEARANCE_DATA_CONTRACT.md`.
 
 **Default asset track: Track B — Quaternius CC0.**
 
@@ -55,7 +61,7 @@ Minimum:
 - real humanoid skeletal mesh
 - skin / face / eyes / hair / default clothing
 - shared/common skeleton + modular appearance
-- deterministic `AppearanceProfile` from stable resident identity
+- map merged PR #65 `FLLAppearanceProfile` values/variant indices into presentation assets
 - NEW GAME residents visually distinct
 - Save/Load appearance continuity
 - Android LOD/mobile fallback
@@ -63,9 +69,10 @@ Minimum:
 
 Implementation rules:
 - Core action/simulation authority remains in Core/Bridge.
-- Character presentation may read authoritative data but must not add a competing action chooser or simulation authority.
-- do not revive/rebase original stale PR #29 as the product path; Character Presentation is already in current main.
-- if AppearanceProfile/Genetics/SaveLoad requires new authoritative data, add an Integration Request to `tasks/TEAM_BOARD.md` for Jjun support.
+- Character presentation may read authoritative/projection data but must not add a competing action chooser or simulation authority.
+- do not create a second appearance SaveGame/cache; PR #65 deliberately provides deterministic projection from stable resident identity.
+- do not revive/rebase original stale PR #29 as the product path.
+- if genuinely new authoritative Genetics/SaveLoad data is needed beyond the merged contract, add an Integration Request to `tasks/TEAM_BOARD.md`.
 - keep Level 0 observer UX uncluttered.
 
 ## AFTER APPEARANCE
@@ -96,28 +103,29 @@ Proceed after #36.
 
 **0개.**
 
-새 API/SaveLoad gap이 실제 발견될 때만 `TEAM_BOARD.md`에 Integration Request를 만든다.
+PR #65 support is already merged. 새 API/SaveLoad gap이 실제 발견될 때만 `TEAM_BOARD.md`에 Integration Request를 만든다.
 
 ## Integration Sprint rule
 
-Jjun default support = REVIEW_ONLY.
+Jjun default support = `REVIEW_ONLY`.
 실제 Dagyeom-owned 수정 지원은 exact HEAD 확인 → ASSIST_LOCK → `integration/dagyeom-<scope>-assist` → 검증/handoff → lock 해제 순서다.
 `dagyeom/*` branch에 Jjun AI direct push 금지.
 
 ## Canonical order
 
 1. Character Presentation v1 — DONE.
-2. Character Appearance v1 — READY_NOW / Track B Quaternius CC0.
-3. Character Motion & Context v1 minimum.
-4. PR #30 Observer UX Polish.
-5. PR #36 Mobile Touch.
-6. PR #38 Visual Feedback.
-7. Core + Observer + Human Character integrated runtime verification.
-8. Android smoke APK + profiling.
-9. MetaHuman comparison / upgrade decision.
-10. Appearance Genetics & Lifecycle.
-11. Clothing/Equipment civilization linkage.
-12. deeper civilization production chains.
+2. Appearance data/projection support — DONE via PR #65.
+3. Character Appearance v1 — READY_NOW / Track B Quaternius CC0.
+4. Character Motion & Context v1 minimum.
+5. PR #30 Observer UX Polish.
+6. PR #36 Mobile Touch.
+7. PR #38 Visual Feedback.
+8. Core + Observer + Human Character integrated runtime verification.
+9. Android smoke APK + profiling.
+10. MetaHuman comparison / upgrade decision.
+11. Appearance Genetics & Lifecycle.
+12. Clothing/Equipment civilization linkage.
+13. deeper civilization production chains.
 
 ## Canonical product direction
 
