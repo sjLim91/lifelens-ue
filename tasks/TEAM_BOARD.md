@@ -28,9 +28,25 @@
 
 ## Current Assist Locks
 
-**없음.**
+### ASSIST_LOCK-17-R1 — Observer HUD v2 reconciliation
 
-쭌이 PR #17 코드를 직접 수정하게 되면 먼저 exact HEAD와 paths를 기록하고 ASSIST_LOCK을 생성한다.
+- Mode: active integration assist
+- Target owner: 다겸 / STILLofficial
+- Target PR: #17 `dagyeom/observer-ui-v2`
+- Base HEAD: `71b900e1a67dc8e5e9643b3cf5d404470a0791dc`
+- Helper branch: `integration/dagyeom-observer-r1-assist`
+- Locked paths:
+  - `Source/LifeLens/UI/LLObservationSubsystem.cpp`
+  - `Source/LifeLens/UI/LLObservationSubsystem.h`
+  - `Source/LifeLens/UI/LLObserverHUD.cpp`
+  - `Source/LifeLens/UI/LLObserverHUD.h`
+  - `Source/LifeLens/UI/LLObserverLabels.h`
+  - `Source/LifeLens/UI/LLObserverPlayerController.cpp`
+  - `Source/LifeLens/UI/LLObserverPlayerController.h`
+- Reason: latest-main reconcile + current Core/Bridge binding + close stale review findings without concurrent edits.
+- Status: `LOCKED / JJUN ASSIST STARTING`
+- Unlock condition: helper branch handoff is validated and integrated into PR #17, or user explicitly cancels the assist.
+- While locked, Dagyeom side should not edit the same seven UI files.
 
 ## Canonical direction — autonomous civilization
 
