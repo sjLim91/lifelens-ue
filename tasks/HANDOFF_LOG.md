@@ -341,3 +341,11 @@
 - CI root cause: core-tests.yml configures Release; CMake defines NDEBUG, eliminating legacy assert checks (including expressions with side effects). Old PASS cannot establish assertion-based correctness.
 - Changed priority: repair this bounded Core/validation defect before merging P24 or starting Unreal read APIs. TASK_03 remains FROZEN.
 - Next: reference-stable storage, Release assertion guard, full tests and targeted ASan/UBSan, then PR/CI and durable checkpoint.
+
+### Core validation recovery — first implementation checkpoint
+
+- RelationshipBook now uses insertion-ordered `std::deque`; returned references/pointers survive subsequent insertions. Iterators still must not span insertions. All existing `all()` consumers use range iteration; no explicit vector consumers were found.
+- Added growth regression with 1,000 inserted relationships and both directed references retained. Original code reproduced AddressSanitizer `heap-use-after-free`; corrected targeted ASan/UBSan run passed.
+- All Core test targets use `lifelens_add_test`, which undefines NDEBUG even in Release. A new `test_assertions_enabled` fails compilation if this guarantee disappears.
+- Structural preflight PASS. Full CMake Release suite and deterministic harness pending at this checkpoint; local CMake was installed in scratch to validate the actual configuration.
+- Next: full Release CTest, confirm optimized test flags include `-UNDEBUG`, PR/CI. No Unreal/UI/TASK_03 files changed.

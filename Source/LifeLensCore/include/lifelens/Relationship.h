@@ -1,7 +1,7 @@
 #pragma once
 #include <algorithm>
 #include <cstddef>
-#include <vector>
+#include <deque>
 #include "Ids.h"
 
 namespace lifelens {
@@ -122,6 +122,9 @@ inline RelationshipDelta relationshipDeltaFor(RelationshipEvent event, double in
 
 class RelationshipBook {
 public:
+    // References and pointers remain valid across getOrCreate insertions.
+    // As with other containers, assignment/destruction of the book invalidates
+    // them; callers must not retain iterators while inserting new relationships.
     Relationship& getOrCreate(CharacterId from, CharacterId to)
     {
         for(auto& r:items_) if(r.from==from && r.to==to) return r;
@@ -138,10 +141,11 @@ public:
     }
 
     std::size_t size() const { return items_.size(); }
-    const std::vector<Relationship>& all() const { return items_; }
+    const std::deque<Relationship>& all() const { return items_; }
 
 private:
-    std::vector<Relationship> items_;
+    // Preserve deterministic insertion order without moving existing records.
+    std::deque<Relationship> items_;
 };
 
 }
