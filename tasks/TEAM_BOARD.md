@@ -2,29 +2,28 @@
 
 이 파일은 쭌(sjLim91), 다겸(STILLofficial), 양쪽 AI의 작업 잠금/분배 보드다.
 
-> **LIVE LOCK STATUS (main): `ASSIST_LOCK-29-R1 = RELEASED`. Current active assist locks = 0.**
-> PR #63 merged as `c9164ebf3cc70a194d3f8f6e50dcfb3c9df2a986`. Older branch copies that still show ACTIVE are stale and must not be treated as authoritative.
+> **LIVE LOCK STATUS (main): active assist locks = 0.**
+> 실제 `main` / branch / PR / Actions가 문서보다 우선한다.
 
 ## 최우선 규칙
 
-- 실제 `main` / branch / PR / Actions가 문서보다 우선한다.
-- 기능 작업 전에 `WORK_STATE.md` → 역할별 READY queue → 이 보드 → `HANDOFF_LOG.md`를 맞춘다.
+- 기능 작업 전 `WORK_STATE.md` → 역할별 READY queue → 이 보드 → `HANDOFF_LOG.md`를 맞춘다.
 - ACTIVE_LOCK 파일은 lock owner 외 수정 금지.
-- `NEXT`/`AFTER`/`HIGH PRIORITY`는 작업 허가가 아니다. 실제 착수 가능 상태는 `READY_NOW` 또는 `PARALLEL_SAFE_NOW`다.
+- 실제 즉시 착수 가능 상태는 `READY_NOW` 또는 `PARALLEL_SAFE_NOW`뿐이다.
+- `NEXT` / `AFTER` / `HIGH PRIORITY` / `READY_AFTER_*`는 즉시 착수 허가가 아니다.
 - 쭌이 다겸 작업을 도울 때는 `docs/INTEGRATION_SPRINT.md`를 따른다.
 - 기본 지원은 REVIEW_ONLY이며 `dagyeom/*` direct push 금지.
+- 검증 전용 PR은 제품 코드로 병합하지 않는다.
 
 ## Active Work
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 다겸 + 다겸 AI | PR #67 / `dagyeom/character-appearance-v1` | Character Appearance v1 | Character appearance/presentation + `Content/Characters/**` | ACTIVE / CLOSEOUT |
-| 쭌 + 쭌 AI | PR #66 | World Affordance Fallback v1 | `Source/LifeLens/World/**` + canonical docs | DONE / MERGED `0ad8d6b...` |
-| 쭌 + 쭌 AI | PR #68 / `jjun/environmental-residue-v1` | Environmental Residue v1 | Core/Simulation/World/SaveLoad | ACTIVE / VALIDATION |
-| 쭌 + 쭌 AI | PR #65 | Deterministic Appearance projection contract | `Source/LifeLens/Simulation/**` + docs | DONE / MERGED `86663cb...` |
+| 쭌 + 쭌 AI | NEW milestone | Core ↔ World Execution Sync v1 | Core / Bridge / World / SaveLoad | READY_NOW / HIGHEST PRIORITY |
+| 다겸 + 다겸 AI | PR #67 / `dagyeom/character-appearance-v1` | Character Appearance v1 | Character appearance + `Content/Characters/**` | ACTIVE / CLOSEOUT |
 | 다겸 + 다겸 AI | `dagyeom/character-motion-v1` after #67 | Character Motion Bootstrap | Character locomotion presentation | READY_AFTER_#67 |
 | 다겸 + 다겸 AI | `dagyeom/world-visual-environment-v1` after Motion bootstrap | World Visual Environment v1 | `Content/Environment/**`, `Content/Maps/**`, `Content/WorldPresentation/**` | HIGH PRIORITY / READY_AFTER_MOTION_BOOTSTRAP |
-| 다겸 + 쭌 Bridge support as needed | continue Motion branch after environment baseline | Character Motion & Context remainder | Character presentation/animation | AFTER WORLD VISUAL v1 |
+| 다겸 + 쭌 Bridge support as needed | after World Visual v1 | Character Motion & Context remainder | Character presentation/animation | AFTER WORLD VISUAL v1 |
 | 다겸 + 다겸 AI | PR #30 | Observer UX Polish | `Source/LifeLens/UI/**` | AFTER HUMAN + WORLD VISUAL MINIMUM |
 | 다겸 + 다겸 AI | PR #36 | Mobile Touch v1 | `Source/LifeLens/UI/**` | AFTER #30 |
 | 다겸 + 다겸 AI | PR #38 | Visual Feedback v1 | `Source/LifeLens/UI/**` | AFTER #36 |
@@ -32,174 +31,139 @@
 
 ## Current Assist Locks
 
-**0개. `ASSIST_LOCK-29-R1`은 RELEASED.**
+**0개.** Previous appearance/presentation assist locks are released.
+
+## Whole Project Verification v1 — DONE WITH FINDINGS
+
+Canonical report: `docs/WHOLE_PROJECT_VERIFICATION_2026-09-14.md`.
+
+Baseline main: `92bb92f6b6dab77a327158460c765b325a0fc149`.
+Verification PR #69: **CLOSED WITHOUT MERGE**.
+
+Automated gates:
+- Structural Preflight `34856094580`: PASS.
+- Core Tests `34856094696`: PASS, 39/39 + deterministic harness diff clean.
+- Unreal Linux Compile `34856094645`: PASS including actual UE 5.6 UHT/UBT/link.
+
+Important: #69 validates current merged main only. It does not include unmerged PR #67 Character Appearance.
+
+### Findings requiring product work
+
+P0:
+- Core physical action completion can occur before Unreal actor arrival/use.
+- Core and Unreal independently resolve physical affordance/fallback state.
+- Core residue grid position and Unreal visible emergency location use different algorithms.
+- World resident actors are not dynamically reconciled after births/deaths; spawn layout is effectively four-slot.
+- activity anchors are collected only at BeginPlay, so newly built civilization facilities are not automatically usable.
+- actual Unreal facilities are not currently reconciled into one Core/World authoritative affordance result.
+
+P1:
+- physical position is not restored into Unreal presentation from authoritative saved state.
+- legacy `ULLDecisionComponent::ChooseAction()` remains a dormant Blueprint-callable competing action chooser.
+- UE compile workflow path filters do not cover all `Source/LifeLens/**` C++ areas such as Character-only changes.
+- binary snapshot v1-v3 migration logic lacks an explicit dedicated legacy-fixture test found by this verification.
+
+## Core ↔ World Execution Sync v1 — READY_NOW
+
+Owner: 쭌 / 쭌 AI.
+
+Goal: remove split-brain physical execution before deeper environment feedback/civilization physical expression.
+
+Minimum:
+- stable physical action token and phase.
+- one resolved affordance/target/tier per action.
+- Core completion only after World arrival/use acknowledgement.
+- explicit failure/re-resolve path for unavailable/disappeared/path-failed targets.
+- canonical Core Grid ↔ Unreal World coordinate transform.
+- residue/environment consequence uses exact completed action location.
+- actual-world facilities/resources participate through one resolution contract.
+- dynamic resident actor reconciliation for population changes.
+- scalable spawn/re-entry positioning for population >4.
+- dynamic activity-anchor registration/reconciliation.
+- physical position continuity through Save/Load.
+- regression tests for preferred/emergency timing and population >4.
+
+After this milestone, resume environment exposure → Health / Memory / Avoidance and sanitation/civilization feedback.
 
 ## World Affordance / Environment — canonical
 
-Simulation/environment consequence canonical: `docs/WORLD_AFFORDANCE_ENVIRONMENT_v1.md`.
-World visual presentation canonical: `docs/WORLD_VISUAL_ENVIRONMENT_v1.md`.
+Simulation/environment consequence: `docs/WORLD_AFFORDANCE_ENVIRONMENT_v1.md`.
+World visual presentation: `docs/WORLD_VISUAL_ENVIRONMENT_v1.md`.
 
 Rules:
-- initial world must not silently spawn beds/toilets/showers/tables or other civilization infrastructure
-- Core decides intent; World chooses the best actually available affordance
-- fallback order: `Preferred → Primitive → Natural → Emergency → Unavailable`
-- Emergency is not equal-quality convenience; it may be less effective or have costs/consequences
-- Eat/Drink fallback never creates food/water
-- environmental consequence with simulation impact belongs to Core authority and Save/Load
-- environment problems may feed Memory / Health / Avoidance / Knowledge / Civilization discovery
-- visual environment must not become a second world authority
+- initial world must not silently spawn modern civilization infrastructure.
+- fallback concept remains `Preferred → Primitive → Natural → Emergency → Unavailable`.
+- Core is simulation/intent authority; physical World reports execution facts.
+- Eat/Drink never create resources implicitly.
+- environmental consequence belongs to Core authority and Save/Load.
+- visual environment must not become a second world authority.
 
 ### PR #66 — DONE
 
-`[WORLD] Add tiered affordance fallback v1`
+- World Affordance Fallback v1 merged as `0ad8d6b4c80c134832fcad9bf9b34dcfabf2b68a`.
+- Preflight `34848772905`: PASS.
+- UE compile `34848772895`: PASS.
 
-- main merge: `0ad8d6b4c80c134832fcad9bf9b34dcfabf2b68a`
-- auto bootstrap living facilities removed
-- tiered actual-world affordance selection
-- emergency fallback without implicit world-object creation
-- active affordance tier/emergency read state
-- latest-head Preflight `34848772905`: PASS
-- latest-head Unreal Compile `34848772895`: PASS including actual UE 5.6 UHT/UBT/link
+### PR #68 — DONE
 
-Boundary: #66 does **not** claim authoritative environmental residue/contamination implementation.
+- Environmental Residue v1 merged as `92bb92f6b6dab77a327158460c765b325a0fc149`.
+- Preflight `34853523382`: PASS.
+- Core Tests `34853523542`: PASS, 39/39.
+- UE compile `34853523394`: PASS including actual UHT/UBT/link.
+- production New Game modern Core SmartObjects removed.
+- Core residue state / accumulation / decay / exposure query / snapshot v4 / SaveLoad / Unreal read DTO delivered.
 
-### Environmental Residue v1 — ACTIVE / PR #68
+Boundary: Health/Memory/Avoidance, weather/media spread, cleanup and sanitation knowledge progression remain later work.
 
-Minimum:
-- outdoor toilet completion becomes environment consequence
-- Core-owned residue record with location / amount / intensity / decay
-- repeated use accumulates
-- Save/Load continuity
-- Observer/World read path
-- queries usable by Hygiene / Health risk / discomfort / avoidance
-- future weather/water/cleanup/sanitation progression hooks
+## Character Appearance v1 — ACTIVE / PR #67 CLOSEOUT
 
-Current verified state:
-- latest Structural Preflight PASS
-- latest Core Tests 39/39 PASS
-- final UE 5.6 compile/result remains the merge gate
+Owner: 다겸 / 다겸 AI.
+Canonical acceptance: `docs/CHARACTER_APPEARANCE_ROADMAP.md`.
+Canonical asset track: `docs/CHARACTER_ASSET_TRACK.md`.
 
-Causal direction:
+Current reported state:
+- humanoid residents visible.
+- #65 deterministic appearance projection consumed.
+- hair/skin variation present.
+- UAL animation assets imported.
+- locomotion not yet wired.
 
-`Need → fallback action → environment consequence → experience/problem → observation/knowledge → primitive solution → improved facility → culture/civilization`
+Remaining DONE gates:
+- final required CI/UE compile record.
+- Save/Load same resident → same appearance verification.
+- minimum default clothing; underwear-only does not satisfy current minimum.
+- final review + merge + docs sync.
 
-### World Visual Environment v1 — HIGH PRIORITY
+## Character visual direction
+
+After #67:
+1. Motion Bootstrap: Idle/Walk/Jog + basic orientation only.
+2. World Visual Environment v1.
+3. remaining Motion/Context: turn refinement, sit/stand/lie/wake, gaze, IK, interaction transitions.
+
+## World Visual Environment v1 — PROMOTED HIGH PRIORITY
 
 Canonical: `docs/WORLD_VISUAL_ENVIRONMENT_v1.md`.
 
-Decision:
-- elevate visual background work much earlier than the old roadmap
-- do not start by stacking it on unfinished PR #67
-- after #67 merge, first remove the obvious Idle-sliding problem with a small Motion bootstrap
-- then start World Visual Environment v1 before the remaining deep Motion/Context work
-
-Dagyeom owns presentation-only paths:
+Dagyeom owns:
 - `Content/Environment/**`
 - `Content/Maps/**`
 - `Content/WorldPresentation/**`
 
-Minimum visual baseline:
-- terrain / ground
-- sky / lighting / atmosphere
-- trees / grass / rocks / natural dressing
-- Observer readability
-- Android-friendly LOD / instancing / material budget
-- no implicit modern infrastructure
-- asset provenance
-
-Authoritative Core/World source remains Jjun-owned. If the background needs authoritative read data, add an Integration Request rather than duplicating state.
-
-### Completed support — Appearance data contract v1
-
-- PR #65 merged to main as `86663cb10f245bf185984a3622e4a86596e14923`.
-- Preflight `34845789763`: PASS.
-- Unreal Linux Compile `34845789757`: PASS including actual UE 5.6 UHT/UBT/link.
-- Added vendor-independent `FLLAppearanceProfile` / `ULLAppearanceProfileLibrary`.
-- Stable resident identity drives deterministic appearance projection.
-- No duplicate SaveGame authority/cache.
-- Dagyeom Character/UI/Content files untouched.
-- Jjun proactive appearance support is complete; future support requires actual blocker/Integration Request.
-
-### Completed assist — Character Presentation v1
-
-- Original PR #29: stale source/history only; do not revive as product integration path.
-- Integration PR #63: MERGED to main as `c9164ebf3cc70a194d3f8f6e50dcfb3c9df2a986`.
-- Final integration cleanup head: `6d257d5f69e63eb721d2cbd36322765e0473fabf`.
-- Preflight `34843425475`: PASS.
-- Unreal Linux Compile `34843425495`: PASS including actual UE 5.6 UHT/UBT/link.
-- Final product diff: exactly four Character Presentation C++ files.
-- `ASSIST_LOCK-29-R1`: DONE / RELEASED.
-
-### Completed assist — UI Foundation
-
-- Integration PR #61 merged to main.
-- Unreal Run `34840467864` PASS including UE 5.6 UHT/UBT/link.
-- `ASSIST_LOCK-26-R1`: DONE / RELEASED.
-
-### Completed assist — Observer HUD
-
-- PR #17 merged to main.
-- Corrected Unreal Run `34833994155` PASS including UHT/UBT/link.
-- Observer assist locks released.
-
-## Character Appearance v1 — ACTIVE / PR #67 CLOSEOUT
-
-Canonical acceptance criteria: `docs/CHARACTER_APPEARANCE_ROADMAP.md`.
-Canonical asset decision: `docs/CHARACTER_ASSET_TRACK.md`.
-
-Default asset track: **Track B — Quaternius packs whose exact source/version explicitly states CC0.**
-MetaHuman is an upgrade/comparison path after Android smoke/performance validation.
-
-Current PR #67 reports:
-- real humanoid residents visible in PIE
-- deterministic #65 AppearanceProfile mapping in use
-- hair / skin variation present
-- UAL animations imported
-- current movement still slides while Idle because Motion & Context is not wired
-
-Remaining completion gates:
-- required CI / Unreal compile result recorded
-- Save/Load appearance continuity explicitly verified
-- minimum default clothing set present
-- final review + merge + docs sync
-
-The existing minimum still includes:
-- real humanoid skeletal mesh
-- skin / face / eyes / hair / default clothing
-- shared/common skeleton + modular appearance
-- deterministic `AppearanceProfile` from stable resident identity
-- NEW GAME residents visually distinct
-- Save/Load appearance continuity
-- Android LOD/mobile fallback
-- asset license/provenance recorded
-
-Authority boundary:
-- Core remains simulation authority.
-- Character/UI presentation reads authoritative state; no competing action chooser or authoritative cache.
-- Use merged PR #65 appearance projection contract instead of creating a second authority.
-- If new Appearance/Genetics/SaveLoad authoritative data is truly required, create an Integration Request below.
-
-## Character visual direction — canonical
-
-Current Cylinder/Sphere Character Presentation is a development placeholder.
-Final direction:
-- common humanoid skeleton
-- real human body / skin / face / eyes / hair / clothing
-- deterministic appearance continuity
-- modular parts + LOD + Android fallback
-- paid runtime/API dependency 없음
-- asset license/provenance 기록
-
-After Appearance, Character Motion & Context is split intentionally:
-1. small locomotion bootstrap: Idle / Walk / Jog + basic orientation
-2. World Visual Environment v1
-3. remaining motion/context: sit/stand/lie, gaze, IK, interaction transitions
+Minimum:
+- terrain/ground.
+- sky/lighting/atmosphere.
+- trees/grass/rocks/natural dressing.
+- Observer readability.
+- Android-friendly LOD/instancing/material budget.
+- no implicit modern infrastructure.
+- asset provenance.
 
 ## Dagyeom API / design handoff
 
-Current blockers from Jjun: **0**.
+Current blockers from Jjun for #67: **0**.
 
-Main exposes:
+Main exposes relevant read contracts including:
 - `GetWorldObservation()`
 - `GetResidentObservations()`
 - `GetResidentObservation(...)`
@@ -209,13 +173,14 @@ Main exposes:
 - `OnCoreRuntimeStateChanged`
 - `GetResidentCivilizationObservation(...)`
 - `GetCivilizationWorldObservation(...)`
+- `GetEnvironmentObservation(...)`
 - `ULLAppearanceProfileLibrary::MakeDeterministicAppearanceProfile(...)`
 
 Rules:
-- never hard-code population to 4 after runtime starts
-- UI rebuilds from Bridge after load
-- presentation does not choose competing actions
-- civilization detail stays out of Level 0
+- never hard-code runtime population to 4.
+- UI rebuilds from Bridge after load.
+- Character/UI presentation does not choose competing actions.
+- if authoritative Core/Bridge data is missing, add an Integration Request rather than duplicating state.
 
 ## Shared File Ownership
 
@@ -237,62 +202,48 @@ Dagyeom default:
 
 ## Integration Requests
 
-Current open blockers from Jjun: **0**.
+Current open blockers from Jjun for Dagyeom work: **0**.
 
-### Dagyeom request — Motion & Context READY promotion
+### Dagyeom request — Motion promotion
 
-**Decision: ACCEPTED WITH EXISTING GATE.**
-
-Request:
-- promote Character Motion & Context v1 to READY_NOW
-- use imported UAL locomotion assets to fix current Idle-sliding presentation
-- planned branch: `dagyeom/character-motion-v1`
-
-Resolution:
-- no additional Core/Bridge API blocker is known
-- status is `READY_AFTER_#67`, not immediate `READY_NOW`
-- after PR #67 is validated, merged, and live docs synced, Motion bootstrap auto-promotes to READY_NOW without another design review
-- first slice is intentionally limited to Idle/Walk/Jog + basic orientation
-- after that small checkpoint, World Visual Environment v1 takes priority before deep Motion/Context work
+**ACCEPTED WITH GATE.**
+- Motion Bootstrap becomes READY_NOW automatically after #67 is validated, merged and docs are synchronized.
+- bootstrap is limited to Idle/Walk/Jog + basic orientation.
+- World Visual v1 takes priority after that checkpoint.
 
 ### Dagyeom request — clothing / skin variety
 
-**Decision: PARTIALLY ACCEPTED / SPLIT BY ACCEPTANCE CRITERION.**
+**PARTIALLY ACCEPTED / SPLIT.**
+- minimum default clothing is already a #67 acceptance requirement.
+- additional clothing and skin detail can be follow-up enhancement.
+- every extra asset pack needs exact source/version/license verification.
 
-- minimum default clothing is already part of Character Appearance v1 acceptance criteria; underwear-only residents remain a PR #67 closeout gap rather than a deferred optional enhancement
-- additional clothing variety beyond the minimum may be queued later
-- additional skin-tone/detail variety may be queued as a follow-up once minimum visual distinctness is met
-- every additional asset pack must have its exact source/version/license verified; do not infer CC0 from the publisher name alone
+### User priority — World Visual Environment
 
-### User priority decision — World Visual Environment
+**PROMOTED.**
+- background work is no longer postponed until deep Motion/UX completion.
+- status: `HIGH PRIORITY / READY_AFTER_MOTION_BOOTSTRAP`.
 
-**Decision: PROMOTED.**
+## Merge / execution queue
 
-- World/background work is no longer postponed until after all Motion/UX work.
-- Canonical milestone: `docs/WORLD_VISUAL_ENVIRONMENT_v1.md`.
-- Status: `HIGH PRIORITY / READY_AFTER_MOTION_BOOTSTRAP`.
-- Dagyeom can begin it after #67 closes and the minimal Idle/Walk/Jog bootstrap is merged.
-- remaining Motion/Context work moves behind the visual environment baseline.
-
-## Merge / reconciliation queue
-
-1. Character Presentation v1 — DONE via PR #63.
-2. Appearance data/projection support — DONE via PR #65.
-3. Character Appearance v1 — ACTIVE / PR #67 CLOSEOUT. (Dagyeom)
-4. World Affordance Fallback v1 — DONE via PR #66. (Jjun)
-5. Environmental Residue v1 — ACTIVE / PR #68 VALIDATION. (Jjun)
-6. Character Motion Bootstrap — READY_AFTER_#67.
-7. **World Visual Environment v1 — HIGH PRIORITY / READY_AFTER_MOTION_BOOTSTRAP.**
-8. Character Motion & Context remaining scope.
-9. PR #30 Observer UX Polish.
-10. PR #36 Mobile Touch.
-11. PR #38 Visual Feedback.
-12. Core + Observer + Human Character + World Visual integrated runtime verification.
-13. Android smoke APK + profiling.
-14. MetaHuman comparison / upgrade decision.
-15. Appearance Genetics & Lifecycle.
-16. Clothing/Equipment civilization linkage.
-17. Resume deeper civilization production chains.
+1. Character Presentation v1 — DONE via #63.
+2. Appearance projection contract — DONE via #65.
+3. World Affordance Fallback — DONE via #66.
+4. Environmental Residue — DONE via #68.
+5. Whole Project Verification — DONE WITH FINDINGS via closed verify-only #69.
+6. **Core ↔ World Execution Sync v1 — READY_NOW.**
+7. Character Appearance #67 — ACTIVE CLOSEOUT in parallel.
+8. Character Motion Bootstrap — READY_AFTER_#67.
+9. **World Visual Environment v1 — HIGH PRIORITY / READY_AFTER_MOTION_BOOTSTRAP.**
+10. Character Motion & Context remainder.
+11. Environment exposure → Health/Memory/Avoidance + sanitation progression.
+12. PR #30 Observer UX Polish.
+13. PR #36 Mobile Touch.
+14. PR #38 Visual Feedback.
+15. integrated runtime verification.
+16. Android smoke APK + device profiling.
+17. MetaHuman comparison / upgrade decision.
+18. genetics/lifecycle visual work and clothing/equipment civilization linkage.
 
 ## Completion rule
 
