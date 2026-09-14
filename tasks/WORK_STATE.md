@@ -4,7 +4,7 @@
 >
 > 제품 기준: `docs/LIFELENS_SPEC_v1.1.md` + **`docs/CIVILIZATION_PROGRESSION_v1.md`** · 상태 규칙: `docs/STATE_MANAGEMENT.md` · 역할/잠금: `tasks/TEAM_BOARD.md` · 이력: `tasks/HANDOFF_LOG.md`
 
-Last reconciled: 2026-09-14 KST — actual `main` is `b90da9242003fbc0cbc553605b9abc46a17aa044`, PR #52 Civilization Knowledge Transmission v1 is MERGED. PR Core `34814310235` PASS, Preflight `34814310291` PASS, push Core `34814219163` PASS. Next Jjun slice is **Civilization Observer Read DTOs v1**, planned from latest main; branch not yet created at this checkpoint.
+Last reconciled: 2026-09-14 KST — actual `main` includes PR #52 merge `b90da9242003fbc0cbc553605b9abc46a17aa044` plus state reconciliation commits through `46e43cca88ffed21a6d2238efb571f02069d5d2b`. PR #52 Core `34814310235` PASS and Preflight `34814310291` PASS. Current Jjun slice **Civilization Observer Read DTOs v1** is `DOING / STATE_LOCKED` on branch `jjun/civilization-observer-read-v1`, created from `46e43cca88ffed21a6d2238efb571f02069d5d2b`.
 
 ## Mandatory sync gate
 
@@ -34,8 +34,9 @@ Rules:
 ### 1. Civilization Observer Read DTOs v1 — Jjun
 
 - Owner: 쭌 + 쭌 AI
-- Status: `PLANNED / STATE_LOCKED`
-- Branch: not created yet at this checkpoint.
+- Status: `DOING / STATE_LOCKED`
+- Branch: `jjun/civilization-observer-read-v1`
+- Base: `46e43cca88ffed21a6d2238efb571f02069d5d2b`
 - Goal: expose authoritative civilization state to Observer/Unreal without leaking mutable Core internals or inventing strategy-game authority in UI.
 - Bounded v1 scope:
   1. Core read DTO for per-resident Inventory summary, personal Knowledge/skill summary and civilization activity summary;
@@ -53,7 +54,7 @@ Rules:
 - Branch/PR: `dagyeom/observer-ui-v2`, PR #17
 - Status: `RECOVERING`
 - Existing legacy Observer blockers remain 0.
-- Civilization UI binding remains blocked only until the new civilization read DTO/Bridge API is published; this does not block current PR #17 reconciliation work.
+- Civilization UI binding remains pending until this new civilization read DTO/Bridge API is published; this does not block current PR #17 reconciliation work.
 
 ### 3. Dagyeom stacked UI / presentation chain
 
