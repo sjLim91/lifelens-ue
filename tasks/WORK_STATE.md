@@ -4,7 +4,7 @@
 >
 > 제품 기준: `docs/LIFELENS_SPEC_v1.1.md` · 상태 규칙: `docs/STATE_MANAGEMENT.md` · 역할/잠금: `tasks/TEAM_BOARD.md` · 이력: `tasks/HANDOFF_LOG.md`
 
-Last reconciled: 2026-09-14 KST — actual `main` HEAD `7f7777cd9d30ca06f486ffe5130d691ff9ff4c58` verified. Core Decision → Unreal Physical Action Bridge v1 is now starting as the active Jjun task; state lock is being established before branch/code work.
+Last reconciled: 2026-09-14 KST — Core Decision → Unreal Physical Action Bridge v1 is open as PR #46 at head `f5b560985a4a04dbde52a26d8878aa61d1f065f0`. Core Tests, Structural Preflight and actual UE 5.6 Linux UHT/UBT are required before merge.
 
 ## Mandatory sync gate
 
@@ -21,23 +21,24 @@ Last reconciled: 2026-09-14 KST — actual `main` HEAD `7f7777cd9d30ca06f486ffe5
 ### 1. Core Decision → Unreal Physical Action Bridge v1 — Jjun
 
 - Owner: 쭌 + 쭌 AI
-- Status: `DOING / STATE_LOCKED`
-- Planned branch: `jjun/core-physical-action-bridge-v1` from the actual latest main after this state update.
-- Goal: remove the remaining split-brain between authoritative Core decisions/state and the physical 3D WorldDirector behavior.
-- Required direction:
-  - Core remains the only source of Needs/social/family/decision truth;
-  - Unreal World/AI executes or presents Core-selected actions rather than independently choosing a competing life decision;
-  - preserve current stable resident GUID mapping and post-load continuity;
-  - do not modify Dagyeom UI or Character appearance/presentation without a new explicit coordination request.
-- Initial bounded scope:
-  - map Core physical decisions for Eat / Sleep / Toilet / Hygiene / Idle into Unreal execution intent;
-  - map current SocialIntent + target into Unreal presentation/execution routing without a competing legacy chooser;
-  - reuse existing WorldDirector movement/action plumbing where safe, but legacy `ULLDecisionComponent` must not remain decision authority for covered intents;
-  - keep SaveGame v2 restore continuity intact.
-- Allowed scope: Jjun-owned `Source/LifeLens/Simulation/**`, `Source/LifeLens/AI/**`, `Source/LifeLens/World/**`, narrowly required Core read DTO/validator/tests.
-- Forbidden scope: `Source/LifeLens/UI/**`, Dagyeom Character appearance/presentation, `Content/UI/**`, `Content/Characters/**`, frozen PR #2.
-- Required verification: structural contract + actual UE 5.6 UHT/UBT, then targeted runtime/PIE verification where available.
-- Exact next action: create `jjun/core-physical-action-bridge-v1` from the latest main after state-doc commits, inspect current Core observation/action DTO and WorldDirector/DecisionComponent execution path, then implement the smallest authority handoff first.
+- Branch: `jjun/core-physical-action-bridge-v1`
+- PR: #46 `[UE] Drive physical world actions from authoritative Core decisions`
+- Head: `f5b560985a4a04dbde52a26d8878aa61d1f065f0`
+- Status: `WAITING_CI`
+- Implemented:
+  - pure Core `ResidentObservation` exposes typed `physicalGoal` / `socialIntent` rather than requiring label parsing;
+  - Core observer test locks typed action authority;
+  - Unreal `FLLCoreActionDirective` carries physical/social typed intent + stable target ResidentId;
+  - `ULLCoreBridgeSubsystem::GetResidentActionDirective()` maps authoritative Core runtime state into Unreal;
+  - `ELLActionIntent::Drink` added so Core Drink is not silently dropped;
+  - `ALLWorldDirector` no longer calls legacy `DecisionComponent->ChooseAction()` for life actions;
+  - WorldDirector no longer calls `ApplyActionOutcome()` / `ApplySocialInteraction()` as a second state authority;
+  - physical Eat/Drink/Sleep/Toilet/Hygiene and social Approach/Avoid/Repair/Comfort are presented from Core directives;
+  - social Avoid moves away; other social intents approach/face the Core-selected target;
+  - Structural Preflight prevents reintroduction of competing WorldDirector decision authority.
+- Scope: Jjun-owned Core/Simulation/World/validator only; no Dagyeom UI/Character presentation/Content edits.
+- Required validation: Core Release full suite + deterministic harness, Structural Preflight, actual UE 5.6 Linux UHT/UBT; targeted runtime/PIE where available.
+- Exact next action: inspect PR #46 Actions. On failure, fix only the first root cause; on all PASS, verify changed-file scope and merge.
 
 ### 2. Observer HUD v2 — Dagyeom
 
