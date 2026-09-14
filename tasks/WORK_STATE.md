@@ -4,7 +4,7 @@
 >
 > 제품 기준: `docs/LIFELENS_SPEC_v1.1.md` · 상태 규칙: `docs/STATE_MANAGEMENT.md` · 역할/잠금: `tasks/TEAM_BOARD.md` · 이력: `tasks/HANDOFF_LOG.md`
 
-Last reconciled: 2026-09-14 KST — Unreal SaveGame Adapter v1 is open as PR #45 at head `547b3f94e0c3df6df15d723e72c8084cd10a7c29`. Core Tests, Structural Preflight and actual UE 5.6 Linux UHT/UBT are required before merge.
+Last reconciled: 2026-09-14 KST — PR #45 head `547b3f94e0c3df6df15d723e72c8084cd10a7c29`: Core Tests `34803226434` PASS incl deterministic harness; Structural Preflight `34803226458` PASS; Unreal Linux Compile `34803226433` is still running and is the only remaining merge gate.
 
 ## Mandatory sync gate
 
@@ -24,7 +24,7 @@ Last reconciled: 2026-09-14 KST — Unreal SaveGame Adapter v1 is open as PR #45
 - Branch: `jjun/unreal-savegame-adapter-v1`
 - PR: #45 `[UE] Persist authoritative Core snapshots through SaveGame v2`
 - Head: `547b3f94e0c3df6df15d723e72c8084cd10a7c29`
-- Status: `WAITING_CI`
+- Status: `WAITING_UNREAL_COMPILE`
 - Implemented scope:
   - pure Core versioned binary snapshot codec with `LLSNAP01` magic;
   - canonical runtime-map ordering and binary roundtrip/continuation test;
@@ -34,10 +34,13 @@ Last reconciled: 2026-09-14 KST — Unreal SaveGame Adapter v1 is open as PR #45
   - v2 Save persists Core bytes only as simulation truth;
   - v2 Load directly restores the Core snapshot then rebuilds compatibility projection;
   - v1 old saves retain seed+minute replay migration only; legacy resident/relationship arrays never become authority;
-  - Structural Preflight now enforces the v2 persistence contract.
-- Scope: Jjun-owned Simulation/Save/Core + validator only; no `Source/LifeLens/UI/**`, Dagyeom Character presentation, or Content edits.
-- Required gates: Core Release full suite + deterministic harness, Structural Preflight, actual UE 5.6 Linux UHT/UBT.
-- Exact next action: inspect PR #45 Actions. On failure, fetch the exact first root cause only; on all PASS, verify changed-file scope, merge, then synchronize WORK_STATE/TEAM_BOARD/HANDOFF.
+  - Structural Preflight enforces the v2 persistence contract.
+- Scope verified: 10 changed files, all Jjun-owned Save/Simulation/Core/validator files; UI/Characters/Content untouched.
+- Validation:
+  - Core Tests `34803226434` PASS: Configure / Build / Test / Deterministic harness.
+  - Structural Preflight `34803226458` PASS.
+  - Unreal Linux Compile `34803226433` IN PROGRESS; actual UHT/UBT still required.
+- Exact next action: inspect Run `34803226433`. If UHT/UBT PASS, mark READY_TO_MERGE and merge. If failure, fetch exact first root cause and fix only that.
 
 ### 2. Observer HUD v2 — Dagyeom
 
