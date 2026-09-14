@@ -35,6 +35,37 @@ ELLCoreSocialIntent ToUnrealSocialIntent(lifelens::SocialIntent Intent)
 }
 }
 
+void ULLCoreBridgeSubsystem::SetExternalPhysicalExecutionEnabled(bool bEnabled)
+{
+    if (CoreSimulation)
+    {
+        CoreSimulation->setExternalPhysicalExecution(bEnabled);
+    }
+}
+
+bool ULLCoreBridgeSubsystem::CompleteResidentPhysicalAction(FGuid ResidentId)
+{
+    if (!CoreSimulation || !ResidentId.IsValid())
+    {
+        return false;
+    }
+
+    const uint64* CoreCharacterId = GuidToCore.Find(ResidentId);
+    if (!CoreCharacterId)
+    {
+        return false;
+    }
+
+    const bool bCompleted = CoreSimulation->completeExternalPhysicalAction(
+        static_cast<lifelens::CharacterId>(*CoreCharacterId));
+    if (bCompleted)
+    {
+        RebuildGuidIndex();
+        OnCoreRuntimeStateChanged.Broadcast();
+    }
+    return bCompleted;
+}
+
 bool ULLCoreBridgeSubsystem::GetResidentActionDirective(
     FGuid ResidentId,
     FLLCoreActionDirective& OutDirective) const
