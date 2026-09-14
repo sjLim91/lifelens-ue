@@ -4,53 +4,65 @@
 
 using namespace lifelens;
 
-int main()
+static Simulation makeUrgentToiletSimulation(std::uint64_t seed)
 {
-    Simulation simulation(9191);
+    Simulation simulation(seed);
     simulation.setupNewGame();
     simulation.setExternalPhysicalExecution(true);
-    assert(simulation.externalPhysicalExecutionEnabled());
-
     simulation.world().minute=481;
     for(auto& resident:simulation.world().characters){
         resident.needs={0.01,0.01,0.01,0.01,0.01};
     }
-
-    Character& actor=simulation.world().characters.front();
-    const CharacterId actorId=actor.id;
-    actor.needs.bladder=0.99;
-
+    simulation.world().characters.front().needs.bladder=0.99;
     simulation.runMinutes(5);
-    ResidentObservation pending=simulation.observeResident(actorId);
+    return simulation;
+}
+
+int main()
+{
+    Simulation emergency=makeUrgentToiletSimulation(9191);
+    assert(emergency.externalPhysicalExecutionEnabled());
+    const CharacterId emergencyActorId=emergency.world().characters.front().id;
+
+    ResidentObservation pending=emergency.observeResident(emergencyActorId);
     assert(pending.activityKind==ObservedActivityKind::Physical);
     assert(pending.physicalGoal==Goal::UseToilet);
-    assert(simulation.observeEnvironment().humanWasteResidues==0);
+    assert(emergency.observeEnvironment().humanWasteResidues==0);
 
-    simulation.runMinutes(20);
-    pending=simulation.observeResident(actorId);
+    emergency.runMinutes(20);
+    pending=emergency.observeResident(emergencyActorId);
     assert(pending.activityKind==ObservedActivityKind::Physical);
     assert(pending.physicalGoal==Goal::UseToilet);
-    assert(simulation.observeEnvironment().humanWasteResidues==0);
+    assert(emergency.observeEnvironment().humanWasteResidues==0);
 
-    assert(simulation.completeExternalPhysicalAction(actorId));
-    const ResidentObservation completed=simulation.observeResident(actorId);
-    assert(completed.activityKind==ObservedActivityKind::Idle);
+    assert(emergency.completeExternalPhysicalAction(emergencyActorId,true));
+    assert(emergency.observeResident(emergencyActorId).activityKind==ObservedActivityKind::Idle);
 
-    const EnvironmentObservation environment=simulation.observeEnvironment();
-    assert(environment.humanWasteResidues>=1);
+    const EnvironmentObservation emergencyEnvironment=emergency.observeEnvironment();
+    assert(emergencyEnvironment.humanWasteResidues>=1);
     bool foundActorResidue=false;
-    for(const auto& residue:environment.residues){
-        if(residue.sourceCharacter==actorId){
+    for(const auto& residue:emergencyEnvironment.residues){
+        if(residue.sourceCharacter==emergencyActorId){
             foundActorResidue=true;
             break;
         }
     }
     assert(foundActorResidue);
 
-    const std::size_t residueCountAfterCompletion=environment.totalResidues;
-    assert(!simulation.completeExternalPhysicalAction(actorId));
-    assert(simulation.observeEnvironment().totalResidues==residueCountAfterCompletion);
+    const std::size_t residueCountAfterCompletion=emergencyEnvironment.totalResidues;
+    assert(!emergency.completeExternalPhysicalAction(emergencyActorId,true));
+    assert(emergency.observeEnvironment().totalResidues==residueCountAfterCompletion);
 
+    // An authored toilet/latrine/world affordance must satisfy the same Core
+    // intent without fabricating an outdoor sanitation residue.
+    Simulation facility=makeUrgentToiletSimulation(9192);
+    const CharacterId facilityActorId=facility.world().characters.front().id;
+    const double bladderBeforeFacility=facility.world().characters.front().needs.bladder;
+    assert(facility.completeExternalPhysicalAction(facilityActorId,false));
+    assert(facility.observeEnvironment().humanWasteResidues==0);
+    assert(facility.world().characters.front().needs.bladder<bladderBeforeFacility);
+
+    // Standalone Core remains autonomous by default.
     Simulation autonomous(9191);
     autonomous.setupNewGame();
     assert(!autonomous.externalPhysicalExecutionEnabled());
