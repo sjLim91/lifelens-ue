@@ -51,6 +51,16 @@ bool validateSnapshot(const SimulationStateSnapshot& snapshot,std::string* error
         if(!validateInventoryState(storage.inventory)) return fail("snapshot contains invalid storage inventory");
     }
 
+    EnvironmentalResidueField validatedResidues;
+    if(!validatedResidues.restoreState(snapshot.world.environmentalResidues.all()))
+        return fail("snapshot contains invalid environmental residue state");
+    for(const auto& residue:snapshot.world.environmentalResidues.all()){
+        if(characterIds.count(residue.sourceCharacter)==0)
+            return fail("environmental residue source character is missing");
+        if(residue.createdMinute>snapshot.world.minute || residue.lastUpdatedMinute>snapshot.world.minute)
+            return fail("environmental residue minute is in the future");
+    }
+
     for(const auto& item:snapshot.runtime){
         if(characterIds.count(item.first)==0) return fail("runtime references missing character");
         if(item.second.actionIndex>item.second.plan.size()) return fail("runtime action index exceeds plan size");

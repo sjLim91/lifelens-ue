@@ -7,6 +7,7 @@
 #include "CivilizationKnowledgeTransmission.h"
 #include "CivilizationObserverReadModel.h"
 #include "DecisionExecution.h"
+#include "EnvironmentalResidue.h"
 #include "ObserverReadModelV2.h"
 #include "Planner.h"
 #include "SimulationSnapshot.h"
@@ -44,6 +45,12 @@ public:
     std::vector<ResidentObservation> observeAllResidents() const;
     FamilyObservation observeFamily(CharacterId id) const;
     WorldOverviewObservation observeWorldOverview() const;
+    EnvironmentObservation observeEnvironment(std::size_t maxResidues=64) const {
+        return buildEnvironmentObservation(world_.minute,world_.environmentalResidues,maxResidues);
+    }
+    double environmentExposureAt(GridPos pos) const {
+        return world_.environmentalResidues.exposureAt(pos);
+    }
     ResidentCivilizationObservation observeResidentCivilization(CharacterId id) const {
         const Character* character=findObservedCharacter(world_,id);
         return character==nullptr

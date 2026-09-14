@@ -1,5 +1,6 @@
 #include "lifelens/SimulationSnapshotCodec.h"
 #include "lifelens/CivilizationSnapshotCodec.h"
+#include "lifelens/EnvironmentalResidueSnapshotCodec.h"
 #include "lifelens/SocialKnowledgeSnapshotCodec.h"
 
 #include <algorithm>
@@ -73,6 +74,27 @@ bool validateCivilizationWorldForCodec(const World& world,std::string* error)
     return true;
 }
 
+bool validateEnvironmentalResiduesForCodec(const World& world,std::string* error)
+{
+    EnvironmentalResidueField rebuilt;
+    if(!rebuilt.restoreState(world.environmentalResidues.all())){
+        setError(error,"invalid environmental residue state");
+        return false;
+    }
+
+    std::unordered_set<CharacterId> characterIds;
+    for(const Character& character:world.characters) characterIds.insert(character.id);
+    for(const auto& residue:world.environmentalResidues.all()){
+        if(characterIds.count(residue.sourceCharacter)==0
+           || residue.createdMinute>world.minute
+           || residue.lastUpdatedMinute>world.minute){
+            setError(error,"environmental residue references invalid character or minute");
+            return false;
+        }
+    }
+    return true;
+}
+
 bool validateSocialKnowledgeForCodec(
     const SocialKnowledgeBook& book,
     const World& world,
@@ -130,6 +152,7 @@ bool encodeSimulationSnapshot(
 {
     if(!validateCivilizationWorldForCodec(snapshot.world,error)) return false;
     if(!validateSocialKnowledgeForCodec(snapshot.socialKnowledge,snapshot.world,error)) return false;
+    if(!validateEnvironmentalResiduesForCodec(snapshot.world,error)) return false;
 
     std::vector<std::uint8_t> body;
     if(!encodeSimulationSnapshotLegacyBody(snapshot,body,error)) return false;
@@ -141,6 +164,10 @@ bool encodeSimulationSnapshot(
     Writer knowledgeExtension;
     writeSocialKnowledgeSnapshotExtension(knowledgeExtension,snapshot.socialKnowledge);
     body.insert(body.end(),knowledgeExtension.bytes.begin(),knowledgeExtension.bytes.end());
+
+    Writer environmentExtension;
+    writeEnvironmentalResidueSnapshotExtension(environmentExtension,snapshot.world.environmentalResidues);
+    body.insert(body.end(),environmentExtension.bytes.begin(),environmentExtension.bytes.end());
 
     outBytes=std::move(body);
     if(error) error->clear();
@@ -164,6 +191,7 @@ bool decodeSimulationSnapshot(
         if(!decodeLegacyBodyForVersion(bytes,decoded,error)) return false;
         initializeLegacyCivilizationState(decoded.world);
         decoded.socialKnowledge.clear();
+        decoded.world.environmentalResidues.clear();
         if(!validateCivilizationWorldForCodec(decoded.world,error)) return false;
         outSnapshot=std::move(decoded);
         if(error) error->clear();
@@ -191,7 +219,20 @@ bool decodeSimulationSnapshot(
         }
     }
 
+    auto environmentMarker=bytes.end();
+    if(binaryVersion>=4){
+        environmentMarker=std::find_end(
+            socialMarker,bytes.end(),
+            EnvironmentalResidueSnapshotExtensionMagic,
+            EnvironmentalResidueSnapshotExtensionMagic+sizeof(EnvironmentalResidueSnapshotExtensionMagic));
+        if(environmentMarker==bytes.end() || environmentMarker<=socialMarker){
+            setError(error,"missing environmental residue snapshot extension");
+            return false;
+        }
+    }
+
     const auto civilizationEnd=binaryVersion>=3 ? socialMarker : bytes.end();
+    const auto socialEnd=binaryVersion>=4 ? environmentMarker : bytes.end();
     std::vector<std::uint8_t> legacyBody(bytes.begin(),civilizationMarker);
     std::vector<std::uint8_t> civilizationBytes(civilizationMarker,civilizationEnd);
 
@@ -206,7 +247,7 @@ bool decodeSimulationSnapshot(
     if(!validateCivilizationWorldForCodec(decoded.world,error)) return false;
 
     if(binaryVersion>=3){
-        std::vector<std::uint8_t> knowledgeBytes(socialMarker,bytes.end());
+        std::vector<std::uint8_t> knowledgeBytes(socialMarker,socialEnd);
         Reader knowledgeReader(knowledgeBytes);
         if(!readSocialKnowledgeSnapshotExtension(knowledgeReader,decoded.socialKnowledge) || !knowledgeReader.done()){
             setError(error,"invalid social knowledge snapshot extension");
@@ -215,6 +256,19 @@ bool decodeSimulationSnapshot(
         if(!validateSocialKnowledgeForCodec(decoded.socialKnowledge,decoded.world,error)) return false;
     }else{
         decoded.socialKnowledge.clear();
+    }
+
+    if(binaryVersion>=4){
+        std::vector<std::uint8_t> environmentBytes(environmentMarker,bytes.end());
+        Reader environmentReader(environmentBytes);
+        if(!readEnvironmentalResidueSnapshotExtension(environmentReader,decoded.world.environmentalResidues)
+           || !environmentReader.done()){
+            setError(error,"invalid environmental residue snapshot extension");
+            return false;
+        }
+        if(!validateEnvironmentalResiduesForCodec(decoded.world,error)) return false;
+    }else{
+        decoded.world.environmentalResidues.clear();
     }
 
     outSnapshot=std::move(decoded);
