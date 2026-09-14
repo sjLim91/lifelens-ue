@@ -6,12 +6,13 @@
 
 class ULLSimulationSubsystem;
 class ULLObservationSubsystem;
+class ULLCoreBridgeSubsystem;
 class ALLResidentCharacter;
 struct FLLResidentData;
 
-// Tabs of the LEVEL 2 detail panel (SPEC 57). Only tabs backed by a read API
-// exist; Emotion / Memory / Relationships / Family etc. are added when the
-// simulation side exposes their data.
+// Tabs of the LEVEL 2 detail panel (SPEC 57). The first four preserve the
+// original Dagyeom HUD layout; the additional tabs consume authoritative Core
+// read DTOs only and never own simulation state.
 UENUM()
 enum class ELLDetailTab : uint8
 {
@@ -19,6 +20,10 @@ enum class ELLDetailTab : uint8
     Needs,
     Personality,
     TraitsSkills,
+    Emotion,
+    Relationships,
+    Family,
+    Civilization,
 
     Count UMETA(Hidden)
 };
@@ -30,7 +35,8 @@ enum class ELLDetailTab : uint8
 // LEVEL 1: one resident selected. A compact quick inspector: name and age,
 //          current action, one-line status summary, one line of personality
 //          words. Numbers are never shown here. Tapping the card opens LEVEL 2.
-// LEVEL 2: tabbed detail panel. Overview / Needs / Personality / Traits & Skills.
+// LEVEL 2: tabbed detail panel. Core-backed emotion / relationship / family /
+//          civilization detail is available here without cluttering LEVEL 0.
 //
 // The HUD owns the on-screen rectangles of its own chrome so the player
 // controller can ask whether a tap landed on UI before hit-testing the world.
@@ -64,7 +70,7 @@ public:
     static bool ProjectResidentTapRect(const APlayerController* PlayerController, const ALLResidentCharacter* Resident,
         float RadiusPixels, FBox2D& OutBoundsRect, FBox2D& OutTapRect);
 
-    static constexpr int32 DetailTabCount = 4; // keep equal to ELLDetailTab::Count
+    static constexpr int32 DetailTabCount = 8; // keep equal to ELLDetailTab::Count
 
 private:
     // Uniform scale so text stays readable on phones and desktops alike.
@@ -94,6 +100,7 @@ private:
     FString CurrentActionFor(const FLLResidentData& Resident) const;
 
     ULLObservationSubsystem* GetObservation() const;
+    ULLCoreBridgeSubsystem* GetCoreBridge() const;
 
     // Chrome rectangles from the last DrawHUD, in canvas pixels.
     FBox2D OverviewBandRect;
