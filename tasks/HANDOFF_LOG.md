@@ -505,6 +505,19 @@
   - `LifeLens.Build.cs` 미수정. ApplicationCore 직접 의존이 없어 SlateCore 경유로 display metrics를 읽음. PR #26 `LLObserverUIFoundation.cpp`의 `RebuildDisplayMetrics` 호출도 같은 이유로 링크 실패 가능(현재는 미참조 함수라 dead-strip으로 통과). PR #26에서 동일하게 수정 예정.
   - 이 브랜치에는 `tasks/WORK_STATE.md`가 없음. main 병합 시 항목 추가.
 
+### Mobile Touch v1 — 화면 확인 결과
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/mobile-touch-v1`, PR #36
+- 커밋: `531abdc`
+- 상태: `REVIEW / 검증 대기`
+- 변경 범위:
+  - 코드 변경 없음
+- 검증 상태:
+  - 화면 확인(로컬 PIE): LEVEL 2 탭·Back 행 터치 크기 확대, 탭 글자 중앙 정렬, 패널 가장자리 여백 확인. 세로로 좁힌 창에서 잘림 없이 표시되어 `+N`과 `…` 조건은 미발동
+  - GitHub Actions: 검증 대기
+- 상대가 알아야 할 점:
+  - 세로 비율 창에서 관찰 카메라의 16:9 aspect 제약으로 상하 레터박스가 크고 HUD 배율이 작아짐. 목표는 가로 모드이므로 참고만. 카메라 설정은 `Core/LLLifeLensGameMode.cpp` 소유자 영역.
+
 ---
 
 ## 다음 인수인계 포인트
