@@ -14,8 +14,13 @@ required = [
     'Source/LifeLens/Simulation/LLCoreReadTypes.h',
     'Source/LifeLens/Simulation/LLCoreBridgeSubsystem.h',
     'Source/LifeLens/Simulation/LLCoreBridgeSubsystem.cpp',
+    'Source/LifeLens/Simulation/LLCoreBridgePersistence.cpp',
     'Source/LifeLens/Simulation/LLCoreCompileUnit.cpp',
     'Source/LifeLens/Save/LLSaveGame.h',
+    'Source/LifeLensCore/include/lifelens/SimulationSnapshot.h',
+    'Source/LifeLensCore/include/lifelens/SimulationSnapshotCodec.h',
+    'Source/LifeLensCore/src/SimulationSnapshot.cpp',
+    'Source/LifeLensCore/src/SimulationSnapshotCodec.cpp',
     'Source/LifeLens/AI/LLDecisionComponent.cpp',
     'Source/LifeLens/Characters/LLResidentCharacter.cpp',
     'Source/LifeLens/World/LLActivityAnchor.cpp',
@@ -52,16 +57,31 @@ for token in (
     'GetFamilyObservation',
     'AdvanceCoreMinutes',
     'RefreshProjectionFromCore',
-    'SaveObject->WorldSeed = WorldSeed;',
-    'SaveObject->SimulationMinute = SimulationMinute;',
+    'SaveObject->SaveVersion = 2;',
+    'SaveObject->CoreSnapshotBytes = MoveTemp(SnapshotBytes);',
+    'CaptureCoreSnapshotBytes',
+    'RestoreCoreSnapshotBytes',
+    'SaveObject->SaveVersion == 2',
+    'SaveObject->SaveVersion == 1',
     'TargetMinute - StartMinute',
     'ApplyActionOutcome',
     'ApplySocialInteraction',
 ):
-    assert token in sim, f'Missing Core-authoritative runtime contract: {token}'
+    assert token in sim, f'Missing Core-authoritative runtime/save contract: {token}'
 assert 'Residents.Add(GenerateAdult' not in sim
 assert 'Residents = SaveObject->Residents' not in sim
+assert 'Relationships = SaveObject->Relationships' not in sim
+assert 'SaveObject->Residents = Residents' not in sim
+assert 'SaveObject->Relationships = Relationships' not in sim
 assert 'MakeDeterministicGuid(Random)' not in sim
+
+save_h = (root / 'Source/LifeLens/Save/LLSaveGame.h').read_text(encoding='utf-8')
+for token in (
+    'SaveVersion = 2',
+    'TArray<uint8> CoreSnapshotBytes',
+    'UPROPERTY(SaveGame)',
+):
+    assert token in save_h, f'Missing SaveGame v2 snapshot contract: {token}'
 
 bridge_h = (root / 'Source/LifeLens/Simulation/LLCoreBridgeSubsystem.h').read_text(encoding='utf-8')
 for token in (
@@ -72,6 +92,8 @@ for token in (
     'GetResidentObservations',
     'GetResidentObservation',
     'GetFamilyObservation',
+    'CaptureCoreSnapshotBytes',
+    'RestoreCoreSnapshotBytes',
     'MakeStableResidentGuid',
     'OnCoreRuntimeStateChanged',
 ):
@@ -103,6 +125,17 @@ for token in (
     assert token in bridge_cpp, f'Missing Core observer projection: {token}'
 assert 'MakeStableResidentGuid(CoreCharacterId)' in bridge_cpp
 
+bridge_persistence = (root / 'Source/LifeLens/Simulation/LLCoreBridgePersistence.cpp').read_text(encoding='utf-8')
+for token in (
+    'captureSnapshot()',
+    'encodeSimulationSnapshot',
+    'decodeSimulationSnapshot',
+    'restoreSnapshot',
+    'std::make_unique<lifelens::Simulation>',
+    'RebuildGuidIndex()',
+):
+    assert token in bridge_persistence, f'Missing Core snapshot persistence bridge: {token}'
+
 read_types = (root / 'Source/LifeLens/Simulation/LLCoreReadTypes.h').read_text(encoding='utf-8')
 for token in (
     'ELLCoreSex',
@@ -130,7 +163,23 @@ for token in (
     assert token in read_types, f'Missing Unreal read DTO: {token}'
 
 compile_unit = (root / 'Source/LifeLens/Simulation/LLCoreCompileUnit.cpp').read_text(encoding='utf-8')
-assert '#include "../../LifeLensCore/src/Simulation.cpp"' in compile_unit
+for token in (
+    '#include "../../LifeLensCore/src/Simulation.cpp"',
+    '#include "../../LifeLensCore/src/SimulationSnapshot.cpp"',
+    '#include "../../LifeLensCore/src/SimulationSnapshotCodec.cpp"',
+):
+    assert token in compile_unit, f'Missing Core compile unit source: {token}'
+
+snapshot_codec = (root / 'Source/LifeLensCore/src/SimulationSnapshotCodec.cpp').read_text(encoding='utf-8')
+for token in (
+    "'L','L','S','N','A','P','0','1'",
+    'SimulationSnapshotBinaryFormatVersion',
+    'writeWorld',
+    'writeRuntime',
+    'decodeSimulationSnapshot',
+    'snapshot contains trailing bytes',
+):
+    assert token in snapshot_codec, f'Missing persistent Core snapshot codec contract: {token}'
 
 # The simulation core remains standard-library C++ with a C++17 baseline.
 forbidden_core_tokens = (
