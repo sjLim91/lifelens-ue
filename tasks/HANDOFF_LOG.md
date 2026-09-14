@@ -548,6 +548,19 @@
 - 상대가 알아야 할 점:
   - 없음
 
+### Visual Feedback v1 — 재확인 결과
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/visual-feedback-v1`, PR #38
+- 커밋: `ffbc32c`
+- 상태: `REVIEW / 검증 대기`
+- 변경 범위:
+  - 코드 변경 없음
+- 검증 상태:
+  - 화면 재확인(로컬 PIE): 밑줄이 주민 아래 짧게 표시됨 확인. 플래시·페이드인: 미기록
+  - GitHub Actions: 검증 대기
+- 상대가 알아야 할 점:
+  - READY NOW 5개(DQ-01~05) 모두 PR 생성 완료. 다겸 측 상태 `NEEDS_ASSIGNMENT`.
+
 ---
 
 ## 다음 인수인계 포인트
