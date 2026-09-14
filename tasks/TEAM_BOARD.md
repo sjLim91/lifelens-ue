@@ -8,13 +8,16 @@
 
 제품 방향 기준은 `docs/LIFELENS_SPEC_v1.1.md`와 **`docs/CIVILIZATION_PROGRESSION_v1.md`**를 함께 따른다.
 
+쭌이 다겸 소유 작업을 도울 때는 **`docs/INTEGRATION_SPRINT.md`가 필수 규칙**이다. 기본은 REVIEW_ONLY이며, 실제 코드 수정은 명시적 `ASSIST_LOCK` + `integration/*-assist` branch를 사용한다. `dagyeom/*` branch에 쭌 AI가 직접 push하지 않는다.
+
 상태: `TODO` / `DOING` / `REVIEW` / `DONE` / `BLOCKED` / `FROZEN`
 
 ## Active Work
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | `jjun/civilization-observer-read-v1`, PR #53 | Civilization Observer Read DTOs v1 | `Source/LifeLensCore/**`, `Source/LifeLens/Simulation/**`, validator/preflight | REVIEW / CI_FIXING — Run #15 link failure root-caused |
+| 쭌 + 쭌 AI | `jjun/civilization-observer-read-v1`, PR #53 | Civilization Observer Read DTOs v1 | `Source/LifeLensCore/**`, `Source/LifeLens/Simulation/**`, validator/preflight | WAITING_CI — latest head `e3a9f661...`; Core+Preflight PASS; UE Run #16 pending |
+| 쭌 + 쭌 AI | post-#53 | Integration Sprint support for Dagyeom | review/assist only under `docs/INTEGRATION_SPRINT.md` | PLANNED — start only after #53 merge |
 | 쭌 + 쭌 AI | `task/03-fast-test`, PR #2 | old Android validation | Bridge/build | FROZEN — Run `34739283266` 재실행/수정/병합 금지 |
 | 다겸 + 다겸 AI | `dagyeom/observer-ui-v2`, PR #17 | Observer HUD v2 + Core Observer Bridge binding | `Source/LifeLens/UI/**` | REVIEW / RECOVERING — latest main reconcile 필요 |
 | 다겸 + 다겸 AI | `dagyeom/ui-foundation-v1`, PR #26 | Android landscape UI foundation | UI foundation | REVIEW |
@@ -38,13 +41,12 @@ Rules:
 ## Current Jjun lock — Civilization Observer Read DTOs v1
 
 - Branch/PR: `jjun/civilization-observer-read-v1`, PR #53.
-- Head before fix: `c7753047a28ea3b1dae75c4e6abae7e1f289f962`.
-- Final push Core `34819660707`: PASS 38/38 + deterministic harness.
-- PR Core `34819825563`: PASS.
-- PR Preflight `34819825627`: PASS.
-- Unreal Linux Compile Run #15 `34819825591`: **FAILED at linker after UHT PASS**.
-- Root cause: `Source/LifeLens/Simulation/LLCoreCompileUnit.cpp` manually includes Core implementation files for the Unreal module but omitted `CivilizationKnowledgeTransmission.cpp`; unresolved symbols were `Simulation::processCivilizationKnowledgeEvent(...)` and `Simulation::advanceCivilizationKnowledgeTeaching()`.
-- Exact next action: add missing include + validator guard, then one latest-head UE 5.6 UHT/UBT rerun. Do not duplicate builds.
+- Latest head: `e3a9f6611118866a6c79eb300a7b6ab2d5ffaf31`.
+- Core `34821150702`: PASS including Build / tests / deterministic harness.
+- Preflight `34821150693`: PASS, including regression guard that requires `CivilizationKnowledgeTransmission.cpp` in Unreal compile unit.
+- Unreal Linux Compile Run #16 `34821150704`: IN PROGRESS; this is the only valid remaining gate.
+- Superseded Run #15 `34819825591`: FAILED at linker after UHT PASS because `LLCoreCompileUnit.cpp` omitted `CivilizationKnowledgeTransmission.cpp`; fixed in latest head.
+- Do not modify PR head while Run #16 is active; do not launch duplicate builds.
 - Published read-only contracts:
   - resident inventory stacks/total carrying;
   - resident technique level/confidence/practice + gathering/crafting/learning skills;
@@ -54,8 +56,44 @@ Rules:
   - stable resident FGuid projection through Bridge.
 - New Unreal getters: `GetResidentCivilizationObservation(...)`, `GetCivilizationWorldObservation(...)`.
 - Existing main HUD DTO is intentionally unchanged; detailed civilization state stays opt-in.
-- No Jjun edits to `Source/LifeLens/UI/**`, Character appearance/presentation, `Content/UI/**`, or `Content/Characters/**`.
-- Intermediate Core Run `34819279308` failure: test fixture used future event timestamps; Snapshot validator correctly rejected it. Fixed in final head.
+- No Jjun edits to `Source/LifeLens/UI/**`, Character appearance/presentation, `Content/UI/**`, or `Content/Characters/**` in PR #53.
+
+## Integration Sprint — post-#53
+
+Canonical protocol: `docs/INTEGRATION_SPRINT.md`.
+
+### Default mode
+
+`REVIEW_ONLY`
+
+쭌/쭌 AI는 다겸 PR/branch/diff/CI를 읽고 수정 방향을 제시할 수 있지만, 다겸 소유 파일을 직접 수정하지 않는다.
+
+### 실제 코드 도움 시
+
+반드시 아래 순서를 따른다.
+
+1. target PR/branch HEAD + CI 재확인
+2. 이 보드에 `ASSIST_LOCK` 등록
+3. locked paths 명시
+4. target branch HEAD에서 `integration/dagyeom-<scope>-assist` 생성
+5. helper branch에서만 수정
+6. 검증/hand-off 후 target에 합치고 lock 해제
+
+**`dagyeom/*` branch direct push 금지.**
+
+### Current Assist Locks
+
+현재 **없음**. #53 merge 전에는 다겸 civilization binding용 ASSIST_LOCK을 만들지 않는다.
+
+### Planned parent-first assist order
+
+1. PR #17 Observer HUD v2
+2. PR #26 UI Foundation — #17과 locked path가 겹치지 않을 때 독립 처리 가능
+3. #29 / #30 after #17
+4. #36 after #30
+5. #38 after #36
+
+여러 stacked branch를 한 번에 force-update/rebase하지 않는다.
 
 ## Latest completed Jjun work
 
@@ -94,18 +132,23 @@ Jjun default ownership: `LifeLens.uproject`, `Source/LifeLens/LifeLens.Build.cs`
 
 Dagyeom default ownership: `Source/LifeLens/UI/**`, Character appearance/presentation code, `Content/UI/**`, `Content/Characters/**`.
 
+ASSIST_LOCK은 기본 소유권을 영구 변경하지 않는다. lock 해제 후 원래 소유권으로 복귀한다.
+
 ## Integration Requests
 
 Current open requests: **none**.
 
+새 요청 형식은 `docs/INTEGRATION_SPRINT.md`의 Mode / Target owner / Target PR / Base HEAD / Locked paths / Helper branch / Reason / Status / Unlock condition 필드를 따른다.
+
 ## Merge / reconciliation queue
 
-1. Fix/revalidate/merge PR #53 Civilization Observer Read DTOs v1.
-2. **Integration Sprint:** Dagyeom PR #17 latest-main reconcile + current Bridge/civilization read binding + review fixes + verify; Jjun pauses new large Core slices.
-3. Dagyeom PR #26 latest-main reconciliation/verification — may proceed independently.
-4. After #17: #29/#30 → #36 → #38.
-5. Integrated runtime check → Android smoke APK.
-6. PR #2 remains FROZEN.
+1. Finish latest-head Run #16 and merge PR #53 if green.
+2. Enter Integration Sprint; Jjun pauses new large Core slices.
+3. PR #17 latest-main reconcile + current Bridge/civilization binding + review fixes + verify.
+4. PR #26 latest-main reconciliation/verification where locks do not overlap.
+5. After #17: #29/#30 → #36 → #38.
+6. Integrated runtime check → Android smoke APK.
+7. PR #2 remains FROZEN.
 
 ## Completion rule
 
