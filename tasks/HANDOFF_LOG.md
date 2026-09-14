@@ -556,3 +556,18 @@
   - #65 merge 후 `ULLResidentAppearanceInputSource::Resolve`를 `ULLAppearanceProfileLibrary::MakeDeterministicAppearanceProfile`로 교체 예정(단일 지점)
   - 임포트 산출물 중 `UAL/UAL1_Standard/Materials/M_Joints, M_Main`은 마네킹 재질(미사용). `Import/IP_*` 파이프라인 에셋은 재임포트용
   - Android LOD/fallback: 에셋은 ~13k tri, 머티리얼 슬롯 3(+헤어 1). 별도 LOD 생성은 후속
+
+### 다겸 측 AI — Character Appearance v1 화면 확인 결과
+
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/character-appearance-v1`, PR #67
+- 커밋: `1c6af4c`
+- 상태: `WAITING_CI / 검증 대기`
+- 검증 상태:
+  - 화면 확인(로컬 PIE): 주민 4명 휴머노이드 모델 표시, 남녀 구분, 헤어·피부 개별 차이 있음(밝은 피부 텍스처 2종이라 차이는 작음), 이름 라벨 머리 위, 선택 링·LEVEL 1 정상, 현재 행동(Eat/Idle) 표시 정상
+  - 관찰: 전원 기본 속옷 상태(의상 미적용; UBC Standard tier에 의상 없음), Idle 외 동작 애니메이션 미연결(Motion & Context v1 범위)
+  - Save/Load 외형 연속성: 미확인
+  - GitHub Actions: 검증 대기
+- 상대가 알아야 할 점:
+  - 의상은 UBC Standard tier 미포함. Quaternius Modular Character Outfits(CC0 명시 확인 후) 또는 후속 팩으로 보강 예정. 로드맵 Phase C "최소 기본 의상 세트"는 미충족
+  - Save/Load 연속성은 임시 시드가 `WorldSeed + ResidentId` 순수 함수이므로 설계상 유지되나 실기 확인 필요
