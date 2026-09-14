@@ -2,6 +2,7 @@
 #include "UI/LLObservationSubsystem.h"
 #include "UI/LLObserverLabels.h"
 #include "Simulation/LLSimulationSubsystem.h"
+#include "Simulation/LLCoreBridgeSubsystem.h"
 #include "Characters/LLResidentCharacter.h"
 #include "Engine/Canvas.h"
 #include "Engine/Engine.h"
@@ -85,12 +86,48 @@ namespace
     {
         switch (Tab)
         {
-            case ELLDetailTab::Needs:        return LLObserverText::TabNeeds;
-            case ELLDetailTab::Personality:  return LLObserverText::TabPersonality;
-            case ELLDetailTab::TraitsSkills: return LLObserverText::TabTraitsSkills;
+            case ELLDetailTab::Needs:         return LLObserverText::TabNeeds;
+            case ELLDetailTab::Personality:   return LLObserverText::TabPersonality;
+            case ELLDetailTab::TraitsSkills:  return LLObserverText::TabTraitsSkills;
+            case ELLDetailTab::Emotion:       return LLObserverText::TabEmotion;
+            case ELLDetailTab::Relationships: return LLObserverText::TabRelationships;
+            case ELLDetailTab::Family:        return LLObserverText::TabFamily;
+            case ELLDetailTab::Civilization:  return LLObserverText::TabCivilization;
             case ELLDetailTab::Overview:
-            default:                         return LLObserverText::TabOverview;
+            default:                          return LLObserverText::TabOverview;
         }
+    }
+
+    template <typename TEnum>
+    FString EnumLabel(TEnum Value)
+    {
+        const UEnum* Enum = StaticEnum<TEnum>();
+        if (!Enum)
+        {
+            return TEXT("Unknown");
+        }
+        FString Name = Enum->GetNameStringByValue(static_cast<int64>(Value));
+        Name.ReplaceInline(TEXT("_"), TEXT(" "));
+        return Name;
+    }
+
+    FString Percent01(float Value)
+    {
+        return FString::Printf(TEXT("%.0f%%"), FMath::Clamp(Value, 0.0f, 1.0f) * 100.0f);
+    }
+
+    FString JoinFamilyNames(const TArray<FLLCoreFamilyMemberSnapshot>& Members)
+    {
+        TArray<FString> Names;
+        Names.Reserve(Members.Num());
+        for (const FLLCoreFamilyMemberSnapshot& Member : Members)
+        {
+            if (!Member.DisplayName.IsEmpty())
+            {
+                Names.Add(Member.DisplayName);
+            }
+        }
+        return Names.Num() > 0 ? FString::Join(Names, TEXT(" · ")) : FString(TEXT("None"));
     }
 
     // One row of panel content. Right is optional (two-column rows); rows with
@@ -126,8 +163,24 @@ ULLObservationSubsystem* ALLObserverHUD::GetObservation() const
     return GameInstance ? GameInstance->GetSubsystem<ULLObservationSubsystem>() : nullptr;
 }
 
+ULLCoreBridgeSubsystem* ALLObserverHUD::GetCoreBridge() const
+{
+    UGameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+    return GameInstance ? GameInstance->GetSubsystem<ULLCoreBridgeSubsystem>() : nullptr;
+}
+
 FString ALLObserverHUD::CurrentActionFor(const FLLResidentData& Resident) const
 {
+    if (ULLCoreBridgeSubsystem* Bridge = GetCoreBridge())
+    {
+        FLLCoreResidentObservation CoreResident;
+        if (Bridge->GetResidentObservation(Resident.ResidentId, CoreResident) && !CoreResident.ActivityLabel.IsEmpty())
+        {
+            return CoreResident.ActivityLabel;
+        }
+    }
+
+    // Transitional fallback only for a runtime where the Core bridge is absent.
     const ALLResidentCharacter* Actor = FindResidentActor(GetWorld(), Resident.ResidentId);
     return Actor ? LLObserverLabels::IntentToString(Actor->GetCurrentIntent()) : FString();
 }
@@ -533,6 +586,54 @@ void ALLObserverHUD::DrawWorldOverview(const ULLSimulationSubsystem& Simulation,
             Row.Scale = RowScale;
             Rows.Add(Row);
         }
+
+        if (ULLCoreBridgeSubsystem* Bridge = GetCoreBridge(); Bridge && Bridge->IsCoreRunning())
+        {
+            const FLLCoreWorldObservation CoreWorld = Bridge->GetWorldObservation();
+            const FLLCoreCivilizationWorldObservation Civilization = Bridge->GetCivilizationWorldObservation(1);
+
+            FRow Households;
+            Households.Left = TEXT("Households");
+            Households.Right = FString::FromInt(CoreWorld.Households);
+            Households.Scale = RowScale;
+            Households.GapBefore = SectionGap;
+            Rows.Add(Households);
+
+            FRow Couples;
+            Couples.Left = TEXT("Active couples");
+            Couples.Right = FString::FromInt(CoreWorld.ActiveCouples);
+            Couples.Scale = RowScale;
+            Rows.Add(Couples);
+
+            FRow Pregnancies;
+            Pregnancies.Left = TEXT("Pregnancies");
+            Pregnancies.Right = FString::FromInt(CoreWorld.ActivePregnancies);
+            Pregnancies.Scale = RowScale;
+            Rows.Add(Pregnancies);
+
+            FRow Techniques;
+            Techniques.Left = TEXT("Known techniques");
+            Techniques.Right = FString::FromInt(Civilization.UniqueKnownTechniqueTypes);
+            Techniques.Scale = RowScale;
+            Techniques.GapBefore = SectionGap;
+            Rows.Add(Techniques);
+
+            FRow Stored;
+            Stored.Left = TEXT("Stored units");
+            Stored.Right = FString::FromInt(Civilization.TotalStoredUnits);
+            Stored.Scale = RowScale;
+            Rows.Add(Stored);
+
+            if (Civilization.RecentDiscoveries.Num() > 0)
+            {
+                const FLLCoreCivilizationDiscoveryObservation& Latest = Civilization.RecentDiscoveries[0];
+                FRow Discovery;
+                Discovery.Left = TEXT("Recent discovery");
+                Discovery.Right = EnumLabel(Latest.Technique) + TEXT(" · ") + Latest.DiscovererName;
+                Discovery.Scale = RowScale;
+                Rows.Add(Discovery);
+            }
+        }
     }
 
     float WidestLeft = 0.0f;
@@ -759,6 +860,14 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
     LLObserverLabels::ENeedLevel WorstLevel = LLObserverLabels::ENeedLevel::Good;
     const FString SummaryLine = LLObserverLabels::StatusSummary(Resident.Needs, WorstLevel);
 
+    ULLCoreBridgeSubsystem* Bridge = GetCoreBridge();
+    FLLCoreResidentObservation CoreResident;
+    FLLCoreFamilyObservation CoreFamily;
+    FLLCoreResidentCivilizationObservation CoreCivilization;
+    const bool bHasCoreResident = Bridge && Bridge->GetResidentObservation(Resident.ResidentId, CoreResident);
+    const bool bHasCoreFamily = Bridge && Bridge->GetFamilyObservation(Resident.ResidentId, CoreFamily);
+    const bool bHasCoreCivilization = Bridge && Bridge->GetResidentCivilizationObservation(Resident.ResidentId, CoreCivilization);
+
     switch (ActiveTab)
     {
         case ELLDetailTab::Needs:
@@ -845,6 +954,161 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
             LikesRow.LeftColor = TextPrimary;
             LikesRow.Scale = RowScale;
             Rows.Add(LikesRow);
+            break;
+        }
+
+        case ELLDetailTab::Emotion:
+        {
+            if (!bHasCoreResident)
+            {
+                FRow None; None.Left = TEXT("Core data unavailable"); None.Scale = RowScale; Rows.Add(None);
+                break;
+            }
+
+            auto AddEmotion = [&Rows, RowScale](const TCHAR* Name, float Value)
+            {
+                FRow Row;
+                Row.Left = Name;
+                Row.Right = Percent01(Value);
+                Row.RightColor = TextPrimary;
+                Row.Scale = RowScale;
+                Rows.Add(Row);
+            };
+            AddEmotion(TEXT("Joy"), CoreResident.Emotion.Joy);
+            AddEmotion(TEXT("Sadness"), CoreResident.Emotion.Sadness);
+            AddEmotion(TEXT("Anger"), CoreResident.Emotion.Anger);
+            AddEmotion(TEXT("Fear"), CoreResident.Emotion.Fear);
+            AddEmotion(TEXT("Affection"), CoreResident.Emotion.Affection);
+            AddEmotion(TEXT("Anxiety"), CoreResident.Emotion.Anxiety);
+            AddEmotion(TEXT("Grief"), CoreResident.Emotion.Grief);
+            AddEmotion(TEXT("Pride"), CoreResident.Emotion.Pride);
+            AddEmotion(TEXT("Jealousy"), CoreResident.Emotion.Jealousy);
+            AddEmotion(TEXT("Relief"), CoreResident.Emotion.Relief);
+            AddEmotion(TEXT("Embarrassment"), CoreResident.Emotion.Embarrassment);
+            break;
+        }
+
+        case ELLDetailTab::Relationships:
+        {
+            if (!bHasCoreResident || CoreResident.Relationships.Num() == 0)
+            {
+                FRow None; None.Left = LLObserverText::NoneListed; None.Scale = RowScale; Rows.Add(None);
+                break;
+            }
+
+            TArray<FLLCoreRelationshipSnapshot> Relations = CoreResident.Relationships;
+            Relations.Sort([](const FLLCoreRelationshipSnapshot& A, const FLLCoreRelationshipSnapshot& B)
+            {
+                return A.SocialBond > B.SocialBond;
+            });
+
+            for (const FLLCoreRelationshipSnapshot& Relation : Relations)
+            {
+                FRow Row;
+                Row.Left = Relation.TargetName.IsEmpty() ? TEXT("Resident") : Relation.TargetName;
+                Row.Right = FString::Printf(TEXT("bond %.2f · trust %.2f · romance %.2f"),
+                    Relation.SocialBond, Relation.Trust, Relation.RomancePotential);
+                Row.RightColor = TextPrimary;
+                Row.Scale = RowScale;
+                Rows.Add(Row);
+            }
+            break;
+        }
+
+        case ELLDetailTab::Family:
+        {
+            if (!bHasCoreFamily)
+            {
+                FRow None; None.Left = TEXT("Core data unavailable"); None.Scale = RowScale; Rows.Add(None);
+                break;
+            }
+
+            FRow Household;
+            Household.Left = TEXT("Household");
+            Household.Right = CoreFamily.HouseholdId != 0
+                ? FString::Printf(TEXT("#%lld"), static_cast<long long>(CoreFamily.HouseholdId))
+                : FString(TEXT("None"));
+            Household.Scale = RowScale;
+            Rows.Add(Household);
+
+            FRow Partner;
+            Partner.Left = TEXT("Partner");
+            Partner.Right = CoreFamily.bHasActivePartner
+                ? CoreFamily.PartnerName + TEXT(" · ") + EnumLabel(CoreFamily.PartnerStage)
+                : FString(TEXT("None"));
+            Partner.Scale = RowScale;
+            Rows.Add(Partner);
+
+            if (CoreFamily.bExpectingChild)
+            {
+                FRow Expecting;
+                Expecting.Left = TEXT("Expecting child");
+                Expecting.Right = CoreFamily.PregnancyPartnerName;
+                Expecting.RightColor = TextAction;
+                Expecting.Scale = RowScale;
+                Rows.Add(Expecting);
+            }
+
+            FRow Parents; Parents.Left = TEXT("Parents"); Parents.Right = JoinFamilyNames(CoreFamily.Parents); Parents.Scale = RowScale; Parents.GapBefore = SectionGap; Rows.Add(Parents);
+            FRow Children; Children.Left = TEXT("Children"); Children.Right = JoinFamilyNames(CoreFamily.Children); Children.Scale = RowScale; Rows.Add(Children);
+            FRow Siblings; Siblings.Left = TEXT("Siblings"); Siblings.Right = JoinFamilyNames(CoreFamily.Siblings); Siblings.Scale = RowScale; Rows.Add(Siblings);
+            break;
+        }
+
+        case ELLDetailTab::Civilization:
+        {
+            if (!bHasCoreCivilization)
+            {
+                FRow None; None.Left = TEXT("Core data unavailable"); None.Scale = RowScale; Rows.Add(None);
+                break;
+            }
+
+            FRow Gathering; Gathering.Left = TEXT("Gathering"); Gathering.Right = Percent01(CoreCivilization.GatheringSkill); Gathering.Scale = RowScale; Rows.Add(Gathering);
+            FRow Crafting; Crafting.Left = TEXT("Crafting"); Crafting.Right = Percent01(CoreCivilization.CraftingSkill); Crafting.Scale = RowScale; Rows.Add(Crafting);
+            FRow Learning; Learning.Left = TEXT("Learning"); Learning.Right = Percent01(CoreCivilization.LearningSkill); Learning.Scale = RowScale; Rows.Add(Learning);
+            FRow Carried; Carried.Left = TEXT("Carried units"); Carried.Right = FString::FromInt(CoreCivilization.TotalInventoryUnits); Carried.Scale = RowScale; Carried.GapBefore = SectionGap; Rows.Add(Carried);
+            FRow Known; Known.Left = TEXT("Known techniques"); Known.Right = FString::FromInt(CoreCivilization.KnownTechniqueCount); Known.Scale = RowScale; Rows.Add(Known);
+            FRow Reproducible; Reproducible.Left = TEXT("Reproducible"); Reproducible.Right = FString::FromInt(CoreCivilization.ReproducibleTechniqueCount); Reproducible.Scale = RowScale; Rows.Add(Reproducible);
+
+            FRow InventoryHeader; InventoryHeader.Left = TEXT("Inventory"); InventoryHeader.LeftColor = TextSection; InventoryHeader.Scale = SectionScale; InventoryHeader.GapBefore = SectionGap; Rows.Add(InventoryHeader);
+            if (CoreCivilization.Inventory.Num() == 0)
+            {
+                FRow None; None.Left = LLObserverText::NoneListed; None.Scale = RowScale; Rows.Add(None);
+            }
+            else
+            {
+                for (const FLLCoreCivilizationItemStack& Stack : CoreCivilization.Inventory)
+                {
+                    FRow Row;
+                    Row.Left = EnumLabel(Stack.Item) + TEXT(" · ") + EnumLabel(Stack.Material);
+                    Row.Right = FString::Printf(TEXT("x%d"), Stack.Quantity);
+                    Row.RightColor = TextPrimary;
+                    Row.Scale = RowScale;
+                    Rows.Add(Row);
+                }
+            }
+
+            FRow TechniqueHeader; TechniqueHeader.Left = TEXT("Techniques"); TechniqueHeader.LeftColor = TextSection; TechniqueHeader.Scale = SectionScale; TechniqueHeader.GapBefore = SectionGap; Rows.Add(TechniqueHeader);
+            if (CoreCivilization.Techniques.Num() == 0)
+            {
+                FRow None; None.Left = LLObserverText::NoneListed; None.Scale = RowScale; Rows.Add(None);
+            }
+            else
+            {
+                for (const FLLCoreTechniqueKnowledgeObservation& Technique : CoreCivilization.Techniques)
+                {
+                    FRow Row;
+                    Row.Left = EnumLabel(Technique.Technique);
+                    Row.Right = EnumLabel(Technique.Level);
+                    if (Technique.bHasProvenance)
+                    {
+                        Row.Right += TEXT(" · ") + EnumLabel(Technique.Source);
+                    }
+                    Row.RightColor = TextPrimary;
+                    Row.Scale = RowScale;
+                    Rows.Add(Row);
+                }
+            }
             break;
         }
 

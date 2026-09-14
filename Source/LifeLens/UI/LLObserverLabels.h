@@ -38,6 +38,10 @@ namespace LLObserverText
     inline const TCHAR* const TabNeeds           = TEXT("Needs");
     inline const TCHAR* const TabPersonality     = TEXT("Personality");
     inline const TCHAR* const TabTraitsSkills    = TEXT("Traits & Skills");
+    inline const TCHAR* const TabEmotion         = TEXT("Emotion");
+    inline const TCHAR* const TabRelationships   = TEXT("Relationships");
+    inline const TCHAR* const TabFamily          = TEXT("Family");
+    inline const TCHAR* const TabCivilization    = TEXT("Knowledge & Gear");
 
     inline const TCHAR* const SectionTraits      = TEXT("Traits");
     inline const TCHAR* const SectionSkills      = TEXT("Skills");
@@ -75,6 +79,7 @@ namespace LLObserverText
 
     // ---- Action intent -----------------------------------------------------
     inline const TCHAR* const ActionEat          = TEXT("Eating");
+    inline const TCHAR* const ActionDrink        = TEXT("Drinking");
     inline const TCHAR* const ActionSleep        = TEXT("Sleeping");
     inline const TCHAR* const ActionSocialize    = TEXT("Socializing");
     inline const TCHAR* const ActionHygiene      = TEXT("Washing");
@@ -261,6 +266,7 @@ namespace LLObserverLabels
         switch (Intent)
         {
             case ELLActionIntent::Eat:       return LLObserverText::ActionEat;
+            case ELLActionIntent::Drink:     return LLObserverText::ActionDrink;
             case ELLActionIntent::Sleep:     return LLObserverText::ActionSleep;
             case ELLActionIntent::Socialize: return LLObserverText::ActionSocialize;
             case ELLActionIntent::Hygiene:   return LLObserverText::ActionHygiene;
