@@ -4,7 +4,7 @@
 >
 > 제품 기준: `docs/LIFELENS_SPEC_v1.1.md` · 상태 규칙: `docs/STATE_MANAGEMENT.md` · 역할/잠금: `tasks/TEAM_BOARD.md` · 이력: `tasks/HANDOFF_LOG.md`
 
-Last reconciled: 2026-09-14 KST — PR #42 merged as `5c6f2c071ca00bcd4b26d6e002bf5c618d02ff1e` after Structural Preflight + actual Unreal 5.6 Linux UHT/UBT PASS. Next Jjun task is the Core-only autonomous family/lifecycle progression loop.
+Last reconciled: 2026-09-14 KST — PR #42 merged as `5c6f2c071ca00bcd4b26d6e002bf5c618d02ff1e` after Structural Preflight + actual Unreal 5.6 Linux UHT/UBT PASS. PR #43 Autonomous Family Progression is now open and waiting Core/Preflight CI.
 
 ## Mandatory sync gate
 
@@ -21,26 +21,28 @@ Last reconciled: 2026-09-14 KST — PR #42 merged as `5c6f2c071ca00bcd4b26d6e002
 ### 1. Autonomous Family Progression v1 — Jjun
 
 - Owner: 쭌 + 쭌 AI
-- Status: `PLANNED → IN_PROGRESS` after branch creation.
-- Branch: `jjun/autonomous-family-progression-v1` (to be created from latest main after this state update).
-- Scope: **`Source/LifeLensCore/**` + Core tests/CMake only.** No Unreal Simulation/UI/Characters/Content files.
-- Goal: existing Romance / Household / Marriage / Pregnancy / Birth systems must stop being isolated APIs and become an autonomous deterministic part of `Simulation::step()`.
-- Required lifecycle path:
-  - relationship quality can naturally trigger dating; no forced initial couple;
-  - dating can lead to cohabitation;
-  - sufficiently mature/stable dating can lead to engagement;
-  - engagement can lead to marriage;
-  - eligible committed couples may attempt pregnancy;
-  - pregnancy advances over simulation time;
-  - due pregnancy produces a real child with genetics + genealogy + household membership + LifeHistory;
-  - child becomes a normal `World::characters` resident and receives runtime state.
-- Determinism: same WorldSeed + same starting state must produce the same progression and child identity/name/genetics.
-- Safety rules:
-  - no instant chain in one minute; explicit minimum relationship/stage durations and periodic checks;
-  - same-sex romance remains valid; current biological pregnancy only when one partner can gestate and the other can contribute genetics under existing reproductive model;
-  - founders still start as strangers; progression must arise from state, not hard-coded pairing.
-- Validation required: existing full Core Release test suite + deterministic harness + new end-to-end progression tests + Structural Preflight. Unreal UHT/UBT is not required unless Unreal-side files are touched (not planned).
-- Exact next action: create branch → inspect existing stage APIs and current `Simulation::step()` → implement deterministic periodic progression coordinator + tests.
+- Branch: `jjun/autonomous-family-progression-v1`
+- PR: #43 `[CORE] Wire autonomous family progression into Simulation`
+- Current head: `d0a4f3557f796e821b4a482cbb385efd2e76709b`
+- Status: `WAITING_CI`
+- Changed scope: Core only — `FamilyProgression.h`, `Simulation.h/.cpp`, Core CMake, `test_autonomous_family_progression.cpp`.
+- Implemented first checkpoint:
+  - state-driven romantic chemistry from familiarity/social bond/personality compatibility;
+  - daily deterministic family decision cadence;
+  - dating candidates require mutual readiness and are ranked deterministically;
+  - dating→cohabitation minimum 30 days;
+  - dating→engagement minimum 90 days plus mature cohabitation;
+  - engagement→marriage minimum 60 days;
+  - marriage→pregnancy attempt minimum 30 days with weekly deterministic attempts;
+  - same-sex romance remains valid while current biological pregnancy uses existing gestational/genetic eligibility model;
+  - pregnancies advance with simulation time;
+  - due pregnancy calls existing Birth/Genetics/Genealogy/Household pipeline and adds newborn as a real World resident;
+  - `BirthBook` becomes authoritative Simulation-owned state;
+  - daily Aging is wired into this lifecycle checkpoint.
+- New end-to-end test covers: no forced initial couple, chemistry emergence, dating→cohabitation→engagement→marriage→pregnancy→birth, child resident/genealogy/household identity, same-seed repeatability.
+- Validation required: full Core Release suite + deterministic harness + Structural Preflight. Unreal files are intentionally untouched, so UHT/UBT is not a required gate for #43.
+- Exact next action: inspect actual #43 CI. If failure, fetch first failing step/log and fix bounded root cause; do not merge until all required gates PASS.
+- Handoff safety: `SAFE` — no Dagyeom or Unreal runtime files changed.
 
 ### 2. Observer HUD v2 — Dagyeom
 
@@ -48,7 +50,7 @@ Last reconciled: 2026-09-14 KST — PR #42 merged as `5c6f2c071ca00bcd4b26d6e002
 - Branch/PR: `dagyeom/observer-ui-v2`, PR #17
 - Status: `RECOVERING`
 - Former six `BLOCKED-BY-JJUN` observer requirements are available on main via #37/#39/#40.
-- PR #42 now also exposes founder Sex / AgeYears / LifeStage / 14-axis Personality through the Core resident DTO.
+- PR #42 is merged and additionally exposes founder Sex / AgeYears / LifeStage / 14-axis Personality through the Core resident DTO.
 - Exact next action: reconcile actual latest main, bind current Core Observer Bridge, address Dagyeom-owned UI review findings, verify UHT/UBT + PIE, update state before merge.
 
 ### 3. Dagyeom stacked UI / presentation chain
@@ -76,25 +78,15 @@ Last reconciled: 2026-09-14 KST — PR #42 merged as `5c6f2c071ca00bcd4b26d6e002
 - Status: `DONE`
 - Feature HEAD: `5f61ce04963166af418fb672fb4442a6cf0598e6`
 - Merge SHA: `5c6f2c071ca00bcd4b26d6e002bf5c618d02ff1e`
-- Validation:
-  - Structural Preflight Run `34799244015` — PASS.
-  - Unreal Linux Compile Run `34799244011` — PASS including actual UHT/UBT.
-- Main now:
-  - starts production Core via `StartCoreNewGame` / `Simulation::setupNewGame()`;
-  - uses Core founders as the single New Game population source;
-  - exposes Sex/Age/LifeStage/Personality identity through Unreal DTOs;
-  - maps Core CharacterId + WorldSeed to stable FGuid;
-  - projects Core residents/relationships into legacy compatibility data rather than randomizing another four residents;
-  - advances Core from the Unreal simulation path;
-  - reconstructs current transitional save state from seed + minute replay rather than trusting legacy resident arrays as authority.
-- Explicit remaining limitation: WorldDirector physical/action presentation is still compatibility-layer driven; full Core-action→3D presentation and full Core snapshot Save/Load remain later bounded tasks.
+- Validation: Structural Preflight `34799244015` PASS; Unreal Linux Compile `34799244011` PASS including actual UHT/UBT.
+- Main now uses Core founders as the single production New Game population source and projects Core identity/state into Unreal compatibility data.
+- Remaining explicit runtime debt: Core-action→3D presentation and full Core snapshot Save/Load.
 
 ### PR #41 Production NEW GAME Core v1
 
 - Status: `DONE`
 - Merge `1b6f349f03db6f3bb1f95cf9387ef994a68c5d68`
 - Core Tests `34798427843` PASS incl deterministic harness; Preflight `34798427848` PASS.
-- Core owns deterministic exact 2M+2F founders, identity, personality/genetics/needs/lifecycle birth time and neutral initial relationship state.
 
 ---
 
