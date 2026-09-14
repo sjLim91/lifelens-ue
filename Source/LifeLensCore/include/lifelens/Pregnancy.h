@@ -259,6 +259,8 @@ inline PregnancyAttemptOutcome applyPregnancyAttempt(
     }
     applyEmotionEvent(gestationalParent.emotion,EmotionEventType::PositiveSocial,0.35);
     applyEmotionEvent(partner.emotion,EmotionEventType::PositiveSocial,0.35);
+    recordLifeEvent(gestationalParent.lifeHistory,LifeEventType::PregnancyStarted,currentMinute,{partner.id});
+    recordLifeEvent(partner.lifeHistory,LifeEventType::PregnancyStarted,currentMinute,{gestationalParent.id});
     outcome.result=PregnancyAttemptResult::Conceived;
     return outcome;
 }
