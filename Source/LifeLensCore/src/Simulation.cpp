@@ -48,7 +48,7 @@ int latestCohabitationMinute(const Character& character)
 Simulation::Simulation(std::uint64_t seed):world_(seed){}
 
 void Simulation::setupDemo(){
-    world_.characters.clear(); world_.objects.clear(); relationships_=RelationshipBook{}; genealogy_=GenealogyBook{}; romances_=RomanceBook{}; households_=HouseholdBook{}; pregnancies_=PregnancyBook{}; births_=BirthBook{}; socialKnowledge_.clear(); runtime_.clear(); logs_.clear(); world_.minute=7*60;
+    world_.characters.clear(); world_.objects.clear(); world_.environmentalResidues.clear(); relationships_=RelationshipBook{}; genealogy_=GenealogyBook{}; romances_=RomanceBook{}; households_=HouseholdBook{}; pregnancies_=PregnancyBook{}; births_=BirthBook{}; socialKnowledge_.clear(); runtime_.clear(); logs_.clear(); world_.minute=7*60;
     Character c; c.id=1; c.name="DevResident"; c.personality=Personality::generate(world_.rng);
     std::uniform_real_distribution<double> start(0.10,0.42);
     c.needs={start(world_.rng),start(world_.rng),start(world_.rng),start(world_.rng),start(world_.rng)};
@@ -65,7 +65,7 @@ void Simulation::setupDemo(){
 }
 
 void Simulation::setupSocialDemo(){
-    world_.characters.clear(); world_.objects.clear(); relationships_=RelationshipBook{}; genealogy_=GenealogyBook{}; romances_=RomanceBook{}; households_=HouseholdBook{}; pregnancies_=PregnancyBook{}; births_=BirthBook{}; socialKnowledge_.clear(); runtime_.clear(); logs_.clear(); world_.minute=7*60;
+    world_.characters.clear(); world_.objects.clear(); world_.environmentalResidues.clear(); relationships_=RelationshipBook{}; genealogy_=GenealogyBook{}; romances_=RomanceBook{}; households_=HouseholdBook{}; pregnancies_=PregnancyBook{}; births_=BirthBook{}; socialKnowledge_.clear(); runtime_.clear(); logs_.clear(); world_.minute=7*60;
 
     Character a;
     a.id=1; a.name="SocialA";
@@ -120,20 +120,6 @@ void Simulation::setupNewGame(){
 
     world_.rng.seed(world_.seed);
     world_.characters=generateInitialFounders(world_.rng,world_.minute);
-
-    world_.objects.push_back({1,ObjectKind::Bed,{1,1},std::nullopt,{0,0,-0.055,0,0},16});
-    world_.objects.push_back({2,ObjectKind::Bed,{2,1},std::nullopt,{0,0,-0.055,0,0},16});
-    world_.objects.push_back({3,ObjectKind::Bed,{3,1},std::nullopt,{0,0,-0.055,0,0},16});
-    world_.objects.push_back({4,ObjectKind::Bed,{4,1},std::nullopt,{0,0,-0.055,0,0},16});
-    world_.objects.push_back({5,ObjectKind::Toilet,{5,1},std::nullopt,{0,0,0,-0.12,0},7});
-    world_.objects.push_back({6,ObjectKind::Toilet,{5,2},std::nullopt,{0,0,0,-0.12,0},7});
-    world_.objects.push_back({7,ObjectKind::Sink,{5,3},std::nullopt,{0,-0.085,0,0,-0.055},8});
-    world_.objects.push_back({8,ObjectKind::Sink,{5,4},std::nullopt,{0,-0.085,0,0,-0.055},8});
-    world_.objects.push_back({9,ObjectKind::Fridge,{1,5},std::nullopt,{-0.075,0,0,0,0},9});
-    world_.objects.push_back({10,ObjectKind::Chair,{1,3},std::nullopt,{0,0,0,0,0},5});
-    world_.objects.push_back({11,ObjectKind::Chair,{2,3},std::nullopt,{0,0,0,0,0},5});
-    world_.objects.push_back({12,ObjectKind::Chair,{3,3},std::nullopt,{0,0,0,0,0},5});
-    world_.objects.push_back({13,ObjectKind::Chair,{4,3},std::nullopt,{0,0,0,0,0},5});
 
     std::uniform_real_distribution<double> familiarity(0.0,0.04);
     for(const Character& from:world_.characters){
@@ -305,6 +291,7 @@ void Simulation::advanceAction(Character& c,Runtime& r){
     if(!r.announced){
         if(a.type==ActionType::MoveTo) emit(c.name+" moving to "+goalName(r.goal));
         else if(a.type==ActionType::Use) emit(c.name+" using "+std::string(goalName(r.goal)));
+        else if(a.type==ActionType::EmergencyUse) emit(c.name+" using emergency "+std::string(goalName(r.goal))+" fallback");
         r.announced=true;
     }
     switch(a.type){
@@ -318,6 +305,24 @@ void Simulation::advanceAction(Character& c,Runtime& r){
             if(!obj){ failPlan(r); return; }
             c.needs.apply(obj->effectPerTick);
             if(--a.remainingTicks<=0){ ++r.actionIndex; r.announced=false; } break;
+        case ActionType::EmergencyUse:
+            c.needs.apply(emergencyUseEffectPerTick(r.goal));
+            if(--a.remainingTicks<=0){
+                if(r.goal==Goal::UseToilet){
+                    r.pos=deterministicOutdoorReliefPosition(world_.seed,c.id,r.pos);
+                    const auto& residue=world_.environmentalResidues.deposit(
+                        EnvironmentalResidueKind::HumanWaste,r.pos,c.id,world_.minute,1.0,0.42,3);
+                    c.needs.hygiene=Needs::clamp01(c.needs.hygiene+0.025);
+                    std::ostringstream consequence;
+                    consequence<<c.name<<" left sanitation residue id="<<residue.id
+                               <<" at ("<<r.pos.x<<","<<r.pos.y<<") amount="
+                               <<std::fixed<<std::setprecision(2)<<residue.amount;
+                    emit(consequence.str());
+                }
+                emit(c.name+" completed "+std::string(goalName(r.goal))+" via emergency fallback");
+                ++r.actionIndex; r.announced=false; r.consecutiveFailures=0;
+            }
+            break;
         case ActionType::Release:
             if(obj && obj->reservedBy && *obj->reservedBy==c.id) obj->reservedBy.reset();
             emit(c.name+" completed "+std::string(goalName(r.goal)));
@@ -627,6 +632,7 @@ void Simulation::step(){
         if(!r.plan.empty()) advanceAction(c,r);
     }
     ++world_.minute;
+    world_.environmentalResidues.advanceToMinute(world_.minute);
     if(world_.minute%(24*60)==0) regenerateCivilizationEnvironment(world_);
     advanceCivilizationKnowledgeTeaching();
     advanceAutonomousFamilyProgression();
