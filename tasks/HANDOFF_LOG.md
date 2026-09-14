@@ -488,6 +488,23 @@
 - 상대가 알아야 할 점:
   - 없음
 
+### Mobile Touch v1 (DQ-04)
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/mobile-touch-v1` (base `dagyeom/observer-ux-polish-v1` `c420457`), PR 생성 예정
+- 커밋: `3fbaed9`
+- 상태: `IN_PROGRESS / 검증 대기`
+- 변경 범위:
+  - `Source/LifeLens/UI/LLObserverHUD.h`, `.cpp`: safe-area 인셋(화면 여백 + Slate title-safe padding)을 개요 텍스트·World overview·Quick Inspector·Detail 패널에 적용. Detail 탭과 Back 행을 터치 타깃(48 논리픽셀 × DPI) 이상 크기로, 텍스트 중앙 정렬. 주민 스트립은 safe 폭에 맞는 항목만 두고 `+N`. 패널 아래에서 잘린 행은 `…`로 표시(스크롤 없음)
+  - `Source/LifeLens/UI/LLObserverLabels.h`: `StripMorePrefix`, `Ellipsis`
+- 검증 상태:
+  - 로컬 `Build.sh LifeLensEditor Mac Development`: 1차 링크 실패(`FDisplayMetrics::RebuildDisplayMetrics` 미해결 심볼, ApplicationCore 모듈 미의존) → `FSlateApplication::Get().GetDisplayMetrics`(SlateCore)로 변경 후 Result: Succeeded
+  - structural preflight PASS (로컬)
+  - GitHub Actions: 검증 대기
+  - 화면/동작 확인: 검증 대기
+- 상대가 알아야 할 점:
+  - `LifeLens.Build.cs` 미수정. ApplicationCore 직접 의존이 없어 SlateCore 경유로 display metrics를 읽음. PR #26 `LLObserverUIFoundation.cpp`의 `RebuildDisplayMetrics` 호출도 같은 이유로 링크 실패 가능(현재는 미참조 함수라 dead-strip으로 통과). PR #26에서 동일하게 수정 예정.
+  - 이 브랜치에는 `tasks/WORK_STATE.md`가 없음. main 병합 시 항목 추가.
+
 ---
 
 ## 다음 인수인계 포인트
