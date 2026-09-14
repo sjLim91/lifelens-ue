@@ -6,6 +6,7 @@
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "UObject/UObjectGlobals.h"
 
 ALLWorldDirector::ALLWorldDirector()
 {
@@ -30,6 +31,7 @@ void ALLWorldDirector::BeginPlay()
     }
 
     CollectActivityAnchors();
+    EnsureBootstrapActivityAnchors();
     SpawnResidents();
 }
 
@@ -62,6 +64,14 @@ void ALLWorldDirector::Tick(float DeltaSeconds)
             UpdateResident(*Character, DeltaSeconds);
         }
     }
+
+    for (auto& Pair : RuntimeStates)
+    {
+        if (!FindResidentActor(Pair.Key))
+        {
+            ReleasePhysicalReservation(Pair.Key, Pair.Value);
+        }
+    }
 }
 
 ALLResidentCharacter* ALLWorldDirector::FindResidentActor(FGuid ResidentId) const
@@ -91,8 +101,91 @@ void ALLWorldDirector::CollectActivityAnchors()
     }
 }
 
+void ALLWorldDirector::EnsureBootstrapActivityAnchors()
+{
+    if (!GetWorld())
+    {
+        return;
+    }
+
+    struct FBootstrapAnchorSpec
+    {
+        ELLActionIntent PrimaryIntent;
+        ELLActionIntent AdditionalIntent;
+        int32 DesiredCount;
+        FVector BaseOffset;
+        FVector StepOffset;
+        FRotator Rotation;
+    };
+
+    const FBootstrapAnchorSpec Specs[] = {
+        { ELLActionIntent::Eat,     ELLActionIntent::Idle, 1, FVector(-520.0f, -300.0f, 90.0f), FVector::ZeroVector,            FRotator(0.0f,   0.0f, 0.0f) },
+        { ELLActionIntent::Sleep,   ELLActionIntent::Idle, 4, FVector( 520.0f, -450.0f, 90.0f), FVector(0.0f, 300.0f, 0.0f),  FRotator(0.0f, 180.0f, 0.0f) },
+        { ELLActionIntent::Toilet,  ELLActionIntent::Idle, 2, FVector( 320.0f,  520.0f, 90.0f), FVector(220.0f, 0.0f, 0.0f),  FRotator(0.0f, -90.0f, 0.0f) },
+        { ELLActionIntent::Hygiene, ELLActionIntent::Drink,2, FVector(-520.0f,  300.0f, 90.0f), FVector(0.0f, 220.0f, 0.0f),  FRotator(0.0f,   0.0f, 0.0f) }
+    };
+
+    const auto CountCapability = [this](ELLActionIntent Intent)
+    {
+        int32 Count = 0;
+        for (ALLActivityAnchor* Anchor : ActivityAnchors)
+        {
+            if (IsValid(Anchor) && Anchor->bEnabled && Anchor->SupportsIntent(Intent))
+            {
+                ++Count;
+            }
+        }
+        return Count;
+    };
+
+    for (const FBootstrapAnchorSpec& Spec : Specs)
+    {
+        const int32 ExistingPrimary = CountCapability(Spec.PrimaryIntent);
+        const int32 ExistingAdditional = Spec.AdditionalIntent == ELLActionIntent::Idle
+            ? Spec.DesiredCount
+            : CountCapability(Spec.AdditionalIntent);
+        const int32 MissingPrimary = FMath::Max(0, Spec.DesiredCount - ExistingPrimary);
+        const int32 MissingAdditional = FMath::Max(0, Spec.DesiredCount - ExistingAdditional);
+        const int32 SpawnCount = FMath::Max(MissingPrimary, MissingAdditional);
+
+        for (int32 NewIndex = 0; NewIndex < SpawnCount; ++NewIndex)
+        {
+            const int32 SlotIndex = ExistingPrimary + NewIndex;
+            FActorSpawnParameters Params;
+            Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+            Params.Name = MakeUniqueObjectName(
+                GetWorld(),
+                ALLActivityAnchor::StaticClass(),
+                FName(TEXT("LLBootstrapActivityAnchor")));
+
+            ALLActivityAnchor* Anchor = GetWorld()->SpawnActor<ALLActivityAnchor>(
+                ALLActivityAnchor::StaticClass(),
+                GetActorLocation() + Spec.BaseOffset + Spec.StepOffset * static_cast<float>(SlotIndex),
+                Spec.Rotation,
+                Params);
+
+            if (!Anchor)
+            {
+                continue;
+            }
+
+            Anchor->SupportedIntent = Spec.PrimaryIntent;
+            if (Spec.AdditionalIntent != ELLActionIntent::Idle)
+            {
+                Anchor->AdditionalSupportedIntents.AddUnique(Spec.AdditionalIntent);
+            }
+            ActivityAnchors.Add(Anchor);
+        }
+    }
+}
+
 void ALLWorldDirector::SpawnResidents()
 {
+    for (auto& Pair : RuntimeStates)
+    {
+        ReleasePhysicalReservation(Pair.Key, Pair.Value);
+    }
+
     SpawnedResidents.Reset();
     RuntimeStates.Reset();
 
@@ -143,6 +236,7 @@ void ALLWorldDirector::UpdateResident(ALLResidentCharacter& Character, float Del
     FLLCoreActionDirective Directive;
     if (!CoreBridge->GetResidentActionDirective(Character.GetResidentId(), Directive))
     {
+        ReleasePhysicalReservation(Character.GetResidentId(), *Runtime);
         Character.ClearMovementTarget();
         Character.SetCurrentIntent(ELLActionIntent::Idle);
         Runtime->bPerformingAction = false;
@@ -166,6 +260,7 @@ void ALLWorldDirector::ApplyCoreDirective(
 
     if (bDirectiveChanged)
     {
+        ReleasePhysicalReservation(Character.GetResidentId(), Runtime);
         Runtime.bInitialized = true;
         Runtime.bPerformingAction = false;
         Runtime.LastActivityKind = Directive.ActivityKind;
@@ -177,6 +272,7 @@ void ALLWorldDirector::ApplyCoreDirective(
 
     if (!Directive.bAlive || Directive.ActivityKind == ELLCoreObservedActivityKind::Idle)
     {
+        ReleasePhysicalReservation(Character.GetResidentId(), Runtime);
         Runtime.bPerformingAction = false;
         Character.ClearMovementTarget();
         Character.SetCurrentIntent(ELLActionIntent::Idle);
@@ -190,26 +286,47 @@ void ALLWorldDirector::ApplyCoreDirective(
 
         if (Intent == ELLActionIntent::Idle)
         {
+            ReleasePhysicalReservation(Character.GetResidentId(), Runtime);
             Runtime.bPerformingAction = false;
             Character.ClearMovementTarget();
             return;
         }
 
-        if (!Runtime.bPerformingAction && (bDirectiveChanged || Character.HasReachedMovementTarget()))
+        ALLActivityAnchor* Anchor = EnsurePhysicalReservation(Character, Runtime, Intent);
+        if (!Anchor)
         {
-            if (bDirectiveChanged)
-            {
-                Character.SetMovementTarget(ResolveTargetLocation(Intent, Character.GetResidentId()));
-            }
-
-            if (Character.HasReachedMovementTarget())
-            {
-                Character.ClearMovementTarget();
-                Runtime.bPerformingAction = true;
-            }
+            Runtime.bPerformingAction = false;
+            Character.ClearMovementTarget();
+            return;
         }
+
+        const FTransform UseTransform = Anchor->GetUseTransform();
+        const FVector DesiredLocation = UseTransform.GetLocation();
+        const double DistanceSquared = FVector::DistSquared2D(Character.GetActorLocation(), DesiredLocation);
+        const bool bAtUsePoint = DistanceSquared <= FMath::Square(110.0);
+
+        if (!bAtUsePoint)
+        {
+            Runtime.bPerformingAction = false;
+            Character.SetMovementTarget(DesiredLocation);
+            return;
+        }
+
+        Character.ClearMovementTarget();
+        if (!Anchor->MarkInUse(Character.GetResidentId()))
+        {
+            ReleasePhysicalReservation(Character.GetResidentId(), Runtime);
+            Runtime.bPerformingAction = false;
+            return;
+        }
+
+        Runtime.bPerformingAction = true;
+        const FRotator UseRotation = UseTransform.GetRotation().Rotator();
+        Character.SetActorRotation(FRotator(0.0f, UseRotation.Yaw, 0.0f));
         return;
     }
+
+    ReleasePhysicalReservation(Character.GetResidentId(), Runtime);
 
     if (Directive.ActivityKind == ELLCoreObservedActivityKind::Social)
     {
@@ -224,8 +341,8 @@ void ALLWorldDirector::ApplyCoreDirective(
         }
 
         const FVector DesiredLocation = ResolveSocialTargetLocation(Character, *Target, Directive.SocialIntent);
-        const float DistanceToDesired = FVector::DistSquared2D(Character.GetActorLocation(), DesiredLocation);
-        const bool bAtDesiredLocation = DistanceToDesired <= FMath::Square(110.0f);
+        const double DistanceToDesired = FVector::DistSquared2D(Character.GetActorLocation(), DesiredLocation);
+        const bool bAtDesiredLocation = DistanceToDesired <= FMath::Square(110.0);
 
         if (!bAtDesiredLocation)
         {
@@ -265,32 +382,82 @@ ELLActionIntent ALLWorldDirector::ToPresentationIntent(ELLCorePhysicalIntent Int
     }
 }
 
-FVector ALLWorldDirector::ResolveTargetLocation(ELLActionIntent Intent, FGuid ResidentId) const
+ALLActivityAnchor* ALLWorldDirector::FindBestUsableAnchor(
+    const ALLResidentCharacter& Character,
+    ELLActionIntent Intent) const
 {
-    for (const ALLActivityAnchor* Anchor : ActivityAnchors)
+    ALLActivityAnchor* BestAnchor = nullptr;
+    double BestDistanceSquared = TNumericLimits<double>::Max();
+    FString BestPath;
+
+    for (ALLActivityAnchor* Anchor : ActivityAnchors)
     {
-        if (IsValid(Anchor) && Anchor->SupportedIntent == Intent)
+        if (!IsValid(Anchor)
+            || !Anchor->SupportsIntent(Intent)
+            || !Anchor->CanBeUsedBy(Character.GetResidentId()))
         {
-            return Anchor->GetUseLocation();
+            continue;
+        }
+
+        const double DistanceSquared = FVector::DistSquared2D(
+            Character.GetActorLocation(), Anchor->GetUseLocation());
+        const FString AnchorPath = Anchor->GetPathName();
+        const bool bCloser = DistanceSquared + KINDA_SMALL_NUMBER < BestDistanceSquared;
+        const bool bStableTieBreak =
+            FMath::IsNearlyEqual(DistanceSquared, BestDistanceSquared)
+            && (BestAnchor == nullptr || AnchorPath.Compare(BestPath, ESearchCase::CaseSensitive) < 0);
+
+        if (bCloser || bStableTieBreak)
+        {
+            BestAnchor = Anchor;
+            BestDistanceSquared = DistanceSquared;
+            BestPath = AnchorPath;
         }
     }
 
-    FVector Base;
-    switch (Intent)
+    return BestAnchor;
+}
+
+ALLActivityAnchor* ALLWorldDirector::EnsurePhysicalReservation(
+    ALLResidentCharacter& Character,
+    FLLResidentRuntimeState& Runtime,
+    ELLActionIntent Intent)
+{
+    if (Runtime.ReservedAnchor.IsValid())
     {
-        case ELLActionIntent::Eat: Base = FVector(-520.0f, -300.0f, 90.0f); break;
-        case ELLActionIntent::Drink: Base = FVector(-520.0f, 300.0f, 90.0f); break;
-        case ELLActionIntent::Sleep: Base = FVector(520.0f, -300.0f, 90.0f); break;
-        case ELLActionIntent::Hygiene: Base = FVector(-520.0f, 300.0f, 90.0f); break;
-        case ELLActionIntent::Toilet: Base = FVector(520.0f, 300.0f, 90.0f); break;
-        case ELLActionIntent::HaveFun: Base = FVector(0.0f, 520.0f, 90.0f); break;
-        case ELLActionIntent::Socialize: Base = FVector::ZeroVector; break;
-        case ELLActionIntent::Idle:
-        default: Base = FVector(0.0f, -100.0f, 90.0f); break;
+        ALLActivityAnchor* Existing = Runtime.ReservedAnchor.Get();
+        if (Runtime.ReservedIntent == Intent
+            && Existing->SupportsIntent(Intent)
+            && Existing->IsClaimedBy(Character.GetResidentId())
+            && Existing->CanBeUsedBy(Character.GetResidentId()))
+        {
+            return Existing;
+        }
+
+        ReleasePhysicalReservation(Character.GetResidentId(), Runtime);
     }
 
-    const float LaneOffset = static_cast<float>(GetTypeHash(ResidentId) % 5) * 42.0f - 84.0f;
-    return GetActorLocation() + Base + FVector(0.0f, LaneOffset, 0.0f);
+    ALLActivityAnchor* Candidate = FindBestUsableAnchor(Character, Intent);
+    if (!Candidate || !Candidate->TryReserve(Character.GetResidentId()))
+    {
+        return nullptr;
+    }
+
+    Runtime.ReservedAnchor = Candidate;
+    Runtime.ReservedIntent = Intent;
+    return Candidate;
+}
+
+void ALLWorldDirector::ReleasePhysicalReservation(
+    FGuid ResidentId,
+    FLLResidentRuntimeState& Runtime)
+{
+    if (Runtime.ReservedAnchor.IsValid())
+    {
+        Runtime.ReservedAnchor->Release(ResidentId);
+    }
+    Runtime.ReservedAnchor.Reset();
+    Runtime.ReservedIntent = ELLActionIntent::Idle;
 }
 
 FVector ALLWorldDirector::ResolveSocialTargetLocation(

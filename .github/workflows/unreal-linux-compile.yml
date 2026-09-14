@@ -6,6 +6,7 @@ on:
     paths:
       - 'Source/LifeLens/LifeLens.Build.cs'
       - 'Source/LifeLens/Simulation/**'
+      - 'Source/LifeLens/World/**'
       - 'Source/LifeLens.Target.cs'
       - 'Source/LifeLensEditor.Target.cs'
       - 'LifeLens.uproject'
