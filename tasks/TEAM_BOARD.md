@@ -12,7 +12,7 @@
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | next latest-main branch | Core Decision → Unreal Physical Action Bridge v1 | Jjun-owned `Simulation/AI/World` | TODO — branch only after actual latest-main sync |
+| 쭌 + 쭌 AI | `jjun/core-physical-action-bridge-v1` | Core Decision → Unreal Physical Action Bridge v1 | Jjun-owned `Simulation/AI/World`, narrow Core read/validator | DOING / STATE_LOCKED — branch from latest main after state sync |
 | 쭌 + 쭌 AI | `task/03-fast-test`, PR #2 | old Android validation | Bridge/build | FROZEN — Run `34739283266` 재실행/수정/병합 금지 |
 | 다겸 + 다겸 AI | `dagyeom/observer-ui-v2`, PR #17 | Observer HUD v2 + Core Observer Bridge binding | `Source/LifeLens/UI/**` | REVIEW / RECOVERING — latest main reconcile 필요 |
 | 다겸 + 다겸 AI | `dagyeom/ui-foundation-v1`, PR #26 | Android landscape UI foundation | UI foundation | REVIEW |
@@ -20,6 +20,17 @@
 | 다겸 + 다겸 AI | `dagyeom/observer-ux-polish-v1`, PR #30 | Observer UX Polish | `Source/LifeLens/UI/**` | REVIEW — stacked on #17 |
 | 다겸 + 다겸 AI | `dagyeom/mobile-touch-v1`, PR #36 | Mobile Touch v1 | `Source/LifeLens/UI/**` | REVIEW — stacked on #30 |
 | 다겸 + 다겸 AI | `dagyeom/visual-feedback-v1`, PR #38 | Visual Feedback v1 | `Source/LifeLens/UI/**` | REVIEW — stacked on #36 |
+
+## Current Jjun lock — Core Decision → Unreal Physical Action Bridge v1
+
+- Planned branch: `jjun/core-physical-action-bridge-v1` from latest main after state-doc commits.
+- Goal: eliminate remaining split-brain between authoritative Core life decisions and legacy Unreal physical decision selection.
+- First covered intents: Eat / Sleep / Toilet / Hygiene / Idle + current SocialIntent target routing.
+- Authority rule: Core chooses; Unreal executes/presents. Covered intents must not be independently re-selected by `ULLDecisionComponent`.
+- Preserve stable resident identity and SaveGame v2 restore continuity.
+- Allowed: Jjun-owned `Source/LifeLens/Simulation/**`, `Source/LifeLens/AI/**`, `Source/LifeLens/World/**`, narrowly required Core read DTO/validator/tests.
+- Forbidden: `Source/LifeLens/UI/**`, Dagyeom Character appearance/presentation, `Content/UI/**`, `Content/Characters/**`, frozen PR #2.
+- Required gates: Structural Preflight + actual UE 5.6 Linux UHT/UBT + targeted runtime/PIE verification where available.
 
 ## Latest completed Jjun work
 
@@ -54,17 +65,6 @@
 - PR #41 Production NEW GAME Core v1 — merge `1b6f349f03db6f3bb1f95cf9387ef994a68c5d68`; Core `34798427843` PASS; Preflight `34798427848` PASS.
 - #37/#39/#40 Observer/family runtime bridge chain remains merged and validated.
 
-## Next Jjun lock to establish
-
-Next bounded task: **Core Decision → Unreal Physical Action Bridge v1**.
-
-Goal:
-- eliminate the remaining split-brain where Core owns life state/decisions while WorldDirector/legacy action logic can still independently choose physical behavior;
-- make Unreal execute/present Core-selected physical/social actions without reintroducing a second simulation truth;
-- start with existing Eat/Sleep/Toilet/Hygiene/Idle plus current SocialIntent presentation;
-- preserve SaveGame v2 restore continuity and stable resident identity;
-- keep Dagyeom UI/Character presentation untouched unless a new coordination request is explicitly opened.
-
 ## Dagyeom API handoff
 
 Former six `BLOCKED-BY-JJUN` items remain RESOLVED / READY FOR BINDING. Main now also has true SaveGame v2 Core snapshot persistence, so Observer/UI state after load should be rebuilt from current Bridge data rather than cached UI-side resident truth.
@@ -81,7 +81,7 @@ Current open requests: **none**.
 
 ## Merge / reconciliation queue
 
-1. Jjun next: Core Decision → Unreal Physical Action Bridge v1 — new branch from actual latest main after sync.
+1. Jjun Core Decision → Unreal Physical Action Bridge v1 — DOING / STATE_LOCKED.
 2. Dagyeom PR #17 — reconcile latest main + bind current Core Bridge + review fixes + verify.
 3. Dagyeom PR #26 — reconcile latest main independently.
 4. After #17: #29/#30 → #36 → #38.
