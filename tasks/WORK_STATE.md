@@ -4,7 +4,7 @@
 >
 > 제품 기준: `docs/LIFELENS_SPEC_v1.1.md` · 상태 규칙: `docs/STATE_MANAGEMENT.md` · 역할/잠금: `tasks/TEAM_BOARD.md` · 이력: `tasks/HANDOFF_LOG.md`
 
-Last reconciled: 2026-09-14 KST — PR #42 merged as `5c6f2c071ca00bcd4b26d6e002bf5c618d02ff1e` after Structural Preflight + actual Unreal 5.6 Linux UHT/UBT PASS. PR #43 Autonomous Family Progression is now open and waiting Core/Preflight CI.
+Last reconciled: 2026-09-14 KST — PR #42 merged as `5c6f2c071ca00bcd4b26d6e002bf5c618d02ff1e`. PR #43 current head `81dbb57d190810cc3318e82ba952064d50fd8fdc` passed full Core Release CI + deterministic harness + Structural Preflight and is READY_TO_MERGE.
 
 ## Mandatory sync gate
 
@@ -23,25 +23,28 @@ Last reconciled: 2026-09-14 KST — PR #42 merged as `5c6f2c071ca00bcd4b26d6e002
 - Owner: 쭌 + 쭌 AI
 - Branch: `jjun/autonomous-family-progression-v1`
 - PR: #43 `[CORE] Wire autonomous family progression into Simulation`
-- Current head: `d0a4f3557f796e821b4a482cbb385efd2e76709b`
-- Status: `WAITING_CI`
-- Changed scope: Core only — `FamilyProgression.h`, `Simulation.h/.cpp`, Core CMake, `test_autonomous_family_progression.cpp`.
-- Implemented first checkpoint:
+- Current head: `81dbb57d190810cc3318e82ba952064d50fd8fdc`
+- Status: `READY_TO_MERGE`
+- Scope: Core only — `FamilyProgression.h`, `Simulation.h/.cpp`, Core CMake, `test_autonomous_family_progression.cpp`.
+- Implemented:
   - state-driven romantic chemistry from familiarity/social bond/personality compatibility;
-  - daily deterministic family decision cadence;
-  - dating candidates require mutual readiness and are ranked deterministically;
+  - daily deterministic family-decision cadence;
+  - mutual-readiness dating candidate ranking without hard-coded founder couples;
   - dating→cohabitation minimum 30 days;
   - dating→engagement minimum 90 days plus mature cohabitation;
   - engagement→marriage minimum 60 days;
-  - marriage→pregnancy attempt minimum 30 days with weekly deterministic attempts;
-  - same-sex romance remains valid while current biological pregnancy uses existing gestational/genetic eligibility model;
-  - pregnancies advance with simulation time;
-  - due pregnancy calls existing Birth/Genetics/Genealogy/Household pipeline and adds newborn as a real World resident;
-  - `BirthBook` becomes authoritative Simulation-owned state;
-  - daily Aging is wired into this lifecycle checkpoint.
-- New end-to-end test covers: no forced initial couple, chemistry emergence, dating→cohabitation→engagement→marriage→pregnancy→birth, child resident/genealogy/household identity, same-seed repeatability.
-- Validation required: full Core Release suite + deterministic harness + Structural Preflight. Unreal files are intentionally untouched, so UHT/UBT is not a required gate for #43.
-- Exact next action: inspect actual #43 CI. If failure, fetch first failing step/log and fix bounded root cause; do not merge until all required gates PASS.
+  - marriage→pregnancy minimum 30 days with weekly deterministic attempts;
+  - same-sex romance remains valid; current biological pregnancy follows existing gestational/genetic eligibility;
+  - active pregnancy advances with simulation time;
+  - due pregnancy creates real child Character with genetics, genealogy, household membership, parent/child links, LifeHistory and runtime state;
+  - Simulation now owns authoritative BirthBook;
+  - successful marriage links spouses in Genealogy;
+  - daily Aging is wired into lifecycle progression.
+- Validation on head `81dbb57d...`:
+  - LifeLens Core Tests Run `34801572846` — PASS: Configure / Build / Test / Deterministic harness smoke.
+  - LifeLens Preflight Run `34801572858` — PASS.
+  - first failed run `34801444613` was a bounded helper-name collision and is superseded by the successful head.
+- Exact next action: verify changed-file scope remains Core-only, then merge #43 with expected head SHA and immediately sync docs/HANDOFF.
 - Handoff safety: `SAFE` — no Dagyeom or Unreal runtime files changed.
 
 ### 2. Observer HUD v2 — Dagyeom
@@ -79,7 +82,7 @@ Last reconciled: 2026-09-14 KST — PR #42 merged as `5c6f2c071ca00bcd4b26d6e002
 - Feature HEAD: `5f61ce04963166af418fb672fb4442a6cf0598e6`
 - Merge SHA: `5c6f2c071ca00bcd4b26d6e002bf5c618d02ff1e`
 - Validation: Structural Preflight `34799244015` PASS; Unreal Linux Compile `34799244011` PASS including actual UHT/UBT.
-- Main now uses Core founders as the single production New Game population source and projects Core identity/state into Unreal compatibility data.
+- Main uses Core founders as the single production New Game population source and projects Core identity/state into Unreal compatibility data.
 - Remaining explicit runtime debt: Core-action→3D presentation and full Core snapshot Save/Load.
 
 ### PR #41 Production NEW GAME Core v1
