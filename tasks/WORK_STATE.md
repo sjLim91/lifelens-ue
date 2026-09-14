@@ -4,7 +4,7 @@
 >
 > 제품 기준: `docs/LIFELENS_SPEC_v1.1.md` · 상태 규칙: `docs/STATE_MANAGEMENT.md` · 역할/잠금: `tasks/TEAM_BOARD.md` · 이력: `tasks/HANDOFF_LOG.md`
 
-Last reconciled: 2026-09-14 KST — PR #46 Core Decision → Unreal Physical Action Bridge v1 latest head is `31c00cb0d751bb33825df31c7e758e60ff54402c`. Existing `ELLActionIntent` ordinals 0–6 are preserved and new `Drink` appends as ordinal 7. Latest Core Tests and Structural Preflight PASS; actual UE 5.6 Linux UHT/UBT is the only remaining merge gate.
+Last reconciled: 2026-09-14 KST — PR #46 Core Decision → Unreal Physical Action Bridge v1 latest head is `31c00cb0d751bb33825df31c7e758e60ff54402c`. Existing `ELLActionIntent` ordinals 0–6 are preserved and new `Drink` appends as ordinal 7. Latest Core Tests and Structural Preflight PASS; actual UE 5.6 Linux UHT/UBT is the only remaining merge gate. While that external Run #10 continues, a non-overlapping pure-Core Witness / Rumor / Social Knowledge v1 task is being state-locked for parallel work.
 
 ## Mandatory sync gate
 
@@ -47,7 +47,26 @@ Last reconciled: 2026-09-14 KST — PR #46 Core Decision → Unreal Physical Act
 - Required validation: actual UE 5.6 Linux UHT/UBT, then targeted runtime/PIE where available.
 - Exact next action: inspect Run `34805882789`; on failure, fix only the first real UHT/UBT root cause; on PASS, verify PR scope/head/mergeability and merge.
 
-### 2. Observer HUD v2 — Dagyeom
+### 2. Witness / Rumor / Social Knowledge v1 — Jjun (parallel Core-only)
+
+- Owner: 쭌 + 쭌 AI
+- Status: `DOING / STATE_LOCKED`
+- Planned branch: `jjun/witness-rumor-core-v1` from latest main after this state-doc checkpoint.
+- Goal: establish the first non-omniscient social-information pipeline required by spec sections 29–30 and 51–52: event witness → personal memory/evidence → statement/rumor transfer → receiver belief with confidence/source provenance.
+- Bounded v1 scope:
+  - pure Core types for witnessed social facts, statements and rumor provenance;
+  - deterministic confidence decay/distortion across retelling hops;
+  - source distinction: direct witness vs heard statement vs inference-ready belief;
+  - trust/relationship-sensitive acceptance without making a statement automatically true;
+  - duplicate/loop suppression so the same rumor cannot amplify forever by cycling through residents;
+  - strong standalone Core tests for direct witness, one-hop rumor, multi-hop confidence loss, low-trust rejection/attenuation, and deterministic replay.
+- Allowed scope: `Source/LifeLensCore/**` and only the minimal Core CMake/test registration needed for Core validation.
+- Forbidden for this parallel slice: `Source/LifeLens/Simulation/**`, `Source/LifeLens/World/**`, `Source/LifeLens/AI/**`, `Source/LifeLens/UI/**`, Character presentation, Content, Config, workflows, frozen PR #2. This prevents overlap with PR #46 while Run #10 is active.
+- Integration into live `Simulation.cpp` is intentionally deferred until PR #46 is merged/reconciled; this branch first establishes a tested pure-Core domain layer.
+- Required verification: Core Release tests + deterministic harness. Unreal UHT/UBT is not required unless this branch later touches Unreal-side files (not planned for v1).
+- Exact next action: create `jjun/witness-rumor-core-v1`, inspect existing Memory/Belief/Relationship types, implement the smallest reusable domain API and tests without touching PR #46 files.
+
+### 3. Observer HUD v2 — Dagyeom
 
 - Owner: 다겸 + 다겸 AI
 - Branch/PR: `dagyeom/observer-ui-v2`, PR #17
@@ -56,7 +75,7 @@ Last reconciled: 2026-09-14 KST — PR #46 Core Decision → Unreal Physical Act
 - Main now includes #42 Core-authoritative founders, #43 autonomous family progression/newborn population growth, #44 full Core snapshot contract, and #45 actual SaveGame v2 snapshot persistence/restore.
 - Exact next action: reconcile actual latest main, bind current Core Observer Bridge, address Dagyeom-owned UI review findings, verify UHT/UBT + PIE.
 
-### 3. Dagyeom stacked UI / presentation chain
+### 4. Dagyeom stacked UI / presentation chain
 
 - #26 `dagyeom/ui-foundation-v1` — independent main-target PR; reconcile latest main.
 - #29 `dagyeom/character-presentation-v1` — stacked on #17.
@@ -65,7 +84,7 @@ Last reconciled: 2026-09-14 KST — PR #46 Core Decision → Unreal Physical Act
 - #38 `dagyeom/visual-feedback-v1` — stacked on #36.
 - Jjun does not modify/flatten these branches.
 
-### 4. Old Android validation
+### 5. Old Android validation
 
 - Branch/PR: `task/03-fast-test`, PR #2
 - Status: `FROZEN`
