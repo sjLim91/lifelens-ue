@@ -4,7 +4,7 @@
 >
 > 제품 기준: `docs/LIFELENS_SPEC_v1.1.md` · 상태 규칙: `docs/STATE_MANAGEMENT.md` · 역할/잠금: `tasks/TEAM_BOARD.md` · 이력: `tasks/HANDOFF_LOG.md`
 
-Last reconciled: 2026-09-14 KST — actual `main` HEAD `753df19657ea634ea2fa7c2ac935f6273ce14c10` verified. PR #47 Witness / Rumor / Social Knowledge v1 and PR #46 Core Decision → Unreal Physical Action Bridge v1 are both merged. No Jjun feature branch is currently active.
+Last reconciled: 2026-09-14 KST — actual `main` HEAD `8ca126b8aaad8867d174e7ab801f59adebb371a0` verified. PR #46 and #47 are merged. Jjun next work is now state-locked as **Physical Interaction / Smart Object Execution v1**; branch creation follows this checkpoint.
 
 ## Mandatory sync gate
 
@@ -18,7 +18,27 @@ Last reconciled: 2026-09-14 KST — actual `main` HEAD `753df19657ea634ea2fa7c2a
 
 ## Active / unresolved work
 
-### 1. Observer HUD v2 — Dagyeom
+### 1. Physical Interaction / Smart Object Execution v1 — Jjun
+
+- Owner: 쭌 + 쭌 AI
+- Status: `DOING / STATE_LOCKED`
+- Planned branch: `jjun/physical-smart-object-v1` from latest main after this checkpoint.
+- Goal: make authoritative Core physical decisions use actual reservable Unreal world objects instead of only moving toward generic action anchors.
+- Bounded v1 scope:
+  - Eat / Drink / Sleep / Toilet / Hygiene only;
+  - typed activity-anchor capability matching;
+  - deterministic nearest usable-object selection;
+  - exclusive reservation/occupancy per resident;
+  - approach/interaction transform separated from object actor origin;
+  - reservation release when Core directive changes, resident dies/disappears, target becomes invalid, or interaction ends;
+  - no second decision authority in Unreal;
+  - preserve `ELLActionIntent` ordinals and SaveGame v2 identity semantics;
+  - structural/preflight guards and actual UE 5.6 UHT/UBT verification before merge.
+- Allowed scope: Jjun-owned `Source/LifeLens/World/**`, `Source/LifeLens/Simulation/**` only if bridge contract needs a narrow change, `Source/LifeLens/Core/LLTypes.h` only if ordinal-safe metadata is required, and `Tools/validate_bootstrap.py`.
+- Forbidden scope: `Source/LifeLens/UI/**`, Dagyeom Character appearance/presentation, `Content/UI/**`, `Content/Characters/**`, frozen PR #2.
+- Exact next action: create branch, inspect `LLActivityAnchor` + current #46 `LLWorldDirector` path, implement the smallest reservation/interaction-target layer without reintroducing legacy `ChooseAction()` authority.
+
+### 2. Observer HUD v2 — Dagyeom
 
 - Owner: 다겸 + 다겸 AI
 - Branch/PR: `dagyeom/observer-ui-v2`, PR #17
@@ -29,7 +49,7 @@ Last reconciled: 2026-09-14 KST — actual `main` HEAD `753df19657ea634ea2fa7c2a
   - #47 pure-Core witness/rumor/social-knowledge domain layer.
 - Exact next action: reconcile actual latest main, bind current Core Observer Bridge, address Dagyeom-owned UI review findings, verify UHT/UBT + PIE.
 
-### 2. Dagyeom stacked UI / presentation chain
+### 3. Dagyeom stacked UI / presentation chain
 
 - #26 `dagyeom/ui-foundation-v1` — independent main-target PR; reconcile latest main.
 - #29 `dagyeom/character-presentation-v1` — stacked on #17.
@@ -38,7 +58,7 @@ Last reconciled: 2026-09-14 KST — actual `main` HEAD `753df19657ea634ea2fa7c2a
 - #38 `dagyeom/visual-feedback-v1` — stacked on #36.
 - Jjun does not modify/flatten these branches.
 
-### 3. Old Android validation
+### 4. Old Android validation
 
 - Branch/PR: `task/03-fast-test`, PR #2
 - Status: `FROZEN`
@@ -98,13 +118,10 @@ Last reconciled: 2026-09-14 KST — actual `main` HEAD `753df19657ea634ea2fa7c2a
 - PR #41 Production NEW GAME Core v1 — merge `1b6f349f03db6f3bb1f95cf9387ef994a68c5d68`; Core `34798427843`; Preflight `34798427848` PASS.
 - Earlier bridge/family milestones: #37 `938d0a27...`, #39 `612229cc...`, #40 `9261581d...`.
 
-## Next Jjun candidates — not started
+## Next Jjun candidates after current task
 
-1. **Physical Interaction / Smart Object Execution v1** — make Core-selected Eat/Sleep/Toilet/Hygiene/Drink use actual reservable world objects, approach points and context-correct interaction state rather than only intent mirroring.
-2. **Witness / Rumor Runtime Wiring v1** — connect #47 domain types to live social/lifecycle events so only actual witnesses learn directly and rumors propagate through social interactions.
-3. Android FAST smoke APK / real-device verification after the runtime slice is sufficiently observable.
-
-Do not claim any of these has started until a new state lock + branch exists.
+1. **Witness / Rumor Runtime Wiring v1** — connect #47 domain types to live social/lifecycle events so only actual witnesses learn directly and rumors propagate through social interactions.
+2. Android FAST smoke APK / real-device verification after Physical Interaction v1 is merged and observable.
 
 ---
 
