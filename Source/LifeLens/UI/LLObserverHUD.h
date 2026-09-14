@@ -47,6 +47,17 @@ public:
     // position was measured in.
     bool HandleTap(const FVector2D& ScreenPosition, const FVector2D& ViewportSize = FVector2D::ZeroVector);
 
+    // Safe-area insets in canvas pixels: screen margin plus the platform
+    // title-safe padding (camera cutout, rounded corners, gesture bar).
+    struct FSafeInsets
+    {
+        float Left = 0.0f;
+        float Top = 0.0f;
+        float Right = 0.0f;
+        float Bottom = 0.0f;
+    };
+    FSafeInsets SafeInsets(float UIScale) const;
+
     // Viewport pixels -> canvas pixels. The canvas is the scene view rect,
     // which is smaller than the viewport when the camera constrains the aspect
     // ratio (letterbox); its origin is the view rect's top-left.

@@ -12,6 +12,8 @@
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "GameFramework/PlayerController.h"
 #include "HAL/IConsoleManager.h"
+#include "GenericPlatform/GenericApplication.h"
+#include "Framework/Application/SlateApplication.h"
 
 static_assert(static_cast<int32>(ELLDetailTab::Count) == ALLObserverHUD::DetailTabCount, "DetailTabCount must match ELLDetailTab::Count");
 
@@ -171,6 +173,30 @@ TArray<FString> ALLObserverHUD::WrapText(const FString& Text, float MaxWidth, fl
 // ---------------------------------------------------------------------------
 // Input
 // ---------------------------------------------------------------------------
+
+ALLObserverHUD::FSafeInsets ALLObserverHUD::SafeInsets(float UIScale) const
+{
+    FSafeInsets Insets;
+    const float MarginPx = Margin * UIScale;
+    Insets.Left = MarginPx;
+    Insets.Top = MarginPx;
+    Insets.Right = MarginPx;
+    Insets.Bottom = MarginPx;
+
+    // TitleSafePaddingSize is (Left, Top, Right, Bottom) in display pixels.
+    // Read through Slate (linked); ApplicationCore is not a direct module dependency.
+    if (FSlateApplication::IsInitialized())
+    {
+        FDisplayMetrics Metrics;
+        FSlateApplication::Get().GetDisplayMetrics(Metrics);
+        const FVector4& Padding = Metrics.TitleSafePaddingSize;
+        Insets.Left = FMath::Max(Insets.Left, static_cast<float>(Padding.X));
+        Insets.Top = FMath::Max(Insets.Top, static_cast<float>(Padding.Y));
+        Insets.Right = FMath::Max(Insets.Right, static_cast<float>(Padding.Z));
+        Insets.Bottom = FMath::Max(Insets.Bottom, static_cast<float>(Padding.W));
+    }
+    return Insets;
+}
 
 float ALLObserverHUD::TouchTargetRadiusPixels(const UObject* WorldContext)
 {
@@ -442,10 +468,37 @@ float ALLObserverHUD::DrawOverview(const ULLSimulationSubsystem& Simulation, con
             ? Resident.DisplayName
             : Resident.DisplayName + LLObserverText::StripNameActionJoin + Action);
     }
-    // Empty state: no fake entries, a single plain line.
-    const FString StripLine = StripItems.Num() > 0
-        ? FString::Join(StripItems, LLObserverText::StripSeparator)
-        : FString(LLObserverText::NoResidents);
+    const FSafeInsets Insets = SafeInsets(UIScale);
+    const float StripMaxWidth = FMath::Max(0.0f, Canvas->ClipX - Insets.Left - Insets.Right);
+
+    // Fit the strip to the safe width: keep whole items, then "+N" for the rest.
+    FString StripLine;
+    if (StripItems.Num() == 0)
+    {
+        // Empty state: no fake entries, a single plain line.
+        StripLine = LLObserverText::NoResidents;
+    }
+    else
+    {
+        int32 Shown = 0;
+        for (; Shown < StripItems.Num(); ++Shown)
+        {
+            TArray<FString> Candidate(StripItems.GetData(), Shown + 1);
+            FString CandidateLine = FString::Join(Candidate, LLObserverText::StripSeparator);
+            const int32 Remaining = StripItems.Num() - (Shown + 1);
+            if (Remaining > 0)
+            {
+                CandidateLine += FString(LLObserverText::StripSeparator) + LLObserverText::StripMorePrefix + FString::FromInt(Remaining);
+            }
+            float W = 0.0f, H = 0.0f;
+            GetTextSize(CandidateLine, W, H, Font, StripScale);
+            if (W > StripMaxWidth && Shown > 0)
+            {
+                break;
+            }
+            StripLine = CandidateLine;
+        }
+    }
     // The hint text lives in LLObserverLabels.h as LLObserverText::TapHint.
     // Tools/validate_bootstrap.py still greps this file for the literal
     // "Tap/click a resident for details"; keep the two in sync until that
@@ -459,7 +512,7 @@ float ALLObserverHUD::DrawOverview(const ULLSimulationSubsystem& Simulation, con
     GetTextSize(StripLine, StripW, StripH, Font, StripScale);
     GetTextSize(HintLine, HintW, HintH, Font, StripScale);
 
-    const float X = Margin * UIScale;
+    const float X = Insets.Left;
     const float Pad = PadY * UIScale;
     const float Gap = LineGap * UIScale;
     const float BandHeight = Pad + StatusH + Gap + StripH + Pad;
@@ -481,7 +534,7 @@ float ALLObserverHUD::DrawOverview(const ULLSimulationSubsystem& Simulation, con
 
     // Hint after the strip: LEVEL 0 only, and only if it fits on the same line.
     const float HintX = X + StripW + 3.0f * PadX * UIScale;
-    if (bShowHint && HintX + HintW <= Canvas->ClipX - X)
+    if (bShowHint && HintX + HintW <= Canvas->ClipX - Insets.Right)
     {
         DrawText(HintLine, TextHint, HintX, CursorY, Font, StripScale, false);
     }
@@ -578,7 +631,7 @@ void ALLObserverHUD::DrawWorldOverview(const ULLSimulationSubsystem& Simulation,
     const float MaxPanelWidth = FMath::Min(PanelMaxWidth * UIScale, Canvas->ClipX * PanelWidthRatio);
     const float PanelWidth = FMath::Clamp(RightColumnX + WidestRight + 2.0f * InnerPadX, FMath::Min(PanelMinWidth * UIScale, MaxPanelWidth), MaxPanelWidth);
     const float PanelHeight = ContentHeight + 2.0f * Pad;
-    const float PanelX = Margin * UIScale;
+    const float PanelX = SafeInsets(UIScale).Left;
     const float PanelY = TopY + Margin * UIScale;
 
     DrawRect(FLinearColor(0.0f, 0.0f, 0.0f, InspectorAlpha), PanelX, PanelY, PanelWidth, PanelHeight);
@@ -678,7 +731,8 @@ void ALLObserverHUD::DrawQuickInspector(const FLLResidentData& Resident, float U
     ContentHeight += Gap * FMath::Max(0, Lines.Num() - 1);
 
     const float PanelHeight = ContentHeight + 2.0f * Pad;
-    const float PanelX = FMath::Max(Margin * UIScale, Canvas->ClipX - PanelWidth - Margin * UIScale);
+    const FSafeInsets Insets = SafeInsets(UIScale);
+    const float PanelX = FMath::Max(Insets.Left, Canvas->ClipX - PanelWidth - Insets.Right);
     const float PanelY = TopY + Margin * UIScale;
 
     DrawRect(FLinearColor(0.0f, 0.0f, 0.0f, InspectorAlpha), PanelX, PanelY, PanelWidth, PanelHeight);
@@ -717,13 +771,17 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
     // ---- Panel geometry ----------------------------------------------------
     // Prefer DetailWidthRatio of the screen (capped), never narrower than the
     // minimum, never wider than the screen minus margins.
-    const float AvailableWidth = FMath::Max(0.0f, Canvas->ClipX - 2.0f * Margin * UIScale);
+    const FSafeInsets Insets = SafeInsets(UIScale);
+    const float AvailableWidth = FMath::Max(0.0f, Canvas->ClipX - Insets.Left - Insets.Right);
     const float PreferredWidth = FMath::Min(DetailMaxWidth * UIScale, Canvas->ClipX * DetailWidthRatio);
     const float PanelWidth = FMath::Min(AvailableWidth, FMath::Max(PreferredWidth, DetailMinWidth * UIScale));
-    const float PanelX = FMath::Max(Margin * UIScale, Canvas->ClipX - PanelWidth - Margin * UIScale);
+    const float PanelX = FMath::Max(Insets.Left, Canvas->ClipX - PanelWidth - Insets.Right);
     const float PanelY = TopY + Margin * UIScale;
     const float InnerWidth = PanelWidth - 2.0f * InnerPadX;
-    const float MaxPanelBottom = Canvas->ClipY - Margin * UIScale;
+    const float MaxPanelBottom = Canvas->ClipY - Insets.Bottom;
+
+    // Touch target: every tappable row/tab is at least this tall and wide.
+    const float MinTouch = TouchTargetRadiusPixels(this);
 
     // ---- Tab bar (measure first; rows are laid out left to right, wrapping) --
     struct FTabBox
@@ -752,8 +810,8 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
     float TabRowH = 0.0f;
     for (FTabBox& Box : Tabs)
     {
-        const float BoxW = Box.W + 2.0f * TabPadXs;
-        const float BoxH = Box.H + 2.0f * TabPadYs;
+        const float BoxW = FMath::Max(Box.W + 2.0f * TabPadXs, MinTouch);
+        const float BoxH = FMath::Max(Box.H + 2.0f * TabPadYs, MinTouch);
         if (TabCursorX > 0.0f && TabCursorX + BoxW > InnerWidth)
         {
             TabRowY += TabRowH;
@@ -771,7 +829,7 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
     const FString BackText(LLObserverText::BackHint);
     float BackW = 0.0f, BackH = 0.0f;
     GetTextSize(BackText, BackW, BackH, Font, TabScale);
-    const float BackRowHeight = BackH + 2.0f * TabPadYs;
+    const float BackRowHeight = FMath::Max(BackH + 2.0f * TabPadYs, MinTouch);
 
     // ---- Content rows for the active tab -------------------------------------
     TArray<FRow> Rows;
@@ -983,7 +1041,7 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
 
     // Back row: same tone as inactive tabs; its hit rectangle spans the panel width.
     const float BackRowTop = PanelY + Pad;
-    DrawText(BackText, TextMuted, TextX, BackRowTop + TabPadYs, Font, TabScale, false);
+    DrawText(BackText, TextMuted, TextX, BackRowTop + (BackRowHeight - BackH) * 0.5f, Font, TabScale, false);
     DetailBackRect = FBox2D(FVector2D(PanelX, BackRowTop), FVector2D(PanelX + PanelWidth, BackRowTop + BackRowHeight));
 
     const float TabBarTop = BackRowTop + BackRowHeight;
@@ -991,26 +1049,34 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
     {
         const float BoxX = TextX + Box.X;
         const float BoxY = TabBarTop + Box.Y;
-        const float BoxW = Box.W + 2.0f * TabPadXs;
-        const float BoxH = Box.H + 2.0f * TabPadYs;
+        const float BoxW = FMath::Max(Box.W + 2.0f * TabPadXs, MinTouch);
+        const float BoxH = FMath::Max(Box.H + 2.0f * TabPadYs, MinTouch);
         const bool bActive = Box.Tab == ActiveTab;
+        const float TitleX = BoxX + (BoxW - Box.W) * 0.5f;
+        const float TitleY = BoxY + (BoxH - Box.H) * 0.5f;
 
-        DrawText(Box.Title, bActive ? TextPrimary : TextMuted, BoxX + TabPadXs, BoxY + TabPadYs, Font, TabScale, false);
+        DrawText(Box.Title, bActive ? TextPrimary : TextMuted, TitleX, TitleY, Font, TabScale, false);
         if (bActive)
         {
-            DrawRect(TabActiveLine, BoxX + TabPadXs, BoxY + BoxH - TabUnderline * UIScale, Box.W, TabUnderline * UIScale);
+            DrawRect(TabActiveLine, TitleX, BoxY + BoxH - TabUnderline * UIScale, Box.W, TabUnderline * UIScale);
         }
         DetailTabRects[static_cast<int32>(Box.Tab)] = FBox2D(FVector2D(BoxX, BoxY), FVector2D(BoxX + BoxW, BoxY + BoxH));
     }
 
     float CursorY = TabBarTop + TabBarHeight + Gap;
     const float PanelBottom = PanelY + PanelHeight - Pad;
+    const FString EllipsisText(LLObserverText::Ellipsis);
+    float EllipsisW = 0.0f, EllipsisH = 0.0f;
+    GetTextSize(EllipsisText, EllipsisW, EllipsisH, Font, RowScale);
+
+    bool bClipped = false;
     for (const FLine& Line : Lines)
     {
         CursorY += Line.GapBefore;
         if (CursorY + Line.Height > PanelBottom)
         {
-            break; // content that does not fit is simply not drawn
+            bClipped = true; // rows that do not fit are not drawn; no scrolling
+            break;
         }
         DrawText(Line.Left, Line.LeftColor, TextX, CursorY, Font, Line.Scale, false);
         if (!Line.Right.IsEmpty())
@@ -1018,5 +1084,11 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
             DrawText(Line.Right, Line.RightColor, TextX + RightColumnX, CursorY, Font, Line.Scale, false);
         }
         CursorY += Line.Height + Gap;
+    }
+
+    // Overflow indicator so a cut list is not mistaken for a complete one.
+    if (bClipped && PanelBottom - EllipsisH >= TabBarTop + TabBarHeight)
+    {
+        DrawText(EllipsisText, TextMuted, TextX, PanelBottom - EllipsisH, Font, RowScale, false);
     }
 }

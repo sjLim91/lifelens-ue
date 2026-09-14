@@ -34,6 +34,8 @@ namespace LLObserverText
     inline const TCHAR* const DetailsHint        = TEXT("Details ›"); // "Details ›"
     inline const TCHAR* const BackHint           = TEXT("‹ Back");  // "‹ Back"
     inline const TCHAR* const NoResidents        = TEXT("No residents yet");
+    inline const TCHAR* const StripMorePrefix    = TEXT("+");       // "+3" when strip items are cut
+    inline const TCHAR* const Ellipsis           = TEXT("…");  // "…" when panel rows are cut
 
     // ---- LEVEL 2 detail panel ------------------------------------------------
     inline const TCHAR* const TabOverview        = TEXT("Overview");
