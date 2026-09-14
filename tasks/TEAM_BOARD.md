@@ -12,7 +12,7 @@
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | `jjun/unreal-savegame-adapter-v1` | Unreal SaveGame Adapter v1 | `Source/LifeLens/Simulation/**`, narrowly required Core snapshot serialization helpers | STARTING — use PR #44 snapshot as single persistence truth |
+| 쭌 + 쭌 AI | `jjun/unreal-savegame-adapter-v1`, PR #45 | Unreal SaveGame Adapter v1 | `Source/LifeLens/Simulation/**`, `Source/LifeLens/Save/**`, narrow Core codec/tests, validator | REVIEW / WAITING_CI — head `547b3f94...`; Core + Preflight + actual UE compile required |
 | 쭌 + 쭌 AI | `task/03-fast-test`, PR #2 | old Android validation | Bridge/build | FROZEN — Run `34739283266` 재실행/수정/병합 금지 |
 | 다겸 + 다겸 AI | `dagyeom/observer-ui-v2`, PR #17 | Observer HUD v2 + Core Observer Bridge binding | `Source/LifeLens/UI/**` | REVIEW / RECOVERING — latest main reconcile 필요 |
 | 다겸 + 다겸 AI | `dagyeom/ui-foundation-v1`, PR #26 | Android landscape UI foundation | UI foundation | REVIEW |
@@ -21,18 +21,18 @@
 | 다겸 + 다겸 AI | `dagyeom/mobile-touch-v1`, PR #36 | Mobile Touch v1 | `Source/LifeLens/UI/**` | REVIEW — stacked on #30 |
 | 다겸 + 다겸 AI | `dagyeom/visual-feedback-v1`, PR #38 | Visual Feedback v1 | `Source/LifeLens/UI/**` | REVIEW — stacked on #36 |
 
-## Current Jjun lock — Unreal SaveGame Adapter v1
+## Current Jjun lock — PR #45 Unreal SaveGame Adapter v1
 
-- Planned branch: `jjun/unreal-savegame-adapter-v1` from latest main after this state update.
-- Must consume `SimulationStateSnapshot` from PR #44; Unreal compatibility `FLLResidentData` must never become a second source of truth.
-- Target:
-  - Save Core snapshot through Unreal persistence;
-  - Load restores Core snapshot directly, not seed+minute replay;
-  - projection rebuilt only after Core restore;
-  - stable resident identity/GUID mapping preserved.
-- Allowed scope: Jjun-owned `Source/LifeLens/Simulation/**`, narrowly required Core snapshot serialization helper/tests.
-- Forbidden scope: `Source/LifeLens/UI/**`, Dagyeom Character presentation, old TASK_03.
-- Required gates: Structural Preflight + actual UE 5.6 Linux UHT/UBT; targeted save/load contract verification before merge.
+- Branch/head: `jjun/unreal-savegame-adapter-v1` / `547b3f94e0c3df6df15d723e72c8084cd10a7c29`.
+- Must consume PR #44 `SimulationStateSnapshot` as single Core persistence truth.
+- Implemented target:
+  - canonical Core binary codec;
+  - SaveGame v2 stores Core snapshot bytes;
+  - v2 Load restores Core directly and rebuilds projection;
+  - live world replacement happens only after temporary candidate decode/restore succeeds;
+  - v1 legacy save replay is migration-only; Residents/Relationships never become authority.
+- Forbidden scope remains UI / Dagyeom Character presentation / Content / frozen TASK_03.
+- Required gates: Core Release full suite + deterministic harness, Structural Preflight, actual UE 5.6 Linux UHT/UBT.
 
 ## Latest completed Jjun work
 
@@ -44,7 +44,7 @@
 
 ## Dagyeom API handoff
 
-Former six `BLOCKED-BY-JJUN` items remain RESOLVED / READY FOR BINDING. Main supports autonomous population growth and full Core snapshot restoration; UI must stay read-only over Core/Bridge state.
+Former six `BLOCKED-BY-JJUN` items remain RESOLVED / READY FOR BINDING. Main supports autonomous population growth and full Core snapshot restoration; UI remains read-only over Bridge state.
 
 ## Shared File Lock
 
@@ -58,7 +58,7 @@ Current open requests: **none**.
 
 ## Merge / reconciliation queue
 
-1. Jjun Unreal SaveGame Adapter v1 — STARTING.
+1. PR #45 — WAITING_CI; do not merge without all required gates PASS.
 2. Dagyeom PR #17 — reconcile latest main + bind current Core Bridge + review fixes + verify.
 3. Dagyeom PR #26 — reconcile latest main independently.
 4. After #17: #29/#30 → #36 → #38.
