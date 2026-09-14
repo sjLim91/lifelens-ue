@@ -349,3 +349,13 @@
 - All Core test targets use `lifelens_add_test`, which undefines NDEBUG even in Release. A new `test_assertions_enabled` fails compilation if this guarantee disappears.
 - Structural preflight PASS. Full CMake Release suite and deterministic harness pending at this checkpoint; local CMake was installed in scratch to validate the actual configuration.
 - Next: full Release CTest, confirm optimized test flags include `-UNDEBUG`, PR/CI. No Unreal/UI/TASK_03 files changed.
+
+### P24 Observer Read Model v2 — refreshed validation checkpoint
+
+- PR #35 merged as `31b2263de3f4a9c80650d1139213d0c38acc8058`; main Core CI `34793860254` and Preflight `34793860178` passed.
+- Merged main checkpoint `bccb8b149877b87146700a7fdf5aacf12e9c0a84` into P24, resolving the CMake conflict by keeping every main test and registering `test_observer_read_model_v2` with `lifelens_add_test`.
+- 27/27 local CMake Release tests passed; all 27 compiled with assertions active. Same-seed one-day harness and structural preflight passed. P24 head CI is the next gate.
+- P24 provides 11 emotion axes plus summaries; family partner/history/cohabitation/pregnancy/parent-child-sibling copies; population/life-stage/household/couple/pregnancy counts and major LifeHistory record count.
+- Scope: these are Core read DTOs, not a live Unreal bridge. `majorLifeEvents` counts individual LifeHistory entries, not deduplicated world events. The DTO does not yet expose GenerationContinuity; the separate existing assessment API remains available.
+- Integration finding: Core `Simulation` currently owns World/RelationshipBook but no family books; Unreal `ULLSimulationSubsystem` still owns its separate resident/save data. A future bridge must first establish authoritative state and GUID mapping, preserve save/load identity, and avoid presenting absent Core data as a real empty family.
+- Frozen TASK_03 and all Dagyeom branches remain untouched. Next: PR #34 refreshed CI → merge → record exact next integration task in main.
