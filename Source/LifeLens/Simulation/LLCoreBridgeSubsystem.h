@@ -39,6 +39,12 @@ public:
     UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Observer")
     void AdvanceCoreMinutes(int32 Minutes = 1);
 
+    UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Action")
+    void SetExternalPhysicalExecutionEnabled(bool bEnabled);
+
+    UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Action")
+    bool CompleteResidentPhysicalAction(FGuid ResidentId);
+
     UFUNCTION(BlueprintPure, Category="LifeLens|Core|Observer")
     bool IsCoreRunning() const { return CoreSimulation != nullptr; }
 
