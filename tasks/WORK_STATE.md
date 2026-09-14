@@ -33,33 +33,28 @@ Last reconciled: 2026-09-14 KST — PR #17 is merged and PR #26 UI Foundation re
 
 ### 2. Observer HUD v2 — DONE / MERGED
 
-- PR #17: **MERGED**
-- Merge SHA: `aa194db7c5b500cdf5041fd6d43b25f97b9dd0b6`
-- Final branch head: `5eaff7dd6d579606331919b89b0060a776a7ad80`
-- R1 latest-main reconciliation: DONE
-  - helper PR #56 merged into Dagyeom branch
-  - verify-only PR #57 CLOSED / NOT MERGED
-  - Preflight `34824371968` PASS
-  - Unreal Run #17 `34824371965` PASS including UHT/UBT/link
-- R2 Core/Family/Action/Civilization binding: DONE
-  - helper PR #58 merged into Dagyeom branch
-  - verify-only PR #59 CLOSED / NOT MERGED
-  - corrected Preflight `34833994138` PASS
-  - corrected Unreal Run #20 `34833994155` PASS including UHT + UBT + final link
-- R3 final state: DONE
-  - unresolved review threads: 0
-  - `ASSIST_LOCK-17-R2` released
+- PR #17: **MERGED** `aa194db7c5b500cdf5041fd6d43b25f97b9dd0b6`
+- R1/R2/R3 complete
+- corrected Unreal Run #20 `34833994155` PASS including UHT/UBT/link
+- unresolved review threads: 0
+- Observer assist locks released
 
 ### 3. PR #26 UI Foundation — DOING
 
 - Original branch: `dagyeom/ui-foundation-v1`
 - Original head: `70dfa5ebeabf24b661c9f9fd0bc63e3ad01ac180`
-- Original PR #26: OPEN / stale base / mergeable=false at reconcile start
+- Original PR #26: OPEN / stale-base path superseded by current integration helper once validated
 - Active lock: `ASSIST_LOCK-26-R1`
 - Helper: `integration/dagyeom-ui-foundation-r1-assist`
-- Helper basis: latest main; only `LLObserverUIFoundation.h/.cpp` restored from PR #26
-- Old branch state-doc changes are intentionally not replayed
-- Next: helper PR → Preflight + actual UE 5.6 UHT/UBT/link → merge/supersede #26 → unlock
+- Helper PR: **#61**
+- Helper scope: only `LLObserverUIFoundation.h/.cpp` on current main
+- Old branch state-doc changes intentionally not replayed
+- Helper Preflight: PASS `34840301429`
+- Verify-only branch: `integration/dagyeom-ui-foundation-r1-verify`
+- Verify-only PR: **#62**
+- Verify Preflight: `34840467738` IN PROGRESS
+- Unreal Linux Compile Run #21: `34840467864` IN PROGRESS
+- Next: verify actual UE 5.6 UHT/UBT/link → close #62 without merge → merge #61 → close/supersede original #26 → unlock
 
 ### 4. Dagyeom integration queue
 
@@ -83,18 +78,14 @@ Parent-first; mass force-rebase 금지.
 
 ### Observer HUD Integration R1-R3
 - #17 merged: `aa194db7c5b500cdf5041fd6d43b25f97b9dd0b6`
-- authoritative Core activity/family/emotion/relationship/civilization data is now available in Observer presentation
-- LEVEL 0 remains thin; detailed civilization data stays in selected-resident/detail layers
-- no UI-side simulation authority/cache introduced
+- authoritative Core activity/family/emotion/relationship/civilization data available in Observer presentation
+- LEVEL 0 remains thin; no UI-side simulation authority/cache
 
 ### PR #54 — macOS clang shadow hotfix
 - Merge `3b649b900c44a4e48bb89171b38f5e685e757b14`
-- Preflight + Core tests + deterministic harness PASS
 
 ### PR #53 — Civilization Observer Read DTOs v1
 - Merge `ec30d80b2986247f0f16572efb2c082a933d796d`
-- Core `34821150702` PASS
-- Preflight `34821150693` PASS
 - Unreal Run #16 `34821150704` PASS
 
 ### PR #52 → #46
