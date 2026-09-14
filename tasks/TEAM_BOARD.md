@@ -12,7 +12,7 @@
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | `jjun/core-physical-action-bridge-v1`, PR #46 | Core Decision → Unreal Physical Action Bridge v1 | Jjun-owned `Simulation/AI/World`, narrow Core read/validator | REVIEW / WAITING_LATEST_HEAD_CI — head `f3a5d47ca17f19928b1438fbe423ee6912a14f01` |
+| 쭌 + 쭌 AI | `jjun/core-physical-action-bridge-v1`, PR #46 | Core Decision → Unreal Physical Action Bridge v1 | Jjun-owned `Simulation/AI/World`, narrow Core read/validator | REVIEW / WAITING_UNREAL_COMPILE — head `31c00cb0d751bb33825df31c7e758e60ff54402c`; Core + Preflight PASS |
 | 쭌 + 쭌 AI | `task/03-fast-test`, PR #2 | old Android validation | Bridge/build | FROZEN — Run `34739283266` 재실행/수정/병합 금지 |
 | 다겸 + 다겸 AI | `dagyeom/observer-ui-v2`, PR #17 | Observer HUD v2 + Core Observer Bridge binding | `Source/LifeLens/UI/**` | REVIEW / RECOVERING — latest main reconcile 필요 |
 | 다겸 + 다겸 AI | `dagyeom/ui-foundation-v1`, PR #26 | Android landscape UI foundation | UI foundation | REVIEW |
@@ -23,17 +23,20 @@
 
 ## Current Jjun lock — PR #46 Core Decision → Unreal Physical Action Bridge v1
 
-- Branch/head: `jjun/core-physical-action-bridge-v1` / `f3a5d47ca17f19928b1438fbe423ee6912a14f01`.
+- Branch/head: `jjun/core-physical-action-bridge-v1` / `31c00cb0d751bb33825df31c7e758e60ff54402c`.
 - Core remains decision authority; Unreal WorldDirector consumes typed Core action directives for presentation/execution.
 - Covered physical intents: Eat / Drink / Sleep / Toilet / Hygiene; Idle follows Core idle state.
 - Covered social intents: Approach / Avoid / Repair / Comfort with Core-selected target.
 - `ALLWorldDirector` no longer calls legacy `DecisionComponent->ChooseAction()` or projection-only `ApplyActionOutcome()` / `ApplySocialInteraction()`.
-- Action enum compatibility is explicit: existing `ELLActionIntent` ordinals remain 0–6; `Drink=7` appends without shifting persisted/Blueprint values.
+- Action enum compatibility preserved: existing ordinal values stay 0–6; appended `Drink` resolves to ordinal 7.
 - SaveGame v2/stable resident identity semantics remain unchanged.
 - Allowed scope: Jjun-owned Core/Simulation/World/validator.
 - Forbidden scope: `Source/LifeLens/UI/**`, Dagyeom Character appearance/presentation, Content, frozen PR #2.
-- Latest-head gates: Core `34805764836`, Preflight `34805764910`, Unreal `34805764898` running/queued at last checkpoint. Superseded Unreal `34805435883` auto-cancelled before UHT/UBT.
-- Required gates: Core Tests + deterministic harness, Structural Preflight, actual UE 5.6 Linux UHT/UBT; runtime/PIE check where available.
+- Latest-head gates:
+  - Core Tests `34805882778` PASS incl deterministic harness.
+  - Structural Preflight `34805882776` PASS.
+  - Unreal Linux Compile `34805882789` IN PROGRESS; actual UHT/UBT pending.
+- Superseded Unreal Runs `34805435883` and `34805764898` were auto-cancelled before UHT/UBT when the PR head moved.
 
 ## Latest completed Jjun work
 
@@ -43,17 +46,7 @@
 - Feature HEAD: `547b3f94e0c3df6df15d723e72c8084cd10a7c29`
 - Merge: `3c646ba331b8199a295fd6f2e9cac1235d844679`
 - Scope: exactly 10 Jjun-owned Save/Simulation/Core/validator files; no UI/Characters/Content edits.
-- Product behavior now on main:
-  - SaveGame v2 stores the authoritative Core snapshot binary payload;
-  - load restores exact evolved Core state rather than replaying seed+minute;
-  - restored state includes residents, RNG, relationships, emotion/memory/belief-bearing Character state, genealogy, romance, households, pregnancies, births, runtime plan/cooldown/social state and logs;
-  - restore is transactional through a temporary Core candidate;
-  - stable `(WorldSeed, CharacterId) -> FGuid` mapping is rebuilt from restored Core state;
-  - legacy v1 saves retain migration replay only and never restore legacy resident arrays as authority.
-- Validation:
-  - Core Tests `34803226434` PASS incl deterministic harness.
-  - Structural Preflight `34803226458` PASS.
-  - Unreal Linux Compile `34803226433` PASS including actual UE 5.6 UHT/UBT.
+- Validation: Core `34803226434` PASS incl deterministic harness; Preflight `34803226458` PASS; Unreal `34803226433` PASS including actual UE 5.6 UHT/UBT.
 
 ### PR #44 — Full Core Save/Load v1
 
@@ -84,7 +77,7 @@ Current open requests: **none**.
 
 ## Merge / reconciliation queue
 
-1. PR #46 — WAITING_LATEST_HEAD_CI; merge only after latest-head Core/Preflight/UHT+UBT PASS.
+1. PR #46 — WAITING_UNREAL_COMPILE; merge only after Run `34805882789` actual UHT/UBT PASS.
 2. Dagyeom PR #17 — reconcile latest main + bind current Core Bridge + review fixes + verify.
 3. Dagyeom PR #26 — reconcile latest main independently.
 4. After #17: #29/#30 → #36 → #38.
