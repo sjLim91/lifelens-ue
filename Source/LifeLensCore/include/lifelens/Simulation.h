@@ -72,6 +72,7 @@ private:
     void beginPlan(Character& c,Runtime& r);
     void advanceAction(Character& c,Runtime& r);
     void failPlan(Runtime& r);
+    bool tryCivilizationDecision(Character& c,Runtime& r);
     bool trySocialDecision(Character& c,Runtime& r);
     void advanceAutonomousFamilyProgression();
     void updatePregnanciesAndBirths();
