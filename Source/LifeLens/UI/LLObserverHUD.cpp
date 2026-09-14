@@ -48,7 +48,6 @@ namespace
     constexpr float LevelFadeSeconds   = 0.18f;
     constexpr float SelectFlashSeconds = 0.45f;
     constexpr float FocusUnderline     = 2.0f;
-    constexpr float FocusUnderlineGap  = 4.0f;
     constexpr float FlashPadStart      = 6.0f;
     constexpr float FlashPadGrow       = 18.0f;
 
@@ -482,10 +481,11 @@ void ALLObserverHUD::DrawSelectionFeedback(const FLLResidentData& Selected, floa
         return;
     }
 
+    // Both marks are anchored on the projected actor origin, not the render
+    // bounds (which include the name label and sit far below on screen).
     const ALLResidentCharacter* Actor = FindResidentActor(GetWorld(), Selected.ResidentId);
-    FBox2D Bounds;
-    FBox2D Unused;
-    if (!Actor || !ProjectResidentTapRect(PlayerController, Actor, 0.0f, Bounds, Unused))
+    FVector2D OriginScreen;
+    if (!Actor || !PlayerController->ProjectWorldLocationToScreen(Actor->GetActorLocation(), OriginScreen, false))
     {
         return;
     }
@@ -493,22 +493,24 @@ void ALLObserverHUD::DrawSelectionFeedback(const FLLResidentData& Selected, floa
     int32 ViewportX = 0;
     int32 ViewportY = 0;
     PlayerController->GetViewportSize(ViewportX, ViewportY);
-    const FVector2D ViewportSize(ViewportX, ViewportY);
-    const FBox2D Rect(ViewportToCanvas(Bounds.Min, ViewportSize), ViewportToCanvas(Bounds.Max, ViewportSize));
+    const FVector2D Origin = ViewportToCanvas(OriginScreen, FVector2D(ViewportX, ViewportY));
+    const float Radius = TouchTargetRadiusPixels(this);
 
-    // Persistent focus mark: a thin underline just below the resident.
-    const float UnderY = Rect.Max.Y + FocusUnderlineGap * UIScale;
-    DrawLine(Rect.Min.X, UnderY, Rect.Max.X, UnderY, TabActiveLine, FocusUnderline * UIScale);
+    // Persistent focus mark: a short underline just below the origin,
+    // about one touch target wide.
+    const float UnderY = Origin.Y + Radius * 0.5f;
+    DrawLine(Origin.X - Radius * 0.5f, UnderY, Origin.X + Radius * 0.5f, UnderY, TabActiveLine, FocusUnderline * UIScale);
 
-    // Brief outline flash on a new selection: grows outward and fades.
+    // Brief flash on a new selection: a small square around the origin that
+    // grows outward and fades.
     const float Now = GetWorld()->GetTimeSeconds();
     const float T = (Now - SelectionChangeTime) / SelectFlashSeconds;
     if (T >= 0.0f && T < 1.0f)
     {
-        const float Pad = (FlashPadStart + FlashPadGrow * T) * UIScale;
+        const float Half = Radius * 0.4f + (FlashPadStart + FlashPadGrow * T) * UIScale;
         FLinearColor Color = TabActiveLine;
         Color.A *= (1.0f - T) * 0.8f;
-        const FBox2D Flash = Rect.ExpandBy(FVector2D(Pad, Pad));
+        const FBox2D Flash(Origin - FVector2D(Half, Half), Origin + FVector2D(Half, Half));
         DrawLine(Flash.Min.X, Flash.Min.Y, Flash.Max.X, Flash.Min.Y, Color, 1.0f);
         DrawLine(Flash.Max.X, Flash.Min.Y, Flash.Max.X, Flash.Max.Y, Color, 1.0f);
         DrawLine(Flash.Max.X, Flash.Max.Y, Flash.Min.X, Flash.Max.Y, Color, 1.0f);
