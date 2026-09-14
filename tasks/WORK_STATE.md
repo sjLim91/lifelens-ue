@@ -4,7 +4,7 @@
 >
 > 제품 요구사항은 `docs/LIFELENS_SPEC_v1.1.md`, 상태관리 규칙은 `docs/STATE_MANAGEMENT.md`, 역할/잠금은 `tasks/TEAM_BOARD.md`, 변경 이력은 `tasks/HANDOFF_LOG.md`를 따른다.
 
-Last reconciled: 2026-09-14 KST
+Last reconciled: 2026-09-14 KST — session recovery; GitHub branch/PR/Actions rechecked
 
 ## Status legend
 
@@ -14,20 +14,20 @@ Last reconciled: 2026-09-14 KST
 
 ## Active / unresolved work
 
-### 1. P23 Generation Continuity Core v1
+### 1. P24 Observer Read Model v2
 
 - Owner: 쭌 + 쭌 AI
-- Branch: `jjun/generation-continuity-v1`
-- Work item: 세대교체 / Population Continuity — 사망·출생·성장·가계도 기반으로 사회가 다음 세대로 이어질 수 있는지 평가하는 Core 모델
-- Last known HEAD: `8454c0c91e1770e2e503d52d5489446beafe6535` (branch creation checkpoint)
-- PR: 없음 — 구현 전
+- Branch: `jjun/observer-read-model-v2`
+- Work item: 다겸 UI의 `BLOCKED-BY-JJUN` 데이터 병목 해소 — 세부 Emotion, Family summary, World aggregate를 Core read DTO로 제공
+- Last known HEAD: `48d6142834ad2fe2b34b228cec57e092e0577e36`
+- PR: #34 `[CORE] Expand observer read model for family and world overview`
 - Status: `IN_PROGRESS`
-- CI: 미실행
-- Last verified fact: P22 LifeHistory Wiring PR #32는 Core Tests + deterministic harness + Preflight PASS 후 `main`에 squash-merge 완료. `jjun/generation-continuity-v1`은 그 merge SHA에서 생성됐고 `generation` / `continuity` / `population` 이름의 선행 브랜치는 없음.
-- Blocker / interruption: 없음.
-- Exact next action: 현재 생존 인구/성인/미성년/세대 깊이/임신·출산 가능성으로 continuity state 평가 → extinction-risk/stable/transition 상태 및 결정 근거 추가 → C++17 테스트 → PR → Core CI + Preflight.
-- Handoff safety: `SAFE`
-- Shared-file impact: `Source/LifeLensCore/**` + Core tests only. TASK_03 / 다겸 UI 파일 건드리지 않음.
+- CI: Core Tests Run `34792467903` PASS; Preflight Run `34792467916` PASS (PR head `48d6142`).
+- Last verified fact: P24 code and original checks are preserved at `48d6142`; PR #35 fixed the pre-existing Core memory/assertion defects on main.
+- Blocker / interruption: Core validation recovery merged via PR #35 (`31b2263`). P24 baseline/CI refresh pending.
+- Exact next action: Merge latest main into this branch, register test_observer_read_model_v2 through lifelens_add_test, run 27-test Release suite + deterministic harness + Preflight, then refresh PR #34 CI.
+- Handoff safety: `CONDITIONAL` — CI passed; code review/reconciliation in progress.
+- Shared-file impact: `Source/LifeLensCore/**` + Core tests only. Unreal USTRUCT/Blueprint bridge는 별도 후속 integration task로 분리.
 
 ### 2. Observer HUD v2
 
@@ -42,13 +42,12 @@ Last reconciled: 2026-09-14 KST
   - actual UHT/UBT / 화면 동작 검증 — PENDING
 - Last verified fact:
   - PR #17은 열려 있고 structural preflight는 통과함
-  - UI branch는 실제 기능 커밋 13개를 포함하며 다겸 쪽 작업은 존재함
   - 감정/관계/가족/SocialIntent/월드 집계 일부는 쭌 측 Unreal read API 대기
-  - 이 API 대기는 다겸 전체 작업 BLOCK이 아니라 `BLOCKED-BY-JJUN` 항목으로 분리함
+  - API 대기는 다겸 전체 작업 BLOCK이 아니라 `BLOCKED-BY-JJUN` 항목으로 분리함
 - Blocker / interruption: PR #17 merge 자체는 actual UHT/UBT 및 shared-doc reconciliation이 필요하지만, 다겸은 별도 READY NOW 작업을 계속할 수 있음.
-- Exact next action: `tasks/DAGYEOM_READY_QUEUE.md`에서 READY NOW 작업을 하나 선택해 새 `dagyeom/*` 브랜치에서 착수. PR #17 파일과 겹치면 stacked branch로 분리.
+- Exact next action: `tasks/DAGYEOM_READY_QUEUE.md` READY NOW 작업 진행. P24 Core DTO 완료 후 Unreal bridge task가 열리면 실제 데이터 바인딩 큐를 추가.
 - Handoff safety: `CONDITIONAL`
-- Shared-file impact: PR #17에 `tasks/TEAM_BOARD.md`, `tasks/HANDOFF_LOG.md` 변경 있음. 최신 main 상태 문서를 덮어쓰지 않도록 병합 전 reconciliation 필요.
+- Shared-file impact: PR #17에 shared docs 변경 있음. 최신 main 상태 문서를 덮어쓰지 않도록 병합 전 reconciliation 필요.
 
 ### 3. TASK_03 Core ↔ Unreal / Android validation
 
@@ -58,17 +57,30 @@ Last reconciled: 2026-09-14 KST
 - Last known HEAD: `f8f461a8ec669ba65ad6dd669e6bac45f186d230`
 - PR: #2 `[UE] Bridge LifeLensCore into Unreal runtime`
 - Status: `FROZEN`
-- CI / Build:
-  - Android Run `34739283266` — FAILURE
-  - UHT passed before UBT compile failure
-  - failure occurred in `Compile LifeLens Android Development`
-  - Cook/Package never started
-  - APK artifact 없음
-- Last verified root cause: 오래된 TASK_03 branch의 `LLCoreBridgeSubsystem`에서 Core `lifelens` namespace와 Unreal `LifeLens` symbol 경계 관련 실제 UBT compile conflict가 발생.
+- CI / Build: Android Run `34739283266` — FAILURE; Cook/Package/APK 미도달.
 - Blocker / interruption: 사용자 지시에 따라 실패 상태 그대로 보존.
-- Exact next action: **없음. 자동 재실행/수정 금지.** 사용자가 TASK_03 재개를 명시하거나 최신 main 기반 새 integration task를 시작할 때만 별도 복구 계획 작성.
+- Exact next action: **없음. 자동 재실행/수정 금지.** 최신 main 기반 새 integration task는 TASK_03 자체와 분리해서 진행.
 - Handoff safety: `SAFE`
-- Shared-file impact: branch가 오래되었고 Build/Simulation/shared files를 포함하므로 main에 그대로 병합 금지.
+- Shared-file impact: 오래된 Build/Simulation/shared files 포함. main에 그대로 병합 금지.
+
+---
+
+
+### 4. Core validation recovery v1
+
+- Owner: 쭌 + 쭌 AI
+- Branch: `jjun/core-validation-recovery-v1`
+- Work item: Restore real Release assertions and fix invalidated RelationshipBook references.
+- Last known HEAD: `612f98f4499f50d359a814df33e3d0b913259f6f`
+- PR: #35 `[CORE] Fix dangling relationship references and restore Release test assertions`
+- Status: `DONE`
+- Merge SHA: `31b2263de3f4a9c80650d1139213d0c38acc8058`
+- CI: Core Tests Run `34793799376` PASS; Preflight Run `34793799447` PASS.
+- Last verified fact: 26/26 local CMake Release tests passed with assertions enabled; all test compile commands restore assertions after NDEBUG. Deterministic one-day seed 42 harness and structural preflight passed. Original heap-use-after-free reproduced with ASan; corrected 1,000-insertion test passed ASan/UBSan. Remote tree `94fe2a7` equals tested local tree.
+- Blocker / interruption: fixed. Shell push initially failed auto-review; full diff confirmed only this public project's code/tests/docs, and a scoped retry passed review but had no shell credentials. Connected GitHub persisted the same reviewed tree.
+- Exact next action: No further feature edits here; P24 proceeds on its own branch using this baseline.
+- Handoff safety: `SAFE` — implementation and verification committed remotely.
+- Shared-file impact: Core headers/tests/CMake plus append-only HANDOFF_LOG. No UI/Unreal/TASK_03 changes.
 
 ---
 
@@ -76,34 +88,31 @@ Last reconciled: 2026-09-14 KST
 
 정식 큐: `tasks/DAGYEOM_READY_QUEUE.md`
 
-현재 즉시 가능한 작업:
-
 1. `dagyeom/ui-foundation-v1` — Android landscape typography / spacing / safe-area / icon / font foundation
 2. `dagyeom/character-presentation-v1` — nameplate / LifeStage badge / selected-focus feedback / display LOD
 3. `dagyeom/observer-ux-polish-v1` — World→Quick→Detail 전환, 뒤로가기/선택해제/empty-state 정리
 4. `dagyeom/mobile-touch-v1` — hit target / safe-area / 작은 화면 scroll/overflow/tab UX
 5. `dagyeom/visual-feedback-v1` — 선택/관찰 레벨/주목 대상의 비침투적 시각 피드백
 
-`BLOCKED-BY-JJUN`: Relationship / Emotion / SocialIntent / Family summary / World aggregate Unreal read APIs. 이것들은 쭌 측 backlog이며 다겸이 Core를 직접 수정하지 않는다.
-
-READY NOW가 0개가 되면 다겸 측은 `할 일 없음`으로 종료하지 않고 `NEEDS_ASSIGNMENT`로 보고 SPEC의 UI/Observer/Character presentation 범위에서 다음 작업을 즉시 채운다.
+`BLOCKED-BY-JJUN`: Unreal-facing Relationship / Emotion / SocialIntent / Family summary / World aggregate read APIs. Core Relationship/SocialIntent/basic emotion DTO는 이미 존재하고 P24에서 나머지 Core DTO를 완성한다.
 
 ---
 
 ## Recently completed product milestones
 
-- P11 Romance Core — `DONE`, main merged.
-- P12 Household / Cohabitation — `DONE`, main merged.
-- P13 Marriage — `DONE`, main merged.
-- P14 Pregnancy — `DONE`, main merged.
-- P15 Birth / Genetics — `DONE`, main merged.
-- P16 Lifecycle Growth — `DONE`, main merged.
-- P17 Parenting / Child Development — `DONE`, main merged.
-- P18 Genealogy / Kinship — `DONE`, main merged as `d1324c766749847c9fc85ea69af60c23c293da31`.
-- P19 Aging Core — `DONE`, Core CI + Preflight PASS; PR #23 squash-merged as `82b4001058332656b08f13a47728079172b10962`.
-- P20 Death Core — `DONE`, Core CI + deterministic harness + Preflight PASS; PR #25 squash-merged as `07509a73f235928c16bf9b26f8b13c689b6a030b`.
-- P21 LifeHistory Core — `DONE`, Core CI + deterministic harness + Preflight PASS; PR #27 squash-merged as `b46869acc62830c432bb5b3693f98535c37f2e0a`.
-- P22 LifeHistory Wiring — `DONE`, Core CI + deterministic harness + Preflight PASS; PR #32 squash-merged as `8454c0c91e1770e2e503d52d5489446beafe6535`.
+- P11 Romance Core — `DONE`.
+- P12 Household / Cohabitation — `DONE`.
+- P13 Marriage — `DONE`.
+- P14 Pregnancy — `DONE`.
+- P15 Birth / Genetics — `DONE`.
+- P16 Lifecycle Growth — `DONE`.
+- P17 Parenting / Child Development — `DONE`.
+- P18 Genealogy / Kinship — `DONE`, merge `d1324c766749847c9fc85ea69af60c23c293da31`.
+- P19 Aging Core — `DONE`, PR #23 merge `82b4001058332656b08f13a47728079172b10962`.
+- P20 Death Core — `DONE`, PR #25 merge `07509a73f235928c16bf9b26f8b13c689b6a030b`.
+- P21 LifeHistory Core — `DONE`, PR #27 merge `b46869acc62830c432bb5b3693f98535c37f2e0a`.
+- P22 LifeHistory Wiring — `DONE`, PR #32 merge `8454c0c91e1770e2e503d52d5489446beafe6535`.
+- P23 Generation Continuity — `DONE`, Core CI + deterministic harness + Preflight PASS; PR #33 merge `37bc2e7af7924fdf8a262d086426e15f2c3e2db3`.
 
 ---
 
@@ -118,7 +127,6 @@ READY NOW가 0개가 되면 다겸 측은 `할 일 없음`으로 종료하지 �
 ### Mandatory recovery rule
 
 If a session/tool/chat times out before normal completion:
-
 1. Do not assume the previous action succeeded or failed.
 2. Fetch actual branch HEAD.
 3. Fetch PR state/head SHA.

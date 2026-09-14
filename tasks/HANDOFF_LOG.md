@@ -320,3 +320,42 @@
 - UI가 추가로 필요로 하는 Simulation/Core read API
 - 화면/터치/관찰 UX 확인 결과
 - PR 생성 시 shared file 포함 여부
+
+
+## 2026-09-14 — usage-limit interruption recovery
+
+- Author: 쭌 측 AI.
+- Verified remote main `4e8f50d92bb7eb08884122a001ac73174d057703` and P24 branch `48d6142834ad2fe2b34b228cec57e092e0577e36`.
+- PR #34 is open/mergeable; Core Tests `34792467903` and Preflight `34792467916` succeeded. WORK_STATE incorrectly said implementation had not started; corrected before further code edits.
+- TASK_03 PR #2 remains FROZEN. Run `34739283266` is completed/failure; no rerun or branch changes.
+- Read-only discovery also confirmed open Dagyeom PRs #17, #26, #29, #30. Their branches are not ours to change.
+- Next checkpoint: review P24 code/tests, then record merge SHA; new integration work starts on a separate branch.
+- Interruption policy: push each coherent change before external waits, record exact branch/HEAD/PR/check IDs/next command. Chat availability does not imply a background AI is still working; re-read GitHub on resume.
+
+
+### 2026-09-14 — P24 merge held: assertions exposed a Core memory defect
+
+- Author: 쭌 측 AI; branch `jjun/core-validation-recovery-v1` (base `6ee98d6`).
+- CMake is absent locally; used installed g++ C++17 with assertions enabled. `test_observer_read_model_v2` passed, but `test_relationship` aborted at line 16 after reverse-relation insertion.
+- Root cause: RelationshipBook::getOrCreate returns a vector element reference, then subsequent insertion reallocates it. Existing test holds both directions. This is a real dangling reference, not a P24 DTO failure.
+- CI root cause: core-tests.yml configures Release; CMake defines NDEBUG, eliminating legacy assert checks (including expressions with side effects). Old PASS cannot establish assertion-based correctness.
+- Changed priority: repair this bounded Core/validation defect before merging P24 or starting Unreal read APIs. TASK_03 remains FROZEN.
+- Next: reference-stable storage, Release assertion guard, full tests and targeted ASan/UBSan, then PR/CI and durable checkpoint.
+
+### Core validation recovery — first implementation checkpoint
+
+- RelationshipBook now uses insertion-ordered `std::deque`; returned references/pointers survive subsequent insertions. Iterators still must not span insertions. All existing `all()` consumers use range iteration; no explicit vector consumers were found.
+- Added growth regression with 1,000 inserted relationships and both directed references retained. Original code reproduced AddressSanitizer `heap-use-after-free`; corrected targeted ASan/UBSan run passed.
+- All Core test targets use `lifelens_add_test`, which undefines NDEBUG even in Release. A new `test_assertions_enabled` fails compilation if this guarantee disappears.
+- Structural preflight PASS. Full CMake Release suite and deterministic harness pending at this checkpoint; local CMake was installed in scratch to validate the actual configuration.
+- Next: full Release CTest, confirm optimized test flags include `-UNDEBUG`, PR/CI. No Unreal/UI/TASK_03 files changed.
+
+### P24 Observer Read Model v2 — refreshed validation checkpoint
+
+- PR #35 merged as `31b2263de3f4a9c80650d1139213d0c38acc8058`; main Core CI `34793860254` and Preflight `34793860178` passed.
+- Merged main checkpoint `bccb8b149877b87146700a7fdf5aacf12e9c0a84` into P24, resolving the CMake conflict by keeping every main test and registering `test_observer_read_model_v2` with `lifelens_add_test`.
+- 27/27 local CMake Release tests passed; all 27 compiled with assertions active. Same-seed one-day harness and structural preflight passed. P24 head CI is the next gate.
+- P24 provides 11 emotion axes plus summaries; family partner/history/cohabitation/pregnancy/parent-child-sibling copies; population/life-stage/household/couple/pregnancy counts and major LifeHistory record count.
+- Scope: these are Core read DTOs, not a live Unreal bridge. `majorLifeEvents` counts individual LifeHistory entries, not deduplicated world events. The DTO does not yet expose GenerationContinuity; the separate existing assessment API remains available.
+- Integration finding: Core `Simulation` currently owns World/RelationshipBook but no family books; Unreal `ULLSimulationSubsystem` still owns its separate resident/save data. A future bridge must first establish authoritative state and GUID mapping, preserve save/load identity, and avoid presenting absent Core data as a real empty family.
+- Frozen TASK_03 and all Dagyeom branches remain untouched. Next: PR #34 refreshed CI → merge → record exact next integration task in main.
