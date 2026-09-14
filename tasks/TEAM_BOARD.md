@@ -2,6 +2,9 @@
 
 이 파일은 쭌(sjLim91), 다겸(STILLofficial), 양쪽 AI의 작업 잠금/분배 보드다.
 
+> **LIVE LOCK STATUS (main): `ASSIST_LOCK-29-R1 = RELEASED`. Current active assist locks = 0.**
+> PR #63 merged as `c9164ebf3cc70a194d3f8f6e50dcfb3c9df2a986`. Older branch copies that still show ACTIVE are stale and must not be treated as authoritative.
+
 ## 최우선 규칙
 
 - 실제 `main` / branch / PR / Actions가 문서보다 우선한다.
@@ -25,7 +28,7 @@
 
 ## Current Assist Locks
 
-**0개.**
+**0개. `ASSIST_LOCK-29-R1`은 RELEASED.**
 
 ### Completed assist — Character Presentation v1
 
