@@ -22,6 +22,8 @@ int main()
     assert(before[0].name == "SocialA");
     assert(before[0].activityKind == ObservedActivityKind::Idle);
     assert(before[0].activityLabel == "Idle");
+    assert(before[0].physicalGoal == Goal::Idle);
+    assert(before[0].socialIntent == SocialIntent::None);
     assert(before[0].relationships.size() == 1);
     assert(before[0].relationships[0].targetId == 2);
     assert(before[0].relationships[0].targetName == "SocialB");
@@ -39,10 +41,11 @@ int main()
     for (const auto& resident : active) {
         if (resident.activityKind == ObservedActivityKind::Social) {
             sawSocial = true;
-            assert(resident.activityLabel == "Approach" ||
-                   resident.activityLabel == "Comfort" ||
-                   resident.activityLabel == "Repair" ||
-                   resident.activityLabel == "Avoid");
+            assert(resident.socialIntent == SocialIntent::Approach ||
+                   resident.socialIntent == SocialIntent::Comfort ||
+                   resident.socialIntent == SocialIntent::Repair ||
+                   resident.socialIntent == SocialIntent::Avoid);
+            assert(resident.physicalGoal == Goal::Idle);
             assert(resident.activityTargetId != 0);
             assert(!resident.activityTargetName.empty());
         }
@@ -54,6 +57,34 @@ int main()
     assert(near(a.needs.hunger, sim.world().characters[0].needs.hunger));
     assert(near(a.emotionValence, sim.world().characters[0].emotion.valence));
     assert(a.relationships.size() == 1);
+
+    // The read model must expose typed physical/social authority rather than
+    // forcing downstream runtimes to parse display labels.
+    World directWorld(7);
+    Character first;
+    first.id = 10;
+    first.name = "First";
+    Character second;
+    second.id = 11;
+    second.name = "Second";
+    directWorld.characters = {first, second};
+    RelationshipBook directRelationships;
+
+    const ResidentObservation physical = buildResidentObservation(
+        directWorld, directRelationships, directWorld.characters[0],
+        true, Goal::Eat, false, SocialIntent::None, 0);
+    assert(physical.activityKind == ObservedActivityKind::Physical);
+    assert(physical.physicalGoal == Goal::Eat);
+    assert(physical.socialIntent == SocialIntent::None);
+
+    const ResidentObservation social = buildResidentObservation(
+        directWorld, directRelationships, directWorld.characters[0],
+        false, Goal::Idle, true, SocialIntent::Comfort, 11);
+    assert(social.activityKind == ObservedActivityKind::Social);
+    assert(social.physicalGoal == Goal::Idle);
+    assert(social.socialIntent == SocialIntent::Comfort);
+    assert(social.activityTargetId == 11);
+    assert(social.activityTargetName == "Second");
 
     // Social action uses a five-tick duration and must return to non-social state.
     sim.runMinutes(4);
