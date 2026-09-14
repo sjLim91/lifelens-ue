@@ -13,7 +13,7 @@
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
 | 쭌 + 쭌 AI | `jjun/core-physical-action-bridge-v1`, PR #46 | Core Decision → Unreal Physical Action Bridge v1 | Jjun-owned `Simulation/AI/World`, narrow Core read/validator | REVIEW / WAITING_UNREAL_COMPILE — head `31c00cb0d751bb33825df31c7e758e60ff54402c`; Core + Preflight PASS |
-| 쭌 + 쭌 AI | `jjun/witness-rumor-core-v1` | Witness / Rumor / Social Knowledge v1 | Pure `Source/LifeLensCore/**` + minimal Core test registration only | DOING / STATE_LOCKED — no overlap with PR #46 files |
+| 쭌 + 쭌 AI | `jjun/witness-rumor-core-v1`, PR #47 | Witness / Rumor / Social Knowledge v1 | Pure `Source/LifeLensCore/**` + minimal Core test registration only | REVIEW / WAITING_CORE_CI — head `8c03b349d8489a847b4e4fb7e22dc974e91be8cf`; no overlap with PR #46 files |
 | 쭌 + 쭌 AI | `task/03-fast-test`, PR #2 | old Android validation | Bridge/build | FROZEN — Run `34739283266` 재실행/수정/병합 금지 |
 | 다겸 + 다겸 AI | `dagyeom/observer-ui-v2`, PR #17 | Observer HUD v2 + Core Observer Bridge binding | `Source/LifeLens/UI/**` | REVIEW / RECOVERING — latest main reconcile 필요 |
 | 다겸 + 다겸 AI | `dagyeom/ui-foundation-v1`, PR #26 | Android landscape UI foundation | UI foundation | REVIEW |
@@ -39,16 +39,16 @@
   - Unreal Linux Compile `34805882789` IN PROGRESS; actual UHT/UBT pending.
 - Superseded Unreal Runs `34805435883` and `34805764898` were auto-cancelled before UHT/UBT when the PR head moved.
 
-## Parallel Jjun lock — Witness / Rumor / Social Knowledge v1
+## Parallel Jjun lock — PR #47 Witness / Rumor / Social Knowledge v1
 
-- Planned branch: `jjun/witness-rumor-core-v1`, created from latest main after state checkpoint.
-- Purpose: build the non-omniscient knowledge foundation from the master spec: witness → memory/evidence → statement/rumor → belief.
-- v1 is deliberately pure Core-only while PR #46 Run #10 is active.
-- Allowed scope: new/modified files under `Source/LifeLensCore/**` and minimal Core CMake/test registration.
+- Branch/head: `jjun/witness-rumor-core-v1` / `8c03b349d8489a847b4e4fb7e22dc974e91be8cf`.
+- Purpose: non-omniscient knowledge foundation from the master spec: witness → memory/evidence → statement/rumor → belief.
+- Scope is exactly pure Core while PR #46 Run #10 is active.
+- Implemented: `SocialFact`, provenance-aware `KnowledgeReceipt`, `SocialStatement`, `SocialKnowledgeBook`, deterministic retell attenuation/distortion, trust-sensitive acceptance, duplicate/loop suppression, existing Memory/Belief integration, positive/negative evidence preservation.
+- Changed files at PR creation: Core `CMakeLists.txt`, new `WitnessRumor.h`, new `test_witness_rumor.cpp`.
 - Forbidden overlap until #46 is merged/reconciled: `Source/LifeLens/Simulation/**`, `Source/LifeLens/World/**`, `Source/LifeLens/AI/**`, Unreal UI/Characters/Content, Config/workflows.
-- Required properties: direct-witness provenance, heard-source provenance, confidence attenuation/distortion over retellings, trust-sensitive acceptance, rumor loop/duplicate suppression, deterministic behavior.
-- Required gate: Core Release test suite + deterministic harness. Unreal compile is not required for this pure-Core slice.
-- Live Simulation wiring is a follow-up after PR #46, not part of the parallel branch.
+- CI at last check: Core `34806559374` IN PROGRESS; Preflight `34806559379` IN PROGRESS. Unreal compile intentionally not required for this pure-Core slice.
+- Live Simulation wiring is follow-up work after PR #46 reconciliation, not part of PR #47.
 
 ## Latest completed Jjun work
 
@@ -90,7 +90,7 @@ Current open requests: **none**.
 ## Merge / reconciliation queue
 
 1. PR #46 — WAITING_UNREAL_COMPILE; merge only after Run `34805882789` actual UHT/UBT PASS.
-2. Witness/Rumor pure-Core v1 may proceed in parallel; do not wire into Unreal/Simulation until #46 is reconciled.
+2. PR #47 — independent pure-Core review; merge after Core/Preflight PASS, no Unreal compile required unless scope changes.
 3. Dagyeom PR #17 — reconcile latest main + bind current Core Bridge + review fixes + verify.
 4. Dagyeom PR #26 — reconcile latest main independently.
 5. After #17: #29/#30 → #36 → #38.
