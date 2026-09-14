@@ -14,7 +14,7 @@
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | fresh latest-main branch | Autonomous Civilization Action Loop v1 | `Source/LifeLensCore/**` | DOING / STATE_LOCKED |
+| 쭌 + 쭌 AI | fresh latest-main branch | Civilization Knowledge Transmission v1 | `Source/LifeLensCore/**` | DOING / STATE_LOCKED |
 | 쭌 + 쭌 AI | `task/03-fast-test`, PR #2 | old Android validation | Bridge/build | FROZEN — Run `34739283266` 재실행/수정/병합 금지 |
 | 다겸 + 다겸 AI | `dagyeom/observer-ui-v2`, PR #17 | Observer HUD v2 + Core Observer Bridge binding | `Source/LifeLens/UI/**` | REVIEW / RECOVERING — latest main reconcile 필요 |
 | 다겸 + 다겸 AI | `dagyeom/ui-foundation-v1`, PR #26 | Android landscape UI foundation | UI foundation | REVIEW |
@@ -25,70 +25,69 @@
 
 ## Canonical direction — autonomous civilization progression
 
-LifeLens의 최종 방향은 현대 가구를 자율적으로 사용하는 NPC 시뮬레이터에 한정되지 않는다.
-
 `Need / Curiosity → Observe → Gather → Carry/Store → Experiment → Discovery → Personal Knowledge → Craft/Build → Teach/Imitate → Shared Culture → Specialization/Exchange → Generational Civilization`
 
 Rules:
-- recipe/tech는 시작부터 전역 unlock되지 않는다.
+- recipe/tech는 전역 unlock되지 않는다.
 - 기술은 개인 지식에서 시작하고 목격·모방·설명·교육을 통해 퍼진다.
-- 시대 레이블은 강제 gate가 아니라 실제 재료/기술 상태의 관찰 요약이다.
+- 시대 레이블은 강제 gate가 아니라 실제 문명 상태의 관찰 요약이다.
 - 지식은 죽음/단절로 소실될 수 있다.
-- Memory / Belief / Witness-Rumor / Family / Generation을 지식 전파와 세대 누적에 재사용한다.
+- Memory / Belief / Witness-Rumor / Family / Generation을 재사용한다.
 - Observer HUD는 계속 단순하게 유지한다.
 
-## Current Jjun lock — Autonomous Civilization Action Loop v1
+## Current Jjun lock — Civilization Knowledge Transmission v1
 
-- Start from actual latest main after state sync.
-- Core owns WHAT to do; Unreal execution/presentation remains a later adapter.
+- Start from actual latest main after #51 merge/state sync.
+- Reuse #47 Witness/Rumor/Social Knowledge rather than building a duplicate rumor layer.
 - v1 required:
-  - CivilizationIntent / deterministic utility selection;
-  - Gather finite resources;
-  - Store surplus in shared StorageSite;
-  - Experiment using personal inventory and unmet knowledge;
-  - Craft only from personally reproducible techniques;
-  - preserve failure resource costs and personal discovery semantics;
-  - log deterministic civilization events;
-  - tests showing same-seed determinism and different residents diverging in knowledge/inventory/progression.
-- Out of scope: teaching/imitation, economy, agriculture/metallurgy, Unreal resource actors, UI fields.
+  - successful discovery/craft creates a transmissible technique fact;
+  - direct witness gains lower-confidence Observed/Hypothesized knowledge, not instant recipe mastery;
+  - imitation requires prerequisite/material context and can advance toward Understood/Reproducible;
+  - deliberate teaching depends on teacher mastery, relationship trust, learner curiosity/learning skill and deterministic roll;
+  - preserve provenance: self-discovered vs witnessed/imitated vs taught/heard;
+  - duplicate/loop handling and no global unlock;
+  - deterministic tests for spread/failure/divergence.
+- Out of scope: UI/read DTO, schools/professions, economy, writing/books, agriculture/metallurgy.
 
 ## Latest completed Jjun work
 
+### PR #51 — Autonomous Civilization Action Loop v1
+- DONE / MERGED `55d5211160c8edad32b01177e2b9326a9faa2b78`
+- Feature head `729536ac3f8f2222e68c0d0d1a1726c98ffe19fa`.
+- Gather / Store / Experiment / Craft are now autonomous Core decisions.
+- Urgent survival stays dominant; civilization competes only in bounded 15-minute slots.
+- Same-seed deterministic + Save/Load continuation + 20,000-minute progression test PASS.
+- Core Tests `34811869666` PASS incl Configure/Build/Test/deterministic harness.
+- Preflight `34811869612` PASS.
+
 ### PR #50 — Civilization Runtime State + Persistence v1
 - DONE / MERGED `c31c422c305a3a79a9553d37ac86247aa31d1853`
-- Feature head `543ee006a48d8a97d7cf37de65f03c74c1b60e3e`.
-- Character owns authoritative civilization state; World owns ResourceNode/StorageSite.
-- Snapshot binary v2 persists civilization state and decodes legacy v1 saves.
-- Core Tests `34810329867` PASS incl Configure/Build/Test/Deterministic harness.
-- Preflight `34810329862` PASS.
+- Core `34810329867` PASS; Preflight `34810329862` PASS.
 
 ### PR #49 — Civilization Foundation v1
 - DONE / MERGED `36bd1ac81192bc689c1e811553f068f255642508`
-- Core Tests `34809360826` PASS incl deterministic harness; Preflight `34809360739` PASS.
+- Core `34809360826` PASS; Preflight `34809360739` PASS.
 
 ### PR #48 — World Affordance Execution v1
 - DONE / MERGED `a90ff6a5d870858a9e555ddf1e6e526bb7aa34e1`
-- Preflight `34808292399` PASS; Unreal Run #14 `34808292682` PASS incl actual UE 5.6 UHT + UBT.
+- Unreal Run #14 `34808292682` PASS incl actual UHT/UBT; Preflight PASS.
 
 ### PR #47 — Witness / Rumor / Social Knowledge v1
 - DONE / MERGED `f1aab37f6f8abad1217783cc1d168cbdd2e0c20c`
 - Core `34806559374` PASS; Preflight `34806559379` PASS.
-
-### PR #46 — Core Decision → Unreal Physical Action Bridge v1
-- DONE / MERGED `753df19657ea634ea2fa7c2ac935f6273ce14c10`
-- Core `34805882778` PASS; Preflight `34805882776` PASS; Unreal Run #10 `34805882789` PASS.
 
 ## Dagyeom API / design handoff
 
 Former Observer read blockers remain RESOLVED / READY FOR BINDING.
 
 Current civilization facts relevant to Dagyeom:
-- authoritative per-resident Inventory / Knowledge / civilization skills now exist in Core after #50;
-- authoritative World ResourceNode / StorageSite now exist in Core;
-- **these are not UI-ready yet** because read DTO/Bridge exposure is not published;
-- do not invent placeholder civilization fields;
-- keep Character Presentation generic for primitive resources/tools through later technologies;
-- main HUD remains observer-first rather than a strategy resource dashboard.
+- per-resident Inventory / Knowledge / skills are authoritative Core state;
+- World ResourceNode / StorageSite are authoritative;
+- residents now autonomously Gather / Store / Experiment / Craft after #51;
+- civilization data is **not UI-ready yet** because Observer/Bridge read DTOs are not published;
+- do not invent placeholder fields;
+- Character Presentation should remain generic for primitive resources/tools through later technologies;
+- main HUD remains observer-first, not a strategy resource dashboard.
 
 ## Shared File Lock
 
@@ -102,7 +101,7 @@ Current open requests: **none**.
 
 ## Merge / reconciliation queue
 
-1. Autonomous Civilization Action Loop v1.
+1. Civilization Knowledge Transmission v1.
 2. Dagyeom PR #17 — latest-main reconcile + Bridge binding + review fixes + verify.
 3. Dagyeom PR #26 — reconcile latest main independently.
 4. After #17: #29/#30 → #36 → #38.
