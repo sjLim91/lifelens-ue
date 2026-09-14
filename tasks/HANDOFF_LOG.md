@@ -390,3 +390,26 @@
 - 다음 행동:
   - 문서 checkpoint 반영 후 최신 PR head의 Preflight를 다시 확인.
   - UHT/UBT 검증 경로는 FROZEN TASK_03을 되살리지 않고 별도 최신-main 검증 작업으로 처리.
+
+### 2026-09-14 — Production New Game + Autonomous Family progression completion
+
+- 작성자: 쭌 측 AI
+- PR #42: `jjun/production-new-game-runtime-v1`, merge `5c6f2c071ca00bcd4b26d6e002bf5c618d02ff1e`.
+- PR #43: `jjun/autonomous-family-progression-v1`, feature head `81dbb57d190810cc3318e82ba952064d50fd8fdc`, merge `179e3a65aaa6ff8d2243117c7aebfd760812c73d`.
+- 변경 범위:
+  - #42: production New Game를 Core-authoritative로 전환하고 founder Sex/Age/LifeStage/Personality를 Unreal read DTO에 노출.
+  - #43: Core-only family progression. 관계/성격 기반 chemistry → dating → cohabitation → engagement → marriage → pregnancy → birth를 `Simulation` runtime에 연결.
+  - 출산된 child는 실제 World resident가 되며 genetics / genealogy / household / parent-child links / LifeHistory / runtime state를 보유.
+  - marriage는 Genealogy spouse link를 갱신하고 Simulation은 authoritative BirthBook을 소유.
+- 검증:
+  - #42 Preflight `34799244015` PASS; Unreal Linux Compile `34799244011` PASS including actual UHT/UBT.
+  - #43 Core Tests `34801572846` PASS including Configure / Build / Test / Deterministic harness smoke.
+  - #43 Preflight `34801572858` PASS.
+  - #43 first failed Core run `34801444613` was a duplicate helper-name compile collision only; fixed in final head and superseded by the passing run.
+- 상대가 알아야 할 점:
+  - NEW GAME는 4명으로 시작하지만 이제 출산으로 `World::characters`가 증가할 수 있으므로 UI/Presentation에서 인구 4명 고정을 가정하면 안 된다.
+  - 기존 Observer family/world read API는 실제 자동 진행 상태를 읽게 된다.
+  - 다겸 영역 파일은 #42/#43에서 수정하지 않았다.
+  - old TASK_03 PR #2 / Run `34739283266`은 FROZEN 그대로다.
+- 다음 쭌 측 우선순위:
+  - Full Core Save/Load v1: 진화된 전체 Core 상태를 snapshot/restore하고 load 후 deterministic continuation을 검증한 뒤 Unreal SaveGame을 adapter로 전환한다.
