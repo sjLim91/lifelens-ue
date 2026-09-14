@@ -6,6 +6,8 @@
 
 이 문서는 `docs/TEAM_WORKFLOW.md`와 `docs/STATE_MANAGEMENT.md`를 보완한다. 충돌 시 GitHub 실제 상태 → STATE_MANAGEMENT → 이 문서 → TEAM_WORKFLOW 순으로 해석한다.
 
+캐릭터 외형/표현 구현 순서는 `docs/CHARACTER_APPEARANCE_ROADMAP.md`를 canonical 실행 기준으로 사용한다.
+
 ## 1. 현재 Integration Sprint 진입 조건
 
 현재 쭌 측은 Civilization Core/Bridge 기반을 빠르게 앞서 구축했고, 다겸 측은 Observer/UI/Presentation PR chain을 최신 main에 재정렬해야 한다.
@@ -15,8 +17,11 @@
 Integration checkpoint 완료 조건:
 - PR #17 Observer HUD v2 latest-main reconcile + current Bridge binding + review fixes + validation
 - PR #26 UI Foundation latest-main reconcile + validation
-- stacked chain #29/#30 → #36 → #38의 base/merge order 정리
-- Core civilization + Observer UI + Character Presentation이 한 runtime에서 함께 읽히는 통합 확인
+- PR #29 Character Presentation foundation latest-main reconcile + validation
+- **Character Appearance v1: 실제 인간 mesh/material/face/hair/clothing + deterministic AppearanceProfile**
+- **Character Motion & Context v1 최소 세트: locomotion/turn/sit/lie/gaze/context hook**
+- stacked UI chain #30 → #36 → #38의 base/merge order 정리
+- Core civilization + Observer UI + 실제 인간 Character Presentation이 한 runtime에서 함께 읽히는 통합 확인
 
 이 checkpoint가 끝날 때까지 쭌 측은 blocker 수정 외의 큰 신규 Core feature slice를 잠시 보류한다.
 
@@ -76,22 +81,28 @@ ASSIST_LOCK이 걸린 동안 다겸/다겸 AI는 동일 파일을 수정하지 �
 
 ## 4. Stacked PR 보호 규칙
 
-현재 다겸 chain:
-- #17 Observer HUD v2
-- #29 Character Presentation — stacked on #17
-- #30 Observer UX Polish — stacked on #17
+현재 다겸 chain / 통합 순서:
+- #17 Observer HUD v2 — merged
+- #26 UI Foundation — current reconcile
+- #29 Character Presentation — presentation foundation
+- **Character Appearance v1 — new high-priority milestone**
+- **Character Motion & Context v1 — minimum human motion milestone**
+- #30 Observer UX Polish
 - #36 Mobile Touch — stacked on #30
 - #38 Visual Feedback — stacked on #36
 
-Integration Sprint에서는 **부모부터 한 단계씩** 처리한다.
+Integration Sprint에서는 **부모/기반부터 한 단계씩** 처리한다.
 
-1. #17을 먼저 latest main과 reconcile한다.
-2. #17이 안정화/merge되기 전에는 #29/#30의 내용을 대규모 재작성하지 않는다.
-3. #17 이후 #29와 #30을 최신 base로 각각 정리한다.
-4. #36은 #30이 정리된 뒤 처리한다.
-5. #38은 #36 이후 처리한다.
+1. #17은 merged baseline으로 유지한다.
+2. #26을 current main에 reconcile한다.
+3. #29를 current main에 reconcile해 selection/label/presentation component 기반을 안정화한다.
+4. #29 직후 `Character Appearance v1`을 우선한다. Cylinder/Sphere placeholder를 실제 인간 외형으로 교체하는 것이 #30/#36/#38 polish보다 우선이다.
+5. `Character Motion & Context v1` 최소 세트를 넣어 실제 외형이 정적인 마네킹으로 남지 않게 한다.
+6. #30을 정리한다.
+7. #36은 #30이 정리된 뒤 처리한다.
+8. #38은 #36 이후 처리한다.
 
-#26 UI Foundation은 독립적으로 reconcile 가능하지만 #17과 같은 파일을 수정한다면 ASSIST_LOCK 충돌 여부를 먼저 확인한다.
+#26 UI Foundation은 독립적으로 reconcile 가능하지만 다른 active ASSIST_LOCK과 파일이 겹치면 먼저 잠금 충돌을 해결한다.
 
 **여러 stacked branch를 한 번에 force update/rebase하지 않는다.** 각 단계마다 GitHub HEAD/PR/base/CI를 다시 확인한다.
 
@@ -133,13 +144,15 @@ TEAM_BOARD의 Integration Request/Assist Lock에는 최소 다음을 적는다.
 - `.github/workflows/**`
 - `Tools/**` 공용 validator
 
-다겸 UI 수정 때문에 Core/Bridge 변경이 필요하면 UI branch에서 임시로 고치지 않는다.
+다겸 UI/Character 수정 때문에 Core/Bridge 변경이 필요하면 다겸 branch에서 임시로 고치지 않는다.
 
 1. TEAM_BOARD Integration Request 생성
-2. 쭌 소유 branch에서 Bridge/API 수정
+2. 쭌 소유 branch에서 Bridge/API/SaveLoad 수정
 3. Core/Preflight/필요 시 UHT·UBT 검증
 4. main merge
 5. 다겸 target branch가 최신 main을 받아 API를 사용
+
+AppearanceProfile/Genetics용 authoritative data가 필요한 경우에도 같은 절차를 따른다.
 
 ## 8. 통합 중 신규 Core 기능 동결
 
@@ -149,6 +162,7 @@ Integration Sprint 동안 쭌 측 신규 대형 기능은 기본적으로 보류
 - 다겸 통합 blocker 해제
 - 컴파일/CI/SaveLoad/Bridge 결함 수정
 - 이미 공개된 API의 최소 보강
+- Character Appearance/Lifecycle 연결에 필요한 최소 authoritative data/SaveLoad contract
 - 통합 runtime에 필요한 World/Simulation adapter 수정
 
 보류:
@@ -158,7 +172,21 @@ Integration Sprint 동안 쭌 측 신규 대형 기능은 기본적으로 보류
 
 목적은 쭌이 계속 앞서 나가서 통합 거리가 다시 벌어지는 것을 막는 것이다.
 
-## 9. 완료 기준
+## 9. 캐릭터 외형 milestone 원칙
+
+`docs/CHARACTER_APPEARANCE_ROADMAP.md` 기준:
+
+- 현재 #29 Cylinder/Sphere는 placeholder다.
+- Character Appearance v1에서 실제 humanoid skeletal mesh, skin, face, eyes, hair, clothing을 넣는다.
+- NEW GAME appearance는 `WorldSeed + CharacterId` 기반 deterministic profile을 사용한다.
+- Save/Load 후 외형이 바뀌지 않아야 한다.
+- common skeleton + modular appearance + LOD + mobile fallback을 기본으로 한다.
+- paid runtime/API에 의존하지 않는다.
+- 무료 asset도 license/provenance 확인 전에는 main에 binary asset을 넣지 않는다.
+- MetaHuman full runtime을 Android 기본 전제로 삼지 않는다.
+- presentation은 Core action을 표현만 하고 별도 AI authority를 만들지 않는다.
+
+## 10. 완료 기준
 
 Integration Sprint는 단순히 PR이 open/merge된 것으로 끝나지 않는다.
 
@@ -168,7 +196,10 @@ Integration Sprint는 단순히 PR이 open/merge된 것으로 끝나지 않는�
 - Observer가 authoritative Core data를 읽음
 - UI가 simulation authority를 복제하지 않음
 - Character presentation이 Core action을 표현만 함
-- 한 통합 runtime에서 주민/행동/관계/문명 read 상태 확인
+- NEW GAME 4명이 실제 인간 외형으로 서로 구분되어 표시됨
+- deterministic appearance + Save/Load continuity 확인
+- Character Motion 최소 세트가 Core action과 모순 없이 표시됨
+- 한 통합 runtime에서 주민/행동/관계/문명/실제 인간 캐릭터 상태 확인
 - 상태문서/HANDOFF 최신화
 
 그 다음 Android Smoke APK milestone으로 간다.
