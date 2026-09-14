@@ -80,13 +80,14 @@ static bool sameCivilizationWorld(const World& a,const World& b)
     return true;
 }
 
-static void patchLittleEndianU32(std::vector<std::uint8_t>& bytes,std::size_t offset,std::uint32_t value)
+static bool patchLittleEndianU32(std::vector<std::uint8_t>& bytes,std::size_t offset,std::uint32_t value)
 {
-    CHECK(bytes.size()>=offset+4);
+    if(bytes.size()<offset+4) return false;
     bytes[offset]=static_cast<std::uint8_t>(value&0xffu);
     bytes[offset+1]=static_cast<std::uint8_t>((value>>8)&0xffu);
     bytes[offset+2]=static_cast<std::uint8_t>((value>>16)&0xffu);
     bytes[offset+3]=static_cast<std::uint8_t>((value>>24)&0xffu);
+    return true;
 }
 
 int main()
@@ -151,7 +152,7 @@ int main()
         CivilizationSnapshotExtensionMagic+sizeof(CivilizationSnapshotExtensionMagic));
     CHECK(marker!=bytes.end());
     std::vector<std::uint8_t> legacy(bytes.begin(),marker);
-    patchLittleEndianU32(legacy,8,1);
+    CHECK(patchLittleEndianU32(legacy,8,1));
 
     SimulationStateSnapshot migrated;
     CHECK(decodeSimulationSnapshot(legacy,migrated,&error));
