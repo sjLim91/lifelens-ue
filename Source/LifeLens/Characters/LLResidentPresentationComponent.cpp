@@ -1,4 +1,5 @@
 #include "Characters/LLResidentPresentationComponent.h"
+#include "Characters/LLResidentAppearanceComponent.h"
 #include "Characters/LLResidentCharacter.h"
 #include "Simulation/LLSimulationSubsystem.h"
 #include "UI/LLObservationSubsystem.h"
@@ -49,11 +50,25 @@ void ULLResidentPresentationComponent::BeginPlay()
     if (AActor* Owner = GetOwner())
     {
         Label = Owner->FindComponentByClass<UTextRenderComponent>();
+        Appearance = Owner->FindComponentByClass<ULLResidentAppearanceComponent>();
     }
 
-    BuildSilhouette();
+    // Human body from Character Appearance v1 takes precedence; the
+    // cylinder/sphere silhouette is only the asset-less fallback.
+    if (Appearance)
+    {
+        Appearance->EnsureBuilt();
+    }
+    const bool bHasHumanBody = Appearance && Appearance->HasBody();
+    if (!bHasHumanBody)
+    {
+        BuildSilhouette();
+    }
     BuildRing();
-    HideDebugBody();
+    if (bHasHumanBody || Torso)
+    {
+        HideDebugBody();
+    }
     RefreshResidentData();
     ApplySilhouetteScale();
     UpdateRing();
@@ -62,7 +77,8 @@ void ULLResidentPresentationComponent::BeginPlay()
 
 void ULLResidentPresentationComponent::HideDebugBody()
 {
-    if (!bHideDebugBody || !Torso)
+    const bool bHasHumanBody = Appearance && Appearance->HasBody();
+    if (!bHideDebugBody || (!Torso && !bHasHumanBody))
     {
         return;
     }
@@ -213,7 +229,10 @@ void ULLResidentPresentationComponent::ApplySilhouetteScale()
     }
     if (Label)
     {
-        Label->SetRelativeLocation(FVector(0.0f, 0.0f, Base + Height + 2.0f * Radius + LabelAboveHead));
+        const float LabelZ = (Appearance && Appearance->HasBody())
+            ? Appearance->GetVisualTopOffset() + LabelAboveHead
+            : Base + Height + 2.0f * Radius + LabelAboveHead;
+        Label->SetRelativeLocation(FVector(0.0f, 0.0f, LabelZ));
     }
 }
 

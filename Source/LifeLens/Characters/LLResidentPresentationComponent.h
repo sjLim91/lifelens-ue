@@ -5,6 +5,7 @@
 #include "Core/LLTypes.h"
 #include "LLResidentPresentationComponent.generated.h"
 
+class ULLResidentAppearanceComponent;
 class UMaterialInstanceDynamic;
 class UMaterialInterface;
 class UStaticMesh;
@@ -111,6 +112,12 @@ private:
 
     UPROPERTY()
     TObjectPtr<UTextRenderComponent> Label;
+
+    // Character Appearance v1: when the owner's appearance component has built
+    // a human body, the silhouette is not created and the label sits above
+    // that body. The silhouette remains the fallback without assets.
+    UPROPERTY()
+    TObjectPtr<ULLResidentAppearanceComponent> Appearance;
 
     ELLLifeStage LifeStage = ELLLifeStage::Adult;
     ELLSex Sex = ELLSex::Male;
