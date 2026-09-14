@@ -1,10 +1,10 @@
 # LifeLens Canonical Work State
 
-> 이 파일은 **현재 진행 상태의 단일 기준판**이다. 쭌/다겸/양쪽 AI는 작업 시작 전에 반드시 읽고 실제 GitHub 상태와 대조한다.
+> 이 파일은 **현재 진행 상태의 단일 기준판(canonical live state)**이다. 쭌/다겸/양쪽 AI는 작업 시작 전에 반드시 읽고 실제 GitHub 상태와 대조한다.
 >
 > 제품 요구사항은 `docs/LIFELENS_SPEC_v1.1.md`, 상태관리 규칙은 `docs/STATE_MANAGEMENT.md`, 역할/잠금은 `tasks/TEAM_BOARD.md`, 변경 이력은 `tasks/HANDOFF_LOG.md`를 따른다.
 
-Last reconciled: 2026-09-14 KST — Observer Runtime Bridge v1 PR #37 opened; structural Preflight PASS; Unreal compile validation pending
+Last reconciled: 2026-09-14 KST — actual `main` `9261581df3abd5332d92855628fd7d03203748af`; PR #37/#39/#40 merged; Unreal 5.6 Linux UHT/UBT PASS; Dagyeom Core/API blockers released.
 
 ## Status legend
 
@@ -12,155 +12,161 @@ Last reconciled: 2026-09-14 KST — Observer Runtime Bridge v1 PR #37 opened; st
 
 ---
 
+## Mandatory sync gate — highest priority
+
+**모든 기능/코드/빌드 작업보다 상태 동기화가 먼저다.**
+
+작업 시작/재개 시 반드시:
+1. 실제 `main` HEAD / 대상 branch HEAD / PR state+head / Actions 상태를 확인한다.
+2. 이 파일, `TEAM_BOARD.md`, 역할별 READY 큐, `HANDOFF_LOG.md`와 비교한다.
+3. 불일치하면 **코드 수정 전에 문서를 실제 GitHub 상태로 먼저 갱신**한다.
+4. 작업 중 의미 있는 checkpoint마다 상태를 갱신한다.
+5. 작업 종료/병합/실패 시 문서를 다시 동기화하고 HANDOFF를 남긴다.
+
+GitHub 실제 상태가 항상 문서보다 우선하며, 문서가 stale인 상태에서 새 기능 작업을 시작하지 않는다.
+
+---
+
 ## Active / unresolved work
 
-### 1. P24 Observer Read Model v2
-
-- Owner: 쭌 + 쭌 AI
-- Branch: `jjun/observer-read-model-v2`
-- Work item: Emotion / family summary / world aggregate Core read DTOs.
-- Last known HEAD: `86b916aef27e5df7c6d5e9a30f49c61a25fd971c`
-- PR: #34 `[CORE] Expand observer read model for family and world overview`
-- Status: `DONE`
-- Merge SHA: `b4403faf138c153bcd83be266cde5026ea53b831`
-- CI: refreshed Core Tests Run `34794030200` PASS; Preflight Run `34794030209` PASS.
-- Last verified fact: PR #34 is merged. 27/27 local CMake Release tests (assertions enabled), deterministic seed 42 harness and structural preflight passed before merge. Remote tree `516e33a` equaled the tested local merge tree.
-- Blocker / interruption: None.
-- Exact next action: No further feature edits on this branch. Runtime exposure proceeds in separate `jjun/observer-runtime-bridge-v1`.
-- Handoff safety: `SAFE`.
-- Shared-file impact: Core DTO/test/CMake + append-only HANDOFF_LOG. No UI/TASK_03 changes. Unreal bridge is intentionally separate.
-- Contract notes: `majorLifeEvents` is per-character LifeHistory record count, not unique events; GenerationContinuity still uses its separate API. Core Simulation does not yet own the family books required for live family/world family aggregates.
-
-### 2. Observer HUD v2
+### 1. Observer HUD v2 — Dagyeom
 
 - Owner: 다겸 + 다겸 AI
 - Branch: `dagyeom/observer-ui-v2`
-- Work item: Observer LEVEL 0 overview / LEVEL 1 quick inspector / LEVEL 2 detail tabs
-- Last known HEAD: `3b578c67528c564064c73a76c1eb4f16f25e489f`
 - PR: #17 `[UI] Observer HUD v2: LEVEL 0 overview, LEVEL 1 quick inspector, LEVEL 2 detail tabs`
-- Status: `IN_PROGRESS`
-- CI:
-  - latest observed LifeLens Preflight Run `34756163064` — PASS
-  - actual UHT/UBT / 화면 동작 검증 — PENDING
-- Last verified fact:
-  - PR #17은 열려 있고 structural preflight는 통과함
-  - 감정/관계/가족/SocialIntent/월드 집계 일부는 쭌 측 Unreal read API 대기
-  - API 대기는 다겸 전체 작업 BLOCK이 아니라 `BLOCKED-BY-JJUN` 항목으로 분리함
-- Blocker / interruption: PR #17 merge 자체는 actual UHT/UBT 및 shared-doc reconciliation이 필요하지만, 다겸은 별도 READY NOW 작업을 계속할 수 있음.
-- Exact next action: `tasks/DAGYEOM_READY_QUEUE.md` READY NOW 작업 진행. Observer Runtime Bridge v1에서 제공되는 실제 Core resident/emotion/relationship/activity read API를 소비하는 integration queue를 추가하되, family/world family aggregate는 별도 authoritative-state 작업 전까지 대기.
-- Handoff safety: `CONDITIONAL`
-- Shared-file impact: PR #17에 shared docs 변경 있음. 최신 main 상태 문서를 덮어쓰지 않도록 병합 전 reconciliation 필요.
+- Last verified HEAD: `dc3351ea9025ee33ea70f8ce1026100070c20092`
+- Base shown by PR: old `main` snapshot `d1324c766749847c9fc85ea69af60c23c293da31`
+- Status: `RECOVERING`
+- Current GitHub fact: PR is OPEN, non-draft, currently `mergeable=false`; reviewer is `sjLim91`.
+- Important change since PR body was written: all six former `BLOCKED-BY-JJUN` observer read requirements are now available on `main` via PR #37/#39/#40.
+- Existing UI review findings remain Dagyeom-owned: selection hint visibility and narrow-panel text overflow among others.
+- Exact next action: Dagyeom side first reconciles PR #17 with latest `main` `9261581d...`, then binds the newly available Core Observer Bridge APIs, addresses its UI review items, runs local/CI UHT/UBT + PIE verification, and updates state before merge.
+- Handoff safety: `CONDITIONAL` — current branch is older than latest main and must be reconciled before feature edits/merge.
 
-### 3. TASK_03 Core ↔ Unreal / Android validation
+### 2. Dagyeom stacked UI / presentation PR chain
+
+These are active and must not be flattened or modified by Jjun without coordination.
+
+- PR #26 `dagyeom/ui-foundation-v1` — OPEN, mergeable; HEAD `70dfa5ebeabf24b661c9f9fd0bc63e3ad01ac180`; base `main` but behind current main.
+- PR #29 `dagyeom/character-presentation-v1` — OPEN, mergeable; HEAD `a4d47b9f69c9270665a8e2613b7863c40bf0f83e`; stacked on PR #17 branch.
+- PR #30 `dagyeom/observer-ux-polish-v1` — OPEN, mergeable; HEAD `c420457c3ddbc73ac2ddbfe692dd20ce63edf45e`; stacked on PR #17 branch.
+- PR #36 `dagyeom/mobile-touch-v1` — OPEN, mergeable; HEAD `15eec5b9216d6a30655f59450e410f0f80bb0343`; stacked on PR #30.
+- PR #38 `dagyeom/visual-feedback-v1` — OPEN, mergeable; HEAD `ffbc32c0cc9465a46feb1491f0bb7d5e0d1cd57a`; stacked on PR #36.
+- Status: `IN_PROGRESS / CONDITIONAL`.
+- Exact next action: resolve #17 against latest main first; then retarget/reconcile stacked PRs in dependency order and verify each before merge. #26 may be reconciled independently because it targets main.
+
+### 3. TASK_03 old Android validation
 
 - Owner: 쭌 + 쭌 AI
 - Branch: `task/03-fast-test`
-- Work item: LifeLensCore ↔ Unreal bridge, Android compile/package 검증, no-engine-rebuild pipeline
-- Last known HEAD: `f8f461a8ec669ba65ad6dd669e6bac45f186d230`
 - PR: #2 `[UE] Bridge LifeLensCore into Unreal runtime`
+- Last known HEAD: `f8f461a8ec669ba65ad6dd669e6bac45f186d230`
 - Status: `FROZEN`
-- CI / Build: Android Run `34739283266` — FAILURE; Cook/Package/APK 미도달.
-- Blocker / interruption: 사용자 지시에 따라 실패 상태 그대로 보존.
-- Exact next action: **없음. 자동 재실행/수정 금지.** 최신 main 기반 새 integration task는 TASK_03 자체와 분리해서 진행.
-- Handoff safety: `SAFE`
-- Shared-file impact: 오래된 Build/Simulation/shared files 포함. main에 그대로 병합 금지.
+- Android Run `34739283266`: FAILURE; Cook/Package/APK not reached.
+- Rule: **do not modify, rerun, revive, or merge this old branch.**
+- Exact next action: none. Future Android work uses a new latest-main task/branch.
 
-### 4. Core validation recovery v1
+### 4. Production NEW GAME / 4-person runtime integration
 
 - Owner: 쭌 + 쭌 AI
-- Branch: `jjun/core-validation-recovery-v1`
-- Work item: Restore real Release assertions and fix invalidated RelationshipBook references.
-- Last known HEAD: `612f98f4499f50d359a814df33e3d0b913259f6f`
-- PR: #35 `[CORE] Fix dangling relationship references and restore Release test assertions`
-- Status: `DONE`
-- Merge SHA: `31b2263de3f4a9c80650d1139213d0c38acc8058`
-- CI: Core Tests Run `34793799376` PASS; Preflight Run `34793799447` PASS.
-- Last verified fact: 26/26 local CMake Release tests passed with assertions enabled; all test compile commands restore assertions after NDEBUG. Deterministic one-day seed 42 harness and structural preflight passed. Original heap-use-after-free reproduced with ASan; corrected 1,000-insertion test passed ASan/UBSan. Remote tree `94fe2a7` equals tested local tree.
-- Blocker / interruption: fixed.
-- Exact next action: No further feature edits here.
-- Handoff safety: `SAFE`.
-- Shared-file impact: Core headers/tests/CMake plus append-only HANDOFF_LOG. No UI/Unreal/TASK_03 changes.
+- Status: `PLANNED`
+- Goal: latest authoritative Core on `main` → production New Game with WorldSeed → exactly 2 male + 2 female adults generated once → stable identity → four-person social simulation.
+- Required follow-ons: full Core Save/Load, runtime bridge integration, Android smoke APK after Linux gates remain clean.
+- Exact next action: start only after this state reconciliation is complete and Dagyeom unblock handoff is published.
 
-### 5. Observer Runtime Bridge v1
+---
 
-- Owner: 쭌 + 쭌 AI
+## Jjun observer/runtime integration — completed
+
+### Observer Runtime Bridge v1 — PR #37
+
 - Branch: `jjun/observer-runtime-bridge-v1`
-- Work item: Expose authoritative LifeLensCore resident observation data to Unreal without modifying the frozen TASK_03 branch or 다겸 UI files.
-- Base: current `main` at P24 merge `b4403faf138c153bcd83be266cde5026ea53b831`.
-- Last verified feature HEAD: `1cd3139d4756386d4bd4ee3a3b59d2c74467ed7a` (subsequent commits are state/handoff docs only).
-- PR: #37 `[UE] Expose LifeLensCore observer runtime read API`
-- Status: `IN_PROGRESS`
-- CI: LifeLens Preflight Run `34794889890` PASS at feature HEAD `1cd3139d...`; latest documentation-only head will receive the same PR Preflight gate.
-- Last verified fact:
-  - actual bridge implementation exists on remote branch and PR #37
-  - structural preflight checks required bridge files/contracts and rejects Unreal reflection leakage into `Source/LifeLensCore/**`
-  - branch was 7 commits ahead / 0 behind main at feature checkpoint; no Dagyeom UI file and no TASK_03 workflow/branch file was changed
-- Implemented scope:
-  - new Core bridge on latest main, not by reviving PR #2
-  - deterministic `(WorldSeed, Core CharacterId)` → Unreal `FGuid`; names are display-only and never identifiers
-  - read-only resident Needs; 11 Emotion axes + summaries; current Physical/Social activity and target; 13D directional Relationship + derived scores; Memory/Belief counts; simulation minute/living counts
-  - `OnCoreRuntimeStateChanged` for Observer consumers
-  - Core remains pure C++17; Unreal reflection/types stay in `Source/LifeLens/**`
-  - no modification to `Source/LifeLens/UI/**`
-- Explicit non-goal: do not present P24 family/household/romance/pregnancy aggregates as live until Core `Simulation` owns authoritative `GenealogyBook` / `RomanceBook` / `HouseholdBook` / `PregnancyBook` state.
-- Validation gap: actual Unreal UHT/UBT compile has **not** been run for PR #37 yet; structural PASS is not treated as compile/APK success. Local container could not clone GitHub because outbound DNS is unavailable.
-- Blocker / interruption: no product-code blocker. Need a separate latest-main Unreal compile validation path that does not modify/revive frozen TASK_03 or blindly repeat its long failed build.
-- Exact next action: inspect available current-main CI/cache paths and choose the shortest isolated UHT/UBT compile validation for PR #37. Do not start full APK/package work merely to validate this bridge. After compile PASS, mark READY_TO_MERGE and publish the API contract to Dagyeom integration queue.
-- Handoff safety: `SAFE` — remote branch, PR, feature SHA, Preflight Run and remaining validation gap are explicit.
-- Shared-file impact: `Source/LifeLens/LifeLens.Build.cs`, `Source/LifeLens/Simulation/**`, `Tools/validate_bootstrap.py`, `tasks/WORK_STATE.md`, append-only `tasks/HANDOFF_LOG.md`. No UI/TASK_03 workflow edits.
+- Status: `DONE`
+- Merge SHA: `938d0a2798e600929b4ccc755b48bcd39026ac75`
+- Final head before merge: `d9be0be6d58bdbd4c9f394cd64c5498c2143d42a`
+- Validation: LifeLens Preflight PASS; Unreal 5.6 Linux Compile Run `34796067278` PASS including image verification + actual UHT/UBT compile.
+- Provides: stable `(WorldSeed, Core CharacterId) -> FGuid`; Needs; 11-axis Emotion + summaries; Physical/Social activity; SocialIntent target; 13D Relationship + derived scores; Memory/Belief counts; basic World observation.
+
+### Authoritative Family Runtime State — PR #39
+
+- Branch: `jjun/family-runtime-state-v1`
+- Status: `DONE`
+- Merge SHA: `612229cc610d2ea6283e080309bdee58ef42d1db`
+- Validation: Core Test Run `34796213647` PASS — Configure / Build / Test / deterministic harness.
+- Core `Simulation` now owns authoritative `GenealogyBook`, `RomanceBook`, `HouseholdBook`, `PregnancyBook` and exposes family/world observations.
+- Note: autonomous romance→cohabitation→marriage→pregnancy progression inside `Simulation::step()` remains future product work; ownership/read path is complete.
+
+### Family + World Observer Bridge — PR #40
+
+- Branch: `jjun/family-observer-bridge-v1`
+- Status: `DONE`
+- Merge SHA / current main checkpoint: `9261581df3abd5332d92855628fd7d03203748af`
+- Final head: `816bb0021b45390e96c4497611970484c9c96879`
+- Validation:
+  - Structural Preflight Run `34796892593` PASS.
+  - Unreal 5.6 Linux Compile Run `34796892609` PASS including actual UHT/UBT.
+- Provides: Partner / Parents / Children / Siblings, romance/marriage/cohabitation/pregnancy state; households/couples/romance-stage/pregnancies/life-stage/major-life-history aggregates.
+- No `Source/LifeLens/UI/**` or Dagyeom Character presentation files were modified.
+
+### Dagyeom integration blockers — RELEASED
+
+The former six `BLOCKED-BY-JJUN` requirements are now **READY FOR DAGYEOM BINDING**:
+1. Relationship 13D + target ID/name — READY.
+2. Emotion detailed axes + valence/arousal/intensity — READY.
+3. SocialIntent + target — READY.
+4. Family summary + marriage/cohabitation/pregnancy — READY.
+5. World family/lifecycle aggregates — READY.
+6. Blueprint/USTRUCT read-only Core Bridge — READY.
+
+No Dagyeom work should continue to describe these six as blocked by Jjun unless a new concrete API gap is discovered.
 
 ---
 
-## Dagyeom READY NOW
+## Recently completed Core milestones
 
-정식 큐: `tasks/DAGYEOM_READY_QUEUE.md`
-
-1. `dagyeom/ui-foundation-v1` — Android landscape typography / spacing / safe-area / icon / font foundation
-2. `dagyeom/character-presentation-v1` — nameplate / LifeStage badge / selected-focus feedback / display LOD
-3. `dagyeom/observer-ux-polish-v1` — World→Quick→Detail 전환, 뒤로가기/선택해제/empty-state 정리
-4. `dagyeom/mobile-touch-v1` — hit target / safe-area / 작은 화면 scroll/overflow/tab UX
-5. `dagyeom/visual-feedback-v1` — 선택/관찰 레벨/주목 대상의 비침투적 시각 피드백
-
-`BLOCKED-BY-JJUN`: Family summary / family-derived World aggregate live Unreal read APIs remain blocked on authoritative family-state ownership. Resident Relationship / Emotion / SocialIntent/current activity/basic World resident counts are implemented in PR #37 and become READY for Dagyeom binding after Unreal compile validation + merge.
-
----
-
-## Recently completed product milestones
-
-- P11 Romance Core — `DONE`.
-- P12 Household / Cohabitation — `DONE`.
-- P13 Marriage — `DONE`.
-- P14 Pregnancy — `DONE`.
-- P15 Birth / Genetics — `DONE`.
-- P16 Lifecycle Growth — `DONE`.
-- P17 Parenting / Child Development — `DONE`.
-- P18 Genealogy / Kinship — `DONE`, merge `d1324c766749847c9fc85ea69af60c23c293da31`.
-- P19 Aging Core — `DONE`, PR #23 merge `82b4001058332656b08f13a47728079172b10962`.
-- P20 Death Core — `DONE`, PR #25 merge `07509a73f235928c16bf9b26f8b13c689b6a030b`.
-- P21 LifeHistory Core — `DONE`, PR #27 merge `b46869acc62830c432bb5b3693f98535c37f2e0a`.
-- P22 LifeHistory Wiring — `DONE`, PR #32 merge `8454c0c91e1770e2e503d52d5489446beafe6535`.
-- P23 Generation Continuity — `DONE`, Core CI + deterministic harness + Preflight PASS; PR #33 merge `37bc2e7af7924fdf8a262d086426e15f2c3e2db3`.
-- P24 Observer Read Model v2 — `DONE`, PR #34 merge `b4403faf138c153bcd83be266cde5026ea53b831`.
+- Relationship Core — DONE, PR #4.
+- Emotion Core — DONE, PR #6.
+- Memory Core — DONE, PR #7.
+- Belief Core — DONE, PR #8.
+- Social Cognition — DONE, PR #9.
+- Social Utility — DONE, PR #10.
+- Social Execution — DONE, PR #11.
+- Simulation Social Loop — DONE, PR #12.
+- Observer Read Model v1 — DONE, PR #13.
+- Romance — DONE, PR #14.
+- Household/Cohabitation — DONE, PR #15.
+- Marriage — DONE, PR #16.
+- Pregnancy — DONE, PR #18.
+- Birth/Genetics — DONE, PR #19.
+- Growth — DONE, PR #20.
+- Parenting — DONE, PR #21.
+- Genealogy — DONE, merge `d1324c766749847c9fc85ea69af60c23c293da31`.
+- Aging — DONE, PR #23 merge `82b4001058332656b08f13a47728079172b10962`.
+- Death — DONE, PR #25 merge `07509a73f235928c16bf9b26f8b13c689b6a030b`.
+- LifeHistory — DONE, PR #27 merge `b46869acc62830c432bb5b3693f98535c37f2e0a`.
+- LifeHistory Wiring — DONE, PR #32 merge `8454c0c91e1770e2e503d52d5489446beafe6535`.
+- Generation Continuity — DONE, PR #33 merge `37bc2e7af7924fdf8a262d086426e15f2c3e2db3`.
+- Core validation recovery — DONE, PR #35 merge `31b2263de3f4a9c80650d1139213d0c38acc8058`.
+- Observer Read Model v2 — DONE, PR #34 merge `b4403faf138c153bcd83be266cde5026ea53b831`.
+- Observer Runtime Bridge / family authoritative state / family-world bridge — DONE, PR #37/#39/#40.
 
 ---
 
 ## Shared-state system
 
-- `docs/STATE_MANAGEMENT.md` — current protocol.
-- `tasks/WORK_STATE.md` — this live state file.
-- `tasks/DAGYEOM_READY_QUEUE.md` — 다겸 즉시 실행 큐.
-- `tasks/TEAM_BOARD.md` — ownership / locks / integration requests.
+- `docs/STATE_MANAGEMENT.md` — state synchronization protocol.
+- `tasks/WORK_STATE.md` — this canonical current-state file.
+- `tasks/DAGYEOM_READY_QUEUE.md` — Dagyeom executable queue and dependencies.
+- `tasks/TEAM_BOARD.md` — ownership / locks / integration requests / merge order.
 - `tasks/HANDOFF_LOG.md` — append-only history.
 
 ### Mandatory recovery rule
 
-If a session/tool/chat times out before normal completion:
+If a session/tool/chat is interrupted:
 1. Do not assume the previous action succeeded or failed.
-2. Fetch actual branch HEAD.
-3. Fetch PR state/head SHA.
+2. Fetch actual main/branch HEAD.
+3. Fetch PR state/head/base.
 4. Fetch related CI/Actions state.
-5. Compare with this file.
-6. Mark/reconcile state before changing code.
-7. Resume only from the last verified GitHub checkpoint.
-
-GitHub facts always override stale text in this file; when they differ, update this file first.
+5. Compare with this file + Team Board + READY queue.
+6. **Update stale state documents first.**
+7. Resume code only from the last verified GitHub checkpoint.
