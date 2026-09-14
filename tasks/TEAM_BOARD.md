@@ -185,6 +185,22 @@ Dagyeom default:
 
 Current open requests: **none**.
 
+```text
+[OPEN] 요청자: 다겸
+필요 API/데이터: Character Motion & Context v1을 `tasks/DAGYEOM_READY_QUEUE.md` / `tasks/WORK_STATE.md` / 이 보드에서 READY_NOW로 승격
+사용 목적: Appearance v1(PR #67)이 화면 확인까지 완료되어 다겸 READY_NOW 잔여 0개. UAL Standard 애니(Idle_Loop / Walk_Loop / Jog_Fwd_Loop / Sprint_Loop / Sitting_* / Interact / PickUp_Table) 임포트 완료. 현재 이동 시 Idle 상태로 미끄러짐(locomotion 미연결)
+희망 반환형/방향: 큐 상태 갱신(쭌 측 문서 소유). 승격 시 `dagyeom/character-motion-v1`(latest main 기준)로 locomotion(Core directive 기반 Idle/Walk/Jog 전환)부터 착수
+관련 브랜치: `dagyeom/character-appearance-v1` (PR #67)
+```
+
+```text
+[OPEN] 요청자: 다겸
+필요 API/데이터: 후속 후보 등록 검토 — 의상·피부 다양화(Quaternius Modular Character Outfits, 팩 페이지 CC0 확인 후) 항목을 다겸 큐에 추가
+사용 목적: UBC Standard tier에 의상 없음(전원 기본 속옷 상태), 밝은 피부 텍스처 2종으로 피부 차이 작음. 로드맵 Phase C "최소 기본 의상 세트" 미충족 보강
+희망 반환형/방향: 큐 항목 추가(우선순위는 쭌 측 판단). 에셋은 `Content/Characters/**`, 코드는 `LLResidentAppearanceComponent` 내부 카탈로그 확장으로 처리 가능
+관련 브랜치: 신규 예정
+```
+
 ## Merge / reconciliation queue
 
 1. Character Presentation v1 — DONE via PR #63.
