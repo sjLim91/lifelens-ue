@@ -12,6 +12,7 @@
 #include "LifeStage.h"
 #include "Development.h"
 #include "LifeCondition.h"
+#include "Civilization.h"
 namespace lifelens {
 
 enum class Sex {
@@ -36,6 +37,7 @@ struct Character {
     GeneticsProfile genetics;
     ChildDevelopment development;
     LifeCondition lifeCondition;
+    IndividualCivilizationState civilization;
     std::vector<CharacterId> parentIds;
     std::vector<CharacterId> childrenIds;
     std::vector<LifeHistoryEntry> lifeHistory;
