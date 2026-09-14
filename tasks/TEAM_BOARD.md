@@ -12,7 +12,7 @@
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | `jjun/autonomous-family-progression-v1`, PR #43 | Autonomous Family Progression v1 | `Source/LifeLensCore/**`, Core tests/CMake only | REVIEW / WAITING_CI — head `d0a4f355...` |
+| 쭌 + 쭌 AI | `jjun/autonomous-family-progression-v1`, PR #43 | Autonomous Family Progression v1 | `Source/LifeLensCore/**`, Core tests/CMake only | READY_TO_MERGE — head `81dbb57d...`, Core + deterministic + Preflight PASS |
 | 쭌 + 쭌 AI | `task/03-fast-test`, PR #2 | old Android validation | Bridge/build | FROZEN — Run `34739283266` 재실행/수정/병합 금지 |
 | 다겸 + 다겸 AI | `dagyeom/observer-ui-v2`, PR #17 | Observer HUD v2 + Core Observer Bridge binding | `Source/LifeLens/UI/**` | REVIEW / RECOVERING — latest main reconcile 필요 |
 | 다겸 + 다겸 AI | `dagyeom/ui-foundation-v1`, PR #26 | Android landscape UI foundation | UI foundation | REVIEW |
@@ -24,32 +24,34 @@
 ## Current Jjun lock — PR #43 Autonomous Family Progression v1
 
 - Branch/PR: `jjun/autonomous-family-progression-v1`, PR #43.
-- Current head: `d0a4f3557f796e821b4a482cbb385efd2e76709b`.
+- Current head: `81dbb57d190810cc3318e82ba952064d50fd8fdc`.
 - Allowed scope: `Source/LifeLensCore/**` and Core tests/CMake only.
-- Explicitly forbidden in this task: `Source/LifeLens/Simulation/**`, `Source/LifeLens/UI/**`, Character presentation, Content, Config, Android workflows, frozen TASK_03.
-- Product behavior under test:
+- Product behavior:
   - no hard-coded founder couples;
-  - familiarity/social bond/personality compatibility can gradually create romantic chemistry;
-  - daily deterministic family-decision cadence;
-  - dating→cohabitation after minimum 30 days;
-  - engagement only after minimum 90 dating days plus mature cohabitation;
-  - marriage only after minimum 60 engaged days;
-  - pregnancy attempts only after minimum 30 married days and then weekly;
-  - same-sex romance remains allowed; biological pregnancy follows existing gestational/genetic eligibility;
-  - active pregnancy advances and due pregnancy creates a real child resident with genetics/genealogy/household/LifeHistory/runtime state;
-  - daily Aging is also wired so newborn/descendant lifecycle can advance over time;
-  - same WorldSeed + same state remains deterministic.
-- Required gates: full Core Release tests, deterministic harness, Structural Preflight.
+  - relationship/social state + personality compatibility can gradually create romantic chemistry;
+  - deterministic daily candidate evaluation;
+  - minimum 30 dating days before cohabitation;
+  - minimum 90 dating days plus 30 mature cohabitation days before engagement;
+  - minimum 60 engagement days before marriage;
+  - minimum 30 marriage days before weekly pregnancy attempts;
+  - same-sex romance allowed; biological pregnancy follows current reproductive eligibility model;
+  - pregnancies advance and due pregnancy creates real child resident with genetics/genealogy/household/LifeHistory/runtime state;
+  - marriage links Genealogy spouses;
+  - daily Aging is integrated.
+- Validation on current head:
+  - Core Tests Run `34801572846` PASS including Configure / Build / Test / Deterministic harness smoke.
+  - Structural Preflight Run `34801572858` PASS.
+  - supersedes first failed Build Run `34801444613` caused by a duplicate helper name.
+- Before merge: verify changed files remain Core-only, then merge with expected head SHA.
 
 ## Latest completed Jjun work
 
 ### PR #42 — Production NEW GAME Unreal Runtime Integration
 
 - Status: DONE
-- Feature HEAD: `5f61ce04963166af418fb672fb4442a6cf0598e6`
 - Merge: `5c6f2c071ca00bcd4b26d6e002bf5c618d02ff1e`
 - Validation: Preflight `34799244015` PASS; Unreal Linux Compile `34799244011` PASS including actual UHT/UBT.
-- Main now starts formal Core New Game, projects founder Sex/Age/LifeStage/Personality to Unreal, preserves stable WorldSeed+CharacterId GUIDs, and does not independently randomize a second four-person population.
+- Main starts formal Core New Game, projects founder Sex/Age/LifeStage/Personality to Unreal, preserves stable WorldSeed+CharacterId GUIDs, and does not independently randomize a second founder population.
 - No Dagyeom UI/Character presentation files changed.
 
 ### Earlier integration
@@ -77,7 +79,7 @@ Current open requests: **none**.
 
 ## Merge / reconciliation queue
 
-1. PR #43 — WAITING_CI, Core-only.
+1. PR #43 — READY_TO_MERGE after final changed-file scope check.
 2. Dagyeom PR #17 — reconcile latest main + bind current Core Bridge + review fixes + verify.
 3. Dagyeom PR #26 — reconcile latest main independently.
 4. After #17: #29/#30 → #36 → #38.
