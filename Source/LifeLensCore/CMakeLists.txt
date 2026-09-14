@@ -9,6 +9,7 @@ enable_testing()
 
 add_library(lifelens_core STATIC
     src/Simulation.cpp
+    src/SimulationSnapshot.cpp
 )
 
 target_include_directories(lifelens_core PUBLIC include)
@@ -88,3 +89,5 @@ lifelens_add_test(test_simulation_family_state)
 lifelens_add_test(test_production_new_game)
 
 lifelens_add_test(test_autonomous_family_progression)
+
+lifelens_add_test(test_core_save_load)
