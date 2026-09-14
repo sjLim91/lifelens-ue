@@ -4,9 +4,17 @@
 
 모든 에이전트는 작업 시작 전에 `AGENTS.md`와 이 문서를 읽는다.
 
-## 0. MASTER SPEC 불변조건 — 역할 분담보다 우선
+## 0. MASTER SPEC 불변조건 + Sync Before Work
 
 이 협업 문서는 제품 요구사항을 새로 정의하거나 축소하지 않는다. **제품의 최상위 기준은 `docs/LIFELENS_SPEC_v1.1.md`이며, 쭌/다겸의 역할 분담과 작업 편의 때문에 아래 요구사항을 삭제·완화·대체할 수 없다.** 빌드/검증 방식만 `docs/BUILD_STRATEGY_v1.2.md`와 `BUILD_LESSONS.md`의 실제 검증 결과를 따른다.
+
+그리고 모든 기능 작업보다 먼저 **상태 동기화**를 수행한다.
+
+1. 실제 `main` HEAD를 확인한다.
+2. 현재 branch HEAD / PR state·head·base·mergeability / CI를 확인한다.
+3. `tasks/WORK_STATE.md` → 역할별 READY 큐 → `tasks/TEAM_BOARD.md` → `tasks/HANDOFF_LOG.md`와 대조한다.
+4. 문서가 stale하면 **코드보다 문서를 먼저 실제 GitHub 기준으로 갱신한다.**
+5. merge/blocker 해제/API 제공 등 상대 작업 조건이 바뀌면 같은 checkpoint에서 상대 READY 큐도 갱신한다.
 
 두 사람과 두 AI 모두 다음을 제품 불변조건으로 취급한다.
 
@@ -27,7 +35,7 @@
 - 기능 수보다 안정적인 기반이 우선이다. 긴 Unreal/Android 빌드 전에 Core 테스트와 빠른 Preflight를 사용하며, 같은 실패를 원인 확인 없이 반복하지 않는다.
 - 실제 APK/Artifact가 존재하기 전에는 Android 빌드 성공이라고 표현하지 않는다.
 
-**역할 분담은 위 요구사항을 누가 구현할지를 나누는 규칙일 뿐, 요구사항 자체를 줄이는 규칙이 아니다.** 예를 들어 다겸이 UI만 담당하더라도 Observer-first 철학 전체를 따라야 하며, 쭌이 Core를 담당하더라도 연애/가족/세대 시스템을 임의로 범위 밖으로 제거할 수 없다.
+**역할 분담은 위 요구사항을 누가 구현할지를 나누는 규칙일 뿐, 요구사항 자체를 줄이는 규칙이 아니다.**
 
 ## 1. 단일 기준 저장소
 
@@ -35,6 +43,7 @@
 - `main`은 항상 통합 가능한 안정본으로 유지한다.
 - 기능 개발은 반드시 개인/작업 브랜치에서 한다.
 - 다른 사람의 작업 브랜치에 직접 push하지 않는다.
+- 상태/문서 전용 동기화는 `docs/STATE_MANAGEMENT.md` 규칙에 따라 main에 직접 기록할 수 있다.
 
 ## 2. 담당 영역
 
@@ -49,8 +58,6 @@
 - Core ↔ Unreal bridge
 - Android build / GitHub Actions / CI
 - 성능, 결정론, 테스트, 통합
-
-쭌 측 AI는 위 영역의 구현과 통합을 우선한다.
 
 ### 다겸 / STILLofficial / 다겸 측 AI — Observer & Presentation Owner
 
@@ -102,11 +109,9 @@
 
 쭌:
 - `jjun/<scope>-<task>` 또는 기존 task 지시서 브랜치 `task/<number>-...`
-- 예: `jjun/social-ai`, `jjun/android-build`
 
 다겸:
 - `dagyeom/<scope>-<task>`
-- 예: `dagyeom/observer-ui`, `dagyeom/resident-card`
 
 긴 작업은 기능 하나당 브랜치 하나를 사용한다.
 
@@ -118,10 +123,9 @@
 - 브랜치
 - 작업 범위
 - 수정 예정 파일/디렉터리
-- 상태: `TODO`, `DOING`, `REVIEW`, `DONE`, `BLOCKED`
+- 상태
 
-상대가 `DOING`으로 잡은 동일 파일은 수정하지 않는다.
-정말 필요한 경우 먼저 Integration Request를 남기고, 공용 인터페이스만 합의해서 변경한다.
+상대가 `DOING`으로 잡은 동일 파일은 수정하지 않는다. 정말 필요한 경우 먼저 Integration Request를 남기고, 공용 인터페이스만 합의해서 변경한다.
 
 ## 7. PR / Merge 규칙
 
@@ -129,10 +133,11 @@
 - 한 PR은 한 작업 목적만 가진다.
 - PR 본문에 변경 파일, 테스트 결과, 영향 범위를 적는다.
 - Core/AI 변경: `core-tests.yml` PASS 필수.
-- Unreal 구조 변경: structural preflight PASS 필수.
+- Unreal 구조 변경: structural preflight + 필요한 actual UHT/UBT 검증 필수.
 - Android APK 성공 여부는 실제 `.apk` Artifact 존재 전까지 성공이라고 표현하지 않는다.
 - 공동 소유 파일이 포함된 PR은 상대 영역 영향 여부를 확인한 뒤 merge한다.
 - 상대 브랜치가 오래된 경우 merge 전에 최신 `main` 기준 충돌 여부를 확인한다.
+- merge 직후 `WORK_STATE`, READY queue, TEAM_BOARD의 blocker/dependency를 업데이트한다.
 
 ## 8. 빌드 규칙
 
@@ -151,22 +156,23 @@
 - LOCAL OBSERVER 코드를 LifeLens 런타임으로 되살리지 않는다.
 - 계획만 쓰지 말고 가능한 범위에서 실제 구현한다.
 - 성공 여부를 추측하지 않는다.
-- 작업 전 `AGENTS.md`, `docs/LIFELENS_SPEC_v1.1.md`, `docs/BUILD_STRATEGY_v1.2.md`, `docs/TEAM_WORKFLOW.md`, `tasks/TEAM_BOARD.md`를 확인한다.
+- 기능 작업 전에 실제 GitHub 상태와 `AGENTS.md` / `STATE_MANAGEMENT` / `WORK_STATE` / READY queue / `TEAM_BOARD` / `HANDOFF_LOG`를 맞춘다.
+- stale한 협업 문서를 발견하면 새 기능보다 문서 정정을 먼저 한다.
 - 상대 담당 영역을 수정해야 하면 먼저 Integration Request를 남긴다.
 
-## 10. 현재 권장 분업
+## 10. 현재 권장 분업 — 2026-09-14 sync checkpoint
 
 ### 쭌 측
-- TASK_03 Core ↔ Unreal bridge 검증
-- UE 5.6 UHT/UBT 실제 컴파일
-- Android FAST TEST/APK 파이프라인
-- LifeLensCore Needs/Utility/관계 로직 확장
+- PR #37/#39/#40 Observer runtime/family read integration은 **DONE**.
+- 기존 PR #2 / old Android Run은 **FROZEN**.
+- 다음 제품 작업: latest main 기반 Production NEW GAME / WorldSeed / 2M+2F authoritative runtime integration → full Core Save/Load → 4-person runtime → Android smoke APK.
+- 다겸 UI/Character presentation branch는 직접 수정하지 않는다.
 
 ### 다겸 측
-- Observer HUD v2
-- 선택 주민 상세 패널
-- World overview 정보 계층
-- Character visual proxy/표현 개선
-- Core/Simulation read API만 사용해 UI 구성
+- 기존 Observer read 관련 `BLOCKED-BY-JJUN`은 **0개**.
+- 최우선: PR #17을 latest main과 reconcile한 뒤 현재 Core Observer Bridge를 바인딩하고 UI review findings를 해결/검증.
+- PR #26은 latest main과 독립적으로 reconcile/verify 가능.
+- stacked chain은 #17 이후 #29/#30 → #36 → #38 순서로 정리한다.
+- 새 Core/API gap이 실제로 발견될 때만 `TEAM_BOARD.md`에 새 Integration Request를 만든다.
 
-이 분업은 `tasks/TEAM_BOARD.md`가 최신 상태를 가진다.
+현재 세부 상태와 정확한 HEAD/PR/next action은 `tasks/WORK_STATE.md`와 `tasks/DAGYEOM_READY_QUEUE.md`가 기준이다.
