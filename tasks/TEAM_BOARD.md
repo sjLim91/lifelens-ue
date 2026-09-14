@@ -12,7 +12,7 @@
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | 없음 | 다음 작업 미시작 | — | TODO — Physical Interaction/Smart Object v1 또는 Witness/Rumor Runtime Wiring v1 |
+| 쭌 + 쭌 AI | `jjun/physical-smart-object-v1` (creation next) | Physical Interaction / Smart Object Execution v1 | Jjun-owned World/Simulation + narrow validator | DOING / STATE_LOCKED — Eat/Drink/Sleep/Toilet/Hygiene reservation + interaction target |
 | 쭌 + 쭌 AI | `task/03-fast-test`, PR #2 | old Android validation | Bridge/build | FROZEN — Run `34739283266` 재실행/수정/병합 금지 |
 | 다겸 + 다겸 AI | `dagyeom/observer-ui-v2`, PR #17 | Observer HUD v2 + Core Observer Bridge binding | `Source/LifeLens/UI/**` | REVIEW / RECOVERING — latest main reconcile 필요 |
 | 다겸 + 다겸 AI | `dagyeom/ui-foundation-v1`, PR #26 | Android landscape UI foundation | UI foundation | REVIEW |
@@ -20,6 +20,23 @@
 | 다겸 + 다겸 AI | `dagyeom/observer-ux-polish-v1`, PR #30 | Observer UX Polish | `Source/LifeLens/UI/**` | REVIEW — stacked on #17 |
 | 다겸 + 다겸 AI | `dagyeom/mobile-touch-v1`, PR #36 | Mobile Touch v1 | `Source/LifeLens/UI/**` | REVIEW — stacked on #30 |
 | 다겸 + 다겸 AI | `dagyeom/visual-feedback-v1`, PR #38 | Visual Feedback v1 | `Source/LifeLens/UI/**` | REVIEW — stacked on #36 |
+
+## Current Jjun lock — Physical Interaction / Smart Object Execution v1
+
+- Planned branch: `jjun/physical-smart-object-v1` from latest main after state checkpoint.
+- Core remains the sole decision authority. Unreal may select **where/how** to execute a Core-selected physical intent but must not decide **what** intent to perform.
+- v1 physical intents: Eat / Drink / Sleep / Toilet / Hygiene only.
+- Required execution contract:
+  - capability-matched usable anchor/object;
+  - deterministic nearest usable selection;
+  - one-resident exclusive reservation/occupancy;
+  - explicit interaction/approach transform, not raw actor origin;
+  - release on directive change/death/despawn/invalid target/completion;
+  - resident switching target only when prior reservation is released or becomes unusable.
+- Preserve existing `ELLActionIntent` ordinals and stable ResidentId/SaveGame v2 identity behavior.
+- Allowed scope: Jjun World/Simulation plus narrow validator/read metadata only where necessary.
+- Forbidden: Dagyeom UI/Character presentation/Content and frozen PR #2.
+- Required gates before merge: Structural Preflight + actual UE 5.6 UHT/UBT; Core suite if any pure-Core file is touched.
 
 ## Latest completed Jjun work
 
@@ -79,11 +96,11 @@ Current open requests: **none**.
 
 ## Merge / reconciliation queue
 
-1. Dagyeom PR #17 — reconcile latest main + bind current Core Bridge + review fixes + verify.
-2. Dagyeom PR #26 — reconcile latest main independently.
-3. After #17: #29/#30 → #36 → #38.
-4. PR #2 remains FROZEN.
-5. Next Jjun task starts only after a fresh state lock/branch.
+1. Physical Interaction / Smart Object Execution v1 — current Jjun active slice.
+2. Dagyeom PR #17 — reconcile latest main + bind current Core Bridge + review fixes + verify.
+3. Dagyeom PR #26 — reconcile latest main independently.
+4. After #17: #29/#30 → #36 → #38.
+5. PR #2 remains FROZEN.
 
 ## Completion rule
 
