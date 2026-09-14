@@ -3,6 +3,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include "Birth.h"
 #include "DecisionExecution.h"
 #include "ObserverReadModelV2.h"
 #include "Planner.h"
@@ -29,6 +30,8 @@ public:
     const HouseholdBook& households() const{return households_;}
     PregnancyBook& pregnancies(){return pregnancies_;}
     const PregnancyBook& pregnancies() const{return pregnancies_;}
+    BirthBook& births(){return births_;}
+    const BirthBook& births() const{return births_;}
     const std::vector<std::string>& logs() const{return logs_;}
     ResidentObservation observeResident(CharacterId id) const;
     std::vector<ResidentObservation> observeAllResidents() const;
@@ -56,6 +59,7 @@ private:
     RomanceBook romances_;
     HouseholdBook households_;
     PregnancyBook pregnancies_;
+    BirthBook births_;
     std::unordered_map<CharacterId,Runtime> runtime_;
     std::vector<EventCallback> callbacks_;
     std::vector<std::string> logs_;
@@ -66,5 +70,11 @@ private:
     void advanceAction(Character& c,Runtime& r);
     void failPlan(Runtime& r);
     bool trySocialDecision(Character& c,Runtime& r);
+    void advanceAutonomousFamilyProgression();
+    void updatePregnanciesAndBirths();
+    void evaluateDailyFamilyTransitions();
+    CharacterId nextCharacterId() const;
+    HouseholdId nextHouseholdId() const;
+    std::string makeChildName(Sex sex,CharacterId childId) const;
 };
 }
