@@ -18,16 +18,17 @@ Last reconciled: 2026-09-14 KST — session recovery; GitHub branch/PR/Actions r
 
 - Owner: 쭌 + 쭌 AI
 - Branch: `jjun/observer-read-model-v2`
-- Work item: 다겸 UI의 `BLOCKED-BY-JJUN` 데이터 병목 해소 — 세부 Emotion, Family summary, World aggregate를 Core read DTO로 제공
-- Last known HEAD: `48d6142834ad2fe2b34b228cec57e092e0577e36`
+- Work item: Emotion / family summary / world aggregate Core read DTOs.
+- Last known HEAD: `86b916aef27e5df7c6d5e9a30f49c61a25fd971c`
 - PR: #34 `[CORE] Expand observer read model for family and world overview`
-- Status: `IN_PROGRESS`
-- CI: Core Tests Run `34792467903` PASS; Preflight Run `34792467916` PASS (PR head `48d6142`).
-- Last verified fact: P24 code and original checks are preserved at `48d6142`; PR #35 fixed the pre-existing Core memory/assertion defects on main.
-- Blocker / interruption: Core validation recovery merged via PR #35 (`31b2263`). P24 baseline/CI refresh pending.
-- Exact next action: Merge latest main into this branch, register test_observer_read_model_v2 through lifelens_add_test, run 27-test Release suite + deterministic harness + Preflight, then refresh PR #34 CI.
-- Handoff safety: `CONDITIONAL` — CI passed; code review/reconciliation in progress.
-- Shared-file impact: `Source/LifeLensCore/**` + Core tests only. Unreal USTRUCT/Blueprint bridge는 별도 후속 integration task로 분리.
+- Status: `WAITING_CI`
+- CI: refreshed Core Tests Run `34794030200` IN_PROGRESS; Preflight Run `34794030209` PASS.
+- Last verified fact: 27/27 local CMake Release tests (assertions enabled), deterministic seed 42 harness and structural preflight passed. Remote tree `516e33a` equals the tested local merge tree.
+- Blocker / interruption: CI pending. Prior validation defect was fixed by PR #35.
+- Exact next action: Read PR #34 head and Run `34794030200`; if unchanged and PASS, verify mergeability and merge with expected head `86b916aef27e5df7c6d5e9a30f49c61a25fd971c`. Record merge SHA, then start a separate observer-runtime integration task.
+- Handoff safety: `CONDITIONAL` — all work saved remotely; CI is the remaining gate.
+- Shared-file impact: Core DTO/test/CMake + append-only HANDOFF_LOG. No UI/TASK_03 changes. Unreal bridge is not implemented by this PR.
+- Contract notes: `majorLifeEvents` is per-character LifeHistory record count, not unique events; GenerationContinuity still uses its separate API.
 
 ### 2. Observer HUD v2
 
