@@ -4,7 +4,7 @@
 >
 > 제품 기준: `docs/LIFELENS_SPEC_v1.1.md` · 상태 규칙: `docs/STATE_MANAGEMENT.md` · 역할/잠금: `tasks/TEAM_BOARD.md` · 이력: `tasks/HANDOFF_LOG.md`
 
-Last reconciled: 2026-09-14 KST — Full Core Save/Load v1 is open as PR #44 at head `64d2fb25f6453112aabaef2d809b0528c9dc4566`; Core Release tests and Structural Preflight are the current merge gates.
+Last reconciled: 2026-09-14 KST — PR #44 Full Core Save/Load v1 at head `64d2fb25f6453112aabaef2d809b0528c9dc4566` passed Core Release full suite, deterministic harness and Structural Preflight; ready to merge after scope verification.
 
 ## Mandatory sync gate
 
@@ -24,24 +24,22 @@ Last reconciled: 2026-09-14 KST — Full Core Save/Load v1 is open as PR #44 at 
 - Branch: `jjun/core-save-load-v1`
 - PR: #44 `[CORE] Add authoritative full-state snapshot save/load v1`
 - Head: `64d2fb25f6453112aabaef2d809b0528c9dc4566`
-- Status: `WAITING_CI`
+- Status: `READY_TO_MERGE`
+- Changed files: exactly 5, all under `Source/LifeLensCore/**`.
 - Implemented:
   - versioned `SimulationStateSnapshot v1`;
-  - exact World seed/minute/RNG state capture;
-  - complete Character state via World value snapshot;
+  - World seed/minute/RNG continuation state;
+  - complete Character authoritative state;
   - Relationship / Genealogy / Romance / Household / Pregnancy / Birth books;
-  - private Simulation runtime plan/action index/position/cooldown/social state projected into snapshot DTO;
+  - Simulation runtime plan/action index/position/cooldown/social state;
   - Core event logs;
-  - `Simulation::captureSnapshot()` / `restoreSnapshot()`;
-  - restore validation for version, CharacterId uniqueness, runtime/cross-reference integrity, and action-index bounds;
-  - external event callbacks intentionally remain runtime attachments rather than persisted state.
-- Test contract:
-  - rich state roundtrip deep equality;
-  - unsupported version rejected without mutating destination;
-  - original/restored worlds run another 10,000 minutes and must remain deeply identical, proving RNG/runtime continuation.
-- Changed scope: `Source/LifeLensCore/**` only; no Unreal/UI/Character files.
-- Required gates: Core Release full suite + deterministic harness + Structural Preflight.
-- Exact next action: inspect PR #44 CI. On failure, fetch exact first root cause only; on PASS, verify changed-file scope then merge and synchronize docs/handoff.
+  - `captureSnapshot()` / `restoreSnapshot()` with integrity validation before commit;
+  - callbacks remain external runtime attachments rather than persisted state.
+- Verification:
+  - Core Tests Run `34802611336` PASS: Configure / Build / Test / Deterministic harness smoke.
+  - Structural Preflight Run `34802611299` PASS.
+  - `test_core_save_load`: rich deep roundtrip equality, invalid-version rejection without mutation, and exact equality after an additional 10,000 simulated minutes.
+- Exact next action: merge #44, then update this document/TEAM_BOARD/HANDOFF. After that, next bounded task is Unreal SaveGame adapter integration over this Core snapshot contract.
 
 ### 2. Observer HUD v2 — Dagyeom
 
