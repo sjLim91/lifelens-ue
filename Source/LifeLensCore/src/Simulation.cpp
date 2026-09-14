@@ -5,7 +5,7 @@ namespace lifelens {
 Simulation::Simulation(std::uint64_t seed):world_(seed){}
 
 void Simulation::setupDemo(){
-    world_.characters.clear(); world_.objects.clear(); relationships_=RelationshipBook{}; runtime_.clear(); logs_.clear(); world_.minute=7*60;
+    world_.characters.clear(); world_.objects.clear(); relationships_=RelationshipBook{}; genealogy_=GenealogyBook{}; romances_=RomanceBook{}; households_=HouseholdBook{}; pregnancies_=PregnancyBook{}; runtime_.clear(); logs_.clear(); world_.minute=7*60;
     Character c; c.id=1; c.name="DevResident"; c.personality=Personality::generate(world_.rng);
     std::uniform_real_distribution<double> start(0.10,0.42);
     c.needs={start(world_.rng),start(world_.rng),start(world_.rng),start(world_.rng),start(world_.rng)};
@@ -22,7 +22,7 @@ void Simulation::setupDemo(){
 }
 
 void Simulation::setupSocialDemo(){
-    world_.characters.clear(); world_.objects.clear(); relationships_=RelationshipBook{}; runtime_.clear(); logs_.clear(); world_.minute=7*60;
+    world_.characters.clear(); world_.objects.clear(); relationships_=RelationshipBook{}; genealogy_=GenealogyBook{}; romances_=RomanceBook{}; households_=HouseholdBook{}; pregnancies_=PregnancyBook{}; runtime_.clear(); logs_.clear(); world_.minute=7*60;
 
     Character a;
     a.id=1; a.name="SocialA";
@@ -93,6 +93,17 @@ std::vector<ResidentObservation> Simulation::observeAllResidents() const{
         result.push_back(observeResident(character.id));
     }
     return result;
+}
+
+FamilyObservation Simulation::observeFamily(CharacterId id) const{
+    const Character* character=findObservedCharacter(world_,id);
+    if(!character) return FamilyObservation{};
+    return buildFamilyObservation(
+        world_,genealogy_,romances_,households_,pregnancies_,*character);
+}
+
+WorldOverviewObservation Simulation::observeWorldOverview() const{
+    return buildWorldOverviewObservation(world_,households_,romances_,pregnancies_);
 }
 
 std::string Simulation::stamp() const{
