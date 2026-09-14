@@ -8,15 +8,17 @@
 // Presentation-side appearance inputs (Character Appearance v1, Track B).
 //
 // This struct is the ONLY thing the appearance component consumes. It mirrors
-// the field set of the Bridge contract `FLLAppearanceProfile` (PR #65) so the
-// producer can be swapped without touching the consumer:
+// the field set of the Bridge contract `FLLAppearanceProfile`
+// (Source/LifeLens/Simulation/LLAppearanceProfile.h, PR #65) so the producer
+// stays in one place:
 //
-//   - Until PR #65 is on main: `MakeTemporaryAppearanceInputs()` derives the
-//     values from hash(WorldSeed, ResidentId). TEMPORARY presentation-only
-//     values; not authoritative, never saved, never read back into Core.
-//   - After PR #65: replace the body of `ULLResidentAppearanceInputSource::
-//     Resolve()` with `ULLAppearanceProfileLibrary::MakeDeterministicAppearanceProfile`
-//     and map its fields 1:1 here. No other file needs to change.
+//   - `ULLResidentAppearanceInputSource::Resolve()` maps
+//     `ULLAppearanceProfileLibrary::MakeDeterministicAppearanceProfile` 1:1.
+//     The Bridge derives ResidentId from (WorldSeed, Core CharacterId), so the
+//     same restored resident yields the same look without any cache.
+//   - `MakeTemporaryAppearanceInputs()` is the fallback for an invalid
+//     ResidentId only: hash(WorldSeed, ResidentId), presentation-only, not
+//     authoritative, never saved.
 //
 // Determinism: same WorldSeed + ResidentId always yields the same inputs, so
 // NEW GAME residents differ per seed and Save/Load keeps each resident's look.
@@ -79,14 +81,13 @@ class LIFELENS_API ULLResidentAppearanceInputSource : public UBlueprintFunctionL
     GENERATED_BODY()
 
 public:
-    // TEMPORARY presentation-only derivation used until PR #65's
-    // FLLAppearanceProfile contract is available on main. Pure function of
-    // (WorldSeed, ResidentId, Sex, LifeStage); no authoritative state.
+    // Fallback derivation (presentation-only) for residents without a stable
+    // identity. Pure function of (WorldSeed, ResidentId, Sex, LifeStage).
     UFUNCTION(BlueprintPure, Category="LifeLens|Appearance")
     static FLLResidentAppearanceInputs MakeTemporaryAppearanceInputs(int32 WorldSeed, FGuid ResidentId, ELLCoreSex Sex, ELLCoreLifeStage LifeStage);
 
-    // Resolution point the appearance component calls. Swap the implementation
-    // to the Bridge contract here when it lands.
+    // Resolution point the appearance component calls: Bridge contract first,
+    // temporary fallback otherwise.
     UFUNCTION(BlueprintPure, Category="LifeLens|Appearance")
     static FLLResidentAppearanceInputs Resolve(int32 WorldSeed, FGuid ResidentId, ELLCoreSex Sex, ELLCoreLifeStage LifeStage);
 };

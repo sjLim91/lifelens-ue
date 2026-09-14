@@ -1,4 +1,5 @@
 #include "Characters/LLResidentAppearanceInputs.h"
+#include "Simulation/LLAppearanceProfile.h"
 
 namespace
 {
@@ -62,8 +63,32 @@ FLLResidentAppearanceInputs ULLResidentAppearanceInputSource::MakeTemporaryAppea
 
 FLLResidentAppearanceInputs ULLResidentAppearanceInputSource::Resolve(int32 WorldSeed, FGuid ResidentId, ELLCoreSex Sex, ELLCoreLifeStage LifeStage)
 {
-    // Swap point for PR #65: return a 1:1 mapping of
-    // ULLAppearanceProfileLibrary::MakeDeterministicAppearanceProfile(ResidentId, Sex, LifeStage)
-    // once it exists on main. Until then the temporary presentation seed is used.
+    // Bridge contract (PR #65): the profile is a deterministic projection of the
+    // stable ResidentId (WorldSeed + Core CharacterId) plus authoritative
+    // Sex/LifeStage, so it survives Save/Load without any presentation cache.
+    if (ResidentId.IsValid())
+    {
+        const FLLAppearanceProfile Profile = ULLAppearanceProfileLibrary::MakeDeterministicAppearanceProfile(ResidentId, Sex, LifeStage);
+
+        FLLResidentAppearanceInputs Inputs;
+        Inputs.ResidentId       = Profile.ResidentId;
+        Inputs.Sex              = Profile.Sex;
+        Inputs.LifeStage        = Profile.LifeStage;
+        Inputs.VisualSeed       = Profile.VisualSeed;
+        Inputs.FaceAxis         = Profile.FaceAxis;
+        Inputs.SkinToneAxis     = Profile.SkinToneAxis;
+        Inputs.EyeColorAxis     = Profile.EyeColorAxis;
+        Inputs.HairColorAxis    = Profile.HairColorAxis;
+        Inputs.HeightAxis       = Profile.HeightAxis;
+        Inputs.BuildAxis        = Profile.BuildAxis;
+        Inputs.FaceVariant      = Profile.FaceVariant;
+        Inputs.HairStyleVariant = Profile.HairStyleVariant;
+        Inputs.OutfitVariant    = Profile.OutfitVariant;
+        Inputs.bTemporaryPresentationSeed = false;
+        return Inputs;
+    }
+
+    // Fallback only when no stable identity is available (should not happen
+    // for spawned residents): temporary presentation seed.
     return MakeTemporaryAppearanceInputs(WorldSeed, ResidentId, Sex, LifeStage);
 }
