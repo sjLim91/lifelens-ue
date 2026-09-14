@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <vector>
 #include "DecisionExecution.h"
-#include "ObserverReadModel.h"
+#include "ObserverReadModelV2.h"
 #include "Planner.h"
 namespace lifelens {
 class Simulation {
@@ -20,9 +20,19 @@ public:
     const World& world() const{return world_;}
     RelationshipBook& relationships(){return relationships_;}
     const RelationshipBook& relationships() const{return relationships_;}
+    GenealogyBook& genealogy(){return genealogy_;}
+    const GenealogyBook& genealogy() const{return genealogy_;}
+    RomanceBook& romances(){return romances_;}
+    const RomanceBook& romances() const{return romances_;}
+    HouseholdBook& households(){return households_;}
+    const HouseholdBook& households() const{return households_;}
+    PregnancyBook& pregnancies(){return pregnancies_;}
+    const PregnancyBook& pregnancies() const{return pregnancies_;}
     const std::vector<std::string>& logs() const{return logs_;}
     ResidentObservation observeResident(CharacterId id) const;
     std::vector<ResidentObservation> observeAllResidents() const;
+    FamilyObservation observeFamily(CharacterId id) const;
+    WorldOverviewObservation observeWorldOverview() const;
 private:
     struct Runtime {
         Goal goal=Goal::Idle;
@@ -41,6 +51,10 @@ private:
     };
     World world_;
     RelationshipBook relationships_;
+    GenealogyBook genealogy_;
+    RomanceBook romances_;
+    HouseholdBook households_;
+    PregnancyBook pregnancies_;
     std::unordered_map<CharacterId,Runtime> runtime_;
     std::vector<EventCallback> callbacks_;
     std::vector<std::string> logs_;
