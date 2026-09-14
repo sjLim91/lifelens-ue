@@ -98,3 +98,5 @@ lifelens_add_test(test_snapshot_codec)
 lifelens_add_test(test_witness_rumor)
 
 lifelens_add_test(test_civilization_foundation)
+
+lifelens_add_test(test_civilization_persistence)
