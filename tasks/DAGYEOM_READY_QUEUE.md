@@ -20,66 +20,37 @@
 
 - #53 Civilization Observer Read DTOs — merged `ec30d80b2986247f0f16572efb2c082a933d796d`, Unreal Run #16 PASS
 - #54 macOS clang shadow hotfix — merged `3b649b900c44a4e48bb89171b38f5e685e757b14`
-- PR #17 R1 latest-main reconciliation — **DONE**
-  - current branch HEAD `0716a95eb4b6000c7098f8c0bb812bd622afa6a3`
-  - helper PR #56 merged into Dagyeom branch
-  - verify-only PR #57 closed without merge
-  - Preflight `34824371968` PASS
-  - Unreal Run #17 `34824371965` PASS including UHT/UBT/link
-  - former Codex review threads resolved
+- #17 Observer HUD v2 — **DONE / MERGED `aa194db7c5b500cdf5041fd6d43b25f97b9dd0b6`**
+  - R1 helper #56 merged, verify-only #57 closed
+  - R1 Preflight `34824371968` PASS
+  - R1 Unreal Run #17 `34824371965` PASS including UHT/UBT/link
+  - R2 helper #58 merged, verify-only #59 closed
+  - corrected R2 Preflight `34833994138` PASS
+  - corrected R2 Unreal Run #20 `34833994155` PASS including UHT/UBT/link
+  - unresolved review threads: 0
+  - all Observer assist locks released
 
 ## HIGHEST PRIORITY
 
-### DQ-R2 — Bind current Observer Bridge — DOING
+### DQ-01 — PR #26 UI Foundation — NEXT
 
-- Target: PR #17 `dagyeom/observer-ui-v2`
-- Assist helper: `integration/dagyeom-observer-r2-assist`
-- Active lock: `ASSIST_LOCK-17-R2`
-- Locked files:
-  - `Source/LifeLens/UI/LLObserverHUD.cpp`
-  - `Source/LifeLens/UI/LLObserverHUD.h`
-  - `Source/LifeLens/UI/LLObserverLabels.h`
+- Re-fetch exact PR #26 / branch HEAD before work.
+- Reconcile against actual latest main, which now includes PR #17.
+- Preserve PR #17 Observer hierarchy and Core authority.
+- Validate Android landscape/safe-area/typography behavior.
+- If Jjun assistance edits Dagyeom-owned files: create a new ASSIST_LOCK and a fresh `integration/dagyeom-...-assist` branch first.
 
-Existing getters:
-- `GetWorldObservation()`
-- `GetResidentObservations()`
-- `GetResidentObservation(...)`
-- `GetFamilyObservation(...)`
-- `GetResidentActionDirective(...)`
-- `GetRecentCoreEvents()`
-- `OnCoreRuntimeStateChanged`
+### DQ-02 — PR #29 Character Presentation — READY AFTER #17
 
-Civilization getters:
-- `GetResidentCivilizationObservation(...)`
-- `GetCivilizationWorldObservation(...)`
+- PR #17 dependency is now cleared.
+- Reconcile parent/base before code changes.
+- Consume Core action intent for visuals only.
+- Keep appearance/equipment hooks data-driven from primitive resources/tools through later technology.
 
-Binding rules:
-- Level 0 stays clean
-- selected resident/detail may show authoritative emotion/relationship/family/civilization data
-- current action presentation reads Core directive/read model; UI never chooses actions
-- civilization detail belongs in detail views and major-discovery feedback
-- no competing UI simulation/cache
-- no hard-coded population 4 after runtime begins
-- after Load, rebuild from Bridge
+### DQ-03 — PR #30 Observer UX Polish — READY AFTER #17
 
-### DQ-R3 — after R2
-
-- PR #17 description/state docs reconcile
-- review state already functionally fixed/resolved
-- final Preflight + actual UE UHT/UBT validation
-- then #17 merge readiness
-
-## READY NOW — other Dagyeom work
-
-### DQ-01 — PR #26 UI Foundation
-- reconcile latest main where it does not overlap active ASSIST_LOCK
-
-### DQ-02 — PR #29 Character Presentation
-- after #17
-- visual-only consumer of Core intent
-
-### DQ-03 — PR #30 Observer UX Polish
-- after #17
+- Reconcile to merged #17 baseline.
+- Preserve Level 0 cleanliness and current Core-backed detail tabs.
 
 ### DQ-04 — PR #36 Mobile Touch
 - after #30
@@ -97,14 +68,15 @@ Binding rules:
 
 Jjun default support = `REVIEW_ONLY`.
 실제 Dagyeom-owned 수정은 exact HEAD 확인 → `ASSIST_LOCK` → `integration/dagyeom-<scope>-assist` → 검증/handoff → lock 해제 순서다.
-`dagyeom/*` direct push 금지.
+`dagyeom/*` branch에 Jjun AI direct push 금지.
 
 Parent-first order:
-1. #17
-2. #26 where independent
-3. #29/#30
-4. #36
-5. #38
+1. #26 next
+2. #29/#30 from merged #17 baseline
+3. #36 after #30
+4. #38 after #36
+5. integrated runtime verification
+6. Android smoke APK
 
 ## Canonical product direction
 
