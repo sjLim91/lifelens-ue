@@ -115,6 +115,7 @@ void Simulation::setupNewGame(){
     runtime_.clear();
     logs_.clear();
     world_.minute=8*60;
+    world_.resetCivilizationEnvironment();
 
     // A formal New Game must be reproducible from WorldSeed. Re-seeding here
     // ensures repeated setup with the same world seed cannot inherit RNG state
@@ -208,10 +209,62 @@ void Simulation::onEvent(EventCallback cb){ callbacks_.push_back(std::move(cb));
 SmartObject* Simulation::objectById(ObjectId id){ for(auto& o:world_.objects) if(o.id==id) return &o; return nullptr; }
 void Simulation::failPlan(Runtime& r){ r.plan.clear(); r.actionIndex=0; r.announced=false; r.socialActive=false; r.socialIntent=SocialIntent::None; r.socialTarget=0; ++r.consecutiveFailures; if(r.consecutiveFailures>=3){r.penaltyUntilMinute=world_.minute+30;r.consecutiveFailures=0;} }
 
+bool Simulation::tryCivilizationDecision(Character& c,Runtime& r){
+    // Keep civilization as a meaningful but bounded third activity channel.
+    // Two of every three 5-minute decision windows remain fully available to
+    // the pre-existing Physical/Social loop.
+    if(world_.minute%15!=0) return false;
+
+    const UnifiedUtilityDecision decision=chooseUnifiedUtilityDecision(world_,c,relationships_);
+    if(decision.kind!=UnifiedDecisionKind::Civilization || decision.civilization.intent==CivilizationIntent::None) return false;
+
+    const CivilizationExecutionResult result=executeCivilizationDecision(world_,c,decision.civilization);
+    if(!result.executed) return false;
+
+    std::ostringstream s;
+    s<<c.name<<" -> Civilization "<<civilizationIntentName(decision.civilization.intent);
+    switch(result.event.type){
+        case CivilizationEventType::Gathered:
+            s<<" "<<materialName(result.event.material)<<" x"<<result.event.quantity;
+            break;
+        case CivilizationEventType::Stored:
+            s<<" "<<materialName(result.event.material)<<" x"<<result.event.quantity;
+            break;
+        case CivilizationEventType::ExperimentFailed:
+            s<<" failed "<<techniqueName(result.event.technique);
+            break;
+        case CivilizationEventType::Discovered:
+            s<<" discovered "<<techniqueName(result.event.technique);
+            break;
+        case CivilizationEventType::Crafted:
+            s<<" crafted "<<techniqueName(result.event.technique);
+            break;
+        default:
+            break;
+    }
+    s<<" (civilization utility "<<std::fixed<<std::setprecision(2)<<decision.civilization.utility<<")";
+    emit(s.str());
+
+    r.socialActive=false;
+    r.socialIntent=SocialIntent::None;
+    r.socialTarget=0;
+    r.goal=Goal::Idle;
+    r.plan={{ActionType::Idle,0,5}};
+    r.actionIndex=0;
+    r.announced=false;
+    r.consecutiveFailures=0;
+    return true;
+}
+
 bool Simulation::trySocialDecision(Character& c,Runtime& r){
     if(world_.minute<r.socialCooldownUntilMinute) return false;
 
-    const UnifiedUtilityDecision decision=chooseUnifiedUtilityDecision(world_,c,relationships_);
+    // Civilization only competes on its own 15-minute slot. On the other two
+    // 5-minute windows, recompute using an unreachable civilization threshold
+    // so the original Physical/Social competition is preserved exactly.
+    const UnifiedUtilityDecision decision=world_.minute%15==0
+        ? chooseUnifiedUtilityDecision(world_,c,relationships_)
+        : chooseUnifiedUtilityDecision(world_,c,relationships_,0.18,2.0);
     if(decision.kind!=UnifiedDecisionKind::Social || decision.social.intent==SocialIntent::None) return false;
 
     const Character* targetBefore=findCharacter(world_,decision.social.target);
@@ -242,6 +295,7 @@ bool Simulation::trySocialDecision(Character& c,Runtime& r){
 }
 
 void Simulation::beginPlan(Character& c,Runtime& r){
+    if(world_.minute>=r.penaltyUntilMinute && tryCivilizationDecision(c,r)) return;
     if(world_.minute>=r.penaltyUntilMinute && trySocialDecision(c,r)) return;
 
     r.socialActive=false;
@@ -584,6 +638,7 @@ void Simulation::step(){
         if(!r.plan.empty()) advanceAction(c,r);
     }
     ++world_.minute;
+    if(world_.minute%(24*60)==0) regenerateCivilizationEnvironment(world_);
     advanceAutonomousFamilyProgression();
 }
 void Simulation::runMinutes(int minutes){ for(int i=0;i<minutes;++i) step(); }
