@@ -12,7 +12,7 @@
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | `jjun/autonomous-family-progression-v1` | Autonomous Family Progression v1 | `Source/LifeLensCore/**`, Core tests/CMake only | DOING — dating→cohabitation→engagement→marriage→pregnancy→birth runtime wiring |
+| 쭌 + 쭌 AI | `jjun/autonomous-family-progression-v1`, PR #43 | Autonomous Family Progression v1 | `Source/LifeLensCore/**`, Core tests/CMake only | REVIEW / WAITING_CI — head `d0a4f355...` |
 | 쭌 + 쭌 AI | `task/03-fast-test`, PR #2 | old Android validation | Bridge/build | FROZEN — Run `34739283266` 재실행/수정/병합 금지 |
 | 다겸 + 다겸 AI | `dagyeom/observer-ui-v2`, PR #17 | Observer HUD v2 + Core Observer Bridge binding | `Source/LifeLens/UI/**` | REVIEW / RECOVERING — latest main reconcile 필요 |
 | 다겸 + 다겸 AI | `dagyeom/ui-foundation-v1`, PR #26 | Android landscape UI foundation | UI foundation | REVIEW |
@@ -21,22 +21,25 @@
 | 다겸 + 다겸 AI | `dagyeom/mobile-touch-v1`, PR #36 | Mobile Touch v1 | `Source/LifeLens/UI/**` | REVIEW — stacked on #30 |
 | 다겸 + 다겸 AI | `dagyeom/visual-feedback-v1`, PR #38 | Visual Feedback v1 | `Source/LifeLens/UI/**` | REVIEW — stacked on #36 |
 
-## Current Jjun lock — Autonomous Family Progression v1
+## Current Jjun lock — PR #43 Autonomous Family Progression v1
 
-- Branch: `jjun/autonomous-family-progression-v1` (created from latest main after state sync).
+- Branch/PR: `jjun/autonomous-family-progression-v1`, PR #43.
+- Current head: `d0a4f3557f796e821b4a482cbb385efd2e76709b`.
 - Allowed scope: `Source/LifeLensCore/**` and Core tests/CMake only.
 - Explicitly forbidden in this task: `Source/LifeLens/Simulation/**`, `Source/LifeLens/UI/**`, Character presentation, Content, Config, Android workflows, frozen TASK_03.
-- Product purpose: wire already-existing Core Romance / Household / Marriage / Pregnancy / Birth APIs into deterministic `Simulation::step()` behavior.
-- Contract:
+- Product behavior under test:
   - no hard-coded founder couples;
-  - periodic state-driven candidate evaluation;
-  - minimum stage durations prevent dating/cohabitation/engagement/marriage/pregnancy from collapsing into one instant chain;
-  - romance is not restricted by sex;
-  - biological pregnancy follows current reproductive eligibility model;
-  - pregnancy advances with simulation time and due pregnancies create actual child residents;
-  - birth updates genetics, genealogy, parent/child links, household membership, LifeHistory and runtime state;
-  - same seed/state yields same result.
-- Validation required: full Core Release tests, deterministic harness, new end-to-end progression tests, Structural Preflight.
+  - familiarity/social bond/personality compatibility can gradually create romantic chemistry;
+  - daily deterministic family-decision cadence;
+  - dating→cohabitation after minimum 30 days;
+  - engagement only after minimum 90 dating days plus mature cohabitation;
+  - marriage only after minimum 60 engaged days;
+  - pregnancy attempts only after minimum 30 married days and then weekly;
+  - same-sex romance remains allowed; biological pregnancy follows existing gestational/genetic eligibility;
+  - active pregnancy advances and due pregnancy creates a real child resident with genetics/genealogy/household/LifeHistory/runtime state;
+  - daily Aging is also wired so newborn/descendant lifecycle can advance over time;
+  - same WorldSeed + same state remains deterministic.
+- Required gates: full Core Release tests, deterministic harness, Structural Preflight.
 
 ## Latest completed Jjun work
 
@@ -46,7 +49,7 @@
 - Feature HEAD: `5f61ce04963166af418fb672fb4442a6cf0598e6`
 - Merge: `5c6f2c071ca00bcd4b26d6e002bf5c618d02ff1e`
 - Validation: Preflight `34799244015` PASS; Unreal Linux Compile `34799244011` PASS including actual UHT/UBT.
-- Main now starts formal Core New Game, projects founder Sex/Age/LifeStage/Personality to Unreal, preserves stable WorldSeed+CharacterId GUIDs, and no longer randomizes a second four-person population in `ULLSimulationSubsystem::NewGame()`.
+- Main now starts formal Core New Game, projects founder Sex/Age/LifeStage/Personality to Unreal, preserves stable WorldSeed+CharacterId GUIDs, and does not independently randomize a second four-person population.
 - No Dagyeom UI/Character presentation files changed.
 
 ### Earlier integration
@@ -58,9 +61,7 @@
 
 ## Dagyeom API handoff
 
-Former six `BLOCKED-BY-JJUN` items remain RESOLVED / READY FOR BINDING via #37/#39/#40: Relationship 13D + target, Emotion details, SocialIntent+target, Family summary, World aggregates, read-only Blueprint/USTRUCT Bridge.
-
-PR #42 is now merged and additionally exposes founder Sex/Age/LifeStage/Personality through the same Core resident DTO.
+Former six `BLOCKED-BY-JJUN` items remain RESOLVED / READY FOR BINDING via #37/#39/#40. PR #42 additionally exposes founder Sex/Age/LifeStage/Personality through the same Core resident DTO.
 
 If a new concrete API gap is found, add a new Integration Request rather than reopening the old six.
 
@@ -76,7 +77,7 @@ Current open requests: **none**.
 
 ## Merge / reconciliation queue
 
-1. Jjun `jjun/autonomous-family-progression-v1` — DOING, Core-only.
+1. PR #43 — WAITING_CI, Core-only.
 2. Dagyeom PR #17 — reconcile latest main + bind current Core Bridge + review fixes + verify.
 3. Dagyeom PR #26 — reconcile latest main independently.
 4. After #17: #29/#30 → #36 → #38.
