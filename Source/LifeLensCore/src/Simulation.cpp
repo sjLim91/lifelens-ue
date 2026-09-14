@@ -1,12 +1,54 @@
 #include "lifelens/Simulation.h"
+#include "lifelens/FamilyProgression.h"
 #include "lifelens/InitialPopulation.h"
+#include <algorithm>
+#include <array>
 #include <iomanip>
 #include <sstream>
+#include <utility>
 namespace lifelens {
+namespace {
+
+Character* findMutableCharacter(World& world,CharacterId id)
+{
+    for(auto& character:world.characters) if(character.id==id) return &character;
+    return nullptr;
+}
+
+double pastRelationshipPenalty(const RomanceBook& romances,CharacterId id)
+{
+    int ended=0;
+    for(const auto& pair:romances.all()){
+        if(pair.contains(id) && !pair.active()) ++ended;
+    }
+    return clampFamilyProgression(static_cast<double>(ended)*0.12);
+}
+
+void recordPairLifeEvent(Character& first,Character& second,LifeEventType type,int minute)
+{
+    recordLifeEvent(first.lifeHistory,type,minute,{second.id});
+    recordLifeEvent(second.lifeHistory,type,minute,{first.id});
+}
+
+bool shareHousehold(const HouseholdBook& households,CharacterId first,CharacterId second)
+{
+    const Household* firstHome=households.householdOf(first);
+    const Household* secondHome=households.householdOf(second);
+    return firstHome!=nullptr && secondHome!=nullptr && firstHome->id==secondHome->id;
+}
+
+int latestCohabitationMinute(const Character& character)
+{
+    const LifeHistoryEntry* event=latestLifeEvent(character.lifeHistory,LifeEventType::CohabitationStarted);
+    return event==nullptr ? -1 : event->minute;
+}
+
+} // namespace
+
 Simulation::Simulation(std::uint64_t seed):world_(seed){}
 
 void Simulation::setupDemo(){
-    world_.characters.clear(); world_.objects.clear(); relationships_=RelationshipBook{}; genealogy_=GenealogyBook{}; romances_=RomanceBook{}; households_=HouseholdBook{}; pregnancies_=PregnancyBook{}; runtime_.clear(); logs_.clear(); world_.minute=7*60;
+    world_.characters.clear(); world_.objects.clear(); relationships_=RelationshipBook{}; genealogy_=GenealogyBook{}; romances_=RomanceBook{}; households_=HouseholdBook{}; pregnancies_=PregnancyBook{}; births_=BirthBook{}; runtime_.clear(); logs_.clear(); world_.minute=7*60;
     Character c; c.id=1; c.name="DevResident"; c.personality=Personality::generate(world_.rng);
     std::uniform_real_distribution<double> start(0.10,0.42);
     c.needs={start(world_.rng),start(world_.rng),start(world_.rng),start(world_.rng),start(world_.rng)};
@@ -23,7 +65,7 @@ void Simulation::setupDemo(){
 }
 
 void Simulation::setupSocialDemo(){
-    world_.characters.clear(); world_.objects.clear(); relationships_=RelationshipBook{}; genealogy_=GenealogyBook{}; romances_=RomanceBook{}; households_=HouseholdBook{}; pregnancies_=PregnancyBook{}; runtime_.clear(); logs_.clear(); world_.minute=7*60;
+    world_.characters.clear(); world_.objects.clear(); relationships_=RelationshipBook{}; genealogy_=GenealogyBook{}; romances_=RomanceBook{}; households_=HouseholdBook{}; pregnancies_=PregnancyBook{}; births_=BirthBook{}; runtime_.clear(); logs_.clear(); world_.minute=7*60;
 
     Character a;
     a.id=1; a.name="SocialA";
@@ -69,6 +111,7 @@ void Simulation::setupNewGame(){
     romances_=RomanceBook{};
     households_=HouseholdBook{};
     pregnancies_=PregnancyBook{};
+    births_=BirthBook{};
     runtime_.clear();
     logs_.clear();
     world_.minute=8*60;
@@ -249,6 +292,287 @@ void Simulation::advanceAction(Character& c,Runtime& r){
     }
 }
 
+CharacterId Simulation::nextCharacterId() const
+{
+    CharacterId result=1;
+    for(const auto& character:world_.characters) result=std::max(result,character.id+1);
+    return result;
+}
+
+HouseholdId Simulation::nextHouseholdId() const
+{
+    HouseholdId result=1;
+    for(const auto& household:households_.all()) result=std::max(result,household.id+1);
+    return result;
+}
+
+std::string Simulation::makeChildName(Sex sex,CharacterId childId) const
+{
+    static const std::array<const char*,12> maleNames={
+        "Yejun","Eunwoo","Juwon","Hajun","Sunwoo","Yunho",
+        "Jinwoo","Minho","Woojin","Seungmin","Jisung","Jaeyun"
+    };
+    static const std::array<const char*,12> femaleNames={
+        "Seoa","Arin","Dayeon","Jiyu","Eunseo","Sena",
+        "Yeji","Nari","Haeun","Bomin","Somin","Chaeyeon"
+    };
+    const auto& names=sex==Sex::Female ? femaleNames : maleNames;
+    const double roll=deterministicFamilyRoll(world_.seed,childId,static_cast<CharacterId>(sex==Sex::Female ? 2 : 1),0);
+    std::size_t index=static_cast<std::size_t>(roll*static_cast<double>(names.size()));
+    if(index>=names.size()) index=names.size()-1;
+    std::string candidate=names[index];
+    bool used=false;
+    for(const auto& character:world_.characters) if(character.name==candidate){ used=true; break; }
+    if(used) candidate+=std::to_string(childId);
+    return candidate;
+}
+
+void Simulation::updatePregnanciesAndBirths()
+{
+    std::vector<CharacterId> dueParents;
+    for(auto& character:world_.characters){
+        PregnancyState* pregnancy=pregnancies_.activeFor(character.id);
+        if(pregnancy==nullptr) continue;
+        advancePregnancy(*pregnancy,character,world_.minute);
+        if(pregnancy->active() && world_.minute>=pregnancy->dueMinute){
+            dueParents.push_back(character.id);
+        }
+    }
+
+    for(CharacterId gestationalId:dueParents){
+        PregnancyState* pregnancy=pregnancies_.activeFor(gestationalId);
+        if(pregnancy==nullptr || world_.minute<pregnancy->dueMinute) continue;
+        const CharacterId partnerId=pregnancy->geneticPartner;
+        Character* gestationalParent=findMutableCharacter(world_,gestationalId);
+        Character* partner=findMutableCharacter(world_,partnerId);
+        if(gestationalParent==nullptr || partner==nullptr) continue;
+
+        const CharacterId childId=nextCharacterId();
+        const Sex childSex=deterministicFamilyRoll(world_.seed,gestationalId,partnerId,childId)<0.5
+            ? Sex::Male : Sex::Female;
+        const std::string childName=makeChildName(childSex,childId);
+        BirthOutcome outcome=performBirth(
+            *gestationalParent,*partner,childId,childName,
+            pregnancies_,households_,births_,world_.rng,world_.minute,0.08,&genealogy_);
+        if(outcome.result!=BirthResult::Success) continue;
+
+        outcome.child.sex=childSex;
+        outcome.child.baseMetabolism=outcome.child.metabolism;
+        outcome.child.baseSleepTendency=outcome.child.sleepTendency;
+        outcome.child.lifeCondition=lifeConditionForAge(
+            0,outcome.child.genetics.healthPotential,outcome.child.childrenIds.size());
+
+        recordLifeEvent(gestationalParent->lifeHistory,LifeEventType::ChildBorn,world_.minute,{childId,partnerId});
+        recordLifeEvent(partner->lifeHistory,LifeEventType::ChildBorn,world_.minute,{childId,gestationalId});
+
+        for(const auto& existing:world_.characters){
+            Relationship& childToExisting=relationships_.getOrCreate(childId,existing.id);
+            Relationship& existingToChild=relationships_.getOrCreate(existing.id,childId);
+            const bool isParent=existing.id==gestationalId || existing.id==partnerId;
+            if(isParent){
+                childToExisting.affection=0.72;
+                childToExisting.trust=0.62;
+                childToExisting.comfort=0.68;
+                childToExisting.familiarity=0.82;
+                existingToChild.affection=0.86;
+                existingToChild.trust=0.72;
+                existingToChild.comfort=0.78;
+                existingToChild.familiarity=0.88;
+                existingToChild.commitment=0.82;
+            }else{
+                childToExisting.familiarity=0.08;
+                existingToChild.familiarity=0.08;
+            }
+        }
+
+        world_.characters.push_back(std::move(outcome.child));
+        runtime_[childId]=Runtime{};
+        emit("birth: "+childName+" child of "+gestationalParent->name+" and "+partner->name);
+    }
+}
+
+void Simulation::evaluateDailyFamilyTransitions()
+{
+    for(auto& character:world_.characters){
+        if(character.alive) advanceAging(character,world_.minute);
+    }
+
+    for(std::size_t i=0;i<world_.characters.size();++i){
+        for(std::size_t j=i+1;j<world_.characters.size();++j){
+            Character& first=world_.characters[i];
+            Character& second=world_.characters[j];
+            Relationship& firstToSecond=relationships_.getOrCreate(first.id,second.id);
+            Relationship& secondToFirst=relationships_.getOrCreate(second.id,first.id);
+            evolveRomanticChemistry(first,second,firstToSecond,secondToFirst);
+        }
+    }
+
+    struct DatingCandidate {
+        CharacterId first=0;
+        CharacterId second=0;
+        double firstScore=0.0;
+        double secondScore=0.0;
+        double mutualScore=0.0;
+    };
+    std::vector<DatingCandidate> candidates;
+
+    for(std::size_t i=0;i<world_.characters.size();++i){
+        for(std::size_t j=i+1;j<world_.characters.size();++j){
+            Character& first=world_.characters[i];
+            Character& second=world_.characters[j];
+            if(!romances_.isAvailable(first.id) || !romances_.isAvailable(second.id)) continue;
+
+            Relationship& firstToSecond=relationships_.getOrCreate(first.id,second.id);
+            Relationship& secondToFirst=relationships_.getOrCreate(second.id,first.id);
+            const RomanceContext firstContext=autonomousRomanceContext(
+                first,second,firstToSecond,pastRelationshipPenalty(romances_,first.id));
+            const RomanceContext secondContext=autonomousRomanceContext(
+                second,first,secondToFirst,pastRelationshipPenalty(romances_,second.id));
+            const RomanceEvaluation firstEval=evaluateRomanceInterest(first,firstToSecond,firstContext,0.60);
+            const RomanceEvaluation secondEval=evaluateRomanceInterest(second,secondToFirst,secondContext,0.60);
+            if(firstEval.ready && secondEval.ready){
+                candidates.push_back({first.id,second.id,firstEval.score,secondEval.score,std::min(firstEval.score,secondEval.score)});
+            }
+        }
+    }
+
+    std::sort(candidates.begin(),candidates.end(),[](const DatingCandidate& a,const DatingCandidate& b){
+        if(a.mutualScore!=b.mutualScore) return a.mutualScore>b.mutualScore;
+        if(a.first!=b.first) return a.first<b.first;
+        return a.second<b.second;
+    });
+
+    for(const DatingCandidate& candidate:candidates){
+        if(!romances_.isAvailable(candidate.first) || !romances_.isAvailable(candidate.second)) continue;
+        Character* first=findMutableCharacter(world_,candidate.first);
+        Character* second=findMutableCharacter(world_,candidate.second);
+        if(first==nullptr || second==nullptr) continue;
+        Relationship& firstToSecond=relationships_.getOrCreate(first->id,second->id);
+        Relationship& secondToFirst=relationships_.getOrCreate(second->id,first->id);
+        const RomanceContext firstContext=autonomousRomanceContext(
+            *first,*second,firstToSecond,pastRelationshipPenalty(romances_,first->id));
+        const RomanceContext secondContext=autonomousRomanceContext(
+            *second,*first,secondToFirst,pastRelationshipPenalty(romances_,second->id));
+
+        Character* proposer=candidate.firstScore>=candidate.secondScore ? first : second;
+        Character* recipient=proposer==first ? second : first;
+        Relationship& proposerToRecipient=proposer==first ? firstToSecond : secondToFirst;
+        Relationship& recipientToProposer=proposer==first ? secondToFirst : firstToSecond;
+        const RomanceContext& proposerContext=proposer==first ? firstContext : secondContext;
+        const RomanceContext& recipientContext=proposer==first ? secondContext : firstContext;
+        const DatingProposalOutcome outcome=applyDatingProposal(
+            *proposer,*recipient,proposerToRecipient,recipientToProposer,
+            proposerContext,recipientContext,romances_,world_.minute,0.60,0.60);
+        if(outcome.result==DatingProposalResult::Accepted){
+            recordPairLifeEvent(*first,*second,LifeEventType::DatingStarted,world_.minute);
+            emit(first->name+" and "+second->name+" started dating");
+        }
+    }
+
+    const std::vector<RomancePair> stagePairs=romances_.all();
+    for(const RomancePair& snapshot:stagePairs){
+        if(!snapshot.active()) continue;
+        Character* first=findMutableCharacter(world_,snapshot.first);
+        Character* second=findMutableCharacter(world_,snapshot.second);
+        if(first==nullptr || second==nullptr || !first->alive || !second->alive) continue;
+        Relationship& firstToSecond=relationships_.getOrCreate(first->id,second->id);
+        Relationship& secondToFirst=relationships_.getOrCreate(second->id,first->id);
+
+        if(snapshot.stage==RomanceStage::Dating){
+            const int datingDuration=world_.minute-snapshot.startedMinute;
+            if(datingDuration>=FamilyDatingToCohabitationMinutes && !shareHousehold(households_,first->id,second->id)){
+                const CohabitationContext firstContext=autonomousCohabitationContext(*first,*second,firstToSecond);
+                const CohabitationContext secondContext=autonomousCohabitationContext(*second,*first,secondToFirst);
+                const CohabitationProposalOutcome outcome=applyCohabitationProposal(
+                    *first,*second,firstToSecond,secondToFirst,
+                    firstContext,secondContext,households_,nextHouseholdId(),true);
+                if(outcome.result==CohabitationProposalResult::Accepted){
+                    recordPairLifeEvent(*first,*second,LifeEventType::CohabitationStarted,world_.minute);
+                    recordPairLifeEvent(*first,*second,LifeEventType::HouseholdChanged,world_.minute);
+                    emit(first->name+" and "+second->name+" started cohabiting");
+                }
+            }
+
+            const int firstCohab=latestCohabitationMinute(*first);
+            const int secondCohab=latestCohabitationMinute(*second);
+            const int cohabStart=std::max(firstCohab,secondCohab);
+            const bool cohabMature=shareHousehold(households_,first->id,second->id) &&
+                cohabStart>=0 && world_.minute-cohabStart>=FamilyCohabitationToEngagementMinutes;
+            if(datingDuration>=FamilyDatingToEngagementMinutes && cohabMature){
+                const double duration=clampFamilyProgression(
+                    static_cast<double>(datingDuration)/static_cast<double>(180*FamilyProgressionDayMinutes));
+                const MarriageContext firstContext=autonomousMarriageContext(*first,*second,firstToSecond,duration);
+                const MarriageContext secondContext=autonomousMarriageContext(*second,*first,secondToFirst,duration);
+                const EngagementProposalOutcome outcome=applyEngagementProposal(
+                    *first,*second,firstToSecond,secondToFirst,
+                    firstContext,secondContext,romances_,world_.minute);
+                if(outcome.result==EngagementProposalResult::Accepted){
+                    recordPairLifeEvent(*first,*second,LifeEventType::Engaged,world_.minute);
+                    emit(first->name+" and "+second->name+" became engaged");
+                }
+            }
+        }else if(snapshot.stage==RomanceStage::Engaged){
+            if(snapshot.engagedMinute>=0 && world_.minute-snapshot.engagedMinute>=FamilyEngagementToMarriageMinutes){
+                const double duration=clampFamilyProgression(
+                    static_cast<double>(world_.minute-snapshot.startedMinute)/static_cast<double>(240*FamilyProgressionDayMinutes));
+                const MarriageContext firstContext=autonomousMarriageContext(*first,*second,firstToSecond,duration);
+                const MarriageContext secondContext=autonomousMarriageContext(*second,*first,secondToFirst,duration);
+                const HouseholdId householdId=shareHousehold(households_,first->id,second->id) ? 0 : nextHouseholdId();
+                const MarriageDecisionOutcome outcome=applyMarriageDecision(
+                    *first,*second,firstToSecond,secondToFirst,
+                    firstContext,secondContext,romances_,households_,world_.minute,householdId);
+                if(outcome.result==MarriageDecisionResult::Married){
+                    recordPairLifeEvent(*first,*second,LifeEventType::Married,world_.minute);
+                    emit(first->name+" and "+second->name+" got married");
+                }
+            }
+        }
+    }
+
+    const std::vector<RomancePair> pregnancyPairs=romances_.all();
+    for(const RomancePair& pair:pregnancyPairs){
+        if(pair.stage!=RomanceStage::Married || pair.marriedMinute<0) continue;
+        const int daysSinceMarriage=(world_.minute-pair.marriedMinute)/FamilyProgressionDayMinutes;
+        if(daysSinceMarriage<30 || ((daysSinceMarriage-30)%FamilyPregnancyAttemptIntervalDays)!=0) continue;
+
+        Character* first=findMutableCharacter(world_,pair.first);
+        Character* second=findMutableCharacter(world_,pair.second);
+        if(first==nullptr || second==nullptr || !first->alive || !second->alive) continue;
+        if(first->sex==second->sex) continue;
+
+        Character* gestationalParent=first->sex==Sex::Female ? first : second;
+        Character* partner=gestationalParent==first ? second : first;
+        if(pregnancies_.activeFor(gestationalParent->id)!=nullptr) continue;
+
+        Relationship& gestationalToPartner=relationships_.getOrCreate(gestationalParent->id,partner->id);
+        Relationship& partnerToGestational=relationships_.getOrCreate(partner->id,gestationalParent->id);
+        const ReproductiveProfile gestationalProfile=autonomousReproductiveProfile(*gestationalParent,world_.minute);
+        const ReproductiveProfile partnerProfile=autonomousReproductiveProfile(*partner,world_.minute);
+        const PregnancyContext context=autonomousPregnancyContext(
+            *gestationalParent,*partner,gestationalToPartner,partnerToGestational);
+        const std::uint64_t epoch=static_cast<std::uint64_t>(daysSinceMarriage/FamilyPregnancyAttemptIntervalDays);
+        const double roll=deterministicFamilyRoll(
+            world_.seed,gestationalParent->id,partner->id,epoch);
+        const PregnancyAttemptOutcome outcome=applyPregnancyAttempt(
+            *gestationalParent,*partner,gestationalProfile,partnerProfile,
+            gestationalToPartner,partnerToGestational,context,
+            pregnancies_,world_.minute,roll);
+        if(outcome.result==PregnancyAttemptResult::Conceived){
+            recordLifeEvent(gestationalParent->lifeHistory,LifeEventType::PregnancyStarted,world_.minute,{partner->id});
+            recordLifeEvent(partner->lifeHistory,LifeEventType::PregnancyStarted,world_.minute,{gestationalParent->id});
+            emit(gestationalParent->name+" and "+partner->name+" are expecting a child");
+        }
+    }
+}
+
+void Simulation::advanceAutonomousFamilyProgression()
+{
+    updatePregnanciesAndBirths();
+    if(world_.minute%FamilyProgressionDayMinutes==FamilyProgressionDecisionMinuteOfDay){
+        evaluateDailyFamilyTransitions();
+    }
+}
+
 void Simulation::step(){
     for(auto& c:world_.characters){
         c.needs.decay(c.metabolism,c.sleepTendency);
@@ -257,6 +581,7 @@ void Simulation::step(){
         if(!r.plan.empty()) advanceAction(c,r);
     }
     ++world_.minute;
+    advanceAutonomousFamilyProgression();
 }
 void Simulation::runMinutes(int minutes){ for(int i=0;i<minutes;++i) step(); }
 }
