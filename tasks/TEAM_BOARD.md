@@ -12,7 +12,7 @@
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | next latest-main branch | Production NEW GAME Unreal Runtime Integration | `Source/LifeLens/Simulation/**`, Core↔Unreal bridge, 필요한 쭌 소유 Core adapter | TODO — PR #41 DONE checkpoint 후 시작 |
+| 쭌 + 쭌 AI | `jjun/production-new-game-runtime-v1` | Production NEW GAME Unreal Runtime Integration | `Source/LifeLens/Simulation/**`, Core↔Unreal read adapter, 필요 시 쭌 소유 Core read model | DOING — Core founder source를 Unreal production start path에 연결 |
 | 쭌 + 쭌 AI | `task/03-fast-test`, PR #2 | old Android validation | Bridge/build | FROZEN — Run `34739283266` 재실행/수정/병합 금지 |
 | 다겸 + 다겸 AI | `dagyeom/observer-ui-v2`, PR #17 | Observer HUD v2 + Core Observer Bridge binding | `Source/LifeLens/UI/**` | REVIEW / RECOVERING — latest main reconcile 필요 |
 | 다겸 + 다겸 AI | `dagyeom/ui-foundation-v1`, PR #26 | Android landscape UI foundation | UI foundation | REVIEW |
@@ -21,45 +21,35 @@
 | 다겸 + 다겸 AI | `dagyeom/mobile-touch-v1`, PR #36 | Mobile Touch v1 | `Source/LifeLens/UI/**` | REVIEW — stacked on #30 |
 | 다겸 + 다겸 AI | `dagyeom/visual-feedback-v1`, PR #38 | Visual Feedback v1 | `Source/LifeLens/UI/**` | REVIEW — stacked on #36 |
 
+## Current Jjun lock — Production NEW GAME Unreal Runtime Integration
+
+- Branch: `jjun/production-new-game-runtime-v1`
+- Base at branch creation: `3f1848873e38325b6aa240f061d1035a5f9c4665`
+- Allowed scope: Jjun-owned `Source/LifeLens/Simulation/**`, Core↔Unreal bridge/read DTO, narrowly required Core read fields/tests.
+- Forbidden scope in this task: `Source/LifeLens/UI/**`, Dagyeom Character presentation, Content UI/Characters, old TASK_03.
+- Verified starting gap:
+  - Core Bridge only starts demo/social demo today.
+  - Production Core `setupNewGame()` from PR #41 is not yet exposed to Unreal.
+  - Core resident Unreal DTO lacks Sex/AgeYears/LifeStage founder identity.
+  - legacy `ULLSimulationSubsystem::NewGame()` independently randomizes another 2M+2F population.
+- Target:
+  - production bridge start calls Core `setupNewGame()`;
+  - stable WorldSeed + CharacterId GUID mapping preserved;
+  - founder identity projected read-only to Unreal;
+  - no new second randomization in the production path;
+  - validate Structural Preflight + actual UE 5.6 Linux UHT/UBT before merge.
+- Save/Load is not silently claimed solved here; persistent Core-state save can be a following bounded task.
+
 ## Latest completed Jjun work
 
-### PR #41 — Production NEW GAME Core v1
-
-- Status: DONE
-- Feature HEAD: `fd94b6b9c2c9d4ae23a6d65abf59ff4686218788`
-- Merge: `1b6f349f03db6f3bb1f95cf9387ef994a68c5d68`
-- Validation: Core Run `34798427843` PASS including deterministic harness; Structural Preflight `34798427848` PASS.
-- Contract now on main:
-  - authoritative Core Sex identity;
-  - WorldSeed deterministic exact 2M+2F founder generation;
-  - unique Core IDs/names;
-  - generated personality/genetics/needs/lifecycle birth time;
-  - `Simulation::setupNewGame()` resets authoritative social/family/runtime state;
-  - no forced couples/families/pregnancies.
-- No Dagyeom UI/Character presentation files changed.
-
-### Earlier integration
-
+- PR #41 Production NEW GAME Core v1 — DONE, merge `1b6f349f03db6f3bb1f95cf9387ef994a68c5d68`; Core `34798427843` PASS incl deterministic harness; Preflight `34798427848` PASS.
 - PR #37 Observer Runtime Bridge — merge `938d0a2798e600929b4ccc755b48bcd39026ac75`; Unreal UHT/UBT `34796067278` PASS.
 - PR #39 authoritative Family Runtime State — merge `612229cc610d2ea6283e080309bdee58ef42d1db`; Core `34796213647` PASS.
-- PR #40 Family + World aggregate Observer Bridge — merge `9261581df3abd5332d92855628fd7d03203748af`; Preflight `34796892593`, Unreal UHT/UBT `34796892609` PASS.
-
-## Next Jjun lock to establish
-
-Next bounded task: **Production NEW GAME Unreal Runtime Integration**.
-
-Goal:
-- legacy Unreal `ULLSimulationSubsystem::NewGame()` must stop independently generating a separate four-person population;
-- Core `Simulation::setupNewGame()` becomes the population source of truth;
-- stable `(WorldSeed, Core CharacterId) -> FGuid` mapping remains authoritative;
-- Observer/runtime reads consume the same Core residents;
-- Save/Load may follow as a separate bounded task rather than expanding this PR without limit;
-- Dagyeom UI/Character presentation files remain untouched.
+- PR #40 Family + World Observer Bridge — merge `9261581df3abd5332d92855628fd7d03203748af`; Preflight `34796892593`, Unreal UHT/UBT `34796892609` PASS.
 
 ## Dagyeom API handoff
 
-Former six `BLOCKED-BY-JJUN` items remain RESOLVED / READY FOR BINDING via #37/#39/#40:
-Relationship 13D + target, Emotion details, SocialIntent+target, Family summary, World aggregates, read-only Blueprint/USTRUCT Bridge.
+Former six `BLOCKED-BY-JJUN` items remain RESOLVED / READY FOR BINDING via #37/#39/#40: Relationship 13D + target, Emotion details, SocialIntent+target, Family summary, World aggregates, read-only Blueprint/USTRUCT Bridge.
 
 If a new concrete API gap is found, add a new Integration Request rather than reopening the old six.
 
@@ -75,7 +65,7 @@ Current open requests: **none**.
 
 ## Merge / reconciliation queue
 
-1. Jjun next New Game Unreal Runtime Integration — branch not yet created at this checkpoint.
+1. Jjun `jjun/production-new-game-runtime-v1` — DOING.
 2. Dagyeom PR #17 — reconcile latest main + bind current Core Bridge + review fixes + verify.
 3. Dagyeom PR #26 — reconcile latest main independently.
 4. After #17: #29/#30 → #36 → #38.
