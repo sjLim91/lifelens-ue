@@ -20,8 +20,8 @@
 |---|---|---|---|---|
 | 쭌 + 다겸 | Integration Sprint | Core/Bridge ↔ UI/Presentation 합류 | REVIEW/ASSIST only | DOING |
 | 다겸 + 다겸 AI | PR #17 | Observer HUD v2 + Core/civilization binding | `Source/LifeLens/UI/**` | DONE / MERGED `aa194db7...` |
-| 다겸 + 쭌 assist | `dagyeom/ui-foundation-v1`, PR #26 | Android landscape UI foundation | `LLObserverUIFoundation.*` | DOING / ASSIST_LOCK-26-R1 |
-| 다겸 + 다겸 AI | `dagyeom/character-presentation-v1`, PR #29 | Character Presentation Foundation | Character presentation | NEXT AFTER #26 |
+| 다겸 + 쭌 assist | PR #61 | UI Foundation current-main reconcile | `LLObserverUIFoundation.*` | DONE / MERGED `7826aaa...` |
+| 다겸 + 다겸 AI | `dagyeom/character-presentation-v1`, PR #29 | Character Presentation Foundation | Character presentation | NEXT |
 | 다겸 + 쭌 Bridge support as needed | NEW milestone | Character Appearance v1 | Appearance + `Content/Characters/**` | HIGH PRIORITY AFTER #29 |
 | 다겸 + 쭌 Bridge support as needed | NEW milestone | Character Motion & Context v1 | Character presentation/animation | AFTER APPEARANCE |
 | 다겸 + 다겸 AI | `dagyeom/observer-ux-polish-v1`, PR #30 | Observer UX Polish | `Source/LifeLens/UI/**` | AFTER HUMAN CHARACTER MINIMUM |
@@ -31,36 +31,28 @@
 
 ## Current Assist Locks
 
-### ASSIST_LOCK-26-R1 — UI Foundation latest-main reconcile
+**0개.**
 
-- Mode: active integration assist
-- Target owner: 다겸 / STILLofficial
-- Target PR: #26 `dagyeom/ui-foundation-v1`
-- Base HEAD: `70dfa5ebeabf24b661c9f9fd0bc63e3ad01ac180`
-- Helper branch: `integration/dagyeom-ui-foundation-r1-assist`
-- Helper PR: #61
-- Locked paths:
-  - `Source/LifeLens/UI/LLObserverUIFoundation.cpp`
-  - `Source/LifeLens/UI/LLObserverUIFoundation.h`
-- Reason: preserve the two UI Foundation files while reconciling PR #26 onto current main, discarding stale shared-state docs from the old branch, then validate UE 5.6 UHT/UBT/link before handoff.
-- Validation: helper Preflight `34840301429` PASS; verify-only PR #62 Preflight `34840467738` PASS; Unreal Run #21 `34840467864` in progress.
-- Status: `LOCKED / JJUN ASSIST R1`
-- While locked, Dagyeom side should not edit these two files.
-- Unlock condition: validated helper merged / original #26 superseded, or user explicitly cancels the assist.
+### Completed assist — PR #26 UI Foundation
+
+- Original PR #26: CLOSED / NOT MERGED / stale-base superseded.
+- Helper PR #61: MERGED to main as `7826aaa917b4877bdd3b5ebbd6d5bfd139309b9b`.
+- Helper Preflight `34840301429` PASS.
+- Verify-only PR #62: CLOSED / NOT MERGED.
+- Verify Preflight `34840467738` PASS.
+- Unreal Run #21 `34840467864` PASS including UE 5.6 UHT/UBT/link.
+- `ASSIST_LOCK-26-R1`: DONE / UNLOCKED.
 
 ### Completed assist — PR #17 R1/R2
 
 - R1 helper PR #56 merged into `dagyeom/observer-ui-v2`.
 - R1 verify-only PR #57 closed without merge.
-- R1 Preflight `34824371968` PASS.
 - R1 Unreal Run #17 `34824371965` PASS including UHT + UBT + link.
-- R2 helper PR #58 merged into `dagyeom/observer-ui-v2` as `5eaff7dd6d579606331919b89b0060a776a7ad80`.
+- R2 helper PR #58 merged into `dagyeom/observer-ui-v2`.
 - R2 verify-only PR #59 closed without merge.
-- Corrected R2 Preflight `34833994138` PASS.
 - Corrected R2 Unreal Run #20 `34833994155` PASS including UHT + UBT + final link.
 - PR #17 merged to main as `aa194db7c5b500cdf5041fd6d43b25f97b9dd0b6`.
-- Former Codex review threads resolved; unresolved = 0.
-- `ASSIST_LOCK-17-R2`: DONE / UNLOCKED.
+- Former review threads resolved; unresolved = 0.
 
 ## Character visual direction — canonical
 
@@ -135,25 +127,21 @@ ASSIST_LOCK은 임시이며 해제 후 원래 소유권으로 복귀한다.
 
 ## Integration Requests
 
-### IR-MAC-SHADOW-01
-- Status: **DONE / RESOLVED** by PR #54.
-
 Current open requests: **none**.
 
 ## Merge / reconciliation queue
 
-1. PR #26 UI Foundation reconcile — **DOING / ASSIST_LOCK-26-R1**.
-2. PR #29 Character Presentation Foundation.
-3. **Character Appearance v1.**
-4. **Character Motion & Context v1 minimum.**
-5. PR #30 Observer UX Polish.
-6. #36 after #30.
-7. #38 after #36.
-8. Core + Observer + Human Character integrated runtime verification.
-9. Android smoke APK.
-10. Appearance Genetics & Lifecycle.
-11. Clothing/Equipment civilization linkage.
-12. Resume deeper civilization production chains.
+1. PR #29 Character Presentation Foundation.
+2. **Character Appearance v1.**
+3. **Character Motion & Context v1 minimum.**
+4. PR #30 Observer UX Polish.
+5. #36 after #30.
+6. #38 after #36.
+7. Core + Observer + Human Character integrated runtime verification.
+8. Android smoke APK.
+9. Appearance Genetics & Lifecycle.
+10. Clothing/Equipment civilization linkage.
+11. Resume deeper civilization production chains.
 
 ## Completion rule
 
