@@ -4,7 +4,7 @@
 >
 > 제품 기준: `docs/LIFELENS_SPEC_v1.1.md` + **`docs/CIVILIZATION_PROGRESSION_v1.md`** · 상태 규칙: `docs/STATE_MANAGEMENT.md` · 역할/잠금: `tasks/TEAM_BOARD.md` · 이력: `tasks/HANDOFF_LOG.md`
 
-Last reconciled: 2026-09-14 KST — actual `main` includes PR #51 merge `55d5211160c8edad32b01177e2b9326a9faa2b78`. Autonomous Civilization Action Loop v1 is MERGED and validated. Next Jjun slice is state-locked as **Civilization Knowledge Transmission v1** on branch `jjun/civilization-knowledge-transmission-v1`.
+Last reconciled: 2026-09-14 KST — actual `main` includes PR #51 merge `55d5211160c8edad32b01177e2b9326a9faa2b78`. **Civilization Knowledge Transmission v1** is open as PR #52 on `jjun/civilization-knowledge-transmission-v1`, head `8fe9369682834a3fae44bb6605f0d872bb80b971`. Push Core Run `34814219163` PASS (37/37 + deterministic harness), PR Preflight `34814310291` PASS, PR Core Run `34814310235` is in progress.
 
 ## Mandatory sync gate
 
@@ -36,21 +36,23 @@ Rules:
 ### 1. Civilization Knowledge Transmission v1 — Jjun
 
 - Owner: 쭌 + 쭌 AI
-- Status: `DOING / STATE_LOCKED`
-- Branch: `jjun/civilization-knowledge-transmission-v1`
+- Status: `REVIEW / CI_RUNNING`
+- Branch/PR: `jjun/civilization-knowledge-transmission-v1`, PR #52
+- Head: `8fe9369682834a3fae44bb6605f0d872bb80b971`
+- Validation: push Core `34814219163` PASS 37/37 + deterministic harness; PR Preflight `34814310291` PASS; PR Core `34814310235` IN PROGRESS.
 - Goal: stop discoveries from remaining isolated forever by connecting personal civilization knowledge to witness / imitation / direct teaching while preserving provenance and imperfect transmission.
-- Bounded v1 scope:
-  1. convert successful Discovery/Craft events into transmissible technique facts;
-  2. direct witnesses can gain Observed/Hypothesized knowledge without becoming instantly Reproducible;
-  3. imitation can advance knowledge only when observer has prerequisite knowledge/material context;
-  4. deliberate teaching uses relationship trust, teacher mastery, learner curiosity/learning skill and deterministic roll;
-  5. source/provenance must distinguish self-discovery, witness/imitation and taught/heard knowledge;
-  6. no global shared-tech unlock;
-  7. death/non-transmission can still remove unique knowledge from the living population;
-  8. deterministic tests for spread, failed teaching, loops/duplicates and personal divergence;
-  9. reuse #47 Witness/Rumor/Social Knowledge where appropriate instead of creating a second rumor system.
+- Implemented v1 scope:
+  1. successful Discovery/Craft events become deterministic transmissible technique facts;
+  2. direct witnesses gain Observed knowledge and can reach Understood through contextual imitation, never instant Reproducible from one witness;
+  3. imitation requires prerequisite/material context;
+  4. deliberate teaching uses relationship trust/respect/familiarity, teacher mastery, learner curiosity/openness/learning skill and deterministic roll;
+  5. `SocialKnowledgeBook` is authoritative Simulation state with fact/receipt/transmissionPath provenance;
+  6. duplicate/loop paths are suppressed and validated;
+  7. binary snapshot format v3 persists provenance while v1/v2 remain readable;
+  8. NEW GAME clears prior culture/transmission history;
+  9. no global shared-tech unlock.
 - Explicitly out of scope: Observer/Unreal read DTOs, UI, schools/professions, economy, writing/books, agriculture/metallurgy chains.
-- Required gates: Core full suite + deterministic harness + Preflight.
+- Merge gates: PR Core full suite + deterministic harness + Preflight.
 
 ### 2. Observer HUD v2 — Dagyeom
 
@@ -115,7 +117,7 @@ Rules:
 
 ## Next sequencing
 
-1. Civilization Knowledge Transmission v1.
+1. Finish/merge Civilization Knowledge Transmission v1 (PR #52).
 2. Civilization Observer read DTOs + discovery/history summaries.
 3. Unreal natural-resource affordances + held tool/item presentation.
 4. Deeper production chains: stable fire, improved stone tools, containers, construction, agriculture, metallurgy.
