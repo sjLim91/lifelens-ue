@@ -4,6 +4,7 @@
 #include "GameFramework/Actor.h"
 #include "Core/LLTypes.h"
 #include "Simulation/LLCoreActionTypes.h"
+#include "World/LLWorldAffordanceTypes.h"
 #include "LLWorldDirector.generated.h"
 
 class ALLActivityAnchor;
@@ -21,6 +22,9 @@ struct FLLResidentRuntimeState
     FGuid LastTargetId;
     TWeakObjectPtr<ALLActivityAnchor> ReservedAnchor;
     ELLActionIntent ReservedIntent = ELLActionIntent::Idle;
+    ELLWorldAffordanceTier ActiveAffordanceTier = ELLWorldAffordanceTier::Unavailable;
+    bool bUsingEmergencyFallback = false;
+    FTransform EmergencyUseTransform = FTransform::Identity;
 };
 
 UCLASS()
@@ -38,12 +42,17 @@ public:
     UFUNCTION(BlueprintPure, Category="LifeLens|World")
     ELLActionIntent GetResidentIntent(FGuid ResidentId) const;
 
+    UFUNCTION(BlueprintPure, Category="LifeLens|World")
+    ELLWorldAffordanceTier GetResidentAffordanceTier(FGuid ResidentId) const;
+
+    UFUNCTION(BlueprintPure, Category="LifeLens|World")
+    bool IsResidentUsingEmergencyFallback(FGuid ResidentId) const;
+
 protected:
     virtual void BeginPlay() override;
 
 private:
     void CollectActivityAnchors();
-    void EnsureBootstrapActivityAnchors();
     void SpawnResidents();
     void UpdateResident(ALLResidentCharacter& Character, float DeltaSeconds);
     void ApplyCoreDirective(
@@ -53,11 +62,21 @@ private:
     ELLActionIntent ToPresentationIntent(ELLCorePhysicalIntent Intent) const;
     ALLActivityAnchor* FindBestUsableAnchor(
         const ALLResidentCharacter& Character,
-        ELLActionIntent Intent) const;
+        ELLActionIntent Intent,
+        ELLWorldAffordanceTier& OutTier) const;
     ALLActivityAnchor* EnsurePhysicalReservation(
         ALLResidentCharacter& Character,
         FLLResidentRuntimeState& Runtime,
         ELLActionIntent Intent);
+    bool EnsureEmergencyFallback(
+        const ALLResidentCharacter& Character,
+        FLLResidentRuntimeState& Runtime,
+        ELLActionIntent Intent,
+        FTransform& OutUseTransform) const;
+    bool SupportsEmergencyFallback(ELLActionIntent Intent) const;
+    FTransform ResolveEmergencyFallbackTransform(
+        const ALLResidentCharacter& Character,
+        ELLActionIntent Intent) const;
     void ReleasePhysicalReservation(FGuid ResidentId, FLLResidentRuntimeState& Runtime);
     FVector ResolveSocialTargetLocation(
         const ALLResidentCharacter& Character,
