@@ -6,6 +6,7 @@
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "UObject/UObjectGlobals.h"
 
 ALLWorldDirector::ALLWorldDirector()
 {
@@ -109,53 +110,72 @@ void ALLWorldDirector::EnsureBootstrapActivityAnchors()
 
     struct FBootstrapAnchorSpec
     {
-        ELLActionIntent Intent;
-        FVector Offset;
+        ELLActionIntent PrimaryIntent;
+        ELLActionIntent AdditionalIntent;
+        int32 DesiredCount;
+        FVector BaseOffset;
+        FVector StepOffset;
         FRotator Rotation;
     };
 
     const FBootstrapAnchorSpec Specs[] = {
-        { ELLActionIntent::Eat,    FVector(-520.0f, -300.0f, 90.0f), FRotator(0.0f,   0.0f, 0.0f) },
-        { ELLActionIntent::Drink,  FVector(-520.0f,  300.0f, 90.0f), FRotator(0.0f,   0.0f, 0.0f) },
-        { ELLActionIntent::Sleep,  FVector( 520.0f, -300.0f, 90.0f), FRotator(0.0f, 180.0f, 0.0f) },
-        { ELLActionIntent::Toilet, FVector( 520.0f,  300.0f, 90.0f), FRotator(0.0f, 180.0f, 0.0f) },
-        { ELLActionIntent::Hygiene,FVector(-220.0f,  520.0f, 90.0f), FRotator(0.0f, -90.0f, 0.0f) }
+        { ELLActionIntent::Eat,     ELLActionIntent::Idle, 1, FVector(-520.0f, -300.0f, 90.0f), FVector::ZeroVector,            FRotator(0.0f,   0.0f, 0.0f) },
+        { ELLActionIntent::Sleep,   ELLActionIntent::Idle, 4, FVector( 520.0f, -450.0f, 90.0f), FVector(0.0f, 300.0f, 0.0f),  FRotator(0.0f, 180.0f, 0.0f) },
+        { ELLActionIntent::Toilet,  ELLActionIntent::Idle, 2, FVector( 320.0f,  520.0f, 90.0f), FVector(220.0f, 0.0f, 0.0f),  FRotator(0.0f, -90.0f, 0.0f) },
+        { ELLActionIntent::Hygiene, ELLActionIntent::Drink,2, FVector(-520.0f,  300.0f, 90.0f), FVector(0.0f, 220.0f, 0.0f),  FRotator(0.0f,   0.0f, 0.0f) }
+    };
+
+    const auto CountCapability = [this](ELLActionIntent Intent)
+    {
+        int32 Count = 0;
+        for (ALLActivityAnchor* Anchor : ActivityAnchors)
+        {
+            if (IsValid(Anchor) && Anchor->bEnabled && Anchor->SupportsIntent(Intent))
+            {
+                ++Count;
+            }
+        }
+        return Count;
     };
 
     for (const FBootstrapAnchorSpec& Spec : Specs)
     {
-        bool bAlreadyProvided = false;
-        for (ALLActivityAnchor* Anchor : ActivityAnchors)
+        const int32 ExistingPrimary = CountCapability(Spec.PrimaryIntent);
+        const int32 ExistingAdditional = Spec.AdditionalIntent == ELLActionIntent::Idle
+            ? Spec.DesiredCount
+            : CountCapability(Spec.AdditionalIntent);
+        const int32 MissingPrimary = FMath::Max(0, Spec.DesiredCount - ExistingPrimary);
+        const int32 MissingAdditional = FMath::Max(0, Spec.DesiredCount - ExistingAdditional);
+        const int32 SpawnCount = FMath::Max(MissingPrimary, MissingAdditional);
+
+        for (int32 NewIndex = 0; NewIndex < SpawnCount; ++NewIndex)
         {
-            if (IsValid(Anchor) && Anchor->SupportedIntent == Spec.Intent)
+            const int32 SlotIndex = ExistingPrimary + NewIndex;
+            FActorSpawnParameters Params;
+            Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+            Params.Name = MakeUniqueObjectName(
+                GetWorld(),
+                ALLActivityAnchor::StaticClass(),
+                FName(TEXT("LLBootstrapActivityAnchor")));
+
+            ALLActivityAnchor* Anchor = GetWorld()->SpawnActor<ALLActivityAnchor>(
+                ALLActivityAnchor::StaticClass(),
+                GetActorLocation() + Spec.BaseOffset + Spec.StepOffset * static_cast<float>(SlotIndex),
+                Spec.Rotation,
+                Params);
+
+            if (!Anchor)
             {
-                bAlreadyProvided = true;
-                break;
+                continue;
             }
+
+            Anchor->SupportedIntent = Spec.PrimaryIntent;
+            if (Spec.AdditionalIntent != ELLActionIntent::Idle)
+            {
+                Anchor->AdditionalSupportedIntents.AddUnique(Spec.AdditionalIntent);
+            }
+            ActivityAnchors.Add(Anchor);
         }
-
-        if (bAlreadyProvided)
-        {
-            continue;
-        }
-
-        FActorSpawnParameters Params;
-        Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-        Params.Name = MakeUniqueObjectName(GetWorld(), ALLActivityAnchor::StaticClass(), TEXT("LLBootstrapActivityAnchor"));
-
-        ALLActivityAnchor* Anchor = GetWorld()->SpawnActor<ALLActivityAnchor>(
-            ALLActivityAnchor::StaticClass(),
-            GetActorLocation() + Spec.Offset,
-            Spec.Rotation,
-            Params);
-
-        if (!Anchor)
-        {
-            continue;
-        }
-
-        Anchor->SupportedIntent = Spec.Intent;
-        ActivityAnchors.Add(Anchor);
     }
 }
 
@@ -373,7 +393,7 @@ ALLActivityAnchor* ALLWorldDirector::FindBestUsableAnchor(
     for (ALLActivityAnchor* Anchor : ActivityAnchors)
     {
         if (!IsValid(Anchor)
-            || Anchor->SupportedIntent != Intent
+            || !Anchor->SupportsIntent(Intent)
             || !Anchor->CanBeUsedBy(Character.GetResidentId()))
         {
             continue;
@@ -407,7 +427,7 @@ ALLActivityAnchor* ALLWorldDirector::EnsurePhysicalReservation(
     {
         ALLActivityAnchor* Existing = Runtime.ReservedAnchor.Get();
         if (Runtime.ReservedIntent == Intent
-            && Existing->SupportedIntent == Intent
+            && Existing->SupportsIntent(Intent)
             && Existing->IsClaimedBy(Character.GetResidentId())
             && Existing->CanBeUsedBy(Character.GetResidentId()))
         {
