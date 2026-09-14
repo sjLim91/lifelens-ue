@@ -32,7 +32,7 @@
 
 ## ACTIVE LOCK
 
-**없음.**
+**없음. `ASSIST_LOCK-29-R1`은 RELEASED.**
 
 ## READY_NOW
 
@@ -41,12 +41,21 @@
 Start from current latest `main` at or after `c9164ebf3cc70a194d3f8f6e50dcfb3c9df2a986`.
 
 Detailed acceptance criteria: `docs/CHARACTER_APPEARANCE_ROADMAP.md`.
+Canonical asset decision: `docs/CHARACTER_ASSET_TRACK.md`.
+
+**Default asset track: Track B — Quaternius CC0.**
+
+- baseline body: Quaternius Universal Base Characters pack version whose pack page explicitly states CC0
+- baseline animation source: Quaternius Universal Animation Library version whose pack page explicitly states CC0
+- record exact source/version/license provenance at import time
+- do not assume every Quaternius pack is CC0; verify any additional pack separately
+- MetaHuman is an upgrade/comparison path only after the Android smoke/performance gate is green
 
 Minimum:
 - real humanoid skeletal mesh
 - skin / face / eyes / hair / default clothing
 - shared/common skeleton + modular appearance
-- deterministic `AppearanceProfile` from WorldSeed + CharacterId
+- deterministic `AppearanceProfile` from stable resident identity
 - NEW GAME residents visually distinct
 - Save/Load appearance continuity
 - Android LOD/mobile fallback
@@ -98,16 +107,17 @@ Jjun default support = REVIEW_ONLY.
 ## Canonical order
 
 1. Character Presentation v1 — DONE.
-2. Character Appearance v1 — READY_NOW.
+2. Character Appearance v1 — READY_NOW / Track B Quaternius CC0.
 3. Character Motion & Context v1 minimum.
 4. PR #30 Observer UX Polish.
 5. PR #36 Mobile Touch.
 6. PR #38 Visual Feedback.
 7. Core + Observer + Human Character integrated runtime verification.
-8. Android smoke APK.
-9. Appearance Genetics & Lifecycle.
-10. Clothing/Equipment civilization linkage.
-11. deeper civilization production chains.
+8. Android smoke APK + profiling.
+9. MetaHuman comparison / upgrade decision.
+10. Appearance Genetics & Lifecycle.
+11. Clothing/Equipment civilization linkage.
+12. deeper civilization production chains.
 
 ## Canonical product direction
 
