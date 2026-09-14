@@ -1,0 +1,1 @@
+Verification-only trigger for PR #26 UI Foundation integration. This file exists only on the verify branch so the Unreal Linux compile workflow runs against the exact latest-main integration tree. Do not merge this file to main.
