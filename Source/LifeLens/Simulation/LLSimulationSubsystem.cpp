@@ -115,24 +115,32 @@ void ULLSimulationSubsystem::NewGame(int32 OptionalSeed)
 
 bool ULLSimulationSubsystem::SaveGame(const FString& SlotName)
 {
-    if (!bCoreAuthoritativeRuntime || !GetCoreBridge() || !GetCoreBridge()->IsCoreRunning())
+    ULLCoreBridgeSubsystem* CoreBridge = GetCoreBridge();
+    if (!bCoreAuthoritativeRuntime || !CoreBridge || !CoreBridge->IsCoreRunning())
     {
         return false;
     }
 
-    // Transitional deterministic checkpoint. Residents/relationships are kept
-    // for file compatibility/inspection, but LoadGame reconstructs Core from
-    // WorldSeed + SimulationMinute rather than treating these arrays as truth.
+    TArray<uint8> SnapshotBytes;
+    FString SnapshotError;
+    if (!CoreBridge->CaptureCoreSnapshotBytes(SnapshotBytes, SnapshotError))
+    {
+        UE_LOG(LogTemp, Error, TEXT("LifeLens SaveGame failed to capture Core snapshot: %s"), *SnapshotError);
+        return false;
+    }
+
     ULLSaveGame* SaveObject = Cast<ULLSaveGame>(UGameplayStatics::CreateSaveGameObject(ULLSaveGame::StaticClass()));
     if (!SaveObject)
     {
         return false;
     }
 
+    SaveObject->SaveVersion = 2;
     SaveObject->WorldSeed = WorldSeed;
     SaveObject->SimulationMinute = SimulationMinute;
-    SaveObject->Residents = Residents;
-    SaveObject->Relationships = Relationships;
+    SaveObject->CoreSnapshotBytes = MoveTemp(SnapshotBytes);
+    SaveObject->Residents.Reset();
+    SaveObject->Relationships.Reset();
     return UGameplayStatics::SaveGameToSlot(SaveObject, SlotName, 0);
 }
 
@@ -145,25 +153,46 @@ bool ULLSimulationSubsystem::LoadGame(const FString& SlotName)
 
     ULLSaveGame* SaveObject = Cast<ULLSaveGame>(UGameplayStatics::LoadGameFromSlot(SlotName, 0));
     ULLCoreBridgeSubsystem* CoreBridge = GetCoreBridge();
-    if (!SaveObject || !CoreBridge || SaveObject->WorldSeed == 0)
+    if (!SaveObject || !CoreBridge)
     {
         return false;
     }
 
-    // Current autonomous Core is deterministic from WorldSeed. Until the full
-    // Core snapshot serializer lands, reload by replaying from formal NEW GAME
-    // instead of reviving the legacy independently-generated resident arrays.
-    WorldSeed = SaveObject->WorldSeed;
-    CoreBridge->StartCoreNewGame(WorldSeed);
-
-    const int64 StartMinute = CoreBridge->GetWorldObservation().SimulationMinute;
-    const int64 TargetMinute = FMath::Max(StartMinute, SaveObject->SimulationMinute);
-    int64 RemainingMinutes = TargetMinute - StartMinute;
-    while (RemainingMinutes > 0)
+    if (SaveObject->SaveVersion == 2)
     {
-        const int32 Chunk = static_cast<int32>(FMath::Min<int64>(RemainingMinutes, 1440));
-        CoreBridge->AdvanceCoreMinutes(Chunk);
-        RemainingMinutes -= Chunk;
+        FString RestoreError;
+        if (!CoreBridge->RestoreCoreSnapshotBytes(SaveObject->CoreSnapshotBytes, RestoreError))
+        {
+            UE_LOG(LogTemp, Error, TEXT("LifeLens LoadGame failed to restore Core snapshot: %s"), *RestoreError);
+            return false;
+        }
+    }
+    else if (SaveObject->SaveVersion == 1)
+    {
+        // Legacy v1 compatibility only. Old saves never contained authoritative
+        // Core state, so the only safe migration path is the previous deterministic
+        // WorldSeed + SimulationMinute replay. Legacy Residents/Relationships are
+        // never revived as simulation truth.
+        if (SaveObject->WorldSeed == 0)
+        {
+            return false;
+        }
+
+        CoreBridge->StartCoreNewGame(SaveObject->WorldSeed);
+        const int64 StartMinute = CoreBridge->GetWorldObservation().SimulationMinute;
+        const int64 TargetMinute = FMath::Max(StartMinute, SaveObject->SimulationMinute);
+        int64 RemainingMinutes = TargetMinute - StartMinute;
+        while (RemainingMinutes > 0)
+        {
+            const int32 Chunk = static_cast<int32>(FMath::Min<int64>(RemainingMinutes, 1440));
+            CoreBridge->AdvanceCoreMinutes(Chunk);
+            RemainingMinutes -= Chunk;
+        }
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("LifeLens LoadGame rejected unsupported save version %d."), SaveObject->SaveVersion);
+        return false;
     }
 
     bCoreAuthoritativeRuntime = RefreshProjectionFromCore();
