@@ -5,9 +5,11 @@ root = Path(__file__).resolve().parents[1]
 required = [
     'Source/LifeLensCore/include/lifelens/CivilizationObserverReadModel.h',
     'Source/LifeLensCore/include/lifelens/Simulation.h',
+    'Source/LifeLensCore/src/CivilizationKnowledgeTransmission.cpp',
     'Source/LifeLens/Simulation/LLCivilizationReadTypes.h',
     'Source/LifeLens/Simulation/LLCoreBridgeSubsystem.h',
     'Source/LifeLens/Simulation/LLCoreBridgeCivilization.cpp',
+    'Source/LifeLens/Simulation/LLCoreCompileUnit.cpp',
     'Source/LifeLensCore/tests/test_civilization_observer_read_model.cpp',
 ]
 missing = [path for path in required if not (root / path).exists()]
@@ -70,6 +72,14 @@ for token in (
     'StableFactId',
 ):
     assert token in bridge_cpp, f'Missing civilization Bridge projection: {token}'
+
+# Core tests compile CivilizationKnowledgeTransmission.cpp as a normal CMake
+# translation unit, while Unreal pulls Core implementation through
+# LLCoreCompileUnit.cpp. Keep the Unreal side linked to the same authoritative
+# implementation so CI cannot pass Core but fail UBT at the final link step.
+compile_unit = (root / 'Source/LifeLens/Simulation/LLCoreCompileUnit.cpp').read_text(encoding='utf-8')
+assert '#include "../../LifeLensCore/src/CivilizationKnowledgeTransmission.cpp"' in compile_unit, \
+    'Unreal compile unit must include CivilizationKnowledgeTransmission.cpp'
 
 # Observer APIs are intentionally read-only. Do not introduce a second Unreal
 # authority for inventory, knowledge, resources or technology unlocks.
