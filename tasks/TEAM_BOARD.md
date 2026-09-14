@@ -4,11 +4,12 @@
 
 ## 최우선 규칙
 
-**기능 작업보다 상태 동기화가 먼저다.** actual main/branch/PR/Actions를 `WORK_STATE.md` → 역할별 READY queue → 이 보드 → `HANDOFF_LOG.md`와 대조하고, 다르면 코드 전에 문서를 갱신한다.
-
-제품 방향 기준은 `docs/LIFELENS_SPEC_v1.1.md`와 **`docs/CIVILIZATION_PROGRESSION_v1.md`**를 함께 따른다.
-
-쭌이 다겸 소유 작업을 도울 때는 **`docs/INTEGRATION_SPRINT.md`가 필수 규칙**이다. 기본은 REVIEW_ONLY이며, 실제 코드 수정은 명시적 `ASSIST_LOCK` + `integration/*-assist` branch를 사용한다. `dagyeom/*` branch에 쭌 AI가 직접 push하지 않는다.
+- 실제 `main` / branch / PR / Actions가 문서보다 우선한다.
+- 기능 작업 전에 `WORK_STATE.md` → 역할별 READY queue → 이 보드 → `HANDOFF_LOG.md`를 맞춘다.
+- 제품 방향은 `docs/LIFELENS_SPEC_v1.1.md` + `docs/CIVILIZATION_PROGRESSION_v1.md`.
+- 쭌이 다겸 작업을 도울 때는 `docs/INTEGRATION_SPRINT.md` 필수.
+- 기본 지원은 `REVIEW_ONLY`.
+- 실제 다겸 소유 코드 수정은 `ASSIST_LOCK` + `integration/dagyeom-<scope>-assist`; `dagyeom/*` direct push 금지.
 
 상태: `TODO` / `DOING` / `REVIEW` / `DONE` / `BLOCKED` / `FROZEN`
 
@@ -16,160 +17,128 @@
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | `jjun/civilization-observer-read-v1`, PR #53 | Civilization Observer Read DTOs v1 | `Source/LifeLensCore/**`, `Source/LifeLens/Simulation/**`, validator/preflight | READY_TO_MERGE after reconcile — Core+Preflight PASS; UE Run #16 PASS; branch diverged only because main docs advanced |
-| 쭌 + 쭌 AI | `jjun/mac-clang-shadow-hotfix`, PR #54 | macOS clang `-Wshadow` unblock for Dagyeom R1 | `Source/LifeLensCore/include/lifelens/ObserverReadModelV2.h` | DONE — merged `3b649b900c44a4e48bb89171b38f5e685e757b14` |
-| 쭌 + 쭌 AI | post-#53 | Integration Sprint support for Dagyeom | review/assist only under `docs/INTEGRATION_SPRINT.md` | PLANNED — start after #53 merge |
-| 쭌 + 쭌 AI | `task/03-fast-test`, PR #2 | old Android validation | Bridge/build | FROZEN — Run `34739283266` 재실행/수정/병합 금지 |
-| 다겸 + 다겸 AI | `dagyeom/observer-ui-v2`, PR #17 | Observer HUD v2 + Core Observer Bridge binding | `Source/LifeLens/UI/**` | REVIEW / RECOVERING — macOS Core blocker resolved; R1 may resume from latest main |
+| 쭌 + 다겸 | Integration Sprint | Core/Bridge ↔ UI/Presentation 합류 | REVIEW/ASSIST only | DOING |
+| 다겸 + 다겸 AI | `dagyeom/observer-ui-v2`, PR #17 | Observer HUD v2 + latest main reconcile + Bridge binding | `Source/LifeLens/UI/**` | READY / R1 RESUME |
 | 다겸 + 다겸 AI | `dagyeom/ui-foundation-v1`, PR #26 | Android landscape UI foundation | UI foundation | REVIEW |
 | 다겸 + 다겸 AI | `dagyeom/character-presentation-v1`, PR #29 | Character Presentation v1 | Character presentation | REVIEW — stacked on #17 |
 | 다겸 + 다겸 AI | `dagyeom/observer-ux-polish-v1`, PR #30 | Observer UX Polish | `Source/LifeLens/UI/**` | REVIEW — stacked on #17 |
 | 다겸 + 다겸 AI | `dagyeom/mobile-touch-v1`, PR #36 | Mobile Touch v1 | `Source/LifeLens/UI/**` | REVIEW — stacked on #30 |
 | 다겸 + 다겸 AI | `dagyeom/visual-feedback-v1`, PR #38 | Visual Feedback v1 | `Source/LifeLens/UI/**` | REVIEW — stacked on #36 |
+| 쭌 + 쭌 AI | `task/03-fast-test`, PR #2 | old Android validation | Bridge/build | FROZEN |
 
-## Canonical direction — autonomous civilization progression
+## Current Assist Locks
 
-`Need / Curiosity → Observe → Gather → Carry/Store → Experiment → Discovery → Personal Knowledge → Craft/Build → Teach/Imitate → Shared Culture → Specialization/Exchange → Generational Civilization`
+**없음.**
 
-Rules:
-- recipe/tech는 전역 unlock되지 않는다.
-- 기술은 개인 지식에서 시작하고 목격·모방·설명·교육을 통해 퍼진다.
-- 시대 레이블은 강제 gate가 아니라 실제 문명 상태의 관찰 요약이다.
-- 지식은 죽음/단절로 소실될 수 있다.
-- Memory / Belief / Witness-Rumor / Family / Generation을 재사용한다.
-- Observer HUD는 계속 단순하게 유지한다.
+쭌이 PR #17 코드를 직접 수정하게 되면 먼저 exact HEAD와 paths를 기록하고 ASSIST_LOCK을 생성한다.
 
-## Current Jjun lock — Civilization Observer Read DTOs v1
+## Canonical direction — autonomous civilization
 
-- Branch/PR: `jjun/civilization-observer-read-v1`, PR #53.
-- Latest head: `e3a9f6611118866a6c79eb300a7b6ab2d5ffaf31`.
-- Core `34821150702`: PASS including Build / tests / deterministic harness.
-- Preflight `34821150693`: PASS, including regression guard that requires `CivilizationKnowledgeTransmission.cpp` in Unreal compile unit.
-- Unreal Linux Compile Run #16 `34821150704`: **PASS including actual UE 5.6 UHT + UBT + final link**.
-- Superseded Run #15 `34819825591`: FAILED at linker after UHT PASS because `LLCoreCompileUnit.cpp` omitted `CivilizationKnowledgeTransmission.cpp`; fixed in latest head.
-- PR is temporarily non-mergeable only because main received state/integration docs after the feature branch split; current main changes since PR base are docs-only plus the isolated macOS shadow hotfix.
-- Published read-only contracts:
-  - resident inventory stacks/total carrying;
-  - resident technique level/confidence/practice + gathering/crafting/learning skills;
-  - SelfDiscovery / DirectWitness / Teaching provenance;
-  - world ResourceNode / StorageSite summaries;
-  - knowledge/discovery aggregates and recent actual discoveries;
-  - stable resident FGuid projection through Bridge.
-- New Unreal getters: `GetResidentCivilizationObservation(...)`, `GetCivilizationWorldObservation(...)`.
-- Existing main HUD DTO is intentionally unchanged; detailed civilization state stays opt-in.
-- No Jjun edits to `Source/LifeLens/UI/**`, Character appearance/presentation, `Content/UI/**`, or `Content/Characters/**` in PR #53.
+`Need / Curiosity → Observe → Gather → Store → Experiment → Discovery → Personal Knowledge → Craft/Build → Teach/Imitate → Shared Culture → Specialization/Exchange → Generational Civilization`
 
-## Integration Sprint — post-#53
-
-Canonical protocol: `docs/INTEGRATION_SPRINT.md`.
-
-### Default mode
-
-`REVIEW_ONLY`
-
-쭌/쭌 AI는 다겸 PR/branch/diff/CI를 읽고 수정 방향을 제시할 수 있지만, 다겸 소유 파일을 직접 수정하지 않는다.
-
-### 실제 코드 도움 시
-
-반드시 아래 순서를 따른다.
-
-1. target PR/branch HEAD + CI 재확인
-2. 이 보드에 `ASSIST_LOCK` 등록
-3. locked paths 명시
-4. target branch HEAD에서 `integration/dagyeom-<scope>-assist` 생성
-5. helper branch에서만 수정
-6. 검증/hand-off 후 target에 합치고 lock 해제
-
-**`dagyeom/*` branch direct push 금지.**
-
-### Current Assist Locks
-
-현재 **없음**. IR-MAC-SHADOW-01은 Jjun 소유 Core 파일 hotfix였으므로 ASSIST_LOCK 없이 완료됐다.
-
-### Planned parent-first assist order
-
-1. PR #17 Observer HUD v2
-2. PR #26 UI Foundation — #17과 locked path가 겹치지 않을 때 독립 처리 가능
-3. #29 / #30 after #17
-4. #36 after #30
-5. #38 after #36
-
-여러 stacked branch를 한 번에 force-update/rebase하지 않는다.
+- 전역 tech unlock 금지
+- 시대 gate 강제 금지
+- 개인 지식/출처/전파를 Core가 권위 상태로 소유
+- Observer HUD Level 0은 계속 단순하게 유지
+- 원시 자원/도구부터 현대 기술까지 수용 가능한 presentation 유지
 
 ## Latest completed Jjun work
 
 ### PR #54 — macOS clang shadow hotfix
-- DONE / MERGED `3b649b900c44a4e48bb89171b38f5e685e757b14`.
-- Only behavior-neutral rename in `ObserverReadModelV2.h`: range-for `pregnancy` → `entry`.
-- Preflight `34822441249` PASS.
-- Core Tests `34822441296` PASS including Build / Test / deterministic harness.
-- Unblocks Dagyeom PR #17 latest-main reconcile on macOS clang `-Wshadow -Werror`.
+- DONE / MERGED `3b649b900c44a4e48bb89171b38f5e685e757b14`
+- `ObserverReadModelV2.h` loop variable rename only
+- Preflight + Core full tests + deterministic harness PASS
+- IR-MAC-SHADOW-01 resolved
 
-### PR #52 — Civilization Knowledge Transmission v1
-- DONE / MERGED `b90da9242003fbc0cbc553605b9abc46a17aa044`
-- Feature head `8fe9369682834a3fae44bb6605f0d872bb80b971`.
-- Discovery/Craft facts spread through deterministic witness/imitation/teaching without global unlock.
-- `SocialKnowledgeBook` provenance is authoritative Simulation state and persists in snapshot binary v3; v1/v2 remain readable.
-- PR Core `34814310235` PASS incl 37/37 + deterministic harness; Preflight `34814310291` PASS.
+### PR #53 — Civilization Observer Read DTOs v1
+- DONE / MERGED `ec30d80b2986247f0f16572efb2c082a933d796d`
+- Feature head `e3a9f6611118866a6c79eb300a7b6ab2d5ffaf31`
+- Core `34821150702` PASS
+- Preflight `34821150693` PASS
+- Unreal Linux Compile Run #16 `34821150704` PASS including UHT + UBT + final link
+- Published getters:
+  - `GetResidentCivilizationObservation(...)`
+  - `GetCivilizationWorldObservation(...)`
+- Published data:
+  - inventory/carrying
+  - technique level/confidence/practice
+  - gathering/crafting/learning skill
+  - SelfDiscovery / DirectWitness / Teaching provenance
+  - ResourceNode / StorageSite summaries
+  - civilization aggregates / recent discoveries
+- UI/Character files untouched
+- Core remains sole authority
 
-### PR #51 — Autonomous Civilization Action Loop v1
-- DONE / MERGED `55d5211160c8edad32b01177e2b9326a9faa2b78`
-- Gather / Store / Experiment / Craft autonomous; Core `34811869666` PASS; Preflight `34811869612` PASS.
-
-### PR #50 / #49 / #48 / #47
-- #50 Civilization Runtime/Persistence merge `c31c422c305a3a79a9553d37ac86247aa31d1853`.
-- #49 Civilization Foundation merge `36bd1ac81192bc689c1e811553f068f255642508`.
-- #48 World Affordance merge `a90ff6a5d870858a9e555ddf1e6e526bb7aa34e1`; UE Run #14 PASS.
-- #47 Witness/Rumor merge `f1aab37f6f8abad1217783cc1d168cbdd2e0c20c`.
+### PR #52 → #46
+- #52 Knowledge Transmission: `b90da9242003fbc0cbc553605b9abc46a17aa044`
+- #51 Autonomous Civilization Loop: `55d5211160c8edad32b01177e2b9326a9faa2b78`
+- #50 Runtime/Persistence: `c31c422c305a3a79a9553d37ac86247aa31d1853`
+- #49 Civilization Foundation: `36bd1ac81192bc689c1e811553f068f255642508`
+- #48 World Affordance: `a90ff6a5d870858a9e555ddf1e6e526bb7aa34e1`
+- #47 Witness/Rumor: `f1aab37f6f8abad1217783cc1d168cbdd2e0c20c`
+- #46 Physical Action Bridge: `753df19657ea634ea2fa7c2ac935f6273ce14c10`
 
 ## Dagyeom API / design handoff
 
-Former Observer blockers are RESOLVED / READY FOR BINDING. The temporary macOS compile blocker IR-MAC-SHADOW-01 is also resolved on main.
+Current Observer blockers from Jjun: **0**.
 
-Civilization status relevant to Dagyeom:
-- Core owns Inventory / personal Knowledge / skills / ResourceNode / StorageSite / autonomous decisions / transmission provenance.
-- PR #53 publishes the real civilization Bridge read contract but **do not bind it until #53 is merged and green**.
-- Existing PR #17 reconciliation can resume from latest main now.
-- Do not invent placeholders or duplicate authority in UI.
-- Character Presentation should remain generic for primitive resources/tools through later technology.
-- main HUD remains observer-first, not a strategy resource dashboard.
+PR #17 may now bind:
+- `GetWorldObservation()`
+- `GetResidentObservations()`
+- `GetResidentObservation(...)`
+- `GetFamilyObservation(...)`
+- `GetResidentActionDirective(...)`
+- `GetRecentCoreEvents()`
+- `OnCoreRuntimeStateChanged`
+- `GetResidentCivilizationObservation(...)`
+- `GetCivilizationWorldObservation(...)`
+
+Rules:
+- never hard-code population to 4 after runtime starts
+- UI rebuilds from Bridge after load
+- presentation does not choose competing actions
+- civilization detail belongs in selected resident/detail/major-discovery layers, not a Level 0 strategy dashboard
 
 ## Shared File Lock
 
-Jjun default ownership: `LifeLens.uproject`, `Source/LifeLens/LifeLens.Build.cs`, `Source/LifeLens/Core/LLTypes.h`, `Source/LifeLens/Simulation/**`, `Source/LifeLensCore/**`, `Config/**`, `.github/workflows/**`, `Tools/validate_bootstrap.py`, and Jjun-owned AI/World runtime integration.
+Jjun default:
+- `Source/LifeLensCore/**`
+- `Source/LifeLens/AI/**`
+- `Source/LifeLens/Simulation/**`
+- `Source/LifeLens/World/**`
+- Save/Load, Bridge, CI/build
 
-Dagyeom default ownership: `Source/LifeLens/UI/**`, Character appearance/presentation code, `Content/UI/**`, `Content/Characters/**`.
+Dagyeom default:
+- `Source/LifeLens/UI/**`
+- Character appearance/presentation
+- `Content/UI/**`
+- `Content/Characters/**`
 
-ASSIST_LOCK은 기본 소유권을 영구 변경하지 않는다. lock 해제 후 원래 소유권으로 복귀한다.
+ASSIST_LOCK은 임시이며 해제 후 원래 소유권으로 복귀한다.
 
 ## Integration Requests
 
-### IR-MAC-SHADOW-01 — Dagyeom R1 macOS compile unblock
+### IR-MAC-SHADOW-01
+- Requester: Dagyeom/Claude
+- Target owner: Jjun
+- File: `ObserverReadModelV2.h`
+- Status: **DONE / RESOLVED**
+- Resolution: PR #54 merge `3b649b900c44a4e48bb89171b38f5e685e757b14`
+- Dagyeom R1 may resume
 
-- Mode: owner-side hotfix request
-- Requester: 다겸 / STILLofficial / Claude
-- Target owner: 쭌
-- Target PR/work: PR #17 latest-main reconciliation (R1)
-- File: `Source/LifeLensCore/include/lifelens/ObserverReadModelV2.h`
-- Reported issue: macOS clang with `-Wshadow -Werror` rejected the range-for variable `pregnancy` because it shadowed the earlier `const PregnancyState* pregnancy` in the same `if/else` scope.
-- Fix: renamed only the loop variable to `entry`; no behavior change.
-- PR: #54
-- Merge: `3b649b900c44a4e48bb89171b38f5e685e757b14`
-- Validation: Preflight `34822441249` PASS; Core `34822441296` PASS incl deterministic harness.
-- Status: `DONE / BLOCKER RELEASED`
-- Unlock: Dagyeom may resume R1 immediately from latest main.
-
-새 요청 형식은 `docs/INTEGRATION_SPRINT.md`의 Mode / Target owner / Target PR / Base HEAD / Locked paths / Helper branch / Reason / Status / Unlock condition 필드를 따른다.
+Current open requests: **none**.
 
 ## Merge / reconciliation queue
 
-1. Reconcile and merge PR #53 now that Run #16 is green and macOS shadow hotfix is on main.
-2. Dagyeom may resume PR #17 R1 immediately from latest main; Integration Sprint assistance follows `docs/INTEGRATION_SPRINT.md`.
-3. PR #26 latest-main reconciliation/verification where locks do not overlap.
-4. After #17: #29/#30 → #36 → #38.
-5. Integrated runtime check → Android smoke APK.
-6. PR #2 remains FROZEN.
+1. PR #17 latest-main reconciliation + current Bridge/civilization binding + review fixes.
+2. PR #26 where independent.
+3. #29/#30 after #17.
+4. #36 after #30.
+5. #38 after #36.
+6. Integrated runtime verification.
+7. Android smoke APK.
+8. Then resume deeper civilization production chains.
 
 ## Completion rule
 
-Code existence alone is not completion. Required validation + merge + state synchronization are required. If GitHub and docs disagree, update docs first.
+검증 + merge + 상태 동기화까지 완료되어야 DONE이다.
