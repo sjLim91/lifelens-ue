@@ -4,7 +4,7 @@
 >
 > 제품 기준: `docs/LIFELENS_SPEC_v1.1.md` · 상태 규칙: `docs/STATE_MANAGEMENT.md` · 역할/잠금: `tasks/TEAM_BOARD.md` · 이력: `tasks/HANDOFF_LOG.md`
 
-Last reconciled: 2026-09-14 KST — PR #44 Full Core Save/Load v1 merged as `2b3f9882703ed73cb8318ae262f26bebb995c209` after Core Release suite + deterministic harness + Structural Preflight PASS. Next bounded task is Unreal SaveGame adapter v1.
+Last reconciled: 2026-09-14 KST — Unreal SaveGame Adapter v1 is open as PR #45 at head `547b3f94e0c3df6df15d723e72c8084cd10a7c29`. Core Tests, Structural Preflight and actual UE 5.6 Linux UHT/UBT are required before merge.
 
 ## Mandatory sync gate
 
@@ -21,16 +21,23 @@ Last reconciled: 2026-09-14 KST — PR #44 Full Core Save/Load v1 merged as `2b3
 ### 1. Unreal SaveGame Adapter v1 — Jjun
 
 - Owner: 쭌 + 쭌 AI
-- Planned branch: `jjun/unreal-savegame-adapter-v1`
-- Status: `STARTING`
-- Base requirement: use PR #44 `SimulationStateSnapshot` as the single Core persistence contract.
-- Goal:
-  - replace seed+minute replay load in `ULLSimulationSubsystem` with actual Core snapshot restore;
-  - persist the Core snapshot through Unreal SaveGame/file storage without reintroducing a second resident truth;
-  - preserve stable WorldSeed/CharacterId→FGuid mapping semantics;
-  - after load, rebuild compatibility projection from restored Core state only.
-- Scope lock: `Source/LifeLens/Simulation/**` plus narrowly required Core snapshot serialization helpers if needed; no `Source/LifeLens/UI/**` or Dagyeom Character presentation edits.
-- Required validation: Structural Preflight + actual UE 5.6 Linux UHT/UBT; add save/load contract checks before merge.
+- Branch: `jjun/unreal-savegame-adapter-v1`
+- PR: #45 `[UE] Persist authoritative Core snapshots through SaveGame v2`
+- Head: `547b3f94e0c3df6df15d723e72c8084cd10a7c29`
+- Status: `WAITING_CI`
+- Implemented scope:
+  - pure Core versioned binary snapshot codec with `LLSNAP01` magic;
+  - canonical runtime-map ordering and binary roundtrip/continuation test;
+  - `CaptureCoreSnapshotBytes` / `RestoreCoreSnapshotBytes` on Core Bridge;
+  - restore validates into a temporary Core instance before replacing the live world;
+  - `ULLSaveGame` v2 stores `CoreSnapshotBytes`;
+  - v2 Save persists Core bytes only as simulation truth;
+  - v2 Load directly restores the Core snapshot then rebuilds compatibility projection;
+  - v1 old saves retain seed+minute replay migration only; legacy resident/relationship arrays never become authority;
+  - Structural Preflight now enforces the v2 persistence contract.
+- Scope: Jjun-owned Simulation/Save/Core + validator only; no `Source/LifeLens/UI/**`, Dagyeom Character presentation, or Content edits.
+- Required gates: Core Release full suite + deterministic harness, Structural Preflight, actual UE 5.6 Linux UHT/UBT.
+- Exact next action: inspect PR #45 Actions. On failure, fetch the exact first root cause only; on all PASS, verify changed-file scope, merge, then synchronize WORK_STATE/TEAM_BOARD/HANDOFF.
 
 ### 2. Observer HUD v2 — Dagyeom
 
@@ -38,7 +45,7 @@ Last reconciled: 2026-09-14 KST — PR #44 Full Core Save/Load v1 merged as `2b3
 - Branch/PR: `dagyeom/observer-ui-v2`, PR #17
 - Status: `RECOVERING`
 - Former six `BLOCKED-BY-JJUN` Observer requirements remain resolved.
-- Main has #42 founder runtime integration, #43 autonomous family progression/newborn growth, and #44 full authoritative Core snapshot restore contract.
+- Main has #42 founder runtime integration, #43 autonomous family progression/newborn growth, and #44 full authoritative Core snapshot contract.
 - Exact next action: reconcile latest main, bind current Core Observer Bridge, address Dagyeom-owned UI review findings, verify UHT/UBT + PIE.
 
 ### 3. Dagyeom stacked UI / presentation chain
@@ -66,15 +73,9 @@ Last reconciled: 2026-09-14 KST — PR #44 Full Core Save/Load v1 merged as `2b3
 - Status: `DONE`
 - Feature HEAD: `64d2fb25f6453112aabaef2d809b0528c9dc4566`
 - Merge SHA: `2b3f9882703ed73cb8318ae262f26bebb995c209`
-- Changed files: exactly 5, all under `Source/LifeLensCore/**`.
-- Snapshot v1 captures World/RNG, complete Character state, Relationship/Genealogy/Romance/Household/Pregnancy/Birth books, Simulation runtime plan/cooldown/position/social state, and Core logs.
-- Restore validates version and cross-reference integrity before committing state; callbacks remain external runtime attachments.
-- Validation:
-  - Core Tests `34802611336` PASS including Configure / Build / Test / Deterministic harness smoke.
-  - Structural Preflight `34802611299` PASS.
-  - Deep rich-state roundtrip equality PASS.
-  - Unsupported snapshot version rejection without destination mutation PASS.
-  - Original/restored worlds remain deeply identical after an additional 10,000 simulated minutes.
+- Core Tests `34802611336` PASS incl Configure / Build / Test / deterministic harness.
+- Structural Preflight `34802611299` PASS.
+- Rich deep roundtrip and exact 10,000-minute post-load continuation PASS.
 
 ## Earlier completed milestones
 
