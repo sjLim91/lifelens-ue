@@ -57,6 +57,17 @@ Last reconciled: 2026-09-14 KST — PR #29 Character Presentation current-main i
 
 즉 **#29 locked code는 쭌 assist가 끝내고, 다겸은 Appearance 준비만 병렬 진행**한다. #29 merge + lock release 후 Character Appearance v1 코드 통합으로 승격한다.
 
+#### 다겸 PREP 진행 행 (다겸 측 AI 추가, 2026-09-14)
+
+- Owner: 다겸 + 다겸 AI
+- Branch/PR: `dagyeom/character-appearance-prep-v1`, PR #64 (docs only)
+- Work item: Character Appearance v1 — PREP_ONLY: asset 후보/license/provenance, 두 트랙(실사 MetaHuman·모바일 LOD 검증 / 경량 Quaternius UBC), 공통 humanoid 스켈레톤 기준, 모듈 슬롯, AppearanceProfile 초안, Android LOD 3단계
+- Deliverable: `docs/CHARACTER_APPEARANCE_ASSETS_v1.md`
+- Status: `PREP_ONLY` — 최종 트랙 선택은 다겸 검토 후 결정
+- Locked files 접촉: 없음. `Content/Characters/**` 에셋: 미반입
+- Exact next action: 트랙 결정 → 선택 에셋 `Content/Characters/**` 준비 → ASSIST_LOCK-29-R1 RELEASED 후 코드 통합 승격
+- Handoff safety: `SAFE`
+
 ## Canonical product direction
 
 초기 4명 → 자연 자원 채집 → 저장/소유 → 실험/실패/발견 → 개인 지식 → 제작/도구 → 목격·모방·교육 → 전문화/교환 → 세대 누적 → emergent civilization.

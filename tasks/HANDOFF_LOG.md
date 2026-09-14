@@ -554,3 +554,17 @@
   - 산출물 문서 경로/파일명은 STATE_MANAGEMENT/READY_QUEUE에 규칙이 없어 사용자 결정 대기
 - 상대가 알아야 할 점:
   - Core/Bridge API 추가 요청 없음(현 단계). AppearanceProfile용 authoritative data가 필요해지면 Integration Request로 등록 예정.
+
+### 다겸 측 AI — Character Appearance v1 PREP 문서 checkpoint
+
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/character-appearance-prep-v1`, PR #64 (docs only). origin/main `c9164eb` merge
+- 변경 범위:
+  - `docs/CHARACTER_APPEARANCE_ASSETS_v1.md` 신규: 후보표(MetaHuman 포함, 출처·라이선스·Android 리스크), 두 트랙, 공통 humanoid 스켈레톤 기준, 모듈 슬롯(body/head/hair/outfit), AppearanceProfile 필드 초안(로드맵 3.1 + VisualSeed), Android LOD 3단계·fallback. 최종 트랙 선택은 "다겸 검토 후 결정"
+  - `tasks/WORK_STATE.md`: 다겸 PREP 진행 행 추가(추가만)
+  - 코드 변경 없음. locked 파일 미접촉. `Content/Characters/**` 미반입
+- 검증 상태:
+  - docs only. 해당 없음
+- 상대가 알아야 할 점:
+  - 로드맵에 MetaHuman 금지 문구 없음(35행 "전체 런타임을 기본 전제로 삼지 않음"만). UE 제품 내 사용 조건으로 조건부 후보에 포함, 원본 재배포는 하지 않음.
+  - Core/Bridge API 추가 요청 없음. AppearanceProfile을 Save 권위 데이터로 넣어야 하면 Integration Request로 등록 예정.
