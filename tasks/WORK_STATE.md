@@ -83,30 +83,53 @@ Later extension:
 - primitive latrine → improved toilet/drainage progression
 - visual residue/VFX driven from Core state
 
-### Character Appearance v1 — READY_NOW
+### Character Appearance v1 — ACTIVE / PR #67 CLOSEOUT
 
 Owner: 다겸 / 다겸 AI.
 
-Start from current latest `main` at or after `86663cb10f245bf185984a3622e4a86596e14923`.
+Current product PR: #67 `dagyeom/character-appearance-v1`.
 
 Canonical asset track: `docs/CHARACTER_ASSET_TRACK.md`.
 Default: Track B — Quaternius packs whose exact source/version explicitly states CC0. MetaHuman remains a post-Android-validation upgrade/comparison path.
 
-Minimum target:
-- real humanoid skeletal mesh
-- skin / face / eyes / hair / default clothing
-- common skeleton + modular appearance
-- deterministic AppearanceProfile from stable resident identity
-- NEW GAME residents visually distinct
-- Save/Load appearance continuity
-- Android LOD/mobile fallback
-- asset license/provenance documented
+Implemented checkpoint reported by Dagyeom:
+- Quaternius humanoid body / hair / skin presentation imported
+- deterministic appearance projection consumes merged PR #65 contract
+- four residents visible in PIE with distinct presentation
+- selection ring / labels retained
+- Universal Animation Library assets imported, but locomotion is not yet wired
+
+Remaining Character Appearance v1 closeout gates before DONE:
+- actual required CI / Unreal compile result recorded
+- Save/Load appearance continuity explicitly verified
+- minimum default clothing set satisfied; underwear-only residents do not meet the existing Appearance v1 acceptance criterion
+- final PR #67 diff/review accepted and merged
+- live docs synchronized with merge SHA
+
+Skin-tone/detail variety beyond the minimum distinctness bar may continue as a follow-up enhancement. The minimum clothing requirement is not deferred unless the canonical Appearance acceptance criteria are explicitly changed.
 
 Rules:
 - presentation remains read-only with respect to Core action/simulation authority.
 - do not add UI/Character-side authoritative caches.
 - use the merged PR #65 appearance projection contract instead of inventing a second authority.
 - if new authoritative appearance/genetics/save data is required, add an Integration Request to `TEAM_BOARD.md`.
+
+### Character Motion & Context v1 — READY_AFTER_#67
+
+Owner: 다겸 / 다겸 AI, with Jjun Bridge review/support only if an actual Core/Bridge blocker is found.
+
+Dagyeom requested immediate READY_NOW promotion because UAL motion assets are already imported and current movement visually slides in Idle. The request is accepted in principle, but execution remains gated by the existing completion rule: Character Appearance v1 must be validated and merged first.
+
+On PR #67 merge + live-doc sync, promote this item to `READY_NOW` without a new product-design review.
+
+Minimum:
+- Core-directive-driven Idle / Walk / Jog or Run locomotion
+- turn-in-place / orientation smoothing
+- sit / stand / lie / wake context transitions
+- gaze/head tracking
+- context interaction hooks
+- basic IK / transition smoothing
+- no competing Character-side action authority
 
 ### Jjun lane — OWN TRACK / REVIEW SUPPORT
 
@@ -130,10 +153,10 @@ Rules:
 
 1. Character Presentation v1 — DONE via PR #63.
 2. Appearance data/projection support — DONE via PR #65.
-3. Character Appearance v1 — READY_NOW / Track B Quaternius CC0. (Dagyeom lane)
+3. Character Appearance v1 — ACTIVE / PR #67 CLOSEOUT. (Dagyeom lane)
 4. World Affordance Fallback v1 — DONE via PR #66. (Jjun lane)
 5. Environmental Residue v1 — READY_NOW. (Jjun lane)
-6. Character Motion & Context v1 minimum — AFTER Appearance.
+6. Character Motion & Context v1 minimum — READY_AFTER_#67; auto-promote to READY_NOW after Appearance merge.
 7. PR #30 Observer UX Polish — AFTER Human Character minimum.
 8. PR #36 Mobile Touch — AFTER #30.
 9. PR #38 Visual Feedback — AFTER #36.
