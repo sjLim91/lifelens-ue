@@ -44,7 +44,7 @@ enum class ELLActionIntent : uint8
     Hygiene = 4,
     Toilet = 5,
     HaveFun = 6,
-    Drink = 7,
+    Drink,
 };
 
 USTRUCT(BlueprintType)
