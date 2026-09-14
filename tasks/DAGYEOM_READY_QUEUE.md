@@ -18,6 +18,8 @@
 Current product checkpoints known to this queue:
 - PR #42 merge `5c6f2c071ca00bcd4b26d6e002bf5c618d02ff1e` — production New Game is Core-authoritative; actual Unreal 5.6 Linux UHT/UBT PASS.
 - PR #43 merge `179e3a65aaa6ff8d2243117c7aebfd760812c73d` — autonomous family progression is on main; Core full tests + deterministic harness + Preflight PASS.
+- PR #44 merge `2b3f9882703ed73cb8318ae262f26bebb995c209` — full authoritative Core snapshot capture/restore + deterministic continuation PASS.
+- PR #45 merge `3c646ba331b8199a295fd6f2e9cac1235d844679` — Unreal SaveGame v2 now persists/restores the authoritative Core snapshot; Core/Preflight/actual UE 5.6 UHT+UBT all PASS.
 
 ---
 
@@ -27,7 +29,7 @@ Current product checkpoints known to this queue:
 
 - Branch/PR: `dagyeom/observer-ui-v2`, PR #17
 - Last verified historical HEAD: `dc3351ea9025ee33ea70f8ce1026100070c20092` — **re-fetch before work**.
-- Current product main has advanced through #42/#43 since the old branch snapshot.
+- Current product main has advanced through #42/#43/#44/#45 since the old branch snapshot.
 - Do first:
   1. fetch latest main;
   2. reconcile branch with current main without overwriting current shared-state docs;
@@ -55,18 +57,16 @@ Available data includes:
 - population/life-stage/household/couple/pregnancy/major-LifeHistory aggregate data
 - founder Sex / AgeYears / LifeStage / 14-axis Personality from PR #42
 
-Important new runtime fact from PR #43:
-- family state is not merely demo/test data anymore;
-- relationships can autonomously progress through dating/cohabitation/engagement/marriage;
-- pregnancies can begin and advance;
-- births create new real World residents with genealogy/household/LifeHistory links;
-- Observer UI should therefore tolerate population growth and family data changing over time rather than assuming exactly four permanent residents.
+Important runtime facts:
+- PR #43: family progression is live; residents can date/cohabit/engage/marry, pregnancies can progress, and births add real World residents. Never hard-code population to 4.
+- PR #45: SaveGame v2 restores the authoritative Core state directly. After load, UI should refresh from Bridge/read DTOs and must not treat cached UI-side resident arrays as simulation truth.
 
 Binding rules:
 - UI reads only; do not modify Core/Simulation state.
 - Do not invent placeholder values for absent data.
 - Names are display data, never identity keys.
-- Never hard-code the resident list to 4 entries; NEW GAME starts with 4, but descendants can increase population.
+- Never hard-code the resident list to 4 entries.
+- On load/state-change events, rebuild visible UI state from current Bridge data.
 - If a genuinely missing API/field is found, add a **new** Integration Request to `TEAM_BOARD.md`.
 
 ### DQ-R3 Resolve PR #17 Dagyeom-owned review findings
@@ -127,6 +127,7 @@ Resolved surfaces now include:
 5. World family/lifecycle aggregates
 6. Blueprint/USTRUCT read-only Core Bridge
 7. Founder Sex/Age/LifeStage/Personality identity fields
+8. Post-load authoritative Core restoration through SaveGame v2
 
 A new blocker is valid only if Dagyeom identifies a concrete missing data/API after using latest `main`. Record requested field, usage and related PR in `TEAM_BOARD.md`.
 
@@ -149,5 +150,6 @@ Do not collapse the whole chain into one giant PR merely to make merging easier.
 - Dagyeom is **not waiting for Jjun API implementation** for the previous Observer items.
 - Immediate task is **reconciliation + binding + verification**, not Core modification.
 - Main now starts at four founders but may gain descendants; UI must remain population-dynamic.
+- Save/load no longer reconstructs the world from UI compatibility data; after load, read current Bridge state.
 - Jjun should not edit Dagyeom UI/Character presentation branches without a new explicit coordination request.
 - Every checkpoint synchronizes `WORK_STATE.md` / this queue / `TEAM_BOARD.md`; meaningful completion/failure/dependency changes also require handoff recording.
