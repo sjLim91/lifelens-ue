@@ -180,7 +180,6 @@ private:
 };
 
 struct RomanceContext {
-    // SPEC 32 inputs that are not already represented by Relationship/Emotion.
     double personalityCompatibility=0.5;
     double sharedExperience=0.0;
     double lifeGoalAlignment=0.5;
@@ -308,6 +307,8 @@ inline DatingProposalOutcome applyDatingProposal(
     recipientToProposer.apply(relationshipDeltaFor(RelationshipEvent::CommitmentMade));
     applyEmotionEvent(proposer.emotion,EmotionEventType::RomanticCloseness);
     applyEmotionEvent(recipient.emotion,EmotionEventType::RomanticCloseness);
+    recordLifeEvent(proposer.lifeHistory,LifeEventType::DatingStarted,minute,{recipient.id});
+    recordLifeEvent(recipient.lifeHistory,LifeEventType::DatingStarted,minute,{proposer.id});
     return outcome;
 }
 
