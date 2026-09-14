@@ -4,7 +4,7 @@
 > 제품 기준: `docs/LIFELENS_SPEC_v1.1.md` + `docs/CIVILIZATION_PROGRESSION_v1.md`
 > 협업 기준: `docs/STATE_MANAGEMENT.md` + `docs/INTEGRATION_SPRINT.md`
 
-Last reconciled: 2026-09-14 KST — `main` includes Observer HUD v2 PR #17 merge `aa194db7c5b500cdf5041fd6d43b25f97b9dd0b6`.
+Last reconciled: 2026-09-14 KST — PR #17 is merged and PR #26 UI Foundation reconcile is active.
 
 ## Mandatory sync gate
 
@@ -27,7 +27,7 @@ Last reconciled: 2026-09-14 KST — `main` includes Observer HUD v2 PR #17 merge
 ### 1. Integration Sprint — ACTIVE
 
 - Owner: 쭌 + 다겸, 기존 소유권 유지
-- Status: `IN_PROGRESS / NEXT: UI FOUNDATION + PRESENTATION STACK`
+- Status: `IN_PROGRESS / PR #26 UI FOUNDATION RECONCILE`
 - 큰 신규 Jjun Core slice는 integration checkpoint 동안 보류
 - Dagyeom-owned 수정은 `docs/INTEGRATION_SPRINT.md` 규칙에 따른다.
 
@@ -44,19 +44,28 @@ Last reconciled: 2026-09-14 KST — `main` includes Observer HUD v2 PR #17 merge
 - R2 Core/Family/Action/Civilization binding: DONE
   - helper PR #58 merged into Dagyeom branch
   - verify-only PR #59 CLOSED / NOT MERGED
-  - initial Run #18 failed only because verify tree omitted four R1 UI files; product/helper branch unaffected
   - corrected Preflight `34833994138` PASS
   - corrected Unreal Run #20 `34833994155` PASS including UHT + UBT + final link
 - R3 final state: DONE
-  - PR description refreshed
   - unresolved review threads: 0
   - `ASSIST_LOCK-17-R2` released
 
-### 3. Dagyeom integration queue
+### 3. PR #26 UI Foundation — DOING
 
-1. PR #26 UI Foundation — next reconcile target.
-2. PR #29 Character Presentation — now unblocked by #17 merge.
-3. PR #30 Observer UX Polish — now unblocked by #17 merge.
+- Original branch: `dagyeom/ui-foundation-v1`
+- Original head: `70dfa5ebeabf24b661c9f9fd0bc63e3ad01ac180`
+- Original PR #26: OPEN / stale base / mergeable=false at reconcile start
+- Active lock: `ASSIST_LOCK-26-R1`
+- Helper: `integration/dagyeom-ui-foundation-r1-assist`
+- Helper basis: latest main; only `LLObserverUIFoundation.h/.cpp` restored from PR #26
+- Old branch state-doc changes are intentionally not replayed
+- Next: helper PR → Preflight + actual UE 5.6 UHT/UBT/link → merge/supersede #26 → unlock
+
+### 4. Dagyeom integration queue
+
+1. PR #26 UI Foundation — **DOING**.
+2. PR #29 Character Presentation — after #26 checkpoint.
+3. PR #30 Observer UX Polish — after #26 checkpoint.
 4. PR #36 Mobile Touch — after #30.
 5. PR #38 Visual Feedback — after #36.
 6. Integrated runtime verification.
@@ -64,7 +73,7 @@ Last reconciled: 2026-09-14 KST — `main` includes Observer HUD v2 PR #17 merge
 
 Parent-first; mass force-rebase 금지.
 
-### 4. Old Android validation
+### 5. Old Android validation
 
 - PR #2 / `task/03-fast-test`: **FROZEN**
 - old Run `34739283266` failed before Cook/Package/APK
@@ -99,7 +108,7 @@ Parent-first; mass force-rebase 금지.
 
 ## Next sequencing
 
-1. Reconcile PR #26 UI Foundation.
+1. Complete PR #26 UI Foundation reconcile.
 2. Reconcile #29/#30 parent-first.
 3. #36 after #30, then #38 after #36.
 4. Integrated runtime verification with current Core + Observer UI + Character Presentation.
