@@ -12,8 +12,10 @@ required = [
     'Source/LifeLens/Simulation/LLSimulationSubsystem.h',
     'Source/LifeLens/Simulation/LLSimulationSubsystem.cpp',
     'Source/LifeLens/Simulation/LLCoreReadTypes.h',
+    'Source/LifeLens/Simulation/LLCoreActionTypes.h',
     'Source/LifeLens/Simulation/LLCoreBridgeSubsystem.h',
     'Source/LifeLens/Simulation/LLCoreBridgeSubsystem.cpp',
+    'Source/LifeLens/Simulation/LLCoreActionBridge.cpp',
     'Source/LifeLens/Simulation/LLCoreBridgePersistence.cpp',
     'Source/LifeLens/Simulation/LLCoreCompileUnit.cpp',
     'Source/LifeLens/Save/LLSaveGame.h',
@@ -91,6 +93,7 @@ for token in (
     'GetWorldObservation',
     'GetResidentObservations',
     'GetResidentObservation',
+    'GetResidentActionDirective',
     'GetFamilyObservation',
     'CaptureCoreSnapshotBytes',
     'RestoreCoreSnapshotBytes',
@@ -124,6 +127,26 @@ for token in (
 ):
     assert token in bridge_cpp, f'Missing Core observer projection: {token}'
 assert 'MakeStableResidentGuid(CoreCharacterId)' in bridge_cpp
+
+bridge_action = (root / 'Source/LifeLens/Simulation/LLCoreActionBridge.cpp').read_text(encoding='utf-8')
+for token in (
+    'GetResidentActionDirective',
+    'Observation.physicalGoal',
+    'Observation.socialIntent',
+    'ELLCorePhysicalIntent::Drink',
+    'ELLCoreSocialIntent::Avoid',
+    'MakeStableResidentGuid',
+):
+    assert token in bridge_action, f'Missing authoritative action bridge contract: {token}'
+
+action_types = (root / 'Source/LifeLens/Simulation/LLCoreActionTypes.h').read_text(encoding='utf-8')
+for token in (
+    'FLLCoreActionDirective',
+    'ELLCorePhysicalIntent',
+    'ELLCoreSocialIntent',
+    'TargetResidentId',
+):
+    assert token in action_types, f'Missing Core action DTO: {token}'
 
 bridge_persistence = (root / 'Source/LifeLens/Simulation/LLCoreBridgePersistence.cpp').read_text(encoding='utf-8')
 for token in (
@@ -162,6 +185,18 @@ for token in (
 ):
     assert token in read_types, f'Missing Unreal read DTO: {token}'
 
+core_read_model = (root / 'Source/LifeLensCore/include/lifelens/ObserverReadModel.h').read_text(encoding='utf-8')
+for token in (
+    'Goal physicalGoal = Goal::Idle',
+    'SocialIntent socialIntent = SocialIntent::None',
+    'dto.physicalGoal = physicalGoal',
+    'dto.socialIntent = socialIntent',
+):
+    assert token in core_read_model, f'Missing typed Core action observation: {token}'
+
+ll_types = (root / 'Source/LifeLens/Core/LLTypes.h').read_text(encoding='utf-8')
+assert 'Drink,' in ll_types, 'Missing Drink presentation intent'
+
 compile_unit = (root / 'Source/LifeLens/Simulation/LLCoreCompileUnit.cpp').read_text(encoding='utf-8')
 for token in (
     '#include "../../LifeLensCore/src/Simulation.cpp"',
@@ -198,11 +233,18 @@ for path in (root / 'Source/LifeLensCore').rglob('*'):
     assert not leaked, f'Unreal dependency leaked into pure Core: {path.relative_to(root)} {leaked}'
 
 world = (root / 'Source/LifeLens/World/LLWorldDirector.cpp').read_text(encoding='utf-8')
-assert 'SpawnResidents()' in world
-assert 'ChooseAction(Resident)' in world
-assert 'SetMovementTarget' in world
-assert 'ApplySocialInteraction' in world
-assert 'SaveGame()' in world
+for token in (
+    'SpawnResidents()',
+    'GetResidentActionDirective',
+    'ApplyCoreDirective',
+    'SetMovementTarget',
+    'ELLCoreSocialIntent::Avoid',
+    'SaveGame()',
+):
+    assert token in world, f'Missing Core-driven WorldDirector contract: {token}'
+assert 'ChooseAction(' not in world, 'WorldDirector must not independently choose covered life actions'
+assert 'ApplyActionOutcome(' not in world, 'WorldDirector must not mutate projected Needs as action authority'
+assert 'ApplySocialInteraction(' not in world, 'WorldDirector must not mutate projected relationships as social authority'
 
 character = (root / 'Source/LifeLens/Characters/LLResidentCharacter.cpp').read_text(encoding='utf-8')
 assert 'VInterpConstantTo' in character
