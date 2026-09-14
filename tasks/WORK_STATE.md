@@ -4,7 +4,7 @@
 >
 > 제품 기준: `docs/LIFELENS_SPEC_v1.1.md` + **`docs/CIVILIZATION_PROGRESSION_v1.md`** · 상태 규칙: `docs/STATE_MANAGEMENT.md` · 역할/잠금: `tasks/TEAM_BOARD.md` · 이력: `tasks/HANDOFF_LOG.md`
 
-Last reconciled: 2026-09-14 KST — actual `main` includes PR #51 merge `55d5211160c8edad32b01177e2b9326a9faa2b78`. **Civilization Knowledge Transmission v1** is open as PR #52 on `jjun/civilization-knowledge-transmission-v1`, head `8fe9369682834a3fae44bb6605f0d872bb80b971`. Push Core Run `34814219163` PASS (37/37 + deterministic harness), PR Preflight `34814310291` PASS, PR Core Run `34814310235` is in progress.
+Last reconciled: 2026-09-14 KST — actual `main` is `b90da9242003fbc0cbc553605b9abc46a17aa044`, PR #52 Civilization Knowledge Transmission v1 is MERGED. PR Core `34814310235` PASS, Preflight `34814310291` PASS, push Core `34814219163` PASS. Next Jjun slice is **Civilization Observer Read DTOs v1**, planned from latest main; branch not yet created at this checkpoint.
 
 ## Mandatory sync gate
 
@@ -17,8 +17,6 @@ Last reconciled: 2026-09-14 KST — actual `main` includes PR #51 merge `55d5211
 ---
 
 ## Canonical product direction — Autonomous Civilization
-
-LifeLens long-term flow:
 
 **4명의 초기 인간 → 자연 자원 채집 → 저장/소유 → 실험/실패/발견 → 개인 지식 → 제작/도구 → 목격·모방·교육을 통한 전파 → 전문화/교환 → 세대 누적 → emergent civilization.**
 
@@ -33,34 +31,29 @@ Rules:
 
 ## Active / unresolved work
 
-### 1. Civilization Knowledge Transmission v1 — Jjun
+### 1. Civilization Observer Read DTOs v1 — Jjun
 
 - Owner: 쭌 + 쭌 AI
-- Status: `REVIEW / CI_RUNNING`
-- Branch/PR: `jjun/civilization-knowledge-transmission-v1`, PR #52
-- Head: `8fe9369682834a3fae44bb6605f0d872bb80b971`
-- Validation: push Core `34814219163` PASS 37/37 + deterministic harness; PR Preflight `34814310291` PASS; PR Core `34814310235` IN PROGRESS.
-- Goal: stop discoveries from remaining isolated forever by connecting personal civilization knowledge to witness / imitation / direct teaching while preserving provenance and imperfect transmission.
-- Implemented v1 scope:
-  1. successful Discovery/Craft events become deterministic transmissible technique facts;
-  2. direct witnesses gain Observed knowledge and can reach Understood through contextual imitation, never instant Reproducible from one witness;
-  3. imitation requires prerequisite/material context;
-  4. deliberate teaching uses relationship trust/respect/familiarity, teacher mastery, learner curiosity/openness/learning skill and deterministic roll;
-  5. `SocialKnowledgeBook` is authoritative Simulation state with fact/receipt/transmissionPath provenance;
-  6. duplicate/loop paths are suppressed and validated;
-  7. binary snapshot format v3 persists provenance while v1/v2 remain readable;
-  8. NEW GAME clears prior culture/transmission history;
-  9. no global shared-tech unlock.
-- Explicitly out of scope: Observer/Unreal read DTOs, UI, schools/professions, economy, writing/books, agriculture/metallurgy chains.
-- Merge gates: PR Core full suite + deterministic harness + Preflight.
+- Status: `PLANNED / STATE_LOCKED`
+- Branch: not created yet at this checkpoint.
+- Goal: expose authoritative civilization state to Observer/Unreal without leaking mutable Core internals or inventing strategy-game authority in UI.
+- Bounded v1 scope:
+  1. Core read DTO for per-resident Inventory summary, personal Knowledge/skill summary and civilization activity summary;
+  2. Core world read DTO for ResourceNode/Storage summary and civilization aggregate counts;
+  3. discovery/knowledge provenance summary from authoritative `SocialKnowledgeBook` without exposing mutable book internals;
+  4. Unreal `USTRUCT` projection and read-only `ULLCoreBridgeSubsystem` getters using stable resident FGuid mapping;
+  5. post-load reads rebuilt from restored Core state, never legacy arrays;
+  6. Observer-first contract: summary APIs only; Level 0 must not become a resource/tech strategy dashboard;
+  7. no UI/Character Presentation file changes in Jjun branch.
+- Required gates: Core full suite + deterministic harness + Structural Preflight + actual UE 5.6 UHT/UBT because Unreal Bridge types change.
 
 ### 2. Observer HUD v2 — Dagyeom
 
 - Owner: 다겸 + 다겸 AI
 - Branch/PR: `dagyeom/observer-ui-v2`, PR #17
 - Status: `RECOVERING`
-- Existing Observer blockers remain 0.
-- Civilization fields are still not UI-ready until read DTO/Bridge exposure is published.
+- Existing legacy Observer blockers remain 0.
+- Civilization UI binding remains blocked only until the new civilization read DTO/Bridge API is published; this does not block current PR #17 reconciliation work.
 
 ### 3. Dagyeom stacked UI / presentation chain
 
@@ -81,23 +74,25 @@ Rules:
 
 ## Latest completed milestones
 
+### PR #52 — Civilization Knowledge Transmission v1
+- Merge: `b90da9242003fbc0cbc553605b9abc46a17aa044`
+- Feature head: `8fe9369682834a3fae44bb6605f0d872bb80b971`
+- Pure Core scope.
+- Discovery/Craft creates transmissible technique facts; direct witness/imitation/teaching can spread individual knowledge without global tech unlock.
+- Transmission depends on prerequisite/material context, teacher mastery, relationship trust/respect/familiarity and learner traits.
+- `SocialKnowledgeBook` is authoritative Simulation state; provenance/transmission paths are persisted in binary snapshot v3; v1/v2 remain readable.
+- duplicate/loop amplification blocked; repeated NEW GAME clears previous culture history.
+- PR Core `34814310235` PASS incl Configure/Build/37 tests/deterministic harness; Preflight `34814310291` PASS.
+
 ### PR #51 — Autonomous Civilization Action Loop v1
 - Merge: `55d5211160c8edad32b01177e2b9326a9faa2b78`
-- Feature head: `729536ac3f8f2222e68c0d0d1a1726c98ffe19fa`
-- Pure Core 6-file scope.
-- Adds `CivilizationIntent` Gather / Store / Experiment / Craft as a third utility axis while preserving Physical/Social authority.
-- Urgent survival (`max Need >= 0.74`) blocks civilization override.
-- Civilization competes on bounded 15-minute slots; other 5-minute windows preserve original Physical/Social competition.
-- Gather consumes finite resources; Store transfers surplus; Experiment can fail/consume and personally discover; Craft requires personal Reproducible knowledge.
-- Renewable resources regenerate daily; repeated NEW GAME resets resource/storage state.
-- Full integration test runs 20,000 simulation minutes and checks autonomous discovery/resource depletion, same-seed canonical bytes, Save/Load continuation, and reset behavior.
-- Core Tests `34811869666` PASS: Configure / Build / Test / deterministic harness.
-- Preflight `34811869612` PASS.
+- Gather / Store / Experiment / Craft are autonomous Core decisions while urgent survival remains dominant.
+- Core Tests `34811869666` PASS; Preflight `34811869612` PASS.
 
 ### PR #50 — Civilization Runtime State + Persistence v1
 - Merge: `c31c422c305a3a79a9553d37ac86247aa31d1853`
+- Character owns civilization state; World owns resources/storage; binary snapshot v2 persisted it before v3 provenance extension.
 - Core Tests `34810329867` PASS; Preflight `34810329862` PASS.
-- Character owns civilization state; World owns resources/storage; binary snapshot v2 persists it with legacy-v1 migration.
 
 ### PR #49 — Civilization Foundation v1
 - Merge: `36bd1ac81192bc689c1e811553f068f255642508`
@@ -105,24 +100,19 @@ Rules:
 
 ### PR #48 — World Affordance Execution v1
 - Merge: `a90ff6a5d870858a9e555ddf1e6e526bb7aa34e1`
-- Unreal Run #14 `34808292682` PASS incl actual UE 5.6 UHT+UBT; Preflight PASS.
+- Unreal Run #14 `34808292682` PASS incl actual UE 5.6 UHT+UBT.
 
-### PR #47 — Witness / Rumor / Social Knowledge v1
-- Merge: `f1aab37f6f8abad1217783cc1d168cbdd2e0c20c`
-- Core/Preflight PASS.
-
-### PR #46 — Core-authoritative physical action bridge
-- Merge: `753df19657ea634ea2fa7c2ac935f6273ce14c10`
-- Core/Preflight/UE actual compile PASS.
+### PR #47 / #46
+- Witness/Rumor merge `f1aab37f6f8abad1217783cc1d168cbdd2e0c20c`.
+- Core-authoritative Physical Action Bridge merge `753df19657ea634ea2fa7c2ac935f6273ce14c10`; UE Run #10 PASS.
 
 ## Next sequencing
 
-1. Finish/merge Civilization Knowledge Transmission v1 (PR #52).
-2. Civilization Observer read DTOs + discovery/history summaries.
-3. Unreal natural-resource affordances + held tool/item presentation.
-4. Deeper production chains: stable fire, improved stone tools, containers, construction, agriculture, metallurgy.
-5. Economy/specialization after production and knowledge flow are real.
-6. Android smoke APK once the new survival/civilization runtime is observable.
+1. Civilization Observer Read DTOs v1.
+2. Unreal natural-resource affordances + held tool/item presentation.
+3. Deeper production chains: stable fire, improved stone tools, containers, construction, agriculture, metallurgy.
+4. Economy/specialization after production and knowledge flow are real.
+5. Android smoke APK once the new survival/civilization runtime is observable.
 
 ---
 
