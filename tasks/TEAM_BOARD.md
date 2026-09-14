@@ -14,7 +14,7 @@
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | `jjun/civilization-knowledge-transmission-v1` | Civilization Knowledge Transmission v1 | `Source/LifeLensCore/**` | DOING / STATE_LOCKED |
+| 쭌 + 쭌 AI | `jjun/civilization-knowledge-transmission-v1`, PR #52 | Civilization Knowledge Transmission v1 | `Source/LifeLensCore/**` | REVIEW / CI_RUNNING — push Core PASS, Preflight PASS, PR Core running |
 | 쭌 + 쭌 AI | `task/03-fast-test`, PR #2 | old Android validation | Bridge/build | FROZEN — Run `34739283266` 재실행/수정/병합 금지 |
 | 다겸 + 다겸 AI | `dagyeom/observer-ui-v2`, PR #17 | Observer HUD v2 + Core Observer Bridge binding | `Source/LifeLens/UI/**` | REVIEW / RECOVERING — latest main reconcile 필요 |
 | 다겸 + 다겸 AI | `dagyeom/ui-foundation-v1`, PR #26 | Android landscape UI foundation | UI foundation | REVIEW |
@@ -37,17 +37,21 @@ Rules:
 
 ## Current Jjun lock — Civilization Knowledge Transmission v1
 
-- Branch: `jjun/civilization-knowledge-transmission-v1` from actual latest main.
-- Reuse #47 Witness/Rumor/Social Knowledge rather than building a duplicate rumor layer.
-- v1 required:
-  - successful discovery/craft creates a transmissible technique fact;
-  - direct witness gains lower-confidence Observed/Hypothesized knowledge, not instant recipe mastery;
-  - imitation requires prerequisite/material context and can advance toward Understood/Reproducible;
-  - deliberate teaching depends on teacher mastery, relationship trust, learner curiosity/learning skill and deterministic roll;
-  - preserve provenance: self-discovered vs witnessed/imitated vs taught/heard;
-  - duplicate/loop handling and no global unlock;
-  - deterministic tests for spread/failure/divergence;
-  - transmission provenance must survive Save/Load so loops cannot reset after loading.
+- Branch/PR: `jjun/civilization-knowledge-transmission-v1`, PR #52.
+- Head: `8fe9369682834a3fae44bb6605f0d872bb80b971`.
+- Push Core Run `34814219163`: PASS 37/37 + deterministic harness.
+- PR Preflight `34814310291`: PASS.
+- PR Core Run `34814310235`: in progress.
+- Reuses #47 Witness/Rumor/Social Knowledge rather than building a duplicate rumor layer.
+- Implemented:
+  - discovery/craft creates a deterministic transmissible technique fact;
+  - direct witness gains Observed and contextual imitation can reach Understood, not instant Reproducible;
+  - deliberate teaching depends on teacher mastery, learner trust/relationship and learning traits;
+  - `Understood -> Reproducible` needs a sufficiently skilled teacher plus prerequisite/material context;
+  - fact/receipt/transmissionPath provenance is authoritative Simulation state;
+  - duplicate/loop amplification is blocked;
+  - snapshot binary v3 persists provenance while v1/v2 remain readable;
+  - NEW GAME resets culture/provenance.
 - Out of scope: UI/read DTO, schools/professions, economy, writing/books, agriculture/metallurgy.
 
 ## Latest completed Jjun work
@@ -84,8 +88,8 @@ Former Observer read blockers remain RESOLVED / READY FOR BINDING.
 Current civilization facts relevant to Dagyeom:
 - per-resident Inventory / Knowledge / skills are authoritative Core state;
 - World ResourceNode / StorageSite are authoritative;
-- residents now autonomously Gather / Store / Experiment / Craft after #51;
-- civilization data is **not UI-ready yet** because Observer/Bridge read DTOs are not published;
+- residents autonomously Gather / Store / Experiment / Craft after #51;
+- PR #52 adds internal witness/imitation/teaching provenance, but civilization data is **still not UI-ready** until Observer/Bridge DTOs are published;
 - do not invent placeholder fields;
 - Character Presentation should remain generic for primitive resources/tools through later technologies;
 - main HUD remains observer-first, not a strategy resource dashboard.
@@ -102,7 +106,7 @@ Current open requests: **none**.
 
 ## Merge / reconciliation queue
 
-1. Civilization Knowledge Transmission v1.
+1. Finish PR #52 Civilization Knowledge Transmission v1.
 2. Dagyeom PR #17 — latest-main reconcile + Bridge binding + review fixes + verify.
 3. Dagyeom PR #26 — reconcile latest main independently.
 4. After #17: #29/#30 → #36 → #38.
