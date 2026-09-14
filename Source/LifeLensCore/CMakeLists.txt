@@ -84,3 +84,5 @@ lifelens_add_test(test_generation_continuity)
 lifelens_add_test(test_observer_read_model_v2)
 
 lifelens_add_test(test_simulation_family_state)
+
+lifelens_add_test(test_production_new_game)

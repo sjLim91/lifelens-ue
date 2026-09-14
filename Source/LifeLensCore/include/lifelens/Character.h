@@ -13,9 +13,21 @@
 #include "Development.h"
 #include "LifeCondition.h"
 namespace lifelens {
+
+enum class Sex {
+    Male,
+    Female
+};
+
+inline const char* sexName(Sex sex)
+{
+    return sex==Sex::Male ? "Male" : "Female";
+}
+
 struct Character {
     CharacterId id=0;
     std::string name;
+    Sex sex=Sex::Male;
     Needs needs;
     Personality personality;
     EmotionState emotion;
