@@ -71,15 +71,15 @@ Last reconciled: 2026-09-14 KST — session recovery; GitHub branch/PR/Actions r
 - Owner: 쭌 + 쭌 AI
 - Branch: `jjun/core-validation-recovery-v1`
 - Work item: Restore real Release assertions and fix invalidated RelationshipBook references.
-- Last known HEAD: `6ee98d62fefd11cac6be224337fcb732d00d1865` (base; implementation not yet committed)
-- PR: not created
-- Status: `IN_PROGRESS`
-- CI: pending; old Release green checks are insufficient for assertion-based tests.
-- Last verified fact: Local g++ C++17 (assertions enabled) reproduced `test_relationship.cpp:16`: `aToB.from==10 && aToB.to==20` fails after creating reverse relation. RelationshipBook stores returned references in a growing vector; second insertion invalidates the first. Local CMake unavailable, g++ available.
-- Blocker / interruption: code defect + test configuration defect; unrelated to UE setup or P24 DTOs.
-- Exact next action: Stabilize relationship references while preserving insertion order; guarantee assertions in every CMake test target including Release; add a configuration guard; run full Core tests, targeted sanitizers, and deterministic harness; create PR and record CI IDs.
-- Handoff safety: `CONDITIONAL` — base and cause saved; next implementation checkpoint pending.
-- Shared-file impact: Core headers/tests/CMake plus status docs only; no UI/TASK_03 changes.
+- Last known HEAD: `612f98f4499f50d359a814df33e3d0b913259f6f`
+- PR: #35 `[CORE] Fix dangling relationship references and restore Release test assertions`
+- Status: `READY_TO_MERGE`
+- CI: Core Tests Run `34793799376` PASS; Preflight Run `34793799447` PASS.
+- Last verified fact: 26/26 local CMake Release tests passed with assertions enabled; all test compile commands restore assertions after NDEBUG. Deterministic one-day seed 42 harness and structural preflight passed. Original heap-use-after-free reproduced with ASan; corrected 1,000-insertion test passed ASan/UBSan. Remote tree `94fe2a7` equals tested local tree.
+- Blocker / interruption: fixed. Shell push initially failed auto-review; full diff confirmed only this public project's code/tests/docs, and a scoped retry passed review but had no shell credentials. Connected GitHub persisted the same reviewed tree.
+- Exact next action: Verify PR #35 head unchanged, merge using expected head SHA, record merge SHA; update P24 PR #34 to this baseline and register its test with lifelens_add_test before rerunning CI.
+- Handoff safety: `SAFE` — implementation and verification committed remotely.
+- Shared-file impact: Core headers/tests/CMake plus append-only HANDOFF_LOG. No UI/Unreal/TASK_03 changes.
 
 ---
 
