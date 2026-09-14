@@ -115,8 +115,7 @@ inline BirthOutcome performBirth(
     child.parentIds={gestationalParent.id,geneticPartner.id};
     child.genetics=inheritGenetics(
         gestationalParent.genetics,geneticPartner.genetics,rng,geneticVariation);
-    child.lifeHistory.push_back(LifeHistoryEntry{
-        LifeEventType::Birth,currentMinute,{gestationalParent.id,geneticPartner.id},0});
+    recordLifeEvent(child.lifeHistory,LifeEventType::Birth,currentMinute,{gestationalParent.id,geneticPartner.id});
 
     HouseholdId householdId=0;
     const Household* home=households.householdOf(gestationalParent.id);
@@ -151,8 +150,10 @@ inline BirthOutcome performBirth(
     if(!containsCharacterId(geneticPartner.childrenIds,child.id))
         geneticPartner.childrenIds.push_back(child.id);
 
+    recordLifeEvent(gestationalParent.lifeHistory,LifeEventType::ChildBorn,currentMinute,{child.id,geneticPartner.id});
+    recordLifeEvent(geneticPartner.lifeHistory,LifeEventType::ChildBorn,currentMinute,{child.id,gestationalParent.id});
+
     if(genealogy!=nullptr){
-        // Prevalidated above, so a successful birth cannot create a contradictory family edge.
         genealogy->registerBirth(child.id,gestationalParent.id,geneticPartner.id);
     }
 
