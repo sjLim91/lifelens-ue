@@ -121,6 +121,20 @@ void Simulation::setupNewGame(){
     world_.rng.seed(world_.seed);
     world_.characters=generateInitialFounders(world_.rng,world_.minute);
 
+    world_.objects.push_back({1,ObjectKind::Bed,{1,1},std::nullopt,{0,0,-0.055,0,0},16});
+    world_.objects.push_back({2,ObjectKind::Bed,{2,1},std::nullopt,{0,0,-0.055,0,0},16});
+    world_.objects.push_back({3,ObjectKind::Bed,{3,1},std::nullopt,{0,0,-0.055,0,0},16});
+    world_.objects.push_back({4,ObjectKind::Bed,{4,1},std::nullopt,{0,0,-0.055,0,0},16});
+    world_.objects.push_back({5,ObjectKind::Toilet,{5,1},std::nullopt,{0,0,0,-0.12,0},7});
+    world_.objects.push_back({6,ObjectKind::Toilet,{5,2},std::nullopt,{0,0,0,-0.12,0},7});
+    world_.objects.push_back({7,ObjectKind::Sink,{5,3},std::nullopt,{0,-0.085,0,0,-0.055},8});
+    world_.objects.push_back({8,ObjectKind::Sink,{5,4},std::nullopt,{0,-0.085,0,0,-0.055},8});
+    world_.objects.push_back({9,ObjectKind::Fridge,{1,5},std::nullopt,{-0.075,0,0,0,0},9});
+    world_.objects.push_back({10,ObjectKind::Chair,{1,3},std::nullopt,{0,0,0,0,0},5});
+    world_.objects.push_back({11,ObjectKind::Chair,{2,3},std::nullopt,{0,0,0,0,0},5});
+    world_.objects.push_back({12,ObjectKind::Chair,{3,3},std::nullopt,{0,0,0,0,0},5});
+    world_.objects.push_back({13,ObjectKind::Chair,{4,3},std::nullopt,{0,0,0,0,0},5});
+
     std::uniform_real_distribution<double> familiarity(0.0,0.04);
     for(const Character& from:world_.characters){
         runtime_[from.id]=Runtime{};
@@ -291,7 +305,6 @@ void Simulation::advanceAction(Character& c,Runtime& r){
     if(!r.announced){
         if(a.type==ActionType::MoveTo) emit(c.name+" moving to "+goalName(r.goal));
         else if(a.type==ActionType::Use) emit(c.name+" using "+std::string(goalName(r.goal)));
-        else if(a.type==ActionType::EmergencyUse) emit(c.name+" using emergency "+std::string(goalName(r.goal))+" fallback");
         r.announced=true;
     }
     switch(a.type){
@@ -305,23 +318,6 @@ void Simulation::advanceAction(Character& c,Runtime& r){
             if(!obj){ failPlan(r); return; }
             c.needs.apply(obj->effectPerTick);
             if(--a.remainingTicks<=0){ ++r.actionIndex; r.announced=false; } break;
-        case ActionType::EmergencyUse:
-            c.needs.apply(emergencyUseEffectPerTick(r.goal));
-            if(--a.remainingTicks<=0){
-                if(r.goal==Goal::UseToilet){
-                    r.pos=deterministicOutdoorReliefPosition(world_.seed,c.id,r.pos);
-                    const auto& residue=world_.environmentalResidues.deposit(
-                        EnvironmentalResidueKind::HumanWaste,r.pos,c.id,world_.minute,1.0,0.42,3);
-                    c.needs.hygiene=Needs::clamp01(c.needs.hygiene+0.025);
-                    std::ostringstream consequence;
-                    consequence<<c.name<<" left sanitation residue id="<<residue.id
-                               <<" at ("<<r.pos.x<<","<<r.pos.y<<") amount="
-                               <<std::fixed<<std::setprecision(2)<<residue.amount;
-                    emit(consequence.str());
-                }
-                ++r.actionIndex; r.announced=false; r.consecutiveFailures=0;
-            }
-            break;
         case ActionType::Release:
             if(obj && obj->reservedBy && *obj->reservedBy==c.id) obj->reservedBy.reset();
             emit(c.name+" completed "+std::string(goalName(r.goal)));
@@ -523,53 +519,47 @@ void Simulation::evaluateDailyFamilyTransitions()
         if(!snapshot.active()) continue;
         Character* first=findFamilyCharacter(world_,snapshot.first);
         Character* second=findFamilyCharacter(world_,snapshot.second);
-        if(first==nullptr || second==nullptr) continue;
+        if(first==nullptr || second==nullptr || !first->alive || !second->alive) continue;
         Relationship& firstToSecond=relationships_.getOrCreate(first->id,second->id);
         Relationship& secondToFirst=relationships_.getOrCreate(second->id,first->id);
-        RomancePair* pair=romances_.find(first->id,second->id);
-        if(pair==nullptr) continue;
 
-        if(pair->stage==RomanceStage::Dating && pair->startedMinute>=0
-           && world_.minute-pair->startedMinute>=FamilyDatingToCohabitationMinutes){
-            const double duration=clampFamilyProgression(
-                static_cast<double>(world_.minute-pair->startedMinute)/static_cast<double>(180*FamilyProgressionDayMinutes));
-            const CohabitationContext firstContext=autonomousCohabitationContext(*first,*second,firstToSecond,duration);
-            const CohabitationContext secondContext=autonomousCohabitationContext(*second,*first,secondToFirst,duration);
-            const HouseholdId householdId=nextHouseholdId();
-            const CohabitationOutcome outcome=applyCohabitationDecision(
-                *first,*second,firstToSecond,secondToFirst,
-                firstContext,secondContext,romances_,households_,world_.minute,householdId);
-            if(outcome.result==CohabitationResult::Started){
-                recordPairLifeEvent(*first,*second,LifeEventType::CohabitationStarted,world_.minute);
-                emit(first->name+" and "+second->name+" started cohabiting");
-            }
-        }
-
-        pair=romances_.find(first->id,second->id);
-        if(pair==nullptr) continue;
-        if(pair->stage==RomanceStage::Cohabiting){
-            const int cohabitationMinute=std::max(latestCohabitationMinute(*first),latestCohabitationMinute(*second));
-            if(cohabitationMinute>=0 && world_.minute-cohabitationMinute>=FamilyCohabitationToEngagementMinutes){
-                const double duration=clampFamilyProgression(
-                    static_cast<double>(world_.minute-pair->startedMinute)/static_cast<double>(240*FamilyProgressionDayMinutes));
-                const EngagementContext firstContext=autonomousEngagementContext(*first,*second,firstToSecond,duration);
-                const EngagementContext secondContext=autonomousEngagementContext(*second,*first,secondToFirst,duration);
-                const EngagementOutcome outcome=applyEngagementDecision(
+        if(snapshot.stage==RomanceStage::Dating){
+            const int datingDuration=world_.minute-snapshot.startedMinute;
+            if(datingDuration>=FamilyDatingToCohabitationMinutes && !shareHousehold(households_,first->id,second->id)){
+                const CohabitationContext firstContext=autonomousCohabitationContext(*first,*second,firstToSecond);
+                const CohabitationContext secondContext=autonomousCohabitationContext(*second,*first,secondToFirst);
+                const CohabitationProposalOutcome outcome=applyCohabitationProposal(
                     *first,*second,firstToSecond,secondToFirst,
-                    firstContext,secondContext,romances_,world_.minute);
-                if(outcome.result==EngagementResult::Engaged){
-                    recordPairLifeEvent(*first,*second,LifeEventType::Engaged,world_.minute);
-                    emit(first->name+" and "+second->name+" got engaged");
+                    firstContext,secondContext,households_,nextHouseholdId(),true);
+                if(outcome.result==CohabitationProposalResult::Accepted){
+                    recordPairLifeEvent(*first,*second,LifeEventType::CohabitationStarted,world_.minute);
+                    recordPairLifeEvent(*first,*second,LifeEventType::HouseholdChanged,world_.minute);
+                    emit(first->name+" and "+second->name+" started cohabiting");
                 }
             }
-        }
 
-        pair=romances_.find(first->id,second->id);
-        if(pair==nullptr) continue;
-        if(pair->stage==RomanceStage::Engaged){
-            if(pair->engagedMinute>=0 && world_.minute-pair->engagedMinute>=FamilyEngagementToMarriageMinutes){
+            const int firstCohab=latestCohabitationMinute(*first);
+            const int secondCohab=latestCohabitationMinute(*second);
+            const int cohabStart=std::max(firstCohab,secondCohab);
+            const bool cohabMature=shareHousehold(households_,first->id,second->id) &&
+                cohabStart>=0 && world_.minute-cohabStart>=FamilyCohabitationToEngagementMinutes;
+            if(datingDuration>=FamilyDatingToEngagementMinutes && cohabMature){
                 const double duration=clampFamilyProgression(
-                    static_cast<double>(world_.minute-pair->startedMinute)/static_cast<double>(240*FamilyProgressionDayMinutes));
+                    static_cast<double>(datingDuration)/static_cast<double>(180*FamilyProgressionDayMinutes));
+                const MarriageContext firstContext=autonomousMarriageContext(*first,*second,firstToSecond,duration);
+                const MarriageContext secondContext=autonomousMarriageContext(*second,*first,secondToFirst,duration);
+                const EngagementProposalOutcome outcome=applyEngagementProposal(
+                    *first,*second,firstToSecond,secondToFirst,
+                    firstContext,secondContext,romances_,world_.minute);
+                if(outcome.result==EngagementProposalResult::Accepted){
+                    recordPairLifeEvent(*first,*second,LifeEventType::Engaged,world_.minute);
+                    emit(first->name+" and "+second->name+" became engaged");
+                }
+            }
+        }else if(snapshot.stage==RomanceStage::Engaged){
+            if(snapshot.engagedMinute>=0 && world_.minute-snapshot.engagedMinute>=FamilyEngagementToMarriageMinutes){
+                const double duration=clampFamilyProgression(
+                    static_cast<double>(world_.minute-snapshot.startedMinute)/static_cast<double>(240*FamilyProgressionDayMinutes));
                 const MarriageContext firstContext=autonomousMarriageContext(*first,*second,firstToSecond,duration);
                 const MarriageContext secondContext=autonomousMarriageContext(*second,*first,secondToFirst,duration);
                 const HouseholdId householdId=shareHousehold(households_,first->id,second->id) ? 0 : nextHouseholdId();
@@ -637,7 +627,6 @@ void Simulation::step(){
         if(!r.plan.empty()) advanceAction(c,r);
     }
     ++world_.minute;
-    world_.environmentalResidues.advanceToMinute(world_.minute);
     if(world_.minute%(24*60)==0) regenerateCivilizationEnvironment(world_);
     advanceCivilizationKnowledgeTeaching();
     advanceAutonomousFamilyProgression();
