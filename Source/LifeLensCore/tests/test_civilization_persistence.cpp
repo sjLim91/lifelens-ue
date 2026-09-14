@@ -126,7 +126,7 @@ int main()
     CHECK(encodeSimulationSnapshot(snapshot,bytes,&error));
     CHECK(error.empty());
     CHECK(bytes.size()>32);
-    CHECK(bytes[8]==3 && bytes[9]==0 && bytes[10]==0 && bytes[11]==0);
+    CHECK(bytes[8]==4 && bytes[9]==0 && bytes[10]==0 && bytes[11]==0);
 
     SimulationStateSnapshot decoded;
     CHECK(decodeSimulationSnapshot(bytes,decoded,&error));
@@ -161,9 +161,9 @@ int main()
         CHECK(character.civilization.knowledge.all().empty());
     }
 
-    std::vector<std::uint8_t> migratedV3;
-    CHECK(encodeSimulationSnapshot(migrated,migratedV3,&error));
-    CHECK(!migratedV3.empty() && migratedV3[8]==3);
+    std::vector<std::uint8_t> migratedV4;
+    CHECK(encodeSimulationSnapshot(migrated,migratedV4,&error));
+    CHECK(!migratedV4.empty() && migratedV4[8]==4);
 
     SimulationStateSnapshot bad=snapshot;
     bad.world.characters[0].civilization.character=999999;
