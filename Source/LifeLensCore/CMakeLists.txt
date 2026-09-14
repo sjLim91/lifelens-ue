@@ -10,6 +10,7 @@ enable_testing()
 add_library(lifelens_core STATIC
     src/Simulation.cpp
     src/SimulationSnapshot.cpp
+    src/SimulationSnapshotCodec.cpp
 )
 
 target_include_directories(lifelens_core PUBLIC include)
