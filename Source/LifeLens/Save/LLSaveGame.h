@@ -12,7 +12,7 @@ class LIFELENS_API ULLSaveGame : public USaveGame
 
 public:
     UPROPERTY(BlueprintReadWrite, SaveGame)
-    int32 SaveVersion = 1;
+    int32 SaveVersion = 2;
 
     UPROPERTY(BlueprintReadWrite, SaveGame)
     int32 WorldSeed = 0;
@@ -20,6 +20,12 @@ public:
     UPROPERTY(BlueprintReadWrite, SaveGame)
     int64 SimulationMinute = 0;
 
+    /** Authoritative LifeLensCore snapshot. Required for SaveVersion >= 2. */
+    UPROPERTY(SaveGame)
+    TArray<uint8> CoreSnapshotBytes;
+
+    // Legacy v1 compatibility only. New saves do not populate these arrays and
+    // LoadGame never treats them as authoritative simulation state.
     UPROPERTY(BlueprintReadWrite, SaveGame)
     TArray<FLLResidentData> Residents;
 

@@ -1,0 +1,99 @@
+name: LifeLens Unreal Linux Compile
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'Source/LifeLens/LifeLens.Build.cs'
+      - 'Source/LifeLens/Simulation/**'
+      - 'Source/LifeLens/World/**'
+      - 'Source/LifeLens.Target.cs'
+      - 'Source/LifeLensEditor.Target.cs'
+      - 'LifeLens.uproject'
+      - '.github/workflows/unreal-linux-compile.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lifelens-unreal-linux-compile-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compile-linux:
+    if: ${{ github.event.repository.private == false }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      UE_IMAGE: ghcr.io/epicgames/unreal-engine:dev-slim-5.6.0
+      UE_ROOT_IN_CONTAINER: /home/ue4/UnrealEngine
+      DIAGNOSTICS: ${{ github.workspace }}/Diagnostics
+
+    steps:
+      - name: Checkout LifeLens source
+        uses: actions/checkout@v4
+
+      - name: Preflight zero-cost runner and Epic GHCR credential
+        shell: bash
+        env:
+          EPIC_GHCR_PAT: ${{ secrets.EPIC_GHCR_PAT }}
+        run: |
+          set -euo pipefail
+          test '${{ github.event.repository.private }}' = 'false'
+          test '${{ runner.os }}' = 'Linux'
+          test -n "$EPIC_GHCR_PAT" || { echo 'EPIC_GHCR_PAT secret is missing'; exit 91; }
+          test -f "$GITHUB_WORKSPACE/LifeLens.uproject"
+          mkdir -p "$DIAGNOSTICS"
+          echo "$EPIC_GHCR_PAT" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          echo 'ZERO COST: public GitHub-hosted Linux runner; Linux compile only, no Android/cook/package.'
+
+      - name: Reclaim disk before Unreal image pull
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL || true
+          sudo apt-get clean || true
+          sudo docker system prune -af || true
+          df -h /
+
+      - name: Pull prebuilt Unreal 5.6 Linux development image
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker pull "$UE_IMAGE" 2>&1 | tee "$DIAGNOSTICS/docker-pull.log"
+          docker image inspect "$UE_IMAGE" --format '{{.Id}} {{.Size}}'
+          df -h /
+
+      - name: Verify image is Linux compile capable
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm "$UE_IMAGE" bash -lc \
+            "test -x '$UE_ROOT_IN_CONTAINER/Engine/Build/BatchFiles/Linux/Build.sh' && test -f '$UE_ROOT_IN_CONTAINER/Engine/Binaries/DotNET/UnrealBuildTool/UnrealBuildTool.dll'"
+          echo 'UE56_LINUX_COMPILE_IMAGE_READY'
+
+      - name: Compile LifeLens Linux Development with UHT and UBT
+        timeout-minutes: 35
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/Binaries" "$GITHUB_WORKSPACE/Intermediate"
+          sudo chmod -R a+rwX "$GITHUB_WORKSPACE"
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -w "$UE_ROOT_IN_CONTAINER" \
+            "$UE_IMAGE" \
+            bash -lc './Engine/Build/BatchFiles/Linux/Build.sh LifeLens Linux Development /workspace/LifeLens.uproject -WaitMutex -NoEngineChanges' \
+            2>&1 | tee "$DIAGNOSTICS/unreal-linux-compile.log"
+          echo 'LIFELENS_UE56_LINUX_COMPILE_PASS'
+          find "$GITHUB_WORKSPACE/Binaries" -maxdepth 3 -type f -printf '%p %s bytes\n' | sort | head -100 || true
+
+      - name: Upload compile diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: LifeLens-Unreal-Linux-Compile-Diagnostics
+          path: Diagnostics/
+          if-no-files-found: ignore
+          retention-days: 7

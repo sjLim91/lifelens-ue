@@ -76,10 +76,15 @@ inline PregnancyEvaluation evaluatePregnancyAttempt(
     if(gestationalParent.id==0 || partner.id==0 || gestationalParent.id==partner.id || !context.available) return result;
 
     const double ageFactor=fertilityAgeFactor(gestationalProfile.ageYears);
+    const double gestationalLifeFertility=clampPregnancy(
+        gestationalParent.lifeCondition.reproductivePotential);
+    const double partnerLifeFertility=clampPregnancy(
+        partner.lifeCondition.reproductivePotential);
     const bool eligible=gestationalProfile.canGestate &&
         partnerProfile.canContributeGenetics &&
         ageFactor>0.0 && gestationalProfile.health>0.05 &&
-        gestationalProfile.fertility>0.0 && partnerProfile.fertility>0.0;
+        gestationalProfile.fertility>0.0 && partnerProfile.fertility>0.0 &&
+        gestationalLifeFertility>0.01 && partnerLifeFertility>0.01;
     result.biologicallyEligible=eligible;
     if(!eligible) return result;
 
@@ -104,13 +109,18 @@ inline PregnancyEvaluation evaluatePregnancyAttempt(
         0.14*clampPregnancy(context.externalStress));
 
     const double biologicalHealth=clampPregnancy(
-        0.55*clampPregnancy(gestationalProfile.health)+
-        0.20*clampPregnancy(partnerProfile.health)+
-        0.25*relationshipStability);
+        0.40*clampPregnancy(gestationalProfile.health)+
+        0.15*clampPregnancy(partnerProfile.health)+
+        0.20*clampPregnancy(gestationalParent.lifeCondition.physicalHealth)+
+        0.10*clampPregnancy(partner.lifeCondition.physicalHealth)+
+        0.15*relationshipStability);
+    const double lifeFertilityFactor=std::sqrt(
+        gestationalLifeFertility*partnerLifeFertility);
     result.conceptionProbability=clampPregnancy(
         0.32*ageFactor*
         clampPregnancy(gestationalProfile.fertility)*
         clampPregnancy(partnerProfile.fertility)*
+        lifeFertilityFactor*
         biologicalHealth);
     result.ready=result.attemptReadiness>=clampPregnancy(readinessThreshold);
     return result;
