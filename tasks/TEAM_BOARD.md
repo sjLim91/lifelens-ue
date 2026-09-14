@@ -12,7 +12,7 @@
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | `jjun/core-save-load-v1` | Full Core Save/Load v1 | `Source/LifeLensCore/**` | DOING — versioned authoritative snapshot + roundtrip/continuation tests |
+| 쭌 + 쭌 AI | `jjun/core-save-load-v1`, PR #44 | Full Core Save/Load v1 | `Source/LifeLensCore/**` | REVIEW / WAITING_CI — head `64d2fb25...`; Core suite + Preflight required |
 | 쭌 + 쭌 AI | `task/03-fast-test`, PR #2 | old Android validation | Bridge/build | FROZEN — Run `34739283266` 재실행/수정/병합 금지 |
 | 다겸 + 다겸 AI | `dagyeom/observer-ui-v2`, PR #17 | Observer HUD v2 + Core Observer Bridge binding | `Source/LifeLens/UI/**` | REVIEW / RECOVERING — latest main reconcile 필요 |
 | 다겸 + 다겸 AI | `dagyeom/ui-foundation-v1`, PR #26 | Android landscape UI foundation | UI foundation | REVIEW |
@@ -21,23 +21,16 @@
 | 다겸 + 다겸 AI | `dagyeom/mobile-touch-v1`, PR #36 | Mobile Touch v1 | `Source/LifeLens/UI/**` | REVIEW — stacked on #30 |
 | 다겸 + 다겸 AI | `dagyeom/visual-feedback-v1`, PR #38 | Visual Feedback v1 | `Source/LifeLens/UI/**` | REVIEW — stacked on #36 |
 
-## Current Jjun lock — Full Core Save/Load v1
+## Current Jjun lock — PR #44 Full Core Save/Load v1
 
 - Branch: `jjun/core-save-load-v1`
-- Base: latest main after this state-lock update.
-- Allowed scope: `Source/LifeLensCore/**`, Core tests/CMake; shared state docs at checkpoints.
-- Forbidden in this slice: `Source/LifeLens/UI/**`, Dagyeom Character presentation, old TASK_03, broad Unreal SaveGame edits before the Core contract is validated.
-- Snapshot must preserve:
-  - seed/minute/RNG continuation;
-  - Character complete authoritative state;
-  - Relationship/Genealogy/Romance/Household/Pregnancy/Birth books;
-  - Simulation runtime state necessary for exact continuation.
-- Completion gate:
-  - full Release Core suite;
-  - snapshot roundtrip deep equality;
-  - deterministic post-load continuation;
-  - Structural Preflight;
-  - merge + state/handoff synchronization.
+- Head: `64d2fb25f6453112aabaef2d809b0528c9dc4566`
+- Scope: `Source/LifeLensCore/**` only.
+- Snapshot contract captures World/RNG, complete Character state, all relationship/family books, Simulation runtime state and logs.
+- Restore validates version/IDs/cross references before committing state.
+- Test proves immediate deep equality and deterministic equality after another 10,000 simulated minutes.
+- Unreal SaveGame adapter is deliberately excluded until this Core contract is validated and merged.
+- Required gates before merge: Core Release full suite + deterministic harness + Structural Preflight.
 
 ## Latest completed Jjun work
 
@@ -48,7 +41,7 @@
 
 ## Dagyeom API handoff
 
-Former six `BLOCKED-BY-JJUN` items remain RESOLVED / READY FOR BINDING. Main now also supports growing population through autonomous birth; UI must not assume resident count remains four.
+Former six `BLOCKED-BY-JJUN` items remain RESOLVED / READY FOR BINDING. Main supports growing population through autonomous birth; UI must not assume resident count remains four.
 
 ## Shared File Lock
 
@@ -62,7 +55,7 @@ Current open requests: **none**.
 
 ## Merge / reconciliation queue
 
-1. Jjun `jjun/core-save-load-v1` — DOING.
+1. PR #44 — WAITING_CI; merge only after required Core + Preflight PASS.
 2. Dagyeom PR #17 — reconcile latest main + bind current Core Bridge + review fixes + verify.
 3. Dagyeom PR #26 — reconcile latest main independently.
 4. After #17: #29/#30 → #36 → #38.
