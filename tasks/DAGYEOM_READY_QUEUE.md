@@ -31,7 +31,8 @@ Current product checkpoints:
 - #50 Civilization Runtime State + Persistence v1 — merge `c31c422c305a3a79a9553d37ac86247aa31d1853`.
 - #51 Autonomous Civilization Action Loop v1 — merge `55d5211160c8edad32b01177e2b9326a9faa2b78`.
 - #52 Civilization Knowledge Transmission v1 — merge `b90da9242003fbc0cbc553605b9abc46a17aa044`; PR Core `34814310235` PASS 37/37 + deterministic harness; Preflight `34814310291` PASS.
-- #53 Civilization Observer Read DTOs v1 — **OPEN / latest head `e3a9f661...`**; latest Core `34821150702` PASS, latest Preflight `34821150693` PASS, Unreal Linux Compile Run #16 `34821150704` pending. Superseded Run #15 link failure was fixed by adding `CivilizationKnowledgeTransmission.cpp` to Unreal compile unit plus validator guard.
+- #53 Civilization Observer Read DTOs v1 — **OPEN / latest head `e3a9f661...`**; Core `34821150702` PASS, Preflight `34821150693` PASS, Unreal Linux Compile Run #16 `34821150704` PASS including UHT/UBT/link. Needs only latest-main reconciliation/merge.
+- #54 macOS clang shadow hotfix — merge `3b649b900c44a4e48bb89171b38f5e685e757b14`; Preflight `34822441249` PASS, Core `34822441296` PASS. Dagyeom R1 macOS `-Wshadow -Werror` blocker released.
 
 ---
 
@@ -57,7 +58,7 @@ After #52 authoritative Core now has:
 - authoritative fact/receipt/transmissionPath provenance;
 - Save/Load deterministic continuation including provenance through snapshot binary v3.
 
-#53 publishes the read-only resident/world civilization DTO contract. **Do not bind the civilization-specific DTO until #53 is actually merged and green.** Existing Observer reconciliation can continue independently.
+#53 publishes the read-only resident/world civilization DTO contract. **Do not bind the civilization-specific DTO until #53 is actually merged**, even though its Core/Preflight/UHT/UBT gates are now green. Existing Observer reconciliation can continue independently.
 
 ---
 
@@ -99,6 +100,7 @@ Do **not** direct-push from Jjun into `dagyeom/*` branches.
 - Branch/PR: `dagyeom/observer-ui-v2`, PR #17
 - Re-fetch branch head before work.
 - Reconcile from actual current main and preserve newest shared docs.
+- **macOS clang blocker is resolved on main by PR #54 merge `3b649b900c44a4e48bb89171b38f5e685e757b14`; R1 may resume now.**
 - If Jjun is asked to actively help, use the Integration Sprint ASSIST_LOCK protocol above; do not both edit the same HUD files simultaneously.
 
 ### DQ-R2 Bind current Core Observer Bridge into Observer HUD
@@ -114,7 +116,7 @@ Existing READY read surfaces remain:
 
 Existing readable data includes Relationship 13D, Emotion 11D, Physical/Social activity, family state, lifecycle/world aggregates, founder identity/personality and typed current action directives.
 
-After #53 merges and is green, new civilization getters become bindable:
+After #53 merges, new civilization getters become bindable:
 - `ULLCoreBridgeSubsystem::GetResidentCivilizationObservation(...)`
 - `ULLCoreBridgeSubsystem::GetCivilizationWorldObservation(...)`
 
@@ -158,15 +160,15 @@ Then verify UHT/UBT + PIE when available.
 
 ## BLOCKED-BY-JJUN
 
-**기존 Observer read 관련 BLOCKED-BY-JJUN 항목은 0개다.**
+**현재 PR #17 R1을 막는 BLOCKED-BY-JJUN 항목은 0개다.** macOS clang shadow blocker는 #54로 해제됐다.
 
-Civilization-detail binding is conditional only on PR #53 being merged/green. This does not block current PR #17/#26 reconciliation.
+Civilization-detail binding is conditional only on PR #53 being merged. This does not block current PR #17/#26 reconciliation.
 
 ---
 
 ## Current Jjun direction visible to Dagyeom
 
-Current Jjun task: finish PR #53 validation/merge. Latest Core/Preflight are green; Run #16 is the remaining UE compile gate.
+Current Jjun task: reconcile/merge PR #53. Core/Preflight/UE Run #16 are all green.
 
 After #53: **Jjun pauses new large Core slices and helps close the integration gap under `docs/INTEGRATION_SPRINT.md`.**
 
@@ -176,7 +178,7 @@ Observer-first rule remains: Level 0 clean; detailed civilization information be
 
 ## Merge dependency order
 
-1. PR #53 green + merge
+1. PR #53 latest-main reconcile + merge
 2. PR #17 latest-main reconciliation + current Bridge/civilization binding + review fixes + verification
 3. PR #26 latest-main reconciliation/verification — may proceed independently where locks do not overlap
 4. PR #29 / #30 after #17
@@ -188,8 +190,9 @@ Observer-first rule remains: Level 0 clean; detailed civilization information be
 
 ## Current Dagyeom state summary
 
+- PR #17 R1 macOS Core compile blocker is resolved on main.
 - Dagyeom is not waiting for Jjun APIs for current Observer reconciliation tasks.
 - Civilization direction is canonical and should influence generic presentation design now.
-- Civilization detail UI waits only for #53 green/merge rather than placeholders.
+- Civilization detail UI waits only for #53 merge rather than placeholders.
 - Main UI remains human/world first.
 - Jjun may actively help after #53, but only through REVIEW_ONLY or explicit ASSIST_LOCK + integration assist branch so the two workstreams do not collide.
