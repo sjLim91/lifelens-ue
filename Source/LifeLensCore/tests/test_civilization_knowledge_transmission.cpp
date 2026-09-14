@@ -92,6 +92,7 @@ int main()
 
     const SocialFact* fact=book.findFact(origin->factId);
     CHECK(fact!=nullptr);
+    const SocialFactId factId=fact->id;
     const TechniqueTransmissionOutcome witnessed=applyTechniqueWitness(
         book,*fact,teacher,observer,seed,601);
     CHECK(witnessed.receiptAccepted);
@@ -99,12 +100,9 @@ int main()
         TechniqueId::SharpFlake,KnowledgeLevel::Observed));
     CHECK(!observer.civilization.knowledge.knowsAtLeast(
         TechniqueId::SharpFlake,KnowledgeLevel::Reproducible));
-    CHECK(book.findReceipt(observer.id,fact->id)!=nullptr);
+    CHECK(book.findReceipt(observer.id,factId)!=nullptr);
     CHECK(observer.memory.entries.back().source==MemorySource::DirectWitness);
 
-    // Teaching is relationship- and comprehension-dependent. Give a fresh learner
-    // strong trust, prerequisite/material context and Understood knowledge so a
-    // practiced/master teacher can advance them to Reproducible.
     Character taught=makeLearner(3);
     taught.civilization.knowledge.learn(
         TechniqueId::SharpFlake,KnowledgeLevel::Understood,0.60);
@@ -117,20 +115,6 @@ int main()
     taughtToTeacher.familiarity=1.0;
     taughtToTeacher.comfort=1.0;
 
-    std::uint64_t goodEpoch=0;
-    const double trust=learnerTrustInTeacher(relationships,taught.id,teacher.id);
-    const double mastery=techniqueMasteryFactor(KnowledgeLevel::Mastered);
-    const double teachingChance=std::min(0.97,
-        0.08+0.24*trust+0.24*mastery+0.24*taught.civilization.learningSkill+
-        0.12*taught.personality.curiosity+0.08*taught.personality.openness);
-    for(std::uint64_t epoch=0;epoch<10000;++epoch){
-        const double roll=deterministicKnowledgeUnit(
-            seed+12345ULL,fact->id,teacher.id,taught.id,epoch);
-        if(roll<teachingChance){ goodEpoch=epoch; break; }
-    }
-
-    // teachTechnique uses its own deterministic salt; search the exact function
-    // result on isolated copies until a successful deterministic epoch is found.
     TechniqueTransmissionOutcome taughtOutcome;
     bool foundTeachingSuccess=false;
     for(std::uint64_t epoch=0;epoch<1000 && !foundTeachingSuccess;++epoch){
@@ -151,14 +135,12 @@ int main()
     CHECK(taughtOutcome.receiptAccepted);
     CHECK(taught.civilization.knowledge.knowsAtLeast(
         TechniqueId::SharpFlake,KnowledgeLevel::Reproducible));
-    const KnowledgeReceipt* taughtReceipt=book.findReceipt(taught.id,fact->id);
+    const KnowledgeReceipt* taughtReceipt=book.findReceipt(taught.id,factId);
     CHECK(taughtReceipt!=nullptr);
     CHECK(taughtReceipt->source==MemorySource::ToldByOther);
     CHECK(taughtReceipt->immediateSource==teacher.id);
     CHECK(taughtReceipt->transmissionPath.size()==2);
 
-    // A receiver with effectively no relationship trust cannot turn the same
-    // demonstration into accepted instruction.
     SocialKnowledgeBook weakBook;
     Character weakTeacher=teacher;
     Character weakLearner=makeLearner(4);
@@ -175,7 +157,6 @@ int main()
     CHECK(!weakLearner.civilization.knowledge.knowsAtLeast(
         TechniqueId::SharpFlake,KnowledgeLevel::Reproducible));
 
-    // The same fact cannot be repeatedly delivered to amplify the same learner.
     const TechniqueTransmissionOutcome duplicate=teachTechnique(
         book,teacher,taught,TechniqueId::SharpFlake,
         relationships,seed,620,999);
@@ -183,7 +164,6 @@ int main()
           duplicate.result==TechniqueTeachingResult::NoFact ||
           duplicate.result==TechniqueTeachingResult::DuplicateOrLoop);
 
-    // Authoritative Simulation snapshot persists facts, receipts and full paths.
     Simulation sim(seed);
     sim.setupNewGame();
     Character& simTeacher=sim.world().characters[0];
@@ -220,8 +200,6 @@ int main()
     CHECK(error.empty());
     CHECK(sameSocialKnowledge(sim.socialKnowledge(),restored.socialKnowledge()));
 
-    // Reconstruct a valid v2 payload by stripping only the v3 social knowledge
-    // extension. v2 must remain readable and migrates with an empty provenance book.
     const auto marker=std::find_end(
         bytes.begin()+12,bytes.end(),
         SocialKnowledgeSnapshotExtensionMagic,
@@ -236,7 +214,6 @@ int main()
     CHECK(migratedV2.socialKnowledge.receipts().empty());
     CHECK(migratedV2.world.characters.size()==snapshot.world.characters.size());
 
-    // Save/restore continuation remains deterministic with the transmission book.
     sim.runMinutes(240);
     restored.runMinutes(240);
     std::vector<std::uint8_t> futureA,futureB;
@@ -244,8 +221,6 @@ int main()
     CHECK(encodeSimulationSnapshot(restored.captureSnapshot(),futureB,&error));
     CHECK(futureA==futureB);
 
-    // Repeated NEW GAME clears transmission history rather than leaking culture
-    // from the previous world.
     sim.setupNewGame();
     CHECK(sim.socialKnowledge().facts().empty());
     CHECK(sim.socialKnowledge().receipts().empty());
