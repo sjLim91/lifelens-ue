@@ -9,6 +9,7 @@
 #include "DecisionExecution.h"
 #include "ObserverReadModelV2.h"
 #include "Planner.h"
+#include "WitnessRumor.h"
 
 namespace lifelens {
 
@@ -30,12 +31,6 @@ struct SimulationRuntimeSnapshot {
     CharacterId socialTarget=0;
 };
 
-// Versioned, Unreal-free authoritative Core snapshot.
-//
-// This is deliberately a value DTO rather than a second mutable simulation model.
-// It captures the exact Core state required to restore and continue a world. The
-// future Unreal SaveGame adapter should serialize this contract rather than
-// serializing its compatibility resident projection as another source of truth.
 struct SimulationStateSnapshot {
     std::uint32_t version=SimulationSnapshotVersion;
     World world{1};
@@ -45,6 +40,7 @@ struct SimulationStateSnapshot {
     HouseholdBook households;
     PregnancyBook pregnancies;
     BirthBook births;
+    SocialKnowledgeBook socialKnowledge;
     std::unordered_map<CharacterId,SimulationRuntimeSnapshot> runtime;
     std::vector<std::string> logs;
 };
