@@ -12,7 +12,7 @@
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | `jjun/unreal-savegame-adapter-v1`, PR #45 | Unreal SaveGame Adapter v1 | `Source/LifeLens/Simulation/**`, `Source/LifeLens/Save/**`, narrow Core codec/tests, validator | REVIEW / WAITING_CI — head `547b3f94...`; Core + Preflight + actual UE compile required |
+| 쭌 + 쭌 AI | `jjun/unreal-savegame-adapter-v1`, PR #45 | Unreal SaveGame Adapter v1 | `Source/LifeLens/Simulation/**`, `Source/LifeLens/Save/**`, narrow Core codec/tests, validator | REVIEW / WAITING_UNREAL_COMPILE — Core + Preflight PASS; UE Run `34803226433` running |
 | 쭌 + 쭌 AI | `task/03-fast-test`, PR #2 | old Android validation | Bridge/build | FROZEN — Run `34739283266` 재실행/수정/병합 금지 |
 | 다겸 + 다겸 AI | `dagyeom/observer-ui-v2`, PR #17 | Observer HUD v2 + Core Observer Bridge binding | `Source/LifeLens/UI/**` | REVIEW / RECOVERING — latest main reconcile 필요 |
 | 다겸 + 다겸 AI | `dagyeom/ui-foundation-v1`, PR #26 | Android landscape UI foundation | UI foundation | REVIEW |
@@ -24,15 +24,14 @@
 ## Current Jjun lock — PR #45 Unreal SaveGame Adapter v1
 
 - Branch/head: `jjun/unreal-savegame-adapter-v1` / `547b3f94e0c3df6df15d723e72c8084cd10a7c29`.
-- Must consume PR #44 `SimulationStateSnapshot` as single Core persistence truth.
-- Implemented target:
-  - canonical Core binary codec;
-  - SaveGame v2 stores Core snapshot bytes;
-  - v2 Load restores Core directly and rebuilds projection;
-  - live world replacement happens only after temporary candidate decode/restore succeeds;
-  - v1 legacy save replay is migration-only; Residents/Relationships never become authority.
-- Forbidden scope remains UI / Dagyeom Character presentation / Content / frozen TASK_03.
-- Required gates: Core Release full suite + deterministic harness, Structural Preflight, actual UE 5.6 Linux UHT/UBT.
+- Changed scope verified: 10 Jjun-owned Save/Simulation/Core/validator files; no UI/Characters/Content.
+- SaveGame v2 stores canonical Core snapshot bytes; v2 Load restores Core directly and rebuilds compatibility projection.
+- Restore is transactional via a temporary Core candidate; corrupt/incompatible saves do not replace the live world.
+- v1 replay remains migration-only and legacy Residents/Relationships never become authority.
+- Validation:
+  - Core Tests `34803226434` PASS incl deterministic harness.
+  - Structural Preflight `34803226458` PASS.
+  - Unreal Linux Compile `34803226433` IN PROGRESS; actual UHT/UBT is the only remaining gate.
 
 ## Latest completed Jjun work
 
@@ -58,7 +57,7 @@ Current open requests: **none**.
 
 ## Merge / reconciliation queue
 
-1. PR #45 — WAITING_CI; do not merge without all required gates PASS.
+1. PR #45 — WAITING_UNREAL_COMPILE; merge only after Run `34803226433` UHT/UBT PASS.
 2. Dagyeom PR #17 — reconcile latest main + bind current Core Bridge + review fixes + verify.
 3. Dagyeom PR #26 — reconcile latest main independently.
 4. After #17: #29/#30 → #36 → #38.
