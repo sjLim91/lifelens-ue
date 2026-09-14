@@ -7,6 +7,7 @@
 #include "DecisionExecution.h"
 #include "ObserverReadModelV2.h"
 #include "Planner.h"
+#include "SimulationSnapshot.h"
 namespace lifelens {
 class Simulation {
 public:
@@ -18,6 +19,8 @@ public:
     void step();
     void runMinutes(int minutes);
     void onEvent(EventCallback cb);
+    SimulationStateSnapshot captureSnapshot() const;
+    bool restoreSnapshot(const SimulationStateSnapshot& snapshot,std::string* error=nullptr);
     World& world(){return world_;}
     const World& world() const{return world_;}
     RelationshipBook& relationships(){return relationships_;}
