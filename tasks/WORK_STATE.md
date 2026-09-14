@@ -39,30 +39,28 @@ Last reconciled: 2026-09-14 KST
 - Dagyeom Character/UI/Content files were not modified.
 - Jjun proactive Character Appearance support is complete; further support only on explicit Integration Request/blocker.
 
-### World Affordance Fallback v1 — ACTIVE / PR #66
+### World Affordance Fallback v1 — DONE
 
 Owner: 쭌 / 쭌 AI.
 
-Branch: `jjun/world-affordance-fallback-v1-r1`.
-PR: #66 `[WORLD] Add tiered affordance fallback v1`.
-Canonical design: `docs/WORLD_AFFORDANCE_ENVIRONMENT_v1.md`.
+- PR #66 `[WORLD] Add tiered affordance fallback v1` merged to main.
+- Main merge: `0ad8d6b4c80c134832fcad9bf9b34dcfabf2b68a`.
+- Latest-head Structural Preflight Run `34848772905`: PASS.
+- Latest-head Unreal Linux Compile Run `34848772895`: PASS including actual UE 5.6 UHT/UBT/link.
+- Canonical design: `docs/WORLD_AFFORDANCE_ENVIRONMENT_v1.md`.
 
-Scope:
-- remove automatic bootstrap beds/toilets/eat/hygiene facilities
-- choose actual world affordances by `Preferred → Primitive → Natural → Emergency`
-- never create civilization facilities just to satisfy an intent
-- emergency Eat/Drink must not create resources
-- expose active affordance tier / emergency state
+Delivered:
+- removed automatic bootstrap beds/toilets/eat/hygiene facilities
+- actual-world affordance selection by `Preferred → Primitive → Natural → Emergency`
+- no implicit civilization facility creation
+- emergency Eat/Drink does not create resources
+- exposes active affordance tier / emergency state
 
-Validation:
-- Structural Preflight Run `34847764909`: PASS
-- Unreal Linux Compile Run `34847764900`: pending/in progress at last reconciliation
+Boundary:
+- #66 implements action/affordance fallback only.
+- Authoritative environmental residue/contamination is intentionally the next slice.
 
-Important boundary:
-- PR #66 is **action/affordance fallback only**.
-- It is NOT considered to have implemented authoritative environmental residue/contamination yet.
-
-### Environmental Residue v1 — NEXT AFTER #66
+### Environmental Residue v1 — READY_NOW
 
 Owner: 쭌 / 쭌 AI.
 
@@ -115,7 +113,7 @@ Rules:
 - Character Appearance proactive support is DONE via PR #65.
 - Default for Dagyeom work returns to REVIEW_ONLY.
 - Jjun owns non-overlapping Core/World/build/runtime work.
-- Current Jjun product path: #66 Affordance fallback → Environmental Residue v1.
+- Current Jjun product path: Environmental Residue v1.
 - Create ASSIST_LOCK only when Dagyeom-owned code actually needs integration help.
 
 ## World / civilization causal rule
@@ -133,8 +131,8 @@ Rules:
 1. Character Presentation v1 — DONE via PR #63.
 2. Appearance data/projection support — DONE via PR #65.
 3. Character Appearance v1 — READY_NOW / Track B Quaternius CC0. (Dagyeom lane)
-4. World Affordance Fallback v1 — ACTIVE / PR #66. (Jjun lane, parallel-safe)
-5. Environmental Residue v1 — AFTER #66. (Jjun lane)
+4. World Affordance Fallback v1 — DONE via PR #66. (Jjun lane)
+5. Environmental Residue v1 — READY_NOW. (Jjun lane)
 6. Character Motion & Context v1 minimum — AFTER Appearance.
 7. PR #30 Observer UX Polish — AFTER Human Character minimum.
 8. PR #36 Mobile Touch — AFTER #30.
@@ -152,6 +150,7 @@ Rules:
 - UI Foundation integrated via PR #61; actual UE 5.6 compile passed.
 - Character Presentation integrated via PR #63; actual UE 5.6 compile passed.
 - Character Appearance deterministic projection contract merged via PR #65; actual UE 5.6 compile passed.
+- World Affordance Fallback merged via PR #66; actual UE 5.6 compile passed.
 - Civilization observer read DTOs PR #53 merged.
 - Core Decision → Unreal Physical Action Bridge merged.
 - Full Core snapshot + Unreal SaveGame v2 merged.
