@@ -359,3 +359,34 @@
 - Scope: these are Core read DTOs, not a live Unreal bridge. `majorLifeEvents` counts individual LifeHistory entries, not deduplicated world events. The DTO does not yet expose GenerationContinuity; the separate existing assessment API remains available.
 - Integration finding: Core `Simulation` currently owns World/RelationshipBook but no family books; Unreal `ULLSimulationSubsystem` still owns its separate resident/save data. A future bridge must first establish authoritative state and GUID mapping, preserve save/load identity, and avoid presenting absent Core data as a real empty family.
 - Frozen TASK_03 and all Dagyeom branches remain untouched. Next: PR #34 refreshed CI → merge → record exact next integration task in main.
+
+### 2026-09-14 — Observer Runtime Bridge v1 checkpoint
+
+- 작성자: 쭌 측 AI
+- 브랜치/PR: `jjun/observer-runtime-bridge-v1`, PR #37
+- 기준: P24가 병합된 `main` merge SHA `b4403faf138c153bcd83be266cde5026ea53b831`에서 분리 시작.
+- 변경 범위:
+  - `Source/LifeLens/Simulation/LLCoreReadTypes.h`
+  - `Source/LifeLens/Simulation/LLCoreBridgeSubsystem.h/.cpp`
+  - `Source/LifeLens/Simulation/LLCoreCompileUnit.cpp`
+  - `Source/LifeLens/LifeLens.Build.cs`
+  - `Tools/validate_bootstrap.py`
+  - 상태/인수인계 문서
+- 구현:
+  - 최신 LifeLensCore `ResidentObservation` / P24 emotion observation을 Unreal Blueprint/read DTO로 투영.
+  - Needs, 11개 Emotion 축, valence/arousal/intensity, Physical/Social activity와 target, 방향성 Relationship 13차원, socialBond/romancePotential, Memory/Belief count, 기본 world resident count를 읽기 전용으로 제공.
+  - 식별은 이름이 아니라 `(WorldSeed, Core CharacterId)`로 결정론적 `FGuid`를 생성해 유지.
+  - Core는 표준 C++17로 유지하고 Unreal reflection/type은 Bridge 쪽에만 둠.
+  - 현재 Core `Simulation`이 family books를 권위 상태로 소유하지 않으므로 Family/Household/Romance/Pregnancy aggregate를 가짜 빈 데이터로 노출하지 않음.
+- 검증:
+  - PR #37 head `1cd3139d4756386d4bd4ee3a3b59d2c74467ed7a` 기준 LifeLens Preflight Run `34794889890` PASS.
+  - Preflight는 Core/Unreal 경계 역침투 검사와 필수 Bridge 계약을 포함함.
+  - 현재 세션 로컬 컨테이너는 외부 GitHub DNS가 차단되어 checkout 검증은 실행하지 못했음; 코드 실패가 아님.
+  - 실제 Unreal UHT/UBT는 아직 PENDING이며 APK/패키징 성공을 주장하지 않음.
+- 상대가 알아야 할 점:
+  - `Source/LifeLens/UI/**`는 수정하지 않았고 다겸 UI 브랜치와 직접 충돌시키지 않음.
+  - 다겸은 이 PR 병합/컴파일 검증 후 `GetResidentObservations`, `GetResidentObservation`, `GetWorldObservation`을 소비할 수 있음.
+  - 기존 TASK_03 PR #2와 Android Run `34739283266`은 사용자 지시대로 FROZEN 상태 그대로이며 수정/재실행하지 않았음.
+- 다음 행동:
+  - 문서 checkpoint 반영 후 최신 PR head의 Preflight를 다시 확인.
+  - UHT/UBT 검증 경로는 FROZEN TASK_03을 되살리지 않고 별도 최신-main 검증 작업으로 처리.
