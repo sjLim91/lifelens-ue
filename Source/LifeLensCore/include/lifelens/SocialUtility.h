@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <string>
 
+#include "CivilizationDecision.h"
 #include "Relationship.h"
 #include "UtilityAI.h"
 
@@ -36,13 +37,15 @@ struct SocialUtilityDecision {
 
 enum class UnifiedDecisionKind {
     Physical,
-    Social
+    Social,
+    Civilization
 };
 
 struct UnifiedUtilityDecision {
     UnifiedDecisionKind kind = UnifiedDecisionKind::Physical;
     Goal physicalGoal = Goal::Idle;
     SocialUtilityDecision social;
+    CivilizationUtilityDecision civilization;
     double utility = 0.0;
 };
 
@@ -266,19 +269,35 @@ inline std::pair<Goal, double> bestPhysicalUtility(
     return {bestGoal, bestScore};
 }
 
+inline double maximumResidentNeed(const Character& self)
+{
+    return std::max({
+        self.needs.hunger,
+        self.needs.thirst,
+        self.needs.sleep,
+        self.needs.bladder,
+        self.needs.hygiene
+    });
+}
+
 inline UnifiedUtilityDecision chooseUnifiedUtilityDecision(
     const World& world,
     const Character& self,
     const RelationshipBook& relationships,
-    double minimumSocialUtility = 0.18) {
+    double minimumSocialUtility = 0.18,
+    double minimumCivilizationUtility = 0.14) {
 
     const auto physical = bestPhysicalUtility(world, self);
     const SocialUtilityDecision social = chooseSocialUtilityDecision(world, self, relationships);
+    const CivilizationUtilityDecision civilization = chooseCivilizationUtilityDecision(world, self);
 
     UnifiedUtilityDecision decision;
     decision.physicalGoal = physical.first;
     decision.social = social;
+    decision.civilization = civilization;
 
+    // Preserve the pre-civilization Physical/Social winner first so existing
+    // behavior remains stable unless civilization is clearly more valuable.
     if (social.intent != SocialIntent::None &&
         social.utility >= minimumSocialUtility &&
         social.utility > physical.second * 1.05) {
@@ -287,6 +306,17 @@ inline UnifiedUtilityDecision chooseUnifiedUtilityDecision(
     } else {
         decision.kind = UnifiedDecisionKind::Physical;
         decision.utility = physical.second;
+    }
+
+    // Survival is still dominant. Civilization competes only while all Needs
+    // are below the urgent threshold, and must beat the existing winner by a
+    // margin rather than constantly interrupting life/social behavior.
+    if (maximumResidentNeed(self) < 0.74 &&
+        civilization.intent != CivilizationIntent::None &&
+        civilization.utility >= minimumCivilizationUtility &&
+        civilization.utility > decision.utility * 1.08) {
+        decision.kind = UnifiedDecisionKind::Civilization;
+        decision.utility = civilization.utility;
     }
 
     return decision;
