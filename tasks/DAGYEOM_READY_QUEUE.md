@@ -17,6 +17,8 @@
 
 제품 방향 기준은 `docs/LIFELENS_SPEC_v1.1.md`와 **`docs/CIVILIZATION_PROGRESSION_v1.md`**를 함께 읽는다.
 
+**쭌이 다겸 작업을 도울 때는 `docs/INTEGRATION_SPRINT.md`를 반드시 읽는다.** 기본 지원은 REVIEW_ONLY다. 실제 다겸 소유 코드 수정이 필요하면 TEAM_BOARD에 `ASSIST_LOCK`을 먼저 만들고, 쭌은 `integration/dagyeom-<scope>-assist` branch를 사용한다. `dagyeom/*` branch에 쭌 AI가 직접 push하지 않는다.
+
 Current product checkpoints:
 - #42 Production New Game Runtime — merged / UE compile PASS.
 - #43 Autonomous Family Progression — merged / Core+Preflight PASS.
@@ -29,6 +31,7 @@ Current product checkpoints:
 - #50 Civilization Runtime State + Persistence v1 — merge `c31c422c305a3a79a9553d37ac86247aa31d1853`.
 - #51 Autonomous Civilization Action Loop v1 — merge `55d5211160c8edad32b01177e2b9326a9faa2b78`.
 - #52 Civilization Knowledge Transmission v1 — merge `b90da9242003fbc0cbc553605b9abc46a17aa044`; PR Core `34814310235` PASS 37/37 + deterministic harness; Preflight `34814310291` PASS.
+- #53 Civilization Observer Read DTOs v1 — **OPEN / latest head `e3a9f661...`**; latest Core `34821150702` PASS, latest Preflight `34821150693` PASS, Unreal Linux Compile Run #16 `34821150704` pending. Superseded Run #15 link failure was fixed by adding `CivilizationKnowledgeTransmission.cpp` to Unreal compile unit plus validator guard.
 
 ---
 
@@ -54,7 +57,38 @@ After #52 authoritative Core now has:
 - authoritative fact/receipt/transmissionPath provenance;
 - Save/Load deterministic continuation including provenance through snapshot binary v3.
 
-Civilization fields are **still not UI-ready at this exact checkpoint**. Jjun is now publishing the real civilization Observer/Bridge read DTOs. Do not invent placeholder fields before that API lands.
+#53 publishes the read-only resident/world civilization DTO contract. **Do not bind the civilization-specific DTO until #53 is actually merged and green.** Existing Observer reconciliation can continue independently.
+
+---
+
+## INTEGRATION SPRINT RULE — Jjun may help, but without branch collision
+
+After #53 merges, Jjun enters Integration Support instead of immediately starting another large Core feature.
+
+### Default
+
+`REVIEW_ONLY`
+
+Jjun may inspect this queue, Dagyeom PRs, diffs, merge conflicts and CI and may leave exact fixes, but does not write Dagyeom-owned files.
+
+### If user asks Jjun to patch Dagyeom code
+
+Before any edit:
+1. Re-fetch the exact target Dagyeom PR/branch HEAD and CI.
+2. Register `ASSIST_LOCK` in `tasks/TEAM_BOARD.md` with exact paths.
+3. Create `integration/dagyeom-<scope>-assist` from that exact Dagyeom branch HEAD.
+4. Jjun edits only the locked paths on the assist branch.
+5. Dagyeom side does not edit the same locked paths until handoff/merge.
+6. After integration, remove the lock and return ownership to Dagyeom.
+
+Do **not** direct-push from Jjun into `dagyeom/*` branches.
+
+### Parent-first protection
+
+- First priority: PR #17.
+- #26 can be worked independently only where file locks do not overlap #17.
+- Do not mass-rebase #29/#30/#36/#38 while #17 is unresolved.
+- After #17, reconcile #29/#30; then #36; then #38.
 
 ---
 
@@ -65,6 +99,7 @@ Civilization fields are **still not UI-ready at this exact checkpoint**. Jjun is
 - Branch/PR: `dagyeom/observer-ui-v2`, PR #17
 - Re-fetch branch head before work.
 - Reconcile from actual current main and preserve newest shared docs.
+- If Jjun is asked to actively help, use the Integration Sprint ASSIST_LOCK protocol above; do not both edit the same HUD files simultaneously.
 
 ### DQ-R2 Bind current Core Observer Bridge into Observer HUD
 
@@ -79,11 +114,15 @@ Existing READY read surfaces remain:
 
 Existing readable data includes Relationship 13D, Emotion 11D, Physical/Social activity, family state, lifecycle/world aggregates, founder identity/personality and typed current action directives.
 
+After #53 merges and is green, new civilization getters become bindable:
+- `ULLCoreBridgeSubsystem::GetResidentCivilizationObservation(...)`
+- `ULLCoreBridgeSubsystem::GetCivilizationWorldObservation(...)`
+
 Important runtime facts:
 - family progression can grow population; never hard-code 4 residents;
 - SaveGame restores authoritative Core snapshot; rebuild UI from Bridge after load;
 - Core owns life decisions; presentation must not choose competing actions;
-- civilization-specific read DTOs are the next Jjun slice and should be bound only after publication.
+- civilization detail belongs in selected-resident/detail/major-discovery layers, not Level 0 resource-dashboard clutter.
 
 ### DQ-R3 Resolve PR #17 Dagyeom-owned review findings
 
@@ -91,7 +130,7 @@ Known examples:
 - hide LEVEL 0 selection hint when inspector is open;
 - constrain/wrap/truncate inspector text on narrow canvases.
 
-Then verify UHT/UBT + PIE.
+Then verify UHT/UBT + PIE when available.
 
 ---
 
@@ -99,6 +138,7 @@ Then verify UHT/UBT + PIE.
 
 ### DQ-01 UI Foundation / Android landscape — PR #26
 - reconcile latest main; verify display metrics/safe layout.
+- May proceed independently from #17 only if its files are not under an active ASSIST_LOCK for #17.
 
 ### DQ-02 Character Presentation v1 — PR #29
 - reconcile after #17;
@@ -120,32 +160,29 @@ Then verify UHT/UBT + PIE.
 
 **기존 Observer read 관련 BLOCKED-BY-JJUN 항목은 0개다.**
 
-New civilization-detail UI is pending only the current Jjun civilization read DTO publication. This does not block PR #17/#26 reconciliation and existing UI work.
+Civilization-detail binding is conditional only on PR #53 being merged/green. This does not block current PR #17/#26 reconciliation.
 
 ---
 
 ## Current Jjun direction visible to Dagyeom
 
-Next Jjun slice: **Civilization Observer Read DTOs v1**.
+Current Jjun task: finish PR #53 validation/merge. Latest Core/Preflight are green; Run #16 is the remaining UE compile gate.
 
-Planned contract:
-- selected resident inventory summary;
-- known-technique level/confidence/practice + skills;
-- world resources/shared storage summaries;
-- discovery/knowledge provenance summaries;
-- read-only Unreal Bridge getters with stable Resident FGuid identity.
+After #53: **Jjun pauses new large Core slices and helps close the integration gap under `docs/INTEGRATION_SPRINT.md`.**
 
-Observer-first rule: Level 0 remains clean. Detailed civilization information belongs in selected-resident/detail views and major-discovery notifications.
+Observer-first rule remains: Level 0 clean; detailed civilization information belongs in selected-resident/detail views and major-discovery notifications.
 
 ---
 
 ## Merge dependency order
 
-1. PR #17 latest-main reconciliation + current Bridge binding + review fixes + verification
-2. PR #26 latest-main reconciliation/verification — may proceed independently
-3. PR #29 / #30 after #17
-4. PR #36 after #30
-5. PR #38 after #36
+1. PR #53 green + merge
+2. PR #17 latest-main reconciliation + current Bridge/civilization binding + review fixes + verification
+3. PR #26 latest-main reconciliation/verification — may proceed independently where locks do not overlap
+4. PR #29 / #30 after #17
+5. PR #36 after #30
+6. PR #38 after #36
+7. Integrated runtime verification, then Android smoke APK
 
 ---
 
@@ -153,6 +190,6 @@ Observer-first rule: Level 0 remains clean. Detailed civilization information be
 
 - Dagyeom is not waiting for Jjun APIs for current Observer reconciliation tasks.
 - Civilization direction is canonical and should influence generic presentation design now.
-- Civilization detail UI waits for the real DTO contract rather than placeholders.
+- Civilization detail UI waits only for #53 green/merge rather than placeholders.
 - Main UI remains human/world first.
-- Jjun does not edit Dagyeom UI/Character branches without explicit coordination.
+- Jjun may actively help after #53, but only through REVIEW_ONLY or explicit ASSIST_LOCK + integration assist branch so the two workstreams do not collide.
