@@ -4,7 +4,7 @@
 >
 > 제품 요구사항은 `docs/LIFELENS_SPEC_v1.1.md`, 상태관리 규칙은 `docs/STATE_MANAGEMENT.md`, 역할/잠금은 `tasks/TEAM_BOARD.md`, 변경 이력은 `tasks/HANDOFF_LOG.md`를 따른다.
 
-Last product-state reconciled: 2026-09-14 KST — product integration checkpoint `9261581df3abd5332d92855628fd7d03203748af` (PR #40 merge), followed only by collaboration/state-document sync commits; PR #37/#39/#40 merged; Unreal 5.6 Linux UHT/UBT PASS; Dagyeom Core/API blockers released. **Always fetch the actual current `main` HEAD before work.**
+Last product-state reconciled: 2026-09-14 KST — product integration checkpoint `9261581df3abd5332d92855628fd7d03203748af` (PR #40 merge), followed by collaboration/state-document sync commits. PR #37/#39/#40 are merged; Unreal 5.6 Linux UHT/UBT PASS; Dagyeom Core/API blockers released. **Always fetch the actual current `main` HEAD before work.**
 
 ## Status legend
 
@@ -29,7 +29,22 @@ GitHub 실제 상태가 항상 문서보다 우선하며, 문서가 stale인 상
 
 ## Active / unresolved work
 
-### 1. Observer HUD v2 — Dagyeom
+### 1. Production NEW GAME Core v1 — Jjun
+
+- Owner: 쭌 + 쭌 AI
+- Branch: `jjun/production-new-game-core-v1`
+- Base at branch creation: latest `main` after collaboration sync (`cd5f2af04189fb80a76c4a20c016c681725110b2`).
+- PR: not opened yet.
+- Status: `IN_PROGRESS`
+- Goal: move the formal NEW GAME founder population rule into authoritative `LifeLensCore`: one WorldSeed deterministically creates exactly 4 adult founders, exactly 2 male + 2 female, unique stable Core IDs, unique display names, generated personality/genetics/needs/life condition, and birth times compatible with Aging/Growth.
+- Initial relationship rule: founders begin as strangers / low familiarity; no forced couple, marriage, household, pregnancy, or family links.
+- Scope of this first PR: **Core generation + Simulation production setup + deterministic tests only.** Do not yet replace Unreal Save/Load or Dagyeom UI code in the same PR.
+- Last verified fact: current Core `Character` has no sex field; `Simulation::setupSocialDemo()` creates only fixed `SocialA/SocialB`; legacy Unreal `ULLSimulationSubsystem::NewGame()` already has a separate 2M+2F generator but it is not authoritative Core state.
+- Validation required: C++17 Core Release tests with assertions, deterministic same-seed/different-seed checks, existing Core regression suite, structural preflight. Unreal UHT/UBT only if this PR changes Unreal-side files (not planned for v1).
+- Exact next action: add Core identity/sex + founder generator, expose `Simulation::setupNewGame()`, add tests/CMake registration, run CI, then open PR and update this state.
+- Handoff safety: `SAFE` — no Dagyeom UI/Character presentation files in scope.
+
+### 2. Observer HUD v2 — Dagyeom
 
 - Owner: 다겸 + 다겸 AI
 - Branch: `dagyeom/observer-ui-v2`
@@ -40,10 +55,10 @@ GitHub 실제 상태가 항상 문서보다 우선하며, 문서가 stale인 상
 - Current GitHub fact: PR is OPEN, non-draft, currently `mergeable=false`; reviewer is `sjLim91`.
 - Important change since PR body was written: all six former `BLOCKED-BY-JJUN` observer read requirements are now available on `main` via PR #37/#39/#40.
 - Existing UI review findings remain Dagyeom-owned: selection hint visibility and narrow-panel text overflow among others.
-- Exact next action: Dagyeom side first reconciles PR #17 with the **actual latest `main`** (which includes product checkpoint `9261581d...` plus later state-doc sync commits), then binds the newly available Core Observer Bridge APIs, addresses its UI review items, runs local/CI UHT/UBT + PIE verification, and updates state before merge.
+- Exact next action: Dagyeom side first reconciles PR #17 with actual latest `main`, then binds the newly available Core Observer Bridge APIs, addresses UI review items, runs local/CI UHT/UBT + PIE verification, and updates state before merge.
 - Handoff safety: `CONDITIONAL` — current branch is older than latest main and must be reconciled before feature edits/merge.
 
-### 2. Dagyeom stacked UI / presentation PR chain
+### 3. Dagyeom stacked UI / presentation PR chain
 
 These are active and must not be flattened or modified by Jjun without coordination.
 
@@ -55,7 +70,7 @@ These are active and must not be flattened or modified by Jjun without coordinat
 - Status: `IN_PROGRESS / CONDITIONAL`.
 - Exact next action: resolve #17 against latest main first; then retarget/reconcile stacked PRs in dependency order and verify each before merge. #26 may be reconciled independently because it targets main.
 
-### 3. TASK_03 old Android validation
+### 4. TASK_03 old Android validation
 
 - Owner: 쭌 + 쭌 AI
 - Branch: `task/03-fast-test`
@@ -66,45 +81,30 @@ These are active and must not be flattened or modified by Jjun without coordinat
 - Rule: **do not modify, rerun, revive, or merge this old branch.**
 - Exact next action: none. Future Android work uses a new latest-main task/branch.
 
-### 4. Production NEW GAME / 4-person runtime integration
-
-- Owner: 쭌 + 쭌 AI
-- Status: `PLANNED`
-- Goal: latest authoritative Core on `main` → production New Game with WorldSeed → exactly 2 male + 2 female adults generated once → stable identity → four-person social simulation.
-- Required follow-ons: full Core Save/Load, runtime bridge integration, Android smoke APK after Linux gates remain clean.
-- Exact next action: start only after this state reconciliation is complete and Dagyeom unblock handoff is published.
-
 ---
 
 ## Jjun observer/runtime integration — completed
 
 ### Observer Runtime Bridge v1 — PR #37
 
-- Branch: `jjun/observer-runtime-bridge-v1`
 - Status: `DONE`
 - Merge SHA: `938d0a2798e600929b4ccc755b48bcd39026ac75`
-- Final head before merge: `d9be0be6d58bdbd4c9f394cd64c5498c2143d42a`
-- Validation: LifeLens Preflight PASS; Unreal 5.6 Linux Compile Run `34796067278` PASS including image verification + actual UHT/UBT compile.
+- Validation: LifeLens Preflight PASS; Unreal 5.6 Linux Compile Run `34796067278` PASS including actual UHT/UBT.
 - Provides: stable `(WorldSeed, Core CharacterId) -> FGuid`; Needs; 11-axis Emotion + summaries; Physical/Social activity; SocialIntent target; 13D Relationship + derived scores; Memory/Belief counts; basic World observation.
 
 ### Authoritative Family Runtime State — PR #39
 
-- Branch: `jjun/family-runtime-state-v1`
 - Status: `DONE`
 - Merge SHA: `612229cc610d2ea6283e080309bdee58ef42d1db`
-- Validation: Core Test Run `34796213647` PASS — Configure / Build / Test / deterministic harness.
-- Core `Simulation` now owns authoritative `GenealogyBook`, `RomanceBook`, `HouseholdBook`, `PregnancyBook` and exposes family/world observations.
-- Note: autonomous romance→cohabitation→marriage→pregnancy progression inside `Simulation::step()` remains future product work; ownership/read path is complete.
+- Validation: Core Test Run `34796213647` PASS.
+- Core `Simulation` owns authoritative `GenealogyBook`, `RomanceBook`, `HouseholdBook`, `PregnancyBook` and exposes family/world observations.
+- Autonomous romance→cohabitation→marriage→pregnancy progression inside `Simulation::step()` remains future product work.
 
 ### Family + World Observer Bridge — PR #40
 
-- Branch: `jjun/family-observer-bridge-v1`
 - Status: `DONE`
 - Merge SHA / product checkpoint: `9261581df3abd5332d92855628fd7d03203748af`
-- Final head: `816bb0021b45390e96c4497611970484c9c96879`
-- Validation:
-  - Structural Preflight Run `34796892593` PASS.
-  - Unreal 5.6 Linux Compile Run `34796892609` PASS including actual UHT/UBT.
+- Validation: Structural Preflight `34796892593` PASS; Unreal 5.6 Linux Compile `34796892609` PASS including actual UHT/UBT.
 - Provides: Partner / Parents / Children / Siblings, romance/marriage/cohabitation/pregnancy state; households/couples/romance-stage/pregnancies/life-stage/major-life-history aggregates.
 - No `Source/LifeLens/UI/**` or Dagyeom Character presentation files were modified.
 
@@ -118,37 +118,11 @@ The former six `BLOCKED-BY-JJUN` requirements are now **READY FOR DAGYEOM BINDIN
 5. World family/lifecycle aggregates — READY.
 6. Blueprint/USTRUCT read-only Core Bridge — READY.
 
-No Dagyeom work should continue to describe these six as blocked by Jjun unless a new concrete API gap is discovered.
-
 ---
 
 ## Recently completed Core milestones
 
-- Relationship Core — DONE, PR #4.
-- Emotion Core — DONE, PR #6.
-- Memory Core — DONE, PR #7.
-- Belief Core — DONE, PR #8.
-- Social Cognition — DONE, PR #9.
-- Social Utility — DONE, PR #10.
-- Social Execution — DONE, PR #11.
-- Simulation Social Loop — DONE, PR #12.
-- Observer Read Model v1 — DONE, PR #13.
-- Romance — DONE, PR #14.
-- Household/Cohabitation — DONE, PR #15.
-- Marriage — DONE, PR #16.
-- Pregnancy — DONE, PR #18.
-- Birth/Genetics — DONE, PR #19.
-- Growth — DONE, PR #20.
-- Parenting — DONE, PR #21.
-- Genealogy — DONE, merge `d1324c766749847c9fc85ea69af60c23c293da31`.
-- Aging — DONE, PR #23 merge `82b4001058332656b08f13a47728079172b10962`.
-- Death — DONE, PR #25 merge `07509a73f235928c16bf9b26f8b13c689b6a030b`.
-- LifeHistory — DONE, PR #27 merge `b46869acc62830c432bb5b3693f98535c37f2e0a`.
-- LifeHistory Wiring — DONE, PR #32 merge `8454c0c91e1770e2e503d52d5489446beafe6535`.
-- Generation Continuity — DONE, PR #33 merge `37bc2e7af7924fdf8a262d086426e15f2c3e2db3`.
-- Core validation recovery — DONE, PR #35 merge `31b2263de3f4a9c80650d1139213d0c38acc8058`.
-- Observer Read Model v2 — DONE, PR #34 merge `b4403faf138c153bcd83be266cde5026ea53b831`.
-- Observer Runtime Bridge / family authoritative state / family-world bridge — DONE, PR #37/#39/#40.
+Relationship #4, Emotion #6, Memory #7, Belief #8, Social Cognition #9, Social Utility #10, Social Execution #11, Simulation Social Loop #12, Observer Read Model #13, Romance #14, Household #15, Marriage #16, Pregnancy #18, Birth/Genetics #19, Growth #20, Parenting #21, Genealogy, Aging #23, Death #25, LifeHistory #27, LifeHistory Wiring #32, Generation Continuity #33, Observer Read Model v2 #34, Core validation recovery #35, Observer Runtime Bridge #37, Family Runtime State #39, Family/World Bridge #40 are `main` integrated.
 
 ---
 
