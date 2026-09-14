@@ -21,11 +21,11 @@ Last reconciled: 2026-09-14 KST — session recovery; GitHub branch/PR/Actions r
 - Work item: 다겸 UI의 `BLOCKED-BY-JJUN` 데이터 병목 해소 — 세부 Emotion, Family summary, World aggregate를 Core read DTO로 제공
 - Last known HEAD: `48d6142834ad2fe2b34b228cec57e092e0577e36`
 - PR: #34 `[CORE] Expand observer read model for family and world overview`
-- Status: `BLOCKED`
+- Status: `IN_PROGRESS`
 - CI: Core Tests Run `34792467903` PASS; Preflight Run `34792467916` PASS (PR head `48d6142`).
-- Last verified fact: PR #34 is open and mergeable; three Core files add Emotion/Family/World DTOs and a test. Prior session stopped after successful CI but before state synchronization. No code was lost. `main` remains `4e8f50d`.
-- Blocker / interruption: Existing Core tests fail with assertions enabled; CI Release builds define NDEBUG and skip assertions. Fix validation/references before merging P24.
-- Exact next action: Finish Core validation recovery below; update PR #34 with that verified baseline, run full tests, then merge. Unreal bridge follows after this gate.
+- Last verified fact: P24 code and original checks are preserved at `48d6142`; PR #35 fixed the pre-existing Core memory/assertion defects on main.
+- Blocker / interruption: Core validation recovery merged via PR #35 (`31b2263`). P24 baseline/CI refresh pending.
+- Exact next action: Merge latest main into this branch, register test_observer_read_model_v2 through lifelens_add_test, run 27-test Release suite + deterministic harness + Preflight, then refresh PR #34 CI.
 - Handoff safety: `CONDITIONAL` — CI passed; code review/reconciliation in progress.
 - Shared-file impact: `Source/LifeLensCore/**` + Core tests only. Unreal USTRUCT/Blueprint bridge는 별도 후속 integration task로 분리.
 
@@ -73,11 +73,12 @@ Last reconciled: 2026-09-14 KST — session recovery; GitHub branch/PR/Actions r
 - Work item: Restore real Release assertions and fix invalidated RelationshipBook references.
 - Last known HEAD: `612f98f4499f50d359a814df33e3d0b913259f6f`
 - PR: #35 `[CORE] Fix dangling relationship references and restore Release test assertions`
-- Status: `READY_TO_MERGE`
+- Status: `DONE`
+- Merge SHA: `31b2263de3f4a9c80650d1139213d0c38acc8058`
 - CI: Core Tests Run `34793799376` PASS; Preflight Run `34793799447` PASS.
 - Last verified fact: 26/26 local CMake Release tests passed with assertions enabled; all test compile commands restore assertions after NDEBUG. Deterministic one-day seed 42 harness and structural preflight passed. Original heap-use-after-free reproduced with ASan; corrected 1,000-insertion test passed ASan/UBSan. Remote tree `94fe2a7` equals tested local tree.
 - Blocker / interruption: fixed. Shell push initially failed auto-review; full diff confirmed only this public project's code/tests/docs, and a scoped retry passed review but had no shell credentials. Connected GitHub persisted the same reviewed tree.
-- Exact next action: Verify PR #35 head unchanged, merge using expected head SHA, record merge SHA; update P24 PR #34 to this baseline and register its test with lifelens_add_test before rerunning CI.
+- Exact next action: No further feature edits here; P24 proceeds on its own branch using this baseline.
 - Handoff safety: `SAFE` — implementation and verification committed remotely.
 - Shared-file impact: Core headers/tests/CMake plus append-only HANDOFF_LOG. No UI/Unreal/TASK_03 changes.
 
