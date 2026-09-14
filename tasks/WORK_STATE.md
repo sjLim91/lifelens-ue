@@ -21,62 +21,77 @@ Last reconciled: 2026-09-14 KST
 
 - Source/history: `dagyeom/character-presentation-v1`, original PR #29.
 - Current-main integration: PR #63.
-- Cleanup head: `6d257d5f69e63eb721d2cbd36322765e0473fabf`.
 - Main merge: `c9164ebf3cc70a194d3f8f6e50dcfb3c9df2a986`.
 - Preflight Run `34843425475`: PASS.
 - Unreal Linux Compile Run `34843425495`: PASS including UE 5.6 UHT/UBT/link.
-- Temporary `Characters/**` workflow trigger was removed before merge.
-- Final PR #63 diff contained exactly four Character Presentation C++ files.
 - `ASSIST_LOCK-29-R1`: RELEASED.
 - Original PR #29 is stale source/history only and must not be used as the product integration path.
+
+### Character Appearance support contract — DONE
+
+- Jjun support PR #65: `[BRIDGE] Add deterministic Character Appearance profile contract v1`.
+- Main merge: `86663cb10f245bf185984a3622e4a86596e14923`.
+- Structural Preflight Run `34845789763`: PASS.
+- Unreal Linux Compile Run `34845789757`: PASS including actual UE 5.6 UHT/UBT/link.
+- Provides vendor-independent `FLLAppearanceProfile` / `ULLAppearanceProfileLibrary` projection from stable resident identity.
+- No separate appearance SaveGame authority or mutable cache was added.
+- Dagyeom Character/UI/Content files were not modified.
+- Jjun proactive Character Appearance support is complete; further support only on explicit Integration Request/blocker.
 
 ### Character Appearance v1 — READY_NOW
 
 Owner: 다겸 / 다겸 AI.
 
-Start from current latest `main` at or after `c9164ebf3cc70a194d3f8f6e50dcfb3c9df2a986`.
+Start from current latest `main` at or after `86663cb10f245bf185984a3622e4a86596e14923`.
+
+Canonical asset track: `docs/CHARACTER_ASSET_TRACK.md`.
+Default: Track B — Quaternius packs whose exact source/version explicitly states CC0. MetaHuman remains a post-Android-validation upgrade/comparison path.
 
 Minimum target:
 - real humanoid skeletal mesh
 - skin / face / eyes / hair / default clothing
 - common skeleton + modular appearance
-- deterministic `AppearanceProfile` from WorldSeed + CharacterId
+- deterministic AppearanceProfile from stable resident identity
 - NEW GAME residents visually distinct
 - Save/Load appearance continuity
 - Android LOD/mobile fallback
-- free-use asset license/provenance documented
+- asset license/provenance documented
 
 Rules:
-- presentation must remain read-only with respect to Core action/simulation authority.
+- presentation remains read-only with respect to Core action/simulation authority.
 - do not add UI/Character-side authoritative caches.
-- if new authoritative appearance/genetics/save data is required, add an Integration Request to `TEAM_BOARD.md` for Jjun Core/Bridge support.
-- Jjun side does not push directly to `dagyeom/*`.
+- use the merged PR #65 appearance projection contract instead of inventing a second authority.
+- if new authoritative appearance/genetics/save data is required, add an Integration Request to `TEAM_BOARD.md`.
 
-### Jjun lane — REVIEW/INTEGRATION SUPPORT
+### Jjun lane — OWN TRACK / REVIEW SUPPORT
 
-- Default: REVIEW_ONLY.
-- Only create ASSIST_LOCK when Dagyeom-owned code actually needs integration help.
-- Large unrelated Core slices are secondary until Human Character minimum is established.
+- Character Appearance proactive support is DONE via PR #65.
+- Default for Dagyeom work returns to REVIEW_ONLY.
+- Jjun may resume non-overlapping Core/World/build/runtime work.
+- Create ASSIST_LOCK only when Dagyeom-owned code actually needs integration help.
 
 ## Canonical execution order
 
 1. Character Presentation v1 — DONE via PR #63.
-2. Character Appearance v1 — READY_NOW.
-3. Character Motion & Context v1 minimum — AFTER Appearance.
-4. PR #30 Observer UX Polish — AFTER Human Character minimum.
-5. PR #36 Mobile Touch — AFTER #30.
-6. PR #38 Visual Feedback — AFTER #36.
-7. Core + Observer + Human Character integrated runtime verification.
-8. Android smoke APK.
-9. Appearance Genetics & Lifecycle.
-10. Clothing/Equipment civilization linkage.
-11. Resume deeper civilization production chains.
+2. Appearance data/projection support — DONE via PR #65.
+3. Character Appearance v1 — READY_NOW / Track B Quaternius CC0.
+4. Character Motion & Context v1 minimum — AFTER Appearance.
+5. PR #30 Observer UX Polish — AFTER Human Character minimum.
+6. PR #36 Mobile Touch — AFTER #30.
+7. PR #38 Visual Feedback — AFTER #36.
+8. Core + Observer + Human Character integrated runtime verification.
+9. Android smoke APK + profiling.
+10. MetaHuman comparison / upgrade decision.
+11. Appearance Genetics & Lifecycle.
+12. Clothing/Equipment civilization linkage.
+13. Resume deeper civilization production chains.
 
 ## Completed checkpoints
 
 - Observer HUD v2 PR #17 merged; authoritative Core activity/family/emotion/relationship/civilization data is readable by Observer UI.
 - UI Foundation integrated via PR #61; actual UE 5.6 compile passed.
 - Character Presentation integrated via PR #63; actual UE 5.6 compile passed.
+- Character Appearance deterministic projection contract merged via PR #65; actual UE 5.6 compile passed.
 - Civilization observer read DTOs PR #53 merged.
 - Core Decision → Unreal Physical Action Bridge merged.
 - Full Core snapshot + Unreal SaveGame v2 merged.
