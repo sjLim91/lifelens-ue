@@ -13,6 +13,7 @@ public:
     explicit Simulation(std::uint64_t seed=1);
     void setupDemo();
     void setupSocialDemo();
+    void setupNewGame();
     void step();
     void runMinutes(int minutes);
     void onEvent(EventCallback cb);

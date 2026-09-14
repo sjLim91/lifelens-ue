@@ -1,4 +1,5 @@
 #include "lifelens/Simulation.h"
+#include "lifelens/InitialPopulation.h"
 #include <iomanip>
 #include <sstream>
 namespace lifelens {
@@ -58,6 +59,55 @@ void Simulation::setupSocialDemo(){
     runtime_[a.id]=Runtime{};
     runtime_[b.id]=Runtime{};
     emit("social simulation start seed="+std::to_string(world_.seed));
+}
+
+void Simulation::setupNewGame(){
+    world_.characters.clear();
+    world_.objects.clear();
+    relationships_=RelationshipBook{};
+    genealogy_=GenealogyBook{};
+    romances_=RomanceBook{};
+    households_=HouseholdBook{};
+    pregnancies_=PregnancyBook{};
+    runtime_.clear();
+    logs_.clear();
+    world_.minute=8*60;
+
+    // A formal New Game must be reproducible from WorldSeed. Re-seeding here
+    // ensures repeated setup with the same world seed cannot inherit RNG state
+    // from a previous run.
+    world_.rng.seed(world_.seed);
+    world_.characters=generateInitialFounders(world_.rng,world_.minute);
+
+    // Minimal shared living-space affordances keep the new population runnable
+    // by the existing Needs/Planner loop without assigning social/family roles.
+    world_.objects.push_back({1,ObjectKind::Bed,{1,1},std::nullopt,{0,0,-0.055,0,0},16});
+    world_.objects.push_back({2,ObjectKind::Bed,{2,1},std::nullopt,{0,0,-0.055,0,0},16});
+    world_.objects.push_back({3,ObjectKind::Bed,{3,1},std::nullopt,{0,0,-0.055,0,0},16});
+    world_.objects.push_back({4,ObjectKind::Bed,{4,1},std::nullopt,{0,0,-0.055,0,0},16});
+    world_.objects.push_back({5,ObjectKind::Toilet,{5,1},std::nullopt,{0,0,0,-0.12,0},7});
+    world_.objects.push_back({6,ObjectKind::Toilet,{5,2},std::nullopt,{0,0,0,-0.12,0},7});
+    world_.objects.push_back({7,ObjectKind::Sink,{5,3},std::nullopt,{0,-0.085,0,0,-0.055},8});
+    world_.objects.push_back({8,ObjectKind::Sink,{5,4},std::nullopt,{0,-0.085,0,0,-0.055},8});
+    world_.objects.push_back({9,ObjectKind::Fridge,{1,5},std::nullopt,{-0.075,0,0,0,0},9});
+    world_.objects.push_back({10,ObjectKind::Chair,{1,3},std::nullopt,{0,0,0,0,0},5});
+    world_.objects.push_back({11,ObjectKind::Chair,{2,3},std::nullopt,{0,0,0,0,0},5});
+    world_.objects.push_back({12,ObjectKind::Chair,{3,3},std::nullopt,{0,0,0,0,0},5});
+    world_.objects.push_back({13,ObjectKind::Chair,{4,3},std::nullopt,{0,0,0,0,0},5});
+
+    // Founders are strangers / very low familiarity. Every direction exists so
+    // future social events can evolve independently without a forced couple.
+    std::uniform_real_distribution<double> familiarity(0.0,0.04);
+    for(const Character& from:world_.characters){
+        runtime_[from.id]=Runtime{};
+        for(const Character& to:world_.characters){
+            if(from.id==to.id) continue;
+            Relationship& relation=relationships_.getOrCreate(from.id,to.id);
+            relation.familiarity=familiarity(world_.rng);
+        }
+    }
+
+    emit("new game start seed="+std::to_string(world_.seed)+" founders=4");
 }
 
 ResidentObservation Simulation::observeResident(CharacterId id) const{
