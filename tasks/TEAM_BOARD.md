@@ -12,7 +12,7 @@
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | `jjun/physical-smart-object-v1` (creation next) | Physical Interaction / Smart Object Execution v1 | Jjun-owned World/Simulation + narrow validator | DOING / STATE_LOCKED — Eat/Drink/Sleep/Toilet/Hygiene reservation + interaction target |
+| 쭌 + 쭌 AI | `jjun/physical-smart-object-v1`, PR #48 | Physical Interaction / Smart Object Execution v1 | Jjun-owned World + narrow Unreal compile workflow trigger | REVIEW / WAITING_UNREAL_COMPILE — head `cda509956feddacf9c159e998b79d631713a8e45`; Preflight PASS; Unreal Run #11 in progress |
 | 쭌 + 쭌 AI | `task/03-fast-test`, PR #2 | old Android validation | Bridge/build | FROZEN — Run `34739283266` 재실행/수정/병합 금지 |
 | 다겸 + 다겸 AI | `dagyeom/observer-ui-v2`, PR #17 | Observer HUD v2 + Core Observer Bridge binding | `Source/LifeLens/UI/**` | REVIEW / RECOVERING — latest main reconcile 필요 |
 | 다겸 + 다겸 AI | `dagyeom/ui-foundation-v1`, PR #26 | Android landscape UI foundation | UI foundation | REVIEW |
@@ -21,22 +21,21 @@
 | 다겸 + 다겸 AI | `dagyeom/mobile-touch-v1`, PR #36 | Mobile Touch v1 | `Source/LifeLens/UI/**` | REVIEW — stacked on #30 |
 | 다겸 + 다겸 AI | `dagyeom/visual-feedback-v1`, PR #38 | Visual Feedback v1 | `Source/LifeLens/UI/**` | REVIEW — stacked on #36 |
 
-## Current Jjun lock — Physical Interaction / Smart Object Execution v1
+## Current Jjun lock — PR #48 Physical Interaction / Smart Object Execution v1
 
-- Planned branch: `jjun/physical-smart-object-v1` from latest main after state checkpoint.
-- Core remains the sole decision authority. Unreal may select **where/how** to execute a Core-selected physical intent but must not decide **what** intent to perform.
-- v1 physical intents: Eat / Drink / Sleep / Toilet / Hygiene only.
-- Required execution contract:
-  - capability-matched usable anchor/object;
-  - deterministic nearest usable selection;
-  - one-resident exclusive reservation/occupancy;
-  - explicit interaction/approach transform, not raw actor origin;
-  - release on directive change/death/despawn/invalid target/completion;
-  - resident switching target only when prior reservation is released or becomes unusable.
-- Preserve existing `ELLActionIntent` ordinals and stable ResidentId/SaveGame v2 identity behavior.
-- Allowed scope: Jjun World/Simulation plus narrow validator/read metadata only where necessary.
-- Forbidden: Dagyeom UI/Character presentation/Content and frozen PR #2.
-- Required gates before merge: Structural Preflight + actual UE 5.6 UHT/UBT; Core suite if any pure-Core file is touched.
+- Branch/head: `jjun/physical-smart-object-v1` / `cda509956feddacf9c159e998b79d631713a8e45`.
+- Core remains the sole decision authority; Unreal chooses only where/how to execute the Core-selected physical intent.
+- Implemented physical intents: Eat / Drink / Sleep / Toilet / Hygiene.
+- `ALLActivityAnchor` now has `Available → Reserved → InUse`, stable ResidentId ownership, use transform offset/rotation, exclusive reservation and release.
+- WorldDirector selects the nearest usable capability-matched anchor with a stable path tie-break, holds the reservation across movement/use, and releases it on directive changes, idle/death, bridge loss, invalid target, despawn, or action transition.
+- Generic coordinate fallback for covered physical intents is removed.
+- Current Entry runtime has no placed anchors, so missing intent types get one bootstrap reservable anchor. Placed anchors remain preferred when present.
+- CI discovery: Unreal compile workflow previously ignored `Source/LifeLens/World/**`; PR #48 adds that path so World changes now receive actual UHT/UBT validation.
+- Scope at latest checkpoint: 4 World files + `.github/workflows/unreal-linux-compile.yml`; no UI, Character presentation, Content, pure Core, or frozen PR #2 edits.
+- Validation:
+  - Structural Preflight `34808013903` PASS on latest head.
+  - Unreal Linux Compile `34808013906` / Run #11 IN PROGRESS.
+- Merge gate: actual UE 5.6 image verification + UHT + UBT must PASS before merge.
 
 ## Latest completed Jjun work
 
@@ -54,7 +53,6 @@
   - Structural Preflight `34805882776` PASS.
   - Unreal Linux Compile `34805882789` / Run #10 PASS incl actual UE 5.6 UHT + UBT.
 - Scope: exactly 9 Jjun-owned Core/Simulation/World/validator files; no Dagyeom UI/Character presentation/Content edits.
-- Remaining QA: targeted PIE/runtime interaction verification when runnable scene/build verification is available.
 
 ### PR #47 — Witness / Rumor / Social Knowledge v1
 
@@ -62,27 +60,11 @@
 - Feature HEAD: `8c03b349d8489a847b4e4fb7e22dc974e91be8cf`
 - Merge: `f1aab37f6f8abad1217783cc1d168cbdd2e0c20c`
 - Scope: exactly 3 pure-Core files; no Unreal overlap.
-- Adds provenance-aware witness/rumor knowledge, deterministic retelling attenuation/distortion, trust-sensitive reception, duplicate/loop suppression, and Memory/Belief integration.
 - Core `34806559374` PASS incl deterministic harness; Preflight `34806559379` PASS.
-- Live Simulation wiring is a follow-up, not part of #47.
-
-### Previous completed work
-
-- PR #45 Unreal SaveGame Adapter v1 — merge `3c646ba331b8199a295fd6f2e9cac1235d844679`.
-- PR #44 Full Core Save/Load v1 — merge `2b3f9882703ed73cb8318ae262f26bebb995c209`.
-- PR #43 Autonomous Family Progression v1 — merge `179e3a65aaa6ff8d2243117c7aebfd760812c73d`.
-- PR #42 Production NEW GAME Unreal Runtime Integration — merge `5c6f2c071ca00bcd4b26d6e002bf5c618d02ff1e`.
-- PR #41 Production NEW GAME Core v1 — merge `1b6f349f03db6f3bb1f95cf9387ef994a68c5d68`.
 
 ## Dagyeom API handoff
 
-Former Observer read blockers remain RESOLVED / READY FOR BINDING. Main now also provides:
-- typed `FLLCoreActionDirective` for physical/social current action + stable target resident;
-- Core-authoritative WorldDirector behavior for covered actions;
-- SaveGame v2 authoritative Core restore;
-- dynamic population from family progression.
-
-PR #47 witness/rumor is Core-domain-only for now; no new UI binding is required until runtime/observer read surfaces are wired.
+Former Observer read blockers remain RESOLVED / READY FOR BINDING. Main already provides typed action directives, Core-authoritative SaveGame v2 restore and dynamic population. PR #48 does not require a new Dagyeom API contract.
 
 ## Shared File Lock
 
@@ -96,7 +78,7 @@ Current open requests: **none**.
 
 ## Merge / reconciliation queue
 
-1. Physical Interaction / Smart Object Execution v1 — current Jjun active slice.
+1. PR #48 — wait for Run #11 actual UHT/UBT result; merge only on PASS.
 2. Dagyeom PR #17 — reconcile latest main + bind current Core Bridge + review fixes + verify.
 3. Dagyeom PR #26 — reconcile latest main independently.
 4. After #17: #29/#30 → #36 → #38.
