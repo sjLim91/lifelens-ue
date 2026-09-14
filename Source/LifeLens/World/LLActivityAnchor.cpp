@@ -21,6 +21,11 @@ FTransform ALLActivityAnchor::GetUseTransform() const
     return FTransform(WorldRotation, WorldLocation, FVector::OneVector);
 }
 
+bool ALLActivityAnchor::SupportsIntent(ELLActionIntent Intent) const
+{
+    return SupportedIntent == Intent || AdditionalSupportedIntents.Contains(Intent);
+}
+
 bool ALLActivityAnchor::CanBeUsedBy(FGuid ResidentId) const
 {
     if (!bEnabled || !ResidentId.IsValid())
