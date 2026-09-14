@@ -31,7 +31,7 @@ inline NeedsDelta emergencyUseEffectPerTick(Goal g)
     }
 }
 
-inline std::vector<Action> buildPlan(const World& w,const Character& c,Goal g,GridPos from={}) {
+inline std::vector<Action> buildPlan(const World& w,Character& c,Goal g,GridPos from={}) {
     if(g==Goal::Idle) return {{ActionType::Idle,0,5}};
     const auto kind=objectKindFor(g);
     for(const auto& o:w.objects){
@@ -40,9 +40,15 @@ inline std::vector<Action> buildPlan(const World& w,const Character& c,Goal g,Gr
             return {{ActionType::FindObject,o.id,0},{ActionType::Reserve,o.id,0},{ActionType::MoveTo,o.id,travel},{ActionType::Use,o.id,std::max(1,o.useDurationTicks)},{ActionType::Release,o.id,0}};
         }
     }
-    if(emergencyAffordanceAvailableFor(c,g)){
-        return {{ActionType::EmergencyUse,0,emergencyUseDurationTicks(g)}};
-    }
-    return {};
+    if(!emergencyAffordanceAvailableFor(c,g)) return {};
+
+    // Emergency Eat/Drink must consume a real provision; fallback must never
+    // synthesize food or water merely because the need exists.
+    if(g==Goal::Eat && !c.civilization.inventory.remove(
+        ItemKind::RawMaterial,MaterialKind::PlantFood,1)) return {};
+    if(g==Goal::Drink && !c.civilization.inventory.remove(
+        ItemKind::RawMaterial,MaterialKind::Water,1)) return {};
+
+    return {{ActionType::EmergencyUse,0,emergencyUseDurationTicks(g)}};
 }
 }
