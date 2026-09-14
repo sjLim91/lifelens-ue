@@ -60,6 +60,7 @@ for token in (
     'GetWorldObservation',
     'GetResidentObservations',
     'GetResidentObservation',
+    'GetFamilyObservation',
     'MakeStableResidentGuid',
     'OnCoreRuntimeStateChanged',
 ):
@@ -69,6 +70,8 @@ bridge_cpp = (root / 'Source/LifeLens/Simulation/LLCoreBridgeSubsystem.cpp').rea
 for token in (
     'observeResident',
     'makeEmotionObservation',
+    'observeFamily',
+    'observeWorldOverview',
     'RomanticInterest',
     'SexualAttraction',
     'Commitment',
@@ -76,6 +79,10 @@ for token in (
     'Grudge',
     'MemoryCount',
     'BeliefCount',
+    'Households',
+    'MarriedCouples',
+    'ActivePregnancies',
+    'MajorLifeEventRecords',
 ):
     assert token in bridge_cpp, f'Missing Core observer projection: {token}'
 assert 'DisplayName' in bridge_cpp
@@ -85,9 +92,19 @@ read_types = (root / 'Source/LifeLens/Simulation/LLCoreReadTypes.h').read_text(e
 for token in (
     'FLLCoreEmotionSnapshot',
     'FLLCoreRelationshipSnapshot',
+    'FLLCoreFamilyMemberSnapshot',
+    'FLLCoreFamilyObservation',
+    'ELLCoreRomanceStage',
     'FLLCoreResidentObservation',
     'FLLCoreWorldObservation',
     'ActivityTargetResidentId',
+    'PartnerResidentId',
+    'PregnancyPartnerResidentId',
+    'Households',
+    'ActiveCouples',
+    'MarriedCouples',
+    'ActivePregnancies',
+    'MajorLifeEventRecords',
 ):
     assert token in read_types, f'Missing Unreal read DTO: {token}'
 
