@@ -17,10 +17,10 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FLLCoreRuntimeStateChanged);
  * FGuid is derived from (world seed, Core CharacterId) and remains stable for
  * that simulated world.
  *
- * v1 starts the existing Core demo worlds so the Observer pipeline can consume
- * real Core emotion/relationship/activity state without reviving TASK_03. A
- * production NEW GAME switch is a separate task because Core Simulation does
- * not yet own all authoritative family books required by the full spec.
+ * The Core simulation owns its relationship and family-state books. This
+ * adapter only projects those authoritative states into read-only Unreal DTOs;
+ * UI code never mutates Core state through the observer API.
+ * Family/world reads remain observer-only so UI consumers cannot become state owners.
  */
 UCLASS()
 class LIFELENS_API ULLCoreBridgeSubsystem : public UGameInstanceSubsystem
@@ -54,6 +54,9 @@ public:
     UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Observer")
     bool GetResidentObservation(FGuid ResidentId, FLLCoreResidentObservation& OutObservation) const;
 
+    UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Observer")
+    bool GetFamilyObservation(FGuid ResidentId, FLLCoreFamilyObservation& OutObservation) const;
+
     UFUNCTION(BlueprintPure, Category="LifeLens|Core|Observer")
     TArray<FString> GetRecentCoreEvents() const { return RecentEvents; }
 
@@ -66,6 +69,7 @@ private:
     void PushCoreEvent(const FString& Line);
     FGuid MakeStableResidentGuid(uint64 CoreCharacterId) const;
     bool BuildResidentObservation(uint64 CoreCharacterId, FLLCoreResidentObservation& OutObservation) const;
+    bool BuildFamilyObservation(uint64 CoreCharacterId, FLLCoreFamilyObservation& OutObservation) const;
 
     lifelens::Simulation* CoreSimulation = nullptr;
     int32 ActiveSeed = 0;

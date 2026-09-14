@@ -24,6 +24,40 @@ int32 SafeCount(std::size_t Count)
         ? MAX_int32
         : static_cast<int32>(Count);
 }
+
+ELLCoreRomanceStage ToUnrealRomanceStage(lifelens::RomanceStage Stage)
+{
+    switch (Stage)
+    {
+        case lifelens::RomanceStage::Dating: return ELLCoreRomanceStage::Dating;
+        case lifelens::RomanceStage::Engaged: return ELLCoreRomanceStage::Engaged;
+        case lifelens::RomanceStage::Married: return ELLCoreRomanceStage::Married;
+        case lifelens::RomanceStage::Separated: return ELLCoreRomanceStage::Separated;
+        case lifelens::RomanceStage::Divorced: return ELLCoreRomanceStage::Divorced;
+        case lifelens::RomanceStage::Widowed: return ELLCoreRomanceStage::Widowed;
+        case lifelens::RomanceStage::FormerPartners: return ELLCoreRomanceStage::FormerPartners;
+    }
+    return ELLCoreRomanceStage::None;
+}
+
+const TCHAR* KinshipLabel(lifelens::KinshipType Kinship)
+{
+    switch (Kinship)
+    {
+        case lifelens::KinshipType::Self: return TEXT("Self");
+        case lifelens::KinshipType::Parent: return TEXT("Parent");
+        case lifelens::KinshipType::Child: return TEXT("Child");
+        case lifelens::KinshipType::Sibling: return TEXT("Sibling");
+        case lifelens::KinshipType::HalfSibling: return TEXT("HalfSibling");
+        case lifelens::KinshipType::Spouse: return TEXT("Spouse");
+        case lifelens::KinshipType::Grandparent: return TEXT("Grandparent");
+        case lifelens::KinshipType::Grandchild: return TEXT("Grandchild");
+        case lifelens::KinshipType::InLaw: return TEXT("InLaw");
+        case lifelens::KinshipType::Unrelated:
+        default:
+            return TEXT("Unrelated");
+    }
+}
 }
 
 void ULLCoreBridgeSubsystem::Deinitialize()
@@ -88,22 +122,29 @@ FLLCoreWorldObservation ULLCoreBridgeSubsystem::GetWorldObservation() const
         return Result;
     }
 
-    const lifelens::World& CoreWorld = CoreSimulation->world();
+    const lifelens::WorldOverviewObservation CoreWorld = CoreSimulation->observeWorldOverview();
     Result.SimulationMinute = static_cast<int64>(CoreWorld.minute);
-    Result.TotalResidents = SafeCount(CoreWorld.characters.size());
+    Result.TotalResidents = SafeCount(CoreWorld.totalResidents);
+    Result.LivingResidents = SafeCount(CoreWorld.livingResidents);
+    Result.DeceasedResidents = SafeCount(CoreWorld.deceasedResidents);
 
-    for (const lifelens::Character& Character : CoreWorld.characters)
-    {
-        if (Character.alive)
-        {
-            ++Result.LivingResidents;
-        }
-        else
-        {
-            ++Result.DeceasedResidents;
-        }
-    }
+    Result.BabyResidents = SafeCount(CoreWorld.lifeStages.baby);
+    Result.ToddlerResidents = SafeCount(CoreWorld.lifeStages.toddler);
+    Result.ChildResidents = SafeCount(CoreWorld.lifeStages.child);
+    Result.TeenResidents = SafeCount(CoreWorld.lifeStages.teen);
+    Result.YoungAdultResidents = SafeCount(CoreWorld.lifeStages.youngAdult);
+    Result.AdultResidents = SafeCount(CoreWorld.lifeStages.adult);
+    Result.MiddleAgeResidents = SafeCount(CoreWorld.lifeStages.middleAge);
+    Result.ElderlyResidents = SafeCount(CoreWorld.lifeStages.elderly);
 
+    Result.Households = SafeCount(CoreWorld.households);
+    Result.ActiveCouples = SafeCount(CoreWorld.activeCouples);
+    Result.DatingCouples = SafeCount(CoreWorld.datingCouples);
+    Result.EngagedCouples = SafeCount(CoreWorld.engagedCouples);
+    Result.MarriedCouples = SafeCount(CoreWorld.marriedCouples);
+    Result.SeparatedCouples = SafeCount(CoreWorld.separatedCouples);
+    Result.ActivePregnancies = SafeCount(CoreWorld.activePregnancies);
+    Result.MajorLifeEventRecords = SafeCount(CoreWorld.majorLifeEvents);
     return Result;
 }
 
@@ -146,6 +187,24 @@ bool ULLCoreBridgeSubsystem::GetResidentObservation(
     }
 
     return BuildResidentObservation(*CoreCharacterId, OutObservation);
+}
+
+bool ULLCoreBridgeSubsystem::GetFamilyObservation(
+    FGuid ResidentId,
+    FLLCoreFamilyObservation& OutObservation) const
+{
+    if (!CoreSimulation || !ResidentId.IsValid())
+    {
+        return false;
+    }
+
+    const uint64* CoreCharacterId = GuidToCore.Find(ResidentId);
+    if (!CoreCharacterId)
+    {
+        return false;
+    }
+
+    return BuildFamilyObservation(*CoreCharacterId, OutObservation);
 }
 
 void ULLCoreBridgeSubsystem::ResetRuntime()
@@ -306,5 +365,79 @@ bool ULLCoreBridgeSubsystem::BuildResidentObservation(
 
     OutObservation.MemoryCount = SafeCount(CoreCharacter->memory.entries.size());
     OutObservation.BeliefCount = SafeCount(CoreCharacter->beliefs.beliefs.size());
+    return true;
+}
+
+bool ULLCoreBridgeSubsystem::BuildFamilyObservation(
+    uint64 CoreCharacterId,
+    FLLCoreFamilyObservation& OutObservation) const
+{
+    if (!CoreSimulation)
+    {
+        return false;
+    }
+
+    const lifelens::CharacterId CharacterId = static_cast<lifelens::CharacterId>(CoreCharacterId);
+    const lifelens::Character* CoreCharacter =
+        lifelens::findObservedCharacter(CoreSimulation->world(), CharacterId);
+    if (!CoreCharacter)
+    {
+        return false;
+    }
+
+    const lifelens::FamilyObservation CoreFamily = CoreSimulation->observeFamily(CharacterId);
+    if (CoreFamily.subjectId == 0)
+    {
+        return false;
+    }
+
+    OutObservation = FLLCoreFamilyObservation{};
+    OutObservation.SubjectResidentId = MakeStableResidentGuid(CoreCharacterId);
+    OutObservation.HouseholdId = static_cast<int64>(CoreFamily.householdId);
+    OutObservation.bHasRomanceHistory = CoreFamily.hasRomanceHistory;
+    OutObservation.bHasActivePartner = CoreFamily.hasActivePartner;
+    OutObservation.PartnerName = UTF8_TO_TCHAR(CoreFamily.partnerName.c_str());
+    OutObservation.PartnerStage = CoreFamily.hasRomanceHistory
+        ? ToUnrealRomanceStage(CoreFamily.partnerStage)
+        : ELLCoreRomanceStage::None;
+    OutObservation.bCohabitingWithPartner = CoreFamily.cohabitingWithPartner;
+    OutObservation.bGestationalParent = CoreFamily.isGestationalParent;
+    OutObservation.bExpectingChild = CoreFamily.expectingChild;
+    OutObservation.PregnancyPartnerName = UTF8_TO_TCHAR(CoreFamily.pregnancyPartnerName.c_str());
+
+    if (CoreFamily.partnerId != 0)
+    {
+        OutObservation.PartnerResidentId =
+            MakeStableResidentGuid(static_cast<uint64>(CoreFamily.partnerId));
+    }
+    if (CoreFamily.pregnancyPartnerId != 0)
+    {
+        OutObservation.PregnancyPartnerResidentId =
+            MakeStableResidentGuid(static_cast<uint64>(CoreFamily.pregnancyPartnerId));
+    }
+
+    const auto AppendMembers = [this](
+        const std::vector<lifelens::FamilyMemberObservation>& CoreMembers,
+        TArray<FLLCoreFamilyMemberSnapshot>& Members)
+    {
+        Members.Reserve(SafeCount(CoreMembers.size()));
+        for (const lifelens::FamilyMemberObservation& CoreMember : CoreMembers)
+        {
+            FLLCoreFamilyMemberSnapshot Member;
+            if (CoreMember.id != 0)
+            {
+                Member.ResidentId = MakeStableResidentGuid(static_cast<uint64>(CoreMember.id));
+            }
+            Member.DisplayName = UTF8_TO_TCHAR(CoreMember.name.c_str());
+            Member.KinshipLabel = KinshipLabel(CoreMember.kinship);
+            Member.LifeStageLabel = UTF8_TO_TCHAR(lifelens::lifeStageName(CoreMember.lifeStage));
+            Member.bAlive = CoreMember.alive;
+            Members.Add(MoveTemp(Member));
+        }
+    };
+
+    AppendMembers(CoreFamily.parents, OutObservation.Parents);
+    AppendMembers(CoreFamily.children, OutObservation.Children);
+    AppendMembers(CoreFamily.siblings, OutObservation.Siblings);
     return true;
 }
