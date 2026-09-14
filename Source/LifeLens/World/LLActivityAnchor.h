@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Core/LLTypes.h"
+#include "World/LLWorldAffordanceTypes.h"
 #include "LLActivityAnchor.generated.h"
 
 UENUM(BlueprintType)
@@ -45,6 +46,16 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="LifeLens|World")
     TArray<ELLActionIntent> AdditionalSupportedIntents;
+
+    /**
+     * Preferred = purpose-built furniture/facility.
+     * Primitive = crafted early-world substitute.
+     * Natural = usable environmental feature such as ground, water source or shelter.
+     * Emergency is reserved for WorldDirector's no-object fallback and should normally
+     * not be authored as a persistent anchor.
+     */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="LifeLens|World")
+    ELLWorldAffordanceTier AffordanceTier = ELLWorldAffordanceTier::Preferred;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="LifeLens|World")
     bool bEnabled = true;
