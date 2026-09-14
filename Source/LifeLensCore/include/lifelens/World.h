@@ -17,6 +17,11 @@ struct World {
     std::vector<StorageSite> storageSites;
     EnvironmentalResidueField environmentalResidues;
 
+    // Runtime execution policy only. The binary snapshot codec deliberately
+    // does not persist this flag; Unreal re-enables external execution after
+    // starting/restoring Core while standalone Core tests remain autonomous.
+    bool externalPhysicalExecution=false;
+
     explicit World(std::uint64_t s=1) : seed(s?s:1), rng(seed)
     {
         resetCivilizationEnvironment();
