@@ -23,11 +23,12 @@ Current product checkpoints:
 - #44 Full Core Save/Load — merged / deterministic continuation PASS.
 - #45 SaveGame v2 — merged / Core+Preflight+UE compile PASS.
 - #46 Core-authoritative action directive bridge — merged / UE Run #10 PASS.
-- #47 Witness/Rumor/Social Knowledge — merged / knowledge-transmission substrate.
+- #47 Witness/Rumor/Social Knowledge — merged.
 - #48 World Affordance Execution v1 — merge `a90ff6a5d870858a9e555ddf1e6e526bb7aa34e1`; UE Run #14 PASS.
-- #49 Civilization Foundation v1 — merge `36bd1ac81192bc689c1e811553f068f255642508`; Core/Preflight PASS.
-- #50 Civilization Runtime State + Persistence v1 — merge `c31c422c305a3a79a9553d37ac86247aa31d1853`; Core/Preflight PASS.
-- #51 Autonomous Civilization Action Loop v1 — merge `55d5211160c8edad32b01177e2b9326a9faa2b78`; Core `34811869666` full suite + deterministic harness PASS; Preflight `34811869612` PASS.
+- #49 Civilization Foundation v1 — merge `36bd1ac81192bc689c1e811553f068f255642508`.
+- #50 Civilization Runtime State + Persistence v1 — merge `c31c422c305a3a79a9553d37ac86247aa31d1853`.
+- #51 Autonomous Civilization Action Loop v1 — merge `55d5211160c8edad32b01177e2b9326a9faa2b78`.
+- #52 Civilization Knowledge Transmission v1 — merge `b90da9242003fbc0cbc553605b9abc46a17aa044`; PR Core `34814310235` PASS 37/37 + deterministic harness; Preflight `34814310291` PASS.
 
 ---
 
@@ -45,14 +46,15 @@ Dagyeom implications:
 - Major discoveries can become observer notifications/cinematic events.
 - Current Eat/Drink/Sleep/Toilet/Hygiene anchors are development affordances, not canonical starting-world content.
 
-After #51, authoritative Core now has both civilization state **and autonomous behavior**:
+After #52 authoritative Core now has:
 - per-resident Inventory / personal Knowledge / skills;
 - World ResourceNode / shared StorageSite;
 - autonomous Gather / Store / Experiment / Craft;
-- failure/resource consumption and personal discovery semantics;
-- Save/Load deterministic continuation.
+- witness / imitation / deliberate teaching of techniques;
+- authoritative fact/receipt/transmissionPath provenance;
+- Save/Load deterministic continuation including provenance through snapshot binary v3.
 
-These fields/actions are **still not UI-ready** because civilization Observer/Bridge DTOs have not been published. Do not invent placeholder UI fields.
+Civilization fields are **still not UI-ready at this exact checkpoint**. Jjun is now publishing the real civilization Observer/Bridge read DTOs. Do not invent placeholder fields before that API lands.
 
 ---
 
@@ -62,13 +64,11 @@ These fields/actions are **still not UI-ready** because civilization Observer/Br
 
 - Branch/PR: `dagyeom/observer-ui-v2`, PR #17
 - Re-fetch branch head before work.
-- Main has advanced substantially; reconcile from actual current main and preserve newest shared docs.
+- Reconcile from actual current main and preserve newest shared docs.
 
 ### DQ-R2 Bind current Core Observer Bridge into Observer HUD
 
-Former Jjun blockers are **READY**, not BLOCKED.
-
-Available read surfaces:
+Existing READY read surfaces remain:
 - `ULLCoreBridgeSubsystem::GetWorldObservation()`
 - `ULLCoreBridgeSubsystem::GetResidentObservations()`
 - `ULLCoreBridgeSubsystem::GetResidentObservation(...)`
@@ -80,10 +80,10 @@ Available read surfaces:
 Existing readable data includes Relationship 13D, Emotion 11D, Physical/Social activity, family state, lifecycle/world aggregates, founder identity/personality and typed current action directives.
 
 Important runtime facts:
-- family progression can grow population; never hard-code 4 residents.
-- SaveGame v2 restores Core directly; rebuild UI from Bridge after load.
-- Core owns life decisions; presentation must not choose competing actions.
-- Civilization state/actions exist internally but are not yet part of these read surfaces.
+- family progression can grow population; never hard-code 4 residents;
+- SaveGame restores authoritative Core snapshot; rebuild UI from Bridge after load;
+- Core owns life decisions; presentation must not choose competing actions;
+- civilization-specific read DTOs are the next Jjun slice and should be bound only after publication.
 
 ### DQ-R3 Resolve PR #17 Dagyeom-owned review findings
 
@@ -101,8 +101,8 @@ Then verify UHT/UBT + PIE.
 - reconcile latest main; verify display metrics/safe layout.
 
 ### DQ-02 Character Presentation v1 — PR #29
-- reconcile after #17.
-- consume intent for visuals only; do not become simulation authority.
+- reconcile after #17;
+- consume intent for visuals only; do not become simulation authority;
 - keep held-object/equipment hooks data-driven rather than modern-appliance-specific.
 
 ### DQ-03 Observer UX Polish v1 — PR #30
@@ -118,17 +118,24 @@ Then verify UHT/UBT + PIE.
 
 ## BLOCKED-BY-JJUN
 
-**현재 기존 Observer read 관련 BLOCKED-BY-JJUN 항목은 0개다.**
+**기존 Observer read 관련 BLOCKED-BY-JJUN 항목은 0개다.**
 
-Future civilization UI becomes READY only when Jjun publishes actual read DTOs. This does not block current Dagyeom work.
+New civilization-detail UI is pending only the current Jjun civilization read DTO publication. This does not block PR #17/#26 reconciliation and existing UI work.
 
 ---
 
 ## Current Jjun direction visible to Dagyeom
 
-Next Jjun slice: **Civilization Knowledge Transmission v1**.
+Next Jjun slice: **Civilization Observer Read DTOs v1**.
 
-The goal is for discoveries to spread imperfectly through witness / imitation / direct teaching, reusing #47 provenance/trust machinery. This remains Core simulation authority work. Dagyeom does not need to add civilization UI yet.
+Planned contract:
+- selected resident inventory summary;
+- known-technique level/confidence/practice + skills;
+- world resources/shared storage summaries;
+- discovery/knowledge provenance summaries;
+- read-only Unreal Bridge getters with stable Resident FGuid identity.
+
+Observer-first rule: Level 0 remains clean. Detailed civilization information belongs in selected-resident/detail views and major-discovery notifications.
 
 ---
 
@@ -144,8 +151,8 @@ The goal is for discoveries to spread imperfectly through witness / imitation / 
 
 ## Current Dagyeom state summary
 
-- Dagyeom is not waiting for Jjun APIs for current Observer tasks.
+- Dagyeom is not waiting for Jjun APIs for current Observer reconciliation tasks.
 - Civilization direction is canonical and should influence generic presentation design now.
-- Civilization data itself is not yet a current UI dependency.
-- Main UI remains human/world first; deeper civilization information comes later through real APIs.
+- Civilization detail UI waits for the real DTO contract rather than placeholders.
+- Main UI remains human/world first.
 - Jjun does not edit Dagyeom UI/Character branches without explicit coordination.
