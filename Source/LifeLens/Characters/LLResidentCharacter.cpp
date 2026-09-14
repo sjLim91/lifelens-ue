@@ -1,5 +1,6 @@
 #include "Characters/LLResidentCharacter.h"
 #include "AI/LLDecisionComponent.h"
+#include "Characters/LLResidentPresentationComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
 #include "UObject/ConstructorHelpers.h"
@@ -30,6 +31,8 @@ ALLResidentCharacter::ALLResidentCharacter()
     NameLabel->SetHorizontalAlignment(EHTA_Center);
     NameLabel->SetWorldSize(28.0f);
     NameLabel->SetTextRenderColor(FColor::White);
+
+    PresentationComponent = CreateDefaultSubobject<ULLResidentPresentationComponent>(TEXT("PresentationComponent"));
 }
 
 void ALLResidentCharacter::Tick(float DeltaSeconds)
