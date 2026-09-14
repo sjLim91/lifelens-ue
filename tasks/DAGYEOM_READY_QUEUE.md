@@ -24,12 +24,13 @@ Current product checkpoints:
 - #45 SaveGame v2 — merged / Core+Preflight+UE compile PASS.
 - #46 Core-authoritative action directive bridge — merged / UE Run #10 PASS.
 - #47 Witness/Rumor/Social Knowledge — merged / future discovery knowledge-transmission substrate.
-- #48 World Affordance Execution v1 — merge `a90ff6a5d870858a9e555ddf1e6e526bb7aa34e1`; Run #14 `34808292682` actual UE 5.6 UHT+UBT PASS.
-- #49 Civilization Foundation v1 — merge `36bd1ac81192bc689c1e811553f068f255642508`; Core `34809360826` full suite + deterministic harness PASS; Preflight `34809360739` PASS.
+- #48 World Affordance Execution v1 — merge `a90ff6a5d870858a9e555ddf1e6e526bb7aa34e1`; UE Run #14 PASS.
+- #49 Civilization Foundation v1 — merge `36bd1ac81192bc689c1e811553f068f255642508`; Core/Preflight PASS.
+- #50 Civilization Runtime State + Persistence v1 — merge `c31c422c305a3a79a9553d37ac86247aa31d1853`; Core `34810329867` full suite + deterministic harness PASS; Preflight `34810329862` PASS.
 
 ---
 
-## NEW CANONICAL PRODUCT DIRECTION — read before UI/Presentation work
+## CANONICAL PRODUCT DIRECTION — read before UI/Presentation work
 
 LifeLens is **not** only a modern-household autonomous life simulator.
 
@@ -43,12 +44,18 @@ Dagyeom implications:
 - Stone shard, branch, fire, basket, storage pile, bronze tool and modern device are all future held/used-object categories.
 - Technology is not globally auto-unlocked; knowledge can differ per resident.
 - Main Observer HUD stays clean; do not turn Level 0 into a strategy resource/tech dashboard.
-- Future Resident Detail may show Inventory / Known Techniques / Skill / Current Experiment after real read APIs exist.
-- Future World/Civilization Detail may show major discoveries / shortages / cultural knowledge differences.
 - Major discoveries can become observer notifications/cinematic events.
-- Current Eat/Drink/Sleep/Toilet/Hygiene anchors are development affordances, not proof that canonical NEW GAME starts with modern appliances.
+- Current Eat/Drink/Sleep/Toilet/Hygiene anchors are development affordances, not canonical starting-world content.
 
-PR #49 domain types are now on main, but **civilization state is not UI-ready yet**. Jjun's current next slice is authoritative runtime/persistence integration. Do not invent UI fields before Bridge DTOs are published.
+After PR #50, authoritative civilization state **exists in Core**:
+- per-resident Inventory;
+- per-resident personal Knowledge / confidence / practice;
+- civilization skills;
+- world ResourceNode state;
+- shared StorageSite state;
+- Save/Load persistence including legacy v1 migration.
+
+However, these fields are **still not UI-ready** because Jjun has not yet published Observer/Bridge DTOs for them. Do not invent placeholder UI fields.
 
 ---
 
@@ -79,7 +86,7 @@ Important runtime facts:
 - family progression can grow population; never hard-code 4 residents.
 - SaveGame v2 restores Core directly; rebuild UI from Bridge after load.
 - Core owns life decisions; presentation must not choose competing actions.
-- Witness/rumor and civilization fields must not be invented before read APIs exist.
+- civilization Inventory/Knowledge/Resource fields now exist internally but are not yet part of these read surfaces.
 
 ### DQ-R3 Resolve PR #17 Dagyeom-owned review findings
 
@@ -117,6 +124,14 @@ Then verify UHT/UBT + PIE.
 **현재 기존 Observer read 관련 BLOCKED-BY-JJUN 항목은 0개다.**
 
 Future Inventory/Knowledge/Discovery UI is not a blocker for current Dagyeom work. It becomes READY only when Jjun publishes actual read DTOs.
+
+---
+
+## Current Jjun direction visible to Dagyeom
+
+Next Jjun slice: **Autonomous Civilization Action Loop v1**.
+
+Residents will begin autonomously choosing Gather / Store / Experiment / Craft in pure Core using their own Needs, curiosity, inventory, knowledge and available world resources. This remains simulation authority work and does not require Dagyeom to change UI now.
 
 ---
 
