@@ -4,7 +4,7 @@
 >
 > 제품 기준: `docs/LIFELENS_SPEC_v1.1.md` · 상태 규칙: `docs/STATE_MANAGEMENT.md` · 역할/잠금: `tasks/TEAM_BOARD.md` · 이력: `tasks/HANDOFF_LOG.md`
 
-Last reconciled: 2026-09-14 KST — PR #45 head `547b3f94e0c3df6df15d723e72c8084cd10a7c29`: Core Tests `34803226434` PASS incl deterministic harness; Structural Preflight `34803226458` PASS; Unreal Linux Compile `34803226433` is still running and is the only remaining merge gate.
+Last reconciled: 2026-09-14 KST — PR #45 Unreal SaveGame Adapter v1 merged as `3c646ba331b8199a295fd6f2e9cac1235d844679`. Core Tests `34803226434`, Structural Preflight `34803226458`, Unreal Linux Compile `34803226433` all PASS, including actual UE 5.6 UHT/UBT.
 
 ## Mandatory sync gate
 
@@ -18,29 +18,19 @@ Last reconciled: 2026-09-14 KST — PR #45 head `547b3f94e0c3df6df15d723e72c8084
 
 ## Active / unresolved work
 
-### 1. Unreal SaveGame Adapter v1 — Jjun
+### 1. Core Decision → Unreal Physical Action Bridge v1 — Jjun
 
 - Owner: 쭌 + 쭌 AI
-- Branch: `jjun/unreal-savegame-adapter-v1`
-- PR: #45 `[UE] Persist authoritative Core snapshots through SaveGame v2`
-- Head: `547b3f94e0c3df6df15d723e72c8084cd10a7c29`
-- Status: `WAITING_UNREAL_COMPILE`
-- Implemented scope:
-  - pure Core versioned binary snapshot codec with `LLSNAP01` magic;
-  - canonical runtime-map ordering and binary roundtrip/continuation test;
-  - `CaptureCoreSnapshotBytes` / `RestoreCoreSnapshotBytes` on Core Bridge;
-  - restore validates into a temporary Core instance before replacing the live world;
-  - `ULLSaveGame` v2 stores `CoreSnapshotBytes`;
-  - v2 Save persists Core bytes only as simulation truth;
-  - v2 Load directly restores the Core snapshot then rebuilds compatibility projection;
-  - v1 old saves retain seed+minute replay migration only; legacy resident/relationship arrays never become authority;
-  - Structural Preflight enforces the v2 persistence contract.
-- Scope verified: 10 changed files, all Jjun-owned Save/Simulation/Core/validator files; UI/Characters/Content untouched.
-- Validation:
-  - Core Tests `34803226434` PASS: Configure / Build / Test / Deterministic harness.
-  - Structural Preflight `34803226458` PASS.
-  - Unreal Linux Compile `34803226433` IN PROGRESS; actual UHT/UBT still required.
-- Exact next action: inspect Run `34803226433`. If UHT/UBT PASS, mark READY_TO_MERGE and merge. If failure, fetch exact first root cause and fix only that.
+- Status: `PLANNED`
+- Branch: not created yet; must branch from actual latest `main` after next sync.
+- Goal: remove the remaining split-brain between authoritative Core decisions/state and the physical 3D WorldDirector behavior.
+- Required direction:
+  - Core remains the only source of Needs/social/family/decision truth;
+  - Unreal World/AI executes or presents Core-selected actions rather than independently choosing a competing life decision;
+  - preserve current stable resident GUID mapping and post-load continuity;
+  - do not modify Dagyeom UI or Character appearance/presentation without a new explicit coordination request.
+- Initial bounded scope should focus on existing physical intents such as Eat/Sleep/Toilet/Hygiene/Idle and current SocialIntent presentation, using Jjun-owned `Simulation/AI/World` boundaries.
+- Required verification: structural contract + actual UE 5.6 UHT/UBT, then targeted runtime/PIE verification where available.
 
 ### 2. Observer HUD v2 — Dagyeom
 
@@ -48,8 +38,8 @@ Last reconciled: 2026-09-14 KST — PR #45 head `547b3f94e0c3df6df15d723e72c8084
 - Branch/PR: `dagyeom/observer-ui-v2`, PR #17
 - Status: `RECOVERING`
 - Former six `BLOCKED-BY-JJUN` Observer requirements remain resolved.
-- Main has #42 founder runtime integration, #43 autonomous family progression/newborn growth, and #44 full authoritative Core snapshot contract.
-- Exact next action: reconcile latest main, bind current Core Observer Bridge, address Dagyeom-owned UI review findings, verify UHT/UBT + PIE.
+- Main now includes #42 Core-authoritative founders, #43 autonomous family progression/newborn population growth, #44 full Core snapshot contract, and #45 actual SaveGame v2 snapshot persistence/restore.
+- Exact next action: reconcile actual latest main, bind current Core Observer Bridge, address Dagyeom-owned UI review findings, verify UHT/UBT + PIE.
 
 ### 3. Dagyeom stacked UI / presentation chain
 
@@ -69,7 +59,31 @@ Last reconciled: 2026-09-14 KST — PR #45 head `547b3f94e0c3df6df15d723e72c8084
 
 ---
 
-## Latest completed milestone — Full Core Save/Load v1
+## Latest completed milestone — Unreal SaveGame Adapter v1
+
+### PR #45 `[UE] Persist authoritative Core snapshots through SaveGame v2`
+
+- Status: `DONE`
+- Feature HEAD: `547b3f94e0c3df6df15d723e72c8084cd10a7c29`
+- Merge SHA: `3c646ba331b8199a295fd6f2e9cac1235d844679`
+- Changed files: exactly 10 Jjun-owned Save/Simulation/Core/validator files; UI/Characters/Content untouched.
+- Implemented:
+  - pure Core persistent binary snapshot codec with magic `LLSNAP01` and explicit binary/Core snapshot versions;
+  - canonical CharacterId ordering for runtime-map serialization;
+  - full World/RNG/Character/SmartObject/Relationship/Genealogy/Romance/Household/Pregnancy/Birth/runtime/log state encoding;
+  - malformed/corrupt/truncated/trailing payload rejection;
+  - Core Bridge `CaptureCoreSnapshotBytes` / `RestoreCoreSnapshotBytes`;
+  - restore validates against a temporary Core candidate before replacing the live world;
+  - `ULLSaveGame` v2 stores `CoreSnapshotBytes` as authoritative simulation truth;
+  - v2 Load restores Core directly and rebuilds compatibility projection;
+  - v1 legacy save migration retains seed+minute replay only; legacy resident/relationship arrays never become authority.
+- Validation:
+  - Core Tests `34803226434` PASS: Configure / Build / Test / deterministic harness.
+  - Structural Preflight `34803226458` PASS.
+  - Unreal Linux Compile `34803226433` PASS including actual UE 5.6 UHT + UBT.
+  - binary codec roundtrip/canonical bytes/corrupt payload/10,000-minute continuation tests PASS.
+
+## Previous completed milestone — Full Core Save/Load v1
 
 ### PR #44 `[CORE] Add authoritative full-state snapshot save/load v1`
 
