@@ -93,6 +93,11 @@ void ALLWorldDirector::CollectActivityAnchors()
 
 void ALLWorldDirector::SpawnResidents()
 {
+    for (auto& Pair : RuntimeStates)
+    {
+        ReleasePhysicalReservation(Pair.Key, Pair.Value);
+    }
+
     SpawnedResidents.Reset();
     RuntimeStates.Reset();
 
@@ -143,6 +148,7 @@ void ALLWorldDirector::UpdateResident(ALLResidentCharacter& Character, float Del
     FLLCoreActionDirective Directive;
     if (!CoreBridge->GetResidentActionDirective(Character.GetResidentId(), Directive))
     {
+        ReleasePhysicalReservation(Character.GetResidentId(), *Runtime);
         Character.ClearMovementTarget();
         Character.SetCurrentIntent(ELLActionIntent::Idle);
         Runtime->bPerformingAction = false;
@@ -166,6 +172,7 @@ void ALLWorldDirector::ApplyCoreDirective(
 
     if (bDirectiveChanged)
     {
+        ReleasePhysicalReservation(Character.GetResidentId(), Runtime);
         Runtime.bInitialized = true;
         Runtime.bPerformingAction = false;
         Runtime.LastActivityKind = Directive.ActivityKind;
@@ -177,6 +184,7 @@ void ALLWorldDirector::ApplyCoreDirective(
 
     if (!Directive.bAlive || Directive.ActivityKind == ELLCoreObservedActivityKind::Idle)
     {
+        ReleasePhysicalReservation(Character.GetResidentId(), Runtime);
         Runtime.bPerformingAction = false;
         Character.ClearMovementTarget();
         Character.SetCurrentIntent(ELLActionIntent::Idle);
@@ -190,26 +198,47 @@ void ALLWorldDirector::ApplyCoreDirective(
 
         if (Intent == ELLActionIntent::Idle)
         {
+            ReleasePhysicalReservation(Character.GetResidentId(), Runtime);
             Runtime.bPerformingAction = false;
             Character.ClearMovementTarget();
             return;
         }
 
-        if (!Runtime.bPerformingAction && (bDirectiveChanged || Character.HasReachedMovementTarget()))
+        ALLActivityAnchor* Anchor = EnsurePhysicalReservation(Character, Runtime, Intent);
+        if (!Anchor)
         {
-            if (bDirectiveChanged)
-            {
-                Character.SetMovementTarget(ResolveTargetLocation(Intent, Character.GetResidentId()));
-            }
-
-            if (Character.HasReachedMovementTarget())
-            {
-                Character.ClearMovementTarget();
-                Runtime.bPerformingAction = true;
-            }
+            Runtime.bPerformingAction = false;
+            Character.ClearMovementTarget();
+            return;
         }
+
+        const FTransform UseTransform = Anchor->GetUseTransform();
+        const FVector DesiredLocation = UseTransform.GetLocation();
+        const float DistanceSquared = FVector::DistSquared2D(Character.GetActorLocation(), DesiredLocation);
+        const bool bAtUsePoint = DistanceSquared <= FMath::Square(110.0f);
+
+        if (!bAtUsePoint)
+        {
+            Runtime.bPerformingAction = false;
+            Character.SetMovementTarget(DesiredLocation);
+            return;
+        }
+
+        Character.ClearMovementTarget();
+        if (!Anchor->MarkInUse(Character.GetResidentId()))
+        {
+            ReleasePhysicalReservation(Character.GetResidentId(), Runtime);
+            Runtime.bPerformingAction = false;
+            return;
+        }
+
+        Runtime.bPerformingAction = true;
+        const FRotator UseRotation = UseTransform.GetRotation().Rotator();
+        Character.SetActorRotation(FRotator(0.0f, UseRotation.Yaw, 0.0f));
         return;
     }
+
+    ReleasePhysicalReservation(Character.GetResidentId(), Runtime);
 
     if (Directive.ActivityKind == ELLCoreObservedActivityKind::Social)
     {
@@ -265,32 +294,82 @@ ELLActionIntent ALLWorldDirector::ToPresentationIntent(ELLCorePhysicalIntent Int
     }
 }
 
-FVector ALLWorldDirector::ResolveTargetLocation(ELLActionIntent Intent, FGuid ResidentId) const
+ALLActivityAnchor* ALLWorldDirector::FindBestUsableAnchor(
+    const ALLResidentCharacter& Character,
+    ELLActionIntent Intent) const
 {
-    for (const ALLActivityAnchor* Anchor : ActivityAnchors)
+    ALLActivityAnchor* BestAnchor = nullptr;
+    double BestDistanceSquared = TNumericLimits<double>::Max();
+    FString BestPath;
+
+    for (ALLActivityAnchor* Anchor : ActivityAnchors)
     {
-        if (IsValid(Anchor) && Anchor->SupportedIntent == Intent)
+        if (!IsValid(Anchor)
+            || Anchor->SupportedIntent != Intent
+            || !Anchor->CanBeUsedBy(Character.GetResidentId()))
         {
-            return Anchor->GetUseLocation();
+            continue;
+        }
+
+        const double DistanceSquared = FVector::DistSquared2D(
+            Character.GetActorLocation(), Anchor->GetUseLocation());
+        const FString AnchorPath = Anchor->GetPathName();
+        const bool bCloser = DistanceSquared + UE_KINDA_SMALL_NUMBER < BestDistanceSquared;
+        const bool bStableTieBreak =
+            FMath::IsNearlyEqual(DistanceSquared, BestDistanceSquared)
+            && (BestAnchor == nullptr || AnchorPath.Compare(BestPath, ESearchCase::CaseSensitive) < 0);
+
+        if (bCloser || bStableTieBreak)
+        {
+            BestAnchor = Anchor;
+            BestDistanceSquared = DistanceSquared;
+            BestPath = AnchorPath;
         }
     }
 
-    FVector Base;
-    switch (Intent)
+    return BestAnchor;
+}
+
+ALLActivityAnchor* ALLWorldDirector::EnsurePhysicalReservation(
+    ALLResidentCharacter& Character,
+    FLLResidentRuntimeState& Runtime,
+    ELLActionIntent Intent)
+{
+    if (Runtime.ReservedAnchor.IsValid())
     {
-        case ELLActionIntent::Eat: Base = FVector(-520.0f, -300.0f, 90.0f); break;
-        case ELLActionIntent::Drink: Base = FVector(-520.0f, 300.0f, 90.0f); break;
-        case ELLActionIntent::Sleep: Base = FVector(520.0f, -300.0f, 90.0f); break;
-        case ELLActionIntent::Hygiene: Base = FVector(-520.0f, 300.0f, 90.0f); break;
-        case ELLActionIntent::Toilet: Base = FVector(520.0f, 300.0f, 90.0f); break;
-        case ELLActionIntent::HaveFun: Base = FVector(0.0f, 520.0f, 90.0f); break;
-        case ELLActionIntent::Socialize: Base = FVector::ZeroVector; break;
-        case ELLActionIntent::Idle:
-        default: Base = FVector(0.0f, -100.0f, 90.0f); break;
+        ALLActivityAnchor* Existing = Runtime.ReservedAnchor.Get();
+        if (Runtime.ReservedIntent == Intent
+            && Existing->SupportedIntent == Intent
+            && Existing->IsClaimedBy(Character.GetResidentId())
+            && Existing->CanBeUsedBy(Character.GetResidentId()))
+        {
+            return Existing;
+        }
+
+        ReleasePhysicalReservation(Character.GetResidentId(), Runtime);
     }
 
-    const float LaneOffset = static_cast<float>(GetTypeHash(ResidentId) % 5) * 42.0f - 84.0f;
-    return GetActorLocation() + Base + FVector(0.0f, LaneOffset, 0.0f);
+    ALLActivityAnchor* Candidate = FindBestUsableAnchor(Character, Intent);
+    if (!Candidate || !Candidate->TryReserve(Character.GetResidentId()))
+    {
+        return nullptr;
+    }
+
+    Runtime.ReservedAnchor = Candidate;
+    Runtime.ReservedIntent = Intent;
+    return Candidate;
+}
+
+void ALLWorldDirector::ReleasePhysicalReservation(
+    FGuid ResidentId,
+    FLLResidentRuntimeState& Runtime)
+{
+    if (Runtime.ReservedAnchor.IsValid())
+    {
+        Runtime.ReservedAnchor->Release(ResidentId);
+    }
+    Runtime.ReservedAnchor.Reset();
+    Runtime.ReservedIntent = ELLActionIntent::Idle;
 }
 
 FVector ALLWorldDirector::ResolveSocialTargetLocation(
