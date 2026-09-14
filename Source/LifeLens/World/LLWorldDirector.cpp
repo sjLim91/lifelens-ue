@@ -30,6 +30,7 @@ void ALLWorldDirector::BeginPlay()
     }
 
     CollectActivityAnchors();
+    EnsureBootstrapActivityAnchors();
     SpawnResidents();
 }
 
@@ -96,6 +97,65 @@ void ALLWorldDirector::CollectActivityAnchors()
     for (TActorIterator<ALLActivityAnchor> It(GetWorld()); It; ++It)
     {
         ActivityAnchors.Add(*It);
+    }
+}
+
+void ALLWorldDirector::EnsureBootstrapActivityAnchors()
+{
+    if (!GetWorld())
+    {
+        return;
+    }
+
+    struct FBootstrapAnchorSpec
+    {
+        ELLActionIntent Intent;
+        FVector Offset;
+        FRotator Rotation;
+    };
+
+    const FBootstrapAnchorSpec Specs[] = {
+        { ELLActionIntent::Eat,    FVector(-520.0f, -300.0f, 90.0f), FRotator(0.0f,   0.0f, 0.0f) },
+        { ELLActionIntent::Drink,  FVector(-520.0f,  300.0f, 90.0f), FRotator(0.0f,   0.0f, 0.0f) },
+        { ELLActionIntent::Sleep,  FVector( 520.0f, -300.0f, 90.0f), FRotator(0.0f, 180.0f, 0.0f) },
+        { ELLActionIntent::Toilet, FVector( 520.0f,  300.0f, 90.0f), FRotator(0.0f, 180.0f, 0.0f) },
+        { ELLActionIntent::Hygiene,FVector(-220.0f,  520.0f, 90.0f), FRotator(0.0f, -90.0f, 0.0f) }
+    };
+
+    for (const FBootstrapAnchorSpec& Spec : Specs)
+    {
+        bool bAlreadyProvided = false;
+        for (ALLActivityAnchor* Anchor : ActivityAnchors)
+        {
+            if (IsValid(Anchor) && Anchor->SupportedIntent == Spec.Intent)
+            {
+                bAlreadyProvided = true;
+                break;
+            }
+        }
+
+        if (bAlreadyProvided)
+        {
+            continue;
+        }
+
+        FActorSpawnParameters Params;
+        Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+        Params.Name = MakeUniqueObjectName(GetWorld(), ALLActivityAnchor::StaticClass(), TEXT("LLBootstrapActivityAnchor"));
+
+        ALLActivityAnchor* Anchor = GetWorld()->SpawnActor<ALLActivityAnchor>(
+            ALLActivityAnchor::StaticClass(),
+            GetActorLocation() + Spec.Offset,
+            Spec.Rotation,
+            Params);
+
+        if (!Anchor)
+        {
+            continue;
+        }
+
+        Anchor->SupportedIntent = Spec.Intent;
+        ActivityAnchors.Add(Anchor);
     }
 }
 
