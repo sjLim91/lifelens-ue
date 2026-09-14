@@ -48,7 +48,7 @@ int latestCohabitationMinute(const Character& character)
 Simulation::Simulation(std::uint64_t seed):world_(seed){}
 
 void Simulation::setupDemo(){
-    world_.characters.clear(); world_.objects.clear(); relationships_=RelationshipBook{}; genealogy_=GenealogyBook{}; romances_=RomanceBook{}; households_=HouseholdBook{}; pregnancies_=PregnancyBook{}; births_=BirthBook{}; runtime_.clear(); logs_.clear(); world_.minute=7*60;
+    world_.characters.clear(); world_.objects.clear(); relationships_=RelationshipBook{}; genealogy_=GenealogyBook{}; romances_=RomanceBook{}; households_=HouseholdBook{}; pregnancies_=PregnancyBook{}; births_=BirthBook{}; socialKnowledge_.clear(); runtime_.clear(); logs_.clear(); world_.minute=7*60;
     Character c; c.id=1; c.name="DevResident"; c.personality=Personality::generate(world_.rng);
     std::uniform_real_distribution<double> start(0.10,0.42);
     c.needs={start(world_.rng),start(world_.rng),start(world_.rng),start(world_.rng),start(world_.rng)};
@@ -65,7 +65,7 @@ void Simulation::setupDemo(){
 }
 
 void Simulation::setupSocialDemo(){
-    world_.characters.clear(); world_.objects.clear(); relationships_=RelationshipBook{}; genealogy_=GenealogyBook{}; romances_=RomanceBook{}; households_=HouseholdBook{}; pregnancies_=PregnancyBook{}; births_=BirthBook{}; runtime_.clear(); logs_.clear(); world_.minute=7*60;
+    world_.characters.clear(); world_.objects.clear(); relationships_=RelationshipBook{}; genealogy_=GenealogyBook{}; romances_=RomanceBook{}; households_=HouseholdBook{}; pregnancies_=PregnancyBook{}; births_=BirthBook{}; socialKnowledge_.clear(); runtime_.clear(); logs_.clear(); world_.minute=7*60;
 
     Character a;
     a.id=1; a.name="SocialA";
@@ -112,19 +112,15 @@ void Simulation::setupNewGame(){
     households_=HouseholdBook{};
     pregnancies_=PregnancyBook{};
     births_=BirthBook{};
+    socialKnowledge_.clear();
     runtime_.clear();
     logs_.clear();
     world_.minute=8*60;
     world_.resetCivilizationEnvironment();
 
-    // A formal New Game must be reproducible from WorldSeed. Re-seeding here
-    // ensures repeated setup with the same world seed cannot inherit RNG state
-    // from a previous run.
     world_.rng.seed(world_.seed);
     world_.characters=generateInitialFounders(world_.rng,world_.minute);
 
-    // Minimal shared living-space affordances keep the new population runnable
-    // by the existing Needs/Planner loop without assigning social/family roles.
     world_.objects.push_back({1,ObjectKind::Bed,{1,1},std::nullopt,{0,0,-0.055,0,0},16});
     world_.objects.push_back({2,ObjectKind::Bed,{2,1},std::nullopt,{0,0,-0.055,0,0},16});
     world_.objects.push_back({3,ObjectKind::Bed,{3,1},std::nullopt,{0,0,-0.055,0,0},16});
@@ -139,8 +135,6 @@ void Simulation::setupNewGame(){
     world_.objects.push_back({12,ObjectKind::Chair,{3,3},std::nullopt,{0,0,0,0,0},5});
     world_.objects.push_back({13,ObjectKind::Chair,{4,3},std::nullopt,{0,0,0,0,0},5});
 
-    // Founders are strangers / very low familiarity. Every direction exists so
-    // future social events can evolve independently without a forced couple.
     std::uniform_real_distribution<double> familiarity(0.0,0.04);
     for(const Character& from:world_.characters){
         runtime_[from.id]=Runtime{};
@@ -210,9 +204,6 @@ SmartObject* Simulation::objectById(ObjectId id){ for(auto& o:world_.objects) if
 void Simulation::failPlan(Runtime& r){ r.plan.clear(); r.actionIndex=0; r.announced=false; r.socialActive=false; r.socialIntent=SocialIntent::None; r.socialTarget=0; ++r.consecutiveFailures; if(r.consecutiveFailures>=3){r.penaltyUntilMinute=world_.minute+30;r.consecutiveFailures=0;} }
 
 bool Simulation::tryCivilizationDecision(Character& c,Runtime& r){
-    // Keep civilization as a meaningful but bounded third activity channel.
-    // Two of every three 5-minute decision windows remain fully available to
-    // the pre-existing Physical/Social loop.
     if(world_.minute%15!=0) return false;
 
     const UnifiedUtilityDecision decision=chooseUnifiedUtilityDecision(world_,c,relationships_);
@@ -220,6 +211,7 @@ bool Simulation::tryCivilizationDecision(Character& c,Runtime& r){
 
     const CivilizationExecutionResult result=executeCivilizationDecision(world_,c,decision.civilization);
     if(!result.executed) return false;
+    processCivilizationKnowledgeEvent(c,result.event);
 
     std::ostringstream s;
     s<<c.name<<" -> Civilization "<<civilizationIntentName(decision.civilization.intent);
@@ -259,9 +251,6 @@ bool Simulation::tryCivilizationDecision(Character& c,Runtime& r){
 bool Simulation::trySocialDecision(Character& c,Runtime& r){
     if(world_.minute<r.socialCooldownUntilMinute) return false;
 
-    // Civilization only competes on its own 15-minute slot. On the other two
-    // 5-minute windows, recompute using an unreachable civilization threshold
-    // so the original Physical/Social competition is preserved exactly.
     const UnifiedUtilityDecision decision=world_.minute%15==0
         ? chooseUnifiedUtilityDecision(world_,c,relationships_)
         : chooseUnifiedUtilityDecision(world_,c,relationships_,0.18,2.0);
@@ -639,6 +628,7 @@ void Simulation::step(){
     }
     ++world_.minute;
     if(world_.minute%(24*60)==0) regenerateCivilizationEnvironment(world_);
+    advanceCivilizationKnowledgeTeaching();
     advanceAutonomousFamilyProgression();
 }
 void Simulation::runMinutes(int minutes){ for(int i=0;i<minutes;++i) step(); }
