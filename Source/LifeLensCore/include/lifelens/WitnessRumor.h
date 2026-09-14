@@ -150,6 +150,60 @@ public:
     const std::vector<SocialFact>& facts() const { return facts_; }
     const std::vector<KnowledgeReceipt>& receipts() const { return receipts_; }
 
+    void clear() {
+        facts_.clear();
+        receipts_.clear();
+    }
+
+    bool restoreState(
+        std::vector<SocialFact> facts,
+        std::vector<KnowledgeReceipt> receipts) {
+
+        SocialKnowledgeBook rebuilt;
+        for (auto& fact : facts) {
+            if (!rebuilt.registerFact(std::move(fact))) return false;
+        }
+
+        for (auto& receipt : receipts) {
+            const SocialFact* fact = rebuilt.findFact(receipt.factId);
+            if (fact == nullptr || receipt.holder == 0 || receipt.originWitness == 0 ||
+                receipt.immediateSource == 0 || receipt.subject != fact->subject ||
+                receipt.learnedMinute < 0 || !std::isfinite(receipt.confidence) ||
+                receipt.confidence < 0.0 || receipt.confidence > 1.0 ||
+                receipt.transmissionPath.empty() ||
+                receipt.transmissionPath.back() != receipt.holder ||
+                receipt.transmissionPath.front() != receipt.originWitness) {
+                return false;
+            }
+
+            for (const auto& existing : rebuilt.receipts_) {
+                if (existing.holder == receipt.holder && existing.factId == receipt.factId) return false;
+            }
+            for (std::size_t i = 0; i < receipt.transmissionPath.size(); ++i) {
+                if (receipt.transmissionPath[i] == 0) return false;
+                for (std::size_t j = i + 1; j < receipt.transmissionPath.size(); ++j) {
+                    if (receipt.transmissionPath[i] == receipt.transmissionPath[j]) return false;
+                }
+            }
+
+            if (receipt.source == MemorySource::DirectWitness) {
+                if (receipt.transmissionPath.size() != 1 ||
+                    receipt.originWitness != receipt.holder ||
+                    receipt.immediateSource != receipt.holder) return false;
+            } else if (receipt.source == MemorySource::ToldByOther) {
+                if (receipt.transmissionPath.size() < 2 ||
+                    receipt.immediateSource != receipt.transmissionPath[receipt.transmissionPath.size() - 2]) return false;
+            } else {
+                return false;
+            }
+
+            rebuilt.receipts_.push_back(std::move(receipt));
+        }
+
+        *this = std::move(rebuilt);
+        return true;
+    }
+
     const KnowledgeReceipt* recordDirectWitness(
         SocialFactId factId,
         CharacterId witness,
@@ -231,9 +285,6 @@ public:
         statement.confidence = MemoryRecord::clamp01(
             receipt->confidence * ageRetention * retellRetention);
 
-        // Semantic inversion is intentionally rare and only possible once a
-        // rumor is already weak. This provides deterministic distortion without
-        // making reliable direct testimony randomly flip on first retelling.
         if (statement.confidence < 0.35) {
             const double distortionRoll = deterministicKnowledgeUnit(
                 worldSeed ^ 0x44535452544E5255ull,
