@@ -4,7 +4,7 @@
 >
 > 제품 기준: `docs/LIFELENS_SPEC_v1.1.md` · 상태 규칙: `docs/STATE_MANAGEMENT.md` · 역할/잠금: `tasks/TEAM_BOARD.md` · 이력: `tasks/HANDOFF_LOG.md`
 
-Last reconciled: 2026-09-14 KST — Core Decision → Unreal Physical Action Bridge v1 is open as PR #46 at head `f5b560985a4a04dbde52a26d8878aa61d1f065f0`. Core Tests, Structural Preflight and actual UE 5.6 Linux UHT/UBT are required before merge.
+Last reconciled: 2026-09-14 KST — PR #46 Core Decision → Unreal Physical Action Bridge v1 latest head is `f3a5d47ca17f19928b1438fbe423ee6912a14f01`. A compatibility review fixed `ELLActionIntent` ordinal stability before Unreal compile: existing values remain 0–6 and new `Drink` is appended as 7. Superseded Unreal Run `34805435883` was automatically cancelled by workflow concurrency; latest-head CI is running.
 
 ## Mandatory sync gate
 
@@ -23,22 +23,27 @@ Last reconciled: 2026-09-14 KST — Core Decision → Unreal Physical Action Bri
 - Owner: 쭌 + 쭌 AI
 - Branch: `jjun/core-physical-action-bridge-v1`
 - PR: #46 `[UE] Drive physical world actions from authoritative Core decisions`
-- Head: `f5b560985a4a04dbde52a26d8878aa61d1f065f0`
-- Status: `WAITING_CI`
+- Head: `f3a5d47ca17f19928b1438fbe423ee6912a14f01`
+- Status: `WAITING_LATEST_HEAD_CI`
 - Implemented:
   - pure Core `ResidentObservation` exposes typed `physicalGoal` / `socialIntent` rather than requiring label parsing;
   - Core observer test locks typed action authority;
   - Unreal `FLLCoreActionDirective` carries physical/social typed intent + stable target ResidentId;
   - `ULLCoreBridgeSubsystem::GetResidentActionDirective()` maps authoritative Core runtime state into Unreal;
-  - `ELLActionIntent::Drink` added so Core Drink is not silently dropped;
+  - `ELLActionIntent` persisted/Blueprint ordinals explicitly preserved: Idle=0, Eat=1, Sleep=2, Socialize=3, Hygiene=4, Toilet=5, HaveFun=6; new Drink=7;
   - `ALLWorldDirector` no longer calls legacy `DecisionComponent->ChooseAction()` for life actions;
   - WorldDirector no longer calls `ApplyActionOutcome()` / `ApplySocialInteraction()` as a second state authority;
   - physical Eat/Drink/Sleep/Toilet/Hygiene and social Approach/Avoid/Repair/Comfort are presented from Core directives;
   - social Avoid moves away; other social intents approach/face the Core-selected target;
   - Structural Preflight prevents reintroduction of competing WorldDirector decision authority.
 - Scope: Jjun-owned Core/Simulation/World/validator only; no Dagyeom UI/Character presentation/Content edits.
+- Latest-head validation runs:
+  - Core Tests `34805764836` IN PROGRESS at last check.
+  - Structural Preflight `34805764910` QUEUED at last check.
+  - Unreal Linux Compile `34805764898` PENDING at last check.
+  - Superseded Unreal Run `34805435883` CANCELLED by `cancel-in-progress` after head moved; its UHT/UBT step never ran.
 - Required validation: Core Release full suite + deterministic harness, Structural Preflight, actual UE 5.6 Linux UHT/UBT; targeted runtime/PIE where available.
-- Exact next action: inspect PR #46 Actions. On failure, fix only the first root cause; on all PASS, verify changed-file scope and merge.
+- Exact next action: inspect latest-head PR #46 Actions. On failure, fix only the first root cause; on all PASS, verify changed-file scope and merge.
 
 ### 2. Observer HUD v2 — Dagyeom
 
