@@ -19,6 +19,8 @@ struct FLLResidentRuntimeState
     ELLCorePhysicalIntent LastPhysicalIntent = ELLCorePhysicalIntent::None;
     ELLCoreSocialIntent LastSocialIntent = ELLCoreSocialIntent::None;
     FGuid LastTargetId;
+    TWeakObjectPtr<ALLActivityAnchor> ReservedAnchor;
+    ELLActionIntent ReservedIntent = ELLActionIntent::Idle;
 };
 
 UCLASS()
@@ -48,7 +50,14 @@ private:
         FLLResidentRuntimeState& Runtime,
         const FLLCoreActionDirective& Directive);
     ELLActionIntent ToPresentationIntent(ELLCorePhysicalIntent Intent) const;
-    FVector ResolveTargetLocation(ELLActionIntent Intent, FGuid ResidentId) const;
+    ALLActivityAnchor* FindBestUsableAnchor(
+        const ALLResidentCharacter& Character,
+        ELLActionIntent Intent) const;
+    ALLActivityAnchor* EnsurePhysicalReservation(
+        ALLResidentCharacter& Character,
+        FLLResidentRuntimeState& Runtime,
+        ELLActionIntent Intent);
+    void ReleasePhysicalReservation(FGuid ResidentId, FLLResidentRuntimeState& Runtime);
     FVector ResolveSocialTargetLocation(
         const ALLResidentCharacter& Character,
         const ALLResidentCharacter& Target,
