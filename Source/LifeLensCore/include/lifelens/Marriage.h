@@ -150,6 +150,8 @@ inline EngagementProposalOutcome applyEngagementProposal(
     recipientToProposer.apply(relationshipDeltaFor(RelationshipEvent::CommitmentMade,0.75));
     applyEmotionEvent(proposer.emotion,EmotionEventType::RomanticCloseness,0.70);
     applyEmotionEvent(recipient.emotion,EmotionEventType::RomanticCloseness,0.70);
+    recordLifeEvent(proposer.lifeHistory,LifeEventType::Engaged,minute,{recipient.id});
+    recordLifeEvent(recipient.lifeHistory,LifeEventType::Engaged,minute,{proposer.id});
     return outcome;
 }
 
@@ -233,6 +235,7 @@ inline MarriageDecisionOutcome applyMarriageDecision(
     const Household* secondHome=households.householdOf(second.id);
     const bool alreadyShared=firstHome!=nullptr && secondHome!=nullptr && firstHome->id==secondHome->id;
     const bool shouldMerge=firstContext.mergeHouseholdsOnMarriage || secondContext.mergeHouseholdsOnMarriage;
+    bool mergedHousehold=false;
 
     if(shouldMerge && !alreadyShared){
         if(newHouseholdId==0 || households.find(newHouseholdId)!=nullptr){
@@ -243,6 +246,7 @@ inline MarriageDecisionOutcome applyMarriageDecision(
             outcome.result=MarriageDecisionResult::Invalid;
             return outcome;
         }
+        mergedHousehold=true;
     }
 
     if(!romances.marry(first.id,second.id,minute)){
@@ -254,6 +258,12 @@ inline MarriageDecisionOutcome applyMarriageDecision(
     secondToFirst.apply(relationshipDeltaFor(RelationshipEvent::CommitmentMade));
     applyEmotionEvent(first.emotion,EmotionEventType::RomanticCloseness);
     applyEmotionEvent(second.emotion,EmotionEventType::RomanticCloseness);
+    recordLifeEvent(first.lifeHistory,LifeEventType::Married,minute,{second.id});
+    recordLifeEvent(second.lifeHistory,LifeEventType::Married,minute,{first.id});
+    if(mergedHousehold){
+        recordLifeEvent(first.lifeHistory,LifeEventType::CohabitationStarted,minute,{second.id});
+        recordLifeEvent(second.lifeHistory,LifeEventType::CohabitationStarted,minute,{first.id});
+    }
     return outcome;
 }
 
