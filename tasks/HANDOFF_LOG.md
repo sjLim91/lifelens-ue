@@ -517,3 +517,19 @@
   - old TASK_03 PR #2 / Run `34739283266`은 계속 FROZEN이다.
 - 다음 쭌 측 잠금:
   - **Civilization Knowledge Transmission v1** — 발견/제작 지식이 개인에게 고립되지 않도록 #47 Witness/Rumor provenance를 재사용해 목격·모방·직접 교육으로 불완전하게 전파한다.
+
+## 2026-09-14 — Observer HUD v2 Integration Sprint R1-R3 완료
+
+- 작성자: 쭌 측 AI / 다겸 협업 지원
+- 대상: `dagyeom/observer-ui-v2`, PR #17
+- 상태: `DONE / main 병합 완료`
+- 최종 PR #17 head: `5eaff7dd6d579606331919b89b0060a776a7ad80`
+- main merge: `aa194db7c5b500cdf5041fd6d43b25f97b9dd0b6`
+- R1: helper #56 merged; verify-only #57 closed; Preflight `34824371968` PASS; Unreal Run #17 `34824371965` PASS (UHT/UBT/link)
+- R2: helper #58 merged; verify-only #59 closed; corrected Preflight `34833994138` PASS; corrected Unreal Run #20 `34833994155` PASS (UHT/UBT/link)
+- 최초 R2 Run #18 실패는 verify tree에서 R1 UI 4파일을 누락한 검증 구성 오류였고 제품/helper 코드 오류가 아님.
+- R3: PR 설명 최신화, Codex review thread 2건 resolved/unresolved 0, `ASSIST_LOCK-17-R2` 해제 및 UI 소유권 다겸 복귀.
+- 반영: LEVEL 0은 얇게 유지, LEVEL 1 narrow-screen wrapping 유지, LEVEL 2에 Core-backed Emotion/Relationships/Family/Knowledge & Gear(Civilization) 상세 제공.
+- 현재 행동은 Core resident observation 우선, legacy actor intent는 transitional fallback.
+- UI는 read-only presentation이며 simulation authority/cache를 새로 만들지 않음.
+- 상대가 알아야 할 점: 쭌 측 Observer blocker 0개. 다음 순서 PR #26 → #29/#30 → #36 → #38 → integrated runtime → Android smoke APK.
