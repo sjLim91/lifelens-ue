@@ -458,6 +458,20 @@
   - `Characters/**` 미수정. 참고(다겸 영역 아님, 기록만): 주민 액터가 카메라 거리(약 1900유닛)에서 큐브 55유닛 ≈ 80px로 작게 보임. 이름 라벨이 원점 위 125유닛.
   - `ll.DebugTapTargets 1`로 투영 사각형을 화면에서 대조 가능.
 
+### DQ-R1 latest-main reconcile — 중단
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/observer-ui-v2`, PR #17
+- 커밋: `dc3351e` (merge 미커밋, `git merge --abort`로 되돌림)
+- 상태: `RECOVERING / BLOCKED`
+- 변경 범위:
+  - 코드 변경 없음. `tasks/TEAM_BOARD.md` Integration Request 1건 추가
+- 검증 상태:
+  - origin/main `87c8ede` merge 시도: 코드 충돌 없음, `tasks/TEAM_BOARD.md` 충돌만(origin/main 기준 해결 예정)
+  - 로컬 `Build.sh LifeLensEditor Mac Development`: Result: Failed. `Source/LifeLensCore/include/lifelens/ObserverReadModelV2.h:141:25: error: declaration shadows a local variable [-Werror,-Wshadow]` (136행 `pregnancy` 선언과 충돌). `LLCoreCompileUnit.cpp`가 Core를 Unreal 모듈에 포함하여 발생
+  - structural preflight PASS
+- 상대가 알아야 할 점:
+  - 원인 파일은 `Source/LifeLensCore/**` 소유자 영역. CI Linux 컴파일과 Mac clang의 경고 플래그 차이로 보임. 수정 전까지 PR #17 reconcile 및 이후 DQ-R2/R3, DQ-01~05 reconcile 대기.
+
 ---
 
 ## 다음 인수인계 포인트

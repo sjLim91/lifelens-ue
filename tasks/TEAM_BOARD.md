@@ -142,6 +142,14 @@
 관련 브랜치: `dagyeom/observer-ui-v2`
 ```
 
+```text
+[OPEN] 요청자: 다겸
+필요 API/데이터: `Source/LifeLensCore/include/lifelens/ObserverReadModelV2.h` 141행 `for(const auto& pregnancy:pregnancies.all())`가 136행 `const PregnancyState* pregnancy` 를 가려 Mac clang `-Werror -Wshadow`에서 컴파일 실패 (`LLCoreCompileUnit.cpp` 경유). 변수명 분리 요청
+사용 목적: `dagyeom/observer-ui-v2`의 latest-main reconcile(DQ-R1) 로컬 `Build.sh LifeLensEditor Mac Development` 통과
+희망 반환형/방향: 소유자 수정 (`Source/LifeLensCore/**`, @sjLim91). origin/main `b4403fa` 이후 코드
+관련 브랜치: `dagyeom/observer-ui-v2`
+```
+
 ## Merge Queue
 
 - PR #22 `[CORE] Add genealogy and kinship graph` — 쭌 측, Core CI/Preflight 검증 중.
