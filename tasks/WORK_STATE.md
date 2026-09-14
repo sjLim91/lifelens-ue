@@ -4,7 +4,7 @@
 >
 > 제품 기준: `docs/LIFELENS_SPEC_v1.1.md` + **`docs/CIVILIZATION_PROGRESSION_v1.md`** · 상태 규칙: `docs/STATE_MANAGEMENT.md` · 역할/잠금: `tasks/TEAM_BOARD.md` · 이력: `tasks/HANDOFF_LOG.md`
 
-Last reconciled: 2026-09-14 KST — actual `main` includes PR #51 merge `55d5211160c8edad32b01177e2b9326a9faa2b78`. Autonomous Civilization Action Loop v1 is MERGED and validated. Next Jjun slice is state-locked as **Civilization Knowledge Transmission v1**.
+Last reconciled: 2026-09-14 KST — actual `main` includes PR #51 merge `55d5211160c8edad32b01177e2b9326a9faa2b78`. Autonomous Civilization Action Loop v1 is MERGED and validated. Next Jjun slice is state-locked as **Civilization Knowledge Transmission v1** on branch `jjun/civilization-knowledge-transmission-v1`.
 
 ## Mandatory sync gate
 
@@ -37,7 +37,7 @@ Rules:
 
 - Owner: 쭌 + 쭌 AI
 - Status: `DOING / STATE_LOCKED`
-- Branch: create from actual latest main after this checkpoint.
+- Branch: `jjun/civilization-knowledge-transmission-v1`
 - Goal: stop discoveries from remaining isolated forever by connecting personal civilization knowledge to witness / imitation / direct teaching while preserving provenance and imperfect transmission.
 - Bounded v1 scope:
   1. convert successful Discovery/Craft events into transmissible technique facts;
