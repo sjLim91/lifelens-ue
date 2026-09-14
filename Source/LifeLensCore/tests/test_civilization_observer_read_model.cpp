@@ -36,6 +36,7 @@ int main()
 
     Character& discoverer=sim.world().characters[0];
     Character& witness=sim.world().characters[1];
+    const int eventMinute=sim.world().minute;
 
     ResourceNode* flint=findResource(sim.world(),MaterialKind::Flint);
     CHECK(flint!=nullptr);
@@ -48,21 +49,22 @@ int main()
         TechniqueId::SharpFlake,KnowledgeLevel::Mastered,0.98);
     const KnowledgeReceipt* origin=registerTechniqueOrigin(
         sim.socialKnowledge(),discoverer,TechniqueId::SharpFlake,
-        sim.world().minute,CivilizationEventType::Discovered,seed);
+        eventMinute,CivilizationEventType::Discovered,seed);
     CHECK(origin!=nullptr);
     const SocialFact* discoveryFact=sim.socialKnowledge().findFact(origin->factId);
     CHECK(discoveryFact!=nullptr);
 
     const TechniqueTransmissionOutcome witnessed=applyTechniqueWitness(
         sim.socialKnowledge(),*discoveryFact,discoverer,witness,
-        seed,sim.world().minute+1);
+        seed,eventMinute);
     CHECK(witnessed.receiptAccepted);
 
     // Add a crafted demonstration fact to ensure the world read model does not
-    // mistake repeated crafting for a new major discovery.
+    // mistake repeated crafting for a new major discovery. Snapshot timestamps
+    // must never be in the future relative to world.minute.
     const KnowledgeReceipt* crafted=registerTechniqueOrigin(
         sim.socialKnowledge(),discoverer,TechniqueId::FiberCordage,
-        sim.world().minute+2,CivilizationEventType::Crafted,seed);
+        eventMinute,CivilizationEventType::Crafted,seed);
     CHECK(crafted!=nullptr);
 
     sim.world().storageSites[0].inventory.add(
