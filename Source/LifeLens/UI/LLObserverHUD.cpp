@@ -44,6 +44,14 @@ namespace
     constexpr float TabPadY          = 6.0f;
     constexpr float TabUnderline     = 2.0f;
 
+    // Feedback timing (seconds) and marks.
+    constexpr float LevelFadeSeconds   = 0.18f;
+    constexpr float SelectFlashSeconds = 0.45f;
+    constexpr float FocusUnderline     = 2.0f;
+    constexpr float FocusUnderlineGap  = 4.0f;
+    constexpr float FlashPadStart      = 6.0f;
+    constexpr float FlashPadGrow       = 18.0f;
+
     constexpr float OverviewAlpha    = 0.22f;
     constexpr float InspectorAlpha   = 0.45f;
     constexpr float DetailAlpha      = 0.60f;
@@ -406,9 +414,11 @@ void ALLObserverHUD::DrawHUD()
     const bool bHasSelection = Observation && Observation->HasObservedResident()
         && Simulation->FindResidentById(Observation->GetObservedResidentId(), Selected);
 
+    UpdateFeedbackState(Observation);
+
     // LEVEL 0 is always drawn; it is deliberately thin.
     const bool bDetailOpen = bHasSelection && Observation->IsDetailOpen();
-    const float OverviewBottom = DrawOverview(*Simulation, Residents, UIScale, !bHasSelection, bDetailOpen);
+    const float OverviewBottom = DrawOverview(*Simulation, Residents, UIScale, !bHasSelection, bDetailOpen, bHasSelection ? Selected.ResidentId : FGuid());
 
     if (CVarLLDebugTapTargets.GetValueOnGameThread() > 0)
     {
@@ -440,9 +450,73 @@ void ALLObserverHUD::DrawHUD()
     {
         DrawQuickInspector(Selected, UIScale, OverviewBottom);
     }
+
+    DrawSelectionFeedback(Selected, UIScale);
 }
 
-float ALLObserverHUD::DrawOverview(const ULLSimulationSubsystem& Simulation, const TArray<FLLResidentData>& Residents, float UIScale, bool bShowHint, bool bDimStrip)
+void ALLObserverHUD::UpdateFeedbackState(const ULLObservationSubsystem* Observation)
+{
+    const float Now = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0f;
+    const ELLObservationLevel Level = Observation ? Observation->GetObservationLevel() : ELLObservationLevel::World;
+    const FGuid ObservedId = Observation ? Observation->GetObservedResidentId() : FGuid();
+
+    if (Level != LastLevel)
+    {
+        LastLevel = Level;
+        LevelChangeTime = Now;
+    }
+    if (ObservedId != LastObservedId)
+    {
+        LastObservedId = ObservedId;
+        SelectionChangeTime = ObservedId.IsValid() ? Now : -100.0f;
+    }
+
+    PanelFade = FMath::Clamp((Now - LevelChangeTime) / LevelFadeSeconds, 0.0f, 1.0f);
+}
+
+void ALLObserverHUD::DrawSelectionFeedback(const FLLResidentData& Selected, float UIScale)
+{
+    const APlayerController* PlayerController = GetOwningPlayerController();
+    if (!PlayerController || !GetWorld())
+    {
+        return;
+    }
+
+    const ALLResidentCharacter* Actor = FindResidentActor(GetWorld(), Selected.ResidentId);
+    FBox2D Bounds;
+    FBox2D Unused;
+    if (!Actor || !ProjectResidentTapRect(PlayerController, Actor, 0.0f, Bounds, Unused))
+    {
+        return;
+    }
+
+    int32 ViewportX = 0;
+    int32 ViewportY = 0;
+    PlayerController->GetViewportSize(ViewportX, ViewportY);
+    const FVector2D ViewportSize(ViewportX, ViewportY);
+    const FBox2D Rect(ViewportToCanvas(Bounds.Min, ViewportSize), ViewportToCanvas(Bounds.Max, ViewportSize));
+
+    // Persistent focus mark: a thin underline just below the resident.
+    const float UnderY = Rect.Max.Y + FocusUnderlineGap * UIScale;
+    DrawLine(Rect.Min.X, UnderY, Rect.Max.X, UnderY, TabActiveLine, FocusUnderline * UIScale);
+
+    // Brief outline flash on a new selection: grows outward and fades.
+    const float Now = GetWorld()->GetTimeSeconds();
+    const float T = (Now - SelectionChangeTime) / SelectFlashSeconds;
+    if (T >= 0.0f && T < 1.0f)
+    {
+        const float Pad = (FlashPadStart + FlashPadGrow * T) * UIScale;
+        FLinearColor Color = TabActiveLine;
+        Color.A *= (1.0f - T) * 0.8f;
+        const FBox2D Flash = Rect.ExpandBy(FVector2D(Pad, Pad));
+        DrawLine(Flash.Min.X, Flash.Min.Y, Flash.Max.X, Flash.Min.Y, Color, 1.0f);
+        DrawLine(Flash.Max.X, Flash.Min.Y, Flash.Max.X, Flash.Max.Y, Color, 1.0f);
+        DrawLine(Flash.Max.X, Flash.Max.Y, Flash.Min.X, Flash.Max.Y, Color, 1.0f);
+        DrawLine(Flash.Min.X, Flash.Max.Y, Flash.Min.X, Flash.Min.Y, Color, 1.0f);
+    }
+}
+
+float ALLObserverHUD::DrawOverview(const ULLSimulationSubsystem& Simulation, const TArray<FLLResidentData>& Residents, float UIScale, bool bShowHint, bool bDimStrip, const FGuid& SelectedId)
 {
     UFont* Font = HUDFont();
 
@@ -460,19 +534,23 @@ float ALLObserverHUD::DrawOverview(const ULLSimulationSubsystem& Simulation, con
 
     // Build the resident strip: "name · action" items, one line.
     TArray<FString> StripItems;
+    TArray<FGuid> StripIds;
     StripItems.Reserve(Residents.Num());
+    StripIds.Reserve(Residents.Num());
     for (const FLLResidentData& Resident : Residents)
     {
         const FString Action = CurrentActionFor(Resident);
         StripItems.Add(Action.IsEmpty()
             ? Resident.DisplayName
             : Resident.DisplayName + LLObserverText::StripNameActionJoin + Action);
+        StripIds.Add(Resident.ResidentId);
     }
     const FSafeInsets Insets = SafeInsets(UIScale);
     const float StripMaxWidth = FMath::Max(0.0f, Canvas->ClipX - Insets.Left - Insets.Right);
 
     // Fit the strip to the safe width: keep whole items, then "+N" for the rest.
     FString StripLine;
+    int32 Shown = 0;
     if (StripItems.Num() == 0)
     {
         // Empty state: no fake entries, a single plain line.
@@ -480,7 +558,6 @@ float ALLObserverHUD::DrawOverview(const ULLSimulationSubsystem& Simulation, con
     }
     else
     {
-        int32 Shown = 0;
         for (; Shown < StripItems.Num(); ++Shown)
         {
             TArray<FString> Candidate(StripItems.GetData(), Shown + 1);
@@ -530,7 +607,41 @@ float ALLObserverHUD::DrawOverview(const ULLSimulationSubsystem& Simulation, con
     {
         StripColor.A *= 0.5f;
     }
-    DrawText(StripLine, StripColor, X, CursorY, Font, StripScale, false);
+
+    if (StripItems.Num() == 0)
+    {
+        DrawText(StripLine, StripColor, X, CursorY, Font, StripScale, false);
+    }
+    else
+    {
+        // Items drawn one by one so the observed resident reads slightly
+        // brighter than the rest; layout matches the measured StripLine.
+        const FString Separator(LLObserverText::StripSeparator);
+        float SepW = 0.0f, SepH = 0.0f;
+        GetTextSize(Separator, SepW, SepH, Font, StripScale);
+
+        float ItemX = X;
+        for (int32 Index = 0; Index < Shown; ++Index)
+        {
+            const bool bFocus = SelectedId.IsValid() && StripIds[Index] == SelectedId;
+            FLinearColor ItemColor = bFocus ? TextSecondary : StripColor;
+            if (bFocus && bDimStrip)
+            {
+                ItemColor.A *= 0.7f;
+            }
+            DrawText(StripItems[Index], ItemColor, ItemX, CursorY, Font, StripScale, false);
+
+            float W = 0.0f, H = 0.0f;
+            GetTextSize(StripItems[Index], W, H, Font, StripScale);
+            ItemX += W + SepW;
+        }
+
+        const int32 Hidden = StripItems.Num() - Shown;
+        if (Hidden > 0)
+        {
+            DrawText(FString(LLObserverText::StripMorePrefix) + FString::FromInt(Hidden), StripColor, ItemX, CursorY, Font, StripScale, false);
+        }
+    }
 
     // Hint after the strip: LEVEL 0 only, and only if it fits on the same line.
     const float HintX = X + StripW + 3.0f * PadX * UIScale;
@@ -735,14 +846,14 @@ void ALLObserverHUD::DrawQuickInspector(const FLLResidentData& Resident, float U
     const float PanelX = FMath::Max(Insets.Left, Canvas->ClipX - PanelWidth - Insets.Right);
     const float PanelY = TopY + Margin * UIScale;
 
-    DrawRect(FLinearColor(0.0f, 0.0f, 0.0f, InspectorAlpha), PanelX, PanelY, PanelWidth, PanelHeight);
+    DrawRect(FLinearColor(0.0f, 0.0f, 0.0f, InspectorAlpha * PanelFade), PanelX, PanelY, PanelWidth, PanelHeight);
     QuickInspectorRect = FBox2D(FVector2D(PanelX, PanelY), FVector2D(PanelX + PanelWidth, PanelY + PanelHeight));
 
     float CursorY = PanelY + Pad;
     const float TextX = PanelX + InnerPadX;
     for (const FLine& Line : Lines)
     {
-        DrawText(Line.Text, Line.Color, TextX, CursorY, Font, Line.Scale, false);
+        DrawText(Line.Text, Faded(Line.Color), TextX, CursorY, Font, Line.Scale, false);
         CursorY += Line.Height + Gap;
     }
 }
@@ -1034,14 +1145,14 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
     const float DesiredHeight = Pad + BackRowHeight + TabBarHeight + Gap + ContentHeight + Pad;
     const float PanelHeight = FMath::Min(DesiredHeight, FMath::Max(0.0f, MaxPanelBottom - PanelY));
 
-    DrawRect(FLinearColor(0.0f, 0.0f, 0.0f, DetailAlpha), PanelX, PanelY, PanelWidth, PanelHeight);
+    DrawRect(FLinearColor(0.0f, 0.0f, 0.0f, DetailAlpha * PanelFade), PanelX, PanelY, PanelWidth, PanelHeight);
     DetailPanelRect = FBox2D(FVector2D(PanelX, PanelY), FVector2D(PanelX + PanelWidth, PanelY + PanelHeight));
 
     const float TextX = PanelX + InnerPadX;
 
     // Back row: same tone as inactive tabs; its hit rectangle spans the panel width.
     const float BackRowTop = PanelY + Pad;
-    DrawText(BackText, TextMuted, TextX, BackRowTop + (BackRowHeight - BackH) * 0.5f, Font, TabScale, false);
+    DrawText(BackText, Faded(TextMuted), TextX, BackRowTop + (BackRowHeight - BackH) * 0.5f, Font, TabScale, false);
     DetailBackRect = FBox2D(FVector2D(PanelX, BackRowTop), FVector2D(PanelX + PanelWidth, BackRowTop + BackRowHeight));
 
     const float TabBarTop = BackRowTop + BackRowHeight;
@@ -1055,10 +1166,10 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
         const float TitleX = BoxX + (BoxW - Box.W) * 0.5f;
         const float TitleY = BoxY + (BoxH - Box.H) * 0.5f;
 
-        DrawText(Box.Title, bActive ? TextPrimary : TextMuted, TitleX, TitleY, Font, TabScale, false);
+        DrawText(Box.Title, Faded(bActive ? TextPrimary : TextMuted), TitleX, TitleY, Font, TabScale, false);
         if (bActive)
         {
-            DrawRect(TabActiveLine, TitleX, BoxY + BoxH - TabUnderline * UIScale, Box.W, TabUnderline * UIScale);
+            DrawRect(Faded(TabActiveLine), TitleX, BoxY + BoxH - TabUnderline * UIScale, Box.W, TabUnderline * UIScale);
         }
         DetailTabRects[static_cast<int32>(Box.Tab)] = FBox2D(FVector2D(BoxX, BoxY), FVector2D(BoxX + BoxW, BoxY + BoxH));
     }
@@ -1078,10 +1189,10 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
             bClipped = true; // rows that do not fit are not drawn; no scrolling
             break;
         }
-        DrawText(Line.Left, Line.LeftColor, TextX, CursorY, Font, Line.Scale, false);
+        DrawText(Line.Left, Faded(Line.LeftColor), TextX, CursorY, Font, Line.Scale, false);
         if (!Line.Right.IsEmpty())
         {
-            DrawText(Line.Right, Line.RightColor, TextX + RightColumnX, CursorY, Font, Line.Scale, false);
+            DrawText(Line.Right, Faded(Line.RightColor), TextX + RightColumnX, CursorY, Font, Line.Scale, false);
         }
         CursorY += Line.Height + Gap;
     }
@@ -1089,6 +1200,6 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
     // Overflow indicator so a cut list is not mistaken for a complete one.
     if (bClipped && PanelBottom - EllipsisH >= TabBarTop + TabBarHeight)
     {
-        DrawText(EllipsisText, TextMuted, TextX, PanelBottom - EllipsisH, Font, RowScale, false);
+        DrawText(EllipsisText, Faded(TextMuted), TextX, PanelBottom - EllipsisH, Font, RowScale, false);
     }
 }

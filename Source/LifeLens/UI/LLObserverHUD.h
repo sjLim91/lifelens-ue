@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/HUD.h"
+#include "UI/LLObservationSubsystem.h"
 #include "LLObserverHUD.generated.h"
 
 class ULLSimulationSubsystem;
@@ -85,7 +86,21 @@ private:
     // only drawn when nothing is selected.
     // bDimStrip lowers the resident strip while LEVEL 2 is open so the detail
     // panel is the clear focus.
-    float DrawOverview(const ULLSimulationSubsystem& Simulation, const TArray<FLLResidentData>& Residents, float UIScale, bool bShowHint, bool bDimStrip);
+    // SelectedId marks the observed resident's strip item.
+    float DrawOverview(const ULLSimulationSubsystem& Simulation, const TArray<FLLResidentData>& Residents, float UIScale, bool bShowHint, bool bDimStrip, const FGuid& SelectedId);
+
+    // ---- Visual feedback (DQ-05): non-intrusive, no new data ----------------
+    // Tracks level / selection changes for a short panel fade-in and a brief
+    // outline flash around the newly observed resident; a thin underline marks
+    // the observed resident while LEVEL 1/2 is open.
+    void UpdateFeedbackState(const ULLObservationSubsystem* Observation);
+    void DrawSelectionFeedback(const FLLResidentData& Selected, float UIScale);
+    FLinearColor Faded(const FLinearColor& Color) const
+    {
+        FLinearColor Result = Color;
+        Result.A *= PanelFade;
+        return Result;
+    }
 
     // World overview panel (SPEC 61). Opened by tapping the overview band at
     // LEVEL 0. Only values available from the read API are drawn.
@@ -119,6 +134,13 @@ private:
     ELLDetailTab ActiveTab = ELLDetailTab::Overview;
     FGuid LastDetailResidentId;
     bool bWorldOverviewOpen = false;
+
+    // Feedback state.
+    ELLObservationLevel LastLevel = ELLObservationLevel::World;
+    FGuid LastObservedId;
+    float LevelChangeTime = -100.0f;
+    float SelectionChangeTime = -100.0f;
+    float PanelFade = 1.0f; // 0..1 while a level transition settles
 
     // Canvas size and view-rect origin of the last DrawHUD, for mapping taps.
     FVector2D LastCanvasSize = FVector2D::ZeroVector;
