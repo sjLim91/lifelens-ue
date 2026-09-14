@@ -439,3 +439,30 @@
   - old TASK_03 PR #2 / Run `34739283266`은 계속 FROZEN이다.
 - 다음 쭌 측 우선순위:
   - Core Decision → Unreal Physical Action Bridge v1: Core가 결정한 물리/사회 행동을 Unreal World/AI가 실행·표현하게 하여 남아 있는 split-brain을 제거한다.
+
+### 2026-09-14 — Core Physical Action Bridge + Witness/Rumor completion
+
+- 작성자: 쭌 측 AI
+- PR #47: `jjun/witness-rumor-core-v1`, feature head `8c03b349d8489a847b4e4fb7e22dc974e91be8cf`, merge `f1aab37f6f8abad1217783cc1d168cbdd2e0c20c`.
+- PR #46: `jjun/core-physical-action-bridge-v1`, feature head `31c00cb0d751bb33825df31c7e758e60ff54402c`, merge `753df19657ea634ea2fa7c2ac935f6273ce14c10`.
+- 변경 범위:
+  - #47: pure-Core `SocialFact`, `KnowledgeReceipt`, `SocialStatement`, `SocialKnowledgeBook`와 direct/heard provenance, deterministic retell attenuation/distortion, trust-sensitive acceptance, duplicate/loop suppression, Memory/Belief integration을 추가.
+  - #46: Core `ResidentObservation`의 typed physical/social authority를 Unreal `FLLCoreActionDirective`로 투영하고, `ALLWorldDirector`가 legacy `ChooseAction()` 및 projection-only outcome mutation 대신 Core directive를 미러하도록 전환.
+  - #46 physical intents: Eat / Drink / Sleep / Toilet / Hygiene. Social intents: Approach / Avoid / Repair / Comfort.
+  - 기존 `ELLActionIntent` ordinal 0–6은 보존하고 `Drink`는 7로 append하여 Blueprint/persisted compatibility를 유지.
+  - #46 changed files는 9개 Jjun-owned Core/Simulation/World/validator이며 Dagyeom UI/Character presentation/Content는 수정하지 않음.
+  - #47 changed files는 정확히 3개 pure-Core 파일이며 #46과 파일 중첩 없음.
+- 검증:
+  - #47 Core Tests `34806559374` PASS incl Configure / Build / Test / deterministic harness.
+  - #47 Structural Preflight `34806559379` PASS.
+  - #46 Core Tests `34805882778` PASS incl deterministic harness.
+  - #46 Structural Preflight `34805882776` PASS.
+  - #46 Unreal Linux Compile `34805882789` / Run #10 PASS; UE 5.6 image verify, UHT, UBT 전부 SUCCESS.
+- 상대가 알아야 할 점:
+  - 현재 행동의 simulation authority는 covered intents에 대해 Core이며, UI/Character presentation에서 별도 action chooser를 만들면 안 된다.
+  - 다겸은 `ULLCoreBridgeSubsystem::GetResidentActionDirective()`로 typed current action + stable target ResidentId를 읽을 수 있다.
+  - #47은 아직 domain-only이므로 rumor/witness UI 필드를 가정하면 안 된다. live Simulation/read DTO wiring은 후속 작업이다.
+  - #46은 compile 검증까지 완료했지만 실제 PIE/실기기에서 이동/anchor/animation 상호작용 품질 검증은 후속 runtime QA가 필요하다.
+  - old TASK_03 PR #2 / Run `34739283266`은 계속 FROZEN이다.
+- 다음 쭌 측 후보:
+  - Physical Interaction / Smart Object Execution v1 또는 Witness / Rumor Runtime Wiring v1. 새 작업은 state lock + 별도 branch 생성 전까지 시작된 것으로 간주하지 않는다.
