@@ -14,7 +14,7 @@
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | fresh latest-main branch | Civilization Knowledge Transmission v1 | `Source/LifeLensCore/**` | DOING / STATE_LOCKED |
+| 쭌 + 쭌 AI | `jjun/civilization-knowledge-transmission-v1` | Civilization Knowledge Transmission v1 | `Source/LifeLensCore/**` | DOING / STATE_LOCKED |
 | 쭌 + 쭌 AI | `task/03-fast-test`, PR #2 | old Android validation | Bridge/build | FROZEN — Run `34739283266` 재실행/수정/병합 금지 |
 | 다겸 + 다겸 AI | `dagyeom/observer-ui-v2`, PR #17 | Observer HUD v2 + Core Observer Bridge binding | `Source/LifeLens/UI/**` | REVIEW / RECOVERING — latest main reconcile 필요 |
 | 다겸 + 다겸 AI | `dagyeom/ui-foundation-v1`, PR #26 | Android landscape UI foundation | UI foundation | REVIEW |
@@ -37,7 +37,7 @@ Rules:
 
 ## Current Jjun lock — Civilization Knowledge Transmission v1
 
-- Start from actual latest main after #51 merge/state sync.
+- Branch: `jjun/civilization-knowledge-transmission-v1` from actual latest main.
 - Reuse #47 Witness/Rumor/Social Knowledge rather than building a duplicate rumor layer.
 - v1 required:
   - successful discovery/craft creates a transmissible technique fact;
@@ -46,7 +46,8 @@ Rules:
   - deliberate teaching depends on teacher mastery, relationship trust, learner curiosity/learning skill and deterministic roll;
   - preserve provenance: self-discovered vs witnessed/imitated vs taught/heard;
   - duplicate/loop handling and no global unlock;
-  - deterministic tests for spread/failure/divergence.
+  - deterministic tests for spread/failure/divergence;
+  - transmission provenance must survive Save/Load so loops cannot reset after loading.
 - Out of scope: UI/read DTO, schools/professions, economy, writing/books, agriculture/metallurgy.
 
 ## Latest completed Jjun work
