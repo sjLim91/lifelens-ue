@@ -14,7 +14,7 @@
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | `jjun/civilization-observer-read-v1`, PR #53 | Civilization Observer Read DTOs v1 | `Source/LifeLensCore/**`, `Source/LifeLens/Simulation/**`, validator/preflight | REVIEW / CI_RUNNING |
+| 쭌 + 쭌 AI | `jjun/civilization-observer-read-v1`, PR #53 | Civilization Observer Read DTOs v1 | `Source/LifeLensCore/**`, `Source/LifeLens/Simulation/**`, validator/preflight | REVIEW / CI_FIXING — Run #15 link failure root-caused |
 | 쭌 + 쭌 AI | `task/03-fast-test`, PR #2 | old Android validation | Bridge/build | FROZEN — Run `34739283266` 재실행/수정/병합 금지 |
 | 다겸 + 다겸 AI | `dagyeom/observer-ui-v2`, PR #17 | Observer HUD v2 + Core Observer Bridge binding | `Source/LifeLens/UI/**` | REVIEW / RECOVERING — latest main reconcile 필요 |
 | 다겸 + 다겸 AI | `dagyeom/ui-foundation-v1`, PR #26 | Android landscape UI foundation | UI foundation | REVIEW |
@@ -38,11 +38,13 @@ Rules:
 ## Current Jjun lock — Civilization Observer Read DTOs v1
 
 - Branch/PR: `jjun/civilization-observer-read-v1`, PR #53.
-- Head: `c7753047a28ea3b1dae75c4e6abae7e1f289f962`.
+- Head before fix: `c7753047a28ea3b1dae75c4e6abae7e1f289f962`.
 - Final push Core `34819660707`: PASS 38/38 + deterministic harness.
-- PR Core `34819825563`: in progress.
-- PR Preflight `34819825627`: in progress.
-- Unreal Linux Compile Run #15 `34819825591`: in progress; actual UE 5.6 UHT/UBT required.
+- PR Core `34819825563`: PASS.
+- PR Preflight `34819825627`: PASS.
+- Unreal Linux Compile Run #15 `34819825591`: **FAILED at linker after UHT PASS**.
+- Root cause: `Source/LifeLens/Simulation/LLCoreCompileUnit.cpp` manually includes Core implementation files for the Unreal module but omitted `CivilizationKnowledgeTransmission.cpp`; unresolved symbols were `Simulation::processCivilizationKnowledgeEvent(...)` and `Simulation::advanceCivilizationKnowledgeTeaching()`.
+- Exact next action: add missing include + validator guard, then one latest-head UE 5.6 UHT/UBT rerun. Do not duplicate builds.
 - Published read-only contracts:
   - resident inventory stacks/total carrying;
   - resident technique level/confidence/practice + gathering/crafting/learning skills;
@@ -98,11 +100,12 @@ Current open requests: **none**.
 
 ## Merge / reconciliation queue
 
-1. Finish PR #53 Civilization Observer Read DTOs v1.
-2. Dagyeom PR #17 — latest-main reconcile + current Bridge binding + review fixes + verify.
-3. Dagyeom PR #26 — reconcile latest main independently.
+1. Fix/revalidate/merge PR #53 Civilization Observer Read DTOs v1.
+2. **Integration Sprint:** Dagyeom PR #17 latest-main reconcile + current Bridge/civilization read binding + review fixes + verify; Jjun pauses new large Core slices.
+3. Dagyeom PR #26 latest-main reconciliation/verification — may proceed independently.
 4. After #17: #29/#30 → #36 → #38.
-5. PR #2 remains FROZEN.
+5. Integrated runtime check → Android smoke APK.
+6. PR #2 remains FROZEN.
 
 ## Completion rule
 
