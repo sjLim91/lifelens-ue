@@ -21,12 +21,14 @@ public:
     explicit Simulation(
         WorldSeed worldSeed=1,
         PopulationSeed populationSeed=0,
-        WorldGenerationVersion generationVersion=CurrentWorldGenerationVersion);
+        WorldGenerationVersion generationVersion=CurrentWorldGenerationVersion,
+        SimulationRuleset ruleset=DefaultSimulationRuleset);
     void setupDemo();
     void setupSocialDemo();
     void setupNewGame();
     void step();
     void runMinutes(int minutes);
+    const SimulationRuleset& ruleset() const{return ruleset_;}
     void setExternalPhysicalExecution(bool enabled){ world_.externalPhysicalExecution=enabled; }
     bool externalPhysicalExecutionEnabled() const{return world_.externalPhysicalExecution;}
     bool runtimePosition(CharacterId id,GridPos& outPosition) const {
@@ -127,6 +129,7 @@ private:
         SocialIntent socialIntent=SocialIntent::None;
         CharacterId socialTarget=0;
     };
+    const SimulationRuleset ruleset_;
     World world_;
     RelationshipBook relationships_;
     GenealogyBook genealogy_;
