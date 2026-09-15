@@ -920,3 +920,23 @@
   - 주민이 이동할 때 몸 방향이 이동 방향과 맞지 않아 문워크처럼 보인다. IR-B 회신대로 쭌 측 #91 범위이므로 기록만 한다
 - 남은 것:
   - 관찰 카메라가 여전히 숲 근처에 있어 전체 조망이 어렵다. 쭌 측 observer camera 작업 대기
+
+### 다겸 측 AI — Milestone B 육안 검증 결과와 Observer 가독성 개선
+
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/observer-readability-and-qa-view`, `dagyeom/state-sync-world-visual-a` (PR #97)
+- 커밋: `beea500`
+- 상태: `일부 수용 조건 확인 / 카메라 의존 항목 미판정`
+- 확인됨:
+  - LEVEL 2 탭 7종(Overview / Needs / Personality / Traits & Skills / Emotion / Relationships / Family / Knowledge & Gear) 정상 표시
+  - Emotion 11차원, Relationships의 bond·trust·romance 다차원 값 표시 확인
+  - 주민 선택과 라벨 동작 정상
+- 확인 불가:
+  - 주민 스폰 겹침 / 부유 / 매몰 / 맵 이탈
+  - HumanWaste 배치 타당성
+  - 원인: 주민이 이동을 마친 상태에서도 화면에 보이지 않는다. #96 카메라 조정 후에도 관찰 카메라가 주민 활동 지점을 담지 못한다. 카메라는 쭌 lane 소유이며 IR에 기록한다
+- 다겸 측 처리:
+  - HUD 패널 배경 불투명도 상향. 배경이 임시 바닥에서 생성 월드로 바뀌며 식생과 지면 텍스처가 옅은 스크림을 통과해 작은 글자의 가독성을 떨어뜨렸다. LEVEL 2 상세 0.60 → 0.92, LEVEL 1 인스펙터 0.45 → 0.78, 상단 개요 밴드 0.22 → 0.40
+  - QA용 콘솔 명령 추가: `ll.ViewResidents [index]`로 주민 전체 또는 지정 주민을 화면에 담고 `ll.ViewReset`으로 복귀한다. 프로덕션 관찰 카메라를 바꾸지 않는 디버그 전용 경로이며 카메라 프레이밍 소유권은 쭌 lane에 그대로 둔다
+- 상대가 알아야 할 점:
+  - 위 명령은 카메라 소유권을 침범하지 않기 위한 검증 우회 수단이다. 관찰 카메라 자체의 프레이밍 개선은 여전히 쭌 lane 과제다
