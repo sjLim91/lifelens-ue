@@ -1,5 +1,6 @@
 #include "Simulation/LLCoreBridgeSubsystem.h"
 
+#include "lifelens/CivilizationSpatial.h"
 #include "lifelens/ObserverReadModel.h"
 #include "lifelens/Simulation.h"
 
@@ -345,6 +346,33 @@ bool ULLCoreBridgeSubsystem::GetResidentActionDirective(
             OutDirective.CivilizationTargetGridX = static_cast<int32>(Civilization.targetGridX);
             OutDirective.CivilizationTargetGridY = static_cast<int32>(Civilization.targetGridY);
             OutDirective.CivilizationSanitationSiteId = static_cast<int64>(Civilization.sanitationSiteId);
+
+            // Sanitation already carries its real site position through the
+            // runtime observation. Gather/Store use stable Core entity ids, so
+            // resolve their authoritative sites here rather than letting
+            // Character presentation guess a nearby scenery object.
+            if (!OutDirective.bHasCivilizationSpatialTarget)
+            {
+                lifelens::GridPos Target{};
+                bool bResolved = false;
+                if (Civilization.kind == lifelens::CivilizationActivityKind::Gather)
+                {
+                    bResolved = lifelens::resolveCivilizationResourceGridPosition(
+                        CoreSimulation->world(), Civilization.resourceNode, Target);
+                }
+                else if (Civilization.kind == lifelens::CivilizationActivityKind::Store)
+                {
+                    bResolved = lifelens::resolveCivilizationStorageGridPosition(
+                        CoreSimulation->world(), Civilization.storage, Target);
+                }
+
+                if (bResolved)
+                {
+                    OutDirective.bHasCivilizationSpatialTarget = true;
+                    OutDirective.CivilizationTargetGridX = static_cast<int32>(Target.x);
+                    OutDirective.CivilizationTargetGridY = static_cast<int32>(Target.y);
+                }
+            }
         }
     }
 
