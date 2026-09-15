@@ -1,4 +1,5 @@
 #include <cassert>
+#include <string>
 
 #include "lifelens/Simulation.h"
 
@@ -40,6 +41,11 @@ int main()
         emergencyActorId,true,emergencyResolvedPosition));
     assert(emergency.observeResident(emergencyActorId).activityKind==ObservedActivityKind::Idle);
 
+    GridPos authoritativePosition{};
+    assert(emergency.runtimePosition(emergencyActorId,authoritativePosition));
+    assert(authoritativePosition.x==emergencyResolvedPosition.x);
+    assert(authoritativePosition.y==emergencyResolvedPosition.y);
+
     const EnvironmentObservation emergencyEnvironment=emergency.observeEnvironment();
     assert(emergencyEnvironment.humanWasteResidues>=1);
     bool foundActorResidue=false;
@@ -52,6 +58,19 @@ int main()
         }
     }
     assert(foundActorResidue);
+
+    // Runtime position is already part of the authoritative Core snapshot. A
+    // restored runtime must expose exactly the same grid position for Unreal to
+    // project back into world space without storing a second transform authority.
+    const SimulationStateSnapshot saved=emergency.captureSnapshot();
+    Simulation restored(1);
+    std::string restoreError;
+    assert(restored.restoreSnapshot(saved,&restoreError));
+    assert(restoreError.empty());
+    GridPos restoredPosition{};
+    assert(restored.runtimePosition(emergencyActorId,restoredPosition));
+    assert(restoredPosition.x==emergencyResolvedPosition.x);
+    assert(restoredPosition.y==emergencyResolvedPosition.y);
 
     const std::size_t residueCountAfterCompletion=emergencyEnvironment.totalResidues;
     assert(!emergency.completeExternalPhysicalAction(
@@ -68,6 +87,10 @@ int main()
         facilityActorId,false,facilityResolvedPosition));
     assert(facility.observeEnvironment().humanWasteResidues==0);
     assert(facility.world().characters.front().needs.bladder<bladderBeforeFacility);
+    GridPos facilityPosition{};
+    assert(facility.runtimePosition(facilityActorId,facilityPosition));
+    assert(facilityPosition.x==facilityResolvedPosition.x);
+    assert(facilityPosition.y==facilityResolvedPosition.y);
 
     // Standalone Core remains autonomous by default.
     Simulation autonomous(9191);

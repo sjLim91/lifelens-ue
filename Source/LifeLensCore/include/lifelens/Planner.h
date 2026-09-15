@@ -1,6 +1,7 @@
 #pragma once
 #include <limits>
 #include <vector>
+#include "EnvironmentalExposure.h"
 #include "UtilityAI.h"
 namespace lifelens {
 enum class ActionType { FindObject, Reserve, MoveTo, Use, Release, Idle, EmergencyUse };
@@ -59,6 +60,11 @@ inline NeedsDelta facilityUseEffectPerTick(Goal g)
 }
 
 inline std::vector<Action> buildPlan(const World& w,Character& c,Goal g,GridPos from={}) {
+    // Environmental perception is sampled at authoritative planning boundaries.
+    // This keeps the feedback loop in Core (not presentation) while avoiding a
+    // second per-frame simulation authority in Unreal.
+    perceiveEnvironmentalContamination(c,w.environmentalResidues,from,w.minute);
+
     if(g==Goal::Idle) return {{ActionType::Idle,0,5}};
 
     const auto kind=objectKindFor(g);
