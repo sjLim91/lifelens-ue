@@ -822,3 +822,19 @@
 - 승인 전까지 콘텐츠 임포트 범위 안에서만 진행한다.
 - 상대가 알아야 할 점:
   - `Config/DefaultEngine.ini`와 `LifeLens.uproject`는 건드리지 않았다. production map을 만들면 정확한 `/Game/Maps/<MapName>` 경로로 별도 요청을 올린다
+
+### 다겸 측 AI — World Visual Milestone A 콘텐츠 슬라이스
+
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/world-visual-milestone-a`, PR #90
+- 커밋: `a065a1b`
+- 상태: `콘텐츠 진행 / IR 승인 대기`
+- 추가:
+  - `Content/Environment/Materials`: `M_LL_Ground` 부모 머티리얼(타일링·틴트 파라미터, 4샘플러)과 지면 인스턴스 3종
+  - `Content/Maps/LifeLensWorld`: 하늘·조명 기준, 24,000 유닛 자연 지면, 자연물 348개 결정론 배치(시드 20260915)
+  - IR-C 제출: production map 경로 `/Game/Maps/LifeLensWorld` 통합 요청
+- 확인된 사항:
+  - `ALLLifeLensGameMode::SpawnRuntimeFloor()`가 런타임에 1,400 x 1,400 유닛 임시 바닥을 스폰한다. production map의 지면과 중복되며 QA-2의 직접 원인으로 보인다. 주민은 3,393 유닛까지 이동하는데 바닥은 ±700 유닛이다
+  - `Source/LifeLens/Core/**`는 다겸 소유가 아니므로 수정하지 않았다
+- 상대가 알아야 할 점:
+  - 현재 자연물 배치는 레벨에 저작한 StaticMeshActor다. IR-A 승인 후 HISM 인스턴싱으로 전환할 예정이며, 그 전까지는 Android 인스턴싱 예산 조건을 충족하지 않는다

@@ -88,3 +88,17 @@ Requests are closed when the owning lane merges the required integration and bot
 - 부호(+90도 또는 -90도)는 PIE 1회 확인으로 확정한다.
 - 현재 마일스톤 차단 여부: 차단하지 않는다. 다만 미수정 상태에서는 World Visual 육안 검증 시 캐릭터 방향이 계속 어긋나 보인다.
 - 상태: `OPEN / 쭌 승인 대기`.
+
+### IR-C — production map 경로 통합 요청
+
+- 요청자: 다겸 / 다겸 AI. 필요한 소유자 결정: 쭌.
+- 맵 애셋 경로: `/Game/Maps/LifeLensWorld` (파일 `Content/Maps/LifeLensWorld.umap`).
+- 요청 내용: `Config/DefaultEngine.ini`의 `GameDefaultMap`과 필요하면 `EditorStartupMap`을 위 경로로 통합해 달라. 해당 파일은 쭌 소유라 다겸 측은 수정하지 않았다.
+- 맵 구성: SkyAtmosphere / DirectionalLight / SkyLight / ExponentialHeightFog / VolumetricCloud, 24,000 유닛 자연 지면, 자연물 348개 결정론 배치. 자동 생성 문명시설 없음.
+- 함께 확인이 필요한 사항 — `ALLLifeLensGameMode::SpawnRuntimeFloor()`가 런타임에 1,400 x 1,400 유닛 바닥(엔진 Cube를 14배 스케일)을 직접 스폰한다.
+  - production map이 자체 지면을 제공하므로 이 임시 바닥과 중복된다.
+  - 이 바닥은 QA-2(주민이 바닥 메시 밖으로 나감)의 직접 원인으로 보인다. 바닥은 원점 기준 ±700 유닛인데 헤드리스 관측에서 주민은 3,393 유닛까지 이동했다.
+  - `Source/LifeLens/Core/**`는 다겸 소유 범위가 아니므로 수정하지 않았다. 제거 또는 조건부 비활성화 여부를 쭌 측이 결정해 달라.
+- 현재 마일스톤 차단 여부: 부분 차단. 기본 맵이 전환되기 전까지 PIE 육안 검증은 에디터에서 맵을 직접 열어야 한다.
+- 상태: `OPEN / 쭌 결정 대기`.
+
