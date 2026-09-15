@@ -1,6 +1,7 @@
 #include "Characters/LLResidentCharacter.h"
 #include "AI/LLDecisionComponent.h"
 #include "Characters/LLResidentAppearanceComponent.h"
+#include "Characters/LLResidentMotionComponent.h"
 #include "Characters/LLResidentPresentationComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
@@ -37,6 +38,10 @@ ALLResidentCharacter::ALLResidentCharacter()
     // silhouette fallback) reads it in its own BeginPlay.
     AppearanceComponent = CreateDefaultSubobject<ULLResidentAppearanceComponent>(TEXT("AppearanceComponent"));
     PresentationComponent = CreateDefaultSubobject<ULLResidentPresentationComponent>(TEXT("PresentationComponent"));
+
+    // Motion Bootstrap: reflects the actual movement of this actor in the body
+    // animation. Presentation only; it never chooses movement or actions.
+    MotionComponent = CreateDefaultSubobject<ULLResidentMotionComponent>(TEXT("MotionComponent"));
 }
 
 void ALLResidentCharacter::Tick(float DeltaSeconds)

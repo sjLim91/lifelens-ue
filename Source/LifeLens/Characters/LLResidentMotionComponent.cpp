@@ -1,0 +1,171 @@
+#include "Characters/LLResidentMotionComponent.h"
+#include "Characters/LLResidentAppearanceComponent.h"
+#include "Animation/AnimSingleNodeInstance.h"
+#include "Animation/BlendSpace.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "GameFramework/Actor.h"
+#include "UObject/ConstructorHelpers.h"
+
+namespace
+{
+    // Mirrors ll.DebugTapTargets: off by default, one line per resident per
+    // second while enabled.
+    static TAutoConsoleVariable<int32> CVarDebugMotion(
+        TEXT("ll.DebugMotion"),
+        0,
+        TEXT("Log resident locomotion speed and blend space state once per second."),
+        ECVF_Default);
+
+    constexpr float DebugLogInterval = 1.0f;
+}
+
+ULLResidentMotionComponent::ULLResidentMotionComponent()
+{
+    PrimaryComponentTick.bCanEverTick = true;
+
+    static ConstructorHelpers::FObjectFinder<UBlendSpace> LocomotionFinder(
+        TEXT("/Game/Characters/Quaternius/UAL/BS_ResidentLocomotion.BS_ResidentLocomotion"));
+    LocomotionBlendSpace = LocomotionFinder.Succeeded() ? LocomotionFinder.Object : nullptr;
+}
+
+void ULLResidentMotionComponent::BeginPlay()
+{
+    Super::BeginPlay();
+
+    if (const AActor* Owner = GetOwner())
+    {
+        PreviousLocation = Owner->GetActorLocation();
+        bHasPreviousLocation = true;
+        SmoothedYaw = Owner->GetActorRotation().Yaw;
+        DesiredYaw = SmoothedYaw;
+    }
+}
+
+void ULLResidentMotionComponent::EnsureLocomotionPlaying()
+{
+    if (bLocomotionPlaying || !LocomotionBlendSpace)
+    {
+        return;
+    }
+
+    if (!Appearance)
+    {
+        if (AActor* Owner = GetOwner())
+        {
+            Appearance = Owner->FindComponentByClass<ULLResidentAppearanceComponent>();
+        }
+    }
+
+    // The body is built once the resident identity is bound, which happens
+    // after BeginPlay, so this keeps retrying until it exists.
+    Body = Appearance ? Appearance->GetBodyComponent() : nullptr;
+    if (!Body)
+    {
+        return;
+    }
+
+    Body->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+    Body->PlayAnimation(LocomotionBlendSpace, true);
+    bLocomotionPlaying = true;
+
+    UE_LOG(LogTemp, Log, TEXT("LLMotion %s locomotion=%s samples=%d"),
+        *GetOwner()->GetName(), *LocomotionBlendSpace->GetName(),
+        LocomotionBlendSpace->GetBlendSamples().Num());
+}
+
+void ULLResidentMotionComponent::UpdateBodyOrientation(float DeltaTime)
+{
+    if (!Body)
+    {
+        return;
+    }
+
+    // Presentation-side turning only: the owning actor keeps whatever rotation
+    // the movement code gives it, and the visible body eases towards the last
+    // travelled direction instead of snapping.
+    SmoothedYaw = FMath::FInterpTo(
+        SmoothedYaw,
+        SmoothedYaw + FMath::FindDeltaAngleDegrees(SmoothedYaw, DesiredYaw),
+        DeltaTime,
+        YawInterpSpeed);
+
+    Body->SetWorldRotation(FRotator(0.0f, SmoothedYaw, 0.0f));
+}
+
+void ULLResidentMotionComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+    Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+    EnsureLocomotionPlaying();
+
+    const AActor* Owner = GetOwner();
+    if (!Owner || DeltaTime <= KINDA_SMALL_NUMBER)
+    {
+        return;
+    }
+
+    const FVector Location = Owner->GetActorLocation();
+    FVector Delta = Location - PreviousLocation;
+    Delta.Z = 0.0f;
+    PreviousLocation = Location;
+
+    if (!bHasPreviousLocation)
+    {
+        bHasPreviousLocation = true;
+        return;
+    }
+
+    // Loading a save or restoring a runtime grid position moves the actor in
+    // one step; that is not locomotion.
+    const float Step = Delta.Size2D();
+    if (Step > TeleportStep)
+    {
+        Delta = FVector::ZeroVector;
+        WindowDistance = 0.0f;
+        WindowSeconds = 0.0f;
+        WindowedSpeed = 0.0f;
+        SmoothedSpeed = 0.0f;
+    }
+    else if (Step > KINDA_SMALL_NUMBER)
+    {
+        DesiredYaw = Delta.Rotation().Yaw;
+    }
+
+    WindowDistance += Step;
+    WindowSeconds += DeltaTime;
+    if (WindowSeconds >= SpeedWindowSeconds)
+    {
+        WindowedSpeed = WindowDistance / WindowSeconds;
+        WindowDistance = 0.0f;
+        WindowSeconds = 0.0f;
+    }
+
+    SmoothedSpeed = FMath::FInterpTo(SmoothedSpeed, WindowedSpeed, DeltaTime, SpeedInterpSpeed);
+    if (SmoothedSpeed < IdleSpeedThreshold)
+    {
+        SmoothedSpeed = 0.0f;
+    }
+
+    UpdateBodyOrientation(DeltaTime);
+
+    if (Body)
+    {
+        if (UAnimSingleNodeInstance* SingleNode = Body->GetSingleNodeInstance())
+        {
+            SingleNode->SetBlendSpacePosition(
+                FVector(FMath::Clamp(SmoothedSpeed, 0.0f, MaxSpeed), 0.0f, 0.0f));
+        }
+    }
+
+    if (CVarDebugMotion.GetValueOnGameThread() != 0)
+    {
+        DebugLogTimer -= DeltaTime;
+        if (DebugLogTimer <= 0.0f)
+        {
+            DebugLogTimer = DebugLogInterval;
+            UE_LOG(LogTemp, Log, TEXT("LLMotion %s speed=%.1f window=%.1f yaw=%.1f->%.1f playing=%d loc=%.0f,%.0f"),
+                *Owner->GetName(), SmoothedSpeed, WindowedSpeed, SmoothedYaw, DesiredYaw,
+                bLocomotionPlaying ? 1 : 0, Location.X, Location.Y);
+        }
+    }
+}
