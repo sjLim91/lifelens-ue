@@ -21,8 +21,10 @@ required = [
     'Source/LifeLens/Save/LLSaveGame.h',
     'Source/LifeLensCore/include/lifelens/SimulationSnapshot.h',
     'Source/LifeLensCore/include/lifelens/SimulationSnapshotCodec.h',
+    'Source/LifeLensCore/include/lifelens/SanitationProblemRecognition.h',
     'Source/LifeLensCore/src/SimulationSnapshot.cpp',
     'Source/LifeLensCore/src/SimulationSnapshotCodec.cpp',
+    'Source/LifeLensCore/tests/test_sanitation_problem_recognition.cpp',
     'Source/LifeLens/AI/LLDecisionComponent.cpp',
     'Source/LifeLens/Characters/LLResidentCharacter.cpp',
     'Source/LifeLens/World/LLActivityAnchor.cpp',
@@ -216,6 +218,29 @@ for token in (
     'snapshot contains trailing bytes',
 ):
     assert token in snapshot_codec, f'Missing persistent Core snapshot codec contract: {token}'
+
+sanitation_recognition = (root / 'Source/LifeLensCore/include/lifelens/SanitationProblemRecognition.h').read_text(encoding='utf-8')
+for token in (
+    'sanitationProblemBeliefProposition',
+    'isDirectSanitationProblemEvidence',
+    'recognizeSanitationProblem',
+    'hasRecognizedSanitationProblem',
+    'result.qualifyingMemories>=2',
+    'belief.supportWeight=std::max',
+):
+    assert token in sanitation_recognition, f'Missing sanitation problem recognition contract: {token}'
+assert 'belief.supportWeight+=' not in sanitation_recognition, 'Sanitation recognition must not inflate evidence on repeated evaluation'
+
+environmental_exposure = (root / 'Source/LifeLensCore/include/lifelens/EnvironmentalExposure.h').read_text(encoding='utf-8')
+for token in (
+    'recognizeSanitationProblem(character,currentMinute)',
+    'sanitationProblemRecognized',
+    'sanitationProblemNewlyRecognized',
+):
+    assert token in environmental_exposure, f'Missing sanitation recognition perception wiring: {token}'
+
+core_cmake = (root / 'Source/LifeLensCore/CMakeLists.txt').read_text(encoding='utf-8')
+assert 'lifelens_add_test(test_sanitation_problem_recognition)' in core_cmake, 'Missing sanitation recognition Core test registration'
 
 # The simulation core remains standard-library C++ with a C++17 baseline.
 forbidden_core_tokens = (
