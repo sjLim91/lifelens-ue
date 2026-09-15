@@ -26,6 +26,9 @@ jobs:
       - name: Validate civilization observer read contract
         run: python Tools/validate_civilization_observer.py
 
+      - name: Validate primitive latrine progression
+        run: python Tools/validate_primitive_latrine.py
+
       - name: Verify Unreal project metadata
         run: |
           python - <<'PY'

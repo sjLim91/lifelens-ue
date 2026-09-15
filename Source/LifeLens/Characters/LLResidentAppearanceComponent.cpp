@@ -438,11 +438,17 @@ void ULLResidentAppearanceComponent::ApplyOutfit()
         }
         else if (Slot.Contains(TEXT("Regular")))
         {
-            // Skin exposed by the outfit (male forearms) uses the pack's Regular
-            // body texture; tint it with the same factor as the body skin.
+            // The male Peasant mesh exposes forearms/hands through its Regular
+            // skin slot. Match both halves of the deterministic skin axis to the
+            // head/body, not only the tint over the pack's dark default texture.
             OutfitSkinMaterial = Outfit->CreateAndSetMaterialInstanceDynamic(Index);
             if (OutfitSkinMaterial)
             {
+                UTexture* MatchingSkinBase = Inputs.SkinToneAxis < 0.5f ? MaleSkinLight.Get() : MaleSkinDark.Get();
+                if (MatchingSkinBase)
+                {
+                    OutfitSkinMaterial->SetTextureParameterValue(ParamBaseColorTexture, MatchingSkinBase);
+                }
                 OutfitSkinMaterial->SetVectorParameterValue(ParamBaseColorFactor, SkinTintColor);
             }
         }

@@ -1,6 +1,4 @@
 #include "Characters/LLResidentCharacter.h"
-#include "Characters/LLResidentAppearanceComponent.h"
-#include "Characters/LLResidentPresentationComponent.h"
 #include "AI/LLDecisionComponent.h"
 #include "Characters/LLResidentAppearanceComponent.h"
 #include "Characters/LLResidentPresentationComponent.h"

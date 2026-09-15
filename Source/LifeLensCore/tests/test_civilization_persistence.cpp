@@ -126,7 +126,8 @@ int main()
     CHECK(encodeSimulationSnapshot(snapshot,bytes,&error));
     CHECK(error.empty());
     CHECK(bytes.size()>32);
-    CHECK(bytes[8]==4 && bytes[9]==0 && bytes[10]==0 && bytes[11]==0);
+    CHECK(bytes[8]==static_cast<std::uint8_t>(SimulationSnapshotBinaryFormatVersion)
+        && bytes[9]==0 && bytes[10]==0 && bytes[11]==0);
 
     SimulationStateSnapshot decoded;
     CHECK(decodeSimulationSnapshot(bytes,decoded,&error));
@@ -161,9 +162,10 @@ int main()
         CHECK(character.civilization.knowledge.all().empty());
     }
 
-    std::vector<std::uint8_t> migratedV4;
-    CHECK(encodeSimulationSnapshot(migrated,migratedV4,&error));
-    CHECK(!migratedV4.empty() && migratedV4[8]==4);
+    std::vector<std::uint8_t> migratedCurrent;
+    CHECK(encodeSimulationSnapshot(migrated,migratedCurrent,&error));
+    CHECK(!migratedCurrent.empty()
+        && migratedCurrent[8]==static_cast<std::uint8_t>(SimulationSnapshotBinaryFormatVersion));
 
     SimulationStateSnapshot bad=snapshot;
     bad.world.characters[0].civilization.character=999999;
@@ -178,7 +180,6 @@ int main()
     bad.world.resourceNodes.push_back(bad.world.resourceNodes[0]);
     CHECK(!untouched.restoreSnapshot(bad,&error));
 
-    // Future continuation stays byte-identical after a full current-format restore.
     Simulation continuation(1);
     CHECK(continuation.restoreSnapshot(decoded,&error));
     source.runMinutes(2500);

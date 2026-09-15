@@ -12,6 +12,7 @@
 #include "EnvironmentalResidue.h"
 #include "ObserverReadModelV2.h"
 #include "Planner.h"
+#include "PrimitiveSanitation.h"
 #include "SimulationSnapshot.h"
 namespace lifelens {
 class Simulation {
@@ -43,10 +44,24 @@ public:
             world_.seed,*character,world_.environmentalResidues,world_.minute);
         return true;
     }
+    bool sanitationUseTarget(CharacterId id,SanitationUseTarget& outTarget) const {
+        const auto runtimeIt=runtime_.find(id);
+        if(runtimeIt==runtime_.end()) return false;
+        const Character* character=nullptr;
+        for(const auto& candidate:world_.characters){
+            if(candidate.id==id){ character=&candidate; break; }
+        }
+        if(character==nullptr || !character->alive) return false;
+        outTarget=resolveSanitationUseTarget(
+            world_.seed,*character,world_.environmentalResidues,
+            world_.primitiveSanitationSites,world_.minute);
+        return true;
+    }
     bool completeExternalPhysicalAction(
         CharacterId id,
         bool emergencyFallback,
-        GridPos resolvedPosition);
+        GridPos resolvedPosition,
+        SanitationSiteId sanitationSiteId=0);
     void onEvent(EventCallback cb);
     SimulationStateSnapshot captureSnapshot() const;
     bool restoreSnapshot(const SimulationStateSnapshot& snapshot,std::string* error=nullptr);
@@ -134,7 +149,8 @@ private:
 inline bool Simulation::completeExternalPhysicalAction(
     CharacterId id,
     bool emergencyFallback,
-    GridPos resolvedPosition)
+    GridPos resolvedPosition,
+    SanitationSiteId sanitationSiteId)
 {
     if(!world_.externalPhysicalExecution) return false;
 
@@ -150,6 +166,18 @@ inline bool Simulation::completeExternalPhysicalAction(
     Runtime& runtime=runtimeIt->second;
     if(runtime.socialActive || runtime.goal==Goal::Idle || runtime.plan.empty()) return false;
 
+    const bool primitiveSanitation=sanitationSiteId!=0;
+    const PrimitiveSanitationSite* sanitationSite=nullptr;
+    if(primitiveSanitation){
+        if(runtime.goal!=Goal::UseToilet || emergencyFallback) return false;
+        sanitationSite=findPrimitiveSanitationSite(
+            world_.primitiveSanitationSites,sanitationSiteId);
+        if(sanitationSite==nullptr || !sanitationSite->active
+           || !validPrimitiveSanitationSiteKind(sanitationSite->kind)
+           || sanitationSite->pos.x!=resolvedPosition.x
+           || sanitationSite->pos.y!=resolvedPosition.y) return false;
+    }
+
     // Food and water are never synthesized by presentation. Even when a real
     // table/campfire/well presentation affordance is used, Core must possess the
     // consumable provision before it can acknowledge the outcome.
@@ -158,12 +186,19 @@ inline bool Simulation::completeExternalPhysicalAction(
     if(runtime.goal==Goal::Drink && !character->civilization.inventory.remove(
         ItemKind::RawMaterial,MaterialKind::Water,1)) return false;
 
-    const int duration=emergencyFallback
-        ? emergencyUseDurationTicks(runtime.goal)
-        : facilityUseDurationTicks(runtime.goal);
-    const NeedsDelta effect=emergencyFallback
-        ? emergencyUseEffectPerTick(runtime.goal)
-        : facilityUseEffectPerTick(runtime.goal);
+    const PrimitiveSanitationSiteKind sanitationKind=sanitationSite!=nullptr
+        ? sanitationSite->kind
+        : PrimitiveSanitationSiteKind::DesignatedArea;
+    const int duration=primitiveSanitation
+        ? primitiveSanitationUseDurationTicks(sanitationKind)
+        : (emergencyFallback
+            ? emergencyUseDurationTicks(runtime.goal)
+            : facilityUseDurationTicks(runtime.goal));
+    const NeedsDelta effect=primitiveSanitation
+        ? primitiveSanitationUseEffectPerTick(sanitationKind)
+        : (emergencyFallback
+            ? emergencyUseEffectPerTick(runtime.goal)
+            : facilityUseEffectPerTick(runtime.goal));
     for(int tick=0;tick<std::max(1,duration);++tick){
         character->needs.apply(effect);
     }
@@ -172,11 +207,25 @@ inline bool Simulation::completeExternalPhysicalAction(
     // at the actual acknowledged world-grid position rather than independently
     // choosing a second position that could disagree with what the player saw.
     runtime.pos=resolvedPosition;
-    if(emergencyFallback && runtime.goal==Goal::UseToilet){
+    if(runtime.goal==Goal::UseToilet && (emergencyFallback || primitiveSanitation)){
+        // #79 compatibility contract: recordDesignatedSanitationSiteUse remains
+        // the designated-area wrapper; the generalized path below accepts both
+        // DesignatedArea and DugPit without changing site identity/GridPos.
+        if(primitiveSanitation && !recordPrimitiveSanitationSiteUse(
+            world_.primitiveSanitationSites,sanitationSiteId,resolvedPosition)) return false;
+        const double residueIntensity=primitiveSanitation
+            ? primitiveSanitationResidueIntensity(sanitationKind)
+            : 0.42;
+        const int residueRadius=primitiveSanitation
+            ? primitiveSanitationResidueRadiusTiles(sanitationKind)
+            : 3;
         const auto& residue=world_.environmentalResidues.deposit(
             EnvironmentalResidueKind::HumanWaste,resolvedPosition,character->id,
-            world_.minute,1.0,0.42,3);
-        character->needs.hygiene=Needs::clamp01(character->needs.hygiene+0.025);
+            world_.minute,1.0,residueIntensity,residueRadius);
+        const double hygieneBurden=primitiveSanitation
+            ? primitiveSanitationHygieneBurden(sanitationKind)
+            : 0.025;
+        character->needs.hygiene=Needs::clamp01(character->needs.hygiene+hygieneBurden);
         emit(character->name+" left sanitation residue id="+std::to_string(residue.id));
     }
 
@@ -186,9 +235,17 @@ inline bool Simulation::completeExternalPhysicalAction(
         emit(character->name+" noticed unsanitary surroundings at ("+
              std::to_string(resolvedPosition.x)+","+std::to_string(resolvedPosition.y)+")");
     }
+    if(exposure.sanitationProblemNewlyRecognized){
+        emit(character->name+" recognized recurring human-waste contamination as a sanitation problem");
+    }
 
-    emit(character->name+" completed "+std::string(goalName(runtime.goal))+
-         (emergencyFallback ? " via emergency fallback" : " via world affordance"));
+    if(primitiveSanitation){
+        emit(character->name+" completed "+std::string(goalName(runtime.goal))+
+             " at primitive sanitation site="+std::to_string(sanitationSiteId));
+    }else{
+        emit(character->name+" completed "+std::string(goalName(runtime.goal))+
+             (emergencyFallback ? " via emergency fallback" : " via world affordance"));
+    }
 
     runtime.plan.clear();
     runtime.actionIndex=0;

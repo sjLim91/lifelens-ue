@@ -61,6 +61,26 @@ bool validateSnapshot(const SimulationStateSnapshot& snapshot,std::string* error
             return fail("environmental residue minute is in the future");
     }
 
+    std::unordered_set<SanitationSiteId> sanitationSiteIds;
+    int activeSanitationSites=0;
+    for(const auto& site:snapshot.world.primitiveSanitationSites){
+        if(!validPrimitiveSanitationSite(site))
+            return fail("snapshot contains invalid primitive sanitation site");
+        if(!sanitationSiteIds.insert(site.id).second)
+            return fail("snapshot contains duplicate primitive sanitation site id");
+        if(characterIds.count(site.establishedBy)==0)
+            return fail("primitive sanitation site establisher is missing");
+        if(site.establishedMinute>snapshot.world.minute)
+            return fail("primitive sanitation site establishment minute is in the future");
+        if(site.improvedBy!=0 && characterIds.count(site.improvedBy)==0)
+            return fail("primitive sanitation site improver is missing");
+        if(site.improvedMinute>snapshot.world.minute)
+            return fail("primitive sanitation site improvement minute is in the future");
+        if(site.active) ++activeSanitationSites;
+    }
+    if(activeSanitationSites>1)
+        return fail("snapshot contains multiple active primitive sanitation sites");
+
     for(const auto& item:snapshot.runtime){
         if(characterIds.count(item.first)==0) return fail("runtime references missing character");
         if(item.second.actionIndex>item.second.plan.size()) return fail("runtime action index exceeds plan size");

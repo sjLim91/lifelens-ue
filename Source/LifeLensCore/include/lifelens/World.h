@@ -6,6 +6,7 @@
 #include "SmartObject.h"
 #include "Civilization.h"
 #include "EnvironmentalResidue.h"
+#include "PrimitiveSanitation.h"
 namespace lifelens {
 struct World {
     int minute=7*60;
@@ -15,6 +16,7 @@ struct World {
     std::vector<SmartObject> objects;
     std::vector<ResourceNode> resourceNodes;
     std::vector<StorageSite> storageSites;
+    std::vector<PrimitiveSanitationSite> primitiveSanitationSites;
     EnvironmentalResidueField environmentalResidues;
 
     // Runtime execution policy only. The binary snapshot codec deliberately
@@ -42,6 +44,7 @@ struct World {
             {7,MaterialKind::PlantFood,80,120,true,10}
         };
         storageSites={{1,Inventory{}}};
+        primitiveSanitationSites.clear();
         environmentalResidues.clear();
     }
 };

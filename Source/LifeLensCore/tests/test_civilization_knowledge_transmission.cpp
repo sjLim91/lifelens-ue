@@ -188,7 +188,8 @@ int main()
     CHECK(encodeSimulationSnapshot(snapshot,bytes,&error));
     CHECK(error.empty());
     CHECK(bytes.size()>32);
-    CHECK(bytes[8]==4 && bytes[9]==0 && bytes[10]==0 && bytes[11]==0);
+    CHECK(bytes[8]==static_cast<std::uint8_t>(SimulationSnapshotBinaryFormatVersion)
+        && bytes[9]==0 && bytes[10]==0 && bytes[11]==0);
 
     SimulationStateSnapshot decoded;
     CHECK(decodeSimulationSnapshot(bytes,decoded,&error));

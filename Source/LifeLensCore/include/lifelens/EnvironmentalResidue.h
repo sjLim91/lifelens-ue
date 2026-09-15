@@ -130,6 +130,29 @@ public:
         return records_.back();
     }
 
+    bool containHumanWasteAt(
+        GridPos pos,
+        int minute,
+        double intensityFactor,
+        int maxRadiusTiles)
+    {
+        advanceToMinute(minute);
+        intensityFactor=std::max(0.01,std::min(1.0,intensityFactor));
+        maxRadiusTiles=std::max(1,std::min(16,maxRadiusTiles));
+
+        bool changed=false;
+        for(auto& record:records_){
+            if(record.kind!=EnvironmentalResidueKind::HumanWaste
+               || record.pos.x!=pos.x || record.pos.y!=pos.y) continue;
+            // Containment changes exposure, not the amount of waste present.
+            record.intensity=std::max(0.01,record.intensity*intensityFactor);
+            record.radiusTiles=std::min(record.radiusTiles,maxRadiusTiles);
+            record.lastUpdatedMinute=minute;
+            changed=true;
+        }
+        return changed;
+    }
+
     double exposureAt(GridPos pos) const
     {
         double total=0.0;

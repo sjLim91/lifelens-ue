@@ -7,6 +7,7 @@
 
 #include "Civilization.h"
 #include "Character.h"
+#include "PrimitiveSanitation.h"
 #include "World.h"
 
 namespace lifelens {
@@ -58,6 +59,8 @@ inline const char* techniqueName(TechniqueId technique)
         case TechniqueId::FireMaking: return "FireMaking";
         case TechniqueId::FiberCordage: return "FiberCordage";
         case TechniqueId::SimpleContainer: return "SimpleContainer";
+        case TechniqueId::DesignatedSanitationArea: return "DesignatedSanitationArea";
+        case TechniqueId::DugSanitationPit: return "DugSanitationPit";
         default: return "None";
     }
 }
@@ -80,6 +83,11 @@ struct CivilizationExecutionResult {
     CivilizationEvent event{};
     ExperimentResult experiment{};
     CraftResult craft{};
+    SanitationSiteId sanitationSiteId=0;
+    GridPos sanitationSitePos{};
+    bool sanitationImprovementCompleted=false;
+    double sanitationWorkBefore=0.0;
+    double sanitationWorkAfter=0.0;
 };
 
 inline double civilizationPreference(std::uint64_t worldSeed,CharacterId actor,std::uint64_t salt)
@@ -128,6 +136,9 @@ inline MaterialKind experimentMaterial(ExperimentKind kind)
         case ExperimentKind::FrictionWood: return MaterialKind::Wood;
         case ExperimentKind::TwistFiber: return MaterialKind::Fiber;
         case ExperimentKind::ShapeClay: return MaterialKind::Clay;
+        case ExperimentKind::DesignateSanitationArea:
+        case ExperimentKind::DigSanitationPit:
+            return MaterialKind::Unknown;
         default: return MaterialKind::Unknown;
     }
 }
@@ -193,14 +204,27 @@ inline CivilizationUtilityDecision bestGatherDecision(const World& world,const C
 inline CivilizationUtilityDecision bestExperimentDecision(const World& world,const Character& self)
 {
     CivilizationUtilityDecision best;
-    const std::array<ExperimentKind,5> experiments={
+    const PrimitiveSanitationOpportunity sanitationOpportunity=
+        evaluatePrimitiveSanitationOpportunity(
+            world.seed,self,world.environmentalResidues,world.minute);
+    const DugSanitationPitOpportunity pitOpportunity=
+        evaluateDugSanitationPitOpportunity(
+            self,world.environmentalResidues,world.primitiveSanitationSites);
+    const std::array<ExperimentKind,7> experiments={
         ExperimentKind::StrikeStone,ExperimentKind::HaftSharpFlake,ExperimentKind::FrictionWood,
-        ExperimentKind::TwistFiber,ExperimentKind::ShapeClay};
+        ExperimentKind::TwistFiber,ExperimentKind::ShapeClay,
+        ExperimentKind::DesignateSanitationArea,ExperimentKind::DigSanitationPit};
 
     for(const ExperimentKind kind:experiments){
         const TechniqueId technique=experimentTechnique(kind);
         if(technique==TechniqueId::None) continue;
         if(self.civilization.knowledge.knowsAtLeast(technique,KnowledgeLevel::Reproducible)) continue;
+
+        const bool designatedExperiment=kind==ExperimentKind::DesignateSanitationArea;
+        const bool pitExperiment=kind==ExperimentKind::DigSanitationPit;
+        if(designatedExperiment &&
+           (!sanitationOpportunity.problemRecognized || !sanitationOpportunity.siteAvailable)) continue;
+        if(pitExperiment && !pitOpportunity.candidateAvailable) continue;
 
         ExperimentContext context;
         context.worldSeed=world.seed;
@@ -211,6 +235,9 @@ inline CivilizationUtilityDecision bestExperimentDecision(const World& world,con
         context.learningSkill=self.civilization.learningSkill;
         context.curiosity=self.personality.curiosity;
         context.patience=self.personality.patience;
+        context.sanitationProblemRecognized=sanitationOpportunity.problemRecognized;
+        context.sanitationSiteAvailable=sanitationOpportunity.siteAvailable;
+        context.sanitationPitCandidateAvailable=pitOpportunity.candidateAvailable;
 
         if(!experimentPrerequisitesMet(context,self.civilization.knowledge)) continue;
         const TechniqueRecipe recipe=experimentRecipe(context);
@@ -220,9 +247,20 @@ inline CivilizationUtilityDecision bestExperimentDecision(const World& world,con
         const KnowledgeLevel level=self.civilization.knowledge.level(technique);
         const double hypothesisBoost=level==KnowledgeLevel::Hypothesized ? 0.08 : (level==KnowledgeLevel::Understood ? 0.05 : 0.0);
         const double preference=civilizationPreference(world.seed,self.id,200ULL+static_cast<std::uint64_t>(kind));
+        double sanitationBoost=0.0;
+        if(designatedExperiment){
+            sanitationBoost=0.18+0.16*sanitationOpportunity.problemConfidence+
+                0.10*clampCivilization01(self.needs.hygiene);
+        }else if(pitExperiment){
+            sanitationBoost=0.18
+                +0.10*pitOpportunity.problemConfidence
+                +0.05*clampCivilization01(static_cast<double>(pitOpportunity.useCount)/4.0)
+                +0.08*clampCivilization01(pitOpportunity.siteExposure);
+        }
         const double score=clampCivilization01(
             0.11+0.22*self.personality.curiosity+0.10*self.personality.openness+
-            0.07*self.personality.patience+0.12*self.civilization.learningSkill+0.08*preference+hypothesisBoost);
+            0.07*self.personality.patience+0.12*self.civilization.learningSkill+
+            0.08*preference+hypothesisBoost+sanitationBoost);
 
         CivilizationUtilityDecision candidate;
         candidate.intent=CivilizationIntent::Experiment;
@@ -242,7 +280,9 @@ inline int desiredTechniqueOutputStock(TechniqueId technique)
         case TechniqueId::ChippedStoneTool: return 1;
         case TechniqueId::FiberCordage: return 2;
         case TechniqueId::SimpleContainer: return 1;
-        case TechniqueId::FireMaking: return 0;
+        case TechniqueId::FireMaking:
+        case TechniqueId::DesignatedSanitationArea:
+        case TechniqueId::DugSanitationPit:
         default: return 0;
     }
 }
@@ -250,7 +290,54 @@ inline int desiredTechniqueOutputStock(TechniqueId technique)
 inline CivilizationUtilityDecision bestCraftDecision(const World& world,const Character& self)
 {
     CivilizationUtilityDecision best;
-    const std::array<TechniqueId,5> techniques={TechniqueId::SharpFlake,TechniqueId::ChippedStoneTool,TechniqueId::FireMaking,TechniqueId::FiberCordage,TechniqueId::SimpleContainer};
+
+    if(self.civilization.knowledge.knowsAtLeast(
+        TechniqueId::DesignatedSanitationArea,KnowledgeLevel::Reproducible)
+       && canEstablishDesignatedSanitationArea(
+           world.seed,self,world.environmentalResidues,
+           world.primitiveSanitationSites,world.minute)){
+        CivilizationUtilityDecision sanitation;
+        sanitation.intent=CivilizationIntent::Craft;
+        sanitation.technique=TechniqueId::DesignatedSanitationArea;
+        sanitation.material=MaterialKind::Unknown;
+        sanitation.item=ItemKind::RawMaterial;
+        sanitation.quantity=0;
+        const double preference=civilizationPreference(
+            world.seed,self.id,399ULL+static_cast<std::uint64_t>(TechniqueId::DesignatedSanitationArea));
+        sanitation.utility=clampCivilization01(
+            0.30+0.14*self.civilization.craftingSkill+
+            0.12*self.personality.conscientiousness+
+            0.08*self.personality.orderliness+
+            0.06*preference);
+        considerCivilizationDecision(best,sanitation);
+    }
+
+    if(canWorkOnDugSanitationPit(self,world.primitiveSanitationSites)){
+        const PrimitiveSanitationSite* site=activePrimitiveSanitationSite(
+            world.primitiveSanitationSites);
+        if(site!=nullptr && site->kind==PrimitiveSanitationSiteKind::DesignatedArea){
+            CivilizationUtilityDecision pit;
+            pit.intent=CivilizationIntent::Craft;
+            pit.technique=TechniqueId::DugSanitationPit;
+            pit.material=MaterialKind::Unknown;
+            pit.item=ItemKind::RawMaterial;
+            pit.quantity=0;
+            const double progress=clampCivilization01(
+                site->improvementWork/DugSanitationPitWorkRequired);
+            const double preference=civilizationPreference(
+                world.seed,self.id,399ULL+static_cast<std::uint64_t>(TechniqueId::DugSanitationPit));
+            pit.utility=clampCivilization01(
+                0.31+0.15*self.civilization.craftingSkill+
+                0.11*self.personality.conscientiousness+
+                0.10*self.personality.patience+
+                0.06*preference+0.10*progress);
+            considerCivilizationDecision(best,pit);
+        }
+    }
+
+    const std::array<TechniqueId,5> techniques={
+        TechniqueId::SharpFlake,TechniqueId::ChippedStoneTool,TechniqueId::FireMaking,
+        TechniqueId::FiberCordage,TechniqueId::SimpleContainer};
 
     for(const TechniqueId technique:techniques){
         if(!self.civilization.knowledge.knowsAtLeast(technique,KnowledgeLevel::Reproducible)) continue;
@@ -371,6 +458,18 @@ inline CivilizationExecutionResult executeCivilizationDecision(World& world,Char
             context.learningSkill=self.civilization.learningSkill;
             context.curiosity=self.personality.curiosity;
             context.patience=self.personality.patience;
+            if(decision.experiment==ExperimentKind::DesignateSanitationArea){
+                const PrimitiveSanitationOpportunity opportunity=
+                    evaluatePrimitiveSanitationOpportunity(
+                        world.seed,self,world.environmentalResidues,world.minute);
+                context.sanitationProblemRecognized=opportunity.problemRecognized;
+                context.sanitationSiteAvailable=opportunity.siteAvailable;
+            }else if(decision.experiment==ExperimentKind::DigSanitationPit){
+                const DugSanitationPitOpportunity opportunity=
+                    evaluateDugSanitationPitOpportunity(
+                        self,world.environmentalResidues,world.primitiveSanitationSites);
+                context.sanitationPitCandidateAvailable=opportunity.candidateAvailable;
+            }
             result.experiment=attemptExperiment(context,self.civilization.inventory,self.civilization.knowledge);
             result.executed=result.experiment.attempted;
             result.success=result.experiment.success;
@@ -379,6 +478,43 @@ inline CivilizationExecutionResult executeCivilizationDecision(World& world,Char
             return result;
         }
         case CivilizationIntent::Craft: {
+            if(decision.technique==TechniqueId::DesignatedSanitationArea){
+                const PrimitiveSanitationSiteCreationResult site=establishDesignatedSanitationArea(
+                    world.seed,self,world.environmentalResidues,world.primitiveSanitationSites,world.minute);
+                if(!site.established) return result;
+                result.executed=true;
+                result.success=true;
+                result.sanitationSiteId=site.siteId;
+                result.sanitationSitePos=site.pos;
+                result.craft.success=true;
+                result.craft.event.actor=self.id;
+                result.craft.event.type=CivilizationEventType::Crafted;
+                result.craft.event.technique=TechniqueId::DesignatedSanitationArea;
+                result.event=result.craft.event;
+                self.civilization.knowledge.recordSuccessfulUse(TechniqueId::DesignatedSanitationArea);
+                self.civilization.craftingSkill=clampCivilization01(self.civilization.craftingSkill+0.004);
+                return result;
+            }
+            if(decision.technique==TechniqueId::DugSanitationPit){
+                const DugSanitationPitWorkResult work=workOnDugSanitationPit(
+                    self,world.environmentalResidues,world.primitiveSanitationSites,world.minute);
+                if(!work.worked) return result;
+                result.executed=true;
+                result.success=true;
+                result.sanitationSiteId=work.siteId;
+                result.sanitationSitePos=work.pos;
+                result.sanitationImprovementCompleted=work.completed;
+                result.sanitationWorkBefore=work.workBefore;
+                result.sanitationWorkAfter=work.workAfter;
+                result.craft.success=true;
+                result.craft.event.actor=self.id;
+                result.craft.event.type=CivilizationEventType::Crafted;
+                result.craft.event.technique=TechniqueId::DugSanitationPit;
+                result.event=result.craft.event;
+                self.civilization.knowledge.recordSuccessfulUse(TechniqueId::DugSanitationPit);
+                self.civilization.craftingSkill=clampCivilization01(self.civilization.craftingSkill+0.004);
+                return result;
+            }
             result.craft=reproduceTechnique(self.id,decision.technique,self.civilization.inventory,self.civilization.knowledge,self.civilization.craftingSkill);
             result.executed=result.craft.success;
             result.success=result.craft.success;

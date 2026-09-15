@@ -29,12 +29,7 @@ void ALLWorldDirector::BeginPlay()
         Simulation->NewGame();
     }
 
-    // Unreal owns physical movement/arrival/use timing. Core keeps the intent
-    // pending and applies authoritative outcomes only after the world ACK.
     CoreBridge->SetExternalPhysicalExecutionEnabled(true);
-
-    // World affordances must come from the actual world/civilization state.
-    // Never synthesize beds, toilets, food stations, etc. just to satisfy an intent.
     CollectActivityAnchors();
     SpawnResidents();
 }
@@ -48,9 +43,6 @@ void ALLWorldDirector::Tick(float DeltaSeconds)
         return;
     }
 
-    // NewGame/LoadGame can replace the Core Simulation instance while this
-    // WorldDirector survives. Reassert the runtime policy before advancing it so
-    // physical outcomes never silently fall back to autonomous completion.
     CoreBridge->SetExternalPhysicalExecutionEnabled(true);
 
     bool bAdvancedSimulation = false;
@@ -70,9 +62,6 @@ void ALLWorldDirector::Tick(float DeltaSeconds)
 
     if (bAdvancedSimulation)
     {
-        // Core may create residents (births) and civilization/world presentation may
-        // add/remove physical affordances at runtime. Reconcile both after each
-        // simulation advance instead of treating BeginPlay as a permanent snapshot.
         CollectActivityAnchors();
         SpawnResidents();
     }
@@ -189,9 +178,6 @@ void ALLWorldDirector::SpawnResidents()
         RuntimeStates.FindOrAdd(Resident.ResidentId);
     }
 
-    // If a projection ever removes a resident entirely, clean up the presentation
-    // actor and any outstanding reservation. Existing living/deceased Core residents
-    // remain projected, so this is identity reconciliation rather than a death policy.
     for (int32 Index = SpawnedResidents.Num() - 1; Index >= 0; --Index)
     {
         ALLResidentCharacter* Character = SpawnedResidents[Index].Get();
@@ -296,6 +282,27 @@ void ALLWorldDirector::ApplyCoreDirective(
         }
 
         ALLActivityAnchor* Anchor = EnsurePhysicalReservation(Character, Runtime, Intent);
+
+        // A Core-owned designated sanitation area is a Primitive-tier affordance.
+        // Preferred/Primitive authored anchors may win; Natural anchors may not
+        // mask an authoritative designated site that should be selected first.
+        if (Anchor && Intent == ELLActionIntent::Toilet
+            && static_cast<uint8>(Anchor->AffordanceTier)
+                > static_cast<uint8>(ELLWorldAffordanceTier::Primitive))
+        {
+            int32 GridX = 0;
+            int32 GridY = 0;
+            bool bDesignated = false;
+            int64 SiteId = 0;
+            if (CoreBridge->GetSanitationUseTarget(
+                    Character.GetResidentId(), GridX, GridY, bDesignated, SiteId)
+                && bDesignated)
+            {
+                ReleasePhysicalReservation(Character.GetResidentId(), Runtime);
+                Anchor = nullptr;
+            }
+        }
+
         FTransform UseTransform = FTransform::Identity;
         const bool bUsesAnchor = Anchor != nullptr;
 
@@ -314,7 +321,13 @@ void ALLWorldDirector::ApplyCoreDirective(
 
         const FVector DesiredLocation = UseTransform.GetLocation();
         const double DistanceSquared = FVector::DistSquared2D(Character.GetActorLocation(), DesiredLocation);
-        const bool bAtUsePoint = DistanceSquared <= FMath::Square(110.0);
+        const bool bCoreSanitationGridTarget =
+            Intent == ELLActionIntent::Toilet
+            && (Runtime.bUsingEmergencyFallback || Runtime.bUsingDesignatedSanitationSite);
+        const float ArrivalRadius = bCoreSanitationGridTarget
+            ? FMath::Max(1.0f, FMath::Min(45.0f, CoreGridCellSizeUU * 0.45f))
+            : 110.0f;
+        const bool bAtUsePoint = DistanceSquared <= FMath::Square(ArrivalRadius);
 
         if (!bAtUsePoint)
         {
@@ -341,7 +354,8 @@ void ALLWorldDirector::ApplyCoreDirective(
             1,
             CoreBridge->GetPhysicalActionDurationTicks(
                 Directive.PhysicalIntent,
-                Runtime.bUsingEmergencyFallback));
+                Runtime.bUsingEmergencyFallback,
+                Runtime.bUsingDesignatedSanitationSite));
         const float RequiredUseSeconds = FMath::Max(
             0.1f,
             static_cast<float>(DurationTicks) * FMath::Max(0.1f, RealSecondsPerSimulationMinute));
@@ -352,12 +366,16 @@ void ALLWorldDirector::ApplyCoreDirective(
         }
 
         const bool bEmergencyFallback = Runtime.bUsingEmergencyFallback;
+        const int64 SanitationSiteId = Runtime.bUsingDesignatedSanitationSite
+            ? Runtime.CoreSanitationSiteId
+            : 0;
         const FIntPoint ResolvedGrid = WorldLocationToCoreGrid(Character.GetActorLocation());
         const bool bAcknowledged = CoreBridge->CompleteResidentPhysicalAction(
             Character.GetResidentId(),
             bEmergencyFallback,
             ResolvedGrid.X,
-            ResolvedGrid.Y);
+            ResolvedGrid.Y,
+            SanitationSiteId);
 
         if (bAcknowledged)
         {
@@ -366,10 +384,17 @@ void ALLWorldDirector::ApplyCoreDirective(
             Character.ClearMovementTarget();
             Character.SetCurrentIntent(ELLActionIntent::Idle);
         }
+        else if (Runtime.bUsingDesignatedSanitationSite)
+        {
+            // The Core site may have been invalidated while the resident moved.
+            // Release the stale target; the next tick re-resolves through Core
+            // and naturally falls back to another valid tier if necessary.
+            ReleasePhysicalReservation(Character.GetResidentId(), Runtime);
+            Runtime.bPerformingAction = false;
+            Character.ClearMovementTarget();
+        }
         else
         {
-            // Avoid hammering Core every frame when a completion precondition
-            // (for example a real provision) is no longer satisfied.
             Runtime.PhysicalUseElapsedSeconds = 0.0f;
         }
         return;
@@ -494,6 +519,8 @@ ALLActivityAnchor* ALLWorldDirector::EnsurePhysicalReservation(
         {
             Runtime.ActiveAffordanceTier = Existing->AffordanceTier;
             Runtime.bUsingEmergencyFallback = false;
+            Runtime.bUsingDesignatedSanitationSite = false;
+            Runtime.CoreSanitationSiteId = 0;
             return Existing;
         }
 
@@ -511,6 +538,8 @@ ALLActivityAnchor* ALLWorldDirector::EnsurePhysicalReservation(
     Runtime.ReservedIntent = Intent;
     Runtime.ActiveAffordanceTier = CandidateTier;
     Runtime.bUsingEmergencyFallback = false;
+    Runtime.bUsingDesignatedSanitationSite = false;
+    Runtime.CoreSanitationSiteId = 0;
     Runtime.EmergencyUseTransform = FTransform::Identity;
     Runtime.PhysicalUseElapsedSeconds = 0.0f;
     return Candidate;
@@ -526,15 +555,75 @@ bool ALLWorldDirector::EnsureEmergencyFallback(
     {
         Runtime.ActiveAffordanceTier = ELLWorldAffordanceTier::Unavailable;
         Runtime.bUsingEmergencyFallback = false;
+        Runtime.bUsingDesignatedSanitationSite = false;
+        Runtime.CoreSanitationSiteId = 0;
         return false;
     }
 
-    if (!Runtime.bUsingEmergencyFallback || Runtime.ReservedIntent != Intent)
+    const bool bHasCachedTarget = Runtime.ReservedIntent == Intent
+        && (Intent == ELLActionIntent::Toilet
+            ? (Runtime.bUsingEmergencyFallback || Runtime.bUsingDesignatedSanitationSite)
+            : Runtime.bUsingEmergencyFallback);
+
+    if (!bHasCachedTarget)
     {
         Runtime.ReservedIntent = Intent;
-        Runtime.ActiveAffordanceTier = ELLWorldAffordanceTier::Emergency;
-        Runtime.bUsingEmergencyFallback = true;
-        Runtime.EmergencyUseTransform = ResolveEmergencyFallbackTransform(Character, Intent);
+        Runtime.bUsingEmergencyFallback = false;
+        Runtime.bUsingDesignatedSanitationSite = false;
+        Runtime.CoreSanitationSiteId = 0;
+
+        if (Intent == ELLActionIntent::Toilet)
+        {
+            int32 RecommendedGridX = 0;
+            int32 RecommendedGridY = 0;
+            bool bDesignatedSite = false;
+            int64 SanitationSiteId = 0;
+            if (!CoreBridge || !CoreBridge->GetSanitationUseTarget(
+                    Character.GetResidentId(),
+                    RecommendedGridX,
+                    RecommendedGridY,
+                    bDesignatedSite,
+                    SanitationSiteId))
+            {
+                Runtime.ActiveAffordanceTier = ELLWorldAffordanceTier::Unavailable;
+                Runtime.EmergencyUseTransform = FTransform::Identity;
+                Runtime.PhysicalUseElapsedSeconds = 0.0f;
+                return false;
+            }
+
+            Runtime.bUsingDesignatedSanitationSite = bDesignatedSite;
+            Runtime.bUsingEmergencyFallback = !bDesignatedSite;
+            Runtime.CoreSanitationSiteId = bDesignatedSite ? SanitationSiteId : 0;
+            Runtime.ActiveAffordanceTier = bDesignatedSite
+                ? ELLWorldAffordanceTier::Primitive
+                : ELLWorldAffordanceTier::Emergency;
+
+            const float CellSize = FMath::Max(1.0f, CoreGridCellSizeUU);
+            FVector RecommendedLocation = GetActorLocation()
+                + FVector(
+                    static_cast<float>(RecommendedGridX) * CellSize,
+                    static_cast<float>(RecommendedGridY) * CellSize,
+                    0.0f);
+            RecommendedLocation.Z = Character.GetActorLocation().Z;
+
+            FVector FacingDirection = RecommendedLocation - Character.GetActorLocation();
+            FacingDirection.Z = 0.0f;
+            const FRotator RecommendedRotation = FacingDirection.IsNearlyZero()
+                ? Character.GetActorRotation()
+                : FacingDirection.Rotation();
+
+            Runtime.EmergencyUseTransform = FTransform(
+                RecommendedRotation,
+                RecommendedLocation,
+                FVector::OneVector);
+        }
+        else
+        {
+            Runtime.ActiveAffordanceTier = ELLWorldAffordanceTier::Emergency;
+            Runtime.bUsingEmergencyFallback = true;
+            Runtime.EmergencyUseTransform = ResolveEmergencyFallbackTransform(Character, Intent);
+        }
+
         Runtime.PhysicalUseElapsedSeconds = 0.0f;
     }
 
@@ -564,28 +653,8 @@ FTransform ALLWorldDirector::ResolveEmergencyFallbackTransform(
     const ALLResidentCharacter& Character,
     ELLActionIntent Intent) const
 {
-    FVector Location = Character.GetActorLocation();
-    FRotator Rotation = Character.GetActorRotation();
-
-    if (Intent == ELLActionIntent::Toilet)
-    {
-        // Until terrain/resource semantics are available, pick a deterministic
-        // outdoor fallback point away from the settlement origin. This is not a
-        // toilet object and therefore does not fake civilization progress.
-        const uint32 StableHash = HashCombine(
-            GetTypeHash(Character.GetResidentId()),
-            static_cast<uint32>(Intent));
-        const float AngleDegrees = static_cast<float>(StableHash % 360u);
-        const float AngleRadians = FMath::DegreesToRadians(AngleDegrees);
-        const FVector Direction(FMath::Cos(AngleRadians), FMath::Sin(AngleRadians), 0.0f);
-        Location = GetActorLocation() + Direction * 650.0f;
-        Location.Z = Character.GetActorLocation().Z;
-        Rotation = Direction.Rotation();
-    }
-
-    // Sleep -> ground rest in place.
-    // Eat/Drink -> consume what Core has already made available, in place.
-    // Hygiene -> minimal no-facility fallback in place.
+    const FVector Location = Character.GetActorLocation();
+    const FRotator Rotation = Character.GetActorRotation();
     return FTransform(Rotation, Location, FVector::OneVector);
 }
 
@@ -653,6 +722,8 @@ void ALLWorldDirector::ReleasePhysicalReservation(
     Runtime.ReservedIntent = ELLActionIntent::Idle;
     Runtime.ActiveAffordanceTier = ELLWorldAffordanceTier::Unavailable;
     Runtime.bUsingEmergencyFallback = false;
+    Runtime.bUsingDesignatedSanitationSite = false;
+    Runtime.CoreSanitationSiteId = 0;
     Runtime.EmergencyUseTransform = FTransform::Identity;
     Runtime.PhysicalUseElapsedSeconds = 0.0f;
 }

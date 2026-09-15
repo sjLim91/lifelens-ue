@@ -25,6 +25,8 @@ struct FLLResidentRuntimeState
     ELLActionIntent ReservedIntent = ELLActionIntent::Idle;
     ELLWorldAffordanceTier ActiveAffordanceTier = ELLWorldAffordanceTier::Unavailable;
     bool bUsingEmergencyFallback = false;
+    bool bUsingDesignatedSanitationSite = false;
+    int64 CoreSanitationSiteId = 0;
     FTransform EmergencyUseTransform = FTransform::Identity;
 };
 
@@ -106,9 +108,7 @@ private:
     UPROPERTY(EditAnywhere, Category="LifeLens|Time")
     float RealSecondsPerSimulationMinute = 0.6f;
 
-    // Spatial contract between Unreal presentation and Core GridPos. The
-    // existing 650uu emergency-toilet radius maps naturally to roughly 6-7
-    // Core tiles, matching the original Core fallback scale.
+    // Spatial contract between Unreal presentation and Core GridPos.
     UPROPERTY(EditAnywhere, Category="LifeLens|World", meta=(ClampMin="1.0"))
     float CoreGridCellSizeUU = 100.0f;
 };
