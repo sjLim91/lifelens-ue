@@ -74,10 +74,21 @@ void ALLLifeLensGameMode::SpawnObserverCamera()
         return;
     }
 
+    // The selected authoritative start chunk is mapped to Unreal presentation
+    // origin by LLWorldDirector. Frame that region using the shared spatial
+    // contract instead of the legacy 1,400 UU bootstrap-floor dimensions.
+    const FVector CameraLocation(
+        0.0f,
+        -LLWorldSpatialContract::ObserverCameraDistanceUU,
+        LLWorldSpatialContract::ObserverCameraHeightUU);
+    const FVector CameraTarget(
+        0.0f,
+        0.0f,
+        LLWorldSpatialContract::ObserverCameraTargetHeightUU);
+    const FRotator CameraRotation = (CameraTarget - CameraLocation).Rotation();
+
     ACameraActor* Camera = GetWorld()->SpawnActor<ACameraActor>(
-        ACameraActor::StaticClass(),
-        FVector(0.0f, -1500.0f, 1120.0f),
-        FRotator(-36.0f, 90.0f, 0.0f));
+        ACameraActor::StaticClass(), CameraLocation, CameraRotation);
 
     if (!Camera)
     {
@@ -86,7 +97,7 @@ void ALLLifeLensGameMode::SpawnObserverCamera()
 
     if (UCameraComponent* CameraComponent = Camera->GetCameraComponent())
     {
-        CameraComponent->SetFieldOfView(55.0f);
+        CameraComponent->SetFieldOfView(LLWorldSpatialContract::ObserverCameraFOVDegrees);
     }
 
     if (APlayerController* PlayerController = GetWorld()->GetFirstPlayerController())
