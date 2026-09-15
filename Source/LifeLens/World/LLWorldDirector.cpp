@@ -1,15 +1,24 @@
 #include "World/LLWorldDirector.h"
 #include "World/LLActivityAnchor.h"
+#include "World/LLEnvironmentalResidueVisualizerComponent.h"
 #include "Characters/LLResidentCharacter.h"
 #include "Simulation/LLCoreBridgeSubsystem.h"
 #include "Simulation/LLSimulationSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "Components/SceneComponent.h"
 
 ALLWorldDirector::ALLWorldDirector()
 {
     PrimaryActorTick.bCanEverTick = true;
+
+    SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
+    SetRootComponent(SceneRoot);
+
+    EnvironmentalResidueVisualizer = CreateDefaultSubobject<ULLEnvironmentalResidueVisualizerComponent>(
+        TEXT("EnvironmentalResidueVisualizer"));
+    EnvironmentalResidueVisualizer->SetupAttachment(SceneRoot);
 }
 
 void ALLWorldDirector::BeginPlay()
@@ -32,6 +41,10 @@ void ALLWorldDirector::BeginPlay()
     CoreBridge->SetExternalPhysicalExecutionEnabled(true);
     CollectActivityAnchors();
     SpawnResidents();
+    if (EnvironmentalResidueVisualizer)
+    {
+        EnvironmentalResidueVisualizer->RefreshFromCore(*CoreBridge, CoreGridCellSizeUU, true);
+    }
 }
 
 void ALLWorldDirector::Tick(float DeltaSeconds)
@@ -81,6 +94,16 @@ void ALLWorldDirector::Tick(float DeltaSeconds)
             ReleasePhysicalReservation(Pair.Key, Pair.Value);
         }
     }
+
+    EnvironmentalVisualRefreshAccumulator += FMath::Max(0.0f, DeltaSeconds);
+    const float VisualRefreshInterval = FMath::Max(0.05f, EnvironmentalVisualRefreshIntervalSeconds);
+    if (EnvironmentalResidueVisualizer
+        && EnvironmentalVisualRefreshAccumulator >= VisualRefreshInterval)
+    {
+        EnvironmentalVisualRefreshAccumulator = FMath::Fmod(
+            EnvironmentalVisualRefreshAccumulator, VisualRefreshInterval);
+        EnvironmentalResidueVisualizer->RefreshFromCore(*CoreBridge, CoreGridCellSizeUU, false);
+    }
 }
 
 ALLResidentCharacter* ALLWorldDirector::FindResidentActor(FGuid ResidentId) const
@@ -111,6 +134,13 @@ bool ALLWorldDirector::IsResidentUsingEmergencyFallback(FGuid ResidentId) const
 {
     const FLLResidentRuntimeState* Runtime = RuntimeStates.Find(ResidentId);
     return Runtime && Runtime->bUsingEmergencyFallback;
+}
+
+int32 ALLWorldDirector::GetEnvironmentalResidueVisualCount() const
+{
+    return EnvironmentalResidueVisualizer
+        ? EnvironmentalResidueVisualizer->GetVisualInstanceCount()
+        : 0;
 }
 
 void ALLWorldDirector::CollectActivityAnchors()
