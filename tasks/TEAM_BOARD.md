@@ -16,17 +16,21 @@ Authority rule: Core/World owns simulation truth. UI/Character/Environment/World
 
 ## Current Assist Locks
 
-### ASSIST_LOCK-UI-CAMERA-1 — ACTIVE
-- requester/implementer: Jjun.
-- owner lane: Dagyeom — UI / Observer presentation.
-- exact locked files: `Source/LifeLens/UI/LLObserverPlayerController.h`, `Source/LifeLens/UI/LLObserverPlayerController.cpp`.
-- purpose: Observer Camera Control v1 input routing only — PC wheel/right-drag/middle-drag and Android tap-vs-drag/pinch/two-finger pan.
-- canonical contract: `docs/OBSERVER_CAMERA_CONTROL_v1.md`.
-- implementation branch: `jjun/observer-camera-control-v1`.
-- exclusions: HUD layout/polish, #30/#36/#38 consolidation, Character presentation, Core simulation authority.
-- release condition: camera-control PR merged or abandoned and the two locked files are synchronized back to main.
+None.
 
 Jjun helping Dagyeom defaults to REVIEW_ONLY. Do not direct-push `dagyeom/*`; use assist branch/PR when a real cross-owner code change is required.
+
+## Recently released Assist Locks
+
+### ASSIST_LOCK-UI-CAMERA-1 — RELEASED
+- requester/implementer: Jjun.
+- owner lane: Dagyeom — UI / Observer presentation.
+- locked files were `Source/LifeLens/UI/LLObserverPlayerController.h`, `Source/LifeLens/UI/LLObserverPlayerController.cpp`.
+- purpose: Observer Camera Control v1 input routing only — PC wheel/right-drag/middle-drag and Android tap-vs-drag/pinch/two-finger pan.
+- canonical contract: `docs/OBSERVER_CAMERA_CONTROL_v1.md`.
+- original PR #105 was superseded by refreshed PR #109.
+- PR #109 merged to `main` as `47f75d2cb7fd93b26b8b2082bf9f30cfafe67bed`.
+- release condition satisfied: camera-control changes are synchronized to main and the stale #105 branch is closed.
 
 ## Open Integration Requests
 
