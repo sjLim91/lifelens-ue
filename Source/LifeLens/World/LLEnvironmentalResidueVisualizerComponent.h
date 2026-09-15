@@ -28,14 +28,16 @@ public:
     void RefreshFromCore(
         const ULLCoreBridgeSubsystem& CoreBridge,
         float CoreGridCellSizeUU,
-        bool bForce = false);
+        bool bForce = false,
+        int32 CoreOriginGridX = 0,
+        int32 CoreOriginGridY = 0);
 
     UFUNCTION(BlueprintPure, Category="LifeLens|World|Environment")
     int32 GetVisualInstanceCount() const { return GetInstanceCount(); }
 
 private:
     uint32 BuildVisualSignature(const FLLCoreEnvironmentObservation& Environment) const;
-    FVector ResolveSurfaceLocation(int32 GridX, int32 GridY, float CoreGridCellSizeUU) const;
+    FVector ResolveSurfaceLocation(int32 GridX, int32 GridY, float CoreGridCellSizeUU, int32 CoreOriginGridX, int32 CoreOriginGridY) const;
 
     uint32 LastVisualSignature = 0;
     bool bHasVisualSignature = false;

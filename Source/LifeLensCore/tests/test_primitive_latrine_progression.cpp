@@ -218,8 +218,8 @@ int main()
         primitiveSanitationResidueIntensity(PrimitiveSanitationSiteKind::DugPit))<1e-9);
     assert(simulation.world().primitiveSanitationSites.front().useCount==1);
 
-    // The outer snapshot format remains v5; only the sanitation extension
-    // advances to v2. Roundtrip must preserve the same facility identity and
+    // The outer snapshot format may advance as new authoritative extensions
+    // are added. Roundtrip must preserve the same facility identity and
     // completed improvement state.
     const SimulationStateSnapshot captured=simulation.captureSnapshot();
     std::vector<std::uint8_t> bytes;
@@ -227,7 +227,8 @@ int main()
     assert(encodeSimulationSnapshot(captured,bytes,&error));
     assert(error.empty());
     assert(bytes.size()>12);
-    assert(bytes[8]==5 && bytes[9]==0 && bytes[10]==0 && bytes[11]==0);
+    assert(bytes[8]==static_cast<std::uint8_t>(SimulationSnapshotBinaryFormatVersion)
+        && bytes[9]==0 && bytes[10]==0 && bytes[11]==0);
 
     SimulationStateSnapshot decoded;
     assert(decodeSimulationSnapshot(bytes,decoded,&error));

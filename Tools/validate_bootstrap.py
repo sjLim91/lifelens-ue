@@ -220,7 +220,8 @@ for token in (
     assert token in compile_unit, f'Missing Core compile unit source: {token}'
 
 snapshot_h = (root / 'Source/LifeLensCore/include/lifelens/SimulationSnapshotCodec.h').read_text(encoding='utf-8')
-assert 'SimulationSnapshotBinaryFormatVersion=5' in snapshot_h, 'Designated sanitation site persistence requires snapshot binary format v5'
+snapshot_binary_version = int(snapshot_h.split('SimulationSnapshotBinaryFormatVersion=', 1)[1].split(';', 1)[0])
+assert snapshot_binary_version >= 5, 'Designated sanitation site persistence requires snapshot binary format v5 or newer'
 
 snapshot_codec = (root / 'Source/LifeLensCore/src/SimulationSnapshotCodec.cpp').read_text(encoding='utf-8')
 for token in (

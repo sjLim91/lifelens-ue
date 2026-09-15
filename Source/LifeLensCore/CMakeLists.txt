@@ -125,3 +125,5 @@ lifelens_add_test(test_primitive_latrine_progression)
 lifelens_add_test(test_world_genesis_wg1)
 
 lifelens_add_test(test_world_genesis_wg2)
+
+lifelens_add_test(test_world_generation_milestone_a)

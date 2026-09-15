@@ -60,6 +60,7 @@ protected:
     virtual void BeginPlay() override;
 
 private:
+    void RefreshCorePresentationOrigin();
     void CollectActivityAnchors();
     void SpawnResidents();
     void UpdateResident(ALLResidentCharacter& Character, float DeltaSeconds);
@@ -116,6 +117,7 @@ private:
 
     float SimulationClockAccumulator = 0.0f;
     float EnvironmentalVisualRefreshAccumulator = 0.0f;
+    FIntPoint CorePresentationOriginGrid = FIntPoint::ZeroValue;
 
     UPROPERTY(EditAnywhere, Category="LifeLens|Environment|Visual", meta=(ClampMin="0.05"))
     float EnvironmentalVisualRefreshIntervalSeconds = 0.25f;

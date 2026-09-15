@@ -67,6 +67,9 @@ int main()
         eventMinute,CivilizationEventType::Crafted,seed);
     CHECK(crafted!=nullptr);
 
+    StorageSite observedStorage;
+    observedStorage.id=7002;
+    sim.world().storageSites.push_back(observedStorage);
     sim.world().storageSites[0].inventory.add(
         {ItemKind::RawMaterial,MaterialKind::Wood,3,0.5,1.0});
 
@@ -101,7 +104,7 @@ int main()
     CHECK(missing.techniques.empty());
 
     const CivilizationWorldObservation worldRead=sim.observeCivilizationWorld();
-    CHECK(worldRead.resourceNodeCount==7);
+    CHECK(worldRead.resourceNodeCount==static_cast<int>(sim.world().resourceNodes.size()));
     CHECK(worldRead.storageSiteCount==1);
     CHECK(worldRead.totalStoredUnits==3);
     CHECK(worldRead.techniqueFactCount==2);

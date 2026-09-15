@@ -6,6 +6,7 @@
 #include "Simulation/LLCoreActionTypes.h"
 #include "Simulation/LLCivilizationReadTypes.h"
 #include "Simulation/LLEnvironmentReadTypes.h"
+#include "Simulation/LLWorldGenerationReadTypes.h"
 #include "LLCoreBridgeSubsystem.generated.h"
 
 namespace lifelens { class Simulation; }
@@ -108,7 +109,17 @@ public:
     UFUNCTION(BlueprintPure, Category="LifeLens|Core|Environment")
     FLLCoreEnvironmentObservation GetEnvironmentObservation(int32 MaxResidues = 64) const;
 
-    // Native persistence bridge. Unreal SaveGame stores these bytes; it never
+    UFUNCTION(BlueprintPure, Category="LifeLens|Core|WorldGeneration")
+    FLLCoreWorldGenerationObservation GetWorldGenerationObservation() const;
+
+    UFUNCTION(BlueprintCallable, Category="LifeLens|Core|WorldGeneration")
+    bool GetNaturalChunkObservation(
+        int32 ChunkX,
+        int32 ChunkY,
+        FLLCoreNaturalChunkObservation& OutObservation) const;
+
+    // Native persistence bridge.
+    // Unreal SaveGame stores these bytes; it never
     // serializes the compatibility resident projection as a second authority.
     bool CaptureCoreSnapshotBytes(TArray<uint8>& OutBytes, FString& OutError) const;
     bool RestoreCoreSnapshotBytes(const TArray<uint8>& Bytes, FString& OutError);

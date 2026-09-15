@@ -39,11 +39,13 @@ void ALLWorldDirector::BeginPlay()
     }
 
     CoreBridge->SetExternalPhysicalExecutionEnabled(true);
+    RefreshCorePresentationOrigin();
     CollectActivityAnchors();
     SpawnResidents();
     if (EnvironmentalResidueVisualizer)
     {
-        EnvironmentalResidueVisualizer->RefreshFromCore(*CoreBridge, CoreGridCellSizeUU, true);
+        EnvironmentalResidueVisualizer->RefreshFromCore(*CoreBridge, CoreGridCellSizeUU, true,
+            CorePresentationOriginGrid.X, CorePresentationOriginGrid.Y);
     }
 }
 
@@ -102,7 +104,8 @@ void ALLWorldDirector::Tick(float DeltaSeconds)
     {
         EnvironmentalVisualRefreshAccumulator = FMath::Fmod(
             EnvironmentalVisualRefreshAccumulator, VisualRefreshInterval);
-        EnvironmentalResidueVisualizer->RefreshFromCore(*CoreBridge, CoreGridCellSizeUU, false);
+        EnvironmentalResidueVisualizer->RefreshFromCore(*CoreBridge, CoreGridCellSizeUU, false,
+            CorePresentationOriginGrid.X, CorePresentationOriginGrid.Y);
     }
 }
 
@@ -141,6 +144,23 @@ int32 ALLWorldDirector::GetEnvironmentalResidueVisualCount() const
     return EnvironmentalResidueVisualizer
         ? EnvironmentalResidueVisualizer->GetVisualInstanceCount()
         : 0;
+}
+
+void ALLWorldDirector::RefreshCorePresentationOrigin()
+{
+    CorePresentationOriginGrid = FIntPoint::ZeroValue;
+    if (!CoreBridge)
+    {
+        return;
+    }
+
+    const FLLCoreWorldGenerationObservation Genesis = CoreBridge->GetWorldGenerationObservation();
+    if (Genesis.bAvailable && Genesis.bHasInitialStartRegion)
+    {
+        CorePresentationOriginGrid = FIntPoint(
+            Genesis.InitialCenterGridX,
+            Genesis.InitialCenterGridY);
+    }
 }
 
 void ALLWorldDirector::CollectActivityAnchors()
@@ -631,8 +651,8 @@ bool ALLWorldDirector::EnsureEmergencyFallback(
             const float CellSize = FMath::Max(1.0f, CoreGridCellSizeUU);
             FVector RecommendedLocation = GetActorLocation()
                 + FVector(
-                    static_cast<float>(RecommendedGridX) * CellSize,
-                    static_cast<float>(RecommendedGridY) * CellSize,
+                    static_cast<float>(RecommendedGridX - CorePresentationOriginGrid.X) * CellSize,
+                    static_cast<float>(RecommendedGridY - CorePresentationOriginGrid.Y) * CellSize,
                     0.0f);
             RecommendedLocation.Z = Character.GetActorLocation().Z;
 
@@ -693,8 +713,8 @@ FIntPoint ALLWorldDirector::WorldLocationToCoreGrid(const FVector& WorldLocation
     const float CellSize = FMath::Max(1.0f, CoreGridCellSizeUU);
     const FVector Relative = WorldLocation - GetActorLocation();
     return FIntPoint(
-        FMath::RoundToInt(Relative.X / CellSize),
-        FMath::RoundToInt(Relative.Y / CellSize));
+        CorePresentationOriginGrid.X + FMath::RoundToInt(Relative.X / CellSize),
+        CorePresentationOriginGrid.Y + FMath::RoundToInt(Relative.Y / CellSize));
 }
 
 FVector ALLWorldDirector::CoreGridToWorldSpawnLocation(
@@ -733,8 +753,8 @@ FVector ALLWorldDirector::CoreGridToWorldSpawnLocation(
 
     return GetActorLocation()
         + FVector(
-            static_cast<float>(GridX) * CellSize,
-            static_cast<float>(GridY) * CellSize,
+            static_cast<float>(GridX - CorePresentationOriginGrid.X) * CellSize,
+            static_cast<float>(GridY - CorePresentationOriginGrid.Y) * CellSize,
             90.0f)
         + SubCellOffset;
 }

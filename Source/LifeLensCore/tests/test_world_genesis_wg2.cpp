@@ -94,16 +94,22 @@ int main()
     assert(worldA.initialStartRegion().region.coord==worldB.initialStartRegion().region.coord);
     assert(sameMacroFacts(worldA.macroRegionFacts({6,7}),worldB.macroRegionFacts({6,7})));
 
-    // Production NEW GAME still starts with nature and founders only. WG-2 does
-    // not manufacture a house/toilet/farm/road/tool or make Unreal presentation
-    // objects authoritative. Physical relocation waits for detailed chunk/world
-    // materialization so the current bootstrap test map remains valid.
+    // Production NEW GAME still starts with nature and founders only. Milestone A
+    // materializes the WG-2-selected natural chunk and places founder Core positions
+    // inside it without manufacturing civilization infrastructure.
     Simulation simulation(seed,111,1);
     simulation.setupNewGame();
     assert(simulation.world().characters.size()==4);
     assert(simulation.world().objects.empty());
     assert(simulation.world().primitiveSanitationSites.empty());
+    assert(simulation.world().storageSites.empty());
     assert(simulation.world().initialStartRegion().region.coord==startA.region.coord);
+    assert(simulation.world().generatedNaturalChunks.size()==1);
+    for(const Character& founder:simulation.world().characters){
+        GridPos pos{};
+        assert(simulation.runtimePosition(founder.id,pos));
+        assert(chunkCoordForGrid(pos)==startA.region.coord);
+    }
 
     return 0;
 }

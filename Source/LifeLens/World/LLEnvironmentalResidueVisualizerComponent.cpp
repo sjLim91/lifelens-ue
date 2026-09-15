@@ -59,13 +59,15 @@ uint32 ULLEnvironmentalResidueVisualizerComponent::BuildVisualSignature(
 FVector ULLEnvironmentalResidueVisualizerComponent::ResolveSurfaceLocation(
     int32 GridX,
     int32 GridY,
-    float CoreGridCellSizeUU) const
+    float CoreGridCellSizeUU,
+    int32 CoreOriginGridX,
+    int32 CoreOriginGridY) const
 {
     const AActor* Owner = GetOwner();
     const float CellSize = FMath::Max(1.0f, CoreGridCellSizeUU);
     FVector Location = Owner ? Owner->GetActorLocation() : FVector::ZeroVector;
-    Location.X += static_cast<float>(GridX) * CellSize;
-    Location.Y += static_cast<float>(GridY) * CellSize;
+    Location.X += static_cast<float>(GridX - CoreOriginGridX) * CellSize;
+    Location.Y += static_cast<float>(GridY - CoreOriginGridY) * CellSize;
 
     UWorld* World = GetWorld();
     if (!World)
@@ -92,7 +94,9 @@ FVector ULLEnvironmentalResidueVisualizerComponent::ResolveSurfaceLocation(
 void ULLEnvironmentalResidueVisualizerComponent::RefreshFromCore(
     const ULLCoreBridgeSubsystem& CoreBridge,
     float CoreGridCellSizeUU,
-    bool bForce)
+    bool bForce,
+    int32 CoreOriginGridX,
+    int32 CoreOriginGridY)
 {
     SetCullDistances(
         FMath::Max(0, StartCullDistanceUU),
@@ -140,7 +144,8 @@ void ULLEnvironmentalResidueVisualizerComponent::RefreshFromCore(
         const float ZScale = FMath::Lerp(0.010f, 0.035f, Intensity);
 
         const FVector WorldLocation = ResolveSurfaceLocation(
-            Residue.GridX, Residue.GridY, CellSize);
+            Residue.GridX, Residue.GridY, CellSize,
+            CoreOriginGridX, CoreOriginGridY);
         const FTransform InstanceTransform(
             FRotator::ZeroRotator,
             WorldLocation,
