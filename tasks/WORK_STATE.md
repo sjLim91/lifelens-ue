@@ -30,51 +30,57 @@ Last reconciled: 2026-09-15 KST
 ## Current product-code baseline
 
 Latest product merge:
-- PR #75 `[CORE] Add environmental exposure perception and avoidance v1`
-- merge SHA: `157ce9937e53d5868d7e558b4149a4fa56c4c454`
+- PR #76 `[WORLD] Consume Core sanitation recommendation for emergency toilet movement`
+- merge SHA: `3bb50056311b3a9a75c6ce2bb2317b10163e69c5`
 
-Validated PR #75 head `c36a31d0f0e1caa069f5389735b3828289d252e9`:
-- Structural Preflight: PASS
-- Core Tests: PASS, 41/41
-- Unreal Linux Compile: PASS
+Validated PR #76 head `e089857710f6ef5430f57940167362ff39d08d64`:
+- Structural Preflight run `34918024951`: PASS
+- Unreal Linux Compile run `34918024929`: PASS
 - UE 5.6 UHT / UBT / link: PASS
+
+Delivered by #76:
+- WorldDirector consumes the exact Core sanitation recommendation GridPos for emergency Toilet movement.
+- Core Grid → Unreal movement uses the existing `CoreGridCellSizeUU` contract.
+- independent deterministic 650uu sanitation target removed.
+- recommendation failure fails closed rather than creating a second authority.
+- emergency Toilet arrival radius remains inside the authoritative Core cell before ACK.
+- visible movement/use → actual completion GridPos ACK → Core residue now share one location contract.
+- Structural Preflight guards the authority wiring.
 
 Documentation-only commits may advance `main` beyond the product-code baseline above.
 
 ## Current dispatch
 
-### Jjun lane — World sanitation recommendation integration — WAITING_CI / PR #76
+### Jjun lane — Sanitation Problem Recognition v1 — READY_NOW / HIGHEST PRIORITY
 
 Owner: 쭌 / 쭌 AI
-Branch: `jjun/world-sanitation-recommendation-v1`
-PR: #76 `[WORLD] Consume Core sanitation recommendation for emergency toilet movement`
-Last known HEAD: `e089857710f6ef5430f57940167362ff39d08d64`
-Handoff safety: CONDITIONAL — CI completion and merge checkpoint required.
+Dependency: PR #76 DONE.
+Handoff safety: SAFE.
 
-Implemented on PR #76:
-- WorldDirector emergency Toilet consumes Core `GetRecommendedOutdoorReliefGridPosition(...)`.
-- Core Grid → Unreal target uses the existing `CoreGridCellSizeUU` contract (100 uu/tile default).
-- the old independent deterministic 650uu sanitation target is removed.
-- emergency Toilet fails closed if Core cannot provide a recommendation instead of inventing a second authority.
-- emergency Toilet arrival radius is capped at 0.45 cell / 45uu so the actual World completion point rounds back to the same Core cell.
-- existing arrival/use duration → completion ACK flow remains authoritative.
-- Structural Preflight guards the recommendation wiring and forbids the old 650uu target.
+Goal:
+- repeated direct sanitation/contamination experience becomes an explicit resident-level recognized problem without a global magic unlock.
+- recognition must derive from Core-owned Memory/environment evidence and survive Save/Load through existing Character/Civilization snapshot authority.
+- recognized sanitation concern becomes a causal input for later primitive sanitation experimentation/designated-area/pit/latrine progression.
 
-Validation at this checkpoint:
-- Structural Preflight run `34918024951`: PASS.
-- Unreal Linux Compile run `34918024929`: IN_PROGRESS; latest checked step is prebuilt UE 5.6 Linux image pull before UHT/UBT/link.
-- PR #76 is mergeable at the latest check.
-
-Exact next action:
-- finish run `34918024929`.
-- if PASS: final diff check → merge #76 → sync state docs.
-- if FAIL: record first failing step/root cause and fix before retry.
+Implementation direction:
+- reuse #75 `environment`, `contamination`, `human_waste`, `avoidance`, `sanitation` memories rather than duplicating environment authority.
+- aggregate repeated/high-confidence sanitation memories into a deterministic problem-recognition signal.
+- personality/experience may affect recognition threshold or urgency, but evidence remains required.
+- do not unlock a latrine merely because a global era/tech flag changes.
+- expose enough deterministic read/test contract for the next primitive sanitation slice.
 
 Acceptance:
-- no independent Unreal random sanitation target when Core recommendation exists.
-- visible location, ACK GridPos, residue GridPos and future avoidance agree.
-- deterministic behavior for same state/seed.
-- regression coverage + Preflight + UE compile.
+- one weak/trace exposure does not instantly create civilization knowledge.
+- repeated or sufficiently strong direct sanitation evidence can produce recognized concern.
+- unrelated memories do not count.
+- same seed/state/evidence produces deterministic recognition.
+- recognition persists via authoritative existing state, not presentation-only flags.
+- Core tests + Structural Preflight; UE compile if Unreal-facing headers/bridge change.
+
+Exact next action:
+- create new Jjun feature branch from latest main.
+- inspect Memory/Belief/Civilization state and snapshot contracts.
+- add minimum sanitation recognition model + regression tests before primitive-affordance implementation.
 
 ### Dagyeom lane — Character Appearance v1 — ACTIVE / PR #67 CLOSEOUT
 
@@ -83,7 +89,7 @@ PR: #67 `dagyeom/character-appearance-v1`
 Latest checked head: `b7941b951df8147627580ff5d4a55a851a705454`
 
 Latest actual workflow lookup for head `b7941b9`:
-- no workflow runs returned at the reconciliation checkpoint.
+- no workflow runs returned at the latest reconciliation checkpoint.
 
 Previously validated/reported checkpoints in PR #67:
 - Preflight: PASS.
@@ -159,6 +165,13 @@ Known limitation:
 - Save/Load continuity.
 - Bridge recommendation API.
 
+### #76 World sanitation recommendation integration — DONE
+- Core recommendation drives actual emergency sanitation target.
+- resident physically moves and completes use before ACK.
+- ACK/residue location agrees with visible target cell.
+- no independent World sanitation target remains.
+- Preflight + UE 5.6 UHT/UBT/link PASS.
+
 ## Character / presentation sequence
 
 1. Character Presentation v1 — DONE via #63.
@@ -182,8 +195,8 @@ Canonical causal chain:
 `Need → Intent → current-world affordance → movement/arrival → action result → environment consequence → exposure/Memory → changed behavior → problem recognition → experiment/discovery → better affordance → culture/civilization`
 
 Immediate sequence:
-1. WorldDirector sanitation recommendation integration — PR #76 WAITING_CI.
-2. Sanitation Problem Recognition v1 — AFTER #76 DONE.
+1. WorldDirector sanitation recommendation integration — DONE #76.
+2. Sanitation Problem Recognition v1 — READY_NOW.
 3. Primitive sanitation discovery / designated area / pit / latrine progression.
 4. HumanWaste Environmental Visual Feedback.
 5. Health/pathogen and water/soil contamination later.
@@ -272,8 +285,8 @@ Do not revive the old multi-hour PR #2 path as the default loop.
 9. #73 World ACK integration — DONE.
 10. #74 runtime position restore — DONE.
 11. #75 environment exposure/perception/avoidance — DONE.
-12. **#76 World sanitation recommendation integration — WAITING_CI.**
-13. Sanitation Problem Recognition — AFTER #76 DONE.
+12. #76 World sanitation recommendation integration — DONE.
+13. **Sanitation Problem Recognition — READY_NOW / HIGHEST PRIORITY.**
 14. Primitive Latrine / sanitation affordance progression.
 15. HumanWaste visual feedback.
 16. Character Appearance #67 — ACTIVE in parallel.
