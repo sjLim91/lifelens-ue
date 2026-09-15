@@ -4,7 +4,7 @@
 > Long-term order: `docs/DEVELOPMENT_MILESTONES.md`.
 > Durable design decisions: `docs/DECISION_LOG.md`.
 
-Last reconciled: 2026-09-15 KST after PR #96 merge.
+Last reconciled: 2026-09-15 KST after Hardcoding Cleanup B dispatch.
 
 ## Recently closed product checkpoints
 
@@ -40,19 +40,33 @@ If only framing is poor, tune `Config/DefaultGame.ini` first rather than changin
 
 ## Jjun lane
 
-Status: `READY_NOW — HARDCODING CLEANUP B`
+Status: `ACTIVE — HARDCODING CLEANUP B / PR #99`
 
-Primary next milestone:
+Branch: `jjun/hardcoding-cleanup-b-ruleset`
+PR: #99 `[CORE] Hardcoding Cleanup B — immutable SimulationRuleset`
+Validation at dispatch:
+- Core Tests #469 (`34974317432`): queued.
+- Preflight #558 (`34974317413`): queued.
+- Unreal Linux Compile #105 (`34974317541`): queued because Save/Bridge C++ interfaces changed.
+
+Milestone scope:
 - introduce pure-C++17 immutable/versioned `SimulationRuleset`.
-- externalize Needs decay and UtilityAI tuning first.
-- wire Simulation to consume the ruleset without introducing a global mutable singleton.
-- align snapshot/current save structure as needed for the ruleset contract.
+- externalize Needs decay and UtilityAI tuning first while preserving existing default behavior.
+- wire Simulation to consume a const per-instance ruleset without a global mutable singleton.
+- persist full ruleset values with Core snapshots and restore under the same immutable rules.
+- simplify snapshot persistence to current pre-release format only.
+- remove Unreal SaveGame v1 replay migration and legacy payloads because no product build has been shipped to users.
+
+Explicitly deferred from this milestone:
+- Social/Fun projection compatibility cleanup remains Cleanup D.
+- LifeStage / Relationship / Romance / Pregnancy / Family tuning migration remains Cleanup C.
+- Character/UI/WorldPresentation presentation behavior is not part of #99.
 
 Pre-release cleanup rule:
 - there is no shipped user save population yet.
 - do not add backward-migration code for development-only save/snapshot formats.
 - remove legacy save/snapshot compatibility code when it directly obstructs or would make the current ruleset/save architecture more expensive later.
-- do not expand this milestone into unrelated projection/UI cleanup; Social/Fun compatibility belongs to its planned later cleanup unless it becomes a direct blocker.
+- do not expand this milestone into unrelated projection/UI cleanup.
 
 ## Dagyeom lane
 
@@ -64,7 +78,7 @@ Dagyeom/Claude should start by reading latest `AGENTS.md`, including `docs/DECIS
 
 - Formal Integration Requests: 0 open after #90/#91/#96 resolution.
 - Assist locks: 0 known active.
-- #96 Dagyeom review is not required and must not be re-requested mechanically.
+- #99 is Jjun Core/Simulation/Save/Bridge scope; no Dagyeom review is requested by default.
 
 ## Long compile rule
 
