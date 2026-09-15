@@ -45,7 +45,11 @@ int latestCohabitationMinute(const Character& character)
 
 } // namespace
 
-Simulation::Simulation(std::uint64_t seed):world_(seed){}
+Simulation::Simulation(
+    WorldSeed worldSeed,
+    PopulationSeed populationSeed,
+    WorldGenerationVersion generationVersion)
+    :world_(worldSeed,populationSeed,generationVersion){}
 
 void Simulation::setupDemo(){
     world_.characters.clear(); world_.objects.clear(); world_.environmentalResidues.clear(); relationships_=RelationshipBook{}; genealogy_=GenealogyBook{}; romances_=RomanceBook{}; households_=HouseholdBook{}; pregnancies_=PregnancyBook{}; births_=BirthBook{}; socialKnowledge_.clear(); runtime_.clear(); logs_.clear(); world_.minute=7*60;
@@ -118,8 +122,12 @@ void Simulation::setupNewGame(){
     world_.minute=8*60;
     world_.resetCivilizationEnvironment();
 
+    // World randomness and initial-population randomness are separate.
+    // Founder generation must not advance the world RNG or affect future chunk
+    // baselines merely because names/traits were regenerated.
     world_.rng.seed(world_.seed);
-    world_.characters=generateInitialFounders(world_.rng,world_.minute);
+    std::mt19937_64 populationRng(world_.populationSeed);
+    world_.characters=generateInitialFounders(populationRng,world_.minute);
 
     std::uniform_real_distribution<double> familiarity(0.0,0.04);
     for(const Character& from:world_.characters){
@@ -127,11 +135,11 @@ void Simulation::setupNewGame(){
         for(const Character& to:world_.characters){
             if(from.id==to.id) continue;
             Relationship& relation=relationships_.getOrCreate(from.id,to.id);
-            relation.familiarity=familiarity(world_.rng);
+            relation.familiarity=familiarity(populationRng);
         }
     }
 
-    emit("new game start seed="+std::to_string(world_.seed)+" founders=4");
+    emit("new game start seed="+std::to_string(world_.seed)+" populationSeed="+std::to_string(world_.populationSeed)+" founders=4");
 }
 
 ResidentObservation Simulation::observeResident(CharacterId id) const{
