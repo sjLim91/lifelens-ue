@@ -7,19 +7,20 @@
 ## 1. 현재 기준점
 
 Latest merged product slice:
-- PR #83 `[CORE] Add deterministic World Genesis WG-1 contracts`
-- merge SHA: `f5c8cbab3aa41c6a37c3bae06838eeb583749771`
-- validated final head: `c4d724b9650647ad986cd1ab235f4d8052840014`
+- PR #85 `[CORE] Add World Genesis WG-2 macro world and viable start region`
+- merge SHA: `ed4bf34d4b5bd0eb917a8bfb7fc5da16f52a4907`
+- validated final head: `eac5a50b83416e9f55e160d1e6ad0d022b3f926a`
 
 Validation:
-- Structural Preflight `34933128958`: PASS, including WG-1 validator
-- Core Tests `34933128953`: **46/46 PASS**
+- Structural Preflight `34935360828`: PASS, including WG-2 validator
+- Core Tests `34935360834`: **47/47 PASS**
 - deterministic harness smoke: PASS
-- Unreal Linux Compile `34933128950`: PASS
+- Unreal Linux Compile `34935360862`: PASS
 - UE 5.6 image verification / UHT / UBT / link: PASS
 - PR comments/reviews/unresolved threads at merge checkpoint: 0
 
 Previous product slices:
+- #83 World Genesis WG-1 — DONE.
 - #82 HumanWaste Environmental Visual Feedback — DONE.
 - #80 Dug sanitation pit progression — DONE.
 
@@ -166,15 +167,16 @@ The causal chain now reaches:
 
 `Need → fallback behavior → residue → exposure/Memory → problem recognition → experiment/knowledge → actual persistent site → repeated physical improvement → measurable containment`
 
-## 5. World Genesis / map scalability — WG-1 IMPLEMENTED / WG-2 NEXT
+## 5. World Genesis / map scalability — WG-1 + WG-2 IMPLEMENTED / MILESTONE A NEXT
 
 Canonical: `docs/WORLD_GENESIS_CHUNK_MIGRATION_v1.md`.
 
 Implementation checkpoint:
 - **WG-1 DONE via PR #83**, merge `f5c8cbab3aa41c6a37c3bae06838eeb583749771`.
-- runtime now has separate WorldSeed/PopulationSeed/GenerationVersion identity, stable ChunkCoord conversion and order-independent untouched chunk baseline seeds.
-- **WG-2 Macro World + viable initial start-site selector is READY_NOW.**
-- detailed natural chunk materialization, persistence, migration and multi-settlement runtime remain later phases.
+- runtime has separate WorldSeed/PopulationSeed/GenerationVersion identity, stable ChunkCoord conversion and order-independent untouched chunk baseline seeds.
+- **WG-2 DONE via PR #85**, merge `ed4bf34d4b5bd0eb917a8bfb7fc5da16f52a4907`.
+- runtime now derives coherent macro elevation/moisture/temperature/biome/resource potential and deterministically selects a viable-but-unsolved start region.
+- next is **World Generation Milestone A**: detailed natural chunks + selected start-region materialization + initial spawn integration + minimum no-reroll persistence boundary.
 
 Major decision:
 - the current gray bootstrap plane is **not** the final map architecture.
@@ -265,7 +267,8 @@ Small test maps may continue for Core/Bridge/animation verification.
 
 Before `World Visual Environment v1` becomes a permanent production-sized map:
 - WG-1 deterministic world coordinates/chunk keys are **established via #83**.
-- WG-2 macro world/start-site selection boundaries must be established or explicitly integrated.
+- WG-2 macro world/start-site selection boundaries are **established via #85**.
+- production World Visual must consume WG-1/WG-2 and the materialization boundary from World Generation Milestone A.
 
 This prevents later rewriting a small hand-authored arena into a scalable world.
 
@@ -309,17 +312,16 @@ Known presentation limitation now promoted to next work:
 
 ### Jjun lane — READY_NOW
 
-**World Genesis WG-2**
+**World Generation Milestone A**
 
 Goal:
-- build deterministic macro terrain/climate/water/resource-potential facts and select a viable initial natural start region.
-- preserve the WG-1 WorldSeed/PopulationSeed split.
-- do not create civilization infrastructure to make the start easier.
-- keep detailed lazy chunks and Unreal streaming out of authority scope for this phase.
+- deliver the first detailed, materializable natural-world slice as one meaningful milestone instead of separate micro-PRs.
+- include deterministic detailed chunks, selected start-region materialization, founder spawn integration and the minimum persistence/no-reroll boundary.
+- preserve zero starting civilization infrastructure and Core world authority.
 
-### Dagyeom lane — READY_NOW
+### Dagyeom lane — ACTIVE
 
-1. **Motion Bootstrap — Idle / Walk / Jog + velocity-driven transition + orientation smoothing.**
+1. **Motion Bootstrap PR #84 — CI PASS; PIE visual confirmation / final review / merge pending.**
 2. World Genesis WG-1/WG-2 integration must be respected before production-sized World Visual map commitment.
 3. World Visual Environment v1.
 4. remaining Motion & Context.
@@ -366,7 +368,7 @@ Status: **design DONE / fully generic artifact runtime NOT YET IMPLEMENTED**.
 Sanitation now has a strong one-id/one-position path, but every facility/resource does not yet use one shared generic target registry.
 
 ### B. World Genesis runtime — PARTIALLY IMPLEMENTED
-WG-1 is DONE via #83. WG-2~WG-7 remain, beginning with Macro World + viable start-site selection.
+WG-1 is DONE via #83 and WG-2 is DONE via #85. The next grouped delivery is World Generation Milestone A, combining detailed natural chunks, start-region materialization, initial spawn integration and a minimum persistence/no-reroll boundary.
 
 ### C. Birth physical position — NEEDS FIX
 New child Core runtime position may still default to `{0,0}`.
@@ -413,8 +415,8 @@ Do not revive the old multi-hour PR #2 path as normal iteration.
 16. Dug sanitation pit progression #80 — DONE.
 17. HumanWaste visual feedback #82 — DONE.
 18. Character Appearance #67 — DONE.
-19. **Motion Bootstrap — READY_NOW** (Dagyeom lane).
-20. **World Genesis WG-1 — DONE #83; WG-2 — READY_NOW.**
+19. **Motion Bootstrap — ACTIVE #84; CI PASS, PIE/review/merge pending** (Dagyeom lane).
+20. **World Genesis WG-1 — DONE #83; WG-2 — DONE #85; World Generation Milestone A — READY_NOW.**
 21. World Visual Environment production map.
 22. Character Motion & Context remainder.
 23. integrated runtime verification.

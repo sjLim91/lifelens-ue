@@ -9,10 +9,13 @@ This document extends `docs/LIFELENS_SPEC_v1.1.md`, `docs/WORLD_AFFORDANCE_ENVIR
 ## Implementation status — 2026-09-15
 
 - **WG-1 DONE** via PR #83, merge `f5c8cbab3aa41c6a37c3bae06838eeb583749771`.
-- merged runtime contract includes `WorldSeed`, separate `PopulationSeed`, `WorldGenerationVersion`, stable `ChunkCoord`, negative-safe grid/chunk mapping, and order-independent untouched chunk baseline/substream seeds.
-- validation: Preflight `34933128958` PASS, Core `34933128953` **46/46 PASS** + deterministic harness, Unreal Linux Compile `34933128950` PASS including UE 5.6 UHT/UBT/link.
-- **WG-2 READY_NOW:** Macro World facts + viable initial start-site selector.
-- WG-3+ detailed chunks/persistence/streaming/migration remain future implementation and must not be described as already running.
+- WG-1 runtime contract includes `WorldSeed`, separate `PopulationSeed`, `WorldGenerationVersion`, stable `ChunkCoord`, negative-safe grid/chunk mapping, and order-independent untouched chunk baseline/substream seeds.
+- WG-1 validation: Preflight `34933128958` PASS, Core `34933128953` **46/46 PASS** + deterministic harness, Unreal Linux Compile `34933128950` PASS.
+- **WG-2 DONE** via PR #85, merge `ed4bf34d4b5bd0eb917a8bfb7fc5da16f52a4907`.
+- WG-2 runtime contract adds coherent macro elevation/moisture/temperature fields, biome classification, broad water/fertility/resource/traversal/hazard potential and deterministic viable initial start-region selection independent of `PopulationSeed`.
+- WG-2 validation: Preflight `34935360828` PASS, Core `34935360834` **47/47 PASS** + deterministic harness, Unreal Linux Compile `34935360862` PASS including UE 5.6 UHT/UBT/link.
+- **World Generation Milestone A READY_NOW:** group detailed natural chunk baseline, selected start-region materialization, initial founder spawn integration and minimum no-reroll persistence boundary into one milestone-sized delivery.
+- deeper persistence/streaming/migration remain future implementation and must not be described as already running.
 
 ---
 
@@ -490,7 +493,7 @@ This same pattern later applies to shelters, storage, paths, agriculture, worksh
 
 ## 18. Implementation sequence
 
-This document remains the architecture gate. WG-1 is now implemented; WG-2 and later runtime phases remain incomplete until separately merged and validated.
+This document remains the architecture gate. WG-1 and WG-2 are now implemented. From this checkpoint, tightly coupled world-generation work is grouped into milestone-sized deliveries to reduce PR/CI/state-sync churn while preserving the same authority boundaries.
 
 Recommended phases:
 
@@ -502,10 +505,20 @@ Recommended phases:
 - PopulationSeed separated from natural-world identity.
 - order-independence test and Core 46/46 validation.
 
-### WG-2 — macro world + initial start-site selector — **READY_NOW**
-- lightweight terrain/biome/water/resource potential
-- start viability scoring
-- no infrastructure spawn
+### WG-2 — macro world + initial start-site selector — **DONE #85**
+- coherent macro terrain/climate/biome/resource potential.
+- deterministic start viability scoring over 625 candidates.
+- geography/start ranking independent of PopulationSeed.
+- no infrastructure spawn.
+- merge `ed4bf34d4b5bd0eb917a8bfb7fc5da16f52a4907`; Core 47/47 + Preflight + UE compile PASS.
+
+### World Generation Milestone A — **READY_NOW**
+- WG-3 deterministic detailed natural chunk baseline.
+- selected WG-2 start-region materialization boundary.
+- initial founder spawn integration into the materialized natural region.
+- generated-chunk registry and minimum no-reroll persistence boundary.
+- minimum Core/Bridge read contract needed by later World Visual presentation.
+- no civilization infrastructure auto-spawn.
 
 ### WG-3 — lazy natural chunk baseline
 - deterministic local environment/resource generation
