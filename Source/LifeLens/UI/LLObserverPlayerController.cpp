@@ -16,15 +16,34 @@ namespace
     // point the local view somewhere else so spawn placement, environment
     // feedback and resident visuals can be inspected. Off unless typed.
     //
-    //   ll.ViewResidents        frame every resident
+    //   ll.ViewResidents        frame the densest resident cluster
     //   ll.ViewResidents 2      frame resident #2 closely
     //   ll.ViewReset            hand the view back to the game mode camera
     TWeakObjectPtr<ACameraActor> GDebugViewCamera;
     TWeakObjectPtr<AActor> GOriginalViewTarget;
 
+    // Residents that are further apart than this are not framed together: the
+    // camera would have to pull back so far that nobody is readable.
+    constexpr float ClusterRadiusUU = 3000.0f;
+    // Smallest subject radius, so one resident is still viewed from a sane
+    // distance rather than from inside their own capsule.
+    constexpr float SingleResidentRadiusUU = 260.0f;
+    constexpr float MinViewDistanceUU = 700.0f;
+    constexpr float MaxViewDistanceUU = 9000.0f;
+    constexpr float ResidentEyeHeightUU = 90.0f;
+
     APlayerController* FirstLocalController(UWorld* World)
     {
         return World ? World->GetFirstPlayerController() : nullptr;
+    }
+
+    // Framing distance for a bounding sphere at a given vertical FOV, with a
+    // margin so the subject does not touch the screen edge.
+    float FramingDistanceUU(float RadiusUU, float FieldOfViewDegrees)
+    {
+        const float HalfAngle = FMath::DegreesToRadians(FMath::Clamp(FieldOfViewDegrees, 20.0f, 120.0f) * 0.5f);
+        const float Distance = RadiusUU / FMath::Max(FMath::Tan(HalfAngle), KINDA_SMALL_NUMBER);
+        return Distance * 1.25f;
     }
 
     void FrameResidents(UWorld* World, const TArray<FString>& Args)
@@ -55,25 +74,66 @@ namespace
             Index = FCString::Atoi(*Args[0]);
         }
 
-        FBox Bounds(ForceInit);
+        FVector Centre = FVector::ZeroVector;
+        float Radius = SingleResidentRadiusUU;
+        int32 Framed = 1;
+        int32 Excluded = 0;
+
         if (Residents.IsValidIndex(Index))
         {
-            Bounds += Residents[Index]->GetActorLocation();
+            Centre = Residents[Index]->GetActorLocation();
         }
         else
         {
+            // Residents can wander far apart. Framing the full bounding box then
+            // puts the camera kilometres away and everything becomes a speck, so
+            // the view centres on the densest cluster instead and reports who was
+            // left out.
+            FVector Best = Residents[0]->GetActorLocation();
+            int32 BestCount = 0;
+            for (const ALLResidentCharacter* Candidate : Residents)
+            {
+                const FVector CandidateLocation = Candidate->GetActorLocation();
+                int32 Count = 0;
+                for (const ALLResidentCharacter* Other : Residents)
+                {
+                    if (FVector::DistSquared2D(CandidateLocation, Other->GetActorLocation())
+                        <= FMath::Square(ClusterRadiusUU))
+                    {
+                        ++Count;
+                    }
+                }
+                if (Count > BestCount)
+                {
+                    BestCount = Count;
+                    Best = CandidateLocation;
+                }
+            }
+
+            FBox Cluster(ForceInit);
             for (const ALLResidentCharacter* Resident : Residents)
             {
-                Bounds += Resident->GetActorLocation();
+                const FVector Location = Resident->GetActorLocation();
+                if (FVector::DistSquared2D(Best, Location) <= FMath::Square(ClusterRadiusUU))
+                {
+                    Cluster += Location;
+                }
+                else
+                {
+                    ++Excluded;
+                }
             }
+            Centre = Cluster.GetCenter();
+            Framed = Residents.Num() - Excluded;
+            Radius = FMath::Max(Cluster.GetSize().Size2D() * 0.5f, SingleResidentRadiusUU);
         }
 
-        const FVector Centre = Bounds.GetCenter();
-        // Enough distance to keep the whole spread in frame, with a floor so a
-        // single resident is still viewed from a readable distance.
-        const float Spread = FMath::Max(Bounds.GetSize().Size2D(), 400.0f);
-        const float Distance = FMath::Clamp(Spread * 1.6f, 900.0f, 20000.0f);
-        const float Height = Distance * 0.75f;
+        const float FieldOfView = 70.0f;
+        const float Distance = FMath::Clamp(FramingDistanceUU(Radius, FieldOfView),
+                                            MinViewDistanceUU, MaxViewDistanceUU);
+        // A 35 degree look-down keeps both the residents and the ground around
+        // them in frame.
+        const float Height = Distance * 0.70f;
 
         if (!GDebugViewCamera.IsValid())
         {
@@ -86,18 +146,26 @@ namespace
             return;
         }
 
-        const FVector CameraLocation = Centre + FVector(0.0f, -Distance, Height);
+        const FVector Focus = Centre + FVector(0.0f, 0.0f, ResidentEyeHeightUU);
+        const FVector CameraLocation = Focus + FVector(0.0f, -Distance, Height);
         Camera->SetActorLocation(CameraLocation);
-        Camera->SetActorRotation((Centre - CameraLocation).Rotation());
+        Camera->SetActorRotation((Focus - CameraLocation).Rotation());
         if (UCameraComponent* CameraComponent = Camera->GetCameraComponent())
         {
-            CameraComponent->SetFieldOfView(70.0f);
+            CameraComponent->SetFieldOfView(FieldOfView);
         }
         Controller->SetViewTarget(Camera);
 
         UE_LOG(LogTemp, Log,
-            TEXT("ll.ViewResidents: %d resident(s), centre=%s distance=%.0f height=%.0f"),
-            Residents.Num(), *Centre.ToCompactString(), Distance, Height);
+            TEXT("ll.ViewResidents: framed %d of %d (excluded %d beyond %.0f), centre=%s radius=%.0f distance=%.0f height=%.0f"),
+            Framed, Residents.Num(), Excluded, ClusterRadiusUU,
+            *Centre.ToCompactString(), Radius, Distance, Height);
+        if (Excluded > 0)
+        {
+            UE_LOG(LogTemp, Warning,
+                TEXT("ll.ViewResidents: %d resident(s) are outside the cluster. Use ll.ViewResidents <index> to look at one."),
+                Excluded);
+        }
     }
 
     void ResetView(UWorld* World)
