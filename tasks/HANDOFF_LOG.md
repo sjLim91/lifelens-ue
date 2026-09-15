@@ -776,3 +776,33 @@
   - 재검증: headless `-game`에서 `resolved=1`, 로컬 Build.sh Succeeded, preflight PASS
 - 상대가 알아야 할 점:
   - 스크립트로 BlendSpace를 만들 때 `sample_data` 직접 기록은 런타임에서 동작하지 않음. 에디터 전용 경로를 거쳐야 하며, 저장 후 `GetSamplesFromBlendInput` 해석 수로 검증해야 함
+
+
+---
+
+## 2026-09-15 — Jjun / joint integration checkpoint
+
+### #84 + #87 closeout and milestone governance transition
+- 작성자: Jjun side AI, reflecting merged Dagyeom + Jjun product lanes.
+- Character Motion Bootstrap #84: DONE / main merge `5f0af986728e717c274482915d5f8b5a9ee31195`.
+  - validated product head `fa781b0829a29f8b29b99fe19fe699cc53792966`
+  - Preflight `34940159290` PASS
+  - Unreal Linux Compile `34940159300` PASS
+  - PIE PASS and review threads resolved
+- World Generation Milestone A #87: DONE / main squash merge `5a543b7392eca722e794b5504241d46669ac23ab`.
+  - head `9de52c43c3048c9260c4d6fe2de2be0f97bed082`
+  - Preflight `34940403254` PASS
+  - Core `34940403079` PASS, 48/48 + deterministic
+  - Unreal Linux Compile `34940402948` PASS including UHT/UBT/link
+  - comments/unresolved review threads 0
+- 협업 규칙 전환:
+  - same-purpose + same-layer + same-validation work is one milestone-sized PR.
+  - `docs/DEVELOPMENT_MILESTONES.md` becomes the canonical roadmap.
+  - `WORK_STATE` is live state only; `TEAM_BOARD` is ownership/locks/Integration Requests only.
+  - role-specific READY queue is deprecated to prevent duplicate/stale dispatch.
+  - meaningful events only go to this append-only HANDOFF log.
+  - do not move an already validated product PR HEAD for docs-only closeout when that would trigger another heavy UE compile.
+  - long UE compile/package runs are started and recorded, then the AI does not keep waiting/polling; closeout resumes when the user reports completion/failure.
+- 다음 gate: **Integrated Runtime Checkpoint A** on merged `main`.
+- Dagyeom next product milestone remains HOLD until that integrated gate is checked.
+- World Visual map/config boundary: Dagyeom owns `Content/Maps/**`; Jjun owns `Config/DefaultEngine.ini` startup/default map and `LifeLens.uproject` plugin integration via explicit Integration Request.

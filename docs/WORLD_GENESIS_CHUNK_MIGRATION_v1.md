@@ -595,3 +595,18 @@ This document does not yet implement:
 Those systems may build on this world foundation later.
 
 The immediate goal is to guarantee that LifeLens can begin with four people in nature and grow across generations without the world architecture becoming the limiting factor.
+
+
+## 2026-09-15 implementation checkpoint — World Generation Milestone A DONE
+
+- WG-1 deterministic world identity/coordinates — DONE #83.
+- WG-2 macro world + viable initial start-region selector — DONE #85.
+- **World Generation Milestone A — DONE #87**, merge `5a543b7392eca722e794b5504241d46669ac23ab`.
+- final #87 head `9de52c43c3048c9260c4d6fe2de2be0f97bed082`.
+- Preflight `34940403254` PASS.
+- Core `34940403079` PASS, 48/48 + deterministic harness.
+- Unreal Linux Compile `34940402948` PASS including UE 5.6 UHT/UBT/link.
+
+Milestone A establishes deterministic detailed natural chunks, selected start-region materialization, founder placement inside that region, generated-chunk identity/registry, snapshot v6 no-reroll persistence boundary, and read-only Unreal presentation contracts without adding starting civilization infrastructure.
+
+**Next gate is Integrated Runtime Checkpoint A**, not another isolated world-generation slice. After that gate, World Visual Milestone A consumes the real generated-world contracts.
