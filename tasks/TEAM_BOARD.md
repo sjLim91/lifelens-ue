@@ -21,11 +21,12 @@
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | after #77 | Primitive sanitation experimentation / affordance progression | Core/Civilization/World contract | **READY_NOW** |
+| 쭌 + 쭌 AI | after #78 | Designated sanitation area authoritative affordance integration | Core/Civilization/World/Bridge contract | **READY_NOW** |
 | 다겸 + 다겸 AI | PR #67 `dagyeom/character-appearance-v1` | Character Appearance v1 | Character appearance + `Content/Characters/**` | **ACTIVE / CLOSEOUT** |
 | 다겸 + 다겸 AI | after #67 | Character Motion Bootstrap | Character locomotion presentation | READY_AFTER_#67 |
 | 다겸 + 다겸 AI | after Motion Bootstrap | World Visual Environment v1 | Environment/Maps/WorldPresentation | HIGH PRIORITY / READY_AFTER_MOTION_BOOTSTRAP |
 | 다겸 + 쭌 Bridge support as needed | after World Visual v1 | Character Motion & Context remainder | Character presentation/animation | AFTER WORLD VISUAL v1 |
+| 쭌 + 쭌 AI | after designated-area affordance | Dug pit / latrine progression | Core/Civilization/World contract | NEXT |
 | 쭌 + 다겸 lanes | after authoritative sanitation loop | HumanWaste visual feedback | Core read contract + Presentation | NEXT |
 | 쭌 + 쭌 AI | PR #2 | old Android validation path | Bridge/build | FROZEN |
 
@@ -33,32 +34,55 @@
 
 **0개.** Previous appearance/presentation assist locks are released.
 
-## Current Jjun lane — Primitive sanitation experimentation / progression READY_NOW
+## Current Jjun lane — Designated sanitation area authoritative affordance integration READY_NOW
 
 Dependency:
-- PR #77 DONE.
+- PR #78 DONE.
 
 Goal:
-- use the resident sanitation-problem Belief created by #77 as a causal input to experimentation/progression.
-- recognized concern must precede sanitation invention attempts.
-- no fixed global tech unlock and no instant latrine creation.
+- turn the personally discovered `DesignatedSanitationArea` technique into an actual reusable primitive sanitation affordance.
+- the authoritative site/location belongs to Core state and survives Save/Load.
+- World/Bridge consumes the same site instead of inventing a second sanitation target.
+- preserve the hierarchy: designated primitive site before natural/emergency fallback, and only later dug pit/latrine.
 
 Planned minimal boundary:
-- inspect existing `CivilizationIntent` / experiment machinery first.
-- add the smallest sanitation experiment/discovery path that fits the generic civilization loop.
-- likely initial responses are designated waste area and/or dug pit attempts before a durable latrine affordance.
-- success becomes personal knowledge first; propagation and infrastructure follow later.
-- failure remains learning evidence.
-- feasibility is constrained by actual resources/material/environment state.
+- inspect existing SmartObject/facility + external physical execution contracts first.
+- define the smallest stable Core-owned designated sanitation site representation.
+- creation requires reproducible technique knowledge plus a feasible clean site; knowledge alone is not a magic facility spawn.
+- use one authoritative GridPos for preference, World movement, completion ACK and environmental consequence.
+- invalid/disappeared site fails/re-resolves through existing fallback rules.
+- persist/restore the site in existing snapshot authority.
 
 Acceptance:
-- no recognized sanitation problem → no spontaneous sanitation experiment.
-- recognized concern can deterministically seed/bias an experiment opportunity.
-- success/failure is state-driven and testable.
-- successful discovery does not create a global magic unlock.
-- Core tests + Structural Preflight.
+- no learned technique → no designated site creation.
+- learned technique still requires the actual creation contract; no silent global site.
+- once created, the designated site is preferred over unstructured emergency outdoor relief when usable.
+- actual World completion and residue agree with the authoritative site GridPos.
+- Save/Load continuity.
+- no duplicate World-only target.
+- Core tests + Structural Preflight + UE compile for Bridge/World changes.
 
-## Latest Jjun product checkpoint — PR #77 DONE
+## Latest Jjun product checkpoint — PR #78 DONE
+
+PR #78 `[CORE] Add primitive sanitation experimentation progression v1` merged as:
+- merge SHA: `3a9739682034ad7c5009da5f75a11b0f07fed55b`
+- validated head: `e78f6d211589b74008ff0fdf73e9be1048e2d807`
+
+Validation:
+- Structural Preflight run `34921390473`: PASS.
+- Core Tests run `34921390510`: PASS, 43/43.
+- Unreal Linux Compile run `34921390491`: PASS.
+- actual UE 5.6 image verification / UHT / UBT / link: PASS.
+
+Delivered:
+- recognized sanitation problem + sufficiently clean candidate site gate sanitation experimentation.
+- personal `DesignatedSanitationArea` technique added to existing civilization Experiment/Knowledge machinery.
+- deterministic failure becomes Hypothesized; deterministic success becomes Reproducible.
+- existing witness/teaching provenance and civilization read models cover the new technique without global unlock.
+- existing civilization snapshot extension persists the technique.
+- discovery creates no Toilet/Latrine SmartObject and no `LatrineUnlocked` flag.
+
+## Previous Jjun product checkpoint — PR #77 DONE
 
 PR #77 `[CORE] Add sanitation problem recognition v1` merged as:
 - merge SHA: `3ea6048d9e7ac6b31e75faa4f5ca55b5c46f9016`
@@ -125,7 +149,7 @@ Disease/pathogen health modelling is not part of #75.
 
 ## Core ↔ World repair status
 
-The old `Core ↔ World Execution Sync v1 — READY_NOW` entry is obsolete. Most verification findings were repaired by #70–#77.
+The old `Core ↔ World Execution Sync v1 — READY_NOW` entry is obsolete. Most verification findings were repaired by #70–#78.
 
 ### Resolved / baseline closed
 
@@ -137,6 +161,7 @@ The old `Core ↔ World Execution Sync v1 — READY_NOW` entry is obsolete. Most
 - #75: environmental perception/memory/avoidance recommendation.
 - #76: World consumes the authoritative sanitation recommendation and ACKs the actual visible location.
 - #77: repeated/salient sanitation evidence can become explicit resident problem recognition.
+- #78: recognized concern can drive deterministic sanitation experiment/discovery and personal knowledge.
 
 ### Still partial / follow-up
 
@@ -169,6 +194,7 @@ Rules:
 - #75 Environmental Exposure / Perception / Avoidance — DONE.
 - #76 World sanitation recommendation integration — DONE.
 - #77 Sanitation Problem Recognition v1 — DONE.
+- #78 Primitive sanitation experimentation progression v1 — DONE.
 
 ### Immediate environmental loop
 
@@ -179,8 +205,9 @@ Rules:
 → `resident exposure/Memory`
 → `next-location avoidance`
 → `problem recognition`
-→ **`primitive sanitation experiment/discovery` (READY_NOW)**
-→ `better sanitation affordance`
+→ `primitive sanitation experiment/discovery`
+→ **`authoritative designated sanitation area` (READY_NOW)**
+→ `dug pit / latrine improvement`
 → `visual feedback`
 
 ## Character Appearance v1 — ACTIVE / PR #67 CLOSEOUT
@@ -322,17 +349,19 @@ Current open blockers from Jjun for Dagyeom #67: **3 review closeout items**.
 11. #75 environmental exposure/perception/avoidance — DONE.
 12. #76 World sanitation recommendation integration — DONE.
 13. #77 Sanitation Problem Recognition — DONE.
-14. **Primitive sanitation experimentation / affordance progression — READY_NOW.**
-15. Character Appearance #67 — ACTIVE CLOSEOUT in parallel.
-16. HumanWaste visual feedback.
-17. Character Motion Bootstrap — after #67.
-18. World Visual Environment v1.
-19. Character Motion & Context remainder.
-20. Observer UX / Mobile Touch / Visual Feedback UI work.
-21. integrated runtime verification.
-22. Android smoke APK + device profiling.
-23. MetaHuman comparison only after Android/mobile baseline.
-24. deeper open-ended invention / health / civilization production chains.
+14. #78 Primitive sanitation experimentation progression — DONE.
+15. **Designated sanitation area authoritative affordance integration — READY_NOW.**
+16. Character Appearance #67 — ACTIVE CLOSEOUT in parallel.
+17. Dug pit / latrine progression.
+18. HumanWaste visual feedback.
+19. Character Motion Bootstrap — after #67.
+20. World Visual Environment v1.
+21. Character Motion & Context remainder.
+22. Observer UX / Mobile Touch / Visual Feedback UI work.
+23. integrated runtime verification.
+24. Android smoke APK + device profiling.
+25. MetaHuman comparison only after Android/mobile baseline.
+26. deeper open-ended invention / health / civilization production chains.
 
 ## Completion rule
 
