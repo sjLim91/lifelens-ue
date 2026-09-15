@@ -58,6 +58,12 @@ struct FLLNeedState
     UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame)
     float Energy = 80.0f;
 
+    // Authoritative Core thirst projected onto the legacy observer DTO.
+    // Appended rather than replacing compatibility fields so existing
+    // Blueprint/property names and old editor assets remain loadable.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame)
+    float Thirst = 80.0f;
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame)
     float Social = 65.0f;
 
