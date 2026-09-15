@@ -1,0 +1,251 @@
+name: Close PR82 state sync
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/close-pr82-state-sync.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Apply canonical state sync
+        run: |
+          git pull --ff-only origin main
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_between(text, start, end, replacement):
+              i = text.index(start)
+              j = text.index(end, i)
+              return text[:i] + replacement.rstrip() + "\n\n" + text[j:]
+
+          # WORK_STATE
+          p = Path('tasks/WORK_STATE.md')
+          t = p.read_text(encoding='utf-8')
+          t = replace_between(
+              t,
+              'Latest product merge:\n',
+              'Latest Core/civilization baseline remains PR #80',
+              '''Latest product merge:
+- PR #82 `[WORLD] Add HumanWaste environmental visual feedback v1`
+- merge SHA: `831ba22ce17ca5fef8a92f2288e18a0495248a7a`
+
+Validated PR #82 final head `8c54ca100c28b12a77375ad48626c4d513087b04`:
+- Structural Preflight run `34931331778`: PASS
+- Environmental visual feedback structural validator: PASS
+- Unreal Linux Compile run `34931331779`: PASS
+- UE 5.6 image verification / UHT / UBT / link: PASS
+- PR comments/reviews/unresolved threads at merge checkpoint: 0
+
+Delivered by #82:
+- authoritative Core `HumanWaste` residue is now projected into the Unreal world through a read-only presentation component.
+- one HISM component represents many residue records instead of one heavy Actor/Niagara per record.
+- Core Grid XY maps to World location and a WorldStatic trace resolves the visible surface Z.
+- amount/intensity/radius/age drive footprint/custom presentation data.
+- open designated-area residue (`0.42`, radius `3`) remains visibly broader/stronger than DugPit-contained residue (`0.16`, radius `1`) without duplicating site authority.
+- visual state is rebuilt from `GetEnvironmentObservation(...)`; presentation never deposits, contains, cleans, or mutates sanitation state.
+- Save/Load restoration naturally rebuilds from authoritative residue state.
+- Android baseline includes HISM, max-instance cap, culling, and signature-based rebuild suppression.''')
+          t = replace_between(
+              t,
+              '### Jjun lane — HumanWaste Environmental Visual Feedback — READY_NOW',
+              '### World Genesis / Chunk / Migration — DESIGN FIXED / IMPLEMENTATION GATE',
+              '''### Jjun lane — World Genesis WG-1 — READY_NOW
+
+Owner: 쭌 / 쭌 AI
+Dependency: canonical `docs/WORLD_GENESIS_CHUNK_MIGRATION_v1.md`; PR #82 DONE.
+Handoff safety: SAFE; HumanWaste visual slice merged and state-synced.
+
+Goal:
+- establish the deterministic logical world coordinate/chunk identity contract before production World Visual commits to a fixed map.
+- separate natural-world identity from initial population randomness.
+
+WG-1 scope:
+- `WorldSeed` and explicit `GenerationVersion` contract.
+- stable `ChunkCoord` / chunk key representation.
+- deterministic untouched-chunk baseline derived only from world seed + generation version + chunk coordinate.
+- exploration/generation order must not affect untouched geography.
+- define world-grid/chunk conversion boundaries without making Unreal streaming or PCG the simulation authority.
+- preserve current bootstrap/test map compatibility while the scalable logical world foundation is introduced.
+
+Acceptance:
+- same inputs produce identical untouched chunk identity/baseline regardless of request order.
+- different seeds can produce different natural baselines.
+- PopulationSeed/random resident generation is not coupled to terrain generation.
+- no production-sized fixed arena assumption is introduced.
+- relevant Core/Preflight/UE compile checks pass.''')
+          p.write_text(t, encoding='utf-8')
+
+          # TEAM_BOARD
+          p = Path('tasks/TEAM_BOARD.md')
+          t = p.read_text(encoding='utf-8')
+          t = t.replace(
+              '| 쭌 + 쭌 AI | new branch after preflight | HumanWaste Environmental Visual Feedback | Core read contract + World presentation support | **READY_NOW** |',
+              '| 쭌 + 쭌 AI | new branch after preflight | World Genesis WG-1 | Core world seed / deterministic chunk-coordinate contract | **READY_NOW** |')
+          t = replace_between(
+              t,
+              '## Latest Jjun product checkpoint — PR #80 DONE',
+              '## Jjun next lane — HumanWaste Environmental Visual Feedback — READY_NOW',
+              '''## Latest Jjun product checkpoint — PR #82 DONE
+
+PR #82 `[WORLD] Add HumanWaste environmental visual feedback v1`
+- merge SHA: `831ba22ce17ca5fef8a92f2288e18a0495248a7a`
+- validated head: `8c54ca100c28b12a77375ad48626c4d513087b04`
+
+Validation:
+- Structural Preflight `34931331778`: PASS.
+- environmental visual feedback validator: PASS.
+- Unreal Linux Compile `34931331779`: PASS.
+- UE 5.6 image verification / UHT / UBT / link: PASS.
+- merge checkpoint PR comments/reviews/unresolved threads: 0.
+
+Delivered:
+- Core-authoritative HumanWaste residue now has an actual Unreal world visual path.
+- HISM batches residue visuals with max-instance cap and distance culling for Android-first cost control.
+- visual placement uses authoritative Grid position plus ground-surface trace.
+- amount/intensity/radius/age affect visual footprint/custom data.
+- DesignatedArea exposure profile remains visually broader/stronger than DugPit containment.
+- visualizer is read-only and never becomes simulation/sanitation authority.
+- Save/Load restoration reconstructs visuals from authoritative Core state.''')
+          t = replace_between(
+              t,
+              '## Jjun next lane — HumanWaste Environmental Visual Feedback — READY_NOW',
+              '## World Genesis / Chunk / Migration — CANONICAL DESIGN FIXED',
+              '''## Jjun next lane — World Genesis WG-1 — READY_NOW
+
+Goal:
+- implement the first runtime architecture gate from `docs/WORLD_GENESIS_CHUNK_MIGRATION_v1.md` before production World Visual hardens around a small fixed map.
+
+WG-1 boundary:
+- stable `WorldSeed` + `GenerationVersion`.
+- stable logical `ChunkCoord` / chunk key.
+- untouched chunk baseline deterministic from `(WorldSeed, GenerationVersion, ChunkCoord)` only.
+- generation order independence.
+- explicit separation from `PopulationSeed` / initial resident randomization.
+- no Unreal streaming/PCG object becomes simulation authority.
+
+Acceptance:
+- same seed/version/chunk yields same untouched baseline in any request order.
+- different WorldSeed can vary the natural world.
+- current bootstrap map remains usable for tests while scalable logical coordinates are introduced.
+- relevant Core/Preflight/UE validation passes.''')
+          t = t.replace('## World Genesis / Chunk / Migration — CANONICAL DESIGN FIXED',
+                        '## World Genesis / Chunk / Migration — WG-1 READY_NOW / WG-2 AFTER WG-1')
+          t = t.replace('- #80 same-site dug-pit improvement and containment.\n',
+                        '- #80 same-site dug-pit improvement and containment.\n- #82 authoritative HumanWaste residue → Android-safe Unreal visual projection.\n')
+          p.write_text(t, encoding='utf-8')
+
+          # PROJECT_PROGRESS
+          p = Path('docs/PROJECT_PROGRESS_2026-09-15.md')
+          t = p.read_text(encoding='utf-8')
+          t = replace_between(
+              t,
+              'Latest merged product slice:\n',
+              'Latest Core/civilization slice remains PR #80',
+              '''Latest merged product slice:
+- PR #82 `[WORLD] Add HumanWaste environmental visual feedback v1`
+- merge SHA: `831ba22ce17ca5fef8a92f2288e18a0495248a7a`
+- validated final head: `8c54ca100c28b12a77375ad48626c4d513087b04`
+
+Validation:
+- Structural Preflight `34931331778`: PASS
+- environmental visual feedback validator: PASS
+- Unreal Linux Compile `34931331779`: PASS
+- UE 5.6 image verification / UHT / UBT / link: PASS
+- PR comments/reviews/unresolved threads at merge checkpoint: 0''')
+          marker = '- no `LatrineUnlocked`, modern plumbing or magic waste deletion.\n\nThe causal chain now reaches:'
+          insert = '''- no `LatrineUnlocked`, modern plumbing or magic waste deletion.
+
+### #82 — HumanWaste Environmental Visual Feedback DONE
+- authoritative HumanWaste residue now appears in Unreal world presentation.
+- single HISM batches many residues; no unlimited heavy Actor/Niagara per residue.
+- authoritative Core Grid position maps to world location with surface trace for visible Z placement.
+- amount/intensity/radius/age drive footprint and per-instance presentation data.
+- DesignatedArea residue (`0.42`, radius `3`) reads broader/stronger than DugPit residue (`0.16`, radius `1`).
+- presentation consumes `GetEnvironmentObservation(...)` only and never owns residue/sanitation truth.
+- Save/Load rebuilds visuals from Core-authoritative state.
+- Android baseline uses cap + culling + signature-based refresh suppression.
+
+The causal chain now reaches:'''
+          t = t.replace(marker, insert)
+          t = replace_between(
+              t,
+              '### Jjun lane — READY_NOW',
+              '### Dagyeom lane — READY_NOW',
+              '''### Jjun lane — READY_NOW
+
+**World Genesis WG-1**
+
+Goal:
+- establish `WorldSeed + GenerationVersion + ChunkCoord` deterministic logical-world contracts.
+- untouched chunk generation must be order-independent.
+- keep `PopulationSeed` separate from terrain/natural-world identity.
+- preserve bootstrap maps for current verification while preventing a permanent fixed-arena architecture.''')
+          t = t.replace('- **HumanWaste ground/decal/material/VFX — READY_NOW**\n',
+                        '- **HumanWaste baseline HISM ground feedback — DONE (#82); presentation material/mesh polish remains later.**\n')
+          t = t.replace('17. **HumanWaste visual feedback — READY_NOW.**',
+                        '17. HumanWaste visual feedback #82 — DONE.')
+          t = t.replace('20. **World Genesis WG-1/WG-2 architecture gate.**',
+                        '20. **World Genesis WG-1 — READY_NOW; WG-2 follows WG-1.**')
+          t = t.replace('- environmental state exists ≠ visual already exists.\n',
+                        '- environmental state exists ≠ every environmental consequence already has polished visual presentation; HumanWaste now has the #82 baseline path.\n')
+          p.write_text(t, encoding='utf-8')
+
+          # HANDOFF append-only
+          p = Path('tasks/HANDOFF_LOG.md')
+          t = p.read_text(encoding='utf-8')
+          entry = '''
+
+## 2026-09-15 — HumanWaste Environmental Visual Feedback v1 완료
+
+- 작성자: 쭌 측 AI
+- 브랜치/PR: `jjun/human-waste-visual-feedback-v1`, PR #82
+- 상태: `DONE / main squash merge 완료`
+- validated head: `8c54ca100c28b12a77375ad48626c4d513087b04`
+- main merge: `831ba22ce17ca5fef8a92f2288e18a0495248a7a`
+- 변경 범위:
+  - `ULLEnvironmentalResidueVisualizerComponent` 추가. Core Bridge `GetEnvironmentObservation(...)`의 authoritative residue read DTO만 소비.
+  - 하나의 HISM으로 여러 HumanWaste record를 표현하여 residue별 heavy Actor/Niagara 무한 생성을 피함.
+  - Core Grid XY를 World 위치로 변환하고 WorldStatic surface trace로 지면 Z를 결정.
+  - amount/intensity/radius/age를 visual footprint 및 per-instance custom data에 반영.
+  - DesignatedArea residue baseline `intensity 0.42 / radius 3`, DugPit `0.16 / radius 1` 차이를 결과 기반으로 표현하며 site kind authority를 Presentation에 복제하지 않음.
+  - BeginPlay/SaveLoad restore 후 authoritative state에서 강제 rebuild; 이후 signature가 바뀔 때만 refresh.
+  - max 128 visual instances + cull distances로 Android-first 비용 경계 설정.
+  - `GetEnvironmentalResidueVisualCount()` QA hook 및 structural validator/Preflight gate 추가.
+- 검증:
+  - Structural Preflight `34931331778` PASS, environmental visual feedback validator 포함.
+  - Unreal Linux Compile `34931331779` PASS; UE 5.6 image verify / UHT / UBT / link 모두 SUCCESS.
+  - merge checkpoint PR comments/reviews/unresolved threads 0.
+- authority 경계:
+  - visual layer는 deposit/contain/cleanup/hygiene/facility 상태를 수정하지 않는다.
+  - visual-only state는 SaveGame authority가 아니며 Core residue에서 재구성한다.
+- 다음 쭌 레인:
+  - **World Genesis WG-1 — READY_NOW**.
+  - `WorldSeed + GenerationVersion + ChunkCoord` deterministic contract와 exploration-order-independent untouched-chunk baseline을 먼저 확정한다.
+  - `PopulationSeed`는 자연환경 seed와 분리하며, production World Visual이 작은 고정 arena에 묶이기 전에 WG-1/WG-2 gate를 통과한다.
+'''
+          if 'HumanWaste Environmental Visual Feedback v1 완료' not in t:
+              t += entry
+          p.write_text(t, encoding='utf-8')
+          PY
+
+      - name: Commit state sync and remove one-shot workflow
+        run: |
+          rm .github/workflows/close-pr82-state-sync.yml
+          git config user.name "LifeLens State Sync"
+          git config user.email "actions@users.noreply.github.com"
+          git add tasks/WORK_STATE.md tasks/TEAM_BOARD.md tasks/HANDOFF_LOG.md docs/PROJECT_PROGRESS_2026-09-15.md .github/workflows/close-pr82-state-sync.yml
+          git commit -m "docs: close HumanWaste visual feedback and promote World Genesis WG-1"
+          git push origin HEAD:main
