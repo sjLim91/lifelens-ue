@@ -200,7 +200,7 @@ Motion Bootstrap scope:
 2. Appearance projection contract — DONE via #65.
 3. Character Appearance v1 — DONE via #67.
 4. Motion Bootstrap — **READY_NOW** (Dagyeom lane).
-5. **World Genesis WG-1/WG-2 architectural gate** — before production-sized permanent World Visual implementation.
+5. **World Genesis WG-1 — DONE #83 / WG-2 architectural gate — READY_NOW** before production-sized permanent World Visual implementation.
 6. World Visual Environment v1 — presentation prototype may proceed after Motion, but production map must respect World Genesis/Chunk contract.
 7. Character Motion & Context remainder.
 8. Observer UX Polish / Mobile Touch / presentation feedback afterward.
@@ -340,10 +340,10 @@ Do not revive the old multi-hour PR #2 path as the default loop.
 14. #78 Primitive sanitation experimentation progression — DONE.
 15. #79 Designated sanitation area authoritative affordance — DONE.
 16. #80 Dug sanitation pit progression — DONE.
-17. **HumanWaste visual feedback — READY_NOW.**
-18. Character Appearance #67 — ACTIVE in parallel.
-19. Motion Bootstrap — after #67.
-20. **World Genesis WG-1/WG-2 architecture implementation gate.**
+17. HumanWaste visual feedback #82 — DONE.
+18. Character Appearance #67 — DONE.
+19. **Motion Bootstrap — READY_NOW** (Dagyeom lane).
+20. **World Genesis WG-1 — DONE #83; WG-2 — READY_NOW.**
 21. World Visual Environment v1 production world work.
 22. Character Motion & Context remainder.
 23. Integrated runtime verification.

@@ -109,9 +109,8 @@ World rules:
 
 Implementation gate:
 - bootstrap/test maps remain valid for current feature verification.
-- before `World Visual Environment v1` becomes a permanent production-sized map, WG-1/WG-2 must be implemented or explicitly integrated:
-  - WG-1 deterministic world coordinates/chunk keys.
-  - WG-2 macro world + viable start-site selector.
+- WG-1 deterministic world coordinates/chunk keys are **DONE #83**.
+- before `World Visual Environment v1` becomes a permanent production-sized map, WG-2 macro world + viable start-site boundaries must be implemented or explicitly integrated.
 - do not hard-lock Environment/Maps work to a small hand-authored arena.
 
 ## Latest Dagyeom product checkpoint — PR #67 DONE
@@ -187,7 +186,7 @@ Sanitation chain now:
 - #78 designated-area discovery — DONE.
 - #79 authoritative designated site — DONE.
 - #80 DugPit improvement/containment — DONE.
-- **HumanWaste visual feedback — READY_NOW.**
+- **HumanWaste visual feedback — DONE #82.**
 - material-backed latrine superstructure and health/pathogen simulation later.
 
 ## Shared File Ownership
@@ -253,10 +252,10 @@ Rules:
 14. #78 Primitive sanitation experimentation progression — DONE.
 15. #79 Designated sanitation area authoritative affordance — DONE.
 16. #80 Dug sanitation pit progression — DONE.
-17. **HumanWaste visual feedback — READY_NOW.**
+17. HumanWaste visual feedback #82 — DONE.
 18. Character Appearance #67 — DONE.
 19. **Character Motion Bootstrap — READY_NOW** (Dagyeom lane).
-20. **World Genesis WG-1/WG-2 implementation gate.**
+20. **World Genesis WG-1 — DONE #83; WG-2 — READY_NOW.**
 21. World Visual Environment v1 production environment.
 22. Character Motion & Context remainder.
 23. Observer UX / Mobile Touch / visual feedback UI work.

@@ -264,7 +264,7 @@ World Partition/streaming/PCG/HISM/HLOD are possible Unreal implementation tools
 Small test maps may continue for Core/Bridge/animation verification.
 
 Before `World Visual Environment v1` becomes a permanent production-sized map:
-- WG-1 deterministic world coordinates/chunk keys must be established.
+- WG-1 deterministic world coordinates/chunk keys are **established via #83**.
 - WG-2 macro world/start-site selection boundaries must be established or explicitly integrated.
 
 This prevents later rewriting a small hand-authored arena into a scalable world.
