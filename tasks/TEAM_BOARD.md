@@ -21,12 +21,12 @@
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | next Jjun slice | World sanitation recommendation integration | Core Bridge / WorldDirector | **READY_NOW / HIGHEST PRIORITY** |
+| 쭌 + 쭌 AI | PR #76 `jjun/world-sanitation-recommendation-v1` | World sanitation recommendation integration | Core Bridge / WorldDirector | **WAITING_CI** |
 | 다겸 + 다겸 AI | PR #67 `dagyeom/character-appearance-v1` | Character Appearance v1 | Character appearance + `Content/Characters/**` | **ACTIVE / CLOSEOUT** |
 | 다겸 + 다겸 AI | after #67 | Character Motion Bootstrap | Character locomotion presentation | READY_AFTER_#67 |
 | 다겸 + 다겸 AI | after Motion Bootstrap | World Visual Environment v1 | Environment/Maps/WorldPresentation | HIGH PRIORITY / READY_AFTER_MOTION_BOOTSTRAP |
 | 다겸 + 쭌 Bridge support as needed | after World Visual v1 | Character Motion & Context remainder | Character presentation/animation | AFTER WORLD VISUAL v1 |
-| 쭌 + 쭌 AI | after World sanitation integration | Sanitation Problem Recognition v1 | Core Memory/Knowledge/Civilization | NEXT |
+| 쭌 + 쭌 AI | after #76 DONE | Sanitation Problem Recognition v1 | Core Memory/Knowledge/Civilization | NEXT |
 | 쭌 + 쭌 AI | after problem recognition | Primitive sanitation affordance progression | Core/World/Civilization | NEXT |
 | 쭌 + 다겸 lanes | after authoritative sanitation loop | HumanWaste visual feedback | Core read contract + Presentation | NEXT |
 | 쭌 + 쭌 AI | PR #2 | old Android validation path | Bridge/build | FROZEN |
@@ -35,7 +35,30 @@
 
 **0개.** Previous appearance/presentation assist locks are released.
 
-## Latest Jjun product checkpoint — PR #75 DONE
+## Latest Jjun product checkpoint — PR #76 WAITING_CI
+
+PR #76 `[WORLD] Consume Core sanitation recommendation for emergency toilet movement`
+- branch: `jjun/world-sanitation-recommendation-v1`
+- head: `e089857710f6ef5430f57940167362ff39d08d64`
+- Structural Preflight run `34918024951`: PASS.
+- Unreal Linux Compile run `34918024929`: IN_PROGRESS at latest check.
+- PR mergeability: mergeable at latest check.
+
+Implemented:
+- WorldDirector emergency Toilet consumes Core `GetRecommendedOutdoorReliefGridPosition(...)`.
+- exact Core GridPos is projected to World using `CoreGridCellSizeUU`.
+- previous independent 650uu sanitation target removed.
+- recommendation failure fails closed rather than creating a competing World authority.
+- emergency Toilet arrival radius kept inside the authoritative Core cell before ACK.
+- existing movement → use-duration → actual completion GridPos ACK remains intact.
+- Preflight regression guard added.
+
+Exact next action:
+- finish Unreal Linux Compile.
+- PASS → final diff review → merge #76 → docs sync.
+- FAIL → capture first root cause and fix before retry.
+
+## Previous Jjun product checkpoint — PR #75 DONE
 
 PR #75 `[CORE] Add environmental exposure perception and avoidance v1` merged as:
 - `157ce9937e53d5868d7e558b4149a4fa56c4c454`
@@ -55,9 +78,7 @@ Delivered:
 - Save/Load continuity.
 - Bridge API `GetRecommendedOutdoorReliefGridPosition(...)`.
 
-Important boundary:
-- WorldDirector does **not yet** consume this recommendation for actual emergency-toilet movement.
-- disease/pathogen health modelling is not part of #75.
+Disease/pathogen health modelling is not part of #75.
 
 ## Core ↔ World repair status
 
@@ -101,17 +122,17 @@ Rules:
 - #68 Environmental Residue — DONE.
 - #75 Environmental Exposure / Perception / Avoidance — DONE.
 
-### Immediate next environmental loop
+### Immediate environmental loop
 
 `Core low-contamination recommendation`
-→ `World actual target/movement`
+→ `World actual target/movement` **(#76 in validation)**
 → `completion ACK at same GridPos`
 → `HumanWaste residue`
 → `resident exposure/Memory`
 → `next-location avoidance`
-→ `visual feedback`
 → `problem recognition`
 → `primitive sanitation solution`
+→ `visual feedback`
 
 ## Character Appearance v1 — ACTIVE / PR #67 CLOSEOUT
 
@@ -120,11 +141,15 @@ Canonical acceptance: `docs/CHARACTER_APPEARANCE_ROADMAP.md`
 Canonical asset track: `docs/CHARACTER_ASSET_TRACK.md`
 
 Latest checked head:
-- `aae68dc54bfb4d373ffc2124dd51b143d6038942`
+- `b7941b951df8147627580ff5d4a55a851a705454`
 
-Latest head validation:
-- Preflight: PASS.
-- Unreal Linux Compile: PASS.
+Latest actual workflow lookup for that head:
+- no workflow runs returned at this reconciliation checkpoint.
+
+Previously validated/reported in PR #67:
+- Preflight PASS.
+- Unreal Linux Compile PASS.
+- local PIE and Save/Load appearance continuity checks reported PASS.
 
 Reported/implemented:
 - Quaternius CC0 humanoids.
@@ -135,9 +160,7 @@ Reported/implemented:
 - humanoid residents visible in PIE.
 
 Remaining before DONE:
-- final PIE outfit confirmation.
-- explicit same-resident appearance continuity check across restart/load.
-- final review / merge / docs sync.
+- final review / merge / docs sync against latest actual head.
 
 Known limitation:
 - Idle-looking movement slide remains until Motion Bootstrap.
@@ -239,9 +262,9 @@ Current open blockers from Jjun for Dagyeom #67: **0**.
 9. #73 World ACK integration — DONE.
 10. #74 runtime position restore — DONE.
 11. #75 environmental exposure/perception/avoidance — DONE.
-12. **World sanitation recommendation integration — READY_NOW.**
+12. **#76 World sanitation recommendation integration — WAITING_CI.**
 13. Character Appearance #67 — ACTIVE CLOSEOUT in parallel.
-14. Sanitation Problem Recognition.
+14. Sanitation Problem Recognition — AFTER #76 DONE.
 15. Primitive sanitation affordance progression.
 16. HumanWaste visual feedback.
 17. Character Motion Bootstrap — after #67.
