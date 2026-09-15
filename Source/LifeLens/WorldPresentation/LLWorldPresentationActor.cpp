@@ -158,26 +158,64 @@ void ALLWorldPresentationActor::ClearInstances()
     SuppressedDressing = 0;
 }
 
-float ALLWorldPresentationActor::AmbientDressingKeepFactor(const FVector2D& LocationUU) const
+FVector2D ALLWorldPresentationActor::SettlementReferenceUU(const FLLCoreWorldGenerationObservation& World) const
 {
-    // The start region sits at the Unreal presentation origin by the shared
-    // spatial contract, so distance from the origin is distance from
-    // `InitialCenterGrid`. Nothing here consults or changes Core state.
-    if (StartRegionClearRadiusUU <= 0.0f)
+    // Resource patches are converted with
+    // `(Patch.GridX - World.InitialCenterGridX) * GridCellSizeUU`, so the Core
+    // start-region centre maps to the presentation origin by construction.
+    // Deriving it here keeps the readability envelope tied to
+    // `InitialCenterGrid` rather than to a hard-coded world origin: if the
+    // mapping ever moves, this moves with it.
+    const FVector ChunkOffset = ChunkOriginUU(World, World.InitialChunkX, World.InitialChunkY);
+    return FVector2D(ChunkOffset.X, ChunkOffset.Y);
+}
+
+float ALLWorldPresentationActor::AmbientDressingKeepFactor(const FVector2D& LocationUU, ELLDressingLayer Layer) const
+{
+    // Ground detail is low enough that it never hides a resident.
+    if (Layer == ELLDressingLayer::GroundDetail)
     {
         return 1.0f;
     }
 
-    const float Distance = LocationUU.Size();
-    if (Distance <= StartRegionClearRadiusUU)
+    const float CoreRadius = FMath::Max(0.0f, CoreClearRadiusUU);
+    const float ActivityRadius = FMath::Max(CoreRadius, ActivityRadiusUU);
+    const float Distance = (LocationUU - CachedSettlementReferenceUU).Size();
+
+    if (Distance >= ActivityRadius || ActivityRadius <= KINDA_SMALL_NUMBER)
     {
-        return 0.0f;
+        return 1.0f;   // untouched natural density outside the envelope
     }
-    if (StartRegionClearFalloffUU <= KINDA_SMALL_NUMBER)
+
+    const bool bCanopy = Layer == ELLDressingLayer::Canopy;
+    const float CoreKeep = FMath::Clamp(bCanopy ? CoreZoneCanopyKeep : CoreZoneUndergrowthKeep, 0.0f, 1.0f);
+    if (Distance <= CoreRadius)
     {
-        return 1.0f;
+        return CoreKeep;   // living core stays open
     }
-    return FMath::Clamp((Distance - StartRegionClearRadiusUU) / StartRegionClearFalloffUU, 0.0f, 1.0f);
+
+    // Activity zone: restore density with distance. Canopy uses the steeper
+    // exponent so tall trees come back last.
+    const float Band = FMath::Max(ActivityRadius - CoreRadius, KINDA_SMALL_NUMBER);
+    const float Progress = FMath::Clamp((Distance - CoreRadius) / Band, 0.0f, 1.0f);
+    const float Exponent = FMath::Max(1.0f, bCanopy ? CanopyRecoveryExponent : UndergrowthRecoveryExponent);
+    return FMath::Lerp(CoreKeep, 1.0f, FMath::Pow(Progress, Exponent));
+}
+
+float ALLWorldPresentationActor::ResourcePatchScaleFactor(const FVector2D& LocationUU) const
+{
+    // An authoritative resource is never removed for readability. Inside the
+    // settlement it is only drawn smaller.
+    const float Distance = (LocationUU - CachedSettlementReferenceUU).Size();
+    if (Distance <= FMath::Max(0.0f, CoreClearRadiusUU))
+    {
+        return FMath::Clamp(CoreZoneResourceScale, 0.1f, 1.0f);
+    }
+    if (Distance <= FMath::Max(CoreClearRadiusUU, ActivityRadiusUU))
+    {
+        return FMath::Clamp(ActivityZoneResourceScale, 0.1f, 1.0f);
+    }
+    return 1.0f;
 }
 
 FVector ALLWorldPresentationActor::ChunkOriginUU(const FLLCoreWorldGenerationObservation& World, int32 ChunkX, int32 ChunkY) const
@@ -262,7 +300,7 @@ void ALLWorldPresentationActor::BuildChunkDressing(const FLLCoreWorldGenerationO
     auto Place = [&](TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>>& Components,
                      int32 Count, int32& Placed, int32 MaxTotal,
                      float MinScale, float MaxScale, float TiltDegrees,
-                     bool bObeyReadabilityRadius)
+                     ELLDressingLayer Layer)
     {
         if (Components.Num() == 0)
         {
@@ -285,8 +323,7 @@ void ALLWorldPresentationActor::BuildChunkDressing(const FLLCoreWorldGenerationO
             // Start-region readability: ambient dressing thins out towards the
             // founders. The roll comes from the same deterministic stream, so
             // the same world always drops the same instances.
-            if (bObeyReadabilityRadius
-                && KeepRoll >= AmbientDressingKeepFactor(FVector2D(Location.X, Location.Y)))
+            if (KeepRoll >= AmbientDressingKeepFactor(FVector2D(Location.X, Location.Y), Layer))
             {
                 ++SuppressedDressing;
                 continue;
@@ -303,13 +340,12 @@ void ALLWorldPresentationActor::BuildChunkDressing(const FLLCoreWorldGenerationO
         }
     };
 
-    // Trees, shrubs and the tall grass are what actually blocks the view of the
-    // founders, so only those obey the readability radius. Rocks and pebbles
-    // are low and are placed everywhere.
-    Place(TreeInstances, TreeCount, PlacedTrees, MaxTreeInstances, 0.85f, 1.6f, 3.0f, true);
-    Place(ShrubInstances, ShrubCount, PlacedShrubs, MaxShrubInstances, 0.7f, 1.5f, 5.0f, true);
-    Place(GrassInstances, GrassCount, PlacedGrass, MaxGrassInstances, 0.7f, 1.7f, 4.0f, true);
-    Place(RockInstances, RockCount, PlacedRocks, MaxRockInstances, 0.7f, 1.8f, 8.0f, false);
+    // Canopy blocks the observer the most, undergrowth blocks at resident
+    // height, ground detail does not block at all.
+    Place(TreeInstances, TreeCount, PlacedTrees, MaxTreeInstances, 0.85f, 1.6f, 3.0f, ELLDressingLayer::Canopy);
+    Place(ShrubInstances, ShrubCount, PlacedShrubs, MaxShrubInstances, 0.7f, 1.5f, 5.0f, ELLDressingLayer::Undergrowth);
+    Place(GrassInstances, GrassCount, PlacedGrass, MaxGrassInstances, 0.7f, 1.7f, 4.0f, ELLDressingLayer::Undergrowth);
+    Place(RockInstances, RockCount, PlacedRocks, MaxRockInstances, 0.7f, 1.8f, 8.0f, ELLDressingLayer::GroundDetail);
 
     // Resource patches are authoritative world facts with their own grid
     // position, so they are marked where Core says they are.
@@ -369,14 +405,10 @@ void ALLWorldPresentationActor::BuildChunkDressing(const FLLCoreWorldGenerationO
             const float Yaw = HashUnit(State) * 360.0f;
             const int32 Slot = static_cast<int32>(HashUnit(State) * Target->Num()) % Target->Num();
 
-            // An authoritative resource is never hidden for readability. Inside
-            // the start-region radius it is drawn smaller so it still reads as
-            // present without blocking the view of the founders.
+            // An authoritative resource is never hidden for readability; it is
+            // only drawn smaller inside the settlement bands.
             const FVector2D PatchLocation(PatchX + SpreadX, PatchY + SpreadY);
-            if (AmbientDressingKeepFactor(PatchLocation) <= 0.0f)
-            {
-                Scale *= StartRegionResourceScale;
-            }
+            Scale *= ResourcePatchScaleFactor(PatchLocation);
 
             if (UHierarchicalInstancedStaticMeshComponent* Component = (*Target)[Slot])
             {
@@ -419,6 +451,10 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
     BuiltGenerationVersion = World.GenerationVersion;
     BuiltChunkCount = World.MaterializedChunkCount;
 
+    // Resolved once per rebuild: the readability envelope is measured from the
+    // Core start-region centre, not from the world origin.
+    CachedSettlementReferenceUU = SettlementReferenceUU(World);
+
     ClearInstances();
     BuildGround(World);
     BuildChunkDressing(World, World.InitialChunk);
@@ -455,11 +491,11 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
     for (UHierarchicalInstancedStaticMeshComponent* Component : RockInstances) { if (Component) { RockInstanceCount += Component->GetInstanceCount(); } }
 
     UE_LOG(LogTemp, Log,
-        TEXT("LLWorldPresentation seed=%lld gen=%d chunks=%d meshes=%d/%d/%d/%d instances=%d/%d/%d/%d cleared=%d radius=%.0f ground=%s"),
+        TEXT("LLWorldPresentation seed=%lld gen=%d chunks=%d meshes=%d/%d/%d/%d instances=%d/%d/%d/%d thinned=%d core=%.0f activity=%.0f ground=%s"),
         World.WorldSeed, World.GenerationVersion, World.MaterializedChunkCount,
         TreeMeshes.Num(), ShrubMeshes.Num(), GrassMeshes.Num(), RockMeshes.Num(),
         TreeInstanceCount, ShrubInstanceCount, GrassInstanceCount, RockInstanceCount,
-        SuppressedDressing, StartRegionClearRadiusUU,
+        SuppressedDressing, CoreClearRadiusUU, ActivityRadiusUU,
         (Ground && Ground->GetStaticMesh()) ? TEXT("yes") : TEXT("no"));
 
 }
