@@ -74,7 +74,7 @@ int main()
     assert(sameMacroFacts(startA.region,startB.region));
     assert(startA.viability==startB.viability);
     assert(startA.evaluatedCandidates==(MacroStartSearchRadiusChunks*2+1)*(MacroStartSearchRadiusChunks*2+1));
-    assert(startA.region.coord!=ChunkCoord{0,0});
+    assert((startA.region.coord!=ChunkCoord{0,0}));
 
     // The selected location must actually beat the arbitrary origin for this
     // deterministic replay seed and satisfy basic early-survival potential.
