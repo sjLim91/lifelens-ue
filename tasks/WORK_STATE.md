@@ -55,10 +55,10 @@ Documentation-only commits may advance `main` beyond the product-code baseline a
 
 ## Current dispatch
 
-### Jjun lane — Dug pit / primitive latrine progression — READY_NOW
+### Jjun lane — Dug pit / primitive latrine progression — IN_PROGRESS
 
 Owner: 쭌 / 쭌 AI
-Branch: not created yet.
+Branch: `jjun/primitive-latrine-progression-v1`
 Dependency: PR #79 DONE.
 Handoff safety: SAFE; no uncommitted local dependency.
 
@@ -85,7 +85,7 @@ Acceptance:
 
 Exact next action:
 - inspect `PrimitiveSanitationSite`, civilization recipes/experiments, inventory/tool representation, environmental residue deposition and snapshot extension.
-- choose the narrowest dug-pit progression contract and create a new Jjun branch only after that boundary is fixed.
+- implement the narrowest dug-pit progression contract on `jjun/primitive-latrine-progression-v1`, preserving the #79 identity/GridPos authority path.
 
 ### Dagyeom lane — Character Appearance v1 — ACTIVE / PR #67 CLOSEOUT
 
@@ -242,7 +242,7 @@ Immediate sequence:
 2. Sanitation Problem Recognition v1 — DONE #77.
 3. Primitive sanitation experiment / DesignatedSanitationArea discovery — DONE #78.
 4. Designated sanitation area authoritative affordance integration — DONE #79.
-5. Dug pit / primitive latrine progression — READY_NOW.
+5. Dug pit / primitive latrine progression — IN_PROGRESS.
 6. HumanWaste Environmental Visual Feedback.
 7. Health/pathogen and water/soil contamination later.
 
@@ -334,7 +334,7 @@ Do not revive the old multi-hour PR #2 path as the default loop.
 13. #77 Sanitation Problem Recognition — DONE.
 14. #78 Primitive sanitation experimentation progression — DONE.
 15. #79 Designated sanitation area authoritative affordance — DONE.
-16. **Dug pit / primitive latrine progression — READY_NOW.**
+16. **Dug pit / primitive latrine progression — IN_PROGRESS (`jjun/primitive-latrine-progression-v1`).**
 17. HumanWaste visual feedback.
 18. Character Appearance #67 — ACTIVE in parallel.
 19. Motion Bootstrap — after #67.
