@@ -21,7 +21,7 @@
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | after #78 | Designated sanitation area authoritative affordance integration | Core/Civilization/World/Bridge contract | **READY_NOW** |
+| 쭌 + 쭌 AI | `jjun/designated-sanitation-affordance-v1` | Designated sanitation area authoritative affordance integration | Core/Civilization/World/Bridge contract | **IN_PROGRESS** |
 | 다겸 + 다겸 AI | PR #67 `dagyeom/character-appearance-v1` | Character Appearance v1 | Character appearance + `Content/Characters/**` | **ACTIVE / CLOSEOUT** |
 | 다겸 + 다겸 AI | after #67 | Character Motion Bootstrap | Character locomotion presentation | READY_AFTER_#67 |
 | 다겸 + 다겸 AI | after Motion Bootstrap | World Visual Environment v1 | Environment/Maps/WorldPresentation | HIGH PRIORITY / READY_AFTER_MOTION_BOOTSTRAP |
@@ -34,7 +34,10 @@
 
 **0개.** Previous appearance/presentation assist locks are released.
 
-## Current Jjun lane — Designated sanitation area authoritative affordance integration READY_NOW
+## Current Jjun lane — Designated sanitation area authoritative affordance integration IN_PROGRESS
+
+Branch:
+- `jjun/designated-sanitation-affordance-v1`
 
 Dependency:
 - PR #78 DONE.
@@ -206,7 +209,7 @@ Rules:
 → `next-location avoidance`
 → `problem recognition`
 → `primitive sanitation experiment/discovery`
-→ **`authoritative designated sanitation area` (READY_NOW)**
+→ **`authoritative designated sanitation area` (IN_PROGRESS)**
 → `dug pit / latrine improvement`
 → `visual feedback`
 
@@ -350,7 +353,7 @@ Current open blockers from Jjun for Dagyeom #67: **3 review closeout items**.
 12. #76 World sanitation recommendation integration — DONE.
 13. #77 Sanitation Problem Recognition — DONE.
 14. #78 Primitive sanitation experimentation progression — DONE.
-15. **Designated sanitation area authoritative affordance integration — READY_NOW.**
+15. **Designated sanitation area authoritative affordance integration — IN_PROGRESS (`jjun/designated-sanitation-affordance-v1`).**
 16. Character Appearance #67 — ACTIVE CLOSEOUT in parallel.
 17. Dug pit / latrine progression.
 18. HumanWaste visual feedback.
