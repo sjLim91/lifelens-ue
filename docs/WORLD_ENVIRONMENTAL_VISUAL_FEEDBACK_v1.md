@@ -284,3 +284,36 @@ Environmental Visual Feedback v1은 최소 다음을 만족해야 한다.
 세 문서의 authority boundary는 동일하다:
 
 **Core/World decides reality. Unreal presents reality. Residents perceive the same reality and act on it again.**
+
+
+---
+
+## HumanWaste runtime presentation baseline — 2026-09-15
+
+PR #80 이후 HumanWaste 표현은 **site kind를 별도 시각 권위로 복제하지 않고 residue read DTO 자체**를 따른다.
+
+현재 authoritative deposit profile:
+- open `DesignatedArea`: intensity `0.42`, radius 3 tiles.
+- `DugPit`: intensity `0.16`, radius 1 tile.
+- 기존 open waste가 DugPit 완성으로 containment될 때도 amount를 삭제하지 않고 intensity/radius만 줄인다.
+
+따라서 Presentation은 `DesignatedArea`/`DugPit` 이름을 보고 임의 효과를 만들지 않는다.
+같은 `FLLCoreEnvironmentalResidueObservation`의 `GridPos / amount / intensity / radius / age`를 읽고 결과를 표현한다.
+이렇게 하면 DugPit의 작은 footprint가 실제 Core containment 결과에서 자연스럽게 나온다.
+
+v1 런타임 baseline:
+- `ALLWorldDirector`에 단일 `ULLEnvironmentalResidueVisualizerComponent`를 둔다.
+- visualizer는 HISM(Hierarchical Instanced Static Mesh) 하나로 최대 128개 residue marker를 표현한다.
+- residue마다 Actor/Niagara를 생성하지 않는다.
+- Core Grid XY를 World 좌표로 변환하고 WorldStatic surface trace로 실제 지면 Z를 찾는다.
+- marker footprint는 observed radius/intensity/amount를 반영하며, 노출 반경 전체를 오염 mesh로 덮는 방식은 사용하지 않는다.
+- per-instance custom data 4개를 예약한다: `intensity`, normalized `amount`, normalized `radius`, normalized `age`.
+- 현재 dependency-free fallback은 engine Cube를 매우 얇게 flatten한 ground marker다. 이후 다겸 Presentation lane에서 material/mesh를 교체해도 Core/read contract는 그대로 유지한다.
+- visualizer는 signature가 바뀐 경우에만 instance set을 rebuild하고, 기본 0.25초 주기로 read-only refresh한다.
+- HISM cull distance를 사용하고 최대 visual residue 수를 제한하여 Android baseline 비용을 통제한다.
+- Save/Load 후에는 저장된 authoritative residue state를 `BeginPlay`에서 강제 rebuild하므로 visual-only save state를 추가하지 않는다.
+
+금지 사항은 그대로 유지한다:
+- visualizer가 `deposit`, containment, hygiene burden, facility state를 직접 수정하지 않는다.
+- visual marker 수/크기를 simulation truth로 다시 읽지 않는다.
+- 128개 cap을 넘는 경우에도 Core의 `TotalResidues`는 그대로이며, presentation cap은 simulation 삭제를 의미하지 않는다.

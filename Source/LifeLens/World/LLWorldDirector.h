@@ -11,6 +11,8 @@ class ALLActivityAnchor;
 class ALLResidentCharacter;
 class ULLSimulationSubsystem;
 class ULLCoreBridgeSubsystem;
+class USceneComponent;
+class ULLEnvironmentalResidueVisualizerComponent;
 
 struct FLLResidentRuntimeState
 {
@@ -51,6 +53,9 @@ public:
     UFUNCTION(BlueprintPure, Category="LifeLens|World")
     bool IsResidentUsingEmergencyFallback(FGuid ResidentId) const;
 
+    UFUNCTION(BlueprintPure, Category="LifeLens|World|Environment")
+    int32 GetEnvironmentalResidueVisualCount() const;
+
 protected:
     virtual void BeginPlay() override;
 
@@ -89,6 +94,12 @@ private:
         const ALLResidentCharacter& Target,
         ELLCoreSocialIntent SocialIntent) const;
 
+    UPROPERTY(VisibleAnywhere, Category="LifeLens|World")
+    TObjectPtr<USceneComponent> SceneRoot;
+
+    UPROPERTY(VisibleAnywhere, Category="LifeLens|World|Environment")
+    TObjectPtr<ULLEnvironmentalResidueVisualizerComponent> EnvironmentalResidueVisualizer;
+
     UPROPERTY()
     TObjectPtr<ULLSimulationSubsystem> Simulation;
 
@@ -104,6 +115,10 @@ private:
     TMap<FGuid, FLLResidentRuntimeState> RuntimeStates;
 
     float SimulationClockAccumulator = 0.0f;
+    float EnvironmentalVisualRefreshAccumulator = 0.0f;
+
+    UPROPERTY(EditAnywhere, Category="LifeLens|Environment|Visual", meta=(ClampMin="0.05"))
+    float EnvironmentalVisualRefreshIntervalSeconds = 0.25f;
 
     UPROPERTY(EditAnywhere, Category="LifeLens|Time")
     float RealSecondsPerSimulationMinute = 0.6f;
