@@ -29,6 +29,10 @@ void ALLWorldDirector::BeginPlay()
         Simulation->NewGame();
     }
 
+    // Unreal owns physical movement/arrival/use timing. Core keeps the intent
+    // pending and applies authoritative outcomes only after the world ACK.
+    CoreBridge->SetExternalPhysicalExecutionEnabled(true);
+
     // World affordances must come from the actual world/civilization state.
     // Never synthesize beds, toilets, food stations, etc. just to satisfy an intent.
     CollectActivityAnchors();
@@ -245,8 +249,6 @@ void ALLWorldDirector::SpawnResidents()
 
 void ALLWorldDirector::UpdateResident(ALLResidentCharacter& Character, float DeltaSeconds)
 {
-    (void)DeltaSeconds;
-
     FLLResidentRuntimeState* Runtime = RuntimeStates.Find(Character.GetResidentId());
     if (!Runtime || !CoreBridge)
     {
@@ -263,13 +265,14 @@ void ALLWorldDirector::UpdateResident(ALLResidentCharacter& Character, float Del
         return;
     }
 
-    ApplyCoreDirective(Character, *Runtime, Directive);
+    ApplyCoreDirective(Character, *Runtime, Directive, DeltaSeconds);
 }
 
 void ALLWorldDirector::ApplyCoreDirective(
     ALLResidentCharacter& Character,
     FLLResidentRuntimeState& Runtime,
-    const FLLCoreActionDirective& Directive)
+    const FLLCoreActionDirective& Directive,
+    float DeltaSeconds)
 {
     const bool bDirectiveChanged =
         !Runtime.bInitialized
@@ -283,6 +286,7 @@ void ALLWorldDirector::ApplyCoreDirective(
         ReleasePhysicalReservation(Character.GetResidentId(), Runtime);
         Runtime.bInitialized = true;
         Runtime.bPerformingAction = false;
+        Runtime.PhysicalUseElapsedSeconds = 0.0f;
         Runtime.LastActivityKind = Directive.ActivityKind;
         Runtime.LastPhysicalIntent = Directive.PhysicalIntent;
         Runtime.LastSocialIntent = Directive.SocialIntent;
@@ -323,6 +327,7 @@ void ALLWorldDirector::ApplyCoreDirective(
         else if (!EnsureEmergencyFallback(Character, Runtime, Intent, UseTransform))
         {
             Runtime.bPerformingAction = false;
+            Runtime.PhysicalUseElapsedSeconds = 0.0f;
             Runtime.ActiveAffordanceTier = ELLWorldAffordanceTier::Unavailable;
             Character.ClearMovementTarget();
             return;
@@ -335,6 +340,7 @@ void ALLWorldDirector::ApplyCoreDirective(
         if (!bAtUsePoint)
         {
             Runtime.bPerformingAction = false;
+            Runtime.PhysicalUseElapsedSeconds = 0.0f;
             Character.SetMovementTarget(DesiredLocation);
             return;
         }
@@ -350,6 +356,43 @@ void ALLWorldDirector::ApplyCoreDirective(
         Runtime.bPerformingAction = true;
         const FRotator UseRotation = UseTransform.GetRotation().Rotator();
         Character.SetActorRotation(FRotator(0.0f, UseRotation.Yaw, 0.0f));
+
+        Runtime.PhysicalUseElapsedSeconds += FMath::Max(0.0f, DeltaSeconds);
+        const int32 DurationTicks = FMath::Max(
+            1,
+            CoreBridge->GetPhysicalActionDurationTicks(
+                Directive.PhysicalIntent,
+                Runtime.bUsingEmergencyFallback));
+        const float RequiredUseSeconds = FMath::Max(
+            0.1f,
+            static_cast<float>(DurationTicks) * FMath::Max(0.1f, RealSecondsPerSimulationMinute));
+
+        if (Runtime.PhysicalUseElapsedSeconds < RequiredUseSeconds)
+        {
+            return;
+        }
+
+        const bool bEmergencyFallback = Runtime.bUsingEmergencyFallback;
+        const FIntPoint ResolvedGrid = WorldLocationToCoreGrid(Character.GetActorLocation());
+        const bool bAcknowledged = CoreBridge->CompleteResidentPhysicalAction(
+            Character.GetResidentId(),
+            bEmergencyFallback,
+            ResolvedGrid.X,
+            ResolvedGrid.Y);
+
+        if (bAcknowledged)
+        {
+            ReleasePhysicalReservation(Character.GetResidentId(), Runtime);
+            Runtime.bPerformingAction = false;
+            Character.ClearMovementTarget();
+            Character.SetCurrentIntent(ELLActionIntent::Idle);
+        }
+        else
+        {
+            // Avoid hammering Core every frame when a completion precondition
+            // (for example a real provision) is no longer satisfied.
+            Runtime.PhysicalUseElapsedSeconds = 0.0f;
+        }
         return;
     }
 
@@ -565,6 +608,15 @@ FTransform ALLWorldDirector::ResolveEmergencyFallbackTransform(
     return FTransform(Rotation, Location, FVector::OneVector);
 }
 
+FIntPoint ALLWorldDirector::WorldLocationToCoreGrid(const FVector& WorldLocation) const
+{
+    const float CellSize = FMath::Max(1.0f, CoreGridCellSizeUU);
+    const FVector Relative = WorldLocation - GetActorLocation();
+    return FIntPoint(
+        FMath::RoundToInt(Relative.X / CellSize),
+        FMath::RoundToInt(Relative.Y / CellSize));
+}
+
 void ALLWorldDirector::ReleasePhysicalReservation(
     FGuid ResidentId,
     FLLResidentRuntimeState& Runtime)
@@ -579,6 +631,7 @@ void ALLWorldDirector::ReleasePhysicalReservation(
     Runtime.ActiveAffordanceTier = ELLWorldAffordanceTier::Unavailable;
     Runtime.bUsingEmergencyFallback = false;
     Runtime.EmergencyUseTransform = FTransform::Identity;
+    Runtime.PhysicalUseElapsedSeconds = 0.0f;
 }
 
 FVector ALLWorldDirector::ResolveSocialTargetLocation(
