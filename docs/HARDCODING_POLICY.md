@@ -30,7 +30,7 @@ Core는 Unreal 의존성을 갖지 않는다. 최종 구조는 immutable `Simula
 
 ### C. Unreal runtime / presentation tuning — Config 또는 Data Asset
 
-런타임 속도, refresh interval, 카메라 framing, presentation 거리/LOD/culling처럼 authority를 만들지 않는 값은 Unreal Config 또는 Data Asset에서 읽는다. 코드에는 비즈니스 기본값을 중복해서 두지 않는다.
+런타임 속도, refresh interval, 카메라 framing, presentation 거리/LOD/culling처럼 authority를 만들지 않는 값은 Unreal Config 또는 Data Asset에서 읽는다. 정상적인 튜닝의 source of truth는 Config/Data Asset으로 두고, C++에는 Config 누락 시 조용한 오동작을 막기 위한 동일값 safety fallback만 허용한다. fallback 값은 별도의 독립 튜닝값으로 취급하지 않는다.
 
 ### D. Content / asset references — soft reference / catalog
 
