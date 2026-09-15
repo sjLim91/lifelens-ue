@@ -9,6 +9,7 @@
 #include "PrimitiveSanitation.h"
 #include "WorldGenesis.h"
 #include "MacroWorldGenesis.h"
+#include "NaturalWorldChunk.h"
 namespace lifelens {
 struct World {
     int minute=7*60;
@@ -23,6 +24,10 @@ struct World {
     std::vector<StorageSite> storageSites;
     std::vector<PrimitiveSanitationSite> primitiveSanitationSites;
     EnvironmentalResidueField environmentalResidues;
+    std::vector<GeneratedNaturalChunk> generatedNaturalChunks;
+    bool hasInitialStartRegionSelection=false;
+    ChunkCoord initialStartRegionCoord{};
+    double initialStartRegionViability=0.0;
 
     // Runtime execution policy only. The binary snapshot codec deliberately
     // does not persist this flag; Unreal re-enables external execution after
@@ -60,7 +65,79 @@ struct World {
 
     InitialStartRegionSelection initialStartRegion() const
     {
+        if(hasInitialStartRegionSelection){
+            InitialStartRegionSelection stored;
+            stored.region=macroRegionFacts(initialStartRegionCoord);
+            stored.viability=initialStartRegionViability;
+            stored.evaluatedCandidates=(MacroStartSearchRadiusChunks*2+1)*(MacroStartSearchRadiusChunks*2+1);
+            return stored;
+        }
         return selectInitialStartRegion(genesisIdentity());
+    }
+
+    InitialStartRegionSelection establishInitialStartRegion()
+    {
+        const InitialStartRegionSelection selected=selectInitialStartRegion(genesisIdentity());
+        hasInitialStartRegionSelection=true;
+        initialStartRegionCoord=selected.region.coord;
+        initialStartRegionViability=selected.viability;
+        return selected;
+    }
+
+    GridPos initialStartRegionCenterGrid() const
+    {
+        const InitialStartRegionSelection selected=initialStartRegion();
+        const GridPos origin=chunkOriginGrid(selected.region.coord);
+        return {origin.x+WorldChunkSpanGridCells/2,origin.y+WorldChunkSpanGridCells/2};
+    }
+
+    const GeneratedNaturalChunk* findGeneratedNaturalChunk(ChunkCoord coord) const
+    {
+        const auto it=std::lower_bound(
+            generatedNaturalChunks.begin(),generatedNaturalChunks.end(),coord,
+            [](const GeneratedNaturalChunk& chunk,ChunkCoord value){return chunk.coord<value;});
+        return it!=generatedNaturalChunks.end() && it->coord==coord ? &*it : nullptr;
+    }
+
+    GeneratedNaturalChunk* findGeneratedNaturalChunk(ChunkCoord coord)
+    {
+        const auto it=std::lower_bound(
+            generatedNaturalChunks.begin(),generatedNaturalChunks.end(),coord,
+            [](const GeneratedNaturalChunk& chunk,ChunkCoord value){return chunk.coord<value;});
+        return it!=generatedNaturalChunks.end() && it->coord==coord ? &*it : nullptr;
+    }
+
+    GeneratedNaturalChunk& materializeNaturalChunk(ChunkCoord coord)
+    {
+        auto it=std::lower_bound(
+            generatedNaturalChunks.begin(),generatedNaturalChunks.end(),coord,
+            [](const GeneratedNaturalChunk& chunk,ChunkCoord value){return chunk.coord<value;});
+        if(it!=generatedNaturalChunks.end() && it->coord==coord) return *it;
+
+        GeneratedNaturalChunk generated=deriveGeneratedNaturalChunk(genesisIdentity(),coord,minute);
+        for(const auto& patch:generated.resourcePatches){
+            const auto nodeIt=std::find_if(resourceNodes.begin(),resourceNodes.end(),[&](const ResourceNode& node){
+                return node.id==patch.nodeId;
+            });
+            if(nodeIt==resourceNodes.end()){
+                resourceNodes.push_back({
+                    patch.nodeId,patch.material,patch.baselineQuantity,patch.maxQuantity,
+                    patch.renewable,patch.regenerationPerDay});
+            }
+        }
+        std::sort(resourceNodes.begin(),resourceNodes.end(),[](const ResourceNode& a,const ResourceNode& b){
+            return a.id<b.id;
+        });
+        it=generatedNaturalChunks.insert(it,std::move(generated));
+        return *it;
+    }
+
+    void clearGeneratedNaturalWorld()
+    {
+        generatedNaturalChunks.clear();
+        hasInitialStartRegionSelection=false;
+        initialStartRegionCoord={};
+        initialStartRegionViability=0.0;
     }
 
     void resetCivilizationEnvironment()

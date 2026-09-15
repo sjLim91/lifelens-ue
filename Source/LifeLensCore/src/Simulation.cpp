@@ -121,6 +121,14 @@ void Simulation::setupNewGame(){
     logs_.clear();
     world_.minute=8*60;
     world_.resetCivilizationEnvironment();
+    // Production NEW GAME begins with nature only. The compatibility World
+    // constructor still seeds a utility-test storage/resource baseline, but the
+    // production path replaces it with the selected natural chunk and no storage.
+    world_.resourceNodes.clear();
+    world_.storageSites.clear();
+    world_.clearGeneratedNaturalWorld();
+    const InitialStartRegionSelection startRegion=world_.establishInitialStartRegion();
+    world_.materializeNaturalChunk(startRegion.region.coord);
 
     // World randomness and initial-population randomness are separate.
     // Founder generation must not advance the world RNG or affect future chunk
@@ -129,9 +137,16 @@ void Simulation::setupNewGame(){
     std::mt19937_64 populationRng(world_.populationSeed);
     world_.characters=generateInitialFounders(populationRng,world_.minute);
 
+    const GridPos startCenter=world_.initialStartRegionCenterGrid();
+    const std::array<GridPos,4> founderOffsets={GridPos{-1,-1},GridPos{1,-1},GridPos{-1,1},GridPos{1,1}};
     std::uniform_real_distribution<double> familiarity(0.0,0.04);
+    std::size_t founderIndex=0;
     for(const Character& from:world_.characters){
-        runtime_[from.id]=Runtime{};
+        Runtime initialRuntime;
+        const GridPos offset=founderOffsets[std::min(founderIndex,founderOffsets.size()-1)];
+        initialRuntime.pos={startCenter.x+offset.x,startCenter.y+offset.y};
+        runtime_[from.id]=initialRuntime;
+        ++founderIndex;
         for(const Character& to:world_.characters){
             if(from.id==to.id) continue;
             Relationship& relation=relationships_.getOrCreate(from.id,to.id);
@@ -139,7 +154,7 @@ void Simulation::setupNewGame(){
         }
     }
 
-    emit("new game start seed="+std::to_string(world_.seed)+" populationSeed="+std::to_string(world_.populationSeed)+" founders=4");
+    emit("new game start seed="+std::to_string(world_.seed)+" populationSeed="+std::to_string(world_.populationSeed)+" founders=4 startChunk=("+std::to_string(startRegion.region.coord.x)+","+std::to_string(startRegion.region.coord.y)+")");
 }
 
 ResidentObservation Simulation::observeResident(CharacterId id) const{

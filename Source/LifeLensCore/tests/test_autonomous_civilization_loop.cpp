@@ -193,15 +193,19 @@ int main()
     CHECK(encodeSimulationSnapshot(restored.captureSnapshot(),futureB,&error));
     CHECK(futureA==futureB);
 
-    // NEW GAME is a true reset: depleted resources and stored items cannot leak.
-    first.world().resourceNodes[1].quantity=1;
-    first.world().storageSites[0].inventory.add({ItemKind::RawMaterial,MaterialKind::Stone,99,0.5,1.0});
+    // NEW GAME is a true reset: depleted generated resources and ad-hoc storage
+    // cannot leak. Production now starts with no civilization storage facility.
+    CHECK(!first.world().resourceNodes.empty());
+    first.world().resourceNodes.front().quantity=1;
+    StorageSite leakedStorage;
+    leakedStorage.id=9999;
+    leakedStorage.inventory.add({ItemKind::RawMaterial,MaterialKind::Stone,99,0.5,1.0});
+    first.world().storageSites.push_back(leakedStorage);
     first.setupNewGame();
-    CHECK(first.world().resourceNodes.size()==7);
-    CHECK(first.world().resourceNodes[1].material==MaterialKind::Flint);
-    CHECK(first.world().resourceNodes[1].quantity==90);
-    CHECK(first.world().storageSites.size()==1);
-    CHECK(first.world().storageSites[0].inventory.stacks().empty());
+    CHECK(!first.world().resourceNodes.empty());
+    for(const auto& node:first.world().resourceNodes) CHECK(node.quantity==node.maxQuantity);
+    CHECK(first.world().storageSites.empty());
+    CHECK(first.world().generatedNaturalChunks.size()==1);
 
     std::cout << "autonomous civilization utility + simulation loop passed\n";
     return 0;

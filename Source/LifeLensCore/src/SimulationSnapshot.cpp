@@ -1,5 +1,6 @@
 #include "lifelens/Simulation.h"
 #include "lifelens/CivilizationSnapshotCodec.h"
+#include "lifelens/WorldGenerationSnapshotCodec.h"
 
 #include <unordered_set>
 
@@ -50,6 +51,8 @@ bool validateSnapshot(const SimulationStateSnapshot& snapshot,std::string* error
         if(!storageIds.insert(storage.id).second) return fail("snapshot contains duplicate storage id");
         if(!validateInventoryState(storage.inventory)) return fail("snapshot contains invalid storage inventory");
     }
+    if(!validateWorldGenerationSnapshotState(snapshot.world))
+        return fail("snapshot contains invalid world generation state");
 
     EnvironmentalResidueField validatedResidues;
     if(!validatedResidues.restoreState(snapshot.world.environmentalResidues.all()))

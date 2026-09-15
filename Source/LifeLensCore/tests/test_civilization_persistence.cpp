@@ -17,9 +17,9 @@ using namespace lifelens;
     } \
 } while(false)
 
-static ResourceNode* findResource(World& world,ResourceNodeId id)
+static ResourceNode* findResource(World& world,MaterialKind material)
 {
-    for(auto& node:world.resourceNodes) if(node.id==id) return &node;
+    for(auto& node:world.resourceNodes) if(node.material==material) return &node;
     return nullptr;
 }
 
@@ -89,14 +89,15 @@ int main()
     Simulation source(909090);
     source.setupNewGame();
     CHECK(source.world().characters.size()==4);
-    CHECK(source.world().resourceNodes.size()==7);
-    CHECK(source.world().storageSites.size()==1);
+    CHECK(!source.world().resourceNodes.empty());
+    CHECK(source.world().generatedNaturalChunks.size()==1);
+    CHECK(source.world().storageSites.empty());
 
     Character& discoverer=source.world().characters[0];
     CHECK(discoverer.civilization.character==discoverer.id);
     CHECK(discoverer.civilization.knowledge.all().empty());
 
-    ResourceNode* flint=findResource(source.world(),2);
+    ResourceNode* flint=findResource(source.world(),MaterialKind::Flint);
     CHECK(flint!=nullptr && flint->material==MaterialKind::Flint);
     const int flintBefore=flint->quantity;
     const CivilizationEvent gathered=gatherResource(discoverer.civilization,*flint,4);
@@ -110,6 +111,9 @@ int main()
     const TechniqueKnowledge* beforeKnowledge=findKnowledge(discoverer.civilization.knowledge,TechniqueId::SharpFlake);
     CHECK(beforeKnowledge!=nullptr && beforeKnowledge->successfulUses==2);
 
+    StorageSite persistedStorage;
+    persistedStorage.id=7001;
+    source.world().storageSites.push_back(persistedStorage);
     source.world().storageSites[0].inventory.add({ItemKind::RawMaterial,MaterialKind::Wood,7,0.52,0.91});
     source.world().storageSites[0].inventory.add({ItemKind::Cordage,MaterialKind::Fiber,2,0.77,0.88});
 
