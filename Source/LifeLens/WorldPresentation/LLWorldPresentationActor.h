@@ -57,6 +57,31 @@ public:
     // are materialized rarely, so this stays cheap.
     static constexpr float RefreshIntervalSeconds = 2.0f;
 
+    // ---- Start-region readability -------------------------------------------
+    // Presentation-only rule: ambient dressing vegetation is not placed right
+    // on top of the founders, so the observer can see them. It changes nothing
+    // about what Core says exists. Authoritative resource patches are never
+    // suppressed by it; they are only drawn smaller inside the radius.
+    //
+    // The centre is the Core start region (`InitialCenterGrid`), never the
+    // Unreal world origin, and the radius is presentation tuning: it is not
+    // part of any Core rule and never reaches the save identity.
+    // Tuned against the authoritative chunk span: one chunk is 32 cells, so the
+    // start chunk is 3,200 UU across. A fully clear 800 UU circle plus a 700 UU
+    // fade leaves the outer part of the start chunk dressed.
+    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.0"))
+    float StartRegionClearRadiusUU = 800.0f;
+
+    // Dressing fades back in over this band instead of stopping at a hard edge.
+    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.0"))
+    float StartRegionClearFalloffUU = 700.0f;
+
+    // Authoritative resource patches stay visible inside the radius at this
+    // fraction of their normal size, so they read as present but do not block
+    // the view of the founders.
+    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.1", ClampMax="1.0"))
+    float StartRegionResourceScale = 0.55f;
+
 private:
     UHierarchicalInstancedStaticMeshComponent* AddInstancedComponent(
         const TCHAR* Name, UStaticMesh* Mesh, float CullStartUU, float CullEndUU, bool bCastShadow);
@@ -68,6 +93,10 @@ private:
                             const FLLCoreNaturalChunkObservation& Chunk);
     FVector ChunkOriginUU(const struct FLLCoreWorldGenerationObservation& World,
                           int32 ChunkX, int32 ChunkY) const;
+
+    // Fraction of ambient dressing kept at a location: 0 next to the founders,
+    // 1 outside the readability band. Deterministic and position-only.
+    float AmbientDressingKeepFactor(const FVector2D& LocationUU) const;
     UMaterialInterface* GroundMaterialForChunk(const FLLCoreNaturalChunkObservation& Chunk) const;
 
     // Catalogue (referenced in the constructor so it is cooked).
@@ -95,4 +124,5 @@ private:
     int32 PlacedShrubs = 0;
     int32 PlacedGrass = 0;
     int32 PlacedRocks = 0;
+    int32 SuppressedDressing = 0;
 };

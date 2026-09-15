@@ -155,6 +155,29 @@ void ALLWorldPresentationActor::ClearInstances()
     PlacedShrubs = 0;
     PlacedGrass = 0;
     PlacedRocks = 0;
+    SuppressedDressing = 0;
+}
+
+float ALLWorldPresentationActor::AmbientDressingKeepFactor(const FVector2D& LocationUU) const
+{
+    // The start region sits at the Unreal presentation origin by the shared
+    // spatial contract, so distance from the origin is distance from
+    // `InitialCenterGrid`. Nothing here consults or changes Core state.
+    if (StartRegionClearRadiusUU <= 0.0f)
+    {
+        return 1.0f;
+    }
+
+    const float Distance = LocationUU.Size();
+    if (Distance <= StartRegionClearRadiusUU)
+    {
+        return 0.0f;
+    }
+    if (StartRegionClearFalloffUU <= KINDA_SMALL_NUMBER)
+    {
+        return 1.0f;
+    }
+    return FMath::Clamp((Distance - StartRegionClearRadiusUU) / StartRegionClearFalloffUU, 0.0f, 1.0f);
 }
 
 FVector ALLWorldPresentationActor::ChunkOriginUU(const FLLCoreWorldGenerationObservation& World, int32 ChunkX, int32 ChunkY) const
@@ -238,7 +261,8 @@ void ALLWorldPresentationActor::BuildChunkDressing(const FLLCoreWorldGenerationO
 
     auto Place = [&](TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>>& Components,
                      int32 Count, int32& Placed, int32 MaxTotal,
-                     float MinScale, float MaxScale, float TiltDegrees)
+                     float MinScale, float MaxScale, float TiltDegrees,
+                     bool bObeyReadabilityRadius)
     {
         if (Components.Num() == 0)
         {
@@ -255,21 +279,37 @@ void ALLWorldPresentationActor::BuildChunkDressing(const FLLCoreWorldGenerationO
             const float HeightJitter = FMath::Lerp(0.92f, 1.12f, HashUnit(State));
 
             const int32 Slot = static_cast<int32>(HashUnit(State) * Components.Num()) % Components.Num();
+            const float KeepRoll = HashUnit(State);
+
+            const FVector Location = ChunkOrigin + FVector(X, Y, 0.0f);
+            // Start-region readability: ambient dressing thins out towards the
+            // founders. The roll comes from the same deterministic stream, so
+            // the same world always drops the same instances.
+            if (bObeyReadabilityRadius
+                && KeepRoll >= AmbientDressingKeepFactor(FVector2D(Location.X, Location.Y)))
+            {
+                ++SuppressedDressing;
+                continue;
+            }
+
             if (UHierarchicalInstancedStaticMeshComponent* Component = Components[Slot])
             {
                 Component->AddInstance(FTransform(
                     FRotator(TiltPitch, Yaw, TiltRoll),
-                    ChunkOrigin + FVector(X, Y, 0.0f),
+                    Location,
                     FVector(Scale, Scale, Scale * HeightJitter)));
                 ++Placed;
             }
         }
     };
 
-    Place(TreeInstances, TreeCount, PlacedTrees, MaxTreeInstances, 0.85f, 1.6f, 3.0f);
-    Place(ShrubInstances, ShrubCount, PlacedShrubs, MaxShrubInstances, 0.7f, 1.5f, 5.0f);
-    Place(GrassInstances, GrassCount, PlacedGrass, MaxGrassInstances, 0.7f, 1.7f, 4.0f);
-    Place(RockInstances, RockCount, PlacedRocks, MaxRockInstances, 0.7f, 1.8f, 8.0f);
+    // Trees, shrubs and the tall grass are what actually blocks the view of the
+    // founders, so only those obey the readability radius. Rocks and pebbles
+    // are low and are placed everywhere.
+    Place(TreeInstances, TreeCount, PlacedTrees, MaxTreeInstances, 0.85f, 1.6f, 3.0f, true);
+    Place(ShrubInstances, ShrubCount, PlacedShrubs, MaxShrubInstances, 0.7f, 1.5f, 5.0f, true);
+    Place(GrassInstances, GrassCount, PlacedGrass, MaxGrassInstances, 0.7f, 1.7f, 4.0f, true);
+    Place(RockInstances, RockCount, PlacedRocks, MaxRockInstances, 0.7f, 1.8f, 8.0f, false);
 
     // Resource patches are authoritative world facts with their own grid
     // position, so they are marked where Core says they are.
@@ -325,14 +365,24 @@ void ALLWorldPresentationActor::BuildChunkDressing(const FLLCoreWorldGenerationO
         {
             const float SpreadX = (HashUnit(State) * 2.0f - 1.0f) * LLWorldSpatialContract::GridCellSizeUU;
             const float SpreadY = (HashUnit(State) * 2.0f - 1.0f) * LLWorldSpatialContract::GridCellSizeUU;
-            const float Scale = FMath::Lerp(MinScale, MaxScale, HashUnit(State));
+            float Scale = FMath::Lerp(MinScale, MaxScale, HashUnit(State));
             const float Yaw = HashUnit(State) * 360.0f;
             const int32 Slot = static_cast<int32>(HashUnit(State) * Target->Num()) % Target->Num();
+
+            // An authoritative resource is never hidden for readability. Inside
+            // the start-region radius it is drawn smaller so it still reads as
+            // present without blocking the view of the founders.
+            const FVector2D PatchLocation(PatchX + SpreadX, PatchY + SpreadY);
+            if (AmbientDressingKeepFactor(PatchLocation) <= 0.0f)
+            {
+                Scale *= StartRegionResourceScale;
+            }
+
             if (UHierarchicalInstancedStaticMeshComponent* Component = (*Target)[Slot])
             {
                 Component->AddInstance(FTransform(
                     FRotator(0.0f, Yaw, 0.0f),
-                    FVector(PatchX + SpreadX, PatchY + SpreadY, 0.0f),
+                    FVector(PatchLocation.X, PatchLocation.Y, 0.0f),
                     FVector(Scale, Scale, Scale)));
                 ++(*PlacedCounter);
             }
@@ -405,10 +455,11 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
     for (UHierarchicalInstancedStaticMeshComponent* Component : RockInstances) { if (Component) { RockInstanceCount += Component->GetInstanceCount(); } }
 
     UE_LOG(LogTemp, Log,
-        TEXT("LLWorldPresentation seed=%lld gen=%d chunks=%d meshes=%d/%d/%d/%d instances=%d/%d/%d/%d ground=%s"),
+        TEXT("LLWorldPresentation seed=%lld gen=%d chunks=%d meshes=%d/%d/%d/%d instances=%d/%d/%d/%d cleared=%d radius=%.0f ground=%s"),
         World.WorldSeed, World.GenerationVersion, World.MaterializedChunkCount,
         TreeMeshes.Num(), ShrubMeshes.Num(), GrassMeshes.Num(), RockMeshes.Num(),
         TreeInstanceCount, ShrubInstanceCount, GrassInstanceCount, RockInstanceCount,
+        SuppressedDressing, StartRegionClearRadiusUU,
         (Ground && Ground->GetStaticMesh()) ? TEXT("yes") : TEXT("no"));
 
 }
