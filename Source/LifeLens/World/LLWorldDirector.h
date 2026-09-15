@@ -120,14 +120,14 @@ private:
     float EnvironmentalVisualRefreshAccumulator = 0.0f;
     FIntPoint CorePresentationOriginGrid = FIntPoint::ZeroValue;
 
-    // Runtime tuning belongs in DefaultGame.ini so iteration does not require
-    // recompiling the WorldDirector. The values are still editable per actor
-    // when an intentional level-specific override is needed.
+    // Runtime tuning belongs in DefaultGame.ini so normal iteration does not
+    // require recompiling the WorldDirector. C++ defaults are safety fallbacks
+    // when a config key cannot be resolved; loaded config values override them.
     UPROPERTY(Config, EditAnywhere, Category="LifeLens|Environment|Visual", meta=(ClampMin="0.05"))
-    float EnvironmentalVisualRefreshIntervalSeconds;
+    float EnvironmentalVisualRefreshIntervalSeconds = 0.25f;
 
     UPROPERTY(Config, EditAnywhere, Category="LifeLens|Time", meta=(ClampMin="0.1"))
-    float RealSecondsPerSimulationMinute;
+    float RealSecondsPerSimulationMinute = 0.6f;
 
     // Spatial contract between Unreal presentation and Core GridPos. The
     // default is shared with bootstrap ground and WorldPresentation so the
