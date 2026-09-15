@@ -29,6 +29,9 @@ jobs:
       - name: Validate primitive latrine progression
         run: python Tools/validate_primitive_latrine.py
 
+      - name: Validate environmental visual feedback
+        run: python Tools/validate_environment_visual_feedback.py
+
       - name: Verify Unreal project metadata
         run: |
           python - <<'PY'
