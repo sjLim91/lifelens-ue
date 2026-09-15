@@ -533,6 +533,7 @@ ALLActivityAnchor* ALLWorldDirector::EnsurePhysicalReservation(
     Runtime.ActiveAffordanceTier = CandidateTier;
     Runtime.bUsingEmergencyFallback = false;
     Runtime.EmergencyUseTransform = FTransform::Identity;
+    Runtime.PhysicalUseElapsedSeconds = 0.0f;
     return Candidate;
 }
 
@@ -555,6 +556,7 @@ bool ALLWorldDirector::EnsureEmergencyFallback(
         Runtime.ActiveAffordanceTier = ELLWorldAffordanceTier::Emergency;
         Runtime.bUsingEmergencyFallback = true;
         Runtime.EmergencyUseTransform = ResolveEmergencyFallbackTransform(Character, Intent);
+        Runtime.PhysicalUseElapsedSeconds = 0.0f;
     }
 
     OutUseTransform = Runtime.EmergencyUseTransform;
