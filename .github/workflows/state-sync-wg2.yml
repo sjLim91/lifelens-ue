@@ -1,0 +1,30 @@
+name: WG2 State Sync
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply WG2 canonical state sync
+        run: python Tools/state_sync_wg2.py
+
+      - name: Commit synced docs and remove temporary sync tools
+        run: |
+          git config user.name "LifeLens State Sync"
+          git config user.email "actions@users.noreply.github.com"
+          git rm .github/workflows/state-sync-wg2.yml Tools/state_sync_wg2.py
+          git add tasks/WORK_STATE.md tasks/TEAM_BOARD.md tasks/HANDOFF_LOG.md docs/PROJECT_PROGRESS_2026-09-15.md docs/WORLD_GENESIS_CHUNK_MIGRATION_v1.md
+          git commit -m "docs: close WG-2 and adopt milestone-sized development"
+          git push origin HEAD:main
