@@ -314,7 +314,11 @@ void ALLWorldDirector::ApplyCoreDirective(
 
         const FVector DesiredLocation = UseTransform.GetLocation();
         const double DistanceSquared = FVector::DistSquared2D(Character.GetActorLocation(), DesiredLocation);
-        const bool bAtUsePoint = DistanceSquared <= FMath::Square(110.0);
+        const float ArrivalRadius =
+            Runtime.bUsingEmergencyFallback && Intent == ELLActionIntent::Toilet
+            ? FMath::Max(1.0f, FMath::Min(45.0f, CoreGridCellSizeUU * 0.45f))
+            : 110.0f;
+        const bool bAtUsePoint = DistanceSquared <= FMath::Square(ArrivalRadius);
 
         if (!bAtUsePoint)
         {
@@ -534,7 +538,45 @@ bool ALLWorldDirector::EnsureEmergencyFallback(
         Runtime.ReservedIntent = Intent;
         Runtime.ActiveAffordanceTier = ELLWorldAffordanceTier::Emergency;
         Runtime.bUsingEmergencyFallback = true;
-        Runtime.EmergencyUseTransform = ResolveEmergencyFallbackTransform(Character, Intent);
+
+        if (Intent == ELLActionIntent::Toilet)
+        {
+            int32 RecommendedGridX = 0;
+            int32 RecommendedGridY = 0;
+            if (!CoreBridge || !CoreBridge->GetRecommendedOutdoorReliefGridPosition(
+                    Character.GetResidentId(), RecommendedGridX, RecommendedGridY))
+            {
+                Runtime.ActiveAffordanceTier = ELLWorldAffordanceTier::Unavailable;
+                Runtime.bUsingEmergencyFallback = false;
+                Runtime.EmergencyUseTransform = FTransform::Identity;
+                Runtime.PhysicalUseElapsedSeconds = 0.0f;
+                return false;
+            }
+
+            const float CellSize = FMath::Max(1.0f, CoreGridCellSizeUU);
+            FVector RecommendedLocation = GetActorLocation()
+                + FVector(
+                    static_cast<float>(RecommendedGridX) * CellSize,
+                    static_cast<float>(RecommendedGridY) * CellSize,
+                    0.0f);
+            RecommendedLocation.Z = Character.GetActorLocation().Z;
+
+            FVector FacingDirection = RecommendedLocation - Character.GetActorLocation();
+            FacingDirection.Z = 0.0f;
+            const FRotator RecommendedRotation = FacingDirection.IsNearlyZero()
+                ? Character.GetActorRotation()
+                : FacingDirection.Rotation();
+
+            Runtime.EmergencyUseTransform = FTransform(
+                RecommendedRotation,
+                RecommendedLocation,
+                FVector::OneVector);
+        }
+        else
+        {
+            Runtime.EmergencyUseTransform = ResolveEmergencyFallbackTransform(Character, Intent);
+        }
+
         Runtime.PhysicalUseElapsedSeconds = 0.0f;
     }
 
@@ -564,25 +606,12 @@ FTransform ALLWorldDirector::ResolveEmergencyFallbackTransform(
     const ALLResidentCharacter& Character,
     ELLActionIntent Intent) const
 {
-    FVector Location = Character.GetActorLocation();
-    FRotator Rotation = Character.GetActorRotation();
+    const FVector Location = Character.GetActorLocation();
+    const FRotator Rotation = Character.GetActorRotation();
 
-    if (Intent == ELLActionIntent::Toilet)
-    {
-        // Until terrain/resource semantics are available, pick a deterministic
-        // outdoor fallback point away from the settlement origin. This is not a
-        // toilet object and therefore does not fake civilization progress.
-        const uint32 StableHash = HashCombine(
-            GetTypeHash(Character.GetResidentId()),
-            static_cast<uint32>(Intent));
-        const float AngleDegrees = static_cast<float>(StableHash % 360u);
-        const float AngleRadians = FMath::DegreesToRadians(AngleDegrees);
-        const FVector Direction(FMath::Cos(AngleRadians), FMath::Sin(AngleRadians), 0.0f);
-        Location = GetActorLocation() + Direction * 650.0f;
-        Location.Z = Character.GetActorLocation().Z;
-        Rotation = Direction.Rotation();
-    }
-
+    // Toilet is resolved from Core's authoritative sanitation recommendation in
+    // EnsureEmergencyFallback so World movement, ACK position and residue share
+    // one grid-space decision.
     // Sleep -> ground rest in place.
     // Eat/Drink -> consume what Core has already made available, in place.
     // Hygiene -> minimal no-facility fallback in place.

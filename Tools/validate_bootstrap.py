@@ -99,6 +99,7 @@ for token in (
     'RestoreCoreSnapshotBytes',
     'MakeStableResidentGuid',
     'OnCoreRuntimeStateChanged',
+    'GetRecommendedOutdoorReliefGridPosition',
 ):
     assert token in bridge_h, f'Missing Core bridge contract: {token}'
 
@@ -240,8 +241,11 @@ for token in (
     'SetMovementTarget',
     'ELLCoreSocialIntent::Avoid',
     'SaveGame()',
+    'CoreBridge->GetRecommendedOutdoorReliefGridPosition',
+    'CoreGridCellSizeUU * 0.45f',
 ):
     assert token in world, f'Missing Core-driven WorldDirector contract: {token}'
+assert 'Direction * 650.0f' not in world, 'WorldDirector must not invent an independent emergency sanitation target'
 assert 'ChooseAction(' not in world, 'WorldDirector must not independently choose covered life actions'
 assert 'ApplyActionOutcome(' not in world, 'WorldDirector must not mutate projected Needs as action authority'
 assert 'ApplySocialInteraction(' not in world, 'WorldDirector must not mutate projected relationships as social authority'
