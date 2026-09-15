@@ -12,7 +12,8 @@
 namespace lifelens {
 
 constexpr char CivilizationSnapshotExtensionMagic[]={'L','L','C','I','V','0','0','1'};
-constexpr std::uint32_t CivilizationSnapshotExtensionVersion=1;
+constexpr std::uint32_t CivilizationSnapshotExtensionVersion=2;
+constexpr std::uint32_t CivilizationSnapshotExtensionLegacyVersion=1;
 
 inline bool validCivilizationUnit(double value)
 {
@@ -236,18 +237,24 @@ void writeCivilizationResourceNode(WriterT& w,const ResourceNode& node)
     w.i32(node.maxQuantity);
     w.boolean(node.renewable);
     w.i32(node.regenerationPerDay);
+    w.i32(node.pos.x);
+    w.i32(node.pos.y);
 }
 
 template<typename ReaderT>
-bool readCivilizationResourceNode(ReaderT& r,ResourceNode& node)
+bool readCivilizationResourceNode(
+    ReaderT& r,
+    ResourceNode& node,
+    std::uint32_t version=CivilizationSnapshotExtensionVersion)
 {
-    return r.u64(node.id)
-        && r.enumeration(node.material)
-        && r.i32(node.quantity)
-        && r.i32(node.maxQuantity)
-        && r.boolean(node.renewable)
-        && r.i32(node.regenerationPerDay)
-        && node.id!=0
+    if(!r.u64(node.id)
+       || !r.enumeration(node.material)
+       || !r.i32(node.quantity)
+       || !r.i32(node.maxQuantity)
+       || !r.boolean(node.renewable)
+       || !r.i32(node.regenerationPerDay)) return false;
+    if(version>=2 && (!r.i32(node.pos.x) || !r.i32(node.pos.y))) return false;
+    return node.id!=0
         && validMaterialKind(node.material)
         && node.material!=MaterialKind::Unknown
         && node.quantity>=0
@@ -260,14 +267,19 @@ void writeCivilizationStorageSite(WriterT& w,const StorageSite& storage)
 {
     w.u64(storage.id);
     writeCivilizationInventory(w,storage.inventory);
+    w.i32(storage.pos.x);
+    w.i32(storage.pos.y);
 }
 
 template<typename ReaderT>
-bool readCivilizationStorageSite(ReaderT& r,StorageSite& storage)
+bool readCivilizationStorageSite(
+    ReaderT& r,
+    StorageSite& storage,
+    std::uint32_t version=CivilizationSnapshotExtensionVersion)
 {
-    return r.u64(storage.id)
-        && storage.id!=0
-        && readCivilizationInventory(r,storage.inventory);
+    if(!r.u64(storage.id) || storage.id==0 || !readCivilizationInventory(r,storage.inventory)) return false;
+    if(version>=2 && (!r.i32(storage.pos.x) || !r.i32(storage.pos.y))) return false;
+    return true;
 }
 
 template<typename WriterT>
@@ -289,14 +301,19 @@ void writeCivilizationSnapshotExtension(WriterT& w,const World& world)
 }
 
 template<typename ReaderT>
-bool readCivilizationSnapshotExtension(ReaderT& r,World& world)
+bool readCivilizationSnapshotExtension(
+    ReaderT& r,
+    World& world,
+    std::uint32_t* outVersion=nullptr)
 {
     char magic[sizeof(CivilizationSnapshotExtensionMagic)]{};
     std::uint32_t version=0;
     if(!r.raw(magic,sizeof(magic))
        || std::memcmp(magic,CivilizationSnapshotExtensionMagic,sizeof(magic))!=0
        || !r.u32(version)
-       || version!=CivilizationSnapshotExtensionVersion) return false;
+       || (version!=CivilizationSnapshotExtensionLegacyVersion
+           && version!=CivilizationSnapshotExtensionVersion)) return false;
+    if(outVersion) *outVersion=version;
 
     std::uint32_t characterCount=0;
     if(!r.count(characterCount) || characterCount!=world.characters.size()) return false;
@@ -317,7 +334,7 @@ bool readCivilizationSnapshotExtension(ReaderT& r,World& world)
     std::unordered_set<ResourceNodeId> resourceIds;
     for(std::uint32_t i=0;i<resourceCount;++i){
         ResourceNode node;
-        if(!readCivilizationResourceNode(r,node) || !resourceIds.insert(node.id).second) return false;
+        if(!readCivilizationResourceNode(r,node,version) || !resourceIds.insert(node.id).second) return false;
         resources.push_back(node);
     }
 
@@ -328,7 +345,7 @@ bool readCivilizationSnapshotExtension(ReaderT& r,World& world)
     std::unordered_set<StorageId> storageIds;
     for(std::uint32_t i=0;i<storageCount;++i){
         StorageSite storage;
-        if(!readCivilizationStorageSite(r,storage) || !storageIds.insert(storage.id).second) return false;
+        if(!readCivilizationStorageSite(r,storage,version) || !storageIds.insert(storage.id).second) return false;
         storages.push_back(std::move(storage));
     }
 
