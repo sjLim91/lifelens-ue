@@ -132,6 +132,7 @@ Whole Project Verification #69 does NOT include #67 because #67 is still unmerge
 - 이전 head `29d6109` CI: structural-preflight SUCCESS, Unreal Linux Compile 실행 기록 없음(트리거 확장 이전).
 - Save/Load 검증: 주민별 외형 입력 로그 추가, PIE 재시작 대조 미기록.
 - 최소 기본 의상: Quaternius Modular Character Outfits - Fantasy v2.1 CC0 확인, 다운로드/임포트 미완.
+- 2026-09-15 갱신: head `78f7e1c` Preflight `34914498920` SUCCESS / Unreal Linux Compile `34914498927` SUCCESS / Core Tests `34914496086` SUCCESS. `f9d1152`에서 Peasant 의상 임포트·적용(PROVENANCE Pack 3). PIE 화면·Save/Load 확인 미기록.
 
 ### Character Motion Bootstrap — READY_AFTER_#67
 

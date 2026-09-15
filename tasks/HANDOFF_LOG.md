@@ -634,3 +634,24 @@
   - 스테이징 예정 경로: `assets_staging/Quaternius/ModularCharacterOutfitsFantasy/` (zip 원본 + 압축 해제 + license_screenshot.png)
 - 상대가 알아야 할 점:
   - 익명 네임스페이스 헬퍼 이름(`Variant`, `Axis`, `Mix64` 등)은 유니티 빌드에서 모듈 내 다른 .cpp와 충돌할 수 있음. 다겸 측은 명명 네임스페이스로 통일
+
+### 다겸 측 AI — Character Appearance v1 최소 기본 의상 적용
+
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/character-appearance-v1`, PR #67
+- 커밋: `f9d1152`
+- 상태: `ACTIVE / CLOSEOUT`
+- CI 기록 (head `78f7e1c`): Preflight `34914498920` SUCCESS, Unreal Linux Compile `34914498927` SUCCESS, Core Tests `34914496086` SUCCESS
+- 변경:
+  - Quaternius "Modular Character Outfits - Fantasy" [Standard] v2.1 (zip 294,347,394 B, 2026-09-15 다운로드, in-zip `License_Standard.txt` "CC0 1.0 Universal (CC0 1.0) Public Domain Dedication") → `Content/Characters/Quaternius/MCO/Peasant/**`. Standard tier 포함 의상은 Peasant·Ranger 2종(남/여). Peasant만 임포트, Ranger 미임포트. `PROVENANCE.md` Pack 3 기록
+  - 헤드리스 임포트 `Import/import_quaternius_outfits.py` (UBC 공유 스켈레톤에 바인딩, 여성용 중복 텍스처/머티리얼은 남성용으로 consolidate, MaxTextureSize 2048)
+  - `LLResidentAppearanceComponent::ApplyOutfit()`: 성별 Peasant 세트를 Body 하위 leader-pose 스켈레탈 메시로 부착. `OutfitVariant` 홀수면 색상 변형 2. 남성 노출 팔 피부 슬롯은 몸 피부와 동일 틴트
+  - 로컬 Build.sh Succeeded, preflight PASS
+- 미충족:
+  - PIE 화면 확인(의상 표시·클리핑 여부) 미기록
+  - PIE 재시작 후 동일 주민 동일 외형(Save/Load): 미기록
+  - 새 head `f9d1152` CI: 대기
+  - final review/merge + live-doc sync
+- 상대가 알아야 할 점:
+  - UBC Standard tier에는 분리된 머리 메시가 없어 Superhero 전신 위에 의상을 겹침(팩 Readme는 머리만 사용 권장). 의상이 몸보다 얇은 부위에서 피부가 비칠 수 있음. 화면 확인 후 필요 시 후속
+  - `Content/Characters/Quaternius/MCO/**` 약 52 MB 바이너리 추가
