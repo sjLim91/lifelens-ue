@@ -132,6 +132,8 @@ Whole Project Verification #69 does NOT include #67 because #67 is still unmerge
 - 이전 head `29d6109` CI: structural-preflight SUCCESS, Unreal Linux Compile 실행 기록 없음(트리거 확장 이전).
 - Save/Load 검증: 주민별 외형 입력 로그 추가, PIE 재시작 대조 미기록.
 - 최소 기본 의상: Quaternius Modular Character Outfits - Fantasy v2.1 CC0 확인, 다운로드/임포트 미완.
+- 2026-09-15 Save/Load 연속성 검증 완료: headless `-game` 2회 실행에서 동일 세이브의 주민 4명 외형 값 완전 일치, 세이브 제거 대조군에서만 다른 주민 생성. PIE 재시작 후 동일 주민 동일 외형 = O. 부수 결함(스폰 후 ID 바인딩 이전에 외형 생성 → 전원 동일 외형, #65 계약 우회) `fc15341`에서 수정.
+- 2026-09-15 화면 확인: 의상 관통 없음, 목 이음매 없음.
 - 2026-09-15 의상 관통 수정: 전신 메시 위 덧씌움 구조에서 팔·몸통·허벅지 관통 확인. 머티리얼 슬롯 hide(머리 동일 섹션)·본 hide(자식 본 동반)·UV 마스크(아틀라스 비분리) 모두 불가로 확인. 파생 머리 전용 메시(`Head`/`neck_01` 삼각형만 유지)로 교체, `bb68a6c`. 화면 재확인 대기.
 - 2026-09-15 갱신: head `78f7e1c` Preflight `34914498920` SUCCESS / Unreal Linux Compile `34914498927` SUCCESS / Core Tests `34914496086` SUCCESS. `f9d1152`에서 Peasant 의상 임포트·적용(PROVENANCE Pack 3). PIE 화면·Save/Load 확인 미기록.
 

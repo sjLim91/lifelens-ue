@@ -680,3 +680,23 @@
   - 의상은 Peasant 1종(남/여) + 색상 2종뿐. 연령대별 의상 구분 없음
   - 착용 시 바디 메시가 머리로 바뀌므로, 향후 노출 부위가 다른 의상을 추가하면 의상별로 대응하는 바디 변형이 필요
 - 미충족: 화면 확인, Save/Load 연속성, 최종 리뷰/머지 + 문서 동기화
+
+### 다겸 측 AI — 의상 확인 결과 및 Save/Load 연속성 검증
+
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/character-appearance-v1`, PR #67
+- 커밋: `fc15341`
+- 상태: `ACTIVE / CLOSEOUT`
+- CI 기록 (head `6d814e3`): Preflight `34916984761` SUCCESS, Unreal Linux Compile `34916984865` SUCCESS
+- 화면 확인 결과 (로컬 PIE, `bb68a6c`): 의상 관통 없음, 목 이음매 보이지 않음
+- 검출된 결함 및 수정:
+  - 로그 대조 중 주민 4명의 `ResidentId`가 모두 무효(`00000000-...`)이고 외형 값이 전원 동일, `temp=1`(임시 해시 경로)로 확인됨. 원인은 `ALLWorldDirector::SpawnResidents`가 액터를 스폰한 직후 `BindResident`로 ID를 넣는데, 외형은 그 이전 `BeginPlay`에서 생성되던 것. #65 결정론 계약이 우회되고 주민 간 외형 구분도 사라진 상태였음
+  - 수정(`fc15341`, Characters/** 범위): `EnsureBuilt()`는 ID가 무효면 보류, `BindResident()`가 ID 설정 후 외형·표현 생성을 호출. 표현 컴포넌트는 ID 대기 중 실루엣 fallback도 보류하고 바인딩 시점에 인체 유무로 분기
+- Save/Load 연속성 검증 (headless `-game -nullrhi`, 로그 대조):
+  - 실행 A: 주민 4명 고유 GUID, 서로 다른 외형, `temp=0`. 실행 중 자동 저장 발생(`Saved/SaveGames/LifeLens_Autosave.sav` 갱신)
+  - 실행 B: 동일 세이브 로드. 4명의 id·seed·skin·eye·hair·height·build·outfit 값이 실행 A와 완전 일치
+  - 대조군 C: 세이브 파일을 옮긴 뒤 실행 → 다른 주민 4명 생성. 세이브 복원 후 원본과 바이트 동일 확인
+  - 결론: 같은 세이브에서 같은 주민은 같은 외형. PIE 재시작 후 동일 주민 동일 외형: O
+- 미충족: 최종 리뷰/머지 + live-doc 동기화
+- 상대가 알아야 할 점:
+  - 스폰 후 바인딩 순서에 의존하는 표현 컴포넌트는 `BeginPlay`가 아니라 `BindResident` 시점을 기준으로 해야 함. World/** 는 수정하지 않았음
