@@ -38,6 +38,14 @@ struct Character {
     ChildDevelopment development;
     LifeCondition lifeCondition;
     IndividualCivilizationState civilization;
+
+    // Transient read/presentation provenance for the most recent civilization
+    // action that actually executed. This is not a second decision authority and
+    // is intentionally not part of persistence: after restore, presentation
+    // waits for the next real Core civilization execution.
+    CivilizationEvent lastCivilizationEvent{};
+    int lastCivilizationActivityMinute=-1;
+
     std::vector<CharacterId> parentIds;
     std::vector<CharacterId> childrenIds;
     std::vector<LifeHistoryEntry> lifeHistory;
