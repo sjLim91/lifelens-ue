@@ -21,7 +21,7 @@
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | next Jjun slice | Sanitation Problem Recognition v1 | Core Memory/Knowledge/Civilization | **READY_NOW / HIGHEST PRIORITY** |
+| 쭌 + 쭌 AI | `jjun/sanitation-problem-recognition-v1` | Sanitation Problem Recognition v1 | Core Memory/Belief/Environment | **IN_PROGRESS** |
 | 다겸 + 다겸 AI | PR #67 `dagyeom/character-appearance-v1` | Character Appearance v1 | Character appearance + `Content/Characters/**` | **ACTIVE / CLOSEOUT** |
 | 다겸 + 다겸 AI | after #67 | Character Motion Bootstrap | Character locomotion presentation | READY_AFTER_#67 |
 | 다겸 + 다겸 AI | after Motion Bootstrap | World Visual Environment v1 | Environment/Maps/WorldPresentation | HIGH PRIORITY / READY_AFTER_MOTION_BOOTSTRAP |
@@ -33,6 +33,23 @@
 ## Current Assist Locks
 
 **0개.** Previous appearance/presentation assist locks are released.
+
+## Current Jjun lane — Sanitation Problem Recognition v1 IN_PROGRESS
+
+Branch:
+- `jjun/sanitation-problem-recognition-v1`
+
+Goal:
+- repeated/high-confidence sanitation memories become an explicit resident-level recognized problem.
+- Memory/environment evidence remains the cause; no global tech unlock.
+- recognition is represented in authoritative Core state and can become an input for primitive sanitation experimentation/progression.
+
+Planned minimal boundary:
+- use #75 sanitation Memory tags as evidence.
+- deterministic evidence aggregation.
+- promote qualifying evidence into a sanitation-problem Belief.
+- no duplicate evidence ingestion.
+- Core regression tests for weak evidence, repeated evidence, unrelated memory and determinism.
 
 ## Latest Jjun product checkpoint — PR #76 DONE
 
@@ -54,12 +71,6 @@ Delivered:
 - existing movement → use-duration → actual completion GridPos ACK remains intact.
 - residue/avoidance feedback can now agree with the visible World location.
 - Preflight regression guard added.
-
-Next Jjun lane:
-- **Sanitation Problem Recognition v1 — READY_NOW / HIGHEST PRIORITY.**
-- use repeated/high-confidence Core sanitation Memory as evidence.
-- do not create global magic tech unlocks.
-- produce deterministic recognized concern that can feed primitive sanitation experimentation/progression.
 
 ## Previous Jjun product checkpoint — PR #75 DONE
 
@@ -136,7 +147,7 @@ Rules:
 → `HumanWaste residue`
 → `resident exposure/Memory`
 → `next-location avoidance`
-→ **`problem recognition` (READY_NOW)**
+→ **`problem recognition` (IN_PROGRESS)**
 → `primitive sanitation solution`
 → `visual feedback`
 
@@ -269,7 +280,7 @@ Current open blockers from Jjun for Dagyeom #67: **0**.
 10. #74 runtime position restore — DONE.
 11. #75 environmental exposure/perception/avoidance — DONE.
 12. #76 World sanitation recommendation integration — DONE.
-13. **Sanitation Problem Recognition — READY_NOW / HIGHEST PRIORITY.**
+13. **Sanitation Problem Recognition — IN_PROGRESS.**
 14. Character Appearance #67 — ACTIVE CLOSEOUT in parallel.
 15. Primitive sanitation affordance progression.
 16. HumanWaste visual feedback.
