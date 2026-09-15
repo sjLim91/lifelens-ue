@@ -13,12 +13,15 @@
 2. `docs/LIFELENS_SPEC_v1.1.md`
 3. `docs/DEVELOPMENT_MILESTONES.md`
 4. `docs/STATE_MANAGEMENT.md`
-5. actual `main` HEAD / target branch / PR / Actions
-6. `tasks/WORK_STATE.md`
-7. `tasks/TEAM_BOARD.md`
-8. `tasks/HANDOFF_LOG.md` 최신 의미 있는 항목
+5. `docs/DECISION_LOG.md`
+6. actual `main` HEAD / target branch / PR / Actions
+7. `tasks/WORK_STATE.md`
+8. `tasks/TEAM_BOARD.md`
+9. `tasks/HANDOFF_LOG.md` 최신 의미 있는 항목
 
 `tasks/DAGYEOM_READY_QUEUE.md`는 과거 링크 호환용이다. **새 dispatch의 canonical source로 사용하지 않는다.**
+
+`docs/DECISION_LOG.md`는 쭌과 AI가 대화 중 확정한 설계·정리·작업 판단 원칙의 canonical log다. 제품 요구사항 자체를 바꾸는 결정은 Decision Log에만 두지 않고 `docs/LIFELENS_SPEC_v1.1.md`에도 반영한다.
 
 ## 1. Development unit — milestone-sized delivery
 
@@ -83,11 +86,15 @@ Canonical milestone roadmap: `docs/DEVELOPMENT_MILESTONES.md`.
 
 ## 5. Shared state documents
 
+- `docs/LIFELENS_SPEC_v1.1.md` — 제품 최상위 요구사항 / 불변조건.
 - `docs/DEVELOPMENT_MILESTONES.md` — 큰 개발 단위와 gate 순서.
+- `docs/DECISION_LOG.md` — 대화 중 확정된 설계·정리·작업 판단 원칙.
 - `tasks/WORK_STATE.md` — **현재 active/ready/blocked state만** 기록.
 - `tasks/TEAM_BOARD.md` — ownership / active locks / Integration Requests만 기록.
 - `tasks/HANDOFF_LOG.md` — 의미 있는 merge/failure/design transition만 append-only 기록.
 - `docs/PROJECT_PROGRESS_2026-09-15.md` — 날짜 기준 전체 진행 snapshot.
+
+문서 역할을 섞지 않는다. 제품 요구사항 변경은 Master Spec에도 반영하고, 현재 상태 변경은 `WORK_STATE`, ownership/lock 변경은 `TEAM_BOARD`, 대화로 확정한 지속적 판단 원칙은 `DECISION_LOG`에 반영한다.
 
 과거 완료 이력을 `WORK_STATE`나 `TEAM_BOARD`에 길게 복제하지 않는다.
 
