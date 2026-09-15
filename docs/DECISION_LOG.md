@@ -168,3 +168,23 @@
 **구현 기준**
 - canonical companion: `docs/CHARACTER_CONTEXT_MOTION_v1.md`의 Toilet / sanitation presentation section.
 - 목표는 노골적 묘사가 아니라 **관찰자가 상황을 즉시 이해하면서도 의상/리깅 비용을 과도하게 만들지 않는 표현**이다.
+
+---
+
+# 2026-09-16
+
+## D-010 — Observer 카메라는 PC/Android에서 직접 orbit/zoom/pan 가능해야 한다
+
+**결정**
+- 현재 production observer camera의 고정 프레이밍은 bootstrap/검증 단계로 보고, 실제 제품 카메라는 사용자가 직접 조작할 수 있어야 한다.
+- PC 입력은 `mouse wheel = zoom`, `right-drag = orbit rotate`, `middle-drag = pan`, `left click = 기존 선택`으로 한다.
+- Android 입력은 `one-finger tap = 선택`, `one-finger drag = orbit rotate`, `pinch = zoom`, `two-finger translate = pan`으로 한다.
+- 모바일에서 touch pressed 순간 선택하지 않고 `Pressed -> movement tracking -> Released`로 tap과 gesture를 구분한다.
+- 주민 선택만으로 카메라가 자동 점프하거나 강제 추적하지 않는다.
+- zoom distance와 elevation은 제품 tuning 범위로 clamp하고 모든 camera transform 변경은 smoothing한다.
+- 카메라 조작은 Presentation이며 Core/World authority와 deterministic simulation을 바꾸지 않는다.
+
+**구현 기준**
+- canonical companion: `docs/OBSERVER_CAMERA_CONTROL_v1.md`.
+- `Source/LifeLens/UI/LLObserverPlayerController.*`는 Dagyeom 소유영역이므로 Jjun 구현 시 별도 assist branch + TEAM_BOARD Assist Lock을 사용한다.
+- HUD polish/old stacked UI PR 정리와 camera control을 같은 PR에 섞지 않는다.
