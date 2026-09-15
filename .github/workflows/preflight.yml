@@ -23,6 +23,9 @@ jobs:
       - name: Validate LifeLens bootstrap
         run: python Tools/validate_bootstrap.py
 
+      - name: Validate SimulationRuleset contract
+        run: python Tools/validate_simulation_ruleset.py
+
       - name: Validate civilization observer read contract
         run: python Tools/validate_civilization_observer.py
 
