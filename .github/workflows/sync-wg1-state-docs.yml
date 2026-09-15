@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   sync:
-    if: github.event.head_commit.message != 'docs: sync WG-1 completion state'
+    if: "${{ github.event.head_commit.message != 'docs: sync WG-1 completion state' }}"
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
