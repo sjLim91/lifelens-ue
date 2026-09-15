@@ -42,6 +42,11 @@ public:
     UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Action")
     void SetExternalPhysicalExecutionEnabled(bool bEnabled);
 
+    UFUNCTION(BlueprintPure, Category="LifeLens|Core|Action")
+    int32 GetPhysicalActionDurationTicks(
+        ELLCorePhysicalIntent Intent,
+        bool bEmergencyFallback) const;
+
     UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Action")
     bool CompleteResidentPhysicalAction(
         FGuid ResidentId,
