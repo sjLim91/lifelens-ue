@@ -34,10 +34,11 @@ jobs:
       - name: Apply Milestone A patch
         run: python Tools/apply_world_generation_milestone_a.py
 
-      - name: Preserve existing residue visual validator call shape
+      - name: Preserve existing validators across the new world origin and snapshot format
         run: |
           python - <<'PY'
           from pathlib import Path
+
           p = Path('Source/LifeLens/World/LLWorldDirector.cpp')
           s = p.read_text(encoding='utf-8')
           s = s.replace(
@@ -49,6 +50,14 @@ jobs:
               'EnvironmentalResidueVisualizer->RefreshFromCore(*CoreBridge, CoreGridCellSizeUU, false,\n',
               1)
           p.write_text(s, encoding='utf-8')
+
+          p = Path('Tools/validate_bootstrap.py')
+          s = p.read_text(encoding='utf-8')
+          old = "assert 'SimulationSnapshotBinaryFormatVersion=5' in snapshot_h, 'Designated sanitation site persistence requires snapshot binary format v5'"
+          new = "snapshot_binary_version = int(snapshot_h.split('SimulationSnapshotBinaryFormatVersion=', 1)[1].split(';', 1)[0])\nassert snapshot_binary_version >= 5, 'Designated sanitation site persistence requires snapshot binary format v5 or newer'"
+          if old not in s:
+              raise SystemExit('bootstrap snapshot-version assertion anchor not found')
+          p.write_text(s.replace(old, new, 1), encoding='utf-8')
           PY
 
       - name: Structural validation
@@ -77,7 +86,7 @@ jobs:
         run: |
           git config user.name "LifeLens Milestone Runner"
           git config user.email "actions@users.noreply.github.com"
-          git add Source/LifeLensCore Source/LifeLens Tools/validate_world_generation_milestone_a.py
+          git add Source/LifeLensCore Source/LifeLens Tools/validate_world_generation_milestone_a.py Tools/validate_bootstrap.py
           if git diff --cached --quiet; then
             echo "No product changes to commit"
             exit 0
