@@ -5,15 +5,21 @@
 #include "GameFramework/PlayerController.h"
 #include "LLObserverPlayerController.generated.h"
 
+class ACameraActor;
 class ALLResidentCharacter;
 
-// Routes a single tap/click. All positions are viewport pixels (the space
-// GetMousePosition, touch events and ProjectWorldLocationToScreen share):
+// Routes observer selection and camera input.
+//
+// Selection:
 //   1. HUD chrome (quick inspector card, detail tabs) - consumed there.
-//   2. The resident whose projected screen position is nearest the tap,
+//   2. The resident whose projected screen position is nearest the tap/click,
 //      within the touch-target radius - select it.
 //   3. Otherwise - step one observation level back.
-UCLASS()
+//
+// Camera (docs/OBSERVER_CAMERA_CONTROL_v1.md):
+//   PC: wheel zoom, right-drag orbit, middle-drag pan.
+//   Android: tap selects, one-finger drag orbits, pinch zooms, two-finger drag pans.
+UCLASS(Config=Game, DefaultConfig)
 class LIFELENS_API ALLObserverPlayerController : public APlayerController
 {
     GENERATED_BODY()
@@ -24,10 +30,31 @@ public:
 protected:
     virtual void BeginPlay() override;
     virtual void SetupInputComponent() override;
+    virtual void PlayerTick(float DeltaTime) override;
 
 private:
+    // Selection input.
     void HandlePrimarySelect();
     void HandleTouchPressed(ETouchIndex::Type FingerIndex, FVector Location);
+    void HandleTouchReleased(ETouchIndex::Type FingerIndex, FVector Location);
+
+    // Mouse camera input.
+    void HandleRightMousePressed();
+    void HandleRightMouseReleased();
+    void HandleMiddleMousePressed();
+    void HandleMiddleMouseReleased();
+    void HandleMouseWheel(float AxisValue);
+
+    // Camera runtime.
+    void EnsureCameraInitialized();
+    void UpdateMouseCameraInput();
+    void UpdateTouchCameraInput();
+    void ApplyCameraTransform(float DeltaTime);
+    void RotateByScreenDelta(const FVector2D& Delta, float DegreesPerPixel);
+    void PanByScreenDelta(const FVector2D& Delta, float ScaleMultiplier = 1.0f);
+    void ZoomByScale(float Scale);
+    float TouchDragThresholdPixels() const;
+
     // ExactHit: the resident directly under the pointer (trace), used when no
     // resident is within the touch-target radius.
     void ApplyTap(const FVector2D& ScreenPosition, ALLResidentCharacter* ExactHit);
@@ -37,4 +64,61 @@ private:
     // from the tap to the nearest resident's bounds rectangle in pixels
     // (0 when inside), or -1 when no resident projects on screen.
     ALLResidentCharacter* FindResidentAtScreenPosition(const FVector2D& ScreenPosition, float RadiusPixels, float& OutDistance) const;
+
+    // Product tuning. Config/DefaultGame.ini is the normal source of truth.
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera", meta=(ClampMin="100.0"))
+    float CameraMinDistanceUU = 1000.0f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera", meta=(ClampMin="1000.0"))
+    float CameraMaxDistanceUU = 24000.0f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera", meta=(ClampMin="1.0", ClampMax="89.0"))
+    float CameraMinElevationDegrees = 20.0f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera", meta=(ClampMin="1.0", ClampMax="89.0"))
+    float CameraMaxElevationDegrees = 80.0f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera", meta=(ClampMin="0.01"))
+    float MouseRotateDegreesPerPixel = 0.18f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera", meta=(ClampMin="0.01"))
+    float TouchRotateDegreesPerPixel = 0.16f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera", meta=(ClampMin="0.0001"))
+    float PanWorldPerPixelDistanceFactor = 0.0015f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera", meta=(ClampMin="0.01", ClampMax="0.8"))
+    float MouseWheelZoomFraction = 0.12f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera", meta=(ClampMin="0.1", ClampMax="3.0"))
+    float PinchZoomSensitivity = 1.0f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera", meta=(ClampMin="1.0"))
+    float TouchDragThresholdLogicalPixels = 12.0f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera", meta=(ClampMin="0.1"))
+    float CameraSmoothingSpeed = 10.0f;
+
+    TWeakObjectPtr<ACameraActor> ObserverCamera;
+    bool bCameraInitialized = false;
+
+    FVector CurrentOrbitTarget = FVector::ZeroVector;
+    FVector DesiredOrbitTarget = FVector::ZeroVector;
+    float CurrentOrbitYawDegrees = 0.0f;
+    float DesiredOrbitYawDegrees = 0.0f;
+    float CurrentOrbitElevationDegrees = 45.0f;
+    float DesiredOrbitElevationDegrees = 45.0f;
+    float CurrentOrbitDistanceUU = 5000.0f;
+    float DesiredOrbitDistanceUU = 5000.0f;
+
+    bool bRightMouseDragging = false;
+    bool bMiddleMouseDragging = false;
+
+    bool bTouch1Tracked = false;
+    bool bTouchGesture = false;
+    bool bTouchHadSecondFinger = false;
+    bool bTwoFingerActive = false;
+    FVector2D TouchStart1 = FVector2D::ZeroVector;
+    FVector2D LastTouch1 = FVector2D::ZeroVector;
+    FVector2D LastTouch2 = FVector2D::ZeroVector;
 };
