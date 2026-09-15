@@ -70,7 +70,7 @@ inline SocialFact makeCivilizationTechniqueFact(
     CivilizationEventType eventType)
 {
     SocialFact fact;
-    fact.id=civilizationTechniqueFactId(worldSeed,actor.id,technique,minute,eventType);
+    fact.id=civilizationTechniqueFactId(worldSeed,actor,technique,minute,eventType);
     fact.subject=actor;
     fact.proposition=techniqueFactProposition(technique);
     fact.where="civilization-worksite";
