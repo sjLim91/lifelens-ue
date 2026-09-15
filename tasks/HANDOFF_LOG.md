@@ -533,3 +533,29 @@
 - 현재 행동은 Core resident observation 우선, legacy actor intent는 transitional fallback.
 - UI는 read-only presentation이며 simulation authority/cache를 새로 만들지 않음.
 - 상대가 알아야 할 점: 쭌 측 Observer blocker 0개. 다음 순서 PR #26 → #29/#30 → #36 → #38 → integrated runtime → Android smoke APK.
+
+## 2026-09-15 — Primitive sanitation experimentation progression 완료
+
+- 작성자: 쭌 측 AI
+- 브랜치/PR: `jjun/primitive-sanitation-progression-v1`, PR #78
+- 상태: `DONE / main 병합 완료`
+- validated head: `e78f6d211589b74008ff0fdf73e9be1048e2d807`
+- main merge: `3a9739682034ad7c5009da5f75a11b0f07fed55b`
+- 변경 범위:
+  - `PrimitiveSanitation.h`를 추가해 #77의 resident sanitation-problem Belief를 실제 문명 실험 전제조건으로 소비.
+  - `TechniqueId::DesignatedSanitationArea` / `ExperimentKind::DesignateSanitationArea`를 기존 Civilization experiment 체계에 추가.
+  - 실험은 **문제 인식 + 낮은 오염도 후보지**가 모두 있을 때만 가능.
+  - 실패는 `Hypothesized`, 성공은 발견자 개인의 `Reproducible` 지식으로 남음.
+  - 기존 witness/teaching provenance 및 Civilization observer 범위를 새 기술까지 확장.
+  - 기존 Civilization snapshot extension으로 개인 기술 지식 지속성 보존.
+  - 전역 `LatrineUnlocked` 또는 자동 Toilet/Latrine SmartObject 생성 없음.
+- 검증:
+  - Structural Preflight run `34921390473` PASS.
+  - Core Tests run `34921390510` PASS, **43/43** including `test_primitive_sanitation_progression`.
+  - deterministic harness smoke PASS.
+  - Unreal Linux Compile run `34921390491` PASS; UE 5.6 image verify + UHT + UBT + link PASS.
+- 상대가 알아야 할 점:
+  - 지정 배변구역은 아직 **개인 발견 지식**이며 실제 persistent facility/affordance는 다음 슬라이스에서 생성한다.
+  - 다른 주민에게는 기존 목격/교육 경로로만 지식이 전달되며 세계 전역 기술 해금은 없다.
+  - 다음 쭌 레인: learned `DesignatedSanitationArea` + authoritative Core GridPos를 persistent Core-owned sanitation affordance로 materialize하고 World가 같은 위치를 소비하도록 연결.
+  - 다겸 #67 branch/UI/Character 파일은 건드리지 않았다.
