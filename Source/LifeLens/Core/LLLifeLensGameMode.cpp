@@ -74,17 +74,19 @@ void ALLLifeLensGameMode::SpawnObserverCamera()
         return;
     }
 
-    // The selected authoritative start chunk is mapped to Unreal presentation
-    // origin by LLWorldDirector. Frame that region using the shared spatial
-    // contract instead of the legacy 1,400 UU bootstrap-floor dimensions.
-    const FVector CameraLocation(
-        0.0f,
-        -LLWorldSpatialContract::ObserverCameraDistanceUU,
-        LLWorldSpatialContract::ObserverCameraHeightUU);
-    const FVector CameraTarget(
-        0.0f,
-        0.0f,
-        LLWorldSpatialContract::ObserverCameraTargetHeightUU);
+    // Keep the authoritative selected start region centred, but enter from a
+    // higher, steeper observer angle so generated tree canopies do not sit
+    // between the initial camera and the founders. Framing values are product
+    // presentation tuning in DefaultGame.ini, not Core spatial authority.
+    const float CameraDistanceChunks = FMath::Max(0.5f, ObserverCameraDistanceChunks);
+    const float CameraHeightChunks = FMath::Max(0.5f, ObserverCameraHeightChunks);
+    const float CameraDistanceUU = LLWorldSpatialContract::ChunkSpanUU * CameraDistanceChunks;
+    const float CameraHeightUU = LLWorldSpatialContract::ChunkSpanUU * CameraHeightChunks;
+    const float TargetHeightUU = FMath::Max(0.0f, ObserverCameraTargetHeightUU);
+    const float CameraFOVDegrees = FMath::Clamp(ObserverCameraFOVDegrees, 30.0f, 90.0f);
+
+    const FVector CameraLocation(0.0f, -CameraDistanceUU, CameraHeightUU);
+    const FVector CameraTarget(0.0f, 0.0f, TargetHeightUU);
     const FRotator CameraRotation = (CameraTarget - CameraLocation).Rotation();
 
     ACameraActor* Camera = GetWorld()->SpawnActor<ACameraActor>(
@@ -97,7 +99,7 @@ void ALLLifeLensGameMode::SpawnObserverCamera()
 
     if (UCameraComponent* CameraComponent = Camera->GetCameraComponent())
     {
-        CameraComponent->SetFieldOfView(LLWorldSpatialContract::ObserverCameraFOVDegrees);
+        CameraComponent->SetFieldOfView(CameraFOVDegrees);
     }
 
     if (APlayerController* PlayerController = GetWorld()->GetFirstPlayerController())
