@@ -559,3 +559,31 @@
   - 다른 주민에게는 기존 목격/교육 경로로만 지식이 전달되며 세계 전역 기술 해금은 없다.
   - 다음 쭌 레인: learned `DesignatedSanitationArea` + authoritative Core GridPos를 persistent Core-owned sanitation affordance로 materialize하고 World가 같은 위치를 소비하도록 연결.
   - 다겸 #67 branch/UI/Character 파일은 건드리지 않았다.
+
+## 2026-09-15 — Designated sanitation area authoritative affordance 완료
+
+- 작성자: 쭌 측 AI
+- 브랜치/PR: `jjun/designated-sanitation-affordance-v1`, PR #79
+- 상태: `DONE / main 병합 완료`
+- validated head: `49c76863b1957df09b7d814f7117826e92707021`
+- main merge: `90f2b4f9cdc480e99886632e09323b2feab9625c`
+- 변경 범위:
+  - `DesignatedSanitationArea` Reproducible 지식은 자동 시설 생성이 아니라 기존 Civilization `Craft` 축을 실제 실행해야 Core-owned `PrimitiveSanitationSite`로 materialize됨.
+  - site는 stable id, authoritative GridPos, establisher/minute, active flag, useCount를 Core가 소유.
+  - Core `SanitationUseTarget` / Unreal `GetSanitationUseTarget(...)`로 designated flag + site id + exact GridPos를 한 번에 전달.
+  - World affordance 우선순위는 authored Preferred/Primitive → Core designated Primitive → Natural → Emergency로 유지.
+  - designated completion은 exact active site id + GridPos가 모두 일치해야 하며 stale/wrong target은 fail-closed.
+  - 성공한 designated use는 실제 ACK 위치에 HumanWaste residue를 남기고 site useCount를 증가시킴.
+  - snapshot binary format v5 + primitive sanitation extension으로 site identity/location/active/useCount를 Save/Load 보존; v1-v4는 site 없음으로 호환 decode.
+  - global `LatrineUnlocked`나 자동 modern Toilet/Latrine SmartObject는 추가하지 않음.
+- 검증:
+  - Structural Preflight run `34923460056` PASS.
+  - Core Tests run `34923459974` PASS, **44/44** including `test_designated_sanitation_affordance`.
+  - deterministic harness smoke PASS.
+  - Unreal Linux Compile run `34923459949` PASS; UE 5.6 image verify + UHT + UBT + link PASS.
+  - 첫 Core run의 2개 실패는 기존 테스트가 snapshot format `4`를 숫자로 하드코딩한 회귀였고, `SimulationSnapshotBinaryFormatVersion` 상수 사용으로 수정 후 최종 44/44 PASS. 새 #79 affordance 테스트 자체는 첫 run에서도 PASS였음.
+- 상대가 알아야 할 점:
+  - 이제 지정 배변구역은 지식만이 아니라 실제 persistent Core affordance이며 World가 같은 위치/identity를 소비한다.
+  - 다음 쭌 레인은 **Dug pit / primitive latrine progression — READY_NOW**. 아직 새 브랜치는 만들지 않았고 구현 시작으로 간주하면 안 된다.
+  - 다음 단계에서도 실제 지식/재료/도구/작업 없이 pit/latrine이 즉시 생기면 안 되며, primitive containment의 위생 개선 효과는 환경 residue와 연결해야 한다.
+  - 다겸 PR #67 / UI / Character appearance / Content 영역은 #79에서 수정하지 않았다.
