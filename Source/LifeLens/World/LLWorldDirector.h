@@ -5,6 +5,7 @@
 #include "Core/LLTypes.h"
 #include "Simulation/LLCoreActionTypes.h"
 #include "World/LLWorldAffordanceTypes.h"
+#include "World/LLWorldSpatialContract.h"
 #include "LLWorldDirector.generated.h"
 
 class ALLActivityAnchor;
@@ -125,7 +126,9 @@ private:
     UPROPERTY(EditAnywhere, Category="LifeLens|Time")
     float RealSecondsPerSimulationMinute = 0.6f;
 
-    // Spatial contract between Unreal presentation and Core GridPos.
+    // Spatial contract between Unreal presentation and Core GridPos. The
+    // default is shared with bootstrap ground and WorldPresentation so the
+    // same authoritative Core target maps to the same Unreal distance.
     UPROPERTY(EditAnywhere, Category="LifeLens|World", meta=(ClampMin="1.0"))
-    float CoreGridCellSizeUU = 100.0f;
+    float CoreGridCellSizeUU = LLWorldSpatialContract::GridCellSizeUU;
 };
