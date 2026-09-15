@@ -14,6 +14,11 @@ class LIFELENS_API ALLLifeLensGameMode : public AGameModeBase
 public:
     ALLLifeLensGameMode();
 
+    float GetObserverCameraTargetHeightUU() const
+    {
+        return FMath::Max(0.0f, ObserverCameraTargetHeightUU);
+    }
+
 protected:
     virtual void BeginPlay() override;
 
