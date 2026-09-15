@@ -6,6 +6,14 @@ Scope: initial natural world generation, scalable map topology, chunk lifecycle,
 
 This document extends `docs/LIFELENS_SPEC_v1.1.md`, `docs/WORLD_AFFORDANCE_ENVIRONMENT_v1.md`, `docs/WORLD_VISUAL_ENVIRONMENT_v1.md`, `docs/CIVILIZATION_PROGRESSION_v1.md`, and `docs/STATE_MANAGEMENT.md`.
 
+## Implementation status — 2026-09-15
+
+- **WG-1 DONE** via PR #83, merge `f5c8cbab3aa41c6a37c3bae06838eeb583749771`.
+- merged runtime contract includes `WorldSeed`, separate `PopulationSeed`, `WorldGenerationVersion`, stable `ChunkCoord`, negative-safe grid/chunk mapping, and order-independent untouched chunk baseline/substream seeds.
+- validation: Preflight `34933128958` PASS, Core `34933128953` **46/46 PASS** + deterministic harness, Unreal Linux Compile `34933128950` PASS including UE 5.6 UHT/UBT/link.
+- **WG-2 READY_NOW:** Macro World facts + viable initial start-site selector.
+- WG-3+ detailed chunks/persistence/streaming/migration remain future implementation and must not be described as already running.
+
 ---
 
 ## 1. Product decision
@@ -482,16 +490,19 @@ This same pattern later applies to shelters, storage, paths, agriculture, worksh
 
 ## 18. Implementation sequence
 
-This document is a design gate, not a claim that the following runtime exists today.
+This document remains the architecture gate. WG-1 is now implemented; WG-2 and later runtime phases remain incomplete until separately merged and validated.
 
 Recommended phases:
 
-### WG-1 — deterministic world coordinates and chunk keys
-- chunk coordinate contract
-- stable `Hash(WorldSeed, ChunkCoord, GenerationVersion)`
-- order-independence test
+### WG-1 — deterministic world coordinates and chunk keys — **DONE #83**
+- merged as `f5c8cbab3aa41c6a37c3bae06838eeb583749771`.
+- chunk coordinate contract.
+- stable deterministic derivation from `WorldSeed + ChunkCoord + GenerationVersion`.
+- negative-coordinate floor semantics.
+- PopulationSeed separated from natural-world identity.
+- order-independence test and Core 46/46 validation.
 
-### WG-2 — macro world + initial start-site selector
+### WG-2 — macro world + initial start-site selector — **READY_NOW**
 - lightweight terrain/biome/water/resource potential
 - start viability scoring
 - no infrastructure spawn

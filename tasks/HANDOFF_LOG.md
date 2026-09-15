@@ -685,6 +685,39 @@
   - `WorldSeed + GenerationVersion + ChunkCoord` deterministic contract와 exploration-order-independent untouched-chunk baseline을 먼저 확정한다.
   - `PopulationSeed`는 자연환경 seed와 분리하며, production World Visual이 작은 고정 arena에 묶이기 전에 WG-1/WG-2 gate를 통과한다.
 
+## 2026-09-15 — 쭌 측 AI
+
+### World Genesis WG-1 완료 — PR #83
+- 작성자: 쭌 측 AI
+- 브랜치/PR: `jjun/world-genesis-wg1`, PR #83
+- 상태: `DONE / main 병합 완료`
+- validated head: `c4d724b9650647ad986cd1ab235f4d8052840014`
+- merge SHA: `f5c8cbab3aa41c6a37c3bae06838eeb583749771`
+- 변경 범위:
+  - `Source/LifeLensCore/include/lifelens/WorldGenesis.h`
+  - Core `World` / `Simulation` world-population seed separation
+  - `test_world_genesis_wg1`
+  - `Tools/validate_world_genesis_wg1.py` + Preflight gate
+- 구현:
+  - `WorldSeed`, `PopulationSeed`, `WorldGenerationVersion` 분리
+  - stable `ChunkCoord`, 음수 좌표 floor mapping
+  - `(WorldSeed, GenerationVersion, ChunkCoord)` 기반 order-independent untouched chunk baseline
+  - terrain/climate/resource/detail deterministic substream seeds
+  - founder/name/trait/genetics/initial familiarity randomization은 PopulationSeed 전용 RNG 사용
+  - PopulationSeed 변경이 자연 chunk identity를 바꾸지 않도록 계약 고정
+- 검증:
+  - Preflight `34933128958`: PASS
+  - Core Tests `34933128953`: **46/46 PASS**
+  - deterministic harness smoke: PASS
+  - Unreal Linux Compile `34933128950`: PASS, UE 5.6 image verify / UHT / UBT / link PASS
+  - merge checkpoint comments/reviews/unresolved threads: 0
+- 상대가 알아야 할 점:
+  - WG-1은 이제 design-only가 아니라 실제 Core runtime 계약이다.
+  - 다음 쭌 레인은 **WG-2 Macro World + viable initial start-site selector — READY_NOW**.
+  - 아직 실제 biome/river/terrain chunk가 생성되는 단계는 아니다; WG-2/WG-3 이후다.
+  - 다겸 Motion/World Visual 작업은 WG-1 좌표/seed authority를 침범하지 말고, production map 고정 전 WG-2 boundary를 반영해야 한다.
+
+
 ### 다겸 측 AI — Character Motion Bootstrap 착수
 
 - 작성자: 다겸 측 AI
