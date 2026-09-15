@@ -4,7 +4,7 @@
 > Long-term order: `docs/DEVELOPMENT_MILESTONES.md`.
 > Durable design decisions: `docs/DECISION_LOG.md`.
 
-Last reconciled: 2026-09-15 KST after Observer detail audit during Hardcoding Cleanup B.
+Last reconciled: 2026-09-15 KST after social-communication/localization requirement capture during Hardcoding Cleanup B.
 
 ## Recently closed product checkpoints
 
@@ -104,6 +104,30 @@ Findings / required follow-up:
 Data-authority rule:
 - Observer may format/summarize but must not create a second resident-state authority.
 - Prefer `FLLCoreResidentObservation`, `FLLCoreFamilyObservation`, and `FLLCoreResidentCivilizationObservation` (or explicit new Core read contracts) over expanding legacy `FLLResidentData` merely to keep old UI plumbing alive.
+
+### Localization + social communication presentation gap
+
+PIE screenshots reviewed on 2026-09-15 expose development-facing English strings (`Overview`, `Needs`, `UseToilet`, `Very low`, etc.) and do not yet make ordinary resident-to-resident communication visibly understandable in the world.
+
+Canonical contract: `docs/SOCIAL_COMMUNICATION_LOCALIZATION_v1.md`.
+
+Required follow-up:
+- default normal-user Observer UI to Korean while keeping Core enum/action/event ids language-neutral.
+- stop leaking raw English identifiers into user-facing UI; route them through a localization-ready display layer.
+- expose actual Core social actions as observable interactions: actor/target approach, facing/gaze/personal-space, talking/context animation, lightweight icons or speech bubbles, and history/Event Feed where appropriate.
+- use importance tiers so ordinary chatter remains lightweight while meaningful interactions and major events can show short Korean dialogue and stronger event presentation.
+- base dialogue variation on authoritative intent/personality/relationship/emotion/memory/context; do not invent events in Presentation.
+- base product must work without paid LLM/API dependency. Deterministic/data-driven Korean dialogue is the baseline.
+- Character and Relationship detail should retain recent social interactions so the observer can understand how relationships evolved.
+
+Ownership boundary:
+- Jjun/Core supplies authoritative social action/event/outcome/read context if current contracts are insufficient.
+- Dagyeom presentation owns Korean UI rendering, speech bubble/Event Feed presentation, gaze/body/animation expression.
+- open a formal Integration Request only when a real cross-owner contract change is needed.
+
+Scheduling:
+- this is **not part of PR #99**.
+- keep it as a dedicated Social Communication & Localization milestone; do not let it disappear into generic future UI polish.
 
 ### Early-survival / all-needs-critical investigation
 
