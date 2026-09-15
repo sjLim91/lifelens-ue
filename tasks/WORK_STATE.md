@@ -31,81 +31,59 @@ Last reconciled: 2026-09-15 KST
 ## Current product-code baseline
 
 Latest product merge:
-- PR #82 `[WORLD] Add HumanWaste environmental visual feedback v1`
-- merge SHA: `831ba22ce17ca5fef8a92f2288e18a0495248a7a`
+- PR #83 `[CORE] Add deterministic World Genesis WG-1 contracts`
+- merge SHA: `f5c8cbab3aa41c6a37c3bae06838eeb583749771`
 
-Validated PR #82 final head `8c54ca100c28b12a77375ad48626c4d513087b04`:
-- Structural Preflight run `34931331778`: PASS
-- Environmental visual feedback structural validator: PASS
-- Unreal Linux Compile run `34931331779`: PASS
+Validated PR #83 final head `c4d724b9650647ad986cd1ab235f4d8052840014`:
+- Structural Preflight run `34933128958`: PASS, including World Genesis WG-1 validator
+- Core Tests run `34933128953`: PASS, **46/46**
+- deterministic harness smoke: PASS
+- Unreal Linux Compile run `34933128950`: PASS
 - UE 5.6 image verification / UHT / UBT / link: PASS
 - PR comments/reviews/unresolved threads at merge checkpoint: 0
 
-Delivered by #82:
-- authoritative Core `HumanWaste` residue is now projected into the Unreal world through a read-only presentation component.
-- one HISM component represents many residue records instead of one heavy Actor/Niagara per record.
-- Core Grid XY maps to World location and a WorldStatic trace resolves the visible surface Z.
-- amount/intensity/radius/age drive footprint/custom presentation data.
-- open designated-area residue (`0.42`, radius `3`) remains visibly broader/stronger than DugPit-contained residue (`0.16`, radius `1`) without duplicating site authority.
-- visual state is rebuilt from `GetEnvironmentObservation(...)`; presentation never deposits, contains, cleans, or mutates sanitation state.
-- Save/Load restoration naturally rebuilds from authoritative residue state.
-- Android baseline includes HISM, max-instance cap, culling, and signature-based rebuild suppression.
+Delivered by #83:
+- explicit `WorldSeed`, `PopulationSeed`, and `WorldGenerationVersion` runtime identity.
+- stable logical `ChunkCoord` with negative-coordinate floor semantics.
+- order-independent untouched chunk baseline derived from `(WorldSeed, GenerationVersion, ChunkCoord)`.
+- fixed deterministic mixer and separated terrain/climate/resource/detail chunk substreams.
+- founder generation and initial relationship familiarity now consume `PopulationSeed`, not the World RNG.
+- same WorldSeed with a different PopulationSeed preserves natural chunk identity while allowing different initial residents.
+- WG-1 is now a runtime contract, not design-only.
 
-Latest Core/civilization baseline remains PR #80 `[CORE] Add dug sanitation pit progression v1`.
-
-Validated PR #80 head `fc918693bcd265f3c021f0bd826f6ba5a7113678`:
-- Structural Preflight run `34926841905`: PASS
-- Core Tests run `34926841895`: PASS, **45/45**
-- deterministic harness smoke: PASS
-- Unreal Linux Compile run `34926841907`: PASS
-- UE 5.6 image verification / UHT / UBT / link: PASS
-
-Delivered by #80:
-- personal `DugSanitationPit` technique and `DigSanitationPit` experiment added after `DesignatedSanitationArea`.
-- an actual designated sanitation site plus meaningful evidence/use is required before the dug-pit experiment can become relevant.
-- discovery remains personal; existing witness/imitation/teaching provenance paths can spread knowledge without global unlock.
-- knowledge alone does not instantly create a pit.
-- repeated Civilization Craft work accumulates excavation progress.
-- the existing authoritative sanitation site keeps the **same site id and GridPos** and upgrades from `DesignatedArea` to `DugPit`; no duplicate facility authority is created.
-- current no-Dig-tool state uses slower manual/primitive excavation; future Dig-capable tools can accelerate the same work contract.
-- pit completion contains existing HumanWaste by reducing exposure intensity/radius without deleting waste amount.
-- future DugPit use still produces HumanWaste, but at a lower exposure profile than an open designated area.
-- physical use still requires the exact authoritative site id + GridPos through the World → Core ACK path.
-- outer snapshot binary remains v5; primitive sanitation sub-extension advances to v2 and remains compatible with v1 sanitation data.
-- site kind/work progress/improver/improvement minute survive Save/Load with reference/time validation.
-- Unreal civilization read DTOs now expose both `DesignatedSanitationArea` and `DugSanitationPit`.
-- no global `LatrineUnlocked` or automatic modern toilet/plumbing was introduced.
+Previous product checkpoints:
+- PR #82 HumanWaste Environmental Visual Feedback — DONE, merge `831ba22ce17ca5fef8a92f2288e18a0495248a7a`.
+- PR #80 Dug sanitation pit progression — DONE, merge `291926cf78d12c1c61284eb9c59a50e7c70e54e7`.
 
 Documentation-only commits may advance `main` beyond the product-code baseline above.
 
 ## Current dispatch
 
-### Jjun lane — World Genesis WG-1 — READY_NOW
+### Jjun lane — World Genesis WG-2 — READY_NOW
 
 Owner: 쭌 / 쭌 AI
-Dependency: canonical `docs/WORLD_GENESIS_CHUNK_MIGRATION_v1.md`; PR #82 DONE.
-Handoff safety: SAFE; HumanWaste visual slice merged and state-synced.
+Dependency: WG-1 DONE via PR #83; canonical `docs/WORLD_GENESIS_CHUNK_MIGRATION_v1.md`.
+Handoff safety: SAFE; deterministic coordinate/seed contract is merged and validated.
 
 Goal:
-- establish the deterministic logical world coordinate/chunk identity contract before production World Visual commits to a fixed map.
-- separate natural-world identity from initial population randomness.
+- add the lightweight macro natural-world layer and a deterministic viable initial start-site selector without creating civilization infrastructure.
 
-WG-1 scope:
-- `WorldSeed` and explicit `GenerationVersion` contract.
-- stable `ChunkCoord` / chunk key representation.
-- deterministic untouched-chunk baseline derived only from world seed + generation version + chunk coordinate.
-- exploration/generation order must not affect untouched geography.
-- define world-grid/chunk conversion boundaries without making Unreal streaming or PCG the simulation authority.
-- preserve current bootstrap/test map compatibility while the scalable logical world foundation is introduced.
+WG-2 scope:
+- macro elevation / moisture / temperature / biome-potential facts.
+- broad water / resource / fertility / traversal / hazard potential.
+- deterministic candidate-region scoring from World Genesis identity.
+- select a survivable-but-unsolved initial region.
+- initial state remains nature + 2 male + 2 female residents + zero civilization infrastructure.
+- no full detailed world materialization and no Unreal streaming authority yet.
 
 Acceptance:
-- same inputs produce identical untouched chunk identity/baseline regardless of request order.
-- different seeds can produce different natural baselines.
-- PopulationSeed/random resident generation is not coupled to terrain generation.
-- no production-sized fixed arena assumption is introduced.
-- relevant Core/Preflight/UE compile checks pass.
+- same WorldSeed + GenerationVersion yields the same macro facts and start-region result.
+- PopulationSeed does not change geography/start-region ranking.
+- start-site selection uses environmental viability, not arbitrary `{0,0}` or a prebuilt settlement.
+- no house/toilet/farm/storage/road/tool is silently created.
+- relevant Core / Preflight / UE compile checks pass.
 
-### World Genesis / Chunk / Migration — DESIGN FIXED / IMPLEMENTATION GATE
+### World Genesis / Chunk / Migration — WG-1 DONE / WG-2 READY_NOW
 
 Canonical: `docs/WORLD_GENESIS_CHUNK_MIGRATION_v1.md`.
 
@@ -120,8 +98,9 @@ Product decision:
 - distant regions/populations need not render every Actor at full fidelity.
 
 Implementation timing:
+- **WG-1 is implemented and merged via PR #83.**
 - small bootstrap/test maps remain allowed for current Core/Bridge/animation validation.
-- before `World Visual Environment v1` becomes a production-sized permanent map, **WG-1 deterministic world/chunk coordinate contract and WG-2 macro world/start-site boundaries must be implemented or explicitly integrated into that work**.
+- before `World Visual Environment v1` becomes a production-sized permanent map, **WG-2 macro world/start-site boundaries must be implemented or explicitly integrated into that work**.
 - do not lock the project into a hand-authored small arena that later requires a world rewrite.
 
 ### Dagyeom lane — Motion Bootstrap — READY_NOW
@@ -244,7 +223,7 @@ Current sanitation sequence:
 3. Primitive sanitation experiment / DesignatedSanitationArea discovery — DONE #78.
 4. Designated sanitation area authoritative affordance — DONE #79.
 5. Dug sanitation pit progression — DONE #80.
-6. **HumanWaste Environmental Visual Feedback — READY_NOW.**
+6. **HumanWaste Environmental Visual Feedback — DONE #82.**
 7. material-backed latrine superstructure / further sanitation improvement — later causal progression.
 8. Health/pathogen and water/soil contamination — later.
 
@@ -289,8 +268,9 @@ Rules already fixed:
 - meaningful physical consequence has a visual representation path.
 - Android uses pooling / instancing / LOD / culling / clustering.
 
-Actual visual implementation still pending:
-- **HumanWaste decal/material/VFX — READY_NOW.**
+Actual visual implementation:
+- **HumanWaste baseline ground feedback — DONE #82.**
+- material/mesh polish may continue later without changing simulation authority.
 - resource depletion/regrowth.
 - fire/smoke/scorch.
 - foot traffic trails.
@@ -306,9 +286,9 @@ Follow-up:
 - civilization-created and authored facilities use one authority path.
 - target disappearance / path failure / re-resolve semantics.
 
-### World Genesis runtime — DESIGN FIXED / NOT IMPLEMENTED
-- WG-1 deterministic world/chunk coordinates.
-- WG-2 macro world/start-site selection.
+### World Genesis runtime — WG-1 IMPLEMENTED / WG-2 READY_NOW
+- WG-1 deterministic world/chunk coordinates — **DONE #83**.
+- WG-2 macro world/start-site selection — **READY_NOW**.
 - WG-3 lazy natural chunks.
 - WG-4 persistent chunk deltas.
 - WG-5 Unreal streaming presentation.

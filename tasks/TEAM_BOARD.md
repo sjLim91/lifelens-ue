@@ -32,9 +32,9 @@
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | new branch after preflight | World Genesis WG-1 | Core world seed / deterministic chunk-coordinate contract | **READY_NOW** |
+| 쭌 + 쭌 AI | new branch after state sync | World Genesis WG-2 | Core macro world / viable start-site selector | **READY_NOW** |
 | 다겸 + 다겸 AI (Claude) | branch / PR pending | Character Motion Bootstrap | Character locomotion presentation | **READY_NOW** |
-| 쭌 + 다겸 lanes | before production World Visual | World Genesis WG-1/WG-2 integration gate | Core world coordinates + environment architecture | DESIGN FIXED / REQUIRED GATE |
+| 쭌 + 다겸 lanes | before production World Visual | World Genesis WG-2 integration gate | Macro world/start-site + environment architecture | WG-1 DONE / WG-2 REQUIRED GATE |
 | 다겸 + 다겸 AI | after Motion + world-genesis gate | World Visual Environment v1 | Environment/Maps/WorldPresentation | HIGH PRIORITY |
 | 다겸 + 쭌 Bridge support as needed | after World Visual v1 | Character Motion & Context remainder | Character presentation/animation | AFTER WORLD VISUAL v1 |
 | 쭌 + 쭌 AI | PR #2 | old Android validation path | Bridge/build | FROZEN |
@@ -43,48 +43,46 @@
 
 **0개.** Previous appearance/presentation assist locks are released.
 
-## Latest Jjun product checkpoint — PR #82 DONE
+## Latest Jjun product checkpoint — PR #83 DONE
 
-PR #82 `[WORLD] Add HumanWaste environmental visual feedback v1`
-- merge SHA: `831ba22ce17ca5fef8a92f2288e18a0495248a7a`
-- validated head: `8c54ca100c28b12a77375ad48626c4d513087b04`
+PR #83 `[CORE] Add deterministic World Genesis WG-1 contracts`
+- merge SHA: `f5c8cbab3aa41c6a37c3bae06838eeb583749771`
+- validated head: `c4d724b9650647ad986cd1ab235f4d8052840014`
 
 Validation:
-- Structural Preflight `34931331778`: PASS.
-- environmental visual feedback validator: PASS.
-- Unreal Linux Compile `34931331779`: PASS.
+- Structural Preflight `34933128958`: PASS, including WG-1 validator.
+- Core Tests `34933128953`: PASS, **46/46**.
+- deterministic harness smoke: PASS.
+- Unreal Linux Compile `34933128950`: PASS.
 - UE 5.6 image verification / UHT / UBT / link: PASS.
 - merge checkpoint PR comments/reviews/unresolved threads: 0.
 
 Delivered:
-- Core-authoritative HumanWaste residue now has an actual Unreal world visual path.
-- HISM batches residue visuals with max-instance cap and distance culling for Android-first cost control.
-- visual placement uses authoritative Grid position plus ground-surface trace.
-- amount/intensity/radius/age affect visual footprint/custom data.
-- DesignatedArea exposure profile remains visually broader/stronger than DugPit containment.
-- visualizer is read-only and never becomes simulation/sanitation authority.
-- Save/Load restoration reconstructs visuals from authoritative Core state.
+- separate WorldSeed / PopulationSeed / GenerationVersion runtime identity.
+- stable negative-safe ChunkCoord mapping.
+- order-independent untouched chunk baseline and deterministic per-domain substreams.
+- initial residents no longer consume/mutate the World RNG stream.
+- same natural world can be replayed with a different initial population.
 
-## Jjun next lane — World Genesis WG-1 — READY_NOW
+## Jjun next lane — World Genesis WG-2 — READY_NOW
 
 Goal:
-- implement the first runtime architecture gate from `docs/WORLD_GENESIS_CHUNK_MIGRATION_v1.md` before production World Visual hardens around a small fixed map.
+- build the deterministic macro natural-world layer and viable initial start-region selector on top of the merged WG-1 identity/coordinate contract.
 
-WG-1 boundary:
-- stable `WorldSeed` + `GenerationVersion`.
-- stable logical `ChunkCoord` / chunk key.
-- untouched chunk baseline deterministic from `(WorldSeed, GenerationVersion, ChunkCoord)` only.
-- generation order independence.
-- explicit separation from `PopulationSeed` / initial resident randomization.
-- no Unreal streaming/PCG object becomes simulation authority.
+WG-2 boundary:
+- macro elevation / moisture / temperature / biome potential.
+- broad water / fertility / natural-resource / traversal / hazard potential.
+- deterministic viable-region scoring and initial-region selection.
+- nature + four founders only; zero civilization infrastructure.
+- detailed lazy chunks, persistent deltas, migration and Unreal streaming remain later phases.
 
 Acceptance:
-- same seed/version/chunk yields same untouched baseline in any request order.
-- different WorldSeed can vary the natural world.
-- current bootstrap map remains usable for tests while scalable logical coordinates are introduced.
-- relevant Core/Preflight/UE validation passes.
+- geography/start-site is reproducible for the same WorldSeed + GenerationVersion.
+- changing PopulationSeed does not change natural macro facts.
+- no arbitrary fixed arena or `{0,0}`-only start assumption.
+- no hidden house/toilet/farm/storage/road/tool spawn.
 
-## World Genesis / Chunk / Migration — WG-1 READY_NOW / WG-2 AFTER WG-1
+## World Genesis / Chunk / Migration — WG-1 DONE / WG-2 READY_NOW
 
 Canonical: `docs/WORLD_GENESIS_CHUNK_MIGRATION_v1.md`.
 
@@ -155,6 +153,7 @@ Resolved baseline:
 - #79 persistent authoritative designated sanitation site.
 - #80 same-site dug-pit improvement and containment.
 - #82 authoritative HumanWaste residue → Android-safe Unreal visual projection.
+- #83 deterministic World Genesis WG-1 coordinate/seed/runtime contract.
 
 Still partial:
 - generic facility/resource target authority beyond sanitation.
