@@ -34,7 +34,7 @@ inline bool validItemKind(ItemKind value)
 inline bool validTechniqueId(TechniqueId value)
 {
     return static_cast<int>(value)>=static_cast<int>(TechniqueId::None)
-        && static_cast<int>(value)<=static_cast<int>(TechniqueId::SimpleContainer);
+        && static_cast<int>(value)<=static_cast<int>(TechniqueId::DesignatedSanitationArea);
 }
 
 inline bool validKnowledgeLevel(KnowledgeLevel value)
