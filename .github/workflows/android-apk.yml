@@ -24,7 +24,7 @@ jobs:
   build-android:
     if: ${{ github.event.repository.private == false }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 300
+    timeout-minutes: 360
     env:
       UE_BRANCH: '5.6'
       ANDROID_API: '34'
@@ -235,7 +235,7 @@ jobs:
 
       - name: Seed Linux cook tools
         if: ${{ inputs.mode == 'seed' }}
-        timeout-minutes: 120
+        timeout-minutes: 240
         shell: bash
         run: |
           set -euo pipefail
@@ -246,7 +246,7 @@ jobs:
             2>&1 | tee "$DIAGNOSTICS/seed-shader-worker.log"
 
       - name: Compile LifeLens Android Development
-        timeout-minutes: 120
+        timeout-minutes: 240
         shell: bash
         run: |
           set -euo pipefail
