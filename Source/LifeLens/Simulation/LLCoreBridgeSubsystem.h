@@ -45,14 +45,16 @@ public:
     UFUNCTION(BlueprintPure, Category="LifeLens|Core|Action")
     int32 GetPhysicalActionDurationTicks(
         ELLCorePhysicalIntent Intent,
-        bool bEmergencyFallback) const;
+        bool bEmergencyFallback,
+        bool bDesignatedSanitationSite = false) const;
 
     UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Action")
     bool CompleteResidentPhysicalAction(
         FGuid ResidentId,
         bool bEmergencyFallback,
         int32 ResolvedGridX,
-        int32 ResolvedGridY);
+        int32 ResolvedGridY,
+        int64 SanitationSiteId = 0);
 
     UFUNCTION(BlueprintCallable, Category="LifeLens|Core|World")
     bool GetResidentRuntimeGridPosition(
@@ -65,6 +67,14 @@ public:
         FGuid ResidentId,
         int32& OutGridX,
         int32& OutGridY) const;
+
+    UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Environment")
+    bool GetSanitationUseTarget(
+        FGuid ResidentId,
+        int32& OutGridX,
+        int32& OutGridY,
+        bool& bOutDesignatedSite,
+        int64& OutSanitationSiteId) const;
 
     UFUNCTION(BlueprintPure, Category="LifeLens|Core|Observer")
     bool IsCoreRunning() const { return CoreSimulation != nullptr; }

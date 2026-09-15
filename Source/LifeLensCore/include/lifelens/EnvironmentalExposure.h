@@ -10,6 +10,7 @@
 
 #include "Character.h"
 #include "EnvironmentalResidue.h"
+#include "SanitationProblemRecognition.h"
 
 namespace lifelens {
 
@@ -18,6 +19,9 @@ struct EnvironmentalExposureResult {
     double hygieneBurden=0.0;
     bool perceived=false;
     bool memoryRecorded=false;
+    bool sanitationProblemRecognized=false;
+    bool sanitationProblemNewlyRecognized=false;
+    double sanitationProblemConfidence=0.0;
 };
 
 inline std::string environmentalGridLabel(GridPos pos)
@@ -103,6 +107,12 @@ inline EnvironmentalExposureResult perceiveEnvironmentalContamination(
         character.memory.add(std::move(memory));
         result.memoryRecorded=true;
     }
+
+    const SanitationProblemRecognitionResult recognition=
+        recognizeSanitationProblem(character,currentMinute);
+    result.sanitationProblemRecognized=recognition.recognized;
+    result.sanitationProblemNewlyRecognized=recognition.becameRecognized;
+    result.sanitationProblemConfidence=recognition.beliefConfidence;
 
     return result;
 }

@@ -64,6 +64,8 @@ ELLCoreTechniqueId ToUnrealTechnique(lifelens::TechniqueId Technique)
         case lifelens::TechniqueId::FireMaking: return ELLCoreTechniqueId::FireMaking;
         case lifelens::TechniqueId::FiberCordage: return ELLCoreTechniqueId::FiberCordage;
         case lifelens::TechniqueId::SimpleContainer: return ELLCoreTechniqueId::SimpleContainer;
+        case lifelens::TechniqueId::DesignatedSanitationArea: return ELLCoreTechniqueId::DesignatedSanitationArea;
+        case lifelens::TechniqueId::DugSanitationPit: return ELLCoreTechniqueId::DugSanitationPit;
         case lifelens::TechniqueId::None:
         default:
             return ELLCoreTechniqueId::None;

@@ -4,49 +4,54 @@
 >
 > 이 문서는 제품 설계를 대체하지 않는다. 제품 방향은 각 canonical 문서를 따르고, 실제 최신 상태는 GitHub `main` / PR / Actions가 최우선 진실이다.
 
-## 1. 기준점
+## 1. 현재 기준점
 
-- Product-code baseline: `157ce9937e53d5868d7e558b4149a4fa56c4c454`
-- Latest merged product slice: PR #75 `[CORE] Add environmental exposure perception and avoidance v1`
-- Documentation-only commits may advance `main` beyond this product-code SHA without changing runtime behavior.
-- PR #75 validation at head `c36a31d0f0e1caa069f5389735b3828289d252e9`:
-  - Structural Preflight: PASS
-  - Core Tests: PASS, 41/41
-  - deterministic harness: PASS through Core workflow
-  - Unreal Linux Compile: PASS
-  - actual UE 5.6 UHT / UBT / link step: PASS
+Latest merged product slice:
+- PR #80 `[CORE] Add dug sanitation pit progression v1`
+- merge SHA: `291926cf78d12c1c61284eb9c59a50e7c70e54e7`
+- validated head: `fc918693bcd265f3c021f0bd826f6ba5a7113678`
+
+Validation:
+- Structural Preflight `34926841905`: PASS
+- Core Tests `34926841895`: **45/45 PASS**
+- deterministic harness smoke: PASS
+- Unreal Linux Compile `34926841907`: PASS
+- UE 5.6 image verification / UHT / UBT / link: PASS
+
+Documentation commits may advance `main` beyond the product-code merge SHA without changing runtime behavior.
 
 ## 2. Canonical design map
 
 - Master product spec: `docs/LIFELENS_SPEC_v1.1.md`
 - Civilization progression: `docs/CIVILIZATION_PROGRESSION_v1.md`
-- Open-ended invention / emergent artifact: `docs/OPEN_ENDED_INVENTION_v1.md`
+- Open-ended invention: `docs/OPEN_ENDED_INVENTION_v1.md`
 - World affordance / environmental consequence: `docs/WORLD_AFFORDANCE_ENVIRONMENT_v1.md`
+- **World genesis / chunk / migration: `docs/WORLD_GENESIS_CHUNK_MIGRATION_v1.md`**
 - World visual environment: `docs/WORLD_VISUAL_ENVIRONMENT_v1.md`
 - Environmental consequence visual feedback: `docs/WORLD_ENVIRONMENTAL_VISUAL_FEEDBACK_v1.md`
 - Character appearance direction: `docs/CHARACTER_APPEARANCE_ROADMAP.md`
 - Character appearance data contract: `docs/CHARACTER_APPEARANCE_DATA_CONTRACT.md`
 - Whole-project verification baseline: `docs/WHOLE_PROJECT_VERIFICATION_2026-09-14.md`
-- Collaboration / state rules: `docs/STATE_MANAGEMENT.md`, `docs/INTEGRATION_SPRINT.md`, `tasks/WORK_STATE.md`, `tasks/TEAM_BOARD.md`
+- Collaboration / state: `docs/STATE_MANAGEMENT.md`, `docs/INTEGRATION_SPRINT.md`, `tasks/WORK_STATE.md`, `tasks/TEAM_BOARD.md`
 
 ## 3. 구현 완료 축
 
-### Core human / society baseline
+### Human / society Core
 
-구축된 기반:
+구축됨:
 - Needs
 - Personality
 - Emotion
 - Memory
 - Belief
-- Relationship
+- 13차원 Relationship
 - social cognition / witness / rumor
 - autonomous social decisions
 - Observer read models
 
-### Family / generation baseline
+### Family / generation
 
-구축된 기반:
+구축됨:
 - Romance
 - Engagement / Marriage
 - Household
@@ -61,285 +66,351 @@
 
 ### Civilization baseline
 
-구축된 기반:
+구축됨:
 - natural resource nodes
 - finite resource quantity / regeneration hooks
 - personal inventory
-- gather / store actions
+- gather / store
 - experiment / discovery
 - crafting baseline
 - personal knowledge
-- knowledge teaching / transmission
+- witness / imitation / teaching transmission
 - civilization observer DTOs
 - Save/Load persistence
 
-중요 경계:
-- 현재 runtime은 아직 완전한 open-ended artifact physics engine이 아니다.
-- `OPEN_ENDED_INVENTION_v1.md`의 arbitrary component/material/connection 조합과 기능 검증은 후속 구현이다.
-- 고정 Tech Tree로 회귀하지 않는다.
+경계:
+- 완전한 arbitrary artifact physics/runtime은 아직 아니다.
+- `OPEN_ENDED_INVENTION_v1.md`의 generic material/component/connection artifact engine은 후속 구현이다.
+- fixed global Tech Tree로 회귀하지 않는다.
 
 ### Core ↔ Unreal physical execution
 
-PR #70~#74로 완료한 주요 항목:
-- dynamic resident reconciliation after Core population changes
-- dynamic ActivityAnchor reconciliation baseline
-- all LifeLens C++ paths trigger UE compile gate
+#70~#74 및 후속 sanitation integration으로 구축됨:
+- dynamic resident reconciliation
+- dynamic ActivityAnchor refresh
+- all LifeLens C++ paths UE compile gate
 - external physical execution ACK contract
-- Core physical outcome waits for World arrival/use completion
-- Core duration ticks projected to World
-- actual acknowledged World position is written back to Core runtime position
-- environmental consequence uses acknowledged position
-- Core Grid ↔ Unreal World baseline contract: 100 uu per grid tile
-- resident position restored from Core runtime state after load/spawn
-- external physical execution mode reasserted after Core replacement
+- Core physical outcome waits for World arrival/use
+- Core use duration projected to World
+- actual completion position written back to Core
+- environmental consequence uses same acknowledged position
+- Core Grid ↔ World baseline 100 uu/tile
+- runtime position restore after Save/Load
 
-### World affordance / missing infrastructure
+## 4. Missing-infrastructure / environment causal loop
 
-구축된 규칙:
-- no implicit modern infrastructure on production NEW GAME
+### #66 — World Affordance Fallback DONE
 - `Preferred → Primitive → Natural → Emergency → Unavailable`
-- missing bed/toilet/sink/etc. remains actually missing
-- Eat / Drink emergency path never synthesizes provisions
-- World presentation does not invent simulation truth
+- missing modern facility remains missing.
 
-### Environmental residue
+### #68 — Environmental Residue DONE
+- Core-owned HumanWaste residue.
+- amount/intensity/radius/time.
+- accumulation/decay/exposure.
+- Save/Load and Unreal read path.
 
-PR #68 완료:
-- Core-owned `EnvironmentalResidueField`
-- `HumanWaste`
-- position / source / amount / intensity / radius / timestamps
-- accumulation
-- deterministic decay
-- exposure query
-- snapshot binary format v4 environmental extension
-- legacy v1-v3 environment migration to empty state
-- Unreal read-only environment observation
+### #75 — Exposure / Memory / Avoidance DONE
+- contamination perception.
+- hygiene/emotional burden.
+- location-specific sanitation Memory.
+- duplicate-memory suppression.
+- current + remembered contamination avoidance.
+- deterministic low-exposure outdoor relief recommendation.
 
-### Environmental exposure / perception / avoidance
+### #76 — World consumes Core sanitation recommendation DONE
+- visible target and authoritative ACK/residue location agree.
 
-PR #75 완료:
-- contamination perception at authoritative Core planning boundaries
-- hygiene burden from exposure
-- immediate emotional discomfort baseline
-- location-specific sanitation Memory
-- short-window duplicate memory suppression
-- avoidance score using current physical exposure + remembered contamination
-- deterministic low-exposure outdoor sanitation recommendation
-- Save/Load continuity of residue + memory + recommendation
-- Bridge API `GetRecommendedOutdoorReliefGridPosition(...)`
+### #77 — Sanitation Problem Recognition DONE
+- repeated/salient direct evidence can become durable sanitation-problem Belief.
+- no global unlock.
 
-현재 경계:
-- Core recommendation은 준비됐지만 WorldDirector가 아직 그 recommendation을 실제 emergency-toilet 이동 목표로 소비하지 않는다.
-- disease/pathogen/health model은 아직 연결하지 않는다.
+### #78 — DesignatedSanitationArea discovery DONE
+- recognized problem + clean candidate site gates experiment.
+- failure → Hypothesized, success → personal Reproducible knowledge.
+- witness/teaching provenance and persistence.
 
-## 4. Character / Presentation 병렬 상태
+### #79 — authoritative designated sanitation site DONE
+- actual Craft required to materialize a persistent Core-owned site.
+- stable site id / exact GridPos / active / useCount.
+- exact site identity and position carried through World movement and ACK.
+- snapshot binary v5 persists site state.
+
+### #80 — Dug sanitation pit progression DONE
+- personal `DugSanitationPit` discovery.
+- actual designated site + useful improvement context required.
+- knowledge does not instantly mutate facility.
+- repeated Craft excavation work accumulates.
+- same site id/GridPos upgrades `DesignatedArea → DugPit`.
+- no fabricated shovel; current manual digging is slower, future Dig tool can accelerate same work contract.
+- existing waste amount retained while containment reduces intensity/radius.
+- future DugPit use still produces HumanWaste with lower exposure profile.
+- sanitation extension v2 persists kind/progress/improver/minute while outer snapshot stays v5 and v1 sanitation data remains readable.
+- no `LatrineUnlocked`, modern plumbing or magic waste deletion.
+
+The causal chain now reaches:
+
+`Need → fallback behavior → residue → exposure/Memory → problem recognition → experiment/knowledge → actual persistent site → repeated physical improvement → measurable containment`
+
+## 5. World Genesis / map scalability — DESIGN FIXED
+
+Canonical: `docs/WORLD_GENESIS_CHUNK_MIGRATION_v1.md`.
+
+Major decision:
+- the current gray bootstrap plane is **not** the final map architecture.
+- LifeLens must not trap multi-generation population growth inside one permanently small fixed arena.
+
+Canonical world chain:
+
+`WorldSeed → Macro World → deterministic lazy chunks → persistent human/environmental history → carrying-capacity pressure → migration → additional settlements → regional society/civilization`
+
+### Seed split
+
+- `WorldSeed`
+  - terrain/water/biome/resource natural baseline
+  - macro world
+  - order-independent chunk baseline
+
+- `PopulationSeed`
+  - initial 2 male + 2 female resident names/traits/genetics/appearance variation
+
+This allows:
+- ordinary NEW GAME: fresh world + fresh people
+- same-world replay: fixed WorldSeed + new PopulationSeed
+- exact debug replay: both fixed
+
+### Initial world rule
+
+NEW GAME starts with:
+
+`natural environment + 2 male residents + 2 female residents + zero civilization infrastructure`
+
+No house, road, toilet, farm, storage, workshop or plumbing may be silently created as simulation truth.
+
+### Chunk rule
+
+Untouched detailed chunk state must be deterministic from:
+
+`Hash(WorldSeed, ChunkCoord, GenerationVersion)`
+
+Exploration order must not change future geography.
+
+Generated/modified chunks never silently reroll after unload/load.
+
+Persistent history can include:
+- resource depletion/regrowth
+- vegetation changes
+- HumanWaste/residues
+- sanitation sites / DugPit
+- structures/storage/work sites
+- excavation
+- paths/foot traffic
+- cultivation
+- abandonment/regrowth
+
+### Population / land pressure
+
+Population growth does not magically resize terrain.
+Instead it changes dynamic carrying pressure based on:
+- food/water
+- production/storage
+- shelter
+- sanitation/contamination
+- available land
+- resource depletion
+- congestion
+- household crowding
+- social conflict/safety
+- knowledge/technology
+
+Pressure/opportunity can lead to exploration, household/group migration, camps and additional settlements.
+
+Do **not** hard-code rules such as `population 30 => settlement B`.
+
+### Android scaling
+
+Logical world size does not imply full 3D rendering everywhere.
+
+Presentation tiers:
+- observed/near: full actors and detailed environment.
+- nearby: reduced LOD/update cost.
+- distant: Core logical simulation without all full 3D actors.
+- untouched: macro facts only until detailed generation is required.
+
+World Partition/streaming/PCG/HISM/HLOD are possible Unreal implementation tools, not simulation authorities.
+
+### Production environment gate
+
+Small test maps may continue for Core/Bridge/animation verification.
+
+Before `World Visual Environment v1` becomes a permanent production-sized map:
+- WG-1 deterministic world coordinates/chunk keys must be established.
+- WG-2 macro world/start-site selection boundaries must be established or explicitly integrated.
+
+This prevents later rewriting a small hand-authored arena into a scalable world.
+
+## 6. Character / Presentation state
 
 ### Character Presentation
-
-완료:
-- PR #63 merged
-- resident presentation layer
-- selection ring / labels
-- basic life-stage/sex presentation support
+- PR #63 DONE.
 
 ### Deterministic Appearance contract
+- PR #65 DONE.
 
-완료:
-- PR #65 merged
-- stable resident identity → deterministic appearance projection
-- 별도 appearance SaveGame authority 없음
-
-### Character Appearance v1 — PR #67 OPEN
+### Character Appearance v1 — PR #67 OPEN / CLOSEOUT
 
 Owner: 다겸 / 다겸 AI
 
-Latest head checked: `aae68dc54bfb4d373ffc2124dd51b143d6038942`
+Latest checked remote head:
+- `e034fe785ca46dd5cb39fd7d7e8710d677994a38`
 
-Latest head CI:
-- Preflight: PASS
-- UE Linux Compile: PASS
+Known CI on that head:
+- Preflight PASS.
+- UE Linux Compile PASS.
 
-Reported/implemented:
-- Quaternius CC0 humanoid body assets
-- UAL animation assets
-- deterministic #65 appearance mapping
-- hair / skin / body variation baseline
-- minimum Peasant outfit asset integration
-- humanoid residents visible in PIE
+Implemented/reported:
+- Quaternius CC0 humanoids.
+- deterministic appearance mapping.
+- hair/skin/body variation.
+- UAL animation assets.
+- Peasant outfit.
+- head-only derivative to avoid clothing penetration.
+- appearance construction after resident identity binding.
+- PIE humanoid visibility.
+- Save/Load appearance continuity reported.
 
-Still required before DONE:
-- final PIE outfit visual confirmation
-- explicit same-resident appearance continuity check across restart/load
-- review / merge / live-doc sync
+Remaining closeout review items:
+1. tracked `__pycache__/*.pyc` removal + ignore rules.
+2. duplicate include cleanup.
+3. bright-skin male Peasant exposed arms/hands tone verification/fix.
 
-Known presentation limitation:
-- locomotion is not wired yet; Idle-looking slide remains until Motion Bootstrap.
+Known limitation:
+- locomotion not wired; Idle-looking slide remains until Motion Bootstrap.
 
-## 5. 환경 그래픽 규칙 상태
+## 7. Immediate next execution
 
-`docs/WORLD_ENVIRONMENTAL_VISUAL_FEEDBACK_v1.md`에 다음 원칙이 canonical로 문서화되어 있다.
+### Jjun lane — READY_NOW
 
-`Resident Action → authoritative environmental consequence → Save/Load state → Unreal visual expression → resident perception → changed decision`
+**HumanWaste Environmental Visual Feedback**
 
-반드시 지킬 규칙:
-- 그래픽은 authority가 아니다.
-- 공간적으로 의미 있는 environmental consequence는 visual representation path를 가진다.
-- residue amount/intensity/radius/decay는 visual 강도/범위/소멸과 동기화된다.
-- Save/Load 후 authoritative state에서 visual을 재구성한다.
-- Android-first이므로 residue마다 무거운 Actor를 1:1 무한 생성하지 않는다.
-- pooling / instancing / LOD / culling / clustering을 사용한다.
-
-아직 미구현:
-- HumanWaste ground visual/decal/material/VFX
-- resource depletion/regrowth visuals
-- fire/smoke/scorch feedback
-- foot-traffic path formation
-- weather-driven contamination visuals
-- construction/damage stage visuals
-
-## 6. Open-ended invention 상태
-
-`docs/OPEN_ENDED_INVENTION_v1.md`가 canonical companion이다.
-
-최종 방향:
-- 현실 역사에 없던 물건도 허용
-- 개발자가 exact recipe를 미리 만들지 않은 구조도 허용
-- material + component + connection + geometry/physical property + use result로 기능 판단
-- 실패 역시 Memory / Belief / material knowledge로 축적
-- 성공한 artifact는 개인 경험 → technique → imitation/teaching → culture로 확산
-- 전역 자동 unlock 금지
-- 물리법칙을 위반하는 마법식 발명 금지
-
-현재는 **설계 완료 / runtime general artifact engine 미구현** 상태다.
-
-## 7. 즉시 다음 실행 순서
-
-### Jjun lane — 가장 먼저
-
-1. **WorldDirector sanitation avoidance integration**
-   - `GetRecommendedOutdoorReliefGridPosition(...)` 소비
-   - Core Grid → Unreal world target
-   - resident가 실제 recommendation 위치로 이동
-   - arrival/use 후 ACK
-   - 같은 위치에 authoritative residue
-   - 다음 sanitation 행동에서 dirty/memorized 위치 회피
-
-2. **Sanitation Problem Recognition v1**
-   - 반복 exposure / discomfort / memory를 문제 인식 입력으로 연결
-   - 개인 경험과 관찰/전파를 구분
-
-3. **Primitive Latrine Discovery / Affordance progression**
-   - designated area / pit / covering / primitive latrine experiments
-   - resource / knowledge / repeatable success requirement
-   - 발견 후 실제 authoritative affordance 생성
-
-4. **Environmental Visual Feedback — HumanWaste first**
-   - authoritative residue → visible ground feedback
-   - accumulation / decay / SaveLoad reconstruction
+Goal:
+- authoritative residue → visible world feedback.
+- open designated contamination vs DugPit containment represented coherently.
+- visual state follows Core create/intensity/radius/decay/removal/SaveLoad.
+- no visual Actor becomes simulation authority.
+- Android-safe pooling/instancing/culling/LOD.
 
 ### Dagyeom lane
 
-1. #67 closeout / merge
-2. Motion Bootstrap — Idle / Walk / Jog + orientation
-3. World Visual Environment v1
-4. remaining Motion & Context — sit/lie/gaze/IK/interactions
-5. Observer UX polish / mobile touch / later presentation polish
+1. #67 closeout / merge.
+2. Motion Bootstrap — Idle / Walk / Jog + orientation.
+3. World Genesis WG-1/WG-2 integration must be respected before production-sized World Visual map commitment.
+4. World Visual Environment v1.
+5. remaining Motion & Context.
+6. Observer UX polish / mobile touch.
 
-## 8. 남아 있는 구조적 과제
+## 8. Environmental visual feedback
 
-### A. Unified facility/resource authority — 아직 부분 해결
+Canonical: `docs/WORLD_ENVIRONMENTAL_VISUAL_FEEDBACK_v1.md`.
 
-Core intent completion과 World ACK는 통합됐지만, 모든 실제 World facility/resource가 아직 하나의 exact shared Core target registry로 통합된 것은 아니다.
+Rules:
+- graphics are not authority.
+- spatially meaningful environmental consequence gets a visual representation path.
+- amount/intensity/radius/decay drives visual strength/range/lifetime.
+- Save/Load reconstructs visuals from authoritative state.
+- Android must avoid unlimited 1:1 heavy Actors.
 
-남은 것:
-- facility identity / tier / quality / backing resource를 ACK contract에 더 명확히 연결
-- World authored facility와 Core civilization-created facility의 동일 authority path
-- target disappearance/path failure/re-resolve semantics 강화
+Pending visuals:
+- **HumanWaste ground/decal/material/VFX — READY_NOW**
+- resource depletion/regrowth
+- fire/smoke/scorch
+- foot-traffic path formation
+- construction/damage stages
 
-### B. Birth physical position
+## 9. Open-ended invention
 
-현재 새 child runtime position은 기본 `{0,0}`에서 시작할 수 있다.
+Canonical: `docs/OPEN_ENDED_INVENTION_v1.md`.
 
-후속 원칙:
-- gestational parent / household vicinity에서 authoritative child initial GridPos 결정
-- presentation-only spawn ring이 위치 authority가 되지 않음
+Direction:
+- novel non-historical artifacts allowed where physically coherent.
+- developer need not pre-author every exact final artifact form.
+- material + component + connection + geometry/use result determine usefulness.
+- failed experiments create learning evidence.
+- success spreads personal experience → technique → imitation/teaching → culture.
+- no global auto-unlock.
+- no magic physical impossibilities.
 
-### C. Dormant legacy `ULLDecisionComponent`
+Status: **design DONE / fully generic artifact runtime NOT YET IMPLEMENTED**.
 
-현재 production WorldDirector가 사용하지 않더라도 Blueprint-callable competing chooser가 남아 있다.
+## 10. Remaining structural risks
 
-후속:
-- remove / deprecate / debug-only restrict
+### A. Generic facility/resource authority — PARTIAL
+Sanitation now has a strong one-id/one-position path, but every facility/resource does not yet use one shared generic target registry.
 
-### D. Explicit binary snapshot legacy fixtures
+### B. World Genesis runtime — NOT IMPLEMENTED
+Design is canonical, runtime phases WG-1~WG-7 remain.
 
-Codec은 v1-v4 migration logic을 지원하지만 대표 v1/v2/v3 encoded fixture를 직접 decode하는 dedicated regression coverage는 아직 보완 필요.
+### C. Birth physical position — NEEDS FIX
+New child Core runtime position may still default to `{0,0}`.
 
-### E. Environment → Health / pathogen
+### D. Dormant `ULLDecisionComponent` — REVIEW / REMOVE
+Blueprint-callable competing chooser remains.
 
-#75는 discomfort/hygiene/memory/avoidance까지만 담당한다.
+### E. Snapshot legacy fixtures — NEEDS TEST
+Migration code exists; representative old binary fixture tests remain incomplete.
 
-후속:
-- disease/pathogen risk
-- contaminated water/soil
-- cleanup / burial / sanitation effectiveness
+### F. Environment → health/pathogen — LATER
+Current sanitation benefits are exposure/hygiene/behavior containment, not full disease simulation.
 
-### F. Death presentation policy
+### G. Death presentation policy — UNDECIDED
+Core death exists; Unreal actor/body/observer policy is separate.
 
-Core death는 존재하지만 Unreal actor/body/observer 표현 정책은 별도 확정 필요.
-
-### G. Android product validation
-
-아직 남음:
+### H. Android product validation — NOT DONE
+Still required:
 - cheap smoke package path
 - Android Cook / Package
 - APK artifact
-- real device execution
+- real device run
 - performance / thermal / memory profiling
 
-장시간 전체 엔진 재빌드를 기본 반복 경로로 사용하지 않는다.
+Do not revive the old multi-hour PR #2 path as normal iteration.
 
-## 9. 구현 우선순위에서 혼동하면 안 되는 것
+## 11. Current product sequence
 
-- #75가 merge됐다고 HumanWaste가 화면에 이미 보이는 것은 아니다.
-- 환경 visual 문서가 있다고 visual implementation이 완료된 것은 아니다.
-- open-ended invention 문서가 있다고 arbitrary new artifact runtime이 이미 가능한 것은 아니다.
-- #67 compile PASS가 곧 merge/DONE을 의미하지 않는다.
-- MetaHuman은 Android/mobile validation 이후 upgrade path다. 현재 Track B Quaternius가 baseline이다.
+1. Character Presentation #63 — DONE.
+2. Appearance contract #65 — DONE.
+3. World Affordance Fallback #66 — DONE.
+4. Environmental Residue #68 — DONE.
+5. Verification #69 — DONE WITH FINDINGS.
+6. runtime resident/dynamic affordance #70 — DONE.
+7. compile trigger coverage #71 — DONE.
+8. external Core ACK #72 — DONE.
+9. World ACK integration #73 — DONE.
+10. runtime position restore #74 — DONE.
+11. exposure/perception/avoidance #75 — DONE.
+12. World sanitation recommendation #76 — DONE.
+13. sanitation problem recognition #77 — DONE.
+14. sanitation experiment/discovery #78 — DONE.
+15. authoritative designated site #79 — DONE.
+16. Dug sanitation pit progression #80 — DONE.
+17. **HumanWaste visual feedback — READY_NOW.**
+18. Character Appearance #67 — ACTIVE in parallel.
+19. Motion Bootstrap — after #67.
+20. **World Genesis WG-1/WG-2 architecture gate.**
+21. World Visual Environment production map.
+22. Character Motion & Context remainder.
+23. integrated runtime verification.
+24. Android smoke APK + device profiling.
+25. MetaHuman comparison after mobile baseline only.
+26. deeper production/health/open-ended invention/migration/multi-settlement systems.
 
-## 10. Documentation audit — 2026-09-15
+## 12. Key interpretation rule
 
-이번 상태 점검에서 발견한 stale/missing state:
-- `tasks/WORK_STATE.md`가 #69 시점에 멈춰 #70~#75 완료 상태를 반영하지 못하고 있었음.
-- `tasks/WORK_STATE.md`에 UE compile trigger coverage가 `NEEDS FIX`로 남아 있었으나 #71에서 이미 완료됨.
-- `tasks/TEAM_BOARD.md`가 Core ↔ World Execution Sync를 아직 READY_NOW로 표시하고 있었으나 #70~#74로 대부분 완료됨.
-- 환경 인지/기억/회피가 follow-up으로만 남아 있었으나 #75에서 구현/검증/merge됨.
-- open-ended invention과 environmental visual feedback가 개별 canonical 문서에는 존재하지만, live work-state 문서의 canonical reference map에 빠져 있었음.
-- 남은 구조적 과제(통합 facility authority, birth initial position, legacy decision chooser, snapshot legacy fixtures, death presentation, Android validation)를 한 곳에서 확인할 수 있는 current snapshot이 없었음.
+다음 표현을 혼동하지 않는다:
+- Compile PASS ≠ feature DONE.
+- design document exists ≠ runtime implemented.
+- environmental state exists ≠ visual already exists.
+- World Genesis design fixed ≠ chunked world already running.
+- #67 CI PASS ≠ #67 review closeout/merge done.
+- Quaternius baseline ≠ permanent final visual ceiling.
 
-조치:
-- 이 문서 생성.
-- `tasks/WORK_STATE.md` current state로 재동기화.
-- `tasks/TEAM_BOARD.md` current queue로 재동기화.
-- canonical reference map에 `OPEN_ENDED_INVENTION_v1.md`와 `WORLD_ENVIRONMENTAL_VISUAL_FEEDBACK_v1.md` 포함.
-
-설계 문서 안의 과거 단계 설명은 historical design context로 남을 수 있으나, **실제 현재 작업 상태 판단에는 이 문서 + WORK_STATE + TEAM_BOARD + GitHub actual state를 사용한다.**
-
-## 11. 다음 통합 체크포인트
-
-가까운 목표는 아래 causal loop를 실제 화면까지 닫는 것이다.
-
-`Need`
-→ `Emergency sanitation intent`
-→ `Core low-contamination recommendation`
-→ `Unreal movement to that exact location`
-→ `physical completion ACK`
-→ `HumanWaste residue`
-→ `resident exposure / Memory`
-→ `next location avoidance`
-→ `visible environmental feedback`
-→ `sanitation problem recognition`
-→ `primitive solution discovery`
-→ `new actual affordance`
-
-이 루프가 닫히면 LifeLens의 Core AI, physical World, environment, Memory, civilization, presentation이 처음으로 하나의 완전한 인과 시스템으로 연결된다.
+Actual current state is determined by GitHub + `WORK_STATE.md` + `TEAM_BOARD.md`.

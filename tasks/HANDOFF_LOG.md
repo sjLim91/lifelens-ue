@@ -534,185 +534,94 @@
 - UI는 read-only presentation이며 simulation authority/cache를 새로 만들지 않음.
 - 상대가 알아야 할 점: 쭌 측 Observer blocker 0개. 다음 순서 PR #26 → #29/#30 → #36 → #38 → integrated runtime → Android smoke APK.
 
-## 2026-09-14 — 다겸 측 AI — Character Appearance v1 checkpoint
+## 2026-09-15 — Primitive sanitation experimentation progression 완료
 
-- 작성자: 다겸 측 AI
-- 브랜치/PR: `dagyeom/character-appearance-v1` (base `main` `9db79b8`), PR 생성 예정
-- 커밋: `7ffa58c` (content), `a1f4bd3` (code)
-- 상태: `IN_PROGRESS / 검증 대기`
+- 작성자: 쭌 측 AI
+- 브랜치/PR: `jjun/primitive-sanitation-progression-v1`, PR #78
+- 상태: `DONE / main 병합 완료`
+- validated head: `e78f6d211589b74008ff0fdf73e9be1048e2d807`
+- main merge: `3a9739682034ad7c5009da5f75a11b0f07fed55b`
 - 변경 범위:
-  - `Content/Characters/Quaternius/**`: Universal Base Characters [Standard] + Universal Animation Library [Standard] 임포트(83 에셋). `PROVENANCE.md`에 팩 버전·zip 크기·다운로드 날짜·URL·zip 내 CC0 문구·사용 파일 기록. `Import/import_quaternius.py`로 headless Interchange 임포트(공유 스켈레톤 1개, 43 애니 시퀀스, 헤어 8, 라이트 스킨 텍스처 2)
-  - `Source/LifeLens/Characters/LLResidentAppearanceInputs.h/.cpp` (신규): `FLLResidentAppearanceInputs`(#65 `FLLAppearanceProfile` 필드 구조와 동일), `Resolve()` 단일 교체 지점. 현재는 `hash(WorldSeed, ResidentId)` 임시 표현용 시드(코드 주석 명시, 권위 데이터 아님, 저장 안 함)
-  - `Source/LifeLens/Characters/LLResidentAppearanceComponent.h/.cpp` (신규): 성별 스켈레탈 메시, 피부 텍스처 변형+틴트, 눈·눈썹 틴트, 헤어 스타일/색(Head 본 부착), 수염 변형, LifeStage·키·체형 스케일, Idle_Loop
-  - `LLResidentPresentationComponent`: 실루엣은 에셋 없을 때 fallback, 라벨은 인체 위로, DebugBody 숨김. 선택 링·라벨 LOD 유지
-  - `LLResidentCharacter`: `AppearanceComponent` 추가만
-- 검증 상태:
-  - 로컬 `Build.sh LifeLensEditor Mac Development`: Result: Succeeded
-  - structural preflight PASS (로컬)
-  - 임포트 커맨드렛 exit 0, Python 오류 없음
-  - GitHub Actions: 검증 대기. 화면/동작 확인: 검증 대기
+  - `PrimitiveSanitation.h`를 추가해 #77의 resident sanitation-problem Belief를 실제 문명 실험 전제조건으로 소비.
+  - `TechniqueId::DesignatedSanitationArea` / `ExperimentKind::DesignateSanitationArea`를 기존 Civilization experiment 체계에 추가.
+  - 실험은 **문제 인식 + 낮은 오염도 후보지**가 모두 있을 때만 가능.
+  - 실패는 `Hypothesized`, 성공은 발견자 개인의 `Reproducible` 지식으로 남음.
+  - 기존 witness/teaching provenance 및 Civilization observer 범위를 새 기술까지 확장.
+  - 기존 Civilization snapshot extension으로 개인 기술 지식 지속성 보존.
+  - 전역 `LatrineUnlocked` 또는 자동 Toilet/Latrine SmartObject 생성 없음.
+- 검증:
+  - Structural Preflight run `34921390473` PASS.
+  - Core Tests run `34921390510` PASS, **43/43** including `test_primitive_sanitation_progression`.
+  - deterministic harness smoke PASS.
+  - Unreal Linux Compile run `34921390491` PASS; UE 5.6 image verify + UHT + UBT + link PASS.
 - 상대가 알아야 할 점:
-  - Core/Bridge 읽기만: `ULLCoreBridgeSubsystem::GetRuntimeSeed/GetResidentObservation`, fallback `ULLSimulationSubsystem`. 새 authoritative 필드 없음
-  - #65 merge 후 `ULLResidentAppearanceInputSource::Resolve`를 `ULLAppearanceProfileLibrary::MakeDeterministicAppearanceProfile`로 교체 예정(단일 지점)
-  - 임포트 산출물 중 `UAL/UAL1_Standard/Materials/M_Joints, M_Main`은 마네킹 재질(미사용). `Import/IP_*` 파이프라인 에셋은 재임포트용
-  - Android LOD/fallback: 에셋은 ~13k tri, 머티리얼 슬롯 3(+헤어 1). 별도 LOD 생성은 후속
+  - 지정 배변구역은 아직 **개인 발견 지식**이며 실제 persistent facility/affordance는 다음 슬라이스에서 생성한다.
+  - 다른 주민에게는 기존 목격/교육 경로로만 지식이 전달되며 세계 전역 기술 해금은 없다.
+  - 다음 쭌 레인: learned `DesignatedSanitationArea` + authoritative Core GridPos를 persistent Core-owned sanitation affordance로 materialize하고 World가 같은 위치를 소비하도록 연결.
+  - 다겸 #67 branch/UI/Character 파일은 건드리지 않았다.
 
-### 다겸 측 AI — Character Appearance v1 화면 확인 결과
+## 2026-09-15 — Designated sanitation area authoritative affordance 완료
 
-- 작성자: 다겸 측 AI
-- 브랜치/PR: `dagyeom/character-appearance-v1`, PR #67
-- 커밋: `1c6af4c`
-- 상태: `WAITING_CI / 검증 대기`
-- 검증 상태:
-  - 화면 확인(로컬 PIE): 주민 4명 휴머노이드 모델 표시, 남녀 구분, 헤어·피부 개별 차이 있음(밝은 피부 텍스처 2종이라 차이는 작음), 이름 라벨 머리 위, 선택 링·LEVEL 1 정상, 현재 행동(Eat/Idle) 표시 정상
-  - 관찰: 전원 기본 속옷 상태(의상 미적용; UBC Standard tier에 의상 없음), Idle 외 동작 애니메이션 미연결(Motion & Context v1 범위)
-  - Save/Load 외형 연속성: 미확인
-  - GitHub Actions: 검증 대기
-- 상대가 알아야 할 점:
-  - 의상은 UBC Standard tier 미포함. Quaternius Modular Character Outfits(CC0 명시 확인 후) 또는 후속 팩으로 보강 예정. 로드맵 Phase C "최소 기본 의상 세트"는 미충족
-  - Save/Load 연속성은 임시 시드가 `WorldSeed + ResidentId` 순수 함수이므로 설계상 유지되나 실기 확인 필요
-
-### 다겸 측 AI — Appearance inputs를 #65 계약에 연결
-
-- 작성자: 다겸 측 AI
-- 브랜치/PR: `dagyeom/character-appearance-v1`, PR #67
-- 커밋: `26ec3b9` (latest main `2510cce` merge 포함)
-- 상태: `WAITING_CI / 검증 대기`
+- 작성자: 쭌 측 AI
+- 브랜치/PR: `jjun/designated-sanitation-affordance-v1`, PR #79
+- 상태: `DONE / main 병합 완료`
+- validated head: `49c76863b1957df09b7d814f7117826e92707021`
+- main merge: `90f2b4f9cdc480e99886632e09323b2feab9625c`
 - 변경 범위:
-  - `Source/LifeLens/Characters/LLResidentAppearanceInputs.cpp/.h`: `Resolve()`가 `ULLAppearanceProfileLibrary::MakeDeterministicAppearanceProfile` 1:1 매핑. 임시 해시 시드는 ResidentId 무효 시 fallback만
-  - `tasks/WORK_STATE.md`: origin/main 유지 + 다겸 행(merge 충돌 해결)
-- 검증 상태:
-  - 로컬 `Build.sh LifeLensEditor Mac Development`: Result: Succeeded
-  - structural preflight PASS (로컬)
-  - GitHub Actions: 검증 대기. PIE 재확인: 검증 대기
+  - `DesignatedSanitationArea` Reproducible 지식은 자동 시설 생성이 아니라 기존 Civilization `Craft` 축을 실제 실행해야 Core-owned `PrimitiveSanitationSite`로 materialize됨.
+  - site는 stable id, authoritative GridPos, establisher/minute, active flag, useCount를 Core가 소유.
+  - Core `SanitationUseTarget` / Unreal `GetSanitationUseTarget(...)`로 designated flag + site id + exact GridPos를 한 번에 전달.
+  - World affordance 우선순위는 authored Preferred/Primitive → Core designated Primitive → Natural → Emergency로 유지.
+  - designated completion은 exact active site id + GridPos가 모두 일치해야 하며 stale/wrong target은 fail-closed.
+  - 성공한 designated use는 실제 ACK 위치에 HumanWaste residue를 남기고 site useCount를 증가시킴.
+  - snapshot binary format v5 + primitive sanitation extension으로 site identity/location/active/useCount를 Save/Load 보존; v1-v4는 site 없음으로 호환 decode.
+  - global `LatrineUnlocked`나 자동 modern Toilet/Latrine SmartObject는 추가하지 않음.
+- 검증:
+  - Structural Preflight run `34923460056` PASS.
+  - Core Tests run `34923459974` PASS, **44/44** including `test_designated_sanitation_affordance`.
+  - deterministic harness smoke PASS.
+  - Unreal Linux Compile run `34923459949` PASS; UE 5.6 image verify + UHT + UBT + link PASS.
+  - 첫 Core run의 2개 실패는 기존 테스트가 snapshot format `4`를 숫자로 하드코딩한 회귀였고, `SimulationSnapshotBinaryFormatVersion` 상수 사용으로 수정 후 최종 44/44 PASS. 새 #79 affordance 테스트 자체는 첫 run에서도 PASS였음.
 - 상대가 알아야 할 점:
-  - 표현 계층은 계약 필드만 소비. 에셋 ID는 `LLResidentAppearanceComponent` 내부에만 있음
+  - 이제 지정 배변구역은 지식만이 아니라 실제 persistent Core affordance이며 World가 같은 위치/identity를 소비한다.
+  - 다음 쭌 레인은 **Dug pit / primitive latrine progression — READY_NOW**. 아직 새 브랜치는 만들지 않았고 구현 시작으로 간주하면 안 된다.
+  - 다음 단계에서도 실제 지식/재료/도구/작업 없이 pit/latrine이 즉시 생기면 안 되며, primitive containment의 위생 개선 효과는 환경 residue와 연결해야 한다.
+  - 다겸 PR #67 / UI / Character appearance / Content 영역은 #79에서 수정하지 않았다.
 
-### 다겸 측 AI — Character Appearance v1 재확인 결과
+## 2026-09-15 — sanitation progression / scalable world design closeout
 
-- 작성자: 다겸 측 AI
-- 브랜치/PR: `dagyeom/character-appearance-v1`, PR #67
-- 커밋: `e8300ec`
-- 상태: `WAITING_CI / 검증 대기`
-- 검증 상태:
-  - 화면 재확인(로컬 PIE): 주민 4명 외형 정상 표시, #65 계약 교체 후 조합 유지
-  - PIE 재시작 후 동일 주민 동일 외형: 미기록
-  - 관찰: 이동 시 걷기 애니메이션 없이 Idle 상태로 미끄러짐 (Character Motion & Context v1 범위, 대기열 AFTER라 미착수)
-  - GitHub Actions: 검증 대기
+### 2026-09-15 — PR #80 Dug pit progression + World Genesis canonicalization
+- 작성자: 쭌 측 AI
+- 브랜치/PR: `jjun/primitive-latrine-progression-v1`, PR #80
+- 상태: `DONE / main 병합 완료`
+- validated head: `fc918693bcd265f3c021f0bd826f6ba5a7113678`
+- main merge: `291926cf78d12c1c61284eb9c59a50e7c70e54e7`
+- 구현:
+  - 개인 `DugSanitationPit` 지식/실험을 추가하고 기존 지정 배변구역을 같은 site ID/GridPos의 `DugPit`으로 개선.
+  - 지식만으로 즉시 시설이 바뀌지 않으며 실제 반복 굴착 작업량이 필요함.
+  - 현재 runtime에 실제 Dig 도구가 없으므로 v1은 느린 수작업 굴착을 허용하고 향후 Dig 도구가 같은 work contract를 가속하도록 설계.
+  - DugPit 완성은 기존 HumanWaste 양을 삭제하지 않고 노출 강도/확산 반경을 줄이는 containment 효과를 적용.
+  - 이후 DugPit 사용도 HumanWaste를 계속 생성하지만 open designated area보다 낮은 exposure profile을 사용.
+  - snapshot 외부 포맷 v5 유지, primitive sanitation extension만 v2로 확장하고 v1 호환 decode 유지.
+  - `DesignatedSanitationArea`와 `DugSanitationPit`이 Core/Unreal civilization read 범위에 모두 포함됨.
+- 검증:
+  - Structural Preflight run `34926841905` PASS.
+  - Core Tests run `34926841895` PASS, **45/45**.
+  - deterministic harness smoke PASS.
+  - Unreal Linux Compile run `34926841907` PASS; UE 5.6 image verify + UHT + UBT + link PASS.
+- 추가 canonical design:
+  - `docs/WORLD_GENESIS_CHUNK_MIGRATION_v1.md`를 신규 canonical companion으로 확정.
+  - 최종 월드는 작은 고정 arena가 아니라 `WorldSeed -> Macro World -> deterministic lazy chunks -> persistent human/environmental change -> carrying-capacity pressure -> migration -> additional settlements -> regional society/civilization` 구조를 따른다.
+  - untouched chunk natural baseline은 `WorldSeed + ChunkCoord`로 탐사 순서와 무관하게 결정론적으로 생성.
+  - 생성 후 인간/자연 변화는 persistent history가 권위이며 reload 시 reroll 금지.
+  - 인구 증가 시 고정 맵에 압축하지 않고 토지 이용 고도화, 탐사, 이주, 분가/집단 분리, 복수 정착지 형성으로 확장.
+  - 초기 자연환경에는 현대/정착 인프라가 없고 생존 가능한 시작 후보지만 평가한다.
+  - WorldSeed와 초기 PopulationSeed/stream을 분리하여 같은 자연환경에서 다른 창립자 구성도 향후 지원 가능하게 한다.
+  - Android는 논리 세계 전체를 고품질 Actor로 유지하지 않고 active presentation chunks / simulation LOD를 사용한다.
+- 다음 쭌 레인:
+  - HumanWaste Environmental Visual Feedback — READY_NOW.
+  - World Genesis WG-1(seed/macro/chunk contracts)과 WG-2(persistence/streaming boundary)는 production World Visual Environment가 고정 맵 가정에 묶이기 전에 gate로 구현/확정.
 - 상대가 알아야 할 점:
-  - 다겸 READY_NOW 잔여 항목 없음. Motion & Context v1이 READY_NOW로 승격되면 locomotion(Idle/Walk/Jog)부터 착수 가능. UAL Standard에 Idle_Loop / Walk_Loop / Jog_Fwd_Loop / Sprint_Loop / Sitting_* / Interact / PickUp_Table 포함
+  - 다겸 PR #67 / Character/UI/Content 영역은 #80에서 수정하지 않았다.
+  - World Visual Environment 작업은 `docs/WORLD_GENESIS_CHUNK_MIGRATION_v1.md`를 반드시 읽고 고정 소형맵을 제품 구조로 굳히지 않는다.
 
-### 다겸 측 AI — Character Appearance v1 closeout 진행
-
-- 작성자: 다겸 측 AI
-- 브랜치/PR: `dagyeom/character-appearance-v1`, PR #67
-- 커밋: `1b47c4b` (origin/main `a596229` merge), `51c60b1`
-- 상태: `ACTIVE / CLOSEOUT`
-- Sync Before Work:
-  - origin/main `a596229` 확인. `tasks/TEAM_BOARD.md`, `tasks/WORK_STATE.md` merge 충돌은 origin/main 버전 유지. 다겸 측 이전 줄(WORK_STATE 진행 행, TEAM_BOARD Integration Request 2건)은 상대 응답(ACCEPTED WITH GATE / PARTIALLY ACCEPTED / PROMOTED)으로 대체되어 재추가하지 않음
-- PR #67 CI 기록 (이전 head `29d6109`):
-  - structural-preflight: SUCCESS
-  - Unreal Linux Compile: 실행 기록 없음 (compile 워크플로우 경로 트리거가 main `d6c2a9a`에서 확장됨. 이번 merge로 브랜치에 반영)
-  - Codex review: 사용량 한도로 미실행
-- 컴파일:
-  - merge 직후 로컬 Build.sh 실패: `Simulation/LLAppearanceProfile.cpp:27 redefinition of 'Variant'` — 유니티 빌드에서 `Characters/LLResidentAppearanceInputs.cpp` 익명 네임스페이스 헬퍼와 충돌. 다겸 측 파일에서 명명 네임스페이스 `LLAppearanceInputsHash`로 이동해 해결
-  - 로컬 `Build.sh LifeLensEditor Mac Development`: Succeeded (`1b47c4b`, `51c60b1`), `Tools/validate_bootstrap.py`: PASS
-- Save/Load 연속성 검증 준비:
-  - `LLResidentAppearanceComponent`가 주민별 `LLAppearance <이름> id=<ResidentId> seed= sex= stage= skin= eye= hair= height= build= temp=` 로그 1줄 출력
-  - `ALLWorldDirector::BeginPlay`가 `LifeLens_Autosave` 슬롯을 LoadGame, 시뮬레이션 60분마다 SaveGame. 검증 절차: PIE Play → 자동 저장 이후 Stop → Play 재시작 → 동일 id의 로그 값 비교
-  - PIE 재시작 후 동일 주민 동일 외형: 미기록
-- 완료 조건 중 미충족 (`tasks/WORK_STATE.md` 원문):
-  - required final CI/UE compile record for the final PR head.
-  - Save/Load appearance continuity explicitly verified.
-  - minimum default clothing present; underwear-only residents do not satisfy the existing minimum.
-  - final review/merge + live-doc sync.
-- 최소 기본 의상 후보 (라이선스 확인 완료, 미다운로드):
-  - Quaternius "Modular Character Outfits - Fantasy" v2.1 (2026-05-07), `Modular Character Outfits - Fantasy [Standard].zip` 280 MB
-  - 출처: https://quaternius.com/packs/modularcharacteroutfitsfantasy.html , https://quaternius.itch.io/modular-character-outfits-fantasy
-  - 라이선스: 팩 페이지 원문 "Free to use in personal, educational and commercial projects. (CC0 License)", itch 페이지 "Creative Commons Zero v1.0 Universal"
-  - Universal Base Characters 리그 호환(Humanoid rig, retargetable), FBX/glTF, 12 outfits / 62 modular parts / 3 색상 변형. Standard tier 포함 범위(Ranger, Peasant 등)는 압축 해제 후 확정
-  - 스테이징 예정 경로: `assets_staging/Quaternius/ModularCharacterOutfitsFantasy/` (zip 원본 + 압축 해제 + license_screenshot.png)
-- 상대가 알아야 할 점:
-  - 익명 네임스페이스 헬퍼 이름(`Variant`, `Axis`, `Mix64` 등)은 유니티 빌드에서 모듈 내 다른 .cpp와 충돌할 수 있음. 다겸 측은 명명 네임스페이스로 통일
-
-### 다겸 측 AI — Character Appearance v1 최소 기본 의상 적용
-
-- 작성자: 다겸 측 AI
-- 브랜치/PR: `dagyeom/character-appearance-v1`, PR #67
-- 커밋: `f9d1152`
-- 상태: `ACTIVE / CLOSEOUT`
-- CI 기록 (head `78f7e1c`): Preflight `34914498920` SUCCESS, Unreal Linux Compile `34914498927` SUCCESS, Core Tests `34914496086` SUCCESS
-- 변경:
-  - Quaternius "Modular Character Outfits - Fantasy" [Standard] v2.1 (zip 294,347,394 B, 2026-09-15 다운로드, in-zip `License_Standard.txt` "CC0 1.0 Universal (CC0 1.0) Public Domain Dedication") → `Content/Characters/Quaternius/MCO/Peasant/**`. Standard tier 포함 의상은 Peasant·Ranger 2종(남/여). Peasant만 임포트, Ranger 미임포트. `PROVENANCE.md` Pack 3 기록
-  - 헤드리스 임포트 `Import/import_quaternius_outfits.py` (UBC 공유 스켈레톤에 바인딩, 여성용 중복 텍스처/머티리얼은 남성용으로 consolidate, MaxTextureSize 2048)
-  - `LLResidentAppearanceComponent::ApplyOutfit()`: 성별 Peasant 세트를 Body 하위 leader-pose 스켈레탈 메시로 부착. `OutfitVariant` 홀수면 색상 변형 2. 남성 노출 팔 피부 슬롯은 몸 피부와 동일 틴트
-  - 로컬 Build.sh Succeeded, preflight PASS
-- 미충족:
-  - PIE 화면 확인(의상 표시·클리핑 여부) 미기록
-  - PIE 재시작 후 동일 주민 동일 외형(Save/Load): 미기록
-  - 새 head `f9d1152` CI: 대기
-  - final review/merge + live-doc sync
-- 상대가 알아야 할 점:
-  - UBC Standard tier에는 분리된 머리 메시가 없어 Superhero 전신 위에 의상을 겹침(팩 Readme는 머리만 사용 권장). 의상이 몸보다 얇은 부위에서 피부가 비칠 수 있음. 화면 확인 후 필요 시 후속
-  - `Content/Characters/Quaternius/MCO/**` 약 52 MB 바이너리 추가
-
-### 다겸 측 AI — 의상 관통 수정 (머리 전용 바디)
-
-- 작성자: 다겸 측 AI
-- 브랜치/PR: `dagyeom/character-appearance-v1`, PR #67
-- 커밋: `bb68a6c`
-- 상태: `ACTIVE / CLOSEOUT`
-- 화면 확인 결과 기록: Peasant 의상은 적용되나 전신 메시 위에 덧씌운 구조라 팔·몸통·허벅지가 의상을 관통. 현재 상태로 minimum default clothing 미충족 판단
-- 조사 결과:
-  - 의상 스킨 웨이트 측정: Peasant 세트가 `pelvis`~`neck_01`과 사지 전체(손가락 포함)를 덮음. 남성은 노출 팔뚝·손을 `MI_Regular_Male`로 자체 포함, 여성은 손까지 `MI_Peasant`로 덮음. 바디에서 필요한 부분은 머리뿐
-  - 방법 1 (머티리얼 슬롯/섹션 hide): 바디 스킨이 머리까지 포함한 단일 섹션이라 슬롯을 숨기면 머리도 사라짐. 불가
-  - 방법 1 변형 (본 hide): `HideBoneByName`은 자식 본까지 함께 숨김. 머리는 `spine_01` 아래에 있어 몸통을 숨기면 머리도 사라짐. 사지만 부분 적용 가능하나 몸통 관통은 남음
-  - 방법 1 변형 (UV 마스크): 머리 UV가 아틀라스 전역에 흩어져 있어(바디 정점 4,281개가 머리 UV 박스 안) 분리 불가
-  - 방법 2 (의상 스케일 확대): 원점이 발밑이라 균등 확대 시 어깨·머리 위치가 어긋남. 채택하지 않음
-- 적용한 방법: 파생 머리 전용 메시
-  - `Import/make_headonly_gltf.py`가 Pack 1 바디 glTF에서 `Head`/`neck_01` 지배 삼각형만 남긴 인덱스로 재작성(남 12,566→2,852, 여 12,812→3,070). 정점·UV·스킨 웨이트·머티리얼·스켈레톤 불변
-  - 절단선은 목 아래(남 Y 1.518, 여 1.480)이고 의상 칼라 상단(남 1.559, 여 1.518)보다 낮아 이음매가 옷 안에 들어감
-  - `/Game/Characters/Quaternius/UBC/HeadOnly/**`로 임포트(1.7 MB), 중복 텍스처·머티리얼은 기존 UBC 사본으로 consolidate
-  - `LLResidentAppearanceComponent`: 머리 전용 메시와 의상이 모두 있을 때만 착용 상태. 스케일·라벨 높이는 전신 메시 기준 유지. 에셋 없으면 전신 바디 폴백
-  - 파생 파일은 staging에만 존재(스크립트로 재생성). CC0 1.0은 파생·재배포 허용
-- 한계:
-  - 목 둘레가 칼라보다 굵으면 목 부위에 관통이 남을 수 있음. 화면 확인 필요
-  - 의상은 Peasant 1종(남/여) + 색상 2종뿐. 연령대별 의상 구분 없음
-  - 착용 시 바디 메시가 머리로 바뀌므로, 향후 노출 부위가 다른 의상을 추가하면 의상별로 대응하는 바디 변형이 필요
-- 미충족: 화면 확인, Save/Load 연속성, 최종 리뷰/머지 + 문서 동기화
-
-### 다겸 측 AI — 의상 확인 결과 및 Save/Load 연속성 검증
-
-- 작성자: 다겸 측 AI
-- 브랜치/PR: `dagyeom/character-appearance-v1`, PR #67
-- 커밋: `fc15341`
-- 상태: `ACTIVE / CLOSEOUT`
-- CI 기록 (head `6d814e3`): Preflight `34916984761` SUCCESS, Unreal Linux Compile `34916984865` SUCCESS
-- 화면 확인 결과 (로컬 PIE, `bb68a6c`): 의상 관통 없음, 목 이음매 보이지 않음
-- 검출된 결함 및 수정:
-  - 로그 대조 중 주민 4명의 `ResidentId`가 모두 무효(`00000000-...`)이고 외형 값이 전원 동일, `temp=1`(임시 해시 경로)로 확인됨. 원인은 `ALLWorldDirector::SpawnResidents`가 액터를 스폰한 직후 `BindResident`로 ID를 넣는데, 외형은 그 이전 `BeginPlay`에서 생성되던 것. #65 결정론 계약이 우회되고 주민 간 외형 구분도 사라진 상태였음
-  - 수정(`fc15341`, Characters/** 범위): `EnsureBuilt()`는 ID가 무효면 보류, `BindResident()`가 ID 설정 후 외형·표현 생성을 호출. 표현 컴포넌트는 ID 대기 중 실루엣 fallback도 보류하고 바인딩 시점에 인체 유무로 분기
-- Save/Load 연속성 검증 (headless `-game -nullrhi`, 로그 대조):
-  - 실행 A: 주민 4명 고유 GUID, 서로 다른 외형, `temp=0`. 실행 중 자동 저장 발생(`Saved/SaveGames/LifeLens_Autosave.sav` 갱신)
-  - 실행 B: 동일 세이브 로드. 4명의 id·seed·skin·eye·hair·height·build·outfit 값이 실행 A와 완전 일치
-  - 대조군 C: 세이브 파일을 옮긴 뒤 실행 → 다른 주민 4명 생성. 세이브 복원 후 원본과 바이트 동일 확인
-  - 결론: 같은 세이브에서 같은 주민은 같은 외형. PIE 재시작 후 동일 주민 동일 외형: O
-- 미충족: 최종 리뷰/머지 + live-doc 동기화
-- 상대가 알아야 할 점:
-  - 스폰 후 바인딩 순서에 의존하는 표현 컴포넌트는 `BeginPlay`가 아니라 `BindResident` 시점을 기준으로 해야 함. World/** 는 수정하지 않았음
-
-### 다겸 측 AI — Character Appearance v1 closeout 완료 보고
-
-- 작성자: 다겸 측 AI
-- 브랜치/PR: `dagyeom/character-appearance-v1`, PR #67
-- 커밋: `afa972e` (origin/main `2ad1cf4` merge 포함)
-- 상태: `REVIEW_READY`
-- 충돌 처리: `tasks/WORK_STATE.md` merge 충돌은 origin/main 버전을 그대로 두고 다겸 측 갱신 줄만 뒤에 추가
-- 최종 head CI: Preflight `34918412318` SUCCESS, Unreal Linux Compile `34918412409` SUCCESS, Core Tests `34918409813` SUCCESS
-- 로컬: `Build.sh LifeLensEditor Mac Development` Succeeded, `Tools/validate_bootstrap.py` PASS
-- 병합 후 재검증: headless `-game` 실행에서 주민 4명 외형 값이 병합 이전 실행과 완전 일치
-- WORK_STATE 기준 잔여 조건:
-  - final PIE outfit confirmation — 충족
-  - explicit same-resident appearance continuity check across restart/load — 충족
-  - final review / merge / docs sync — 다겸 측 권한 밖. 대기
-- 다겸 측 READY_NOW 잔여 항목 없음. Motion Bootstrap은 #67 머지 + 문서 동기화 이후 자동 승격 조건

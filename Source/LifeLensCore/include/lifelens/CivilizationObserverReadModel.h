@@ -106,7 +106,7 @@ struct CivilizationWorldObservation {
 inline TechniqueId techniqueFromCivilizationFact(const SocialFact& fact)
 {
     for(int raw=static_cast<int>(TechniqueId::SharpFlake);
-        raw<=static_cast<int>(TechniqueId::SimpleContainer);++raw){
+        raw<=static_cast<int>(TechniqueId::DugSanitationPit);++raw){
         const TechniqueId candidate=static_cast<TechniqueId>(raw);
         if(factRepresentsTechnique(fact,candidate)) return candidate;
     }
@@ -287,7 +287,7 @@ inline CivilizationWorldObservation buildCivilizationWorldObservation(
     }
     std::sort(dto.storages.begin(),dto.storages.end(),[](const auto& a,const auto& b){return a.id<b.id;});
 
-    constexpr std::size_t TechniqueSlots=static_cast<std::size_t>(TechniqueId::SimpleContainer)+1;
+    constexpr std::size_t TechniqueSlots=static_cast<std::size_t>(TechniqueId::DugSanitationPit)+1;
     std::array<bool,TechniqueSlots> knownTypes{};
     std::array<bool,TechniqueSlots> reproducibleTypes{};
     for(const Character& character:world.characters){

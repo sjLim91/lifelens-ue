@@ -41,7 +41,9 @@ enum class ELLCoreTechniqueId : uint8
     ChippedStoneTool,
     FireMaking,
     FiberCordage,
-    SimpleContainer
+    SimpleContainer,
+    DesignatedSanitationArea,
+    DugSanitationPit
 };
 
 UENUM(BlueprintType)

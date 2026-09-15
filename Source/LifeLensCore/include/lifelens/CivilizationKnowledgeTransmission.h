@@ -107,6 +107,9 @@ inline bool techniquePrerequisiteContextSatisfied(const Character& learner,Techn
     if(technique==TechniqueId::ChippedStoneTool &&
        !learner.civilization.knowledge.knowsAtLeast(
            TechniqueId::SharpFlake,KnowledgeLevel::Reproducible)) return false;
+    if(technique==TechniqueId::DugSanitationPit &&
+       !learner.civilization.knowledge.knowsAtLeast(
+           TechniqueId::DesignatedSanitationArea,KnowledgeLevel::Reproducible)) return false;
     return true;
 }
 
@@ -181,7 +184,7 @@ inline TechniqueTransmissionOutcome applyTechniqueWitness(
 
     TechniqueId technique=TechniqueId::None;
     for(int raw=static_cast<int>(TechniqueId::SharpFlake);
-        raw<=static_cast<int>(TechniqueId::SimpleContainer);++raw){
+        raw<=static_cast<int>(TechniqueId::DugSanitationPit);++raw){
         const TechniqueId candidate=static_cast<TechniqueId>(raw);
         if(factRepresentsTechnique(fact,candidate)){ technique=candidate; break; }
     }

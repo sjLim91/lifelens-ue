@@ -48,6 +48,7 @@ int main()
     assert(first.exposure>=0.79);
     assert(first.hygieneBurden>0.0);
     assert(first.memoryRecorded);
+    assert(!first.sanitationProblemRecognized);
     assert(exposed.needs.hygiene>hygieneBefore);
     assert(exposed.emotion.anxiety>0.0);
     assert(exposed.memory.entries.size()==1);
@@ -59,7 +60,34 @@ int main()
         exposed,field,{2,-1},120);
     assert(repeated.perceived);
     assert(!repeated.memoryRecorded);
+    assert(!repeated.sanitationProblemRecognized);
     assert(exposed.memory.entries.size()==1);
+
+    // A later direct experience at a different dirty location is independent
+    // evidence. The real perception path now promotes recurring sanitation
+    // experience into one durable problem Belief.
+    field.deposit(EnvironmentalResidueKind::HumanWaste,{-3,2},77,300,2.0,0.80,3);
+    const EnvironmentalExposureResult secondLocation=perceiveEnvironmentalContamination(
+        exposed,field,{-3,2},300);
+    assert(secondLocation.memoryRecorded);
+    assert(secondLocation.sanitationProblemRecognized);
+    assert(secondLocation.sanitationProblemNewlyRecognized);
+    assert(secondLocation.sanitationProblemConfidence>=0.55);
+    assert(exposed.memory.entries.size()==2);
+    assert(hasRecognizedSanitationProblem(exposed));
+
+    // Re-sampling the same state does not inflate the evidence again.
+    const BeliefRecord* sanitationBelief=
+        exposed.beliefs.find(0,sanitationProblemBeliefProposition());
+    assert(sanitationBelief!=nullptr);
+    const double recognitionWeight=sanitationBelief->supportWeight;
+    const EnvironmentalExposureResult recognitionRepeat=perceiveEnvironmentalContamination(
+        exposed,field,{-3,2},310);
+    sanitationBelief=exposed.beliefs.find(0,sanitationProblemBeliefProposition());
+    assert(recognitionRepeat.sanitationProblemRecognized);
+    assert(!recognitionRepeat.sanitationProblemNewlyRecognized);
+    assert(sanitationBelief!=nullptr);
+    assert(sanitationBelief->supportWeight==recognitionWeight);
 
     // A resident's deterministic outdoor choice changes once the original site
     // becomes dirty and is remembered as unpleasant.
