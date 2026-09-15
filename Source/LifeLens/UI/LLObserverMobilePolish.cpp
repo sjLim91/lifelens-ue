@@ -1,4 +1,5 @@
 #include "UI/LLObserverHUD.h"
+#include "Core/LLTypes.h"
 #include "Characters/LLResidentCharacter.h"
 #include "EngineUtils.h"
 #include "Framework/Application/SlateApplication.h"
