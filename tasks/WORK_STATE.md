@@ -30,63 +30,62 @@ Last reconciled: 2026-09-15 KST
 ## Current product-code baseline
 
 Latest product merge:
-- PR #78 `[CORE] Add primitive sanitation experimentation progression v1`
-- merge SHA: `3a9739682034ad7c5009da5f75a11b0f07fed55b`
+- PR #79 `[CORE/WORLD] Add authoritative designated sanitation area affordance v1`
+- merge SHA: `90f2b4f9cdc480e99886632e09323b2feab9625c`
 
-Validated PR #78 head `e78f6d211589b74008ff0fdf73e9be1048e2d807`:
-- Structural Preflight run `34921390473`: PASS
-- Core Tests run `34921390510`: PASS, 43/43
-- Unreal Linux Compile run `34921390491`: PASS
+Validated PR #79 head `49c76863b1957df09b7d814f7117826e92707021`:
+- Structural Preflight run `34923460056`: PASS
+- Core Tests run `34923459974`: PASS, 44/44
+- deterministic harness smoke: PASS
+- Unreal Linux Compile run `34923459949`: PASS
 - UE 5.6 image verification / UHT / UBT / link: PASS
 
-Delivered by #78:
-- resident sanitation-problem Belief becomes a causal input to primitive sanitation experimentation.
-- `DesignatedSanitationArea` is a personal civilization technique, not a global tech flag.
-- sanitation experiment requires BOTH recognized sanitation concern and a sufficiently clean candidate site.
-- existing low-exposure recommendation supplies deterministic environmental feasibility.
-- deterministic failure becomes `Hypothesized`; deterministic success becomes personal `Reproducible` knowledge.
-- existing witness/teaching provenance and civilization observer/read-model ranges cover the new technique without global auto-unlock.
-- existing civilization snapshot extension persists the technique.
-- no Toilet/Latrine SmartObject or `LatrineUnlocked` state is spawned by discovery.
+Delivered by #79:
+- `DesignatedSanitationArea` reproducible knowledge can now materialize through the existing Civilization `Craft` axis into a persistent Core-owned primitive sanitation site.
+- technique knowledge alone does not silently create world infrastructure.
+- Core owns stable sanitation site identity, authoritative GridPos, establisher/minute, active state and use count.
+- Core sanitation use resolution prefers an active designated area before unstructured emergency outdoor relief.
+- Unreal Bridge carries designated-site identity plus exact Core GridPos; World movement and completion ACK consume the same target.
+- designated ACK requires the exact active site id and GridPos; stale/wrong identity or position fails closed.
+- actual designated use increments site usage and deposits HumanWaste at the acknowledged Core cell.
+- snapshot binary format is v5 and persists designated sanitation site state; older v1-v4 snapshots decode with no designated sites.
+- no global `LatrineUnlocked` flag or automatic modern Toilet/Latrine SmartObject was introduced.
 
 Documentation-only commits may advance `main` beyond the product-code baseline above.
 
 ## Current dispatch
 
-### Jjun lane — Designated sanitation area affordance integration v1 — IN_PROGRESS
+### Jjun lane — Dug pit / primitive latrine progression — READY_NOW
 
 Owner: 쭌 / 쭌 AI
-Branch: `jjun/designated-sanitation-affordance-v1`
-Dependency: PR #78 DONE.
+Branch: not created yet.
+Dependency: PR #79 DONE.
 Handoff safety: SAFE; no uncommitted local dependency.
 
 Goal:
-- consume `TechniqueId::DesignatedSanitationArea` knowledge plus the deterministic low-exposure site contract to create an actual authoritative primitive sanitation affordance.
-- move the causal chain from discovery/knowledge to a reusable physical behavior target.
-- keep the site Core-owned/persisted; Unreal presentation/world execution must consume it rather than inventing a second target.
-- do not jump directly to a dug pit or modern latrine before the designated-area behavior is authoritative and working.
+- evolve the now-authoritative reusable designated sanitation area into a more capable primitive sanitation improvement without jumping directly to modern plumbing.
+- keep progression causal: observed problem → personal/shared knowledge → actual materials/work → improved physical affordance.
+- preserve Core ownership of facility identity/location/state and the existing World movement/ACK contract.
 
 Implementation direction:
-- define the smallest Core-owned designated sanitation site state with stable identity/location/quality or equivalent facility facts.
-- creation requires a resident with reproducible `DesignatedSanitationArea` knowledge and a currently feasible clean site.
-- route future Toilet affordance resolution to an existing designated site before natural/emergency outdoor fallback.
-- actual use must still complete through the existing World movement/ACK path and deposit environmental residue at the real completion location.
-- Save/Load must preserve the created site and its authoritative GridPos.
-- target disappearance/invalidation must fail/re-resolve rather than create magic infrastructure.
+- inspect the current #79 `PrimitiveSanitationSite`, Civilization recipe/material, excavation/tool and environmental consequence contracts before adding state.
+- model the smallest physically meaningful improvement step, preferably a dug pit before a more developed latrine.
+- require actual knowledge/material/tool/work prerequisites rather than a global unlock or instant upgrade.
+- decide whether improvement mutates the existing site or creates a successor facility identity; avoid parallel duplicate authorities.
+- define how containment changes HumanWaste exposure/radius/intensity without pretending primitive sanitation removes waste entirely.
+- persist/restore improvement state and fail/re-resolve cleanly if the facility becomes invalid.
 
 Acceptance:
-- technique knowledge alone does not silently create a site until the creation/use contract executes.
-- one authoritative GridPos drives Core preference, World movement and completion consequence.
-- no duplicate World-only sanitation target.
-- Save/Load restores the site.
-- invalid/unavailable site falls back through the existing affordance hierarchy.
-- Core tests + Structural Preflight + Unreal compile for Bridge/World contract changes.
+- no reproducible knowledge/resources/work → no pit/latrine appears.
+- designated area remains the fallback primitive sanitation facility until a real improvement completes.
+- improved facility has one authoritative Core identity/GridPos used by World movement and ACK.
+- improvement produces a measurable sanitation benefit while retaining realistic residue/consequence.
+- Save/Load continuity.
+- Core tests + Structural Preflight + Unreal compile for any Bridge/World contract change.
 
 Exact next action:
-- inspect current SmartObject/facility and external physical execution contracts for the narrowest primitive-site authority representation.
-- implement Core-owned designated sanitation site creation/lookup/persistence.
-- expose/consume the site through the existing Toilet resolution path without adding a competing World chooser.
-- add regression coverage before moving to dug pit/latrine progression.
+- inspect `PrimitiveSanitationSite`, civilization recipes/experiments, inventory/tool representation, environmental residue deposition and snapshot extension.
+- choose the narrowest dug-pit progression contract and create a new Jjun branch only after that boundary is fixed.
 
 ### Dagyeom lane — Character Appearance v1 — ACTIVE / PR #67 CLOSEOUT
 
@@ -205,6 +204,17 @@ Known limitation:
 - Core 43/43 + Preflight + UE 5.6 UHT/UBT/link PASS.
 - merge SHA `3a9739682034ad7c5009da5f75a11b0f07fed55b`.
 
+### #79 Designated sanitation area authoritative affordance v1 — DONE
+- reproducible `DesignatedSanitationArea` knowledge materializes only through actual Civilization Craft execution.
+- Core-owned persistent primitive sanitation site with stable id/GridPos/active/useCount.
+- one sanitation target contract drives Core preference, Unreal World movement and exact completion ACK.
+- wrong/stale site id or GridPos fails closed without mutating needs/residue/useCount.
+- designated use creates residue at the real acknowledged site and increments useCount.
+- snapshot binary v5 persists site state and v1-v4 remain readable with no site state.
+- no global unlock or automatic modern toilet/latrine.
+- Core 44/44 + deterministic harness + Preflight + UE 5.6 UHT/UBT/link PASS.
+- merge SHA `90f2b4f9cdc480e99886632e09323b2feab9625c`.
+
 ## Character / presentation sequence
 
 1. Character Presentation v1 — DONE via #63.
@@ -231,8 +241,8 @@ Immediate sequence:
 1. WorldDirector sanitation recommendation integration — DONE #76.
 2. Sanitation Problem Recognition v1 — DONE #77.
 3. Primitive sanitation experiment / DesignatedSanitationArea discovery — DONE #78.
-4. Designated sanitation area authoritative affordance integration — IN_PROGRESS.
-5. Dug pit / latrine progression after the designated-area loop is physical and persistent.
+4. Designated sanitation area authoritative affordance integration — DONE #79.
+5. Dug pit / primitive latrine progression — READY_NOW.
 6. HumanWaste Environmental Visual Feedback.
 7. Health/pathogen and water/soil contamination later.
 
@@ -271,7 +281,7 @@ Actual visual implementation still pending:
 ## Remaining structural work / known risks
 
 ### Unified facility/resource authority — PARTIAL
-Core intent/ACK timing is unified, but every actual World facility/resource is not yet one exact shared target registry.
+#79 establishes one exact authoritative identity/GridPos path for the designated sanitation site, but every actual World facility/resource is not yet one exact shared target registry.
 
 Follow-up:
 - facility identity / tier / quality / backing-resource contract.
@@ -289,7 +299,7 @@ Follow-up:
 Dormant Blueprint-callable competing chooser remains.
 
 ### Snapshot legacy migration fixtures — NEEDS TEST
-Binary v1-v4 migration exists, but dedicated representative v1/v2/v3 encoded fixture regression coverage remains.
+Binary v1-v5 migration support exists as applicable, but dedicated representative old-format fixture regression coverage remains incomplete.
 
 ### Health/pathogen environment feedback — LATER
 #75 stops at discomfort/hygiene/Memory/avoidance.
@@ -323,8 +333,8 @@ Do not revive the old multi-hour PR #2 path as the default loop.
 12. #76 World sanitation recommendation integration — DONE.
 13. #77 Sanitation Problem Recognition — DONE.
 14. #78 Primitive sanitation experimentation progression — DONE.
-15. **Designated sanitation area authoritative affordance integration — IN_PROGRESS (`jjun/designated-sanitation-affordance-v1`).**
-16. Dug pit / latrine progression.
+15. #79 Designated sanitation area authoritative affordance — DONE.
+16. **Dug pit / primitive latrine progression — READY_NOW.**
 17. HumanWaste visual feedback.
 18. Character Appearance #67 — ACTIVE in parallel.
 19. Motion Bootstrap — after #67.
