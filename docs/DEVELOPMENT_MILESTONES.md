@@ -22,28 +22,29 @@
 - Character Appearance #67 — DONE.
 - **Character Motion Bootstrap #84 — DONE.**
 - **World Generation Milestone A #87 — DONE.**
+- **Gate A — Integrated Runtime Checkpoint A — DONE by owner acceptance on automated/runtime evidence.**
 
-## Gate A — Integrated Runtime Checkpoint A — IN_PROGRESS
+## Gate A — Integrated Runtime Checkpoint A — DONE
 
-Owner: joint integration; Jjun coordinates runtime/authority verification, Dagyeom performs presentation PIE QA.
+Owner: joint integration; Jjun coordinated runtime/authority verification.
 
-Current gate state:
+Final gate state:
 - **Jjun Core/World runtime side: PASS** — Run `34943197031`, Job `104296410531`.
-- **Dagyeom PIE visual side: PENDING.**
-- Full Gate A remains open until the visual side passes or any actual visual blocker is resolved.
+- additional Dagyeom manual PIE visual inspection: **WAIVED BY PROJECT OWNER on 2026-09-15**.
+- this waiver is not recorded as a visual PASS; skipped visual concerns are carried into World Visual Milestone A validation.
 
 Purpose: 처음으로 `main`의 실제 vertical slice를 한 번에 확인한다.
 
-Acceptance:
-- NEW GAME starts successfully. **Runtime PASS**
-- WG-2 selected initial region is the region materialized by Milestone A. **Runtime PASS**
-- four founders are physically projected inside that materialized region at initial spawn. **Runtime PASS / visual confirmation pending**
-- no starting house/toilet/farm/storage/road/tool/modern infrastructure appears. **Core PASS / visual confirmation pending**
-- Character Appearance + Idle/Walk/Jog + orientation presentation works in the integrated runtime. **PIE pending**
-- existing AI movement/action flow still follows Core/World authority. **Runtime contract PASS**
-- HumanWaste/environmental feedback is reconstructed from authoritative Core state. **Core/runtime PASS / visual placement pending**
-- Save/Load does not silently reroll generated natural state and restores resident/world projection coherently. **Core/runtime PASS / visual continuity pending**
-- Observer can inspect residents after start/load. **Core read-model PASS / PIE usability pending**
+Runtime acceptance proven:
+- NEW GAME starts successfully.
+- WG-2 selected initial region is the region materialized by Milestone A.
+- four founders have authoritative initial positions inside that materialized region.
+- no starting Core house/toilet/farm/storage/road/tool/modern infrastructure is fabricated.
+- existing AI movement/action flow follows Core/World authority.
+- HumanWaste/environmental feedback originates from authoritative Core state.
+- Save/Load does not reroll generated natural state and restores exact resident positions at the save checkpoint.
+- Observer Core read models expose residents after start/load.
+- source/restored simulation state remains byte-identical after deterministic continuation.
 
 Jjun runtime evidence from the corrected Gate A run:
 - 4 founders: 2 male / 2 female.
@@ -57,11 +58,13 @@ Jjun runtime evidence from the corrected Gate A run:
 
 The earlier Run `34943075204` failed only because the temporary validation harness incorrectly assumed residents must remain in their initial chunk after autonomous movement. That expectation was corrected; no product code change was required.
 
-Until Gate A fully closes, **Dagyeom does not start an additional product milestone.**
+Manual visual items that were not separately inspected at Gate A are **not discarded**. They become explicit validation targets inside the next visual milestone: appearance correctness, locomotion/orientation coherence, spawn overlap/floating/sinking, environmental placement, Observer usability, and Save/Load visual continuity.
 
-## Milestone B — World Visual Milestone A — AFTER GATE A
+## Milestone B — World Visual Milestone A — READY_NOW / START AUTHORIZED
 
 Owner: Dagyeom visual/content lane; Jjun supplies Config/Bridge integration when requested.
+
+Purpose: replace the bootstrap/fixed-stage presentation with a production-oriented generated-world view driven by the merged world-generation contracts.
 
 Scope:
 - production-oriented generated-world presentation consuming real world-generation contracts.
@@ -71,6 +74,20 @@ Scope:
 - Android-friendly HISM/instancing/LOD/culling/material budget.
 - observer readability.
 - no visual-only second authority.
+
+Validation carried into this milestone:
+- four residents visibly project coherently in the generated-world presentation.
+- Quaternius appearance remains correct.
+- Idle/Walk/Jog and orientation have no T-pose/sliding regression.
+- no visibly invalid spawn overlap/floating/sinking/map escape.
+- no starting civilization infrastructure is invented visually as simulation truth.
+- HumanWaste/environment feedback placement is spatially reasonable.
+- Observer labels/selection/detail remain usable.
+- Save → Load presentation remains visually coherent.
+
+Important authority rule:
+- World presentation consumes Core/World facts; it does not create a parallel terrain/resource/simulation authority.
+- generated-world facts should replace fixed gray-world assumptions whenever an authoritative read contract exists.
 
 Important Config boundary:
 - Dagyeom may create maps under `Content/Maps/**` (`/Game/Maps/...`).
@@ -114,10 +131,10 @@ These remain product direction, not immediate dispatch:
 
 ## Current dispatch
 
-**Only the remaining PIE visual half of Gate A is actionable.**
+**World Visual Milestone A is READY_NOW and START AUTHORIZED.**
 
-- Jjun: runtime side PASS; hold unless visual QA proves an integration/config blocker.
-- Dagyeom: perform Gate A PIE visual QA and report PASS or exact repro evidence.
-- World Visual Milestone A remains `AFTER GATE A`, not READY_NOW yet.
+- Dagyeom: begin World Visual Milestone A in the visual/content lane.
+- Jjun: remain available for explicit Config/Bridge/project Integration Requests and verified authority blockers.
+- do not split the milestone into tiny PRs; keep the coherent generated-world presentation objective together and validate at a meaningful milestone checkpoint.
 
 `tasks/WORK_STATE.md` contains the current live execution state. `tasks/TEAM_BOARD.md` contains ownership/locks/Integration Requests.
