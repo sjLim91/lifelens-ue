@@ -2,138 +2,84 @@
 
 > Actual GitHub `main` / PR / Actions is the highest-priority truth.
 > Long-term order: `docs/DEVELOPMENT_MILESTONES.md`.
+> Durable design decisions: `docs/DECISION_LOG.md`.
 
-Last reconciled: 2026-09-15 KST after Gate A owner acceptance and World Visual dispatch.
+Last reconciled: 2026-09-15 KST after Hardcoding Cleanup B dispatch.
 
-## Product baseline
+## Recently closed product checkpoints
 
-### Character Motion Bootstrap — DONE #84
-- PR: #84
-- validated product head before docs-only review reconciliation: `fa781b0829a29f8b29b99fe19fe699cc53792966`
-- Preflight `34940159290`: PASS
-- Unreal Linux Compile `34940159300`: PASS
-- PIE visual verification: PASS — T-pose resolved, Idle/Walk visible, no sliding, smooth turning
-- all three review threads resolved before merge
-- docs-only helper reconciliation did not change product code
-- main merge: `5f0af986728e717c274482915d5f8b5a9ee31195`
+### World Visual Milestone A — DONE
+- Dagyeom presentation/content delivery merged through PR #90.
+- Production map asset: `/Game/Maps/LifeLensWorld`.
+- deterministic WorldPresentation consumes Core/World read contracts; it does not own simulation authority.
+- start-region readability rule is presentation-only and does not hide authoritative resource patches.
 
-### World Generation Milestone A — DONE #87
-- PR: #87
-- final head: `9de52c43c3048c9260c4d6fe2de2be0f97bed082`
-- Preflight `34940403254`: PASS
-- Core Tests `34940403079`: PASS, 48/48 + deterministic harness
-- Unreal Linux Compile `34940402948`: PASS including UE 5.6 image verification / UHT / UBT / link
-- PR comments: 0
-- unresolved review threads: 0
-- main squash merge: `5a543b7392eca722e794b5504241d46669ac23ab`
+### World visual/runtime integration — DONE
+- supporting integration fixes merged through #91/#92/#96.
+- PR #96 final product head: `2642e72efbc69a01c5f58cff08683b1cea793087`.
+- Preflight #551 (`34970785808`): PASS.
+- Unreal Linux Compile #103 (`34970785878`): PASS.
+- PR #96 squash merge: `60432fd102fed327d9e7ae8b4c3ad8727aff476c`.
+- production default/startup map now points to `/Game/Maps/LifeLensWorld`.
+- observer camera tuning is Config-backed and defaults to 1.25 chunk distance / 2.0 chunk height / 100 UU target / 55 FOV.
+- stale bootstrap validator expectation for `/Engine/Maps/Entry` was updated to the production map contract.
 
-Delivered by #87:
-- deterministic detailed natural chunk baseline from WorldSeed + GenerationVersion + ChunkCoord.
-- WG-2 selected start-region materialization.
-- founder physical Core positions inside the selected region.
-- generated-chunk registry and snapshot v6 no-reroll persistence boundary.
-- read-only Unreal World Generation observation path for presentation.
-- safe Core-global → Unreal-local presentation origin mapping.
-- zero starting civilization infrastructure.
+## Current validation risk
 
-Documentation/validation-only commits may advance `main` beyond the product merge SHA above without changing product runtime code.
+`OPEN VISUAL QA RISK — NOT A CODE/COMPILE BLOCKER`
 
-## Integrated Runtime Checkpoint A — DONE
+The #96 compile proves C++/UHT/UBT integration, not camera aesthetics. The next actual PIE/APK visual pass should confirm:
+- `LifeLensWorld` opens as production map.
+- founders are visible and camera is not inside canopy.
+- generated-world presentation appears correctly.
+- authoritative resource patches remain readable.
+- character facing/orientation remains correct.
+- Android framing is acceptable.
 
-Owner: joint integration; Jjun coordinated runtime/authority evidence.
-Status: `DONE — OWNER ACCEPTED WITHOUT ADDITIONAL MANUAL PIE VISUAL QA`
-Handoff safety: `SAFE`
-Active locks: 0
-
-### Runtime evidence — PASS
-
-Corrected Gate A run:
-- Run `34943197031`: **SUCCESS**
-- Job `104296410531`: **SUCCESS**
-- integrated harness output: `GATE_A_CORE_RUNTIME_PASS`
-- founders: 4 total, 2 male / 2 female
-- selected/materialized start chunk in replay: `(-12, 6)`
-- generated natural chunks at initial slice: 1
-- authoritative HumanWaste residues produced by missing-toilet fallback: 1
-- snapshot bytes in replay: 13980
-
-Verified in one runtime flow:
-- production NEW GAME creates exactly 4 founders.
-- all founders initially occupy authoritative positions inside the selected/materialized start region.
-- no starting Core objects/storage/primitive sanitation infrastructure.
-- Observer world/resident read models expose all 4 residents.
-- autonomous missing-toilet fallback creates authoritative HumanWaste.
-- Save/Load preserves generated natural chunk baseline without reroll.
-- Save/Load restores exact resident positions from the save checkpoint.
-- environmental residue and Observer-readable state survive restore.
-- immediate snapshot re-encode is byte-identical.
-- source/restored simulations remain byte-identical after another 120 minutes.
-
-Supporting runtime contracts also PASS:
-- `test_production_new_game`
-- `test_world_generation_milestone_a`
-- `test_external_physical_execution`
-- `test_environmental_residue`
-- `test_environmental_exposure`
-- `test_core_save_load`
-- `test_civilization_observer_read_model`
-
-Evidence artifact from Run `34943197031`: `Gate-A-Core-Runtime-Evidence` / artifact ID `10385548493`.
-
-Run `34943075204` was a **validation-harness expectation failure, not a product failure**. The first harness incorrectly required residents to remain inside the initial chunk after 20 minutes of autonomous movement. The corrected contract compares exact save-checkpoint positions across restore; no product code was changed for this correction.
-
-### Manual visual acceptance policy for this gate
-
-On 2026-09-15, the project owner explicitly chose to **waive the additional Dagyeom PIE visual inspection for Gate A** and proceed.
-
-This is **not** a claim that the skipped visual checks were observed to pass. Instead:
-- Gate A is accepted on the available automated/runtime evidence.
-- any appearance/spawn/animation/environment visual regression not covered by that evidence is carried forward as Milestone B visual validation risk.
-- future visual failures should be fixed in the owning lane without reopening already-proven Core/World runtime contracts unless evidence shows an authority/runtime regression.
-
-## Current dispatch — World Visual Milestone A — READY_NOW / START AUTHORIZED
-
-Owner: Dagyeom visual/content lane.
-Jjun role: Config / Bridge / integration support only when requested.
-Status: `READY_NOW — START AUTHORIZED`
-
-Scope:
-- production-oriented generated-world presentation consuming the merged World Generation contracts.
-- terrain/biome presentation.
-- vegetation / rocks / water / natural dressing.
-- chunk presentation/materialization consumption.
-- Android-friendly HISM/instancing/LOD/culling/material budget.
-- observer readability.
-- no visual-only second authority.
-
-Acceptance direction:
-- use Core/World read contracts as source of truth.
-- no fixed gray-world assumptions where generated-world facts are available.
-- no starting modern/civilization infrastructure invented by presentation.
-- manual visual inspection now belongs to this milestone and should validate the skipped Gate A visual concerns together with the new world presentation.
-- milestone close requires meaningful validation, not just asset creation.
-
-## Dagyeom lane
-
-Status: `WORLD VISUAL MILESTONE A — READY_NOW / START AUTHORIZED`
-
-Dagyeom may begin the product milestone now. When a production map is created, provide the exact `/Game/Maps/<MapName>` asset path through an Integration Request rather than editing Jjun-owned Config.
+If only framing is poor, tune `Config/DefaultGame.ini` first rather than changing Core spatial authority.
 
 ## Jjun lane
 
-Status: `INTEGRATION SUPPORT / WAIT FOR REQUEST`
+Status: `ACTIVE — HARDCODING CLEANUP B / PR #99`
 
-Do not start an unrelated World Generation feature in parallel. Support World Visual through existing read contracts and handle only explicit Config/Bridge/project integration requests or verified authority blockers.
+Branch: `jjun/hardcoding-cleanup-b-ruleset`
+PR: #99 `[CORE] Hardcoding Cleanup B — immutable SimulationRuleset`
+Validation at dispatch:
+- Core Tests #469 (`34974317432`): queued.
+- Preflight #558 (`34974317413`): queued.
+- Unreal Linux Compile #105 (`34974317541`): queued because Save/Bridge C++ interfaces changed.
 
-## Known near-term integration boundary
+Milestone scope:
+- introduce pure-C++17 immutable/versioned `SimulationRuleset`.
+- externalize Needs decay and UtilityAI tuning first while preserving existing default behavior.
+- wire Simulation to consume a const per-instance ruleset without a global mutable singleton.
+- persist full ruleset values with Core snapshots and restore under the same immutable rules.
+- simplify snapshot persistence to current pre-release format only.
+- remove Unreal SaveGame v1 replay migration and legacy payloads because no product build has been shipped to users.
 
-Formal Integration Request currently open: **0**.
+Explicitly deferred from this milestone:
+- Social/Fun projection compatibility cleanup remains Cleanup D.
+- LifeStage / Relationship / Romance / Pregnancy / Family tuning migration remains Cleanup C.
+- Character/UI/WorldPresentation presentation behavior is not part of #99.
 
-Expected upcoming handoff once Dagyeom creates a production map:
-- Dagyeom supplies `/Game/Maps/<MapName>` asset path.
-- Jjun updates `Config/DefaultEngine.ini` (`GameDefaultMap`, and `EditorStartupMap` if needed).
-- Water/plugin changes to `LifeLens.uproject` require a separate explicit Integration Request.
+Pre-release cleanup rule:
+- there is no shipped user save population yet.
+- do not add backward-migration code for development-only save/snapshot formats.
+- remove legacy save/snapshot compatibility code when it directly obstructs or would make the current ruleset/save architecture more expensive later.
+- do not expand this milestone into unrelated projection/UI cleanup.
+
+## Dagyeom lane
+
+Status: `SYNC FROM AGENTS.md / NO OPEN INTEGRATION REQUESTS`
+
+Dagyeom/Claude should start by reading latest `AGENTS.md`, including `docs/DECISION_LOG.md`, then reconcile with actual GitHub before new work.
+
+## Active blockers / locks
+
+- Formal Integration Requests: 0 open after #90/#91/#96 resolution.
+- Assist locks: 0 known active.
+- #99 is Jjun Core/Simulation/Save/Bridge scope; no Dagyeom review is requested by default.
 
 ## Long compile rule
 
-When a long UE compile/package is started, record HEAD + Run ID and continue other safe work. Do not continuously wait/poll; the user reports completion/failure and then closeout resumes.
+When a long UE compile/package is started, record HEAD + Run ID and continue safe independent work. Do not continuously poll. A successful compile is evidence for integration correctness, while visual quality still requires its own appropriate validation.
