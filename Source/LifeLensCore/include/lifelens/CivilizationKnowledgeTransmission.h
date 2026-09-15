@@ -70,8 +70,8 @@ inline SocialFact makeCivilizationTechniqueFact(
     CivilizationEventType eventType)
 {
     SocialFact fact;
-    fact.id=civilizationTechniqueFactId(worldSeed,actor,technique,minute,eventType);
-    fact.subject=actor;
+    fact.id=civilizationTechniqueFactId(worldSeed,actor.id,technique,minute,eventType);
+    fact.subject=actor.id;
     fact.proposition=techniqueFactProposition(technique);
     fact.where="civilization-worksite";
     fact.eventMinute=minute;
@@ -107,6 +107,9 @@ inline bool techniquePrerequisiteContextSatisfied(const Character& learner,Techn
     if(technique==TechniqueId::ChippedStoneTool &&
        !learner.civilization.knowledge.knowsAtLeast(
            TechniqueId::SharpFlake,KnowledgeLevel::Reproducible)) return false;
+    if(technique==TechniqueId::DugSanitationPit &&
+       !learner.civilization.knowledge.knowsAtLeast(
+           TechniqueId::DesignatedSanitationArea,KnowledgeLevel::Reproducible)) return false;
     return true;
 }
 
@@ -181,7 +184,7 @@ inline TechniqueTransmissionOutcome applyTechniqueWitness(
 
     TechniqueId technique=TechniqueId::None;
     for(int raw=static_cast<int>(TechniqueId::SharpFlake);
-        raw<=static_cast<int>(TechniqueId::DesignatedSanitationArea);++raw){
+        raw<=static_cast<int>(TechniqueId::DugSanitationPit);++raw){
         const TechniqueId candidate=static_cast<TechniqueId>(raw);
         if(factRepresentsTechnique(fact,candidate)){ technique=candidate; break; }
     }
