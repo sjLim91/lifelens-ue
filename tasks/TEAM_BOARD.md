@@ -269,3 +269,22 @@ Rules:
 ## Completion rule
 
 검증 + merge + 상태 동기화까지 완료되어야 DONE이다.
+
+## Integration Requests — Dagyeom (2026-09-15)
+
+다겸 측 추가. 아래 두 건은 요청만 기록한 것이며 착수는 하지 않았다.
+
+### IR-1 — 기본 맵 경로 결정 요청
+
+- 현재 `Config/DefaultEngine.ini`의 `GameDefaultMap` / `EditorStartupMap`이 `/Engine/Maps/Entry`이고 저장소에 `Content/Maps`가 없다.
+- World Visual Environment v1의 다겸 소유 경로는 `Content/Maps/**`이지만, 그 맵으로 전환하려면 `Config/**` 수정이 필요하고 해당 경로는 다겸 수정 범위 밖이다.
+- 요청: 맵 애셋 이름과 기본 맵 전환 시점을 쭌 측이 정해 준다. 정해지면 다겸 측이 그 이름으로 `Content/Maps`에 맵을 만든다.
+- 대안: 전환 전까지 `/Engine/Maps/Entry`를 유지하고 환경 표현을 레벨 인스턴스/액터로만 구성하는 방식도 가능하다. 어느 쪽이든 쭌 측 판단을 따른다.
+- 상태: `OPEN / 다겸 대기`.
+
+### IR-2 — Water 플러그인 사용 여부 판단 요청
+
+- `LifeLens.uproject`에 활성 플러그인이 하나도 없다. UE 5.6 Water 플러그인을 쓰려면 이 파일에 플러그인 항목을 추가해야 하는데 `LifeLens.uproject`는 Shared File Lock 대상이라 다겸 측이 수정하지 않는다.
+- 참고: 5.6에서 Water 플러그인은 `Engine/Plugins/Experimental/Water` 경로에 있고 모바일 지원 범위 확인이 필요하다. Android 우선 원칙과 상충할 수 있다.
+- 요청: 물 표현을 (a) 플러그인 없이 지형·머티리얼로 표현할지, (b) Water 플러그인을 활성화할지 쭌 측이 정해 준다.
+- 상태: `OPEN / 다겸 대기`.
