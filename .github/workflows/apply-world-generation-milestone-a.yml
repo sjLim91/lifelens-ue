@@ -1,0 +1,56 @@
+name: Apply World Generation Milestone A
+
+on:
+  push:
+    branches:
+      - jjun/world-generation-milestone-a
+
+permissions:
+  contents: write
+
+jobs:
+  apply-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout milestone branch
+        uses: actions/checkout@v4
+        with:
+          ref: jjun/world-generation-milestone-a
+          fetch-depth: 0
+
+      - name: Apply Milestone A patch
+        run: python Tools/apply_world_generation_milestone_a.py
+
+      - name: Structural validation
+        run: |
+          python Tools/validate_world_genesis_wg1.py
+          python Tools/validate_world_genesis_wg2.py
+          python Tools/validate_world_generation_milestone_a.py
+          python Tools/validate_environment_visual_feedback.py
+          python Tools/validate_bootstrap.py
+
+      - name: Build Core Release
+        run: |
+          cmake -S Source/LifeLensCore -B /tmp/lifelens-core-build -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/lifelens-core-build --config Release -j2
+
+      - name: Run Core tests
+        run: ctest --test-dir /tmp/lifelens-core-build -C Release --output-on-failure
+
+      - name: Deterministic harness smoke
+        run: |
+          /tmp/lifelens-core-build/ll_harness 424242 1440 > /tmp/a.txt
+          /tmp/lifelens-core-build/ll_harness 424242 1440 > /tmp/b.txt
+          diff -u /tmp/a.txt /tmp/b.txt
+
+      - name: Commit validated product changes
+        run: |
+          git config user.name "LifeLens Milestone Runner"
+          git config user.email "actions@users.noreply.github.com"
+          git add Source/LifeLensCore Source/LifeLens Tools/validate_world_generation_milestone_a.py
+          if git diff --cached --quiet; then
+            echo "No product changes to commit"
+            exit 0
+          fi
+          git commit -m "feat: implement World Generation Milestone A"
+          git push origin HEAD:jjun/world-generation-milestone-a
