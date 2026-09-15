@@ -684,3 +684,20 @@
   - **World Genesis WG-1 — READY_NOW**.
   - `WorldSeed + GenerationVersion + ChunkCoord` deterministic contract와 exploration-order-independent untouched-chunk baseline을 먼저 확정한다.
   - `PopulationSeed`는 자연환경 seed와 분리하며, production World Visual이 작은 고정 arena에 묶이기 전에 WG-1/WG-2 gate를 통과한다.
+
+### 다겸 측 AI — Character Motion Bootstrap 착수
+
+- 작성자: 다겸 측 AI
+- 브랜치: `dagyeom/character-motion-v1` (main `f5c8cba` 기준)
+- 커밋: `df81c7a`
+- 상태: `WAITING_CI / PIE 확인 대기`
+- Sync Before Work: origin/main `f5c8cba`, PR #67 머지(`9159063`) 및 리뷰 3건 반영 확인, TEAM_BOARD의 `Character Motion Bootstrap — READY_NOW` 확인
+- 구현:
+  - `Content/Characters/Quaternius/UAL/BS_ResidentLocomotion` (BlendSpace1D, 속도축 0~600 cm/s, Idle/Walk/Jog/Sprint 4샘플). 생성 스크립트 `Import/make_locomotion_blendspace.py`
+  - `Source/LifeLens/Characters/LLResidentMotionComponent.h/.cpp` 신규. 액터 이동량을 0.2초 창으로 측정해 BlendSpace 입력으로 전달, 마지막 이동 방향으로 바디 yaw 보간
+  - `ll.DebugMotion` CVar(기본 0)
+  - `LLResidentCharacter`에 MotionComponent 추가(추가만)
+- 상대가 알아야 할 점:
+  - 월드 디렉터가 주민을 매 프레임 이동시키지 않아 프레임 단위 속도 표본이 0과 최대치를 오갑니다. 표현 계층에서 0.2초 창 평균으로 흡수했습니다. Core/World 쪽 변경은 요청하지 않습니다
+  - 표현용 회전은 바디 메시에만 적용하고 액터 회전은 건드리지 않았습니다. 이동·행동 권한은 그대로 Core/World에 있습니다
+  - 400 유닛을 넘는 단일 스텝은 순간 이동(로드/그리드 복원)으로 간주해 속도 0 처리합니다

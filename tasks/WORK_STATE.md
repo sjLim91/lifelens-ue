@@ -149,6 +149,25 @@ Motion Bootstrap scope:
 - remove Idle-looking slide.
 - Character animation remains presentation only; Core/World remains movement/action authority.
 
+### Dagyeom lane — Character Motion Bootstrap — ACTIVE
+
+Owner: 다겸 / 다겸 AI
+Branch: `dagyeom/character-motion-v1` (from main `f5c8cba`)
+
+Scope (board minimum):
+- Core-directive-driven Idle / Walk / Jog transition — 구현. 속도축 BlendSpace `BS_ResidentLocomotion`에 실제 이동 속도를 입력.
+- basic orientation smoothing — 구현. 바디 메시 yaw만 보간, 액터 회전·이동 권한 불변.
+- remove the current "Idle while sliding" presentation — 구현. 이동 중 Walk/Jog 블렌드.
+- no competing Character-side action chooser — 유지. 신규 컴포넌트는 읽기·표현만 수행.
+
+검증:
+- headless `-game`: BlendSpace 4샘플 재생, 측정 속도 180 cm/s가 `RuntimeMoveSpeed`와 일치, yaw가 이동 방향으로 수렴.
+- 로컬 `Build.sh LifeLensEditor Mac Development` Succeeded, `Tools/validate_bootstrap.py` PASS.
+
+미충족:
+- PIE 육안 확인(보행 애니메이션, 회전 자연스러움, 미끄러짐 해소).
+- CI 기록.
+
 ## Completed foundation / repair slices
 
 ### #66 World Affordance Fallback — DONE
