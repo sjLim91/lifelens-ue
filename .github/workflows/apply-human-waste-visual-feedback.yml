@@ -29,6 +29,7 @@ jobs:
 
       - name: Commit implementation and remove one-shot files
         run: |
+          git checkout HEAD -- .github/workflows/preflight.yml
           rm Tools/apply_human_waste_visual_feedback_patch.py
           rm .github/workflows/apply-human-waste-visual-feedback.yml
           git config user.name "LifeLens Visual Feedback Bot"
