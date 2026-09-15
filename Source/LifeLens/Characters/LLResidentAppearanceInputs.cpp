@@ -1,7 +1,10 @@
 #include "Characters/LLResidentAppearanceInputs.h"
 #include "Simulation/LLAppearanceProfile.h"
 
-namespace
+// Named (not anonymous) namespace: the unity build merges this file with
+// Simulation/LLAppearanceProfile.cpp, which has its own anonymous-namespace
+// helpers of the same name.
+namespace LLAppearanceInputsHash
 {
     // SplitMix64 finaliser: cheap, well-distributed, platform-independent.
     uint64 Mix64(uint64 Value)
@@ -38,24 +41,24 @@ FLLResidentAppearanceInputs ULLResidentAppearanceInputSource::MakeTemporaryAppea
     Inputs.Sex = Sex;
     Inputs.LifeStage = LifeStage;
 
-    const uint64 Base = SeedFrom(WorldSeed, ResidentId);
+    const uint64 Base = LLAppearanceInputsHash::SeedFrom(WorldSeed, ResidentId);
     Inputs.VisualSeed = static_cast<int32>(Base & 0x7FFFFFFFull);
     if (Inputs.VisualSeed == 0)
     {
         Inputs.VisualSeed = 1;
     }
 
-    Inputs.FaceAxis      = Axis(Base, 0x01);
-    Inputs.SkinToneAxis  = Axis(Base, 0x02);
-    Inputs.EyeColorAxis  = Axis(Base, 0x03);
-    Inputs.HairColorAxis = Axis(Base, 0x04);
-    Inputs.HeightAxis    = Axis(Base, 0x05);
-    Inputs.BuildAxis     = Axis(Base, 0x06);
+    Inputs.FaceAxis      = LLAppearanceInputsHash::Axis(Base, 0x01);
+    Inputs.SkinToneAxis  = LLAppearanceInputsHash::Axis(Base, 0x02);
+    Inputs.EyeColorAxis  = LLAppearanceInputsHash::Axis(Base, 0x03);
+    Inputs.HairColorAxis = LLAppearanceInputsHash::Axis(Base, 0x04);
+    Inputs.HeightAxis    = LLAppearanceInputsHash::Axis(Base, 0x05);
+    Inputs.BuildAxis     = LLAppearanceInputsHash::Axis(Base, 0x06);
 
     // Large variant spaces; consumers wrap to their catalogue sizes.
-    Inputs.FaceVariant      = Variant(Base, 0x11, 1024);
-    Inputs.HairStyleVariant = Variant(Base, 0x12, 1024);
-    Inputs.OutfitVariant    = Variant(Base, 0x13, 1024);
+    Inputs.FaceVariant      = LLAppearanceInputsHash::Variant(Base, 0x11, 1024);
+    Inputs.HairStyleVariant = LLAppearanceInputsHash::Variant(Base, 0x12, 1024);
+    Inputs.OutfitVariant    = LLAppearanceInputsHash::Variant(Base, 0x13, 1024);
 
     Inputs.bTemporaryPresentationSeed = true;
     return Inputs;

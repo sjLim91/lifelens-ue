@@ -107,3 +107,7 @@ lifelens_add_test(test_autonomous_civilization_loop)
 lifelens_add_test(test_civilization_knowledge_transmission)
 
 lifelens_add_test(test_civilization_observer_read_model)
+
+lifelens_add_test(test_environmental_residue)
+
+lifelens_add_test(test_external_physical_execution)

@@ -20,6 +20,24 @@ inline bool objectAvailableFor(const World& w, Goal g, CharacterId who) {
     for(const auto& o:w.objects) if(o.kind==kind && (!o.reservedBy || *o.reservedBy==who)) return true;
     return false;
 }
+inline bool emergencyAffordanceAvailableFor(const Character& c,Goal g) {
+    switch(g){
+        case Goal::Sleep:
+        case Goal::UseToilet:
+        case Goal::Wash:
+            return true;
+        case Goal::Eat:
+            return c.civilization.inventory.count(ItemKind::RawMaterial,MaterialKind::PlantFood)>0;
+        case Goal::Drink:
+            return c.civilization.inventory.count(ItemKind::RawMaterial,MaterialKind::Water)>0;
+        case Goal::Idle:
+        default:
+            return true;
+    }
+}
+inline bool actionAvailableFor(const World& w,const Character& c,Goal g) {
+    return objectAvailableFor(w,g,c.id) || emergencyAffordanceAvailableFor(c,g);
+}
 inline double needForGoal(const Character& c, Goal g) {
     switch(g){case Goal::Eat:return c.needs.hunger;case Goal::Drink:return c.needs.thirst;case Goal::Sleep:return c.needs.sleep;case Goal::UseToilet:return c.needs.bladder;case Goal::Wash:return c.needs.hygiene;default:return 0.0;}
 }
@@ -30,7 +48,7 @@ inline double utilityCurve(double n) {
 }
 inline double scoreGoal(const World& w,const Character& c,Goal g) {
     if(g==Goal::Idle) return 0.035;
-    if(!objectAvailableFor(w,g,c.id)) return 0.0;
+    if(!actionAvailableFor(w,c,g)) return 0.0;
     double s=utilityCurve(needForGoal(c,g));
     if(g==Goal::Sleep){ const int hour=(w.minute/60)%24; if(hour>=22||hour<6) s*=1.35; }
     if(g==Goal::Wash) s*=0.85+0.35*c.personality.conscientiousness;

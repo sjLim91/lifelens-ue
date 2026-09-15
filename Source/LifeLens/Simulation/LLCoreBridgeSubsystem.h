@@ -5,6 +5,7 @@
 #include "Simulation/LLCoreReadTypes.h"
 #include "Simulation/LLCoreActionTypes.h"
 #include "Simulation/LLCivilizationReadTypes.h"
+#include "Simulation/LLEnvironmentReadTypes.h"
 #include "LLCoreBridgeSubsystem.generated.h"
 
 namespace lifelens { class Simulation; }
@@ -38,6 +39,21 @@ public:
     UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Observer")
     void AdvanceCoreMinutes(int32 Minutes = 1);
 
+    UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Action")
+    void SetExternalPhysicalExecutionEnabled(bool bEnabled);
+
+    UFUNCTION(BlueprintPure, Category="LifeLens|Core|Action")
+    int32 GetPhysicalActionDurationTicks(
+        ELLCorePhysicalIntent Intent,
+        bool bEmergencyFallback) const;
+
+    UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Action")
+    bool CompleteResidentPhysicalAction(
+        FGuid ResidentId,
+        bool bEmergencyFallback,
+        int32 ResolvedGridX,
+        int32 ResolvedGridY);
+
     UFUNCTION(BlueprintPure, Category="LifeLens|Core|Observer")
     bool IsCoreRunning() const { return CoreSimulation != nullptr; }
 
@@ -66,6 +82,9 @@ public:
 
     UFUNCTION(BlueprintPure, Category="LifeLens|Core|Civilization")
     FLLCoreCivilizationWorldObservation GetCivilizationWorldObservation(int32 MaxRecentDiscoveries = 16) const;
+
+    UFUNCTION(BlueprintPure, Category="LifeLens|Core|Environment")
+    FLLCoreEnvironmentObservation GetEnvironmentObservation(int32 MaxResidues = 64) const;
 
     // Native persistence bridge. Unreal SaveGame stores these bytes; it never
     // serializes the compatibility resident projection as a second authority.

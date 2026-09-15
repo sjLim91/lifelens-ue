@@ -17,7 +17,7 @@
 
 - ACTIVE_LOCK 파일은 절대 수정하지 않는다.
 - 실제 즉시 착수 가능한 것은 `READY_NOW` 또는 `PARALLEL_SAFE_NOW`뿐이다.
-- `NEXT`/`AFTER`는 바로 실행 가능하다는 뜻이 아니다.
+- `NEXT`/`AFTER`/`READY_AFTER_*`는 바로 실행 가능하다는 뜻이 아니다.
 - current-main 기준으로 새 작업을 시작하고 stale stacked branch를 제품 기준으로 사용하지 않는다.
 
 ## Current product checkpoints
@@ -34,16 +34,19 @@
   - Preflight `34845789763` PASS
   - Unreal Linux Compile `34845789757` PASS including actual UE 5.6 UHT/UBT/link
   - use `FLLAppearanceProfile` / `ULLAppearanceProfileLibrary::MakeDeterministicAppearanceProfile(...)`
+- Character Appearance v1 — ACTIVE / PR #67 CLOSEOUT.
+  - branch `dagyeom/character-appearance-v1`
+  - reported PIE: four humanoid residents visible; deterministic appearance mapping active
+  - UAL animations imported; locomotion not wired yet
+  - remaining gates: required CI/compile record, Save/Load appearance continuity verification, minimum default clothing, merge + live-doc sync
 
 ## ACTIVE LOCK
 
 **없음. `ASSIST_LOCK-29-R1`은 RELEASED.**
 
-## READY_NOW
+## ACTIVE / CLOSEOUT
 
-### Character Appearance v1
-
-Start from current latest `main` at or after `86663cb10f245bf185984a3622e4a86596e14923`.
+### Character Appearance v1 — PR #67
 
 Detailed acceptance criteria: `docs/CHARACTER_APPEARANCE_ROADMAP.md`.
 Canonical asset decision: `docs/CHARACTER_ASSET_TRACK.md`.
@@ -51,45 +54,85 @@ Appearance projection contract: `docs/CHARACTER_APPEARANCE_DATA_CONTRACT.md`.
 
 **Default asset track: Track B — Quaternius CC0.**
 
-- baseline body: Quaternius Universal Base Characters pack version whose pack page explicitly states CC0
-- baseline animation source: Quaternius Universal Animation Library version whose pack page explicitly states CC0
-- record exact source/version/license provenance at import time
-- do not assume every Quaternius pack is CC0; verify any additional pack separately
-- MetaHuman is an upgrade/comparison path only after the Android smoke/performance gate is green
+Already established:
+- real humanoid skeletal mesh path
+- shared/common skeleton
+- deterministic #65 AppearanceProfile projection
+- resident visual differentiation
+- selection ring / label presentation preserved
+- asset provenance recorded for imported baseline packs
+
+Must be closed before DONE:
+- required GitHub/UE validation recorded
+- Save/Load produces the same appearance for the same resident/world
+- minimum default clothing set present; underwear-only presentation does not satisfy the current Appearance v1 minimum
+- final PR review/merge
+- live docs updated with merge SHA
+
+Additional skin-tone/detail variety beyond the minimum distinctness bar may be a follow-up enhancement. Additional Quaternius packs must have their exact pack/version/license verified independently.
+
+## READY_AFTER_#67
+
+### Character Motion Bootstrap — first slice of Motion & Context v1
+
+Dagyeom's Motion promotion request is accepted in principle. After PR #67 is validated, merged, and live docs are synchronized, start a **small locomotion slice first** instead of the full Motion milestone.
+
+Expected branch: `dagyeom/character-motion-v1` from latest `main`.
+
+Minimum bootstrap:
+- Core-directive-driven Idle / Walk / Jog or Run transition
+- basic orientation smoothing
+- remove the current "Idle while sliding" presentation
+- no competing Character-side action chooser or simulation authority
+
+The bootstrap should stay intentionally small so visual environment work can begin early.
+
+## READY_AFTER_MOTION_BOOTSTRAP — HIGH PRIORITY
+
+### World Visual Environment v1
+
+Canonical: `docs/WORLD_VISUAL_ENVIRONMENT_v1.md`.
+
+This milestone is intentionally promoted ahead of the remaining deep Motion/Context work.
+
+Expected branch: `dagyeom/world-visual-environment-v1` from the latest merged `main` after the locomotion bootstrap checkpoint.
+
+Dagyeom-owned presentation paths:
+- `Content/Environment/**`
+- `Content/Maps/**`
+- `Content/WorldPresentation/**`
 
 Minimum:
-- real humanoid skeletal mesh
-- skin / face / eyes / hair / default clothing
-- shared/common skeleton + modular appearance
-- map merged PR #65 `FLLAppearanceProfile` values/variant indices into presentation assets
-- NEW GAME residents visually distinct
-- Save/Load appearance continuity
-- Android LOD/mobile fallback
-- free-use asset license/provenance documented
+- non-placeholder natural terrain / ground
+- sky / lighting / atmosphere baseline
+- trees / grass / rocks / natural dressing
+- observer readability for resident labels and selection rings
+- Android-friendly LOD / instancing / material budget
+- no automatic modern infrastructure
+- visual-only decor must not become a second world authority
+- external asset source/version/license provenance recorded
 
-Implementation rules:
-- Core action/simulation authority remains in Core/Bridge.
-- Character presentation may read authoritative/projection data but must not add a competing action chooser or simulation authority.
-- do not create a second appearance SaveGame/cache; PR #65 deliberately provides deterministic projection from stable resident identity.
-- do not revive/rebase original stale PR #29 as the product path.
-- if genuinely new authoritative Genetics/SaveLoad data is needed beyond the merged contract, add an Integration Request to `tasks/TEAM_BOARD.md`.
-- keep Level 0 observer UX uncluttered.
+Do not edit `Source/LifeLensCore/**` or authoritative `Source/LifeLens/World/**` for visual convenience. If the environment presentation needs a new Core/World read API, add an Integration Request to `TEAM_BOARD.md`.
 
-## AFTER APPEARANCE
+## AFTER WORLD VISUAL ENVIRONMENT v1
 
-### Character Motion & Context v1 minimum
+### Character Motion & Context v1 — remaining scope
 
-- idle / walk / run
-- turn-in-place
+Continue the rest of the Motion milestone after the visual environment baseline:
+- turn-in-place refinement
 - sit / stand / lie / wake
 - gaze/head tracking
 - context interaction hook
 - basic IK / transition smoothing
 - visual action stays consistent with Core action directive
 
+Imported UAL animations may be reused if their exact provenance/license remains recorded.
+
+## AFTER HUMAN CHARACTER + WORLD VISUAL MINIMUM
+
 ### PR #30 Observer UX Polish
 
-Proceed only after Human Character Appearance/Motion minimum checkpoint.
+Proceed after the Human Character minimum and World Visual Environment v1 baseline.
 
 ### PR #36 Mobile Touch
 
@@ -115,20 +158,22 @@ Jjun default support = `REVIEW_ONLY`.
 
 1. Character Presentation v1 — DONE.
 2. Appearance data/projection support — DONE via PR #65.
-3. Character Appearance v1 — READY_NOW / Track B Quaternius CC0.
-4. Character Motion & Context v1 minimum.
-5. PR #30 Observer UX Polish.
-6. PR #36 Mobile Touch.
-7. PR #38 Visual Feedback.
-8. Core + Observer + Human Character integrated runtime verification.
-9. Android smoke APK + profiling.
-10. MetaHuman comparison / upgrade decision.
-11. Appearance Genetics & Lifecycle.
-12. Clothing/Equipment civilization linkage.
-13. deeper civilization production chains.
+3. Character Appearance v1 — ACTIVE / PR #67 CLOSEOUT.
+4. Character Motion Bootstrap — READY_AFTER_#67.
+5. **World Visual Environment v1 — HIGH PRIORITY / READY_AFTER_MOTION_BOOTSTRAP.**
+6. Character Motion & Context v1 remaining scope.
+7. PR #30 Observer UX Polish.
+8. PR #36 Mobile Touch.
+9. PR #38 Visual Feedback.
+10. Core + Observer + Human Character + World Visual integrated runtime verification.
+11. Android smoke APK + profiling.
+12. MetaHuman comparison / upgrade decision.
+13. Appearance Genetics & Lifecycle.
+14. Clothing/Equipment civilization linkage.
+15. deeper civilization production chains.
 
 ## Canonical product direction
 
 `Need / Curiosity → Gather → Store → Experiment → Discovery → Personal Knowledge → Craft/Build → Teach/Imitate → Culture → Specialization → Generational Civilization`
 
-Character/UI presentation은 원시 자원·도구부터 이후 기술까지 수용 가능하게 유지한다.
+Character/UI/environment presentation은 원시 자원·도구부터 이후 기술까지 수용 가능하게 유지하며, 실제 세계 상태의 authority는 Core/World에 둔다.
