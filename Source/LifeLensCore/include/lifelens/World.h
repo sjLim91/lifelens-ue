@@ -8,6 +8,7 @@
 #include "EnvironmentalResidue.h"
 #include "PrimitiveSanitation.h"
 #include "WorldGenesis.h"
+#include "MacroWorldGenesis.h"
 namespace lifelens {
 struct World {
     int minute=7*60;
@@ -50,6 +51,16 @@ struct World {
     UntouchedChunkBaseline untouchedChunkBaseline(ChunkCoord coord) const
     {
         return deriveUntouchedChunkBaseline(genesisIdentity(),coord);
+    }
+
+    MacroRegionFacts macroRegionFacts(ChunkCoord coord) const
+    {
+        return deriveMacroRegionFacts(genesisIdentity(),coord);
+    }
+
+    InitialStartRegionSelection initialStartRegion() const
+    {
+        return selectInitialStartRegion(genesisIdentity());
     }
 
     void resetCivilizationEnvironment()
