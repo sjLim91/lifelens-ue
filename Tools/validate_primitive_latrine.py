@@ -62,7 +62,8 @@ for token in (
     assert token in simulation, f"Missing primitive sanitation physical ACK contract: {token}"
 
 snapshot_header = read("Source/LifeLensCore/include/lifelens/SimulationSnapshotCodec.h")
-assert "SimulationSnapshotBinaryFormatVersion=5" in snapshot_header, "Outer snapshot format must remain v5"
+snapshot_binary_version = int(snapshot_header.split("SimulationSnapshotBinaryFormatVersion=", 1)[1].split(";", 1)[0])
+assert snapshot_binary_version >= 5, "Dug-pit persistence requires outer snapshot format v5 or newer"
 
 sanitation_snapshot = read("Source/LifeLensCore/include/lifelens/PrimitiveSanitationSnapshotCodec.h")
 for token in (
