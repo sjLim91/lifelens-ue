@@ -30,73 +30,78 @@ Last reconciled: 2026-09-15 KST
 ## Current product-code baseline
 
 Latest product merge:
-- PR #76 `[WORLD] Consume Core sanitation recommendation for emergency toilet movement`
-- merge SHA: `3bb50056311b3a9a75c6ce2bb2317b10163e69c5`
+- PR #77 `[CORE] Add sanitation problem recognition v1`
+- merge SHA: `3ea6048d9e7ac6b31e75faa4f5ca55b5c46f9016`
 
-Validated PR #76 head `e089857710f6ef5430f57940167362ff39d08d64`:
-- Structural Preflight run `34918024951`: PASS
-- Unreal Linux Compile run `34918024929`: PASS
+Validated PR #77 head `26a0af034364f7ae12b636cfc5a991d57fe729ab`:
+- Structural Preflight run `34919266787`: PASS
+- Core Tests run `34919266571`: PASS, 42/42
+- Unreal Linux Compile run `34919266720`: PASS
 - UE 5.6 UHT / UBT / link: PASS
 
-Delivered by #76:
-- WorldDirector consumes the exact Core sanitation recommendation GridPos for emergency Toilet movement.
-- Core Grid → Unreal movement uses the existing `CoreGridCellSizeUU` contract.
-- independent deterministic 650uu sanitation target removed.
-- recommendation failure fails closed rather than creating a second authority.
-- emergency Toilet arrival radius remains inside the authoritative Core cell before ACK.
-- visible movement/use → actual completion GridPos ACK → Core residue now share one location contract.
-- Structural Preflight guards the authority wiring.
+Delivered by #77:
+- direct sanitation/contamination Memory evidence can become an explicit resident-level sanitation-problem Belief.
+- ordinary weak exposure does not instantly create civilization knowledge.
+- repeated qualifying direct evidence, or one exceptionally salient direct event, can establish recognition.
+- recognition reuses existing Core Memory → Belief authority instead of a global tech/unlock flag.
+- evidence re-evaluation is idempotent (`max`, not repeated `+=`).
+- environmental perception reports recognized/newly-recognized/confidence.
+- snapshot encode/decode/restore preserves recognized Belief.
+- no pit/latrine is auto-unlocked; the next slice consumes the recognized concern as input to experimentation/progression.
 
 Documentation-only commits may advance `main` beyond the product-code baseline above.
 
 ## Current dispatch
 
-### Jjun lane — Sanitation Problem Recognition v1 — IN_PROGRESS
+### Jjun lane — Primitive sanitation experimentation / progression — READY_NOW
 
 Owner: 쭌 / 쭌 AI
-Branch: `jjun/sanitation-problem-recognition-v1`
-PR: not opened yet
-Dependency: PR #76 DONE.
-Handoff safety: SAFE at branch checkpoint; no uncommitted local dependency.
+Dependency: PR #77 DONE.
+Handoff safety: SAFE; no uncommitted local dependency.
 
 Goal:
-- repeated direct sanitation/contamination experience becomes an explicit resident-level recognized problem without a global magic unlock.
-- recognition derives from Core-owned Memory/environment evidence and survives Save/Load through existing Character/Belief authority.
-- recognized sanitation concern becomes a causal input for later primitive sanitation experimentation/designated-area/pit/latrine progression.
+- consume `hasRecognizedSanitationProblem(character)` as a causal input to the next civilization step.
+- recognized sanitation concern should motivate experimentation/designation before any durable sanitation affordance exists.
+- preserve the canonical causal chain: problem recognition → attempt/experiment → result/failure/discovery → personal knowledge → better sanitation affordance.
+- do not create a fixed global Tech Tree or instant `LatrineUnlocked=true` path.
 
 Implementation direction:
-- reuse #75 `environment`, `contamination`, `human_waste`, `avoidance`, `sanitation` memories rather than duplicating environment authority.
-- aggregate repeated/high-confidence sanitation memories into a deterministic problem-recognition signal.
-- promote qualifying evidence into an explicit sanitation-problem Belief rather than a presentation-only flag.
-- personality/experience may affect recognition threshold or urgency, but evidence remains required.
-- do not unlock a latrine merely because a global era/tech flag changes.
-- expose deterministic read/test contract for the next primitive sanitation slice.
+- start with the minimum primitive sanitation response: designated waste area and/or dug pit attempt, chosen through existing civilization intent/experiment machinery.
+- discovery remains resident/personal knowledge first; propagation comes later.
+- resource/material/environment feasibility must gate the result.
+- failed attempts remain evidence/learning rather than disappearing.
+- only after a successful discovery should a better sanitation affordance become available.
 
 Acceptance:
-- one weak/trace exposure does not instantly create civilization knowledge.
-- repeated or sufficiently strong direct sanitation evidence can produce recognized concern.
-- unrelated memories do not count.
-- same state/evidence produces deterministic recognition.
-- recognition persists via authoritative existing state, not presentation-only flags.
-- Core tests + Structural Preflight; UE compile only if Unreal-facing headers/bridge change.
+- residents without recognized sanitation concern do not manufacture sanitation experiments from nothing.
+- recognized concern can deterministically bias/seed a sanitation experiment opportunity.
+- no global auto-unlock.
+- failure and success are both representable and deterministic from the same state.
+- successful discovery can become durable personal knowledge and a later affordance input.
+- Core tests + Structural Preflight; UE compile only if Unreal-facing contracts change.
 
 Exact next action:
-- implement minimum Core sanitation recognition helper around Memory → Belief.
-- wire recognition at the environmental perception boundary without duplicate evidence ingestion.
-- add regression tests for threshold, unrelated-memory rejection, determinism and persistence-compatible Belief state.
+- reconcile existing `CivilizationIntent` / experiment APIs against the new sanitation Belief.
+- implement the smallest sanitation-specific experiment/discovery contract without bypassing generic civilization progression.
+- add tests for precondition rejection, deterministic attempt, failure/success outcome and no global unlock.
 
 ### Dagyeom lane — Character Appearance v1 — ACTIVE / PR #67 CLOSEOUT
 
 Owner: 다겸 / 다겸 AI
 PR: #67 `dagyeom/character-appearance-v1`
-Latest checked head: `b7941b951df8147627580ff5d4a55a851a705454`
+Latest checked head: `e034fe785ca46dd5cb39fd7d7e8710d677994a38`
 
-Latest actual workflow lookup for head `b7941b9`:
-- no workflow runs returned at the latest reconciliation checkpoint.
+Latest actual workflow lookup for head `e034fe7`:
+- Structural Preflight run `34919060096`: PASS.
+- Unreal Linux Compile run `34919060115`: PASS.
+
+Review status:
+- Jjun review `CHANGES_REQUESTED` remains active.
+- requested closeout items: remove committed `__pycache__/*.pyc` and add ignore rules; remove duplicate includes; verify/fix bright-skin male Peasant exposed-skin tone consistency.
+- no newer remote head or Dagyeom reply was present at the latest reconciliation checkpoint.
 
 Previously validated/reported checkpoints in PR #67:
-- Preflight: PASS.
-- Unreal Linux Compile: PASS.
+- Core Tests: PASS on earlier final code head.
 - local PIE / SaveLoad appearance continuity checks reported PASS in the PR body.
 
 Implemented/reported:
@@ -105,10 +110,13 @@ Implemented/reported:
 - hair / skin / body variation baseline.
 - UAL animation assets.
 - Peasant outfit integration.
+- head-only body derivative to prevent clothing penetration.
 - humanoid residents visible in PIE.
+- appearance construction moved after resident identity binding, fixing four residents receiving the same invalid-id temporary appearance.
 
 Remaining before DONE:
-- final review / merge / docs sync against the actual latest head.
+- close the three review items on a new remote HEAD.
+- final CI / review / merge / docs sync.
 
 Known limitation:
 - locomotion is not wired; Idle-looking slide remains until Motion Bootstrap.
@@ -175,6 +183,16 @@ Known limitation:
 - no independent World sanitation target remains.
 - Preflight + UE 5.6 UHT/UBT/link PASS.
 
+### #77 Sanitation Problem Recognition v1 — DONE
+- direct sanitation Memory evidence promotes to a durable resident sanitation-problem Belief.
+- weak single exposure is insufficient; repeated or exceptionally salient direct evidence can qualify.
+- unchanged evidence does not inflate support/confidence.
+- environmental perception integration + new-recognition event.
+- snapshot persistence through existing Character/Belief authority.
+- no global tech unlock / no automatic latrine creation.
+- Core 42/42 + Preflight + UE 5.6 UHT/UBT/link PASS.
+- merge SHA `3ea6048d9e7ac6b31e75faa4f5ca55b5c46f9016`.
+
 ## Character / presentation sequence
 
 1. Character Presentation v1 — DONE via #63.
@@ -199,8 +217,8 @@ Canonical causal chain:
 
 Immediate sequence:
 1. WorldDirector sanitation recommendation integration — DONE #76.
-2. Sanitation Problem Recognition v1 — IN_PROGRESS.
-3. Primitive sanitation discovery / designated area / pit / latrine progression.
+2. Sanitation Problem Recognition v1 — DONE #77.
+3. Primitive sanitation discovery / designated area / pit / latrine progression — READY_NOW.
 4. HumanWaste Environmental Visual Feedback.
 5. Health/pathogen and water/soil contamination later.
 
@@ -289,8 +307,8 @@ Do not revive the old multi-hour PR #2 path as the default loop.
 10. #74 runtime position restore — DONE.
 11. #75 environment exposure/perception/avoidance — DONE.
 12. #76 World sanitation recommendation integration — DONE.
-13. **Sanitation Problem Recognition — IN_PROGRESS.**
-14. Primitive Latrine / sanitation affordance progression.
+13. #77 Sanitation Problem Recognition — DONE.
+14. **Primitive sanitation experimentation / affordance progression — READY_NOW.**
 15. HumanWaste visual feedback.
 16. Character Appearance #67 — ACTIVE in parallel.
 17. Motion Bootstrap — after #67.
