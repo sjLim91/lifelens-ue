@@ -116,16 +116,29 @@ Speech bubbles/Event Feed/localization follow `docs/SOCIAL_COMMUNICATION_LOCALIZ
 
 ## Phase 4 — Civilization/context work
 
-`Gather / Craft / Work / Dig / Build / Carry` need explicit authoritative context-action read data before animation routing is considered complete.
+The current authoritative resident-level civilization actions are exactly:
+- `Gather`
+- `Store`
+- `Experiment`
+- `Craft`
+
+These are projected through the typed civilization section of `FLLCoreActionDirective` together with authoritative result/provenance fields such as material, item, technique, quantity, resource/storage identifiers, success, and action minute.
+
+Important truthfulness rules:
+- `Work / Dig / Build / Carry` are **not** standalone resident action authorities in the current Core and must not be invented by Presentation.
+- a dug sanitation pit is represented by the real Core action `Craft` plus `Technique=DugSanitationPit`; Character Presentation may choose a kneeling/dig-like visual for that typed combination.
+- current `ResourceNode` and `StorageSite` records do not own authoritative world-grid positions. Their stable IDs may be exposed, but Presentation must not pretend an arbitrary nearby tree/rock/container is the target.
+- when Core sanitation-site creation/improvement provides a real grid position, the directive may set `bHasCivilizationSpatialTarget=true` and provide that target.
+- civilization presentation context is transient runtime read data only. It is deliberately not persisted, so loading a save must not replay an old work animation.
 
 Jjun/Core responsibility:
-- expose a stable typed context-action contract for civilization/work execution where current contracts are insufficient.
-- include target/object/location identifiers only when they are authoritative and needed for presentation.
+- expose and preserve the stable typed contract for actual civilization execution.
+- include target/object/location identifiers only when they are authoritative.
+- add spatial authority to resource/storage systems separately if/when the simulation gains real positioned resource/storage entities.
 
 Dagyeom/Character responsibility:
 - map the typed context action to validated animations such as `PickUp_Table`, `Fixing_Kneeling`, generic `Interact`, or future free/CC0 assets.
-
-Do not infer civilization action solely from nearby scenery or animation choice.
+- select visuals from the authoritative action + technique/material/result fields, never from nearby scenery guesses.
 
 ## Missing-animation rule
 
@@ -148,6 +161,7 @@ A context-motion slice is DONE only when:
 - missing facilities use outdoor/emergency visual fallbacks instead of fabricated infrastructure.
 - toilet/private action privacy mask follows the action state and does not obscure the whole resident.
 - indoor toilet alignment uses an explicit interaction point and does not visibly miss the fixture.
+- civilization actions display only authoritative `Gather/Store/Experiment/Craft` context; missing resource/storage positions are not fabricated.
 - male/female/outfit variants are checked.
 - Android presentation remains within performance budget.
 
@@ -159,5 +173,6 @@ A context-motion slice is DONE only when:
 4. Wire `Sitting_Enter/Idle/Exit` where a real sit affordance exists.
 5. Wire `Interact` / `PickUp_Table` / `Fixing_Kneeling` to authoritative matching contexts.
 6. Add validated fallback presentation for Eat/Drink/Sleep/Toilet/Hygiene when no dedicated animation exists, including the reusable Privacy Mask for Toilet/outdoor sanitation.
-7. Extend Core context-action read contract for Gather/Craft/Work/Dig/Build/Carry.
-8. Replace generic fallbacks over time with dedicated validated free/CC0 animations.
+7. Consume the typed Core civilization contract for `Gather/Store/Experiment/Craft`; use `Craft + DugSanitationPit` for pit-work presentation and do not invent standalone Work/Dig/Build/Carry actions.
+8. Add authoritative spatialization for resource/storage targets in a later Core/World slice before scenery-specific gather/store alignment is attempted.
+9. Replace generic fallbacks over time with dedicated validated free/CC0 animations.
