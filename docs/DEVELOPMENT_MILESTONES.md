@@ -23,24 +23,41 @@
 - **Character Motion Bootstrap #84 — DONE.**
 - **World Generation Milestone A #87 — DONE.**
 
-## Gate A — Integrated Runtime Checkpoint A — READY_NOW
+## Gate A — Integrated Runtime Checkpoint A — IN_PROGRESS
 
-Owner: joint integration; Jjun coordinates runtime/authority verification, Dagyeom presentation lane participates as needed.
+Owner: joint integration; Jjun coordinates runtime/authority verification, Dagyeom performs presentation PIE QA.
+
+Current gate state:
+- **Jjun Core/World runtime side: PASS** — Run `34943197031`, Job `104296410531`.
+- **Dagyeom PIE visual side: PENDING.**
+- Full Gate A remains open until the visual side passes or any actual visual blocker is resolved.
 
 Purpose: 처음으로 `main`의 실제 vertical slice를 한 번에 확인한다.
 
 Acceptance:
-- NEW GAME starts successfully.
-- WG-2 selected initial region is the region materialized by Milestone A.
-- four founders are physically projected inside that materialized region.
-- no starting house/toilet/farm/storage/road/tool/modern infrastructure appears.
-- Character Appearance + Idle/Walk/Jog + orientation presentation works in the integrated runtime.
-- existing AI movement/action flow still follows Core/World authority.
-- HumanWaste/environmental visual feedback can be reconstructed from authoritative Core state.
-- Save/Load does not silently reroll generated natural state and restores resident/world projection coherently.
-- Observer can inspect residents after start/load.
+- NEW GAME starts successfully. **Runtime PASS**
+- WG-2 selected initial region is the region materialized by Milestone A. **Runtime PASS**
+- four founders are physically projected inside that materialized region at initial spawn. **Runtime PASS / visual confirmation pending**
+- no starting house/toilet/farm/storage/road/tool/modern infrastructure appears. **Core PASS / visual confirmation pending**
+- Character Appearance + Idle/Walk/Jog + orientation presentation works in the integrated runtime. **PIE pending**
+- existing AI movement/action flow still follows Core/World authority. **Runtime contract PASS**
+- HumanWaste/environmental feedback is reconstructed from authoritative Core state. **Core/runtime PASS / visual placement pending**
+- Save/Load does not silently reroll generated natural state and restores resident/world projection coherently. **Core/runtime PASS / visual continuity pending**
+- Observer can inspect residents after start/load. **Core read-model PASS / PIE usability pending**
 
-Until this gate is checked, **Dagyeom does not start an additional product milestone.**
+Jjun runtime evidence from the corrected Gate A run:
+- 4 founders: 2 male / 2 female.
+- selected/materialized replay start chunk: `(-12, 6)`.
+- initial generated natural chunk registry count: 1.
+- autonomous missing-toilet path produced authoritative HumanWaste: 1 residue.
+- Save/Load restored exact save-checkpoint resident positions.
+- generated natural baseline survived restore without reroll.
+- immediate snapshot roundtrip and another 120 minutes of deterministic continuation were byte-identical.
+- supporting production-new-game, world-generation, external-physical-execution, environmental-residue/exposure, core-save-load and civilization-observer contracts all passed.
+
+The earlier Run `34943075204` failed only because the temporary validation harness incorrectly assumed residents must remain in their initial chunk after autonomous movement. That expectation was corrected; no product code change was required.
+
+Until Gate A fully closes, **Dagyeom does not start an additional product milestone.**
 
 ## Milestone B — World Visual Milestone A — AFTER GATE A
 
@@ -97,6 +114,10 @@ These remain product direction, not immediate dispatch:
 
 ## Current dispatch
 
-**Only Gate A — Integrated Runtime Checkpoint A is READY_NOW.**
+**Only the remaining PIE visual half of Gate A is actionable.**
+
+- Jjun: runtime side PASS; hold unless visual QA proves an integration/config blocker.
+- Dagyeom: perform Gate A PIE visual QA and report PASS or exact repro evidence.
+- World Visual Milestone A remains `AFTER GATE A`, not READY_NOW yet.
 
 `tasks/WORK_STATE.md` contains the current live execution state. `tasks/TEAM_BOARD.md` contains ownership/locks/Integration Requests.
