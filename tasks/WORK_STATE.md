@@ -4,7 +4,7 @@
 > Long-term order: `docs/DEVELOPMENT_MILESTONES.md`.
 > Durable design decisions: `docs/DECISION_LOG.md`.
 
-Last reconciled: 2026-09-16 KST after Observer Camera Control v1 dispatch (#105).
+Last reconciled: 2026-09-16 KST after Early Survival Provisioning #106 merge and Android seed Run #3 failure capture.
 
 ## Recently closed product checkpoints
 
@@ -53,14 +53,29 @@ Last reconciled: 2026-09-16 KST after Observer Camera Control v1 dispatch (#105)
 - runtime work provenance is not persisted in snapshots, preventing stale work animation replay after load.
 - `FLLCoreActionDirective` now exposes action/result/material/item/technique/quantity/time/stable IDs and only exposes a spatial target when Core actually owns one.
 - Character presentation files were not modified by the provider PR.
-- TEAM_BOARD IR-D is now provider-complete and ready for Dagyeom Context Motion consumption.
+- TEAM_BOARD IR-D is provider-complete and ready for Dagyeom Context Motion consumption.
 
-### Android Fast Pipeline recovery — MERGED / RUNTIME VALIDATION PENDING
+### Early Survival Provisioning — DONE
+- PR #106 `[CORE] Early survival provisioning — prevent urgent food/water deadlock` merged.
+- feature head: `a028388dede5d5de8753659b240f3d46b44bd444`.
+- Core Tests #494 (`35005155297`): PASS.
+- Preflight #606 (`35005155299`): PASS.
+- squash merge: `4b8c938629cca18fafad00de0abcfb8cf41b36c9`.
+- root cause: ordinary Civilization was suppressed once `maximumResidentNeed >= 0.74`, while Eat/Drink were unavailable without a real facility or carried PlantFood/Water. A resident could therefore become too hungry/thirsty to gather the very provision required to recover.
+- fix is deliberately narrow: only urgent Hunger/Thirst with zero matching carried provision and a real matching ResourceNode can promote that actual `Civilization::Gather` as survival acquisition. Craft/Experiment/Store and unrelated Gather remain suppressed by urgent survival pressure.
+- no resource is synthesized; the existing real ResourceNode Gather execution remains authoritative.
+- `test_early_survival` proves worst-case zero-inventory recovery and a four-founder/four-day production-like New Game path with actual Water/PlantFood Gather plus Drink/Eat completions.
+- the same regression confirms outdoor toilet emergency fallback still leaves authoritative HumanWaste residue.
+- Unreal Linux Compile #127 auto-triggered despite pure-Core scope; it was not a merge gate and no rerun is required for this Core-only change.
+
+### Android Fast Pipeline recovery — MERGED / FIRST SEED FAILED
 - PR #101 recovered the `seed / fast / full` workflow and merged as `fe97884f3f2bcf71b5a508cdce2e2ca8f42d912c`.
 - stale PR #2 was closed unmerged after its obsolete Core bridge was intentionally excluded.
-- first manual `seed` Run #3 (`34979129395`) remains `in_progress` at the last live check, currently in `Seed Linux cook tools`.
-- current workflow gives `Seed Linux cook tools` 120 minutes and the full job 300 minutes; the observed first-seed compile rate creates a material timeout risk.
-- do not blindly rerun the same multi-hour seed if it fails/times out. Inspect the exact failure stage and redesign the seed path around durable checkpoints/split work before another expensive attempt.
+- first manual `seed` Run #3 (`34979129395`), job `104414522147`, completed **FAILURE**.
+- successful setup stages: checkout, disk reclaim, Java 21, Android SDK/NDK, exact UE 5.6 revision resolution, UE source clone, dependency restore, Setup, GenerateProjectFiles.
+- failure stage: Step 14 `Seed compiled engine — Linux cook tools`.
+- Android compile, cache creation/save, APK package/verify/upload were skipped after that failure.
+- exact Step 14 root cause is still under investigation; do **not** rerun the same multi-hour seed until the specific log error is identified and the workflow is corrected.
 - after a genuinely successful seed/cache creation, normal APK validation should use `fast`.
 
 ## Current active product work
@@ -70,13 +85,15 @@ Last reconciled: 2026-09-16 KST after Observer Camera Control v1 dispatch (#105)
 - durable decision: D-010.
 - branch: `jjun/observer-camera-control-v1`.
 - PR #105: `[Observer] Camera Control v1 — PC orbit/zoom/pan + Android gestures`.
-- current head at dispatch: `22496055594243c0c1ca5f9c5ffda6b82da4fa0c`.
+- latest verified code head: `909328292703272c5af717c2222d851df96d295a`.
+- Preflight #602: PASS.
+- Unreal Linux Compile #126: PASS.
 - PC contract: wheel zoom, right-drag orbit, middle-drag pan, left-click selection preserved.
 - Android contract: short tap selection on release, one-finger orbit, pinch zoom, two-finger pan.
 - camera uses distance/elevation clamps and smoothing; resident selection does not force camera movement.
 - `ASSIST_LOCK-UI-CAMERA-1` is ACTIVE because `LLObserverPlayerController.*` is Dagyeom UI ownership.
 - old stacked HUD PR consolidation (#30/#36/#38) is intentionally separate and paused while this lock is active.
-- required gates: Preflight + Unreal Linux Compile, then PIE and Android gesture QA.
+- compile gates are complete, but actual PIE/Android gesture QA is still required before merge. Do not mark DONE from compile alone.
 
 ## Current validation risk
 
@@ -92,12 +109,13 @@ The compile gates prove C++/UHT/UBT integration, not every presentation variant.
 
 ## Jjun lane
 
-Status: `PR #105 ACTIVE / ANDROID SEED VALIDATION RISK ALSO ACTIVE`
+Status: `PR #105 VISUAL QA PENDING / ANDROID SEED FAILURE ROOT-CAUSE INVESTIGATION ACTIVE`
 
 Current facts:
-- PR #105 is the active observer-camera assist PR.
+- #106 Early Survival Provisioning is merged and no longer active.
+- PR #105 remains open because camera input requires actual PIE/Android gesture QA after passing Preflight/UE compile.
 - camera work touches Dagyeom-owned `LLObserverPlayerController.*` only under explicit `ASSIST_LOCK-UI-CAMERA-1`.
-- Android seed Run #3 (`34979129395`) is independent; do not start another expensive seed/full Android job until that run finishes/fails or is intentionally stopped and the checkpoint strategy is decided.
+- Android seed Run #3 (`34979129395`) failed specifically at Step 14 `Seed compiled engine — Linux cook tools`; do not start another expensive seed/full Android job until the exact error is identified and fixed.
 - IR-D implementation itself belongs to Dagyeom Character Presentation; Jjun provider work is complete unless a real contract deficiency is found.
 
 ## Tracked implementation gaps — DO NOT DROP
@@ -169,15 +187,16 @@ Required follow-up in Character Presentation:
 - privacy-first Toilet/outdoor sanitation sequence with reusable local Privacy Mask.
 - consume merged typed `Gather / Store / Experiment / Craft` data from #103.
 
-### Early-survival / all-needs-critical investigation
+### Early-survival follow-up QA
 
-PIE capture showed Day 4 with all five needs `Very low` and repeated `UseToilet`. This is not yet classified as a confirmed simulation defect.
+The confirmed food/water acquisition deadlock from the Day-4 investigation is resolved by #106 and covered by a deterministic four-founder/four-day regression.
 
-Required validation:
-- run a deterministic New Game through at least the first 4 simulation days and record five needs, inventory, selected goals, civilization decisions, and physical completion ACKs per founder.
-- prove food/water acquisition and consumption occur before urgent survival pressure can deadlock civilization acquisition.
-- prove outdoor sleep/toilet/wash fallbacks relieve the matching need.
-- if deadlocked, fix causal acquisition/decision logic rather than hiding it in labels or seeding fake modern facilities.
+Still worth checking in the next real PIE/APK runtime pass:
+- Sleep fallback visibly and causally relieves Energy as expected through the UE execution/ACK path.
+- outdoor Hygiene fallback visibly and causally relieves Hygiene as expected through the UE execution/ACK path.
+- the Observer no longer shows all five needs pinned at the hard floor from the old provisioning deadlock.
+
+Do not reopen the food/water deadlock unless runtime evidence contradicts the new Core regression; treat sleep/wash execution as separate physical-action QA.
 
 ## Dagyeom lane
 
@@ -195,8 +214,8 @@ Status: `IR-B DONE / IR-D CONTEXT MOTION READY / UI CAMERA ASSIST LOCK ACTIVE`
 - Formal Integration Requests: **IR-D open**, provider DONE / presentation consumption READY.
 - Assist locks: **ASSIST_LOCK-UI-CAMERA-1 ACTIVE**.
 - Open Jjun code PRs from the current work: **#105**.
-- Android seed Run #3 is independent and still running at the last live check.
+- Android seed Run #3 is **FAILED at Step 14**; exact root cause investigation is active and another seed run is blocked until fixed.
 
 ## Long compile rule
 
-When a long UE compile/package is started, record HEAD + Run ID and continue safe independent work. Do not continuously poll. A successful compile is evidence for integration correctness; visual quality still requires PIE/APK validation.
+When a long UE compile/package is started, record HEAD + Run ID and continue safe independent work. Do not continuously poll. A successful compile is evidence for integration correctness, while visual/input quality still requires appropriate PIE/APK validation.
