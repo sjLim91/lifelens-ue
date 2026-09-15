@@ -1,5 +1,6 @@
 #include "Characters/LLResidentCharacter.h"
 #include "AI/LLDecisionComponent.h"
+#include "Characters/LLResidentAppearanceComponent.h"
 #include "Characters/LLResidentPresentationComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
@@ -32,6 +33,9 @@ ALLResidentCharacter::ALLResidentCharacter()
     NameLabel->SetWorldSize(28.0f);
     NameLabel->SetTextRenderColor(FColor::White);
 
+    // Appearance builds the human body first; Presentation (ring, label,
+    // silhouette fallback) reads it in its own BeginPlay.
+    AppearanceComponent = CreateDefaultSubobject<ULLResidentAppearanceComponent>(TEXT("AppearanceComponent"));
     PresentationComponent = CreateDefaultSubobject<ULLResidentPresentationComponent>(TEXT("PresentationComponent"));
 }
 
@@ -72,6 +76,18 @@ void ALLResidentCharacter::BindResident(const FLLResidentData& ResidentData)
     if (NameLabel)
     {
         NameLabel->SetText(ResidentDisplayName);
+    }
+
+    // Appearance is deterministic per ResidentId, so it can only be built once
+    // the identity is known. Both calls are idempotent and re-binding the same
+    // resident does not rebuild.
+    if (AppearanceComponent)
+    {
+        AppearanceComponent->EnsureBuilt();
+    }
+    if (PresentationComponent)
+    {
+        PresentationComponent->OnResidentBound();
     }
 }
 

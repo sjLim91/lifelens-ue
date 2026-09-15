@@ -140,6 +140,13 @@ Remaining before DONE:
 Known limitation:
 - locomotion is not wired; Idle-looking slide remains until Motion Bootstrap.
 
+다겸 측 갱신 (2026-09-15, head `b7941b9` + origin/main merge):
+- final PIE outfit confirmation: 완료. Peasant 의상 관통 없음, 목 이음매 없음. 전신 메시 관통은 파생 머리 전용 메시(`Head`/`neck_01` 삼각형만 유지, `Import/make_headonly_gltf.py`)로 해소.
+- same-resident appearance continuity across restart/load: 완료. headless `-game` 실행 A에서 자동 저장 후 실행 B가 동일 세이브를 로드해 주민 4명의 id·seed·skin·eye·hair·height·build·outfit 값 완전 일치. 대조군(세이브 제거)에서만 다른 주민 생성.
+- 부수 결함 수정 `fc15341`: 스폰 직후 `BeginPlay`에서 `ResidentId`가 무효라 전원이 동일 임시 해시 외형을 받고 #65 계약이 우회되던 문제. `BindResident` 이후로 외형 생성 시점 이동.
+- CI: head `6d814e3` Preflight `34916984761` PASS, Unreal Linux Compile `34916984865` PASS.
+- 남은 것: final review / merge / docs sync.
+
 ## Completed foundation / repair slices
 
 ### #66 World Affordance Fallback — DONE

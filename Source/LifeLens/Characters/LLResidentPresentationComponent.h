@@ -5,6 +5,7 @@
 #include "Core/LLTypes.h"
 #include "LLResidentPresentationComponent.generated.h"
 
+class ULLResidentAppearanceComponent;
 class UMaterialInstanceDynamic;
 class UMaterialInterface;
 class UStaticMesh;
@@ -29,6 +30,11 @@ public:
 
     virtual void BeginPlay() override;
     virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+
+    // Called once the owner knows which resident it represents. The human body
+    // can only be built then, so the fallback silhouette created in BeginPlay
+    // is removed here.
+    void OnResidentBound();
 
     // ---- Silhouette (adult, unscaled; multiplied by the LifeStage factor) ----
     // Reference is the DebugBody cube: 55 x 55 x 90, centred on the actor
@@ -111,6 +117,12 @@ private:
 
     UPROPERTY()
     TObjectPtr<UTextRenderComponent> Label;
+
+    // Character Appearance v1: when the owner's appearance component has built
+    // a human body, the silhouette is not created and the label sits above
+    // that body. The silhouette remains the fallback without assets.
+    UPROPERTY()
+    TObjectPtr<ULLResidentAppearanceComponent> Appearance;
 
     ELLLifeStage LifeStage = ELLLifeStage::Adult;
     ELLSex Sex = ELLSex::Male;

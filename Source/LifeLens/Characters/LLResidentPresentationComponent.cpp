@@ -1,4 +1,5 @@
 #include "Characters/LLResidentPresentationComponent.h"
+#include "Characters/LLResidentAppearanceComponent.h"
 #include "Characters/LLResidentCharacter.h"
 #include "Simulation/LLSimulationSubsystem.h"
 #include "UI/LLObservationSubsystem.h"
@@ -49,10 +50,68 @@ void ULLResidentPresentationComponent::BeginPlay()
     if (AActor* Owner = GetOwner())
     {
         Label = Owner->FindComponentByClass<UTextRenderComponent>();
+        Appearance = Owner->FindComponentByClass<ULLResidentAppearanceComponent>();
     }
 
-    BuildSilhouette();
+    // Human body from Character Appearance v1 takes precedence; the
+    // cylinder/sphere silhouette is only the asset-less fallback.
+    if (Appearance)
+    {
+        Appearance->EnsureBuilt();
+    }
+    // The world director binds the resident right after spawning the actor, so
+    // at BeginPlay the identity is usually still unknown and the appearance
+    // cannot be built yet. Wait for OnResidentBound() instead of falling back
+    // to a silhouette that would be discarded one call later.
+    const ALLResidentCharacter* Resident = Cast<ALLResidentCharacter>(GetOwner());
+    const bool bAwaitingIdentity = Resident && !Resident->GetResidentId().IsValid();
+
+    const bool bHasHumanBody = Appearance && Appearance->HasBody();
+    if (!bHasHumanBody && !bAwaitingIdentity)
+    {
+        BuildSilhouette();
+    }
     BuildRing();
+    if (bHasHumanBody || Torso)
+    {
+        HideDebugBody();
+    }
+    RefreshResidentData();
+    ApplySilhouetteScale();
+    UpdateRing();
+    UpdateLabel();
+}
+
+void ULLResidentPresentationComponent::OnResidentBound()
+{
+    if (!Appearance)
+    {
+        return;
+    }
+    Appearance->EnsureBuilt();
+    if (!Appearance->HasBody())
+    {
+        // No human body for this resident: build the silhouette fallback that
+        // BeginPlay deferred.
+        if (!Torso)
+        {
+            BuildSilhouette();
+        }
+    }
+    else if (Torso)
+    {
+        // A human body arrived after a silhouette had already been built; drop
+        // the placeholder meshes.
+        Torso->DestroyComponent();
+        Torso = nullptr;
+        if (Head)
+        {
+            Head->DestroyComponent();
+            Head = nullptr;
+        }
+        SilhouetteMaterial = nullptr;
+    }
+
     HideDebugBody();
     RefreshResidentData();
     ApplySilhouetteScale();
@@ -62,7 +121,8 @@ void ULLResidentPresentationComponent::BeginPlay()
 
 void ULLResidentPresentationComponent::HideDebugBody()
 {
-    if (!bHideDebugBody || !Torso)
+    const bool bHasHumanBody = Appearance && Appearance->HasBody();
+    if (!bHideDebugBody || (!Torso && !bHasHumanBody))
     {
         return;
     }
@@ -213,7 +273,10 @@ void ULLResidentPresentationComponent::ApplySilhouetteScale()
     }
     if (Label)
     {
-        Label->SetRelativeLocation(FVector(0.0f, 0.0f, Base + Height + 2.0f * Radius + LabelAboveHead));
+        const float LabelZ = (Appearance && Appearance->HasBody())
+            ? Appearance->GetVisualTopOffset() + LabelAboveHead
+            : Base + Height + 2.0f * Radius + LabelAboveHead;
+        Label->SetRelativeLocation(FVector(0.0f, 0.0f, LabelZ));
     }
 }
 

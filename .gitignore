@@ -9,3 +9,5 @@ Saved/
 *.opensdf
 *.sdf
 *.VC.db
+__pycache__/
+*.pyc

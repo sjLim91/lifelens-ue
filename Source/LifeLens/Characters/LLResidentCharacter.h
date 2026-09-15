@@ -6,6 +6,7 @@
 #include "LLResidentCharacter.generated.h"
 
 class ULLDecisionComponent;
+class ULLResidentAppearanceComponent;
 class ULLResidentPresentationComponent;
 class UStaticMeshComponent;
 class UTextRenderComponent;
@@ -45,6 +46,9 @@ public:
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="LifeLens|AI")
     TObjectPtr<ULLDecisionComponent> DecisionComponent;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="LifeLens|Presentation")
+    TObjectPtr<ULLResidentAppearanceComponent> AppearanceComponent;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="LifeLens|Presentation")
     TObjectPtr<ULLResidentPresentationComponent> PresentationComponent;
