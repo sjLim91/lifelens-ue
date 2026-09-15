@@ -19,6 +19,8 @@ required = [
     'Source/LifeLens/Simulation/LLCoreBridgePersistence.cpp',
     'Source/LifeLens/Simulation/LLCoreCompileUnit.cpp',
     'Source/LifeLens/Save/LLSaveGame.h',
+    'Source/LifeLensCore/include/lifelens/SimulationRuleset.h',
+    'Source/LifeLensCore/include/lifelens/SimulationRulesetSnapshotCodec.h',
     'Source/LifeLensCore/include/lifelens/SimulationSnapshot.h',
     'Source/LifeLensCore/include/lifelens/SimulationSnapshotCodec.h',
     'Source/LifeLensCore/include/lifelens/SanitationProblemRecognition.h',
@@ -65,17 +67,22 @@ for token in (
     'GetFamilyObservation',
     'AdvanceCoreMinutes',
     'RefreshProjectionFromCore',
-    'SaveObject->SaveVersion = 2;',
+    'SaveObject->SaveVersion = ULLSaveGame::CurrentSaveVersion;',
     'SaveObject->CoreSnapshotBytes = MoveTemp(SnapshotBytes);',
     'CaptureCoreSnapshotBytes',
     'RestoreCoreSnapshotBytes',
-    'SaveObject->SaveVersion == 2',
-    'SaveObject->SaveVersion == 1',
-    'TargetMinute - StartMinute',
+    'SaveObject->SaveVersion != ULLSaveGame::CurrentSaveVersion',
     'ApplyActionOutcome',
     'ApplySocialInteraction',
 ):
     assert token in sim, f'Missing Core-authoritative runtime/save contract: {token}'
+for obsolete in (
+    'SaveObject->SaveVersion == 1',
+    'SaveObject->SaveVersion == 2',
+    'TargetMinute - StartMinute',
+    'StartCoreNewGame(SaveObject->WorldSeed)',
+):
+    assert obsolete not in sim, f'Pre-release SaveGame migration path must stay removed: {obsolete}'
 assert 'Residents.Add(GenerateAdult' not in sim
 assert 'Residents = SaveObject->Residents' not in sim
 assert 'Relationships = SaveObject->Relationships' not in sim
@@ -85,11 +92,19 @@ assert 'MakeDeterministicGuid(Random)' not in sim
 
 save_h = (root / 'Source/LifeLens/Save/LLSaveGame.h').read_text(encoding='utf-8')
 for token in (
-    'SaveVersion = 2',
+    'CurrentSaveVersion = 3',
+    'int32 SaveVersion = CurrentSaveVersion',
     'TArray<uint8> CoreSnapshotBytes',
     'UPROPERTY(SaveGame)',
 ):
-    assert token in save_h, f'Missing SaveGame v2 snapshot contract: {token}'
+    assert token in save_h, f'Missing current SaveGame snapshot contract: {token}'
+for obsolete in (
+    'int32 WorldSeed',
+    'int64 SimulationMinute',
+    'TArray<FLLResidentData> Residents',
+    'TArray<FLLRelationshipData> Relationships',
+):
+    assert obsolete not in save_h, f'Pre-release SaveGame compatibility payload must stay removed: {obsolete}'
 
 bridge_h = (root / 'Source/LifeLens/Simulation/LLCoreBridgeSubsystem.h').read_text(encoding='utf-8')
 for token in (
@@ -169,6 +184,9 @@ for token in (
     'decodeSimulationSnapshot',
     'restoreSnapshot',
     'std::make_unique<lifelens::Simulation>',
+    'Snapshot.world.populationSeed',
+    'Snapshot.world.generationVersion',
+    'Snapshot.ruleset',
     'RebuildGuidIndex()',
 ):
     assert token in bridge_persistence, f'Missing Core snapshot persistence bridge: {token}'
@@ -219,24 +237,112 @@ for token in (
 ):
     assert token in compile_unit, f'Missing Core compile unit source: {token}'
 
+ruleset_h = (root / 'Source/LifeLensCore/include/lifelens/SimulationRuleset.h').read_text(encoding='utf-8')
+for token in (
+    'struct NeedsRuleset',
+    'struct UtilityAIRuleset',
+    'struct SimulationRuleset',
+    'DefaultSimulationRuleset',
+    'validSimulationRuleset',
+    'sameSimulationRuleset',
+):
+    assert token in ruleset_h, f'Missing SimulationRuleset contract: {token}'
+
+needs_h = (root / 'Source/LifeLensCore/include/lifelens/Needs.h').read_text(encoding='utf-8')
+for token in (
+    'const NeedsRuleset& rules',
+    'rules.hungerPerMinute*metabolism',
+    'rules.thirstPerMinute*metabolism',
+    'rules.sleepPerMinute*sleepTendency',
+    'rules.bladderPerMinute*metabolism',
+    'rules.hygienePerMinute',
+):
+    assert token in needs_h, f'Missing ruleset-driven Needs decay: {token}'
+assert '0.0010*metabolism' not in needs_h
+assert '0.0013*metabolism' not in needs_h
+
+utility_h = (root / 'Source/LifeLensCore/include/lifelens/UtilityAI.h').read_text(encoding='utf-8')
+for token in (
+    'const UtilityAIRuleset& rules',
+    'rules.needExponent',
+    'rules.urgentThreshold',
+    'rules.urgentSlope',
+    'rules.idleScore',
+    'rules.sleepNightMultiplier',
+    'rules.secondChoiceProbability',
+):
+    assert token in utility_h, f'Missing ruleset-driven UtilityAI tuning: {token}'
+assert 'return 0.035;' not in utility_h
+assert '(n-0.70)*1.8' not in utility_h
+
+simulation_core = (root / 'Source/LifeLensCore/include/lifelens/Simulation.h').read_text(encoding='utf-8')
+for token in (
+    'SimulationRuleset ruleset=DefaultSimulationRuleset',
+    'const SimulationRuleset& ruleset() const',
+    'const SimulationRuleset ruleset_',
+    'sanitationUseTarget',
+    'resolveSanitationUseTarget',
+    'SanitationSiteId sanitationSiteId=0',
+    'recordPrimitiveSanitationSiteUse',
+    'primitiveSanitationUseDurationTicks',
+):
+    assert token in simulation_core, f'Missing Core Simulation contract: {token}'
+
+simulation_cpp = (root / 'Source/LifeLensCore/src/Simulation.cpp').read_text(encoding='utf-8')
+for token in (
+    ':ruleset_(ruleset),world_',
+    'chooseGoal(world_,c,ruleset_.utilityAI)',
+    'c.needs.decay(ruleset_.needs,c.metabolism,c.sleepTendency)',
+):
+    assert token in simulation_cpp, f'Missing runtime SimulationRuleset wiring: {token}'
+
+snapshot_state_h = (root / 'Source/LifeLensCore/include/lifelens/SimulationSnapshot.h').read_text(encoding='utf-8')
+for token in (
+    'SimulationSnapshotVersion=2',
+    'SimulationRuleset ruleset=DefaultSimulationRuleset',
+):
+    assert token in snapshot_state_h, f'Missing ruleset snapshot state contract: {token}'
+
 snapshot_h = (root / 'Source/LifeLensCore/include/lifelens/SimulationSnapshotCodec.h').read_text(encoding='utf-8')
 snapshot_binary_version = int(snapshot_h.split('SimulationSnapshotBinaryFormatVersion=', 1)[1].split(';', 1)[0])
-assert snapshot_binary_version >= 5, 'Designated sanitation site persistence requires snapshot binary format v5 or newer'
+assert snapshot_binary_version == 7, 'Cleanup B current-only ruleset persistence requires snapshot binary format v7'
+assert 'MinimumSupportedSimulationSnapshotBinaryFormatVersion' not in snapshot_h
 
 snapshot_codec = (root / 'Source/LifeLensCore/src/SimulationSnapshotCodec.cpp').read_text(encoding='utf-8')
 for token in (
-    "'L','L','S','N','A','P','0','1'",
     'SimulationSnapshotBinaryFormatVersion',
-    'writeWorld',
-    'writeRuntime',
-    'decodeSimulationSnapshot',
-    'snapshot contains trailing bytes',
+    'readBinaryFormatVersion',
+    'decodeSimulationSnapshotBaseBody',
+    'writeCivilizationSnapshotExtension',
+    'readCivilizationSnapshotExtension',
     'writePrimitiveSanitationSnapshotExtension',
     'readPrimitiveSanitationSnapshotExtension',
     'validatePrimitiveSanitationSitesForCodec',
     'PrimitiveSanitationSnapshotExtensionMagic',
+    'writeWorldGenerationSnapshotExtension',
+    'readWorldGenerationSnapshotExtension',
+    'writeSimulationRulesetSnapshotExtension',
+    'readSimulationRulesetSnapshotExtension',
+    'SimulationRulesetSnapshotExtensionMagic',
 ):
-    assert token in snapshot_codec, f'Missing persistent Core snapshot/sanitation contract: {token}'
+    assert token in snapshot_codec, f'Missing current persistent Core snapshot contract: {token}'
+for obsolete in (
+    'binaryVersion==1',
+    'initializeLegacyCivilizationState',
+    'patchBinaryFormatVersion',
+    'decodeLegacyBodyForVersion',
+    'MinimumSupportedSimulationSnapshotBinaryFormatVersion',
+):
+    assert obsolete not in snapshot_codec, f'Pre-release snapshot migration path must stay removed: {obsolete}'
+
+ruleset_snapshot = (root / 'Source/LifeLensCore/include/lifelens/SimulationRulesetSnapshotCodec.h').read_text(encoding='utf-8')
+for token in (
+    'SimulationRulesetSnapshotExtensionMagic',
+    'writeSimulationRulesetSnapshotExtension',
+    'readSimulationRulesetSnapshotExtension',
+    'validSimulationRuleset',
+):
+    assert token in ruleset_snapshot, f'Missing ruleset snapshot codec contract: {token}'
 
 sanitation_snapshot = (root / 'Source/LifeLensCore/include/lifelens/PrimitiveSanitationSnapshotCodec.h').read_text(encoding='utf-8')
 for token in (
@@ -313,16 +419,6 @@ for token in (
 ):
     assert token in civilization_decision, f'Missing sanitation civilization progression/establishment wiring: {token}'
 assert 'LatrineUnlocked' not in civilization_decision, 'Sanitation utility must remain evidence-driven, not globally unlocked'
-
-simulation_core = (root / 'Source/LifeLensCore/include/lifelens/Simulation.h').read_text(encoding='utf-8')
-for token in (
-    'sanitationUseTarget',
-    'resolveSanitationUseTarget',
-    'SanitationSiteId sanitationSiteId=0',
-    'recordPrimitiveSanitationSiteUse',
-    'primitiveSanitationUseDurationTicks',
-):
-    assert token in simulation_core, f'Missing Core sanitation target/completion authority: {token}'
 
 civilization_snapshot = (root / 'Source/LifeLensCore/include/lifelens/CivilizationSnapshotCodec.h').read_text(encoding='utf-8')
 for token in (
