@@ -137,6 +137,35 @@ Emotion milestone acceptance direction:
 - implemented emotion dimensions are reconciled with the canonical Master Spec instead of leaving a silent partial implementation.
 - authoritative emotion survives save/restore and is exposed through Observer read models.
 
+## Milestone — Social Communication & Localization
+
+Canonical contract: `docs/SOCIAL_COMMUNICATION_LOCALIZATION_v1.md`.
+
+Ownership:
+- Jjun/Core: authoritative social action/event taxonomy, actor/target/intent/outcome/read contract, deterministic context needed by presentation.
+- Dagyeom presentation: Korean localization presentation, speech bubbles/Event Feed, gaze/body/animation expression, observer history rendering.
+- shared contract changes use Integration Requests only when a real cross-owner interface change is required.
+
+Purpose:
+- make resident-to-resident social behavior visibly understandable to the observer instead of existing only as hidden relationship/emotion number changes.
+- make Korean the default user-facing display language without translating Core identifiers or protocol values.
+
+Scope:
+- localization-ready display layer; raw English enum/action identifiers do not leak into normal user UI.
+- social presentation levels for everyday talk / meaningful interaction / important social event.
+- actor-target facing/gaze/personal-space coherence.
+- short Korean dialogue for meaningful interactions, generated from authoritative intent/personality/relationship/emotion/context without paid LLM/API dependency.
+- Event Feed and resident/relationship recent-interaction history.
+- important social events remain eligible for Event Director/camera attention.
+
+Acceptance:
+- common Observer labels/actions/statuses render in Korean by default.
+- actual Core social events are visible in-world through appropriate animation/gaze/icon/bubble treatment.
+- important social actions such as comfort, argument, apology, affection/confession/rejection can be distinguished by the observer without opening debug data.
+- Presentation never fabricates a social event or relationship change absent from Core authority.
+- dialogue variation can reflect personality/relationship/emotion/context and remains deterministic/data-driven in the base product.
+- Android presentation does not fill the screen with permanent chat text; ordinary talk stays lightweight.
+
 ## Current dispatch
 
 **World Visual Milestone A is READY_NOW and START AUTHORIZED.**
