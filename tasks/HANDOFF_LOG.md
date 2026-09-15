@@ -897,3 +897,26 @@
 - 상대가 알아야 할 점:
   - 헤드리스 `-game` 캡처는 이 프로젝트에서 표현 검증용으로 신뢰할 수 없다. 로그 검증은 유효하다
   - 가독성 완충이 필요하면 표현 액터에 주민 시작 지점 주변 제외 반경을 넣을 수 있으나, authoritative fact가 아니므로 요청 없이는 넣지 않는다
+
+### 다겸 측 AI — 시작 지점 가독성 반경 PIE 확인
+
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/world-visual-milestone-a`, PR #90
+- 커밋: `5c004cd`
+- 상태: `가독성 반경 확인 완료 / 카메라 대기`
+- PIE 확인 결과:
+  - 자연물 제외 반경 정상 동작. 주민 시작 지점 주변이 트이고 식생이 거리에 따라 점진적으로 차오른다
+  - 주민이 나무에 가리지 않고 보인다
+  - 식생 종류와 색 변화도 확인
+- 구현이 지킨 승인 조건:
+  - presentation-only. Core / world generation / resource authority 미변경
+  - 기준점은 Core start region. 공간 계약상 `InitialCenterGrid`가 표현 원점이므로 원점 거리 = 시작 지점 거리
+  - 제외 대상은 청크 fertility/moisture로 추가되는 ambient dressing 중 시야를 가리는 나무·덤불·큰 풀로 한정. 낮은 바위·자갈은 제외하지 않음
+  - `ResourcePatches`는 반경 안에서도 숨기지 않고 `StartRegionResourceScale` 0.55배로 축소해 유지
+  - 결정론 유지. 제외 판정도 동일 해시 스트림에서 뽑으며 두 실행 로그가 완전히 일치함
+  - 반경 800 / 감쇠 700 / 자원 축소율은 `EditAnywhere` presentation tuning 값. Core 규칙이나 세이브 identity에 포함하지 않음
+  - 튜닝 근거: 청크 32셀 = 3,200 유닛. 초기값 1,200/900은 시작 청크 대부분을 비워 800/700으로 조정. instances 96/151/359/40 → 65/99/216/40, cleared 226
+- 관찰 사항 (수정하지 않음):
+  - 주민이 이동할 때 몸 방향이 이동 방향과 맞지 않아 문워크처럼 보인다. IR-B 회신대로 쭌 측 #91 범위이므로 기록만 한다
+- 남은 것:
+  - 관찰 카메라가 여전히 숲 근처에 있어 전체 조망이 어렵다. 쭌 측 observer camera 작업 대기
