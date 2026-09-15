@@ -34,6 +34,23 @@ jobs:
       - name: Apply Milestone A patch
         run: python Tools/apply_world_generation_milestone_a.py
 
+      - name: Preserve existing residue visual validator call shape
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('Source/LifeLens/World/LLWorldDirector.cpp')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace(
+              'EnvironmentalResidueVisualizer->RefreshFromCore(\n            *CoreBridge, CoreGridCellSizeUU, true,\n',
+              'EnvironmentalResidueVisualizer->RefreshFromCore(*CoreBridge, CoreGridCellSizeUU, true,\n',
+              1)
+          s = s.replace(
+              'EnvironmentalResidueVisualizer->RefreshFromCore(\n            *CoreBridge, CoreGridCellSizeUU, false,\n',
+              'EnvironmentalResidueVisualizer->RefreshFromCore(*CoreBridge, CoreGridCellSizeUU, false,\n',
+              1)
+          p.write_text(s, encoding='utf-8')
+          PY
+
       - name: Structural validation
         run: |
           python Tools/validate_world_genesis_wg1.py
