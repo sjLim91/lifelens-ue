@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <vector>
 #include "Birth.h"
+#include "CivilizationActivityReadModel.h"
 #include "CivilizationKnowledgeTransmission.h"
 #include "CivilizationObserverReadModel.h"
 #include "DecisionExecution.h"
@@ -98,6 +99,7 @@ public:
     std::vector<ResidentObservation> observeAllResidents() const;
     FamilyObservation observeFamily(CharacterId id) const;
     WorldOverviewObservation observeWorldOverview() const;
+    ResidentCivilizationActivityObservation observeResidentCivilizationActivity(CharacterId id) const;
     EnvironmentObservation observeEnvironment(std::size_t maxResidues=64) const {
         return buildEnvironmentObservation(world_.minute,world_.environmentalResidues,maxResidues);
     }
@@ -128,6 +130,18 @@ private:
         bool socialActive=false;
         SocialIntent socialIntent=SocialIntent::None;
         CharacterId socialTarget=0;
+
+        // Presentation provenance for the civilization action that actually
+        // executed. Intentionally omitted from SimulationRuntimeSnapshot so
+        // save/restore never replays stale work animations.
+        bool civilizationActive=false;
+        CivilizationEvent civilizationEvent{};
+        int civilizationActivityMinute=-1;
+        ResourceNodeId civilizationResourceNode=0;
+        StorageId civilizationStorage=0;
+        bool civilizationHasSpatialTarget=false;
+        GridPos civilizationTargetPos{};
+        std::uint64_t civilizationSanitationSiteId=0;
     };
     const SimulationRuleset ruleset_;
     World world_;
