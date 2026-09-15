@@ -133,7 +133,8 @@ inline PrimitiveSanitationOpportunity evaluatePrimitiveSanitationOpportunity(
     std::uint64_t worldSeed,
     const Character& character,
     const EnvironmentalResidueField& field,
-    int currentMinute)
+    int currentMinute,
+    GridPos referencePosition={})
 {
     PrimitiveSanitationOpportunity result;
     result.problemRecognized=hasRecognizedSanitationProblem(character);
@@ -141,7 +142,7 @@ inline PrimitiveSanitationOpportunity evaluatePrimitiveSanitationOpportunity(
 
     result.problemConfidence=recognizedSanitationProblemConfidence(character);
     result.suggestedSite=chooseLowExposureOutdoorReliefPosition(
-        worldSeed,character,field,currentMinute);
+        worldSeed,character,field,currentMinute,referencePosition);
     result.siteExposure=field.exposureAt(result.suggestedSite);
     result.siteAvailable=result.siteExposure<PrimitiveSanitationCleanSiteExposureLimit;
     return result;
@@ -151,13 +152,14 @@ inline PrimitiveSanitationOpportunity evaluateDesignatedSanitationSiteCreationOp
     std::uint64_t worldSeed,
     const Character& character,
     const EnvironmentalResidueField& field,
-    int currentMinute)
+    int currentMinute,
+    GridPos referencePosition={})
 {
     PrimitiveSanitationOpportunity result;
     result.problemRecognized=hasRecognizedSanitationProblem(character);
     result.problemConfidence=recognizedSanitationProblemConfidence(character);
     result.suggestedSite=chooseLowExposureOutdoorReliefPosition(
-        worldSeed,character,field,currentMinute);
+        worldSeed,character,field,currentMinute,referencePosition);
     result.siteExposure=field.exposureAt(result.suggestedSite);
     result.siteAvailable=result.siteExposure<PrimitiveSanitationCleanSiteExposureLimit;
     return result;
@@ -168,13 +170,14 @@ inline bool canEstablishDesignatedSanitationArea(
     const Character& character,
     const EnvironmentalResidueField& field,
     const std::vector<PrimitiveSanitationSite>& sites,
-    int currentMinute)
+    int currentMinute,
+    GridPos referencePosition={})
 {
     if(!character.civilization.knowledge.knowsAtLeast(
         TechniqueId::DesignatedSanitationArea,KnowledgeLevel::Reproducible)) return false;
     if(activePrimitiveSanitationSite(sites)!=nullptr) return false;
     return evaluateDesignatedSanitationSiteCreationOpportunity(
-        worldSeed,character,field,currentMinute).siteAvailable;
+        worldSeed,character,field,currentMinute,referencePosition).siteAvailable;
 }
 
 struct PrimitiveSanitationSiteCreationResult {
@@ -188,15 +191,16 @@ inline PrimitiveSanitationSiteCreationResult establishDesignatedSanitationArea(
     Character& character,
     const EnvironmentalResidueField& field,
     std::vector<PrimitiveSanitationSite>& sites,
-    int currentMinute)
+    int currentMinute,
+    GridPos referencePosition={})
 {
     PrimitiveSanitationSiteCreationResult result;
     if(!canEstablishDesignatedSanitationArea(
-        worldSeed,character,field,sites,currentMinute)) return result;
+        worldSeed,character,field,sites,currentMinute,referencePosition)) return result;
 
     const PrimitiveSanitationOpportunity opportunity=
         evaluateDesignatedSanitationSiteCreationOpportunity(
-            worldSeed,character,field,currentMinute);
+            worldSeed,character,field,currentMinute,referencePosition);
     if(!opportunity.siteAvailable) return result;
 
     PrimitiveSanitationSite site;
@@ -336,14 +340,16 @@ inline SanitationUseTarget resolveSanitationUseTarget(
     const Character& character,
     const EnvironmentalResidueField& field,
     const std::vector<PrimitiveSanitationSite>& sites,
-    int currentMinute)
+    int currentMinute,
+    GridPos referencePosition={})
 {
     if(const PrimitiveSanitationSite* site=activePrimitiveSanitationSite(sites)){
         return {SanitationUseTargetKind::DesignatedArea,site->pos,site->id};
     }
     return {
         SanitationUseTargetKind::EmergencyOutdoor,
-        chooseLowExposureOutdoorReliefPosition(worldSeed,character,field,currentMinute),
+        chooseLowExposureOutdoorReliefPosition(
+            worldSeed,character,field,currentMinute,referencePosition),
         0};
 }
 

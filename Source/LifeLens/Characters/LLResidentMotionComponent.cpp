@@ -115,7 +115,10 @@ void ULLResidentMotionComponent::UpdateBodyOrientation(float DeltaTime)
         DeltaTime,
         YawInterpSpeed);
 
-    Body->SetWorldRotation(FRotator(0.0f, SmoothedYaw, 0.0f));
+    // Quaternius UBC's authored forward axis imports as local -Y. The actor
+    // and simulation continue to use normal Unreal +X forward; only the visual
+    // body receives this asset-axis correction.
+    Body->SetWorldRotation(FRotator(0.0f, SmoothedYaw + MeshForwardYawOffsetDegrees, 0.0f));
 }
 
 void ULLResidentMotionComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -193,8 +196,9 @@ void ULLResidentMotionComponent::TickComponent(float DeltaTime, ELevelTick TickT
         if (DebugLogTimer <= 0.0f)
         {
             DebugLogTimer = DebugLogInterval;
-            UE_LOG(LogTemp, Log, TEXT("LLMotion %s speed=%.1f window=%.1f yaw=%.1f travel=%.1f actor=%.1f playing=%d loc=%.0f,%.0f"),
-                *Owner->GetName(), SmoothedSpeed, WindowedSpeed, SmoothedYaw, DesiredYaw,
+            UE_LOG(LogTemp, Log, TEXT("LLMotion %s speed=%.1f window=%.1f yaw=%.1f visual=%.1f travel=%.1f actor=%.1f playing=%d loc=%.0f,%.0f"),
+                *Owner->GetName(), SmoothedSpeed, WindowedSpeed, SmoothedYaw,
+                SmoothedYaw + MeshForwardYawOffsetDegrees, DesiredYaw,
                 Owner->GetActorRotation().Yaw, bLocomotionPlaying ? 1 : 0, Location.X, Location.Y);
         }
     }

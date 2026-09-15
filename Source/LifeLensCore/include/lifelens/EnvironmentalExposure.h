@@ -132,21 +132,23 @@ inline GridPos chooseLowExposureOutdoorReliefPosition(
     std::uint64_t worldSeed,
     const Character& character,
     const EnvironmentalResidueField& field,
-    int currentMinute)
+    int currentMinute,
+    GridPos referencePosition={})
 {
     static constexpr std::array<GridPos,8> Directions={{
         {1,0},{1,1},{0,1},{-1,1},{-1,0},{-1,-1},{0,-1},{1,-1}
     }};
 
-    // v1 uses Core grid origin as the settlement reference, matching the
-    // existing emergency-sanitation contract. Future settlement/household
-    // centers can replace this reference without changing the scoring model.
+    // Outdoor relief is selected 5-7 Core cells away from the supplied
+    // settlement/runtime reference. Before World Genesis this implicitly used
+    // absolute grid (0,0); production callers now pass the selected start-region
+    // center so a non-origin world does not send residents across the map.
     const std::uint64_t mixed=environmentalMix(
         (worldSeed?worldSeed:1ULL)^environmentalMix(character.id));
     const int startDirection=static_cast<int>(mixed%Directions.size());
     const int startDistance=5+static_cast<int>((mixed>>8)%3ULL);
 
-    GridPos best{};
+    GridPos best=referencePosition;
     double bestScore=1.0e9;
     int stableOrder=0;
     int bestOrder=1000000;
@@ -156,7 +158,9 @@ inline GridPos chooseLowExposureOutdoorReliefPosition(
         for(int directionOffset=0;directionOffset<static_cast<int>(Directions.size());++directionOffset){
             const int directionIndex=(startDirection+directionOffset)%static_cast<int>(Directions.size());
             const GridPos direction=Directions[static_cast<std::size_t>(directionIndex)];
-            const GridPos candidate{direction.x*distance,direction.y*distance};
+            const GridPos candidate{
+                referencePosition.x+direction.x*distance,
+                referencePosition.y+direction.y*distance};
             const double score=outdoorReliefAvoidanceScore(
                 character,field,candidate,currentMinute);
 

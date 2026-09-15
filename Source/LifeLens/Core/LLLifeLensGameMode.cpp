@@ -1,5 +1,6 @@
 #include "Core/LLLifeLensGameMode.h"
 #include "World/LLWorldDirector.h"
+#include "World/LLWorldSpatialContract.h"
 #include "UI/LLObserverHUD.h"
 #include "UI/LLObserverPlayerController.h"
 #include "Camera/CameraActor.h"
@@ -55,7 +56,15 @@ void ALLLifeLensGameMode::SpawnRuntimeFloor()
     FloorComponent->SetMobility(EComponentMobility::Movable);
     FloorComponent->SetStaticMesh(RuntimeFloorMesh);
     FloorComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-    Floor->SetActorScale3D(FVector(14.0f, 14.0f, 0.1f));
+
+    // This is only the bootstrap visual/collision ground. It must nevertheless
+    // cover the complete authoritative selected start chunk; clamping Core
+    // targets to a smaller debug plane would corrupt simulation/presentation
+    // agreement. World Visual may replace this actor later.
+    Floor->SetActorScale3D(FVector(
+        LLWorldSpatialContract::BootstrapFloorCubeScale,
+        LLWorldSpatialContract::BootstrapFloorCubeScale,
+        0.1f));
 }
 
 void ALLLifeLensGameMode::SpawnObserverCamera()
@@ -65,10 +74,21 @@ void ALLLifeLensGameMode::SpawnObserverCamera()
         return;
     }
 
+    // The selected authoritative start chunk is mapped to Unreal presentation
+    // origin by LLWorldDirector. Frame that region using the shared spatial
+    // contract instead of the legacy 1,400 UU bootstrap-floor dimensions.
+    const FVector CameraLocation(
+        0.0f,
+        -LLWorldSpatialContract::ObserverCameraDistanceUU,
+        LLWorldSpatialContract::ObserverCameraHeightUU);
+    const FVector CameraTarget(
+        0.0f,
+        0.0f,
+        LLWorldSpatialContract::ObserverCameraTargetHeightUU);
+    const FRotator CameraRotation = (CameraTarget - CameraLocation).Rotation();
+
     ACameraActor* Camera = GetWorld()->SpawnActor<ACameraActor>(
-        ACameraActor::StaticClass(),
-        FVector(0.0f, -1500.0f, 1120.0f),
-        FRotator(-36.0f, 90.0f, 0.0f));
+        ACameraActor::StaticClass(), CameraLocation, CameraRotation);
 
     if (!Camera)
     {
@@ -77,7 +97,7 @@ void ALLLifeLensGameMode::SpawnObserverCamera()
 
     if (UCameraComponent* CameraComponent = Camera->GetCameraComponent())
     {
-        CameraComponent->SetFieldOfView(55.0f);
+        CameraComponent->SetFieldOfView(LLWorldSpatialContract::ObserverCameraFOVDegrees);
     }
 
     if (APlayerController* PlayerController = GetWorld()->GetFirstPlayerController())

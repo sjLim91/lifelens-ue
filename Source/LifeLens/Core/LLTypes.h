@@ -69,6 +69,12 @@ struct FLLNeedState
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame)
     float Fun = 60.0f;
+
+    // Authoritative Core thirst projected onto the legacy observer DTO.
+    // Appended after every pre-existing field so any legacy C++ aggregate
+    // initializer keeps the meaning of its existing positional values.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame)
+    float Thirst = 80.0f;
 };
 
 USTRUCT(BlueprintType)

@@ -263,11 +263,13 @@ bool ULLSimulationSubsystem::RefreshProjectionFromCore()
         Resident.Personality.EmotionalStability = FMath::Clamp(CoreResident.Personality.EmotionalStability * 100.0f, 0.0f, 100.0f);
 
         Resident.Needs.Hunger = ToLegacyNeed(CoreResident.Needs.Hunger);
+        Resident.Needs.Thirst = ToLegacyNeed(CoreResident.Needs.Thirst);
         Resident.Needs.Energy = ToLegacyNeed(CoreResident.Needs.Sleep);
         Resident.Needs.Hygiene = ToLegacyNeed(CoreResident.Needs.Hygiene);
         Resident.Needs.Bladder = ToLegacyNeed(CoreResident.Needs.Bladder);
         // Core social cognition is relationship/emotion driven rather than a
-        // single legacy bar. Keep these compatibility-only values neutral.
+        // single legacy bar. Social/Fun remain compatibility-only fields and
+        // are intentionally excluded from observer need rows/summaries.
         Resident.Needs.Social = 65.0f;
         Resident.Needs.Fun = 60.0f;
 
@@ -366,6 +368,7 @@ bool ULLSimulationSubsystem::ApplyActionOutcome(FGuid ResidentId, ELLActionInten
     switch (Intent)
     {
         case ELLActionIntent::Eat: Resident->Needs.Hunger = FMath::Clamp(Resident->Needs.Hunger + 55.0f * Scale, 0.0f, 100.0f); break;
+        case ELLActionIntent::Drink: Resident->Needs.Thirst = FMath::Clamp(Resident->Needs.Thirst + 60.0f * Scale, 0.0f, 100.0f); break;
         case ELLActionIntent::Sleep: Resident->Needs.Energy = FMath::Clamp(Resident->Needs.Energy + 65.0f * Scale, 0.0f, 100.0f); break;
         case ELLActionIntent::Socialize:
             Resident->Needs.Social = FMath::Clamp(Resident->Needs.Social + 40.0f * Scale, 0.0f, 100.0f);

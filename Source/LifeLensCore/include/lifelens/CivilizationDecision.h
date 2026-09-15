@@ -99,6 +99,13 @@ inline double civilizationPreference(std::uint64_t worldSeed,CharacterId actor,s
     return static_cast<double>(mantissa)*(1.0/9007199254740992.0);
 }
 
+inline GridPos civilizationSanitationReferencePosition(const World& world)
+{
+    return world.hasInitialStartRegionSelection
+        ? world.initialStartRegionCenterGrid()
+        : GridPos{};
+}
+
 inline int inventoryUnitCount(const Inventory& inventory)
 {
     int total=0;
@@ -204,9 +211,10 @@ inline CivilizationUtilityDecision bestGatherDecision(const World& world,const C
 inline CivilizationUtilityDecision bestExperimentDecision(const World& world,const Character& self)
 {
     CivilizationUtilityDecision best;
+    const GridPos sanitationReference=civilizationSanitationReferencePosition(world);
     const PrimitiveSanitationOpportunity sanitationOpportunity=
         evaluatePrimitiveSanitationOpportunity(
-            world.seed,self,world.environmentalResidues,world.minute);
+            world.seed,self,world.environmentalResidues,world.minute,sanitationReference);
     const DugSanitationPitOpportunity pitOpportunity=
         evaluateDugSanitationPitOpportunity(
             self,world.environmentalResidues,world.primitiveSanitationSites);
@@ -290,12 +298,13 @@ inline int desiredTechniqueOutputStock(TechniqueId technique)
 inline CivilizationUtilityDecision bestCraftDecision(const World& world,const Character& self)
 {
     CivilizationUtilityDecision best;
+    const GridPos sanitationReference=civilizationSanitationReferencePosition(world);
 
     if(self.civilization.knowledge.knowsAtLeast(
         TechniqueId::DesignatedSanitationArea,KnowledgeLevel::Reproducible)
        && canEstablishDesignatedSanitationArea(
            world.seed,self,world.environmentalResidues,
-           world.primitiveSanitationSites,world.minute)){
+           world.primitiveSanitationSites,world.minute,sanitationReference)){
         CivilizationUtilityDecision sanitation;
         sanitation.intent=CivilizationIntent::Craft;
         sanitation.technique=TechniqueId::DesignatedSanitationArea;
@@ -430,6 +439,7 @@ inline StorageSite* findCivilizationStorage(World& world,StorageId id)
 inline CivilizationExecutionResult executeCivilizationDecision(World& world,Character& self,const CivilizationUtilityDecision& decision)
 {
     CivilizationExecutionResult result;
+    const GridPos sanitationReference=civilizationSanitationReferencePosition(world);
     switch(decision.intent){
         case CivilizationIntent::Gather: {
             ResourceNode* node=findCivilizationResource(world,decision.resourceNode);
@@ -461,7 +471,8 @@ inline CivilizationExecutionResult executeCivilizationDecision(World& world,Char
             if(decision.experiment==ExperimentKind::DesignateSanitationArea){
                 const PrimitiveSanitationOpportunity opportunity=
                     evaluatePrimitiveSanitationOpportunity(
-                        world.seed,self,world.environmentalResidues,world.minute);
+                        world.seed,self,world.environmentalResidues,world.minute,
+                        sanitationReference);
                 context.sanitationProblemRecognized=opportunity.problemRecognized;
                 context.sanitationSiteAvailable=opportunity.siteAvailable;
             }else if(decision.experiment==ExperimentKind::DigSanitationPit){
@@ -480,7 +491,8 @@ inline CivilizationExecutionResult executeCivilizationDecision(World& world,Char
         case CivilizationIntent::Craft: {
             if(decision.technique==TechniqueId::DesignatedSanitationArea){
                 const PrimitiveSanitationSiteCreationResult site=establishDesignatedSanitationArea(
-                    world.seed,self,world.environmentalResidues,world.primitiveSanitationSites,world.minute);
+                    world.seed,self,world.environmentalResidues,world.primitiveSanitationSites,
+                    world.minute,sanitationReference);
                 if(!site.established) return result;
                 result.executed=true;
                 result.success=true;

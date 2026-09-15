@@ -50,6 +50,7 @@ namespace LLObserverText
     inline const TCHAR* const NoneListed         = TEXT("None listed");
 
     inline const TCHAR* const NeedNameHunger     = TEXT("Hunger");
+    inline const TCHAR* const NeedNameThirst     = TEXT("Thirst");
     inline const TCHAR* const NeedNameEnergy     = TEXT("Energy");
     inline const TCHAR* const NeedNameSocial     = TEXT("Social");
     inline const TCHAR* const NeedNameHygiene    = TEXT("Hygiene");
@@ -95,6 +96,7 @@ namespace LLObserverText
 
     // Status summary phrases, [0] = Low, [1] = Very low.
     inline const TCHAR* const HungerPhrases[2]   = { TEXT("Hungry"),           TEXT("Starving") };
+    inline const TCHAR* const ThirstPhrases[2]   = { TEXT("Thirsty"),          TEXT("Very thirsty") };
     inline const TCHAR* const EnergyPhrases[2]   = { TEXT("A bit tired"),      TEXT("Exhausted") };
     inline const TCHAR* const SocialPhrases[2]   = { TEXT("Lonely"),           TEXT("Very lonely") };
     inline const TCHAR* const HygienePhrases[2]  = { TEXT("Needs a wash"),     TEXT("Really needs a wash") };
@@ -128,7 +130,9 @@ namespace LLObserverLabels
     constexpr int32 MaxSummaryPhrases   = 3;
     constexpr int32 MaxPersonalityWords = 3;
 
-    // A named need with its value, for tabular display.
+    // A named need with its value, for tabular display. Only authoritative Core
+    // physical needs belong here. Social state is relationship/emotion driven
+    // and Fun is not a Core need, so compatibility placeholders are excluded.
     struct FNeedRow
     {
         const TCHAR* Name;
@@ -139,11 +143,10 @@ namespace LLObserverLabels
     {
         return {
             { LLObserverText::NeedNameHunger,  Needs.Hunger },
+            { LLObserverText::NeedNameThirst,  Needs.Thirst },
             { LLObserverText::NeedNameEnergy,  Needs.Energy },
-            { LLObserverText::NeedNameSocial,  Needs.Social },
             { LLObserverText::NeedNameHygiene, Needs.Hygiene },
             { LLObserverText::NeedNameBladder, Needs.Bladder },
-            { LLObserverText::NeedNameFun,     Needs.Fun },
         };
     }
 
@@ -277,8 +280,9 @@ namespace LLObserverLabels
         }
     }
 
-    // One human-readable line: the lowest needs first, at most MaxSummaryPhrases.
-    // Also reports the worst level so the caller can colour the line.
+    // One human-readable line: the lowest authoritative physical needs first,
+    // at most MaxSummaryPhrases. Compatibility-only Social/Fun placeholders
+    // must never generate observer claims such as "Lonely" or "Bored".
     inline FString StatusSummary(const FLLNeedState& Needs, ENeedLevel& OutWorstLevel)
     {
         struct FEntry
@@ -288,11 +292,10 @@ namespace LLObserverLabels
         };
         const FEntry Entries[] = {
             { Needs.Hunger,  LLObserverText::HungerPhrases },
+            { Needs.Thirst,  LLObserverText::ThirstPhrases },
             { Needs.Energy,  LLObserverText::EnergyPhrases },
             { Needs.Bladder, LLObserverText::BladderPhrases },
             { Needs.Hygiene, LLObserverText::HygienePhrases },
-            { Needs.Social,  LLObserverText::SocialPhrases },
-            { Needs.Fun,     LLObserverText::FunPhrases },
         };
 
         TArray<FEntry> Sorted(Entries, static_cast<int32>(UE_ARRAY_COUNT(Entries)));
