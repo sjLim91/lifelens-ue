@@ -51,36 +51,39 @@ Documentation-only commits may advance `main` beyond the product-code baseline a
 
 ## Current dispatch
 
-### Jjun lane — Sanitation Problem Recognition v1 — READY_NOW / HIGHEST PRIORITY
+### Jjun lane — Sanitation Problem Recognition v1 — IN_PROGRESS
 
 Owner: 쭌 / 쭌 AI
+Branch: `jjun/sanitation-problem-recognition-v1`
+PR: not opened yet
 Dependency: PR #76 DONE.
-Handoff safety: SAFE.
+Handoff safety: SAFE at branch checkpoint; no uncommitted local dependency.
 
 Goal:
 - repeated direct sanitation/contamination experience becomes an explicit resident-level recognized problem without a global magic unlock.
-- recognition must derive from Core-owned Memory/environment evidence and survive Save/Load through existing Character/Civilization snapshot authority.
+- recognition derives from Core-owned Memory/environment evidence and survives Save/Load through existing Character/Belief authority.
 - recognized sanitation concern becomes a causal input for later primitive sanitation experimentation/designated-area/pit/latrine progression.
 
 Implementation direction:
 - reuse #75 `environment`, `contamination`, `human_waste`, `avoidance`, `sanitation` memories rather than duplicating environment authority.
 - aggregate repeated/high-confidence sanitation memories into a deterministic problem-recognition signal.
+- promote qualifying evidence into an explicit sanitation-problem Belief rather than a presentation-only flag.
 - personality/experience may affect recognition threshold or urgency, but evidence remains required.
 - do not unlock a latrine merely because a global era/tech flag changes.
-- expose enough deterministic read/test contract for the next primitive sanitation slice.
+- expose deterministic read/test contract for the next primitive sanitation slice.
 
 Acceptance:
 - one weak/trace exposure does not instantly create civilization knowledge.
 - repeated or sufficiently strong direct sanitation evidence can produce recognized concern.
 - unrelated memories do not count.
-- same seed/state/evidence produces deterministic recognition.
+- same state/evidence produces deterministic recognition.
 - recognition persists via authoritative existing state, not presentation-only flags.
-- Core tests + Structural Preflight; UE compile if Unreal-facing headers/bridge change.
+- Core tests + Structural Preflight; UE compile only if Unreal-facing headers/bridge change.
 
 Exact next action:
-- create new Jjun feature branch from latest main.
-- inspect Memory/Belief/Civilization state and snapshot contracts.
-- add minimum sanitation recognition model + regression tests before primitive-affordance implementation.
+- implement minimum Core sanitation recognition helper around Memory → Belief.
+- wire recognition at the environmental perception boundary without duplicate evidence ingestion.
+- add regression tests for threshold, unrelated-memory rejection, determinism and persistence-compatible Belief state.
 
 ### Dagyeom lane — Character Appearance v1 — ACTIVE / PR #67 CLOSEOUT
 
@@ -196,7 +199,7 @@ Canonical causal chain:
 
 Immediate sequence:
 1. WorldDirector sanitation recommendation integration — DONE #76.
-2. Sanitation Problem Recognition v1 — READY_NOW.
+2. Sanitation Problem Recognition v1 — IN_PROGRESS.
 3. Primitive sanitation discovery / designated area / pit / latrine progression.
 4. HumanWaste Environmental Visual Feedback.
 5. Health/pathogen and water/soil contamination later.
@@ -286,7 +289,7 @@ Do not revive the old multi-hour PR #2 path as the default loop.
 10. #74 runtime position restore — DONE.
 11. #75 environment exposure/perception/avoidance — DONE.
 12. #76 World sanitation recommendation integration — DONE.
-13. **Sanitation Problem Recognition — READY_NOW / HIGHEST PRIORITY.**
+13. **Sanitation Problem Recognition — IN_PROGRESS.**
 14. Primitive Latrine / sanitation affordance progression.
 15. HumanWaste visual feedback.
 16. Character Appearance #67 — ACTIVE in parallel.
