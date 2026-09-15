@@ -94,7 +94,11 @@ for forbidden in (
         f'Civilization observer bridge must remain read-only: {forbidden}'
 
 workflow = (root / '.github/workflows/unreal-linux-compile.yml').read_text(encoding='utf-8')
-assert "'Source/LifeLens/Simulation/**'" in workflow, \
-    'Simulation changes must trigger actual UE 5.6 UHT/UBT compile'
+assert (
+    "'Source/LifeLens/**'" in workflow
+    or "'Source/LifeLens/Simulation/**'" in workflow
+), 'Simulation changes must trigger actual UE 5.6 UHT/UBT compile'
+assert "'Source/LifeLensCore/**'" in workflow, \
+    'LifeLensCore changes must trigger actual UE 5.6 UHT/UBT compile'
 
 print('LifeLens civilization observer read validation: PASS')
