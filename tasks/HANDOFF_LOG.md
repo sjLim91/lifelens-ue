@@ -806,3 +806,117 @@
 - 다음 gate: **Integrated Runtime Checkpoint A** on merged `main`.
 - Dagyeom next product milestone remains HOLD until that integrated gate is checked.
 - World Visual map/config boundary: Dagyeom owns `Content/Maps/**`; Jjun owns `Config/DefaultEngine.ini` startup/default map and `LifeLens.uproject` plugin integration via explicit Integration Request.
+
+### 다겸 측 AI — World Visual Milestone A 착수 및 Integration Request 2건
+
+- 작성자: 다겸 측 AI
+- 브랜치: `dagyeom/world-visual-milestone-a` (main `f298140` 기준)
+- 커밋: `b83096c`
+- 상태: `콘텐츠 임포트 완료 / IR 승인 대기`
+- 진행:
+  - Stylized Nature MegaKit [Standard] 68종과 ambientCG 지면 재질 12맵 임포트, `Content/Environment/PROVENANCE.md` 기록
+  - 모델별 중복 텍스처·머티리얼 통합으로 264 MB → 49 MB, 전 텍스처 `MaxTextureSize = 1024`
+- Integration Request 2건 제출:
+  - IR-A `Source/LifeLens/WorldPresentation/**` 신설 요청. 승인 전까지 런타임 청크 소비 표현 착수 불가
+  - IR-B 게걸음(QA-1) 수정 착수 승인 요청. Characters 범위 상수 yaw 오프셋
+- 승인 전까지 콘텐츠 임포트 범위 안에서만 진행한다.
+- 상대가 알아야 할 점:
+  - `Config/DefaultEngine.ini`와 `LifeLens.uproject`는 건드리지 않았다. production map을 만들면 정확한 `/Game/Maps/<MapName>` 경로로 별도 요청을 올린다
+
+### 다겸 측 AI — World Visual Milestone A 콘텐츠 슬라이스
+
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/world-visual-milestone-a`, PR #90
+- 커밋: `a065a1b`
+- 상태: `콘텐츠 진행 / IR 승인 대기`
+- 추가:
+  - `Content/Environment/Materials`: `M_LL_Ground` 부모 머티리얼(타일링·틴트 파라미터, 4샘플러)과 지면 인스턴스 3종
+  - `Content/Maps/LifeLensWorld`: 하늘·조명 기준, 24,000 유닛 자연 지면, 자연물 348개 결정론 배치(시드 20260915)
+  - IR-C 제출: production map 경로 `/Game/Maps/LifeLensWorld` 통합 요청
+- 확인된 사항:
+  - `ALLLifeLensGameMode::SpawnRuntimeFloor()`가 런타임에 1,400 x 1,400 유닛 임시 바닥을 스폰한다. production map의 지면과 중복되며 QA-2의 직접 원인으로 보인다. 주민은 3,393 유닛까지 이동하는데 바닥은 ±700 유닛이다
+  - `Source/LifeLens/Core/**`는 다겸 소유가 아니므로 수정하지 않았다
+- 상대가 알아야 할 점:
+  - 현재 자연물 배치는 레벨에 저작한 StaticMeshActor다. IR-A 승인 후 HISM 인스턴싱으로 전환할 예정이며, 그 전까지는 Android 인스턴싱 예산 조건을 충족하지 않는다
+
+### 다겸 측 AI — World Visual Milestone A 1차 육안 확인 결과
+
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/world-visual-milestone-a`, PR #90
+- 커밋: `e1537e1`
+- 상태: `조정 후 재확인 대기`
+- 확인 결과와 처리:
+  1. 지면 타일링 이음매가 세로 줄로 보임 — 다겸 범위, 수정함. 엔진 Plane의 UV가 240 m 전체에 0~1이라 타일링 계수를 곱하면 텍스처 한 장이 맵 전체로 늘어난다. 월드 XY를 `TileSizeCm`(기본 400)으로 나눈 월드 정렬 UV로 교체해 메시 스케일과 무관하게 4 m마다 반복되게 함
+  2. 라이팅 미빌드 349건 — 다겸 범위, 수정함. DirectionalLight와 SkyLight를 Movable로 전환해 라이트맵 베이크 자체를 없앰. 시뮬레이션 분에 태양을 연결하려면 어차피 Movable이 필요하다. Android 예산을 위해 동적 그림자 거리 9,000 유닛, 캐스케이드 3단으로 제한
+  3. 관찰 카메라가 지면에 너무 가까워 240 m 월드의 배경을 볼 수 없음 — 카메라는 `Source/LifeLens/Core/**` 소유라 수정하지 않고 IR-C에 기록
+  4. 주민이 게임모드 임시 바닥 밖으로 나가 사라지는 현상이 새 맵에서도 재현 — IR-C에 추가 기록
+- 현재 상태로는 배경 품질 판정이 불가능하다. 3번이 해결되어야 원거리 배경, 밀도, 실루엣을 평가할 수 있다.
+
+### 다겸 측 AI — World Visual Milestone A 배경 1차 목표 달성
+
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/world-visual-milestone-a`, PR #90
+- 커밋: `2291ae0`
+- 상태: `배경 1차 목표 달성 / 리뷰 대기`
+- 재확인 결과 (로컬 PIE):
+  - 지면 머티리얼 정상 렌더링. 초록 잔디로 보임
+  - 지면 세로 줄 이음매 해소
+  - 자연물 군집 배치와 밀도 개선 확인
+  - 배경 1차 목표 달성으로 판단
+- 수정 경위:
+  - 지면이 회색으로 보이던 원인은 머티리얼 컴파일 실패였다. `TextureSampleParameter2D`에 기본 텍스처가 지정되지 않아 엔진 컬러 `DefaultTexture`로 대체되었고, Normal / Linear Grayscale 샘플러 타입과 불일치해 머티리얼 전체가 컴파일되지 않았다. 그 결과 지면이 엔진 기본 회색 머티리얼로 그려졌다
+  - 각 텍스처 파라미터에 기본 텍스처를 지정하고, Roughness / AmbientOcclusion은 `TC_GRAYSCALE` + sRGB off, NormalGL은 `TC_NORMALMAP`으로 설정해 해결
+  - 지면 UV는 메시 스케일과 무관하도록 월드 정렬로 교체(`TileSizeCm`, 기본 400)
+  - 지면 메시는 단면 Plane에서 두께 20 유닛 Cube로 교체. 윗면이 z=0
+  - 자연물 배치는 균등 살포에서 군집 배치로 교체. 숲 14곳과 덤불 26곳 중심의 거리 감쇠 배치로 빈 터가 생기게 함. 348개 → 1,298개, 크기 변형 0.6~1.9배, 축별 비균등 스케일과 기울기 추가
+  - 조명은 DirectionalLight와 SkyLight를 Movable로 전환해 라이팅 미빌드 경고 349건을 해소. 동적 그림자 거리 9,000 유닛, 캐스케이드 3단
+- 남은 것:
+  - 게걸음(메시 정면 축) — QA-1. 원인 특정 완료, 쭌 승인 대기(IR-B)
+  - 관찰 카메라 높이·거리가 240 m 월드에 맞지 않아 배경 전체를 볼 수 없음 — IR-C 기록됨. `Source/LifeLens/Core/**` 소유라 미수정
+  - 주민이 게임모드 임시 바닥(±700 유닛) 밖으로 이동 — IR-C 기록됨
+  - 지면 3종 영역별 블렌딩은 검증 가능한 결과를 얻지 못해 넣지 않음. 단일 재질 유지
+  - 자연물은 아직 개별 StaticMeshActor. HISM 인스턴싱 전환은 IR-A 승인 후
+- 상대가 알아야 할 점:
+  - 스크립트로 머티리얼을 만들 때 텍스처 파라미터에 기본 텍스처를 지정하지 않으면 샘플러 타입 불일치로 컴파일이 실패하고, 화면에는 에러 없이 기본 회색 머티리얼로 나타난다. 로그의 `Failed to compile Material ... Default Material will be used in game`으로만 드러난다
+
+### 다겸 측 AI — 생성 월드 기반 런타임 표현 PIE 확인
+
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/world-visual-milestone-a`, PR #90
+- 커밋: `b8d8dc2`
+- 상태: `런타임 표현 동작 확인 / 카메라 프레이밍 대기`
+- PIE 확인 결과: 생성된 지면과 자연물이 정상 렌더링된다. 초록 지면, 나무 숲, 풀, 바위 모두 보이고 `WorldPresentation` 액터도 아웃라이너에 정상 등록된다.
+- 헤드리스 캡처 관련 정정:
+  - `-game` + `HighResShot`로 얻은 캡처에는 생성 지면과 자연물이 보이지 않았다. 그러나 실제 PIE에서는 정상 렌더링된다.
+  - 따라서 렌더링 경로 문제가 아니라 헤드리스 캡처 방식의 한계다. 이 방식의 캡처 결과만으로 표현 누락을 판단하지 않는다.
+  - 헤드리스는 로그 기반 검증(인스턴스 수, 컴포넌트 등록, 결정론 값 대조)에는 계속 유효하다. 육안 판정은 PIE로만 한다.
+- 관찰 사항 (IR-C에 기록):
+  - 관찰 카메라가 생성된 숲 바로 앞에 위치해 화면이 나무로 가득 차고 주민이 보이지 않는다.
+  - `LLWorldPresentationActor`는 `LLWorldSpatialContract` 기준으로 시작 청크를 표현 원점에 두고 해당 청크의 authoritative 밀도값대로 배치한다. 표현은 계약대로이며 카메라가 배치 안쪽에 들어가 있는 상태다.
+  - 카메라는 `Source/LifeLens/Core/**` 소유라 수정하지 않았다
+- 상대가 알아야 할 점:
+  - 헤드리스 `-game` 캡처는 이 프로젝트에서 표현 검증용으로 신뢰할 수 없다. 로그 검증은 유효하다
+  - 가독성 완충이 필요하면 표현 액터에 주민 시작 지점 주변 제외 반경을 넣을 수 있으나, authoritative fact가 아니므로 요청 없이는 넣지 않는다
+
+### 다겸 측 AI — 시작 지점 가독성 반경 PIE 확인
+
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/world-visual-milestone-a`, PR #90
+- 커밋: `5c004cd`
+- 상태: `가독성 반경 확인 완료 / 카메라 대기`
+- PIE 확인 결과:
+  - 자연물 제외 반경 정상 동작. 주민 시작 지점 주변이 트이고 식생이 거리에 따라 점진적으로 차오른다
+  - 주민이 나무에 가리지 않고 보인다
+  - 식생 종류와 색 변화도 확인
+- 구현이 지킨 승인 조건:
+  - presentation-only. Core / world generation / resource authority 미변경
+  - 기준점은 Core start region. 공간 계약상 `InitialCenterGrid`가 표현 원점이므로 원점 거리 = 시작 지점 거리
+  - 제외 대상은 청크 fertility/moisture로 추가되는 ambient dressing 중 시야를 가리는 나무·덤불·큰 풀로 한정. 낮은 바위·자갈은 제외하지 않음
+  - `ResourcePatches`는 반경 안에서도 숨기지 않고 `StartRegionResourceScale` 0.55배로 축소해 유지
+  - 결정론 유지. 제외 판정도 동일 해시 스트림에서 뽑으며 두 실행 로그가 완전히 일치함
+  - 반경 800 / 감쇠 700 / 자원 축소율은 `EditAnywhere` presentation tuning 값. Core 규칙이나 세이브 identity에 포함하지 않음
+  - 튜닝 근거: 청크 32셀 = 3,200 유닛. 초기값 1,200/900은 시작 청크 대부분을 비워 800/700으로 조정. instances 96/151/359/40 → 65/99/216/40, cleared 226
+- 관찰 사항 (수정하지 않음):
+  - 주민이 이동할 때 몸 방향이 이동 방향과 맞지 않아 문워크처럼 보인다. IR-B 회신대로 쭌 측 #91 범위이므로 기록만 한다
+- 남은 것:
+  - 관찰 카메라가 여전히 숲 근처에 있어 전체 조망이 어렵다. 쭌 측 observer camera 작업 대기
