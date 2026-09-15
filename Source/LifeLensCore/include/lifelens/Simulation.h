@@ -166,14 +166,16 @@ inline bool Simulation::completeExternalPhysicalAction(
     Runtime& runtime=runtimeIt->second;
     if(runtime.socialActive || runtime.goal==Goal::Idle || runtime.plan.empty()) return false;
 
-    const bool designatedSanitation=sanitationSiteId!=0;
-    if(designatedSanitation){
+    const bool primitiveSanitation=sanitationSiteId!=0;
+    const PrimitiveSanitationSite* sanitationSite=nullptr;
+    if(primitiveSanitation){
         if(runtime.goal!=Goal::UseToilet || emergencyFallback) return false;
-        const PrimitiveSanitationSite* site=findPrimitiveSanitationSite(
+        sanitationSite=findPrimitiveSanitationSite(
             world_.primitiveSanitationSites,sanitationSiteId);
-        if(site==nullptr || !site->active
-           || site->kind!=PrimitiveSanitationSiteKind::DesignatedArea
-           || site->pos.x!=resolvedPosition.x || site->pos.y!=resolvedPosition.y) return false;
+        if(sanitationSite==nullptr || !sanitationSite->active
+           || !validPrimitiveSanitationSiteKind(sanitationSite->kind)
+           || sanitationSite->pos.x!=resolvedPosition.x
+           || sanitationSite->pos.y!=resolvedPosition.y) return false;
     }
 
     // Food and water are never synthesized by presentation. Even when a real
@@ -184,13 +186,16 @@ inline bool Simulation::completeExternalPhysicalAction(
     if(runtime.goal==Goal::Drink && !character->civilization.inventory.remove(
         ItemKind::RawMaterial,MaterialKind::Water,1)) return false;
 
-    const int duration=designatedSanitation
-        ? designatedSanitationUseDurationTicks()
+    const PrimitiveSanitationSiteKind sanitationKind=sanitationSite!=nullptr
+        ? sanitationSite->kind
+        : PrimitiveSanitationSiteKind::DesignatedArea;
+    const int duration=primitiveSanitation
+        ? primitiveSanitationUseDurationTicks(sanitationKind)
         : (emergencyFallback
             ? emergencyUseDurationTicks(runtime.goal)
             : facilityUseDurationTicks(runtime.goal));
-    const NeedsDelta effect=designatedSanitation
-        ? designatedSanitationUseEffectPerTick()
+    const NeedsDelta effect=primitiveSanitation
+        ? primitiveSanitationUseEffectPerTick(sanitationKind)
         : (emergencyFallback
             ? emergencyUseEffectPerTick(runtime.goal)
             : facilityUseEffectPerTick(runtime.goal));
@@ -202,13 +207,25 @@ inline bool Simulation::completeExternalPhysicalAction(
     // at the actual acknowledged world-grid position rather than independently
     // choosing a second position that could disagree with what the player saw.
     runtime.pos=resolvedPosition;
-    if(runtime.goal==Goal::UseToilet && (emergencyFallback || designatedSanitation)){
-        if(designatedSanitation && !recordDesignatedSanitationSiteUse(
+    if(runtime.goal==Goal::UseToilet && (emergencyFallback || primitiveSanitation)){
+        // #79 compatibility contract: recordDesignatedSanitationSiteUse remains
+        // the designated-area wrapper; the generalized path below accepts both
+        // DesignatedArea and DugPit without changing site identity/GridPos.
+        if(primitiveSanitation && !recordPrimitiveSanitationSiteUse(
             world_.primitiveSanitationSites,sanitationSiteId,resolvedPosition)) return false;
+        const double residueIntensity=primitiveSanitation
+            ? primitiveSanitationResidueIntensity(sanitationKind)
+            : 0.42;
+        const int residueRadius=primitiveSanitation
+            ? primitiveSanitationResidueRadiusTiles(sanitationKind)
+            : 3;
         const auto& residue=world_.environmentalResidues.deposit(
             EnvironmentalResidueKind::HumanWaste,resolvedPosition,character->id,
-            world_.minute,1.0,0.42,3);
-        character->needs.hygiene=Needs::clamp01(character->needs.hygiene+0.025);
+            world_.minute,1.0,residueIntensity,residueRadius);
+        const double hygieneBurden=primitiveSanitation
+            ? primitiveSanitationHygieneBurden(sanitationKind)
+            : 0.025;
+        character->needs.hygiene=Needs::clamp01(character->needs.hygiene+hygieneBurden);
         emit(character->name+" left sanitation residue id="+std::to_string(residue.id));
     }
 
@@ -222,9 +239,9 @@ inline bool Simulation::completeExternalPhysicalAction(
         emit(character->name+" recognized recurring human-waste contamination as a sanitation problem");
     }
 
-    if(designatedSanitation){
+    if(primitiveSanitation){
         emit(character->name+" completed "+std::string(goalName(runtime.goal))+
-             " at designated sanitation site="+std::to_string(sanitationSiteId));
+             " at primitive sanitation site="+std::to_string(sanitationSiteId));
     }else{
         emit(character->name+" completed "+std::string(goalName(runtime.goal))+
              (emergencyFallback ? " via emergency fallback" : " via world affordance"));

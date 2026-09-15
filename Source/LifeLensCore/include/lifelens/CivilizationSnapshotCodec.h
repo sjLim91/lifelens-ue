@@ -33,8 +33,10 @@ inline bool validItemKind(ItemKind value)
 
 inline bool validTechniqueId(TechniqueId value)
 {
+    // The contiguous persisted range includes both
+    // TechniqueId::DesignatedSanitationArea and TechniqueId::DugSanitationPit.
     return static_cast<int>(value)>=static_cast<int>(TechniqueId::None)
-        && static_cast<int>(value)<=static_cast<int>(TechniqueId::DesignatedSanitationArea);
+        && static_cast<int>(value)<=static_cast<int>(TechniqueId::DugSanitationPit);
 }
 
 inline bool validKnowledgeLevel(KnowledgeLevel value)

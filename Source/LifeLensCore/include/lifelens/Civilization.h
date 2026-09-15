@@ -210,7 +210,8 @@ enum class TechniqueId {
     FireMaking,
     FiberCordage,
     SimpleContainer,
-    DesignatedSanitationArea
+    DesignatedSanitationArea,
+    DugSanitationPit
 };
 
 enum class KnowledgeLevel : int {
@@ -294,7 +295,8 @@ enum class ExperimentKind {
     FrictionWood,
     TwistFiber,
     ShapeClay,
-    DesignateSanitationArea
+    DesignateSanitationArea,
+    DigSanitationPit
 };
 
 enum class CivilizationEventType {
@@ -325,6 +327,7 @@ struct ExperimentContext {
     double patience=0.5;
     bool sanitationProblemRecognized=false;
     bool sanitationSiteAvailable=false;
+    bool sanitationPitCandidateAvailable=false;
 };
 
 struct ExperimentResult {
@@ -368,6 +371,7 @@ inline TechniqueRecipe techniqueRecipe(TechniqueId technique)
         case TechniqueId::SimpleContainer:
             return {technique,{{ItemKind::RawMaterial,MaterialKind::Clay,3,false}},true,ItemKind::SimpleContainer,MaterialKind::Clay,1};
         case TechniqueId::DesignatedSanitationArea:
+        case TechniqueId::DugSanitationPit:
             return {technique,{},false,ItemKind::RawMaterial,MaterialKind::Unknown,0};
         case TechniqueId::None:
         default:
@@ -403,6 +407,7 @@ inline TechniqueId experimentTechnique(ExperimentKind kind)
         case ExperimentKind::TwistFiber: return TechniqueId::FiberCordage;
         case ExperimentKind::ShapeClay: return TechniqueId::SimpleContainer;
         case ExperimentKind::DesignateSanitationArea: return TechniqueId::DesignatedSanitationArea;
+        case ExperimentKind::DigSanitationPit: return TechniqueId::DugSanitationPit;
         default: return TechniqueId::None;
     }
 }
@@ -438,6 +443,7 @@ inline double experimentBaseChance(ExperimentKind kind,MaterialKind material)
         case ExperimentKind::TwistFiber: return material==MaterialKind::Fiber ? 0.34 : 0.0;
         case ExperimentKind::ShapeClay: return material==MaterialKind::Clay ? 0.30 : 0.0;
         case ExperimentKind::DesignateSanitationArea: return material==MaterialKind::Unknown ? 0.32 : 0.0;
+        case ExperimentKind::DigSanitationPit: return material==MaterialKind::Unknown ? 0.28 : 0.0;
         default: return 0.0;
     }
 }
@@ -467,6 +473,11 @@ inline bool experimentPrerequisitesMet(const ExperimentContext& context,const Kn
     }
     if(context.kind==ExperimentKind::DesignateSanitationArea){
         return context.sanitationProblemRecognized && context.sanitationSiteAvailable;
+    }
+    if(context.kind==ExperimentKind::DigSanitationPit){
+        return context.sanitationPitCandidateAvailable
+            && knowledge.knowsAtLeast(
+                TechniqueId::DesignatedSanitationArea,KnowledgeLevel::Reproducible);
     }
     return true;
 }

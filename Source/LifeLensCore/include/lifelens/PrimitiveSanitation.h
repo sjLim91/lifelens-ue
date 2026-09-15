@@ -12,8 +12,13 @@ namespace lifelens {
 using SanitationSiteId=std::uint64_t;
 
 enum class PrimitiveSanitationSiteKind {
-    DesignatedArea
+    DesignatedArea,
+    DugPit
 };
+
+inline constexpr double DugSanitationPitWorkRequired=4.5;
+inline constexpr double DugSanitationPitContainmentIntensityFactor=0.45;
+inline constexpr int DugSanitationPitContainmentRadiusTiles=1;
 
 struct PrimitiveSanitationSite {
     SanitationSiteId id=0;
@@ -23,15 +28,31 @@ struct PrimitiveSanitationSite {
     int establishedMinute=0;
     bool active=true;
     int useCount=0;
+    double improvementWork=0.0;
+    CharacterId improvedBy=0;
+    int improvedMinute=-1;
 };
+
+inline bool validPrimitiveSanitationSiteKind(PrimitiveSanitationSiteKind kind)
+{
+    return kind==PrimitiveSanitationSiteKind::DesignatedArea
+        || kind==PrimitiveSanitationSiteKind::DugPit;
+}
 
 inline bool validPrimitiveSanitationSite(const PrimitiveSanitationSite& site)
 {
-    return site.id!=0
-        && site.kind==PrimitiveSanitationSiteKind::DesignatedArea
-        && site.establishedBy!=0
-        && site.establishedMinute>=0
-        && site.useCount>=0;
+    if(site.id==0 || !validPrimitiveSanitationSiteKind(site.kind)
+       || site.establishedBy==0 || site.establishedMinute<0 || site.useCount<0
+       || site.improvementWork<0.0 || site.improvementWork>DugSanitationPitWorkRequired+1e-9){
+        return false;
+    }
+    if(site.kind==PrimitiveSanitationSiteKind::DesignatedArea){
+        return site.improvedBy==0 && site.improvedMinute==-1
+            && site.improvementWork<DugSanitationPitWorkRequired;
+    }
+    return site.improvedBy!=0
+        && site.improvedMinute>=site.establishedMinute
+        && site.improvementWork>=DugSanitationPitWorkRequired-1e-9;
 }
 
 inline const PrimitiveSanitationSite* findPrimitiveSanitationSite(
@@ -50,15 +71,35 @@ inline PrimitiveSanitationSite* findPrimitiveSanitationSite(
     return nullptr;
 }
 
-inline const PrimitiveSanitationSite* activeDesignatedSanitationSite(
+inline const PrimitiveSanitationSite* activePrimitiveSanitationSite(
     const std::vector<PrimitiveSanitationSite>& sites)
 {
     const PrimitiveSanitationSite* best=nullptr;
     for(const auto& site:sites){
-        if(!site.active || site.kind!=PrimitiveSanitationSiteKind::DesignatedArea) continue;
+        if(!site.active || !validPrimitiveSanitationSiteKind(site.kind)) continue;
         if(best==nullptr || site.id<best->id) best=&site;
     }
     return best;
+}
+
+inline PrimitiveSanitationSite* activePrimitiveSanitationSite(
+    std::vector<PrimitiveSanitationSite>& sites)
+{
+    PrimitiveSanitationSite* best=nullptr;
+    for(auto& site:sites){
+        if(!site.active || !validPrimitiveSanitationSiteKind(site.kind)) continue;
+        if(best==nullptr || site.id<best->id) best=&site;
+    }
+    return best;
+}
+
+inline const PrimitiveSanitationSite* activeDesignatedSanitationSite(
+    const std::vector<PrimitiveSanitationSite>& sites)
+{
+    const PrimitiveSanitationSite* site=activePrimitiveSanitationSite(sites);
+    return site!=nullptr && site->kind==PrimitiveSanitationSiteKind::DesignatedArea
+        ? site
+        : nullptr;
 }
 
 inline SanitationSiteId nextPrimitiveSanitationSiteId(
@@ -131,7 +172,7 @@ inline bool canEstablishDesignatedSanitationArea(
 {
     if(!character.civilization.knowledge.knowsAtLeast(
         TechniqueId::DesignatedSanitationArea,KnowledgeLevel::Reproducible)) return false;
-    if(activeDesignatedSanitationSite(sites)!=nullptr) return false;
+    if(activePrimitiveSanitationSite(sites)!=nullptr) return false;
     return evaluateDesignatedSanitationSiteCreationOpportunity(
         worldSeed,character,field,currentMinute).siteAvailable;
 }
@@ -174,6 +215,111 @@ inline PrimitiveSanitationSiteCreationResult establishDesignatedSanitationArea(
     return result;
 }
 
+struct DugSanitationPitOpportunity {
+    bool candidateAvailable=false;
+    SanitationSiteId siteId=0;
+    GridPos pos{};
+    int useCount=0;
+    double siteExposure=0.0;
+    double problemConfidence=0.0;
+};
+
+inline DugSanitationPitOpportunity evaluateDugSanitationPitOpportunity(
+    const Character& character,
+    const EnvironmentalResidueField& field,
+    const std::vector<PrimitiveSanitationSite>& sites)
+{
+    DugSanitationPitOpportunity result;
+    const PrimitiveSanitationSite* site=activePrimitiveSanitationSite(sites);
+    if(site==nullptr || site->kind!=PrimitiveSanitationSiteKind::DesignatedArea) return result;
+    if(!character.civilization.knowledge.knowsAtLeast(
+        TechniqueId::DesignatedSanitationArea,KnowledgeLevel::Reproducible)) return result;
+
+    result.siteId=site->id;
+    result.pos=site->pos;
+    result.useCount=site->useCount;
+    result.siteExposure=field.exposureAt(site->pos);
+    result.problemConfidence=recognizedSanitationProblemConfidence(character);
+    result.candidateAvailable=hasRecognizedSanitationProblem(character)
+        || site->useCount>=2
+        || result.siteExposure>=0.12;
+    return result;
+}
+
+inline bool canWorkOnDugSanitationPit(
+    const Character& character,
+    const std::vector<PrimitiveSanitationSite>& sites)
+{
+    const PrimitiveSanitationSite* site=activePrimitiveSanitationSite(sites);
+    return site!=nullptr
+        && site->kind==PrimitiveSanitationSiteKind::DesignatedArea
+        && character.civilization.knowledge.knowsAtLeast(
+            TechniqueId::DugSanitationPit,KnowledgeLevel::Reproducible);
+}
+
+inline double diggingToolWorkBonus(const Inventory& inventory)
+{
+    double best=0.0;
+    for(const ItemStack& stack:inventory.stacks()){
+        if(stack.quantity<=0 || itemCapability(stack.kind)!=ToolCapability::Dig) continue;
+        best=std::max(best,0.90*stack.quality*stack.durability);
+    }
+    return best;
+}
+
+inline double dugSanitationPitWorkContribution(const Character& character)
+{
+    return 0.90
+        +0.30*clampCivilization01(character.civilization.craftingSkill)
+        +0.20*clampCivilization01(character.personality.patience)
+        +diggingToolWorkBonus(character.civilization.inventory);
+}
+
+struct DugSanitationPitWorkResult {
+    bool worked=false;
+    bool completed=false;
+    SanitationSiteId siteId=0;
+    GridPos pos{};
+    double workBefore=0.0;
+    double workAfter=0.0;
+};
+
+inline DugSanitationPitWorkResult workOnDugSanitationPit(
+    Character& character,
+    EnvironmentalResidueField& field,
+    std::vector<PrimitiveSanitationSite>& sites,
+    int currentMinute)
+{
+    DugSanitationPitWorkResult result;
+    if(!canWorkOnDugSanitationPit(character,sites)) return result;
+
+    PrimitiveSanitationSite* site=activePrimitiveSanitationSite(sites);
+    if(site==nullptr || site->kind!=PrimitiveSanitationSiteKind::DesignatedArea) return result;
+
+    result.worked=true;
+    result.siteId=site->id;
+    result.pos=site->pos;
+    result.workBefore=site->improvementWork;
+    site->improvementWork=std::min(
+        DugSanitationPitWorkRequired,
+        site->improvementWork+dugSanitationPitWorkContribution(character));
+    result.workAfter=site->improvementWork;
+
+    if(site->improvementWork>=DugSanitationPitWorkRequired-1e-9){
+        site->improvementWork=DugSanitationPitWorkRequired;
+        site->kind=PrimitiveSanitationSiteKind::DugPit;
+        site->improvedBy=character.id;
+        site->improvedMinute=currentMinute;
+        field.containHumanWasteAt(
+            site->pos,currentMinute,
+            DugSanitationPitContainmentIntensityFactor,
+            DugSanitationPitContainmentRadiusTiles);
+        result.workAfter=site->improvementWork;
+        result.completed=true;
+    }
+    return result;
+}
+
 enum class SanitationUseTargetKind {
     EmergencyOutdoor,
     DesignatedArea
@@ -192,7 +338,7 @@ inline SanitationUseTarget resolveSanitationUseTarget(
     const std::vector<PrimitiveSanitationSite>& sites,
     int currentMinute)
 {
-    if(const PrimitiveSanitationSite* site=activeDesignatedSanitationSite(sites)){
+    if(const PrimitiveSanitationSite* site=activePrimitiveSanitationSite(sites)){
         return {SanitationUseTargetKind::DesignatedArea,site->pos,site->id};
     }
     return {
@@ -201,17 +347,25 @@ inline SanitationUseTarget resolveSanitationUseTarget(
         0};
 }
 
-inline bool recordDesignatedSanitationSiteUse(
+inline bool recordPrimitiveSanitationSiteUse(
     std::vector<PrimitiveSanitationSite>& sites,
     SanitationSiteId siteId,
     GridPos resolvedPosition)
 {
     PrimitiveSanitationSite* site=findPrimitiveSanitationSite(sites,siteId);
     if(site==nullptr || !site->active
-       || site->kind!=PrimitiveSanitationSiteKind::DesignatedArea
+       || !validPrimitiveSanitationSiteKind(site->kind)
        || site->pos.x!=resolvedPosition.x || site->pos.y!=resolvedPosition.y) return false;
     ++site->useCount;
     return true;
+}
+
+inline bool recordDesignatedSanitationSiteUse(
+    std::vector<PrimitiveSanitationSite>& sites,
+    SanitationSiteId siteId,
+    GridPos resolvedPosition)
+{
+    return recordPrimitiveSanitationSiteUse(sites,siteId,resolvedPosition);
 }
 
 inline int designatedSanitationUseDurationTicks()
@@ -219,9 +373,35 @@ inline int designatedSanitationUseDurationTicks()
     return 2;
 }
 
+inline int primitiveSanitationUseDurationTicks(PrimitiveSanitationSiteKind /*kind*/)
+{
+    return 2;
+}
+
 inline NeedsDelta designatedSanitationUseEffectPerTick()
 {
     return {0,0,0,-0.13,0.012};
+}
+
+inline NeedsDelta primitiveSanitationUseEffectPerTick(PrimitiveSanitationSiteKind kind)
+{
+    if(kind==PrimitiveSanitationSiteKind::DugPit) return {0,0,0,-0.14,0.004};
+    return designatedSanitationUseEffectPerTick();
+}
+
+inline double primitiveSanitationResidueIntensity(PrimitiveSanitationSiteKind kind)
+{
+    return kind==PrimitiveSanitationSiteKind::DugPit ? 0.16 : 0.42;
+}
+
+inline int primitiveSanitationResidueRadiusTiles(PrimitiveSanitationSiteKind kind)
+{
+    return kind==PrimitiveSanitationSiteKind::DugPit ? 1 : 3;
+}
+
+inline double primitiveSanitationHygieneBurden(PrimitiveSanitationSiteKind kind)
+{
+    return kind==PrimitiveSanitationSiteKind::DugPit ? 0.008 : 0.025;
 }
 
 } // namespace lifelens
