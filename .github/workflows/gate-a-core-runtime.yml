@@ -95,6 +95,16 @@ jobs:
               assert(environment.humanWasteResidues>=1);
               assert(environment.totalResidues>=1);
 
+              // Residents are allowed to move after initial spawn. Save/load must
+              // restore the exact positions that existed at the save checkpoint.
+              std::vector<GridPos> positionsAtSave;
+              positionsAtSave.reserve(world.characters.size());
+              for(const Character& resident:world.characters){
+                  GridPos pos{};
+                  assert(sim.runtimePosition(resident.id,pos));
+                  positionsAtSave.push_back(pos);
+              }
+
               // Save/load must preserve generated natural identity, resident positions,
               // environmental consequence and observer-readable state without reroll.
               std::string error;
@@ -117,11 +127,13 @@ jobs:
               assert(restored.observeAllResidents().size()==4);
               assert(restored.observeEnvironment().humanWasteResidues==environment.humanWasteResidues);
               assert(restored.world().initialStartRegionCoord==world.initialStartRegionCoord);
+              assert(restored.world().characters.size()==world.characters.size());
 
-              for(const Character& founder:restored.world().characters){
+              for(std::size_t i=0;i<restored.world().characters.size();++i){
+                  assert(restored.world().characters[i].id==world.characters[i].id);
                   GridPos pos{};
-                  assert(restored.runtimePosition(founder.id,pos));
-                  assert(chunkCoordForGrid(pos)==restored.world().initialStartRegionCoord);
+                  assert(restored.runtimePosition(restored.world().characters[i].id,pos));
+                  assert(pos.x==positionsAtSave[i].x && pos.y==positionsAtSave[i].y);
               }
 
               std::vector<std::uint8_t> restoredBytes;
