@@ -53,9 +53,10 @@ Documentation-only commits may advance `main` beyond the product-code baseline a
 
 ## Current dispatch
 
-### Jjun lane — Designated sanitation area affordance integration v1 — READY_NOW
+### Jjun lane — Designated sanitation area affordance integration v1 — IN_PROGRESS
 
 Owner: 쭌 / 쭌 AI
+Branch: `jjun/designated-sanitation-affordance-v1`
 Dependency: PR #78 DONE.
 Handoff safety: SAFE; no uncommitted local dependency.
 
@@ -230,7 +231,7 @@ Immediate sequence:
 1. WorldDirector sanitation recommendation integration — DONE #76.
 2. Sanitation Problem Recognition v1 — DONE #77.
 3. Primitive sanitation experiment / DesignatedSanitationArea discovery — DONE #78.
-4. Designated sanitation area authoritative affordance integration — READY_NOW.
+4. Designated sanitation area authoritative affordance integration — IN_PROGRESS.
 5. Dug pit / latrine progression after the designated-area loop is physical and persistent.
 6. HumanWaste Environmental Visual Feedback.
 7. Health/pathogen and water/soil contamination later.
@@ -322,7 +323,7 @@ Do not revive the old multi-hour PR #2 path as the default loop.
 12. #76 World sanitation recommendation integration — DONE.
 13. #77 Sanitation Problem Recognition — DONE.
 14. #78 Primitive sanitation experimentation progression — DONE.
-15. **Designated sanitation area authoritative affordance integration — READY_NOW.**
+15. **Designated sanitation area authoritative affordance integration — IN_PROGRESS (`jjun/designated-sanitation-affordance-v1`).**
 16. Dug pit / latrine progression.
 17. HumanWaste visual feedback.
 18. Character Appearance #67 — ACTIVE in parallel.
