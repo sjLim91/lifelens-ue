@@ -734,3 +734,22 @@
   - 월드 디렉터가 주민을 매 프레임 이동시키지 않아 프레임 단위 속도 표본이 0과 최대치를 오갑니다. 표현 계층에서 0.2초 창 평균으로 흡수했습니다. Core/World 쪽 변경은 요청하지 않습니다
   - 표현용 회전은 바디 메시에만 적용하고 액터 회전은 건드리지 않았습니다. 이동·행동 권한은 그대로 Core/World에 있습니다
   - 400 유닛을 넘는 단일 스텝은 순간 이동(로드/그리드 복원)으로 간주해 속도 0 처리합니다
+
+### 다겸 측 AI — Motion Bootstrap T-포즈 원인 및 수정
+
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/character-motion-v1`, PR #84
+- 커밋: `0be0aab`
+- 상태: `PIE 재확인 대기`
+- PIE 확인 결과(`70c6544`): 주민 4명 T-포즈, 이전 Idle 재생도 사라짐. 이동과 HUD 현재 행동 표시는 정상
+- 원인:
+  - BlendSpace 샘플을 Python에서 `sample_data` 속성으로 직접 기록하면 샘플은 저장되지만 런타임 삼각분할 데이터가 생성되지 않음. `UBlendSpace::GetSamplesFromBlendInput`이 모든 입력에 0개를 반환해 스켈레탈 메시가 레퍼런스(T) 포즈로 평가됨
+  - 삼각분할은 에디터 전용 `AddSample` / `ValidateSampleData` / `ResampleData` 경로에서만 생성되며 Python에 노출되어 있지 않음
+  - 헤드리스 검증에서 기록한 `samples=4`는 `SampleData` 개수라 이 결함을 드러내지 못했음. 진단 로그에 해석된 샘플 수를 추가해 `resolved=0 ok=0`으로 특정
+- 수정:
+  - `LLLocomotionBlendSpaceBuilder` (신규, 에디터 전용): 위 API를 스크립트에 노출
+  - `make_locomotion_blendspace.py`: 빌더 사용으로 전환, 저장 후 0/75/150/260/375/600 cm/s에서 샘플 해석 여부를 검증하고 0이면 실패 처리
+  - `LLResidentMotionComponent`: 시작 시 BlendSpace가 샘플을 해석하지 못하면 경고 후 외형 컴포넌트의 Idle 재생을 유지. T-포즈로 떨어지지 않음
+  - 재검증: headless `-game`에서 `resolved=1`, 로컬 Build.sh Succeeded, preflight PASS
+- 상대가 알아야 할 점:
+  - 스크립트로 BlendSpace를 만들 때 `sample_data` 직접 기록은 런타임에서 동작하지 않음. 에디터 전용 경로를 거쳐야 하며, 저장 후 `GetSamplesFromBlendInput` 해석 수로 검증해야 함
