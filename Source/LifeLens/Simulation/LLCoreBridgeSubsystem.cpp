@@ -3,6 +3,7 @@
 #include "lifelens/Aging.h"
 #include "lifelens/ObserverReadModelV2.h"
 #include "lifelens/Simulation.h"
+#include "lifelens/SimulationRuleset.h"
 
 namespace
 {
@@ -82,6 +83,42 @@ const TCHAR* KinshipLabel(lifelens::KinshipType Kinship)
 }
 }
 
+lifelens::Simulation* ULLCoreBridgeSubsystem::CreateConfiguredSimulation(uint64 CoreSeed) const
+{
+    lifelens::SimulationRuleset Rules = lifelens::DefaultSimulationRuleset;
+
+    Rules.needs.hungerPerMinute = FMath::Max(0.0, NeedsHungerPerMinute);
+    Rules.needs.thirstPerMinute = FMath::Max(0.0, NeedsThirstPerMinute);
+    Rules.needs.sleepPerMinute = FMath::Max(0.0, NeedsSleepPerMinute);
+    Rules.needs.bladderPerMinute = FMath::Max(0.0, NeedsBladderPerMinute);
+    Rules.needs.hygienePerMinute = FMath::Max(0.0, NeedsHygienePerMinute);
+
+    Rules.utilityAI.needExponent = FMath::Max(0.01, UtilityNeedExponent);
+    Rules.utilityAI.urgentThreshold = FMath::Clamp(UtilityUrgentThreshold, 0.0, 1.0);
+    Rules.utilityAI.urgentSlope = FMath::Max(0.0, UtilityUrgentSlope);
+    Rules.utilityAI.idleScore = FMath::Max(0.0, UtilityIdleScore);
+    Rules.utilityAI.sleepNightStartHour = FMath::Clamp(UtilitySleepNightStartHour, 0, 23);
+    Rules.utilityAI.sleepNightEndHour = FMath::Clamp(UtilitySleepNightEndHour, 0, 23);
+    Rules.utilityAI.sleepNightMultiplier = FMath::Max(0.0, UtilitySleepNightMultiplier);
+    Rules.utilityAI.washBaseMultiplier = FMath::Max(0.0, UtilityWashBaseMultiplier);
+    Rules.utilityAI.washConscientiousnessMultiplier = FMath::Max(0.0, UtilityWashConscientiousnessMultiplier);
+    Rules.utilityAI.sleepBaseMultiplier = FMath::Max(0.0, UtilitySleepBaseMultiplier);
+    Rules.utilityAI.sleepIntroversionMultiplier = FMath::Max(0.0, UtilitySleepIntroversionMultiplier);
+    Rules.utilityAI.secondChoiceProbability = FMath::Clamp(UtilitySecondChoiceProbability, 0.0, 1.0);
+
+    if (!lifelens::validSimulationRuleset(Rules))
+    {
+        UE_LOG(LogTemp, Error, TEXT("LifeLens Core ruleset config is invalid; falling back to compiled safe defaults."));
+        Rules = lifelens::DefaultSimulationRuleset;
+    }
+
+    return new lifelens::Simulation(
+        CoreSeed,
+        0,
+        lifelens::CurrentWorldGenerationVersion,
+        Rules);
+}
+
 void ULLCoreBridgeSubsystem::Deinitialize()
 {
     ResetRuntime();
@@ -95,7 +132,7 @@ void ULLCoreBridgeSubsystem::StartCoreNewGame(int32 Seed)
     ActiveSeed = Seed == 0 ? 1 : Seed;
     const uint64 CoreSeed = static_cast<uint64>(static_cast<uint32>(ActiveSeed));
 
-    CoreSimulation = new lifelens::Simulation(CoreSeed);
+    CoreSimulation = CreateConfiguredSimulation(CoreSeed);
     CoreSimulation->onEvent([this](const std::string& Line)
     {
         PushCoreEvent(UTF8_TO_TCHAR(Line.c_str()));
@@ -113,7 +150,7 @@ void ULLCoreBridgeSubsystem::StartCoreObserverDemo(int32 Seed, bool bSocialDemo)
     ActiveSeed = Seed == 0 ? 42 : Seed;
     const uint64 CoreSeed = static_cast<uint64>(static_cast<uint32>(ActiveSeed));
 
-    CoreSimulation = new lifelens::Simulation(CoreSeed);
+    CoreSimulation = CreateConfiguredSimulation(CoreSeed);
     CoreSimulation->onEvent([this](const std::string& Line)
     {
         PushCoreEvent(UTF8_TO_TCHAR(Line.c_str()));
