@@ -20,6 +20,21 @@ ELLCorePhysicalIntent ToUnrealPhysicalIntent(lifelens::Goal Goal)
     }
 }
 
+lifelens::Goal ToCorePhysicalGoal(ELLCorePhysicalIntent Intent)
+{
+    switch (Intent)
+    {
+        case ELLCorePhysicalIntent::Eat: return lifelens::Goal::Eat;
+        case ELLCorePhysicalIntent::Drink: return lifelens::Goal::Drink;
+        case ELLCorePhysicalIntent::Sleep: return lifelens::Goal::Sleep;
+        case ELLCorePhysicalIntent::Toilet: return lifelens::Goal::UseToilet;
+        case ELLCorePhysicalIntent::Hygiene: return lifelens::Goal::Wash;
+        case ELLCorePhysicalIntent::None:
+        default:
+            return lifelens::Goal::Idle;
+    }
+}
+
 ELLCoreSocialIntent ToUnrealSocialIntent(lifelens::SocialIntent Intent)
 {
     switch (Intent)
@@ -41,6 +56,16 @@ void ULLCoreBridgeSubsystem::SetExternalPhysicalExecutionEnabled(bool bEnabled)
     {
         CoreSimulation->setExternalPhysicalExecution(bEnabled);
     }
+}
+
+int32 ULLCoreBridgeSubsystem::GetPhysicalActionDurationTicks(
+    ELLCorePhysicalIntent Intent,
+    bool bEmergencyFallback) const
+{
+    const lifelens::Goal Goal = ToCorePhysicalGoal(Intent);
+    return bEmergencyFallback
+        ? static_cast<int32>(lifelens::emergencyUseDurationTicks(Goal))
+        : static_cast<int32>(lifelens::facilityUseDurationTicks(Goal));
 }
 
 bool ULLCoreBridgeSubsystem::CompleteResidentPhysicalAction(

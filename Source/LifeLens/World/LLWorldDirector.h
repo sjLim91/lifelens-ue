@@ -16,6 +16,7 @@ struct FLLResidentRuntimeState
 {
     bool bInitialized = false;
     bool bPerformingAction = false;
+    float PhysicalUseElapsedSeconds = 0.0f;
     ELLCoreObservedActivityKind LastActivityKind = ELLCoreObservedActivityKind::Idle;
     ELLCorePhysicalIntent LastPhysicalIntent = ELLCorePhysicalIntent::None;
     ELLCoreSocialIntent LastSocialIntent = ELLCoreSocialIntent::None;
@@ -58,7 +59,8 @@ private:
     void ApplyCoreDirective(
         ALLResidentCharacter& Character,
         FLLResidentRuntimeState& Runtime,
-        const FLLCoreActionDirective& Directive);
+        const FLLCoreActionDirective& Directive,
+        float DeltaSeconds);
     ELLActionIntent ToPresentationIntent(ELLCorePhysicalIntent Intent) const;
     ALLActivityAnchor* FindBestUsableAnchor(
         const ALLResidentCharacter& Character,
@@ -77,6 +79,7 @@ private:
     FTransform ResolveEmergencyFallbackTransform(
         const ALLResidentCharacter& Character,
         ELLActionIntent Intent) const;
+    FIntPoint WorldLocationToCoreGrid(const FVector& WorldLocation) const;
     void ReleasePhysicalReservation(FGuid ResidentId, FLLResidentRuntimeState& Runtime);
     FVector ResolveSocialTargetLocation(
         const ALLResidentCharacter& Character,
@@ -101,4 +104,10 @@ private:
 
     UPROPERTY(EditAnywhere, Category="LifeLens|Time")
     float RealSecondsPerSimulationMinute = 0.6f;
+
+    // Spatial contract between Unreal presentation and Core GridPos. The
+    // existing 650uu emergency-toilet radius maps naturally to roughly 6-7
+    // Core tiles, matching the original Core fallback scale.
+    UPROPERTY(EditAnywhere, Category="LifeLens|World", meta=(ClampMin="1.0"))
+    float CoreGridCellSizeUU = 100.0f;
 };
