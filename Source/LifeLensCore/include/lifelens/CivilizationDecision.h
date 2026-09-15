@@ -7,6 +7,7 @@
 
 #include "Civilization.h"
 #include "Character.h"
+#include "PrimitiveSanitation.h"
 #include "World.h"
 
 namespace lifelens {
@@ -58,6 +59,7 @@ inline const char* techniqueName(TechniqueId technique)
         case TechniqueId::FireMaking: return "FireMaking";
         case TechniqueId::FiberCordage: return "FiberCordage";
         case TechniqueId::SimpleContainer: return "SimpleContainer";
+        case TechniqueId::DesignatedSanitationArea: return "DesignatedSanitationArea";
         default: return "None";
     }
 }
@@ -128,6 +130,7 @@ inline MaterialKind experimentMaterial(ExperimentKind kind)
         case ExperimentKind::FrictionWood: return MaterialKind::Wood;
         case ExperimentKind::TwistFiber: return MaterialKind::Fiber;
         case ExperimentKind::ShapeClay: return MaterialKind::Clay;
+        case ExperimentKind::DesignateSanitationArea: return MaterialKind::Unknown;
         default: return MaterialKind::Unknown;
     }
 }
@@ -193,14 +196,21 @@ inline CivilizationUtilityDecision bestGatherDecision(const World& world,const C
 inline CivilizationUtilityDecision bestExperimentDecision(const World& world,const Character& self)
 {
     CivilizationUtilityDecision best;
-    const std::array<ExperimentKind,5> experiments={
+    const PrimitiveSanitationOpportunity sanitationOpportunity=
+        evaluatePrimitiveSanitationOpportunity(
+            world.seed,self,world.environmentalResidues,world.minute);
+    const std::array<ExperimentKind,6> experiments={
         ExperimentKind::StrikeStone,ExperimentKind::HaftSharpFlake,ExperimentKind::FrictionWood,
-        ExperimentKind::TwistFiber,ExperimentKind::ShapeClay};
+        ExperimentKind::TwistFiber,ExperimentKind::ShapeClay,ExperimentKind::DesignateSanitationArea};
 
     for(const ExperimentKind kind:experiments){
         const TechniqueId technique=experimentTechnique(kind);
         if(technique==TechniqueId::None) continue;
         if(self.civilization.knowledge.knowsAtLeast(technique,KnowledgeLevel::Reproducible)) continue;
+
+        const bool sanitationExperiment=kind==ExperimentKind::DesignateSanitationArea;
+        if(sanitationExperiment &&
+           (!sanitationOpportunity.problemRecognized || !sanitationOpportunity.siteAvailable)) continue;
 
         ExperimentContext context;
         context.worldSeed=world.seed;
@@ -211,6 +221,8 @@ inline CivilizationUtilityDecision bestExperimentDecision(const World& world,con
         context.learningSkill=self.civilization.learningSkill;
         context.curiosity=self.personality.curiosity;
         context.patience=self.personality.patience;
+        context.sanitationProblemRecognized=sanitationOpportunity.problemRecognized;
+        context.sanitationSiteAvailable=sanitationOpportunity.siteAvailable;
 
         if(!experimentPrerequisitesMet(context,self.civilization.knowledge)) continue;
         const TechniqueRecipe recipe=experimentRecipe(context);
@@ -220,9 +232,13 @@ inline CivilizationUtilityDecision bestExperimentDecision(const World& world,con
         const KnowledgeLevel level=self.civilization.knowledge.level(technique);
         const double hypothesisBoost=level==KnowledgeLevel::Hypothesized ? 0.08 : (level==KnowledgeLevel::Understood ? 0.05 : 0.0);
         const double preference=civilizationPreference(world.seed,self.id,200ULL+static_cast<std::uint64_t>(kind));
+        const double sanitationBoost=sanitationExperiment
+            ? 0.18+0.16*sanitationOpportunity.problemConfidence+0.10*clampCivilization01(self.needs.hygiene)
+            : 0.0;
         const double score=clampCivilization01(
             0.11+0.22*self.personality.curiosity+0.10*self.personality.openness+
-            0.07*self.personality.patience+0.12*self.civilization.learningSkill+0.08*preference+hypothesisBoost);
+            0.07*self.personality.patience+0.12*self.civilization.learningSkill+
+            0.08*preference+hypothesisBoost+sanitationBoost);
 
         CivilizationUtilityDecision candidate;
         candidate.intent=CivilizationIntent::Experiment;
@@ -371,6 +387,13 @@ inline CivilizationExecutionResult executeCivilizationDecision(World& world,Char
             context.learningSkill=self.civilization.learningSkill;
             context.curiosity=self.personality.curiosity;
             context.patience=self.personality.patience;
+            if(decision.experiment==ExperimentKind::DesignateSanitationArea){
+                const PrimitiveSanitationOpportunity opportunity=
+                    evaluatePrimitiveSanitationOpportunity(
+                        world.seed,self,world.environmentalResidues,world.minute);
+                context.sanitationProblemRecognized=opportunity.problemRecognized;
+                context.sanitationSiteAvailable=opportunity.siteAvailable;
+            }
             result.experiment=attemptExperiment(context,self.civilization.inventory,self.civilization.knowledge);
             result.executed=result.experiment.attempted;
             result.success=result.experiment.success;

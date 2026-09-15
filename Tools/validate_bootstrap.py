@@ -22,9 +22,11 @@ required = [
     'Source/LifeLensCore/include/lifelens/SimulationSnapshot.h',
     'Source/LifeLensCore/include/lifelens/SimulationSnapshotCodec.h',
     'Source/LifeLensCore/include/lifelens/SanitationProblemRecognition.h',
+    'Source/LifeLensCore/include/lifelens/PrimitiveSanitation.h',
     'Source/LifeLensCore/src/SimulationSnapshot.cpp',
     'Source/LifeLensCore/src/SimulationSnapshotCodec.cpp',
     'Source/LifeLensCore/tests/test_sanitation_problem_recognition.cpp',
+    'Source/LifeLensCore/tests/test_primitive_sanitation_progression.cpp',
     'Source/LifeLens/AI/LLDecisionComponent.cpp',
     'Source/LifeLens/Characters/LLResidentCharacter.cpp',
     'Source/LifeLens/World/LLActivityAnchor.cpp',
@@ -239,8 +241,55 @@ for token in (
 ):
     assert token in environmental_exposure, f'Missing sanitation recognition perception wiring: {token}'
 
+primitive_sanitation = (root / 'Source/LifeLensCore/include/lifelens/PrimitiveSanitation.h').read_text(encoding='utf-8')
+for token in (
+    'PrimitiveSanitationOpportunity',
+    'hasRecognizedSanitationProblem(character)',
+    'chooseLowExposureOutdoorReliefPosition',
+    'PrimitiveSanitationCleanSiteExposureLimit',
+    'result.siteAvailable=result.siteExposure<PrimitiveSanitationCleanSiteExposureLimit',
+):
+    assert token in primitive_sanitation, f'Missing primitive sanitation opportunity contract: {token}'
+assert 'LatrineUnlocked' not in primitive_sanitation, 'Primitive sanitation must not introduce a global latrine unlock'
+
+civilization = (root / 'Source/LifeLensCore/include/lifelens/Civilization.h').read_text(encoding='utf-8')
+for token in (
+    'DesignatedSanitationArea',
+    'DesignateSanitationArea',
+    'context.sanitationProblemRecognized && context.sanitationSiteAvailable',
+    'KnowledgeLevel::Hypothesized',
+    'KnowledgeLevel::Reproducible',
+):
+    assert token in civilization, f'Missing sanitation experiment/knowledge contract: {token}'
+assert 'LatrineUnlocked' not in civilization, 'Civilization model must not add a global sanitation tech flag'
+
+civilization_decision = (root / 'Source/LifeLensCore/include/lifelens/CivilizationDecision.h').read_text(encoding='utf-8')
+for token in (
+    'evaluatePrimitiveSanitationOpportunity',
+    'ExperimentKind::DesignateSanitationArea',
+    'sanitationOpportunity.problemRecognized',
+    'sanitationOpportunity.siteAvailable',
+    'sanitationBoost',
+):
+    assert token in civilization_decision, f'Missing sanitation civilization utility wiring: {token}'
+assert 'LatrineUnlocked' not in civilization_decision, 'Sanitation utility must remain evidence-driven, not globally unlocked'
+
+civilization_snapshot = (root / 'Source/LifeLensCore/include/lifelens/CivilizationSnapshotCodec.h').read_text(encoding='utf-8')
+assert 'TechniqueId::DesignatedSanitationArea' in civilization_snapshot, 'Sanitation personal knowledge must survive snapshot validation'
+
+civilization_transmission = (root / 'Source/LifeLensCore/include/lifelens/CivilizationKnowledgeTransmission.h').read_text(encoding='utf-8')
+assert 'raw<=static_cast<int>(TechniqueId::DesignatedSanitationArea)' in civilization_transmission, 'Sanitation knowledge must use the existing witness/teaching path'
+
+civilization_observer = (root / 'Source/LifeLensCore/include/lifelens/CivilizationObserverReadModel.h').read_text(encoding='utf-8')
+for token in (
+    'raw<=static_cast<int>(TechniqueId::DesignatedSanitationArea)',
+    'TechniqueId::DesignatedSanitationArea)+1',
+):
+    assert token in civilization_observer, f'Missing sanitation technique observer/provenance coverage: {token}'
+
 core_cmake = (root / 'Source/LifeLensCore/CMakeLists.txt').read_text(encoding='utf-8')
 assert 'lifelens_add_test(test_sanitation_problem_recognition)' in core_cmake, 'Missing sanitation recognition Core test registration'
+assert 'lifelens_add_test(test_primitive_sanitation_progression)' in core_cmake, 'Missing primitive sanitation progression Core test registration'
 
 # The simulation core remains standard-library C++ with a C++17 baseline.
 forbidden_core_tokens = (

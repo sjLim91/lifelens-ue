@@ -181,7 +181,7 @@ inline TechniqueTransmissionOutcome applyTechniqueWitness(
 
     TechniqueId technique=TechniqueId::None;
     for(int raw=static_cast<int>(TechniqueId::SharpFlake);
-        raw<=static_cast<int>(TechniqueId::SimpleContainer);++raw){
+        raw<=static_cast<int>(TechniqueId::DesignatedSanitationArea);++raw){
         const TechniqueId candidate=static_cast<TechniqueId>(raw);
         if(factRepresentsTechnique(fact,candidate)){ technique=candidate; break; }
     }
