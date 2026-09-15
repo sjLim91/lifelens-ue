@@ -196,10 +196,22 @@ void ULLResidentMotionComponent::TickComponent(float DeltaTime, ELevelTick TickT
         if (DebugLogTimer <= 0.0f)
         {
             DebugLogTimer = DebugLogInterval;
-            UE_LOG(LogTemp, Log, TEXT("LLMotion %s speed=%.1f window=%.1f yaw=%.1f visual=%.1f travel=%.1f actor=%.1f playing=%d loc=%.0f,%.0f"),
+            // `facing` is the decisive number: the mesh faces its own local
+            // +Y, which is the component right vector, so projecting it onto
+            // the travel direction gives +1 when the character walks forwards
+            // and -1 when it walks backwards.
+            float FacingDot = 0.0f;
+            if (Body && SmoothedSpeed > 0.0f)
+            {
+                const FVector TravelDirection = FRotator(0.0f, DesiredYaw, 0.0f).Vector();
+                FacingDot = FVector::DotProduct(Body->GetRightVector(), TravelDirection);
+            }
+
+            UE_LOG(LogTemp, Log, TEXT("LLMotion %s speed=%.1f window=%.1f yaw=%.1f visual=%.1f travel=%.1f actor=%.1f facing=%.2f playing=%d loc=%.0f,%.0f"),
                 *Owner->GetName(), SmoothedSpeed, WindowedSpeed, SmoothedYaw,
                 SmoothedYaw + MeshForwardYawOffsetDegrees, DesiredYaw,
-                Owner->GetActorRotation().Yaw, bLocomotionPlaying ? 1 : 0, Location.X, Location.Y);
+                Owner->GetActorRotation().Yaw, FacingDot,
+                bLocomotionPlaying ? 1 : 0, Location.X, Location.Y);
         }
     }
 }
