@@ -100,12 +100,18 @@ void ULLResidentMotionComponent::UpdateBodyOrientation(float DeltaTime)
         return;
     }
 
-    // Presentation-side turning only: the owning actor keeps whatever rotation
-    // the movement code gives it, and the visible body eases towards the last
-    // travelled direction instead of snapping.
+    // Presentation-side turning only, and only while the resident is actually
+    // travelling. A stationary resident is turned by the world director toward
+    // its use point or social target, so the body follows the actor rotation
+    // then; holding the last travel heading would make residents interact while
+    // visibly facing away.
+    const AActor* Owner = GetOwner();
+    const float OwnerYaw = Owner ? Owner->GetActorRotation().Yaw : SmoothedYaw;
+    const float TargetYaw = SmoothedSpeed > 0.0f ? DesiredYaw : OwnerYaw;
+
     SmoothedYaw = FMath::FInterpTo(
         SmoothedYaw,
-        SmoothedYaw + FMath::FindDeltaAngleDegrees(SmoothedYaw, DesiredYaw),
+        SmoothedYaw + FMath::FindDeltaAngleDegrees(SmoothedYaw, TargetYaw),
         DeltaTime,
         YawInterpSpeed);
 
@@ -136,28 +142,32 @@ void ULLResidentMotionComponent::TickComponent(float DeltaTime, ELevelTick TickT
     }
 
     // Loading a save or restoring a runtime grid position moves the actor in
-    // one step; that is not locomotion.
+    // one step; that is not locomotion. The step is dropped entirely so it
+    // never reaches the speed window, which would otherwise report a burst of
+    // sprint speed when the window closes.
     const float Step = Delta.Size2D();
     if (Step > TeleportStep)
     {
-        Delta = FVector::ZeroVector;
         WindowDistance = 0.0f;
         WindowSeconds = 0.0f;
         WindowedSpeed = 0.0f;
         SmoothedSpeed = 0.0f;
     }
-    else if (Step > KINDA_SMALL_NUMBER)
+    else
     {
-        DesiredYaw = Delta.Rotation().Yaw;
-    }
+        if (Step > KINDA_SMALL_NUMBER)
+        {
+            DesiredYaw = Delta.Rotation().Yaw;
+        }
 
-    WindowDistance += Step;
-    WindowSeconds += DeltaTime;
-    if (WindowSeconds >= SpeedWindowSeconds)
-    {
-        WindowedSpeed = WindowDistance / WindowSeconds;
-        WindowDistance = 0.0f;
-        WindowSeconds = 0.0f;
+        WindowDistance += Step;
+        WindowSeconds += DeltaTime;
+        if (WindowSeconds >= SpeedWindowSeconds)
+        {
+            WindowedSpeed = WindowDistance / WindowSeconds;
+            WindowDistance = 0.0f;
+            WindowSeconds = 0.0f;
+        }
     }
 
     SmoothedSpeed = FMath::FInterpTo(SmoothedSpeed, WindowedSpeed, DeltaTime, SpeedInterpSpeed);
@@ -183,9 +193,9 @@ void ULLResidentMotionComponent::TickComponent(float DeltaTime, ELevelTick TickT
         if (DebugLogTimer <= 0.0f)
         {
             DebugLogTimer = DebugLogInterval;
-            UE_LOG(LogTemp, Log, TEXT("LLMotion %s speed=%.1f window=%.1f yaw=%.1f->%.1f playing=%d loc=%.0f,%.0f"),
+            UE_LOG(LogTemp, Log, TEXT("LLMotion %s speed=%.1f window=%.1f yaw=%.1f travel=%.1f actor=%.1f playing=%d loc=%.0f,%.0f"),
                 *Owner->GetName(), SmoothedSpeed, WindowedSpeed, SmoothedYaw, DesiredYaw,
-                bLocomotionPlaying ? 1 : 0, Location.X, Location.Y);
+                Owner->GetActorRotation().Yaw, bLocomotionPlaying ? 1 : 0, Location.X, Location.Y);
         }
     }
 }
