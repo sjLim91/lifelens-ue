@@ -122,7 +122,7 @@ struct World {
             if(nodeIt==resourceNodes.end()){
                 resourceNodes.push_back({
                     patch.nodeId,patch.material,patch.baselineQuantity,patch.maxQuantity,
-                    patch.renewable,patch.regenerationPerDay});
+                    patch.renewable,patch.regenerationPerDay,patch.pos});
             }
         }
         std::sort(resourceNodes.begin(),resourceNodes.end(),[](const ResourceNode& a,const ResourceNode& b){
@@ -144,17 +144,19 @@ struct World {
     {
         // Natural starting environment. These are material opportunities, not
         // pre-unlocked techniques. Characters still begin with no recipe/tech
-        // knowledge and must discover reproducible methods themselves.
+        // knowledge and must discover reproducible methods themselves. The
+        // fixed positions belong only to this compatibility/test environment;
+        // production NEW GAME replaces these nodes with generated patch positions.
         resourceNodes={
-            {1,MaterialKind::Stone,160,160,false,0},
-            {2,MaterialKind::Flint,90,90,false,0},
-            {3,MaterialKind::Wood,140,180,true,8},
-            {4,MaterialKind::Fiber,100,140,true,7},
-            {5,MaterialKind::Clay,120,120,false,0},
-            {6,MaterialKind::Water,240,300,true,30},
-            {7,MaterialKind::PlantFood,80,120,true,10}
+            {1,MaterialKind::Stone,160,160,false,0,{-4,-2}},
+            {2,MaterialKind::Flint,90,90,false,0,{-2,-4}},
+            {3,MaterialKind::Wood,140,180,true,8,{4,-3}},
+            {4,MaterialKind::Fiber,100,140,true,7,{5,1}},
+            {5,MaterialKind::Clay,120,120,false,0,{-5,3}},
+            {6,MaterialKind::Water,240,300,true,30,{0,6}},
+            {7,MaterialKind::PlantFood,80,120,true,10,{3,5}}
         };
-        storageSites={{1,Inventory{}}};
+        storageSites={{1,Inventory{},{0,0}}};
         primitiveSanitationSites.clear();
         environmentalResidues.clear();
     }
