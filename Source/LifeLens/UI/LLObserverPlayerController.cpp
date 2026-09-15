@@ -323,6 +323,16 @@ void ALLObserverPlayerController::HandleTouchReleased(ETouchIndex::Type FingerIn
         && !bTouchHadSecondFinger
         && bReleaseStayedWithinTapThreshold;
 
+    ALLResidentCharacter* ExactHit = nullptr;
+    if (bTap)
+    {
+        FHitResult Hit;
+        if (GetHitResultUnderFinger(FingerIndex, ECC_Pawn, true, Hit))
+        {
+            ExactHit = Cast<ALLResidentCharacter>(Hit.GetActor());
+        }
+    }
+
     bTouch1Tracked = false;
     bTouchGesture = false;
     bTouchHadSecondFinger = false;
@@ -330,9 +340,7 @@ void ALLObserverPlayerController::HandleTouchReleased(ETouchIndex::Type FingerIn
 
     if (bTap)
     {
-        // Near-resident screen-space picking in ApplyTap is authoritative for
-        // touch. ExactHit is optional and deliberately omitted on release.
-        ApplyTap(ReleasePosition, nullptr);
+        ApplyTap(ReleasePosition, ExactHit);
     }
 }
 
