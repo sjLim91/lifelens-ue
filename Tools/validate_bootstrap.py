@@ -410,7 +410,7 @@ engine_config = (root / 'Config/DefaultEngine.ini').read_text(encoding='utf-8')
 game_config = (root / 'Config/DefaultGame.ini').read_text(encoding='utf-8')
 assert '[/Script/EngineSettings.GameMapsSettings]' in engine_config
 assert 'GlobalDefaultGameMode=/Script/LifeLens.LLLifeLensGameMode' in engine_config
-assert 'GameDefaultMap=/Engine/Maps/Entry' in engine_config
+assert 'GameDefaultMap=/Game/Maps/LifeLensWorld' in engine_config
 assert 'TargetSDKVersion=34' in engine_config
 assert 'bBuildForArm64=True' in engine_config
 assert 'bPackageDataInsideApk=True' in engine_config
