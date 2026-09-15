@@ -4,7 +4,7 @@
 > Long-term order: `docs/DEVELOPMENT_MILESTONES.md`.
 > Durable design decisions: `docs/DECISION_LOG.md`.
 
-Last reconciled: 2026-09-15 KST after social-communication/localization requirement capture during Hardcoding Cleanup B.
+Last reconciled: 2026-09-15 KST after Hardcoding Cleanup B merge and Context Action Contract v1 implementation start.
 
 ## Recently closed product checkpoints
 
@@ -20,139 +20,151 @@ Last reconciled: 2026-09-15 KST after social-communication/localization requirem
 - Preflight #551 (`34970785808`): PASS.
 - Unreal Linux Compile #103 (`34970785878`): PASS.
 - PR #96 squash merge: `60432fd102fed327d9e7ae8b4c3ad8727aff476c`.
-- production default/startup map now points to `/Game/Maps/LifeLensWorld`.
-- observer camera tuning is Config-backed and defaults to 1.25 chunk distance / 2.0 chunk height / 100 UU target / 55 FOV.
-- stale bootstrap validator expectation for `/Engine/Maps/Entry` was updated to the production map contract.
+- production default/startup map points to `/Game/Maps/LifeLensWorld`.
+
+### Hardcoding Cleanup B — DONE
+- PR #99 `[CORE] Hardcoding Cleanup B — immutable SimulationRuleset` merged.
+- final PR head: `3d65f79a2d16837ad1cb1b6a944bb73725ea167a`.
+- Core Tests #480: PASS.
+- Preflight #574: PASS.
+- Unreal Linux Compile #116 (`34977769413`): PASS.
+- squash merge: `1ca6db8f276cf01211a8ce8c023d2e8d8107d6cd`.
+- Needs / UtilityAI tuning now flows `DefaultGame.ini -> UE Config -> immutable Core SimulationRuleset -> Simulation`.
+- current snapshot/save format is pre-release current-only; old development-only migration paths are not product requirements.
+
+### Android Fast Pipeline recovery — MERGED / RUNTIME VALIDATION PENDING
+- PR #101 recovered the `seed / fast / full` workflow and merged as `fe97884f3f2bcf71b5a508cdce2e2ca8f42d912c`.
+- stale PR #2 was closed unmerged after its obsolete Core bridge was intentionally excluded.
+- first manual `seed` Run #3 (`34979129395`) was `in_progress` at the last live check; do not infer success until the run is checked again.
+- after a successful seed, normal APK validation should use `fast`; do not repeat a multi-hour seed after a failure without inspecting the failed stage.
 
 ## Current validation risk
 
 `OPEN VISUAL QA RISK — NOT A CODE/COMPILE BLOCKER`
 
-The #96 compile proves C++/UHT/UBT integration, not camera aesthetics. The next actual PIE/APK visual pass should confirm:
+The #96 compile proves C++/UHT/UBT integration, not camera or character aesthetics. The next actual PIE/APK visual pass should confirm:
 - `LifeLensWorld` opens as production map.
-- founders are visible and camera is not inside canopy.
-- generated-world presentation appears correctly.
-- authoritative resource patches remain readable.
-- character facing/orientation remains correct.
+- founders and generated-world presentation are readable.
+- authoritative resource patches remain visible.
+- character facing/orientation is correct.
 - Android framing is acceptable.
 
-If only framing is poor, tune `Config/DefaultGame.ini` first rather than changing Core spatial authority.
+IR-B separately tracks the reproduced backwards-walk/facing problem in the Dagyeom Character Presentation lane.
 
 ## Jjun lane
 
-Status: `ACTIVE — HARDCODING CLEANUP B / PR #99`
+Status: `ACTIVE — CONTEXT ACTION CONTRACT v1`
 
-Branch: `jjun/hardcoding-cleanup-b-ruleset`
-PR: #99 `[CORE] Hardcoding Cleanup B — immutable SimulationRuleset`
-Validation at dispatch:
-- Core Tests #469 (`34974317432`): queued.
-- Preflight #558 (`34974317413`): queued.
-- Unreal Linux Compile #105 (`34974317541`): queued because Save/Bridge C++ interfaces changed.
+Branch: `jjun/context-action-contract-v1`
+Scope:
+- expose actual executed civilization work to presentation without inventing actions.
+- current authoritative civilization action set is exactly `Gather / Store / Experiment / Craft`.
+- keep the short-lived work context in `Simulation::Runtime`, intentionally outside snapshot persistence so save/load cannot replay stale work animations.
+- project typed action/result data through `FLLCoreActionDirective`: material, item, technique, quantity, result, stable resource/storage IDs, action minute, and an authoritative spatial target only when Core really owns one.
+- sanitation-site creation/improvement may expose its real grid position; ordinary resource/storage actions currently must not fabricate world positions.
+- Character presentation files are not modified in this Jjun branch.
 
-Milestone scope:
-- introduce pure-C++17 immutable/versioned `SimulationRuleset`.
-- externalize Needs decay and UtilityAI tuning first while preserving existing default behavior.
-- wire Simulation to consume a const per-instance ruleset without a global mutable singleton.
-- persist full ruleset values with Core snapshots and restore under the same immutable rules.
-- simplify snapshot persistence to current pre-release format only.
-- remove Unreal SaveGame v1 replay migration and legacy payloads because no product build has been shipped to users.
-
-Explicitly deferred from this milestone:
-- Social/Fun projection compatibility cleanup remains Cleanup D.
-- LifeStage / Relationship / Romance / Pregnancy / Family tuning migration remains Cleanup C.
-- Character/UI/WorldPresentation presentation behavior is not part of #99.
-
-Pre-release cleanup rule:
-- there is no shipped user save population yet.
-- do not add backward-migration code for development-only save/snapshot formats.
-- remove legacy save/snapshot compatibility code when it directly obstructs or would make the current ruleset/save architecture more expensive later.
-- do not expand this milestone into unrelated projection/UI cleanup.
+Validation gate before merge:
+- Core regression coverage for actual civilization activity visibility, context expiry, and no stale activity after snapshot restore.
+- Structural Preflight.
+- one Unreal Linux Compile because UENUM/USTRUCT + Bridge C++ interfaces changed.
+- no Dagyeom review request by default; handoff is through the typed contract and TEAM_BOARD when ready.
 
 ## Tracked implementation gaps — DO NOT DROP
 
+### Civilization resource/storage spatialization gap
+
+Current Core `ResourceNode` and `StorageSite` records have stable IDs and authoritative inventory/material state but no authoritative `GridPos`.
+
+Consequences / rule:
+- Context Action Contract v1 may expose the stable resource/storage ID but sets no spatial target for ordinary Gather/Store.
+- Character/World Presentation must not choose an arbitrary nearby tree, rock, or container and pretend it is the authoritative target.
+- sanitation-site work is an exception when Core actually supplies the real site position.
+- add resource/storage spatial authority in a later Core/World slice before scenery-specific gather/store approach/alignment is considered truthful.
+
 ### Emotion runtime integration gap
 
-Observed during PIE review on 2026-09-15: the resident Emotion detail UI can legitimately show all `0%` values because founders currently begin with neutral `EmotionState` and many ordinary life events do not yet drive emotion changes.
-
-This is **not currently treated as a UI rendering defect**. The Core read/bridge/UI path exposes the values; the simulation-side event coverage is incomplete.
+Resident Emotion can remain all `0%` because founders begin neutral and many ordinary life events still do not drive emotion changes.
 
 Required follow-up:
-- keep neutral-at-start semantics unless product design later decides otherwise; do not fill founder emotions with arbitrary random noise just to avoid zeros.
-- connect ordinary life/survival events to emotion where causally appropriate: unresolved hunger/thirst/fatigue/bladder/hygiene pressure, need relief, environmental hazard/contamination exposure, successful gathering/crafting/work, repeated failure/frustration, threat/loss, and other meaningful outcomes.
-- preserve event-driven causality: Emotion must reflect what happened to the resident, not UI-fabricated values.
-- audit Master Spec emotion coverage against `EmotionState`: the code comment claims the Master Spec emotion model, but the current state exposes only the presently implemented dimensions. Close the gap to the canonical spec rather than silently accepting the partial set.
-- add Core regression coverage showing non-social daily-life events can produce/decay emotion and that Observer projection reports the authoritative values.
-
-Scheduling:
-- do **not** expand PR #99 Cleanup B to implement this.
-- keep this gap visible for a dedicated Emotion/Life-event integration slice after the current ruleset cleanup sequence, or pull it forward only if it becomes a direct blocker for the next simulation milestone.
+- keep neutral-at-start semantics; do not random-fill emotions just to avoid zeros.
+- causally connect meaningful survival/life outcomes: unresolved need pressure, relief, contamination/hazard, successful gathering/crafting/work, repeated failure/frustration, threat/loss, etc.
+- audit the Master Spec emotion set against the currently implemented dimensions.
+- add Core regression coverage for daily-life emotion generation/decay and Observer projection.
 
 ### Observer resident-detail data fidelity gap
 
-PIE screenshots reviewed on 2026-09-15 show that the detail panel is structurally working, but several tabs either hide authoritative Core values behind coarse labels or still read legacy DTO fields that are no longer populated.
+PIE review showed several detail tabs are structurally present but still hide or bypass authoritative Core data.
 
-Findings / required follow-up:
-- **Needs:** authoritative five physical needs exist, but the detail tab currently shows only qualitative `Good/Fine/Low/Very low` labels. Preserve the human-readable label, but also expose the actual authoritative value (percent/bar or equivalent) so the detail view is genuinely detailed.
-- **Personality:** Core currently owns 14 dimensions (`introversion`, `conscientiousness`, `openness`, `agreeableness`, `emotionalStability`, `empathy`, `impulsiveness`, `riskTolerance`, `ambition`, `patience`, `sociability`, `curiosity`, `orderliness`, `adaptability`). The legacy observer DTO/UI exposes only five derived/selected axes and qualitative words. The resident detail path should read the Core observation directly and expose the full canonical set without inventing alternate personality authority.
-- **Traits & Skills:** current tab reads legacy `FLLResidentData.Traits/Skills/Preferences`, but `RefreshProjectionFromCore()` does not populate those fields. `None listed` therefore does **not** prove the resident has no abilities. Core already has authoritative civilization skills (`Gathering`, `Crafting`, `Learning`) and knowledge/inventory observations. Replace or redesign this tab around authoritative Core traits/skills; do not fabricate placeholder entries. Keep genetics/appearance traits conceptually separate unless the product spec explicitly classifies them as observer-facing traits.
-- **Relationships:** Core exposes directional 13-dimensional relationship state plus derived `SocialBond` / `RomancePotential`, while the current UI summarizes each target as only `bond / trust / romance`. Keep that row as a summary if useful, but provide access to the underlying directional dimensions in the detailed view instead of silently collapsing them.
-- **Emotion:** UI does show numeric percentages, but current runtime values often remain zero due to the separate emotion integration gap above. Also audit which canonical emotion dimensions/derived valence-arousal-intensity values belong in the detailed observer view.
-- **Family:** `None` is valid for unrelated/single founders and the tab reads authoritative family observation. Do not manufacture family links to make the panel look populated.
-- **Overview:** current name/age/sex/life-stage/action/need-summary/personality-word view is acceptable as a summary; it should remain concise rather than duplicating every detailed field.
-- **Knowledge & Gear:** already reads authoritative civilization observation directly, including Gathering/Crafting/Learning and inventory/technique counts. Use this as the model for migrating other tabs away from legacy DTO dependence.
+Required follow-up:
+- **Needs:** keep human labels but also show authoritative numeric value/bar.
+- **Personality:** expose the full 14 Core dimensions rather than only five legacy axes.
+- **Traits & Skills:** stop using unpopulated legacy DTO fields; use authoritative Core skills/traits. `None listed` must not falsely imply no ability.
+- **Relationships:** keep bond/trust/romance summary if useful, but expose the underlying directional relationship dimensions in detail.
+- **Emotion:** show authoritative dimensions/derived values once the separate runtime integration gap is addressed.
+- **Family:** `None` is valid for unrelated/single founders; do not invent links.
+- **Overview:** remain concise.
+- **Knowledge & Gear:** keep the current direct-Core model as the pattern for other tabs.
 
 Data-authority rule:
 - Observer may format/summarize but must not create a second resident-state authority.
-- Prefer `FLLCoreResidentObservation`, `FLLCoreFamilyObservation`, and `FLLCoreResidentCivilizationObservation` (or explicit new Core read contracts) over expanding legacy `FLLResidentData` merely to keep old UI plumbing alive.
 
 ### Localization + social communication presentation gap
-
-PIE screenshots reviewed on 2026-09-15 expose development-facing English strings (`Overview`, `Needs`, `UseToilet`, `Very low`, etc.) and do not yet make ordinary resident-to-resident communication visibly understandable in the world.
 
 Canonical contract: `docs/SOCIAL_COMMUNICATION_LOCALIZATION_v1.md`.
 
 Required follow-up:
-- default normal-user Observer UI to Korean while keeping Core enum/action/event ids language-neutral.
-- stop leaking raw English identifiers into user-facing UI; route them through a localization-ready display layer.
-- expose actual Core social actions as observable interactions: actor/target approach, facing/gaze/personal-space, talking/context animation, lightweight icons or speech bubbles, and history/Event Feed where appropriate.
-- use importance tiers so ordinary chatter remains lightweight while meaningful interactions and major events can show short Korean dialogue and stronger event presentation.
-- base dialogue variation on authoritative intent/personality/relationship/emotion/memory/context; do not invent events in Presentation.
-- base product must work without paid LLM/API dependency. Deterministic/data-driven Korean dialogue is the baseline.
-- Character and Relationship detail should retain recent social interactions so the observer can understand how relationships evolved.
+- normal-user UI defaults to Korean; Core identifiers remain language-neutral.
+- raw identifiers such as `UseToilet` must not leak into final user UI.
+- actual Core social actions must be observable through approach/facing/gaze/context animation plus appropriately tiered bubbles/icons/Event Feed/history.
+- dialogue baseline is deterministic/data-driven and must not require a paid LLM/API.
+- Presentation must not invent social events that Core did not issue.
 
-Ownership boundary:
-- Jjun/Core supplies authoritative social action/event/outcome/read context if current contracts are insufficient.
-- Dagyeom presentation owns Korean UI rendering, speech bubble/Event Feed presentation, gaze/body/animation expression.
-- open a formal Integration Request only when a real cross-owner contract change is needed.
+Ownership:
+- Jjun/Core: authoritative social action/event/outcome/read context where needed.
+- Dagyeom: Korean UI rendering and social presentation.
 
-Scheduling:
-- this is **not part of PR #99**.
-- keep it as a dedicated Social Communication & Localization milestone; do not let it disappear into generic future UI polish.
+### Character context-motion gap
+
+Canonical contract: `docs/CHARACTER_CONTEXT_MOTION_v1.md`.
+
+Current runtime locomotion is primarily `Idle / Walk / Jog / Sprint`; imported context animation assets are not implementation until wired to authoritative actions.
+
+Required follow-up in Character Presentation:
+- Context Motion Router.
+- social talking/facing/gaze.
+- sitting enter/idle/exit where real sit affordances exist.
+- generic interact/pickup/kneeling work mappings.
+- truthful fallbacks for Eat/Drink/Sleep/Toilet/Hygiene.
+- privacy-first Toilet/outdoor sanitation sequence with reusable local Privacy Mask.
+- consume typed `Gather / Store / Experiment / Craft` data after the Core contract is merged.
 
 ### Early-survival / all-needs-critical investigation
 
-The same PIE capture showed Day 4 with Hunger, Thirst, Energy, Hygiene, and Bladder all rendered `Very low`, while multiple founders were repeatedly on `UseToilet`.
-
-This is **not yet classified as a confirmed simulation defect**, but it requires a focused runtime test because the production New Game starts with nature only and no synthetic fridge/sink/food/water inventory. Core Eat/Drink fallback requires real PlantFood/Water inventory, while civilization decisions are suppressed once survival need pressure is already urgent. Verify that early gathering/acquisition happens soon enough to prevent a starvation/thirst deadlock and that Unreal physical-action acknowledgements actually apply expected need relief.
+PIE capture showed Day 4 with all five needs `Very low` and repeated `UseToilet`. This is not yet classified as a confirmed simulation defect.
 
 Required validation:
-- run deterministic New Game for at least the first 4 simulation days and record per-founder five needs, inventory, selected goals, civilization decisions, and completed physical ACKs.
-- prove that founders can acquire and consume authoritative water/food before urgent survival pressure blocks civilization acquisition.
-- prove outdoor sleep/toilet/wash fallbacks relieve their matching needs as designed.
-- if the loop deadlocks, fix causal survival acquisition/decision logic rather than masking it in Observer labels or seeding impossible modern facilities.
+- run a deterministic New Game through at least the first 4 simulation days and record five needs, inventory, selected goals, civilization decisions, and physical completion ACKs per founder.
+- prove food/water acquisition and consumption occur before urgent survival pressure can deadlock civilization acquisition.
+- prove outdoor sleep/toilet/wash fallbacks relieve the matching need.
+- if deadlocked, fix causal acquisition/decision logic rather than hiding it in labels or seeding fake modern facilities.
 
 ## Dagyeom lane
 
-Status: `SYNC FROM AGENTS.md / NO OPEN INTEGRATION REQUESTS`
+Status: `ACTIVE CHARACTER PRESENTATION / IR-B OPEN`
 
-Dagyeom/Claude should start by reading latest `AGENTS.md`, including `docs/DECISION_LOG.md`, then reconcile with actual GitHub before new work.
+- IR-B: backwards-walk / facing regression is owned by Dagyeom Character Presentation.
+- suspected `MeshForwardYawOffsetDegrees +90 -> -90` is an A/B hypothesis only; validate in PIE before making permanent.
+- after IR-B, Context Motion Router is the natural next presentation slice.
+- no Jjun direct changes to `Source/LifeLens/Characters/**` unless an explicit assist lock is opened.
 
 ## Active blockers / locks
 
-- Formal Integration Requests: 0 open after #90/#91/#96 resolution.
+- Formal Integration Requests: IR-B open for Character facing/backwards-walk.
 - Assist locks: 0 known active.
-- #99 is Jjun Core/Simulation/Save/Bridge scope; no Dagyeom review is requested by default.
+- Context Action Contract v1 is Jjun Core/Bridge scope; no Dagyeom review is requested by default.
+- Android seed runtime validation is independent of this Core/Bridge work.
 
 ## Long compile rule
 
-When a long UE compile/package is started, record HEAD + Run ID and continue safe independent work. Do not continuously poll. A successful compile is evidence for integration correctness, while visual quality still requires its own appropriate validation.
+When a long UE compile/package is started, record HEAD + Run ID and continue safe independent work. Do not continuously poll. A successful compile is evidence for integration correctness; visual quality still requires PIE/APK validation.
