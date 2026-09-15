@@ -3,8 +3,130 @@
 #include "UI/LLObserverHUD.h"
 #include "Characters/LLResidentCharacter.h"
 #include "Components/InputComponent.h"
+#include "Camera/CameraActor.h"
+#include "Camera/CameraComponent.h"
 #include "Engine/GameInstance.h"
+#include "Engine/World.h"
 #include "EngineUtils.h"
+
+namespace
+{
+    // QA aid for the visual milestones. The production observer camera is
+    // owned by the game mode lane; these commands never change it, they only
+    // point the local view somewhere else so spawn placement, environment
+    // feedback and resident visuals can be inspected. Off unless typed.
+    //
+    //   ll.ViewResidents        frame every resident
+    //   ll.ViewResidents 2      frame resident #2 closely
+    //   ll.ViewReset            hand the view back to the game mode camera
+    TWeakObjectPtr<ACameraActor> GDebugViewCamera;
+    TWeakObjectPtr<AActor> GOriginalViewTarget;
+
+    APlayerController* FirstLocalController(UWorld* World)
+    {
+        return World ? World->GetFirstPlayerController() : nullptr;
+    }
+
+    void FrameResidents(UWorld* World, const TArray<FString>& Args)
+    {
+        APlayerController* Controller = FirstLocalController(World);
+        if (!Controller)
+        {
+            return;
+        }
+
+        TArray<ALLResidentCharacter*> Residents;
+        for (TActorIterator<ALLResidentCharacter> It(World); It; ++It)
+        {
+            if (IsValid(*It))
+            {
+                Residents.Add(*It);
+            }
+        }
+        if (Residents.Num() == 0)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("ll.ViewResidents: no residents in the world"));
+            return;
+        }
+
+        int32 Index = INDEX_NONE;
+        if (Args.Num() > 0)
+        {
+            Index = FCString::Atoi(*Args[0]);
+        }
+
+        FBox Bounds(ForceInit);
+        if (Residents.IsValidIndex(Index))
+        {
+            Bounds += Residents[Index]->GetActorLocation();
+        }
+        else
+        {
+            for (const ALLResidentCharacter* Resident : Residents)
+            {
+                Bounds += Resident->GetActorLocation();
+            }
+        }
+
+        const FVector Centre = Bounds.GetCenter();
+        // Enough distance to keep the whole spread in frame, with a floor so a
+        // single resident is still viewed from a readable distance.
+        const float Spread = FMath::Max(Bounds.GetSize().Size2D(), 400.0f);
+        const float Distance = FMath::Clamp(Spread * 1.6f, 900.0f, 20000.0f);
+        const float Height = Distance * 0.75f;
+
+        if (!GDebugViewCamera.IsValid())
+        {
+            GDebugViewCamera = World->SpawnActor<ACameraActor>(ACameraActor::StaticClass());
+            GOriginalViewTarget = Controller->GetViewTarget();
+        }
+        ACameraActor* Camera = GDebugViewCamera.Get();
+        if (!Camera)
+        {
+            return;
+        }
+
+        const FVector CameraLocation = Centre + FVector(0.0f, -Distance, Height);
+        Camera->SetActorLocation(CameraLocation);
+        Camera->SetActorRotation((Centre - CameraLocation).Rotation());
+        if (UCameraComponent* CameraComponent = Camera->GetCameraComponent())
+        {
+            CameraComponent->SetFieldOfView(70.0f);
+        }
+        Controller->SetViewTarget(Camera);
+
+        UE_LOG(LogTemp, Log,
+            TEXT("ll.ViewResidents: %d resident(s), centre=%s distance=%.0f height=%.0f"),
+            Residents.Num(), *Centre.ToCompactString(), Distance, Height);
+    }
+
+    void ResetView(UWorld* World)
+    {
+        APlayerController* Controller = FirstLocalController(World);
+        if (Controller && GOriginalViewTarget.IsValid())
+        {
+            Controller->SetViewTarget(GOriginalViewTarget.Get());
+            UE_LOG(LogTemp, Log, TEXT("ll.ViewReset: view returned to the game mode camera"));
+        }
+        if (GDebugViewCamera.IsValid())
+        {
+            GDebugViewCamera->Destroy();
+            GDebugViewCamera.Reset();
+        }
+        GOriginalViewTarget.Reset();
+    }
+
+    static FAutoConsoleCommandWithWorldAndArgs CVarViewResidents(
+        TEXT("ll.ViewResidents"),
+        TEXT("Debug/QA only: point the view at the residents. Optional index frames one resident. Does not change the production observer camera."),
+        FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(
+            [](const TArray<FString>& Args, UWorld* World) { FrameResidents(World, Args); }));
+
+    static FAutoConsoleCommandWithWorld CVarViewReset(
+        TEXT("ll.ViewReset"),
+        TEXT("Debug/QA only: hand the view back to the game mode observer camera."),
+        FConsoleCommandWithWorldDelegate::CreateStatic([](UWorld* World) { ResetView(World); }));
+}
 
 ALLObserverPlayerController::ALLObserverPlayerController()
 {
