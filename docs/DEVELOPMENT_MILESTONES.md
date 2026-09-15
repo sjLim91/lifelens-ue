@@ -124,10 +124,18 @@ MetaHuman comparison happens only after this gate.
 These remain product direction, not immediate dispatch:
 - generic facility/resource authority beyond sanitation.
 - health/pathogen + water/soil contamination.
+- **Emotion / life-event integration**: keep founder emotion neutral at New Game, but make ordinary survival/life events causally drive Emotion; audit the current partial `EmotionState` dimension set against the Master Spec and add authoritative observer/regression coverage.
 - birth physical position fix and lifecycle presentation policy.
 - open-ended material/component/connection artifact runtime.
 - carrying-capacity pressure / exploration / migration.
 - multiple settlements / regional society / politics / generational civilization.
+
+Emotion milestone acceptance direction:
+- hunger/thirst/fatigue/bladder/hygiene pressure and relief can affect emotion where appropriate.
+- environmental hazard/contamination, success, repeated failure/frustration, threat/loss and meaningful social/life events drive emotion through Core causality.
+- UI never fabricates non-zero values merely for presentation.
+- implemented emotion dimensions are reconciled with the canonical Master Spec instead of leaving a silent partial implementation.
+- authoritative emotion survives save/restore and is exposed through Observer read models.
 
 ## Current dispatch
 
