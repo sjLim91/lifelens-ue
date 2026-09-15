@@ -9,11 +9,12 @@
 #include "DecisionExecution.h"
 #include "ObserverReadModelV2.h"
 #include "Planner.h"
+#include "SimulationRuleset.h"
 #include "WitnessRumor.h"
 
 namespace lifelens {
 
-constexpr std::uint32_t SimulationSnapshotVersion=1;
+constexpr std::uint32_t SimulationSnapshotVersion=2;
 
 struct SimulationRuntimeSnapshot {
     Goal goal=Goal::Idle;
@@ -33,6 +34,7 @@ struct SimulationRuntimeSnapshot {
 
 struct SimulationStateSnapshot {
     std::uint32_t version=SimulationSnapshotVersion;
+    SimulationRuleset ruleset=DefaultSimulationRuleset;
     World world{1};
     RelationshipBook relationships;
     GenealogyBook genealogy;
