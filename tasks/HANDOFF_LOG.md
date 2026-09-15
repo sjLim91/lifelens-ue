@@ -806,3 +806,19 @@
 - 다음 gate: **Integrated Runtime Checkpoint A** on merged `main`.
 - Dagyeom next product milestone remains HOLD until that integrated gate is checked.
 - World Visual map/config boundary: Dagyeom owns `Content/Maps/**`; Jjun owns `Config/DefaultEngine.ini` startup/default map and `LifeLens.uproject` plugin integration via explicit Integration Request.
+
+### 다겸 측 AI — World Visual Milestone A 착수 및 Integration Request 2건
+
+- 작성자: 다겸 측 AI
+- 브랜치: `dagyeom/world-visual-milestone-a` (main `f298140` 기준)
+- 커밋: `b83096c`
+- 상태: `콘텐츠 임포트 완료 / IR 승인 대기`
+- 진행:
+  - Stylized Nature MegaKit [Standard] 68종과 ambientCG 지면 재질 12맵 임포트, `Content/Environment/PROVENANCE.md` 기록
+  - 모델별 중복 텍스처·머티리얼 통합으로 264 MB → 49 MB, 전 텍스처 `MaxTextureSize = 1024`
+- Integration Request 2건 제출:
+  - IR-A `Source/LifeLens/WorldPresentation/**` 신설 요청. 승인 전까지 런타임 청크 소비 표현 착수 불가
+  - IR-B 게걸음(QA-1) 수정 착수 승인 요청. Characters 범위 상수 yaw 오프셋
+- 승인 전까지 콘텐츠 임포트 범위 안에서만 진행한다.
+- 상대가 알아야 할 점:
+  - `Config/DefaultEngine.ini`와 `LifeLens.uproject`는 건드리지 않았다. production map을 만들면 정확한 `/Game/Maps/<MapName>` 경로로 별도 요청을 올린다

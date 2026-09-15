@@ -56,3 +56,35 @@ An Integration Request must contain:
 - whether it blocks current milestone.
 
 Requests are closed when the owning lane merges the required integration and both sides can consume it.
+
+## Integration Requests — Dagyeom, World Visual Milestone A (2026-09-15)
+
+다겸 측 추가. 아래 두 건은 승인 전까지 착수하지 않는다. 승인 전에는 콘텐츠 임포트 범위 안에서만 진행한다.
+
+### IR-A — `Source/LifeLens/WorldPresentation/**` 신설 요청 (다겸 소유)
+
+- 요청자: 다겸 / 다겸 AI. 필요한 소유자 결정: 쭌.
+- 필요한 경로: `Source/LifeLens/WorldPresentation/**`를 다겸 소유 표현 전용 경로로 신설.
+- 근거:
+  - World Visual Milestone A 범위에 청크 데이터 소비, HISM 인스턴싱, LOD, 컬링이 포함되어 있어 C++ 코드가 필요하다.
+  - 그런데 다겸 소유 범위는 `Content/Environment/**`, `Content/Maps/**`, `Content/WorldPresentation/**`로 콘텐츠뿐이다.
+  - 기존 환경 표현 코드(`LLEnvironmentalResidueVisualizerComponent`)는 쭌 소유인 `Source/LifeLens/World/**`에 있다. 다겸 측이 그 경로에 코드를 추가하면 소유 경계를 침범한다.
+- 대안과 평가: 블루프린트 전용 구현도 가능하나 스크립트 저작과 텍스트 기반 리뷰가 어려워 권장하지 않는다. 헤드리스 재현과 PR 리뷰 품질이 모두 떨어진다.
+- 조건 (다겸 측이 지키겠다고 명시하는 범위):
+  - 새 경로는 표현 전용이다. Core/World authority를 만들지 않는다.
+  - `ULLCoreBridgeSubsystem`의 읽기 API(`GetWorldGenerationObservation`, `GetNaturalChunkObservation`, `GetEnvironmentObservation` 등)만 소비한다.
+  - 시뮬레이션 상태를 저장하거나 복제하지 않고, 행동·이동·자원 존재 여부를 결정하지 않는다.
+  - `Source/LifeLens/LifeLens.Build.cs` 변경이 필요하면 별도 Integration Request로 요청한다.
+- 대상 브랜치: `dagyeom/world-visual-milestone-a`.
+- 현재 마일스톤 차단 여부: **차단한다.** 승인 전까지 런타임 청크 소비 표현을 시작할 수 없다.
+- 상태: `OPEN / 쭌 결정 대기`.
+
+### IR-B — 게걸음 수정 착수 승인 요청 (QA-1)
+
+- 요청자: 다겸 / 다겸 AI. 필요한 소유자 결정: 쭌.
+- 내용: Gate A 육안 QA에서 발견한 "이동 중 몸 방향이 90도 어긋남" 증상의 수정 착수 승인.
+- 증상과 원인 분석은 `## Dagyeom QA findings — Gate A visual inspection`의 QA-1 항목에 기록되어 있다. 방향 로직은 정상이며, 원인은 스켈레탈 메시의 정면 축이 UE 관례 +X가 아니라 -Y인 것이다.
+- 수정 범위: `Source/LifeLens/Characters/**` 안에서 바디 컴포넌트 yaw에 상수 오프셋을 적용한다. Core/World 변경은 필요 없다.
+- 부호(+90도 또는 -90도)는 PIE 1회 확인으로 확정한다.
+- 현재 마일스톤 차단 여부: 차단하지 않는다. 다만 미수정 상태에서는 World Visual 육안 검증 시 캐릭터 방향이 계속 어긋나 보인다.
+- 상태: `OPEN / 쭌 승인 대기`.
