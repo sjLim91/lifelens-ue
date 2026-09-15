@@ -68,6 +68,25 @@ Pre-release cleanup rule:
 - remove legacy save/snapshot compatibility code when it directly obstructs or would make the current ruleset/save architecture more expensive later.
 - do not expand this milestone into unrelated projection/UI cleanup.
 
+## Tracked implementation gaps — DO NOT DROP
+
+### Emotion runtime integration gap
+
+Observed during PIE review on 2026-09-15: the resident Emotion detail UI can legitimately show all `0%` values because founders currently begin with neutral `EmotionState` and many ordinary life events do not yet drive emotion changes.
+
+This is **not currently treated as a UI rendering defect**. The Core read/bridge/UI path exposes the values; the simulation-side event coverage is incomplete.
+
+Required follow-up:
+- keep neutral-at-start semantics unless product design later decides otherwise; do not fill founder emotions with arbitrary random noise just to avoid zeros.
+- connect ordinary life/survival events to emotion where causally appropriate: unresolved hunger/thirst/fatigue/bladder/hygiene pressure, need relief, environmental hazard/contamination exposure, successful gathering/crafting/work, repeated failure/frustration, threat/loss, and other meaningful outcomes.
+- preserve event-driven causality: Emotion must reflect what happened to the resident, not UI-fabricated values.
+- audit Master Spec emotion coverage against `EmotionState`: the code comment claims the Master Spec emotion model, but the current state exposes only the presently implemented dimensions. Close the gap to the canonical spec rather than silently accepting the partial set.
+- add Core regression coverage showing non-social daily-life events can produce/decay emotion and that Observer projection reports the authoritative values.
+
+Scheduling:
+- do **not** expand PR #99 Cleanup B to implement this.
+- keep this gap visible for a dedicated Emotion/Life-event integration slice after the current ruleset cleanup sequence, or pull it forward only if it becomes a direct blocker for the next simulation milestone.
+
 ## Dagyeom lane
 
 Status: `SYNC FROM AGENTS.md / NO OPEN INTEGRATION REQUESTS`
