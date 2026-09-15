@@ -33,8 +33,7 @@
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
 | 쭌 + 쭌 AI | new branch after preflight | HumanWaste Environmental Visual Feedback | Core read contract + World presentation support | **READY_NOW** |
-| 다겸 + 다겸 AI | PR #67 `dagyeom/character-appearance-v1` | Character Appearance v1 closeout | Character appearance + `Content/Characters/**` | **ACTIVE / CLOSEOUT** |
-| 다겸 + 다겸 AI | after #67 | Character Motion Bootstrap | Character locomotion presentation | READY_AFTER_#67 |
+| 다겸 + 다겸 AI (Claude) | branch / PR pending | Character Motion Bootstrap | Character locomotion presentation | **READY_NOW** |
 | 쭌 + 다겸 lanes | before production World Visual | World Genesis WG-1/WG-2 integration gate | Core world coordinates + environment architecture | DESIGN FIXED / REQUIRED GATE |
 | 다겸 + 다겸 AI | after Motion + world-genesis gate | World Visual Environment v1 | Environment/Maps/WorldPresentation | HIGH PRIORITY |
 | 다겸 + 쭌 Bridge support as needed | after World Visual v1 | Character Motion & Context remainder | Character presentation/animation | AFTER WORLD VISUAL v1 |
@@ -125,37 +124,29 @@ Implementation gate:
   - WG-2 macro world + viable start-site selector.
 - do not hard-lock Environment/Maps work to a small hand-authored arena.
 
-## Character Appearance v1 — ACTIVE / PR #67 CLOSEOUT
+## Latest Dagyeom product checkpoint — PR #67 DONE
 
-Owner: 다겸 / 다겸 AI
-PR: #67 `dagyeom/character-appearance-v1`
-Latest checked head: `e034fe785ca46dd5cb39fd7d7e8710d677994a38`
+PR #67 `[UI] Character Appearance v1 — Quaternius CC0 human body, deterministic look (Track B)`
+- final head: `982d930a53f199b33ebf7ca3d4f5b72f72f8a91b`
+- main squash merge: `915906357d9752a5654b3dfeb85795419d885b59`
+- helper closeout: PR #81 merged into `dagyeom/character-appearance-v1`
 
-Latest known CI on that head:
-- Preflight `34919060096`: PASS.
-- Unreal Linux Compile `34919060115`: PASS.
+Final closeout delivered:
+- committed Python cache artifact removed; `.gitignore` now covers `__pycache__/` and `*.pyc`.
+- duplicate character includes removed.
+- bright-skin male Peasant exposed arms/hands use the same deterministic light/dark skin BaseColor choice and tint as the resident body/head.
+- latest main was integrated without moving simulation authority into Character presentation.
 
-Jjun review remains `CHANGES_REQUESTED` for three closeout items:
-1. remove committed `__pycache__/*.pyc` + add ignore rules.
-2. remove duplicate includes from `LLResidentCharacter.cpp`.
-3. verify/fix bright-skin male Peasant exposed arm/hand skin consistency with face/neck.
+Validation:
+- #67 final-head Preflight `34929703738`: PASS.
+- #67 final-head Unreal Linux Compile `34929703712`: PASS including UE 5.6 image verify / UHT / UBT / link.
+- helper integration Core Tests `34929611584`: PASS, **45/45** + deterministic harness smoke.
+- previous blocking review dismissed after verification; final review approved.
 
-Reported/implemented:
-- Quaternius CC0 humanoids.
-- deterministic #65 appearance projection.
-- hair / skin / body variation baseline.
-- UAL animation assets.
-- Peasant outfit integration.
-- head-only body derivative to prevent outfit penetration.
-- identity binding fixed before appearance construction.
-- local PIE and Save/Load appearance continuity reported PASS.
-
-Remaining before DONE:
-- push closeout fixes on a new remote HEAD.
-- final CI / review / merge / docs sync.
-
-Known limitation:
-- Idle-looking movement slide remains until Motion Bootstrap.
+Next Dagyeom lane:
+- **Character Motion Bootstrap — READY_NOW.**
+- scope: Idle / Walk / Jog + velocity-driven switching + orientation smoothing.
+- Core/World continues to own movement/action authority; animation only reflects runtime movement state.
 
 ## Core ↔ World repair status
 
@@ -271,8 +262,8 @@ Rules:
 15. #79 Designated sanitation area authoritative affordance — DONE.
 16. #80 Dug sanitation pit progression — DONE.
 17. **HumanWaste visual feedback — READY_NOW.**
-18. Character Appearance #67 — ACTIVE CLOSEOUT in parallel.
-19. Character Motion Bootstrap — after #67.
+18. Character Appearance #67 — DONE.
+19. **Character Motion Bootstrap — READY_NOW** (Dagyeom lane).
 20. **World Genesis WG-1/WG-2 implementation gate.**
 21. World Visual Environment v1 production environment.
 22. Character Motion & Context remainder.

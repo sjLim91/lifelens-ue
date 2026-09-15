@@ -7,16 +7,17 @@
 ## 1. 현재 기준점
 
 Latest merged product slice:
-- PR #80 `[CORE] Add dug sanitation pit progression v1`
-- merge SHA: `291926cf78d12c1c61284eb9c59a50e7c70e54e7`
-- validated head: `fc918693bcd265f3c021f0bd826f6ba5a7113678`
+- PR #67 `[UI] Character Appearance v1 — Quaternius CC0 human body, deterministic look (Track B)`
+- merge SHA: `915906357d9752a5654b3dfeb85795419d885b59`
+- validated final head: `982d930a53f199b33ebf7ca3d4f5b72f72f8a91b`
 
 Validation:
-- Structural Preflight `34926841905`: PASS
-- Core Tests `34926841895`: **45/45 PASS**
-- deterministic harness smoke: PASS
-- Unreal Linux Compile `34926841907`: PASS
+- Structural Preflight `34929703738`: PASS
+- Unreal Linux Compile `34929703712`: PASS
 - UE 5.6 image verification / UHT / UBT / link: PASS
+- helper PR #81 integration Core Tests `34929611584`: **45/45 PASS** + deterministic harness smoke
+
+Latest Core/civilization slice remains PR #80, merge `291926cf78d12c1c61284eb9c59a50e7c70e54e7`, with its previously recorded 45/45 + Preflight + UE compile validation.
 
 Documentation commits may advance `main` beyond the product-code merge SHA without changing runtime behavior.
 
@@ -256,35 +257,33 @@ This prevents later rewriting a small hand-authored arena into a scalable world.
 ### Deterministic Appearance contract
 - PR #65 DONE.
 
-### Character Appearance v1 — PR #67 OPEN / CLOSEOUT
+### Character Appearance v1 — PR #67 DONE
 
 Owner: 다겸 / 다겸 AI
 
-Latest checked remote head:
-- `e034fe785ca46dd5cb39fd7d7e8710d677994a38`
+Final head / merge:
+- final head: `982d930a53f199b33ebf7ca3d4f5b72f72f8a91b`
+- main squash merge: `915906357d9752a5654b3dfeb85795419d885b59`
 
-Known CI on that head:
-- Preflight PASS.
-- UE Linux Compile PASS.
-
-Implemented/reported:
+Delivered:
 - Quaternius CC0 humanoids.
-- deterministic appearance mapping.
-- hair/skin/body variation.
+- deterministic #65 appearance mapping.
+- hair / skin / body variation.
 - UAL animation assets.
-- Peasant outfit.
-- head-only derivative to avoid clothing penetration.
+- Peasant outfit + head-only derivative to avoid clothing penetration.
 - appearance construction after resident identity binding.
-- PIE humanoid visibility.
-- Save/Load appearance continuity reported.
+- same-resident appearance continuity across restart/load.
+- tracked `__pycache__/*.pyc` removed and ignore rules added.
+- duplicate includes removed.
+- male Peasant exposed skin now matches deterministic body/head light/dark BaseColor + tint.
 
-Remaining closeout review items:
-1. tracked `__pycache__/*.pyc` removal + ignore rules.
-2. duplicate include cleanup.
-3. bright-skin male Peasant exposed arms/hands tone verification/fix.
+Final validation:
+- Preflight `34929703738`: PASS.
+- Unreal Linux Compile `34929703712`: PASS including UHT / UBT / link.
+- helper integration Core Tests `34929611584`: 45/45 PASS + deterministic harness.
 
-Known limitation:
-- locomotion not wired; Idle-looking slide remains until Motion Bootstrap.
+Known presentation limitation now promoted to next work:
+- locomotion is not wired yet; Idle-looking slide is Motion Bootstrap scope.
 
 ## 7. Immediate next execution
 
@@ -299,14 +298,15 @@ Goal:
 - no visual Actor becomes simulation authority.
 - Android-safe pooling/instancing/culling/LOD.
 
-### Dagyeom lane
+### Dagyeom lane — READY_NOW
 
-1. #67 closeout / merge.
-2. Motion Bootstrap — Idle / Walk / Jog + orientation.
-3. World Genesis WG-1/WG-2 integration must be respected before production-sized World Visual map commitment.
-4. World Visual Environment v1.
-5. remaining Motion & Context.
-6. Observer UX polish / mobile touch.
+1. **Motion Bootstrap — Idle / Walk / Jog + velocity-driven transition + orientation smoothing.**
+2. World Genesis WG-1/WG-2 integration must be respected before production-sized World Visual map commitment.
+3. World Visual Environment v1.
+4. remaining Motion & Context.
+5. Observer UX polish / mobile touch.
+
+Motion is presentation-only: Core/World remains movement/action authority.
 
 ## 8. Environmental visual feedback
 
@@ -393,8 +393,8 @@ Do not revive the old multi-hour PR #2 path as normal iteration.
 15. authoritative designated site #79 — DONE.
 16. Dug sanitation pit progression #80 — DONE.
 17. **HumanWaste visual feedback — READY_NOW.**
-18. Character Appearance #67 — ACTIVE in parallel.
-19. Motion Bootstrap — after #67.
+18. Character Appearance #67 — DONE.
+19. **Motion Bootstrap — READY_NOW** (Dagyeom lane).
 20. **World Genesis WG-1/WG-2 architecture gate.**
 21. World Visual Environment production map.
 22. Character Motion & Context remainder.
@@ -410,7 +410,7 @@ Do not revive the old multi-hour PR #2 path as normal iteration.
 - design document exists ≠ runtime implemented.
 - environmental state exists ≠ visual already exists.
 - World Genesis design fixed ≠ chunked world already running.
-- #67 CI PASS ≠ #67 review closeout/merge done.
+- #67 is DONE; Motion Bootstrap needs its own branch/PR/validation before it is DONE.
 - Quaternius baseline ≠ permanent final visual ceiling.
 
 Actual current state is determined by GitHub + `WORK_STATE.md` + `TEAM_BOARD.md`.

@@ -31,8 +31,16 @@ Last reconciled: 2026-09-15 KST
 ## Current product-code baseline
 
 Latest product merge:
-- PR #80 `[CORE] Add dug sanitation pit progression v1`
-- merge SHA: `291926cf78d12c1c61284eb9c59a50e7c70e54e7`
+- PR #67 `[UI] Character Appearance v1 — Quaternius CC0 human body, deterministic look (Track B)`
+- merge SHA: `915906357d9752a5654b3dfeb85795419d885b59`
+
+Validated PR #67 final head `982d930a53f199b33ebf7ca3d4f5b72f72f8a91b`:
+- Structural Preflight run `34929703738`: PASS
+- Unreal Linux Compile run `34929703712`: PASS
+- UE 5.6 image verification / UHT / UBT / link: PASS
+- helper PR #81 integration tree Core Tests run `34929611584`: PASS, **45/45** + deterministic harness smoke PASS
+
+Latest Core/civilization baseline remains PR #80 `[CORE] Add dug sanitation pit progression v1`.
 
 Validated PR #80 head `fc918693bcd265f3c021f0bd826f6ba5a7113678`:
 - Structural Preflight run `34926841905`: PASS
@@ -104,48 +112,30 @@ Implementation timing:
 - before `World Visual Environment v1` becomes a production-sized permanent map, **WG-1 deterministic world/chunk coordinate contract and WG-2 macro world/start-site boundaries must be implemented or explicitly integrated into that work**.
 - do not lock the project into a hand-authored small arena that later requires a world rewrite.
 
-### Dagyeom lane — Character Appearance v1 — ACTIVE / PR #67 CLOSEOUT
+### Dagyeom lane — Motion Bootstrap — READY_NOW
 
-Owner: 다겸 / 다겸 AI
-PR: #67 `dagyeom/character-appearance-v1`
-Latest checked head: `e034fe785ca46dd5cb39fd7d7e8710d677994a38`
+Owner: 다겸 / 다겸 AI (Claude)
+Dependency: PR #67 DONE.
+Branch / PR: not yet observed on remote at this reconciliation checkpoint.
 
-Latest known workflow lookup for head `e034fe7`:
-- Structural Preflight run `34919060096`: PASS.
-- Unreal Linux Compile run `34919060115`: PASS.
+Character Appearance v1 closeout:
+- PR #67 final head `982d930a53f199b33ebf7ca3d4f5b72f72f8a91b`.
+- helper PR #81 merged into the Dagyeom branch to sync latest main and close the final three review items.
+- tracked `__pycache__/*.pyc` removed and ignore rules added.
+- duplicate appearance/presentation includes removed.
+- male Peasant exposed forearm/hand skin now selects the same light/dark skin BaseColor axis and tint as face/head.
+- prior `CHANGES_REQUESTED` review dismissed after verification; final review approved.
+- Preflight `34929703738`: PASS.
+- Unreal Linux Compile `34929703712`: PASS including UE 5.6 image verify / UHT / UBT / link.
+- helper integration Core Tests `34929611584`: PASS, 45/45 + deterministic harness.
+- squash merge to main: `915906357d9752a5654b3dfeb85795419d885b59`.
 
-Review status:
-- Jjun review `CHANGES_REQUESTED` remains active.
-- requested closeout items: remove committed `__pycache__/*.pyc` and add ignore rules; remove duplicate includes; verify/fix bright-skin male Peasant exposed-skin tone consistency.
-- no newer remote head or Dagyeom reply was present at the latest reconciliation checkpoint.
-
-Previously validated/reported checkpoints in PR #67:
-- Core Tests: PASS on earlier final code head.
-- local PIE / SaveLoad appearance continuity checks reported PASS in PR body.
-
-Implemented/reported:
-- Quaternius CC0 humanoids.
-- deterministic #65 appearance projection.
-- hair / skin / body variation baseline.
-- UAL animation assets.
-- Peasant outfit integration.
-- head-only body derivative to prevent clothing penetration.
-- humanoid residents visible in PIE.
-- appearance construction moved after resident identity binding, fixing four residents receiving the same invalid-id temporary appearance.
-
-Remaining before DONE:
-- close the three review items on a new remote HEAD.
-- final CI / review / merge / docs sync.
-
-Known limitation:
-- locomotion is not wired; Idle-looking slide remains until Motion Bootstrap.
-
-다겸 측 갱신 (2026-09-15, head `b7941b9` + origin/main merge):
-- final PIE outfit confirmation: 완료. Peasant 의상 관통 없음, 목 이음매 없음. 전신 메시 관통은 파생 머리 전용 메시(`Head`/`neck_01` 삼각형만 유지, `Import/make_headonly_gltf.py`)로 해소.
-- same-resident appearance continuity across restart/load: 완료. headless `-game` 실행 A에서 자동 저장 후 실행 B가 동일 세이브를 로드해 주민 4명의 id·seed·skin·eye·hair·height·build·outfit 값 완전 일치. 대조군(세이브 제거)에서만 다른 주민 생성.
-- 부수 결함 수정 `fc15341`: 스폰 직후 `BeginPlay`에서 `ResidentId`가 무효라 전원이 동일 임시 해시 외형을 받고 #65 계약이 우회되던 문제. `BindResident` 이후로 외형 생성 시점 이동.
-- CI: head `6d814e3` Preflight `34916984761` PASS, Unreal Linux Compile `34916984865` PASS.
-- 남은 것: final review / merge / docs sync.
+Motion Bootstrap scope:
+- Idle / Walk / Jog.
+- velocity/movement-state-driven presentation switching.
+- basic orientation smoothing.
+- remove Idle-looking slide.
+- Character animation remains presentation only; Core/World remains movement/action authority.
 
 ## Completed foundation / repair slices
 
@@ -217,8 +207,8 @@ Known limitation:
 
 1. Character Presentation v1 — DONE via #63.
 2. Appearance projection contract — DONE via #65.
-3. Character Appearance v1 — ACTIVE #67 closeout.
-4. Motion Bootstrap — READY_AFTER_#67.
+3. Character Appearance v1 — DONE via #67.
+4. Motion Bootstrap — **READY_NOW** (Dagyeom lane).
 5. **World Genesis WG-1/WG-2 architectural gate** — before production-sized permanent World Visual implementation.
 6. World Visual Environment v1 — presentation prototype may proceed after Motion, but production map must respect World Genesis/Chunk contract.
 7. Character Motion & Context remainder.

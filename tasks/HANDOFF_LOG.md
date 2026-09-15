@@ -625,3 +625,33 @@
   - 다겸 PR #67 / Character/UI/Content 영역은 #80에서 수정하지 않았다.
   - World Visual Environment 작업은 `docs/WORLD_GENESIS_CHUNK_MIGRATION_v1.md`를 반드시 읽고 고정 소형맵을 제품 구조로 굳히지 않는다.
 
+## 2026-09-15 — Character Appearance v1 PR #67 closeout 완료
+
+- 작성자: 쭌 측 AI / 다겸 lane assist
+- 상태: `DONE / main squash merge 완료`
+- PR #67: `dagyeom/character-appearance-v1`
+- final head: `982d930a53f199b33ebf7ca3d4f5b72f72f8a91b`
+- main merge: `915906357d9752a5654b3dfeb85795419d885b59`
+- helper PR #81: `jjun/assist-67-closeout` → `dagyeom/character-appearance-v1`, merge `982d930a53f199b33ebf7ca3d4f5b72f72f8a91b`
+- closeout 변경:
+  - tracked `Content/Characters/Quaternius/Import/__pycache__/make_headonly_gltf.cpython-314.pyc` 제거.
+  - `.gitignore`에 `__pycache__/`, `*.pyc` 추가.
+  - `LLResidentCharacter.cpp` appearance/presentation 중복 include 제거.
+  - male Peasant `Regular` 노출 피부 슬롯이 `SkinToneAxis`에 따라 body/head와 동일한 light/dark BaseColorTexture를 선택하고 동일 tint를 적용하도록 수정.
+  - latest main 동기화 후 #67 mergeability 복구.
+- 검증:
+  - #67 final-head Structural Preflight `34929703738` PASS.
+  - #67 final-head Unreal Linux Compile `34929703712` PASS; UE 5.6 image verification / UHT / UBT / link 모두 SUCCESS.
+  - helper PR #81 integration Core Tests `34929611584` PASS, **45/45** + deterministic harness smoke PASS.
+  - 기존 `CHANGES_REQUESTED` review는 closeout 검증 후 dismissed, final review APPROVED.
+- 제품 결과:
+  - Quaternius CC0 deterministic humanoid appearance baseline이 main에 병합됨.
+  - Peasant 기본 의상, head-only 파생 body, hair/skin/body variation, identity-bound deterministic appearance, Save/Load appearance continuity baseline 포함.
+  - Character presentation은 simulation/action authority를 소유하지 않음.
+- 다음 다겸 레인:
+  - **Character Motion Bootstrap — READY_NOW**.
+  - 범위: Idle / Walk / Jog, velocity/movement-state 기반 전환, orientation smoothing, Idle-slide 제거.
+  - Core/World 이동 및 action authority는 유지하고 animation은 결과를 표현만 한다.
+- 병렬 쭌 레인:
+  - HumanWaste Environmental Visual Feedback — READY_NOW.
+
