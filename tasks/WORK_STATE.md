@@ -4,7 +4,7 @@
 > Long-term order: `docs/DEVELOPMENT_MILESTONES.md`.
 > Durable design decisions: `docs/DECISION_LOG.md`.
 
-Last reconciled: 2026-09-15 KST after #103 Context Action Contract v1 merge and Android seed live check.
+Last reconciled: 2026-09-16 KST after Observer Camera Control v1 dispatch (#105).
 
 ## Recently closed product checkpoints
 
@@ -63,6 +63,21 @@ Last reconciled: 2026-09-15 KST after #103 Context Action Contract v1 merge and 
 - do not blindly rerun the same multi-hour seed if it fails/times out. Inspect the exact failure stage and redesign the seed path around durable checkpoints/split work before another expensive attempt.
 - after a genuinely successful seed/cache creation, normal APK validation should use `fast`.
 
+## Current active product work
+
+### Observer Camera Control v1 — ACTIVE / PR #105
+- canonical contract: `docs/OBSERVER_CAMERA_CONTROL_v1.md`.
+- durable decision: D-010.
+- branch: `jjun/observer-camera-control-v1`.
+- PR #105: `[Observer] Camera Control v1 — PC orbit/zoom/pan + Android gestures`.
+- current head at dispatch: `22496055594243c0c1ca5f9c5ffda6b82da4fa0c`.
+- PC contract: wheel zoom, right-drag orbit, middle-drag pan, left-click selection preserved.
+- Android contract: short tap selection on release, one-finger orbit, pinch zoom, two-finger pan.
+- camera uses distance/elevation clamps and smoothing; resident selection does not force camera movement.
+- `ASSIST_LOCK-UI-CAMERA-1` is ACTIVE because `LLObserverPlayerController.*` is Dagyeom UI ownership.
+- old stacked HUD PR consolidation (#30/#36/#38) is intentionally separate and paused while this lock is active.
+- required gates: Preflight + Unreal Linux Compile, then PIE and Android gesture QA.
+
 ## Current validation risk
 
 `OPEN VISUAL QA RISK — NOT A CODE/COMPILE BLOCKER`
@@ -73,15 +88,16 @@ The compile gates prove C++/UHT/UBT integration, not every presentation variant.
 - authoritative resource patches remain visible.
 - corrected facing remains valid for stationary interaction targets and male/female/outfit variants.
 - Android framing is acceptable.
+- Observer Camera Control v1 gestures feel natural and do not trigger unintended resident selection.
 
 ## Jjun lane
 
-Status: `NO OPEN CODE PR — ANDROID SEED VALIDATION / PIPELINE RISK ACTIVE`
+Status: `PR #105 ACTIVE / ANDROID SEED VALIDATION RISK ALSO ACTIVE`
 
 Current facts:
-- PR #103 is merged; no Jjun feature PR is left open from the Context Action Contract work.
-- Android seed Run #3 (`34979129395`) is the only currently running long build known at this reconciliation point.
-- do not start another expensive seed/full Android job until the current run finishes/fails or is intentionally stopped and the checkpoint strategy is decided.
+- PR #105 is the active observer-camera assist PR.
+- camera work touches Dagyeom-owned `LLObserverPlayerController.*` only under explicit `ASSIST_LOCK-UI-CAMERA-1`.
+- Android seed Run #3 (`34979129395`) is independent; do not start another expensive seed/full Android job until that run finishes/fails or is intentionally stopped and the checkpoint strategy is decided.
 - IR-D implementation itself belongs to Dagyeom Character Presentation; Jjun provider work is complete unless a real contract deficiency is found.
 
 ## Tracked implementation gaps — DO NOT DROP
@@ -165,19 +181,20 @@ Required validation:
 
 ## Dagyeom lane
 
-Status: `IR-B DONE / IR-D CONTEXT MOTION READY`
+Status: `IR-B DONE / IR-D CONTEXT MOTION READY / UI CAMERA ASSIST LOCK ACTIVE`
 
 - IR-B is resolved and merged through #102; no further IR-B blocker is open.
 - ordinary visual regression checks for stationary target-facing and male/female/outfit variants remain QA only.
 - IR-D provider contract is merged through #103 and ready to consume now.
 - Dagyeom Character Presentation owns the Context Motion Router and action-to-animation presentation.
+- `ASSIST_LOCK-UI-CAMERA-1` temporarily locks only `LLObserverPlayerController.h/.cpp` for PR #105; other Dagyeom UI files remain available.
 - no Jjun direct changes to `Source/LifeLens/Characters/**` unless an explicit assist lock is opened.
 
 ## Active blockers / locks
 
 - Formal Integration Requests: **IR-D open**, provider DONE / presentation consumption READY.
-- Assist locks: 0 known active.
-- Open Jjun code PRs from the current work: **0**.
+- Assist locks: **ASSIST_LOCK-UI-CAMERA-1 ACTIVE**.
+- Open Jjun code PRs from the current work: **#105**.
 - Android seed Run #3 is independent and still running at the last live check.
 
 ## Long compile rule
