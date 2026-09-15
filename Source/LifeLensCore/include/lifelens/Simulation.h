@@ -186,6 +186,9 @@ inline bool Simulation::completeExternalPhysicalAction(
         emit(character->name+" noticed unsanitary surroundings at ("+
              std::to_string(resolvedPosition.x)+","+std::to_string(resolvedPosition.y)+")");
     }
+    if(exposure.sanitationProblemNewlyRecognized){
+        emit(character->name+" recognized recurring human-waste contamination as a sanitation problem");
+    }
 
     emit(character->name+" completed "+std::string(goalName(runtime.goal))+
          (emergencyFallback ? " via emergency fallback" : " via world affordance"));
