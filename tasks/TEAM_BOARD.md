@@ -123,4 +123,14 @@ Requests are closed when the owning lane merges the required integration and bot
 - **IR-C — CLOSED.** production map `/Game/Maps/LifeLensWorld` 연결과 observer camera 프레이밍이 PR #96(main merge `60432fd102fe`)으로 처리되었다. 임시 바닥과 sanitation locality는 #91에서, observer camera는 #92와 #96에서 처리되었다.
 - 시작 지점 가독성 반경은 IR-C 승인 조건대로 구현되어 #90에 포함되었다. presentation-only이며 Core/world generation/resource authority를 변경하지 않는다.
 
-현재 다겸 측 미해결 Integration Request: **0**.
+### IR-D — 관찰 카메라가 주민 활동 지점을 담지 못함
+
+- 요청자: 다겸 / 다겸 AI. 필요한 소유자 결정: 쭌.
+- 증상: #96의 카메라 상향 이후에도 관찰 카메라가 주민 활동 지점을 화면에 담지 못한다. 주민이 이동을 마친 상태에서도 보이지 않는다.
+- 영향: Milestone B 수용 조건 중 스폰 겹침 / 부유 / 매몰 / 맵 이탈 여부와 HumanWaste 배치 타당성을 육안으로 판정할 수 없다.
+- 다겸 측 우회 수단: QA 전용 콘솔 명령 `ll.ViewResidents [index]` / `ll.ViewReset`을 `Source/LifeLens/UI/**`에 추가했다(브랜치 `dagyeom/observer-readability-and-qa-view`). 프로덕션 관찰 카메라를 변경하지 않으며 입력하지 않으면 동작하지 않는다. 카메라 프레이밍 자체의 소유권은 쭌 lane에 그대로 둔다.
+- 요청: 관찰 카메라가 주민 활동 범위를 따라가도록 할지, 아니면 현재 고정 프레이밍을 유지하고 검증은 위 디버그 명령으로 할지 쭌 측이 정해 달라.
+- 현재 마일스톤 차단 여부: 부분 차단. 위 두 수용 조건의 판정이 디버그 명령에 의존한다.
+- 상태: `OPEN / 쭌 결정 대기`.
+
+현재 다겸 측 미해결 Integration Request: **1** (IR-D).
