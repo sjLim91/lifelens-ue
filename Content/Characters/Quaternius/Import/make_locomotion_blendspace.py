@@ -59,18 +59,23 @@ def main():
     parameters[0] = axis
     blend_space.set_editor_property("blend_parameters", parameters)
 
-    samples = []
+    # Samples must go through the editor-only AddSample/ValidateSampleData/
+    # ResampleData path. Writing `sample_data` directly leaves the blend space
+    # without triangulation data, so at runtime every input resolves to zero
+    # samples and the mesh shows the reference (T) pose.
+    animations = []
+    speeds = []
     for name, speed in SAMPLES:
         animation = EAL.load_asset("%s/%s" % (UAL, name))
         if animation is None:
             raise RuntimeError("missing animation: %s/%s" % (UAL, name))
-        sample = unreal.BlendSample()
-        sample.set_editor_property("animation", animation)
-        sample.set_editor_property("sample_value", unreal.Vector(speed, 0.0, 0.0))
-        sample.set_editor_property("rate_scale", 1.0)
-        samples.append(sample)
+        animations.append(animation)
+        speeds.append(speed)
         log("sample %-14s at %.0f cm/s" % (name, speed))
-    blend_space.set_editor_property("sample_data", samples)
+
+    built = unreal.LLLocomotionBlendSpaceBuilder.build_speed_blend_space(blend_space, animations, speeds)
+    if built != len(SAMPLES):
+        raise RuntimeError("blend space build returned %d samples" % built)
 
     # Scale the playback rate along the speed axis so the stride roughly
     # follows the actual ground speed between samples.
@@ -85,6 +90,13 @@ def main():
                                    sample.get_editor_property("sample_value").x))
     if len(stored) != len(SAMPLES):
         raise RuntimeError("sample data not persisted")
+
+    # The asset is only usable if the runtime blend data resolves samples.
+    for probe in (0.0, 75.0, 150.0, 260.0, 375.0, 600.0):
+        resolved = unreal.LLLocomotionBlendSpaceBuilder.count_resolved_samples(reloaded, probe)
+        log("  resolves %d sample(s) at %.0f cm/s" % (resolved, probe))
+        if resolved <= 0:
+            raise RuntimeError("blend space resolves no samples at %.0f cm/s" % probe)
     log("done")
 
 

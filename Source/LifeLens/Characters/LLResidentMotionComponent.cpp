@@ -64,13 +64,33 @@ void ULLResidentMotionComponent::EnsureLocomotionPlaying()
         return;
     }
 
+    // A blend space that carries sample data but no runtime triangulation
+    // resolves zero samples for every input, and the mesh then shows the
+    // reference (T) pose instead of any animation. Leave the idle animation
+    // that the appearance component started rather than replacing it with a
+    // blend space that cannot produce a pose.
+    TArray<FBlendSampleData> ResolvedSamples;
+    int32 CachedTriangulationIndex = INDEX_NONE;
+    const bool bResolved = LocomotionBlendSpace->GetSamplesFromBlendInput(
+        FVector(0.0f, 0.0f, 0.0f), ResolvedSamples, CachedTriangulationIndex, true);
+    if (!bResolved || ResolvedSamples.Num() == 0)
+    {
+        UE_LOG(LogTemp, Warning,
+            TEXT("LLMotion %s locomotion=%s resolves no samples (%d authored); keeping the idle animation"),
+            *GetOwner()->GetName(), *LocomotionBlendSpace->GetName(),
+            LocomotionBlendSpace->GetBlendSamples().Num());
+        LocomotionBlendSpace = nullptr;
+        bLocomotionPlaying = true;   // do not retry every frame
+        return;
+    }
+
     Body->SetAnimationMode(EAnimationMode::AnimationSingleNode);
     Body->PlayAnimation(LocomotionBlendSpace, true);
     bLocomotionPlaying = true;
 
-    UE_LOG(LogTemp, Log, TEXT("LLMotion %s locomotion=%s samples=%d"),
+    UE_LOG(LogTemp, Log, TEXT("LLMotion %s locomotion=%s samples=%d resolved=%d"),
         *GetOwner()->GetName(), *LocomotionBlendSpace->GetName(),
-        LocomotionBlendSpace->GetBlendSamples().Num());
+        LocomotionBlendSpace->GetBlendSamples().Num(), ResolvedSamples.Num());
 }
 
 void ULLResidentMotionComponent::UpdateBodyOrientation(float DeltaTime)
@@ -148,7 +168,7 @@ void ULLResidentMotionComponent::TickComponent(float DeltaTime, ELevelTick TickT
 
     UpdateBodyOrientation(DeltaTime);
 
-    if (Body)
+    if (Body && LocomotionBlendSpace)
     {
         if (UAnimSingleNodeInstance* SingleNode = Body->GetSingleNodeInstance())
         {
