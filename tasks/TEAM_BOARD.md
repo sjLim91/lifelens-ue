@@ -21,12 +21,11 @@
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | `jjun/sanitation-problem-recognition-v1` | Sanitation Problem Recognition v1 | Core Memory/Belief/Environment | **IN_PROGRESS** |
+| 쭌 + 쭌 AI | after #77 | Primitive sanitation experimentation / affordance progression | Core/Civilization/World contract | **READY_NOW** |
 | 다겸 + 다겸 AI | PR #67 `dagyeom/character-appearance-v1` | Character Appearance v1 | Character appearance + `Content/Characters/**` | **ACTIVE / CLOSEOUT** |
 | 다겸 + 다겸 AI | after #67 | Character Motion Bootstrap | Character locomotion presentation | READY_AFTER_#67 |
 | 다겸 + 다겸 AI | after Motion Bootstrap | World Visual Environment v1 | Environment/Maps/WorldPresentation | HIGH PRIORITY / READY_AFTER_MOTION_BOOTSTRAP |
 | 다겸 + 쭌 Bridge support as needed | after World Visual v1 | Character Motion & Context remainder | Character presentation/animation | AFTER WORLD VISUAL v1 |
-| 쭌 + 쭌 AI | after problem recognition | Primitive sanitation affordance progression | Core/World/Civilization | NEXT |
 | 쭌 + 다겸 lanes | after authoritative sanitation loop | HumanWaste visual feedback | Core read contract + Presentation | NEXT |
 | 쭌 + 쭌 AI | PR #2 | old Android validation path | Bridge/build | FROZEN |
 
@@ -34,24 +33,54 @@
 
 **0개.** Previous appearance/presentation assist locks are released.
 
-## Current Jjun lane — Sanitation Problem Recognition v1 IN_PROGRESS
+## Current Jjun lane — Primitive sanitation experimentation / progression READY_NOW
 
-Branch:
-- `jjun/sanitation-problem-recognition-v1`
+Dependency:
+- PR #77 DONE.
 
 Goal:
-- repeated/high-confidence sanitation memories become an explicit resident-level recognized problem.
-- Memory/environment evidence remains the cause; no global tech unlock.
-- recognition is represented in authoritative Core state and can become an input for primitive sanitation experimentation/progression.
+- use the resident sanitation-problem Belief created by #77 as a causal input to experimentation/progression.
+- recognized concern must precede sanitation invention attempts.
+- no fixed global tech unlock and no instant latrine creation.
 
 Planned minimal boundary:
-- use #75 sanitation Memory tags as evidence.
-- deterministic evidence aggregation.
-- promote qualifying evidence into a sanitation-problem Belief.
-- no duplicate evidence ingestion.
-- Core regression tests for weak evidence, repeated evidence, unrelated memory and determinism.
+- inspect existing `CivilizationIntent` / experiment machinery first.
+- add the smallest sanitation experiment/discovery path that fits the generic civilization loop.
+- likely initial responses are designated waste area and/or dug pit attempts before a durable latrine affordance.
+- success becomes personal knowledge first; propagation and infrastructure follow later.
+- failure remains learning evidence.
+- feasibility is constrained by actual resources/material/environment state.
 
-## Latest Jjun product checkpoint — PR #76 DONE
+Acceptance:
+- no recognized sanitation problem → no spontaneous sanitation experiment.
+- recognized concern can deterministically seed/bias an experiment opportunity.
+- success/failure is state-driven and testable.
+- successful discovery does not create a global magic unlock.
+- Core tests + Structural Preflight.
+
+## Latest Jjun product checkpoint — PR #77 DONE
+
+PR #77 `[CORE] Add sanitation problem recognition v1` merged as:
+- merge SHA: `3ea6048d9e7ac6b31e75faa4f5ca55b5c46f9016`
+- validated head: `26a0af034364f7ae12b636cfc5a991d57fe729ab`
+
+Validation:
+- Structural Preflight run `34919266787`: PASS.
+- Core Tests run `34919266571`: PASS, 42/42.
+- Unreal Linux Compile run `34919266720`: PASS.
+- actual UE 5.6 UHT / UBT / link: PASS.
+
+Delivered:
+- direct sanitation Memory evidence can become a durable resident-level sanitation-problem Belief.
+- weak single exposure does not instantly create recognized civilization knowledge.
+- repeated qualifying direct evidence, or one exceptionally salient direct event, can establish recognition.
+- recognition reuses Core Memory → Belief authority.
+- evidence re-evaluation is idempotent and cannot inflate support on every tick.
+- environmental exposure reports recognized/newly-recognized/confidence.
+- snapshot encode/decode/restore preserves the Belief.
+- no pit/latrine/global tech unlock is created by #77.
+
+## Previous Jjun product checkpoint — PR #76 DONE
 
 PR #76 `[WORLD] Consume Core sanitation recommendation for emergency toilet movement` merged as:
 - merge SHA: `3bb50056311b3a9a75c6ce2bb2317b10163e69c5`
@@ -96,7 +125,7 @@ Disease/pathogen health modelling is not part of #75.
 
 ## Core ↔ World repair status
 
-The old `Core ↔ World Execution Sync v1 — READY_NOW` entry is obsolete. Most verification findings were repaired by #70–#76.
+The old `Core ↔ World Execution Sync v1 — READY_NOW` entry is obsolete. Most verification findings were repaired by #70–#77.
 
 ### Resolved / baseline closed
 
@@ -107,6 +136,7 @@ The old `Core ↔ World Execution Sync v1 — READY_NOW` entry is obsolete. Most
 - #74: resident runtime position restore from authoritative Core GridPos.
 - #75: environmental perception/memory/avoidance recommendation.
 - #76: World consumes the authoritative sanitation recommendation and ACKs the actual visible location.
+- #77: repeated/salient sanitation evidence can become explicit resident problem recognition.
 
 ### Still partial / follow-up
 
@@ -138,6 +168,7 @@ Rules:
 - #68 Environmental Residue — DONE.
 - #75 Environmental Exposure / Perception / Avoidance — DONE.
 - #76 World sanitation recommendation integration — DONE.
+- #77 Sanitation Problem Recognition v1 — DONE.
 
 ### Immediate environmental loop
 
@@ -147,8 +178,9 @@ Rules:
 → `HumanWaste residue`
 → `resident exposure/Memory`
 → `next-location avoidance`
-→ **`problem recognition` (IN_PROGRESS)**
-→ `primitive sanitation solution`
+→ `problem recognition`
+→ **`primitive sanitation experiment/discovery` (READY_NOW)**
+→ `better sanitation affordance`
 → `visual feedback`
 
 ## Character Appearance v1 — ACTIVE / PR #67 CLOSEOUT
@@ -158,14 +190,20 @@ Canonical acceptance: `docs/CHARACTER_APPEARANCE_ROADMAP.md`
 Canonical asset track: `docs/CHARACTER_ASSET_TRACK.md`
 
 Latest checked head:
-- `b7941b951df8147627580ff5d4a55a851a705454`
+- `e034fe785ca46dd5cb39fd7d7e8710d677994a38`
 
 Latest actual workflow lookup for that head:
-- no workflow runs returned at the latest reconciliation checkpoint.
+- Preflight `34919060096`: PASS.
+- Unreal Linux Compile `34919060115`: PASS.
+
+Current review status:
+- Jjun review remains `CHANGES_REQUESTED`.
+- requested closeout: remove tracked `__pycache__/*.pyc` + add ignore rules; remove duplicate includes; verify/fix bright-skin male Peasant exposed-skin tone consistency.
+- latest PR comment asks Dagyeom to push the closeout commit and report new HEAD + CI.
+- no newer remote HEAD / Dagyeom reply was present at the latest reconciliation checkpoint.
 
 Previously validated/reported in PR #67:
-- Preflight PASS.
-- Unreal Linux Compile PASS.
+- Core Tests PASS on an earlier final code head.
 - local PIE and Save/Load appearance continuity checks reported PASS.
 
 Reported/implemented:
@@ -174,10 +212,13 @@ Reported/implemented:
 - hair / skin / body variation baseline.
 - UAL animation assets.
 - Peasant outfit integration.
+- head-only body derivative to prevent outfit penetration.
+- appearance construction after resident identity binding, fixing invalid-id identical appearances.
 - humanoid residents visible in PIE.
 
 Remaining before DONE:
-- final review / merge / docs sync against latest actual head.
+- close three review items on a new remote HEAD.
+- final CI / review / merge / docs sync.
 
 Known limitation:
 - Idle-looking movement slide remains until Motion Bootstrap.
@@ -207,7 +248,7 @@ Rules:
 
 ## Dagyeom API / design handoff
 
-Current blockers from Jjun for #67: **0**.
+Current blockers from Jjun for #67: **review closeout 3건 only**.
 
 Relevant read contracts include:
 - `GetWorldObservation()`
@@ -250,7 +291,7 @@ Dagyeom default:
 
 ## Integration Requests
 
-Current open blockers from Jjun for Dagyeom #67: **0**.
+Current open blockers from Jjun for Dagyeom #67: **3 review closeout items**.
 
 ### Motion promotion
 
@@ -280,9 +321,9 @@ Current open blockers from Jjun for Dagyeom #67: **0**.
 10. #74 runtime position restore — DONE.
 11. #75 environmental exposure/perception/avoidance — DONE.
 12. #76 World sanitation recommendation integration — DONE.
-13. **Sanitation Problem Recognition — IN_PROGRESS.**
-14. Character Appearance #67 — ACTIVE CLOSEOUT in parallel.
-15. Primitive sanitation affordance progression.
+13. #77 Sanitation Problem Recognition — DONE.
+14. **Primitive sanitation experimentation / affordance progression — READY_NOW.**
+15. Character Appearance #67 — ACTIVE CLOSEOUT in parallel.
 16. HumanWaste visual feedback.
 17. Character Motion Bootstrap — after #67.
 18. World Visual Environment v1.
