@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/HUD.h"
+#include "UI/LLObservationSubsystem.h"
 #include "LLObserverHUD.generated.h"
 
 class ULLSimulationSubsystem;
@@ -53,6 +54,17 @@ public:
     // position was measured in.
     bool HandleTap(const FVector2D& ScreenPosition, const FVector2D& ViewportSize = FVector2D::ZeroVector);
 
+    // Safe-area insets in canvas pixels: normal LifeLens margin plus the
+    // platform title-safe padding (camera cutout, rounded corners, gesture bar).
+    struct FSafeInsets
+    {
+        float Left = 0.0f;
+        float Top = 0.0f;
+        float Right = 0.0f;
+        float Bottom = 0.0f;
+    };
+    FSafeInsets SafeInsets(float UIScale) const;
+
     // Viewport pixels -> canvas pixels. The canvas is the scene view rect,
     // which is smaller than the viewport when the camera constrains the aspect
     // ratio (letterbox); its origin is the view rect's top-left.
@@ -77,8 +89,21 @@ private:
     float ComputeUIScale() const;
 
     // LEVEL 0. Returns the Y just below the drawn overview. The selection hint is
-    // only drawn when nothing is selected.
-    float DrawOverview(const ULLSimulationSubsystem& Simulation, const TArray<FLLResidentData>& Residents, float UIScale, bool bShowHint);
+    // only drawn when nothing is selected. bDimStrip de-emphasizes the strip
+    // while LEVEL 2 is open; SelectedId highlights the observed resident.
+    float DrawOverview(const ULLSimulationSubsystem& Simulation, const TArray<FLLResidentData>& Residents,
+        float UIScale, bool bShowHint, bool bDimStrip, const FGuid& SelectedId);
+
+    // Lightweight presentation-only feedback from legacy DQ-05, reimplemented
+    // on current main without changing observation/simulation authority.
+    void UpdateFeedbackState(const ULLObservationSubsystem* Observation);
+    void DrawSelectionFeedback(const FLLResidentData& Selected, float UIScale);
+    FLinearColor Faded(const FLinearColor& Color) const
+    {
+        FLinearColor Result = Color;
+        Result.A *= PanelFade;
+        return Result;
+    }
 
     // World overview panel (SPEC 61). Opened by tapping the overview band at
     // LEVEL 0. Only values available from the read API are drawn.
@@ -107,11 +132,19 @@ private:
     FBox2D WorldOverviewRect;
     FBox2D QuickInspectorRect;
     FBox2D DetailPanelRect;
+    FBox2D DetailBackRect;
     FBox2D DetailTabRects[DetailTabCount];
 
     ELLDetailTab ActiveTab = ELLDetailTab::Overview;
     FGuid LastDetailResidentId;
     bool bWorldOverviewOpen = false;
+
+    // Presentation-only feedback state.
+    ELLObservationLevel LastLevel = ELLObservationLevel::World;
+    FGuid LastObservedId;
+    float LevelChangeTime = -100.0f;
+    float SelectionChangeTime = -100.0f;
+    float PanelFade = 1.0f;
 
     // Canvas size and view-rect origin of the last DrawHUD, for mapping taps.
     FVector2D LastCanvasSize = FVector2D::ZeroVector;
