@@ -43,7 +43,9 @@ public:
             if(candidate.id==id){ character=&candidate; break; }
         }
         if(character==nullptr || !character->alive) return false;
-        const GridPos settlementReference=world_.initialStartRegionCenterGrid();
+        const GridPos settlementReference=world_.hasInitialStartRegionSelection
+            ? world_.initialStartRegionCenterGrid()
+            : GridPos{};
         outPosition=chooseLowExposureOutdoorReliefPosition(
             world_.seed,*character,world_.environmentalResidues,world_.minute,
             settlementReference);
@@ -57,20 +59,12 @@ public:
             if(candidate.id==id){ character=&candidate; break; }
         }
         if(character==nullptr || !character->alive) return false;
-
-        if(const PrimitiveSanitationSite* site=activePrimitiveSanitationSite(
-            world_.primitiveSanitationSites)){
-            outTarget={SanitationUseTargetKind::DesignatedArea,site->pos,site->id};
-            return true;
-        }
-
-        const GridPos settlementReference=world_.initialStartRegionCenterGrid();
-        outTarget={
-            SanitationUseTargetKind::EmergencyOutdoor,
-            chooseLowExposureOutdoorReliefPosition(
-                world_.seed,*character,world_.environmentalResidues,world_.minute,
-                settlementReference),
-            0};
+        const GridPos settlementReference=world_.hasInitialStartRegionSelection
+            ? world_.initialStartRegionCenterGrid()
+            : GridPos{};
+        outTarget=resolveSanitationUseTarget(
+            world_.seed,*character,world_.environmentalResidues,
+            world_.primitiveSanitationSites,world_.minute,settlementReference);
         return true;
     }
     bool completeExternalPhysicalAction(
