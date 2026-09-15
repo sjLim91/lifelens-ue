@@ -86,20 +86,26 @@ def spawn(actor_subsystem, cls, location, rotation=None):
 
 
 def build_sky(actors):
-    # Daylight baseline. Kept deliberately plain so Observer readability and
-    # the Android budget come first; the sun can later be driven by the
-    # authoritative simulation minute.
+    # Daylight baseline, fully dynamic. Movable lights need no baked lightmaps,
+    # which removes the "lighting needs to be rebuilt" state for every static
+    # mesh in the level, and they are also the prerequisite for driving the sun
+    # from the authoritative simulation minute later.
     sun = spawn(actors, unreal.DirectionalLight, unreal.Vector(0, 0, 1500),
                 unreal.Rotator(-48.0, -35.0, 0.0))
     sun.set_actor_label("Sun")
     light = sun.get_component_by_class(unreal.DirectionalLightComponent)
+    light.set_editor_property("mobility", unreal.ComponentMobility.MOVABLE)
     light.set_editor_property("intensity", 4.0)
     light.set_editor_property("light_color", unreal.Color(255, 246, 228))
     light.set_editor_property("atmosphere_sun_light", True)
+    # Android budget: cascaded shadows only around the observed area.
+    light.set_editor_property("dynamic_shadow_distance_movable_light", 9000.0)
+    light.set_editor_property("dynamic_shadow_cascades", 3)
 
     sky_light = spawn(actors, unreal.SkyLight, unreal.Vector(0, 0, 1600))
     sky_light.set_actor_label("SkyLight")
     sky_component = sky_light.get_component_by_class(unreal.SkyLightComponent)
+    sky_component.set_editor_property("mobility", unreal.ComponentMobility.MOVABLE)
     sky_component.set_editor_property("real_time_capture", True)
     sky_component.set_editor_property("intensity", 1.0)
 
@@ -173,6 +179,11 @@ def main():
     level_subsystem = unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)
     actor_subsystem = unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
 
+    # Rebuilding is deterministic, so an existing map is replaced rather than
+    # merged into.
+    if EAL.does_asset_exist(MAP_PATH):
+        EAL.delete_asset(MAP_PATH)
+        log("removed previous %s" % MAP_PATH)
     if not level_subsystem.new_level(MAP_PATH):
         raise RuntimeError("could not create level %s" % MAP_PATH)
     log("created level %s" % MAP_PATH)

@@ -8,7 +8,13 @@
 #       -EnablePlugins=PythonScriptPlugin -unattended -nopause -nosplash -stdout -FullStdOutLogOutput
 #
 # One parent material, one instance per surface. Mobile-oriented: no
-# displacement, no tessellation, single UV set, four texture samplers.
+# displacement, no tessellation, four texture samplers.
+#
+# UVs are world-aligned rather than mesh UVs. The ground plane is one 100 uu
+# engine plane scaled by 240, so its UV range stays 0..1 across 240 m; scaling
+# that by a plain tiling factor stretches a single texture over the whole map.
+# Dividing world XY by a tile size gives an exact "one tile per N cm" that is
+# independent of how the ground mesh is scaled.
 
 import unreal
 
@@ -26,8 +32,9 @@ INSTANCES = {
     "MI_Ground_Transition": "Ground037_1K-PNG",
 }
 
-# One tile per 2 m of world space reads well at the observer camera distance.
-DEFAULT_TILING = 0.5
+# Centimetres of world space per texture tile. The observer camera sits well
+# above the residents, so a 4 m tile keeps detail without visible repetition.
+DEFAULT_TILE_SIZE_CM = 400.0
 
 
 def log(msg):
@@ -43,16 +50,25 @@ def build_parent():
     if material is None:
         raise RuntimeError("could not create %s" % dest)
 
-    # World-space tiling so the ground plane can be scaled without stretching.
-    tiling = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, -900, 400)
-    tiling.set_editor_property("parameter_name", "Tiling")
-    tiling.set_editor_property("default_value", DEFAULT_TILING)
+    # World-aligned UVs: tiling no longer depends on the ground mesh scale.
+    tile_size = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, -1100, 420)
+    tile_size.set_editor_property("parameter_name", "TileSizeCm")
+    tile_size.set_editor_property("default_value", DEFAULT_TILE_SIZE_CM)
 
-    coords = MEL.create_material_expression(material, unreal.MaterialExpressionTextureCoordinate, -900, 300)
+    world_position = MEL.create_material_expression(
+        material, unreal.MaterialExpressionWorldPosition, -1100, 260)
 
-    scaled = MEL.create_material_expression(material, unreal.MaterialExpressionMultiply, -700, 340)
-    MEL.connect_material_expressions(coords, "", scaled, "A")
-    MEL.connect_material_expressions(tiling, "", scaled, "B")
+    world_xy = MEL.create_material_expression(
+        material, unreal.MaterialExpressionComponentMask, -880, 280)
+    world_xy.set_editor_property("r", True)
+    world_xy.set_editor_property("g", True)
+    world_xy.set_editor_property("b", False)
+    world_xy.set_editor_property("a", False)
+    MEL.connect_material_expressions(world_position, "", world_xy, "")
+
+    scaled = MEL.create_material_expression(material, unreal.MaterialExpressionDivide, -700, 300)
+    MEL.connect_material_expressions(world_xy, "", scaled, "A")
+    MEL.connect_material_expressions(tile_size, "", scaled, "B")
 
     def sampler(name, x, y, sampler_type):
         node = MEL.create_material_expression(material, unreal.MaterialExpressionTextureSampleParameter2D, x, y)
@@ -108,7 +124,7 @@ def build_instance(parent, name, prefix):
             raise RuntimeError("missing texture %s" % texture_path)
         MEL.set_material_instance_texture_parameter_value(instance, param, texture)
 
-    MEL.set_material_instance_scalar_parameter_value(instance, "Tiling", DEFAULT_TILING)
+    MEL.set_material_instance_scalar_parameter_value(instance, "TileSizeCm", DEFAULT_TILE_SIZE_CM)
     EAL.save_asset(dest, only_if_is_dirty=False)
     log("built instance %s from %s" % (dest, prefix))
 
