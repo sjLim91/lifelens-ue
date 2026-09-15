@@ -2,8 +2,9 @@
 #include "lifelens/CivilizationSnapshotCodec.h"
 #include "lifelens/EnvironmentalResidueSnapshotCodec.h"
 #include "lifelens/PrimitiveSanitationSnapshotCodec.h"
-#include "lifelens/WorldGenerationSnapshotCodec.h"
+#include "lifelens/SimulationRulesetSnapshotCodec.h"
 #include "lifelens/SocialKnowledgeSnapshotCodec.h"
+#include "lifelens/WorldGenerationSnapshotCodec.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -11,15 +12,11 @@
 #include <utility>
 #include <vector>
 
-#define encodeSimulationSnapshot encodeSimulationSnapshotLegacyBody
-#define decodeSimulationSnapshot decodeSimulationSnapshotLegacyBody
+#define encodeSimulationSnapshot encodeSimulationSnapshotBaseBody
+#define decodeSimulationSnapshot decodeSimulationSnapshotBaseBody
 #include "SimulationSnapshotCodecLegacy.cpp"
 #undef encodeSimulationSnapshot
 #undef decodeSimulationSnapshot
-
-// Structural validator compatibility tokens live in the preserved legacy body:
-// 'L','L','S','N','A','P','0','1' writeWorld writeRuntime
-// decodeSimulationSnapshot snapshot contains trailing bytes
 
 namespace lifelens {
 namespace {
@@ -31,15 +28,6 @@ std::uint32_t readBinaryFormatVersion(const std::vector<std::uint8_t>& bytes)
         | (static_cast<std::uint32_t>(bytes[9])<<8)
         | (static_cast<std::uint32_t>(bytes[10])<<16)
         | (static_cast<std::uint32_t>(bytes[11])<<24);
-}
-
-void patchBinaryFormatVersion(std::vector<std::uint8_t>& bytes,std::uint32_t version)
-{
-    if(bytes.size()<12) return;
-    bytes[8]=static_cast<std::uint8_t>(version&0xffu);
-    bytes[9]=static_cast<std::uint8_t>((version>>8)&0xffu);
-    bytes[10]=static_cast<std::uint8_t>((version>>16)&0xffu);
-    bytes[11]=static_cast<std::uint8_t>((version>>24)&0xffu);
 }
 
 bool validateCivilizationWorldForCodec(const World& world,std::string* error)
@@ -154,15 +142,6 @@ bool validateSocialKnowledgeForCodec(
     return true;
 }
 
-bool decodeLegacyBodyForVersion(
-    std::vector<std::uint8_t> legacyBody,
-    SimulationStateSnapshot& decoded,
-    std::string* error)
-{
-    patchBinaryFormatVersion(legacyBody,SimulationSnapshotBinaryFormatVersion);
-    return decodeSimulationSnapshotLegacyBody(legacyBody,decoded,error);
-}
-
 } // namespace
 
 bool encodeSimulationSnapshot(
@@ -170,14 +149,21 @@ bool encodeSimulationSnapshot(
     std::vector<std::uint8_t>& outBytes,
     std::string* error)
 {
+    if(!validSimulationRuleset(snapshot.ruleset)){
+        setError(error,"invalid simulation ruleset");
+        return false;
+    }
     if(!validateCivilizationWorldForCodec(snapshot.world,error)) return false;
     if(!validateSocialKnowledgeForCodec(snapshot.socialKnowledge,snapshot.world,error)) return false;
     if(!validateEnvironmentalResiduesForCodec(snapshot.world,error)) return false;
     if(!validatePrimitiveSanitationSitesForCodec(snapshot.world,error)) return false;
-    if(!validateWorldGenerationSnapshotState(snapshot.world)){ setError(error,"invalid world generation state"); return false; }
+    if(!validateWorldGenerationSnapshotState(snapshot.world)){
+        setError(error,"invalid world generation state");
+        return false;
+    }
 
     std::vector<std::uint8_t> body;
-    if(!encodeSimulationSnapshotLegacyBody(snapshot,body,error)) return false;
+    if(!encodeSimulationSnapshotBaseBody(snapshot,body,error)) return false;
 
     Writer civilizationExtension;
     writeCivilizationSnapshotExtension(civilizationExtension,snapshot.world);
@@ -200,6 +186,10 @@ bool encodeSimulationSnapshot(
     writeWorldGenerationSnapshotExtension(worldGenerationExtension,snapshot.world);
     body.insert(body.end(),worldGenerationExtension.bytes.begin(),worldGenerationExtension.bytes.end());
 
+    Writer rulesetExtension;
+    writeSimulationRulesetSnapshotExtension(rulesetExtension,snapshot.ruleset);
+    body.insert(body.end(),rulesetExtension.bytes.begin(),rulesetExtension.bytes.end());
+
     outBytes=std::move(body);
     if(error) error->clear();
     return true;
@@ -210,24 +200,9 @@ bool decodeSimulationSnapshot(
     SimulationStateSnapshot& outSnapshot,
     std::string* error)
 {
-    const std::uint32_t binaryVersion=readBinaryFormatVersion(bytes);
-    if(binaryVersion<MinimumSupportedSimulationSnapshotBinaryFormatVersion
-       || binaryVersion>SimulationSnapshotBinaryFormatVersion){
+    if(readBinaryFormatVersion(bytes)!=SimulationSnapshotBinaryFormatVersion){
         setError(error,"unsupported snapshot binary format");
         return false;
-    }
-
-    if(binaryVersion==1){
-        SimulationStateSnapshot decoded;
-        if(!decodeLegacyBodyForVersion(bytes,decoded,error)) return false;
-        initializeLegacyCivilizationState(decoded.world);
-        decoded.socialKnowledge.clear();
-        decoded.world.environmentalResidues.clear();
-        decoded.world.primitiveSanitationSites.clear();
-        if(!validateCivilizationWorldForCodec(decoded.world,error)) return false;
-        outSnapshot=std::move(decoded);
-        if(error) error->clear();
-        return true;
     }
 
     const auto civilizationMarker=std::find_end(
@@ -239,63 +214,61 @@ bool decodeSimulationSnapshot(
         return false;
     }
 
-    auto socialMarker=bytes.end();
-    if(binaryVersion>=3){
-        socialMarker=std::find_end(
-            civilizationMarker,bytes.end(),
-            SocialKnowledgeSnapshotExtensionMagic,
-            SocialKnowledgeSnapshotExtensionMagic+sizeof(SocialKnowledgeSnapshotExtensionMagic));
-        if(socialMarker==bytes.end() || socialMarker<=civilizationMarker){
-            setError(error,"missing social knowledge snapshot extension");
-            return false;
-        }
+    const auto socialMarker=std::find_end(
+        civilizationMarker,bytes.end(),
+        SocialKnowledgeSnapshotExtensionMagic,
+        SocialKnowledgeSnapshotExtensionMagic+sizeof(SocialKnowledgeSnapshotExtensionMagic));
+    if(socialMarker==bytes.end() || socialMarker<=civilizationMarker){
+        setError(error,"missing social knowledge snapshot extension");
+        return false;
     }
 
-    auto environmentMarker=bytes.end();
-    if(binaryVersion>=4){
-        environmentMarker=std::find_end(
-            socialMarker,bytes.end(),
-            EnvironmentalResidueSnapshotExtensionMagic,
-            EnvironmentalResidueSnapshotExtensionMagic+sizeof(EnvironmentalResidueSnapshotExtensionMagic));
-        if(environmentMarker==bytes.end() || environmentMarker<=socialMarker){
-            setError(error,"missing environmental residue snapshot extension");
-            return false;
-        }
+    const auto environmentMarker=std::find_end(
+        socialMarker,bytes.end(),
+        EnvironmentalResidueSnapshotExtensionMagic,
+        EnvironmentalResidueSnapshotExtensionMagic+sizeof(EnvironmentalResidueSnapshotExtensionMagic));
+    if(environmentMarker==bytes.end() || environmentMarker<=socialMarker){
+        setError(error,"missing environmental residue snapshot extension");
+        return false;
     }
 
-    auto sanitationMarker=bytes.end();
-    if(binaryVersion>=5){
-        sanitationMarker=std::find_end(
-            environmentMarker,bytes.end(),
-            PrimitiveSanitationSnapshotExtensionMagic,
-            PrimitiveSanitationSnapshotExtensionMagic+sizeof(PrimitiveSanitationSnapshotExtensionMagic));
-        if(sanitationMarker==bytes.end() || sanitationMarker<=environmentMarker){
-            setError(error,"missing primitive sanitation snapshot extension");
-            return false;
-        }
+    const auto sanitationMarker=std::find_end(
+        environmentMarker,bytes.end(),
+        PrimitiveSanitationSnapshotExtensionMagic,
+        PrimitiveSanitationSnapshotExtensionMagic+sizeof(PrimitiveSanitationSnapshotExtensionMagic));
+    if(sanitationMarker==bytes.end() || sanitationMarker<=environmentMarker){
+        setError(error,"missing primitive sanitation snapshot extension");
+        return false;
     }
 
-    auto worldGenerationMarker=bytes.end();
-    if(binaryVersion>=6){
-        worldGenerationMarker=std::find_end(
-            sanitationMarker,bytes.end(),
-            WorldGenerationSnapshotExtensionMagic,
-            WorldGenerationSnapshotExtensionMagic+sizeof(WorldGenerationSnapshotExtensionMagic));
-        if(worldGenerationMarker==bytes.end() || worldGenerationMarker<=sanitationMarker){
-            setError(error,"missing world generation snapshot extension");
-            return false;
-        }
+    const auto worldGenerationMarker=std::find_end(
+        sanitationMarker,bytes.end(),
+        WorldGenerationSnapshotExtensionMagic,
+        WorldGenerationSnapshotExtensionMagic+sizeof(WorldGenerationSnapshotExtensionMagic));
+    if(worldGenerationMarker==bytes.end() || worldGenerationMarker<=sanitationMarker){
+        setError(error,"missing world generation snapshot extension");
+        return false;
     }
 
-    const auto civilizationEnd=binaryVersion>=3 ? socialMarker : bytes.end();
-    const auto socialEnd=binaryVersion>=4 ? environmentMarker : bytes.end();
-    const auto environmentEnd=binaryVersion>=5 ? sanitationMarker : bytes.end();
-    const auto sanitationEnd=binaryVersion>=6 ? worldGenerationMarker : bytes.end();
-    std::vector<std::uint8_t> legacyBody(bytes.begin(),civilizationMarker);
-    std::vector<std::uint8_t> civilizationBytes(civilizationMarker,civilizationEnd);
+    const auto rulesetMarker=std::find_end(
+        worldGenerationMarker,bytes.end(),
+        SimulationRulesetSnapshotExtensionMagic,
+        SimulationRulesetSnapshotExtensionMagic+sizeof(SimulationRulesetSnapshotExtensionMagic));
+    if(rulesetMarker==bytes.end() || rulesetMarker<=worldGenerationMarker){
+        setError(error,"missing simulation ruleset snapshot extension");
+        return false;
+    }
+
+    std::vector<std::uint8_t> baseBody(bytes.begin(),civilizationMarker);
+    std::vector<std::uint8_t> civilizationBytes(civilizationMarker,socialMarker);
+    std::vector<std::uint8_t> knowledgeBytes(socialMarker,environmentMarker);
+    std::vector<std::uint8_t> environmentBytes(environmentMarker,sanitationMarker);
+    std::vector<std::uint8_t> sanitationBytes(sanitationMarker,worldGenerationMarker);
+    std::vector<std::uint8_t> worldGenerationBytes(worldGenerationMarker,rulesetMarker);
+    std::vector<std::uint8_t> rulesetBytes(rulesetMarker,bytes.end());
 
     SimulationStateSnapshot decoded;
-    if(!decodeLegacyBodyForVersion(std::move(legacyBody),decoded,error)) return false;
+    if(!decodeSimulationSnapshotBaseBody(baseBody,decoded,error)) return false;
 
     Reader civilizationReader(civilizationBytes);
     if(!readCivilizationSnapshotExtension(civilizationReader,decoded.world) || !civilizationReader.done()){
@@ -304,60 +277,42 @@ bool decodeSimulationSnapshot(
     }
     if(!validateCivilizationWorldForCodec(decoded.world,error)) return false;
 
-    if(binaryVersion>=3){
-        std::vector<std::uint8_t> knowledgeBytes(socialMarker,socialEnd);
-        Reader knowledgeReader(knowledgeBytes);
-        if(!readSocialKnowledgeSnapshotExtension(knowledgeReader,decoded.socialKnowledge) || !knowledgeReader.done()){
-            setError(error,"invalid social knowledge snapshot extension");
-            return false;
-        }
-        if(!validateSocialKnowledgeForCodec(decoded.socialKnowledge,decoded.world,error)) return false;
-    }else{
-        decoded.socialKnowledge.clear();
+    Reader knowledgeReader(knowledgeBytes);
+    if(!readSocialKnowledgeSnapshotExtension(knowledgeReader,decoded.socialKnowledge) || !knowledgeReader.done()){
+        setError(error,"invalid social knowledge snapshot extension");
+        return false;
+    }
+    if(!validateSocialKnowledgeForCodec(decoded.socialKnowledge,decoded.world,error)) return false;
+
+    Reader environmentReader(environmentBytes);
+    if(!readEnvironmentalResidueSnapshotExtension(environmentReader,decoded.world.environmentalResidues)
+       || !environmentReader.done()){
+        setError(error,"invalid environmental residue snapshot extension");
+        return false;
+    }
+    if(!validateEnvironmentalResiduesForCodec(decoded.world,error)) return false;
+
+    Reader sanitationReader(sanitationBytes);
+    if(!readPrimitiveSanitationSnapshotExtension(
+        sanitationReader,decoded.world.primitiveSanitationSites)
+       || !sanitationReader.done()){
+        setError(error,"invalid primitive sanitation snapshot extension");
+        return false;
+    }
+    if(!validatePrimitiveSanitationSitesForCodec(decoded.world,error)) return false;
+
+    Reader worldGenerationReader(worldGenerationBytes);
+    if(!readWorldGenerationSnapshotExtension(worldGenerationReader,decoded.world)
+       || !worldGenerationReader.done()){
+        setError(error,"invalid world generation snapshot extension");
+        return false;
     }
 
-    if(binaryVersion>=4){
-        std::vector<std::uint8_t> environmentBytes(environmentMarker,environmentEnd);
-        Reader environmentReader(environmentBytes);
-        if(!readEnvironmentalResidueSnapshotExtension(environmentReader,decoded.world.environmentalResidues)
-           || !environmentReader.done()){
-            setError(error,"invalid environmental residue snapshot extension");
-            return false;
-        }
-        if(!validateEnvironmentalResiduesForCodec(decoded.world,error)) return false;
-    }else{
-        decoded.world.environmentalResidues.clear();
-    }
-
-    if(binaryVersion>=5){
-        std::vector<std::uint8_t> sanitationBytes(sanitationMarker,sanitationEnd);
-        Reader sanitationReader(sanitationBytes);
-        if(!readPrimitiveSanitationSnapshotExtension(
-            sanitationReader,decoded.world.primitiveSanitationSites)
-           || !sanitationReader.done()){
-            setError(error,"invalid primitive sanitation snapshot extension");
-            return false;
-        }
-        if(!validatePrimitiveSanitationSitesForCodec(decoded.world,error)) return false;
-    }else{
-        decoded.world.primitiveSanitationSites.clear();
-    }
-
-    if(binaryVersion>=6){
-        std::vector<std::uint8_t> worldGenerationBytes(worldGenerationMarker,bytes.end());
-        Reader worldGenerationReader(worldGenerationBytes);
-        if(!readWorldGenerationSnapshotExtension(worldGenerationReader,decoded.world)
-           || !worldGenerationReader.done()){
-            setError(error,"invalid world generation snapshot extension");
-            return false;
-        }
-    }else{
-        // Legacy snapshots predate materialized chunks. Preserve their existing
-        // resource/history state and do not silently generate a new landscape.
-        decoded.world.generatedNaturalChunks.clear();
-        decoded.world.hasInitialStartRegionSelection=false;
-        decoded.world.initialStartRegionCoord={};
-        decoded.world.initialStartRegionViability=0.0;
+    Reader rulesetReader(rulesetBytes);
+    if(!readSimulationRulesetSnapshotExtension(rulesetReader,decoded.ruleset)
+       || !rulesetReader.done()){
+        setError(error,"invalid simulation ruleset snapshot extension");
+        return false;
     }
 
     outSnapshot=std::move(decoded);

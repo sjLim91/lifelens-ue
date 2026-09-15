@@ -20,7 +20,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FLLCoreRuntimeStateChanged);
  * from (WorldSeed, Core CharacterId). The production NEW GAME entry point is
  * StartCoreNewGame(); demo entry points remain available only for development.
  */
-UCLASS()
+UCLASS(Config=Game, DefaultConfig)
 class LIFELENS_API ULLCoreBridgeSubsystem : public UGameInstanceSubsystem
 {
     GENERATED_BODY()
@@ -131,12 +131,64 @@ public:
     FLLCoreRuntimeStateChanged OnCoreRuntimeStateChanged;
 
 private:
+    lifelens::Simulation* CreateConfiguredSimulation(uint64 CoreSeed) const;
     void ResetRuntime();
     void RebuildGuidIndex();
     void PushCoreEvent(const FString& Line);
     FGuid MakeStableResidentGuid(uint64 CoreCharacterId) const;
     bool BuildResidentObservation(uint64 CoreCharacterId, FLLCoreResidentObservation& OutObservation) const;
     bool BuildFamilyObservation(uint64 CoreCharacterId, FLLCoreFamilyObservation& OutObservation) const;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Core|Ruleset|Needs", meta=(ClampMin="0.0"))
+    double NeedsHungerPerMinute = 0.0010;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Core|Ruleset|Needs", meta=(ClampMin="0.0"))
+    double NeedsThirstPerMinute = 0.0013;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Core|Ruleset|Needs", meta=(ClampMin="0.0"))
+    double NeedsSleepPerMinute = 0.0008;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Core|Ruleset|Needs", meta=(ClampMin="0.0"))
+    double NeedsBladderPerMinute = 0.0011;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Core|Ruleset|Needs", meta=(ClampMin="0.0"))
+    double NeedsHygienePerMinute = 0.0007;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Core|Ruleset|UtilityAI", meta=(ClampMin="0.01"))
+    double UtilityNeedExponent = 4.0;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Core|Ruleset|UtilityAI", meta=(ClampMin="0.0", ClampMax="1.0"))
+    double UtilityUrgentThreshold = 0.70;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Core|Ruleset|UtilityAI", meta=(ClampMin="0.0"))
+    double UtilityUrgentSlope = 1.8;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Core|Ruleset|UtilityAI", meta=(ClampMin="0.0"))
+    double UtilityIdleScore = 0.035;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Core|Ruleset|UtilityAI", meta=(ClampMin="0", ClampMax="23"))
+    int32 UtilitySleepNightStartHour = 22;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Core|Ruleset|UtilityAI", meta=(ClampMin="0", ClampMax="23"))
+    int32 UtilitySleepNightEndHour = 6;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Core|Ruleset|UtilityAI", meta=(ClampMin="0.0"))
+    double UtilitySleepNightMultiplier = 1.35;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Core|Ruleset|UtilityAI", meta=(ClampMin="0.0"))
+    double UtilityWashBaseMultiplier = 0.85;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Core|Ruleset|UtilityAI", meta=(ClampMin="0.0"))
+    double UtilityWashConscientiousnessMultiplier = 0.35;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Core|Ruleset|UtilityAI", meta=(ClampMin="0.0"))
+    double UtilitySleepBaseMultiplier = 0.90;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Core|Ruleset|UtilityAI", meta=(ClampMin="0.0"))
+    double UtilitySleepIntroversionMultiplier = 0.25;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Core|Ruleset|UtilityAI", meta=(ClampMin="0.0", ClampMax="1.0"))
+    double UtilitySecondChoiceProbability = 0.08;
 
     lifelens::Simulation* CoreSimulation = nullptr;
     int32 ActiveSeed = 0;

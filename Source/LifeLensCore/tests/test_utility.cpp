@@ -16,6 +16,15 @@ int main(){
     if(lifelens::chooseGoal(w,w.characters.front())!=lifelens::Goal::Idle){
         std::cerr<<"expected Idle when every usable object is reserved\n"; return 2;
     }
+
+    for(auto& o:w.objects) o.reservedBy.reset();
+    lifelens::UtilityAIRuleset tuned=lifelens::DefaultSimulationRuleset.utilityAI;
+    tuned.idleScore=10.0;
+    tuned.secondChoiceProbability=0.0;
+    if(lifelens::chooseGoal(w,w.characters.front(),tuned)!=lifelens::Goal::Idle){
+        std::cerr<<"custom utility ruleset did not override goal scoring\n"; return 3;
+    }
+
     std::cout<<"test_utility PASS\n";
     return 0;
 }

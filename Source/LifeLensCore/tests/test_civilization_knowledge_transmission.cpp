@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <cstdint>
 #include <iostream>
 #include <string>
@@ -17,19 +16,6 @@ using namespace lifelens;
         return 1; \
     } \
 } while(false)
-
-static bool patchLittleEndianU32(
-    std::vector<std::uint8_t>& bytes,
-    std::size_t offset,
-    std::uint32_t value)
-{
-    if(bytes.size()<offset+4) return false;
-    bytes[offset]=static_cast<std::uint8_t>(value&0xffu);
-    bytes[offset+1]=static_cast<std::uint8_t>((value>>8)&0xffu);
-    bytes[offset+2]=static_cast<std::uint8_t>((value>>16)&0xffu);
-    bytes[offset+3]=static_cast<std::uint8_t>((value>>24)&0xffu);
-    return true;
-}
 
 static bool sameSocialKnowledge(
     const SocialKnowledgeBook& a,
@@ -201,20 +187,6 @@ int main()
     CHECK(error.empty());
     CHECK(sameSocialKnowledge(sim.socialKnowledge(),restored.socialKnowledge()));
 
-    const auto marker=std::find_end(
-        bytes.begin()+12,bytes.end(),
-        SocialKnowledgeSnapshotExtensionMagic,
-        SocialKnowledgeSnapshotExtensionMagic+sizeof(SocialKnowledgeSnapshotExtensionMagic));
-    CHECK(marker!=bytes.end());
-    std::vector<std::uint8_t> v2(bytes.begin(),marker);
-    CHECK(patchLittleEndianU32(v2,8,2));
-    SimulationStateSnapshot migratedV2;
-    CHECK(decodeSimulationSnapshot(v2,migratedV2,&error));
-    CHECK(error.empty());
-    CHECK(migratedV2.socialKnowledge.facts().empty());
-    CHECK(migratedV2.socialKnowledge.receipts().empty());
-    CHECK(migratedV2.world.characters.size()==snapshot.world.characters.size());
-
     sim.runMinutes(240);
     restored.runMinutes(240);
     std::vector<std::uint8_t> futureA,futureB;
@@ -226,6 +198,6 @@ int main()
     CHECK(sim.socialKnowledge().facts().empty());
     CHECK(sim.socialKnowledge().receipts().empty());
 
-    std::cout << "civilization witness/imitation/teaching + provenance persistence passed\n";
+    std::cout << "civilization witness/imitation/teaching + current snapshot persistence passed\n";
     return 0;
 }

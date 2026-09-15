@@ -6,16 +6,18 @@ LifeLens의 목표는 숫자 리터럴 자체를 없애는 것이 아니라, **�
 
 ### A. Stable protocol / determinism contracts — 코드에 유지
 
-다음 값은 저장 호환성, seed 재현성, 좌표계 또는 직렬화 계약을 정의하므로 임의 외부 설정으로 만들지 않는다.
+다음 값은 저장 포맷, seed 재현성, 좌표계 또는 직렬화 계약을 정의하므로 임의 외부 설정으로 만들지 않는다.
 
 - World generation version
 - deterministic hash/mixing constants and domain separators
 - Core chunk coordinate span처럼 생성 규칙의 identity에 직접 포함되는 값
-- snapshot/schema version과 명시적인 migration discriminator
+- snapshot/schema version과 format discriminator
 
-이 값을 변경할 때는 일반 튜닝이 아니라 versioned migration으로 취급한다.
+출시 후 실제 사용자 save/replay가 존재하는 기준선이 생기면 이 값의 변경은 일반 튜닝이 아니라 명시적 compatibility/migration 판단 대상이다.
 
-### B. Core simulation policy / balance — versioned Ruleset으로 이동
+**현재 pre-release 예외:** 아직 실제 사용자에게 배포된 LifeLens 제품 save가 없으므로 개발 중 과거 snapshot/save 포맷의 migration/backward compatibility는 제품 요구사항이 아니다. 현재 구조를 더 복잡하게 만드는 개발 전용 migration 코드는 보존하지 않으며, 현재 포맷을 직접 갱신한다.
+
+### B. Core simulation policy / balance — versioned immutable Ruleset
 
 다음 값은 로직이 아니라 시뮬레이션 정책/밸런스 데이터다.
 
@@ -26,7 +28,9 @@ LifeLens의 목표는 숫자 리터럴 자체를 없애는 것이 아니라, **�
 - pregnancy/fertility/gestation tuning
 - social/civilization cooldown 및 utility weights
 
-Core는 Unreal 의존성을 갖지 않는다. 최종 구조는 immutable `SimulationRuleset`을 Core 생성 시 주입하고, ruleset identity/version을 snapshot에 고정해 동일 save/replay가 같은 규칙을 사용하게 한다.
+Core는 Unreal 의존성을 갖지 않는다. `Simulation`은 생성 시 immutable `SimulationRuleset`을 값으로 주입받고 실행 중 이를 변경하지 않는다. 저장 시 ruleset version만 기록하는 것이 아니라 실제 ruleset 값 전체를 snapshot에 고정해 같은 save/replay가 같은 규칙을 계속 사용하게 한다.
+
+Unreal runtime은 Config/Data Asset에서 변경 가능한 제품 튜닝을 읽어 Core ruleset 값으로 변환한다. Core의 동일 숫자 기본값은 Config가 누락되거나 잘못된 경우를 위한 safety fallback이며 정상 튜닝 source of truth가 아니다.
 
 ### C. Unreal runtime / presentation tuning — Config 또는 Data Asset
 
@@ -44,10 +48,12 @@ Core는 Unreal 의존성을 갖지 않는다. 최종 구조는 immutable `Simula
 
 1. 동작 변경과 외부화 작업을 가능한 한 분리한다.
 2. 기존 값을 외부화하는 첫 커밋은 behavior-preserving이어야 한다.
-3. Core ruleset 변경은 ruleset version/snapshot compatibility를 함께 검토한다.
-4. presentation config는 Core authority나 world-generation identity를 바꾸지 않는다.
-5. 같은 의미의 값은 한 곳에서만 소유한다.
-6. Config/Build/CI, shared types, cross-owner path는 기존 Integration Request / review 규칙을 따른다.
+3. Core ruleset 변경은 ruleset version/snapshot determinism을 함께 검토한다.
+4. 실제 배포 기준선 이전에는 개발 전용 구버전 migration layer를 새로 만들지 않는다.
+5. 실제 배포 기준선 이후에는 save/replay compatibility 정책을 명시적으로 결정한 뒤 format/ruleset version을 변경한다.
+6. presentation config는 Core authority나 world-generation identity를 바꾸지 않는다.
+7. 같은 의미의 값은 한 곳에서만 소유한다.
+8. Config/Build/CI, shared types, cross-owner path는 기존 Integration Request / review 규칙을 따른다.
 
 ## 3. 현재 적용 순서
 
@@ -57,3 +63,16 @@ Core는 Unreal 의존성을 갖지 않는다. 최종 구조는 immutable `Simula
 4. legacy compatibility projection/outcome 상수 제거 (`#93` 이후)
 5. hardcoded asset paths/name catalogs를 content catalog로 이동
 6. 신규 magic tuning value 유입 방지 validator 추가
+
+## 4. Cleanup B 적용 상태
+
+Cleanup B의 목표 구조는 다음과 같다.
+
+`DefaultGame.ini -> ULLCoreBridgeSubsystem Config -> SimulationRuleset value -> const Simulation::ruleset_`
+
+- Needs/UtilityAI의 변경 가능한 제품 튜닝은 `DefaultGame.ini`가 정상 source of truth다.
+- Core default 값은 pure C++ 테스트/독립 실행과 Config failure를 위한 fallback이다.
+- snapshot은 실행 중인 ruleset 전체 값을 저장한다.
+- load는 snapshot에 저장된 ruleset으로 Simulation을 먼저 구성한 후 상태를 복원한다.
+- 개발 중 v1~v6 snapshot migration 및 Unreal SaveGame v1 replay migration은 미배포 pre-release 부채이므로 제거한다.
+- Social/Fun projection, LifeStage/Relationship/Romance/Pregnancy/Family의 나머지 하드코딩은 각 계획된 후속 Cleanup 단계에서 처리한다.
