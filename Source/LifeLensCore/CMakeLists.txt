@@ -113,3 +113,5 @@ lifelens_add_test(test_environmental_residue)
 lifelens_add_test(test_external_physical_execution)
 
 lifelens_add_test(test_environmental_exposure)
+
+lifelens_add_test(test_sanitation_problem_recognition)
