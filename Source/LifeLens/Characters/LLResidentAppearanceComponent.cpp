@@ -133,6 +133,17 @@ void ULLResidentAppearanceComponent::EnsureBuilt()
     ApplyHair();
     ApplyScale();
     PlayIdle();
+
+    // One line per built resident so Save/Load continuity can be checked in
+    // the Output Log: the same ResidentId must print the same seed/variants
+    // before and after a load.
+    const ALLResidentCharacter* Resident = Cast<ALLResidentCharacter>(GetOwner());
+    UE_LOG(LogTemp, Log, TEXT("LLAppearance %s id=%s seed=%d sex=%d stage=%d skin=%.3f eye=%.3f hair=%d/%.3f height=%.3f build=%.3f temp=%d"),
+        Resident ? *Resident->GetResidentDisplayName().ToString() : TEXT("?"),
+        *Inputs.ResidentId.ToString(EGuidFormats::DigitsWithHyphens),
+        Inputs.VisualSeed, static_cast<int32>(Inputs.Sex), static_cast<int32>(Inputs.LifeStage),
+        Inputs.SkinToneAxis, Inputs.EyeColorAxis, Inputs.HairStyleVariant, Inputs.HairColorAxis,
+        Inputs.HeightAxis, Inputs.BuildAxis, Inputs.bTemporaryPresentationSeed ? 1 : 0);
 }
 
 float ULLResidentAppearanceComponent::GetVisualTopOffset() const
