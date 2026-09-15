@@ -111,46 +111,29 @@ Implementation timing:
 - production World Visual must now consume the merged WG-1/WG-2 contracts; the next Jjun unit is World Generation Milestone A.
 - do not lock the project into a hand-authored small arena that later requires a world rewrite.
 
-### Dagyeom lane — Character Motion Bootstrap — ACTIVE / FINAL VISUAL CHECK
+### Dagyeom lane — Character Motion Bootstrap — ACTIVE / REVIEW CLOSEOUT
 
 Owner: 다겸 / 다겸 AI (Claude)
 Branch: `dagyeom/character-motion-v1`
 PR: #84
-Latest observed head: `70c6544abda45f547f900242753abe523a29e045`
-Handoff safety: CONDITIONAL — CI green; PIE visual confirmation / final review / merge remain.
+Latest observed head: `fa781b0829a29f8b29b99fe19fe699cc53792966`
+Handoff safety: CONDITIONAL — CI + PIE verified; final review / merge / state sync remain.
 
 Delivered on branch:
 - in-place Idle / Walk / Jog / Sprint locomotion BlendSpace.
 - actual Actor movement measured over a 0.2s presentation window.
 - body-mesh-only orientation smoothing; Actor/Core movement authority unchanged.
-- teleport/load-like large steps are excluded from locomotion measurement.
+- stationary body orientation follows the owner's authoritative yaw so activity/social facing is preserved.
+- teleport/load-like large steps are excluded entirely from locomotion speed accumulation.
 - no Character-side action chooser and no root-motion authority.
 
 Validation observed:
-- Preflight `34935329473`: PASS.
-- Unreal Linux Compile `34935329453`: PASS.
+- Preflight `34940159290`: PASS.
+- Unreal Linux Compile `34940159300`: PASS.
+- PIE visual verification: PASS — Idle/Walk locomotion visible, T-pose resolved, no sliding, smooth turning.
 
 Exact next action:
-- PIE visual confirmation → review/comments check → merge → final canonical state sync.
-
-### Dagyeom lane — Character Motion Bootstrap — ACTIVE
-
-Owner: 다겸 / 다겸 AI
-Branch: `dagyeom/character-motion-v1` (from main `f5c8cba`)
-
-Scope (board minimum):
-- Core-directive-driven Idle / Walk / Jog transition — 구현. 속도축 BlendSpace `BS_ResidentLocomotion`에 실제 이동 속도를 입력.
-- basic orientation smoothing — 구현. 바디 메시 yaw만 보간, 액터 회전·이동 권한 불변.
-- remove the current "Idle while sliding" presentation — 구현. 이동 중 Walk/Jog 블렌드.
-- no competing Character-side action chooser — 유지. 신규 컴포넌트는 읽기·표현만 수행.
-
-검증:
-- headless `-game`: BlendSpace 4샘플 재생, 측정 속도 180 cm/s가 `RuntimeMoveSpeed`와 일치, yaw가 이동 방향으로 수렴.
-- 로컬 `Build.sh LifeLensEditor Mac Development` Succeeded, `Tools/validate_bootstrap.py` PASS.
-
-미충족:
-- PIE 육안 확인(보행 애니메이션, 회전 자연스러움, 미끄러짐 해소).
-- CI 기록.
+- close remaining review/state-doc reconciliation → merge #84 → final canonical state sync.
 
 ## Completed foundation / repair slices
 
@@ -223,7 +206,7 @@ Scope (board minimum):
 1. Character Presentation v1 — DONE via #63.
 2. Appearance projection contract — DONE via #65.
 3. Character Appearance v1 — DONE via #67.
-4. Motion Bootstrap — **ACTIVE #84; CI PASS, PIE/review/merge pending** (Dagyeom lane).
+4. Motion Bootstrap — **ACTIVE #84; CI + PIE PASS, review closeout/merge pending** (Dagyeom lane).
 5. **World Genesis WG-1 DONE #83 / WG-2 DONE #85; World Generation Milestone A — READY_NOW.**
 6. World Visual Environment v1 — presentation prototype may proceed after Motion, but production map must respect World Genesis/Chunk contract.
 7. Character Motion & Context remainder.
@@ -366,7 +349,7 @@ Do not revive the old multi-hour PR #2 path as the default loop.
 16. #80 Dug sanitation pit progression — DONE.
 17. HumanWaste visual feedback #82 — DONE.
 18. Character Appearance #67 — DONE.
-19. **Motion Bootstrap — READY_NOW** (Dagyeom lane).
+19. **Motion Bootstrap — ACTIVE #84; CI + PIE PASS, review closeout/merge pending** (Dagyeom lane).
 20. **World Genesis WG-1 — DONE #83; WG-2 — DONE #85; World Generation Milestone A — READY_NOW.**
 21. World Visual Environment v1 production world work.
 22. Character Motion & Context remainder.

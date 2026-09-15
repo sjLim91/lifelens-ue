@@ -33,7 +33,7 @@
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
 | 쭌 + 쭌 AI | new milestone branch after state sync | World Generation Milestone A | detailed natural chunks + start-region materialization + spawn/persistence boundary | **READY_NOW** |
-| 다겸 + 다겸 AI (Claude) | `dagyeom/character-motion-v1` / #84 | Character Motion Bootstrap | Character locomotion presentation | **ACTIVE — CI PASS / PIE+review pending** |
+| 다겸 + 다겸 AI (Claude) | `dagyeom/character-motion-v1` / #84 | Character Motion Bootstrap | Character locomotion presentation | **ACTIVE — CI+PIE PASS / review closeout pending** |
 | 쭌 + 다겸 lanes | before production World Visual | World generation integration gate | WG-1/WG-2 authority + materialized chunk boundary | WG-1/WG-2 DONE / MILESTONE A NEXT |
 | 다겸 + 다겸 AI | after Motion + world-genesis gate | World Visual Environment v1 | Environment/Maps/WorldPresentation | HIGH PRIORITY |
 | 다겸 + 쭌 Bridge support as needed | after World Visual v1 | Character Motion & Context remainder | Character presentation/animation | AFTER WORLD VISUAL v1 |
@@ -134,9 +134,10 @@ Validation:
 - helper integration Core Tests `34929611584`: PASS, **45/45** + deterministic harness smoke.
 - previous blocking review dismissed after verification; final review approved.
 
-Next Dagyeom lane:
-- **Character Motion Bootstrap — READY_NOW.**
-- scope: Idle / Walk / Jog + velocity-driven switching + orientation smoothing.
+Current Dagyeom lane:
+- **Character Motion Bootstrap — ACTIVE #84.**
+- head `fa781b0829a29f8b29b99fe19fe699cc53792966`; Preflight `34940159290` PASS; Unreal Linux Compile `34940159300` PASS; PIE visual verification PASS.
+- remaining: review closeout → merge → final canonical state sync.
 - Core/World continues to own movement/action authority; animation only reflects runtime movement state.
 
 ## Core ↔ World repair status
@@ -256,7 +257,7 @@ Rules:
 16. #80 Dug sanitation pit progression — DONE.
 17. HumanWaste visual feedback #82 — DONE.
 18. Character Appearance #67 — DONE.
-19. **Character Motion Bootstrap — ACTIVE #84; CI PASS, PIE/review/merge pending** (Dagyeom lane).
+19. **Character Motion Bootstrap — ACTIVE #84; CI + PIE PASS, review closeout/merge pending** (Dagyeom lane).
 20. **World Genesis WG-1 — DONE #83; WG-2 — DONE #85; World Generation Milestone A — READY_NOW.**
 21. World Visual Environment v1 production environment.
 22. Character Motion & Context remainder.
