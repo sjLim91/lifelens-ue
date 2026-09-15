@@ -1,0 +1,91 @@
+name: Assist PR67 closeout
+
+on:
+  push:
+    branches: [jjun/assist-67-closeout]
+    paths:
+      - '.github/workflows/assist-67-closeout.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  closeout:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout assist branch
+        uses: actions/checkout@v4
+        with:
+          ref: jjun/assist-67-closeout
+          fetch-depth: 0
+
+      - name: Merge latest main and apply requested closeout
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "LifeLens Assist Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git fetch origin main
+
+          set +e
+          git merge --no-commit --no-ff origin/main
+          merge_rc=$?
+          set -e
+          if [ "$merge_rc" -ne 0 ]; then
+            conflicts="$(git diff --name-only --diff-filter=U)"
+            echo "Merge conflicts:"
+            printf '%s\n' "$conflicts"
+            unexpected=0
+            while IFS= read -r path; do
+              [ -z "$path" ] && continue
+              case "$path" in
+                tasks/WORK_STATE.md|tasks/TEAM_BOARD.md|tasks/HANDOFF_LOG.md)
+                  echo "Taking current main for shared state file: $path"
+                  git checkout --theirs -- "$path"
+                  git add "$path"
+                  ;;
+                *)
+                  echo "Unexpected conflict requires manual resolution: $path"
+                  unexpected=1
+                  ;;
+              esac
+            done <<< "$conflicts"
+            if [ "$unexpected" -ne 0 ]; then
+              exit 2
+            fi
+          fi
+
+          rm -f Content/Characters/Quaternius/Import/__pycache__/make_headonly_gltf.cpython-314.pyc
+          git add -u Content/Characters/Quaternius/Import
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path('.gitignore')
+          text = p.read_text(encoding='utf-8')
+          for line in ('__pycache__/', '*.pyc'):
+              if line not in text.splitlines():
+                  text = text.rstrip() + '\n' + line + '\n'
+          p.write_text(text, encoding='utf-8')
+
+          p = Path('Source/LifeLens/Characters/LLResidentCharacter.cpp')
+          text = p.read_text(encoding='utf-8')
+          old = '''#include "Characters/LLResidentCharacter.h"\n#include "Characters/LLResidentAppearanceComponent.h"\n#include "Characters/LLResidentPresentationComponent.h"\n#include "AI/LLDecisionComponent.h"\n#include "Characters/LLResidentAppearanceComponent.h"\n#include "Characters/LLResidentPresentationComponent.h"\n'''
+          new = '''#include "Characters/LLResidentCharacter.h"\n#include "AI/LLDecisionComponent.h"\n#include "Characters/LLResidentAppearanceComponent.h"\n#include "Characters/LLResidentPresentationComponent.h"\n'''
+          if old not in text:
+              raise SystemExit('expected duplicate include block not found')
+          p.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          p = Path('Source/LifeLens/Characters/LLResidentAppearanceComponent.cpp')
+          text = p.read_text(encoding='utf-8')
+          old = '''        else if (Slot.Contains(TEXT("Regular")))\n        {\n            // Skin exposed by the outfit (male forearms) uses the pack's Regular\n            // body texture; tint it with the same factor as the body skin.\n            OutfitSkinMaterial = Outfit->CreateAndSetMaterialInstanceDynamic(Index);\n            if (OutfitSkinMaterial)\n            {\n                OutfitSkinMaterial->SetVectorParameterValue(ParamBaseColorFactor, SkinTintColor);\n            }\n        }\n'''
+          new = '''        else if (Slot.Contains(TEXT("Regular")))\n        {\n            // The male Peasant mesh exposes forearms/hands through its Regular\n            // skin slot. Match both halves of the deterministic skin axis to the\n            // head/body, not only the tint over the pack's dark default texture.\n            OutfitSkinMaterial = Outfit->CreateAndSetMaterialInstanceDynamic(Index);\n            if (OutfitSkinMaterial)\n            {\n                UTexture* MatchingSkinBase = Inputs.SkinToneAxis < 0.5f ? MaleSkinLight.Get() : MaleSkinDark.Get();\n                if (MatchingSkinBase)\n                {\n                    OutfitSkinMaterial->SetTextureParameterValue(ParamBaseColorTexture, MatchingSkinBase);\n                }\n                OutfitSkinMaterial->SetVectorParameterValue(ParamBaseColorFactor, SkinTintColor);\n            }\n        }\n'''
+          if old not in text:
+              raise SystemExit('expected outfit skin block not found')
+          p.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+
+          git add .gitignore Source/LifeLens/Characters/LLResidentCharacter.cpp Source/LifeLens/Characters/LLResidentAppearanceComponent.cpp
+          git rm .github/workflows/assist-67-closeout.yml
+          git commit -m "fix: close Character Appearance v1 review items and sync main"
+          git push origin HEAD:jjun/assist-67-closeout
