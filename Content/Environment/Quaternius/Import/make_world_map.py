@@ -6,94 +6,21 @@
 #       -script="<repo>/Content/Environment/Quaternius/Import/make_world_map.py" \
 #       -EnablePlugins=PythonScriptPlugin -unattended -nopause -nosplash -stdout -FullStdOutLogOutput
 #
-# Content-only: sky/lighting baseline, a natural ground plane and a
-# deterministic natural dressing pass. The scatter is authored into the level
-# because the runtime chunk-driven presentation needs a Dagyeom-owned source
-# path (Integration Request IR-A) that is not granted yet.
-#
-# Nothing here creates simulation authority: no beds, toilets, roads, farms or
-# tools, and no gameplay state.
+# The map authors only the sky/lighting baseline and one WorldPresentation
+# actor. Ground and natural dressing are built at runtime from the
+# authoritative world generation observation (`ALLWorldPresentationActor`), so
+# no world content is baked into the level and nothing here becomes a second
+# authority over what exists in the world.
 
-import math
 import unreal
 
 EAL = unreal.EditorAssetLibrary
 MAP_PATH = "/Game/Maps/LifeLensWorld"
-
-NATURE = "/Game/Environment/Quaternius/StylizedNature"
-GROUND_MATERIAL = "/Game/Environment/Materials/MI_Ground_Grass"
-# A flattened cube rather than the engine plane: the plane is single sided,
-# so anything above it sees through to the runtime floor underneath.
-GROUND_MESH = "/Engine/BasicShapes/Cube"
-GROUND_THICKNESS_UU = 20.0
-
-# The game mode spawns a 1400 x 1400 runtime floor; residents roam several
-# thousand units, so the visual ground has to be much larger than that.
-GROUND_SIZE_UU = 24000.0
-SCATTER_RADIUS_UU = 11000.0
-CLEAR_RADIUS_UU = 900.0        # keep the founder area open and readable
-
-SCATTER_SEED = 20260915
-
-# Natural cover is clumped, not evenly sprinkled: groves of trees with open
-# ground between them. Each group places its meshes around a set of cluster
-# centres, so the same asset count reads as woodland instead of noise.
-GROVE_COUNT = 14
-GROVE_RADIUS_UU = 2100.0
-THICKET_COUNT = 26
-THICKET_RADIUS_UU = 900.0
-
-# group: (mesh names, count, scale range, cluster set, tilt degrees)
-SCATTER_GROUPS = [
-    (["CommonTree_1", "CommonTree_2", "CommonTree_3", "CommonTree_4", "CommonTree_5"],
-     150, (0.85, 1.6), "grove", 3.0),
-    (["Pine_1", "Pine_2", "Pine_3", "Pine_4", "Pine_5"],
-     110, (0.9, 1.7), "grove", 3.0),
-    (["TwistedTree_1", "TwistedTree_2", "TwistedTree_3"],
-     45, (0.8, 1.45), "grove", 5.0),
-    (["DeadTree_1", "DeadTree_2", "DeadTree_3"],
-     28, (0.8, 1.35), "grove", 6.0),
-    (["Bush_Common", "Bush_Common_Flowers"],
-     160, (0.7, 1.6), "thicket", 5.0),
-    (["Grass_Common_Tall", "Grass_Common_Short", "Grass_Wispy_Tall", "Grass_Wispy_Short"],
-     420, (0.7, 1.8), "thicket", 4.0),
-    (["Fern_1", "Plant_1", "Plant_1_Big", "Plant_7"],
-     150, (0.7, 1.5), "thicket", 5.0),
-    (["Clover_1", "Clover_2", "Flower_3_Group", "Flower_4_Group", "Mushroom_Common"],
-     120, (0.8, 1.5), "thicket", 4.0),
-    (["Rock_Medium_1", "Rock_Medium_2", "Rock_Medium_3"],
-     46, (0.7, 1.9), "scatter", 8.0),
-    (["Pebble_Round_1", "Pebble_Round_3", "Pebble_Square_2", "Pebble_Square_4", "Pebble_Square_6"],
-     120, (0.6, 1.6), "scatter", 10.0),
-]
+PRESENTATION_CLASS = "/Script/LifeLens.LLWorldPresentationActor"
 
 
 def log(msg):
     unreal.log("[LLEnv] " + str(msg))
-
-
-class Random:
-    """Deterministic LCG so the same map is produced on every run."""
-
-    def __init__(self, seed):
-        self.state = seed & 0xFFFFFFFF
-
-    def next(self):
-        self.state = (1103515245 * self.state + 12345) & 0x7FFFFFFF
-        return self.state / float(0x7FFFFFFF)
-
-    def range(self, low, high):
-        return low + (high - low) * self.next()
-
-
-def find_mesh(name):
-    for asset_path in EAL.list_assets(NATURE, recursive=True, include_folder=False):
-        if asset_path.rsplit("/", 1)[-1].split(".")[0] != name:
-            continue
-        if EAL.find_asset_data(asset_path).asset_class_path.asset_name != "StaticMesh":
-            continue
-        return EAL.load_asset(asset_path)
-    return None
 
 
 def spawn(actor_subsystem, cls, location, rotation=None):
@@ -139,96 +66,17 @@ def build_sky(actors):
     log("sky/lighting actors placed")
 
 
-def build_ground(actors):
-    mesh = EAL.load_asset(GROUND_MESH)
-    material = EAL.load_asset(GROUND_MATERIAL)
-    if mesh is None or material is None:
-        raise RuntimeError("missing ground mesh or material")
-
-    # Top surface sits exactly at z = 0 where the residents walk.
-    ground = spawn(actors, unreal.StaticMeshActor, unreal.Vector(0, 0, -GROUND_THICKNESS_UU * 0.5))
-    ground.set_actor_label("NaturalGround")
-    component = ground.static_mesh_component
-    component.set_editor_property("mobility", unreal.ComponentMobility.STATIC)
-    component.set_static_mesh(mesh)
-    component.set_material(0, material)
-    scale = GROUND_SIZE_UU / 100.0     # engine cube is 100 x 100 x 100 uu
-    ground.set_actor_scale3d(unreal.Vector(scale, scale, GROUND_THICKNESS_UU / 100.0))
-    log("ground plane %.0f x %.0f uu" % (GROUND_SIZE_UU, GROUND_SIZE_UU))
-    return ground
-
-
-def make_centres(rng, count, inner_clear):
-    centres = []
-    while len(centres) < count:
-        angle = rng.range(0.0, math.pi * 2.0)
-        radius = math.sqrt(rng.next()) * SCATTER_RADIUS_UU
-        if radius < inner_clear:
-            continue
-        centres.append((math.cos(angle) * radius, math.sin(angle) * radius))
-    return centres
-
-
-def build_scatter(actors):
-    rng = Random(SCATTER_SEED)
-    # Groves stay away from the founder area; thickets may come closer but
-    # still leave the immediate spawn ground readable.
-    groves = make_centres(rng, GROVE_COUNT, CLEAR_RADIUS_UU * 3.0)
-    thickets = make_centres(rng, THICKET_COUNT, CLEAR_RADIUS_UU * 1.2)
-
-    placed = 0
-    missing = []
-    for names, count, scale_range, cluster_set, tilt in SCATTER_GROUPS:
-        meshes = []
-        for name in names:
-            mesh = find_mesh(name)
-            if mesh is None:
-                missing.append(name)
-            else:
-                meshes.append((name, mesh))
-        if not meshes:
-            continue
-
-        for index in range(count):
-            if cluster_set == "grove":
-                centre = groves[int(rng.next() * len(groves)) % len(groves)]
-                spread = GROVE_RADIUS_UU
-            elif cluster_set == "thicket":
-                centre = thickets[int(rng.next() * len(thickets)) % len(thickets)]
-                spread = THICKET_RADIUS_UU
-            else:
-                centre = (0.0, 0.0)
-                spread = SCATTER_RADIUS_UU
-
-            # Gaussian-ish falloff from the cluster centre keeps edges soft.
-            offset_angle = rng.range(0.0, math.pi * 2.0)
-            offset_radius = (rng.next() * rng.next()) * spread
-            x = centre[0] + math.cos(offset_angle) * offset_radius
-            y = centre[1] + math.sin(offset_angle) * offset_radius
-
-            if math.hypot(x, y) < CLEAR_RADIUS_UU or math.hypot(x, y) > SCATTER_RADIUS_UU:
-                continue
-
-            name, mesh = meshes[int(rng.next() * len(meshes)) % len(meshes)]
-            actor = spawn(actors, unreal.StaticMeshActor, unreal.Vector(x, y, 0.0),
-                          unreal.Rotator(rng.range(-tilt, tilt), rng.range(0.0, 360.0),
-                                         rng.range(-tilt, tilt)))
-            actor.set_actor_label("Nature_%s_%d" % (name, placed))
-            component = actor.static_mesh_component
-            component.set_editor_property("mobility", unreal.ComponentMobility.STATIC)
-            component.set_static_mesh(mesh)
-            component.set_collision_profile_name("NoCollision")
-            scale = rng.range(scale_range[0], scale_range[1])
-            actor.set_actor_scale3d(unreal.Vector(scale * rng.range(0.92, 1.08),
-                                                  scale * rng.range(0.92, 1.08),
-                                                  scale * rng.range(0.9, 1.15)))
-            placed += 1
-
-    if missing:
-        log("WARNING: meshes not found: %s" % ", ".join(sorted(set(missing))))
-    log("scattered %d natural meshes around %d groves and %d thickets"
-        % (placed, len(groves), len(thickets)))
-    return placed
+def build_world_presentation(actors):
+    """Place the runtime presentation actor. It reads the authoritative world
+    generation observation and builds ground and natural dressing from Core
+    facts, so the map itself authors no world content."""
+    presentation_class = unreal.load_class(None, PRESENTATION_CLASS)
+    if presentation_class is None:
+        raise RuntimeError("LLWorldPresentationActor not found; compile the project first")
+    actor = spawn(actors, presentation_class, unreal.Vector(0.0, 0.0, 0.0))
+    actor.set_actor_label("WorldPresentation")
+    log("placed WorldPresentation actor")
+    return actor
 
 
 def main():
@@ -245,12 +93,11 @@ def main():
     log("created level %s" % MAP_PATH)
 
     build_sky(actor_subsystem)
-    build_ground(actor_subsystem)
-    placed = build_scatter(actor_subsystem)
+    build_world_presentation(actor_subsystem)
 
     if not level_subsystem.save_current_level():
         raise RuntimeError("could not save level")
-    log("saved level with %d scattered meshes" % placed)
+    log("saved level")
     log("done")
 
 
