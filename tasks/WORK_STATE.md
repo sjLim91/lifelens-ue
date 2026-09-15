@@ -65,7 +65,7 @@ Status: `ACTIVE — CONTEXT ACTION CONTRACT v1 / PR #103`
 
 Branch: `jjun/context-action-contract-v1`
 PR: #103 `[CORE] Context action contract v1 — civilization presentation read data`
-Code head validated by current CI dispatch: `3c18f4b94ff906f857cebdeeca163b8e6242b3ae`
+Head: `3c18f4b94ff906f857cebdeeca163b8e6242b3ae`
 
 Scope:
 - expose actual executed civilization work to presentation without inventing actions.
@@ -79,7 +79,6 @@ Validation at last live check:
 - Core Tests #490 (`34986684474`): PASS.
 - Preflight #587 (`34986684197`): PASS.
 - Unreal Linux Compile #118 (`34986684115`): IN_PROGRESS.
-- subsequent branch commits `948f0634...` and this WORK_STATE sync are docs-only `[skip ci]`; product code under validation is unchanged.
 - no Dagyeom review request; handoff is through typed contract + TEAM_BOARD IR-D.
 
 ## Tracked implementation gaps — DO NOT DROP
