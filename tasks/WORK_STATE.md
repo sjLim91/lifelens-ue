@@ -127,6 +127,12 @@ Remaining DONE gates from current acceptance criteria:
 
 Whole Project Verification #69 does NOT include #67 because #67 is still unmerged.
 
+다겸 측 갱신 (2026-09-15):
+- branch HEAD `51c60b1` (origin/main `a596229` merge 포함). 로컬 Build.sh Mac Development Succeeded, preflight PASS.
+- 이전 head `29d6109` CI: structural-preflight SUCCESS, Unreal Linux Compile 실행 기록 없음(트리거 확장 이전).
+- Save/Load 검증: 주민별 외형 입력 로그 추가, PIE 재시작 대조 미기록.
+- 최소 기본 의상: Quaternius Modular Character Outfits - Fantasy v2.1 CC0 확인, 다운로드/임포트 미완.
+
 ### Character Motion Bootstrap — READY_AFTER_#67
 
 Owner: 다겸 / 다겸 AI.

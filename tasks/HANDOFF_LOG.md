@@ -601,3 +601,36 @@
   - GitHub Actions: 검증 대기
 - 상대가 알아야 할 점:
   - 다겸 READY_NOW 잔여 항목 없음. Motion & Context v1이 READY_NOW로 승격되면 locomotion(Idle/Walk/Jog)부터 착수 가능. UAL Standard에 Idle_Loop / Walk_Loop / Jog_Fwd_Loop / Sprint_Loop / Sitting_* / Interact / PickUp_Table 포함
+
+### 다겸 측 AI — Character Appearance v1 closeout 진행
+
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/character-appearance-v1`, PR #67
+- 커밋: `1b47c4b` (origin/main `a596229` merge), `51c60b1`
+- 상태: `ACTIVE / CLOSEOUT`
+- Sync Before Work:
+  - origin/main `a596229` 확인. `tasks/TEAM_BOARD.md`, `tasks/WORK_STATE.md` merge 충돌은 origin/main 버전 유지. 다겸 측 이전 줄(WORK_STATE 진행 행, TEAM_BOARD Integration Request 2건)은 상대 응답(ACCEPTED WITH GATE / PARTIALLY ACCEPTED / PROMOTED)으로 대체되어 재추가하지 않음
+- PR #67 CI 기록 (이전 head `29d6109`):
+  - structural-preflight: SUCCESS
+  - Unreal Linux Compile: 실행 기록 없음 (compile 워크플로우 경로 트리거가 main `d6c2a9a`에서 확장됨. 이번 merge로 브랜치에 반영)
+  - Codex review: 사용량 한도로 미실행
+- 컴파일:
+  - merge 직후 로컬 Build.sh 실패: `Simulation/LLAppearanceProfile.cpp:27 redefinition of 'Variant'` — 유니티 빌드에서 `Characters/LLResidentAppearanceInputs.cpp` 익명 네임스페이스 헬퍼와 충돌. 다겸 측 파일에서 명명 네임스페이스 `LLAppearanceInputsHash`로 이동해 해결
+  - 로컬 `Build.sh LifeLensEditor Mac Development`: Succeeded (`1b47c4b`, `51c60b1`), `Tools/validate_bootstrap.py`: PASS
+- Save/Load 연속성 검증 준비:
+  - `LLResidentAppearanceComponent`가 주민별 `LLAppearance <이름> id=<ResidentId> seed= sex= stage= skin= eye= hair= height= build= temp=` 로그 1줄 출력
+  - `ALLWorldDirector::BeginPlay`가 `LifeLens_Autosave` 슬롯을 LoadGame, 시뮬레이션 60분마다 SaveGame. 검증 절차: PIE Play → 자동 저장 이후 Stop → Play 재시작 → 동일 id의 로그 값 비교
+  - PIE 재시작 후 동일 주민 동일 외형: 미기록
+- 완료 조건 중 미충족 (`tasks/WORK_STATE.md` 원문):
+  - required final CI/UE compile record for the final PR head.
+  - Save/Load appearance continuity explicitly verified.
+  - minimum default clothing present; underwear-only residents do not satisfy the existing minimum.
+  - final review/merge + live-doc sync.
+- 최소 기본 의상 후보 (라이선스 확인 완료, 미다운로드):
+  - Quaternius "Modular Character Outfits - Fantasy" v2.1 (2026-05-07), `Modular Character Outfits - Fantasy [Standard].zip` 280 MB
+  - 출처: https://quaternius.com/packs/modularcharacteroutfitsfantasy.html , https://quaternius.itch.io/modular-character-outfits-fantasy
+  - 라이선스: 팩 페이지 원문 "Free to use in personal, educational and commercial projects. (CC0 License)", itch 페이지 "Creative Commons Zero v1.0 Universal"
+  - Universal Base Characters 리그 호환(Humanoid rig, retargetable), FBX/glTF, 12 outfits / 62 modular parts / 3 색상 변형. Standard tier 포함 범위(Ranger, Peasant 등)는 압축 해제 후 확정
+  - 스테이징 예정 경로: `assets_staging/Quaternius/ModularCharacterOutfitsFantasy/` (zip 원본 + 압축 해제 + license_screenshot.png)
+- 상대가 알아야 할 점:
+  - 익명 네임스페이스 헬퍼 이름(`Variant`, `Axis`, `Mix64` 등)은 유니티 빌드에서 모듈 내 다른 .cpp와 충돌할 수 있음. 다겸 측은 명명 네임스페이스로 통일
