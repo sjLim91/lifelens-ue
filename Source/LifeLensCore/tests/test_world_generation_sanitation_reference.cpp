@@ -1,3 +1,4 @@
+#include "lifelens/CivilizationDecision.h"
 #include "lifelens/Simulation.h"
 #include "lifelens/WorldGenesis.h"
 
@@ -8,6 +9,20 @@
 #include <iostream>
 
 using namespace lifelens;
+
+namespace {
+
+void assertLocalToStartRegion(GridPos pos, GridPos startCenter, ChunkCoord startChunk)
+{
+    const int dx = std::abs(pos.x - startCenter.x);
+    const int dy = std::abs(pos.y - startCenter.y);
+    const int chebyshevDistance = std::max(dx, dy);
+    assert(chebyshevDistance >= 5);
+    assert(chebyshevDistance <= 7);
+    assert(chunkCoordForGrid(pos) == startChunk);
+}
+
+} // namespace
 
 int main()
 {
@@ -53,15 +68,9 @@ int main()
         assert(target.pos.x == recommended.x);
         assert(target.pos.y == recommended.y);
 
-        const int dx = std::abs(recommended.x - startCenter.x);
-        const int dy = std::abs(recommended.y - startCenter.y);
-        const int chebyshevDistance = std::max(dx, dy);
-        assert(chebyshevDistance >= 5);
-        assert(chebyshevDistance <= 7);
-
         // A start-center-relative 5-7 cell target stays inside the selected
         // 32x32 start chunk instead of sending a founder toward grid (0,0).
-        assert(chunkCoordForGrid(recommended) == startChunk);
+        assertLocalToStartRegion(recommended, startCenter, startChunk);
 
         const int legacyOriginDistance = std::max(
             std::abs(recommended.x), std::abs(recommended.y));
@@ -72,6 +81,43 @@ int main()
             assert(legacyOriginDistance > 7);
         }
     }
+
+    // The same reference must survive progression. Once a founder learns the
+    // designated sanitation technique, autonomous Craft selection/execution
+    // must establish the site around the generated settlement, not around the
+    // pre-WG absolute origin.
+    Character& builder = simulation.world().characters.front();
+    builder.civilization.knowledge.learn(
+        TechniqueId::DesignatedSanitationArea,
+        KnowledgeLevel::Reproducible,
+        0.90);
+
+    const CivilizationUtilityDecision craft =
+        bestCraftDecision(simulation.world(), builder);
+    assert(craft.intent == CivilizationIntent::Craft);
+    assert(craft.technique == TechniqueId::DesignatedSanitationArea);
+
+    const CivilizationExecutionResult established =
+        executeCivilizationDecision(simulation.world(), builder, craft);
+    assert(established.executed);
+    assert(established.success);
+    assert(established.sanitationSiteId != 0);
+    assert(simulation.world().primitiveSanitationSites.size() == 1);
+    assertLocalToStartRegion(established.sanitationSitePos, startCenter, startChunk);
+
+    const PrimitiveSanitationSite* site = findPrimitiveSanitationSite(
+        simulation.world().primitiveSanitationSites,
+        established.sanitationSiteId);
+    assert(site != nullptr);
+    assert(site->pos.x == established.sanitationSitePos.x);
+    assert(site->pos.y == established.sanitationSitePos.y);
+
+    SanitationUseTarget designated;
+    assert(simulation.sanitationUseTarget(builder.id, designated));
+    assert(designated.kind == SanitationUseTargetKind::DesignatedArea);
+    assert(designated.siteId == established.sanitationSiteId);
+    assert(designated.pos.x == established.sanitationSitePos.x);
+    assert(designated.pos.y == established.sanitationSitePos.y);
 
     std::cout << "world-generation sanitation reference test passed\n";
     return 0;
