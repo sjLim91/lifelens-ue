@@ -91,6 +91,8 @@ ULLResidentAppearanceComponent::ULLResidentAppearanceComponent()
     static ConstructorHelpers::FObjectFinder<UStaticMesh> HairBuzzedFemaleFinder(TEXT("/Game/Characters/Quaternius/UBC/Hair/Hair_BuzzedFemale.Hair_BuzzedFemale"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> BeardFinder(TEXT("/Game/Characters/Quaternius/UBC/Hair/Hair_Beard.Hair_Beard"));
     static ConstructorHelpers::FObjectFinder<UAnimSequence> IdleFinder(TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Idle_Loop.Idle_Loop"));
+    static ConstructorHelpers::FObjectFinder<USkeletalMesh> MaleHeadFinder(TEXT("/Game/Characters/Quaternius/UBC/HeadOnly/Male/LL_Superhero_Male_HeadOnly/SkeletalMeshes/LL_Superhero_Male_HeadOnly.LL_Superhero_Male_HeadOnly"));
+    static ConstructorHelpers::FObjectFinder<USkeletalMesh> FemaleHeadFinder(TEXT("/Game/Characters/Quaternius/UBC/HeadOnly/Female/LL_Superhero_Female_HeadOnly/SkeletalMeshes/LL_Superhero_Female_HeadOnly.LL_Superhero_Female_HeadOnly"));
     static ConstructorHelpers::FObjectFinder<USkeletalMesh> MalePeasantFinder(TEXT("/Game/Characters/Quaternius/MCO/Peasant/Male/Male_Peasant/SkeletalMeshes/Male_Peasant.Male_Peasant"));
     static ConstructorHelpers::FObjectFinder<USkeletalMesh> FemalePeasantFinder(TEXT("/Game/Characters/Quaternius/MCO/Peasant/Female/Female_Peasant/SkeletalMeshes/Female_Peasant.Female_Peasant"));
     static ConstructorHelpers::FObjectFinder<UTexture> PeasantAltFinder(TEXT("/Game/Characters/Quaternius/MCO/Peasant/Textures/T_Peasant_2_BaseColor.T_Peasant_2_BaseColor"));
@@ -109,6 +111,8 @@ ULLResidentAppearanceComponent::ULLResidentAppearanceComponent()
     if (HairBuzzedFemaleFinder.Succeeded()) { FemaleHair.Add(HairBuzzedFemaleFinder.Object); }
     BeardMesh = BeardFinder.Succeeded() ? BeardFinder.Object : nullptr;
     IdleAnim = IdleFinder.Succeeded() ? IdleFinder.Object : nullptr;
+    MaleHeadMesh = MaleHeadFinder.Succeeded() ? MaleHeadFinder.Object : nullptr;
+    FemaleHeadMesh = FemaleHeadFinder.Succeeded() ? FemaleHeadFinder.Object : nullptr;
     MalePeasantMesh = MalePeasantFinder.Succeeded() ? MalePeasantFinder.Object : nullptr;
     FemalePeasantMesh = FemalePeasantFinder.Succeeded() ? FemalePeasantFinder.Object : nullptr;
     PeasantAltBaseColor = PeasantAltFinder.Succeeded() ? PeasantAltFinder.Object : nullptr;
@@ -218,7 +222,17 @@ void ULLResidentAppearanceComponent::ResolveInputs()
 void ULLResidentAppearanceComponent::BuildBody()
 {
     AActor* Owner = GetOwner();
-    USkeletalMesh* Mesh = Inputs.Sex == ELLCoreSex::Female ? FemaleMesh.Get() : MaleMesh.Get();
+    const bool bFemale = Inputs.Sex == ELLCoreSex::Female;
+    USkeletalMesh* FullBody = bFemale ? FemaleMesh.Get() : MaleMesh.Get();
+    USkeletalMesh* HeadOnly = bFemale ? FemaleHeadMesh.Get() : MaleHeadMesh.Get();
+    USkeletalMesh* OutfitMesh = bFemale ? FemalePeasantMesh.Get() : MalePeasantMesh.Get();
+
+    // Clothed residents draw the head-only body: the outfit supplies the torso,
+    // limbs and (male) bare forearms and hands, so the full body under it would
+    // only clip through the clothing. Bare full body is the fallback when either
+    // asset is missing.
+    bClothed = HeadOnly != nullptr && OutfitMesh != nullptr;
+    USkeletalMesh* Mesh = bClothed ? HeadOnly : FullBody;
     if (!Owner || !Owner->GetRootComponent() || !Mesh)
     {
         return;
@@ -241,7 +255,9 @@ void ULLResidentAppearanceComponent::BuildBody()
     Body->SetRelativeLocation(FVector(0.0f, 0.0f, -FeetOffset));
     Body->RegisterComponent();
 
-    MeshHeight = MeshBindPoseHeight(Mesh);
+    // Always measure the full body: the head-only variant has no legs, and the
+    // scale and the label height must not change when the outfit is applied.
+    MeshHeight = MeshBindPoseHeight(FullBody ? FullBody : Mesh);
 }
 
 UMaterialInstanceDynamic* ULLResidentAppearanceComponent::MakeSlotMaterial(const TCHAR* SlotNameContains)
@@ -381,7 +397,7 @@ void ULLResidentAppearanceComponent::ApplyOutfit()
     // picks between the pack's two colour variations.
     USkeletalMesh* Mesh = Inputs.Sex == ELLCoreSex::Female ? FemalePeasantMesh.Get() : MalePeasantMesh.Get();
     AActor* Owner = GetOwner();
-    if (!Body || !Mesh || !Owner)
+    if (!bClothed || !Body || !Mesh || !Owner)
     {
         return;
     }

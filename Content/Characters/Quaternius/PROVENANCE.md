@@ -48,6 +48,16 @@ Canonical rule: `docs/CHARACTER_ASSET_TRACK.md` (Track B, Quaternius CC0). Each 
 - Skeleton: same 65-joint set as Universal Base Characters (verified by comparing glTF skin joints, identical order).
 - Runtime use: the outfit is a child skeletal mesh following the UBC body pose (leader pose). The Standard tier has no separate UBC head, so the Superhero full body stays under the clothing.
 
+## Derived assets (generated from Pack 1, CC0)
+
+`Import/make_headonly_gltf.py` writes `LL_Superhero_Male_HeadOnly.gltf/.bin` and `LL_Superhero_Female_HeadOnly.gltf/.bin` next to the Pack 1 glTF files in staging, and the outfit import brings them in as `/Game/Characters/Quaternius/UBC/HeadOnly/{Male,Female}`.
+
+- Why: the Peasant outfit covers `pelvis` → `neck_01` plus every limb bone including the fingers (measured from the outfit glTF skin weights), and Pack 3's `Readme.txt` states "When using the clothing, only the head of the model is required. Using the full body will result in clipping."
+- What the script changes: the triangle index list of the skin primitive only. It keeps every triangle whose three vertices are all dominated by `Head` or `neck_01`; vertex buffers, UVs, skin weights, materials, textures and the skeleton are untouched. Male 12,566 → 2,852 triangles, female 12,812 → 3,070.
+- Cut line: the base of the neck (male bind-pose Y 1.518, female 1.480), below the outfit collar (male up to 1.559, female up to 1.518), so the seam sits inside the clothing.
+- The derived files live in staging only (regenerable, not committed). Imported skin/eye/eyebrow textures and material instances are consolidated onto the Pack 1 copies, so only the meshes add data.
+- CC0 1.0 permits modification and redistribution of derivatives.
+
 ## Not included
 
 - Source-tier files, `.blend` sources, Unity/Godot folders, the `Rigged to Head Bone` hair variants (Unity-oriented).

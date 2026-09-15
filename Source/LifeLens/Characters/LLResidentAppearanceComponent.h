@@ -86,6 +86,10 @@ private:
     UPROPERTY() TObjectPtr<UAnimSequence> IdleAnim;
     // Minimum default clothing (Modular Character Outfits - Fantasy, Peasant),
     // skinned to the shared UBC skeleton; follows the body pose.
+    // Head-only bodies worn under the clothing. The outfit covers pelvis ->
+    // neck_01 and the whole limbs, so the full body would clip through it.
+    UPROPERTY() TObjectPtr<USkeletalMesh> MaleHeadMesh;
+    UPROPERTY() TObjectPtr<USkeletalMesh> FemaleHeadMesh;
     UPROPERTY() TObjectPtr<USkeletalMesh> MalePeasantMesh;
     UPROPERTY() TObjectPtr<USkeletalMesh> FemalePeasantMesh;
     UPROPERTY() TObjectPtr<UTexture> PeasantAltBaseColor;
@@ -106,5 +110,6 @@ private:
     float MeshHeight = 0.0f;   // unscaled bind-pose height of the chosen mesh
     float BodyScaleZ = 1.0f;
     FLinearColor SkinTintColor = FLinearColor::White; // shared by body skin and outfit-exposed skin
+    bool bClothed = false;  // head-only body + outfit instead of the bare full body
     bool bBuilt = false;
 };
