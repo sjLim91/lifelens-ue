@@ -33,7 +33,7 @@ struct FLLResidentRuntimeState
     FTransform EmergencyUseTransform = FTransform::Identity;
 };
 
-UCLASS()
+UCLASS(Config=Game, DefaultConfig)
 class LIFELENS_API ALLWorldDirector : public AActor
 {
     GENERATED_BODY()
@@ -120,11 +120,14 @@ private:
     float EnvironmentalVisualRefreshAccumulator = 0.0f;
     FIntPoint CorePresentationOriginGrid = FIntPoint::ZeroValue;
 
-    UPROPERTY(EditAnywhere, Category="LifeLens|Environment|Visual", meta=(ClampMin="0.05"))
-    float EnvironmentalVisualRefreshIntervalSeconds = 0.25f;
+    // Runtime tuning belongs in DefaultGame.ini so iteration does not require
+    // recompiling the WorldDirector. The values are still editable per actor
+    // when an intentional level-specific override is needed.
+    UPROPERTY(Config, EditAnywhere, Category="LifeLens|Environment|Visual", meta=(ClampMin="0.05"))
+    float EnvironmentalVisualRefreshIntervalSeconds;
 
-    UPROPERTY(EditAnywhere, Category="LifeLens|Time")
-    float RealSecondsPerSimulationMinute = 0.6f;
+    UPROPERTY(Config, EditAnywhere, Category="LifeLens|Time", meta=(ClampMin="0.1"))
+    float RealSecondsPerSimulationMinute;
 
     // Spatial contract between Unreal presentation and Core GridPos. The
     // default is shared with bootstrap ground and WorldPresentation so the
