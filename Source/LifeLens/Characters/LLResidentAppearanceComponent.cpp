@@ -130,6 +130,19 @@ void ULLResidentAppearanceComponent::EnsureBuilt()
     {
         return;
     }
+
+    // The world director spawns the actor first and binds the resident right
+    // after, so BeginPlay runs before the identity exists. Building here would
+    // fall back to the temporary hash of an invalid id, which is identical for
+    // every resident and ignores the #65 contract. Wait for BindResident.
+    if (const ALLResidentCharacter* Resident = Cast<ALLResidentCharacter>(GetOwner()))
+    {
+        if (!Resident->GetResidentId().IsValid())
+        {
+            return;
+        }
+    }
+
     bBuilt = true;
 
     ResolveInputs();

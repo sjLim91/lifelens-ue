@@ -31,6 +31,11 @@ public:
     virtual void BeginPlay() override;
     virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
+    // Called once the owner knows which resident it represents. The human body
+    // can only be built then, so the fallback silhouette created in BeginPlay
+    // is removed here.
+    void OnResidentBound();
+
     // ---- Silhouette (adult, unscaled; multiplied by the LifeStage factor) ----
     // Reference is the DebugBody cube: 55 x 55 x 90, centred on the actor
     // origin. Adult silhouette height (torso + head) equals 90 and its width

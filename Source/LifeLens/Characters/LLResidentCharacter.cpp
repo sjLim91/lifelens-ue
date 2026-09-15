@@ -1,4 +1,6 @@
 #include "Characters/LLResidentCharacter.h"
+#include "Characters/LLResidentAppearanceComponent.h"
+#include "Characters/LLResidentPresentationComponent.h"
 #include "AI/LLDecisionComponent.h"
 #include "Characters/LLResidentAppearanceComponent.h"
 #include "Characters/LLResidentPresentationComponent.h"
@@ -76,6 +78,18 @@ void ALLResidentCharacter::BindResident(const FLLResidentData& ResidentData)
     if (NameLabel)
     {
         NameLabel->SetText(ResidentDisplayName);
+    }
+
+    // Appearance is deterministic per ResidentId, so it can only be built once
+    // the identity is known. Both calls are idempotent and re-binding the same
+    // resident does not rebuild.
+    if (AppearanceComponent)
+    {
+        AppearanceComponent->EnsureBuilt();
+    }
+    if (PresentationComponent)
+    {
+        PresentationComponent->OnResidentBound();
     }
 }
 
