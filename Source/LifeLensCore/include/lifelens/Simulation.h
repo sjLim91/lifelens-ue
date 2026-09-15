@@ -208,6 +208,9 @@ inline bool Simulation::completeExternalPhysicalAction(
     // choosing a second position that could disagree with what the player saw.
     runtime.pos=resolvedPosition;
     if(runtime.goal==Goal::UseToilet && (emergencyFallback || primitiveSanitation)){
+        // #79 compatibility contract: recordDesignatedSanitationSiteUse remains
+        // the designated-area wrapper; the generalized path below accepts both
+        // DesignatedArea and DugPit without changing site identity/GridPos.
         if(primitiveSanitation && !recordPrimitiveSanitationSiteUse(
             world_.primitiveSanitationSites,sanitationSiteId,resolvedPosition)) return false;
         const double residueIntensity=primitiveSanitation
