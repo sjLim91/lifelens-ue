@@ -221,6 +221,8 @@ bool Simulation::tryCivilizationDecision(Character& c,Runtime& r){
 
     const CivilizationExecutionResult result=executeCivilizationDecision(world_,c,decision.civilization);
     if(!result.executed) return false;
+    c.lastCivilizationEvent=result.event;
+    c.lastCivilizationActivityMinute=world_.minute;
     processCivilizationKnowledgeEvent(c,result.event);
 
     std::ostringstream s;
