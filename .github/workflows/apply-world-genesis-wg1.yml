@@ -5,6 +5,7 @@ on:
     branches: [ jjun/world-genesis-wg1 ]
     paths:
       - 'Tools/apply_world_genesis_wg1.py'
+      - 'Tools/fix_world_genesis_wg1_patch.py'
       - '.github/workflows/apply-world-genesis-wg1.yml'
 
 permissions:
@@ -22,7 +23,9 @@ jobs:
           fetch-depth: 0
 
       - name: Apply WG-1 patch
-        run: python Tools/apply_world_genesis_wg1.py
+        run: |
+          python Tools/apply_world_genesis_wg1.py
+          python Tools/fix_world_genesis_wg1_patch.py
 
       - name: Validate WG-1 structure
         run: python Tools/validate_world_genesis_wg1.py
