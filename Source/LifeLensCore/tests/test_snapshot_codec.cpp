@@ -20,6 +20,12 @@ int main()
     source.setupNewGame();
     source.runMinutes(5000);
 
+    // This is a codec fixture, not an autonomous-romance integration test.
+    // Long-running simulation may legitimately create dating state before we
+    // seed the representative relationship below, so reset only that book to
+    // keep this fixture deterministic and independent of decision-loop changes.
+    source.romances()=RomanceBook{};
+
     // Seed representative family/history state so book codecs are non-empty.
     Character& a=source.world().characters[0];
     Character& b=source.world().characters[2];
