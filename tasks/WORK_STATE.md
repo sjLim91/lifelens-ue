@@ -91,6 +91,46 @@ This is **not** a claim that the skipped visual checks were observed to pass. In
 - any appearance/spawn/animation/environment visual regression not covered by that evidence is carried forward as Milestone B visual validation risk.
 - future visual failures should be fixed in the owning lane without reopening already-proven Core/World runtime contracts unless evidence shows an authority/runtime regression.
 
+## Dagyeom 측 상태 동기화 (2026-09-15, 다겸 측 AI 추가)
+
+아래는 실제 GitHub 상태다. 위/아래 절의 쭌 측 서술은 수정하지 않고 현재 사실만 덧붙인다.
+
+### World Visual Milestone A — 구현분 main 병합됨
+
+- PR #90 `[Environment] World Visual Milestone A` — MERGED, main squash merge `2c4eef487298`.
+  - 최종 head `7c56986c` Preflight PASS (`34962229119`), Unreal Linux Compile PASS (`34962229115`).
+- 함께 병합된 쭌 측 통합: PR #95 `0b5c1fd8fc0d` (WorldDirector runtime config), PR #96 `60432fd102fe` (LifeLensWorld 연결 + observer camera 상향).
+
+#90이 전달한 것:
+- `Source/LifeLens/WorldPresentation/LLWorldPresentationActor` — 생성 월드 관측을 읽어 지면과 자연물을 런타임 생성. 시뮬레이션 authority 미생성.
+- 좌표는 `LLWorldSpatialContract` 기준, 시작 청크가 표현 원점.
+- 밀도는 청크의 fertility / moisture / traversal에서 도출. `ResourcePatches`는 Core 좌표에 표시.
+- 결정론: WorldSeed + GenerationVersion + 청크 좌표. PopulationSeed 비영향.
+- Android 예산: HISM 인스턴싱, 종류별 컬 거리, 인스턴스 상한.
+- 시작 지점 가독성 반경(presentation-only, 반경 800 / 감쇠 700 / 자원 축소 0.55).
+- 에셋: Quaternius Stylized Nature MegaKit [Standard] 68종, ambientCG 지면 3세트. provenance는 `Content/Environment/PROVENANCE.md`.
+
+### Milestone B 수용 조건 중 다겸 측 확인 상태
+
+확인됨:
+- 생성 월드 표현이 Core 사실을 소비한다.
+- Quaternius 외형 정상.
+- 지면·식생·바위 렌더링 정상, 시작 지점 가독성 반경 동작.
+- 시작 시 문명 인프라를 표현이 만들어내지 않는다.
+
+미확인 (다음 작업 대상):
+- 주민 4명의 스폰 겹침 / 부유 / 매몰 / 맵 이탈 여부.
+- HumanWaste 등 환경 피드백 배치의 공간적 타당성.
+- Observer 라벨 / 선택 / 상세의 사용성.
+- Save → Load 후 표현 일관성.
+
+회귀로 기록된 것:
+- 이동 시 몸 방향과 이동 방향 불일치(문워크). 쭌 lane 처리 범위이며 다겸 측은 수정하지 않는다.
+
+### 다겸 측 Integration Request
+
+미해결 **0**. IR-A / IR-B / IR-C 종결 내역은 `tasks/TEAM_BOARD.md`의 종결 기록 절을 따른다.
+
 ## Current dispatch — World Visual Milestone A — READY_NOW / START AUTHORIZED
 
 Owner: Dagyeom visual/content lane.

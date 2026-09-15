@@ -114,3 +114,13 @@ Requests are closed when the owning lane merges the required integration and bot
 - 관찰 카메라 시야: `ALLLifeLensGameMode::SpawnObserverCamera()`가 카메라를 `(0, -1500, 1120)`, 피치 -36도, FOV 55로 고정 스폰한다. 240 m 규모 월드에서는 지면에 너무 가까워 배경을 볼 수 없다. 배경 품질 판정 자체가 불가능하다. `Source/LifeLens/Core/**`는 다겸 소유가 아니므로 수정하지 않았다. 카메라 거리·피치·FOV 조정 또는 Observer 카메라 제어를 쭌 측이 판단해 달라.
 - 임시 바닥 재확인: production map에서도 주민이 게임모드 임시 바닥(±700 유닛) 밖으로 나가 화면에서 사라지는 현상이 재현된다. QA-2와 동일 증상이며 새 지면(±12,000 유닛)과 무관하게 발생한다.
 
+## Dagyeom Integration Request 종결 기록 (2026-09-15)
+
+다겸 측 추가. 위 IR-A / IR-B / IR-C 항목의 본문은 요청 당시 기록이므로 그대로 두고, 종결 상태만 여기에 덧붙인다.
+
+- **IR-A — CLOSED / APPROVED.** `Source/LifeLens/WorldPresentation/**`가 다겸 소유 표현 전용 경로로 승인되었고 `ALLWorldPresentationActor`가 PR #90(main merge `2c4eef487298`)으로 들어갔다. 조건대로 Bridge 읽기 API만 소비하고 Core/World authority를 만들지 않는다.
+- **IR-B — CLOSED / JJUN HANDLING.** 게걸음(QA-1) 보정은 쭌 lane에서 처리한다. 다겸 브랜치에서는 착수하지 않았다.
+- **IR-C — CLOSED.** production map `/Game/Maps/LifeLensWorld` 연결과 observer camera 프레이밍이 PR #96(main merge `60432fd102fe`)으로 처리되었다. 임시 바닥과 sanitation locality는 #91에서, observer camera는 #92와 #96에서 처리되었다.
+- 시작 지점 가독성 반경은 IR-C 승인 조건대로 구현되어 #90에 포함되었다. presentation-only이며 Core/world generation/resource authority를 변경하지 않는다.
+
+현재 다겸 측 미해결 Integration Request: **0**.
