@@ -48,8 +48,9 @@ int latestCohabitationMinute(const Character& character)
 Simulation::Simulation(
     WorldSeed worldSeed,
     PopulationSeed populationSeed,
-    WorldGenerationVersion generationVersion)
-    :world_(worldSeed,populationSeed,generationVersion){}
+    WorldGenerationVersion generationVersion,
+    SimulationRuleset ruleset)
+    :ruleset_(ruleset),world_(worldSeed,populationSeed,generationVersion){}
 
 void Simulation::setupDemo(){
     world_.characters.clear(); world_.objects.clear(); world_.environmentalResidues.clear(); relationships_=RelationshipBook{}; genealogy_=GenealogyBook{}; romances_=RomanceBook{}; households_=HouseholdBook{}; pregnancies_=PregnancyBook{}; births_=BirthBook{}; socialKnowledge_.clear(); runtime_.clear(); logs_.clear(); world_.minute=7*60;
@@ -300,7 +301,7 @@ void Simulation::beginPlan(Character& c,Runtime& r){
     r.socialIntent=SocialIntent::None;
     r.socialTarget=0;
 
-    Goal chosen=(world_.minute<r.penaltyUntilMinute)?Goal::Idle:chooseGoal(world_,c);
+    Goal chosen=(world_.minute<r.penaltyUntilMinute)?Goal::Idle:chooseGoal(world_,c,ruleset_.utilityAI);
     if(chosen==r.lastGoal){ ++r.repeatCount; } else { r.lastGoal=chosen; r.repeatCount=1; }
     if(r.repeatCount>=5){ chosen=Goal::Idle; r.repeatCount=0; }
     r.goal=chosen; r.plan=buildPlan(world_,c,chosen,r.pos); r.actionIndex=0; r.announced=false;
@@ -649,7 +650,7 @@ void Simulation::advanceAutonomousFamilyProgression()
 
 void Simulation::step(){
     for(auto& c:world_.characters){
-        c.needs.decay(c.metabolism,c.sleepTendency);
+        c.needs.decay(ruleset_.needs,c.metabolism,c.sleepTendency);
         Runtime& r=runtime_[c.id];
         if(r.plan.empty() && world_.minute%5==0) beginPlan(c,r);
         if(!r.plan.empty()) advanceAction(c,r);
