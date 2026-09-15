@@ -82,6 +82,8 @@ struct CivilizationExecutionResult {
     CivilizationEvent event{};
     ExperimentResult experiment{};
     CraftResult craft{};
+    SanitationSiteId sanitationSiteId=0;
+    GridPos sanitationSitePos{};
 };
 
 inline double civilizationPreference(std::uint64_t worldSeed,CharacterId actor,std::uint64_t salt)
@@ -258,7 +260,8 @@ inline int desiredTechniqueOutputStock(TechniqueId technique)
         case TechniqueId::ChippedStoneTool: return 1;
         case TechniqueId::FiberCordage: return 2;
         case TechniqueId::SimpleContainer: return 1;
-        case TechniqueId::FireMaking: return 0;
+        case TechniqueId::FireMaking:
+        case TechniqueId::DesignatedSanitationArea:
         default: return 0;
     }
 }
@@ -266,7 +269,31 @@ inline int desiredTechniqueOutputStock(TechniqueId technique)
 inline CivilizationUtilityDecision bestCraftDecision(const World& world,const Character& self)
 {
     CivilizationUtilityDecision best;
-    const std::array<TechniqueId,5> techniques={TechniqueId::SharpFlake,TechniqueId::ChippedStoneTool,TechniqueId::FireMaking,TechniqueId::FiberCordage,TechniqueId::SimpleContainer};
+
+    if(self.civilization.knowledge.knowsAtLeast(
+        TechniqueId::DesignatedSanitationArea,KnowledgeLevel::Reproducible)
+       && canEstablishDesignatedSanitationArea(
+           world.seed,self,world.environmentalResidues,
+           world.primitiveSanitationSites,world.minute)){
+        CivilizationUtilityDecision sanitation;
+        sanitation.intent=CivilizationIntent::Craft;
+        sanitation.technique=TechniqueId::DesignatedSanitationArea;
+        sanitation.material=MaterialKind::Unknown;
+        sanitation.item=ItemKind::RawMaterial;
+        sanitation.quantity=0;
+        const double preference=civilizationPreference(
+            world.seed,self.id,399ULL+static_cast<std::uint64_t>(TechniqueId::DesignatedSanitationArea));
+        sanitation.utility=clampCivilization01(
+            0.30+0.14*self.civilization.craftingSkill+
+            0.12*self.personality.conscientiousness+
+            0.08*self.personality.orderliness+
+            0.06*preference);
+        considerCivilizationDecision(best,sanitation);
+    }
+
+    const std::array<TechniqueId,5> techniques={
+        TechniqueId::SharpFlake,TechniqueId::ChippedStoneTool,TechniqueId::FireMaking,
+        TechniqueId::FiberCordage,TechniqueId::SimpleContainer};
 
     for(const TechniqueId technique:techniques){
         if(!self.civilization.knowledge.knowsAtLeast(technique,KnowledgeLevel::Reproducible)) continue;
@@ -402,6 +429,23 @@ inline CivilizationExecutionResult executeCivilizationDecision(World& world,Char
             return result;
         }
         case CivilizationIntent::Craft: {
+            if(decision.technique==TechniqueId::DesignatedSanitationArea){
+                const PrimitiveSanitationSiteCreationResult site=establishDesignatedSanitationArea(
+                    world.seed,self,world.environmentalResidues,world.primitiveSanitationSites,world.minute);
+                if(!site.established) return result;
+                result.executed=true;
+                result.success=true;
+                result.sanitationSiteId=site.siteId;
+                result.sanitationSitePos=site.pos;
+                result.craft.success=true;
+                result.craft.event.actor=self.id;
+                result.craft.event.type=CivilizationEventType::Crafted;
+                result.craft.event.technique=TechniqueId::DesignatedSanitationArea;
+                result.event=result.craft.event;
+                self.civilization.knowledge.recordSuccessfulUse(TechniqueId::DesignatedSanitationArea);
+                self.civilization.craftingSkill=clampCivilization01(self.civilization.craftingSkill+0.004);
+                return result;
+            }
             result.craft=reproduceTechnique(self.id,decision.technique,self.civilization.inventory,self.civilization.knowledge,self.civilization.craftingSkill);
             result.executed=result.craft.success;
             result.success=result.craft.success;

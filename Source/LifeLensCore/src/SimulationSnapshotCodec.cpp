@@ -1,6 +1,7 @@
 #include "lifelens/SimulationSnapshotCodec.h"
 #include "lifelens/CivilizationSnapshotCodec.h"
 #include "lifelens/EnvironmentalResidueSnapshotCodec.h"
+#include "lifelens/PrimitiveSanitationSnapshotCodec.h"
 #include "lifelens/SocialKnowledgeSnapshotCodec.h"
 
 #include <algorithm>
@@ -95,6 +96,24 @@ bool validateEnvironmentalResiduesForCodec(const World& world,std::string* error
     return true;
 }
 
+bool validatePrimitiveSanitationSitesForCodec(const World& world,std::string* error)
+{
+    std::unordered_set<CharacterId> characterIds;
+    for(const Character& character:world.characters) characterIds.insert(character.id);
+
+    std::unordered_set<SanitationSiteId> siteIds;
+    for(const PrimitiveSanitationSite& site:world.primitiveSanitationSites){
+        if(!validPrimitiveSanitationSite(site)
+           || !siteIds.insert(site.id).second
+           || characterIds.count(site.establishedBy)==0
+           || site.establishedMinute>world.minute){
+            setError(error,"invalid primitive sanitation site state");
+            return false;
+        }
+    }
+    return true;
+}
+
 bool validateSocialKnowledgeForCodec(
     const SocialKnowledgeBook& book,
     const World& world,
@@ -153,6 +172,7 @@ bool encodeSimulationSnapshot(
     if(!validateCivilizationWorldForCodec(snapshot.world,error)) return false;
     if(!validateSocialKnowledgeForCodec(snapshot.socialKnowledge,snapshot.world,error)) return false;
     if(!validateEnvironmentalResiduesForCodec(snapshot.world,error)) return false;
+    if(!validatePrimitiveSanitationSitesForCodec(snapshot.world,error)) return false;
 
     std::vector<std::uint8_t> body;
     if(!encodeSimulationSnapshotLegacyBody(snapshot,body,error)) return false;
@@ -168,6 +188,11 @@ bool encodeSimulationSnapshot(
     Writer environmentExtension;
     writeEnvironmentalResidueSnapshotExtension(environmentExtension,snapshot.world.environmentalResidues);
     body.insert(body.end(),environmentExtension.bytes.begin(),environmentExtension.bytes.end());
+
+    Writer sanitationExtension;
+    writePrimitiveSanitationSnapshotExtension(
+        sanitationExtension,snapshot.world.primitiveSanitationSites);
+    body.insert(body.end(),sanitationExtension.bytes.begin(),sanitationExtension.bytes.end());
 
     outBytes=std::move(body);
     if(error) error->clear();
@@ -192,6 +217,7 @@ bool decodeSimulationSnapshot(
         initializeLegacyCivilizationState(decoded.world);
         decoded.socialKnowledge.clear();
         decoded.world.environmentalResidues.clear();
+        decoded.world.primitiveSanitationSites.clear();
         if(!validateCivilizationWorldForCodec(decoded.world,error)) return false;
         outSnapshot=std::move(decoded);
         if(error) error->clear();
@@ -231,8 +257,21 @@ bool decodeSimulationSnapshot(
         }
     }
 
+    auto sanitationMarker=bytes.end();
+    if(binaryVersion>=5){
+        sanitationMarker=std::find_end(
+            environmentMarker,bytes.end(),
+            PrimitiveSanitationSnapshotExtensionMagic,
+            PrimitiveSanitationSnapshotExtensionMagic+sizeof(PrimitiveSanitationSnapshotExtensionMagic));
+        if(sanitationMarker==bytes.end() || sanitationMarker<=environmentMarker){
+            setError(error,"missing primitive sanitation snapshot extension");
+            return false;
+        }
+    }
+
     const auto civilizationEnd=binaryVersion>=3 ? socialMarker : bytes.end();
     const auto socialEnd=binaryVersion>=4 ? environmentMarker : bytes.end();
+    const auto environmentEnd=binaryVersion>=5 ? sanitationMarker : bytes.end();
     std::vector<std::uint8_t> legacyBody(bytes.begin(),civilizationMarker);
     std::vector<std::uint8_t> civilizationBytes(civilizationMarker,civilizationEnd);
 
@@ -259,7 +298,7 @@ bool decodeSimulationSnapshot(
     }
 
     if(binaryVersion>=4){
-        std::vector<std::uint8_t> environmentBytes(environmentMarker,bytes.end());
+        std::vector<std::uint8_t> environmentBytes(environmentMarker,environmentEnd);
         Reader environmentReader(environmentBytes);
         if(!readEnvironmentalResidueSnapshotExtension(environmentReader,decoded.world.environmentalResidues)
            || !environmentReader.done()){
@@ -269,6 +308,20 @@ bool decodeSimulationSnapshot(
         if(!validateEnvironmentalResiduesForCodec(decoded.world,error)) return false;
     }else{
         decoded.world.environmentalResidues.clear();
+    }
+
+    if(binaryVersion>=5){
+        std::vector<std::uint8_t> sanitationBytes(sanitationMarker,bytes.end());
+        Reader sanitationReader(sanitationBytes);
+        if(!readPrimitiveSanitationSnapshotExtension(
+            sanitationReader,decoded.world.primitiveSanitationSites)
+           || !sanitationReader.done()){
+            setError(error,"invalid primitive sanitation snapshot extension");
+            return false;
+        }
+        if(!validatePrimitiveSanitationSitesForCodec(decoded.world,error)) return false;
+    }else{
+        decoded.world.primitiveSanitationSites.clear();
     }
 
     outSnapshot=std::move(decoded);

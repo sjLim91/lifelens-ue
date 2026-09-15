@@ -60,8 +60,14 @@ void ULLCoreBridgeSubsystem::SetExternalPhysicalExecutionEnabled(bool bEnabled)
 
 int32 ULLCoreBridgeSubsystem::GetPhysicalActionDurationTicks(
     ELLCorePhysicalIntent Intent,
-    bool bEmergencyFallback) const
+    bool bEmergencyFallback,
+    bool bDesignatedSanitationSite) const
 {
+    if (bDesignatedSanitationSite && Intent == ELLCorePhysicalIntent::Toilet)
+    {
+        return static_cast<int32>(lifelens::designatedSanitationUseDurationTicks());
+    }
+
     const lifelens::Goal Goal = ToCorePhysicalGoal(Intent);
     return bEmergencyFallback
         ? static_cast<int32>(lifelens::emergencyUseDurationTicks(Goal))
@@ -72,9 +78,10 @@ bool ULLCoreBridgeSubsystem::CompleteResidentPhysicalAction(
     FGuid ResidentId,
     bool bEmergencyFallback,
     int32 ResolvedGridX,
-    int32 ResolvedGridY)
+    int32 ResolvedGridY,
+    int64 SanitationSiteId)
 {
-    if (!CoreSimulation || !ResidentId.IsValid())
+    if (!CoreSimulation || !ResidentId.IsValid() || SanitationSiteId < 0)
     {
         return false;
     }
@@ -92,7 +99,8 @@ bool ULLCoreBridgeSubsystem::CompleteResidentPhysicalAction(
     const bool bCompleted = CoreSimulation->completeExternalPhysicalAction(
         static_cast<lifelens::CharacterId>(*CoreCharacterId),
         bEmergencyFallback,
-        ResolvedPosition);
+        ResolvedPosition,
+        static_cast<lifelens::SanitationSiteId>(SanitationSiteId));
     if (bCompleted)
     {
         RebuildGuidIndex();
@@ -158,6 +166,43 @@ bool ULLCoreBridgeSubsystem::GetRecommendedOutdoorReliefGridPosition(
 
     OutGridX = static_cast<int32>(Position.x);
     OutGridY = static_cast<int32>(Position.y);
+    return true;
+}
+
+bool ULLCoreBridgeSubsystem::GetSanitationUseTarget(
+    FGuid ResidentId,
+    int32& OutGridX,
+    int32& OutGridY,
+    bool& bOutDesignatedSite,
+    int64& OutSanitationSiteId) const
+{
+    OutGridX = 0;
+    OutGridY = 0;
+    bOutDesignatedSite = false;
+    OutSanitationSiteId = 0;
+
+    if (!CoreSimulation || !ResidentId.IsValid())
+    {
+        return false;
+    }
+
+    const uint64* CoreCharacterId = GuidToCore.Find(ResidentId);
+    if (!CoreCharacterId)
+    {
+        return false;
+    }
+
+    lifelens::SanitationUseTarget Target;
+    if (!CoreSimulation->sanitationUseTarget(
+        static_cast<lifelens::CharacterId>(*CoreCharacterId), Target))
+    {
+        return false;
+    }
+
+    OutGridX = static_cast<int32>(Target.pos.x);
+    OutGridY = static_cast<int32>(Target.pos.y);
+    bOutDesignatedSite = Target.kind == lifelens::SanitationUseTargetKind::DesignatedArea;
+    OutSanitationSiteId = static_cast<int64>(Target.siteId);
     return true;
 }
 

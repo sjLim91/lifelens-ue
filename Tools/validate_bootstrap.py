@@ -23,10 +23,12 @@ required = [
     'Source/LifeLensCore/include/lifelens/SimulationSnapshotCodec.h',
     'Source/LifeLensCore/include/lifelens/SanitationProblemRecognition.h',
     'Source/LifeLensCore/include/lifelens/PrimitiveSanitation.h',
+    'Source/LifeLensCore/include/lifelens/PrimitiveSanitationSnapshotCodec.h',
     'Source/LifeLensCore/src/SimulationSnapshot.cpp',
     'Source/LifeLensCore/src/SimulationSnapshotCodec.cpp',
     'Source/LifeLensCore/tests/test_sanitation_problem_recognition.cpp',
     'Source/LifeLensCore/tests/test_primitive_sanitation_progression.cpp',
+    'Source/LifeLensCore/tests/test_designated_sanitation_affordance.cpp',
     'Source/LifeLens/AI/LLDecisionComponent.cpp',
     'Source/LifeLens/Characters/LLResidentCharacter.cpp',
     'Source/LifeLens/World/LLActivityAnchor.cpp',
@@ -104,6 +106,9 @@ for token in (
     'MakeStableResidentGuid',
     'OnCoreRuntimeStateChanged',
     'GetRecommendedOutdoorReliefGridPosition',
+    'GetSanitationUseTarget',
+    'bDesignatedSanitationSite',
+    'SanitationSiteId',
 ):
     assert token in bridge_h, f'Missing Core bridge contract: {token}'
 
@@ -141,8 +146,12 @@ for token in (
     'ELLCorePhysicalIntent::Drink',
     'ELLCoreSocialIntent::Avoid',
     'MakeStableResidentGuid',
+    'CoreSimulation->sanitationUseTarget',
+    'SanitationUseTargetKind::DesignatedArea',
+    'designatedSanitationUseDurationTicks',
+    'static_cast<lifelens::SanitationSiteId>(SanitationSiteId)',
 ):
-    assert token in bridge_action, f'Missing authoritative action bridge contract: {token}'
+    assert token in bridge_action, f'Missing authoritative action/sanitation bridge contract: {token}'
 
 action_types = (root / 'Source/LifeLens/Simulation/LLCoreActionTypes.h').read_text(encoding='utf-8')
 for token in (
@@ -210,6 +219,9 @@ for token in (
 ):
     assert token in compile_unit, f'Missing Core compile unit source: {token}'
 
+snapshot_h = (root / 'Source/LifeLensCore/include/lifelens/SimulationSnapshotCodec.h').read_text(encoding='utf-8')
+assert 'SimulationSnapshotBinaryFormatVersion=5' in snapshot_h, 'Designated sanitation site persistence requires snapshot binary format v5'
+
 snapshot_codec = (root / 'Source/LifeLensCore/src/SimulationSnapshotCodec.cpp').read_text(encoding='utf-8')
 for token in (
     "'L','L','S','N','A','P','0','1'",
@@ -218,8 +230,22 @@ for token in (
     'writeRuntime',
     'decodeSimulationSnapshot',
     'snapshot contains trailing bytes',
+    'writePrimitiveSanitationSnapshotExtension',
+    'readPrimitiveSanitationSnapshotExtension',
+    'validatePrimitiveSanitationSitesForCodec',
+    'PrimitiveSanitationSnapshotExtensionMagic',
 ):
-    assert token in snapshot_codec, f'Missing persistent Core snapshot codec contract: {token}'
+    assert token in snapshot_codec, f'Missing persistent Core snapshot/sanitation contract: {token}'
+
+sanitation_snapshot = (root / 'Source/LifeLensCore/include/lifelens/PrimitiveSanitationSnapshotCodec.h').read_text(encoding='utf-8')
+for token in (
+    'PrimitiveSanitationSnapshotExtensionMagic',
+    'writePrimitiveSanitationSite',
+    'readPrimitiveSanitationSite',
+    'restorePrimitiveSanitationSites',
+    'site.useCount',
+):
+    assert token in sanitation_snapshot, f'Missing primitive sanitation persistence contract: {token}'
 
 sanitation_recognition = (root / 'Source/LifeLensCore/include/lifelens/SanitationProblemRecognition.h').read_text(encoding='utf-8')
 for token in (
@@ -244,13 +270,23 @@ for token in (
 primitive_sanitation = (root / 'Source/LifeLensCore/include/lifelens/PrimitiveSanitation.h').read_text(encoding='utf-8')
 for token in (
     'PrimitiveSanitationOpportunity',
-    'hasRecognizedSanitationProblem(character)',
-    'chooseLowExposureOutdoorReliefPosition',
+    'PrimitiveSanitationSite',
+    'SanitationUseTarget',
+    'establishDesignatedSanitationArea',
+    'resolveSanitationUseTarget',
+    'recordDesignatedSanitationSiteUse',
+    'TechniqueId::DesignatedSanitationArea,KnowledgeLevel::Reproducible',
     'PrimitiveSanitationCleanSiteExposureLimit',
-    'result.siteAvailable=result.siteExposure<PrimitiveSanitationCleanSiteExposureLimit',
 ):
-    assert token in primitive_sanitation, f'Missing primitive sanitation opportunity contract: {token}'
+    assert token in primitive_sanitation, f'Missing primitive sanitation affordance contract: {token}'
 assert 'LatrineUnlocked' not in primitive_sanitation, 'Primitive sanitation must not introduce a global latrine unlock'
+
+world_core = (root / 'Source/LifeLensCore/include/lifelens/World.h').read_text(encoding='utf-8')
+for token in (
+    'std::vector<PrimitiveSanitationSite> primitiveSanitationSites',
+    'primitiveSanitationSites.clear()',
+):
+    assert token in world_core, f'Missing Core-owned primitive sanitation world state: {token}'
 
 civilization = (root / 'Source/LifeLensCore/include/lifelens/Civilization.h').read_text(encoding='utf-8')
 for token in (
@@ -270,9 +306,22 @@ for token in (
     'sanitationOpportunity.problemRecognized',
     'sanitationOpportunity.siteAvailable',
     'sanitationBoost',
+    'canEstablishDesignatedSanitationArea',
+    'establishDesignatedSanitationArea',
+    'result.sanitationSiteId=site.siteId',
 ):
-    assert token in civilization_decision, f'Missing sanitation civilization utility wiring: {token}'
+    assert token in civilization_decision, f'Missing sanitation civilization progression/establishment wiring: {token}'
 assert 'LatrineUnlocked' not in civilization_decision, 'Sanitation utility must remain evidence-driven, not globally unlocked'
+
+simulation_core = (root / 'Source/LifeLensCore/include/lifelens/Simulation.h').read_text(encoding='utf-8')
+for token in (
+    'sanitationUseTarget',
+    'resolveSanitationUseTarget',
+    'SanitationSiteId sanitationSiteId=0',
+    'recordDesignatedSanitationSiteUse',
+    'designatedSanitationUseDurationTicks',
+):
+    assert token in simulation_core, f'Missing Core sanitation target/completion authority: {token}'
 
 civilization_snapshot = (root / 'Source/LifeLensCore/include/lifelens/CivilizationSnapshotCodec.h').read_text(encoding='utf-8')
 assert 'TechniqueId::DesignatedSanitationArea' in civilization_snapshot, 'Sanitation personal knowledge must survive snapshot validation'
@@ -290,6 +339,7 @@ for token in (
 core_cmake = (root / 'Source/LifeLensCore/CMakeLists.txt').read_text(encoding='utf-8')
 assert 'lifelens_add_test(test_sanitation_problem_recognition)' in core_cmake, 'Missing sanitation recognition Core test registration'
 assert 'lifelens_add_test(test_primitive_sanitation_progression)' in core_cmake, 'Missing primitive sanitation progression Core test registration'
+assert 'lifelens_add_test(test_designated_sanitation_affordance)' in core_cmake, 'Missing designated sanitation affordance Core test registration'
 
 # The simulation core remains standard-library C++ with a C++17 baseline.
 forbidden_core_tokens = (
@@ -307,6 +357,13 @@ for path in (root / 'Source/LifeLensCore').rglob('*'):
     leaked = [token for token in forbidden_core_tokens if token in text]
     assert not leaked, f'Unreal dependency leaked into pure Core: {path.relative_to(root)} {leaked}'
 
+world_h = (root / 'Source/LifeLens/World/LLWorldDirector.h').read_text(encoding='utf-8')
+for token in (
+    'bUsingDesignatedSanitationSite',
+    'CoreSanitationSiteId',
+):
+    assert token in world_h, f'Missing designated sanitation World runtime state: {token}'
+
 world = (root / 'Source/LifeLens/World/LLWorldDirector.cpp').read_text(encoding='utf-8')
 for token in (
     'SpawnResidents()',
@@ -315,11 +372,16 @@ for token in (
     'SetMovementTarget',
     'ELLCoreSocialIntent::Avoid',
     'SaveGame()',
-    'CoreBridge->GetRecommendedOutdoorReliefGridPosition',
+    'CoreBridge->GetSanitationUseTarget',
+    'ELLWorldAffordanceTier::Primitive',
+    'Runtime.bUsingDesignatedSanitationSite',
+    'Runtime.CoreSanitationSiteId',
     'CoreGridCellSizeUU * 0.45f',
+    'CompleteResidentPhysicalAction',
 ):
-    assert token in world, f'Missing Core-driven WorldDirector contract: {token}'
+    assert token in world, f'Missing Core-driven WorldDirector sanitation contract: {token}'
 assert 'Direction * 650.0f' not in world, 'WorldDirector must not invent an independent emergency sanitation target'
+assert 'GetRecommendedOutdoorReliefGridPosition(' not in world, 'WorldDirector must consume the unified Core sanitation target, not bypass designated sites'
 assert 'ChooseAction(' not in world, 'WorldDirector must not independently choose covered life actions'
 assert 'ApplyActionOutcome(' not in world, 'WorldDirector must not mutate projected Needs as action authority'
 assert 'ApplySocialInteraction(' not in world, 'WorldDirector must not mutate projected relationships as social authority'
