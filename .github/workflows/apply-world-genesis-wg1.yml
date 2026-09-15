@@ -1,0 +1,49 @@
+name: Apply World Genesis WG-1 patch
+
+on:
+  push:
+    branches: [ jjun/world-genesis-wg1 ]
+    paths:
+      - 'Tools/apply_world_genesis_wg1.py'
+      - '.github/workflows/apply-world-genesis-wg1.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: jjun/world-genesis-wg1
+          fetch-depth: 0
+
+      - name: Apply WG-1 patch
+        run: python Tools/apply_world_genesis_wg1.py
+
+      - name: Validate WG-1 structure
+        run: python Tools/validate_world_genesis_wg1.py
+
+      - name: Build and run Core tests
+        run: |
+          cmake -S Source/LifeLensCore -B build/wg1 -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/wg1 --parallel 2
+          ctest --test-dir build/wg1 --output-on-failure
+          ./build/wg1/ll_harness > /tmp/wg1_harness.txt
+
+      - name: Commit product implementation only
+        run: |
+          git config user.name "LifeLens WG1 Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add Source/LifeLensCore/include/lifelens/WorldGenesis.h
+          git add Source/LifeLensCore/include/lifelens/World.h
+          git add Source/LifeLensCore/include/lifelens/Simulation.h
+          git add Source/LifeLensCore/src/Simulation.cpp
+          git add Source/LifeLensCore/tests/test_world_genesis_wg1.cpp
+          git add Source/LifeLensCore/CMakeLists.txt
+          git add Tools/validate_world_genesis_wg1.py
+          git commit -m "feat: add deterministic World Genesis WG-1 contract"
+          git push origin HEAD:jjun/world-genesis-wg1
