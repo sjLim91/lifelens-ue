@@ -3,7 +3,7 @@
 > Actual GitHub `main` / PR / Actions is the highest-priority truth.
 > Long-term order: `docs/DEVELOPMENT_MILESTONES.md`.
 
-Last reconciled: 2026-09-15 KST after Gate A Core/World runtime verification.
+Last reconciled: 2026-09-15 KST after Gate A owner acceptance and World Visual dispatch.
 
 ## Product baseline
 
@@ -38,14 +38,14 @@ Delivered by #87:
 
 Documentation/validation-only commits may advance `main` beyond the product merge SHA above without changing product runtime code.
 
-## Current dispatch — Integrated Runtime Checkpoint A — IN_PROGRESS
+## Integrated Runtime Checkpoint A — DONE
 
-Owner: joint; Jjun coordinates runtime/authority evidence, Dagyeom performs PIE visual QA.
-Status: `CORE/WORLD RUNTIME PASS — DAGYEOM PIE VISUAL PENDING`
+Owner: joint integration; Jjun coordinated runtime/authority evidence.
+Status: `DONE — OWNER ACCEPTED WITHOUT ADDITIONAL MANUAL PIE VISUAL QA`
 Handoff safety: `SAFE`
 Active locks: 0
 
-### Jjun runtime side — PASS
+### Runtime evidence — PASS
 
 Corrected Gate A run:
 - Run `34943197031`: **SUCCESS**
@@ -82,43 +82,54 @@ Evidence artifact from Run `34943197031`: `Gate-A-Core-Runtime-Evidence` / artif
 
 Run `34943075204` was a **validation-harness expectation failure, not a product failure**. The first harness incorrectly required residents to remain inside the initial chunk after 20 minutes of autonomous movement. The corrected contract compares exact save-checkpoint positions across restore; no product code was changed for this correction.
 
-### Remaining Gate A acceptance — PIE visual QA
+### Manual visual acceptance policy for this gate
 
-Pending from Dagyeom lane:
-- four residents visibly project correctly in PIE.
-- Quaternius appearance remains correct.
-- Idle/Walk/Jog and orientation are visually coherent with no T-pose/sliding regression.
-- no visibly invalid spawn overlap/floating/sinking/map escape.
-- no starting civilization infrastructure appears visually as simulation truth.
-- HumanWaste presentation is spatially reasonable.
-- Observer labels/selection/detail remain usable.
-- Save → Load presentation remains visually coherent.
+On 2026-09-15, the project owner explicitly chose to **waive the additional Dagyeom PIE visual inspection for Gate A** and proceed.
 
-Full Gate A is **not DONE** until Dagyeom reports `PIE VISUAL PASS` or any reported visual blocker is resolved.
+This is **not** a claim that the skipped visual checks were observed to pass. Instead:
+- Gate A is accepted on the available automated/runtime evidence.
+- any appearance/spawn/animation/environment visual regression not covered by that evidence is carried forward as Milestone B visual validation risk.
+- future visual failures should be fixed in the owning lane without reopening already-proven Core/World runtime contracts unless evidence shows an authority/runtime regression.
 
-Exact next action:
-- wait for Dagyeom PIE visual result.
-- do not start another product milestone while Gate A is pending.
-- on visual PASS: mark Gate A DONE and promote `World Visual Milestone A` to READY_NOW.
-- on visual failure: record exact repro/evidence and route only the verified blocker to its owning lane.
+## Current dispatch — World Visual Milestone A — READY_NOW / START AUTHORIZED
+
+Owner: Dagyeom visual/content lane.
+Jjun role: Config / Bridge / integration support only when requested.
+Status: `READY_NOW — START AUTHORIZED`
+
+Scope:
+- production-oriented generated-world presentation consuming the merged World Generation contracts.
+- terrain/biome presentation.
+- vegetation / rocks / water / natural dressing.
+- chunk presentation/materialization consumption.
+- Android-friendly HISM/instancing/LOD/culling/material budget.
+- observer readability.
+- no visual-only second authority.
+
+Acceptance direction:
+- use Core/World read contracts as source of truth.
+- no fixed gray-world assumptions where generated-world facts are available.
+- no starting modern/civilization infrastructure invented by presentation.
+- manual visual inspection now belongs to this milestone and should validate the skipped Gate A visual concerns together with the new world presentation.
+- milestone close requires meaningful validation, not just asset creation.
 
 ## Dagyeom lane
 
-Status: `HOLD — PIE VISUAL QA FOR GATE A`
+Status: `WORLD VISUAL MILESTONE A — READY_NOW / START AUTHORIZED`
 
-Perform the requested Gate A PIE visual check only. Do not start World Visual product implementation until Gate A closes.
+Dagyeom may begin the product milestone now. When a production map is created, provide the exact `/Game/Maps/<MapName>` asset path through an Integration Request rather than editing Jjun-owned Config.
 
 ## Jjun lane
 
-Status: `GATE A RUNTIME PASS / HOLD FOR VISUAL RESULT`
+Status: `INTEGRATION SUPPORT / WAIT FOR REQUEST`
 
-World Generation Milestone A is DONE. Do not start another world-generation feature before Gate A closes. Jjun may only handle a verified integration/config blocker discovered by the visual QA.
+Do not start an unrelated World Generation feature in parallel. Support World Visual through existing read contracts and handle only explicit Config/Bridge/project integration requests or verified authority blockers.
 
 ## Known near-term integration boundary
 
 Formal Integration Request currently open: **0**.
 
-Expected upcoming handoff once Dagyeom creates a production map after Gate A:
+Expected upcoming handoff once Dagyeom creates a production map:
 - Dagyeom supplies `/Game/Maps/<MapName>` asset path.
 - Jjun updates `Config/DefaultEngine.ini` (`GameDefaultMap`, and `EditorStartupMap` if needed).
 - Water/plugin changes to `LifeLens.uproject` require a separate explicit Integration Request.
