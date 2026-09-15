@@ -21,12 +21,11 @@
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | PR #76 `jjun/world-sanitation-recommendation-v1` | World sanitation recommendation integration | Core Bridge / WorldDirector | **WAITING_CI** |
+| 쭌 + 쭌 AI | next Jjun slice | Sanitation Problem Recognition v1 | Core Memory/Knowledge/Civilization | **READY_NOW / HIGHEST PRIORITY** |
 | 다겸 + 다겸 AI | PR #67 `dagyeom/character-appearance-v1` | Character Appearance v1 | Character appearance + `Content/Characters/**` | **ACTIVE / CLOSEOUT** |
 | 다겸 + 다겸 AI | after #67 | Character Motion Bootstrap | Character locomotion presentation | READY_AFTER_#67 |
 | 다겸 + 다겸 AI | after Motion Bootstrap | World Visual Environment v1 | Environment/Maps/WorldPresentation | HIGH PRIORITY / READY_AFTER_MOTION_BOOTSTRAP |
 | 다겸 + 쭌 Bridge support as needed | after World Visual v1 | Character Motion & Context remainder | Character presentation/animation | AFTER WORLD VISUAL v1 |
-| 쭌 + 쭌 AI | after #76 DONE | Sanitation Problem Recognition v1 | Core Memory/Knowledge/Civilization | NEXT |
 | 쭌 + 쭌 AI | after problem recognition | Primitive sanitation affordance progression | Core/World/Civilization | NEXT |
 | 쭌 + 다겸 lanes | after authoritative sanitation loop | HumanWaste visual feedback | Core read contract + Presentation | NEXT |
 | 쭌 + 쭌 AI | PR #2 | old Android validation path | Bridge/build | FROZEN |
@@ -35,28 +34,32 @@
 
 **0개.** Previous appearance/presentation assist locks are released.
 
-## Latest Jjun product checkpoint — PR #76 WAITING_CI
+## Latest Jjun product checkpoint — PR #76 DONE
 
-PR #76 `[WORLD] Consume Core sanitation recommendation for emergency toilet movement`
-- branch: `jjun/world-sanitation-recommendation-v1`
-- head: `e089857710f6ef5430f57940167362ff39d08d64`
+PR #76 `[WORLD] Consume Core sanitation recommendation for emergency toilet movement` merged as:
+- merge SHA: `3bb50056311b3a9a75c6ce2bb2317b10163e69c5`
+- validated head: `e089857710f6ef5430f57940167362ff39d08d64`
+
+Validation:
 - Structural Preflight run `34918024951`: PASS.
-- Unreal Linux Compile run `34918024929`: IN_PROGRESS at latest check.
-- PR mergeability: mergeable at latest check.
+- Unreal Linux Compile run `34918024929`: PASS.
+- actual UE 5.6 UHT / UBT / link: PASS.
 
-Implemented:
+Delivered:
 - WorldDirector emergency Toilet consumes Core `GetRecommendedOutdoorReliefGridPosition(...)`.
 - exact Core GridPos is projected to World using `CoreGridCellSizeUU`.
 - previous independent 650uu sanitation target removed.
 - recommendation failure fails closed rather than creating a competing World authority.
-- emergency Toilet arrival radius kept inside the authoritative Core cell before ACK.
+- emergency Toilet arrival radius stays inside the authoritative Core cell before ACK.
 - existing movement → use-duration → actual completion GridPos ACK remains intact.
+- residue/avoidance feedback can now agree with the visible World location.
 - Preflight regression guard added.
 
-Exact next action:
-- finish Unreal Linux Compile.
-- PASS → final diff review → merge #76 → docs sync.
-- FAIL → capture first root cause and fix before retry.
+Next Jjun lane:
+- **Sanitation Problem Recognition v1 — READY_NOW / HIGHEST PRIORITY.**
+- use repeated/high-confidence Core sanitation Memory as evidence.
+- do not create global magic tech unlocks.
+- produce deterministic recognized concern that can feed primitive sanitation experimentation/progression.
 
 ## Previous Jjun product checkpoint — PR #75 DONE
 
@@ -82,7 +85,7 @@ Disease/pathogen health modelling is not part of #75.
 
 ## Core ↔ World repair status
 
-The old `Core ↔ World Execution Sync v1 — READY_NOW` entry is obsolete. Most verification findings were repaired by #70–#74.
+The old `Core ↔ World Execution Sync v1 — READY_NOW` entry is obsolete. Most verification findings were repaired by #70–#76.
 
 ### Resolved / baseline closed
 
@@ -91,6 +94,8 @@ The old `Core ↔ World Execution Sync v1 — READY_NOW` entry is obsolete. Most
 - #72: external physical execution ACK Core contract.
 - #73: World arrival/use → Core completion ACK integration, actual resolved position, 100 uu/tile baseline.
 - #74: resident runtime position restore from authoritative Core GridPos.
+- #75: environmental perception/memory/avoidance recommendation.
+- #76: World consumes the authoritative sanitation recommendation and ACKs the actual visible location.
 
 ### Still partial / follow-up
 
@@ -121,16 +126,17 @@ Rules:
 - #66 World Affordance Fallback — DONE.
 - #68 Environmental Residue — DONE.
 - #75 Environmental Exposure / Perception / Avoidance — DONE.
+- #76 World sanitation recommendation integration — DONE.
 
 ### Immediate environmental loop
 
 `Core low-contamination recommendation`
-→ `World actual target/movement` **(#76 in validation)**
+→ `World actual target/movement`
 → `completion ACK at same GridPos`
 → `HumanWaste residue`
 → `resident exposure/Memory`
 → `next-location avoidance`
-→ `problem recognition`
+→ **`problem recognition` (READY_NOW)**
 → `primitive sanitation solution`
 → `visual feedback`
 
@@ -144,7 +150,7 @@ Latest checked head:
 - `b7941b951df8147627580ff5d4a55a851a705454`
 
 Latest actual workflow lookup for that head:
-- no workflow runs returned at this reconciliation checkpoint.
+- no workflow runs returned at the latest reconciliation checkpoint.
 
 Previously validated/reported in PR #67:
 - Preflight PASS.
@@ -262,9 +268,9 @@ Current open blockers from Jjun for Dagyeom #67: **0**.
 9. #73 World ACK integration — DONE.
 10. #74 runtime position restore — DONE.
 11. #75 environmental exposure/perception/avoidance — DONE.
-12. **#76 World sanitation recommendation integration — WAITING_CI.**
-13. Character Appearance #67 — ACTIVE CLOSEOUT in parallel.
-14. Sanitation Problem Recognition — AFTER #76 DONE.
+12. #76 World sanitation recommendation integration — DONE.
+13. **Sanitation Problem Recognition — READY_NOW / HIGHEST PRIORITY.**
+14. Character Appearance #67 — ACTIVE CLOSEOUT in parallel.
 15. Primitive sanitation affordance progression.
 16. HumanWaste visual feedback.
 17. Character Motion Bootstrap — after #67.
