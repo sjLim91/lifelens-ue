@@ -184,6 +184,35 @@ ResidentObservation Simulation::observeResident(CharacterId id) const{
         socialActive,socialIntent,socialTarget);
 }
 
+ResidentCivilizationActivityObservation Simulation::observeResidentCivilizationActivity(CharacterId id) const{
+    ResidentCivilizationActivityObservation dto;
+    dto.residentId=id;
+
+    const Character* character=findObservedCharacter(world_,id);
+    const auto it=runtime_.find(id);
+    if(character==nullptr || !character->alive || it==runtime_.end()) return dto;
+
+    const Runtime& r=it->second;
+    if(!r.civilizationActive) return dto;
+
+    dto.active=true;
+    dto.kind=civilizationActivityKindFromEvent(r.civilizationEvent.type);
+    dto.eventType=r.civilizationEvent.type;
+    dto.material=r.civilizationEvent.material;
+    dto.item=r.civilizationEvent.item;
+    dto.technique=r.civilizationEvent.technique;
+    dto.quantity=r.civilizationEvent.quantity;
+    dto.minute=r.civilizationActivityMinute;
+    dto.resourceNode=r.civilizationResourceNode;
+    dto.storage=r.civilizationStorage;
+    dto.success=r.civilizationEvent.type!=CivilizationEventType::ExperimentFailed;
+    dto.hasSpatialTarget=r.civilizationHasSpatialTarget;
+    dto.targetGridX=r.civilizationTargetPos.x;
+    dto.targetGridY=r.civilizationTargetPos.y;
+    dto.sanitationSiteId=r.civilizationSanitationSiteId;
+    return dto;
+}
+
 std::vector<ResidentObservation> Simulation::observeAllResidents() const{
     std::vector<ResidentObservation> result;
     result.reserve(world_.characters.size());
@@ -211,7 +240,7 @@ std::string Simulation::stamp() const{
 void Simulation::emit(const std::string& message){ const std::string line=stamp()+message; logs_.push_back(line); for(auto& cb:callbacks_) cb(line); }
 void Simulation::onEvent(EventCallback cb){ callbacks_.push_back(std::move(cb)); }
 SmartObject* Simulation::objectById(ObjectId id){ for(auto& o:world_.objects) if(o.id==id) return &o; return nullptr; }
-void Simulation::failPlan(Runtime& r){ r.plan.clear(); r.actionIndex=0; r.announced=false; r.socialActive=false; r.socialIntent=SocialIntent::None; r.socialTarget=0; ++r.consecutiveFailures; if(r.consecutiveFailures>=3){r.penaltyUntilMinute=world_.minute+30;r.consecutiveFailures=0;} }
+void Simulation::failPlan(Runtime& r){ r.plan.clear(); r.actionIndex=0; r.announced=false; r.socialActive=false; r.socialIntent=SocialIntent::None; r.socialTarget=0; r.civilizationActive=false; ++r.consecutiveFailures; if(r.consecutiveFailures>=3){r.penaltyUntilMinute=world_.minute+30;r.consecutiveFailures=0;} }
 
 bool Simulation::tryCivilizationDecision(Character& c,Runtime& r){
     if(world_.minute%15!=0) return false;
@@ -221,8 +250,14 @@ bool Simulation::tryCivilizationDecision(Character& c,Runtime& r){
 
     const CivilizationExecutionResult result=executeCivilizationDecision(world_,c,decision.civilization);
     if(!result.executed) return false;
-    c.lastCivilizationEvent=result.event;
-    c.lastCivilizationActivityMinute=world_.minute;
+    r.civilizationActive=true;
+    r.civilizationEvent=result.event;
+    r.civilizationActivityMinute=world_.minute;
+    r.civilizationResourceNode=decision.civilization.resourceNode;
+    r.civilizationStorage=decision.civilization.storage;
+    r.civilizationHasSpatialTarget=result.sanitationSiteId!=0;
+    r.civilizationTargetPos=result.sanitationSitePos;
+    r.civilizationSanitationSiteId=static_cast<std::uint64_t>(result.sanitationSiteId);
     processCivilizationKnowledgeEvent(c,result.event);
 
     std::ostringstream s;
@@ -278,6 +313,7 @@ bool Simulation::trySocialDecision(Character& c,Runtime& r){
     else if(decision.social.intent==SocialIntent::Repair) cooldown=30;
     else if(decision.social.intent==SocialIntent::Comfort) cooldown=25;
     r.socialCooldownUntilMinute=world_.minute+cooldown;
+    r.civilizationActive=false;
     r.socialActive=true;
     r.socialIntent=decision.social.intent;
     r.socialTarget=decision.social.target;
@@ -299,6 +335,7 @@ void Simulation::beginPlan(Character& c,Runtime& r){
     if(world_.minute>=r.penaltyUntilMinute && tryCivilizationDecision(c,r)) return;
     if(world_.minute>=r.penaltyUntilMinute && trySocialDecision(c,r)) return;
 
+    r.civilizationActive=false;
     r.socialActive=false;
     r.socialIntent=SocialIntent::None;
     r.socialTarget=0;
@@ -358,6 +395,9 @@ void Simulation::advanceAction(Character& c,Runtime& r){
     }
     if(r.actionIndex>=r.plan.size()){
         r.plan.clear(); r.actionIndex=0;
+        if(r.civilizationActive){
+            r.civilizationActive=false;
+        }
         if(r.socialActive){
             r.socialActive=false;
             r.socialIntent=SocialIntent::None;
