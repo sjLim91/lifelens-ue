@@ -47,6 +47,14 @@ jobs:
               raise SystemExit('natural material validator anchor not found')
           p.write_text(s.replace(anchor, replacement, 1), encoding='utf-8')
 
+          p = Path('Source/LifeLensCore/tests/test_world_generation_milestone_a.cpp')
+          s = p.read_text(encoding='utf-8')
+          old = '#include "lifelens/SimulationSnapshotCodec.h"\n'
+          new = '#include "lifelens/SimulationSnapshotCodec.h"\n#include "lifelens/WorldGenerationSnapshotCodec.h"\n'
+          if old not in s:
+              raise SystemExit('milestone test include anchor not found')
+          p.write_text(s.replace(old, new, 1), encoding='utf-8')
+
           p = Path('Source/LifeLens/World/LLWorldDirector.cpp')
           s = p.read_text(encoding='utf-8')
           s = s.replace(
