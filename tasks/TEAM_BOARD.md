@@ -21,51 +21,73 @@
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | `jjun/designated-sanitation-affordance-v1` | Designated sanitation area authoritative affordance integration | Core/Civilization/World/Bridge contract | **IN_PROGRESS** |
+| 쭌 + 쭌 AI | branch not created | Dug pit / primitive latrine progression | Core/Civilization/World contract | **READY_NOW** |
 | 다겸 + 다겸 AI | PR #67 `dagyeom/character-appearance-v1` | Character Appearance v1 | Character appearance + `Content/Characters/**` | **ACTIVE / CLOSEOUT** |
 | 다겸 + 다겸 AI | after #67 | Character Motion Bootstrap | Character locomotion presentation | READY_AFTER_#67 |
 | 다겸 + 다겸 AI | after Motion Bootstrap | World Visual Environment v1 | Environment/Maps/WorldPresentation | HIGH PRIORITY / READY_AFTER_MOTION_BOOTSTRAP |
 | 다겸 + 쭌 Bridge support as needed | after World Visual v1 | Character Motion & Context remainder | Character presentation/animation | AFTER WORLD VISUAL v1 |
-| 쭌 + 쭌 AI | after designated-area affordance | Dug pit / latrine progression | Core/Civilization/World contract | NEXT |
-| 쭌 + 다겸 lanes | after authoritative sanitation loop | HumanWaste visual feedback | Core read contract + Presentation | NEXT |
+| 쭌 + 다겸 lanes | after primitive sanitation improvement | HumanWaste visual feedback | Core read contract + Presentation | NEXT |
 | 쭌 + 쭌 AI | PR #2 | old Android validation path | Bridge/build | FROZEN |
 
 ## Current Assist Locks
 
 **0개.** Previous appearance/presentation assist locks are released.
 
-## Current Jjun lane — Designated sanitation area authoritative affordance integration IN_PROGRESS
+## Current Jjun lane — Dug pit / primitive latrine progression — READY_NOW
 
 Branch:
-- `jjun/designated-sanitation-affordance-v1`
+- not created yet.
 
 Dependency:
-- PR #78 DONE.
+- PR #79 DONE.
 
 Goal:
-- turn the personally discovered `DesignatedSanitationArea` technique into an actual reusable primitive sanitation affordance.
-- the authoritative site/location belongs to Core state and survives Save/Load.
-- World/Bridge consumes the same site instead of inventing a second sanitation target.
-- preserve the hierarchy: designated primitive site before natural/emergency fallback, and only later dug pit/latrine.
+- improve the authoritative designated sanitation area into a physically meaningful primitive sanitation facility without jumping directly to modern plumbing.
+- preserve the causal progression from recognized problem and discovered knowledge into actual work/material-backed infrastructure.
+- keep facility identity/location/state Core-owned while World executes movement/use and reports completion facts.
 
 Planned minimal boundary:
-- inspect existing SmartObject/facility + external physical execution contracts first.
-- define the smallest stable Core-owned designated sanitation site representation.
-- creation requires reproducible technique knowledge plus a feasible clean site; knowledge alone is not a magic facility spawn.
-- use one authoritative GridPos for preference, World movement, completion ACK and environmental consequence.
-- invalid/disappeared site fails/re-resolves through existing fallback rules.
-- persist/restore the site in existing snapshot authority.
+- inspect #79 `PrimitiveSanitationSite`, Civilization recipe/tool/material representation, environmental residue deposition and snapshot extension first.
+- prefer a dug-pit step before a more developed latrine unless current material/tool contracts make a different primitive step more coherent.
+- require actual knowledge/resources/tools/work rather than a global unlock or silent upgrade.
+- decide explicitly whether improvement upgrades the existing site or creates a successor identity; never leave two competing authorities for the same facility.
+- encode a measurable sanitation benefit such as tighter containment/lower exposure while preserving realistic waste residue.
+- persist/restore the improvement and keep stale/invalid target handling fail-closed.
 
 Acceptance:
-- no learned technique → no designated site creation.
-- learned technique still requires the actual creation contract; no silent global site.
-- once created, the designated site is preferred over unstructured emergency outdoor relief when usable.
-- actual World completion and residue agree with the authoritative site GridPos.
+- no prerequisite knowledge/material/work → no pit/latrine appears.
+- the #79 designated area remains usable until a real improvement completes.
+- improved facility keeps one authoritative Core identity/GridPos for preference, World movement and completion ACK.
+- physical use yields a measurable sanitation improvement without magical waste deletion.
 - Save/Load continuity.
-- no duplicate World-only target.
-- Core tests + Structural Preflight + UE compile for Bridge/World changes.
+- Core tests + Structural Preflight + Unreal compile for any Bridge/World contract changes.
 
-## Latest Jjun product checkpoint — PR #78 DONE
+## Latest Jjun product checkpoint — PR #79 DONE
+
+PR #79 `[CORE/WORLD] Add authoritative designated sanitation area affordance v1` merged as:
+- merge SHA: `90f2b4f9cdc480e99886632e09323b2feab9625c`
+- validated head: `49c76863b1957df09b7d814f7117826e92707021`
+
+Validation:
+- Structural Preflight run `34923460056`: PASS.
+- Core Tests run `34923459974`: PASS, 44/44.
+- deterministic harness smoke: PASS.
+- Unreal Linux Compile run `34923459949`: PASS.
+- actual UE 5.6 image verification / UHT / UBT / link: PASS.
+
+Delivered:
+- personal reproducible `DesignatedSanitationArea` knowledge can materialize only through actual Civilization Craft execution.
+- Core owns persistent `PrimitiveSanitationSite` identity, exact GridPos, establisher/minute, active state and use count.
+- technique knowledge alone does not create a world site.
+- `GetSanitationUseTarget(...)` prefers the active Core designated site before emergency outdoor relief.
+- Bridge propagates designated-site flag + site id + exact Core GridPos to World.
+- World keeps authored Preferred/Primitive anchors ahead of the Core site, then Core designated Primitive site, then Natural, then Emergency.
+- exact site id + GridPos is required for designated completion; stale/wrong identity or position fails closed.
+- successful designated use increments site use count and deposits HumanWaste at the acknowledged site cell.
+- snapshot binary format v5 persists designated sanitation sites and older v1-v4 snapshots decode with no site state.
+- no global `LatrineUnlocked` or automatic modern Toilet/Latrine SmartObject.
+
+## Previous Jjun product checkpoint — PR #78 DONE
 
 PR #78 `[CORE] Add primitive sanitation experimentation progression v1` merged as:
 - merge SHA: `3a9739682034ad7c5009da5f75a11b0f07fed55b`
@@ -152,7 +174,7 @@ Disease/pathogen health modelling is not part of #75.
 
 ## Core ↔ World repair status
 
-The old `Core ↔ World Execution Sync v1 — READY_NOW` entry is obsolete. Most verification findings were repaired by #70–#78.
+The old `Core ↔ World Execution Sync v1 — READY_NOW` entry is obsolete. Most verification findings were repaired by #70–#79.
 
 ### Resolved / baseline closed
 
@@ -165,15 +187,16 @@ The old `Core ↔ World Execution Sync v1 — READY_NOW` entry is obsolete. Most
 - #76: World consumes the authoritative sanitation recommendation and ACKs the actual visible location.
 - #77: repeated/salient sanitation evidence can become explicit resident problem recognition.
 - #78: recognized concern can drive deterministic sanitation experiment/discovery and personal knowledge.
+- #79: discovered sanitation knowledge can become a persistent Core-owned primitive site with exact identity/GridPos carried through World movement and completion ACK.
 
 ### Still partial / follow-up
 
 - one exact shared facility/resource target authority across all authored and civilization-created facilities.
-- facility identity / tier / quality / backing-resource facts in the execution contract.
-- target disappearance/path failure/re-resolve semantics.
+- facility identity / tier / quality / backing-resource facts in the execution contract beyond the sanitation-specific #79 path.
+- target disappearance/path failure/re-resolve semantics across generic facilities.
 - child initial Core GridPos at birth.
 - dormant `ULLDecisionComponent` competing chooser removal/restriction.
-- explicit v1/v2/v3 snapshot migration fixtures.
+- explicit legacy snapshot migration fixtures.
 
 ## World Affordance / Environment — canonical
 
@@ -198,6 +221,7 @@ Rules:
 - #76 World sanitation recommendation integration — DONE.
 - #77 Sanitation Problem Recognition v1 — DONE.
 - #78 Primitive sanitation experimentation progression v1 — DONE.
+- #79 Designated sanitation area authoritative affordance v1 — DONE.
 
 ### Immediate environmental loop
 
@@ -209,8 +233,8 @@ Rules:
 → `next-location avoidance`
 → `problem recognition`
 → `primitive sanitation experiment/discovery`
-→ **`authoritative designated sanitation area` (IN_PROGRESS)**
-→ `dug pit / latrine improvement`
+→ `authoritative designated sanitation area` **DONE #79**
+→ **`dug pit / primitive latrine improvement` READY_NOW**
 → `visual feedback`
 
 ## Character Appearance v1 — ACTIVE / PR #67 CLOSEOUT
@@ -293,6 +317,7 @@ Relevant read contracts include:
 - `GetEnvironmentObservation(...)`
 - `GetResidentRuntimeGridPosition(...)`
 - `GetRecommendedOutdoorReliefGridPosition(...)`
+- `GetSanitationUseTarget(...)`
 - `ULLAppearanceProfileLibrary::MakeDeterministicAppearanceProfile(...)`
 
 Rules:
@@ -353,9 +378,9 @@ Current open blockers from Jjun for Dagyeom #67: **3 review closeout items**.
 12. #76 World sanitation recommendation integration — DONE.
 13. #77 Sanitation Problem Recognition — DONE.
 14. #78 Primitive sanitation experimentation progression — DONE.
-15. **Designated sanitation area authoritative affordance integration — IN_PROGRESS (`jjun/designated-sanitation-affordance-v1`).**
-16. Character Appearance #67 — ACTIVE CLOSEOUT in parallel.
-17. Dug pit / latrine progression.
+15. #79 Designated sanitation area authoritative affordance — DONE.
+16. **Dug pit / primitive latrine progression — READY_NOW.**
+17. Character Appearance #67 — ACTIVE CLOSEOUT in parallel.
 18. HumanWaste visual feedback.
 19. Character Motion Bootstrap — after #67.
 20. World Visual Environment v1.
