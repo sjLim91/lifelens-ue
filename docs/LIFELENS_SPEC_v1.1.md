@@ -6,6 +6,7 @@
 > - 이 파일은 MASTER DESIGN SPEC v1.1 원문을 Markdown으로 재정리한 것이다. 내용·의도·항목은 원문과 동일하며, 형식만 바꿨다.
 > - 원문의 섹션 번호를 그대로 유지한다. 다른 문서가 "31절", "72~76절"처럼 번호로 참조한다.
 > - 빌드/검증 방식(72~76절)은 `docs/BUILD_STRATEGY_v1.2.md`가 우선한다. 그 외 모든 섹션은 이 문서가 기준이다.
+> - 확장형 세계 생성/청크/이주 구조는 `docs/WORLD_GENESIS_CHUNK_MIGRATION_v1.md`가 canonical companion이며, 고정 소형 arena를 제품 월드 구조로 사용하지 않는다.
 
 ---
 
