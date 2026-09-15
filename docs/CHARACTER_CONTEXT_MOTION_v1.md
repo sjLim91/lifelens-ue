@@ -70,6 +70,32 @@ Requirements:
 - outdoor emergency fallback must use an appropriate grounded fallback pose; do not display a fake toilet/bed/sink interaction when no such object exists.
 - if no dedicated animation exists yet, use an explicit generic fallback state, not unrelated locomotion.
 
+### Toilet / sanitation presentation — privacy-first V1
+
+Toilet use is not implemented as a single generic `Sit` animation. It is a short context sequence driven by the authoritative `Toilet` action.
+
+With a real toilet/facility:
+
+`approach -> align to interaction point -> enter seated pose -> privacy mask ON -> toilet idle -> completion ACK -> exit pose -> privacy mask OFF -> optional flush/interact -> resume`
+
+Without a toilet/facility:
+
+`find valid outdoor fallback -> move away from residents/living area where possible -> align -> squat/low grounded pose -> privacy mask ON -> completion ACK + environmental sanitation residue -> privacy mask OFF -> resume`
+
+V1 intentionally does **not** require clothing undress/redress animation. Clothing manipulation creates high per-outfit rigging, clipping and retargeting cost and is not required for the observer experience.
+
+Privacy presentation requirements:
+- use a reusable **local Privacy Mask/Occluder** around the pelvis/upper-thigh region rather than blurring the entire screen or character.
+- keep face and upper-body context visible so the observer can still understand the action.
+- prefer a lightweight mobile-safe mask/material/pixelation/frosted-noise effect over expensive full-screen Gaussian/post-process blur.
+- mask timing follows the context-motion state; it must not remain visible after the private action ends.
+- the same privacy system may later be reused for shower/bathing, changing clothes, childbirth, or other private context actions.
+- privacy masking is presentation only; it does not create, complete, cancel, or alter the authoritative action.
+- indoor toilet alignment must use an explicit interaction point/socket/transform so the resident does not visibly sit beside or through the fixture.
+- V1 may use seated toilet presentation for all residents and squat/low-pose outdoor fallback for all residents; sex-specific variants are optional later refinements, not a prerequisite.
+
+The goal is **non-explicit but immediately understandable context**, not anatomical simulation.
+
 ## Phase 3 — Social communication
 
 Authoritative social intent/target already available through `FLLCoreActionDirective`:
@@ -120,6 +146,8 @@ A context-motion slice is DONE only when:
 - the same Core action does not randomly display unrelated motion.
 - physical completion ACK still comes from the existing authoritative execution path.
 - missing facilities use outdoor/emergency visual fallbacks instead of fabricated infrastructure.
+- toilet/private action privacy mask follows the action state and does not obscure the whole resident.
+- indoor toilet alignment uses an explicit interaction point and does not visibly miss the fixture.
 - male/female/outfit variants are checked.
 - Android presentation remains within performance budget.
 
@@ -130,6 +158,6 @@ A context-motion slice is DONE only when:
 3. Wire `Idle_Talking_Loop` to authoritative social interaction.
 4. Wire `Sitting_Enter/Idle/Exit` where a real sit affordance exists.
 5. Wire `Interact` / `PickUp_Table` / `Fixing_Kneeling` to authoritative matching contexts.
-6. Add validated fallback presentation for Eat/Drink/Sleep/Toilet/Hygiene when no dedicated animation exists.
+6. Add validated fallback presentation for Eat/Drink/Sleep/Toilet/Hygiene when no dedicated animation exists, including the reusable Privacy Mask for Toilet/outdoor sanitation.
 7. Extend Core context-action read contract for Gather/Craft/Work/Dig/Build/Carry.
 8. Replace generic fallbacks over time with dedicated validated free/CC0 animations.
