@@ -655,3 +655,32 @@
 - 병렬 쭌 레인:
   - HumanWaste Environmental Visual Feedback — READY_NOW.
 
+
+
+## 2026-09-15 — HumanWaste Environmental Visual Feedback v1 완료
+
+- 작성자: 쭌 측 AI
+- 브랜치/PR: `jjun/human-waste-visual-feedback-v1`, PR #82
+- 상태: `DONE / main squash merge 완료`
+- validated head: `8c54ca100c28b12a77375ad48626c4d513087b04`
+- main merge: `831ba22ce17ca5fef8a92f2288e18a0495248a7a`
+- 변경 범위:
+  - `ULLEnvironmentalResidueVisualizerComponent` 추가. Core Bridge `GetEnvironmentObservation(...)`의 authoritative residue read DTO만 소비.
+  - 하나의 HISM으로 여러 HumanWaste record를 표현하여 residue별 heavy Actor/Niagara 무한 생성을 피함.
+  - Core Grid XY를 World 위치로 변환하고 WorldStatic surface trace로 지면 Z를 결정.
+  - amount/intensity/radius/age를 visual footprint 및 per-instance custom data에 반영.
+  - DesignatedArea residue baseline `intensity 0.42 / radius 3`, DugPit `0.16 / radius 1` 차이를 결과 기반으로 표현하며 site kind authority를 Presentation에 복제하지 않음.
+  - BeginPlay/SaveLoad restore 후 authoritative state에서 강제 rebuild; 이후 signature가 바뀔 때만 refresh.
+  - max 128 visual instances + cull distances로 Android-first 비용 경계 설정.
+  - `GetEnvironmentalResidueVisualCount()` QA hook 및 structural validator/Preflight gate 추가.
+- 검증:
+  - Structural Preflight `34931331778` PASS, environmental visual feedback validator 포함.
+  - Unreal Linux Compile `34931331779` PASS; UE 5.6 image verify / UHT / UBT / link 모두 SUCCESS.
+  - merge checkpoint PR comments/reviews/unresolved threads 0.
+- authority 경계:
+  - visual layer는 deposit/contain/cleanup/hygiene/facility 상태를 수정하지 않는다.
+  - visual-only state는 SaveGame authority가 아니며 Core residue에서 재구성한다.
+- 다음 쭌 레인:
+  - **World Genesis WG-1 — READY_NOW**.
+  - `WorldSeed + GenerationVersion + ChunkCoord` deterministic contract와 exploration-order-independent untouched-chunk baseline을 먼저 확정한다.
+  - `PopulationSeed`는 자연환경 seed와 분리하며, production World Visual이 작은 고정 arena에 묶이기 전에 WG-1/WG-2 gate를 통과한다.

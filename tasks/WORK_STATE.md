@@ -31,14 +31,25 @@ Last reconciled: 2026-09-15 KST
 ## Current product-code baseline
 
 Latest product merge:
-- PR #67 `[UI] Character Appearance v1 — Quaternius CC0 human body, deterministic look (Track B)`
-- merge SHA: `915906357d9752a5654b3dfeb85795419d885b59`
+- PR #82 `[WORLD] Add HumanWaste environmental visual feedback v1`
+- merge SHA: `831ba22ce17ca5fef8a92f2288e18a0495248a7a`
 
-Validated PR #67 final head `982d930a53f199b33ebf7ca3d4f5b72f72f8a91b`:
-- Structural Preflight run `34929703738`: PASS
-- Unreal Linux Compile run `34929703712`: PASS
+Validated PR #82 final head `8c54ca100c28b12a77375ad48626c4d513087b04`:
+- Structural Preflight run `34931331778`: PASS
+- Environmental visual feedback structural validator: PASS
+- Unreal Linux Compile run `34931331779`: PASS
 - UE 5.6 image verification / UHT / UBT / link: PASS
-- helper PR #81 integration tree Core Tests run `34929611584`: PASS, **45/45** + deterministic harness smoke PASS
+- PR comments/reviews/unresolved threads at merge checkpoint: 0
+
+Delivered by #82:
+- authoritative Core `HumanWaste` residue is now projected into the Unreal world through a read-only presentation component.
+- one HISM component represents many residue records instead of one heavy Actor/Niagara per record.
+- Core Grid XY maps to World location and a WorldStatic trace resolves the visible surface Z.
+- amount/intensity/radius/age drive footprint/custom presentation data.
+- open designated-area residue (`0.42`, radius `3`) remains visibly broader/stronger than DugPit-contained residue (`0.16`, radius `1`) without duplicating site authority.
+- visual state is rebuilt from `GetEnvironmentObservation(...)`; presentation never deposits, contains, cleans, or mutates sanitation state.
+- Save/Load restoration naturally rebuilds from authoritative residue state.
+- Android baseline includes HISM, max-instance cap, culling, and signature-based rebuild suppression.
 
 Latest Core/civilization baseline remains PR #80 `[CORE] Add dug sanitation pit progression v1`.
 
@@ -69,29 +80,30 @@ Documentation-only commits may advance `main` beyond the product-code baseline a
 
 ## Current dispatch
 
-### Jjun lane — HumanWaste Environmental Visual Feedback — READY_NOW
+### Jjun lane — World Genesis WG-1 — READY_NOW
 
 Owner: 쭌 / 쭌 AI
-Dependency: PR #80 DONE.
-Handoff safety: SAFE; no uncommitted local dependency.
+Dependency: canonical `docs/WORLD_GENESIS_CHUNK_MIGRATION_v1.md`; PR #82 DONE.
+Handoff safety: SAFE; HumanWaste visual slice merged and state-synced.
 
 Goal:
-- make authoritative HumanWaste/environment consequence visibly observable without moving authority into Presentation.
-- visual state must follow Core creation, location, intensity/radius, decay/removal and Save/Load restore.
-- support both open designated-area residue and improved DugPit containment differences.
+- establish the deterministic logical world coordinate/chunk identity contract before production World Visual commits to a fixed map.
+- separate natural-world identity from initial population randomness.
+
+WG-1 scope:
+- `WorldSeed` and explicit `GenerationVersion` contract.
+- stable `ChunkCoord` / chunk key representation.
+- deterministic untouched-chunk baseline derived only from world seed + generation version + chunk coordinate.
+- exploration/generation order must not affect untouched geography.
+- define world-grid/chunk conversion boundaries without making Unreal streaming or PCG the simulation authority.
+- preserve current bootstrap/test map compatibility while the scalable logical world foundation is introduced.
 
 Acceptance:
-- Core/environment remains authoritative.
-- no presentation-created residue or sanitation state.
-- visual representation appears at the same authoritative world/grid location.
-- intensity/containment differences have a readable but Android-safe representation.
-- pooling/instancing/culling/LOD considered from the start.
-- restore/rebuild after Save/Load is deterministic from authoritative state.
-
-Exact next action:
-- reconcile `docs/WORLD_ENVIRONMENTAL_VISUAL_FEEDBACK_v1.md` with the #80 DugPit exposure profile.
-- define the smallest read DTO / World presentation component needed for HumanWaste creation/update/removal.
-- branch only after latest `main` and #67 comments are rechecked.
+- same inputs produce identical untouched chunk identity/baseline regardless of request order.
+- different seeds can produce different natural baselines.
+- PopulationSeed/random resident generation is not coupled to terrain generation.
+- no production-sized fixed arena assumption is introduced.
+- relevant Core/Preflight/UE compile checks pass.
 
 ### World Genesis / Chunk / Migration — DESIGN FIXED / IMPLEMENTATION GATE
 

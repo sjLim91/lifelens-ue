@@ -7,15 +7,16 @@
 ## 1. 현재 기준점
 
 Latest merged product slice:
-- PR #67 `[UI] Character Appearance v1 — Quaternius CC0 human body, deterministic look (Track B)`
-- merge SHA: `915906357d9752a5654b3dfeb85795419d885b59`
-- validated final head: `982d930a53f199b33ebf7ca3d4f5b72f72f8a91b`
+- PR #82 `[WORLD] Add HumanWaste environmental visual feedback v1`
+- merge SHA: `831ba22ce17ca5fef8a92f2288e18a0495248a7a`
+- validated final head: `8c54ca100c28b12a77375ad48626c4d513087b04`
 
 Validation:
-- Structural Preflight `34929703738`: PASS
-- Unreal Linux Compile `34929703712`: PASS
+- Structural Preflight `34931331778`: PASS
+- environmental visual feedback validator: PASS
+- Unreal Linux Compile `34931331779`: PASS
 - UE 5.6 image verification / UHT / UBT / link: PASS
-- helper PR #81 integration Core Tests `34929611584`: **45/45 PASS** + deterministic harness smoke
+- PR comments/reviews/unresolved threads at merge checkpoint: 0
 
 Latest Core/civilization slice remains PR #80, merge `291926cf78d12c1c61284eb9c59a50e7c70e54e7`, with its previously recorded 45/45 + Preflight + UE compile validation.
 
@@ -147,6 +148,16 @@ Documentation commits may advance `main` beyond the product-code merge SHA witho
 - future DugPit use still produces HumanWaste with lower exposure profile.
 - sanitation extension v2 persists kind/progress/improver/minute while outer snapshot stays v5 and v1 sanitation data remains readable.
 - no `LatrineUnlocked`, modern plumbing or magic waste deletion.
+
+### #82 — HumanWaste Environmental Visual Feedback DONE
+- authoritative HumanWaste residue now appears in Unreal world presentation.
+- single HISM batches many residues; no unlimited heavy Actor/Niagara per residue.
+- authoritative Core Grid position maps to world location with surface trace for visible Z placement.
+- amount/intensity/radius/age drive footprint and per-instance presentation data.
+- DesignatedArea residue (`0.42`, radius `3`) reads broader/stronger than DugPit residue (`0.16`, radius `1`).
+- presentation consumes `GetEnvironmentObservation(...)` only and never owns residue/sanitation truth.
+- Save/Load rebuilds visuals from Core-authoritative state.
+- Android baseline uses cap + culling + signature-based refresh suppression.
 
 The causal chain now reaches:
 
@@ -289,14 +300,13 @@ Known presentation limitation now promoted to next work:
 
 ### Jjun lane — READY_NOW
 
-**HumanWaste Environmental Visual Feedback**
+**World Genesis WG-1**
 
 Goal:
-- authoritative residue → visible world feedback.
-- open designated contamination vs DugPit containment represented coherently.
-- visual state follows Core create/intensity/radius/decay/removal/SaveLoad.
-- no visual Actor becomes simulation authority.
-- Android-safe pooling/instancing/culling/LOD.
+- establish `WorldSeed + GenerationVersion + ChunkCoord` deterministic logical-world contracts.
+- untouched chunk generation must be order-independent.
+- keep `PopulationSeed` separate from terrain/natural-world identity.
+- preserve bootstrap maps for current verification while preventing a permanent fixed-arena architecture.
 
 ### Dagyeom lane — READY_NOW
 
@@ -320,7 +330,7 @@ Rules:
 - Android must avoid unlimited 1:1 heavy Actors.
 
 Pending visuals:
-- **HumanWaste ground/decal/material/VFX — READY_NOW**
+- **HumanWaste baseline HISM ground feedback — DONE (#82); presentation material/mesh polish remains later.**
 - resource depletion/regrowth
 - fire/smoke/scorch
 - foot-traffic path formation
@@ -392,10 +402,10 @@ Do not revive the old multi-hour PR #2 path as normal iteration.
 14. sanitation experiment/discovery #78 — DONE.
 15. authoritative designated site #79 — DONE.
 16. Dug sanitation pit progression #80 — DONE.
-17. **HumanWaste visual feedback — READY_NOW.**
+17. HumanWaste visual feedback #82 — DONE.
 18. Character Appearance #67 — DONE.
 19. **Motion Bootstrap — READY_NOW** (Dagyeom lane).
-20. **World Genesis WG-1/WG-2 architecture gate.**
+20. **World Genesis WG-1 — READY_NOW; WG-2 follows WG-1.**
 21. World Visual Environment production map.
 22. Character Motion & Context remainder.
 23. integrated runtime verification.
@@ -408,7 +418,7 @@ Do not revive the old multi-hour PR #2 path as normal iteration.
 다음 표현을 혼동하지 않는다:
 - Compile PASS ≠ feature DONE.
 - design document exists ≠ runtime implemented.
-- environmental state exists ≠ visual already exists.
+- environmental state exists ≠ every environmental consequence already has polished visual presentation; HumanWaste now has the #82 baseline path.
 - World Genesis design fixed ≠ chunked world already running.
 - #67 is DONE; Motion Bootstrap needs its own branch/PR/validation before it is DONE.
 - Quaternius baseline ≠ permanent final visual ceiling.

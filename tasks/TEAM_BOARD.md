@@ -32,7 +32,7 @@
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | new branch after preflight | HumanWaste Environmental Visual Feedback | Core read contract + World presentation support | **READY_NOW** |
+| 쭌 + 쭌 AI | new branch after preflight | World Genesis WG-1 | Core world seed / deterministic chunk-coordinate contract | **READY_NOW** |
 | 다겸 + 다겸 AI (Claude) | branch / PR pending | Character Motion Bootstrap | Character locomotion presentation | **READY_NOW** |
 | 쭌 + 다겸 lanes | before production World Visual | World Genesis WG-1/WG-2 integration gate | Core world coordinates + environment architecture | DESIGN FIXED / REQUIRED GATE |
 | 다겸 + 다겸 AI | after Motion + world-genesis gate | World Visual Environment v1 | Environment/Maps/WorldPresentation | HIGH PRIORITY |
@@ -43,56 +43,48 @@
 
 **0개.** Previous appearance/presentation assist locks are released.
 
-## Latest Jjun product checkpoint — PR #80 DONE
+## Latest Jjun product checkpoint — PR #82 DONE
 
-PR #80 `[CORE] Add dug sanitation pit progression v1`
-- merge SHA: `291926cf78d12c1c61284eb9c59a50e7c70e54e7`
-- validated head: `fc918693bcd265f3c021f0bd826f6ba5a7113678`
+PR #82 `[WORLD] Add HumanWaste environmental visual feedback v1`
+- merge SHA: `831ba22ce17ca5fef8a92f2288e18a0495248a7a`
+- validated head: `8c54ca100c28b12a77375ad48626c4d513087b04`
 
 Validation:
-- Structural Preflight `34926841905`: PASS.
-- Core Tests `34926841895`: **PASS, 45/45**.
-- deterministic harness smoke: PASS.
-- Unreal Linux Compile `34926841907`: PASS.
-- actual UE 5.6 image verification / UHT / UBT / link: PASS.
+- Structural Preflight `34931331778`: PASS.
+- environmental visual feedback validator: PASS.
+- Unreal Linux Compile `34931331779`: PASS.
+- UE 5.6 image verification / UHT / UBT / link: PASS.
+- merge checkpoint PR comments/reviews/unresolved threads: 0.
 
 Delivered:
-- personal `DugSanitationPit` knowledge and `DigSanitationPit` experiment.
-- no site / no meaningful sanitation-improvement context → no pit progression.
-- knowledge discovery alone does not mutate facility kind.
-- repeated Craft work accumulates excavation progress.
-- existing `PrimitiveSanitationSite` keeps the exact same site id and Core GridPos and upgrades `DesignatedArea → DugPit`.
-- current no-Dig-tool world supports slower manual excavation without inventing a shovel.
-- future Dig-capable tools can accelerate the same work contract.
-- pit completion contains existing HumanWaste by lowering exposure intensity/radius without deleting waste amount.
-- DugPit use still creates HumanWaste with reduced exposure profile.
-- exact Core site id + GridPos remains required through World movement and ACK.
-- outer snapshot remains v5; sanitation sub-extension v2 persists kind/progress/improver/minute and accepts v1 data.
-- Unreal civilization read DTO includes `DesignatedSanitationArea` and `DugSanitationPit`.
-- no global `LatrineUnlocked` or automatic modern plumbing.
+- Core-authoritative HumanWaste residue now has an actual Unreal world visual path.
+- HISM batches residue visuals with max-instance cap and distance culling for Android-first cost control.
+- visual placement uses authoritative Grid position plus ground-surface trace.
+- amount/intensity/radius/age affect visual footprint/custom data.
+- DesignatedArea exposure profile remains visually broader/stronger than DugPit containment.
+- visualizer is read-only and never becomes simulation/sanitation authority.
+- Save/Load restoration reconstructs visuals from authoritative Core state.
 
-## Jjun next lane — HumanWaste Environmental Visual Feedback — READY_NOW
+## Jjun next lane — World Genesis WG-1 — READY_NOW
 
 Goal:
-- make the authoritative sanitation consequence visually observable.
-- keep Core/environment state authoritative.
-- visual state follows create/update/decay/removal/SaveLoad restore.
-- open designated-area contamination and DugPit-contained contamination must be distinguishable without misleading the player into thinking waste disappeared.
+- implement the first runtime architecture gate from `docs/WORLD_GENESIS_CHUNK_MIGRATION_v1.md` before production World Visual hardens around a small fixed map.
 
-Expected boundary:
-- inspect `docs/WORLD_ENVIRONMENTAL_VISUAL_FEEDBACK_v1.md` against #80.
-- expose only the minimum read facts missing for visual reconstruction.
-- use pooled/instanced/cullable Android-safe presentation.
-- no UI/World code may invent residues or mutate sanitation state.
+WG-1 boundary:
+- stable `WorldSeed` + `GenerationVersion`.
+- stable logical `ChunkCoord` / chunk key.
+- untouched chunk baseline deterministic from `(WorldSeed, GenerationVersion, ChunkCoord)` only.
+- generation order independence.
+- explicit separation from `PopulationSeed` / initial resident randomization.
+- no Unreal streaming/PCG object becomes simulation authority.
 
 Acceptance:
-- visible location agrees with authoritative Core/Grid position.
-- visual lifetime agrees with authoritative residue lifetime.
-- lower DugPit exposure has a coherent visual cue.
-- Save/Load rebuilds visuals from Core state.
-- relevant Preflight/Core/UE compile checks pass.
+- same seed/version/chunk yields same untouched baseline in any request order.
+- different WorldSeed can vary the natural world.
+- current bootstrap map remains usable for tests while scalable logical coordinates are introduced.
+- relevant Core/Preflight/UE validation passes.
 
-## World Genesis / Chunk / Migration — CANONICAL DESIGN FIXED
+## World Genesis / Chunk / Migration — WG-1 READY_NOW / WG-2 AFTER WG-1
 
 Canonical: `docs/WORLD_GENESIS_CHUNK_MIGRATION_v1.md`.
 
@@ -162,6 +154,7 @@ Resolved baseline:
 - #78 sanitation experiment/personal knowledge.
 - #79 persistent authoritative designated sanitation site.
 - #80 same-site dug-pit improvement and containment.
+- #82 authoritative HumanWaste residue → Android-safe Unreal visual projection.
 
 Still partial:
 - generic facility/resource target authority beyond sanitation.
