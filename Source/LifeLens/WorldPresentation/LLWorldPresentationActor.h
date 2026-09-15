@@ -11,6 +11,15 @@ class UStaticMesh;
 class UStaticMeshComponent;
 struct FLLCoreNaturalChunkObservation;
 
+// How strongly a piece of ambient dressing blocks the observer's view of the
+// residents. Purely a presentation classification; Core knows nothing about it.
+enum class ELLDressingLayer : uint8
+{
+    Canopy,       // full-height trees: the worst offenders
+    Undergrowth,  // shrubs, ferns, tall grass: block at resident height
+    GroundDetail, // rocks and pebbles: low enough to keep everywhere
+};
+
 // World Visual Milestone A — generated-world natural presentation.
 //
 // Presentation only. Every placement fact comes from the authoritative world
@@ -57,30 +66,57 @@ public:
     // are materialized rarely, so this stays cheap.
     static constexpr float RefreshIntervalSeconds = 2.0f;
 
-    // ---- Start-region readability -------------------------------------------
-    // Presentation-only rule: ambient dressing vegetation is not placed right
-    // on top of the founders, so the observer can see them. It changes nothing
-    // about what Core says exists. Authoritative resource patches are never
-    // suppressed by it; they are only drawn smaller inside the radius.
+    // ---- Settlement readability envelope -------------------------------------
+    // Presentation-only rule. Residents live and act within a few thousand
+    // units of the settlement, and natural forest density there hides both the
+    // residents and what they are doing. Ambient dressing therefore thins out
+    // near the settlement and returns to full natural density outside it.
     //
-    // The centre is the Core start region (`InitialCenterGrid`), never the
-    // Unreal world origin, and the radius is presentation tuning: it is not
-    // part of any Core rule and never reaches the save identity.
-    // Tuned against the authoritative chunk span: one chunk is 32 cells, so the
-    // start chunk is 3,200 UU across. A fully clear 800 UU circle plus a 700 UU
-    // fade leaves the outer part of the start chunk dressed.
+    // This changes nothing about what Core says exists: resident movement and
+    // action range are untouched, and authoritative resource patches are never
+    // removed. The reference point is the Core start region
+    // (`InitialCenterGrid`), never a fixed world origin, and every value here
+    // is presentation tuning that never reaches Core rules or the save
+    // identity.
+    //
+    // Three bands, measured from the settlement reference:
+    //   0 .. CoreClearRadiusUU        living core; ambient canopy and
+    //                                 undergrowth almost fully suppressed
+    //   CoreClear .. ActivityRadius   activity zone; density restored with
+    //                                 distance, canopy last
+    //   beyond ActivityRadius         untouched natural density
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.0"))
-    float StartRegionClearRadiusUU = 800.0f;
+    float CoreClearRadiusUU = 1200.0f;
 
-    // Dressing fades back in over this band instead of stopping at a hard edge.
+    // Matches the observed resident activity range. Core movement is not
+    // clamped to it; it only says how far the visual thinning reaches.
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.0"))
-    float StartRegionClearFalloffUU = 700.0f;
+    float ActivityRadiusUU = 3000.0f;
 
-    // Authoritative resource patches stay visible inside the radius at this
-    // fraction of their normal size, so they read as present but do not block
-    // the view of the founders.
+    // Recovery curves across the activity band. A higher exponent keeps the
+    // zone open for longer; canopy recovers latest because it blocks the most.
+    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="1.0", ClampMax="6.0"))
+    float CanopyRecoveryExponent = 2.6f;
+
+    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="1.0", ClampMax="6.0"))
+    float UndergrowthRecoveryExponent = 1.5f;
+
+    // A little dressing survives even in the living core so the settlement does
+    // not read as a cut clearing. Low enough to stay see-through.
+    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.0", ClampMax="0.3"))
+    float CoreZoneCanopyKeep = 0.04f;
+
+    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.0", ClampMax="0.5"))
+    float CoreZoneUndergrowthKeep = 0.10f;
+
+    // Authoritative resource patches are never hidden. Inside the settlement
+    // they are only drawn smaller so they read as present without blocking the
+    // view of the residents.
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.1", ClampMax="1.0"))
-    float StartRegionResourceScale = 0.55f;
+    float CoreZoneResourceScale = 0.55f;
+
+    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.1", ClampMax="1.0"))
+    float ActivityZoneResourceScale = 0.8f;
 
 private:
     UHierarchicalInstancedStaticMeshComponent* AddInstancedComponent(
@@ -94,9 +130,18 @@ private:
     FVector ChunkOriginUU(const struct FLLCoreWorldGenerationObservation& World,
                           int32 ChunkX, int32 ChunkY) const;
 
-    // Fraction of ambient dressing kept at a location: 0 next to the founders,
-    // 1 outside the readability band. Deterministic and position-only.
-    float AmbientDressingKeepFactor(const FVector2D& LocationUU) const;
+    // Fraction of ambient dressing kept at a location for one layer: low in
+    // the settlement core, restored with distance, 1 outside the envelope.
+    // Deterministic and position-only.
+    float AmbientDressingKeepFactor(const FVector2D& LocationUU, ELLDressingLayer Layer) const;
+
+    // Presentation-space position of the Core start region centre
+    // (`InitialCenterGrid`). Not assumed to be the world origin.
+    FVector2D SettlementReferenceUU(const struct FLLCoreWorldGenerationObservation& World) const;
+
+    // Size factor for an authoritative resource patch by band. Never zero: a
+    // resource Core says exists is not hidden for readability.
+    float ResourcePatchScaleFactor(const FVector2D& LocationUU) const;
     UMaterialInterface* GroundMaterialForChunk(const FLLCoreNaturalChunkObservation& Chunk) const;
 
     // Catalogue (referenced in the constructor so it is cooked).
@@ -125,4 +170,5 @@ private:
     int32 PlacedGrass = 0;
     int32 PlacedRocks = 0;
     int32 SuppressedDressing = 0;
+    FVector2D CachedSettlementReferenceUU = FVector2D::ZeroVector;
 };
