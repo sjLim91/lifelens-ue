@@ -6,8 +6,9 @@
 
 ## 1. 기준점
 
-- Current `main`: `157ce9937e53d5868d7e558b4149a4fa56c4c454`
-- Latest merged slice: PR #75 `[CORE] Add environmental exposure perception and avoidance v1`
+- Product-code baseline: `157ce9937e53d5868d7e558b4149a4fa56c4c454`
+- Latest merged product slice: PR #75 `[CORE] Add environmental exposure perception and avoidance v1`
+- Documentation-only commits may advance `main` beyond this product-code SHA without changing runtime behavior.
 - PR #75 validation at head `c36a31d0f0e1caa069f5389735b3828289d252e9`:
   - Structural Preflight: PASS
   - Core Tests: PASS, 41/41
@@ -306,7 +307,25 @@ Core death는 존재하지만 Unreal actor/body/observer 표현 정책은 별도
 - #67 compile PASS가 곧 merge/DONE을 의미하지 않는다.
 - MetaHuman은 Android/mobile validation 이후 upgrade path다. 현재 Track B Quaternius가 baseline이다.
 
-## 10. 다음 통합 체크포인트
+## 10. Documentation audit — 2026-09-15
+
+이번 상태 점검에서 발견한 stale/missing state:
+- `tasks/WORK_STATE.md`가 #69 시점에 멈춰 #70~#75 완료 상태를 반영하지 못하고 있었음.
+- `tasks/WORK_STATE.md`에 UE compile trigger coverage가 `NEEDS FIX`로 남아 있었으나 #71에서 이미 완료됨.
+- `tasks/TEAM_BOARD.md`가 Core ↔ World Execution Sync를 아직 READY_NOW로 표시하고 있었으나 #70~#74로 대부분 완료됨.
+- 환경 인지/기억/회피가 follow-up으로만 남아 있었으나 #75에서 구현/검증/merge됨.
+- open-ended invention과 environmental visual feedback가 개별 canonical 문서에는 존재하지만, live work-state 문서의 canonical reference map에 빠져 있었음.
+- 남은 구조적 과제(통합 facility authority, birth initial position, legacy decision chooser, snapshot legacy fixtures, death presentation, Android validation)를 한 곳에서 확인할 수 있는 current snapshot이 없었음.
+
+조치:
+- 이 문서 생성.
+- `tasks/WORK_STATE.md` current state로 재동기화.
+- `tasks/TEAM_BOARD.md` current queue로 재동기화.
+- canonical reference map에 `OPEN_ENDED_INVENTION_v1.md`와 `WORLD_ENVIRONMENTAL_VISUAL_FEEDBACK_v1.md` 포함.
+
+설계 문서 안의 과거 단계 설명은 historical design context로 남을 수 있으나, **실제 현재 작업 상태 판단에는 이 문서 + WORK_STATE + TEAM_BOARD + GitHub actual state를 사용한다.**
+
+## 11. 다음 통합 체크포인트
 
 가까운 목표는 아래 causal loop를 실제 화면까지 닫는 것이다.
 
