@@ -127,3 +127,25 @@
 **목적**
 - 새 세션에서 사용자가 요구사항을 다시 설명하지 않게 한다.
 - AI가 과거 대화 기억만 믿고 실제 저장소와 다른 방향으로 가는 것을 방지한다.
+
+---
+
+## D-008 — 사용자 UI는 한국어 기본, 사회행동은 실제로 관찰 가능해야 한다
+
+**결정**
+- 일반 사용자용 LifeLens UI의 기본 표시 언어는 한국어로 한다.
+- Core의 enum/action/event id는 언어 중립 식별자를 유지하고, Presentation/localization layer에서 사용자 언어로 변환한다.
+- `UseToilet`, `Comfort`, `Argue` 같은 raw English identifier를 최종 사용자 UI에 그대로 노출하지 않는다.
+- 주민 간 사회행동은 관계 수치만 바꾸고 끝나서는 안 된다. Core에서 실제로 발생한 actor/target/intent/outcome을 Presentation이 접근, facing/gaze, animation, 아이콘/말풍선, Event Feed/History로 관찰 가능하게 표현한다.
+- 모든 일상 대화를 큰 말풍선으로 도배하지 않는다. 일상/의미 있는 사회행동/중요 사건의 중요도 단계에 따라 표현 강도를 나눈다.
+- 대사는 초기부터 유료 LLM/API에 의존하지 않는다. social intent + personality + relationship + emotion + memory/context를 조합한 deterministic/data-driven 한국어 표현으로 기본 기능이 완전하게 동작해야 한다.
+- Presentation은 Core에서 발생하지 않은 고백/다툼/위로/관계변화를 꾸며내지 않는다.
+
+**구현 기준**
+- canonical companion: `docs/SOCIAL_COMMUNICATION_LOCALIZATION_v1.md`.
+- Jjun/Core lane: social action/event authority, outcome/read contract, presentation에 필요한 deterministic context.
+- Dagyeom presentation lane: localization 표시, speech bubble/Event Feed, gaze/body/animation 표현.
+- shared contract가 실제로 필요할 때만 Integration Request를 연다.
+
+**목적**
+- LifeLens의 핵심 경험을 "내부 숫자가 변하는 시뮬레이션"이 아니라 "사람들이 서로 소통하며 살아가는 사회를 관찰하는 경험"으로 유지한다.
