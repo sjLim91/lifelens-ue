@@ -318,21 +318,26 @@ for token in (
     'sanitationUseTarget',
     'resolveSanitationUseTarget',
     'SanitationSiteId sanitationSiteId=0',
-    'recordDesignatedSanitationSiteUse',
-    'designatedSanitationUseDurationTicks',
+    'recordPrimitiveSanitationSiteUse',
+    'primitiveSanitationUseDurationTicks',
 ):
     assert token in simulation_core, f'Missing Core sanitation target/completion authority: {token}'
 
 civilization_snapshot = (root / 'Source/LifeLensCore/include/lifelens/CivilizationSnapshotCodec.h').read_text(encoding='utf-8')
-assert 'TechniqueId::DesignatedSanitationArea' in civilization_snapshot, 'Sanitation personal knowledge must survive snapshot validation'
+for token in (
+    'TechniqueId::DesignatedSanitationArea',
+    'TechniqueId::DugSanitationPit',
+):
+    assert token in civilization_snapshot, f'Sanitation personal knowledge must survive snapshot validation: {token}'
 
 civilization_transmission = (root / 'Source/LifeLensCore/include/lifelens/CivilizationKnowledgeTransmission.h').read_text(encoding='utf-8')
-assert 'raw<=static_cast<int>(TechniqueId::DesignatedSanitationArea)' in civilization_transmission, 'Sanitation knowledge must use the existing witness/teaching path'
+assert 'raw<=static_cast<int>(TechniqueId::DugSanitationPit)' in civilization_transmission, 'Sanitation knowledge transmission must cover dug-pit progression'
+assert 'TechniqueId::DesignatedSanitationArea' in civilization_transmission, 'Dug-pit transmission must preserve designated-area prerequisite context'
 
 civilization_observer = (root / 'Source/LifeLensCore/include/lifelens/CivilizationObserverReadModel.h').read_text(encoding='utf-8')
 for token in (
-    'raw<=static_cast<int>(TechniqueId::DesignatedSanitationArea)',
-    'TechniqueId::DesignatedSanitationArea)+1',
+    'raw<=static_cast<int>(TechniqueId::DugSanitationPit)',
+    'TechniqueId::DugSanitationPit)+1',
 ):
     assert token in civilization_observer, f'Missing sanitation technique observer/provenance coverage: {token}'
 
@@ -340,6 +345,7 @@ core_cmake = (root / 'Source/LifeLensCore/CMakeLists.txt').read_text(encoding='u
 assert 'lifelens_add_test(test_sanitation_problem_recognition)' in core_cmake, 'Missing sanitation recognition Core test registration'
 assert 'lifelens_add_test(test_primitive_sanitation_progression)' in core_cmake, 'Missing primitive sanitation progression Core test registration'
 assert 'lifelens_add_test(test_designated_sanitation_affordance)' in core_cmake, 'Missing designated sanitation affordance Core test registration'
+assert 'lifelens_add_test(test_primitive_latrine_progression)' in core_cmake, 'Missing primitive latrine progression Core test registration'
 
 # The simulation core remains standard-library C++ with a C++17 baseline.
 forbidden_core_tokens = (
