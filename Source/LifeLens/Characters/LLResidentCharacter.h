@@ -7,6 +7,7 @@
 
 class ULLDecisionComponent;
 class ULLResidentAppearanceComponent;
+class ULLResidentMotionComponent;
 class ULLResidentPresentationComponent;
 class UStaticMeshComponent;
 class UTextRenderComponent;
@@ -52,6 +53,9 @@ public:
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="LifeLens|Presentation")
     TObjectPtr<ULLResidentPresentationComponent> PresentationComponent;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="LifeLens|Presentation")
+    TObjectPtr<ULLResidentMotionComponent> MotionComponent;
 
 protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="LifeLens|Resident")
