@@ -149,3 +149,22 @@
 
 **목적**
 - LifeLens의 핵심 경험을 "내부 숫자가 변하는 시뮬레이션"이 아니라 "사람들이 서로 소통하며 살아가는 사회를 관찰하는 경험"으로 유지한다.
+
+---
+
+## D-009 — 화장실/사적 행동은 Privacy Mask 기반으로 표현한다
+
+**결정**
+- 화장실 행동을 위해 의상별 바지 내리기/올리기 애니메이션을 V1 필수요건으로 두지 않는다.
+- `Toilet`은 단일 `Sit` 모션이 아니라 `approach -> align -> enter pose -> use loop -> completion ACK -> exit`의 context sequence로 표현한다.
+- 사적 구간에는 캐릭터 전체/화면 전체 블러가 아니라 **골반~상부 허벅지 영역의 재사용 가능한 Privacy Mask/Occluder**를 표시한다.
+- 모바일 성능을 위해 무거운 full-screen Gaussian blur보다 lightweight material/pixelation/frosted-noise 계열 presentation을 우선한다.
+- 실제 변기가 없으면 가짜 시설 상호작용을 만들지 않고 outdoor fallback pose + 기존 sanitation/environment 결과를 사용한다.
+- 실제 변기가 있으면 명시적 interaction point/socket/transform에 정렬해서 허공이나 변기 옆에 앉는 표현을 허용하지 않는다.
+- V1에서는 성별에 상관없이 indoor seated / outdoor squat-low pose를 공통 fallback으로 사용할 수 있으며, 성별 전용 variant는 이후 개선사항이다.
+- Privacy Mask는 Presentation 전용이며 Core 행동의 시작/완료/취소 authority를 가지지 않는다.
+- 같은 시스템을 향후 샤워/목욕, 옷 갈아입기, 출산 등 다른 사적 context action에 재사용할 수 있다.
+
+**구현 기준**
+- canonical companion: `docs/CHARACTER_CONTEXT_MOTION_v1.md`의 Toilet / sanitation presentation section.
+- 목표는 노골적 묘사가 아니라 **관찰자가 상황을 즉시 이해하면서도 의상/리깅 비용을 과도하게 만들지 않는 표현**이다.
