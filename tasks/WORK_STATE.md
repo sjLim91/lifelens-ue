@@ -43,22 +43,32 @@ Documentation-only commits may advance `main` beyond the product-code baseline a
 
 ## Current dispatch
 
-### Jjun lane — World sanitation recommendation integration — READY_NOW / HIGHEST PRIORITY
+### Jjun lane — World sanitation recommendation integration — WAITING_CI / PR #76
 
 Owner: 쭌 / 쭌 AI
+Branch: `jjun/world-sanitation-recommendation-v1`
+PR: #76 `[WORLD] Consume Core sanitation recommendation for emergency toilet movement`
+Last known HEAD: `e089857710f6ef5430f57940167362ff39d08d64`
+Handoff safety: CONDITIONAL — CI completion and merge checkpoint required.
 
-PR #75 delivered Core + Bridge recommendation:
-- `Simulation::recommendedOutdoorReliefPosition(...)`
-- `ULLCoreBridgeSubsystem::GetRecommendedOutdoorReliefGridPosition(...)`
+Implemented on PR #76:
+- WorldDirector emergency Toilet consumes Core `GetRecommendedOutdoorReliefGridPosition(...)`.
+- Core Grid → Unreal target uses the existing `CoreGridCellSizeUU` contract (100 uu/tile default).
+- the old independent deterministic 650uu sanitation target is removed.
+- emergency Toilet fails closed if Core cannot provide a recommendation instead of inventing a second authority.
+- emergency Toilet arrival radius is capped at 0.45 cell / 45uu so the actual World completion point rounds back to the same Core cell.
+- existing arrival/use duration → completion ACK flow remains authoritative.
+- Structural Preflight guards the recommendation wiring and forbids the old 650uu target.
 
-Next implementation:
-- WorldDirector emergency Toilet path consumes exact Core recommended GridPos.
-- Core Grid → Unreal world location uses the existing 100 uu/tile contract.
-- resident physically walks to that location.
-- arrival/use duration completes before ACK.
-- ACK writes the actual completion grid back to Core.
-- residue is deposited at the same visible location.
-- next sanitation choice can avoid dirty/remembered locations.
+Validation at this checkpoint:
+- Structural Preflight run `34918024951`: PASS.
+- Unreal Linux Compile run `34918024929`: IN_PROGRESS; latest checked step is prebuilt UE 5.6 Linux image pull before UHT/UBT/link.
+- PR #76 is mergeable at the latest check.
+
+Exact next action:
+- finish run `34918024929`.
+- if PASS: final diff check → merge #76 → sync state docs.
+- if FAIL: record first failing step/root cause and fix before retry.
 
 Acceptance:
 - no independent Unreal random sanitation target when Core recommendation exists.
@@ -70,11 +80,15 @@ Acceptance:
 
 Owner: 다겸 / 다겸 AI
 PR: #67 `dagyeom/character-appearance-v1`
-Latest checked head: `aae68dc54bfb4d373ffc2124dd51b143d6038942`
+Latest checked head: `b7941b951df8147627580ff5d4a55a851a705454`
 
-Latest head CI checked:
-- Preflight: PASS
-- Unreal Linux Compile: PASS
+Latest actual workflow lookup for head `b7941b9`:
+- no workflow runs returned at the reconciliation checkpoint.
+
+Previously validated/reported checkpoints in PR #67:
+- Preflight: PASS.
+- Unreal Linux Compile: PASS.
+- local PIE / SaveLoad appearance continuity checks reported PASS in the PR body.
 
 Implemented/reported:
 - Quaternius CC0 humanoids.
@@ -85,9 +99,7 @@ Implemented/reported:
 - humanoid residents visible in PIE.
 
 Remaining before DONE:
-- final PIE outfit confirmation.
-- explicit same-resident appearance continuity check across restart/load.
-- final review / merge / docs sync.
+- final review / merge / docs sync against the actual latest head.
 
 Known limitation:
 - locomotion is not wired; Idle-looking slide remains until Motion Bootstrap.
@@ -170,8 +182,8 @@ Canonical causal chain:
 `Need → Intent → current-world affordance → movement/arrival → action result → environment consequence → exposure/Memory → changed behavior → problem recognition → experiment/discovery → better affordance → culture/civilization`
 
 Immediate sequence:
-1. WorldDirector sanitation recommendation integration.
-2. Sanitation Problem Recognition v1.
+1. WorldDirector sanitation recommendation integration — PR #76 WAITING_CI.
+2. Sanitation Problem Recognition v1 — AFTER #76 DONE.
 3. Primitive sanitation discovery / designated area / pit / latrine progression.
 4. HumanWaste Environmental Visual Feedback.
 5. Health/pathogen and water/soil contamination later.
@@ -260,8 +272,8 @@ Do not revive the old multi-hour PR #2 path as the default loop.
 9. #73 World ACK integration — DONE.
 10. #74 runtime position restore — DONE.
 11. #75 environment exposure/perception/avoidance — DONE.
-12. **World sanitation recommendation integration — READY_NOW.**
-13. Sanitation Problem Recognition.
+12. **#76 World sanitation recommendation integration — WAITING_CI.**
+13. Sanitation Problem Recognition — AFTER #76 DONE.
 14. Primitive Latrine / sanitation affordance progression.
 15. HumanWaste visual feedback.
 16. Character Appearance #67 — ACTIVE in parallel.
