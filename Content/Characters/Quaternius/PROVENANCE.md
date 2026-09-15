@@ -31,10 +31,27 @@ Canonical rule: `docs/CHARACTER_ASSET_TRACK.md` (Track B, Quaternius CC0). Each 
   - `Unreal-Godot/UAL1_Standard_RM.glb` (root motion baked) — not imported in v1
 - Skeleton: same 65-joint set as Universal Base Characters.
 
+## Pack 3 — Modular Character Outfits - Fantasy [Standard]
+
+- Source page: https://quaternius.itch.io/modular-character-outfits-fantasy (pack page: https://quaternius.com/packs/modularcharacteroutfitsfantasy.html)
+- Downloaded: 2026-09-15 by 다겸 (STILLofficial)
+- File: `Modular Character Outfits - Fantasy[Standard].zip`, 294,347,394 bytes (itch.io lists 280 MB)
+- Pack version: 2.1 (itch.io devlog 2026-05-07); pack folder timestamp 2026-01-29
+- License: CC0 1.0 Universal — `License_Standard.txt` inside the zip states "CC0 1.0 Universal (CC0 1.0) Public Domain Dedication https://creativecommons.org/publicdomain/zero/1.0/". Pack page states "Free to use in personal, educational and commercial projects. (CC0 License)". Pack page screenshot kept in staging as `license_screenshot.png`.
+- Tier: Standard (free). Contains the Peasant and Ranger outfits only (male/female, combined `Outfits/*.gltf` and `Modular Parts/*` Arms/Body/Legs/Feet, Ranger also Head_Hood / pauldrons); the other 10 outfits are Source-tier and are not in this repository. `Readme.txt`: outfits are made for the Universal Base Character kit, "only the head of the model is required. Using the full body will result in clipping."
+- Files used for import (`Exports/glTF (Godot-Unreal)/Outfits`, skinned to the UBC skeleton, imported with Skeleton = UBC shared skeleton; script `Import/import_quaternius_outfits.py`):
+  - `Outfits/Male_Peasant.gltf` (+ `.bin`, `T_Peasant_BaseColor/Normal/ORM.png`, `T_Regular_Male_Dark_BaseColor/Normal/Roughness.png` for the exposed forearm skin) → `/Game/Characters/Quaternius/MCO/Peasant/Male`
+  - `Outfits/Female_Peasant.gltf` (+ `.bin`) → `/Game/Characters/Quaternius/MCO/Peasant/Female`; its `T_Peasant_*` textures and `MI_Peasant` are consolidated onto the male copies (redirectors remain)
+  - `Textures/Peasant/T_Peasant_2_BaseColor.png` (second colour variation) → `/Game/Characters/Quaternius/MCO/Peasant/Textures`
+  - imported textures are clamped to `MaxTextureSize = 2048` (pack ships 4K)
+- Not imported in v1: Ranger outfits, `Modular Parts/*`, FBX (Unity) exports, `T_Ranger_*`, `Textures/Base/*` (duplicates of the Ranger "Base Chars" textures).
+- Skeleton: same 65-joint set as Universal Base Characters (verified by comparing glTF skin joints, identical order).
+- Runtime use: the outfit is a child skeletal mesh following the UBC body pose (leader pose). The Standard tier has no separate UBC head, so the Superhero full body stays under the clothing.
+
 ## Not included
 
 - Source-tier files, `.blend` sources, Unity/Godot folders, the `Rigged to Head Bone` hair variants (Unity-oriented).
-- Any other Quaternius pack. Verify its own license before adding.
+- Any other Quaternius pack (including Ultimate Modular Men/Women). Verify its own license before adding.
 
 ## Staging
 

@@ -40,6 +40,9 @@ public:
 
     bool HasBody() const { return Body != nullptr; }
 
+    // True when the minimum default clothing layer was attached to the body.
+    bool HasOutfit() const { return Outfit != nullptr; }
+
     // Height of the scaled body above the actor origin, in world units
     // (used by the presentation layer to place the label).
     float GetVisualTopOffset() const;
@@ -63,6 +66,7 @@ private:
     void ApplySkin();
     void ApplyEyes();
     void ApplyHair();
+    void ApplyOutfit();
     void ApplyScale();
     void PlayIdle();
 
@@ -80,6 +84,11 @@ private:
     UPROPERTY() TArray<TObjectPtr<UStaticMesh>> FemaleHair;
     UPROPERTY() TObjectPtr<UStaticMesh> BeardMesh;
     UPROPERTY() TObjectPtr<UAnimSequence> IdleAnim;
+    // Minimum default clothing (Modular Character Outfits - Fantasy, Peasant),
+    // skinned to the shared UBC skeleton; follows the body pose.
+    UPROPERTY() TObjectPtr<USkeletalMesh> MalePeasantMesh;
+    UPROPERTY() TObjectPtr<USkeletalMesh> FemalePeasantMesh;
+    UPROPERTY() TObjectPtr<UTexture> PeasantAltBaseColor;
 
     // Runtime.
     UPROPERTY() TObjectPtr<USkeletalMeshComponent> Body;
@@ -88,10 +97,14 @@ private:
     UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> SkinMaterial;
     UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> EyeMaterial;
     UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> HairMaterial;
+    UPROPERTY() TObjectPtr<USkeletalMeshComponent> Outfit;
+    UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> OutfitMaterial;
+    UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> OutfitSkinMaterial;
 
     FLLResidentAppearanceInputs Inputs;
     float FeetOffset = 88.0f;
     float MeshHeight = 0.0f;   // unscaled bind-pose height of the chosen mesh
     float BodyScaleZ = 1.0f;
+    FLinearColor SkinTintColor = FLinearColor::White; // shared by body skin and outfit-exposed skin
     bool bBuilt = false;
 };

@@ -1,0 +1,182 @@
+# Quaternius Track B import, part 2: Modular Character Outfits - Fantasy [Standard]
+# (minimum default clothing for Character Appearance v1).
+#
+# Run headless from the repository root, with the editor closed, AFTER
+# import_quaternius.py (the outfits are skinned to the UBC shared skeleton):
+#   "/Users/Shared/Epic Games/UE_5.6/Engine/Binaries/Mac/UnrealEditor-Cmd" \
+#       "<repo>/LifeLens.uproject" -run=pythonscript \
+#       -script="<repo>/Content/Characters/Quaternius/Import/import_quaternius_outfits.py" \
+#       -EnablePlugins=PythonScriptPlugin -unattended -nopause -nosplash -stdout -FullStdOutLogOutput
+#
+# Sources: docs/CHARACTER_ASSET_TRACK.md, Content/Characters/Quaternius/PROVENANCE.md (Pack 3).
+# Only the Peasant outfit (male/female) is imported in v1; Ranger stays in staging.
+
+import os
+import unreal
+
+STAGING = os.environ.get(
+    "LL_QUATERNIUS_STAGING",
+    "/Users/mac/Desktop/다겸이취미/Lifelens/assets_staging/Quaternius")
+MCO = os.path.join(STAGING, "ModularCharacterOutfitsFantasy", "Modular Character Outfits - Fantasy[Standard]")
+MCO_GLTF = os.path.join(MCO, "Exports", "glTF (Godot-Unreal)", "Outfits")
+MCO_TEX = os.path.join(MCO, "Textures", "Peasant")
+
+DEST = "/Game/Characters/Quaternius"
+DEST_IMPORT = DEST + "/Import"
+DEST_SKELETON_FOLDER = DEST + "/UBC/Male"
+DEST_PEASANT_MALE = DEST + "/MCO/Peasant/Male"
+DEST_PEASANT_FEMALE = DEST + "/MCO/Peasant/Female"
+DEST_PEASANT_TEX = DEST + "/MCO/Peasant/Textures"
+
+GLTF_ASSETS_PIPELINE = "/Interchange/Pipelines/DefaultGLTFAssetsPipeline.DefaultGLTFAssetsPipeline"
+GLTF_PIPELINE = "/Interchange/Pipelines/DefaultGLTFPipeline.DefaultGLTFPipeline"
+TEXTURE_PIPELINE = "/Interchange/Pipelines/DefaultTexturePipeline.DefaultTexturePipeline"
+
+OUTFITS = [
+    ("Male_Peasant.gltf", DEST_PEASANT_MALE),
+    ("Female_Peasant.gltf", DEST_PEASANT_FEMALE),
+]
+EXTRA_TEXTURES = ["T_Peasant_2_BaseColor.png"]   # second colour variation (OutfitVariant)
+
+# Android budget: the pack ships 4K PNGs; clamp the cooked size (source kept).
+MAX_TEXTURE_SIZE = 2048
+
+EAL = unreal.EditorAssetLibrary
+
+
+def log(msg):
+    unreal.log("[LLImport] " + str(msg))
+
+
+def set_prop(obj, names, value):
+    for name in names:
+        try:
+            obj.set_editor_property(name, value)
+            return name
+        except Exception:
+            continue
+    log("WARNING: none of %s settable on %s" % (names, obj))
+    return None
+
+
+def make_pipeline(name, source_path, configure):
+    registry = unreal.AssetRegistryHelpers.get_asset_registry()
+    registry.scan_paths_synchronous(["/Interchange/Pipelines", DEST_IMPORT], True)
+    source = unreal.load_object(None, source_path)
+    if source is None:
+        raise RuntimeError("missing engine pipeline: %s" % source_path)
+    dest = "%s/%s" % (DEST_IMPORT, name)
+    if EAL.does_asset_exist(dest):
+        EAL.delete_asset(dest)
+    pipeline = unreal.AssetToolsHelpers.get_asset_tools().duplicate_asset(name, DEST_IMPORT, source)
+    if pipeline is None:
+        raise RuntimeError("could not duplicate pipeline %s" % source_path)
+    configure(pipeline)
+    EAL.save_asset(dest, only_if_is_dirty=False)
+    return unreal.SoftObjectPath("%s.%s" % (dest, name))
+
+
+def configure_outfit(pipeline, skeleton):
+    common = pipeline.get_editor_property("common_skeletal_meshes_and_animations_properties")
+    set_prop(common, ["import_only_animations"], False)
+    set_prop(common, ["skeleton"], skeleton)
+    set_prop(common, ["import_meshes_in_bone_hierarchy"], True)
+    mesh = pipeline.get_editor_property("mesh_pipeline")
+    set_prop(mesh, ["import_skeletal_meshes"], True)
+    set_prop(mesh, ["import_static_meshes"], False)
+    anim = pipeline.get_editor_property("animation_pipeline")
+    set_prop(anim, ["import_animations"], False)
+    material = pipeline.get_editor_property("material_pipeline")
+    set_prop(material, ["import_materials"], True)
+
+
+def import_file(path, dest_folder, pipelines):
+    if not os.path.isfile(path):
+        raise RuntimeError("missing source file: %s" % path)
+    manager = unreal.InterchangeManager.get_interchange_manager_scripted()
+    source = unreal.InterchangeManager.create_source_data(path)
+    params = unreal.ImportAssetParameters()
+    params.set_editor_property("is_automated", True)
+    params.set_editor_property("override_pipelines", pipelines)
+    result = manager.import_asset(dest_folder, source, params)
+    ok, objects = (result if isinstance(result, tuple) else (bool(result), []))
+    log("import %s -> %s : %s, %d objects" % (os.path.basename(path), dest_folder, ok, len(objects)))
+    for obj in objects:
+        log("  + %s (%s)" % (obj.get_path_name(), obj.get_class().get_name()))
+    if not ok:
+        raise RuntimeError("import failed: %s" % path)
+    return objects
+
+
+def find_skeleton(folder):
+    for asset_path in EAL.list_assets(folder, recursive=True, include_folder=False):
+        data = EAL.find_asset_data(asset_path)
+        if data.asset_class_path.asset_name == "Skeleton":
+            return EAL.load_asset(asset_path)
+    return None
+
+
+def clamp_textures(folder):
+    for asset_path in EAL.list_assets(folder, recursive=True, include_folder=False):
+        data = EAL.find_asset_data(asset_path)
+        if data.asset_class_path.asset_name != "Texture2D":
+            continue
+        tex = EAL.load_asset(asset_path)
+        set_prop(tex, ["max_texture_size"], MAX_TEXTURE_SIZE)
+        EAL.save_asset(asset_path, only_if_is_dirty=False)
+        log("max_texture_size=%d on %s" % (MAX_TEXTURE_SIZE, asset_path))
+
+
+def dedupe_shared_outfit_assets():
+    """Male and Female Peasant reference the same T_Peasant_* textures and an
+    identical MI_Peasant; keep the male copies and redirect the female ones."""
+    male = DEST_PEASANT_MALE + "/Male_Peasant"
+    female = DEST_PEASANT_FEMALE + "/Female_Peasant"
+    pairs = [
+        (male + "/Textures/T_Peasant_BaseColor", female + "/Textures/T_Peasant_BaseColor"),
+        (male + "/Textures/T_Peasant_Normal", female + "/Textures/T_Peasant_Normal"),
+        (male + "/Textures/T_Peasant_ORM", female + "/Textures/T_Peasant_ORM"),
+        (male + "/Materials/MI_Peasant", female + "/Materials/MI_Peasant"),
+    ]
+    for keep, drop in pairs:
+        if not EAL.does_asset_exist(drop):
+            continue
+        keep_asset = EAL.load_asset(keep)
+        drop_asset = EAL.load_asset(drop)
+        if keep_asset is None or drop_asset is None:
+            log("WARNING: cannot dedupe %s -> %s" % (drop, keep))
+            continue
+        ok = EAL.consolidate_assets(keep_asset, [drop_asset])
+        log("consolidate %s -> %s : %s" % (drop, keep, ok))
+    for folder in (female + "/Textures", female + "/Materials"):
+        if EAL.does_directory_exist(folder) and not EAL.list_assets(folder, recursive=True, include_folder=False):
+            EAL.delete_directory(folder)
+
+
+def main():
+    log("staging: %s" % STAGING)
+    for folder in (DEST_IMPORT, DEST_PEASANT_MALE, DEST_PEASANT_FEMALE, DEST_PEASANT_TEX):
+        if not EAL.does_directory_exist(folder):
+            EAL.make_directory(folder)
+
+    skeleton = find_skeleton(DEST_SKELETON_FOLDER)
+    if skeleton is None:
+        raise RuntimeError("UBC skeleton not found under %s; run import_quaternius.py first" % DEST_SKELETON_FOLDER)
+    log("shared skeleton: %s" % skeleton.get_path_name())
+
+    outfit_pipeline = make_pipeline(
+        "IP_MCO_Outfit", GLTF_ASSETS_PIPELINE, lambda p: configure_outfit(p, skeleton))
+    for file_name, dest in OUTFITS:
+        import_file(os.path.join(MCO_GLTF, file_name), dest,
+                    [outfit_pipeline, unreal.SoftObjectPath(GLTF_PIPELINE)])
+
+    for name in EXTRA_TEXTURES:
+        import_file(os.path.join(MCO_TEX, name), DEST_PEASANT_TEX, [unreal.SoftObjectPath(TEXTURE_PIPELINE)])
+
+    dedupe_shared_outfit_assets()
+    clamp_textures(DEST + "/MCO")
+    EAL.save_directory(DEST + "/MCO", only_if_is_dirty=False, recursive=True)
+    log("done")
+
+
+main()

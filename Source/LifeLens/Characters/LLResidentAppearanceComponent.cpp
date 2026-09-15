@@ -91,6 +91,9 @@ ULLResidentAppearanceComponent::ULLResidentAppearanceComponent()
     static ConstructorHelpers::FObjectFinder<UStaticMesh> HairBuzzedFemaleFinder(TEXT("/Game/Characters/Quaternius/UBC/Hair/Hair_BuzzedFemale.Hair_BuzzedFemale"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> BeardFinder(TEXT("/Game/Characters/Quaternius/UBC/Hair/Hair_Beard.Hair_Beard"));
     static ConstructorHelpers::FObjectFinder<UAnimSequence> IdleFinder(TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Idle_Loop.Idle_Loop"));
+    static ConstructorHelpers::FObjectFinder<USkeletalMesh> MalePeasantFinder(TEXT("/Game/Characters/Quaternius/MCO/Peasant/Male/Male_Peasant/SkeletalMeshes/Male_Peasant.Male_Peasant"));
+    static ConstructorHelpers::FObjectFinder<USkeletalMesh> FemalePeasantFinder(TEXT("/Game/Characters/Quaternius/MCO/Peasant/Female/Female_Peasant/SkeletalMeshes/Female_Peasant.Female_Peasant"));
+    static ConstructorHelpers::FObjectFinder<UTexture> PeasantAltFinder(TEXT("/Game/Characters/Quaternius/MCO/Peasant/Textures/T_Peasant_2_BaseColor.T_Peasant_2_BaseColor"));
 
     MaleMesh = MaleFinder.Succeeded() ? MaleFinder.Object : nullptr;
     FemaleMesh = FemaleFinder.Succeeded() ? FemaleFinder.Object : nullptr;
@@ -106,6 +109,9 @@ ULLResidentAppearanceComponent::ULLResidentAppearanceComponent()
     if (HairBuzzedFemaleFinder.Succeeded()) { FemaleHair.Add(HairBuzzedFemaleFinder.Object); }
     BeardMesh = BeardFinder.Succeeded() ? BeardFinder.Object : nullptr;
     IdleAnim = IdleFinder.Succeeded() ? IdleFinder.Object : nullptr;
+    MalePeasantMesh = MalePeasantFinder.Succeeded() ? MalePeasantFinder.Object : nullptr;
+    FemalePeasantMesh = FemalePeasantFinder.Succeeded() ? FemalePeasantFinder.Object : nullptr;
+    PeasantAltBaseColor = PeasantAltFinder.Succeeded() ? PeasantAltFinder.Object : nullptr;
 }
 
 void ULLResidentAppearanceComponent::BeginPlay()
@@ -131,6 +137,7 @@ void ULLResidentAppearanceComponent::EnsureBuilt()
     ApplySkin();
     ApplyEyes();
     ApplyHair();
+    ApplyOutfit();
     ApplyScale();
     PlayIdle();
 
@@ -138,12 +145,12 @@ void ULLResidentAppearanceComponent::EnsureBuilt()
     // the Output Log: the same ResidentId must print the same seed/variants
     // before and after a load.
     const ALLResidentCharacter* Resident = Cast<ALLResidentCharacter>(GetOwner());
-    UE_LOG(LogTemp, Log, TEXT("LLAppearance %s id=%s seed=%d sex=%d stage=%d skin=%.3f eye=%.3f hair=%d/%.3f height=%.3f build=%.3f temp=%d"),
+    UE_LOG(LogTemp, Log, TEXT("LLAppearance %s id=%s seed=%d sex=%d stage=%d skin=%.3f eye=%.3f hair=%d/%.3f height=%.3f build=%.3f outfit=%d/%d temp=%d"),
         Resident ? *Resident->GetResidentDisplayName().ToString() : TEXT("?"),
         *Inputs.ResidentId.ToString(EGuidFormats::DigitsWithHyphens),
         Inputs.VisualSeed, static_cast<int32>(Inputs.Sex), static_cast<int32>(Inputs.LifeStage),
         Inputs.SkinToneAxis, Inputs.EyeColorAxis, Inputs.HairStyleVariant, Inputs.HairColorAxis,
-        Inputs.HeightAxis, Inputs.BuildAxis, Inputs.bTemporaryPresentationSeed ? 1 : 0);
+        Inputs.HeightAxis, Inputs.BuildAxis, Inputs.OutfitVariant, Outfit ? 1 : 0, Inputs.bTemporaryPresentationSeed ? 1 : 0);
 }
 
 float ULLResidentAppearanceComponent::GetVisualTopOffset() const
@@ -273,7 +280,8 @@ void ULLResidentAppearanceComponent::ApplySkin()
     }
     // Tint varies within each half of the axis so four residents rarely match.
     const float Local = FMath::Frac(Inputs.SkinToneAxis * 2.0f);
-    SkinMaterial->SetVectorParameterValue(ParamBaseColorFactor, SkinTint(Local));
+    SkinTintColor = SkinTint(Local);
+    SkinMaterial->SetVectorParameterValue(ParamBaseColorFactor, SkinTintColor);
 }
 
 void ULLResidentAppearanceComponent::ApplyEyes()
@@ -361,6 +369,53 @@ void ULLResidentAppearanceComponent::ApplyHair()
         if (UMaterialInstanceDynamic* BeardMaterial = Beard->CreateAndSetMaterialInstanceDynamic(0))
         {
             BeardMaterial->SetVectorParameterValue(ParamBaseColorFactor, Tint);
+        }
+    }
+}
+
+void ULLResidentAppearanceComponent::ApplyOutfit()
+{
+    // Minimum default clothing: one Peasant set per sex, attached under the
+    // body so it inherits the LifeStage/height/build scale, driven by the
+    // body's pose (leader pose, no second animation evaluation). OutfitVariant
+    // picks between the pack's two colour variations.
+    USkeletalMesh* Mesh = Inputs.Sex == ELLCoreSex::Female ? FemalePeasantMesh.Get() : MalePeasantMesh.Get();
+    AActor* Owner = GetOwner();
+    if (!Body || !Mesh || !Owner)
+    {
+        return;
+    }
+
+    Outfit = NewObject<USkeletalMeshComponent>(Owner, TEXT("AppearanceOutfit"));
+    Outfit->SetSkeletalMesh(Mesh);
+    Outfit->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    Outfit->SetCastShadow(true);
+    Outfit->SetupAttachment(Body);
+    Outfit->SetRelativeTransform(FTransform::Identity);
+    Outfit->RegisterComponent();
+    Outfit->SetLeaderPoseComponent(Body);
+
+    const TArray<FName> SlotNames = Outfit->GetMaterialSlotNames();
+    for (int32 Index = 0; Index < SlotNames.Num(); ++Index)
+    {
+        const FString Slot = SlotNames[Index].ToString();
+        if (Slot.Contains(TEXT("Peasant")))
+        {
+            OutfitMaterial = Outfit->CreateAndSetMaterialInstanceDynamic(Index);
+            if (OutfitMaterial && PeasantAltBaseColor && (Inputs.OutfitVariant % 2) == 1)
+            {
+                OutfitMaterial->SetTextureParameterValue(ParamBaseColorTexture, PeasantAltBaseColor);
+            }
+        }
+        else if (Slot.Contains(TEXT("Regular")))
+        {
+            // Skin exposed by the outfit (male forearms) uses the pack's Regular
+            // body texture; tint it with the same factor as the body skin.
+            OutfitSkinMaterial = Outfit->CreateAndSetMaterialInstanceDynamic(Index);
+            if (OutfitSkinMaterial)
+            {
+                OutfitSkinMaterial->SetVectorParameterValue(ParamBaseColorFactor, SkinTintColor);
+            }
         }
     }
 }
