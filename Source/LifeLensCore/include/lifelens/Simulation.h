@@ -43,8 +43,12 @@ public:
             if(candidate.id==id){ character=&candidate; break; }
         }
         if(character==nullptr || !character->alive) return false;
+        const GridPos settlementReference=world_.hasInitialStartRegionSelection
+            ? world_.initialStartRegionCenterGrid()
+            : GridPos{};
         outPosition=chooseLowExposureOutdoorReliefPosition(
-            world_.seed,*character,world_.environmentalResidues,world_.minute);
+            world_.seed,*character,world_.environmentalResidues,world_.minute,
+            settlementReference);
         return true;
     }
     bool sanitationUseTarget(CharacterId id,SanitationUseTarget& outTarget) const {
@@ -55,9 +59,12 @@ public:
             if(candidate.id==id){ character=&candidate; break; }
         }
         if(character==nullptr || !character->alive) return false;
+        const GridPos settlementReference=world_.hasInitialStartRegionSelection
+            ? world_.initialStartRegionCenterGrid()
+            : GridPos{};
         outTarget=resolveSanitationUseTarget(
             world_.seed,*character,world_.environmentalResidues,
-            world_.primitiveSanitationSites,world_.minute);
+            world_.primitiveSanitationSites,world_.minute,settlementReference);
         return true;
     }
     bool completeExternalPhysicalAction(

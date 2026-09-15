@@ -51,6 +51,12 @@ private:
     void EnsureLocomotionPlaying();
     void UpdateBodyOrientation(float DeltaTime);
 
+    // Quaternius UBC imports with visual forward along local -Y, while LifeLens
+    // actor/world forward is Unreal +X. Keep the asset-axis correction in the
+    // presentation component; actor yaw and Core/World movement stay untouched.
+    UPROPERTY(EditAnywhere, Category="LifeLens|Motion")
+    float MeshForwardYawOffsetDegrees = 90.0f;
+
     // Catalogue (referenced in the constructor so it is cooked).
     UPROPERTY() TObjectPtr<UBlendSpace> LocomotionBlendSpace;
 
