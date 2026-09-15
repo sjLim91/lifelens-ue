@@ -119,3 +119,5 @@ lifelens_add_test(test_sanitation_problem_recognition)
 lifelens_add_test(test_primitive_sanitation_progression)
 
 lifelens_add_test(test_designated_sanitation_affordance)
+
+lifelens_add_test(test_primitive_latrine_progression)
