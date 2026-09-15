@@ -102,6 +102,13 @@ Requests are closed when the owning lane merges the required integration and bot
 - 현재 마일스톤 차단 여부: 부분 차단. 기본 맵이 전환되기 전까지 PIE 육안 검증은 에디터에서 맵을 직접 열어야 한다.
 - 상태: `OPEN / 쭌 결정 대기`.
 
+#### IR-C 추가 관측 2 (런타임 표현 적용 후, 2026-09-15)
+
+- 관찰 카메라가 생성된 숲 바로 앞에 위치해 화면이 나무로 가득 차고 주민이 보이지 않는다.
+- Core 생성 월드에서 선택된 시작 청크의 위치와 고정 카메라 위치가 맞지 않는 것으로 보인다. `LLWorldPresentationActor`는 `LLWorldSpatialContract` 기준으로 시작 청크를 표현 원점에 두고 그 청크의 authoritative 밀도값대로 자연물을 배치한다. 즉 표현은 계약대로 배치되어 있고, 카메라가 그 배치 안쪽에 들어가 있는 상태다.
+- 카메라는 `Source/LifeLens/Core/**` 소유라 다겸 측은 수정하지 않았다. 시작 청크 기준 프레이밍을 쭌 측이 조정해 주기를 요청한다.
+- 참고: 다겸 측에서 조정 가능한 완충 수단으로 표현 액터에 "주민 시작 지점 주변 자연물 제외 반경"을 둘 수 있다. 필요하면 요청해 달라. 다만 그 반경은 authoritative fact가 아니라 가독성용 표현 규칙이므로 임의로 넣지 않았다.
+
 #### IR-C 추가 관측 (1차 육안 확인, 2026-09-15)
 
 - 관찰 카메라 시야: `ALLLifeLensGameMode::SpawnObserverCamera()`가 카메라를 `(0, -1500, 1120)`, 피치 -36도, FOV 55로 고정 스폰한다. 240 m 규모 월드에서는 지면에 너무 가까워 배경을 볼 수 없다. 배경 품질 판정 자체가 불가능하다. `Source/LifeLens/Core/**`는 다겸 소유가 아니므로 수정하지 않았다. 카메라 거리·피치·FOV 조정 또는 Observer 카메라 제어를 쭌 측이 판단해 달라.
