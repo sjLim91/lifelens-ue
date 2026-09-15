@@ -35,6 +35,9 @@ jobs:
       - name: Validate World Genesis WG-1
         run: python Tools/validate_world_genesis_wg1.py
 
+      - name: Validate World Genesis WG-2
+        run: python Tools/validate_world_genesis_wg2.py
+
       - name: Verify Unreal project metadata
         run: |
           python - <<'PY'

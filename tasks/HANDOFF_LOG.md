@@ -718,6 +718,29 @@
   - 다겸 Motion/World Visual 작업은 WG-1 좌표/seed authority를 침범하지 말고, production map 고정 전 WG-2 boundary를 반영해야 한다.
 
 
+
+### 쭌 측 AI — World Genesis WG-2 완료 / milestone-sized development 전환
+
+- 날짜: 2026-09-15 KST
+- PR: #85 `[CORE] Add World Genesis WG-2 macro world and viable start region`
+- final head: `eac5a50b83416e9f55e160d1e6ad0d022b3f926a`
+- squash merge: `ed4bf34d4b5bd0eb917a8bfb7fc5da16f52a4907`
+- 검증:
+  - Preflight `34935360828` PASS
+  - Core Tests `34935360834` **47/47 PASS** + deterministic harness
+  - Unreal Linux Compile `34935360862` PASS including UE 5.6 UHT/UBT/link
+  - merge checkpoint comments/reviews/unresolved threads: 0
+- 구현:
+  - coherent macro elevation/moisture/temperature + biome classification
+  - broad water/fertility/wood/stone/food/traversal/hazard potential
+  - PopulationSeed-independent natural geography/start ranking
+  - deterministic viable initial start-region selection over 625 candidates
+  - no house/toilet/farm/storage/road/tool spawn; current bootstrap surface is not falsely treated as the production world
+- 운영 결정:
+  - micro-PR 반복 비용이 커졌으므로 이후 동일 목적/동일 레이어/동일 검증 범위 작업은 milestone-sized PR로 묶는다.
+  - 쭌 다음 lane은 **World Generation Milestone A — READY_NOW**: detailed natural chunks + selected start-region materialization + founder spawn integration + minimum no-reroll persistence boundary.
+  - 다겸 Motion PR #84는 별도 presentation lane으로 유지하며 Core/World movement authority를 침범하지 않는다.
+
 ### 다겸 측 AI — Character Motion Bootstrap 착수
 
 - 작성자: 다겸 측 AI

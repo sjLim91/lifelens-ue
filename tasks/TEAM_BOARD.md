@@ -32,9 +32,9 @@
 
 | 담당 | 브랜치 / PR | 작업 | 소유 범위 | 상태 |
 |---|---|---|---|---|
-| 쭌 + 쭌 AI | new branch after state sync | World Genesis WG-2 | Core macro world / viable start-site selector | **READY_NOW** |
-| 다겸 + 다겸 AI (Claude) | branch / PR pending | Character Motion Bootstrap | Character locomotion presentation | **READY_NOW** |
-| 쭌 + 다겸 lanes | before production World Visual | World Genesis WG-2 integration gate | Macro world/start-site + environment architecture | WG-1 DONE / WG-2 REQUIRED GATE |
+| 쭌 + 쭌 AI | new milestone branch after state sync | World Generation Milestone A | detailed natural chunks + start-region materialization + spawn/persistence boundary | **READY_NOW** |
+| 다겸 + 다겸 AI (Claude) | `dagyeom/character-motion-v1` / #84 | Character Motion Bootstrap | Character locomotion presentation | **ACTIVE — CI PASS / PIE+review pending** |
+| 쭌 + 다겸 lanes | before production World Visual | World generation integration gate | WG-1/WG-2 authority + materialized chunk boundary | WG-1/WG-2 DONE / MILESTONE A NEXT |
 | 다겸 + 다겸 AI | after Motion + world-genesis gate | World Visual Environment v1 | Environment/Maps/WorldPresentation | HIGH PRIORITY |
 | 다겸 + 쭌 Bridge support as needed | after World Visual v1 | Character Motion & Context remainder | Character presentation/animation | AFTER WORLD VISUAL v1 |
 | 쭌 + 쭌 AI | PR #2 | old Android validation path | Bridge/build | FROZEN |
@@ -43,46 +43,47 @@
 
 **0개.** Previous appearance/presentation assist locks are released.
 
-## Latest Jjun product checkpoint — PR #83 DONE
+## Latest Jjun product checkpoint — PR #85 DONE
 
-PR #83 `[CORE] Add deterministic World Genesis WG-1 contracts`
-- merge SHA: `f5c8cbab3aa41c6a37c3bae06838eeb583749771`
-- validated head: `c4d724b9650647ad986cd1ab235f4d8052840014`
+PR #85 `[CORE] Add World Genesis WG-2 macro world and viable start region`
+- merge SHA: `ed4bf34d4b5bd0eb917a8bfb7fc5da16f52a4907`
+- validated head: `eac5a50b83416e9f55e160d1e6ad0d022b3f926a`
 
 Validation:
-- Structural Preflight `34933128958`: PASS, including WG-1 validator.
-- Core Tests `34933128953`: PASS, **46/46**.
+- Structural Preflight `34935360828`: PASS, including WG-2 validator.
+- Core Tests `34935360834`: PASS, **47/47**.
 - deterministic harness smoke: PASS.
-- Unreal Linux Compile `34933128950`: PASS.
+- Unreal Linux Compile `34935360862`: PASS.
 - UE 5.6 image verification / UHT / UBT / link: PASS.
 - merge checkpoint PR comments/reviews/unresolved threads: 0.
 
 Delivered:
-- separate WorldSeed / PopulationSeed / GenerationVersion runtime identity.
-- stable negative-safe ChunkCoord mapping.
-- order-independent untouched chunk baseline and deterministic per-domain substreams.
-- initial residents no longer consume/mutate the World RNG stream.
-- same natural world can be replayed with a different initial population.
+- coherent deterministic macro terrain/climate fields and biome classification.
+- broad water/fertility/natural-resource/traversal/hazard potential.
+- PopulationSeed-independent geography and start-region ranking.
+- deterministic viable start-region selection over 625 candidates.
+- no starting civilization infrastructure and no forced relocation outside the current bootstrap surface before chunk materialization exists.
 
-## Jjun next lane — World Genesis WG-2 — READY_NOW
+## Jjun next lane — World Generation Milestone A — READY_NOW
 
-Goal:
-- build the deterministic macro natural-world layer and viable initial start-region selector on top of the merged WG-1 identity/coordinate contract.
+Purpose:
+- reduce PR/CI/document churn by grouping the next tightly coupled world-generation work into one milestone-sized delivery.
 
-WG-2 boundary:
-- macro elevation / moisture / temperature / biome potential.
-- broad water / fertility / natural-resource / traversal / hazard potential.
-- deterministic viable-region scoring and initial-region selection.
-- nature + four founders only; zero civilization infrastructure.
-- detailed lazy chunks, persistent deltas, migration and Unreal streaming remain later phases.
+Scope:
+- WG-3 deterministic detailed natural chunk baseline.
+- macro/biome-driven local nature/resource facts.
+- generated-chunk registry / no-reroll identity.
+- WG-2 selected start-region materialization boundary.
+- initial founder spawn integration into that region.
+- minimum persistence boundary required for unload/load and Save/Load continuity.
+- minimal Bridge read path required by later World Visual presentation.
 
-Acceptance:
-- geography/start-site is reproducible for the same WorldSeed + GenerationVersion.
-- changing PopulationSeed does not change natural macro facts.
-- no arbitrary fixed arena or `{0,0}`-only start assumption.
-- no hidden house/toilet/farm/storage/road/tool spawn.
+Boundary:
+- still no house/toilet/farm/storage/road/tool auto-spawn.
+- Unreal streaming/PCG remains presentation/implementation, not simulation authority.
+- one heavy UE compile gate at milestone close unless an earlier interface change specifically requires it.
 
-## World Genesis / Chunk / Migration — WG-1 DONE / WG-2 READY_NOW
+## World Genesis / Chunk / Migration — WG-1 DONE / WG-2 DONE / MILESTONE A READY_NOW
 
 Canonical: `docs/WORLD_GENESIS_CHUNK_MIGRATION_v1.md`.
 
@@ -110,7 +111,8 @@ World rules:
 Implementation gate:
 - bootstrap/test maps remain valid for current feature verification.
 - WG-1 deterministic world coordinates/chunk keys are **DONE #83**.
-- before `World Visual Environment v1` becomes a permanent production-sized map, WG-2 macro world + viable start-site boundaries must be implemented or explicitly integrated.
+- WG-2 macro world + viable start-site selection is **DONE #85**.
+- production World Visual must consume these contracts; World Generation Milestone A materializes the first detailed natural/start-region slice.
 - do not hard-lock Environment/Maps work to a small hand-authored arena.
 
 ## Latest Dagyeom product checkpoint — PR #67 DONE
@@ -254,8 +256,8 @@ Rules:
 16. #80 Dug sanitation pit progression — DONE.
 17. HumanWaste visual feedback #82 — DONE.
 18. Character Appearance #67 — DONE.
-19. **Character Motion Bootstrap — READY_NOW** (Dagyeom lane).
-20. **World Genesis WG-1 — DONE #83; WG-2 — READY_NOW.**
+19. **Character Motion Bootstrap — ACTIVE #84; CI PASS, PIE/review/merge pending** (Dagyeom lane).
+20. **World Genesis WG-1 — DONE #83; WG-2 — DONE #85; World Generation Milestone A — READY_NOW.**
 21. World Visual Environment v1 production environment.
 22. Character Motion & Context remainder.
 23. Observer UX / Mobile Touch / visual feedback UI work.
