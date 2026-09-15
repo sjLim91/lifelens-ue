@@ -16,7 +16,15 @@ Authority rule: Core/World owns simulation truth. UI/Character/Environment/World
 
 ## Current Assist Locks
 
-**0 active locks.**
+### ASSIST_LOCK-UI-CAMERA-1 — ACTIVE
+- requester/implementer: Jjun.
+- owner lane: Dagyeom — UI / Observer presentation.
+- exact locked files: `Source/LifeLens/UI/LLObserverPlayerController.h`, `Source/LifeLens/UI/LLObserverPlayerController.cpp`.
+- purpose: Observer Camera Control v1 input routing only — PC wheel/right-drag/middle-drag and Android tap-vs-drag/pinch/two-finger pan.
+- canonical contract: `docs/OBSERVER_CAMERA_CONTROL_v1.md`.
+- implementation branch: `jjun/observer-camera-control-v1`.
+- exclusions: HUD layout/polish, #30/#36/#38 consolidation, Character presentation, Core simulation authority.
+- release condition: camera-control PR merged or abandoned and the two locked files are synchronized back to main.
 
 Jjun helping Dagyeom defaults to REVIEW_ONLY. Do not direct-push `dagyeom/*`; use assist branch/PR when a real cross-owner code change is required.
 
@@ -31,9 +39,9 @@ Jjun helping Dagyeom defaults to REVIEW_ONLY. Do not direct-push `dagyeom/*`; us
 - actual civilization action set exposed by Core: `Gather / Store / Experiment / Craft` only.
 - directive also exposes authoritative material/item/technique/quantity/result/action-minute and stable resource/storage IDs.
 - `bHasCivilizationSpatialTarget` is false for ordinary Gather/Store because current Core resource/storage entities do not own positions; do not guess a nearby scenery target.
-- sanitation-site creation/improvement may provide a real target grid position; `Craft + Technique=DugSanitationPit` is the truthful contract for pit-work presentation.
+- sanitation-site work is an exception when Core actually supplies the real site position.
 - requested Character work: Context Motion Router consumes the directive and selects validated talking/sit/interact/pickup/kneeling/fallback motions without creating simulation truth.
-- no Jjun direct changes to `Source/LifeLens/Characters/**`; 0 assist locks.
+- no Jjun direct changes to `Source/LifeLens/Characters/**`; 0 assist locks outside the explicit camera assist above.
 - no GitHub review request is required merely because Dagyeom will consume the API.
 - status: **PROVIDER DONE / PRESENTATION CONSUMPTION READY**. Does not block Core work.
 
