@@ -22,7 +22,16 @@ Jjun helping Dagyeom defaults to REVIEW_ONLY. Do not direct-push `dagyeom/*`; us
 
 ## Open Integration Requests
 
-**0.**
+### IR-B — character facing / backwards-walk issue — REOPENED
+- requester: Jjun / visual QA.
+- needed owner: Dagyeom — Character presentation.
+- current PIE evidence on 2026-09-15 reproduces the issue: residents translate toward the correct destination but the visual character body faces the opposite direction while walking.
+- exact owner path: `Source/LifeLens/Characters/LLResidentMotionComponent.{h,cpp}`.
+- Core/World movement is not currently suspected: `LLResidentCharacter::Tick()` moves toward the target and sets actor yaw from the travel delta.
+- primary suspect: `MeshForwardYawOffsetDegrees = 90.0f` added during the earlier facing fix. Re-validate the imported Quaternius forward axis against the actual PIE mesh; an A/B check with `-90.0f` is the first targeted test, not a blind permanent change.
+- verify after any fix: forward walking direction, stationary facing toward use/social targets, male/female/outfit variants, and no sideways-walk regression.
+- do not change Core movement authority to compensate for an asset/presentation axis mismatch.
+- status: BLOCKING visual correctness; not a Core simulation blocker.
 
 ## Recently resolved Integration Requests
 
@@ -30,10 +39,6 @@ Jjun helping Dagyeom defaults to REVIEW_ONLY. Do not direct-push `dagyeom/*`; us
 - `Source/LifeLens/WorldPresentation/**` established as Dagyeom-owned presentation path.
 - World Visual implementation merged in PR #90.
 - presentation consumes authoritative read contracts only.
-
-### IR-B — character facing / sideways-walk issue — RESOLVED
-- integration/facing correction delivered through the merged character/world integration work including PR #91.
-- do not reopen unless current PIE/APK evidence reproduces the issue.
 
 ### IR-C — production map + observer framing — RESOLVED
 - production map `/Game/Maps/LifeLensWorld` supplied by Dagyeom lane.
