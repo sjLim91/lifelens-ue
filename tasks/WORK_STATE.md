@@ -4,7 +4,7 @@
 > Long-term order: `docs/DEVELOPMENT_MILESTONES.md`.
 > Durable design decisions: `docs/DECISION_LOG.md`.
 
-Last reconciled: 2026-09-15 KST after Hardcoding Cleanup B merge and Context Action Contract v1 implementation start.
+Last reconciled: 2026-09-15 KST after Hardcoding Cleanup B merge, IR-B resolution/#102 merge, and Context Action Contract v1 PR dispatch.
 
 ## Recently closed product checkpoints
 
@@ -32,6 +32,16 @@ Last reconciled: 2026-09-15 KST after Hardcoding Cleanup B merge and Context Act
 - Needs / UtilityAI tuning now flows `DefaultGame.ini -> UE Config -> immutable Core SimulationRuleset -> Simulation`.
 - current snapshot/save format is pre-release current-only; old development-only migration paths are not product requirements.
 
+### Character facing / backwards-walk IR-B — DONE
+- PR #102 `[Character] IR-B 후진 보행 수정 — 메시 정면 축 보정 +90 → -90` merged.
+- imported skeleton measurement proved Quaternius visual forward is local `+Y`; presentation yaw correction therefore needs `-90` against Unreal +X actor/world forward.
+- `ll.DebugMotion` A/B evidence: old `+90` -> `facing=-1.00`, corrected `-90` -> `facing=+1.00` on all sampled moving frames.
+- PIE confirmed residents face the travel direction; the reproduced backwards-walk issue is resolved.
+- Preflight #577: PASS.
+- Unreal Linux Compile #117 (`34979601112`): PASS.
+- squash merge: `d3c87996499b353c742ce97fd90978633b9b7ca0`.
+- remaining stationary-target and male/female/outfit checks are ordinary visual regression QA, not an open IR-B blocker.
+
 ### Android Fast Pipeline recovery — MERGED / RUNTIME VALIDATION PENDING
 - PR #101 recovered the `seed / fast / full` workflow and merged as `fe97884f3f2bcf71b5a508cdce2e2ca8f42d912c`.
 - stale PR #2 was closed unmerged after its obsolete Core bridge was intentionally excluded.
@@ -42,20 +52,21 @@ Last reconciled: 2026-09-15 KST after Hardcoding Cleanup B merge and Context Act
 
 `OPEN VISUAL QA RISK — NOT A CODE/COMPILE BLOCKER`
 
-The #96 compile proves C++/UHT/UBT integration, not camera or character aesthetics. The next actual PIE/APK visual pass should confirm:
+The compile gates prove C++/UHT/UBT integration, not every presentation variant. The next actual PIE/APK visual pass should confirm:
 - `LifeLensWorld` opens as production map.
 - founders and generated-world presentation are readable.
 - authoritative resource patches remain visible.
-- character facing/orientation is correct.
+- corrected facing remains valid for stationary interaction targets and male/female/outfit variants.
 - Android framing is acceptable.
-
-IR-B separately tracks the reproduced backwards-walk/facing problem in the Dagyeom Character Presentation lane.
 
 ## Jjun lane
 
-Status: `ACTIVE — CONTEXT ACTION CONTRACT v1`
+Status: `ACTIVE — CONTEXT ACTION CONTRACT v1 / PR #103`
 
 Branch: `jjun/context-action-contract-v1`
+PR: #103 `[CORE] Context action contract v1 — civilization presentation read data`
+Code head validated by current CI dispatch: `3c18f4b94ff906f857cebdeeca163b8e6242b3ae`
+
 Scope:
 - expose actual executed civilization work to presentation without inventing actions.
 - current authoritative civilization action set is exactly `Gather / Store / Experiment / Craft`.
@@ -64,11 +75,12 @@ Scope:
 - sanitation-site creation/improvement may expose its real grid position; ordinary resource/storage actions currently must not fabricate world positions.
 - Character presentation files are not modified in this Jjun branch.
 
-Validation gate before merge:
-- Core regression coverage for actual civilization activity visibility, context expiry, and no stale activity after snapshot restore.
-- Structural Preflight.
-- one Unreal Linux Compile because UENUM/USTRUCT + Bridge C++ interfaces changed.
-- no Dagyeom review request by default; handoff is through the typed contract and TEAM_BOARD when ready.
+Validation at last live check:
+- Core Tests #490 (`34986684474`): PASS.
+- Preflight #587 (`34986684197`): PASS.
+- Unreal Linux Compile #118 (`34986684115`): IN_PROGRESS.
+- subsequent branch commits `948f0634...` and this WORK_STATE sync are docs-only `[skip ci]`; product code under validation is unchanged.
+- no Dagyeom review request; handoff is through typed contract + TEAM_BOARD IR-D.
 
 ## Tracked implementation gaps — DO NOT DROP
 
@@ -137,7 +149,7 @@ Required follow-up in Character Presentation:
 - generic interact/pickup/kneeling work mappings.
 - truthful fallbacks for Eat/Drink/Sleep/Toilet/Hygiene.
 - privacy-first Toilet/outdoor sanitation sequence with reusable local Privacy Mask.
-- consume typed `Gather / Store / Experiment / Craft` data after the Core contract is merged.
+- consume typed `Gather / Store / Experiment / Craft` data after PR #103 merges.
 
 ### Early-survival / all-needs-critical investigation
 
@@ -151,18 +163,18 @@ Required validation:
 
 ## Dagyeom lane
 
-Status: `ACTIVE CHARACTER PRESENTATION / IR-B OPEN`
+Status: `IR-B DONE / CONTEXT MOTION HANDOFF READY AFTER #103`
 
-- IR-B: backwards-walk / facing regression is owned by Dagyeom Character Presentation.
-- suspected `MeshForwardYawOffsetDegrees +90 -> -90` is an A/B hypothesis only; validate in PIE before making permanent.
-- after IR-B, Context Motion Router is the natural next presentation slice.
+- IR-B is resolved and merged through #102; no further IR-B blocker is open.
+- ordinary visual regression checks for stationary target-facing and male/female/outfit variants remain QA only.
+- IR-D is the current open Character handoff: consume `FLLCoreActionDirective` through a Context Motion Router after provider PR #103 merges.
 - no Jjun direct changes to `Source/LifeLens/Characters/**` unless an explicit assist lock is opened.
 
 ## Active blockers / locks
 
-- Formal Integration Requests: IR-B open for Character facing/backwards-walk.
+- Formal Integration Requests: **IR-D open** for Context Motion contract consumption.
 - Assist locks: 0 known active.
-- Context Action Contract v1 is Jjun Core/Bridge scope; no Dagyeom review is requested by default.
+- PR #103 is Jjun Core/Bridge scope; no Dagyeom review is requested by default.
 - Android seed runtime validation is independent of this Core/Bridge work.
 
 ## Long compile rule
