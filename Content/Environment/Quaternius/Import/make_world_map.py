@@ -22,7 +22,10 @@ MAP_PATH = "/Game/Maps/LifeLensWorld"
 
 NATURE = "/Game/Environment/Quaternius/StylizedNature"
 GROUND_MATERIAL = "/Game/Environment/Materials/MI_Ground_Grass"
-PLANE_MESH = "/Engine/BasicShapes/Plane"
+# A flattened cube rather than the engine plane: the plane is single sided,
+# so anything above it sees through to the runtime floor underneath.
+GROUND_MESH = "/Engine/BasicShapes/Cube"
+GROUND_THICKNESS_UU = 20.0
 
 # The game mode spawns a 1400 x 1400 runtime floor; residents roam several
 # thousand units, so the visual ground has to be much larger than that.
@@ -137,19 +140,20 @@ def build_sky(actors):
 
 
 def build_ground(actors):
-    mesh = EAL.load_asset(PLANE_MESH)
+    mesh = EAL.load_asset(GROUND_MESH)
     material = EAL.load_asset(GROUND_MATERIAL)
     if mesh is None or material is None:
         raise RuntimeError("missing ground mesh or material")
 
-    ground = spawn(actors, unreal.StaticMeshActor, unreal.Vector(0, 0, 0))
+    # Top surface sits exactly at z = 0 where the residents walk.
+    ground = spawn(actors, unreal.StaticMeshActor, unreal.Vector(0, 0, -GROUND_THICKNESS_UU * 0.5))
     ground.set_actor_label("NaturalGround")
     component = ground.static_mesh_component
     component.set_editor_property("mobility", unreal.ComponentMobility.STATIC)
     component.set_static_mesh(mesh)
     component.set_material(0, material)
-    scale = GROUND_SIZE_UU / 100.0     # engine plane is 100 x 100 uu
-    ground.set_actor_scale3d(unreal.Vector(scale, scale, 1.0))
+    scale = GROUND_SIZE_UU / 100.0     # engine cube is 100 x 100 x 100 uu
+    ground.set_actor_scale3d(unreal.Vector(scale, scale, GROUND_THICKNESS_UU / 100.0))
     log("ground plane %.0f x %.0f uu" % (GROUND_SIZE_UU, GROUND_SIZE_UU))
     return ground
 
