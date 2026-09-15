@@ -22,32 +22,32 @@ Jjun helping Dagyeom defaults to REVIEW_ONLY. Do not direct-push `dagyeom/*`; us
 
 ## Open Integration Requests
 
-### IR-B — character facing / backwards-walk issue — REOPENED
-- requester: Jjun / visual QA.
-- needed owner: Dagyeom — Character presentation.
-- current PIE evidence on 2026-09-15 reproduces the issue: residents translate toward the correct destination but the visual character body faces the opposite direction while walking.
-- exact owner path: `Source/LifeLens/Characters/LLResidentMotionComponent.{h,cpp}`.
-- Core/World movement is not currently suspected: `LLResidentCharacter::Tick()` moves toward the target and sets actor yaw from the travel delta.
-- primary suspect: `MeshForwardYawOffsetDegrees = 90.0f` added during the earlier facing fix. Re-validate the imported Quaternius forward axis against the actual PIE mesh; an A/B check with `-90.0f` is the first targeted test, not a blind permanent change.
-- verify after any fix: forward walking direction, stationary facing toward use/social targets, male/female/outfit variants, and no sideways-walk regression.
-- do not change Core movement authority to compensate for an asset/presentation axis mismatch.
-- status: BLOCKING visual correctness; not a Core simulation blocker.
-
 ### IR-D — consume typed Context Action contract in Character Presentation — OPEN
 - requester: Jjun / Core-Bridge lane after product Context Motion requirement.
 - needed owner: Dagyeom — Character presentation.
-- provider branch: `jjun/context-action-contract-v1`.
+- provider branch/PR: `jjun/context-action-contract-v1`, PR #103.
 - consumer API: `FLLCoreActionDirective` in `Source/LifeLens/Simulation/LLCoreActionTypes.h` via `ULLCoreBridgeSubsystem::GetResidentActionDirective`.
 - actual civilization action set exposed by Core: `Gather / Store / Experiment / Craft` only.
 - directive also exposes authoritative material/item/technique/quantity/result/action-minute and stable resource/storage IDs.
 - `bHasCivilizationSpatialTarget` is false for ordinary Gather/Store because current Core resource/storage entities do not own positions; do not guess a nearby scenery target.
 - sanitation-site creation/improvement may provide a real target grid position; `Craft + Technique=DugSanitationPit` is the truthful contract for pit-work presentation.
-- requested Character work after IR-B: Context Motion Router consumes the directive and selects validated talking/sit/interact/pickup/kneeling/fallback motions without creating simulation truth.
+- requested Character work: Context Motion Router consumes the directive and selects validated talking/sit/interact/pickup/kneeling/fallback motions without creating simulation truth.
 - no Jjun direct changes to `Source/LifeLens/Characters/**`; 0 assist locks.
 - no GitHub review request is required merely because Dagyeom will consume the API. Validate the provider contract via Core/Preflight/UE compile, then consume it in the Dagyeom lane.
-- status: provider implementation ACTIVE; presentation consumption READY after provider merge. Does not block Core CI.
+- status: provider PR #103 ACTIVE; presentation consumption READY after provider merge. Does not block Core CI.
 
 ## Recently resolved Integration Requests
+
+### IR-B — character facing / backwards-walk issue — RESOLVED
+- owner: Dagyeom — Character presentation.
+- PR #102 changed `MeshForwardYawOffsetDegrees` from `+90` to `-90` after imported-skeleton axis measurement proved Quaternius visual forward is local `+Y`.
+- `ll.DebugMotion` A/B evidence: old `+90` produced `facing=-1.00`; corrected `-90` produced `facing=+1.00` on all sampled moving frames.
+- PIE confirmed residents face the travel direction and the reproduced backwards-walk issue is resolved.
+- Preflight #577: PASS.
+- Unreal Linux Compile #117 (`34979601112`): PASS.
+- squash merge: `d3c87996499b353c742ce97fd90978633b9b7ca0`.
+- Core/World movement authority and actor yaw were not changed.
+- remaining stationary-target and male/female/outfit checks are ordinary visual regression QA, not an open IR-B blocker.
 
 ### IR-A — WorldPresentation owner path — RESOLVED
 - `Source/LifeLens/WorldPresentation/**` established as Dagyeom-owned presentation path.
