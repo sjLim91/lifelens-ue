@@ -6,6 +6,8 @@
 
 배경은 단순 장식용 맵이 아니라 Observer가 살아 있는 세계를 읽을 수 있게 만드는 시각 레이어다. 다만 환경의 실제 시뮬레이션 상태와 자원/시설 존재 여부의 authority는 Core/World에 남는다.
 
+행동 이후 발생하는 오염, 자원 감소, 불/그을음, 반복 보행, 건설/노후화 등 **authoritative environmental consequence의 시각 피드백 기준은 `docs/WORLD_ENVIRONMENTAL_VISUAL_FEEDBACK_v1.md`를 따른다.**
+
 ## Authority boundary
 
 - Core / `Source/LifeLens/World/**`가 실제 세계 상태, 환경 consequence, affordance, 자원/시설 존재 여부의 authority다.
@@ -14,6 +16,8 @@
 - 자연물도 상호작용/채집 가능한 오브젝트라면 이후 Core resource/affordance state와 연결해야 한다.
 - 연결 전의 자연물은 visual-only decor로 취급한다.
 - Character/UI 쪽과 마찬가지로 presentation이 독자적인 simulation authority를 만들지 않는다.
+- 공간적/물리적으로 의미 있는 authoritative environment change는 최소 하나의 visual representation path를 가져야 한다.
+- visual은 Core state의 생성/강도/감쇠/제거/SaveLoad 복원과 동기화되어야 한다.
 
 ## 시작 월드 방향
 
@@ -59,6 +63,25 @@
 - 머티리얼 수와 texture memory를 제한한다.
 - 과도한 투명 foliage overdraw를 피한다.
 - 4 residents + Observer + Core + Environment를 함께 실행하는 것을 baseline으로 본다.
+- residue/흔적/VFX도 pooling, culling, aggregate representation을 우선하며 simulation record 수만큼 고비용 Actor를 생성하지 않는다.
+
+## 환경 consequence visual rule
+
+배경은 정적인 장식으로 끝나지 않는다.
+
+기본 causal presentation:
+
+`Action → authoritative environment state → visual change → resident perception → next action`
+
+예:
+- 야외 배변 → 지면 오염 흔적 / 강도 변화 / decay 시 약화.
+- 자원 채취 → 나무/식생/자원 mesh 감소 또는 depleted state.
+- 불 사용 → flame/light/smoke, 종료 뒤 필요하면 scorch consequence.
+- 반복 보행 → grass flatten / dirt trail.
+- 건설 → authoritative build progress에 따른 구조물 단계 변화.
+- 시설 노후/파손 → 상태에 맞는 외관 변화.
+
+세부 계약과 완료 기준은 `docs/WORLD_ENVIRONMENTAL_VISUAL_FEEDBACK_v1.md`가 canonical이다.
 
 ## 에셋 정책
 
@@ -111,7 +134,7 @@
 
 - authoritative time 기반 day/night
 - weather presentation
-- Environmental Residue 시각화
+- Environmental Residue 시각화 → `docs/WORLD_ENVIRONMENTAL_VISUAL_FEEDBACK_v1.md`
 - 물/토양 상태 표현
 - 계절/기후
 - 건축/정착지 성장 시각화
