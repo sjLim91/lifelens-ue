@@ -700,3 +700,19 @@
 - 미충족: 최종 리뷰/머지 + live-doc 동기화
 - 상대가 알아야 할 점:
   - 스폰 후 바인딩 순서에 의존하는 표현 컴포넌트는 `BeginPlay`가 아니라 `BindResident` 시점을 기준으로 해야 함. World/** 는 수정하지 않았음
+
+### 다겸 측 AI — Character Appearance v1 closeout 완료 보고
+
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/character-appearance-v1`, PR #67
+- 커밋: `afa972e` (origin/main `2ad1cf4` merge 포함)
+- 상태: `REVIEW_READY`
+- 충돌 처리: `tasks/WORK_STATE.md` merge 충돌은 origin/main 버전을 그대로 두고 다겸 측 갱신 줄만 뒤에 추가
+- 최종 head CI: Preflight `34918412318` SUCCESS, Unreal Linux Compile `34918412409` SUCCESS, Core Tests `34918409813` SUCCESS
+- 로컬: `Build.sh LifeLensEditor Mac Development` Succeeded, `Tools/validate_bootstrap.py` PASS
+- 병합 후 재검증: headless `-game` 실행에서 주민 4명 외형 값이 병합 이전 실행과 완전 일치
+- WORK_STATE 기준 잔여 조건:
+  - final PIE outfit confirmation — 충족
+  - explicit same-resident appearance continuity check across restart/load — 충족
+  - final review / merge / docs sync — 다겸 측 권한 밖. 대기
+- 다겸 측 READY_NOW 잔여 항목 없음. Motion Bootstrap은 #67 머지 + 문서 동기화 이후 자동 승격 조건
