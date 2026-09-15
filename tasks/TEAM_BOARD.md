@@ -25,7 +25,8 @@ Jjun helping Dagyeom defaults to REVIEW_ONLY. Do not direct-push `dagyeom/*`; us
 ### IR-D — consume typed Context Action contract in Character Presentation — OPEN
 - requester: Jjun / Core-Bridge lane after product Context Motion requirement.
 - needed owner: Dagyeom — Character presentation.
-- provider branch/PR: `jjun/context-action-contract-v1`, PR #103.
+- provider PR #103 is **MERGED** as `cba58803c67f971eb1273aaf4e35f5c22b980f01`.
+- provider validation: Core Tests #490 PASS, Preflight #587 PASS, Unreal Linux Compile #118 (`34986684115`) PASS.
 - consumer API: `FLLCoreActionDirective` in `Source/LifeLens/Simulation/LLCoreActionTypes.h` via `ULLCoreBridgeSubsystem::GetResidentActionDirective`.
 - actual civilization action set exposed by Core: `Gather / Store / Experiment / Craft` only.
 - directive also exposes authoritative material/item/technique/quantity/result/action-minute and stable resource/storage IDs.
@@ -33,8 +34,8 @@ Jjun helping Dagyeom defaults to REVIEW_ONLY. Do not direct-push `dagyeom/*`; us
 - sanitation-site creation/improvement may provide a real target grid position; `Craft + Technique=DugSanitationPit` is the truthful contract for pit-work presentation.
 - requested Character work: Context Motion Router consumes the directive and selects validated talking/sit/interact/pickup/kneeling/fallback motions without creating simulation truth.
 - no Jjun direct changes to `Source/LifeLens/Characters/**`; 0 assist locks.
-- no GitHub review request is required merely because Dagyeom will consume the API. Validate the provider contract via Core/Preflight/UE compile, then consume it in the Dagyeom lane.
-- status: provider PR #103 ACTIVE; presentation consumption READY after provider merge. Does not block Core CI.
+- no GitHub review request is required merely because Dagyeom will consume the API.
+- status: **PROVIDER DONE / PRESENTATION CONSUMPTION READY**. Does not block Core work.
 
 ## Recently resolved Integration Requests
 
