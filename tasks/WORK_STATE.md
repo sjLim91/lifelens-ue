@@ -9,6 +9,7 @@ Canonical product references:
 - Civilization: `docs/CIVILIZATION_PROGRESSION_v1.md`
 - Open-ended invention: `docs/OPEN_ENDED_INVENTION_v1.md`
 - World affordance/environment: `docs/WORLD_AFFORDANCE_ENVIRONMENT_v1.md`
+- **World genesis / chunks / migration: `docs/WORLD_GENESIS_CHUNK_MIGRATION_v1.md`**
 - World visual environment: `docs/WORLD_VISUAL_ENVIRONMENT_v1.md`
 - Environmental visual feedback: `docs/WORLD_ENVIRONMENTAL_VISUAL_FEEDBACK_v1.md`
 - Character appearance: `docs/CHARACTER_APPEARANCE_ROADMAP.md`
@@ -30,62 +31,78 @@ Last reconciled: 2026-09-15 KST
 ## Current product-code baseline
 
 Latest product merge:
-- PR #79 `[CORE/WORLD] Add authoritative designated sanitation area affordance v1`
-- merge SHA: `90f2b4f9cdc480e99886632e09323b2feab9625c`
+- PR #80 `[CORE] Add dug sanitation pit progression v1`
+- merge SHA: `291926cf78d12c1c61284eb9c59a50e7c70e54e7`
 
-Validated PR #79 head `49c76863b1957df09b7d814f7117826e92707021`:
-- Structural Preflight run `34923460056`: PASS
-- Core Tests run `34923459974`: PASS, 44/44
+Validated PR #80 head `fc918693bcd265f3c021f0bd826f6ba5a7113678`:
+- Structural Preflight run `34926841905`: PASS
+- Core Tests run `34926841895`: PASS, **45/45**
 - deterministic harness smoke: PASS
-- Unreal Linux Compile run `34923459949`: PASS
+- Unreal Linux Compile run `34926841907`: PASS
 - UE 5.6 image verification / UHT / UBT / link: PASS
 
-Delivered by #79:
-- `DesignatedSanitationArea` reproducible knowledge can now materialize through the existing Civilization `Craft` axis into a persistent Core-owned primitive sanitation site.
-- technique knowledge alone does not silently create world infrastructure.
-- Core owns stable sanitation site identity, authoritative GridPos, establisher/minute, active state and use count.
-- Core sanitation use resolution prefers an active designated area before unstructured emergency outdoor relief.
-- Unreal Bridge carries designated-site identity plus exact Core GridPos; World movement and completion ACK consume the same target.
-- designated ACK requires the exact active site id and GridPos; stale/wrong identity or position fails closed.
-- actual designated use increments site usage and deposits HumanWaste at the acknowledged Core cell.
-- snapshot binary format is v5 and persists designated sanitation site state; older v1-v4 snapshots decode with no designated sites.
-- no global `LatrineUnlocked` flag or automatic modern Toilet/Latrine SmartObject was introduced.
+Delivered by #80:
+- personal `DugSanitationPit` technique and `DigSanitationPit` experiment added after `DesignatedSanitationArea`.
+- an actual designated sanitation site plus meaningful evidence/use is required before the dug-pit experiment can become relevant.
+- discovery remains personal; existing witness/imitation/teaching provenance paths can spread knowledge without global unlock.
+- knowledge alone does not instantly create a pit.
+- repeated Civilization Craft work accumulates excavation progress.
+- the existing authoritative sanitation site keeps the **same site id and GridPos** and upgrades from `DesignatedArea` to `DugPit`; no duplicate facility authority is created.
+- current no-Dig-tool state uses slower manual/primitive excavation; future Dig-capable tools can accelerate the same work contract.
+- pit completion contains existing HumanWaste by reducing exposure intensity/radius without deleting waste amount.
+- future DugPit use still produces HumanWaste, but at a lower exposure profile than an open designated area.
+- physical use still requires the exact authoritative site id + GridPos through the World → Core ACK path.
+- outer snapshot binary remains v5; primitive sanitation sub-extension advances to v2 and remains compatible with v1 sanitation data.
+- site kind/work progress/improver/improvement minute survive Save/Load with reference/time validation.
+- Unreal civilization read DTOs now expose both `DesignatedSanitationArea` and `DugSanitationPit`.
+- no global `LatrineUnlocked` or automatic modern toilet/plumbing was introduced.
 
 Documentation-only commits may advance `main` beyond the product-code baseline above.
 
 ## Current dispatch
 
-### Jjun lane — Dug pit / primitive latrine progression — IN_PROGRESS
+### Jjun lane — HumanWaste Environmental Visual Feedback — READY_NOW
 
 Owner: 쭌 / 쭌 AI
-Branch: `jjun/primitive-latrine-progression-v1`
-Dependency: PR #79 DONE.
+Dependency: PR #80 DONE.
 Handoff safety: SAFE; no uncommitted local dependency.
 
 Goal:
-- evolve the now-authoritative reusable designated sanitation area into a more capable primitive sanitation improvement without jumping directly to modern plumbing.
-- keep progression causal: observed problem → personal/shared knowledge → actual materials/work → improved physical affordance.
-- preserve Core ownership of facility identity/location/state and the existing World movement/ACK contract.
-
-Implementation direction:
-- inspect the current #79 `PrimitiveSanitationSite`, Civilization recipe/material, excavation/tool and environmental consequence contracts before adding state.
-- model the smallest physically meaningful improvement step, preferably a dug pit before a more developed latrine.
-- require actual knowledge/material/tool/work prerequisites rather than a global unlock or instant upgrade.
-- decide whether improvement mutates the existing site or creates a successor facility identity; avoid parallel duplicate authorities.
-- define how containment changes HumanWaste exposure/radius/intensity without pretending primitive sanitation removes waste entirely.
-- persist/restore improvement state and fail/re-resolve cleanly if the facility becomes invalid.
+- make authoritative HumanWaste/environment consequence visibly observable without moving authority into Presentation.
+- visual state must follow Core creation, location, intensity/radius, decay/removal and Save/Load restore.
+- support both open designated-area residue and improved DugPit containment differences.
 
 Acceptance:
-- no reproducible knowledge/resources/work → no pit/latrine appears.
-- designated area remains the fallback primitive sanitation facility until a real improvement completes.
-- improved facility has one authoritative Core identity/GridPos used by World movement and ACK.
-- improvement produces a measurable sanitation benefit while retaining realistic residue/consequence.
-- Save/Load continuity.
-- Core tests + Structural Preflight + Unreal compile for any Bridge/World contract change.
+- Core/environment remains authoritative.
+- no presentation-created residue or sanitation state.
+- visual representation appears at the same authoritative world/grid location.
+- intensity/containment differences have a readable but Android-safe representation.
+- pooling/instancing/culling/LOD considered from the start.
+- restore/rebuild after Save/Load is deterministic from authoritative state.
 
 Exact next action:
-- inspect `PrimitiveSanitationSite`, civilization recipes/experiments, inventory/tool representation, environmental residue deposition and snapshot extension.
-- implement the narrowest dug-pit progression contract on `jjun/primitive-latrine-progression-v1`, preserving the #79 identity/GridPos authority path.
+- reconcile `docs/WORLD_ENVIRONMENTAL_VISUAL_FEEDBACK_v1.md` with the #80 DugPit exposure profile.
+- define the smallest read DTO / World presentation component needed for HumanWaste creation/update/removal.
+- branch only after latest `main` and #67 comments are rechecked.
+
+### World Genesis / Chunk / Migration — DESIGN FIXED / IMPLEMENTATION GATE
+
+Canonical: `docs/WORLD_GENESIS_CHUNK_MIGRATION_v1.md`.
+
+Product decision:
+- LifeLens is **not** a permanently small fixed arena.
+- canonical world chain is:
+  `WorldSeed → Macro World → deterministic lazy chunks → persistent human/environmental change → carrying-capacity pressure → migration → additional settlements`.
+- same `WorldSeed + GenerationVersion + ChunkCoord` must produce the same untouched natural chunk independent of exploration order.
+- initial resident randomization uses a separate `PopulationSeed`, preserving fresh names/traits while allowing same-world replay.
+- NEW GAME starts with natural environment + 2 male + 2 female residents + zero civilization infrastructure.
+- generated/modified chunks never silently reroll after unload/load.
+- distant regions/populations need not render every Actor at full fidelity.
+
+Implementation timing:
+- small bootstrap/test maps remain allowed for current Core/Bridge/animation validation.
+- before `World Visual Environment v1` becomes a production-sized permanent map, **WG-1 deterministic world/chunk coordinate contract and WG-2 macro world/start-site boundaries must be implemented or explicitly integrated into that work**.
+- do not lock the project into a hand-authored small arena that later requires a world rewrite.
 
 ### Dagyeom lane — Character Appearance v1 — ACTIVE / PR #67 CLOSEOUT
 
@@ -93,7 +110,7 @@ Owner: 다겸 / 다겸 AI
 PR: #67 `dagyeom/character-appearance-v1`
 Latest checked head: `e034fe785ca46dd5cb39fd7d7e8710d677994a38`
 
-Latest actual workflow lookup for head `e034fe7`:
+Latest known workflow lookup for head `e034fe7`:
 - Structural Preflight run `34919060096`: PASS.
 - Unreal Linux Compile run `34919060115`: PASS.
 
@@ -104,7 +121,7 @@ Review status:
 
 Previously validated/reported checkpoints in PR #67:
 - Core Tests: PASS on earlier final code head.
-- local PIE / SaveLoad appearance continuity checks reported PASS in the PR body.
+- local PIE / SaveLoad appearance continuity checks reported PASS in PR body.
 
 Implemented/reported:
 - Quaternius CC0 humanoids.
@@ -128,92 +145,66 @@ Known limitation:
 ### #66 World Affordance Fallback — DONE
 - `Preferred → Primitive → Natural → Emergency → Unavailable`.
 - no implicit modern facility spawn.
-- missing infrastructure remains actually missing.
 
 ### #68 Environmental Residue — DONE
 - production NEW GAME modern Core SmartObjects removed.
 - Core-owned HumanWaste residue.
 - accumulation / decay / exposure query.
-- binary snapshot v4 environment extension.
-- Save/Load + Unreal read DTO.
-- emergency Eat/Drink requires real provisions.
+- snapshot persistence and Unreal read DTO.
 
 ### #69 Whole Project Verification — DONE WITH FINDINGS / VERIFY-ONLY CLOSED
-- 39/39 Core tests on baseline.
-- Preflight PASS.
-- UE compile PASS.
-- report: `docs/WHOLE_PROJECT_VERIFICATION_2026-09-14.md`.
+- verification report: `docs/WHOLE_PROJECT_VERIFICATION_2026-09-14.md`.
 
 ### #70 Runtime resident / dynamic affordance reconciliation — DONE
-- newly projected residents such as births are reconciled after Core advances.
-- ActivityAnchors are refreshed instead of BeginPlay-only discovery.
+- births/newly projected residents reconcile into World presentation.
+- ActivityAnchors refresh beyond BeginPlay.
 
 ### #71 Unreal compile trigger coverage — DONE
-- all `Source/LifeLens/**` and `Source/LifeLensCore/**` C++ paths are covered by the UE compile workflow trigger.
-- previous `NEEDS FIX` status is obsolete.
+- all `Source/LifeLens/**` and `Source/LifeLensCore/**` C++ paths trigger actual UE compile validation.
 
 ### #72 External physical execution ACK Core contract — DONE
-- Core can hold physical intent pending for an external World executor.
-- physical outcome does not complete before ACK.
+- Core physical intent can remain pending for World execution.
 
 ### #73 World physical completion ACK integration — DONE
-- actual World arrival/use timing drives ACK.
-- Core duration ticks are used.
-- actual completion position is sent to Core.
-- environmental consequence can use the same resolved position.
-- Core Grid ↔ World baseline contract: 100 uu/tile.
+- actual movement/arrival/use timing drives completion ACK.
+- actual completion position returns to Core.
 
 ### #74 Runtime position restore — DONE
-- Core `runtime.pos` is authoritative across snapshot restore.
-- newly projected resident actors spawn from Core GridPos.
-- external physical execution policy is reasserted after Core replacement.
+- authoritative Core runtime GridPos survives snapshot restore and actor reconstruction.
 
 ### #75 Environmental Exposure / Perception / Avoidance — DONE
-- contamination perception at Core planning boundaries.
-- hygiene burden and emotional discomfort baseline.
-- sanitation location Memory.
-- duplicate-memory suppression window.
-- current exposure + remembered contamination avoidance scoring.
-- deterministic low-exposure outdoor sanitation recommendation.
-- Save/Load continuity.
-- Bridge recommendation API.
+- contamination perception, hygiene/emotion burden, Memory, dedupe, avoidance and low-exposure recommendation.
 
 ### #76 World sanitation recommendation integration — DONE
-- Core recommendation drives actual emergency sanitation target.
-- resident physically moves and completes use before ACK.
-- ACK/residue location agrees with visible target cell.
-- no independent World sanitation target remains.
-- Preflight + UE 5.6 UHT/UBT/link PASS.
+- Core recommendation drives visible World emergency sanitation target and same-cell ACK/residue.
 
 ### #77 Sanitation Problem Recognition v1 — DONE
-- direct sanitation Memory evidence promotes to a durable resident sanitation-problem Belief.
-- weak single exposure is insufficient; repeated or exceptionally salient direct evidence can qualify.
-- unchanged evidence does not inflate support/confidence.
-- environmental perception integration + new-recognition event.
-- snapshot persistence through existing Character/Belief authority.
-- no global tech unlock / no automatic latrine creation.
-- Core 42/42 + Preflight + UE 5.6 UHT/UBT/link PASS.
+- direct Memory evidence can promote to durable sanitation-problem Belief.
+- Core 42/42 + Preflight + UE compile PASS.
 - merge SHA `3ea6048d9e7ac6b31e75faa4f5ca55b5c46f9016`.
 
 ### #78 Primitive sanitation experimentation progression v1 — DONE
-- recognized sanitation concern + clean candidate site gates `DesignateSanitationArea` experimentation.
-- deterministic failure → Hypothesized; deterministic success → personal Reproducible knowledge.
-- existing witness/teaching provenance + civilization observer coverage extended to the technique.
-- existing civilization snapshot persistence carries the technique.
-- no world facility/global unlock is created by discovery alone.
-- Core 43/43 + Preflight + UE 5.6 UHT/UBT/link PASS.
+- recognized concern + clean candidate site gates `DesignatedSanitationArea` experimentation.
+- personal knowledge, provenance, persistence; no world auto-unlock.
+- Core 43/43 + Preflight + UE compile PASS.
 - merge SHA `3a9739682034ad7c5009da5f75a11b0f07fed55b`.
 
 ### #79 Designated sanitation area authoritative affordance v1 — DONE
-- reproducible `DesignatedSanitationArea` knowledge materializes only through actual Civilization Craft execution.
-- Core-owned persistent primitive sanitation site with stable id/GridPos/active/useCount.
-- one sanitation target contract drives Core preference, Unreal World movement and exact completion ACK.
-- wrong/stale site id or GridPos fails closed without mutating needs/residue/useCount.
-- designated use creates residue at the real acknowledged site and increments useCount.
-- snapshot binary v5 persists site state and v1-v4 remain readable with no site state.
-- no global unlock or automatic modern toilet/latrine.
-- Core 44/44 + deterministic harness + Preflight + UE 5.6 UHT/UBT/link PASS.
+- reproducible sanitation knowledge materializes only through actual Craft execution.
+- Core-owned persistent site identity/GridPos/useCount.
+- exact site id + GridPos drives World movement and completion ACK.
+- snapshot binary v5 persists site state.
+- Core 44/44 + deterministic harness + Preflight + UE compile PASS.
 - merge SHA `90f2b4f9cdc480e99886632e09323b2feab9625c`.
+
+### #80 Dug sanitation pit progression v1 — DONE
+- personal `DugSanitationPit` discovery/provenance.
+- repeated excavation work; no instant upgrade.
+- same site id/GridPos upgrades to `DugPit`.
+- containment reduces exposure without deleting HumanWaste.
+- primitive sanitation extension v2 with backward-readable v1 data inside outer snapshot v5.
+- Core **45/45** + deterministic harness + Preflight + UE 5.6 UHT/UBT/link PASS.
+- merge SHA `291926cf78d12c1c61284eb9c59a50e7c70e54e7`.
 
 ## Character / presentation sequence
 
@@ -221,9 +212,10 @@ Known limitation:
 2. Appearance projection contract — DONE via #65.
 3. Character Appearance v1 — ACTIVE #67 closeout.
 4. Motion Bootstrap — READY_AFTER_#67.
-5. World Visual Environment v1 — HIGH PRIORITY / READY_AFTER_MOTION_BOOTSTRAP.
-6. Character Motion & Context remainder — AFTER WORLD VISUAL v1.
-7. Observer UX Polish / Mobile Touch / presentation feedback afterward.
+5. **World Genesis WG-1/WG-2 architectural gate** — before production-sized permanent World Visual implementation.
+6. World Visual Environment v1 — presentation prototype may proceed after Motion, but production map must respect World Genesis/Chunk contract.
+7. Character Motion & Context remainder.
+8. Observer UX Polish / Mobile Touch / presentation feedback afterward.
 
 Motion Bootstrap scope:
 - Idle / Walk / Jog or Run.
@@ -231,20 +223,37 @@ Motion Bootstrap scope:
 - remove Idle-sliding.
 - Character presentation must not become action authority.
 
-## Environment / civilization next chain
+## Environment / civilization causal chain
 
 Canonical causal chain:
 
 `Need → Intent → current-world affordance → movement/arrival → action result → environment consequence → exposure/Memory → changed behavior → problem recognition → experiment/discovery → better affordance → culture/civilization`
 
-Immediate sequence:
+Current sanitation sequence:
 1. WorldDirector sanitation recommendation integration — DONE #76.
 2. Sanitation Problem Recognition v1 — DONE #77.
 3. Primitive sanitation experiment / DesignatedSanitationArea discovery — DONE #78.
-4. Designated sanitation area authoritative affordance integration — DONE #79.
-5. Dug pit / primitive latrine progression — IN_PROGRESS.
-6. HumanWaste Environmental Visual Feedback.
-7. Health/pathogen and water/soil contamination later.
+4. Designated sanitation area authoritative affordance — DONE #79.
+5. Dug sanitation pit progression — DONE #80.
+6. **HumanWaste Environmental Visual Feedback — READY_NOW.**
+7. material-backed latrine superstructure / further sanitation improvement — later causal progression.
+8. Health/pathogen and water/soil contamination — later.
+
+## World scaling / multi-generation rule
+
+Canonical: `docs/WORLD_GENESIS_CHUNK_MIGRATION_v1.md`.
+
+Rules:
+- bootstrap gray plane is not production world architecture.
+- logical world is larger than the currently rendered region.
+- natural world comes from deterministic seed-driven generation.
+- detailed chunks are generated lazily and order-independently.
+- history persists as chunk/world deltas; unloading never rerolls history.
+- carrying capacity is dynamic and depends on environment + infrastructure + knowledge.
+- population pressure can produce exploration, household/group migration and additional settlements rather than hard crowding in one fixed map.
+- distant residents/regions can remain logically simulated without all 3D Actors being active.
+- Unreal streaming/PCG/World Partition choices are presentation/implementation tools, not simulation authority.
+- Android-first profiling decides chunk/render detail, not the existence of the larger logical world.
 
 ## Open-ended invention status
 
@@ -272,7 +281,7 @@ Rules already fixed:
 - Android uses pooling / instancing / LOD / culling / clustering.
 
 Actual visual implementation still pending:
-- HumanWaste decal/material/VFX.
+- **HumanWaste decal/material/VFX — READY_NOW.**
 - resource depletion/regrowth.
 - fire/smoke/scorch.
 - foot traffic trails.
@@ -281,28 +290,35 @@ Actual visual implementation still pending:
 ## Remaining structural work / known risks
 
 ### Unified facility/resource authority — PARTIAL
-#79 establishes one exact authoritative identity/GridPos path for the designated sanitation site, but every actual World facility/resource is not yet one exact shared target registry.
+#79/#80 establish one authoritative sanitation facility identity/GridPos path, but all World facilities/resources do not yet share one generic registry.
 
 Follow-up:
 - facility identity / tier / quality / backing-resource contract.
 - civilization-created and authored facilities use one authority path.
 - target disappearance / path failure / re-resolve semantics.
 
+### World Genesis runtime — DESIGN FIXED / NOT IMPLEMENTED
+- WG-1 deterministic world/chunk coordinates.
+- WG-2 macro world/start-site selection.
+- WG-3 lazy natural chunks.
+- WG-4 persistent chunk deltas.
+- WG-5 Unreal streaming presentation.
+- WG-6 carrying capacity/migration.
+- WG-7 multi-settlement society.
+
+Production-sized World Visual work must not assume a permanently fixed small arena.
+
 ### Birth initial physical position — NEEDS FIX
 New child runtime position may default to `{0,0}`.
-
-Follow-up:
-- derive child initial Core GridPos from gestational parent/household vicinity.
-- presentation spawn offsets must not become authority.
 
 ### Legacy `ULLDecisionComponent` — REVIEW / REMOVE
 Dormant Blueprint-callable competing chooser remains.
 
 ### Snapshot legacy migration fixtures — NEEDS TEST
-Binary v1-v5 migration support exists as applicable, but dedicated representative old-format fixture regression coverage remains incomplete.
+Binary migration support exists, but representative old-format fixture regression coverage remains incomplete.
 
 ### Health/pathogen environment feedback — LATER
-#75 stops at discomfort/hygiene/Memory/avoidance.
+Current sanitation chain stops at contamination/hygiene/Memory/avoidance/primitive containment.
 
 ### Death presentation policy — UNDECIDED
 Core death exists; Unreal body/actor/observer presentation requires an explicit policy.
@@ -334,16 +350,17 @@ Do not revive the old multi-hour PR #2 path as the default loop.
 13. #77 Sanitation Problem Recognition — DONE.
 14. #78 Primitive sanitation experimentation progression — DONE.
 15. #79 Designated sanitation area authoritative affordance — DONE.
-16. **Dug pit / primitive latrine progression — IN_PROGRESS (`jjun/primitive-latrine-progression-v1`).**
-17. HumanWaste visual feedback.
+16. #80 Dug sanitation pit progression — DONE.
+17. **HumanWaste visual feedback — READY_NOW.**
 18. Character Appearance #67 — ACTIVE in parallel.
 19. Motion Bootstrap — after #67.
-20. World Visual Environment v1.
-21. Character Motion & Context remainder.
-22. Integrated runtime verification.
-23. Android smoke APK + device profiling.
-24. MetaHuman comparison only after mobile baseline validation.
-25. deeper open-ended invention / production / health / environment simulation.
+20. **World Genesis WG-1/WG-2 architecture implementation gate.**
+21. World Visual Environment v1 production world work.
+22. Character Motion & Context remainder.
+23. Integrated runtime verification.
+24. Android smoke APK + device profiling.
+25. MetaHuman comparison only after mobile baseline validation.
+26. deeper open-ended invention / production / health / multi-settlement society simulation.
 
 ## Frozen legacy
 
