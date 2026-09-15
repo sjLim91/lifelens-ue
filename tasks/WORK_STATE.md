@@ -4,7 +4,7 @@
 > Long-term order: `docs/DEVELOPMENT_MILESTONES.md`.
 > Durable design decisions: `docs/DECISION_LOG.md`.
 
-Last reconciled: 2026-09-15 KST after Hardcoding Cleanup B dispatch.
+Last reconciled: 2026-09-15 KST after Observer detail audit during Hardcoding Cleanup B.
 
 ## Recently closed product checkpoints
 
@@ -86,6 +86,36 @@ Required follow-up:
 Scheduling:
 - do **not** expand PR #99 Cleanup B to implement this.
 - keep this gap visible for a dedicated Emotion/Life-event integration slice after the current ruleset cleanup sequence, or pull it forward only if it becomes a direct blocker for the next simulation milestone.
+
+### Observer resident-detail data fidelity gap
+
+PIE screenshots reviewed on 2026-09-15 show that the detail panel is structurally working, but several tabs either hide authoritative Core values behind coarse labels or still read legacy DTO fields that are no longer populated.
+
+Findings / required follow-up:
+- **Needs:** authoritative five physical needs exist, but the detail tab currently shows only qualitative `Good/Fine/Low/Very low` labels. Preserve the human-readable label, but also expose the actual authoritative value (percent/bar or equivalent) so the detail view is genuinely detailed.
+- **Personality:** Core currently owns 14 dimensions (`introversion`, `conscientiousness`, `openness`, `agreeableness`, `emotionalStability`, `empathy`, `impulsiveness`, `riskTolerance`, `ambition`, `patience`, `sociability`, `curiosity`, `orderliness`, `adaptability`). The legacy observer DTO/UI exposes only five derived/selected axes and qualitative words. The resident detail path should read the Core observation directly and expose the full canonical set without inventing alternate personality authority.
+- **Traits & Skills:** current tab reads legacy `FLLResidentData.Traits/Skills/Preferences`, but `RefreshProjectionFromCore()` does not populate those fields. `None listed` therefore does **not** prove the resident has no abilities. Core already has authoritative civilization skills (`Gathering`, `Crafting`, `Learning`) and knowledge/inventory observations. Replace or redesign this tab around authoritative Core traits/skills; do not fabricate placeholder entries. Keep genetics/appearance traits conceptually separate unless the product spec explicitly classifies them as observer-facing traits.
+- **Relationships:** Core exposes directional 13-dimensional relationship state plus derived `SocialBond` / `RomancePotential`, while the current UI summarizes each target as only `bond / trust / romance`. Keep that row as a summary if useful, but provide access to the underlying directional dimensions in the detailed view instead of silently collapsing them.
+- **Emotion:** UI does show numeric percentages, but current runtime values often remain zero due to the separate emotion integration gap above. Also audit which canonical emotion dimensions/derived valence-arousal-intensity values belong in the detailed observer view.
+- **Family:** `None` is valid for unrelated/single founders and the tab reads authoritative family observation. Do not manufacture family links to make the panel look populated.
+- **Overview:** current name/age/sex/life-stage/action/need-summary/personality-word view is acceptable as a summary; it should remain concise rather than duplicating every detailed field.
+- **Knowledge & Gear:** already reads authoritative civilization observation directly, including Gathering/Crafting/Learning and inventory/technique counts. Use this as the model for migrating other tabs away from legacy DTO dependence.
+
+Data-authority rule:
+- Observer may format/summarize but must not create a second resident-state authority.
+- Prefer `FLLCoreResidentObservation`, `FLLCoreFamilyObservation`, and `FLLCoreResidentCivilizationObservation` (or explicit new Core read contracts) over expanding legacy `FLLResidentData` merely to keep old UI plumbing alive.
+
+### Early-survival / all-needs-critical investigation
+
+The same PIE capture showed Day 4 with Hunger, Thirst, Energy, Hygiene, and Bladder all rendered `Very low`, while multiple founders were repeatedly on `UseToilet`.
+
+This is **not yet classified as a confirmed simulation defect**, but it requires a focused runtime test because the production New Game starts with nature only and no synthetic fridge/sink/food/water inventory. Core Eat/Drink fallback requires real PlantFood/Water inventory, while civilization decisions are suppressed once survival need pressure is already urgent. Verify that early gathering/acquisition happens soon enough to prevent a starvation/thirst deadlock and that Unreal physical-action acknowledgements actually apply expected need relief.
+
+Required validation:
+- run deterministic New Game for at least the first 4 simulation days and record per-founder five needs, inventory, selected goals, civilization decisions, and completed physical ACKs.
+- prove that founders can acquire and consume authoritative water/food before urgent survival pressure blocks civilization acquisition.
+- prove outdoor sleep/toilet/wash fallbacks relieve their matching needs as designed.
+- if the loop deadlocks, fix causal survival acquisition/decision logic rather than masking it in Observer labels or seeding impossible modern facilities.
 
 ## Dagyeom lane
 
