@@ -43,9 +43,14 @@ namespace
     constexpr float TabPadY          = 6.0f;
     constexpr float TabUnderline     = 2.0f;
 
-    constexpr float OverviewAlpha    = 0.22f;
-    constexpr float InspectorAlpha   = 0.45f;
-    constexpr float DetailAlpha      = 0.60f;
+    // Panel backgrounds sit over the generated world now, not over a flat
+    // bootstrap floor. Vegetation and ground texture show through a light
+    // scrim and make small text hard to read, so panels that carry dense text
+    // are close to opaque. The top overview band stays lighter because it is
+    // one line over mostly sky.
+    constexpr float OverviewAlpha    = 0.40f;
+    constexpr float InspectorAlpha   = 0.78f;
+    constexpr float DetailAlpha      = 0.92f;
 
     const FLinearColor TextPrimary   (1.00f, 1.00f, 1.00f, 1.0f);
     const FLinearColor TextSecondary (0.88f, 0.90f, 0.94f, 1.0f);
