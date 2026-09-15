@@ -806,3 +806,15 @@
 - 다음 gate: **Integrated Runtime Checkpoint A** on merged `main`.
 - Dagyeom next product milestone remains HOLD until that integrated gate is checked.
 - World Visual map/config boundary: Dagyeom owns `Content/Maps/**`; Jjun owns `Config/DefaultEngine.ini` startup/default map and `LifeLens.uproject` plugin integration via explicit Integration Request.
+
+### 다겸 측 AI — Gate A 육안 QA 결과 기록
+
+- 작성자: 다겸 측 AI
+- 브랜치: `dagyeom/qa-findings-gate-a` (main `f298140` 기준)
+- 상태: `기록 전용 / 수정 없음`
+- Gate A가 owner waiver로 DONE 처리되어 수정하지 않고 증상만 기록한다. 상세는 `tasks/TEAM_BOARD.md`의 "Dagyeom QA findings — Gate A visual inspection" 절을 따른다.
+- QA-1 주민이 옆으로 걷는다: 방향 로직은 정상이며 body yaw / 이동 방향 / 액터 yaw가 로그에서 일치한다. 원인은 스켈레탈 메시의 정면 축이 UE 관례(+X)가 아니라 -Y인 것이다. 임포트 메시 바운드 X 92.9 / Y 14.6, 원본 glTF에서 측면 X, 정면 +Z로 확인했다. Characters lane 소유이며 쭌 승인 후 상수 yaw 오프셋으로 수정 예정이다.
+- QA-2 UseToilet 이동 중 바닥 메시 이탈: 주민 3명이 바닥 밖으로 나갔고 HUD는 4명을 유지한다. 헤드리스에서도 시작 지점에서 3,000 유닛 이상 단조 이동이 관측된다. 이동 목표와 도착 판정은 World 권한이라 증상만 기록한다.
+- 상대가 알아야 할 점:
+  - QA-1은 Character Appearance v1부터 존재하던 문제다. 걷기 애니메이션이 없던 시기에는 드러나지 않았다. Motion Bootstrap의 회귀가 아니다
+  - QA-2는 표현 계층에서 위치를 읽기만 하므로 다겸 측에서 판단하거나 고치지 않는다
