@@ -4,7 +4,7 @@
 > Long-term order: `docs/DEVELOPMENT_MILESTONES.md`.
 > Durable design decisions: `docs/DECISION_LOG.md`.
 
-Last reconciled: 2026-09-15 KST after Hardcoding Cleanup B merge, IR-B resolution/#102 merge, and Context Action Contract v1 PR dispatch.
+Last reconciled: 2026-09-15 KST after #103 Context Action Contract v1 merge and Android seed live check.
 
 ## Recently closed product checkpoints
 
@@ -42,11 +42,26 @@ Last reconciled: 2026-09-15 KST after Hardcoding Cleanup B merge, IR-B resolutio
 - squash merge: `d3c87996499b353c742ce97fd90978633b9b7ca0`.
 - remaining stationary-target and male/female/outfit checks are ordinary visual regression QA, not an open IR-B blocker.
 
+### Context Action Contract v1 — DONE
+- PR #103 `[CORE] Context action contract v1 — civilization presentation read data` merged.
+- final synchronized PR head: `16838dd6582ce007470594477a325aa6edde0a8d`.
+- Core Tests #490 (`34986684474`): PASS.
+- Preflight #587 (`34986684197`): PASS.
+- Unreal Linux Compile #118 (`34986684115`): PASS.
+- squash merge: `cba58803c67f971eb1273aaf4e35f5c22b980f01`.
+- authoritative executed civilization work is exposed as typed `Gather / Store / Experiment / Craft` presentation context.
+- runtime work provenance is not persisted in snapshots, preventing stale work animation replay after load.
+- `FLLCoreActionDirective` now exposes action/result/material/item/technique/quantity/time/stable IDs and only exposes a spatial target when Core actually owns one.
+- Character presentation files were not modified by the provider PR.
+- TEAM_BOARD IR-D is now provider-complete and ready for Dagyeom Context Motion consumption.
+
 ### Android Fast Pipeline recovery — MERGED / RUNTIME VALIDATION PENDING
 - PR #101 recovered the `seed / fast / full` workflow and merged as `fe97884f3f2bcf71b5a508cdce2e2ca8f42d912c`.
 - stale PR #2 was closed unmerged after its obsolete Core bridge was intentionally excluded.
-- first manual `seed` Run #3 (`34979129395`) was `in_progress` at the last live check; do not infer success until the run is checked again.
-- after a successful seed, normal APK validation should use `fast`; do not repeat a multi-hour seed after a failure without inspecting the failed stage.
+- first manual `seed` Run #3 (`34979129395`) remains `in_progress` at the last live check, currently in `Seed Linux cook tools`.
+- current workflow gives `Seed Linux cook tools` 120 minutes and the full job 300 minutes; the observed first-seed compile rate creates a material timeout risk.
+- do not blindly rerun the same multi-hour seed if it fails/times out. Inspect the exact failure stage and redesign the seed path around durable checkpoints/split work before another expensive attempt.
+- after a genuinely successful seed/cache creation, normal APK validation should use `fast`.
 
 ## Current validation risk
 
@@ -61,25 +76,13 @@ The compile gates prove C++/UHT/UBT integration, not every presentation variant.
 
 ## Jjun lane
 
-Status: `ACTIVE — CONTEXT ACTION CONTRACT v1 / PR #103`
+Status: `NO OPEN CODE PR — ANDROID SEED VALIDATION / PIPELINE RISK ACTIVE`
 
-Branch: `jjun/context-action-contract-v1`
-PR: #103 `[CORE] Context action contract v1 — civilization presentation read data`
-Head: `3c18f4b94ff906f857cebdeeca163b8e6242b3ae`
-
-Scope:
-- expose actual executed civilization work to presentation without inventing actions.
-- current authoritative civilization action set is exactly `Gather / Store / Experiment / Craft`.
-- keep the short-lived work context in `Simulation::Runtime`, intentionally outside snapshot persistence so save/load cannot replay stale work animations.
-- project typed action/result data through `FLLCoreActionDirective`: material, item, technique, quantity, result, stable resource/storage IDs, action minute, and an authoritative spatial target only when Core really owns one.
-- sanitation-site creation/improvement may expose its real grid position; ordinary resource/storage actions currently must not fabricate world positions.
-- Character presentation files are not modified in this Jjun branch.
-
-Validation at last live check:
-- Core Tests #490 (`34986684474`): PASS.
-- Preflight #587 (`34986684197`): PASS.
-- Unreal Linux Compile #118 (`34986684115`): IN_PROGRESS.
-- no Dagyeom review request; handoff is through typed contract + TEAM_BOARD IR-D.
+Current facts:
+- PR #103 is merged; no Jjun feature PR is left open from the Context Action Contract work.
+- Android seed Run #3 (`34979129395`) is the only currently running long build known at this reconciliation point.
+- do not start another expensive seed/full Android job until the current run finishes/fails or is intentionally stopped and the checkpoint strategy is decided.
+- IR-D implementation itself belongs to Dagyeom Character Presentation; Jjun provider work is complete unless a real contract deficiency is found.
 
 ## Tracked implementation gaps — DO NOT DROP
 
@@ -88,7 +91,7 @@ Validation at last live check:
 Current Core `ResourceNode` and `StorageSite` records have stable IDs and authoritative inventory/material state but no authoritative `GridPos`.
 
 Consequences / rule:
-- Context Action Contract v1 may expose the stable resource/storage ID but sets no spatial target for ordinary Gather/Store.
+- Context Action Contract v1 exposes stable resource/storage IDs but no spatial target for ordinary Gather/Store.
 - Character/World Presentation must not choose an arbitrary nearby tree, rock, or container and pretend it is the authoritative target.
 - sanitation-site work is an exception when Core actually supplies the real site position.
 - add resource/storage spatial authority in a later Core/World slice before scenery-specific gather/store approach/alignment is considered truthful.
@@ -148,7 +151,7 @@ Required follow-up in Character Presentation:
 - generic interact/pickup/kneeling work mappings.
 - truthful fallbacks for Eat/Drink/Sleep/Toilet/Hygiene.
 - privacy-first Toilet/outdoor sanitation sequence with reusable local Privacy Mask.
-- consume typed `Gather / Store / Experiment / Craft` data after PR #103 merges.
+- consume merged typed `Gather / Store / Experiment / Craft` data from #103.
 
 ### Early-survival / all-needs-critical investigation
 
@@ -162,19 +165,20 @@ Required validation:
 
 ## Dagyeom lane
 
-Status: `IR-B DONE / CONTEXT MOTION HANDOFF READY AFTER #103`
+Status: `IR-B DONE / IR-D CONTEXT MOTION READY`
 
 - IR-B is resolved and merged through #102; no further IR-B blocker is open.
 - ordinary visual regression checks for stationary target-facing and male/female/outfit variants remain QA only.
-- IR-D is the current open Character handoff: consume `FLLCoreActionDirective` through a Context Motion Router after provider PR #103 merges.
+- IR-D provider contract is merged through #103 and ready to consume now.
+- Dagyeom Character Presentation owns the Context Motion Router and action-to-animation presentation.
 - no Jjun direct changes to `Source/LifeLens/Characters/**` unless an explicit assist lock is opened.
 
 ## Active blockers / locks
 
-- Formal Integration Requests: **IR-D open** for Context Motion contract consumption.
+- Formal Integration Requests: **IR-D open**, provider DONE / presentation consumption READY.
 - Assist locks: 0 known active.
-- PR #103 is Jjun Core/Bridge scope; no Dagyeom review is requested by default.
-- Android seed runtime validation is independent of this Core/Bridge work.
+- Open Jjun code PRs from the current work: **0**.
+- Android seed Run #3 is independent and still running at the last live check.
 
 ## Long compile rule
 
