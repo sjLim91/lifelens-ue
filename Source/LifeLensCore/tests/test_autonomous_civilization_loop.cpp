@@ -158,6 +158,42 @@ int main()
     const CivilizationExecutionResult crafted=executeCivilizationDecision(divergenceWorld,experimenter,craftDecision);
     CHECK(crafted.executed && crafted.success);
 
+    // Presentation/read contract is driven only by a real executed civilization
+    // decision. It is transient runtime state, not save-game state.
+    Simulation activityProbe(4242001);
+    activityProbe.setupNewGame();
+    ResidentCivilizationActivityObservation observedActivity;
+    bool foundActiveCivilization=false;
+    for(int minute=0;minute<2000 && !foundActiveCivilization;++minute){
+        activityProbe.step();
+        for(const auto& resident:activityProbe.world().characters){
+            const auto activity=activityProbe.observeResidentCivilizationActivity(resident.id);
+            if(!activity.active) continue;
+            observedActivity=activity;
+            foundActiveCivilization=true;
+            break;
+        }
+    }
+    CHECK(foundActiveCivilization);
+    CHECK(observedActivity.kind!=CivilizationActivityKind::None);
+    CHECK(observedActivity.residentId!=0);
+    CHECK(observedActivity.minute>=0);
+    CHECK(observedActivity.minute<=activityProbe.world().minute);
+    if(observedActivity.kind==CivilizationActivityKind::Gather){
+        CHECK(observedActivity.resourceNode!=0);
+        CHECK(!observedActivity.hasSpatialTarget);
+    }
+
+    const SimulationStateSnapshot activeSnapshot=activityProbe.captureSnapshot();
+    Simulation restoredProbe(1);
+    std::string probeError;
+    CHECK(restoredProbe.restoreSnapshot(activeSnapshot,&probeError));
+    CHECK(probeError.empty());
+    CHECK(!restoredProbe.observeResidentCivilizationActivity(observedActivity.residentId).active);
+
+    activityProbe.runMinutes(5);
+    CHECK(!activityProbe.observeResidentCivilizationActivity(observedActivity.residentId).active);
+
     // Full Simulation integration: same seed must progress identically while
     // actually consuming natural resources and creating individual knowledge.
     Simulation first(4242001);
