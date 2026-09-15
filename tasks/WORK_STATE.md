@@ -30,60 +30,62 @@ Last reconciled: 2026-09-15 KST
 ## Current product-code baseline
 
 Latest product merge:
-- PR #77 `[CORE] Add sanitation problem recognition v1`
-- merge SHA: `3ea6048d9e7ac6b31e75faa4f5ca55b5c46f9016`
+- PR #78 `[CORE] Add primitive sanitation experimentation progression v1`
+- merge SHA: `3a9739682034ad7c5009da5f75a11b0f07fed55b`
 
-Validated PR #77 head `26a0af034364f7ae12b636cfc5a991d57fe729ab`:
-- Structural Preflight run `34919266787`: PASS
-- Core Tests run `34919266571`: PASS, 42/42
-- Unreal Linux Compile run `34919266720`: PASS
-- UE 5.6 UHT / UBT / link: PASS
+Validated PR #78 head `e78f6d211589b74008ff0fdf73e9be1048e2d807`:
+- Structural Preflight run `34921390473`: PASS
+- Core Tests run `34921390510`: PASS, 43/43
+- Unreal Linux Compile run `34921390491`: PASS
+- UE 5.6 image verification / UHT / UBT / link: PASS
 
-Delivered by #77:
-- direct sanitation/contamination Memory evidence can become an explicit resident-level sanitation-problem Belief.
-- ordinary weak exposure does not instantly create civilization knowledge.
-- repeated qualifying direct evidence, or one exceptionally salient direct event, can establish recognition.
-- recognition reuses existing Core Memory → Belief authority instead of a global tech/unlock flag.
-- evidence re-evaluation is idempotent (`max`, not repeated `+=`).
-- environmental perception reports recognized/newly-recognized/confidence.
-- snapshot encode/decode/restore preserves recognized Belief.
-- no pit/latrine is auto-unlocked; the next slice consumes the recognized concern as input to experimentation/progression.
+Delivered by #78:
+- resident sanitation-problem Belief becomes a causal input to primitive sanitation experimentation.
+- `DesignatedSanitationArea` is a personal civilization technique, not a global tech flag.
+- sanitation experiment requires BOTH recognized sanitation concern and a sufficiently clean candidate site.
+- existing low-exposure recommendation supplies deterministic environmental feasibility.
+- deterministic failure becomes `Hypothesized`; deterministic success becomes personal `Reproducible` knowledge.
+- existing witness/teaching provenance and civilization observer/read-model ranges cover the new technique without global auto-unlock.
+- existing civilization snapshot extension persists the technique.
+- no Toilet/Latrine SmartObject or `LatrineUnlocked` state is spawned by discovery.
 
 Documentation-only commits may advance `main` beyond the product-code baseline above.
 
 ## Current dispatch
 
-### Jjun lane — Primitive sanitation experimentation / progression — READY_NOW
+### Jjun lane — Designated sanitation area affordance integration v1 — READY_NOW
 
 Owner: 쭌 / 쭌 AI
-Dependency: PR #77 DONE.
+Dependency: PR #78 DONE.
 Handoff safety: SAFE; no uncommitted local dependency.
 
 Goal:
-- consume `hasRecognizedSanitationProblem(character)` as a causal input to the next civilization step.
-- recognized sanitation concern should motivate experimentation/designation before any durable sanitation affordance exists.
-- preserve the canonical causal chain: problem recognition → attempt/experiment → result/failure/discovery → personal knowledge → better sanitation affordance.
-- do not create a fixed global Tech Tree or instant `LatrineUnlocked=true` path.
+- consume `TechniqueId::DesignatedSanitationArea` knowledge plus the deterministic low-exposure site contract to create an actual authoritative primitive sanitation affordance.
+- move the causal chain from discovery/knowledge to a reusable physical behavior target.
+- keep the site Core-owned/persisted; Unreal presentation/world execution must consume it rather than inventing a second target.
+- do not jump directly to a dug pit or modern latrine before the designated-area behavior is authoritative and working.
 
 Implementation direction:
-- start with the minimum primitive sanitation response: designated waste area and/or dug pit attempt, chosen through existing civilization intent/experiment machinery.
-- discovery remains resident/personal knowledge first; propagation comes later.
-- resource/material/environment feasibility must gate the result.
-- failed attempts remain evidence/learning rather than disappearing.
-- only after a successful discovery should a better sanitation affordance become available.
+- define the smallest Core-owned designated sanitation site state with stable identity/location/quality or equivalent facility facts.
+- creation requires a resident with reproducible `DesignatedSanitationArea` knowledge and a currently feasible clean site.
+- route future Toilet affordance resolution to an existing designated site before natural/emergency outdoor fallback.
+- actual use must still complete through the existing World movement/ACK path and deposit environmental residue at the real completion location.
+- Save/Load must preserve the created site and its authoritative GridPos.
+- target disappearance/invalidation must fail/re-resolve rather than create magic infrastructure.
 
 Acceptance:
-- residents without recognized sanitation concern do not manufacture sanitation experiments from nothing.
-- recognized concern can deterministically bias/seed a sanitation experiment opportunity.
-- no global auto-unlock.
-- failure and success are both representable and deterministic from the same state.
-- successful discovery can become durable personal knowledge and a later affordance input.
-- Core tests + Structural Preflight; UE compile only if Unreal-facing contracts change.
+- technique knowledge alone does not silently create a site until the creation/use contract executes.
+- one authoritative GridPos drives Core preference, World movement and completion consequence.
+- no duplicate World-only sanitation target.
+- Save/Load restores the site.
+- invalid/unavailable site falls back through the existing affordance hierarchy.
+- Core tests + Structural Preflight + Unreal compile for Bridge/World contract changes.
 
 Exact next action:
-- reconcile existing `CivilizationIntent` / experiment APIs against the new sanitation Belief.
-- implement the smallest sanitation-specific experiment/discovery contract without bypassing generic civilization progression.
-- add tests for precondition rejection, deterministic attempt, failure/success outcome and no global unlock.
+- inspect current SmartObject/facility and external physical execution contracts for the narrowest primitive-site authority representation.
+- implement Core-owned designated sanitation site creation/lookup/persistence.
+- expose/consume the site through the existing Toilet resolution path without adding a competing World chooser.
+- add regression coverage before moving to dug pit/latrine progression.
 
 ### Dagyeom lane — Character Appearance v1 — ACTIVE / PR #67 CLOSEOUT
 
@@ -193,6 +195,15 @@ Known limitation:
 - Core 42/42 + Preflight + UE 5.6 UHT/UBT/link PASS.
 - merge SHA `3ea6048d9e7ac6b31e75faa4f5ca55b5c46f9016`.
 
+### #78 Primitive sanitation experimentation progression v1 — DONE
+- recognized sanitation concern + clean candidate site gates `DesignateSanitationArea` experimentation.
+- deterministic failure → Hypothesized; deterministic success → personal Reproducible knowledge.
+- existing witness/teaching provenance + civilization observer coverage extended to the technique.
+- existing civilization snapshot persistence carries the technique.
+- no world facility/global unlock is created by discovery alone.
+- Core 43/43 + Preflight + UE 5.6 UHT/UBT/link PASS.
+- merge SHA `3a9739682034ad7c5009da5f75a11b0f07fed55b`.
+
 ## Character / presentation sequence
 
 1. Character Presentation v1 — DONE via #63.
@@ -218,9 +229,11 @@ Canonical causal chain:
 Immediate sequence:
 1. WorldDirector sanitation recommendation integration — DONE #76.
 2. Sanitation Problem Recognition v1 — DONE #77.
-3. Primitive sanitation discovery / designated area / pit / latrine progression — READY_NOW.
-4. HumanWaste Environmental Visual Feedback.
-5. Health/pathogen and water/soil contamination later.
+3. Primitive sanitation experiment / DesignatedSanitationArea discovery — DONE #78.
+4. Designated sanitation area authoritative affordance integration — READY_NOW.
+5. Dug pit / latrine progression after the designated-area loop is physical and persistent.
+6. HumanWaste Environmental Visual Feedback.
+7. Health/pathogen and water/soil contamination later.
 
 ## Open-ended invention status
 
@@ -308,16 +321,18 @@ Do not revive the old multi-hour PR #2 path as the default loop.
 11. #75 environment exposure/perception/avoidance — DONE.
 12. #76 World sanitation recommendation integration — DONE.
 13. #77 Sanitation Problem Recognition — DONE.
-14. **Primitive sanitation experimentation / affordance progression — READY_NOW.**
-15. HumanWaste visual feedback.
-16. Character Appearance #67 — ACTIVE in parallel.
-17. Motion Bootstrap — after #67.
-18. World Visual Environment v1.
-19. Character Motion & Context remainder.
-20. Integrated runtime verification.
-21. Android smoke APK + device profiling.
-22. MetaHuman comparison only after mobile baseline validation.
-23. deeper open-ended invention / production / health / environment simulation.
+14. #78 Primitive sanitation experimentation progression — DONE.
+15. **Designated sanitation area authoritative affordance integration — READY_NOW.**
+16. Dug pit / latrine progression.
+17. HumanWaste visual feedback.
+18. Character Appearance #67 — ACTIVE in parallel.
+19. Motion Bootstrap — after #67.
+20. World Visual Environment v1.
+21. Character Motion & Context remainder.
+22. Integrated runtime verification.
+23. Android smoke APK + device profiling.
+24. MetaHuman comparison only after mobile baseline validation.
+25. deeper open-ended invention / production / health / environment simulation.
 
 ## Frozen legacy
 
