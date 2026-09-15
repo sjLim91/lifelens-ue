@@ -18,7 +18,10 @@ namespace lifelens {
 class Simulation {
 public:
     using EventCallback=std::function<void(const std::string&)>;
-    explicit Simulation(std::uint64_t seed=1);
+    explicit Simulation(
+        WorldSeed worldSeed=1,
+        PopulationSeed populationSeed=0,
+        WorldGenerationVersion generationVersion=CurrentWorldGenerationVersion);
     void setupDemo();
     void setupSocialDemo();
     void setupNewGame();

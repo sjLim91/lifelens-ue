@@ -7,10 +7,14 @@
 #include "Civilization.h"
 #include "EnvironmentalResidue.h"
 #include "PrimitiveSanitation.h"
+#include "WorldGenesis.h"
 namespace lifelens {
 struct World {
     int minute=7*60;
+    // `seed` remains the compatibility spelling for authoritative WorldSeed.
     std::uint64_t seed=1;
+    PopulationSeed populationSeed=1;
+    WorldGenerationVersion generationVersion=CurrentWorldGenerationVersion;
     std::mt19937_64 rng{1};
     std::vector<Character> characters;
     std::vector<SmartObject> objects;
@@ -24,9 +28,28 @@ struct World {
     // starting/restoring Core while standalone Core tests remain autonomous.
     bool externalPhysicalExecution=false;
 
-    explicit World(std::uint64_t s=1) : seed(s?s:1), rng(seed)
+    explicit World(
+        WorldSeed worldSeed=1,
+        PopulationSeed initialPopulationSeed=0,
+        WorldGenerationVersion initialGenerationVersion=CurrentWorldGenerationVersion)
     {
+        const WorldGenesisIdentity identity=makeWorldGenesisIdentity(
+            worldSeed,initialPopulationSeed,initialGenerationVersion);
+        seed=identity.worldSeed;
+        populationSeed=identity.populationSeed;
+        generationVersion=identity.generationVersion;
+        rng.seed(seed);
         resetCivilizationEnvironment();
+    }
+
+    WorldGenesisIdentity genesisIdentity() const
+    {
+        return {seed,populationSeed,generationVersion};
+    }
+
+    UntouchedChunkBaseline untouchedChunkBaseline(ChunkCoord coord) const
+    {
+        return deriveUntouchedChunkBaseline(genesisIdentity(),coord);
     }
 
     void resetCivilizationEnvironment()
