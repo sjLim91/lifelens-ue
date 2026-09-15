@@ -129,6 +129,27 @@ def dedupe_by_name(folder, class_name):
     log("consolidated %d duplicate %s assets under %s" % (merged, class_name, folder))
 
 
+def configure_ground_textures():
+    """Roughness and ambient occlusion maps are data, not colour. Interchange
+    imports them as sRGB colour textures, which does not match a Linear
+    Grayscale sampler and makes the ground material fail to compile, so the
+    ground silently falls back to the grey default material."""
+    for asset_path in EAL.list_assets(DEST_GROUND, recursive=True, include_folder=False):
+        data = EAL.find_asset_data(asset_path)
+        if data.asset_class_path.asset_name != "Texture2D":
+            continue
+        name = asset_path.rsplit("/", 1)[-1]
+        texture = EAL.load_asset(asset_path)
+        if name.endswith("_Roughness") or name.endswith("_AmbientOcclusion"):
+            set_prop(texture, ["compression_settings"], unreal.TextureCompressionSettings.TC_GRAYSCALE)
+            set_prop(texture, ["srgb"], False)
+        elif name.endswith("_NormalGL"):
+            set_prop(texture, ["compression_settings"], unreal.TextureCompressionSettings.TC_NORMALMAP)
+            set_prop(texture, ["srgb"], False)
+        EAL.save_asset(asset_path, only_if_is_dirty=False)
+        log("configured %s" % name)
+
+
 def clamp_textures(folder, max_size):
     count = 0
     for asset_path in EAL.list_assets(folder, recursive=True, include_folder=False):
@@ -173,6 +194,7 @@ def main():
 
     dedupe_by_name(DEST_NATURE, "Texture2D")
     dedupe_by_name(DEST_NATURE, "MaterialInstanceConstant")
+    configure_ground_textures()
     clamp_textures(DEST_NATURE, MAX_NATURE_TEXTURE)
     clamp_textures(DEST_GROUND, MAX_GROUND_TEXTURE)
     EAL.save_directory(DEST, only_if_is_dirty=False, recursive=True)

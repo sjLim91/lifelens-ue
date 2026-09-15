@@ -36,6 +36,11 @@ INSTANCES = {
 # above the residents, so a 4 m tile keeps detail without visible repetition.
 DEFAULT_TILE_SIZE_CM = 400.0
 
+# Ground variation across areas is not implemented yet: a scripted two-surface
+# blend did not produce a verifiable result in a headless build, so the ground
+# ships as one surface per instance and the variation work is tracked
+# separately rather than shipped unverified.
+
 
 def log(msg):
     unreal.log("[LLEnv] " + str(msg))
@@ -70,17 +75,30 @@ def build_parent():
     MEL.connect_material_expressions(world_xy, "", scaled, "A")
     MEL.connect_material_expressions(tile_size, "", scaled, "B")
 
-    def sampler(name, x, y, sampler_type):
+    def sampler(name, x, y, sampler_type, default_texture):
         node = MEL.create_material_expression(material, unreal.MaterialExpressionTextureSampleParameter2D, x, y)
         node.set_editor_property("parameter_name", name)
+        # A parameter without a default texture falls back to the engine colour
+        # DefaultTexture, which does not match a Normal or Linear Grayscale
+        # sampler; the material then fails to compile and every ground surface
+        # silently renders with the grey default material.
+        texture = EAL.load_asset(default_texture)
+        if texture is None:
+            raise RuntimeError("missing default texture %s" % default_texture)
+        node.set_editor_property("texture", texture)
         node.set_editor_property("sampler_type", sampler_type)
         MEL.connect_material_expressions(scaled, "", node, "UVs")
         return node
 
-    base = sampler("BaseColor", -400, 0, unreal.MaterialSamplerType.SAMPLERTYPE_COLOR)
-    normal = sampler("Normal", -400, 300, unreal.MaterialSamplerType.SAMPLERTYPE_NORMAL)
-    rough = sampler("Roughness", -400, 600, unreal.MaterialSamplerType.SAMPLERTYPE_LINEAR_GRAYSCALE)
-    occlusion = sampler("AmbientOcclusion", -400, 900, unreal.MaterialSamplerType.SAMPLERTYPE_LINEAR_GRAYSCALE)
+    default_set = INSTANCES["MI_Ground_Grass"]
+    base = sampler("BaseColor", -400, 0, unreal.MaterialSamplerType.SAMPLERTYPE_COLOR,
+                   "%s/%s_Color" % (TEX, default_set))
+    normal = sampler("Normal", -400, 300, unreal.MaterialSamplerType.SAMPLERTYPE_NORMAL,
+                     "%s/%s_NormalGL" % (TEX, default_set))
+    rough = sampler("Roughness", -400, 600, unreal.MaterialSamplerType.SAMPLERTYPE_LINEAR_GRAYSCALE,
+                    "%s/%s_Roughness" % (TEX, default_set))
+    occlusion = sampler("AmbientOcclusion", -400, 900, unreal.MaterialSamplerType.SAMPLERTYPE_LINEAR_GRAYSCALE,
+                        "%s/%s_AmbientOcclusion" % (TEX, default_set))
 
     # A tint parameter lets one surface cover several biome variations without
     # another texture set.
@@ -88,7 +106,7 @@ def build_parent():
     tint.set_editor_property("parameter_name", "Tint")
     tint.set_editor_property("default_value", unreal.LinearColor(1.0, 1.0, 1.0, 1.0))
 
-    tinted = MEL.create_material_expression(material, unreal.MaterialExpressionMultiply, -150, -50)
+    tinted = MEL.create_material_expression(material, unreal.MaterialExpressionMultiply, 420, 100)
     MEL.connect_material_expressions(base, "RGB", tinted, "A")
     MEL.connect_material_expressions(tint, "", tinted, "B")
 
@@ -125,6 +143,7 @@ def build_instance(parent, name, prefix):
         MEL.set_material_instance_texture_parameter_value(instance, param, texture)
 
     MEL.set_material_instance_scalar_parameter_value(instance, "TileSizeCm", DEFAULT_TILE_SIZE_CM)
+    MEL.set_material_instance_vector_parameter_value(instance, "Tint", unreal.LinearColor(1.0, 1.0, 1.0, 1.0))
     EAL.save_asset(dest, only_if_is_dirty=False)
     log("built instance %s from %s" % (dest, prefix))
 
