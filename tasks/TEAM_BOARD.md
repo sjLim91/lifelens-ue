@@ -14,13 +14,15 @@
 
 Authority rule: Core/World owns simulation truth. UI/Character/Environment presents it and must not duplicate authority.
 
-## Current gate
+## Current milestone
 
-`Integrated Runtime Checkpoint A — READY_NOW`
+`World Visual Milestone A — READY_NOW / START AUTHORIZED`
 
-- Jjun coordinates integrated runtime verification.
-- Dagyeom starts no additional product milestone until Gate A result.
-- after PASS, `World Visual Milestone A` becomes the next Dagyeom milestone.
+- Gate A is closed by project-owner acceptance using the successful Core/World runtime evidence.
+- the additional manual PIE visual inspection was waived for Gate A, not falsely recorded as PASS.
+- skipped visual concerns are now validation targets inside World Visual Milestone A.
+- Dagyeom may begin World Visual product work now.
+- Jjun remains integration support for Config/Bridge/project-level requests and verified authority blockers.
 
 ## Current Assist Locks
 
@@ -34,13 +36,15 @@ Jjun helping Dagyeom defaults to REVIEW_ONLY. Do not direct-push `dagyeom/*`; us
 
 **0.**
 
-### Expected World Visual config handoff — NOT YET FORMAL
+### Expected World Visual config handoff — READY WHEN MAP EXISTS
 
 When Dagyeom creates the production map:
 1. Dagyeom provides the exact asset path, e.g. `/Game/Maps/LifeLensWorld`.
 2. Jjun owns `Config/DefaultEngine.ini` default/startup map integration.
 3. If Unreal Water or another plugin requires `LifeLens.uproject` changes, Dagyeom opens an explicit Integration Request with the required plugin and reason.
 4. Content work should not silently edit Jjun-owned Config/project integration files.
+
+Remember: an asset stored as `Content/Maps/MyMap.umap` is referenced by Unreal as `/Game/Maps/MyMap`, not `/Content/Maps/MyMap`.
 
 ## Request format
 
