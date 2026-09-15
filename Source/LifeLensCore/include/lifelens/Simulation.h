@@ -24,6 +24,12 @@ public:
     void runMinutes(int minutes);
     void setExternalPhysicalExecution(bool enabled){ world_.externalPhysicalExecution=enabled; }
     bool externalPhysicalExecutionEnabled() const{return world_.externalPhysicalExecution;}
+    bool runtimePosition(CharacterId id,GridPos& outPosition) const {
+        const auto it=runtime_.find(id);
+        if(it==runtime_.end()) return false;
+        outPosition=it->second.pos;
+        return true;
+    }
     bool completeExternalPhysicalAction(
         CharacterId id,
         bool emergencyFallback,

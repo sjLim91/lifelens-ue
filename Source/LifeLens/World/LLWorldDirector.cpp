@@ -48,6 +48,11 @@ void ALLWorldDirector::Tick(float DeltaSeconds)
         return;
     }
 
+    // NewGame/LoadGame can replace the Core Simulation instance while this
+    // WorldDirector survives. Reassert the runtime policy before advancing it so
+    // physical outcomes never silently fall back to autonomous completion.
+    CoreBridge->SetExternalPhysicalExecutionEnabled(true);
+
     bool bAdvancedSimulation = false;
     SimulationClockAccumulator += DeltaSeconds;
     const float StepSeconds = FMath::Max(0.1f, RealSecondsPerSimulationMinute);
@@ -133,7 +138,7 @@ void ALLWorldDirector::CollectActivityAnchors()
 
 void ALLWorldDirector::SpawnResidents()
 {
-    if (!Simulation || !GetWorld())
+    if (!Simulation || !CoreBridge || !GetWorld())
     {
         return;
     }
@@ -146,14 +151,6 @@ void ALLWorldDirector::SpawnResidents()
     const TArray<FLLResidentData> Residents = Simulation->GetResidents();
     TSet<FGuid> ProjectedResidentIds;
     ProjectedResidentIds.Reserve(Residents.Num());
-
-    const FVector Base = GetActorLocation() + FVector(0.0f, 0.0f, 90.0f);
-    const TArray<FVector> FounderSpawnOffsets = {
-        FVector(-240.0f, -160.0f, 0.0f),
-        FVector( 240.0f, -160.0f, 0.0f),
-        FVector(-240.0f,  160.0f, 0.0f),
-        FVector( 240.0f,  160.0f, 0.0f)
-    };
 
     for (int32 Index = 0; Index < Residents.Num(); ++Index)
     {
@@ -172,34 +169,16 @@ void ALLWorldDirector::SpawnResidents()
             continue;
         }
 
-        FVector SpawnOffset = FVector::ZeroVector;
-        if (Index < FounderSpawnOffsets.Num())
-        {
-            SpawnOffset = FounderSpawnOffsets[Index];
-        }
-        else
-        {
-            // New generations must never wrap back onto the original four spawn
-            // points. Allocate stable expanding rings so load/reconciliation can
-            // represent populations larger than the founder set without overlap.
-            const int32 ExtraIndex = Index - FounderSpawnOffsets.Num();
-            const int32 Ring = (ExtraIndex / 8) + 1;
-            const int32 Slot = ExtraIndex % 8;
-            const float AngleDegrees = static_cast<float>(Slot) * 45.0f
-                + ((Ring % 2) == 1 ? 22.5f : 0.0f);
-            const float AngleRadians = FMath::DegreesToRadians(AngleDegrees);
-            const float Radius = 520.0f + static_cast<float>(Ring - 1) * 180.0f;
-            SpawnOffset = FVector(
-                FMath::Cos(AngleRadians) * Radius,
-                FMath::Sin(AngleRadians) * Radius,
-                0.0f);
-        }
+        int32 GridX = 0;
+        int32 GridY = 0;
+        CoreBridge->GetResidentRuntimeGridPosition(Resident.ResidentId, GridX, GridY);
+        const FVector SpawnLocation = CoreGridToWorldSpawnLocation(GridX, GridY, Index);
 
         FActorSpawnParameters Params;
         Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
         ALLResidentCharacter* Character = GetWorld()->SpawnActor<ALLResidentCharacter>(
-            ALLResidentCharacter::StaticClass(), Base + SpawnOffset, FRotator::ZeroRotator, Params);
+            ALLResidentCharacter::StaticClass(), SpawnLocation, FRotator::ZeroRotator, Params);
         if (!Character)
         {
             continue;
@@ -617,6 +596,48 @@ FIntPoint ALLWorldDirector::WorldLocationToCoreGrid(const FVector& WorldLocation
     return FIntPoint(
         FMath::RoundToInt(Relative.X / CellSize),
         FMath::RoundToInt(Relative.Y / CellSize));
+}
+
+FVector ALLWorldDirector::CoreGridToWorldSpawnLocation(
+    int32 GridX,
+    int32 GridY,
+    int32 PresentationSlot) const
+{
+    const float CellSize = FMath::Max(1.0f, CoreGridCellSizeUU);
+    const float MaxSubCellRadius = CellSize * 0.42f;
+
+    FVector SubCellOffset = FVector::ZeroVector;
+    const int32 SafeSlot = FMath::Max(0, PresentationSlot);
+    if (SafeSlot < 4)
+    {
+        const float XSign = (SafeSlot % 2) == 0 ? -1.0f : 1.0f;
+        const float YSign = SafeSlot < 2 ? -1.0f : 1.0f;
+        SubCellOffset = FVector(
+            XSign * MaxSubCellRadius,
+            YSign * MaxSubCellRadius,
+            0.0f);
+    }
+    else
+    {
+        const int32 RingSlot = (SafeSlot - 4) % 8;
+        const int32 Ring = ((SafeSlot - 4) / 8) + 1;
+        const float AngleDegrees = static_cast<float>(RingSlot) * 45.0f
+            + ((Ring % 2) == 1 ? 22.5f : 0.0f);
+        const float AngleRadians = FMath::DegreesToRadians(AngleDegrees);
+        const float RadiusScale = FMath::Min(1.0f, 0.55f + static_cast<float>(Ring - 1) * 0.12f);
+        const float Radius = MaxSubCellRadius * RadiusScale;
+        SubCellOffset = FVector(
+            FMath::Cos(AngleRadians) * Radius,
+            FMath::Sin(AngleRadians) * Radius,
+            0.0f);
+    }
+
+    return GetActorLocation()
+        + FVector(
+            static_cast<float>(GridX) * CellSize,
+            static_cast<float>(GridY) * CellSize,
+            90.0f)
+        + SubCellOffset;
 }
 
 void ALLWorldDirector::ReleasePhysicalReservation(

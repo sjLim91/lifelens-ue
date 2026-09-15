@@ -54,6 +54,12 @@ public:
         int32 ResolvedGridX,
         int32 ResolvedGridY);
 
+    UFUNCTION(BlueprintCallable, Category="LifeLens|Core|World")
+    bool GetResidentRuntimeGridPosition(
+        FGuid ResidentId,
+        int32& OutGridX,
+        int32& OutGridY) const;
+
     UFUNCTION(BlueprintPure, Category="LifeLens|Core|Observer")
     bool IsCoreRunning() const { return CoreSimulation != nullptr; }
 

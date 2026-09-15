@@ -80,6 +80,7 @@ private:
         const ALLResidentCharacter& Character,
         ELLActionIntent Intent) const;
     FIntPoint WorldLocationToCoreGrid(const FVector& WorldLocation) const;
+    FVector CoreGridToWorldSpawnLocation(int32 GridX, int32 GridY, int32 PresentationSlot) const;
     void ReleasePhysicalReservation(FGuid ResidentId, FLLResidentRuntimeState& Runtime);
     FVector ResolveSocialTargetLocation(
         const ALLResidentCharacter& Character,
