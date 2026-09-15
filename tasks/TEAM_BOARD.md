@@ -33,6 +33,20 @@ Jjun helping Dagyeom defaults to REVIEW_ONLY. Do not direct-push `dagyeom/*`; us
 - do not change Core movement authority to compensate for an asset/presentation axis mismatch.
 - status: BLOCKING visual correctness; not a Core simulation blocker.
 
+### IR-D — consume typed Context Action contract in Character Presentation — OPEN
+- requester: Jjun / Core-Bridge lane after product Context Motion requirement.
+- needed owner: Dagyeom — Character presentation.
+- provider branch: `jjun/context-action-contract-v1`.
+- consumer API: `FLLCoreActionDirective` in `Source/LifeLens/Simulation/LLCoreActionTypes.h` via `ULLCoreBridgeSubsystem::GetResidentActionDirective`.
+- actual civilization action set exposed by Core: `Gather / Store / Experiment / Craft` only.
+- directive also exposes authoritative material/item/technique/quantity/result/action-minute and stable resource/storage IDs.
+- `bHasCivilizationSpatialTarget` is false for ordinary Gather/Store because current Core resource/storage entities do not own positions; do not guess a nearby scenery target.
+- sanitation-site creation/improvement may provide a real target grid position; `Craft + Technique=DugSanitationPit` is the truthful contract for pit-work presentation.
+- requested Character work after IR-B: Context Motion Router consumes the directive and selects validated talking/sit/interact/pickup/kneeling/fallback motions without creating simulation truth.
+- no Jjun direct changes to `Source/LifeLens/Characters/**`; 0 assist locks.
+- no GitHub review request is required merely because Dagyeom will consume the API. Validate the provider contract via Core/Preflight/UE compile, then consume it in the Dagyeom lane.
+- status: provider implementation ACTIVE; presentation consumption READY after provider merge. Does not block Core CI.
+
 ## Recently resolved Integration Requests
 
 ### IR-A — WorldPresentation owner path — RESOLVED
