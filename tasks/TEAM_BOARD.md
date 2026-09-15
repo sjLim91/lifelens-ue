@@ -102,3 +102,8 @@ Requests are closed when the owning lane merges the required integration and bot
 - 현재 마일스톤 차단 여부: 부분 차단. 기본 맵이 전환되기 전까지 PIE 육안 검증은 에디터에서 맵을 직접 열어야 한다.
 - 상태: `OPEN / 쭌 결정 대기`.
 
+#### IR-C 추가 관측 (1차 육안 확인, 2026-09-15)
+
+- 관찰 카메라 시야: `ALLLifeLensGameMode::SpawnObserverCamera()`가 카메라를 `(0, -1500, 1120)`, 피치 -36도, FOV 55로 고정 스폰한다. 240 m 규모 월드에서는 지면에 너무 가까워 배경을 볼 수 없다. 배경 품질 판정 자체가 불가능하다. `Source/LifeLens/Core/**`는 다겸 소유가 아니므로 수정하지 않았다. 카메라 거리·피치·FOV 조정 또는 Observer 카메라 제어를 쭌 측이 판단해 달라.
+- 임시 바닥 재확인: production map에서도 주민이 게임모드 임시 바닥(±700 유닛) 밖으로 나가 화면에서 사라지는 현상이 재현된다. QA-2와 동일 증상이며 새 지면(±12,000 유닛)과 무관하게 발생한다.
+
