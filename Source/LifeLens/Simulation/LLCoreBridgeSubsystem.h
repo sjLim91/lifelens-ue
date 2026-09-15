@@ -60,6 +60,12 @@ public:
         int32& OutGridX,
         int32& OutGridY) const;
 
+    UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Environment")
+    bool GetRecommendedOutdoorReliefGridPosition(
+        FGuid ResidentId,
+        int32& OutGridX,
+        int32& OutGridY) const;
+
     UFUNCTION(BlueprintPure, Category="LifeLens|Core|Observer")
     bool IsCoreRunning() const { return CoreSimulation != nullptr; }
 

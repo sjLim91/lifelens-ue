@@ -8,6 +8,7 @@
 #include "CivilizationKnowledgeTransmission.h"
 #include "CivilizationObserverReadModel.h"
 #include "DecisionExecution.h"
+#include "EnvironmentalExposure.h"
 #include "EnvironmentalResidue.h"
 #include "ObserverReadModelV2.h"
 #include "Planner.h"
@@ -28,6 +29,18 @@ public:
         const auto it=runtime_.find(id);
         if(it==runtime_.end()) return false;
         outPosition=it->second.pos;
+        return true;
+    }
+    bool recommendedOutdoorReliefPosition(CharacterId id,GridPos& outPosition) const {
+        const auto runtimeIt=runtime_.find(id);
+        if(runtimeIt==runtime_.end()) return false;
+        const Character* character=nullptr;
+        for(const auto& candidate:world_.characters){
+            if(candidate.id==id){ character=&candidate; break; }
+        }
+        if(character==nullptr || !character->alive) return false;
+        outPosition=chooseLowExposureOutdoorReliefPosition(
+            world_.seed,*character,world_.environmentalResidues,world_.minute);
         return true;
     }
     bool completeExternalPhysicalAction(
@@ -165,6 +178,13 @@ inline bool Simulation::completeExternalPhysicalAction(
             world_.minute,1.0,0.42,3);
         character->needs.hygiene=Needs::clamp01(character->needs.hygiene+0.025);
         emit(character->name+" left sanitation residue id="+std::to_string(residue.id));
+    }
+
+    const EnvironmentalExposureResult exposure=perceiveEnvironmentalContamination(
+        *character,world_.environmentalResidues,resolvedPosition,world_.minute);
+    if(exposure.memoryRecorded){
+        emit(character->name+" noticed unsanitary surroundings at ("+
+             std::to_string(resolvedPosition.x)+","+std::to_string(resolvedPosition.y)+")");
     }
 
     emit(character->name+" completed "+std::string(goalName(runtime.goal))+

@@ -20,6 +20,16 @@ int main()
     source.setupNewGame();
     source.runMinutes(5000);
 
+    // This is a codec fixture, not an autonomous-family integration test.
+    // Long-running simulation may legitimately create relationship/family state
+    // before we seed representative records below. Reset those books so codec
+    // coverage remains deterministic and independent of decision-loop changes.
+    source.romances()=RomanceBook{};
+    source.households()=HouseholdBook{};
+    source.genealogy()=GenealogyBook{};
+    source.pregnancies()=PregnancyBook{};
+    source.births()=BirthBook{};
+
     // Seed representative family/history state so book codecs are non-empty.
     Character& a=source.world().characters[0];
     Character& b=source.world().characters[2];

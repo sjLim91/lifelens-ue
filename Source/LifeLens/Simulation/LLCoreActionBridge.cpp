@@ -131,6 +131,36 @@ bool ULLCoreBridgeSubsystem::GetResidentRuntimeGridPosition(
     return true;
 }
 
+bool ULLCoreBridgeSubsystem::GetRecommendedOutdoorReliefGridPosition(
+    FGuid ResidentId,
+    int32& OutGridX,
+    int32& OutGridY) const
+{
+    OutGridX = 0;
+    OutGridY = 0;
+    if (!CoreSimulation || !ResidentId.IsValid())
+    {
+        return false;
+    }
+
+    const uint64* CoreCharacterId = GuidToCore.Find(ResidentId);
+    if (!CoreCharacterId)
+    {
+        return false;
+    }
+
+    lifelens::GridPos Position{};
+    if (!CoreSimulation->recommendedOutdoorReliefPosition(
+        static_cast<lifelens::CharacterId>(*CoreCharacterId), Position))
+    {
+        return false;
+    }
+
+    OutGridX = static_cast<int32>(Position.x);
+    OutGridY = static_cast<int32>(Position.y);
+    return true;
+}
+
 bool ULLCoreBridgeSubsystem::GetResidentActionDirective(
     FGuid ResidentId,
     FLLCoreActionDirective& OutDirective) const
