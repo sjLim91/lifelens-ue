@@ -90,9 +90,9 @@ private:
 
     // LEVEL 0. Returns the Y just below the drawn overview. The selection hint is
     // only drawn when nothing is selected. bDimStrip de-emphasizes the strip
-    // while LEVEL 2 is open; SelectedId highlights the observed resident.
+    // while LEVEL 2 is open.
     float DrawOverview(const ULLSimulationSubsystem& Simulation, const TArray<FLLResidentData>& Residents,
-        float UIScale, bool bShowHint, bool bDimStrip, const FGuid& SelectedId);
+        float UIScale, bool bShowHint, bool bDimStrip);
 
     // Lightweight presentation-only feedback from legacy DQ-05, reimplemented
     // on current main without changing observation/simulation authority.
