@@ -135,7 +135,7 @@ void ALLWorldObstacleCollisionProxyActor::RefreshCollisionProxies(bool bForce)
     bHasBuilt = true;
 }
 
-uint32 ALLWorldObstacleCollisionProxyActor::ComputeSourceSignature(const ALLWorldPresentationActor& Source) const
+uint32 ALLWorldObstacleCollisionProxyActor::ComputeSourceSignature(ALLWorldPresentationActor& Source) const
 {
     uint32 Signature = 0x4C4C4F42u; // "LLOB"
     TInlineComponentArray<UHierarchicalInstancedStaticMeshComponent*> Components(&Source);
