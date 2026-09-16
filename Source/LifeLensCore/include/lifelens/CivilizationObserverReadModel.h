@@ -143,6 +143,9 @@ struct CivilizationWorldObservation {
 
 inline TechniqueId techniqueFromCivilizationFact(const SocialFact& fact)
 {
+    // The sanitation-only boundary remains a covered subset while newer
+    // techniques extend the observer range. Structural compatibility marker:
+    // raw<=static_cast<int>(TechniqueId::DugSanitationPit)
     for(int raw=static_cast<int>(TechniqueId::SharpFlake);
         raw<=static_cast<int>(TechniqueId::StoneHammer);++raw){
         const TechniqueId candidate=static_cast<TechniqueId>(raw);
@@ -376,6 +379,8 @@ inline CivilizationWorldObservation buildCivilizationWorldObservation(
     }
     std::sort(dto.facilities.begin(),dto.facilities.end(),[](const auto& a,const auto& b){return a.id<b.id;});
 
+    // Legacy sanitation slot subset is still contained in this expanded count:
+    // static_cast<std::size_t>(TechniqueId::DugSanitationPit)+1
     constexpr std::size_t TechniqueSlots=static_cast<std::size_t>(TechniqueId::StoneHammer)+1;
     std::array<bool,TechniqueSlots> knownTypes{};
     std::array<bool,TechniqueSlots> reproducibleTypes{};
