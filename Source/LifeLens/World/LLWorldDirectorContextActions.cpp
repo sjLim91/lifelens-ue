@@ -179,6 +179,12 @@ void ALLWorldDirector::ApplyPendingContextDirective(
                         case ELLCoreItemKind::SimpleContainer:
                             HeldToolAtTarget = ELLResidentHeldToolPresentation::SimpleContainer;
                             break;
+                        case ELLCoreItemKind::DiggingStick:
+                            HeldToolAtTarget = ELLResidentHeldToolPresentation::DiggingStick;
+                            break;
+                        case ELLCoreItemKind::StoneHammer:
+                            HeldToolAtTarget = ELLResidentHeldToolPresentation::StoneHammer;
+                            break;
                         case ELLCoreItemKind::RawMaterial:
                         case ELLCoreItemKind::Cordage:
                         case ELLCoreItemKind::FuelBundle:
