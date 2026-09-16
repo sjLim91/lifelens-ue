@@ -217,8 +217,17 @@ bool ULLSimulationSubsystem::RefreshProjectionFromCore()
     Residents.Reset(CoreResidents.Num());
     Relationships.Reset();
 
+    // This compatibility array drives physical resident actors. Deceased Core
+    // residents remain in authoritative history/genealogy/Observer DTOs but are
+    // deliberately omitted here so WorldDirector releases reservations/runtime
+    // and destroys their physical actor through its existing projection cleanup.
     for (const FLLCoreResidentObservation& CoreResident : CoreResidents)
     {
+        if (!CoreResident.bAlive)
+        {
+            continue;
+        }
+
         FLLResidentData Resident;
         Resident.ResidentId = CoreResident.ResidentId;
         Resident.DisplayName = CoreResident.DisplayName;
@@ -263,14 +272,20 @@ bool ULLSimulationSubsystem::RefreshProjectionFromCore()
         Residents.Add(MoveTemp(Resident));
     }
 
-    // Build one symmetric compatibility row per resident pair from the two
-    // directional Core relationships. Core remains the original 13D source.
+    // Legacy relationship projection is likewise restricted to living physical
+    // residents. Core retains directional relationships and life history for
+    // deceased residents independently of this presentation compatibility view.
     for (int32 I = 0; I < CoreResidents.Num(); ++I)
     {
         for (int32 J = I + 1; J < CoreResidents.Num(); ++J)
         {
             const FLLCoreResidentObservation& A = CoreResidents[I];
             const FLLCoreResidentObservation& B = CoreResidents[J];
+            if (!A.bAlive || !B.bAlive)
+            {
+                continue;
+            }
+
             const FLLCoreRelationshipSnapshot* AToB = FindCoreRelationship(A, B.ResidentId);
             const FLLCoreRelationshipSnapshot* BToA = FindCoreRelationship(B, A.ResidentId);
 
