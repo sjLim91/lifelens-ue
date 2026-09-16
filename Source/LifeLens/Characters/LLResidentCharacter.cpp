@@ -108,41 +108,51 @@ void ALLResidentCharacter::Tick(float DeltaSeconds)
     if (ForwardHit.bBlockingHit)
     {
         const FVector ImpactLocation = GetActorLocation();
-        FVector Remaining = FlatTarget - ImpactLocation;
-        Remaining.Z = 0.0f;
+        const float ForwardTravelDistance = FMath::Clamp(
+            (ImpactLocation - StartLocation).Size2D(),
+            0.0f,
+            StepDistance);
+        const float RemainingStepDistance = FMath::Max(0.0f, StepDistance - ForwardTravelDistance);
 
-        FVector SlideDirection = FVector::VectorPlaneProject(Remaining, ForwardHit.ImpactNormal);
-        SlideDirection.Z = 0.0f;
-        const bool bHadProjectedSlide = SlideDirection.Normalize();
-        if (!bHadProjectedSlide)
+        if (RemainingStepDistance > KINDA_SMALL_NUMBER)
         {
-            SlideDirection = StableSideDirection(Forward, ResidentId);
-        }
+            FVector Remaining = FlatTarget - ImpactLocation;
+            Remaining.Z = 0.0f;
 
-        const FVector BeforeSlide = GetActorLocation();
-        FHitResult SlideHit;
-        SetActorLocation(
-            BeforeSlide + SlideDirection * StepDistance,
-            true,
-            &SlideHit,
-            ETeleportType::None);
+            FVector SlideDirection = FVector::VectorPlaneProject(Remaining, ForwardHit.ImpactNormal);
+            SlideDirection.Z = 0.0f;
+            const bool bHadProjectedSlide = SlideDirection.Normalize();
+            if (!bHadProjectedSlide)
+            {
+                SlideDirection = StableSideDirection(Forward, ResidentId);
+            }
 
-        // A near head-on hit against a flat box can yield a tangent that is
-        // immediately blocked by a neighbouring proxy. If the first sidestep
-        // made effectively no progress, try the resident's stable opposite
-        // side rather than oscillating left/right every frame.
-        const float SlideProgressSquared = FVector::DistSquared2D(BeforeSlide, GetActorLocation());
-        if (SlideProgressSquared <= FMath::Square(1.0f))
-        {
-            const FVector FallbackSide = StableSideDirection(Forward, ResidentId);
-            const FVector AlternateSide = bHadProjectedSlide
-                ? FallbackSide
-                : -FallbackSide;
+            const FVector BeforeSlide = GetActorLocation();
+            FHitResult SlideHit;
             SetActorLocation(
-                BeforeSlide + AlternateSide * StepDistance,
+                BeforeSlide + SlideDirection * RemainingStepDistance,
                 true,
-                nullptr,
+                &SlideHit,
                 ETeleportType::None);
+
+            // A near head-on hit against a flat box can yield a tangent that is
+            // immediately blocked by a neighbouring proxy. If the first sidestep
+            // made effectively no progress, try the resident's stable opposite
+            // side rather than oscillating left/right every frame. The alternate
+            // attempt uses the same remaining frame budget, never an extra step.
+            const float SlideProgressSquared = FVector::DistSquared2D(BeforeSlide, GetActorLocation());
+            if (SlideProgressSquared <= FMath::Square(1.0f))
+            {
+                const FVector FallbackSide = StableSideDirection(Forward, ResidentId);
+                const FVector AlternateSide = bHadProjectedSlide
+                    ? FallbackSide
+                    : -FallbackSide;
+                SetActorLocation(
+                    BeforeSlide + AlternateSide * RemainingStepDistance,
+                    true,
+                    nullptr,
+                    ETeleportType::None);
+            }
         }
     }
 
