@@ -5,7 +5,7 @@
 
 namespace
 {
-ELLCoreContextActionKind ToUnrealContextKind(lifelens::ContextActionKind Kind)
+ELLCoreContextActionKind ContextActionToUnrealContextKind(lifelens::ContextActionKind Kind)
 {
     switch (Kind)
     {
@@ -17,7 +17,7 @@ ELLCoreContextActionKind ToUnrealContextKind(lifelens::ContextActionKind Kind)
     }
 }
 
-ELLCoreSocialIntent ToUnrealSocialIntent(lifelens::SocialIntent Intent)
+ELLCoreSocialIntent ContextActionToUnrealSocialIntent(lifelens::SocialIntent Intent)
 {
     switch (Intent)
     {
@@ -30,7 +30,7 @@ ELLCoreSocialIntent ToUnrealSocialIntent(lifelens::SocialIntent Intent)
     }
 }
 
-ELLCoreCivilizationAction ToUnrealCivilizationAction(lifelens::CivilizationIntent Intent)
+ELLCoreCivilizationAction ContextActionToUnrealCivilizationAction(lifelens::CivilizationIntent Intent)
 {
     switch (Intent)
     {
@@ -43,7 +43,7 @@ ELLCoreCivilizationAction ToUnrealCivilizationAction(lifelens::CivilizationInten
     }
 }
 
-ELLCoreParentingAction ToUnrealParentingAction(lifelens::ParentingAction Action)
+ELLCoreParentingAction ContextActionToUnrealParentingAction(lifelens::ParentingAction Action)
 {
     switch (Action)
     {
@@ -61,7 +61,7 @@ ELLCoreParentingAction ToUnrealParentingAction(lifelens::ParentingAction Action)
     }
 }
 
-ELLCoreMaterialKind ToUnrealMaterial(lifelens::MaterialKind Kind)
+ELLCoreMaterialKind ContextActionToUnrealMaterial(lifelens::MaterialKind Kind)
 {
     switch (Kind)
     {
@@ -83,7 +83,7 @@ ELLCoreMaterialKind ToUnrealMaterial(lifelens::MaterialKind Kind)
     }
 }
 
-ELLCoreItemKind ToUnrealItem(lifelens::ItemKind Kind)
+ELLCoreItemKind ContextActionToUnrealItem(lifelens::ItemKind Kind)
 {
     switch (Kind)
     {
@@ -97,7 +97,7 @@ ELLCoreItemKind ToUnrealItem(lifelens::ItemKind Kind)
     }
 }
 
-ELLCoreTechniqueId ToUnrealTechnique(lifelens::TechniqueId Technique)
+ELLCoreTechniqueId ContextActionToUnrealTechnique(lifelens::TechniqueId Technique)
 {
     switch (Technique)
     {
@@ -140,7 +140,7 @@ bool ULLCoreBridgeSubsystem::GetResidentPendingContextDirective(
     }
 
     OutDirective.bAlive = true;
-    OutDirective.ContextActionKind = ToUnrealContextKind(Pending.kind);
+    OutDirective.ContextActionKind = ContextActionToUnrealContextKind(Pending.kind);
     OutDirective.ContextActionToken = static_cast<int64>(Pending.token);
     OutDirective.ContextActionDurationTicks = FMath::Max(1, Pending.durationTicks);
 
@@ -154,14 +154,14 @@ bool ULLCoreBridgeSubsystem::GetResidentPendingContextDirective(
     {
         case lifelens::ContextActionKind::Social:
             OutDirective.ActivityKind = ELLCoreObservedActivityKind::Social;
-            OutDirective.SocialIntent = ToUnrealSocialIntent(Pending.socialIntent);
+            OutDirective.SocialIntent = ContextActionToUnrealSocialIntent(Pending.socialIntent);
             break;
 
         case lifelens::ContextActionKind::Civilization:
-            OutDirective.CivilizationAction = ToUnrealCivilizationAction(Pending.civilizationIntent);
-            OutDirective.CivilizationMaterial = ToUnrealMaterial(Pending.material);
-            OutDirective.CivilizationItem = ToUnrealItem(Pending.item);
-            OutDirective.CivilizationTechnique = ToUnrealTechnique(Pending.technique);
+            OutDirective.CivilizationAction = ContextActionToUnrealCivilizationAction(Pending.civilizationIntent);
+            OutDirective.CivilizationMaterial = ContextActionToUnrealMaterial(Pending.material);
+            OutDirective.CivilizationItem = ContextActionToUnrealItem(Pending.item);
+            OutDirective.CivilizationTechnique = ContextActionToUnrealTechnique(Pending.technique);
             OutDirective.CivilizationQuantity = Pending.quantity;
             OutDirective.CivilizationActionMinute = Pending.issuedMinute;
             OutDirective.CivilizationResourceNodeId = static_cast<int64>(Pending.resourceNode);
@@ -174,7 +174,7 @@ bool ULLCoreBridgeSubsystem::GetResidentPendingContextDirective(
             break;
 
         case lifelens::ContextActionKind::Parenting:
-            OutDirective.ParentingAction = ToUnrealParentingAction(Pending.parentingAction);
+            OutDirective.ParentingAction = ContextActionToUnrealParentingAction(Pending.parentingAction);
             break;
 
         case lifelens::ContextActionKind::None:
