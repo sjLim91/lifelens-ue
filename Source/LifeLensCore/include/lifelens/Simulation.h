@@ -1,5 +1,6 @@
 #pragma once
 #include <algorithm>
+#include <cstdint>
 #include <functional>
 #include <string>
 #include <unordered_map>
@@ -18,6 +19,7 @@
 #include "Planner.h"
 #include "PrimitiveSanitation.h"
 #include "SimulationSnapshot.h"
+#include "SocialCommunicationReadModel.h"
 namespace lifelens {
 class Simulation {
 public:
@@ -103,6 +105,10 @@ public:
     SocialKnowledgeBook& socialKnowledge(){return socialKnowledge_;}
     const SocialKnowledgeBook& socialKnowledge() const{return socialKnowledge_;}
     const std::vector<std::string>& logs() const{return logs_;}
+    std::vector<SocialCommunicationObservation> observeRecentSocialEvents(
+        std::size_t maxEvents=32) const {
+        return recentSocialCommunicationTail(recentSocialEvents_,maxEvents);
+    }
     ResidentObservation observeResident(CharacterId id) const;
     std::vector<ResidentObservation> observeAllResidents() const;
     FamilyObservation observeFamily(CharacterId id) const;
@@ -164,7 +170,25 @@ private:
     std::unordered_map<CharacterId,Runtime> runtime_;
     std::vector<EventCallback> callbacks_;
     std::vector<std::string> logs_;
+    std::vector<SocialCommunicationObservation> recentSocialEvents_;
+    std::uint64_t nextSocialEventSequence_=1;
+    static constexpr std::size_t MaxRecentSocialEvents=64;
     void emit(const std::string& message);
+    void recordSocialEvent(const SocialEvent& event){
+        if(event.actor==0 || event.recipient==0) return;
+        recentSocialEvents_.push_back(
+            makeSocialCommunicationObservation(event,nextSocialEventSequence_++));
+        if(recentSocialEvents_.size()>MaxRecentSocialEvents){
+            recentSocialEvents_.erase(
+                recentSocialEvents_.begin(),
+                recentSocialEvents_.begin()+static_cast<std::ptrdiff_t>(
+                    recentSocialEvents_.size()-MaxRecentSocialEvents));
+        }
+    }
+    void clearRecentSocialEvents(){
+        recentSocialEvents_.clear();
+        nextSocialEventSequence_=1;
+    }
     std::string stamp() const;
     SmartObject* objectById(ObjectId id);
     void beginPlan(Character& c,Runtime& r);
