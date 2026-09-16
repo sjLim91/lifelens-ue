@@ -1,4 +1,5 @@
 #include "lifelens/Simulation.h"
+#include "lifelens/ToolEffectiveness.h"
 
 #include <algorithm>
 #include <iomanip>
@@ -178,7 +179,18 @@ bool Simulation::completeContextAction(
         }
 
         case ContextActionKind::Civilization: {
-            const CivilizationUtilityDecision decision=pending.civilization;
+            CivilizationUtilityDecision decision=pending.civilization;
+            GatherToolUseProfile gatherTool;
+            if(decision.intent==CivilizationIntent::Gather){
+                gatherTool=inspectGatherTool(actor.civilization.inventory,decision.material);
+                if(gatherTool.available){
+                    decision.quantity=gatheringQuantityWithTool(
+                        actor.civilization.inventory,
+                        decision.material,
+                        decision.quantity);
+                }
+            }
+
             const ResourceNodeId resourceNode=decision.resourceNode;
             const StorageId storage=decision.storage;
             const bool hadSpatialTarget=pending.hasSpatialTarget;
@@ -218,6 +230,19 @@ bool Simulation::completeContextAction(
                 return false;
             }
 
+            if(decision.intent==CivilizationIntent::Gather
+               && result.event.type==CivilizationEventType::Gathered
+               && result.event.quantity>0
+               && gatherTool.available){
+                GatherToolUseProfile consumedTool;
+                if(consumeGatherToolUse(
+                    actor.civilization.inventory,
+                    decision.material,
+                    &consumedTool)){
+                    gatherTool=consumedTool;
+                }
+            }
+
             runtime.civilizationActive=true;
             runtime.civilizationEvent=result.event;
             runtime.civilizationActivityMinute=world_.minute;
@@ -253,6 +278,13 @@ bool Simulation::completeContextAction(
                     break;
                 default:
                     break;
+            }
+            if(gatherTool.used){
+                log<<" tool="<<toolItemName(gatherTool.tool.kind)
+                   <<" q="<<std::fixed<<std::setprecision(2)<<gatherTool.tool.quality
+                   <<" durability="<<gatherTool.durabilityBefore
+                   <<"->"<<gatherTool.durabilityAfter;
+                if(gatherTool.broken) log<<" broken";
             }
             log<<" (civilization utility "<<std::fixed<<std::setprecision(2)<<decision.utility<<")";
             emit(log.str());
