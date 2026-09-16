@@ -50,6 +50,20 @@ public:
     // Distance from the actor origin down to the feet of the body.
     float GetFeetOffset() const { return FeetOffset; }
 
+    // Lifecycle presentation can resize the authoritative character capsule.
+    // Keep the visual body, its cached height, outfit/hair children and label
+    // calculations aligned without rebuilding identity/genetics/materials.
+    void ApplyLifecyclePresentationScale(float NewFeetOffset, const FVector& NewBodyScale)
+    {
+        FeetOffset = FMath::Max(1.0f, NewFeetOffset);
+        BodyScaleZ = FMath::Max(0.01f, NewBodyScale.Z);
+        if (Body)
+        {
+            Body->SetRelativeLocation(FVector(0.0f, 0.0f, -FeetOffset));
+            Body->SetRelativeScale3D(NewBodyScale);
+        }
+    }
+
     const FLLResidentAppearanceInputs& GetInputs() const { return Inputs; }
 
     USkeletalMeshComponent* GetBodyComponent() const { return Body; }
