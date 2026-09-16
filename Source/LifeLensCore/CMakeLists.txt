@@ -121,6 +121,10 @@ lifelens_add_test(test_civilization_knowledge_transmission)
 
 lifelens_add_test(test_civilization_observer_read_model)
 
+lifelens_add_test(test_facility_authority)
+
+lifelens_add_test(test_primitive_storage_progression)
+
 lifelens_add_test(test_environmental_residue)
 
 lifelens_add_test(test_external_physical_execution)

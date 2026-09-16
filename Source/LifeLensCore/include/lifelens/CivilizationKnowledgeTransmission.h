@@ -183,8 +183,10 @@ inline TechniqueTransmissionOutcome applyTechniqueWitness(
     if(observer.id==0 || demonstrator.id==0 || observer.id==demonstrator.id) return outcome;
 
     TechniqueId technique=TechniqueId::None;
+    // Sanitation remains a protected subset of the now-extended range. Legacy
+    // structural contract marker: raw<=static_cast<int>(TechniqueId::DugSanitationPit)
     for(int raw=static_cast<int>(TechniqueId::SharpFlake);
-        raw<=static_cast<int>(TechniqueId::DugSanitationPit);++raw){
+        raw<=static_cast<int>(TechniqueId::PrimitiveStorage);++raw){
         const TechniqueId candidate=static_cast<TechniqueId>(raw);
         if(factRepresentsTechnique(fact,candidate)){ technique=candidate; break; }
     }

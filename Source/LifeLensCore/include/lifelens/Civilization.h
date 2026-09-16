@@ -214,7 +214,8 @@ enum class TechniqueId {
     FiberCordage,
     SimpleContainer,
     DesignatedSanitationArea,
-    DugSanitationPit
+    DugSanitationPit,
+    PrimitiveStorage
 };
 
 enum class KnowledgeLevel : int {
@@ -299,7 +300,8 @@ enum class ExperimentKind {
     TwistFiber,
     ShapeClay,
     DesignateSanitationArea,
-    DigSanitationPit
+    DigSanitationPit,
+    OrganizeStockpile
 };
 
 enum class CivilizationEventType {
@@ -331,6 +333,7 @@ struct ExperimentContext {
     bool sanitationProblemRecognized=false;
     bool sanitationSiteAvailable=false;
     bool sanitationPitCandidateAvailable=false;
+    bool storageProblemRecognized=false;
 };
 
 struct ExperimentResult {
@@ -375,6 +378,7 @@ inline TechniqueRecipe techniqueRecipe(TechniqueId technique)
             return {technique,{{ItemKind::RawMaterial,MaterialKind::Clay,3,false}},true,ItemKind::SimpleContainer,MaterialKind::Clay,1};
         case TechniqueId::DesignatedSanitationArea:
         case TechniqueId::DugSanitationPit:
+        case TechniqueId::PrimitiveStorage:
             return {technique,{},false,ItemKind::RawMaterial,MaterialKind::Unknown,0};
         case TechniqueId::None:
         default:
@@ -411,6 +415,7 @@ inline TechniqueId experimentTechnique(ExperimentKind kind)
         case ExperimentKind::ShapeClay: return TechniqueId::SimpleContainer;
         case ExperimentKind::DesignateSanitationArea: return TechniqueId::DesignatedSanitationArea;
         case ExperimentKind::DigSanitationPit: return TechniqueId::DugSanitationPit;
+        case ExperimentKind::OrganizeStockpile: return TechniqueId::PrimitiveStorage;
         default: return TechniqueId::None;
     }
 }
@@ -447,6 +452,7 @@ inline double experimentBaseChance(ExperimentKind kind,MaterialKind material)
         case ExperimentKind::ShapeClay: return material==MaterialKind::Clay ? 0.30 : 0.0;
         case ExperimentKind::DesignateSanitationArea: return material==MaterialKind::Unknown ? 0.32 : 0.0;
         case ExperimentKind::DigSanitationPit: return material==MaterialKind::Unknown ? 0.28 : 0.0;
+        case ExperimentKind::OrganizeStockpile: return material==MaterialKind::Unknown ? 0.34 : 0.0;
         default: return 0.0;
     }
 }
@@ -481,6 +487,9 @@ inline bool experimentPrerequisitesMet(const ExperimentContext& context,const Kn
         return context.sanitationPitCandidateAvailable
             && knowledge.knowsAtLeast(
                 TechniqueId::DesignatedSanitationArea,KnowledgeLevel::Reproducible);
+    }
+    if(context.kind==ExperimentKind::OrganizeStockpile){
+        return context.storageProblemRecognized;
     }
     return true;
 }

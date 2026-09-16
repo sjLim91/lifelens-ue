@@ -43,6 +43,32 @@ ELLCoreCivilizationAction ContextActionToUnrealCivilizationAction(lifelens::Civi
     }
 }
 
+ELLCoreFacilityBuildAction ContextActionToUnrealFacilityAction(lifelens::FacilityBuildAction Action)
+{
+    switch (Action)
+    {
+        case lifelens::FacilityBuildAction::Plan: return ELLCoreFacilityBuildAction::Plan;
+        case lifelens::FacilityBuildAction::DeliverMaterial: return ELLCoreFacilityBuildAction::DeliverMaterial;
+        case lifelens::FacilityBuildAction::Work: return ELLCoreFacilityBuildAction::Work;
+        case lifelens::FacilityBuildAction::None:
+        default: return ELLCoreFacilityBuildAction::None;
+    }
+}
+
+ELLCoreFacilityKind ContextActionToUnrealFacilityKind(lifelens::FacilityKind Kind)
+{
+    switch (Kind)
+    {
+        case lifelens::FacilityKind::PrimitiveStorage: return ELLCoreFacilityKind::PrimitiveStorage;
+        case lifelens::FacilityKind::FirePit: return ELLCoreFacilityKind::FirePit;
+        case lifelens::FacilityKind::WorkSurface: return ELLCoreFacilityKind::WorkSurface;
+        case lifelens::FacilityKind::SleepingPlace: return ELLCoreFacilityKind::SleepingPlace;
+        case lifelens::FacilityKind::Shelter: return ELLCoreFacilityKind::Shelter;
+        case lifelens::FacilityKind::Furnace: return ELLCoreFacilityKind::Furnace;
+        default: return ELLCoreFacilityKind::PrimitiveStorage;
+    }
+}
+
 ELLCoreParentingAction ContextActionToUnrealParentingAction(lifelens::ParentingAction Action)
 {
     switch (Action)
@@ -108,6 +134,7 @@ ELLCoreTechniqueId ContextActionToUnrealTechnique(lifelens::TechniqueId Techniqu
         case lifelens::TechniqueId::SimpleContainer: return ELLCoreTechniqueId::SimpleContainer;
         case lifelens::TechniqueId::DesignatedSanitationArea: return ELLCoreTechniqueId::DesignatedSanitationArea;
         case lifelens::TechniqueId::DugSanitationPit: return ELLCoreTechniqueId::DugSanitationPit;
+        case lifelens::TechniqueId::PrimitiveStorage: return ELLCoreTechniqueId::PrimitiveStorage;
         case lifelens::TechniqueId::None:
         default: return ELLCoreTechniqueId::None;
     }
@@ -166,6 +193,9 @@ bool ULLCoreBridgeSubsystem::GetResidentPendingContextDirective(
             OutDirective.CivilizationActionMinute = Pending.issuedMinute;
             OutDirective.CivilizationResourceNodeId = static_cast<int64>(Pending.resourceNode);
             OutDirective.CivilizationStorageId = static_cast<int64>(Pending.storage);
+            OutDirective.CivilizationFacilityAction = ContextActionToUnrealFacilityAction(Pending.facilityAction);
+            OutDirective.CivilizationFacilityId = static_cast<int64>(Pending.facility);
+            OutDirective.CivilizationFacilityKind = ContextActionToUnrealFacilityKind(Pending.facilityKind);
             OutDirective.bCivilizationActionSucceeded = false;
             OutDirective.bHasCivilizationSpatialTarget = Pending.hasSpatialTarget;
             OutDirective.CivilizationTargetGridX = Pending.targetPos.x;

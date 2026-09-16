@@ -19,6 +19,9 @@ namespace LLObserverKorean
     inline const TCHAR* const Pregnancies = TEXT("임신 중");
     inline const TCHAR* const KnownTechniques = TEXT("알고 있는 기술");
     inline const TCHAR* const StoredUnits = TEXT("저장 자원");
+    inline const TCHAR* const Facilities = TEXT("시설 수");
+    inline const TCHAR* const FacilitiesUnderConstruction = TEXT("건설 중");
+    inline const TCHAR* const FacilitiesOperational = TEXT("가동 중");
     inline const TCHAR* const RecentDiscovery = TEXT("최근 발견");
 
     inline const TCHAR* const Hunger = TEXT("배고픔");
@@ -160,6 +163,7 @@ namespace LLObserverKorean
             case ELLCoreTechniqueId::SimpleContainer:           return TEXT("간이 용기 제작");
             case ELLCoreTechniqueId::DesignatedSanitationArea:  return TEXT("지정 위생 구역");
             case ELLCoreTechniqueId::DugSanitationPit:          return TEXT("위생 구덩이");
+            case ELLCoreTechniqueId::PrimitiveStorage:          return TEXT("원시 저장소");
             case ELLCoreTechniqueId::None:
             default:                                             return TEXT("없음");
         }

@@ -9,9 +9,17 @@ class UBlendSpace;
 class ULLResidentAppearanceComponent;
 class USkeletalMeshComponent;
 
+UENUM(BlueprintType)
+enum class ELLResidentWorkPresentationMode : uint8
+{
+    None,
+    Interact,
+    Build
+};
+
 // Character Motion Bootstrap: locomotion + lightweight context presentation.
 // Core/World keep all action authority; this component only reflects the
-// resident actor's actual movement and active social interaction visually.
+// resident actor's actual movement and active authoritative context work.
 UCLASS(ClassGroup=(LifeLens), meta=(BlueprintSpawnableComponent))
 class LIFELENS_API ULLResidentMotionComponent : public UActorComponent
 {
@@ -26,14 +34,20 @@ public:
     UFUNCTION(BlueprintPure, Category="LifeLens|Motion")
     float GetGroundSpeed() const { return SmoothedSpeed; }
 
-    // Presentation-only signal from WorldDirector. It never starts/completes a
-    // Core action and is cleared whenever the authoritative context action is
-    // no longer being performed at its target.
+    // Presentation-only signals from WorldDirector. They never start/complete a
+    // Core action and are cleared whenever the authoritative context action is
+    // not actively being performed at its target.
     UFUNCTION(BlueprintCallable, Category="LifeLens|Motion")
     void SetSocialInteractionActive(bool bActive);
 
+    UFUNCTION(BlueprintCallable, Category="LifeLens|Motion")
+    void SetWorkPresentationMode(ELLResidentWorkPresentationMode Mode);
+
     UFUNCTION(BlueprintPure, Category="LifeLens|Motion")
     bool IsSocialInteractionActive() const { return bSocialInteractionActive; }
+
+    UFUNCTION(BlueprintPure, Category="LifeLens|Motion")
+    ELLResidentWorkPresentationMode GetWorkPresentationMode() const { return WorkPresentationMode; }
 
     static constexpr float IdleSpeedThreshold = 5.0f;
     static constexpr float MaxSpeed = 600.0f;
@@ -45,7 +59,7 @@ public:
 private:
     void EnsureLocomotionPlaying();
     void UpdateBodyOrientation(float DeltaTime);
-    void UpdateSocialAnimationState();
+    void UpdateContextAnimationState();
 
     UPROPERTY(EditAnywhere, Category="LifeLens|Motion")
     float MeshForwardYawOffsetDegrees = -90.0f;
@@ -53,6 +67,9 @@ private:
     UPROPERTY() TObjectPtr<UBlendSpace> LocomotionBlendSpace;
     UPROPERTY() TObjectPtr<UAnimSequence> IdleAnimation;
     UPROPERTY() TObjectPtr<UAnimSequence> TalkingAnimation;
+    UPROPERTY() TObjectPtr<UAnimSequence> InteractAnimation;
+    UPROPERTY() TObjectPtr<UAnimSequence> BuildAnimation;
+    UPROPERTY() TObjectPtr<UAnimSequence> ActiveContextAnimation;
 
     UPROPERTY() TObjectPtr<ULLResidentAppearanceComponent> Appearance;
     UPROPERTY() TObjectPtr<USkeletalMeshComponent> Body;
@@ -67,6 +84,6 @@ private:
     bool bHasPreviousLocation = false;
     bool bLocomotionPlaying = false;
     bool bSocialInteractionActive = false;
-    bool bSocialAnimationPlaying = false;
+    ELLResidentWorkPresentationMode WorkPresentationMode = ELLResidentWorkPresentationMode::None;
     float DebugLogTimer = 0.0f;
 };

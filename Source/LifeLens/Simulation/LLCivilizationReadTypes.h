@@ -43,7 +43,8 @@ enum class ELLCoreTechniqueId : uint8
     FiberCordage,
     SimpleContainer,
     DesignatedSanitationArea,
-    DugSanitationPit
+    DugSanitationPit,
+    PrimitiveStorage
 };
 
 UENUM(BlueprintType)
@@ -65,6 +66,26 @@ enum class ELLCoreKnowledgeSource : uint8
     SelfDiscovery,
     DirectWitness,
     Teaching
+};
+
+UENUM(BlueprintType)
+enum class ELLCoreFacilityKind : uint8
+{
+    PrimitiveStorage,
+    FirePit,
+    WorkSurface,
+    SleepingPlace,
+    Shelter,
+    Furnace
+};
+
+UENUM(BlueprintType)
+enum class ELLCoreFacilityState : uint8
+{
+    Planned,
+    UnderConstruction,
+    Operational,
+    Ruined
 };
 
 USTRUCT(BlueprintType)
@@ -142,6 +163,41 @@ struct FLLCoreCivilizationStorageObservation
 };
 
 USTRUCT(BlueprintType)
+struct FLLCoreCivilizationFacilityRequirementObservation
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") ELLCoreMaterialKind Material = ELLCoreMaterialKind::Unknown;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int32 Required = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int32 Delivered = 0;
+};
+
+USTRUCT(BlueprintType)
+struct FLLCoreCivilizationFacilityObservation
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int64 FacilityId = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") ELLCoreFacilityKind Kind = ELLCoreFacilityKind::PrimitiveStorage;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") ELLCoreFacilityState State = ELLCoreFacilityState::Planned;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int32 GridX = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int32 GridY = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") FGuid InitiatedByResidentId;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") FGuid LastWorkedByResidentId;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int64 StartedMinute = -1;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int64 CompletedMinute = -1;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") float ConstructionWork = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") float RequiredWork = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") float WorkProgress = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") float Durability = 1.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") bool bActive = false;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int64 LinkedStorageId = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int32 RequiredMaterialUnits = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int32 DeliveredMaterialUnits = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") TArray<FLLCoreCivilizationFacilityRequirementObservation> Requirements;
+};
+
+USTRUCT(BlueprintType)
 struct FLLCoreCivilizationDiscoveryObservation
 {
     GENERATED_BODY()
@@ -167,6 +223,11 @@ struct FLLCoreCivilizationWorldObservation
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int32 StorageSiteCount = 0;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int32 TotalStoredUnits = 0;
 
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int32 FacilityCount = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int32 PlannedFacilityCount = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int32 UnderConstructionFacilityCount = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int32 OperationalFacilityCount = 0;
+
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int32 TechniqueFactCount = 0;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int32 TransmissionReceiptCount = 0;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int32 UniqueKnownTechniqueTypes = 0;
@@ -176,5 +237,6 @@ struct FLLCoreCivilizationWorldObservation
 
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") TArray<FLLCoreCivilizationResourceObservation> Resources;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") TArray<FLLCoreCivilizationStorageObservation> Storages;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") TArray<FLLCoreCivilizationFacilityObservation> Facilities;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") TArray<FLLCoreCivilizationDiscoveryObservation> RecentDiscoveries;
 };
