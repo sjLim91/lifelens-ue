@@ -42,7 +42,10 @@ enum class ELLCoreFacilityBuildAction : uint8
     None,
     Plan,
     DeliverMaterial,
-    Work
+    Work,
+    Fuel,
+    Ignite,
+    CollectCharcoal
 };
 
 UENUM(BlueprintType)
