@@ -7,12 +7,14 @@
 #include <vector>
 
 #include "Civilization.h"
+#include "Facility.h"
 #include "World.h"
 
 namespace lifelens {
 
 constexpr char CivilizationSnapshotExtensionMagic[]={'L','L','C','I','V','0','0','1'};
-constexpr std::uint32_t CivilizationSnapshotExtensionVersion=2;
+constexpr std::uint32_t CivilizationSnapshotExtensionVersion=3;
+constexpr std::uint32_t CivilizationSnapshotExtensionSpatialVersion=2;
 constexpr std::uint32_t CivilizationSnapshotExtensionLegacyVersion=1;
 
 inline bool validCivilizationUnit(double value)
@@ -34,8 +36,6 @@ inline bool validItemKind(ItemKind value)
 
 inline bool validTechniqueId(TechniqueId value)
 {
-    // The contiguous persisted range includes both
-    // TechniqueId::DesignatedSanitationArea and TechniqueId::DugSanitationPit.
     return static_cast<int>(value)>=static_cast<int>(TechniqueId::None)
         && static_cast<int>(value)<=static_cast<int>(TechniqueId::DugSanitationPit);
 }
@@ -97,6 +97,7 @@ inline void initializeLegacyCivilizationState(World& world)
             character.personality.openness*0.18));
         character.civilization=std::move(state);
     }
+    world.facilities.clear();
     // World(seed) already creates the deterministic natural environment.
 }
 
@@ -193,10 +194,6 @@ bool readCivilizationKnowledge(ReaderT& r,KnowledgeState& knowledge)
         records.push_back(record);
     }
 
-    // Snapshot restore is the only place that must reinstate the exact private
-    // practice counter. The object is non-const; all() intentionally remains a
-    // read-only gameplay API, so persistence performs this narrowly-scoped
-    // canonical-state restore without exposing a general mutation surface.
     auto& target=const_cast<std::vector<TechniqueKnowledge>&>(knowledge.all());
     target=std::move(records);
     return true;
@@ -253,7 +250,8 @@ bool readCivilizationResourceNode(
        || !r.i32(node.maxQuantity)
        || !r.boolean(node.renewable)
        || !r.i32(node.regenerationPerDay)) return false;
-    if(version>=2 && (!r.i32(node.pos.x) || !r.i32(node.pos.y))) return false;
+    if(version>=CivilizationSnapshotExtensionSpatialVersion
+       && (!r.i32(node.pos.x) || !r.i32(node.pos.y))) return false;
     return node.id!=0
         && validMaterialKind(node.material)
         && node.material!=MaterialKind::Unknown
@@ -278,8 +276,81 @@ bool readCivilizationStorageSite(
     std::uint32_t version=CivilizationSnapshotExtensionVersion)
 {
     if(!r.u64(storage.id) || storage.id==0 || !readCivilizationInventory(r,storage.inventory)) return false;
-    if(version>=2 && (!r.i32(storage.pos.x) || !r.i32(storage.pos.y))) return false;
+    if(version>=CivilizationSnapshotExtensionSpatialVersion
+       && (!r.i32(storage.pos.x) || !r.i32(storage.pos.y))) return false;
     return true;
+}
+
+template<typename WriterT>
+void writeFacilityRequirement(WriterT& w,const FacilityMaterialRequirement& requirement)
+{
+    w.enumeration(requirement.material);
+    w.i32(requirement.required);
+    w.i32(requirement.delivered);
+}
+
+template<typename ReaderT>
+bool readFacilityRequirement(ReaderT& r,FacilityMaterialRequirement& requirement)
+{
+    return r.enumeration(requirement.material)
+        && r.i32(requirement.required)
+        && r.i32(requirement.delivered)
+        && validMaterialKind(requirement.material)
+        && requirement.material!=MaterialKind::Unknown
+        && requirement.required>0
+        && requirement.delivered>=0
+        && requirement.delivered<=requirement.required;
+}
+
+template<typename WriterT>
+void writeConstructedFacility(WriterT& w,const ConstructedFacility& facility)
+{
+    w.u64(facility.id);
+    w.enumeration(facility.kind);
+    w.enumeration(facility.state);
+    w.i32(facility.pos.x);
+    w.i32(facility.pos.y);
+    w.u64(facility.initiatedBy);
+    w.u64(facility.lastWorkedBy);
+    w.i32(facility.startedMinute);
+    w.i32(facility.completedMinute);
+    w.real(facility.constructionWork);
+    w.real(facility.requiredWork);
+    w.real(facility.durability);
+    w.boolean(facility.active);
+    w.u64(facility.linkedStorage);
+    w.u32(static_cast<std::uint32_t>(facility.requirements.size()));
+    for(const auto& requirement:facility.requirements) writeFacilityRequirement(w,requirement);
+}
+
+template<typename ReaderT>
+bool readConstructedFacility(ReaderT& r,ConstructedFacility& facility)
+{
+    if(!r.u64(facility.id)
+       || !r.enumeration(facility.kind)
+       || !r.enumeration(facility.state)
+       || !r.i32(facility.pos.x)
+       || !r.i32(facility.pos.y)
+       || !r.u64(facility.initiatedBy)
+       || !r.u64(facility.lastWorkedBy)
+       || !r.i32(facility.startedMinute)
+       || !r.i32(facility.completedMinute)
+       || !r.real(facility.constructionWork)
+       || !r.real(facility.requiredWork)
+       || !r.real(facility.durability)
+       || !r.boolean(facility.active)
+       || !r.u64(facility.linkedStorage)) return false;
+
+    std::uint32_t requirementCount=0;
+    if(!r.count(requirementCount) || requirementCount==0) return false;
+    facility.requirements.clear();
+    facility.requirements.reserve(requirementCount);
+    for(std::uint32_t i=0;i<requirementCount;++i){
+        FacilityMaterialRequirement requirement;
+        if(!readFacilityRequirement(r,requirement)) return false;
+        facility.requirements.push_back(requirement);
+    }
+    return validConstructedFacility(facility);
 }
 
 template<typename WriterT>
@@ -298,6 +369,9 @@ void writeCivilizationSnapshotExtension(WriterT& w,const World& world)
 
     w.u32(static_cast<std::uint32_t>(world.storageSites.size()));
     for(const StorageSite& storage:world.storageSites) writeCivilizationStorageSite(w,storage);
+
+    w.u32(static_cast<std::uint32_t>(world.facilities.size()));
+    for(const ConstructedFacility& facility:world.facilities) writeConstructedFacility(w,facility);
 }
 
 template<typename ReaderT>
@@ -312,6 +386,7 @@ bool readCivilizationSnapshotExtension(
        || std::memcmp(magic,CivilizationSnapshotExtensionMagic,sizeof(magic))!=0
        || !r.u32(version)
        || (version!=CivilizationSnapshotExtensionLegacyVersion
+           && version!=CivilizationSnapshotExtensionSpatialVersion
            && version!=CivilizationSnapshotExtensionVersion)) return false;
     if(outVersion) *outVersion=version;
 
@@ -349,8 +424,25 @@ bool readCivilizationSnapshotExtension(
         storages.push_back(std::move(storage));
     }
 
+    std::vector<ConstructedFacility> facilities;
+    if(version>=3){
+        std::uint32_t facilityCount=0;
+        if(!r.count(facilityCount)) return false;
+        facilities.reserve(facilityCount);
+        std::unordered_set<FacilityId> facilityIds;
+        for(std::uint32_t i=0;i<facilityCount;++i){
+            ConstructedFacility facility;
+            if(!readConstructedFacility(r,facility)
+               || !facilityIds.insert(facility.id).second) return false;
+            if(facility.linkedStorage!=0 && storageIds.find(facility.linkedStorage)==storageIds.end())
+                return false;
+            facilities.push_back(std::move(facility));
+        }
+    }
+
     world.resourceNodes=std::move(resources);
     world.storageSites=std::move(storages);
+    world.facilities=std::move(facilities);
     return true;
 }
 
