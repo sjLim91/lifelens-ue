@@ -195,6 +195,7 @@ void ALLWorldDirector::ApplyPendingContextDirective(
             }
             else if (Directive.CivilizationTechnique == ELLCoreTechniqueId::PrimitiveStorage)
             {
+                bFaceWorldTarget = true;
                 switch (Directive.CivilizationFacilityAction)
                 {
                     case ELLCoreFacilityBuildAction::Plan:
@@ -203,6 +204,30 @@ void ALLWorldDirector::ApplyPendingContextDirective(
                         break;
                     case ELLCoreFacilityBuildAction::Work:
                         WorkAtTarget = ELLResidentWorkPresentationMode::Build;
+                        break;
+                    case ELLCoreFacilityBuildAction::Fuel:
+                    case ELLCoreFacilityBuildAction::Ignite:
+                    case ELLCoreFacilityBuildAction::CollectCharcoal:
+                    case ELLCoreFacilityBuildAction::None:
+                    default:
+                        break;
+                }
+            }
+            else if (Directive.CivilizationTechnique == ELLCoreTechniqueId::FireMaking
+                && Directive.CivilizationFacilityKind == ELLCoreFacilityKind::FirePit)
+            {
+                bFaceWorldTarget = true;
+                switch (Directive.CivilizationFacilityAction)
+                {
+                    case ELLCoreFacilityBuildAction::Work:
+                        WorkAtTarget = ELLResidentWorkPresentationMode::Build;
+                        break;
+                    case ELLCoreFacilityBuildAction::Plan:
+                    case ELLCoreFacilityBuildAction::DeliverMaterial:
+                    case ELLCoreFacilityBuildAction::Fuel:
+                    case ELLCoreFacilityBuildAction::Ignite:
+                    case ELLCoreFacilityBuildAction::CollectCharcoal:
+                        WorkAtTarget = ELLResidentWorkPresentationMode::Interact;
                         break;
                     case ELLCoreFacilityBuildAction::None:
                     default:

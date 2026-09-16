@@ -53,6 +53,16 @@ struct ConstructedFacility {
     bool active = false;
     StorageId linkedStorage = 0;
     std::vector<FacilityMaterialRequirement> requirements;
+
+    // Heat-production authority. These fields are intentionally resident on the
+    // facility itself so Presentation never has to invent fire state. They are
+    // zero for facilities that do not produce heat.
+    int fuelUnits = 0;
+    int charcoalUnits = 0;
+    double heatLevel = 0.0;
+    bool lit = false;
+    int burnMinutesRemaining = 0;
+    int lastFireMinute = -1;
 };
 
 inline bool validFacilityKind(FacilityKind kind)
@@ -72,6 +82,11 @@ inline bool facilityProvidesStorage(FacilityKind kind)
     return kind == FacilityKind::PrimitiveStorage;
 }
 
+inline bool facilityProducesHeat(FacilityKind kind)
+{
+    return kind == FacilityKind::FirePit || kind == FacilityKind::Furnace;
+}
+
 inline FacilityConstructionSpec facilityConstructionSpec(FacilityKind kind)
 {
     switch(kind){
@@ -83,6 +98,13 @@ inline FacilityConstructionSpec facilityConstructionSpec(FacilityKind kind)
                 {MaterialKind::Fiber,2,0}
             }};
         case FacilityKind::FirePit:
+            // A deliberately primitive stone-ring hearth. FireMaking knowledge is
+            // checked by the progression layer; the facility contract only owns
+            // the physical material/work requirements.
+            return {kind,6.0,{
+                {MaterialKind::Stone,5,0},
+                {MaterialKind::Wood,2,0}
+            }};
         case FacilityKind::WorkSurface:
         case FacilityKind::SleepingPlace:
         case FacilityKind::Shelter:
@@ -229,6 +251,85 @@ inline bool activateConstructedFacility(
     return true;
 }
 
+constexpr int PrimitiveFireBurnMinutesPerWoodUnit = 30;
+
+inline int addFirePitWoodFuel(
+    ConstructedFacility& facility,
+    Inventory& source,
+    int requested)
+{
+    if(facility.id == 0 || facility.kind != FacilityKind::FirePit
+       || facility.state != FacilityState::Operational || !facility.active
+       || requested <= 0) return 0;
+    const int available = source.count(ItemKind::RawMaterial,MaterialKind::Wood);
+    const int added = std::min(requested,available);
+    if(added <= 0) return 0;
+    if(!source.remove(ItemKind::RawMaterial,MaterialKind::Wood,added)) return 0;
+    facility.fuelUnits += added;
+    return added;
+}
+
+inline bool igniteFirePit(ConstructedFacility& facility,int minute)
+{
+    if(facility.id == 0 || facility.kind != FacilityKind::FirePit
+       || facility.state != FacilityState::Operational || !facility.active
+       || facility.fuelUnits <= 0 || facility.lit) return false;
+    facility.lit = true;
+    facility.heatLevel = 1.0;
+    facility.burnMinutesRemaining = PrimitiveFireBurnMinutesPerWoodUnit;
+    facility.lastFireMinute = std::max(0,minute);
+    return true;
+}
+
+inline void advanceFirePitOneMinute(ConstructedFacility& facility,int minute)
+{
+    if(facility.kind != FacilityKind::FirePit
+       || facility.state != FacilityState::Operational || !facility.active){
+        facility.lit = false;
+        facility.heatLevel = 0.0;
+        facility.burnMinutesRemaining = 0;
+        return;
+    }
+
+    if(!facility.lit){
+        facility.heatLevel = std::max(0.0,facility.heatLevel - 0.04);
+        if(facility.heatLevel <= 1e-9) facility.heatLevel = 0.0;
+        return;
+    }
+
+    facility.lastFireMinute = std::max(facility.lastFireMinute,std::max(0,minute));
+    facility.heatLevel = std::max(0.45,facility.heatLevel - 0.01);
+    if(facility.burnMinutesRemaining > 0) --facility.burnMinutesRemaining;
+    if(facility.burnMinutesRemaining > 0) return;
+
+    if(facility.fuelUnits > 0){
+        --facility.fuelUnits;
+        ++facility.charcoalUnits;
+    }
+    if(facility.fuelUnits > 0){
+        facility.burnMinutesRemaining = PrimitiveFireBurnMinutesPerWoodUnit;
+        facility.heatLevel = 1.0;
+    }else{
+        facility.lit = false;
+        facility.burnMinutesRemaining = 0;
+        facility.heatLevel = 0.20;
+    }
+}
+
+inline int collectFirePitCharcoal(
+    ConstructedFacility& facility,
+    Inventory& destination,
+    int requested)
+{
+    if(facility.id == 0 || facility.kind != FacilityKind::FirePit
+       || facility.state != FacilityState::Operational || !facility.active
+       || requested <= 0 || facility.charcoalUnits <= 0) return 0;
+    const int collected = std::min(requested,facility.charcoalUnits);
+    facility.charcoalUnits -= collected;
+    destination.add({ItemKind::RawMaterial,MaterialKind::Charcoal,collected,0.55,1.0});
+    return collected;
+}
+
 inline bool validConstructedFacility(const ConstructedFacility& facility)
 {
     if(facility.id == 0 || !validFacilityKind(facility.kind) || !validFacilityState(facility.state)
@@ -236,7 +337,10 @@ inline bool validConstructedFacility(const ConstructedFacility& facility)
        || facility.requiredWork <= 0.0 || facility.constructionWork < 0.0
        || facility.constructionWork > facility.requiredWork + 1e-9
        || facility.durability < 0.0 || facility.durability > 1.0
-       || facility.requirements.empty()) return false;
+       || facility.requirements.empty()
+       || facility.fuelUnits < 0 || facility.charcoalUnits < 0
+       || facility.heatLevel < 0.0 || facility.heatLevel > 1.0
+       || facility.burnMinutesRemaining < 0) return false;
 
     bool hasIncomplete = false;
     std::vector<int> seenMaterials;
@@ -257,6 +361,20 @@ inline bool validConstructedFacility(const ConstructedFacility& facility)
     }else{
         if(facility.active || facility.completedMinute >= 0) return false;
         if(facility.linkedStorage != 0) return false;
+        if(facility.fuelUnits != 0 || facility.charcoalUnits != 0
+           || facility.heatLevel != 0.0 || facility.lit
+           || facility.burnMinutesRemaining != 0 || facility.lastFireMinute >= 0) return false;
+    }
+
+    if(!facilityProducesHeat(facility.kind)){
+        if(facility.fuelUnits != 0 || facility.charcoalUnits != 0
+           || facility.heatLevel != 0.0 || facility.lit
+           || facility.burnMinutesRemaining != 0 || facility.lastFireMinute >= 0) return false;
+    }
+    if(facility.lit){
+        if(!facilityProducesHeat(facility.kind) || facility.fuelUnits <= 0
+           || facility.heatLevel <= 0.0 || facility.burnMinutesRemaining <= 0
+           || facility.lastFireMinute < 0) return false;
     }
     return true;
 }

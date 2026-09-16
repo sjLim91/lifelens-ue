@@ -96,6 +96,12 @@ struct CivilizationFacilityObservation {
     StorageId linkedStorage=0;
     int requiredMaterialUnits=0;
     int deliveredMaterialUnits=0;
+    int fuelUnits=0;
+    int charcoalUnits=0;
+    double heatLevel=0.0;
+    bool lit=false;
+    int burnMinutesRemaining=0;
+    int lastFireMinute=-1;
     std::vector<CivilizationFacilityRequirementObservation> requirements;
 };
 
@@ -137,11 +143,11 @@ struct CivilizationWorldObservation {
 
 inline TechniqueId techniqueFromCivilizationFact(const SocialFact& fact)
 {
-    // The old sanitation-only boundary remains a covered subset after adding
-    // PrimitiveStorage. Structural compatibility markers:
+    // The sanitation-only boundary remains a covered subset while newer
+    // techniques extend the observer range. Structural compatibility marker:
     // raw<=static_cast<int>(TechniqueId::DugSanitationPit)
     for(int raw=static_cast<int>(TechniqueId::SharpFlake);
-        raw<=static_cast<int>(TechniqueId::PrimitiveStorage);++raw){
+        raw<=static_cast<int>(TechniqueId::StoneHammer);++raw){
         const TechniqueId candidate=static_cast<TechniqueId>(raw);
         if(factRepresentsTechnique(fact,candidate)) return candidate;
     }
@@ -299,6 +305,12 @@ inline CivilizationFacilityObservation makeCivilizationFacilityObservation(
     dto.durability=facility.durability;
     dto.active=facility.active;
     dto.linkedStorage=facility.linkedStorage;
+    dto.fuelUnits=facility.fuelUnits;
+    dto.charcoalUnits=facility.charcoalUnits;
+    dto.heatLevel=facility.heatLevel;
+    dto.lit=facility.lit;
+    dto.burnMinutesRemaining=facility.burnMinutesRemaining;
+    dto.lastFireMinute=facility.lastFireMinute;
     dto.requirements.reserve(facility.requirements.size());
     for(const auto& requirement:facility.requirements){
         CivilizationFacilityRequirementObservation observed;
@@ -369,7 +381,7 @@ inline CivilizationWorldObservation buildCivilizationWorldObservation(
 
     // Legacy sanitation slot subset is still contained in this expanded count:
     // static_cast<std::size_t>(TechniqueId::DugSanitationPit)+1
-    constexpr std::size_t TechniqueSlots=static_cast<std::size_t>(TechniqueId::PrimitiveStorage)+1;
+    constexpr std::size_t TechniqueSlots=static_cast<std::size_t>(TechniqueId::StoneHammer)+1;
     std::array<bool,TechniqueSlots> knownTypes{};
     std::array<bool,TechniqueSlots> reproducibleTypes{};
     for(const Character& character:world.characters){

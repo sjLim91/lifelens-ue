@@ -116,11 +116,14 @@ inline int contextActionDurationTicks(const PendingContextAction& action)
             return 3;
         case ContextActionKind::Civilization:
             if(action.civilization.intent==CivilizationIntent::Craft
-               && action.civilization.technique==TechniqueId::PrimitiveStorage){
+               && action.civilization.facilityAction!=FacilityBuildAction::None){
                 switch(action.civilization.facilityAction){
                     case FacilityBuildAction::Plan: return 4;
                     case FacilityBuildAction::DeliverMaterial: return 4;
                     case FacilityBuildAction::Work: return 8;
+                    case FacilityBuildAction::Fuel: return 4;
+                    case FacilityBuildAction::Ignite: return 6;
+                    case FacilityBuildAction::CollectCharcoal: return 4;
                     case FacilityBuildAction::None:
                     default: return 1;
                 }
@@ -209,6 +212,35 @@ inline bool resolveCivilizationContextTarget(
                 }
                 return false;
             }
+            if(decision.technique==TechniqueId::FireMaking
+               && decision.facilityKind==FacilityKind::FirePit){
+                if(!decision.hasFacilityTarget) return false;
+                if(decision.facilityAction==FacilityBuildAction::Plan){
+                    const PrimitiveFirePitSiteOpportunity opportunity=
+                        choosePrimitiveFirePitSite(world,actor.id);
+                    if(!opportunity.available
+                       || opportunity.pos.x!=decision.facilityTargetPos.x
+                       || opportunity.pos.y!=decision.facilityTargetPos.y) return false;
+                    outTarget=decision.facilityTargetPos;
+                    return true;
+                }
+                for(const auto& facility:world.facilities){
+                    if(facility.id!=decision.facility
+                       || facility.kind!=FacilityKind::FirePit
+                       || facility.state==FacilityState::Ruined) continue;
+                    if(facility.pos.x!=decision.facilityTargetPos.x
+                       || facility.pos.y!=decision.facilityTargetPos.y) return false;
+                    const bool operational=facility.state==FacilityState::Operational && facility.active;
+                    if((decision.facilityAction==FacilityBuildAction::DeliverMaterial
+                        || decision.facilityAction==FacilityBuildAction::Work) && operational) return false;
+                    if((decision.facilityAction==FacilityBuildAction::Fuel
+                        || decision.facilityAction==FacilityBuildAction::Ignite
+                        || decision.facilityAction==FacilityBuildAction::CollectCharcoal) && !operational) return false;
+                    outTarget=facility.pos;
+                    return true;
+                }
+                return false;
+            }
             if(decision.technique==TechniqueId::DesignatedSanitationArea){
                 const PrimitiveSanitationOpportunity opportunity=evaluateDesignatedSanitationSiteCreationOpportunity(
                     world.seed,actor,world.environmentalResidues,world.minute,
@@ -241,7 +273,10 @@ inline bool civilizationContextRequiresSpatialTarget(const CivilizationUtilityDe
     if(decision.intent==CivilizationIntent::Craft){
         return decision.technique==TechniqueId::DesignatedSanitationArea
             || decision.technique==TechniqueId::DugSanitationPit
-            || decision.technique==TechniqueId::PrimitiveStorage;
+            || decision.technique==TechniqueId::PrimitiveStorage
+            || (decision.technique==TechniqueId::FireMaking
+                && decision.facilityKind==FacilityKind::FirePit
+                && decision.facilityAction!=FacilityBuildAction::None);
     }
     return false;
 }

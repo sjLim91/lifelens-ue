@@ -28,7 +28,12 @@ int main()
     CHECK(spec.requiredWork==8.0);
     CHECK(spec.requirements.size()==2);
     CHECK(facilityKindConstructible(FacilityKind::PrimitiveStorage));
-    CHECK(!facilityKindConstructible(FacilityKind::FirePit));
+
+    const FacilityConstructionSpec fireSpec=facilityConstructionSpec(FacilityKind::FirePit);
+    CHECK(fireSpec.requiredWork==6.0);
+    CHECK(fireSpec.requirements.size()==2);
+    CHECK(facilityKindConstructible(FacilityKind::FirePit));
+    CHECK(!facilityKindConstructible(FacilityKind::Furnace));
 
     Simulation source(880088);
     source.setupNewGame();

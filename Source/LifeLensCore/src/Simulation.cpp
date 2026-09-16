@@ -1,6 +1,7 @@
 #include "lifelens/Simulation.h"
 #include "lifelens/FamilyProgression.h"
 #include "lifelens/InitialPopulation.h"
+#include "lifelens/PrimitiveFireProgression.h"
 #include <algorithm>
 #include <array>
 #include <iomanip>
@@ -497,7 +498,6 @@ void Simulation::advanceDependentCare()
 
     for(auto& child:world_.characters){
         if(!child.alive || !isDependentStage(child.lifeStage) || child.parentIds.empty()) continue;
-
         const double maxPhysicalNeed=std::max({
             child.needs.hunger,child.needs.thirst,child.needs.sleep,
             child.needs.bladder,child.needs.hygiene});
@@ -936,6 +936,7 @@ void Simulation::step(){
         if(!r.plan.empty()) advanceAction(c,r);
     }
     ++world_.minute;
+    advancePrimitiveFireOneMinute(world_);
     world_.environmentalResidues.advanceToMinute(world_.minute);
     if(world_.minute%(24*60)==0) regenerateCivilizationEnvironment(world_);
     advanceCivilizationKnowledgeTeaching();
