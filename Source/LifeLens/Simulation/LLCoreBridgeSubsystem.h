@@ -92,6 +92,11 @@ public:
     UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Observer")
     bool GetResidentObservation(FGuid ResidentId, FLLCoreResidentObservation& OutObservation) const;
 
+    UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Observer")
+    bool GetResidentTraitPreferenceObservation(
+        FGuid ResidentId,
+        FLLCoreTraitPreferenceObservation& OutObservation) const;
+
     UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Action")
     bool GetResidentActionDirective(FGuid ResidentId, FLLCoreActionDirective& OutDirective) const;
 
