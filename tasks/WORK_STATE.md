@@ -4,7 +4,7 @@
 > Long-term order: `docs/DEVELOPMENT_MILESTONES.md`.
 > Durable design decisions: `docs/DECISION_LOG.md`.
 
-Last reconciled: 2026-09-16 KST after PR #111 merge.
+Last reconciled: 2026-09-16 KST during Observer Resident Detail Data v1 work after PR #111 merge.
 
 ## Current main baseline
 
@@ -47,14 +47,15 @@ Authority rule remains unchanged: Core/World owns simulation truth. UI/Character
 - no resource is synthesized.
 - deterministic regression covers four-founder/four-day production-like recovery, real Water/PlantFood acquisition, Drink/Eat completion, and outdoor sanitation residue.
 
-### Android pipeline timeout/split recovery — DONE / SEED VALIDATION PENDING
+### Android pipeline timeout/split recovery — DONE / DEVICE BASELINE VALIDATION UNDERWAY SEPARATELY
 - PR #107 increased the old monolithic seed/full timeout budget and merged as `e58374a4c3a427ae47c2c507ae7c23b282d0078e`.
 - PR #108 then split the workflow into two jobs and merged as `0d3da3d7f69c2e3c2ad54b2b4f43d19822ee8760`.
 - `seed-engine` builds Linux editor/cook tools and writes the encrypted host cache.
 - `build-android` is a separate job; a `seed` dispatch chains into it automatically after the seed job.
 - `fast` reuses the encrypted Android engine cache and must fail clearly on cache miss rather than silently falling back to a full engine build.
 - the historical seed Run #3 failure belongs to the pre-split workflow and is no longer the canonical current pipeline state.
-- **No seed has yet been dispatched against the split #108 workflow.** The next Android pipeline validation should run `mode=seed` once on latest `main`; after a successful seed/cache creation, normal APK validation should use `fast`.
+- Android seed/device-baseline validation is being handled separately from the Observer data branch; **this Observer PR must not trigger a duplicate Android seed/full run**.
+- after a genuinely successful seed/cache creation, normal APK validation should use `fast`.
 
 ### Observer Camera Control v1 — DONE / DEVICE FEEL QA REMAINS
 - original PR #105 was superseded and closed.
@@ -62,51 +63,75 @@ Authority rule remains unchanged: Core/World owns simulation truth. UI/Character
 - PC: wheel zoom, right-drag orbit, middle-drag pan, left-click selection preserved.
 - Android: short tap selection on release, one-finger orbit, pinch zoom, two-finger pan.
 - distance/elevation clamps and smoothing are integrated.
-- `ASSIST_LOCK-UI-CAMERA-1` is **RELEASED**; there are currently no assist locks.
+- `ASSIST_LOCK-UI-CAMERA-1` is **RELEASED**.
 - compile integration is complete; final gesture feel still belongs to real device QA.
 
 ### Observer mobile UI polish — DONE / DEVICE QA REMAINS
 - refreshed PR #110 merged as `e6443d693076791e3981047d827ff5a64e4858f2`.
 - Level2 -> Level1 Back flow, zero-resident empty state, resident-strip de-emphasis, safe-area/cutout handling, minimum touch targets, overflow indicators and short selection/focus feedback are integrated.
-- UI and camera refreshed branches do not overlap.
 
 ### Civilization resource/storage spatial authority — DONE
 - PR #111 merged as `dda35bac7cef4a88433f4f6a362b89c1b3ea2eee`.
 - validation: Core Tests #502 PASS, Preflight #617 PASS, Unreal Linux Compile #130 PASS.
 - Core test suite at #111: **51/51 PASS**, including `test_civilization_spatial_targets`; deterministic harness smoke also PASS.
-- `ResourceNode` and `StorageSite` now own authoritative `GridPos`.
-- production-generated ResourceNodes preserve the exact `NaturalResourcePatch.pos` from world generation.
-- compatibility/test resources have deterministic fixed positions.
+- `ResourceNode` and `StorageSite` own authoritative `GridPos`.
+- production-generated ResourceNodes preserve the exact `NaturalResourcePatch.pos`.
 - civilization snapshot extension v2 persists resource/storage positions and retains v1 read compatibility.
-- generated natural resource positions remain recoverable from immutable natural patches for legacy v1 data.
-- `ULLCoreBridgeSubsystem::GetResidentActionDirective` resolves ordinary Gather to the actual resource-node position and Store to the actual storage-site position when presenting civilization work.
-- Character Presentation must consume those Core-owned targets; it must not guess a nearby tree, rock, container, or scenery proxy.
-- the old tracked "Civilization resource/storage spatialization gap" is **RESOLVED** and must not be reopened without new contradictory runtime evidence.
+- `ULLCoreBridgeSubsystem::GetResidentActionDirective` resolves Gather/Store to actual Core-owned positions.
+- the old spatialization gap is **RESOLVED**.
 
 ## Current active product work
 
+### Observer Resident Detail Data v1 — ACTIVE
+
+Canonical contract: `docs/OBSERVER_RESIDENT_DETAIL_DATA_v1.md`.
+
+Branch: `jjun/observer-data-completeness-v1`.
+Assist lock: `ASSIST_LOCK-UI-OBSERVER-DATA-1` — ACTIVE.
+
+Purpose:
+- finish the Level 2 Observer resident-detail fidelity end-to-end rather than splitting Core/UI handoffs;
+- make detailed resident inspection consume authoritative Core read data wherever it exists;
+- remove misleading dependence on empty legacy `FLLResidentData` Traits/Skills/Preferences fields.
+
+Implemented on the active branch:
+- **Needs:** direct `FLLCoreResidentObservation::Needs`; five physical needs show satisfaction percentage plus compact bar. Core deficit semantics remain `0=satisfied, 1=urgent`.
+- **Personality:** direct Core personality, all 14 dimensions shown rather than five compatibility axes.
+- **Traits:** no explicit named Core trait taxonomy currently exists; UI states that fact rather than showing `None listed` or inventing trait labels.
+- **Skills:** direct authoritative civilization `Gathering / Crafting / Learning` skill values.
+- **Preferences:** no authoritative Core preference model currently exists; legacy placeholders are hidden rather than presented as facts.
+- **Relationships:** preserve SocialBond/RomancePotential summaries while exposing the underlying directional Core dimensions: Affection, Trust, Respect, Comfort, Familiarity, Attraction, RomanticInterest, SexualAttraction, Commitment, Conflict, Jealousy, Fear, Grudge.
+- **Family:** existing direct-Core family observation remains authoritative.
+- **Knowledge & Gear:** existing direct-Core civilization observation remains the reference pattern.
+- **Emotion:** display remains direct-Core; ordinary life-event emotion causality is deliberately deferred to the separate Emotion Runtime Integration milestone.
+
+Validation still required before merge:
+- Preflight PASS.
+- Unreal Linux Compile PASS.
+- diff review confirms Level 0/1 behavior, camera/tap routing, safe-area/mobile polish, and selection feedback remain intact.
+- no Android build is required for this PR because Android seed/device work is already being handled separately.
+
 ### Jjun lane
 
-Status: `ANDROID SPLIT PIPELINE SEED VALIDATION PENDING / NEXT CORE SLICE AVAILABLE`
+Status: `OBSERVER DATA COMPLETENESS ACTIVE / ANDROID DEVICE BASELINE RUNNING SEPARATELY`
 
 Current facts:
-- no open Jjun feature PR from #109/#110/#111 work remains.
-- no assist lock is active.
+- branch `jjun/observer-data-completeness-v1` is the active Jjun feature branch.
+- `ASSIST_LOCK-UI-OBSERVER-DATA-1` covers only the Observer detail UI files needed for this milestone.
+- Jjun is intentionally completing the whole Observer data slice; after merge/release, Dagyeom resumes normal Observer UI maintenance/styling under the canonical data-authority contract.
 - #111 spatial provider work is complete.
-- the next Android pipeline validation is one `mode=seed` dispatch on latest main. A successful seed should automatically continue into `build-android`; subsequent APK builds should use `fast`.
-- do not start `full` unless the split-cache path itself proves unusable and evidence requires a fallback.
-- IR-D Character Presentation consumption remains Dagyeom-owned; Jjun changes are only needed if a real Core/Bridge contract deficiency appears.
+- do not launch another Android seed/full job from this branch.
 
 ### Dagyeom lane
 
-Status: `IR-B DONE / IR-D CONTEXT MOTION READY / UI-CAMERA LOCK RELEASED`
+Status: `IR-B DONE / IR-D CONTEXT MOTION CONSUMER WORK / OBSERVER DATA ASSIST LOCK ACTIVE`
 
 Current facts:
 - IR-B is resolved and merged through #102.
 - IR-D provider contract is merged through #103 and spatial target follow-up #111.
-- Character Presentation can now consume real Gather/Store target coordinates instead of scenery guesses.
-- Dagyeom owns the Context Motion Router and action-to-animation presentation.
-- Observer Camera and mobile UI refreshes are merged; remaining device/visual checks are QA, not ownership blockers.
+- Character Presentation can consume real Gather/Store target coordinates instead of scenery guesses.
+- Dagyeom owns Context Motion Router/action-to-animation presentation.
+- while `ASSIST_LOCK-UI-OBSERVER-DATA-1` is active, Jjun owns the explicitly locked Observer detail files; after release, normal UI maintenance returns to Dagyeom.
 - no Jjun direct changes to `Source/LifeLens/Characters/**` unless a new explicit assist lock is opened.
 
 ## Current validation risk
@@ -120,11 +145,12 @@ The compile gates prove C++/UHT/UBT integration, not every presentation/input va
 - corrected facing remains valid for stationary interaction targets and male/female/outfit variants.
 - Android framing/safe area remains acceptable.
 - Observer Camera gestures feel natural and do not trigger unintended resident selection.
-- Gather residents approach the actual resource target supplied by Core rather than an arbitrary scenery object.
-- Store presentation uses the actual storage target once storage exists.
+- Gather residents approach the actual Core resource target.
+- Store uses the actual storage target once storage exists.
 - Sleep fallback visibly and causally relieves Energy through the UE execution/ACK path.
 - outdoor Hygiene fallback visibly and causally relieves Hygiene through the UE execution/ACK path.
-- the old food/water provisioning deadlock does not reappear in runtime observation.
+- the old food/water provisioning deadlock does not reappear.
+- Level 2 Needs/Personality/Skills/Relationships/Family/Knowledge detail remains readable on the device after the current Observer milestone merges.
 
 ## Tracked implementation gaps — DO NOT DROP
 
@@ -138,22 +164,28 @@ Required follow-up:
 - audit the Master Spec emotion set against the currently implemented dimensions.
 - add Core regression coverage for daily-life emotion generation/decay and Observer projection.
 
-### Observer resident-detail data fidelity gap
+### Observer resident-detail data fidelity gap — IN PROGRESS
 
-PIE review showed several detail tabs are structurally present but still hide or bypass authoritative Core data.
+This gap is the active `Observer Resident Detail Data v1` milestone on `jjun/observer-data-completeness-v1`.
 
-Required follow-up:
-- **Needs:** keep human labels but also show authoritative numeric value/bar.
-- **Personality:** expose the full 14 Core dimensions rather than only five legacy axes.
-- **Traits & Skills:** stop using unpopulated legacy DTO fields; use authoritative Core skills/traits. `None listed` must not falsely imply no ability.
-- **Relationships:** keep bond/trust/romance summary if useful, but expose the underlying directional relationship dimensions in detail.
-- **Emotion:** show authoritative dimensions/derived values once the separate runtime integration gap is addressed.
-- **Family:** `None` is valid for unrelated/single founders; do not invent links.
-- **Overview:** remain concise.
-- **Knowledge & Gear:** keep the current direct-Core model as the pattern for other tabs.
+Resolved in the branch implementation once validation/merge completes:
+- Needs direct-Core numeric value/bar.
+- all 14 Core personality dimensions.
+- authoritative civilization skills instead of legacy empty skill DTOs.
+- truthful no-model state for Traits/Preferences rather than fake `None listed`.
+- detailed directional relationship dimensions.
+- authoritative Family and direct-Core Knowledge/Gear preserved.
 
-Data-authority rule:
-- Observer may format/summarize but must not create a second resident-state authority.
+Do not mark this gap DONE until the branch passes integration validation and merges.
+
+### Explicit Core trait/preference model gap
+
+The current Core has personality, genetics/life-condition data, civilization skills/knowledge, relationships, family, etc., but it does not yet own an explicit named resident Trait taxonomy or an authoritative Preference model.
+
+Rule:
+- Observer must not infer named traits/preferences from unrelated values just to populate UI.
+- current Observer data milestone communicates model absence truthfully.
+- a future product milestone may add explicit Core models when they have actual simulation meaning.
 
 ### Localization + social communication presentation gap
 
@@ -168,7 +200,7 @@ Required follow-up:
 
 Ownership:
 - Jjun/Core: authoritative social action/event/outcome/read context where needed.
-- Dagyeom: Korean UI rendering and social presentation.
+- Dagyeom: Korean UI rendering and social presentation after the current Observer assist lock is released.
 
 ### Character context-motion gap
 
@@ -188,20 +220,20 @@ Required follow-up in Character Presentation:
 
 ## Active blockers / locks
 
-- Formal Integration Requests: **IR-D open**, provider fully DONE / presentation consumption READY.
-- Assist locks: **None**.
-- Open Jjun code PRs from the camera/UI/spatial sequence: **None**.
-- Core/Preflight/Unreal compile blocker for #111: **None**.
-- Android pipeline: **not blocked by the old pre-split Run #3 failure**; the split #108 workflow simply still needs its first real `seed` validation.
+- Formal Integration Requests: **IR-D open**, provider fully DONE / presentation consumer work belongs to Dagyeom.
+- Assist locks: **ASSIST_LOCK-UI-OBSERVER-DATA-1 ACTIVE**.
+- Active Jjun branch: `jjun/observer-data-completeness-v1`.
+- #111 Core/Preflight/Unreal compile blocker: **None**.
+- Android device-baseline validation is separate; do not duplicate it from Observer work.
 - Device visual/input QA remains open but is not a code/compile blocker.
 
 ## Android validation rule
 
-For the current split workflow:
-1. Run `mode=seed` once on latest `main` when a fresh engine cache is required.
-2. A successful `seed-engine` automatically allows the chained `build-android` job to produce the APK.
+For the split workflow:
+1. Run `mode=seed` once when a fresh engine cache is required.
+2. A successful `seed-engine` chains into `build-android` and APK production.
 3. After a valid Android engine cache exists, use `mode=fast` for normal APK checks.
-4. Use `full` only as an evidence-driven fallback, not as the default.
+4. Use `full` only as an evidence-driven fallback.
 
 Do not run repeated expensive seed/full jobs blindly. Capture the exact failing job/step/log first if a future run fails.
 
