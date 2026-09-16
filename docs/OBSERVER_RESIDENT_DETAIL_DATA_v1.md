@@ -98,6 +98,19 @@ Regression coverage must prove:
 - all profile values remain normalized to `[0,1]`;
 - snapshot encode/decode reproduces exactly the same profiles.
 
+### Behavioral influence rule for Traits & Preferences
+
+Traits and Preferences are not display-only metadata. Core utility scoring consumes the same authoritative profiles when evaluating ordinary Social and Civilization choices.
+
+Behavioral influence must remain bounded and must not replace hard simulation constraints:
+- Socializing / Solitude / Compassion / Boldness and related traits may shift ordinary social intent utility.
+- Gathering / Crafting / Exploration / Novelty / Order and related traits may shift ordinary civilization utility.
+- Profile effects are bounded modifiers, not permission to fabricate unavailable actions or targets.
+- Critical survival provision gathering for Hunger/Thirst bypasses ordinary preference modulation so personality cannot suppress required survival acquisition.
+- UI never computes these behavior effects; it only displays the same Core-owned profile that Core decision logic consumes.
+
+Regression coverage must prove that changing relevant profile inputs can change ordinary utility ordering while urgent survival behavior remains dominant and available.
+
 ### Emotion
 
 Authoritative source: `FLLCoreResidentObservation::Emotion`.
@@ -156,6 +169,7 @@ After the milestone PR merges and the assist lock is released, normal Observer U
 - Traits show the eight authoritative Core `TraitProfile` dimensions.
 - Preferences show the eight authoritative Core `PreferenceProfile` dimensions.
 - Traits/Preferences are deterministic for the same population seed and reproduce exactly after snapshot restore.
+- Traits/Preferences influence ordinary Core Social/Civilization utility without weakening urgent survival acquisition.
 - Skills use authoritative civilization skill values.
 - Relationships expose the directional Core dimensions, not only summary scores.
 - Family continues to read authoritative Core family data.
