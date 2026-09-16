@@ -28,10 +28,11 @@
 - Character facing IR-B #102 — DONE.
 - Context Action Contract v1 #103 — DONE.
 - Early Survival Provisioning #106 — DONE.
-- Android pipeline timeout/split recovery #107/#108 — DONE; real seed/device validation is a separate runtime gate.
+- Android pipeline timeout/split recovery #107/#108 — DONE; real seed/device validation remains a separate runtime gate.
 - Observer Camera Control v1 #109 — DONE; device feel QA remains.
 - Observer Mobile UI Polish #110 — DONE; device QA remains.
 - Civilization Resource/Storage Spatial Authority #111 — DONE.
+- Observer Resident Detail Data v1 + authoritative Traits/Preferences #112 — DONE.
 
 ## Gate A — Integrated Runtime Checkpoint A — DONE
 
@@ -78,58 +79,55 @@ Consumer scope:
 
 Animation remains presentation of Core/World action authority. Character Presentation must consume the supplied real target coordinates rather than guess scenery.
 
-## Observer Resident Detail Data v1 — ACTIVE IN JJUN LANE
+## Observer Resident Detail Data v1 — DONE
 
+Milestone implementation: PR #112, squash merged as `27ba0aa147fc38ad05cf388e9390dd2dcaccdf30`.
 Owner during milestone: Jjun under explicit UI assist lock `ASSIST_LOCK-UI-OBSERVER-DATA-1`.
-Branch: `jjun/observer-data-completeness-v1`.
 Canonical contract: `docs/OBSERVER_RESIDENT_DETAIL_DATA_v1.md`.
 
-Purpose: complete Level 2 resident-detail fidelity end-to-end while keeping Core/World as the only resident-state authority.
-
-Scope:
+Delivered scope:
 - Needs from direct Core physical need data with numeric satisfaction and compact bar.
 - all 14 authoritative Core personality dimensions.
-- explicit Core `TraitProfile` with Resilience / Creativity / Discipline / Compassion / Adaptability / Boldness / Perseverance / Resourcefulness.
-- explicit Core `PreferenceProfile` with Socializing / Solitude / Exploration / Crafting / Gathering / Comfort / Novelty / Order.
-- Traits/Preferences are deterministic Core read models derived from persistent Personality/Genetics, projected through `FLLCoreTraitPreferenceObservation`; Observer does not invent or own them.
-- civilization Gathering/Crafting/Learning as real resident skills.
-- detailed directional relationship dimensions rather than only aggregate bond/romance summaries.
-- authoritative Family data.
-- preserve direct-Core Knowledge & Gear.
-- keep Overview concise.
+- explicit Core `TraitProfile`: Resilience / Creativity / Discipline / Compassion / Adaptability / Boldness / Perseverance / Resourcefulness.
+- explicit Core `PreferenceProfile`: Socializing / Solitude / Exploration / Crafting / Gathering / Comfort / Novelty / Order.
+- deterministic Trait/Preference derivation from persistent Personality/Genetics; no second mutable serialization authority.
+- Bridge projection through `FLLCoreTraitPreferenceObservation` / `GetResidentTraitPreferenceObservation`.
+- Traits/Preferences participate in ordinary Core Social/Civilization utility rather than existing only as display metadata.
+- ordinary civilization disposition effect is bounded to a 0.90–1.10 multiplier.
+- urgent Hunger/Thirst provision gathering bypasses ordinary preference modulation, preserving survival priority.
+- civilization Gathering/Crafting/Learning displayed as real resident skills.
+- detailed directional relationship dimensions rather than only aggregate summaries.
+- authoritative Family data and direct-Core Knowledge & Gear preserved.
+- Overview remains concise; Emotion causality was not fabricated into this milestone.
 
-Persistence/determinism acceptance for Traits/Preferences:
-- same WorldSeed + PopulationSeed produces the same profiles.
-- a different PopulationSeed may produce different founder profiles.
-- values stay normalized to `[0,1]`.
-- Core snapshot encode/decode reproduces the same profiles because their authoritative Personality/Genetics inputs are persisted; no duplicate mutable profile state is introduced.
+Acceptance evidence:
+- Core Tests #515: **PASS, 52/52**, including `test_traits_preferences`.
+- deterministic harness smoke: **PASS**.
+- Preflight #627: **PASS**.
+- Unreal Linux Compile #137: **PASS**, including UHT/UBT for the new Unreal read/bridge types.
+- Level 0/1, camera and mobile-input ownership were not replaced by this work; device readability remains part of Gate B QA.
 
-Explicit non-scope:
-- Emotion causal generation/decay remains the later Emotion Runtime Integration milestone.
-- full Korean localization/social presentation remains a later milestone.
+Closeout:
+- `ASSIST_LOCK-UI-OBSERVER-DATA-1` is released.
+- normal Observer layout/styling/mobile-maintenance ownership returns to Dagyeom.
+- Core/Bridge data authority remains Jjun-owned.
 
-Integration gate:
-- Core Tests PASS, including `test_traits_preferences`.
-- Preflight PASS.
-- Unreal Linux Compile PASS.
-- no regression to Level 0/1, tap routing, camera behavior, mobile safe area/touch targets, selection feedback.
-- Android seed/full is not duplicated for this PR; device validation uses the separately produced APK baseline.
+## Gate B — Android Smoke / Real-device Baseline — PENDING ACTUAL RUN
 
-After merge, the assist lock is released and normal Observer layout/styling/mobile-maintenance ownership returns to Dagyeom while preserving the data-authority contract.
+The split #108 Android pipeline is the canonical path. No successful seed/cache baseline is recorded by this roadmap yet; do not describe Gate B as underway until an actual Android workflow run is started and verified.
 
-## Gate B — Android Smoke / Real-device Baseline — UNDERWAY SEPARATELY
-
-The split #108 Android pipeline is the canonical path:
+Execution:
 - first valid engine-cache creation uses `mode=seed`.
-- a successful seed chains into the Android build job and APK artifact.
-- later normal APK checks use `mode=fast`.
-- `full` is evidence-driven fallback only.
+- a successful seed chains automatically into the Android build job and APK artifact.
+- later normal APK checks use `mode=fast` only after a valid Android engine cache exists.
+- `full` is an evidence-driven fallback only.
 
 Acceptance on a real Android device:
 - APK installs and boots into `/Game/Maps/LifeLensWorld`.
 - New Game exposes four founders and generated world presentation.
 - Observer selection/detail and camera gestures operate correctly.
-- autonomous movement/actions, resource approach, survival fallbacks, Save/Load can be observed.
+- Level 2 authoritative Needs/Personality/Traits/Skills/Preferences/Relationships/Family/Knowledge detail is readable.
+- autonomous movement/actions, real resource approach, survival fallbacks and Save/Load can be observed.
 - establish initial FPS / memory / thermal / rendering-budget baseline.
 
 MetaHuman comparison happens only after this gate.
@@ -143,7 +141,7 @@ Purpose:
 - resident-to-resident social behavior becomes visibly understandable through approach/facing/gaze/context animation plus lightweight bubbles/icons/Event Feed/history.
 - deterministic/data-driven dialogue baseline without paid LLM/API dependency.
 
-Ownership after the current Observer assist lock closes:
+Ownership now that the Observer assist lock is closed:
 - Jjun/Core: authoritative social action/event/outcome/read context where required.
 - Dagyeom presentation: Korean UI rendering and social presentation.
 
@@ -176,12 +174,10 @@ These remain product direction after the current playable/device/readability gat
 
 ## Current parallel dispatch
 
-**Android/device lane:** Gate B seed/APK/device baseline is being validated separately. Do not duplicate expensive seed/full runs from feature PRs.
+**Android/device lane:** Gate B is **pending actual seed/APK execution**. Do not duplicate expensive seed/full runs blindly; establish one verified seed/cache baseline, then use fast.
 
-**Dagyeom lane:** Character Context Motion milestone / IR-D consumer work.
+**Dagyeom lane:** Character Context Motion milestone / IR-D consumer work; normal Observer UI ownership is restored after #112.
 
-**Jjun lane:** Observer Resident Detail Data v1 on `jjun/observer-data-completeness-v1`, including explicit Core Traits/Preferences, UI under the recorded assist lock, and mandatory canonical doc updates.
-
-When Observer data work merges, release its assist lock in TEAM_BOARD before moving the UI lane back to normal maintenance ownership.
+**Jjun lane:** Observer Resident Detail Data v1 is complete. Next canonical Jjun priority is Social Communication & Localization Core/Bridge support, followed by Emotion Runtime Integration unless a higher-priority runtime blocker is discovered.
 
 `tasks/WORK_STATE.md` contains live execution state. `tasks/TEAM_BOARD.md` contains ownership/locks/Integration Requests.
