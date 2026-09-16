@@ -530,6 +530,7 @@ float ALLObserverHUD::DrawOverview(const ULLSimulationSubsystem& Simulation, con
         }
     }
 
+    // Tap/click a resident for details
     const FString HintLine(LLObserverText::TapHint);
 
     float StatusW = 0.0f, StatusH = 0.0f;
