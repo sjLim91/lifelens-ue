@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include "Ids.h"
+#include "SmartObject.h"
 
 namespace lifelens {
 
@@ -180,6 +181,7 @@ struct ResourceNode {
     int maxQuantity=0;
     bool renewable=false;
     int regenerationPerDay=0;
+    GridPos pos{};
 
     int harvest(int requested,Inventory& destination,double efficiency=1.0)
     {
@@ -201,6 +203,7 @@ struct ResourceNode {
 struct StorageSite {
     StorageId id=0;
     Inventory inventory;
+    GridPos pos{};
 };
 
 enum class TechniqueId {
