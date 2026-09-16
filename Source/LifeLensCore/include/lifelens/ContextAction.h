@@ -33,15 +33,8 @@ struct PendingContextAction {
     GridPos targetPos{};
     SanitationSiteId sanitationSiteId=0;
 
-    bool active() const
-    {
-        return token!=0 && kind!=ContextActionKind::None;
-    }
-
-    void clear()
-    {
-        *this=PendingContextAction{};
-    }
+    bool active() const { return token!=0 && kind!=ContextActionKind::None; }
+    void clear() { *this=PendingContextAction{}; }
 };
 
 struct PendingContextActionObservation {
@@ -75,9 +68,6 @@ struct PendingContextActionObservation {
 
 inline std::uint64_t nextContextActionToken()
 {
-    // Transport identity only: it deliberately does not participate in utility
-    // or simulation randomness. Keeping it process-monotonic prevents an ACK
-    // that survived Save/Load from matching a newly-issued action.
     static std::atomic<std::uint64_t> next{1};
     std::uint64_t token=next.fetch_add(1,std::memory_order_relaxed);
     if(token==0) token=next.fetch_add(1,std::memory_order_relaxed);
@@ -124,6 +114,8 @@ inline int contextActionDurationTicks(const PendingContextAction& action)
                     case FacilityBuildAction::Fuel: return 4;
                     case FacilityBuildAction::Ignite: return 6;
                     case FacilityBuildAction::CollectCharcoal: return 4;
+                    case FacilityBuildAction::LoadSmeltCharge: return 5;
+                    case FacilityBuildAction::CollectMetal: return 4;
                     case FacilityBuildAction::None:
                     default: return 1;
                 }
@@ -187,13 +179,18 @@ inline bool resolveCivilizationContextTarget(
                 outSanitationSiteId=opportunity.siteId;
                 return true;
             }
+            if(decision.experiment==ExperimentKind::SmeltCopperOre){
+                const ConstructedFacility* furnace=primitiveFurnaceProject(world);
+                if(furnace==nullptr || furnace->state!=FacilityState::Operational || !furnace->active) return false;
+                outTarget=furnace->pos;
+                return true;
+            }
             return false;
         case CivilizationIntent::Craft:
             if(decision.technique==TechniqueId::PrimitiveStorage){
                 if(!decision.hasFacilityTarget) return false;
                 if(decision.facilityAction==FacilityBuildAction::Plan){
-                    const PrimitiveStorageSiteOpportunity opportunity=
-                        choosePrimitiveStorageSite(world,actor.id);
+                    const PrimitiveStorageSiteOpportunity opportunity=choosePrimitiveStorageSite(world,actor.id);
                     if(!opportunity.available
                        || opportunity.pos.x!=decision.facilityTargetPos.x
                        || opportunity.pos.y!=decision.facilityTargetPos.y) return false;
@@ -216,8 +213,7 @@ inline bool resolveCivilizationContextTarget(
                && decision.facilityKind==FacilityKind::FirePit){
                 if(!decision.hasFacilityTarget) return false;
                 if(decision.facilityAction==FacilityBuildAction::Plan){
-                    const PrimitiveFirePitSiteOpportunity opportunity=
-                        choosePrimitiveFirePitSite(world,actor.id);
+                    const PrimitiveFirePitSiteOpportunity opportunity=choosePrimitiveFirePitSite(world,actor.id);
                     if(!opportunity.available
                        || opportunity.pos.x!=decision.facilityTargetPos.x
                        || opportunity.pos.y!=decision.facilityTargetPos.y) return false;
@@ -236,6 +232,35 @@ inline bool resolveCivilizationContextTarget(
                     if((decision.facilityAction==FacilityBuildAction::Fuel
                         || decision.facilityAction==FacilityBuildAction::Ignite
                         || decision.facilityAction==FacilityBuildAction::CollectCharcoal) && !operational) return false;
+                    outTarget=facility.pos;
+                    return true;
+                }
+                return false;
+            }
+            if(decision.facilityKind==FacilityKind::Furnace
+               && (decision.technique==TechniqueId::FireMaking
+                   || decision.technique==TechniqueId::CopperSmelting)){
+                if(!decision.hasFacilityTarget) return false;
+                if(decision.facilityAction==FacilityBuildAction::Plan){
+                    const PrimitiveFurnaceSiteOpportunity opportunity=choosePrimitiveFurnaceSite(world,actor.id);
+                    if(!opportunity.available
+                       || opportunity.pos.x!=decision.facilityTargetPos.x
+                       || opportunity.pos.y!=decision.facilityTargetPos.y) return false;
+                    outTarget=decision.facilityTargetPos;
+                    return true;
+                }
+                for(const auto& facility:world.facilities){
+                    if(facility.id!=decision.facility
+                       || facility.kind!=FacilityKind::Furnace
+                       || facility.state==FacilityState::Ruined) continue;
+                    if(facility.pos.x!=decision.facilityTargetPos.x
+                       || facility.pos.y!=decision.facilityTargetPos.y) return false;
+                    const bool operational=facility.state==FacilityState::Operational && facility.active;
+                    if((decision.facilityAction==FacilityBuildAction::DeliverMaterial
+                        || decision.facilityAction==FacilityBuildAction::Work) && operational) return false;
+                    if((decision.facilityAction==FacilityBuildAction::LoadSmeltCharge
+                        || decision.facilityAction==FacilityBuildAction::Ignite
+                        || decision.facilityAction==FacilityBuildAction::CollectMetal) && !operational) return false;
                     outTarget=facility.pos;
                     return true;
                 }
@@ -268,7 +293,8 @@ inline bool civilizationContextRequiresSpatialTarget(const CivilizationUtilityDe
     if(decision.intent==CivilizationIntent::Gather || decision.intent==CivilizationIntent::Store) return true;
     if(decision.intent==CivilizationIntent::Experiment){
         return decision.experiment==ExperimentKind::DesignateSanitationArea
-            || decision.experiment==ExperimentKind::DigSanitationPit;
+            || decision.experiment==ExperimentKind::DigSanitationPit
+            || decision.experiment==ExperimentKind::SmeltCopperOre;
     }
     if(decision.intent==CivilizationIntent::Craft){
         return decision.technique==TechniqueId::DesignatedSanitationArea
@@ -276,6 +302,10 @@ inline bool civilizationContextRequiresSpatialTarget(const CivilizationUtilityDe
             || decision.technique==TechniqueId::PrimitiveStorage
             || (decision.technique==TechniqueId::FireMaking
                 && decision.facilityKind==FacilityKind::FirePit
+                && decision.facilityAction!=FacilityBuildAction::None)
+            || (decision.facilityKind==FacilityKind::Furnace
+                && (decision.technique==TechniqueId::FireMaking
+                    || decision.technique==TechniqueId::CopperSmelting)
                 && decision.facilityAction!=FacilityBuildAction::None);
     }
     return false;
