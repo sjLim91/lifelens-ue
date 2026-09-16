@@ -79,6 +79,46 @@ struct FLLCorePersonalitySnapshot
 };
 
 USTRUCT(BlueprintType)
+struct FLLCoreTraitSnapshot
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float Resilience = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float Creativity = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float Discipline = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float Compassion = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float Adaptability = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float Boldness = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float Perseverance = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float Resourcefulness = 0.5f;
+};
+
+USTRUCT(BlueprintType)
+struct FLLCorePreferenceSnapshot
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float Socializing = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float Solitude = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float Exploration = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float Crafting = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float Gathering = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float Comfort = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float Novelty = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float Order = 0.5f;
+};
+
+USTRUCT(BlueprintType)
+struct FLLCoreTraitPreferenceObservation
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") FGuid ResidentId;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") FLLCoreTraitSnapshot Traits;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") FLLCorePreferenceSnapshot Preferences;
+};
+
+USTRUCT(BlueprintType)
 struct FLLCoreEmotionSnapshot
 {
     GENERATED_BODY()
