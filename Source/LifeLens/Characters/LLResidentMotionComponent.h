@@ -26,7 +26,9 @@ enum class ELLResidentHeldToolPresentation : uint8
     None,
     SharpFlake,
     StoneCuttingTool,
-    SimpleContainer
+    SimpleContainer,
+    DiggingStick,
+    StoneHammer
 };
 
 // Character Motion Bootstrap: locomotion + lightweight context presentation.
