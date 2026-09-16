@@ -5,6 +5,32 @@
 #include <sstream>
 
 namespace lifelens {
+namespace {
+
+Character* findContextCharacter(World& world,CharacterId id)
+{
+    for(auto& character:world.characters) if(character.id==id) return &character;
+    return nullptr;
+}
+
+const char* contextParentingActionName(ParentingAction action)
+{
+    switch(action){
+        case ParentingAction::Feed: return "Feed";
+        case ParentingAction::PutToSleep: return "PutToSleep";
+        case ParentingAction::Bathe: return "Bathe";
+        case ParentingAction::ToiletAssist: return "ToiletAssist";
+        case ParentingAction::Hold: return "Hold";
+        case ParentingAction::Play: return "Play";
+        case ParentingAction::Educate: return "Educate";
+        case ParentingAction::Discipline: return "Discipline";
+        case ParentingAction::Comfort: return "Comfort";
+        case ParentingAction::HealthCare: return "HealthCare";
+    }
+    return "Care";
+}
+
+} // namespace
 
 PendingContextActionObservation Simulation::observePendingContextAction(CharacterId id) const
 {
@@ -25,7 +51,7 @@ bool Simulation::completeExternalContextAction(
     if(!world_.externalPhysicalExecution || token==0) return false;
     auto runtimeIt=runtime_.find(id);
     if(runtimeIt==runtime_.end()) return false;
-    Character* actor=findFamilyCharacter(world_,id);
+    Character* actor=findContextCharacter(world_,id);
     if(actor==nullptr || !actor->alive) return false;
     return completeContextAction(*actor,runtimeIt->second,token,resolvedPosition);
 }
@@ -49,7 +75,7 @@ bool Simulation::completeContextAction(
 
     switch(pending.kind){
         case ContextActionKind::Social: {
-            Character* target=findFamilyCharacter(world_,pending.social.target);
+            Character* target=findContextCharacter(world_,pending.social.target);
             if(target==nullptr || !target->alive || target->id==actor.id){
                 pending.clear();
                 return false;
@@ -145,7 +171,7 @@ bool Simulation::completeContextAction(
         }
 
         case ContextActionKind::Parenting: {
-            Character* child=findFamilyCharacter(world_,pending.parentingTarget);
+            Character* child=findContextCharacter(world_,pending.parentingTarget);
             if(child==nullptr || !child->alive || !isParentOf(actor,*child)){
                 pending.clear();
                 return false;
@@ -194,7 +220,7 @@ bool Simulation::completeContextAction(
                      " during assisted toilet care");
             }
             emit(actor.name+" cared for "+child->name+" -> "+
-                 std::string(parentingActionName(pending.parentingAction)));
+                 std::string(contextParentingActionName(pending.parentingAction)));
             completed=true;
             break;
         }
