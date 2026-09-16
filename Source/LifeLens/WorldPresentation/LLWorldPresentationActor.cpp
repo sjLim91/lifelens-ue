@@ -104,8 +104,8 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
         RockInstances.Add(AddInstancedComponent(*FString::Printf(TEXT("Rocks_%d"), Index), RockMeshes[Index], SmallCullStartUU, TreeCullEndUU, false));
     }
 
-    // Temporary low-cost primitive-storage composition. Core owns whether the
-    // facility exists and where it is; these cube instances only visualize it.
+    // Shared low-cost facility composition. Core owns whether a facility exists,
+    // where it is, and its runtime state; these cube instances only visualize it.
     FacilityFoundationInstances = AddInstancedComponent(TEXT("FacilityFoundations"), GroundMesh, FacilityCullStartUU, FacilityCullEndUU, true);
     FacilityPostInstances = AddInstancedComponent(TEXT("FacilityPosts"), GroundMesh, FacilityCullStartUU, FacilityCullEndUU, true);
     FacilityRoofInstances = AddInstancedComponent(TEXT("FacilityRoofs"), GroundMesh, FacilityCullStartUU, FacilityCullEndUU, true);
@@ -392,6 +392,9 @@ uint32 ALLWorldPresentationActor::FacilitySignature(const FLLCoreCivilizationWor
         Hash = MixHash(Hash, static_cast<uint32>(Facility.RequiredMaterialUnits));
         Hash = MixHash(Hash, static_cast<uint32>(Facility.DeliveredMaterialUnits));
         Hash = MixHash(Hash, Facility.bActive ? 1u : 0u);
+        Hash = MixHash(Hash, static_cast<uint32>(FMath::Max(0, Facility.FuelUnits)));
+        Hash = MixHash(Hash, static_cast<uint32>(FMath::Max(0, Facility.CharcoalUnits)));
+        Hash = MixHash(Hash, Facility.bLit ? 1u : 0u);
     }
     return Hash;
 }
@@ -402,8 +405,7 @@ void ALLWorldPresentationActor::BuildFacilities(
 {
     for (const FLLCoreCivilizationFacilityObservation& Facility : Civilization.Facilities)
     {
-        if (Facility.Kind != ELLCoreFacilityKind::PrimitiveStorage
-            || Facility.State == ELLCoreFacilityState::Ruined)
+        if (Facility.State == ELLCoreFacilityState::Ruined)
         {
             continue;
         }
@@ -419,48 +421,124 @@ void ALLWorldPresentationActor::BuildFacilities(
         const bool bOperational = Facility.State == ELLCoreFacilityState::Operational && Facility.bActive;
         const float BuildProgress = bOperational ? 1.0f : FMath::Max(MaterialProgress, WorkProgress);
 
-        if (FacilityFoundationInstances)
+        if (Facility.Kind == ELLCoreFacilityKind::PrimitiveStorage)
         {
-            const float PlannedScale = Facility.State == ELLCoreFacilityState::Planned ? 0.72f : 1.0f;
+            if (FacilityFoundationInstances)
+            {
+                const float PlannedScale = Facility.State == ELLCoreFacilityState::Planned ? 0.72f : 1.0f;
+                FacilityFoundationInstances->AddInstance(FTransform(
+                    FRotator::ZeroRotator,
+                    Base + FVector(0.0f, 0.0f, 6.0f),
+                    FVector(2.2f * PlannedScale, 1.6f * PlannedScale, 0.12f)));
+            }
+
+            const FVector2D PostOffsets[4] = {
+                FVector2D(-90.0f, -60.0f), FVector2D(90.0f, -60.0f),
+                FVector2D(-90.0f, 60.0f), FVector2D(90.0f, 60.0f)};
+            const int32 PostCount = bOperational ? 4 : FMath::Clamp(FMath::CeilToInt(BuildProgress * 4.0f), 0, 4);
+            for (int32 Index = 0; Index < PostCount; ++Index)
+            {
+                if (!FacilityPostInstances) { break; }
+                const float HeightFactor = bOperational ? 1.0f : FMath::Clamp(0.35f + 0.65f * BuildProgress, 0.35f, 1.0f);
+                FacilityPostInstances->AddInstance(FTransform(
+                    FRotator::ZeroRotator,
+                    Base + FVector(PostOffsets[Index].X, PostOffsets[Index].Y, 55.0f * HeightFactor),
+                    FVector(0.14f, 0.14f, 1.1f * HeightFactor)));
+            }
+
+            const int32 CargoCount = bOperational ? 6 : FMath::Clamp(FMath::CeilToInt(MaterialProgress * 6.0f), 0, 6);
+            for (int32 Index = 0; Index < CargoCount; ++Index)
+            {
+                if (!FacilityCargoInstances) { break; }
+                const int32 Column = Index % 3;
+                const int32 Row = Index / 3;
+                FacilityCargoInstances->AddInstance(FTransform(
+                    FRotator(0.0f, (Index % 2 == 0) ? 0.0f : 90.0f, 0.0f),
+                    Base + FVector(-65.0f + Column * 65.0f, -22.0f + Row * 48.0f, 25.0f),
+                    FVector(0.55f, 0.32f, 0.28f)));
+            }
+
+            if ((bOperational || WorkProgress >= 0.65f) && FacilityRoofInstances)
+            {
+                const float RoofScale = bOperational ? 1.0f : FMath::Clamp((WorkProgress - 0.65f) / 0.35f, 0.25f, 1.0f);
+                FacilityRoofInstances->AddInstance(FTransform(
+                    FRotator::ZeroRotator,
+                    Base + FVector(0.0f, 0.0f, 118.0f),
+                    FVector(2.15f * RoofScale, 1.55f, 0.12f)));
+            }
+            continue;
+        }
+
+        if (Facility.Kind != ELLCoreFacilityKind::FirePit)
+        {
+            continue;
+        }
+
+        // A tiny Android-safe stone-ring/fire proxy. Every visible state comes
+        // from the Core facility DTO; the presentation never creates fuel/heat.
+        const int32 StoneCount = bOperational
+            ? 8
+            : FMath::Clamp(FMath::CeilToInt(BuildProgress * 8.0f), 0, 8);
+        for (int32 Index = 0; Index < StoneCount; ++Index)
+        {
+            if (!FacilityFoundationInstances) { break; }
+            const float AngleDegrees = static_cast<float>(Index) * 45.0f;
+            const float AngleRadians = FMath::DegreesToRadians(AngleDegrees);
+            const FVector Offset(
+                FMath::Cos(AngleRadians) * 68.0f,
+                FMath::Sin(AngleRadians) * 68.0f,
+                13.0f);
+            FacilityFoundationInstances->AddInstance(FTransform(
+                FRotator(0.0f, AngleDegrees, 0.0f),
+                Base + Offset,
+                FVector(0.48f, 0.28f, 0.20f)));
+        }
+
+        if (bOperational && FacilityFoundationInstances)
+        {
             FacilityFoundationInstances->AddInstance(FTransform(
                 FRotator::ZeroRotator,
-                Base + FVector(0.0f, 0.0f, 6.0f),
-                FVector(2.2f * PlannedScale, 1.6f * PlannedScale, 0.12f)));
+                Base + FVector(0.0f, 0.0f, 5.0f),
+                FVector(1.05f, 1.05f, 0.08f)));
         }
 
-        const FVector2D PostOffsets[4] = {
-            FVector2D(-90.0f, -60.0f), FVector2D(90.0f, -60.0f),
-            FVector2D(-90.0f, 60.0f), FVector2D(90.0f, 60.0f)};
-        const int32 PostCount = bOperational ? 4 : FMath::Clamp(FMath::CeilToInt(BuildProgress * 4.0f), 0, 4);
-        for (int32 Index = 0; Index < PostCount; ++Index)
-        {
-            if (!FacilityPostInstances) { break; }
-            const float HeightFactor = bOperational ? 1.0f : FMath::Clamp(0.35f + 0.65f * BuildProgress, 0.35f, 1.0f);
-            FacilityPostInstances->AddInstance(FTransform(
-                FRotator::ZeroRotator,
-                Base + FVector(PostOffsets[Index].X, PostOffsets[Index].Y, 55.0f * HeightFactor),
-                FVector(0.14f, 0.14f, 1.1f * HeightFactor)));
-        }
-
-        const int32 CargoCount = bOperational ? 6 : FMath::Clamp(FMath::CeilToInt(MaterialProgress * 6.0f), 0, 6);
-        for (int32 Index = 0; Index < CargoCount; ++Index)
+        const int32 LogCount = bOperational
+            ? FMath::Clamp(Facility.FuelUnits, 0, 3)
+            : FMath::Clamp(FMath::CeilToInt(MaterialProgress * 2.0f), 0, 2);
+        for (int32 Index = 0; Index < LogCount; ++Index)
         {
             if (!FacilityCargoInstances) { break; }
-            const int32 Column = Index % 3;
-            const int32 Row = Index / 3;
             FacilityCargoInstances->AddInstance(FTransform(
-                FRotator(0.0f, (Index % 2 == 0) ? 0.0f : 90.0f, 0.0f),
-                Base + FVector(-65.0f + Column * 65.0f, -22.0f + Row * 48.0f, 25.0f),
-                FVector(0.55f, 0.32f, 0.28f)));
+                FRotator(0.0f, Index % 2 == 0 ? 45.0f : 135.0f, 0.0f),
+                Base + FVector(0.0f, 0.0f, 24.0f + Index * 7.0f),
+                FVector(0.85f, 0.16f, 0.14f)));
         }
 
-        if ((bOperational || WorkProgress >= 0.65f) && FacilityRoofInstances)
+        if (!Facility.bLit)
         {
-            const float RoofScale = bOperational ? 1.0f : FMath::Clamp((WorkProgress - 0.65f) / 0.35f, 0.25f, 1.0f);
-            FacilityRoofInstances->AddInstance(FTransform(
-                FRotator::ZeroRotator,
-                Base + FVector(0.0f, 0.0f, 118.0f),
-                FVector(2.15f * RoofScale, 1.55f, 0.12f)));
+            const int32 CharcoalCount = FMath::Clamp(Facility.CharcoalUnits, 0, 4);
+            for (int32 Index = 0; Index < CharcoalCount; ++Index)
+            {
+                if (!FacilityCargoInstances) { break; }
+                const float OffsetX = (Index % 2 == 0) ? -20.0f : 20.0f;
+                const float OffsetY = (Index < 2) ? -14.0f : 14.0f;
+                FacilityCargoInstances->AddInstance(FTransform(
+                    FRotator(0.0f, static_cast<float>(Index) * 37.0f, 0.0f),
+                    Base + FVector(OffsetX, OffsetY, 18.0f),
+                    FVector(0.24f, 0.20f, 0.12f)));
+            }
+        }
+
+        if (Facility.bLit && FacilityPostInstances)
+        {
+            FacilityPostInstances->AddInstance(FTransform(
+                FRotator(0.0f, 45.0f, 0.0f),
+                Base + FVector(0.0f, 0.0f, 55.0f),
+                FVector(0.24f, 0.18f, 0.70f)));
+            FacilityPostInstances->AddInstance(FTransform(
+                FRotator(0.0f, 135.0f, 0.0f),
+                Base + FVector(0.0f, 0.0f, 48.0f),
+                FVector(0.18f, 0.16f, 0.50f)));
         }
     }
 }
