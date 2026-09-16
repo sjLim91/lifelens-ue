@@ -26,7 +26,6 @@ static TAutoConsoleVariable<int32> CVarLLDebugTapTargets(
 namespace
 {
     constexpr float TouchTargetLogicalPixels = 48.0f;
-    // Layout constants, in unscaled pixels.
     constexpr float Margin           = 16.0f;
     constexpr float PadX             = 12.0f;
     constexpr float PadY             = 8.0f;
@@ -154,8 +153,6 @@ namespace
         return Names.Num() > 0 ? FString::Join(Names, TEXT(" · ")) : FString(TEXT("None"));
     }
 
-    // One row of panel content. Right is optional (two-column rows); rows with
-    // no Right text are word-wrapped to the panel width.
     struct FRow
     {
         FString Left;
@@ -163,13 +160,9 @@ namespace
         FString Right;
         FLinearColor RightColor = TextSecondary;
         float Scale = 1.0f;
-        float GapBefore = 0.0f; // extra spacing above, unscaled
+        float GapBefore = 0.0f;
     };
 }
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 float ALLObserverHUD::ComputeUIScale() const
 {
@@ -204,7 +197,6 @@ FString ALLObserverHUD::CurrentActionFor(const FLLResidentData& Resident) const
         }
     }
 
-    // Transitional fallback only for a runtime where the Core bridge is absent.
     const ALLResidentCharacter* Actor = FindResidentActor(GetWorld(), Resident.ResidentId);
     return Actor ? LLObserverLabels::IntentToString(Actor->GetCurrentIntent()) : FString();
 }
@@ -244,10 +236,6 @@ TArray<FString> ALLObserverHUD::WrapText(const FString& Text, float MaxWidth, fl
     }
     return Lines;
 }
-
-// ---------------------------------------------------------------------------
-// Input
-// ---------------------------------------------------------------------------
 
 float ALLObserverHUD::TouchTargetRadiusPixels(const UObject* WorldContext)
 {
@@ -401,10 +389,6 @@ bool ALLObserverHUD::HandleTap(const FVector2D& InScreenPosition, const FVector2
     }
 }
 
-// ---------------------------------------------------------------------------
-// Drawing
-// ---------------------------------------------------------------------------
-
 void ALLObserverHUD::DrawHUD()
 {
     Super::DrawHUD();
@@ -546,7 +530,6 @@ float ALLObserverHUD::DrawOverview(const ULLSimulationSubsystem& Simulation, con
         }
     }
 
-    // Tap/click a resident for details
     const FString HintLine(LLObserverText::TapHint);
 
     float StatusW = 0.0f, StatusH = 0.0f;
@@ -878,9 +861,11 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
     FLLCoreResidentObservation CoreResident;
     FLLCoreFamilyObservation CoreFamily;
     FLLCoreResidentCivilizationObservation CoreCivilization;
+    FLLCoreTraitPreferenceObservation CoreDisposition;
     const bool bHasCoreResident = Bridge && Bridge->GetResidentObservation(Resident.ResidentId, CoreResident);
     const bool bHasCoreFamily = Bridge && Bridge->GetFamilyObservation(Resident.ResidentId, CoreFamily);
     const bool bHasCoreCivilization = Bridge && Bridge->GetResidentCivilizationObservation(Resident.ResidentId, CoreCivilization);
+    const bool bHasCoreDisposition = Bridge && Bridge->GetResidentTraitPreferenceObservation(Resident.ResidentId, CoreDisposition);
 
     switch (ActiveTab)
     {
@@ -945,17 +930,29 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
 
         case ELLDetailTab::TraitsSkills:
         {
+            if (!bHasCoreDisposition)
+            {
+                FRow None; None.Left = TEXT("Core trait/preference data unavailable"); None.Scale = RowScale; Rows.Add(None);
+                break;
+            }
+
             FRow TraitsHeader;
             TraitsHeader.Left = LLObserverText::SectionTraits;
             TraitsHeader.LeftColor = TextSection;
             TraitsHeader.Scale = SectionScale;
             Rows.Add(TraitsHeader);
 
-            FRow TraitStatus;
-            TraitStatus.Left = TEXT("No explicit Core trait taxonomy yet; personality is shown separately and is not duplicated here.");
-            TraitStatus.LeftColor = TextMuted;
-            TraitStatus.Scale = RowScale;
-            Rows.Add(TraitStatus);
+            auto AddProfilePair = [&Rows, RowScale](const TCHAR* FirstName, float FirstValue, const TCHAR* SecondName, float SecondValue)
+            {
+                FRow Row;
+                Row.Left = FString::Printf(TEXT("%s %s · %s %s"), FirstName, *Percent01(FirstValue), SecondName, *Percent01(SecondValue));
+                Row.Scale = RowScale;
+                Rows.Add(Row);
+            };
+            AddProfilePair(TEXT("Resilience"), CoreDisposition.Traits.Resilience, TEXT("Creativity"), CoreDisposition.Traits.Creativity);
+            AddProfilePair(TEXT("Discipline"), CoreDisposition.Traits.Discipline, TEXT("Compassion"), CoreDisposition.Traits.Compassion);
+            AddProfilePair(TEXT("Adaptability"), CoreDisposition.Traits.Adaptability, TEXT("Boldness"), CoreDisposition.Traits.Boldness);
+            AddProfilePair(TEXT("Perseverance"), CoreDisposition.Traits.Perseverance, TEXT("Resourcefulness"), CoreDisposition.Traits.Resourcefulness);
 
             FRow SkillsHeader;
             SkillsHeader.Left = LLObserverText::SectionSkills;
@@ -982,11 +979,10 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
             PreferencesHeader.GapBefore = SectionGap;
             Rows.Add(PreferencesHeader);
 
-            FRow PreferencesStatus;
-            PreferencesStatus.Left = TEXT("No authoritative Core preference model yet; legacy placeholder values are hidden.");
-            PreferencesStatus.LeftColor = TextMuted;
-            PreferencesStatus.Scale = RowScale;
-            Rows.Add(PreferencesStatus);
+            AddProfilePair(TEXT("Socializing"), CoreDisposition.Preferences.Socializing, TEXT("Solitude"), CoreDisposition.Preferences.Solitude);
+            AddProfilePair(TEXT("Exploration"), CoreDisposition.Preferences.Exploration, TEXT("Crafting"), CoreDisposition.Preferences.Crafting);
+            AddProfilePair(TEXT("Gathering"), CoreDisposition.Preferences.Gathering, TEXT("Comfort"), CoreDisposition.Preferences.Comfort);
+            AddProfilePair(TEXT("Novelty"), CoreDisposition.Preferences.Novelty, TEXT("Order"), CoreDisposition.Preferences.Order);
             break;
         }
 
