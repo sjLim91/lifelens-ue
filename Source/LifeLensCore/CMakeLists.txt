@@ -9,6 +9,7 @@ enable_testing()
 
 add_library(lifelens_core STATIC
     src/Simulation.cpp
+    src/ContextActionRuntime.cpp
     src/CivilizationKnowledgeTransmission.cpp
     src/SimulationSnapshot.cpp
     src/SimulationSnapshotCodec.cpp
