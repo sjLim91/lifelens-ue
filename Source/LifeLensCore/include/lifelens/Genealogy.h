@@ -23,6 +23,25 @@ enum class KinshipType {
     InLaw
 };
 
+inline bool isRomanceProhibitedKinship(KinshipType type)
+{
+    switch(type){
+        case KinshipType::Self:
+        case KinshipType::Parent:
+        case KinshipType::Child:
+        case KinshipType::Sibling:
+        case KinshipType::HalfSibling:
+        case KinshipType::Grandparent:
+        case KinshipType::Grandchild:
+            return true;
+        case KinshipType::Unrelated:
+        case KinshipType::Spouse:
+        case KinshipType::InLaw:
+            return false;
+    }
+    return true;
+}
+
 struct GenealogyNode {
     CharacterId characterId=0;
     std::vector<CharacterId> parents;
