@@ -45,7 +45,9 @@ enum class ELLCoreFacilityBuildAction : uint8
     Work,
     Fuel,
     Ignite,
-    CollectCharcoal
+    CollectCharcoal,
+    LoadSmeltCharge,
+    CollectMetal
 };
 
 UENUM(BlueprintType)
@@ -85,109 +87,42 @@ enum class ELLCoreParentingAction : uint8
     HealthCare
 };
 
-/**
- * Typed execution directive projected from the authoritative LifeLensCore
- * runtime. Display labels are deliberately excluded from decision authority;
- * Unreal presentation consumes these enums and stable target/provenance data.
- */
 USTRUCT(BlueprintType)
 struct FLLCoreActionDirective
 {
     GENERATED_BODY()
 
-    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action")
-    ELLCoreObservedActivityKind ActivityKind = ELLCoreObservedActivityKind::Idle;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action") ELLCoreObservedActivityKind ActivityKind = ELLCoreObservedActivityKind::Idle;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action") ELLCorePhysicalIntent PhysicalIntent = ELLCorePhysicalIntent::None;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action") ELLCoreSocialIntent SocialIntent = ELLCoreSocialIntent::None;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action") FGuid TargetResidentId;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Context") ELLCoreContextActionKind ContextActionKind = ELLCoreContextActionKind::None;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Context") int64 ContextActionToken = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Context") int32 ContextActionDurationTicks = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Parenting") ELLCoreParentingAction ParentingAction = ELLCoreParentingAction::None;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization") ELLCoreCivilizationAction CivilizationAction = ELLCoreCivilizationAction::None;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization") ELLCoreMaterialKind CivilizationMaterial = ELLCoreMaterialKind::Unknown;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization") ELLCoreItemKind CivilizationItem = ELLCoreItemKind::RawMaterial;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization") ELLCoreTechniqueId CivilizationTechnique = ELLCoreTechniqueId::None;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization") int32 CivilizationQuantity = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization") int64 CivilizationActionMinute = -1;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization") int64 CivilizationResourceNodeId = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization") int64 CivilizationStorageId = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization") ELLCoreFacilityBuildAction CivilizationFacilityAction = ELLCoreFacilityBuildAction::None;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization") int64 CivilizationFacilityId = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization") ELLCoreFacilityKind CivilizationFacilityKind = ELLCoreFacilityKind::PrimitiveStorage;
 
-    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action")
-    ELLCorePhysicalIntent PhysicalIntent = ELLCorePhysicalIntent::None;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization|Tool") bool bHasCivilizationTool = false;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization|Tool") ELLCoreItemKind CivilizationToolItem = ELLCoreItemKind::RawMaterial;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization|Tool") ELLCoreToolCapability CivilizationToolCapability = ELLCoreToolCapability::None;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization|Tool") float CivilizationToolQuality = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization|Tool") float CivilizationToolDurability = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization|Tool") float CivilizationToolQuantityMultiplier = 1.0f;
 
-    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action")
-    ELLCoreSocialIntent SocialIntent = ELLCoreSocialIntent::None;
-
-    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action")
-    FGuid TargetResidentId;
-
-    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Context")
-    ELLCoreContextActionKind ContextActionKind = ELLCoreContextActionKind::None;
-
-    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Context")
-    int64 ContextActionToken = 0;
-
-    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Context")
-    int32 ContextActionDurationTicks = 0;
-
-    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Parenting")
-    ELLCoreParentingAction ParentingAction = ELLCoreParentingAction::None;
-
-    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization")
-    ELLCoreCivilizationAction CivilizationAction = ELLCoreCivilizationAction::None;
-
-    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization")
-    ELLCoreMaterialKind CivilizationMaterial = ELLCoreMaterialKind::Unknown;
-
-    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization")
-    ELLCoreItemKind CivilizationItem = ELLCoreItemKind::RawMaterial;
-
-    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization")
-    ELLCoreTechniqueId CivilizationTechnique = ELLCoreTechniqueId::None;
-
-    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization")
-    int32 CivilizationQuantity = 0;
-
-    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization")
-    int64 CivilizationActionMinute = -1;
-
-    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization")
-    int64 CivilizationResourceNodeId = 0;
-
-    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization")
-    int64 CivilizationStorageId = 0;
-
-    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization")
-    ELLCoreFacilityBuildAction CivilizationFacilityAction = ELLCoreFacilityBuildAction::None;
-
-    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization")
-    int64 CivilizationFacilityId = 0;
-
-    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization")
-    ELLCoreFacilityKind CivilizationFacilityKind = ELLCoreFacilityKind::PrimitiveStorage;
-
-    // Read-only projection of the exact Core tool candidate that the pending
-    // Gather ACK will use. Presentation may display it but cannot grant its
-    // efficiency or durability effect.
-    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization|Tool")
-    bool bHasCivilizationTool = false;
-
-    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization|Tool")
-    ELLCoreItemKind CivilizationToolItem = ELLCoreItemKind::RawMaterial;
-
-    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization|Tool")
-    ELLCoreToolCapability CivilizationToolCapability = ELLCoreToolCapability::None;
-
-    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization|Tool")
-    float CivilizationToolQuality = 0.0f;
-
-    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization|Tool")
-    float CivilizationToolDurability = 0.0f;
-
-    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization|Tool")
-    float CivilizationToolQuantityMultiplier = 1.0f;
-
-    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization")
-    bool bCivilizationActionSucceeded = false;
-
-    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization")
-    bool bHasCivilizationSpatialTarget = false;
-
-    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization")
-    int32 CivilizationTargetGridX = 0;
-
-    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization")
-    int32 CivilizationTargetGridY = 0;
-
-    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization")
-    int64 CivilizationSanitationSiteId = 0;
-
-    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action")
-    bool bAlive = true;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization") bool bCivilizationActionSucceeded = false;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization") bool bHasCivilizationSpatialTarget = false;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization") int32 CivilizationTargetGridX = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization") int32 CivilizationTargetGridY = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization") int64 CivilizationSanitationSiteId = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action") bool bAlive = true;
 };
