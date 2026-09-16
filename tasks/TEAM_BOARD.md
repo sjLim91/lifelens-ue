@@ -23,7 +23,8 @@ Authority rule: Core/World owns simulation truth. UI/Character/Environment/World
 - current PR: #119 `도구 실효성 v1: 채집 효율·품질·내구도 연결`.
 - purpose: 시설·도구·기술 발전을 `필요 인식 -> 관찰/실험 -> 발견 -> 재현 -> 실제 제작/건설 -> 실제 효율/세계 변화 -> 표현/Observer -> Save/Load`의 종단 흐름으로 구현한다.
 - delivered first slice: PR #118 merged to `main` as `c3de18790bd19ff7068971b5edc1f475c016048c`; New Game 시설 0개 원칙을 유지하면서 PrimitiveStorage를 필요 인식 → 발견 → Core 위치 선정 → 재료 운반 → 건설 ACK → Storage 활성화 → Save/Load → World/Character/UI 표현까지 연결했다.
-- current slice: ToolCapability / quality / durability를 실제 채집 효율과 마모/파손에 연결하고, 이후 active tool read DTO와 손 도구 presentation으로 확장한다.
+- current slice: ToolCapability / quality / durability를 실제 채집 효율과 마모/파손에 연결했다. Pending Gather는 같은 Core 규칙으로 실제 사용할 도구를 Bridge DTO에 노출하고, WorldDirector/Character는 해당 read DTO만 소비해 Gather 모션과 손 도구 proxy를 표시한다.
+- hand-tool presentation v1: SharpFlake / StoneCuttingTool / SimpleContainer만 표시하며 실제 효율·마모·파손은 계속 Core ACK에서만 발생한다. 현재 engine basic mesh proxy는 추후 art asset 교체 지점이다.
 - locked Core/World scope: `Source/LifeLensCore/**`, `Source/LifeLens/Simulation/**`, `Source/LifeLens/World/**` 중 시설/건설/도구/기술/자원/제작/공간 권위와 Bridge 계약.
 - locked UI scope: `Source/LifeLens/UI/**`, `Content/UI/**` 중 시설·제작·기술 발견·인벤토리·건설·도구 상태 표현. 한글 glyph 실기기 보장은 Android Gate B에서 검증하며 전용 UI 폰트 보강을 Presentation 체크리스트에 포함한다.
 - locked Character scope: `Source/LifeLens/Characters/**`, `Content/Characters/**` 중 채집/제작/건설/도구 사용 모션과 손 도구 표현.
