@@ -14,6 +14,7 @@ struct DecisionExecutionResult {
     CharacterId actor = 0;
     CharacterId target = 0;
     SocialEventType eventType = SocialEventType::PositiveInteraction;
+    SocialEvent socialEvent{};
 };
 
 inline Character* findMutableCharacter(World& world, CharacterId id) {
@@ -122,6 +123,7 @@ inline DecisionExecutionResult executeSocialDecision(
     result.socialExecuted = true;
     result.generatedSocialEvent = true;
     result.eventType = eventType;
+    result.socialEvent = event;
     return result;
 }
 
