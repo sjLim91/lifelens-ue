@@ -17,12 +17,24 @@ void ALLWorldDirector::ApplyPendingContextDirective(
             Character.MotionComponent->SetSocialInteractionActive(bActive);
         }
     };
+    auto SetWorkPresentation = [&](ELLResidentWorkPresentationMode Mode)
+    {
+        if (Character.MotionComponent)
+        {
+            Character.MotionComponent->SetWorkPresentationMode(Mode);
+        }
+    };
+    auto ClearContextPresentation = [&]()
+    {
+        SetTalkingPresentation(false);
+        SetWorkPresentation(ELLResidentWorkPresentationMode::None);
+    };
 
     if (!CoreBridge
         || Directive.ContextActionKind == ELLCoreContextActionKind::None
         || Directive.ContextActionToken <= 0)
     {
-        SetTalkingPresentation(false);
+        ClearContextPresentation();
         Runtime.ActiveContextActionToken = 0;
         Runtime.ContextUseElapsedSeconds = 0.0f;
         Runtime.bPerformingAction = false;
@@ -32,7 +44,7 @@ void ALLWorldDirector::ApplyPendingContextDirective(
 
     if (Runtime.ActiveContextActionToken != Directive.ContextActionToken)
     {
-        SetTalkingPresentation(false);
+        ClearContextPresentation();
         ReleasePhysicalReservation(Character.GetResidentId(), Runtime);
         Runtime.ActiveContextActionToken = Directive.ContextActionToken;
         Runtime.ContextUseElapsedSeconds = 0.0f;
@@ -50,6 +62,7 @@ void ALLWorldDirector::ApplyPendingContextDirective(
         AckSafeArrivalRadius);
     bool bFaceTarget = false;
     bool bTalkAtTarget = false;
+    ELLResidentWorkPresentationMode WorkAtTarget = ELLResidentWorkPresentationMode::None;
 
     auto ResolveAuthoritativeResidentTarget = [&](FGuid TargetResidentId, FVector& OutLocation) -> bool
     {
@@ -76,7 +89,7 @@ void ALLWorldDirector::ApplyPendingContextDirective(
             TargetResident = FindResidentActor(Directive.TargetResidentId);
             if (!TargetResident || Directive.SocialIntent == ELLCoreSocialIntent::None)
             {
-                SetTalkingPresentation(false);
+                ClearContextPresentation();
                 Runtime.bPerformingAction = false;
                 Character.ClearMovementTarget();
                 return;
@@ -100,7 +113,7 @@ void ALLWorldDirector::ApplyPendingContextDirective(
             {
                 if (!ResolveAuthoritativeResidentTarget(Directive.TargetResidentId, DesiredLocation))
                 {
-                    SetTalkingPresentation(false);
+                    ClearContextPresentation();
                     Runtime.bPerformingAction = false;
                     Character.ClearMovementTarget();
                     return;
@@ -118,14 +131,14 @@ void ALLWorldDirector::ApplyPendingContextDirective(
             TargetResident = FindResidentActor(Directive.TargetResidentId);
             if (!TargetResident || Directive.ParentingAction == ELLCoreParentingAction::None)
             {
-                SetTalkingPresentation(false);
+                ClearContextPresentation();
                 Runtime.bPerformingAction = false;
                 Character.ClearMovementTarget();
                 return;
             }
             if (!ResolveAuthoritativeResidentTarget(Directive.TargetResidentId, DesiredLocation))
             {
-                SetTalkingPresentation(false);
+                ClearContextPresentation();
                 Runtime.bPerformingAction = false;
                 Character.ClearMovementTarget();
                 return;
@@ -139,6 +152,22 @@ void ALLWorldDirector::ApplyPendingContextDirective(
 
         case ELLCoreContextActionKind::Civilization:
             Character.SetCurrentIntent(ELLActionIntent::Idle);
+            if (Directive.CivilizationTechnique == ELLCoreTechniqueId::PrimitiveStorage)
+            {
+                switch (Directive.CivilizationFacilityAction)
+                {
+                    case ELLCoreFacilityBuildAction::Plan:
+                    case ELLCoreFacilityBuildAction::DeliverMaterial:
+                        WorkAtTarget = ELLResidentWorkPresentationMode::Interact;
+                        break;
+                    case ELLCoreFacilityBuildAction::Work:
+                        WorkAtTarget = ELLResidentWorkPresentationMode::Build;
+                        break;
+                    case ELLCoreFacilityBuildAction::None:
+                    default:
+                        break;
+                }
+            }
             if (Directive.bHasCivilizationSpatialTarget)
             {
                 const float CellSize = FMath::Max(1.0f, CoreGridCellSizeUU);
@@ -158,7 +187,7 @@ void ALLWorldDirector::ApplyPendingContextDirective(
 
         case ELLCoreContextActionKind::None:
         default:
-            SetTalkingPresentation(false);
+            ClearContextPresentation();
             return;
     }
 
@@ -166,7 +195,7 @@ void ALLWorldDirector::ApplyPendingContextDirective(
         Character.GetActorLocation(), DesiredLocation);
     if (DistanceSquared > FMath::Square(ArrivalRadius))
     {
-        SetTalkingPresentation(false);
+        ClearContextPresentation();
         Runtime.bPerformingAction = false;
         Runtime.ContextUseElapsedSeconds = 0.0f;
         Character.SetMovementTarget(DesiredLocation);
@@ -176,6 +205,7 @@ void ALLWorldDirector::ApplyPendingContextDirective(
     Character.ClearMovementTarget();
     Runtime.bPerformingAction = true;
     SetTalkingPresentation(bTalkAtTarget);
+    SetWorkPresentation(WorkAtTarget);
 
     if (bFaceTarget && TargetResident)
     {
@@ -207,7 +237,7 @@ void ALLWorldDirector::ApplyPendingContextDirective(
     Runtime.ContextUseElapsedSeconds = 0.0f;
     if (bAcknowledged)
     {
-        SetTalkingPresentation(false);
+        ClearContextPresentation();
         Runtime.ActiveContextActionToken = 0;
         Runtime.bPerformingAction = false;
         Character.ClearMovementTarget();

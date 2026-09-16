@@ -12,7 +12,7 @@ namespace
     static TAutoConsoleVariable<int32> CVarDebugMotion(
         TEXT("ll.DebugMotion"),
         0,
-        TEXT("Log resident locomotion speed and blend space state once per second."),
+        TEXT("Log resident locomotion speed and context presentation state once per second."),
         ECVF_Default);
 
     constexpr float DebugLogInterval = 1.0f;
@@ -33,6 +33,14 @@ ULLResidentMotionComponent::ULLResidentMotionComponent()
     static ConstructorHelpers::FObjectFinder<UAnimSequence> TalkingFinder(
         TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Idle_Talking_Loop.Idle_Talking_Loop"));
     TalkingAnimation = TalkingFinder.Succeeded() ? TalkingFinder.Object : nullptr;
+
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> InteractFinder(
+        TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Interact.Interact"));
+    InteractAnimation = InteractFinder.Succeeded() ? InteractFinder.Object : nullptr;
+
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> BuildFinder(
+        TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Fixing_Kneeling.Fixing_Kneeling"));
+    BuildAnimation = BuildFinder.Succeeded() ? BuildFinder.Object : nullptr;
 }
 
 void ULLResidentMotionComponent::BeginPlay()
@@ -53,9 +61,18 @@ void ULLResidentMotionComponent::SetSocialInteractionActive(bool bActive)
     bSocialInteractionActive = bActive;
 }
 
+void ULLResidentMotionComponent::SetWorkPresentationMode(ELLResidentWorkPresentationMode Mode)
+{
+    WorkPresentationMode = Mode;
+}
+
 void ULLResidentMotionComponent::EnsureLocomotionPlaying()
 {
-    if (bLocomotionPlaying || !LocomotionBlendSpace)
+    if (bSocialInteractionActive
+        || WorkPresentationMode != ELLResidentWorkPresentationMode::None
+        || ActiveContextAnimation
+        || bLocomotionPlaying
+        || !LocomotionBlendSpace)
     {
         return;
     }
@@ -98,7 +115,7 @@ void ULLResidentMotionComponent::EnsureLocomotionPlaying()
         LocomotionBlendSpace->GetBlendSamples().Num(), ResolvedSamples.Num());
 }
 
-void ULLResidentMotionComponent::UpdateSocialAnimationState()
+void ULLResidentMotionComponent::UpdateContextAnimationState()
 {
     if (!Appearance)
     {
@@ -113,28 +130,49 @@ void ULLResidentMotionComponent::UpdateSocialAnimationState()
         return;
     }
 
+    UAnimSequence* DesiredAnimation = nullptr;
     if (bSocialInteractionActive)
     {
-        if (!bSocialAnimationPlaying && TalkingAnimation)
+        DesiredAnimation = TalkingAnimation;
+    }
+    else
+    {
+        switch (WorkPresentationMode)
+        {
+            case ELLResidentWorkPresentationMode::Interact:
+                DesiredAnimation = InteractAnimation;
+                break;
+            case ELLResidentWorkPresentationMode::Build:
+                DesiredAnimation = BuildAnimation;
+                break;
+            case ELLResidentWorkPresentationMode::None:
+            default:
+                break;
+        }
+    }
+
+    if (DesiredAnimation)
+    {
+        if (ActiveContextAnimation != DesiredAnimation)
         {
             Body->SetAnimationMode(EAnimationMode::AnimationSingleNode);
-            Body->PlayAnimation(TalkingAnimation, true);
-            bSocialAnimationPlaying = true;
+            Body->PlayAnimation(DesiredAnimation, true);
+            ActiveContextAnimation = DesiredAnimation;
+            bLocomotionPlaying = false;
         }
         return;
     }
 
-    if (!bSocialAnimationPlaying)
+    if (!ActiveContextAnimation)
     {
         return;
     }
 
-    bSocialAnimationPlaying = false;
+    ActiveContextAnimation = nullptr;
     bLocomotionPlaying = false;
 
-    // Restore a truthful stationary pose immediately. If the authored
-    // locomotion blend space is valid it will take ownership again on the next
-    // tick; if it was intentionally disabled as a fallback, this idle remains.
+    // Restore a truthful stationary pose immediately. Locomotion may take
+    // ownership again later in this same tick when no context presentation is active.
     if (IdleAnimation)
     {
         Body->SetAnimationMode(EAnimationMode::AnimationSingleNode);
@@ -166,8 +204,8 @@ void ULLResidentMotionComponent::TickComponent(float DeltaTime, ELevelTick TickT
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+    UpdateContextAnimationState();
     EnsureLocomotionPlaying();
-    UpdateSocialAnimationState();
 
     const AActor* Owner = GetOwner();
     if (!Owner || DeltaTime <= KINDA_SMALL_NUMBER)
@@ -219,7 +257,7 @@ void ULLResidentMotionComponent::TickComponent(float DeltaTime, ELevelTick TickT
 
     UpdateBodyOrientation(DeltaTime);
 
-    if (!bSocialAnimationPlaying && Body && LocomotionBlendSpace)
+    if (!ActiveContextAnimation && Body && LocomotionBlendSpace)
     {
         if (UAnimSingleNodeInstance* SingleNode = Body->GetSingleNodeInstance())
         {
@@ -241,11 +279,14 @@ void ULLResidentMotionComponent::TickComponent(float DeltaTime, ELevelTick TickT
                 FacingDot = FVector::DotProduct(Body->GetRightVector(), TravelDirection);
             }
 
-            UE_LOG(LogTemp, Log, TEXT("LLMotion %s speed=%.1f window=%.1f yaw=%.1f visual=%.1f travel=%.1f actor=%.1f facing=%.2f locomotion=%d talking=%d loc=%.0f,%.0f"),
+            UE_LOG(LogTemp, Log, TEXT("LLMotion %s speed=%.1f window=%.1f yaw=%.1f visual=%.1f travel=%.1f actor=%.1f facing=%.2f locomotion=%d talking=%d work=%d context=%s loc=%.0f,%.0f"),
                 *Owner->GetName(), SmoothedSpeed, WindowedSpeed, SmoothedYaw,
                 SmoothedYaw + MeshForwardYawOffsetDegrees, DesiredYaw,
                 Owner->GetActorRotation().Yaw, FacingDot,
-                bLocomotionPlaying ? 1 : 0, bSocialAnimationPlaying ? 1 : 0,
+                bLocomotionPlaying ? 1 : 0,
+                bSocialInteractionActive ? 1 : 0,
+                static_cast<int32>(WorkPresentationMode),
+                ActiveContextAnimation ? *ActiveContextAnimation->GetName() : TEXT("none"),
                 Location.X, Location.Y);
         }
     }
