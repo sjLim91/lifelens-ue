@@ -59,9 +59,6 @@ int main()
         seed,eventMinute);
     CHECK(witnessed.receiptAccepted);
 
-    // Add a crafted demonstration fact to ensure the world read model does not
-    // mistake repeated crafting for a new major discovery. Snapshot timestamps
-    // must never be in the future relative to world.minute.
     const KnowledgeReceipt* crafted=registerTechniqueOrigin(
         sim.socialKnowledge(),discoverer,TechniqueId::FiberCordage,
         eventMinute,CivilizationEventType::Crafted,seed);
@@ -72,6 +69,21 @@ int main()
     sim.world().storageSites.push_back(observedStorage);
     sim.world().storageSites[0].inventory.add(
         {ItemKind::RawMaterial,MaterialKind::Wood,3,0.5,1.0});
+
+    // Build a real in-progress facility state and verify that the observer read
+    // contract exposes authority rather than asking Unreal to infer progress.
+    discoverer.civilization.inventory.add(
+        {ItemKind::RawMaterial,MaterialKind::Wood,4,0.5,1.0});
+    discoverer.civilization.inventory.add(
+        {ItemKind::RawMaterial,MaterialKind::Fiber,2,0.5,1.0});
+    ConstructedFacility facility=makeFacilityConstructionSite(
+        8100,FacilityKind::PrimitiveStorage,{7,-2},discoverer.id,eventMinute);
+    CHECK(facility.id==8100);
+    CHECK(deliverFacilityMaterial(facility,discoverer.civilization.inventory,MaterialKind::Wood,4)==4);
+    CHECK(deliverFacilityMaterial(facility,discoverer.civilization.inventory,MaterialKind::Fiber,2)==2);
+    CHECK(applyFacilityConstructionWork(facility,discoverer.id,3.0)==false);
+    CHECK(facility.state==FacilityState::UnderConstruction);
+    sim.world().facilities.push_back(facility);
 
     const ResidentCivilizationObservation discovererRead=
         sim.observeResidentCivilization(discoverer.id);
@@ -107,6 +119,20 @@ int main()
     CHECK(worldRead.resourceNodeCount==static_cast<int>(sim.world().resourceNodes.size()));
     CHECK(worldRead.storageSiteCount==1);
     CHECK(worldRead.totalStoredUnits==3);
+    CHECK(worldRead.facilityCount==1);
+    CHECK(worldRead.plannedFacilityCount==0);
+    CHECK(worldRead.underConstructionFacilityCount==1);
+    CHECK(worldRead.operationalFacilityCount==0);
+    CHECK(worldRead.facilities.size()==1);
+    CHECK(worldRead.facilities[0].id==8100);
+    CHECK(worldRead.facilities[0].kind==FacilityKind::PrimitiveStorage);
+    CHECK(worldRead.facilities[0].state==FacilityState::UnderConstruction);
+    CHECK(worldRead.facilities[0].pos.x==7);
+    CHECK(worldRead.facilities[0].pos.y==-2);
+    CHECK(worldRead.facilities[0].requiredMaterialUnits==6);
+    CHECK(worldRead.facilities[0].deliveredMaterialUnits==6);
+    CHECK(worldRead.facilities[0].workProgress>0.37 && worldRead.facilities[0].workProgress<0.38);
+    CHECK(worldRead.facilities[0].requirements.size()==2);
     CHECK(worldRead.techniqueFactCount==2);
     CHECK(worldRead.transmissionReceiptCount==3);
     CHECK(worldRead.uniqueKnownTechniqueTypes>=1);
@@ -118,8 +144,6 @@ int main()
     CHECK(worldRead.recentDiscoveries[0].recipientCount==2);
     CHECK(worldRead.recentDiscoveries[0].livingKnowerCount>=2);
 
-    // Read models must be rebuilt from the restored authoritative Core snapshot.
-    // They must not depend on transient Unreal/legacy projection state.
     const SimulationStateSnapshot snapshot=sim.captureSnapshot();
     Simulation restored(1);
     std::string error;
@@ -135,6 +159,12 @@ int main()
     CHECK(restoredResident.totalInventoryUnits==discovererRead.totalInventoryUnits);
     CHECK(restoredWorld.totalResourceUnits==worldRead.totalResourceUnits);
     CHECK(restoredWorld.totalStoredUnits==worldRead.totalStoredUnits);
+    CHECK(restoredWorld.facilityCount==1);
+    CHECK(restoredWorld.facilities.size()==1);
+    CHECK(restoredWorld.facilities[0].id==8100);
+    CHECK(restoredWorld.facilities[0].state==FacilityState::UnderConstruction);
+    CHECK(restoredWorld.facilities[0].deliveredMaterialUnits==6);
+    CHECK(restoredWorld.facilities[0].workProgress>0.37 && restoredWorld.facilities[0].workProgress<0.38);
     CHECK(restoredWorld.techniqueFactCount==worldRead.techniqueFactCount);
     CHECK(restoredWorld.transmissionReceiptCount==worldRead.transmissionReceiptCount);
     CHECK(restoredWorld.recentDiscoveries.size()==worldRead.recentDiscoveries.size());

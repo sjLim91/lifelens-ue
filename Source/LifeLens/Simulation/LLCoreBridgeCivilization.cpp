@@ -102,6 +102,32 @@ ELLCoreKnowledgeSource ToUnrealKnowledgeSource(lifelens::CivilizationKnowledgeSo
     }
 }
 
+ELLCoreFacilityKind ToUnrealFacilityKind(lifelens::FacilityKind Kind)
+{
+    switch (Kind)
+    {
+        case lifelens::FacilityKind::PrimitiveStorage: return ELLCoreFacilityKind::PrimitiveStorage;
+        case lifelens::FacilityKind::FirePit: return ELLCoreFacilityKind::FirePit;
+        case lifelens::FacilityKind::WorkSurface: return ELLCoreFacilityKind::WorkSurface;
+        case lifelens::FacilityKind::SleepingPlace: return ELLCoreFacilityKind::SleepingPlace;
+        case lifelens::FacilityKind::Shelter: return ELLCoreFacilityKind::Shelter;
+        case lifelens::FacilityKind::Furnace: return ELLCoreFacilityKind::Furnace;
+        default: return ELLCoreFacilityKind::PrimitiveStorage;
+    }
+}
+
+ELLCoreFacilityState ToUnrealFacilityState(lifelens::FacilityState State)
+{
+    switch (State)
+    {
+        case lifelens::FacilityState::Planned: return ELLCoreFacilityState::Planned;
+        case lifelens::FacilityState::UnderConstruction: return ELLCoreFacilityState::UnderConstruction;
+        case lifelens::FacilityState::Operational: return ELLCoreFacilityState::Operational;
+        case lifelens::FacilityState::Ruined: return ELLCoreFacilityState::Ruined;
+        default: return ELLCoreFacilityState::Planned;
+    }
+}
+
 FLLCoreCivilizationItemStack ToUnrealItemStack(const lifelens::CivilizationItemObservation& Core)
 {
     FLLCoreCivilizationItemStack Result;
@@ -212,6 +238,10 @@ FLLCoreCivilizationWorldObservation ULLCoreBridgeSubsystem::GetCivilizationWorld
     Result.TotalResourceUnits = Core.totalResourceUnits;
     Result.StorageSiteCount = SafeCivilizationCount(Core.storageSiteCount);
     Result.TotalStoredUnits = Core.totalStoredUnits;
+    Result.FacilityCount = SafeCivilizationCount(Core.facilityCount);
+    Result.PlannedFacilityCount = SafeCivilizationCount(Core.plannedFacilityCount);
+    Result.UnderConstructionFacilityCount = SafeCivilizationCount(Core.underConstructionFacilityCount);
+    Result.OperationalFacilityCount = SafeCivilizationCount(Core.operationalFacilityCount);
     Result.TechniqueFactCount = SafeCivilizationCount(Core.techniqueFactCount);
     Result.TransmissionReceiptCount = SafeCivilizationCount(Core.transmissionReceiptCount);
     Result.UniqueKnownTechniqueTypes = SafeCivilizationCount(Core.uniqueKnownTechniqueTypes);
@@ -244,6 +274,45 @@ FLLCoreCivilizationWorldObservation ULLCoreBridgeSubsystem::GetCivilizationWorld
             Read.Inventory.Add(ToUnrealItemStack(Item));
         }
         Result.Storages.Add(MoveTemp(Read));
+    }
+
+    Result.Facilities.Reserve(SafeCivilizationCount(Core.facilities.size()));
+    for (const lifelens::CivilizationFacilityObservation& Facility : Core.facilities)
+    {
+        FLLCoreCivilizationFacilityObservation Read;
+        Read.FacilityId = static_cast<int64>(Facility.id);
+        Read.Kind = ToUnrealFacilityKind(Facility.kind);
+        Read.State = ToUnrealFacilityState(Facility.state);
+        Read.GridX = Facility.pos.x;
+        Read.GridY = Facility.pos.y;
+        if (Facility.initiatedBy != 0)
+        {
+            Read.InitiatedByResidentId = MakeStableResidentGuid(static_cast<uint64>(Facility.initiatedBy));
+        }
+        if (Facility.lastWorkedBy != 0)
+        {
+            Read.LastWorkedByResidentId = MakeStableResidentGuid(static_cast<uint64>(Facility.lastWorkedBy));
+        }
+        Read.StartedMinute = static_cast<int64>(Facility.startedMinute);
+        Read.CompletedMinute = static_cast<int64>(Facility.completedMinute);
+        Read.ConstructionWork = static_cast<float>(Facility.constructionWork);
+        Read.RequiredWork = static_cast<float>(Facility.requiredWork);
+        Read.WorkProgress = static_cast<float>(Facility.workProgress);
+        Read.Durability = static_cast<float>(Facility.durability);
+        Read.bActive = Facility.active;
+        Read.LinkedStorageId = static_cast<int64>(Facility.linkedStorage);
+        Read.RequiredMaterialUnits = Facility.requiredMaterialUnits;
+        Read.DeliveredMaterialUnits = Facility.deliveredMaterialUnits;
+        Read.Requirements.Reserve(SafeCivilizationCount(Facility.requirements.size()));
+        for (const lifelens::CivilizationFacilityRequirementObservation& Requirement : Facility.requirements)
+        {
+            FLLCoreCivilizationFacilityRequirementObservation RequirementRead;
+            RequirementRead.Material = ToUnrealMaterial(Requirement.material);
+            RequirementRead.Required = Requirement.required;
+            RequirementRead.Delivered = Requirement.delivered;
+            Read.Requirements.Add(MoveTemp(RequirementRead));
+        }
+        Result.Facilities.Add(MoveTemp(Read));
     }
 
     Result.RecentDiscoveries.Reserve(SafeCivilizationCount(Core.recentDiscoveries.size()));
