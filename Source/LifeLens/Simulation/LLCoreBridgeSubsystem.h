@@ -57,6 +57,13 @@ public:
         int32 ResolvedGridY,
         int64 SanitationSiteId = 0);
 
+    UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Action")
+    bool CompleteResidentContextAction(
+        FGuid ResidentId,
+        int64 ContextActionToken,
+        int32 ResolvedGridX,
+        int32 ResolvedGridY);
+
     UFUNCTION(BlueprintCallable, Category="LifeLens|Core|World")
     bool GetResidentRuntimeGridPosition(
         FGuid ResidentId,
