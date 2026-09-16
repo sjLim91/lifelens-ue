@@ -39,6 +39,8 @@ int main(){
     if(out.population.needsAdultReplacement(2) || !out.population.needsAdultReplacement(4)) return fail("continuity");
     if(applyDeath(a,1100,DeathCause::Other,people,rels,romance).died) return fail("duplicate");
 
+    // v1 does not fabricate unexplained premature natural deaths. Illness,
+    // accident, starvation and pathogen mortality are later health-system work.
     Character young;
     young.id=10;
     young.hasBirthMinute=true;
@@ -46,10 +48,17 @@ int main(){
     young.lifeStage=LifeStage::Adult;
     young.lifeCondition.physicalHealth=1.0;
     const int youngMinute=30*LifeMinutesPerYear;
-    if(dailyMortalityProbability(young,youngMinute)<=0.0 || dailyMortalityProbability(young,youngMinute)>=0.001) return fail("young probability");
+    if(dailyMortalityProbability(young,youngMinute)!=0.0) return fail("young probability");
+    if(shouldDieToday(young,12345,youngMinute)) return fail("young mortality");
     const double rollA=deterministicMortalityRoll(12345,young.id,youngMinute);
     const double rollB=deterministicMortalityRoll(12345,young.id,youngMinute);
     if(rollA!=rollB || rollA<0.0 || rollA>=1.0) return fail("deterministic roll");
+
+    Character older=young;
+    older.id=13;
+    older.lifeStage=LifeStage::MiddleAge;
+    const int olderMinute=60*LifeMinutesPerYear;
+    if(dailyMortalityProbability(older,olderMinute)<=0.0) return fail("older probability");
 
     Character oldest=young;
     oldest.id=11;
