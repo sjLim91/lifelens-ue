@@ -2,6 +2,7 @@
 
 #include "lifelens/ContextAction.h"
 #include "lifelens/Simulation.h"
+#include "lifelens/ToolEffectiveness.h"
 
 namespace
 {
@@ -66,6 +67,21 @@ ELLCoreFacilityKind ContextActionToUnrealFacilityKind(lifelens::FacilityKind Kin
         case lifelens::FacilityKind::Shelter: return ELLCoreFacilityKind::Shelter;
         case lifelens::FacilityKind::Furnace: return ELLCoreFacilityKind::Furnace;
         default: return ELLCoreFacilityKind::PrimitiveStorage;
+    }
+}
+
+ELLCoreToolCapability ContextActionToUnrealToolCapability(lifelens::ToolCapability Capability)
+{
+    switch (Capability)
+    {
+        case lifelens::ToolCapability::Cut: return ELLCoreToolCapability::Cut;
+        case lifelens::ToolCapability::Chop: return ELLCoreToolCapability::Chop;
+        case lifelens::ToolCapability::Dig: return ELLCoreToolCapability::Dig;
+        case lifelens::ToolCapability::Strike: return ELLCoreToolCapability::Strike;
+        case lifelens::ToolCapability::Carry: return ELLCoreToolCapability::Carry;
+        case lifelens::ToolCapability::Heat: return ELLCoreToolCapability::Heat;
+        case lifelens::ToolCapability::None:
+        default: return ELLCoreToolCapability::None;
     }
 }
 
@@ -157,9 +173,10 @@ bool ULLCoreBridgeSubsystem::GetResidentPendingContextDirective(
         return false;
     }
 
+    const lifelens::CharacterId CharacterId =
+        static_cast<lifelens::CharacterId>(*CoreCharacterId);
     const lifelens::PendingContextActionObservation Pending =
-        CoreSimulation->observePendingContextAction(
-            static_cast<lifelens::CharacterId>(*CoreCharacterId));
+        CoreSimulation->observePendingContextAction(CharacterId);
     if (!Pending.active || Pending.token == 0
         || Pending.token > static_cast<uint64>(TNumericLimits<int64>::Max()))
     {
@@ -201,6 +218,40 @@ bool ULLCoreBridgeSubsystem::GetResidentPendingContextDirective(
             OutDirective.CivilizationTargetGridX = Pending.targetPos.x;
             OutDirective.CivilizationTargetGridY = Pending.targetPos.y;
             OutDirective.CivilizationSanitationSiteId = static_cast<int64>(Pending.sanitationSiteId);
+
+            if (Pending.civilizationIntent == lifelens::CivilizationIntent::Gather)
+            {
+                const lifelens::Character* Character = nullptr;
+                for (const lifelens::Character& Candidate : CoreSimulation->world().characters)
+                {
+                    if (Candidate.id == CharacterId)
+                    {
+                        Character = &Candidate;
+                        break;
+                    }
+                }
+
+                if (Character)
+                {
+                    const lifelens::GatherToolUseProfile Tool =
+                        lifelens::inspectGatherTool(
+                            Character->civilization.inventory,
+                            Pending.material);
+                    if (Tool.available)
+                    {
+                        OutDirective.bHasCivilizationTool = true;
+                        OutDirective.CivilizationToolItem = ContextActionToUnrealItem(Tool.tool.kind);
+                        OutDirective.CivilizationToolCapability =
+                            ContextActionToUnrealToolCapability(Tool.capability);
+                        OutDirective.CivilizationToolQuality =
+                            static_cast<float>(Tool.tool.quality);
+                        OutDirective.CivilizationToolDurability =
+                            static_cast<float>(Tool.durabilityBefore);
+                        OutDirective.CivilizationToolQuantityMultiplier =
+                            static_cast<float>(Tool.quantityMultiplier);
+                    }
+                }
+            }
             break;
 
         case lifelens::ContextActionKind::Parenting:

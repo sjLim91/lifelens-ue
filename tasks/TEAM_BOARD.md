@@ -19,16 +19,19 @@ Authority rule: Core/World owns simulation truth. UI/Character/Environment/World
 ### ASSIST_LOCK-FACILITY-TECH-1 — ACTIVE
 - requester/implementer: Jjun, 사용자 승인으로 Core + World + Character + UI + WorldPresentation을 한 흐름으로 공동 구현.
 - owner lanes: Dagyeom — UI / Observer presentation, Character presentation, Environment / maps / world presentation.
-- implementation branch: `jjun/facilities-tools-technology-v1`.
+- milestone branch history: `jjun/facilities-tools-technology-v1` → `jjun/tool-effectiveness-v1`.
+- current PR: #119 `도구 실효성 v1: 채집 효율·품질·내구도 연결`.
 - purpose: 시설·도구·기술 발전을 `필요 인식 -> 관찰/실험 -> 발견 -> 재현 -> 실제 제작/건설 -> 실제 효율/세계 변화 -> 표현/Observer -> Save/Load`의 종단 흐름으로 구현한다.
-- first slice: 범용 Core 권위 시설 모델과 원시 저장소 건설. New Game은 시설 0개 원칙을 유지하며 저장소는 주민이 필요성을 겪고 기술을 발견하고 재료를 운반해 건설한 뒤에만 활성화한다.
+- delivered first slice: PR #118 merged to `main` as `c3de18790bd19ff7068971b5edc1f475c016048c`; New Game 시설 0개 원칙을 유지하면서 PrimitiveStorage를 필요 인식 → 발견 → Core 위치 선정 → 재료 운반 → 건설 ACK → Storage 활성화 → Save/Load → World/Character/UI 표현까지 연결했다.
+- current slice: ToolCapability / quality / durability를 실제 채집 효율과 마모/파손에 연결했다. Pending Gather는 같은 Core 규칙으로 실제 사용할 도구를 Bridge DTO에 노출하고, WorldDirector/Character는 해당 read DTO만 소비해 Gather 모션과 손 도구 proxy를 표시한다.
+- hand-tool presentation v1: SharpFlake / StoneCuttingTool / SimpleContainer만 표시하며 실제 효율·마모·파손은 계속 Core ACK에서만 발생한다. 현재 engine basic mesh proxy는 추후 art asset 교체 지점이다.
 - locked Core/World scope: `Source/LifeLensCore/**`, `Source/LifeLens/Simulation/**`, `Source/LifeLens/World/**` 중 시설/건설/도구/기술/자원/제작/공간 권위와 Bridge 계약.
-- locked UI scope: `Source/LifeLens/UI/**`, `Content/UI/**` 중 시설·제작·기술 발견·인벤토리·건설 상태 표현. 한글 glyph 실기기 보장은 Android Gate B에서 검증하며 전용 UI 폰트 보강을 Presentation 체크리스트에 포함한다.
+- locked UI scope: `Source/LifeLens/UI/**`, `Content/UI/**` 중 시설·제작·기술 발견·인벤토리·건설·도구 상태 표현. 한글 glyph 실기기 보장은 Android Gate B에서 검증하며 전용 UI 폰트 보강을 Presentation 체크리스트에 포함한다.
 - locked Character scope: `Source/LifeLens/Characters/**`, `Content/Characters/**` 중 채집/제작/건설/도구 사용 모션과 손 도구 표현.
 - locked WorldPresentation scope: `Source/LifeLens/WorldPresentation/**`, `Content/Environment/**`, `Content/WorldPresentation/**` 중 Core 권위 자원 감소/재생, 건설 시설, 불/연료/작업대/광맥 등 문명 결과 표현.
 - Environment 일반 미관 작업과 #8 무관한 캐릭터 외형 작업은 이 락에 포함하지 않는다.
 - Presentation은 시설·자원·도구·기술 상태를 생성하거나 보정하지 않고 Core read contract만 소비한다.
-- release condition: #8 v1 종단 범위가 Core/Preflight/Unreal 검증을 통과하고 PR 병합된 뒤 해제한다.
+- release condition: #8 시설/도구 v1의 Core + Bridge + Character/UI presentation 종단 범위가 Core/Preflight/Unreal 검증을 통과하고 병합된 뒤 해제한다.
 
 Jjun helping Dagyeom defaults to REVIEW_ONLY지만, 위 ACTIVE Assist Lock 범위에서는 사용자 승인에 따라 직접 구현한다. `dagyeom/*` 브랜치에는 직접 push하지 않고 별도 `jjun/*` 브랜치/PR을 사용한다.
 

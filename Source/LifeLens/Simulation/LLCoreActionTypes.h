@@ -46,6 +46,18 @@ enum class ELLCoreFacilityBuildAction : uint8
 };
 
 UENUM(BlueprintType)
+enum class ELLCoreToolCapability : uint8
+{
+    None,
+    Cut,
+    Chop,
+    Dig,
+    Strike,
+    Carry,
+    Heat
+};
+
+UENUM(BlueprintType)
 enum class ELLCoreContextActionKind : uint8
 {
     None,
@@ -136,6 +148,27 @@ struct FLLCoreActionDirective
 
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization")
     ELLCoreFacilityKind CivilizationFacilityKind = ELLCoreFacilityKind::PrimitiveStorage;
+
+    // Read-only projection of the exact Core tool candidate that the pending
+    // Gather ACK will use. Presentation may display it but cannot grant its
+    // efficiency or durability effect.
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization|Tool")
+    bool bHasCivilizationTool = false;
+
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization|Tool")
+    ELLCoreItemKind CivilizationToolItem = ELLCoreItemKind::RawMaterial;
+
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization|Tool")
+    ELLCoreToolCapability CivilizationToolCapability = ELLCoreToolCapability::None;
+
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization|Tool")
+    float CivilizationToolQuality = 0.0f;
+
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization|Tool")
+    float CivilizationToolDurability = 0.0f;
+
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization|Tool")
+    float CivilizationToolQuantityMultiplier = 1.0f;
 
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Action|Civilization")
     bool bCivilizationActionSucceeded = false;

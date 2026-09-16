@@ -4,7 +4,11 @@
 #include "Animation/AnimSingleNodeInstance.h"
 #include "Animation/BlendSpace.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/SkeletalMesh.h"
+#include "Engine/StaticMesh.h"
 #include "GameFramework/Actor.h"
+#include "ReferenceSkeleton.h"
 #include "UObject/ConstructorHelpers.h"
 
 namespace
@@ -16,6 +20,31 @@ namespace
         ECVF_Default);
 
     constexpr float DebugLogInterval = 1.0f;
+
+    FName ResolveRightHandBone(const USkeletalMeshComponent* Body)
+    {
+        if (!Body || !Body->GetSkeletalMeshAsset())
+        {
+            return NAME_None;
+        }
+
+        const FReferenceSkeleton& RefSkeleton = Body->GetSkeletalMeshAsset()->GetRefSkeleton();
+        static const FName Candidates[] = {
+            FName(TEXT("RightHand")),
+            FName(TEXT("Hand_R")),
+            FName(TEXT("hand_r")),
+            FName(TEXT("R_Hand")),
+            FName(TEXT("Hand.R"))
+        };
+        for (const FName Candidate : Candidates)
+        {
+            if (RefSkeleton.FindBoneIndex(Candidate) != INDEX_NONE)
+            {
+                return Candidate;
+            }
+        }
+        return NAME_None;
+    }
 }
 
 ULLResidentMotionComponent::ULLResidentMotionComponent()
@@ -41,6 +70,16 @@ ULLResidentMotionComponent::ULLResidentMotionComponent()
     static ConstructorHelpers::FObjectFinder<UAnimSequence> BuildFinder(
         TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Fixing_Kneeling.Fixing_Kneeling"));
     BuildAnimation = BuildFinder.Succeeded() ? BuildFinder.Object : nullptr;
+
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> FlakeFinder(
+        TEXT("/Engine/BasicShapes/Cone.Cone"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> CuttingToolFinder(
+        TEXT("/Engine/BasicShapes/Cube.Cube"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> ContainerFinder(
+        TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
+    SharpFlakeMesh = FlakeFinder.Succeeded() ? FlakeFinder.Object : nullptr;
+    StoneCuttingToolMesh = CuttingToolFinder.Succeeded() ? CuttingToolFinder.Object : nullptr;
+    SimpleContainerMesh = ContainerFinder.Succeeded() ? ContainerFinder.Object : nullptr;
 }
 
 void ULLResidentMotionComponent::BeginPlay()
@@ -64,6 +103,11 @@ void ULLResidentMotionComponent::SetSocialInteractionActive(bool bActive)
 void ULLResidentMotionComponent::SetWorkPresentationMode(ELLResidentWorkPresentationMode Mode)
 {
     WorkPresentationMode = Mode;
+}
+
+void ULLResidentMotionComponent::SetHeldToolPresentation(ELLResidentHeldToolPresentation Tool)
+{
+    HeldToolPresentation = Tool;
 }
 
 void ULLResidentMotionComponent::EnsureLocomotionPlaying()
@@ -140,6 +184,10 @@ void ULLResidentMotionComponent::UpdateContextAnimationState()
         switch (WorkPresentationMode)
         {
             case ELLResidentWorkPresentationMode::Interact:
+            case ELLResidentWorkPresentationMode::Gather:
+                // Gather has its own semantic route now. The generic UAL
+                // Interact clip is the v1 fallback until a dedicated authored
+                // cutting/chopping/carry clip is selected.
                 DesiredAnimation = InteractAnimation;
                 break;
             case ELLResidentWorkPresentationMode::Build:
@@ -180,6 +228,87 @@ void ULLResidentMotionComponent::UpdateContextAnimationState()
     }
 }
 
+void ULLResidentMotionComponent::UpdateHeldToolVisualState()
+{
+    if (HeldToolPresentation == ELLResidentHeldToolPresentation::None)
+    {
+        if (HeldToolMesh)
+        {
+            HeldToolMesh->SetVisibility(false, true);
+        }
+        return;
+    }
+
+    if (!Body)
+    {
+        return;
+    }
+
+    if (!HeldToolMesh)
+    {
+        AActor* Owner = GetOwner();
+        if (!Owner)
+        {
+            return;
+        }
+
+        HeldToolMesh = NewObject<UStaticMeshComponent>(Owner, TEXT("HeldToolPresentationMesh"));
+        HeldToolMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        HeldToolMesh->SetCastShadow(true);
+        const FName HandBone = ResolveRightHandBone(Body);
+        HeldToolMesh->SetupAttachment(Body, HandBone);
+        HeldToolMesh->RegisterComponent();
+        if (HandBone.IsNone())
+        {
+            // Safe visual fallback for an unexpected vendor skeleton. It keeps
+            // the tool near the upper body instead of inventing another socket.
+            HeldToolMesh->SetRelativeLocation(FVector(20.0f, -28.0f, 92.0f));
+        }
+    }
+
+    UStaticMesh* DesiredMesh = nullptr;
+    FVector RelativeScale(0.05f, 0.05f, 0.05f);
+    FRotator RelativeRotation = FRotator::ZeroRotator;
+    FVector RelativeLocation(2.0f, 0.0f, 0.0f);
+
+    switch (HeldToolPresentation)
+    {
+        case ELLResidentHeldToolPresentation::SharpFlake:
+            DesiredMesh = SharpFlakeMesh.Get();
+            RelativeScale = FVector(0.035f, 0.055f, 0.025f);
+            RelativeRotation = FRotator(0.0f, 90.0f, 90.0f);
+            break;
+        case ELLResidentHeldToolPresentation::StoneCuttingTool:
+            DesiredMesh = StoneCuttingToolMesh.Get();
+            RelativeScale = FVector(0.035f, 0.035f, 0.20f);
+            RelativeRotation = FRotator(0.0f, 15.0f, 70.0f);
+            break;
+        case ELLResidentHeldToolPresentation::SimpleContainer:
+            DesiredMesh = SimpleContainerMesh.Get();
+            RelativeScale = FVector(0.09f, 0.09f, 0.12f);
+            RelativeLocation = FVector(5.0f, 0.0f, -3.0f);
+            break;
+        case ELLResidentHeldToolPresentation::None:
+        default:
+            break;
+    }
+
+    if (!DesiredMesh)
+    {
+        HeldToolMesh->SetVisibility(false, true);
+        return;
+    }
+
+    HeldToolMesh->SetStaticMesh(DesiredMesh);
+    HeldToolMesh->SetRelativeScale3D(RelativeScale);
+    HeldToolMesh->SetRelativeRotation(RelativeRotation);
+    if (!HeldToolMesh->GetAttachSocketName().IsNone())
+    {
+        HeldToolMesh->SetRelativeLocation(RelativeLocation);
+    }
+    HeldToolMesh->SetVisibility(true, true);
+}
+
 void ULLResidentMotionComponent::UpdateBodyOrientation(float DeltaTime)
 {
     if (!Body)
@@ -205,6 +334,7 @@ void ULLResidentMotionComponent::TickComponent(float DeltaTime, ELevelTick TickT
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
     UpdateContextAnimationState();
+    UpdateHeldToolVisualState();
     EnsureLocomotionPlaying();
 
     const AActor* Owner = GetOwner();
@@ -279,13 +409,14 @@ void ULLResidentMotionComponent::TickComponent(float DeltaTime, ELevelTick TickT
                 FacingDot = FVector::DotProduct(Body->GetRightVector(), TravelDirection);
             }
 
-            UE_LOG(LogTemp, Log, TEXT("LLMotion %s speed=%.1f window=%.1f yaw=%.1f visual=%.1f travel=%.1f actor=%.1f facing=%.2f locomotion=%d talking=%d work=%d context=%s loc=%.0f,%.0f"),
+            UE_LOG(LogTemp, Log, TEXT("LLMotion %s speed=%.1f window=%.1f yaw=%.1f visual=%.1f travel=%.1f actor=%.1f facing=%.2f locomotion=%d talking=%d work=%d tool=%d context=%s loc=%.0f,%.0f"),
                 *Owner->GetName(), SmoothedSpeed, WindowedSpeed, SmoothedYaw,
                 SmoothedYaw + MeshForwardYawOffsetDegrees, DesiredYaw,
                 Owner->GetActorRotation().Yaw, FacingDot,
                 bLocomotionPlaying ? 1 : 0,
                 bSocialInteractionActive ? 1 : 0,
                 static_cast<int32>(WorkPresentationMode),
+                static_cast<int32>(HeldToolPresentation),
                 ActiveContextAnimation ? *ActiveContextAnimation->GetName() : TEXT("none"),
                 Location.X, Location.Y);
         }
