@@ -28,7 +28,7 @@ public:
 
 private:
     void RefreshCollisionProxies(bool bForce);
-    uint32 ComputeSourceSignature(const ALLWorldPresentationActor& Source) const;
+    uint32 ComputeSourceSignature(ALLWorldPresentationActor& Source) const;
     void RebuildFromSource(ALLWorldPresentationActor& Source);
     void AddTreeProxy(const FTransform& SourceTransform, UStaticMesh& SourceMesh);
     void AddRockProxy(const FTransform& SourceTransform, UStaticMesh& SourceMesh);
