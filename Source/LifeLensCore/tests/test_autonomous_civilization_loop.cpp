@@ -181,7 +181,14 @@ int main()
     CHECK(observedActivity.minute<=activityProbe.world().minute);
     if(observedActivity.kind==CivilizationActivityKind::Gather){
         CHECK(observedActivity.resourceNode!=0);
-        CHECK(!observedActivity.hasSpatialTarget);
+        CHECK(observedActivity.hasSpatialTarget);
+        const ResourceNode* observedNode=nullptr;
+        for(const auto& node:activityProbe.world().resourceNodes){
+            if(node.id==observedActivity.resourceNode){ observedNode=&node; break; }
+        }
+        CHECK(observedNode!=nullptr);
+        CHECK(observedActivity.targetGridX==observedNode->pos.x);
+        CHECK(observedActivity.targetGridY==observedNode->pos.y);
     }
 
     const SimulationStateSnapshot activeSnapshot=activityProbe.captureSnapshot();
