@@ -66,7 +66,9 @@ enum class ItemKind {
     StoneCuttingTool,
     Cordage,
     SimpleContainer,
-    FuelBundle
+    FuelBundle,
+    DiggingStick,
+    StoneHammer
 };
 
 enum class ToolCapability {
@@ -84,6 +86,8 @@ inline ToolCapability itemCapability(ItemKind kind)
     switch(kind){
         case ItemKind::SharpFlake: return ToolCapability::Cut;
         case ItemKind::StoneCuttingTool: return ToolCapability::Chop;
+        case ItemKind::DiggingStick: return ToolCapability::Dig;
+        case ItemKind::StoneHammer: return ToolCapability::Strike;
         case ItemKind::SimpleContainer: return ToolCapability::Carry;
         case ItemKind::FuelBundle: return ToolCapability::Heat;
         default: return ToolCapability::None;
@@ -143,6 +147,18 @@ public:
         }
         stacks_.erase(std::remove_if(stacks_.begin(),stacks_.end(),[](const ItemStack& s){return s.quantity<=0;}),stacks_.end());
         return remaining==0;
+    }
+
+    bool removeExactOne(const ItemStack& item)
+    {
+        for(auto it=stacks_.begin();it!=stacks_.end();++it){
+            if(it->quantity<=0 || it->kind!=item.kind || it->material!=item.material) continue;
+            if(!near(it->quality,item.quality) || !near(it->durability,item.durability)) continue;
+            --it->quantity;
+            if(it->quantity<=0) stacks_.erase(it);
+            return true;
+        }
+        return false;
     }
 
     bool transferTo(Inventory& target,ItemKind kind,MaterialKind material,int quantity,bool anyMaterial=false)
@@ -215,7 +231,9 @@ enum class TechniqueId {
     SimpleContainer,
     DesignatedSanitationArea,
     DugSanitationPit,
-    PrimitiveStorage
+    PrimitiveStorage,
+    DiggingStick,
+    StoneHammer
 };
 
 enum class KnowledgeLevel : int {
@@ -301,7 +319,9 @@ enum class ExperimentKind {
     ShapeClay,
     DesignateSanitationArea,
     DigSanitationPit,
-    OrganizeStockpile
+    OrganizeStockpile,
+    ShapeDiggingStick,
+    HaftStoneHammer
 };
 
 enum class CivilizationEventType {
@@ -376,6 +396,10 @@ inline TechniqueRecipe techniqueRecipe(TechniqueId technique)
             return {technique,{{ItemKind::RawMaterial,MaterialKind::Fiber,2,false}},true,ItemKind::Cordage,MaterialKind::Fiber,1};
         case TechniqueId::SimpleContainer:
             return {technique,{{ItemKind::RawMaterial,MaterialKind::Clay,3,false}},true,ItemKind::SimpleContainer,MaterialKind::Clay,1};
+        case TechniqueId::DiggingStick:
+            return {technique,{{ItemKind::RawMaterial,MaterialKind::Wood,2,false}},true,ItemKind::DiggingStick,MaterialKind::Wood,1};
+        case TechniqueId::StoneHammer:
+            return {technique,{{ItemKind::RawMaterial,MaterialKind::Stone,2,false},{ItemKind::RawMaterial,MaterialKind::Wood,1,false},{ItemKind::Cordage,MaterialKind::Fiber,1,false}},true,ItemKind::StoneHammer,MaterialKind::Stone,1};
         case TechniqueId::DesignatedSanitationArea:
         case TechniqueId::DugSanitationPit:
         case TechniqueId::PrimitiveStorage:
@@ -416,6 +440,8 @@ inline TechniqueId experimentTechnique(ExperimentKind kind)
         case ExperimentKind::DesignateSanitationArea: return TechniqueId::DesignatedSanitationArea;
         case ExperimentKind::DigSanitationPit: return TechniqueId::DugSanitationPit;
         case ExperimentKind::OrganizeStockpile: return TechniqueId::PrimitiveStorage;
+        case ExperimentKind::ShapeDiggingStick: return TechniqueId::DiggingStick;
+        case ExperimentKind::HaftStoneHammer: return TechniqueId::StoneHammer;
         default: return TechniqueId::None;
     }
 }
@@ -450,6 +476,8 @@ inline double experimentBaseChance(ExperimentKind kind,MaterialKind material)
         case ExperimentKind::FrictionWood: return material==MaterialKind::Wood ? 0.15 : 0.0;
         case ExperimentKind::TwistFiber: return material==MaterialKind::Fiber ? 0.34 : 0.0;
         case ExperimentKind::ShapeClay: return material==MaterialKind::Clay ? 0.30 : 0.0;
+        case ExperimentKind::ShapeDiggingStick: return material==MaterialKind::Wood ? 0.29 : 0.0;
+        case ExperimentKind::HaftStoneHammer: return material==MaterialKind::Stone ? 0.24 : 0.0;
         case ExperimentKind::DesignateSanitationArea: return material==MaterialKind::Unknown ? 0.32 : 0.0;
         case ExperimentKind::DigSanitationPit: return material==MaterialKind::Unknown ? 0.28 : 0.0;
         case ExperimentKind::OrganizeStockpile: return material==MaterialKind::Unknown ? 0.34 : 0.0;
@@ -479,6 +507,13 @@ inline bool experimentPrerequisitesMet(const ExperimentContext& context,const Kn
 {
     if(context.kind==ExperimentKind::HaftSharpFlake){
         return knowledge.knowsAtLeast(TechniqueId::SharpFlake,KnowledgeLevel::Reproducible);
+    }
+    if(context.kind==ExperimentKind::ShapeDiggingStick){
+        return knowledge.knowsAtLeast(TechniqueId::SharpFlake,KnowledgeLevel::Reproducible);
+    }
+    if(context.kind==ExperimentKind::HaftStoneHammer){
+        return knowledge.knowsAtLeast(TechniqueId::ChippedStoneTool,KnowledgeLevel::Reproducible)
+            && knowledge.knowsAtLeast(TechniqueId::FiberCordage,KnowledgeLevel::Reproducible);
     }
     if(context.kind==ExperimentKind::DesignateSanitationArea){
         return context.sanitationProblemRecognized && context.sanitationSiteAvailable;

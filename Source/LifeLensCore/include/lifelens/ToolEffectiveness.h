@@ -110,10 +110,9 @@ inline bool consumeGatherToolUse(
         return false;
     }
 
-    // Inventory keeps equal-quality/equal-durability tools stacked. Selecting
-    // the first usable matching capability therefore lets public remove/add
-    // split exactly one tool instance into its newly worn durability state.
-    if(!inventory.remove(profile.tool.kind,profile.tool.material,1)){
+    // Remove exactly the selected quality/durability stack. A broken or stale
+    // sibling stack of the same item/material must never absorb this wear.
+    if(!inventory.removeExactOne(profile.tool)){
         if(outProfile) *outProfile=GatherToolUseProfile{};
         return false;
     }
@@ -136,6 +135,8 @@ inline const char* toolItemName(ItemKind item)
     switch(item){
         case ItemKind::SharpFlake: return "SharpFlake";
         case ItemKind::StoneCuttingTool: return "StoneCuttingTool";
+        case ItemKind::DiggingStick: return "DiggingStick";
+        case ItemKind::StoneHammer: return "StoneHammer";
         case ItemKind::SimpleContainer: return "SimpleContainer";
         case ItemKind::Cordage: return "Cordage";
         case ItemKind::FuelBundle: return "FuelBundle";

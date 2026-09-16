@@ -82,6 +82,8 @@ inline const char* techniqueName(TechniqueId technique)
         case TechniqueId::DesignatedSanitationArea: return "DesignatedSanitationArea";
         case TechniqueId::DugSanitationPit: return "DugSanitationPit";
         case TechniqueId::PrimitiveStorage: return "PrimitiveStorage";
+        case TechniqueId::DiggingStick: return "DiggingStick";
+        case TechniqueId::StoneHammer: return "StoneHammer";
         default: return "None";
     }
 }
@@ -180,6 +182,8 @@ inline MaterialKind experimentMaterial(ExperimentKind kind)
         case ExperimentKind::FrictionWood: return MaterialKind::Wood;
         case ExperimentKind::TwistFiber: return MaterialKind::Fiber;
         case ExperimentKind::ShapeClay: return MaterialKind::Clay;
+        case ExperimentKind::ShapeDiggingStick: return MaterialKind::Wood;
+        case ExperimentKind::HaftStoneHammer: return MaterialKind::Stone;
         case ExperimentKind::DesignateSanitationArea:
         case ExperimentKind::DigSanitationPit:
         case ExperimentKind::OrganizeStockpile:
@@ -197,10 +201,13 @@ inline double materialProgressDemand(const Character& self,MaterialKind material
         case MaterialKind::Wood:
             if(!knowledge.knowsAtLeast(TechniqueId::SharpFlake,KnowledgeLevel::Reproducible)) return 0.30;
             if(!knowledge.knowsAtLeast(TechniqueId::ChippedStoneTool,KnowledgeLevel::Reproducible)) return 0.92;
+            if(!knowledge.knowsAtLeast(TechniqueId::DiggingStick,KnowledgeLevel::Reproducible)) return 0.88;
             if(!knowledge.knowsAtLeast(TechniqueId::FireMaking,KnowledgeLevel::Reproducible)) return 0.82;
             return 0.45;
         case MaterialKind::Fiber:
-            return knowledge.knowsAtLeast(TechniqueId::FiberCordage,KnowledgeLevel::Reproducible) ? 0.38 : 0.84;
+            if(!knowledge.knowsAtLeast(TechniqueId::FiberCordage,KnowledgeLevel::Reproducible)) return 0.84;
+            if(!knowledge.knowsAtLeast(TechniqueId::StoneHammer,KnowledgeLevel::Reproducible)) return 0.70;
+            return 0.38;
         case MaterialKind::Clay:
             return knowledge.knowsAtLeast(TechniqueId::SimpleContainer,KnowledgeLevel::Reproducible) ? 0.35 : 0.80;
         case MaterialKind::PlantFood:
@@ -208,7 +215,11 @@ inline double materialProgressDemand(const Character& self,MaterialKind material
         case MaterialKind::Water:
             return 0.25+0.55*clampCivilization01(self.needs.thirst);
         case MaterialKind::Stone:
-            return 0.24;
+            return knowledge.knowsAtLeast(TechniqueId::StoneHammer,KnowledgeLevel::Reproducible) ? 0.30 : 0.72;
+        case MaterialKind::CopperOre:
+        case MaterialKind::TinOre:
+        case MaterialKind::IronOre:
+            return knowledge.knowsAtLeast(TechniqueId::StoneHammer,KnowledgeLevel::Reproducible) ? 0.44 : 0.18;
         default:
             return 0.12;
     }
@@ -262,9 +273,10 @@ inline CivilizationUtilityDecision bestExperimentDecision(const World& world,con
         evaluateDugSanitationPitOpportunity(
             self,world.environmentalResidues,world.primitiveSanitationSites);
     const PrimitiveStorageNeedObservation storageNeed=observePrimitiveStorageNeed(world,self);
-    const std::array<ExperimentKind,8> experiments={
+    const std::array<ExperimentKind,10> experiments={
         ExperimentKind::StrikeStone,ExperimentKind::HaftSharpFlake,ExperimentKind::FrictionWood,
         ExperimentKind::TwistFiber,ExperimentKind::ShapeClay,
+        ExperimentKind::ShapeDiggingStick,ExperimentKind::HaftStoneHammer,
         ExperimentKind::DesignateSanitationArea,ExperimentKind::DigSanitationPit,
         ExperimentKind::OrganizeStockpile};
 
@@ -341,6 +353,8 @@ inline int desiredTechniqueOutputStock(TechniqueId technique)
         case TechniqueId::ChippedStoneTool: return 1;
         case TechniqueId::FiberCordage: return 2;
         case TechniqueId::SimpleContainer: return 1;
+        case TechniqueId::DiggingStick: return 1;
+        case TechniqueId::StoneHammer: return 1;
         case TechniqueId::FireMaking:
         case TechniqueId::DesignatedSanitationArea:
         case TechniqueId::DugSanitationPit:
@@ -467,9 +481,10 @@ inline CivilizationUtilityDecision bestCraftDecision(const World& world,const Ch
         }
     }
 
-    const std::array<TechniqueId,5> techniques={
+    const std::array<TechniqueId,7> techniques={
         TechniqueId::SharpFlake,TechniqueId::ChippedStoneTool,TechniqueId::FireMaking,
-        TechniqueId::FiberCordage,TechniqueId::SimpleContainer};
+        TechniqueId::FiberCordage,TechniqueId::SimpleContainer,
+        TechniqueId::DiggingStick,TechniqueId::StoneHammer};
 
     for(const TechniqueId technique:techniques){
         if(!self.civilization.knowledge.knowsAtLeast(technique,KnowledgeLevel::Reproducible)) continue;

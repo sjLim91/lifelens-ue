@@ -31,18 +31,18 @@ inline bool validMaterialKind(MaterialKind value)
 inline bool validItemKind(ItemKind value)
 {
     return static_cast<int>(value)>=static_cast<int>(ItemKind::RawMaterial)
-        && static_cast<int>(value)<=static_cast<int>(ItemKind::FuelBundle);
+        && static_cast<int>(value)<=static_cast<int>(ItemKind::StoneHammer);
 }
 
 inline bool validTechniqueId(TechniqueId value)
 {
-    // Persisted knowledge is one contiguous enum range. Keep the named
-    // sanitation techniques explicit here because structural preflight protects
-    // their Save/Load contract while the upper bound grows with new technology.
+    // Persisted knowledge is one contiguous enum range. Existing numeric values
+    // remain stable; new technology is appended and only the accepted upper
+    // bound grows, preserving backward snapshot compatibility.
     // TechniqueId::DesignatedSanitationArea
     // TechniqueId::DugSanitationPit
     return static_cast<int>(value)>=static_cast<int>(TechniqueId::None)
-        && static_cast<int>(value)<=static_cast<int>(TechniqueId::PrimitiveStorage);
+        && static_cast<int>(value)<=static_cast<int>(TechniqueId::StoneHammer);
 }
 
 inline bool validKnowledgeLevel(KnowledgeLevel value)

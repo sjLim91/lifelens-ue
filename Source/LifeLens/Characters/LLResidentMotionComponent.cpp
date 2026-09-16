@@ -186,8 +186,8 @@ void ULLResidentMotionComponent::UpdateContextAnimationState()
             case ELLResidentWorkPresentationMode::Interact:
             case ELLResidentWorkPresentationMode::Gather:
                 // Gather has its own semantic route now. The generic UAL
-                // Interact clip is the v1 fallback until a dedicated authored
-                // cutting/chopping/carry clip is selected.
+                // Interact clip is the v1 fallback until dedicated authored
+                // cutting/chopping/digging/striking/carry clips are selected.
                 DesiredAnimation = InteractAnimation;
                 break;
             case ELLResidentWorkPresentationMode::Build:
@@ -287,6 +287,18 @@ void ULLResidentMotionComponent::UpdateHeldToolVisualState()
             DesiredMesh = SimpleContainerMesh.Get();
             RelativeScale = FVector(0.09f, 0.09f, 0.12f);
             RelativeLocation = FVector(5.0f, 0.0f, -3.0f);
+            break;
+        case ELLResidentHeldToolPresentation::DiggingStick:
+            DesiredMesh = StoneCuttingToolMesh.Get();
+            RelativeScale = FVector(0.022f, 0.022f, 0.28f);
+            RelativeRotation = FRotator(0.0f, 8.0f, 82.0f);
+            RelativeLocation = FVector(4.0f, 0.0f, -4.0f);
+            break;
+        case ELLResidentHeldToolPresentation::StoneHammer:
+            DesiredMesh = StoneCuttingToolMesh.Get();
+            RelativeScale = FVector(0.065f, 0.045f, 0.16f);
+            RelativeRotation = FRotator(0.0f, 24.0f, 68.0f);
+            RelativeLocation = FVector(3.0f, 0.0f, 1.0f);
             break;
         case ELLResidentHeldToolPresentation::None:
         default:
