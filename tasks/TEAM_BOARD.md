@@ -16,23 +16,24 @@ Authority rule: Core/World owns simulation truth. UI/Character/Environment/World
 
 ## Current Assist Locks
 
-### ASSIST_LOCK-CHARACTER-OBSTACLE-1 — ACTIVE
-- requester/implementer: Jjun.
-- owner lane: Dagyeom — Character presentation.
-- branch: `jjun/world-obstacle-collision-v1`.
-- PR: #114.
-- locked file: `Source/LifeLens/Characters/LLResidentCharacter.cpp` only.
-- Jjun-owned supporting scope: `Source/LifeLens/World/**`, `Source/LifeLens/Core/LLLifeLensGameMode.cpp`, validation/docs.
-- purpose: stop residents visibly clipping through solid-looking generated trees/rocks while preserving Core action/target authority.
-- constraint: obstacle handling is local presentation-path steering only; it must not create or mutate Core resource/world facts, change Core target selection, or fabricate simulation outcomes.
-- collision policy: tree trunks and non-trivial rocks may block the resident capsule through low-cost query-only proxies; shrubs/grass/small pebbles remain non-blocking.
-- movement policy: collision may alter only the local route toward an existing authoritative target; action completion still follows the existing Core/physical ACK contract.
-- movement budget: collision slide/side-step may consume only the unspent distance from the current constant-speed frame step; obstacle avoidance must not accelerate residents.
-- release condition: final-head compile validation passes, collision/steering PR merges, and Dagyeom regains normal Character-file ownership.
+**None.**
+
+Current Jjun Core task `Lifecycle Core Correctness v1` is entirely inside the Jjun-owned Core/Simulation lane and does not require a cross-owner assist lock.
 
 Jjun helping Dagyeom defaults to REVIEW_ONLY. Do not direct-push `dagyeom/*`; use assist branch/PR when a real cross-owner code change is required.
 
 ## Recently released Assist Locks
+
+### ASSIST_LOCK-CHARACTER-OBSTACLE-1 — RELEASED
+- requester/implementer: Jjun.
+- owner lane: Dagyeom — Character presentation.
+- implementation branch: `jjun/world-obstacle-collision-v1`.
+- PR #114 merged to `main` as `3a544fc36d743d9afa1b3ec3100f4577db13ba75`.
+- locked file was `Source/LifeLens/Characters/LLResidentCharacter.cpp` only.
+- delivered: query-only tree/meaningful-rock collision proxies, constant-speed swept movement, bounded slide/side-step, explicit pebble traversal, stable opposite-side fallback.
+- Core action/target authority was not changed by the obstacle PR.
+- release condition satisfied after final-head compile completion and merge; normal Character-file ownership returns to Dagyeom.
+- PIE/APK feel QA remains a product-validation item, not an ownership lock.
 
 ### ASSIST_LOCK-UI-OBSERVER-DATA-1 — RELEASED
 - requester/implementer: Jjun.
