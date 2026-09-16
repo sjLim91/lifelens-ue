@@ -56,8 +56,9 @@ This interaction-radius rule is a consumer requirement for IR-D / Context Motion
 
 Required before merge:
 
-- Preflight PASS on the final PR head.
-- Unreal Linux Compile PASS on the final PR head, including UHT/UBT for the new collision proxy actor.
+- Preflight PASS on the **final PR head**.
+- Unreal Linux Compile PASS on the **final PR head**, including UHT/UBT for the new collision proxy actor.
+- earlier compile results from before movement-budget/pebble refinements are useful evidence but are not final-head merge evidence.
 - Core Tests are **not path-triggered** by this milestone because `Source/LifeLensCore/**` is unchanged; Core authority must instead remain unchanged by diff review.
 - Diff confirms no `Source/LifeLensCore/**` authority changes and no WorldPresentation render/culling source changes.
 - PIE/device visual QA should verify residents route around tree trunks and large rocks without becoming stuck or visibly oscillating.
