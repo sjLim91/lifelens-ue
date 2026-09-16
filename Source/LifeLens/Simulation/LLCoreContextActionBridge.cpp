@@ -51,6 +51,9 @@ ELLCoreFacilityBuildAction ContextActionToUnrealFacilityAction(lifelens::Facilit
         case lifelens::FacilityBuildAction::Plan: return ELLCoreFacilityBuildAction::Plan;
         case lifelens::FacilityBuildAction::DeliverMaterial: return ELLCoreFacilityBuildAction::DeliverMaterial;
         case lifelens::FacilityBuildAction::Work: return ELLCoreFacilityBuildAction::Work;
+        case lifelens::FacilityBuildAction::Fuel: return ELLCoreFacilityBuildAction::Fuel;
+        case lifelens::FacilityBuildAction::Ignite: return ELLCoreFacilityBuildAction::Ignite;
+        case lifelens::FacilityBuildAction::CollectCharcoal: return ELLCoreFacilityBuildAction::CollectCharcoal;
         case lifelens::FacilityBuildAction::None:
         default: return ELLCoreFacilityBuildAction::None;
     }
