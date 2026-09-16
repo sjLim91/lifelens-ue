@@ -11,15 +11,13 @@
 ## Completed foundations
 
 - Character Presentation #63 — DONE.
-- Appearance projection #65 — DONE.
+- Appearance projection #65/#67 — DONE.
 - World Affordance Fallback #66 — DONE.
 - Environmental Residue #68 — DONE.
 - Runtime resident / physical ACK / restore #70~#74 — DONE.
 - Exposure / sanitation causal chain #75~#80 — DONE.
 - HumanWaste Environmental Visual Feedback #82 — DONE.
-- World Genesis WG-1 #83 — DONE.
-- World Genesis WG-2 #85 — DONE.
-- Character Appearance #67 — DONE.
+- World Genesis WG-1 #83 / WG-2 #85 — DONE.
 - Character Motion Bootstrap #84 — DONE.
 - World Generation Milestone A #87 — DONE.
 - Gate A — Integrated Runtime Checkpoint A — DONE.
@@ -33,6 +31,7 @@
 - Observer Mobile UI Polish #110 — DONE; device QA remains.
 - Civilization Resource/Storage Spatial Authority #111 — DONE.
 - Observer Resident Detail Data v1 + authoritative Traits/Preferences #112 — DONE.
+- World Obstacle Collision v1 #114 — DONE as immediate visual-clipping mitigation; authoritative obstacle ownership remains future work.
 
 ## Gate A — Integrated Runtime Checkpoint A — DONE
 
@@ -44,20 +43,6 @@ Runtime acceptance established the first coherent Core/World vertical slice:
 - missing-facility sanitation produces authoritative HumanWaste residue.
 - Save/Load restores resident/world state without reroll.
 - deterministic continuation remains stable after restore.
-
-Manual visual items waived at this gate were carried into later visual/device validation rather than counted as visual PASS.
-
-## World Visual Milestone A — DONE
-
-Owner: Dagyeom visual/content lane with Jjun integration where required.
-
-Delivered through #90/#91/#92/#96:
-- production-oriented generated-world presentation consuming Core/World facts.
-- production map `/Game/Maps/LifeLensWorld`.
-- default/startup map integration.
-- generated natural presentation without a parallel simulation authority.
-
-Remaining appearance/framing/performance checks are device QA, not an unfinished World Visual implementation milestone.
 
 ## Character Context Motion Milestone — ACTIVE IN DAGYEOM LANE
 
@@ -77,107 +62,135 @@ Consumer scope:
 - basic gaze/body orientation layering.
 - truthful fallbacks where a dedicated animation/facility is absent.
 
-Animation remains presentation of Core/World action authority. Character Presentation must consume the supplied real target coordinates rather than guess scenery.
+Animation remains presentation of Core/World action authority. Character Presentation must consume supplied real target coordinates rather than guess scenery.
 
-## Observer Resident Detail Data v1 — DONE
+## Jjun Milestone 1 — Lifecycle Core Correctness v1 — ACTIVE
 
-Milestone implementation: PR #112, squash merged as `27ba0aa147fc38ad05cf388e9390dd2dcaccdf30`.
-Owner during milestone: Jjun under explicit UI assist lock `ASSIST_LOCK-UI-OBSERVER-DATA-1`.
-Canonical contract: `docs/OBSERVER_RESIDENT_DETAIL_DATA_v1.md`.
+Owner: Jjun Core/Simulation.
+Canonical contract: `docs/LIFECYCLE_CORE_CORRECTNESS_v1.md`.
+Branch: `jjun/lifecycle-core-correctness-v1`.
 
-Delivered scope:
-- Needs from direct Core physical need data with numeric satisfaction and compact bar.
-- all 14 authoritative Core personality dimensions.
-- explicit Core `TraitProfile`: Resilience / Creativity / Discipline / Compassion / Adaptability / Boldness / Perseverance / Resourcefulness.
-- explicit Core `PreferenceProfile`: Socializing / Solitude / Exploration / Crafting / Gathering / Comfort / Novelty / Order.
-- deterministic Trait/Preference derivation from persistent Personality/Genetics; no second mutable serialization authority.
-- Bridge projection through `FLLCoreTraitPreferenceObservation` / `GetResidentTraitPreferenceObservation`.
-- Traits/Preferences participate in ordinary Core Social/Civilization utility rather than existing only as display metadata.
-- ordinary civilization disposition effect is bounded to a 0.90–1.10 multiplier.
-- urgent Hunger/Thirst provision gathering bypasses ordinary preference modulation, preserving survival priority.
-- civilization Gathering/Crafting/Learning displayed as real resident skills.
-- detailed directional relationship dimensions rather than only aggregate summaries.
-- authoritative Family data and direct-Core Knowledge & Gear preserved.
-- Overview remains concise; Emotion causality was not fabricated into this milestone.
+This milestone was promoted ahead of localization/emotion after the 2026-09-16 full-source audit found correctness gaps that would corrupt long-run generational simulation.
 
-Acceptance evidence:
-- Core Tests #515: **PASS, 52/52**, including `test_traits_preferences`.
-- deterministic harness smoke: **PASS**.
-- Preflight #627: **PASS**.
-- Unreal Linux Compile #137: **PASS**, including UHT/UBT for the new Unreal read/bridge types.
-- Level 0/1, camera and mobile-input ownership were not replaced by this work; device readability remains part of Gate B QA.
+Scope:
+- dead residents become runtime-inactive and release transient activity/reservations;
+- Baby/Toddler stop running the adult autonomous loop;
+- parent care becomes authoritative Core behavior and cannot synthesize food/water;
+- close genetic kin are excluded from autonomous romance progression;
+- newborn runtime position follows the gestational parent rather than absolute `{0,0}`;
+- newborn base metabolism/sleep values avoid multiplier compounding;
+- deterministic natural age mortality is connected to production runtime;
+- gestational-parent death closes pregnancy;
+- death updates household/romance/life-history state without deleting genealogy;
+- Core regression covers the production wiring, not only isolated helper functions.
 
-Closeout:
-- `ASSIST_LOCK-UI-OBSERVER-DATA-1` is released.
-- normal Observer layout/styling/mobile-maintenance ownership returns to Dagyeom.
-- Core/Bridge data authority remains Jjun-owned.
+Validation gate:
+- all Core tests PASS, including `test_lifecycle_runtime_correctness`;
+- deterministic harness PASS;
+- Preflight PASS;
+- Unreal Linux UHT/UBT PASS;
+- no Android build solely for this Core milestone.
 
-## Gate B — Android Smoke / Real-device Baseline — PENDING ACTUAL RUN
+## Jjun Milestone 2 — Action Completion Unification — NEXT
 
-The split #108 Android pipeline is the canonical path. No successful seed/cache baseline is recorded by this roadmap yet; do not describe Gate B as underway until an actual Android workflow run is started and verified.
+Purpose: remove the remaining `decision == outcome` shortcuts.
+
+Current physical Needs actions already follow the correct model:
+
+`Core intent -> UE movement/interaction -> arrival/completion -> Core ACK -> authoritative outcome`
+
+Social, Civilization and the newly wired Parenting behavior must converge on the same model.
+
+Required scope:
+- Social Approach/Repair/Comfort does not mutate relationships/emotion before physical interaction completes.
+- Civilization Gather/Store/Experiment/Craft does not alter inventory/resource/knowledge before the resident reaches/uses the authoritative target/context.
+- Parenting care gets an authoritative completion path rather than remaining instant Core presentation-blind work.
+- interruption/death/target invalidation cancels pending work without committing an outcome.
+- Save/Load must not replay stale pending presentation work as a completed event.
+
+## Jjun Milestone 3 — World / Facility / Obstacle Authority Normalization
+
+Purpose: restore the authority rule all the way through physical traversal and facility use.
+
+Audit findings to close:
+- #114 collision proxies currently mirror `WorldPresentation` dressing; final blocking topology must derive from Core/World-owned physical facts, not presentation decoration.
+- `LLActivityAnchor` currently lacks a stable Core facility identity; a UE-authored bed/toilet/sink must not create facility-level simulation truth by existing visually.
+- Gather/Store interaction loci remain Core-owned; presentation collision may change approach path/radius only, never the target coordinate.
+- storage construction/creation needs a real production progression path before Store is naturally reachable.
+
+## Jjun Milestone 4 — Legacy Authority Removal
+
+Remove compatibility surfaces once preceding migrations make them unnecessary:
+- `ULLDecisionComponent` second callable AI surface;
+- `ULLSimulationSubsystem::ApplyActionOutcome`;
+- `ULLSimulationSubsystem::ApplySocialInteraction`;
+- stale projection-only contracts and Preflight assertions that pin them;
+- dead `SimulationSnapshotCodecLegacy.cpp` under the current-only pre-release save policy.
+
+## Jjun Milestone 5 — Lifecycle Presentation Integration
+
+After Core lifecycle truth is stable:
+- dead resident actor/presentation state and Observer population handling;
+- Baby/Toddler/Child/Teen/Adult mesh scale updates across LifeStage changes;
+- Character capsule scale/interaction footprint follows lifecycle safely;
+- appearance updates without rerolling identity/genetics;
+- birth/death/growth presentation remains a consumer of Core state.
+
+## Gate B — Android Smoke / Real-device Baseline — PENDING ACTUAL VERIFIED RUN
+
+The split #108 Android pipeline remains canonical.
 
 Execution:
-- first valid engine-cache creation uses `mode=seed`.
-- a successful seed chains automatically into the Android build job and APK artifact.
-- later normal APK checks use `mode=fast` only after a valid Android engine cache exists.
-- `full` is an evidence-driven fallback only.
+- use `mode=seed` when a fresh engine cache is required;
+- successful seed chains into Android build/APK;
+- use `mode=fast` only after a verified valid Android cache exists;
+- `full` is evidence-driven fallback only.
 
 Acceptance on a real Android device:
-- APK installs and boots into `/Game/Maps/LifeLensWorld`.
-- New Game exposes four founders and generated world presentation.
-- Observer selection/detail and camera gestures operate correctly.
-- Level 2 authoritative Needs/Personality/Traits/Skills/Preferences/Relationships/Family/Knowledge detail is readable.
-- autonomous movement/actions, real resource approach, survival fallbacks and Save/Load can be observed.
-- establish initial FPS / memory / thermal / rendering-budget baseline.
+- APK installs and boots into `/Game/Maps/LifeLensWorld`;
+- New Game exposes four founders/generated world;
+- Observer selection/detail/camera gestures operate correctly;
+- authoritative data is readable;
+- movement, resource approach, fallbacks and Save/Load can be observed;
+- establish FPS/memory/thermal/rendering baseline.
 
 MetaHuman comparison happens only after this gate.
 
-## Next priority — Social Communication & Localization
+## Social Communication & Localization — AFTER CORRECTNESS CHAIN
 
 Canonical contract: `docs/SOCIAL_COMMUNICATION_LOCALIZATION_v1.md`.
 
-Purpose:
-- normal-user UI defaults to Korean without changing language-neutral Core identifiers.
-- resident-to-resident social behavior becomes visibly understandable through approach/facing/gaze/context animation plus lightweight bubbles/icons/Event Feed/history.
-- deterministic/data-driven dialogue baseline without paid LLM/API dependency.
+- normal-user UI defaults to Korean while Core identifiers stay language-neutral;
+- real social actions become visible through approach/facing/gaze/context presentation and lightweight bubbles/icons/Event Feed/history;
+- deterministic/data-driven dialogue baseline without paid LLM/API;
+- Presentation never invents relationship events.
 
-Ownership now that the Observer assist lock is closed:
-- Jjun/Core: authoritative social action/event/outcome/read context where required.
-- Dagyeom presentation: Korean UI rendering and social presentation.
+## Emotion Runtime Integration — AFTER CORRECTNESS CHAIN
 
-Acceptance:
-- raw enum/action identifiers do not leak into normal user UI.
-- actual Core social events are visibly distinguishable.
-- Presentation never fabricates social events or relationship changes.
-- Android presentation remains observation-first rather than filling the screen with permanent chat text.
+Keep founders neutral at New Game, then causally connect real survival/life outcomes to emotion:
+- need pressure/relief;
+- environmental hazard/contamination;
+- successful/failed work;
+- frustration/threat/loss;
+- social/family/lifecycle events.
 
-## Next priority — Emotion Runtime Integration
-
-Keep founder emotion neutral at New Game, then causally connect ordinary survival/life outcomes to emotion.
-
-Acceptance direction:
-- hunger/thirst/fatigue/bladder/hygiene pressure and relief can affect emotion where appropriate.
-- environmental hazard/contamination, success, repeated failure/frustration, threat/loss and meaningful social/life events drive emotion through Core causality.
-- UI never fabricates non-zero values merely for presentation.
-- implemented emotion dimensions are reconciled with the Master Spec.
-- authoritative emotion survives save/restore and is exposed through Observer read models.
+UI must never fabricate non-zero emotion merely for visual interest.
 
 ## Later simulation milestones
 
-These remain product direction after the current playable/device/readability gates:
-- generic facility/resource authority beyond sanitation.
-- health/pathogen + water/soil contamination.
-- birth physical position/lifecycle presentation refinements.
-- open-ended material/component/connection artifact runtime.
-- carrying-capacity pressure / exploration / migration.
-- multiple settlements / regional society / economy / politics / generational civilization.
+- health/pathogen + water/soil contamination and premature illness/accident mortality;
+- generic facilities/resources beyond sanitation;
+- open-ended material/component/connection artifact runtime;
+- carrying-capacity pressure / exploration / migration;
+- multiple settlements / regional society / economy / politics;
+- multi-generation civilization and long-run stability.
 
 ## Current parallel dispatch
 
-**Android/device lane:** Gate B is **pending actual seed/APK execution**. Do not duplicate expensive seed/full runs blindly; establish one verified seed/cache baseline, then use fast.
+**Jjun:** Lifecycle Core Correctness v1 -> Action Completion Unification -> World/Facility/Obstacle Authority -> Legacy Authority Removal -> Lifecycle Presentation Integration.
 
-**Dagyeom lane:** Character Context Motion milestone / IR-D consumer work; normal Observer UI ownership is restored after #112.
+**Dagyeom:** Character Context Motion / IR-D consumer work; normal UI/Character/WorldPresentation ownership remains in that lane outside explicit assist locks.
 
-**Jjun lane:** Observer Resident Detail Data v1 is complete. Next canonical Jjun priority is Social Communication & Localization Core/Bridge support, followed by Emotion Runtime Integration unless a higher-priority runtime blocker is discovered.
+**Android/device:** Gate B remains pending an actual verified APK/device run. Do not duplicate expensive seed/full runs blindly.
 
 `tasks/WORK_STATE.md` contains live execution state. `tasks/TEAM_BOARD.md` contains ownership/locks/Integration Requests.
