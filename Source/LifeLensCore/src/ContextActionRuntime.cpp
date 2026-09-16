@@ -30,6 +30,56 @@ const char* contextParentingActionName(ParentingAction action)
     return "Care";
 }
 
+bool sameGridPosition(GridPos a,GridPos b)
+{
+    return a.x==b.x && a.y==b.y;
+}
+
+bool validatePendingSanitationSite(const World& world,const PendingContextAction& pending)
+{
+    if(pending.sanitationSiteId==0) return false;
+    const PrimitiveSanitationSite* site=findPrimitiveSanitationSite(
+        world.primitiveSanitationSites,pending.sanitationSiteId);
+    return site!=nullptr && site->active && sameGridPosition(site->pos,pending.targetPos);
+}
+
+CivilizationExecutionResult establishPendingDesignatedSanitationArea(
+    World& world,
+    Character& actor,
+    GridPos targetPos)
+{
+    CivilizationExecutionResult result;
+    if(!actor.civilization.knowledge.knowsAtLeast(
+        TechniqueId::DesignatedSanitationArea,KnowledgeLevel::Reproducible)) return result;
+    if(activePrimitiveSanitationSite(world.primitiveSanitationSites)!=nullptr) return result;
+    if(world.environmentalResidues.exposureAt(targetPos)>=PrimitiveSanitationCleanSiteExposureLimit)
+        return result;
+
+    PrimitiveSanitationSite site;
+    site.id=nextPrimitiveSanitationSiteId(world.primitiveSanitationSites);
+    site.kind=PrimitiveSanitationSiteKind::DesignatedArea;
+    site.pos=targetPos;
+    site.establishedBy=actor.id;
+    site.establishedMinute=world.minute;
+    site.active=true;
+    site.useCount=0;
+    world.primitiveSanitationSites.push_back(site);
+
+    result.executed=true;
+    result.success=true;
+    result.sanitationSiteId=site.id;
+    result.sanitationSitePos=site.pos;
+    result.craft.success=true;
+    result.craft.event.actor=actor.id;
+    result.craft.event.type=CivilizationEventType::Crafted;
+    result.craft.event.technique=TechniqueId::DesignatedSanitationArea;
+    result.event=result.craft.event;
+    actor.civilization.knowledge.recordSuccessfulUse(TechniqueId::DesignatedSanitationArea);
+    actor.civilization.craftingSkill=clampCivilization01(
+        actor.civilization.craftingSkill+0.004);
+    return result;
+}
+
 } // namespace
 
 PendingContextActionObservation Simulation::observePendingContextAction(CharacterId id) const
@@ -87,7 +137,9 @@ bool Simulation::completeContextAction(
                 return false;
             }
             if(pending.social.intent==SocialIntent::Avoid){
-                if(contextActionNearTarget(resolvedPosition,targetRuntime->second.pos,0)) return false;
+                const int dx=std::abs(resolvedPosition.x-targetRuntime->second.pos.x);
+                const int dy=std::abs(resolvedPosition.y-targetRuntime->second.pos.y);
+                if(std::max(dx,dy)<2) return false;
             }else if(!contextActionNearTarget(resolvedPosition,targetRuntime->second.pos,1)){
                 return false;
             }
@@ -122,7 +174,28 @@ bool Simulation::completeContextAction(
             const GridPos targetPos=pending.targetPos;
             const SanitationSiteId targetSite=pending.sanitationSiteId;
 
-            const CivilizationExecutionResult result=executeCivilizationDecision(world_,actor,decision);
+            if((decision.intent==CivilizationIntent::Experiment
+                    && decision.experiment==ExperimentKind::DigSanitationPit)
+               || (decision.intent==CivilizationIntent::Craft
+                    && decision.technique==TechniqueId::DugSanitationPit)){
+                if(!validatePendingSanitationSite(world_,pending)){
+                    pending.clear();
+                    return false;
+                }
+            }
+
+            CivilizationExecutionResult result;
+            if(decision.intent==CivilizationIntent::Craft
+               && decision.technique==TechniqueId::DesignatedSanitationArea){
+                if(!pending.hasSpatialTarget){
+                    pending.clear();
+                    return false;
+                }
+                result=establishPendingDesignatedSanitationArea(
+                    world_,actor,pending.targetPos);
+            }else{
+                result=executeCivilizationDecision(world_,actor,decision);
+            }
             if(!result.executed){
                 pending.clear();
                 return false;
