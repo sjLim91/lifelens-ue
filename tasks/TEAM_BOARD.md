@@ -16,11 +16,19 @@ Authority rule: Core/World owns simulation truth. UI/Character/Environment/World
 
 ## Current Assist Locks
 
-**None.**
+### ASSIST_LOCK-SOCIAL-COMM-1 — ACTIVE
+- requester/implementer: Jjun, 사용자 승인으로 Core + Presentation 통합 구현.
+- owner lanes: Dagyeom — UI / Observer presentation + Character presentation.
+- implementation branch: `jjun/social-communication-localization-v1`.
+- purpose: Social Communication & Localization v1을 Core 이벤트 계약부터 한국어 말풍선/Event Feed/시선·몸 방향/Context Motion 소비까지 한 브랜치에서 종단 구현한다.
+- locked UI scope: `Source/LifeLens/UI/**` 중 소셜 표시, 이벤트 피드, 한국어 라벨/말풍선 관련 파일과 이번 작업에서 새로 추가되는 소셜 UI 파일.
+- locked Character scope: `Source/LifeLens/Characters/LLResidentCharacter.*`, `LLResidentMotionComponent.*`, 소셜 상호작용 표현을 위해 이번 작업에서 새로 추가되는 Character presentation 파일.
+- Appearance/asset import와 Environment/WorldPresentation 일반 작업은 이 락에 포함하지 않는다.
+- Core/Bridge truth는 계속 Jjun lane이 소유하며 Presentation은 Core에서 발생하지 않은 고백/갈등/관계 변화를 생성하지 않는다.
+- 기존 IR-D Context Motion consumer 작업은 이 락/브랜치에 **흡수**한다. 같은 파일에 대한 병렬 구현은 하지 않는다.
+- release condition: Social Communication & Localization v1 최종 CI/PIE 검증 후 PR 병합.
 
-Current Jjun task `Action Completion Unification v1` is in the Core/Simulation/World/Bridge lane on branch `jjun/action-completion-unification-v1` and does not require a Character/UI assist lock. Lifecycle Core Correctness v1 is complete in PR #115, merged as `0a8014482a8eae994e3469f3264760b9d05e99cc`.
-
-Jjun helping Dagyeom defaults to REVIEW_ONLY. Do not direct-push `dagyeom/*`; use assist branch/PR when a real cross-owner code change is required.
+Jjun helping Dagyeom defaults to REVIEW_ONLY지만, 위 ACTIVE Assist Lock 범위에서는 사용자 승인에 따라 직접 구현한다. `dagyeom/*` 브랜치에는 직접 push하지 않고 별도 `jjun/*` 브랜치/PR을 사용한다.
 
 ## Recently released Assist Locks
 
@@ -62,26 +70,16 @@ Jjun helping Dagyeom defaults to REVIEW_ONLY. Do not direct-push `dagyeom/*`; us
 
 ## Open Integration Requests
 
-### IR-D — consume typed Context Action contract in Character Presentation — OPEN
+### IR-D — consume typed Context Action contract in Character Presentation — ABSORBED INTO ASSIST_LOCK-SOCIAL-COMM-1
 - requester: Jjun / Core-Bridge lane after product Context Motion requirement.
 - needed owner: Dagyeom — Character presentation.
 - original provider PR #103 is **MERGED** as `cba58803c67f971eb1273aaf4e35f5c22b980f01`.
 - spatial-authority follow-up PR #111 is **MERGED** as `dda35bac7cef4a88433f4f6a362b89c1b3ea2eee`.
-- #111 validation: Core Tests #502 PASS, Preflight #617 PASS, Unreal Linux Compile #130 PASS.
-- consumer API: `FLLCoreActionDirective` in `Source/LifeLens/Simulation/LLCoreActionTypes.h` via `ULLCoreBridgeSubsystem::GetResidentActionDirective`.
-- actual civilization action set exposed by Core: `Gather / Store / Experiment / Craft` only.
-- directive exposes authoritative material/item/technique/quantity/result/action-minute, stable resource/storage IDs, and Core-owned spatial targets when available.
-- `ResourceNode` and `StorageSite` now own authoritative `GridPos`; generated resource nodes preserve the exact `NaturalResourcePatch.pos`.
-- ordinary Gather resolves to the actual resource-node position; Store resolves to the actual storage-site position. Character Presentation must consume those targets rather than guess nearby scenery.
-- obstacle-collision follow-up: the authoritative `GridPos` is the target locus, not a requirement for the resident capsule to overlap the exact visual/collider centre. If a tree/rock/storage visual has a blocking collision proxy, Character Presentation must stop within a truthful interaction radius outside that blocker, face/interact with the same Core target, and must not move, replace, or fabricate the Core coordinates.
-- civilization snapshot extension v2 persists resource/storage positions while retaining v1 read compatibility; generated resource positions can still resolve from immutable natural patches for legacy v1 data.
-- sanitation-site work continues to use the real Core-supplied site position.
-- Action Completion Unification v1 is **ACTIVE** on `jjun/action-completion-unification-v1`: the provider is adding runtime-only pending Context kind/token/duration, Parenting action context, and `CompleteResidentContextAction` so Social/Civilization/Parenting outcomes occur only after movement/interaction ACK. The canonical contract is `docs/ACTION_COMPLETION_UNIFICATION_v1.md`.
-- while that follow-up is active, Character Presentation must treat a pending directive as presentation work only; animation/motion must never manufacture a relationship/resource/care outcome or bypass the token ACK.
-- requested Character work: Context Motion Router consumes the directive and selects validated talking/sit/interact/pickup/kneeling/fallback motions without creating simulation truth.
-- no Jjun direct changes to `Source/LifeLens/Characters/**` are part of the completion-unification branch.
-- no GitHub review request is required merely because Dagyeom will consume the API.
-- status: **BASE PROVIDER DONE / COMPLETION-ACK FOLLOW-UP ACTIVE / PRESENTATION CONSUMER OPEN**. Does not block independent Core correctness work.
+- Action Completion Unification PR #116 is **MERGED** as `8492a5d4d3f65bce83530badf8ed74cf464e08a8`.
+- consumer API: `FLLCoreActionDirective` via `ULLCoreBridgeSubsystem::GetResidentPendingContextDirective` / `GetResidentActionDirective`.
+- Character Presentation must consume Core target/action truth and must never manufacture relationship/resource/care outcomes or bypass ACK.
+- requested Context Motion Router and social interaction presentation are now implemented under `ASSIST_LOCK-SOCIAL-COMM-1` on `jjun/social-communication-localization-v1`.
+- status: **PROVIDER DONE / CONSUMER WORK ABSORBED INTO CURRENT INTEGRATED MILESTONE**.
 
 ## Recently resolved Integration Requests
 
