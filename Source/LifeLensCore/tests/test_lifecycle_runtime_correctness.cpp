@@ -1,6 +1,7 @@
 #include <cmath>
 #include <iostream>
 
+#include "lifelens/FamilyProgression.h"
 #include "lifelens/Simulation.h"
 
 using namespace lifelens;
