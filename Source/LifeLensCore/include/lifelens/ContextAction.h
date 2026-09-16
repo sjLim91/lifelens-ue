@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <atomic>
 #include <cstdint>
 
 #include "CivilizationDecision.h"
@@ -26,6 +27,7 @@ struct PendingContextAction {
     CivilizationUtilityDecision civilization{};
     CharacterId parentingTarget=0;
     ParentingAction parentingAction=ParentingAction::Comfort;
+    ParentingContext parentingContext{};
 
     bool hasSpatialTarget=false;
     GridPos targetPos{};
@@ -67,6 +69,17 @@ struct PendingContextActionObservation {
     SanitationSiteId sanitationSiteId=0;
 };
 
+inline std::uint64_t nextContextActionToken()
+{
+    // Transport identity only: it deliberately does not participate in utility
+    // or simulation randomness. Keeping it process-monotonic prevents an ACK
+    // that survived Save/Load from matching a newly-issued action.
+    static std::atomic<std::uint64_t> next{1};
+    std::uint64_t token=next.fetch_add(1,std::memory_order_relaxed);
+    if(token==0) token=next.fetch_add(1,std::memory_order_relaxed);
+    return token;
+}
+
 inline int contextActionTimeoutMinutes(ContextActionKind kind)
 {
     switch(kind){
@@ -75,6 +88,40 @@ inline int contextActionTimeoutMinutes(ContextActionKind kind)
         case ContextActionKind::Civilization: return 120;
         case ContextActionKind::None:
         default: return 0;
+    }
+}
+
+inline int contextActionDurationTicks(const PendingContextAction& action)
+{
+    switch(action.kind){
+        case ContextActionKind::Social:
+            return action.social.intent==SocialIntent::Avoid ? 1 : 3;
+        case ContextActionKind::Parenting:
+            switch(action.parentingAction){
+                case ParentingAction::Feed: return 3;
+                case ParentingAction::PutToSleep: return 4;
+                case ParentingAction::Bathe: return 5;
+                case ParentingAction::ToiletAssist: return 4;
+                case ParentingAction::Hold: return 3;
+                case ParentingAction::Play: return 5;
+                case ParentingAction::Educate: return 6;
+                case ParentingAction::Discipline: return 3;
+                case ParentingAction::Comfort: return 4;
+                case ParentingAction::HealthCare: return 6;
+            }
+            return 3;
+        case ContextActionKind::Civilization:
+            switch(action.civilization.intent){
+                case CivilizationIntent::Gather: return 5;
+                case CivilizationIntent::Store: return 3;
+                case CivilizationIntent::Experiment: return 7;
+                case CivilizationIntent::Craft: return 8;
+                case CivilizationIntent::None:
+                default: return 1;
+            }
+        case ContextActionKind::None:
+        default:
+            return 1;
     }
 }
 
