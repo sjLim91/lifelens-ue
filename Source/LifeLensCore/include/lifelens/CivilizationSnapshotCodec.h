@@ -13,7 +13,9 @@
 namespace lifelens {
 
 constexpr char CivilizationSnapshotExtensionMagic[]={'L','L','C','I','V','0','0','1'};
-constexpr std::uint32_t CivilizationSnapshotExtensionVersion=3;
+constexpr std::uint32_t CivilizationSnapshotExtensionVersion=4;
+constexpr std::uint32_t CivilizationSnapshotExtensionFireRuntimeVersion=4;
+constexpr std::uint32_t CivilizationSnapshotExtensionFacilityVersion=3;
 constexpr std::uint32_t CivilizationSnapshotExtensionSpatialVersion=2;
 constexpr std::uint32_t CivilizationSnapshotExtensionLegacyVersion=1;
 
@@ -326,10 +328,23 @@ void writeConstructedFacility(WriterT& w,const ConstructedFacility& facility)
     w.u64(facility.linkedStorage);
     w.u32(static_cast<std::uint32_t>(facility.requirements.size()));
     for(const auto& requirement:facility.requirements) writeFacilityRequirement(w,requirement);
+
+    // v4 appends runtime heat state after the exact v3 facility payload. This
+    // preserves the old field ordering and lets v1-v3 snapshots default these
+    // values to a cold/unlit state.
+    w.i32(facility.fuelUnits);
+    w.i32(facility.charcoalUnits);
+    w.real(facility.heatLevel);
+    w.boolean(facility.lit);
+    w.i32(facility.burnMinutesRemaining);
+    w.i32(facility.lastFireMinute);
 }
 
 template<typename ReaderT>
-bool readConstructedFacility(ReaderT& r,ConstructedFacility& facility)
+bool readConstructedFacility(
+    ReaderT& r,
+    ConstructedFacility& facility,
+    std::uint32_t version=CivilizationSnapshotExtensionVersion)
 {
     if(!r.u64(facility.id)
        || !r.enumeration(facility.kind)
@@ -354,6 +369,22 @@ bool readConstructedFacility(ReaderT& r,ConstructedFacility& facility)
         FacilityMaterialRequirement requirement;
         if(!readFacilityRequirement(r,requirement)) return false;
         facility.requirements.push_back(requirement);
+    }
+
+    if(version>=CivilizationSnapshotExtensionFireRuntimeVersion){
+        if(!r.i32(facility.fuelUnits)
+           || !r.i32(facility.charcoalUnits)
+           || !r.real(facility.heatLevel)
+           || !r.boolean(facility.lit)
+           || !r.i32(facility.burnMinutesRemaining)
+           || !r.i32(facility.lastFireMinute)) return false;
+    }else{
+        facility.fuelUnits=0;
+        facility.charcoalUnits=0;
+        facility.heatLevel=0.0;
+        facility.lit=false;
+        facility.burnMinutesRemaining=0;
+        facility.lastFireMinute=-1;
     }
     return validConstructedFacility(facility);
 }
@@ -392,6 +423,7 @@ bool readCivilizationSnapshotExtension(
        || !r.u32(version)
        || (version!=CivilizationSnapshotExtensionLegacyVersion
            && version!=CivilizationSnapshotExtensionSpatialVersion
+           && version!=CivilizationSnapshotExtensionFacilityVersion
            && version!=CivilizationSnapshotExtensionVersion)) return false;
     if(outVersion) *outVersion=version;
 
@@ -430,14 +462,14 @@ bool readCivilizationSnapshotExtension(
     }
 
     std::vector<ConstructedFacility> facilities;
-    if(version>=3){
+    if(version>=CivilizationSnapshotExtensionFacilityVersion){
         std::uint32_t facilityCount=0;
         if(!r.count(facilityCount)) return false;
         facilities.reserve(facilityCount);
         std::unordered_set<FacilityId> facilityIds;
         for(std::uint32_t i=0;i<facilityCount;++i){
             ConstructedFacility facility;
-            if(!readConstructedFacility(r,facility)
+            if(!readConstructedFacility(r,facility,version)
                || !facilityIds.insert(facility.id).second) return false;
             if(facility.linkedStorage!=0 && storageIds.find(facility.linkedStorage)==storageIds.end())
                 return false;
