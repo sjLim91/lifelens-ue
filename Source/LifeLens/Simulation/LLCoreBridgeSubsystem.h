@@ -57,6 +57,13 @@ public:
         int32 ResolvedGridY,
         int64 SanitationSiteId = 0);
 
+    UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Action")
+    bool CompleteResidentContextAction(
+        FGuid ResidentId,
+        int64 ContextActionToken,
+        int32 ResolvedGridX,
+        int32 ResolvedGridY);
+
     UFUNCTION(BlueprintCallable, Category="LifeLens|Core|World")
     bool GetResidentRuntimeGridPosition(
         FGuid ResidentId,
@@ -99,6 +106,11 @@ public:
 
     UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Action")
     bool GetResidentActionDirective(FGuid ResidentId, FLLCoreActionDirective& OutDirective) const;
+
+    UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Action")
+    bool GetResidentPendingContextDirective(
+        FGuid ResidentId,
+        FLLCoreActionDirective& OutDirective) const;
 
     UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Observer")
     bool GetFamilyObservation(FGuid ResidentId, FLLCoreFamilyObservation& OutObservation) const;

@@ -18,7 +18,7 @@ Authority rule: Core/World owns simulation truth. UI/Character/Environment/World
 
 **None.**
 
-Current Jjun Core task `Lifecycle Core Correctness v1` is entirely inside the Jjun-owned Core/Simulation lane and does not require a cross-owner assist lock.
+Current Jjun task `Action Completion Unification v1` is in the Core/Simulation/World/Bridge lane on branch `jjun/action-completion-unification-v1` and does not require a Character/UI assist lock. Lifecycle Core Correctness v1 is complete in PR #115, merged as `0a8014482a8eae994e3469f3264760b9d05e99cc`.
 
 Jjun helping Dagyeom defaults to REVIEW_ONLY. Do not direct-push `dagyeom/*`; use assist branch/PR when a real cross-owner code change is required.
 
@@ -76,10 +76,12 @@ Jjun helping Dagyeom defaults to REVIEW_ONLY. Do not direct-push `dagyeom/*`; us
 - obstacle-collision follow-up: the authoritative `GridPos` is the target locus, not a requirement for the resident capsule to overlap the exact visual/collider centre. If a tree/rock/storage visual has a blocking collision proxy, Character Presentation must stop within a truthful interaction radius outside that blocker, face/interact with the same Core target, and must not move, replace, or fabricate the Core coordinates.
 - civilization snapshot extension v2 persists resource/storage positions while retaining v1 read compatibility; generated resource positions can still resolve from immutable natural patches for legacy v1 data.
 - sanitation-site work continues to use the real Core-supplied site position.
+- Action Completion Unification v1 is **ACTIVE** on `jjun/action-completion-unification-v1`: the provider is adding runtime-only pending Context kind/token/duration, Parenting action context, and `CompleteResidentContextAction` so Social/Civilization/Parenting outcomes occur only after movement/interaction ACK. The canonical contract is `docs/ACTION_COMPLETION_UNIFICATION_v1.md`.
+- while that follow-up is active, Character Presentation must treat a pending directive as presentation work only; animation/motion must never manufacture a relationship/resource/care outcome or bypass the token ACK.
 - requested Character work: Context Motion Router consumes the directive and selects validated talking/sit/interact/pickup/kneeling/fallback motions without creating simulation truth.
-- no Jjun direct changes to `Source/LifeLens/Characters/**` outside an explicit assist lock.
+- no Jjun direct changes to `Source/LifeLens/Characters/**` are part of the completion-unification branch.
 - no GitHub review request is required merely because Dagyeom will consume the API.
-- status: **PROVIDER FULLY DONE / PRESENTATION CONSUMPTION READY**. Does not block Core work.
+- status: **BASE PROVIDER DONE / COMPLETION-ACK FOLLOW-UP ACTIVE / PRESENTATION CONSUMER OPEN**. Does not block independent Core correctness work.
 
 ## Recently resolved Integration Requests
 

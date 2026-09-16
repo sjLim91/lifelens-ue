@@ -9,6 +9,7 @@ enable_testing()
 
 add_library(lifelens_core STATIC
     src/Simulation.cpp
+    src/ContextActionRuntime.cpp
     src/CivilizationKnowledgeTransmission.cpp
     src/SimulationSnapshot.cpp
     src/SimulationSnapshotCodec.cpp
@@ -93,6 +94,10 @@ lifelens_add_test(test_production_new_game)
 lifelens_add_test(test_autonomous_family_progression)
 
 lifelens_add_test(test_lifecycle_runtime_correctness)
+
+lifelens_add_test(test_context_action_completion)
+
+lifelens_add_test(test_context_action_competing_parenting)
 
 lifelens_add_test(test_core_save_load)
 

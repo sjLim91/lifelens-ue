@@ -270,6 +270,16 @@ void ALLWorldDirector::UpdateResident(ALLResidentCharacter& Character, float Del
         return;
     }
 
+    FLLCoreActionDirective PendingDirective;
+    if (CoreBridge->GetResidentPendingContextDirective(Character.GetResidentId(), PendingDirective))
+    {
+        ApplyPendingContextDirective(Character, *Runtime, PendingDirective, DeltaSeconds);
+        return;
+    }
+
+    Runtime->ActiveContextActionToken = 0;
+    Runtime->ContextUseElapsedSeconds = 0.0f;
+
     FLLCoreActionDirective Directive;
     if (!CoreBridge->GetResidentActionDirective(Character.GetResidentId(), Directive))
     {
