@@ -2,7 +2,7 @@
 #include "World/LLWorldDirector.h"
 #include "World/LLWorldObstacleCollisionProxyActor.h"
 #include "World/LLWorldSpatialContract.h"
-#include "UI/LLObserverHUD.h"
+#include "UI/LLSocialObserverHUD.h"
 #include "UI/LLObserverPlayerController.h"
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
@@ -15,7 +15,7 @@
 ALLLifeLensGameMode::ALLLifeLensGameMode()
 {
     DefaultPawnClass = nullptr;
-    HUDClass = ALLObserverHUD::StaticClass();
+    HUDClass = ALLSocialObserverHUD::StaticClass();
     PlayerControllerClass = ALLObserverPlayerController::StaticClass();
 
     static ConstructorHelpers::FObjectFinder<UStaticMesh> FloorMeshFinder(TEXT("/Engine/BasicShapes/Cube.Cube"));
