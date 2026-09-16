@@ -16,33 +16,27 @@ Authority rule: Core/World owns simulation truth. UI/Character/Environment/World
 
 ## Current Assist Locks
 
-### ASSIST_LOCK-FACILITY-TECH-1 — ACTIVE
-- requester/implementer: Jjun, 사용자 승인으로 Core + World + Character + UI + WorldPresentation을 한 흐름으로 공동 구현.
-- owner lanes: Dagyeom — UI / Observer presentation, Character presentation, Environment / maps / world presentation.
-- milestone branch history: `jjun/facilities-tools-technology-v1` → `jjun/tool-effectiveness-v1` → `jjun/dig-strike-tools-v1` → `jjun/fire-heat-firepit-v1` → `jjun/furnace-smelting-v1`.
-- current PR: #122 `원시 제련 v1: Furnace→CopperSmelting→Copper 종단 연결`.
-- purpose: 시설·도구·기술 발전을 `필요 인식 -> 관찰/실험 -> 발견 -> 재현 -> 실제 제작/건설 -> 실제 효율/세계 변화 -> 표현/Observer -> Save/Load`의 종단 흐름으로 구현한다.
-- delivered first slice: PR #118 merged to `main` as `c3de18790bd19ff7068971b5edc1f475c016048c`; New Game 시설 0개 원칙을 유지하면서 PrimitiveStorage를 필요 인식 → 발견 → Core 위치 선정 → 재료 운반 → 건설 ACK → Storage 활성화 → Save/Load → World/Character/UI 표현까지 연결했다.
-- delivered tool-effectiveness slice: PR #119 merged to `main` as `c59a3e2338f23f658a4bde18e9fabd1ebec13687`; ToolCapability / quality / durability를 실제 채집 효율과 마모/파손에 연결하고, Pending Gather가 실제 사용할 도구를 Bridge DTO에 노출해 Gather 모션과 손 도구 proxy를 연결했다.
-- delivered dig/strike slice: PR #120 merged to `main` as `28d2f44ae81c7eb140015cb664b4e9d40a4ed16c`; `DiggingStick` / `StoneHammer`를 무료 지급 없이 실험·발견·재현·제작 루프에 추가하고 Dig / Strike capability를 Clay 및 Stone/Flint/Bone/Ore 채집 효율·마모와 손 도구 표현에 연결했다.
-- delivered fire slice: PR #121 merged to `main` as `da40073d327ef00aff9646000fcdc30eda9d93d8`; FireMaking `Reproducible` 지식을 전제로 FirePit을 Stone 5 + Wood 2 + Work 6으로 실제 건설하고, Fuel → Ignite → simulation-minute burn → Heat → Charcoal → Collect를 Core 권위로 연결했다. fire runtime은 snapshot v4로 저장되고 Bridge/Context/WorldPresentation은 authoritative 상태만 소비한다.
-- current furnace/smelting slice: 운영 FirePit + FireMaking / StoneHammer / SimpleContainer 지식을 전제로 Furnace를 Stone 8 + Clay 6 + Work 12로 실제 건설한다. 운영 Furnace 앞에서 CopperOre + Charcoal을 소비하는 `SmeltCopperOre` 실험으로 `CopperSmelting`을 발견한 뒤, 반복 생산은 Furnace의 LoadSmeltCharge → Ignite → 45 simulation-minute smelt → CopperMetal → CollectMetal runtime만 사용한다. Tin/Iron은 다음 합금·고온 제련 단계까지 ore 상태로 남긴다.
-- furnace persistence v1: civilization snapshot extension v5가 Furnace `oreUnits / metalUnits`를 v4 fire runtime 뒤에 append하며 v1~v4 read compatibility를 유지한다.
-- hand-tool presentation v1: SharpFlake / StoneCuttingTool / SimpleContainer / DiggingStick / StoneHammer를 authoritative pending-tool DTO로만 표시한다. 현재 engine basic mesh proxy는 추후 art asset 교체 지점이다.
-- fire presentation v1: 기존 Android-safe facility HISM을 재사용해 FirePit 돌 고리 / 장작 / 목탄 / lit flame proxy를 표시한다. 불/연료/열/목탄 상태는 Presentation에서 생성하거나 보정하지 않는다.
-- furnace presentation v1: 같은 Android-safe HISM 계층을 재사용해 Furnace 몸체/굴뚝/광석 charge/완성 금속/가동 flame proxy를 표시한다. `OreUnits / MetalUnits / HeatLevel / bLit`는 Core read DTO에서만 온다.
-- observer labels: DiggingStick / StoneHammer 기존 누락과 CopperMetal / CopperSmelting 한글 라벨을 #122에서 보강한다. 전용 한글 glyph 실기기 검증은 Android Gate B에 유지한다.
-- locked Core/World scope: `Source/LifeLensCore/**`, `Source/LifeLens/Simulation/**`, `Source/LifeLens/World/**` 중 시설/건설/도구/기술/자원/제작/공간 권위와 Bridge 계약.
-- locked UI scope: `Source/LifeLens/UI/**`, `Content/UI/**` 중 시설·제작·기술 발견·인벤토리·건설·도구 상태 표현. 한글 glyph 실기기 보장은 Android Gate B에서 검증하며 전용 UI 폰트 보강을 Presentation 체크리스트에 포함한다.
-- locked Character scope: `Source/LifeLens/Characters/**`, `Content/Characters/**` 중 채집/제작/건설/도구 사용 모션과 손 도구 표현.
-- locked WorldPresentation scope: `Source/LifeLens/WorldPresentation/**`, `Content/Environment/**`, `Content/WorldPresentation/**` 중 Core 권위 자원 감소/재생, 건설 시설, 불/연료/작업대/광맥 등 문명 결과 표현.
-- Environment 일반 미관 작업과 #8 무관한 캐릭터 외형 작업은 이 락에 포함하지 않는다.
-- Presentation은 시설·자원·도구·기술 상태를 생성하거나 보정하지 않고 Core read contract만 소비한다.
-- release condition: #8 시설/도구 v1의 Core + Bridge + Character/UI presentation 종단 범위가 Core/Preflight/Unreal 검증을 통과하고 병합된 뒤 해제한다.
+현재 활성 Assist Lock 없음.
 
-Jjun helping Dagyeom defaults to REVIEW_ONLY지만, 위 ACTIVE Assist Lock 범위에서는 사용자 승인에 따라 직접 구현한다. `dagyeom/*` 브랜치에는 직접 push하지 않고 별도 `jjun/*` 브랜치/PR을 사용한다.
+Jjun helping Dagyeom defaults to REVIEW_ONLY. 새 cross-owner 직접 구현이 필요하면 사용자 승인 범위를 명시한 Assist Lock을 먼저 연다. `dagyeom/*` 브랜치에는 직접 push하지 않고 별도 `jjun/*` 브랜치/PR을 사용한다.
 
 ## Recently released Assist Locks
+
+### ASSIST_LOCK-FACILITY-TECH-1 — RELEASED
+- requester/implementer: Jjun, 사용자 승인으로 Core + World + Character + UI + WorldPresentation을 한 흐름으로 공동 구현.
+- branch history: `jjun/facilities-tools-technology-v1` → `jjun/tool-effectiveness-v1` → `jjun/dig-strike-tools-v1` → `jjun/fire-heat-firepit-v1` → `jjun/furnace-smelting-v1`.
+- delivered PRs: #118 PrimitiveStorage, #119 tool effectiveness, #120 DiggingStick/StoneHammer, #121 FirePit/Heat/Charcoal, #122 Furnace/CopperSmelting/CopperMetal.
+- final PR #122 merged to `main` as `72e90d5e94085b82806e0b0071f2b81b39cd6f16`.
+- final validation: Preflight #692 PASS, Core Tests #649 PASS, Unreal Linux Compile #191 PASS.
+- delivered authority chain: 필요 인식 → 실험/발견 → 재현 → 실제 제작/건설 → 실제 효율/세계 변화 → Bridge/Character/UI/WorldPresentation → Save/Load.
+- New Game 시설 0개 원칙을 유지하며 PrimitiveStorage / FirePit / Furnace는 모두 Core progression을 통해서만 생성된다.
+- ToolCapability / quality / durability는 실제 Gather 효율·마모와 연결되고, Pending Gather DTO가 실제 사용할 손 도구 표현을 공급한다.
+- FirePit은 Fuel → Ignite → minute burn → Heat → Charcoal → Collect를 Core 권위로 수행한다.
+- Furnace는 CopperOre + Charcoal → CopperSmelting 발견 → LoadSmeltCharge → Ignite → 45-minute smelt → CopperMetal → CollectMetal을 Core 권위로 수행한다.
+- snapshot extension은 facility/fire/furnace runtime을 보존하며 이전 extension version read compatibility를 유지한다.
+- Presentation은 시설·자원·도구·기술 상태를 생성하거나 보정하지 않고 Core read contract만 소비한다.
+- dedicated Korean font asset/Android glyph 확인은 Gate B 실기기 검증 항목으로 남는다.
+- release condition satisfied; UI/Character/WorldPresentation ownership은 Dagyeom 기본 규칙으로 복귀한다.
 
 ### ASSIST_LOCK-SOCIAL-COMM-1 — RELEASED
 - requester/implementer: Jjun, 사용자 승인으로 Core + Presentation 통합 구현.
@@ -51,7 +45,7 @@ Jjun helping Dagyeom defaults to REVIEW_ONLY지만, 위 ACTIVE Assist Lock 범�
 - delivered: ACK 이후 Core 권위 recent social feed, Everyday/Meaningful/Important presentation level, 한국어 Observer 라벨/말풍선/Event Feed, 최근 상호작용 detail, social target facing, `Idle_Talking_Loop` context motion.
 - validation: Preflight #656 PASS, Core Tests #572 PASS, Unreal Linux Compile #160 UHT/UBT PASS.
 - dedicated Korean font asset is not yet present; actual Korean glyph rendering remains an Android Gate B visual-validation item rather than a Core authority blocker.
-- release condition satisfied after final-head CI and merge; normal ownership returns except for the new scoped #8 assist lock above.
+- release condition satisfied after final-head CI and merge.
 
 ### ASSIST_LOCK-CHARACTER-OBSTACLE-1 — RELEASED
 - requester/implementer: Jjun.
@@ -59,7 +53,7 @@ Jjun helping Dagyeom defaults to REVIEW_ONLY지만, 위 ACTIVE Assist Lock 범�
 - locked file was `Source/LifeLens/Characters/LLResidentCharacter.cpp` only.
 - purpose: query-only tree/meaningful-rock collision proxies, constant-speed swept movement, bounded slide/side-step, explicit pebble traversal, stable opposite-side fallback.
 - Core action/target authority was not changed by the obstacle PR.
-- release condition satisfied after final-head compile completion and merge; normal Character-file ownership returns to Dagyeom.
+- release condition satisfied after final-head compile completion and merge; normal Character ownership returns to Dagyeom.
 - PIE/APK feel QA remains a product-validation item, not an ownership lock.
 
 ### ASSIST_LOCK-UI-OBSERVER-DATA-1 — RELEASED
@@ -87,7 +81,9 @@ Jjun helping Dagyeom defaults to REVIEW_ONLY지만, 위 ACTIVE Assist Lock 범�
 
 ## Open Integration Requests
 
-현재 #8 범위의 Core↔Presentation 변경은 `ASSIST_LOCK-FACILITY-TECH-1` 아래에서 직접 종단 구현하므로 별도 신규 IR 없이 진행한다. 기존 ownership을 벗어나는 #8 무관 작업이 필요할 때만 새 IR을 연다.
+현재 open Integration Request 없음.
+
+`jjun/world-authority-normalization-v1` / PR #123은 Jjun 소유 Core / Simulation / World 범위에서 Presentation-derived physical authority를 제거하는 작업이며 Dagyeom 소유 파일을 직접 수정하지 않는다.
 
 ## Recently resolved Integration Requests
 
