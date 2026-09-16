@@ -107,6 +107,11 @@ public:
     UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Action")
     bool GetResidentActionDirective(FGuid ResidentId, FLLCoreActionDirective& OutDirective) const;
 
+    UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Action")
+    bool GetResidentPendingContextDirective(
+        FGuid ResidentId,
+        FLLCoreActionDirective& OutDirective) const;
+
     UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Observer")
     bool GetFamilyObservation(FGuid ResidentId, FLLCoreFamilyObservation& OutObservation) const;
 
