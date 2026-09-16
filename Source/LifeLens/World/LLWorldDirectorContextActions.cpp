@@ -32,6 +32,7 @@ void ALLWorldDirector::ApplyPendingContextDirective(
     FVector DesiredLocation = Character.GetActorLocation();
     ALLResidentCharacter* TargetResident = nullptr;
     float ArrivalRadius = FMath::Max(1.0f, ContextWorldTargetArrivalRadiusUU);
+    bool bFaceTarget = false;
 
     switch (Directive.ContextActionKind)
     {
@@ -43,8 +44,26 @@ void ALLWorldDirector::ApplyPendingContextDirective(
                 Character.ClearMovementTarget();
                 return;
             }
-            DesiredLocation = ResolveSocialTargetLocation(
-                Character, *TargetResident, Directive.SocialIntent);
+            if (Directive.SocialIntent == ELLCoreSocialIntent::Avoid)
+            {
+                FVector AwayDirection = Character.GetActorLocation() - TargetResident->GetActorLocation();
+                AwayDirection.Z = 0.0f;
+                if (AwayDirection.IsNearlyZero())
+                {
+                    const bool bPositive = (GetTypeHash(Character.GetResidentId()) & 1u) == 0u;
+                    AwayDirection = bPositive
+                        ? FVector(1.0f, 0.0f, 0.0f)
+                        : FVector(0.0f, 1.0f, 0.0f);
+                }
+                AwayDirection.Normalize();
+                DesiredLocation = TargetResident->GetActorLocation() + AwayDirection * 420.0f;
+            }
+            else
+            {
+                DesiredLocation = ResolveSocialTargetLocation(
+                    Character, *TargetResident, Directive.SocialIntent);
+                bFaceTarget = true;
+            }
             ArrivalRadius = FMath::Max(1.0f, ContextResidentArrivalRadiusUU);
             Character.SetCurrentIntent(ELLActionIntent::Socialize);
             break;
@@ -61,6 +80,7 @@ void ALLWorldDirector::ApplyPendingContextDirective(
                 Character, *TargetResident, ELLCoreSocialIntent::Approach);
             ArrivalRadius = FMath::Max(1.0f, ContextResidentArrivalRadiusUU);
             Character.SetCurrentIntent(ELLActionIntent::Socialize);
+            bFaceTarget = true;
             break;
 
         case ELLCoreContextActionKind::Civilization:
@@ -97,7 +117,7 @@ void ALLWorldDirector::ApplyPendingContextDirective(
     Character.ClearMovementTarget();
     Runtime.bPerformingAction = true;
 
-    if (TargetResident)
+    if (bFaceTarget && TargetResident)
     {
         FVector LookDirection = TargetResident->GetActorLocation() - Character.GetActorLocation();
         LookDirection.Z = 0.0f;
