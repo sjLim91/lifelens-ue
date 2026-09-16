@@ -1,7 +1,9 @@
+#include <algorithm>
 #include <iostream>
 #include <string>
 #include <vector>
 
+#include "lifelens/PrimitiveFireProgression.h"
 #include "lifelens/Simulation.h"
 #include "lifelens/SimulationSnapshotCodec.h"
 
@@ -61,7 +63,45 @@ int main()
     a.memory.add(memory);
     a.beliefs.getOrCreate(b.id,"trusted").applyEvidence(true,0.88,source.world().minute);
 
+    // Seed an actively burning FirePit so the binary codec must preserve all
+    // authoritative runtime fields, not merely the physical facility shell.
+    auto& facilities=source.world().facilities;
+    facilities.erase(
+        std::remove_if(facilities.begin(),facilities.end(),[](const ConstructedFacility& facility){
+            return facility.kind==FacilityKind::FirePit;
+        }),
+        facilities.end());
+    a.civilization.knowledge.learn(
+        TechniqueId::FireMaking,KnowledgeLevel::Reproducible,0.9);
+    a.civilization.inventory.add({ItemKind::RawMaterial,MaterialKind::Stone,5,0.5,1.0});
+    a.civilization.inventory.add({ItemKind::RawMaterial,MaterialKind::Wood,4,0.5,1.0});
+    const PrimitiveFirePitSiteOpportunity fireSite=choosePrimitiveFirePitSite(source.world(),a.id);
+    CHECK(fireSite.available);
+    ConstructedFacility* firePit=establishPrimitiveFirePitProject(source.world(),a,fireSite.pos);
+    CHECK(firePit!=nullptr);
+    const FacilityId firePitId=firePit->id;
+    CHECK(deliverFacilityMaterial(*firePit,a.civilization.inventory,MaterialKind::Stone,5)==5);
+    CHECK(deliverFacilityMaterial(*firePit,a.civilization.inventory,MaterialKind::Wood,2)==2);
+    PrimitiveFirePitWorkResult fireWork;
+    while(!fireWork.completed){
+        fireWork=workOnPrimitiveFirePit(source.world(),a,2.0);
+        CHECK(fireWork.worked);
+    }
+    CHECK(fuelPrimitiveFirePit(source.world(),a,firePitId,2)==2);
+    CHECK(ignitePrimitiveFirePit(source.world(),a,firePitId));
+    for(int i=0;i<7;++i){
+        ++source.world().minute;
+        advancePrimitiveFireOneMinute(source.world());
+    }
+    firePit=primitiveFirePitProject(source.world());
+    CHECK(firePit!=nullptr && firePit->lit);
+    CHECK(firePit->fuelUnits==2);
+    CHECK(firePit->burnMinutesRemaining==PrimitiveFireBurnMinutesPerWoodUnit-7);
+    const int savedBurnMinutes=firePit->burnMinutesRemaining;
+    const double savedHeat=firePit->heatLevel;
+
     const SimulationStateSnapshot snapshot=source.captureSnapshot();
+    CHECK(snapshot.version==SimulationSnapshotVersion);
     CHECK(sameSimulationRuleset(snapshot.ruleset,rules));
     std::vector<std::uint8_t> bytes;
     std::string error;
@@ -73,6 +113,16 @@ int main()
     CHECK(decodeSimulationSnapshot(bytes,decoded,&error));
     CHECK(error.empty());
     CHECK(sameSimulationRuleset(decoded.ruleset,rules));
+    const ConstructedFacility* decodedFirePit=nullptr;
+    for(const auto& facility:decoded.world.facilities){
+        if(facility.id==firePitId){ decodedFirePit=&facility; break; }
+    }
+    CHECK(decodedFirePit!=nullptr);
+    CHECK(decodedFirePit->kind==FacilityKind::FirePit);
+    CHECK(decodedFirePit->lit);
+    CHECK(decodedFirePit->fuelUnits==2);
+    CHECK(decodedFirePit->burnMinutesRemaining==savedBurnMinutes);
+    CHECK(decodedFirePit->heatLevel==savedHeat);
 
     // Canonical codec contract: decode+encode must reproduce identical bytes.
     std::vector<std::uint8_t> reencoded;
