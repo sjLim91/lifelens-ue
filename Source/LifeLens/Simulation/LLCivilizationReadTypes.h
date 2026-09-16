@@ -30,7 +30,9 @@ enum class ELLCoreItemKind : uint8
     StoneCuttingTool,
     Cordage,
     SimpleContainer,
-    FuelBundle
+    FuelBundle,
+    DiggingStick,
+    StoneHammer
 };
 
 UENUM(BlueprintType)
@@ -44,7 +46,9 @@ enum class ELLCoreTechniqueId : uint8
     SimpleContainer,
     DesignatedSanitationArea,
     DugSanitationPit,
-    PrimitiveStorage
+    PrimitiveStorage,
+    DiggingStick,
+    StoneHammer
 };
 
 UENUM(BlueprintType)
