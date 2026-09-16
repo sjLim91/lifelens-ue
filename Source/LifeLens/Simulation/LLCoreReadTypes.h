@@ -79,6 +79,38 @@ struct FLLCorePersonalitySnapshot
 };
 
 USTRUCT(BlueprintType)
+struct FLLCoreResidentTraitSnapshot
+{
+    GENERATED_BODY()
+
+    // These are Core-owned continuous lifelong/genetic facts, not invented UI
+    // tags. Presentation may summarize them but must preserve the underlying
+    // values when showing resident "traits".
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float HeightPotential = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float BuildPotential = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float HealthPotential = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float LearningPotential = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float TemperamentSensitivity = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float PhysicalHealth = 1.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float EnergyCapacity = 1.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float MovementCapacity = 1.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float ReproductivePotential = 1.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float WorkCapacity = 1.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float LifeGoalFamilyFocus = 0.3f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float FamilyRoleSalience = 0.2f;
+};
+
+USTRUCT(BlueprintType)
+struct FLLCoreResidentSkillSnapshot
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float Gathering = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float Crafting = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float Learning = 0.5f;
+};
+
+USTRUCT(BlueprintType)
 struct FLLCoreEmotionSnapshot
 {
     GENERATED_BODY()
@@ -169,6 +201,8 @@ struct FLLCoreResidentObservation
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") ELLCoreLifeStage LifeStage = ELLCoreLifeStage::Adult;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") bool bAlive = true;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") FLLCorePersonalitySnapshot Personality;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") FLLCoreResidentTraitSnapshot Traits;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") FLLCoreResidentSkillSnapshot Skills;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") FLLCoreNeedSnapshot Needs;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") FLLCoreEmotionSnapshot Emotion;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") ELLCoreObservedActivityKind ActivityKind = ELLCoreObservedActivityKind::Idle;
