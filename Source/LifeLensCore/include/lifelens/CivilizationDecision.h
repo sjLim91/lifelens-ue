@@ -303,24 +303,25 @@ inline CivilizationUtilityDecision bestExperimentDecision(const World& world,con
         const KnowledgeLevel level=self.civilization.knowledge.level(technique);
         const double hypothesisBoost=level==KnowledgeLevel::Hypothesized ? 0.08 : (level==KnowledgeLevel::Understood ? 0.05 : 0.0);
         const double preference=civilizationPreference(world.seed,self.id,200ULL+static_cast<std::uint64_t>(kind));
-        double situationBoost=0.0;
+        double sanitationBoost=0.0;
+        double storageBoost=0.0;
         if(designatedExperiment){
-            situationBoost=0.18+0.16*sanitationOpportunity.problemConfidence+
+            sanitationBoost=0.18+0.16*sanitationOpportunity.problemConfidence+
                 0.10*clampCivilization01(self.needs.hygiene);
         }else if(pitExperiment){
-            situationBoost=0.18
+            sanitationBoost=0.18
                 +0.10*pitOpportunity.problemConfidence
                 +0.05*clampCivilization01(static_cast<double>(pitOpportunity.useCount)/4.0)
                 +0.08*clampCivilization01(pitOpportunity.siteExposure);
         }else if(storageExperiment){
-            situationBoost=0.20+0.22*storageNeed.pressure+
+            storageBoost=0.20+0.22*storageNeed.pressure+
                 0.08*self.personality.orderliness+
                 0.06*self.personality.conscientiousness;
         }
         const double score=clampCivilization01(
             0.11+0.22*self.personality.curiosity+0.10*self.personality.openness+
             0.07*self.personality.patience+0.12*self.civilization.learningSkill+
-            0.08*preference+hypothesisBoost+situationBoost);
+            0.08*preference+hypothesisBoost+sanitationBoost+storageBoost);
 
         CivilizationUtilityDecision candidate;
         candidate.intent=CivilizationIntent::Experiment;
