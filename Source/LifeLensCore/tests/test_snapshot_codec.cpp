@@ -16,7 +16,13 @@ using namespace lifelens;
 
 int main()
 {
-    Simulation source(777331);
+    SimulationRuleset rules=DefaultSimulationRuleset;
+    rules.needs.hungerPerMinute=0.00105;
+    rules.utilityAI.idleScore=0.036;
+    rules.utilityAI.secondChoiceProbability=0.04;
+    CHECK(validSimulationRuleset(rules));
+
+    Simulation source(777331,0,CurrentWorldGenerationVersion,rules);
     source.setupNewGame();
     source.runMinutes(5000);
 
@@ -56,6 +62,7 @@ int main()
     a.beliefs.getOrCreate(b.id,"trusted").applyEvidence(true,0.88,source.world().minute);
 
     const SimulationStateSnapshot snapshot=source.captureSnapshot();
+    CHECK(sameSimulationRuleset(snapshot.ruleset,rules));
     std::vector<std::uint8_t> bytes;
     std::string error;
     CHECK(encodeSimulationSnapshot(snapshot,bytes,&error));
@@ -65,22 +72,33 @@ int main()
     SimulationStateSnapshot decoded;
     CHECK(decodeSimulationSnapshot(bytes,decoded,&error));
     CHECK(error.empty());
+    CHECK(sameSimulationRuleset(decoded.ruleset,rules));
 
     // Canonical codec contract: decode+encode must reproduce identical bytes.
     std::vector<std::uint8_t> reencoded;
     CHECK(encodeSimulationSnapshot(decoded,reencoded,&error));
     CHECK(bytes==reencoded);
 
-    Simulation restored(1);
+    Simulation restored(
+        decoded.world.seed,
+        decoded.world.populationSeed,
+        decoded.world.generationVersion,
+        decoded.ruleset);
     CHECK(restored.restoreSnapshot(decoded,&error));
     CHECK(error.empty());
+
+    // A simulation created under different immutable rules must not silently
+    // accept state that was produced under another ruleset.
+    Simulation wrongRuleset(decoded.world.seed);
+    CHECK(!wrongRuleset.restoreSnapshot(decoded,&error));
+    CHECK(!error.empty());
 
     // Restored Core must serialize identically immediately.
     std::vector<std::uint8_t> restoredBytes;
     CHECK(encodeSimulationSnapshot(restored.captureSnapshot(),restoredBytes,&error));
     CHECK(restoredBytes==bytes);
 
-    // And must continue into the exact same future, proving RNG/runtime state.
+    // And must continue into the exact same future, proving RNG/runtime/ruleset state.
     source.runMinutes(10000);
     restored.runMinutes(10000);
     std::vector<std::uint8_t> futureA,futureB;
@@ -102,6 +120,6 @@ int main()
     trailing.push_back(0x42);
     CHECK(!decodeSimulationSnapshot(trailing,rejected,&error));
 
-    std::cout << "snapshot binary codec roundtrip + continuation passed\n";
+    std::cout << "snapshot binary codec roundtrip + ruleset continuation passed\n";
     return 0;
 }

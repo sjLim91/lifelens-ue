@@ -24,6 +24,7 @@ bool validateSnapshot(const SimulationStateSnapshot& snapshot,std::string* error
     };
 
     if(snapshot.version!=SimulationSnapshotVersion) return fail("unsupported snapshot version");
+    if(!validSimulationRuleset(snapshot.ruleset)) return fail("snapshot contains invalid simulation ruleset");
     if(snapshot.world.seed==0) return fail("snapshot world seed must be nonzero");
     if(snapshot.world.minute<0) return fail("snapshot minute must be nonnegative");
 
@@ -161,6 +162,7 @@ SimulationStateSnapshot Simulation::captureSnapshot() const
 {
     SimulationStateSnapshot snapshot;
     snapshot.version=SimulationSnapshotVersion;
+    snapshot.ruleset=ruleset_;
     snapshot.world=world_;
     for(auto& character:snapshot.world.characters){
         if(character.civilization.character==0) character.civilization.character=character.id;
@@ -199,6 +201,10 @@ SimulationStateSnapshot Simulation::captureSnapshot() const
 bool Simulation::restoreSnapshot(const SimulationStateSnapshot& snapshot,std::string* error)
 {
     if(!validateSnapshot(snapshot,error)) return false;
+    if(!sameSimulationRuleset(snapshot.ruleset,ruleset_)){
+        if(error) *error="snapshot ruleset does not match simulation ruleset";
+        return false;
+    }
 
     std::unordered_map<CharacterId,Runtime> restoredRuntime;
     restoredRuntime.reserve(snapshot.runtime.size());

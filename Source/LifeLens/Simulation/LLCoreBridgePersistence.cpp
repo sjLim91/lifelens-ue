@@ -61,10 +61,15 @@ bool ULLCoreBridgeSubsystem::RestoreCoreSnapshotBytes(const TArray<uint8>& Bytes
         return false;
     }
 
-    // Restore into a temporary Core instance first. A corrupt/incompatible save
-    // must never destroy the currently running world.
+    // Restore into a temporary Core instance first. A corrupt save must never
+    // destroy the currently running world. The saved immutable ruleset is part
+    // of the authoritative snapshot and must be installed before restoration.
     std::unique_ptr<lifelens::Simulation> Candidate =
-        std::make_unique<lifelens::Simulation>(Snapshot.world.seed);
+        std::make_unique<lifelens::Simulation>(
+            Snapshot.world.seed,
+            Snapshot.world.populationSeed,
+            Snapshot.world.generationVersion,
+            Snapshot.ruleset);
     if (!Candidate->restoreSnapshot(Snapshot, &Error))
     {
         OutError = UTF8_TO_TCHAR(Error.c_str());

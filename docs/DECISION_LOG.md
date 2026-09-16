@@ -127,3 +127,64 @@
 **목적**
 - 새 세션에서 사용자가 요구사항을 다시 설명하지 않게 한다.
 - AI가 과거 대화 기억만 믿고 실제 저장소와 다른 방향으로 가는 것을 방지한다.
+
+---
+
+## D-008 — 사용자 UI는 한국어 기본, 사회행동은 실제로 관찰 가능해야 한다
+
+**결정**
+- 일반 사용자용 LifeLens UI의 기본 표시 언어는 한국어로 한다.
+- Core의 enum/action/event id는 언어 중립 식별자를 유지하고, Presentation/localization layer에서 사용자 언어로 변환한다.
+- `UseToilet`, `Comfort`, `Argue` 같은 raw English identifier를 최종 사용자 UI에 그대로 노출하지 않는다.
+- 주민 간 사회행동은 관계 수치만 바꾸고 끝나서는 안 된다. Core에서 실제로 발생한 actor/target/intent/outcome을 Presentation이 접근, facing/gaze, animation, 아이콘/말풍선, Event Feed/History로 관찰 가능하게 표현한다.
+- 모든 일상 대화를 큰 말풍선으로 도배하지 않는다. 일상/의미 있는 사회행동/중요 사건의 중요도 단계에 따라 표현 강도를 나눈다.
+- 대사는 초기부터 유료 LLM/API에 의존하지 않는다. social intent + personality + relationship + emotion + memory/context를 조합한 deterministic/data-driven 한국어 표현으로 기본 기능이 완전하게 동작해야 한다.
+- Presentation은 Core에서 발생하지 않은 고백/다툼/위로/관계변화를 꾸며내지 않는다.
+
+**구현 기준**
+- canonical companion: `docs/SOCIAL_COMMUNICATION_LOCALIZATION_v1.md`.
+- Jjun/Core lane: social action/event authority, outcome/read contract, presentation에 필요한 deterministic context.
+- Dagyeom presentation lane: localization 표시, speech bubble/Event Feed, gaze/body/animation 표현.
+- shared contract가 실제로 필요할 때만 Integration Request를 연다.
+
+**목적**
+- LifeLens의 핵심 경험을 "내부 숫자가 변하는 시뮬레이션"이 아니라 "사람들이 서로 소통하며 살아가는 사회를 관찰하는 경험"으로 유지한다.
+
+---
+
+## D-009 — 화장실/사적 행동은 Privacy Mask 기반으로 표현한다
+
+**결정**
+- 화장실 행동을 위해 의상별 바지 내리기/올리기 애니메이션을 V1 필수요건으로 두지 않는다.
+- `Toilet`은 단일 `Sit` 모션이 아니라 `approach -> align -> enter pose -> use loop -> completion ACK -> exit`의 context sequence로 표현한다.
+- 사적 구간에는 캐릭터 전체/화면 전체 블러가 아니라 **골반~상부 허벅지 영역의 재사용 가능한 Privacy Mask/Occluder**를 표시한다.
+- 모바일 성능을 위해 무거운 full-screen Gaussian blur보다 lightweight material/pixelation/frosted-noise 계열 presentation을 우선한다.
+- 실제 변기가 없으면 가짜 시설 상호작용을 만들지 않고 outdoor fallback pose + 기존 sanitation/environment 결과를 사용한다.
+- 실제 변기가 있으면 명시적 interaction point/socket/transform에 정렬해서 허공이나 변기 옆에 앉는 표현을 허용하지 않는다.
+- V1에서는 성별에 상관없이 indoor seated / outdoor squat-low pose를 공통 fallback으로 사용할 수 있으며, 성별 전용 variant는 이후 개선사항이다.
+- Privacy Mask는 Presentation 전용이며 Core 행동의 시작/완료/취소 authority를 가지지 않는다.
+- 같은 시스템을 향후 샤워/목욕, 옷 갈아입기, 출산 등 다른 사적 context action에 재사용할 수 있다.
+
+**구현 기준**
+- canonical companion: `docs/CHARACTER_CONTEXT_MOTION_v1.md`의 Toilet / sanitation presentation section.
+- 목표는 노골적 묘사가 아니라 **관찰자가 상황을 즉시 이해하면서도 의상/리깅 비용을 과도하게 만들지 않는 표현**이다.
+
+---
+
+# 2026-09-16
+
+## D-010 — Observer 카메라는 PC/Android에서 직접 orbit/zoom/pan 가능해야 한다
+
+**결정**
+- 현재 production observer camera의 고정 프레이밍은 bootstrap/검증 단계로 보고, 실제 제품 카메라는 사용자가 직접 조작할 수 있어야 한다.
+- PC 입력은 `mouse wheel = zoom`, `right-drag = orbit rotate`, `middle-drag = pan`, `left click = 기존 선택`으로 한다.
+- Android 입력은 `one-finger tap = 선택`, `one-finger drag = orbit rotate`, `pinch = zoom`, `two-finger translate = pan`으로 한다.
+- 모바일에서 touch pressed 순간 선택하지 않고 `Pressed -> movement tracking -> Released`로 tap과 gesture를 구분한다.
+- 주민 선택만으로 카메라가 자동 점프하거나 강제 추적하지 않는다.
+- zoom distance와 elevation은 제품 tuning 범위로 clamp하고 모든 camera transform 변경은 smoothing한다.
+- 카메라 조작은 Presentation이며 Core/World authority와 deterministic simulation을 바꾸지 않는다.
+
+**구현 기준**
+- canonical companion: `docs/OBSERVER_CAMERA_CONTROL_v1.md`.
+- `Source/LifeLens/UI/LLObserverPlayerController.*`는 Dagyeom 소유영역이므로 Jjun 구현 시 별도 assist branch + TEAM_BOARD Assist Lock을 사용한다.
+- HUD polish/old stacked UI PR 정리와 camera control을 같은 PR에 섞지 않는다.

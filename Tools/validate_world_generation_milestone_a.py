@@ -33,7 +33,8 @@ for token in ['generatedNaturalChunks', 'materializeNaturalChunk', 'establishIni
 for token in ['world_.storageSites.clear()', 'world_.materializeNaturalChunk', 'initialRuntime.pos']:
     assert token in sim, f'missing production New Game integration: {token}'
 
-assert 'SimulationSnapshotBinaryFormatVersion=6' in codec_h
+snapshot_binary_version = int(codec_h.split('SimulationSnapshotBinaryFormatVersion=', 1)[1].split(';', 1)[0])
+assert snapshot_binary_version >= 6, 'World Generation persistence requires snapshot binary format v6 or newer'
 assert 'WorldGenerationSnapshotExtensionMagic' in wg_codec
 assert 'writeWorldGenerationSnapshotExtension' in codec
 assert 'readWorldGenerationSnapshotExtension' in codec

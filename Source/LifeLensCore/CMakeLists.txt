@@ -102,6 +102,8 @@ lifelens_add_test(test_civilization_foundation)
 
 lifelens_add_test(test_civilization_persistence)
 
+lifelens_add_test(test_civilization_spatial_targets)
+
 lifelens_add_test(test_autonomous_civilization_loop)
 
 lifelens_add_test(test_civilization_knowledge_transmission)
@@ -129,3 +131,5 @@ lifelens_add_test(test_world_genesis_wg2)
 lifelens_add_test(test_world_generation_milestone_a)
 
 lifelens_add_test(test_world_generation_sanitation_reference)
+
+lifelens_add_test(test_early_survival)

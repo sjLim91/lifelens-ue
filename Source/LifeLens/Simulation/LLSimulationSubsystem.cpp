@@ -135,12 +135,8 @@ bool ULLSimulationSubsystem::SaveGame(const FString& SlotName)
         return false;
     }
 
-    SaveObject->SaveVersion = 2;
-    SaveObject->WorldSeed = WorldSeed;
-    SaveObject->SimulationMinute = SimulationMinute;
+    SaveObject->SaveVersion = ULLSaveGame::CurrentSaveVersion;
     SaveObject->CoreSnapshotBytes = MoveTemp(SnapshotBytes);
-    SaveObject->Residents.Reset();
-    SaveObject->Relationships.Reset();
     return UGameplayStatics::SaveGameToSlot(SaveObject, SlotName, 0);
 }
 
@@ -158,40 +154,16 @@ bool ULLSimulationSubsystem::LoadGame(const FString& SlotName)
         return false;
     }
 
-    if (SaveObject->SaveVersion == 2)
+    if (SaveObject->SaveVersion != ULLSaveGame::CurrentSaveVersion)
     {
-        FString RestoreError;
-        if (!CoreBridge->RestoreCoreSnapshotBytes(SaveObject->CoreSnapshotBytes, RestoreError))
-        {
-            UE_LOG(LogTemp, Error, TEXT("LifeLens LoadGame failed to restore Core snapshot: %s"), *RestoreError);
-            return false;
-        }
+        UE_LOG(LogTemp, Error, TEXT("LifeLens LoadGame rejected non-current pre-release save version %d."), SaveObject->SaveVersion);
+        return false;
     }
-    else if (SaveObject->SaveVersion == 1)
-    {
-        // Legacy v1 compatibility only. Old saves never contained authoritative
-        // Core state, so the only safe migration path is the previous deterministic
-        // WorldSeed + SimulationMinute replay. Legacy Residents/Relationships are
-        // never revived as simulation truth.
-        if (SaveObject->WorldSeed == 0)
-        {
-            return false;
-        }
 
-        CoreBridge->StartCoreNewGame(SaveObject->WorldSeed);
-        const int64 StartMinute = CoreBridge->GetWorldObservation().SimulationMinute;
-        const int64 TargetMinute = FMath::Max(StartMinute, SaveObject->SimulationMinute);
-        int64 RemainingMinutes = TargetMinute - StartMinute;
-        while (RemainingMinutes > 0)
-        {
-            const int32 Chunk = static_cast<int32>(FMath::Min<int64>(RemainingMinutes, 1440));
-            CoreBridge->AdvanceCoreMinutes(Chunk);
-            RemainingMinutes -= Chunk;
-        }
-    }
-    else
+    FString RestoreError;
+    if (!CoreBridge->RestoreCoreSnapshotBytes(SaveObject->CoreSnapshotBytes, RestoreError))
     {
-        UE_LOG(LogTemp, Error, TEXT("LifeLens LoadGame rejected unsupported save version %d."), SaveObject->SaveVersion);
+        UE_LOG(LogTemp, Error, TEXT("LifeLens LoadGame failed to restore Core snapshot: %s"), *RestoreError);
         return false;
     }
 

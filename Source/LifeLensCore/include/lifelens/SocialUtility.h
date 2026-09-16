@@ -280,6 +280,65 @@ inline double maximumResidentNeed(const Character& self)
     });
 }
 
+// Ordinary civilization yields to urgent survival pressure. The one exception
+// is acquiring a missing provision required to satisfy that survival pressure:
+// if hunger/thirst is already critical and there is no carried PlantFood/Water,
+// a real matching ResourceNode may be gathered. This is still an authoritative
+// Civilization::Gather action; it does not synthesize food/water or unlock the
+// rest of civilization while the resident is in crisis.
+inline CivilizationUtilityDecision urgentSurvivalProvisionGatherDecision(
+    const World& world,
+    const Character& self)
+{
+    constexpr double SurvivalProvisionThreshold = 0.74;
+    CivilizationUtilityDecision best;
+
+    const auto considerProvision = [&](Goal goal, MaterialKind material, double need) {
+        if (need < SurvivalProvisionThreshold) return;
+        if (objectAvailableFor(world, goal, self.id)) return;
+        if (self.civilization.inventory.count(ItemKind::RawMaterial, material) > 0) return;
+
+        for (const auto& node : world.resourceNodes) {
+            if (node.id == 0 || node.quantity <= 0 || node.material != material) continue;
+
+            CivilizationUtilityDecision candidate;
+            candidate.intent = CivilizationIntent::Gather;
+            candidate.utility = socialClamp01(0.80 + 0.20 * need);
+            candidate.resourceNode = node.id;
+            candidate.material = material;
+            candidate.item = ItemKind::RawMaterial;
+            candidate.quantity = 2 + static_cast<int>(2.0 * clampCivilization01(self.civilization.gatheringSkill));
+            considerCivilizationDecision(best, candidate);
+        }
+    };
+
+    // Thirst wins exact ties because the production decay rate is higher.
+    considerProvision(Goal::Eat, MaterialKind::PlantFood, self.needs.hunger);
+    const double hungerUtility = best.utility;
+    CivilizationUtilityDecision thirstCandidate;
+    if (self.needs.thirst >= SurvivalProvisionThreshold
+        && !objectAvailableFor(world, Goal::Drink, self.id)
+        && self.civilization.inventory.count(ItemKind::RawMaterial, MaterialKind::Water) == 0) {
+        for (const auto& node : world.resourceNodes) {
+            if (node.id == 0 || node.quantity <= 0 || node.material != MaterialKind::Water) continue;
+            thirstCandidate.intent = CivilizationIntent::Gather;
+            thirstCandidate.utility = socialClamp01(0.80 + 0.20 * self.needs.thirst);
+            thirstCandidate.resourceNode = node.id;
+            thirstCandidate.material = MaterialKind::Water;
+            thirstCandidate.item = ItemKind::RawMaterial;
+            thirstCandidate.quantity = 2 + static_cast<int>(2.0 * clampCivilization01(self.civilization.gatheringSkill));
+            break;
+        }
+    }
+    if (thirstCandidate.intent != CivilizationIntent::None
+        && (thirstCandidate.utility > hungerUtility + 1e-12
+            || std::abs(thirstCandidate.utility - hungerUtility) <= 1e-12)) {
+        best = thirstCandidate;
+    }
+
+    return best;
+}
+
 inline UnifiedUtilityDecision chooseUnifiedUtilityDecision(
     const World& world,
     const Character& self,
@@ -290,11 +349,22 @@ inline UnifiedUtilityDecision chooseUnifiedUtilityDecision(
     const auto physical = bestPhysicalUtility(world, self);
     const SocialUtilityDecision social = chooseSocialUtilityDecision(world, self, relationships);
     const CivilizationUtilityDecision civilization = chooseCivilizationUtilityDecision(world, self);
+    const CivilizationUtilityDecision survivalProvision = urgentSurvivalProvisionGatherDecision(world, self);
 
     UnifiedUtilityDecision decision;
     decision.physicalGoal = physical.first;
     decision.social = social;
     decision.civilization = civilization;
+
+    // A missing critical provision is part of survival, not optional progress.
+    // Promote only the matching Gather action before applying the normal rule
+    // that urgent Needs suppress civilization.
+    if (survivalProvision.intent != CivilizationIntent::None) {
+        decision.kind = UnifiedDecisionKind::Civilization;
+        decision.civilization = survivalProvision;
+        decision.utility = survivalProvision.utility;
+        return decision;
+    }
 
     // Preserve the pre-civilization Physical/Social winner first so existing
     // behavior remains stable unless civilization is clearly more valuable.

@@ -1,5 +1,6 @@
 #pragma once
 #include <algorithm>
+#include "SimulationRuleset.h"
 namespace lifelens {
 struct NeedsDelta { double hunger=0, thirst=0, sleep=0, bladder=0, hygiene=0; };
 struct Needs {
@@ -9,8 +10,17 @@ struct Needs {
         hunger=clamp01(hunger+d.hunger); thirst=clamp01(thirst+d.thirst);
         sleep=clamp01(sleep+d.sleep); bladder=clamp01(bladder+d.bladder); hygiene=clamp01(hygiene+d.hygiene);
     }
-    void decay(double metabolism=1.0, double sleepTendency=1.0) {
-        apply({0.0010*metabolism,0.0013*metabolism,0.0008*sleepTendency,0.0011*metabolism,0.0007});
+    void decay(const NeedsRuleset& rules,double metabolism=1.0,double sleepTendency=1.0) {
+        apply({
+            rules.hungerPerMinute*metabolism,
+            rules.thirstPerMinute*metabolism,
+            rules.sleepPerMinute*sleepTendency,
+            rules.bladderPerMinute*metabolism,
+            rules.hygienePerMinute
+        });
+    }
+    void decay(double metabolism=1.0,double sleepTendency=1.0) {
+        decay(DefaultSimulationRuleset.needs,metabolism,sleepTendency);
     }
 };
 }

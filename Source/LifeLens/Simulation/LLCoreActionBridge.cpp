@@ -1,5 +1,6 @@
 #include "Simulation/LLCoreBridgeSubsystem.h"
 
+#include "lifelens/CivilizationSpatial.h"
 #include "lifelens/ObserverReadModel.h"
 #include "lifelens/Simulation.h"
 
@@ -46,6 +47,75 @@ ELLCoreSocialIntent ToUnrealSocialIntent(lifelens::SocialIntent Intent)
         case lifelens::SocialIntent::None:
         default:
             return ELLCoreSocialIntent::None;
+    }
+}
+
+ELLCoreCivilizationAction ToUnrealCivilizationAction(lifelens::CivilizationActivityKind Kind)
+{
+    switch (Kind)
+    {
+        case lifelens::CivilizationActivityKind::Gather: return ELLCoreCivilizationAction::Gather;
+        case lifelens::CivilizationActivityKind::Store: return ELLCoreCivilizationAction::Store;
+        case lifelens::CivilizationActivityKind::Experiment: return ELLCoreCivilizationAction::Experiment;
+        case lifelens::CivilizationActivityKind::Craft: return ELLCoreCivilizationAction::Craft;
+        case lifelens::CivilizationActivityKind::None:
+        default:
+            return ELLCoreCivilizationAction::None;
+    }
+}
+
+ELLCoreMaterialKind ToUnrealMaterialKind(lifelens::MaterialKind Kind)
+{
+    switch (Kind)
+    {
+        case lifelens::MaterialKind::Stone: return ELLCoreMaterialKind::Stone;
+        case lifelens::MaterialKind::Flint: return ELLCoreMaterialKind::Flint;
+        case lifelens::MaterialKind::Wood: return ELLCoreMaterialKind::Wood;
+        case lifelens::MaterialKind::Fiber: return ELLCoreMaterialKind::Fiber;
+        case lifelens::MaterialKind::Clay: return ELLCoreMaterialKind::Clay;
+        case lifelens::MaterialKind::Water: return ELLCoreMaterialKind::Water;
+        case lifelens::MaterialKind::PlantFood: return ELLCoreMaterialKind::PlantFood;
+        case lifelens::MaterialKind::Bone: return ELLCoreMaterialKind::Bone;
+        case lifelens::MaterialKind::Hide: return ELLCoreMaterialKind::Hide;
+        case lifelens::MaterialKind::CopperOre: return ELLCoreMaterialKind::CopperOre;
+        case lifelens::MaterialKind::TinOre: return ELLCoreMaterialKind::TinOre;
+        case lifelens::MaterialKind::IronOre: return ELLCoreMaterialKind::IronOre;
+        case lifelens::MaterialKind::Charcoal: return ELLCoreMaterialKind::Charcoal;
+        case lifelens::MaterialKind::Unknown:
+        default:
+            return ELLCoreMaterialKind::Unknown;
+    }
+}
+
+ELLCoreItemKind ToUnrealItemKind(lifelens::ItemKind Kind)
+{
+    switch (Kind)
+    {
+        case lifelens::ItemKind::SharpFlake: return ELLCoreItemKind::SharpFlake;
+        case lifelens::ItemKind::StoneCuttingTool: return ELLCoreItemKind::StoneCuttingTool;
+        case lifelens::ItemKind::Cordage: return ELLCoreItemKind::Cordage;
+        case lifelens::ItemKind::SimpleContainer: return ELLCoreItemKind::SimpleContainer;
+        case lifelens::ItemKind::FuelBundle: return ELLCoreItemKind::FuelBundle;
+        case lifelens::ItemKind::RawMaterial:
+        default:
+            return ELLCoreItemKind::RawMaterial;
+    }
+}
+
+ELLCoreTechniqueId ToUnrealTechniqueId(lifelens::TechniqueId Technique)
+{
+    switch (Technique)
+    {
+        case lifelens::TechniqueId::SharpFlake: return ELLCoreTechniqueId::SharpFlake;
+        case lifelens::TechniqueId::ChippedStoneTool: return ELLCoreTechniqueId::ChippedStoneTool;
+        case lifelens::TechniqueId::FireMaking: return ELLCoreTechniqueId::FireMaking;
+        case lifelens::TechniqueId::FiberCordage: return ELLCoreTechniqueId::FiberCordage;
+        case lifelens::TechniqueId::SimpleContainer: return ELLCoreTechniqueId::SimpleContainer;
+        case lifelens::TechniqueId::DesignatedSanitationArea: return ELLCoreTechniqueId::DesignatedSanitationArea;
+        case lifelens::TechniqueId::DugSanitationPit: return ELLCoreTechniqueId::DugSanitationPit;
+        case lifelens::TechniqueId::None:
+        default:
+            return ELLCoreTechniqueId::None;
     }
 }
 }
@@ -253,6 +323,57 @@ bool ULLCoreBridgeSubsystem::GetResidentActionDirective(
         default:
             OutDirective.ActivityKind = ELLCoreObservedActivityKind::Idle;
             break;
+    }
+
+    // Physical/social authority wins if a new action already replaced the
+    // short-lived civilization presentation context.
+    if (Observation.activityKind == lifelens::ObservedActivityKind::Idle)
+    {
+        const lifelens::ResidentCivilizationActivityObservation Civilization =
+            CoreSimulation->observeResidentCivilizationActivity(CharacterId);
+        if (Civilization.active)
+        {
+            OutDirective.CivilizationAction = ToUnrealCivilizationAction(Civilization.kind);
+            OutDirective.CivilizationMaterial = ToUnrealMaterialKind(Civilization.material);
+            OutDirective.CivilizationItem = ToUnrealItemKind(Civilization.item);
+            OutDirective.CivilizationTechnique = ToUnrealTechniqueId(Civilization.technique);
+            OutDirective.CivilizationQuantity = static_cast<int32>(Civilization.quantity);
+            OutDirective.CivilizationActionMinute = static_cast<int64>(Civilization.minute);
+            OutDirective.CivilizationResourceNodeId = static_cast<int64>(Civilization.resourceNode);
+            OutDirective.CivilizationStorageId = static_cast<int64>(Civilization.storage);
+            OutDirective.bCivilizationActionSucceeded = Civilization.success;
+            OutDirective.bHasCivilizationSpatialTarget = Civilization.hasSpatialTarget;
+            OutDirective.CivilizationTargetGridX = static_cast<int32>(Civilization.targetGridX);
+            OutDirective.CivilizationTargetGridY = static_cast<int32>(Civilization.targetGridY);
+            OutDirective.CivilizationSanitationSiteId = static_cast<int64>(Civilization.sanitationSiteId);
+
+            // Sanitation already carries its real site position through the
+            // runtime observation. Gather/Store use stable Core entity ids, so
+            // resolve their authoritative sites here rather than letting
+            // Character presentation guess a nearby scenery object.
+            if (!OutDirective.bHasCivilizationSpatialTarget)
+            {
+                lifelens::GridPos Target{};
+                bool bResolved = false;
+                if (Civilization.kind == lifelens::CivilizationActivityKind::Gather)
+                {
+                    bResolved = lifelens::resolveCivilizationResourceGridPosition(
+                        CoreSimulation->world(), Civilization.resourceNode, Target);
+                }
+                else if (Civilization.kind == lifelens::CivilizationActivityKind::Store)
+                {
+                    bResolved = lifelens::resolveCivilizationStorageGridPosition(
+                        CoreSimulation->world(), Civilization.storage, Target);
+                }
+
+                if (bResolved)
+                {
+                    OutDirective.bHasCivilizationSpatialTarget = true;
+                    OutDirective.CivilizationTargetGridX = static_cast<int32>(Target.x);
+                    OutDirective.CivilizationTargetGridY = static_cast<int32>(Target.y);
+                }
+            }
+        }
     }
 
     return true;

@@ -51,11 +51,18 @@ private:
     void EnsureLocomotionPlaying();
     void UpdateBodyOrientation(float DeltaTime);
 
-    // Quaternius UBC imports with visual forward along local -Y, while LifeLens
-    // actor/world forward is Unreal +X. Keep the asset-axis correction in the
-    // presentation component; actor yaw and Core/World movement stay untouched.
+    // Asset axis correction. Measured on the imported skeleton rather than
+    // assumed: in component space `ball_l` (the toe) sits at Y +11.3 while
+    // `foot_l` sits at Y -3.6, so the mesh faces local +Y, and `hand_l` X +73.9
+    // against `hand_r` X -73.9 puts the lateral axis on X. LifeLens actor and
+    // world forward is Unreal +X, so the body needs -90 degrees of yaw to turn
+    // its +Y forward onto the travel direction. The earlier +90 turned it the
+    // other way, which is why residents walked backwards.
+    //
+    // The correction stays in the presentation component; actor yaw and
+    // Core/World movement are untouched.
     UPROPERTY(EditAnywhere, Category="LifeLens|Motion")
-    float MeshForwardYawOffsetDegrees = 90.0f;
+    float MeshForwardYawOffsetDegrees = -90.0f;
 
     // Catalogue (referenced in the constructor so it is cooked).
     UPROPERTY() TObjectPtr<UBlendSpace> LocomotionBlendSpace;
