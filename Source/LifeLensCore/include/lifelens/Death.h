@@ -31,9 +31,13 @@ inline double dailyMortalityProbability(const Character& character,int currentMi
     const int age=ageYearsFromMinutes(character.birthMinute,currentMinute);
     if(age>=110) return 1.0;
 
-    double ageBase=0.0000025;
-    if(age>=50 && age<60) ageBase=0.000010;
-    else if(age>=60 && age<70) ageBase=0.000035;
+    // v1 models natural age-related mortality only. Premature illness,
+    // accident, starvation and pathogen mortality belong to the later health
+    // system and must not be fabricated as unexplained random young deaths.
+    if(age<50) return 0.0;
+
+    double ageBase=0.000010;
+    if(age>=60 && age<70) ageBase=0.000035;
     else if(age>=70 && age<80) ageBase=0.000120;
     else if(age>=80 && age<90) ageBase=0.000420;
     else if(age>=90 && age<100) ageBase=0.001200;
