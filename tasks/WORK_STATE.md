@@ -94,18 +94,21 @@ Purpose:
 - make detailed resident inspection consume authoritative Core read data wherever it exists;
 - remove misleading dependence on empty legacy `FLLResidentData` Traits/Skills/Preferences fields.
 
-Implemented on the active branch:
+Implemented on the active work branch/staging chain:
 - **Needs:** direct `FLLCoreResidentObservation::Needs`; five physical needs show satisfaction percentage plus compact bar. Core deficit semantics remain `0=satisfied, 1=urgent`.
 - **Personality:** direct Core personality, all 14 dimensions shown rather than five compatibility axes.
-- **Traits:** no explicit named Core trait taxonomy currently exists; UI states that fact rather than showing `None listed` or inventing trait labels.
+- **Traits:** explicit Core `TraitProfile` in `TraitsPreferences.h` with 8 dimensions: Resilience, Creativity, Discipline, Compassion, Adaptability, Boldness, Perseverance, Resourcefulness.
+- **Preferences:** explicit Core `PreferenceProfile` with 8 dimensions: Socializing, Solitude, Exploration, Crafting, Gathering, Comfort, Novelty, Order.
+- **Trait/Preference authority:** profiles are deterministic Core read models derived from persistent Personality + Genetics, projected through `ULLCoreBridgeSubsystem::GetResidentTraitPreferenceObservation`; they are not legacy UI placeholders and do not create duplicate mutable Save authority.
+- **Trait/Preference persistence:** same PopulationSeed reproduces the same profiles; snapshot encode/decode reproduces the same profiles because their authoritative inputs are persisted. `test_traits_preferences` covers same-seed determinism, different-population variation, normalized range and snapshot reproduction.
 - **Skills:** direct authoritative civilization `Gathering / Crafting / Learning` skill values.
-- **Preferences:** no authoritative Core preference model currently exists; legacy placeholders are hidden rather than presented as facts.
 - **Relationships:** preserve SocialBond/RomancePotential summaries while exposing the underlying directional Core dimensions: Affection, Trust, Respect, Comfort, Familiarity, Attraction, RomanticInterest, SexualAttraction, Commitment, Conflict, Jealousy, Fear, Grudge.
 - **Family:** existing direct-Core family observation remains authoritative.
 - **Knowledge & Gear:** existing direct-Core civilization observation remains the reference pattern.
 - **Emotion:** display remains direct-Core; ordinary life-event emotion causality is deliberately deferred to the separate Emotion Runtime Integration milestone.
 
 Validation still required before merge:
+- Core Tests PASS, including `test_traits_preferences`.
 - Preflight PASS.
 - Unreal Linux Compile PASS.
 - diff review confirms Level 0/1 behavior, camera/tap routing, safe-area/mobile polish, and selection feedback remain intact.
@@ -116,7 +119,7 @@ Validation still required before merge:
 Status: `OBSERVER DATA COMPLETENESS ACTIVE / ANDROID DEVICE BASELINE RUNNING SEPARATELY`
 
 Current facts:
-- branch `jjun/observer-data-completeness-v1` is the active Jjun feature branch.
+- branch `jjun/observer-data-completeness-v1` is the active Jjun feature branch; `jjun/observer-data-traits-preferences-stage` is a temporary descendant staging branch used to batch the Core/Bridge/UI/docs extension before one PR-head sync.
 - `ASSIST_LOCK-UI-OBSERVER-DATA-1` covers only the Observer detail UI files needed for this milestone.
 - Jjun is intentionally completing the whole Observer data slice; after merge/release, Dagyeom resumes normal Observer UI maintenance/styling under the canonical data-authority contract.
 - #111 spatial provider work is complete.
@@ -150,7 +153,7 @@ The compile gates prove C++/UHT/UBT integration, not every presentation/input va
 - Sleep fallback visibly and causally relieves Energy through the UE execution/ACK path.
 - outdoor Hygiene fallback visibly and causally relieves Hygiene through the UE execution/ACK path.
 - the old food/water provisioning deadlock does not reappear.
-- Level 2 Needs/Personality/Skills/Relationships/Family/Knowledge detail remains readable on the device after the current Observer milestone merges.
+- Level 2 Needs/Personality/Traits/Skills/Preferences/Relationships/Family/Knowledge detail remains readable on the device after the current Observer milestone merges.
 
 ## Tracked implementation gaps — DO NOT DROP
 
@@ -168,24 +171,27 @@ Required follow-up:
 
 This gap is the active `Observer Resident Detail Data v1` milestone on `jjun/observer-data-completeness-v1`.
 
-Resolved in the branch implementation once validation/merge completes:
+Resolved in branch implementation once validation/merge completes:
 - Needs direct-Core numeric value/bar.
 - all 14 Core personality dimensions.
+- explicit 8-axis Core TraitProfile.
+- explicit 8-axis Core PreferenceProfile.
 - authoritative civilization skills instead of legacy empty skill DTOs.
-- truthful no-model state for Traits/Preferences rather than fake `None listed`.
 - detailed directional relationship dimensions.
 - authoritative Family and direct-Core Knowledge/Gear preserved.
 
-Do not mark this gap DONE until the branch passes integration validation and merges.
+Do not mark this gap DONE until the branch passes Core/Preflight/Unreal integration validation and merges.
 
-### Explicit Core trait/preference model gap
+### Explicit Core trait/preference model gap — RESOLVED IN #112 BRANCH, AWAITING VALIDATION/MERGE
 
-The current Core has personality, genetics/life-condition data, civilization skills/knowledge, relationships, family, etc., but it does not yet own an explicit named resident Trait taxonomy or an authoritative Preference model.
+The previous gap is no longer intentionally deferred. The current #112 work now provides:
+- Core `TraitProfile` and `PreferenceProfile` with explicit named semantics.
+- deterministic derivation from persistent Personality/Genetics so profiles remain stable and do not duplicate mutable authority.
+- Bridge projection through `FLLCoreTraitPreferenceObservation`.
+- Observer presentation of all 8 Trait and 8 Preference values.
+- Core regression coverage for seed determinism, variation, normalization and snapshot reproduction.
 
-Rule:
-- Observer must not infer named traits/preferences from unrelated values just to populate UI.
-- current Observer data milestone communicates model absence truthfully.
-- a future product milestone may add explicit Core models when they have actual simulation meaning.
+This section can move to closed history once #112 validates and merges.
 
 ### Localization + social communication presentation gap
 
@@ -222,8 +228,9 @@ Required follow-up in Character Presentation:
 
 - Formal Integration Requests: **IR-D open**, provider fully DONE / presentation consumer work belongs to Dagyeom.
 - Assist locks: **ASSIST_LOCK-UI-OBSERVER-DATA-1 ACTIVE**.
-- Active Jjun branch: `jjun/observer-data-completeness-v1`.
+- Active Jjun branch: `jjun/observer-data-completeness-v1`; temporary staging descendant: `jjun/observer-data-traits-preferences-stage`.
 - #111 Core/Preflight/Unreal compile blocker: **None**.
+- #112 Trait/Preference extension: **implementation present on staging; Core/Preflight/Unreal revalidation required after single PR-head sync**.
 - Android device-baseline validation is separate; do not duplicate it from Observer work.
 - Device visual/input QA remains open but is not a code/compile blocker.
 
