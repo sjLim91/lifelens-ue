@@ -24,10 +24,18 @@ void ALLWorldDirector::ApplyPendingContextDirective(
             Character.MotionComponent->SetWorkPresentationMode(Mode);
         }
     };
+    auto SetHeldToolPresentation = [&](ELLResidentHeldToolPresentation Tool)
+    {
+        if (Character.MotionComponent)
+        {
+            Character.MotionComponent->SetHeldToolPresentation(Tool);
+        }
+    };
     auto ClearContextPresentation = [&]()
     {
         SetTalkingPresentation(false);
         SetWorkPresentation(ELLResidentWorkPresentationMode::None);
+        SetHeldToolPresentation(ELLResidentHeldToolPresentation::None);
     };
 
     if (!CoreBridge
@@ -61,8 +69,10 @@ void ALLWorldDirector::ApplyPendingContextDirective(
         FMath::Max(1.0f, ContextWorldTargetArrivalRadiusUU),
         AckSafeArrivalRadius);
     bool bFaceTarget = false;
+    bool bFaceWorldTarget = false;
     bool bTalkAtTarget = false;
     ELLResidentWorkPresentationMode WorkAtTarget = ELLResidentWorkPresentationMode::None;
+    ELLResidentHeldToolPresentation HeldToolAtTarget = ELLResidentHeldToolPresentation::None;
 
     auto ResolveAuthoritativeResidentTarget = [&](FGuid TargetResidentId, FVector& OutLocation) -> bool
     {
@@ -152,7 +162,32 @@ void ALLWorldDirector::ApplyPendingContextDirective(
 
         case ELLCoreContextActionKind::Civilization:
             Character.SetCurrentIntent(ELLActionIntent::Idle);
-            if (Directive.CivilizationTechnique == ELLCoreTechniqueId::PrimitiveStorage)
+            if (Directive.CivilizationAction == ELLCoreCivilizationAction::Gather)
+            {
+                WorkAtTarget = ELLResidentWorkPresentationMode::Gather;
+                bFaceWorldTarget = true;
+                if (Directive.bHasCivilizationTool)
+                {
+                    switch (Directive.CivilizationToolItem)
+                    {
+                        case ELLCoreItemKind::SharpFlake:
+                            HeldToolAtTarget = ELLResidentHeldToolPresentation::SharpFlake;
+                            break;
+                        case ELLCoreItemKind::StoneCuttingTool:
+                            HeldToolAtTarget = ELLResidentHeldToolPresentation::StoneCuttingTool;
+                            break;
+                        case ELLCoreItemKind::SimpleContainer:
+                            HeldToolAtTarget = ELLResidentHeldToolPresentation::SimpleContainer;
+                            break;
+                        case ELLCoreItemKind::RawMaterial:
+                        case ELLCoreItemKind::Cordage:
+                        case ELLCoreItemKind::FuelBundle:
+                        default:
+                            break;
+                    }
+                }
+            }
+            else if (Directive.CivilizationTechnique == ELLCoreTechniqueId::PrimitiveStorage)
             {
                 switch (Directive.CivilizationFacilityAction)
                 {
@@ -206,10 +241,20 @@ void ALLWorldDirector::ApplyPendingContextDirective(
     Runtime.bPerformingAction = true;
     SetTalkingPresentation(bTalkAtTarget);
     SetWorkPresentation(WorkAtTarget);
+    SetHeldToolPresentation(HeldToolAtTarget);
 
     if (bFaceTarget && TargetResident)
     {
         FVector LookDirection = TargetResident->GetActorLocation() - Character.GetActorLocation();
+        LookDirection.Z = 0.0f;
+        if (!LookDirection.IsNearlyZero())
+        {
+            Character.SetActorRotation(FRotator(0.0f, LookDirection.Rotation().Yaw, 0.0f));
+        }
+    }
+    else if (bFaceWorldTarget)
+    {
+        FVector LookDirection = DesiredLocation - Character.GetActorLocation();
         LookDirection.Z = 0.0f;
         if (!LookDirection.IsNearlyZero())
         {
