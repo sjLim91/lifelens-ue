@@ -198,6 +198,12 @@ struct FLLCoreCivilizationFacilityObservation
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int64 LinkedStorageId = 0;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int32 RequiredMaterialUnits = 0;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int32 DeliveredMaterialUnits = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int32 FuelUnits = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int32 CharcoalUnits = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") float HeatLevel = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") bool bLit = false;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int32 BurnMinutesRemaining = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int64 LastFireMinute = -1;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") TArray<FLLCoreCivilizationFacilityRequirementObservation> Requirements;
 };
 
