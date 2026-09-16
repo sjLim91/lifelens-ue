@@ -7,6 +7,25 @@
 #include "Components/TextRenderComponent.h"
 #include "UObject/ConstructorHelpers.h"
 
+namespace
+{
+    float StableAvoidanceSign(const FGuid& ResidentId)
+    {
+        const uint32 Mixed = ResidentId.A ^ ResidentId.B ^ ResidentId.C ^ ResidentId.D;
+        return (Mixed & 1u) != 0u ? 1.0f : -1.0f;
+    }
+
+    FVector StableSideDirection(const FVector& Forward, const FGuid& ResidentId)
+    {
+        FVector Side(-Forward.Y, Forward.X, 0.0f);
+        if (!Side.Normalize())
+        {
+            Side = FVector::RightVector;
+        }
+        return Side * StableAvoidanceSign(ResidentId);
+    }
+}
+
 ALLResidentCharacter::ALLResidentCharacter()
 {
     PrimaryActorTick.bCanEverTick = true;
@@ -53,23 +72,78 @@ void ALLResidentCharacter::Tick(float DeltaSeconds)
         return;
     }
 
-    const FVector Current = GetActorLocation();
+    const FVector StartLocation = GetActorLocation();
     FVector FlatTarget = MovementTarget;
-    FlatTarget.Z = Current.Z;
+    FlatTarget.Z = StartLocation.Z;
 
-    const FVector Delta = FlatTarget - Current;
-    if (Delta.SizeSquared2D() <= FMath::Square(TargetAcceptanceRadius))
+    FVector ToTarget = FlatTarget - StartLocation;
+    ToTarget.Z = 0.0f;
+    const float DistanceToTarget = ToTarget.Size2D();
+    if (DistanceToTarget <= FMath::Max(1.0f, TargetAcceptanceRadius))
     {
         bHasMovementTarget = false;
         return;
     }
 
-    const FVector Next = FMath::VInterpConstantTo(Current, FlatTarget, DeltaSeconds, RuntimeMoveSpeed);
-    SetActorLocation(Next, true);
-
-    if (!Delta.IsNearlyZero())
+    const float StepDistance = FMath::Min(
+        DistanceToTarget,
+        FMath::Max(0.0f, RuntimeMoveSpeed) * FMath::Max(0.0f, DeltaSeconds));
+    if (StepDistance <= KINDA_SMALL_NUMBER)
     {
-        SetActorRotation(FRotator(0.0f, Delta.Rotation().Yaw, 0.0f));
+        return;
+    }
+
+    const FVector Forward = ToTarget.GetSafeNormal2D();
+    const FVector ForwardDestination = StartLocation + Forward * StepDistance;
+
+    FHitResult ForwardHit;
+    SetActorLocation(ForwardDestination, true, &ForwardHit, ETeleportType::None);
+
+    if (ForwardHit.bBlockingHit)
+    {
+        const FVector ImpactLocation = GetActorLocation();
+        FVector Remaining = FlatTarget - ImpactLocation;
+        Remaining.Z = 0.0f;
+
+        FVector SlideDirection = FVector::VectorPlaneProject(Remaining, ForwardHit.ImpactNormal);
+        SlideDirection.Z = 0.0f;
+        const bool bHadProjectedSlide = SlideDirection.Normalize();
+        if (!bHadProjectedSlide)
+        {
+            SlideDirection = StableSideDirection(Forward, ResidentId);
+        }
+
+        const FVector BeforeSlide = GetActorLocation();
+        FHitResult SlideHit;
+        SetActorLocation(
+            BeforeSlide + SlideDirection * StepDistance,
+            true,
+            &SlideHit,
+            ETeleportType::None);
+
+        // A near head-on hit against a flat box can yield a tangent that is
+        // immediately blocked by a neighbouring proxy. If the first sidestep
+        // made effectively no progress, try the resident's stable opposite
+        // side rather than oscillating left/right every frame.
+        const float SlideProgressSquared = FVector::DistSquared2D(BeforeSlide, GetActorLocation());
+        if (SlideProgressSquared <= FMath::Square(1.0f))
+        {
+            const FVector FallbackSide = StableSideDirection(Forward, ResidentId);
+            const FVector AlternateSide = bHadProjectedSlide
+                ? FallbackSide
+                : -FallbackSide;
+            SetActorLocation(
+                BeforeSlide + AlternateSide * StepDistance,
+                true,
+                nullptr,
+                ETeleportType::None);
+        }
+    }
+
+    const FVector ActualMove = GetActorLocation() - StartLocation;
+    if (ActualMove.SizeSquared2D() > FMath::Square(0.5f))
+    {
+        SetActorRotation(FRotator(0.0f, ActualMove.Rotation().Yaw, 0.0f));
     }
 }
 
