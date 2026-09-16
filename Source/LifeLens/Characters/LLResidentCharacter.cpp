@@ -85,16 +85,22 @@ void ALLResidentCharacter::Tick(float DeltaSeconds)
         return;
     }
 
-    const float StepDistance = FMath::Min(
-        DistanceToTarget,
-        FMath::Max(0.0f, RuntimeMoveSpeed) * FMath::Max(0.0f, DeltaSeconds));
+    // Preserve the existing constant-speed movement contract, then sweep the
+    // resulting frame step so visible solid dressing can block and redirect it.
+    const FVector ForwardDestination = FMath::VInterpConstantTo(
+        StartLocation,
+        FlatTarget,
+        FMath::Max(0.0f, DeltaSeconds),
+        FMath::Max(0.0f, RuntimeMoveSpeed));
+    FVector ForwardStep = ForwardDestination - StartLocation;
+    ForwardStep.Z = 0.0f;
+    const float StepDistance = ForwardStep.Size2D();
     if (StepDistance <= KINDA_SMALL_NUMBER)
     {
         return;
     }
 
-    const FVector Forward = ToTarget.GetSafeNormal2D();
-    const FVector ForwardDestination = StartLocation + Forward * StepDistance;
+    const FVector Forward = ForwardStep.GetSafeNormal2D();
 
     FHitResult ForwardHit;
     SetActorLocation(ForwardDestination, true, &ForwardHit, ETeleportType::None);
