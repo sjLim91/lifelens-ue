@@ -7,6 +7,7 @@
 
 #include "Facility.h"
 #include "PrimitiveSanitation.h"
+#include "PrimitiveSmeltingProgression.h"
 #include "World.h"
 
 namespace lifelens {
@@ -60,9 +61,6 @@ inline bool primitiveFirePitSiteBlocked(const World& world,GridPos pos)
 
 inline bool primitiveFirePitPlanningDeferredBySanitation(const World& world)
 {
-    // Once a designated sanitation area has seen repeated real use, finish the
-    // recognized sanitation improvement before starting a new hearth project.
-    // Existing FirePit projects are not interrupted; this only gates new plans.
     for(const auto& sanitation:world.primitiveSanitationSites){
         if(sanitation.active
            && sanitation.kind==PrimitiveSanitationSiteKind::DesignatedArea
@@ -212,6 +210,8 @@ inline void advancePrimitiveFireOneMinute(World& world)
     for(auto& facility:world.facilities){
         if(facility.kind==FacilityKind::FirePit){
             advanceFirePitOneMinute(facility,world.minute);
+        }else if(facility.kind==FacilityKind::Furnace){
+            advanceFurnaceOneMinute(facility,world.minute);
         }
     }
 }
