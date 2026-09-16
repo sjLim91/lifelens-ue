@@ -137,16 +137,16 @@ void ALLResidentCharacter::Tick(float DeltaSeconds)
 
             // A near head-on hit against a flat box can yield a tangent that is
             // immediately blocked by a neighbouring proxy. If the first sidestep
-            // made effectively no progress, try the resident's stable opposite
-            // side rather than oscillating left/right every frame. The alternate
-            // attempt uses the same remaining frame budget, never an extra step.
+            // made effectively no progress, try the stable tangent on the other
+            // side rather than repeating the same blocked direction or oscillating.
+            // The alternate attempt reuses the same remaining frame budget.
             const float SlideProgressSquared = FVector::DistSquared2D(BeforeSlide, GetActorLocation());
             if (SlideProgressSquared <= FMath::Square(1.0f))
             {
-                const FVector FallbackSide = StableSideDirection(Forward, ResidentId);
-                const FVector AlternateSide = bHadProjectedSlide
-                    ? FallbackSide
-                    : -FallbackSide;
+                const FVector StableSide = StableSideDirection(Forward, ResidentId);
+                const FVector AlternateSide = FVector::DotProduct(SlideDirection, StableSide) >= 0.0f
+                    ? -StableSide
+                    : StableSide;
                 SetActorLocation(
                     BeforeSlide + AlternateSide * RemainingStepDistance,
                     true,
