@@ -20,13 +20,15 @@ Authority rule: Core/World owns simulation truth. UI/Character/Environment/World
 - requester/implementer: Jjun.
 - owner lane: Dagyeom — Character presentation.
 - branch: `jjun/world-obstacle-collision-v1`.
+- PR: #114.
 - locked file: `Source/LifeLens/Characters/LLResidentCharacter.cpp` only.
 - Jjun-owned supporting scope: `Source/LifeLens/World/**`, `Source/LifeLens/Core/LLLifeLensGameMode.cpp`, validation/docs.
 - purpose: stop residents visibly clipping through solid-looking generated trees/rocks while preserving Core action/target authority.
 - constraint: obstacle handling is local presentation-path steering only; it must not create or mutate Core resource/world facts, change Core target selection, or fabricate simulation outcomes.
 - collision policy: tree trunks and non-trivial rocks may block the resident capsule through low-cost query-only proxies; shrubs/grass/small pebbles remain non-blocking.
 - movement policy: collision may alter only the local route toward an existing authoritative target; action completion still follows the existing Core/physical ACK contract.
-- release condition: compile validation passes, collision/steering PR merges, and Dagyeom regains normal Character-file ownership.
+- movement budget: collision slide/side-step may consume only the unspent distance from the current constant-speed frame step; obstacle avoidance must not accelerate residents.
+- release condition: final-head compile validation passes, collision/steering PR merges, and Dagyeom regains normal Character-file ownership.
 
 Jjun helping Dagyeom defaults to REVIEW_ONLY. Do not direct-push `dagyeom/*`; use assist branch/PR when a real cross-owner code change is required.
 
@@ -70,6 +72,7 @@ Jjun helping Dagyeom defaults to REVIEW_ONLY. Do not direct-push `dagyeom/*`; us
 - directive exposes authoritative material/item/technique/quantity/result/action-minute, stable resource/storage IDs, and Core-owned spatial targets when available.
 - `ResourceNode` and `StorageSite` now own authoritative `GridPos`; generated resource nodes preserve the exact `NaturalResourcePatch.pos`.
 - ordinary Gather resolves to the actual resource-node position; Store resolves to the actual storage-site position. Character Presentation must consume those targets rather than guess nearby scenery.
+- obstacle-collision follow-up: the authoritative `GridPos` is the target locus, not a requirement for the resident capsule to overlap the exact visual/collider centre. If a tree/rock/storage visual has a blocking collision proxy, Character Presentation must stop within a truthful interaction radius outside that blocker, face/interact with the same Core target, and must not move, replace, or fabricate the Core coordinates.
 - civilization snapshot extension v2 persists resource/storage positions while retaining v1 read compatibility; generated resource positions can still resolve from immutable natural patches for legacy v1 data.
 - sanitation-site work continues to use the real Core-supplied site position.
 - requested Character work: Context Motion Router consumes the directive and selects validated talking/sit/interact/pickup/kneeling/fallback motions without creating simulation truth.
