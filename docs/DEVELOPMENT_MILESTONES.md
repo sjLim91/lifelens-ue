@@ -89,19 +89,27 @@ Purpose: complete Level 2 resident-detail fidelity end-to-end while keeping Core
 Scope:
 - Needs from direct Core physical need data with numeric satisfaction and compact bar.
 - all 14 authoritative Core personality dimensions.
+- explicit Core `TraitProfile` with Resilience / Creativity / Discipline / Compassion / Adaptability / Boldness / Perseverance / Resourcefulness.
+- explicit Core `PreferenceProfile` with Socializing / Solitude / Exploration / Crafting / Gathering / Comfort / Novelty / Order.
+- Traits/Preferences are deterministic Core read models derived from persistent Personality/Genetics, projected through `FLLCoreTraitPreferenceObservation`; Observer does not invent or own them.
 - civilization Gathering/Crafting/Learning as real resident skills.
-- no fake `None listed` from empty legacy Traits/Preferences DTO fields; communicate absence of an explicit Core model truthfully.
 - detailed directional relationship dimensions rather than only aggregate bond/romance summaries.
 - authoritative Family data.
 - preserve direct-Core Knowledge & Gear.
 - keep Overview concise.
 
+Persistence/determinism acceptance for Traits/Preferences:
+- same WorldSeed + PopulationSeed produces the same profiles.
+- a different PopulationSeed may produce different founder profiles.
+- values stay normalized to `[0,1]`.
+- Core snapshot encode/decode reproduces the same profiles because their authoritative Personality/Genetics inputs are persisted; no duplicate mutable profile state is introduced.
+
 Explicit non-scope:
 - Emotion causal generation/decay remains the later Emotion Runtime Integration milestone.
-- this milestone must not invent named Core traits/preferences that do not exist.
 - full Korean localization/social presentation remains a later milestone.
 
 Integration gate:
+- Core Tests PASS, including `test_traits_preferences`.
 - Preflight PASS.
 - Unreal Linux Compile PASS.
 - no regression to Level 0/1, tap routing, camera behavior, mobile safe area/touch targets, selection feedback.
@@ -159,7 +167,6 @@ Acceptance direction:
 ## Later simulation milestones
 
 These remain product direction after the current playable/device/readability gates:
-- explicit named resident Trait / Preference models when they have actual simulation meaning.
 - generic facility/resource authority beyond sanitation.
 - health/pathogen + water/soil contamination.
 - birth physical position/lifecycle presentation refinements.
@@ -173,7 +180,7 @@ These remain product direction after the current playable/device/readability gat
 
 **Dagyeom lane:** Character Context Motion milestone / IR-D consumer work.
 
-**Jjun lane:** Observer Resident Detail Data v1 on `jjun/observer-data-completeness-v1`, including UI under the recorded assist lock and mandatory canonical doc updates.
+**Jjun lane:** Observer Resident Detail Data v1 on `jjun/observer-data-completeness-v1`, including explicit Core Traits/Preferences, UI under the recorded assist lock, and mandatory canonical doc updates.
 
 When Observer data work merges, release its assist lock in TEAM_BOARD before moving the UI lane back to normal maintenance ownership.
 
