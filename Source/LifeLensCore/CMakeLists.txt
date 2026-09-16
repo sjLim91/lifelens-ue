@@ -129,6 +129,8 @@ lifelens_add_test(test_tool_effectiveness)
 
 lifelens_add_test(test_primitive_fire_progression)
 
+lifelens_add_test(test_primitive_furnace_smelting)
+
 lifelens_add_test(test_environmental_residue)
 
 lifelens_add_test(test_external_physical_execution)

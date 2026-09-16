@@ -54,15 +54,18 @@ struct ConstructedFacility {
     StorageId linkedStorage = 0;
     std::vector<FacilityMaterialRequirement> requirements;
 
-    // Heat-production authority. These fields are intentionally resident on the
-    // facility itself so Presentation never has to invent fire state. They are
-    // zero for facilities that do not produce heat.
+    // Heat-production authority. Presentation only reads these values.
     int fuelUnits = 0;
     int charcoalUnits = 0;
     double heatLevel = 0.0;
     bool lit = false;
     int burnMinutesRemaining = 0;
     int lastFireMinute = -1;
+
+    // Furnace-only runtime. v1 metalworking deliberately supports copper only;
+    // tin/iron remain ores until later alloy/high-temperature progression.
+    int oreUnits = 0;
+    int metalUnits = 0;
 };
 
 inline bool validFacilityKind(FacilityKind kind)
@@ -91,27 +94,26 @@ inline FacilityConstructionSpec facilityConstructionSpec(FacilityKind kind)
 {
     switch(kind){
         case FacilityKind::PrimitiveStorage:
-            // A low-tech raised cache / covered stockpile. The material budget is
-            // deliberately reachable with the existing early-game carrying model.
             return {kind,8.0,{
                 {MaterialKind::Wood,4,0},
                 {MaterialKind::Fiber,2,0}
             }};
         case FacilityKind::FirePit:
-            // A deliberately primitive stone-ring hearth. FireMaking knowledge is
-            // checked by the progression layer; the facility contract only owns
-            // the physical material/work requirements.
             return {kind,6.0,{
                 {MaterialKind::Stone,5,0},
                 {MaterialKind::Wood,2,0}
             }};
+        case FacilityKind::Furnace:
+            // A small clay-lined stone furnace. Knowledge gating belongs to the
+            // progression layer; this contract owns only physical requirements.
+            return {kind,12.0,{
+                {MaterialKind::Stone,8,0},
+                {MaterialKind::Clay,6,0}
+            }};
         case FacilityKind::WorkSurface:
         case FacilityKind::SleepingPlace:
         case FacilityKind::Shelter:
-        case FacilityKind::Furnace:
         default:
-            // Reserved kinds are intentionally non-constructible until their own
-            // progression slice defines an authoritative recipe and work budget.
             return {kind,0.0,{}};
     }
 }
@@ -252,6 +254,7 @@ inline bool activateConstructedFacility(
 }
 
 constexpr int PrimitiveFireBurnMinutesPerWoodUnit = 30;
+constexpr int PrimitiveFurnaceSmeltMinutesPerCopperUnit = 45;
 
 inline int addFirePitWoodFuel(
     ConstructedFacility& facility,
@@ -330,6 +333,89 @@ inline int collectFirePitCharcoal(
     return collected;
 }
 
+inline int loadFurnaceCopperCharge(
+    ConstructedFacility& facility,
+    Inventory& source,
+    int requested)
+{
+    if(facility.id == 0 || facility.kind != FacilityKind::Furnace
+       || facility.state != FacilityState::Operational || !facility.active
+       || facility.lit || requested <= 0) return 0;
+    const int availableOre = source.count(ItemKind::RawMaterial,MaterialKind::CopperOre);
+    const int availableCharcoal = source.count(ItemKind::RawMaterial,MaterialKind::Charcoal);
+    const int loaded = std::min({requested,availableOre,availableCharcoal,2});
+    if(loaded <= 0) return 0;
+    if(!source.remove(ItemKind::RawMaterial,MaterialKind::CopperOre,loaded)) return 0;
+    if(!source.remove(ItemKind::RawMaterial,MaterialKind::Charcoal,loaded)){
+        source.add({ItemKind::RawMaterial,MaterialKind::CopperOre,loaded,0.5,1.0});
+        return 0;
+    }
+    facility.oreUnits += loaded;
+    facility.fuelUnits += loaded;
+    return loaded;
+}
+
+inline bool igniteFurnace(ConstructedFacility& facility,int minute)
+{
+    if(facility.id == 0 || facility.kind != FacilityKind::Furnace
+       || facility.state != FacilityState::Operational || !facility.active
+       || facility.oreUnits <= 0 || facility.fuelUnits <= 0 || facility.lit) return false;
+    facility.lit = true;
+    facility.heatLevel = 1.0;
+    facility.burnMinutesRemaining = PrimitiveFurnaceSmeltMinutesPerCopperUnit;
+    facility.lastFireMinute = std::max(0,minute);
+    return true;
+}
+
+inline void advanceFurnaceOneMinute(ConstructedFacility& facility,int minute)
+{
+    if(facility.kind != FacilityKind::Furnace
+       || facility.state != FacilityState::Operational || !facility.active){
+        facility.lit = false;
+        facility.heatLevel = 0.0;
+        facility.burnMinutesRemaining = 0;
+        return;
+    }
+    if(!facility.lit){
+        facility.heatLevel = std::max(0.0,facility.heatLevel - 0.025);
+        if(facility.heatLevel <= 1e-9) facility.heatLevel = 0.0;
+        return;
+    }
+
+    facility.lastFireMinute = std::max(facility.lastFireMinute,std::max(0,minute));
+    facility.heatLevel = std::max(0.72,facility.heatLevel - 0.004);
+    if(facility.burnMinutesRemaining > 0) --facility.burnMinutesRemaining;
+    if(facility.burnMinutesRemaining > 0) return;
+
+    if(facility.oreUnits > 0 && facility.fuelUnits > 0){
+        --facility.oreUnits;
+        --facility.fuelUnits;
+        ++facility.metalUnits;
+    }
+    if(facility.oreUnits > 0 && facility.fuelUnits > 0){
+        facility.burnMinutesRemaining = PrimitiveFurnaceSmeltMinutesPerCopperUnit;
+        facility.heatLevel = 1.0;
+    }else{
+        facility.lit = false;
+        facility.burnMinutesRemaining = 0;
+        facility.heatLevel = 0.35;
+    }
+}
+
+inline int collectFurnaceCopper(
+    ConstructedFacility& facility,
+    Inventory& destination,
+    int requested)
+{
+    if(facility.id == 0 || facility.kind != FacilityKind::Furnace
+       || facility.state != FacilityState::Operational || !facility.active
+       || facility.lit || requested <= 0 || facility.metalUnits <= 0) return 0;
+    const int collected = std::min(requested,facility.metalUnits);
+    facility.metalUnits -= collected;
+    destination.add({ItemKind::RawMaterial,MaterialKind::CopperMetal,collected,0.60,1.0});
+    return collected;
+}
+
 inline bool validConstructedFacility(const ConstructedFacility& facility)
 {
     if(facility.id == 0 || !validFacilityKind(facility.kind) || !validFacilityState(facility.state)
@@ -339,6 +425,7 @@ inline bool validConstructedFacility(const ConstructedFacility& facility)
        || facility.durability < 0.0 || facility.durability > 1.0
        || facility.requirements.empty()
        || facility.fuelUnits < 0 || facility.charcoalUnits < 0
+       || facility.oreUnits < 0 || facility.metalUnits < 0
        || facility.heatLevel < 0.0 || facility.heatLevel > 1.0
        || facility.burnMinutesRemaining < 0) return false;
 
@@ -362,19 +449,24 @@ inline bool validConstructedFacility(const ConstructedFacility& facility)
         if(facility.active || facility.completedMinute >= 0) return false;
         if(facility.linkedStorage != 0) return false;
         if(facility.fuelUnits != 0 || facility.charcoalUnits != 0
+           || facility.oreUnits != 0 || facility.metalUnits != 0
            || facility.heatLevel != 0.0 || facility.lit
            || facility.burnMinutesRemaining != 0 || facility.lastFireMinute >= 0) return false;
     }
 
     if(!facilityProducesHeat(facility.kind)){
         if(facility.fuelUnits != 0 || facility.charcoalUnits != 0
+           || facility.oreUnits != 0 || facility.metalUnits != 0
            || facility.heatLevel != 0.0 || facility.lit
            || facility.burnMinutesRemaining != 0 || facility.lastFireMinute >= 0) return false;
     }
+    if(facility.kind==FacilityKind::FirePit && (facility.oreUnits!=0 || facility.metalUnits!=0)) return false;
+    if(facility.kind==FacilityKind::Furnace && facility.charcoalUnits!=0) return false;
     if(facility.lit){
         if(!facilityProducesHeat(facility.kind) || facility.fuelUnits <= 0
            || facility.heatLevel <= 0.0 || facility.burnMinutesRemaining <= 0
            || facility.lastFireMinute < 0) return false;
+        if(facility.kind==FacilityKind::Furnace && facility.oreUnits<=0) return false;
     }
     return true;
 }

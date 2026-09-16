@@ -120,21 +120,22 @@ namespace LLObserverKorean
     {
         switch (Value)
         {
-            case ELLCoreMaterialKind::Stone:     return TEXT("돌");
-            case ELLCoreMaterialKind::Flint:     return TEXT("부싯돌");
-            case ELLCoreMaterialKind::Wood:      return TEXT("목재");
-            case ELLCoreMaterialKind::Fiber:     return TEXT("섬유");
-            case ELLCoreMaterialKind::Clay:      return TEXT("점토");
-            case ELLCoreMaterialKind::Water:     return TEXT("물");
-            case ELLCoreMaterialKind::PlantFood: return TEXT("식물성 식량");
-            case ELLCoreMaterialKind::Bone:      return TEXT("뼈");
-            case ELLCoreMaterialKind::Hide:      return TEXT("가죽");
-            case ELLCoreMaterialKind::CopperOre: return TEXT("구리 광석");
-            case ELLCoreMaterialKind::TinOre:    return TEXT("주석 광석");
-            case ELLCoreMaterialKind::IronOre:   return TEXT("철 광석");
-            case ELLCoreMaterialKind::Charcoal:  return TEXT("목탄");
+            case ELLCoreMaterialKind::Stone:       return TEXT("돌");
+            case ELLCoreMaterialKind::Flint:       return TEXT("부싯돌");
+            case ELLCoreMaterialKind::Wood:        return TEXT("목재");
+            case ELLCoreMaterialKind::Fiber:       return TEXT("섬유");
+            case ELLCoreMaterialKind::Clay:        return TEXT("점토");
+            case ELLCoreMaterialKind::Water:       return TEXT("물");
+            case ELLCoreMaterialKind::PlantFood:   return TEXT("식물성 식량");
+            case ELLCoreMaterialKind::Bone:        return TEXT("뼈");
+            case ELLCoreMaterialKind::Hide:        return TEXT("가죽");
+            case ELLCoreMaterialKind::CopperOre:   return TEXT("구리 광석");
+            case ELLCoreMaterialKind::TinOre:      return TEXT("주석 광석");
+            case ELLCoreMaterialKind::IronOre:     return TEXT("철 광석");
+            case ELLCoreMaterialKind::Charcoal:    return TEXT("목탄");
+            case ELLCoreMaterialKind::CopperMetal: return TEXT("구리");
             case ELLCoreMaterialKind::Unknown:
-            default:                             return TEXT("미상");
+            default:                               return TEXT("미상");
         }
     }
 
@@ -148,6 +149,8 @@ namespace LLObserverKorean
             case ELLCoreItemKind::Cordage:           return TEXT("끈");
             case ELLCoreItemKind::SimpleContainer:   return TEXT("간이 용기");
             case ELLCoreItemKind::FuelBundle:        return TEXT("연료 묶음");
+            case ELLCoreItemKind::DiggingStick:      return TEXT("굴착봉");
+            case ELLCoreItemKind::StoneHammer:       return TEXT("돌망치");
             default:                                 return TEXT("물품");
         }
     }
@@ -164,6 +167,9 @@ namespace LLObserverKorean
             case ELLCoreTechniqueId::DesignatedSanitationArea:  return TEXT("지정 위생 구역");
             case ELLCoreTechniqueId::DugSanitationPit:          return TEXT("위생 구덩이");
             case ELLCoreTechniqueId::PrimitiveStorage:          return TEXT("원시 저장소");
+            case ELLCoreTechniqueId::DiggingStick:              return TEXT("굴착봉 제작");
+            case ELLCoreTechniqueId::StoneHammer:               return TEXT("돌망치 제작");
+            case ELLCoreTechniqueId::CopperSmelting:            return TEXT("구리 제련");
             case ELLCoreTechniqueId::None:
             default:                                             return TEXT("없음");
         }

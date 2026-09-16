@@ -54,6 +54,8 @@ ELLCoreFacilityBuildAction ContextActionToUnrealFacilityAction(lifelens::Facilit
         case lifelens::FacilityBuildAction::Fuel: return ELLCoreFacilityBuildAction::Fuel;
         case lifelens::FacilityBuildAction::Ignite: return ELLCoreFacilityBuildAction::Ignite;
         case lifelens::FacilityBuildAction::CollectCharcoal: return ELLCoreFacilityBuildAction::CollectCharcoal;
+        case lifelens::FacilityBuildAction::LoadSmeltCharge: return ELLCoreFacilityBuildAction::LoadSmeltCharge;
+        case lifelens::FacilityBuildAction::CollectMetal: return ELLCoreFacilityBuildAction::CollectMetal;
         case lifelens::FacilityBuildAction::None:
         default: return ELLCoreFacilityBuildAction::None;
     }
@@ -123,6 +125,7 @@ ELLCoreMaterialKind ContextActionToUnrealMaterial(lifelens::MaterialKind Kind)
         case lifelens::MaterialKind::TinOre: return ELLCoreMaterialKind::TinOre;
         case lifelens::MaterialKind::IronOre: return ELLCoreMaterialKind::IronOre;
         case lifelens::MaterialKind::Charcoal: return ELLCoreMaterialKind::Charcoal;
+        case lifelens::MaterialKind::CopperMetal: return ELLCoreMaterialKind::CopperMetal;
         case lifelens::MaterialKind::Unknown:
         default: return ELLCoreMaterialKind::Unknown;
     }
@@ -158,6 +161,7 @@ ELLCoreTechniqueId ContextActionToUnrealTechnique(lifelens::TechniqueId Techniqu
         case lifelens::TechniqueId::PrimitiveStorage: return ELLCoreTechniqueId::PrimitiveStorage;
         case lifelens::TechniqueId::DiggingStick: return ELLCoreTechniqueId::DiggingStick;
         case lifelens::TechniqueId::StoneHammer: return ELLCoreTechniqueId::StoneHammer;
+        case lifelens::TechniqueId::CopperSmelting: return ELLCoreTechniqueId::CopperSmelting;
         case lifelens::TechniqueId::None:
         default: return ELLCoreTechniqueId::None;
     }

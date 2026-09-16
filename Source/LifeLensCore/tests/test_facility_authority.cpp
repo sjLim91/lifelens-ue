@@ -33,7 +33,16 @@ int main()
     CHECK(fireSpec.requiredWork==6.0);
     CHECK(fireSpec.requirements.size()==2);
     CHECK(facilityKindConstructible(FacilityKind::FirePit));
-    CHECK(!facilityKindConstructible(FacilityKind::Furnace));
+
+    const FacilityConstructionSpec furnaceSpec=facilityConstructionSpec(FacilityKind::Furnace);
+    CHECK(furnaceSpec.requiredWork==12.0);
+    CHECK(furnaceSpec.requirements.size()==2);
+    CHECK(facilityMissingMaterial(makeFacilityConstructionSite(1,FacilityKind::Furnace,{0,0},1,0),MaterialKind::Stone)==8);
+    CHECK(facilityMissingMaterial(makeFacilityConstructionSite(1,FacilityKind::Furnace,{0,0},1,0),MaterialKind::Clay)==6);
+    CHECK(facilityKindConstructible(FacilityKind::Furnace));
+    CHECK(!facilityKindConstructible(FacilityKind::WorkSurface));
+    CHECK(!facilityKindConstructible(FacilityKind::SleepingPlace));
+    CHECK(!facilityKindConstructible(FacilityKind::Shelter));
 
     Simulation source(880088);
     source.setupNewGame();
@@ -125,8 +134,6 @@ int main()
     CHECK(completeDecoded.world.storageSites[0].pos.y==sitePos.y);
     CHECK(validConstructedFacility(completeDecoded.world.facilities[0]));
 
-    // NEW GAME must remove every constructed result and return to nature-only
-    // production state. No facility or storage may leak across a restart.
     restored.setupNewGame();
     CHECK(restored.world().facilities.empty());
     CHECK(restored.world().storageSites.empty());

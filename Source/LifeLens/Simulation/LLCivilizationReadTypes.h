@@ -19,7 +19,8 @@ enum class ELLCoreMaterialKind : uint8
     CopperOre,
     TinOre,
     IronOre,
-    Charcoal
+    Charcoal,
+    CopperMetal
 };
 
 UENUM(BlueprintType)
@@ -48,7 +49,8 @@ enum class ELLCoreTechniqueId : uint8
     DugSanitationPit,
     PrimitiveStorage,
     DiggingStick,
-    StoneHammer
+    StoneHammer,
+    CopperSmelting
 };
 
 UENUM(BlueprintType)
@@ -115,7 +117,6 @@ struct FLLCoreTechniqueKnowledgeObservation
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int32 SuccessfulUses = 0;
 
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") bool bHasProvenance = false;
-    // SocialFactId is uint64 in Core. String preserves its full unsigned value for Blueprint/UI.
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") FString ProvenanceFactId;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") FGuid OriginResidentId;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") FGuid ImmediateSourceResidentId;
@@ -200,6 +201,8 @@ struct FLLCoreCivilizationFacilityObservation
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int32 DeliveredMaterialUnits = 0;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int32 FuelUnits = 0;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int32 CharcoalUnits = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int32 OreUnits = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int32 MetalUnits = 0;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") float HeatLevel = 0.0f;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") bool bLit = false;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int32 BurnMinutesRemaining = 0;

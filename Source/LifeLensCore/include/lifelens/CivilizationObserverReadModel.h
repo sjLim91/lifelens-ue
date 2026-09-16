@@ -98,6 +98,8 @@ struct CivilizationFacilityObservation {
     int deliveredMaterialUnits=0;
     int fuelUnits=0;
     int charcoalUnits=0;
+    int oreUnits=0;
+    int metalUnits=0;
     double heatLevel=0.0;
     bool lit=false;
     int burnMinutesRemaining=0;
@@ -147,7 +149,7 @@ inline TechniqueId techniqueFromCivilizationFact(const SocialFact& fact)
     // techniques extend the observer range. Structural compatibility marker:
     // raw<=static_cast<int>(TechniqueId::DugSanitationPit)
     for(int raw=static_cast<int>(TechniqueId::SharpFlake);
-        raw<=static_cast<int>(TechniqueId::StoneHammer);++raw){
+        raw<=static_cast<int>(TechniqueId::CopperSmelting);++raw){
         const TechniqueId candidate=static_cast<TechniqueId>(raw);
         if(factRepresentsTechnique(fact,candidate)) return candidate;
     }
@@ -307,6 +309,8 @@ inline CivilizationFacilityObservation makeCivilizationFacilityObservation(
     dto.linkedStorage=facility.linkedStorage;
     dto.fuelUnits=facility.fuelUnits;
     dto.charcoalUnits=facility.charcoalUnits;
+    dto.oreUnits=facility.oreUnits;
+    dto.metalUnits=facility.metalUnits;
     dto.heatLevel=facility.heatLevel;
     dto.lit=facility.lit;
     dto.burnMinutesRemaining=facility.burnMinutesRemaining;
@@ -381,7 +385,7 @@ inline CivilizationWorldObservation buildCivilizationWorldObservation(
 
     // Legacy sanitation slot subset is still contained in this expanded count:
     // static_cast<std::size_t>(TechniqueId::DugSanitationPit)+1
-    constexpr std::size_t TechniqueSlots=static_cast<std::size_t>(TechniqueId::StoneHammer)+1;
+    constexpr std::size_t TechniqueSlots=static_cast<std::size_t>(TechniqueId::CopperSmelting)+1;
     std::array<bool,TechniqueSlots> knownTypes{};
     std::array<bool,TechniqueSlots> reproducibleTypes{};
     for(const Character& character:world.characters){

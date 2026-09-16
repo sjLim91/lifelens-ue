@@ -26,7 +26,8 @@ enum class MaterialKind {
     CopperOre,
     TinOre,
     IronOre,
-    Charcoal
+    Charcoal,
+    CopperMetal
 };
 
 struct MaterialProperties {
@@ -55,6 +56,7 @@ inline MaterialProperties materialProperties(MaterialKind kind)
         case MaterialKind::TinOre: return {0.62,0.10,0.26,0.02,0.00,0.76,0.00};
         case MaterialKind::IronOre: return {0.86,0.08,0.20,0.01,0.00,0.94,0.00};
         case MaterialKind::Charcoal: return {0.18,0.02,0.64,0.02,0.98,0.52,0.00};
+        case MaterialKind::CopperMetal: return {0.56,0.18,0.08,0.42,0.00,0.70,0.00};
         case MaterialKind::Unknown:
         default: return {};
     }
@@ -233,7 +235,8 @@ enum class TechniqueId {
     DugSanitationPit,
     PrimitiveStorage,
     DiggingStick,
-    StoneHammer
+    StoneHammer,
+    CopperSmelting
 };
 
 enum class KnowledgeLevel : int {
@@ -321,7 +324,8 @@ enum class ExperimentKind {
     DigSanitationPit,
     OrganizeStockpile,
     ShapeDiggingStick,
-    HaftStoneHammer
+    HaftStoneHammer,
+    SmeltCopperOre
 };
 
 enum class CivilizationEventType {
@@ -354,6 +358,7 @@ struct ExperimentContext {
     bool sanitationSiteAvailable=false;
     bool sanitationPitCandidateAvailable=false;
     bool storageProblemRecognized=false;
+    bool smeltingOpportunityAvailable=false;
 };
 
 struct ExperimentResult {
@@ -400,6 +405,8 @@ inline TechniqueRecipe techniqueRecipe(TechniqueId technique)
             return {technique,{{ItemKind::RawMaterial,MaterialKind::Wood,2,false}},true,ItemKind::DiggingStick,MaterialKind::Wood,1};
         case TechniqueId::StoneHammer:
             return {technique,{{ItemKind::RawMaterial,MaterialKind::Stone,2,false},{ItemKind::RawMaterial,MaterialKind::Wood,1,false},{ItemKind::Cordage,MaterialKind::Fiber,1,false}},true,ItemKind::StoneHammer,MaterialKind::Stone,1};
+        case TechniqueId::CopperSmelting:
+            return {technique,{{ItemKind::RawMaterial,MaterialKind::CopperOre,1,false},{ItemKind::RawMaterial,MaterialKind::Charcoal,1,false}},true,ItemKind::RawMaterial,MaterialKind::CopperMetal,1};
         case TechniqueId::DesignatedSanitationArea:
         case TechniqueId::DugSanitationPit:
         case TechniqueId::PrimitiveStorage:
@@ -442,6 +449,7 @@ inline TechniqueId experimentTechnique(ExperimentKind kind)
         case ExperimentKind::OrganizeStockpile: return TechniqueId::PrimitiveStorage;
         case ExperimentKind::ShapeDiggingStick: return TechniqueId::DiggingStick;
         case ExperimentKind::HaftStoneHammer: return TechniqueId::StoneHammer;
+        case ExperimentKind::SmeltCopperOre: return TechniqueId::CopperSmelting;
         default: return TechniqueId::None;
     }
 }
@@ -478,6 +486,7 @@ inline double experimentBaseChance(ExperimentKind kind,MaterialKind material)
         case ExperimentKind::ShapeClay: return material==MaterialKind::Clay ? 0.30 : 0.0;
         case ExperimentKind::ShapeDiggingStick: return material==MaterialKind::Wood ? 0.29 : 0.0;
         case ExperimentKind::HaftStoneHammer: return material==MaterialKind::Stone ? 0.24 : 0.0;
+        case ExperimentKind::SmeltCopperOre: return material==MaterialKind::CopperOre ? 0.18 : 0.0;
         case ExperimentKind::DesignateSanitationArea: return material==MaterialKind::Unknown ? 0.32 : 0.0;
         case ExperimentKind::DigSanitationPit: return material==MaterialKind::Unknown ? 0.28 : 0.0;
         case ExperimentKind::OrganizeStockpile: return material==MaterialKind::Unknown ? 0.34 : 0.0;
@@ -514,6 +523,12 @@ inline bool experimentPrerequisitesMet(const ExperimentContext& context,const Kn
     if(context.kind==ExperimentKind::HaftStoneHammer){
         return knowledge.knowsAtLeast(TechniqueId::ChippedStoneTool,KnowledgeLevel::Reproducible)
             && knowledge.knowsAtLeast(TechniqueId::FiberCordage,KnowledgeLevel::Reproducible);
+    }
+    if(context.kind==ExperimentKind::SmeltCopperOre){
+        return context.smeltingOpportunityAvailable
+            && knowledge.knowsAtLeast(TechniqueId::FireMaking,KnowledgeLevel::Reproducible)
+            && knowledge.knowsAtLeast(TechniqueId::StoneHammer,KnowledgeLevel::Reproducible)
+            && knowledge.knowsAtLeast(TechniqueId::SimpleContainer,KnowledgeLevel::Reproducible);
     }
     if(context.kind==ExperimentKind::DesignateSanitationArea){
         return context.sanitationProblemRecognized && context.sanitationSiteAvailable;

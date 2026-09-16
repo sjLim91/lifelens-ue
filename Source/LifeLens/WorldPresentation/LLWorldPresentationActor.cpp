@@ -104,8 +104,6 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
         RockInstances.Add(AddInstancedComponent(*FString::Printf(TEXT("Rocks_%d"), Index), RockMeshes[Index], SmallCullStartUU, TreeCullEndUU, false));
     }
 
-    // Shared low-cost facility composition. Core owns whether a facility exists,
-    // where it is, and its runtime state; these cube instances only visualize it.
     FacilityFoundationInstances = AddInstancedComponent(TEXT("FacilityFoundations"), GroundMesh, FacilityCullStartUU, FacilityCullEndUU, true);
     FacilityPostInstances = AddInstancedComponent(TEXT("FacilityPosts"), GroundMesh, FacilityCullStartUU, FacilityCullEndUU, true);
     FacilityRoofInstances = AddInstancedComponent(TEXT("FacilityRoofs"), GroundMesh, FacilityCullStartUU, FacilityCullEndUU, true);
@@ -137,12 +135,8 @@ void ALLWorldPresentationActor::BeginPlay()
 void ALLWorldPresentationActor::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
-
     RefreshAccumulator += DeltaSeconds;
-    if (RefreshAccumulator < RefreshIntervalSeconds)
-    {
-        return;
-    }
+    if (RefreshAccumulator < RefreshIntervalSeconds) { return; }
     RefreshAccumulator = 0.0f;
     RefreshFromCore(false);
 }
@@ -170,20 +164,10 @@ void ALLWorldPresentationActor::ClearFacilityInstances()
 
 float ALLWorldPresentationActor::AmbientDressingKeepFactor(const FVector2D& LocationUU) const
 {
-    if (StartRegionClearRadiusUU <= 0.0f)
-    {
-        return 1.0f;
-    }
-
+    if (StartRegionClearRadiusUU <= 0.0f) { return 1.0f; }
     const float Distance = LocationUU.Size();
-    if (Distance <= StartRegionClearRadiusUU)
-    {
-        return 0.0f;
-    }
-    if (StartRegionClearFalloffUU <= KINDA_SMALL_NUMBER)
-    {
-        return 1.0f;
-    }
+    if (Distance <= StartRegionClearRadiusUU) { return 0.0f; }
+    if (StartRegionClearFalloffUU <= KINDA_SMALL_NUMBER) { return 1.0f; }
     return FMath::Clamp((Distance - StartRegionClearRadiusUU) / StartRegionClearFalloffUU, 0.0f, 1.0f);
 }
 
@@ -202,49 +186,29 @@ UMaterialInterface* ALLWorldPresentationActor::GroundMaterialForChunk(const FLLC
         || Surface.Contains(TEXT("sand")) || Surface.Contains(TEXT("rock")) || Surface.Contains(TEXT("dirt"))
         || Biome.Contains(TEXT("desert")) || Biome.Contains(TEXT("arid"));
     const bool bLush = Chunk.Moisture > 0.6f && Chunk.FertilityPotential > 0.45f;
-
-    if (bDry && GroundDry)
-    {
-        return GroundDry;
-    }
-    if (bLush && GroundGrass)
-    {
-        return GroundGrass;
-    }
+    if (bDry && GroundDry) { return GroundDry; }
+    if (bLush && GroundGrass) { return GroundGrass; }
     return GroundTransition ? GroundTransition.Get() : GroundGrass.Get();
 }
 
 void ALLWorldPresentationActor::BuildGround(const FLLCoreWorldGenerationObservation& World)
 {
-    if (!Ground || !GroundMesh)
-    {
-        return;
-    }
-
+    if (!Ground || !GroundMesh) { return; }
     const int32 Rings = FMath::Clamp(
         FMath::CeilToInt(FMath::Sqrt(static_cast<float>(FMath::Max(1, World.MaterializedChunkCount)))), 1, 9);
     const float SpanUU = LLWorldSpatialContract::ChunkSpanUU * (2.0f * Rings + 1.0f);
     const float Thickness = 20.0f;
-
     Ground->SetRelativeLocation(FVector(0.0f, 0.0f, -Thickness * 0.5f));
     Ground->SetRelativeScale3D(FVector(
         SpanUU / LLWorldSpatialContract::EngineCubeSideUU,
         SpanUU / LLWorldSpatialContract::EngineCubeSideUU,
         Thickness / LLWorldSpatialContract::EngineCubeSideUU));
-
-    if (UMaterialInterface* Material = GroundMaterialForChunk(World.InitialChunk))
-    {
-        Ground->SetMaterial(0, Material);
-    }
+    if (UMaterialInterface* Material = GroundMaterialForChunk(World.InitialChunk)) { Ground->SetMaterial(0, Material); }
 }
 
 void ALLWorldPresentationActor::BuildChunkDressing(const FLLCoreWorldGenerationObservation& World, const FLLCoreNaturalChunkObservation& Chunk)
 {
-    if (!Chunk.bMaterialized)
-    {
-        return;
-    }
-
+    if (!Chunk.bMaterialized) { return; }
     const FVector ChunkOrigin = ChunkOriginUU(World, Chunk.ChunkX, Chunk.ChunkY);
     const float HalfSpan = LLWorldSpatialContract::ChunkSpanUU * 0.5f;
     uint32 State = ChunkHash(World.WorldSeed, World.GenerationVersion, Chunk.ChunkX, Chunk.ChunkY);
@@ -252,7 +216,6 @@ void ALLWorldPresentationActor::BuildChunkDressing(const FLLCoreWorldGenerationO
     const float Fertility = FMath::Clamp(Chunk.FertilityPotential, 0.0f, 1.0f);
     const float Moisture = FMath::Clamp(Chunk.Moisture, 0.0f, 1.0f);
     const float Traversal = FMath::Clamp(Chunk.TraversalEase, 0.0f, 1.0f);
-
     const int32 TreeCount = ScaledCount(Fertility * Moisture, MaxTreesPerChunk);
     const int32 ShrubCount = ScaledCount(Fertility * 0.8f + Moisture * 0.2f, MaxShrubsPerChunk);
     const int32 GrassCount = ScaledCount(Fertility * 0.6f + Moisture * 0.4f, MaxGrassPerChunk);
@@ -263,10 +226,7 @@ void ALLWorldPresentationActor::BuildChunkDressing(const FLLCoreWorldGenerationO
                      float MinScale, float MaxScale, float TiltDegrees,
                      bool bObeyReadabilityRadius)
     {
-        if (Components.Num() == 0)
-        {
-            return;
-        }
+        if (Components.Num() == 0) { return; }
         for (int32 Index = 0; Index < Count && Placed < MaxTotal; ++Index)
         {
             const float X = (HashUnit(State) * 2.0f - 1.0f) * HalfSpan;
@@ -276,10 +236,8 @@ void ALLWorldPresentationActor::BuildChunkDressing(const FLLCoreWorldGenerationO
             const float TiltPitch = (HashUnit(State) * 2.0f - 1.0f) * TiltDegrees;
             const float TiltRoll = (HashUnit(State) * 2.0f - 1.0f) * TiltDegrees;
             const float HeightJitter = FMath::Lerp(0.92f, 1.12f, HashUnit(State));
-
             const int32 Slot = static_cast<int32>(HashUnit(State) * Components.Num()) % Components.Num();
             const float KeepRoll = HashUnit(State);
-
             const FVector Location = ChunkOrigin + FVector(X, Y, 0.0f);
             if (bObeyReadabilityRadius
                 && KeepRoll >= AmbientDressingKeepFactor(FVector2D(Location.X, Location.Y)))
@@ -287,13 +245,10 @@ void ALLWorldPresentationActor::BuildChunkDressing(const FLLCoreWorldGenerationO
                 ++SuppressedDressing;
                 continue;
             }
-
             if (UHierarchicalInstancedStaticMeshComponent* Component = Components[Slot])
             {
                 Component->AddInstance(FTransform(
-                    FRotator(TiltPitch, Yaw, TiltRoll),
-                    Location,
-                    FVector(Scale, Scale, Scale * HeightJitter)));
+                    FRotator(TiltPitch, Yaw, TiltRoll),Location,FVector(Scale, Scale, Scale * HeightJitter)));
                 ++Placed;
             }
         }
@@ -315,38 +270,21 @@ void ALLWorldPresentationActor::BuildChunkDressing(const FLLCoreWorldGenerationO
 
         if (Material.Contains(TEXT("wood")) || Material.Contains(TEXT("timber")) || Material.Contains(TEXT("tree")))
         {
-            Target = &TreeInstances;
-            PlacedCounter = &PlacedTrees;
-            MaxTotal = MaxTreeInstances;
-            MinScale = 1.1f;
-            MaxScale = 1.7f;
+            Target = &TreeInstances; PlacedCounter = &PlacedTrees; MaxTotal = MaxTreeInstances; MinScale = 1.1f; MaxScale = 1.7f;
         }
         else if (Material.Contains(TEXT("stone")) || Material.Contains(TEXT("rock")) || Material.Contains(TEXT("flint")))
         {
-            Target = &RockInstances;
-            PlacedCounter = &PlacedRocks;
-            MaxTotal = MaxRockInstances;
-            MinScale = 1.0f;
-            MaxScale = 1.9f;
+            Target = &RockInstances; PlacedCounter = &PlacedRocks; MaxTotal = MaxRockInstances; MinScale = 1.0f; MaxScale = 1.9f;
         }
         else if (Material.Contains(TEXT("berry")) || Material.Contains(TEXT("plant"))
             || Material.Contains(TEXT("fiber")) || Material.Contains(TEXT("food")))
         {
-            Target = &ShrubInstances;
-            PlacedCounter = &PlacedShrubs;
-            MaxTotal = MaxShrubInstances;
-            MinScale = 0.9f;
-            MaxScale = 1.5f;
+            Target = &ShrubInstances; PlacedCounter = &PlacedShrubs; MaxTotal = MaxShrubInstances; MinScale = 0.9f; MaxScale = 1.5f;
         }
 
-        if (!Target || Target->Num() == 0 || !PlacedCounter || *PlacedCounter >= MaxTotal)
-        {
-            continue;
-        }
-
+        if (!Target || Target->Num() == 0 || !PlacedCounter || *PlacedCounter >= MaxTotal) { continue; }
         const float PatchX = static_cast<float>(Patch.GridX - World.InitialCenterGridX) * LLWorldSpatialContract::GridCellSizeUU;
         const float PatchY = static_cast<float>(Patch.GridY - World.InitialCenterGridY) * LLWorldSpatialContract::GridCellSizeUU;
-
         const int32 PatchInstances = FMath::Clamp(
             FMath::RoundToInt(FMath::Clamp(Patch.VisualDensity, 0.0f, 1.0f) * 6.0f) + 1, 1, 8);
         for (int32 Index = 0; Index < PatchInstances && *PlacedCounter < MaxTotal; ++Index)
@@ -356,19 +294,12 @@ void ALLWorldPresentationActor::BuildChunkDressing(const FLLCoreWorldGenerationO
             float Scale = FMath::Lerp(MinScale, MaxScale, HashUnit(State));
             const float Yaw = HashUnit(State) * 360.0f;
             const int32 Slot = static_cast<int32>(HashUnit(State) * Target->Num()) % Target->Num();
-
             const FVector2D PatchLocation(PatchX + SpreadX, PatchY + SpreadY);
-            if (AmbientDressingKeepFactor(PatchLocation) <= 0.0f)
-            {
-                Scale *= StartRegionResourceScale;
-            }
-
+            if (AmbientDressingKeepFactor(PatchLocation) <= 0.0f) { Scale *= StartRegionResourceScale; }
             if (UHierarchicalInstancedStaticMeshComponent* Component = (*Target)[Slot])
             {
                 Component->AddInstance(FTransform(
-                    FRotator(0.0f, Yaw, 0.0f),
-                    FVector(PatchLocation.X, PatchLocation.Y, 0.0f),
-                    FVector(Scale, Scale, Scale)));
+                    FRotator(0.0f, Yaw, 0.0f),FVector(PatchLocation.X, PatchLocation.Y, 0.0f),FVector(Scale, Scale, Scale)));
                 ++(*PlacedCounter);
             }
         }
@@ -394,6 +325,10 @@ uint32 ALLWorldPresentationActor::FacilitySignature(const FLLCoreCivilizationWor
         Hash = MixHash(Hash, Facility.bActive ? 1u : 0u);
         Hash = MixHash(Hash, static_cast<uint32>(FMath::Max(0, Facility.FuelUnits)));
         Hash = MixHash(Hash, static_cast<uint32>(FMath::Max(0, Facility.CharcoalUnits)));
+        Hash = MixHash(Hash, static_cast<uint32>(FMath::Max(0, Facility.OreUnits)));
+        Hash = MixHash(Hash, static_cast<uint32>(FMath::Max(0, Facility.MetalUnits)));
+        Hash = MixHash(Hash, static_cast<uint32>(FMath::RoundToInt(FMath::Max(0.0f, Facility.HeatLevel) * 100.0f)));
+        Hash = MixHash(Hash, static_cast<uint32>(FMath::Max(0, Facility.BurnMinutesRemaining)));
         Hash = MixHash(Hash, Facility.bLit ? 1u : 0u);
     }
     return Hash;
@@ -405,15 +340,11 @@ void ALLWorldPresentationActor::BuildFacilities(
 {
     for (const FLLCoreCivilizationFacilityObservation& Facility : Civilization.Facilities)
     {
-        if (Facility.State == ELLCoreFacilityState::Ruined)
-        {
-            continue;
-        }
+        if (Facility.State == ELLCoreFacilityState::Ruined) { continue; }
 
         const float X = static_cast<float>(Facility.GridX - World.InitialCenterGridX) * LLWorldSpatialContract::GridCellSizeUU;
         const float Y = static_cast<float>(Facility.GridY - World.InitialCenterGridY) * LLWorldSpatialContract::GridCellSizeUU;
         const FVector Base(X, Y, 0.0f);
-
         const float MaterialProgress = Facility.RequiredMaterialUnits > 0
             ? FMath::Clamp(static_cast<float>(Facility.DeliveredMaterialUnits) / static_cast<float>(Facility.RequiredMaterialUnits), 0.0f, 1.0f)
             : 0.0f;
@@ -427,11 +358,8 @@ void ALLWorldPresentationActor::BuildFacilities(
             {
                 const float PlannedScale = Facility.State == ELLCoreFacilityState::Planned ? 0.72f : 1.0f;
                 FacilityFoundationInstances->AddInstance(FTransform(
-                    FRotator::ZeroRotator,
-                    Base + FVector(0.0f, 0.0f, 6.0f),
-                    FVector(2.2f * PlannedScale, 1.6f * PlannedScale, 0.12f)));
+                    FRotator::ZeroRotator,Base + FVector(0.0f, 0.0f, 6.0f),FVector(2.2f * PlannedScale, 1.6f * PlannedScale, 0.12f)));
             }
-
             const FVector2D PostOffsets[4] = {
                 FVector2D(-90.0f, -60.0f), FVector2D(90.0f, -60.0f),
                 FVector2D(-90.0f, 60.0f), FVector2D(90.0f, 60.0f)};
@@ -441,11 +369,9 @@ void ALLWorldPresentationActor::BuildFacilities(
                 if (!FacilityPostInstances) { break; }
                 const float HeightFactor = bOperational ? 1.0f : FMath::Clamp(0.35f + 0.65f * BuildProgress, 0.35f, 1.0f);
                 FacilityPostInstances->AddInstance(FTransform(
-                    FRotator::ZeroRotator,
-                    Base + FVector(PostOffsets[Index].X, PostOffsets[Index].Y, 55.0f * HeightFactor),
+                    FRotator::ZeroRotator,Base + FVector(PostOffsets[Index].X, PostOffsets[Index].Y, 55.0f * HeightFactor),
                     FVector(0.14f, 0.14f, 1.1f * HeightFactor)));
             }
-
             const int32 CargoCount = bOperational ? 6 : FMath::Clamp(FMath::CeilToInt(MaterialProgress * 6.0f), 0, 6);
             for (int32 Index = 0; Index < CargoCount; ++Index)
             {
@@ -454,66 +380,102 @@ void ALLWorldPresentationActor::BuildFacilities(
                 const int32 Row = Index / 3;
                 FacilityCargoInstances->AddInstance(FTransform(
                     FRotator(0.0f, (Index % 2 == 0) ? 0.0f : 90.0f, 0.0f),
-                    Base + FVector(-65.0f + Column * 65.0f, -22.0f + Row * 48.0f, 25.0f),
-                    FVector(0.55f, 0.32f, 0.28f)));
+                    Base + FVector(-65.0f + Column * 65.0f, -22.0f + Row * 48.0f, 25.0f),FVector(0.55f, 0.32f, 0.28f)));
             }
-
             if ((bOperational || WorkProgress >= 0.65f) && FacilityRoofInstances)
             {
                 const float RoofScale = bOperational ? 1.0f : FMath::Clamp((WorkProgress - 0.65f) / 0.35f, 0.25f, 1.0f);
                 FacilityRoofInstances->AddInstance(FTransform(
-                    FRotator::ZeroRotator,
-                    Base + FVector(0.0f, 0.0f, 118.0f),
-                    FVector(2.15f * RoofScale, 1.55f, 0.12f)));
+                    FRotator::ZeroRotator,Base + FVector(0.0f, 0.0f, 118.0f),FVector(2.15f * RoofScale, 1.55f, 0.12f)));
             }
             continue;
         }
 
-        if (Facility.Kind != ELLCoreFacilityKind::FirePit)
+        if (Facility.Kind == ELLCoreFacilityKind::Furnace)
         {
+            // Android-safe visual-only furnace. Chamber/charge/output are derived
+            // solely from the authoritative facility read DTO.
+            const float Structure = bOperational ? 1.0f : FMath::Clamp(BuildProgress, 0.0f, 1.0f);
+            if (FacilityFoundationInstances && Structure > 0.0f)
+            {
+                FacilityFoundationInstances->AddInstance(FTransform(
+                    FRotator::ZeroRotator,Base + FVector(0.0f, 0.0f, 8.0f),FVector(1.55f * Structure, 1.35f * Structure, 0.16f)));
+            }
+            const FVector2D WallOffsets[3] = { FVector2D(-58.0f,0.0f), FVector2D(58.0f,0.0f), FVector2D(0.0f,52.0f) };
+            const int32 WallCount = bOperational ? 3 : FMath::Clamp(FMath::CeilToInt(Structure * 3.0f),0,3);
+            for (int32 Index=0; Index<WallCount; ++Index)
+            {
+                if (!FacilityPostInstances) { break; }
+                const bool bSide = Index < 2;
+                FacilityPostInstances->AddInstance(FTransform(
+                    FRotator::ZeroRotator,
+                    Base + FVector(WallOffsets[Index].X, WallOffsets[Index].Y, 62.0f),
+                    bSide ? FVector(0.22f,1.15f,1.05f) : FVector(1.15f,0.22f,1.05f)));
+            }
+            if ((bOperational || WorkProgress>=0.70f) && FacilityRoofInstances)
+            {
+                FacilityRoofInstances->AddInstance(FTransform(
+                    FRotator::ZeroRotator,Base + FVector(0.0f,0.0f,126.0f),FVector(1.30f,1.10f,0.16f)));
+                FacilityRoofInstances->AddInstance(FTransform(
+                    FRotator::ZeroRotator,Base + FVector(42.0f,28.0f,184.0f),FVector(0.34f,0.34f,0.95f)));
+            }
+
+            const int32 OreCount = FMath::Clamp(Facility.OreUnits,0,3);
+            for (int32 Index=0; Index<OreCount; ++Index)
+            {
+                if (!FacilityCargoInstances) { break; }
+                FacilityCargoInstances->AddInstance(FTransform(
+                    FRotator(0.0f,static_cast<float>(Index)*31.0f,0.0f),
+                    Base + FVector(-24.0f+Index*24.0f,-28.0f,28.0f),FVector(0.26f,0.22f,0.18f)));
+            }
+            if (!Facility.bLit)
+            {
+                const int32 MetalCount = FMath::Clamp(Facility.MetalUnits,0,3);
+                for (int32 Index=0; Index<MetalCount; ++Index)
+                {
+                    if (!FacilityCargoInstances) { break; }
+                    FacilityCargoInstances->AddInstance(FTransform(
+                        FRotator(0.0f,0.0f,0.0f),
+                        Base + FVector(-36.0f+Index*36.0f,-72.0f,18.0f),FVector(0.30f,0.16f,0.10f)));
+                }
+            }
+            if (Facility.bLit && FacilityPostInstances)
+            {
+                const float FlameHeight = FMath::Lerp(0.45f,0.85f,FMath::Clamp(Facility.HeatLevel,0.0f,1.0f));
+                FacilityPostInstances->AddInstance(FTransform(
+                    FRotator(0.0f,45.0f,0.0f),Base + FVector(0.0f,-34.0f,52.0f),FVector(0.20f,0.16f,FlameHeight)));
+                FacilityPostInstances->AddInstance(FTransform(
+                    FRotator(0.0f,135.0f,0.0f),Base + FVector(8.0f,-32.0f,46.0f),FVector(0.14f,0.13f,FlameHeight*0.72f)));
+            }
             continue;
         }
 
-        // A tiny Android-safe stone-ring/fire proxy. Every visible state comes
-        // from the Core facility DTO; the presentation never creates fuel/heat.
-        const int32 StoneCount = bOperational
-            ? 8
-            : FMath::Clamp(FMath::CeilToInt(BuildProgress * 8.0f), 0, 8);
+        if (Facility.Kind != ELLCoreFacilityKind::FirePit) { continue; }
+
+        const int32 StoneCount = bOperational ? 8 : FMath::Clamp(FMath::CeilToInt(BuildProgress * 8.0f), 0, 8);
         for (int32 Index = 0; Index < StoneCount; ++Index)
         {
             if (!FacilityFoundationInstances) { break; }
             const float AngleDegrees = static_cast<float>(Index) * 45.0f;
             const float AngleRadians = FMath::DegreesToRadians(AngleDegrees);
-            const FVector Offset(
-                FMath::Cos(AngleRadians) * 68.0f,
-                FMath::Sin(AngleRadians) * 68.0f,
-                13.0f);
+            const FVector Offset(FMath::Cos(AngleRadians) * 68.0f,FMath::Sin(AngleRadians) * 68.0f,13.0f);
             FacilityFoundationInstances->AddInstance(FTransform(
-                FRotator(0.0f, AngleDegrees, 0.0f),
-                Base + Offset,
-                FVector(0.48f, 0.28f, 0.20f)));
+                FRotator(0.0f, AngleDegrees, 0.0f),Base + Offset,FVector(0.48f, 0.28f, 0.20f)));
         }
-
         if (bOperational && FacilityFoundationInstances)
         {
             FacilityFoundationInstances->AddInstance(FTransform(
-                FRotator::ZeroRotator,
-                Base + FVector(0.0f, 0.0f, 5.0f),
-                FVector(1.05f, 1.05f, 0.08f)));
+                FRotator::ZeroRotator,Base + FVector(0.0f, 0.0f, 5.0f),FVector(1.05f, 1.05f, 0.08f)));
         }
-
-        const int32 LogCount = bOperational
-            ? FMath::Clamp(Facility.FuelUnits, 0, 3)
+        const int32 LogCount = bOperational ? FMath::Clamp(Facility.FuelUnits, 0, 3)
             : FMath::Clamp(FMath::CeilToInt(MaterialProgress * 2.0f), 0, 2);
         for (int32 Index = 0; Index < LogCount; ++Index)
         {
             if (!FacilityCargoInstances) { break; }
             FacilityCargoInstances->AddInstance(FTransform(
                 FRotator(0.0f, Index % 2 == 0 ? 45.0f : 135.0f, 0.0f),
-                Base + FVector(0.0f, 0.0f, 24.0f + Index * 7.0f),
-                FVector(0.85f, 0.16f, 0.14f)));
+                Base + FVector(0.0f, 0.0f, 24.0f + Index * 7.0f),FVector(0.85f, 0.16f, 0.14f)));
         }
-
         if (!Facility.bLit)
         {
             const int32 CharcoalCount = FMath::Clamp(Facility.CharcoalUnits, 0, 4);
@@ -524,21 +486,15 @@ void ALLWorldPresentationActor::BuildFacilities(
                 const float OffsetY = (Index < 2) ? -14.0f : 14.0f;
                 FacilityCargoInstances->AddInstance(FTransform(
                     FRotator(0.0f, static_cast<float>(Index) * 37.0f, 0.0f),
-                    Base + FVector(OffsetX, OffsetY, 18.0f),
-                    FVector(0.24f, 0.20f, 0.12f)));
+                    Base + FVector(OffsetX, OffsetY, 18.0f),FVector(0.24f, 0.20f, 0.12f)));
             }
         }
-
         if (Facility.bLit && FacilityPostInstances)
         {
             FacilityPostInstances->AddInstance(FTransform(
-                FRotator(0.0f, 45.0f, 0.0f),
-                Base + FVector(0.0f, 0.0f, 55.0f),
-                FVector(0.24f, 0.18f, 0.70f)));
+                FRotator(0.0f, 45.0f, 0.0f),Base + FVector(0.0f, 0.0f, 55.0f),FVector(0.24f, 0.18f, 0.70f)));
             FacilityPostInstances->AddInstance(FTransform(
-                FRotator(0.0f, 135.0f, 0.0f),
-                Base + FVector(0.0f, 0.0f, 48.0f),
-                FVector(0.18f, 0.16f, 0.50f)));
+                FRotator(0.0f, 135.0f, 0.0f),Base + FVector(0.0f, 0.0f, 48.0f),FVector(0.18f, 0.16f, 0.50f)));
         }
     }
 }
@@ -547,16 +503,10 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
 {
     const UGameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
     ULLCoreBridgeSubsystem* Bridge = GameInstance ? GameInstance->GetSubsystem<ULLCoreBridgeSubsystem>() : nullptr;
-    if (!Bridge)
-    {
-        return;
-    }
+    if (!Bridge) { return; }
 
     const FLLCoreWorldGenerationObservation World = Bridge->GetWorldGenerationObservation();
-    if (!World.bAvailable || !World.bHasInitialStartRegion)
-    {
-        return;
-    }
+    if (!World.bAvailable || !World.bHasInitialStartRegion) { return; }
     const FLLCoreCivilizationWorldObservation Civilization = Bridge->GetCivilizationWorldObservation(0);
 
     const bool bNaturalChanged = bForce
@@ -564,21 +514,14 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         || World.GenerationVersion != BuiltGenerationVersion
         || World.MaterializedChunkCount != BuiltChunkCount;
     const uint32 CurrentFacilitySignature = FacilitySignature(Civilization);
-    const bool bFacilitiesChanged = bForce
-        || !bBuiltFacilityPresentation
-        || CurrentFacilitySignature != BuiltFacilitySignature;
-
-    if (!bNaturalChanged && !bFacilitiesChanged)
-    {
-        return;
-    }
+    const bool bFacilitiesChanged = bForce || !bBuiltFacilityPresentation || CurrentFacilitySignature != BuiltFacilitySignature;
+    if (!bNaturalChanged && !bFacilitiesChanged) { return; }
 
     if (bNaturalChanged)
     {
         BuiltWorldSeed = World.WorldSeed;
         BuiltGenerationVersion = World.GenerationVersion;
         BuiltChunkCount = World.MaterializedChunkCount;
-
         ClearInstances();
         BuildGround(World);
         BuildChunkDressing(World, World.InitialChunk);
@@ -589,10 +532,7 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         {
             for (int32 OffsetY = -Rings; OffsetY <= Rings; ++OffsetY)
             {
-                if (OffsetX == 0 && OffsetY == 0)
-                {
-                    continue;
-                }
+                if (OffsetX == 0 && OffsetY == 0) { continue; }
                 FLLCoreNaturalChunkObservation Neighbour;
                 if (Bridge->GetNaturalChunkObservation(World.InitialChunkX + OffsetX, World.InitialChunkY + OffsetY, Neighbour)
                     && Neighbour.bMaterialized)
@@ -630,7 +570,6 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         TEXT("LLWorldPresentation seed=%lld gen=%d chunks=%d natural=%d/%d/%d/%d facilities=%d facilityInstances=%d cleared=%d radius=%.0f ground=%s"),
         World.WorldSeed, World.GenerationVersion, World.MaterializedChunkCount,
         TreeInstanceCount, ShrubInstanceCount, GrassInstanceCount, RockInstanceCount,
-        Civilization.FacilityCount, FacilityInstanceCount,
-        SuppressedDressing, StartRegionClearRadiusUU,
+        Civilization.FacilityCount, FacilityInstanceCount,SuppressedDressing, StartRegionClearRadiusUU,
         (Ground && Ground->GetStaticMesh()) ? TEXT("yes") : TEXT("no"));
 }
