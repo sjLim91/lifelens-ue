@@ -74,7 +74,8 @@ inline DecisionExecutionResult executeSocialDecision(
 
     Character* actor = findMutableCharacter(world, actorId);
     Character* target = findMutableCharacter(world, social.target);
-    if (!actor || !target || actorId == social.target || social.intent == SocialIntent::None) {
+    if (!actor || !target || !actor->alive || !target->alive ||
+        actorId == social.target || social.intent == SocialIntent::None) {
         return result;
     }
 
@@ -135,7 +136,7 @@ inline DecisionExecutionResult executeUnifiedDecision(
     result.actor = actorId;
 
     Character* actor = findMutableCharacter(world, actorId);
-    if (!actor) return result;
+    if (!actor || !actor->alive) return result;
 
     result.decision = chooseUnifiedUtilityDecision(
         world,

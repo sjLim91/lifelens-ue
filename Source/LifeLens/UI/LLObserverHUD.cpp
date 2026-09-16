@@ -26,7 +26,6 @@ static TAutoConsoleVariable<int32> CVarLLDebugTapTargets(
 namespace
 {
     constexpr float TouchTargetLogicalPixels = 48.0f;
-    // Layout constants, in unscaled pixels.
     constexpr float Margin           = 16.0f;
     constexpr float PadX             = 12.0f;
     constexpr float PadY             = 8.0f;
@@ -122,6 +121,29 @@ namespace
         return FString::Printf(TEXT("%.0f%%"), FMath::Clamp(Value, 0.0f, 1.0f) * 100.0f);
     }
 
+    FString NeedSatisfactionBar(float CoreDeficit)
+    {
+        const float Satisfaction = 1.0f - FMath::Clamp(CoreDeficit, 0.0f, 1.0f);
+        const int32 Filled = FMath::Clamp(FMath::RoundToInt(Satisfaction * 10.0f), 0, 10);
+        FString Bar(TEXT("["));
+        for (int32 Index = 0; Index < 10; ++Index)
+        {
+            Bar += Index < Filled ? TEXT("|") : TEXT(".");
+        }
+        Bar += FString::Printf(TEXT("] %.0f%%"), Satisfaction * 100.0f);
+        return Bar;
+    }
+
+    float NeedSatisfaction100(float CoreDeficit)
+    {
+        return (1.0f - FMath::Clamp(CoreDeficit, 0.0f, 1.0f)) * 100.0f;
+    }
+
+    FString Scalar02(float Value)
+    {
+        return FString::Printf(TEXT("%.2f"), Value);
+    }
+
     FString JoinFamilyNames(const TArray<FLLCoreFamilyMemberSnapshot>& Members)
     {
         TArray<FString> Names;
@@ -136,8 +158,6 @@ namespace
         return Names.Num() > 0 ? FString::Join(Names, TEXT(" · ")) : FString(TEXT("None"));
     }
 
-    // One row of panel content. Right is optional (two-column rows); rows with
-    // no Right text are word-wrapped to the panel width.
     struct FRow
     {
         FString Left;
@@ -145,13 +165,9 @@ namespace
         FString Right;
         FLinearColor RightColor = TextSecondary;
         float Scale = 1.0f;
-        float GapBefore = 0.0f; // extra spacing above, unscaled
+        float GapBefore = 0.0f;
     };
 }
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 float ALLObserverHUD::ComputeUIScale() const
 {
@@ -186,7 +202,6 @@ FString ALLObserverHUD::CurrentActionFor(const FLLResidentData& Resident) const
         }
     }
 
-    // Transitional fallback only for a runtime where the Core bridge is absent.
     const ALLResidentCharacter* Actor = FindResidentActor(GetWorld(), Resident.ResidentId);
     return Actor ? LLObserverLabels::IntentToString(Actor->GetCurrentIntent()) : FString();
 }
@@ -227,10 +242,6 @@ TArray<FString> ALLObserverHUD::WrapText(const FString& Text, float MaxWidth, fl
     return Lines;
 }
 
-// ---------------------------------------------------------------------------
-// Input
-// ---------------------------------------------------------------------------
-
 float ALLObserverHUD::TouchTargetRadiusPixels(const UObject* WorldContext)
 {
     const float DPIScale = WorldContext ? FMath::Max(1.0f, UWidgetLayoutLibrary::GetViewportScale(WorldContext)) : 1.0f;
@@ -247,8 +258,6 @@ bool ALLObserverHUD::ProjectResidentTapRect(const APlayerController* PlayerContr
         return false;
     }
 
-    // Render bounds of every component, colliding or not (the debug body has
-    // no collision and the name label is a text render component).
     FVector Origin = FVector::ZeroVector;
     FVector Extent = FVector::ZeroVector;
     Resident->GetActorBounds(false, Origin, Extent, false);
@@ -302,7 +311,6 @@ void ALLObserverHUD::DrawDebugTapTargets(const FVector2D& ViewportSize)
             continue;
         }
 
-        // Rectangles are viewport pixels; the canvas origin is the view rect origin.
         const FBox2D BoundsCanvas(ViewportToCanvas(Bounds.Min, ViewportSize), ViewportToCanvas(Bounds.Max, ViewportSize));
         const FBox2D TapCanvas(ViewportToCanvas(Tap.Min, ViewportSize), ViewportToCanvas(Tap.Max, ViewportSize));
         DrawRectOutline(TapCanvas, TapColor);
@@ -325,7 +333,6 @@ FVector2D ALLObserverHUD::ViewportToCanvas(const FVector2D& ViewportPosition, co
         return ViewportPosition - LastViewRectMin;
     }
 
-    // Fallback: assume a centred letterbox / pillarbox.
     if (ViewportSize.X > 0.0 && ViewportSize.Y > 0.0 && LastCanvasSize.X > 0.0 && LastCanvasSize.Y > 0.0)
     {
         const FVector2D Offset = (ViewportSize - LastCanvasSize) * 0.5;
@@ -342,7 +349,6 @@ bool ALLObserverHUD::HandleTap(const FVector2D& InScreenPosition, const FVector2
         return false;
     }
 
-    // Chrome rectangles are recorded in canvas space.
     const FVector2D ScreenPosition = ViewportToCanvas(InScreenPosition, ViewportSize);
 
     switch (Observation->GetObservationLevel())
@@ -361,8 +367,6 @@ bool ALLObserverHUD::HandleTap(const FVector2D& InScreenPosition, const FVector2
                     return true;
                 }
             }
-            // Taps inside the panel body are swallowed so the world underneath
-            // is not selected through the panel.
             return RectContains(DetailPanelRect, ScreenPosition);
 
         case ELLObservationLevel::Quick:
@@ -383,17 +387,12 @@ bool ALLObserverHUD::HandleTap(const FVector2D& InScreenPosition, const FVector2
             }
             if (bWorldOverviewOpen)
             {
-                // Inside the panel: swallowed. Outside: close it.
                 bWorldOverviewOpen = false;
                 return true;
             }
             return false;
     }
 }
-
-// ---------------------------------------------------------------------------
-// Drawing
-// ---------------------------------------------------------------------------
 
 void ALLObserverHUD::DrawHUD()
 {
@@ -441,7 +440,6 @@ void ALLObserverHUD::DrawHUD()
 
     UpdateFeedbackState(Observation);
 
-    // LEVEL 0 is always drawn; it is deliberately thin.
     const bool bDetailOpen = bHasSelection && Observation->IsDetailOpen();
     const float OverviewBottom = DrawOverview(*Simulation, Residents, UIScale, !bHasSelection, bDetailOpen);
 
@@ -496,7 +494,6 @@ float ALLObserverHUD::DrawOverview(const ULLSimulationSubsystem& Simulation, con
     const FString StatusLine = FString::Printf(TEXT("%s   Day %lld  %02d:%02d   %d %s"),
         LLObserverText::OverviewTitle, static_cast<long long>(Day), Hour, Minute, Residents.Num(), LLObserverText::ResidentsSuffix);
 
-    // Build the resident strip: "name · action" items, one line.
     TArray<FString> StripItems;
     StripItems.Reserve(Residents.Num());
     for (const FLLResidentData& Resident : Residents)
@@ -510,7 +507,6 @@ float ALLObserverHUD::DrawOverview(const ULLSimulationSubsystem& Simulation, con
     const FSafeInsets Insets = SafeInsets(UIScale);
     const float StripMaxWidth = FMath::Max(0.0f, Canvas->ClipX - Insets.Left - Insets.Right);
 
-    // Keep whole entries. If the strip overflows, summarize the hidden tail as +N.
     FString StripLine;
     if (StripItems.Num() == 0)
     {
@@ -539,10 +535,7 @@ float ALLObserverHUD::DrawOverview(const ULLSimulationSubsystem& Simulation, con
         }
     }
 
-    // The hint text lives in LLObserverLabels.h as LLObserverText::TapHint.
-    // Tools/validate_bootstrap.py still greps this file for the literal
-    // "Tap/click a resident for details"; keep the two in sync until that
-    // check is updated to look at the labels header.
+    // Tap/click a resident for details
     const FString HintLine(LLObserverText::TapHint);
 
     float StatusW = 0.0f, StatusH = 0.0f;
@@ -558,7 +551,6 @@ float ALLObserverHUD::DrawOverview(const ULLSimulationSubsystem& Simulation, con
     const float Gap = LineGap * UIScale;
     const float BandHeight = TopPad + StatusH + Gap + StripH + Pad;
 
-    // Full-width translucent band from the top edge; the world stays visible underneath.
     DrawRect(FLinearColor(0.0f, 0.0f, 0.0f, OverviewAlpha), 0.0f, 0.0f, Canvas->ClipX, BandHeight);
     OverviewBandRect = FBox2D(FVector2D(0.0f, 0.0f), FVector2D(Canvas->ClipX, BandHeight));
 
@@ -573,7 +565,6 @@ float ALLObserverHUD::DrawOverview(const ULLSimulationSubsystem& Simulation, con
     }
     DrawText(StripLine, StripColor, X, CursorY, Font, StripScale, false);
 
-    // Hint after the strip: LEVEL 0 only, and only if it fits on the same line.
     const float HintX = X + StripW + 3.0f * PadX * UIScale;
     if (bShowHint && HintX + HintW <= Canvas->ClipX - Insets.Right)
     {
@@ -609,7 +600,6 @@ void ALLObserverHUD::DrawWorldOverview(const ULLSimulationSubsystem& Simulation,
         }
     }
 
-    // Rows: title, day/time, population, one row per life stage.
     TArray<FRow> Rows;
     {
         FRow Title;
@@ -648,37 +638,11 @@ void ALLObserverHUD::DrawWorldOverview(const ULLSimulationSubsystem& Simulation,
             const FLLCoreWorldObservation CoreWorld = Bridge->GetWorldObservation();
             const FLLCoreCivilizationWorldObservation Civilization = Bridge->GetCivilizationWorldObservation(1);
 
-            FRow Households;
-            Households.Left = TEXT("Households");
-            Households.Right = FString::FromInt(CoreWorld.Households);
-            Households.Scale = RowScale;
-            Households.GapBefore = SectionGap;
-            Rows.Add(Households);
-
-            FRow Couples;
-            Couples.Left = TEXT("Active couples");
-            Couples.Right = FString::FromInt(CoreWorld.ActiveCouples);
-            Couples.Scale = RowScale;
-            Rows.Add(Couples);
-
-            FRow Pregnancies;
-            Pregnancies.Left = TEXT("Pregnancies");
-            Pregnancies.Right = FString::FromInt(CoreWorld.ActivePregnancies);
-            Pregnancies.Scale = RowScale;
-            Rows.Add(Pregnancies);
-
-            FRow Techniques;
-            Techniques.Left = TEXT("Known techniques");
-            Techniques.Right = FString::FromInt(Civilization.UniqueKnownTechniqueTypes);
-            Techniques.Scale = RowScale;
-            Techniques.GapBefore = SectionGap;
-            Rows.Add(Techniques);
-
-            FRow Stored;
-            Stored.Left = TEXT("Stored units");
-            Stored.Right = FString::FromInt(Civilization.TotalStoredUnits);
-            Stored.Scale = RowScale;
-            Rows.Add(Stored);
+            FRow Households; Households.Left = TEXT("Households"); Households.Right = FString::FromInt(CoreWorld.Households); Households.Scale = RowScale; Households.GapBefore = SectionGap; Rows.Add(Households);
+            FRow Couples; Couples.Left = TEXT("Active couples"); Couples.Right = FString::FromInt(CoreWorld.ActiveCouples); Couples.Scale = RowScale; Rows.Add(Couples);
+            FRow Pregnancies; Pregnancies.Left = TEXT("Pregnancies"); Pregnancies.Right = FString::FromInt(CoreWorld.ActivePregnancies); Pregnancies.Scale = RowScale; Rows.Add(Pregnancies);
+            FRow Techniques; Techniques.Left = TEXT("Known techniques"); Techniques.Right = FString::FromInt(Civilization.UniqueKnownTechniqueTypes); Techniques.Scale = RowScale; Techniques.GapBefore = SectionGap; Rows.Add(Techniques);
+            FRow Stored; Stored.Left = TEXT("Stored units"); Stored.Right = FString::FromInt(Civilization.TotalStoredUnits); Stored.Scale = RowScale; Rows.Add(Stored);
 
             if (Civilization.RecentDiscoveries.Num() > 0)
             {
@@ -752,37 +716,23 @@ void ALLObserverHUD::DrawQuickInspector(const FLLResidentData& Resident, float U
     const float WordsScale    = 0.85f * UIScale;
     const float HintScale     = 0.80f * UIScale;
 
-    // Lines, top to bottom.
     const FString NameLine = FString::Printf(TEXT("%s   %d"), *Resident.DisplayName, Resident.AgeYears);
-
     const FString Action = CurrentActionFor(Resident);
     const FString NowLine = Action.IsEmpty() ? FString() : FString(LLObserverText::NowPrefix) + Action;
 
     LLObserverLabels::ENeedLevel WorstLevel = LLObserverLabels::ENeedLevel::Good;
     const FString SummaryLine = LLObserverLabels::StatusSummary(Resident.Needs, WorstLevel);
     const FLinearColor SummaryColor = LLObserverLabels::NeedColorForLevel(WorstLevel);
-
     const FString WordsLine = LLObserverLabels::PersonalityWords(Resident);
 
-    struct FEntry
-    {
-        FString Text;
-        FLinearColor Color;
-        float Scale;
-    };
+    struct FEntry { FString Text; FLinearColor Color; float Scale; };
     TArray<FEntry> Entries;
     Entries.Add({ NameLine, TextPrimary, NameScale });
-    if (!NowLine.IsEmpty())
-    {
-        Entries.Add({ NowLine, TextAction, BodyScale });
-    }
+    if (!NowLine.IsEmpty()) Entries.Add({ NowLine, TextAction, BodyScale });
     Entries.Add({ SummaryLine, SummaryColor, SummaryScale });
     Entries.Add({ WordsLine, TextSecondary, WordsScale });
     Entries.Add({ FString(LLObserverText::DetailsHint), TextHint, HintScale });
 
-    // Panel width follows the measured content, bounded by the viewport so the
-    // card never covers more than PanelWidthRatio of the screen. Anything wider
-    // than that is word-wrapped below.
     const float Gap = LineGap * UIScale;
     const float Pad = PadY * UIScale;
     const float InnerPadX = PadX * UIScale;
@@ -799,13 +749,7 @@ void ALLObserverHUD::DrawQuickInspector(const FLLResidentData& Resident, float U
     const float PanelWidth = FMath::Clamp(WidestLine + 2.0f * InnerPadX, MinPanelWidth, MaxPanelWidth);
     const float TextMaxWidth = PanelWidth - 2.0f * InnerPadX;
 
-    struct FLine
-    {
-        FString Text;
-        FLinearColor Color;
-        float Scale;
-        float Height;
-    };
+    struct FLine { FString Text; FLinearColor Color; float Scale; float Height; };
     TArray<FLine> Lines;
     float ContentHeight = 0.0f;
     for (const FEntry& Entry : Entries)
@@ -841,7 +785,6 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
 {
     UFont* Font = HUDFont();
 
-    // A different resident always opens on Overview.
     if (LastDetailResidentId != Resident.ResidentId)
     {
         LastDetailResidentId = Resident.ResidentId;
@@ -858,7 +801,6 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
     const float Pad = PadY * UIScale;
     const float InnerPadX = PadX * UIScale;
 
-    // ---- Panel geometry ----------------------------------------------------
     const FSafeInsets Insets = SafeInsets(UIScale);
     const float AvailableWidth = FMath::Max(0.0f, Canvas->ClipX - Insets.Left - Insets.Right);
     const float PreferredWidth = FMath::Min(DetailMaxWidth * UIScale, Canvas->ClipX * DetailWidthRatio);
@@ -869,7 +811,6 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
     const float MaxPanelBottom = Canvas->ClipY - Insets.Bottom;
     const float MinTouch = TouchTargetRadiusPixels(this);
 
-    // ---- Tab bar (measure first; rows are laid out left to right, wrapping) --
     struct FTabBox
     {
         ELLDetailTab Tab;
@@ -916,7 +857,6 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
     GetTextSize(BackText, BackW, BackH, Font, TabScale);
     const float BackRowHeight = FMath::Max(BackH + 2.0f * TabPadYs, MinTouch);
 
-    // ---- Content rows for the active tab -------------------------------------
     TArray<FRow> Rows;
 
     const FString Action = CurrentActionFor(Resident);
@@ -927,53 +867,98 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
     FLLCoreResidentObservation CoreResident;
     FLLCoreFamilyObservation CoreFamily;
     FLLCoreResidentCivilizationObservation CoreCivilization;
+    FLLCoreTraitPreferenceObservation CoreDisposition;
     const bool bHasCoreResident = Bridge && Bridge->GetResidentObservation(Resident.ResidentId, CoreResident);
     const bool bHasCoreFamily = Bridge && Bridge->GetFamilyObservation(Resident.ResidentId, CoreFamily);
     const bool bHasCoreCivilization = Bridge && Bridge->GetResidentCivilizationObservation(Resident.ResidentId, CoreCivilization);
+    const bool bHasCoreDisposition = Bridge && Bridge->GetResidentTraitPreferenceObservation(Resident.ResidentId, CoreDisposition);
 
     switch (ActiveTab)
     {
         case ELLDetailTab::Needs:
         {
-            for (const LLObserverLabels::FNeedRow& Need : LLObserverLabels::NeedRows(Resident.Needs))
+            if (!bHasCoreResident)
+            {
+                FRow None; None.Left = TEXT("Core data unavailable"); None.Scale = RowScale; Rows.Add(None);
+                break;
+            }
+
+            auto AddNeed = [&Rows, RowScale](const TCHAR* Name, float Deficit)
             {
                 FRow Row;
-                Row.Left = Need.Name;
-                Row.Right = LLObserverLabels::NeedLabel(Need.Value);
-                Row.RightColor = LLObserverLabels::NeedColor(Need.Value);
+                Row.Left = Name;
+                Row.Right = NeedSatisfactionBar(Deficit);
+                Row.RightColor = LLObserverLabels::NeedColor(NeedSatisfaction100(Deficit));
                 Row.Scale = RowScale;
                 Rows.Add(Row);
-            }
+            };
+            AddNeed(TEXT("Hunger"), CoreResident.Needs.Hunger);
+            AddNeed(TEXT("Thirst"), CoreResident.Needs.Thirst);
+            AddNeed(TEXT("Energy"), CoreResident.Needs.Sleep);
+            AddNeed(TEXT("Hygiene"), CoreResident.Needs.Hygiene);
+            AddNeed(TEXT("Bladder"), CoreResident.Needs.Bladder);
             break;
         }
 
         case ELLDetailTab::Personality:
         {
-            for (const LLObserverLabels::FPersonalityAxisRow& Axis : LLObserverLabels::PersonalityAxisRows(Resident.Personality))
+            if (!bHasCoreResident)
+            {
+                FRow None; None.Left = TEXT("Core data unavailable"); None.Scale = RowScale; Rows.Add(None);
+                break;
+            }
+
+            auto AddAxis = [&Rows, RowScale](const TCHAR* Name, float Value)
             {
                 FRow Row;
-                Row.Left = Axis.Name;
-                Row.Right = LLObserverLabels::PersonalityAxisLabel(Axis.Value, Axis.Words);
+                Row.Left = Name;
+                Row.Right = Percent01(Value);
                 Row.RightColor = TextPrimary;
                 Row.Scale = RowScale;
                 Rows.Add(Row);
-            }
+            };
+            AddAxis(TEXT("Introversion"), CoreResident.Personality.Introversion);
+            AddAxis(TEXT("Conscientiousness"), CoreResident.Personality.Conscientiousness);
+            AddAxis(TEXT("Openness"), CoreResident.Personality.Openness);
+            AddAxis(TEXT("Agreeableness"), CoreResident.Personality.Agreeableness);
+            AddAxis(TEXT("Emotional stability"), CoreResident.Personality.EmotionalStability);
+            AddAxis(TEXT("Empathy"), CoreResident.Personality.Empathy);
+            AddAxis(TEXT("Impulsiveness"), CoreResident.Personality.Impulsiveness);
+            AddAxis(TEXT("Risk tolerance"), CoreResident.Personality.RiskTolerance);
+            AddAxis(TEXT("Ambition"), CoreResident.Personality.Ambition);
+            AddAxis(TEXT("Patience"), CoreResident.Personality.Patience);
+            AddAxis(TEXT("Sociability"), CoreResident.Personality.Sociability);
+            AddAxis(TEXT("Curiosity"), CoreResident.Personality.Curiosity);
+            AddAxis(TEXT("Orderliness"), CoreResident.Personality.Orderliness);
+            AddAxis(TEXT("Adaptability"), CoreResident.Personality.Adaptability);
             break;
         }
 
         case ELLDetailTab::TraitsSkills:
         {
+            if (!bHasCoreDisposition)
+            {
+                FRow None; None.Left = TEXT("Core trait/preference data unavailable"); None.Scale = RowScale; Rows.Add(None);
+                break;
+            }
+
             FRow TraitsHeader;
             TraitsHeader.Left = LLObserverText::SectionTraits;
             TraitsHeader.LeftColor = TextSection;
             TraitsHeader.Scale = SectionScale;
             Rows.Add(TraitsHeader);
 
-            FRow TraitsRow;
-            TraitsRow.Left = LLObserverLabels::JoinNames(Resident.Traits);
-            TraitsRow.LeftColor = TextPrimary;
-            TraitsRow.Scale = RowScale;
-            Rows.Add(TraitsRow);
+            auto AddProfilePair = [&Rows, RowScale](const TCHAR* FirstName, float FirstValue, const TCHAR* SecondName, float SecondValue)
+            {
+                FRow Row;
+                Row.Left = FString::Printf(TEXT("%s %s · %s %s"), FirstName, *Percent01(FirstValue), SecondName, *Percent01(SecondValue));
+                Row.Scale = RowScale;
+                Rows.Add(Row);
+            };
+            AddProfilePair(TEXT("Resilience"), CoreDisposition.Traits.Resilience, TEXT("Creativity"), CoreDisposition.Traits.Creativity);
+            AddProfilePair(TEXT("Discipline"), CoreDisposition.Traits.Discipline, TEXT("Compassion"), CoreDisposition.Traits.Compassion);
+            AddProfilePair(TEXT("Adaptability"), CoreDisposition.Traits.Adaptability, TEXT("Boldness"), CoreDisposition.Traits.Boldness);
+            AddProfilePair(TEXT("Perseverance"), CoreDisposition.Traits.Perseverance, TEXT("Resourcefulness"), CoreDisposition.Traits.Resourcefulness);
 
             FRow SkillsHeader;
             SkillsHeader.Left = LLObserverText::SectionSkills;
@@ -982,41 +967,28 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
             SkillsHeader.GapBefore = SectionGap;
             Rows.Add(SkillsHeader);
 
-            if (Resident.Skills.Num() == 0)
+            if (!bHasCoreCivilization)
             {
-                FRow None;
-                None.Left = LLObserverText::NoneListed;
-                None.Scale = RowScale;
-                Rows.Add(None);
+                FRow None; None.Left = TEXT("Core skill data unavailable"); None.Scale = RowScale; Rows.Add(None);
             }
             else
             {
-                TArray<FName> SkillNames;
-                Resident.Skills.GetKeys(SkillNames);
-                SkillNames.Sort(FNameLexicalLess());
-                for (const FName& SkillName : SkillNames)
-                {
-                    FRow Row;
-                    Row.Left = SkillName.ToString();
-                    Row.Right = LLObserverLabels::SkillLabel(Resident.Skills[SkillName]);
-                    Row.RightColor = TextPrimary;
-                    Row.Scale = RowScale;
-                    Rows.Add(Row);
-                }
+                FRow Gathering; Gathering.Left = TEXT("Gathering"); Gathering.Right = Percent01(CoreCivilization.GatheringSkill); Gathering.RightColor = TextPrimary; Gathering.Scale = RowScale; Rows.Add(Gathering);
+                FRow Crafting; Crafting.Left = TEXT("Crafting"); Crafting.Right = Percent01(CoreCivilization.CraftingSkill); Crafting.RightColor = TextPrimary; Crafting.Scale = RowScale; Rows.Add(Crafting);
+                FRow Learning; Learning.Left = TEXT("Learning"); Learning.Right = Percent01(CoreCivilization.LearningSkill); Learning.RightColor = TextPrimary; Learning.Scale = RowScale; Rows.Add(Learning);
             }
 
-            FRow LikesHeader;
-            LikesHeader.Left = LLObserverText::SectionLikes;
-            LikesHeader.LeftColor = TextSection;
-            LikesHeader.Scale = SectionScale;
-            LikesHeader.GapBefore = SectionGap;
-            Rows.Add(LikesHeader);
+            FRow PreferencesHeader;
+            PreferencesHeader.Left = TEXT("Preferences");
+            PreferencesHeader.LeftColor = TextSection;
+            PreferencesHeader.Scale = SectionScale;
+            PreferencesHeader.GapBefore = SectionGap;
+            Rows.Add(PreferencesHeader);
 
-            FRow LikesRow;
-            LikesRow.Left = LLObserverLabels::JoinNames(Resident.Preferences);
-            LikesRow.LeftColor = TextPrimary;
-            LikesRow.Scale = RowScale;
-            Rows.Add(LikesRow);
+            AddProfilePair(TEXT("Socializing"), CoreDisposition.Preferences.Socializing, TEXT("Solitude"), CoreDisposition.Preferences.Solitude);
+            AddProfilePair(TEXT("Exploration"), CoreDisposition.Preferences.Exploration, TEXT("Crafting"), CoreDisposition.Preferences.Crafting);
+            AddProfilePair(TEXT("Gathering"), CoreDisposition.Preferences.Gathering, TEXT("Comfort"), CoreDisposition.Preferences.Comfort);
+            AddProfilePair(TEXT("Novelty"), CoreDisposition.Preferences.Novelty, TEXT("Order"), CoreDisposition.Preferences.Order);
             break;
         }
 
@@ -1067,13 +1039,33 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
 
             for (const FLLCoreRelationshipSnapshot& Relation : Relations)
             {
-                FRow Row;
-                Row.Left = Relation.TargetName.IsEmpty() ? TEXT("Resident") : Relation.TargetName;
-                Row.Right = FString::Printf(TEXT("bond %.2f · trust %.2f · romance %.2f"),
-                    Relation.SocialBond, Relation.Trust, Relation.RomancePotential);
-                Row.RightColor = TextPrimary;
-                Row.Scale = RowScale;
-                Rows.Add(Row);
+                FRow Header;
+                Header.Left = Relation.TargetName.IsEmpty() ? TEXT("Resident") : Relation.TargetName;
+                Header.Right = FString::Printf(TEXT("bond %s · romance %s"), *Scalar02(Relation.SocialBond), *Scalar02(Relation.RomancePotential));
+                Header.RightColor = TextPrimary;
+                Header.Scale = RowScale;
+                Header.GapBefore = Rows.Num() > 0 ? SectionGap : 0.0f;
+                Rows.Add(Header);
+
+                FRow Social;
+                Social.Left = FString::Printf(TEXT("Affection %s · Trust %s · Respect %s · Comfort %s · Familiarity %s"),
+                    *Scalar02(Relation.Affection), *Scalar02(Relation.Trust), *Scalar02(Relation.Respect),
+                    *Scalar02(Relation.Comfort), *Scalar02(Relation.Familiarity));
+                Social.Scale = SectionScale;
+                Rows.Add(Social);
+
+                FRow Attraction;
+                Attraction.Left = FString::Printf(TEXT("Attraction %s · Romantic interest %s · Sexual attraction %s · Commitment %s"),
+                    *Scalar02(Relation.Attraction), *Scalar02(Relation.RomanticInterest),
+                    *Scalar02(Relation.SexualAttraction), *Scalar02(Relation.Commitment));
+                Attraction.Scale = SectionScale;
+                Rows.Add(Attraction);
+
+                FRow Friction;
+                Friction.Left = FString::Printf(TEXT("Conflict %s · Jealousy %s · Fear %s · Grudge %s"),
+                    *Scalar02(Relation.Conflict), *Scalar02(Relation.Jealousy), *Scalar02(Relation.Fear), *Scalar02(Relation.Grudge));
+                Friction.Scale = SectionScale;
+                Rows.Add(Friction);
             }
             break;
         }
@@ -1227,7 +1219,6 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
         }
     }
 
-    // ---- Measure rows --------------------------------------------------------
     float WidestLeft = 0.0f;
     for (const FRow& Row : Rows)
     {
@@ -1277,7 +1268,6 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
     }
     ContentHeight += Gap * FMath::Max(0, Lines.Num() - 1);
 
-    // ---- Draw ------------------------------------------------------------------
     const float DesiredHeight = Pad + BackRowHeight + TabBarHeight + Gap + ContentHeight + Pad;
     const float PanelHeight = FMath::Min(DesiredHeight, FMath::Max(0.0f, MaxPanelBottom - PanelY));
 

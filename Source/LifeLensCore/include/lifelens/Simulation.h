@@ -8,10 +8,12 @@
 #include "CivilizationActivityReadModel.h"
 #include "CivilizationKnowledgeTransmission.h"
 #include "CivilizationObserverReadModel.h"
+#include "Death.h"
 #include "DecisionExecution.h"
 #include "EnvironmentalExposure.h"
 #include "EnvironmentalResidue.h"
 #include "ObserverReadModelV2.h"
+#include "Parenting.h"
 #include "Planner.h"
 #include "PrimitiveSanitation.h"
 #include "SimulationSnapshot.h"
@@ -161,12 +163,15 @@ private:
     void beginPlan(Character& c,Runtime& r);
     void advanceAction(Character& c,Runtime& r);
     void failPlan(Runtime& r);
+    void clearRuntimeActivity(Runtime& r);
     bool tryCivilizationDecision(Character& c,Runtime& r);
     bool trySocialDecision(Character& c,Runtime& r);
     void processCivilizationKnowledgeEvent(Character& actor,const CivilizationEvent& event);
     void advanceCivilizationKnowledgeTeaching();
+    void advanceDependentCare();
     void advanceAutonomousFamilyProgression();
     void updatePregnanciesAndBirths();
+    void evaluateDailyMortality();
     void evaluateDailyFamilyTransitions();
     CharacterId nextCharacterId() const;
     HouseholdId nextHouseholdId() const;

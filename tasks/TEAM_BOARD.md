@@ -16,11 +16,39 @@ Authority rule: Core/World owns simulation truth. UI/Character/Environment/World
 
 ## Current Assist Locks
 
-None.
+**None.**
+
+Current Jjun Core task `Lifecycle Core Correctness v1` is entirely inside the Jjun-owned Core/Simulation lane and does not require a cross-owner assist lock.
 
 Jjun helping Dagyeom defaults to REVIEW_ONLY. Do not direct-push `dagyeom/*`; use assist branch/PR when a real cross-owner code change is required.
 
 ## Recently released Assist Locks
+
+### ASSIST_LOCK-CHARACTER-OBSTACLE-1 — RELEASED
+- requester/implementer: Jjun.
+- owner lane: Dagyeom — Character presentation.
+- implementation branch: `jjun/world-obstacle-collision-v1`.
+- PR #114 merged to `main` as `3a544fc36d743d9afa1b3ec3100f4577db13ba75`.
+- locked file was `Source/LifeLens/Characters/LLResidentCharacter.cpp` only.
+- delivered: query-only tree/meaningful-rock collision proxies, constant-speed swept movement, bounded slide/side-step, explicit pebble traversal, stable opposite-side fallback.
+- Core action/target authority was not changed by the obstacle PR.
+- release condition satisfied after final-head compile completion and merge; normal Character-file ownership returns to Dagyeom.
+- PIE/APK feel QA remains a product-validation item, not an ownership lock.
+
+### ASSIST_LOCK-UI-OBSERVER-DATA-1 — RELEASED
+- requester/implementer: Jjun.
+- owner lane: Dagyeom — UI / Observer presentation.
+- implementation branch: `jjun/observer-data-completeness-v1`.
+- purpose: complete Observer resident-detail fidelity end-to-end while keeping Core/World as the only simulation authority.
+- PR #112 merged to `main` as `27ba0aa147fc38ad05cf388e9390dd2dcaccdf30`.
+- validation: Core Tests #515 **PASS, 52/52** including `test_traits_preferences`; Preflight #627 **PASS**; Unreal Linux Compile #137 **PASS**.
+- delivered Core provider: `Source/LifeLensCore/include/lifelens/TraitsPreferences.h` -> `ULLCoreBridgeSubsystem::GetResidentTraitPreferenceObservation` -> Observer detail.
+- delivered trait dimensions: Resilience / Creativity / Discipline / Compassion / Adaptability / Boldness / Perseverance / Resourcefulness.
+- delivered preference dimensions: Socializing / Solitude / Exploration / Crafting / Gathering / Comfort / Novelty / Order.
+- Traits/Preferences are deterministic Core read models derived from persistent Personality/Genetics, reproduce through Save/Load, and do not create a second mutable authority.
+- the same Core profiles now influence ordinary Social/Civilization utility with bounded disposition effects; urgent Hunger/Thirst provision gathering remains outside ordinary preference modulation so survival priority is preserved.
+- Observer Level 2 also consumes authoritative numeric Needs, all 14 Core personality dimensions, civilization Skills, directional Relationships, Family, and Knowledge/Gear data.
+- release condition satisfied: normal Observer layout/styling/mobile-maintenance ownership returns to Dagyeom while the authoritative data contract remains fixed by `docs/OBSERVER_RESIDENT_DETAIL_DATA_v1.md`.
 
 ### ASSIST_LOCK-UI-CAMERA-1 — RELEASED
 - requester/implementer: Jjun.
@@ -45,10 +73,11 @@ Jjun helping Dagyeom defaults to REVIEW_ONLY. Do not direct-push `dagyeom/*`; us
 - directive exposes authoritative material/item/technique/quantity/result/action-minute, stable resource/storage IDs, and Core-owned spatial targets when available.
 - `ResourceNode` and `StorageSite` now own authoritative `GridPos`; generated resource nodes preserve the exact `NaturalResourcePatch.pos`.
 - ordinary Gather resolves to the actual resource-node position; Store resolves to the actual storage-site position. Character Presentation must consume those targets rather than guess nearby scenery.
+- obstacle-collision follow-up: the authoritative `GridPos` is the target locus, not a requirement for the resident capsule to overlap the exact visual/collider centre. If a tree/rock/storage visual has a blocking collision proxy, Character Presentation must stop within a truthful interaction radius outside that blocker, face/interact with the same Core target, and must not move, replace, or fabricate the Core coordinates.
 - civilization snapshot extension v2 persists resource/storage positions while retaining v1 read compatibility; generated resource positions can still resolve from immutable natural patches for legacy v1 data.
 - sanitation-site work continues to use the real Core-supplied site position.
 - requested Character work: Context Motion Router consumes the directive and selects validated talking/sit/interact/pickup/kneeling/fallback motions without creating simulation truth.
-- no Jjun direct changes to `Source/LifeLens/Characters/**`.
+- no Jjun direct changes to `Source/LifeLens/Characters/**` outside an explicit assist lock.
 - no GitHub review request is required merely because Dagyeom will consume the API.
 - status: **PROVIDER FULLY DONE / PRESENTATION CONSUMPTION READY**. Does not block Core work.
 

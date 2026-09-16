@@ -4,207 +4,188 @@
 > Long-term order: `docs/DEVELOPMENT_MILESTONES.md`.
 > Durable design decisions: `docs/DECISION_LOG.md`.
 
-Last reconciled: 2026-09-16 KST after PR #111 merge.
+Last reconciled: 2026-09-16 KST during Lifecycle Core Correctness v1.
 
 ## Current main baseline
 
-Latest functional checkpoint covered here:
+Latest functional checkpoints:
 - PR #108 — Android build pipeline split: **MERGED** as `0d3da3d7f69c2e3c2ad54b2b4f43d19822ee8760`.
 - PR #109 — Observer Camera Control v1 refresh: **MERGED** as `47f75d2cb7fd93b26b8b2082bf9f30cfafe67bed`.
 - PR #110 — Observer mobile UI polish refresh: **MERGED** as `e6443d693076791e3981047d827ff5a64e4858f2`.
 - PR #111 — Civilization resource/storage spatial targets: **MERGED** as `dda35bac7cef4a88433f4f6a362b89c1b3ea2eee`.
-- TEAM_BOARD reconciliation after #111: `cd8245378b87bcbb4603ed2dd2deccc1b6bea5d1`.
+- PR #112 — Observer Resident Detail Data v1 + authoritative Traits/Preferences: **MERGED** as `27ba0aa147fc38ad05cf388e9390dd2dcaccdf30`.
+- PR #114 — World Obstacle Collision v1: **MERGED** as `3a544fc36d743d9afa1b3ec3100f4577db13ba75`.
 
 Authority rule remains unchanged: Core/World owns simulation truth. UI/Character/Environment/WorldPresentation presents that truth and must not create a second authority.
 
+## Active branch checkpoint
+
+### Lifecycle Core Correctness v1 — ACTIVE
+
+Canonical contract: `docs/LIFECYCLE_CORE_CORRECTNESS_v1.md`.
+
+Branch: `jjun/lifecycle-core-correctness-v1`.
+
+Purpose:
+- fix lifecycle correctness gaps found during the full-source audit before deeper society/civilization expansion;
+- make dead residents truly inactive;
+- stop Baby/Toddler from running adult autonomous AI;
+- connect authoritative parent care without synthesizing food/water;
+- prevent autonomous close-kin romance;
+- give newborns a real parent-relative runtime position;
+- connect deterministic natural death to pregnancy/household/romance cleanup.
+
+Implementation in progress:
+- `Genealogy.h`: prohibited genetic romance kinship rule.
+- `Pregnancy.h`: lifecycle termination API.
+- `Death.h`: deterministic daily natural mortality policy; death memory provenance corrected to the survivor who owns the memory.
+- `Parenting.h`: `requiresDirectCare`, resource-aware Feed, `ToiletAssist`, living-parent validation.
+- `Simulation.h/.cpp`: production lifecycle wiring.
+- `test_lifecycle_runtime_correctness.cpp`: dead-runtime / direct-care / incest / newborn-position / death cleanup integration coverage.
+
+Expected validation gate before merge:
+- all Core tests PASS including `test_lifecycle_runtime_correctness`;
+- deterministic harness PASS;
+- Preflight PASS;
+- Unreal Linux UHT/UBT PASS;
+- Android build is not required solely for this Core milestone.
+
 ## Recently closed product checkpoints
 
-### World Visual / production map integration — DONE
-- World Visual delivery merged through PR #90 and follow-up integration through #91/#92/#96.
-- production map: `/Game/Maps/LifeLensWorld`.
-- default/startup map points to `/Game/Maps/LifeLensWorld`.
-- WorldPresentation consumes authoritative Core/World read contracts only.
+### World Obstacle Collision v1 — DONE / DEVICE FEEL QA REMAINS
 
-### Hardcoding Cleanup B — DONE
-- PR #99 merged as `1ca6db8f276cf01211a8ce8c023d2e8d8107d6cd`.
-- Needs / UtilityAI tuning flows `DefaultGame.ini -> UE Config -> immutable Core SimulationRuleset -> Simulation`.
+PR #114 merged as `3a544fc36d743d9afa1b3ec3100f4577db13ba75`.
 
-### Character facing / backwards-walk IR-B — DONE
-- PR #102 merged as `d3c87996499b353c742ce97fd90978633b9b7ca0`.
-- Quaternius imported skeleton visual forward is local `+Y`; presentation yaw correction uses `-90` against Unreal +X actor/world forward.
-- PIE/debug evidence confirmed residents face travel direction.
+Delivered:
+- query-only tree/meaningful-rock collision proxies;
+- explicit pebble traversal;
+- constant-speed swept resident movement;
+- remaining-frame-distance slide/side-step budget;
+- stable alternate tangent when the first local bypass is blocked;
+- Gather/Store interaction-radius rule documented without moving Core coordinates.
 
-### Context Action Contract v1 — DONE
-- PR #103 merged as `cba58803c67f971eb1273aaf4e35f5c22b980f01`.
-- `FLLCoreActionDirective` exposes authoritative civilization presentation context for `Gather / Store / Experiment / Craft`.
-- action/result/material/item/technique/quantity/time/stable entity IDs are presentation read data only.
-- runtime work provenance is not persisted as stale animation replay state.
-- Character Presentation consumer work remains owned by Dagyeom through IR-D.
+Ownership closeout:
+- `ASSIST_LOCK-CHARACTER-OBSTACLE-1` is **RELEASED**.
+- normal Character ownership returns to Dagyeom.
 
-### Early Survival Provisioning — DONE
-- PR #106 merged as `4b8c938629cca18fafad00de0abcfb8cf41b36c9`.
-- urgent Hunger/Thirst can promote only the real matching ResourceNode Gather when no matching carried provision exists.
-- no resource is synthesized.
-- deterministic regression covers four-founder/four-day production-like recovery, real Water/PlantFood acquisition, Drink/Eat completion, and outdoor sanitation residue.
+Important audit follow-up: the current obstacle proxy source is still WorldPresentation dressing. That is a known authority inversion and is tracked below for the later World Authority normalization milestone; #114 remains a visual-clipping mitigation, not the final authoritative obstacle model.
 
-### Android pipeline timeout/split recovery — DONE / SEED VALIDATION PENDING
-- PR #107 increased the old monolithic seed/full timeout budget and merged as `e58374a4c3a427ae47c2c507ae7c23b282d0078e`.
-- PR #108 then split the workflow into two jobs and merged as `0d3da3d7f69c2e3c2ad54b2b4f43d19822ee8760`.
-- `seed-engine` builds Linux editor/cook tools and writes the encrypted host cache.
-- `build-android` is a separate job; a `seed` dispatch chains into it automatically after the seed job.
-- `fast` reuses the encrypted Android engine cache and must fail clearly on cache miss rather than silently falling back to a full engine build.
-- the historical seed Run #3 failure belongs to the pre-split workflow and is no longer the canonical current pipeline state.
-- **No seed has yet been dispatched against the split #108 workflow.** The next Android pipeline validation should run `mode=seed` once on latest `main`; after a successful seed/cache creation, normal APK validation should use `fast`.
+### Observer Resident Detail Data v1 — DONE
 
-### Observer Camera Control v1 — DONE / DEVICE FEEL QA REMAINS
-- original PR #105 was superseded and closed.
-- refreshed PR #109 merged as `47f75d2cb7fd93b26b8b2082bf9f30cfafe67bed`.
-- PC: wheel zoom, right-drag orbit, middle-drag pan, left-click selection preserved.
-- Android: short tap selection on release, one-finger orbit, pinch zoom, two-finger pan.
-- distance/elevation clamps and smoothing are integrated.
-- `ASSIST_LOCK-UI-CAMERA-1` is **RELEASED**; there are currently no assist locks.
-- compile integration is complete; final gesture feel still belongs to real device QA.
+PR #112 delivered direct-Core Needs, all 14 Personality dimensions, explicit 8-axis Traits, explicit 8-axis Preferences, civilization Skills, directional Relationships, Family, Knowledge/Gear, and bounded Trait/Preference behavior integration.
 
-### Observer mobile UI polish — DONE / DEVICE QA REMAINS
-- refreshed PR #110 merged as `e6443d693076791e3981047d827ff5a64e4858f2`.
-- Level2 -> Level1 Back flow, zero-resident empty state, resident-strip de-emphasis, safe-area/cutout handling, minimum touch targets, overflow indicators and short selection/focus feedback are integrated.
-- UI and camera refreshed branches do not overlap.
+Validation on final PR head:
+- Core Tests #515: **PASS, 52/52**.
+- deterministic harness smoke: **PASS**.
+- Preflight #627: **PASS**.
+- Unreal Linux Compile #137: **PASS**.
 
 ### Civilization resource/storage spatial authority — DONE
 - PR #111 merged as `dda35bac7cef4a88433f4f6a362b89c1b3ea2eee`.
-- validation: Core Tests #502 PASS, Preflight #617 PASS, Unreal Linux Compile #130 PASS.
-- Core test suite at #111: **51/51 PASS**, including `test_civilization_spatial_targets`; deterministic harness smoke also PASS.
-- `ResourceNode` and `StorageSite` now own authoritative `GridPos`.
-- production-generated ResourceNodes preserve the exact `NaturalResourcePatch.pos` from world generation.
-- compatibility/test resources have deterministic fixed positions.
-- civilization snapshot extension v2 persists resource/storage positions and retains v1 read compatibility.
-- generated natural resource positions remain recoverable from immutable natural patches for legacy v1 data.
-- `ULLCoreBridgeSubsystem::GetResidentActionDirective` resolves ordinary Gather to the actual resource-node position and Store to the actual storage-site position when presenting civilization work.
-- Character Presentation must consume those Core-owned targets; it must not guess a nearby tree, rock, container, or scenery proxy.
-- the old tracked "Civilization resource/storage spatialization gap" is **RESOLVED** and must not be reopened without new contradictory runtime evidence.
+- ResourceNode and StorageSite own authoritative `GridPos`.
+- generated ResourceNodes preserve exact `NaturalResourcePatch.pos`.
 
-## Current active product work
+### Observer Camera Control / mobile UI polish — DONE / DEVICE QA REMAINS
+- Camera PR #109 and mobile UI PR #110 are merged.
+- PC and Android observer gestures exist; device feel remains a QA item.
+
+### Early Survival Provisioning — DONE
+- PR #106 merged as `4b8c938629cca18fafad00de0abcfb8cf41b36c9`.
+- urgent Hunger/Thirst promotes only real matching ResourceNode Gather; no synthetic food/water.
+
+### Context Action Contract v1 — PROVIDER DONE / IR-D CONSUMER OPEN
+- PR #103 typed Context Action contract and PR #111 spatial targets are merged.
+- Character Presentation consumer remains Dagyeom-owned.
+
+## Current active / next work
 
 ### Jjun lane
 
-Status: `ANDROID SPLIT PIPELINE SEED VALIDATION PENDING / NEXT CORE SLICE AVAILABLE`
+Status: `LIFECYCLE CORE CORRECTNESS V1 ACTIVE`
 
-Current facts:
-- no open Jjun feature PR from #109/#110/#111 work remains.
-- no assist lock is active.
-- #111 spatial provider work is complete.
-- the next Android pipeline validation is one `mode=seed` dispatch on latest main. A successful seed should automatically continue into `build-android`; subsequent APK builds should use `fast`.
-- do not start `full` unless the split-cache path itself proves unusable and evidence requires a fallback.
-- IR-D Character Presentation consumption remains Dagyeom-owned; Jjun changes are only needed if a real Core/Bridge contract deficiency appears.
+Current ordered scope:
+1. dead-resident runtime guard;
+2. dependent-child stage gates + Parenting runtime;
+3. close-kin autonomous romance prohibition;
+4. newborn runtime position and growth-rate correctness;
+5. deterministic death + pregnancy/household/romance lifecycle cleanup;
+6. regression tests + docs + Core/Preflight/Linux validation.
+
+Next canonical priority after this milestone:
+- **Action Completion Unification** — Social / Civilization / Parenting must move from "decision executes immediately" to `decision -> movement/interaction -> authoritative Core completion/ACK`, matching the already-correct physical action pattern.
+
+After Action Completion Unification:
+- World/Facility/Obstacle authority normalization;
+- legacy AI/projection mutator removal;
+- child growth presentation/capsule integration;
+- Social Communication & Localization;
+- Emotion Runtime Integration.
 
 ### Dagyeom lane
 
-Status: `IR-B DONE / IR-D CONTEXT MOTION READY / UI-CAMERA LOCK RELEASED`
+Status: `IR-D CONTEXT MOTION CONSUMER WORK`
 
 Current facts:
-- IR-B is resolved and merged through #102.
-- IR-D provider contract is merged through #103 and spatial target follow-up #111.
-- Character Presentation can now consume real Gather/Store target coordinates instead of scenery guesses.
-- Dagyeom owns the Context Motion Router and action-to-animation presentation.
-- Observer Camera and mobile UI refreshes are merged; remaining device/visual checks are QA, not ownership blockers.
-- no Jjun direct changes to `Source/LifeLens/Characters/**` unless a new explicit assist lock is opened.
+- provider contracts are merged through #103/#111;
+- Character Presentation owns Context Motion Router/action-to-animation consumption;
+- there is currently **no Jjun assist lock** on Character files;
+- Observer normal presentation maintenance remains Dagyeom-owned.
+
+### Android / device lane
+
+Status: `GATE B PENDING — NO CANONICAL SUCCESSFUL SEED CACHE RECORDED HERE`
+
+Execution rule:
+1. Run `mode=seed` once when a fresh engine cache is required.
+2. Successful `seed-engine` chains into Android build/APK.
+3. After a genuinely successful Android engine cache exists, use `mode=fast` for normal APK checks.
+4. Use `full` only as evidence-driven fallback.
+
+Do not run repeated expensive seed/full jobs blindly.
+
+## Full-source audit findings — ordered backlog
+
+### P0 — current / next correctness work
+
+- **Lifecycle runtime** — ACTIVE in current branch.
+- **Action completion authority** — Social/Civilization currently apply outcomes before physical arrival; Parenting runtime introduced by lifecycle work is also Core-immediate until the next unification milestone.
+- **World obstacle/facility authority** — current obstacle collision mirrors WorldPresentation dressing; persistent ActivityAnchor can provide facility behavior without a stable Core facility ID. Final model must be Core/World-owned.
+
+### P1 — after P0 correctness
+
+- Gather/Store spatial target should ultimately be authoritative in the Core activity observation itself, not only resolved in the Unreal bridge.
+- WorldDirector still does not fully consume Civilization directives as physical movement/context work.
+- legacy `ULLDecisionComponent` remains a second callable AI surface even though WorldDirector no longer uses it.
+- legacy `ApplyActionOutcome` / `ApplySocialInteraction` projection mutators remain public compatibility APIs.
+- death state is absent from legacy `FLLResidentData`; World/Observer actor cleanup must be completed when death presentation is integrated.
+- Baby/Toddler visual mesh scale and ACharacter capsule scale are not lifecycle-synchronized.
+- Character appearance is built once; LifeStage growth does not yet rebuild/update presentation scale.
+- production New Game starts with zero StorageSites and currently has no storage-construction progression, so Store is not naturally reachable.
+- civilization knowledge witness/teaching currently lacks physical distance/meeting requirements.
+- Observer Detail overflow is indicated but not truly scrollable.
+
+### P2 — cleanup / performance
+
+- environmental residue visualizer can rebuild HISM/ground traces frequently as residue state changes; profile on Android during long-run testing.
+- long frame/catch-up simulation stepping needs an explicit per-frame budget.
+- `Source/LifeLensCore/src/SimulationSnapshotCodecLegacy.cpp` is uncompiled dead source under the current-only pre-release save policy.
+- `LLCoreActionTypes.h` has stale comments predating resource/storage spatial authority.
+- Preflight still asserts existence of some legacy compatibility APIs, which must be updated when those APIs are deliberately removed.
 
 ## Current validation risk
 
-`OPEN PIE/APK VISUAL + DEVICE QA RISK — NOT A CORE/COMPILE BLOCKER`
+`OPEN PIE/APK VISUAL + DEVICE QA RISK — NOT A CORE AUTHORITY BLOCKER`
 
-The compile gates prove C++/UHT/UBT integration, not every presentation/input variant. The next real PIE/APK pass should confirm:
-- `LifeLensWorld` opens as the production map.
-- founders and generated-world presentation remain readable.
-- authoritative resource patches remain visible.
-- corrected facing remains valid for stationary interaction targets and male/female/outfit variants.
-- Android framing/safe area remains acceptable.
-- Observer Camera gestures feel natural and do not trigger unintended resident selection.
-- Gather residents approach the actual resource target supplied by Core rather than an arbitrary scenery object.
-- Store presentation uses the actual storage target once storage exists.
-- Sleep fallback visibly and causally relieves Energy through the UE execution/ACK path.
-- outdoor Hygiene fallback visibly and causally relieves Hygiene through the UE execution/ACK path.
-- the old food/water provisioning deadlock does not reappear in runtime observation.
-
-## Tracked implementation gaps — DO NOT DROP
-
-### Emotion runtime integration gap
-
-Resident Emotion can remain all `0%` because founders begin neutral and many ordinary life events still do not drive emotion changes.
-
-Required follow-up:
-- keep neutral-at-start semantics; do not random-fill emotions just to avoid zeros.
-- causally connect meaningful survival/life outcomes: unresolved need pressure, relief, contamination/hazard, successful gathering/crafting/work, repeated failure/frustration, threat/loss, etc.
-- audit the Master Spec emotion set against the currently implemented dimensions.
-- add Core regression coverage for daily-life emotion generation/decay and Observer projection.
-
-### Observer resident-detail data fidelity gap
-
-PIE review showed several detail tabs are structurally present but still hide or bypass authoritative Core data.
-
-Required follow-up:
-- **Needs:** keep human labels but also show authoritative numeric value/bar.
-- **Personality:** expose the full 14 Core dimensions rather than only five legacy axes.
-- **Traits & Skills:** stop using unpopulated legacy DTO fields; use authoritative Core skills/traits. `None listed` must not falsely imply no ability.
-- **Relationships:** keep bond/trust/romance summary if useful, but expose the underlying directional relationship dimensions in detail.
-- **Emotion:** show authoritative dimensions/derived values once the separate runtime integration gap is addressed.
-- **Family:** `None` is valid for unrelated/single founders; do not invent links.
-- **Overview:** remain concise.
-- **Knowledge & Gear:** keep the current direct-Core model as the pattern for other tabs.
-
-Data-authority rule:
-- Observer may format/summarize but must not create a second resident-state authority.
-
-### Localization + social communication presentation gap
-
-Canonical contract: `docs/SOCIAL_COMMUNICATION_LOCALIZATION_v1.md`.
-
-Required follow-up:
-- normal-user UI defaults to Korean; Core identifiers remain language-neutral.
-- raw identifiers such as `UseToilet` must not leak into final user UI.
-- actual Core social actions must be observable through approach/facing/gaze/context animation plus appropriately tiered bubbles/icons/Event Feed/history.
-- dialogue baseline is deterministic/data-driven and must not require a paid LLM/API.
-- Presentation must not invent social events that Core did not issue.
-
-Ownership:
-- Jjun/Core: authoritative social action/event/outcome/read context where needed.
-- Dagyeom: Korean UI rendering and social presentation.
-
-### Character context-motion gap
-
-Canonical contract: `docs/CHARACTER_CONTEXT_MOTION_v1.md`.
-
-Current runtime locomotion is primarily `Idle / Walk / Jog / Sprint`; imported context animation assets are not implementation until wired to authoritative actions.
-
-Required follow-up in Character Presentation:
-- Context Motion Router.
-- social talking/facing/gaze.
-- sitting enter/idle/exit where real sit affordances exist.
-- generic interact/pickup/kneeling work mappings.
-- truthful fallbacks for Eat/Drink/Sleep/Toilet/Hygiene.
-- privacy-first Toilet/outdoor sanitation sequence with reusable local Privacy Mask.
-- consume merged typed `Gather / Store / Experiment / Craft` data from #103.
-- consume merged authoritative Gather/Store spatial targets from #111.
-
-## Active blockers / locks
-
-- Formal Integration Requests: **IR-D open**, provider fully DONE / presentation consumption READY.
-- Assist locks: **None**.
-- Open Jjun code PRs from the camera/UI/spatial sequence: **None**.
-- Core/Preflight/Unreal compile blocker for #111: **None**.
-- Android pipeline: **not blocked by the old pre-split Run #3 failure**; the split #108 workflow simply still needs its first real `seed` validation.
-- Device visual/input QA remains open but is not a code/compile blocker.
-
-## Android validation rule
-
-For the current split workflow:
-1. Run `mode=seed` once on latest `main` when a fresh engine cache is required.
-2. A successful `seed-engine` automatically allows the chained `build-android` job to produce the APK.
-3. After a valid Android engine cache exists, use `mode=fast` for normal APK checks.
-4. Use `full` only as an evidence-driven fallback, not as the default.
-
-Do not run repeated expensive seed/full jobs blindly. Capture the exact failing job/step/log first if a future run fails.
+Next real PIE/APK pass should confirm:
+- production map boots correctly;
+- four founders and generated world remain readable;
+- tree/meaningful-rock clipping is blocked without stuck/jitter/speed burst;
+- explicit pebbles/shrubs/grass remain traversable;
+- Gather approaches the actual Core target using a truthful interaction radius;
+- Sleep/Hygiene fallbacks complete through UE physical ACK;
+- Observer Level 2 data remains readable;
+- camera/touch/safe area behavior remains correct.
 
 ## Long compile rule
 
-When a long UE compile/package is started, record HEAD + Run ID and continue safe independent work. Do not continuously poll. A successful compile is evidence for integration correctness, while visual/input quality still requires appropriate PIE/APK validation.
+When a long UE compile/package is started, record HEAD + Run ID and continue safe independent work. The user reports compile/package completion; **do not repeatedly poll a healthy long-running compile**. Do not restart a healthy run merely because the large Unreal image pull is slow. A successful compile is integration evidence; visual/input quality still requires PIE/APK validation.
