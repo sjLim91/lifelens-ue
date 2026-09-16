@@ -51,9 +51,19 @@ Display all 14 Core dimensions rather than the five-axis compatibility projectio
 
 ### Traits & Skills
 
-There is currently no explicit named Core trait taxonomy. The Observer must not interpret personality, genetics, appearance axes, or unrelated state as invented trait labels merely to fill this section.
+Authoritative trait source: `lifelens::TraitProfile` from `TraitsPreferences.h`, projected through `FLLCoreTraitPreferenceObservation`.
 
-Until a real Core trait model exists, the Traits section must state that no explicit Core trait taxonomy is available rather than showing `None listed`, which could falsely imply an authoritative empty trait set.
+The named trait model is explicit Core semantics, not a UI inference. The profile is deterministically derived from the resident's already-authoritative persistent `Personality` and `GeneticsProfile`, which avoids storing a second mutable copy that could desynchronize during Save/Load.
+
+The eight authoritative trait dimensions are:
+- Resilience
+- Creativity
+- Discipline
+- Compassion
+- Adaptability
+- Boldness
+- Perseverance
+- Resourcefulness
 
 Authoritative current resident skills come from `FLLCoreResidentCivilizationObservation`:
 - Gathering
@@ -62,7 +72,31 @@ Authoritative current resident skills come from `FLLCoreResidentCivilizationObse
 
 Legacy `FLLResidentData::Skills` is not the source for resident-detail display.
 
-There is currently no authoritative Core preference model. Legacy placeholder preferences must therefore remain hidden and the UI should say the authoritative model is not available yet rather than implying a real empty preference set.
+### Preferences
+
+Authoritative preference source: `lifelens::PreferenceProfile` from `TraitsPreferences.h`, projected through `FLLCoreTraitPreferenceObservation`.
+
+The preference profile follows the same authority rule as Traits: it is a named Core read model deterministically derived from persistent Personality/Genetics, not presentation-owned placeholder data. The eight authoritative preference dimensions are:
+- Socializing
+- Solitude
+- Exploration
+- Crafting
+- Gathering
+- Comfort
+- Novelty
+- Order
+
+The Observer displays these values directly and must not fall back to legacy `FLLResidentData::Preferences` placeholders.
+
+### Persistence / determinism rule for Traits & Preferences
+
+Traits and Preferences intentionally do not introduce duplicate mutable serialization fields. Their inputs (`Personality` and `GeneticsProfile`) are part of authoritative resident state and already survive Core snapshot encode/decode. Therefore the named profiles reproduce exactly after Save/Load while remaining consistent with the resident's source state.
+
+Regression coverage must prove:
+- same WorldSeed + PopulationSeed produces identical profiles;
+- changing PopulationSeed can produce different founder profiles;
+- all profile values remain normalized to `[0,1]`;
+- snapshot encode/decode reproduces exactly the same profiles.
 
 ### Emotion
 
@@ -109,15 +143,6 @@ Keep the existing direct-Core model for:
 
 This tab is the reference pattern for future Observer detail work: presentation consumes Core read contracts directly whenever they exist.
 
-## Data availability wording
-
-Use three distinct meanings:
-- real empty authoritative set -> `None` / `None listed` is acceptable;
-- Core runtime/read contract unavailable -> say Core data is unavailable;
-- product model does not exist yet -> explicitly say the authoritative model is not available yet.
-
-Do not conflate these states.
-
 ## Ownership / maintenance
 
 The data-completeness implementation is performed under `ASSIST_LOCK-UI-OBSERVER-DATA-1` on `jjun/observer-data-completeness-v1`.
@@ -128,7 +153,9 @@ After the milestone PR merges and the assist lock is released, normal Observer U
 
 - Needs detail reads Core and shows numeric satisfaction plus compact visual bar.
 - Personality detail shows all 14 Core dimensions.
-- Traits/Preferences do not use empty legacy placeholders as fake authority.
+- Traits show the eight authoritative Core `TraitProfile` dimensions.
+- Preferences show the eight authoritative Core `PreferenceProfile` dimensions.
+- Traits/Preferences are deterministic for the same population seed and reproduce exactly after snapshot restore.
 - Skills use authoritative civilization skill values.
 - Relationships expose the directional Core dimensions, not only summary scores.
 - Family continues to read authoritative Core family data.
