@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "Character.h"
-#include "Ids.h"
 #include "Relationship.h"
 #include "Romance.h"
 
@@ -188,6 +187,15 @@ public:
         if(state==nullptr || currentMinute<state->dueMinute) return false;
         state->stage=PregnancyStage::Completed;
         state->lastUpdateMinute=std::max(state->lastUpdateMinute,currentMinute);
+        return true;
+    }
+
+    bool terminate(CharacterId gestationalParent,int currentMinute)
+    {
+        PregnancyState* state=activeFor(gestationalParent);
+        if(state==nullptr) return false;
+        state->stage=PregnancyStage::Completed;
+        state->lastUpdateMinute=std::max(state->lastUpdateMinute,std::max(0,currentMinute));
         return true;
     }
 
