@@ -37,17 +37,20 @@ Jjun helping Dagyeom defaults to REVIEW_ONLY. Do not direct-push `dagyeom/*`; us
 ### IR-D — consume typed Context Action contract in Character Presentation — OPEN
 - requester: Jjun / Core-Bridge lane after product Context Motion requirement.
 - needed owner: Dagyeom — Character presentation.
-- provider PR #103 is **MERGED** as `cba58803c67f971eb1273aaf4e35f5c22b980f01`.
-- provider validation: Core Tests #490 PASS, Preflight #587 PASS, Unreal Linux Compile #118 (`34986684115`) PASS.
+- original provider PR #103 is **MERGED** as `cba58803c67f971eb1273aaf4e35f5c22b980f01`.
+- spatial-authority follow-up PR #111 is **MERGED** as `dda35bac7cef4a88433f4f6a362b89c1b3ea2eee`.
+- #111 validation: Core Tests #502 PASS, Preflight #617 PASS, Unreal Linux Compile #130 PASS.
 - consumer API: `FLLCoreActionDirective` in `Source/LifeLens/Simulation/LLCoreActionTypes.h` via `ULLCoreBridgeSubsystem::GetResidentActionDirective`.
 - actual civilization action set exposed by Core: `Gather / Store / Experiment / Craft` only.
-- directive also exposes authoritative material/item/technique/quantity/result/action-minute and stable resource/storage IDs.
-- `bHasCivilizationSpatialTarget` is false for ordinary Gather/Store because current Core resource/storage entities do not own positions; do not guess a nearby scenery target.
-- sanitation-site work is an exception when Core actually supplies the real site position.
+- directive exposes authoritative material/item/technique/quantity/result/action-minute, stable resource/storage IDs, and Core-owned spatial targets when available.
+- `ResourceNode` and `StorageSite` now own authoritative `GridPos`; generated resource nodes preserve the exact `NaturalResourcePatch.pos`.
+- ordinary Gather resolves to the actual resource-node position; Store resolves to the actual storage-site position. Character Presentation must consume those targets rather than guess nearby scenery.
+- civilization snapshot extension v2 persists resource/storage positions while retaining v1 read compatibility; generated resource positions can still resolve from immutable natural patches for legacy v1 data.
+- sanitation-site work continues to use the real Core-supplied site position.
 - requested Character work: Context Motion Router consumes the directive and selects validated talking/sit/interact/pickup/kneeling/fallback motions without creating simulation truth.
-- no Jjun direct changes to `Source/LifeLens/Characters/**`; 0 assist locks outside the explicit camera assist above.
+- no Jjun direct changes to `Source/LifeLens/Characters/**`.
 - no GitHub review request is required merely because Dagyeom will consume the API.
-- status: **PROVIDER DONE / PRESENTATION CONSUMPTION READY**. Does not block Core work.
+- status: **PROVIDER FULLY DONE / PRESENTATION CONSUMPTION READY**. Does not block Core work.
 
 ## Recently resolved Integration Requests
 
