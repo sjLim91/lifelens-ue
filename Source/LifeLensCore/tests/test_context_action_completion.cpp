@@ -20,15 +20,16 @@ static Character* findCharacter(Simulation& sim,CharacterId id)
     return nullptr;
 }
 
-static Character* findCharacter(SimulationStateSnapshot& snapshot,CharacterId id)
+static int totalResourceQuantity(const World& world)
 {
-    for(auto& character:snapshot.world.characters) if(character.id==id) return &character;
-    return nullptr;
+    int total=0;
+    for(const auto& node:world.resourceNodes) total+=node.quantity;
+    return total;
 }
 
-static int materialCount(const Character& character,MaterialKind material)
+static int totalInventoryUnits(const Character& character)
 {
-    return character.civilization.inventory.count(ItemKind::RawMaterial,material);
+    return inventoryUnitCount(character.civilization.inventory);
 }
 
 int main()
@@ -120,9 +121,8 @@ int main()
             sim.world().characters[i].deathMinute=sim.world().minute;
         }
 
-        ResourceNode& firstNode=sim.world().resourceNodes.front();
-        const int nodeBefore=firstNode.quantity;
-        const int inventoryBefore=materialCount(actor,firstNode.material);
+        const int resourcesBefore=totalResourceQuantity(sim.world());
+        const int inventoryBefore=totalInventoryUnits(actor);
 
         sim.step();
         const PendingContextActionObservation pending=
@@ -132,25 +132,21 @@ int main()
         CHECK(pending.civilizationIntent==CivilizationIntent::Gather);
         CHECK(pending.resourceNode!=0);
         CHECK(pending.hasSpatialTarget);
-        CHECK(firstNode.quantity==nodeBefore);
-        CHECK(materialCount(actor,firstNode.material)==inventoryBefore);
+        CHECK(totalResourceQuantity(sim.world())==resourcesBefore);
+        CHECK(totalInventoryUnits(actor)==inventoryBefore);
 
         GridPos wrong=pending.targetPos;
         wrong.x+=3;
         CHECK(!sim.completeExternalContextAction(actor.id,pending.token,wrong));
         CHECK(sim.observePendingContextAction(actor.id).active);
-        CHECK(firstNode.quantity==nodeBefore);
+        CHECK(totalResourceQuantity(sim.world())==resourcesBefore);
+        CHECK(totalInventoryUnits(actor)==inventoryBefore);
 
         CHECK(sim.completeExternalContextAction(
             actor.id,pending.token,pending.targetPos));
         CHECK(!sim.observePendingContextAction(actor.id).active);
-        ResourceNode* completedNode=nullptr;
-        for(auto& node:sim.world().resourceNodes){
-            if(node.id==pending.resourceNode){ completedNode=&node; break; }
-        }
-        CHECK(completedNode!=nullptr);
-        CHECK(completedNode->quantity<nodeBefore || completedNode->id!=firstNode.id);
-        CHECK(materialCount(actor,pending.material)>inventoryBefore);
+        CHECK(totalResourceQuantity(sim.world())<resourcesBefore);
+        CHECK(totalInventoryUnits(actor)>inventoryBefore);
     }
 
     // Direct-care children wait for a real caregiver interaction. ToiletAssist
