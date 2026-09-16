@@ -24,7 +24,7 @@ namespace
         return GEngine ? GEngine->GetSmallFont() : nullptr;
     }
 
-    ALLResidentCharacter* FindResidentActor(UWorld* World, FGuid ResidentId)
+    ALLResidentCharacter* FindSocialResidentActor(UWorld* World, FGuid ResidentId)
     {
         if (!World || !ResidentId.IsValid())
         {
@@ -88,7 +88,7 @@ FString ALLSocialObserverHUD::CurrentActionFor(const FLLResidentData& Resident) 
         }
     }
 
-    if (const ALLResidentCharacter* Actor = FindResidentActor(GetWorld(), Resident.ResidentId))
+    if (const ALLResidentCharacter* Actor = FindSocialResidentActor(GetWorld(), Resident.ResidentId))
     {
         return LLObserverLabels::IntentToString(Actor->GetCurrentIntent());
     }
@@ -149,7 +149,7 @@ void ALLSocialObserverHUD::DrawSpeechBubbles(
             continue;
         }
 
-        ALLResidentCharacter* Actor = FindResidentActor(GetWorld(), Event.ActorResidentId);
+        ALLResidentCharacter* Actor = FindSocialResidentActor(GetWorld(), Event.ActorResidentId);
         if (!Actor)
         {
             continue;
