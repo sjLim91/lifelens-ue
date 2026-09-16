@@ -16,24 +16,26 @@ Authority rule: Core/World owns simulation truth. UI/Character/Environment/World
 
 ## Current Assist Locks
 
-### ASSIST_LOCK-UI-OBSERVER-DATA-1 — ACTIVE
-- requester/implementer: Jjun.
-- owner lane: Dagyeom — UI / Observer presentation.
-- branch: `jjun/observer-data-completeness-v1`.
-- locked files: Observer resident-detail data presentation under `Source/LifeLens/UI/LLObserverHUD.*` and `Source/LifeLens/UI/LLObserverLabels.h` only as required by this milestone.
-- Jjun-owned supporting scope: `Source/LifeLens/Simulation/**`, `Source/LifeLensCore/**`, Core tests, and canonical work-state/docs.
-- purpose: complete Observer resident-detail fidelity end-to-end instead of splitting Core/Bridge and UI into separate handoffs.
-- acceptance scope: authoritative numeric Needs, all 14 Core personality dimensions, explicit authoritative 8-axis `TraitProfile`, explicit authoritative 8-axis `PreferenceProfile`, civilization Skills, detailed directional relationship dimensions, existing authoritative Family data, concise Overview, and preservation of direct-Core Knowledge/Gear behavior.
-- trait/preference provider: `Source/LifeLensCore/include/lifelens/TraitsPreferences.h` -> `ULLCoreBridgeSubsystem::GetResidentTraitPreferenceObservation` -> Observer detail. Profiles are deterministic Core read models derived from persistent Personality/Genetics rather than legacy UI placeholders or a second mutable authority.
-- trait dimensions: Resilience / Creativity / Discipline / Compassion / Adaptability / Boldness / Perseverance / Resourcefulness.
-- preference dimensions: Socializing / Solitude / Exploration / Crafting / Gathering / Comfort / Novelty / Order.
-- authority constraint: presentation may format/summarize Core values but must not fabricate resident traits, preferences, abilities, relationships, or family facts.
-- explicit non-scope: Emotion causality remains the later Emotion runtime-integration milestone; do not synthesize non-zero emotion values here.
-- release condition: Observer data-completeness PR is merged and the owner lane can resume normal UI maintenance/styling without a parallel data-authority implementation.
+None.
 
 Jjun helping Dagyeom defaults to REVIEW_ONLY. Do not direct-push `dagyeom/*`; use assist branch/PR when a real cross-owner code change is required.
 
 ## Recently released Assist Locks
+
+### ASSIST_LOCK-UI-OBSERVER-DATA-1 — RELEASED
+- requester/implementer: Jjun.
+- owner lane: Dagyeom — UI / Observer presentation.
+- implementation branch: `jjun/observer-data-completeness-v1`.
+- purpose: complete Observer resident-detail fidelity end-to-end while keeping Core/World as the only simulation authority.
+- PR #112 merged to `main` as `27ba0aa147fc38ad05cf388e9390dd2dcaccdf30`.
+- validation: Core Tests #515 **PASS, 52/52** including `test_traits_preferences`; Preflight #627 **PASS**; Unreal Linux Compile #137 **PASS**.
+- delivered Core provider: `Source/LifeLensCore/include/lifelens/TraitsPreferences.h` -> `ULLCoreBridgeSubsystem::GetResidentTraitPreferenceObservation` -> Observer detail.
+- delivered trait dimensions: Resilience / Creativity / Discipline / Compassion / Adaptability / Boldness / Perseverance / Resourcefulness.
+- delivered preference dimensions: Socializing / Solitude / Exploration / Crafting / Gathering / Comfort / Novelty / Order.
+- Traits/Preferences are deterministic Core read models derived from persistent Personality/Genetics, reproduce through Save/Load, and do not create a second mutable authority.
+- the same Core profiles now influence ordinary Social/Civilization utility with bounded disposition effects; urgent Hunger/Thirst provision gathering remains outside ordinary preference modulation so survival priority is preserved.
+- Observer Level 2 also consumes authoritative numeric Needs, all 14 Core personality dimensions, civilization Skills, directional Relationships, Family, and Knowledge/Gear data.
+- release condition satisfied: normal Observer layout/styling/mobile-maintenance ownership returns to Dagyeom while the authoritative data contract remains fixed by `docs/OBSERVER_RESIDENT_DETAIL_DATA_v1.md`.
 
 ### ASSIST_LOCK-UI-CAMERA-1 — RELEASED
 - requester/implementer: Jjun.
