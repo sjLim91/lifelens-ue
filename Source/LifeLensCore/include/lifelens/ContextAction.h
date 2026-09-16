@@ -50,6 +50,7 @@ struct PendingContextActionObservation {
     std::uint64_t token=0;
     ContextActionKind kind=ContextActionKind::None;
     int issuedMinute=-1;
+    int durationTicks=0;
 
     SocialIntent socialIntent=SocialIntent::None;
     CharacterId targetResident=0;
@@ -220,6 +221,7 @@ inline PendingContextActionObservation observePendingContextAction(
     result.token=pending.token;
     result.kind=pending.kind;
     result.issuedMinute=pending.issuedMinute;
+    result.durationTicks=contextActionDurationTicks(pending);
     result.hasSpatialTarget=pending.hasSpatialTarget;
     result.targetPos=pending.targetPos;
     result.sanitationSiteId=pending.sanitationSiteId;
