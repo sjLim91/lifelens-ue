@@ -37,6 +37,12 @@ public:
     UFUNCTION(BlueprintPure, Category="LifeLens|World")
     bool IsClaimedBy(FGuid ResidentId) const;
 
+    UFUNCTION(BlueprintPure, Category="LifeLens|World|Authority")
+    bool RequiresCoreFacilityBinding() const;
+
+    UFUNCTION(BlueprintPure, Category="LifeLens|World|Authority")
+    bool HasOperationalCoreFacilityBinding() const;
+
     bool TryReserve(FGuid ResidentId);
     bool MarkInUse(FGuid ResidentId);
     void Release(FGuid ResidentId);
@@ -56,6 +62,14 @@ public:
      */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="LifeLens|World")
     ELLWorldAffordanceTier AffordanceTier = ELLWorldAffordanceTier::Preferred;
+
+    /**
+     * Stable Core FacilityId backing this authored use point. Preferred and
+     * Primitive anchors are ignored unless this id resolves to an authoritative
+     * Operational+Active Core facility. Natural anchors do not require a facility id.
+     */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="LifeLens|World|Authority", meta=(ClampMin="0"))
+    int64 CoreFacilityId = 0;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="LifeLens|World")
     bool bEnabled = true;
