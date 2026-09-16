@@ -5,12 +5,15 @@
 #include <unordered_map>
 #include <vector>
 #include "Birth.h"
+#include "CivilizationActivityReadModel.h"
 #include "CivilizationKnowledgeTransmission.h"
 #include "CivilizationObserverReadModel.h"
+#include "Death.h"
 #include "DecisionExecution.h"
 #include "EnvironmentalExposure.h"
 #include "EnvironmentalResidue.h"
 #include "ObserverReadModelV2.h"
+#include "Parenting.h"
 #include "Planner.h"
 #include "PrimitiveSanitation.h"
 #include "SimulationSnapshot.h"
@@ -21,12 +24,14 @@ public:
     explicit Simulation(
         WorldSeed worldSeed=1,
         PopulationSeed populationSeed=0,
-        WorldGenerationVersion generationVersion=CurrentWorldGenerationVersion);
+        WorldGenerationVersion generationVersion=CurrentWorldGenerationVersion,
+        SimulationRuleset ruleset=DefaultSimulationRuleset);
     void setupDemo();
     void setupSocialDemo();
     void setupNewGame();
     void step();
     void runMinutes(int minutes);
+    const SimulationRuleset& ruleset() const{return ruleset_;}
     void setExternalPhysicalExecution(bool enabled){ world_.externalPhysicalExecution=enabled; }
     bool externalPhysicalExecutionEnabled() const{return world_.externalPhysicalExecution;}
     bool runtimePosition(CharacterId id,GridPos& outPosition) const {
@@ -96,6 +101,7 @@ public:
     std::vector<ResidentObservation> observeAllResidents() const;
     FamilyObservation observeFamily(CharacterId id) const;
     WorldOverviewObservation observeWorldOverview() const;
+    ResidentCivilizationActivityObservation observeResidentCivilizationActivity(CharacterId id) const;
     EnvironmentObservation observeEnvironment(std::size_t maxResidues=64) const {
         return buildEnvironmentObservation(world_.minute,world_.environmentalResidues,maxResidues);
     }
@@ -126,7 +132,20 @@ private:
         bool socialActive=false;
         SocialIntent socialIntent=SocialIntent::None;
         CharacterId socialTarget=0;
+
+        // Presentation provenance for the civilization action that actually
+        // executed. Intentionally omitted from SimulationRuntimeSnapshot so
+        // save/restore never replays stale work animations.
+        bool civilizationActive=false;
+        CivilizationEvent civilizationEvent{};
+        int civilizationActivityMinute=-1;
+        ResourceNodeId civilizationResourceNode=0;
+        StorageId civilizationStorage=0;
+        bool civilizationHasSpatialTarget=false;
+        GridPos civilizationTargetPos{};
+        std::uint64_t civilizationSanitationSiteId=0;
     };
+    const SimulationRuleset ruleset_;
     World world_;
     RelationshipBook relationships_;
     GenealogyBook genealogy_;
@@ -144,12 +163,15 @@ private:
     void beginPlan(Character& c,Runtime& r);
     void advanceAction(Character& c,Runtime& r);
     void failPlan(Runtime& r);
+    void clearRuntimeActivity(Runtime& r);
     bool tryCivilizationDecision(Character& c,Runtime& r);
     bool trySocialDecision(Character& c,Runtime& r);
     void processCivilizationKnowledgeEvent(Character& actor,const CivilizationEvent& event);
     void advanceCivilizationKnowledgeTeaching();
+    void advanceDependentCare();
     void advanceAutonomousFamilyProgression();
     void updatePregnanciesAndBirths();
+    void evaluateDailyMortality();
     void evaluateDailyFamilyTransitions();
     CharacterId nextCharacterId() const;
     HouseholdId nextHouseholdId() const;

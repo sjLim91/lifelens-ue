@@ -11,17 +11,20 @@
 작업 시작·재개 시 순서:
 1. `AGENTS.md`
 2. `docs/LIFELENS_SPEC_v1.1.md`
-3. `docs/DEVELOPMENT_MILESTONES.md`
-4. `docs/STATE_MANAGEMENT.md`
-5. `docs/DECISION_LOG.md`
-6. actual `main` HEAD / target branch / PR / Actions
-7. `tasks/WORK_STATE.md`
-8. `tasks/TEAM_BOARD.md`
-9. `tasks/HANDOFF_LOG.md` 최신 의미 있는 항목
+3. `docs/SOCIAL_COMMUNICATION_LOCALIZATION_v1.md`
+4. `docs/DEVELOPMENT_MILESTONES.md`
+5. `docs/STATE_MANAGEMENT.md`
+6. `docs/DECISION_LOG.md`
+7. actual `main` HEAD / target branch / PR / Actions
+8. `tasks/WORK_STATE.md`
+9. `tasks/TEAM_BOARD.md`
+10. `tasks/HANDOFF_LOG.md` 최신 의미 있는 항목
 
 `tasks/DAGYEOM_READY_QUEUE.md`는 과거 링크 호환용이다. **새 dispatch의 canonical source로 사용하지 않는다.**
 
 `docs/DECISION_LOG.md`는 쭌과 AI가 대화 중 확정한 설계·정리·작업 판단 원칙의 canonical log다. 제품 요구사항 자체를 바꾸는 결정은 Decision Log에만 두지 않고 `docs/LIFELENS_SPEC_v1.1.md`에도 반영한다.
+
+`docs/SOCIAL_COMMUNICATION_LOCALIZATION_v1.md`는 Master Spec의 대화/관계/Observer-first 요구사항을 구체화하는 canonical companion이다. 한국어 기본 UI, 언어 중립 Core 식별자, 사회행동 authority와 말풍선/Event Feed/animation 표현 경계를 이 문서 기준으로 맞춘다.
 
 ## 1. Development unit — milestone-sized delivery
 
@@ -61,6 +64,9 @@ Canonical milestone roadmap: `docs/DEVELOPMENT_MILESTONES.md`.
 - 실제 world consequence는 가능한 경우 presentation path를 가진다.
 - 무료 범위를 벗어나는 서비스/자산을 필수 의존성으로 만들지 않는다.
 - MetaHuman은 Android/mobile baseline 검증 뒤 upgrade path로만 둔다. 기본 캐릭터는 Quaternius CC0 Track B.
+- 일반 사용자용 UI의 기본 표시 언어는 한국어다. Core enum/action/event id는 언어 중립 식별자를 유지하고 Presentation/localization layer에서 번역한다.
+- 주민 간 사회행동은 숨은 수치 변화만으로 끝나면 안 된다. 실제 Core social event는 Observer가 적절한 animation/gaze/icon/bubble/history를 통해 이해할 수 있어야 한다.
+- 기본 사회대화 표현은 유료 LLM/API에 의존하지 않는다.
 
 ## 4. Ownership
 
@@ -87,6 +93,7 @@ Canonical milestone roadmap: `docs/DEVELOPMENT_MILESTONES.md`.
 ## 5. Shared state documents
 
 - `docs/LIFELENS_SPEC_v1.1.md` — 제품 최상위 요구사항 / 불변조건.
+- `docs/SOCIAL_COMMUNICATION_LOCALIZATION_v1.md` — 한국어 UI + 주민 사회행동 관찰 표현 canonical companion.
 - `docs/DEVELOPMENT_MILESTONES.md` — 큰 개발 단위와 gate 순서.
 - `docs/DECISION_LOG.md` — 대화 중 확정된 설계·정리·작업 판단 원칙.
 - `tasks/WORK_STATE.md` — **현재 active/ready/blocked state만** 기록.

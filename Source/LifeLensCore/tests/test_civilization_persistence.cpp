@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <cstdint>
 #include <iostream>
 #include <string>
@@ -74,16 +73,6 @@ static bool sameCivilizationWorld(const World& a,const World& b)
     return true;
 }
 
-static bool patchLittleEndianU32(std::vector<std::uint8_t>& bytes,std::size_t offset,std::uint32_t value)
-{
-    if(bytes.size()<offset+4) return false;
-    bytes[offset]=static_cast<std::uint8_t>(value&0xffu);
-    bytes[offset+1]=static_cast<std::uint8_t>((value>>8)&0xffu);
-    bytes[offset+2]=static_cast<std::uint8_t>((value>>16)&0xffu);
-    bytes[offset+3]=static_cast<std::uint8_t>((value>>24)&0xffu);
-    return true;
-}
-
 int main()
 {
     Simulation source(909090);
@@ -142,35 +131,6 @@ int main()
     CHECK(encodeSimulationSnapshot(decoded,reencoded,&error));
     CHECK(bytes==reencoded);
 
-    // Reconstruct an authentic legacy-v1-shaped payload by removing all modern
-    // extensions at the civilization marker and changing only the format header.
-    const auto marker=std::find_end(
-        bytes.begin()+12,bytes.end(),
-        CivilizationSnapshotExtensionMagic,
-        CivilizationSnapshotExtensionMagic+sizeof(CivilizationSnapshotExtensionMagic));
-    CHECK(marker!=bytes.end());
-    std::vector<std::uint8_t> legacy(bytes.begin(),marker);
-    CHECK(patchLittleEndianU32(legacy,8,1));
-
-    SimulationStateSnapshot migrated;
-    CHECK(decodeSimulationSnapshot(legacy,migrated,&error));
-    CHECK(error.empty());
-    CHECK(migrated.world.characters.size()==snapshot.world.characters.size());
-    CHECK(migrated.world.resourceNodes.size()==7);
-    CHECK(migrated.world.storageSites.size()==1);
-    CHECK(migrated.socialKnowledge.facts().empty());
-    CHECK(migrated.socialKnowledge.receipts().empty());
-    for(const Character& character:migrated.world.characters){
-        CHECK(character.civilization.character==character.id);
-        CHECK(character.civilization.inventory.stacks().empty());
-        CHECK(character.civilization.knowledge.all().empty());
-    }
-
-    std::vector<std::uint8_t> migratedCurrent;
-    CHECK(encodeSimulationSnapshot(migrated,migratedCurrent,&error));
-    CHECK(!migratedCurrent.empty()
-        && migratedCurrent[8]==static_cast<std::uint8_t>(SimulationSnapshotBinaryFormatVersion));
-
     SimulationStateSnapshot bad=snapshot;
     bad.world.characters[0].civilization.character=999999;
     Simulation untouched(123);
@@ -193,6 +153,6 @@ int main()
     CHECK(encodeSimulationSnapshot(continuation.captureSnapshot(),futureB,&error));
     CHECK(futureA==futureB);
 
-    std::cout << "civilization runtime snapshot persistence + v1 migration passed\n";
+    std::cout << "civilization runtime snapshot persistence passed\n";
     return 0;
 }

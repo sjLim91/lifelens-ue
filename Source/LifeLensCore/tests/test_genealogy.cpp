@@ -35,9 +35,16 @@ int main()
     CHECK(family.relationBetween(1,7)==KinshipType::Grandparent);
     CHECK(family.relationBetween(7,1)==KinshipType::Grandchild);
 
+    CHECK(isRomanceProhibitedKinship(family.relationBetween(1,3)));
+    CHECK(isRomanceProhibitedKinship(family.relationBetween(3,4)));
+    CHECK(isRomanceProhibitedKinship(family.relationBetween(3,5)));
+    CHECK(isRomanceProhibitedKinship(family.relationBetween(1,7)));
+    CHECK(!isRomanceProhibitedKinship(KinshipType::Unrelated));
+
     CHECK(family.linkSpouses(3,9));
     CHECK(family.relationBetween(3,9)==KinshipType::Spouse);
     CHECK(family.relationBetween(9,1)==KinshipType::InLaw);
+    CHECK(!isRomanceProhibitedKinship(family.relationBetween(9,1)));
     CHECK(family.unlinkSpouses(3,9));
     CHECK(family.relationBetween(3,9)==KinshipType::Unrelated);
 

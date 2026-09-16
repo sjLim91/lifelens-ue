@@ -7,6 +7,25 @@
 #include "Components/TextRenderComponent.h"
 #include "UObject/ConstructorHelpers.h"
 
+namespace
+{
+    float StableAvoidanceSign(const FGuid& ResidentId)
+    {
+        const uint32 Mixed = ResidentId.A ^ ResidentId.B ^ ResidentId.C ^ ResidentId.D;
+        return (Mixed & 1u) != 0u ? 1.0f : -1.0f;
+    }
+
+    FVector StableSideDirection(const FVector& Forward, const FGuid& ResidentId)
+    {
+        FVector Side(-Forward.Y, Forward.X, 0.0f);
+        if (!Side.Normalize())
+        {
+            Side = FVector::RightVector;
+        }
+        return Side * StableAvoidanceSign(ResidentId);
+    }
+}
+
 ALLResidentCharacter::ALLResidentCharacter()
 {
     PrimaryActorTick.bCanEverTick = true;
@@ -53,23 +72,94 @@ void ALLResidentCharacter::Tick(float DeltaSeconds)
         return;
     }
 
-    const FVector Current = GetActorLocation();
+    const FVector StartLocation = GetActorLocation();
     FVector FlatTarget = MovementTarget;
-    FlatTarget.Z = Current.Z;
+    FlatTarget.Z = StartLocation.Z;
 
-    const FVector Delta = FlatTarget - Current;
-    if (Delta.SizeSquared2D() <= FMath::Square(TargetAcceptanceRadius))
+    FVector ToTarget = FlatTarget - StartLocation;
+    ToTarget.Z = 0.0f;
+    const float DistanceToTarget = ToTarget.Size2D();
+    if (DistanceToTarget <= FMath::Max(1.0f, TargetAcceptanceRadius))
     {
         bHasMovementTarget = false;
         return;
     }
 
-    const FVector Next = FMath::VInterpConstantTo(Current, FlatTarget, DeltaSeconds, RuntimeMoveSpeed);
-    SetActorLocation(Next, true);
-
-    if (!Delta.IsNearlyZero())
+    // Preserve the existing constant-speed movement contract, then sweep the
+    // resulting frame step so visible solid dressing can block and redirect it.
+    const FVector ForwardDestination = FMath::VInterpConstantTo(
+        StartLocation,
+        FlatTarget,
+        FMath::Max(0.0f, DeltaSeconds),
+        FMath::Max(0.0f, RuntimeMoveSpeed));
+    FVector ForwardStep = ForwardDestination - StartLocation;
+    ForwardStep.Z = 0.0f;
+    const float StepDistance = ForwardStep.Size2D();
+    if (StepDistance <= KINDA_SMALL_NUMBER)
     {
-        SetActorRotation(FRotator(0.0f, Delta.Rotation().Yaw, 0.0f));
+        return;
+    }
+
+    const FVector Forward = ForwardStep.GetSafeNormal2D();
+
+    FHitResult ForwardHit;
+    SetActorLocation(ForwardDestination, true, &ForwardHit, ETeleportType::None);
+
+    if (ForwardHit.bBlockingHit)
+    {
+        const FVector ImpactLocation = GetActorLocation();
+        const float ForwardTravelDistance = FMath::Clamp(
+            (ImpactLocation - StartLocation).Size2D(),
+            0.0f,
+            StepDistance);
+        const float RemainingStepDistance = FMath::Max(0.0f, StepDistance - ForwardTravelDistance);
+
+        if (RemainingStepDistance > KINDA_SMALL_NUMBER)
+        {
+            FVector Remaining = FlatTarget - ImpactLocation;
+            Remaining.Z = 0.0f;
+
+            FVector SlideDirection = FVector::VectorPlaneProject(Remaining, ForwardHit.ImpactNormal);
+            SlideDirection.Z = 0.0f;
+            const bool bHadProjectedSlide = SlideDirection.Normalize();
+            if (!bHadProjectedSlide)
+            {
+                SlideDirection = StableSideDirection(Forward, ResidentId);
+            }
+
+            const FVector BeforeSlide = GetActorLocation();
+            FHitResult SlideHit;
+            SetActorLocation(
+                BeforeSlide + SlideDirection * RemainingStepDistance,
+                true,
+                &SlideHit,
+                ETeleportType::None);
+
+            // A near head-on hit against a flat box can yield a tangent that is
+            // immediately blocked by a neighbouring proxy. If the first sidestep
+            // made effectively no progress, try the stable tangent on the other
+            // side rather than repeating the same blocked direction or oscillating.
+            // The alternate attempt reuses the same remaining frame budget.
+            const float SlideProgressSquared = FVector::DistSquared2D(BeforeSlide, GetActorLocation());
+            if (SlideProgressSquared <= FMath::Square(1.0f))
+            {
+                const FVector StableSide = StableSideDirection(Forward, ResidentId);
+                const FVector AlternateSide = FVector::DotProduct(SlideDirection, StableSide) >= 0.0f
+                    ? -StableSide
+                    : StableSide;
+                SetActorLocation(
+                    BeforeSlide + AlternateSide * RemainingStepDistance,
+                    true,
+                    nullptr,
+                    ETeleportType::None);
+            }
+        }
+    }
+
+    const FVector ActualMove = GetActorLocation() - StartLocation;
+    if (ActualMove.SizeSquared2D() > FMath::Square(0.5f))
+    {
+        SetActorRotation(FRotator(0.0f, ActualMove.Rotation().Yaw, 0.0f));
     }
 }
 

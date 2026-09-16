@@ -1,5 +1,6 @@
 #include "Core/LLLifeLensGameMode.h"
 #include "World/LLWorldDirector.h"
+#include "World/LLWorldObstacleCollisionProxyActor.h"
 #include "World/LLWorldSpatialContract.h"
 #include "UI/LLObserverHUD.h"
 #include "UI/LLObserverPlayerController.h"
@@ -33,6 +34,10 @@ void ALLLifeLensGameMode::BeginPlay()
     if (GetWorld())
     {
         GetWorld()->SpawnActor<ALLWorldDirector>(ALLWorldDirector::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator);
+        GetWorld()->SpawnActor<ALLWorldObstacleCollisionProxyActor>(
+            ALLWorldObstacleCollisionProxyActor::StaticClass(),
+            FVector::ZeroVector,
+            FRotator::ZeroRotator);
     }
 
     SpawnObserverCamera();

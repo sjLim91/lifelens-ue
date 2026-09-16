@@ -43,13 +43,38 @@ int latestCohabitationMinute(const Character& character)
     return event==nullptr ? -1 : event->minute;
 }
 
+const char* parentingActionName(ParentingAction action)
+{
+    switch(action){
+        case ParentingAction::Feed: return "Feed";
+        case ParentingAction::PutToSleep: return "PutToSleep";
+        case ParentingAction::Bathe: return "Bathe";
+        case ParentingAction::ToiletAssist: return "ToiletAssist";
+        case ParentingAction::Hold: return "Hold";
+        case ParentingAction::Play: return "Play";
+        case ParentingAction::Educate: return "Educate";
+        case ParentingAction::Discipline: return "Discipline";
+        case ParentingAction::Comfort: return "Comfort";
+        case ParentingAction::HealthCare: return "HealthCare";
+    }
+    return "Care";
+}
+
+bool isRoutineDevelopmentalCare(ParentingAction action)
+{
+    return action==ParentingAction::Play ||
+           action==ParentingAction::Educate ||
+           action==ParentingAction::Discipline;
+}
+
 } // namespace
 
 Simulation::Simulation(
     WorldSeed worldSeed,
     PopulationSeed populationSeed,
-    WorldGenerationVersion generationVersion)
-    :world_(worldSeed,populationSeed,generationVersion){}
+    WorldGenerationVersion generationVersion,
+    SimulationRuleset ruleset)
+    :ruleset_(ruleset),world_(worldSeed,populationSeed,generationVersion){}
 
 void Simulation::setupDemo(){
     world_.characters.clear(); world_.objects.clear(); world_.environmentalResidues.clear(); relationships_=RelationshipBook{}; genealogy_=GenealogyBook{}; romances_=RomanceBook{}; households_=HouseholdBook{}; pregnancies_=PregnancyBook{}; births_=BirthBook{}; socialKnowledge_.clear(); runtime_.clear(); logs_.clear(); world_.minute=7*60;
@@ -170,17 +195,46 @@ ResidentObservation Simulation::observeResident(CharacterId id) const{
     const auto it=runtime_.find(id);
     if(it!=runtime_.end()){
         const Runtime& r=it->second;
-        hasPhysicalAction=!r.plan.empty() && !r.socialActive;
-        physicalGoal=r.goal;
-        socialActive=r.socialActive;
-        socialIntent=r.socialIntent;
-        socialTarget=r.socialTarget;
+        hasPhysicalAction=character->alive && !r.plan.empty() && !r.socialActive;
+        physicalGoal=character->alive ? r.goal : Goal::Idle;
+        socialActive=character->alive && r.socialActive;
+        socialIntent=socialActive ? r.socialIntent : SocialIntent::None;
+        socialTarget=socialActive ? r.socialTarget : 0;
     }
 
     return buildResidentObservation(
         world_,relationships_,*character,
         hasPhysicalAction,physicalGoal,
         socialActive,socialIntent,socialTarget);
+}
+
+ResidentCivilizationActivityObservation Simulation::observeResidentCivilizationActivity(CharacterId id) const{
+    ResidentCivilizationActivityObservation dto;
+    dto.residentId=id;
+
+    const Character* character=findObservedCharacter(world_,id);
+    const auto it=runtime_.find(id);
+    if(character==nullptr || !character->alive || it==runtime_.end()) return dto;
+
+    const Runtime& r=it->second;
+    if(!r.civilizationActive) return dto;
+
+    dto.active=true;
+    dto.kind=civilizationActivityKindFromEvent(r.civilizationEvent.type);
+    dto.eventType=r.civilizationEvent.type;
+    dto.material=r.civilizationEvent.material;
+    dto.item=r.civilizationEvent.item;
+    dto.technique=r.civilizationEvent.technique;
+    dto.quantity=r.civilizationEvent.quantity;
+    dto.minute=r.civilizationActivityMinute;
+    dto.resourceNode=r.civilizationResourceNode;
+    dto.storage=r.civilizationStorage;
+    dto.success=r.civilizationEvent.type!=CivilizationEventType::ExperimentFailed;
+    dto.hasSpatialTarget=r.civilizationHasSpatialTarget;
+    dto.targetGridX=r.civilizationTargetPos.x;
+    dto.targetGridY=r.civilizationTargetPos.y;
+    dto.sanitationSiteId=r.civilizationSanitationSiteId;
+    return dto;
 }
 
 std::vector<ResidentObservation> Simulation::observeAllResidents() const{
@@ -210,9 +264,29 @@ std::string Simulation::stamp() const{
 void Simulation::emit(const std::string& message){ const std::string line=stamp()+message; logs_.push_back(line); for(auto& cb:callbacks_) cb(line); }
 void Simulation::onEvent(EventCallback cb){ callbacks_.push_back(std::move(cb)); }
 SmartObject* Simulation::objectById(ObjectId id){ for(auto& o:world_.objects) if(o.id==id) return &o; return nullptr; }
-void Simulation::failPlan(Runtime& r){ r.plan.clear(); r.actionIndex=0; r.announced=false; r.socialActive=false; r.socialIntent=SocialIntent::None; r.socialTarget=0; ++r.consecutiveFailures; if(r.consecutiveFailures>=3){r.penaltyUntilMinute=world_.minute+30;r.consecutiveFailures=0;} }
+void Simulation::failPlan(Runtime& r){ r.plan.clear(); r.actionIndex=0; r.announced=false; r.socialActive=false; r.socialIntent=SocialIntent::None; r.socialTarget=0; r.civilizationActive=false; ++r.consecutiveFailures; if(r.consecutiveFailures>=3){r.penaltyUntilMinute=world_.minute+30;r.consecutiveFailures=0;} }
+void Simulation::clearRuntimeActivity(Runtime& r){
+    r.goal=Goal::Idle;
+    r.plan.clear();
+    r.actionIndex=0;
+    r.announced=false;
+    r.repeatCount=0;
+    r.consecutiveFailures=0;
+    r.socialActive=false;
+    r.socialIntent=SocialIntent::None;
+    r.socialTarget=0;
+    r.civilizationActive=false;
+    r.civilizationEvent=CivilizationEvent{};
+    r.civilizationActivityMinute=-1;
+    r.civilizationResourceNode=0;
+    r.civilizationStorage=0;
+    r.civilizationHasSpatialTarget=false;
+    r.civilizationTargetPos={};
+    r.civilizationSanitationSiteId=0;
+}
 
 bool Simulation::tryCivilizationDecision(Character& c,Runtime& r){
+    if(!c.alive || !lifeStageProfile(c.lifeStage).canWork) return false;
     if(world_.minute%15!=0) return false;
 
     const UnifiedUtilityDecision decision=chooseUnifiedUtilityDecision(world_,c,relationships_);
@@ -220,6 +294,14 @@ bool Simulation::tryCivilizationDecision(Character& c,Runtime& r){
 
     const CivilizationExecutionResult result=executeCivilizationDecision(world_,c,decision.civilization);
     if(!result.executed) return false;
+    r.civilizationActive=true;
+    r.civilizationEvent=result.event;
+    r.civilizationActivityMinute=world_.minute;
+    r.civilizationResourceNode=decision.civilization.resourceNode;
+    r.civilizationStorage=decision.civilization.storage;
+    r.civilizationHasSpatialTarget=result.sanitationSiteId!=0;
+    r.civilizationTargetPos=result.sanitationSitePos;
+    r.civilizationSanitationSiteId=static_cast<std::uint64_t>(result.sanitationSiteId);
     processCivilizationKnowledgeEvent(c,result.event);
 
     std::ostringstream s;
@@ -258,6 +340,7 @@ bool Simulation::tryCivilizationDecision(Character& c,Runtime& r){
 }
 
 bool Simulation::trySocialDecision(Character& c,Runtime& r){
+    if(!c.alive || lifeStageProfile(c.lifeStage).autonomy<0.35) return false;
     if(world_.minute<r.socialCooldownUntilMinute) return false;
 
     const UnifiedUtilityDecision decision=world_.minute%15==0
@@ -266,7 +349,8 @@ bool Simulation::trySocialDecision(Character& c,Runtime& r){
     if(decision.kind!=UnifiedDecisionKind::Social || decision.social.intent==SocialIntent::None) return false;
 
     const Character* targetBefore=findCharacter(world_,decision.social.target);
-    const std::string targetName=targetBefore?targetBefore->name:std::to_string(decision.social.target);
+    if(targetBefore==nullptr || !targetBefore->alive) return false;
+    const std::string targetName=targetBefore->name;
     const DecisionExecutionResult result=executeSocialDecision(world_,relationships_,c.id,decision.social,"simulation");
     if(!result.socialExecuted) return false;
 
@@ -275,6 +359,7 @@ bool Simulation::trySocialDecision(Character& c,Runtime& r){
     else if(decision.social.intent==SocialIntent::Repair) cooldown=30;
     else if(decision.social.intent==SocialIntent::Comfort) cooldown=25;
     r.socialCooldownUntilMinute=world_.minute+cooldown;
+    r.civilizationActive=false;
     r.socialActive=true;
     r.socialIntent=decision.social.intent;
     r.socialTarget=decision.social.target;
@@ -293,14 +378,19 @@ bool Simulation::trySocialDecision(Character& c,Runtime& r){
 }
 
 void Simulation::beginPlan(Character& c,Runtime& r){
+    if(!c.alive || requiresDirectCare(c.lifeStage)){
+        clearRuntimeActivity(r);
+        return;
+    }
     if(world_.minute>=r.penaltyUntilMinute && tryCivilizationDecision(c,r)) return;
     if(world_.minute>=r.penaltyUntilMinute && trySocialDecision(c,r)) return;
 
+    r.civilizationActive=false;
     r.socialActive=false;
     r.socialIntent=SocialIntent::None;
     r.socialTarget=0;
 
-    Goal chosen=(world_.minute<r.penaltyUntilMinute)?Goal::Idle:chooseGoal(world_,c);
+    Goal chosen=(world_.minute<r.penaltyUntilMinute)?Goal::Idle:chooseGoal(world_,c,ruleset_.utilityAI);
     if(chosen==r.lastGoal){ ++r.repeatCount; } else { r.lastGoal=chosen; r.repeatCount=1; }
     if(r.repeatCount>=5){ chosen=Goal::Idle; r.repeatCount=0; }
     r.goal=chosen; r.plan=buildPlan(world_,c,chosen,r.pos); r.actionIndex=0; r.announced=false;
@@ -309,6 +399,7 @@ void Simulation::beginPlan(Character& c,Runtime& r){
 }
 
 void Simulation::advanceAction(Character& c,Runtime& r){
+    if(!c.alive){ clearRuntimeActivity(r); return; }
     if(r.actionIndex>=r.plan.size()) return;
     Action& a=r.plan[r.actionIndex]; SmartObject* obj=a.objectId?objectById(a.objectId):nullptr;
     if(!r.announced){
@@ -355,6 +446,9 @@ void Simulation::advanceAction(Character& c,Runtime& r){
     }
     if(r.actionIndex>=r.plan.size()){
         r.plan.clear(); r.actionIndex=0;
+        if(r.civilizationActive){
+            r.civilizationActive=false;
+        }
         if(r.socialActive){
             r.socialActive=false;
             r.socialIntent=SocialIntent::None;
@@ -398,12 +492,98 @@ std::string Simulation::makeChildName(Sex sex,CharacterId childId) const
     return candidate;
 }
 
+void Simulation::advanceDependentCare()
+{
+    if(world_.minute%30!=0) return;
+    const bool dailyDevelopmentWindow=
+        world_.minute%FamilyProgressionDayMinutes==FamilyProgressionDecisionMinuteOfDay;
+
+    for(auto& child:world_.characters){
+        if(!child.alive || !isDependentStage(child.lifeStage) || child.parentIds.empty()) continue;
+
+        const double maxPhysicalNeed=std::max({
+            child.needs.hunger,child.needs.thirst,child.needs.sleep,
+            child.needs.bladder,child.needs.hygiene});
+        const double distress=std::max({
+            child.development.stress,child.emotion.sadness,
+            child.emotion.anxiety,child.emotion.fear});
+        const bool urgentPhysical=maxPhysicalNeed>=0.35 || child.development.health<0.65;
+        const bool urgentDistress=distress>=0.40;
+        if(!urgentPhysical && !urgentDistress && !dailyDevelopmentWindow) continue;
+
+        Character* chosenParent=nullptr;
+        ParentingDecision chosenDecision;
+        ParentingContext chosenContext;
+        chosenDecision.utility=-1.0;
+
+        for(CharacterId parentId:child.parentIds){
+            Character* parent=findFamilyCharacter(world_,parentId);
+            if(parent==nullptr || !parent->alive || !lifeStageProfile(parent->lifeStage).canParent) continue;
+
+            Relationship& parentToChild=relationships_.getOrCreate(parent->id,child.id);
+            ParentingContext context;
+            const double parentNeed=std::max({
+                parent->needs.hunger,parent->needs.thirst,parent->needs.sleep,
+                parent->needs.bladder,parent->needs.hygiene});
+            context.timeAvailable=clampDevelopment(1.0-0.65*parentNeed);
+            context.caregiverStress=clampDevelopment(parent->development.stress);
+            context.warmth=clampDevelopment(
+                0.35+0.35*parent->personality.empathy+0.30*parent->personality.patience);
+            context.consistency=clampDevelopment(
+                0.35+0.40*parent->personality.conscientiousness+0.25*parent->personality.patience);
+            context.harshness=clampDevelopment(
+                0.08+0.28*parent->personality.impulsiveness-0.18*parent->personality.patience);
+            context.foodAvailable=parent->civilization.inventory.count(
+                ItemKind::RawMaterial,MaterialKind::PlantFood)>0;
+            context.waterAvailable=parent->civilization.inventory.count(
+                ItemKind::RawMaterial,MaterialKind::Water)>0;
+
+            ParentingDecision decision=chooseParentingAction(*parent,child,parentToChild,context);
+            if(!decision.valid) continue;
+            if(!dailyDevelopmentWindow && isRoutineDevelopmentalCare(decision.action)) continue;
+            if(!urgentDistress && !dailyDevelopmentWindow &&
+               (decision.action==ParentingAction::Hold || decision.action==ParentingAction::Comfort)) continue;
+            if(decision.utility>chosenDecision.utility){
+                chosenParent=parent;
+                chosenDecision=decision;
+                chosenContext=context;
+            }
+        }
+
+        if(chosenParent==nullptr || !chosenDecision.valid) continue;
+        Relationship& parentToChild=relationships_.getOrCreate(chosenParent->id,child.id);
+        Relationship& childToParent=relationships_.getOrCreate(child.id,chosenParent->id);
+        const bool consumeFood=chosenDecision.action==ParentingAction::Feed &&
+            chosenContext.foodAvailable && child.needs.hunger>0.05;
+        const bool consumeWater=chosenDecision.action==ParentingAction::Feed &&
+            chosenContext.waterAvailable && child.needs.thirst>0.05;
+
+        const ParentingResult result=applyParentingAction(
+            *chosenParent,child,parentToChild,childToParent,chosenDecision.action,chosenContext);
+        if(result!=ParentingResult::Performed) continue;
+
+        if(consumeFood){
+            chosenParent->civilization.inventory.remove(
+                ItemKind::RawMaterial,MaterialKind::PlantFood,1);
+        }
+        if(consumeWater){
+            chosenParent->civilization.inventory.remove(
+                ItemKind::RawMaterial,MaterialKind::Water,1);
+        }
+        emit(chosenParent->name+" cared for "+child.name+" -> "+parentingActionName(chosenDecision.action));
+    }
+}
+
 void Simulation::updatePregnanciesAndBirths()
 {
     std::vector<CharacterId> dueParents;
     for(auto& character:world_.characters){
         PregnancyState* pregnancy=pregnancies_.activeFor(character.id);
         if(pregnancy==nullptr) continue;
+        if(!character.alive){
+            pregnancies_.terminate(character.id,world_.minute);
+            continue;
+        }
         advancePregnancy(*pregnancy,character,world_.minute);
         if(pregnancy->active() && world_.minute>=pregnancy->dueMinute){
             dueParents.push_back(character.id);
@@ -416,7 +596,7 @@ void Simulation::updatePregnanciesAndBirths()
         const CharacterId partnerId=pregnancy->geneticPartner;
         Character* gestationalParent=findFamilyCharacter(world_,gestationalId);
         Character* partner=findFamilyCharacter(world_,partnerId);
-        if(gestationalParent==nullptr || partner==nullptr) continue;
+        if(gestationalParent==nullptr || !gestationalParent->alive || partner==nullptr) continue;
 
         const std::string gestationalName=gestationalParent->name;
         const std::string partnerName=partner->name;
@@ -430,8 +610,9 @@ void Simulation::updatePregnanciesAndBirths()
         if(outcome.result!=BirthResult::Success) continue;
 
         outcome.child.sex=childSex;
-        outcome.child.baseMetabolism=outcome.child.metabolism;
-        outcome.child.baseSleepTendency=outcome.child.sleepTendency;
+        outcome.child.baseMetabolism=1.0;
+        outcome.child.baseSleepTendency=1.0;
+        applyLifeStageProfile(outcome.child,LifeStage::Baby);
         outcome.child.lifeCondition=lifeConditionForAge(
             0,outcome.child.genetics.healthPotential,outcome.child.childrenIds.size());
 
@@ -458,9 +639,78 @@ void Simulation::updatePregnanciesAndBirths()
             }
         }
 
+        GridPos childPosition=world_.hasInitialStartRegionSelection
+            ? world_.initialStartRegionCenterGrid()
+            : GridPos{};
+        const auto gestationalRuntime=runtime_.find(gestationalId);
+        const auto partnerRuntime=runtime_.find(partnerId);
+        if(gestationalRuntime!=runtime_.end()) childPosition=gestationalRuntime->second.pos;
+        else if(partnerRuntime!=runtime_.end()) childPosition=partnerRuntime->second.pos;
+
         emit("birth: "+childName+" child of "+gestationalName+" and "+partnerName);
         world_.characters.push_back(std::move(outcome.child));
-        runtime_[childId]=Runtime{};
+        Runtime childRuntime;
+        childRuntime.pos=childPosition;
+        runtime_[childId]=childRuntime;
+    }
+}
+
+void Simulation::evaluateDailyMortality()
+{
+    std::vector<CharacterId> dueDeaths;
+    for(const auto& character:world_.characters){
+        if(character.alive && shouldDieToday(character,world_.seed,world_.minute)){
+            dueDeaths.push_back(character.id);
+        }
+    }
+
+    for(CharacterId id:dueDeaths){
+        Character* deceased=findFamilyCharacter(world_,id);
+        if(deceased==nullptr || !deceased->alive) continue;
+
+        std::vector<Character*> residents;
+        residents.reserve(world_.characters.size());
+        for(auto& character:world_.characters) residents.push_back(&character);
+
+        std::vector<CharacterId> formerHouseholdMembers;
+        if(const Household* household=households_.householdOf(id)){
+            for(const auto& member:household->members){
+                if(member.characterId!=id) formerHouseholdMembers.push_back(member.characterId);
+            }
+        }
+        const bool pregnancyEnded=pregnancies_.activeFor(id)!=nullptr;
+        const DeathCause cause=inferNaturalDeathCause(*deceased,world_.minute);
+        const std::string deceasedName=deceased->name;
+        const DeathOutcome outcome=applyDeath(
+            *deceased,world_.minute,cause,residents,relationships_,romances_);
+        if(!outcome.died) continue;
+
+        if(pregnancyEnded) pregnancies_.terminate(id,world_.minute);
+        households_.removeMember(id);
+        households_.pruneEmpty();
+        for(CharacterId survivorId:formerHouseholdMembers){
+            Character* survivor=findFamilyCharacter(world_,survivorId);
+            if(survivor!=nullptr && survivor->alive){
+                recordLifeEvent(survivor->lifeHistory,LifeEventType::HouseholdChanged,world_.minute,{id});
+            }
+        }
+        if(outcome.survivingPartner!=0){
+            Character* survivor=findFamilyCharacter(world_,outcome.survivingPartner);
+            if(survivor!=nullptr && survivor->alive){
+                recordLifeEvent(survivor->lifeHistory,LifeEventType::PartnerWidowed,world_.minute,{id});
+            }
+        }
+
+        auto runtimeIt=runtime_.find(id);
+        if(runtimeIt!=runtime_.end()) clearRuntimeActivity(runtimeIt->second);
+        for(auto& object:world_.objects){
+            if(object.reservedBy && *object.reservedBy==id) object.reservedBy.reset();
+        }
+
+        emit(deceasedName+" died");
+        if(pregnancyEnded){
+            emit("pregnancy ended because gestational parent "+deceasedName+" died");
+        }
     }
 }
 
@@ -469,11 +719,13 @@ void Simulation::evaluateDailyFamilyTransitions()
     for(auto& character:world_.characters){
         if(character.alive) advanceAging(character,world_.minute);
     }
+    evaluateDailyMortality();
 
     for(std::size_t i=0;i<world_.characters.size();++i){
         for(std::size_t j=i+1;j<world_.characters.size();++j){
             Character& first=world_.characters[i];
             Character& second=world_.characters[j];
+            if(isRomanceProhibitedKinship(genealogy_.relationBetween(first.id,second.id))) continue;
             Relationship& firstToSecond=relationships_.getOrCreate(first.id,second.id);
             Relationship& secondToFirst=relationships_.getOrCreate(second.id,first.id);
             evolveRomanticChemistry(first,second,firstToSecond,secondToFirst);
@@ -493,6 +745,8 @@ void Simulation::evaluateDailyFamilyTransitions()
         for(std::size_t j=i+1;j<world_.characters.size();++j){
             Character& first=world_.characters[i];
             Character& second=world_.characters[j];
+            if(!first.alive || !second.alive) continue;
+            if(isRomanceProhibitedKinship(genealogy_.relationBetween(first.id,second.id))) continue;
             if(!romances_.isAvailable(first.id) || !romances_.isAvailable(second.id)) continue;
 
             Relationship& firstToSecond=relationships_.getOrCreate(first.id,second.id);
@@ -517,9 +771,10 @@ void Simulation::evaluateDailyFamilyTransitions()
 
     for(const DatingCandidate& candidate:candidates){
         if(!romances_.isAvailable(candidate.first) || !romances_.isAvailable(candidate.second)) continue;
+        if(isRomanceProhibitedKinship(genealogy_.relationBetween(candidate.first,candidate.second))) continue;
         Character* first=findFamilyCharacter(world_,candidate.first);
         Character* second=findFamilyCharacter(world_,candidate.second);
-        if(first==nullptr || second==nullptr) continue;
+        if(first==nullptr || second==nullptr || !first->alive || !second->alive) continue;
         Relationship& firstToSecond=relationships_.getOrCreate(first->id,second->id);
         Relationship& secondToFirst=relationships_.getOrCreate(second->id,first->id);
         const RomanceContext firstContext=autonomousRomanceContext(
@@ -548,6 +803,7 @@ void Simulation::evaluateDailyFamilyTransitions()
         Character* first=findFamilyCharacter(world_,snapshot.first);
         Character* second=findFamilyCharacter(world_,snapshot.second);
         if(first==nullptr || second==nullptr || !first->alive || !second->alive) continue;
+        if(isRomanceProhibitedKinship(genealogy_.relationBetween(first->id,second->id))) continue;
         Relationship& firstToSecond=relationships_.getOrCreate(first->id,second->id);
         Relationship& secondToFirst=relationships_.getOrCreate(second->id,first->id);
 
@@ -606,6 +862,7 @@ void Simulation::evaluateDailyFamilyTransitions()
     const std::vector<RomancePair> pregnancyPairs=romances_.all();
     for(const RomancePair& pair:pregnancyPairs){
         if(pair.stage!=RomanceStage::Married || pair.marriedMinute<0) continue;
+        if(isRomanceProhibitedKinship(genealogy_.relationBetween(pair.first,pair.second))) continue;
         const int daysSinceMarriage=(world_.minute-pair.marriedMinute)/FamilyProgressionDayMinutes;
         if(daysSinceMarriage<30 || ((daysSinceMarriage-30)%FamilyPregnancyAttemptIntervalDays)!=0) continue;
 
@@ -648,9 +905,19 @@ void Simulation::advanceAutonomousFamilyProgression()
 }
 
 void Simulation::step(){
+    advanceDependentCare();
     for(auto& c:world_.characters){
-        c.needs.decay(c.metabolism,c.sleepTendency);
         Runtime& r=runtime_[c.id];
+        if(!c.alive){
+            clearRuntimeActivity(r);
+            continue;
+        }
+
+        c.needs.decay(ruleset_.needs,c.metabolism,c.sleepTendency);
+        if(requiresDirectCare(c.lifeStage)){
+            clearRuntimeActivity(r);
+            continue;
+        }
         if(r.plan.empty() && world_.minute%5==0) beginPlan(c,r);
         if(!r.plan.empty()) advanceAction(c,r);
     }

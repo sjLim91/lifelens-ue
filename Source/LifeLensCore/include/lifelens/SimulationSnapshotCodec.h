@@ -8,8 +8,9 @@
 
 namespace lifelens {
 
-constexpr std::uint32_t SimulationSnapshotBinaryFormatVersion=6;
-constexpr std::uint32_t MinimumSupportedSimulationSnapshotBinaryFormatVersion=1;
+// Pre-release project: only the current on-disk format is supported.
+// There are no shipped user saves to migrate.
+constexpr std::uint32_t SimulationSnapshotBinaryFormatVersion=7;
 
 bool encodeSimulationSnapshot(
     const SimulationStateSnapshot& snapshot,
