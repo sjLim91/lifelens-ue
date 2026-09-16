@@ -57,6 +57,8 @@ lifelens_add_test(test_decision_execution)
 
 lifelens_add_test(test_simulation_social_loop)
 
+lifelens_add_test(test_social_communication_read_model)
+
 lifelens_add_test(test_observer_read_model)
 
 lifelens_add_test(test_romance)

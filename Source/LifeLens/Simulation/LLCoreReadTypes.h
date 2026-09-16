@@ -44,6 +44,47 @@ enum class ELLCoreRomanceStage : uint8
     FormerPartners
 };
 
+UENUM(BlueprintType)
+enum class ELLCoreSocialEventType : uint8
+{
+    PositiveInteraction,
+    Help,
+    Comfort,
+    Conflict,
+    Betrayal,
+    Rejection,
+    Apology,
+    Intimacy,
+    Commitment
+};
+
+UENUM(BlueprintType)
+enum class ELLCoreSocialPresentationLevel : uint8
+{
+    Everyday,
+    Meaningful,
+    Important
+};
+
+USTRUCT(BlueprintType)
+struct FLLCoreSocialEventObservation
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Social") int64 Sequence = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Social") FGuid ActorResidentId;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Social") FString ActorName;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Social") FGuid TargetResidentId;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Social") FString TargetName;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Social") ELLCoreSocialEventType Type = ELLCoreSocialEventType::PositiveInteraction;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Social") ELLCoreSocialPresentationLevel PresentationLevel = ELLCoreSocialPresentationLevel::Everyday;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Social") float Intensity = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Social") float Importance = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Social") int64 SimulationMinute = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Social") FString Location;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Social") bool bSuccessful = true;
+};
+
 USTRUCT(BlueprintType)
 struct FLLCoreNeedSnapshot
 {

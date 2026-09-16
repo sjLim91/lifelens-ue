@@ -2,6 +2,7 @@
 #include "UI/LLObservationSubsystem.h"
 #include "UI/LLObserverLabels.h"
 #include "UI/LLObserverMobilePolishLabels.h"
+#include "UI/LLObserverKorean.h"
 #include "Simulation/LLSimulationSubsystem.h"
 #include "Simulation/LLCoreBridgeSubsystem.h"
 #include "Characters/LLResidentCharacter.h"
@@ -104,12 +105,19 @@ namespace
         const UEnum* Enum = StaticEnum<TEnum>();
         if (!Enum)
         {
-            return TEXT("Unknown");
+            return TEXT("미상");
         }
         FString Name = Enum->GetNameStringByValue(static_cast<int64>(Value));
         Name.ReplaceInline(TEXT("_"), TEXT(" "));
         return Name;
     }
+
+    FString EnumLabel(ELLCoreRomanceStage Value)      { return LLObserverKorean::RomanceStage(Value); }
+    FString EnumLabel(ELLCoreMaterialKind Value)      { return LLObserverKorean::Material(Value); }
+    FString EnumLabel(ELLCoreItemKind Value)          { return LLObserverKorean::Item(Value); }
+    FString EnumLabel(ELLCoreTechniqueId Value)       { return LLObserverKorean::Technique(Value); }
+    FString EnumLabel(ELLCoreKnowledgeLevel Value)    { return LLObserverKorean::KnowledgeLevel(Value); }
+    FString EnumLabel(ELLCoreKnowledgeSource Value)   { return LLObserverKorean::KnowledgeSource(Value); }
 
     FString Percent01(float Value)
     {
@@ -150,7 +158,7 @@ namespace
                 Names.Add(Member.DisplayName);
             }
         }
-        return Names.Num() > 0 ? FString::Join(Names, TEXT(" · ")) : FString(TEXT("None"));
+        return Names.Num() > 0 ? FString::Join(Names, TEXT(" · ")) : FString(LLObserverKorean::None);
     }
 
     struct FRow
@@ -486,8 +494,9 @@ float ALLObserverHUD::DrawOverview(const ULLSimulationSubsystem& Simulation, con
     const float TitleScale = 1.0f * UIScale;
     const float StripScale = 0.85f * UIScale;
 
-    const FString StatusLine = FString::Printf(TEXT("%s   Day %lld  %02d:%02d   %d %s"),
-        LLObserverText::OverviewTitle, static_cast<long long>(Day), Hour, Minute, Residents.Num(), LLObserverText::ResidentsSuffix);
+    const FString StatusLine = FString::Printf(TEXT("%s   %lld%s  %02d:%02d   %d%s"),
+        LLObserverText::OverviewTitle, static_cast<long long>(Day), LLObserverKorean::Day,
+        Hour, Minute, Residents.Num(), LLObserverText::ResidentsSuffix);
 
     TArray<FString> StripItems;
     StripItems.Reserve(Residents.Num());
@@ -530,7 +539,6 @@ float ALLObserverHUD::DrawOverview(const ULLSimulationSubsystem& Simulation, con
         }
     }
 
-    // Tap/click a resident for details
     const FString HintLine(LLObserverText::TapHint);
 
     float StatusW = 0.0f, StatusH = 0.0f;
@@ -604,7 +612,7 @@ void ALLObserverHUD::DrawWorldOverview(const ULLSimulationSubsystem& Simulation,
         Rows.Add(Title);
 
         FRow Clock;
-        Clock.Left = FString::Printf(TEXT("Day %lld  %02d:%02d"), static_cast<long long>(Day), Hour, Minute);
+        Clock.Left = FString::Printf(TEXT("%lld%s  %02d:%02d"), static_cast<long long>(Day), LLObserverKorean::Day, Hour, Minute);
         Clock.LeftColor = TextSecondary;
         Clock.Scale = RowScale;
         Rows.Add(Clock);
@@ -633,17 +641,17 @@ void ALLObserverHUD::DrawWorldOverview(const ULLSimulationSubsystem& Simulation,
             const FLLCoreWorldObservation CoreWorld = Bridge->GetWorldObservation();
             const FLLCoreCivilizationWorldObservation Civilization = Bridge->GetCivilizationWorldObservation(1);
 
-            FRow Households; Households.Left = TEXT("Households"); Households.Right = FString::FromInt(CoreWorld.Households); Households.Scale = RowScale; Households.GapBefore = SectionGap; Rows.Add(Households);
-            FRow Couples; Couples.Left = TEXT("Active couples"); Couples.Right = FString::FromInt(CoreWorld.ActiveCouples); Couples.Scale = RowScale; Rows.Add(Couples);
-            FRow Pregnancies; Pregnancies.Left = TEXT("Pregnancies"); Pregnancies.Right = FString::FromInt(CoreWorld.ActivePregnancies); Pregnancies.Scale = RowScale; Rows.Add(Pregnancies);
-            FRow Techniques; Techniques.Left = TEXT("Known techniques"); Techniques.Right = FString::FromInt(Civilization.UniqueKnownTechniqueTypes); Techniques.Scale = RowScale; Techniques.GapBefore = SectionGap; Rows.Add(Techniques);
-            FRow Stored; Stored.Left = TEXT("Stored units"); Stored.Right = FString::FromInt(Civilization.TotalStoredUnits); Stored.Scale = RowScale; Rows.Add(Stored);
+            FRow Households; Households.Left = LLObserverKorean::Households; Households.Right = FString::FromInt(CoreWorld.Households); Households.Scale = RowScale; Households.GapBefore = SectionGap; Rows.Add(Households);
+            FRow Couples; Couples.Left = LLObserverKorean::ActiveCouples; Couples.Right = FString::FromInt(CoreWorld.ActiveCouples); Couples.Scale = RowScale; Rows.Add(Couples);
+            FRow Pregnancies; Pregnancies.Left = LLObserverKorean::Pregnancies; Pregnancies.Right = FString::FromInt(CoreWorld.ActivePregnancies); Pregnancies.Scale = RowScale; Rows.Add(Pregnancies);
+            FRow Techniques; Techniques.Left = LLObserverKorean::KnownTechniques; Techniques.Right = FString::FromInt(Civilization.UniqueKnownTechniqueTypes); Techniques.Scale = RowScale; Techniques.GapBefore = SectionGap; Rows.Add(Techniques);
+            FRow Stored; Stored.Left = LLObserverKorean::StoredUnits; Stored.Right = FString::FromInt(Civilization.TotalStoredUnits); Stored.Scale = RowScale; Rows.Add(Stored);
 
             if (Civilization.RecentDiscoveries.Num() > 0)
             {
                 const FLLCoreCivilizationDiscoveryObservation& Latest = Civilization.RecentDiscoveries[0];
                 FRow Discovery;
-                Discovery.Left = TEXT("Recent discovery");
+                Discovery.Left = LLObserverKorean::RecentDiscovery;
                 Discovery.Right = EnumLabel(Latest.Technique) + TEXT(" · ") + Latest.DiscovererName;
                 Discovery.Scale = RowScale;
                 Rows.Add(Discovery);
@@ -874,7 +882,7 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
         {
             if (!bHasCoreResident)
             {
-                FRow None; None.Left = TEXT("Core data unavailable"); None.Scale = RowScale; Rows.Add(None);
+                FRow None; None.Left = LLObserverKorean::CoreUnavailable; None.Scale = RowScale; Rows.Add(None);
                 break;
             }
 
@@ -887,11 +895,11 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
                 Row.Scale = RowScale;
                 Rows.Add(Row);
             };
-            AddNeed(TEXT("Hunger"), CoreResident.Needs.Hunger);
-            AddNeed(TEXT("Thirst"), CoreResident.Needs.Thirst);
-            AddNeed(TEXT("Energy"), CoreResident.Needs.Sleep);
-            AddNeed(TEXT("Hygiene"), CoreResident.Needs.Hygiene);
-            AddNeed(TEXT("Bladder"), CoreResident.Needs.Bladder);
+            AddNeed(LLObserverKorean::Hunger, CoreResident.Needs.Hunger);
+            AddNeed(LLObserverKorean::Thirst, CoreResident.Needs.Thirst);
+            AddNeed(LLObserverKorean::Energy, CoreResident.Needs.Sleep);
+            AddNeed(LLObserverKorean::Hygiene, CoreResident.Needs.Hygiene);
+            AddNeed(LLObserverKorean::Bladder, CoreResident.Needs.Bladder);
             break;
         }
 
@@ -899,7 +907,7 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
         {
             if (!bHasCoreResident)
             {
-                FRow None; None.Left = TEXT("Core data unavailable"); None.Scale = RowScale; Rows.Add(None);
+                FRow None; None.Left = LLObserverKorean::CoreUnavailable; None.Scale = RowScale; Rows.Add(None);
                 break;
             }
 
@@ -912,20 +920,20 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
                 Row.Scale = RowScale;
                 Rows.Add(Row);
             };
-            AddAxis(TEXT("Introversion"), CoreResident.Personality.Introversion);
-            AddAxis(TEXT("Conscientiousness"), CoreResident.Personality.Conscientiousness);
-            AddAxis(TEXT("Openness"), CoreResident.Personality.Openness);
-            AddAxis(TEXT("Agreeableness"), CoreResident.Personality.Agreeableness);
-            AddAxis(TEXT("Emotional stability"), CoreResident.Personality.EmotionalStability);
-            AddAxis(TEXT("Empathy"), CoreResident.Personality.Empathy);
-            AddAxis(TEXT("Impulsiveness"), CoreResident.Personality.Impulsiveness);
-            AddAxis(TEXT("Risk tolerance"), CoreResident.Personality.RiskTolerance);
-            AddAxis(TEXT("Ambition"), CoreResident.Personality.Ambition);
-            AddAxis(TEXT("Patience"), CoreResident.Personality.Patience);
-            AddAxis(TEXT("Sociability"), CoreResident.Personality.Sociability);
-            AddAxis(TEXT("Curiosity"), CoreResident.Personality.Curiosity);
-            AddAxis(TEXT("Orderliness"), CoreResident.Personality.Orderliness);
-            AddAxis(TEXT("Adaptability"), CoreResident.Personality.Adaptability);
+            AddAxis(LLObserverKorean::Introversion, CoreResident.Personality.Introversion);
+            AddAxis(LLObserverKorean::Conscientiousness, CoreResident.Personality.Conscientiousness);
+            AddAxis(LLObserverKorean::Openness, CoreResident.Personality.Openness);
+            AddAxis(LLObserverKorean::Agreeableness, CoreResident.Personality.Agreeableness);
+            AddAxis(LLObserverKorean::EmotionalStability, CoreResident.Personality.EmotionalStability);
+            AddAxis(LLObserverKorean::Empathy, CoreResident.Personality.Empathy);
+            AddAxis(LLObserverKorean::Impulsiveness, CoreResident.Personality.Impulsiveness);
+            AddAxis(LLObserverKorean::RiskTolerance, CoreResident.Personality.RiskTolerance);
+            AddAxis(LLObserverKorean::Ambition, CoreResident.Personality.Ambition);
+            AddAxis(LLObserverKorean::Patience, CoreResident.Personality.Patience);
+            AddAxis(LLObserverKorean::Sociability, CoreResident.Personality.Sociability);
+            AddAxis(LLObserverKorean::Curiosity, CoreResident.Personality.Curiosity);
+            AddAxis(LLObserverKorean::Orderliness, CoreResident.Personality.Orderliness);
+            AddAxis(LLObserverKorean::Adaptability, CoreResident.Personality.Adaptability);
             break;
         }
 
@@ -933,7 +941,7 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
         {
             if (!bHasCoreDisposition)
             {
-                FRow None; None.Left = TEXT("Core trait/preference data unavailable"); None.Scale = RowScale; Rows.Add(None);
+                FRow None; None.Left = LLObserverKorean::CoreTraitUnavailable; None.Scale = RowScale; Rows.Add(None);
                 break;
             }
 
@@ -950,10 +958,10 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
                 Row.Scale = RowScale;
                 Rows.Add(Row);
             };
-            AddProfilePair(TEXT("Resilience"), CoreDisposition.Traits.Resilience, TEXT("Creativity"), CoreDisposition.Traits.Creativity);
-            AddProfilePair(TEXT("Discipline"), CoreDisposition.Traits.Discipline, TEXT("Compassion"), CoreDisposition.Traits.Compassion);
-            AddProfilePair(TEXT("Adaptability"), CoreDisposition.Traits.Adaptability, TEXT("Boldness"), CoreDisposition.Traits.Boldness);
-            AddProfilePair(TEXT("Perseverance"), CoreDisposition.Traits.Perseverance, TEXT("Resourcefulness"), CoreDisposition.Traits.Resourcefulness);
+            AddProfilePair(LLObserverKorean::Resilience, CoreDisposition.Traits.Resilience, LLObserverKorean::Creativity, CoreDisposition.Traits.Creativity);
+            AddProfilePair(LLObserverKorean::Discipline, CoreDisposition.Traits.Discipline, LLObserverKorean::Compassion, CoreDisposition.Traits.Compassion);
+            AddProfilePair(LLObserverKorean::Adaptability, CoreDisposition.Traits.Adaptability, LLObserverKorean::Boldness, CoreDisposition.Traits.Boldness);
+            AddProfilePair(LLObserverKorean::Perseverance, CoreDisposition.Traits.Perseverance, LLObserverKorean::Resourcefulness, CoreDisposition.Traits.Resourcefulness);
 
             FRow SkillsHeader;
             SkillsHeader.Left = LLObserverText::SectionSkills;
@@ -964,26 +972,26 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
 
             if (!bHasCoreCivilization)
             {
-                FRow None; None.Left = TEXT("Core skill data unavailable"); None.Scale = RowScale; Rows.Add(None);
+                FRow None; None.Left = LLObserverKorean::CoreSkillUnavailable; None.Scale = RowScale; Rows.Add(None);
             }
             else
             {
-                FRow Gathering; Gathering.Left = TEXT("Gathering"); Gathering.Right = Percent01(CoreCivilization.GatheringSkill); Gathering.RightColor = TextPrimary; Gathering.Scale = RowScale; Rows.Add(Gathering);
-                FRow Crafting; Crafting.Left = TEXT("Crafting"); Crafting.Right = Percent01(CoreCivilization.CraftingSkill); Crafting.RightColor = TextPrimary; Crafting.Scale = RowScale; Rows.Add(Crafting);
-                FRow Learning; Learning.Left = TEXT("Learning"); Learning.Right = Percent01(CoreCivilization.LearningSkill); Learning.RightColor = TextPrimary; Learning.Scale = RowScale; Rows.Add(Learning);
+                FRow Gathering; Gathering.Left = LLObserverKorean::Gathering; Gathering.Right = Percent01(CoreCivilization.GatheringSkill); Gathering.RightColor = TextPrimary; Gathering.Scale = RowScale; Rows.Add(Gathering);
+                FRow Crafting; Crafting.Left = LLObserverKorean::Crafting; Crafting.Right = Percent01(CoreCivilization.CraftingSkill); Crafting.RightColor = TextPrimary; Crafting.Scale = RowScale; Rows.Add(Crafting);
+                FRow Learning; Learning.Left = LLObserverKorean::Learning; Learning.Right = Percent01(CoreCivilization.LearningSkill); Learning.RightColor = TextPrimary; Learning.Scale = RowScale; Rows.Add(Learning);
             }
 
             FRow PreferencesHeader;
-            PreferencesHeader.Left = TEXT("Preferences");
+            PreferencesHeader.Left = LLObserverKorean::Preferences;
             PreferencesHeader.LeftColor = TextSection;
             PreferencesHeader.Scale = SectionScale;
             PreferencesHeader.GapBefore = SectionGap;
             Rows.Add(PreferencesHeader);
 
-            AddProfilePair(TEXT("Socializing"), CoreDisposition.Preferences.Socializing, TEXT("Solitude"), CoreDisposition.Preferences.Solitude);
-            AddProfilePair(TEXT("Exploration"), CoreDisposition.Preferences.Exploration, TEXT("Crafting"), CoreDisposition.Preferences.Crafting);
-            AddProfilePair(TEXT("Gathering"), CoreDisposition.Preferences.Gathering, TEXT("Comfort"), CoreDisposition.Preferences.Comfort);
-            AddProfilePair(TEXT("Novelty"), CoreDisposition.Preferences.Novelty, TEXT("Order"), CoreDisposition.Preferences.Order);
+            AddProfilePair(LLObserverKorean::Socializing, CoreDisposition.Preferences.Socializing, LLObserverKorean::Solitude, CoreDisposition.Preferences.Solitude);
+            AddProfilePair(LLObserverKorean::Exploration, CoreDisposition.Preferences.Exploration, LLObserverKorean::Crafting, CoreDisposition.Preferences.Crafting);
+            AddProfilePair(LLObserverKorean::Gathering, CoreDisposition.Preferences.Gathering, LLObserverKorean::Comfort, CoreDisposition.Preferences.Comfort);
+            AddProfilePair(LLObserverKorean::Novelty, CoreDisposition.Preferences.Novelty, LLObserverKorean::Order, CoreDisposition.Preferences.Order);
             break;
         }
 
@@ -991,7 +999,7 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
         {
             if (!bHasCoreResident)
             {
-                FRow None; None.Left = TEXT("Core data unavailable"); None.Scale = RowScale; Rows.Add(None);
+                FRow None; None.Left = LLObserverKorean::CoreUnavailable; None.Scale = RowScale; Rows.Add(None);
                 break;
             }
 
@@ -1004,17 +1012,17 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
                 Row.Scale = RowScale;
                 Rows.Add(Row);
             };
-            AddEmotion(TEXT("Joy"), CoreResident.Emotion.Joy);
-            AddEmotion(TEXT("Sadness"), CoreResident.Emotion.Sadness);
-            AddEmotion(TEXT("Anger"), CoreResident.Emotion.Anger);
-            AddEmotion(TEXT("Fear"), CoreResident.Emotion.Fear);
-            AddEmotion(TEXT("Affection"), CoreResident.Emotion.Affection);
-            AddEmotion(TEXT("Anxiety"), CoreResident.Emotion.Anxiety);
-            AddEmotion(TEXT("Grief"), CoreResident.Emotion.Grief);
-            AddEmotion(TEXT("Pride"), CoreResident.Emotion.Pride);
-            AddEmotion(TEXT("Jealousy"), CoreResident.Emotion.Jealousy);
-            AddEmotion(TEXT("Relief"), CoreResident.Emotion.Relief);
-            AddEmotion(TEXT("Embarrassment"), CoreResident.Emotion.Embarrassment);
+            AddEmotion(LLObserverKorean::Joy, CoreResident.Emotion.Joy);
+            AddEmotion(LLObserverKorean::Sadness, CoreResident.Emotion.Sadness);
+            AddEmotion(LLObserverKorean::Anger, CoreResident.Emotion.Anger);
+            AddEmotion(LLObserverKorean::Fear, CoreResident.Emotion.Fear);
+            AddEmotion(LLObserverKorean::Affection, CoreResident.Emotion.Affection);
+            AddEmotion(LLObserverKorean::Anxiety, CoreResident.Emotion.Anxiety);
+            AddEmotion(LLObserverKorean::Grief, CoreResident.Emotion.Grief);
+            AddEmotion(LLObserverKorean::Pride, CoreResident.Emotion.Pride);
+            AddEmotion(LLObserverKorean::Jealousy, CoreResident.Emotion.Jealousy);
+            AddEmotion(LLObserverKorean::Relief, CoreResident.Emotion.Relief);
+            AddEmotion(LLObserverKorean::Embarrassment, CoreResident.Emotion.Embarrassment);
             break;
         }
 
@@ -1035,30 +1043,32 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
             for (const FLLCoreRelationshipSnapshot& Relation : Relations)
             {
                 FRow Header;
-                Header.Left = Relation.TargetName.IsEmpty() ? TEXT("Resident") : Relation.TargetName;
-                Header.Right = FString::Printf(TEXT("bond %s · romance %s"), *Scalar02(Relation.SocialBond), *Scalar02(Relation.RomancePotential));
+                Header.Left = Relation.TargetName.IsEmpty() ? LLObserverKorean::Resident : Relation.TargetName;
+                Header.Right = FString::Printf(TEXT("%s %s · %s %s"), LLObserverKorean::Bond, *Scalar02(Relation.SocialBond), LLObserverKorean::Romance, *Scalar02(Relation.RomancePotential));
                 Header.RightColor = TextPrimary;
                 Header.Scale = RowScale;
                 Header.GapBefore = Rows.Num() > 0 ? SectionGap : 0.0f;
                 Rows.Add(Header);
 
                 FRow Social;
-                Social.Left = FString::Printf(TEXT("Affection %s · Trust %s · Respect %s · Comfort %s · Familiarity %s"),
-                    *Scalar02(Relation.Affection), *Scalar02(Relation.Trust), *Scalar02(Relation.Respect),
-                    *Scalar02(Relation.Comfort), *Scalar02(Relation.Familiarity));
+                Social.Left = FString::Printf(TEXT("%s %s · %s %s · %s %s · %s %s · %s %s"),
+                    LLObserverKorean::Affection, *Scalar02(Relation.Affection), LLObserverKorean::Trust, *Scalar02(Relation.Trust),
+                    LLObserverKorean::Respect, *Scalar02(Relation.Respect), LLObserverKorean::Comfort, *Scalar02(Relation.Comfort),
+                    LLObserverKorean::Familiarity, *Scalar02(Relation.Familiarity));
                 Social.Scale = SectionScale;
                 Rows.Add(Social);
 
                 FRow Attraction;
-                Attraction.Left = FString::Printf(TEXT("Attraction %s · Romantic interest %s · Sexual attraction %s · Commitment %s"),
-                    *Scalar02(Relation.Attraction), *Scalar02(Relation.RomanticInterest),
-                    *Scalar02(Relation.SexualAttraction), *Scalar02(Relation.Commitment));
+                Attraction.Left = FString::Printf(TEXT("%s %s · %s %s · %s %s · %s %s"),
+                    LLObserverKorean::Attraction, *Scalar02(Relation.Attraction), LLObserverKorean::RomanticInterest, *Scalar02(Relation.RomanticInterest),
+                    LLObserverKorean::SexualAttraction, *Scalar02(Relation.SexualAttraction), LLObserverKorean::Commitment, *Scalar02(Relation.Commitment));
                 Attraction.Scale = SectionScale;
                 Rows.Add(Attraction);
 
                 FRow Friction;
-                Friction.Left = FString::Printf(TEXT("Conflict %s · Jealousy %s · Fear %s · Grudge %s"),
-                    *Scalar02(Relation.Conflict), *Scalar02(Relation.Jealousy), *Scalar02(Relation.Fear), *Scalar02(Relation.Grudge));
+                Friction.Left = FString::Printf(TEXT("%s %s · %s %s · %s %s · %s %s"),
+                    LLObserverKorean::Conflict, *Scalar02(Relation.Conflict), LLObserverKorean::Jealousy, *Scalar02(Relation.Jealousy),
+                    LLObserverKorean::Fear, *Scalar02(Relation.Fear), LLObserverKorean::Grudge, *Scalar02(Relation.Grudge));
                 Friction.Scale = SectionScale;
                 Rows.Add(Friction);
             }
@@ -1069,39 +1079,39 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
         {
             if (!bHasCoreFamily)
             {
-                FRow None; None.Left = TEXT("Core data unavailable"); None.Scale = RowScale; Rows.Add(None);
+                FRow None; None.Left = LLObserverKorean::CoreUnavailable; None.Scale = RowScale; Rows.Add(None);
                 break;
             }
 
             FRow Household;
-            Household.Left = TEXT("Household");
+            Household.Left = LLObserverKorean::Household;
             Household.Right = CoreFamily.HouseholdId != 0
                 ? FString::Printf(TEXT("#%lld"), static_cast<long long>(CoreFamily.HouseholdId))
-                : FString(TEXT("None"));
+                : FString(LLObserverKorean::None);
             Household.Scale = RowScale;
             Rows.Add(Household);
 
             FRow Partner;
-            Partner.Left = TEXT("Partner");
+            Partner.Left = LLObserverKorean::Partner;
             Partner.Right = CoreFamily.bHasActivePartner
                 ? CoreFamily.PartnerName + TEXT(" · ") + EnumLabel(CoreFamily.PartnerStage)
-                : FString(TEXT("None"));
+                : FString(LLObserverKorean::None);
             Partner.Scale = RowScale;
             Rows.Add(Partner);
 
             if (CoreFamily.bExpectingChild)
             {
                 FRow Expecting;
-                Expecting.Left = TEXT("Expecting child");
+                Expecting.Left = LLObserverKorean::ExpectingChild;
                 Expecting.Right = CoreFamily.PregnancyPartnerName;
                 Expecting.RightColor = TextAction;
                 Expecting.Scale = RowScale;
                 Rows.Add(Expecting);
             }
 
-            FRow Parents; Parents.Left = TEXT("Parents"); Parents.Right = JoinFamilyNames(CoreFamily.Parents); Parents.Scale = RowScale; Parents.GapBefore = SectionGap; Rows.Add(Parents);
-            FRow Children; Children.Left = TEXT("Children"); Children.Right = JoinFamilyNames(CoreFamily.Children); Children.Scale = RowScale; Rows.Add(Children);
-            FRow Siblings; Siblings.Left = TEXT("Siblings"); Siblings.Right = JoinFamilyNames(CoreFamily.Siblings); Siblings.Scale = RowScale; Rows.Add(Siblings);
+            FRow Parents; Parents.Left = LLObserverKorean::Parents; Parents.Right = JoinFamilyNames(CoreFamily.Parents); Parents.Scale = RowScale; Parents.GapBefore = SectionGap; Rows.Add(Parents);
+            FRow Children; Children.Left = LLObserverKorean::Children; Children.Right = JoinFamilyNames(CoreFamily.Children); Children.Scale = RowScale; Rows.Add(Children);
+            FRow Siblings; Siblings.Left = LLObserverKorean::Siblings; Siblings.Right = JoinFamilyNames(CoreFamily.Siblings); Siblings.Scale = RowScale; Rows.Add(Siblings);
             break;
         }
 
@@ -1109,18 +1119,18 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
         {
             if (!bHasCoreCivilization)
             {
-                FRow None; None.Left = TEXT("Core data unavailable"); None.Scale = RowScale; Rows.Add(None);
+                FRow None; None.Left = LLObserverKorean::CoreUnavailable; None.Scale = RowScale; Rows.Add(None);
                 break;
             }
 
-            FRow Gathering; Gathering.Left = TEXT("Gathering"); Gathering.Right = Percent01(CoreCivilization.GatheringSkill); Gathering.Scale = RowScale; Rows.Add(Gathering);
-            FRow Crafting; Crafting.Left = TEXT("Crafting"); Crafting.Right = Percent01(CoreCivilization.CraftingSkill); Crafting.Scale = RowScale; Rows.Add(Crafting);
-            FRow Learning; Learning.Left = TEXT("Learning"); Learning.Right = Percent01(CoreCivilization.LearningSkill); Learning.Scale = RowScale; Rows.Add(Learning);
-            FRow Carried; Carried.Left = TEXT("Carried units"); Carried.Right = FString::FromInt(CoreCivilization.TotalInventoryUnits); Carried.Scale = RowScale; Carried.GapBefore = SectionGap; Rows.Add(Carried);
-            FRow Known; Known.Left = TEXT("Known techniques"); Known.Right = FString::FromInt(CoreCivilization.KnownTechniqueCount); Known.Scale = RowScale; Rows.Add(Known);
-            FRow Reproducible; Reproducible.Left = TEXT("Reproducible"); Reproducible.Right = FString::FromInt(CoreCivilization.ReproducibleTechniqueCount); Reproducible.Scale = RowScale; Rows.Add(Reproducible);
+            FRow Gathering; Gathering.Left = LLObserverKorean::Gathering; Gathering.Right = Percent01(CoreCivilization.GatheringSkill); Gathering.Scale = RowScale; Rows.Add(Gathering);
+            FRow Crafting; Crafting.Left = LLObserverKorean::Crafting; Crafting.Right = Percent01(CoreCivilization.CraftingSkill); Crafting.Scale = RowScale; Rows.Add(Crafting);
+            FRow Learning; Learning.Left = LLObserverKorean::Learning; Learning.Right = Percent01(CoreCivilization.LearningSkill); Learning.Scale = RowScale; Rows.Add(Learning);
+            FRow Carried; Carried.Left = LLObserverKorean::CarriedUnits; Carried.Right = FString::FromInt(CoreCivilization.TotalInventoryUnits); Carried.Scale = RowScale; Carried.GapBefore = SectionGap; Rows.Add(Carried);
+            FRow Known; Known.Left = LLObserverKorean::KnownTechniques; Known.Right = FString::FromInt(CoreCivilization.KnownTechniqueCount); Known.Scale = RowScale; Rows.Add(Known);
+            FRow Reproducible; Reproducible.Left = LLObserverKorean::Reproducible; Reproducible.Right = FString::FromInt(CoreCivilization.ReproducibleTechniqueCount); Reproducible.Scale = RowScale; Rows.Add(Reproducible);
 
-            FRow InventoryHeader; InventoryHeader.Left = TEXT("Inventory"); InventoryHeader.LeftColor = TextSection; InventoryHeader.Scale = SectionScale; InventoryHeader.GapBefore = SectionGap; Rows.Add(InventoryHeader);
+            FRow InventoryHeader; InventoryHeader.Left = LLObserverKorean::Inventory; InventoryHeader.LeftColor = TextSection; InventoryHeader.Scale = SectionScale; InventoryHeader.GapBefore = SectionGap; Rows.Add(InventoryHeader);
             if (CoreCivilization.Inventory.Num() == 0)
             {
                 FRow None; None.Left = LLObserverText::NoneListed; None.Scale = RowScale; Rows.Add(None);
@@ -1138,7 +1148,7 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
                 }
             }
 
-            FRow TechniqueHeader; TechniqueHeader.Left = TEXT("Techniques"); TechniqueHeader.LeftColor = TextSection; TechniqueHeader.Scale = SectionScale; TechniqueHeader.GapBefore = SectionGap; Rows.Add(TechniqueHeader);
+            FRow TechniqueHeader; TechniqueHeader.Left = LLObserverKorean::Techniques; TechniqueHeader.LeftColor = TextSection; TechniqueHeader.Scale = SectionScale; TechniqueHeader.GapBefore = SectionGap; Rows.Add(TechniqueHeader);
             if (CoreCivilization.Techniques.Num() == 0)
             {
                 FRow None; None.Left = LLObserverText::NoneListed; None.Scale = RowScale; Rows.Add(None);

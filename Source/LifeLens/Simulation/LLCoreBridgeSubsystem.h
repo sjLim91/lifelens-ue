@@ -104,6 +104,9 @@ public:
         FGuid ResidentId,
         FLLCoreTraitPreferenceObservation& OutObservation) const;
 
+    UFUNCTION(BlueprintPure, Category="LifeLens|Core|Social")
+    TArray<FLLCoreSocialEventObservation> GetRecentSocialEvents(int32 MaxEvents = 32) const;
+
     UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Action")
     bool GetResidentActionDirective(FGuid ResidentId, FLLCoreActionDirective& OutDirective) const;
 

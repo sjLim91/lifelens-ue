@@ -158,6 +158,9 @@ bool Simulation::completeContextAction(
                 pending.clear();
                 return false;
             }
+            if(result.generatedSocialEvent){
+                recordSocialEvent(result.socialEvent);
+            }
 
             int cooldown=20;
             if(pending.social.intent==SocialIntent::Avoid) cooldown=15;

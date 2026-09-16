@@ -122,7 +122,9 @@ private:
     // rectangle, for checking the pick against what is rendered.
     void DrawDebugTapTargets(const FVector2D& ViewportSize);
 
-    FString CurrentActionFor(const FLLResidentData& Resident) const;
+    // Virtual so specialized observer presentation layers can localize the
+    // display label without changing Core's language-neutral action ids.
+    virtual FString CurrentActionFor(const FLLResidentData& Resident) const;
 
     ULLObservationSubsystem* GetObservation() const;
     ULLCoreBridgeSubsystem* GetCoreBridge() const;

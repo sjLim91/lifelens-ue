@@ -1,6 +1,7 @@
 #include "World/LLWorldDirector.h"
 
 #include "Characters/LLResidentCharacter.h"
+#include "Characters/LLResidentMotionComponent.h"
 #include "Simulation/LLCoreBridgeSubsystem.h"
 
 void ALLWorldDirector::ApplyPendingContextDirective(
@@ -9,10 +10,19 @@ void ALLWorldDirector::ApplyPendingContextDirective(
     const FLLCoreActionDirective& Directive,
     float DeltaSeconds)
 {
+    auto SetTalkingPresentation = [&](bool bActive)
+    {
+        if (Character.MotionComponent)
+        {
+            Character.MotionComponent->SetSocialInteractionActive(bActive);
+        }
+    };
+
     if (!CoreBridge
         || Directive.ContextActionKind == ELLCoreContextActionKind::None
         || Directive.ContextActionToken <= 0)
     {
+        SetTalkingPresentation(false);
         Runtime.ActiveContextActionToken = 0;
         Runtime.ContextUseElapsedSeconds = 0.0f;
         Runtime.bPerformingAction = false;
@@ -22,6 +32,7 @@ void ALLWorldDirector::ApplyPendingContextDirective(
 
     if (Runtime.ActiveContextActionToken != Directive.ContextActionToken)
     {
+        SetTalkingPresentation(false);
         ReleasePhysicalReservation(Character.GetResidentId(), Runtime);
         Runtime.ActiveContextActionToken = Directive.ContextActionToken;
         Runtime.ContextUseElapsedSeconds = 0.0f;
@@ -38,6 +49,7 @@ void ALLWorldDirector::ApplyPendingContextDirective(
         FMath::Max(1.0f, ContextWorldTargetArrivalRadiusUU),
         AckSafeArrivalRadius);
     bool bFaceTarget = false;
+    bool bTalkAtTarget = false;
 
     auto ResolveAuthoritativeResidentTarget = [&](FGuid TargetResidentId, FVector& OutLocation) -> bool
     {
@@ -64,6 +76,7 @@ void ALLWorldDirector::ApplyPendingContextDirective(
             TargetResident = FindResidentActor(Directive.TargetResidentId);
             if (!TargetResident || Directive.SocialIntent == ELLCoreSocialIntent::None)
             {
+                SetTalkingPresentation(false);
                 Runtime.bPerformingAction = false;
                 Character.ClearMovementTarget();
                 return;
@@ -80,9 +93,6 @@ void ALLWorldDirector::ApplyPendingContextDirective(
                         : FVector(0.0f, 1.0f, 0.0f);
                 }
                 AwayDirection.Normalize();
-                // Avoid must always increase separation from the current point;
-                // targeting a fixed radius around the other resident could make
-                // an already-distant resident walk back toward that resident.
                 DesiredLocation = Character.GetActorLocation() + AwayDirection * 420.0f;
                 ArrivalRadius = FMath::Max(1.0f, ContextResidentArrivalRadiusUU);
             }
@@ -90,6 +100,7 @@ void ALLWorldDirector::ApplyPendingContextDirective(
             {
                 if (!ResolveAuthoritativeResidentTarget(Directive.TargetResidentId, DesiredLocation))
                 {
+                    SetTalkingPresentation(false);
                     Runtime.bPerformingAction = false;
                     Character.ClearMovementTarget();
                     return;
@@ -98,6 +109,7 @@ void ALLWorldDirector::ApplyPendingContextDirective(
                     FMath::Max(1.0f, ContextResidentArrivalRadiusUU),
                     AckSafeArrivalRadius);
                 bFaceTarget = true;
+                bTalkAtTarget = true;
             }
             Character.SetCurrentIntent(ELLActionIntent::Socialize);
             break;
@@ -106,12 +118,14 @@ void ALLWorldDirector::ApplyPendingContextDirective(
             TargetResident = FindResidentActor(Directive.TargetResidentId);
             if (!TargetResident || Directive.ParentingAction == ELLCoreParentingAction::None)
             {
+                SetTalkingPresentation(false);
                 Runtime.bPerformingAction = false;
                 Character.ClearMovementTarget();
                 return;
             }
             if (!ResolveAuthoritativeResidentTarget(Directive.TargetResidentId, DesiredLocation))
             {
+                SetTalkingPresentation(false);
                 Runtime.bPerformingAction = false;
                 Character.ClearMovementTarget();
                 return;
@@ -144,6 +158,7 @@ void ALLWorldDirector::ApplyPendingContextDirective(
 
         case ELLCoreContextActionKind::None:
         default:
+            SetTalkingPresentation(false);
             return;
     }
 
@@ -151,6 +166,7 @@ void ALLWorldDirector::ApplyPendingContextDirective(
         Character.GetActorLocation(), DesiredLocation);
     if (DistanceSquared > FMath::Square(ArrivalRadius))
     {
+        SetTalkingPresentation(false);
         Runtime.bPerformingAction = false;
         Runtime.ContextUseElapsedSeconds = 0.0f;
         Character.SetMovementTarget(DesiredLocation);
@@ -159,6 +175,7 @@ void ALLWorldDirector::ApplyPendingContextDirective(
 
     Character.ClearMovementTarget();
     Runtime.bPerformingAction = true;
+    SetTalkingPresentation(bTalkAtTarget);
 
     if (bFaceTarget && TargetResident)
     {
@@ -190,6 +207,7 @@ void ALLWorldDirector::ApplyPendingContextDirective(
     Runtime.ContextUseElapsedSeconds = 0.0f;
     if (bAcknowledged)
     {
+        SetTalkingPresentation(false);
         Runtime.ActiveContextActionToken = 0;
         Runtime.bPerformingAction = false;
         Character.ClearMovementTarget();

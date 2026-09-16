@@ -237,6 +237,12 @@ bool Simulation::restoreSnapshot(const SimulationStateSnapshot& snapshot,std::st
     socialKnowledge_=snapshot.socialKnowledge;
     runtime_=std::move(restoredRuntime);
     logs_=snapshot.logs;
+
+    // Recent social communication is presentation provenance, not persisted
+    // simulation truth. Clearing it prevents old speech bubbles / feed entries
+    // from replaying after a load.
+    clearRecentSocialEvents();
+
     if(error) error->clear();
     return true;
 }
