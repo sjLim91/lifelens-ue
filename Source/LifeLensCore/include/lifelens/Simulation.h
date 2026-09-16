@@ -8,6 +8,7 @@
 #include "CivilizationActivityReadModel.h"
 #include "CivilizationKnowledgeTransmission.h"
 #include "CivilizationObserverReadModel.h"
+#include "ContextAction.h"
 #include "Death.h"
 #include "DecisionExecution.h"
 #include "EnvironmentalExposure.h"
@@ -77,6 +78,11 @@ public:
         bool emergencyFallback,
         GridPos resolvedPosition,
         SanitationSiteId sanitationSiteId=0);
+    PendingContextActionObservation observePendingContextAction(CharacterId id) const;
+    bool completeExternalContextAction(
+        CharacterId id,
+        std::uint64_t token,
+        GridPos resolvedPosition);
     void onEvent(EventCallback cb);
     SimulationStateSnapshot captureSnapshot() const;
     bool restoreSnapshot(const SimulationStateSnapshot& snapshot,std::string* error=nullptr);
@@ -132,6 +138,7 @@ private:
         bool socialActive=false;
         SocialIntent socialIntent=SocialIntent::None;
         CharacterId socialTarget=0;
+        PendingContextAction pendingContext{};
 
         // Presentation provenance for the civilization action that actually
         // executed. Intentionally omitted from SimulationRuntimeSnapshot so
@@ -164,6 +171,7 @@ private:
     void advanceAction(Character& c,Runtime& r);
     void failPlan(Runtime& r);
     void clearRuntimeActivity(Runtime& r);
+    bool completeContextAction(Character& actor,Runtime& runtime,std::uint64_t token,GridPos resolvedPosition);
     bool tryCivilizationDecision(Character& c,Runtime& r);
     bool trySocialDecision(Character& c,Runtime& r);
     void processCivilizationKnowledgeEvent(Character& actor,const CivilizationEvent& event);
