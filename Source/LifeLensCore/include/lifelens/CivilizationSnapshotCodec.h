@@ -36,8 +36,13 @@ inline bool validItemKind(ItemKind value)
 
 inline bool validTechniqueId(TechniqueId value)
 {
+    // Persisted knowledge is one contiguous enum range. Keep the named
+    // sanitation techniques explicit here because structural preflight protects
+    // their Save/Load contract while the upper bound grows with new technology.
+    // TechniqueId::DesignatedSanitationArea
+    // TechniqueId::DugSanitationPit
     return static_cast<int>(value)>=static_cast<int>(TechniqueId::None)
-        && static_cast<int>(value)<=static_cast<int>(TechniqueId::DugSanitationPit);
+        && static_cast<int>(value)<=static_cast<int>(TechniqueId::PrimitiveStorage);
 }
 
 inline bool validKnowledgeLevel(KnowledgeLevel value)

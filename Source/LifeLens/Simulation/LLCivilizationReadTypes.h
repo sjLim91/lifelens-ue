@@ -43,7 +43,8 @@ enum class ELLCoreTechniqueId : uint8
     FiberCordage,
     SimpleContainer,
     DesignatedSanitationArea,
-    DugSanitationPit
+    DugSanitationPit,
+    PrimitiveStorage
 };
 
 UENUM(BlueprintType)

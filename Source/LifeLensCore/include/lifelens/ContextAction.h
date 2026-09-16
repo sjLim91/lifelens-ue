@@ -62,6 +62,9 @@ struct PendingContextActionObservation {
     int quantity=0;
     ResourceNodeId resourceNode=0;
     StorageId storage=0;
+    FacilityBuildAction facilityAction=FacilityBuildAction::None;
+    FacilityId facility=0;
+    FacilityKind facilityKind=FacilityKind::PrimitiveStorage;
 
     ParentingAction parentingAction=ParentingAction::Comfort;
 
@@ -112,6 +115,16 @@ inline int contextActionDurationTicks(const PendingContextAction& action)
             }
             return 3;
         case ContextActionKind::Civilization:
+            if(action.civilization.intent==CivilizationIntent::Craft
+               && action.civilization.technique==TechniqueId::PrimitiveStorage){
+                switch(action.civilization.facilityAction){
+                    case FacilityBuildAction::Plan: return 4;
+                    case FacilityBuildAction::DeliverMaterial: return 4;
+                    case FacilityBuildAction::Work: return 8;
+                    case FacilityBuildAction::None:
+                    default: return 1;
+                }
+            }
             switch(action.civilization.intent){
                 case CivilizationIntent::Gather: return 5;
                 case CivilizationIntent::Store: return 3;
@@ -173,6 +186,29 @@ inline bool resolveCivilizationContextTarget(
             }
             return false;
         case CivilizationIntent::Craft:
+            if(decision.technique==TechniqueId::PrimitiveStorage){
+                if(!decision.hasFacilityTarget) return false;
+                if(decision.facilityAction==FacilityBuildAction::Plan){
+                    const PrimitiveStorageSiteOpportunity opportunity=
+                        choosePrimitiveStorageSite(world,actor.id);
+                    if(!opportunity.available
+                       || opportunity.pos.x!=decision.facilityTargetPos.x
+                       || opportunity.pos.y!=decision.facilityTargetPos.y) return false;
+                    outTarget=decision.facilityTargetPos;
+                    return true;
+                }
+                for(const auto& facility:world.facilities){
+                    if(facility.id!=decision.facility
+                       || facility.kind!=FacilityKind::PrimitiveStorage
+                       || facility.state==FacilityState::Operational
+                       || facility.state==FacilityState::Ruined) continue;
+                    if(facility.pos.x!=decision.facilityTargetPos.x
+                       || facility.pos.y!=decision.facilityTargetPos.y) return false;
+                    outTarget=facility.pos;
+                    return true;
+                }
+                return false;
+            }
             if(decision.technique==TechniqueId::DesignatedSanitationArea){
                 const PrimitiveSanitationOpportunity opportunity=evaluateDesignatedSanitationSiteCreationOpportunity(
                     world.seed,actor,world.environmentalResidues,world.minute,
@@ -204,7 +240,8 @@ inline bool civilizationContextRequiresSpatialTarget(const CivilizationUtilityDe
     }
     if(decision.intent==CivilizationIntent::Craft){
         return decision.technique==TechniqueId::DesignatedSanitationArea
-            || decision.technique==TechniqueId::DugSanitationPit;
+            || decision.technique==TechniqueId::DugSanitationPit
+            || decision.technique==TechniqueId::PrimitiveStorage;
     }
     return false;
 }
@@ -239,6 +276,9 @@ inline PendingContextActionObservation observePendingContextAction(
             result.quantity=pending.civilization.quantity;
             result.resourceNode=pending.civilization.resourceNode;
             result.storage=pending.civilization.storage;
+            result.facilityAction=pending.civilization.facilityAction;
+            result.facility=pending.civilization.facility;
+            result.facilityKind=pending.civilization.facilityKind;
             break;
         case ContextActionKind::Parenting:
             result.parentingAction=pending.parentingAction;

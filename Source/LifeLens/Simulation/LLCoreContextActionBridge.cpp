@@ -108,6 +108,7 @@ ELLCoreTechniqueId ContextActionToUnrealTechnique(lifelens::TechniqueId Techniqu
         case lifelens::TechniqueId::SimpleContainer: return ELLCoreTechniqueId::SimpleContainer;
         case lifelens::TechniqueId::DesignatedSanitationArea: return ELLCoreTechniqueId::DesignatedSanitationArea;
         case lifelens::TechniqueId::DugSanitationPit: return ELLCoreTechniqueId::DugSanitationPit;
+        case lifelens::TechniqueId::PrimitiveStorage: return ELLCoreTechniqueId::PrimitiveStorage;
         case lifelens::TechniqueId::None:
         default: return ELLCoreTechniqueId::None;
     }

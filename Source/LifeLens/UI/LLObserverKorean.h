@@ -160,6 +160,7 @@ namespace LLObserverKorean
             case ELLCoreTechniqueId::SimpleContainer:           return TEXT("간이 용기 제작");
             case ELLCoreTechniqueId::DesignatedSanitationArea:  return TEXT("지정 위생 구역");
             case ELLCoreTechniqueId::DugSanitationPit:          return TEXT("위생 구덩이");
+            case ELLCoreTechniqueId::PrimitiveStorage:          return TEXT("원시 저장소");
             case ELLCoreTechniqueId::None:
             default:                                             return TEXT("없음");
         }
