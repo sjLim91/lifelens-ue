@@ -1,5 +1,4 @@
 #include "Characters/LLResidentCharacter.h"
-#include "AI/LLDecisionComponent.h"
 #include "Characters/LLResidentAppearanceComponent.h"
 #include "Characters/LLResidentMotionComponent.h"
 #include "Characters/LLResidentPresentationComponent.h"
@@ -29,8 +28,6 @@ namespace
 ALLResidentCharacter::ALLResidentCharacter()
 {
     PrimaryActorTick.bCanEverTick = true;
-
-    DecisionComponent = CreateDefaultSubobject<ULLDecisionComponent>(TEXT("DecisionComponent"));
 
     DebugBody = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DebugBody"));
     DebugBody->SetupAttachment(RootComponent);
@@ -86,7 +83,7 @@ void ALLResidentCharacter::Tick(float DeltaSeconds)
     }
 
     // Preserve the existing constant-speed movement contract, then sweep the
-    // resulting frame step so visible solid dressing can block and redirect it.
+    // resulting frame step so authoritative blockers can redirect it.
     const FVector ForwardDestination = FMath::VInterpConstantTo(
         StartLocation,
         FlatTarget,
