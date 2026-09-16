@@ -23,7 +23,10 @@ Authority rule: Core/World owns simulation truth. UI/Character/Environment/World
 - locked files: Observer resident-detail data presentation under `Source/LifeLens/UI/LLObserverHUD.*` and `Source/LifeLens/UI/LLObserverLabels.h` only as required by this milestone.
 - Jjun-owned supporting scope: `Source/LifeLens/Simulation/**`, `Source/LifeLensCore/**`, Core tests, and canonical work-state/docs.
 - purpose: complete Observer resident-detail fidelity end-to-end instead of splitting Core/Bridge and UI into separate handoffs.
-- acceptance scope: authoritative numeric Needs, all 14 Core personality dimensions, truthful Traits/Skills backed by Core data rather than empty legacy DTOs, detailed directional relationship dimensions, existing authoritative Family data, concise Overview, and preservation of direct-Core Knowledge/Gear behavior.
+- acceptance scope: authoritative numeric Needs, all 14 Core personality dimensions, explicit authoritative 8-axis `TraitProfile`, explicit authoritative 8-axis `PreferenceProfile`, civilization Skills, detailed directional relationship dimensions, existing authoritative Family data, concise Overview, and preservation of direct-Core Knowledge/Gear behavior.
+- trait/preference provider: `Source/LifeLensCore/include/lifelens/TraitsPreferences.h` -> `ULLCoreBridgeSubsystem::GetResidentTraitPreferenceObservation` -> Observer detail. Profiles are deterministic Core read models derived from persistent Personality/Genetics rather than legacy UI placeholders or a second mutable authority.
+- trait dimensions: Resilience / Creativity / Discipline / Compassion / Adaptability / Boldness / Perseverance / Resourcefulness.
+- preference dimensions: Socializing / Solitude / Exploration / Crafting / Gathering / Comfort / Novelty / Order.
 - authority constraint: presentation may format/summarize Core values but must not fabricate resident traits, preferences, abilities, relationships, or family facts.
 - explicit non-scope: Emotion causality remains the later Emotion runtime-integration milestone; do not synthesize non-zero emotion values here.
 - release condition: Observer data-completeness PR is merged and the owner lane can resume normal UI maintenance/styling without a parallel data-authority implementation.
