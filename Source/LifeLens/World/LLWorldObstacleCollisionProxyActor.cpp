@@ -2,43 +2,17 @@
 
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "Components/SceneComponent.h"
+#include "Engine/GameInstance.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
-#include "EngineUtils.h"
+#include "Simulation/LLCoreBridgeSubsystem.h"
+#include "Simulation/LLWorldGenerationReadTypes.h"
 #include "UObject/ConstructorHelpers.h"
-#include "WorldPresentation/LLWorldPresentationActor.h"
+#include "World/LLWorldSpatialContract.h"
 
 namespace
 {
     constexpr float EngineCubeSideUU = 100.0f;
-
-    bool IsTreeSource(const UHierarchicalInstancedStaticMeshComponent& Component)
-    {
-        return Component.GetName().StartsWith(TEXT("Trees_"));
-    }
-
-    bool IsRockSource(const UHierarchicalInstancedStaticMeshComponent& Component)
-    {
-        return Component.GetName().StartsWith(TEXT("Rocks_"));
-    }
-
-    uint32 MixSignature(uint32 Seed, uint32 Value)
-    {
-        return HashCombineFast(Seed, Value);
-    }
-
-    uint32 HashTransformSample(const FTransform& Transform)
-    {
-        const FVector Location = Transform.GetLocation();
-        const FVector Scale = Transform.GetScale3D();
-        uint32 Hash = GetTypeHash(FMath::RoundToInt(Location.X));
-        Hash = MixSignature(Hash, GetTypeHash(FMath::RoundToInt(Location.Y)));
-        Hash = MixSignature(Hash, GetTypeHash(FMath::RoundToInt(Location.Z)));
-        Hash = MixSignature(Hash, GetTypeHash(FMath::RoundToInt(Scale.X * 100.0f)));
-        Hash = MixSignature(Hash, GetTypeHash(FMath::RoundToInt(Scale.Y * 100.0f)));
-        Hash = MixSignature(Hash, GetTypeHash(FMath::RoundToInt(Scale.Z * 100.0f)));
-        return Hash;
-    }
 
     void ConfigureCollisionProxy(UHierarchicalInstancedStaticMeshComponent& Component, UStaticMesh* CubeMesh)
     {
@@ -52,6 +26,11 @@ namespace
         Component.SetCanEverAffectNavigation(false);
         Component.SetCastShadow(false);
         Component.SetHiddenInGame(true);
+    }
+
+    uint32 MixSignature(uint32 Seed, uint32 Value)
+    {
+        return HashCombineFast(Seed, Value);
     }
 }
 
@@ -97,187 +76,168 @@ void ALLWorldObstacleCollisionProxyActor::Tick(float DeltaSeconds)
 
 void ALLWorldObstacleCollisionProxyActor::RefreshCollisionProxies(bool bForce)
 {
-    if (!GetWorld() || !CollisionCube || !TreeCollision || !RockCollision)
+    const UGameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+    ULLCoreBridgeSubsystem* Bridge = GameInstance ? GameInstance->GetSubsystem<ULLCoreBridgeSubsystem>() : nullptr;
+    if (!Bridge || !CollisionCube || !TreeCollision || !RockCollision)
     {
+        if (bHasBuilt && TreeCollision && RockCollision)
+        {
+            TreeCollision->ClearInstances();
+            RockCollision->ClearInstances();
+            bHasBuilt = false;
+            LastCoreSignature = 0;
+        }
         return;
     }
 
-    ALLWorldPresentationActor* Source = nullptr;
-    for (TActorIterator<ALLWorldPresentationActor> It(GetWorld()); It; ++It)
-    {
-        if (IsValid(*It))
-        {
-            Source = *It;
-            break;
-        }
-    }
-
-    if (!Source)
+    const FLLCoreWorldGenerationObservation World = Bridge->GetWorldGenerationObservation();
+    if (!World.bAvailable || !World.bHasInitialStartRegion)
     {
         if (bHasBuilt)
         {
             TreeCollision->ClearInstances();
             RockCollision->ClearInstances();
             bHasBuilt = false;
-            LastSourceSignature = 0;
+            LastCoreSignature = 0;
         }
         return;
     }
 
-    const uint32 Signature = ComputeSourceSignature(*Source);
-    if (!bForce && bHasBuilt && Signature == LastSourceSignature)
+    TArray<FLLCoreNaturalChunkObservation> Chunks;
+    CollectMaterializedChunks(*Bridge, World, Chunks);
+    const uint32 Signature = ComputeCoreSignature(World, Chunks);
+    if (!bForce && bHasBuilt && Signature == LastCoreSignature)
     {
         return;
     }
 
-    RebuildFromSource(*Source);
-    LastSourceSignature = Signature;
+    RebuildFromCore(World, Chunks);
+    LastCoreSignature = Signature;
     bHasBuilt = true;
 }
 
-uint32 ALLWorldObstacleCollisionProxyActor::ComputeSourceSignature(ALLWorldPresentationActor& Source) const
+void ALLWorldObstacleCollisionProxyActor::CollectMaterializedChunks(
+    ULLCoreBridgeSubsystem& Bridge,
+    const FLLCoreWorldGenerationObservation& World,
+    TArray<FLLCoreNaturalChunkObservation>& OutChunks) const
 {
-    uint32 Signature = 0x4C4C4F42u; // "LLOB"
-    TInlineComponentArray<UHierarchicalInstancedStaticMeshComponent*> Components(&Source);
-
-    for (const UHierarchicalInstancedStaticMeshComponent* Component : Components)
+    OutChunks.Reset();
+    if (World.InitialChunk.bMaterialized)
     {
-        if (!Component || (!IsTreeSource(*Component) && !IsRockSource(*Component)))
-        {
-            continue;
-        }
-
-        const int32 Count = Component->GetInstanceCount();
-        Signature = MixSignature(Signature, GetTypeHash(Component->GetFName()));
-        Signature = MixSignature(Signature, GetTypeHash(Count));
-
-        if (Count <= 0)
-        {
-            continue;
-        }
-
-        const int32 SampleIndices[3] = {0, Count / 2, Count - 1};
-        for (const int32 SampleIndex : SampleIndices)
-        {
-            FTransform Transform;
-            if (Component->GetInstanceTransform(SampleIndex, Transform, true))
-            {
-                Signature = MixSignature(Signature, HashTransformSample(Transform));
-            }
-        }
+        OutChunks.Add(World.InitialChunk);
     }
 
-    return Signature;
-}
-
-void ALLWorldObstacleCollisionProxyActor::RebuildFromSource(ALLWorldPresentationActor& Source)
-{
-    TreeCollision->ClearInstances();
-    RockCollision->ClearInstances();
-
-    TInlineComponentArray<UHierarchicalInstancedStaticMeshComponent*> Components(&Source);
-    for (UHierarchicalInstancedStaticMeshComponent* Component : Components)
+    const int32 Rings = FMath::Clamp(
+        FMath::CeilToInt(FMath::Sqrt(static_cast<float>(FMath::Max(1, World.MaterializedChunkCount)))),
+        1,
+        6);
+    for (int32 OffsetX = -Rings; OffsetX <= Rings; ++OffsetX)
     {
-        if (!Component)
+        for (int32 OffsetY = -Rings; OffsetY <= Rings; ++OffsetY)
         {
-            continue;
-        }
-
-        const bool bTree = IsTreeSource(*Component);
-        const bool bRock = IsRockSource(*Component);
-        UStaticMesh* SourceMesh = Component->GetStaticMesh();
-        if ((!bTree && !bRock) || !SourceMesh)
-        {
-            continue;
-        }
-
-        const int32 InstanceCount = Component->GetInstanceCount();
-        for (int32 InstanceIndex = 0; InstanceIndex < InstanceCount; ++InstanceIndex)
-        {
-            FTransform SourceTransform;
-            if (!Component->GetInstanceTransform(InstanceIndex, SourceTransform, true))
+            if (OffsetX == 0 && OffsetY == 0)
             {
                 continue;
             }
 
-            if (bTree)
+            FLLCoreNaturalChunkObservation Chunk;
+            if (Bridge.GetNaturalChunkObservation(
+                    World.InitialChunkX + OffsetX,
+                    World.InitialChunkY + OffsetY,
+                    Chunk)
+                && Chunk.bMaterialized)
             {
-                AddTreeProxy(SourceTransform, *SourceMesh);
-            }
-            else
-            {
-                AddRockProxy(SourceTransform, *SourceMesh);
+                OutChunks.Add(MoveTemp(Chunk));
             }
         }
     }
-
-    UE_LOG(LogTemp, Log, TEXT("LifeLens obstacle proxies: trees=%d rocks=%d"),
-        TreeCollision->GetInstanceCount(), RockCollision->GetInstanceCount());
 }
 
-void ALLWorldObstacleCollisionProxyActor::AddTreeProxy(const FTransform& SourceTransform, UStaticMesh& SourceMesh)
+uint32 ALLWorldObstacleCollisionProxyActor::ComputeCoreSignature(
+    const FLLCoreWorldGenerationObservation& World,
+    const TArray<FLLCoreNaturalChunkObservation>& Chunks) const
 {
-    const FBoxSphereBounds Bounds = SourceMesh.GetBounds();
-    const FVector SourceScale = SourceTransform.GetScale3D();
-    const FVector AbsScale(FMath::Abs(SourceScale.X), FMath::Abs(SourceScale.Y), FMath::Abs(SourceScale.Z));
-    const FVector VisualHalfExtent(
-        Bounds.BoxExtent.X * AbsScale.X,
-        Bounds.BoxExtent.Y * AbsScale.Y,
-        Bounds.BoxExtent.Z * AbsScale.Z);
+    uint32 Signature = 0x4C4C4F43u; // "LLOC"
+    Signature = MixSignature(Signature, GetTypeHash(World.WorldSeed));
+    Signature = MixSignature(Signature, GetTypeHash(World.GenerationVersion));
+    Signature = MixSignature(Signature, GetTypeHash(World.MaterializedChunkCount));
 
-    const float VisualRadius = FMath::Min(VisualHalfExtent.X, VisualHalfExtent.Y);
-    const float Radius = FMath::Clamp(
-        VisualRadius * TreeTrunkRadiusFraction,
-        TreeMinRadiusUU,
-        TreeMaxRadiusUU);
-    const float HalfHeight = FMath::Clamp(
-        VisualHalfExtent.Z * TreeTrunkHalfHeightFraction,
-        TreeMinHalfHeightUU,
-        TreeMaxHalfHeightUU);
-
-    FVector LocalCenter = Bounds.Origin;
-    LocalCenter.Z -= Bounds.BoxExtent.Z * 0.30f;
-    const FVector WorldCenter = SourceTransform.TransformPosition(LocalCenter);
-    const FRotator YawOnly(0.0f, SourceTransform.Rotator().Yaw, 0.0f);
-    const FVector ProxyScale(
-        (Radius * 2.0f) / EngineCubeSideUU,
-        (Radius * 2.0f) / EngineCubeSideUU,
-        (HalfHeight * 2.0f) / EngineCubeSideUU);
-
-    TreeCollision->AddInstance(FTransform(YawOnly, WorldCenter, ProxyScale), true);
+    for (const FLLCoreNaturalChunkObservation& Chunk : Chunks)
+    {
+        Signature = MixSignature(Signature, GetTypeHash(Chunk.ChunkX));
+        Signature = MixSignature(Signature, GetTypeHash(Chunk.ChunkY));
+        Signature = MixSignature(Signature, GetTypeHash(Chunk.PhysicalObstacles.Num()));
+        for (const FLLCoreNaturalObstacleObservation& Obstacle : Chunk.PhysicalObstacles)
+        {
+            Signature = MixSignature(Signature, GetTypeHash(Obstacle.ObstacleId));
+            Signature = MixSignature(Signature, static_cast<uint32>(Obstacle.Kind));
+            Signature = MixSignature(Signature, GetTypeHash(Obstacle.GridX));
+            Signature = MixSignature(Signature, GetTypeHash(Obstacle.GridY));
+            Signature = MixSignature(Signature, GetTypeHash(FMath::RoundToInt(Obstacle.OffsetXCells * 1000.0f)));
+            Signature = MixSignature(Signature, GetTypeHash(FMath::RoundToInt(Obstacle.OffsetYCells * 1000.0f)));
+            Signature = MixSignature(Signature, GetTypeHash(FMath::RoundToInt(Obstacle.HalfExtentXCells * 1000.0f)));
+            Signature = MixSignature(Signature, GetTypeHash(FMath::RoundToInt(Obstacle.HalfExtentYCells * 1000.0f)));
+        }
+    }
+    return Signature;
 }
 
-void ALLWorldObstacleCollisionProxyActor::AddRockProxy(const FTransform& SourceTransform, UStaticMesh& SourceMesh)
+void ALLWorldObstacleCollisionProxyActor::RebuildFromCore(
+    const FLLCoreWorldGenerationObservation& World,
+    const TArray<FLLCoreNaturalChunkObservation>& Chunks)
 {
-    // Decorative pebble meshes are deliberately traversable even when a random
-    // presentation scale makes one instance appear larger. Only true rock/
-    // boulder meshes should participate in resident blocking.
-    if (SourceMesh.GetName().Contains(TEXT("Pebble"), ESearchCase::IgnoreCase))
+    TreeCollision->ClearInstances();
+    RockCollision->ClearInstances();
+
+    for (const FLLCoreNaturalChunkObservation& Chunk : Chunks)
+    {
+        for (const FLLCoreNaturalObstacleObservation& Obstacle : Chunk.PhysicalObstacles)
+        {
+            AddObstacleProxy(World, Obstacle);
+        }
+    }
+
+    UE_LOG(LogTemp, Log,
+        TEXT("LifeLens Core obstacle proxies: trees=%d rocks=%d chunks=%d"),
+        TreeCollision->GetInstanceCount(),
+        RockCollision->GetInstanceCount(),
+        Chunks.Num());
+}
+
+void ALLWorldObstacleCollisionProxyActor::AddObstacleProxy(
+    const FLLCoreWorldGenerationObservation& World,
+    const FLLCoreNaturalObstacleObservation& Obstacle)
+{
+    if (Obstacle.ObstacleId <= 0
+        || Obstacle.HalfExtentXCells <= 0.0f
+        || Obstacle.HalfExtentYCells <= 0.0f
+        || Obstacle.HalfHeightCells <= 0.0f)
     {
         return;
     }
 
-    const FBoxSphereBounds Bounds = SourceMesh.GetBounds();
-    const FVector SourceScale = SourceTransform.GetScale3D();
-    const FVector AbsScale(FMath::Abs(SourceScale.X), FMath::Abs(SourceScale.Y), FMath::Abs(SourceScale.Z));
-    const FVector VisualHalfExtent(
-        Bounds.BoxExtent.X * AbsScale.X,
-        Bounds.BoxExtent.Y * AbsScale.Y,
-        Bounds.BoxExtent.Z * AbsScale.Z);
+    const float CellSize = LLWorldSpatialContract::GridCellSizeUU;
+    const float RelativeXCells =
+        static_cast<float>(Obstacle.GridX - World.InitialCenterGridX) + Obstacle.OffsetXCells;
+    const float RelativeYCells =
+        static_cast<float>(Obstacle.GridY - World.InitialCenterGridY) + Obstacle.OffsetYCells;
+    const float HalfX = Obstacle.HalfExtentXCells * CellSize;
+    const float HalfY = Obstacle.HalfExtentYCells * CellSize;
+    const float HalfZ = Obstacle.HalfHeightCells * CellSize;
 
-    const float HalfX = VisualHalfExtent.X * RockFootprintFraction;
-    const float HalfY = VisualHalfExtent.Y * RockFootprintFraction;
-    if (FMath::Max(HalfX, HalfY) < MinimumBlockingRockHalfExtentUU)
-    {
-        return; // other genuinely tiny rock meshes also stay traversable
-    }
-
-    const float HalfZ = FMath::Max(24.0f, VisualHalfExtent.Z * RockFootprintFraction);
-    const FVector WorldCenter = SourceTransform.TransformPosition(Bounds.Origin);
+    const FVector WorldCenter = GetActorLocation() + FVector(
+        RelativeXCells * CellSize,
+        RelativeYCells * CellSize,
+        HalfZ);
     const FVector ProxyScale(
         (HalfX * 2.0f) / EngineCubeSideUU,
         (HalfY * 2.0f) / EngineCubeSideUU,
         (HalfZ * 2.0f) / EngineCubeSideUU);
 
-    RockCollision->AddInstance(FTransform(SourceTransform.Rotator(), WorldCenter, ProxyScale), true);
+    UHierarchicalInstancedStaticMeshComponent* Target =
+        Obstacle.Kind == ELLCoreNaturalObstacleKind::Rock ? RockCollision.Get() : TreeCollision.Get();
+    if (Target)
+    {
+        Target->AddInstance(FTransform(FRotator::ZeroRotator, WorldCenter, ProxyScale), true);
+    }
 }
