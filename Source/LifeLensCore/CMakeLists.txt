@@ -92,6 +92,8 @@ lifelens_add_test(test_production_new_game)
 
 lifelens_add_test(test_autonomous_family_progression)
 
+lifelens_add_test(test_lifecycle_runtime_correctness)
+
 lifelens_add_test(test_core_save_load)
 
 lifelens_add_test(test_snapshot_codec)
