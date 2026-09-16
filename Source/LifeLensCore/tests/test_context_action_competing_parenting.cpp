@@ -1,3 +1,4 @@
+#include <cstddef>
 #include <iostream>
 #include <string>
 #include "lifelens/LifeStage.h"
@@ -31,11 +32,11 @@ int main(){
     std::string error; CHECK(sim.restoreSnapshot(snapshot,&error)); CHECK(error.empty()); sim.setExternalPhysicalExecution(true);
     sim.step();
     PendingContextActionObservation first; int count=0;
-    for(CharacterId parent:{parentA,parentB}){ auto p=sim.observePendingContextAction(parent); if(p.active && p.kind==ContextActionKind::Parenting && p.parentingTarget==child.id){ ++count; first=p; } }
+    for(CharacterId parent:{parentA,parentB}){ auto p=sim.observePendingContextAction(parent); if(p.active && p.kind==ContextActionKind::Parenting && p.targetResident==child.id){ ++count; first=p; } }
     CHECK(count==1); CHECK(first.active); CHECK(first.parentingAction==ParentingAction::ToiletAssist);
     sim.runMinutes(30);
     PendingContextActionObservation second; count=0;
-    for(CharacterId parent:{parentA,parentB}){ auto p=sim.observePendingContextAction(parent); if(p.active && p.kind==ContextActionKind::Parenting && p.parentingTarget==child.id){ ++count; if(p.actor!=first.actor) second=p; } }
+    for(CharacterId parent:{parentA,parentB}){ auto p=sim.observePendingContextAction(parent); if(p.active && p.kind==ContextActionKind::Parenting && p.targetResident==child.id){ ++count; if(p.actor!=first.actor) second=p; } }
     CHECK(count==2); CHECK(second.active);
     GridPos childPos{}; CHECK(sim.runtimePosition(child.id,childPos));
     Character* childCharacter=findCharacter(sim,child.id); CHECK(childCharacter!=nullptr);
