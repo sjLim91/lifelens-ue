@@ -4,17 +4,17 @@
 #include "GameFramework/Actor.h"
 #include "LLWorldObstacleCollisionProxyActor.generated.h"
 
-class ALLWorldPresentationActor;
 class UHierarchicalInstancedStaticMeshComponent;
+class ULLCoreBridgeSubsystem;
 class USceneComponent;
 class UStaticMesh;
+struct FLLCoreNaturalChunkObservation;
+struct FLLCoreNaturalObstacleObservation;
+struct FLLCoreWorldGenerationObservation;
 
-// Mirrors solid-looking generated dressing into cheap query-only collision.
-//
-// This is intentionally a UE presentation-path concern: Core still owns every
-// action/target/world fact. The proxies only prevent the resident capsule from
-// visually walking through tree trunks and non-trivial rocks while travelling
-// toward an already-authoritative target.
+// Query-only resident collision projected from authoritative Core natural
+// obstacle facts. This actor no longer inspects WorldPresentation instances;
+// visual dressing may decorate the same area but cannot create blocking truth.
 UCLASS()
 class LIFELENS_API ALLWorldObstacleCollisionProxyActor : public AActor
 {
@@ -28,10 +28,19 @@ public:
 
 private:
     void RefreshCollisionProxies(bool bForce);
-    uint32 ComputeSourceSignature(ALLWorldPresentationActor& Source) const;
-    void RebuildFromSource(ALLWorldPresentationActor& Source);
-    void AddTreeProxy(const FTransform& SourceTransform, UStaticMesh& SourceMesh);
-    void AddRockProxy(const FTransform& SourceTransform, UStaticMesh& SourceMesh);
+    void CollectMaterializedChunks(
+        ULLCoreBridgeSubsystem& Bridge,
+        const FLLCoreWorldGenerationObservation& World,
+        TArray<FLLCoreNaturalChunkObservation>& OutChunks) const;
+    uint32 ComputeCoreSignature(
+        const FLLCoreWorldGenerationObservation& World,
+        const TArray<FLLCoreNaturalChunkObservation>& Chunks) const;
+    void RebuildFromCore(
+        const FLLCoreWorldGenerationObservation& World,
+        const TArray<FLLCoreNaturalChunkObservation>& Chunks);
+    void AddObstacleProxy(
+        const FLLCoreWorldGenerationObservation& World,
+        const FLLCoreNaturalObstacleObservation& Obstacle);
 
     UPROPERTY()
     TObjectPtr<USceneComponent> SceneRoot;
@@ -45,34 +54,10 @@ private:
     UPROPERTY()
     TObjectPtr<UStaticMesh> CollisionCube;
 
-    UPROPERTY(EditAnywhere, Category="LifeLens|ObstacleCollision", meta=(ClampMin="0.05", ClampMax="0.5"))
-    float TreeTrunkRadiusFraction = 0.18f;
-
-    UPROPERTY(EditAnywhere, Category="LifeLens|ObstacleCollision", meta=(ClampMin="10.0"))
-    float TreeMinRadiusUU = 30.0f;
-
-    UPROPERTY(EditAnywhere, Category="LifeLens|ObstacleCollision", meta=(ClampMin="20.0"))
-    float TreeMaxRadiusUU = 72.0f;
-
-    UPROPERTY(EditAnywhere, Category="LifeLens|ObstacleCollision", meta=(ClampMin="0.1", ClampMax="1.0"))
-    float TreeTrunkHalfHeightFraction = 0.55f;
-
-    UPROPERTY(EditAnywhere, Category="LifeLens|ObstacleCollision", meta=(ClampMin="20.0"))
-    float TreeMinHalfHeightUU = 90.0f;
-
-    UPROPERTY(EditAnywhere, Category="LifeLens|ObstacleCollision", meta=(ClampMin="40.0"))
-    float TreeMaxHalfHeightUU = 240.0f;
-
-    UPROPERTY(EditAnywhere, Category="LifeLens|ObstacleCollision", meta=(ClampMin="0.1", ClampMax="1.0"))
-    float RockFootprintFraction = 0.72f;
-
-    UPROPERTY(EditAnywhere, Category="LifeLens|ObstacleCollision", meta=(ClampMin="10.0"))
-    float MinimumBlockingRockHalfExtentUU = 36.0f;
-
     UPROPERTY(EditAnywhere, Category="LifeLens|ObstacleCollision", meta=(ClampMin="0.25"))
     float RefreshIntervalSeconds = 1.0f;
 
     float RefreshAccumulator = 0.0f;
-    uint32 LastSourceSignature = 0;
+    uint32 LastCoreSignature = 0;
     bool bHasBuilt = false;
 };
