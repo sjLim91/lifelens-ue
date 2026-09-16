@@ -2,10 +2,12 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <vector>
 
 #include "Character.h"
+#include "LifeCycle.h"
 #include "Relationship.h"
 #include "Romance.h"
 
@@ -17,6 +19,73 @@ enum class DeathCause {
     Accident,
     Other
 };
+
+inline double clampMortality(double value)
+{
+    return std::max(0.0,std::min(1.0,value));
+}
+
+inline double dailyMortalityProbability(const Character& character,int currentMinute)
+{
+    if(!character.alive || !character.hasBirthMinute) return 0.0;
+    const int age=ageYearsFromMinutes(character.birthMinute,currentMinute);
+    if(age>=110) return 1.0;
+
+    // v1 models natural age-related mortality only. Premature illness,
+    // accident, starvation and pathogen mortality belong to the later health
+    // system and must not be fabricated as unexplained random young deaths.
+    if(age<50) return 0.0;
+
+    double ageBase=0.000010;
+    if(age>=60 && age<70) ageBase=0.000035;
+    else if(age>=70 && age<80) ageBase=0.000120;
+    else if(age>=80 && age<90) ageBase=0.000420;
+    else if(age>=90 && age<100) ageBase=0.001200;
+    else if(age>=100) ageBase=0.004000;
+
+    const double health=clampMortality(character.lifeCondition.physicalHealth);
+    const double healthMultiplier=1.0+6.0*(1.0-health)*(1.0-health);
+    return clampMortality(ageBase*healthMultiplier);
+}
+
+inline std::uint64_t mortalityMix(std::uint64_t x)
+{
+    x+=0x9E3779B97F4A7C15ull;
+    x=(x^(x>>30))*0xBF58476D1CE4E5B9ull;
+    x=(x^(x>>27))*0x94D049BB133111EBull;
+    return x^(x>>31);
+}
+
+inline double deterministicMortalityRoll(
+    std::uint64_t worldSeed,
+    CharacterId characterId,
+    int currentMinute)
+{
+    const std::uint64_t day=static_cast<std::uint64_t>(std::max(0,currentMinute)/LifeMinutesPerDay);
+    std::uint64_t value=mortalityMix((worldSeed?worldSeed:1ULL)^mortalityMix(characterId));
+    value=mortalityMix(value^mortalityMix(day+1ULL));
+    const std::uint64_t mantissa=value>>11;
+    return static_cast<double>(mantissa)*(1.0/9007199254740992.0);
+}
+
+inline bool shouldDieToday(
+    const Character& character,
+    std::uint64_t worldSeed,
+    int currentMinute)
+{
+    const double probability=dailyMortalityProbability(character,currentMinute);
+    return probability>0.0 && deterministicMortalityRoll(worldSeed,character.id,currentMinute)<probability;
+}
+
+inline DeathCause inferNaturalDeathCause(const Character& character,int currentMinute)
+{
+    const int age=character.hasBirthMinute
+        ? ageYearsFromMinutes(character.birthMinute,currentMinute)
+        : 0;
+    if(age>=70) return DeathCause::AgeRelated;
+    if(character.lifeCondition.physicalHealth<0.30) return DeathCause::Illness;
+    return DeathCause::Other;
+}
 
 struct PopulationContinuity {
     std::size_t living=0;
@@ -133,6 +202,7 @@ inline DeathOutcome applyDeath(
 
         MemoryRecord memory;
         memory.who=deceased.id;
+        memory.sourceCharacter=survivor->id;
         memory.what="death";
         memory.where="";
         memory.minute=deathMinute;

@@ -81,10 +81,48 @@ int main()
     CHECK(baby.development.attachment>attachmentBefore);
     CHECK(babyToParent.trust>trustBefore);
 
+    // Feed never invents unavailable provisions.
+    ParentingContext noSupplies=context;
+    noSupplies.foodAvailable=false;
+    noSupplies.waterAvailable=false;
+    const double hungerBeforeBlocked=baby.needs.hunger;
+    const double thirstBeforeBlocked=baby.needs.thirst;
+    CHECK(parentingUtility(ParentingAction::Feed,parent,baby,parentToBaby,noSupplies)<0.0);
+    CHECK(applyParentingAction(
+        parent,baby,parentToBaby,babyToParent,ParentingAction::Feed,noSupplies)==ParentingResult::UnavailableResources);
+    CHECK(baby.needs.hunger==hungerBeforeBlocked);
+    CHECK(baby.needs.thirst==thirstBeforeBlocked);
+
+    // A single available provision only relieves the matching need.
+    ParentingContext waterOnly=context;
+    waterOnly.foodAvailable=false;
+    waterOnly.waterAvailable=true;
+    baby.needs.hunger=0.80;
+    baby.needs.thirst=0.80;
+    const double foodNeedBefore=baby.needs.hunger;
+    const double waterNeedBefore=baby.needs.thirst;
+    CHECK(applyParentingAction(
+        parent,baby,parentToBaby,babyToParent,ParentingAction::Feed,waterOnly)==ParentingResult::Performed);
+    CHECK(baby.needs.hunger==foodNeedBefore);
+    CHECK(baby.needs.thirst<waterNeedBefore);
+
+    // Dependent bladder pressure has a real care action instead of using adult toilet AI.
+    baby.needs.bladder=0.92;
+    CHECK(requiresDirectCare(LifeStage::Baby));
+    CHECK(requiresDirectCare(LifeStage::Toddler));
+    CHECK(!requiresDirectCare(LifeStage::Child));
+    CHECK(parentingActionAllowed(ParentingAction::ToiletAssist,LifeStage::Baby));
+    CHECK(!parentingActionAllowed(ParentingAction::ToiletAssist,LifeStage::Teen));
+    const double bladderBefore=baby.needs.bladder;
+    CHECK(applyParentingAction(
+        parent,baby,parentToBaby,babyToParent,ParentingAction::ToiletAssist,context)==ParentingResult::Performed);
+    CHECK(baby.needs.bladder<bladderBefore);
+
     // Distress should cause comfort-seeking care and improve emotional security.
     baby.needs.hunger=0.05;
     baby.needs.thirst=0.05;
     baby.needs.sleep=0.05;
+    baby.needs.bladder=0.05;
     baby.needs.hygiene=0.05;
     baby.development.stress=0.90;
     baby.emotion.sadness=0.85;
@@ -162,12 +200,15 @@ int main()
         parent,child,parentToChild,childToParent,ParentingAction::HealthCare,supportive)==ParentingResult::Performed);
     CHECK(child.development.health>healthBefore);
 
-    // Only an actual parent can apply parenting actions in this layer.
+    // Only an actual living parent can apply parenting actions in this layer.
     Character stranger=makeParent(99);
     Relationship strangerToChild=bond(stranger.id,child.id);
     Relationship childToStranger=bond(child.id,stranger.id);
     CHECK(applyParentingAction(
         stranger,child,strangerToChild,childToStranger,ParentingAction::Play,context)==ParentingResult::NotParent);
+    parent.alive=false;
+    CHECK(applyParentingAction(
+        parent,child,parentToChild,childToParent,ParentingAction::Play,context)==ParentingResult::Invalid);
 
     return 0;
 }

@@ -14,6 +14,7 @@ enum class ParentingAction {
     Feed,
     PutToSleep,
     Bathe,
+    ToiletAssist,
     Hold,
     Play,
     Educate,
@@ -29,6 +30,8 @@ struct ParentingContext {
     double warmth=0.75;
     double consistency=0.70;
     double harshness=0.10;
+    bool foodAvailable=true;
+    bool waterAvailable=true;
 };
 
 struct ParentingDecision {
@@ -41,6 +44,7 @@ enum class ParentingResult {
     Invalid,
     NotParent,
     NotAllowedForStage,
+    UnavailableResources,
     Performed
 };
 
@@ -48,6 +52,11 @@ inline bool isDependentStage(LifeStage stage)
 {
     return stage==LifeStage::Baby || stage==LifeStage::Toddler ||
            stage==LifeStage::Child || stage==LifeStage::Teen;
+}
+
+inline bool requiresDirectCare(LifeStage stage)
+{
+    return stage==LifeStage::Baby || stage==LifeStage::Toddler;
 }
 
 inline bool isParentOf(const Character& caregiver,const Character& child)
@@ -66,6 +75,8 @@ inline bool parentingActionAllowed(ParentingAction action,LifeStage stage)
         case ParentingAction::Comfort:
         case ParentingAction::HealthCare:
             return true;
+        case ParentingAction::ToiletAssist:
+            return stage==LifeStage::Baby || stage==LifeStage::Toddler || stage==LifeStage::Child;
         case ParentingAction::Hold:
             return stage==LifeStage::Baby || stage==LifeStage::Toddler;
         case ParentingAction::Educate:
@@ -96,14 +107,24 @@ inline double parentingUtility(
 
     double urgency=0.0;
     switch(action){
-        case ParentingAction::Feed:
-            urgency=0.72*child.needs.hunger+0.28*child.needs.thirst;
+        case ParentingAction::Feed: {
+            if(!context.foodAvailable && !context.waterAvailable) return -1.0;
+            const double foodWeight=context.foodAvailable ? 0.65 : 0.0;
+            const double waterWeight=context.waterAvailable ? 0.35 : 0.0;
+            const double totalWeight=foodWeight+waterWeight;
+            urgency=totalWeight>0.0
+                ? (foodWeight*child.needs.hunger+waterWeight*child.needs.thirst)/totalWeight
+                : 0.0;
             break;
+        }
         case ParentingAction::PutToSleep:
             urgency=child.needs.sleep;
             break;
         case ParentingAction::Bathe:
             urgency=child.needs.hygiene;
+            break;
+        case ParentingAction::ToiletAssist:
+            urgency=child.needs.bladder;
             break;
         case ParentingAction::Hold:
             urgency=0.55*(1.0-child.development.attachment)+
@@ -138,7 +159,7 @@ inline double parentingUtility(
             break;
     }
 
-    const double resourceNeed=(action==ParentingAction::Feed || action==ParentingAction::HealthCare) ? resources : 1.0;
+    const double resourceNeed=action==ParentingAction::HealthCare ? resources : 1.0;
     return clampDevelopment((0.72*clampDevelopment(urgency)+0.18*caregiverCapacity+0.10*bond)*resourceNeed);
 }
 
@@ -151,10 +172,11 @@ inline ParentingDecision chooseParentingAction(
     ParentingDecision best;
     best.utility=-std::numeric_limits<double>::infinity();
 
-    constexpr std::array<ParentingAction,9> actions={
+    constexpr std::array<ParentingAction,10> actions={
         ParentingAction::Feed,
         ParentingAction::PutToSleep,
         ParentingAction::Bathe,
+        ParentingAction::ToiletAssist,
         ParentingAction::Hold,
         ParentingAction::Play,
         ParentingAction::Educate,
@@ -192,8 +214,11 @@ inline ParentingResult applyParentingAction(
     const ParentingContext& context)
 {
     if(caregiver.id==0 || child.id==0 || caregiver.id==child.id) return ParentingResult::Invalid;
+    if(!caregiver.alive || !child.alive) return ParentingResult::Invalid;
     if(!isParentOf(caregiver,child)) return ParentingResult::NotParent;
     if(!parentingActionAllowed(action,child.lifeStage)) return ParentingResult::NotAllowedForStage;
+    if(action==ParentingAction::Feed && !context.foodAvailable && !context.waterAvailable)
+        return ParentingResult::UnavailableResources;
 
     const double warmth=clampDevelopment(context.warmth);
     const double consistency=clampDevelopment(context.consistency);
@@ -206,7 +231,13 @@ inline ParentingResult applyParentingAction(
 
     switch(action){
         case ParentingAction::Feed:
-            child.needs.apply({-0.58,-0.30,0.0,0.0,0.0});
+            // Production consumes provisions only when the corresponding need
+            // is materially non-zero. Mirror that threshold here so care can
+            // never create a Need effect without consuming the matching item.
+            child.needs.apply({
+                context.foodAvailable && child.needs.hunger>0.05 ? -0.58 : 0.0,
+                context.waterAvailable && child.needs.thirst>0.05 ? -0.42 : 0.0,
+                0.0,0.0,0.0});
             child.development.attachment+=0.018*careQuality;
             child.development.emotionalSecurity+=0.012*careQuality;
             applyPositiveCareBond(caregiverToChild,childToCaregiver,0.35*careQuality);
@@ -221,6 +252,12 @@ inline ParentingResult applyParentingAction(
             child.needs.apply({0.0,0.0,0.0,0.0,-0.72});
             child.development.attachment+=0.010*careQuality;
             applyPositiveCareBond(caregiverToChild,childToCaregiver,0.22*careQuality);
+            break;
+        case ParentingAction::ToiletAssist:
+            child.needs.apply({0.0,0.0,0.0,-0.72,child.lifeStage==LifeStage::Baby ? 0.018 : 0.008});
+            child.development.attachment+=0.012*careQuality;
+            child.development.stress-=0.025*careQuality;
+            applyPositiveCareBond(caregiverToChild,childToCaregiver,0.24*careQuality);
             break;
         case ParentingAction::Hold:
             child.development.attachment+=0.060*careQuality;
