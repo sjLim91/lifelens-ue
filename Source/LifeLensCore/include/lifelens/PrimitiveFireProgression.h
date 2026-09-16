@@ -58,12 +58,26 @@ inline bool primitiveFirePitSiteBlocked(const World& world,GridPos pos)
     return false;
 }
 
+inline bool primitiveFirePitPlanningDeferredBySanitation(const World& world)
+{
+    // Once a designated sanitation area has seen repeated real use, finish the
+    // recognized sanitation improvement before starting a new hearth project.
+    // Existing FirePit projects are not interrupted; this only gates new plans.
+    for(const auto& sanitation:world.primitiveSanitationSites){
+        if(sanitation.active
+           && sanitation.kind==PrimitiveSanitationSiteKind::DesignatedArea
+           && sanitation.useCount>=2) return true;
+    }
+    return false;
+}
+
 inline PrimitiveFirePitSiteOpportunity choosePrimitiveFirePitSite(
     const World& world,
     CharacterId planner)
 {
     PrimitiveFirePitSiteOpportunity result;
-    if(planner==0 || primitiveFirePitProject(world)!=nullptr) return result;
+    if(planner==0 || primitiveFirePitProject(world)!=nullptr
+       || primitiveFirePitPlanningDeferredBySanitation(world)) return result;
 
     const GridPos center=world.hasInitialStartRegionSelection
         ? world.initialStartRegionCenterGrid()
