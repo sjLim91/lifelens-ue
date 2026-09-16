@@ -118,3 +118,47 @@ A request must contain:
 - whether it blocks the current milestone.
 
 Shared/Config change alone does **not** mechanically require Dagyeom review. Request review when the change materially touches Dagyeom-owned behavior, a cross-owner interface/contract, or genuinely needs visual/content validation.
+
+## Dagyeom — IR-E-1 초기 관찰 가독성 mitigation 기록 (2026-09-16)
+
+다겸 측 추가. 쭌 측 승인 조건(PR #98 코멘트)에 따라 구현하고 PIE로 확인했다. **RESOLVED로 처리하지 않는다.**
+
+### 상태
+
+`MITIGATED — Milestone B 초기 관찰 가독성용. 최종 해법 아님.`
+
+### 구현
+
+초기 관찰 카메라 위치에서 정착지 기준점(`InitialCenterGrid`)으로 향하는 원뿔 안의 `Canopy` 계층만 추가 억제한다. 구현 위치는 `Source/LifeLens/WorldPresentation/LLWorldPresentationActor.{h,cpp}`이며 다른 파일은 수정하지 않았다.
+
+- 카메라 포즈는 `APlayerCameraManager::GetCameraLocation()`으로 한 번 읽어 고정한다. 게임모드가 카메라를 늦게 스폰하므로 첫 빌드에서 놓치면 다음 refresh에서 잡아 1회 재생성한다.
+- 원뿔은 카메라에서 정착지까지 구간에만 적용되고 거리에 비례해 넓어져 화면상 일정 각도를 차지한다. 반각 16도, 가장자리 9도 감쇠, 중심 잔존율 0.05.
+- `Canopy`만 적용한다. 관목·풀·바위는 해당 높이에서 시야를 막지 않으므로 밀도를 유지한다.
+
+### 승인 조건 준수
+
+- presentation-only. Core / world generation / resource authority 불변.
+- `ResourcePatches` 미삭제.
+- 초기 카메라와 Config 값은 읽기 전용. `const APlayerCameraManager*`로 위치만 읽으며 쓰기 호출이 없다.
+- 위치 기반 결정론 유지. 동일 실행 2회 로그 완전 일치.
+- 관목·풀·바위를 과도하게 비우지 않음.
+
+### 검증
+
+- PIE: 식생 로딩 완료 후에도 화면이 트여 있고 관찰 가능한 상태가 유지된다. 이전처럼 주민이 완전히 묻히는 현상은 해소되었다. LEVEL 1 카드와 선택 표시도 정상.
+- headless: 로그에 `sightline=<억제 수>/<카메라 포착 여부>` 지표를 추가했다.
+
+### 한계 — 이것이 RESOLVED가 아닌 이유
+
+원뿔은 **초기 카메라 자세에 고정**된다. 플레이어가 회전하거나 패닝하면 시선이 비워 둔 쐐기를 벗어나 효과가 사라진다. 즉 게임 시작 시점의 관찰 상태만 보장한다.
+
+또한 카메라와 정착지 사이 구간 상당 부분이 이미 activity zone이라 기존 envelope이 대부분 솎아낸 상태다. 원뿔이 추가로 걷어내는 양 자체는 적으며, 적은 수의 나무가 결정적으로 작용하는 구조다. 주민은 `CoreGridToWorldSpawnLocation` 기준 같은 셀 안 42 유닛 이내로 뭉치므로 나무 한 그루가 무리 전체를 가릴 수 있다.
+
+### 근본 해법 방향 (쭌 측 권장, 별도 과제)
+
+월드 생성·배치를 카메라에 따라 다시 억제하는 방식이 아니라, **이미 생성된 월드는 그대로 두고 현재 카메라와 관찰 대상 주민 사이를 실제로 가리는 `Canopy` presentation만 런타임에서 되돌릴 수 있게 fade/hide 처리**한다.
+
+- 카메라 이동에 따른 나무 재생성·소멸 pop을 피한다.
+- collision과 visual 불일치를 피한다.
+- 권한 경계 오염을 피한다.
+- 구현 시 카메라 transform과 관찰 대상 접근이 `PlayerCameraManager` 및 기존 Observer API로 충분하면 cross-owner 변경이 필요 없다. 부족하면 그 시점에 새 Integration Request를 올린다.

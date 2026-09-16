@@ -946,3 +946,20 @@
 - 상대가 알아야 할 점:
   - 에셋 축 불일치를 Core 이동으로 보정하지 않았다. 보정값은 `Source/LifeLens/Characters/**`의 presentation tuning 값이다
   - `facing` 지표는 `ll.DebugMotion` 활성 시에만 출력되며 회귀 확인에 그대로 쓸 수 있다
+
+### 다겸 측 AI — IR-E-1 초기 시야 원뿔 mitigation 완료
+
+- 작성자: 다겸 측 AI
+- 브랜치/PR: `dagyeom/world-visual-readability-envelope`, PR #100
+- 커밋: `19d7da6`
+- 상태: `MITIGATED — RESOLVED 아님`
+- 쭌 측 승인 조건대로 초기 카메라에서 정착지로 향하는 원뿔 안의 `Canopy`만 억제했다. 상세와 한계는 `tasks/TEAM_BOARD.md`의 mitigation 기록 절을 따른다.
+- PIE 확인: 식생 로딩 완료 후에도 화면이 트여 있고 관찰 가능한 상태가 유지된다. 주민이 완전히 묻히는 현상 해소. LEVEL 1 카드와 선택 표시 정상.
+- 수정 파일은 `Source/LifeLens/WorldPresentation/LLWorldPresentationActor.{h,cpp}` 둘뿐이다. 카메라는 `const APlayerCameraManager*`로 위치만 읽었고 쓰기 호출이 없다. Config, Core, World, Simulation은 읽기만 했다.
+- 교차 계층 확인 근거:
+  - `World/LLWorldDirector.cpp`의 `CoreGridToWorldSpawnLocation`이 Core 그리드에서 `CorePresentationOriginGrid`를 빼고 셀 크기를 곱해 위치를 만든다. 표현 원점이 Core 원점과 같다는 전제가 유지되며 원뿔 기준점과 좌표계가 일치한다
+  - 같은 셀의 주민은 셀 반경 42% 안에서만 흩어지므로 무리가 화면에서 매우 좁은 영역을 차지한다. 나무 한 그루가 무리 전체를 가릴 수 있는 구조다
+  - `Core/LLLifeLensGameMode.cpp`와 `Config/DefaultGame.ini` 기준 초기 카메라는 거리 1.25 청크, 높이 2.0 청크, FOV 55도다
+- 상대가 알아야 할 점:
+  - 이 mitigation은 초기 카메라 자세에 고정된다. 회전·패닝 후에는 효과가 없다
+  - 근본 해법은 현재 카메라와 주민 사이를 실제로 가리는 Canopy의 런타임 reversible fade다. 별도 과제로 남긴다
