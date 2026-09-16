@@ -4,196 +4,170 @@
 > Long-term order: `docs/DEVELOPMENT_MILESTONES.md`.
 > Durable design decisions: `docs/DECISION_LOG.md`.
 
-Last reconciled: 2026-09-16 KST during Observer Resident Detail Data v1 work after PR #111 merge.
+Last reconciled: 2026-09-16 KST after Observer Resident Detail Data v1 / PR #112 merge.
 
 ## Current main baseline
 
-Latest functional checkpoint covered here:
+Latest functional checkpoints:
 - PR #108 — Android build pipeline split: **MERGED** as `0d3da3d7f69c2e3c2ad54b2b4f43d19822ee8760`.
 - PR #109 — Observer Camera Control v1 refresh: **MERGED** as `47f75d2cb7fd93b26b8b2082bf9f30cfafe67bed`.
 - PR #110 — Observer mobile UI polish refresh: **MERGED** as `e6443d693076791e3981047d827ff5a64e4858f2`.
 - PR #111 — Civilization resource/storage spatial targets: **MERGED** as `dda35bac7cef4a88433f4f6a362b89c1b3ea2eee`.
-- TEAM_BOARD reconciliation after #111: `cd8245378b87bcbb4603ed2dd2deccc1b6bea5d1`.
+- PR #112 — Observer Resident Detail Data v1 + authoritative Traits/Preferences: **MERGED** as `27ba0aa147fc38ad05cf388e9390dd2dcaccdf30`.
 
 Authority rule remains unchanged: Core/World owns simulation truth. UI/Character/Environment/WorldPresentation presents that truth and must not create a second authority.
 
 ## Recently closed product checkpoints
 
-### World Visual / production map integration — DONE
-- World Visual delivery merged through PR #90 and follow-up integration through #91/#92/#96.
-- production map: `/Game/Maps/LifeLensWorld`.
-- default/startup map points to `/Game/Maps/LifeLensWorld`.
-- WorldPresentation consumes authoritative Core/World read contracts only.
+### Observer Resident Detail Data v1 — DONE
 
-### Hardcoding Cleanup B — DONE
-- PR #99 merged as `1ca6db8f276cf01211a8ce8c023d2e8d8107d6cd`.
-- Needs / UtilityAI tuning flows `DefaultGame.ini -> UE Config -> immutable Core SimulationRuleset -> Simulation`.
+Canonical contract: `docs/OBSERVER_RESIDENT_DETAIL_DATA_v1.md`.
 
-### Character facing / backwards-walk IR-B — DONE
-- PR #102 merged as `d3c87996499b353c742ce97fd90978633b9b7ca0`.
-- Quaternius imported skeleton visual forward is local `+Y`; presentation yaw correction uses `-90` against Unreal +X actor/world forward.
-- PIE/debug evidence confirmed residents face travel direction.
+Delivered by PR #112:
+- **Needs:** direct `FLLCoreResidentObservation::Needs`; five physical needs show numeric satisfaction plus compact visual bar while Core keeps deficit semantics (`0=satisfied`, `1=urgent`).
+- **Personality:** all 14 authoritative Core dimensions.
+- **Traits:** explicit Core `TraitProfile` with Resilience, Creativity, Discipline, Compassion, Adaptability, Boldness, Perseverance, Resourcefulness.
+- **Preferences:** explicit Core `PreferenceProfile` with Socializing, Solitude, Exploration, Crafting, Gathering, Comfort, Novelty, Order.
+- **Trait/Preference authority:** deterministic Core read profiles derived from persistent Personality + Genetics; no second mutable Save authority.
+- **Persistence:** same WorldSeed + PopulationSeed reproduces the same profiles; snapshot encode/decode reproduces the same values.
+- **Behavior integration:** the same Core Traits/Preferences influence ordinary Social/Civilization utility. Civilization disposition effects are bounded to a 0.90–1.10 multiplier; urgent Hunger/Thirst provision gathering bypasses ordinary preference modulation so survival priority is preserved.
+- **Bridge:** `FLLCoreTraitPreferenceObservation` via `ULLCoreBridgeSubsystem::GetResidentTraitPreferenceObservation`.
+- **Skills:** authoritative civilization Gathering / Crafting / Learning.
+- **Relationships:** directional Core dimensions exposed while SocialBond/RomancePotential remain summaries.
+- **Family / Knowledge & Gear:** existing direct-Core observation retained.
+- **Emotion:** display remains truthful/direct-Core; causal daily-life emotion generation is intentionally a separate milestone.
 
-### Context Action Contract v1 — DONE
-- PR #103 merged as `cba58803c67f971eb1273aaf4e35f5c22b980f01`.
-- `FLLCoreActionDirective` exposes authoritative civilization presentation context for `Gather / Store / Experiment / Craft`.
-- action/result/material/item/technique/quantity/time/stable entity IDs are presentation read data only.
-- runtime work provenance is not persisted as stale animation replay state.
-- Character Presentation consumer work remains owned by Dagyeom through IR-D.
+Validation on final PR head:
+- Core Tests #515: **PASS, 52/52**, including `test_traits_preferences`.
+- deterministic harness smoke: **PASS**.
+- Preflight #627: **PASS**.
+- Unreal Linux Compile #137: **PASS**, including UHT/UBT integration of the new USTRUCT/UFUNCTION bridge types.
+- diff review: no PlayerController/camera/mobile-input files changed; Level 0/1 and existing camera/touch ownership were not replaced by this milestone.
 
-### Early Survival Provisioning — DONE
-- PR #106 merged as `4b8c938629cca18fafad00de0abcfb8cf41b36c9`.
-- urgent Hunger/Thirst can promote only the real matching ResourceNode Gather when no matching carried provision exists.
-- no resource is synthesized.
-- deterministic regression covers four-founder/four-day production-like recovery, real Water/PlantFood acquisition, Drink/Eat completion, and outdoor sanitation residue.
-
-### Android pipeline timeout/split recovery — DONE / DEVICE BASELINE VALIDATION UNDERWAY SEPARATELY
-- PR #107 increased the old monolithic seed/full timeout budget and merged as `e58374a4c3a427ae47c2c507ae7c23b282d0078e`.
-- PR #108 then split the workflow into two jobs and merged as `0d3da3d7f69c2e3c2ad54b2b4f43d19822ee8760`.
-- `seed-engine` builds Linux editor/cook tools and writes the encrypted host cache.
-- `build-android` is a separate job; a `seed` dispatch chains into it automatically after the seed job.
-- `fast` reuses the encrypted Android engine cache and must fail clearly on cache miss rather than silently falling back to a full engine build.
-- the historical seed Run #3 failure belongs to the pre-split workflow and is no longer the canonical current pipeline state.
-- Android seed/device-baseline validation is being handled separately from the Observer data branch; **this Observer PR must not trigger a duplicate Android seed/full run**.
-- after a genuinely successful seed/cache creation, normal APK validation should use `fast`.
-
-### Observer Camera Control v1 — DONE / DEVICE FEEL QA REMAINS
-- original PR #105 was superseded and closed.
-- refreshed PR #109 merged as `47f75d2cb7fd93b26b8b2082bf9f30cfafe67bed`.
-- PC: wheel zoom, right-drag orbit, middle-drag pan, left-click selection preserved.
-- Android: short tap selection on release, one-finger orbit, pinch zoom, two-finger pan.
-- distance/elevation clamps and smoothing are integrated.
-- `ASSIST_LOCK-UI-CAMERA-1` is **RELEASED**.
-- compile integration is complete; final gesture feel still belongs to real device QA.
-
-### Observer mobile UI polish — DONE / DEVICE QA REMAINS
-- refreshed PR #110 merged as `e6443d693076791e3981047d827ff5a64e4858f2`.
-- Level2 -> Level1 Back flow, zero-resident empty state, resident-strip de-emphasis, safe-area/cutout handling, minimum touch targets, overflow indicators and short selection/focus feedback are integrated.
+Ownership closeout:
+- `ASSIST_LOCK-UI-OBSERVER-DATA-1` is **RELEASED**.
+- normal Observer presentation/layout/styling maintenance returns to Dagyeom.
+- Core/Bridge data authority remains owned by Jjun/Core.
 
 ### Civilization resource/storage spatial authority — DONE
 - PR #111 merged as `dda35bac7cef4a88433f4f6a362b89c1b3ea2eee`.
 - validation: Core Tests #502 PASS, Preflight #617 PASS, Unreal Linux Compile #130 PASS.
-- Core test suite at #111: **51/51 PASS**, including `test_civilization_spatial_targets`; deterministic harness smoke also PASS.
 - `ResourceNode` and `StorageSite` own authoritative `GridPos`.
-- production-generated ResourceNodes preserve the exact `NaturalResourcePatch.pos`.
-- civilization snapshot extension v2 persists resource/storage positions and retains v1 read compatibility.
-- `ULLCoreBridgeSubsystem::GetResidentActionDirective` resolves Gather/Store to actual Core-owned positions.
-- the old spatialization gap is **RESOLVED**.
+- generated ResourceNodes preserve exact `NaturalResourcePatch.pos`.
+- Gather/Store directives resolve actual Core-owned targets instead of guessed scenery.
 
-## Current active product work
+### Observer Camera Control v1 — DONE / DEVICE FEEL QA REMAINS
+- PR #109 merged as `47f75d2cb7fd93b26b8b2082bf9f30cfafe67bed`.
+- PC: wheel zoom, right-drag orbit, middle-drag pan, left-click selection.
+- Android: short tap selection, one-finger orbit, pinch zoom, two-finger pan.
+- `ASSIST_LOCK-UI-CAMERA-1` is **RELEASED**.
 
-### Observer Resident Detail Data v1 — ACTIVE
+### Observer mobile UI polish — DONE / DEVICE QA REMAINS
+- PR #110 merged as `e6443d693076791e3981047d827ff5a64e4858f2`.
+- Level2 -> Level1 Back, empty state, resident-strip de-emphasis, safe-area/cutout handling, minimum touch targets, overflow and selection/focus feedback are integrated.
 
-Canonical contract: `docs/OBSERVER_RESIDENT_DETAIL_DATA_v1.md`.
+### Early Survival Provisioning — DONE
+- PR #106 merged as `4b8c938629cca18fafad00de0abcfb8cf41b36c9`.
+- urgent Hunger/Thirst can promote only a real matching ResourceNode Gather when needed; resources are never synthesized.
 
-Branch: `jjun/observer-data-completeness-v1`.
-Assist lock: `ASSIST_LOCK-UI-OBSERVER-DATA-1` — ACTIVE.
+### Context Action Contract v1 — DONE
+- PR #103 merged as `cba58803c67f971eb1273aaf4e35f5c22b980f01`.
+- `FLLCoreActionDirective` exposes authoritative civilization presentation context for `Gather / Store / Experiment / Craft`.
+- Character Presentation consumer work remains Dagyeom-owned through IR-D.
 
-Purpose:
-- finish the Level 2 Observer resident-detail fidelity end-to-end rather than splitting Core/UI handoffs;
-- make detailed resident inspection consume authoritative Core read data wherever it exists;
-- remove misleading dependence on empty legacy `FLLResidentData` Traits/Skills/Preferences fields.
+### Character facing / backwards-walk IR-B — DONE
+- PR #102 merged as `d3c87996499b353c742ce97fd90978633b9b7ca0`.
+- Quaternius visual forward correction is integrated and verified.
 
-Implemented on the active work branch/staging chain:
-- **Needs:** direct `FLLCoreResidentObservation::Needs`; five physical needs show satisfaction percentage plus compact bar. Core deficit semantics remain `0=satisfied, 1=urgent`.
-- **Personality:** direct Core personality, all 14 dimensions shown rather than five compatibility axes.
-- **Traits:** explicit Core `TraitProfile` in `TraitsPreferences.h` with 8 dimensions: Resilience, Creativity, Discipline, Compassion, Adaptability, Boldness, Perseverance, Resourcefulness.
-- **Preferences:** explicit Core `PreferenceProfile` with 8 dimensions: Socializing, Solitude, Exploration, Crafting, Gathering, Comfort, Novelty, Order.
-- **Trait/Preference authority:** profiles are deterministic Core read models derived from persistent Personality + Genetics, projected through `ULLCoreBridgeSubsystem::GetResidentTraitPreferenceObservation`; they are not legacy UI placeholders and do not create duplicate mutable Save authority.
-- **Trait/Preference persistence:** same PopulationSeed reproduces the same profiles; snapshot encode/decode reproduces the same profiles because their authoritative inputs are persisted. `test_traits_preferences` covers same-seed determinism, different-population variation, normalized range and snapshot reproduction.
-- **Skills:** direct authoritative civilization `Gathering / Crafting / Learning` skill values.
-- **Relationships:** preserve SocialBond/RomancePotential summaries while exposing the underlying directional Core dimensions: Affection, Trust, Respect, Comfort, Familiarity, Attraction, RomanticInterest, SexualAttraction, Commitment, Conflict, Jealousy, Fear, Grudge.
-- **Family:** existing direct-Core family observation remains authoritative.
-- **Knowledge & Gear:** existing direct-Core civilization observation remains the reference pattern.
-- **Emotion:** display remains direct-Core; ordinary life-event emotion causality is deliberately deferred to the separate Emotion Runtime Integration milestone.
+### Hardcoding Cleanup B — DONE
+- PR #99 merged as `1ca6db8f276cf01211a8ce8c023d2e8d8107d6cd`.
+- Needs / UtilityAI tuning flows from config into immutable Core rules.
 
-Validation still required before merge:
-- Core Tests PASS, including `test_traits_preferences`.
-- Preflight PASS.
-- Unreal Linux Compile PASS.
-- diff review confirms Level 0/1 behavior, camera/tap routing, safe-area/mobile polish, and selection feedback remain intact.
-- no Android build is required for this PR because Android seed/device work is already being handled separately.
+### World Visual / production map integration — DONE
+- World Visual delivery merged through #90/#91/#92/#96.
+- production/default map: `/Game/Maps/LifeLensWorld`.
+
+## Current active / next work
 
 ### Jjun lane
 
-Status: `OBSERVER DATA COMPLETENESS ACTIVE / ANDROID DEVICE BASELINE RUNNING SEPARATELY`
+Status: `OBSERVER DATA DONE / NEXT CORE-PRESENTATION CONTRACT PRIORITY READY`
 
-Current facts:
-- branch `jjun/observer-data-completeness-v1` is the active Jjun feature branch; `jjun/observer-data-traits-preferences-stage` is a temporary descendant staging branch used to batch the Core/Bridge/UI/docs extension before one PR-head sync.
-- `ASSIST_LOCK-UI-OBSERVER-DATA-1` covers only the Observer detail UI files needed for this milestone.
-- Jjun is intentionally completing the whole Observer data slice; after merge/release, Dagyeom resumes normal Observer UI maintenance/styling under the canonical data-authority contract.
-- #111 spatial provider work is complete.
-- do not launch another Android seed/full job from this branch.
+Next canonical priority from the roadmap:
+- **Social Communication & Localization** contract support where Core/Bridge changes are required.
+- keep Core identifiers language-neutral; Korean is presentation/localization behavior.
+- expose only real social action/event/outcome context; Presentation must not invent conversations or relationship changes.
+
+After that, the major Core gap is **Emotion Runtime Integration**: neutral founders are valid, but ordinary life/survival outcomes need causal emotion generation/decay.
 
 ### Dagyeom lane
 
-Status: `IR-B DONE / IR-D CONTEXT MOTION CONSUMER WORK / OBSERVER DATA ASSIST LOCK ACTIVE`
+Status: `IR-D CONTEXT MOTION CONSUMER WORK / OBSERVER UI NORMAL OWNERSHIP RESTORED`
 
 Current facts:
-- IR-B is resolved and merged through #102.
-- IR-D provider contract is merged through #103 and spatial target follow-up #111.
-- Character Presentation can consume real Gather/Store target coordinates instead of scenery guesses.
+- IR-D provider contracts are merged through #103 and spatial authority #111.
+- Character Presentation can consume real Gather/Store target coordinates.
 - Dagyeom owns Context Motion Router/action-to-animation presentation.
-- while `ASSIST_LOCK-UI-OBSERVER-DATA-1` is active, Jjun owns the explicitly locked Observer detail files; after release, normal UI maintenance returns to Dagyeom.
-- no Jjun direct changes to `Source/LifeLens/Characters/**` unless a new explicit assist lock is opened.
+- Observer normal presentation maintenance is no longer locked by Jjun after #112.
+
+### Android / device lane
+
+Status: `GATE B PENDING — NO CANONICAL SUCCESSFUL SEED CACHE YET`
+
+The split #108 workflow is ready, but this #112 work did **not** launch Android seed/full/fast validation. Do not describe device-baseline validation as already underway unless an actual workflow run is started and verified.
+
+Canonical execution rule:
+1. Run `mode=seed` once when a fresh engine cache is required.
+2. Successful `seed-engine` chains automatically into `build-android` and APK production.
+3. Only after a genuinely successful Android engine cache exists, use `mode=fast` for normal APK checks.
+4. Use `full` only as an evidence-driven fallback.
+
+Do not run repeated expensive seed/full jobs blindly. Capture the exact failing run/job/step/log first if a future run fails.
 
 ## Current validation risk
 
 `OPEN PIE/APK VISUAL + DEVICE QA RISK — NOT A CORE/COMPILE BLOCKER`
 
-The compile gates prove C++/UHT/UBT integration, not every presentation/input variant. The next real PIE/APK pass should confirm:
-- `LifeLensWorld` opens as the production map.
-- founders and generated-world presentation remain readable.
-- authoritative resource patches remain visible.
-- corrected facing remains valid for stationary interaction targets and male/female/outfit variants.
-- Android framing/safe area remains acceptable.
-- Observer Camera gestures feel natural and do not trigger unintended resident selection.
-- Gather residents approach the actual Core resource target.
+Core/Preflight/Linux compile gates prove source integration, not final device presentation. The next real PIE/APK pass should confirm:
+- `/Game/Maps/LifeLensWorld` boots correctly.
+- four founders and generated-world presentation remain readable.
+- Android framing/safe area and Observer gestures feel correct.
+- Level 2 Needs/Personality/Traits/Skills/Preferences/Relationships/Family/Knowledge detail is readable.
+- Gather approaches the actual Core resource target.
 - Store uses the actual storage target once storage exists.
-- Sleep fallback visibly and causally relieves Energy through the UE execution/ACK path.
-- outdoor Hygiene fallback visibly and causally relieves Hygiene through the UE execution/ACK path.
-- the old food/water provisioning deadlock does not reappear.
-- Level 2 Needs/Personality/Traits/Skills/Preferences/Relationships/Family/Knowledge detail remains readable on the device after the current Observer milestone merges.
+- Sleep and Hygiene fallbacks visibly complete through UE execution/ACK.
+- the food/water provisioning deadlock does not reappear.
+- corrected character facing remains valid across context actions and appearance variants.
 
 ## Tracked implementation gaps — DO NOT DROP
 
-### Emotion runtime integration gap
+### Emotion runtime integration gap — OPEN
 
 Resident Emotion can remain all `0%` because founders begin neutral and many ordinary life events still do not drive emotion changes.
 
 Required follow-up:
-- keep neutral-at-start semantics; do not random-fill emotions just to avoid zeros.
+- keep neutral-at-start semantics; do not random-fill emotion just to avoid zeros.
 - causally connect meaningful survival/life outcomes: unresolved need pressure, relief, contamination/hazard, successful gathering/crafting/work, repeated failure/frustration, threat/loss, etc.
-- audit the Master Spec emotion set against the currently implemented dimensions.
+- reconcile implemented emotion dimensions with the Master Spec.
 - add Core regression coverage for daily-life emotion generation/decay and Observer projection.
 
-### Observer resident-detail data fidelity gap — IN PROGRESS
+### Observer resident-detail data fidelity gap — CLOSED BY #112
 
-This gap is the active `Observer Resident Detail Data v1` milestone on `jjun/observer-data-completeness-v1`.
-
-Resolved in branch implementation once validation/merge completes:
+Resolved:
 - Needs direct-Core numeric value/bar.
 - all 14 Core personality dimensions.
 - explicit 8-axis Core TraitProfile.
 - explicit 8-axis Core PreferenceProfile.
-- authoritative civilization skills instead of legacy empty skill DTOs.
+- Traits/Preferences participate in ordinary behavior selection and remain stable across Save/Load.
+- authoritative civilization skills.
 - detailed directional relationship dimensions.
-- authoritative Family and direct-Core Knowledge/Gear preserved.
+- authoritative Family and direct-Core Knowledge/Gear.
 
-Do not mark this gap DONE until the branch passes Core/Preflight/Unreal integration validation and merges.
+### Explicit Core trait/preference model gap — CLOSED BY #112
 
-### Explicit Core trait/preference model gap — RESOLVED IN #112 BRANCH, AWAITING VALIDATION/MERGE
+Resolved with explicit named Core semantics, deterministic derivation, Bridge projection, Observer display, behavioral integration, and regression coverage.
 
-The previous gap is no longer intentionally deferred. The current #112 work now provides:
-- Core `TraitProfile` and `PreferenceProfile` with explicit named semantics.
-- deterministic derivation from persistent Personality/Genetics so profiles remain stable and do not duplicate mutable authority.
-- Bridge projection through `FLLCoreTraitPreferenceObservation`.
-- Observer presentation of all 8 Trait and 8 Preference values.
-- Core regression coverage for seed determinism, variation, normalization and snapshot reproduction.
-
-This section can move to closed history once #112 validates and merges.
-
-### Localization + social communication presentation gap
+### Localization + social communication presentation gap — OPEN
 
 Canonical contract: `docs/SOCIAL_COMMUNICATION_LOCALIZATION_v1.md`.
 
@@ -206,13 +180,11 @@ Required follow-up:
 
 Ownership:
 - Jjun/Core: authoritative social action/event/outcome/read context where needed.
-- Dagyeom: Korean UI rendering and social presentation after the current Observer assist lock is released.
+- Dagyeom: Korean UI rendering and social presentation.
 
-### Character context-motion gap
+### Character context-motion gap — OPEN / IR-D
 
 Canonical contract: `docs/CHARACTER_CONTEXT_MOTION_v1.md`.
-
-Current runtime locomotion is primarily `Idle / Walk / Jog / Sprint`; imported context animation assets are not implementation until wired to authoritative actions.
 
 Required follow-up in Character Presentation:
 - Context Motion Router.
@@ -220,30 +192,18 @@ Required follow-up in Character Presentation:
 - sitting enter/idle/exit where real sit affordances exist.
 - generic interact/pickup/kneeling work mappings.
 - truthful fallbacks for Eat/Drink/Sleep/Toilet/Hygiene.
-- privacy-first Toilet/outdoor sanitation sequence with reusable local Privacy Mask.
-- consume merged typed `Gather / Store / Experiment / Craft` data from #103.
-- consume merged authoritative Gather/Store spatial targets from #111.
+- privacy-first Toilet/outdoor sanitation sequence.
+- consume typed `Gather / Store / Experiment / Craft` data from #103.
+- consume authoritative Gather/Store spatial targets from #111.
 
 ## Active blockers / locks
 
-- Formal Integration Requests: **IR-D open**, provider fully DONE / presentation consumer work belongs to Dagyeom.
-- Assist locks: **ASSIST_LOCK-UI-OBSERVER-DATA-1 ACTIVE**.
-- Active Jjun branch: `jjun/observer-data-completeness-v1`; temporary staging descendant: `jjun/observer-data-traits-preferences-stage`.
-- #111 Core/Preflight/Unreal compile blocker: **None**.
-- #112 Trait/Preference extension: **implementation present on staging; Core/Preflight/Unreal revalidation required after single PR-head sync**.
-- Android device-baseline validation is separate; do not duplicate it from Observer work.
-- Device visual/input QA remains open but is not a code/compile blocker.
-
-## Android validation rule
-
-For the split workflow:
-1. Run `mode=seed` once when a fresh engine cache is required.
-2. A successful `seed-engine` chains into `build-android` and APK production.
-3. After a valid Android engine cache exists, use `mode=fast` for normal APK checks.
-4. Use `full` only as an evidence-driven fallback.
-
-Do not run repeated expensive seed/full jobs blindly. Capture the exact failing job/step/log first if a future run fails.
+- Formal Integration Requests: **IR-D open**; provider side DONE, presentation consumer belongs to Dagyeom.
+- Assist locks: **None**.
+- #112 Core/Preflight/Unreal compile blocker: **None — merged and validated**.
+- Android real-device baseline: **pending actual seed/APK execution**.
+- PIE/APK visual/input QA remains open but is not a Core/compile blocker.
 
 ## Long compile rule
 
-When a long UE compile/package is started, record HEAD + Run ID and continue safe independent work. Do not continuously poll. A successful compile is evidence for integration correctness, while visual/input quality still requires appropriate PIE/APK validation.
+When a long UE compile/package is started, record HEAD + Run ID and continue safe independent work. Do not restart a healthy run merely because the large Unreal image pull is slow. A successful compile is integration evidence; visual/input quality still requires PIE/APK validation.
