@@ -76,6 +76,16 @@ protected:
     float TargetAcceptanceRadius = 45.0f;
 
 private:
+    void RefreshLifecyclePresentation();
+
     FVector MovementTarget = FVector::ZeroVector;
     bool bHasMovementTarget = false;
+
+    // Presentation-only lifecycle cache. The Core LifeStage remains the sole
+    // source of stage truth; these values only prevent cumulative rescaling.
+    bool bLifecyclePresentationInitialized = false;
+    int32 LastLifecycleStageIndex = INDEX_NONE;
+    float AdultCapsuleHalfHeight = 0.0f;
+    float AdultCapsuleRadius = 0.0f;
+    FVector AdultBodyScale = FVector::OneVector;
 };
