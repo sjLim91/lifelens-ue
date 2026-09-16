@@ -1,6 +1,7 @@
 #include "Simulation/LLCoreBridgeSubsystem.h"
 
 #include "lifelens/Civilization.h"
+#include "lifelens/NaturalPhysicalObstacle.h"
 #include "lifelens/NaturalWorldChunk.h"
 #include "lifelens/Simulation.h"
 
@@ -57,6 +58,28 @@ void FillNaturalChunkObservation(
             Item.CurrentQuantity = Node->quantity;
         }
         Out.ResourcePatches.Add(Item);
+    }
+
+    const std::vector<lifelens::NaturalPhysicalObstacle> Obstacles =
+        lifelens::deriveNaturalPhysicalObstacles(Chunk);
+    Out.PhysicalObstacles.Reserve(static_cast<int32>(FMath::Min<std::size_t>(
+        Obstacles.size(), static_cast<std::size_t>(MAX_int32))));
+    for (const lifelens::NaturalPhysicalObstacle& Obstacle : Obstacles)
+    {
+        FLLCoreNaturalObstacleObservation Read;
+        Read.ObstacleId = static_cast<int64>(Obstacle.id);
+        Read.Kind = Obstacle.kind == lifelens::NaturalPhysicalObstacleKind::Rock
+            ? ELLCoreNaturalObstacleKind::Rock
+            : ELLCoreNaturalObstacleKind::Tree;
+        Read.SourceResourceNodeId = static_cast<int64>(Obstacle.sourceNodeId);
+        Read.GridX = Obstacle.grid.x;
+        Read.GridY = Obstacle.grid.y;
+        Read.OffsetXCells = static_cast<float>(Obstacle.offsetXCells);
+        Read.OffsetYCells = static_cast<float>(Obstacle.offsetYCells);
+        Read.HalfExtentXCells = static_cast<float>(Obstacle.halfExtentXCells);
+        Read.HalfExtentYCells = static_cast<float>(Obstacle.halfExtentYCells);
+        Read.HalfHeightCells = static_cast<float>(Obstacle.halfHeightCells);
+        Out.PhysicalObstacles.Add(Read);
     }
 }
 }
