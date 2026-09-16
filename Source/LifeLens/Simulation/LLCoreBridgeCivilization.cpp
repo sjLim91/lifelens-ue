@@ -34,6 +34,7 @@ ELLCoreMaterialKind ToUnrealMaterial(lifelens::MaterialKind Material)
         case lifelens::MaterialKind::TinOre: return ELLCoreMaterialKind::TinOre;
         case lifelens::MaterialKind::IronOre: return ELLCoreMaterialKind::IronOre;
         case lifelens::MaterialKind::Charcoal: return ELLCoreMaterialKind::Charcoal;
+        case lifelens::MaterialKind::CopperMetal: return ELLCoreMaterialKind::CopperMetal;
         case lifelens::MaterialKind::Unknown:
         default:
             return ELLCoreMaterialKind::Unknown;
@@ -71,6 +72,7 @@ ELLCoreTechniqueId ToUnrealTechnique(lifelens::TechniqueId Technique)
         case lifelens::TechniqueId::PrimitiveStorage: return ELLCoreTechniqueId::PrimitiveStorage;
         case lifelens::TechniqueId::DiggingStick: return ELLCoreTechniqueId::DiggingStick;
         case lifelens::TechniqueId::StoneHammer: return ELLCoreTechniqueId::StoneHammer;
+        case lifelens::TechniqueId::CopperSmelting: return ELLCoreTechniqueId::CopperSmelting;
         case lifelens::TechniqueId::None:
         default:
             return ELLCoreTechniqueId::None;
@@ -309,6 +311,8 @@ FLLCoreCivilizationWorldObservation ULLCoreBridgeSubsystem::GetCivilizationWorld
         Read.DeliveredMaterialUnits = Facility.deliveredMaterialUnits;
         Read.FuelUnits = Facility.fuelUnits;
         Read.CharcoalUnits = Facility.charcoalUnits;
+        Read.OreUnits = Facility.oreUnits;
+        Read.MetalUnits = Facility.metalUnits;
         Read.HeatLevel = static_cast<float>(Facility.heatLevel);
         Read.bLit = Facility.lit;
         Read.BurnMinutesRemaining = Facility.burnMinutesRemaining;
