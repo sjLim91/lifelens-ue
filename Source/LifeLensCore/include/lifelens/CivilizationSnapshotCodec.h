@@ -13,7 +13,8 @@
 namespace lifelens {
 
 constexpr char CivilizationSnapshotExtensionMagic[]={'L','L','C','I','V','0','0','1'};
-constexpr std::uint32_t CivilizationSnapshotExtensionVersion=4;
+constexpr std::uint32_t CivilizationSnapshotExtensionVersion=5;
+constexpr std::uint32_t CivilizationSnapshotExtensionMetalRuntimeVersion=5;
 constexpr std::uint32_t CivilizationSnapshotExtensionFireRuntimeVersion=4;
 constexpr std::uint32_t CivilizationSnapshotExtensionFacilityVersion=3;
 constexpr std::uint32_t CivilizationSnapshotExtensionSpatialVersion=2;
@@ -27,7 +28,7 @@ inline bool validCivilizationUnit(double value)
 inline bool validMaterialKind(MaterialKind value)
 {
     return static_cast<int>(value)>=static_cast<int>(MaterialKind::Unknown)
-        && static_cast<int>(value)<=static_cast<int>(MaterialKind::Charcoal);
+        && static_cast<int>(value)<=static_cast<int>(MaterialKind::CopperMetal);
 }
 
 inline bool validItemKind(ItemKind value)
@@ -39,12 +40,11 @@ inline bool validItemKind(ItemKind value)
 inline bool validTechniqueId(TechniqueId value)
 {
     // Persisted knowledge is one contiguous enum range. Existing numeric values
-    // remain stable; new technology is appended and only the accepted upper
-    // bound grows, preserving backward snapshot compatibility.
+    // remain stable; StoneHammer and all earlier technique ordinals are unchanged.
     // TechniqueId::DesignatedSanitationArea
     // TechniqueId::DugSanitationPit
     return static_cast<int>(value)>=static_cast<int>(TechniqueId::None)
-        && static_cast<int>(value)<=static_cast<int>(TechniqueId::StoneHammer);
+        && static_cast<int>(value)<=static_cast<int>(TechniqueId::CopperSmelting);
 }
 
 inline bool validKnowledgeLevel(KnowledgeLevel value)
@@ -105,7 +105,6 @@ inline void initializeLegacyCivilizationState(World& world)
         character.civilization=std::move(state);
     }
     world.facilities.clear();
-    // World(seed) already creates the deterministic natural environment.
 }
 
 template<typename WriterT>
@@ -329,15 +328,17 @@ void writeConstructedFacility(WriterT& w,const ConstructedFacility& facility)
     w.u32(static_cast<std::uint32_t>(facility.requirements.size()));
     for(const auto& requirement:facility.requirements) writeFacilityRequirement(w,requirement);
 
-    // v4 appends runtime heat state after the exact v3 facility payload. This
-    // preserves the old field ordering and lets v1-v3 snapshots default these
-    // values to a cold/unlit state.
+    // v4 heat runtime remains byte-for-byte before the v5 furnace tail.
     w.i32(facility.fuelUnits);
     w.i32(facility.charcoalUnits);
     w.real(facility.heatLevel);
     w.boolean(facility.lit);
     w.i32(facility.burnMinutesRemaining);
     w.i32(facility.lastFireMinute);
+
+    // v5 appends furnace feed/output after v4, preserving older layouts.
+    w.i32(facility.oreUnits);
+    w.i32(facility.metalUnits);
 }
 
 template<typename ReaderT>
@@ -386,6 +387,13 @@ bool readConstructedFacility(
         facility.burnMinutesRemaining=0;
         facility.lastFireMinute=-1;
     }
+
+    if(version>=CivilizationSnapshotExtensionMetalRuntimeVersion){
+        if(!r.i32(facility.oreUnits) || !r.i32(facility.metalUnits)) return false;
+    }else{
+        facility.oreUnits=0;
+        facility.metalUnits=0;
+    }
     return validConstructedFacility(facility);
 }
 
@@ -424,6 +432,7 @@ bool readCivilizationSnapshotExtension(
        || (version!=CivilizationSnapshotExtensionLegacyVersion
            && version!=CivilizationSnapshotExtensionSpatialVersion
            && version!=CivilizationSnapshotExtensionFacilityVersion
+           && version!=CivilizationSnapshotExtensionFireRuntimeVersion
            && version!=CivilizationSnapshotExtensionVersion)) return false;
     if(outVersion) *outVersion=version;
 
