@@ -249,6 +249,14 @@ void ALLWorldObstacleCollisionProxyActor::AddTreeProxy(const FTransform& SourceT
 
 void ALLWorldObstacleCollisionProxyActor::AddRockProxy(const FTransform& SourceTransform, UStaticMesh& SourceMesh)
 {
+    // Decorative pebble meshes are deliberately traversable even when a random
+    // presentation scale makes one instance appear larger. Only true rock/
+    // boulder meshes should participate in resident blocking.
+    if (SourceMesh.GetName().Contains(TEXT("Pebble"), ESearchCase::IgnoreCase))
+    {
+        return;
+    }
+
     const FBoxSphereBounds Bounds = SourceMesh.GetBounds();
     const FVector SourceScale = SourceTransform.GetScale3D();
     const FVector AbsScale(FMath::Abs(SourceScale.X), FMath::Abs(SourceScale.Y), FMath::Abs(SourceScale.Z));
@@ -261,7 +269,7 @@ void ALLWorldObstacleCollisionProxyActor::AddRockProxy(const FTransform& SourceT
     const float HalfY = VisualHalfExtent.Y * RockFootprintFraction;
     if (FMath::Max(HalfX, HalfY) < MinimumBlockingRockHalfExtentUU)
     {
-        return; // pebbles and tiny stones stay traversable
+        return; // other genuinely tiny rock meshes also stay traversable
     }
 
     const float HalfZ = FMath::Max(24.0f, VisualHalfExtent.Z * RockFootprintFraction);
