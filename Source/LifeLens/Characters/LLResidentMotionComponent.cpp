@@ -1,5 +1,6 @@
 #include "Characters/LLResidentMotionComponent.h"
 #include "Characters/LLResidentAppearanceComponent.h"
+#include "Animation/AnimSequence.h"
 #include "Animation/AnimSingleNodeInstance.h"
 #include "Animation/BlendSpace.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -8,8 +9,6 @@
 
 namespace
 {
-    // Mirrors ll.DebugTapTargets: off by default, one line per resident per
-    // second while enabled.
     static TAutoConsoleVariable<int32> CVarDebugMotion(
         TEXT("ll.DebugMotion"),
         0,
@@ -26,6 +25,14 @@ ULLResidentMotionComponent::ULLResidentMotionComponent()
     static ConstructorHelpers::FObjectFinder<UBlendSpace> LocomotionFinder(
         TEXT("/Game/Characters/Quaternius/UAL/BS_ResidentLocomotion.BS_ResidentLocomotion"));
     LocomotionBlendSpace = LocomotionFinder.Succeeded() ? LocomotionFinder.Object : nullptr;
+
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> IdleFinder(
+        TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Idle_Loop.Idle_Loop"));
+    IdleAnimation = IdleFinder.Succeeded() ? IdleFinder.Object : nullptr;
+
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> TalkingFinder(
+        TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Idle_Talking_Loop.Idle_Talking_Loop"));
+    TalkingAnimation = TalkingFinder.Succeeded() ? TalkingFinder.Object : nullptr;
 }
 
 void ULLResidentMotionComponent::BeginPlay()
@@ -39,6 +46,11 @@ void ULLResidentMotionComponent::BeginPlay()
         SmoothedYaw = Owner->GetActorRotation().Yaw;
         DesiredYaw = SmoothedYaw;
     }
+}
+
+void ULLResidentMotionComponent::SetSocialInteractionActive(bool bActive)
+{
+    bSocialInteractionActive = bActive;
 }
 
 void ULLResidentMotionComponent::EnsureLocomotionPlaying()
@@ -56,19 +68,12 @@ void ULLResidentMotionComponent::EnsureLocomotionPlaying()
         }
     }
 
-    // The body is built once the resident identity is bound, which happens
-    // after BeginPlay, so this keeps retrying until it exists.
     Body = Appearance ? Appearance->GetBodyComponent() : nullptr;
     if (!Body)
     {
         return;
     }
 
-    // A blend space that carries sample data but no runtime triangulation
-    // resolves zero samples for every input, and the mesh then shows the
-    // reference (T) pose instead of any animation. Leave the idle animation
-    // that the appearance component started rather than replacing it with a
-    // blend space that cannot produce a pose.
     TArray<FBlendSampleData> ResolvedSamples;
     int32 CachedTriangulationIndex = INDEX_NONE;
     const bool bResolved = LocomotionBlendSpace->GetSamplesFromBlendInput(
@@ -80,7 +85,7 @@ void ULLResidentMotionComponent::EnsureLocomotionPlaying()
             *GetOwner()->GetName(), *LocomotionBlendSpace->GetName(),
             LocomotionBlendSpace->GetBlendSamples().Num());
         LocomotionBlendSpace = nullptr;
-        bLocomotionPlaying = true;   // do not retry every frame
+        bLocomotionPlaying = true;
         return;
     }
 
@@ -93,6 +98,50 @@ void ULLResidentMotionComponent::EnsureLocomotionPlaying()
         LocomotionBlendSpace->GetBlendSamples().Num(), ResolvedSamples.Num());
 }
 
+void ULLResidentMotionComponent::UpdateSocialAnimationState()
+{
+    if (!Appearance)
+    {
+        if (AActor* Owner = GetOwner())
+        {
+            Appearance = Owner->FindComponentByClass<ULLResidentAppearanceComponent>();
+        }
+    }
+    Body = Appearance ? Appearance->GetBodyComponent() : nullptr;
+    if (!Body)
+    {
+        return;
+    }
+
+    if (bSocialInteractionActive)
+    {
+        if (!bSocialAnimationPlaying && TalkingAnimation)
+        {
+            Body->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+            Body->PlayAnimation(TalkingAnimation, true);
+            bSocialAnimationPlaying = true;
+        }
+        return;
+    }
+
+    if (!bSocialAnimationPlaying)
+    {
+        return;
+    }
+
+    bSocialAnimationPlaying = false;
+    bLocomotionPlaying = false;
+
+    // Restore a truthful stationary pose immediately. If the authored
+    // locomotion blend space is valid it will take ownership again on the next
+    // tick; if it was intentionally disabled as a fallback, this idle remains.
+    if (IdleAnimation)
+    {
+        Body->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+        Body->PlayAnimation(IdleAnimation, true);
+    }
+}
+
 void ULLResidentMotionComponent::UpdateBodyOrientation(float DeltaTime)
 {
     if (!Body)
@@ -100,11 +149,6 @@ void ULLResidentMotionComponent::UpdateBodyOrientation(float DeltaTime)
         return;
     }
 
-    // Presentation-side turning only, and only while the resident is actually
-    // travelling. A stationary resident is turned by the world director toward
-    // its use point or social target, so the body follows the actor rotation
-    // then; holding the last travel heading would make residents interact while
-    // visibly facing away.
     const AActor* Owner = GetOwner();
     const float OwnerYaw = Owner ? Owner->GetActorRotation().Yaw : SmoothedYaw;
     const float TargetYaw = SmoothedSpeed > 0.0f ? DesiredYaw : OwnerYaw;
@@ -115,9 +159,6 @@ void ULLResidentMotionComponent::UpdateBodyOrientation(float DeltaTime)
         DeltaTime,
         YawInterpSpeed);
 
-    // Quaternius UBC's authored forward axis imports as local -Y. The actor
-    // and simulation continue to use normal Unreal +X forward; only the visual
-    // body receives this asset-axis correction.
     Body->SetWorldRotation(FRotator(0.0f, SmoothedYaw + MeshForwardYawOffsetDegrees, 0.0f));
 }
 
@@ -126,6 +167,7 @@ void ULLResidentMotionComponent::TickComponent(float DeltaTime, ELevelTick TickT
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
     EnsureLocomotionPlaying();
+    UpdateSocialAnimationState();
 
     const AActor* Owner = GetOwner();
     if (!Owner || DeltaTime <= KINDA_SMALL_NUMBER)
@@ -144,10 +186,6 @@ void ULLResidentMotionComponent::TickComponent(float DeltaTime, ELevelTick TickT
         return;
     }
 
-    // Loading a save or restoring a runtime grid position moves the actor in
-    // one step; that is not locomotion. The step is dropped entirely so it
-    // never reaches the speed window, which would otherwise report a burst of
-    // sprint speed when the window closes.
     const float Step = Delta.Size2D();
     if (Step > TeleportStep)
     {
@@ -181,7 +219,7 @@ void ULLResidentMotionComponent::TickComponent(float DeltaTime, ELevelTick TickT
 
     UpdateBodyOrientation(DeltaTime);
 
-    if (Body && LocomotionBlendSpace)
+    if (!bSocialAnimationPlaying && Body && LocomotionBlendSpace)
     {
         if (UAnimSingleNodeInstance* SingleNode = Body->GetSingleNodeInstance())
         {
@@ -196,10 +234,6 @@ void ULLResidentMotionComponent::TickComponent(float DeltaTime, ELevelTick TickT
         if (DebugLogTimer <= 0.0f)
         {
             DebugLogTimer = DebugLogInterval;
-            // `facing` is the decisive number: the mesh faces its own local
-            // +Y, which is the component right vector, so projecting it onto
-            // the travel direction gives +1 when the character walks forwards
-            // and -1 when it walks backwards.
             float FacingDot = 0.0f;
             if (Body && SmoothedSpeed > 0.0f)
             {
@@ -207,11 +241,12 @@ void ULLResidentMotionComponent::TickComponent(float DeltaTime, ELevelTick TickT
                 FacingDot = FVector::DotProduct(Body->GetRightVector(), TravelDirection);
             }
 
-            UE_LOG(LogTemp, Log, TEXT("LLMotion %s speed=%.1f window=%.1f yaw=%.1f visual=%.1f travel=%.1f actor=%.1f facing=%.2f playing=%d loc=%.0f,%.0f"),
+            UE_LOG(LogTemp, Log, TEXT("LLMotion %s speed=%.1f window=%.1f yaw=%.1f visual=%.1f travel=%.1f actor=%.1f facing=%.2f locomotion=%d talking=%d loc=%.0f,%.0f"),
                 *Owner->GetName(), SmoothedSpeed, WindowedSpeed, SmoothedYaw,
                 SmoothedYaw + MeshForwardYawOffsetDegrees, DesiredYaw,
                 Owner->GetActorRotation().Yaw, FacingDot,
-                bLocomotionPlaying ? 1 : 0, Location.X, Location.Y);
+                bLocomotionPlaying ? 1 : 0, bSocialAnimationPlaying ? 1 : 0,
+                Location.X, Location.Y);
         }
     }
 }

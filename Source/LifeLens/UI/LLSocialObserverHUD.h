@@ -11,7 +11,8 @@ struct FLLResidentData;
  *
  * The base observer HUD remains responsible for normal world/resident chrome.
  * This layer only presents authoritative typed social events supplied by Core:
- * short world-space speech bubbles and a compact meaningful/important event feed.
+ * speech bubbles, a meaningful/important event feed, and a compact recent
+ * interaction history for the currently observed resident.
  */
 UCLASS()
 class LIFELENS_API ALLSocialObserverHUD : public ALLObserverHUD
@@ -28,6 +29,9 @@ private:
         const TArray<FLLCoreSocialEventObservation>& Events,
         int64 CurrentSimulationMinute);
     void DrawSpeechBubbles(
+        const TArray<FLLCoreSocialEventObservation>& Events,
+        int64 CurrentSimulationMinute);
+    void DrawObservedResidentHistory(
         const TArray<FLLCoreSocialEventObservation>& Events,
         int64 CurrentSimulationMinute);
     void DrawEventFeed(

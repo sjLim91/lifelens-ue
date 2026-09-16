@@ -3,6 +3,7 @@
 #include "Characters/LLResidentCharacter.h"
 #include "Core/LLTypes.h"
 #include "Simulation/LLCoreBridgeSubsystem.h"
+#include "UI/LLObservationSubsystem.h"
 #include "UI/LLObserverLabels.h"
 #include "UI/LLSocialCommunicationText.h"
 #include "Engine/Canvas.h"
@@ -16,8 +17,10 @@ namespace
 {
     constexpr int64 SpeechBubbleLifetimeMinutes = 8;
     constexpr int64 EventFeedLifetimeMinutes = 180;
+    constexpr int64 ResidentHistoryLifetimeMinutes = 720;
     constexpr int32 MaxVisibleSpeechBubbles = 2;
     constexpr int32 MaxVisibleFeedEntries = 4;
+    constexpr int32 MaxVisibleResidentHistoryEntries = 3;
 
     UFont* SocialHUDFont()
     {
@@ -40,10 +43,33 @@ namespace
         return nullptr;
     }
 
-    ULLCoreBridgeSubsystem* FindCoreBridge(UWorld* World)
+    ULLCoreBridgeSubsystem* FindSocialCoreBridge(UWorld* World)
     {
         UGameInstance* GameInstance = World ? World->GetGameInstance() : nullptr;
         return GameInstance ? GameInstance->GetSubsystem<ULLCoreBridgeSubsystem>() : nullptr;
+    }
+
+    ULLObservationSubsystem* FindSocialObservation(UWorld* World)
+    {
+        UGameInstance* GameInstance = World ? World->GetGameInstance() : nullptr;
+        return GameInstance ? GameInstance->GetSubsystem<ULLObservationSubsystem>() : nullptr;
+    }
+
+    FString SocialRelativeTimeLabel(int64 AgeMinutes)
+    {
+        if (AgeMinutes < 1)
+        {
+            return TEXT("방금");
+        }
+        if (AgeMinutes < 60)
+        {
+            return FString::Printf(TEXT("%lld분 전"), static_cast<long long>(AgeMinutes));
+        }
+        if (AgeMinutes < 1440)
+        {
+            return FString::Printf(TEXT("%lld시간 전"), static_cast<long long>(AgeMinutes / 60));
+        }
+        return FString::Printf(TEXT("%lld일 전"), static_cast<long long>(AgeMinutes / 1440));
     }
 }
 
@@ -56,13 +82,13 @@ void ALLSocialObserverHUD::DrawHUD()
         return;
     }
 
-    ULLCoreBridgeSubsystem* Bridge = FindCoreBridge(GetWorld());
+    ULLCoreBridgeSubsystem* Bridge = FindSocialCoreBridge(GetWorld());
     if (!Bridge || !Bridge->IsCoreRunning())
     {
         return;
     }
 
-    const TArray<FLLCoreSocialEventObservation> Events = Bridge->GetRecentSocialEvents(16);
+    const TArray<FLLCoreSocialEventObservation> Events = Bridge->GetRecentSocialEvents(24);
     if (Events.Num() == 0)
     {
         return;
@@ -73,7 +99,7 @@ void ALLSocialObserverHUD::DrawHUD()
 
 FString ALLSocialObserverHUD::CurrentActionFor(const FLLResidentData& Resident) const
 {
-    if (ULLCoreBridgeSubsystem* Bridge = FindCoreBridge(GetWorld()))
+    if (ULLCoreBridgeSubsystem* Bridge = FindSocialCoreBridge(GetWorld()))
     {
         FLLCoreResidentObservation Observation;
         if (Bridge->GetResidentObservation(Resident.ResidentId, Observation))
@@ -100,6 +126,7 @@ void ALLSocialObserverHUD::DrawSocialOverlays(
     int64 CurrentSimulationMinute)
 {
     DrawSpeechBubbles(Events, CurrentSimulationMinute);
+    DrawObservedResidentHistory(Events, CurrentSimulationMinute);
     DrawEventFeed(Events, CurrentSimulationMinute);
 }
 
@@ -109,7 +136,7 @@ void ALLSocialObserverHUD::DrawSpeechBubbles(
 {
     APlayerController* PlayerController = GetOwningPlayerController();
     UFont* Font = SocialHUDFont();
-    ULLCoreBridgeSubsystem* Bridge = FindCoreBridge(GetWorld());
+    ULLCoreBridgeSubsystem* Bridge = FindSocialCoreBridge(GetWorld());
     if (!PlayerController || !Font || !Bridge)
     {
         return;
@@ -217,6 +244,126 @@ void ALLSocialObserverHUD::DrawSpeechBubbles(
 
         PresentedActors.Add(Event.ActorResidentId);
         ++VisibleCount;
+    }
+}
+
+void ALLSocialObserverHUD::DrawObservedResidentHistory(
+    const TArray<FLLCoreSocialEventObservation>& Events,
+    int64 CurrentSimulationMinute)
+{
+    UFont* Font = SocialHUDFont();
+    ULLObservationSubsystem* Observation = FindSocialObservation(GetWorld());
+    if (!Font || !Observation || !Observation->HasObservedResident())
+    {
+        return;
+    }
+
+    const FGuid ObservedId = Observation->GetObservedResidentId();
+    TArray<const FLLCoreSocialEventObservation*> HistoryEvents;
+    for (int32 Index = Events.Num() - 1;
+         Index >= 0 && HistoryEvents.Num() < MaxVisibleResidentHistoryEntries;
+         --Index)
+    {
+        const FLLCoreSocialEventObservation& Event = Events[Index];
+        const bool bInvolvesObserved = Event.ActorResidentId == ObservedId
+            || Event.TargetResidentId == ObservedId;
+        const int64 AgeMinutes = FMath::Max<int64>(
+            0,
+            CurrentSimulationMinute - Event.SimulationMinute);
+        if (!Event.bSuccessful || !bInvolvesObserved || AgeMinutes > ResidentHistoryLifetimeMinutes)
+        {
+            continue;
+        }
+        HistoryEvents.Add(&Event);
+    }
+
+    if (HistoryEvents.Num() == 0)
+    {
+        return;
+    }
+
+    const float UIScale = FMath::Clamp(
+        FMath::Min(Canvas->ClipX, Canvas->ClipY) / 540.0f,
+        1.0f,
+        2.5f);
+    const float TitleScale = 0.76f * UIScale;
+    const float RowScale = 0.70f * UIScale;
+    const float PadX = 10.0f * UIScale;
+    const float PadY = 8.0f * UIScale;
+    const float Gap = 5.0f * UIScale;
+    const float PanelWidth = FMath::Min(330.0f * UIScale, Canvas->ClipX * 0.44f);
+
+    float TitleW = 0.0f;
+    float TitleH = 0.0f;
+    GetTextSize(TEXT("최근 상호작용"), TitleW, TitleH, Font, TitleScale);
+
+    TArray<FString> Lines;
+    TArray<float> Heights;
+    float ContentHeight = TitleH;
+    for (const FLLCoreSocialEventObservation* Event : HistoryEvents)
+    {
+        const bool bWasActor = Event->ActorResidentId == ObservedId;
+        const FString OtherName = bWasActor ? Event->TargetName : Event->ActorName;
+        const int64 AgeMinutes = FMath::Max<int64>(
+            0,
+            CurrentSimulationMinute - Event->SimulationMinute);
+        FString Line = FString::Printf(
+            TEXT("%s %s · %s · %s"),
+            bWasActor ? TEXT("→") : TEXT("←"),
+            OtherName.IsEmpty() ? TEXT("상대") : *OtherName,
+            *LLSocialCommunicationText::EventLabel(Event->Type),
+            *SocialRelativeTimeLabel(AgeMinutes));
+        if (Line.Len() > 38)
+        {
+            Line = Line.Left(37) + TEXT("…");
+        }
+
+        float W = 0.0f;
+        float H = 0.0f;
+        GetTextSize(Line, W, H, Font, RowScale);
+        Lines.Add(MoveTemp(Line));
+        Heights.Add(H);
+        ContentHeight += Gap + H;
+    }
+
+    const float PanelHeight = ContentHeight + PadY * 2.0f;
+    const FSafeInsets Insets = SafeInsets(UIScale);
+    const float PanelX = FMath::Max(
+        Insets.Left,
+        Canvas->ClipX - Insets.Right - PanelWidth);
+    const float PanelY = FMath::Max(
+        Insets.Top,
+        Canvas->ClipY - Insets.Bottom - PanelHeight);
+
+    DrawRect(
+        FLinearColor(0.0f, 0.0f, 0.0f, 0.38f),
+        PanelX,
+        PanelY,
+        PanelWidth,
+        PanelHeight);
+
+    float CursorY = PanelY + PadY;
+    DrawText(
+        TEXT("최근 상호작용"),
+        FLinearColor(0.82f, 0.92f, 1.0f, 0.92f),
+        PanelX + PadX,
+        CursorY,
+        Font,
+        TitleScale,
+        false);
+    CursorY += TitleH + Gap;
+
+    for (int32 Index = 0; Index < Lines.Num(); ++Index)
+    {
+        DrawText(
+            Lines[Index],
+            FLinearColor(0.93f, 0.95f, 0.98f, 0.88f),
+            PanelX + PadX,
+            CursorY,
+            Font,
+            RowScale,
+            false);
+        CursorY += Heights[Index] + Gap;
     }
 }
 
