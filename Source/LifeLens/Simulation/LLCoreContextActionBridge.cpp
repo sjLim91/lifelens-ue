@@ -134,6 +134,8 @@ ELLCoreItemKind ContextActionToUnrealItem(lifelens::ItemKind Kind)
         case lifelens::ItemKind::Cordage: return ELLCoreItemKind::Cordage;
         case lifelens::ItemKind::SimpleContainer: return ELLCoreItemKind::SimpleContainer;
         case lifelens::ItemKind::FuelBundle: return ELLCoreItemKind::FuelBundle;
+        case lifelens::ItemKind::DiggingStick: return ELLCoreItemKind::DiggingStick;
+        case lifelens::ItemKind::StoneHammer: return ELLCoreItemKind::StoneHammer;
         case lifelens::ItemKind::RawMaterial:
         default: return ELLCoreItemKind::RawMaterial;
     }
@@ -151,6 +153,8 @@ ELLCoreTechniqueId ContextActionToUnrealTechnique(lifelens::TechniqueId Techniqu
         case lifelens::TechniqueId::DesignatedSanitationArea: return ELLCoreTechniqueId::DesignatedSanitationArea;
         case lifelens::TechniqueId::DugSanitationPit: return ELLCoreTechniqueId::DugSanitationPit;
         case lifelens::TechniqueId::PrimitiveStorage: return ELLCoreTechniqueId::PrimitiveStorage;
+        case lifelens::TechniqueId::DiggingStick: return ELLCoreTechniqueId::DiggingStick;
+        case lifelens::TechniqueId::StoneHammer: return ELLCoreTechniqueId::StoneHammer;
         case lifelens::TechniqueId::None:
         default: return ELLCoreTechniqueId::None;
     }
