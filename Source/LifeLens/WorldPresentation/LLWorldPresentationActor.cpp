@@ -9,6 +9,8 @@
 #include "Simulation/LLCoreBridgeSubsystem.h"
 #include "Simulation/LLWorldGenerationReadTypes.h"
 #include "UObject/ConstructorHelpers.h"
+#include "GameFramework/PlayerController.h"
+#include "Camera/PlayerCameraManager.h"
 #include "World/LLWorldSpatialContract.h"
 
 namespace
@@ -156,6 +158,7 @@ void ALLWorldPresentationActor::ClearInstances()
     PlacedGrass = 0;
     PlacedRocks = 0;
     SuppressedDressing = 0;
+    SightlineCleared = 0;
 }
 
 FVector2D ALLWorldPresentationActor::SettlementReferenceUU(const FLLCoreWorldGenerationObservation& World) const
@@ -200,6 +203,79 @@ float ALLWorldPresentationActor::AmbientDressingKeepFactor(const FVector2D& Loca
     const float Progress = FMath::Clamp((Distance - CoreRadius) / Band, 0.0f, 1.0f);
     const float Exponent = FMath::Max(1.0f, bCanopy ? CanopyRecoveryExponent : UndergrowthRecoveryExponent);
     return FMath::Lerp(CoreKeep, 1.0f, FMath::Pow(Progress, Exponent));
+}
+
+bool ALLWorldPresentationActor::CaptureInitialViewOrigin()
+{
+    if (bInitialViewCaptured)
+    {
+        return true;
+    }
+    const UWorld* World = GetWorld();
+    const APlayerController* Controller = World ? World->GetFirstPlayerController() : nullptr;
+    const APlayerCameraManager* CameraManager = Controller ? Controller->PlayerCameraManager : nullptr;
+    if (!CameraManager)
+    {
+        return false;   // the game mode has not placed the observer camera yet
+    }
+
+    // Read only. The observer camera pose and its Config tuning belong to
+    // another lane; this never writes to either.
+    const FVector CameraLocation = CameraManager->GetCameraLocation();
+    if (CameraLocation.ContainsNaN())
+    {
+        return false;
+    }
+
+    InitialViewOriginUU = FVector2D(CameraLocation.X, CameraLocation.Y);
+    bInitialViewCaptured = true;
+    return true;
+}
+
+float ALLWorldPresentationActor::InitialSightlineKeepFactor(const FVector2D& LocationUU) const
+{
+    if (!bClearInitialSightlineCanopy || !bInitialViewCaptured)
+    {
+        return 1.0f;
+    }
+
+    const FVector2D Axis = CachedSettlementReferenceUU - InitialViewOriginUU;
+    const float AxisLength = Axis.Size();
+    if (AxisLength <= KINDA_SMALL_NUMBER)
+    {
+        return 1.0f;
+    }
+    const FVector2D AxisDirection = Axis / AxisLength;
+
+    const FVector2D ToPoint = LocationUU - InitialViewOriginUU;
+    const float Along = FVector2D::DotProduct(ToPoint, AxisDirection);
+    // Only what stands between the camera and the settlement can occlude it.
+    if (Along <= 0.0f || Along >= AxisLength)
+    {
+        return 1.0f;
+    }
+
+    const float Lateral = FMath::Abs(FVector2D::CrossProduct(ToPoint, AxisDirection));
+    const float InnerHalfAngle = FMath::DegreesToRadians(FMath::Max(0.0f, InitialSightlineHalfAngleDegrees));
+    const float OuterHalfAngle = InnerHalfAngle
+        + FMath::DegreesToRadians(FMath::Max(0.0f, InitialSightlineEdgeFalloffDegrees));
+
+    // Cone widens with distance from the camera, so the cleared wedge stays a
+    // constant angular slice of the opening view.
+    const float InnerWidth = Along * FMath::Tan(InnerHalfAngle);
+    const float OuterWidth = Along * FMath::Tan(OuterHalfAngle);
+    const float CentreKeep = FMath::Clamp(InitialSightlineCanopyKeep, 0.0f, 1.0f);
+
+    if (Lateral <= InnerWidth)
+    {
+        return CentreKeep;
+    }
+    if (Lateral >= OuterWidth || OuterWidth - InnerWidth <= KINDA_SMALL_NUMBER)
+    {
+        return 1.0f;
+    }
+    const float EdgeProgress = (Lateral - InnerWidth) / (OuterWidth - InnerWidth);
+    return FMath::Lerp(CentreKeep, 1.0f, EdgeProgress);
 }
 
 float ALLWorldPresentationActor::ResourcePatchScaleFactor(const FVector2D& LocationUU) const
@@ -323,7 +399,20 @@ void ALLWorldPresentationActor::BuildChunkDressing(const FLLCoreWorldGenerationO
             // Start-region readability: ambient dressing thins out towards the
             // founders. The roll comes from the same deterministic stream, so
             // the same world always drops the same instances.
-            if (KeepRoll >= AmbientDressingKeepFactor(FVector2D(Location.X, Location.Y), Layer))
+            const FVector2D Location2D(Location.X, Location.Y);
+            float KeepFactor = AmbientDressingKeepFactor(Location2D, Layer);
+            if (Layer == ELLDressingLayer::Canopy)
+            {
+                // Only the canopy blocks the opening view; shrubs, grass and
+                // rocks keep their normal density inside the cone.
+                const float SightlineKeep = InitialSightlineKeepFactor(Location2D);
+                if (SightlineKeep < KeepFactor)
+                {
+                    ++SightlineCleared;
+                    KeepFactor = SightlineKeep;
+                }
+            }
+            if (KeepRoll >= KeepFactor)
             {
                 ++SuppressedDressing;
                 continue;
@@ -439,7 +528,9 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
 
     // Rebuild only when the authoritative generation identity or the
     // materialized chunk set actually changed.
+    const bool bSightlinePending = bClearInitialSightlineCanopy && !bInitialViewCaptured;
     if (!bForce
+        && !bSightlinePending
         && World.WorldSeed == BuiltWorldSeed
         && World.GenerationVersion == BuiltGenerationVersion
         && World.MaterializedChunkCount == BuiltChunkCount)
@@ -454,6 +545,11 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
     // Resolved once per rebuild: the readability envelope is measured from the
     // Core start-region centre, not from the world origin.
     CachedSettlementReferenceUU = SettlementReferenceUU(World);
+
+    // The observer camera is spawned by the game mode, which may run after this
+    // actor's BeginPlay. Capturing it here means the first build can miss it;
+    // the next refresh picks it up and rebuilds once.
+    CaptureInitialViewOrigin();
 
     ClearInstances();
     BuildGround(World);
@@ -491,11 +587,12 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
     for (UHierarchicalInstancedStaticMeshComponent* Component : RockInstances) { if (Component) { RockInstanceCount += Component->GetInstanceCount(); } }
 
     UE_LOG(LogTemp, Log,
-        TEXT("LLWorldPresentation seed=%lld gen=%d chunks=%d meshes=%d/%d/%d/%d instances=%d/%d/%d/%d thinned=%d core=%.0f activity=%.0f ground=%s"),
+        TEXT("LLWorldPresentation seed=%lld gen=%d chunks=%d meshes=%d/%d/%d/%d instances=%d/%d/%d/%d thinned=%d sightline=%d/%d core=%.0f activity=%.0f ground=%s"),
         World.WorldSeed, World.GenerationVersion, World.MaterializedChunkCount,
         TreeMeshes.Num(), ShrubMeshes.Num(), GrassMeshes.Num(), RockMeshes.Num(),
         TreeInstanceCount, ShrubInstanceCount, GrassInstanceCount, RockInstanceCount,
-        SuppressedDressing, CoreClearRadiusUU, ActivityRadiusUU,
+        SuppressedDressing, SightlineCleared, bInitialViewCaptured ? 1 : 0,
+        CoreClearRadiusUU, ActivityRadiusUU,
         (Ground && Ground->GetStaticMesh()) ? TEXT("yes") : TEXT("no"));
 
 }

@@ -118,6 +118,40 @@ public:
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.1", ClampMax="1.0"))
     float ActivityZoneResourceScale = 0.8f;
 
+    // ---- Initial sight line (IR-E-1 mitigation) --------------------------------
+    // Residents are visible the moment play starts and then disappear behind the
+    // canopy that loads between the observer camera and the settlement. This
+    // clears canopy inside a cone from the initial camera position toward the
+    // settlement reference so the opening view of the world is readable.
+    //
+    // Deliberately limited: the cone is frozen at the initial camera pose, so it
+    // stops helping once the player orbits or pans. It is an initial-readability
+    // mitigation for Milestone B, not the general solution. The general fix is to
+    // fade the canopy that actually occludes the current camera-to-resident line
+    // at runtime, which is tracked separately.
+    //
+    // Presentation-only: the camera is read and never moved, Core and
+    // world-generation facts are untouched, and authoritative resource patches
+    // are never removed. Only the canopy layer is affected; shrubs, grass and
+    // rocks keep their normal density.
+    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability")
+    bool bClearInitialSightlineCanopy = true;
+
+    // Narrower than the observer field of view: only what stands in front of the
+    // residents needs to go, not the whole visible wedge.
+    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="2.0", ClampMax="60.0"))
+    float InitialSightlineHalfAngleDegrees = 16.0f;
+
+    // Canopy returns gradually across this band at the cone edge so the cleared
+    // wedge does not read as a cut corridor.
+    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.0", ClampMax="40.0"))
+    float InitialSightlineEdgeFalloffDegrees = 9.0f;
+
+    // Canopy kept at the centre of the cone. Not zero, so the corridor keeps
+    // some depth cue.
+    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.0", ClampMax="0.4"))
+    float InitialSightlineCanopyKeep = 0.05f;
+
 private:
     UHierarchicalInstancedStaticMeshComponent* AddInstancedComponent(
         const TCHAR* Name, UStaticMesh* Mesh, float CullStartUU, float CullEndUU, bool bCastShadow);
@@ -142,6 +176,14 @@ private:
     // Size factor for an authoritative resource patch by band. Never zero: a
     // resource Core says exists is not hidden for readability.
     float ResourcePatchScaleFactor(const FVector2D& LocationUU) const;
+
+    // Fraction of canopy kept along the initial camera-to-settlement cone.
+    // 1 when the mitigation is off or no camera pose has been captured.
+    float InitialSightlineKeepFactor(const FVector2D& LocationUU) const;
+
+    // Reads the observer camera once and freezes it. Returns true when a pose is
+    // available. The camera is only read, never moved.
+    bool CaptureInitialViewOrigin();
     UMaterialInterface* GroundMaterialForChunk(const FLLCoreNaturalChunkObservation& Chunk) const;
 
     // Catalogue (referenced in the constructor so it is cooked).
@@ -171,4 +213,7 @@ private:
     int32 PlacedRocks = 0;
     int32 SuppressedDressing = 0;
     FVector2D CachedSettlementReferenceUU = FVector2D::ZeroVector;
+    FVector2D InitialViewOriginUU = FVector2D::ZeroVector;
+    bool bInitialViewCaptured = false;
+    int32 SightlineCleared = 0;
 };
