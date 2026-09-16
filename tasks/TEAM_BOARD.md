@@ -89,3 +89,35 @@ A request must contain:
 - whether it blocks the current milestone.
 
 Shared/Config change alone does **not** mechanically require Dagyeom review. Request review when the change materially touches Dagyeom-owned behavior, a cross-owner interface/contract, or genuinely needs visual/content validation.
+
+## Dagyeom Integration Request — IR-E 관찰 카메라 (2026-09-16)
+
+다겸 측 추가. 요청 기록이며 카메라 소유는 쭌 lane이다.
+
+### 현재 동작 확인 결과
+
+PIE에서 다시 확인했다. **휠 줌과 회전은 동작한다.** 아래 두 가지가 문제다.
+
+### IR-E-1 — 초기 카메라 각도가 주민 활동 구역을 담지 못한다
+
+- 증상: Play 시작 시 주민이 나무에 가려 보이지 않는다. 플레이어가 시작하자마자 줌과 회전을 조작해야 주민을 찾을 수 있다.
+- PR #100의 vegetation density 조정 이후에도 동일하다. 정착지 중심 1200 UU는 비어 있지만 초기 카메라가 그 지점을 정면으로 담지 않는다.
+- 요청: 초기 프레이밍이 주민 활동 구역을 담도록 조정해 달라.
+- 참고: `ll.ViewResidents`를 입력하면 주민 4명이 정상적으로 잡힌다. 즉 월드 배치나 표현 문제가 아니라 초기 카메라 위치·각도 문제다. 다만 디버그 명령 없이 기본 화면에서 주민이 보이는 것이 정상 상태여야 한다.
+
+### IR-E-2 — 패닝이 없어 시야를 옆으로 옮길 수 없다
+
+- 증상: 줌과 회전은 되지만 카메라 이동(패닝)이 없다. 초기 지점을 중심으로만 볼 수 있다.
+- Observer 관점에서 세계를 둘러보려면 패닝이 필요해 보인다.
+- 요청: 관찰 카메라에 패닝 입력 추가 검토.
+
+### 다겸 측 완충안 (요청 수락 전까지의 대안)
+
+카메라를 건드리지 않고 표현 계층에서 할 수 있는 것은 **초기 카메라 시선 방향의 큰 수목을 추가로 억제**하는 것이다.
+
+- `ALLWorldPresentationActor`의 readability envelope에 방향 가중치를 추가해, 정착지 기준 초기 카메라 방향 쪽 canopy만 더 강하게 솎아낸다.
+- presentation-only이며 Core authority와 ResourcePatch는 그대로 둔다. 결정론도 유지한다.
+- 다만 이것은 대칭적이지 않은 표현이 되고, 카메라가 회전하면 반대쪽에서는 효과가 없다. **근본 해결이 아니라 임시 완충이다.**
+- 쭌 측이 IR-E-1을 조정하면 이 완충안은 불필요하다. 필요 여부를 알려 주면 구현한다.
+
+- 상태: `OPEN / 쭌 결정 대기`.
