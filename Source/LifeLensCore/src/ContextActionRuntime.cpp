@@ -288,6 +288,21 @@ bool Simulation::completeContextAction(
                 return false;
             }
 
+            // More than one caregiver can independently decide to help the same
+            // dependent while the first caregiver is still travelling. The first
+            // successful authoritative ACK wins; cancel competing pending care so
+            // Needs changes, provision consumption, and sanitation residue cannot
+            // be applied twice for the same unresolved care episode.
+            for(auto& runtimeEntry:runtime_){
+                if(runtimeEntry.first==actor.id) continue;
+                PendingContextAction& competing=runtimeEntry.second.pendingContext;
+                if(competing.active()
+                   && competing.kind==ContextActionKind::Parenting
+                   && competing.parentingTarget==child->id){
+                    competing.clear();
+                }
+            }
+
             if(consumeFood){
                 actor.civilization.inventory.remove(
                     ItemKind::RawMaterial,MaterialKind::PlantFood,1);

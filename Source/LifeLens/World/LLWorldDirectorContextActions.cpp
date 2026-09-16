@@ -29,10 +29,34 @@ void ALLWorldDirector::ApplyPendingContextDirective(
         Character.ClearMovementTarget();
     }
 
+    const float AckSafeArrivalRadius = FMath::Max(
+        1.0f,
+        FMath::Max(1.0f, CoreGridCellSizeUU) * 1.40f);
     FVector DesiredLocation = Character.GetActorLocation();
     ALLResidentCharacter* TargetResident = nullptr;
-    float ArrivalRadius = FMath::Max(1.0f, ContextWorldTargetArrivalRadiusUU);
+    float ArrivalRadius = FMath::Min(
+        FMath::Max(1.0f, ContextWorldTargetArrivalRadiusUU),
+        AckSafeArrivalRadius);
     bool bFaceTarget = false;
+
+    auto ResolveAuthoritativeResidentTarget = [&](FGuid TargetResidentId, FVector& OutLocation) -> bool
+    {
+        int32 TargetGridX = 0;
+        int32 TargetGridY = 0;
+        if (!CoreBridge->GetResidentRuntimeGridPosition(TargetResidentId, TargetGridX, TargetGridY))
+        {
+            return false;
+        }
+
+        const float CellSize = FMath::Max(1.0f, CoreGridCellSizeUU);
+        OutLocation = GetActorLocation()
+            + FVector(
+                static_cast<float>(TargetGridX - CorePresentationOriginGrid.X) * CellSize,
+                static_cast<float>(TargetGridY - CorePresentationOriginGrid.Y) * CellSize,
+                0.0f);
+        OutLocation.Z = Character.GetActorLocation().Z;
+        return true;
+    };
 
     switch (Directive.ContextActionKind)
     {
@@ -56,15 +80,25 @@ void ALLWorldDirector::ApplyPendingContextDirective(
                         : FVector(0.0f, 1.0f, 0.0f);
                 }
                 AwayDirection.Normalize();
-                DesiredLocation = TargetResident->GetActorLocation() + AwayDirection * 420.0f;
+                // Avoid must always increase separation from the current point;
+                // targeting a fixed radius around the other resident could make
+                // an already-distant resident walk back toward that resident.
+                DesiredLocation = Character.GetActorLocation() + AwayDirection * 420.0f;
+                ArrivalRadius = FMath::Max(1.0f, ContextResidentArrivalRadiusUU);
             }
             else
             {
-                DesiredLocation = ResolveSocialTargetLocation(
-                    Character, *TargetResident, Directive.SocialIntent);
+                if (!ResolveAuthoritativeResidentTarget(Directive.TargetResidentId, DesiredLocation))
+                {
+                    Runtime.bPerformingAction = false;
+                    Character.ClearMovementTarget();
+                    return;
+                }
+                ArrivalRadius = FMath::Min(
+                    FMath::Max(1.0f, ContextResidentArrivalRadiusUU),
+                    AckSafeArrivalRadius);
                 bFaceTarget = true;
             }
-            ArrivalRadius = FMath::Max(1.0f, ContextResidentArrivalRadiusUU);
             Character.SetCurrentIntent(ELLActionIntent::Socialize);
             break;
 
@@ -76,9 +110,15 @@ void ALLWorldDirector::ApplyPendingContextDirective(
                 Character.ClearMovementTarget();
                 return;
             }
-            DesiredLocation = ResolveSocialTargetLocation(
-                Character, *TargetResident, ELLCoreSocialIntent::Approach);
-            ArrivalRadius = FMath::Max(1.0f, ContextResidentArrivalRadiusUU);
+            if (!ResolveAuthoritativeResidentTarget(Directive.TargetResidentId, DesiredLocation))
+            {
+                Runtime.bPerformingAction = false;
+                Character.ClearMovementTarget();
+                return;
+            }
+            ArrivalRadius = FMath::Min(
+                FMath::Max(1.0f, ContextResidentArrivalRadiusUU),
+                AckSafeArrivalRadius);
             Character.SetCurrentIntent(ELLActionIntent::Socialize);
             bFaceTarget = true;
             break;
@@ -96,6 +136,9 @@ void ALLWorldDirector::ApplyPendingContextDirective(
                             Directive.CivilizationTargetGridY - CorePresentationOriginGrid.Y) * CellSize,
                         0.0f);
                 DesiredLocation.Z = Character.GetActorLocation().Z;
+                ArrivalRadius = FMath::Min(
+                    FMath::Max(1.0f, ContextWorldTargetArrivalRadiusUU),
+                    AckSafeArrivalRadius);
             }
             break;
 
