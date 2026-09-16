@@ -43,6 +43,14 @@ bool validatePendingSanitationSite(const World& world,const PendingContextAction
     return site!=nullptr && site->active && sameGridPosition(site->pos,pending.targetPos);
 }
 
+bool validatePendingDesignatedAreaTarget(const World& world,const PendingContextAction& pending)
+{
+    return pending.hasSpatialTarget
+        && activePrimitiveSanitationSite(world.primitiveSanitationSites)==nullptr
+        && world.environmentalResidues.exposureAt(pending.targetPos)
+            < PrimitiveSanitationCleanSiteExposureLimit;
+}
+
 CivilizationExecutionResult establishPendingDesignatedSanitationArea(
     World& world,
     Character& actor,
@@ -139,7 +147,7 @@ bool Simulation::completeContextAction(
             if(pending.social.intent==SocialIntent::Avoid){
                 const int dx=std::abs(resolvedPosition.x-targetRuntime->second.pos.x);
                 const int dy=std::abs(resolvedPosition.y-targetRuntime->second.pos.y);
-                if(std::max(dx,dy)<2) return false;
+                if(std::max(dx,dy)<1) return false;
             }else if(!contextActionNearTarget(resolvedPosition,targetRuntime->second.pos,1)){
                 return false;
             }
@@ -174,6 +182,12 @@ bool Simulation::completeContextAction(
             const GridPos targetPos=pending.targetPos;
             const SanitationSiteId targetSite=pending.sanitationSiteId;
 
+            if(decision.intent==CivilizationIntent::Experiment
+               && decision.experiment==ExperimentKind::DesignateSanitationArea
+               && !validatePendingDesignatedAreaTarget(world_,pending)){
+                pending.clear();
+                return false;
+            }
             if((decision.intent==CivilizationIntent::Experiment
                     && decision.experiment==ExperimentKind::DigSanitationPit)
                || (decision.intent==CivilizationIntent::Craft
@@ -187,7 +201,7 @@ bool Simulation::completeContextAction(
             CivilizationExecutionResult result;
             if(decision.intent==CivilizationIntent::Craft
                && decision.technique==TechniqueId::DesignatedSanitationArea){
-                if(!pending.hasSpatialTarget){
+                if(!validatePendingDesignatedAreaTarget(world_,pending)){
                     pending.clear();
                     return false;
                 }
