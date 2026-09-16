@@ -307,6 +307,12 @@ FLLCoreCivilizationWorldObservation ULLCoreBridgeSubsystem::GetCivilizationWorld
         Read.LinkedStorageId = static_cast<int64>(Facility.linkedStorage);
         Read.RequiredMaterialUnits = Facility.requiredMaterialUnits;
         Read.DeliveredMaterialUnits = Facility.deliveredMaterialUnits;
+        Read.FuelUnits = Facility.fuelUnits;
+        Read.CharcoalUnits = Facility.charcoalUnits;
+        Read.HeatLevel = static_cast<float>(Facility.heatLevel);
+        Read.bLit = Facility.lit;
+        Read.BurnMinutesRemaining = Facility.burnMinutesRemaining;
+        Read.LastFireMinute = static_cast<int64>(Facility.lastFireMinute);
         Read.Requirements.Reserve(SafeCivilizationCount(Facility.requirements.size()));
         for (const lifelens::CivilizationFacilityRequirementObservation& Requirement : Facility.requirements)
         {
