@@ -8,13 +8,25 @@ class UAnimSequence;
 class UBlendSpace;
 class ULLResidentAppearanceComponent;
 class USkeletalMeshComponent;
+class UStaticMesh;
+class UStaticMeshComponent;
 
 UENUM(BlueprintType)
 enum class ELLResidentWorkPresentationMode : uint8
 {
     None,
     Interact,
+    Gather,
     Build
+};
+
+UENUM(BlueprintType)
+enum class ELLResidentHeldToolPresentation : uint8
+{
+    None,
+    SharpFlake,
+    StoneCuttingTool,
+    SimpleContainer
 };
 
 // Character Motion Bootstrap: locomotion + lightweight context presentation.
@@ -43,11 +55,17 @@ public:
     UFUNCTION(BlueprintCallable, Category="LifeLens|Motion")
     void SetWorkPresentationMode(ELLResidentWorkPresentationMode Mode);
 
+    UFUNCTION(BlueprintCallable, Category="LifeLens|Motion")
+    void SetHeldToolPresentation(ELLResidentHeldToolPresentation Tool);
+
     UFUNCTION(BlueprintPure, Category="LifeLens|Motion")
     bool IsSocialInteractionActive() const { return bSocialInteractionActive; }
 
     UFUNCTION(BlueprintPure, Category="LifeLens|Motion")
     ELLResidentWorkPresentationMode GetWorkPresentationMode() const { return WorkPresentationMode; }
+
+    UFUNCTION(BlueprintPure, Category="LifeLens|Motion")
+    ELLResidentHeldToolPresentation GetHeldToolPresentation() const { return HeldToolPresentation; }
 
     static constexpr float IdleSpeedThreshold = 5.0f;
     static constexpr float MaxSpeed = 600.0f;
@@ -60,6 +78,7 @@ private:
     void EnsureLocomotionPlaying();
     void UpdateBodyOrientation(float DeltaTime);
     void UpdateContextAnimationState();
+    void UpdateHeldToolVisualState();
 
     UPROPERTY(EditAnywhere, Category="LifeLens|Motion")
     float MeshForwardYawOffsetDegrees = -90.0f;
@@ -70,6 +89,13 @@ private:
     UPROPERTY() TObjectPtr<UAnimSequence> InteractAnimation;
     UPROPERTY() TObjectPtr<UAnimSequence> BuildAnimation;
     UPROPERTY() TObjectPtr<UAnimSequence> ActiveContextAnimation;
+
+    // Tool meshes are intentionally simple presentation proxies. The enum and
+    // attachment contract stay stable when proper art assets replace them.
+    UPROPERTY() TObjectPtr<UStaticMesh> SharpFlakeMesh;
+    UPROPERTY() TObjectPtr<UStaticMesh> StoneCuttingToolMesh;
+    UPROPERTY() TObjectPtr<UStaticMesh> SimpleContainerMesh;
+    UPROPERTY() TObjectPtr<UStaticMeshComponent> HeldToolMesh;
 
     UPROPERTY() TObjectPtr<ULLResidentAppearanceComponent> Appearance;
     UPROPERTY() TObjectPtr<USkeletalMeshComponent> Body;
@@ -85,5 +111,6 @@ private:
     bool bLocomotionPlaying = false;
     bool bSocialInteractionActive = false;
     ELLResidentWorkPresentationMode WorkPresentationMode = ELLResidentWorkPresentationMode::None;
+    ELLResidentHeldToolPresentation HeldToolPresentation = ELLResidentHeldToolPresentation::None;
     float DebugLogTimer = 0.0f;
 };
