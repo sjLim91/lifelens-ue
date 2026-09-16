@@ -4,7 +4,7 @@
 > Long-term order: `docs/DEVELOPMENT_MILESTONES.md`.
 > Durable design decisions: `docs/DECISION_LOG.md`.
 
-Last reconciled: 2026-09-16 KST after Observer Resident Detail Data v1 / PR #112 merge.
+Last reconciled: 2026-09-16 KST during World Obstacle Collision v1 / PR #114.
 
 ## Current main baseline
 
@@ -16,6 +16,42 @@ Latest functional checkpoints:
 - PR #112 — Observer Resident Detail Data v1 + authoritative Traits/Preferences: **MERGED** as `27ba0aa147fc38ad05cf388e9390dd2dcaccdf30`.
 
 Authority rule remains unchanged: Core/World owns simulation truth. UI/Character/Environment/WorldPresentation presents that truth and must not create a second authority.
+
+## Active branch checkpoint
+
+### World Obstacle Collision v1 — ACTIVE / PR #114
+
+Canonical contract: `docs/WORLD_OBSTACLE_COLLISION_v1.md`.
+
+Branch: `jjun/world-obstacle-collision-v1`.
+
+Purpose:
+- stop residents visibly clipping through generated tree trunks and non-trivial rocks;
+- preserve Core action/target/resource authority;
+- avoid changing Dagyeom-owned WorldPresentation render/culling source.
+
+Implementation:
+- hidden query-only HISM collision proxies mirror actual generated tree/rock presentation instances;
+- proxies block `ECC_Pawn` only and do not affect navigation generation;
+- tree trunks and meaningful rocks block; shrubs, grass and explicit `Pebble_*` meshes remain traversable;
+- `ALLResidentCharacter` preserves its existing `VInterpConstantTo` constant-speed frame step, sweeps that step, and spends only the **remaining** frame-distance budget on obstacle slide/side-step;
+- obstacle avoidance faces the direction actually travelled and does not alter Core target selection or action outcome authority.
+
+Ownership:
+- `ASSIST_LOCK-CHARACTER-OBSTACLE-1` is ACTIVE for `Source/LifeLens/Characters/LLResidentCharacter.cpp` only;
+- supporting collision adapter/runtime spawn lives in Jjun-owned World/Core paths;
+- `Source/LifeLens/WorldPresentation/**` remains unchanged.
+
+Validation status:
+- PR #114 Preflight #632 passed before the final movement-budget/pebble/document refinements;
+- final branch head requires fresh Preflight/Unreal Linux validation after those refinements;
+- this PR does not touch `Source/LifeLensCore/**`, so Core Tests are not path-triggered and are not a required PR gate;
+- PIE/device visual QA still must confirm no trunk/large-rock clipping, no stuck/jitter, no obstacle-avoidance speed burst, and correct facing.
+
+IR-D follow-up requirement:
+- authoritative Gather/Store `GridPos` remains the target locus;
+- when the corresponding visual has a blocking proxy, Character Presentation must use a truthful interaction radius outside the blocker rather than require the capsule to overlap the exact target centre;
+- the Core coordinate must never be moved or replaced to make presentation easier.
 
 ## Recently closed product checkpoints
 
@@ -91,9 +127,13 @@ Ownership closeout:
 
 ### Jjun lane
 
-Status: `OBSERVER DATA DONE / NEXT CORE-PRESENTATION CONTRACT PRIORITY READY`
+Status: `WORLD OBSTACLE COLLISION V1 ACTIVE / PR #114`
 
-Next canonical priority from the roadmap:
+Current task:
+- finish #114 final-head validation and visual collision contract closeout;
+- release `ASSIST_LOCK-CHARACTER-OBSTACLE-1` only after merge.
+
+Next canonical priority after #114:
 - **Social Communication & Localization** contract support where Core/Bridge changes are required.
 - keep Core identifiers language-neutral; Korean is presentation/localization behavior.
 - expose only real social action/event/outcome context; Presentation must not invent conversations or relationship changes.
@@ -102,19 +142,20 @@ After that, the major Core gap is **Emotion Runtime Integration**: neutral found
 
 ### Dagyeom lane
 
-Status: `IR-D CONTEXT MOTION CONSUMER WORK / OBSERVER UI NORMAL OWNERSHIP RESTORED`
+Status: `IR-D CONTEXT MOTION CONSUMER WORK / CHARACTER OBSTACLE ASSIST LOCK ACTIVE ON ONE FILE`
 
 Current facts:
 - IR-D provider contracts are merged through #103 and spatial authority #111.
 - Character Presentation can consume real Gather/Store target coordinates.
 - Dagyeom owns Context Motion Router/action-to-animation presentation.
+- while #114 is open, Jjun temporarily owns only `LLResidentCharacter.cpp` through `ASSIST_LOCK-CHARACTER-OBSTACLE-1`; normal Character ownership returns after merge.
 - Observer normal presentation maintenance is no longer locked by Jjun after #112.
 
 ### Android / device lane
 
 Status: `GATE B PENDING — NO CANONICAL SUCCESSFUL SEED CACHE YET`
 
-The split #108 workflow is ready, but this #112 work did **not** launch Android seed/full/fast validation. Do not describe device-baseline validation as already underway unless an actual workflow run is started and verified.
+The split #108 workflow is ready. Do not describe device-baseline validation as already underway unless an actual workflow run is started and verified.
 
 Canonical execution rule:
 1. Run `mode=seed` once when a fresh engine cache is required.
@@ -126,14 +167,17 @@ Do not run repeated expensive seed/full jobs blindly. Capture the exact failing 
 
 ## Current validation risk
 
-`OPEN PIE/APK VISUAL + DEVICE QA RISK — NOT A CORE/COMPILE BLOCKER`
+`OPEN PIE/APK VISUAL + DEVICE QA RISK — NOT A CORE AUTHORITY BLOCKER`
 
 Core/Preflight/Linux compile gates prove source integration, not final device presentation. The next real PIE/APK pass should confirm:
 - `/Game/Maps/LifeLensWorld` boots correctly.
 - four founders and generated-world presentation remain readable.
+- residents do not pass through tree trunks or meaningful rocks.
+- obstacle avoidance does not cause visible jitter, permanent stuck states, or speed bursts.
+- explicit pebbles/shrubs/grass remain traversable.
 - Android framing/safe area and Observer gestures feel correct.
 - Level 2 Needs/Personality/Traits/Skills/Preferences/Relationships/Family/Knowledge detail is readable.
-- Gather approaches the actual Core resource target.
+- Gather approaches the actual Core resource target using a valid interaction radius outside any blocking visual proxy.
 - Store uses the actual storage target once storage exists.
 - Sleep and Hygiene fallbacks visibly complete through UE execution/ACK.
 - the food/water provisioning deadlock does not reappear.
@@ -195,15 +239,16 @@ Required follow-up in Character Presentation:
 - privacy-first Toilet/outdoor sanitation sequence.
 - consume typed `Gather / Store / Experiment / Craft` data from #103.
 - consume authoritative Gather/Store spatial targets from #111.
+- treat Gather/Store target coordinates as authoritative target loci; where a solid visual/collision proxy blocks the exact centre, stop within an interaction radius outside the blocker and interact with the same Core target rather than shifting the target coordinate.
 
 ## Active blockers / locks
 
 - Formal Integration Requests: **IR-D open**; provider side DONE, presentation consumer belongs to Dagyeom.
-- Assist locks: **None**.
-- #112 Core/Preflight/Unreal compile blocker: **None — merged and validated**.
+- Assist locks: **ASSIST_LOCK-CHARACTER-OBSTACLE-1 ACTIVE** for #114.
+- #114 final-head Preflight/Unreal compile validation: **pending after final refinements**.
 - Android real-device baseline: **pending actual seed/APK execution**.
-- PIE/APK visual/input QA remains open but is not a Core/compile blocker.
+- PIE/APK visual/input/collision QA remains open but is not a Core authority blocker.
 
 ## Long compile rule
 
-When a long UE compile/package is started, record HEAD + Run ID and continue safe independent work. Do not restart a healthy run merely because the large Unreal image pull is slow. A successful compile is integration evidence; visual/input quality still requires PIE/APK validation.
+When a long UE compile/package is started, record HEAD + Run ID and continue safe independent work. The user reports compile/package completion; do not repeatedly poll a healthy long-running compile. Do not restart a healthy run merely because the large Unreal image pull is slow. A successful compile is integration evidence; visual/input quality still requires PIE/APK validation.
