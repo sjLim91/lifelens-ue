@@ -5,7 +5,6 @@
 #include "Core/LLTypes.h"
 #include "LLResidentCharacter.generated.h"
 
-class ULLDecisionComponent;
 class ULLResidentAppearanceComponent;
 class ULLResidentMotionComponent;
 class ULLResidentPresentationComponent;
@@ -44,9 +43,6 @@ public:
 
     UFUNCTION(BlueprintCallable, Category="LifeLens|Resident")
     void SetCurrentIntent(ELLActionIntent NewIntent) { CurrentIntent = NewIntent; }
-
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="LifeLens|AI")
-    TObjectPtr<ULLDecisionComponent> DecisionComponent;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="LifeLens|Presentation")
     TObjectPtr<ULLResidentAppearanceComponent> AppearanceComponent;
