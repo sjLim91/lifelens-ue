@@ -2,8 +2,12 @@
 #include "Characters/LLResidentAppearanceComponent.h"
 #include "Characters/LLResidentMotionComponent.h"
 #include "Characters/LLResidentPresentationComponent.h"
+#include "Simulation/LLCoreBridgeSubsystem.h"
+#include "Components/CapsuleComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
+#include "Engine/GameInstance.h"
 #include "UObject/ConstructorHelpers.h"
 
 namespace
@@ -162,8 +166,20 @@ void ALLResidentCharacter::Tick(float DeltaSeconds)
 
 void ALLResidentCharacter::BindResident(const FLLResidentData& ResidentData)
 {
+    const bool bIdentityChanged = ResidentId.IsValid() && ResidentId != ResidentData.ResidentId;
     ResidentId = ResidentData.ResidentId;
     ResidentDisplayName = FText::FromString(ResidentData.DisplayName);
+
+    if (bIdentityChanged)
+    {
+        // Actors should normally stay bound to one stable Core resident. Reset
+        // presentation caches defensively if pooling/rebinding is introduced.
+        bLifecyclePresentationInitialized = false;
+        LastLifecycleStageIndex = INDEX_NONE;
+        AdultCapsuleHalfHeight = 0.0f;
+        AdultCapsuleRadius = 0.0f;
+        AdultBodyScale = FVector::OneVector;
+    }
 
     if (NameLabel)
     {
@@ -171,16 +187,93 @@ void ALLResidentCharacter::BindResident(const FLLResidentData& ResidentData)
     }
 
     // Appearance is deterministic per ResidentId, so it can only be built once
-    // the identity is known. Both calls are idempotent and re-binding the same
-    // resident does not rebuild.
+    // the identity is known. Rebinding refreshes only lifecycle scale; identity,
+    // genetics, skin, hair and outfit are never rerolled.
     if (AppearanceComponent)
     {
         AppearanceComponent->EnsureBuilt();
+        RefreshLifecyclePresentation();
     }
     if (PresentationComponent)
     {
         PresentationComponent->OnResidentBound();
     }
+}
+
+void ALLResidentCharacter::RefreshLifecyclePresentation()
+{
+    if (!AppearanceComponent || !AppearanceComponent->HasBody() || !ResidentId.IsValid())
+    {
+        return;
+    }
+
+    UGameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+    ULLCoreBridgeSubsystem* Bridge = GameInstance
+        ? GameInstance->GetSubsystem<ULLCoreBridgeSubsystem>()
+        : nullptr;
+    if (!Bridge || !Bridge->IsCoreRunning())
+    {
+        return;
+    }
+
+    FLLCoreResidentObservation Observation;
+    if (!Bridge->GetResidentObservation(ResidentId, Observation) || !Observation.bAlive)
+    {
+        return;
+    }
+
+    UCapsuleComponent* Capsule = GetCapsuleComponent();
+    USkeletalMeshComponent* Body = AppearanceComponent->GetBodyComponent();
+    if (!Capsule || !Body)
+    {
+        return;
+    }
+
+    const int32 StageIndex = FMath::Clamp(static_cast<int32>(Observation.LifeStage), 0, 7);
+    const float StageFactor = ULLResidentAppearanceComponent::StageHeightFactor[StageIndex];
+
+    if (!bLifecyclePresentationInitialized)
+    {
+        AdultCapsuleHalfHeight = Capsule->GetUnscaledCapsuleHalfHeight();
+        AdultCapsuleRadius = Capsule->GetUnscaledCapsuleRadius();
+
+        const int32 BuiltStageIndex = FMath::Clamp(
+            static_cast<int32>(AppearanceComponent->GetInputs().LifeStage), 0, 7);
+        const float BuiltStageFactor = FMath::Max(
+            0.01f,
+            ULLResidentAppearanceComponent::StageHeightFactor[BuiltStageIndex]);
+        AdultBodyScale = Body->GetRelativeScale3D() / BuiltStageFactor;
+        bLifecyclePresentationInitialized = true;
+    }
+
+    if (LastLifecycleStageIndex == StageIndex)
+    {
+        return;
+    }
+
+    const float OldScaledHalfHeight = Capsule->GetScaledCapsuleHalfHeight();
+    const float GroundZ = GetActorLocation().Z - OldScaledHalfHeight;
+
+    const float NewRadius = FMath::Max(1.0f, AdultCapsuleRadius * StageFactor);
+    const float NewHalfHeight = FMath::Max(NewRadius, AdultCapsuleHalfHeight * StageFactor);
+    Capsule->SetCapsuleSize(NewRadius, NewHalfHeight, true);
+
+    const float NewScaledHalfHeight = Capsule->GetScaledCapsuleHalfHeight();
+    FVector NewActorLocation = GetActorLocation();
+    NewActorLocation.Z = GroundZ + NewScaledHalfHeight;
+    SetActorLocation(NewActorLocation, false, nullptr, ETeleportType::TeleportPhysics);
+
+    const FVector NewBodyScale = AdultBodyScale * StageFactor;
+    AppearanceComponent->ApplyLifecyclePresentationScale(NewScaledHalfHeight, NewBodyScale);
+    LastLifecycleStageIndex = StageIndex;
+
+    UE_LOG(LogTemp, Log,
+        TEXT("LifeLens lifecycle presentation: resident=%s stage=%d factor=%.2f capsule=(%.1f, %.1f)"),
+        *ResidentId.ToString(EGuidFormats::DigitsWithHyphens),
+        StageIndex,
+        StageFactor,
+        NewRadius,
+        NewHalfHeight);
 }
 
 void ALLResidentCharacter::SetMovementTarget(const FVector& TargetLocation)
