@@ -231,9 +231,12 @@ inline ParentingResult applyParentingAction(
 
     switch(action){
         case ParentingAction::Feed:
+            // Production consumes provisions only when the corresponding need
+            // is materially non-zero. Mirror that threshold here so care can
+            // never create a Need effect without consuming the matching item.
             child.needs.apply({
-                context.foodAvailable ? -0.58 : 0.0,
-                context.waterAvailable ? -0.42 : 0.0,
+                context.foodAvailable && child.needs.hunger>0.05 ? -0.58 : 0.0,
+                context.waterAvailable && child.needs.thirst>0.05 ? -0.42 : 0.0,
                 0.0,0.0,0.0});
             child.development.attachment+=0.018*careQuality;
             child.development.emotionalSecurity+=0.012*careQuality;
