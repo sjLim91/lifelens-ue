@@ -15,6 +15,7 @@ int main()
 {
     Simulation sim(9001);
     sim.setupSocialDemo();
+    sim.setExternalPhysicalExecution(true);
 
     const auto before = sim.observeAllResidents();
     assert(before.size() == 2);
@@ -39,16 +40,32 @@ int main()
 
     bool sawSocial = false;
     for (const auto& resident : active) {
-        if (resident.activityKind == ObservedActivityKind::Social) {
-            sawSocial = true;
-            assert(resident.socialIntent == SocialIntent::Approach ||
-                   resident.socialIntent == SocialIntent::Comfort ||
-                   resident.socialIntent == SocialIntent::Repair ||
-                   resident.socialIntent == SocialIntent::Avoid);
-            assert(resident.physicalGoal == Goal::Idle);
-            assert(resident.activityTargetId != 0);
-            assert(!resident.activityTargetName.empty());
+        if (resident.activityKind != ObservedActivityKind::Social) continue;
+
+        sawSocial = true;
+        assert(resident.socialIntent == SocialIntent::Approach ||
+               resident.socialIntent == SocialIntent::Comfort ||
+               resident.socialIntent == SocialIntent::Repair ||
+               resident.socialIntent == SocialIntent::Avoid);
+        assert(resident.physicalGoal == Goal::Idle);
+        assert(resident.activityTargetId != 0);
+        assert(!resident.activityTargetName.empty());
+
+        const PendingContextActionObservation pending =
+            sim.observePendingContextAction(resident.id);
+        assert(pending.active);
+        assert(pending.kind == ContextActionKind::Social);
+        assert(pending.token != 0);
+        assert(pending.targetResident == resident.activityTargetId);
+
+        GridPos targetPos{};
+        assert(sim.runtimePosition(pending.targetResident, targetPos));
+        GridPos resolved = targetPos;
+        if (pending.socialIntent == SocialIntent::Avoid) {
+            resolved.x += 1;
         }
+        assert(sim.completeExternalContextAction(
+            pending.actor, pending.token, resolved));
     }
     assert(sawSocial);
 
@@ -86,10 +103,10 @@ int main()
     assert(social.activityTargetId == 11);
     assert(social.activityTargetName == "Second");
 
-    // Social action uses a five-tick duration and must return to non-social state.
-    sim.runMinutes(4);
-    const auto afterDuration = sim.observeAllResidents();
-    for (const auto& resident : afterDuration) {
+    // Once the pending interaction is acknowledged, the authoritative read
+    // model must no longer report a social action for that resident.
+    const auto afterCompletion = sim.observeAllResidents();
+    for (const auto& resident : afterCompletion) {
         assert(resident.activityKind != ObservedActivityKind::Social);
     }
 
