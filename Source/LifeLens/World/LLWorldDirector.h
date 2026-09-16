@@ -20,6 +20,8 @@ struct FLLResidentRuntimeState
     bool bInitialized = false;
     bool bPerformingAction = false;
     float PhysicalUseElapsedSeconds = 0.0f;
+    int64 ActiveContextActionToken = 0;
+    float ContextUseElapsedSeconds = 0.0f;
     ELLCoreObservedActivityKind LastActivityKind = ELLCoreObservedActivityKind::Idle;
     ELLCorePhysicalIntent LastPhysicalIntent = ELLCorePhysicalIntent::None;
     ELLCoreSocialIntent LastSocialIntent = ELLCoreSocialIntent::None;
@@ -65,6 +67,11 @@ private:
     void CollectActivityAnchors();
     void SpawnResidents();
     void UpdateResident(ALLResidentCharacter& Character, float DeltaSeconds);
+    void ApplyPendingContextDirective(
+        ALLResidentCharacter& Character,
+        FLLResidentRuntimeState& Runtime,
+        const FLLCoreActionDirective& Directive,
+        float DeltaSeconds);
     void ApplyCoreDirective(
         ALLResidentCharacter& Character,
         FLLResidentRuntimeState& Runtime,
@@ -128,6 +135,12 @@ private:
 
     UPROPERTY(Config, EditAnywhere, Category="LifeLens|Time", meta=(ClampMin="0.1"))
     float RealSecondsPerSimulationMinute = 0.6f;
+
+    UPROPERTY(Config, EditAnywhere, Category="LifeLens|Action|Context", meta=(ClampMin="1.0"))
+    float ContextWorldTargetArrivalRadiusUU = 165.0f;
+
+    UPROPERTY(Config, EditAnywhere, Category="LifeLens|Action|Context", meta=(ClampMin="1.0"))
+    float ContextResidentArrivalRadiusUU = 130.0f;
 
     // Spatial contract between Unreal presentation and Core GridPos. The
     // default is shared with bootstrap ground and WorldPresentation so the
