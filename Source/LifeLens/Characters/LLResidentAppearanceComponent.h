@@ -2,13 +2,13 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Characters/LLResidentAppearanceInputs.h"
 #include "LLResidentAppearanceComponent.generated.h"
 
 class UAnimSequence;
 class UMaterialInstanceDynamic;
 class USkeletalMesh;
-class USkeletalMeshComponent;
 class UStaticMesh;
 class UStaticMeshComponent;
 class UTexture;
