@@ -42,8 +42,12 @@ inline bool validateWorldGenerationSnapshotState(const World& world)
                || node->material != patch.material
                || node->maxQuantity != patch.maxQuantity
                || node->quantity < 0 || node->quantity > node->maxQuantity
-               || node->renewable != patch.renewable
-               || node->regenerationPerDay != patch.regenerationPerDay) return false;
+               || node->renewable != patch.renewable) return false;
+            // The generated patch owns the immutable natural regeneration
+            // baseline. E3 may cache a weather-adjusted per-day rate on the
+            // live ResourceNode; that derived runtime value is intentionally
+            // allowed to differ from patch.regenerationPerDay and is already
+            // range-validated by the civilization snapshot validator.
         }
     }
     return foundInitial;
