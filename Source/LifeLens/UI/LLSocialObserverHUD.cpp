@@ -227,7 +227,12 @@ void ALLSocialObserverHUD::DrawSpeechBubbles(
                 / static_cast<float>(SpeechBubbleLifetimeMinutes + 1),
             0.25f,
             1.0f);
-        const FLinearColor BubbleColor(0.02f, 0.025f, 0.035f, 0.78f * Fade);
+        // Background and text fade independently. Multiplying both by Fade let
+        // an old bubble drop to 0.195 background alpha, at which point the
+        // generated-world vegetation shows through and the text stops being
+        // readable. The panel now stays close to opaque and only the text
+        // fades, so age still reads without costing legibility.
+        const FLinearColor BubbleColor(0.02f, 0.025f, 0.035f, 0.88f + 0.07f * Fade);
         FLinearColor TextColor = Event.PresentationLevel == ELLCoreSocialPresentationLevel::Important
             ? FLinearColor(1.0f, 0.88f, 0.68f, Fade)
             : FLinearColor(1.0f, 1.0f, 1.0f, Fade);
