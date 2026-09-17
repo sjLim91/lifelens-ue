@@ -45,6 +45,8 @@ lifelens_add_test(test_relationship)
 
 lifelens_add_test(test_emotion)
 
+lifelens_add_test(test_emotion_runtime)
+
 lifelens_add_test(test_memory)
 
 lifelens_add_test(test_belief)

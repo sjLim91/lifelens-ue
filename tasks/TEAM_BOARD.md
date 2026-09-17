@@ -64,7 +64,8 @@ A new blocker is triaged before unrelated follow-up work. This does **not** mean
 - Observer true scrolling remains a separate current-main task.
 
 ### Jjun — next provider milestone
-- **Emotion Runtime Integration v1**.
+- **Emotion Runtime Integration v1 — ACTIVE**.
+- branch: `jjun/emotion-runtime-integration-v1`.
 - no Assist Lock required for Core provider work.
 - if new presentation-only fields or motion states are needed, expose/extend a read/action contract first instead of editing Dagyeom UI/Character directly.
 

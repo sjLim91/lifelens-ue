@@ -7,6 +7,27 @@
 
 Last reconciled: **2026-09-17 KST after PR #130 merge**.
 
+## ACTIVE — Emotion Runtime Integration v1
+
+Owner: Jjun Core provider.
+Branch: `jjun/emotion-runtime-integration-v1`.
+
+Scope:
+- real need pressure and need resolution drive bounded emotion changes;
+- repeated action failure drives anger/anxiety;
+- civilization success/discovery drives joy/pride and failure drives distress;
+- existing environment, parenting, social and bereavement events remain authoritative inputs;
+- emotion may influence physical utility only within a strict bounded multiplier;
+- persistence and deterministic continuation are covered by Core tests.
+
+Current validation:
+- structural Preflight — PASS locally;
+- SimulationRuleset validator — PASS locally;
+- manual Core suite — 64/64 PASS before the final integration-test extension;
+- deterministic one-day harness — PASS.
+
+Next action: rerun the full Core suite, push the branch, open the milestone PR and run exact-head CI.
+
 ## Current main baseline
 
 Current `main`: `fb1842ad60c25f0054eb040f46d757340f65991c`.

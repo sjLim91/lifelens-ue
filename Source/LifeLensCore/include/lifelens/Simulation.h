@@ -193,7 +193,7 @@ private:
     SmartObject* objectById(ObjectId id);
     void beginPlan(Character& c,Runtime& r);
     void advanceAction(Character& c,Runtime& r);
-    void failPlan(Runtime& r);
+    void failPlan(Character& character,Runtime& r);
     void clearRuntimeActivity(Runtime& r);
     bool completeContextAction(Character& actor,Runtime& runtime,std::uint64_t token,GridPos resolvedPosition);
     bool tryCivilizationDecision(Character& c,Runtime& r);

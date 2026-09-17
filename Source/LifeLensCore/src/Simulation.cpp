@@ -1,6 +1,7 @@
 #include "lifelens/Simulation.h"
 #include "lifelens/FamilyProgression.h"
 #include "lifelens/InitialPopulation.h"
+#include "lifelens/EmotionRuntime.h"
 #include "lifelens/PrimitiveFireProgression.h"
 #include <algorithm>
 #include <array>
@@ -273,7 +274,17 @@ std::string Simulation::stamp() const{
 void Simulation::emit(const std::string& message){ const std::string line=stamp()+message; logs_.push_back(line); for(auto& cb:callbacks_) cb(line); }
 void Simulation::onEvent(EventCallback cb){ callbacks_.push_back(std::move(cb)); }
 SmartObject* Simulation::objectById(ObjectId id){ for(auto& o:world_.objects) if(o.id==id) return &o; return nullptr; }
-void Simulation::failPlan(Runtime& r){ r.plan.clear(); r.actionIndex=0; r.announced=false; r.pendingContext.clear(); r.socialActive=false; r.socialIntent=SocialIntent::None; r.socialTarget=0; r.civilizationActive=false; ++r.consecutiveFailures; if(r.consecutiveFailures>=3){r.penaltyUntilMinute=world_.minute+30;r.consecutiveFailures=0;} }
+void Simulation::failPlan(Character& character,Runtime& r){
+    r.plan.clear(); r.actionIndex=0; r.announced=false; r.pendingContext.clear();
+    r.socialActive=false; r.socialIntent=SocialIntent::None; r.socialTarget=0;
+    r.civilizationActive=false;
+    ++r.consecutiveFailures;
+    applyActionFailureEmotion(character,r.consecutiveFailures);
+    if(r.consecutiveFailures>=3){
+        r.penaltyUntilMinute=world_.minute+30;
+        r.consecutiveFailures=0;
+    }
+}
 void Simulation::clearRuntimeActivity(Runtime& r){
     r.goal=Goal::Idle;
     r.plan.clear();
@@ -392,7 +403,7 @@ void Simulation::beginPlan(Character& c,Runtime& r){
     if(chosen==r.lastGoal){ ++r.repeatCount; } else { r.lastGoal=chosen; r.repeatCount=1; }
     if(r.repeatCount>=5){ chosen=Goal::Idle; r.repeatCount=0; }
     r.goal=chosen; r.plan=buildPlan(world_,c,chosen,r.pos); r.actionIndex=0; r.announced=false;
-    if(r.plan.empty()){ failPlan(r); return; }
+    if(r.plan.empty()){ failPlan(c,r); return; }
     std::ostringstream s; s<<c.name<<" -> "<<goalName(chosen)<<" (need "<<std::fixed<<std::setprecision(2)<<needForGoal(c,chosen)<<")"; emit(s.str());
 }
 
@@ -409,16 +420,24 @@ void Simulation::advanceAction(Character& c,Runtime& r){
     switch(a.type){
         case ActionType::FindObject: ++r.actionIndex; r.announced=false; break;
         case ActionType::Reserve:
-            if(!obj || (obj->reservedBy && *obj->reservedBy!=c.id)){ failPlan(r); return; }
+            if(!obj || (obj->reservedBy && *obj->reservedBy!=c.id)){ failPlan(c,r); return; }
             obj->reservedBy=c.id; ++r.actionIndex; r.announced=false; break;
         case ActionType::MoveTo:
             if(--a.remainingTicks<=0){ if(obj) r.pos=obj->pos; ++r.actionIndex; r.announced=false; } break;
         case ActionType::Use:
-            if(!obj){ failPlan(r); return; }
+            if(!obj){ failPlan(c,r); return; }
+            {
+            const Needs before=c.needs;
             c.needs.apply(obj->effectPerTick);
+            applyNeedResolutionEmotion(c,before,r.goal);
+            }
             if(--a.remainingTicks<=0){ ++r.actionIndex; r.announced=false; } break;
         case ActionType::EmergencyUse:
+            {
+            const Needs before=c.needs;
             c.needs.apply(emergencyUseEffectPerTick(r.goal));
+            applyNeedResolutionEmotion(c,before,r.goal);
+            }
             if(--a.remainingTicks<=0){
                 if(r.goal==Goal::UseToilet){
                     r.pos=deterministicOutdoorReliefPosition(world_.seed,c.id,r.pos);
@@ -919,6 +938,7 @@ void Simulation::step(){
         }
 
         c.needs.decay(ruleset_.needs,c.metabolism,c.sleepTendency);
+        advanceEmotionOneMinute(c);
         if(requiresDirectCare(c.lifeStage)){
             clearRuntimeActivity(r);
             continue;
