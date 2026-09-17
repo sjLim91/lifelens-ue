@@ -15,7 +15,8 @@ enum class ContextActionKind {
     None,
     Social,
     Civilization,
-    Parenting
+    Parenting,
+    KnowledgeTeaching
 };
 
 struct PendingContextAction {
@@ -28,6 +29,10 @@ struct PendingContextAction {
     CharacterId parentingTarget=0;
     ParentingAction parentingAction=ParentingAction::Comfort;
     ParentingContext parentingContext{};
+
+    CharacterId knowledgeTeachingTarget=0;
+    TechniqueId knowledgeTeachingTechnique=TechniqueId::None;
+    double knowledgeTeachingScore=0.0;
 
     bool hasSpatialTarget=false;
     GridPos targetPos{};
@@ -79,6 +84,7 @@ inline int contextActionTimeoutMinutes(ContextActionKind kind)
     switch(kind){
         case ContextActionKind::Social: return 45;
         case ContextActionKind::Parenting: return 45;
+        case ContextActionKind::KnowledgeTeaching: return 45;
         case ContextActionKind::Civilization: return 120;
         case ContextActionKind::None:
         default: return 0;
@@ -90,6 +96,8 @@ inline int contextActionDurationTicks(const PendingContextAction& action)
     switch(action.kind){
         case ContextActionKind::Social:
             return action.social.intent==SocialIntent::Avoid ? 1 : 3;
+        case ContextActionKind::KnowledgeTeaching:
+            return 6;
         case ContextActionKind::Parenting:
             switch(action.parentingAction){
                 case ParentingAction::Feed: return 3;
@@ -348,6 +356,10 @@ inline PendingContextActionObservation observePendingContextAction(
         case ContextActionKind::Parenting:
             result.parentingAction=pending.parentingAction;
             result.targetResident=pending.parentingTarget;
+            break;
+        case ContextActionKind::KnowledgeTeaching:
+            result.targetResident=pending.knowledgeTeachingTarget;
+            result.technique=pending.knowledgeTeachingTechnique;
             break;
         case ContextActionKind::None:
         default:
