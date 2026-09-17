@@ -166,13 +166,29 @@ void ALLObserverPlayerController::HandleMouseWheel(float AxisValue)
         return;
     }
 
+    float MouseX = 0.0f;
+    float MouseY = 0.0f;
+    if (GetMousePosition(MouseX, MouseY))
+    {
+        int32 ViewportX = 0;
+        int32 ViewportY = 0;
+        GetViewportSize(ViewportX, ViewportY);
+        if (ALLObserverHUD* ObserverHUD = GetHUD<ALLObserverHUD>();
+            ObserverHUD && ObserverHUD->HandleDetailScrollWheel(
+                FVector2D(MouseX, MouseY), AxisValue, FVector2D(ViewportX, ViewportY)))
+        {
+            return;
+        }
+    }
+
     EnsureCameraInitialized();
     if (!bCameraInitialized)
     {
         return;
     }
 
-    // Positive wheel = zoom in, negative = zoom out.
+    // Positive wheel = zoom in, negative = zoom out when the cursor is not
+    // over LEVEL 2 scroll content.
     const float PerNotchScale = FMath::Clamp(1.0f - MouseWheelZoomFraction, 0.2f, 0.99f);
     ZoomByScale(FMath::Pow(PerNotchScale, AxisValue));
 }
@@ -287,12 +303,29 @@ void ALLObserverPlayerController::HandleTouchPressed(ETouchIndex::Type FingerInd
         bTouchGesture = false;
         bTouchHadSecondFinger = false;
         bTwoFingerActive = false;
+        bHUDDetailScrollTouchActive = false;
         TouchStart1 = Position;
         LastTouch1 = Position;
         LastTouch2 = FVector2D::ZeroVector;
+
+        int32 ViewportX = 0;
+        int32 ViewportY = 0;
+        GetViewportSize(ViewportX, ViewportY);
+        if (ALLObserverHUD* ObserverHUD = GetHUD<ALLObserverHUD>();
+            ObserverHUD && ObserverHUD->BeginDetailScrollDrag(Position, FVector2D(ViewportX, ViewportY)))
+        {
+            bHUDDetailScrollTouchActive = true;
+            bTouchGesture = true;
+        }
     }
     else if (FingerIndex == ETouchIndex::Touch2 && bTouch1Tracked)
     {
+        if (bHUDDetailScrollTouchActive)
+        {
+            bTouchHadSecondFinger = true;
+            return;
+        }
+
         bTouchHadSecondFinger = true;
         bTouchGesture = true;
         bTwoFingerActive = true;
@@ -304,6 +337,12 @@ void ALLObserverPlayerController::HandleTouchReleased(ETouchIndex::Type FingerIn
 {
     if (FingerIndex == ETouchIndex::Touch2)
     {
+        if (bHUDDetailScrollTouchActive)
+        {
+            bTouchHadSecondFinger = true;
+            return;
+        }
+
         bTouchHadSecondFinger = true;
         bTouchGesture = true;
         bTwoFingerActive = false;
@@ -316,9 +355,19 @@ void ALLObserverPlayerController::HandleTouchReleased(ETouchIndex::Type FingerIn
     }
 
     const FVector2D ReleasePosition(Location.X, Location.Y);
+    const bool bWasHUDDetailScrollTouchActive = bHUDDetailScrollTouchActive;
+    if (bWasHUDDetailScrollTouchActive)
+    {
+        if (ALLObserverHUD* ObserverHUD = GetHUD<ALLObserverHUD>())
+        {
+            ObserverHUD->EndDetailScrollDrag();
+        }
+    }
+
     const bool bReleaseStayedWithinTapThreshold =
         (ReleasePosition - TouchStart1).Size() <= TouchDragThresholdPixels();
     const bool bTap = bTouch1Tracked
+        && !bWasHUDDetailScrollTouchActive
         && !bTouchGesture
         && !bTouchHadSecondFinger
         && bReleaseStayedWithinTapThreshold;
@@ -337,6 +386,7 @@ void ALLObserverPlayerController::HandleTouchReleased(ETouchIndex::Type FingerIn
     bTouchGesture = false;
     bTouchHadSecondFinger = false;
     bTwoFingerActive = false;
+    bHUDDetailScrollTouchActive = false;
 
     if (bTap)
     {
@@ -369,6 +419,19 @@ void ALLObserverPlayerController::UpdateTouchCameraInput()
         bTouch1Tracked = true;
         TouchStart1 = Current1;
         LastTouch1 = Current1;
+    }
+
+    if (bHUDDetailScrollTouchActive)
+    {
+        int32 ViewportX = 0;
+        int32 ViewportY = 0;
+        GetViewportSize(ViewportX, ViewportY);
+        if (ALLObserverHUD* ObserverHUD = GetHUD<ALLObserverHUD>())
+        {
+            ObserverHUD->UpdateDetailScrollDrag(Current1, FVector2D(ViewportX, ViewportY));
+        }
+        LastTouch1 = Current1;
+        return;
     }
 
     if (bTouch2Pressed)

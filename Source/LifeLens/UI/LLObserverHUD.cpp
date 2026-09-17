@@ -32,6 +32,7 @@ namespace
     constexpr float PadY             = 8.0f;
     constexpr float LineGap          = 6.0f;
     constexpr float SectionGap       = 12.0f;
+    constexpr float DetailWheelStep  = 64.0f;
 
     constexpr float PanelMaxWidth    = 360.0f;
     constexpr float PanelMinWidth    = 200.0f;
@@ -180,6 +181,15 @@ float ALLObserverHUD::ComputeUIScale() const
     }
     const float ShortSide = FMath::Min(Canvas->ClipX, Canvas->ClipY);
     return FMath::Clamp(ShortSide / 540.0f, 1.0f, 2.5f);
+}
+
+void ALLObserverHUD::ResetDetailScroll()
+{
+    DetailScrollOffset = 0.0f;
+    DetailScrollMax = 0.0f;
+    LastDetailScrollDragY = 0.0f;
+    bDetailScrollDragging = false;
+    DetailContentRect = FBox2D(ForceInit);
 }
 
 ULLObservationSubsystem* ALLObserverHUD::GetObservation() const
@@ -344,6 +354,63 @@ FVector2D ALLObserverHUD::ViewportToCanvas(const FVector2D& ViewportPosition, co
     return ViewportPosition;
 }
 
+bool ALLObserverHUD::HandleDetailScrollWheel(const FVector2D& InScreenPosition, float WheelDelta, const FVector2D& ViewportSize)
+{
+    ULLObservationSubsystem* Observation = GetObservation();
+    if (!Observation || Observation->GetObservationLevel() != ELLObservationLevel::Detail)
+    {
+        return false;
+    }
+
+    const FVector2D ScreenPosition = ViewportToCanvas(InScreenPosition, ViewportSize);
+    if (!RectContains(DetailContentRect, ScreenPosition))
+    {
+        return false;
+    }
+
+    const float Step = DetailWheelStep * ComputeUIScale();
+    DetailScrollOffset = FMath::Clamp(DetailScrollOffset - WheelDelta * Step, 0.0f, DetailScrollMax);
+    return true;
+}
+
+bool ALLObserverHUD::BeginDetailScrollDrag(const FVector2D& InScreenPosition, const FVector2D& ViewportSize)
+{
+    ULLObservationSubsystem* Observation = GetObservation();
+    if (!Observation || Observation->GetObservationLevel() != ELLObservationLevel::Detail)
+    {
+        return false;
+    }
+
+    const FVector2D ScreenPosition = ViewportToCanvas(InScreenPosition, ViewportSize);
+    if (!RectContains(DetailContentRect, ScreenPosition))
+    {
+        return false;
+    }
+
+    bDetailScrollDragging = true;
+    LastDetailScrollDragY = ScreenPosition.Y;
+    return true;
+}
+
+bool ALLObserverHUD::UpdateDetailScrollDrag(const FVector2D& InScreenPosition, const FVector2D& ViewportSize)
+{
+    if (!bDetailScrollDragging)
+    {
+        return false;
+    }
+
+    const FVector2D ScreenPosition = ViewportToCanvas(InScreenPosition, ViewportSize);
+    const float DeltaY = LastDetailScrollDragY - ScreenPosition.Y;
+    LastDetailScrollDragY = ScreenPosition.Y;
+    DetailScrollOffset = FMath::Clamp(DetailScrollOffset + DeltaY, 0.0f, DetailScrollMax);
+    return true;
+}
+
+void ALLObserverHUD::EndDetailScrollDrag()
+{
+    bDetailScrollDragging = false;
+}
+
 bool ALLObserverHUD::HandleTap(const FVector2D& InScreenPosition, const FVector2D& ViewportSize)
 {
     ULLObservationSubsystem* Observation = GetObservation();
@@ -359,6 +426,7 @@ bool ALLObserverHUD::HandleTap(const FVector2D& InScreenPosition, const FVector2
         case ELLObservationLevel::Detail:
             if (RectContains(DetailBackRect, ScreenPosition))
             {
+                ResetDetailScroll();
                 Observation->CloseDetail();
                 return true;
             }
@@ -366,7 +434,12 @@ bool ALLObserverHUD::HandleTap(const FVector2D& InScreenPosition, const FVector2
             {
                 if (RectContains(DetailTabRects[Index], ScreenPosition))
                 {
-                    ActiveTab = static_cast<ELLDetailTab>(Index);
+                    const ELLDetailTab NewTab = static_cast<ELLDetailTab>(Index);
+                    if (NewTab != ActiveTab)
+                    {
+                        ActiveTab = NewTab;
+                        ResetDetailScroll();
+                    }
                     return true;
                 }
             }
@@ -376,6 +449,7 @@ bool ALLObserverHUD::HandleTap(const FVector2D& InScreenPosition, const FVector2
             if (RectContains(QuickInspectorRect, ScreenPosition))
             {
                 ActiveTab = ELLDetailTab::Overview;
+                ResetDetailScroll();
                 Observation->OpenDetail();
                 return true;
             }
@@ -406,6 +480,7 @@ void ALLObserverHUD::DrawHUD()
     QuickInspectorRect = FBox2D(ForceInit);
     DetailPanelRect = FBox2D(ForceInit);
     DetailBackRect = FBox2D(ForceInit);
+    DetailContentRect = FBox2D(ForceInit);
     for (FBox2D& Rect : DetailTabRects)
     {
         Rect = FBox2D(ForceInit);
@@ -444,6 +519,10 @@ void ALLObserverHUD::DrawHUD()
     UpdateFeedbackState(Observation);
 
     const bool bDetailOpen = bHasSelection && Observation->IsDetailOpen();
+    if (!bDetailOpen)
+    {
+        ResetDetailScroll();
+    }
     const float OverviewBottom = DrawOverview(*Simulation, Residents, UIScale, !bHasSelection, bDetailOpen);
 
     if (CVarLLDebugTapTargets.GetValueOnGameThread() > 0)
@@ -792,6 +871,7 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
     {
         LastDetailResidentId = Resident.ResidentId;
         ActiveTab = ELLDetailTab::Overview;
+        ResetDetailScroll();
     }
 
     const float NameScale    = 1.15f * UIScale;
@@ -1304,31 +1384,50 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
         DetailTabRects[static_cast<int32>(Box.Tab)] = FBox2D(FVector2D(BoxX, BoxY), FVector2D(BoxX + BoxW, BoxY + BoxH));
     }
 
-    float CursorY = TabBarTop + TabBarHeight + Gap;
+    const float ContentTop = TabBarTop + TabBarHeight + Gap;
     const float PanelBottom = PanelY + PanelHeight - Pad;
-    const FString EllipsisText(LLObserverMobilePolishText::Ellipsis);
-    float EllipsisW = 0.0f, EllipsisH = 0.0f;
-    GetTextSize(EllipsisText, EllipsisW, EllipsisH, Font, RowScale);
+    const float ContentViewportHeight = FMath::Max(0.0f, PanelBottom - ContentTop);
+    DetailScrollMax = FMath::Max(0.0f, ContentHeight - ContentViewportHeight);
+    DetailScrollOffset = FMath::Clamp(DetailScrollOffset, 0.0f, DetailScrollMax);
+    if (ContentViewportHeight > 0.0f)
+    {
+        DetailContentRect = FBox2D(FVector2D(PanelX, ContentTop), FVector2D(PanelX + PanelWidth, PanelBottom));
+    }
+    else
+    {
+        DetailContentRect = FBox2D(ForceInit);
+    }
 
-    bool bClipped = false;
+    float CursorY = ContentTop - DetailScrollOffset;
     for (const FLine& Line : Lines)
     {
         CursorY += Line.GapBefore;
-        if (CursorY + Line.Height > PanelBottom)
+        const float LineTop = CursorY;
+        const float LineBottom = LineTop + Line.Height;
+        if (LineTop >= ContentTop && LineBottom <= PanelBottom)
         {
-            bClipped = true;
-            break;
+            DrawText(Line.Left, Faded(Line.LeftColor), TextX, LineTop, Font, Line.Scale, false);
+            if (!Line.Right.IsEmpty())
+            {
+                DrawText(Line.Right, Faded(Line.RightColor), TextX + RightColumnX, LineTop, Font, Line.Scale, false);
+            }
         }
-        DrawText(Line.Left, Faded(Line.LeftColor), TextX, CursorY, Font, Line.Scale, false);
-        if (!Line.Right.IsEmpty())
-        {
-            DrawText(Line.Right, Faded(Line.RightColor), TextX + RightColumnX, CursorY, Font, Line.Scale, false);
-        }
-        CursorY += Line.Height + Gap;
+        CursorY = LineBottom + Gap;
     }
 
-    if (bClipped && PanelBottom - EllipsisH >= TabBarTop + TabBarHeight)
+    if (DetailScrollMax > KINDA_SMALL_NUMBER && ContentViewportHeight > 0.0f)
     {
-        DrawText(EllipsisText, Faded(TextMuted), TextX, PanelBottom - EllipsisH, Font, RowScale, false);
+        const float TrackWidth = FMath::Max(2.0f, 2.0f * UIScale);
+        const float TrackX = PanelX + PanelWidth - TrackWidth - 2.0f * UIScale;
+        const float TrackHeight = ContentViewportHeight;
+        DrawRect(Faded(FLinearColor(0.65f, 0.70f, 0.78f, 0.22f)), TrackX, ContentTop, TrackWidth, TrackHeight);
+
+        const float ThumbHeight = FMath::Clamp(
+            TrackHeight * (ContentViewportHeight / FMath::Max(ContentHeight, ContentViewportHeight)),
+            FMath::Min(24.0f * UIScale, TrackHeight),
+            TrackHeight);
+        const float Travel = FMath::Max(0.0f, TrackHeight - ThumbHeight);
+        const float ThumbY = ContentTop + Travel * (DetailScrollOffset / DetailScrollMax);
+        DrawRect(Faded(FLinearColor(0.78f, 0.86f, 1.0f, 0.72f)), TrackX, ThumbY, TrackWidth, ThumbHeight);
     }
 }

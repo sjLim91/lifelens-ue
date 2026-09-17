@@ -55,6 +55,17 @@ public:
     // can add chrome without bypassing the controller's single HUD hit-test.
     virtual bool HandleTap(const FVector2D& ScreenPosition, const FVector2D& ViewportSize = FVector2D::ZeroVector);
 
+    // LEVEL 2 scrolling input. The HUD owns scroll offset and content hit-test;
+    // the player controller only routes wheel / one-finger drag events. This
+    // keeps camera controls from firing underneath an actively used panel.
+    virtual bool HandleDetailScrollWheel(const FVector2D& ScreenPosition, float WheelDelta,
+        const FVector2D& ViewportSize = FVector2D::ZeroVector);
+    virtual bool BeginDetailScrollDrag(const FVector2D& ScreenPosition,
+        const FVector2D& ViewportSize = FVector2D::ZeroVector);
+    virtual bool UpdateDetailScrollDrag(const FVector2D& ScreenPosition,
+        const FVector2D& ViewportSize = FVector2D::ZeroVector);
+    virtual void EndDetailScrollDrag();
+
     // Safe-area insets in canvas pixels: normal LifeLens margin plus the
     // platform title-safe padding (camera cutout, rounded corners, gesture bar).
     struct FSafeInsets
@@ -88,6 +99,7 @@ public:
 private:
     // Uniform scale so text stays readable on phones and desktops alike.
     float ComputeUIScale() const;
+    void ResetDetailScroll();
 
     // LEVEL 0. Returns the Y just below the drawn overview. The selection hint is
     // only drawn when nothing is selected. bDimStrip de-emphasizes the strip
@@ -136,11 +148,18 @@ private:
     FBox2D QuickInspectorRect;
     FBox2D DetailPanelRect;
     FBox2D DetailBackRect;
+    FBox2D DetailContentRect;
     FBox2D DetailTabRects[DetailTabCount];
 
     ELLDetailTab ActiveTab = ELLDetailTab::Overview;
     FGuid LastDetailResidentId;
     bool bWorldOverviewOpen = false;
+
+    // LEVEL 2 presentation-only scrolling state. It never modifies Core data.
+    float DetailScrollOffset = 0.0f;
+    float DetailScrollMax = 0.0f;
+    float LastDetailScrollDragY = 0.0f;
+    bool bDetailScrollDragging = false;
 
     // Presentation-only feedback state.
     ELLObservationLevel LastLevel = ELLObservationLevel::World;
