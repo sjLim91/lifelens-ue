@@ -1,238 +1,130 @@
 # LifeLens Canonical Work State
 
 > Actual GitHub `main` / PR / Actions is the highest-priority truth.
-> Long-term order: `docs/DEVELOPMENT_MILESTONES.md`.
-> Detailed 2026-09-17 audit: `docs/INTEGRATED_AUDIT_2026-09-17.md`.
-> Ownership/locks/IR: `tasks/TEAM_BOARD.md`.
-> Durable design decisions: `docs/DECISION_LOG.md`.
+> Canonical roadmap: `docs/DEVELOPMENT_MILESTONES.md`.
+> Ownership / locks / IR: `tasks/TEAM_BOARD.md`.
+> Point-in-time audit: `docs/INTEGRATED_AUDIT_2026-09-17.md`.
 
-Last reconciled: **2026-09-17 KST after integrated Jjun + Dagyeom audit**.
+Last reconciled: **2026-09-17 KST after PR #130 merge**.
 
 ## Current main baseline
 
-Current functional baseline:
-- PR #115 — Lifecycle Core Correctness v1 — DONE.
-- PR #116 — Action Completion Unification v1 — DONE.
-- PR #117 — Social Communication & Localization v1 — DONE.
-- PR #118 — PrimitiveStorage / Facilities-Tools-Technology v1 — DONE.
-- PR #119 — Tool Effectiveness + held tool presentation — DONE.
-- PR #120 — DiggingStick / StoneHammer — DONE.
-- PR #121 — Fire / Heat / FirePit v1 — DONE.
-- PR #122 — Furnace / Copper Smelting v1 — DONE.
-- PR #123 — World / Facility / Obstacle Authority Normalization v1 — DONE.
-- PR #124 — Legacy Authority Removal v1 — DONE.
-- PR #125 — Lifecycle Presentation v1 — DONE, merged as `e6e005ba1180a4152476ab9b7a19ad9953c07287`.
+Current `main`: `fb1842ad60c25f0054eb040f46d757340f65991c`.
 
-Authority rule remains unchanged:
+Recent completed checkpoints:
+- #115 Lifecycle Core Correctness v1 — DONE.
+- #116 Action Completion Unification v1 — DONE.
+- #117 Social Communication & Localization v1 — DONE.
+- #118~#122 Facilities / Tools / Fire / Furnace / Copper — DONE.
+- #123 World / Facility / Obstacle Authority Normalization — DONE.
+- #124 Legacy Authority Removal v1 — DONE.
+- #125 Lifecycle Presentation v1 — DONE.
+- #126 Social speech-bubble readability — DONE, merge `32ef9e31eb3af9c47d08ac78f591c0bf60f3421a`.
+- #127 Integrated audit / canonical roadmap reconciliation — DONE, merge `44fe94efaed01ca5fd4250d5f17d9bcbf27b2699`.
+- #128 Mac editor `-Wshadow` unblocker — DONE, merge `7aaac203af35ab806ee8dcebf49bacc13a22b08a`.
+- #130 Knowledge Transmission Spatial Authority v1 — DONE, merge `fb1842ad60c25f0054eb040f46d757340f65991c`.
 
-> Core / World owns simulation truth. UI / Character / Environment / WorldPresentation is a read-only presentation consumer and must not create a second authority.
+Authority rule:
 
-## What #125 closed
+> Core / World owns simulation truth. UI / Character / WorldPresentation consumes authoritative contracts and must not invent outcomes.
 
-Lifecycle Presentation v1 now provides:
-- living-only physical compatibility projection;
-- deceased actor/runtime/reservation cleanup through existing WorldDirector reconciliation;
-- LifeStage-driven body scale synchronization;
-- capsule radius/half-height synchronization;
-- ground-preserving capsule resize;
-- identity/genetics/appearance seed preservation across growth.
+## #130 closed — Knowledge Transmission Spatial Authority v1
 
-Known v1 limitation:
-- Quaternius adult skeleton is uniformly scaled for younger stages. This is functional stage presentation, not final child anatomy quality.
+Delivered:
+- technique witness eligibility is limited to residents within 2 Core grid cells of the completed civilization work position;
+- hourly remote `teachTechnique()` application is removed;
+- `ContextActionKind::KnowledgeTeaching` carries teacher, learner and technique through the same completion-aware interaction chain;
+- external physical execution requires teacher movement to the learner, talking presentation and Core ACK before teaching applies;
+- World follows the live learner actor while moving, then Core revalidates runtime proximity at ACK;
+- wrong token and far ACK are rejected;
+- target and technique are revalidated at completion;
+- pending teaching is not persisted, so Save/Load cannot replay stale teaching;
+- headless simulation still completes through the same ContextAction completion path for deterministic tests.
 
-## Current active external work
+Exact-head validation for `3d42c407140266557ba52256af28e4ccb82dca93`:
+- Preflight #715 — PASS.
+- Core Tests #664 — PASS.
+- Unreal Linux Compile #203 — PASS.
 
-### Dagyeom PR #100 — World Readability Envelope — ACTIVE
+## Dagyeom work
+
+### PR #100 — World Readability Envelope — ACTIVE / FINAL CLOSEOUT
 
 Branch: `dagyeom/world-visual-readability-envelope`.
+Current head: `62b191a6afb2c0c5ae32ddbb1e0ae7876ae00556`.
 
-Status:
-- valid current-main work; base is #125 main.
-- WorldPresentation-only.
-- Core target/resource authority unchanged.
-- replaces one simple start clear radius with a settlement readability envelope.
+Current status:
+- mergeable with current repository state at last check;
+- exact-head Preflight #707 — PASS;
+- exact-head Unreal Linux Compile #200 — PASS;
+- Mac editor rebuild blocker was removed by merged PR #128;
+- remaining closeout is Dagyeom Mac PIE visual confirmation / final merge decision;
+- WorldPresentation-only; Core resource/action authority is unchanged.
 
-Rule:
-- merge only after latest exact-head required CI passes.
-- PIE/device visual feel is separate quality evidence, not a Core authority blocker.
+Do not merge merely to clear the queue if Dagyeom still needs the final visual check.
 
-### Dagyeom PR #98 — STALE / DO NOT MERGE AS-IS
+### PR #98 — STALE / SELECTIVE SALVAGE ONLY
 
-Branch: `dagyeom/observer-readability-and-qa-view`.
+Do **not** merge this old branch wholesale.
+Still-useful ideas may be reimplemented on latest main:
+- Observer panel readability tuning;
+- QA-only resident framing helpers;
+- true Observer Detail scrolling remains a current gap.
 
-Status:
-- old base; do not merge the branch wholesale.
-- selectively salvage valid ideas on current main only.
+## Administrative state
 
-Still-useful ideas:
-- denser Observer panel readability tuning.
-- debug-only resident framing helpers.
-
-Main gap that still remains:
-- Observer Detail overflow is not real scrolling.
-
-## Android / device lane
-
-Status: **PAUSED BY USER — 2026-09-17**.
-
-The Gate B roadmap remains valid, but no Android seed/full/fast build should be started until the user resumes this lane.
-
-Do not delete the gate from the roadmap. Do not burn long CI time on it while paused.
+Canonical document reconciliation is complete through #130.
+- `ASSIST_LOCK-LIFECYCLE-PRESENTATION-1` — RELEASED.
+- Current Assist Lock count — 0.
+- Open Integration Requests — 0 at last checkpoint.
+- Android Gate B — **PAUSED BY USER**; keep it in the roadmap but do not run Android builds until explicitly resumed.
+- old PR #129 is superseded by the post-#130 live-state reconciliation branch and should not be merged independently.
 
 ## Unified next work order
 
-This is one integrated roadmap. Jjun and Dagyeom keep separate ownership lanes but do not maintain separate schedules.
+One roadmap, parallel ownership lanes:
 
-### 0. Canonical docs reconciliation — CURRENT ADMINISTRATIVE CLOSEOUT
+1. **Dagyeom #100 closeout** — final Mac PIE confirmation, then merge if visually acceptable.
+2. **Character Context Motion v2 — Dagyeom** — consume authoritative ContextAction targets; improve PickUp/Carry, Dig/Strike, Craft/Build/Fire/Smelt, Parenting, sanitation, sitting/lying only where real facilities support it.
+3. **Emotion Runtime Integration v1 — Jjun** — wire existing Core emotion model to real Needs, outcome, environment, family/loss and civilization events; bounded utility effects only.
+4. **Observer Readability + Real Scrolling — Dagyeom** — current-main implementation, selective #98 salvage only.
+5. **Lifecycle Event Presentation v2 — Dagyeom** — birth/growth/death/history visibility from Core DTOs.
+6. **Civilization Phase 2 — Jjun -> Dagyeom** — SleepingPlace, Shelter, WorkSurface, facility effects, Tin/Bronze progression; no free infrastructure.
+7. **Cleanup + long-run performance — Jjun** — legacy source/check cleanup, catch-up frame budget, residue/HISM profiling.
+8. **Health / disease / premature mortality**.
+9. **Migration / multiple settlements / economy / society**.
+10. **Android Gate B — PAUSED** until explicit user resume.
 
-- update `WORK_STATE` through #125;
-- update `DEVELOPMENT_MILESTONES` through #125;
-- release `ASSIST_LOCK-LIFECYCLE-PRESENTATION-1`;
-- record integrated audit findings;
-- establish one parallel execution order.
+## Cross-lane coordination checkpoints
 
-### 1. Dagyeom PR #100 closeout
+Jjun checks Dagyeom-side open PRs, new comments/review requests and `TEAM_BOARD` Integration Requests:
+- before starting a new Jjun work unit;
+- after completing or merging a Jjun work unit;
+- when entering a long Unreal/CI wait;
+- when returning to handle a long Unreal/CI result;
+- before a main-changing merge or rebase.
 
-- exact-head CI pass;
-- review/merge if clean;
-- no Core changes.
+A new Dagyeom blocker is triaged before unrelated follow-up work. This is independent from build polling: never repeatedly query or restart a healthy long build merely to perform coordination checks.
 
-### 2. Knowledge Transmission Spatial Authority v1 — Jjun
+## Open audit findings
 
-Current defect:
-- technique witness/teaching can occur without a real physical encounter.
-
-Required:
-- discovery witness requires spatial proximity/encounter;
-- teaching requires real approach/meeting/context completion;
-- no remote settlement telepathy;
-- deterministic tests.
-
-### 3. Character Context Motion v2 — Dagyeom
-
-Current state:
-- Core/World ContextAction target + ACK chain is authoritative and merged.
-- presentation modes are still broad `Interact/Gather/Build` fallbacks.
-
-Next:
-- Sit/Stand/Lie/Wake;
-- PickUp/Carry/Use;
-- Cut/Chop/Dig/Strike;
-- Craft/Build/Fire/Smelt;
-- Parenting care;
-- sanitation interactions;
-- use existing Quaternius animations before adding new assets.
-
-### 4. Observer Readability + Real Scrolling — Dagyeom
-
-- true detail scrolling;
-- generated-world panel readability;
-- selective #98 salvage only;
-- keep debug camera helpers separate from production observer framing.
-
-### 5. Emotion Runtime Integration v1 — Jjun provider + Dagyeom consumer
-
-Core already owns the emotion model. Connect real events:
-- need pressure/relief;
-- success/failure/frustration;
-- environment threat/contamination;
-- parenting/family;
-- lifecycle loss/grief;
-- civilization discovery/craft outcomes.
-
-UI must not fabricate emotion.
-
-### 6. Lifecycle Event Presentation v2 — Dagyeom
-
-#125 already handles physical death removal and growth scale.
-
-Still needed:
-- birth/growth/death event visibility;
-- deceased/history inspection via Core observer/history DTOs;
-- optional truthful death animation presentation.
-
-### 7. Civilization Phase 2 — Jjun -> Dagyeom
-
-Existing progression is stable through PrimitiveStorage / FirePit / Furnace / Copper.
-
-Next candidates:
-- SleepingPlace;
-- Shelter;
-- WorkSurface;
-- facility-driven Needs/work efficiency;
-- TinOre;
-- Bronze / bronze-tool progression.
-
-No free starting infrastructure.
-
-### 8. Cleanup + long-run performance — Jjun
-
-- remove dead `SimulationSnapshotCodecLegacy.cpp` when compatibility checks are updated;
-- remove obsolete Preflight legacy markers/assertions;
-- add explicit per-frame catch-up simulation budget;
-- profile residue/HISM refresh cost during long runs.
-
-### 9. Health / disease / premature mortality
-
-- pathogens;
-- contaminated water/soil;
-- sanitation-linked health;
-- illness/recovery;
-- non-age premature death.
-
-### 10. Migration / settlements / economy / society
-
-- exploration and carrying-capacity pressure;
-- household migration;
-- multiple settlements;
-- jobs/economy/trade;
-- social institutions/politics;
-- multi-generation society stability.
-
-### 11. Android Gate B — PAUSED
-
-Resume only on explicit user request.
-
-## Ownership model
-
-### Jjun lane
-- `Source/LifeLensCore/**`
-- `Source/LifeLens/AI/**`
-- `Source/LifeLens/Simulation/**`
-- `Source/LifeLens/World/**`
-- Save/Load / Bridge / read contracts
-- Build/CI/Android/config
-
-### Dagyeom lane
-- `Source/LifeLens/UI/**`
-- `Source/LifeLens/Characters/**`
-- `Source/LifeLens/WorldPresentation/**`
-- corresponding Content/UI/Characters/Environment/Maps assets
-
-Cross-owner work requires an Integration Request or scoped Assist Lock before direct implementation.
-
-## Full-source audit findings still open
-
-### P1 correctness/integration
-
-- civilization knowledge witness/teaching lacks physical meeting requirements;
-- Character Context Motion remains generic for many concrete actions;
-- Observer Detail overflow is not truly scrollable;
-- existing Emotion model is not yet causally wired to the full survival/work/family/environment loop;
+### P1 correctness / integration
+- Character Context Motion is still generic for many concrete actions;
+- Observer Detail overflow is not true scrolling;
+- Emotion exists but is not yet causally wired across the full runtime;
 - lifecycle birth/growth/death events need richer observer presentation.
 
-### P2 cleanup/performance
+Knowledge transmission remote-telepathy defect is **closed by #130**.
 
-- environmental residue presentation rebuild cost needs long-run profiling;
-- long catch-up stepping needs explicit per-frame budget;
+### P2 cleanup / performance
+- environmental residue presentation refresh cost needs long-run profiling;
+- long catch-up stepping needs an explicit per-frame budget;
 - `SimulationSnapshotCodecLegacy.cpp` remains dead/uncompiled source;
-- some structural Preflight compatibility checks still pin removed legacy names/paths.
+- structural Preflight still contains some compatibility markers for removed legacy surfaces.
 
-### P3 later simulation depth
-
+### P3 later depth
 - health/disease/pathogens;
-- richer facilities/resources;
-- open-ended material/component artifact progression;
+- richer facilities/resources/material progression;
 - migration/multiple settlements/economy/society.
 
 ## Validation strategy while Android is paused
@@ -247,10 +139,6 @@ Unreal C++ changes:
 - Unreal Linux Compile.
 
 Docs-only changes:
-- do not start a new heavy Unreal compile solely for documentation.
+- do not start a heavy Unreal compile solely for documentation.
 
-Exact-head rule remains mandatory before merge.
-
-## Long compile rule
-
-When a long UE compile/package is started, record HEAD + Run ID and continue safe independent work. Do not repeatedly poll or restart a healthy long-running Unreal compile. A successful compile is integration evidence; visual/input quality still requires later PIE/device validation.
+Exact-head validation remains mandatory before functional merge.
