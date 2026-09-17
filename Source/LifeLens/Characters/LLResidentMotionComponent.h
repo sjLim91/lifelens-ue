@@ -89,6 +89,9 @@ private:
     UPROPERTY() TObjectPtr<UAnimSequence> IdleAnimation;
     UPROPERTY() TObjectPtr<UAnimSequence> TalkingAnimation;
     UPROPERTY() TObjectPtr<UAnimSequence> InteractAnimation;
+    UPROPERTY() TObjectPtr<UAnimSequence> GatherAnimation;
+    UPROPERTY() TObjectPtr<UAnimSequence> DigAnimation;
+    UPROPERTY() TObjectPtr<UAnimSequence> StrikeAnimation;
     UPROPERTY() TObjectPtr<UAnimSequence> BuildAnimation;
     UPROPERTY() TObjectPtr<UAnimSequence> ActiveContextAnimation;
 
