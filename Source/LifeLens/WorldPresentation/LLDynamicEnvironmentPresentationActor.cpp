@@ -144,7 +144,7 @@ void ALLDynamicEnvironmentPresentationActor::ResolveWorldComponents()
     if (SunLight)
     {
         SunLight->SetMobility(EComponentMobility::Movable);
-        SunLight->bUsedAsAtmosphereSunLight = true;
+        SunLight->bAtmosphereSunLight = true;
         SunLight->AtmosphereSunLightIndex = 0;
         SunLight->SetCastShadows(true);
     }
