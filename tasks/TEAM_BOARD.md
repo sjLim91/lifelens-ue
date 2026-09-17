@@ -16,9 +16,17 @@ Authority rule: Core/World owns simulation truth. UI/Character/Environment/World
 
 ## Current Assist Locks
 
-현재 활성 Assist Lock 없음.
+### ASSIST_LOCK-LIFECYCLE-PRESENTATION-1 — ACTIVE
+- requester/implementer: Jjun, 사용자의 계속 진행 승인 범위에서 Lifecycle Presentation Milestone을 종단 구현.
+- owner lane: Dagyeom — Character presentation.
+- implementation branch: `jjun/lifecycle-presentation-v1`.
+- locked Character scope: `Source/LifeLens/Characters/LLResidentCharacter.*`, `Source/LifeLens/Characters/LLResidentAppearanceComponent.*` 중 Core `LifeStage` 소비와 외형/캡슐 스케일 동기화.
+- Jjun-owned integration scope: `Source/LifeLens/Simulation/LLSimulationSubsystem.cpp`의 physical compatibility projection에서 Core `bAlive=false` 주민을 제외해 기존 WorldDirector cleanup이 actor/예약/runtime을 제거하도록 연결.
+- non-goals: 새 LifeStage/사망 규칙 생성, genetics/identity 재추첨, 새 애니메이션/에셋 추가, UI 미관 변경.
+- authority rule: `FLLCoreResidentObservation.bAlive`와 `LifeStage`만 진실로 사용하며 Presentation은 생존/성장 상태를 추정하지 않는다.
+- release condition: Preflight + Unreal Linux Compile 통과 및 branch PR 병합 후 해제.
 
-Jjun helping Dagyeom defaults to REVIEW_ONLY. 새 cross-owner 직접 구현이 필요하면 사용자 승인 범위를 명시한 Assist Lock을 먼저 연다. `dagyeom/*` 브랜치에는 직접 push하지 않고 별도 `jjun/*` 브랜치/PR을 사용한다.
+Jjun helping Dagyeom defaults to REVIEW_ONLY지만, 위 ACTIVE Assist Lock 범위에서는 사용자 승인에 따라 직접 구현한다. `dagyeom/*` 브랜치에는 직접 push하지 않고 별도 `jjun/*` 브랜치/PR을 사용한다.
 
 ## Recently released Assist Locks
 
@@ -81,9 +89,7 @@ Jjun helping Dagyeom defaults to REVIEW_ONLY. 새 cross-owner 직접 구현이 �
 
 ## Open Integration Requests
 
-현재 open Integration Request 없음.
-
-`jjun/world-authority-normalization-v1` / PR #123은 Jjun 소유 Core / Simulation / World 범위에서 Presentation-derived physical authority를 제거하는 작업이며 Dagyeom 소유 파일을 직접 수정하지 않는다.
+현재 open Integration Request 없음. `ASSIST_LOCK-LIFECYCLE-PRESENTATION-1` 범위의 cross-owner Character 수정은 해당 lock으로 직접 구현한다.
 
 ## Recently resolved Integration Requests
 
