@@ -13,6 +13,7 @@ ELLCoreContextActionKind ContextActionToUnrealContextKind(lifelens::ContextActio
         case lifelens::ContextActionKind::Social: return ELLCoreContextActionKind::Social;
         case lifelens::ContextActionKind::Civilization: return ELLCoreContextActionKind::Civilization;
         case lifelens::ContextActionKind::Parenting: return ELLCoreContextActionKind::Parenting;
+        case lifelens::ContextActionKind::KnowledgeTeaching: return ELLCoreContextActionKind::KnowledgeTeaching;
         case lifelens::ContextActionKind::None:
         default: return ELLCoreContextActionKind::None;
     }
@@ -210,6 +211,12 @@ bool ULLCoreBridgeSubsystem::GetResidentPendingContextDirective(
         case lifelens::ContextActionKind::Social:
             OutDirective.ActivityKind = ELLCoreObservedActivityKind::Social;
             OutDirective.SocialIntent = ContextActionToUnrealSocialIntent(Pending.socialIntent);
+            break;
+
+        case lifelens::ContextActionKind::KnowledgeTeaching:
+            OutDirective.ActivityKind = ELLCoreObservedActivityKind::Social;
+            OutDirective.SocialIntent = ELLCoreSocialIntent::Approach;
+            OutDirective.CivilizationTechnique = ContextActionToUnrealTechnique(Pending.technique);
             break;
 
         case lifelens::ContextActionKind::Civilization:
