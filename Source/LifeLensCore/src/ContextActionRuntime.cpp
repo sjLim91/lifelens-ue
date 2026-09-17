@@ -1,4 +1,5 @@
 #include "lifelens/Simulation.h"
+#include "lifelens/EmotionRuntime.h"
 #include "lifelens/ToolEffectiveness.h"
 
 #include <algorithm>
@@ -257,6 +258,9 @@ bool Simulation::completeContextAction(
                 : static_cast<std::uint64_t>(targetSite);
             runtime.pos=resolvedPosition;
             processCivilizationKnowledgeEvent(actor,result.event);
+            applyCivilizationOutcomeEmotion(
+                actor,result.success,
+                result.event.type==CivilizationEventType::Discovered);
 
             std::ostringstream log;
             log<<actor.name<<" -> Civilization "<<civilizationIntentName(decision.intent);

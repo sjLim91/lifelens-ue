@@ -67,6 +67,12 @@ inline double scoreGoal(const World& w,const Character& c,Goal g,const UtilityAI
     }
     if(g==Goal::Wash) s*=rules.washBaseMultiplier+rules.washConscientiousnessMultiplier*c.personality.conscientiousness;
     if(g==Goal::Sleep) s*=rules.sleepBaseMultiplier+rules.sleepIntroversionMultiplier*c.personality.introversion;
+    const double distress=std::max(c.emotion.anxiety,c.emotion.fear);
+    const double depletion=std::max(c.emotion.sadness,c.emotion.grief);
+    const double activation=c.emotion.joy+c.emotion.pride;
+    double emotionBias=0.045*distress+0.020*depletion-0.015*activation;
+    if(g==Goal::Sleep) emotionBias+=0.020*depletion;
+    s*=std::clamp(1.0+emotionBias,0.92,1.08);
     return s;
 }
 inline double scoreGoal(const World& w,const Character& c,Goal g) {

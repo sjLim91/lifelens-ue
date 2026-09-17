@@ -78,15 +78,19 @@ int main()
     assert(emergency.observeEnvironment().totalResidues==residueCountAfterCompletion);
 
     // An authored toilet/latrine/world affordance must satisfy the same Core
-    // intent without fabricating an outdoor sanitation residue.
+    // intent without fabricating an outdoor sanitation residue. Production
+    // external completion must also drive the same authoritative emotion relief
+    // as the standalone Core physical execution path.
     Simulation facility=makeUrgentToiletSimulation(9192);
     const CharacterId facilityActorId=facility.world().characters.front().id;
     const double bladderBeforeFacility=facility.world().characters.front().needs.bladder;
+    const double reliefBeforeFacility=facility.world().characters.front().emotion.relief;
     const GridPos facilityResolvedPosition{2,3};
     assert(facility.completeExternalPhysicalAction(
         facilityActorId,false,facilityResolvedPosition));
     assert(facility.observeEnvironment().humanWasteResidues==0);
     assert(facility.world().characters.front().needs.bladder<bladderBeforeFacility);
+    assert(facility.world().characters.front().emotion.relief>reliefBeforeFacility);
     GridPos facilityPosition{};
     assert(facility.runtimePosition(facilityActorId,facilityPosition));
     assert(facilityPosition.x==facilityResolvedPosition.x);
