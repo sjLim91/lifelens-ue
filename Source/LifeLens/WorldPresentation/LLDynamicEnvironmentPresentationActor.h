@@ -16,6 +16,8 @@ class USkyLightComponent;
  * This actor never advances simulation time and never generates weather. It
  * consumes ULLCoreBridgeSubsystem observations and maps them to lighting,
  * atmosphere and fog parameters that Dagyeom can tune visually in PIE.
+ * Existing map lighting is reused when present; fallback actors are spawned
+ * only when the production map does not provide the relevant primitive.
  */
 UCLASS(Config=Game, DefaultConfig)
 class LIFELENS_API ALLDynamicEnvironmentPresentationActor : public AActor
@@ -29,6 +31,7 @@ public:
     virtual void Tick(float DeltaSeconds) override;
 
 private:
+    void ResolveWorldComponents();
     void RefreshFromCore(bool bForce);
     void ApplyLighting(float Daylight01, float CloudCover01, float Visibility01, int32 MinuteOfDay, float AnnualPhase);
     void ApplyFog(float Daylight01, float CloudCover01, float Visibility01, float Humidity01, float Precipitation01);
