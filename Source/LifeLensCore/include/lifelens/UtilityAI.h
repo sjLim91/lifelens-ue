@@ -5,6 +5,7 @@
 #include <random>
 #include <utility>
 #include "Character.h"
+#include "EmotionRuntime.h"
 #include "SimulationRuleset.h"
 #include "World.h"
 namespace lifelens {
@@ -66,7 +67,10 @@ inline double scoreGoal(const World& w,const Character& c,Goal g,const UtilityAI
         if(hourInWindow(hour,rules.sleepNightStartHour,rules.sleepNightEndHour)) s*=rules.sleepNightMultiplier;
     }
     if(g==Goal::Wash) s*=rules.washBaseMultiplier+rules.washConscientiousnessMultiplier*c.personality.conscientiousness;
-    if(g==Goal::Sleep) s*=rules.sleepBaseMultiplier+rules.sleepIntroversionMultiplier*c.personality.introversion;
+    if(g==Goal::Sleep){
+        s*=rules.sleepBaseMultiplier+rules.sleepIntroversionMultiplier*c.personality.introversion;
+        s*=emotionSleepUtilityMultiplier(c);
+    }
     return s;
 }
 inline double scoreGoal(const World& w,const Character& c,Goal g) {
