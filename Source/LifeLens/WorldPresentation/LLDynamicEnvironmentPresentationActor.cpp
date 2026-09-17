@@ -5,7 +5,13 @@
 #include "Components/SceneComponent.h"
 #include "Components/SkyAtmosphereComponent.h"
 #include "Components/SkyLightComponent.h"
+#include "Engine/DirectionalLight.h"
+#include "Engine/ExponentialHeightFog.h"
 #include "Engine/GameInstance.h"
+#include "Engine/SkyAtmosphere.h"
+#include "Engine/SkyLight.h"
+#include "Engine/World.h"
+#include "EngineUtils.h"
 #include "Simulation/LLCoreBridgeSubsystem.h"
 #include "Simulation/LLEnvironmentReadTypes.h"
 #include "Simulation/LLTimeReadTypes.h"
@@ -21,6 +27,24 @@ FLinearColor BlendColor(const FLinearColor& A, const FLinearColor& B, float Alph
 {
     return A + (B - A) * Saturate(Alpha);
 }
+
+template <typename TActor, typename TComponent>
+TComponent* FindFirstWorldComponent(UWorld* World)
+{
+    if (!World)
+    {
+        return nullptr;
+    }
+
+    for (TActorIterator<TActor> It(World); It; ++It)
+    {
+        if (TComponent* Component = It->template FindComponentByClass<TComponent>())
+        {
+            return Component;
+        }
+    }
+    return nullptr;
+}
 }
 
 ALLDynamicEnvironmentPresentationActor::ALLDynamicEnvironmentPresentationActor()
@@ -29,32 +53,12 @@ ALLDynamicEnvironmentPresentationActor::ALLDynamicEnvironmentPresentationActor()
 
     SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("EnvironmentRoot"));
     SetRootComponent(SceneRoot);
-
-    SunLight = CreateDefaultSubobject<UDirectionalLightComponent>(TEXT("AuthoritativeSun"));
-    SunLight->SetupAttachment(SceneRoot);
-    SunLight->SetMobility(EComponentMobility::Movable);
-    SunLight->bUsedAsAtmosphereSunLight = true;
-    SunLight->AtmosphereSunLightIndex = 0;
-    SunLight->SetCastShadows(true);
-
-    SkyLight = CreateDefaultSubobject<USkyLightComponent>(TEXT("AuthoritativeSkyLight"));
-    SkyLight->SetupAttachment(SceneRoot);
-    SkyLight->SetMobility(EComponentMobility::Movable);
-    SkyLight->bRealTimeCapture = false;
-
-    SkyAtmosphere = CreateDefaultSubobject<USkyAtmosphereComponent>(TEXT("AuthoritativeSkyAtmosphere"));
-    SkyAtmosphere->SetupAttachment(SceneRoot);
-    SkyAtmosphere->SetMobility(EComponentMobility::Movable);
-
-    HeightFog = CreateDefaultSubobject<UExponentialHeightFogComponent>(TEXT("AuthoritativeHeightFog"));
-    HeightFog->SetupAttachment(SceneRoot);
-    HeightFog->SetMobility(EComponentMobility::Movable);
-    HeightFog->SetFogDensity(ClearFogDensity);
 }
 
 void ALLDynamicEnvironmentPresentationActor::BeginPlay()
 {
     Super::BeginPlay();
+    ResolveWorldComponents();
     RefreshFromCore(true);
 }
 
@@ -70,6 +74,71 @@ void ALLDynamicEnvironmentPresentationActor::Tick(float DeltaSeconds)
 
     RefreshAccumulator = 0.0f;
     RefreshFromCore(false);
+}
+
+void ALLDynamicEnvironmentPresentationActor::ResolveWorldComponents()
+{
+    UWorld* World = GetWorld();
+    if (!World)
+    {
+        return;
+    }
+
+    SunLight = FindFirstWorldComponent<ADirectionalLight, UDirectionalLightComponent>(World);
+    SkyLight = FindFirstWorldComponent<ASkyLight, USkyLightComponent>(World);
+    SkyAtmosphere = FindFirstWorldComponent<ASkyAtmosphere, USkyAtmosphereComponent>(World);
+    HeightFog = FindFirstWorldComponent<AExponentialHeightFog, UExponentialHeightFogComponent>(World);
+
+    if (!SunLight)
+    {
+        if (ADirectionalLight* Actor = World->SpawnActor<ADirectionalLight>())
+        {
+            SunLight = Actor->FindComponentByClass<UDirectionalLightComponent>();
+        }
+    }
+    if (!SkyLight)
+    {
+        if (ASkyLight* Actor = World->SpawnActor<ASkyLight>())
+        {
+            SkyLight = Actor->FindComponentByClass<USkyLightComponent>();
+        }
+    }
+    if (!SkyAtmosphere)
+    {
+        if (ASkyAtmosphere* Actor = World->SpawnActor<ASkyAtmosphere>())
+        {
+            SkyAtmosphere = Actor->FindComponentByClass<USkyAtmosphereComponent>();
+        }
+    }
+    if (!HeightFog)
+    {
+        if (AExponentialHeightFog* Actor = World->SpawnActor<AExponentialHeightFog>())
+        {
+            HeightFog = Actor->FindComponentByClass<UExponentialHeightFogComponent>();
+        }
+    }
+
+    if (SunLight)
+    {
+        SunLight->SetMobility(EComponentMobility::Movable);
+        SunLight->bUsedAsAtmosphereSunLight = true;
+        SunLight->AtmosphereSunLightIndex = 0;
+        SunLight->SetCastShadows(true);
+    }
+    if (SkyLight)
+    {
+        SkyLight->SetMobility(EComponentMobility::Movable);
+        SkyLight->bRealTimeCapture = false;
+    }
+    if (SkyAtmosphere)
+    {
+        SkyAtmosphere->SetMobility(EComponentMobility::Movable);
+    }
+    if (HeightFog)
+    {
+        HeightFog->SetMobility(EComponentMobility::Movable);
+        HeightFog->SetFogDensity(ClearFogDensity);
+    }
 }
 
 void ALLDynamicEnvironmentPresentationActor::RefreshFromCore(bool bForce)
