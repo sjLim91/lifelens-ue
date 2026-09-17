@@ -2,6 +2,7 @@
 #include "World/LLWorldDirector.h"
 #include "World/LLWorldObstacleCollisionProxyActor.h"
 #include "World/LLWorldSpatialContract.h"
+#include "WorldPresentation/LLDynamicEnvironmentPresentationActor.h"
 #include "UI/LLSocialObserverHUD.h"
 #include "UI/LLObserverPlayerController.h"
 #include "Camera/CameraActor.h"
@@ -36,6 +37,10 @@ void ALLLifeLensGameMode::BeginPlay()
         GetWorld()->SpawnActor<ALLWorldDirector>(ALLWorldDirector::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator);
         GetWorld()->SpawnActor<ALLWorldObstacleCollisionProxyActor>(
             ALLWorldObstacleCollisionProxyActor::StaticClass(),
+            FVector::ZeroVector,
+            FRotator::ZeroRotator);
+        GetWorld()->SpawnActor<ALLDynamicEnvironmentPresentationActor>(
+            ALLDynamicEnvironmentPresentationActor::StaticClass(),
             FVector::ZeroVector,
             FRotator::ZeroRotator);
     }
