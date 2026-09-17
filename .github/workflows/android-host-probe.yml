@@ -1,0 +1,103 @@
+name: LifeLens Android Prebuilt Host Probe
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/android-host-probe.yml'
+      - '.github/workflows/android-apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lifelens-android-host-probe-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  probe-prebuilt-host:
+    if: ${{ github.event.repository.private == false }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      UE_IMAGE: ghcr.io/epicgames/unreal-engine:dev-slim-5.6.0
+      UE_ROOT: /home/ue4/UnrealEngine
+
+    steps:
+      - name: Checkout LifeLens source
+        uses: actions/checkout@v4
+
+      - name: Authenticate and reclaim runner disk
+        shell: bash
+        env:
+          EPIC_GHCR_PAT: ${{ secrets.EPIC_GHCR_PAT }}
+        run: |
+          set -euo pipefail
+          test '${{ runner.os }}' = 'Linux'
+          test -n "$EPIC_GHCR_PAT" || { echo 'EPIC_GHCR_PAT secret is missing'; exit 91; }
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/local/lib/node_modules || true
+          sudo apt-get clean || true
+          sudo docker system prune -af || true
+          echo "$EPIC_GHCR_PAT" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          echo '=== disk before image pull ==='
+          df -h /
+          free -h
+
+      - name: Pull official prebuilt UE 5.6 development host
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker pull "$UE_IMAGE"
+          docker image inspect "$UE_IMAGE" --format 'image={{.Id}} bytes={{.Size}}'
+          echo '=== disk after image pull ==='
+          df -h /
+
+      - name: Verify host editor and Android platform payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm "$UE_IMAGE" bash -lc '
+            set -euo pipefail
+            ROOT="/home/ue4/UnrealEngine"
+            test -x "$ROOT/Engine/Build/BatchFiles/Linux/Build.sh"
+            test -x "$ROOT/Engine/Build/BatchFiles/RunUAT.sh"
+            test -f "$ROOT/Engine/Binaries/DotNET/UnrealBuildTool/UnrealBuildTool.dll"
+            test -x "$ROOT/Engine/Binaries/Linux/UnrealEditor"
+
+            echo "UE_HOST_TOOLS=OK"
+            echo "=== Android-related engine paths ==="
+            find "$ROOT/Engine" -maxdepth 5 \
+              \( -iname "*AndroidTargetPlatform*" -o -iname "*AndroidPlatformSDK*" -o -iname "SetupAndroid.sh" \) \
+              -print | head -80
+
+            FOUND_ANDROID=0
+            for CANDIDATE in \
+              "$ROOT/Engine/Platforms/Android" \
+              "$ROOT/Engine/Source/Developer/Android" \
+              "$ROOT/Engine/Source/Programs/UnrealBuildTool/Platform/Android"; do
+              if [ -e "$CANDIDATE" ]; then
+                echo "ANDROID_PLATFORM_SOURCE=$CANDIDATE"
+                FOUND_ANDROID=1
+              fi
+            done
+            test "$FOUND_ANDROID" = 1 || { echo "ANDROID_PLATFORM_SOURCE_MISSING"; exit 42; }
+
+            if [ -x "$ROOT/Engine/Extras/Android/SetupAndroid.sh" ]; then
+              echo "ANDROID_SETUP_SCRIPT=Engine/Extras/Android/SetupAndroid.sh"
+            elif [ -x "$ROOT/Engine/Platforms/Android/Build/Android/SetupAndroid.sh" ]; then
+              echo "ANDROID_SETUP_SCRIPT=Engine/Platforms/Android/Build/Android/SetupAndroid.sh"
+            else
+              echo "ANDROID_SETUP_SCRIPT_NOT_BUNDLED"
+            fi
+
+            echo "PREBUILT_HOST_ANDROID_PROBE_PASS"
+          '
+
+      - name: Record post-probe resource headroom
+        if: always()
+        shell: bash
+        run: |
+          echo '=== final runner resources ==='
+          df -h /
+          free -h
