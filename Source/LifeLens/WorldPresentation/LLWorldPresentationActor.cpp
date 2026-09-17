@@ -10,6 +10,8 @@
 #include "Simulation/LLCoreBridgeSubsystem.h"
 #include "Simulation/LLWorldGenerationReadTypes.h"
 #include "UObject/ConstructorHelpers.h"
+#include "GameFramework/PlayerController.h"
+#include "Camera/PlayerCameraManager.h"
 #include "World/LLWorldSpatialContract.h"
 
 namespace
@@ -152,6 +154,7 @@ void ALLWorldPresentationActor::ClearInstances()
     PlacedGrass = 0;
     PlacedRocks = 0;
     SuppressedDressing = 0;
+    SightlineCleared = 0;
 }
 
 void ALLWorldPresentationActor::ClearFacilityInstances()
@@ -162,13 +165,100 @@ void ALLWorldPresentationActor::ClearFacilityInstances()
     if (FacilityCargoInstances) { FacilityCargoInstances->ClearInstances(); }
 }
 
-float ALLWorldPresentationActor::AmbientDressingKeepFactor(const FVector2D& LocationUU) const
+FVector2D ALLWorldPresentationActor::SettlementReferenceUU(const FLLCoreWorldGenerationObservation& World) const
 {
-    if (StartRegionClearRadiusUU <= 0.0f) { return 1.0f; }
-    const float Distance = LocationUU.Size();
-    if (Distance <= StartRegionClearRadiusUU) { return 0.0f; }
-    if (StartRegionClearFalloffUU <= KINDA_SMALL_NUMBER) { return 1.0f; }
-    return FMath::Clamp((Distance - StartRegionClearRadiusUU) / StartRegionClearFalloffUU, 0.0f, 1.0f);
+    // Resource patches convert with `(GridX - InitialCenterGridX) * CellSize`,
+    // so the Core start-region centre maps to the presentation origin by
+    // construction. Deriving it keeps the envelope tied to `InitialCenterGrid`
+    // instead of a hard-coded world origin.
+    const FVector ChunkOffset = ChunkOriginUU(World, World.InitialChunkX, World.InitialChunkY);
+    return FVector2D(ChunkOffset.X, ChunkOffset.Y);
+}
+
+float ALLWorldPresentationActor::AmbientDressingKeepFactor(const FVector2D& LocationUU, ELLDressingLayer Layer) const
+{
+    // Ground detail is low enough that it never hides a resident.
+    if (Layer == ELLDressingLayer::GroundDetail) { return 1.0f; }
+
+    const float CoreRadius = FMath::Max(0.0f, CoreClearRadiusUU);
+    const float ActivityRadius = FMath::Max(CoreRadius, ActivityRadiusUU);
+    const float Distance = (LocationUU - CachedSettlementReferenceUU).Size();
+    if (Distance >= ActivityRadius || ActivityRadius <= KINDA_SMALL_NUMBER) { return 1.0f; }
+
+    const bool bCanopy = Layer == ELLDressingLayer::Canopy;
+    const float CoreKeep = FMath::Clamp(bCanopy ? CoreZoneCanopyKeep : CoreZoneUndergrowthKeep, 0.0f, 1.0f);
+    if (Distance <= CoreRadius) { return CoreKeep; }
+
+    // Activity zone: restore density with distance, canopy last.
+    const float Band = FMath::Max(ActivityRadius - CoreRadius, KINDA_SMALL_NUMBER);
+    const float Progress = FMath::Clamp((Distance - CoreRadius) / Band, 0.0f, 1.0f);
+    const float Exponent = FMath::Max(1.0f, bCanopy ? CanopyRecoveryExponent : UndergrowthRecoveryExponent);
+    return FMath::Lerp(CoreKeep, 1.0f, FMath::Pow(Progress, Exponent));
+}
+
+bool ALLWorldPresentationActor::CaptureInitialViewOrigin()
+{
+    if (bInitialViewCaptured) { return true; }
+    const UWorld* World = GetWorld();
+    const APlayerController* Controller = World ? World->GetFirstPlayerController() : nullptr;
+    const APlayerCameraManager* CameraManager = Controller ? Controller->PlayerCameraManager : nullptr;
+    if (!CameraManager) { return false; }   // game mode has not placed the camera yet
+
+    // Read only. The observer camera pose and its Config tuning belong to
+    // another lane; this never writes to either.
+    const FVector CameraLocation = CameraManager->GetCameraLocation();
+    if (CameraLocation.ContainsNaN()) { return false; }
+
+    InitialViewOriginUU = FVector2D(CameraLocation.X, CameraLocation.Y);
+    bInitialViewCaptured = true;
+    return true;
+}
+
+float ALLWorldPresentationActor::InitialSightlineKeepFactor(const FVector2D& LocationUU) const
+{
+    if (!bClearInitialSightlineCanopy || !bInitialViewCaptured) { return 1.0f; }
+
+    const FVector2D Axis = CachedSettlementReferenceUU - InitialViewOriginUU;
+    const float AxisLength = Axis.Size();
+    if (AxisLength <= KINDA_SMALL_NUMBER) { return 1.0f; }
+    const FVector2D AxisDirection = Axis / AxisLength;
+
+    const FVector2D ToPoint = LocationUU - InitialViewOriginUU;
+    const float Along = FVector2D::DotProduct(ToPoint, AxisDirection);
+    // Only what stands between the camera and the settlement can occlude it.
+    if (Along <= 0.0f || Along >= AxisLength) { return 1.0f; }
+
+    const float Lateral = FMath::Abs(FVector2D::CrossProduct(ToPoint, AxisDirection));
+    const float InnerHalfAngle = FMath::DegreesToRadians(FMath::Max(0.0f, InitialSightlineHalfAngleDegrees));
+    const float OuterHalfAngle = InnerHalfAngle
+        + FMath::DegreesToRadians(FMath::Max(0.0f, InitialSightlineEdgeFalloffDegrees));
+
+    // The cone widens with distance so the cleared wedge stays a constant
+    // angular slice of the opening view.
+    const float InnerWidth = Along * FMath::Tan(InnerHalfAngle);
+    const float OuterWidth = Along * FMath::Tan(OuterHalfAngle);
+    const float CentreKeep = FMath::Clamp(InitialSightlineCanopyKeep, 0.0f, 1.0f);
+
+    if (Lateral <= InnerWidth) { return CentreKeep; }
+    if (Lateral >= OuterWidth || OuterWidth - InnerWidth <= KINDA_SMALL_NUMBER) { return 1.0f; }
+    const float EdgeProgress = (Lateral - InnerWidth) / (OuterWidth - InnerWidth);
+    return FMath::Lerp(CentreKeep, 1.0f, EdgeProgress);
+}
+
+float ALLWorldPresentationActor::ResourcePatchScaleFactor(const FVector2D& LocationUU) const
+{
+    // An authoritative resource is never removed for readability; inside the
+    // settlement it is only drawn smaller.
+    const float Distance = (LocationUU - CachedSettlementReferenceUU).Size();
+    if (Distance <= FMath::Max(0.0f, CoreClearRadiusUU))
+    {
+        return FMath::Clamp(CoreZoneResourceScale, 0.1f, 1.0f);
+    }
+    if (Distance <= FMath::Max(CoreClearRadiusUU, ActivityRadiusUU))
+    {
+        return FMath::Clamp(ActivityZoneResourceScale, 0.1f, 1.0f);
+    }
+    return 1.0f;
 }
 
 FVector ALLWorldPresentationActor::ChunkOriginUU(const FLLCoreWorldGenerationObservation& World, int32 ChunkX, int32 ChunkY) const
@@ -224,7 +314,7 @@ void ALLWorldPresentationActor::BuildChunkDressing(const FLLCoreWorldGenerationO
     auto Place = [&](TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>>& Components,
                      int32 Count, int32& Placed, int32 MaxTotal,
                      float MinScale, float MaxScale, float TiltDegrees,
-                     bool bObeyReadabilityRadius)
+                     ELLDressingLayer Layer)
     {
         if (Components.Num() == 0) { return; }
         for (int32 Index = 0; Index < Count && Placed < MaxTotal; ++Index)
@@ -239,8 +329,20 @@ void ALLWorldPresentationActor::BuildChunkDressing(const FLLCoreWorldGenerationO
             const int32 Slot = static_cast<int32>(HashUnit(State) * Components.Num()) % Components.Num();
             const float KeepRoll = HashUnit(State);
             const FVector Location = ChunkOrigin + FVector(X, Y, 0.0f);
-            if (bObeyReadabilityRadius
-                && KeepRoll >= AmbientDressingKeepFactor(FVector2D(Location.X, Location.Y)))
+            const FVector2D Location2D(Location.X, Location.Y);
+            float KeepFactor = AmbientDressingKeepFactor(Location2D, Layer);
+            if (Layer == ELLDressingLayer::Canopy)
+            {
+                // Only the canopy blocks the opening view; shrubs, grass and
+                // rocks keep their normal density inside the cone.
+                const float SightlineKeep = InitialSightlineKeepFactor(Location2D);
+                if (SightlineKeep < KeepFactor)
+                {
+                    ++SightlineCleared;
+                    KeepFactor = SightlineKeep;
+                }
+            }
+            if (KeepRoll >= KeepFactor)
             {
                 ++SuppressedDressing;
                 continue;
@@ -254,10 +356,10 @@ void ALLWorldPresentationActor::BuildChunkDressing(const FLLCoreWorldGenerationO
         }
     };
 
-    Place(TreeInstances, TreeCount, PlacedTrees, MaxTreeInstances, 0.85f, 1.6f, 3.0f, true);
-    Place(ShrubInstances, ShrubCount, PlacedShrubs, MaxShrubInstances, 0.7f, 1.5f, 5.0f, true);
-    Place(GrassInstances, GrassCount, PlacedGrass, MaxGrassInstances, 0.7f, 1.7f, 4.0f, true);
-    Place(RockInstances, RockCount, PlacedRocks, MaxRockInstances, 0.7f, 1.8f, 8.0f, false);
+    Place(TreeInstances, TreeCount, PlacedTrees, MaxTreeInstances, 0.85f, 1.6f, 3.0f, ELLDressingLayer::Canopy);
+    Place(ShrubInstances, ShrubCount, PlacedShrubs, MaxShrubInstances, 0.7f, 1.5f, 5.0f, ELLDressingLayer::Undergrowth);
+    Place(GrassInstances, GrassCount, PlacedGrass, MaxGrassInstances, 0.7f, 1.7f, 4.0f, ELLDressingLayer::Undergrowth);
+    Place(RockInstances, RockCount, PlacedRocks, MaxRockInstances, 0.7f, 1.8f, 8.0f, ELLDressingLayer::GroundDetail);
 
     for (const FLLCoreNaturalResourcePatchObservation& Patch : Chunk.ResourcePatches)
     {
@@ -295,7 +397,7 @@ void ALLWorldPresentationActor::BuildChunkDressing(const FLLCoreWorldGenerationO
             const float Yaw = HashUnit(State) * 360.0f;
             const int32 Slot = static_cast<int32>(HashUnit(State) * Target->Num()) % Target->Num();
             const FVector2D PatchLocation(PatchX + SpreadX, PatchY + SpreadY);
-            if (AmbientDressingKeepFactor(PatchLocation) <= 0.0f) { Scale *= StartRegionResourceScale; }
+            Scale *= ResourcePatchScaleFactor(PatchLocation);
             if (UHierarchicalInstancedStaticMeshComponent* Component = (*Target)[Slot])
             {
                 Component->AddInstance(FTransform(
@@ -509,16 +611,26 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
     if (!World.bAvailable || !World.bHasInitialStartRegion) { return; }
     const FLLCoreCivilizationWorldObservation Civilization = Bridge->GetCivilizationWorldObservation(0);
 
+    // The observer camera is spawned by the game mode, which can run after this
+    // actor's BeginPlay. The first build may therefore miss it; the next refresh
+    // picks it up and rebuilds the dressing once.
+    const bool bSightlinePending = bClearInitialSightlineCanopy && !bInitialViewCaptured;
+    CaptureInitialViewOrigin();
+
     const bool bNaturalChanged = bForce
         || World.WorldSeed != BuiltWorldSeed
         || World.GenerationVersion != BuiltGenerationVersion
-        || World.MaterializedChunkCount != BuiltChunkCount;
+        || World.MaterializedChunkCount != BuiltChunkCount
+        || (bSightlinePending && bInitialViewCaptured);
+
     const uint32 CurrentFacilitySignature = FacilitySignature(Civilization);
     const bool bFacilitiesChanged = bForce || !bBuiltFacilityPresentation || CurrentFacilitySignature != BuiltFacilitySignature;
     if (!bNaturalChanged && !bFacilitiesChanged) { return; }
 
     if (bNaturalChanged)
     {
+        // Measured from the Core start-region centre, not the world origin.
+        CachedSettlementReferenceUU = SettlementReferenceUU(World);
         BuiltWorldSeed = World.WorldSeed;
         BuiltGenerationVersion = World.GenerationVersion;
         BuiltChunkCount = World.MaterializedChunkCount;
@@ -567,9 +679,11 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         + (FacilityCargoInstances ? FacilityCargoInstances->GetInstanceCount() : 0);
 
     UE_LOG(LogTemp, Log,
-        TEXT("LLWorldPresentation seed=%lld gen=%d chunks=%d natural=%d/%d/%d/%d facilities=%d facilityInstances=%d cleared=%d radius=%.0f ground=%s"),
+        TEXT("LLWorldPresentation seed=%lld gen=%d chunks=%d natural=%d/%d/%d/%d facilities=%d facilityInstances=%d thinned=%d sightline=%d/%d core=%.0f activity=%.0f ground=%s"),
         World.WorldSeed, World.GenerationVersion, World.MaterializedChunkCount,
         TreeInstanceCount, ShrubInstanceCount, GrassInstanceCount, RockInstanceCount,
-        Civilization.FacilityCount, FacilityInstanceCount,SuppressedDressing, StartRegionClearRadiusUU,
+        Civilization.FacilityCount, FacilityInstanceCount,
+        SuppressedDressing, SightlineCleared, bInitialViewCaptured ? 1 : 0,
+        CoreClearRadiusUU, ActivityRadiusUU,
         (Ground && Ground->GetStaticMesh()) ? TEXT("yes") : TEXT("no"));
 }
