@@ -292,6 +292,65 @@ bool Simulation::completeContextAction(
             break;
         }
 
+        case ContextActionKind::KnowledgeTeaching: {
+            Character* learner=findContextCharacter(world_,pending.knowledgeTeachingTarget);
+            if(learner==nullptr || !learner->alive || learner->id==actor.id){
+                pending.clear();
+                return false;
+            }
+            const auto learnerRuntime=runtime_.find(learner->id);
+            if(learnerRuntime==runtime_.end()
+               || !contextActionNearTarget(resolvedPosition,learnerRuntime->second.pos,1)){
+                return false;
+            }
+
+            const TechniqueId technique=pending.knowledgeTeachingTechnique;
+            if(technique==TechniqueId::None
+               || !actor.civilization.knowledge.knowsAtLeast(
+                    technique,KnowledgeLevel::Reproducible)
+               || learner->civilization.knowledge.knowsAtLeast(
+                    technique,KnowledgeLevel::Reproducible)
+               || bestTechniqueFactForTeaching(
+                    socialKnowledge_,actor.id,learner->id,technique)==nullptr){
+                pending.clear();
+                return false;
+            }
+
+            const TechniqueTransmissionOutcome outcome=teachTechnique(
+                socialKnowledge_,actor,*learner,technique,relationships_,
+                world_.seed,world_.minute,
+                static_cast<std::uint64_t>(std::max(0,pending.issuedMinute/60)));
+
+            if(outcome.result==TechniqueTeachingResult::Invalid
+               || outcome.result==TechniqueTeachingResult::NoFact
+               || outcome.result==TechniqueTeachingResult::DuplicateOrLoop
+               || outcome.result==TechniqueTeachingResult::AlreadyKnown){
+                pending.clear();
+                return false;
+            }
+
+            runtime.pos=resolvedPosition;
+            runtime.socialCooldownUntilMinute=world_.minute+20;
+
+            std::ostringstream log;
+            if(outcome.result==TechniqueTeachingResult::Advanced){
+                log<<actor.name<<" taught "<<learner->name<<" "
+                   <<techniqueName(technique)<<" -> knowledge "
+                   <<static_cast<int>(outcome.before)<<"->"<<static_cast<int>(outcome.after);
+            }else if(outcome.result==TechniqueTeachingResult::ComprehensionFailed){
+                log<<actor.name<<" tried teaching "<<learner->name<<" "
+                   <<techniqueName(technique)<<" but comprehension failed";
+            }else{
+                log<<actor.name<<" tried teaching "<<learner->name<<" "
+                   <<techniqueName(technique)<<" but trust/clarity was too weak";
+            }
+            log<<" (teaching "<<std::fixed<<std::setprecision(2)
+               <<pending.knowledgeTeachingScore<<")";
+            emit(log.str());
+            completed=true;
+            break;
+        }
+
         case ContextActionKind::Parenting: {
             Character* child=findContextCharacter(world_,pending.parentingTarget);
             if(child==nullptr || !child->alive || !isParentOf(actor,*child)){
@@ -323,11 +382,6 @@ bool Simulation::completeContextAction(
                 return false;
             }
 
-            // More than one caregiver can independently decide to help the same
-            // dependent while the first caregiver is still travelling. The first
-            // successful authoritative ACK wins; cancel competing pending care so
-            // Needs changes, provision consumption, and sanitation residue cannot
-            // be applied twice for the same unresolved care episode.
             for(auto& runtimeEntry:runtime_){
                 if(runtimeEntry.first==actor.id) continue;
                 PendingContextAction& competing=runtimeEntry.second.pendingContext;

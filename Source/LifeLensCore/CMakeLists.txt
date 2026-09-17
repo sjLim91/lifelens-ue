@@ -119,6 +119,8 @@ lifelens_add_test(test_autonomous_civilization_loop)
 
 lifelens_add_test(test_civilization_knowledge_transmission)
 
+lifelens_add_test(test_civilization_knowledge_spatial_authority)
+
 lifelens_add_test(test_civilization_observer_read_model)
 
 lifelens_add_test(test_facility_authority)

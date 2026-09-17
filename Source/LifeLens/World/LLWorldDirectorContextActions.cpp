@@ -110,6 +110,23 @@ void ALLWorldDirector::ApplyPendingContextDirective(
             Character.SetCurrentIntent(ELLActionIntent::Socialize);
             break;
 
+        case ELLCoreContextActionKind::KnowledgeTeaching:
+            TargetResident = FindResidentActor(Directive.TargetResidentId);
+            if (!TargetResident)
+            {
+                ClearContextPresentation(); Runtime.bPerformingAction = false; Character.ClearMovementTarget(); return;
+            }
+            // Teaching is a real person-to-person encounter. Follow the learner's
+            // actual physical actor while travelling, then let Core revalidate the
+            // resolved grid position against its authoritative learner runtime on ACK.
+            DesiredLocation = TargetResident->GetActorLocation();
+            DesiredLocation.Z = Character.GetActorLocation().Z;
+            ArrivalRadius = FMath::Min(FMath::Max(1.0f, ContextResidentArrivalRadiusUU),AckSafeArrivalRadius);
+            Character.SetCurrentIntent(ELLActionIntent::Socialize);
+            bFaceTarget = true;
+            bTalkAtTarget = true;
+            break;
+
         case ELLCoreContextActionKind::Parenting:
             TargetResident = FindResidentActor(Directive.TargetResidentId);
             if (!TargetResident || Directive.ParentingAction == ELLCoreParentingAction::None
