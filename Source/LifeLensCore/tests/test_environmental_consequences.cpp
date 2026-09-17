@@ -69,8 +69,6 @@ int main()
     applyEnvironmentalNeedPressure(needs, hotProfile);
     assert(needs.thirst > 0.0);
 
-    // Integration: a production-style natural world uses the same authoritative
-    // climate field for daily renewable resource regeneration.
     World world(20260917);
     world.resourceNodes.clear();
     world.storageSites.clear();
@@ -91,8 +89,6 @@ int main()
     }
     assert(sawRenewable);
 
-    // Integration: environmental pressure is applied to resident Needs by the
-    // authoritative minute hook rather than being a visual-only readout.
     Character resident;
     resident.id = 77;
     resident.alive = true;
@@ -106,7 +102,6 @@ int main()
     assert(near(world.characters.front().needs.sleep,startProfile.perMinuteNeedsDelta.sleep));
     assert(near(world.characters.front().needs.hygiene,startProfile.perMinuteNeedsDelta.hygiene));
 
-    // Integration: bad weather increases Core travel ticks deterministically.
     const GridPos from = world.initialStartRegionCenterGrid();
     const GridPos to{from.x+12,from.y};
     const int baseTravel = manhattan(from,to);
