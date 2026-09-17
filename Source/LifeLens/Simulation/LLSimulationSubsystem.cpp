@@ -76,6 +76,35 @@ void ULLSimulationSubsystem::Initialize(FSubsystemCollectionBase& Collection)
     Collection.InitializeDependency<ULLCoreBridgeSubsystem>();
 }
 
+float ULLSimulationSubsystem::SpeedMultiplierForPreset(ELLSimulationSpeedPreset Preset)
+{
+    switch (Preset)
+    {
+        case ELLSimulationSpeedPreset::Paused: return 0.0f;
+        case ELLSimulationSpeedPreset::Observe: return 1.0f;
+        case ELLSimulationSpeedPreset::Fast: return 4.0f;
+        case ELLSimulationSpeedPreset::Faster: return 16.0f;
+        case ELLSimulationSpeedPreset::Rapid: return 64.0f;
+    }
+    return 1.0f;
+}
+
+void ULLSimulationSubsystem::SetSimulationSpeedPreset(ELLSimulationSpeedPreset NewPreset)
+{
+    if (SimulationSpeedPreset == NewPreset)
+    {
+        return;
+    }
+
+    SimulationSpeedPreset = NewPreset;
+    OnSimulationSpeedChanged.Broadcast(SimulationSpeedPreset);
+}
+
+float ULLSimulationSubsystem::GetSimulationSpeedMultiplier() const
+{
+    return SpeedMultiplierForPreset(SimulationSpeedPreset);
+}
+
 ULLCoreBridgeSubsystem* ULLSimulationSubsystem::GetCoreBridge() const
 {
     UGameInstance* GameInstance = GetGameInstance();
