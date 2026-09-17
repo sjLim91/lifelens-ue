@@ -8,13 +8,13 @@
 #include "Engine/DirectionalLight.h"
 #include "Engine/ExponentialHeightFog.h"
 #include "Engine/GameInstance.h"
-#include "Engine/SkyAtmosphere.h"
 #include "Engine/SkyLight.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "Simulation/LLCoreBridgeSubsystem.h"
 #include "Simulation/LLEnvironmentReadTypes.h"
 #include "Simulation/LLTimeReadTypes.h"
+#include "UObject/UObjectIterator.h"
 
 namespace
 {
@@ -39,6 +39,26 @@ TComponent* FindFirstWorldComponent(UWorld* World)
     for (TActorIterator<TActor> It(World); It; ++It)
     {
         if (TComponent* Component = It->template FindComponentByClass<TComponent>())
+        {
+            return Component;
+        }
+    }
+    return nullptr;
+}
+
+USkyAtmosphereComponent* FindSkyAtmosphereComponent(UWorld* World)
+{
+    if (!World)
+    {
+        return nullptr;
+    }
+
+    for (TObjectIterator<USkyAtmosphereComponent> It; It; ++It)
+    {
+        USkyAtmosphereComponent* Component = *It;
+        if (Component
+            && !Component->HasAnyFlags(RF_ClassDefaultObject)
+            && Component->GetWorld() == World)
         {
             return Component;
         }
@@ -86,7 +106,7 @@ void ALLDynamicEnvironmentPresentationActor::ResolveWorldComponents()
 
     SunLight = FindFirstWorldComponent<ADirectionalLight, UDirectionalLightComponent>(World);
     SkyLight = FindFirstWorldComponent<ASkyLight, USkyLightComponent>(World);
-    SkyAtmosphere = FindFirstWorldComponent<ASkyAtmosphere, USkyAtmosphereComponent>(World);
+    SkyAtmosphere = FindSkyAtmosphereComponent(World);
     HeightFog = FindFirstWorldComponent<AExponentialHeightFog, UExponentialHeightFogComponent>(World);
 
     if (!SunLight)
@@ -105,9 +125,12 @@ void ALLDynamicEnvironmentPresentationActor::ResolveWorldComponents()
     }
     if (!SkyAtmosphere)
     {
-        if (ASkyAtmosphere* Actor = World->SpawnActor<ASkyAtmosphere>())
+        SkyAtmosphere = NewObject<USkyAtmosphereComponent>(this, TEXT("FallbackSkyAtmosphere"));
+        if (SkyAtmosphere)
         {
-            SkyAtmosphere = Actor->FindComponentByClass<USkyAtmosphereComponent>();
+            SkyAtmosphere->SetupAttachment(SceneRoot);
+            AddInstanceComponent(SkyAtmosphere);
+            SkyAtmosphere->RegisterComponent();
         }
     }
     if (!HeightFog)
