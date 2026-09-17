@@ -33,6 +33,19 @@ Rules:
 - Jjun does not push directly to `dagyeom/*` branches.
 - old branches are not merged wholesale; missing functionality is reimplemented from current `main` when needed.
 
+### Cross-lane request checkpoint cadence
+
+To avoid one lane blocking while the other lane is busy, Jjun must check Dagyeom-side open PRs, new PR comments/review requests, and `TEAM_BOARD` Integration Requests at these boundaries:
+- immediately before starting a new Jjun functional work unit;
+- immediately after finishing or merging a Jjun work unit;
+- when entering a long CI / Unreal build wait;
+- when returning to act on a completed or failed long CI / Unreal build;
+- before a main-changing rebase or merge that can invalidate the other lane.
+
+If a new cross-lane blocker or review request exists, triage it before starting unrelated follow-up work. A blocker may be handled immediately when it is safe and scoped, or converted into an explicit Integration Request if provider work is required.
+
+This checkpoint rule does **not** mean repeatedly polling a healthy long build. Long builds keep their recorded HEAD + Run ID and continue normally; cross-lane requests are checked independently without restarting or spamming the build workflow.
+
 ## Current Assist Locks
 
 **None.**
