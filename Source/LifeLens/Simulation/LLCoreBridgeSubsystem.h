@@ -6,6 +6,7 @@
 #include "Simulation/LLCoreActionTypes.h"
 #include "Simulation/LLCivilizationReadTypes.h"
 #include "Simulation/LLEnvironmentReadTypes.h"
+#include "Simulation/LLTimeReadTypes.h"
 #include "Simulation/LLWorldGenerationReadTypes.h"
 #include "LLCoreBridgeSubsystem.generated.h"
 
@@ -92,6 +93,9 @@ public:
 
     UFUNCTION(BlueprintPure, Category="LifeLens|Core|Observer")
     FLLCoreWorldObservation GetWorldObservation() const;
+
+    UFUNCTION(BlueprintPure, Category="LifeLens|Core|Time")
+    FLLCoreTimeObservation GetTimeObservation() const;
 
     UFUNCTION(BlueprintPure, Category="LifeLens|Core|Observer")
     TArray<FLLCoreResidentObservation> GetResidentObservations() const;
