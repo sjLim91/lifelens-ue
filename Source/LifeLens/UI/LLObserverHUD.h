@@ -51,8 +51,9 @@ public:
 
     // Returns true if the tap landed on HUD chrome and was handled here.
     // ScreenPosition is in viewport pixels; ViewportSize is the viewport the
-    // position was measured in.
-    bool HandleTap(const FVector2D& ScreenPosition, const FVector2D& ViewportSize = FVector2D::ZeroVector);
+    // position was measured in. Virtual so production HUD composition layers
+    // can add chrome without bypassing the controller's single HUD hit-test.
+    virtual bool HandleTap(const FVector2D& ScreenPosition, const FVector2D& ViewportSize = FVector2D::ZeroVector);
 
     // Safe-area insets in canvas pixels: normal LifeLens margin plus the
     // platform title-safe padding (camera cutout, rounded corners, gesture bar).
