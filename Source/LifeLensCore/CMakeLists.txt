@@ -41,6 +41,8 @@ lifelens_add_test(test_utility)
 
 lifelens_add_test(test_determinism)
 
+lifelens_add_test(test_simulation_calendar)
+
 lifelens_add_test(test_relationship)
 
 lifelens_add_test(test_emotion)
