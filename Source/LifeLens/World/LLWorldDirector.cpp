@@ -60,18 +60,30 @@ void ALLWorldDirector::Tick(float DeltaSeconds)
 
     CoreBridge->SetExternalPhysicalExecutionEnabled(true);
 
-    bool bAdvancedSimulation = false;
-    SimulationClockAccumulator += DeltaSeconds;
-    const float StepSeconds = FMath::Max(0.1f, RealSecondsPerSimulationMinute);
-    while (SimulationClockAccumulator >= StepSeconds)
-    {
-        SimulationClockAccumulator -= StepSeconds;
-        Simulation->AdvanceSimulationMinutes(1);
-        bAdvancedSimulation = true;
+    const float RealDeltaSeconds = FMath::Max(0.0f, DeltaSeconds);
+    const float SpeedMultiplier = FMath::Max(0.0f, Simulation->GetSimulationSpeedMultiplier());
 
-        if ((Simulation->GetSimulationMinute() % 60) == 0)
+    bool bAdvancedSimulation = false;
+    if (SpeedMultiplier > KINDA_SMALL_NUMBER)
+    {
+        // Core time consumes scaled real time, while visual refresh below stays
+        // on the render clock. This keeps Pause/1x/4x/16x/64x from creating a
+        // second simulation truth in Presentation.
+        SimulationClockAccumulator += RealDeltaSeconds * SpeedMultiplier;
+        const float StepSeconds = FMath::Max(0.01f, RealSecondsPerSimulationMinute);
+        const int32 StepBudget = FMath::Max(1, MaxSimulationMinutesPerFrame);
+        int32 StepsThisFrame = 0;
+        while (SimulationClockAccumulator >= StepSeconds && StepsThisFrame < StepBudget)
         {
-            Simulation->SaveGame();
+            SimulationClockAccumulator -= StepSeconds;
+            Simulation->AdvanceSimulationMinutes(1);
+            ++StepsThisFrame;
+            bAdvancedSimulation = true;
+
+            if ((Simulation->GetSimulationMinute() % 60) == 0)
+            {
+                Simulation->SaveGame();
+            }
         }
     }
 
@@ -81,11 +93,19 @@ void ALLWorldDirector::Tick(float DeltaSeconds)
         SpawnResidents();
     }
 
+    // Physical presentation follows the same Observer speed so authoritative
+    // external actions do not become a real-time bottleneck at high speed.
+    // Pausing disables resident movement ticks without stopping the render/UI
+    // clock. Core itself remains frozen because no simulation minutes advance.
+    const bool bPaused = SpeedMultiplier <= KINDA_SMALL_NUMBER;
+    const float SimulationDeltaSeconds = RealDeltaSeconds * SpeedMultiplier;
     for (ALLResidentCharacter* Character : SpawnedResidents)
     {
         if (IsValid(Character))
         {
-            UpdateResident(*Character, DeltaSeconds);
+            Character->SetActorTickEnabled(!bPaused);
+            Character->CustomTimeDilation = bPaused ? 1.0f : SpeedMultiplier;
+            UpdateResident(*Character, SimulationDeltaSeconds);
         }
     }
 
@@ -97,7 +117,7 @@ void ALLWorldDirector::Tick(float DeltaSeconds)
         }
     }
 
-    EnvironmentalVisualRefreshAccumulator += FMath::Max(0.0f, DeltaSeconds);
+    EnvironmentalVisualRefreshAccumulator += RealDeltaSeconds;
     const float VisualRefreshInterval = FMath::Max(0.05f, EnvironmentalVisualRefreshIntervalSeconds);
     if (EnvironmentalResidueVisualizer
         && EnvironmentalVisualRefreshAccumulator >= VisualRefreshInterval)
