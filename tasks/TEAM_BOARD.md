@@ -4,8 +4,11 @@
 
 - live execution state: `tasks/WORK_STATE.md`
 - canonical roadmap: `docs/DEVELOPMENT_MILESTONES.md`
+- time / speed / environment contract: `docs/TIME_AND_DYNAMIC_ENVIRONMENT.md`
 - long-range civilization direction: `docs/OPEN_ENDED_CIVILIZATION_NORTH_STAR.md`
 - integrated audit: `docs/INTEGRATED_AUDIT_2026-09-17.md` — historical point-in-time evidence
+
+---
 
 ## Ownership
 
@@ -15,35 +18,49 @@
 | Build / CI / Android / Config | Jjun | `.github/workflows/**`, build pipeline, `Config/**`, startup/default map, project integration |
 | UI / Observer | Dagyeom | `Source/LifeLens/UI/**`, `Content/UI/**` |
 | Character presentation | Dagyeom | `Source/LifeLens/Characters/**`, `Content/Characters/**` |
-| Environment / maps / WorldPresentation | Dagyeom | `Source/LifeLens/WorldPresentation/**`, `Content/Environment/**`, `Content/Maps/**`, `Content/WorldPresentation/**` |
+| Environment visual / maps / WorldPresentation | Dagyeom | `Source/LifeLens/WorldPresentation/**`, `Content/Environment/**`, `Content/Maps/**`, `Content/WorldPresentation/**` |
 
 Authority rule:
 
-> Core / World owns simulation truth. Presentation consumes authoritative read/action contracts and never invents resources, facilities, outcomes, lifecycle state, emotion, knowledge or technology.
+> Core / World owns simulation truth. Presentation consumes authoritative read/action contracts and never invents resources, facilities, outcomes, lifecycle state, emotion, knowledge, time, weather or technology.
+
+Time/environment ownership clarification:
+
+- Jjun owns authoritative simulation time, calendar, season/weather state and gameplay effects.
+- Dagyeom owns sun/sky/weather VFX, environment readability and Observer controls/readouts.
+- Dagyeom must consume provider contracts rather than calculate a second time/weather truth.
+
+---
 
 ## Collaboration model
 
 LifeLens uses **one integrated roadmap with parallel ownership lanes**.
 
 Rules:
+
 - Jjun defines Core/World truth and provider contracts.
 - Dagyeom consumes those contracts for Character/UI/WorldPresentation.
 - each owner stays in their lane by default.
 - direct cross-owner edits require an Integration Request or explicit scoped Assist Lock.
 - Jjun does not push directly to `dagyeom/*` branches.
-- stale branches are not merged wholesale; valid missing ideas are reimplemented from latest `main`.
-- new civilization/future systems expose provider contracts before presentation work begins.
+- stale branches are not merged wholesale; valid missing ideas are reconstructed from latest `main`.
+- new civilization/time/environment systems expose provider contracts before presentation depends on them.
+- Dagyeom-owned work may merge independently after CI if it does not conflict with active provider ownership.
+- conflict resolution compares both sides; never overwrite current main blindly.
 
 ### Cross-lane request checkpoint cadence
 
-Jjun must check Dagyeom-side open PRs, new comments/review requests and new Integration Requests:
-- immediately before starting a new Jjun functional work unit;
-- immediately after completing or merging a Jjun work unit;
+Jjun checks Dagyeom-side open PRs, new comments/review requests and new Integration Requests:
+
+- before starting a new Jjun functional work unit;
+- after completing or merging a Jjun work unit;
 - when entering a long CI / Unreal build wait;
 - when returning to act on a long CI / Unreal result;
 - before a main-changing merge or rebase.
 
 A new blocker is triaged before unrelated follow-up work. This does **not** mean repeatedly polling or restarting a healthy long build.
+
+---
 
 ## Current Assist Locks
 
@@ -53,9 +70,10 @@ A new blocker is triaged before unrelated follow-up work. This does **not** mean
 
 **None at this checkpoint.**
 
-Open a new Integration Request only when one owner actually needs another owner to change a file/API/config outside the requester's lane and the existing contract is insufficient.
+Open a new Integration Request only when one owner needs another owner to change a file/API/config outside the requester's lane and the current contract is insufficient.
 
 A request must contain:
+
 - requester / needed owner;
 - exact file/API/config needed;
 - why the existing contract is insufficient;
@@ -66,48 +84,48 @@ A request must contain:
 
 ## Current owner work references
 
-### Jjun — PR #132 Emotion Runtime Integration v1 — CLOSEOUT
+### Jjun — PR #133 Roadmap / documentation reconciliation — ACTIVE
 
-PR: #132.
-Actual branch: `jjun/emotion-runtime-integration-v1-20260917`.
-Current exact head: `0327afb58caed550b8bb12f046b2ec6738157ef5`.
+Purpose:
 
-Current state:
-- Needs pressure/resolution, authoritative failure and civilization outcome emotion integration implemented;
-- physical utility influence bounded to +/-8%;
-- closeout review found production `completeExternalPhysicalAction()` was missing Need-resolution emotion relief;
-- gap fixed and production external regression assertion added;
-- Preflight + Core Tests PASS on the closeout head;
-- final exact-head Unreal Linux Compile required before merge.
+- reconcile #132/#134 completion.
+- close original #100 as superseded.
+- add canonical simulation time / variable speed / dynamic environment contract.
+- reorder next implementation priorities.
 
-Semantic ownership:
-- renderer/bridge timeout or invalid/stale ACK does not invent emotion;
-- only authoritative Core-lived outcomes may create resident emotion.
+This PR is docs-only. Do not start a heavy Unreal compile solely because documentation changed.
 
-No Assist Lock required.
+After #133 merges, Jjun starts:
 
-### Dagyeom — PR #100 World Readability Envelope — ACTIVE / REFRESH REQUIRED
+> **T1 — Simulation Time Authority & Variable Speed**
 
-Branch: `dagyeom/world-visual-readability-envelope`.
-Last known head: `62b191a6afb2c0c5ae32ddbb1e0ae7876ae00556`.
+Then:
 
-Live repository state now reports the PR as **not mergeable against current main**.
-Therefore the old “PIE only” closeout sequence is no longer valid.
+> **E1 Calendar + Day/Night Authority**
+> **E2 Seasons + Dynamic Weather Core v1**
+> **E3 Environmental Consequences v1**
 
-Owner actions:
-1. refresh/reconstruct still-needed WorldPresentation changes on current main;
-2. resolve conflicts without importing stale Core authority;
-3. run fresh exact-head Preflight + Unreal Linux Compile;
-4. run Mac PIE visual confirmation;
-5. merge only if acceptable.
+### Dagyeom — PR #100 World Readability — SUPERSEDED / CLOSED BY #134
 
-Jjun must not repair this by pushing directly to the Dagyeom branch. Open an IR only if Dagyeom discovers a Core/provider blocker.
+Original branch:
+`dagyeom/world-visual-readability-envelope`.
+
+The old PR is no longer the integration vehicle.
+Validated WorldPresentation source was reconstructed on current main through #134.
+
+#134 evidence:
+
+- Preflight #723 PASS.
+- Unreal Linux Compile #207 PASS.
+- merged to main as `1195fddbaf3341ac9508347d07fab69740f02482`.
+
+Therefore Dagyeom no longer waits for #100 merge.
 
 ### Dagyeom — PR #98 Observer Readability / QA View — STALE
 
-- **do not merge as-is**;
-- selectively reimplement only still-useful ideas on current main;
-- Observer true scrolling remains a separate current-main task.
+- do not merge as-is.
+- selectively reimplement useful ideas on current main.
+- true Observer scrolling remains a live task.
 
 ---
 
@@ -116,97 +134,140 @@ Jjun must not repair this by pushing directly to the Dagyeom branch. Open an IR 
 ### ContextAction / KnowledgeTeaching
 
 `KnowledgeTeaching` is authoritative:
-- Core identifies teacher, learner and technique;
-- Bridge exposes target resident + technique + token;
-- World moves teacher to learner and ACKs only after authoritative completion conditions;
-- Core revalidates the real meeting at completion;
+
+- Core identifies teacher, learner and technique.
+- Bridge exposes target resident + technique + token.
+- World moves teacher to learner and ACKs only after completion conditions.
+- Core revalidates the real meeting.
 - Save/Load does not persist stale pending teaching.
 
-Use for richer teaching/social Context Motion and Observer labeling without changing simulation authority.
+Use for richer teaching/social motion and Observer labels without changing simulation authority.
 
 ### Emotion runtime
 
-After #132 merge, Dagyeom may consume the existing authoritative resident emotion projection for presentation/Observer work.
+#132 is merged.
+Dagyeom may consume authoritative resident emotion projection.
 
 Rules:
-- UI/Character must not calculate a second emotional truth;
-- animation/facial/UI state may summarize Core emotion but must not mutate it;
-- if later presentation requires missing causal history/event metadata, request a provider read-model extension instead of inferring causes from visuals.
+
+- UI/Character must not calculate a second emotional truth.
+- animation/facial/UI state may summarize Core emotion but must not mutate it.
+- missing cause/history metadata requires provider read-model extension instead of visual inference.
 
 ### Lifecycle
 
-Existing Core lifecycle/family/history DTOs remain the authority for Lifecycle Event Presentation v2.
-Presentation may show birth/growth/death/history but must not infer a death cause or create grave/corpse state unless Core exposes that truth.
+Core lifecycle/family/history DTOs remain authority for Lifecycle Event Presentation v2.
+Presentation may show birth/growth/death/history but must not infer cause or create grave/corpse state unless Core exposes it.
+
+### Time / Speed — provider pending T1
+
+Target presets:
+
+- Pause 0x.
+- 1x = 8 real minutes / LifeLens day.
+- 4x = 2 minutes/day.
+- 16x = 30 seconds/day.
+- 64x = 7.5 seconds/day.
+- History = adaptive long-run mode.
+
+Dagyeom Observer may implement the control surface after T1 exposes the authoritative runtime contract.
+Do not directly scale Core truth from UI tick rate.
+
+### Calendar / Environment — provider pending E1/E2
+
+Planned provider state:
+
+- time of day / day / year / annual phase.
+- daylight/darkness.
+- derived season summary.
+- local temperature.
+- precipitation.
+- cloud/wind/humidity/visibility/wetness summary.
+
+Dagyeom consumes these for:
+
+- sun/sky/day-night.
+- weather VFX.
+- season/weather/date/time Observer readouts.
+
+Presentation does not generate weather outcomes independently.
 
 ---
 
 # Next work by lane
 
-## Jjun Core/World lane
+## Jjun Core / World lane
 
-After #132 merge:
+1. **T1 Simulation Time Authority & Variable Speed**.
+2. **E1 Calendar + Day/Night Authority**.
+3. **E2 Seasons + Dynamic Weather Core v1**.
+4. **E3 Environmental Consequences v1**.
+5. **C1 Settlement & Subsistence Foundation**.
+6. **C2 Long-Run Scale + History Fast-Forward**.
+7. **C3 Open-Ended Civilization Framework v1**.
+8. Health / Disease / Population Resilience.
+9. Education / Recording / Specialization / Economy / Institutions.
+10. Migration / Multiple Settlements / Trade Networks.
+11. Historical -> industrial -> modern -> digital -> AI -> advanced energy/biotech -> space -> open future.
 
-1. **Settlement & Subsistence Foundation**
-   - SleepingPlace / Shelter / WorkSurface;
-   - real facility effects;
-   - cultivation/agriculture / renewable food substrate;
-   - Tin/Bronze with real prerequisites.
+Canonical architecture:
 
-2. **Long-Run Scale & Cleanup**
-   - catch-up budget;
-   - population CPU/memory stability;
-   - residue/HISM profiling;
-   - snapshot/legacy cleanup;
-   - multi-century deterministic regression.
-
-3. **Open-Ended Civilization Framework v1**
-   - Knowledge / Capability / Technology / CivilizationTransformation;
-   - stable IDs/definitions;
-   - prerequisites/effects;
-   - problem-driven research;
-   - diffusion/adoption/loss/rediscovery.
-
-4. **Health / Disease / Population Resilience**.
-5. **Education / Recording / Specialization / Economy / Institutions**.
-6. **Migration / Multiple Settlements / Trade Networks**.
-7. **Historical -> industrial -> modern -> digital capability content**.
-8. **AI / automation -> advanced energy/materials/biotech -> space -> open future**.
-
-Canonical architecture: `docs/OPEN_ENDED_CIVILIZATION_NORTH_STAR.md`.
+- `docs/DEVELOPMENT_MILESTONES.md`
+- `docs/TIME_AND_DYNAMIC_ENVIRONMENT.md`
+- `docs/OPEN_ENDED_CIVILIZATION_NORTH_STAR.md`
 
 ## Dagyeom Presentation lane
 
-1. #100 current-main refresh + CI + Mac PIE closeout.
-2. Character Context Motion v2.
-3. Observer Readability + Real Scrolling.
-4. Lifecycle Event Presentation v2.
-5. consume settlement/civilization capability/history provider contracts as they land.
+1. **Character Context Motion v2**.
+2. **Observer Readability + Real Scrolling**.
+3. **Time Controls / date-time readout** after T1/E1 provider lands.
+4. **Dynamic Environment Presentation v1** after E1/E2 provider lands.
+5. **Lifecycle Event Presentation v2**.
+6. settlement/civilization/future presentation consumers as provider contracts land.
 
-Parallel execution is expected. Dagyeom tasks do not block unrelated Jjun provider work unless an actual IR is opened.
+Parallel execution is expected. Dagyeom work does not block unrelated Jjun provider work unless an actual IR is opened.
 
-## Android/device lane
+## Android / device lane
 
 **Gate B remains PAUSED BY USER.**
-Do not start Android build/seed merely because roadmap documents changed.
+
+Do not start Android build/seed because roadmap docs changed.
+When explicitly resumed, prefer cached/fast smoke paths before long engine builds.
 
 ---
 
 ## Recently completed coordination items
 
+### PR #134 — PR #100 WorldPresentation current-main reapplication — DONE
+
+- owner/integration: Jjun.
+- changed files: only current WorldPresentation source pair.
+- stale coordination docs intentionally excluded.
+- Preflight #723 PASS.
+- Unreal Linux Compile #207 PASS.
+- merged `1195fddbaf3341ac9508347d07fab69740f02482`.
+- original #100 superseded.
+
+### PR #132 — Emotion Runtime Integration v1 — DONE
+
+- Need pressure/resolution/failure/civilization outcomes integrated.
+- production external physical relief path included.
+- authoritative outcome semantics preserved.
+
 ### PR #130 — Knowledge Transmission Spatial Authority v1 — DONE
-- owner: Jjun Core / Simulation / World;
-- merged as `fb1842ad60c25f0054eb040f46d757340f65991c`;
-- exact-head gates PASS;
+
+- merged `fb1842ad60c25f0054eb040f46d757340f65991c`.
 - closed remote witness/teaching telepathy.
 
 ### PR #128 — Mac editor build unblocker — DONE
-- minimal `-Wshadow` rename only;
-- unblocked Dagyeom Mac editor work at that checkpoint.
+
+- minimal `-Wshadow` rename only.
 
 ### ASSIST_LOCK-LIFECYCLE-PRESENTATION-1 — RELEASED
+
 - Character ownership returned to Dagyeom after #125.
 
-Other older released Assist Locks remain historical and need no active coordination action.
+---
 
 ## Recently resolved Integration Requests
 
