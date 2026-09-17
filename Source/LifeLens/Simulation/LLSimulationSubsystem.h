@@ -7,7 +7,21 @@
 
 class ULLCoreBridgeSubsystem;
 
+UENUM(BlueprintType)
+enum class ELLSimulationSpeedPreset : uint8
+{
+    Paused UMETA(DisplayName="Paused"),
+    Observe UMETA(DisplayName="1x Observe"),
+    Fast UMETA(DisplayName="4x Fast"),
+    Faster UMETA(DisplayName="16x Faster"),
+    Rapid UMETA(DisplayName="64x Rapid")
+};
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FLLSimulationStateChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(
+    FLLSimulationSpeedChanged,
+    ELLSimulationSpeedPreset,
+    SpeedPreset);
 
 /**
  * Compatibility/runtime projection used by the current WorldDirector.
@@ -16,6 +30,10 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FLLSimulationStateChanged);
  * ULLCoreBridgeSubsystem. This subsystem does not own decision or outcome
  * authority; FLLResidentData/FLLRelationshipData remain read-only projections
  * while presentation consumers migrate to direct Core DTOs.
+ *
+ * Observer time speed is intentionally runtime control state rather than Core
+ * simulation truth. The Core minute remains authoritative and Save/Load never
+ * fabricates or rewrites simulation time from the selected presentation speed.
  */
 UCLASS()
 class LIFELENS_API ULLSimulationSubsystem : public UGameInstanceSubsystem
@@ -36,6 +54,18 @@ public:
 
     UFUNCTION(BlueprintCallable, Category="LifeLens|Simulation")
     void AdvanceSimulationMinutes(int32 Minutes);
+
+    UFUNCTION(BlueprintCallable, Category="LifeLens|Simulation|Time")
+    void SetSimulationSpeedPreset(ELLSimulationSpeedPreset NewPreset);
+
+    UFUNCTION(BlueprintPure, Category="LifeLens|Simulation|Time")
+    ELLSimulationSpeedPreset GetSimulationSpeedPreset() const { return SimulationSpeedPreset; }
+
+    UFUNCTION(BlueprintPure, Category="LifeLens|Simulation|Time")
+    float GetSimulationSpeedMultiplier() const;
+
+    UFUNCTION(BlueprintPure, Category="LifeLens|Simulation|Time")
+    bool IsSimulationPaused() const { return SimulationSpeedPreset == ELLSimulationSpeedPreset::Paused; }
 
     UFUNCTION(BlueprintPure, Category="LifeLens|Simulation")
     TArray<FLLResidentData> GetResidents() const { return Residents; }
@@ -61,7 +91,12 @@ public:
     UPROPERTY(BlueprintAssignable, Category="LifeLens|Simulation")
     FLLSimulationStateChanged OnSimulationStateChanged;
 
+    UPROPERTY(BlueprintAssignable, Category="LifeLens|Simulation|Time")
+    FLLSimulationSpeedChanged OnSimulationSpeedChanged;
+
 private:
+    static float SpeedMultiplierForPreset(ELLSimulationSpeedPreset Preset);
+
     ULLCoreBridgeSubsystem* GetCoreBridge() const;
     bool RefreshProjectionFromCore();
 
@@ -73,6 +108,9 @@ private:
 
     UPROPERTY()
     bool bCoreAuthoritativeRuntime = false;
+
+    UPROPERTY()
+    ELLSimulationSpeedPreset SimulationSpeedPreset = ELLSimulationSpeedPreset::Observe;
 
     UPROPERTY()
     TArray<FLLResidentData> Residents;
