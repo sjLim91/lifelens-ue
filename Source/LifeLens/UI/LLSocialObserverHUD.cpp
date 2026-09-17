@@ -151,8 +151,11 @@ void ALLSocialObserverHUD::DrawSpeechBubbles(
         1.0f,
         2.5f);
     const float TextScale = 0.82f * UIScale;
-    const float PadX = 9.0f * UIScale;
-    const float PadY = 6.0f * UIScale;
+    // Named apart from the PadX/PadY constants in LLObserverHUD.cpp: both files
+    // can land in the same unity translation unit, where identical names trip
+    // -Werror,-Wshadow and break the build.
+    const float BubblePadX = 9.0f * UIScale;
+    const float BubblePadY = 6.0f * UIScale;
 
     TSet<FGuid> PresentedActors;
     int32 VisibleCount = 0;
@@ -211,8 +214,8 @@ void ALLSocialObserverHUD::DrawSpeechBubbles(
         float TextH = 0.0f;
         GetTextSize(Speech, TextW, TextH, Font, TextScale);
 
-        const float BubbleW = TextW + PadX * 2.0f;
-        const float BubbleH = TextH + PadY * 2.0f;
+        const float BubbleW = TextW + BubblePadX * 2.0f;
+        const float BubbleH = TextH + BubblePadY * 2.0f;
         const float BubbleX = FMath::Clamp(
             CanvasPosition.X - BubbleW * 0.5f,
             4.0f,
@@ -241,8 +244,8 @@ void ALLSocialObserverHUD::DrawSpeechBubbles(
         DrawText(
             Speech,
             TextColor,
-            BubbleX + PadX,
-            BubbleY + PadY,
+            BubbleX + BubblePadX,
+            BubbleY + BubblePadY,
             Font,
             TextScale,
             false);
@@ -293,8 +296,8 @@ void ALLSocialObserverHUD::DrawObservedResidentHistory(
         2.5f);
     const float TitleScale = 0.76f * UIScale;
     const float RowScale = 0.70f * UIScale;
-    const float PadX = 10.0f * UIScale;
-    const float PadY = 8.0f * UIScale;
+    const float BubblePadX = 10.0f * UIScale;
+    const float BubblePadY = 8.0f * UIScale;
     const float Gap = 5.0f * UIScale;
     const float PanelWidth = FMath::Min(330.0f * UIScale, Canvas->ClipX * 0.44f);
 
@@ -331,7 +334,7 @@ void ALLSocialObserverHUD::DrawObservedResidentHistory(
         ContentHeight += Gap + H;
     }
 
-    const float PanelHeight = ContentHeight + PadY * 2.0f;
+    const float PanelHeight = ContentHeight + BubblePadY * 2.0f;
     const FSafeInsets Insets = SafeInsets(UIScale);
     const float PanelX = FMath::Max(
         Insets.Left,
@@ -347,11 +350,11 @@ void ALLSocialObserverHUD::DrawObservedResidentHistory(
         PanelWidth,
         PanelHeight);
 
-    float CursorY = PanelY + PadY;
+    float CursorY = PanelY + BubblePadY;
     DrawText(
         TEXT("최근 상호작용"),
         FLinearColor(0.82f, 0.92f, 1.0f, 0.92f),
-        PanelX + PadX,
+        PanelX + BubblePadX,
         CursorY,
         Font,
         TitleScale,
@@ -363,7 +366,7 @@ void ALLSocialObserverHUD::DrawObservedResidentHistory(
         DrawText(
             Lines[Index],
             FLinearColor(0.93f, 0.95f, 0.98f, 0.88f),
-            PanelX + PadX,
+            PanelX + BubblePadX,
             CursorY,
             Font,
             RowScale,
@@ -411,8 +414,8 @@ void ALLSocialObserverHUD::DrawEventFeed(
         2.5f);
     const float TitleScale = 0.78f * UIScale;
     const float RowScale = 0.72f * UIScale;
-    const float PadX = 10.0f * UIScale;
-    const float PadY = 8.0f * UIScale;
+    const float BubblePadX = 10.0f * UIScale;
+    const float BubblePadY = 8.0f * UIScale;
     const float Gap = 5.0f * UIScale;
     const float PanelWidth = FMath::Min(330.0f * UIScale, Canvas->ClipX * 0.48f);
 
@@ -438,7 +441,7 @@ void ALLSocialObserverHUD::DrawEventFeed(
         ContentHeight += Gap + H;
     }
 
-    const float PanelHeight = ContentHeight + PadY * 2.0f;
+    const float PanelHeight = ContentHeight + BubblePadY * 2.0f;
     const FSafeInsets Insets = SafeInsets(UIScale);
     const float PanelX = Insets.Left;
     const float PanelY = FMath::Max(
@@ -452,11 +455,11 @@ void ALLSocialObserverHUD::DrawEventFeed(
         PanelWidth,
         PanelHeight);
 
-    float CursorY = PanelY + PadY;
+    float CursorY = PanelY + BubblePadY;
     DrawText(
         TEXT("사회 사건"),
         FLinearColor(0.80f, 0.90f, 1.0f, 0.92f),
-        PanelX + PadX,
+        PanelX + BubblePadX,
         CursorY,
         Font,
         TitleScale,
@@ -473,7 +476,7 @@ void ALLSocialObserverHUD::DrawEventFeed(
         DrawText(
             Lines[Index],
             RowColor,
-            PanelX + PadX,
+            PanelX + BubblePadX,
             CursorY,
             Font,
             RowScale,
