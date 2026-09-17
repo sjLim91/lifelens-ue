@@ -274,8 +274,21 @@ ELLResidentContextMotion ULLResidentMotionComponent::ResolveContextMotion() cons
         return ELLResidentContextMotion::None;
     }
 
+    // The *pending context directive* is the one WorldDirector itself consumed
+    // to open this work window (ALLWorldDirector::ApplyPendingContextDirective),
+    // and it is the only read that carries ContextActionKind, the facility
+    // action, the parenting action and the equipped tool capability.
+    //
+    // GetResidentActionDirective is a different read: it reports the observed
+    // activity plus the physical/social intent, and it fills the civilization
+    // fields only while the resident is Idle. Measured over a headless run,
+    // 112/112 samples came back with ctxKind=0 facility=0 tool=0 cap=0 from
+    // that read while the pending read carried ctxKind=1/2/4 — which is why
+    // every refinement used to fall through to the legacy clip.
     FLLCoreActionDirective Directive;
-    if (!Bridge->GetResidentActionDirective(Resident->GetResidentId(), Directive))
+    const bool bHasPending =
+        Bridge->GetResidentPendingContextDirective(Resident->GetResidentId(), Directive);
+    if (!bHasPending && !Bridge->GetResidentActionDirective(Resident->GetResidentId(), Directive))
     {
         return ELLResidentContextMotion::None;
     }
@@ -388,6 +401,15 @@ ELLResidentContextMotion ULLResidentMotionComponent::ResolveContextMotion() cons
             break;
     }
 
+    // Observation-read residue: a social exchange with no pending context
+    // action still reads as a conversation.
+    if (Directive.ActivityKind == ELLCoreObservedActivityKind::Social
+        && Directive.SocialIntent != ELLCoreSocialIntent::None
+        && Directive.SocialIntent != ELLCoreSocialIntent::Avoid)
+    {
+        return ELLResidentContextMotion::Talk;
+    }
+
     return ELLResidentContextMotion::None;
 }
 
@@ -408,6 +430,53 @@ UAnimSequence* ULLResidentMotionComponent::ClipForContextMotion(ELLResidentConte
         case ELLResidentContextMotion::None:
         default:                                    return nullptr;
     }
+}
+
+void ULLResidentMotionComponent::LogDirectiveDiagnostics() const
+{
+    const AActor* Owner = GetOwner();
+    const ALLResidentCharacter* Resident = Cast<ALLResidentCharacter>(Owner);
+    const UWorld* World = GetWorld();
+    const UGameInstance* GameInstance = World ? World->GetGameInstance() : nullptr;
+    const ULLCoreBridgeSubsystem* Bridge =
+        GameInstance ? GameInstance->GetSubsystem<ULLCoreBridgeSubsystem>() : nullptr;
+
+    const bool bResidentCast = Resident != nullptr;
+    const bool bIdValid = Resident && Resident->GetResidentId().IsValid();
+
+    FLLCoreActionDirective ActionDirective;
+    bool bActionRead = false;
+    FLLCoreActionDirective PendingDirective;
+    bool bPendingRead = false;
+    if (Bridge && bIdValid)
+    {
+        bActionRead = Bridge->GetResidentActionDirective(Resident->GetResidentId(), ActionDirective);
+        bPendingRead = Bridge->GetResidentPendingContextDirective(Resident->GetResidentId(), PendingDirective);
+    }
+
+    UE_LOG(LogTemp, Log,
+        TEXT("LLMotionDiag %s cast=%d id=%d bridge=%d | action=%d activity=%d phys=%d social=%d ctxKind=%d civ=%d facility=%d tool=%d cap=%d sanit=%lld")
+        TEXT(" | pending=%d ctxKind=%d civ=%d facility=%d parenting=%d tool=%d cap=%d sanit=%lld"),
+        Owner ? *Owner->GetName() : TEXT("none"),
+        bResidentCast ? 1 : 0, bIdValid ? 1 : 0, Bridge ? 1 : 0,
+        bActionRead ? 1 : 0,
+        static_cast<int32>(ActionDirective.ActivityKind),
+        static_cast<int32>(ActionDirective.PhysicalIntent),
+        static_cast<int32>(ActionDirective.SocialIntent),
+        static_cast<int32>(ActionDirective.ContextActionKind),
+        static_cast<int32>(ActionDirective.CivilizationAction),
+        static_cast<int32>(ActionDirective.CivilizationFacilityAction),
+        ActionDirective.bHasCivilizationTool ? 1 : 0,
+        static_cast<int32>(ActionDirective.CivilizationToolCapability),
+        static_cast<long long>(ActionDirective.CivilizationSanitationSiteId),
+        bPendingRead ? 1 : 0,
+        static_cast<int32>(PendingDirective.ContextActionKind),
+        static_cast<int32>(PendingDirective.CivilizationAction),
+        static_cast<int32>(PendingDirective.CivilizationFacilityAction),
+        static_cast<int32>(PendingDirective.ParentingAction),
+        PendingDirective.bHasCivilizationTool ? 1 : 0,
+        static_cast<int32>(PendingDirective.CivilizationToolCapability),
+        static_cast<long long>(PendingDirective.CivilizationSanitationSiteId));
 }
 
 void ULLResidentMotionComponent::UpdateContextAnimationState(float DeltaTime)
@@ -714,6 +783,7 @@ void ULLResidentMotionComponent::TickComponent(float DeltaTime, ELevelTick TickT
         if (DebugLogTimer <= 0.0f)
         {
             DebugLogTimer = DebugLogInterval;
+            LogDirectiveDiagnostics();
             float FacingDot = 0.0f;
             if (Body && SmoothedSpeed > 0.0f)
             {

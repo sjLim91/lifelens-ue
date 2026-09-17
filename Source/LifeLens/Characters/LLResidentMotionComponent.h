@@ -112,6 +112,10 @@ private:
     // Read-only: nothing here starts, completes or mutates a Core action.
     ELLResidentContextMotion ResolveContextMotion() const;
     UAnimSequence* ClipForContextMotion(ELLResidentContextMotion Motion) const;
+    // ll.DebugMotion diagnostics: reports which bridge read succeeded and what
+    // the authoritative directives actually contain, so a wrong classification
+    // can be told apart from an empty read.
+    void LogDirectiveDiagnostics() const;
 
     UPROPERTY(EditAnywhere, Category="LifeLens|Motion")
     float MeshForwardYawOffsetDegrees = -90.0f;
