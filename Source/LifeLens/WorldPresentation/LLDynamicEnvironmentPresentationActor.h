@@ -6,6 +6,9 @@
 
 class UDirectionalLightComponent;
 class UExponentialHeightFogComponent;
+class UNiagaraComponent;
+class UNiagaraSystem;
+class UPostProcessComponent;
 class USceneComponent;
 class USkyAtmosphereComponent;
 class USkyLightComponent;
@@ -15,7 +18,7 @@ class USkyLightComponent;
  *
  * This actor never advances simulation time and never generates weather. It
  * consumes ULLCoreBridgeSubsystem observations and maps them to lighting,
- * atmosphere and fog parameters that Dagyeom can tune visually in PIE.
+ * atmosphere, surface material parameters, weather VFX and post-process values.
  * Existing map lighting is reused when present; fallback actors are spawned
  * only when the production map does not provide the relevant primitive.
  */
@@ -32,18 +35,59 @@ public:
 
 private:
     void ResolveWorldComponents();
+    void ConfigureEffectAssets();
+    void UpdateEffectAnchor();
     void RefreshFromCore(bool bForce);
     void ApplyLighting(float Daylight01, float CloudCover01, float Visibility01, int32 MinuteOfDay, float AnnualPhase);
     void ApplyFog(float Daylight01, float CloudCover01, float Visibility01, float Humidity01, float Precipitation01);
+    void ApplySurfaceMaterials(float SurfaceWetness01, float Snow01, float Precipitation01, float AirTemperatureC);
+    void ApplyWeatherEffects(float Rain01, float Snow01, float Fog01, float Wind01);
+    void ApplyPostProcess(float Daylight01, float CloudCover01, float Visibility01, float Precipitation01);
+    void SetEffectActive(UNiagaraComponent* Component, bool bShouldBeActive) const;
 
     UPROPERTY() TObjectPtr<USceneComponent> SceneRoot;
     UPROPERTY() TObjectPtr<UDirectionalLightComponent> SunLight;
     UPROPERTY() TObjectPtr<USkyLightComponent> SkyLight;
     UPROPERTY() TObjectPtr<USkyAtmosphereComponent> SkyAtmosphere;
     UPROPERTY() TObjectPtr<UExponentialHeightFogComponent> HeightFog;
+    UPROPERTY() TObjectPtr<UNiagaraComponent> RainEffect;
+    UPROPERTY() TObjectPtr<UNiagaraComponent> SnowEffect;
+    UPROPERTY() TObjectPtr<UNiagaraComponent> FogEffect;
+    UPROPERTY() TObjectPtr<UPostProcessComponent> PostProcess;
 
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Environment", meta=(ClampMin="0.05", ClampMax="5.0"))
     float RefreshIntervalSeconds = 0.25f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Environment", meta=(ClampMin="0.0", ClampMax="0.25"))
+    float EffectActivationThreshold = 0.02f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Environment", meta=(ClampMin="0.0", ClampMax="5000.0"))
+    float EffectAnchorHeightUU = 1200.0f;
+
+    // Stable material parameter contract. WorldPresentation materials may opt
+    // into any/all of these without creating a second weather authority.
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Materials")
+    FName WetnessMaterialParameter = TEXT("LL_Wetness");
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Materials")
+    FName SnowMaterialParameter = TEXT("LL_Snow");
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Materials")
+    FName PrecipitationMaterialParameter = TEXT("LL_Precipitation");
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Materials")
+    FName AirTemperatureMaterialParameter = TEXT("LL_AirTemperatureC");
+
+    // Optional authored Niagara systems. The binding and activation path is
+    // fully runtime-ready even when a visual asset has not yet been assigned.
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|VFX")
+    TSoftObjectPtr<UNiagaraSystem> RainSystem;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|VFX")
+    TSoftObjectPtr<UNiagaraSystem> SnowSystem;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|VFX")
+    TSoftObjectPtr<UNiagaraSystem> FogSystem;
 
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Lighting", meta=(ClampMin="0.0"))
     float DaySunIntensity = 8.0f;
@@ -77,6 +121,21 @@ private:
 
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Fog", meta=(ClampMin="0.0", ClampMax="1.0"))
     float PrecipitationFogWeight = 0.40f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|PostProcess", meta=(ClampMin="-3.0", ClampMax="3.0"))
+    float DayExposureBias = 0.0f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|PostProcess", meta=(ClampMin="-3.0", ClampMax="3.0"))
+    float NightExposureBias = -0.35f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|PostProcess", meta=(ClampMin="0.0", ClampMax="1.0"))
+    float MaximumStormExposureReduction = 0.30f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|PostProcess", meta=(ClampMin="0.0", ClampMax="2.0"))
+    float ClearSaturation = 1.0f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|PostProcess", meta=(ClampMin="0.0", ClampMax="2.0"))
+    float SevereWeatherSaturation = 0.78f;
 
     float RefreshAccumulator = 0.0f;
     int64 LastAppliedSimulationMinute = TNumericLimits<int64>::Lowest();
