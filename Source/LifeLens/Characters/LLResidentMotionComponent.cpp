@@ -67,6 +67,21 @@ ULLResidentMotionComponent::ULLResidentMotionComponent()
         TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Interact.Interact"));
     InteractAnimation = InteractFinder.Succeeded() ? InteractFinder.Object : nullptr;
 
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> GatherFinder(
+        TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/PickUp_Table.PickUp_Table"));
+    GatherAnimation = GatherFinder.Succeeded() ? GatherFinder.Object : nullptr;
+
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> DigFinder(
+        TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Fixing_Kneeling.Fixing_Kneeling"));
+    DigAnimation = DigFinder.Succeeded() ? DigFinder.Object : nullptr;
+
+    // Quaternius has no dedicated primitive hammer clip. Sword_Attack is used
+    // only as a repeated arm-swing fallback; no sword is spawned, and the
+    // authoritative held StoneHammer presentation remains the visible tool.
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> StrikeFinder(
+        TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Sword_Attack.Sword_Attack"));
+    StrikeAnimation = StrikeFinder.Succeeded() ? StrikeFinder.Object : nullptr;
+
     static ConstructorHelpers::FObjectFinder<UAnimSequence> BuildFinder(
         TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Fixing_Kneeling.Fixing_Kneeling"));
     BuildAnimation = BuildFinder.Succeeded() ? BuildFinder.Object : nullptr;
@@ -184,15 +199,37 @@ void ULLResidentMotionComponent::UpdateContextAnimationState()
         switch (WorkPresentationMode)
         {
             case ELLResidentWorkPresentationMode::Interact:
-            case ELLResidentWorkPresentationMode::Gather:
-                // Gather has its own semantic route now. The generic UAL
-                // Interact clip is the v1 fallback until dedicated authored
-                // cutting/chopping/digging/striking/carry clips are selected.
                 DesiredAnimation = InteractAnimation;
                 break;
+
+            case ELLResidentWorkPresentationMode::Gather:
+                // The Core/World contract already tells Presentation which real
+                // tool is being used. Reuse that signal to select a closer body
+                // motion without inventing a second action state.
+                switch (HeldToolPresentation)
+                {
+                    case ELLResidentHeldToolPresentation::DiggingStick:
+                        DesiredAnimation = DigAnimation ? DigAnimation : InteractAnimation;
+                        break;
+                    case ELLResidentHeldToolPresentation::StoneHammer:
+                        DesiredAnimation = StrikeAnimation ? StrikeAnimation : InteractAnimation;
+                        break;
+                    case ELLResidentHeldToolPresentation::SimpleContainer:
+                    case ELLResidentHeldToolPresentation::None:
+                        DesiredAnimation = GatherAnimation ? GatherAnimation : InteractAnimation;
+                        break;
+                    case ELLResidentHeldToolPresentation::SharpFlake:
+                    case ELLResidentHeldToolPresentation::StoneCuttingTool:
+                    default:
+                        DesiredAnimation = InteractAnimation;
+                        break;
+                }
+                break;
+
             case ELLResidentWorkPresentationMode::Build:
                 DesiredAnimation = BuildAnimation;
                 break;
+
             case ELLResidentWorkPresentationMode::None:
             default:
                 break;
