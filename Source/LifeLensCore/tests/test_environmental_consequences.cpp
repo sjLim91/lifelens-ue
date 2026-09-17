@@ -1,9 +1,19 @@
 #include "lifelens/EnvironmentalConsequences.h"
+#include "lifelens/Planner.h"
+#include "lifelens/PrimitiveFireProgression.h"
 
 #include <cassert>
 #include <cmath>
 
 using namespace lifelens;
+
+namespace
+{
+bool near(double a,double b,double epsilon=1e-12)
+{
+    return std::abs(a-b)<=epsilon;
+}
+}
 
 int main()
 {
@@ -58,6 +68,51 @@ int main()
     Needs needs{};
     applyEnvironmentalNeedPressure(needs, hotProfile);
     assert(needs.thirst > 0.0);
+
+    // Integration: a production-style natural world uses the same authoritative
+    // climate field for daily renewable resource regeneration.
+    World world(20260917);
+    world.resourceNodes.clear();
+    world.storageSites.clear();
+    world.clearGeneratedNaturalWorld();
+    const InitialStartRegionSelection selected = world.establishInitialStartRegion();
+    world.materializeNaturalChunk(selected.region.coord);
+    world.minute = SimulationMinutesPerDay;
+
+    prepareEnvironmentalResourceRegeneration(world);
+    bool sawRenewable = false;
+    for(const auto& node : world.resourceNodes){
+        if(!node.renewable) continue;
+        const int baseline = generatedBaselineRegenerationPerDay(world,node.id);
+        assert(baseline >= 0);
+        const EnvironmentalConsequenceProfile profile = environmentalConsequencesAt(world,node.pos);
+        assert(node.regenerationPerDay == environmentalRegenerationUnits(node.material,baseline,profile));
+        sawRenewable = true;
+    }
+    assert(sawRenewable);
+
+    // Integration: environmental pressure is applied to resident Needs by the
+    // authoritative minute hook rather than being a visual-only readout.
+    Character resident;
+    resident.id = 77;
+    resident.alive = true;
+    resident.needs = {};
+    world.characters = {resident};
+    const EnvironmentalConsequenceProfile startProfile = deriveEnvironmentalConsequences(
+        deriveDynamicEnvironment(world.genesisIdentity(),selected.region.coord,world.minute));
+    applyStartRegionEnvironmentalNeedPressure(world);
+    assert(near(world.characters.front().needs.hunger,startProfile.perMinuteNeedsDelta.hunger));
+    assert(near(world.characters.front().needs.thirst,startProfile.perMinuteNeedsDelta.thirst));
+    assert(near(world.characters.front().needs.sleep,startProfile.perMinuteNeedsDelta.sleep));
+    assert(near(world.characters.front().needs.hygiene,startProfile.perMinuteNeedsDelta.hygiene));
+
+    // Integration: bad weather increases Core travel ticks deterministically.
+    const GridPos from = world.initialStartRegionCenterGrid();
+    const GridPos to{from.x+12,from.y};
+    const int baseTravel = manhattan(from,to);
+    const int adjustedTravel = environmentAdjustedTravelTicks(world,from,to);
+    assert(adjustedTravel >= baseTravel);
+    assert(adjustedTravel == environmentAdjustedTravelTicks(world,from,to));
 
     return 0;
 }
