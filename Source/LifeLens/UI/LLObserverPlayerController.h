@@ -19,6 +19,7 @@ class ALLResidentCharacter;
 // Camera (docs/OBSERVER_CAMERA_CONTROL_v1.md):
 //   PC: wheel zoom, right-drag orbit, middle-drag pan.
 //   Android: tap selects, one-finger drag orbits, pinch zooms, two-finger drag pans.
+//   LEVEL 2 detail content consumes wheel / one-finger drag before camera input.
 UCLASS(Config=Game, DefaultConfig)
 class LIFELENS_API ALLObserverPlayerController : public APlayerController
 {
@@ -118,6 +119,7 @@ private:
     bool bTouchGesture = false;
     bool bTouchHadSecondFinger = false;
     bool bTwoFingerActive = false;
+    bool bHUDDetailScrollTouchActive = false;
     FVector2D TouchStart1 = FVector2D::ZeroVector;
     FVector2D LastTouch1 = FVector2D::ZeroVector;
     FVector2D LastTouch2 = FVector2D::ZeroVector;
