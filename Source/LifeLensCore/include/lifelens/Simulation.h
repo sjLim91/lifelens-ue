@@ -12,6 +12,7 @@
 #include "ContextAction.h"
 #include "Death.h"
 #include "DecisionExecution.h"
+#include "EmotionRuntime.h"
 #include "EnvironmentalExposure.h"
 #include "EnvironmentalResidue.h"
 #include "ObserverReadModelV2.h"
@@ -250,6 +251,7 @@ inline bool Simulation::completeExternalPhysicalAction(
     if(runtime.goal==Goal::Drink && !character->civilization.inventory.remove(
         ItemKind::RawMaterial,MaterialKind::Water,1)) return false;
 
+    const Needs beforeNeeds=character->needs;
     const PrimitiveSanitationSiteKind sanitationKind=sanitationSite!=nullptr
         ? sanitationSite->kind
         : PrimitiveSanitationSiteKind::DesignatedArea;
@@ -292,6 +294,8 @@ inline bool Simulation::completeExternalPhysicalAction(
         character->needs.hygiene=Needs::clamp01(character->needs.hygiene+hygieneBurden);
         emit(character->name+" left sanitation residue id="+std::to_string(residue.id));
     }
+
+    applyNeedResolutionEmotion(*character,beforeNeeds,runtime.goal);
 
     const EnvironmentalExposureResult exposure=perceiveEnvironmentalContamination(
         *character,world_.environmentalResidues,resolvedPosition,world_.minute);
