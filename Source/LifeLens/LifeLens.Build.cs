@@ -31,7 +31,8 @@ public class LifeLens : ModuleRules
             "InputCore",
             "UMG",
             "AIModule",
-            "NavigationSystem"
+            "NavigationSystem",
+            "Niagara"
         });
 
         PrivateDependencyModuleNames.AddRange(new string[]

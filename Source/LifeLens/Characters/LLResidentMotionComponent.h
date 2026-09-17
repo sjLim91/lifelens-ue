@@ -43,11 +43,10 @@ enum class ELLResidentContextMotion : uint8
     None,
     Talk,           // Idle_Talking_Loop  - social exchange, teaching, instruction
     Learn,          // Interact           - learner side of a teaching exchange
-    GatherPick,     // PickUp_Table       - gathering, storing, hauling into a store
-    ChopSwing,      // Sword_Attack       - Chop/Cut tool capability
-    StrikeWork,     // Fixing_Kneeling    - Strike capability (knapping, hammering)
-    DigWork,        // Fixing_Kneeling    - Dig capability
-    CraftWork,      // Fixing_Kneeling    - craft, experiment, facility work, smelt charge
+    GatherPick,     // GatherAnimation    - gathering, storing, carrying into a store
+    StrikeSwing,    // StrikeAnimation    - Chop/Cut/Strike tool capability
+    DigWork,        // DigAnimation       - Dig capability
+    CraftWork,      // BuildAnimation     - craft, experiment, facility work, smelt charge
     HaulPush,       // Push_Loop          - material delivery
     FireTend,       // Idle_Torch_Loop    - ignite, fuel, charcoal collection
     CrouchLow,      // Crouch_Idle_Loop   - sanitation site use, hygiene
@@ -105,12 +104,13 @@ private:
     void UpdateContextAnimationState(float DeltaTime);
     void UpdateHeldToolVisualState();
 
+    // PR #143's WorldDirector-signal clip selection, kept intact. It decides
+    // whether a resident is presenting context work at all, and stays the
+    // result whenever the authoritative directive cannot refine it.
+    UAnimSequence* LegacyContextAnimation() const;
     // Reads the authoritative directive for this resident and classifies it.
     // Read-only: nothing here starts, completes or mutates a Core action.
     ELLResidentContextMotion ResolveContextMotion() const;
-    // Legacy WorldDirector signal path, kept as the fallback whenever the
-    // directive cannot be read (no bridge, unbound resident, save/load gap).
-    ELLResidentContextMotion ContextMotionFromLegacyMode() const;
     UAnimSequence* ClipForContextMotion(ELLResidentContextMotion Motion) const;
 
     UPROPERTY(EditAnywhere, Category="LifeLens|Motion")
@@ -120,12 +120,15 @@ private:
     UPROPERTY() TObjectPtr<UAnimSequence> IdleAnimation;
     UPROPERTY() TObjectPtr<UAnimSequence> TalkingAnimation;
     UPROPERTY() TObjectPtr<UAnimSequence> InteractAnimation;
+    UPROPERTY() TObjectPtr<UAnimSequence> GatherAnimation;
+    UPROPERTY() TObjectPtr<UAnimSequence> DigAnimation;
+    UPROPERTY() TObjectPtr<UAnimSequence> StrikeAnimation;
     UPROPERTY() TObjectPtr<UAnimSequence> BuildAnimation;
 
     // Context Motion v2 clips. All of them are already-imported Quaternius UAL
     // sequences; no new animation asset is introduced by this milestone.
-    UPROPERTY() TObjectPtr<UAnimSequence> GatherAnimation;
-    UPROPERTY() TObjectPtr<UAnimSequence> ChopAnimation;
+    // Gather/Dig/Strike are the clips #143 already selected and are reused
+    // as-is rather than duplicated under new names.
     UPROPERTY() TObjectPtr<UAnimSequence> HaulAnimation;
     UPROPERTY() TObjectPtr<UAnimSequence> FireAnimation;
     UPROPERTY() TObjectPtr<UAnimSequence> CrouchAnimation;

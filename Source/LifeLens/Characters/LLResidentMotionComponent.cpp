@@ -72,22 +72,32 @@ ULLResidentMotionComponent::ULLResidentMotionComponent()
         TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Interact.Interact"));
     InteractAnimation = InteractFinder.Succeeded() ? InteractFinder.Object : nullptr;
 
-    static ConstructorHelpers::FObjectFinder<UAnimSequence> BuildFinder(
-        TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Fixing_Kneeling.Fixing_Kneeling"));
-    BuildAnimation = BuildFinder.Succeeded() ? BuildFinder.Object : nullptr;
-
-    // Context Motion v2 clips. Survey evidence (see
-    // Content/Characters/Quaternius/Import/survey_animations.py): none of the
-    // UAL sequences carry root motion, so looping a work clip never fights the
-    // authoritative Core/World movement of the actor.
     static ConstructorHelpers::FObjectFinder<UAnimSequence> GatherFinder(
         TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/PickUp_Table.PickUp_Table"));
     GatherAnimation = GatherFinder.Succeeded() ? GatherFinder.Object : nullptr;
 
-    static ConstructorHelpers::FObjectFinder<UAnimSequence> ChopFinder(
-        TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Sword_Attack.Sword_Attack"));
-    ChopAnimation = ChopFinder.Succeeded() ? ChopFinder.Object : nullptr;
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> DigFinder(
+        TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Fixing_Kneeling.Fixing_Kneeling"));
+    DigAnimation = DigFinder.Succeeded() ? DigFinder.Object : nullptr;
 
+    // Quaternius has no dedicated primitive hammer clip. Sword_Attack is used
+    // only as a repeated arm-swing fallback; no sword is spawned, and the
+    // authoritative held StoneHammer presentation remains the visible tool.
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> StrikeFinder(
+        TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Sword_Attack.Sword_Attack"));
+    StrikeAnimation = StrikeFinder.Succeeded() ? StrikeFinder.Object : nullptr;
+
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> BuildFinder(
+        TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Fixing_Kneeling.Fixing_Kneeling"));
+    BuildAnimation = BuildFinder.Succeeded() ? BuildFinder.Object : nullptr;
+
+    // Context Motion v2 adds the clips the tool-based route above has no entry
+    // for: hauling, fire tending, low crouched work and seated care. Gather,
+    // Dig and Strike stay on the clips #143 already chose.
+    //
+    // Survey evidence (Content/Characters/Quaternius/Import/survey_animations.py):
+    // none of the 43 imported UAL sequences carries root motion, so looping a
+    // work clip never fights the authoritative Core/World movement.
     static ConstructorHelpers::FObjectFinder<UAnimSequence> HaulFinder(
         TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Push_Loop.Push_Loop"));
     HaulAnimation = HaulFinder.Succeeded() ? HaulFinder.Object : nullptr;
@@ -200,38 +210,60 @@ void ULLResidentMotionComponent::EnsureLocomotionPlaying()
         LocomotionBlendSpace->GetBlendSamples().Num(), ResolvedSamples.Num());
 }
 
-ELLResidentContextMotion ULLResidentMotionComponent::ContextMotionFromLegacyMode() const
+UAnimSequence* ULLResidentMotionComponent::LegacyContextAnimation() const
 {
+    UAnimSequence* DesiredAnimation = nullptr;
     if (bSocialInteractionActive)
     {
-        return ELLResidentContextMotion::Talk;
+        DesiredAnimation = TalkingAnimation;
+    }
+    else
+    {
+        switch (WorkPresentationMode)
+        {
+            case ELLResidentWorkPresentationMode::Interact:
+                DesiredAnimation = InteractAnimation;
+                break;
+
+            case ELLResidentWorkPresentationMode::Gather:
+                // The Core/World contract already tells Presentation which real
+                // tool is being used. Reuse that signal to select a closer body
+                // motion without inventing a second action state.
+                switch (HeldToolPresentation)
+                {
+                    case ELLResidentHeldToolPresentation::DiggingStick:
+                        DesiredAnimation = DigAnimation ? DigAnimation : InteractAnimation;
+                        break;
+                    case ELLResidentHeldToolPresentation::StoneHammer:
+                        DesiredAnimation = StrikeAnimation ? StrikeAnimation : InteractAnimation;
+                        break;
+                    case ELLResidentHeldToolPresentation::SimpleContainer:
+                    case ELLResidentHeldToolPresentation::None:
+                        DesiredAnimation = GatherAnimation ? GatherAnimation : InteractAnimation;
+                        break;
+                    case ELLResidentHeldToolPresentation::SharpFlake:
+                    case ELLResidentHeldToolPresentation::StoneCuttingTool:
+                    default:
+                        DesiredAnimation = InteractAnimation;
+                        break;
+                }
+                break;
+
+            case ELLResidentWorkPresentationMode::Build:
+                DesiredAnimation = BuildAnimation;
+                break;
+
+            case ELLResidentWorkPresentationMode::None:
+            default:
+                break;
+        }
     }
 
-    switch (WorkPresentationMode)
-    {
-        case ELLResidentWorkPresentationMode::Gather:
-            return ELLResidentContextMotion::GatherPick;
-        case ELLResidentWorkPresentationMode::Build:
-            return ELLResidentContextMotion::CraftWork;
-        case ELLResidentWorkPresentationMode::Interact:
-            return ELLResidentContextMotion::Learn;
-        case ELLResidentWorkPresentationMode::None:
-        default:
-            return ELLResidentContextMotion::None;
-    }
+    return DesiredAnimation;
 }
 
 ELLResidentContextMotion ULLResidentMotionComponent::ResolveContextMotion() const
 {
-    // The WorldDirector signal stays the authority on *whether* a resident is
-    // performing its action at the target. Refining the clip never widens that
-    // window, so a resident walking toward a tree is still walking.
-    const ELLResidentContextMotion LegacyMotion = ContextMotionFromLegacyMode();
-    if (LegacyMotion == ELLResidentContextMotion::None)
-    {
-        return ELLResidentContextMotion::None;
-    }
-
     const ALLResidentCharacter* Resident = Cast<ALLResidentCharacter>(GetOwner());
     const UWorld* World = GetWorld();
     const UGameInstance* GameInstance = World ? World->GetGameInstance() : nullptr;
@@ -239,13 +271,13 @@ ELLResidentContextMotion ULLResidentMotionComponent::ResolveContextMotion() cons
         GameInstance ? GameInstance->GetSubsystem<ULLCoreBridgeSubsystem>() : nullptr;
     if (!Resident || !Bridge || !Resident->GetResidentId().IsValid())
     {
-        return LegacyMotion;
+        return ELLResidentContextMotion::None;
     }
 
     FLLCoreActionDirective Directive;
     if (!Bridge->GetResidentActionDirective(Resident->GetResidentId(), Directive))
     {
-        return LegacyMotion;
+        return ELLResidentContextMotion::None;
     }
 
     if (!Directive.bAlive)
@@ -254,8 +286,8 @@ ELLResidentContextMotion ULLResidentMotionComponent::ResolveContextMotion() cons
         return ELLResidentContextMotion::None;
     }
 
-    // Sanitation is classified first: Core marks it on the civilization action
-    // and on the physical intent, and a squat reads correctly for both.
+    // Sanitation is classified first: Core marks it both on the civilization
+    // action and on the physical intent, and a squat reads correctly for both.
     if (Directive.CivilizationSanitationSiteId != 0
         || Directive.PhysicalIntent == ELLCorePhysicalIntent::Toilet
         || Directive.PhysicalIntent == ELLCorePhysicalIntent::Hygiene)
@@ -289,8 +321,9 @@ ELLResidentContextMotion ULLResidentMotionComponent::ResolveContextMotion() cons
                     return ELLResidentContextMotion::CrouchLow;
                 case ELLCoreParentingAction::PutToSleep:
                     // No authored lying/settling clip exists in the imported
-                    // pack. Recorded as a Context Motion v2 asset gap rather
-                    // than dressed up with an unrelated clip.
+                    // pack, so this stays a seated care pose and is recorded as
+                    // a Context Motion v2 asset gap rather than dressed up with
+                    // an unrelated clip.
                     return ELLResidentContextMotion::SeatedCare;
                 default:
                     return ELLResidentContextMotion::Talk;
@@ -321,18 +354,19 @@ ELLResidentContextMotion ULLResidentMotionComponent::ResolveContextMotion() cons
     }
 
     // Tool capability describes the physical gesture better than the action
-    // verb does, so it wins whenever Core reports an equipped tool.
+    // verb does, so it wins whenever Core reports an equipped tool. The clips
+    // are the same ones the held-tool route in LegacyContextAnimation() uses,
+    // so a refined and an unrefined resident never disagree on screen.
     if (Directive.bHasCivilizationTool)
     {
         switch (Directive.CivilizationToolCapability)
         {
             case ELLCoreToolCapability::Chop:
             case ELLCoreToolCapability::Cut:
-                return ELLResidentContextMotion::ChopSwing;
+            case ELLCoreToolCapability::Strike:
+                return ELLResidentContextMotion::StrikeSwing;
             case ELLCoreToolCapability::Dig:
                 return ELLResidentContextMotion::DigWork;
-            case ELLCoreToolCapability::Strike:
-                return ELLResidentContextMotion::StrikeWork;
             case ELLCoreToolCapability::Heat:
                 return ELLResidentContextMotion::FireTend;
             case ELLCoreToolCapability::Carry:
@@ -354,26 +388,25 @@ ELLResidentContextMotion ULLResidentMotionComponent::ResolveContextMotion() cons
             break;
     }
 
-    return LegacyMotion;
+    return ELLResidentContextMotion::None;
 }
 
 UAnimSequence* ULLResidentMotionComponent::ClipForContextMotion(ELLResidentContextMotion Motion) const
 {
     switch (Motion)
     {
-        case ELLResidentContextMotion::Talk:       return TalkingAnimation;
-        case ELLResidentContextMotion::Learn:      return InteractAnimation;
-        case ELLResidentContextMotion::GatherPick: return GatherAnimation;
-        case ELLResidentContextMotion::ChopSwing:  return ChopAnimation;
-        case ELLResidentContextMotion::StrikeWork: return BuildAnimation;
-        case ELLResidentContextMotion::DigWork:    return BuildAnimation;
-        case ELLResidentContextMotion::CraftWork:  return BuildAnimation;
-        case ELLResidentContextMotion::HaulPush:   return HaulAnimation;
-        case ELLResidentContextMotion::FireTend:   return FireAnimation;
-        case ELLResidentContextMotion::CrouchLow:  return CrouchAnimation;
-        case ELLResidentContextMotion::SeatedCare: return SeatedCareAnimation;
+        case ELLResidentContextMotion::Talk:        return TalkingAnimation;
+        case ELLResidentContextMotion::Learn:       return InteractAnimation;
+        case ELLResidentContextMotion::GatherPick:  return GatherAnimation;
+        case ELLResidentContextMotion::StrikeSwing: return StrikeAnimation;
+        case ELLResidentContextMotion::DigWork:     return DigAnimation;
+        case ELLResidentContextMotion::CraftWork:   return BuildAnimation;
+        case ELLResidentContextMotion::HaulPush:    return HaulAnimation;
+        case ELLResidentContextMotion::FireTend:    return FireAnimation;
+        case ELLResidentContextMotion::CrouchLow:   return CrouchAnimation;
+        case ELLResidentContextMotion::SeatedCare:  return SeatedCareAnimation;
         case ELLResidentContextMotion::None:
-        default:                                   return nullptr;
+        default:                                    return nullptr;
     }
 }
 
@@ -404,11 +437,28 @@ void ULLResidentMotionComponent::UpdateContextAnimationState(float DeltaTime)
         bLocomotionPlaying = false;
     };
 
-    const ELLResidentContextMotion DesiredMotion = ResolveContextMotion();
+    // The WorldDirector signal stays the authority on *whether* a resident is
+    // presenting context work at its target. Refining the clip never widens
+    // that window, so a resident walking toward a tree is still walking.
+    UAnimSequence* LegacyAnimation = LegacyContextAnimation();
 
-    // Seated care owns authored enter/exit clips, so it is driven by a small
-    // timed sequence instead of a direct swap. Every other motion is a plain
-    // looping clip and needs no transition state.
+    ELLResidentContextMotion DesiredMotion = ELLResidentContextMotion::None;
+    UAnimSequence* DesiredAnimation = nullptr;
+    if (LegacyAnimation)
+    {
+        DesiredMotion = ResolveContextMotion();
+        DesiredAnimation = ClipForContextMotion(DesiredMotion);
+        if (!DesiredAnimation)
+        {
+            // No bridge, unbound resident, or a directive this milestone does
+            // not classify: keep exactly what the held-tool route decided.
+            DesiredMotion = ELLResidentContextMotion::None;
+            DesiredAnimation = LegacyAnimation;
+        }
+    }
+
+    // Seated care owns authored enter/exit clips, so it is the only motion that
+    // needs a transition state. Everything else is a plain looping clip swap.
     if (SeatedTransitionRemaining > 0.0f)
     {
         SeatedTransitionRemaining = FMath::Max(0.0f, SeatedTransitionRemaining - DeltaTime);
@@ -432,40 +482,30 @@ void ULLResidentMotionComponent::UpdateContextAnimationState(float DeltaTime)
         bLocomotionPlaying = false;
     }
 
-    if (DesiredMotion == ActiveContextMotion)
+    const bool bWasSeated = bSeatedEntered;
+    const bool bWantsSeated = DesiredMotion == ELLResidentContextMotion::SeatedCare;
+
+    if (bWantsSeated && !bWasSeated && SeatedEnterAnimation)
     {
+        PlayClip(SeatedEnterAnimation, false);
+        SeatedTransitionRemaining = SeatedEnterAnimation->GetPlayLength();
+        bSeatedEntered = true;
+        ActiveContextMotion = ELLResidentContextMotion::SeatedCare;
         return;
     }
 
-    const bool bWasSeated = ActiveContextMotion == ELLResidentContextMotion::SeatedCare;
-    const bool bWantsSeated = DesiredMotion == ELLResidentContextMotion::SeatedCare;
-
-    if (bWantsSeated && !bWasSeated)
-    {
-        if (SeatedEnterAnimation)
-        {
-            PlayClip(SeatedEnterAnimation, false);
-            SeatedTransitionRemaining = SeatedEnterAnimation->GetPlayLength();
-            bSeatedEntered = true;
-            ActiveContextMotion = ELLResidentContextMotion::SeatedCare;
-            return;
-        }
-    }
-    else if (bWasSeated && !bWantsSeated && bSeatedEntered)
+    if (!bWantsSeated && bWasSeated && SeatedExitAnimation)
     {
         bSeatedEntered = false;
-        if (SeatedExitAnimation)
-        {
-            PlayClip(SeatedExitAnimation, false);
-            SeatedTransitionRemaining = SeatedExitAnimation->GetPlayLength();
-            ActiveContextMotion = ELLResidentContextMotion::None;
-            return;
-        }
+        PlayClip(SeatedExitAnimation, false);
+        SeatedTransitionRemaining = SeatedExitAnimation->GetPlayLength();
+        ActiveContextMotion = ELLResidentContextMotion::None;
+        return;
     }
 
     ActiveContextMotion = DesiredMotion;
 
-    if (UAnimSequence* DesiredAnimation = ClipForContextMotion(DesiredMotion))
+    if (DesiredAnimation)
     {
         PlayClip(DesiredAnimation, true);
         return;
