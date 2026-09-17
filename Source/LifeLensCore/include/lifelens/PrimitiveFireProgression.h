@@ -150,8 +150,13 @@ inline PrimitiveFirePitWorkResult workOnPrimitiveFirePit(
     result.facilityId=project->id;
     result.pos=project->pos;
     result.workBefore=project->constructionWork;
+    const DynamicEnvironmentObservation environment=deriveDynamicEnvironment(
+        world.genesisIdentity(),chunkCoordForGrid(project->pos),world.minute);
+    const EnvironmentalConsequenceProfile consequence=deriveEnvironmentalConsequences(environment);
+    const double effectiveWork=std::max(
+        0.05,workAmount*(1.0-0.55*consequence.outdoorWorkFriction01));
     const bool reachedCompletion=applyFacilityConstructionWork(
-        *project,worker.id,workAmount);
+        *project,worker.id,effectiveWork);
     result.workAfter=project->constructionWork;
     result.worked=result.workAfter>result.workBefore;
     if(!result.worked) return result;
@@ -195,10 +200,14 @@ inline bool ignitePrimitiveFirePit(
         TechniqueId::FireMaking,KnowledgeLevel::Reproducible)) return false;
     for(auto& facility:world.facilities){
         if(facility.id!=facilityId || facility.kind!=FacilityKind::FirePit) continue;
-        // Primitive exposed fire can fail outright when rain/wind/humidity make
-        // ignition physically implausible. The climate field itself is fully
-        // deterministic, so this threshold does not introduce a second RNG.
-        if(environmentalConsequencesAt(world,facility.pos).fireReliability01<0.22) return false;
+        const DynamicEnvironmentObservation environment=deriveDynamicEnvironment(
+            world.genesisIdentity(),chunkCoordForGrid(facility.pos),world.minute);
+        const EnvironmentalConsequenceProfile consequence=deriveEnvironmentalConsequences(environment);
+        // Primitive exposed fire can fail outright in genuinely severe wet/windy
+        // weather. Requiring active precipitation keeps legacy mild-weather fire
+        // behavior stable while making storms physically consequential.
+        if(environment.precipitationIntensity01>=0.65
+           && consequence.fireReliability01<0.22) return false;
         return igniteFirePit(facility,world.minute);
     }
     return false;
@@ -262,8 +271,12 @@ inline void advancePrimitiveFireOneMinute(World& world)
 {
     for(auto& facility:world.facilities){
         if(facility.kind==FacilityKind::FirePit){
-            const EnvironmentalConsequenceProfile consequence=environmentalConsequencesAt(world,facility.pos);
-            if(facility.lit && consequence.fireReliability01<0.18){
+            const DynamicEnvironmentObservation environment=deriveDynamicEnvironment(
+                world.genesisIdentity(),chunkCoordForGrid(facility.pos),world.minute);
+            const EnvironmentalConsequenceProfile consequence=deriveEnvironmentalConsequences(environment);
+            if(facility.lit
+               && environment.precipitationIntensity01>=0.75
+               && consequence.fireReliability01<0.18){
                 // Severe exposed weather can extinguish a primitive fire. Fuel
                 // remains available for a later re-ignition attempt.
                 facility.lit=false;
