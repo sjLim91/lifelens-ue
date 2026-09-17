@@ -7,6 +7,9 @@
 #include <sstream>
 
 namespace lifelens {
+namespace {
+constexpr int CivilizationKnowledgeWitnessRadiusTiles=2;
+}
 
 void Simulation::processCivilizationKnowledgeEvent(
     Character& actor,
@@ -23,8 +26,21 @@ void Simulation::processCivilizationKnowledgeEvent(
     const SocialFact* fact=socialKnowledge_.findFact(origin->factId);
     if(fact==nullptr) return;
 
+    const auto actorRuntime=runtime_.find(actor.id);
+    if(actorRuntime==runtime_.end()) return;
+    const GridPos demonstrationPos=actorRuntime->second.pos;
+
     for(auto& observer:world_.characters){
         if(!observer.alive || observer.id==actor.id) continue;
+
+        const auto observerRuntime=runtime_.find(observer.id);
+        if(observerRuntime==runtime_.end()
+           || !contextActionNearTarget(
+                observerRuntime->second.pos,
+                demonstrationPos,
+                CivilizationKnowledgeWitnessRadiusTiles)){
+            continue;
+        }
 
         const Relationship* relation=relationships_.find(observer.id,actor.id);
         const double familiarity=relation ? relation->familiarity : 0.0;
@@ -71,10 +87,16 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
 
     for(const Character& teacher:world_.characters){
         if(!teacher.alive) continue;
+        const auto teacherRuntime=runtime_.find(teacher.id);
+        if(teacherRuntime==runtime_.end() || teacherRuntime->second.pendingContext.active()) continue;
+
         for(const TechniqueKnowledge& record:teacher.civilization.knowledge.all()){
             if(static_cast<int>(record.level)<static_cast<int>(KnowledgeLevel::Reproducible)) continue;
             for(const Character& learner:world_.characters){
                 if(!learner.alive || learner.id==teacher.id) continue;
+                const auto learnerRuntime=runtime_.find(learner.id);
+                if(learnerRuntime==runtime_.end() || learnerRuntime->second.pendingContext.active()) continue;
+
                 const KnowledgeLevel learnerLevel=learner.civilization.knowledge.level(record.technique);
                 if(static_cast<int>(learnerLevel)>=static_cast<int>(KnowledgeLevel::Reproducible)) continue;
                 if(bestTechniqueFactForTeaching(
@@ -118,21 +140,37 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
     }
     if(teacher==nullptr || learner==nullptr) return;
 
-    const TechniqueTransmissionOutcome outcome=teachTechnique(
-        socialKnowledge_,*teacher,*learner,best.technique,relationships_,
-        world_.seed,world_.minute,
-        static_cast<std::uint64_t>(world_.minute/60));
+    auto teacherRuntime=runtime_.find(best.teacher);
+    const auto learnerRuntime=runtime_.find(best.learner);
+    if(teacherRuntime==runtime_.end() || learnerRuntime==runtime_.end()
+       || teacherRuntime->second.pendingContext.active()
+       || learnerRuntime->second.pendingContext.active()) return;
 
-    if(outcome.result==TechniqueTeachingResult::Advanced){
-        std::ostringstream s;
-        s<<teacher->name<<" taught "<<learner->name<<" "
-         <<techniqueName(best.technique)<<" -> knowledge "
-         <<static_cast<int>(outcome.before)<<"->"<<static_cast<int>(outcome.after)
-         <<" (teaching "<<std::fixed<<std::setprecision(2)<<best.score<<")";
-        emit(s.str());
-    }else if(outcome.result==TechniqueTeachingResult::ComprehensionFailed){
-        emit(teacher->name+" tried teaching "+learner->name+" "+
-             techniqueName(best.technique)+" but comprehension failed");
+    PendingContextAction pending;
+    pending.token=nextContextActionToken();
+    pending.kind=ContextActionKind::KnowledgeTeaching;
+    pending.issuedMinute=world_.minute;
+    pending.knowledgeTeachingTarget=best.learner;
+    pending.knowledgeTeachingTechnique=best.technique;
+    pending.knowledgeTeachingScore=best.score;
+
+    Runtime& runtime=teacherRuntime->second;
+    runtime.pendingContext=pending;
+    runtime.goal=Goal::Idle;
+    runtime.plan.clear();
+    runtime.actionIndex=0;
+    runtime.announced=false;
+    runtime.civilizationActive=false;
+    runtime.socialActive=false;
+    runtime.socialIntent=SocialIntent::None;
+    runtime.socialTarget=0;
+
+    if(!world_.externalPhysicalExecution){
+        completeContextAction(
+            *teacher,
+            runtime,
+            pending.token,
+            learnerRuntime->second.pos);
     }
 }
 
