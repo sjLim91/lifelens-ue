@@ -1,5 +1,6 @@
 #include "Characters/LLResidentMotionComponent.h"
 #include "Characters/LLResidentAppearanceComponent.h"
+#include "Characters/LLResidentCharacter.h"
 #include "Animation/AnimSequence.h"
 #include "Animation/AnimSingleNodeInstance.h"
 #include "Animation/BlendSpace.h"
@@ -7,8 +8,12 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/GameInstance.h"
+#include "Engine/World.h"
 #include "GameFramework/Actor.h"
 #include "ReferenceSkeleton.h"
+#include "Simulation/LLCoreActionTypes.h"
+#include "Simulation/LLCoreBridgeSubsystem.h"
 #include "UObject/ConstructorHelpers.h"
 
 namespace
@@ -70,6 +75,42 @@ ULLResidentMotionComponent::ULLResidentMotionComponent()
     static ConstructorHelpers::FObjectFinder<UAnimSequence> BuildFinder(
         TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Fixing_Kneeling.Fixing_Kneeling"));
     BuildAnimation = BuildFinder.Succeeded() ? BuildFinder.Object : nullptr;
+
+    // Context Motion v2 clips. Survey evidence (see
+    // Content/Characters/Quaternius/Import/survey_animations.py): none of the
+    // UAL sequences carry root motion, so looping a work clip never fights the
+    // authoritative Core/World movement of the actor.
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> GatherFinder(
+        TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/PickUp_Table.PickUp_Table"));
+    GatherAnimation = GatherFinder.Succeeded() ? GatherFinder.Object : nullptr;
+
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> ChopFinder(
+        TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Sword_Attack.Sword_Attack"));
+    ChopAnimation = ChopFinder.Succeeded() ? ChopFinder.Object : nullptr;
+
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> HaulFinder(
+        TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Push_Loop.Push_Loop"));
+    HaulAnimation = HaulFinder.Succeeded() ? HaulFinder.Object : nullptr;
+
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> FireFinder(
+        TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Idle_Torch_Loop.Idle_Torch_Loop"));
+    FireAnimation = FireFinder.Succeeded() ? FireFinder.Object : nullptr;
+
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> CrouchFinder(
+        TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Crouch_Idle_Loop.Crouch_Idle_Loop"));
+    CrouchAnimation = CrouchFinder.Succeeded() ? CrouchFinder.Object : nullptr;
+
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> SeatedEnterFinder(
+        TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Sitting_Enter.Sitting_Enter"));
+    SeatedEnterAnimation = SeatedEnterFinder.Succeeded() ? SeatedEnterFinder.Object : nullptr;
+
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> SeatedCareFinder(
+        TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Sitting_Talking_Loop.Sitting_Talking_Loop"));
+    SeatedCareAnimation = SeatedCareFinder.Succeeded() ? SeatedCareFinder.Object : nullptr;
+
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> SeatedExitFinder(
+        TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Sitting_Exit.Sitting_Exit"));
+    SeatedExitAnimation = SeatedExitFinder.Succeeded() ? SeatedExitFinder.Object : nullptr;
 
     static ConstructorHelpers::FObjectFinder<UStaticMesh> FlakeFinder(
         TEXT("/Engine/BasicShapes/Cone.Cone"));
@@ -159,7 +200,184 @@ void ULLResidentMotionComponent::EnsureLocomotionPlaying()
         LocomotionBlendSpace->GetBlendSamples().Num(), ResolvedSamples.Num());
 }
 
-void ULLResidentMotionComponent::UpdateContextAnimationState()
+ELLResidentContextMotion ULLResidentMotionComponent::ContextMotionFromLegacyMode() const
+{
+    if (bSocialInteractionActive)
+    {
+        return ELLResidentContextMotion::Talk;
+    }
+
+    switch (WorkPresentationMode)
+    {
+        case ELLResidentWorkPresentationMode::Gather:
+            return ELLResidentContextMotion::GatherPick;
+        case ELLResidentWorkPresentationMode::Build:
+            return ELLResidentContextMotion::CraftWork;
+        case ELLResidentWorkPresentationMode::Interact:
+            return ELLResidentContextMotion::Learn;
+        case ELLResidentWorkPresentationMode::None:
+        default:
+            return ELLResidentContextMotion::None;
+    }
+}
+
+ELLResidentContextMotion ULLResidentMotionComponent::ResolveContextMotion() const
+{
+    // The WorldDirector signal stays the authority on *whether* a resident is
+    // performing its action at the target. Refining the clip never widens that
+    // window, so a resident walking toward a tree is still walking.
+    const ELLResidentContextMotion LegacyMotion = ContextMotionFromLegacyMode();
+    if (LegacyMotion == ELLResidentContextMotion::None)
+    {
+        return ELLResidentContextMotion::None;
+    }
+
+    const ALLResidentCharacter* Resident = Cast<ALLResidentCharacter>(GetOwner());
+    const UWorld* World = GetWorld();
+    const UGameInstance* GameInstance = World ? World->GetGameInstance() : nullptr;
+    const ULLCoreBridgeSubsystem* Bridge =
+        GameInstance ? GameInstance->GetSubsystem<ULLCoreBridgeSubsystem>() : nullptr;
+    if (!Resident || !Bridge || !Resident->GetResidentId().IsValid())
+    {
+        return LegacyMotion;
+    }
+
+    FLLCoreActionDirective Directive;
+    if (!Bridge->GetResidentActionDirective(Resident->GetResidentId(), Directive))
+    {
+        return LegacyMotion;
+    }
+
+    if (!Directive.bAlive)
+    {
+        // Death presentation belongs to the lifecycle lane, not to work motion.
+        return ELLResidentContextMotion::None;
+    }
+
+    // Sanitation is classified first: Core marks it on the civilization action
+    // and on the physical intent, and a squat reads correctly for both.
+    if (Directive.CivilizationSanitationSiteId != 0
+        || Directive.PhysicalIntent == ELLCorePhysicalIntent::Toilet
+        || Directive.PhysicalIntent == ELLCorePhysicalIntent::Hygiene)
+    {
+        return ELLResidentContextMotion::CrouchLow;
+    }
+
+    switch (Directive.ContextActionKind)
+    {
+        case ELLCoreContextActionKind::KnowledgeTeaching:
+            // The directive carries a teaching target only on the teacher side.
+            return Directive.TargetResidentId.IsValid()
+                ? ELLResidentContextMotion::Talk
+                : ELLResidentContextMotion::Learn;
+
+        case ELLCoreContextActionKind::Parenting:
+            switch (Directive.ParentingAction)
+            {
+                case ELLCoreParentingAction::Feed:
+                case ELLCoreParentingAction::Hold:
+                case ELLCoreParentingAction::Comfort:
+                case ELLCoreParentingAction::HealthCare:
+                    return ELLResidentContextMotion::SeatedCare;
+                case ELLCoreParentingAction::Educate:
+                case ELLCoreParentingAction::Discipline:
+                    return ELLResidentContextMotion::Talk;
+                case ELLCoreParentingAction::Play:
+                    return ELLResidentContextMotion::Learn;
+                case ELLCoreParentingAction::Bathe:
+                case ELLCoreParentingAction::ToiletAssist:
+                    return ELLResidentContextMotion::CrouchLow;
+                case ELLCoreParentingAction::PutToSleep:
+                    // No authored lying/settling clip exists in the imported
+                    // pack. Recorded as a Context Motion v2 asset gap rather
+                    // than dressed up with an unrelated clip.
+                    return ELLResidentContextMotion::SeatedCare;
+                default:
+                    return ELLResidentContextMotion::Talk;
+            }
+
+        case ELLCoreContextActionKind::Social:
+            return Directive.SocialIntent == ELLCoreSocialIntent::Comfort
+                ? ELLResidentContextMotion::SeatedCare
+                : ELLResidentContextMotion::Talk;
+
+        default:
+            break;
+    }
+
+    if (Directive.CivilizationFacilityAction != ELLCoreFacilityBuildAction::None)
+    {
+        switch (Directive.CivilizationFacilityAction)
+        {
+            case ELLCoreFacilityBuildAction::DeliverMaterial:
+                return ELLResidentContextMotion::HaulPush;
+            case ELLCoreFacilityBuildAction::Fuel:
+            case ELLCoreFacilityBuildAction::Ignite:
+            case ELLCoreFacilityBuildAction::CollectCharcoal:
+                return ELLResidentContextMotion::FireTend;
+            default:
+                return ELLResidentContextMotion::CraftWork;
+        }
+    }
+
+    // Tool capability describes the physical gesture better than the action
+    // verb does, so it wins whenever Core reports an equipped tool.
+    if (Directive.bHasCivilizationTool)
+    {
+        switch (Directive.CivilizationToolCapability)
+        {
+            case ELLCoreToolCapability::Chop:
+            case ELLCoreToolCapability::Cut:
+                return ELLResidentContextMotion::ChopSwing;
+            case ELLCoreToolCapability::Dig:
+                return ELLResidentContextMotion::DigWork;
+            case ELLCoreToolCapability::Strike:
+                return ELLResidentContextMotion::StrikeWork;
+            case ELLCoreToolCapability::Heat:
+                return ELLResidentContextMotion::FireTend;
+            case ELLCoreToolCapability::Carry:
+                return ELLResidentContextMotion::GatherPick;
+            default:
+                break;
+        }
+    }
+
+    switch (Directive.CivilizationAction)
+    {
+        case ELLCoreCivilizationAction::Gather:
+        case ELLCoreCivilizationAction::Store:
+            return ELLResidentContextMotion::GatherPick;
+        case ELLCoreCivilizationAction::Craft:
+        case ELLCoreCivilizationAction::Experiment:
+            return ELLResidentContextMotion::CraftWork;
+        default:
+            break;
+    }
+
+    return LegacyMotion;
+}
+
+UAnimSequence* ULLResidentMotionComponent::ClipForContextMotion(ELLResidentContextMotion Motion) const
+{
+    switch (Motion)
+    {
+        case ELLResidentContextMotion::Talk:       return TalkingAnimation;
+        case ELLResidentContextMotion::Learn:      return InteractAnimation;
+        case ELLResidentContextMotion::GatherPick: return GatherAnimation;
+        case ELLResidentContextMotion::ChopSwing:  return ChopAnimation;
+        case ELLResidentContextMotion::StrikeWork: return BuildAnimation;
+        case ELLResidentContextMotion::DigWork:    return BuildAnimation;
+        case ELLResidentContextMotion::CraftWork:  return BuildAnimation;
+        case ELLResidentContextMotion::HaulPush:   return HaulAnimation;
+        case ELLResidentContextMotion::FireTend:   return FireAnimation;
+        case ELLResidentContextMotion::CrouchLow:  return CrouchAnimation;
+        case ELLResidentContextMotion::SeatedCare: return SeatedCareAnimation;
+        case ELLResidentContextMotion::None:
+        default:                                   return nullptr;
+    }
+}
+
+void ULLResidentMotionComponent::UpdateContextAnimationState(float DeltaTime)
 {
     if (!Appearance)
     {
@@ -174,40 +392,82 @@ void ULLResidentMotionComponent::UpdateContextAnimationState()
         return;
     }
 
-    UAnimSequence* DesiredAnimation = nullptr;
-    if (bSocialInteractionActive)
+    auto PlayClip = [this](UAnimSequence* Clip, bool bLoop)
     {
-        DesiredAnimation = TalkingAnimation;
-    }
-    else
-    {
-        switch (WorkPresentationMode)
+        if (!Clip || ActiveContextAnimation == Clip)
         {
-            case ELLResidentWorkPresentationMode::Interact:
-            case ELLResidentWorkPresentationMode::Gather:
-                // Gather has its own semantic route now. The generic UAL
-                // Interact clip is the v1 fallback until dedicated authored
-                // cutting/chopping/digging/striking/carry clips are selected.
-                DesiredAnimation = InteractAnimation;
-                break;
-            case ELLResidentWorkPresentationMode::Build:
-                DesiredAnimation = BuildAnimation;
-                break;
-            case ELLResidentWorkPresentationMode::None:
-            default:
-                break;
+            return;
+        }
+        Body->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+        Body->PlayAnimation(Clip, bLoop);
+        ActiveContextAnimation = Clip;
+        bLocomotionPlaying = false;
+    };
+
+    const ELLResidentContextMotion DesiredMotion = ResolveContextMotion();
+
+    // Seated care owns authored enter/exit clips, so it is driven by a small
+    // timed sequence instead of a direct swap. Every other motion is a plain
+    // looping clip and needs no transition state.
+    if (SeatedTransitionRemaining > 0.0f)
+    {
+        SeatedTransitionRemaining = FMath::Max(0.0f, SeatedTransitionRemaining - DeltaTime);
+        if (SeatedTransitionRemaining > 0.0f)
+        {
+            return;
+        }
+
+        if (bSeatedEntered)
+        {
+            PlayClip(SeatedCareAnimation, true);
+            ActiveContextMotion = ELLResidentContextMotion::SeatedCare;
+            return;
+        }
+
+        // The stand-up clip finished. Release the body explicitly, otherwise
+        // the one-shot exit pose would hold and locomotion could never take
+        // ownership again.
+        ActiveContextAnimation = nullptr;
+        ActiveContextMotion = ELLResidentContextMotion::None;
+        bLocomotionPlaying = false;
+    }
+
+    if (DesiredMotion == ActiveContextMotion)
+    {
+        return;
+    }
+
+    const bool bWasSeated = ActiveContextMotion == ELLResidentContextMotion::SeatedCare;
+    const bool bWantsSeated = DesiredMotion == ELLResidentContextMotion::SeatedCare;
+
+    if (bWantsSeated && !bWasSeated)
+    {
+        if (SeatedEnterAnimation)
+        {
+            PlayClip(SeatedEnterAnimation, false);
+            SeatedTransitionRemaining = SeatedEnterAnimation->GetPlayLength();
+            bSeatedEntered = true;
+            ActiveContextMotion = ELLResidentContextMotion::SeatedCare;
+            return;
+        }
+    }
+    else if (bWasSeated && !bWantsSeated && bSeatedEntered)
+    {
+        bSeatedEntered = false;
+        if (SeatedExitAnimation)
+        {
+            PlayClip(SeatedExitAnimation, false);
+            SeatedTransitionRemaining = SeatedExitAnimation->GetPlayLength();
+            ActiveContextMotion = ELLResidentContextMotion::None;
+            return;
         }
     }
 
-    if (DesiredAnimation)
+    ActiveContextMotion = DesiredMotion;
+
+    if (UAnimSequence* DesiredAnimation = ClipForContextMotion(DesiredMotion))
     {
-        if (ActiveContextAnimation != DesiredAnimation)
-        {
-            Body->SetAnimationMode(EAnimationMode::AnimationSingleNode);
-            Body->PlayAnimation(DesiredAnimation, true);
-            ActiveContextAnimation = DesiredAnimation;
-            bLocomotionPlaying = false;
-        }
+        PlayClip(DesiredAnimation, true);
         return;
     }
 
@@ -345,7 +605,7 @@ void ULLResidentMotionComponent::TickComponent(float DeltaTime, ELevelTick TickT
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-    UpdateContextAnimationState();
+    UpdateContextAnimationState(DeltaTime);
     UpdateHeldToolVisualState();
     EnsureLocomotionPlaying();
 
@@ -421,7 +681,7 @@ void ULLResidentMotionComponent::TickComponent(float DeltaTime, ELevelTick TickT
                 FacingDot = FVector::DotProduct(Body->GetRightVector(), TravelDirection);
             }
 
-            UE_LOG(LogTemp, Log, TEXT("LLMotion %s speed=%.1f window=%.1f yaw=%.1f visual=%.1f travel=%.1f actor=%.1f facing=%.2f locomotion=%d talking=%d work=%d tool=%d context=%s loc=%.0f,%.0f"),
+            UE_LOG(LogTemp, Log, TEXT("LLMotion %s speed=%.1f window=%.1f yaw=%.1f visual=%.1f travel=%.1f actor=%.1f facing=%.2f locomotion=%d talking=%d work=%d tool=%d motion=%d context=%s loc=%.0f,%.0f"),
                 *Owner->GetName(), SmoothedSpeed, WindowedSpeed, SmoothedYaw,
                 SmoothedYaw + MeshForwardYawOffsetDegrees, DesiredYaw,
                 Owner->GetActorRotation().Yaw, FacingDot,
@@ -429,6 +689,7 @@ void ULLResidentMotionComponent::TickComponent(float DeltaTime, ELevelTick TickT
                 bSocialInteractionActive ? 1 : 0,
                 static_cast<int32>(WorkPresentationMode),
                 static_cast<int32>(HeldToolPresentation),
+                static_cast<int32>(ActiveContextMotion),
                 ActiveContextAnimation ? *ActiveContextAnimation->GetName() : TEXT("none"),
                 Location.X, Location.Y);
         }

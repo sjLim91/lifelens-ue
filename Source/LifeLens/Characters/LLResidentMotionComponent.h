@@ -31,6 +31,29 @@ enum class ELLResidentHeldToolPresentation : uint8
     StoneHammer
 };
 
+// Character Context Motion v2 presentation vocabulary.
+//
+// This is a *presentation* classification, not a second action authority. Each
+// entry is chosen from the authoritative `FLLCoreActionDirective` and maps to
+// one already-imported Quaternius UAL clip. Core decides what a resident does;
+// this enum only decides what that already-decided work looks like.
+UENUM(BlueprintType)
+enum class ELLResidentContextMotion : uint8
+{
+    None,
+    Talk,           // Idle_Talking_Loop  - social exchange, teaching, instruction
+    Learn,          // Interact           - learner side of a teaching exchange
+    GatherPick,     // PickUp_Table       - gathering, storing, hauling into a store
+    ChopSwing,      // Sword_Attack       - Chop/Cut tool capability
+    StrikeWork,     // Fixing_Kneeling    - Strike capability (knapping, hammering)
+    DigWork,        // Fixing_Kneeling    - Dig capability
+    CraftWork,      // Fixing_Kneeling    - craft, experiment, facility work, smelt charge
+    HaulPush,       // Push_Loop          - material delivery
+    FireTend,       // Idle_Torch_Loop    - ignite, fuel, charcoal collection
+    CrouchLow,      // Crouch_Idle_Loop   - sanitation site use, hygiene
+    SeatedCare      // Sitting_* sequence - parenting care and comfort
+};
+
 // Character Motion Bootstrap: locomotion + lightweight context presentation.
 // Core/World keep all action authority; this component only reflects the
 // resident actor's actual movement and active authoritative context work.
@@ -79,8 +102,16 @@ public:
 private:
     void EnsureLocomotionPlaying();
     void UpdateBodyOrientation(float DeltaTime);
-    void UpdateContextAnimationState();
+    void UpdateContextAnimationState(float DeltaTime);
     void UpdateHeldToolVisualState();
+
+    // Reads the authoritative directive for this resident and classifies it.
+    // Read-only: nothing here starts, completes or mutates a Core action.
+    ELLResidentContextMotion ResolveContextMotion() const;
+    // Legacy WorldDirector signal path, kept as the fallback whenever the
+    // directive cannot be read (no bridge, unbound resident, save/load gap).
+    ELLResidentContextMotion ContextMotionFromLegacyMode() const;
+    UAnimSequence* ClipForContextMotion(ELLResidentContextMotion Motion) const;
 
     UPROPERTY(EditAnywhere, Category="LifeLens|Motion")
     float MeshForwardYawOffsetDegrees = -90.0f;
@@ -90,6 +121,18 @@ private:
     UPROPERTY() TObjectPtr<UAnimSequence> TalkingAnimation;
     UPROPERTY() TObjectPtr<UAnimSequence> InteractAnimation;
     UPROPERTY() TObjectPtr<UAnimSequence> BuildAnimation;
+
+    // Context Motion v2 clips. All of them are already-imported Quaternius UAL
+    // sequences; no new animation asset is introduced by this milestone.
+    UPROPERTY() TObjectPtr<UAnimSequence> GatherAnimation;
+    UPROPERTY() TObjectPtr<UAnimSequence> ChopAnimation;
+    UPROPERTY() TObjectPtr<UAnimSequence> HaulAnimation;
+    UPROPERTY() TObjectPtr<UAnimSequence> FireAnimation;
+    UPROPERTY() TObjectPtr<UAnimSequence> CrouchAnimation;
+    UPROPERTY() TObjectPtr<UAnimSequence> SeatedEnterAnimation;
+    UPROPERTY() TObjectPtr<UAnimSequence> SeatedCareAnimation;
+    UPROPERTY() TObjectPtr<UAnimSequence> SeatedExitAnimation;
+
     UPROPERTY() TObjectPtr<UAnimSequence> ActiveContextAnimation;
 
     // Tool meshes are intentionally simple presentation proxies. The enum and
@@ -114,5 +157,12 @@ private:
     bool bSocialInteractionActive = false;
     ELLResidentWorkPresentationMode WorkPresentationMode = ELLResidentWorkPresentationMode::None;
     ELLResidentHeldToolPresentation HeldToolPresentation = ELLResidentHeldToolPresentation::None;
+
+    // Seated care is the only motion with authored enter/exit clips, so it is
+    // the only one that needs a transition state machine. Everything else is a
+    // single looping clip swap.
+    ELLResidentContextMotion ActiveContextMotion = ELLResidentContextMotion::None;
+    float SeatedTransitionRemaining = 0.0f;
+    bool bSeatedEntered = false;
     float DebugLogTimer = 0.0f;
 };
