@@ -1,545 +1,629 @@
 # LifeLens Development Milestones
 
-이 문서는 **큰 개발 단위와 integration gate의 canonical roadmap**이다.
+이 문서는 **LifeLens의 canonical execution roadmap**이다.
 
-- 장기 제품/문명 아키텍처 방향: `docs/OPEN_ENDED_CIVILIZATION_NORTH_STAR.md`
+- 장기 제품/문명 방향: `docs/OPEN_ENDED_CIVILIZATION_NORTH_STAR.md`
+- 시간/배속/환경 계약: `docs/TIME_AND_DYNAMIC_ENVIRONMENT.md`
 - 현재 실행 상태: `tasks/WORK_STATE.md`
 - ownership / locks / IR: `tasks/TEAM_BOARD.md`
-- 2026-09-17 통합감사: `docs/INTEGRATED_AUDIT_2026-09-17.md` — 역사적 point-in-time evidence로 보존
+- 2026-09-17 통합감사: `docs/INTEGRATED_AUDIT_2026-09-17.md` — historical point-in-time evidence로 보존
 
-## Product North Star
+---
+
+# 1. Product North Star
 
 > **초기 인간 4명으로 시작하여, 외부 스크립트가 시대를 강제하지 않고 생존·지식·발견·사회 변화의 결과로 원시사회부터 현재 인류 수준을 지나 아직 현실세계가 마주하지 않은 미지의 미래문명까지 자율적으로 발전할 수 있는 관찰형 시뮬레이션.**
 
 시대 이름은 Observer 요약일 뿐 Core의 강제 진행 게이트가 아니다.
-장기 발전의 실제 기반은 `Knowledge -> Capability -> Technology -> Civilization Transformation`이다.
+장기 발전의 실제 기반은 다음이다.
 
-## Delivery rule
+`Environment / Needs / Social pressure`
+→ `Knowledge`
+→ `Capability`
+→ `Technology`
+→ `Civilization Transformation`
+
+시간과 환경은 장식이 아니라 위 발전 루프의 핵심 입력이다.
+
+---
+
+# 2. Delivery / Authority Rules
 
 > Same purpose + same layer + same validation scope = one milestone-sized PR.
 
-기본 원칙:
+고정 원칙:
+
 - Core / World is the sole simulation authority.
 - Presentation consumes read/action contracts and never fabricates outcomes.
-- stale branches are not merged wholesale.
-- latest `main`에서 실제로 빠진 변화만 재구현한다.
-- functional merge evidence는 exact-head CI를 기준으로 한다.
+- stale branch는 wholesale merge하지 않는다.
+- latest `main`에서 실제로 빠진 변화만 안전하게 재적용한다.
+- 기능 PR의 merge evidence는 exact-head CI를 기준으로 한다.
 - 시간 경과만으로 기술/시대를 무료 해금하지 않는다.
 - 자원/에너지/시설/지식/운영 능력이 없는 기술은 실제 Capability가 아니다.
 - 쇠퇴, 지식 소실, 붕괴, 재발견을 허용한다.
+- 시간 가속은 causality를 생략해서는 안 된다.
+- 날씨/계절은 visual-only effect가 아니라 Core 생활/자원/행동에 실제 영향을 줘야 한다.
 
 ---
 
-## Completed foundations
+# 3. Current Baseline / Completed Foundations
 
-주요 완료 기반:
-- Character / Appearance / World Affordance / Residue / Runtime ACK / Save-Load — DONE.
-- World Genesis WG-1/WG-2 / World Generation Milestone A / production map integration — DONE.
-- Context Action Contract v1 / spatial authority / Observer camera + resident detail — DONE.
-- Lifecycle Core Correctness #115 — DONE.
-- Action Completion Unification #116 — DONE.
-- Social Communication & Localization #117 — DONE.
-- Facilities / Tools / PrimitiveStorage #118 — DONE.
-- Tool Effectiveness #119 — DONE.
-- DiggingStick / StoneHammer #120 — DONE.
-- Fire / Heat / FirePit #121 — DONE.
-- Furnace / Copper Smelting #122 — DONE.
-- World / Facility / Obstacle Authority Normalization #123 — DONE.
-- Legacy Authority Removal v1 #124 — DONE.
-- Lifecycle Presentation v1 #125 — DONE.
-- Social bubble readability #126 — DONE.
-- Integrated audit / canonical roadmap reconciliation #127 — DONE.
-- Mac editor `-Wshadow` unblocker #128 — DONE.
-- Knowledge Transmission Spatial Authority v1 #130 — DONE.
+완료된 주요 기반:
 
-### PR #132 — Emotion Runtime Integration v1 — CLOSEOUT
+- Character / Appearance / World Affordance / Residue / Runtime ACK / Save-Load.
+- World Genesis WG-1/WG-2 / generated natural world / production map integration.
+- Context Action Contract v1 / spatial authority / Observer camera + resident detail.
+- Lifecycle Core Correctness #115.
+- Action Completion Unification #116.
+- Social Communication & Localization #117.
+- Facilities / Tools / PrimitiveStorage #118.
+- Tool Effectiveness #119.
+- DiggingStick / StoneHammer #120.
+- Fire / Heat / FirePit #121.
+- Furnace / Copper Smelting #122.
+- World / Facility / Obstacle Authority Normalization #123.
+- Legacy Authority Removal v1 #124.
+- Lifecycle Presentation v1 #125.
+- Social bubble readability #126.
+- Integrated audit / roadmap reconciliation #127.
+- Mac editor `-Wshadow` unblocker #128.
+- Knowledge Transmission Spatial Authority v1 #130.
+- Emotion Runtime Integration v1 #132 — **MERGED**.
+- PR #100 World Readability source current-main reapplication via #134 — **MERGED**.
 
-Owner: Jjun Core provider.
-Branch: `jjun/emotion-runtime-integration-v1-20260917`.
-Current exact head: `0327afb58caed550b8bb12f046b2ec6738157ef5`.
+## PR #100 / #134 closeout
 
-Delivered:
-- Needs pressure drives bounded anxiety/fear.
-- successful Need resolution drives relief/joy.
-- repeated authoritative failures drive distress.
-- civilization success/discovery/failure affects emotion.
-- physical utility emotion influence is bounded to +/-8% so survival Needs remain dominant.
-- existing social/family/loss/environment paths remain intact.
-- production external physical completion now applies the same Need-resolution emotion relief as standalone Core execution.
-- regression coverage verifies the production external physical relief path.
+Original Dagyeom PR #100 was not merged wholesale after becoming stale.
+Its validated `WorldPresentation` source changes were reconstructed on current main as PR #134.
 
-Semantics:
-- authoritative lived failures may change emotion;
-- stale/wrong/far ACK, restore-time cancellation and presentation/control-plane timeout do not fabricate emotional failure by themselves.
+#134 exact-head evidence:
+- Preflight #723 — PASS.
+- Unreal Linux Compile #207 — PASS.
+- merge commit on main: `1195fddbaf3341ac9508347d07fab69740f02482`.
 
-Validation on current head:
-- Preflight — PASS.
-- Core Tests — PASS.
-- Unreal Linux Compile — exact-head closeout run still required before merge.
-
-Do not mark DONE or merge until the final exact-head Unreal compile passes.
+Therefore:
+- #134 = DONE.
+- original #100 = **superseded / closeout complete**.
+- Dagyeom Presentation lane no longer waits for #100.
 
 ---
 
-## Gate A — Integrated Runtime Checkpoint A — DONE
+# 4. New Priority Order
 
-Acceptance already established:
-- NEW GAME boots with four founders, 2 male / 2 female.
-- initial world/population generation is deterministic.
-- no free starting house/toilet/farm/storage/road/tool/modern infrastructure.
-- missing sanitation creates authoritative HumanWaste residue.
-- Save/Load restores state without identity reroll.
-- continuation remains deterministic.
+이번 재정렬의 핵심은 **시간과 동적 환경을 정착/농업/장기 문명보다 먼저 안정화**하는 것이다.
+이유는 농업, 수면, 저장, 장기 생존, 세대 진행, 건강, 기술 압력 모두 시간/환경 축을 공유하기 때문이다.
 
----
+## Priority 0 — Documentation / Integration Closeout
 
-## Correctness / Authority Chain — DONE THROUGH #130, #132 CLOSEOUT
+1. #134 merge state를 canonical docs에 반영.
+2. #133 roadmap/docs PR closeout.
+3. #100은 superseded로 정리.
+4. Android Gate B는 계속 PAUSED BY USER.
 
-Completed authority chain:
-1. Lifecycle Core Correctness — #115.
-2. Action Completion Unification — #116.
-3. Social Communication/Localization — #117.
-4. Facilities/Tools/Fire/Smelting — #118~#122.
-5. World/Facility/Obstacle Authority Normalization — #123.
-6. Legacy Authority Removal v1 — #124.
-7. Lifecycle Presentation v1 — #125.
-8. Knowledge Transmission Spatial Authority v1 — #130.
-
-Current closeout:
-9. Emotion Runtime Integration v1 — #132.
-
-Result:
-- Social/Civilization/Parenting outcomes require completion-aware authority.
-- Core owns target/resource/facility/lifecycle/knowledge/emotion truth.
-- knowledge witness is spatially local rather than globally telepathic.
-- direct teaching is a physical `KnowledgeTeaching` ContextAction and applies only after real approach/talking/ACK.
-- pending teaching is not replayed after Save/Load.
-- emotion increasingly reflects lived runtime rather than decorative presentation state.
+이 단계가 끝나면 다음 기능 작업은 아래 P0 Core 순서로 진행한다.
 
 ---
 
-# Immediate Product / Presentation Track
+# 5. P0 Core / World Foundation Track
 
-These items are high priority because the simulation truth already exists but the observed world must communicate it faithfully.
+## Milestone T1 — Simulation Time Authority & Variable Speed
 
-## Milestone P1 — Dagyeom World Readability Envelope — ACTIVE PR #100 / REFRESH REQUIRED
+Owner: Jjun Core/World + Dagyeom Observer control consumer.
+Canonical spec: `docs/TIME_AND_DYNAMIC_ENVIRONMENT.md`.
 
-Owner: Dagyeom WorldPresentation.
-Branch: `dagyeom/world-visual-readability-envelope`.
-Last known head: `62b191a6afb2c0c5ae32ddbb1e0ae7876ae00556`.
+### Target rule
 
-Purpose:
-- improve resident/facility readability without changing Core world/resource authority.
+**기본 1x = 현실 8분 / LifeLens 1일.**
 
-Old validation evidence:
-- Preflight #707 PASS.
-- Unreal Linux Compile #200 PASS.
-- Mac editor build blocker removed by #128.
+현재 main의 기존 값 `0.6 real sec / simulation minute`는 약 14분 24초/일이므로,
+T1에서 target `0.333333... real sec / simulation minute`로 전환한다.
 
-**Live repository state no longer reports this PR mergeable against current main.**
-Therefore old “PIE only then merge” guidance is obsolete.
+### Required controls
 
-Required closeout order:
-1. Dagyeom owner refreshes/reconstructs the still-needed WorldPresentation changes on current main.
-2. resolve conflicts without importing stale Core authority.
-3. fresh exact-head Preflight + Unreal Linux Compile.
-4. Mac PIE visual confirmation.
-5. merge only if visually and structurally acceptable.
+- Pause — 0x
+- Observe — 1x — 8분/일
+- Fast — 4x — 2분/일
+- Faster — 16x — 30초/일
+- Rapid — 64x — 7.5초/일
+- History — adaptive long-run mode
 
-Do not merge merely to clear the queue.
+### Scope
+
+- Core simulation clock authority 명확화.
+- Unreal render clock과 simulation clock 분리.
+- speed preset/runtime config.
+- pause/resume.
+- speed change 중 pending ACK/action correctness.
+- Save/Load deterministic continuation.
+- per-frame catch-up budget.
+- History mode가 사용할 batching hook 준비.
+
+### Acceptance
+
+- 속도를 변경해도 Needs/action/lifecycle 결과 순서가 깨지지 않는다.
+- Presentation FPS가 simulation truth를 결정하지 않는다.
+- 1x target이 8분/일 기준으로 동작한다.
+- 64x에서도 한 프레임 무한 catch-up이 발생하지 않는다.
 
 ---
 
-## Milestone P2 — Character Context Motion v2
+## Milestone E1 — Calendar + Day/Night Authority
 
-Owner: Dagyeom Character Presentation.
-
-Provider status:
-- authoritative ContextAction target/ACK contracts are merged.
-- KnowledgeTeaching has target resident + technique + token.
-- physical actions must correspond to real facilities/tools/resources.
+Owner: Jjun Core provider -> Dagyeom WorldPresentation/UI consumer.
 
 Scope:
-- Sit / Stand / Lie / Wake only when compatible real facilities exist.
-- PickUp / Carry / Use.
-- Gather / Cut / Chop / Dig / Strike.
-- Craft / Build / Fire / Smelt.
-- Parenting care.
-- sanitation interaction.
-- teaching / social context motion.
-- gaze/body orientation from authoritative targets.
 
-Asset policy:
-- existing Quaternius CC0 animations first.
-- never show sitting/lying on invented furniture.
-- animation failure must not fabricate Core completion.
+- total simulation minute.
+- minute/hour of day.
+- day/year index.
+- annual phase.
+- derived season summary.
+- daylight/darkness state.
+- deterministic Save/Load.
+- Core read model / Bridge exposure.
+
+Gameplay hooks:
+
+- sleep/circadian utility.
+- night visibility/risk.
+- outdoor work/travel efficiency.
+- fire/lighting/shelter utility.
+
+Presentation:
+
+- sun movement.
+- sky/atmosphere transition.
+- night lighting/moon path where justified.
+- Observer date/time indicator.
 
 ---
 
-## Milestone P3 — Observer Readability + Real Scrolling
+## Milestone E2 — Seasons + Dynamic Weather Core v1
 
-Owner: Dagyeom UI/Observer.
+Owner: Jjun Core/World provider.
+
+Existing baseline to preserve:
+
+- biome / natural surface.
+- elevation.
+- moisture.
+- temperature.
+- water potential.
+- fertility potential.
+- traversal ease.
+- hazard potential.
+- renewable resource regeneration.
+
+Add time-varying layer:
+
+- local air temperature.
+- precipitation intensity/type.
+- cloud cover.
+- wind.
+- humidity/wetness tendency.
+- visibility modifier.
+- soil/surface moisture modifier.
+- continuous seasonal modifier.
+
+Derived Observer labels may include:
+Clear / Cloudy / Rain / Snow / Fog / Storm / Heat / Cold.
 
 Rules:
-- old PR #98 is stale; do not merge wholesale.
-- selectively reimplement useful concepts on current main.
+
+- labels are summaries, not authority.
+- weather is deterministic from seed/time/ruleset/region state.
+- real-world weather API is not simulation truth.
+- Save/Load reproduces continuation.
+
+---
+
+## Milestone E3 — Environmental Consequences v1
+
+Owner: Jjun Core/Simulation provider -> Dagyeom Presentation consumer.
+
+Connect environment to actual life:
+
+- heat/cold exposure.
+- shelter/fire/clothing value hooks.
+- rain/wetness work/travel friction.
+- water availability/replenishment.
+- seasonal plant-food regeneration.
+- agriculture/fertility modifier.
+- fire reliability.
+- storm/extreme-condition hazard hooks.
+- environment memory/avoidance extension.
+
+Acceptance:
+
+- 비/눈/계절이 화면만 바꾸고 Core 결과가 같아서는 안 된다.
+- 환경 변화가 survival utility와 resource pressure를 실제로 바꾼다.
+- future technologies can reduce or transform those pressures through real capabilities.
+
+---
+
+## Milestone E4 — Dynamic Environment Presentation v1
+
+Owner: Dagyeom WorldPresentation.
+
+Provider dependency: E1/E2 authoritative read contracts.
 
 Scope:
-- true scrollable Detail content;
-- generated-world readability tuning;
-- QA resident framing helpers separated from production camera behavior;
-- emotion / teaching / lifecycle / history labels consume authoritative provider data;
-- prepare Observer surfaces for later civilization capability/history views without cluttering the main screen.
+
+- day/night light + sky.
+- weather visual state.
+- rain/snow/fog/cloud presentation.
+- seasonal ground/vegetation readability where assets/budget permit.
+- Observer current date/time/season/weather summary.
+
+Android policy:
+
+- scalable quality tiers.
+- light/sky parameter changes first.
+- Niagara/weather VFX budgeted separately.
+- distant/unobserved areas do not require full visual weather simulation.
+- high speed may reduce VFX/UI refresh frequency.
 
 ---
 
-## Milestone P4 — Lifecycle Event Presentation v2
-
-Owner: Dagyeom Presentation.
-
-Already done:
-- dead residents removed from living physical projection;
-- stage growth updates body/capsule scale.
-
-Next:
-- pregnancy/birth visibility where authoritative data exists;
-- growth transition visibility;
-- death/history visibility;
-- deceased inspection from Core DTO/history;
-- truthful optional death animation without inventing corpse/grave authority;
-- family/history feed integration.
-
----
-
-# Civilization / Long-Run Core Track
+# 6. P1 Survival / Settlement Track
 
 ## Milestone C1 — Settlement & Subsistence Foundation
 
 Owner: Jjun Core/World provider -> Dagyeom presentation consumer.
 
-This replaces the narrow old `Civilization Phase 2` interpretation.
-The current simulation already reaches Copper Smelting, but it lacks the durable settlement/food substrate needed for centuries of population growth.
-
-Existing stable progression:
-- PrimitiveStorage;
-- SharpFlake / StoneCuttingTool / DiggingStick / StoneHammer;
-- FirePit / Heat / Charcoal;
-- Furnace / CopperOre / CopperMetal / CopperSmelting.
+This expands the old narrow `Civilization Phase 2` interpretation.
+The current simulation reaches Copper Smelting but still lacks a durable settlement/food substrate for centuries of life.
 
 Priority scope:
-- SleepingPlace;
-- Shelter;
-- WorkSurface;
-- facility effects on sleep / comfort / work efficiency;
-- cultivation/agriculture foundation;
-- renewable food production rather than indefinite gathering dependence;
-- water handling/storage where needed;
-- settlement resource pressure and maintenance;
-- TinOre;
-- Bronze / bronze tools after actual prerequisites exist.
+
+- SleepingPlace.
+- Shelter.
+- WorkSurface.
+- facility effects on sleep/comfort/work efficiency.
+- cultivation/agriculture foundation.
+- renewable food production.
+- water handling/storage.
+- settlement resource pressure/maintenance.
+- TinOre.
+- Bronze/bronze tools after real prerequisites.
+
+New environment dependency:
+
+- crop growth depends on time/season/moisture/fertility.
+- shelter value depends partly on temperature/weather.
+- food storage pressure changes with harvest/season availability.
+- water systems respond to environment rather than infinite static supply.
 
 Rules:
-- no free starting infrastructure;
-- no “era reached” auto-spawn;
-- every facility requires actual material/work/knowledge;
+
+- no free starting infrastructure.
+- no era auto-spawn.
+- every facility requires material/work/knowledge.
 - farming does not create food without land/time/input constraints.
 
-Acceptance direction:
-- a New Game can transition from gathering toward a reproducible settlement economy through actual actions;
-- a failed settlement may regress rather than receiving rescue resources.
+Acceptance:
+
+- New Game can move from gathering toward reproducible settlement economy by actual actions.
+- failed settlement may regress.
+- seasonal/resource shocks can expose weak settlement design.
 
 ---
 
-## Milestone C2 — Long-Run Scale & Cleanup
+# 7. P1 Long-Run Reliability Track
+
+## Milestone C2 — Long-Run Scale, History Fast-Forward & Cleanup
 
 Owner: Jjun.
 
-**Priority moved earlier.**
-Open-ended civilization is meaningless if the simulation cannot survive centuries/many generations efficiently.
+This remains ahead of large historical/future content expansion.
 
 Scope:
-- remove `SimulationSnapshotCodecLegacy.cpp` after compatibility checks are updated;
-- remove stale Preflight compatibility markers;
-- explicit per-frame simulation catch-up budget;
-- residue/HISM refresh profiling;
-- population growth CPU/memory stability;
-- snapshot size/restore cost review;
-- inactive/distant simulation strategy preparation where necessary;
-- deterministic multi-generation / multi-century headless regression harness.
 
-Acceptance principle:
-- long time acceleration must not create a single-frame death spiral;
-- performance optimizations must not create a second authority or silently skip required causal outcomes.
+- deterministic multi-generation / multi-century headless harness.
+- explicit per-frame simulation work budget.
+- History-mode daily/weekly/monthly batching where equivalence is proven.
+- event-aware slowdown hooks.
+- population CPU/memory stability.
+- snapshot size/restore cost review.
+- residue/HISM/environment refresh profiling.
+- inactive/distant simulation strategy.
+- remove legacy snapshot/Preflight compatibility baggage after verification.
+
+Acceptance:
+
+- centuries can be simulated without a single-frame death spiral.
+- acceleration does not silently skip causal outcomes.
+- long-run optimization does not create a second authority.
 
 ---
+
+# 8. P2 Open-Ended Civilization Framework
 
 ## Milestone C3 — Open-Ended Civilization Framework v1
 
 Owner: Jjun Core/Simulation/Save/Bridge.
 Canonical architecture: `docs/OPEN_ENDED_CIVILIZATION_NORTH_STAR.md`.
 
-Purpose:
-- stop scaling civilization by endlessly appending one-off era enums;
-- provide a reusable framework able to carry primitive, historical, modern and future development.
-
 Core model:
-1. `Knowledge` — what residents/groups know.
-2. `Capability` — what they can actually do with current facilities/resources/skills.
-3. `Technology` — reproducible inventions/processes built from prerequisites.
-4. `CivilizationTransformation` — measurable social/production consequences.
 
-Scope v1:
-- stable Capability/Technology identity and versioning;
-- map existing primitive Techniques into the capability graph without breaking save ordinals;
-- prerequisite/effect graph;
-- problem/resource pressure as research/experiment motivation;
-- experiment -> discovery -> reproducibility;
-- physical/authoritative knowledge diffusion;
-- adoption/diffusion state separate from discovery;
-- technology/capability loss and rediscovery;
-- Core read model for Observer;
+1. Knowledge — what individuals/groups know.
+2. Capability — what they can actually do.
+3. Technology — reproducible invention/process.
+4. CivilizationTransformation — measurable social/production consequence.
+
+Scope:
+
+- stable Capability/Technology identity/versioning.
+- existing primitive Technique compatibility mapping.
+- prerequisite/effect graph.
+- survival/environment/resource pressure -> research/experiment motivation.
+- experiment -> discovery -> reproducibility.
+- physical knowledge diffusion.
+- adoption separate from discovery.
+- loss/rediscovery.
+- Observer read model.
 - deterministic snapshot roundtrip.
 
-Validation:
-- no unlock without prerequisites;
-- no output without required resources/energy/facility;
-- same seed/state reproduces the same progression;
-- different circumstances may branch into different development orders;
-- knowledge/capability can decline;
-- Save/Load does not duplicate discoveries.
+Environment is now a first-class innovation driver:
+
+- cold can pressure shelter/heating/clothing.
+- drought can pressure storage/irrigation/wells/migration.
+- night can pressure lighting.
+- resource seasonality can pressure preservation/storage/trade.
 
 ---
 
+# 9. P2 Population / Society Foundations
+
 ## Milestone C4 — Health / Disease / Population Resilience
 
-Owner: Jjun Core provider -> Dagyeom presentation.
-
 Scope candidates:
-- pathogens / infection;
-- contaminated water/soil;
-- sanitation-linked health;
-- illness/recovery;
-- environment/accident mortality;
-- immunity/resilience where justified;
-- health knowledge and care progression hooks;
-- deterministic, testable effects.
 
-Why here:
-- multi-century civilization requires meaningful non-age mortality and population shocks;
-- later medicine/biotech needs a real health substrate rather than decorative stats.
+- pathogens/infection.
+- contaminated water/soil.
+- sanitation-linked health.
+- illness/recovery.
+- temperature/weather exposure health effects.
+- accident/environment mortality.
+- immunity/resilience.
+- health knowledge/care progression.
 
 ---
 
 ## Milestone C5 — Education / Recording / Specialization / Economy / Institutions
 
-Owner: Jjun Core/Simulation/World provider -> Dagyeom Observer/Presentation.
-
-**This scope is moved forward from the former final “economy/society” bucket.**
-Industrial and future civilization cannot emerge naturally without coordination and knowledge scaling.
-
 Scope:
-- family/apprenticeship teaching expansion;
-- persistent records / writing precursor when prerequisites exist;
-- education/learning throughput;
-- jobs/roles/specialization;
-- production/storage demand signals;
-- exchange/trade foundation;
-- ownership/shared-resource policies at a generic simulation level;
-- institutions/group coordination;
-- technology adoption/acceptance effects;
-- research/education organizations when capabilities permit.
 
-Rules:
-- no single real-world political/economic system is treated as the mandatory endpoint;
-- systems emerge from generic resource/coordination/incentive mechanics.
+- family/apprenticeship teaching expansion.
+- records/writing precursor.
+- education throughput.
+- jobs/roles/specialization.
+- production/storage demand signals.
+- exchange/trade foundation.
+- generic ownership/shared-resource policies.
+- institutions/group coordination.
+- technology adoption/acceptance.
+- research/education organizations.
+
+No one real-world political/economic system is a mandatory endpoint.
 
 ---
 
 ## Milestone C6 — Migration / Multiple Settlements / Trade Networks
 
-Owner: Jjun Core/World/Simulation.
+Scope:
+
+- carrying-capacity pressure.
+- exploration.
+- household/group migration.
+- settlement founding/abandonment.
+- multiple settlements.
+- local knowledge/capability differences.
+- trade routes/resource specialization.
+- conflict/cooperation foundations.
+- weather/resource pressure as migration drivers.
+
+---
+
+# 10. Presentation Track — Parallel, Not Blocking Core
+
+## Milestone P2 — Character Context Motion v2
+
+Owner: Dagyeom Character Presentation.
 
 Scope:
-- carrying-capacity pressure;
-- exploration;
-- household/group migration;
-- settlement founding/abandonment;
-- multiple settlements;
-- local knowledge/capability differences;
-- trade routes and resource specialization;
-- inter-settlement social continuity/conflict/cooperation foundations.
 
-Depends on:
-- trustworthy long-run scale;
-- settlement economy;
-- education/economy foundations.
+- Sit / Stand / Lie / Wake only with compatible facilities.
+- PickUp / Carry / Use.
+- Gather / Cut / Chop / Dig / Strike.
+- Craft / Build / Fire / Smelt.
+- Parenting care.
+- sanitation interaction.
+- teaching/social context motion.
+- gaze/body orientation from authoritative targets.
 
----
+Asset policy:
 
-# Historical-to-Future Content Expansion
-
-These milestones add concrete content **on top of** the open-ended framework instead of creating a separate hardcoded era machine.
-
-## Milestone F1 — Advanced Metallurgy / Urban / Scientific Accumulation
-
-Examples:
-- Bronze completion and improved tooling;
-- Iron/high-temperature metallurgy;
-- construction/material sophistication;
-- urban infrastructure pressures;
-- measurement/recording;
-- structured experimentation and accumulated scientific knowledge.
-
-The exact order is simulation-driven, not a fixed era checklist.
+- existing Quaternius CC0 first.
+- never invent furniture/tools through animation.
+- animation failure must not fabricate Core completion.
 
 ---
 
-## Milestone F2 — Mechanical / Industrial Civilization
+## Milestone P3 — Observer Readability, Real Scrolling & Time Controls
 
-Examples:
-- mechanical power transmission;
-- precision tooling;
-- pumps/engines;
-- scalable manufacturing;
-- transport infrastructure;
-- industrial energy/resource externalities.
+Owner: Dagyeom UI/Observer.
 
-Technology must materially change production and society, not just add Observer labels.
+Scope:
 
----
-
-## Milestone F3 — Electrical / Chemical / Modern Infrastructure
-
-Examples:
-- electricity generation/transmission/storage;
-- advanced chemistry/materials;
-- sanitation/medical infrastructure;
-- mass production;
-- motorized transport;
-- high-throughput communication prerequisites.
+- true scrollable Detail content.
+- generated-world readability.
+- pause / 1x / 4x / 16x / 64x controls from T1 contract.
+- current simulation date/time.
+- current season/weather summary from E1/E2.
+- emotion/teaching/lifecycle/history authoritative labels.
+- future civilization capability/history surfaces without cluttering main view.
 
 ---
 
-## Milestone F4 — Digital / Network / Information Civilization
+## Milestone P4 — Lifecycle Event Presentation v2
 
-Examples:
-- computation;
-- electronics;
-- data storage;
-- communications networks;
-- software/control abstractions represented as simulation capabilities;
+Scope:
+
+- pregnancy/birth visibility.
+- growth transition visibility.
+- death/history visibility.
+- deceased inspection from Core history.
+- truthful optional death animation.
+- family/history feed integration.
+
+---
+
+# 11. Historical-to-Future Content Expansion
+
+These are **content bands on top of C3**, not forced era gates.
+
+## F1 — Advanced Metallurgy / Urban / Scientific Accumulation
+
+- Bronze completion.
+- Iron/high-temperature metallurgy.
+- construction/material sophistication.
+- urban infrastructure pressure.
+- measurement/recording.
+- structured experimentation.
+
+## F2 — Mechanical / Industrial Civilization
+
+- mechanical power.
+- precision tooling.
+- pumps/engines.
+- scalable manufacturing.
+- transport infrastructure.
+- industrial externalities.
+
+## F3 — Electrical / Chemical / Modern Infrastructure
+
+- electricity generation/transmission/storage.
+- advanced chemistry/materials.
+- sanitation/medical infrastructure.
+- mass production.
+- motorized transport.
+- high-throughput communications.
+
+## F4 — Digital / Network / Information Civilization
+
+- computation.
+- electronics.
+- data storage.
+- communication networks.
+- software/control abstractions as simulation capabilities.
 - automation prerequisites.
 
----
+## F5 — AI / Robotics / Advanced Automation
 
-## Milestone F5 — AI / Robotics / Advanced Automation
+- machine perception/control.
+- autonomous robotics.
+- automated production.
+- AI-assisted research/education.
+- labor/production structure transformation.
 
-Examples:
-- machine perception/control;
-- autonomous robotics;
-- automated production;
-- AI-assisted research/education;
-- labor/production structure transformation;
-- adoption, regulation/acceptance and concentration/distribution effects as generic social mechanics.
+No scripted singularity date.
 
-No scripted “singularity date.”
-Acceleration may emerge only when the feedback loop actually exists.
+## F6 — Advanced Energy / Materials / Biotechnology
 
----
+- high-density energy.
+- advanced materials.
+- closed-loop production.
+- genetics/regenerative medicine/artificial organs.
+- longevity with demographic/social consequences.
 
-## Milestone F6 — Advanced Energy / Materials / Biotechnology
+## F7 — Planetary / Space / Interplanetary Civilization
 
-Examples:
-- high-density energy;
-- advanced materials;
-- closed-loop production;
-- genetics / regenerative medicine / artificial organs when health science supports them;
-- longevity effects with real demographic/social consequences.
+- launch capability.
+- orbital infrastructure.
+- closed-loop life support.
+- autonomous off-world industry.
+- moon/planet/asteroid settlements.
 
----
+## F8 — Open Future / Unknown Civilization
 
-## Milestone F7 — Planetary / Space / Interplanetary Civilization
+- compositional innovation from Capability + Knowledge + material + energy constraints.
+- deterministic stable technology identity.
+- concrete measurable effects.
+- multiple future trajectories.
+- acceleration, stagnation, collapse and rediscovery.
 
-Examples:
-- launch capability;
-- orbital infrastructure;
-- closed-loop life support;
-- autonomous off-world industry;
-- moon/planet/asteroid settlement when resources and transport permit;
-- multi-settlement model generalized to off-world settlements.
+LifeLens should eventually surprise the observer **without abandoning causality**.
 
 ---
 
-## Milestone F8 — Open Future / Unknown Civilization
-
-Purpose:
-- allow credible capabilities beyond pre-authored modern/future milestones.
-
-Direction:
-- compositional innovation from existing Capability + Knowledge + resource/energy constraints;
-- generated technology candidates must have deterministic stable identity and concrete effects;
-- new technology must alter measurable simulation capability rather than exist as flavor text;
-- allow multiple future trajectories such as distributed AI society, extreme automation, biological adaptation, advanced energy or other mechanically supported branches;
-- allow acceleration, stagnation, collapse and rediscovery.
-
-This is the point where LifeLens should be able to surprise the observer without abandoning causality.
-
----
-
-# Previous Roadmap Reconciliation
+# 12. Reconciliation With Previous Roadmap
 
 | Previous item | New disposition | Reason |
 |---|---|---|
-| Dagyeom #100 closeout | KEEP, status corrected | live PR is no longer mergeable; refresh/current-main validation required |
-| Character Context Motion v2 | KEEP HIGH | simulation actions need truthful visible embodiment |
-| Emotion Runtime Integration | #132 CLOSEOUT | implemented; production external relief gap found/fixed before final merge |
-| Observer Readability/Scrolling | KEEP HIGH | current detail overflow still needs real scrolling |
-| Lifecycle Event Presentation | KEEP HIGH | multigeneration observation requires visible birth/growth/death history |
-| Civilization Phase 2 | EXPANDED -> Settlement & Subsistence | housing/agriculture/renewable food are prerequisites for long civilization |
-| Cleanup + long-run performance | MOVE UP | centuries/future simulation requires scale before content explosion |
-| Health/Disease | KEEP, structured earlier | population shocks and future medicine need a real health substrate |
-| Migration / Economy / Society | SPLIT | education/economy/institutions are needed before industrial/future progression; migration follows local foundation |
-| Open-Ended Civilization Framework | NEW | prevents hardcoded era ceiling and future rework |
-| Historical -> modern content bands | NEW | implemented on top of capability framework, not as forced era gates |
-| AI/advanced energy/biotech/space | NEW | explicit long-range content path |
-| Unknown future compositional innovation | NEW NORTH STAR | enables progression beyond present-day humanity |
+| Dagyeom #100 closeout | DONE via #134 | validated WorldPresentation source reapplied on current main |
+| Character Context Motion v2 | KEEP HIGH / parallel | truthful action embodiment still needed |
+| Observer Readability/Scrolling | EXPANDED | now also owns time-speed and environment readouts |
+| Lifecycle Event Presentation | KEEP HIGH / parallel | multigeneration observation requires it |
+| Civilization Phase 2 | EXPANDED -> Settlement & Subsistence | agriculture/shelter/water are long-run prerequisites |
+| Time scale | PROMOTED TO P0 T1 | every lifecycle/environment/long-run system depends on authoritative speed |
+| Day/Night / Seasons / Weather | PROMOTED TO P0 E1~E4 | environment must shape life before agriculture/long civilization grows |
+| Cleanup / long-run performance | KEEP EARLY | centuries/future simulation requires scale before content explosion |
+| Open-Ended Civilization Framework | KEEP BEFORE CONTENT BANDS | prevents hardcoded era ceiling |
+| Health/Disease | KEEP AFTER CORE ENVIRONMENT | health can consume real environmental exposure |
+| Education/Economy/Institutions | KEEP BEFORE INDUSTRIAL EXPANSION | coordination/knowledge scaling prerequisite |
+| Migration/Multi-settlement | AFTER LOCAL FOUNDATION | depends on settlement/economy/long-run reliability |
+| AI/advanced energy/biotech/space | LONG-RANGE CONTENT | built on open-ended capability framework |
+| Unknown future innovation | NORTH STAR | progression beyond present humanity |
 
 ---
 
-## Gate B — Android Smoke / Real-device Baseline — PAUSED BY USER
+# 13. Current Parallel Dispatch
 
-Do not run Android builds until explicitly resumed.
+## Jjun Core / World lane
+
+1. **T1 Simulation Time Authority & Variable Speed.**
+2. **E1 Calendar + Day/Night Authority.**
+3. **E2 Seasons + Dynamic Weather Core v1.**
+4. **E3 Environmental Consequences v1.**
+5. **C1 Settlement & Subsistence Foundation.**
+6. **C2 Long-Run Scale + History Fast-Forward.**
+7. **C3 Open-Ended Civilization Framework v1.**
+8. C4 Health / Disease / Population Resilience.
+9. C5 Education / Recording / Specialization / Economy / Institutions.
+10. C6 Migration / Multiple Settlements / Trade Networks.
+11. F1 -> F8 historical / modern / future expansion.
+
+## Dagyeom Presentation lane
+
+1. **P2 Character Context Motion v2.**
+2. **P3 Observer Readability + Real Scrolling + Time Controls.**
+3. **E4 Dynamic Environment Presentation v1** as E1/E2 provider contracts land.
+4. **P4 Lifecycle Event Presentation v2.**
+5. settlement/civilization/future presentation consumers as Core contracts land.
+
+Dagyeom-owned changes may proceed and merge independently after CI when they do not conflict with active Core provider ownership.
+Conflicts must be resolved by comparing both sides; do not overwrite current main blindly.
+
+## Android / Device lane
+
+Gate B remains **PAUSED BY USER**.
+Do not launch long Android builds until explicitly resumed.
 
 When resumed:
-- prefer cached/fast paths after verified engine cache;
-- avoid blind repeat of long seed/full builds;
-- validate APK boot, four founders, Observer controls/data, movement/actions, Save/Load, FPS/memory/thermal baseline.
 
-MetaHuman comparison remains after this gate unless superseded by later presentation decisions.
+- prefer cached/fast path after verified engine cache.
+- avoid blind repeat of full/seed builds.
+- validate APK boot, four founders, Observer controls/data, movement/actions, Save/Load, FPS/memory/thermal baseline.
 
 ---
 
-## Current Parallel Dispatch
+# 14. Immediate Next Feature
 
-### Jjun Core/World lane
-1. #132 exact-head closeout + merge.
-2. Settlement & Subsistence Foundation.
-3. Long-Run Scale & Cleanup.
-4. Open-Ended Civilization Framework v1.
-5. Health / Disease / Population Resilience.
-6. Education / Recording / Specialization / Economy / Institutions.
-7. Migration / Multiple Settlements / Trade Networks.
-8. Historical -> industrial -> modern -> digital content.
-9. AI / automation -> advanced energy / biotech -> space -> open future.
+After this documentation PR is merged, the next Jjun-owned implementation target is:
 
-### Dagyeom Presentation lane
-1. #100 current-main refresh / CI / Mac PIE closeout.
-2. Character Context Motion v2.
-3. Observer Readability + Real Scrolling.
-4. Lifecycle Event Presentation v2.
-5. presentation consumers for settlement, civilization capability/history and future systems as provider contracts land.
+> **T1 — Simulation Time Authority & Variable Speed**
 
-### Android/device lane
-- Gate B remains **PAUSED** until explicit user resume.
+The first delivery should establish the 8-minute/day target and safe pause/1x/4x/16x/64x Core contract without yet trying to implement the full weather stack in the same PR.
 
-Cross-lane request checkpoints from `tasks/TEAM_BOARD.md` remain mandatory at work start/end, long-build boundaries and before main-changing merges/rebases.
+After T1 is stable, E1/E2 follow so that Settlement & Subsistence is built on a real calendar/day-night/season/weather foundation instead of receiving those systems retroactively.
