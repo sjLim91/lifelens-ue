@@ -133,8 +133,14 @@ private:
     UPROPERTY(Config, EditAnywhere, Category="LifeLens|Environment|Visual", meta=(ClampMin="0.05"))
     float EnvironmentalVisualRefreshIntervalSeconds = 0.25f;
 
-    UPROPERTY(Config, EditAnywhere, Category="LifeLens|Time", meta=(ClampMin="0.1"))
-    float RealSecondsPerSimulationMinute = 0.6f;
+    // Canonical Observe speed: 480 real seconds / 1440 simulation minutes.
+    UPROPERTY(Config, EditAnywhere, Category="LifeLens|Time", meta=(ClampMin="0.01"))
+    float RealSecondsPerSimulationMinute = 0.333333f;
+
+    // Prevent long hitches / high speed from turning one render frame into an
+    // unbounded Core catch-up loop. Backlog remains queued in the accumulator.
+    UPROPERTY(Config, EditAnywhere, Category="LifeLens|Time", meta=(ClampMin="1", ClampMax="512"))
+    int32 MaxSimulationMinutesPerFrame = 32;
 
     UPROPERTY(Config, EditAnywhere, Category="LifeLens|Action|Context", meta=(ClampMin="1.0"))
     float ContextWorldTargetArrivalRadiusUU = 165.0f;
