@@ -133,6 +133,12 @@ public:
     UFUNCTION(BlueprintPure, Category="LifeLens|Core|Environment")
     FLLCoreEnvironmentObservation GetEnvironmentObservation(int32 MaxResidues = 64) const;
 
+    UFUNCTION(BlueprintPure, Category="LifeLens|Core|Environment|Weather")
+    FLLCoreDynamicEnvironmentObservation GetDynamicEnvironmentObservation(int32 ChunkX, int32 ChunkY) const;
+
+    UFUNCTION(BlueprintPure, Category="LifeLens|Core|Environment|Weather")
+    FLLCoreDynamicEnvironmentObservation GetInitialRegionDynamicEnvironmentObservation() const;
+
     UFUNCTION(BlueprintPure, Category="LifeLens|Core|WorldGeneration")
     FLLCoreWorldGenerationObservation GetWorldGenerationObservation() const;
 
