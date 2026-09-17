@@ -12,6 +12,7 @@
 #include "ContextAction.h"
 #include "Death.h"
 #include "DecisionExecution.h"
+#include "EmotionRuntime.h"
 #include "EnvironmentalExposure.h"
 #include "EnvironmentalResidue.h"
 #include "ObserverReadModelV2.h"
@@ -146,9 +147,6 @@ private:
         CharacterId socialTarget=0;
         PendingContextAction pendingContext{};
 
-        // Presentation provenance for the civilization action that actually
-        // executed. Intentionally omitted from SimulationRuntimeSnapshot so
-        // save/restore never replays stale work animations.
         bool civilizationActive=false;
         CivilizationEvent civilizationEvent{};
         int civilizationActivityMinute=-1;
@@ -242,14 +240,12 @@ inline bool Simulation::completeExternalPhysicalAction(
            || sanitationSite->pos.y!=resolvedPosition.y) return false;
     }
 
-    // Food and water are never synthesized by presentation. Even when a real
-    // table/campfire/well presentation affordance is used, Core must possess the
-    // consumable provision before it can acknowledge the outcome.
     if(runtime.goal==Goal::Eat && !character->civilization.inventory.remove(
         ItemKind::RawMaterial,MaterialKind::PlantFood,1)) return false;
     if(runtime.goal==Goal::Drink && !character->civilization.inventory.remove(
         ItemKind::RawMaterial,MaterialKind::Water,1)) return false;
 
+    const double needBefore=needForGoal(*character,runtime.goal);
     const PrimitiveSanitationSiteKind sanitationKind=sanitationSite!=nullptr
         ? sanitationSite->kind
         : PrimitiveSanitationSiteKind::DesignatedArea;
@@ -266,15 +262,10 @@ inline bool Simulation::completeExternalPhysicalAction(
     for(int tick=0;tick<std::max(1,duration);++tick){
         character->needs.apply(effect);
     }
+    applyNeedResolutionEmotion(*character,needBefore,needForGoal(*character,runtime.goal));
 
-    // World is the physical resolver, so Core records environmental consequence
-    // at the actual acknowledged world-grid position rather than independently
-    // choosing a second position that could disagree with what the player saw.
     runtime.pos=resolvedPosition;
     if(runtime.goal==Goal::UseToilet && (emergencyFallback || primitiveSanitation)){
-        // #79 compatibility contract: recordDesignatedSanitationSiteUse remains
-        // the designated-area wrapper; the generalized path below accepts both
-        // DesignatedArea and DugPit without changing site identity/GridPos.
         if(primitiveSanitation && !recordPrimitiveSanitationSiteUse(
             world_.primitiveSanitationSites,sanitationSiteId,resolvedPosition)) return false;
         const double residueIntensity=primitiveSanitation
