@@ -36,20 +36,24 @@ public:
     virtual void Tick(float DeltaSeconds) override;
 
     // ---- Android budget ------------------------------------------------------
-    static constexpr int32 MaxTreeInstances  = 700;
-    static constexpr int32 MaxShrubInstances = 900;
-    static constexpr int32 MaxGrassInstances = 2600;
-    static constexpr int32 MaxRockInstances  = 900;
+    // Visual Catch-up v2 tightens the ambient HISM envelope before adding
+    // weather VFX. Resource/facility truth is untouched; these values only
+    // cap presentation density and distance so precipitation/post-process has
+    // headroom on the Android target.
+    static constexpr int32 MaxTreeInstances  = 620;
+    static constexpr int32 MaxShrubInstances = 760;
+    static constexpr int32 MaxGrassInstances = 1800;
+    static constexpr int32 MaxRockInstances  = 720;
 
-    static constexpr int32 MaxTreesPerChunk  = 110;
-    static constexpr int32 MaxShrubsPerChunk = 140;
-    static constexpr int32 MaxGrassPerChunk  = 420;
-    static constexpr int32 MaxRocksPerChunk  = 130;
+    static constexpr int32 MaxTreesPerChunk  = 96;
+    static constexpr int32 MaxShrubsPerChunk = 115;
+    static constexpr int32 MaxGrassPerChunk  = 300;
+    static constexpr int32 MaxRocksPerChunk  = 105;
 
-    static constexpr float TreeCullStartUU = 14000.0f;
-    static constexpr float TreeCullEndUU   = 30000.0f;
-    static constexpr float SmallCullStartUU = 4500.0f;
-    static constexpr float SmallCullEndUU   = 13000.0f;
+    static constexpr float TreeCullStartUU = 12000.0f;
+    static constexpr float TreeCullEndUU   = 26000.0f;
+    static constexpr float SmallCullStartUU = 3800.0f;
+    static constexpr float SmallCullEndUU   = 10500.0f;
     static constexpr float FacilityCullStartUU = 7000.0f;
     static constexpr float FacilityCullEndUU = 18000.0f;
 
