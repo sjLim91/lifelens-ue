@@ -9,6 +9,7 @@ enable_testing()
 
 add_library(lifelens_core STATIC
     src/Simulation.cpp
+    src/ContextActionRuntime.cpp
     src/CivilizationKnowledgeTransmission.cpp
     src/SimulationSnapshot.cpp
     src/SimulationSnapshotCodec.cpp
@@ -56,6 +57,8 @@ lifelens_add_test(test_decision_execution)
 
 lifelens_add_test(test_simulation_social_loop)
 
+lifelens_add_test(test_social_communication_read_model)
+
 lifelens_add_test(test_observer_read_model)
 
 lifelens_add_test(test_romance)
@@ -94,6 +97,10 @@ lifelens_add_test(test_autonomous_family_progression)
 
 lifelens_add_test(test_lifecycle_runtime_correctness)
 
+lifelens_add_test(test_context_action_completion)
+
+lifelens_add_test(test_context_action_competing_parenting)
+
 lifelens_add_test(test_core_save_load)
 
 lifelens_add_test(test_snapshot_codec)
@@ -113,6 +120,18 @@ lifelens_add_test(test_autonomous_civilization_loop)
 lifelens_add_test(test_civilization_knowledge_transmission)
 
 lifelens_add_test(test_civilization_observer_read_model)
+
+lifelens_add_test(test_facility_authority)
+
+lifelens_add_test(test_primitive_storage_progression)
+
+lifelens_add_test(test_tool_effectiveness)
+
+lifelens_add_test(test_primitive_fire_progression)
+
+lifelens_add_test(test_primitive_furnace_smelting)
+
+lifelens_add_test(test_natural_physical_obstacles)
 
 lifelens_add_test(test_environmental_residue)
 

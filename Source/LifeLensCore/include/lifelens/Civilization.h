@@ -26,7 +26,8 @@ enum class MaterialKind {
     CopperOre,
     TinOre,
     IronOre,
-    Charcoal
+    Charcoal,
+    CopperMetal
 };
 
 struct MaterialProperties {
@@ -55,6 +56,7 @@ inline MaterialProperties materialProperties(MaterialKind kind)
         case MaterialKind::TinOre: return {0.62,0.10,0.26,0.02,0.00,0.76,0.00};
         case MaterialKind::IronOre: return {0.86,0.08,0.20,0.01,0.00,0.94,0.00};
         case MaterialKind::Charcoal: return {0.18,0.02,0.64,0.02,0.98,0.52,0.00};
+        case MaterialKind::CopperMetal: return {0.56,0.18,0.08,0.42,0.00,0.70,0.00};
         case MaterialKind::Unknown:
         default: return {};
     }
@@ -66,7 +68,9 @@ enum class ItemKind {
     StoneCuttingTool,
     Cordage,
     SimpleContainer,
-    FuelBundle
+    FuelBundle,
+    DiggingStick,
+    StoneHammer
 };
 
 enum class ToolCapability {
@@ -84,6 +88,8 @@ inline ToolCapability itemCapability(ItemKind kind)
     switch(kind){
         case ItemKind::SharpFlake: return ToolCapability::Cut;
         case ItemKind::StoneCuttingTool: return ToolCapability::Chop;
+        case ItemKind::DiggingStick: return ToolCapability::Dig;
+        case ItemKind::StoneHammer: return ToolCapability::Strike;
         case ItemKind::SimpleContainer: return ToolCapability::Carry;
         case ItemKind::FuelBundle: return ToolCapability::Heat;
         default: return ToolCapability::None;
@@ -143,6 +149,18 @@ public:
         }
         stacks_.erase(std::remove_if(stacks_.begin(),stacks_.end(),[](const ItemStack& s){return s.quantity<=0;}),stacks_.end());
         return remaining==0;
+    }
+
+    bool removeExactOne(const ItemStack& item)
+    {
+        for(auto it=stacks_.begin();it!=stacks_.end();++it){
+            if(it->quantity<=0 || it->kind!=item.kind || it->material!=item.material) continue;
+            if(!near(it->quality,item.quality) || !near(it->durability,item.durability)) continue;
+            --it->quantity;
+            if(it->quantity<=0) stacks_.erase(it);
+            return true;
+        }
+        return false;
     }
 
     bool transferTo(Inventory& target,ItemKind kind,MaterialKind material,int quantity,bool anyMaterial=false)
@@ -214,7 +232,11 @@ enum class TechniqueId {
     FiberCordage,
     SimpleContainer,
     DesignatedSanitationArea,
-    DugSanitationPit
+    DugSanitationPit,
+    PrimitiveStorage,
+    DiggingStick,
+    StoneHammer,
+    CopperSmelting
 };
 
 enum class KnowledgeLevel : int {
@@ -299,7 +321,11 @@ enum class ExperimentKind {
     TwistFiber,
     ShapeClay,
     DesignateSanitationArea,
-    DigSanitationPit
+    DigSanitationPit,
+    OrganizeStockpile,
+    ShapeDiggingStick,
+    HaftStoneHammer,
+    SmeltCopperOre
 };
 
 enum class CivilizationEventType {
@@ -331,6 +357,8 @@ struct ExperimentContext {
     bool sanitationProblemRecognized=false;
     bool sanitationSiteAvailable=false;
     bool sanitationPitCandidateAvailable=false;
+    bool storageProblemRecognized=false;
+    bool smeltingOpportunityAvailable=false;
 };
 
 struct ExperimentResult {
@@ -373,8 +401,15 @@ inline TechniqueRecipe techniqueRecipe(TechniqueId technique)
             return {technique,{{ItemKind::RawMaterial,MaterialKind::Fiber,2,false}},true,ItemKind::Cordage,MaterialKind::Fiber,1};
         case TechniqueId::SimpleContainer:
             return {technique,{{ItemKind::RawMaterial,MaterialKind::Clay,3,false}},true,ItemKind::SimpleContainer,MaterialKind::Clay,1};
+        case TechniqueId::DiggingStick:
+            return {technique,{{ItemKind::RawMaterial,MaterialKind::Wood,2,false}},true,ItemKind::DiggingStick,MaterialKind::Wood,1};
+        case TechniqueId::StoneHammer:
+            return {technique,{{ItemKind::RawMaterial,MaterialKind::Stone,2,false},{ItemKind::RawMaterial,MaterialKind::Wood,1,false},{ItemKind::Cordage,MaterialKind::Fiber,1,false}},true,ItemKind::StoneHammer,MaterialKind::Stone,1};
+        case TechniqueId::CopperSmelting:
+            return {technique,{{ItemKind::RawMaterial,MaterialKind::CopperOre,1,false},{ItemKind::RawMaterial,MaterialKind::Charcoal,1,false}},true,ItemKind::RawMaterial,MaterialKind::CopperMetal,1};
         case TechniqueId::DesignatedSanitationArea:
         case TechniqueId::DugSanitationPit:
+        case TechniqueId::PrimitiveStorage:
             return {technique,{},false,ItemKind::RawMaterial,MaterialKind::Unknown,0};
         case TechniqueId::None:
         default:
@@ -411,6 +446,10 @@ inline TechniqueId experimentTechnique(ExperimentKind kind)
         case ExperimentKind::ShapeClay: return TechniqueId::SimpleContainer;
         case ExperimentKind::DesignateSanitationArea: return TechniqueId::DesignatedSanitationArea;
         case ExperimentKind::DigSanitationPit: return TechniqueId::DugSanitationPit;
+        case ExperimentKind::OrganizeStockpile: return TechniqueId::PrimitiveStorage;
+        case ExperimentKind::ShapeDiggingStick: return TechniqueId::DiggingStick;
+        case ExperimentKind::HaftStoneHammer: return TechniqueId::StoneHammer;
+        case ExperimentKind::SmeltCopperOre: return TechniqueId::CopperSmelting;
         default: return TechniqueId::None;
     }
 }
@@ -445,8 +484,12 @@ inline double experimentBaseChance(ExperimentKind kind,MaterialKind material)
         case ExperimentKind::FrictionWood: return material==MaterialKind::Wood ? 0.15 : 0.0;
         case ExperimentKind::TwistFiber: return material==MaterialKind::Fiber ? 0.34 : 0.0;
         case ExperimentKind::ShapeClay: return material==MaterialKind::Clay ? 0.30 : 0.0;
+        case ExperimentKind::ShapeDiggingStick: return material==MaterialKind::Wood ? 0.29 : 0.0;
+        case ExperimentKind::HaftStoneHammer: return material==MaterialKind::Stone ? 0.24 : 0.0;
+        case ExperimentKind::SmeltCopperOre: return material==MaterialKind::CopperOre ? 0.18 : 0.0;
         case ExperimentKind::DesignateSanitationArea: return material==MaterialKind::Unknown ? 0.32 : 0.0;
         case ExperimentKind::DigSanitationPit: return material==MaterialKind::Unknown ? 0.28 : 0.0;
+        case ExperimentKind::OrganizeStockpile: return material==MaterialKind::Unknown ? 0.34 : 0.0;
         default: return 0.0;
     }
 }
@@ -474,6 +517,19 @@ inline bool experimentPrerequisitesMet(const ExperimentContext& context,const Kn
     if(context.kind==ExperimentKind::HaftSharpFlake){
         return knowledge.knowsAtLeast(TechniqueId::SharpFlake,KnowledgeLevel::Reproducible);
     }
+    if(context.kind==ExperimentKind::ShapeDiggingStick){
+        return knowledge.knowsAtLeast(TechniqueId::SharpFlake,KnowledgeLevel::Reproducible);
+    }
+    if(context.kind==ExperimentKind::HaftStoneHammer){
+        return knowledge.knowsAtLeast(TechniqueId::ChippedStoneTool,KnowledgeLevel::Reproducible)
+            && knowledge.knowsAtLeast(TechniqueId::FiberCordage,KnowledgeLevel::Reproducible);
+    }
+    if(context.kind==ExperimentKind::SmeltCopperOre){
+        return context.smeltingOpportunityAvailable
+            && knowledge.knowsAtLeast(TechniqueId::FireMaking,KnowledgeLevel::Reproducible)
+            && knowledge.knowsAtLeast(TechniqueId::StoneHammer,KnowledgeLevel::Reproducible)
+            && knowledge.knowsAtLeast(TechniqueId::SimpleContainer,KnowledgeLevel::Reproducible);
+    }
     if(context.kind==ExperimentKind::DesignateSanitationArea){
         return context.sanitationProblemRecognized && context.sanitationSiteAvailable;
     }
@@ -481,6 +537,9 @@ inline bool experimentPrerequisitesMet(const ExperimentContext& context,const Kn
         return context.sanitationPitCandidateAvailable
             && knowledge.knowsAtLeast(
                 TechniqueId::DesignatedSanitationArea,KnowledgeLevel::Reproducible);
+    }
+    if(context.kind==ExperimentKind::OrganizeStockpile){
+        return context.storageProblemRecognized;
     }
     return true;
 }

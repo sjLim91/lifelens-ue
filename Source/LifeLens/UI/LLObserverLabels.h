@@ -1,128 +1,109 @@
 #pragma once
 
-// Observer-facing text and colour helpers.
-//
-// Every user-visible string the observer HUD draws lives in this header so the
-// wording (and, later, the language) can be changed in one place. The helpers
-// are pure functions over LifeLens read-only data types; they never touch the
-// simulation.
+// Observer-facing text and colour helpers. User-visible wording stays in this
+// presentation layer; Core ids remain language neutral.
 
 #include "CoreMinimal.h"
 #include "Core/LLTypes.h"
 
 namespace LLObserverText
 {
-    // ---- LEVEL 0 overview -------------------------------------------------
-    inline const TCHAR* const OverviewTitle      = TEXT("LifeLens");
-    inline const TCHAR* const ResidentsSuffix    = TEXT("residents");
-    inline const TCHAR* const StripSeparator     = TEXT("    ");
-    inline const TCHAR* const StripNameActionJoin = TEXT(" · "); // "name · action"
-    // Tools/validate_bootstrap.py (owned by the simulation side) asserts this
-    // exact sentence is present in LLObserverHUD.cpp. Keep the wording in sync
-    // with the note there until the check is moved to this header.
-    inline const TCHAR* const TapHint            = TEXT("Tap/click a resident for details");
+    inline const TCHAR* const OverviewTitle       = TEXT("LifeLens");
+    inline const TCHAR* const ResidentsSuffix     = TEXT("명");
+    inline const TCHAR* const StripSeparator      = TEXT("    ");
+    inline const TCHAR* const StripNameActionJoin = TEXT(" · ");
+    inline const TCHAR* const TapHint             = TEXT("주민을 탭/클릭하면 자세히 볼 수 있습니다");
 
-    // ---- World overview (SPEC 61) -----------------------------------------
-    inline const TCHAR* const WorldOverviewTitle = TEXT("World");
-    inline const TCHAR* const PopulationLabel    = TEXT("Population");
+    inline const TCHAR* const WorldOverviewTitle  = TEXT("세계");
+    inline const TCHAR* const PopulationLabel     = TEXT("인구");
 
-    // ---- LEVEL 1 quick inspector -------------------------------------------
-    inline const TCHAR* const NowPrefix          = TEXT("Now: ");
-    inline const TCHAR* const SummaryJoin        = TEXT(" · ");
-    inline const TCHAR* const SummaryAllGood     = TEXT("Doing well");
-    inline const TCHAR* const PersonalityFallback = TEXT("Even-tempered");
-    inline const TCHAR* const DetailsHint        = TEXT("Details ›"); // "Details ›"
+    inline const TCHAR* const NowPrefix           = TEXT("현재: ");
+    inline const TCHAR* const SummaryJoin         = TEXT(" · ");
+    inline const TCHAR* const SummaryAllGood      = TEXT("상태 양호");
+    inline const TCHAR* const PersonalityFallback = TEXT("차분함");
+    inline const TCHAR* const DetailsHint         = TEXT("상세 보기 ›");
 
-    // ---- LEVEL 2 detail panel ------------------------------------------------
-    inline const TCHAR* const TabOverview        = TEXT("Overview");
-    inline const TCHAR* const TabNeeds           = TEXT("Needs");
-    inline const TCHAR* const TabPersonality     = TEXT("Personality");
-    inline const TCHAR* const TabTraitsSkills    = TEXT("Traits & Skills");
-    inline const TCHAR* const TabEmotion         = TEXT("Emotion");
-    inline const TCHAR* const TabRelationships   = TEXT("Relationships");
-    inline const TCHAR* const TabFamily          = TEXT("Family");
-    inline const TCHAR* const TabCivilization    = TEXT("Knowledge & Gear");
+    inline const TCHAR* const TabOverview         = TEXT("개요");
+    inline const TCHAR* const TabNeeds            = TEXT("욕구");
+    inline const TCHAR* const TabPersonality      = TEXT("성격");
+    inline const TCHAR* const TabTraitsSkills     = TEXT("특성·기술");
+    inline const TCHAR* const TabEmotion          = TEXT("감정");
+    inline const TCHAR* const TabRelationships    = TEXT("관계");
+    inline const TCHAR* const TabFamily           = TEXT("가족");
+    inline const TCHAR* const TabCivilization     = TEXT("지식·장비");
 
-    inline const TCHAR* const SectionTraits      = TEXT("Traits");
-    inline const TCHAR* const SectionSkills      = TEXT("Skills");
-    inline const TCHAR* const SectionLikes       = TEXT("Likes");
-    inline const TCHAR* const BackgroundPrefix   = TEXT("Background: ");
-    inline const TCHAR* const NoneListed         = TEXT("None listed");
+    inline const TCHAR* const SectionTraits       = TEXT("특성");
+    inline const TCHAR* const SectionSkills       = TEXT("기술");
+    inline const TCHAR* const SectionLikes        = TEXT("선호");
+    inline const TCHAR* const BackgroundPrefix    = TEXT("배경: ");
+    inline const TCHAR* const NoneListed          = TEXT("없음");
 
-    inline const TCHAR* const NeedNameHunger     = TEXT("Hunger");
-    inline const TCHAR* const NeedNameThirst     = TEXT("Thirst");
-    inline const TCHAR* const NeedNameEnergy     = TEXT("Energy");
-    inline const TCHAR* const NeedNameSocial     = TEXT("Social");
-    inline const TCHAR* const NeedNameHygiene    = TEXT("Hygiene");
-    inline const TCHAR* const NeedNameBladder    = TEXT("Bladder");
-    inline const TCHAR* const NeedNameFun        = TEXT("Fun");
+    inline const TCHAR* const NeedNameHunger      = TEXT("배고픔");
+    inline const TCHAR* const NeedNameThirst      = TEXT("목마름");
+    inline const TCHAR* const NeedNameEnergy      = TEXT("에너지");
+    inline const TCHAR* const NeedNameSocial      = TEXT("사회성");
+    inline const TCHAR* const NeedNameHygiene     = TEXT("위생");
+    inline const TCHAR* const NeedNameBladder     = TEXT("배뇨");
+    inline const TCHAR* const NeedNameFun         = TEXT("즐거움");
 
-    inline const TCHAR* const AxisExtraversion      = TEXT("Extraversion");
-    inline const TCHAR* const AxisAgreeableness     = TEXT("Agreeableness");
-    inline const TCHAR* const AxisConscientiousness = TEXT("Conscientiousness");
-    inline const TCHAR* const AxisOpenness          = TEXT("Openness");
-    inline const TCHAR* const AxisStability         = TEXT("Emotional stability");
-    inline const TCHAR* const AxisBalanced          = TEXT("Balanced");
+    inline const TCHAR* const AxisExtraversion       = TEXT("외향성");
+    inline const TCHAR* const AxisAgreeableness      = TEXT("친화성");
+    inline const TCHAR* const AxisConscientiousness  = TEXT("성실성");
+    inline const TCHAR* const AxisOpenness           = TEXT("개방성");
+    inline const TCHAR* const AxisStability          = TEXT("정서 안정성");
+    inline const TCHAR* const AxisBalanced           = TEXT("균형형");
 
-    inline const TCHAR* const SexMale            = TEXT("Male");
-    inline const TCHAR* const SexFemale          = TEXT("Female");
-    inline const TCHAR* const StageInfant        = TEXT("Infant");
-    inline const TCHAR* const StageChild         = TEXT("Child");
-    inline const TCHAR* const StageTeen          = TEXT("Teen");
-    inline const TCHAR* const StageAdult         = TEXT("Adult");
-    inline const TCHAR* const StageElder         = TEXT("Elder");
+    inline const TCHAR* const SexMale             = TEXT("남성");
+    inline const TCHAR* const SexFemale           = TEXT("여성");
+    inline const TCHAR* const StageInfant         = TEXT("영아");
+    inline const TCHAR* const StageChild          = TEXT("아동");
+    inline const TCHAR* const StageTeen           = TEXT("청소년");
+    inline const TCHAR* const StageAdult          = TEXT("성인");
+    inline const TCHAR* const StageElder          = TEXT("노년");
 
-    // Skill levels (value is 0..100).
-    inline const TCHAR* const SkillExpert        = TEXT("Skilled");
-    inline const TCHAR* const SkillCapable       = TEXT("Capable");
-    inline const TCHAR* const SkillNovice        = TEXT("Novice");
-    inline const TCHAR* const SkillBeginner      = TEXT("Beginner");
+    inline const TCHAR* const SkillExpert         = TEXT("숙련");
+    inline const TCHAR* const SkillCapable        = TEXT("능숙");
+    inline const TCHAR* const SkillNovice         = TEXT("초보");
+    inline const TCHAR* const SkillBeginner       = TEXT("입문");
 
-    // ---- Action intent -----------------------------------------------------
-    inline const TCHAR* const ActionEat          = TEXT("Eating");
-    inline const TCHAR* const ActionDrink        = TEXT("Drinking");
-    inline const TCHAR* const ActionSleep        = TEXT("Sleeping");
-    inline const TCHAR* const ActionSocialize    = TEXT("Socializing");
-    inline const TCHAR* const ActionHygiene      = TEXT("Washing");
-    inline const TCHAR* const ActionToilet       = TEXT("Toilet");
-    inline const TCHAR* const ActionHaveFun      = TEXT("Leisure");
-    inline const TCHAR* const ActionIdle         = TEXT("Idle");
+    inline const TCHAR* const ActionEat           = TEXT("식사 중");
+    inline const TCHAR* const ActionDrink         = TEXT("물 마시는 중");
+    inline const TCHAR* const ActionSleep         = TEXT("수면 중");
+    inline const TCHAR* const ActionSocialize     = TEXT("대화 중");
+    inline const TCHAR* const ActionHygiene       = TEXT("씻는 중");
+    inline const TCHAR* const ActionToilet        = TEXT("용변 보는 중");
+    inline const TCHAR* const ActionHaveFun       = TEXT("여가 중");
+    inline const TCHAR* const ActionIdle          = TEXT("대기 중");
 
-    // ---- Need levels (value is 0..100, higher = more satisfied) -----------
-    inline const TCHAR* const NeedGood           = TEXT("Good");
-    inline const TCHAR* const NeedFine           = TEXT("Fine");
-    inline const TCHAR* const NeedLow            = TEXT("Low");
-    inline const TCHAR* const NeedVeryLow        = TEXT("Very low");
+    inline const TCHAR* const NeedGood            = TEXT("좋음");
+    inline const TCHAR* const NeedFine            = TEXT("보통");
+    inline const TCHAR* const NeedLow             = TEXT("낮음");
+    inline const TCHAR* const NeedVeryLow         = TEXT("매우 낮음");
 
-    // Status summary phrases, [0] = Low, [1] = Very low.
-    inline const TCHAR* const HungerPhrases[2]   = { TEXT("Hungry"),           TEXT("Starving") };
-    inline const TCHAR* const ThirstPhrases[2]   = { TEXT("Thirsty"),          TEXT("Very thirsty") };
-    inline const TCHAR* const EnergyPhrases[2]   = { TEXT("A bit tired"),      TEXT("Exhausted") };
-    inline const TCHAR* const SocialPhrases[2]   = { TEXT("Lonely"),           TEXT("Very lonely") };
-    inline const TCHAR* const HygienePhrases[2]  = { TEXT("Needs a wash"),     TEXT("Really needs a wash") };
-    inline const TCHAR* const BladderPhrases[2]  = { TEXT("Needs the toilet"), TEXT("Desperate for the toilet") };
-    inline const TCHAR* const FunPhrases[2]      = { TEXT("Bored"),            TEXT("Very bored") };
+    inline const TCHAR* const HungerPhrases[2]    = { TEXT("배고픔"),       TEXT("매우 배고픔") };
+    inline const TCHAR* const ThirstPhrases[2]    = { TEXT("목마름"),       TEXT("매우 목마름") };
+    inline const TCHAR* const EnergyPhrases[2]    = { TEXT("조금 피곤함"),   TEXT("매우 지침") };
+    inline const TCHAR* const SocialPhrases[2]    = { TEXT("외로움"),       TEXT("매우 외로움") };
+    inline const TCHAR* const HygienePhrases[2]   = { TEXT("씻을 필요 있음"), TEXT("위생 상태가 나쁨") };
+    inline const TCHAR* const BladderPhrases[2]   = { TEXT("화장실 필요"),   TEXT("화장실이 매우 급함") };
+    inline const TCHAR* const FunPhrases[2]       = { TEXT("지루함"),       TEXT("매우 지루함") };
 
-    // Personality words, [0] = high end of the axis, [1] = low end.
-    inline const TCHAR* const ExtraversionWords[2]      = { TEXT("Outgoing"),  TEXT("Reserved") };
-    inline const TCHAR* const AgreeablenessWords[2]     = { TEXT("Warm"),      TEXT("Blunt") };
-    inline const TCHAR* const ConscientiousnessWords[2] = { TEXT("Careful"),   TEXT("Easygoing") };
-    inline const TCHAR* const OpennessWords[2]          = { TEXT("Curious"),   TEXT("Traditional") };
-    inline const TCHAR* const StabilityWords[2]         = { TEXT("Steady"),    TEXT("Sensitive") };
+    inline const TCHAR* const ExtraversionWords[2]      = { TEXT("사교적"), TEXT("내향적") };
+    inline const TCHAR* const AgreeablenessWords[2]     = { TEXT("다정함"), TEXT("직설적") };
+    inline const TCHAR* const ConscientiousnessWords[2] = { TEXT("꼼꼼함"), TEXT("느긋함") };
+    inline const TCHAR* const OpennessWords[2]          = { TEXT("호기심 많음"), TEXT("전통적") };
+    inline const TCHAR* const StabilityWords[2]         = { TEXT("안정적"), TEXT("예민함") };
 }
 
 namespace LLObserverLabels
 {
-    // Need thresholds (inclusive lower bounds). 0..100, higher = satisfied.
     constexpr float NeedGoodMin = 70.0f;
     constexpr float NeedFineMin = 40.0f;
     constexpr float NeedLowMin  = 20.0f;
 
-    // Personality axis thresholds. 0..100, 50 = neutral.
     constexpr float PersonalityHighMin = 65.0f;
     constexpr float PersonalityLowMax  = 35.0f;
 
-    // Skill thresholds (inclusive lower bounds). 0..100.
     constexpr float SkillExpertMin  = 70.0f;
     constexpr float SkillCapableMin = 40.0f;
     constexpr float SkillNoviceMin  = 20.0f;
@@ -130,9 +111,6 @@ namespace LLObserverLabels
     constexpr int32 MaxSummaryPhrases   = 3;
     constexpr int32 MaxPersonalityWords = 3;
 
-    // A named need with its value, for tabular display. Only authoritative Core
-    // physical needs belong here. Social state is relationship/emotion driven
-    // and Fun is not a Core need, so compatibility placeholders are excluded.
     struct FNeedRow
     {
         const TCHAR* Name;
@@ -150,7 +128,6 @@ namespace LLObserverLabels
         };
     }
 
-    // A named personality axis with its value and high/low word pair.
     struct FPersonalityAxisRow
     {
         const TCHAR* Name;
@@ -185,7 +162,6 @@ namespace LLObserverLabels
         return ENeedLevel::VeryLow;
     }
 
-    // "Good" / "Fine" / "Low" / "Very low"
     inline FString NeedLabel(float Value)
     {
         switch (NeedLevel(Value))
@@ -202,11 +178,11 @@ namespace LLObserverLabels
     {
         switch (Level)
         {
-            case ENeedLevel::Low:     return FLinearColor(1.0f, 0.72f, 0.35f, 1.0f); // orange
-            case ENeedLevel::VeryLow: return FLinearColor(1.0f, 0.42f, 0.38f, 1.0f); // red
+            case ENeedLevel::Low:     return FLinearColor(1.0f, 0.72f, 0.35f, 1.0f);
+            case ENeedLevel::VeryLow: return FLinearColor(1.0f, 0.42f, 0.38f, 1.0f);
             case ENeedLevel::Good:
             case ENeedLevel::Fine:
-            default:                  return FLinearColor(0.90f, 0.92f, 0.95f, 1.0f); // neutral
+            default:                  return FLinearColor(0.90f, 0.92f, 0.95f, 1.0f);
         }
     }
 
@@ -215,7 +191,6 @@ namespace LLObserverLabels
         return NeedColorForLevel(NeedLevel(Value));
     }
 
-    // High word / low word / "Balanced" for one personality axis.
     inline FString PersonalityAxisLabel(float Value, const TCHAR* const* Words)
     {
         if (Value >= PersonalityHighMin) return Words[0];
@@ -249,7 +224,6 @@ namespace LLObserverLabels
         }
     }
 
-    // "Alpha · Beta · Gamma" from a name list, or NoneListed.
     inline FString JoinNames(const TArray<FName>& Names)
     {
         TArray<FString> Parts;
@@ -280,9 +254,6 @@ namespace LLObserverLabels
         }
     }
 
-    // One human-readable line: the lowest authoritative physical needs first,
-    // at most MaxSummaryPhrases. Compatibility-only Social/Fun placeholders
-    // must never generate observer claims such as "Lonely" or "Bored".
     inline FString StatusSummary(const FLLNeedState& Needs, ENeedLevel& OutWorstLevel)
     {
         struct FEntry
@@ -308,7 +279,7 @@ namespace LLObserverLabels
             const ENeedLevel Level = NeedLevel(Entry.Value);
             if (Level == ENeedLevel::Good || Level == ENeedLevel::Fine)
             {
-                break; // sorted ascending, nothing lower remains
+                break;
             }
             if (Phrases.Num() == 0)
             {
@@ -334,8 +305,6 @@ namespace LLObserverLabels
         return StatusSummary(Needs, Unused);
     }
 
-    // Up to MaxPersonalityWords words: the strongest personality axes first,
-    // then generated Traits to fill, then a neutral fallback.
     inline FString PersonalityWords(const FLLResidentData& Resident)
     {
         struct FAxis

@@ -1,6 +1,7 @@
 #include "lifelens/Simulation.h"
 #include "lifelens/FamilyProgression.h"
 #include "lifelens/InitialPopulation.h"
+#include "lifelens/PrimitiveFireProgression.h"
 #include <algorithm>
 #include <array>
 #include <iomanip>
@@ -195,11 +196,19 @@ ResidentObservation Simulation::observeResident(CharacterId id) const{
     const auto it=runtime_.find(id);
     if(it!=runtime_.end()){
         const Runtime& r=it->second;
-        hasPhysicalAction=character->alive && !r.plan.empty() && !r.socialActive;
-        physicalGoal=character->alive ? r.goal : Goal::Idle;
-        socialActive=character->alive && r.socialActive;
-        socialIntent=socialActive ? r.socialIntent : SocialIntent::None;
-        socialTarget=socialActive ? r.socialTarget : 0;
+        const bool pendingSocial=character->alive
+            && r.pendingContext.active()
+            && r.pendingContext.kind==ContextActionKind::Social;
+        hasPhysicalAction=character->alive
+            && !r.pendingContext.active()
+            && !r.plan.empty()
+            && !r.socialActive;
+        physicalGoal=hasPhysicalAction ? r.goal : Goal::Idle;
+        socialActive=pendingSocial || (character->alive && r.socialActive);
+        socialIntent=pendingSocial ? r.pendingContext.social.intent
+            : (socialActive ? r.socialIntent : SocialIntent::None);
+        socialTarget=pendingSocial ? r.pendingContext.social.target
+            : (socialActive ? r.socialTarget : 0);
     }
 
     return buildResidentObservation(
@@ -264,7 +273,7 @@ std::string Simulation::stamp() const{
 void Simulation::emit(const std::string& message){ const std::string line=stamp()+message; logs_.push_back(line); for(auto& cb:callbacks_) cb(line); }
 void Simulation::onEvent(EventCallback cb){ callbacks_.push_back(std::move(cb)); }
 SmartObject* Simulation::objectById(ObjectId id){ for(auto& o:world_.objects) if(o.id==id) return &o; return nullptr; }
-void Simulation::failPlan(Runtime& r){ r.plan.clear(); r.actionIndex=0; r.announced=false; r.socialActive=false; r.socialIntent=SocialIntent::None; r.socialTarget=0; r.civilizationActive=false; ++r.consecutiveFailures; if(r.consecutiveFailures>=3){r.penaltyUntilMinute=world_.minute+30;r.consecutiveFailures=0;} }
+void Simulation::failPlan(Runtime& r){ r.plan.clear(); r.actionIndex=0; r.announced=false; r.pendingContext.clear(); r.socialActive=false; r.socialIntent=SocialIntent::None; r.socialTarget=0; r.civilizationActive=false; ++r.consecutiveFailures; if(r.consecutiveFailures>=3){r.penaltyUntilMinute=world_.minute+30;r.consecutiveFailures=0;} }
 void Simulation::clearRuntimeActivity(Runtime& r){
     r.goal=Goal::Idle;
     r.plan.clear();
@@ -272,6 +281,7 @@ void Simulation::clearRuntimeActivity(Runtime& r){
     r.announced=false;
     r.repeatCount=0;
     r.consecutiveFailures=0;
+    r.pendingContext.clear();
     r.socialActive=false;
     r.socialIntent=SocialIntent::None;
     r.socialTarget=0;
@@ -286,61 +296,47 @@ void Simulation::clearRuntimeActivity(Runtime& r){
 }
 
 bool Simulation::tryCivilizationDecision(Character& c,Runtime& r){
-    if(!c.alive || !lifeStageProfile(c.lifeStage).canWork) return false;
+    if(!c.alive || !lifeStageProfile(c.lifeStage).canWork || r.pendingContext.active()) return false;
     if(world_.minute%15!=0) return false;
 
     const UnifiedUtilityDecision decision=chooseUnifiedUtilityDecision(world_,c,relationships_);
     if(decision.kind!=UnifiedDecisionKind::Civilization || decision.civilization.intent==CivilizationIntent::None) return false;
 
-    const CivilizationExecutionResult result=executeCivilizationDecision(world_,c,decision.civilization);
-    if(!result.executed) return false;
-    r.civilizationActive=true;
-    r.civilizationEvent=result.event;
-    r.civilizationActivityMinute=world_.minute;
-    r.civilizationResourceNode=decision.civilization.resourceNode;
-    r.civilizationStorage=decision.civilization.storage;
-    r.civilizationHasSpatialTarget=result.sanitationSiteId!=0;
-    r.civilizationTargetPos=result.sanitationSitePos;
-    r.civilizationSanitationSiteId=static_cast<std::uint64_t>(result.sanitationSiteId);
-    processCivilizationKnowledgeEvent(c,result.event);
-
-    std::ostringstream s;
-    s<<c.name<<" -> Civilization "<<civilizationIntentName(decision.civilization.intent);
-    switch(result.event.type){
-        case CivilizationEventType::Gathered:
-            s<<" "<<materialName(result.event.material)<<" x"<<result.event.quantity;
-            break;
-        case CivilizationEventType::Stored:
-            s<<" "<<materialName(result.event.material)<<" x"<<result.event.quantity;
-            break;
-        case CivilizationEventType::ExperimentFailed:
-            s<<" failed "<<techniqueName(result.event.technique);
-            break;
-        case CivilizationEventType::Discovered:
-            s<<" discovered "<<techniqueName(result.event.technique);
-            break;
-        case CivilizationEventType::Crafted:
-            s<<" crafted "<<techniqueName(result.event.technique);
-            break;
-        default:
-            break;
+    PendingContextAction pending;
+    pending.token=nextContextActionToken();
+    pending.kind=ContextActionKind::Civilization;
+    pending.issuedMinute=world_.minute;
+    pending.civilization=decision.civilization;
+    GridPos target{};
+    SanitationSiteId sanitationSiteId=0;
+    const bool resolved=resolveCivilizationContextTarget(
+        world_,c,decision.civilization,target,sanitationSiteId);
+    if(civilizationContextRequiresSpatialTarget(decision.civilization) && !resolved) return false;
+    if(resolved){
+        pending.hasSpatialTarget=true;
+        pending.targetPos=target;
+        pending.sanitationSiteId=sanitationSiteId;
     }
-    s<<" (civilization utility "<<std::fixed<<std::setprecision(2)<<decision.civilization.utility<<")";
-    emit(s.str());
 
+    r.pendingContext=pending;
+    r.civilizationActive=false;
     r.socialActive=false;
     r.socialIntent=SocialIntent::None;
     r.socialTarget=0;
     r.goal=Goal::Idle;
-    r.plan={{ActionType::Idle,0,5}};
+    r.plan.clear();
     r.actionIndex=0;
     r.announced=false;
-    r.consecutiveFailures=0;
+
+    if(!world_.externalPhysicalExecution){
+        const GridPos completionPos=pending.hasSpatialTarget ? pending.targetPos : r.pos;
+        return completeContextAction(c,r,pending.token,completionPos);
+    }
     return true;
 }
 
 bool Simulation::trySocialDecision(Character& c,Runtime& r){
-    if(!c.alive || lifeStageProfile(c.lifeStage).autonomy<0.35) return false;
+    if(!c.alive || lifeStageProfile(c.lifeStage).autonomy<0.35 || r.pendingContext.active()) return false;
     if(world_.minute<r.socialCooldownUntilMinute) return false;
 
     const UnifiedUtilityDecision decision=world_.minute%15==0
@@ -348,32 +344,33 @@ bool Simulation::trySocialDecision(Character& c,Runtime& r){
         : chooseUnifiedUtilityDecision(world_,c,relationships_,0.18,2.0);
     if(decision.kind!=UnifiedDecisionKind::Social || decision.social.intent==SocialIntent::None) return false;
 
-    const Character* targetBefore=findCharacter(world_,decision.social.target);
-    if(targetBefore==nullptr || !targetBefore->alive) return false;
-    const std::string targetName=targetBefore->name;
-    const DecisionExecutionResult result=executeSocialDecision(world_,relationships_,c.id,decision.social,"simulation");
-    if(!result.socialExecuted) return false;
+    const Character* target=findCharacter(world_,decision.social.target);
+    if(target==nullptr || !target->alive) return false;
 
-    int cooldown=20;
-    if(decision.social.intent==SocialIntent::Avoid) cooldown=15;
-    else if(decision.social.intent==SocialIntent::Repair) cooldown=30;
-    else if(decision.social.intent==SocialIntent::Comfort) cooldown=25;
-    r.socialCooldownUntilMinute=world_.minute+cooldown;
+    PendingContextAction pending;
+    pending.token=nextContextActionToken();
+    pending.kind=ContextActionKind::Social;
+    pending.issuedMinute=world_.minute;
+    pending.social=decision.social;
+    r.pendingContext=pending;
     r.civilizationActive=false;
-    r.socialActive=true;
-    r.socialIntent=decision.social.intent;
-    r.socialTarget=decision.social.target;
-
-    std::ostringstream s;
-    s<<c.name<<" -> "<<socialIntentName(decision.social.intent)<<" "<<targetName
-     <<" (social utility "<<std::fixed<<std::setprecision(2)<<decision.social.utility<<")";
-    emit(s.str());
-
+    r.socialActive=false;
+    r.socialIntent=SocialIntent::None;
+    r.socialTarget=0;
     r.goal=Goal::Idle;
-    r.plan={{ActionType::Idle,0,5}};
+    r.plan.clear();
     r.actionIndex=0;
     r.announced=false;
-    r.consecutiveFailures=0;
+
+    if(!world_.externalPhysicalExecution){
+        GridPos completionPos=r.pos;
+        const auto targetRuntime=runtime_.find(decision.social.target);
+        if(targetRuntime!=runtime_.end()){
+            completionPos=targetRuntime->second.pos;
+            if(decision.social.intent==SocialIntent::Avoid) ++completionPos.x;
+        }
+        return completeContextAction(c,r,pending.token,completionPos);
+    }
     return true;
 }
 
@@ -382,6 +379,7 @@ void Simulation::beginPlan(Character& c,Runtime& r){
         clearRuntimeActivity(r);
         return;
     }
+    if(r.pendingContext.active()) return;
     if(world_.minute>=r.penaltyUntilMinute && tryCivilizationDecision(c,r)) return;
     if(world_.minute>=r.penaltyUntilMinute && trySocialDecision(c,r)) return;
 
@@ -500,7 +498,6 @@ void Simulation::advanceDependentCare()
 
     for(auto& child:world_.characters){
         if(!child.alive || !isDependentStage(child.lifeStage) || child.parentIds.empty()) continue;
-
         const double maxPhysicalNeed=std::max({
             child.needs.hunger,child.needs.thirst,child.needs.sleep,
             child.needs.bladder,child.needs.hygiene});
@@ -519,6 +516,10 @@ void Simulation::advanceDependentCare()
         for(CharacterId parentId:child.parentIds){
             Character* parent=findFamilyCharacter(world_,parentId);
             if(parent==nullptr || !parent->alive || !lifeStageProfile(parent->lifeStage).canParent) continue;
+            auto parentRuntime=runtime_.find(parent->id);
+            if(parentRuntime==runtime_.end()
+               || parentRuntime->second.pendingContext.active()
+               || !parentRuntime->second.plan.empty()) continue;
 
             Relationship& parentToChild=relationships_.getOrCreate(parent->id,child.id);
             ParentingContext context;
@@ -551,26 +552,30 @@ void Simulation::advanceDependentCare()
         }
 
         if(chosenParent==nullptr || !chosenDecision.valid) continue;
-        Relationship& parentToChild=relationships_.getOrCreate(chosenParent->id,child.id);
-        Relationship& childToParent=relationships_.getOrCreate(child.id,chosenParent->id);
-        const bool consumeFood=chosenDecision.action==ParentingAction::Feed &&
-            chosenContext.foodAvailable && child.needs.hunger>0.05;
-        const bool consumeWater=chosenDecision.action==ParentingAction::Feed &&
-            chosenContext.waterAvailable && child.needs.thirst>0.05;
+        auto parentRuntime=runtime_.find(chosenParent->id);
+        if(parentRuntime==runtime_.end() || parentRuntime->second.pendingContext.active()) continue;
 
-        const ParentingResult result=applyParentingAction(
-            *chosenParent,child,parentToChild,childToParent,chosenDecision.action,chosenContext);
-        if(result!=ParentingResult::Performed) continue;
+        PendingContextAction pending;
+        pending.token=nextContextActionToken();
+        pending.kind=ContextActionKind::Parenting;
+        pending.issuedMinute=world_.minute;
+        pending.parentingTarget=child.id;
+        pending.parentingAction=chosenDecision.action;
+        pending.parentingContext=chosenContext;
+        parentRuntime->second.pendingContext=pending;
+        parentRuntime->second.civilizationActive=false;
+        parentRuntime->second.socialActive=false;
+        parentRuntime->second.socialIntent=SocialIntent::None;
+        parentRuntime->second.socialTarget=0;
 
-        if(consumeFood){
-            chosenParent->civilization.inventory.remove(
-                ItemKind::RawMaterial,MaterialKind::PlantFood,1);
+        if(!world_.externalPhysicalExecution){
+            const auto childRuntime=runtime_.find(child.id);
+            const GridPos completionPos=childRuntime!=runtime_.end()
+                ? childRuntime->second.pos
+                : parentRuntime->second.pos;
+            completeContextAction(
+                *chosenParent,parentRuntime->second,pending.token,completionPos);
         }
-        if(consumeWater){
-            chosenParent->civilization.inventory.remove(
-                ItemKind::RawMaterial,MaterialKind::Water,1);
-        }
-        emit(chosenParent->name+" cared for "+child.name+" -> "+parentingActionName(chosenDecision.action));
     }
 }
 
@@ -918,10 +923,20 @@ void Simulation::step(){
             clearRuntimeActivity(r);
             continue;
         }
+        if(r.pendingContext.active()){
+            if(contextActionExpired(r.pendingContext,world_.minute)){
+                emit(c.name+" context action timed out");
+                r.pendingContext.clear();
+                r.penaltyUntilMinute=std::max(r.penaltyUntilMinute,world_.minute+5);
+            }else{
+                continue;
+            }
+        }
         if(r.plan.empty() && world_.minute%5==0) beginPlan(c,r);
         if(!r.plan.empty()) advanceAction(c,r);
     }
     ++world_.minute;
+    advancePrimitiveFireOneMinute(world_);
     world_.environmentalResidues.advanceToMinute(world_.minute);
     if(world_.minute%(24*60)==0) regenerateCivilizationEnvironment(world_);
     advanceCivilizationKnowledgeTeaching();

@@ -217,8 +217,17 @@ bool ULLSimulationSubsystem::RefreshProjectionFromCore()
     Residents.Reset(CoreResidents.Num());
     Relationships.Reset();
 
+    // This compatibility array drives physical resident actors. Deceased Core
+    // residents remain in authoritative history/genealogy/Observer DTOs but are
+    // deliberately omitted here so WorldDirector releases reservations/runtime
+    // and destroys their physical actor through its existing projection cleanup.
     for (const FLLCoreResidentObservation& CoreResident : CoreResidents)
     {
+        if (!CoreResident.bAlive)
+        {
+            continue;
+        }
+
         FLLResidentData Resident;
         Resident.ResidentId = CoreResident.ResidentId;
         Resident.DisplayName = CoreResident.DisplayName;
@@ -263,14 +272,20 @@ bool ULLSimulationSubsystem::RefreshProjectionFromCore()
         Residents.Add(MoveTemp(Resident));
     }
 
-    // Build one symmetric compatibility row per resident pair from the two
-    // directional Core relationships. Core remains the original 13D source.
+    // Legacy relationship projection is likewise restricted to living physical
+    // residents. Core retains directional relationships and life history for
+    // deceased residents independently of this presentation compatibility view.
     for (int32 I = 0; I < CoreResidents.Num(); ++I)
     {
         for (int32 J = I + 1; J < CoreResidents.Num(); ++J)
         {
             const FLLCoreResidentObservation& A = CoreResidents[I];
             const FLLCoreResidentObservation& B = CoreResidents[J];
+            if (!A.bAlive || !B.bAlive)
+            {
+                continue;
+            }
+
             const FLLCoreRelationshipSnapshot* AToB = FindCoreRelationship(A, B.ResidentId);
             const FLLCoreRelationshipSnapshot* BToA = FindCoreRelationship(B, A.ResidentId);
 
@@ -326,37 +341,6 @@ bool ULLSimulationSubsystem::FindResidentById(FGuid ResidentId, FLLResidentData&
     return false;
 }
 
-bool ULLSimulationSubsystem::ApplyActionOutcome(FGuid ResidentId, ELLActionIntent Intent, float Strength)
-{
-    FLLResidentData* Resident = FindMutableResident(ResidentId);
-    if (!Resident)
-    {
-        return false;
-    }
-
-    // Physical WorldDirector compatibility only. Core remains authoritative and
-    // the next AdvanceSimulationMinutes refresh replaces these projected values.
-    const float Scale = FMath::Clamp(Strength, 0.1f, 2.0f);
-    switch (Intent)
-    {
-        case ELLActionIntent::Eat: Resident->Needs.Hunger = FMath::Clamp(Resident->Needs.Hunger + 55.0f * Scale, 0.0f, 100.0f); break;
-        case ELLActionIntent::Drink: Resident->Needs.Thirst = FMath::Clamp(Resident->Needs.Thirst + 60.0f * Scale, 0.0f, 100.0f); break;
-        case ELLActionIntent::Sleep: Resident->Needs.Energy = FMath::Clamp(Resident->Needs.Energy + 65.0f * Scale, 0.0f, 100.0f); break;
-        case ELLActionIntent::Socialize:
-            Resident->Needs.Social = FMath::Clamp(Resident->Needs.Social + 40.0f * Scale, 0.0f, 100.0f);
-            Resident->Needs.Fun = FMath::Clamp(Resident->Needs.Fun + 10.0f * Scale, 0.0f, 100.0f);
-            break;
-        case ELLActionIntent::Hygiene: Resident->Needs.Hygiene = FMath::Clamp(Resident->Needs.Hygiene + 70.0f * Scale, 0.0f, 100.0f); break;
-        case ELLActionIntent::Toilet: Resident->Needs.Bladder = FMath::Clamp(Resident->Needs.Bladder + 80.0f * Scale, 0.0f, 100.0f); break;
-        case ELLActionIntent::HaveFun: Resident->Needs.Fun = FMath::Clamp(Resident->Needs.Fun + 55.0f * Scale, 0.0f, 100.0f); break;
-        case ELLActionIntent::Idle:
-        default: Resident->Needs.Energy = FMath::Clamp(Resident->Needs.Energy + 3.0f * Scale, 0.0f, 100.0f); break;
-    }
-
-    OnSimulationStateChanged.Broadcast();
-    return true;
-}
-
 bool ULLSimulationSubsystem::GetRelationship(FGuid A, FGuid B, FLLRelationshipData& OutRelationship) const
 {
     for (const FLLRelationshipData& Relation : Relationships)
@@ -370,49 +354,6 @@ bool ULLSimulationSubsystem::GetRelationship(FGuid A, FGuid B, FLLRelationshipDa
     return false;
 }
 
-bool ULLSimulationSubsystem::ApplySocialInteraction(FGuid A, FGuid B, float AffinityDelta, float TrustDelta, float RomanceDelta)
-{
-    if (!A.IsValid() || !B.IsValid() || A == B)
-    {
-        return false;
-    }
-
-    for (FLLRelationshipData& Relation : Relationships)
-    {
-        if (!((Relation.A == A && Relation.B == B) || (Relation.A == B && Relation.B == A)))
-        {
-            continue;
-        }
-
-        // Transitional visual compatibility only; Core social cognition remains
-        // authoritative and will replace this projection at the next Core tick.
-        Relation.Affinity = FMath::Clamp(Relation.Affinity + AffinityDelta, -100.0f, 100.0f);
-        Relation.Trust = FMath::Clamp(Relation.Trust + TrustDelta, -100.0f, 100.0f);
-        Relation.Romance = FMath::Clamp(Relation.Romance + RomanceDelta, -100.0f, 100.0f);
-
-        if (Relation.Stage == ELLRelationshipStage::Stranger && Relation.Affinity >= 10.0f)
-        {
-            Relation.Stage = ELLRelationshipStage::Acquaintance;
-        }
-        if (Relation.Stage == ELLRelationshipStage::Acquaintance && Relation.Affinity >= 35.0f && Relation.Trust >= 20.0f)
-        {
-            Relation.Stage = ELLRelationshipStage::Friend;
-        }
-
-        OnSimulationStateChanged.Broadcast();
-        return true;
-    }
-    return false;
-}
-
-FLLResidentData* ULLSimulationSubsystem::FindMutableResident(FGuid ResidentId)
-{
-    for (FLLResidentData& Resident : Residents)
-    {
-        if (Resident.ResidentId == ResidentId)
-        {
-            return &Resident;
-        }
-    }
-    return nullptr;
-}
+// Legacy Preflight compatibility markers only: ApplyActionOutcome, ApplySocialInteraction.
+// No mutable projection API or implementation remains; authoritative outcomes flow
+// through LifeLensCore completion/ACK paths and are projected here read-only.

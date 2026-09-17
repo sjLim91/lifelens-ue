@@ -5,6 +5,7 @@
 #include "Character.h"
 #include "SmartObject.h"
 #include "Civilization.h"
+#include "Facility.h"
 #include "EnvironmentalResidue.h"
 #include "PrimitiveSanitation.h"
 #include "WorldGenesis.h"
@@ -22,6 +23,7 @@ struct World {
     std::vector<SmartObject> objects;
     std::vector<ResourceNode> resourceNodes;
     std::vector<StorageSite> storageSites;
+    std::vector<ConstructedFacility> facilities;
     std::vector<PrimitiveSanitationSite> primitiveSanitationSites;
     EnvironmentalResidueField environmentalResidues;
     std::vector<GeneratedNaturalChunk> generatedNaturalChunks;
@@ -157,6 +159,10 @@ struct World {
             {7,MaterialKind::PlantFood,80,120,true,10,{3,5}}
         };
         storageSites={{1,Inventory{},{0,0}}};
+        // Compatibility worlds retain their legacy storage fixture, but the new
+        // constructed-facility authority starts empty. Production NEW GAME also
+        // clears storageSites, so no facility/storage is granted for free.
+        facilities.clear();
         primitiveSanitationSites.clear();
         environmentalResidues.clear();
     }

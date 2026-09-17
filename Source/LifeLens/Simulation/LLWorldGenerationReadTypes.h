@@ -3,6 +3,30 @@
 #include "CoreMinimal.h"
 #include "LLWorldGenerationReadTypes.generated.h"
 
+UENUM(BlueprintType)
+enum class ELLCoreNaturalObstacleKind : uint8
+{
+    Tree,
+    Rock
+};
+
+USTRUCT(BlueprintType)
+struct FLLCoreNaturalObstacleObservation
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Obstacle") int64 ObstacleId = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Obstacle") ELLCoreNaturalObstacleKind Kind = ELLCoreNaturalObstacleKind::Tree;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Obstacle") int64 SourceResourceNodeId = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Obstacle") int32 GridX = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Obstacle") int32 GridY = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Obstacle") float OffsetXCells = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Obstacle") float OffsetYCells = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Obstacle") float HalfExtentXCells = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Obstacle") float HalfExtentYCells = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Obstacle") float HalfHeightCells = 0.0f;
+};
+
 USTRUCT(BlueprintType)
 struct FLLCoreNaturalResourcePatchObservation
 {
@@ -38,6 +62,7 @@ struct FLLCoreNaturalChunkObservation
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration") float HazardPotential = 0.0f;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration") int32 MaterializedMinute = 0;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration") TArray<FLLCoreNaturalResourcePatchObservation> ResourcePatches;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Obstacle") TArray<FLLCoreNaturalObstacleObservation> PhysicalObstacles;
 };
 
 USTRUCT(BlueprintType)

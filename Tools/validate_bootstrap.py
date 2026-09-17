@@ -499,7 +499,7 @@ assert 'GetHitResultUnderFinger' in controller
 assert 'ObserveResident' in controller
 
 hud = (root / 'Source/LifeLens/UI/LLObserverHUD.cpp').read_text(encoding='utf-8')
-assert 'Tap/click a resident for details' in hud
+assert 'LLObserverText::TapHint' in hud
 assert 'GetObservedResidentId' in hud
 
 engine_config = (root / 'Config/DefaultEngine.ini').read_text(encoding='utf-8')

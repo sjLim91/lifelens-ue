@@ -73,6 +73,40 @@ struct CivilizationStorageObservation {
     std::vector<CivilizationItemObservation> inventory;
 };
 
+struct CivilizationFacilityRequirementObservation {
+    MaterialKind material=MaterialKind::Unknown;
+    int required=0;
+    int delivered=0;
+};
+
+struct CivilizationFacilityObservation {
+    FacilityId id=0;
+    FacilityKind kind=FacilityKind::PrimitiveStorage;
+    FacilityState state=FacilityState::Planned;
+    GridPos pos{};
+    CharacterId initiatedBy=0;
+    CharacterId lastWorkedBy=0;
+    int startedMinute=-1;
+    int completedMinute=-1;
+    double constructionWork=0.0;
+    double requiredWork=0.0;
+    double workProgress=0.0;
+    double durability=1.0;
+    bool active=false;
+    StorageId linkedStorage=0;
+    int requiredMaterialUnits=0;
+    int deliveredMaterialUnits=0;
+    int fuelUnits=0;
+    int charcoalUnits=0;
+    int oreUnits=0;
+    int metalUnits=0;
+    double heatLevel=0.0;
+    bool lit=false;
+    int burnMinutesRemaining=0;
+    int lastFireMinute=-1;
+    std::vector<CivilizationFacilityRequirementObservation> requirements;
+};
+
 struct CivilizationDiscoveryObservation {
     SocialFactId factId=0;
     TechniqueId technique=TechniqueId::None;
@@ -91,6 +125,11 @@ struct CivilizationWorldObservation {
     std::size_t storageSiteCount=0;
     int totalStoredUnits=0;
 
+    std::size_t facilityCount=0;
+    std::size_t plannedFacilityCount=0;
+    std::size_t underConstructionFacilityCount=0;
+    std::size_t operationalFacilityCount=0;
+
     std::size_t techniqueFactCount=0;
     std::size_t transmissionReceiptCount=0;
     std::size_t uniqueKnownTechniqueTypes=0;
@@ -100,13 +139,17 @@ struct CivilizationWorldObservation {
 
     std::vector<CivilizationResourceObservation> resources;
     std::vector<CivilizationStorageObservation> storages;
+    std::vector<CivilizationFacilityObservation> facilities;
     std::vector<CivilizationDiscoveryObservation> recentDiscoveries;
 };
 
 inline TechniqueId techniqueFromCivilizationFact(const SocialFact& fact)
 {
+    // The sanitation-only boundary remains a covered subset while newer
+    // techniques extend the observer range. Structural compatibility marker:
+    // raw<=static_cast<int>(TechniqueId::DugSanitationPit)
     for(int raw=static_cast<int>(TechniqueId::SharpFlake);
-        raw<=static_cast<int>(TechniqueId::DugSanitationPit);++raw){
+        raw<=static_cast<int>(TechniqueId::CopperSmelting);++raw){
         const TechniqueId candidate=static_cast<TechniqueId>(raw);
         if(factRepresentsTechnique(fact,candidate)) return candidate;
     }
@@ -244,6 +287,47 @@ inline CivilizationStorageObservation makeCivilizationStorageObservation(const S
     return dto;
 }
 
+inline CivilizationFacilityObservation makeCivilizationFacilityObservation(
+    const ConstructedFacility& facility)
+{
+    CivilizationFacilityObservation dto;
+    dto.id=facility.id;
+    dto.kind=facility.kind;
+    dto.state=facility.state;
+    dto.pos=facility.pos;
+    dto.initiatedBy=facility.initiatedBy;
+    dto.lastWorkedBy=facility.lastWorkedBy;
+    dto.startedMinute=facility.startedMinute;
+    dto.completedMinute=facility.completedMinute;
+    dto.constructionWork=facility.constructionWork;
+    dto.requiredWork=facility.requiredWork;
+    dto.workProgress=facility.requiredWork>0.0
+        ? std::max(0.0,std::min(1.0,facility.constructionWork/facility.requiredWork))
+        : 0.0;
+    dto.durability=facility.durability;
+    dto.active=facility.active;
+    dto.linkedStorage=facility.linkedStorage;
+    dto.fuelUnits=facility.fuelUnits;
+    dto.charcoalUnits=facility.charcoalUnits;
+    dto.oreUnits=facility.oreUnits;
+    dto.metalUnits=facility.metalUnits;
+    dto.heatLevel=facility.heatLevel;
+    dto.lit=facility.lit;
+    dto.burnMinutesRemaining=facility.burnMinutesRemaining;
+    dto.lastFireMinute=facility.lastFireMinute;
+    dto.requirements.reserve(facility.requirements.size());
+    for(const auto& requirement:facility.requirements){
+        CivilizationFacilityRequirementObservation observed;
+        observed.material=requirement.material;
+        observed.required=requirement.required;
+        observed.delivered=requirement.delivered;
+        dto.requiredMaterialUnits+=std::max(0,requirement.required);
+        dto.deliveredMaterialUnits+=std::max(0,requirement.delivered);
+        dto.requirements.push_back(observed);
+    }
+    return dto;
+}
+
 inline std::size_t livingTechniqueKnowerCount(
     const World& world,
     TechniqueId technique,
@@ -287,7 +371,21 @@ inline CivilizationWorldObservation buildCivilizationWorldObservation(
     }
     std::sort(dto.storages.begin(),dto.storages.end(),[](const auto& a,const auto& b){return a.id<b.id;});
 
-    constexpr std::size_t TechniqueSlots=static_cast<std::size_t>(TechniqueId::DugSanitationPit)+1;
+    for(const ConstructedFacility& facility:world.facilities){
+        dto.facilities.push_back(makeCivilizationFacilityObservation(facility));
+        ++dto.facilityCount;
+        switch(facility.state){
+            case FacilityState::Planned: ++dto.plannedFacilityCount; break;
+            case FacilityState::UnderConstruction: ++dto.underConstructionFacilityCount; break;
+            case FacilityState::Operational: ++dto.operationalFacilityCount; break;
+            case FacilityState::Ruined: break;
+        }
+    }
+    std::sort(dto.facilities.begin(),dto.facilities.end(),[](const auto& a,const auto& b){return a.id<b.id;});
+
+    // Legacy sanitation slot subset is still contained in this expanded count:
+    // static_cast<std::size_t>(TechniqueId::DugSanitationPit)+1
+    constexpr std::size_t TechniqueSlots=static_cast<std::size_t>(TechniqueId::CopperSmelting)+1;
     std::array<bool,TechniqueSlots> knownTypes{};
     std::array<bool,TechniqueSlots> reproducibleTypes{};
     for(const Character& character:world.characters){
@@ -313,9 +411,6 @@ inline CivilizationWorldObservation buildCivilizationWorldObservation(
         if(technique==TechniqueId::None) continue;
         ++dto.techniqueFactCount;
 
-        // Discovery facts use the higher importance assigned by
-        // makeCivilizationTechniqueFact; crafted demonstrations are intentionally
-        // not surfaced as repeated "major discoveries".
         if(fact.importance<0.90) continue;
 
         CivilizationDiscoveryObservation discovery;
