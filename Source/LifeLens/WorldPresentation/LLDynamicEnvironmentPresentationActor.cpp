@@ -1,7 +1,10 @@
 #include "WorldPresentation/LLDynamicEnvironmentPresentationActor.h"
 
+#include "Camera/PlayerCameraManager.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/ExponentialHeightFogComponent.h"
+#include "Components/MeshComponent.h"
+#include "Components/PostProcessComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/SkyAtmosphereComponent.h"
 #include "Components/SkyLightComponent.h"
@@ -11,10 +14,14 @@
 #include "Engine/SkyLight.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "GameFramework/PlayerController.h"
+#include "NiagaraComponent.h"
+#include "NiagaraSystem.h"
 #include "Simulation/LLCoreBridgeSubsystem.h"
 #include "Simulation/LLEnvironmentReadTypes.h"
 #include "Simulation/LLTimeReadTypes.h"
 #include "UObject/UObjectIterator.h"
+#include "WorldPresentation/LLWorldPresentationActor.h"
 
 namespace
 {
@@ -73,18 +80,39 @@ ALLDynamicEnvironmentPresentationActor::ALLDynamicEnvironmentPresentationActor()
 
     SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("EnvironmentRoot"));
     SetRootComponent(SceneRoot);
+
+    RainEffect = CreateDefaultSubobject<UNiagaraComponent>(TEXT("RainEffect"));
+    RainEffect->SetupAttachment(SceneRoot);
+    RainEffect->SetAutoActivate(false);
+
+    SnowEffect = CreateDefaultSubobject<UNiagaraComponent>(TEXT("SnowEffect"));
+    SnowEffect->SetupAttachment(SceneRoot);
+    SnowEffect->SetAutoActivate(false);
+
+    FogEffect = CreateDefaultSubobject<UNiagaraComponent>(TEXT("FogEffect"));
+    FogEffect->SetupAttachment(SceneRoot);
+    FogEffect->SetAutoActivate(false);
+
+    PostProcess = CreateDefaultSubobject<UPostProcessComponent>(TEXT("EnvironmentPostProcess"));
+    PostProcess->SetupAttachment(SceneRoot);
+    PostProcess->bUnbound = true;
+    PostProcess->BlendWeight = 1.0f;
+    PostProcess->Priority = -10.0f;
 }
 
 void ALLDynamicEnvironmentPresentationActor::BeginPlay()
 {
     Super::BeginPlay();
     ResolveWorldComponents();
+    ConfigureEffectAssets();
     RefreshFromCore(true);
 }
 
 void ALLDynamicEnvironmentPresentationActor::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
+
+    UpdateEffectAnchor();
 
     RefreshAccumulator += FMath::Max(0.0f, DeltaSeconds);
     if (RefreshAccumulator < RefreshIntervalSeconds)
@@ -164,6 +192,50 @@ void ALLDynamicEnvironmentPresentationActor::ResolveWorldComponents()
     }
 }
 
+void ALLDynamicEnvironmentPresentationActor::ConfigureEffectAssets()
+{
+    auto AssignSystem = [](UNiagaraComponent* Component, const TSoftObjectPtr<UNiagaraSystem>& SystemAsset)
+    {
+        if (!Component || SystemAsset.IsNull())
+        {
+            return;
+        }
+        if (UNiagaraSystem* System = SystemAsset.LoadSynchronous())
+        {
+            Component->SetAsset(System);
+        }
+    };
+
+    AssignSystem(RainEffect, RainSystem);
+    AssignSystem(SnowEffect, SnowSystem);
+    AssignSystem(FogEffect, FogSystem);
+}
+
+void ALLDynamicEnvironmentPresentationActor::UpdateEffectAnchor()
+{
+    const bool bAnyEffectActive =
+        (RainEffect && RainEffect->IsActive())
+        || (SnowEffect && SnowEffect->IsActive())
+        || (FogEffect && FogEffect->IsActive());
+    if (!bAnyEffectActive)
+    {
+        return;
+    }
+
+    const UWorld* World = GetWorld();
+    const APlayerController* Controller = World ? World->GetFirstPlayerController() : nullptr;
+    const APlayerCameraManager* CameraManager = Controller ? Controller->PlayerCameraManager : nullptr;
+    if (!CameraManager)
+    {
+        return;
+    }
+
+    const FVector Anchor = CameraManager->GetCameraLocation() + FVector(0.0f, 0.0f, EffectAnchorHeightUU);
+    if (RainEffect && RainEffect->IsActive()) { RainEffect->SetWorldLocation(Anchor); }
+    if (SnowEffect && SnowEffect->IsActive()) { SnowEffect->SetWorldLocation(Anchor); }
+    if (FogEffect && FogEffect->IsActive()) { FogEffect->SetWorldLocation(Anchor); }
+}
+
 void ALLDynamicEnvironmentPresentationActor::RefreshFromCore(bool bForce)
 {
     UGameInstance* GameInstance = GetGameInstance();
@@ -192,18 +264,44 @@ void ALLDynamicEnvironmentPresentationActor::RefreshFromCore(bool bForce)
     }
 
     LastAppliedSimulationMinute = Time.SimulationMinute;
+
+    const float Daylight01 = Saturate(Time.Daylight01);
+    const float CloudCover01 = Saturate(Environment.CloudCover01);
+    const float Visibility01 = Saturate(Environment.Visibility01);
+    const float Humidity01 = Saturate(Environment.Humidity01);
+    const float Precipitation01 = Saturate(Environment.PrecipitationIntensity01);
+    const float SurfaceWetness01 = Saturate(Environment.SurfaceWetness01);
+    const float Wind01 = Saturate(Environment.WindIntensity01);
+    const float Rain01 = Environment.PrecipitationType == ELLCorePrecipitationType::Rain
+        ? Precipitation01
+        : 0.0f;
+    const float Snow01 = Environment.PrecipitationType == ELLCorePrecipitationType::Snow
+        ? Precipitation01
+        : 0.0f;
+    const float Fog01 = Saturate(
+        (1.0f - Visibility01)
+        + 0.35f * Humidity01
+        + 0.25f * Precipitation01);
+
     ApplyLighting(
-        Saturate(Time.Daylight01),
-        Saturate(Environment.CloudCover01),
-        Saturate(Environment.Visibility01),
+        Daylight01,
+        CloudCover01,
+        Visibility01,
         Time.MinuteOfDay,
         Saturate(Time.AnnualPhase));
     ApplyFog(
-        Saturate(Time.Daylight01),
-        Saturate(Environment.CloudCover01),
-        Saturate(Environment.Visibility01),
-        Saturate(Environment.Humidity01),
-        Saturate(Environment.PrecipitationIntensity01));
+        Daylight01,
+        CloudCover01,
+        Visibility01,
+        Humidity01,
+        Precipitation01);
+    ApplySurfaceMaterials(
+        SurfaceWetness01,
+        Snow01,
+        Precipitation01,
+        Environment.AirTemperatureC);
+    ApplyWeatherEffects(Rain01, Snow01, Fog01, Wind01);
+    ApplyPostProcess(Daylight01, CloudCover01, Visibility01, Precipitation01);
 }
 
 void ALLDynamicEnvironmentPresentationActor::ApplyLighting(
@@ -275,4 +373,112 @@ void ALLDynamicEnvironmentPresentationActor::ApplyFog(
     FLinearColor FogColor = BlendColor(NightFog, DayFog, Daylight01);
     FogColor = BlendColor(FogColor, StormFog, Saturate(0.65f * CloudCover01 + 0.35f * WeatherFog01));
     HeightFog->SetFogInscatteringColor(FogColor);
+}
+
+void ALLDynamicEnvironmentPresentationActor::ApplySurfaceMaterials(
+    float SurfaceWetness01,
+    float Snow01,
+    float Precipitation01,
+    float AirTemperatureC)
+{
+    UWorld* World = GetWorld();
+    if (!World)
+    {
+        return;
+    }
+
+    for (TActorIterator<ALLWorldPresentationActor> It(World); It; ++It)
+    {
+        TInlineComponentArray<UMeshComponent*> MeshComponents(*It);
+        for (UMeshComponent* Mesh : MeshComponents)
+        {
+            if (!Mesh)
+            {
+                continue;
+            }
+
+            Mesh->SetScalarParameterValueOnMaterials(WetnessMaterialParameter, SurfaceWetness01);
+            Mesh->SetScalarParameterValueOnMaterials(SnowMaterialParameter, Snow01);
+            Mesh->SetScalarParameterValueOnMaterials(PrecipitationMaterialParameter, Precipitation01);
+            Mesh->SetScalarParameterValueOnMaterials(AirTemperatureMaterialParameter, AirTemperatureC);
+        }
+    }
+}
+
+void ALLDynamicEnvironmentPresentationActor::ApplyWeatherEffects(
+    float Rain01,
+    float Snow01,
+    float Fog01,
+    float Wind01)
+{
+    if (RainEffect)
+    {
+        RainEffect->SetVariableFloat(TEXT("User.Intensity"), Rain01);
+        RainEffect->SetVariableFloat(TEXT("User.WindIntensity"), Wind01);
+        SetEffectActive(RainEffect, Rain01 >= EffectActivationThreshold);
+    }
+    if (SnowEffect)
+    {
+        SnowEffect->SetVariableFloat(TEXT("User.Intensity"), Snow01);
+        SnowEffect->SetVariableFloat(TEXT("User.WindIntensity"), Wind01);
+        SetEffectActive(SnowEffect, Snow01 >= EffectActivationThreshold);
+    }
+    if (FogEffect)
+    {
+        FogEffect->SetVariableFloat(TEXT("User.Intensity"), Fog01);
+        FogEffect->SetVariableFloat(TEXT("User.WindIntensity"), Wind01);
+        SetEffectActive(FogEffect, Fog01 >= EffectActivationThreshold);
+    }
+}
+
+void ALLDynamicEnvironmentPresentationActor::ApplyPostProcess(
+    float Daylight01,
+    float CloudCover01,
+    float Visibility01,
+    float Precipitation01)
+{
+    if (!PostProcess)
+    {
+        return;
+    }
+
+    const float WeatherPressure01 = Saturate(
+        0.45f * CloudCover01
+        + 0.35f * Precipitation01
+        + 0.20f * (1.0f - Visibility01));
+
+    PostProcess->Settings.bOverride_AutoExposureBias = true;
+    PostProcess->Settings.AutoExposureBias =
+        FMath::Lerp(NightExposureBias, DayExposureBias, Daylight01)
+        - MaximumStormExposureReduction * WeatherPressure01;
+
+    const float Saturation = FMath::Lerp(ClearSaturation, SevereWeatherSaturation, WeatherPressure01);
+    PostProcess->Settings.bOverride_ColorSaturation = true;
+    PostProcess->Settings.ColorSaturation = FVector4(Saturation, Saturation, Saturation, 1.0f);
+
+    PostProcess->Settings.bOverride_VignetteIntensity = true;
+    PostProcess->Settings.VignetteIntensity = FMath::Lerp(0.18f, 0.28f, WeatherPressure01);
+}
+
+void ALLDynamicEnvironmentPresentationActor::SetEffectActive(
+    UNiagaraComponent* Component,
+    bool bShouldBeActive) const
+{
+    if (!Component)
+    {
+        return;
+    }
+
+    const bool bHasSystem = Component->GetAsset() != nullptr;
+    if (bShouldBeActive && bHasSystem)
+    {
+        if (!Component->IsActive())
+        {
+            Component->Activate();
+        }
+    }
+    else if (Component->IsActive())
+    {
+        Component->Deactivate();
+    }
 }
