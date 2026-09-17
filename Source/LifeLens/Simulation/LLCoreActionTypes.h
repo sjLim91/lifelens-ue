@@ -68,7 +68,8 @@ enum class ELLCoreContextActionKind : uint8
     None,
     Social,
     Civilization,
-    Parenting
+    Parenting,
+    KnowledgeTeaching
 };
 
 UENUM(BlueprintType)
