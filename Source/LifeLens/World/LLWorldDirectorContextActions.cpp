@@ -110,6 +110,19 @@ void ALLWorldDirector::ApplyPendingContextDirective(
             Character.SetCurrentIntent(ELLActionIntent::Socialize);
             break;
 
+        case ELLCoreContextActionKind::KnowledgeTeaching:
+            TargetResident = FindResidentActor(Directive.TargetResidentId);
+            if (!TargetResident
+                || !ResolveAuthoritativeResidentTarget(Directive.TargetResidentId, DesiredLocation))
+            {
+                ClearContextPresentation(); Runtime.bPerformingAction = false; Character.ClearMovementTarget(); return;
+            }
+            ArrivalRadius = FMath::Min(FMath::Max(1.0f, ContextResidentArrivalRadiusUU),AckSafeArrivalRadius);
+            Character.SetCurrentIntent(ELLActionIntent::Socialize);
+            bFaceTarget = true;
+            bTalkAtTarget = true;
+            break;
+
         case ELLCoreContextActionKind::Parenting:
             TargetResident = FindResidentActor(Directive.TargetResidentId);
             if (!TargetResident || Directive.ParentingAction == ELLCoreParentingAction::None
