@@ -114,6 +114,17 @@ One roadmap, parallel ownership lanes.
 
 Cross-owner direct implementation requires an Integration Request or scoped Assist Lock. A file originally authored by the other lane does not override current path ownership when the board clearly assigns that path.
 
+## Cross-lane coordination checkpoints
+
+Jjun must check Dagyeom-side open PRs, new comments/review requests, and new `TEAM_BOARD` Integration Requests:
+- before starting a new Jjun work unit;
+- after completing or merging the current Jjun work unit;
+- when entering a long Unreal/CI wait;
+- when returning to handle the result of that long Unreal/CI run;
+- before any main-changing rebase or merge.
+
+New Dagyeom blockers are triaged before unrelated follow-up work so the presentation lane is not left waiting unnecessarily. This request check is separate from build polling: do not repeatedly query or restart a healthy Unreal build just to perform coordination checks.
+
 ## Open audit findings
 
 ### P1 correctness / integration
@@ -153,4 +164,4 @@ Exact-head rule remains mandatory before merge.
 
 ## Long compile rule
 
-When a long UE compile/package is started, record HEAD + Run ID and continue safe independent work. Do not repeatedly poll or restart a healthy long-running Unreal compile. A successful compile is integration evidence; visual/input quality still requires later PIE/device validation.
+When a long UE compile/package is started, record HEAD + Run ID and continue safe independent work. Do not repeatedly poll or restart a healthy long-running Unreal compile. During that wait, use the available gap to run the cross-lane request checkpoint instead of idling or polling. A successful compile is integration evidence; visual/input quality still requires later PIE/device validation.
