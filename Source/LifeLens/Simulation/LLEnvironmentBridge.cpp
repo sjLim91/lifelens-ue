@@ -1,5 +1,6 @@
 #include "Simulation/LLCoreBridgeSubsystem.h"
 
+#include "lifelens/EnvironmentalConsequences.h"
 #include "lifelens/Simulation.h"
 #include "lifelens/SimulationClimate.h"
 
@@ -43,6 +44,9 @@ ELLCoreWeatherSummary ToUnrealWeatherSummary(lifelens::WeatherSummary Summary)
 FLLCoreDynamicEnvironmentObservation ToUnrealDynamicEnvironment(
     const lifelens::DynamicEnvironmentObservation& CoreEnvironment)
 {
+    const lifelens::EnvironmentalConsequenceProfile Consequences =
+        lifelens::deriveEnvironmentalConsequences(CoreEnvironment);
+
     FLLCoreDynamicEnvironmentObservation Result;
     Result.bAvailable = true;
     Result.SimulationMinute = static_cast<int64>(CoreEnvironment.simulationMinute);
@@ -59,6 +63,14 @@ FLLCoreDynamicEnvironmentObservation ToUnrealDynamicEnvironment(
     Result.Humidity01 = static_cast<float>(CoreEnvironment.humidity01);
     Result.Visibility01 = static_cast<float>(CoreEnvironment.visibility01);
     Result.SurfaceWetness01 = static_cast<float>(CoreEnvironment.surfaceWetness01);
+    Result.HeatStress01 = static_cast<float>(Consequences.heatStress01);
+    Result.ColdStress01 = static_cast<float>(Consequences.coldStress01);
+    Result.WetStress01 = static_cast<float>(Consequences.wetStress01);
+    Result.TravelFriction01 = static_cast<float>(Consequences.travelFriction01);
+    Result.OutdoorWorkFriction01 = static_cast<float>(Consequences.outdoorWorkFriction01);
+    Result.FireReliability01 = static_cast<float>(Consequences.fireReliability01);
+    Result.WaterReplenishmentMultiplier = static_cast<float>(Consequences.waterReplenishmentMultiplier);
+    Result.PlantFoodRegenerationMultiplier = static_cast<float>(Consequences.plantFoodRegenerationMultiplier);
     Result.PrecipitationType = ToUnrealPrecipitationType(CoreEnvironment.precipitationType);
     Result.WeatherSummary = ToUnrealWeatherSummary(CoreEnvironment.summary);
     return Result;

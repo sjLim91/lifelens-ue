@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <utility>
 
+#include "EnvironmentalConsequences.h"
 #include "Facility.h"
 #include "PrimitiveSanitation.h"
 #include "PrimitiveSmeltingProgression.h"
@@ -149,8 +150,13 @@ inline PrimitiveFirePitWorkResult workOnPrimitiveFirePit(
     result.facilityId=project->id;
     result.pos=project->pos;
     result.workBefore=project->constructionWork;
+    const DynamicEnvironmentObservation environment=deriveDynamicEnvironment(
+        world.genesisIdentity(),chunkCoordForGrid(project->pos),world.minute);
+    const EnvironmentalConsequenceProfile consequence=deriveEnvironmentalConsequences(environment);
+    const double effectiveWork=std::max(
+        0.05,workAmount*(1.0-0.55*consequence.outdoorWorkFriction01));
     const bool reachedCompletion=applyFacilityConstructionWork(
-        *project,worker.id,workAmount);
+        *project,worker.id,effectiveWork);
     result.workAfter=project->constructionWork;
     result.worked=result.workAfter>result.workBefore;
     if(!result.worked) return result;
@@ -177,6 +183,14 @@ inline int fuelPrimitiveFirePit(
     return 0;
 }
 
+inline EnvironmentalConsequenceProfile environmentalConsequencesAt(
+    const World& world,
+    GridPos pos)
+{
+    return deriveEnvironmentalConsequences(deriveDynamicEnvironment(
+        world.genesisIdentity(),chunkCoordForGrid(pos),world.minute));
+}
+
 inline bool ignitePrimitiveFirePit(
     World& world,
     const Character& worker,
@@ -186,6 +200,14 @@ inline bool ignitePrimitiveFirePit(
         TechniqueId::FireMaking,KnowledgeLevel::Reproducible)) return false;
     for(auto& facility:world.facilities){
         if(facility.id!=facilityId || facility.kind!=FacilityKind::FirePit) continue;
+        const DynamicEnvironmentObservation environment=deriveDynamicEnvironment(
+            world.genesisIdentity(),chunkCoordForGrid(facility.pos),world.minute);
+        const EnvironmentalConsequenceProfile consequence=deriveEnvironmentalConsequences(environment);
+        // Primitive exposed fire can fail outright in genuinely severe wet/windy
+        // weather. Requiring active precipitation keeps legacy mild-weather fire
+        // behavior stable while making storms physically consequential.
+        if(environment.precipitationIntensity01>=0.65
+           && consequence.fireReliability01<0.22) return false;
         return igniteFirePit(facility,world.minute);
     }
     return false;
@@ -205,15 +227,75 @@ inline int collectPrimitiveFirePitCharcoal(
     return 0;
 }
 
+inline int generatedBaselineRegenerationPerDay(
+    const World& world,
+    ResourceNodeId nodeId)
+{
+    for(const auto& chunk:world.generatedNaturalChunks){
+        for(const auto& patch:chunk.resourcePatches){
+            if(patch.nodeId==nodeId) return patch.regenerationPerDay;
+        }
+    }
+    return -1;
+}
+
+inline void prepareEnvironmentalResourceRegeneration(World& world)
+{
+    if(world.minute%(24*60)!=0) return;
+    for(auto& node:world.resourceNodes){
+        if(!node.renewable) continue;
+        const int baseline=generatedBaselineRegenerationPerDay(world,node.id);
+        // Compatibility/demo nodes do not have an immutable natural-patch
+        // baseline. Leave those legacy fixtures unchanged to prevent multiplier
+        // compounding across days and snapshots.
+        if(baseline<0) continue;
+        const EnvironmentalConsequenceProfile consequence=environmentalConsequencesAt(world,node.pos);
+        node.regenerationPerDay=environmentalRegenerationUnits(
+            node.material,baseline,consequence);
+    }
+}
+
+inline void applyStartRegionEnvironmentalNeedPressure(World& world)
+{
+    const ChunkCoord coord=world.hasInitialStartRegionSelection
+        ? world.initialStartRegionCoord
+        : world.initialStartRegion().region.coord;
+    const EnvironmentalConsequenceProfile consequence=deriveEnvironmentalConsequences(
+        deriveDynamicEnvironment(world.genesisIdentity(),coord,world.minute));
+    for(auto& character:world.characters){
+        if(character.alive) applyEnvironmentalNeedPressure(character.needs,consequence);
+    }
+}
+
 inline void advancePrimitiveFireOneMinute(World& world)
 {
     for(auto& facility:world.facilities){
         if(facility.kind==FacilityKind::FirePit){
+            const DynamicEnvironmentObservation environment=deriveDynamicEnvironment(
+                world.genesisIdentity(),chunkCoordForGrid(facility.pos),world.minute);
+            const EnvironmentalConsequenceProfile consequence=deriveEnvironmentalConsequences(environment);
+            if(facility.lit
+               && environment.precipitationIntensity01>=0.75
+               && consequence.fireReliability01<0.18){
+                // Severe exposed weather can extinguish a primitive fire. Fuel
+                // remains available for a later re-ignition attempt.
+                facility.lit=false;
+                facility.burnMinutesRemaining=0;
+                facility.heatLevel=std::min(facility.heatLevel,0.12);
+            }
             advanceFirePitOneMinute(facility,world.minute);
         }else if(facility.kind==FacilityKind::Furnace){
+            // Furnace combustion is structurally sheltered in v1; weather still
+            // affects the people operating it, but not the enclosed burn cycle.
             advanceFurnaceOneMinute(facility,world.minute);
         }
     }
+
+    // Simulation.cpp already advances this hook once per authoritative minute.
+    // E3 extends that existing cadence so environmental pressure is Core truth,
+    // not a Presentation-only effect.
+    applyStartRegionEnvironmentalNeedPressure(world);
+    prepareEnvironmentalResourceRegeneration(world);
 }
 
 } // namespace lifelens

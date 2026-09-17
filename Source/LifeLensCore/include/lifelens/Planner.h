@@ -1,6 +1,8 @@
 #pragma once
+#include <cmath>
 #include <limits>
 #include <vector>
+#include "EnvironmentalConsequences.h"
 #include "EnvironmentalExposure.h"
 #include "UtilityAI.h"
 namespace lifelens {
@@ -59,6 +61,16 @@ inline NeedsDelta facilityUseEffectPerTick(Goal g)
     }
 }
 
+inline int environmentAdjustedTravelTicks(const World& world,GridPos from,GridPos to)
+{
+    const int baseTravel=std::max(1,manhattan(from,to));
+    const DynamicEnvironmentObservation environment=deriveDynamicEnvironment(
+        world.genesisIdentity(),chunkCoordForGrid(from),world.minute);
+    const EnvironmentalConsequenceProfile consequence=deriveEnvironmentalConsequences(environment);
+    const double multiplier=1.0+1.50*consequence.travelFriction01;
+    return std::max(baseTravel,static_cast<int>(std::ceil(static_cast<double>(baseTravel)*multiplier)));
+}
+
 inline std::vector<Action> buildPlan(const World& w,Character& c,Goal g,GridPos from={}) {
     // Environmental perception is sampled at authoritative planning boundaries.
     // This keeps the feedback loop in Core (not presentation) while avoiding a
@@ -73,7 +85,7 @@ inline std::vector<Action> buildPlan(const World& w,Character& c,Goal g,GridPos 
         if(o.kind==kind && (!o.reservedBy || *o.reservedBy==c.id)){
             hasObject=true;
             if(!w.externalPhysicalExecution){
-                const int travel=std::max(1,manhattan(from,o.pos));
+                const int travel=environmentAdjustedTravelTicks(w,from,o.pos);
                 return {{ActionType::FindObject,o.id,0},{ActionType::Reserve,o.id,0},{ActionType::MoveTo,o.id,travel},{ActionType::Use,o.id,std::max(1,o.useDurationTicks)},{ActionType::Release,o.id,0}};
             }
             break;
@@ -94,7 +106,7 @@ inline std::vector<Action> buildPlan(const World& w,Character& c,Goal g,GridPos 
     if(hasObject){
         for(const auto& o:w.objects){
             if(o.kind==kind && (!o.reservedBy || *o.reservedBy==c.id)){
-                const int travel=std::max(1,manhattan(from,o.pos));
+                const int travel=environmentAdjustedTravelTicks(w,from,o.pos);
                 return {{ActionType::FindObject,o.id,0},{ActionType::Reserve,o.id,0},{ActionType::MoveTo,o.id,travel},{ActionType::Use,o.id,std::max(1,o.useDurationTicks)},{ActionType::Release,o.id,0}};
             }
         }

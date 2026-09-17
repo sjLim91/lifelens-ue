@@ -62,7 +62,8 @@ struct FLLCoreEnvironmentObservation
 /**
  * Read-only climate/weather projection for one authoritative world chunk.
  * Values are derived from Core WorldSeed + generation version + chunk + time;
- * Presentation must consume this DTO rather than create a second weather truth.
+ * Presentation/physical execution must consume this DTO rather than create a
+ * second weather truth.
  */
 USTRUCT(BlueprintType)
 struct FLLCoreDynamicEnvironmentObservation
@@ -87,6 +88,15 @@ struct FLLCoreDynamicEnvironmentObservation
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Environment|Weather") float Humidity01 = 0.0f;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Environment|Weather") float Visibility01 = 1.0f;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Environment|Weather") float SurfaceWetness01 = 0.0f;
+
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Environment|Consequences") float HeatStress01 = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Environment|Consequences") float ColdStress01 = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Environment|Consequences") float WetStress01 = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Environment|Consequences") float TravelFriction01 = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Environment|Consequences") float OutdoorWorkFriction01 = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Environment|Consequences") float FireReliability01 = 1.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Environment|Consequences") float WaterReplenishmentMultiplier = 1.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Environment|Consequences") float PlantFoodRegenerationMultiplier = 1.0f;
 
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Environment|Weather") ELLCorePrecipitationType PrecipitationType = ELLCorePrecipitationType::None;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Environment|Weather") ELLCoreWeatherSummary WeatherSummary = ELLCoreWeatherSummary::Clear;
