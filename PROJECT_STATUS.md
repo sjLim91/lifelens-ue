@@ -2,7 +2,7 @@
 
 Date: 2026-09-18
 Current main checkpoint before this docs sync: `87020ec85787f1dfb3d03c30dd8fafaeb7b2aafe`
-Current product phase: **C1 Settlement & Subsistence**
+Current product phase: **Stage C — Settlement, Survival & Early Civilization**
 
 ## Whole-source audit closeout
 
@@ -20,7 +20,7 @@ AUDIT-0A / 0B / 0C automated source gates are complete.
 
 Runtime-only visual/input smoke (actual PIE/device layout, touch feel, animation/VFX/performance) remains a QA track and is not represented as CI-verified.
 
-**Current feature priority returns to C1-B Autonomous Settlement Need Recognition.**
+**Current feature priority: Stage C / C-S1 Autonomous Settlement Need Recognition.**
 
 Canonical audit:
 - `docs/SOURCE_AUDIT_2026-09-18.md`
@@ -100,22 +100,45 @@ Before multi-settlement / migration:
 
 This is **not ahead of AUDIT-0A/B**, and does not replace C1-B after P0 stabilization.
 
-## Current C1 sequence
+## Current macro roadmap
 
-### C1-B — Autonomous settlement need recognition
+LifeLens execution is grouped into four large stages. Existing detailed work is preserved inside them; this is a roadmap simplification, not a scope reduction.
+
+- **Stage C — Settlement, Survival & Early Civilization**
+  - C-S0 Facility Authority — DONE via #152.
+  - C-S1 Autonomous Settlement Need Recognition — ACTIVE.
+  - C-S2 Facility Effects & Maintenance.
+  - C-S3 Durable Water/Food/Storage/Spoilage/Cultivation.
+  - C-S4 Emergent Settlement Geometry.
+  - C-S5 Tin/Bronze & early material expansion.
+- **Stage D — Long-Run Simulation & Civilization Engine**
+  - former C2 Long-Run Scale/History/Fast-forward/Cleanup.
+  - former C3 Knowledge/Capability/Technology/CivilizationTransformation framework.
+- **Stage E — Human Society, Health, Education, Economy & Migration**
+  - former C4 Health/Disease/Population Resilience.
+  - former C5 Education/Recording/Specialization/Economy/Institutions.
+  - former C6 Migration/Multiple Settlements/Trade.
+- **Stage F — Historical Civilization to Open Future**
+  - former F1~F8, from advanced metallurgy/urbanization through industrial/electrical/digital/AI/biotech/space to unknown future civilization.
+
+Common tracks remain outside the letters: Presentation quality, PIE/device QA, Android delivery, CI, and AUDIT follow-ups.
+
+## Stage C sequence
+
+### C-S1 — Autonomous settlement need recognition
 - high sleep pressure / repeated outdoor sleeping -> SleepingPlace utility.
 - repeated rain/cold/heat exposure -> Shelter utility.
 - repeated crafting/building demand -> WorkSurface utility.
 - residents gather missing construction materials.
 - all build actions use Core-authored spatial targets and ContextAction ACK.
 
-### C1-C — Facility effects / maintenance
+### C-S2 — Facility effects / maintenance
 - SleepingPlace improves sleep efficiency/comfort.
 - Shelter reduces appropriate environmental penalties.
 - WorkSurface improves relevant work/crafting.
 - condition/maintenance becomes causal.
 
-### C1-D / C1-E / C1-F
+### C-S3 / C-S4 / C-S5
 - water/food persistence, storage/spoilage, cultivation.
 - emergent settlement shape.
 - Tin/Bronze only after real prerequisites.
