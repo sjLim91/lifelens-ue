@@ -194,15 +194,18 @@ int main()
 
     // With no repair material carried, maintenance contributes to real Gather
     // demand instead of synthesizing repair resources.
-    world.resourceNodes.erase(
-        std::remove_if(
-            world.resourceNodes.begin(),
-            world.resourceNodes.end(),
-            [repairMaterial](const ResourceNode& node){
-                return node.material!=repairMaterial;
-            }),
-        world.resourceNodes.end());
-    CHECK(!world.resourceNodes.empty());
+    // Keep generated resource nodes in place so the WorldGeneration snapshot
+    // contract remains valid. Depleting unrelated live nodes is sufficient to
+    // make the maintenance material the only available Gather target.
+    bool hasRepairNode=false;
+    for(auto& node:world.resourceNodes){
+        if(node.material==repairMaterial && node.quantity>0){
+            hasRepairNode=true;
+        }else{
+            node.quantity=0;
+        }
+    }
+    CHECK(hasRepairNode);
     const CivilizationUtilityDecision gatherRepair=
         bestGatherDecision(world,actor);
     CHECK(gatherRepair.intent==CivilizationIntent::Gather);
