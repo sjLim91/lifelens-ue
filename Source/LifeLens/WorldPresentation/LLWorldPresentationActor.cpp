@@ -475,10 +475,10 @@ void ALLWorldPresentationActor::BuildChunkDressing(const FLLCoreWorldGenerationO
             const FVector Location = ChunkOrigin + FVector(X, Y, 0.0f);
             const FVector2D Location2D(Location.X, Location.Y);
             float KeepFactor = AmbientDressingKeepFactor(Location2D, Layer);
-            if (Layer == ELLDressingLayer::Canopy)
+            if (Layer == ELLDressingLayer::Canopy && !bDynamicObserverCanopyVisibility)
             {
-                // Only the canopy blocks the opening view; shrubs, grass and
-                // rocks keep their normal density inside the cone.
+                // Legacy opening-view fallback. The default dynamic path keeps
+                // the canopy instance so it can be restored when the camera moves.
                 const float SightlineKeep = InitialSightlineKeepFactor(Location2D);
                 if (SightlineKeep < KeepFactor)
                 {
@@ -766,7 +766,8 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
     // The observer camera is spawned by the game mode, which can run after this
     // actor's BeginPlay. The first build may therefore miss it; the next refresh
     // picks it up and rebuilds the dressing once.
-    const bool bSightlinePending = bClearInitialSightlineCanopy && !bInitialViewCaptured;
+    const bool bSightlinePending = !bDynamicObserverCanopyVisibility
+        && bClearInitialSightlineCanopy && !bInitialViewCaptured;
     CaptureInitialViewOrigin();
 
     const bool bNaturalChanged = bForce
