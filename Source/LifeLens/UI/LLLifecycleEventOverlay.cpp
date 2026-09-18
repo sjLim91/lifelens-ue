@@ -110,7 +110,10 @@ void ULLLifecycleEventOverlay::NativeConstruct()
     RootStack->AddChildToVerticalBox(ResidentStatusBorder);
     WidgetTree->RootWidget = RootStack;
 
-    SetVisibility(ESlateVisibility::HitTestInvisible);
+    // The widget only handles pointer input when a lifecycle notice card is
+    // actually under the pointer. All other overlay space returns Unhandled so
+    // the observer camera/HUD continues receiving input normally.
+    SetVisibility(ESlateVisibility::Visible);
 }
 
 void ULLLifecycleEventOverlay::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
@@ -130,6 +133,72 @@ void ULLLifecycleEventOverlay::NativeTick(const FGeometry& MyGeometry, float InD
     {
         RefreshNoticeWidgets();
     }
+}
+
+FReply ULLLifecycleEventOverlay::NativeOnMouseButtonDown(
+    const FGeometry& InGeometry,
+    const FPointerEvent& InMouseEvent)
+{
+    const FReply NoticeReply = HandleNoticePointer(InMouseEvent.GetScreenSpacePosition());
+    return NoticeReply.IsEventHandled()
+        ? NoticeReply
+        : Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
+}
+
+FReply ULLLifecycleEventOverlay::NativeOnTouchStarted(
+    const FGeometry& InGeometry,
+    const FPointerEvent& InGestureEvent)
+{
+    const FReply NoticeReply = HandleNoticePointer(InGestureEvent.GetScreenSpacePosition());
+    return NoticeReply.IsEventHandled()
+        ? NoticeReply
+        : Super::NativeOnTouchStarted(InGeometry, InGestureEvent);
+}
+
+FReply ULLLifecycleEventOverlay::HandleNoticePointer(const FVector2D& ScreenPosition)
+{
+    const int32 Count = FMath::Min(NoticeHitBorders.Num(), Notices.Num());
+    for (int32 Index = 0; Index < Count; ++Index)
+    {
+        const UBorder* Border = NoticeHitBorders[Index];
+        if (!Border)
+        {
+            continue;
+        }
+
+        const FGeometry& Geometry = Border->GetCachedGeometry();
+        const FVector2D Local = Geometry.AbsoluteToLocal(ScreenPosition);
+        const FVector2D LocalSize = Geometry.GetLocalSize();
+        const bool bInside =
+            Local.X >= 0.0f && Local.Y >= 0.0f
+            && Local.X <= LocalSize.X && Local.Y <= LocalSize.Y;
+        if (!bInside)
+        {
+            continue;
+        }
+
+        const FTransientNotice& Notice = Notices[Index];
+        const FGuid TargetResidentId = Notice.SubjectResidentId.IsValid()
+            ? Notice.SubjectResidentId
+            : Notice.RelatedResidentId;
+        if (!TargetResidentId.IsValid())
+        {
+            return FReply::Unhandled();
+        }
+
+        UGameInstance* GameInstance = GetGameInstance();
+        ULLObservationSubsystem* Observation =
+            GameInstance ? GameInstance->GetSubsystem<ULLObservationSubsystem>() : nullptr;
+        if (!Observation)
+        {
+            return FReply::Unhandled();
+        }
+
+        Observation->ObserveResident(TargetResidentId);
+        return FReply::Handled();
+    }
+
+    return FReply::Unhandled();
 }
 
 void ULLLifecycleEventOverlay::ResetObservationState()
@@ -570,6 +639,7 @@ void ULLLifecycleEventOverlay::RefreshNoticeWidgets()
     }
 
     EventList->ClearChildren();
+    NoticeHitBorders.Reset();
     if (Notices.Num() == 0)
     {
         EventBorder->SetVisibility(ESlateVisibility::Collapsed);
@@ -590,7 +660,12 @@ void ULLLifecycleEventOverlay::RefreshNoticeWidgets()
         Label->SetColorAndOpacity(FSlateColor(FLinearColor(0.95f, 0.97f, 1.0f, 1.0f)));
         Label->SetVisibility(ESlateVisibility::HitTestInvisible);
 
-        Moment->SetText(FText::FromString(FormatObservedMoment(Notice.SimulationMinute)));
+        const FGuid FocusResidentId = Notice.SubjectResidentId.IsValid()
+            ? Notice.SubjectResidentId
+            : Notice.RelatedResidentId;
+        const FString MomentLine = FormatObservedMoment(Notice.SimulationMinute)
+            + (FocusResidentId.IsValid() ? TEXT(" · 탭하여 추적") : TEXT(""));
+        Moment->SetText(FText::FromString(MomentLine));
         Moment->SetAutoWrapText(false);
         Moment->SetColorAndOpacity(FSlateColor(FLinearColor(
             Accent.R * 0.82f,
@@ -613,6 +688,7 @@ void ULLLifecycleEventOverlay::RefreshNoticeWidgets()
             0.90f));
         NoticeBorder->SetContent(NoticeStack);
         NoticeBorder->SetVisibility(ESlateVisibility::HitTestInvisible);
+        NoticeHitBorders.Add(NoticeBorder);
 
         if (UVerticalBoxSlot* Slot = EventList->AddChildToVerticalBox(NoticeBorder))
         {
