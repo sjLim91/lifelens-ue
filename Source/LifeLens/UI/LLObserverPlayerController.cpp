@@ -256,6 +256,14 @@ void ALLObserverPlayerController::PlayerTick(float DeltaTime)
 {
     Super::PlayerTick(DeltaTime);
 
+    // QA camera from Dagyeom PR #98 is intentionally isolated from the
+    // production orbit/follow controller. Without this guard the next tick
+    // would adopt the temporary CameraActor and immediately move it.
+    if (GDebugViewCamera.IsValid() && GetViewTarget() == GDebugViewCamera.Get())
+    {
+        return;
+    }
+
     EnsureCameraInitialized();
     if (!bCameraInitialized)
     {
