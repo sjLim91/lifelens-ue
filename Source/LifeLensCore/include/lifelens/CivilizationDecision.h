@@ -272,7 +272,9 @@ inline CivilizationUtilityDecision bestGatherDecision(const World& world,const C
         const int fireMissing=primitiveFirePitMissingMaterial(world,node.material);
         const int furnaceMissing=primitiveFurnaceMissingMaterial(world,node.material);
         const int settlementMissing=settlementConstructionMissingMaterial(world,node.material);
-        const int repairMissing=settlementRepairMaterialDemand(world,node.material);
+        const int repairMissing=std::max(
+            0,
+            settlementRepairMaterialDemand(world,node.material)-held);
         const int constructionMissing=std::max(
             settlementMissing,
             std::max(storageMissing,std::max(fireMissing,furnaceMissing)));
