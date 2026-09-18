@@ -64,6 +64,11 @@ public:
         }
     }
 
+    // Applies reversible age-stage presentation without rerolling identity.
+    // Hair style / skin axis / outfit variant remain deterministic per resident;
+    // only stage-driven visibility, greying and subtle skin ageing change.
+    void ApplyLifecycleAgePresentation(ELLCoreLifeStage LifeStage, int32 AgeYears);
+
     const FLLResidentAppearanceInputs& GetInputs() const { return Inputs; }
 
     USkeletalMeshComponent* GetBodyComponent() const { return Body; }
@@ -71,6 +76,7 @@ public:
     // ---- Tuning ---------------------------------------------------------------
     // Height factor per Core LifeStage (index = ELLCoreLifeStage).
     static constexpr float StageHeightFactor[8] = { 0.40f, 0.52f, 0.65f, 0.85f, 0.98f, 1.0f, 1.0f, 0.96f };
+    static constexpr float StageWidthFactor[8]  = { 1.16f, 1.12f, 1.07f, 0.98f, 0.99f, 1.0f, 1.01f, 0.97f };
     static constexpr float HeightAxisRange = 0.08f; // +-8 % around the stage height
     static constexpr float BuildAxisRange  = 0.06f; // +-6 % lateral scale
 
@@ -115,6 +121,8 @@ private:
     UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> SkinMaterial;
     UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> EyeMaterial;
     UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> HairMaterial;
+    UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> BeardMaterial;
+    UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> BrowMaterial;
     UPROPERTY() TObjectPtr<USkeletalMeshComponent> Outfit;
     UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> OutfitMaterial;
     UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> OutfitSkinMaterial;
