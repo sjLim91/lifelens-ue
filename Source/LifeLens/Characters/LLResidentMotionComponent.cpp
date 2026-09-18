@@ -813,7 +813,7 @@ void ULLResidentMotionComponent::UpdateHeldToolVisualState()
     HeldToolMesh->SetStaticMesh(DesiredMesh);
     if (HeldPropMaterial)
     {
-        HeldPropMaterial->SetVectorParameterValue(TEXT("Color"), PropColor);
+        HeldPropMaterial->SetVectorParameterValue(FName(TEXT("Color")), PropColor);
         HeldToolMesh->SetMaterial(0, HeldPropMaterial);
     }
     HeldToolMesh->SetRelativeScale3D(RelativeScale);
