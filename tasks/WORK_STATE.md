@@ -2,6 +2,8 @@
 
 > Actual GitHub `main` / PR / Actions is the highest-priority truth.
 >
+> Whole-source audit / current P0 fixes: `docs/SOURCE_AUDIT_2026-09-18.md`.
+>
 > Canonical roadmap: `docs/DEVELOPMENT_MILESTONES.md`.
 >
 > Long-range civilization direction: `docs/OPEN_ENDED_CIVILIZATION_NORTH_STAR.md`.
@@ -12,24 +14,28 @@
 >
 > Historical audit: `docs/INTEGRATED_AUDIT_2026-09-17.md` (point-in-time only; do not treat as live status).
 
-Last reconciled: **2026-09-18 KST after PR #152 merge**.
+Last reconciled: **2026-09-18 KST after whole-source audit promotion**.
 
 ---
 
 ## 1. Current main checkpoint
 
-Current main before this docs-only reconciliation:
+Current main before this docs-only audit-priority sync:
 
-- main SHA: `6cceafca5233e9ba472a2fee04139ebf41887aa4`.
-- #145 Character Context Motion v2 — **MERGED**.
-- #149 Visual Catch-up v3 packaged rain/snow fallback — **MERGED**.
-- #150 Lifecycle Presentation v2 — **MERGED**.
-- #151 Observer Adaptive Information Density v1 — **MERGED**.
-- #152 C1 Settlement Facility Authority Foundation v1 — **MERGED**.
+- main SHA: `87020ec85787f1dfb3d03c30dd8fafaeb7b2aafe`.
+- #145 Character Context Motion v2 — MERGED.
+- #149 Visual Catch-up v3 packaged rain/snow fallback — MERGED.
+- #150 Lifecycle Presentation v2 — MERGED.
+- #151 Observer Adaptive Information Density v1 — MERGED.
+- #152 C1 Settlement Facility Authority Foundation v1 — MERGED.
+- #153 docs reconciliation — MERGED.
+- #154 explicit Dagyeom presentation assist handoff — MERGED.
 
-#152 exact-head validation:
-- Preflight #774 — PASS.
+Recent validated functional baseline:
 - Core Tests #707 — PASS.
+- 67/67 Core tests — PASS.
+- deterministic harness — PASS.
+- Preflight #774 — PASS.
 - Unreal Linux Compile #235 — PASS.
 
 Authority rule remains:
@@ -38,7 +44,77 @@ Authority rule remains:
 
 ---
 
-## 2. Recent completed chain
+## 2. STOP-THE-LINE ACTIVE PRIORITY
+
+### AUDIT-0A — Time / Weather / Speed UI consolidation
+
+Status: **ACTIVE / FIRST**
+
+Problem:
+- `ALLRuntimeObserverHUD::DrawRuntimeChrome()` already renders time/weather/speed controls.
+- `ULLObserverTimeWeatherOverlay` is also auto-created and renders the same information/control set.
+- both can call `ULLSimulationSubsystem::SetSimulationSpeedPreset()`.
+
+Required:
+1. choose one canonical production control surface.
+2. remove/absorb the duplicate path.
+3. keep one input/hit-testing path.
+4. keep Core time authority untouched.
+5. verify PC + Android interaction.
+6. PIE smoke: exactly one time/weather/speed surface.
+
+### AUDIT-0B — Resident-local environmental Need pressure
+
+Status: **NEXT P0, immediately after 0A**
+
+Problem:
+- per-minute `applyStartRegionEnvironmentalNeedPressure(world)` applies one start-region environment to every living resident.
+- travel/work systems already use actual spatial location, so environment causality is inconsistent.
+
+Required:
+1. authoritative resident runtime GridPos.
+2. GridPos -> chunk.
+3. per-resident DynamicEnvironment.
+4. per-resident environmental Need pressure.
+5. regression with two residents in different climates.
+6. deterministic Save/Load continuation.
+
+### AUDIT-0C — Full regression gate
+
+Status: **BLOCKS C1-B**
+
+After 0A/0B:
+- Core Tests.
+- deterministic harness.
+- Structural Preflight.
+- Unreal Linux Compile.
+- PIE visual/input smoke checklist.
+
+**Do not start/merge C1-B before AUDIT-0A/B/C are green.**
+
+---
+
+## 3. P1 audit follow-up
+
+### AUDIT-1A — Explicit materialized chunk enumeration
+
+Current WorldPresentation and obstacle collision proxy infer materialized chunk coordinates from:
+- `MaterializedChunkCount`.
+- a ring around the initial chunk.
+
+This can miss distant/non-contiguous materialized chunks later.
+
+Required before migration/multi-settlement:
+- Core bridge exposes authoritative materialized chunk coordinate list.
+- WorldPresentation consumes the list.
+- obstacle collision proxy consumes the list.
+- no count-based coordinate guessing.
+
+This is not ahead of P0 and does not replace C1-B after stabilization.
+
+---
+
+## 4. Recent completed chain
 
 ### Time / environment
 - #135 Simulation Time Authority & Variable Speed.
@@ -50,7 +126,7 @@ Authority rule remains:
 - #142 Runtime Chrome.
 - #147 Observer time/weather/speed controls.
 - #148 Dynamic Observer Canopy Visibility.
-- #149 Visual Catch-up v3 rain/snow packaged fallback.
+- #149 packaged rain/snow fallback.
 
 ### Character / Observer / lifecycle
 - #143 Character Context Motion v2a.
@@ -62,154 +138,103 @@ Authority rule remains:
 
 ### C1 settlement
 - #152 C1-A authority:
-  - WorkSurface is constructible.
-  - SleepingPlace is constructible.
-  - Shelter is constructible.
-  - all require real materials + real work.
-  - deterministic sites avoid existing facility/sanitation/resource collisions.
-  - weather friction affects construction work.
-  - operational facility state survives snapshot roundtrip.
-  - NEW GAME still starts without those facilities.
+  - WorkSurface constructible.
+  - SleepingPlace constructible.
+  - Shelter constructible.
+  - real materials + real work.
+  - deterministic sites.
+  - weather friction on construction work.
+  - snapshot persistence.
+  - no free NEW GAME settlement facility.
 
 ---
 
-## 3. Active priority
+## 5. C1 continuation after audit P0
 
 ### C1-B — Autonomous settlement need recognition
-
-Next Core-owned implementation target:
-
 1. SleepingPlace utility from sleep/outdoor-rest pressure.
-2. Shelter utility from repeated environmental exposure.
-3. WorkSurface utility from repeated crafting/build demand.
-4. missing project materials feed back into Gather decisions.
-5. Plan / DeliverMaterial / Work actions resolve to real Core facility positions.
-6. WorldDirector / Character presentation only executes the authoritative pending directive.
-7. same seed / snapshot continuation remains deterministic.
-
-Do **not** create a generic "advance settlement era" switch.
-
----
-
-## 4. C1 continuation after C1-B
+2. Shelter utility from local environmental exposure.
+3. WorkSurface utility from repeated craft/build demand.
+4. missing project materials -> Gather demand.
+5. Plan / DeliverMaterial / Work -> authoritative spatial ContextAction.
+6. presentation only executes/visualizes Core directive.
+7. same-seed / snapshot continuation deterministic.
 
 ### C1-C — Facility effects / maintenance
-- SleepingPlace sleep recovery/comfort benefit.
-- Shelter weather-protection benefit.
-- WorkSurface work/craft efficiency.
-- facility durability / maintenance pressure.
-- operational vs ruined state affects actual utility.
+- sleep benefit.
+- shelter environmental protection.
+- work/craft benefit.
+- durability / maintenance.
+- ruined/inactive facilities stop providing benefit.
 
 ### C1-D — Water / food persistence
-- water carrying/storage.
+- water handling/storage.
 - food storage/spoilage.
-- renewable/cultivated food.
+- cultivation/renewable production.
 - season/moisture/fertility dependency.
-- local scarcity drives search/movement.
+- scarcity -> search/movement.
 
 ### C1-E — Emergent settlement geometry
-- repeated use creates activity centers.
-- household living space can differentiate.
-- sanitation stays outside dense living space.
-- storage/fire/work/sleep clusters emerge from use and constraints.
-- no hard-coded "town center" authority object is required.
+- activity centers emerge from use.
+- household space differentiation.
+- sanitation away from dense living.
+- storage/fire/work/sleep clusters emerge.
+- no hard-coded town-center authority.
+
+### C1-F — Early material expansion
+- Tin/Bronze only after actual prerequisites.
 
 ---
 
-## 5. Roadmap after C1
+## 6. Roadmap after C1
 
-- **C2** — long-run scale/history fast-forward/cleanup.
-- **C3** — open-ended Capability / Technology / Transformation framework.
-- **C4** — health/disease/population resilience.
-- **C5** — education/recording/specialization/economy/institutions.
-- **C6** — migration/multiple settlements/trade networks.
-- **F1~F8** — historical, industrial, modern, digital, AI/robotics, advanced energy/biotech, space, open future.
+- C2 — long-run scale/history fast-forward/cleanup.
+- C3 — open-ended Capability / Technology / Transformation framework.
+- C4 — health/disease/population resilience.
+- C5 — education/recording/specialization/economy/institutions.
+- C6 — migration/multiple settlements/trade networks.
+- F1~F8 — historical -> industrial -> modern -> digital -> AI/robotics -> advanced energy/biotech -> space -> open future.
 
-F1~F8 are observer/development bands, never time-based Core era gates.
-
----
-
-## 6. Presentation state
-
-The Presentation Catch-up sprint is no longer the primary blocker.
-
-Completed:
-- time/weather/speed chrome and controls.
-- detail scrolling on PC and Android.
-- lifecycle event visibility.
-- persistent selected-resident family/lifecycle presentation.
-- adaptive HUD density.
-- context motion expansion.
-- dynamic canopy readability.
-- packaged rain/snow fallback.
-
-Remaining quality work is incremental:
-- authored Niagara/material assets.
-- higher-quality child/body/lifecycle animation.
-- panel opacity salvage from stale #98 where still useful.
-- device-specific layout/LOD tuning.
-- camera/readability QA.
-
-These should not block C1 Core progression unless a real provider/consumer contract gap is found.
+No forced era timer.
 
 ---
 
-## 7. Collaboration / merge rule
+## 7. Runtime QA not covered by green compile/tests
 
+Still requires runtime/device validation:
+- actual HUD z-order/layout/safe area.
+- touch gesture conflicts.
+- camera feel.
+- animation transitions / hand-tool alignment.
+- Niagara/material visual quality.
+- Android GPU/performance.
+- long Unreal session memory/performance.
+- APK packaging/device launch.
+
+Android Gate B remains PAUSED BY USER.
+
+---
+
+## 8. Collaboration / merge rule
+
+- Review source as one LifeLens product; ownership is for coordination, not quality silos.
 - Correct responsibility beats artificial file separation.
-- Do not create duplicate classes/sources merely to avoid another person's file.
 - Same responsibility -> same canonical file.
-- Coordinate, rebase and resolve overlaps instead of bending architecture.
+- coordinate/rebase actual overlaps.
+- stale #98 remains selective-salvage only.
 
-Standing Jjun merge rule:
-- refresh PR exact head.
-- required exact-head CI must be green.
-- refresh Dagyeom active PRs and changed filenames.
-- if no unresolved overlap/conflict, merge without another confirmation.
-- if overlap/ownership is unresolved, coordinate first.
-
-Current Dagyeom open item:
-- #98 Observer readability + QA view — **STALE / SELECTIVE SALVAGE ONLY**.
-- do not wholesale merge its old HUD/controller snapshots over current main.
+Standing Jjun merge rule remains:
+- refresh exact head.
+- required CI green.
+- refresh active PRs/files.
+- no unresolved overlap/conflict.
+- expected_head_sha on merge.
 
 ---
 
-## 8. Android state
+## 9. Immediate next implementation target
 
-Android Gate B remains **PAUSED BY USER**.
+> **AUDIT-0A — consolidate duplicate Observer time/weather/speed UI.**
 
-Known recovery result:
-- PR #141 probe confirmed a prebuilt UE 5.6 development host contains Linux compile tooling plus Android platform payload.
-- therefore routine Android recovery should use the verified prebuilt-host strategy rather than repeatedly compiling the full Unreal Editor from source.
-- #141 itself is stale and should be reimplemented from fresh main if/when Android work resumes.
-
-No long Android build should be launched until the user explicitly resumes it.
-
----
-
-## 9. Validation policy
-
-Core:
-- Core Tests.
-- deterministic regression/harness where relevant.
-- Structural Preflight.
-
-Unreal C++:
-- Structural Preflight.
-- Unreal Linux Compile.
-
-Save/time/environment:
-- snapshot roundtrip and deterministic continuation as applicable.
-
-Docs-only:
-- no heavy Unreal compile intentionally required solely for documentation.
-
-Exact-head validation is mandatory before functional merge.
-
----
-
-## 10. Immediate next implementation target
-
-> **C1-B — Autonomous Settlement Need Recognition**
-
-Do not jump directly to agriculture, bronze, cities or future technology before residents can autonomously recognize, construct and use the first durable settlement facilities.
+Then:
+**AUDIT-0B -> AUDIT-0C -> C1-B**.
