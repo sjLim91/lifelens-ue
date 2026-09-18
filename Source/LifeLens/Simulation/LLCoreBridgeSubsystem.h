@@ -170,6 +170,17 @@ public:
         int32 ChunkY,
         FLLCoreHydrologyObservation& OutObservation) const;
 
+    // Read-only deterministic geometry hints for projecting authoritative
+    // materialized hydrology into Unreal Water/mesh presentation.
+    UFUNCTION(BlueprintPure, Category="LifeLens|Core|WorldGeneration|Hydrology|Presentation")
+    TArray<FLLCoreSurfaceWaterPresentationObservation> GetMaterializedSurfaceWaterPresentationObservations() const;
+
+    UFUNCTION(BlueprintCallable, Category="LifeLens|Core|WorldGeneration|Hydrology|Presentation")
+    bool GetSurfaceWaterPresentationObservation(
+        int32 ChunkX,
+        int32 ChunkY,
+        FLLCoreSurfaceWaterPresentationObservation& OutObservation) const;
+
     // Native persistence bridge.
     // Unreal SaveGame stores these bytes; it never
     // serializes the compatibility resident projection as a second authority.

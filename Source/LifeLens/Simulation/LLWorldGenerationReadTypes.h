@@ -53,6 +53,43 @@ struct FLLCoreHydrologyObservation
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology") bool bFreshSurfaceWater = false;
 };
 
+/**
+ * Deterministic presentation projection derived from authoritative Core
+ * hydrology. Grid positions/size hints help Unreal Water build a stable local
+ * surface representation, but they do not create or mutate water simulation.
+ */
+USTRUCT(BlueprintType)
+struct FLLCoreSurfaceWaterPresentationObservation
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Presentation") bool bAvailable = false;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Presentation") int64 SurfaceWaterId = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Presentation") ELLCoreSurfaceWaterKind SurfaceKind = ELLCoreSurfaceWaterKind::None;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Presentation") ELLCoreWaterSalinity Salinity = ELLCoreWaterSalinity::Fresh;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Presentation") int32 ChunkX = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Presentation") int32 ChunkY = 0;
+
+    // Stable local-surface anchor at the authoritative chunk center.
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Presentation") int32 CenterGridX = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Presentation") int32 CenterGridY = 0;
+
+    // Linear surface water (spring/stream/river) can connect toward the
+    // authoritative downstream chunk. Consumers must ignore these when false.
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Presentation") bool bLinearChannel = false;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Presentation") bool bHasDownstreamTarget = false;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Presentation") int32 DownstreamCenterGridX = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Presentation") int32 DownstreamCenterGridY = 0;
+
+    // Rendering hints only. They are deterministic functions of authoritative
+    // water kind/availability/flow and are not gameplay width/depth claims.
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Presentation") float SuggestedChannelWidthCells = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Presentation") float SuggestedAreaRadiusCells = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Presentation") float SurfaceAvailability = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Presentation") float FlowPotential = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Presentation") bool bFreshSurfaceWater = false;
+};
+
 USTRUCT(BlueprintType)
 struct FLLCoreNaturalObstacleObservation
 {
