@@ -8,6 +8,7 @@
 > - 빌드/검증 방식(72~76절)은 `docs/BUILD_STRATEGY_v1.2.md`가 우선한다. 그 외 모든 섹션은 이 문서가 기준이다.
 > - 확장형 세계 생성/청크/이주 구조는 `docs/WORLD_GENESIS_CHUNK_MIGRATION_v1.md`가 canonical companion이며, 고정 소형 arena를 제품 월드 구조로 사용하지 않는다.
 > - 문명이 원시 정착에서 현대를 지나 미지의 미래까지 자율적으로 발전하는 장기 방향은 `docs/OPEN_ENDED_CIVILIZATION_NORTH_STAR.md`가 canonical companion이다. 시대 라벨은 Core unlock timer가 아니다.
+> - PC cinematic / Android mobile rendering 분리는 `docs/CINEMATIC_RENDERING_STRATEGY_v1.md`가 canonical companion이다.
 > - 실제 구현 순서는 `docs/DEVELOPMENT_MILESTONES.md`, 현재 상태는 `tasks/WORK_STATE.md`를 따른다.
 
 ---
@@ -118,6 +119,14 @@ PC Presentation        Android Presentation
 ```
 
 모바일이라고 캐릭터의 기본 AI 철학을 바꾸지 않는다. 단, Simulation LOD를 이용하여 계산 비용을 줄일 수 있다.
+
+**그래픽 품질의 상한은 플랫폼별로 분리한다.** Android 우선 개발은 Windows PC의 시각 품질을 모바일 수준으로 제한한다는 뜻이 아니다.
+
+- Windows PC: Unreal의 cinematic real-time stack(Lumen GI/Reflections, Nanite eligible assets, Virtual Shadow Maps, TSR, 고품질 PBR/atmosphere)을 적극 활용한다.
+- Android: 동일한 World/Character/Facility identity를 유지하면서 conventional LOD/HLOD, 경량 material/shadow/foliage/texture 정책으로 다운스케일한다.
+- 그래픽 LOD 차이는 presentation 차이일 뿐이며 Core/World/Save truth를 바꾸지 않는다.
+- PC 고품질 자산은 Android용 fallback mesh/LOD 또는 별도 경량 presentation path를 가져야 한다.
+- 세부 기준은 `docs/CINEMATIC_RENDERING_STRATEGY_v1.md`를 따른다.
 
 ---
 
