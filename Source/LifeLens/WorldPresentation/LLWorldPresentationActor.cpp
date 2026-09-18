@@ -784,7 +784,8 @@ uint32 ALLWorldPresentationActor::FacilitySignature(const FLLCoreCivilizationWor
 
 void ALLWorldPresentationActor::BuildFacilities(
     const FLLCoreWorldGenerationObservation& World,
-    const FLLCoreCivilizationWorldObservation& Civilization)
+    const FLLCoreCivilizationWorldObservation& Civilization,
+    bool bNightPresentation)
 {
     for (const FLLCoreCivilizationFacilityObservation& Facility : Civilization.Facilities)
     {
@@ -1202,6 +1203,21 @@ void ALLWorldPresentationActor::BuildFacilities(
                     FRotator(0.0f,45.0f,0.0f),Base + FVector(0.0f,-34.0f,52.0f),FVector(0.20f,0.16f,FlameHeight)));
                 FacilityAccentInstances->AddInstance(FTransform(
                     FRotator(0.0f,135.0f,0.0f),Base + FVector(8.0f,-32.0f,46.0f),FVector(0.14f,0.13f,FlameHeight*0.72f)));
+
+                if (bNightPresentation)
+                {
+                    // Android-safe emissive pool: no dynamic lights or shadows,
+                    // just a low, collision-free accent that keeps an active
+                    // furnace readable against the dark ground.
+                    FacilityAccentInstances->AddInstance(FTransform(
+                        FRotator::ZeroRotator,
+                        Base + FVector(0.0f, -22.0f, 10.0f),
+                        FVector(0.95f, 0.70f, 0.025f)));
+                    FacilityAccentInstances->AddInstance(FTransform(
+                        FRotator(0.0f, 45.0f, 0.0f),
+                        Base + FVector(0.0f, -22.0f, 12.0f),
+                        FVector(0.62f, 0.62f, 0.020f)));
+                }
             }
             continue;
         }
@@ -1251,6 +1267,18 @@ void ALLWorldPresentationActor::BuildFacilities(
                 FRotator(0.0f, 45.0f, 0.0f),Base + FVector(0.0f, 0.0f, 55.0f),FVector(0.24f, 0.18f, 0.70f)));
             FacilityAccentInstances->AddInstance(FTransform(
                 FRotator(0.0f, 135.0f, 0.0f),Base + FVector(0.0f, 0.0f, 48.0f),FVector(0.18f, 0.16f, 0.50f)));
+
+            if (bNightPresentation)
+            {
+                FacilityAccentInstances->AddInstance(FTransform(
+                    FRotator::ZeroRotator,
+                    Base + FVector(0.0f, 0.0f, 9.0f),
+                    FVector(0.88f, 0.88f, 0.022f)));
+                FacilityAccentInstances->AddInstance(FTransform(
+                    FRotator(0.0f, 45.0f, 0.0f),
+                    Base + FVector(0.0f, 0.0f, 11.0f),
+                    FVector(0.56f, 0.56f, 0.018f)));
+            }
         }
     }
 }
@@ -1264,6 +1292,8 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
     const FLLCoreWorldGenerationObservation World = Bridge->GetWorldGenerationObservation();
     if (!World.bAvailable || !World.bHasInitialStartRegion) { return; }
     const FLLCoreCivilizationWorldObservation Civilization = Bridge->GetCivilizationWorldObservation(0);
+    const FLLCoreTimeObservation Time = Bridge->GetTimeObservation();
+    const bool bNightPresentation = Time.bIsNight || Time.Daylight01 < 0.22f;
 
     // The observer camera is spawned by the game mode, which can run after this
     // actor's BeginPlay. The first build may therefore miss it; the next refresh
@@ -1289,7 +1319,12 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         || bFacilityLayoutChanged
         || (bSightlinePending && bInitialViewCaptured);
 
-    const uint32 CurrentFacilitySignature = FacilitySignature(Civilization);
+    uint32 CurrentFacilitySignature = FacilitySignature(Civilization);
+    // Rebuild facility accent instances only when the coarse day/night state
+    // changes; minute-by-minute time does not churn the HISM presentation.
+    CurrentFacilitySignature = MixHash(
+        CurrentFacilitySignature,
+        bNightPresentation ? 0x4E494748u : 0x44415900u);
     const bool bFacilitiesChanged = bForce || !bBuiltFacilityPresentation || CurrentFacilitySignature != BuiltFacilitySignature;
     if (!bNaturalChanged && !bFacilitiesChanged) { return; }
 
@@ -1326,7 +1361,7 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         BuiltFacilitySignature = CurrentFacilitySignature;
         bBuiltFacilityPresentation = true;
         ClearFacilityInstances();
-        BuildFacilities(World, Civilization);
+        BuildFacilities(World, Civilization, bNightPresentation);
     }
 
     int32 TreeInstanceCount = 0;

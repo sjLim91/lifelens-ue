@@ -186,7 +186,8 @@ private:
     void BuildChunkDressing(const struct FLLCoreWorldGenerationObservation& World,
                             const FLLCoreNaturalChunkObservation& Chunk);
     void BuildFacilities(const struct FLLCoreWorldGenerationObservation& World,
-                         const FLLCoreCivilizationWorldObservation& Civilization);
+                         const FLLCoreCivilizationWorldObservation& Civilization,
+                         bool bNightPresentation);
     uint32 FacilitySignature(const FLLCoreCivilizationWorldObservation& Civilization) const;
     uint32 FacilityLayoutSignature(const FLLCoreCivilizationWorldObservation& Civilization) const;
     void RefreshFacilityReadabilityReferences(
