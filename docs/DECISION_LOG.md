@@ -258,3 +258,31 @@ C1 세부 순서:
 - 시설 생성/완료 authority는 Core다.
 - settlement milestone 이름이 facility spawn trigger가 되어서는 안 된다.
 
+---
+
+## D-015 — Whole-source audit P0 fixes outrank C1-B until stabilized
+
+**Decision**
+- 2026-09-18 whole-source audit findings are promoted above the current feature roadmap.
+- C1-B remains the next product feature milestone, but it is blocked until AUDIT-0A/B/C are complete and green.
+
+**AUDIT-0A**
+- duplicate time/weather/speed UI responsibility must be consolidated to one canonical production surface.
+
+**AUDIT-0B**
+- per-minute environmental Need pressure must use each resident's authoritative location/chunk, not one shared start-region climate.
+
+**AUDIT-0C**
+- after 0A/0B: Core Tests + deterministic harness + Preflight + Unreal Compile + PIE smoke.
+
+**P1 follow-up**
+- WorldPresentation / obstacle collision must eventually consume an explicit materialized chunk coordinate read contract instead of inferring coordinates from count + initial-region ring scanning.
+
+**Reason**
+- 0A is a same-responsibility duplication that increases every future UI maintenance cost.
+- 0B is a simulation-causality bug that would make Shelter/migration/environment-driven settlement decisions wrong if C1-B were built on top of it.
+- Fixing these first is not roadmap drift; it is foundation stabilization.
+
+**Canonical evidence**
+- `docs/SOURCE_AUDIT_2026-09-18.md`.
+
