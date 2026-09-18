@@ -51,6 +51,7 @@ private:
     void UpdateMouseCameraInput();
     void UpdateTouchCameraInput();
     void ApplyCameraTransform(float DeltaTime);
+    void SyncObservedResidentSelection();
     void UpdateObservedResidentFocus();
     void FocusObservedResident(ALLResidentCharacter* Resident, bool bReframe);
     void ResolveObservedResidentFocusFraming(const ALLResidentCharacter* Resident, FVector& OutTarget, float& OutDistance) const;
