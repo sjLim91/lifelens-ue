@@ -520,6 +520,58 @@ void ALLObserverPlayerController::SuspendObservedResidentFollow()
     bFollowObservedResident = false;
 }
 
+void ALLObserverPlayerController::ResolveObservedResidentFocusFraming(
+    const ALLResidentCharacter* Resident,
+    FVector& OutTarget,
+    float& OutDistance) const
+{
+    OutTarget = Resident ? Resident->GetActorLocation() : FVector::ZeroVector;
+    OutDistance = ObservedResidentFocusDistanceUU;
+    if (!Resident)
+    {
+        return;
+    }
+
+    FVector Origin = Resident->GetActorLocation();
+    FVector Extent = FVector::ZeroVector;
+    Resident->GetActorBounds(false, Origin, Extent, false);
+
+    const float RenderedHeight = FMath::Max(1.0f, Extent.Z * 2.0f);
+    const float ReferenceHeight = FMath::Max(10.0f, ObservedResidentReferenceHeightUU);
+    const float SizeScale = FMath::Clamp(
+        RenderedHeight / ReferenceHeight,
+        FMath::Clamp(ObservedResidentFocusMinDistanceScale, 0.25f, 1.0f),
+        1.15f);
+
+    const float MinDistance = FMath::Max(100.0f, CameraMinDistanceUU);
+    const float MaxDistance = FMath::Max(MinDistance, CameraMaxDistanceUU);
+    OutDistance = FMath::Clamp(
+        ObservedResidentFocusDistanceUU * SizeScale,
+        MinDistance,
+        MaxDistance);
+
+    // Scale the vertical aim point with the resident instead of looking above
+    // small children at the same fixed adult offset.
+    const float MaxHeightOffset = FMath::Max(0.0f, ObservedResidentFocusHeightOffsetUU);
+    const float AdaptiveHeightOffset = FMath::Clamp(
+        Extent.Z * 0.75f,
+        FMath::Min(24.0f, MaxHeightOffset),
+        MaxHeightOffset);
+
+    FVector CameraRight = FVector::RightVector;
+    if (const ACameraActor* Camera = ObserverCamera.Get())
+    {
+        CameraRight = Camera->GetActorRightVector();
+        CameraRight.Z = 0.0f;
+        CameraRight.Normalize();
+    }
+
+    const float LateralFraction = FMath::Clamp(ObservedResidentFocusLateralFraction, 0.0f, 0.35f);
+    OutTarget = Origin
+        + FVector(0.0f, 0.0f, AdaptiveHeightOffset)
+        + CameraRight * (OutDistance * LateralFraction);
+}
+
 void ALLObserverPlayerController::FocusObservedResident(ALLResidentCharacter* Resident, bool bReframe)
 {
     if (!Resident)
@@ -530,19 +582,12 @@ void ALLObserverPlayerController::FocusObservedResident(ALLResidentCharacter* Re
     FocusedResidentId = Resident->GetResidentId();
     bFollowObservedResident = FocusedResidentId.IsValid();
 
-    FVector Origin = Resident->GetActorLocation();
-    FVector Extent = FVector::ZeroVector;
-    Resident->GetActorBounds(false, Origin, Extent, false);
-    DesiredOrbitTarget = Origin + FVector(0.0f, 0.0f, ObservedResidentFocusHeightOffsetUU);
+    float FocusDistance = ObservedResidentFocusDistanceUU;
+    ResolveObservedResidentFocusFraming(Resident, DesiredOrbitTarget, FocusDistance);
 
     if (bReframe)
     {
-        const float MinDistance = FMath::Max(100.0f, CameraMinDistanceUU);
-        const float MaxDistance = FMath::Max(MinDistance, CameraMaxDistanceUU);
-        DesiredOrbitDistanceUU = FMath::Clamp(
-            ObservedResidentFocusDistanceUU,
-            MinDistance,
-            MaxDistance);
+        DesiredOrbitDistanceUU = FocusDistance;
 
         const float MinElevation = FMath::Clamp(CameraMinElevationDegrees, 1.0f, 89.0f);
         const float MaxElevation = FMath::Clamp(CameraMaxElevationDegrees, MinElevation, 89.0f);
@@ -580,10 +625,8 @@ void ALLObserverPlayerController::UpdateObservedResidentFocus()
     }
 
     FocusedResidentId = ObservedId;
-    FVector Origin = Resident->GetActorLocation();
-    FVector Extent = FVector::ZeroVector;
-    Resident->GetActorBounds(false, Origin, Extent, false);
-    DesiredOrbitTarget = Origin + FVector(0.0f, 0.0f, ObservedResidentFocusHeightOffsetUU);
+    float FocusDistance = DesiredOrbitDistanceUU;
+    ResolveObservedResidentFocusFraming(Resident, DesiredOrbitTarget, FocusDistance);
 }
 
 void ALLObserverPlayerController::RestoreWorldOverview()
