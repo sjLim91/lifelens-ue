@@ -576,6 +576,7 @@ uint32 ALLWorldPresentationActor::FacilitySignature(const FLLCoreCivilizationWor
         Hash = MixHash(Hash, static_cast<uint32>(FMath::RoundToInt(Facility.WorkProgress * 1000.0f)));
         Hash = MixHash(Hash, static_cast<uint32>(Facility.RequiredMaterialUnits));
         Hash = MixHash(Hash, static_cast<uint32>(Facility.DeliveredMaterialUnits));
+        Hash = MixHash(Hash, static_cast<uint32>(FMath::RoundToInt(FMath::Clamp(Facility.Durability, 0.0f, 1.0f) * 1000.0f)));
         Hash = MixHash(Hash, Facility.bActive ? 1u : 0u);
         Hash = MixHash(Hash, static_cast<uint32>(FMath::Max(0, Facility.FuelUnits)));
         Hash = MixHash(Hash, static_cast<uint32>(FMath::Max(0, Facility.CharcoalUnits)));
@@ -594,8 +595,6 @@ void ALLWorldPresentationActor::BuildFacilities(
 {
     for (const FLLCoreCivilizationFacilityObservation& Facility : Civilization.Facilities)
     {
-        if (Facility.State == ELLCoreFacilityState::Ruined) { continue; }
-
         const float X = static_cast<float>(Facility.GridX - World.InitialCenterGridX) * LLWorldSpatialContract::GridCellSizeUU;
         const float Y = static_cast<float>(Facility.GridY - World.InitialCenterGridY) * LLWorldSpatialContract::GridCellSizeUU;
         const FVector Base(X, Y, 0.0f);
@@ -604,7 +603,46 @@ void ALLWorldPresentationActor::BuildFacilities(
             : 0.0f;
         const float WorkProgress = FMath::Clamp(Facility.WorkProgress, 0.0f, 1.0f);
         const bool bOperational = Facility.State == ELLCoreFacilityState::Operational && Facility.bActive;
+        const bool bRuined = Facility.State == ELLCoreFacilityState::Ruined;
+        const float Durability = FMath::Clamp(Facility.Durability, 0.0f, 1.0f);
         const float BuildProgress = bOperational ? 1.0f : FMath::Max(MaterialProgress, WorkProgress);
+
+        // Ruins stay visible as low, scattered debris instead of disappearing.
+        // This is deliberately generic: Core owns the Ruined state; Presentation
+        // only projects that state and never decides whether a facility failed.
+        if (bRuined)
+        {
+            if (FacilityFoundationInstances)
+            {
+                FacilityFoundationInstances->AddInstance(FTransform(
+                    FRotator(0.0f, 18.0f, 8.0f),
+                    Base + FVector(-42.0f, -18.0f, 9.0f),
+                    FVector(0.82f, 0.42f, 0.12f)));
+                FacilityFoundationInstances->AddInstance(FTransform(
+                    FRotator(0.0f, -27.0f, -6.0f),
+                    Base + FVector(48.0f, 24.0f, 7.0f),
+                    FVector(0.68f, 0.34f, 0.10f)));
+            }
+            if (FacilityPostInstances)
+            {
+                FacilityPostInstances->AddInstance(FTransform(
+                    FRotator(0.0f, 36.0f, 78.0f),
+                    Base + FVector(12.0f, -34.0f, 18.0f),
+                    FVector(0.12f, 0.12f, 0.92f)));
+            }
+            if (FacilityCargoInstances)
+            {
+                FacilityCargoInstances->AddInstance(FTransform(
+                    FRotator(11.0f, 62.0f, 5.0f),
+                    Base + FVector(-64.0f, 52.0f, 13.0f),
+                    FVector(0.46f, 0.22f, 0.16f)));
+                FacilityCargoInstances->AddInstance(FTransform(
+                    FRotator(-8.0f, 121.0f, -4.0f),
+                    Base + FVector(58.0f, -54.0f, 11.0f),
+                    FVector(0.40f, 0.20f, 0.14f)));
+            }
+            continue;
+        }
 
         if (Facility.Kind == ELLCoreFacilityKind::PrimitiveStorage)
         {
@@ -641,6 +679,168 @@ void ALLWorldPresentationActor::BuildFacilities(
                 const float RoofScale = bOperational ? 1.0f : FMath::Clamp((WorkProgress - 0.65f) / 0.35f, 0.25f, 1.0f);
                 FacilityRoofInstances->AddInstance(FTransform(
                     FRotator::ZeroRotator,Base + FVector(0.0f, 0.0f, 118.0f),FVector(2.15f * RoofScale, 1.55f, 0.12f)));
+            }
+            continue;
+        }
+
+        if (Facility.Kind == ELLCoreFacilityKind::WorkSurface)
+        {
+            // Low primitive workbench. Construction visibly grows from delivered
+            // materials to legs to a usable top. Durability subtly sags the top.
+            const float Integrity = FMath::Lerp(0.72f, 1.0f, Durability);
+            const float DamageTilt = (1.0f - Durability) * 11.0f;
+
+            if (FacilityFoundationInstances)
+            {
+                const float FootprintScale = Facility.State == ELLCoreFacilityState::Planned ? 0.72f : 1.0f;
+                FacilityFoundationInstances->AddInstance(FTransform(
+                    FRotator::ZeroRotator,
+                    Base + FVector(0.0f, 0.0f, 5.0f),
+                    FVector(1.75f * FootprintScale, 0.95f * FootprintScale, 0.08f)));
+            }
+
+            const FVector2D LegOffsets[4] = {
+                FVector2D(-68.0f, -32.0f), FVector2D(68.0f, -32.0f),
+                FVector2D(-68.0f, 32.0f), FVector2D(68.0f, 32.0f)};
+            const int32 LegCount = bOperational
+                ? 4
+                : FMath::Clamp(FMath::CeilToInt(BuildProgress * 4.0f), 0, 4);
+            for (int32 Index = 0; Index < LegCount; ++Index)
+            {
+                if (!FacilityPostInstances) { break; }
+                const float Height = 0.62f * Integrity;
+                FacilityPostInstances->AddInstance(FTransform(
+                    FRotator(0.0f, 0.0f, (Index >= 2 ? 1.0f : -1.0f) * DamageTilt * 0.25f),
+                    Base + FVector(LegOffsets[Index].X, LegOffsets[Index].Y, 34.0f * Integrity),
+                    FVector(0.12f, 0.12f, Height)));
+            }
+
+            if ((bOperational || WorkProgress >= 0.45f) && FacilityRoofInstances)
+            {
+                const float TopScale = bOperational
+                    ? 1.0f
+                    : FMath::Clamp((WorkProgress - 0.45f) / 0.55f, 0.25f, 1.0f);
+                FacilityRoofInstances->AddInstance(FTransform(
+                    FRotator(0.0f, 0.0f, DamageTilt),
+                    Base + FVector(0.0f, 0.0f, 72.0f * Integrity),
+                    FVector(1.65f * TopScale, 0.82f, 0.12f * Integrity)));
+            }
+
+            const int32 LooseMaterialCount = bOperational
+                ? 2
+                : FMath::Clamp(FMath::CeilToInt(MaterialProgress * 3.0f), 0, 3);
+            for (int32 Index = 0; Index < LooseMaterialCount; ++Index)
+            {
+                if (!FacilityCargoInstances) { break; }
+                FacilityCargoInstances->AddInstance(FTransform(
+                    FRotator(0.0f, 18.0f + Index * 43.0f, 0.0f),
+                    Base + FVector(-44.0f + Index * 42.0f, 58.0f, 17.0f),
+                    FVector(0.40f, 0.14f, 0.12f)));
+            }
+            continue;
+        }
+
+        if (Facility.Kind == ELLCoreFacilityKind::SleepingPlace)
+        {
+            // Primitive bedding: a raised frame plus layered fiber bed. The bed
+            // remains visually low-tech and is clearly distinct from a WorkSurface.
+            const float Integrity = FMath::Lerp(0.70f, 1.0f, Durability);
+            const float DamageTilt = (1.0f - Durability) * 8.0f;
+
+            if (FacilityFoundationInstances)
+            {
+                const float FrameScale = Facility.State == ELLCoreFacilityState::Planned ? 0.70f : 1.0f;
+                FacilityFoundationInstances->AddInstance(FTransform(
+                    FRotator::ZeroRotator,
+                    Base + FVector(0.0f, 0.0f, 9.0f),
+                    FVector(1.85f * FrameScale, 0.92f * FrameScale, 0.12f)));
+            }
+
+            const int32 RailCount = bOperational
+                ? 2
+                : FMath::Clamp(FMath::CeilToInt(BuildProgress * 2.0f), 0, 2);
+            for (int32 Index = 0; Index < RailCount; ++Index)
+            {
+                if (!FacilityPostInstances) { break; }
+                const float Side = Index == 0 ? -1.0f : 1.0f;
+                FacilityPostInstances->AddInstance(FTransform(
+                    FRotator(0.0f, 0.0f, Side * DamageTilt * 0.35f),
+                    Base + FVector(0.0f, Side * 42.0f, 24.0f),
+                    FVector(1.72f, 0.11f, 0.16f * Integrity)));
+            }
+
+            if ((bOperational || MaterialProgress >= 0.55f) && FacilityCargoInstances)
+            {
+                const float BeddingScale = bOperational
+                    ? 1.0f
+                    : FMath::Clamp((MaterialProgress - 0.55f) / 0.45f, 0.30f, 1.0f);
+                FacilityCargoInstances->AddInstance(FTransform(
+                    FRotator(0.0f, 0.0f, DamageTilt),
+                    Base + FVector(0.0f, 0.0f, 31.0f * Integrity),
+                    FVector(1.58f * BeddingScale, 0.72f, 0.16f)));
+                if (bOperational)
+                {
+                    FacilityCargoInstances->AddInstance(FTransform(
+                        FRotator(0.0f, 0.0f, DamageTilt * 0.65f),
+                        Base + FVector(-58.0f, 0.0f, 47.0f * Integrity),
+                        FVector(0.42f, 0.64f, 0.12f)));
+                }
+            }
+            continue;
+        }
+
+        if (Facility.Kind == ELLCoreFacilityKind::Shelter)
+        {
+            // Four-post primitive shelter. Partial projects show posts first,
+            // then roof coverage. Wear is projected as roof sag/tilt.
+            const float Integrity = FMath::Lerp(0.68f, 1.0f, Durability);
+            const float DamageTilt = (1.0f - Durability) * 13.0f;
+
+            if (FacilityFoundationInstances)
+            {
+                const float PlannedScale = Facility.State == ELLCoreFacilityState::Planned ? 0.72f : 1.0f;
+                FacilityFoundationInstances->AddInstance(FTransform(
+                    FRotator::ZeroRotator,
+                    Base + FVector(0.0f, 0.0f, 5.0f),
+                    FVector(2.35f * PlannedScale, 1.85f * PlannedScale, 0.08f)));
+            }
+
+            const FVector2D PostOffsets[4] = {
+                FVector2D(-92.0f, -70.0f), FVector2D(92.0f, -70.0f),
+                FVector2D(-92.0f, 70.0f), FVector2D(92.0f, 70.0f)};
+            const int32 PostCount = bOperational
+                ? 4
+                : FMath::Clamp(FMath::CeilToInt(BuildProgress * 4.0f), 0, 4);
+            for (int32 Index = 0; Index < PostCount; ++Index)
+            {
+                if (!FacilityPostInstances) { break; }
+                const float LeanDirection = (Index % 2 == 0) ? -1.0f : 1.0f;
+                FacilityPostInstances->AddInstance(FTransform(
+                    FRotator(LeanDirection * DamageTilt * 0.25f, 0.0f, LeanDirection * DamageTilt * 0.15f),
+                    Base + FVector(PostOffsets[Index].X, PostOffsets[Index].Y, 78.0f * Integrity),
+                    FVector(0.14f, 0.14f, 1.48f * Integrity)));
+            }
+
+            if ((bOperational || WorkProgress >= 0.58f) && FacilityRoofInstances)
+            {
+                const float RoofProgress = bOperational
+                    ? 1.0f
+                    : FMath::Clamp((WorkProgress - 0.58f) / 0.42f, 0.25f, 1.0f);
+                FacilityRoofInstances->AddInstance(FTransform(
+                    FRotator(0.0f, 0.0f, DamageTilt),
+                    Base + FVector(0.0f, 0.0f, 156.0f * Integrity),
+                    FVector(2.25f * RoofProgress, 1.75f, 0.13f * Integrity)));
+            }
+
+            if ((bOperational || MaterialProgress >= 0.70f) && FacilityCargoInstances)
+            {
+                const float WallProgress = bOperational
+                    ? 1.0f
+                    : FMath::Clamp((MaterialProgress - 0.70f) / 0.30f, 0.25f, 1.0f);
+                FacilityCargoInstances->AddInstance(FTransform(
+                    FRotator::ZeroRotator,
+                    Base + FVector(0.0f, 74.0f, 76.0f * Integrity),
+                    FVector(2.02f * WallProgress, 0.10f, 1.20f * Integrity)));
             }
             continue;
         }
