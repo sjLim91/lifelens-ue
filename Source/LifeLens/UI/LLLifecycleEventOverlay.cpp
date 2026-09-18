@@ -79,6 +79,8 @@ void ULLLifecycleEventOverlay::NativeConstruct()
     RootStack = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("LifecycleRootStack"));
     EventBorder = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("LifecycleEventBorder"));
     EventList = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("LifecycleEventList"));
+    RecentEventBorder = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("LifecycleRecentEventBorder"));
+    RecentEventList = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("LifecycleRecentEventList"));
     ResidentStatusBorder = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("ResidentLifecycleStatusBorder"));
     UVerticalBox* StatusStack = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("ResidentLifecycleStatusStack"));
     ResidentStatusText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("ResidentLifecycleStatusText"));
@@ -88,6 +90,11 @@ void ULLLifecycleEventOverlay::NativeConstruct()
     EventBorder->SetPadding(FMargin(8.0f, 7.0f));
     EventBorder->SetBrushColor(FLinearColor(0.012f, 0.020f, 0.032f, 0.58f));
     EventBorder->SetVisibility(ESlateVisibility::Collapsed);
+
+    RecentEventBorder->SetContent(RecentEventList);
+    RecentEventBorder->SetPadding(FMargin(8.0f, 6.0f));
+    RecentEventBorder->SetBrushColor(FLinearColor(0.012f, 0.020f, 0.032f, 0.42f));
+    RecentEventBorder->SetVisibility(ESlateVisibility::Collapsed);
 
     ResidentStatusText->SetAutoWrapText(true);
     ResidentStatusText->SetColorAndOpacity(FSlateColor(FLinearColor(0.96f, 0.97f, 1.0f, 1.0f)));
@@ -106,6 +113,10 @@ void ULLLifecycleEventOverlay::NativeConstruct()
     if (UVerticalBoxSlot* EventSlot = RootStack->AddChildToVerticalBox(EventBorder))
     {
         EventSlot->SetPadding(FMargin(0.0f, 0.0f, 0.0f, 6.0f));
+    }
+    if (UVerticalBoxSlot* RecentSlot = RootStack->AddChildToVerticalBox(RecentEventBorder))
+    {
+        RecentSlot->SetPadding(FMargin(0.0f, 0.0f, 0.0f, 6.0f));
     }
     RootStack->AddChildToVerticalBox(ResidentStatusBorder);
     WidgetTree->RootWidget = RootStack;
@@ -198,6 +209,47 @@ FReply ULLLifecycleEventOverlay::HandleNoticePointer(const FVector2D& ScreenPosi
         return FReply::Handled();
     }
 
+    const int32 RecentCount = FMath::Min(RecentNoticeHitBorders.Num(), RecentNotices.Num());
+    for (int32 Index = 0; Index < RecentCount; ++Index)
+    {
+        const UBorder* Border = RecentNoticeHitBorders[Index];
+        if (!Border)
+        {
+            continue;
+        }
+
+        const FGeometry& Geometry = Border->GetCachedGeometry();
+        const FVector2D Local = Geometry.AbsoluteToLocal(ScreenPosition);
+        const FVector2D LocalSize = Geometry.GetLocalSize();
+        const bool bInside =
+            Local.X >= 0.0f && Local.Y >= 0.0f
+            && Local.X <= LocalSize.X && Local.Y <= LocalSize.Y;
+        if (!bInside)
+        {
+            continue;
+        }
+
+        const FTransientNotice& Notice = RecentNotices[Index];
+        const FGuid TargetResidentId = Notice.SubjectResidentId.IsValid()
+            ? Notice.SubjectResidentId
+            : Notice.RelatedResidentId;
+        if (!TargetResidentId.IsValid())
+        {
+            return FReply::Unhandled();
+        }
+
+        UGameInstance* GameInstance = GetGameInstance();
+        ULLObservationSubsystem* Observation =
+            GameInstance ? GameInstance->GetSubsystem<ULLObservationSubsystem>() : nullptr;
+        if (!Observation)
+        {
+            return FReply::Unhandled();
+        }
+
+        Observation->ObserveResident(TargetResidentId);
+        return FReply::Handled();
+    }
+
     return FReply::Unhandled();
 }
 
@@ -207,6 +259,7 @@ void ULLLifecycleEventOverlay::ResetObservationState()
     PreviousPregnancyPairs.Reset();
     PreviousRomancePairs.Reset();
     Notices.Reset();
+    RecentNotices.Reset();
     ObservedLifeHistory.Reset();
     LastObservedSimulationMinute = -1;
     bBaselineReady = false;
@@ -587,6 +640,13 @@ void ULLLifecycleEventOverlay::PushNotice(const FString& Text, FGuid SubjectResi
     Notice.RelatedResidentId = RelatedResidentId;
     Notice.SimulationMinute = SimulationMinute;
     Notice.ExpireAtRealSeconds = Now + NoticeLifetimeSeconds;
+
+    RecentNotices.Insert(Notice, 0);
+    if (RecentNotices.Num() > MaxRecentNotices)
+    {
+        RecentNotices.SetNum(MaxRecentNotices, EAllowShrinking::No);
+    }
+
     Notices.Insert(MoveTemp(Notice), 0);
 
     const FString HistoryLine = FormatObservedMoment(SimulationMinute) + TEXT(" · ") + Text;
@@ -633,20 +693,18 @@ void ULLLifecycleEventOverlay::PushNotice(const FString& Text, FGuid SubjectResi
 
 void ULLLifecycleEventOverlay::RefreshNoticeWidgets()
 {
-    if (!EventList || !EventBorder)
+    if (!EventList || !EventBorder || !RecentEventList || !RecentEventBorder)
     {
         return;
     }
 
     EventList->ClearChildren();
+    RecentEventList->ClearChildren();
     NoticeHitBorders.Reset();
-    if (Notices.Num() == 0)
-    {
-        EventBorder->SetVisibility(ESlateVisibility::Collapsed);
-        return;
-    }
+    RecentNoticeHitBorders.Reset();
 
-    EventBorder->SetVisibility(ESlateVisibility::HitTestInvisible);
+    EventBorder->SetVisibility(
+        Notices.Num() > 0 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
     for (const FTransientNotice& Notice : Notices)
     {
         UBorder* NoticeBorder = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass());
@@ -693,6 +751,53 @@ void ULLLifecycleEventOverlay::RefreshNoticeWidgets()
         if (UVerticalBoxSlot* Slot = EventList->AddChildToVerticalBox(NoticeBorder))
         {
             Slot->SetPadding(FMargin(0.0f, 2.0f));
+        }
+    }
+
+    // When the live burst is gone, leave a compact three-event breadcrumb so
+    // fast-forward does not make meaningful events impossible to recover.
+    const bool bShowRecent = Notices.Num() == 0 && RecentNotices.Num() > 0;
+    RecentEventBorder->SetVisibility(
+        bShowRecent ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+    if (bShowRecent)
+    {
+        const int32 Count = FMath::Min(MaxVisibleRecentNotices, RecentNotices.Num());
+        for (int32 Index = 0; Index < Count; ++Index)
+        {
+            const FTransientNotice& Notice = RecentNotices[Index];
+            UBorder* RowBorder = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass());
+            UTextBlock* RowText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
+            const FLinearColor Accent = LifecycleNoticeAccent(Notice.Text);
+            const FGuid FocusResidentId = Notice.SubjectResidentId.IsValid()
+                ? Notice.SubjectResidentId
+                : Notice.RelatedResidentId;
+
+            RowText->SetText(FText::FromString(
+                FString(TEXT("최근 · ")) + Notice.Text
+                + TEXT(" · ") + FormatObservedMoment(Notice.SimulationMinute)
+                + (FocusResidentId.IsValid() ? TEXT(" · 탭하여 추적") : TEXT(""))));
+            RowText->SetAutoWrapText(true);
+            RowText->SetColorAndOpacity(FSlateColor(FLinearColor(
+                0.78f + Accent.R * 0.12f,
+                0.80f + Accent.G * 0.10f,
+                0.84f + Accent.B * 0.08f,
+                0.90f)));
+            RowText->SetVisibility(ESlateVisibility::HitTestInvisible);
+
+            RowBorder->SetPadding(FMargin(9.0f, 4.0f));
+            RowBorder->SetBrushColor(FLinearColor(
+                Accent.R * 0.08f,
+                Accent.G * 0.08f,
+                Accent.B * 0.08f,
+                0.72f));
+            RowBorder->SetContent(RowText);
+            RowBorder->SetVisibility(ESlateVisibility::HitTestInvisible);
+            RecentNoticeHitBorders.Add(RowBorder);
+
+            if (UVerticalBoxSlot* Slot = RecentEventList->AddChildToVerticalBox(RowBorder))
+            {
+                Slot->SetPadding(FMargin(0.0f, 1.0f));
+            }
         }
     }
 }

@@ -82,6 +82,12 @@ private:
     TObjectPtr<UVerticalBox> EventList;
 
     UPROPERTY(Transient)
+    TObjectPtr<UBorder> RecentEventBorder;
+
+    UPROPERTY(Transient)
+    TObjectPtr<UVerticalBox> RecentEventList;
+
+    UPROPERTY(Transient)
     TObjectPtr<UVerticalBox> RootStack;
 
     UPROPERTY(Transient)
@@ -97,9 +103,13 @@ private:
     TSet<FString> PreviousPregnancyPairs;
     TMap<FString, FRomanceVisualState> PreviousRomancePairs;
     TArray<FTransientNotice> Notices;
+    TArray<FTransientNotice> RecentNotices;
 
     UPROPERTY(Transient)
     TArray<TObjectPtr<UBorder>> NoticeHitBorders;
+
+    UPROPERTY(Transient)
+    TArray<TObjectPtr<UBorder>> RecentNoticeHitBorders;
 
     TMap<FGuid, TArray<FString>> ObservedLifeHistory;
 
@@ -107,6 +117,8 @@ private:
     bool bBaselineReady = false;
 
     static constexpr int32 MaxVisibleNotices = 4;
+    static constexpr int32 MaxRecentNotices = 8;
+    static constexpr int32 MaxVisibleRecentNotices = 3;
     static constexpr int32 MaxObservedHistoryPerResident = 16;
     static constexpr int32 MaxHistoryLinesOnCard = 4;
     static constexpr double NoticeLifetimeSeconds = 7.5;
