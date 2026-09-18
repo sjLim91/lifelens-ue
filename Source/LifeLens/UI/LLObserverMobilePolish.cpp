@@ -130,10 +130,10 @@ void ALLObserverHUD::DrawSelectionFeedback(const FLLResidentData& Selected, floa
 
         const float SafeDx = FMath::Abs(Direction.X) > KINDA_SMALL_NUMBER
             ? ((Direction.X > 0.0f ? MaxX : MinX) - CanvasCenter.X) / Direction.X
-            : BIG_NUMBER;
+            : TNumericLimits<float>::Max();
         const float SafeDy = FMath::Abs(Direction.Y) > KINDA_SMALL_NUMBER
             ? ((Direction.Y > 0.0f ? MaxY : MinY) - CanvasCenter.Y) / Direction.Y
-            : BIG_NUMBER;
+            : TNumericLimits<float>::Max();
         const float ScaleToEdge = FMath::Max(0.0f, FMath::Min(SafeDx, SafeDy));
         const FVector2D EdgePoint = CanvasCenter + Direction * ScaleToEdge;
 
