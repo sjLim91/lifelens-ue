@@ -55,6 +55,12 @@ namespace
         return GameInstance ? GameInstance->GetSubsystem<ULLObservationSubsystem>() : nullptr;
     }
 
+    bool SocialRectsOverlap(const FBox2D& A, const FBox2D& B)
+    {
+        return A.Min.X < B.Max.X && A.Max.X > B.Min.X
+            && A.Min.Y < B.Max.Y && A.Max.Y > B.Min.Y;
+    }
+
     FString SocialRelativeTimeLabel(int64 AgeMinutes)
     {
         if (AgeMinutes < 1)
@@ -174,6 +180,7 @@ void ALLSocialObserverHUD::DrawSpeechBubbles(
         1.0f,
         2.5f);
     const float TextScale = 0.82f * UIScale;
+    const float SpeakerScale = 0.68f * UIScale;
     // Named apart from the PadX/PadY constants in LLObserverHUD.cpp: both files
     // can land in the same unity translation unit, where identical names trip
     // -Werror,-Wshadow and break the build.
@@ -181,6 +188,7 @@ void ALLSocialObserverHUD::DrawSpeechBubbles(
     const float BubblePadY = 6.0f * UIScale;
 
     TSet<FGuid> PresentedActors;
+    TArray<FBox2D> OccupiedBubbleRects;
     int32 VisibleCount = 0;
 
     for (int32 Index = Events.Num() - 1;
@@ -213,11 +221,18 @@ void ALLSocialObserverHUD::DrawSpeechBubbles(
             Bridge->GetResidentObservation(Event.ActorResidentId, ActorObservation)
                 ? &ActorObservation
                 : nullptr;
-        const FString Speech = LLSocialCommunicationText::SpeechLine(Event, ActorContext);
+        FString Speech = LLSocialCommunicationText::SpeechLine(Event, ActorContext);
         if (Speech.IsEmpty())
         {
             continue;
         }
+        if (Speech.Len() > 36)
+        {
+            Speech = Speech.Left(35) + TEXT("…");
+        }
+        const FString Speaker = ActorContext && !ActorContext->DisplayName.IsEmpty()
+            ? ActorContext->DisplayName
+            : Actor->GetResidentDisplayName().ToString();
 
         FVector BoundsOrigin = FVector::ZeroVector;
         FVector BoundsExtent = FVector::ZeroVector;
@@ -236,17 +251,51 @@ void ALLSocialObserverHUD::DrawSpeechBubbles(
         float TextW = 0.0f;
         float TextH = 0.0f;
         GetTextSize(Speech, TextW, TextH, Font, TextScale);
+        float SpeakerW = 0.0f;
+        float SpeakerH = 0.0f;
+        GetTextSize(Speaker, SpeakerW, SpeakerH, Font, SpeakerScale);
 
-        const float BubbleW = TextW + BubblePadX * 2.0f;
-        const float BubbleH = TextH + BubblePadY * 2.0f;
+        const float BubbleW = FMath::Max(TextW, SpeakerW) + BubblePadX * 2.0f;
+        const float BubbleH = SpeakerH + TextH + BubblePadY * 2.0f + 2.0f * UIScale;
         const float BubbleX = FMath::Clamp(
             CanvasPosition.X - BubbleW * 0.5f,
             4.0f,
             FMath::Max(4.0f, Canvas->ClipX - BubbleW - 4.0f));
-        const float BubbleY = FMath::Clamp(
+        float BubbleY = FMath::Clamp(
             CanvasPosition.Y - BubbleH,
             4.0f,
             FMath::Max(4.0f, Canvas->ClipY - BubbleH - 4.0f));
+
+        bool bOverlapsExisting = false;
+        for (int32 Attempt = 0; Attempt < 4; ++Attempt)
+        {
+            const FBox2D Candidate(
+                FVector2D(BubbleX, BubbleY),
+                FVector2D(BubbleX + BubbleW, BubbleY + BubbleH));
+            bOverlapsExisting = false;
+            for (const FBox2D& Existing : OccupiedBubbleRects)
+            {
+                if (SocialRectsOverlap(Candidate, Existing))
+                {
+                    bOverlapsExisting = true;
+                    break;
+                }
+            }
+            if (!bOverlapsExisting)
+            {
+                OccupiedBubbleRects.Add(Candidate);
+                break;
+            }
+
+            BubbleY = FMath::Clamp(
+                BubbleY - BubbleH - 5.0f * UIScale,
+                4.0f,
+                FMath::Max(4.0f, Canvas->ClipY - BubbleH - 4.0f));
+        }
+        if (bOverlapsExisting)
+        {
+            continue;
+        }
 
         const float Fade = FMath::Clamp(
             1.0f - static_cast<float>(AgeMinutes)
@@ -289,11 +338,23 @@ void ALLSocialObserverHUD::DrawSpeechBubbles(
                 BubbleW,
                 FMath::Max(1.0f, UIScale));
         }
+        const FLinearColor SpeakerColor =
+            Event.PresentationLevel == ELLCoreSocialPresentationLevel::Important
+                ? FLinearColor(1.0f, 0.75f, 0.46f, Fade)
+                : FLinearColor(0.50f, 0.84f, 1.0f, Fade);
+        DrawText(
+            Speaker,
+            SpeakerColor,
+            BubbleX + BubblePadX,
+            BubbleY + BubblePadY,
+            Font,
+            SpeakerScale,
+            false);
         DrawText(
             Speech,
             TextColor,
             BubbleX + BubblePadX,
-            BubbleY + BubblePadY,
+            BubbleY + BubblePadY + SpeakerH + 2.0f * UIScale,
             Font,
             TextScale,
             false);
