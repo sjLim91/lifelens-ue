@@ -103,8 +103,8 @@ void ALLWorldObstacleCollisionProxyActor::RefreshCollisionProxies(bool bForce)
         return;
     }
 
-    TArray<FLLCoreNaturalChunkObservation> Chunks;
-    CollectMaterializedChunks(*Bridge, World, Chunks);
+    const TArray<FLLCoreNaturalChunkObservation> Chunks =
+        Bridge->GetMaterializedNaturalChunkObservations();
     const uint32 Signature = ComputeCoreSignature(World, Chunks);
     if (!bForce && bHasBuilt && Signature == LastCoreSignature)
     {
@@ -114,43 +114,6 @@ void ALLWorldObstacleCollisionProxyActor::RefreshCollisionProxies(bool bForce)
     RebuildFromCore(World, Chunks);
     LastCoreSignature = Signature;
     bHasBuilt = true;
-}
-
-void ALLWorldObstacleCollisionProxyActor::CollectMaterializedChunks(
-    ULLCoreBridgeSubsystem& Bridge,
-    const FLLCoreWorldGenerationObservation& World,
-    TArray<FLLCoreNaturalChunkObservation>& OutChunks) const
-{
-    OutChunks.Reset();
-    if (World.InitialChunk.bMaterialized)
-    {
-        OutChunks.Add(World.InitialChunk);
-    }
-
-    const int32 Rings = FMath::Clamp(
-        FMath::CeilToInt(FMath::Sqrt(static_cast<float>(FMath::Max(1, World.MaterializedChunkCount)))),
-        1,
-        6);
-    for (int32 OffsetX = -Rings; OffsetX <= Rings; ++OffsetX)
-    {
-        for (int32 OffsetY = -Rings; OffsetY <= Rings; ++OffsetY)
-        {
-            if (OffsetX == 0 && OffsetY == 0)
-            {
-                continue;
-            }
-
-            FLLCoreNaturalChunkObservation Chunk;
-            if (Bridge.GetNaturalChunkObservation(
-                    World.InitialChunkX + OffsetX,
-                    World.InitialChunkY + OffsetY,
-                    Chunk)
-                && Chunk.bMaterialized)
-            {
-                OutChunks.Add(MoveTemp(Chunk));
-            }
-        }
-    }
 }
 
 uint32 ALLWorldObstacleCollisionProxyActor::ComputeCoreSignature(
