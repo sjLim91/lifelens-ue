@@ -188,7 +188,12 @@ void ALLWorldDirector::ApplyPendingContextDirective(
                     case ELLCoreFacilityBuildAction::DeliverMaterial:
                         WorkAtTarget = ELLResidentWorkPresentationMode::Interact; break;
                     case ELLCoreFacilityBuildAction::Work:
+                    case ELLCoreFacilityBuildAction::Repair:
                         WorkAtTarget = ELLResidentWorkPresentationMode::Build; break;
+                    case ELLCoreFacilityBuildAction::None:
+                        // A normal Craft decision can target an operational
+                        // WorkSurface without becoming a construction action.
+                        WorkAtTarget = ELLResidentWorkPresentationMode::Interact; break;
                     default: break;
                 }
             }
