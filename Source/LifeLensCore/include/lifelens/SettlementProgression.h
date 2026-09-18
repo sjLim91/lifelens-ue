@@ -143,6 +143,52 @@ inline const ConstructedFacility* bestOperationalSleepFacility(
     return sleeping;
 }
 
+inline ConstructedFacility* bestOperationalSleepFacility(
+    World& world,
+    GridPos pos,
+    int maxDistance=1)
+{
+    ConstructedFacility* sleeping=
+        operationalSettlementFacilityNear(
+            world,FacilityKind::SleepingPlace,pos,maxDistance);
+    ConstructedFacility* shelter=
+        operationalSettlementFacilityNear(
+            world,FacilityKind::Shelter,pos,maxDistance);
+
+    if(sleeping==nullptr) return shelter;
+    if(shelter==nullptr) return sleeping;
+
+    const int sleepingDistance=manhattan(sleeping->pos,pos);
+    const int shelterDistance=manhattan(shelter->pos,pos);
+    if(sleepingDistance!=shelterDistance){
+        return sleepingDistance<shelterDistance ? sleeping : shelter;
+    }
+    return sleeping;
+}
+
+inline const ConstructedFacility* nearestOperationalSleepFacility(
+    const World& world,
+    GridPos pos)
+{
+    const ConstructedFacility* best=nullptr;
+    int bestDistance=0;
+    for(const auto& facility:world.facilities){
+        if(!facilityProvidesSleep(facility.kind)
+           || !facilityOperationalAndActive(facility)) continue;
+        const int distance=manhattan(facility.pos,pos);
+        if(best==nullptr || distance<bestDistance
+           || (distance==bestDistance
+               && facility.kind==FacilityKind::SleepingPlace
+               && best->kind!=FacilityKind::SleepingPlace)
+           || (distance==bestDistance && facility.kind==best->kind
+               && facility.id<best->id)){
+            best=&facility;
+            bestDistance=distance;
+        }
+    }
+    return best;
+}
+
 inline double settlementSleepRecoveryPerTick(
     const ConstructedFacility& facility)
 {
