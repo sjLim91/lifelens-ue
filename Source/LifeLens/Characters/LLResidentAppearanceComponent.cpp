@@ -600,11 +600,17 @@ void ULLResidentAppearanceComponent::ApplyScale()
     const float CapsuleHeight = FeetOffset * 2.0f;
     const int32 StageIndex = FMath::Clamp(static_cast<int32>(Inputs.LifeStage), 0, 7);
     const float Stage = StageHeightFactor[StageIndex];
+    const float StageWidth = StageWidthFactor[StageIndex];
     const float Height = 1.0f + (Inputs.HeightAxis - 0.5f) * 2.0f * HeightAxisRange;
     const float Build = 1.0f + (Inputs.BuildAxis - 0.5f) * 2.0f * BuildAxisRange;
 
     BodyScaleZ = (CapsuleHeight / MeshHeight) * Stage * Height;
-    const float ScaleXY = BodyScaleZ * Build;
+
+    // Height and width should not scale identically through childhood. The
+    // existing stage-width table keeps babies/toddlers proportionally fuller,
+    // teens leaner, and elders slightly narrower while preserving each
+    // resident's deterministic build axis.
+    const float ScaleXY = BodyScaleZ * StageWidth * Build;
     Body->SetRelativeScale3D(FVector(ScaleXY, ScaleXY, BodyScaleZ));
 }
 
