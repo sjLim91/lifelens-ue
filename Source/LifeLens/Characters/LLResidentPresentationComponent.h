@@ -75,6 +75,9 @@ public:
     static constexpr float LabelMinLifeStageScale = 0.82f;
     static constexpr float SelectedLabelSizeMultiplier = 1.12f;
     static constexpr float LabelAboveHead = 10.0f;
+    static constexpr float CrowdLabelSeparationPixels = 72.0f;
+    static constexpr float CrowdLabelRefreshSeconds = 0.30f;
+    static constexpr int32 MaxCrowdLabelComparisons = 64;
 
     static constexpr float DataRefreshSeconds = 1.0f;
 
@@ -85,6 +88,7 @@ private:
     void RefreshResidentData();
     void ApplySilhouetteScale();
     void UpdateRing();
+    void RefreshCrowdLabelSuppression();
     void UpdateLabel();
 
     float FeetOffset() const;
@@ -135,5 +139,7 @@ private:
     FString DisplayName;
     float StageFactor = 1.0f;
     float DataRefreshTimer = 0.0f;
+    float CrowdLabelRefreshTimer = 0.0f;
+    bool bCrowdLabelSuppressed = false;
     bool bResidentDataValid = false;
 };
