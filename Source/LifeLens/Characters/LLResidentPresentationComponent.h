@@ -64,10 +64,13 @@ public:
     // ---- Name label LOD (camera distance, world units) ----------------------
     static constexpr float LabelNearDistance = 1500.0f;
     static constexpr float LabelMidDistance  = 4500.0f;
+    static constexpr float SelectedLabelMaxDistance = 7000.0f;
     static constexpr float LabelReferenceDistance = 1900.0f;
     static constexpr float LabelBaseWorldSize = 14.0f;
     static constexpr float LabelMinScale = 0.6f;
     static constexpr float LabelMaxScale = 2.0f;
+    static constexpr float LabelMinLifeStageScale = 0.82f;
+    static constexpr float SelectedLabelSizeMultiplier = 1.12f;
     static constexpr float LabelAboveHead = 10.0f;
 
     static constexpr float DataRefreshSeconds = 1.0f;
