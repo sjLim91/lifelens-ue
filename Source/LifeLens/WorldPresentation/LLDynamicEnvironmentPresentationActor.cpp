@@ -17,6 +17,8 @@
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "GameFramework/PlayerController.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "Materials/MaterialInterface.h"
 #include "NiagaraComponent.h"
 #include "NiagaraSystem.h"
 #include "Simulation/LLCoreBridgeSubsystem.h"
@@ -43,6 +45,14 @@ float StableNoise01(int32 Index, float Salt)
     const float Value = FMath::Sin(static_cast<float>(Index) * 12.9898f + Salt * 78.233f) * 43758.5453f;
     return FMath::Frac(FMath::Abs(Value));
 }
+
+float TwilightFactor(float Daylight01)
+{
+    // Strongest around low-but-nonzero daylight and fades at full day/night.
+    return Saturate(1.0f - FMath::Abs(Saturate(Daylight01) - 0.24f) / 0.24f);
+}
+
+const FName PrecipitationColorParameter(TEXT("Color"));
 
 template <typename TActor, typename TComponent>
 TComponent* FindFirstWorldComponent(UWorld* World)
@@ -104,8 +114,13 @@ ALLDynamicEnvironmentPresentationActor::ALLDynamicEnvironmentPresentationActor()
 
     static ConstructorHelpers::FObjectFinder<UStaticMesh> FallbackRainMeshFinder(TEXT("/Engine/BasicShapes/Cube.Cube"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> FallbackSnowMeshFinder(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
+    static ConstructorHelpers::FObjectFinder<UMaterialInterface> FallbackPrecipitationMaterialFinder(
+        TEXT("/Engine/EngineMaterials/EmissiveMeshMaterial.EmissiveMeshMaterial"));
     FallbackRainMesh = FallbackRainMeshFinder.Succeeded() ? FallbackRainMeshFinder.Object : nullptr;
     FallbackSnowMesh = FallbackSnowMeshFinder.Succeeded() ? FallbackSnowMeshFinder.Object : nullptr;
+    FallbackPrecipitationMaterial = FallbackPrecipitationMaterialFinder.Succeeded()
+        ? FallbackPrecipitationMaterialFinder.Object
+        : nullptr;
 
     RainFallback = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("RainFallback"));
     RainFallback->SetupAttachment(SceneRoot);
@@ -243,6 +258,27 @@ void ALLDynamicEnvironmentPresentationActor::ConfigureEffectAssets()
 
 void ALLDynamicEnvironmentPresentationActor::ConfigureFallbackPrecipitation()
 {
+    if (FallbackPrecipitationMaterial)
+    {
+        FallbackRainMaterial = UMaterialInstanceDynamic::Create(FallbackPrecipitationMaterial, this);
+        FallbackSnowMaterial = UMaterialInstanceDynamic::Create(FallbackPrecipitationMaterial, this);
+
+        if (FallbackRainMaterial)
+        {
+            FallbackRainMaterial->SetVectorParameterValue(
+                PrecipitationColorParameter,
+                FLinearColor(0.32f, 0.62f, 0.90f, 1.0f));
+            if (RainFallback) { RainFallback->SetMaterial(0, FallbackRainMaterial); }
+        }
+        if (FallbackSnowMaterial)
+        {
+            FallbackSnowMaterial->SetVectorParameterValue(
+                PrecipitationColorParameter,
+                FLinearColor(0.88f, 0.95f, 1.0f, 1.0f));
+            if (SnowFallback) { SnowFallback->SetMaterial(0, FallbackSnowMaterial); }
+        }
+    }
+
     auto Configure = [this](UInstancedStaticMeshComponent* Component, UStaticMesh* Mesh, int32 MaxInstances)
     {
         if (!Component || !Mesh)
@@ -452,11 +488,19 @@ void ALLDynamicEnvironmentPresentationActor::ApplyLighting(
         const FLinearColor DayColor(1.0f, 0.94f, 0.82f, 1.0f);
         const FLinearColor HorizonColor(1.0f, 0.48f, 0.24f, 1.0f);
         const FLinearColor NightColor(0.30f, 0.40f, 0.66f, 1.0f);
+        const FLinearColor OvercastColor(0.61f, 0.69f, 0.78f, 1.0f);
         const float HorizonWarmth = Daylight01 > KINDA_SMALL_NUMBER
             ? FMath::Square(1.0f - Daylight01)
             : 0.0f;
         FLinearColor SunColor = BlendColor(DayColor, HorizonColor, HorizonWarmth);
         SunColor = BlendColor(NightColor, SunColor, Daylight01);
+
+        // Cloud and poor visibility gradually cool the direct light instead of
+        // only making it dimmer. Twilight warmth remains visible in clear air.
+        const float WeatherCooling = Saturate(
+            0.72f * CloudCover01
+            + 0.28f * (1.0f - Visibility01));
+        SunColor = BlendColor(SunColor, OvercastColor, WeatherCooling * 0.62f);
         SunLight->SetLightColor(SunColor);
     }
 
@@ -492,8 +536,10 @@ void ALLDynamicEnvironmentPresentationActor::ApplyFog(
 
     const FLinearColor NightFog(0.045f, 0.065f, 0.11f, 1.0f);
     const FLinearColor DayFog(0.62f, 0.72f, 0.80f, 1.0f);
-    const FLinearColor StormFog(0.22f, 0.27f, 0.31f, 1.0f);
+    const FLinearColor TwilightFog(0.74f, 0.43f, 0.30f, 1.0f);
+    const FLinearColor StormFog(0.20f, 0.26f, 0.32f, 1.0f);
     FLinearColor FogColor = BlendColor(NightFog, DayFog, Daylight01);
+    FogColor = BlendColor(FogColor, TwilightFog, TwilightFactor(Daylight01) * (1.0f - 0.75f * CloudCover01));
     FogColor = BlendColor(FogColor, StormFog, Saturate(0.65f * CloudCover01 + 0.35f * WeatherFog01));
     HeightFog->SetFogInscatteringColor(FogColor);
 }
@@ -592,12 +638,31 @@ void ALLDynamicEnvironmentPresentationActor::ApplyPostProcess(
         FMath::Lerp(NightExposureBias, DayExposureBias, Daylight01)
         - MaximumStormExposureReduction * WeatherPressure01;
 
-    const float Saturation = FMath::Lerp(ClearSaturation, SevereWeatherSaturation, WeatherPressure01);
+    const float Twilight01 = TwilightFactor(Daylight01);
+    const float Saturation = FMath::Clamp(
+        FMath::Lerp(ClearSaturation, SevereWeatherSaturation, WeatherPressure01)
+            + TwilightSaturationLift * Twilight01 * (1.0f - WeatherPressure01),
+        0.0f,
+        2.0f);
     PostProcess->Settings.bOverride_ColorSaturation = true;
     PostProcess->Settings.ColorSaturation = FVector4(Saturation, Saturation, Saturation, 1.0f);
 
+    const float Contrast = FMath::Lerp(ClearContrast, SevereWeatherContrast, WeatherPressure01);
+    PostProcess->Settings.bOverride_ColorContrast = true;
+    PostProcess->Settings.ColorContrast = FVector4(Contrast, Contrast, Contrast, 1.0f);
+
+    PostProcess->Settings.bOverride_BloomIntensity = true;
+    PostProcess->Settings.BloomIntensity = FMath::Lerp(
+        ClearBloomIntensity,
+        SevereWeatherBloomIntensity,
+        WeatherPressure01);
+
     PostProcess->Settings.bOverride_VignetteIntensity = true;
-    PostProcess->Settings.VignetteIntensity = FMath::Lerp(0.18f, 0.28f, WeatherPressure01);
+    const float NightVignette = (1.0f - Daylight01) * 0.05f;
+    PostProcess->Settings.VignetteIntensity = FMath::Clamp(
+        FMath::Lerp(0.16f, 0.26f, WeatherPressure01) + NightVignette,
+        0.0f,
+        1.0f);
 }
 
 void ALLDynamicEnvironmentPresentationActor::SetEffectActive(
