@@ -85,6 +85,13 @@ public:
         bool& bOutDesignatedSite,
         int64& OutSanitationSiteId) const;
 
+    UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Action")
+    bool GetSettlementSleepUseTarget(
+        FGuid ResidentId,
+        int32& OutGridX,
+        int32& OutGridY,
+        int64& OutFacilityId) const;
+
     UFUNCTION(BlueprintPure, Category="LifeLens|Core|Observer")
     bool IsCoreRunning() const { return CoreSimulation != nullptr; }
 
