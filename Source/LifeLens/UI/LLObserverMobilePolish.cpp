@@ -6,7 +6,7 @@
 #include "Framework/Application/SlateApplication.h"
 #include "GenericPlatform/GenericApplication.h"
 #include "GameFramework/PlayerController.h"
-#include "GameFramework/PlayerCameraManager.h"
+#include "Camera/PlayerCameraManager.h"
 
 namespace
 {
