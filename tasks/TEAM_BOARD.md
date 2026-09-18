@@ -78,6 +78,8 @@ A new blocker is triaged before unrelated follow-up work. This does **not** mean
   - opt approved high-detail static assets into Nanite on the Windows presentation path while preserving Android fallback LOD/mesh.
   - tune Sky Atmosphere / volumetric fog/cloud / exposure and dynamic environment lighting against authoritative time/weather state.
   - verify terrain/water/material presentation under the Windows Lumen/VSM/TSR path.
+  - adopt the enabled Unreal `PCG` plugin for natural dressing/biome placement without inventing resource authority.
+  - project authoritative Hydrology into the enabled Unreal `Water` system for river/lake/coast/ocean visuals, with an Android-safe fallback path.
   - do not restore Engine Cube/Cone or visibly prototype local-view fallback art.
 - why existing contract is insufficient: Config can enable the renderer, but content/map assets must explicitly use and visually validate it.
 - blocking: **does not block the Jjun Config PR**, but it blocks claiming that the cinematic visual target itself is delivered.
