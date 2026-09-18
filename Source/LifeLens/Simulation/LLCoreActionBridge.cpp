@@ -276,6 +276,43 @@ bool ULLCoreBridgeSubsystem::GetSanitationUseTarget(
     return true;
 }
 
+bool ULLCoreBridgeSubsystem::GetSettlementSleepUseTarget(
+    FGuid ResidentId,
+    int32& OutGridX,
+    int32& OutGridY,
+    int64& OutFacilityId) const
+{
+    OutGridX = 0;
+    OutGridY = 0;
+    OutFacilityId = 0;
+    if (!CoreSimulation || !ResidentId.IsValid())
+    {
+        return false;
+    }
+
+    const uint64* CoreCharacterId = GuidToCore.Find(ResidentId);
+    if (!CoreCharacterId)
+    {
+        return false;
+    }
+
+    lifelens::GridPos Position{};
+    lifelens::FacilityId FacilityId = 0;
+    if (!CoreSimulation->settlementSleepTarget(
+            static_cast<lifelens::CharacterId>(*CoreCharacterId),
+            Position,
+            FacilityId))
+    {
+        return false;
+    }
+
+    OutGridX = static_cast<int32>(Position.x);
+    OutGridY = static_cast<int32>(Position.y);
+    OutFacilityId = static_cast<int64>(FacilityId);
+    return OutFacilityId > 0;
+}
+
+
 bool ULLCoreBridgeSubsystem::GetResidentActionDirective(
     FGuid ResidentId,
     FLLCoreActionDirective& OutDirective) const
