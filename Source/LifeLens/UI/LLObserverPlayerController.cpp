@@ -568,9 +568,17 @@ void ALLObserverPlayerController::ResolveObservedResidentFocusFraming(
     }
 
     const float LateralFraction = FMath::Clamp(ObservedResidentFocusLateralFraction, 0.0f, 0.35f);
+
+    FVector MovementLead = Resident->GetVelocity();
+    MovementLead.Z = 0.0f;
+    MovementLead *= FMath::Clamp(ObservedResidentMovementLeadSeconds, 0.0f, 2.0f);
+    MovementLead = MovementLead.GetClampedToMaxSize(
+        FMath::Max(0.0f, ObservedResidentMaxMovementLeadUU));
+
     OutTarget = Origin
         + FVector(0.0f, 0.0f, AdaptiveHeightOffset)
-        + CameraRight * (OutDistance * LateralFraction);
+        + CameraRight * (OutDistance * LateralFraction)
+        + MovementLead;
 }
 
 void ALLObserverPlayerController::FocusObservedResident(ALLResidentCharacter* Resident, bool bReframe)
