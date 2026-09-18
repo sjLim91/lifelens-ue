@@ -166,6 +166,7 @@ void ALLSocialObserverHUD::DrawSpeechBubbles(
     APlayerController* PlayerController = GetOwningPlayerController();
     UFont* Font = SocialHUDFont();
     ULLCoreBridgeSubsystem* Bridge = FindSocialCoreBridge(GetWorld());
+    ULLObservationSubsystem* Observation = FindSocialObservation(GetWorld());
     if (!PlayerController || !Font || !Bridge)
     {
         return;
@@ -233,6 +234,8 @@ void ALLSocialObserverHUD::DrawSpeechBubbles(
         const FString Speaker = ActorContext && !ActorContext->DisplayName.IsEmpty()
             ? ActorContext->DisplayName
             : Actor->GetResidentDisplayName().ToString();
+        const bool bSelectedSpeaker = Observation && Observation->HasObservedResident()
+            && Observation->GetObservedResidentId() == Event.ActorResidentId;
 
         FVector BoundsOrigin = FVector::ZeroVector;
         FVector BoundsExtent = FVector::ZeroVector;
@@ -307,7 +310,9 @@ void ALLSocialObserverHUD::DrawSpeechBubbles(
         // generated-world vegetation shows through and the text stops being
         // readable. The panel now stays close to opaque and only the text
         // fades, so age still reads without costing legibility.
-        const FLinearColor BubbleColor(0.02f, 0.025f, 0.035f, 0.88f + 0.07f * Fade);
+        const FLinearColor BubbleColor = bSelectedSpeaker
+            ? FLinearColor(0.025f, 0.09f, 0.13f, 0.92f + 0.05f * Fade)
+            : FLinearColor(0.02f, 0.025f, 0.035f, 0.88f + 0.07f * Fade);
         FLinearColor TextColor = Event.PresentationLevel == ELLCoreSocialPresentationLevel::Important
             ? FLinearColor(1.0f, 0.88f, 0.68f, Fade)
             : FLinearColor(1.0f, 1.0f, 1.0f, Fade);
@@ -320,28 +325,43 @@ void ALLSocialObserverHUD::DrawSpeechBubbles(
             BubbleW,
             BubbleH);
         DrawRect(BubbleColor, BubbleX, BubbleY, BubbleW, BubbleH);
-        if (Event.PresentationLevel == ELLCoreSocialPresentationLevel::Important)
+
+        const FLinearColor AccentColor = bSelectedSpeaker
+            ? FLinearColor(0.38f, 0.90f, 1.0f, 0.95f * Fade)
+            : (Event.PresentationLevel == ELLCoreSocialPresentationLevel::Important
+                ? FLinearColor(1.0f, 0.72f, 0.36f, 0.90f * Fade)
+                : FLinearColor(0.42f, 0.82f, 1.0f, 0.55f * Fade));
+        DrawRect(
+            AccentColor,
+            BubbleX,
+            BubbleY,
+            BubbleW,
+            FMath::Max(bSelectedSpeaker ? 2.0f : 1.0f, (bSelectedSpeaker ? 2.0f : 1.0f) * UIScale));
+
+        // A short leader ties the bubble back to its resident when multiple
+        // people stand close together. It is presentation-only and clipped to
+        // a modest length so it never becomes a screen-spanning line.
+        const FVector2D BubbleAnchor(BubbleX + BubbleW * 0.5f, BubbleY + BubbleH);
+        FVector2D LeaderDelta = CanvasPosition - BubbleAnchor;
+        const float LeaderLength = LeaderDelta.Size();
+        if (LeaderLength > 6.0f * UIScale)
         {
-            DrawRect(
-                FLinearColor(1.0f, 0.72f, 0.36f, 0.90f * Fade),
-                BubbleX,
-                BubbleY,
-                BubbleW,
-                FMath::Max(2.0f, 2.0f * UIScale));
-        }
-        else
-        {
-            DrawRect(
-                FLinearColor(0.42f, 0.82f, 1.0f, 0.55f * Fade),
-                BubbleX,
-                BubbleY,
-                BubbleW,
+            const float MaxLeaderLength = 76.0f * UIScale;
+            LeaderDelta = LeaderDelta.GetSafeNormal() * FMath::Min(LeaderLength, MaxLeaderLength);
+            const FVector2D LeaderEnd = BubbleAnchor + LeaderDelta;
+            DrawLine(
+                BubbleAnchor.X,
+                BubbleAnchor.Y,
+                LeaderEnd.X,
+                LeaderEnd.Y,
+                AccentColor * 0.72f,
                 FMath::Max(1.0f, UIScale));
         }
-        const FLinearColor SpeakerColor =
-            Event.PresentationLevel == ELLCoreSocialPresentationLevel::Important
+        const FLinearColor SpeakerColor = bSelectedSpeaker
+            ? FLinearColor(0.50f, 0.94f, 1.0f, Fade)
+            : (Event.PresentationLevel == ELLCoreSocialPresentationLevel::Important
                 ? FLinearColor(1.0f, 0.75f, 0.46f, Fade)
-                : FLinearColor(0.50f, 0.84f, 1.0f, Fade);
+                : FLinearColor(0.50f, 0.84f, 1.0f, Fade));
         DrawText(
             Speaker,
             SpeakerColor,
