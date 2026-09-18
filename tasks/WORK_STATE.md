@@ -26,7 +26,7 @@ Last reconciled: **2026-09-19 KST after #226/#227 merged; Earth & Human Foundati
 
 Current main before this docs-only closeout sync:
 
-- main SHA: `68af0d1cdb3ad16080d5bfcde132b98833061067`.
+- main SHA: `87b4ca9e904f59e7e5c54e48c828a4ad0b81b178`.
 - #145 Character Context Motion v2 — MERGED.
 - #149 Visual Catch-up v3 packaged rain/snow fallback — MERGED.
 - #150 Lifecycle Presentation v2 — MERGED.
@@ -289,7 +289,7 @@ Latest merged wave:
 - #224 World event focus return v2.
 
 Each merged only after its exact-head Preflight + Unreal Linux Compile succeeded.
-Current open synchronization item: #225 docs-only current-work reconciliation.
+#225 docs reconciliation is merged. #226/#227 Local Surface environment fixes are merged.
 
 The previous practical four-PR batch cap is removed. Independent canonical files may now be developed/compiled in larger parallel batches while same-file responsibilities are sequenced or combined.
 
