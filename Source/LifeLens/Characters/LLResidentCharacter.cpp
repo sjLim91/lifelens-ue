@@ -231,6 +231,14 @@ void ALLResidentCharacter::RefreshLifecyclePresentation()
 
     const int32 StageIndex = FMath::Clamp(static_cast<int32>(Observation.LifeStage), 0, 7);
     const float StageFactor = ULLResidentAppearanceComponent::StageHeightFactor[StageIndex];
+    const float StageWidthFactor = ULLResidentAppearanceComponent::StageWidthFactor[StageIndex];
+
+    // Hair greying / child hair volume / beard visibility may change while the
+    // broad LifeStage remains the same, so update this before the stage-size
+    // early return below.
+    AppearanceComponent->ApplyLifecycleAgePresentation(
+        Observation.LifeStage,
+        Observation.AgeYears);
 
     if (!bLifecyclePresentationInitialized)
     {
@@ -254,8 +262,12 @@ void ALLResidentCharacter::RefreshLifecyclePresentation()
     const float OldScaledHalfHeight = Capsule->GetScaledCapsuleHalfHeight();
     const float GroundZ = GetActorLocation().Z - OldScaledHalfHeight;
 
-    const float NewRadius = FMath::Max(1.0f, AdultCapsuleRadius * StageFactor);
-    const float NewHalfHeight = FMath::Max(NewRadius, AdultCapsuleHalfHeight * StageFactor);
+    const float NewRadius = FMath::Max(
+        1.0f,
+        AdultCapsuleRadius * StageFactor * StageWidthFactor);
+    const float NewHalfHeight = FMath::Max(
+        NewRadius,
+        AdultCapsuleHalfHeight * StageFactor);
     Capsule->SetCapsuleSize(NewRadius, NewHalfHeight, true);
 
     const float NewScaledHalfHeight = Capsule->GetScaledCapsuleHalfHeight();
@@ -263,7 +275,10 @@ void ALLResidentCharacter::RefreshLifecyclePresentation()
     NewActorLocation.Z = GroundZ + NewScaledHalfHeight;
     SetActorLocation(NewActorLocation, false, nullptr, ETeleportType::TeleportPhysics);
 
-    const FVector NewBodyScale = AdultBodyScale * StageFactor;
+    FVector NewBodyScale = AdultBodyScale;
+    NewBodyScale.X *= StageFactor * StageWidthFactor;
+    NewBodyScale.Y *= StageFactor * StageWidthFactor;
+    NewBodyScale.Z *= StageFactor;
     AppearanceComponent->ApplyLifecyclePresentationScale(NewScaledHalfHeight, NewBodyScale);
     LastLifecycleStageIndex = StageIndex;
 
