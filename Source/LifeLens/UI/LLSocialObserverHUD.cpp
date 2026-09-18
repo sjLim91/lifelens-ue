@@ -411,6 +411,65 @@ void ALLSocialObserverHUD::DrawSpeechBubbles(
                             Mid.Y - Marker,
                             Marker * 2.0f,
                             Marker * 2.0f);
+
+                        if (bSelectedSpeaker)
+                        {
+                            FString CounterpartName = Event.TargetName;
+                            if (CounterpartName.IsEmpty())
+                            {
+                                CounterpartName = Target->GetResidentDisplayName().ToString();
+                            }
+
+                            FString CounterpartLabel = TEXT("상대 · ") + CounterpartName;
+                            if (CounterpartLabel.Len() > 22)
+                            {
+                                CounterpartLabel = CounterpartLabel.Left(21) + TEXT("…");
+                            }
+
+                            float CounterpartW = 0.0f;
+                            float CounterpartH = 0.0f;
+                            const float CounterpartScale = 0.66f * UIScale;
+                            GetTextSize(
+                                CounterpartLabel,
+                                CounterpartW,
+                                CounterpartH,
+                                Font,
+                                CounterpartScale);
+
+                            const float LabelPadX = 6.0f * UIScale;
+                            const float LabelPadY = 3.0f * UIScale;
+                            const float LabelW = CounterpartW + LabelPadX * 2.0f;
+                            const float LabelH = CounterpartH + LabelPadY * 2.0f;
+                            const float LabelX = FMath::Clamp(
+                                TargetCanvas.X - LabelW * 0.5f,
+                                4.0f,
+                                FMath::Max(4.0f, Canvas->ClipX - LabelW - 4.0f));
+                            const float LabelY = FMath::Clamp(
+                                TargetCanvas.Y - LabelH - 12.0f * UIScale,
+                                4.0f,
+                                FMath::Max(4.0f, Canvas->ClipY - LabelH - 4.0f));
+
+                            DrawRect(
+                                FLinearColor(0.015f, 0.045f, 0.065f, 0.88f * Fade),
+                                LabelX,
+                                LabelY,
+                                LabelW,
+                                LabelH);
+                            DrawRect(
+                                FLinearColor(0.46f, 0.91f, 1.0f, 0.88f * Fade),
+                                LabelX,
+                                LabelY,
+                                FMath::Max(2.0f, 2.0f * UIScale),
+                                LabelH);
+                            DrawText(
+                                CounterpartLabel,
+                                FLinearColor(0.78f, 0.95f, 1.0f, 0.96f * Fade),
+                                LabelX + LabelPadX,
+                                LabelY + LabelPadY,
+                                Font,
+                                CounterpartScale,
+                                false);
+                        }
                     }
                 }
             }
