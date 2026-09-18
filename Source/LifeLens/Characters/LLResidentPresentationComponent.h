@@ -136,6 +136,7 @@ private:
 
     ELLLifeStage LifeStage = ELLLifeStage::Adult;
     ELLSex Sex = ELLSex::Male;
+    int32 AgeYears = 0;
     FString DisplayName;
     float StageFactor = 1.0f;
     float DataRefreshTimer = 0.0f;
