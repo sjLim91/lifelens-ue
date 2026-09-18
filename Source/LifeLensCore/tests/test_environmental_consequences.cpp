@@ -219,7 +219,7 @@ int main()
         const auto bRuntime = continuedB.runtime.find(b.id);
         assert(aRuntime != continuedA.runtime.end());
         assert(bRuntime != continuedB.runtime.end());
-        assert(aRuntime->second.pos == bRuntime->second.pos);
+        assert(aRuntime->second.pos.x == bRuntime->second.pos.x);\n        assert(aRuntime->second.pos.y == bRuntime->second.pos.y);
     }
 
     return 0;
