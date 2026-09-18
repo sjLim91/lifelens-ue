@@ -46,9 +46,12 @@ namespace
     constexpr float TabPadY          = 6.0f;
     constexpr float TabUnderline     = 2.0f;
 
-    constexpr float OverviewAlpha    = 0.34f;
-    constexpr float InspectorAlpha   = 0.72f;
-    constexpr float DetailAlpha      = 0.82f;
+    // Ported from Dagyeom PR #98 onto current main. Generated-world
+    // vegetation/ground detail sits behind these surfaces now, so dense panels
+    // need stronger separation than the earlier bootstrap presentation.
+    constexpr float OverviewAlpha    = 0.40f;
+    constexpr float InspectorAlpha   = 0.78f;
+    constexpr float DetailAlpha      = 0.92f;
 
     const FLinearColor TextPrimary   (1.00f, 1.00f, 1.00f, 1.0f);
     const FLinearColor TextSecondary (0.88f, 0.91f, 0.95f, 1.0f);
