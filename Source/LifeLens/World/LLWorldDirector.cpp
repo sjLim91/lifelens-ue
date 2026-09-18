@@ -156,7 +156,8 @@ ELLWorldAffordanceTier ALLWorldDirector::GetResidentAffordanceTier(FGuid Residen
 bool ALLWorldDirector::IsResidentUsingEmergencyFallback(FGuid ResidentId) const
 {
     const FLLResidentRuntimeState* Runtime = RuntimeStates.Find(ResidentId);
-    return Runtime && Runtime->bUsingEmergencyFallback;
+    return Runtime
+        && Runtime->ActiveAffordanceTier == ELLWorldAffordanceTier::Emergency;
 }
 
 int32 ALLWorldDirector::GetEnvironmentalResidueVisualCount() const
@@ -696,6 +697,46 @@ bool ALLWorldDirector::EnsureEmergencyFallback(
                 RecommendedRotation,
                 RecommendedLocation,
                 FVector::OneVector);
+        }
+        else if (Intent == ELLActionIntent::Sleep)
+        {
+            int32 SleepGridX = 0;
+            int32 SleepGridY = 0;
+            int64 SleepFacilityId = 0;
+            if (CoreBridge && CoreBridge->GetSettlementSleepUseTarget(
+                    Character.GetResidentId(),
+                    SleepGridX,
+                    SleepGridY,
+                    SleepFacilityId))
+            {
+                Runtime.ActiveAffordanceTier = ELLWorldAffordanceTier::Primitive;
+                Runtime.bUsingEmergencyFallback = true;
+
+                const float CellSize = FMath::Max(1.0f, CoreGridCellSizeUU);
+                FVector SleepLocation = GetActorLocation()
+                    + FVector(
+                        static_cast<float>(SleepGridX - CorePresentationOriginGrid.X) * CellSize,
+                        static_cast<float>(SleepGridY - CorePresentationOriginGrid.Y) * CellSize,
+                        0.0f);
+                SleepLocation.Z = Character.GetActorLocation().Z;
+
+                FVector FacingDirection = SleepLocation - Character.GetActorLocation();
+                FacingDirection.Z = 0.0f;
+                const FRotator SleepRotation = FacingDirection.IsNearlyZero()
+                    ? Character.GetActorRotation()
+                    : FacingDirection.Rotation();
+
+                Runtime.EmergencyUseTransform = FTransform(
+                    SleepRotation,
+                    SleepLocation,
+                    FVector::OneVector);
+            }
+            else
+            {
+                Runtime.ActiveAffordanceTier = ELLWorldAffordanceTier::Emergency;
+                Runtime.bUsingEmergencyFallback = true;
+                Runtime.EmergencyUseTransform = ResolveEmergencyFallbackTransform(Character, Intent);
+            }
         }
         else
         {

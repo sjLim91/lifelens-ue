@@ -9,6 +9,7 @@
 #include "Facility.h"
 #include "PrimitiveSanitation.h"
 #include "PrimitiveSmeltingProgression.h"
+#include "SettlementProgression.h"
 #include "World.h"
 
 namespace lifelens {
@@ -261,11 +262,23 @@ inline void applyResidentEnvironmentalNeedPressure(
     GridPos authoritativePosition)
 {
     if(!character.alive) return;
-    const EnvironmentalConsequenceProfile consequence=deriveEnvironmentalConsequences(
+    EnvironmentalConsequenceProfile consequence=deriveEnvironmentalConsequences(
         deriveDynamicEnvironment(
             world.genesisIdentity(),
             chunkCoordForGrid(authoritativePosition),
             world.minute));
+
+    const double shelterProtection=
+        settlementShelterProtection01(world,authoritativePosition);
+    if(shelterProtection>0.0){
+        const double remaining=1.0-shelterProtection;
+        consequence.perMinuteNeedsDelta.hunger*=remaining;
+        consequence.perMinuteNeedsDelta.thirst*=remaining;
+        consequence.perMinuteNeedsDelta.sleep*=remaining;
+        consequence.perMinuteNeedsDelta.bladder*=remaining;
+        consequence.perMinuteNeedsDelta.hygiene*=remaining;
+    }
+
     applyEnvironmentalNeedPressure(character.needs,consequence);
 }
 

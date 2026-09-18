@@ -105,6 +105,101 @@ inline bool facilityProvidesWeatherProtection(FacilityKind kind)
     return kind == FacilityKind::Shelter;
 }
 
+inline bool facilityOperationalAndActive(const ConstructedFacility& facility)
+{
+    return facility.state==FacilityState::Operational
+        && facility.active
+        && facility.durability>1e-9;
+}
+
+inline double facilityEffectiveness01(const ConstructedFacility& facility)
+{
+    if(!facilityOperationalAndActive(facility)) return 0.0;
+    return std::clamp(facility.durability,0.0,1.0);
+}
+
+inline MaterialKind facilityRepairMaterial(FacilityKind kind)
+{
+    switch(kind){
+        case FacilityKind::WorkSurface: return MaterialKind::Wood;
+        case FacilityKind::SleepingPlace: return MaterialKind::Fiber;
+        case FacilityKind::Shelter: return MaterialKind::Wood;
+        default: return MaterialKind::Unknown;
+    }
+}
+
+inline bool facilitySupportsMaintenance(FacilityKind kind)
+{
+    return facilityRepairMaterial(kind)!=MaterialKind::Unknown;
+}
+
+inline double facilityWearPerUse(FacilityKind kind)
+{
+    switch(kind){
+        case FacilityKind::WorkSurface: return 0.018;
+        case FacilityKind::SleepingPlace: return 0.012;
+        case FacilityKind::Shelter: return 0.006;
+        default: return 0.0;
+    }
+}
+
+inline bool ruinConstructedFacility(ConstructedFacility& facility)
+{
+    if(facility.id==0 || facility.state!=FacilityState::Operational) return false;
+    facility.durability=0.0;
+    facility.state=FacilityState::Ruined;
+    facility.active=false;
+    facility.lit=false;
+    facility.heatLevel=0.0;
+    facility.burnMinutesRemaining=0;
+    return true;
+}
+
+inline bool applyFacilityWear(ConstructedFacility& facility,double amount)
+{
+    if(!facilityOperationalAndActive(facility) || amount<=0.0) return false;
+    facility.durability=std::max(0.0,facility.durability-amount);
+    if(facility.durability<=1e-9) ruinConstructedFacility(facility);
+    return true;
+}
+
+struct FacilityRepairResult {
+    bool repaired=false;
+    FacilityId facilityId=0;
+    FacilityKind kind=FacilityKind::WorkSurface;
+    MaterialKind material=MaterialKind::Unknown;
+    double durabilityBefore=0.0;
+    double durabilityAfter=0.0;
+};
+
+inline FacilityRepairResult repairConstructedFacility(
+    ConstructedFacility& facility,
+    CharacterId worker,
+    Inventory& inventory,
+    double craftingSkill)
+{
+    FacilityRepairResult result;
+    result.facilityId=facility.id;
+    result.kind=facility.kind;
+    result.material=facilityRepairMaterial(facility.kind);
+    result.durabilityBefore=facility.durability;
+    result.durabilityAfter=facility.durability;
+
+    if(worker==0 || !facilityOperationalAndActive(facility)
+       || !facilitySupportsMaintenance(facility.kind)
+       || facility.durability>=0.98
+       || result.material==MaterialKind::Unknown) return result;
+
+    if(!inventory.remove(ItemKind::RawMaterial,result.material,1)) return result;
+
+    const double restored=0.18+0.22*std::clamp(craftingSkill,0.0,1.0);
+    facility.durability=std::min(1.0,facility.durability+restored);
+    facility.lastWorkedBy=worker;
+    result.durabilityAfter=facility.durability;
+    result.repaired=result.durabilityAfter>result.durabilityBefore;
+    return result;
+}
+
 inline FacilityConstructionSpec facilityConstructionSpec(FacilityKind kind)
 {
     switch(kind){
@@ -473,9 +568,16 @@ inline bool validConstructedFacility(const ConstructedFacility& facility)
     }
 
     if(facility.state == FacilityState::Operational){
-        if(!facility.active || hasIncomplete || !facilityWorkComplete(facility)
+        if(!facility.active || facility.durability<=0.0
+           || hasIncomplete || !facilityWorkComplete(facility)
            || facility.completedMinute < facility.startedMinute) return false;
         if(facilityProvidesStorage(facility.kind) && facility.linkedStorage == 0) return false;
+    }else if(facility.state == FacilityState::Ruined){
+        if(facility.active || facility.durability>1e-9
+           || hasIncomplete || !facilityWorkComplete(facility)
+           || facility.completedMinute < facility.startedMinute) return false;
+        if(facility.lit || facility.heatLevel!=0.0
+           || facility.burnMinutesRemaining!=0) return false;
     }else{
         if(facility.active || facility.completedMinute >= 0) return false;
         if(facility.linkedStorage != 0) return false;

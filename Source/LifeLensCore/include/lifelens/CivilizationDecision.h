@@ -30,6 +30,7 @@ enum class FacilityBuildAction {
     Plan,
     DeliverMaterial,
     Work,
+    Repair,
     Fuel,
     Ignite,
     CollectCharcoal,
@@ -54,6 +55,7 @@ inline const char* facilityBuildActionName(FacilityBuildAction action)
         case FacilityBuildAction::Plan: return "Plan";
         case FacilityBuildAction::DeliverMaterial: return "DeliverMaterial";
         case FacilityBuildAction::Work: return "Work";
+        case FacilityBuildAction::Repair: return "Repair";
         case FacilityBuildAction::Fuel: return "Fuel";
         case FacilityBuildAction::Ignite: return "Ignite";
         case FacilityBuildAction::CollectCharcoal: return "CollectCharcoal";
@@ -142,6 +144,8 @@ struct CivilizationExecutionResult {
     StorageId activatedStorage=0;
     double facilityWorkBefore=0.0;
     double facilityWorkAfter=0.0;
+    double facilityDurabilityBefore=0.0;
+    double facilityDurabilityAfter=0.0;
     int facilityFuelUnits=0;
     int facilityCharcoalUnits=0;
     int facilityOreUnits=0;
@@ -268,21 +272,29 @@ inline CivilizationUtilityDecision bestGatherDecision(const World& world,const C
         const int fireMissing=primitiveFirePitMissingMaterial(world,node.material);
         const int furnaceMissing=primitiveFurnaceMissingMaterial(world,node.material);
         const int settlementMissing=settlementConstructionMissingMaterial(world,node.material);
+        const int repairMissing=std::max(
+            0,
+            settlementRepairMaterialDemand(world,node.material)-held);
         const int constructionMissing=std::max(
             settlementMissing,
             std::max(storageMissing,std::max(fireMissing,furnaceMissing)));
+        const int materialDemand=constructionMissing+repairMissing;
         const int baseTarget=(node.material==MaterialKind::Water || node.material==MaterialKind::PlantFood) ? 4 : 5;
         const int fireFuelReserve=(hasOperationalFirePit(world) && node.material==MaterialKind::Wood) ? 3 : 0;
-        const int target=baseTarget+std::min(4,constructionMissing)+fireFuelReserve;
+        const int target=baseTarget+std::min(4,materialDemand)+fireFuelReserve;
         const double gap=clampCivilization01(static_cast<double>(std::max(0,target-held-std::min(stored,2)))/static_cast<double>(std::max(1,target)));
         const double demand=materialProgressDemand(self,node.material);
         const double constructionDemand=constructionMissing>0
             ? clampCivilization01(0.45+0.12*static_cast<double>(constructionMissing))
             : 0.0;
+        const double maintenanceDemand=repairMissing>0
+            ? clampCivilization01(0.42+0.18*static_cast<double>(repairMissing))
+            : 0.0;
         const double preference=civilizationPreference(world.seed,self.id,100ULL+static_cast<std::uint64_t>(node.material));
         const double score=clampCivilization01(
             0.07+0.12*self.personality.curiosity+0.05*self.personality.adaptability+
-            0.08*self.civilization.gatheringSkill+0.16*demand+0.13*gap+0.30*constructionDemand+0.07*preference);
+            0.08*self.civilization.gatheringSkill+0.16*demand+0.13*gap+
+            0.30*constructionDemand+0.24*maintenanceDemand+0.07*preference);
         CivilizationUtilityDecision candidate;
         candidate.intent=CivilizationIntent::Gather;
         candidate.utility=score;
@@ -486,9 +498,42 @@ inline CivilizationUtilityDecision bestSettlementFoundationDecision(
     };
 
     for(const FacilityKind kind:kinds){
+        const ConstructedFacility* project=settlementFacilityProject(world,kind);
+        const double preference=civilizationPreference(
+            world.seed,self.id,610ULL+static_cast<std::uint64_t>(kind));
+
+        if(project!=nullptr && facilityOperationalAndActive(*project)){
+            if(!settlementFacilityNeedsMaintenance(*project)) continue;
+
+            const MaterialKind repairMaterial=facilityRepairMaterial(kind);
+            const int held=self.civilization.inventory.count(
+                ItemKind::RawMaterial,repairMaterial);
+            if(held<=0) continue;
+
+            CivilizationUtilityDecision repair;
+            repair.intent=CivilizationIntent::Craft;
+            repair.facilityKind=kind;
+            repair.facilityAction=FacilityBuildAction::Repair;
+            repair.facility=project->id;
+            repair.hasFacilityTarget=true;
+            repair.facilityTargetPos=project->pos;
+            repair.material=repairMaterial;
+            repair.item=ItemKind::RawMaterial;
+            repair.quantity=1;
+
+            const double damage=clampCivilization01(1.0-project->durability);
+            repair.utility=clampCivilization01(
+                0.46+0.34*damage
+                +0.09*self.personality.conscientiousness
+                +0.07*self.personality.orderliness
+                +0.07*self.civilization.craftingSkill
+                +0.04*preference);
+            considerCivilizationDecision(best,repair);
+            continue;
+        }
+
         if(hasOperationalSettlementFacility(world,kind)) continue;
 
-        const ConstructedFacility* project=settlementFacilityProject(world,kind);
         double pressure=settlementFacilityNeedPressure(
             world,self,authoritativePosition,kind);
         if(project==nullptr && pressure<0.24) continue;
@@ -499,9 +544,6 @@ inline CivilizationUtilityDecision bestSettlementFoundationDecision(
         candidate.facilityKind=kind;
         candidate.item=ItemKind::RawMaterial;
         candidate.technique=TechniqueId::None;
-
-        const double preference=civilizationPreference(
-            world.seed,self.id,610ULL+static_cast<std::uint64_t>(kind));
 
         if(project==nullptr){
             const SettlementFacilitySiteOpportunity site=
@@ -923,6 +965,18 @@ inline CivilizationUtilityDecision bestCraftDecisionAtPosition(
         candidate.item=recipe.outputKind;
         candidate.material=recipe.outputMaterial;
         candidate.quantity=recipe.outputQuantity;
+
+        const ConstructedFacility* workSurface=
+            operationalSettlementFacility(world,FacilityKind::WorkSurface);
+        if(workSurface!=nullptr){
+            candidate.facilityKind=FacilityKind::WorkSurface;
+            candidate.facility=workSurface->id;
+            candidate.hasFacilityTarget=true;
+            candidate.facilityTargetPos=workSurface->pos;
+            candidate.utility=clampCivilization01(
+                candidate.utility+0.05*facilityEffectiveness01(*workSurface));
+        }
+
         considerCivilizationDecision(best,candidate);
     }
     return best;
@@ -1091,14 +1145,31 @@ inline CivilizationExecutionResult executeCivilizationDecision(World& world,Char
                 if(facility==nullptr
                    || facility->kind!=decision.facilityKind
                    || !isSettlementFoundationFacility(facility->kind)
-                   || facility->state==FacilityState::Operational
-                   || facility->state==FacilityState::Ruined
                    || !decision.hasFacilityTarget
                    || facility->pos.x!=decision.facilityTargetPos.x
                    || facility->pos.y!=decision.facilityTargetPos.y) return result;
 
                 result.facilityId=facility->id;
                 result.facilityPos=facility->pos;
+
+                if(decision.facilityAction==FacilityBuildAction::Repair){
+                    if(!facilityOperationalAndActive(*facility)) return result;
+                    const FacilityRepairResult repair=
+                        repairSettlementFacility(world,self,facility->id);
+                    if(!repair.repaired) return result;
+                    result.executed=true;
+                    result.success=true;
+                    result.craft.success=true;
+                    result.event=result.craft.event;
+                    result.facilityDurabilityBefore=repair.durabilityBefore;
+                    result.facilityDurabilityAfter=repair.durabilityAfter;
+                    self.civilization.craftingSkill=clampCivilization01(
+                        self.civilization.craftingSkill+0.0035);
+                    return result;
+                }
+
+                if(facility->state==FacilityState::Operational
+                   || facility->state==FacilityState::Ruined) return result;
 
                 if(decision.facilityAction==FacilityBuildAction::DeliverMaterial){
                     const int delivered=deliverFacilityMaterial(
@@ -1457,11 +1528,45 @@ inline CivilizationExecutionResult executeCivilizationDecision(World& world,Char
                 self.civilization.craftingSkill=clampCivilization01(self.civilization.craftingSkill+0.004);
                 return result;
             }
-            result.craft=reproduceTechnique(self.id,decision.technique,self.civilization.inventory,self.civilization.knowledge,self.civilization.craftingSkill);
+            ConstructedFacility* workSurface=nullptr;
+            double effectiveCraftingSkill=self.civilization.craftingSkill;
+            if(decision.facilityKind==FacilityKind::WorkSurface
+               && decision.facility!=0
+               && decision.hasFacilityTarget){
+                workSurface=findCivilizationFacility(world,decision.facility);
+                if(workSurface==nullptr
+                   || workSurface->kind!=FacilityKind::WorkSurface
+                   || !facilityOperationalAndActive(*workSurface)
+                   || workSurface->pos.x!=decision.facilityTargetPos.x
+                   || workSurface->pos.y!=decision.facilityTargetPos.y) return result;
+                effectiveCraftingSkill=clampCivilization01(
+                    effectiveCraftingSkill+
+                    settlementWorkSurfaceSkillBonus(*workSurface));
+            }
+
+            result.craft=reproduceTechnique(
+                self.id,
+                decision.technique,
+                self.civilization.inventory,
+                self.civilization.knowledge,
+                effectiveCraftingSkill);
             result.executed=result.craft.success;
             result.success=result.craft.success;
             result.event=result.craft.event;
-            if(result.success) self.civilization.craftingSkill=clampCivilization01(self.civilization.craftingSkill+0.004);
+            if(result.success){
+                if(workSurface!=nullptr){
+                    result.facilityId=workSurface->id;
+                    result.facilityKind=workSurface->kind;
+                    result.facilityPos=workSurface->pos;
+                    result.facilityDurabilityBefore=workSurface->durability;
+                    applyFacilityWear(
+                        *workSurface,
+                        facilityWearPerUse(workSurface->kind));
+                    result.facilityDurabilityAfter=workSurface->durability;
+                }
+                self.civilization.craftingSkill=clampCivilization01(
+                    self.civilization.craftingSkill+0.004);
+            }
             return result;
         }
         case CivilizationIntent::None:
