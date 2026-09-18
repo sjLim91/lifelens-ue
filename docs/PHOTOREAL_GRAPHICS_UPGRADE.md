@@ -84,3 +84,26 @@ Rules:
 - Core resources, facility state and collision authority continue to exist even when a presentation mesh is omitted.
 
 This prevents the scene from silently regressing to prototype-looking geometry while the asset library is upgraded in waves.
+
+
+## Wave 1 validation evidence
+
+The compact Poly Haven wave completed the zero-cost GitHub Actions import path successfully.
+
+Validated outputs committed by the import workflow:
+- `SM_LL_fir_sapling.uasset`
+- `SM_LL_pine_sapling_small.uasset`
+- `SM_LL_boulder_01.uasset`
+- `SM_LL_tree_stump_01.uasset`
+- `SM_LL_shrub_02.uasset`
+- `SM_LL_shrub_03.uasset`
+- `SM_LL_weed_plant_02.uasset`
+
+Validation sequence completed before the generated asset commit:
+1. curated source acquisition with per-asset payload guards.
+2. Unreal 5.6 LifeLensEditor compile.
+3. headless Unreal import.
+4. repository file-size guard.
+5. generated Unreal assets committed by GitHub Actions.
+
+The generated asset commit intentionally uses `[skip ci]` because it is the output of the already-successful headless import workflow. Source/config changes remain subject to normal Preflight and Unreal compile gates.
