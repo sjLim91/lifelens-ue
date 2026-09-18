@@ -101,6 +101,8 @@ public:
     static constexpr float SpeedWindowSeconds = 0.2f;
     static constexpr float SpeedInterpSpeed = 6.0f;
     static constexpr float YawInterpSpeed = 8.0f;
+    static constexpr float ContextEnterSpeedThreshold = 18.0f;
+    static constexpr float SleepPoseInterpSpeed = 5.0f;
     static constexpr float TeleportStep = 400.0f;
 
 private:
@@ -177,6 +179,7 @@ private:
     float SmoothedSpeed = 0.0f;
     float DesiredYaw = 0.0f;
     float SmoothedYaw = 0.0f;
+    float PresentedSleepRollDegrees = 0.0f;
     bool bHasPreviousLocation = false;
     bool bLocomotionPlaying = false;
     bool bSocialInteractionActive = false;
