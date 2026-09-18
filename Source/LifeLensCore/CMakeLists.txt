@@ -169,4 +169,6 @@ lifelens_add_test(test_world_generation_milestone_a)
 
 lifelens_add_test(test_world_generation_sanitation_reference)
 
+lifelens_add_test(test_hydrology_foundation)
+
 lifelens_add_test(test_early_survival)
