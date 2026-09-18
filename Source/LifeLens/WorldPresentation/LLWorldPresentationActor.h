@@ -51,6 +51,13 @@ public:
     static constexpr int32 MaxGrassPerChunk  = 300;
     static constexpr int32 MaxRocksPerChunk  = 105;
 
+    // Visual-only far world envelope. These instances never represent
+    // interactable Core resources and carry no collision/navigation authority.
+    static constexpr int32 MaxFarTreeInstances = 180;
+    static constexpr int32 MaxFarRockInstances = 96;
+    static constexpr float FarDressingCullStartUU = 10000.0f;
+    static constexpr float FarDressingCullEndUU = 72000.0f;
+
     static constexpr float TreeCullStartUU = 12000.0f;
     static constexpr float TreeCullEndUU   = 26000.0f;
     static constexpr float SmallCullStartUU = 3800.0f;
@@ -141,6 +148,23 @@ public:
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.0", ClampMax="3000.0"))
     float FacilityActivityRadiusUU = 1050.0f;
 
+    // ---- Visual-only far world envelope --------------------------------------
+    // The authoritative simulation only materializes nearby chunks. The
+    // observer camera can see much farther, so a separate collision-free
+    // horizon surface prevents the bootstrap/materialized square from floating
+    // in grey void. It never creates Core chunks/resources/facilities.
+    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|FarWorld", meta=(ClampMin="16.0", ClampMax="96.0"))
+    float FarGroundMinSpanChunks = 48.0f;
+
+    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|FarWorld", meta=(ClampMin="2.0", ClampMax="12.0"))
+    float FarGroundActiveSpanMultiplier = 6.0f;
+
+    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|FarWorld", meta=(ClampMin="0.0", ClampMax="8.0"))
+    float FarGroundDropUU = 2.0f;
+
+    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|FarWorld", meta=(ClampMin="0.2", ClampMax="1.0"))
+    float FarDressingOuterRadiusFraction = 0.43f;
+
     // ---- Initial sight line (IR-E-1 mitigation) --------------------------------
     // Residents are visible the moment play starts and then disappear behind the
     // canopy that loads between the observer camera and the settlement. This
@@ -183,6 +207,10 @@ private:
     void ClearFacilityInstances();
     void ApplyFacilityMaterialPalette();
     void BuildGround(const struct FLLCoreWorldGenerationObservation& World);
+    void BuildFarEnvironment(
+        const struct FLLCoreWorldGenerationObservation& World,
+        float ActiveGroundSpanUU,
+        float FarGroundSpanUU);
     void BuildChunkDressing(const struct FLLCoreWorldGenerationObservation& World,
                             const FLLCoreNaturalChunkObservation& Chunk);
     void BuildFacilities(const struct FLLCoreWorldGenerationObservation& World,
@@ -222,10 +250,13 @@ private:
 
     // Natural runtime presentation.
     UPROPERTY() TObjectPtr<UStaticMeshComponent> Ground;
+    UPROPERTY() TObjectPtr<UStaticMeshComponent> FarGround;
     UPROPERTY() TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>> TreeInstances;
+    UPROPERTY() TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>> FarTreeInstances;
     UPROPERTY() TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>> ShrubInstances;
     UPROPERTY() TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>> GrassInstances;
     UPROPERTY() TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>> RockInstances;
+    UPROPERTY() TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>> FarRockInstances;
 
     // Facility presentation uses simple Engine cube composition until a suitable
     // CC0 prop set is added. These components are visual-only and collision-free.
