@@ -4,6 +4,9 @@ import json
 root = Path(__file__).resolve().parents[1]
 required = [
     'LifeLens.uproject',
+    'Config/Windows/WindowsEngine.ini',
+    'Config/Android/AndroidEngine.ini',
+    'docs/CINEMATIC_RENDERING_STRATEGY_v1.md',
     'Source/LifeLens.Target.cs',
     'Source/LifeLensEditor.Target.cs',
     'Source/LifeLens/LifeLens.Build.cs',
@@ -512,6 +515,42 @@ assert 'bBuildForArm64=True' in engine_config
 assert 'bPackageDataInsideApk=True' in engine_config
 assert 'Orientation=SensorLandscape' in engine_config
 assert '[/Script/Engine.GameMapsSettings]' not in game_config
+
+windows_engine = (root / 'Config/Windows/WindowsEngine.ini').read_text(encoding='utf-8')
+for token in (
+    'DefaultGraphicsRHI=DefaultGraphicsRHI_DX12',
+    '+D3D12TargetedShaderFormats=PCD3D_SM6',
+    'r.GenerateMeshDistanceFields=True',
+    'r.DynamicGlobalIlluminationMethod=1',
+    'r.ReflectionMethod=1',
+    'r.Shadow.Virtual.Enable=1',
+    'r.AntiAliasingMethod=4',
+    'r.Nanite.ProjectEnabled=True',
+    'r.Lumen.HardwareRayTracing=False',
+):
+    assert token in windows_engine, f'Missing Windows cinematic renderer contract: {token}'
+
+android_engine = (root / 'Config/Android/AndroidEngine.ini').read_text(encoding='utf-8')
+for token in (
+    'r.GenerateMeshDistanceFields=False',
+    'r.DynamicGlobalIlluminationMethod=0',
+    'r.ReflectionMethod=0',
+    'r.Shadow.Virtual.Enable=0',
+    'r.Nanite.ProjectEnabled=False',
+    'r.Lumen.HardwareRayTracing=False',
+    'r.AntiAliasingMethod=2',
+):
+    assert token in android_engine, f'Missing Android renderer contract: {token}'
+
+rendering_strategy = (root / 'docs/CINEMATIC_RENDERING_STRATEGY_v1.md').read_text(encoding='utf-8')
+for token in (
+    'Lumen Global Illumination',
+    'Virtual Shadow Maps',
+    'Temporal Super Resolution (TSR)',
+    'Nanite project support',
+    'Android fallback mesh/LOD',
+):
+    assert token in rendering_strategy, f'Missing cinematic rendering strategy invariant: {token}'
 
 for target in ('Source/LifeLens.Target.cs', 'Source/LifeLensEditor.Target.cs'):
     target_text = (root / target).read_text(encoding='utf-8')
