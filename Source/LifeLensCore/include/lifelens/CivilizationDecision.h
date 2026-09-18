@@ -30,6 +30,7 @@ enum class FacilityBuildAction {
     Plan,
     DeliverMaterial,
     Work,
+    Repair,
     Fuel,
     Ignite,
     CollectCharcoal,
@@ -54,6 +55,7 @@ inline const char* facilityBuildActionName(FacilityBuildAction action)
         case FacilityBuildAction::Plan: return "Plan";
         case FacilityBuildAction::DeliverMaterial: return "DeliverMaterial";
         case FacilityBuildAction::Work: return "Work";
+        case FacilityBuildAction::Repair: return "Repair";
         case FacilityBuildAction::Fuel: return "Fuel";
         case FacilityBuildAction::Ignite: return "Ignite";
         case FacilityBuildAction::CollectCharcoal: return "CollectCharcoal";
@@ -142,6 +144,8 @@ struct CivilizationExecutionResult {
     StorageId activatedStorage=0;
     double facilityWorkBefore=0.0;
     double facilityWorkAfter=0.0;
+    double facilityDurabilityBefore=0.0;
+    double facilityDurabilityAfter=0.0;
     int facilityFuelUnits=0;
     int facilityCharcoalUnits=0;
     int facilityOreUnits=0;
@@ -268,21 +272,27 @@ inline CivilizationUtilityDecision bestGatherDecision(const World& world,const C
         const int fireMissing=primitiveFirePitMissingMaterial(world,node.material);
         const int furnaceMissing=primitiveFurnaceMissingMaterial(world,node.material);
         const int settlementMissing=settlementConstructionMissingMaterial(world,node.material);
+        const int repairMissing=settlementRepairMaterialDemand(world,node.material);
         const int constructionMissing=std::max(
             settlementMissing,
             std::max(storageMissing,std::max(fireMissing,furnaceMissing)));
+        const int materialDemand=constructionMissing+repairMissing;
         const int baseTarget=(node.material==MaterialKind::Water || node.material==MaterialKind::PlantFood) ? 4 : 5;
         const int fireFuelReserve=(hasOperationalFirePit(world) && node.material==MaterialKind::Wood) ? 3 : 0;
-        const int target=baseTarget+std::min(4,constructionMissing)+fireFuelReserve;
+        const int target=baseTarget+std::min(4,materialDemand)+fireFuelReserve;
         const double gap=clampCivilization01(static_cast<double>(std::max(0,target-held-std::min(stored,2)))/static_cast<double>(std::max(1,target)));
         const double demand=materialProgressDemand(self,node.material);
         const double constructionDemand=constructionMissing>0
             ? clampCivilization01(0.45+0.12*static_cast<double>(constructionMissing))
             : 0.0;
+        const double maintenanceDemand=repairMissing>0
+            ? clampCivilization01(0.42+0.18*static_cast<double>(repairMissing))
+            : 0.0;
         const double preference=civilizationPreference(world.seed,self.id,100ULL+static_cast<std::uint64_t>(node.material));
         const double score=clampCivilization01(
             0.07+0.12*self.personality.curiosity+0.05*self.personality.adaptability+
-            0.08*self.civilization.gatheringSkill+0.16*demand+0.13*gap+0.30*constructionDemand+0.07*preference);
+            0.08*self.civilization.gatheringSkill+0.16*demand+0.13*gap+
+            0.30*constructionDemand+0.24*maintenanceDemand+0.07*preference);
         CivilizationUtilityDecision candidate;
         candidate.intent=CivilizationIntent::Gather;
         candidate.utility=score;
