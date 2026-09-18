@@ -22,13 +22,13 @@ DEST_ROOT = "/Game/Environment/Photoreal/PolyHaven"
 DEST_IMPORT = "/Game/Environment/Photoreal/Import"
 
 MODEL_IDS = [
-    "pine_tree_01",
     "fir_sapling",
-    "tree_small_02",
+    "pine_sapling_small",
     "boulder_01",
-    "rock_07",
-    "rock_09",
     "tree_stump_01",
+    "shrub_02",
+    "shrub_03",
+    "weed_plant_02",
     "dead_tree_trunk",
 ]
 
