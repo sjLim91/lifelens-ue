@@ -475,13 +475,15 @@ void ALLDynamicEnvironmentPresentationActor::RefreshFromCore(bool bForce)
     bPresentedEnvironmentInitialized = true;
 
     // SurfaceWetness01 is already authoritative Core residue. Snow currently
-    // exposes precipitation intensity but no separate accumulated cover read,
-    // so retain only a short presentation residue and melt it faster above 0 C.
+    // exposes snowfall intensity but no separate accumulated-cover read, so
+    // maintain presentation-only cover that can build across a storm and thaw
+    // gradually afterwards. The simulation still owns precipitation and
+    // temperature; this never feeds back into movement or resources.
     if (!bPresentedSnowInitialized || bForce
         || PreviousSimulationMinute == TNumericLimits<int64>::Lowest()
         || Time.SimulationMinute < PreviousSimulationMinute)
     {
-        PresentedSnowCover01 = Snow01;
+        PresentedSnowCover01 = Snow01 * 0.45f;
         bPresentedSnowInitialized = true;
     }
     else
@@ -490,18 +492,37 @@ void ALLDynamicEnvironmentPresentationActor::RefreshFromCore(bool bForce)
             static_cast<float>(Time.SimulationMinute - PreviousSimulationMinute),
             0.0f,
             1440.0f);
-        if (Snow01 >= PresentedSnowCover01)
+        const float TemperatureC = Environment.AirTemperatureC;
+
+        if (Snow01 > KINDA_SMALL_NUMBER)
         {
-            PresentedSnowCover01 = Snow01;
-        }
-        else
-        {
-            const float TemperatureAboveFreezing = FMath::Max(0.0f, Environment.AirTemperatureC);
-            const float DecayPerMinute = 0.00018f + TemperatureAboveFreezing * 0.0012f;
+            const float FreezeSupport = FMath::Clamp(
+                (2.0f - TemperatureC) / 8.0f,
+                0.25f,
+                1.0f);
+            const float Accumulation =
+                Snow01 * ElapsedSimulationMinutes * 0.0012f * FreezeSupport;
             PresentedSnowCover01 = FMath::Max(
-                Snow01,
-                PresentedSnowCover01 - ElapsedSimulationMinutes * DecayPerMinute);
+                PresentedSnowCover01,
+                Snow01 * 0.45f);
+            PresentedSnowCover01 += Accumulation;
         }
+
+        if (TemperatureC > 0.0f)
+        {
+            const float MeltPerMinute =
+                0.00012f + TemperatureC * 0.0009f;
+            PresentedSnowCover01 -=
+                ElapsedSimulationMinutes * MeltPerMinute;
+        }
+        else if (Snow01 <= KINDA_SMALL_NUMBER)
+        {
+            // Frozen old snow compacts/clears very slowly instead of vanishing
+            // the minute active snowfall ends.
+            PresentedSnowCover01 -=
+                ElapsedSimulationMinutes * 0.00001f;
+        }
+
         PresentedSnowCover01 = Saturate(PresentedSnowCover01);
     }
 
