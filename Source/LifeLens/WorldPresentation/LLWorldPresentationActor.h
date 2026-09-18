@@ -136,10 +136,10 @@ public:
     // clears canopy inside a cone from the initial camera position toward the
     // settlement reference.
     //
-    // Frozen at the initial camera pose, so it stops helping once the player
-    // orbits or pans. Milestone B initial-readability mitigation, not the
-    // general solution; the general fix is a runtime reversible fade of the
-    // canopy that actually occludes the current camera-to-resident line.
+    // Frozen at the initial camera pose, so it is now only the fallback used
+    // when Dynamic Observer Canopy Visibility is disabled. The default runtime
+    // path keeps all ambient canopy instances and reversibly collapses only the
+    // ones currently between the camera and a resident.
     //
     // The camera is read and never moved; Core and world-generation facts are
     // untouched and resource patches are never removed.
