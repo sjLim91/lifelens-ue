@@ -53,6 +53,7 @@
 - 나무 / 풀 / 바위 / 지면 디테일로 자연환경을 구성한다.
 - 같은 에셋 반복이 눈에 띄지 않도록 scale/rotation/variant를 사용한다.
 - Unreal PCG Framework를 기본 procedural placement tool로 사용할 수 있다.
+- `FLLCoreNaturalChunkObservation.VisualSeed`와 각 resource patch의 `VisualSeed`를 deterministic PCG seed로 사용해 같은 WorldSeed/World state에서 장식 배치가 불필요하게 흔들리지 않게 한다.
 - PCG가 생성한 위치/밀도는 visual decoration authority만 가진다. 채집 가능한 나무/광물/식량 등 gameplay resource 존재 여부는 반드시 Core/World read contract를 따른다.
 - Windows에서는 고밀도/고품질 PCG 결과를 허용하고, Android에서는 partition/bake/LOD/HISM/density scaling으로 비용을 낮춘다.
 - 초반에는 visual-only decoration과 authoritative resource node를 명확히 구분한다.
