@@ -86,8 +86,7 @@ void ALLObserverHUD::DrawSelectionFeedback(const FLLResidentData& Selected, floa
     }
 
     const ALLResidentCharacter* Actor = FindResidentActorForPolish(GetWorld(), Selected.ResidentId);
-    FVector2D OriginScreen;
-    if (!Actor || !PlayerController->ProjectWorldLocationToScreen(Actor->GetActorLocation(), OriginScreen, false))
+    if (!Actor)
     {
         return;
     }
@@ -95,14 +94,55 @@ void ALLObserverHUD::DrawSelectionFeedback(const FLLResidentData& Selected, floa
     int32 ViewportX = 0;
     int32 ViewportY = 0;
     PlayerController->GetViewportSize(ViewportX, ViewportY);
-    const FVector2D Origin = ViewportToCanvas(OriginScreen, FVector2D(ViewportX, ViewportY));
-    const float Radius = TouchTargetRadiusPixels(this);
+    const FVector2D ViewportSize(ViewportX, ViewportY);
 
-    // Small persistent focus mark while LEVEL 1/2 is active.
-    const float UnderY = Origin.Y + Radius * 0.5f;
-    DrawLine(Origin.X - Radius * 0.5f, UnderY, Origin.X + Radius * 0.5f, UnderY, FocusColor, FocusUnderline * UIScale);
+    FBox2D BoundsScreen;
+    FBox2D UnusedTapRect;
+    if (!ProjectResidentTapRect(PlayerController, Actor, 0.0f, BoundsScreen, UnusedTapRect))
+    {
+        return;
+    }
 
-    // Brief flash when the observed resident changes.
+    FBox2D Bounds(
+        ViewportToCanvas(BoundsScreen.Min, ViewportSize),
+        ViewportToCanvas(BoundsScreen.Max, ViewportSize));
+    if (!Bounds.bIsValid)
+    {
+        return;
+    }
+
+    // Keep the bracket close to the rendered resident, not the touch target.
+    const float Pad = 9.0f * UIScale;
+    Bounds.Min -= FVector2D(Pad, Pad);
+    Bounds.Max += FVector2D(Pad, Pad);
+
+    const float Width = Bounds.GetSize().X;
+    const float Height = Bounds.GetSize().Y;
+    const float Corner = FMath::Clamp(FMath::Min(Width, Height) * 0.24f, 10.0f * UIScale, 24.0f * UIScale);
+    const float Stroke = FocusUnderline * UIScale;
+
+    FLinearColor Persistent = FocusColor;
+    Persistent.A *= 0.90f;
+
+    auto DrawCorner = [this, Corner, Stroke](const FVector2D& P, const FVector2D& Horizontal, const FVector2D& Vertical, const FLinearColor& Color)
+    {
+        DrawLine(P.X, P.Y, P.X + Horizontal.X * Corner, P.Y + Horizontal.Y * Corner, Color, Stroke);
+        DrawLine(P.X, P.Y, P.X + Vertical.X * Corner, P.Y + Vertical.Y * Corner, Color, Stroke);
+    };
+
+    DrawCorner(Bounds.Min, FVector2D(1.0f, 0.0f), FVector2D(0.0f, 1.0f), Persistent);
+    DrawCorner(FVector2D(Bounds.Max.X, Bounds.Min.Y), FVector2D(-1.0f, 0.0f), FVector2D(0.0f, 1.0f), Persistent);
+    DrawCorner(Bounds.Max, FVector2D(-1.0f, 0.0f), FVector2D(0.0f, -1.0f), Persistent);
+    DrawCorner(FVector2D(Bounds.Min.X, Bounds.Max.Y), FVector2D(1.0f, 0.0f), FVector2D(0.0f, -1.0f), Persistent);
+
+    // A small underline reinforces the feet direction while the existing
+    // world-space selection ring remains the ground contact cue.
+    const float UnderY = Bounds.Max.Y + 4.0f * UIScale;
+    const float UnderHalf = FMath::Clamp(Width * 0.20f, 10.0f * UIScale, 28.0f * UIScale);
+    const float CenterX = (Bounds.Min.X + Bounds.Max.X) * 0.5f;
+    DrawLine(CenterX - UnderHalf, UnderY, CenterX + UnderHalf, UnderY, Persistent, Stroke);
+
+    // Brief expanding bracket flash when the observed resident changes.
     const float Now = GetWorld()->GetTimeSeconds();
     const float T = (Now - SelectionChangeTime) / SelectFlashSeconds;
     if (T < 0.0f || T >= 1.0f)
@@ -110,12 +150,20 @@ void ALLObserverHUD::DrawSelectionFeedback(const FLLResidentData& Selected, floa
         return;
     }
 
-    const float Half = Radius * 0.4f + (FlashPadStart + FlashPadGrow * T) * UIScale;
-    FLinearColor Color = FocusColor;
-    Color.A *= (1.0f - T) * 0.8f;
-    const FBox2D Flash(Origin - FVector2D(Half, Half), Origin + FVector2D(Half, Half));
-    DrawLine(Flash.Min.X, Flash.Min.Y, Flash.Max.X, Flash.Min.Y, Color, 1.0f);
-    DrawLine(Flash.Max.X, Flash.Min.Y, Flash.Max.X, Flash.Max.Y, Color, 1.0f);
-    DrawLine(Flash.Max.X, Flash.Max.Y, Flash.Min.X, Flash.Max.Y, Color, 1.0f);
-    DrawLine(Flash.Min.X, Flash.Max.Y, Flash.Min.X, Flash.Min.Y, Color, 1.0f);
+    const float FlashPad = (FlashPadStart + FlashPadGrow * T) * UIScale;
+    const FBox2D Flash(Bounds.Min - FVector2D(FlashPad), Bounds.Max + FVector2D(FlashPad));
+    FLinearColor FlashColor = FocusColor;
+    FlashColor.A *= (1.0f - T) * 0.72f;
+
+    const float FlashCorner = Corner + 6.0f * UIScale;
+    auto DrawFlashCorner = [this, FlashCorner](const FVector2D& P, const FVector2D& Horizontal, const FVector2D& Vertical, const FLinearColor& Color)
+    {
+        DrawLine(P.X, P.Y, P.X + Horizontal.X * FlashCorner, P.Y + Horizontal.Y * FlashCorner, Color, 1.0f);
+        DrawLine(P.X, P.Y, P.X + Vertical.X * FlashCorner, P.Y + Vertical.Y * FlashCorner, Color, 1.0f);
+    };
+
+    DrawFlashCorner(Flash.Min, FVector2D(1.0f, 0.0f), FVector2D(0.0f, 1.0f), FlashColor);
+    DrawFlashCorner(FVector2D(Flash.Max.X, Flash.Min.Y), FVector2D(-1.0f, 0.0f), FVector2D(0.0f, 1.0f), FlashColor);
+    DrawFlashCorner(Flash.Max, FVector2D(-1.0f, 0.0f), FVector2D(0.0f, -1.0f), FlashColor);
+    DrawFlashCorner(FVector2D(Flash.Min.X, Flash.Max.Y), FVector2D(1.0f, 0.0f), FVector2D(0.0f, -1.0f), FlashColor);
 }
