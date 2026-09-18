@@ -548,7 +548,7 @@ for token in (
     'Virtual Shadow Maps',
     'Temporal Super Resolution (TSR)',
     'Nanite project support',
-    'Android fallback mesh/LOD',
+    'fallback mesh/LOD',
 ):
     assert token in rendering_strategy, f'Missing cinematic rendering strategy invariant: {token}'
 
