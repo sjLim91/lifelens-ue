@@ -31,14 +31,17 @@ LICENSE = "CC0 1.0"
 # Keep the first wave compact enough for repo/import iteration while replacing
 # the most visibly stylized classes in the current scene.
 CURATED = {
-    "pine_tree_01": {"kind": "model", "resolution": "2k", "format": "gltf"},
-    "fir_sapling": {"kind": "model", "resolution": "2k", "format": "gltf"},
-    "tree_small_02": {"kind": "model", "resolution": "2k", "format": "gltf"},
-    "boulder_01": {"kind": "model", "resolution": "2k", "format": "gltf"},
-    "rock_07": {"kind": "model", "resolution": "2k", "format": "gltf"},
-    "rock_09": {"kind": "model", "resolution": "2k", "format": "gltf"},
-    "tree_stump_01": {"kind": "model", "resolution": "2k", "format": "gltf"},
-    "dead_tree_trunk": {"kind": "model", "resolution": "2k", "format": "gltf"},
+    # Keep production-local-view assets inside a practical mobile/repository
+    # geometry budget. Very high-poly Poly Haven trees (for example the
+    # 17M-triangle pine_tree_01) are intentionally excluded from the baseline.
+    "fir_sapling": {"kind": "model", "resolution": "2k", "format": "gltf", "max_mib": 90},
+    "pine_sapling_small": {"kind": "model", "resolution": "2k", "format": "gltf", "max_mib": 90},
+    "boulder_01": {"kind": "model", "resolution": "2k", "format": "gltf", "max_mib": 45},
+    "tree_stump_01": {"kind": "model", "resolution": "2k", "format": "gltf", "max_mib": 45},
+    "shrub_02": {"kind": "model", "resolution": "2k", "format": "gltf", "max_mib": 45},
+    "shrub_03": {"kind": "model", "resolution": "2k", "format": "gltf", "max_mib": 45},
+    "weed_plant_02": {"kind": "model", "resolution": "2k", "format": "gltf", "max_mib": 45},
+    "dead_tree_trunk": {"kind": "model", "resolution": "2k", "format": "gltf", "max_mib": 60},
     "forest_floor": {"kind": "texture", "resolution": "2k"},
     "forrest_ground_01": {"kind": "texture", "resolution": "2k"},
     "mossy_rock": {"kind": "texture", "resolution": "2k"},
@@ -235,6 +238,15 @@ def main() -> int:
             raise RuntimeError(
                 f"No matching files returned for {asset_id}; "
                 f"API structure may have changed.")
+
+        selected_bytes = sum(int(item.get("size") or 0) for item in chosen)
+        max_mib = spec.get("max_mib")
+        if max_mib and selected_bytes > int(max_mib) * 1024 * 1024:
+            raise RuntimeError(
+                f"{asset_id} selected payload is {selected_bytes / 1024 / 1024:.1f} MiB, "
+                f"over the {max_mib} MiB LifeLens baseline budget. "
+                "Choose a lower-geometry asset instead of silently importing a hero scan.")
+
         asset_dir = root / asset_id
         downloaded = [download(item, asset_dir, args.dry_run) for item in chosen]
         manifest["assets"][asset_id] = {
