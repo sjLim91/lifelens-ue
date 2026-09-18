@@ -580,7 +580,9 @@ void ULLLifecycleEventOverlay::RefreshNoticeWidgets()
     for (const FTransientNotice& Notice : Notices)
     {
         UBorder* NoticeBorder = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass());
+        UVerticalBox* NoticeStack = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass());
         UTextBlock* Label = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
+        UTextBlock* Moment = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
         const FLinearColor Accent = LifecycleNoticeAccent(Notice.Text);
 
         Label->SetText(FText::FromString(Notice.Text));
@@ -588,13 +590,28 @@ void ULLLifecycleEventOverlay::RefreshNoticeWidgets()
         Label->SetColorAndOpacity(FSlateColor(FLinearColor(0.95f, 0.97f, 1.0f, 1.0f)));
         Label->SetVisibility(ESlateVisibility::HitTestInvisible);
 
+        Moment->SetText(FText::FromString(FormatObservedMoment(Notice.SimulationMinute)));
+        Moment->SetAutoWrapText(false);
+        Moment->SetColorAndOpacity(FSlateColor(FLinearColor(
+            Accent.R * 0.82f,
+            Accent.G * 0.82f,
+            Accent.B * 0.82f,
+            0.86f)));
+        Moment->SetVisibility(ESlateVisibility::HitTestInvisible);
+
+        NoticeStack->AddChildToVerticalBox(Label);
+        if (UVerticalBoxSlot* MomentSlot = NoticeStack->AddChildToVerticalBox(Moment))
+        {
+            MomentSlot->SetPadding(FMargin(0.0f, 2.0f, 0.0f, 0.0f));
+        }
+
         NoticeBorder->SetPadding(FMargin(10.0f, 6.0f, 10.0f, 6.0f));
         NoticeBorder->SetBrushColor(FLinearColor(
             Accent.R * 0.16f,
             Accent.G * 0.16f,
             Accent.B * 0.16f,
             0.90f));
-        NoticeBorder->SetContent(Label);
+        NoticeBorder->SetContent(NoticeStack);
         NoticeBorder->SetVisibility(ESlateVisibility::HitTestInvisible);
 
         if (UVerticalBoxSlot* Slot = EventList->AddChildToVerticalBox(NoticeBorder))
