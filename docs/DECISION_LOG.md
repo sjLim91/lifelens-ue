@@ -313,3 +313,27 @@ C1 세부 순서:
 **Immediate application**
 - Current work is **Stage C / C-S1 Autonomous Settlement Need Recognition**.
 
+---
+
+# 2026-09-19
+
+## D-017 — Windows PC는 Unreal cinematic renderer를 적극 활용하고 Android와 렌더링 티어를 분리한다
+
+**결정**
+- Android가 첫 실제 제품 타깃이라는 원칙은 유지한다.
+- 그러나 Android 성능 예산을 Windows PC 그래픽의 품질 상한으로 사용하지 않는다.
+- 동일한 Core/World/Save truth를 두고 Windows PC와 Android의 Presentation renderer tier를 분리한다.
+- Windows PC 기본 고품질 경로는 DX12 + SM6 + Lumen GI/Reflections + Virtual Shadow Maps + TSR + Nanite eligible assets를 사용한다.
+- PC Lumen은 우선 Software Ray Tracing을 baseline으로 하며 Hardware Ray Tracing은 이후 선택형 Ultra tier로 둔다.
+- Android baseline은 Lumen/Nanite/VSM에 의존하지 않고 conventional LOD/HLOD/instancing/mobile shading으로 동작해야 한다.
+- Nanite를 사용하는 PC asset도 Android fallback mesh/LOD를 잃으면 안 된다.
+- Engine primitive 또는 명백한 prototype/low-poly geometry를 production local-view의 자동 fallback으로 사용하지 않는다.
+
+**구현 기준**
+- canonical companion: `docs/CINEMATIC_RENDERING_STRATEGY_v1.md`.
+- `Config/Windows/WindowsEngine.ini`와 `Config/Android/AndroidEngine.ini`에서 platform renderer contract를 분리한다.
+- `Config/DefaultEngine.ini`는 universal Android-safe baseline을 유지한다.
+- 그래픽 표현은 Presentation이며 simulation/resource/facility/weather truth를 복제하거나 수정하지 않는다.
+
+**이유**
+- Unreal Engine을 선택한 핵심 가치 중 하나인 실시간 고품질 렌더링 능력을 활용하면서도 Android-first delivery와 동일한 자율 시뮬레이션을 유지하기 위함이다.
