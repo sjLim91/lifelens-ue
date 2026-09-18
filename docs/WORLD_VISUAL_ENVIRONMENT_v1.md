@@ -44,12 +44,17 @@
 
 ### 2. Sky / Lighting / Atmosphere
 - 시간대에 따라 읽히는 하늘과 조명 구조를 만든다.
-- 낮/밤 표현은 장차 authoritative simulation minute에 연결할 수 있게 구성한다.
-- 과도한 cinematic-only 설정보다 Android에서도 유지 가능한 baseline을 우선한다.
+- 낮/밤 표현은 authoritative simulation minute / weather provider에 연결한다.
+- Windows PC는 `docs/CINEMATIC_RENDERING_STRATEGY_v1.md`의 Lumen/VSM/TSR/atmosphere cinematic tier를 사용한다.
+- Android는 동일한 환경 truth를 mobile-safe light/shadow/fog/material path로 표현한다.
+- Android 우선 검증이 Windows 시각 품질의 상한이 되어서는 안 된다.
 
 ### 3. Natural Dressing
 - 나무 / 풀 / 바위 / 지면 디테일로 자연환경을 구성한다.
 - 같은 에셋 반복이 눈에 띄지 않도록 scale/rotation/variant를 사용한다.
+- Unreal PCG Framework를 기본 procedural placement tool로 사용할 수 있다.
+- PCG가 생성한 위치/밀도는 visual decoration authority만 가진다. 채집 가능한 나무/광물/식량 등 gameplay resource 존재 여부는 반드시 Core/World read contract를 따른다.
+- Windows에서는 고밀도/고품질 PCG 결과를 허용하고, Android에서는 partition/bake/LOD/HISM/density scaling으로 비용을 낮춘다.
 - 초반에는 visual-only decoration과 authoritative resource node를 명확히 구분한다.
 
 ### 4. Observer Readability
@@ -57,7 +62,15 @@
 - 선택 링, 이름 라벨, Level 0 Observer 정보가 배경 때문에 읽기 어려워지지 않아야 한다.
 - 너무 조잡한 HUD 요소를 배경에 추가하지 않는다.
 
-### 5. Mobile-first Performance
+### 5. Water / Hydrology Presentation
+- Unreal Water System은 강/호수/해안/바다의 **렌더링·메시·수면 표현 도구**로 사용한다.
+- 물의 존재/종류/염도/흐름/가용성은 Core Hydrology가 authority다.
+- Presentation이 보기 좋은 위치에 임의의 강/호수를 만들거나 Core 수계를 재추측하지 않는다.
+- Water spline/body/mesh가 필요하면 authoritative hydrology read model을 projection하여 생성한다.
+- Windows는 고품질 반사/수면/대기 상호작용을 사용할 수 있고 Android는 경량 water material/mesh/LOD path를 유지한다.
+- 수영/음용/채집/홍수 같은 gameplay consequence는 Water plugin 자체가 아니라 Core/World 계약이 결정한다.
+
+### 6. Mobile-first Performance
 - Android가 첫 실제 검증 플랫폼이다.
 - vegetation/rocks는 instancing/LOD 중심으로 구성한다.
 - 머티리얼 수와 texture memory를 제한한다.
@@ -119,6 +132,18 @@
 
 이렇게 하면 배경 작업을 너무 뒤로 미루지 않으면서도 사람이 서서 미끄러지는 상태의 어색함을 먼저 제거할 수 있다.
 
+## Unreal-native environment tools
+
+Project plugins:
+- `PCG` — procedural vegetation/rocks/ground-cover/biome dressing.
+- `Water` — river/lake/ocean surface presentation driven by authoritative Hydrology.
+- `Niagara` — weather/fire/smoke/ambient VFX where appropriate.
+
+사용 원칙:
+- 엔진 기능은 Presentation 생산성을 높이는 도구다. Core authority를 대신하지 않는다.
+- Experimental PCG extensions/GPU features는 별도 검증 없이 production 필수 의존성으로 만들지 않는다.
+- Runtime PCG가 비싸면 Android에서 반드시 runtime generation을 고집하지 않고 deterministic seed 결과를 bake/cache하거나 더 단순한 instancing path를 사용할 수 있다.
+
 ## v1 완료 기준
 
 - placeholder 느낌이 아닌 자연 지형/하늘/조명/vegetation baseline
@@ -127,6 +152,8 @@
 - selection ring / label 가독성 유지
 - visual-only 자연물과 authoritative interactable world state 경계 명확
 - Android 친화적인 LOD/instancing/material 구성
+- Windows cinematic tier에서 동일 세계의 고품질 environment path 확인
+- PCG/Water를 사용할 때 Core authority와 presentation projection 경계 확인
 - 사용 외부 에셋 provenance 기록
 - 실제 Unreal 실행/컴파일 검증
 
