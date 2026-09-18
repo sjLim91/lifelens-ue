@@ -473,6 +473,26 @@ for token in (
 ):
     assert token in world_h, f'Missing designated sanitation World runtime state: {token}'
 
+world_generation_types = (root / 'Source/LifeLens/Simulation/LLWorldGenerationReadTypes.h').read_text(encoding='utf-8')
+for token in (
+    'FLLCoreSurfaceWaterPresentationObservation',
+    'SuggestedChannelWidthCells',
+    'SuggestedAreaRadiusCells',
+    'DownstreamCenterGridX',
+    'bHasDownstreamTarget',
+):
+    assert token in world_generation_types, f'Missing water presentation read contract: {token}'
+
+world_generation_bridge = (root / 'Source/LifeLens/Simulation/LLWorldGenerationBridge.cpp').read_text(encoding='utf-8')
+for token in (
+    'FillSurfaceWaterPresentationObservation',
+    'GetMaterializedSurfaceWaterPresentationObservations',
+    'GetSurfaceWaterPresentationObservation',
+    'chunkOriginGrid',
+    'WorldChunkSpanGridCells',
+):
+    assert token in world_generation_bridge, f'Missing deterministic hydrology presentation projection: {token}'
+
 world = (root / 'Source/LifeLens/World/LLWorldDirector.cpp').read_text(encoding='utf-8')
 for token in (
     'SpawnResidents()',
