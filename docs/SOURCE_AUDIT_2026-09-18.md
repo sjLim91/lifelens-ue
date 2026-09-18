@@ -4,7 +4,11 @@
 >
 > Audit base main: `87020ec85787f1dfb3d03c30dd8fafaeb7b2aafe`
 >
-> Priority rule: 아래 **P0 수정이 C1-B보다 먼저**다.
+> Closeout: **AUDIT-0A / 0B / 0C automated source gates completed and merged through #158.**
+>
+> Exact-head closeout evidence: Preflight #789 PASS / Core Tests #721 PASS / Unreal Linux Compile #241 PASS / deterministic harness PASS.
+>
+> Interactive PIE/device smoke remains runtime QA, not CI evidence.
 
 ---
 
@@ -36,9 +40,9 @@
 
 ---
 
-# 2. P0 — C1-B보다 먼저 수정
+# 2. P0 — COMPLETED
 
-## P0-A — Time / Weather / Speed UI authority duplication
+## P0-A — Time / Weather / Speed UI authority duplication — DONE (#156)
 
 ### 확인된 상태
 
@@ -85,7 +89,7 @@ GameMode의 HUDClass는 현재 `ALLRuntimeObserverHUD`다. 따라서 runtime HUD
 
 ---
 
-## P0-B — Environmental Need Pressure가 resident 위치가 아닌 start region 기준
+## P0-B — Environmental Need Pressure가 resident 위치가 아닌 start region 기준 — DONE (#157)
 
 ### 확인된 상태
 
