@@ -86,16 +86,6 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
     static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoGroundCover(
         TEXT("/Game/Environment/Photoreal/PolyHaven/weed_plant_02/SM_LL_weed_plant_02.SM_LL_weed_plant_02"));
 
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> TreeA(TEXT("/Game/Environment/Quaternius/StylizedNature/CommonTree_1/StaticMeshes/CommonTree_1.CommonTree_1"));
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> TreeB(TEXT("/Game/Environment/Quaternius/StylizedNature/Pine_1/StaticMeshes/Pine_1.Pine_1"));
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> TreeC(TEXT("/Game/Environment/Quaternius/StylizedNature/TwistedTree_2/StaticMeshes/TwistedTree_2.TwistedTree_2"));
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> ShrubA(TEXT("/Game/Environment/Quaternius/StylizedNature/Bush_Common/StaticMeshes/Bush_Common.Bush_Common"));
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> ShrubB(TEXT("/Game/Environment/Quaternius/StylizedNature/Fern_1/StaticMeshes/Fern_1.Fern_1"));
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> GrassA(TEXT("/Game/Environment/Quaternius/StylizedNature/Grass_Common_Tall/StaticMeshes/Grass_Common_Tall.Grass_Common_Tall"));
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> GrassB(TEXT("/Game/Environment/Quaternius/StylizedNature/Grass_Wispy_Tall/StaticMeshes/Grass_Wispy_Tall.Grass_Wispy_Tall"));
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> RockA(TEXT("/Game/Environment/Quaternius/StylizedNature/Rock_Medium_1/StaticMeshes/Rock_Medium_1.Rock_Medium_1"));
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> RockB(TEXT("/Game/Environment/Quaternius/StylizedNature/Pebble_Round_2/StaticMeshes/Pebble_Round_2.Pebble_Round_2"));
-
     if (PhotoTreeFirSapling.Succeeded()) { TreeMeshes.Add(PhotoTreeFirSapling.Object); }
     if (PhotoTreePineSapling.Succeeded()) { TreeMeshes.Add(PhotoTreePineSapling.Object); }
     if (PhotoShrubA.Succeeded()) { ShrubMeshes.Add(PhotoShrubA.Object); }
