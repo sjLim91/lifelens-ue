@@ -140,6 +140,38 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
     FarGround->SetCanEverAffectNavigation(false);
     FarGround->SetCastShadow(false);
 
+    GroundGrassTileInstances = AddInstancedComponent(
+        TEXT("GroundGrassTiles"),
+        GroundMesh,
+        TreeCullStartUU,
+        TreeCullEndUU,
+        false);
+    GroundDryTileInstances = AddInstancedComponent(
+        TEXT("GroundDryTiles"),
+        GroundMesh,
+        TreeCullStartUU,
+        TreeCullEndUU,
+        false);
+    GroundTransitionTileInstances = AddInstancedComponent(
+        TEXT("GroundTransitionTiles"),
+        GroundMesh,
+        TreeCullStartUU,
+        TreeCullEndUU,
+        false);
+
+    if (GroundGrassTileInstances && GroundGrass)
+    {
+        GroundGrassTileInstances->SetMaterial(0, GroundGrass);
+    }
+    if (GroundDryTileInstances && GroundDry)
+    {
+        GroundDryTileInstances->SetMaterial(0, GroundDry);
+    }
+    if (GroundTransitionTileInstances && GroundTransition)
+    {
+        GroundTransitionTileInstances->SetMaterial(0, GroundTransition);
+    }
+
     for (int32 Index = 0; Index < TreeMeshes.Num(); ++Index)
     {
         TreeInstances.Add(AddInstancedComponent(*FString::Printf(TEXT("Trees_%d"), Index), TreeMeshes[Index], TreeCullStartUU, TreeCullEndUU, true));
@@ -217,6 +249,10 @@ void ALLWorldPresentationActor::Tick(float DeltaSeconds)
 
 void ALLWorldPresentationActor::ClearInstances()
 {
+    if (GroundGrassTileInstances) { GroundGrassTileInstances->ClearInstances(); }
+    if (GroundDryTileInstances) { GroundDryTileInstances->ClearInstances(); }
+    if (GroundTransitionTileInstances) { GroundTransitionTileInstances->ClearInstances(); }
+
     for (UHierarchicalInstancedStaticMeshComponent* Component : TreeInstances) { if (Component) { Component->ClearInstances(); } }
     for (UHierarchicalInstancedStaticMeshComponent* Component : ShrubInstances) { if (Component) { Component->ClearInstances(); } }
     for (UHierarchicalInstancedStaticMeshComponent* Component : GrassInstances) { if (Component) { Component->ClearInstances(); } }
@@ -679,6 +715,58 @@ void ALLWorldPresentationActor::BuildGround(const FLLCoreWorldGenerationObservat
     }
 
     BuildFarEnvironment(World, ActiveSpanUU, FarSpanUU);
+}
+
+void ALLWorldPresentationActor::BuildChunkGround(
+    const FLLCoreWorldGenerationObservation& World,
+    const FLLCoreNaturalChunkObservation& Chunk)
+{
+    if (!Chunk.bMaterialized || !GroundMesh)
+    {
+        return;
+    }
+
+    UMaterialInterface* Material = GroundMaterialForChunk(Chunk);
+    UHierarchicalInstancedStaticMeshComponent* Target = nullptr;
+    if (Material == GroundDry)
+    {
+        Target = GroundDryTileInstances;
+    }
+    else if (Material == GroundGrass)
+    {
+        Target = GroundGrassTileInstances;
+    }
+    else
+    {
+        Target = GroundTransitionTileInstances
+            ? GroundTransitionTileInstances.Get()
+            : GroundGrassTileInstances.Get();
+    }
+
+    if (!Target)
+    {
+        return;
+    }
+
+    const FVector ChunkOrigin = ChunkOriginUU(World, Chunk.ChunkX, Chunk.ChunkY);
+    constexpr float TileThicknessUU = 8.0f;
+    constexpr float SurfaceLiftUU = 0.35f;
+    const float SpanScale =
+        (LLWorldSpatialContract::ChunkSpanUU
+            / LLWorldSpatialContract::EngineCubeSideUU)
+        * 1.0125f;
+    const float HeightScale =
+        TileThicknessUU / LLWorldSpatialContract::EngineCubeSideUU;
+
+    // Slight XY overlap removes precision cracks between adjacent tiles. The top
+    // face sits 0.35 UU above the broad continuity ground, avoiding z-fighting.
+    Target->AddInstance(FTransform(
+        FRotator::ZeroRotator,
+        ChunkOrigin + FVector(
+            0.0f,
+            0.0f,
+            -TileThicknessUU * 0.5f + SurfaceLiftUU),
+        FVector(SpanScale, SpanScale, HeightScale)));
 }
 
 void ALLWorldPresentationActor::BuildFarEnvironment(
@@ -1581,6 +1669,7 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         {
             if (Chunk.bMaterialized)
             {
+                BuildChunkGround(World, Chunk);
                 BuildChunkDressing(World, Chunk);
             }
         }
@@ -1593,6 +1682,11 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         ClearFacilityInstances();
         BuildFacilities(World, Civilization, bNightPresentation);
     }
+
+    const int32 GroundTileCount =
+        (GroundGrassTileInstances ? GroundGrassTileInstances->GetInstanceCount() : 0)
+        + (GroundDryTileInstances ? GroundDryTileInstances->GetInstanceCount() : 0)
+        + (GroundTransitionTileInstances ? GroundTransitionTileInstances->GetInstanceCount() : 0);
 
     int32 TreeInstanceCount = 0;
     int32 ShrubInstanceCount = 0;
@@ -1611,8 +1705,9 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         + (FacilityAccentInstances ? FacilityAccentInstances->GetInstanceCount() : 0);
 
     UE_LOG(LogTemp, Log,
-        TEXT("LLWorldPresentation seed=%lld gen=%d chunks=%d natural=%d/%d/%d/%d facilities=%d facilityInstances=%d thinned=%d sightline=%d/%d dynamicCanopy=%d core=%.0f activity=%.0f ground=%s farGround=%s"),
+        TEXT("LLWorldPresentation seed=%lld gen=%d chunks=%d groundTiles=%d natural=%d/%d/%d/%d facilities=%d facilityInstances=%d thinned=%d sightline=%d/%d dynamicCanopy=%d core=%.0f activity=%.0f ground=%s farGround=%s"),
         World.WorldSeed, World.GenerationVersion, World.MaterializedChunkCount,
+        GroundTileCount,
         TreeInstanceCount, ShrubInstanceCount, GrassInstanceCount, RockInstanceCount,
         Civilization.FacilityCount, FacilityInstanceCount,
         SuppressedDressing, SightlineCleared, bInitialViewCaptured ? 1 : 0, DynamicCanopySuppressed,
