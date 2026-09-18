@@ -263,7 +263,32 @@ void ALLSocialObserverHUD::DrawSpeechBubbles(
             ? FLinearColor(1.0f, 0.88f, 0.68f, Fade)
             : FLinearColor(1.0f, 1.0f, 1.0f, Fade);
 
+        const float BubbleShadow = 3.0f * UIScale;
+        DrawRect(
+            FLinearColor(0.0f, 0.0f, 0.0f, 0.26f * Fade),
+            BubbleX + BubbleShadow,
+            BubbleY + BubbleShadow,
+            BubbleW,
+            BubbleH);
         DrawRect(BubbleColor, BubbleX, BubbleY, BubbleW, BubbleH);
+        if (Event.PresentationLevel == ELLCoreSocialPresentationLevel::Important)
+        {
+            DrawRect(
+                FLinearColor(1.0f, 0.72f, 0.36f, 0.90f * Fade),
+                BubbleX,
+                BubbleY,
+                BubbleW,
+                FMath::Max(2.0f, 2.0f * UIScale));
+        }
+        else
+        {
+            DrawRect(
+                FLinearColor(0.42f, 0.82f, 1.0f, 0.55f * Fade),
+                BubbleX,
+                BubbleY,
+                BubbleW,
+                FMath::Max(1.0f, UIScale));
+        }
         DrawText(
             Speech,
             TextColor,
@@ -366,12 +391,32 @@ void ALLSocialObserverHUD::DrawObservedResidentHistory(
         Insets.Top,
         Canvas->ClipY - Insets.Bottom - PanelHeight);
 
+    const float HistoryShadowOffset = 4.0f * UIScale;
+    const float HistoryAccentWidth = FMath::Max(3.0f, 3.0f * UIScale);
     DrawRect(
-        FLinearColor(0.0f, 0.0f, 0.0f, 0.38f),
+        FLinearColor(0.0f, 0.0f, 0.0f, 0.24f),
+        PanelX + HistoryShadowOffset,
+        PanelY + HistoryShadowOffset,
+        PanelWidth,
+        PanelHeight);
+    DrawRect(
+        FLinearColor(0.018f, 0.028f, 0.044f, 0.82f),
         PanelX,
         PanelY,
         PanelWidth,
         PanelHeight);
+    DrawRect(
+        FLinearColor(0.42f, 0.82f, 1.0f, 0.80f),
+        PanelX,
+        PanelY,
+        HistoryAccentWidth,
+        PanelHeight);
+    DrawRect(
+        FLinearColor(0.44f, 0.63f, 0.82f, 0.22f),
+        PanelX,
+        PanelY,
+        PanelWidth,
+        FMath::Max(1.0f, UIScale));
 
     float CursorY = PanelY + BubblePadY;
     DrawText(
@@ -383,6 +428,12 @@ void ALLSocialObserverHUD::DrawObservedResidentHistory(
         TitleScale,
         false);
     CursorY += TitleH + Gap;
+    DrawRect(
+        FLinearColor(0.44f, 0.63f, 0.82f, 0.18f),
+        PanelX + BubblePadX,
+        CursorY - Gap * 0.5f,
+        FMath::Max(0.0f, PanelWidth - BubblePadX * 2.0f),
+        FMath::Max(1.0f, UIScale));
 
     for (int32 Index = 0; Index < Lines.Num(); ++Index)
     {
@@ -471,12 +522,32 @@ void ALLSocialObserverHUD::DrawEventFeed(
         Insets.Top,
         Canvas->ClipY - Insets.Bottom - PanelHeight);
 
+    const float FeedShadowOffset = 4.0f * UIScale;
+    const float FeedAccentWidth = FMath::Max(3.0f, 3.0f * UIScale);
     DrawRect(
-        FLinearColor(0.0f, 0.0f, 0.0f, 0.42f),
+        FLinearColor(0.0f, 0.0f, 0.0f, 0.24f),
+        PanelX + FeedShadowOffset,
+        PanelY + FeedShadowOffset,
+        PanelWidth,
+        PanelHeight);
+    DrawRect(
+        FLinearColor(0.018f, 0.028f, 0.044f, 0.84f),
         PanelX,
         PanelY,
         PanelWidth,
         PanelHeight);
+    DrawRect(
+        FLinearColor(0.42f, 0.82f, 1.0f, 0.78f),
+        PanelX,
+        PanelY,
+        FeedAccentWidth,
+        PanelHeight);
+    DrawRect(
+        FLinearColor(0.44f, 0.63f, 0.82f, 0.22f),
+        PanelX,
+        PanelY,
+        PanelWidth,
+        FMath::Max(1.0f, UIScale));
 
     float CursorY = PanelY + BubblePadY;
     DrawText(
@@ -488,6 +559,12 @@ void ALLSocialObserverHUD::DrawEventFeed(
         TitleScale,
         false);
     CursorY += TitleH + Gap;
+    DrawRect(
+        FLinearColor(0.44f, 0.63f, 0.82f, 0.18f),
+        PanelX + BubblePadX,
+        CursorY - Gap * 0.5f,
+        FMath::Max(0.0f, PanelWidth - BubblePadX * 2.0f),
+        FMath::Max(1.0f, UIScale));
 
     for (int32 Index = 0; Index < Lines.Num(); ++Index)
     {
@@ -496,6 +573,15 @@ void ALLSocialObserverHUD::DrawEventFeed(
         const FLinearColor RowColor = bImportant
             ? FLinearColor(1.0f, 0.83f, 0.62f, 0.95f)
             : FLinearColor(0.92f, 0.94f, 0.98f, 0.88f);
+        if (bImportant)
+        {
+            DrawRect(
+                FLinearColor(1.0f, 0.72f, 0.36f, 0.90f),
+                PanelX + BubblePadX - 6.0f * UIScale,
+                CursorY,
+                FMath::Max(2.0f, 2.0f * UIScale),
+                FMath::Max(2.0f, Heights[Index]));
+        }
         DrawText(
             Lines[Index],
             RowColor,
