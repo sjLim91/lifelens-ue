@@ -6,6 +6,8 @@
 >
 > Canonical roadmap: `docs/DEVELOPMENT_MILESTONES.md`.
 >
+> Earth / human expansion architecture: `docs/EARTH_AND_HUMAN_FOUNDATION.md`.
+>
 > Long-range civilization direction: `docs/OPEN_ENDED_CIVILIZATION_NORTH_STAR.md`.
 >
 > Ownership / locks / IR: `tasks/TEAM_BOARD.md`.
@@ -16,7 +18,7 @@
 >
 > Historical audit: `docs/INTEGRATED_AUDIT_2026-09-17.md` (point-in-time only; do not treat as live status).
 
-Last reconciled: **2026-09-18 23:55 KST after #216~#224 merged; #225 docs sync remains open**.
+Last reconciled: **2026-09-19 KST after #226/#227 merged; Earth & Human Foundation selected as the new structural priority**.
 
 ---
 
@@ -142,7 +144,7 @@ Legacy mapping is preserved so no planned work is lost:
 - persistence.
 - no free New Game facilities.
 
-### C-S1 — Autonomous settlement need recognition — ACTIVE
+### C-S1 — Autonomous settlement need recognition — DONE (#161)
 1. SleepingPlace utility from sleep/outdoor-rest pressure.
 2. Shelter utility from resident-local environmental exposure.
 3. WorkSurface utility from repeated craft/build demand.
@@ -151,7 +153,7 @@ Legacy mapping is preserved so no planned work is lost:
 6. Presentation only executes/visualizes Core directive.
 7. same-seed / snapshot continuation deterministic.
 
-### C-S2 — Facility effects / maintenance
+### C-S2 — Facility effects / maintenance — DONE (#162)
 - sleep benefit.
 - shelter environmental protection.
 - work/craft benefit.
@@ -252,7 +254,15 @@ Standing Jjun merge rule remains:
 
 ## 9. Immediate next implementation target
 
-> **Stage C / C-S1 — Autonomous Settlement Need Recognition.**
+> **Earth & Human Foundation / EH-0 -> EH-1.**
+
+Immediate structural sequence:
+1. hierarchy-compatible Planet / Surface Region / Chunk identity contract.
+2. authoritative materialized region/chunk enumeration.
+3. deterministic hydrology foundation.
+4. explicit water bodies and freshwater/saltwater observations.
+5. real thirst source selection and collection.
+6. only then continue water-dependent settlement/agriculture expansion.
 
 
 ---
@@ -282,3 +292,31 @@ Each merged only after its exact-head Preflight + Unreal Linux Compile succeeded
 Current open synchronization item: #225 docs-only current-work reconciliation.
 
 The previous practical four-PR batch cap is removed. Independent canonical files may now be developed/compiled in larger parallel batches while same-file responsibilities are sequenced or combined.
+
+
+---
+
+## 11. Earth & Human Foundation — ACTIVE
+
+Canonical design:
+- `docs/EARTH_AND_HUMAN_FOUNDATION.md`.
+
+Preserved:
+- current Core authority.
+- deterministic WorldSeed/chunks.
+- residents, Needs, emotions, relationships, family/lifecycle.
+- facilities, civilization, weather/time.
+- Save/Load and Observer contracts.
+
+Structural expansion:
+- `Planet -> Surface Region -> Chunk -> Local Surface`.
+- Observer scale: `Local -> Regional -> Planetary -> Orbital -> Interplanetary`.
+- deterministic Simulation LOD for distant regions/populations.
+- terrain/hydrology before deeper settlement expansion.
+- ecology and richer human body/culture/society layers.
+
+Latest local-surface presentation:
+- #226 Far world visual envelope — MERGED.
+- #227 Horizon atmosphere blend — MERGED.
+
+These fixes hide the bootstrap square/void at Local scale only; they are not the final planetary geometry.
