@@ -125,8 +125,31 @@ void ALLSocialObserverHUD::DrawSocialOverlays(
     const TArray<FLLCoreSocialEventObservation>& Events,
     int64 CurrentSimulationMinute)
 {
+    // Speech belongs to the world itself, so it remains visible at every
+    // observation depth. Bottom panels adapt to the base HUD density instead of
+    // competing with LEVEL 1/2 resident chrome.
     DrawSpeechBubbles(Events, CurrentSimulationMinute);
-    DrawObservedResidentHistory(Events, CurrentSimulationMinute);
+
+    ULLObservationSubsystem* Observation = FindSocialObservation(GetWorld());
+    if (!Observation)
+    {
+        DrawEventFeed(Events, CurrentSimulationMinute);
+        return;
+    }
+
+    if (Observation->GetObservationLevel() == ELLObservationLevel::Detail)
+    {
+        // LEVEL 2 already spends most of the available mobile-safe width on
+        // resident detail. Avoid stacking two more bottom panels over it.
+        return;
+    }
+
+    if (Observation->HasObservedResident())
+    {
+        DrawObservedResidentHistory(Events, CurrentSimulationMinute);
+        return;
+    }
+
     DrawEventFeed(Events, CurrentSimulationMinute);
 }
 
