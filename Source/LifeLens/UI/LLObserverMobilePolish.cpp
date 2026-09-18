@@ -1,6 +1,7 @@
 #include "UI/LLObserverHUD.h"
 #include "Core/LLTypes.h"
 #include "Characters/LLResidentCharacter.h"
+#include "Engine/Engine.h"
 #include "EngineUtils.h"
 #include "Framework/Application/SlateApplication.h"
 #include "GenericPlatform/GenericApplication.h"
@@ -95,8 +96,9 @@ void ALLObserverHUD::DrawSelectionFeedback(const FLLResidentData& Selected, floa
     int32 ViewportY = 0;
     PlayerController->GetViewportSize(ViewportX, ViewportY);
     const FVector2D ViewportSize(ViewportX, ViewportY);
+    const FString SelectedName = Selected.DisplayName;
 
-    auto DrawOffscreenCue = [this, PlayerController, Actor, ViewportSize, UIScale]()
+    auto DrawOffscreenCue = [this, PlayerController, Actor, ViewportSize, UIScale, SelectedName]()
     {
         if (!Canvas)
         {
@@ -158,6 +160,45 @@ void ALLObserverHUD::DrawSelectionFeedback(const FLLResidentData& Selected, floa
             EdgePoint.Y + Perpendicular.Y * 5.0f * UIScale,
             CueColor,
             FMath::Max(1.0f, UIScale));
+
+        // Keep identity attached to the direction cue so the observer knows
+        // exactly who left frame, especially once several generations coexist.
+        UFont* Font = GEngine ? GEngine->GetSmallFont() : nullptr;
+        if (Font && !SelectedName.IsEmpty())
+        {
+            const float TextScale = 0.72f * UIScale;
+            float TextW = 0.0f;
+            float TextH = 0.0f;
+            GetTextSize(SelectedName, TextW, TextH, Font, TextScale);
+
+            const FVector2D LabelCenter =
+                EdgePoint - Direction * (30.0f * UIScale);
+            const float LabelX = FMath::Clamp(
+                LabelCenter.X - TextW * 0.5f,
+                MinX,
+                FMath::Max(MinX, MaxX - TextW));
+            const float LabelY = FMath::Clamp(
+                LabelCenter.Y - TextH * 0.5f,
+                MinY,
+                FMath::Max(MinY, MaxY - TextH));
+
+            DrawText(
+                SelectedName,
+                FLinearColor(0.02f, 0.03f, 0.04f, 0.85f),
+                LabelX + 1.5f * UIScale,
+                LabelY + 1.5f * UIScale,
+                Font,
+                TextScale,
+                false);
+            DrawText(
+                SelectedName,
+                FLinearColor(0.80f, 0.94f, 1.0f, 0.96f),
+                LabelX,
+                LabelY,
+                Font,
+                TextScale,
+                false);
+        }
     };
 
     FBox2D BoundsScreen;
