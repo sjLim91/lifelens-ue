@@ -540,10 +540,8 @@ void ALLSocialObserverHUD::DrawEventFeed(
         return;
     }
 
-    TArray<const FLLCoreSocialEventObservation*> FeedEvents;
-    for (int32 Index = Events.Num() - 1;
-         Index >= 0 && FeedEvents.Num() < MaxVisibleFeedEntries;
-         --Index)
+    TArray<const FLLCoreSocialEventObservation*> Candidates;
+    for (int32 Index = Events.Num() - 1; Index >= 0; --Index)
     {
         const FLLCoreSocialEventObservation& Event = Events[Index];
         const int64 AgeMinutes = FMath::Max<int64>(
@@ -555,8 +553,51 @@ void ALLSocialObserverHUD::DrawEventFeed(
         {
             continue;
         }
-        FeedEvents.Add(&Event);
+        Candidates.Add(&Event);
     }
+
+    TArray<const FLLCoreSocialEventObservation*> FeedEvents;
+    FeedEvents.Reserve(MaxVisibleFeedEntries);
+
+    // Fast simulation can generate several routine social rows between frames.
+    // Reserve room for the newest Important events first, then fill the
+    // remaining slots by recency so meaningful milestones are not immediately
+    // pushed out by ordinary interactions.
+    constexpr int32 MaxReservedImportantEvents = 2;
+    int32 ReservedImportant = 0;
+    for (const FLLCoreSocialEventObservation* Event : Candidates)
+    {
+        if (ReservedImportant >= MaxReservedImportantEvents
+            || FeedEvents.Num() >= MaxVisibleFeedEntries)
+        {
+            break;
+        }
+        if (Event
+            && Event->PresentationLevel == ELLCoreSocialPresentationLevel::Important)
+        {
+            FeedEvents.Add(Event);
+            ++ReservedImportant;
+        }
+    }
+
+    for (const FLLCoreSocialEventObservation* Event : Candidates)
+    {
+        if (FeedEvents.Num() >= MaxVisibleFeedEntries)
+        {
+            break;
+        }
+        if (Event && !FeedEvents.Contains(Event))
+        {
+            FeedEvents.Add(Event);
+        }
+    }
+
+    FeedEvents.Sort([](
+        const FLLCoreSocialEventObservation& A,
+        const FLLCoreSocialEventObservation& B)
+    {
+        return A.SimulationMinute > B.SimulationMinute;
+    });
 
     if (FeedEvents.Num() == 0)
     {
