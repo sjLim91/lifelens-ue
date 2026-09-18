@@ -59,6 +59,30 @@ public:
 
     static constexpr float RefreshIntervalSeconds = 2.0f;
 
+    // ---- Dynamic observer canopy visibility ---------------------------------
+    // Presentation-only. Ambient canopy that crosses the current camera ->
+    // resident sightline is reversibly collapsed, then restored as the observer
+    // moves. Authoritative resource-patch trees are intentionally NOT registered
+    // here, so this never hides or mutates resource truth.
+    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability")
+    bool bDynamicObserverCanopyVisibility = true;
+
+    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="40.0", ClampMax="800.0"))
+    float DynamicCanopyHideRadiusUU = 220.0f;
+
+    // Hysteresis prevents a tree from flickering as a camera/resident sightline
+    // skims the edge of the hide corridor.
+    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="40.0", ClampMax="1200.0"))
+    float DynamicCanopyRestoreRadiusUU = 300.0f;
+
+    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.001", ClampMax="0.20"))
+    float DynamicCanopyHiddenScale = 0.02f;
+
+    // Bounds the Android cost when population becomes large. Nearest residents
+    // to the observer get readability priority; Core population is untouched.
+    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="1", ClampMax="64"))
+    int32 MaxDynamicVisibilityTargets = 24;
+
     // ---- Settlement readability envelope -------------------------------------
     // Presentation-only. Residents live and act within a few thousand units of
     // the settlement, and natural forest density there hides both the residents
@@ -112,10 +136,10 @@ public:
     // clears canopy inside a cone from the initial camera position toward the
     // settlement reference.
     //
-    // Frozen at the initial camera pose, so it stops helping once the player
-    // orbits or pans. Milestone B initial-readability mitigation, not the
-    // general solution; the general fix is a runtime reversible fade of the
-    // canopy that actually occludes the current camera-to-resident line.
+    // Frozen at the initial camera pose, so it is now only the fallback used
+    // when Dynamic Observer Canopy Visibility is disabled. The default runtime
+    // path keeps all ambient canopy instances and reversibly collapses only the
+    // ones currently between the camera and a resident.
     //
     // The camera is read and never moved; Core and world-generation facts are
     // untouched and resource patches are never removed.
@@ -132,6 +156,14 @@ public:
     float InitialSightlineCanopyKeep = 0.05f;
 
 private:
+    struct FDynamicCanopyInstance
+    {
+        TWeakObjectPtr<UHierarchicalInstancedStaticMeshComponent> Component;
+        int32 InstanceIndex = INDEX_NONE;
+        FTransform BaseTransform = FTransform::Identity;
+        bool bSuppressed = false;
+    };
+
     UHierarchicalInstancedStaticMeshComponent* AddInstancedComponent(
         const TCHAR* Name, UStaticMesh* Mesh, float CullStartUU, float CullEndUU, bool bCastShadow);
 
@@ -152,6 +184,9 @@ private:
     float ResourcePatchScaleFactor(const FVector2D& LocationUU) const;
     float InitialSightlineKeepFactor(const FVector2D& LocationUU) const;
     bool CaptureInitialViewOrigin();
+    void RegisterDynamicCanopyInstance(UHierarchicalInstancedStaticMeshComponent* Component,
+                                       int32 InstanceIndex, const FTransform& BaseTransform);
+    void UpdateDynamicObserverCanopyVisibility();
     UMaterialInterface* GroundMaterialForChunk(const FLLCoreNaturalChunkObservation& Chunk) const;
 
     // Catalogue (referenced in the constructor so it is cooked).
@@ -193,4 +228,6 @@ private:
     FVector2D InitialViewOriginUU = FVector2D::ZeroVector;
     bool bInitialViewCaptured = false;
     int32 SightlineCleared = 0;
+    int32 DynamicCanopySuppressed = 0;
+    TArray<FDynamicCanopyInstance> DynamicCanopyInstances;
 };
