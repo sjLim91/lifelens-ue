@@ -452,3 +452,61 @@ Civilization 방향의 첫 성공 기준은 다음이다.
 > **NPC들이 스스로 살아가고, 사랑하고, 가족을 이루는 동시에 자연에서 자원을 얻고, 실패하고, 발견하고, 만들고, 가르치며 세대에 걸쳐 하나의 문명과 역사를 만들어간다. 플레이어는 그 과정을 지시하는 것이 아니라 발견하고 관찰한다.**
 
 이 방향은 LifeLens의 기존 Human-like AI / Relationship / Family / Generation / Observer 철학과 동등한 최상위 제품 요구사항이다.
+
+---
+
+## 20. 2026-09-18 구현 정렬
+
+이 문서의 초기 Civilization Foundation은 이제 실제 main에서 상당 부분 구현되었다.
+
+현재 완료:
+- 자연 Resource Node + 유한/재생 수량.
+- 개인 Inventory.
+- Gather / Carry / Store 기반.
+- PrimitiveStorage.
+- SharpFlake / StoneCuttingTool / DiggingStick / StoneHammer.
+- 개인 Knowledge + discovery / reproducibility.
+- spatial witness / teaching.
+- FirePit / heat / charcoal.
+- Furnace / copper smelting.
+- Core-authored facility position / ContextAction ACK.
+- time / season / weather / environmental consequence.
+- WorkSurface / SleepingPlace / Shelter의 authoritative construction contract (#152).
+
+### 현재 C1 전환점
+
+#152부터 정착 시설은 이름만 있는 enum이 아니라 실제 건설 가능한 Core object다.
+
+- WorkSurface: Wood 3 + Stone 2 + Work 7.
+- SleepingPlace: Fiber 4 + Wood 2 + Work 5.
+- Shelter: Wood 8 + Fiber 5 + Work 14.
+
+이 시설들은 NEW GAME에서 제공되지 않는다.
+실제 site selection, inventory material delivery, construction work, activation을 거쳐야 한다.
+
+### 다음 구현
+
+**C1-B Autonomous Settlement Need Recognition**
+
+- 반복되는 수면 압박/야외 휴식 -> SleepingPlace Utility.
+- 날씨/온도 노출 -> Shelter Utility.
+- 반복 제작/건설 병목 -> WorkSurface Utility.
+- 프로젝트에 부족한 재료 -> Gather demand.
+- 실제 spatial ContextAction / ACK를 통해 Plan / Deliver / Work를 수행.
+
+이후:
+- C1-C facility benefit / maintenance.
+- C1-D water / food storage / spoilage / cultivation.
+- C1-E emergent settlement geometry.
+- C1-F Tin/Bronze with real prerequisites.
+
+### Open-ended 확장
+
+이 문서의 원시 문명 progression은 최종 상한이 아니다.
+장기적으로는 `docs/OPEN_ENDED_CIVILIZATION_NORTH_STAR.md`의
+Knowledge / Capability / Technology / Civilization Transformation 모델로 확장한다.
+
+고정 시대 해금은 사용하지 않는다.
+정착, 농업, 금속, 산업, 전기, 디지털, AI/자동화, 우주 및 미지의 미래는
+실제 선행조건과 사회적 결과에서 발생하는 capability band로 취급한다.
+
