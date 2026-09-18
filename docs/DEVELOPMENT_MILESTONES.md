@@ -48,45 +48,58 @@
 
 # 3. Current Baseline / Completed Foundations
 
-완료된 주요 기반:
+Completed major authority/correctness chain:
 
-- Character / Appearance / World Affordance / Residue / Runtime ACK / Save-Load.
-- World Genesis WG-1/WG-2 / generated natural world / production map integration.
-- Context Action Contract v1 / spatial authority / Observer camera + resident detail.
-- Lifecycle Core Correctness #115.
-- Action Completion Unification #116.
-- Social Communication & Localization #117.
-- Facilities / Tools / PrimitiveStorage #118.
-- Tool Effectiveness #119.
-- DiggingStick / StoneHammer #120.
-- Fire / Heat / FirePit #121.
-- Furnace / Copper Smelting #122.
-- World / Facility / Obstacle Authority Normalization #123.
-- Legacy Authority Removal v1 #124.
-- Lifecycle Presentation v1 #125.
-- Social bubble readability #126.
-- Integrated audit / roadmap reconciliation #127.
-- Mac editor `-Wshadow` unblocker #128.
-- Knowledge Transmission Spatial Authority v1 #130.
-- Emotion Runtime Integration v1 #132 — **MERGED**.
-- PR #100 World Readability source current-main reapplication via #134 — **MERGED**.
+- #115 Lifecycle Core Correctness.
+- #116 Action Completion Unification.
+- #117 Social Communication & Localization.
+- #118 Facilities / Tools / PrimitiveStorage.
+- #119 Tool Effectiveness.
+- #120 DiggingStick / StoneHammer.
+- #121 Fire / Heat / FirePit.
+- #122 Furnace / Copper Smelting.
+- #123 World / Facility / Obstacle Authority Normalization.
+- #124 Legacy Authority Removal.
+- #125 Lifecycle Presentation v1.
+- #130 Knowledge Transmission Spatial Authority.
+- #132 Emotion Runtime Integration.
+- #134 World readability current-main reapplication.
 
-## PR #100 / #134 closeout
+Time/environment foundation is now implemented:
 
-Original Dagyeom PR #100 was not merged wholesale after becoming stale.
-Its validated `WorldPresentation` source changes were reconstructed on current main as PR #134.
+- #135 Simulation Time Authority & Variable Speed.
+- #136 Calendar + Day/Night Authority.
+- #137 Seasons + Dynamic Weather Core.
+- #138 Environmental Consequences.
+- #139 Dynamic Environment Presentation Foundation.
+- #140 Visual Catch-up v2.
+- #142 Observer runtime time/weather/speed chrome.
+- #147 Observer time/weather/speed controls.
+- #148 Dynamic Observer Canopy Visibility.
+- #149 Visual Catch-up v3 packaged rain/snow fallback.
 
-#134 exact-head evidence:
-- Preflight #723 — PASS.
-- Unreal Linux Compile #207 — PASS.
-- merge commit on main: `1195fddbaf3341ac9508347d07fab69740f02482`.
+Presentation catch-up is substantially integrated:
 
-Therefore:
-- #134 = DONE.
-- original #100 = **superseded / closeout complete**.
-- Dagyeom Presentation lane no longer waits for #100.
+- #143 Context Motion v2a.
+- #144 Detail Scrolling v1.
+- #145 Character Context Motion v2.
+- #146 lifecycle live event feed.
+- #150 Lifecycle Presentation v2 persistent family/life card and observed timeline.
+- #151 Adaptive Observer Information Density.
 
----
+Settlement foundation has started:
+
+- #152 **C1-A Settlement Facility Authority Foundation** — MERGED.
+  - WorkSurface / SleepingPlace / Shelter are now real constructible Core facilities.
+  - no free starting infrastructure.
+  - deterministic site selection.
+  - real material delivery + construction work.
+  - weather-sensitive work friction.
+  - save/load persistence.
+
+Historical PR #100 remains superseded by #134.
+Stale PR #98 remains selective-salvage only and must not overwrite current HUD/controller wholesale.
+Android Gate B remains paused by user.
 
 # 4. New Priority Order
 
@@ -271,43 +284,78 @@ Android policy:
 
 Owner: Jjun Core/World provider -> Dagyeom presentation consumer.
 
-This expands the old narrow `Civilization Phase 2` interpretation.
-The current simulation reaches Copper Smelting but still lacks a durable settlement/food substrate for centuries of life.
+Goal:
+move from opportunistic gathering toward a durable, reproducible settlement economy without a forced era switch.
 
-Priority scope:
+### C1-A — Settlement facility authority — DONE (#152)
 
+- WorkSurface.
 - SleepingPlace.
 - Shelter.
-- WorkSurface.
-- facility effects on sleep/comfort/work efficiency.
-- cultivation/agriculture foundation.
-- renewable food production.
-- water handling/storage.
-- settlement resource pressure/maintenance.
-- TinOre.
-- Bronze/bronze tools after real prerequisites.
+- deterministic Core-authored construction sites.
+- real material requirements.
+- real construction work.
+- environment work friction.
+- operational state + snapshot persistence.
+- no free New Game facility.
 
-New environment dependency:
+### C1-B — Autonomous settlement need recognition — NEXT
 
-- crop growth depends on time/season/moisture/fertility.
-- shelter value depends partly on temperature/weather.
-- food storage pressure changes with harvest/season availability.
-- water systems respond to environment rather than infinite static supply.
+Residents should choose settlement construction because their lived pressure makes it useful.
+
+Required causal inputs:
+- high/repeated sleep pressure or outdoor rest -> SleepingPlace value.
+- rain/cold/heat exposure -> Shelter value.
+- repeated craft/build demand -> WorkSurface value.
+- incomplete project material requirements -> Gather demand for the missing materials.
+
+Required action chain:
+`Need/pressure -> Utility -> Plan -> spatial ContextAction -> DeliverMaterial -> Work -> ACK -> Operational`
 
 Rules:
+- facility does not appear because C1 is "unlocked".
+- resident must possess/deliver actual material.
+- Presentation never completes the facility.
+- identical seed/snapshot continuation remains deterministic.
 
-- no free starting infrastructure.
-- no era auto-spawn.
-- every facility requires material/work/knowledge.
-- farming does not create food without land/time/input constraints.
+### C1-C — Facility effects and maintenance
+
+- SleepingPlace improves sleep recovery/comfort versus outdoor fallback.
+- Shelter reduces appropriate weather/environment penalties.
+- WorkSurface improves relevant crafting/work throughput or success.
+- durability and maintenance become meaningful.
+- ruined/inactive facilities stop providing benefit.
+- maintenance requires real material/labor rather than passive auto-repair.
+
+### C1-D — Durable subsistence
+
+- water handling / carrying / storage.
+- food storage and spoilage pressure.
+- cultivation/agriculture foundation.
+- renewable food production.
+- season/moisture/fertility constraints.
+- local scarcity can trigger search/migration pressure.
+- farming never creates food without land/time/input constraints.
+
+### C1-E — Emergent settlement form
+
+- frequently used facilities form activity centers through actual use.
+- storage/fire/work/sleep functions may cluster naturally.
+- sanitation remains outside dense living space.
+- household living space may differentiate.
+- no hard-coded "town center" authority object is required.
+
+### C1-F — Early material progression after settlement stability
+
+- TinOre.
+- Bronze and bronze tools only after physical prerequisites.
+- no automatic Bronze Age transition.
 
 Acceptance:
-
-- New Game can move from gathering toward reproducible settlement economy by actual actions.
-- failed settlement may regress.
-- seasonal/resource shocks can expose weak settlement design.
-
----
+- New Game can progress from no facilities to autonomous construction/use of durable settlement infrastructure.
+- settlement economy can fail/regress under weak resources, weather or maintenance.
+- seasonal/resource shocks expose real settlement weaknesses.
+- Save/Load does not duplicate projects, materials or completion.
 
 # 7. P1 Long-Run Reliability Track
 
@@ -427,57 +475,65 @@ Scope:
 
 # 10. Presentation Track — Parallel, Not Blocking Core
 
-## Milestone P2 — Character Context Motion v2
+The 2026-09-18 Presentation Catch-up sprint is substantially complete and no longer blocks C1.
 
-Owner: Dagyeom Character Presentation.
+## Milestone P2 — Character Context Motion v2 — DONE / ITERATIVE QUALITY
 
-Scope:
+Merged:
+- #143 tool-specific gather motion.
+- #145 authority-directive-based Context Motion v2.
 
-- Sit / Stand / Lie / Wake only with compatible facilities.
-- PickUp / Carry / Use.
-- Gather / Cut / Chop / Dig / Strike.
-- Craft / Build / Fire / Smelt.
-- Parenting care.
-- sanitation interaction.
-- teaching/social context motion.
-- gaze/body orientation from authoritative targets.
+Covered presentation categories include gather/tool use, build/fire/smelt, sanitation, parenting/teaching/social where compatible clips exist.
 
-Asset policy:
+Remaining quality gaps:
+- authored sleep/lie/wake assets.
+- better carry/eat/drink clips.
+- higher-quality age/child-specific anatomy and animation.
+- runtime visual QA.
 
-- existing Quaternius CC0 first.
-- never invent furniture/tools through animation.
-- animation failure must not fabricate Core completion.
+Authority rule remains:
+animation never fabricates completion or bypasses Core ACK.
 
----
+## Milestone P3 — Observer Readability, Real Scrolling & Time Controls — DONE / ITERATIVE QUALITY
 
-## Milestone P3 — Observer Readability, Real Scrolling & Time Controls
+Merged:
+- #142 runtime chrome.
+- #144 true Detail scrolling: PC wheel + Android one-finger drag.
+- #147 time/weather/speed controls.
+- #148 dynamic canopy visibility.
+- #151 adaptive information density.
 
-Owner: Dagyeom UI/Observer.
+Remaining:
+- selective panel-opacity salvage from stale #98 if still beneficial.
+- device-specific safe-area/layout tuning.
+- camera/readability QA.
 
-Scope:
+## Milestone P4 — Lifecycle Event Presentation v2 — DONE / ITERATIVE QUALITY
 
-- true scrollable Detail content.
-- generated-world readability.
-- pause / 1x / 4x / 16x / 64x controls from T1 contract.
-- current simulation date/time.
-- current season/weather summary from E1/E2.
-- emotion/teaching/lifecycle/history authoritative labels.
-- future civilization capability/history surfaces without cluttering main view.
+Merged:
+- #146 pregnancy/birth/growth/death event feed.
+- #150 selected-resident persistent family/lifecycle card + observed session timeline.
 
----
+Remaining:
+- persistent full historical LifeHistory read model when Core exposes it.
+- deceased inspection polish.
+- optional truthful death-specific animation.
+- better child/life-stage visual assets.
 
-## Milestone P4 — Lifecycle Event Presentation v2
+## Milestone P5 — Dynamic Environment Visual Quality — ACTIVE ASSET/POLISH PATH
 
-Scope:
+Merged:
+- #139 environment presentation foundation.
+- #140 surface weather/Niagara/post-process/HISM budget.
+- #149 packaged code fallback for visible rain/snow when authored Niagara systems are absent.
 
-- pregnancy/birth visibility.
-- growth transition visibility.
-- death/history visibility.
-- deceased inspection from Core history.
-- truthful optional death animation.
-- family/history feed integration.
+Next quality path:
+- authored Niagara systems/materials.
+- stronger wet/snow surface art.
+- fire/furnace light/smoke polish.
+- Android LOD/performance validation.
 
----
+Presentation quality may continue in parallel, but should not create a second simulation truth or block C1 unless a real contract gap is found.
 
 # 11. Historical-to-Future Content Expansion
 
@@ -582,11 +638,11 @@ LifeLens should eventually surprise the observer **without abandoning causality*
 
 ## Jjun Core / World lane
 
-1. **T1 Simulation Time Authority & Variable Speed.**
-2. **E1 Calendar + Day/Night Authority.**
-3. **E2 Seasons + Dynamic Weather Core v1.**
-4. **E3 Environmental Consequences v1.**
-5. **C1 Settlement & Subsistence Foundation.**
+1. **C1-B Autonomous Settlement Need Recognition.**
+2. **C1-C Facility Effects + Maintenance.**
+3. **C1-D Water/Food Persistence + Cultivation.**
+4. **C1-E Emergent Settlement Geometry.**
+5. **C1-F Tin/Bronze after real prerequisites.**
 6. **C2 Long-Run Scale + History Fast-Forward.**
 7. **C3 Open-Ended Civilization Framework v1.**
 8. C4 Health / Disease / Population Resilience.
@@ -596,34 +652,41 @@ LifeLens should eventually surprise the observer **without abandoning causality*
 
 ## Dagyeom Presentation lane
 
-1. **P2 Character Context Motion v2.**
-2. **P3 Observer Readability + Real Scrolling + Time Controls.**
-3. **E4 Dynamic Environment Presentation v1** as E1/E2 provider contracts land.
-4. **P4 Lifecycle Event Presentation v2.**
-5. settlement/civilization/future presentation consumers as Core contracts land.
+Presentation Catch-up is integrated through #151.
 
-Dagyeom-owned changes may proceed and merge independently after CI when they do not conflict with active Core provider ownership.
-Conflicts must be resolved by comparing both sides; do not overwrite current main blindly.
+Independent quality work may continue:
+- authored animation improvements.
+- panel/readability polish.
+- environment VFX/material polish.
+- lifecycle/deceased visual polish.
+- C1 facility presentation consumers as Core contracts land.
+
+Correct responsibility beats artificial file separation.
+If both lanes legitimately need the same canonical file, coordinate/rebase instead of inventing duplicate architecture.
 
 ## Android / Device lane
 
 Gate B remains **PAUSED BY USER**.
-Do not launch long Android builds until explicitly resumed.
 
-When resumed:
-
-- prefer cached/fast path after verified engine cache.
-- avoid blind repeat of full/seed builds.
-- validate APK boot, four founders, Observer controls/data, movement/actions, Save/Load, FPS/memory/thermal baseline.
-
----
+Known recovery evidence:
+- #141 probe confirmed a prebuilt UE 5.6 Linux development image includes UnrealEditor / RunUAT / UBT plus Android platform payload.
+- production recovery should be rebuilt from fresh main using that prebuilt-host direction.
+- do not merge stale #141 as-is.
+- do not launch a long Android build until the user explicitly resumes Gate B.
 
 # 14. Immediate Next Feature
 
-After this documentation PR is merged, the next Jjun-owned implementation target is:
+Current next Jjun-owned implementation target:
 
-> **T1 — Simulation Time Authority & Variable Speed**
+> **C1-B — Autonomous Settlement Need Recognition**
 
-The first delivery should establish the 8-minute/day target and safe pause/1x/4x/16x/64x Core contract without yet trying to implement the full weather stack in the same PR.
+First delivery:
+- convert sleep/environment/crafting pressure into utility for SleepingPlace / Shelter / WorkSurface.
+- feed missing project materials into gathering demand.
+- make Plan / DeliverMaterial / Work use authoritative spatial ContextAction targets.
+- preserve same-seed determinism and snapshot continuation.
+- do not bundle agriculture, Bronze and long-run scale into the same PR.
 
-After T1 is stable, E1/E2 follow so that Settlement & Subsistence is built on a real calendar/day-night/season/weather foundation instead of receiving those systems retroactively.
+After C1-B is stable:
+C1-C facility effects/maintenance -> C1-D durable water/food/cultivation -> C1-E emergent settlement geometry -> C1-F early metallurgy expansion.
+
