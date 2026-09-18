@@ -127,6 +127,11 @@ private:
     UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> OutfitMaterial;
     UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> OutfitSkinMaterial;
 
+    // Preserve authored relative scale from the imported hair/beard meshes.
+    // Lifecycle ageing multiplies these bases instead of replacing them.
+    FVector HairBaseRelativeScale = FVector::OneVector;
+    FVector BeardBaseRelativeScale = FVector::OneVector;
+
     FLLResidentAppearanceInputs Inputs;
     float FeetOffset = 88.0f;
     float MeshHeight = 0.0f;   // unscaled bind-pose height of the chosen mesh
