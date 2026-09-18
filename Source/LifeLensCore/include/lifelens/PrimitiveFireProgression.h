@@ -255,16 +255,18 @@ inline void prepareEnvironmentalResourceRegeneration(World& world)
     }
 }
 
-inline void applyStartRegionEnvironmentalNeedPressure(World& world)
+inline void applyResidentEnvironmentalNeedPressure(
+    const World& world,
+    Character& character,
+    GridPos authoritativePosition)
 {
-    const ChunkCoord coord=world.hasInitialStartRegionSelection
-        ? world.initialStartRegionCoord
-        : world.initialStartRegion().region.coord;
+    if(!character.alive) return;
     const EnvironmentalConsequenceProfile consequence=deriveEnvironmentalConsequences(
-        deriveDynamicEnvironment(world.genesisIdentity(),coord,world.minute));
-    for(auto& character:world.characters){
-        if(character.alive) applyEnvironmentalNeedPressure(character.needs,consequence);
-    }
+        deriveDynamicEnvironment(
+            world.genesisIdentity(),
+            chunkCoordForGrid(authoritativePosition),
+            world.minute));
+    applyEnvironmentalNeedPressure(character.needs,consequence);
 }
 
 inline void advancePrimitiveFireOneMinute(World& world)
@@ -291,10 +293,10 @@ inline void advancePrimitiveFireOneMinute(World& world)
         }
     }
 
-    // Simulation.cpp already advances this hook once per authoritative minute.
-    // E3 extends that existing cadence so environmental pressure is Core truth,
-    // not a Presentation-only effect.
-    applyStartRegionEnvironmentalNeedPressure(world);
+    // Simulation.cpp applies resident-local environmental Need pressure because
+    // authoritative resident positions live in Simulation runtime state, not in
+    // World alone. This hook still owns weather-sensitive fire/furnace updates
+    // and renewable-resource regeneration.
     prepareEnvironmentalResourceRegeneration(world);
 }
 
