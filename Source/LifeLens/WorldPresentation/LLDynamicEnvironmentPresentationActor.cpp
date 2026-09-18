@@ -422,6 +422,7 @@ void ALLDynamicEnvironmentPresentationActor::RefreshFromCore(bool bForce)
         return;
     }
 
+    const int64 PreviousSimulationMinute = LastAppliedSimulationMinute;
     LastAppliedSimulationMinute = Time.SimulationMinute;
 
     const float Daylight01 = Saturate(Time.Daylight01);
@@ -437,6 +438,38 @@ void ALLDynamicEnvironmentPresentationActor::RefreshFromCore(bool bForce)
     const float Snow01 = Environment.PrecipitationType == ELLCorePrecipitationType::Snow
         ? Precipitation01
         : 0.0f;
+
+    // SurfaceWetness01 is already authoritative Core residue. Snow currently
+    // exposes precipitation intensity but no separate accumulated cover read,
+    // so retain only a short presentation residue and melt it faster above 0 C.
+    if (!bPresentedSnowInitialized || bForce
+        || PreviousSimulationMinute == TNumericLimits<int64>::Lowest()
+        || Time.SimulationMinute < PreviousSimulationMinute)
+    {
+        PresentedSnowCover01 = Snow01;
+        bPresentedSnowInitialized = true;
+    }
+    else
+    {
+        const float ElapsedSimulationMinutes = FMath::Clamp(
+            static_cast<float>(Time.SimulationMinute - PreviousSimulationMinute),
+            0.0f,
+            1440.0f);
+        if (Snow01 >= PresentedSnowCover01)
+        {
+            PresentedSnowCover01 = Snow01;
+        }
+        else
+        {
+            const float TemperatureAboveFreezing = FMath::Max(0.0f, Environment.AirTemperatureC);
+            const float DecayPerMinute = 0.00018f + TemperatureAboveFreezing * 0.0012f;
+            PresentedSnowCover01 = FMath::Max(
+                Snow01,
+                PresentedSnowCover01 - ElapsedSimulationMinutes * DecayPerMinute);
+        }
+        PresentedSnowCover01 = Saturate(PresentedSnowCover01);
+    }
+
     const float Fog01 = Saturate(
         (1.0f - Visibility01)
         + 0.35f * Humidity01
@@ -456,7 +489,7 @@ void ALLDynamicEnvironmentPresentationActor::RefreshFromCore(bool bForce)
         Precipitation01);
     ApplySurfaceMaterials(
         SurfaceWetness01,
-        Snow01,
+        PresentedSnowCover01,
         Precipitation01,
         Environment.AirTemperatureC);
     ApplyWeatherEffects(Rain01, Snow01, Fog01, Wind01);
