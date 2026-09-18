@@ -74,7 +74,9 @@ namespace
         };
         const int32 Count = UE_ARRAY_COUNT(Palette);
         const int32 Index = Count > 0 ? FMath::Abs(Variant) % Count : 0;
-        return Palette[Index];
+        // BaseColorFactor multiplies the authored texture. Blending toward white
+        // keeps cloth texture/crease detail from becoming muddy on darker tones.
+        return FMath::Lerp(FLinearColor::White, Palette[Index], 0.58f);
     }
 
     float MeshBindPoseHeight(const USkeletalMesh* Mesh)
@@ -387,9 +389,17 @@ void ULLResidentAppearanceComponent::ApplyHair()
 
     bool bWithBeard = false;
     Hair = Attach(TEXT("AppearanceHair"), PickHairMesh(bWithBeard));
+    if (Hair)
+    {
+        HairBaseRelativeScale = Hair->GetRelativeScale3D();
+    }
     if (bWithBeard)
     {
         Beard = Attach(TEXT("AppearanceBeard"), BeardMesh.Get());
+        if (Beard)
+        {
+            BeardBaseRelativeScale = Beard->GetRelativeScale3D();
+        }
     }
 
     const FLinearColor Tint = HairTint(Inputs.HairColorAxis);
@@ -495,7 +505,8 @@ void ULLResidentAppearanceComponent::ApplyLifecycleAgePresentation(
     };
     if (Hair)
     {
-        Hair->SetRelativeScale3D(FVector(HairStageScale[StageIndex]));
+        Hair->SetRelativeScale3D(
+            HairBaseRelativeScale * HairStageScale[StageIndex]);
     }
 
     const bool bBeardAge =
@@ -505,6 +516,8 @@ void ULLResidentAppearanceComponent::ApplyLifecycleAgePresentation(
         || LifeStage == ELLCoreLifeStage::Elderly;
     if (Beard)
     {
+        Beard->SetRelativeScale3D(
+            BeardBaseRelativeScale * HairStageScale[StageIndex]);
         Beard->SetVisibility(bBeardAge, true);
     }
 
