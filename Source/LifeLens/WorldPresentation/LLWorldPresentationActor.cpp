@@ -788,6 +788,7 @@ void ALLWorldPresentationActor::BuildFacilities(
         // An Operational facility stays fully built even while temporarily
         // inactive; activity only affects the work/fire presentation.
         const bool bStructurallyComplete = Facility.State == ELLCoreFacilityState::Operational;
+        const bool bPlanned = Facility.State == ELLCoreFacilityState::Planned;
         const bool bRuined = Facility.State == ELLCoreFacilityState::Ruined;
         const float Durability = FMath::Clamp(Facility.Durability, 0.0f, 1.0f);
         const float BuildProgress = bStructurallyComplete ? 1.0f : FMath::Max(MaterialProgress, WorkProgress);
@@ -861,6 +862,54 @@ void ALLWorldPresentationActor::BuildFacilities(
                         FMath::Lerp(0.22f, 0.42f, Damage01),
                         0.15f + 0.03f * static_cast<float>(Index),
                         0.10f + 0.02f * static_cast<float>(Index))));
+            }
+        }
+
+        // Planned facilities should read as a staked-out work site rather than
+        // a miniature finished building. Core owns the Planned state and grid
+        // location; Presentation only projects that truth into a low footprint.
+        if (bPlanned && FacilityPostInstances)
+        {
+            FVector2D HalfExtent(76.0f, 52.0f);
+            switch (Facility.Kind)
+            {
+                case ELLCoreFacilityKind::PrimitiveStorage:
+                    HalfExtent = FVector2D(92.0f, 64.0f);
+                    break;
+                case ELLCoreFacilityKind::WorkSurface:
+                    HalfExtent = FVector2D(72.0f, 40.0f);
+                    break;
+                case ELLCoreFacilityKind::SleepingPlace:
+                    HalfExtent = FVector2D(80.0f, 44.0f);
+                    break;
+                case ELLCoreFacilityKind::Shelter:
+                    HalfExtent = FVector2D(98.0f, 76.0f);
+                    break;
+                case ELLCoreFacilityKind::Furnace:
+                    HalfExtent = FVector2D(66.0f, 58.0f);
+                    break;
+                case ELLCoreFacilityKind::FirePit:
+                    HalfExtent = FVector2D(54.0f, 54.0f);
+                    break;
+                default:
+                    break;
+            }
+
+            const FVector2D Stakes[4] = {
+                FVector2D(-HalfExtent.X, -HalfExtent.Y),
+                FVector2D(HalfExtent.X, -HalfExtent.Y),
+                FVector2D(-HalfExtent.X, HalfExtent.Y),
+                FVector2D(HalfExtent.X, HalfExtent.Y)
+            };
+            for (int32 StakeIndex = 0; StakeIndex < 4; ++StakeIndex)
+            {
+                FacilityPostInstances->AddInstance(FTransform(
+                    FRotator::ZeroRotator,
+                    Base + FVector(
+                        Stakes[StakeIndex].X,
+                        Stakes[StakeIndex].Y,
+                        16.0f),
+                    FVector(0.08f, 0.08f, 0.30f)));
             }
         }
 
