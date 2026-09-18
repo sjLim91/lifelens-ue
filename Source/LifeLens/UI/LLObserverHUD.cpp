@@ -767,11 +767,60 @@ void ALLObserverHUD::DrawWorldOverview(const ULLSimulationSubsystem& Simulation,
             const FLLCoreWorldObservation CoreWorld = Bridge->GetWorldObservation();
             const FLLCoreCivilizationWorldObservation Civilization = Bridge->GetCivilizationWorldObservation(1);
 
-            FRow Households; Households.Left = LLObserverKorean::Households; Households.Right = FString::FromInt(CoreWorld.Households); Households.Scale = RowScale; Households.GapBefore = SectionGap; Rows.Add(Households);
+            FRow PopulationRecord;
+            PopulationRecord.Left = TEXT("인구 기록");
+            PopulationRecord.Right = FString::Printf(
+                TEXT("생존 %d · 사망 %d"),
+                CoreWorld.LivingResidents,
+                CoreWorld.DeceasedResidents);
+            PopulationRecord.RightColor = TextPrimary;
+            PopulationRecord.Scale = RowScale;
+            PopulationRecord.GapBefore = SectionGap;
+            Rows.Add(PopulationRecord);
+
+            FRow Households; Households.Left = LLObserverKorean::Households; Households.Right = FString::FromInt(CoreWorld.Households); Households.Scale = RowScale; Rows.Add(Households);
             FRow Couples; Couples.Left = LLObserverKorean::ActiveCouples; Couples.Right = FString::FromInt(CoreWorld.ActiveCouples); Couples.Scale = RowScale; Rows.Add(Couples);
             FRow Pregnancies; Pregnancies.Left = LLObserverKorean::Pregnancies; Pregnancies.Right = FString::FromInt(CoreWorld.ActivePregnancies); Pregnancies.Scale = RowScale; Rows.Add(Pregnancies);
-            FRow Techniques; Techniques.Left = LLObserverKorean::KnownTechniques; Techniques.Right = FString::FromInt(Civilization.UniqueKnownTechniqueTypes); Techniques.Scale = RowScale; Techniques.GapBefore = SectionGap; Rows.Add(Techniques);
-            FRow Stored; Stored.Left = LLObserverKorean::StoredUnits; Stored.Right = FString::FromInt(Civilization.TotalStoredUnits); Stored.Scale = RowScale; Rows.Add(Stored);
+
+            FRow RelationshipStages;
+            RelationshipStages.Left = TEXT("관계 단계");
+            RelationshipStages.Right = FString::Printf(
+                TEXT("연애 %d · 약혼 %d · 결혼 %d · 별거 %d"),
+                CoreWorld.DatingCouples,
+                CoreWorld.EngagedCouples,
+                CoreWorld.MarriedCouples,
+                CoreWorld.SeparatedCouples);
+            RelationshipStages.Scale = RowScale;
+            Rows.Add(RelationshipStages);
+
+            FRow LifeEvents;
+            LifeEvents.Left = TEXT("생애사건 기록");
+            LifeEvents.Right = FString::FromInt(CoreWorld.MajorLifeEventRecords);
+            LifeEvents.Scale = RowScale;
+            Rows.Add(LifeEvents);
+
+            FRow Facilities;
+            Facilities.Left = TEXT("시설");
+            Facilities.Right = FString::Printf(
+                TEXT("운영 %d · 건설 %d · 계획 %d"),
+                Civilization.OperationalFacilityCount,
+                Civilization.UnderConstructionFacilityCount,
+                Civilization.PlannedFacilityCount);
+            Facilities.Scale = RowScale;
+            Facilities.GapBefore = SectionGap;
+            Rows.Add(Facilities);
+
+            FRow ResourceState;
+            ResourceState.Left = TEXT("자원");
+            ResourceState.Right = FString::Printf(
+                TEXT("저장 %d · 고갈 %d/%d"),
+                Civilization.TotalStoredUnits,
+                Civilization.DepletedResourceNodeCount,
+                Civilization.ResourceNodeCount);
+            ResourceState.Scale = RowScale;
+            Rows.Add(ResourceState);
+
+            FRow Techniques; Techniques.Left = LLObserverKorean::KnownTechniques; Techniques.Right = FString::FromInt(Civilization.UniqueKnownTechniqueTypes); Techniques.Scale = RowScale; Rows.Add(Techniques);
 
             if (Civilization.RecentDiscoveries.Num() > 0)
             {
@@ -1278,9 +1327,23 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
 
             auto FamilyMemberStatus = [](const FLLCoreFamilyMemberSnapshot& Member)
             {
-                FString Status = Member.LifeStageLabel.IsEmpty()
-                    ? FString(LLObserverKorean::Resident)
-                    : Member.LifeStageLabel;
+                FString Status;
+                if (!Member.KinshipLabel.IsEmpty())
+                {
+                    Status = Member.KinshipLabel;
+                }
+                if (!Member.LifeStageLabel.IsEmpty())
+                {
+                    if (!Status.IsEmpty())
+                    {
+                        Status += TEXT(" · ");
+                    }
+                    Status += Member.LifeStageLabel;
+                }
+                if (Status.IsEmpty())
+                {
+                    Status = LLObserverKorean::Resident;
+                }
                 if (!Member.bAlive)
                 {
                     Status += TEXT(" · ") + FString(LLObserverKorean::Deceased);
@@ -1288,9 +1351,22 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
                 return Status;
             };
 
+            auto LivingMemberCount = [](const TArray<FLLCoreFamilyMemberSnapshot>& Members)
+            {
+                int32 Count = 0;
+                for (const FLLCoreFamilyMemberSnapshot& Member : Members)
+                {
+                    Count += Member.bAlive ? 1 : 0;
+                }
+                return Count;
+            };
+
             FRow ParentsHeader;
             ParentsHeader.Left = LLObserverKorean::FamilyParentsGeneration;
-            ParentsHeader.Right = FString::FromInt(CoreFamily.Parents.Num());
+            ParentsHeader.Right = FString::Printf(
+                TEXT("%d · 생존 %d"),
+                CoreFamily.Parents.Num(),
+                LivingMemberCount(CoreFamily.Parents));
             ParentsHeader.LeftColor = TextSection;
             ParentsHeader.RightColor = TextMuted;
             ParentsHeader.Scale = SectionScale;
@@ -1309,7 +1385,9 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
                 for (const FLLCoreFamilyMemberSnapshot& Parent : CoreFamily.Parents)
                 {
                     FRow Row;
-                    Row.Left = Parent.DisplayName.IsEmpty() ? FString(LLObserverKorean::Parents) : Parent.DisplayName;
+                    Row.Left = TEXT("↑ ") + (Parent.DisplayName.IsEmpty()
+                        ? FString(LLObserverKorean::Parents)
+                        : Parent.DisplayName);
                     Row.Right = FamilyMemberStatus(Parent);
                     Row.RightColor = Parent.bAlive ? TextSecondary : TextMuted;
                     Row.Scale = RowScale;
@@ -1325,7 +1403,7 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
             Rows.Add(CurrentHeader);
 
             FRow Self;
-            Self.Left = Resident.DisplayName;
+            Self.Left = TEXT("● ") + Resident.DisplayName;
             Self.Right = FString::Printf(
                 TEXT("%d세 · %s"),
                 Resident.AgeYears,
@@ -1347,8 +1425,8 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
             {
                 FRow Partner;
                 Partner.Left = CoreFamily.bHasActivePartner
-                    ? FString(LLObserverKorean::Partner)
-                    : FString(LLObserverKorean::RelationshipHistory);
+                    ? FString(TEXT("♥ ")) + FString(LLObserverKorean::Partner)
+                    : FString(TEXT("◌ ")) + FString(LLObserverKorean::RelationshipHistory);
                 if (!CoreFamily.PartnerName.IsEmpty())
                 {
                     Partner.Left += TEXT(" · ") + CoreFamily.PartnerName;
@@ -1373,15 +1451,47 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
                 Rows.Add(Expecting);
             }
 
-            FRow Siblings;
-            Siblings.Left = LLObserverKorean::Siblings;
-            Siblings.Right = JoinFamilyNames(CoreFamily.Siblings);
-            Siblings.Scale = RowScale;
-            Rows.Add(Siblings);
+            FRow SiblingsHeader;
+            SiblingsHeader.Left = LLObserverKorean::Siblings;
+            SiblingsHeader.Right = FString::Printf(
+                TEXT("%d · 생존 %d"),
+                CoreFamily.Siblings.Num(),
+                LivingMemberCount(CoreFamily.Siblings));
+            SiblingsHeader.LeftColor = TextSection;
+            SiblingsHeader.RightColor = TextMuted;
+            SiblingsHeader.Scale = SectionScale;
+            SiblingsHeader.GapBefore = SectionGap;
+            Rows.Add(SiblingsHeader);
+
+            if (CoreFamily.Siblings.Num() == 0)
+            {
+                FRow None;
+                None.Left = TEXT("↔ ") + FString(LLObserverKorean::Siblings);
+                None.Right = LLObserverKorean::None;
+                None.Scale = RowScale;
+                Rows.Add(None);
+            }
+            else
+            {
+                for (const FLLCoreFamilyMemberSnapshot& Sibling : CoreFamily.Siblings)
+                {
+                    FRow Row;
+                    Row.Left = TEXT("↔ ") + (Sibling.DisplayName.IsEmpty()
+                        ? FString(LLObserverKorean::Siblings)
+                        : Sibling.DisplayName);
+                    Row.Right = FamilyMemberStatus(Sibling);
+                    Row.RightColor = Sibling.bAlive ? TextSecondary : TextMuted;
+                    Row.Scale = RowScale;
+                    Rows.Add(Row);
+                }
+            }
 
             FRow ChildrenHeader;
             ChildrenHeader.Left = LLObserverKorean::FamilyChildrenGeneration;
-            ChildrenHeader.Right = FString::FromInt(CoreFamily.Children.Num());
+            ChildrenHeader.Right = FString::Printf(
+                TEXT("%d · 생존 %d"),
+                CoreFamily.Children.Num(),
+                LivingMemberCount(CoreFamily.Children));
             ChildrenHeader.LeftColor = TextSection;
             ChildrenHeader.RightColor = TextMuted;
             ChildrenHeader.Scale = SectionScale;
@@ -1401,7 +1511,9 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
                 for (const FLLCoreFamilyMemberSnapshot& Child : CoreFamily.Children)
                 {
                     FRow Row;
-                    Row.Left = Child.DisplayName.IsEmpty() ? FString(LLObserverKorean::Children) : Child.DisplayName;
+                    Row.Left = TEXT("↓ ") + (Child.DisplayName.IsEmpty()
+                        ? FString(LLObserverKorean::Children)
+                        : Child.DisplayName);
                     Row.Right = FamilyMemberStatus(Child);
                     Row.RightColor = Child.bAlive ? TextSecondary : TextMuted;
                     Row.Scale = RowScale;
