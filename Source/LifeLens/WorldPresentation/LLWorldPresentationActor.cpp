@@ -45,6 +45,14 @@ namespace
     {
         return FMath::Clamp(FMath::RoundToInt(FMath::Clamp(Factor, 0.0f, 1.0f) * MaxCount), 0, MaxCount);
     }
+
+    uint32 PresentationSeed(int64 Seed)
+    {
+        const uint64 Word = static_cast<uint64>(Seed);
+        uint32 Hash = static_cast<uint32>(Word & 0xFFFFFFFFu);
+        Hash = MixHash(Hash, static_cast<uint32>((Word >> 32) & 0xFFFFFFFFu));
+        return Hash != 0 ? Hash : 0x4C4C5043u; // LLPC
+    }
 }
 
 ALLWorldPresentationActor::ALLWorldPresentationActor()
@@ -85,6 +93,12 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
         TEXT("/Game/Environment/Photoreal/PolyHaven/shrub_03/SM_LL_shrub_03.SM_LL_shrub_03"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoGroundCover(
         TEXT("/Game/Environment/Photoreal/PolyHaven/weed_plant_02/SM_LL_weed_plant_02.SM_LL_weed_plant_02"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoFirePit(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/stone_fire_pit/SM_LL_stone_fire_pit.SM_LL_stone_fire_pit"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoStorageBasket(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/wicker_basket_01/SM_LL_wicker_basket_01.SM_LL_wicker_basket_01"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoWoodenAxe(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/wooden_axe/SM_LL_wooden_axe.SM_LL_wooden_axe"));
 
     if (PhotoTreeFirSapling.Succeeded()) { TreeMeshes.Add(PhotoTreeFirSapling.Object); }
     if (PhotoTreePineSapling.Succeeded()) { TreeMeshes.Add(PhotoTreePineSapling.Object); }
@@ -181,6 +195,31 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
     FacilityRoofInstances = AddInstancedComponent(TEXT("FacilityRoofs"), GroundMesh, FacilityCullStartUU, FacilityCullEndUU, true);
     FacilityCargoInstances = AddInstancedComponent(TEXT("FacilityCargo"), GroundMesh, FacilityCullStartUU, FacilityCullEndUU, true);
     FacilityAccentInstances = AddInstancedComponent(TEXT("FacilityAccents"), GroundMesh, FacilityCullStartUU, FacilityCullEndUU, false);
+
+    if (PhotoFirePit.Succeeded())
+    {
+        PhotorealFirePitInstances = AddInstancedComponent(
+            TEXT("PhotorealFirePits"), PhotoFirePit.Object,
+            FacilityCullStartUU, FacilityCullEndUU, true);
+    }
+    if (PhotoStorageBasket.Succeeded())
+    {
+        PhotorealStorageBasketInstances = AddInstancedComponent(
+            TEXT("PhotorealStorageBaskets"), PhotoStorageBasket.Object,
+            FacilityCullStartUU, FacilityCullEndUU, true);
+    }
+    if (PhotoWoodenAxe.Succeeded())
+    {
+        PhotorealWorkToolInstances = AddInstancedComponent(
+            TEXT("PhotorealWorkTools"), PhotoWoodenAxe.Object,
+            FacilityCullStartUU, FacilityCullEndUU, true);
+    }
+
+    UE_LOG(LogTemp, Log,
+        TEXT("LLWorldPresentation approved facility art: firepit=%d basket=%d workTool=%d"),
+        PhotorealFirePitInstances ? 1 : 0,
+        PhotorealStorageBasketInstances ? 1 : 0,
+        PhotorealWorkToolInstances ? 1 : 0);
 }
 
 UHierarchicalInstancedStaticMeshComponent* ALLWorldPresentationActor::AddInstancedComponent(
@@ -251,6 +290,9 @@ void ALLWorldPresentationActor::ClearFacilityInstances()
     if (FacilityRoofInstances) { FacilityRoofInstances->ClearInstances(); }
     if (FacilityCargoInstances) { FacilityCargoInstances->ClearInstances(); }
     if (FacilityAccentInstances) { FacilityAccentInstances->ClearInstances(); }
+    if (PhotorealFirePitInstances) { PhotorealFirePitInstances->ClearInstances(); }
+    if (PhotorealStorageBasketInstances) { PhotorealStorageBasketInstances->ClearInstances(); }
+    if (PhotorealWorkToolInstances) { PhotorealWorkToolInstances->ClearInstances(); }
 }
 
 void ALLWorldPresentationActor::ApplyFacilityMaterialPalette()
@@ -850,7 +892,9 @@ void ALLWorldPresentationActor::BuildChunkDressing(const FLLCoreWorldGenerationO
     if (!Chunk.bMaterialized) { return; }
     const FVector ChunkOrigin = ChunkOriginUU(World, Chunk.ChunkX, Chunk.ChunkY);
     const float HalfSpan = LLWorldSpatialContract::ChunkSpanUU * 0.5f;
-    uint32 State = ChunkHash(World.WorldSeed, World.GenerationVersion, Chunk.ChunkX, Chunk.ChunkY);
+    uint32 State = Chunk.VisualSeed != 0
+        ? PresentationSeed(Chunk.VisualSeed)
+        : ChunkHash(World.WorldSeed, World.GenerationVersion, Chunk.ChunkX, Chunk.ChunkY);
 
     const float Fertility = FMath::Clamp(Chunk.FertilityPotential, 0.0f, 1.0f);
     const float Moisture = FMath::Clamp(Chunk.Moisture, 0.0f, 1.0f);
@@ -962,14 +1006,18 @@ void ALLWorldPresentationActor::BuildChunkDressing(const FLLCoreWorldGenerationO
                 FMath::RoundToInt(VisibleDensity * 6.0f) + 1,
                 1,
                 8);
+        uint32 PatchState = Patch.VisualSeed != 0
+            ? PresentationSeed(Patch.VisualSeed)
+            : MixHash(State, static_cast<uint32>(
+                static_cast<uint64>(Patch.ResourceNodeId) & 0xFFFFFFFFu));
         for (int32 Index = 0; Index < PatchInstances && *PlacedCounter < MaxTotal; ++Index)
         {
-            const float SpreadX = (HashUnit(State) * 2.0f - 1.0f) * LLWorldSpatialContract::GridCellSizeUU;
-            const float SpreadY = (HashUnit(State) * 2.0f - 1.0f) * LLWorldSpatialContract::GridCellSizeUU;
-            float Scale = FMath::Lerp(MinScale, MaxScale, HashUnit(State));
+            const float SpreadX = (HashUnit(PatchState) * 2.0f - 1.0f) * LLWorldSpatialContract::GridCellSizeUU;
+            const float SpreadY = (HashUnit(PatchState) * 2.0f - 1.0f) * LLWorldSpatialContract::GridCellSizeUU;
+            float Scale = FMath::Lerp(MinScale, MaxScale, HashUnit(PatchState));
             Scale *= FMath::Lerp(0.62f, 1.0f, FMath::Sqrt(Quantity01));
-            const float Yaw = HashUnit(State) * 360.0f;
-            const int32 Slot = static_cast<int32>(HashUnit(State) * Target->Num()) % Target->Num();
+            const float Yaw = HashUnit(PatchState) * 360.0f;
+            const int32 Slot = static_cast<int32>(HashUnit(PatchState) * Target->Num()) % Target->Num();
             const FVector2D PatchLocation(PatchX + SpreadX, PatchY + SpreadY);
             Scale *= ResourcePatchScaleFactor(PatchLocation);
             if (UHierarchicalInstancedStaticMeshComponent* Component = (*Target)[Slot])
@@ -1251,10 +1299,31 @@ void ALLWorldPresentationActor::BuildFacilities(
                     FVector(0.14f, 0.14f, 1.1f * HeightFactor)));
             }
             // Construction still shows delivered build material. Once the
-            // storage is operational, cargo switches to the linked authoritative
-            // inventory total instead of always drawing six fake crates.
+            // storage is operational, approved CC0 baskets replace fake cargo
+            // cubes. If that approved art is unavailable, do not invent extra
+            // completed-storage cargo visuals.
+            if (bStructurallyComplete && PhotorealStorageBasketInstances)
+            {
+                const int32 BasketCount = FMath::Clamp(
+                    FMath::CeilToInt(static_cast<float>(LinkedStoredUnits) / 2.0f),
+                    0,
+                    4);
+                for (int32 Index = 0; Index < BasketCount; ++Index)
+                {
+                    const int32 Column = Index % 2;
+                    const int32 Row = Index / 2;
+                    PhotorealStorageBasketInstances->AddInstance(FTransform(
+                        FRotator(0.0f, 18.0f + 71.0f * static_cast<float>(Index), 0.0f),
+                        Base + FVector(
+                            -52.0f + Column * 104.0f,
+                            -30.0f + Row * 66.0f,
+                            0.0f),
+                        FVector(0.92f)));
+                }
+            }
+
             const int32 CargoCount = bStructurallyComplete
-                ? FMath::Clamp(LinkedStoredUnits, 0, 8)
+                ? 0
                 : FMath::Clamp(FMath::CeilToInt(MaterialProgress * 6.0f), 0, 6);
             for (int32 Index = 0; Index < CargoCount; ++Index)
             {
@@ -1319,6 +1388,14 @@ void ALLWorldPresentationActor::BuildFacilities(
                     FRotator(0.0f, 0.0f, DamageTilt),
                     Base + FVector(0.0f, 0.0f, 72.0f * Integrity),
                     FVector(1.65f * TopScale, 0.82f, 0.12f * Integrity)));
+            }
+
+            if (bStructurallyComplete && PhotorealWorkToolInstances)
+            {
+                PhotorealWorkToolInstances->AddInstance(FTransform(
+                    FRotator(0.0f, 18.0f, 82.0f),
+                    Base + FVector(18.0f, 0.0f, 84.0f * Integrity),
+                    FVector(0.92f)));
             }
 
             const int32 LooseMaterialCount = bStructurallyComplete
@@ -1516,7 +1593,20 @@ void ALLWorldPresentationActor::BuildFacilities(
 
         if (Facility.Kind != ELLCoreFacilityKind::FirePit) { continue; }
 
-        const int32 StoneCount = bStructurallyComplete ? 8 : FMath::Clamp(FMath::CeilToInt(BuildProgress * 8.0f), 0, 8);
+        if (bStructurallyComplete && PhotorealFirePitInstances)
+        {
+            PhotorealFirePitInstances->AddInstance(FTransform(
+                FRotator::ZeroRotator,
+                Base,
+                FVector(1.0f)));
+        }
+
+        // Construction may use reviewed lightweight progress pieces, but an
+        // operational production firepit never falls back to the old Engine
+        // cube ring if the approved photoreal hero asset is unavailable.
+        const int32 StoneCount = bStructurallyComplete
+            ? 0
+            : FMath::Clamp(FMath::CeilToInt(BuildProgress * 8.0f), 0, 8);
         for (int32 Index = 0; Index < StoneCount; ++Index)
         {
             if (!FacilityFoundationInstances) { break; }
@@ -1526,11 +1616,8 @@ void ALLWorldPresentationActor::BuildFacilities(
             FacilityFoundationInstances->AddInstance(FTransform(
                 FRotator(0.0f, AngleDegrees, 0.0f),Base + Offset,FVector(0.48f, 0.28f, 0.20f)));
         }
-        if (bStructurallyComplete && FacilityFoundationInstances)
-        {
-            FacilityFoundationInstances->AddInstance(FTransform(
-                FRotator::ZeroRotator,Base + FVector(0.0f, 0.0f, 5.0f),FVector(1.05f, 1.05f, 0.08f)));
-        }
+        // No completed Engine-cube hearth fallback: the imported CC0 asset
+        // above is the only hero structure for an operational firepit.
         const int32 LogCount = bStructurallyComplete ? FMath::Clamp(Facility.FuelUnits, 0, 3)
             : FMath::Clamp(FMath::CeilToInt(MaterialProgress * 2.0f), 0, 2);
         for (int32 Index = 0; Index < LogCount; ++Index)
@@ -1677,7 +1764,10 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         + (FacilityPostInstances ? FacilityPostInstances->GetInstanceCount() : 0)
         + (FacilityRoofInstances ? FacilityRoofInstances->GetInstanceCount() : 0)
         + (FacilityCargoInstances ? FacilityCargoInstances->GetInstanceCount() : 0)
-        + (FacilityAccentInstances ? FacilityAccentInstances->GetInstanceCount() : 0);
+        + (FacilityAccentInstances ? FacilityAccentInstances->GetInstanceCount() : 0)
+        + (PhotorealFirePitInstances ? PhotorealFirePitInstances->GetInstanceCount() : 0)
+        + (PhotorealStorageBasketInstances ? PhotorealStorageBasketInstances->GetInstanceCount() : 0)
+        + (PhotorealWorkToolInstances ? PhotorealWorkToolInstances->GetInstanceCount() : 0);
 
     UE_LOG(LogTemp, Log,
         TEXT("LLWorldPresentation seed=%lld gen=%d chunks=%d groundTiles=%d natural=%d/%d/%d/%d facilities=%d facilityInstances=%d thinned=%d sightline=%d/%d dynamicCanopy=%d core=%.0f activity=%.0f ground=%s farGround=%s"),
