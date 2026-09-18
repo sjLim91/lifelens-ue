@@ -135,6 +135,8 @@ lifelens_add_test(test_facility_authority)
 
 lifelens_add_test(test_settlement_autonomy)
 
+lifelens_add_test(test_settlement_facility_effects)
+
 lifelens_add_test(test_primitive_storage_progression)
 
 lifelens_add_test(test_tool_effectiveness)
