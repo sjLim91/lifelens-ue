@@ -168,6 +168,7 @@ private:
 
     FGuid FocusedResidentId;
     bool bFollowObservedResident = false;
+    bool bWorldEventFocusActive = false;
 
     bool bRightMouseDragging = false;
     bool bMiddleMouseDragging = false;
