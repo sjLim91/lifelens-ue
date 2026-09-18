@@ -261,7 +261,35 @@ void ULLObserverTimeWeatherOverlay::RefreshStatus(bool bForce)
     const FString WeatherLine = Weather.bAvailable
         ? FString::Printf(TEXT("%s %.1f°C"), *WeatherLabel(Weather.WeatherSummary), Weather.AirTemperatureC)
         : FString(TEXT("날씨 준비 중"));
-    const FString DayPhase = Time.bIsNight ? TEXT("밤") : TEXT("낮");
+
+    const int32 MinuteOfDay =
+        FMath::Clamp(Time.HourOfDay * 60 + Time.MinuteOfHour, 0, 1439);
+    FString DayPhase;
+    if (MinuteOfDay >= 270 && MinuteOfDay < 390)
+    {
+        DayPhase = TEXT("새벽");
+    }
+    else if (MinuteOfDay >= 390 && MinuteOfDay < 630)
+    {
+        DayPhase = TEXT("아침");
+    }
+    else if (MinuteOfDay >= 630 && MinuteOfDay < 990)
+    {
+        DayPhase = TEXT("낮");
+    }
+    else if (MinuteOfDay >= 990 && MinuteOfDay < 1110)
+    {
+        DayPhase = TEXT("해질녘");
+    }
+    else if (MinuteOfDay >= 1110 && MinuteOfDay < 1350)
+    {
+        DayPhase = TEXT("저녁");
+    }
+    else
+    {
+        DayPhase = TEXT("밤");
+    }
+
     const int64 DisplayYear = FMath::Max<int64>(0, Time.YearIndex) + 1;
     const int32 DisplayDay = FMath::Max(0, Time.DayOfYear) + 1;
 
@@ -288,17 +316,41 @@ void ULLObserverTimeWeatherOverlay::RefreshStatus(bool bForce)
 
     if (DayProgressBar)
     {
-        const float MinuteOfDay = static_cast<float>(
-            FMath::Clamp(Time.HourOfDay * 60 + Time.MinuteOfHour, 0, 1439));
-        const float DayProgress01 = MinuteOfDay / 1439.0f;
+        const float DayProgress01 = static_cast<float>(MinuteOfDay) / 1439.0f;
         DayProgressBar->SetPercent(DayProgress01);
 
-        const float NoonDistance = FMath::Abs(DayProgress01 - 0.5f) * 2.0f;
-        const float DaylightWarmth = 1.0f - FMath::Clamp(NoonDistance, 0.0f, 1.0f);
         const FLinearColor NightColor(0.28f, 0.44f, 0.76f, 0.92f);
+        const FLinearColor DawnColor(0.86f, 0.50f, 0.60f, 0.94f);
         const FLinearColor DayColor(1.0f, 0.74f, 0.30f, 0.96f);
-        DayProgressBar->SetFillColorAndOpacity(
-            FMath::Lerp(NightColor, DayColor, DaylightWarmth));
+        const FLinearColor SunsetColor(1.0f, 0.46f, 0.24f, 0.96f);
+
+        FLinearColor ProgressColor = NightColor;
+        if (MinuteOfDay >= 270 && MinuteOfDay < 390)
+        {
+            const float T = static_cast<float>(MinuteOfDay - 270) / 120.0f;
+            ProgressColor = FMath::Lerp(NightColor, DawnColor, T);
+        }
+        else if (MinuteOfDay >= 390 && MinuteOfDay < 720)
+        {
+            const float T = static_cast<float>(MinuteOfDay - 390) / 330.0f;
+            ProgressColor = FMath::Lerp(DawnColor, DayColor, T);
+        }
+        else if (MinuteOfDay >= 720 && MinuteOfDay < 990)
+        {
+            ProgressColor = DayColor;
+        }
+        else if (MinuteOfDay >= 990 && MinuteOfDay < 1110)
+        {
+            const float T = static_cast<float>(MinuteOfDay - 990) / 120.0f;
+            ProgressColor = FMath::Lerp(DayColor, SunsetColor, T);
+        }
+        else if (MinuteOfDay >= 1110 && MinuteOfDay < 1350)
+        {
+            const float T = static_cast<float>(MinuteOfDay - 1110) / 240.0f;
+            ProgressColor = FMath::Lerp(SunsetColor, NightColor, T);
+        }
+
+        DayProgressBar->SetFillColorAndOpacity(ProgressColor);
     }
 
     RefreshButtonState(SpeedPreset);
