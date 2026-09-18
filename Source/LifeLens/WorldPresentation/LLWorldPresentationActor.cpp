@@ -69,15 +69,22 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
     FacilitySurfaceMaterial = FacilitySurfaceMatFinder.Succeeded() ? FacilitySurfaceMatFinder.Object : nullptr;
     FacilityAccentMaterial = FacilityAccentMatFinder.Succeeded() ? FacilityAccentMatFinder.Object : nullptr;
 
-    // Photoreal CC0 assets are the preferred production art path. The
-    // Quaternius set remains a zero-cost fallback so source-only/CI branches and
-    // partial asset checkouts still boot cleanly.
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoTreePine(
-        TEXT("/Game/Environment/Photoreal/PolyHaven/pine_tree_01/SM_LL_pine_tree_01.SM_LL_pine_tree_01"));
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoTreeSmall(
-        TEXT("/Game/Environment/Photoreal/PolyHaven/tree_small_02/SM_LL_tree_small_02.SM_LL_tree_small_02"));
+    // Production local-view art only uses the curated photoreal catalogue.
+    // Missing approved assets are omitted rather than silently regressing to
+    // obvious prototype geometry. Stylized assets remain available in Content
+    // for explicit bootstrap/LOD/developer modes, not as the normal hero path.
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoTreeFirSapling(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/fir_sapling/SM_LL_fir_sapling.SM_LL_fir_sapling"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoTreePineSapling(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/pine_sapling_small/SM_LL_pine_sapling_small.SM_LL_pine_sapling_small"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoBoulder(
         TEXT("/Game/Environment/Photoreal/PolyHaven/boulder_01/SM_LL_boulder_01.SM_LL_boulder_01"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoShrubA(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/shrub_02/SM_LL_shrub_02.SM_LL_shrub_02"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoShrubB(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/shrub_03/SM_LL_shrub_03.SM_LL_shrub_03"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoGroundCover(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/weed_plant_02/SM_LL_weed_plant_02.SM_LL_weed_plant_02"));
 
     static ConstructorHelpers::FObjectFinder<UStaticMesh> TreeA(TEXT("/Game/Environment/Quaternius/StylizedNature/CommonTree_1/StaticMeshes/CommonTree_1.CommonTree_1"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> TreeB(TEXT("/Game/Environment/Quaternius/StylizedNature/Pine_1/StaticMeshes/Pine_1.Pine_1"));
@@ -89,40 +96,18 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
     static ConstructorHelpers::FObjectFinder<UStaticMesh> RockA(TEXT("/Game/Environment/Quaternius/StylizedNature/Rock_Medium_1/StaticMeshes/Rock_Medium_1.Rock_Medium_1"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> RockB(TEXT("/Game/Environment/Quaternius/StylizedNature/Pebble_Round_2/StaticMeshes/Pebble_Round_2.Pebble_Round_2"));
 
-    const bool bHasPhotorealTrees =
-        PhotoTreePine.Succeeded() || PhotoTreeSmall.Succeeded();
-    if (bHasPhotorealTrees)
-    {
-        if (PhotoTreePine.Succeeded()) { TreeMeshes.Add(PhotoTreePine.Object); }
-        if (PhotoTreeSmall.Succeeded()) { TreeMeshes.Add(PhotoTreeSmall.Object); }
-    }
-    else
-    {
-        if (TreeA.Succeeded()) { TreeMeshes.Add(TreeA.Object); }
-        if (TreeB.Succeeded()) { TreeMeshes.Add(TreeB.Object); }
-        if (TreeC.Succeeded()) { TreeMeshes.Add(TreeC.Object); }
-    }
-
-    if (ShrubA.Succeeded()) { ShrubMeshes.Add(ShrubA.Object); }
-    if (ShrubB.Succeeded()) { ShrubMeshes.Add(ShrubB.Object); }
-    if (GrassA.Succeeded()) { GrassMeshes.Add(GrassA.Object); }
-    if (GrassB.Succeeded()) { GrassMeshes.Add(GrassB.Object); }
-
-    if (PhotoBoulder.Succeeded())
-    {
-        RockMeshes.Add(PhotoBoulder.Object);
-    }
-    else
-    {
-        if (RockA.Succeeded()) { RockMeshes.Add(RockA.Object); }
-        if (RockB.Succeeded()) { RockMeshes.Add(RockB.Object); }
-    }
+    if (PhotoTreeFirSapling.Succeeded()) { TreeMeshes.Add(PhotoTreeFirSapling.Object); }
+    if (PhotoTreePineSapling.Succeeded()) { TreeMeshes.Add(PhotoTreePineSapling.Object); }
+    if (PhotoShrubA.Succeeded()) { ShrubMeshes.Add(PhotoShrubA.Object); }
+    if (PhotoShrubB.Succeeded()) { ShrubMeshes.Add(PhotoShrubB.Object); }
+    if (PhotoGroundCover.Succeeded()) { GrassMeshes.Add(PhotoGroundCover.Object); }
+    if (PhotoBoulder.Succeeded()) { RockMeshes.Add(PhotoBoulder.Object); }
 
     UE_LOG(LogTemp, Log,
-        TEXT("LLWorldPresentation natural art: photorealTrees=%d photorealRock=%d treeMeshes=%d rockMeshes=%d"),
-        bHasPhotorealTrees ? 1 : 0,
-        PhotoBoulder.Succeeded() ? 1 : 0,
+        TEXT("LLWorldPresentation production natural art: trees=%d shrubs=%d groundCover=%d rocks=%d"),
         TreeMeshes.Num(),
+        ShrubMeshes.Num(),
+        GrassMeshes.Num(),
         RockMeshes.Num());
 
     Ground = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("GeneratedGround"));
