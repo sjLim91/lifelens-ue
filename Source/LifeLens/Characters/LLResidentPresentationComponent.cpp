@@ -2,6 +2,7 @@
 #include "Characters/LLResidentAppearanceComponent.h"
 #include "Characters/LLResidentCharacter.h"
 #include "Simulation/LLSimulationSubsystem.h"
+#include "Simulation/LLCoreBridgeSubsystem.h"
 #include "UI/LLObservationSubsystem.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -456,6 +457,12 @@ void ULLResidentPresentationComponent::UpdateLabel()
     UGameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
     ULLObservationSubsystem* Observation =
         GameInstance ? GameInstance->GetSubsystem<ULLObservationSubsystem>() : nullptr;
+    ULLCoreBridgeSubsystem* Bridge =
+        GameInstance ? GameInstance->GetSubsystem<ULLCoreBridgeSubsystem>() : nullptr;
+    const float Daylight01 = Bridge && Bridge->IsCoreRunning()
+        ? FMath::Clamp(Bridge->GetTimeObservation().Daylight01, 0.0f, 1.0f)
+        : 1.0f;
+    const float NightReadability01 = 1.0f - Daylight01;
     const bool bSelected = Resident && Observation && Observation->HasObservedResident()
         && Observation->GetObservedResidentId() == Resident->GetResidentId();
 
@@ -500,15 +507,30 @@ void ULLResidentPresentationComponent::UpdateLabel()
             (Distance - FadeStart) / FMath::Max(FadeBand, KINDA_SMALL_NUMBER),
             0.0f,
             1.0f);
-    const uint8 BaseAlpha = bSelected ? 255 : 220;
+    const uint8 BaseAlpha = bSelected
+        ? 255
+        : static_cast<uint8>(FMath::RoundToInt(
+            FMath::Lerp(220.0f, 245.0f, NightReadability01)));
     const uint8 PresentedAlpha = static_cast<uint8>(
         FMath::Clamp(
             FMath::RoundToInt(static_cast<float>(BaseAlpha) * DistanceFade),
             0,
             255));
-    Label->SetTextRenderColor(bSelected
+
+    const FLinearColor DayUnselected(0.92f, 0.94f, 0.96f, 1.0f);
+    const FLinearColor NightUnselected(0.86f, 0.94f, 1.0f, 1.0f);
+    const FLinearColor UnselectedColor = FMath::Lerp(
+        DayUnselected,
+        NightUnselected,
+        NightReadability01);
+    const FColor PresentedColor = bSelected
         ? FColor(130, 224, 255, PresentedAlpha)
-        : FColor(235, 240, 246, PresentedAlpha));
+        : FColor(
+            static_cast<uint8>(FMath::Clamp(FMath::RoundToInt(UnselectedColor.R * 255.0f), 0, 255)),
+            static_cast<uint8>(FMath::Clamp(FMath::RoundToInt(UnselectedColor.G * 255.0f), 0, 255)),
+            static_cast<uint8>(FMath::Clamp(FMath::RoundToInt(UnselectedColor.B * 255.0f), 0, 255)),
+            PresentedAlpha);
+    Label->SetTextRenderColor(PresentedColor);
 
     const FVector ToCamera = CameraLocation - LabelLocation;
     if (!ToCamera.IsNearlyZero())
@@ -527,5 +549,11 @@ void ULLResidentPresentationComponent::UpdateLabel()
         LabelMinLifeStageScale,
         1.0f);
     const float SelectionScale = bSelected ? SelectedLabelSizeMultiplier : 1.0f;
-    Label->SetWorldSize(LabelBaseWorldSize * LifeStageLabelScale * DistanceScale * SelectionScale);
+    const float NightScale = FMath::Lerp(1.0f, bSelected ? 1.08f : 1.04f, NightReadability01);
+    Label->SetWorldSize(
+        LabelBaseWorldSize
+        * LifeStageLabelScale
+        * DistanceScale
+        * SelectionScale
+        * NightScale);
 }
