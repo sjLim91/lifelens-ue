@@ -14,15 +14,15 @@
 >
 > Historical audit: `docs/INTEGRATED_AUDIT_2026-09-17.md` (point-in-time only; do not treat as live status).
 
-Last reconciled: **2026-09-18 KST after whole-source audit promotion**.
+Last reconciled: **2026-09-18 KST after AUDIT-0C merge (#158)**.
 
 ---
 
 ## 1. Current main checkpoint
 
-Current main before this docs-only audit-priority sync:
+Current main before this docs-only closeout sync:
 
-- main SHA: `87020ec85787f1dfb3d03c30dd8fafaeb7b2aafe`.
+- main SHA: `68af0d1cdb3ad16080d5bfcde132b98833061067`.
 - #145 Character Context Motion v2 — MERGED.
 - #149 Visual Catch-up v3 packaged rain/snow fallback — MERGED.
 - #150 Lifecycle Presentation v2 — MERGED.
@@ -30,13 +30,16 @@ Current main before this docs-only audit-priority sync:
 - #152 C1 Settlement Facility Authority Foundation v1 — MERGED.
 - #153 docs reconciliation — MERGED.
 - #154 explicit Dagyeom presentation assist handoff — MERGED.
+- #156 AUDIT-0A Observer chrome single authority — MERGED.
+- #157 AUDIT-0B resident-local environmental pressure — MERGED.
+- #158 AUDIT-0C whole regression guards — MERGED.
 
 Recent validated functional baseline:
-- Core Tests #707 — PASS.
-- 67/67 Core tests — PASS.
+- Core Tests #721 — PASS.
 - deterministic harness — PASS.
-- Preflight #774 — PASS.
-- Unreal Linux Compile #235 — PASS.
+- Preflight #789 — PASS.
+- Unreal Linux Compile #241 — PASS.
+- whole-source audit invariants — PASS.
 
 Authority rule remains:
 
@@ -44,53 +47,29 @@ Authority rule remains:
 
 ---
 
-## 2. STOP-THE-LINE ACTIVE PRIORITY
+## 2. Whole-source audit P0 — COMPLETE
 
-### AUDIT-0A — Time / Weather / Speed UI consolidation
+### AUDIT-0A — DONE (#156)
+- duplicate Canvas runtime chrome removed.
+- production HUD hierarchy no longer owns a second time/weather/speed surface.
+- one UI speed mutation path remains.
 
-Status: **ACTIVE / FIRST**
+### AUDIT-0B — DONE (#157)
+- environmental Need pressure uses resident authoritative runtime GridPos.
+- GridPos -> chunk -> local DynamicEnvironment.
+- regression covers residents in different climate chunks.
 
-Problem:
-- `ALLRuntimeObserverHUD::DrawRuntimeChrome()` already renders time/weather/speed controls.
-- `ULLObserverTimeWeatherOverlay` is also auto-created and renders the same information/control set.
-- both can call `ULLSimulationSubsystem::SetSimulationSpeedPreset()`.
+### AUDIT-0C — DONE (#158, automated source gate)
+- Preflight #789 — PASS.
+- Core Tests #721 — PASS.
+- deterministic harness — PASS.
+- Unreal Linux Compile #241 — PASS.
+- regression guard prevents the two audit bugs from silently returning.
+- snapshot restore + local-climate deterministic continuation regression added.
 
-Required:
-1. choose one canonical production control surface.
-2. remove/absorb the duplicate path.
-3. keep one input/hit-testing path.
-4. keep Core time authority untouched.
-5. verify PC + Android interaction.
-6. PIE smoke: exactly one time/weather/speed surface.
+Runtime-only PIE/device smoke remains a QA item because CI does not execute an interactive Unreal viewport/device session.
 
-### AUDIT-0B — Resident-local environmental Need pressure
-
-Status: **NEXT P0, immediately after 0A**
-
-Problem:
-- per-minute `applyStartRegionEnvironmentalNeedPressure(world)` applies one start-region environment to every living resident.
-- travel/work systems already use actual spatial location, so environment causality is inconsistent.
-
-Required:
-1. authoritative resident runtime GridPos.
-2. GridPos -> chunk.
-3. per-resident DynamicEnvironment.
-4. per-resident environmental Need pressure.
-5. regression with two residents in different climates.
-6. deterministic Save/Load continuation.
-
-### AUDIT-0C — Full regression gate
-
-Status: **BLOCKS C1-B**
-
-After 0A/0B:
-- Core Tests.
-- deterministic harness.
-- Structural Preflight.
-- Unreal Linux Compile.
-- PIE visual/input smoke checklist.
-
-**Do not start/merge C1-B before AUDIT-0A/B/C are green.**
+**C1-B is no longer blocked by the source-audit gate.**
 
 ---
 
@@ -149,7 +128,7 @@ This is not ahead of P0 and does not replace C1-B after stabilization.
 
 ---
 
-## 5. C1 continuation after audit P0
+## 5. Active C1 continuation
 
 ### C1-B — Autonomous settlement need recognition
 1. SleepingPlace utility from sleep/outdoor-rest pressure.
@@ -234,7 +213,4 @@ Standing Jjun merge rule remains:
 
 ## 9. Immediate next implementation target
 
-> **AUDIT-0A — consolidate duplicate Observer time/weather/speed UI.**
-
-Then:
-**AUDIT-0B -> AUDIT-0C -> C1-B**.
+> **C1-B — Autonomous Settlement Need Recognition.**
