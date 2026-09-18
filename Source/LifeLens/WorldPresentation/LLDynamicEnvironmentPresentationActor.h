@@ -192,6 +192,13 @@ private:
     float FallbackRainIntensity01 = 0.0f;
     float FallbackSnowIntensity01 = 0.0f;
     float FallbackWind01 = 0.0f;
+
+    // Presentation-only snow residue. Core still owns weather and temperature;
+    // this only prevents the material snow cue from disappearing on the exact
+    // minute snowfall stops when no authored snow-cover DTO exists yet.
+    float PresentedSnowCover01 = 0.0f;
+    bool bPresentedSnowInitialized = false;
+
     bool bFallbackRainActive = false;
     bool bFallbackSnowActive = false;
 };
