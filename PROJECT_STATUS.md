@@ -2,49 +2,28 @@
 
 Date: 2026-09-18
 Current main checkpoint before this docs sync: `87020ec85787f1dfb3d03c30dd8fafaeb7b2aafe`
-Current product phase: **P0 Whole-Source Audit Stabilization -> C1 Settlement & Subsistence**
+Current product phase: **C1 Settlement & Subsistence**
 
-## STOP-THE-LINE CURRENT PRIORITY
+## Whole-source audit closeout
 
-Whole-source audit found two issues that must be fixed **before C1-B**.
+AUDIT-0A / 0B / 0C automated source gates are complete.
 
-### AUDIT-0A — Time / Weather / Speed UI duplication
+- #156 **AUDIT-0A** — duplicate Observer time/weather/speed UI removed; one canonical production control surface remains.
+- #157 **AUDIT-0B** — per-minute environmental Need pressure now uses each resident's authoritative Core runtime GridPos -> chunk -> DynamicEnvironment.
+- #158 **AUDIT-0C** — regression guards added and combined post-fix validation passed.
 
-Current main has both:
-- `ALLRuntimeObserverHUD::DrawRuntimeChrome()`
-- `ULLObserverTimeWeatherOverlay` + auto-created presentation subsystem
+#158 exact-head validation:
+- Preflight #789 — PASS.
+- Core Tests #721 — PASS.
+- Unreal Linux Compile #241 — PASS.
+- deterministic harness runs inside Core Tests — PASS.
 
-Both show time/weather/speed and both can mutate `ULLSimulationSubsystem::SetSimulationSpeedPreset()`.
+Runtime-only visual/input smoke (actual PIE/device layout, touch feel, animation/VFX/performance) remains a QA track and is not represented as CI-verified.
 
-Required:
-- consolidate to exactly one canonical Observer control surface.
-- remove duplicate hit/input path.
-- keep Core time authority unchanged.
-- verify PC/Android interaction and PIE layout.
-
-### AUDIT-0B — Environmental Need Pressure must follow each resident's authoritative location
-
-Current per-minute environment pressure uses one start-region environment for every living resident.
-
-Required:
-- resident runtime GridPos -> resident chunk -> DynamicEnvironment.
-- two residents in different chunks must receive their own local environmental pressure.
-- preserve deterministic Save/Load continuation.
-
-### AUDIT-0C — Whole regression after fixes
-
-Required before resuming C1-B:
-- Core Tests.
-- deterministic harness.
-- Structural Preflight.
-- Unreal Linux Compile.
-- PIE visual/input smoke checklist.
+**Current feature priority returns to C1-B Autonomous Settlement Need Recognition.**
 
 Canonical audit:
 - `docs/SOURCE_AUDIT_2026-09-18.md`
-
-After AUDIT-0A/B/C are green, resume:
-**C1-B Autonomous Settlement Need Recognition**.
 
 ---
 
@@ -62,7 +41,7 @@ LifeLens is an Unreal-native autonomous life and civilization simulation.
 - Android remains the first deployment target; Windows follows.
 - Paid runtime/API/cloud dependencies are not required for the simulation to function.
 
-## Completed foundations through PR #154
+## Completed foundations through PR #158
 
 Major correctness / authority:
 - #115 Lifecycle Core Correctness.
@@ -121,7 +100,7 @@ Before multi-settlement / migration:
 
 This is **not ahead of AUDIT-0A/B**, and does not replace C1-B after P0 stabilization.
 
-## C1 sequence after P0 audit fixes
+## Current C1 sequence
 
 ### C1-B — Autonomous settlement need recognition
 - high sleep pressure / repeated outdoor sleeping -> SleepingPlace utility.
@@ -144,11 +123,11 @@ This is **not ahead of AUDIT-0A/B**, and does not replace C1-B after P0 stabiliz
 ## Build / validation state
 
 Recent validated baseline:
-- Core Tests #707 — PASS.
-- 67/67 Core tests — PASS.
+- Core Tests #721 — PASS.
 - deterministic harness — PASS.
-- Preflight #774 — PASS.
-- Unreal Linux Compile #235 — PASS.
+- Preflight #789 — PASS.
+- Unreal Linux Compile #241 — PASS.
+- whole-source audit invariants — PASS.
 
 Important:
 - green compile/tests prove structural and regression health, not visual/device perfection.
