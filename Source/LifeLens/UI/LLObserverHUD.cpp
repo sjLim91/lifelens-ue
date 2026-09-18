@@ -1273,6 +1273,65 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
                 break;
             }
 
+            auto FamilyMemberStatus = [](const FLLCoreFamilyMemberSnapshot& Member)
+            {
+                FString Status = Member.LifeStageLabel.IsEmpty()
+                    ? FString(LLObserverKorean::Resident)
+                    : Member.LifeStageLabel;
+                if (!Member.bAlive)
+                {
+                    Status += TEXT(" · ") + FString(LLObserverKorean::Deceased);
+                }
+                return Status;
+            };
+
+            FRow ParentsHeader;
+            ParentsHeader.Left = LLObserverKorean::FamilyParentsGeneration;
+            ParentsHeader.Right = FString::FromInt(CoreFamily.Parents.Num());
+            ParentsHeader.LeftColor = TextSection;
+            ParentsHeader.RightColor = TextMuted;
+            ParentsHeader.Scale = SectionScale;
+            Rows.Add(ParentsHeader);
+
+            if (CoreFamily.Parents.Num() == 0)
+            {
+                FRow None;
+                None.Left = LLObserverKorean::Parents;
+                None.Right = LLObserverKorean::None;
+                None.Scale = RowScale;
+                Rows.Add(None);
+            }
+            else
+            {
+                for (const FLLCoreFamilyMemberSnapshot& Parent : CoreFamily.Parents)
+                {
+                    FRow Row;
+                    Row.Left = Parent.DisplayName.IsEmpty() ? FString(LLObserverKorean::Parents) : Parent.DisplayName;
+                    Row.Right = FamilyMemberStatus(Parent);
+                    Row.RightColor = Parent.bAlive ? TextSecondary : TextMuted;
+                    Row.Scale = RowScale;
+                    Rows.Add(Row);
+                }
+            }
+
+            FRow CurrentHeader;
+            CurrentHeader.Left = LLObserverKorean::FamilyCurrentGeneration;
+            CurrentHeader.LeftColor = TextSection;
+            CurrentHeader.Scale = SectionScale;
+            CurrentHeader.GapBefore = SectionGap;
+            Rows.Add(CurrentHeader);
+
+            FRow Self;
+            Self.Left = Resident.DisplayName;
+            Self.Right = FString::Printf(
+                TEXT("%d세 · %s"),
+                Resident.AgeYears,
+                *LLObserverLabels::LifeStageToString(Resident.LifeStage));
+            Self.LeftColor = TextPrimary;
+            Self.RightColor = TextPrimary;
+            Self.Scale = RowScale;
+            Rows.Add(Self);
+
             FRow Household;
             Household.Left = LLObserverKorean::Household;
             Household.Right = CoreFamily.HouseholdId != 0
@@ -1281,13 +1340,25 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
             Household.Scale = RowScale;
             Rows.Add(Household);
 
-            FRow Partner;
-            Partner.Left = LLObserverKorean::Partner;
-            Partner.Right = CoreFamily.bHasActivePartner
-                ? CoreFamily.PartnerName + TEXT(" · ") + EnumLabel(CoreFamily.PartnerStage)
-                : FString(LLObserverKorean::None);
-            Partner.Scale = RowScale;
-            Rows.Add(Partner);
+            if (CoreFamily.bHasActivePartner || CoreFamily.bHasRomanceHistory)
+            {
+                FRow Partner;
+                Partner.Left = CoreFamily.bHasActivePartner
+                    ? FString(LLObserverKorean::Partner)
+                    : FString(LLObserverKorean::RelationshipHistory);
+                if (!CoreFamily.PartnerName.IsEmpty())
+                {
+                    Partner.Left += TEXT(" · ") + CoreFamily.PartnerName;
+                }
+                Partner.Right = EnumLabel(CoreFamily.PartnerStage);
+                if (CoreFamily.bHasActivePartner && CoreFamily.bCohabitingWithPartner)
+                {
+                    Partner.Right += TEXT(" · ") + FString(LLObserverKorean::Cohabiting);
+                }
+                Partner.RightColor = CoreFamily.bHasActivePartner ? TextAction : TextMuted;
+                Partner.Scale = RowScale;
+                Rows.Add(Partner);
+            }
 
             if (CoreFamily.bExpectingChild)
             {
@@ -1299,9 +1370,41 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
                 Rows.Add(Expecting);
             }
 
-            FRow Parents; Parents.Left = LLObserverKorean::Parents; Parents.Right = JoinFamilyNames(CoreFamily.Parents); Parents.Scale = RowScale; Parents.GapBefore = SectionGap; Rows.Add(Parents);
-            FRow Children; Children.Left = LLObserverKorean::Children; Children.Right = JoinFamilyNames(CoreFamily.Children); Children.Scale = RowScale; Rows.Add(Children);
-            FRow Siblings; Siblings.Left = LLObserverKorean::Siblings; Siblings.Right = JoinFamilyNames(CoreFamily.Siblings); Siblings.Scale = RowScale; Rows.Add(Siblings);
+            FRow Siblings;
+            Siblings.Left = LLObserverKorean::Siblings;
+            Siblings.Right = JoinFamilyNames(CoreFamily.Siblings);
+            Siblings.Scale = RowScale;
+            Rows.Add(Siblings);
+
+            FRow ChildrenHeader;
+            ChildrenHeader.Left = LLObserverKorean::FamilyChildrenGeneration;
+            ChildrenHeader.Right = FString::FromInt(CoreFamily.Children.Num());
+            ChildrenHeader.LeftColor = TextSection;
+            ChildrenHeader.RightColor = TextMuted;
+            ChildrenHeader.Scale = SectionScale;
+            ChildrenHeader.GapBefore = SectionGap;
+            Rows.Add(ChildrenHeader);
+
+            if (CoreFamily.Children.Num() == 0)
+            {
+                FRow None;
+                None.Left = LLObserverKorean::Children;
+                None.Right = LLObserverKorean::None;
+                None.Scale = RowScale;
+                Rows.Add(None);
+            }
+            else
+            {
+                for (const FLLCoreFamilyMemberSnapshot& Child : CoreFamily.Children)
+                {
+                    FRow Row;
+                    Row.Left = Child.DisplayName.IsEmpty() ? FString(LLObserverKorean::Children) : Child.DisplayName;
+                    Row.Right = FamilyMemberStatus(Child);
+                    Row.RightColor = Child.bAlive ? TextSecondary : TextMuted;
+                    Row.Scale = RowScale;
+                    Rows.Add(Row);
+                }
+            }
             break;
         }
 
