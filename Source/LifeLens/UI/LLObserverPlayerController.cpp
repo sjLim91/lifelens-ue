@@ -797,6 +797,7 @@ void ALLObserverPlayerController::FocusWorldLocation(
     // the camera away from the event location. Re-selecting/tapping a resident
     // resumes normal resident framing.
     SuspendObservedResidentFollow();
+    bWorldEventFocusActive = true;
 
     UGameInstance* GameInstance = GetGameInstance();
     ULLObservationSubsystem* Observation =
@@ -831,6 +832,7 @@ void ALLObserverPlayerController::FocusObservedResident(ALLResidentCharacter* Re
 
     FocusedResidentId = Resident->GetResidentId();
     bFollowObservedResident = FocusedResidentId.IsValid();
+    bWorldEventFocusActive = false;
 
     float FocusDistance = ObservedResidentFocusDistanceUU;
     ResolveObservedResidentFocusFraming(Resident, DesiredOrbitTarget, FocusDistance);
@@ -917,6 +919,7 @@ void ALLObserverPlayerController::UpdateObservedResidentFocus()
 void ALLObserverPlayerController::RestoreWorldOverview()
 {
     bFollowObservedResident = false;
+    bWorldEventFocusActive = false;
     FocusedResidentId.Invalidate();
 
     if (!bWorldOverviewCaptured)
@@ -1040,7 +1043,21 @@ void ALLObserverPlayerController::ApplyTap(const FVector2D& ScreenPosition, ALLR
         return;
     }
 
-    // 3. Empty space: one level back (LEVEL 2 -> 1 -> 0). Returning to
+    // 3. A facility/world-event focus is a temporary camera excursion, not
+    // an observation-level change. The first empty tap returns to the selected
+    // resident instead of accidentally closing that resident's inspector.
+    if (bWorldEventFocusActive && Observation->HasObservedResident())
+    {
+        if (ALLResidentCharacter* Resident =
+                FindResidentActor(Observation->GetObservedResidentId()))
+        {
+            FocusObservedResident(Resident, true);
+            return;
+        }
+        bWorldEventFocusActive = false;
+    }
+
+    // 4. Empty space: one level back (LEVEL 2 -> 1 -> 0). Returning to
     // LEVEL 0 restores the captured production overview framing.
     Observation->StepBack();
     if (Observation->GetObservationLevel() == ELLObservationLevel::World)
