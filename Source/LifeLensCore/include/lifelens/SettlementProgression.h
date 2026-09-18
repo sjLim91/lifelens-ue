@@ -54,6 +54,20 @@ inline ConstructedFacility* settlementFacilityProject(
     return nullptr;
 }
 
+inline int settlementConstructionMissingMaterial(
+    const World& world,
+    MaterialKind material)
+{
+    int missing=0;
+    for(const auto& facility:world.facilities){
+        if(!isSettlementFoundationFacility(facility.kind)
+           || facility.state==FacilityState::Operational
+           || facility.state==FacilityState::Ruined) continue;
+        missing+=std::max(0,facilityMissingMaterial(facility,material));
+    }
+    return missing;
+}
+
 inline bool settlementFacilitySiteBlocked(const World& world,GridPos pos)
 {
     for(const auto& facility:world.facilities){
