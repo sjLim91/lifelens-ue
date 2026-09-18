@@ -286,3 +286,30 @@ C1 세부 순서:
 **Canonical evidence**
 - `docs/SOURCE_AUDIT_2026-09-18.md`.
 
+---
+
+## D-016 — Roadmap display is grouped into four macro stages C / D / E / F
+
+**Decision**
+- The development roadmap is presented in four large stages for clarity.
+- This is a naming/execution organization change only. Previously planned work is not removed.
+
+**Mapping**
+- **Stage C — Settlement, Survival & Early Civilization**
+  - former C1-A~C1-F.
+- **Stage D — Long-Run Simulation & Civilization Engine**
+  - former C2 + C3.
+- **Stage E — Human Society, Health, Education, Economy & Migration**
+  - former C4 + C5 + C6.
+- **Stage F — Historical Civilization to Open Future**
+  - former F1~F8.
+
+**Rules**
+- Detailed acceptance criteria remain in the roadmap and are implemented in manageable PR-sized slices.
+- A macro stage must not become one giant PR.
+- C/D/E/F labels must never become forced Core era/time unlocks.
+- Presentation, PIE/device QA, Android delivery, CI and audit follow-ups remain cross-cutting tracks.
+
+**Immediate application**
+- Current work is **Stage C / C-S1 Autonomous Settlement Need Recognition**.
+
