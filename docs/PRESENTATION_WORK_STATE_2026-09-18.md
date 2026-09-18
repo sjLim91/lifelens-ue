@@ -1,4 +1,4 @@
-# LifeLens Presentation & Integration Work State — 2026-09-18 23:45 KST
+# LifeLens Presentation & Integration Work State — 2026-09-18 23:55 KST
 
 > Truth order: actual GitHub main / open PR / Actions > this snapshot > older handoff/status text.
 >
@@ -96,64 +96,48 @@ Standing rule:
 - #213 Social counterpart link v6.
 - #214 Night resident label readability v6.
 - #215 Facility event focus v1.
+- #216 Detail resident navigation v1.
+- #217 Sleep site posture v7.
+- #218 Resource depletion visual v2.
+- #219 Selected social counterpart v7.
+- #220 Snow cover accumulation v6.
+- #221 Detailed daypart chrome v5.
+- #222 Resident identity badge v7.
+- #223 Offscreen action cue v4.
+- #224 World event focus return v2.
 
 All items above were merged only after their exact tested head satisfied required Preflight + Unreal Linux Compile at merge time.
 
-## 4. In-flight work snapshot
+## 4. Current work snapshot
 
-As of 2026-09-18 23:45 KST, the following PRs are open and under CI. GitHub Actions is authoritative if this status becomes stale.
+The #216~#224 expanded Presentation/Observer wave is now **MERGED**.
 
-### First active wave
-- #216 **Detail resident navigation v1**
-  - Relationships/Family rows become direct resident navigation.
-  - Keeps active detail tab and relies on external-selection camera sync.
-  - Head: `0f9be32bc07a93686b257f2a5844bf615f9e87e9`.
+Exact-head validation before merge:
+- #216 Preflight #910 + Unreal Linux Compile #302 — PASS.
+- #217 Preflight #911 + Unreal Linux Compile #303 — PASS.
+- #218 Preflight #912 + Unreal Linux Compile #304 — PASS.
+- #219 Preflight #913 + Unreal Linux Compile #305 — PASS.
+- #220 Preflight #914 + Unreal Linux Compile #307 — PASS.
+- #221 Preflight #915 + Unreal Linux Compile #306 — PASS.
+- #222 Preflight #916 + Unreal Linux Compile #308 — PASS.
+- #223 Preflight #917 + Unreal Linux Compile #309 — PASS.
+- #224 Preflight #918 + Unreal Linux Compile #310 — PASS.
 
-- #217 **Sleep site posture v7**
-  - Distinguish degraded ground sleep from real SleepingPlace sleep.
-  - Uses authoritative settlement sleep target.
-  - Head: `b12b989ae2cef484ab63b5a195952b4b5af5ac49`.
+Merge SHAs:
+- #216 `a98a02c232e8e77385e5a954e2c4be408e7eb1d3`
+- #217 `64428fb3d8bfdd30ae52b6c0a959c74eeca067a5`
+- #218 `e2344a77068d6ec518dc67d61c602ccba44b9411`
+- #219 `ea9a5f7007f19f158a5aca3c25708f7ca7e3d964`
+- #220 `684bfeec613c40b85857e9452306a506a12788ab`
+- #221 `9ecf5931fafffdb6db582193652a963852fac709`
+- #222 `5c29bf8ff7747687e67c82c21e738f0f43e90e99`
+- #223 `85c7c714eed67992dc733c36b20b324fdb45f54d`
+- #224 `481c99df96390c55dc4148cd254701baa09b25be`
 
-- #218 **Resource depletion visual v2**
-  - Natural resource patch instance count/scale follows authoritative quantity.
-  - Zero quantity produces zero visual resource instances.
-  - Head: `56f1648205e75aa51d8db2a3dad09b45122a1dd4`.
+Active synchronization PR:
+- #225 **Docs current-work sync** — documentation-only reconciliation of this state.
 
-- #219 **Selected social counterpart v7**
-  - Selected resident social target receives a compact counterpart label.
-  - Head: `f90ddcdfed1e8473f32e53d1686b7f99e4f6dd78`.
-
-At snapshot time:
-- #216~#219 Preflight: PASS.
-- #216~#219 Unreal Linux Compile: in progress.
-
-### Expanded parallel wave
-Parallel-count restriction was removed by the user. Independent files may now run in larger batches.
-
-- #220 **Snow cover accumulation v6**
-  - Snow presentation accumulates through storms and thaws by temperature.
-  - Head: `f476461294f62124db041b11f38f6419d3c18c9d`.
-
-- #221 **Detailed daypart chrome v5**
-  - Dawn / morning / day / sunset / evening / night.
-  - Head: `9d2d961c27959680a30eff6ce2a585f7215cfbf9`.
-
-- #222 **Resident identity badge v7**
-  - Korean life-stage badge and selected resident age.
-  - Head: `910de7f511400c608681f70f68471dec228d7f0d`.
-
-- #223 **Offscreen action cue v4**
-  - Offscreen selected-resident cue includes current action.
-  - Head: `d6ae030ac315fde7fb1ab71eda04f34d98ec211b`.
-
-- #224 **World event focus return v2**
-  - First empty tap after facility/world-event focus returns camera to selected resident without closing inspector.
-  - Head: `bcbbbeee0d2ab9912bf0a7215fbecddfc6154d77`.
-
-At snapshot time:
-- #220~#221 Preflight: PASS.
-- #222~#224 Preflight: running.
-- #220~#224 Unreal Linux Compile: running.
+There is no remaining open feature PR from the #216~#224 wave.
 
 ## 5. Merge / CI standing rule
 
@@ -176,7 +160,7 @@ From now on:
 - Do not distort architecture merely to create file independence.
 - If the correct responsibility belongs in the same file, sequence or combine the work instead.
 
-## 7. Immediate Presentation backlog after current wave
+## 7. Immediate Presentation backlog after merged #216~#224 wave
 
 High-value next work:
 - resident/family/relationship navigation polish after #216 runtime validation.
