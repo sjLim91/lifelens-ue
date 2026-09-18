@@ -53,6 +53,7 @@ private:
     void ApplyCameraTransform(float DeltaTime);
     void UpdateObservedResidentFocus();
     void FocusObservedResident(ALLResidentCharacter* Resident, bool bReframe);
+    void ResolveObservedResidentFocusFraming(const ALLResidentCharacter* Resident, FVector& OutTarget, float& OutDistance) const;
     void RestoreWorldOverview();
     void SuspendObservedResidentFollow();
     ALLResidentCharacter* FindResidentActor(FGuid ResidentId) const;
@@ -115,6 +116,20 @@ private:
 
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera|Focus", meta=(ClampMin="-500.0", ClampMax="1000.0"))
     float ObservedResidentFocusHeightOffsetUU = 70.0f;
+
+    // Adult-sized rendered height used to normalize focus distance. Smaller
+    // residents automatically frame closer while large residents stay near the
+    // established 3200 UU composition.
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera|Focus", meta=(ClampMin="10.0"))
+    float ObservedResidentReferenceHeightUU = 180.0f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera|Focus", meta=(ClampMin="0.25", ClampMax="1.0"))
+    float ObservedResidentFocusMinDistanceScale = 0.68f;
+
+    // Shift the camera target slightly to screen-right so the resident appears
+    // left-of-centre, leaving breathing room for the right-side observer card.
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera|Focus", meta=(ClampMin="0.0", ClampMax="0.35"))
+    float ObservedResidentFocusLateralFraction = 0.12f;
 
     TWeakObjectPtr<ACameraActor> ObserverCamera;
     bool bCameraInitialized = false;
