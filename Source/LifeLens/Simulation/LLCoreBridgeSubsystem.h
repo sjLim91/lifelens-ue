@@ -160,6 +160,16 @@ public:
         int32 ChunkY,
         FLLCoreNaturalChunkObservation& OutObservation) const;
 
+    // Deterministic Core hydrology projected for authoritative materialized chunks.
+    UFUNCTION(BlueprintPure, Category="LifeLens|Core|WorldGeneration|Hydrology")
+    TArray<FLLCoreHydrologyObservation> GetMaterializedHydrologyObservations() const;
+
+    UFUNCTION(BlueprintCallable, Category="LifeLens|Core|WorldGeneration|Hydrology")
+    bool GetHydrologyObservation(
+        int32 ChunkX,
+        int32 ChunkY,
+        FLLCoreHydrologyObservation& OutObservation) const;
+
     // Native persistence bridge.
     // Unreal SaveGame stores these bytes; it never
     // serializes the compatibility resident projection as a second authority.
