@@ -754,3 +754,19 @@ First delivery:
 - missing construction materials -> Gather demand.
 - Plan / DeliverMaterial / Work -> authoritative spatial ContextAction / ACK.
 - preserve deterministic Save/Load continuation.
+
+
+---
+
+## Late 2026-09-18 Presentation sprint reconciliation
+
+Presentation quality continued substantially after the earlier P2~P5 snapshot. The canonical live list of merged #159~#215 and active #216~#224 is maintained in:
+
+- `docs/PRESENTATION_WORK_STATE_2026-09-18.md`.
+
+This does **not** replace the Stage C -> D -> E -> F roadmap above. It records the parallel observer/presentation lane only.
+
+Execution rule update:
+- the previous practical 4-item parallel batch cap is removed;
+- independent files/responsibilities may run in larger parallel waves;
+- do not split or duplicate canonical architecture merely to manufacture parallelism.
