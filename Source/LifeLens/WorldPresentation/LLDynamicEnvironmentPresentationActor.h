@@ -7,6 +7,8 @@
 class UDirectionalLightComponent;
 class UExponentialHeightFogComponent;
 class UInstancedStaticMeshComponent;
+class UMaterialInstanceDynamic;
+class UMaterialInterface;
 class UNiagaraComponent;
 class UNiagaraSystem;
 class UPostProcessComponent;
@@ -62,6 +64,9 @@ private:
     UPROPERTY() TObjectPtr<UInstancedStaticMeshComponent> SnowFallback;
     UPROPERTY() TObjectPtr<UStaticMesh> FallbackRainMesh;
     UPROPERTY() TObjectPtr<UStaticMesh> FallbackSnowMesh;
+    UPROPERTY() TObjectPtr<UMaterialInterface> FallbackPrecipitationMaterial;
+    UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> FallbackRainMaterial;
+    UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> FallbackSnowMaterial;
 
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Environment", meta=(ClampMin="0.05", ClampMax="5.0"))
     float RefreshIntervalSeconds = 0.25f;
@@ -165,6 +170,21 @@ private:
 
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|PostProcess", meta=(ClampMin="0.0", ClampMax="2.0"))
     float SevereWeatherSaturation = 0.78f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|PostProcess", meta=(ClampMin="0.5", ClampMax="1.5"))
+    float ClearContrast = 1.02f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|PostProcess", meta=(ClampMin="0.5", ClampMax="1.5"))
+    float SevereWeatherContrast = 0.90f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|PostProcess", meta=(ClampMin="0.0", ClampMax="1.0"))
+    float TwilightSaturationLift = 0.08f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|PostProcess", meta=(ClampMin="0.0", ClampMax="2.0"))
+    float ClearBloomIntensity = 0.32f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|PostProcess", meta=(ClampMin="0.0", ClampMax="2.0"))
+    float SevereWeatherBloomIntensity = 0.12f;
 
     float RefreshAccumulator = 0.0f;
     int64 LastAppliedSimulationMinute = TNumericLimits<int64>::Lowest();
