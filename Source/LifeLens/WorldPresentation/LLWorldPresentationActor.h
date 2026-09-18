@@ -190,6 +190,7 @@ private:
                          bool bNightPresentation);
     uint32 FacilitySignature(const FLLCoreCivilizationWorldObservation& Civilization) const;
     uint32 FacilityLayoutSignature(const FLLCoreCivilizationWorldObservation& Civilization) const;
+    uint32 ResourceQuantitySignature(const FLLCoreCivilizationWorldObservation& Civilization) const;
     void RefreshFacilityReadabilityReferences(
         const struct FLLCoreWorldGenerationObservation& World,
         const FLLCoreCivilizationWorldObservation& Civilization);
@@ -249,6 +250,7 @@ private:
     int32 BuiltChunkCount = -1;
     uint32 BuiltFacilitySignature = 0;
     uint32 BuiltFacilityLayoutSignature = 0;
+    uint32 BuiltResourceQuantitySignature = 0;
     bool bBuiltFacilityPresentation = false;
     int32 PlacedTrees = 0;
     int32 PlacedShrubs = 0;

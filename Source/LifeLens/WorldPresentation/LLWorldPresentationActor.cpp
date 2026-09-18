@@ -685,13 +685,30 @@ void ALLWorldPresentationActor::BuildChunkDressing(const FLLCoreWorldGenerationO
         if (!Target || Target->Num() == 0 || !PlacedCounter || *PlacedCounter >= MaxTotal) { continue; }
         const float PatchX = static_cast<float>(Patch.GridX - World.InitialCenterGridX) * LLWorldSpatialContract::GridCellSizeUU;
         const float PatchY = static_cast<float>(Patch.GridY - World.InitialCenterGridY) * LLWorldSpatialContract::GridCellSizeUU;
-        const int32 PatchInstances = FMath::Clamp(
-            FMath::RoundToInt(FMath::Clamp(Patch.VisualDensity, 0.0f, 1.0f) * 6.0f) + 1, 1, 8);
+        const float Quantity01 = Patch.MaxQuantity > 0
+            ? FMath::Clamp(
+                static_cast<float>(Patch.CurrentQuantity)
+                    / static_cast<float>(Patch.MaxQuantity),
+                0.0f,
+                1.0f)
+            : (Patch.CurrentQuantity > 0 ? 1.0f : 0.0f);
+        const float VisibleDensity = FMath::Clamp(
+            Patch.VisualDensity,
+            0.0f,
+            1.0f)
+            * FMath::Sqrt(Quantity01);
+        const int32 PatchInstances = Quantity01 <= KINDA_SMALL_NUMBER
+            ? 0
+            : FMath::Clamp(
+                FMath::RoundToInt(VisibleDensity * 6.0f) + 1,
+                1,
+                8);
         for (int32 Index = 0; Index < PatchInstances && *PlacedCounter < MaxTotal; ++Index)
         {
             const float SpreadX = (HashUnit(State) * 2.0f - 1.0f) * LLWorldSpatialContract::GridCellSizeUU;
             const float SpreadY = (HashUnit(State) * 2.0f - 1.0f) * LLWorldSpatialContract::GridCellSizeUU;
             float Scale = FMath::Lerp(MinScale, MaxScale, HashUnit(State));
+            Scale *= FMath::Lerp(0.62f, 1.0f, FMath::Sqrt(Quantity01));
             const float Yaw = HashUnit(State) * 360.0f;
             const int32 Slot = static_cast<int32>(HashUnit(State) * Target->Num()) % Target->Num();
             const FVector2D PatchLocation(PatchX + SpreadX, PatchY + SpreadY);
@@ -704,6 +721,22 @@ void ALLWorldPresentationActor::BuildChunkDressing(const FLLCoreWorldGenerationO
             }
         }
     }
+}
+
+uint32 ALLWorldPresentationActor::ResourceQuantitySignature(
+    const FLLCoreCivilizationWorldObservation& Civilization) const
+{
+    uint32 Hash = 0x52455331u;
+    Hash = MixHash(Hash, static_cast<uint32>(Civilization.ResourceNodeCount));
+    for (const FLLCoreCivilizationResourceObservation& Resource : Civilization.Resources)
+    {
+        const uint64 Id = static_cast<uint64>(Resource.ResourceNodeId);
+        Hash = MixHash(Hash, static_cast<uint32>(Id & 0xFFFFFFFFu));
+        Hash = MixHash(Hash, static_cast<uint32>((Id >> 32) & 0xFFFFFFFFu));
+        Hash = MixHash(Hash, static_cast<uint32>(FMath::Max(0, Resource.Quantity)));
+        Hash = MixHash(Hash, static_cast<uint32>(FMath::Max(0, Resource.MaxQuantity)));
+    }
+    return Hash;
 }
 
 uint32 ALLWorldPresentationActor::FacilityLayoutSignature(
@@ -1312,11 +1345,18 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         RefreshFacilityReadabilityReferences(World, Civilization);
     }
 
+    const uint32 CurrentResourceQuantitySignature =
+        ResourceQuantitySignature(Civilization);
+    const bool bResourceQuantityChanged =
+        bForce
+        || CurrentResourceQuantitySignature != BuiltResourceQuantitySignature;
+
     const bool bNaturalChanged = bForce
         || World.WorldSeed != BuiltWorldSeed
         || World.GenerationVersion != BuiltGenerationVersion
         || World.MaterializedChunkCount != BuiltChunkCount
         || bFacilityLayoutChanged
+        || bResourceQuantityChanged
         || (bSightlinePending && bInitialViewCaptured);
 
     uint32 CurrentFacilitySignature = FacilitySignature(Civilization);
@@ -1335,6 +1375,7 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         BuiltWorldSeed = World.WorldSeed;
         BuiltGenerationVersion = World.GenerationVersion;
         BuiltChunkCount = World.MaterializedChunkCount;
+        BuiltResourceQuantitySignature = CurrentResourceQuantitySignature;
         ClearInstances();
         BuildGround(World);
         BuildChunkDressing(World, World.InitialChunk);
