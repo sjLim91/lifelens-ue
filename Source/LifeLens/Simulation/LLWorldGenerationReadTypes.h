@@ -10,6 +10,49 @@ enum class ELLCoreNaturalObstacleKind : uint8
     Rock
 };
 
+UENUM(BlueprintType)
+enum class ELLCoreSurfaceWaterKind : uint8
+{
+    None,
+    Spring,
+    Stream,
+    River,
+    Lake,
+    Wetland,
+    Coast,
+    Ocean
+};
+
+UENUM(BlueprintType)
+enum class ELLCoreWaterSalinity : uint8
+{
+    Fresh,
+    Brackish,
+    Salt
+};
+
+USTRUCT(BlueprintType)
+struct FLLCoreHydrologyObservation
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology") bool bAvailable = false;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology") int32 ChunkX = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology") int32 ChunkY = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology") ELLCoreSurfaceWaterKind SurfaceKind = ELLCoreSurfaceWaterKind::None;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology") ELLCoreWaterSalinity Salinity = ELLCoreWaterSalinity::Fresh;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology") int64 SurfaceWaterId = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology") float SurfaceAvailability = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology") float FlowPotential = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology") float GroundwaterPotential = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology") float RechargePotential = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology") float RunoffPotential = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology") bool bHasDownstream = false;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology") int32 DownstreamChunkX = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology") int32 DownstreamChunkY = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology") bool bFreshSurfaceWater = false;
+};
+
 USTRUCT(BlueprintType)
 struct FLLCoreNaturalObstacleObservation
 {
