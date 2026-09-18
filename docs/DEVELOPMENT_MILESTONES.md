@@ -103,14 +103,14 @@ Android Gate B remains paused by user.
 
 # 4. New Priority Order
 
-## Priority -1 — Whole-Source Audit Stabilization — ACTIVE NOW
+## Priority -1 — Whole-Source Audit Stabilization — DONE
 
 Canonical audit:
 `docs/SOURCE_AUDIT_2026-09-18.md`
 
 C1-B보다 먼저 다음을 끝낸다.
 
-### AUDIT-0A — Observer time/weather/speed duplicate UI consolidation
+### AUDIT-0A — Observer time/weather/speed duplicate UI consolidation — DONE (#156)
 
 Current main contains both:
 - `ALLRuntimeObserverHUD::DrawRuntimeChrome()`.
@@ -125,7 +125,7 @@ Acceptance:
 - PC/Android interaction checked.
 - Preflight + Unreal Compile + PIE smoke green.
 
-### AUDIT-0B — Resident-local environmental Need pressure
+### AUDIT-0B — Resident-local environmental Need pressure — DONE (#157)
 
 Current per-minute environmental Need pressure samples the initial start region once and applies it to all living residents.
 
@@ -135,7 +135,7 @@ Acceptance:
 - deterministic snapshot continuation remains valid.
 - Core regression added.
 
-### AUDIT-0C — Whole regression
+### AUDIT-0C — Whole regression — DONE (#158 automated gate)
 
 Before resuming C1-B:
 - Core Tests.
@@ -153,7 +153,7 @@ Before migration / multi-settlement:
 - consume the list directly.
 - remove count-based coordinate guessing.
 
-**Stop-the-line:** AUDIT-0A/B/C must be green before C1-B is merged.
+**Closeout:** AUDIT-0A/B/C automated source gates are green. Interactive PIE/device smoke remains runtime QA.
 
 After this stabilization, return to the existing C1 sequence without reordering its product intent.
 
@@ -676,18 +676,9 @@ LifeLens should eventually surprise the observer **without abandoning causality*
 
 # 13. Current Parallel Dispatch
 
-## Whole-product stabilization lane — FIRST
+## C1 mainline — ACTIVE
 
-1. **AUDIT-0A** — consolidate duplicate Observer time/weather/speed UI.
-2. **AUDIT-0B** — resident-local environmental Need pressure.
-3. **AUDIT-0C** — full regression + PIE smoke.
-4. **AUDIT-1A** — explicit materialized chunk enumeration before migration/multi-settlement.
-
-Ownership labels do not split this audit. The repository is reviewed and stabilized as one LifeLens product.
-
-## C1 lane — resumes after AUDIT-0C
-
-1. C1-B Autonomous Settlement Need Recognition.
+1. **C1-B Autonomous Settlement Need Recognition.**
 2. C1-C Facility Effects + Maintenance.
 3. C1-D Water/Food Persistence + Cultivation.
 4. C1-E Emergent Settlement Geometry.
@@ -699,10 +690,14 @@ Ownership labels do not split this audit. The repository is reviewed and stabili
 10. C6 Migration / Multiple Settlements / Trade Networks.
 11. F1 -> F8 historical / modern / future expansion.
 
+## Audit follow-up
+
+- AUDIT-0A / 0B / 0C — DONE.
+- AUDIT-1A explicit materialized chunk enumeration — must land before migration/multi-settlement.
+
 ## Presentation quality lane
 
-The previous catch-up remains integrated through #151/#154.
-Only incremental quality work continues unless it intersects AUDIT-0A.
+Presentation catch-up remains integrated; runtime visual/device QA continues incrementally.
 
 ## Android / Device lane
 
@@ -713,9 +708,12 @@ Do not launch a long Android build until the user explicitly resumes it.
 
 Current immediate implementation target:
 
-> **AUDIT-0A — consolidate duplicate Observer time/weather/speed UI.**
+> **C1-B — Autonomous Settlement Need Recognition**
 
-Then:
-`AUDIT-0B -> AUDIT-0C -> C1-B`
-
-C1-B remains the next product feature milestone, but it is temporarily blocked by the audit stabilization gate so settlement is not built on a duplicated UI responsibility or incorrect environment-location basis.
+First delivery:
+- sleep/outdoor-rest pressure -> SleepingPlace utility.
+- resident-local environmental exposure -> Shelter utility.
+- repeated craft/build pressure -> WorkSurface utility.
+- missing construction materials -> Gather demand.
+- Plan / DeliverMaterial / Work -> authoritative spatial ContextAction / ACK.
+- preserve deterministic Save/Load continuation.
