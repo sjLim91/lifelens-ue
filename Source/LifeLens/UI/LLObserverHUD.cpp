@@ -154,6 +154,24 @@ namespace
         return (1.0f - FMath::Clamp(CoreDeficit, 0.0f, 1.0f)) * 100.0f;
     }
 
+    FString NeedStateLabel(float CoreDeficit)
+    {
+        const float Deficit = FMath::Clamp(CoreDeficit, 0.0f, 1.0f);
+        if (Deficit >= 0.75f) { return TEXT("긴급"); }
+        if (Deficit >= 0.50f) { return TEXT("불편"); }
+        if (Deficit >= 0.25f) { return TEXT("주의"); }
+        return TEXT("안정");
+    }
+
+    FString EmotionIntensityLabel(float Value)
+    {
+        const float Strength = FMath::Clamp(Value, 0.0f, 1.0f);
+        if (Strength >= 0.75f) { return TEXT("강함"); }
+        if (Strength >= 0.50f) { return TEXT("뚜렷"); }
+        if (Strength >= 0.22f) { return TEXT("약함"); }
+        return TEXT("잔잔");
+    }
+
     FString Scalar02(float Value)
     {
         return FString::Printf(TEXT("%.2f"), Value);
@@ -1128,20 +1146,56 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
                 break;
             }
 
+            struct FNeedReadout
+            {
+                const TCHAR* Name;
+                float Deficit;
+            };
+            const FNeedReadout Needs[] = {
+                { LLObserverKorean::Hunger, CoreResident.Needs.Hunger },
+                { LLObserverKorean::Thirst, CoreResident.Needs.Thirst },
+                { LLObserverKorean::Energy, CoreResident.Needs.Sleep },
+                { LLObserverKorean::Hygiene, CoreResident.Needs.Hygiene },
+                { LLObserverKorean::Bladder, CoreResident.Needs.Bladder }
+            };
+
+            const FNeedReadout* WorstNeed = &Needs[0];
+            for (const FNeedReadout& Need : Needs)
+            {
+                if (Need.Deficit > WorstNeed->Deficit)
+                {
+                    WorstNeed = &Need;
+                }
+            }
+
+            FRow Summary;
+            Summary.Left = TEXT("현재 상태");
+            Summary.Right = FString::Printf(
+                TEXT("%s · %s"),
+                WorstNeed->Name,
+                *NeedStateLabel(WorstNeed->Deficit));
+            Summary.RightColor = LLObserverLabels::NeedColor(
+                NeedSatisfaction100(WorstNeed->Deficit));
+            Summary.LeftColor = TextSection;
+            Summary.Scale = RowScale;
+            Rows.Add(Summary);
+
             auto AddNeed = [&Rows, RowScale](const TCHAR* Name, float Deficit)
             {
                 FRow Row;
                 Row.Left = Name;
-                Row.Right = NeedSatisfactionBar(Deficit);
+                Row.Right = FString::Printf(
+                    TEXT("%s · %.0f%%"),
+                    *NeedStateLabel(Deficit),
+                    NeedSatisfaction100(Deficit));
                 Row.RightColor = LLObserverLabels::NeedColor(NeedSatisfaction100(Deficit));
                 Row.Scale = RowScale;
                 Rows.Add(Row);
             };
-            AddNeed(LLObserverKorean::Hunger, CoreResident.Needs.Hunger);
-            AddNeed(LLObserverKorean::Thirst, CoreResident.Needs.Thirst);
-            AddNeed(LLObserverKorean::Energy, CoreResident.Needs.Sleep);
-            AddNeed(LLObserverKorean::Hygiene, CoreResident.Needs.Hygiene);
-            AddNeed(LLObserverKorean::Bladder, CoreResident.Needs.Bladder);
+            for (const FNeedReadout& Need : Needs)
+            {
+                AddNeed(Need.Name, Need.Deficit);
+            }
             break;
         }
 
@@ -1245,26 +1299,59 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
                 break;
             }
 
+            struct FEmotionReadout
+            {
+                const TCHAR* Name;
+                float Value;
+            };
+            TArray<FEmotionReadout> Emotions = {
+                { LLObserverKorean::Joy, CoreResident.Emotion.Joy },
+                { LLObserverKorean::Sadness, CoreResident.Emotion.Sadness },
+                { LLObserverKorean::Anger, CoreResident.Emotion.Anger },
+                { LLObserverKorean::Fear, CoreResident.Emotion.Fear },
+                { LLObserverKorean::Affection, CoreResident.Emotion.Affection },
+                { LLObserverKorean::Anxiety, CoreResident.Emotion.Anxiety },
+                { LLObserverKorean::Grief, CoreResident.Emotion.Grief },
+                { LLObserverKorean::Pride, CoreResident.Emotion.Pride },
+                { LLObserverKorean::Jealousy, CoreResident.Emotion.Jealousy },
+                { LLObserverKorean::Relief, CoreResident.Emotion.Relief },
+                { LLObserverKorean::Embarrassment, CoreResident.Emotion.Embarrassment }
+            };
+            Emotions.Sort([](const FEmotionReadout& A, const FEmotionReadout& B)
+            {
+                return A.Value > B.Value;
+            });
+
+            if (Emotions.Num() > 0)
+            {
+                FRow Summary;
+                Summary.Left = TEXT("주요 감정");
+                Summary.Right = FString::Printf(
+                    TEXT("%s · %s"),
+                    Emotions[0].Name,
+                    *EmotionIntensityLabel(Emotions[0].Value));
+                Summary.LeftColor = TextSection;
+                Summary.RightColor = TextAction;
+                Summary.Scale = RowScale;
+                Rows.Add(Summary);
+            }
+
             auto AddEmotion = [&Rows, RowScale](const TCHAR* Name, float Value)
             {
                 FRow Row;
                 Row.Left = Name;
-                Row.Right = Percent01(Value);
-                Row.RightColor = TextPrimary;
+                Row.Right = FString::Printf(
+                    TEXT("%s · %.0f%%"),
+                    *EmotionIntensityLabel(Value),
+                    FMath::Clamp(Value, 0.0f, 1.0f) * 100.0f);
+                Row.RightColor = Value >= 0.50f ? TextPrimary : TextMuted;
                 Row.Scale = RowScale;
                 Rows.Add(Row);
             };
-            AddEmotion(LLObserverKorean::Joy, CoreResident.Emotion.Joy);
-            AddEmotion(LLObserverKorean::Sadness, CoreResident.Emotion.Sadness);
-            AddEmotion(LLObserverKorean::Anger, CoreResident.Emotion.Anger);
-            AddEmotion(LLObserverKorean::Fear, CoreResident.Emotion.Fear);
-            AddEmotion(LLObserverKorean::Affection, CoreResident.Emotion.Affection);
-            AddEmotion(LLObserverKorean::Anxiety, CoreResident.Emotion.Anxiety);
-            AddEmotion(LLObserverKorean::Grief, CoreResident.Emotion.Grief);
-            AddEmotion(LLObserverKorean::Pride, CoreResident.Emotion.Pride);
-            AddEmotion(LLObserverKorean::Jealousy, CoreResident.Emotion.Jealousy);
-            AddEmotion(LLObserverKorean::Relief, CoreResident.Emotion.Relief);
-            AddEmotion(LLObserverKorean::Embarrassment, CoreResident.Emotion.Embarrassment);
+            for (const FEmotionReadout& Emotion : Emotions)
+            {
+                AddEmotion(Emotion.Name, Emotion.Value);
+            }
             break;
         }
 
