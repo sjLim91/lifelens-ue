@@ -496,9 +496,42 @@ inline CivilizationUtilityDecision bestSettlementFoundationDecision(
     };
 
     for(const FacilityKind kind:kinds){
+        const ConstructedFacility* project=settlementFacilityProject(world,kind);
+        const double preference=civilizationPreference(
+            world.seed,self.id,610ULL+static_cast<std::uint64_t>(kind));
+
+        if(project!=nullptr && facilityOperationalAndActive(*project)){
+            if(!settlementFacilityNeedsMaintenance(*project)) continue;
+
+            const MaterialKind repairMaterial=facilityRepairMaterial(kind);
+            const int held=self.civilization.inventory.count(
+                ItemKind::RawMaterial,repairMaterial);
+            if(held<=0) continue;
+
+            CivilizationUtilityDecision repair;
+            repair.intent=CivilizationIntent::Craft;
+            repair.facilityKind=kind;
+            repair.facilityAction=FacilityBuildAction::Repair;
+            repair.facility=project->id;
+            repair.hasFacilityTarget=true;
+            repair.facilityTargetPos=project->pos;
+            repair.material=repairMaterial;
+            repair.item=ItemKind::RawMaterial;
+            repair.quantity=1;
+
+            const double damage=clampCivilization01(1.0-project->durability);
+            repair.utility=clampCivilization01(
+                0.46+0.34*damage
+                +0.09*self.personality.conscientiousness
+                +0.07*self.personality.orderliness
+                +0.07*self.civilization.craftingSkill
+                +0.04*preference);
+            considerCivilizationDecision(best,repair);
+            continue;
+        }
+
         if(hasOperationalSettlementFacility(world,kind)) continue;
 
-        const ConstructedFacility* project=settlementFacilityProject(world,kind);
         double pressure=settlementFacilityNeedPressure(
             world,self,authoritativePosition,kind);
         if(project==nullptr && pressure<0.24) continue;
@@ -509,9 +542,6 @@ inline CivilizationUtilityDecision bestSettlementFoundationDecision(
         candidate.facilityKind=kind;
         candidate.item=ItemKind::RawMaterial;
         candidate.technique=TechniqueId::None;
-
-        const double preference=civilizationPreference(
-            world.seed,self.id,610ULL+static_cast<std::uint64_t>(kind));
 
         if(project==nullptr){
             const SettlementFacilitySiteOpportunity site=
@@ -933,6 +963,18 @@ inline CivilizationUtilityDecision bestCraftDecisionAtPosition(
         candidate.item=recipe.outputKind;
         candidate.material=recipe.outputMaterial;
         candidate.quantity=recipe.outputQuantity;
+
+        const ConstructedFacility* workSurface=
+            operationalSettlementFacility(world,FacilityKind::WorkSurface);
+        if(workSurface!=nullptr){
+            candidate.facilityKind=FacilityKind::WorkSurface;
+            candidate.facility=workSurface->id;
+            candidate.hasFacilityTarget=true;
+            candidate.facilityTargetPos=workSurface->pos;
+            candidate.utility=clampCivilization01(
+                candidate.utility+0.05*facilityEffectiveness01(*workSurface));
+        }
+
         considerCivilizationDecision(best,candidate);
     }
     return best;
