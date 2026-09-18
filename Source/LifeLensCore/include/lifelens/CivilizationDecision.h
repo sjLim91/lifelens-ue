@@ -450,7 +450,19 @@ inline double settlementFacilityNeedPressure(
             0.58*environment.windIntensity01,
             consequence.outdoorWorkFriction01
         });
-        return clampCivilization01(weatherPressure);
+
+        // A single harsh minute is not enough to invent a settlement need.
+        // Environmental consequences already accumulate into resident Needs;
+        // combining local weather with that persistent burden makes Shelter
+        // recognition emerge after sustained exposure while keeping the
+        // resident's authoritative location causal.
+        const double accumulatedBurden=std::max({
+            clampCivilization01(self.needs.thirst),
+            clampCivilization01(self.needs.sleep),
+            clampCivilization01(self.needs.hygiene)
+        });
+        return clampCivilization01(
+            weatherPressure*(0.08+0.92*accumulatedBurden));
     }
 
     if(kind==FacilityKind::WorkSurface){
