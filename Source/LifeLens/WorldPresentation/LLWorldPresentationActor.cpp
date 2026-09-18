@@ -8,6 +8,7 @@
 #include "EngineUtils.h"
 #include "Engine/World.h"
 #include "Materials/MaterialInterface.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "Simulation/LLCivilizationReadTypes.h"
 #include "Simulation/LLCoreBridgeSubsystem.h"
 #include "Simulation/LLWorldGenerationReadTypes.h"
@@ -58,11 +59,15 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
     static ConstructorHelpers::FObjectFinder<UMaterialInterface> GrassMatFinder(TEXT("/Game/Environment/Materials/MI_Ground_Grass.MI_Ground_Grass"));
     static ConstructorHelpers::FObjectFinder<UMaterialInterface> DryMatFinder(TEXT("/Game/Environment/Materials/MI_Ground_DryEarth.MI_Ground_DryEarth"));
     static ConstructorHelpers::FObjectFinder<UMaterialInterface> TransitionMatFinder(TEXT("/Game/Environment/Materials/MI_Ground_Transition.MI_Ground_Transition"));
+    static ConstructorHelpers::FObjectFinder<UMaterialInterface> FacilitySurfaceMatFinder(TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
+    static ConstructorHelpers::FObjectFinder<UMaterialInterface> FacilityAccentMatFinder(TEXT("/Engine/EngineMaterials/EmissiveMeshMaterial.EmissiveMeshMaterial"));
 
     GroundMesh = CubeFinder.Succeeded() ? CubeFinder.Object : nullptr;
     GroundGrass = GrassMatFinder.Succeeded() ? GrassMatFinder.Object : nullptr;
     GroundDry = DryMatFinder.Succeeded() ? DryMatFinder.Object : nullptr;
     GroundTransition = TransitionMatFinder.Succeeded() ? TransitionMatFinder.Object : nullptr;
+    FacilitySurfaceMaterial = FacilitySurfaceMatFinder.Succeeded() ? FacilitySurfaceMatFinder.Object : nullptr;
+    FacilityAccentMaterial = FacilityAccentMatFinder.Succeeded() ? FacilityAccentMatFinder.Object : nullptr;
 
     static ConstructorHelpers::FObjectFinder<UStaticMesh> TreeA(TEXT("/Game/Environment/Quaternius/StylizedNature/CommonTree_1/StaticMeshes/CommonTree_1.CommonTree_1"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> TreeB(TEXT("/Game/Environment/Quaternius/StylizedNature/Pine_1/StaticMeshes/Pine_1.Pine_1"));
@@ -112,6 +117,7 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
     FacilityPostInstances = AddInstancedComponent(TEXT("FacilityPosts"), GroundMesh, FacilityCullStartUU, FacilityCullEndUU, true);
     FacilityRoofInstances = AddInstancedComponent(TEXT("FacilityRoofs"), GroundMesh, FacilityCullStartUU, FacilityCullEndUU, true);
     FacilityCargoInstances = AddInstancedComponent(TEXT("FacilityCargo"), GroundMesh, FacilityCullStartUU, FacilityCullEndUU, true);
+    FacilityAccentInstances = AddInstancedComponent(TEXT("FacilityAccents"), GroundMesh, FacilityCullStartUU, FacilityCullEndUU, false);
 }
 
 UHierarchicalInstancedStaticMeshComponent* ALLWorldPresentationActor::AddInstancedComponent(
@@ -133,6 +139,7 @@ UHierarchicalInstancedStaticMeshComponent* ALLWorldPresentationActor::AddInstanc
 void ALLWorldPresentationActor::BeginPlay()
 {
     Super::BeginPlay();
+    ApplyFacilityMaterialPalette();
     RefreshFromCore(true);
     UpdateDynamicObserverCanopyVisibility();
 }
@@ -174,6 +181,50 @@ void ALLWorldPresentationActor::ClearFacilityInstances()
     if (FacilityPostInstances) { FacilityPostInstances->ClearInstances(); }
     if (FacilityRoofInstances) { FacilityRoofInstances->ClearInstances(); }
     if (FacilityCargoInstances) { FacilityCargoInstances->ClearInstances(); }
+    if (FacilityAccentInstances) { FacilityAccentInstances->ClearInstances(); }
+}
+
+void ALLWorldPresentationActor::ApplyFacilityMaterialPalette()
+{
+    const FName ColorParameter(TEXT("Color"));
+    if (FacilitySurfaceMaterial)
+    {
+        FacilityFoundationMaterial = UMaterialInstanceDynamic::Create(FacilitySurfaceMaterial, this);
+        FacilityPostMaterial = UMaterialInstanceDynamic::Create(FacilitySurfaceMaterial, this);
+        FacilityRoofMaterial = UMaterialInstanceDynamic::Create(FacilitySurfaceMaterial, this);
+        FacilityCargoMaterial = UMaterialInstanceDynamic::Create(FacilitySurfaceMaterial, this);
+
+        if (FacilityFoundationMaterial)
+        {
+            FacilityFoundationMaterial->SetVectorParameterValue(ColorParameter, FLinearColor(0.24f, 0.22f, 0.19f, 1.0f));
+            if (FacilityFoundationInstances) { FacilityFoundationInstances->SetMaterial(0, FacilityFoundationMaterial); }
+        }
+        if (FacilityPostMaterial)
+        {
+            FacilityPostMaterial->SetVectorParameterValue(ColorParameter, FLinearColor(0.34f, 0.20f, 0.10f, 1.0f));
+            if (FacilityPostInstances) { FacilityPostInstances->SetMaterial(0, FacilityPostMaterial); }
+        }
+        if (FacilityRoofMaterial)
+        {
+            FacilityRoofMaterial->SetVectorParameterValue(ColorParameter, FLinearColor(0.39f, 0.31f, 0.19f, 1.0f));
+            if (FacilityRoofInstances) { FacilityRoofInstances->SetMaterial(0, FacilityRoofMaterial); }
+        }
+        if (FacilityCargoMaterial)
+        {
+            FacilityCargoMaterial->SetVectorParameterValue(ColorParameter, FLinearColor(0.47f, 0.32f, 0.16f, 1.0f));
+            if (FacilityCargoInstances) { FacilityCargoInstances->SetMaterial(0, FacilityCargoMaterial); }
+        }
+    }
+
+    if (FacilityAccentMaterial)
+    {
+        FacilityAccentDynamicMaterial = UMaterialInstanceDynamic::Create(FacilityAccentMaterial, this);
+        if (FacilityAccentDynamicMaterial)
+        {
+            FacilityAccentDynamicMaterial->SetVectorParameterValue(ColorParameter, FLinearColor(1.0f, 0.20f, 0.025f, 1.0f));
+            if (FacilityAccentInstances) { FacilityAccentInstances->SetMaterial(0, FacilityAccentDynamicMaterial); }
+        }
+    }
 }
 
 FVector2D ALLWorldPresentationActor::SettlementReferenceUU(const FLLCoreWorldGenerationObservation& World) const
@@ -893,12 +944,12 @@ void ALLWorldPresentationActor::BuildFacilities(
                         Base + FVector(-36.0f+Index*36.0f,-72.0f,18.0f),FVector(0.30f,0.16f,0.10f)));
                 }
             }
-            if (Facility.bLit && FacilityPostInstances)
+            if (Facility.bLit && FacilityAccentInstances)
             {
                 const float FlameHeight = FMath::Lerp(0.45f,0.85f,FMath::Clamp(Facility.HeatLevel,0.0f,1.0f));
-                FacilityPostInstances->AddInstance(FTransform(
+                FacilityAccentInstances->AddInstance(FTransform(
                     FRotator(0.0f,45.0f,0.0f),Base + FVector(0.0f,-34.0f,52.0f),FVector(0.20f,0.16f,FlameHeight)));
-                FacilityPostInstances->AddInstance(FTransform(
+                FacilityAccentInstances->AddInstance(FTransform(
                     FRotator(0.0f,135.0f,0.0f),Base + FVector(8.0f,-32.0f,46.0f),FVector(0.14f,0.13f,FlameHeight*0.72f)));
             }
             continue;
@@ -943,11 +994,11 @@ void ALLWorldPresentationActor::BuildFacilities(
                     Base + FVector(OffsetX, OffsetY, 18.0f),FVector(0.24f, 0.20f, 0.12f)));
             }
         }
-        if (Facility.bLit && FacilityPostInstances)
+        if (Facility.bLit && FacilityAccentInstances)
         {
-            FacilityPostInstances->AddInstance(FTransform(
+            FacilityAccentInstances->AddInstance(FTransform(
                 FRotator(0.0f, 45.0f, 0.0f),Base + FVector(0.0f, 0.0f, 55.0f),FVector(0.24f, 0.18f, 0.70f)));
-            FacilityPostInstances->AddInstance(FTransform(
+            FacilityAccentInstances->AddInstance(FTransform(
                 FRotator(0.0f, 135.0f, 0.0f),Base + FVector(0.0f, 0.0f, 48.0f),FVector(0.18f, 0.16f, 0.50f)));
         }
     }
@@ -1029,7 +1080,8 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         (FacilityFoundationInstances ? FacilityFoundationInstances->GetInstanceCount() : 0)
         + (FacilityPostInstances ? FacilityPostInstances->GetInstanceCount() : 0)
         + (FacilityRoofInstances ? FacilityRoofInstances->GetInstanceCount() : 0)
-        + (FacilityCargoInstances ? FacilityCargoInstances->GetInstanceCount() : 0);
+        + (FacilityCargoInstances ? FacilityCargoInstances->GetInstanceCount() : 0)
+        + (FacilityAccentInstances ? FacilityAccentInstances->GetInstanceCount() : 0);
 
     UE_LOG(LogTemp, Log,
         TEXT("LLWorldPresentation seed=%lld gen=%d chunks=%d natural=%d/%d/%d/%d facilities=%d facilityInstances=%d thinned=%d sightline=%d/%d dynamicCanopy=%d core=%.0f activity=%.0f ground=%s"),
