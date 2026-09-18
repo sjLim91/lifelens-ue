@@ -160,11 +160,13 @@ int main()
     CHECK(sawWork);
     CHECK(hasOperationalSettlementFacility(world,FacilityKind::SleepingPlace));
 
-    // Shelter recognition uses the resident's actual local climate, not the
-    // initial region climate. Search deterministic nearby/farther chunks for a
-    // sufficiently harsh location and verify that local exposure becomes the
-    // construction reason.
-    actor.needs.sleep=0.05;
+    // Shelter recognition uses the resident's actual local climate plus
+    // accumulated resident Need burden from sustained exposure, rather than
+    // reacting to one isolated weather sample. Search deterministic chunks for
+    // a sufficiently harsh resident-local climate.
+    actor.needs.sleep=0.42;
+    actor.needs.thirst=0.36;
+    actor.needs.hygiene=0.34;
     GridPos harshPosition=center;
     double harshPressure=0.0;
     for(int radius=1;radius<=96 && harshPressure<0.30;++radius){
