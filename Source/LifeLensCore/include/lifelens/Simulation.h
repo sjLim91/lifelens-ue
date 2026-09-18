@@ -20,6 +20,7 @@
 #include "Planner.h"
 #include "PrimitiveSanitation.h"
 #include "SimulationSnapshot.h"
+#include "SettlementProgression.h"
 #include "SocialCommunicationReadModel.h"
 namespace lifelens {
 class Simulation {
@@ -74,6 +75,26 @@ public:
         outTarget=resolveSanitationUseTarget(
             world_.seed,*character,world_.environmentalResidues,
             world_.primitiveSanitationSites,world_.minute,settlementReference);
+        return true;
+    }
+    bool settlementSleepTarget(
+        CharacterId id,
+        GridPos& outPosition,
+        FacilityId& outFacilityId) const {
+        outPosition={};
+        outFacilityId=0;
+        const auto runtimeIt=runtime_.find(id);
+        if(runtimeIt==runtime_.end()) return false;
+        const Character* character=nullptr;
+        for(const auto& candidate:world_.characters){
+            if(candidate.id==id){ character=&candidate; break; }
+        }
+        if(character==nullptr || !character->alive) return false;
+        const ConstructedFacility* facility=
+            nearestOperationalSleepFacility(world_,runtimeIt->second.pos);
+        if(facility==nullptr) return false;
+        outPosition=facility->pos;
+        outFacilityId=facility->id;
         return true;
     }
     bool completeExternalPhysicalAction(
@@ -255,6 +276,12 @@ inline bool Simulation::completeExternalPhysicalAction(
     const PrimitiveSanitationSiteKind sanitationKind=sanitationSite!=nullptr
         ? sanitationSite->kind
         : PrimitiveSanitationSiteKind::DesignatedArea;
+    ConstructedFacility* settlementSleepFacility=nullptr;
+    if(runtime.goal==Goal::Sleep && emergencyFallback){
+        settlementSleepFacility=
+            bestOperationalSleepFacility(world_,resolvedPosition,1);
+    }
+
     const int duration=primitiveSanitation
         ? primitiveSanitationUseDurationTicks(sanitationKind)
         : (emergencyFallback
@@ -262,11 +289,18 @@ inline bool Simulation::completeExternalPhysicalAction(
             : facilityUseDurationTicks(runtime.goal));
     const NeedsDelta effect=primitiveSanitation
         ? primitiveSanitationUseEffectPerTick(sanitationKind)
-        : (emergencyFallback
-            ? emergencyUseEffectPerTick(runtime.goal)
-            : facilityUseEffectPerTick(runtime.goal));
+        : (settlementSleepFacility!=nullptr
+            ? NeedsDelta{0,0,-settlementSleepRecoveryPerTick(*settlementSleepFacility),0,0}
+            : (emergencyFallback
+                ? emergencyUseEffectPerTick(runtime.goal)
+                : facilityUseEffectPerTick(runtime.goal)));
     for(int tick=0;tick<std::max(1,duration);++tick){
         character->needs.apply(effect);
+    }
+    if(settlementSleepFacility!=nullptr){
+        applyFacilityWear(
+            *settlementSleepFacility,
+            facilityWearPerUse(settlementSleepFacility->kind));
     }
 
     // World is the physical resolver, so Core records environmental consequence
@@ -310,6 +344,9 @@ inline bool Simulation::completeExternalPhysicalAction(
     if(primitiveSanitation){
         emit(character->name+" completed "+std::string(goalName(runtime.goal))+
              " at primitive sanitation site="+std::to_string(sanitationSiteId));
+    }else if(settlementSleepFacility!=nullptr){
+        emit(character->name+" completed Sleep at settlement facility="+
+             std::to_string(settlementSleepFacility->id));
     }else{
         emit(character->name+" completed "+std::string(goalName(runtime.goal))+
              (emergencyFallback ? " via emergency fallback" : " via world affordance"));
