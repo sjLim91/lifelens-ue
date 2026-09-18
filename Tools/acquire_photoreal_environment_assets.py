@@ -1,0 +1,254 @@
+#!/usr/bin/env python3
+"""Acquire curated zero-cost photoreal environment assets for LifeLens.
+
+Primary source: Poly Haven public API.
+- Assets are CC0.
+- The live API is free to use and requires a unique User-Agent.
+- Original source files are downloaded into LL_ASSET_STAGING and are NOT
+  committed to the repository.
+
+The script is intentionally deterministic: curated asset ids, preferred
+resolution and file-format ordering are versioned here instead of doing a
+"latest popular assets" search during builds.
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import sys
+import urllib.request
+from typing import Any, Iterable
+
+USER_AGENT = "LifeLensAssetPipeline/1.0 (+https://github.com/sjLim91/lifelens-ue)"
+API = "https://api.polyhaven.com"
+SOURCE = "Poly Haven"
+LICENSE = "CC0 1.0"
+
+# Keep the first wave compact enough for repo/import iteration while replacing
+# the most visibly stylized classes in the current scene.
+CURATED = {
+    "pine_tree_01": {"kind": "model", "resolution": "2k", "format": "gltf"},
+    "fir_sapling": {"kind": "model", "resolution": "2k", "format": "gltf"},
+    "tree_small_02": {"kind": "model", "resolution": "2k", "format": "gltf"},
+    "boulder_01": {"kind": "model", "resolution": "2k", "format": "gltf"},
+    "rock_07": {"kind": "model", "resolution": "2k", "format": "gltf"},
+    "rock_09": {"kind": "model", "resolution": "2k", "format": "gltf"},
+    "tree_stump_01": {"kind": "model", "resolution": "2k", "format": "gltf"},
+    "dead_tree_trunk": {"kind": "model", "resolution": "2k", "format": "gltf"},
+    "forest_floor": {"kind": "texture", "resolution": "2k"},
+    "forrest_ground_01": {"kind": "texture", "resolution": "2k"},
+    "mossy_rock": {"kind": "texture", "resolution": "2k"},
+    "nature_reserve_forest": {"kind": "hdri", "resolution": "2k", "format": "hdr"},
+}
+
+MODEL_EXTENSIONS = {".gltf", ".glb", ".fbx", ".bin", ".png", ".jpg", ".jpeg", ".webp"}
+TEXTURE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp"}
+HDRI_EXTENSIONS = {".hdr", ".exr"}
+
+
+def api_json(path: str) -> Any:
+    req = urllib.request.Request(API + path, headers={"User-Agent": USER_AGENT})
+    with urllib.request.urlopen(req, timeout=60) as response:
+        return json.load(response)
+
+
+def url_leaves(value: Any, path: tuple[str, ...] = ()) -> Iterable[tuple[tuple[str, ...], dict[str, Any]]]:
+    if isinstance(value, dict):
+        if isinstance(value.get("url"), str):
+            yield path, value
+        for key, child in value.items():
+            if key in {"url", "size", "md5"}:
+                continue
+            yield from url_leaves(child, path + (str(key),))
+    elif isinstance(value, list):
+        for index, child in enumerate(value):
+            yield from url_leaves(child, path + (str(index),))
+
+
+def find_named_branch(value: Any, wanted: str) -> Any | None:
+    wanted = wanted.lower()
+    if isinstance(value, dict):
+        for key, child in value.items():
+            if str(key).lower() == wanted:
+                return child
+        for child in value.values():
+            found = find_named_branch(child, wanted)
+            if found is not None:
+                return found
+    elif isinstance(value, list):
+        for child in value:
+            found = find_named_branch(child, wanted)
+            if found is not None:
+                return found
+    return None
+
+
+def choose_resolution_branch(branch: Any, requested: str) -> Any:
+    if not isinstance(branch, dict):
+        return branch
+    for candidate in (requested, "2k", "1k", "4k"):
+        for key, child in branch.items():
+            if str(key).lower() == candidate:
+                return child
+    return branch
+
+
+def extension(url: str) -> str:
+    clean = url.split("?", 1)[0]
+    return Path(clean).suffix.lower()
+
+
+def select_files(files: Any, spec: dict[str, str]) -> list[dict[str, Any]]:
+    kind = spec["kind"]
+    resolution = spec.get("resolution", "2k")
+    fmt = spec.get("format")
+
+    scope = files
+    if kind == "model" and fmt:
+        branch = find_named_branch(files, fmt)
+        if branch is not None:
+            scope = choose_resolution_branch(branch, resolution)
+    elif kind == "hdri":
+        branch = find_named_branch(files, "hdri")
+        if branch is not None:
+            scope = choose_resolution_branch(branch, resolution)
+    else:
+        # Textures expose map categories at the top level; keep only the
+        # requested-resolution leaves and common runtime maps below.
+        scope = files
+
+    selected: list[dict[str, Any]] = []
+    for key_path, leaf in url_leaves(scope):
+        url = leaf["url"]
+        ext = extension(url)
+        lowered = "/".join(key_path).lower()
+
+        if kind == "model":
+            if ext not in MODEL_EXTENSIONS:
+                continue
+            # When the API branch includes multiple resolutions in dependencies,
+            # prefer the requested one and keep model companion .bin/images.
+            if any(token in lowered for token in ("1k", "2k", "4k", "8k")) and resolution not in lowered:
+                continue
+        elif kind == "texture":
+            if ext not in TEXTURE_EXTENSIONS:
+                continue
+            if resolution not in lowered and f"_{resolution}" not in url.lower():
+                continue
+            # Keep only maps used by the LifeLens PBR material path.
+            useful = ("diff", "albedo", "basecolor", "nor_gl", "normal", "rough", "ao", "arm", "disp")
+            if not any(token in lowered or token in url.lower() for token in useful):
+                continue
+        elif kind == "hdri":
+            if ext not in HDRI_EXTENSIONS:
+                continue
+            if fmt and ext != "." + fmt.lower():
+                continue
+        else:
+            continue
+
+        selected.append({
+            "path": list(key_path),
+            "url": url,
+            "size": int(leaf.get("size") or 0),
+            "md5": str(leaf.get("md5") or ""),
+        })
+
+    # Stable order and duplicate URL removal.
+    dedup: dict[str, dict[str, Any]] = {}
+    for item in selected:
+        dedup.setdefault(item["url"], item)
+    return [dedup[url] for url in sorted(dedup)]
+
+
+def md5_file(path: Path) -> str:
+    digest = hashlib.md5()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def download(item: dict[str, Any], dest: Path, dry_run: bool) -> dict[str, Any]:
+    url = item["url"]
+    name = Path(url.split("?", 1)[0]).name or "asset.bin"
+    target = dest / name
+
+    result = dict(item)
+    result["local"] = target.name
+
+    if dry_run:
+        return result
+
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if target.exists() and item.get("md5") and md5_file(target) == item["md5"]:
+        return result
+
+    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    with urllib.request.urlopen(req, timeout=120) as response, target.open("wb") as output:
+        while True:
+            block = response.read(1024 * 1024)
+            if not block:
+                break
+            output.write(block)
+
+    expected = item.get("md5")
+    if expected:
+        actual = md5_file(target)
+        if actual != expected:
+            target.unlink(missing_ok=True)
+            raise RuntimeError(f"MD5 mismatch for {url}: {actual} != {expected}")
+    return result
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--asset", action="append", choices=sorted(CURATED))
+    parser.add_argument("--staging", default=os.environ.get("LL_ASSET_STAGING", "assets_staging"))
+    parser.add_argument("--dry-run", action="store_true")
+    args = parser.parse_args()
+
+    ids = args.asset or list(CURATED)
+    root = Path(args.staging).expanduser().resolve() / "PolyHaven"
+    manifest = {
+        "source": SOURCE,
+        "license": LICENSE,
+        "api": API,
+        "user_agent": USER_AGENT,
+        "assets": {},
+    }
+
+    for asset_id in ids:
+        spec = CURATED[asset_id]
+        print(f"[LifeLens assets] query {asset_id} ({spec})")
+        files = api_json(f"/files/{asset_id}")
+        chosen = select_files(files, spec)
+        if not chosen:
+            raise RuntimeError(
+                f"No matching files returned for {asset_id}; "
+                f"API structure may have changed.")
+        asset_dir = root / asset_id
+        downloaded = [download(item, asset_dir, args.dry_run) for item in chosen]
+        manifest["assets"][asset_id] = {
+            "source_page": f"https://polyhaven.com/a/{asset_id}",
+            "spec": spec,
+            "files": downloaded,
+        }
+        total = sum(item.get("size", 0) for item in downloaded)
+        print(f"[LifeLens assets] {asset_id}: {len(downloaded)} files, {total/1024/1024:.1f} MiB")
+
+    if not args.dry_run:
+        root.mkdir(parents=True, exist_ok=True)
+        (root / "manifest.json").write_text(
+            json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8")
+        print(f"[LifeLens assets] manifest: {root / 'manifest.json'}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
