@@ -12,9 +12,11 @@
 >
 > Dagyeom presentation assist handoff: `docs/DAGYEOM_PRESENTATION_HANDOFF_2026-09-18.md`.
 >
+> Current late-day Presentation/Observer work state: `docs/PRESENTATION_WORK_STATE_2026-09-18.md`.
+>
 > Historical audit: `docs/INTEGRATED_AUDIT_2026-09-17.md` (point-in-time only; do not treat as live status).
 
-Last reconciled: **2026-09-18 KST after AUDIT-0C merge (#158)**.
+Last reconciled: **2026-09-18 23:55 KST after #216~#224 merged; #225 docs sync remains open**.
 
 ---
 
@@ -237,7 +239,7 @@ Android Gate B remains PAUSED BY USER.
 - Correct responsibility beats artificial file separation.
 - Same responsibility -> same canonical file.
 - coordinate/rebase actual overlaps.
-- stale #98 remains selective-salvage only.
+- Dagyeom #98 was selectively ported by #202 onto current main and the original #98 is closed as superseded.
 
 Standing Jjun merge rule remains:
 - refresh exact head.
@@ -251,3 +253,32 @@ Standing Jjun merge rule remains:
 ## 9. Immediate next implementation target
 
 > **Stage C / C-S1 — Autonomous Settlement Need Recognition.**
+
+
+---
+
+## 10. Late 2026-09-18 Presentation / Observer sprint
+
+The earlier sections preserve Stage C / audit context, but the active screen lane moved substantially beyond the #158 snapshot.
+
+Canonical detailed snapshot:
+- `docs/PRESENTATION_WORK_STATE_2026-09-18.md`.
+
+Merged since the earlier work-state snapshot:
+- #159~#215, including environment, character appearance/motion, facility readability, observer camera/HUD, lifecycle/social/family navigation and Dagyeom #98 integration via #202.
+
+Latest merged wave:
+- #216 Detail resident navigation v1.
+- #217 Sleep site posture v7.
+- #218 Resource depletion visual v2.
+- #219 Selected social counterpart v7.
+- #220 Snow cover accumulation v6.
+- #221 Detailed daypart chrome v5.
+- #222 Resident identity badge v7.
+- #223 Offscreen action cue v4.
+- #224 World event focus return v2.
+
+Each merged only after its exact-head Preflight + Unreal Linux Compile succeeded.
+Current open synchronization item: #225 docs-only current-work reconciliation.
+
+The previous practical four-PR batch cap is removed. Independent canonical files may now be developed/compiled in larger parallel batches while same-file responsibilities are sequenced or combined.

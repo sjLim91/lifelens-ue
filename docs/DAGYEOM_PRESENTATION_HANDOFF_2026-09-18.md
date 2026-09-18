@@ -178,13 +178,25 @@ Known quality gaps:
 
 ---
 
-## 4. PR #98은 그대로 merge하면 안 됨
+## 4. PR #98 current-main integration — RESOLVED
 
 PR #98:
 `[UI] Observer 가독성 개선 + QA 관찰 명령`
 
+Resolution:
+- 원본 #98은 current main보다 크게 뒤처져 wholesale merge하지 않았다.
+- 유효한 intent를 최신 main에서 #202로 선택 포팅했다.
+- #202는 exact-head Preflight + Unreal Linux Compile PASS 후 merge됐다.
+- original #98은 superseded로 close했다.
+
+Integrated through #202:
+- panel opacity/readability tuning.
+- QA-only `ll.ViewResidents [index]`.
+- QA-only `ll.ViewReset`.
+- current production observer camera와 QA CameraActor의 tick ownership 충돌 방지.
+
 Status:
-- **STALE / SELECTIVE SALVAGE ONLY**
+- **RESOLVED VIA #202 / ORIGINAL #98 CLOSED**
 
 #98 touched:
 - `LLObserverHUD.cpp`
@@ -199,15 +211,8 @@ Status:
 
 따라서 #98의 old HUD/controller snapshots를 wholesale merge하면 current-main 기능을 되돌릴 위험이 있다.
 
-살릴 후보:
-- panel opacity/readability tuning.
-- QA-only `ll.ViewResidents` / `ll.ViewReset` 의도.
-
-진행 방법:
-1. 최신 main에서 시작.
-2. #98의 유효한 hunk만 다시 적용.
-3. #144/#151 behavior를 보존.
-4. exact-head Unreal compile 후 merge.
+#98에서 살릴 후보였던 항목은 #202에서 이미 current-main 방식으로 반영 완료되었다.
+동일 기능을 다시 구현하거나 original #98을 reopen/whole-file merge하지 않는다.
 
 ---
 
@@ -240,7 +245,7 @@ Character:
 - animation transition polish.
 
 Observer:
-- #98 panel opacity selective salvage if still visually useful.
+- #98 panel opacity / QA view salvage는 #202로 완료.
 - device safe-area/layout QA.
 - camera/readability visual QA.
 - full historical LifeHistory/deceased presentation once Core read model exposes enough data.
@@ -279,11 +284,19 @@ Dagyeom should render this chain, not invent a parallel build state.
 
 ## 8. Where to look first after returning
 
-1. `PROJECT_STATUS.md`
-2. `tasks/WORK_STATE.md`
-3. this file
-4. `docs/DEVELOPMENT_MILESTONES.md`
-5. actual GitHub open PRs / main
-6. `tasks/TEAM_BOARD.md` only for ownership/locks/IR; note that #98 may still carry an old board snapshot until rebased.
+1. `docs/PRESENTATION_WORK_STATE_2026-09-18.md`
+2. `PROJECT_STATUS.md`
+3. `tasks/WORK_STATE.md`
+4. this file
+5. `docs/DEVELOPMENT_MILESTONES.md`
+6. actual GitHub open PRs / main
+7. `tasks/TEAM_BOARD.md` only for ownership/locks/IR.
+
+### Merged Presentation checkpoint #216~#224
+
+The expanded observer/presentation wave is now merged on main after exact-head green CI. This includes resident/family navigation, sleep-site posture, resource depletion visuals, social counterpart labeling, snow accumulation, detailed dayparts, resident identity/age labels, offscreen action cues and world-event focus return.
+
+Current detailed status:
+- `docs/PRESENTATION_WORK_STATE_2026-09-18.md`
 
 If any old HANDOFF/TEAM_BOARD line conflicts with actual main or this handoff, **actual GitHub main wins**.
