@@ -64,7 +64,22 @@ A new blocker is triaged before unrelated follow-up work. This does **not** mean
 
 ## Current Assist Locks
 
-**None.**
+### ASSIST_LOCK-GFX-WORLDPRESENTATION-1 — Jjun scoped integration assist
+
+- explicit user direction: continue the graphics integration now rather than wait idle on presentation ownership.
+- helper: Jjun.
+- owner/reviewer: Dagyeom.
+- branch: `integration/worldpresentation-photoreal-consumers-v1`.
+- allowed files:
+  - `Source/LifeLens/WorldPresentation/LLWorldPresentationActor.cpp`
+  - `Source/LifeLens/WorldPresentation/LLWorldPresentationActor.h`
+  - directly-related validation/docs only when needed.
+- scope:
+  - consume already-merged deterministic PCG presentation seeds.
+  - wire already-imported approved photoreal facility props into existing authoritative facility presentation.
+  - do not add new simulation/resource/facility authority.
+  - do not merge over an overlapping Dagyeom PR; request Dagyeom review before closeout when available.
+- release: after this integration PR is merged/closed and TEAM_BOARD is reconciled.
 
 ## Open Integration Requests
 
