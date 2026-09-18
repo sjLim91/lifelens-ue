@@ -328,6 +328,42 @@ void ULLObserverTimeWeatherOverlay::RefreshButtonState(ELLSimulationSpeedPreset 
     Apply(FastButton, ELLSimulationSpeedPreset::Fast);
     Apply(FasterButton, ELLSimulationSpeedPreset::Faster);
     Apply(RapidButton, ELLSimulationSpeedPreset::Rapid);
+
+    // Speed is already written in the weather line and buttons, so avoid a
+    // duplicate warning label. Instead change the chrome surface itself: at a
+    // glance the observer can tell normal viewing from fast-forward or pause.
+    FLinearColor PanelColor(0.015f, 0.025f, 0.04f, 0.90f);
+    FLinearColor PrimaryTextColor(0.96f, 0.98f, 1.0f, 1.0f);
+    switch (Preset)
+    {
+        case ELLSimulationSpeedPreset::Paused:
+            PanelColor = FLinearColor(0.025f, 0.035f, 0.055f, 0.94f);
+            PrimaryTextColor = FLinearColor(0.76f, 0.84f, 0.94f, 1.0f);
+            break;
+        case ELLSimulationSpeedPreset::Fast:
+            PanelColor = FLinearColor(0.018f, 0.045f, 0.070f, 0.92f);
+            break;
+        case ELLSimulationSpeedPreset::Faster:
+            PanelColor = FLinearColor(0.075f, 0.045f, 0.018f, 0.93f);
+            PrimaryTextColor = FLinearColor(1.0f, 0.90f, 0.72f, 1.0f);
+            break;
+        case ELLSimulationSpeedPreset::Rapid:
+            PanelColor = FLinearColor(0.090f, 0.030f, 0.018f, 0.95f);
+            PrimaryTextColor = FLinearColor(1.0f, 0.80f, 0.64f, 1.0f);
+            break;
+        case ELLSimulationSpeedPreset::Observe:
+        default:
+            break;
+    }
+
+    if (ControlBorder)
+    {
+        ControlBorder->SetBrushColor(PanelColor);
+    }
+    if (StatusText)
+    {
+        StatusText->SetColorAndOpacity(FSlateColor(PrimaryTextColor));
+    }
 }
 
 void ULLObserverTimeWeatherOverlay::ApplySpeedPreset(ELLSimulationSpeedPreset Preset)
