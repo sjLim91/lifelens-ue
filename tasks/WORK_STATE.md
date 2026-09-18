@@ -69,7 +69,7 @@ Authority rule remains:
 
 Runtime-only PIE/device smoke remains a QA item because CI does not execute an interactive Unreal viewport/device session.
 
-**C1-B is no longer blocked by the source-audit gate.**
+**Stage C / C-S1 is no longer blocked by the source-audit gate.**
 
 ---
 
@@ -128,53 +128,90 @@ This is not ahead of P0 and does not replace C1-B after stabilization.
 
 ---
 
-## 5. Active C1 continuation
+## 5. Stage C — Settlement, Survival & Early Civilization — ACTIVE
 
-### C1-B — Autonomous settlement need recognition
+Legacy mapping is preserved so no planned work is lost:
+
+### C-S0 — Facility authority — DONE (#152)
+- WorkSurface / SleepingPlace / Shelter.
+- deterministic sites.
+- real materials + real work.
+- environment-sensitive construction.
+- persistence.
+- no free New Game facilities.
+
+### C-S1 — Autonomous settlement need recognition — ACTIVE
 1. SleepingPlace utility from sleep/outdoor-rest pressure.
-2. Shelter utility from local environmental exposure.
+2. Shelter utility from resident-local environmental exposure.
 3. WorkSurface utility from repeated craft/build demand.
 4. missing project materials -> Gather demand.
 5. Plan / DeliverMaterial / Work -> authoritative spatial ContextAction.
-6. presentation only executes/visualizes Core directive.
+6. Presentation only executes/visualizes Core directive.
 7. same-seed / snapshot continuation deterministic.
 
-### C1-C — Facility effects / maintenance
+### C-S2 — Facility effects / maintenance
 - sleep benefit.
 - shelter environmental protection.
 - work/craft benefit.
 - durability / maintenance.
 - ruined/inactive facilities stop providing benefit.
+- repairs require actual material/labor.
 
-### C1-D — Water / food persistence
+### C-S3 — Durable subsistence
 - water handling/storage.
 - food storage/spoilage.
 - cultivation/renewable production.
 - season/moisture/fertility dependency.
-- scarcity -> search/movement.
+- local scarcity -> exploration/search/movement pressure.
 
-### C1-E — Emergent settlement geometry
-- activity centers emerge from use.
+### C-S4 — Emergent settlement geometry
+- activity centers emerge from real use.
 - household space differentiation.
 - sanitation away from dense living.
 - storage/fire/work/sleep clusters emerge.
 - no hard-coded town-center authority.
 
-### C1-F — Early material expansion
-- Tin/Bronze only after actual prerequisites.
+### C-S5 — Early material expansion
+- TinOre.
+- Bronze.
+- bronze tools/processes only after actual physical/knowledge/facility prerequisites.
+- no automatic Bronze Age switch.
 
 ---
 
-## 6. Roadmap after C1
+## 6. Macro roadmap after Stage C
 
-- C2 — long-run scale/history fast-forward/cleanup.
-- C3 — open-ended Capability / Technology / Transformation framework.
-- C4 — health/disease/population resilience.
-- C5 — education/recording/specialization/economy/institutions.
-- C6 — migration/multiple settlements/trade networks.
-- F1~F8 — historical -> industrial -> modern -> digital -> AI/robotics -> advanced energy/biotech -> space -> open future.
+### Stage D — Long-Run Simulation & Civilization Engine
+- long-run deterministic multi-generation simulation.
+- History/Fast-forward and event-aware slowdown.
+- CPU/memory/snapshot/per-frame work budgets.
+- inactive/distant simulation strategy.
+- Knowledge -> Capability -> Technology -> CivilizationTransformation.
+- discovery -> experiment -> reproducibility -> diffusion -> adoption.
+- loss, collapse and rediscovery.
 
-No forced era timer.
+### Stage E — Human Society, Health, Education, Economy & Migration
+- health/disease/contamination/immunity/recovery.
+- education/apprenticeship/recording/writing.
+- roles/jobs/specialization.
+- production, exchange, ownership/shared-resource policy.
+- institutions/research/education organizations.
+- exploration/migration.
+- multiple settlements.
+- trade routes/resource specialization.
+- cooperation/conflict foundations.
+
+### Stage F — Historical Civilization -> Open Future
+- advanced metallurgy / urban / science.
+- mechanical / industrial.
+- electrical / chemical / modern infrastructure.
+- digital / network.
+- AI / robotics / automation.
+- advanced energy / materials / biotechnology.
+- planetary / space / interplanetary civilization.
+- open future / unknown civilization.
+
+Stage labels organize execution only. They are **not Core era gates**.
 
 ---
 
@@ -213,4 +250,4 @@ Standing Jjun merge rule remains:
 
 ## 9. Immediate next implementation target
 
-> **C1-B — Autonomous Settlement Need Recognition.**
+> **Stage C / C-S1 — Autonomous Settlement Need Recognition.**
