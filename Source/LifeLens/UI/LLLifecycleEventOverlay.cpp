@@ -1,5 +1,6 @@
 #include "UI/LLLifecycleEventOverlay.h"
 
+#include "UI/LLObservationSubsystem.h"
 #include "Simulation/LLCoreBridgeSubsystem.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/Border.h"
@@ -20,14 +21,39 @@ void ULLLifecycleEventOverlay::NativeConstruct()
         return;
     }
 
+    RootStack = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("LifecycleRootStack"));
     EventBorder = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("LifecycleEventBorder"));
     EventList = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("LifecycleEventList"));
+    ResidentStatusBorder = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("ResidentLifecycleStatusBorder"));
+    UVerticalBox* StatusStack = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("ResidentLifecycleStatusStack"));
+    ResidentStatusText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("ResidentLifecycleStatusText"));
+    ResidentHistoryText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("ResidentLifecycleHistoryText"));
 
     EventBorder->SetContent(EventList);
     EventBorder->SetPadding(FMargin(12.0f, 8.0f));
     EventBorder->SetBrushColor(FLinearColor(0.015f, 0.02f, 0.03f, 0.72f));
     EventBorder->SetVisibility(ESlateVisibility::Collapsed);
-    WidgetTree->RootWidget = EventBorder;
+
+    ResidentStatusText->SetAutoWrapText(true);
+    ResidentStatusText->SetColorAndOpacity(FSlateColor(FLinearColor(0.96f, 0.97f, 1.0f, 1.0f)));
+    ResidentHistoryText->SetAutoWrapText(true);
+    ResidentHistoryText->SetColorAndOpacity(FSlateColor(FLinearColor(0.78f, 0.84f, 0.92f, 0.95f)));
+    if (UVerticalBoxSlot* StatusSlot = StatusStack->AddChildToVerticalBox(ResidentStatusText))
+    {
+        StatusSlot->SetPadding(FMargin(0.0f, 0.0f, 0.0f, 4.0f));
+    }
+    StatusStack->AddChildToVerticalBox(ResidentHistoryText);
+    ResidentStatusBorder->SetContent(StatusStack);
+    ResidentStatusBorder->SetPadding(FMargin(12.0f, 9.0f));
+    ResidentStatusBorder->SetBrushColor(FLinearColor(0.02f, 0.025f, 0.04f, 0.70f));
+    ResidentStatusBorder->SetVisibility(ESlateVisibility::Collapsed);
+
+    if (UVerticalBoxSlot* EventSlot = RootStack->AddChildToVerticalBox(EventBorder))
+    {
+        EventSlot->SetPadding(FMargin(0.0f, 0.0f, 0.0f, 6.0f));
+    }
+    RootStack->AddChildToVerticalBox(ResidentStatusBorder);
+    WidgetTree->RootWidget = RootStack;
 
     SetVisibility(ESlateVisibility::HitTestInvisible);
 }
@@ -37,6 +63,7 @@ void ULLLifecycleEventOverlay::NativeTick(const FGeometry& MyGeometry, float InD
     Super::NativeTick(MyGeometry, InDeltaTime);
 
     RefreshFromCore();
+    RefreshSelectedResidentCard();
 
     const UWorld* World = GetWorld();
     const double Now = World ? static_cast<double>(World->GetRealTimeSeconds()) : 0.0;
@@ -55,6 +82,7 @@ void ULLLifecycleEventOverlay::ResetObservationState()
     PreviousResidents.Reset();
     PreviousPregnancyPairs.Reset();
     Notices.Reset();
+    ObservedLifeHistory.Reset();
     LastObservedSimulationMinute = -1;
     bBaselineReady = false;
     RefreshNoticeWidgets();
@@ -74,6 +102,15 @@ FString ULLLifecycleEventOverlay::LifeStageLabel(ELLCoreLifeStage Stage)
         case ELLCoreLifeStage::Elderly: return TEXT("노년");
     }
     return TEXT("미상");
+}
+
+FString ULLLifecycleEventOverlay::FormatObservedMoment(int64 SimulationMinute)
+{
+    const int64 SafeMinute = FMath::Max<int64>(0, SimulationMinute);
+    const int64 Day = SafeMinute / 1440 + 1;
+    const int32 MinuteOfDay = static_cast<int32>(SafeMinute % 1440);
+    return FString::Printf(TEXT("%lld일 %02d:%02d"),
+        static_cast<long long>(Day), MinuteOfDay / 60, MinuteOfDay % 60);
 }
 
 FString ULLLifecycleEventOverlay::PregnancyPairKey(const FGuid& First, const FGuid& Second)
@@ -105,6 +142,8 @@ void ULLLifecycleEventOverlay::RefreshFromCore()
     TMap<FGuid, FResidentVisualState> CurrentResidents;
     TSet<FString> CurrentPregnancyPairs;
     TMap<FString, FString> PregnancyLabels;
+    TMap<FString, FGuid> PregnancySubjects;
+    TMap<FString, FGuid> PregnancyPartners;
 
     const TArray<FLLCoreResidentObservation> Residents = Bridge->GetResidentObservations();
     CurrentResidents.Reserve(Residents.Num());
@@ -138,6 +177,8 @@ void ULLLifecycleEventOverlay::RefreshFromCore()
                 ? TEXT("상대 주민")
                 : Family.PregnancyPartnerName;
             PregnancyLabels.Add(PairKey, Resident.DisplayName + TEXT(" · ") + PartnerName);
+            PregnancySubjects.Add(PairKey, Resident.ResidentId);
+            PregnancyPartners.Add(PairKey, Family.PregnancyPartnerResidentId);
         }
     }
 
@@ -159,18 +200,18 @@ void ULLLifecycleEventOverlay::RefreshFromCore()
         {
             if (Current.bAlive && Current.LifeStage == ELLCoreLifeStage::Baby)
             {
-                PushNotice(FString::Printf(TEXT("[탄생] %s"), *Current.Name));
+                PushNotice(FString::Printf(TEXT("[탄생] %s"), *Current.Name), Pair.Key, FGuid(), WorldObservation.SimulationMinute);
             }
             else
             {
-                PushNotice(FString::Printf(TEXT("[새 주민] %s"), *Current.Name));
+                PushNotice(FString::Printf(TEXT("[새 주민] %s"), *Current.Name), Pair.Key, FGuid(), WorldObservation.SimulationMinute);
             }
             continue;
         }
 
         if (Previous->bAlive && !Current.bAlive)
         {
-            PushNotice(FString::Printf(TEXT("[사망] %s"), *Current.Name));
+            PushNotice(FString::Printf(TEXT("[사망] %s"), *Current.Name), Pair.Key, FGuid(), WorldObservation.SimulationMinute);
             continue;
         }
 
@@ -180,7 +221,7 @@ void ULLLifecycleEventOverlay::RefreshFromCore()
                 TEXT("[성장] %s · %s → %s"),
                 *Current.Name,
                 *LifeStageLabel(Previous->LifeStage),
-                *LifeStageLabel(Current.LifeStage)));
+                *LifeStageLabel(Current.LifeStage)), Pair.Key, FGuid(), WorldObservation.SimulationMinute);
         }
     }
 
@@ -189,7 +230,10 @@ void ULLLifecycleEventOverlay::RefreshFromCore()
         if (!PreviousPregnancyPairs.Contains(PairKey))
         {
             const FString* Label = PregnancyLabels.Find(PairKey);
-            PushNotice(FString::Printf(TEXT("[임신] %s"), Label ? **Label : TEXT("새 가족")));
+            const FGuid* Subject = PregnancySubjects.Find(PairKey);
+            const FGuid* Partner = PregnancyPartners.Find(PairKey);
+            PushNotice(FString::Printf(TEXT("[임신] %s"), Label ? **Label : TEXT("새 가족")),
+                Subject ? *Subject : FGuid(), Partner ? *Partner : FGuid(), WorldObservation.SimulationMinute);
         }
     }
 
@@ -198,7 +242,76 @@ void ULLLifecycleEventOverlay::RefreshFromCore()
     LastObservedSimulationMinute = WorldObservation.SimulationMinute;
 }
 
-void ULLLifecycleEventOverlay::PushNotice(const FString& Text)
+void ULLLifecycleEventOverlay::RefreshSelectedResidentCard()
+{
+    if (!ResidentStatusBorder || !ResidentStatusText || !ResidentHistoryText)
+    {
+        return;
+    }
+
+    UGameInstance* GameInstance = GetGameInstance();
+    ULLObservationSubsystem* Observation = GameInstance ? GameInstance->GetSubsystem<ULLObservationSubsystem>() : nullptr;
+    ULLCoreBridgeSubsystem* Bridge = GameInstance ? GameInstance->GetSubsystem<ULLCoreBridgeSubsystem>() : nullptr;
+    if (!Observation || !Bridge || !Bridge->IsCoreRunning() || !Observation->HasObservedResident())
+    {
+        ResidentStatusBorder->SetVisibility(ESlateVisibility::Collapsed);
+        return;
+    }
+
+    const FGuid ResidentId = Observation->GetObservedResidentId();
+    FLLCoreResidentObservation Resident;
+    if (!Bridge->GetResidentObservation(ResidentId, Resident))
+    {
+        ResidentStatusBorder->SetVisibility(ESlateVisibility::Collapsed);
+        return;
+    }
+
+    FLLCoreFamilyObservation Family;
+    const bool bHasFamily = Bridge->GetFamilyObservation(ResidentId, Family);
+    FString Status = FString::Printf(TEXT("인생 · %s · %d세 · %s%s"),
+        *Resident.DisplayName,
+        Resident.AgeYears,
+        *LifeStageLabel(Resident.LifeStage),
+        Resident.bAlive ? TEXT("") : TEXT(" · 사망"));
+
+    if (bHasFamily)
+    {
+        if (Family.bHasActivePartner)
+        {
+            Status += FString::Printf(TEXT("\n파트너 · %s%s"),
+                Family.PartnerName.IsEmpty() ? TEXT("이름 미상") : *Family.PartnerName,
+                Family.bCohabitingWithPartner ? TEXT(" · 동거") : TEXT(""));
+        }
+        if (Family.bExpectingChild)
+        {
+            Status += FString::Printf(TEXT("\n임신 진행 중 · %s"),
+                Family.PregnancyPartnerName.IsEmpty() ? TEXT("상대 주민") : *Family.PregnancyPartnerName);
+        }
+        Status += FString::Printf(TEXT("\n가족 · 자녀 %d · 부모 %d · 형제 %d · 가구 %lld"),
+            Family.Children.Num(), Family.Parents.Num(), Family.Siblings.Num(), static_cast<long long>(Family.HouseholdId));
+    }
+    ResidentStatusText->SetText(FText::FromString(Status));
+
+    FString History = TEXT("관찰된 인생 사건");
+    const TArray<FString>* Entries = ObservedLifeHistory.Find(ResidentId);
+    if (!Entries || Entries->Num() == 0)
+    {
+        History += TEXT("\n· 이번 관찰 세션에서 새 사건 없음");
+    }
+    else
+    {
+        const int32 Start = FMath::Max(0, Entries->Num() - MaxHistoryLinesOnCard);
+        for (int32 Index = Start; Index < Entries->Num(); ++Index)
+        {
+            History += TEXT("\n· ") + (*Entries)[Index];
+        }
+    }
+    ResidentHistoryText->SetText(FText::FromString(History));
+    ResidentStatusBorder->SetVisibility(ESlateVisibility::HitTestInvisible);
+}
+
+void ULLLifecycleEventOverlay::PushNotice(const FString& Text, FGuid SubjectResidentId,
+    FGuid RelatedResidentId, int64 SimulationMinute)
 {
     if (Text.IsEmpty())
     {
@@ -218,8 +331,31 @@ void ULLLifecycleEventOverlay::PushNotice(const FString& Text)
 
     FTransientNotice Notice;
     Notice.Text = Text;
+    Notice.SubjectResidentId = SubjectResidentId;
+    Notice.RelatedResidentId = RelatedResidentId;
+    Notice.SimulationMinute = SimulationMinute;
     Notice.ExpireAtRealSeconds = Now + NoticeLifetimeSeconds;
     Notices.Insert(MoveTemp(Notice), 0);
+
+    const FString HistoryLine = FormatObservedMoment(SimulationMinute) + TEXT(" · ") + Text;
+    auto AppendHistory = [this, &HistoryLine](FGuid ResidentId)
+    {
+        if (!ResidentId.IsValid())
+        {
+            return;
+        }
+        TArray<FString>& Entries = ObservedLifeHistory.FindOrAdd(ResidentId);
+        Entries.Add(HistoryLine);
+        if (Entries.Num() > MaxObservedHistoryPerResident)
+        {
+            Entries.RemoveAt(0, Entries.Num() - MaxObservedHistoryPerResident, EAllowShrinking::No);
+        }
+    };
+    AppendHistory(SubjectResidentId);
+    if (RelatedResidentId != SubjectResidentId)
+    {
+        AppendHistory(RelatedResidentId);
+    }
 
     if (Notices.Num() > MaxVisibleNotices)
     {
@@ -286,7 +422,7 @@ void ULLLifecyclePresentationSubsystem::Tick(float DeltaTime)
     OverlayWidget->AddToViewport(60);
     OverlayWidget->SetAlignmentInViewport(FVector2D::ZeroVector);
     OverlayWidget->SetPositionInViewport(FVector2D(18.0f, 108.0f), false);
-    OverlayWidget->SetDesiredSizeInViewport(FVector2D(560.0f, 220.0f));
+    OverlayWidget->SetDesiredSizeInViewport(FVector2D(560.0f, 360.0f));
 }
 
 TStatId ULLLifecyclePresentationSubsystem::GetStatId() const
