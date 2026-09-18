@@ -1143,14 +1143,31 @@ inline CivilizationExecutionResult executeCivilizationDecision(World& world,Char
                 if(facility==nullptr
                    || facility->kind!=decision.facilityKind
                    || !isSettlementFoundationFacility(facility->kind)
-                   || facility->state==FacilityState::Operational
-                   || facility->state==FacilityState::Ruined
                    || !decision.hasFacilityTarget
                    || facility->pos.x!=decision.facilityTargetPos.x
                    || facility->pos.y!=decision.facilityTargetPos.y) return result;
 
                 result.facilityId=facility->id;
                 result.facilityPos=facility->pos;
+
+                if(decision.facilityAction==FacilityBuildAction::Repair){
+                    if(!facilityOperationalAndActive(*facility)) return result;
+                    const FacilityRepairResult repair=
+                        repairSettlementFacility(world,self,facility->id);
+                    if(!repair.repaired) return result;
+                    result.executed=true;
+                    result.success=true;
+                    result.craft.success=true;
+                    result.event=result.craft.event;
+                    result.facilityDurabilityBefore=repair.durabilityBefore;
+                    result.facilityDurabilityAfter=repair.durabilityAfter;
+                    self.civilization.craftingSkill=clampCivilization01(
+                        self.civilization.craftingSkill+0.0035);
+                    return result;
+                }
+
+                if(facility->state==FacilityState::Operational
+                   || facility->state==FacilityState::Ruined) return result;
 
                 if(decision.facilityAction==FacilityBuildAction::DeliverMaterial){
                     const int delivered=deliverFacilityMaterial(
@@ -1509,11 +1526,45 @@ inline CivilizationExecutionResult executeCivilizationDecision(World& world,Char
                 self.civilization.craftingSkill=clampCivilization01(self.civilization.craftingSkill+0.004);
                 return result;
             }
-            result.craft=reproduceTechnique(self.id,decision.technique,self.civilization.inventory,self.civilization.knowledge,self.civilization.craftingSkill);
+            ConstructedFacility* workSurface=nullptr;
+            double effectiveCraftingSkill=self.civilization.craftingSkill;
+            if(decision.facilityKind==FacilityKind::WorkSurface
+               && decision.facility!=0
+               && decision.hasFacilityTarget){
+                workSurface=findCivilizationFacility(world,decision.facility);
+                if(workSurface==nullptr
+                   || workSurface->kind!=FacilityKind::WorkSurface
+                   || !facilityOperationalAndActive(*workSurface)
+                   || workSurface->pos.x!=decision.facilityTargetPos.x
+                   || workSurface->pos.y!=decision.facilityTargetPos.y) return result;
+                effectiveCraftingSkill=clampCivilization01(
+                    effectiveCraftingSkill+
+                    settlementWorkSurfaceSkillBonus(*workSurface));
+            }
+
+            result.craft=reproduceTechnique(
+                self.id,
+                decision.technique,
+                self.civilization.inventory,
+                self.civilization.knowledge,
+                effectiveCraftingSkill);
             result.executed=result.craft.success;
             result.success=result.craft.success;
             result.event=result.craft.event;
-            if(result.success) self.civilization.craftingSkill=clampCivilization01(self.civilization.craftingSkill+0.004);
+            if(result.success){
+                if(workSurface!=nullptr){
+                    result.facilityId=workSurface->id;
+                    result.facilityKind=workSurface->kind;
+                    result.facilityPos=workSurface->pos;
+                    result.facilityDurabilityBefore=workSurface->durability;
+                    applyFacilityWear(
+                        *workSurface,
+                        facilityWearPerUse(workSurface->kind));
+                    result.facilityDurabilityAfter=workSurface->durability;
+                }
+                self.civilization.craftingSkill=clampCivilization01(
+                    self.civilization.craftingSkill+0.004);
+            }
             return result;
         }
         case CivilizationIntent::None:
