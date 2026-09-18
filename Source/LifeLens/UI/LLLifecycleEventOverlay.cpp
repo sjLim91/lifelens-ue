@@ -37,6 +37,34 @@ namespace
         }
         return FLinearColor(0.68f, 0.82f, 0.96f, 1.0f);
     }
+
+    int32 LifecycleNoticePriority(const FString& Text)
+    {
+        if (Text.StartsWith(TEXT("[사망]")) || Text.StartsWith(TEXT("[탄생]")))
+        {
+            return 5;
+        }
+        if (Text.StartsWith(TEXT("[임신]")) || Text.StartsWith(TEXT("[결혼]"))
+            || Text.StartsWith(TEXT("[사별]")) || Text.StartsWith(TEXT("[이혼]")))
+        {
+            return 4;
+        }
+        if (Text.StartsWith(TEXT("[약혼]")) || Text.StartsWith(TEXT("[연애]"))
+            || Text.StartsWith(TEXT("[별거]")) || Text.StartsWith(TEXT("[관계 종료]"))
+            || Text.StartsWith(TEXT("[동거]")) || Text.StartsWith(TEXT("[동거 종료]")))
+        {
+            return 3;
+        }
+        if (Text.StartsWith(TEXT("[새 주민]")))
+        {
+            return 2;
+        }
+        if (Text.StartsWith(TEXT("[성장]")))
+        {
+            return 1;
+        }
+        return 2;
+    }
 }
 
 void ULLLifecycleEventOverlay::NativeConstruct()
@@ -512,9 +540,24 @@ void ULLLifecycleEventOverlay::PushNotice(const FString& Text, FGuid SubjectResi
         AppendHistory(RelatedResidentId);
     }
 
-    if (Notices.Num() > MaxVisibleNotices)
+    // During 16x/64x fast-forward, several stage changes can land in the
+    // same real-time window. Keep the visible stack compact without allowing
+    // routine growth notices to evict births/deaths/family milestones.
+    while (Notices.Num() > MaxVisibleNotices)
     {
-        Notices.SetNum(MaxVisibleNotices, EAllowShrinking::No);
+        int32 RemoveIndex = Notices.Num() - 1;
+        int32 LowestPriority = LifecycleNoticePriority(Notices[RemoveIndex].Text);
+        for (int32 Index = Notices.Num() - 2; Index >= 0; --Index)
+        {
+            const int32 Priority = LifecycleNoticePriority(Notices[Index].Text);
+            if (Priority < LowestPriority
+                || (Priority == LowestPriority && Index > RemoveIndex))
+            {
+                LowestPriority = Priority;
+                RemoveIndex = Index;
+            }
+        }
+        Notices.RemoveAt(RemoveIndex, 1, EAllowShrinking::No);
     }
     RefreshNoticeWidgets();
 }
