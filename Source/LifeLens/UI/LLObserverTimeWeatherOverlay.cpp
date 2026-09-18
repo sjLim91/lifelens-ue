@@ -244,7 +244,7 @@ void ULLObserverTimeWeatherOverlay::RefreshStatus(bool bForce)
         return;
     }
 
-    const FString WeatherText = Weather.bAvailable
+    const FString WeatherLine = Weather.bAvailable
         ? FString::Printf(TEXT("%s %.1f°C"), *WeatherLabel(Weather.WeatherSummary), Weather.AirTemperatureC)
         : FString(TEXT("날씨 준비 중"));
     const FString DayPhase = Time.bIsNight ? TEXT("밤") : TEXT("낮");
@@ -265,7 +265,7 @@ void ULLObserverTimeWeatherOverlay::RefreshStatus(bool bForce)
     if (WeatherText)
     {
         WeatherText->SetText(FText::FromString(
-            WeatherText + TEXT(" · ") + SpeedLabel(SpeedPreset)));
+            WeatherLine + TEXT(" · ") + SpeedLabel(SpeedPreset)));
         WeatherText->SetColorAndOpacity(FSlateColor(
             Weather.bAvailable
                 ? WeatherColor(Weather.WeatherSummary)
