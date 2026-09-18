@@ -4,6 +4,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Subsystems/WorldSubsystem.h"
 #include "Simulation/LLCoreReadTypes.h"
+#include "Simulation/LLCivilizationReadTypes.h"
 #include "LLLifecycleEventOverlay.generated.h"
 
 class UBorder;
@@ -52,11 +53,21 @@ private:
         bool bCohabiting = false;
     };
 
+    struct FFacilityVisualState
+    {
+        ELLCoreFacilityKind Kind = ELLCoreFacilityKind::PrimitiveStorage;
+        ELLCoreFacilityState State = ELLCoreFacilityState::Planned;
+        int32 GridX = 0;
+        int32 GridY = 0;
+    };
+
     struct FTransientNotice
     {
         FString Text;
         FGuid SubjectResidentId;
         FGuid RelatedResidentId;
+        FVector WorldFocus = FVector::ZeroVector;
+        bool bHasWorldFocus = false;
         int64 SimulationMinute = 0;
         double ExpireAtRealSeconds = 0.0;
     };
@@ -65,7 +76,8 @@ private:
     void RefreshFromCore();
     void RefreshSelectedResidentCard();
     void PushNotice(const FString& Text, FGuid SubjectResidentId = FGuid(),
-                    FGuid RelatedResidentId = FGuid(), int64 SimulationMinute = 0);
+                    FGuid RelatedResidentId = FGuid(), int64 SimulationMinute = 0,
+                    FVector WorldFocus = FVector::ZeroVector, bool bHasWorldFocus = false);
     void RefreshNoticeWidgets();
     FReply HandleNoticePointer(const FVector2D& ScreenPosition);
     static FString FormatObservedMoment(int64 SimulationMinute);
@@ -102,6 +114,7 @@ private:
     TMap<FGuid, FResidentVisualState> PreviousResidents;
     TSet<FString> PreviousPregnancyPairs;
     TMap<FString, FRomanceVisualState> PreviousRomancePairs;
+    TMap<int64, FFacilityVisualState> PreviousFacilities;
     TArray<FTransientNotice> Notices;
     TArray<FTransientNotice> RecentNotices;
 
