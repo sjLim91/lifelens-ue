@@ -83,6 +83,11 @@ private:
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Environment", meta=(ClampMin="0.0", ClampMax="5000.0"))
     float EffectAnchorHeightUU = 1200.0f;
 
+    // Presentation-only interpolation between authoritative environment samples.
+    // Higher values follow Core faster; zero snaps to each sampled value.
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Environment", meta=(ClampMin="0.0", ClampMax="20.0"))
+    float EnvironmentTransitionInterpSpeed = 3.0f;
+
     // Stable material parameter contract. WorldPresentation materials may opt
     // into any/all of these without creating a second weather authority.
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Materials")
@@ -198,6 +203,18 @@ private:
     // minute snowfall stops when no authored snow-cover DTO exists yet.
     float PresentedSnowCover01 = 0.0f;
     bool bPresentedSnowInitialized = false;
+
+    float PresentedDaylight01 = 0.0f;
+    float PresentedCloudCover01 = 0.0f;
+    float PresentedVisibility01 = 1.0f;
+    float PresentedHumidity01 = 0.0f;
+    float PresentedPrecipitation01 = 0.0f;
+    float PresentedSurfaceWetness01 = 0.0f;
+    float PresentedWind01 = 0.0f;
+    float PresentedRain01 = 0.0f;
+    float PresentedSnowfall01 = 0.0f;
+    float PresentedAirTemperatureC = 20.0f;
+    bool bPresentedEnvironmentInitialized = false;
 
     bool bFallbackRainActive = false;
     bool bFallbackSnowActive = false;
