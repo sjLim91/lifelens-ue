@@ -188,3 +188,73 @@
 - canonical companion: `docs/OBSERVER_CAMERA_CONTROL_v1.md`.
 - `Source/LifeLens/UI/LLObserverPlayerController.*`는 Dagyeom 소유영역이므로 Jjun 구현 시 별도 assist branch + TEAM_BOARD Assist Lock을 사용한다.
 - HUD polish/old stacked UI PR 정리와 camera control을 같은 PR에 섞지 않는다.
+
+---
+
+# 2026-09-18
+
+## D-011 — 문명은 현재를 넘어 미지의 미래까지 열린 구조로 간다
+
+**결정**
+- LifeLens 문명은 원시 생존/정착에서 끝나지 않고 현대 문명 수준을 지나 현실에 아직 없는 미래까지 발전 가능해야 한다.
+- `StoneAge -> BronzeAge -> Modern -> Future` 같은 시간 기반 단일 강제 트리를 Core 진실로 사용하지 않는다.
+- 시대/문명 단계는 실제 Knowledge / Capability / Technology / 사회상태를 Observer가 요약한 결과다.
+- 같은 시간이 흘러도 세계마다 발전 속도, 경로, 쇠퇴, 지식 소실과 재발견이 달라질 수 있다.
+- 미래 기술 역시 자원/에너지/지식/제조능력/조직/유지보수 조건을 실제로 만족해야 한다.
+
+**Canonical companion**
+- `docs/OPEN_ENDED_CIVILIZATION_NORTH_STAR.md`.
+
+---
+
+## D-012 — 충돌 회피를 위해 구조를 꼬지 않는다
+
+**결정**
+- 파일 충돌을 피하는 것 자체를 아키텍처 목표로 삼지 않는다.
+- 같은 책임의 변경은 같은 canonical source/file에 들어가는 것이 맞다면 그 파일을 수정한다.
+- 상대 작업과 겹치면 별도 우회 클래스/중복 source를 만드는 대신 상태 확인, 리뷰, rebase/merge로 해결한다.
+- "파일이 안 겹친다"보다 "책임이 올바른 곳에 있다"가 우선이다.
+
+**협업 적용**
+- Dagyeom active work와 exact file overlap이 없으면 Jjun lane 작업은 정상 진행한다.
+- overlap이 있으면 실제 hunk/책임을 확인하고 coordination 후 통합한다.
+- stale branch의 whole-file snapshot으로 최신 main을 덮어쓰지 않는다.
+
+---
+
+## D-013 — Jjun PR의 standing merge rule
+
+**결정**
+Jjun-owned PR은 다음 조건을 모두 만족하면 매번 별도 확인을 받지 않고 병합할 수 있다.
+
+1. PR exact head를 다시 확인한다.
+2. 요구되는 exact-head CI가 모두 green이다.
+3. 최신 main / mergeability를 확인한다.
+4. Dagyeom의 현재 open PR과 changed filename을 새로 확인한다.
+5. unresolved ownership/overlap이 없다.
+6. merge 시 `expected_head_sha`를 사용한다.
+
+Dagyeom 소유 변경 또는 실제 overlap/불확실성이 있으면 자동 병합하지 않고 먼저 coordination한다.
+
+---
+
+## D-014 — Presentation Catch-up 이후 C1 Settlement를 본선으로 진행한다
+
+**결정**
+- #142~#151에서 time/weather chrome, scrolling, lifecycle visibility, context motion, canopy/readability, weather fallback, adaptive UI까지 1차 Presentation Catch-up을 통합했다.
+- 이후 Presentation polishing은 Core 진행을 막는 기본 blocker로 취급하지 않는다.
+- 현재 본선은 **C1 Settlement & Subsistence**다.
+
+C1 세부 순서:
+1. **C1-A Facility Authority** — WorkSurface / SleepingPlace / Shelter의 실제 material/work/persistence. #152 완료.
+2. **C1-B Autonomous Need Recognition** — sleep/environment/crafting pressure가 건설 Utility를 만든다.
+3. **C1-C Facility Effects & Maintenance** — 실제 sleep/weather/work 효율 및 durability.
+4. **C1-D Durable Subsistence** — water/food storage, spoilage, cultivation, seasonal production.
+5. **C1-E Emergent Settlement Form** — 실제 사용/동선/제약으로 생활 중심과 공간 분화가 나타난다.
+6. **C1-F Early material expansion** — Tin/Bronze는 실제 선행조건 뒤에 진행한다.
+
+**불변조건**
+- New Game에 정착 시설을 공짜로 지급하지 않는다.
+- 시설 생성/완료 authority는 Core다.
+- settlement milestone 이름이 facility spawn trigger가 되어서는 안 된다.
+
