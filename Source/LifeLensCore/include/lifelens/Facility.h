@@ -90,6 +90,21 @@ inline bool facilityProducesHeat(FacilityKind kind)
     return kind == FacilityKind::FirePit || kind == FacilityKind::Furnace;
 }
 
+inline bool facilitySupportsCrafting(FacilityKind kind)
+{
+    return kind == FacilityKind::WorkSurface;
+}
+
+inline bool facilityProvidesSleep(FacilityKind kind)
+{
+    return kind == FacilityKind::SleepingPlace || kind == FacilityKind::Shelter;
+}
+
+inline bool facilityProvidesWeatherProtection(FacilityKind kind)
+{
+    return kind == FacilityKind::Shelter;
+}
+
 inline FacilityConstructionSpec facilityConstructionSpec(FacilityKind kind)
 {
     switch(kind){
@@ -103,6 +118,25 @@ inline FacilityConstructionSpec facilityConstructionSpec(FacilityKind kind)
                 {MaterialKind::Stone,5,0},
                 {MaterialKind::Wood,2,0}
             }};
+        case FacilityKind::WorkSurface:
+            // A stable low work platform: no free starting furniture, only a
+            // physically buildable surface from gathered wood and stone.
+            return {kind,7.0,{
+                {MaterialKind::Wood,3,0},
+                {MaterialKind::Stone,2,0}
+            }};
+        case FacilityKind::SleepingPlace:
+            // Primitive bedding is deliberately cheap enough to precede a full
+            // shelter, but still consumes real gathered material and work.
+            return {kind,5.0,{
+                {MaterialKind::Fiber,4,0},
+                {MaterialKind::Wood,2,0}
+            }};
+        case FacilityKind::Shelter:
+            return {kind,14.0,{
+                {MaterialKind::Wood,8,0},
+                {MaterialKind::Fiber,5,0}
+            }};
         case FacilityKind::Furnace:
             // A small clay-lined stone furnace. Knowledge gating belongs to the
             // progression layer; this contract owns only physical requirements.
@@ -110,9 +144,6 @@ inline FacilityConstructionSpec facilityConstructionSpec(FacilityKind kind)
                 {MaterialKind::Stone,8,0},
                 {MaterialKind::Clay,6,0}
             }};
-        case FacilityKind::WorkSurface:
-        case FacilityKind::SleepingPlace:
-        case FacilityKind::Shelter:
         default:
             return {kind,0.0,{}};
     }
