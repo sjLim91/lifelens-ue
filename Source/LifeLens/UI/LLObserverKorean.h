@@ -94,6 +94,12 @@ namespace LLObserverKorean
     inline const TCHAR* const Parents = TEXT("부모");
     inline const TCHAR* const Children = TEXT("자녀");
     inline const TCHAR* const Siblings = TEXT("형제자매");
+    inline const TCHAR* const FamilyParentsGeneration = TEXT("부모 세대");
+    inline const TCHAR* const FamilyCurrentGeneration = TEXT("현재 세대");
+    inline const TCHAR* const FamilyChildrenGeneration = TEXT("자녀 세대");
+    inline const TCHAR* const RelationshipHistory = TEXT("관계 이력");
+    inline const TCHAR* const Cohabiting = TEXT("동거");
+    inline const TCHAR* const Deceased = TEXT("사망");
 
     inline const TCHAR* const CarriedUnits = TEXT("소지 자원");
     inline const TCHAR* const Reproducible = TEXT("재현 가능한 기술");
