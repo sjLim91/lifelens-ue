@@ -117,6 +117,8 @@ Presentation responsibilities:
 
 Presentation은 Core의 시간 상태를 읽어 표현한다.
 
+Unreal sun/sky consumers should use `FLLCoreSkyPresentationObservation` when available. It combines authoritative calendar/daylight and initial-region weather into deterministic rendering hints (sun elevation/azimuth/intensity, sky brightness, cloud/fog/wind/wetness). These values are presentation helpers, not a new astronomy or weather authority.
+
 ---
 
 ## 6. Dynamic Environment model
