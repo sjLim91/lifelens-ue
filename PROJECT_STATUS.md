@@ -159,3 +159,4 @@ Open stale item:
 - Time/environment contract: `docs/TIME_AND_DYNAMIC_ENVIRONMENT.md`
 - Decisions: `docs/DECISION_LOG.md`
 - Ownership/locks/IR: `tasks/TEAM_BOARD.md`
+- Dagyeom presentation assist handoff: `docs/DAGYEOM_PRESENTATION_HANDOFF_2026-09-18.md`
