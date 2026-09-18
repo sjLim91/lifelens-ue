@@ -230,6 +230,7 @@ namespace
         FLinearColor RightColor = TextSecondary;
         float Scale = 1.0f;
         float GapBefore = 0.0f;
+        FGuid LinkResidentId;
     };
 }
 
@@ -490,6 +491,19 @@ bool ALLObserverHUD::HandleTap(const FVector2D& InScreenPosition, const FVector2
                 Observation->CloseDetail();
                 return true;
             }
+            for (const FDetailResidentLinkHit& Link : DetailResidentLinkHits)
+            {
+                if (Link.ResidentId.IsValid() && RectContains(Link.Rect, ScreenPosition))
+                {
+                    // Keep the active Family/Relationships tab while moving to
+                    // the linked resident. #204's external-selection camera
+                    // sync performs the matching world reframe next tick.
+                    LastDetailResidentId = Link.ResidentId;
+                    DetailScrollOffset = 0.0f;
+                    Observation->ObserveResident(Link.ResidentId);
+                    return true;
+                }
+            }
             for (int32 Index = 0; Index < DetailTabCount; ++Index)
             {
                 if (RectContains(DetailTabRects[Index], ScreenPosition))
@@ -541,6 +555,7 @@ void ALLObserverHUD::DrawHUD()
     DetailPanelRect = FBox2D(ForceInit);
     DetailBackRect = FBox2D(ForceInit);
     DetailContentRect = FBox2D(ForceInit);
+    DetailResidentLinkHits.Reset();
     for (FBox2D& Rect : DetailTabRects)
     {
         Rect = FBox2D(ForceInit);
@@ -1413,8 +1428,10 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
                 Header.Left = TargetName;
                 Header.Right = BondState + TEXT(" · ") + RomanceState;
                 Header.RightColor = Relation.SocialBond >= 0.38f ? TextAction : TextPrimary;
+                Header.LeftColor = Relation.TargetResidentId.IsValid() ? TextAction : TextPrimary;
                 Header.Scale = RowScale;
                 Header.GapBefore = Rows.Num() > 0 ? SectionGap : 0.0f;
+                Header.LinkResidentId = Relation.TargetResidentId;
                 Rows.Add(Header);
 
                 FRow Summary;
@@ -1537,7 +1554,9 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
                         : Parent.DisplayName);
                     Row.Right = FamilyMemberStatus(Parent);
                     Row.RightColor = Parent.bAlive ? TextSecondary : TextMuted;
+                    Row.LeftColor = Parent.ResidentId.IsValid() ? TextAction : TextSecondary;
                     Row.Scale = RowScale;
+                    Row.LinkResidentId = Parent.ResidentId;
                     Rows.Add(Row);
                 }
             }
@@ -1584,7 +1603,9 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
                     Partner.Right += TEXT(" · ") + FString(LLObserverKorean::Cohabiting);
                 }
                 Partner.RightColor = CoreFamily.bHasActivePartner ? TextAction : TextMuted;
+                Partner.LeftColor = CoreFamily.PartnerResidentId.IsValid() ? TextAction : TextSecondary;
                 Partner.Scale = RowScale;
+                Partner.LinkResidentId = CoreFamily.PartnerResidentId;
                 Rows.Add(Partner);
             }
 
@@ -1594,7 +1615,11 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
                 Expecting.Left = LLObserverKorean::ExpectingChild;
                 Expecting.Right = CoreFamily.PregnancyPartnerName;
                 Expecting.RightColor = TextAction;
+                Expecting.LeftColor = CoreFamily.PregnancyPartnerResidentId.IsValid()
+                    ? TextAction
+                    : TextSecondary;
                 Expecting.Scale = RowScale;
+                Expecting.LinkResidentId = CoreFamily.PregnancyPartnerResidentId;
                 Rows.Add(Expecting);
             }
 
@@ -1628,7 +1653,9 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
                         : Sibling.DisplayName);
                     Row.Right = FamilyMemberStatus(Sibling);
                     Row.RightColor = Sibling.bAlive ? TextSecondary : TextMuted;
+                    Row.LeftColor = Sibling.ResidentId.IsValid() ? TextAction : TextSecondary;
                     Row.Scale = RowScale;
+                    Row.LinkResidentId = Sibling.ResidentId;
                     Rows.Add(Row);
                 }
             }
@@ -1663,7 +1690,9 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
                         : Child.DisplayName);
                     Row.Right = FamilyMemberStatus(Child);
                     Row.RightColor = Child.bAlive ? TextSecondary : TextMuted;
+                    Row.LeftColor = Child.ResidentId.IsValid() ? TextAction : TextSecondary;
                     Row.Scale = RowScale;
+                    Row.LinkResidentId = Child.ResidentId;
                     Rows.Add(Row);
                 }
             }
@@ -1800,6 +1829,7 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
         float Scale;
         float Height;
         float GapBefore;
+        FGuid LinkResidentId;
     };
     TArray<FLine> Lines;
     float ContentHeight = 0.0f;
@@ -1813,7 +1843,7 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
             {
                 float W = 0.0f, H = 0.0f;
                 GetTextSize(Wrapped, W, H, Font, Row.Scale);
-                Lines.Add({ Wrapped, Row.LeftColor, FString(), Row.RightColor, Row.Scale, H, bFirst ? GapBefore : 0.0f });
+                Lines.Add({ Wrapped, Row.LeftColor, FString(), Row.RightColor, Row.Scale, H, bFirst ? GapBefore : 0.0f, bFirst ? Row.LinkResidentId : FGuid() });
                 ContentHeight += H + (bFirst ? GapBefore : 0.0f);
                 bFirst = false;
             }
@@ -1822,7 +1852,7 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
         {
             float W = 0.0f, H = 0.0f;
             GetTextSize(Row.Left, W, H, Font, Row.Scale);
-            Lines.Add({ Row.Left, Row.LeftColor, Row.Right, Row.RightColor, Row.Scale, H, GapBefore });
+            Lines.Add({ Row.Left, Row.LeftColor, Row.Right, Row.RightColor, Row.Scale, H, GapBefore, Row.LinkResidentId });
             ContentHeight += H + GapBefore;
         }
     }
@@ -1908,6 +1938,26 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
         const float LineBottom = LineTop + Line.Height;
         if (LineTop >= ContentTop && LineBottom <= PanelBottom)
         {
+            if (Line.LinkResidentId.IsValid())
+            {
+                const float HitTop = FMath::Max(ContentTop, LineTop - 3.0f * UIScale);
+                const float HitBottom = FMath::Min(
+                    PanelBottom,
+                    LineBottom + 3.0f * UIScale);
+                DetailResidentLinkHits.Add({
+                    FBox2D(
+                        FVector2D(PanelX, HitTop),
+                        FVector2D(PanelX + PanelWidth, HitBottom)),
+                    Line.LinkResidentId
+                });
+                DrawRect(
+                    Faded(FLinearColor(0.18f, 0.56f, 0.78f, 0.10f)),
+                    PanelX + DetailAccentWidth,
+                    HitTop,
+                    FMath::Max(0.0f, PanelWidth - DetailAccentWidth),
+                    FMath::Max(0.0f, HitBottom - HitTop));
+            }
+
             DrawText(Line.Left, Faded(Line.LeftColor), TextX, LineTop, Font, Line.Scale, false);
             if (!Line.Right.IsEmpty())
             {
