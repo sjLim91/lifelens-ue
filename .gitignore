@@ -11,3 +11,6 @@ Saved/
 *.VC.db
 __pycache__/
 *.pyc
+
+# Downloaded third-party source assets stay outside version control.
+assets_staging/
