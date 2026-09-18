@@ -913,7 +913,44 @@ void ULLResidentMotionComponent::UpdateBodyOrientation(float DeltaTime)
     const float OwnerYaw = Owner ? Owner->GetActorRotation().Yaw : SmoothedYaw;
 
     const bool bSleeping = ActiveContextMotion == ELLResidentContextMotion::SleepRest;
-    const float TargetSleepRoll = bSleeping ? 90.0f : 0.0f;
+    bool bUsingSleepingPlace = false;
+    if (bSleeping)
+    {
+        const ALLResidentCharacter* Resident = Cast<ALLResidentCharacter>(Owner);
+        const UWorld* World = GetWorld();
+        const UGameInstance* GameInstance = World ? World->GetGameInstance() : nullptr;
+        const ULLCoreBridgeSubsystem* Bridge =
+            GameInstance ? GameInstance->GetSubsystem<ULLCoreBridgeSubsystem>() : nullptr;
+        int32 SleepGridX = 0;
+        int32 SleepGridY = 0;
+        int64 SleepFacilityId = 0;
+        bUsingSleepingPlace =
+            Resident
+            && Bridge
+            && Resident->GetResidentId().IsValid()
+            && Bridge->GetSettlementSleepUseTarget(
+                Resident->GetResidentId(),
+                SleepGridX,
+                SleepGridY,
+                SleepFacilityId)
+            && SleepFacilityId != 0;
+    }
+
+    // The action remains the same authoritative Sleep intent, but the posture
+    // distinguishes degraded ground sleep from using a real SleepingPlace.
+    // Ground sleep is a stronger side curl; a facility-backed sleeper lies
+    // flatter so the body reads as resting on the visible bed/mat geometry.
+    const float TargetSleepPitch = bSleeping
+        ? (bUsingSleepingPlace ? -4.0f : 7.0f)
+        : 0.0f;
+    const float TargetSleepRoll = bSleeping
+        ? (bUsingSleepingPlace ? 86.0f : 96.0f)
+        : 0.0f;
+    PresentedSleepPitchDegrees = FMath::FInterpTo(
+        PresentedSleepPitchDegrees,
+        TargetSleepPitch,
+        DeltaTime,
+        SleepPoseInterpSpeed);
     PresentedSleepRollDegrees = FMath::FInterpTo(
         PresentedSleepRollDegrees,
         TargetSleepRoll,
@@ -946,7 +983,7 @@ void ULLResidentMotionComponent::UpdateBodyOrientation(float DeltaTime)
         YawInterpSpeed);
 
     Body->SetWorldRotation(FRotator(
-        0.0f,
+        PresentedSleepPitchDegrees,
         SmoothedYaw + MeshForwardYawOffsetDegrees,
         PresentedSleepRollDegrees));
 }
