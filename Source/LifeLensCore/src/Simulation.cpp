@@ -437,9 +437,23 @@ void Simulation::advanceAction(Character& c,Runtime& r){
             if(--a.remainingTicks<=0){ ++r.actionIndex; r.announced=false; } break;
         case ActionType::EmergencyUse:
             {
+            ConstructedFacility* settlementSleepFacility=
+                r.goal==Goal::Sleep
+                    ? bestOperationalSleepFacility(world_,r.pos,1)
+                    : nullptr;
             const Needs before=c.needs;
-            c.needs.apply(emergencyUseEffectPerTick(r.goal));
+            if(settlementSleepFacility!=nullptr){
+                c.needs.apply({
+                    0,0,-settlementSleepRecoveryPerTick(*settlementSleepFacility),0,0});
+            }else{
+                c.needs.apply(emergencyUseEffectPerTick(r.goal));
+            }
             applyNeedResolutionEmotion(c,before,r.goal);
+            if(a.remainingTicks==1 && settlementSleepFacility!=nullptr){
+                applyFacilityWear(
+                    *settlementSleepFacility,
+                    facilityWearPerUse(settlementSleepFacility->kind));
+            }
             }
             if(--a.remainingTicks<=0){
                 if(r.goal==Goal::UseToilet){
@@ -972,6 +986,7 @@ void Simulation::step(){
         applyResidentEnvironmentalNeedPressure(world_,character,position);
     }
 
+    advanceSettlementFacilityWearOneMinute(world_);
     advancePrimitiveFireOneMinute(world_);
     world_.environmentalResidues.advanceToMinute(world_.minute);
     if(world_.minute%(24*60)==0) regenerateCivilizationEnvironment(world_);
