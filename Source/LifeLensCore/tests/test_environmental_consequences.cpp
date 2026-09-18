@@ -1,6 +1,7 @@
 #include "lifelens/EnvironmentalConsequences.h"
 #include "lifelens/Planner.h"
 #include "lifelens/PrimitiveFireProgression.h"
+#include "lifelens/Simulation.h"
 
 #include <cassert>
 #include <cmath>
