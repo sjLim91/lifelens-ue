@@ -439,6 +439,41 @@ void ALLDynamicEnvironmentPresentationActor::RefreshFromCore(bool bForce)
         ? Precipitation01
         : 0.0f;
 
+    const bool bResetPresentedEnvironment =
+        bForce
+        || !bPresentedEnvironmentInitialized
+        || PreviousSimulationMinute == TNumericLimits<int64>::Lowest()
+        || Time.SimulationMinute < PreviousSimulationMinute;
+    const float TransitionSpeed = FMath::Max(0.0f, EnvironmentTransitionInterpSpeed);
+    auto PresentValue = [this, bResetPresentedEnvironment, TransitionSpeed](
+        float Current,
+        float Target)
+    {
+        if (bResetPresentedEnvironment || TransitionSpeed <= KINDA_SMALL_NUMBER)
+        {
+            return Target;
+        }
+        return FMath::FInterpTo(
+            Current,
+            Target,
+            FMath::Max(RefreshIntervalSeconds, KINDA_SMALL_NUMBER),
+            TransitionSpeed);
+    };
+
+    PresentedDaylight01 = Saturate(PresentValue(PresentedDaylight01, Daylight01));
+    PresentedCloudCover01 = Saturate(PresentValue(PresentedCloudCover01, CloudCover01));
+    PresentedVisibility01 = Saturate(PresentValue(PresentedVisibility01, Visibility01));
+    PresentedHumidity01 = Saturate(PresentValue(PresentedHumidity01, Humidity01));
+    PresentedPrecipitation01 = Saturate(PresentValue(PresentedPrecipitation01, Precipitation01));
+    PresentedSurfaceWetness01 = Saturate(PresentValue(PresentedSurfaceWetness01, SurfaceWetness01));
+    PresentedWind01 = Saturate(PresentValue(PresentedWind01, Wind01));
+    PresentedRain01 = Saturate(PresentValue(PresentedRain01, Rain01));
+    PresentedSnowfall01 = Saturate(PresentValue(PresentedSnowfall01, Snow01));
+    PresentedAirTemperatureC = PresentValue(
+        PresentedAirTemperatureC,
+        Environment.AirTemperatureC);
+    bPresentedEnvironmentInitialized = true;
+
     // SurfaceWetness01 is already authoritative Core residue. Snow currently
     // exposes precipitation intensity but no separate accumulated cover read,
     // so retain only a short presentation residue and melt it faster above 0 C.
@@ -471,29 +506,37 @@ void ALLDynamicEnvironmentPresentationActor::RefreshFromCore(bool bForce)
     }
 
     const float Fog01 = Saturate(
-        (1.0f - Visibility01)
-        + 0.35f * Humidity01
-        + 0.25f * Precipitation01);
+        (1.0f - PresentedVisibility01)
+        + 0.35f * PresentedHumidity01
+        + 0.25f * PresentedPrecipitation01);
 
     ApplyLighting(
-        Daylight01,
-        CloudCover01,
-        Visibility01,
+        PresentedDaylight01,
+        PresentedCloudCover01,
+        PresentedVisibility01,
         Time.MinuteOfDay,
         Saturate(Time.AnnualPhase));
     ApplyFog(
-        Daylight01,
-        CloudCover01,
-        Visibility01,
-        Humidity01,
-        Precipitation01);
+        PresentedDaylight01,
+        PresentedCloudCover01,
+        PresentedVisibility01,
+        PresentedHumidity01,
+        PresentedPrecipitation01);
     ApplySurfaceMaterials(
-        SurfaceWetness01,
+        PresentedSurfaceWetness01,
         PresentedSnowCover01,
-        Precipitation01,
-        Environment.AirTemperatureC);
-    ApplyWeatherEffects(Rain01, Snow01, Fog01, Wind01);
-    ApplyPostProcess(Daylight01, CloudCover01, Visibility01, Precipitation01);
+        PresentedPrecipitation01,
+        PresentedAirTemperatureC);
+    ApplyWeatherEffects(
+        PresentedRain01,
+        PresentedSnowfall01,
+        Fog01,
+        PresentedWind01);
+    ApplyPostProcess(
+        PresentedDaylight01,
+        PresentedCloudCover01,
+        PresentedVisibility01,
+        PresentedPrecipitation01);
 }
 
 void ALLDynamicEnvironmentPresentationActor::ApplyLighting(
