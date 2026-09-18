@@ -207,6 +207,9 @@ private:
     void ClearFacilityInstances();
     void ApplyFacilityMaterialPalette();
     void BuildGround(const struct FLLCoreWorldGenerationObservation& World);
+    void BuildChunkGround(
+        const struct FLLCoreWorldGenerationObservation& World,
+        const FLLCoreNaturalChunkObservation& Chunk);
     void BuildFarEnvironment(
         const struct FLLCoreWorldGenerationObservation& World,
         float ActiveGroundSpanUU,
@@ -251,6 +254,15 @@ private:
     // Natural runtime presentation.
     UPROPERTY() TObjectPtr<UStaticMeshComponent> Ground;
     UPROPERTY() TObjectPtr<UStaticMeshComponent> FarGround;
+
+    // Authoritative materialized-chunk surface overlay. The broad Ground/FarGround
+    // remain continuity underlays; these HISM tiles project each Core chunk's
+    // actual moisture/biome surface material so the local world is not one flat
+    // initial-chunk carpet.
+    UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> GroundGrassTileInstances;
+    UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> GroundDryTileInstances;
+    UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> GroundTransitionTileInstances;
+
     UPROPERTY() TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>> TreeInstances;
     UPROPERTY() TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>> FarTreeInstances;
     UPROPERTY() TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>> ShrubInstances;
