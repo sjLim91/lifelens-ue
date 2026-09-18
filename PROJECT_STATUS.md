@@ -1,8 +1,8 @@
 # LifeLens Project Status
 
 Date: 2026-09-18
-Current main checkpoint before this docs sync: `87020ec85787f1dfb3d03c30dd8fafaeb7b2aafe`
-Current product phase: **Stage C — Settlement, Survival & Early Civilization**
+Current main checkpoint before this docs sync: `87b4ca9e904f59e7e5c54e48c828a4ad0b81b178`
+Current product phase: **Earth & Human Foundation — Earth-scale world hierarchy, hydrology, ecology and human depth**
 
 ## Whole-source audit closeout
 
@@ -20,7 +20,7 @@ AUDIT-0A / 0B / 0C automated source gates are complete.
 
 Runtime-only visual/input smoke (actual PIE/device layout, touch feel, animation/VFX/performance) remains a QA track and is not represented as CI-verified.
 
-**Current execution focus: late-2026-09-18 Presentation/Observer quality sprint; #216~#224 are merged and the next screen wave is ready to dispatch in parallel with the Stage C simulation roadmap.**
+**Current execution focus: Earth & Human Foundation. #226 Far world visual envelope and #227 Horizon atmosphere blend are merged as Local Surface presentation fixes; next structural work is world hierarchy + hydrology.**
 
 Canonical audit:
 - `docs/SOURCE_AUDIT_2026-09-18.md`
@@ -104,13 +104,23 @@ This is **not ahead of AUDIT-0A/B**, and does not replace C1-B after P0 stabiliz
 
 LifeLens execution is grouped into four large stages. Existing detailed work is preserved inside them; this is a roadmap simplification, not a scope reduction.
 
-- **Stage C — Settlement, Survival & Early Civilization**
+- **Earth & Human Foundation — ACTIVE**
+  - EH-0 World hierarchy / observer scale / simulation LOD contracts.
+  - EH-1 Terrain + hydrology: explicit rivers/lakes/coast/ocean/freshwater/saltwater.
+  - EH-2 Water-driven survival and settlement pressure.
+  - EH-3 Ecology.
+  - EH-4 Human physiology / health.
+  - EH-5 Language / culture / ordinary life.
+  - EH-6 Society / economy / institutions.
+  - EH-7 Planetary/orbital observer architecture.
+  - EH-8 Interplanetary civilization after real prerequisites.
+- **Stage C — Settlement, Survival & Early Civilization — preserved beneath the new foundation**
   - C-S0 Facility Authority — DONE via #152.
-  - C-S1 Autonomous Settlement Need Recognition — ACTIVE.
-  - C-S2 Facility Effects & Maintenance.
-  - C-S3 Durable Water/Food/Storage/Spoilage/Cultivation.
-  - C-S4 Emergent Settlement Geometry.
-  - C-S5 Tin/Bronze & early material expansion.
+  - C-S1 Autonomous Settlement Need Recognition — DONE via #161.
+  - C-S2 Facility Effects & Maintenance — DONE via #162.
+  - C-S3 water scope expands into EH-1/EH-2; food/storage/cultivation continues afterward.
+  - C-S4 Emergent Settlement Geometry follows real terrain/hydrology.
+  - C-S5 Tin/Bronze follows real geology/resource prerequisites.
 - **Stage D — Long-Run Simulation & Civilization Engine**
   - former C2 Long-Run Scale/History/Fast-forward/Cleanup.
   - former C3 Knowledge/Capability/Technology/CivilizationTransformation framework.
@@ -125,23 +135,27 @@ Common tracks remain outside the letters: Presentation quality, PIE/device QA, A
 
 ## Stage C sequence
 
-### C-S1 — Autonomous settlement need recognition
+### C-S1 — Autonomous settlement need recognition — DONE (#161)
 - high sleep pressure / repeated outdoor sleeping -> SleepingPlace utility.
 - repeated rain/cold/heat exposure -> Shelter utility.
 - repeated crafting/building demand -> WorkSurface utility.
 - residents gather missing construction materials.
 - all build actions use Core-authored spatial targets and ContextAction ACK.
 
-### C-S2 — Facility effects / maintenance
+### C-S2 — Facility effects / maintenance — DONE (#162)
 - SleepingPlace improves sleep efficiency/comfort.
 - Shelter reduces appropriate environmental penalties.
 - WorkSurface improves relevant work/crafting.
 - condition/maintenance becomes causal.
 
-### C-S3 / C-S4 / C-S5
-- water/food persistence, storage/spoilage, cultivation.
-- emergent settlement shape.
-- Tin/Bronze only after real prerequisites.
+### Earth & Human Foundation insertion before remaining C-S3/C-S4/C-S5
+- hierarchy-compatible Planet -> Region -> Chunk -> Local Surface world model.
+- explicit hydrology and freshwater/saltwater sources.
+- simulation LOD for Earth-scale growth.
+- ecology and deeper human systems.
+- C-S3 food/storage/cultivation then consumes real water/terrain.
+- C-S4 settlement shape emerges from geography and activity.
+- C-S5 Tin/Bronze consumes real geology/resource prerequisites.
 
 ## Build / validation state
 
@@ -189,10 +203,18 @@ Merged after exact-head Preflight + Unreal Linux Compile:
 - #223 Offscreen action cue v4.
 - #224 World event focus return v2.
 
-#225 is the docs-only synchronization PR for this checkpoint.
+#225 documentation synchronization is merged. #226 and #227 are also merged as Local Surface environment fixes.
+
+## Earth & Human Foundation
+
+Canonical expansion architecture:
+- `docs/EARTH_AND_HUMAN_FOUNDATION.md`
+
+Important: #226/#227 expand only the **Local Surface visual envelope**. They do not define Earth as a large flat plane. Future observer scale is Local -> Regional -> Planetary -> Orbital -> Interplanetary.
 
 ## Canonical documents
 
+- Earth & Human Foundation: `docs/EARTH_AND_HUMAN_FOUNDATION.md`
 - Current Presentation/Observer sprint: `docs/PRESENTATION_WORK_STATE_2026-09-18.md`
 - Whole-source audit / current P0 fixes: `docs/SOURCE_AUDIT_2026-09-18.md`
 - Product spec: `docs/LIFELENS_SPEC_v1.1.md`

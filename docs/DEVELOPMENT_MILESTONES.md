@@ -3,6 +3,7 @@
 이 문서는 **LifeLens의 canonical execution roadmap**이다.
 
 - 장기 제품/문명 방향: `docs/OPEN_ENDED_CIVILIZATION_NORTH_STAR.md`
+- 지구/인간 확장 구조: `docs/EARTH_AND_HUMAN_FOUNDATION.md`
 - 시간/배속/환경 계약: `docs/TIME_AND_DYNAMIC_ENVIRONMENT.md`
 - 현재 실행 상태: `tasks/WORK_STATE.md`
 - ownership / locks / IR: `tasks/TEAM_BOARD.md`
@@ -140,6 +141,87 @@ Maps former F1~F8:
 **Important:** C/D/E/F are planning labels only, never simulation-time era gates.
 
 ---
+
+# 4A. Earth & Human Foundation — CURRENT STRUCTURAL PRIORITY
+
+Canonical architecture:
+- `docs/EARTH_AND_HUMAN_FOUNDATION.md`
+
+This foundation is inserted before the remaining Stage C expansion. It preserves completed settlement work and prevents the project from hardening around a tiny flat local world.
+
+## EH-0 — World hierarchy / observer scale / Simulation LOD
+
+- Planet identity.
+- Surface Region identity.
+- existing Chunk compatibility.
+- Local Surface compatibility.
+- authoritative materialized region/chunk enumeration.
+- deterministic seed derivation per hierarchy layer.
+- Observer scales: Local / Regional / Planetary / Orbital / Interplanetary.
+- deterministic promotion/demotion of remote simulation detail.
+
+## EH-1 — Terrain / Hydrology
+
+- elevation/topography foundation.
+- watershed/drainage.
+- Spring / Stream / River / Lake / Wetland / Groundwater / Coast / Ocean.
+- Fresh / Brackish / Salt water.
+- water flow/recharge/capacity/contamination contracts.
+- visible water presentation consumes Core hydrology.
+
+## EH-2 — Water-driven survival
+
+- thirst resolves to real freshwater.
+- travel to source.
+- drink/collect.
+- carry/store.
+- boiling/filtering foundations.
+- settlement pressure emerges around reliable water.
+
+## EH-3 — Ecology
+
+- plant lifecycle/regeneration.
+- animal population foundations.
+- fish/hunting/fishing.
+- food web and human ecological pressure.
+
+## EH-4 — Human physiology / health
+
+- hydration/nutrition/body temperature/fatigue.
+- injury/infection/disease/immunity.
+- pregnancy/postpartum physical consequences.
+- aging-related decline and cause-specific mortality.
+
+## EH-5 — Language / culture / ordinary life
+
+- richer conversation and information transfer.
+- records/writing.
+- customs/traditions.
+- play/leisure/visiting/celebration/grief.
+
+## EH-6 — Society / economy / institutions
+
+- specialization.
+- property/shared resources.
+- exchange/markets/trade.
+- organizations/education/law/dispute resolution.
+
+## EH-7 — Planetary / orbital observer
+
+- Regional representation.
+- globe/sphere representation.
+- planetary curvature transition.
+- orbit/moons/satellites/stations.
+- no million-kilometer single Unreal coordinate space.
+
+## EH-8 — Interplanetary civilization
+
+Only after actual capability prerequisites:
+- launch.
+- life support.
+- off-world industry.
+- permanent settlements.
+- interplanetary logistics.
 
 # 5. New Priority Order
 
@@ -379,7 +461,7 @@ move from opportunistic gathering toward a durable, reproducible settlement econ
 - operational state + snapshot persistence.
 - no free New Game facility.
 
-### C1-B — Autonomous settlement need recognition — NEXT
+### C1-B — Autonomous settlement need recognition — DONE (#161)
 
 Residents should choose settlement construction because their lived pressure makes it useful.
 
@@ -398,7 +480,7 @@ Rules:
 - Presentation never completes the facility.
 - identical seed/snapshot continuation remains deterministic.
 
-### C1-C — Facility effects and maintenance
+### C1-C — Facility effects and maintenance — DONE (#162)
 
 - SleepingPlace improves sleep recovery/comfort versus outdoor fallback.
 - Shelter reduces appropriate weather/environment penalties.
@@ -745,7 +827,7 @@ Do not launch a long Android build until the user explicitly resumes it.
 
 Current immediate implementation target:
 
-> **Stage C / C-S1 — Autonomous Settlement Need Recognition**
+> **Earth & Human Foundation / EH-0 -> EH-1**
 
 First delivery:
 - sleep/outdoor-rest pressure -> SleepingPlace utility.
@@ -786,3 +868,23 @@ The expanded Presentation/Observer wave completed with exact-head green Prefligh
 - world-event focus return.
 
 #225 synchronizes the canonical documentation after this merge wave.
+
+
+---
+
+## Current Earth & Human dispatch
+
+Immediate order:
+1. EH-0 hierarchy-compatible world identity contracts.
+2. explicit materialized region/chunk enumeration.
+3. EH-1 deterministic hydrology types and water-body observations.
+4. EH-2 thirst -> real freshwater travel/drink/collect.
+5. C-S3 food/storage/cultivation on top of real geography.
+6. C-S4 settlement geometry shaped by terrain/water/activity.
+7. C-S5 geology-backed early metallurgy.
+
+Local presentation checkpoint:
+- #226 Far world visual envelope — MERGED.
+- #227 Horizon atmosphere blend — MERGED.
+
+These are Local Surface LOD fixes only, not an infinite-flat-world architecture.
