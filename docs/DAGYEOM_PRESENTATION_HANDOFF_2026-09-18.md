@@ -292,4 +292,11 @@ Dagyeom should render this chain, not invent a parallel build state.
 6. actual GitHub open PRs / main
 7. `tasks/TEAM_BOARD.md` only for ownership/locks/IR.
 
+### Merged Presentation checkpoint #216~#224
+
+The expanded observer/presentation wave is now merged on main after exact-head green CI. This includes resident/family navigation, sleep-site posture, resource depletion visuals, social counterpart labeling, snow accumulation, detailed dayparts, resident identity/age labels, offscreen action cues and world-event focus return.
+
+Current detailed status:
+- `docs/PRESENTATION_WORK_STATE_2026-09-18.md`
+
 If any old HANDOFF/TEAM_BOARD line conflicts with actual main or this handoff, **actual GitHub main wins**.
