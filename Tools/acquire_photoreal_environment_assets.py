@@ -209,6 +209,8 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--asset", action="append", choices=sorted(CURATED))
     parser.add_argument("--staging", default=os.environ.get("LL_ASSET_STAGING", "assets_staging"))
+    parser.add_argument("--resolution", choices=["1k", "2k", "4k"],
+                        help="override curated resolution for this acquisition run")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
@@ -223,7 +225,9 @@ def main() -> int:
     }
 
     for asset_id in ids:
-        spec = CURATED[asset_id]
+        spec = dict(CURATED[asset_id])
+        if args.resolution:
+            spec["resolution"] = args.resolution
         print(f"[LifeLens assets] query {asset_id} ({spec})")
         files = api_json(f"/files/{asset_id}")
         chosen = select_files(files, spec)
