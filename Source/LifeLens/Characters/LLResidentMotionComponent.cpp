@@ -1,5 +1,6 @@
 #include "Characters/LLResidentMotionComponent.h"
 #include "Characters/LLResidentAppearanceComponent.h"
+#include "Characters/LLResidentCharacter.h"
 #include "Animation/AnimSequence.h"
 #include "Animation/AnimSingleNodeInstance.h"
 #include "Animation/BlendSpace.h"
@@ -7,8 +8,12 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/GameInstance.h"
+#include "Engine/World.h"
 #include "GameFramework/Actor.h"
 #include "ReferenceSkeleton.h"
+#include "Simulation/LLCoreActionTypes.h"
+#include "Simulation/LLCoreBridgeSubsystem.h"
 #include "UObject/ConstructorHelpers.h"
 
 namespace
@@ -85,6 +90,37 @@ ULLResidentMotionComponent::ULLResidentMotionComponent()
     static ConstructorHelpers::FObjectFinder<UAnimSequence> BuildFinder(
         TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Fixing_Kneeling.Fixing_Kneeling"));
     BuildAnimation = BuildFinder.Succeeded() ? BuildFinder.Object : nullptr;
+
+    // Context Motion v2 adds the clips the tool-based route above has no entry
+    // for: hauling, fire tending, low crouched work and seated care. Gather,
+    // Dig and Strike stay on the clips #143 already chose.
+    //
+    // Survey evidence (Content/Characters/Quaternius/Import/survey_animations.py):
+    // none of the 43 imported UAL sequences carries root motion, so looping a
+    // work clip never fights the authoritative Core/World movement.
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> HaulFinder(
+        TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Push_Loop.Push_Loop"));
+    HaulAnimation = HaulFinder.Succeeded() ? HaulFinder.Object : nullptr;
+
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> FireFinder(
+        TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Idle_Torch_Loop.Idle_Torch_Loop"));
+    FireAnimation = FireFinder.Succeeded() ? FireFinder.Object : nullptr;
+
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> CrouchFinder(
+        TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Crouch_Idle_Loop.Crouch_Idle_Loop"));
+    CrouchAnimation = CrouchFinder.Succeeded() ? CrouchFinder.Object : nullptr;
+
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> SeatedEnterFinder(
+        TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Sitting_Enter.Sitting_Enter"));
+    SeatedEnterAnimation = SeatedEnterFinder.Succeeded() ? SeatedEnterFinder.Object : nullptr;
+
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> SeatedCareFinder(
+        TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Sitting_Talking_Loop.Sitting_Talking_Loop"));
+    SeatedCareAnimation = SeatedCareFinder.Succeeded() ? SeatedCareFinder.Object : nullptr;
+
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> SeatedExitFinder(
+        TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Sitting_Exit.Sitting_Exit"));
+    SeatedExitAnimation = SeatedExitFinder.Succeeded() ? SeatedExitFinder.Object : nullptr;
 
     static ConstructorHelpers::FObjectFinder<UStaticMesh> FlakeFinder(
         TEXT("/Engine/BasicShapes/Cone.Cone"));
@@ -174,21 +210,8 @@ void ULLResidentMotionComponent::EnsureLocomotionPlaying()
         LocomotionBlendSpace->GetBlendSamples().Num(), ResolvedSamples.Num());
 }
 
-void ULLResidentMotionComponent::UpdateContextAnimationState()
+UAnimSequence* ULLResidentMotionComponent::LegacyContextAnimation() const
 {
-    if (!Appearance)
-    {
-        if (AActor* Owner = GetOwner())
-        {
-            Appearance = Owner->FindComponentByClass<ULLResidentAppearanceComponent>();
-        }
-    }
-    Body = Appearance ? Appearance->GetBodyComponent() : nullptr;
-    if (!Body)
-    {
-        return;
-    }
-
     UAnimSequence* DesiredAnimation = nullptr;
     if (bSocialInteractionActive)
     {
@@ -236,15 +259,324 @@ void ULLResidentMotionComponent::UpdateContextAnimationState()
         }
     }
 
+    return DesiredAnimation;
+}
+
+ELLResidentContextMotion ULLResidentMotionComponent::ResolveContextMotion() const
+{
+    const ALLResidentCharacter* Resident = Cast<ALLResidentCharacter>(GetOwner());
+    const UWorld* World = GetWorld();
+    const UGameInstance* GameInstance = World ? World->GetGameInstance() : nullptr;
+    const ULLCoreBridgeSubsystem* Bridge =
+        GameInstance ? GameInstance->GetSubsystem<ULLCoreBridgeSubsystem>() : nullptr;
+    if (!Resident || !Bridge || !Resident->GetResidentId().IsValid())
+    {
+        return ELLResidentContextMotion::None;
+    }
+
+    // The *pending context directive* is the one WorldDirector itself consumed
+    // to open this work window (ALLWorldDirector::ApplyPendingContextDirective),
+    // and it is the only read that carries ContextActionKind, the facility
+    // action, the parenting action and the equipped tool capability.
+    //
+    // GetResidentActionDirective is a different read: it reports the observed
+    // activity plus the physical/social intent, and it fills the civilization
+    // fields only while the resident is Idle. Measured over a headless run,
+    // 112/112 samples came back with ctxKind=0 facility=0 tool=0 cap=0 from
+    // that read while the pending read carried ctxKind=1/2/4 — which is why
+    // every refinement used to fall through to the legacy clip.
+    FLLCoreActionDirective Directive;
+    const bool bHasPending =
+        Bridge->GetResidentPendingContextDirective(Resident->GetResidentId(), Directive);
+    if (!bHasPending && !Bridge->GetResidentActionDirective(Resident->GetResidentId(), Directive))
+    {
+        return ELLResidentContextMotion::None;
+    }
+
+    if (!Directive.bAlive)
+    {
+        // Death presentation belongs to the lifecycle lane, not to work motion.
+        return ELLResidentContextMotion::None;
+    }
+
+    // Sanitation is classified first: Core marks it both on the civilization
+    // action and on the physical intent, and a squat reads correctly for both.
+    if (Directive.CivilizationSanitationSiteId != 0
+        || Directive.PhysicalIntent == ELLCorePhysicalIntent::Toilet
+        || Directive.PhysicalIntent == ELLCorePhysicalIntent::Hygiene)
+    {
+        return ELLResidentContextMotion::CrouchLow;
+    }
+
+    switch (Directive.ContextActionKind)
+    {
+        case ELLCoreContextActionKind::KnowledgeTeaching:
+            // The directive carries a teaching target only on the teacher side.
+            return Directive.TargetResidentId.IsValid()
+                ? ELLResidentContextMotion::Talk
+                : ELLResidentContextMotion::Learn;
+
+        case ELLCoreContextActionKind::Parenting:
+            switch (Directive.ParentingAction)
+            {
+                case ELLCoreParentingAction::Feed:
+                case ELLCoreParentingAction::Hold:
+                case ELLCoreParentingAction::Comfort:
+                case ELLCoreParentingAction::HealthCare:
+                    return ELLResidentContextMotion::SeatedCare;
+                case ELLCoreParentingAction::Educate:
+                case ELLCoreParentingAction::Discipline:
+                    return ELLResidentContextMotion::Talk;
+                case ELLCoreParentingAction::Play:
+                    return ELLResidentContextMotion::Learn;
+                case ELLCoreParentingAction::Bathe:
+                case ELLCoreParentingAction::ToiletAssist:
+                    return ELLResidentContextMotion::CrouchLow;
+                case ELLCoreParentingAction::PutToSleep:
+                    // No authored lying/settling clip exists in the imported
+                    // pack, so this stays a seated care pose and is recorded as
+                    // a Context Motion v2 asset gap rather than dressed up with
+                    // an unrelated clip.
+                    return ELLResidentContextMotion::SeatedCare;
+                default:
+                    return ELLResidentContextMotion::Talk;
+            }
+
+        case ELLCoreContextActionKind::Social:
+            return Directive.SocialIntent == ELLCoreSocialIntent::Comfort
+                ? ELLResidentContextMotion::SeatedCare
+                : ELLResidentContextMotion::Talk;
+
+        default:
+            break;
+    }
+
+    if (Directive.CivilizationFacilityAction != ELLCoreFacilityBuildAction::None)
+    {
+        switch (Directive.CivilizationFacilityAction)
+        {
+            case ELLCoreFacilityBuildAction::DeliverMaterial:
+                return ELLResidentContextMotion::HaulPush;
+            case ELLCoreFacilityBuildAction::Fuel:
+            case ELLCoreFacilityBuildAction::Ignite:
+            case ELLCoreFacilityBuildAction::CollectCharcoal:
+                return ELLResidentContextMotion::FireTend;
+            default:
+                return ELLResidentContextMotion::CraftWork;
+        }
+    }
+
+    // Tool capability describes the physical gesture better than the action
+    // verb does, so it wins whenever Core reports an equipped tool. The clips
+    // are the same ones the held-tool route in LegacyContextAnimation() uses,
+    // so a refined and an unrefined resident never disagree on screen.
+    if (Directive.bHasCivilizationTool)
+    {
+        switch (Directive.CivilizationToolCapability)
+        {
+            case ELLCoreToolCapability::Chop:
+            case ELLCoreToolCapability::Cut:
+            case ELLCoreToolCapability::Strike:
+                return ELLResidentContextMotion::StrikeSwing;
+            case ELLCoreToolCapability::Dig:
+                return ELLResidentContextMotion::DigWork;
+            case ELLCoreToolCapability::Heat:
+                return ELLResidentContextMotion::FireTend;
+            case ELLCoreToolCapability::Carry:
+                return ELLResidentContextMotion::GatherPick;
+            default:
+                break;
+        }
+    }
+
+    switch (Directive.CivilizationAction)
+    {
+        case ELLCoreCivilizationAction::Gather:
+        case ELLCoreCivilizationAction::Store:
+            return ELLResidentContextMotion::GatherPick;
+        case ELLCoreCivilizationAction::Craft:
+        case ELLCoreCivilizationAction::Experiment:
+            return ELLResidentContextMotion::CraftWork;
+        default:
+            break;
+    }
+
+    // Observation-read residue: a social exchange with no pending context
+    // action still reads as a conversation.
+    if (Directive.ActivityKind == ELLCoreObservedActivityKind::Social
+        && Directive.SocialIntent != ELLCoreSocialIntent::None
+        && Directive.SocialIntent != ELLCoreSocialIntent::Avoid)
+    {
+        return ELLResidentContextMotion::Talk;
+    }
+
+    return ELLResidentContextMotion::None;
+}
+
+UAnimSequence* ULLResidentMotionComponent::ClipForContextMotion(ELLResidentContextMotion Motion) const
+{
+    switch (Motion)
+    {
+        case ELLResidentContextMotion::Talk:        return TalkingAnimation;
+        case ELLResidentContextMotion::Learn:       return InteractAnimation;
+        case ELLResidentContextMotion::GatherPick:  return GatherAnimation;
+        case ELLResidentContextMotion::StrikeSwing: return StrikeAnimation;
+        case ELLResidentContextMotion::DigWork:     return DigAnimation;
+        case ELLResidentContextMotion::CraftWork:   return BuildAnimation;
+        case ELLResidentContextMotion::HaulPush:    return HaulAnimation;
+        case ELLResidentContextMotion::FireTend:    return FireAnimation;
+        case ELLResidentContextMotion::CrouchLow:   return CrouchAnimation;
+        case ELLResidentContextMotion::SeatedCare:  return SeatedCareAnimation;
+        case ELLResidentContextMotion::None:
+        default:                                    return nullptr;
+    }
+}
+
+void ULLResidentMotionComponent::LogDirectiveDiagnostics() const
+{
+    const AActor* Owner = GetOwner();
+    const ALLResidentCharacter* Resident = Cast<ALLResidentCharacter>(Owner);
+    const UWorld* World = GetWorld();
+    const UGameInstance* GameInstance = World ? World->GetGameInstance() : nullptr;
+    const ULLCoreBridgeSubsystem* Bridge =
+        GameInstance ? GameInstance->GetSubsystem<ULLCoreBridgeSubsystem>() : nullptr;
+
+    const bool bResidentCast = Resident != nullptr;
+    const bool bIdValid = Resident && Resident->GetResidentId().IsValid();
+
+    FLLCoreActionDirective ActionDirective;
+    bool bActionRead = false;
+    FLLCoreActionDirective PendingDirective;
+    bool bPendingRead = false;
+    if (Bridge && bIdValid)
+    {
+        bActionRead = Bridge->GetResidentActionDirective(Resident->GetResidentId(), ActionDirective);
+        bPendingRead = Bridge->GetResidentPendingContextDirective(Resident->GetResidentId(), PendingDirective);
+    }
+
+    UE_LOG(LogTemp, Log,
+        TEXT("LLMotionDiag %s cast=%d id=%d bridge=%d | action=%d activity=%d phys=%d social=%d ctxKind=%d civ=%d facility=%d tool=%d cap=%d sanit=%lld")
+        TEXT(" | pending=%d ctxKind=%d civ=%d facility=%d parenting=%d tool=%d cap=%d sanit=%lld"),
+        Owner ? *Owner->GetName() : TEXT("none"),
+        bResidentCast ? 1 : 0, bIdValid ? 1 : 0, Bridge ? 1 : 0,
+        bActionRead ? 1 : 0,
+        static_cast<int32>(ActionDirective.ActivityKind),
+        static_cast<int32>(ActionDirective.PhysicalIntent),
+        static_cast<int32>(ActionDirective.SocialIntent),
+        static_cast<int32>(ActionDirective.ContextActionKind),
+        static_cast<int32>(ActionDirective.CivilizationAction),
+        static_cast<int32>(ActionDirective.CivilizationFacilityAction),
+        ActionDirective.bHasCivilizationTool ? 1 : 0,
+        static_cast<int32>(ActionDirective.CivilizationToolCapability),
+        static_cast<long long>(ActionDirective.CivilizationSanitationSiteId),
+        bPendingRead ? 1 : 0,
+        static_cast<int32>(PendingDirective.ContextActionKind),
+        static_cast<int32>(PendingDirective.CivilizationAction),
+        static_cast<int32>(PendingDirective.CivilizationFacilityAction),
+        static_cast<int32>(PendingDirective.ParentingAction),
+        PendingDirective.bHasCivilizationTool ? 1 : 0,
+        static_cast<int32>(PendingDirective.CivilizationToolCapability),
+        static_cast<long long>(PendingDirective.CivilizationSanitationSiteId));
+}
+
+void ULLResidentMotionComponent::UpdateContextAnimationState(float DeltaTime)
+{
+    if (!Appearance)
+    {
+        if (AActor* Owner = GetOwner())
+        {
+            Appearance = Owner->FindComponentByClass<ULLResidentAppearanceComponent>();
+        }
+    }
+    Body = Appearance ? Appearance->GetBodyComponent() : nullptr;
+    if (!Body)
+    {
+        return;
+    }
+
+    auto PlayClip = [this](UAnimSequence* Clip, bool bLoop)
+    {
+        if (!Clip || ActiveContextAnimation == Clip)
+        {
+            return;
+        }
+        Body->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+        Body->PlayAnimation(Clip, bLoop);
+        ActiveContextAnimation = Clip;
+        bLocomotionPlaying = false;
+    };
+
+    // The WorldDirector signal stays the authority on *whether* a resident is
+    // presenting context work at its target. Refining the clip never widens
+    // that window, so a resident walking toward a tree is still walking.
+    UAnimSequence* LegacyAnimation = LegacyContextAnimation();
+
+    ELLResidentContextMotion DesiredMotion = ELLResidentContextMotion::None;
+    UAnimSequence* DesiredAnimation = nullptr;
+    if (LegacyAnimation)
+    {
+        DesiredMotion = ResolveContextMotion();
+        DesiredAnimation = ClipForContextMotion(DesiredMotion);
+        if (!DesiredAnimation)
+        {
+            // No bridge, unbound resident, or a directive this milestone does
+            // not classify: keep exactly what the held-tool route decided.
+            DesiredMotion = ELLResidentContextMotion::None;
+            DesiredAnimation = LegacyAnimation;
+        }
+    }
+
+    // Seated care owns authored enter/exit clips, so it is the only motion that
+    // needs a transition state. Everything else is a plain looping clip swap.
+    if (SeatedTransitionRemaining > 0.0f)
+    {
+        SeatedTransitionRemaining = FMath::Max(0.0f, SeatedTransitionRemaining - DeltaTime);
+        if (SeatedTransitionRemaining > 0.0f)
+        {
+            return;
+        }
+
+        if (bSeatedEntered)
+        {
+            PlayClip(SeatedCareAnimation, true);
+            ActiveContextMotion = ELLResidentContextMotion::SeatedCare;
+            return;
+        }
+
+        // The stand-up clip finished. Release the body explicitly, otherwise
+        // the one-shot exit pose would hold and locomotion could never take
+        // ownership again.
+        ActiveContextAnimation = nullptr;
+        ActiveContextMotion = ELLResidentContextMotion::None;
+        bLocomotionPlaying = false;
+    }
+
+    const bool bWasSeated = bSeatedEntered;
+    const bool bWantsSeated = DesiredMotion == ELLResidentContextMotion::SeatedCare;
+
+    if (bWantsSeated && !bWasSeated && SeatedEnterAnimation)
+    {
+        PlayClip(SeatedEnterAnimation, false);
+        SeatedTransitionRemaining = SeatedEnterAnimation->GetPlayLength();
+        bSeatedEntered = true;
+        ActiveContextMotion = ELLResidentContextMotion::SeatedCare;
+        return;
+    }
+
+    if (!bWantsSeated && bWasSeated && SeatedExitAnimation)
+    {
+        bSeatedEntered = false;
+        PlayClip(SeatedExitAnimation, false);
+        SeatedTransitionRemaining = SeatedExitAnimation->GetPlayLength();
+        ActiveContextMotion = ELLResidentContextMotion::None;
+        return;
+    }
+
+    ActiveContextMotion = DesiredMotion;
+
     if (DesiredAnimation)
     {
-        if (ActiveContextAnimation != DesiredAnimation)
-        {
-            Body->SetAnimationMode(EAnimationMode::AnimationSingleNode);
-            Body->PlayAnimation(DesiredAnimation, true);
-            ActiveContextAnimation = DesiredAnimation;
-            bLocomotionPlaying = false;
-        }
+        PlayClip(DesiredAnimation, true);
         return;
     }
 
@@ -382,7 +714,7 @@ void ULLResidentMotionComponent::TickComponent(float DeltaTime, ELevelTick TickT
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-    UpdateContextAnimationState();
+    UpdateContextAnimationState(DeltaTime);
     UpdateHeldToolVisualState();
     EnsureLocomotionPlaying();
 
@@ -451,6 +783,7 @@ void ULLResidentMotionComponent::TickComponent(float DeltaTime, ELevelTick TickT
         if (DebugLogTimer <= 0.0f)
         {
             DebugLogTimer = DebugLogInterval;
+            LogDirectiveDiagnostics();
             float FacingDot = 0.0f;
             if (Body && SmoothedSpeed > 0.0f)
             {
@@ -458,7 +791,7 @@ void ULLResidentMotionComponent::TickComponent(float DeltaTime, ELevelTick TickT
                 FacingDot = FVector::DotProduct(Body->GetRightVector(), TravelDirection);
             }
 
-            UE_LOG(LogTemp, Log, TEXT("LLMotion %s speed=%.1f window=%.1f yaw=%.1f visual=%.1f travel=%.1f actor=%.1f facing=%.2f locomotion=%d talking=%d work=%d tool=%d context=%s loc=%.0f,%.0f"),
+            UE_LOG(LogTemp, Log, TEXT("LLMotion %s speed=%.1f window=%.1f yaw=%.1f visual=%.1f travel=%.1f actor=%.1f facing=%.2f locomotion=%d talking=%d work=%d tool=%d motion=%d context=%s loc=%.0f,%.0f"),
                 *Owner->GetName(), SmoothedSpeed, WindowedSpeed, SmoothedYaw,
                 SmoothedYaw + MeshForwardYawOffsetDegrees, DesiredYaw,
                 Owner->GetActorRotation().Yaw, FacingDot,
@@ -466,6 +799,7 @@ void ULLResidentMotionComponent::TickComponent(float DeltaTime, ELevelTick TickT
                 bSocialInteractionActive ? 1 : 0,
                 static_cast<int32>(WorkPresentationMode),
                 static_cast<int32>(HeldToolPresentation),
+                static_cast<int32>(ActiveContextMotion),
                 ActiveContextAnimation ? *ActiveContextAnimation->GetName() : TEXT("none"),
                 Location.X, Location.Y);
         }

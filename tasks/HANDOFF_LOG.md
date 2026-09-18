@@ -946,3 +946,24 @@
 - 상대가 알아야 할 점:
   - 에셋 축 불일치를 Core 이동으로 보정하지 않았다. 보정값은 `Source/LifeLens/Characters/**`의 presentation tuning 값이다
   - `facing` 지표는 `ll.DebugMotion` 활성 시에만 출력되며 회귀 확인에 그대로 쓸 수 있다
+
+### 다겸 측 AI — #134 재적용 World Readability 화면 확인 / #100 계열 종결
+
+- 작성자: 다겸 측 AI
+- 확인 대상 커밋: `34a0f36` (Merge PR #138) 기준 Mac 에디터 빌드
+- 상태: `확인 완료 / #100 계열 종결`
+- 배경: 원본 PR #100은 `tasks/TEAM_BOARD.md` 충돌이 반복되어 쭌 측이 2026-09-17T06:04:15Z에 unmerged 상태로 닫았고, 검증된 WorldPresentation 소스만 PR #134(`1195fdd`)로 현재 main에 재적용했다.
+- 소스 무결성 대조 — 추측이 아니라 blob 해시로 확인했다.
+  - `LLWorldPresentationActor.cpp` `#100 head 62b191a` = `main` = `655229fa`
+  - `LLWorldPresentationActor.h` `#100 head 62b191a` = `main` = `428d3bba`
+  - `git diff 62b191a HEAD -- Source/LifeLens/WorldPresentation/` 출력 없음. #134 이후 이 경로를 건드린 커밋은 재적용 커밋 `bd42525` 하나뿐이다.
+- 로컬 재검증
+  - `Tools/validate_bootstrap.py` PASS
+  - Mac 에디터 빌드 `Result: Succeeded`, 실제 warning 0 / error 0 / shadow 0
+  - `Module.LifeLens.1~5.cpp` 전량 재컴파일 후 링크. `Binaries/Mac/UnrealEditor-LifeLens.dylib` 신규 생성 확인(타임스탬프 no-op 아님)
+- 화면 확인 결과 (사용자 확인)
+  - 3구간 readability envelope 정상 동작. 정착지 중심이 트이고 큰 나무가 물러났다
+  - 초기 시야 원뿔 정상 동작. 카메라 정면의 Canopy가 주민을 가리지 않는다
+  - 말풍선(#126)과 사회 사건 패널 가독성도 양호
+- 알려진 한계 (신규 결함 아님): 시야 원뿔은 초기 카메라 자세 고정이므로 회전·패닝하면 효과가 사라진다. IR-E-1에 `MITIGATED`로 이미 기록되어 있다.
+- 결론: #100 계열 작업은 종결한다. 다음은 Dagyeom lane 1번 Character Context Motion v2.
