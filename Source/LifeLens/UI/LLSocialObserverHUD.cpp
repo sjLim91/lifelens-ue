@@ -236,6 +236,8 @@ void ALLSocialObserverHUD::DrawSpeechBubbles(
             : Actor->GetResidentDisplayName().ToString();
         const bool bSelectedSpeaker = Observation && Observation->HasObservedResident()
             && Observation->GetObservedResidentId() == Event.ActorResidentId;
+        const bool bSelectedTarget = Observation && Observation->HasObservedResident()
+            && Observation->GetObservedResidentId() == Event.TargetResidentId;
 
         FVector BoundsOrigin = FVector::ZeroVector;
         FVector BoundsExtent = FVector::ZeroVector;
@@ -357,6 +359,63 @@ void ALLSocialObserverHUD::DrawSpeechBubbles(
                 AccentColor * 0.72f,
                 FMath::Max(1.0f, UIScale));
         }
+
+        // When both participants are on screen, a restrained actor->target
+        // link makes the social exchange readable without opening the detail
+        // panel. Keep it short and only emphasize it when either participant
+        // is the selected resident.
+        if (Event.TargetResidentId.IsValid())
+        {
+            if (ALLResidentCharacter* Target =
+                    FindSocialResidentActor(GetWorld(), Event.TargetResidentId))
+            {
+                FVector TargetOrigin = FVector::ZeroVector;
+                FVector TargetExtent = FVector::ZeroVector;
+                Target->GetActorBounds(false, TargetOrigin, TargetExtent, false);
+                FVector2D TargetScreen;
+                if (PlayerController->ProjectWorldLocationToScreen(
+                        TargetOrigin + FVector(0.0f, 0.0f, TargetExtent.Z * 0.72f),
+                        TargetScreen,
+                        false))
+                {
+                    const FVector2D TargetCanvas = ViewportToCanvas(TargetScreen, ViewportSize);
+                    const float ConnectionLength = FVector2D::Distance(
+                        CanvasPosition,
+                        TargetCanvas);
+                    if (ConnectionLength >= 20.0f * UIScale
+                        && ConnectionLength <= 420.0f * UIScale)
+                    {
+                        const bool bSelectedExchange = bSelectedSpeaker || bSelectedTarget;
+                        const FLinearColor ConnectionColor = bSelectedExchange
+                            ? FLinearColor(0.46f, 0.91f, 1.0f, 0.72f * Fade)
+                            : FLinearColor(
+                                AccentColor.R,
+                                AccentColor.G,
+                                AccentColor.B,
+                                0.26f * Fade);
+                        DrawLine(
+                            CanvasPosition.X,
+                            CanvasPosition.Y,
+                            TargetCanvas.X,
+                            TargetCanvas.Y,
+                            ConnectionColor,
+                            FMath::Max(
+                                bSelectedExchange ? 2.0f : 1.0f,
+                                (bSelectedExchange ? 1.5f : 0.8f) * UIScale));
+
+                        const FVector2D Mid = (CanvasPosition + TargetCanvas) * 0.5f;
+                        const float Marker = 3.0f * UIScale;
+                        DrawRect(
+                            ConnectionColor,
+                            Mid.X - Marker,
+                            Mid.Y - Marker,
+                            Marker * 2.0f,
+                            Marker * 2.0f);
+                    }
+                }
+            }
+        }
+
         const FLinearColor SpeakerColor = bSelectedSpeaker
             ? FLinearColor(0.50f, 0.94f, 1.0f, Fade)
             : (Event.PresentationLevel == ELLCoreSocialPresentationLevel::Important
