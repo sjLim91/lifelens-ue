@@ -7,6 +7,7 @@
 #include "LLLifecycleEventOverlay.generated.h"
 
 class UBorder;
+class UTextBlock;
 class UVerticalBox;
 
 /**
@@ -38,13 +39,19 @@ private:
     struct FTransientNotice
     {
         FString Text;
+        FGuid SubjectResidentId;
+        FGuid RelatedResidentId;
+        int64 SimulationMinute = 0;
         double ExpireAtRealSeconds = 0.0;
     };
 
     void ResetObservationState();
     void RefreshFromCore();
-    void PushNotice(const FString& Text);
+    void RefreshSelectedResidentCard();
+    void PushNotice(const FString& Text, FGuid SubjectResidentId = FGuid(),
+                    FGuid RelatedResidentId = FGuid(), int64 SimulationMinute = 0);
     void RefreshNoticeWidgets();
+    static FString FormatObservedMoment(int64 SimulationMinute);
 
     static FString LifeStageLabel(ELLCoreLifeStage Stage);
     static FString PregnancyPairKey(const FGuid& First, const FGuid& Second);
@@ -55,14 +62,29 @@ private:
     UPROPERTY(Transient)
     TObjectPtr<UVerticalBox> EventList;
 
+    UPROPERTY(Transient)
+    TObjectPtr<UVerticalBox> RootStack;
+
+    UPROPERTY(Transient)
+    TObjectPtr<UBorder> ResidentStatusBorder;
+
+    UPROPERTY(Transient)
+    TObjectPtr<UTextBlock> ResidentStatusText;
+
+    UPROPERTY(Transient)
+    TObjectPtr<UTextBlock> ResidentHistoryText;
+
     TMap<FGuid, FResidentVisualState> PreviousResidents;
     TSet<FString> PreviousPregnancyPairs;
     TArray<FTransientNotice> Notices;
+    TMap<FGuid, TArray<FString>> ObservedLifeHistory;
 
     int64 LastObservedSimulationMinute = -1;
     bool bBaselineReady = false;
 
     static constexpr int32 MaxVisibleNotices = 4;
+    static constexpr int32 MaxObservedHistoryPerResident = 16;
+    static constexpr int32 MaxHistoryLinesOnCard = 4;
     static constexpr double NoticeLifetimeSeconds = 7.5;
 };
 
