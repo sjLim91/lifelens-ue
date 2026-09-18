@@ -22,6 +22,22 @@ namespace
     constexpr float ButtonWidth = 54.0f;
     constexpr float ButtonHeight = 34.0f;
 
+    FLinearColor WeatherColor(ELLCoreWeatherSummary Weather)
+    {
+        switch (Weather)
+        {
+            case ELLCoreWeatherSummary::Clear:  return FLinearColor(1.00f, 0.86f, 0.48f, 1.0f);
+            case ELLCoreWeatherSummary::Cloudy: return FLinearColor(0.76f, 0.82f, 0.90f, 1.0f);
+            case ELLCoreWeatherSummary::Rain:   return FLinearColor(0.46f, 0.76f, 1.00f, 1.0f);
+            case ELLCoreWeatherSummary::Snow:   return FLinearColor(0.88f, 0.95f, 1.00f, 1.0f);
+            case ELLCoreWeatherSummary::Fog:    return FLinearColor(0.74f, 0.79f, 0.84f, 1.0f);
+            case ELLCoreWeatherSummary::Storm:  return FLinearColor(1.00f, 0.67f, 0.36f, 1.0f);
+            case ELLCoreWeatherSummary::Heat:   return FLinearColor(1.00f, 0.54f, 0.34f, 1.0f);
+            case ELLCoreWeatherSummary::Cold:   return FLinearColor(0.58f, 0.84f, 1.00f, 1.0f);
+        }
+        return FLinearColor(0.88f, 0.92f, 0.98f, 1.0f);
+    }
+
     UButton* BuildSpeedButton(
         UWidgetTree* WidgetTree,
         UHorizontalBox* Row,
@@ -77,14 +93,16 @@ void ULLObserverTimeWeatherOverlay::NativeConstruct()
         UVerticalBox::StaticClass(), TEXT("ObserverTimeWeatherContent"));
     StatusText = WidgetTree->ConstructWidget<UTextBlock>(
         UTextBlock::StaticClass(), TEXT("ObserverTimeWeatherStatus"));
+    WeatherText = WidgetTree->ConstructWidget<UTextBlock>(
+        UTextBlock::StaticClass(), TEXT("ObserverTimeWeatherWeather"));
     UHorizontalBox* SpeedRow = WidgetTree->ConstructWidget<UHorizontalBox>(
         UHorizontalBox::StaticClass(), TEXT("ObserverSpeedRow"));
 
     WidgetTree->RootWidget = RootCanvas;
     SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 
-    ControlBorder->SetPadding(FMargin(10.0f, 8.0f));
-    ControlBorder->SetBrushColor(FLinearColor(0.015f, 0.02f, 0.03f, 0.78f));
+    ControlBorder->SetPadding(FMargin(12.0f, 9.0f));
+    ControlBorder->SetBrushColor(FLinearColor(0.015f, 0.025f, 0.04f, 0.90f));
     ControlBorder->SetContent(Content);
 
     if (UCanvasPanelSlot* BorderSlot = RootCanvas->AddChildToCanvas(ControlBorder))
@@ -95,12 +113,20 @@ void ULLObserverTimeWeatherOverlay::NativeConstruct()
         BorderSlot->SetAutoSize(true);
     }
 
-    StatusText->SetColorAndOpacity(FSlateColor(FLinearColor(0.94f, 0.96f, 1.0f, 1.0f)));
+    StatusText->SetColorAndOpacity(FSlateColor(FLinearColor(0.96f, 0.98f, 1.0f, 1.0f)));
     StatusText->SetAutoWrapText(false);
     StatusText->SetVisibility(ESlateVisibility::HitTestInvisible);
     if (UVerticalBoxSlot* StatusSlot = Content->AddChildToVerticalBox(StatusText))
     {
-        StatusSlot->SetPadding(FMargin(4.0f, 0.0f, 4.0f, 6.0f));
+        StatusSlot->SetPadding(FMargin(4.0f, 0.0f, 4.0f, 2.0f));
+    }
+
+    WeatherText->SetColorAndOpacity(FSlateColor(FLinearColor(0.76f, 0.82f, 0.90f, 1.0f)));
+    WeatherText->SetAutoWrapText(false);
+    WeatherText->SetVisibility(ESlateVisibility::HitTestInvisible);
+    if (UVerticalBoxSlot* WeatherSlot = Content->AddChildToVerticalBox(WeatherText))
+    {
+        WeatherSlot->SetPadding(FMargin(4.0f, 0.0f, 4.0f, 7.0f));
     }
 
     if (UVerticalBoxSlot* SpeedSlot = Content->AddChildToVerticalBox(SpeedRow))
@@ -188,8 +214,13 @@ void ULLObserverTimeWeatherOverlay::RefreshStatus(bool bForce)
     {
         if (StatusText && (bForce || !bHasRenderedStatus || LastSpeedPreset != SpeedPreset))
         {
-            StatusText->SetText(FText::FromString(
-                FString::Printf(TEXT("LifeLens 준비 중 · %s"), *SpeedLabel(SpeedPreset))));
+            StatusText->SetText(FText::FromString(TEXT("LifeLens 준비 중")));
+            if (WeatherText)
+            {
+                WeatherText->SetText(FText::FromString(
+                    FString::Printf(TEXT("시뮬레이션 · %s"), *SpeedLabel(SpeedPreset))));
+                WeatherText->SetColorAndOpacity(FSlateColor(FLinearColor(0.68f, 0.75f, 0.84f, 1.0f)));
+            }
             RefreshButtonState(SpeedPreset);
             LastSpeedPreset = SpeedPreset;
             bHasRenderedStatus = true;
@@ -213,7 +244,7 @@ void ULLObserverTimeWeatherOverlay::RefreshStatus(bool bForce)
         return;
     }
 
-    const FString WeatherText = Weather.bAvailable
+    const FString WeatherLine = Weather.bAvailable
         ? FString::Printf(TEXT("%s %.1f°C"), *WeatherLabel(Weather.WeatherSummary), Weather.AirTemperatureC)
         : FString(TEXT("날씨 준비 중"));
     const FString DayPhase = Time.bIsNight ? TEXT("밤") : TEXT("낮");
@@ -223,15 +254,22 @@ void ULLObserverTimeWeatherOverlay::RefreshStatus(bool bForce)
     if (StatusText)
     {
         StatusText->SetText(FText::FromString(FString::Printf(
-            TEXT("%lld년 %d일 · %02d:%02d · %s · %s · %s · %s"),
+            TEXT("%lld년 %d일 · %02d:%02d · %s · %s"),
             static_cast<long long>(DisplayYear),
             DisplayDay,
             Time.HourOfDay,
             Time.MinuteOfHour,
             *SeasonLabel(Time.Season),
-            *DayPhase,
-            *WeatherText,
-            *SpeedLabel(SpeedPreset))));
+            *DayPhase)));
+    }
+    if (WeatherText)
+    {
+        WeatherText->SetText(FText::FromString(
+            WeatherLine + TEXT(" · ") + SpeedLabel(SpeedPreset)));
+        WeatherText->SetColorAndOpacity(FSlateColor(
+            Weather.bAvailable
+                ? WeatherColor(Weather.WeatherSummary)
+                : FLinearColor(0.68f, 0.75f, 0.84f, 1.0f)));
     }
 
     RefreshButtonState(SpeedPreset);
@@ -245,8 +283,8 @@ void ULLObserverTimeWeatherOverlay::RefreshStatus(bool bForce)
 
 void ULLObserverTimeWeatherOverlay::RefreshButtonState(ELLSimulationSpeedPreset Preset)
 {
-    const FLinearColor Active(0.12f, 0.42f, 0.72f, 0.95f);
-    const FLinearColor Inactive(0.12f, 0.14f, 0.18f, 0.92f);
+    const FLinearColor Active(0.10f, 0.46f, 0.78f, 1.0f);
+    const FLinearColor Inactive(0.08f, 0.11f, 0.16f, 0.94f);
 
     const auto Apply = [Preset, &Active, &Inactive](UButton* Button, ELLSimulationSpeedPreset ButtonPreset)
     {

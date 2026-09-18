@@ -46,6 +46,7 @@ private:
 
     UPROPERTY(Transient) TObjectPtr<UBorder> ControlBorder;
     UPROPERTY(Transient) TObjectPtr<UTextBlock> StatusText;
+    UPROPERTY(Transient) TObjectPtr<UTextBlock> WeatherText;
     UPROPERTY(Transient) TObjectPtr<UButton> PauseButton;
     UPROPERTY(Transient) TObjectPtr<UButton> ObserveButton;
     UPROPERTY(Transient) TObjectPtr<UButton> FastButton;
