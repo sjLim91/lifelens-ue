@@ -96,9 +96,23 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
     Ground->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     Ground->SetCanEverAffectNavigation(false);
 
+    FarGround = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FarVisualGround"));
+    FarGround->SetupAttachment(Root);
+    FarGround->SetMobility(EComponentMobility::Movable);
+    FarGround->SetStaticMesh(GroundMesh);
+    FarGround->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    FarGround->SetCanEverAffectNavigation(false);
+    FarGround->SetCastShadow(false);
+
     for (int32 Index = 0; Index < TreeMeshes.Num(); ++Index)
     {
         TreeInstances.Add(AddInstancedComponent(*FString::Printf(TEXT("Trees_%d"), Index), TreeMeshes[Index], TreeCullStartUU, TreeCullEndUU, true));
+        FarTreeInstances.Add(AddInstancedComponent(
+            *FString::Printf(TEXT("FarTrees_%d"), Index),
+            TreeMeshes[Index],
+            FarDressingCullStartUU,
+            FarDressingCullEndUU,
+            false));
     }
     for (int32 Index = 0; Index < ShrubMeshes.Num(); ++Index)
     {
@@ -111,6 +125,12 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
     for (int32 Index = 0; Index < RockMeshes.Num(); ++Index)
     {
         RockInstances.Add(AddInstancedComponent(*FString::Printf(TEXT("Rocks_%d"), Index), RockMeshes[Index], SmallCullStartUU, TreeCullEndUU, false));
+        FarRockInstances.Add(AddInstancedComponent(
+            *FString::Printf(TEXT("FarRocks_%d"), Index),
+            RockMeshes[Index],
+            FarDressingCullStartUU,
+            FarDressingCullEndUU,
+            false));
     }
 
     FacilityFoundationInstances = AddInstancedComponent(TEXT("FacilityFoundations"), GroundMesh, FacilityCullStartUU, FacilityCullEndUU, true);
@@ -165,6 +185,8 @@ void ALLWorldPresentationActor::ClearInstances()
     for (UHierarchicalInstancedStaticMeshComponent* Component : ShrubInstances) { if (Component) { Component->ClearInstances(); } }
     for (UHierarchicalInstancedStaticMeshComponent* Component : GrassInstances) { if (Component) { Component->ClearInstances(); } }
     for (UHierarchicalInstancedStaticMeshComponent* Component : RockInstances) { if (Component) { Component->ClearInstances(); } }
+    for (UHierarchicalInstancedStaticMeshComponent* Component : FarTreeInstances) { if (Component) { Component->ClearInstances(); } }
+    for (UHierarchicalInstancedStaticMeshComponent* Component : FarRockInstances) { if (Component) { Component->ClearInstances(); } }
     PlacedTrees = 0;
     PlacedShrubs = 0;
     PlacedGrass = 0;
@@ -574,16 +596,154 @@ UMaterialInterface* ALLWorldPresentationActor::GroundMaterialForChunk(const FLLC
 void ALLWorldPresentationActor::BuildGround(const FLLCoreWorldGenerationObservation& World)
 {
     if (!Ground || !GroundMesh) { return; }
+
     const int32 Rings = FMath::Clamp(
-        FMath::CeilToInt(FMath::Sqrt(static_cast<float>(FMath::Max(1, World.MaterializedChunkCount)))), 1, 9);
-    const float SpanUU = LLWorldSpatialContract::ChunkSpanUU * (2.0f * Rings + 1.0f);
+        FMath::CeilToInt(FMath::Sqrt(static_cast<float>(
+            FMath::Max(1, World.MaterializedChunkCount)))),
+        1,
+        9);
+    const float ActiveSpanUU =
+        LLWorldSpatialContract::ChunkSpanUU * (2.0f * Rings + 1.0f);
+    const float FarSpanUU = FMath::Max(
+        ActiveSpanUU * FMath::Max(2.0f, FarGroundActiveSpanMultiplier),
+        LLWorldSpatialContract::ChunkSpanUU
+            * FMath::Max(16.0f, FarGroundMinSpanChunks));
+
     const float Thickness = 20.0f;
     Ground->SetRelativeLocation(FVector(0.0f, 0.0f, -Thickness * 0.5f));
     Ground->SetRelativeScale3D(FVector(
-        SpanUU / LLWorldSpatialContract::EngineCubeSideUU,
-        SpanUU / LLWorldSpatialContract::EngineCubeSideUU,
+        ActiveSpanUU / LLWorldSpatialContract::EngineCubeSideUU,
+        ActiveSpanUU / LLWorldSpatialContract::EngineCubeSideUU,
         Thickness / LLWorldSpatialContract::EngineCubeSideUU));
-    if (UMaterialInterface* Material = GroundMaterialForChunk(World.InitialChunk)) { Ground->SetMaterial(0, Material); }
+
+    UMaterialInterface* Material = GroundMaterialForChunk(World.InitialChunk);
+    if (Material)
+    {
+        Ground->SetMaterial(0, Material);
+    }
+
+    if (FarGround)
+    {
+        // The far visual surface sits just under the authoritative/materialized
+        // presentation surface. Its overlap removes the visible square edge
+        // without adding collision or simulation authority outside Core chunks.
+        const float FarThickness = 18.0f;
+        FarGround->SetRelativeLocation(FVector(
+            0.0f,
+            0.0f,
+            -FarThickness * 0.5f - FMath::Max(0.0f, FarGroundDropUU)));
+        FarGround->SetRelativeScale3D(FVector(
+            FarSpanUU / LLWorldSpatialContract::EngineCubeSideUU,
+            FarSpanUU / LLWorldSpatialContract::EngineCubeSideUU,
+            FarThickness / LLWorldSpatialContract::EngineCubeSideUU));
+        if (Material)
+        {
+            FarGround->SetMaterial(0, Material);
+        }
+    }
+
+    BuildFarEnvironment(World, ActiveSpanUU, FarSpanUU);
+}
+
+void ALLWorldPresentationActor::BuildFarEnvironment(
+    const FLLCoreWorldGenerationObservation& World,
+    float ActiveGroundSpanUU,
+    float FarGroundSpanUU)
+{
+    if (FarGroundSpanUU <= ActiveGroundSpanUU)
+    {
+        return;
+    }
+
+    const float Fertility = FMath::Clamp(
+        World.InitialChunk.FertilityPotential,
+        0.0f,
+        1.0f);
+    const float Moisture = FMath::Clamp(
+        World.InitialChunk.Moisture,
+        0.0f,
+        1.0f);
+    const float Traversal = FMath::Clamp(
+        World.InitialChunk.TraversalEase,
+        0.0f,
+        1.0f);
+
+    const float TreeSuitability = FMath::Clamp(
+        Fertility * (0.35f + 0.65f * Moisture),
+        0.0f,
+        1.0f);
+    const float RockSuitability = FMath::Clamp(
+        (1.0f - Fertility) * 0.7f + (1.0f - Traversal) * 0.3f,
+        0.0f,
+        1.0f);
+
+    const int32 TreeCount = FMath::Clamp(
+        FMath::RoundToInt(TreeSuitability * MaxFarTreeInstances),
+        0,
+        MaxFarTreeInstances);
+    const int32 RockCount = FMath::Clamp(
+        FMath::RoundToInt((0.25f + 0.75f * RockSuitability) * MaxFarRockInstances),
+        0,
+        MaxFarRockInstances);
+
+    const float InnerRadius = FMath::Max(
+        ActiveGroundSpanUU * 0.58f,
+        LLWorldSpatialContract::ChunkSpanUU * 2.0f);
+    const float OuterRadius = FMath::Max(
+        InnerRadius + LLWorldSpatialContract::ChunkSpanUU,
+        FarGroundSpanUU * FMath::Clamp(
+            FarDressingOuterRadiusFraction,
+            0.2f,
+            0.48f));
+
+    uint32 State = ChunkHash(
+        World.WorldSeed,
+        World.GenerationVersion,
+        World.InitialChunkX ^ 0x5A5A,
+        World.InitialChunkY ^ 0xA5A5);
+
+    auto PlaceRing = [&](TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>>& Components,
+                         int32 Count,
+                         float MinScale,
+                         float MaxScale,
+                         float HeightScale)
+    {
+        if (Components.Num() == 0 || Count <= 0)
+        {
+            return;
+        }
+
+        for (int32 Index = 0; Index < Count; ++Index)
+        {
+            const float Angle = HashUnit(State) * 2.0f * PI;
+            // sqrt keeps a broad but visually denser outer horizon belt.
+            const float RadiusT = FMath::Sqrt(HashUnit(State));
+            const float Radius = FMath::Lerp(InnerRadius, OuterRadius, RadiusT);
+            const float Yaw = HashUnit(State) * 360.0f;
+            const float Scale = FMath::Lerp(MinScale, MaxScale, HashUnit(State));
+            const int32 Slot =
+                static_cast<int32>(HashUnit(State) * Components.Num())
+                % Components.Num();
+
+            if (UHierarchicalInstancedStaticMeshComponent* Component = Components[Slot])
+            {
+                const FVector Location(
+                    FMath::Cos(Angle) * Radius,
+                    FMath::Sin(Angle) * Radius,
+                    -FMath::Max(0.0f, FarGroundDropUU));
+                Component->AddInstance(FTransform(
+                    FRotator(0.0f, Yaw, 0.0f),
+                    Location,
+                    FVector(Scale, Scale, Scale * HeightScale)));
+            }
+        }
+    };
+
+    // These are backdrop silhouettes only: no shadow, collision, nav or Core
+    // resource identity. Real nearby dressing still comes exclusively from
+    // materialized authoritative chunks.
+    PlaceRing(FarTreeInstances, TreeCount, 0.75f, 1.45f, 1.15f);
+    PlaceRing(FarRockInstances, RockCount, 0.65f, 1.55f, 0.85f);
 }
 
 void ALLWorldPresentationActor::BuildChunkDressing(const FLLCoreWorldGenerationObservation& World, const FLLCoreNaturalChunkObservation& Chunk)
@@ -1422,11 +1582,12 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         + (FacilityAccentInstances ? FacilityAccentInstances->GetInstanceCount() : 0);
 
     UE_LOG(LogTemp, Log,
-        TEXT("LLWorldPresentation seed=%lld gen=%d chunks=%d natural=%d/%d/%d/%d facilities=%d facilityInstances=%d thinned=%d sightline=%d/%d dynamicCanopy=%d core=%.0f activity=%.0f ground=%s"),
+        TEXT("LLWorldPresentation seed=%lld gen=%d chunks=%d natural=%d/%d/%d/%d facilities=%d facilityInstances=%d thinned=%d sightline=%d/%d dynamicCanopy=%d core=%.0f activity=%.0f ground=%s farGround=%s"),
         World.WorldSeed, World.GenerationVersion, World.MaterializedChunkCount,
         TreeInstanceCount, ShrubInstanceCount, GrassInstanceCount, RockInstanceCount,
         Civilization.FacilityCount, FacilityInstanceCount,
         SuppressedDressing, SightlineCleared, bInitialViewCaptured ? 1 : 0, DynamicCanopySuppressed,
         CoreClearRadiusUU, ActivityRadiusUU,
-        (Ground && Ground->GetStaticMesh()) ? TEXT("yes") : TEXT("no"));
+        (Ground && Ground->GetStaticMesh()) ? TEXT("yes") : TEXT("no"),
+        (FarGround && FarGround->GetStaticMesh()) ? TEXT("yes") : TEXT("no"));
 }
