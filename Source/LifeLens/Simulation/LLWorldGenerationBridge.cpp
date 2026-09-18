@@ -1,6 +1,7 @@
 #include "Simulation/LLCoreBridgeSubsystem.h"
 
 #include "lifelens/Civilization.h"
+#include "lifelens/Hydrology.h"
 #include "lifelens/NaturalPhysicalObstacle.h"
 #include "lifelens/NaturalWorldChunk.h"
 #include "lifelens/Simulation.h"
@@ -19,6 +20,57 @@ const lifelens::ResourceNode* FindResourceNode(
         }
     }
     return nullptr;
+}
+
+ELLCoreSurfaceWaterKind ToUnrealSurfaceWaterKind(lifelens::SurfaceWaterKind Kind)
+{
+    switch (Kind)
+    {
+    case lifelens::SurfaceWaterKind::Spring: return ELLCoreSurfaceWaterKind::Spring;
+    case lifelens::SurfaceWaterKind::Stream: return ELLCoreSurfaceWaterKind::Stream;
+    case lifelens::SurfaceWaterKind::River: return ELLCoreSurfaceWaterKind::River;
+    case lifelens::SurfaceWaterKind::Lake: return ELLCoreSurfaceWaterKind::Lake;
+    case lifelens::SurfaceWaterKind::Wetland: return ELLCoreSurfaceWaterKind::Wetland;
+    case lifelens::SurfaceWaterKind::Coast: return ELLCoreSurfaceWaterKind::Coast;
+    case lifelens::SurfaceWaterKind::Ocean: return ELLCoreSurfaceWaterKind::Ocean;
+    case lifelens::SurfaceWaterKind::None:
+    default:
+        return ELLCoreSurfaceWaterKind::None;
+    }
+}
+
+ELLCoreWaterSalinity ToUnrealWaterSalinity(lifelens::WaterSalinity Salinity)
+{
+    switch (Salinity)
+    {
+    case lifelens::WaterSalinity::Brackish: return ELLCoreWaterSalinity::Brackish;
+    case lifelens::WaterSalinity::Salt: return ELLCoreWaterSalinity::Salt;
+    case lifelens::WaterSalinity::Fresh:
+    default:
+        return ELLCoreWaterSalinity::Fresh;
+    }
+}
+
+void FillHydrologyObservation(
+    const lifelens::HydrologyFacts& Facts,
+    FLLCoreHydrologyObservation& Out)
+{
+    Out = FLLCoreHydrologyObservation{};
+    Out.bAvailable = true;
+    Out.ChunkX = Facts.coord.x;
+    Out.ChunkY = Facts.coord.y;
+    Out.SurfaceKind = ToUnrealSurfaceWaterKind(Facts.surfaceKind);
+    Out.Salinity = ToUnrealWaterSalinity(Facts.salinity);
+    Out.SurfaceWaterId = static_cast<int64>(Facts.surfaceWaterId);
+    Out.SurfaceAvailability = static_cast<float>(Facts.surfaceAvailability);
+    Out.FlowPotential = static_cast<float>(Facts.flowPotential);
+    Out.GroundwaterPotential = static_cast<float>(Facts.groundwaterPotential);
+    Out.RechargePotential = static_cast<float>(Facts.rechargePotential);
+    Out.RunoffPotential = static_cast<float>(Facts.runoffPotential);
+    Out.bHasDownstream = Facts.hasDownstream;
+    Out.DownstreamChunkX = Facts.downstream.x;
+    Out.DownstreamChunkY = Facts.downstream.y;
+    Out.bFreshSurfaceWater = lifelens::isFreshSurfaceWater(Facts);
 }
 
 void FillNaturalChunkObservation(
@@ -164,5 +216,57 @@ bool ULLCoreBridgeSubsystem::GetNaturalChunkObservation(
     }
 
     FillNaturalChunkObservation(World, *Chunk, OutObservation);
+    return true;
+}
+
+TArray<FLLCoreHydrologyObservation> ULLCoreBridgeSubsystem::GetMaterializedHydrologyObservations() const
+{
+    TArray<FLLCoreHydrologyObservation> Result;
+    if (!CoreSimulation)
+    {
+        return Result;
+    }
+
+    const lifelens::World& World = CoreSimulation->world();
+    Result.Reserve(static_cast<int32>(FMath::Min<std::size_t>(
+        World.generatedNaturalChunks.size(),
+        static_cast<std::size_t>(MAX_int32))));
+
+    for (const lifelens::GeneratedNaturalChunk& Chunk : World.generatedNaturalChunks)
+    {
+        const lifelens::HydrologyFacts Facts =
+            lifelens::deriveHydrologyFacts(World.genesisIdentity(), Chunk.coord);
+        FLLCoreHydrologyObservation Observation;
+        FillHydrologyObservation(Facts, Observation);
+        Result.Add(MoveTemp(Observation));
+    }
+    return Result;
+}
+
+bool ULLCoreBridgeSubsystem::GetHydrologyObservation(
+    int32 ChunkX,
+    int32 ChunkY,
+    FLLCoreHydrologyObservation& OutObservation) const
+{
+    OutObservation = FLLCoreHydrologyObservation{};
+    if (!CoreSimulation)
+    {
+        return false;
+    }
+
+    const lifelens::World& World = CoreSimulation->world();
+    const lifelens::ChunkCoord Coord{ChunkX, ChunkY};
+
+    // Hydrology is deterministic for any coordinate, but the Unreal Local
+    // Surface bridge intentionally exposes it only once Core has materialized
+    // that chunk. Regional/planetary LOD will get a separate contract later.
+    if (!World.findGeneratedNaturalChunk(Coord))
+    {
+        return false;
+    }
+
+    const lifelens::HydrologyFacts Facts =
+        lifelens::deriveHydrologyFacts(World.genesisIdentity(), Coord);
+    FillHydrologyObservation(Facts, OutObservation);
     return true;
 }
