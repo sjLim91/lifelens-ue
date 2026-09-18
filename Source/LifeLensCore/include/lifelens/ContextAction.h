@@ -119,6 +119,7 @@ inline int contextActionDurationTicks(const PendingContextAction& action)
                     case FacilityBuildAction::Plan: return 4;
                     case FacilityBuildAction::DeliverMaterial: return 4;
                     case FacilityBuildAction::Work: return 8;
+                    case FacilityBuildAction::Repair: return 7;
                     case FacilityBuildAction::Fuel: return 4;
                     case FacilityBuildAction::Ignite: return 6;
                     case FacilityBuildAction::CollectCharcoal: return 4;
@@ -195,6 +196,21 @@ inline bool resolveCivilizationContextTarget(
             }
             return false;
         case CivilizationIntent::Craft:
+            if(decision.facilityKind==FacilityKind::WorkSurface
+               && decision.facilityAction==FacilityBuildAction::None
+               && decision.facility!=0
+               && decision.hasFacilityTarget){
+                for(const auto& facility:world.facilities){
+                    if(facility.id!=decision.facility
+                       || facility.kind!=FacilityKind::WorkSurface
+                       || !facilityOperationalAndActive(facility)) continue;
+                    if(facility.pos.x!=decision.facilityTargetPos.x
+                       || facility.pos.y!=decision.facilityTargetPos.y) return false;
+                    outTarget=facility.pos;
+                    return true;
+                }
+                return false;
+            }
             if(isSettlementFoundationFacility(decision.facilityKind)
                && decision.facilityAction!=FacilityBuildAction::None){
                 if(!decision.hasFacilityTarget) return false;
@@ -211,11 +227,18 @@ inline bool resolveCivilizationContextTarget(
                 for(const auto& facility:world.facilities){
                     if(facility.id!=decision.facility
                        || facility.kind!=decision.facilityKind
-                       || !isSettlementFoundationFacility(facility.kind)
-                       || facility.state==FacilityState::Operational
-                       || facility.state==FacilityState::Ruined) continue;
+                       || !isSettlementFoundationFacility(facility.kind)) continue;
                     if(facility.pos.x!=decision.facilityTargetPos.x
                        || facility.pos.y!=decision.facilityTargetPos.y) return false;
+
+                    if(decision.facilityAction==FacilityBuildAction::Repair){
+                        if(!settlementFacilityNeedsMaintenance(facility)) return false;
+                        outTarget=facility.pos;
+                        return true;
+                    }
+
+                    if(facility.state==FacilityState::Operational
+                       || facility.state==FacilityState::Ruined) return false;
                     if(decision.facilityAction!=FacilityBuildAction::DeliverMaterial
                        && decision.facilityAction!=FacilityBuildAction::Work) return false;
                     outTarget=facility.pos;
@@ -333,7 +356,11 @@ inline bool civilizationContextRequiresSpatialTarget(const CivilizationUtilityDe
             || decision.experiment==ExperimentKind::SmeltCopperOre;
     }
     if(decision.intent==CivilizationIntent::Craft){
-        return (isSettlementFoundationFacility(decision.facilityKind)
+        return (decision.facilityKind==FacilityKind::WorkSurface
+                && decision.facilityAction==FacilityBuildAction::None
+                && decision.facility!=0
+                && decision.hasFacilityTarget)
+            || (isSettlementFoundationFacility(decision.facilityKind)
                 && decision.facilityAction!=FacilityBuildAction::None)
             || decision.technique==TechniqueId::DesignatedSanitationArea
             || decision.technique==TechniqueId::DugSanitationPit
