@@ -617,6 +617,19 @@ void ULLResidentMotionComponent::UpdateContextAnimationState(float DeltaTime)
         }
     }
 
+    // Core may open the work/use window on the same frame movement reaches its
+    // target while our visual speed is still easing down. Keep locomotion for
+    // those final frames instead of snapping directly from a walk cycle into a
+    // kneel/talk/use clip. Hauling is intentionally excluded because it is a
+    // travelling presentation and already delegates animation to locomotion.
+    if (DesiredMotion != ELLResidentContextMotion::None
+        && DesiredMotion != ELLResidentContextMotion::HaulPush
+        && SmoothedSpeed > ContextEnterSpeedThreshold)
+    {
+        DesiredMotion = ELLResidentContextMotion::None;
+        DesiredAnimation = nullptr;
+    }
+
     // Seated care owns authored enter/exit clips, so it is the only motion that
     // needs a transition state. Everything else is a plain looping clip swap.
     if (SeatedTransitionRemaining > 0.0f)
@@ -899,20 +912,17 @@ void ULLResidentMotionComponent::UpdateBodyOrientation(float DeltaTime)
     const AActor* Owner = GetOwner();
     const float OwnerYaw = Owner ? Owner->GetActorRotation().Yaw : SmoothedYaw;
 
-    if (ActiveContextMotion == ELLResidentContextMotion::SleepRest)
-    {
-        // The current imported standard pack has no dedicated lying clip.
-        // Rotate the complete appearance hierarchy only while WorldDirector has
-        // actually reached the authoritative sleep use point. The capsule,
-        // navigation position and Core state remain upright/unchanged.
-        Body->SetWorldRotation(FRotator(
-            0.0f,
-            OwnerYaw + MeshForwardYawOffsetDegrees,
-            90.0f));
-        return;
-    }
+    const bool bSleeping = ActiveContextMotion == ELLResidentContextMotion::SleepRest;
+    const float TargetSleepRoll = bSleeping ? 90.0f : 0.0f;
+    PresentedSleepRollDegrees = FMath::FInterpTo(
+        PresentedSleepRollDegrees,
+        TargetSleepRoll,
+        DeltaTime,
+        SleepPoseInterpSpeed);
 
-    float TargetYaw = SmoothedSpeed > 0.0f ? DesiredYaw : OwnerYaw;
+    float TargetYaw = bSleeping
+        ? OwnerYaw
+        : (SmoothedSpeed > 0.0f ? DesiredYaw : OwnerYaw);
 
     // Social/teaching/parenting work is much easier to read when participants
     // face one another. Only stationary interpersonal presentation may override
@@ -935,7 +945,10 @@ void ULLResidentMotionComponent::UpdateBodyOrientation(float DeltaTime)
         DeltaTime,
         YawInterpSpeed);
 
-    Body->SetWorldRotation(FRotator(0.0f, SmoothedYaw + MeshForwardYawOffsetDegrees, 0.0f));
+    Body->SetWorldRotation(FRotator(
+        0.0f,
+        SmoothedYaw + MeshForwardYawOffsetDegrees,
+        PresentedSleepRollDegrees));
 }
 
 void ULLResidentMotionComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
