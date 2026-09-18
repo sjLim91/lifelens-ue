@@ -131,6 +131,14 @@ private:
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera|Focus", meta=(ClampMin="0.0", ClampMax="0.35"))
     float ObservedResidentFocusLateralFraction = 0.12f;
 
+    // Look slightly ahead of a moving observed resident so travel direction is
+    // visible instead of pinning the resident to a static composition point.
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera|Focus", meta=(ClampMin="0.0", ClampMax="2.0"))
+    float ObservedResidentMovementLeadSeconds = 0.45f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera|Focus", meta=(ClampMin="0.0", ClampMax="1000.0"))
+    float ObservedResidentMaxMovementLeadUU = 180.0f;
+
     TWeakObjectPtr<ACameraActor> ObserverCamera;
     bool bCameraInitialized = false;
 
