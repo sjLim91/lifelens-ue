@@ -49,3 +49,48 @@ Reproducible headlessly with the editor closed:
 ```
 
 Original zips, extracted folders and licence screenshots live outside the repository under `<workspace>/assets_staging/` and are not committed.
+
+
+## Pack 3 — Poly Haven photoreal CC0 wave
+
+- Source: https://polyhaven.com
+- API: https://api.polyhaven.com
+- Licence: CC0 1.0 for assets.
+- Acquisition: `Tools/acquire_photoreal_environment_assets.py`.
+- Live API requests use the required project-specific User-Agent.
+- Original model/texture files remain outside Git under `LL_ASSET_STAGING/PolyHaven`.
+- Unreal import: `Content/Environment/Photoreal/Import/import_photoreal_nature.py`.
+- Unreal destination: `/Game/Environment/Photoreal/PolyHaven`.
+
+Curated photoreal pool:
+- `fir_sapling`
+- `pine_sapling_small`
+- `boulder_01`
+- `tree_stump_01`
+- `shrub_02`
+- `shrub_03`
+- `weed_plant_02`
+- `dead_tree_trunk`
+- `forest_floor`
+- `forrest_ground_01`
+- `mossy_rock`
+- `nature_reserve_forest`
+
+Initial automated import wave intentionally starts smaller:
+- `fir_sapling`
+- `pine_sapling_small`
+- `boulder_01`
+- `tree_stump_01`
+- `shrub_02`
+- `shrub_03`
+- `weed_plant_02`
+
+The first automated wave acquires 1K source textures to prove the end-to-end zero-cost
+download/import/commit path without repository bloat. The desktop target remains 2K+
+for later validated waves; Android quality is reduced through LOD/streaming rather than
+making the stylized fallback the production art direction.
+
+
+### LifeLens geometry/payload guard
+
+The baseline intentionally rejects ultra-heavy photogrammetry hero meshes when the selected model payload exceeds the per-asset budget. For example, high-detail multi-million-triangle trees are not an acceptable universal Android-first baseline merely because their textures are requested at 1K. Curated saplings/ground-cover assets are used until explicit PC-only/HLOD tiers are introduced.

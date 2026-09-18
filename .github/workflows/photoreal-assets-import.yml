@@ -1,0 +1,136 @@
+name: LifeLens Photoreal CC0 Asset Import
+
+on:
+  push:
+    branches:
+      - integration/photoreal-free-asset-pipeline-v2
+    paths:
+      - '.github/workflows/photoreal-assets-import.yml'
+      - 'Tools/acquire_photoreal_environment_assets.py'
+      - 'Content/Environment/Photoreal/Import/import_photoreal_nature.py'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lifelens-photoreal-import
+  cancel-in-progress: true
+
+jobs:
+  import-wave-1:
+    if: ${{ github.event.repository.private == false }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      UE_IMAGE: ghcr.io/epicgames/unreal-engine:dev-slim-5.6.0
+      UE_ROOT_IN_CONTAINER: /home/ue4/UnrealEngine
+      STAGING: ${{ github.workspace }}/assets_staging
+      DIAGNOSTICS: ${{ github.workspace }}/Diagnostics/PhotorealImport
+
+    steps:
+      - name: Checkout asset branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Acquire compact CC0 photoreal wave
+        shell: bash
+        run: |
+          set -euo pipefail
+          python Tools/acquire_photoreal_environment_assets.py \
+            --staging "$STAGING" \
+            --resolution 1k \
+            --asset fir_sapling \
+            --asset pine_sapling_small \
+            --asset boulder_01 \
+            --asset tree_stump_01 \
+            --asset shrub_02 \
+            --asset shrub_03 \
+            --asset weed_plant_02
+          du -sh "$STAGING" || true
+
+      - name: Preflight Epic GHCR credential
+        shell: bash
+        env:
+          EPIC_GHCR_PAT: ${{ secrets.EPIC_GHCR_PAT }}
+        run: |
+          set -euo pipefail
+          test -n "$EPIC_GHCR_PAT" || { echo 'EPIC_GHCR_PAT secret is missing'; exit 91; }
+          echo "$EPIC_GHCR_PAT" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+
+      - name: Reclaim disk and pull Unreal 5.6
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL || true
+          sudo apt-get clean || true
+          sudo docker system prune -af || true
+          docker pull "$UE_IMAGE"
+          df -h /
+
+      - name: Compile LifeLensEditor module for headless import
+        timeout-minutes: 35
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/Binaries" "$GITHUB_WORKSPACE/Intermediate" "$DIAGNOSTICS"
+          sudo chmod -R a+rwX "$GITHUB_WORKSPACE"
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -w "$UE_ROOT_IN_CONTAINER" \
+            "$UE_IMAGE" \
+            bash -lc './Engine/Build/BatchFiles/Linux/Build.sh LifeLensEditor Linux Development /workspace/LifeLens.uproject -WaitMutex -NoEngineChanges' \
+            2>&1 | tee "$DIAGNOSTICS/editor-compile.log"
+          test -d "$GITHUB_WORKSPACE/Binaries/Linux"
+          find "$GITHUB_WORKSPACE/Binaries/Linux" -maxdepth 2 -type f -printf '%p %s bytes\n' | sort | head -100
+
+      - name: Headless Unreal import
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo chmod -R a+rwX "$GITHUB_WORKSPACE"
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -e LL_ASSET_STAGING=/workspace/assets_staging \
+            -w "$UE_ROOT_IN_CONTAINER" \
+            "$UE_IMAGE" \
+            bash -lc './Engine/Binaries/Linux/UnrealEditor-Cmd /workspace/LifeLens.uproject \
+              -run=pythonscript \
+              -script=/workspace/Content/Environment/Photoreal/Import/import_photoreal_nature.py \
+              -EnablePlugins=PythonScriptPlugin -nullrhi -unattended -nopause -nosplash -stdout -FullStdOutLogOutput'
+          test -d "$GITHUB_WORKSPACE/Content/Environment/Photoreal/PolyHaven"
+          find "$GITHUB_WORKSPACE/Content/Environment/Photoreal/PolyHaven" -type f -maxdepth 8 -print | head -100
+
+      - name: Guard repository file size
+        shell: bash
+        run: |
+          set -euo pipefail
+          oversize="$(find Content/Environment/Photoreal/PolyHaven -type f -size +95M -print -quit || true)"
+          if [ -n "$oversize" ]; then
+            echo "Imported file exceeds safe GitHub size budget: $oversize"
+            exit 92
+          fi
+
+      - name: Commit imported Unreal assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "LifeLens Asset Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add Content/Environment/Photoreal/PolyHaven
+          if git diff --cached --quiet; then
+            echo "No new imported assets"
+            exit 0
+          fi
+          git commit -m "Import CC0 photoreal environment wave 1 [skip ci]"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+
+      - name: Upload photoreal import diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: LifeLens-Photoreal-Import-Diagnostics
+          path: Diagnostics/PhotorealImport/
+          if-no-files-found: ignore
+          retention-days: 7

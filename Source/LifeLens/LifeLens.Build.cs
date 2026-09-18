@@ -38,7 +38,11 @@ public class LifeLens : ModuleRules
         PrivateDependencyModuleNames.AddRange(new string[]
         {
             "Slate",
-            "SlateCore"
+            "SlateCore",
+            // FDisplayMetrics::RebuildDisplayMetrics is implemented by
+            // ApplicationCore. The game target linked transitively before, but
+            // LifeLensEditor requires the explicit module dependency.
+            "ApplicationCore"
         });
     }
 }
