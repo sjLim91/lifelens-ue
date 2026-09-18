@@ -256,6 +256,7 @@ void ULLResidentPresentationComponent::RefreshResidentData()
     {
         LifeStage = Data.LifeStage;
         Sex = Data.Sex;
+        AgeYears = Data.AgeYears;
         DisplayName = Data.DisplayName;
         const int32 StageIndex = FMath::Clamp(static_cast<int32>(LifeStage), 0, 4);
         StageFactor = StageHeightFactor[StageIndex];
@@ -431,12 +432,12 @@ FString ULLResidentPresentationComponent::LifeStageBadge(ELLLifeStage Stage)
 {
     switch (Stage)
     {
-        case ELLLifeStage::Infant: return TEXT("Infant");
-        case ELLLifeStage::Child:  return TEXT("Child");
-        case ELLLifeStage::Teen:   return TEXT("Teen");
-        case ELLLifeStage::Elder:  return TEXT("Elder");
+        case ELLLifeStage::Infant: return TEXT("영아");
+        case ELLLifeStage::Child:  return TEXT("아동");
+        case ELLLifeStage::Teen:   return TEXT("청소년");
+        case ELLLifeStage::Elder:  return TEXT("노년");
         case ELLLifeStage::Adult:
-        default:                   return TEXT("Adult");
+        default:                   return TEXT("성인");
     }
 }
 
@@ -490,9 +491,15 @@ void ULLResidentPresentationComponent::UpdateLabel()
         // focus range; unselected residents only show it up close to reduce
         // world-space text clutter.
         const bool bShowIdentityBadge = bSelected || Distance <= LabelNearDistance;
-        const FString Wanted = bShowIdentityBadge
-            ? DisplayName + TEXT(" · ") + LifeStageBadge(LifeStage)
-            : DisplayName;
+        FString Wanted = DisplayName;
+        if (bShowIdentityBadge)
+        {
+            Wanted += TEXT(" · ") + LifeStageBadge(LifeStage);
+            if (bSelected)
+            {
+                Wanted += FString::Printf(TEXT(" · %d세"), FMath::Max(0, AgeYears));
+            }
+        }
         if (!Label->Text.ToString().Equals(Wanted))
         {
             Label->SetText(FText::FromString(Wanted));
