@@ -27,6 +27,12 @@ class LIFELENS_API ULLLifecycleEventOverlay : public UUserWidget
 protected:
     virtual void NativeConstruct() override;
     virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
+    virtual FReply NativeOnMouseButtonDown(
+        const FGeometry& InGeometry,
+        const FPointerEvent& InMouseEvent) override;
+    virtual FReply NativeOnTouchStarted(
+        const FGeometry& InGeometry,
+        const FPointerEvent& InGestureEvent) override;
 
 private:
     struct FResidentVisualState
@@ -61,6 +67,7 @@ private:
     void PushNotice(const FString& Text, FGuid SubjectResidentId = FGuid(),
                     FGuid RelatedResidentId = FGuid(), int64 SimulationMinute = 0);
     void RefreshNoticeWidgets();
+    FReply HandleNoticePointer(const FVector2D& ScreenPosition);
     static FString FormatObservedMoment(int64 SimulationMinute);
 
     static FString LifeStageLabel(ELLCoreLifeStage Stage);
@@ -90,6 +97,10 @@ private:
     TSet<FString> PreviousPregnancyPairs;
     TMap<FString, FRomanceVisualState> PreviousRomancePairs;
     TArray<FTransientNotice> Notices;
+
+    UPROPERTY(Transient)
+    TArray<TObjectPtr<UBorder>> NoticeHitBorders;
+
     TMap<FGuid, TArray<FString>> ObservedLifeHistory;
 
     int64 LastObservedSimulationMinute = -1;
