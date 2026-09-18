@@ -43,6 +43,7 @@ enum class ELLCoreFacilityBuildAction : uint8
     Plan,
     DeliverMaterial,
     Work,
+    Repair,
     Fuel,
     Ignite,
     CollectCharcoal,
