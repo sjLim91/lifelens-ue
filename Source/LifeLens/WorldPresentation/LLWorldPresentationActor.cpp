@@ -237,6 +237,63 @@ FVector2D ALLWorldPresentationActor::SettlementReferenceUU(const FLLCoreWorldGen
     return FVector2D(ChunkOffset.X, ChunkOffset.Y);
 }
 
+float ALLWorldPresentationActor::FacilityDressingKeepFactor(
+    const FVector2D& LocationUU,
+    ELLDressingLayer Layer) const
+{
+    if (Layer == ELLDressingLayer::GroundDetail
+        || CachedFacilityReadabilityCentersUU.Num() == 0)
+    {
+        return 1.0f;
+    }
+
+    const float ClearRadius = FMath::Max(0.0f, FacilityClearRadiusUU);
+    const float ActivityRadius = FMath::Max(ClearRadius, FacilityActivityRadiusUU);
+    if (ActivityRadius <= KINDA_SMALL_NUMBER)
+    {
+        return 1.0f;
+    }
+
+    float NearestDistanceSq = TNumericLimits<float>::Max();
+    for (const FVector2D& FacilityCenter : CachedFacilityReadabilityCentersUU)
+    {
+        NearestDistanceSq = FMath::Min(
+            NearestDistanceSq,
+            FVector2D::DistSquared(LocationUU, FacilityCenter));
+    }
+    const float Distance = FMath::Sqrt(NearestDistanceSq);
+    if (Distance >= ActivityRadius)
+    {
+        return 1.0f;
+    }
+
+    const bool bCanopy = Layer == ELLDressingLayer::Canopy;
+    // Local facility envelopes are intentionally softer than the original
+    // settlement core so an expanding town still feels embedded in nature.
+    const float BaseCoreKeep = FMath::Clamp(
+        bCanopy ? CoreZoneCanopyKeep : CoreZoneUndergrowthKeep,
+        0.0f,
+        1.0f);
+    const float LocalCoreKeep = FMath::Clamp(
+        BaseCoreKeep + (bCanopy ? 0.06f : 0.10f),
+        0.0f,
+        1.0f);
+    if (Distance <= ClearRadius)
+    {
+        return LocalCoreKeep;
+    }
+
+    const float Band = FMath::Max(ActivityRadius - ClearRadius, KINDA_SMALL_NUMBER);
+    const float Progress = FMath::Clamp((Distance - ClearRadius) / Band, 0.0f, 1.0f);
+    const float Exponent = FMath::Max(
+        1.0f,
+        bCanopy ? CanopyRecoveryExponent : UndergrowthRecoveryExponent);
+    return FMath::Lerp(
+        LocalCoreKeep,
+        1.0f,
+        FMath::Pow(Progress, Exponent));
+}
+
 float ALLWorldPresentationActor::AmbientDressingKeepFactor(const FVector2D& LocationUU, ELLDressingLayer Layer) const
 {
     // Ground detail is low enough that it never hides a resident.
@@ -245,17 +302,29 @@ float ALLWorldPresentationActor::AmbientDressingKeepFactor(const FVector2D& Loca
     const float CoreRadius = FMath::Max(0.0f, CoreClearRadiusUU);
     const float ActivityRadius = FMath::Max(CoreRadius, ActivityRadiusUU);
     const float Distance = (LocationUU - CachedSettlementReferenceUU).Size();
-    if (Distance >= ActivityRadius || ActivityRadius <= KINDA_SMALL_NUMBER) { return 1.0f; }
 
     const bool bCanopy = Layer == ELLDressingLayer::Canopy;
     const float CoreKeep = FMath::Clamp(bCanopy ? CoreZoneCanopyKeep : CoreZoneUndergrowthKeep, 0.0f, 1.0f);
-    if (Distance <= CoreRadius) { return CoreKeep; }
+    float SettlementKeep = 1.0f;
+    if (ActivityRadius > KINDA_SMALL_NUMBER && Distance < ActivityRadius)
+    {
+        if (Distance <= CoreRadius)
+        {
+            SettlementKeep = CoreKeep;
+        }
+        else
+        {
+            // Activity zone: restore density with distance, canopy last.
+            const float Band = FMath::Max(ActivityRadius - CoreRadius, KINDA_SMALL_NUMBER);
+            const float Progress = FMath::Clamp((Distance - CoreRadius) / Band, 0.0f, 1.0f);
+            const float Exponent = FMath::Max(1.0f, bCanopy ? CanopyRecoveryExponent : UndergrowthRecoveryExponent);
+            SettlementKeep = FMath::Lerp(CoreKeep, 1.0f, FMath::Pow(Progress, Exponent));
+        }
+    }
 
-    // Activity zone: restore density with distance, canopy last.
-    const float Band = FMath::Max(ActivityRadius - CoreRadius, KINDA_SMALL_NUMBER);
-    const float Progress = FMath::Clamp((Distance - CoreRadius) / Band, 0.0f, 1.0f);
-    const float Exponent = FMath::Max(1.0f, bCanopy ? CanopyRecoveryExponent : UndergrowthRecoveryExponent);
-    return FMath::Lerp(CoreKeep, 1.0f, FMath::Pow(Progress, Exponent));
+    return FMath::Min(
+        SettlementKeep,
+        FacilityDressingKeepFactor(LocationUU, Layer));
 }
 
 bool ALLWorldPresentationActor::CaptureInitialViewOrigin()
@@ -443,17 +512,43 @@ float ALLWorldPresentationActor::InitialSightlineKeepFactor(const FVector2D& Loc
 float ALLWorldPresentationActor::ResourcePatchScaleFactor(const FVector2D& LocationUU) const
 {
     // An authoritative resource is never removed for readability; inside the
-    // settlement it is only drawn smaller.
+    // settlement or immediately beside a real facility it is only drawn smaller.
     const float Distance = (LocationUU - CachedSettlementReferenceUU).Size();
+    float Scale = 1.0f;
     if (Distance <= FMath::Max(0.0f, CoreClearRadiusUU))
     {
-        return FMath::Clamp(CoreZoneResourceScale, 0.1f, 1.0f);
+        Scale = FMath::Clamp(CoreZoneResourceScale, 0.1f, 1.0f);
     }
-    if (Distance <= FMath::Max(CoreClearRadiusUU, ActivityRadiusUU))
+    else if (Distance <= FMath::Max(CoreClearRadiusUU, ActivityRadiusUU))
     {
-        return FMath::Clamp(ActivityZoneResourceScale, 0.1f, 1.0f);
+        Scale = FMath::Clamp(ActivityZoneResourceScale, 0.1f, 1.0f);
     }
-    return 1.0f;
+
+    if (CachedFacilityReadabilityCentersUU.Num() > 0)
+    {
+        float NearestDistanceSq = TNumericLimits<float>::Max();
+        for (const FVector2D& FacilityCenter : CachedFacilityReadabilityCentersUU)
+        {
+            NearestDistanceSq = FMath::Min(
+                NearestDistanceSq,
+                FVector2D::DistSquared(LocationUU, FacilityCenter));
+        }
+        const float FacilityDistance = FMath::Sqrt(NearestDistanceSq);
+        if (FacilityDistance <= FMath::Max(0.0f, FacilityClearRadiusUU))
+        {
+            Scale = FMath::Min(
+                Scale,
+                FMath::Clamp(CoreZoneResourceScale + 0.15f, 0.1f, 1.0f));
+        }
+        else if (FacilityDistance <= FMath::Max(FacilityClearRadiusUU, FacilityActivityRadiusUU))
+        {
+            Scale = FMath::Min(
+                Scale,
+                FMath::Clamp(ActivityZoneResourceScale, 0.1f, 1.0f));
+        }
+    }
+
+    return Scale;
 }
 
 FVector ALLWorldPresentationActor::ChunkOriginUU(const FLLCoreWorldGenerationObservation& World, int32 ChunkX, int32 ChunkY) const
@@ -608,6 +703,42 @@ void ALLWorldPresentationActor::BuildChunkDressing(const FLLCoreWorldGenerationO
                 ++(*PlacedCounter);
             }
         }
+    }
+}
+
+uint32 ALLWorldPresentationActor::FacilityLayoutSignature(
+    const FLLCoreCivilizationWorldObservation& Civilization) const
+{
+    uint32 Hash = 0x4C41594Fu;
+    Hash = MixHash(Hash, static_cast<uint32>(Civilization.FacilityCount));
+    for (const FLLCoreCivilizationFacilityObservation& Facility : Civilization.Facilities)
+    {
+        const uint64 Id = static_cast<uint64>(Facility.FacilityId);
+        Hash = MixHash(Hash, static_cast<uint32>(Id & 0xFFFFFFFFu));
+        Hash = MixHash(Hash, static_cast<uint32>((Id >> 32) & 0xFFFFFFFFu));
+        Hash = MixHash(Hash, static_cast<uint32>(Facility.Kind));
+        Hash = MixHash(Hash, static_cast<uint32>(Facility.GridX));
+        Hash = MixHash(Hash, static_cast<uint32>(Facility.GridY));
+    }
+    return Hash;
+}
+
+void ALLWorldPresentationActor::RefreshFacilityReadabilityReferences(
+    const FLLCoreWorldGenerationObservation& World,
+    const FLLCoreCivilizationWorldObservation& Civilization)
+{
+    CachedFacilityReadabilityCentersUU.Reset();
+    CachedFacilityReadabilityCentersUU.Reserve(Civilization.Facilities.Num());
+
+    for (const FLLCoreCivilizationFacilityObservation& Facility : Civilization.Facilities)
+    {
+        const float X = static_cast<float>(
+            Facility.GridX - World.InitialCenterGridX)
+            * LLWorldSpatialContract::GridCellSizeUU;
+        const float Y = static_cast<float>(
+            Facility.GridY - World.InitialCenterGridY)
+            * LLWorldSpatialContract::GridCellSizeUU;
+        CachedFacilityReadabilityCentersUU.Add(FVector2D(X, Y));
     }
 }
 
@@ -1059,10 +1190,21 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         && bClearInitialSightlineCanopy && !bInitialViewCaptured;
     CaptureInitialViewOrigin();
 
+    const uint32 CurrentFacilityLayoutSignature =
+        FacilityLayoutSignature(Civilization);
+    const bool bFacilityLayoutChanged =
+        bForce || CurrentFacilityLayoutSignature != BuiltFacilityLayoutSignature;
+    if (bFacilityLayoutChanged)
+    {
+        BuiltFacilityLayoutSignature = CurrentFacilityLayoutSignature;
+        RefreshFacilityReadabilityReferences(World, Civilization);
+    }
+
     const bool bNaturalChanged = bForce
         || World.WorldSeed != BuiltWorldSeed
         || World.GenerationVersion != BuiltGenerationVersion
         || World.MaterializedChunkCount != BuiltChunkCount
+        || bFacilityLayoutChanged
         || (bSightlinePending && bInitialViewCaptured);
 
     const uint32 CurrentFacilitySignature = FacilitySignature(Civilization);
