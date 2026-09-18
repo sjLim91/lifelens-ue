@@ -7,6 +7,8 @@
 > - 원문의 섹션 번호를 그대로 유지한다. 다른 문서가 "31절", "72~76절"처럼 번호로 참조한다.
 > - 빌드/검증 방식(72~76절)은 `docs/BUILD_STRATEGY_v1.2.md`가 우선한다. 그 외 모든 섹션은 이 문서가 기준이다.
 > - 확장형 세계 생성/청크/이주 구조는 `docs/WORLD_GENESIS_CHUNK_MIGRATION_v1.md`가 canonical companion이며, 고정 소형 arena를 제품 월드 구조로 사용하지 않는다.
+> - 문명이 원시 정착에서 현대를 지나 미지의 미래까지 자율적으로 발전하는 장기 방향은 `docs/OPEN_ENDED_CIVILIZATION_NORTH_STAR.md`가 canonical companion이다. 시대 라벨은 Core unlock timer가 아니다.
+> - 실제 구현 순서는 `docs/DEVELOPMENT_MILESTONES.md`, 현재 상태는 `tasks/WORK_STATE.md`를 따른다.
 
 ---
 
@@ -1170,10 +1172,32 @@ Goal 생성 → Goal 선택 → Plan → 실행 → 실패 대응 → 대안 탐
 
 ## 84. 장기적 세계 확장
 
+LifeLens의 세계는 가족·인구 증가에서 끝나지 않는다.
+
 ```
-4명 → Relationship → Couple → Family → Children → Generation
-→ Households → Population → Occupation → Economy → Groups → Society → Politics
+4명
+→ Relationship / Couple / Family / Children / Generation
+→ Households / Settlement / Population
+→ Specialization / Exchange / Economy / Institutions
+→ Agriculture / Metallurgy / Cities
+→ Mechanical / Industrial civilization
+→ Electrical / Modern infrastructure
+→ Digital / Network civilization
+→ AI / Robotics / Advanced automation
+→ Advanced energy / materials / biotechnology
+→ Planetary / Space civilization
+→ Unknown future civilization
 ```
+
+이 순서는 강제 Tech Tree가 아니다. 실제 자원, 지식, Capability, 시설, 에너지, 사회조건과 문제 해결의 결과로 각 경로가 열려야 한다.
+
+- 시간만 흘렀다고 시대가 자동으로 상승하지 않는다.
+- 어떤 사회는 발전이 느리거나 붕괴할 수 있다.
+- 기술과 지식은 소실·재발견될 수 있다.
+- 같은 seed/ruleset/snapshot에서는 결정론적 재현을 유지한다.
+- Observer의 시대/문명 단계 표시는 실제 Capability와 사회 상태를 요약하는 결과일 뿐이다.
+
+세부 원칙은 `docs/OPEN_ENDED_CIVILIZATION_NORTH_STAR.md`를 따른다.
 
 ---
 
@@ -1208,33 +1232,38 @@ LIFELENS는 새로운 세계를 생성할 때마다 서로 다른 이름, 서로
 
 플레이어는 이 모든 삶에 직접 명령을 내리는 대신, 가능한 한 방해받지 않는 화면에서 그들의 인생과 사회의 변화를 관찰한다.
 
+그 사회는 단순히 몇 세대를 이어가는 데서 멈추지 않는다. 주민들이 생존 문제를 해결하고 지식을 전승하며 도구·시설·생산·제도·기술을 만들어가면, 원시 정착에서 현대 수준을 지나 현실에 아직 존재하지 않는 미래 문명까지 발전할 가능성을 가진다. 그 발전은 날짜나 고정 시대 스크립트가 아니라 실제 시뮬레이션 상태의 결과여야 한다.
+
 매번 새로운 게임을 시작할 때마다 새로운 네 사람과 새로운 세계의 역사가 시작된다.
 
 ---
 
 ## 88. 새 세션에서 즉시 진행할 작업
 
-이 문서를 전달받은 새 세션에서는 모든 기능을 한꺼번에 만들지 않는다. 아래 순서를 따른다.
+초기 bootstrap 단계는 이미 완료되었다. 새 세션에서 이 오래된 초기 체크리스트를 다시 수행하지 않는다.
 
-1. 신규 LifeLens Unreal 프로젝트 설계
-2. GitHub Repository / Source 구조 확정
-3. 기존 Android Smoke Pipeline에서 재사용 가능한 부분 분석
-4. Engine Build 재사용 / Cache 전략 설계
-5. 최소 LifeLens Android APK 성공
-6. 작은 집
-7. 개발용 인간 1명
-8. Navigation / Smart Object
-9. Needs
-10. Utility AI + StateTree
-11. 하루 생활 자율화
-12. Procedural Character Generator
-13. WorldSeed 기반 NEW GAME
-14. Male 2 / Female 2 생성
-15. 4인 사회 시뮬레이션 시작
+새 세션은 다음 순서로 현재 상태를 복구한다.
 
-**첫 기술 목표:** "한 명의 인간이 작은 집 안에서 누가 조종하지 않아도 자연스럽게 하루를 살아간다."
+1. 실제 GitHub `main` / open PR / exact-head Actions 확인.
+2. `PROJECT_STATUS.md` 확인.
+3. `tasks/WORK_STATE.md`에서 현재 ACTIVE / NEXT 확인.
+4. `docs/DEVELOPMENT_MILESTONES.md`에서 canonical execution order 확인.
+5. `docs/OPEN_ENDED_CIVILIZATION_NORTH_STAR.md`에서 장기 방향 확인.
+6. `tasks/TEAM_BOARD.md`에서 ownership / lock / Integration Request 확인.
+7. 현재 milestone에서 실제 구현 가능한 작업을 계속한다.
 
-**첫 정식 게임 목표:** "NEW GAME을 누르면 매번 서로 다른 남성 2명과 여성 2명이 생성되고, 네 사람이 독립적으로 살아가면서 서로 다른 인간관계와 역사를 만들어가기 시작한다."
+2026-09-18 기준 초기 Unreal 프로젝트, 4인 NEW GAME, Needs/Utility, 관계/가족/lifecycle, primitive civilization, 시간/날씨, Observer catch-up은 이미 main에 존재한다.
+
+현재 기능 개발 축은 **C1 Settlement & Subsistence**다.
+
+- C1-A Settlement Facility Authority — 완료.
+- C1-B Autonomous Settlement Need Recognition — 다음.
+- 이후 Facility Effects/Maintenance -> Water/Food/Cultivation -> Emergent Settlement -> 후속 재료/기술 progression.
+
+Android APK Gate B는 제품 우선순위에서 삭제된 것이 아니라 사용자 요청으로 일시 정지 상태다. 재개 시 현재 main에서 검증된 prebuilt-host 방향으로 이어간다.
+
+**현재 첫 목표가 아니라 유지해야 할 제품 기준:**
+"NEW GAME을 누르면 서로 다른 남성 2명과 여성 2명이 생성되고, 플레이어 명령 없이 생존·관계·가족·지식·정착·문명을 스스로 만들어가며 장기적으로 미지의 미래까지 발전할 수 있다."
 
 ---
 
