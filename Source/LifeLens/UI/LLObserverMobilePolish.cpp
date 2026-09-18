@@ -98,8 +98,21 @@ void ALLObserverHUD::DrawSelectionFeedback(const FLLResidentData& Selected, floa
     PlayerController->GetViewportSize(ViewportX, ViewportY);
     const FVector2D ViewportSize(ViewportX, ViewportY);
     const FString SelectedName = Selected.DisplayName;
+    FString SelectedAction = CurrentActionFor(Selected);
+    if (SelectedAction.Len() > 18)
+    {
+        SelectedAction = SelectedAction.Left(17) + TEXT("…");
+    }
 
-    auto DrawOffscreenCue = [this, PlayerController, Actor, ViewportSize, UIScale, SelectedName]()
+    auto DrawOffscreenCue = [
+        this,
+        PlayerController,
+        Actor,
+        ViewportSize,
+        UIScale,
+        SelectedName,
+        SelectedAction
+    ]()
     {
         if (!Canvas)
         {
@@ -187,6 +200,10 @@ void ALLObserverHUD::DrawSelectionFeedback(const FLLResidentData& Selected, floa
                         TEXT(" · %.0fm"),
                         DistanceMeters);
                 }
+            }
+            if (!SelectedAction.IsEmpty())
+            {
+                CueLabel += TEXT(" · ") + SelectedAction;
             }
 
             const float TextScale = 0.72f * UIScale;
