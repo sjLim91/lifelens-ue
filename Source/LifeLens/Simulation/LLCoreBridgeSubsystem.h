@@ -149,6 +149,11 @@ public:
     UFUNCTION(BlueprintPure, Category="LifeLens|Core|WorldGeneration")
     FLLCoreWorldGenerationObservation GetWorldGenerationObservation() const;
 
+    // Authoritative materialized natural chunks in Core registry order.
+    // Consumers must use this instead of guessing coordinates from a count/radius.
+    UFUNCTION(BlueprintPure, Category="LifeLens|Core|WorldGeneration")
+    TArray<FLLCoreNaturalChunkObservation> GetMaterializedNaturalChunkObservations() const;
+
     UFUNCTION(BlueprintCallable, Category="LifeLens|Core|WorldGeneration")
     bool GetNaturalChunkObservation(
         int32 ChunkX,
