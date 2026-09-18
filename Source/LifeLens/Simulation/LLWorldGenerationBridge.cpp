@@ -80,6 +80,8 @@ void FillNaturalChunkObservation(
 {
     Out = FLLCoreNaturalChunkObservation{};
     Out.bMaterialized = true;
+    Out.VisualSeed = static_cast<int64>(
+        Chunk.chunkSeed & 0x7fffffffffffffffULL);
     Out.ChunkX = Chunk.coord.x;
     Out.ChunkY = Chunk.coord.y;
     Out.Biome = FName(UTF8_TO_TCHAR(lifelens::macroBiomeName(Chunk.biome)));
@@ -105,6 +107,8 @@ void FillNaturalChunkObservation(
         Item.bRenewable = Patch.renewable;
         Item.RegenerationPerDay = Patch.regenerationPerDay;
         Item.VisualDensity = static_cast<float>(Patch.visualDensity);
+        Item.VisualSeed = static_cast<int64>(
+            Patch.detailSeed & 0x7fffffffffffffffULL);
         if (const lifelens::ResourceNode* Node = FindResourceNode(World, Patch.nodeId))
         {
             Item.CurrentQuantity = Node->quantity;
