@@ -1,7 +1,7 @@
 # LifeLens Project Status
 
 Date: 2026-09-18
-Current main checkpoint before this docs sync: `87020ec85787f1dfb3d03c30dd8fafaeb7b2aafe`
+Current main checkpoint before this docs sync: `87b4ca9e904f59e7e5c54e48c828a4ad0b81b178`
 Current product phase: **Earth & Human Foundation — Earth-scale world hierarchy, hydrology, ecology and human depth**
 
 ## Whole-source audit closeout
@@ -203,7 +203,7 @@ Merged after exact-head Preflight + Unreal Linux Compile:
 - #223 Offscreen action cue v4.
 - #224 World event focus return v2.
 
-#225 is the docs-only synchronization PR for this checkpoint.
+#225 documentation synchronization is merged. #226 and #227 are also merged as Local Surface environment fixes.
 
 ## Earth & Human Foundation
 
