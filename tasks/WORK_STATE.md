@@ -8,6 +8,8 @@
 >
 > Ownership / locks / IR: `tasks/TEAM_BOARD.md`.
 >
+> Dagyeom presentation assist handoff: `docs/DAGYEOM_PRESENTATION_HANDOFF_2026-09-18.md`.
+>
 > Historical audit: `docs/INTEGRATED_AUDIT_2026-09-17.md` (point-in-time only; do not treat as live status).
 
 Last reconciled: **2026-09-18 KST after PR #152 merge**.
