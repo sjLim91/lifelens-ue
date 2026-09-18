@@ -335,11 +335,19 @@ void ULLResidentPresentationComponent::UpdateLabel()
         return;
     }
 
+    const ALLResidentCharacter* Resident = Cast<ALLResidentCharacter>(GetOwner());
+    UGameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+    ULLObservationSubsystem* Observation =
+        GameInstance ? GameInstance->GetSubsystem<ULLObservationSubsystem>() : nullptr;
+    const bool bSelected = Resident && Observation && Observation->HasObservedResident()
+        && Observation->GetObservedResidentId() == Resident->GetResidentId();
+
     const FVector CameraLocation = Camera->GetCameraLocation();
     const FVector LabelLocation = Label->GetComponentLocation();
     const float Distance = static_cast<float>(FVector::Dist(CameraLocation, LabelLocation));
+    const float MaxVisibleDistance = bSelected ? SelectedLabelMaxDistance : LabelMidDistance;
 
-    if (Distance > LabelMidDistance)
+    if (Distance > MaxVisibleDistance)
     {
         Label->SetVisibility(false);
         return;
@@ -348,7 +356,11 @@ void ULLResidentPresentationComponent::UpdateLabel()
 
     if (bResidentDataValid)
     {
-        const FString Wanted = Distance <= LabelNearDistance
+        // The selected resident keeps the identity badge visible throughout the
+        // focus range; unselected residents only show it up close to reduce
+        // world-space text clutter.
+        const bool bShowIdentityBadge = bSelected || Distance <= LabelNearDistance;
+        const FString Wanted = bShowIdentityBadge
             ? DisplayName + TEXT(" · ") + LifeStageBadge(LifeStage)
             : DisplayName;
         if (!Label->Text.ToString().Equals(Wanted))
@@ -357,11 +369,26 @@ void ULLResidentPresentationComponent::UpdateLabel()
         }
     }
 
+    Label->SetTextRenderColor(bSelected
+        ? FColor(130, 224, 255, 255)
+        : FColor(235, 240, 246, 220));
+
     const FVector ToCamera = CameraLocation - LabelLocation;
     if (!ToCamera.IsNearlyZero())
     {
         Label->SetWorldRotation(FRotationMatrix::MakeFromX(ToCamera).Rotator());
     }
-    const float Scale = FMath::Clamp(Distance / LabelReferenceDistance, LabelMinScale, LabelMaxScale);
-    Label->SetWorldSize(LabelBaseWorldSize * StageFactor * Scale);
+
+    const float DistanceScale = FMath::Clamp(
+        Distance / LabelReferenceDistance,
+        LabelMinScale,
+        LabelMaxScale);
+    // Label legibility should not shrink in lockstep with body height. Babies
+    // and children stay physically smaller, but their names remain readable.
+    const float LifeStageLabelScale = FMath::Clamp(
+        StageFactor,
+        LabelMinLifeStageScale,
+        1.0f);
+    const float SelectionScale = bSelected ? SelectedLabelSizeMultiplier : 1.0f;
+    Label->SetWorldSize(LabelBaseWorldSize * LifeStageLabelScale * DistanceScale * SelectionScale);
 }
