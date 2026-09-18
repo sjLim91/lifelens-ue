@@ -11,6 +11,8 @@
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "Materials/MaterialInterface.h"
 #include "ReferenceSkeleton.h"
 #include "Simulation/LLCoreActionTypes.h"
 #include "Simulation/LLCoreBridgeSubsystem.h"
@@ -134,11 +136,14 @@ ULLResidentMotionComponent::ULLResidentMotionComponent()
         TEXT("/Engine/BasicShapes/Sphere.Sphere"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> DrinkFinder(
         TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
+    static ConstructorHelpers::FObjectFinder<UMaterialInterface> HeldPropMaterialFinder(
+        TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
     SharpFlakeMesh = FlakeFinder.Succeeded() ? FlakeFinder.Object : nullptr;
     StoneCuttingToolMesh = CuttingToolFinder.Succeeded() ? CuttingToolFinder.Object : nullptr;
     SimpleContainerMesh = ContainerFinder.Succeeded() ? ContainerFinder.Object : nullptr;
     FoodProxyMesh = FoodFinder.Succeeded() ? FoodFinder.Object : nullptr;
     DrinkProxyMesh = DrinkFinder.Succeeded() ? DrinkFinder.Object : nullptr;
+    HeldPropMaterialBase = HeldPropMaterialFinder.Succeeded() ? HeldPropMaterialFinder.Object : nullptr;
 }
 
 void ULLResidentMotionComponent::BeginPlay()
@@ -712,6 +717,14 @@ void ULLResidentMotionComponent::UpdateHeldToolVisualState()
         const FName HandBone = ResolveRightHandBone(Body);
         HeldToolMesh->SetupAttachment(Body, HandBone);
         HeldToolMesh->RegisterComponent();
+        if (HeldPropMaterialBase)
+        {
+            HeldPropMaterial = UMaterialInstanceDynamic::Create(HeldPropMaterialBase, HeldToolMesh);
+            if (HeldPropMaterial)
+            {
+                HeldToolMesh->SetMaterial(0, HeldPropMaterial);
+            }
+        }
         if (HandBone.IsNone())
         {
             // Safe visual fallback for an unexpected vendor skeleton. It keeps
@@ -724,6 +737,7 @@ void ULLResidentMotionComponent::UpdateHeldToolVisualState()
     FVector RelativeScale(0.05f, 0.05f, 0.05f);
     FRotator RelativeRotation = FRotator::ZeroRotator;
     FVector RelativeLocation(2.0f, 0.0f, 0.0f);
+    FLinearColor PropColor(0.38f, 0.34f, 0.30f, 1.0f);
 
     if (HeldToolPresentation == ELLResidentHeldToolPresentation::None)
     {
@@ -732,6 +746,7 @@ void ULLResidentMotionComponent::UpdateHeldToolVisualState()
             DesiredMesh = FoodProxyMesh.Get();
             RelativeScale = FVector(0.10f);
             RelativeLocation = FVector(8.0f, 2.0f, 0.0f);
+            PropColor = FLinearColor(0.78f, 0.48f, 0.20f, 1.0f);
         }
         else if (ActiveContextMotion == ELLResidentContextMotion::Drink)
         {
@@ -739,12 +754,14 @@ void ULLResidentMotionComponent::UpdateHeldToolVisualState()
             RelativeScale = FVector(0.075f, 0.075f, 0.16f);
             RelativeRotation = FRotator(0.0f, 0.0f, 90.0f);
             RelativeLocation = FVector(7.0f, 1.0f, 0.0f);
+            PropColor = FLinearColor(0.32f, 0.60f, 0.86f, 1.0f);
         }
         else if (ActiveContextMotion == ELLResidentContextMotion::HaulPush)
         {
             DesiredMesh = SimpleContainerMesh.Get();
             RelativeScale = FVector(0.18f, 0.18f, 0.15f);
             RelativeLocation = FVector(10.0f, 2.0f, -3.0f);
+            PropColor = FLinearColor(0.48f, 0.30f, 0.14f, 1.0f);
         }
     }
 
@@ -754,28 +771,33 @@ void ULLResidentMotionComponent::UpdateHeldToolVisualState()
             DesiredMesh = SharpFlakeMesh.Get();
             RelativeScale = FVector(0.035f, 0.055f, 0.025f);
             RelativeRotation = FRotator(0.0f, 90.0f, 90.0f);
+            PropColor = FLinearColor(0.46f, 0.50f, 0.54f, 1.0f);
             break;
         case ELLResidentHeldToolPresentation::StoneCuttingTool:
             DesiredMesh = StoneCuttingToolMesh.Get();
             RelativeScale = FVector(0.035f, 0.035f, 0.20f);
             RelativeRotation = FRotator(0.0f, 15.0f, 70.0f);
+            PropColor = FLinearColor(0.40f, 0.42f, 0.44f, 1.0f);
             break;
         case ELLResidentHeldToolPresentation::SimpleContainer:
             DesiredMesh = SimpleContainerMesh.Get();
             RelativeScale = FVector(0.09f, 0.09f, 0.12f);
             RelativeLocation = FVector(5.0f, 0.0f, -3.0f);
+            PropColor = FLinearColor(0.50f, 0.31f, 0.15f, 1.0f);
             break;
         case ELLResidentHeldToolPresentation::DiggingStick:
             DesiredMesh = StoneCuttingToolMesh.Get();
             RelativeScale = FVector(0.022f, 0.022f, 0.28f);
             RelativeRotation = FRotator(0.0f, 8.0f, 82.0f);
             RelativeLocation = FVector(4.0f, 0.0f, -4.0f);
+            PropColor = FLinearColor(0.43f, 0.25f, 0.10f, 1.0f);
             break;
         case ELLResidentHeldToolPresentation::StoneHammer:
             DesiredMesh = StoneCuttingToolMesh.Get();
             RelativeScale = FVector(0.065f, 0.045f, 0.16f);
             RelativeRotation = FRotator(0.0f, 24.0f, 68.0f);
             RelativeLocation = FVector(3.0f, 0.0f, 1.0f);
+            PropColor = FLinearColor(0.34f, 0.36f, 0.40f, 1.0f);
             break;
         case ELLResidentHeldToolPresentation::None:
         default:
@@ -789,6 +811,11 @@ void ULLResidentMotionComponent::UpdateHeldToolVisualState()
     }
 
     HeldToolMesh->SetStaticMesh(DesiredMesh);
+    if (HeldPropMaterial)
+    {
+        HeldPropMaterial->SetVectorParameterValue(FName(TEXT("Color")), PropColor);
+        HeldToolMesh->SetMaterial(0, HeldPropMaterial);
+    }
     HeldToolMesh->SetRelativeScale3D(RelativeScale);
     HeldToolMesh->SetRelativeRotation(RelativeRotation);
     if (!HeldToolMesh->GetAttachSocketName().IsNone())
