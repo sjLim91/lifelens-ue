@@ -5,9 +5,207 @@
 #include "Core/LLLifeLensGameMode.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "Camera/CameraActor.h"
+#include "Camera/CameraComponent.h"
 #include "Components/InputComponent.h"
 #include "Engine/GameInstance.h"
+#include "Engine/World.h"
 #include "EngineUtils.h"
+#include "HAL/IConsoleManager.h"
+
+namespace
+{
+    // Ported from Dagyeom PR #98 onto the current observer camera code.
+    // These commands are QA-only and never alter production camera tuning.
+    //
+    //   ll.ViewResidents        frame the densest resident cluster
+    //   ll.ViewResidents 2      frame resident #2 closely
+    //   ll.ViewReset            return to the original view target
+    TWeakObjectPtr<ACameraActor> GDebugViewCamera;
+    TWeakObjectPtr<AActor> GOriginalViewTarget;
+
+    constexpr float DebugClusterRadiusUU = 3000.0f;
+    constexpr float DebugSingleResidentRadiusUU = 260.0f;
+    constexpr float DebugMinViewDistanceUU = 700.0f;
+    constexpr float DebugMaxViewDistanceUU = 9000.0f;
+    constexpr float DebugResidentEyeHeightUU = 90.0f;
+
+    APlayerController* DebugFirstLocalController(UWorld* World)
+    {
+        return World ? World->GetFirstPlayerController() : nullptr;
+    }
+
+    float DebugFramingDistanceUU(float RadiusUU, float FieldOfViewDegrees)
+    {
+        const float HalfAngle = FMath::DegreesToRadians(
+            FMath::Clamp(FieldOfViewDegrees, 20.0f, 120.0f) * 0.5f);
+        const float Distance = RadiusUU
+            / FMath::Max(FMath::Tan(HalfAngle), KINDA_SMALL_NUMBER);
+        return Distance * 1.25f;
+    }
+
+    void DebugFrameResidents(UWorld* World, const TArray<FString>& Args)
+    {
+        APlayerController* Controller = DebugFirstLocalController(World);
+        if (!Controller)
+        {
+            return;
+        }
+
+        TArray<ALLResidentCharacter*> Residents;
+        for (TActorIterator<ALLResidentCharacter> It(World); It; ++It)
+        {
+            if (IsValid(*It))
+            {
+                Residents.Add(*It);
+            }
+        }
+        if (Residents.Num() == 0)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("ll.ViewResidents: no residents in the world"));
+            return;
+        }
+
+        int32 RequestedIndex = INDEX_NONE;
+        if (Args.Num() > 0)
+        {
+            RequestedIndex = FCString::Atoi(*Args[0]);
+        }
+
+        FVector Centre = FVector::ZeroVector;
+        float Radius = DebugSingleResidentRadiusUU;
+        int32 Framed = 1;
+        int32 Excluded = 0;
+
+        if (Residents.IsValidIndex(RequestedIndex))
+        {
+            Centre = Residents[RequestedIndex]->GetActorLocation();
+        }
+        else
+        {
+            FVector Best = Residents[0]->GetActorLocation();
+            int32 BestCount = 0;
+            for (const ALLResidentCharacter* Candidate : Residents)
+            {
+                const FVector CandidateLocation = Candidate->GetActorLocation();
+                int32 Count = 0;
+                for (const ALLResidentCharacter* Other : Residents)
+                {
+                    if (FVector::DistSquared2D(
+                            CandidateLocation,
+                            Other->GetActorLocation())
+                        <= FMath::Square(DebugClusterRadiusUU))
+                    {
+                        ++Count;
+                    }
+                }
+                if (Count > BestCount)
+                {
+                    BestCount = Count;
+                    Best = CandidateLocation;
+                }
+            }
+
+            FBox Cluster(ForceInit);
+            for (const ALLResidentCharacter* Resident : Residents)
+            {
+                const FVector Location = Resident->GetActorLocation();
+                if (FVector::DistSquared2D(Best, Location)
+                    <= FMath::Square(DebugClusterRadiusUU))
+                {
+                    Cluster += Location;
+                }
+                else
+                {
+                    ++Excluded;
+                }
+            }
+            Centre = Cluster.GetCenter();
+            Framed = Residents.Num() - Excluded;
+            Radius = FMath::Max(
+                Cluster.GetSize().Size2D() * 0.5f,
+                DebugSingleResidentRadiusUU);
+        }
+
+        const float FieldOfView = 70.0f;
+        const float Distance = FMath::Clamp(
+            DebugFramingDistanceUU(Radius, FieldOfView),
+            DebugMinViewDistanceUU,
+            DebugMaxViewDistanceUU);
+        const float Height = Distance * 0.70f;
+
+        if (!GDebugViewCamera.IsValid())
+        {
+            GDebugViewCamera = World->SpawnActor<ACameraActor>(
+                ACameraActor::StaticClass());
+            GOriginalViewTarget = Controller->GetViewTarget();
+        }
+
+        ACameraActor* Camera = GDebugViewCamera.Get();
+        if (!Camera)
+        {
+            return;
+        }
+
+        const FVector Focus = Centre
+            + FVector(0.0f, 0.0f, DebugResidentEyeHeightUU);
+        const FVector CameraLocation = Focus
+            + FVector(0.0f, -Distance, Height);
+        Camera->SetActorLocation(CameraLocation);
+        Camera->SetActorRotation((Focus - CameraLocation).Rotation());
+        if (UCameraComponent* CameraComponent = Camera->GetCameraComponent())
+        {
+            CameraComponent->SetFieldOfView(FieldOfView);
+        }
+        Controller->SetViewTarget(Camera);
+
+        UE_LOG(LogTemp, Log,
+            TEXT("ll.ViewResidents: framed %d of %d (excluded %d beyond %.0f), centre=%s radius=%.0f distance=%.0f height=%.0f"),
+            Framed,
+            Residents.Num(),
+            Excluded,
+            DebugClusterRadiusUU,
+            *Centre.ToCompactString(),
+            Radius,
+            Distance,
+            Height);
+    }
+
+    void DebugResetObserverView(UWorld* World)
+    {
+        APlayerController* Controller = DebugFirstLocalController(World);
+        if (Controller && GOriginalViewTarget.IsValid())
+        {
+            Controller->SetViewTarget(GOriginalViewTarget.Get());
+            UE_LOG(LogTemp, Log,
+                TEXT("ll.ViewReset: view returned to the production observer camera"));
+        }
+
+        if (GDebugViewCamera.IsValid())
+        {
+            GDebugViewCamera->Destroy();
+            GDebugViewCamera.Reset();
+        }
+        GOriginalViewTarget.Reset();
+    }
+
+    static FAutoConsoleCommandWithWorldAndArgs CVarViewResidents(
+        TEXT("ll.ViewResidents"),
+        TEXT("QA only: frame residents. Optional index frames one resident."),
+        FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(
+            [](const TArray<FString>& Args, UWorld* World)
+            {
+                DebugFrameResidents(World, Args);
+            }));
+
+    static FAutoConsoleCommandWithWorld CVarViewReset(
+        TEXT("ll.ViewReset"),
+        TEXT("QA only: return to the production observer camera."),
+        FConsoleCommandWithWorldDelegate::CreateStatic(
+            [](UWorld* World)
+            {
+                DebugResetObserverView(World);
+            }));
+}
 
 ALLObserverPlayerController::ALLObserverPlayerController()
 {
@@ -57,6 +255,14 @@ void ALLObserverPlayerController::SetupInputComponent()
 void ALLObserverPlayerController::PlayerTick(float DeltaTime)
 {
     Super::PlayerTick(DeltaTime);
+
+    // QA camera from Dagyeom PR #98 is intentionally isolated from the
+    // production orbit/follow controller. Without this guard the next tick
+    // would adopt the temporary CameraActor and immediately move it.
+    if (GDebugViewCamera.IsValid() && GetViewTarget() == GDebugViewCamera.Get())
+    {
+        return;
+    }
 
     EnsureCameraInitialized();
     if (!bCameraInitialized)
