@@ -8,7 +8,9 @@
 #include "Components/TextRenderComponent.h"
 #include "Engine/GameInstance.h"
 #include "Engine/StaticMesh.h"
+#include "EngineUtils.h"
 #include "GameFramework/Character.h"
+#include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
@@ -152,6 +154,13 @@ void ULLResidentPresentationComponent::TickComponent(float DeltaTime, ELevelTick
         DataRefreshTimer = DataRefreshSeconds;
         RefreshResidentData();
         ApplySilhouetteScale();
+    }
+
+    CrowdLabelRefreshTimer -= DeltaTime;
+    if (CrowdLabelRefreshTimer <= 0.0f)
+    {
+        CrowdLabelRefreshTimer = CrowdLabelRefreshSeconds;
+        RefreshCrowdLabelSuppression();
     }
 
     UpdateRing();
@@ -334,6 +343,89 @@ void ULLResidentPresentationComponent::UpdateRing()
     }
 }
 
+void ULLResidentPresentationComponent::RefreshCrowdLabelSuppression()
+{
+    bCrowdLabelSuppressed = false;
+
+    const ALLResidentCharacter* Resident = Cast<ALLResidentCharacter>(GetOwner());
+    UWorld* World = GetWorld();
+    APlayerController* PlayerController = World ? World->GetFirstPlayerController() : nullptr;
+    APlayerCameraManager* Camera = UGameplayStatics::GetPlayerCameraManager(this, 0);
+    if (!Resident || !Label || !World || !PlayerController || !Camera)
+    {
+        return;
+    }
+
+    UGameInstance* GameInstance = World->GetGameInstance();
+    ULLObservationSubsystem* Observation =
+        GameInstance ? GameInstance->GetSubsystem<ULLObservationSubsystem>() : nullptr;
+    const FGuid SelfId = Resident->GetResidentId();
+    const bool bSelected = Observation && Observation->HasObservedResident()
+        && Observation->GetObservedResidentId() == SelfId;
+    if (bSelected)
+    {
+        return;
+    }
+
+    FVector2D SelfScreen;
+    if (!PlayerController->ProjectWorldLocationToScreen(
+            Label->GetComponentLocation(), SelfScreen, false))
+    {
+        return;
+    }
+
+    const FVector CameraLocation = Camera->GetCameraLocation();
+    const float SelfDistanceSq = FVector::DistSquared(
+        CameraLocation,
+        Resident->GetActorLocation());
+    const float SeparationSq = FMath::Square(CrowdLabelSeparationPixels);
+    int32 Comparisons = 0;
+
+    for (TActorIterator<ALLResidentCharacter> It(World); It; ++It)
+    {
+        const ALLResidentCharacter* Other = *It;
+        if (!Other || Other == Resident || ++Comparisons > MaxCrowdLabelComparisons)
+        {
+            if (Comparisons > MaxCrowdLabelComparisons)
+            {
+                break;
+            }
+            continue;
+        }
+
+        FVector BoundsOrigin = FVector::ZeroVector;
+        FVector BoundsExtent = FVector::ZeroVector;
+        Other->GetActorBounds(false, BoundsOrigin, BoundsExtent, false);
+        const FVector OtherLabelPoint =
+            BoundsOrigin + FVector(0.0f, 0.0f, BoundsExtent.Z + LabelAboveHead);
+
+        FVector2D OtherScreen;
+        if (!PlayerController->ProjectWorldLocationToScreen(
+                OtherLabelPoint, OtherScreen, false)
+            || FVector2D::DistSquared(SelfScreen, OtherScreen) > SeparationSq)
+        {
+            continue;
+        }
+
+        const FGuid OtherId = Other->GetResidentId();
+        const bool bOtherSelected = Observation && Observation->HasObservedResident()
+            && Observation->GetObservedResidentId() == OtherId;
+        const float OtherDistanceSq = FVector::DistSquared(
+            CameraLocation,
+            Other->GetActorLocation());
+        const bool bOtherClearlyCloser = OtherDistanceSq + 100.0f < SelfDistanceSq;
+        const bool bTieBreakWins =
+            FMath::IsNearlyEqual(OtherDistanceSq, SelfDistanceSq, 100.0f)
+            && GetTypeHash(OtherId) < GetTypeHash(SelfId);
+
+        if (bOtherSelected || bOtherClearlyCloser || bTieBreakWins)
+        {
+            bCrowdLabelSuppressed = true;
+            return;
+        }
+    }
+}
+
 FString ULLResidentPresentationComponent::LifeStageBadge(ELLLifeStage Stage)
 {
     switch (Stage)
@@ -366,6 +458,12 @@ void ULLResidentPresentationComponent::UpdateLabel()
         GameInstance ? GameInstance->GetSubsystem<ULLObservationSubsystem>() : nullptr;
     const bool bSelected = Resident && Observation && Observation->HasObservedResident()
         && Observation->GetObservedResidentId() == Resident->GetResidentId();
+
+    if (!bSelected && bCrowdLabelSuppressed)
+    {
+        Label->SetVisibility(false);
+        return;
+    }
 
     const FVector CameraLocation = Camera->GetCameraLocation();
     const FVector LabelLocation = Label->GetComponentLocation();
