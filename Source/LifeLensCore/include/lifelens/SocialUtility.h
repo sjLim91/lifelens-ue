@@ -302,18 +302,29 @@ inline CivilizationUtilityDecision applyCivilizationDispositionBias(
     return candidate;
 }
 
-inline CivilizationUtilityDecision chooseDispositionAwareCivilizationDecision(
+inline CivilizationUtilityDecision chooseDispositionAwareCivilizationDecisionAtPosition(
     const World& world,
-    const Character& self) {
+    const Character& self,
+    GridPos authoritativePosition) {
 
     CivilizationUtilityDecision best;
     if (self.id == 0 || self.civilization.character != self.id) return best;
 
     considerCivilizationDecision(best, applyCivilizationDispositionBias(self, bestExperimentDecision(world, self)));
-    considerCivilizationDecision(best, applyCivilizationDispositionBias(self, bestCraftDecision(world, self)));
+    considerCivilizationDecision(
+        best,
+        applyCivilizationDispositionBias(
+            self,bestCraftDecisionAtPosition(world,self,authoritativePosition)));
     considerCivilizationDecision(best, applyCivilizationDispositionBias(self, bestStoreDecision(world, self)));
     considerCivilizationDecision(best, applyCivilizationDispositionBias(self, bestGatherDecision(world, self)));
     return best;
+}
+
+inline CivilizationUtilityDecision chooseDispositionAwareCivilizationDecision(
+    const World& world,
+    const Character& self) {
+    return chooseDispositionAwareCivilizationDecisionAtPosition(
+        world,self,civilizationSanitationReferencePosition(world));
 }
 
 inline std::pair<Goal, double> bestPhysicalUtility(
@@ -411,16 +422,19 @@ inline CivilizationUtilityDecision urgentSurvivalProvisionGatherDecision(
     return best;
 }
 
-inline UnifiedUtilityDecision chooseUnifiedUtilityDecision(
+inline UnifiedUtilityDecision chooseUnifiedUtilityDecisionAtPosition(
     const World& world,
     const Character& self,
     const RelationshipBook& relationships,
+    GridPos authoritativePosition,
     double minimumSocialUtility = 0.18,
     double minimumCivilizationUtility = 0.14) {
 
     const auto physical = bestPhysicalUtility(world, self);
     const SocialUtilityDecision social = chooseSocialUtilityDecision(world, self, relationships);
-    const CivilizationUtilityDecision civilization = chooseDispositionAwareCivilizationDecision(world, self);
+    const CivilizationUtilityDecision civilization =
+        chooseDispositionAwareCivilizationDecisionAtPosition(
+            world,self,authoritativePosition);
     const CivilizationUtilityDecision survivalProvision = urgentSurvivalProvisionGatherDecision(world, self);
 
     UnifiedUtilityDecision decision;
@@ -463,6 +477,21 @@ inline UnifiedUtilityDecision chooseUnifiedUtilityDecision(
     }
 
     return decision;
+}
+
+inline UnifiedUtilityDecision chooseUnifiedUtilityDecision(
+    const World& world,
+    const Character& self,
+    const RelationshipBook& relationships,
+    double minimumSocialUtility = 0.18,
+    double minimumCivilizationUtility = 0.14) {
+    return chooseUnifiedUtilityDecisionAtPosition(
+        world,
+        self,
+        relationships,
+        civilizationSanitationReferencePosition(world),
+        minimumSocialUtility,
+        minimumCivilizationUtility);
 }
 
 } // namespace lifelens

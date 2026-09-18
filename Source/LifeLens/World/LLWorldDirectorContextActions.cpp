@@ -177,6 +177,21 @@ void ALLWorldDirector::ApplyPendingContextDirective(
                     default: break;
                 }
             }
+            else if (Directive.CivilizationFacilityKind == ELLCoreFacilityKind::WorkSurface
+                || Directive.CivilizationFacilityKind == ELLCoreFacilityKind::SleepingPlace
+                || Directive.CivilizationFacilityKind == ELLCoreFacilityKind::Shelter)
+            {
+                bFaceWorldTarget = true;
+                switch (Directive.CivilizationFacilityAction)
+                {
+                    case ELLCoreFacilityBuildAction::Plan:
+                    case ELLCoreFacilityBuildAction::DeliverMaterial:
+                        WorkAtTarget = ELLResidentWorkPresentationMode::Interact; break;
+                    case ELLCoreFacilityBuildAction::Work:
+                        WorkAtTarget = ELLResidentWorkPresentationMode::Build; break;
+                    default: break;
+                }
+            }
             else if (Directive.CivilizationTechnique == ELLCoreTechniqueId::FireMaking
                 && Directive.CivilizationFacilityKind == ELLCoreFacilityKind::FirePit)
             {

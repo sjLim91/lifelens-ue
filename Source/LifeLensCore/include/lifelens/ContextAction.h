@@ -195,6 +195,34 @@ inline bool resolveCivilizationContextTarget(
             }
             return false;
         case CivilizationIntent::Craft:
+            if(isSettlementFoundationFacility(decision.facilityKind)
+               && decision.facilityAction!=FacilityBuildAction::None){
+                if(!decision.hasFacilityTarget) return false;
+                if(decision.facilityAction==FacilityBuildAction::Plan){
+                    const SettlementFacilitySiteOpportunity opportunity=
+                        chooseSettlementFacilitySite(
+                            world,actor.id,decision.facilityKind);
+                    if(!opportunity.available
+                       || opportunity.pos.x!=decision.facilityTargetPos.x
+                       || opportunity.pos.y!=decision.facilityTargetPos.y) return false;
+                    outTarget=decision.facilityTargetPos;
+                    return true;
+                }
+                for(const auto& facility:world.facilities){
+                    if(facility.id!=decision.facility
+                       || facility.kind!=decision.facilityKind
+                       || !isSettlementFoundationFacility(facility.kind)
+                       || facility.state==FacilityState::Operational
+                       || facility.state==FacilityState::Ruined) continue;
+                    if(facility.pos.x!=decision.facilityTargetPos.x
+                       || facility.pos.y!=decision.facilityTargetPos.y) return false;
+                    if(decision.facilityAction!=FacilityBuildAction::DeliverMaterial
+                       && decision.facilityAction!=FacilityBuildAction::Work) return false;
+                    outTarget=facility.pos;
+                    return true;
+                }
+                return false;
+            }
             if(decision.technique==TechniqueId::PrimitiveStorage){
                 if(!decision.hasFacilityTarget) return false;
                 if(decision.facilityAction==FacilityBuildAction::Plan){
@@ -305,7 +333,9 @@ inline bool civilizationContextRequiresSpatialTarget(const CivilizationUtilityDe
             || decision.experiment==ExperimentKind::SmeltCopperOre;
     }
     if(decision.intent==CivilizationIntent::Craft){
-        return decision.technique==TechniqueId::DesignatedSanitationArea
+        return (isSettlementFoundationFacility(decision.facilityKind)
+                && decision.facilityAction!=FacilityBuildAction::None)
+            || decision.technique==TechniqueId::DesignatedSanitationArea
             || decision.technique==TechniqueId::DugSanitationPit
             || decision.technique==TechniqueId::PrimitiveStorage
             || (decision.technique==TechniqueId::FireMaking

@@ -310,7 +310,8 @@ bool Simulation::tryCivilizationDecision(Character& c,Runtime& r){
     if(!c.alive || !lifeStageProfile(c.lifeStage).canWork || r.pendingContext.active()) return false;
     if(world_.minute%15!=0) return false;
 
-    const UnifiedUtilityDecision decision=chooseUnifiedUtilityDecision(world_,c,relationships_);
+    const UnifiedUtilityDecision decision=chooseUnifiedUtilityDecisionAtPosition(
+        world_,c,relationships_,r.pos);
     if(decision.kind!=UnifiedDecisionKind::Civilization || decision.civilization.intent==CivilizationIntent::None) return false;
 
     PendingContextAction pending;
@@ -351,8 +352,10 @@ bool Simulation::trySocialDecision(Character& c,Runtime& r){
     if(world_.minute<r.socialCooldownUntilMinute) return false;
 
     const UnifiedUtilityDecision decision=world_.minute%15==0
-        ? chooseUnifiedUtilityDecision(world_,c,relationships_)
-        : chooseUnifiedUtilityDecision(world_,c,relationships_,0.18,2.0);
+        ? chooseUnifiedUtilityDecisionAtPosition(
+            world_,c,relationships_,r.pos)
+        : chooseUnifiedUtilityDecisionAtPosition(
+            world_,c,relationships_,r.pos,0.18,2.0);
     if(decision.kind!=UnifiedDecisionKind::Social || decision.social.intent==SocialIntent::None) return false;
 
     const Character* target=findCharacter(world_,decision.social.target);

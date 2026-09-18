@@ -12,6 +12,7 @@
 #include "PrimitiveSanitation.h"
 #include "PrimitiveSmeltingProgression.h"
 #include "PrimitiveStorageProgression.h"
+#include "SettlementProgression.h"
 #include "World.h"
 
 namespace lifelens {
@@ -266,7 +267,10 @@ inline CivilizationUtilityDecision bestGatherDecision(const World& world,const C
         const int storageMissing=primitiveStorageMissingMaterial(world,node.material);
         const int fireMissing=primitiveFirePitMissingMaterial(world,node.material);
         const int furnaceMissing=primitiveFurnaceMissingMaterial(world,node.material);
-        const int constructionMissing=std::max(storageMissing,std::max(fireMissing,furnaceMissing));
+        const int settlementMissing=settlementConstructionMissingMaterial(world,node.material);
+        const int constructionMissing=std::max(
+            settlementMissing,
+            std::max(storageMissing,std::max(fireMissing,furnaceMissing)));
         const int baseTarget=(node.material==MaterialKind::Water || node.material==MaterialKind::PlantFood) ? 4 : 5;
         const int fireFuelReserve=(hasOperationalFirePit(world) && node.material==MaterialKind::Wood) ? 3 : 0;
         const int target=baseTarget+std::min(4,constructionMissing)+fireFuelReserve;
@@ -278,7 +282,7 @@ inline CivilizationUtilityDecision bestGatherDecision(const World& world,const C
         const double preference=civilizationPreference(world.seed,self.id,100ULL+static_cast<std::uint64_t>(node.material));
         const double score=clampCivilization01(
             0.07+0.12*self.personality.curiosity+0.05*self.personality.adaptability+
-            0.08*self.civilization.gatheringSkill+0.16*demand+0.13*gap+0.12*constructionDemand+0.07*preference);
+            0.08*self.civilization.gatheringSkill+0.16*demand+0.13*gap+0.30*constructionDemand+0.07*preference);
         CivilizationUtilityDecision candidate;
         candidate.intent=CivilizationIntent::Gather;
         candidate.utility=score;
@@ -399,6 +403,165 @@ inline int desiredTechniqueOutputStock(TechniqueId technique)
         case TechniqueId::PrimitiveStorage:
         default: return 0;
     }
+}
+
+inline double settlementCraftDemandPressure(const Character& self)
+{
+    int successfulUses=0;
+    int reproducibleTechniques=0;
+    for(const auto& record:self.civilization.knowledge.all()){
+        successfulUses+=std::max(0,record.successfulUses);
+        if(self.civilization.knowledge.knowsAtLeast(
+            record.technique,KnowledgeLevel::Reproducible)) ++reproducibleTechniques;
+    }
+    return clampCivilization01(
+        0.05
+        +0.055*static_cast<double>(std::min(successfulUses,10))
+        +0.045*static_cast<double>(std::min(reproducibleTechniques,5))
+        +0.18*clampCivilization01(self.civilization.craftingSkill));
+}
+
+inline double settlementFacilityNeedPressure(
+    const World& world,
+    const Character& self,
+    GridPos authoritativePosition,
+    FacilityKind kind)
+{
+    if(!isSettlementFoundationFacility(kind)) return 0.0;
+
+    if(kind==FacilityKind::SleepingPlace){
+        if(hasOperationalSettlementFacility(world,FacilityKind::SleepingPlace)
+           || hasOperationalSettlementFacility(world,FacilityKind::Shelter)) return 0.0;
+        return clampCivilization01(
+            (clampCivilization01(self.needs.sleep)-0.22)/0.48);
+    }
+
+    if(kind==FacilityKind::Shelter){
+        if(hasOperationalSettlementFacility(world,FacilityKind::Shelter)) return 0.0;
+        const DynamicEnvironmentObservation environment=deriveDynamicEnvironment(
+            world.genesisIdentity(),chunkCoordForGrid(authoritativePosition),world.minute);
+        const EnvironmentalConsequenceProfile consequence=
+            deriveEnvironmentalConsequences(environment);
+        const double weatherPressure=std::max({
+            consequence.heatStress01,
+            consequence.coldStress01,
+            0.90*environment.precipitationIntensity01,
+            0.72*environment.surfaceWetness01,
+            0.58*environment.windIntensity01,
+            consequence.outdoorWorkFriction01
+        });
+
+        // A single harsh minute is not enough to invent a settlement need.
+        // Environmental consequences already accumulate into resident Needs;
+        // combining local weather with that persistent burden makes Shelter
+        // recognition emerge after sustained exposure while keeping the
+        // resident's authoritative location causal.
+        const double accumulatedBurden=std::max({
+            clampCivilization01(self.needs.thirst),
+            clampCivilization01(self.needs.sleep),
+            clampCivilization01(self.needs.hygiene)
+        });
+        return clampCivilization01(
+            weatherPressure*(0.08+0.92*accumulatedBurden));
+    }
+
+    if(kind==FacilityKind::WorkSurface){
+        if(hasOperationalSettlementFacility(world,FacilityKind::WorkSurface)) return 0.0;
+        return settlementCraftDemandPressure(self);
+    }
+
+    return 0.0;
+}
+
+inline CivilizationUtilityDecision bestSettlementFoundationDecision(
+    const World& world,
+    const Character& self,
+    GridPos authoritativePosition)
+{
+    CivilizationUtilityDecision best;
+    constexpr std::array<FacilityKind,3> kinds={
+        FacilityKind::SleepingPlace,
+        FacilityKind::Shelter,
+        FacilityKind::WorkSurface
+    };
+
+    for(const FacilityKind kind:kinds){
+        if(hasOperationalSettlementFacility(world,kind)) continue;
+
+        const ConstructedFacility* project=settlementFacilityProject(world,kind);
+        double pressure=settlementFacilityNeedPressure(
+            world,self,authoritativePosition,kind);
+        if(project==nullptr && pressure<0.24) continue;
+        if(project!=nullptr) pressure=std::max(pressure,0.46);
+
+        CivilizationUtilityDecision candidate;
+        candidate.intent=CivilizationIntent::Craft;
+        candidate.facilityKind=kind;
+        candidate.item=ItemKind::RawMaterial;
+        candidate.technique=TechniqueId::None;
+
+        const double preference=civilizationPreference(
+            world.seed,self.id,610ULL+static_cast<std::uint64_t>(kind));
+
+        if(project==nullptr){
+            const SettlementFacilitySiteOpportunity site=
+                chooseSettlementFacilitySite(world,self.id,kind);
+            if(!site.available) continue;
+            candidate.facilityAction=FacilityBuildAction::Plan;
+            candidate.hasFacilityTarget=true;
+            candidate.facilityTargetPos=site.pos;
+            candidate.utility=clampCivilization01(
+                0.24+0.56*pressure
+                +0.07*self.personality.conscientiousness
+                +0.05*self.personality.adaptability
+                +0.04*preference);
+            considerCivilizationDecision(best,candidate);
+            continue;
+        }
+
+        candidate.facility=project->id;
+        candidate.hasFacilityTarget=true;
+        candidate.facilityTargetPos=project->pos;
+
+        bool canDeliver=false;
+        for(const auto& requirement:project->requirements){
+            const int missing=std::max(0,requirement.required-requirement.delivered);
+            const int held=self.civilization.inventory.count(
+                ItemKind::RawMaterial,requirement.material);
+            if(missing<=0 || held<=0) continue;
+            candidate.facilityAction=FacilityBuildAction::DeliverMaterial;
+            candidate.material=requirement.material;
+            candidate.quantity=std::min({missing,held,2});
+            candidate.utility=clampCivilization01(
+                0.47+0.32*pressure
+                +0.08*self.personality.conscientiousness
+                +0.06*self.civilization.gatheringSkill
+                +0.04*preference);
+            canDeliver=true;
+            break;
+        }
+        if(canDeliver){
+            considerCivilizationDecision(best,candidate);
+            continue;
+        }
+
+        if(facilityMaterialsComplete(*project) && !facilityWorkComplete(*project)){
+            candidate.facilityAction=FacilityBuildAction::Work;
+            candidate.facilityWork=1.25+1.75*clampCivilization01(
+                self.civilization.craftingSkill);
+            const double progress=clampCivilization01(
+                project->constructionWork/std::max(0.1,project->requiredWork));
+            candidate.utility=clampCivilization01(
+                0.49+0.28*pressure
+                +0.08*self.personality.conscientiousness
+                +0.07*self.personality.patience
+                +0.07*self.civilization.craftingSkill
+                +0.05*progress+0.03*preference);
+            considerCivilizationDecision(best,candidate);
+        }
+    }
+
+    return best;
 }
 
 inline CivilizationUtilityDecision bestPrimitiveStorageConstructionDecision(
@@ -665,11 +828,16 @@ inline CivilizationUtilityDecision bestPrimitiveFurnaceDecision(
     return CivilizationUtilityDecision{};
 }
 
-inline CivilizationUtilityDecision bestCraftDecision(const World& world,const Character& self)
+inline CivilizationUtilityDecision bestCraftDecisionAtPosition(
+    const World& world,
+    const Character& self,
+    GridPos authoritativePosition)
 {
     CivilizationUtilityDecision best;
     const GridPos sanitationReference=civilizationSanitationReferencePosition(world);
 
+    considerCivilizationDecision(
+        best,bestSettlementFoundationDecision(world,self,authoritativePosition));
     considerCivilizationDecision(best,bestPrimitiveStorageConstructionDecision(world,self));
     considerCivilizationDecision(best,bestPrimitiveFirePitDecision(world,self));
     considerCivilizationDecision(best,bestPrimitiveFurnaceDecision(world,self));
@@ -760,6 +928,14 @@ inline CivilizationUtilityDecision bestCraftDecision(const World& world,const Ch
     return best;
 }
 
+inline CivilizationUtilityDecision bestCraftDecision(
+    const World& world,
+    const Character& self)
+{
+    return bestCraftDecisionAtPosition(
+        world,self,civilizationSanitationReferencePosition(world));
+}
+
 inline CivilizationUtilityDecision bestStoreDecision(const World& world,const Character& self)
 {
     CivilizationUtilityDecision best;
@@ -790,15 +966,27 @@ inline CivilizationUtilityDecision bestStoreDecision(const World& world,const Ch
     return best;
 }
 
-inline CivilizationUtilityDecision chooseCivilizationUtilityDecision(const World& world,const Character& self)
+inline CivilizationUtilityDecision chooseCivilizationUtilityDecisionAtPosition(
+    const World& world,
+    const Character& self,
+    GridPos authoritativePosition)
 {
     CivilizationUtilityDecision best;
     if(self.id==0 || self.civilization.character!=self.id) return best;
     considerCivilizationDecision(best,bestExperimentDecision(world,self));
-    considerCivilizationDecision(best,bestCraftDecision(world,self));
+    considerCivilizationDecision(
+        best,bestCraftDecisionAtPosition(world,self,authoritativePosition));
     considerCivilizationDecision(best,bestStoreDecision(world,self));
     considerCivilizationDecision(best,bestGatherDecision(world,self));
     return best;
+}
+
+inline CivilizationUtilityDecision chooseCivilizationUtilityDecision(
+    const World& world,
+    const Character& self)
+{
+    return chooseCivilizationUtilityDecisionAtPosition(
+        world,self,civilizationSanitationReferencePosition(world));
 }
 
 inline ResourceNode* findCivilizationResource(World& world,ResourceNodeId id)
@@ -876,6 +1064,75 @@ inline CivilizationExecutionResult executeCivilizationDecision(World& world,Char
             return result;
         }
         case CivilizationIntent::Craft: {
+            if(isSettlementFoundationFacility(decision.facilityKind)
+               && decision.facilityAction!=FacilityBuildAction::None){
+                result.facilityKind=decision.facilityKind;
+                result.facilityAction=decision.facilityAction;
+                result.craft.event.actor=self.id;
+                result.craft.event.type=CivilizationEventType::Crafted;
+                result.craft.event.technique=TechniqueId::None;
+
+                if(decision.facilityAction==FacilityBuildAction::Plan){
+                    if(!decision.hasFacilityTarget) return result;
+                    ConstructedFacility* created=establishSettlementFacilityProject(
+                        world,self.id,decision.facilityKind,decision.facilityTargetPos);
+                    if(created==nullptr) return result;
+                    result.executed=true;
+                    result.success=true;
+                    result.facilityId=created->id;
+                    result.facilityPos=created->pos;
+                    result.craft.success=true;
+                    result.event=result.craft.event;
+                    return result;
+                }
+
+                ConstructedFacility* facility=findCivilizationFacility(
+                    world,decision.facility);
+                if(facility==nullptr
+                   || facility->kind!=decision.facilityKind
+                   || !isSettlementFoundationFacility(facility->kind)
+                   || facility->state==FacilityState::Operational
+                   || facility->state==FacilityState::Ruined
+                   || !decision.hasFacilityTarget
+                   || facility->pos.x!=decision.facilityTargetPos.x
+                   || facility->pos.y!=decision.facilityTargetPos.y) return result;
+
+                result.facilityId=facility->id;
+                result.facilityPos=facility->pos;
+
+                if(decision.facilityAction==FacilityBuildAction::DeliverMaterial){
+                    const int delivered=deliverFacilityMaterial(
+                        *facility,self.civilization.inventory,decision.material,
+                        std::max(1,decision.quantity));
+                    if(delivered<=0) return result;
+                    result.executed=true;
+                    result.success=true;
+                    result.craft.success=true;
+                    result.craft.event.material=decision.material;
+                    result.craft.event.quantity=delivered;
+                    result.event=result.craft.event;
+                    return result;
+                }
+
+                if(decision.facilityAction==FacilityBuildAction::Work){
+                    const SettlementFacilityWorkResult work=workOnSettlementFacility(
+                        world,self,facility->id,std::max(0.1,decision.facilityWork));
+                    if(!work.worked || work.facilityId!=facility->id) return result;
+                    result.executed=true;
+                    result.success=true;
+                    result.facilityCompleted=work.completed;
+                    result.facilityWorkBefore=work.workBefore;
+                    result.facilityWorkAfter=work.workAfter;
+                    result.craft.success=true;
+                    result.event=result.craft.event;
+                    self.civilization.craftingSkill=clampCivilization01(
+                        self.civilization.craftingSkill+0.004);
+                    return result;
+                }
+
+                return result;
+            }
+
             if(decision.technique==TechniqueId::PrimitiveStorage){
                 result.facilityKind=FacilityKind::PrimitiveStorage;
                 result.facilityAction=decision.facilityAction;
