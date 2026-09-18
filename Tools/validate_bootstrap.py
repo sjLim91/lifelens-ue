@@ -590,4 +590,19 @@ for token in (
 ):
     assert token in world_generation_bridge, f'Missing deterministic PCG seed projection: {token}'
 
+
+world_presentation = (root / 'Source/LifeLens/WorldPresentation/LLWorldPresentationActor.cpp').read_text(encoding='utf-8')
+for token in (
+    'PresentationSeed(Chunk.VisualSeed)',
+    'PresentationSeed(Patch.VisualSeed)',
+    'SM_LL_stone_fire_pit',
+    'SM_LL_wicker_basket_01',
+    'SM_LL_wooden_axe',
+    'PhotorealFirePitInstances',
+    'PhotorealStorageBasketInstances',
+    'PhotorealWorkToolInstances',
+):
+    assert token in world_presentation, f'Missing approved photoreal/seed WorldPresentation consumer: {token}'
+assert 'const int32 StoneCount = bStructurallyComplete ? 8' not in world_presentation, 'Completed firepit must not regress to the Engine-cube ring'
+
 print('LifeLens autonomous observer structural validation: PASS')
