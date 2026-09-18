@@ -67,6 +67,7 @@
 - 물의 존재/종류/염도/흐름/가용성은 Core Hydrology가 authority다.
 - Presentation이 보기 좋은 위치에 임의의 강/호수를 만들거나 Core 수계를 재추측하지 않는다.
 - Water spline/body/mesh가 필요하면 authoritative hydrology read model을 projection하여 생성한다.
+- Bridge의 `FLLCoreSurfaceWaterPresentationObservation`은 materialized water의 stable center/downstream target과 deterministic width/radius **rendering hint**를 제공한다. 이 값은 Unreal Water spline/body 제작용이며 gameplay 수량/깊이/유량의 새 authority가 아니다.
 - Windows는 고품질 반사/수면/대기 상호작용을 사용할 수 있고 Android는 경량 water material/mesh/LOD path를 유지한다.
 - 수영/음용/채집/홍수 같은 gameplay consequence는 Water plugin 자체가 아니라 Core/World 계약이 결정한다.
 
