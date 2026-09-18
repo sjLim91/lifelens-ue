@@ -21,7 +21,7 @@ SOURCE_ROOT = STAGING_ROOT / "PolyHaven"
 DEST_ROOT = "/Game/Environment/Photoreal/PolyHaven"
 DEST_IMPORT = "/Game/Environment/Photoreal/Import"
 
-MODEL_IDS = [
+DEFAULT_MODEL_IDS = [
     "fir_sapling",
     "pine_sapling_small",
     "boulder_01",
@@ -149,6 +149,16 @@ def configure_imported_assets(folder: str):
     return meshes, textures
 
 
+def selected_model_ids():
+    raw = os.environ.get("LL_PHOTOREAL_MODEL_IDS", "").strip()
+    if not raw:
+        return list(DEFAULT_MODEL_IDS)
+    ids = [item.strip() for item in raw.split(",") if item.strip()]
+    if not ids:
+        raise RuntimeError("LL_PHOTOREAL_MODEL_IDS was set but contained no asset ids")
+    return ids
+
+
 def main():
     manifest_path = SOURCE_ROOT / "manifest.json"
     if not manifest_path.is_file():
@@ -165,8 +175,10 @@ def main():
 
     pipeline = make_static_pipeline()
     imported = 0
+    model_ids = selected_model_ids()
+    log("requested model ids: " + ", ".join(model_ids))
 
-    for asset_id in MODEL_IDS:
+    for asset_id in model_ids:
         source_dir = SOURCE_ROOT / asset_id
         if not source_dir.is_dir():
             log(f"skip missing optional model {asset_id}")

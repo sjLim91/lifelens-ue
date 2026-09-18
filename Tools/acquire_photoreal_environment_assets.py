@@ -44,6 +44,11 @@ CURATED = {
     "shrub_03": {"kind": "model", "resolution": "2k", "format": "gltf", "max_mib": 45},
     "weed_plant_02": {"kind": "model", "resolution": "2k", "format": "gltf", "max_mib": 45},
     "dead_tree_trunk": {"kind": "model", "resolution": "2k", "format": "gltf", "max_mib": 60},
+    # Primitive-civilization props: real CC0 meshes that replace completed
+    # facility hero visuals without reintroducing Engine Cube/Cone fallback.
+    "stone_fire_pit": {"kind": "model", "resolution": "2k", "format": "gltf", "max_mib": 70},
+    "wicker_basket_01": {"kind": "model", "resolution": "2k", "format": "gltf", "max_mib": 65},
+    "wooden_axe": {"kind": "model", "resolution": "2k", "format": "gltf", "max_mib": 50},
     "forest_floor": {"kind": "texture", "resolution": "2k"},
     "forrest_ground_01": {"kind": "texture", "resolution": "2k"},
     "mossy_rock": {"kind": "texture", "resolution": "2k"},

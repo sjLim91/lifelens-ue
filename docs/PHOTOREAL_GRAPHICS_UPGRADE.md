@@ -107,3 +107,19 @@ Validation sequence completed before the generated asset commit:
 5. generated Unreal assets committed by GitHub Actions.
 
 The generated asset commit intentionally uses `[skip ci]` because it is the output of the already-successful headless import workflow. Source/config changes remain subject to normal Preflight and Unreal compile gates.
+
+
+## Facility photoreal wave
+
+The next compact CC0 facility wave is intentionally small and directly replaces the most visible primitive-civilization props:
+
+- `stone_fire_pit` — Poly Haven CC0, low-thousands-of-triangles class.
+- `wicker_basket_01` — Poly Haven CC0 storage prop.
+- `wooden_axe` — Poly Haven CC0 early work-tool prop.
+
+Rules:
+- these are **presentation assets**, never Core facility/tool authority.
+- the asset import is a separate wave so a failure does not re-download/re-import the already validated nature wave.
+- completed production facilities may use these approved hero props.
+- if an approved completed-facility prop is unavailable, do not silently substitute Engine Cube/Cone as the hero visual.
+- construction-progress readability may still use explicitly reviewed lightweight modular pieces until a full primitive-building kit is acquired.
