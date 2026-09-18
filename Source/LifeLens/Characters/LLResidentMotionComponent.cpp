@@ -128,9 +128,15 @@ ULLResidentMotionComponent::ULLResidentMotionComponent()
         TEXT("/Engine/BasicShapes/Cube.Cube"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> ContainerFinder(
         TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> FoodFinder(
+        TEXT("/Engine/BasicShapes/Sphere.Sphere"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> DrinkFinder(
+        TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
     SharpFlakeMesh = FlakeFinder.Succeeded() ? FlakeFinder.Object : nullptr;
     StoneCuttingToolMesh = CuttingToolFinder.Succeeded() ? CuttingToolFinder.Object : nullptr;
     SimpleContainerMesh = ContainerFinder.Succeeded() ? ContainerFinder.Object : nullptr;
+    FoodProxyMesh = FoodFinder.Succeeded() ? FoodFinder.Object : nullptr;
+    DrinkProxyMesh = DrinkFinder.Succeeded() ? DrinkFinder.Object : nullptr;
 }
 
 void ULLResidentMotionComponent::BeginPlay()
@@ -260,6 +266,52 @@ UAnimSequence* ULLResidentMotionComponent::LegacyContextAnimation() const
     }
 
     return DesiredAnimation;
+}
+
+ELLResidentContextMotion ULLResidentMotionComponent::ResolveDirectPhysicalMotion() const
+{
+    const ALLResidentCharacter* Resident = Cast<ALLResidentCharacter>(GetOwner());
+    if (!Resident || !Resident->HasReachedMovementTarget())
+    {
+        return ELLResidentContextMotion::None;
+    }
+
+    switch (Resident->GetCurrentIntent())
+    {
+        case ELLActionIntent::Eat:     return ELLResidentContextMotion::Eat;
+        case ELLActionIntent::Drink:   return ELLResidentContextMotion::Drink;
+        case ELLActionIntent::Sleep:   return ELLResidentContextMotion::SleepRest;
+        case ELLActionIntent::Toilet:
+        case ELLActionIntent::Hygiene: return ELLResidentContextMotion::CrouchLow;
+        default:                       return ELLResidentContextMotion::None;
+    }
+}
+
+ELLResidentContextMotion ULLResidentMotionComponent::ResolveTravelMotion() const
+{
+    const ALLResidentCharacter* Resident = Cast<ALLResidentCharacter>(GetOwner());
+    const UWorld* World = GetWorld();
+    const UGameInstance* GameInstance = World ? World->GetGameInstance() : nullptr;
+    const ULLCoreBridgeSubsystem* Bridge =
+        GameInstance ? GameInstance->GetSubsystem<ULLCoreBridgeSubsystem>() : nullptr;
+    if (!Resident || !Bridge || !Resident->GetResidentId().IsValid()
+        || Resident->HasReachedMovementTarget())
+    {
+        return ELLResidentContextMotion::None;
+    }
+
+    FLLCoreActionDirective Directive;
+    if (!Bridge->GetResidentPendingContextDirective(Resident->GetResidentId(), Directive))
+    {
+        return ELLResidentContextMotion::None;
+    }
+
+    if (Directive.ContextActionKind == ELLCoreContextActionKind::Civilization
+        && Directive.CivilizationFacilityAction == ELLCoreFacilityBuildAction::DeliverMaterial)
+    {
+        return ELLResidentContextMotion::HaulPush;
+    }
+    return ELLResidentContextMotion::None;
 }
 
 ELLResidentContextMotion ULLResidentMotionComponent::ResolveContextMotion() const
@@ -417,6 +469,9 @@ UAnimSequence* ULLResidentMotionComponent::ClipForContextMotion(ELLResidentConte
 {
     switch (Motion)
     {
+        case ELLResidentContextMotion::Eat:         return InteractAnimation;
+        case ELLResidentContextMotion::Drink:       return InteractAnimation;
+        case ELLResidentContextMotion::SleepRest:   return IdleAnimation;
         case ELLResidentContextMotion::Talk:        return TalkingAnimation;
         case ELLResidentContextMotion::Learn:       return InteractAnimation;
         case ELLResidentContextMotion::GatherPick:  return GatherAnimation;
@@ -511,9 +566,16 @@ void ULLResidentMotionComponent::UpdateContextAnimationState(float DeltaTime)
     // that window, so a resident walking toward a tree is still walking.
     UAnimSequence* LegacyAnimation = LegacyContextAnimation();
 
-    ELLResidentContextMotion DesiredMotion = ELLResidentContextMotion::None;
-    UAnimSequence* DesiredAnimation = nullptr;
-    if (LegacyAnimation)
+    ELLResidentContextMotion DesiredMotion = ResolveDirectPhysicalMotion();
+    UAnimSequence* DesiredAnimation = ClipForContextMotion(DesiredMotion);
+
+    if (DesiredMotion == ELLResidentContextMotion::None)
+    {
+        DesiredMotion = ResolveTravelMotion();
+        DesiredAnimation = ClipForContextMotion(DesiredMotion);
+    }
+
+    if (DesiredMotion == ELLResidentContextMotion::None && LegacyAnimation)
     {
         DesiredMotion = ResolveContextMotion();
         DesiredAnimation = ClipForContextMotion(DesiredMotion);
@@ -599,7 +661,12 @@ void ULLResidentMotionComponent::UpdateContextAnimationState(float DeltaTime)
 
 void ULLResidentMotionComponent::UpdateHeldToolVisualState()
 {
-    if (HeldToolPresentation == ELLResidentHeldToolPresentation::None)
+    const bool bDailyLifeProp =
+        ActiveContextMotion == ELLResidentContextMotion::Eat
+        || ActiveContextMotion == ELLResidentContextMotion::Drink
+        || ActiveContextMotion == ELLResidentContextMotion::HaulPush;
+
+    if (HeldToolPresentation == ELLResidentHeldToolPresentation::None && !bDailyLifeProp)
     {
         if (HeldToolMesh)
         {
@@ -639,6 +706,29 @@ void ULLResidentMotionComponent::UpdateHeldToolVisualState()
     FVector RelativeScale(0.05f, 0.05f, 0.05f);
     FRotator RelativeRotation = FRotator::ZeroRotator;
     FVector RelativeLocation(2.0f, 0.0f, 0.0f);
+
+    if (HeldToolPresentation == ELLResidentHeldToolPresentation::None)
+    {
+        if (ActiveContextMotion == ELLResidentContextMotion::Eat)
+        {
+            DesiredMesh = FoodProxyMesh.Get();
+            RelativeScale = FVector(0.10f);
+            RelativeLocation = FVector(8.0f, 2.0f, 0.0f);
+        }
+        else if (ActiveContextMotion == ELLResidentContextMotion::Drink)
+        {
+            DesiredMesh = DrinkProxyMesh.Get();
+            RelativeScale = FVector(0.075f, 0.075f, 0.16f);
+            RelativeRotation = FRotator(0.0f, 0.0f, 90.0f);
+            RelativeLocation = FVector(7.0f, 1.0f, 0.0f);
+        }
+        else if (ActiveContextMotion == ELLResidentContextMotion::HaulPush)
+        {
+            DesiredMesh = SimpleContainerMesh.Get();
+            RelativeScale = FVector(0.18f, 0.18f, 0.15f);
+            RelativeLocation = FVector(10.0f, 2.0f, -3.0f);
+        }
+    }
 
     switch (HeldToolPresentation)
     {
@@ -699,6 +789,20 @@ void ULLResidentMotionComponent::UpdateBodyOrientation(float DeltaTime)
 
     const AActor* Owner = GetOwner();
     const float OwnerYaw = Owner ? Owner->GetActorRotation().Yaw : SmoothedYaw;
+
+    if (ActiveContextMotion == ELLResidentContextMotion::SleepRest)
+    {
+        // The current imported standard pack has no dedicated lying clip.
+        // Rotate the complete appearance hierarchy only while WorldDirector has
+        // actually reached the authoritative sleep use point. The capsule,
+        // navigation position and Core state remain upright/unchanged.
+        Body->SetWorldRotation(FRotator(
+            0.0f,
+            OwnerYaw + MeshForwardYawOffsetDegrees,
+            90.0f));
+        return;
+    }
+
     const float TargetYaw = SmoothedSpeed > 0.0f ? DesiredYaw : OwnerYaw;
 
     SmoothedYaw = FMath::FInterpTo(

@@ -41,6 +41,9 @@ UENUM(BlueprintType)
 enum class ELLResidentContextMotion : uint8
 {
     None,
+    Eat,            // direct physical Eat at the resolved use point
+    Drink,          // direct physical Drink at the resolved use point
+    SleepRest,      // stationary sleep pose at the resolved sleep target
     Talk,           // Idle_Talking_Loop  - social exchange, teaching, instruction
     Learn,          // Interact           - learner side of a teaching exchange
     GatherPick,     // GatherAnimation    - gathering, storing, carrying into a store
@@ -111,6 +114,14 @@ private:
     // Reads the authoritative directive for this resident and classifies it.
     // Read-only: nothing here starts, completes or mutates a Core action.
     ELLResidentContextMotion ResolveContextMotion() const;
+    // Direct physical Needs actions do not open a ContextAction window. Use the
+    // WorldDirector-owned CurrentIntent plus movement-target completion so Eat /
+    // Drink / Sleep never begin while the resident is still travelling.
+    ELLResidentContextMotion ResolveDirectPhysicalMotion() const;
+    // Delivery is a ContextAction but its old presentation signal was cleared
+    // while travelling. Read the pending directive so hauling can remain visible
+    // on the way to the authoritative facility target.
+    ELLResidentContextMotion ResolveTravelMotion() const;
     UAnimSequence* ClipForContextMotion(ELLResidentContextMotion Motion) const;
     // ll.DebugMotion diagnostics: reports which bridge read succeeded and what
     // the authoritative directives actually contain, so a wrong classification
@@ -147,6 +158,8 @@ private:
     UPROPERTY() TObjectPtr<UStaticMesh> SharpFlakeMesh;
     UPROPERTY() TObjectPtr<UStaticMesh> StoneCuttingToolMesh;
     UPROPERTY() TObjectPtr<UStaticMesh> SimpleContainerMesh;
+    UPROPERTY() TObjectPtr<UStaticMesh> FoodProxyMesh;
+    UPROPERTY() TObjectPtr<UStaticMesh> DrinkProxyMesh;
     UPROPERTY() TObjectPtr<UStaticMeshComponent> HeldToolMesh;
 
     UPROPERTY() TObjectPtr<ULLResidentAppearanceComponent> Appearance;
