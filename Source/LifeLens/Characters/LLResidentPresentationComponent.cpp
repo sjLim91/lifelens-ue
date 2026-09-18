@@ -295,17 +295,42 @@ void ULLResidentPresentationComponent::UpdateRing()
         Intensity = Observation->IsDetailOpen() ? RingDetailIntensity : RingQuickIntensity;
     }
 
+    const float Feet = FeetOffset();
+    const bool bDetail = bSelected && Observation && Observation->IsDetailOpen();
+    const float TimeSeconds = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0f;
+    const float Pulse = bSelected
+        ? 1.0f + FMath::Sin(TimeSeconds * RingPulseRadiansPerSecond) * RingPulseFraction
+        : 1.0f;
+    const float DetailScale = bDetail ? RingDetailRadiusScale : 1.0f;
+    const float OuterRadius = RingOuterRadius * Pulse * DetailScale;
+    const float InnerRadius = RingInnerRadius * Pulse * DetailScale;
+
     if (RingOuter)
     {
+        RingOuter->SetRelativeScale3D(FVector(
+            OuterRadius / 50.0f,
+            OuterRadius / 50.0f,
+            RingThickness / 100.0f));
+        RingOuter->SetRelativeLocation(FVector(
+            0.0f, 0.0f, -Feet + RingThickness * 0.5f));
         RingOuter->SetVisibility(bSelected);
     }
     if (RingInner)
     {
+        RingInner->SetRelativeScale3D(FVector(
+            InnerRadius / 50.0f,
+            InnerRadius / 50.0f,
+            RingThickness / 100.0f));
+        RingInner->SetRelativeLocation(FVector(
+            0.0f, 0.0f, -Feet + RingThickness * 0.5f + 0.5f));
         RingInner->SetVisibility(bSelected);
     }
     if (bSelected && RingOuterMaterial)
     {
-        RingOuterMaterial->SetVectorParameterValue(ColorParameter, RingColor * Intensity);
+        const float PulseBrightness = FMath::Lerp(0.92f, 1.08f, (Pulse - (1.0f - RingPulseFraction)) / (2.0f * RingPulseFraction));
+        RingOuterMaterial->SetVectorParameterValue(
+            ColorParameter,
+            RingColor * Intensity * PulseBrightness);
     }
 }
 
