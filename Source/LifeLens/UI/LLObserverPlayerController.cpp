@@ -552,11 +552,12 @@ void ALLObserverPlayerController::ResolveObservedResidentFocusFraming(
 
     // Scale the vertical aim point with the resident instead of looking above
     // small children at the same fixed adult offset.
-    const float MaxHeightOffset = FMath::Max(0.0f, ObservedResidentFocusHeightOffsetUU);
-    const float AdaptiveHeightOffset = FMath::Clamp(
-        Extent.Z * 0.75f,
-        FMath::Min(24.0f, MaxHeightOffset),
-        MaxHeightOffset);
+    const float AdaptiveHeightOffset = ObservedResidentFocusHeightOffsetUU < 0.0f
+        ? ObservedResidentFocusHeightOffsetUU
+        : FMath::Clamp(
+            Extent.Z * 0.75f,
+            FMath::Min(24.0f, ObservedResidentFocusHeightOffsetUU),
+            ObservedResidentFocusHeightOffsetUU);
 
     FVector CameraRight = FVector::RightVector;
     if (const ACameraActor* Camera = ObserverCamera.Get())
