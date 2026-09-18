@@ -166,10 +166,32 @@ void ALLObserverHUD::DrawSelectionFeedback(const FLLResidentData& Selected, floa
         UFont* Font = GEngine ? GEngine->GetSmallFont() : nullptr;
         if (Font && !SelectedName.IsEmpty())
         {
+            FString CueLabel = SelectedName;
+            if (PlayerController->PlayerCameraManager)
+            {
+                const float DistanceMeters =
+                    FVector::Dist(
+                        PlayerController->PlayerCameraManager->GetCameraLocation(),
+                        Actor->GetActorLocation())
+                    / 100.0f;
+                if (DistanceMeters >= 1000.0f)
+                {
+                    CueLabel += FString::Printf(
+                        TEXT(" · %.1fkm"),
+                        DistanceMeters / 1000.0f);
+                }
+                else
+                {
+                    CueLabel += FString::Printf(
+                        TEXT(" · %.0fm"),
+                        DistanceMeters);
+                }
+            }
+
             const float TextScale = 0.72f * UIScale;
             float TextW = 0.0f;
             float TextH = 0.0f;
-            GetTextSize(SelectedName, TextW, TextH, Font, TextScale);
+            GetTextSize(CueLabel, TextW, TextH, Font, TextScale);
 
             const FVector2D LabelCenter =
                 EdgePoint - Direction * (30.0f * UIScale);
@@ -183,7 +205,7 @@ void ALLObserverHUD::DrawSelectionFeedback(const FLLResidentData& Selected, floa
                 FMath::Max(MinY, MaxY - TextH));
 
             DrawText(
-                SelectedName,
+                CueLabel,
                 FLinearColor(0.02f, 0.03f, 0.04f, 0.85f),
                 LabelX + 1.5f * UIScale,
                 LabelY + 1.5f * UIScale,
@@ -191,7 +213,7 @@ void ALLObserverHUD::DrawSelectionFeedback(const FLLResidentData& Selected, floa
                 TextScale,
                 false);
             DrawText(
-                SelectedName,
+                CueLabel,
                 FLinearColor(0.80f, 0.94f, 1.0f, 0.96f),
                 LabelX,
                 LabelY,
