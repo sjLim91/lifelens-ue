@@ -151,6 +151,13 @@ private:
     FBox2D DetailContentRect;
     FBox2D DetailTabRects[DetailTabCount];
 
+    struct FDetailResidentLinkHit
+    {
+        FBox2D Rect;
+        FGuid ResidentId;
+    };
+    TArray<FDetailResidentLinkHit> DetailResidentLinkHits;
+
     ELLDetailTab ActiveTab = ELLDetailTab::Overview;
     FGuid LastDetailResidentId;
     bool bWorldOverviewOpen = false;
