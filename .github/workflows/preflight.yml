@@ -38,6 +38,9 @@ jobs:
       - name: Validate environmental visual feedback
         run: python Tools/validate_environment_visual_feedback.py
 
+      - name: Validate whole-source audit invariants
+        run: python Tools/validate_source_audit_invariants.py
+
       - name: Validate World Genesis WG-1
         run: python Tools/validate_world_genesis_wg1.py
 

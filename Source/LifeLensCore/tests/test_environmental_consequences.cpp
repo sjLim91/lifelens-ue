@@ -188,5 +188,40 @@ int main()
         + std::abs(firstAfter.needs.hygiene-secondAfter.needs.hygiene);
     assert(postDelta > 1e-8);
 
+    // AUDIT-0C: the resident-local climate path must survive snapshot restore
+    // and continue deterministically from the same authoritative positions.
+    const SimulationStateSnapshot localSaved = localPressure.captureSnapshot();
+    Simulation localRestored(7);
+    restoreError.clear();
+    assert(localRestored.restoreSnapshot(localSaved,&restoreError));
+    assert(restoreError.empty());
+
+    localPressure.runMinutes(120);
+    localRestored.runMinutes(120);
+
+    const SimulationStateSnapshot continuedA = localPressure.captureSnapshot();
+    const SimulationStateSnapshot continuedB = localRestored.captureSnapshot();
+    assert(continuedA.world.minute == continuedB.world.minute);
+    assert(continuedA.world.characters.size() == continuedB.world.characters.size());
+    assert(continuedA.runtime.size() == continuedB.runtime.size());
+
+    for(std::size_t i=0; i<2; ++i){
+        const Character& a = continuedA.world.characters[i];
+        const Character& b = continuedB.world.characters[i];
+        assert(a.id == b.id);
+        assert(a.needs.hunger == b.needs.hunger);
+        assert(a.needs.thirst == b.needs.thirst);
+        assert(a.needs.sleep == b.needs.sleep);
+        assert(a.needs.bladder == b.needs.bladder);
+        assert(a.needs.hygiene == b.needs.hygiene);
+
+        const auto aRuntime = continuedA.runtime.find(a.id);
+        const auto bRuntime = continuedB.runtime.find(b.id);
+        assert(aRuntime != continuedA.runtime.end());
+        assert(bRuntime != continuedB.runtime.end());
+        assert(aRuntime->second.pos.x == bRuntime->second.pos.x);
+        assert(aRuntime->second.pos.y == bRuntime->second.pos.y);
+    }
+
     return 0;
 }
