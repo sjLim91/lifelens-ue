@@ -84,6 +84,11 @@ struct FLLCoreNaturalResourcePatchObservation
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration") bool bRenewable = false;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration") int32 RegenerationPerDay = 0;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration") float VisualDensity = 0.0f;
+
+    // Stable deterministic presentation seed projected from the Core patch
+    // detail stream. PCG may use it for decorative scatter without becoming
+    // resource authority.
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Presentation") int64 VisualSeed = 0;
 };
 
 USTRUCT(BlueprintType)
@@ -92,6 +97,10 @@ struct FLLCoreNaturalChunkObservation
     GENERATED_BODY()
 
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration") bool bMaterialized = false;
+
+    // Stable deterministic presentation seed derived from the authoritative
+    // generated chunk seed. Intended for repeatable PCG decoration only.
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Presentation") int64 VisualSeed = 0;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration") int32 ChunkX = 0;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration") int32 ChunkY = 0;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration") FName Biome;
