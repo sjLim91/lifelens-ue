@@ -79,6 +79,13 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
     static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoBoulder(
         TEXT("/Game/Environment/Photoreal/PolyHaven/boulder_01/SM_LL_boulder_01.SM_LL_boulder_01"));
 
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoFirePit(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/stone_fire_pit/SM_LL_stone_fire_pit.SM_LL_stone_fire_pit"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoStorageBasket(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/wicker_basket_01/SM_LL_wicker_basket_01.SM_LL_wicker_basket_01"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoWoodenAxe(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/wooden_axe/SM_LL_wooden_axe.SM_LL_wooden_axe"));
+
     static ConstructorHelpers::FObjectFinder<UStaticMesh> TreeA(TEXT("/Game/Environment/Quaternius/StylizedNature/CommonTree_1/StaticMeshes/CommonTree_1.CommonTree_1"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> TreeB(TEXT("/Game/Environment/Quaternius/StylizedNature/Pine_1/StaticMeshes/Pine_1.Pine_1"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> TreeC(TEXT("/Game/Environment/Quaternius/StylizedNature/TwistedTree_2/StaticMeshes/TwistedTree_2.TwistedTree_2"));
@@ -174,6 +181,40 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
     FacilityRoofInstances = AddInstancedComponent(TEXT("FacilityRoofs"), GroundMesh, FacilityCullStartUU, FacilityCullEndUU, true);
     FacilityCargoInstances = AddInstancedComponent(TEXT("FacilityCargo"), GroundMesh, FacilityCullStartUU, FacilityCullEndUU, true);
     FacilityAccentInstances = AddInstancedComponent(TEXT("FacilityAccents"), GroundMesh, FacilityCullStartUU, FacilityCullEndUU, false);
+
+    if (PhotoFirePit.Succeeded())
+    {
+        PhotorealFirePitInstances = AddInstancedComponent(
+            TEXT("PhotorealFirePits"),
+            PhotoFirePit.Object,
+            FacilityCullStartUU,
+            FacilityCullEndUU,
+            true);
+    }
+    if (PhotoStorageBasket.Succeeded())
+    {
+        PhotorealStorageBasketInstances = AddInstancedComponent(
+            TEXT("PhotorealStorageBaskets"),
+            PhotoStorageBasket.Object,
+            FacilityCullStartUU,
+            FacilityCullEndUU,
+            true);
+    }
+    if (PhotoWoodenAxe.Succeeded())
+    {
+        PhotorealWorkToolInstances = AddInstancedComponent(
+            TEXT("PhotorealWorkTools"),
+            PhotoWoodenAxe.Object,
+            FacilityCullStartUU,
+            FacilityCullEndUU,
+            true);
+    }
+
+    UE_LOG(LogTemp, Log,
+        TEXT("LLWorldPresentation facility art: firepit=%d basket=%d workTool=%d"),
+        PhotorealFirePitInstances ? 1 : 0,
+        PhotorealStorageBasketInstances ? 1 : 0,
+        PhotorealWorkToolInstances ? 1 : 0);
 }
 
 UHierarchicalInstancedStaticMeshComponent* ALLWorldPresentationActor::AddInstancedComponent(
@@ -240,6 +281,9 @@ void ALLWorldPresentationActor::ClearFacilityInstances()
     if (FacilityRoofInstances) { FacilityRoofInstances->ClearInstances(); }
     if (FacilityCargoInstances) { FacilityCargoInstances->ClearInstances(); }
     if (FacilityAccentInstances) { FacilityAccentInstances->ClearInstances(); }
+    if (PhotorealFirePitInstances) { PhotorealFirePitInstances->ClearInstances(); }
+    if (PhotorealStorageBasketInstances) { PhotorealStorageBasketInstances->ClearInstances(); }
+    if (PhotorealWorkToolInstances) { PhotorealWorkToolInstances->ClearInstances(); }
 }
 
 void ALLWorldPresentationActor::ApplyFacilityMaterialPalette()
@@ -1190,8 +1234,30 @@ void ALLWorldPresentationActor::BuildFacilities(
             // Construction still shows delivered build material. Once the
             // storage is operational, cargo switches to the linked authoritative
             // inventory total instead of always drawing six fake crates.
+            if (bStructurallyComplete && PhotorealStorageBasketInstances)
+            {
+                const int32 BasketCount = FMath::Clamp(
+                    FMath::CeilToInt(static_cast<float>(LinkedStoredUnits) / 2.0f),
+                    0,
+                    4);
+                for (int32 Index = 0; Index < BasketCount; ++Index)
+                {
+                    const int32 Column = Index % 2;
+                    const int32 Row = Index / 2;
+                    PhotorealStorageBasketInstances->AddInstance(FTransform(
+                        FRotator(0.0f, 18.0f + 71.0f * static_cast<float>(Index), 0.0f),
+                        Base + FVector(
+                            -52.0f + Column * 104.0f,
+                            -30.0f + Row * 66.0f,
+                            0.0f),
+                        FVector(0.92f)));
+                }
+            }
+
             const int32 CargoCount = bStructurallyComplete
-                ? FMath::Clamp(LinkedStoredUnits, 0, 8)
+                ? (PhotorealStorageBasketInstances
+                    ? 0
+                    : FMath::Clamp(LinkedStoredUnits, 0, 8))
                 : FMath::Clamp(FMath::CeilToInt(MaterialProgress * 6.0f), 0, 6);
             for (int32 Index = 0; Index < CargoCount; ++Index)
             {
@@ -1256,6 +1322,14 @@ void ALLWorldPresentationActor::BuildFacilities(
                     FRotator(0.0f, 0.0f, DamageTilt),
                     Base + FVector(0.0f, 0.0f, 72.0f * Integrity),
                     FVector(1.65f * TopScale, 0.82f, 0.12f * Integrity)));
+            }
+
+            if (bStructurallyComplete && PhotorealWorkToolInstances)
+            {
+                PhotorealWorkToolInstances->AddInstance(FTransform(
+                    FRotator(0.0f, 18.0f, 82.0f),
+                    Base + FVector(18.0f, 0.0f, 84.0f * Integrity),
+                    FVector(0.92f)));
             }
 
             const int32 LooseMaterialCount = bStructurallyComplete
@@ -1453,7 +1527,17 @@ void ALLWorldPresentationActor::BuildFacilities(
 
         if (Facility.Kind != ELLCoreFacilityKind::FirePit) { continue; }
 
-        const int32 StoneCount = bStructurallyComplete ? 8 : FMath::Clamp(FMath::CeilToInt(BuildProgress * 8.0f), 0, 8);
+        if (bStructurallyComplete && PhotorealFirePitInstances)
+        {
+            PhotorealFirePitInstances->AddInstance(FTransform(
+                FRotator::ZeroRotator,
+                Base,
+                FVector(1.0f)));
+        }
+
+        const int32 StoneCount = bStructurallyComplete
+            ? (PhotorealFirePitInstances ? 0 : 8)
+            : FMath::Clamp(FMath::CeilToInt(BuildProgress * 8.0f), 0, 8);
         for (int32 Index = 0; Index < StoneCount; ++Index)
         {
             if (!FacilityFoundationInstances) { break; }
@@ -1463,7 +1547,9 @@ void ALLWorldPresentationActor::BuildFacilities(
             FacilityFoundationInstances->AddInstance(FTransform(
                 FRotator(0.0f, AngleDegrees, 0.0f),Base + Offset,FVector(0.48f, 0.28f, 0.20f)));
         }
-        if (bStructurallyComplete && FacilityFoundationInstances)
+        if (bStructurallyComplete
+            && !PhotorealFirePitInstances
+            && FacilityFoundationInstances)
         {
             FacilityFoundationInstances->AddInstance(FTransform(
                 FRotator::ZeroRotator,Base + FVector(0.0f, 0.0f, 5.0f),FVector(1.05f, 1.05f, 0.08f)));
@@ -1608,7 +1694,10 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         + (FacilityPostInstances ? FacilityPostInstances->GetInstanceCount() : 0)
         + (FacilityRoofInstances ? FacilityRoofInstances->GetInstanceCount() : 0)
         + (FacilityCargoInstances ? FacilityCargoInstances->GetInstanceCount() : 0)
-        + (FacilityAccentInstances ? FacilityAccentInstances->GetInstanceCount() : 0);
+        + (FacilityAccentInstances ? FacilityAccentInstances->GetInstanceCount() : 0)
+        + (PhotorealFirePitInstances ? PhotorealFirePitInstances->GetInstanceCount() : 0)
+        + (PhotorealStorageBasketInstances ? PhotorealStorageBasketInstances->GetInstanceCount() : 0)
+        + (PhotorealWorkToolInstances ? PhotorealWorkToolInstances->GetInstanceCount() : 0);
 
     UE_LOG(LogTemp, Log,
         TEXT("LLWorldPresentation seed=%lld gen=%d chunks=%d natural=%d/%d/%d/%d facilities=%d facilityInstances=%d thinned=%d sightline=%d/%d dynamicCanopy=%d core=%.0f activity=%.0f ground=%s farGround=%s"),
