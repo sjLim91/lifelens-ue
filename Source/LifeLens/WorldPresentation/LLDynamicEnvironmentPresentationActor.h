@@ -155,6 +155,14 @@ private:
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Fog", meta=(ClampMin="0.0", ClampMax="0.2"))
     float SevereFogDensity = 0.055f;
 
+    // Keep the playable settlement crisp while allowing distant visual-only
+    // terrain to dissolve into atmosphere before its outer edge can read.
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Fog", meta=(ClampMin="0.0", ClampMax="30000.0"))
+    float HorizonFogStartDistanceUU = 6500.0f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Fog", meta=(ClampMin="0.0", ClampMax="1.0"))
+    float HorizonFogMaxOpacity = 0.78f;
+
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Fog", meta=(ClampMin="0.0", ClampMax="1.0"))
     float HumidityFogWeight = 0.35f;
 
