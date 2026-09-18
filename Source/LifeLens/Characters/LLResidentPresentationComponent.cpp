@@ -492,9 +492,23 @@ void ULLResidentPresentationComponent::UpdateLabel()
         }
     }
 
+    const float FadeBand = FMath::Max(300.0f, MaxVisibleDistance * 0.24f);
+    const float FadeStart = FMath::Max(0.0f, MaxVisibleDistance - FadeBand);
+    const float DistanceFade = Distance <= FadeStart
+        ? 1.0f
+        : 1.0f - FMath::Clamp(
+            (Distance - FadeStart) / FMath::Max(FadeBand, KINDA_SMALL_NUMBER),
+            0.0f,
+            1.0f);
+    const uint8 BaseAlpha = bSelected ? 255 : 220;
+    const uint8 PresentedAlpha = static_cast<uint8>(
+        FMath::Clamp(
+            FMath::RoundToInt(static_cast<float>(BaseAlpha) * DistanceFade),
+            0,
+            255));
     Label->SetTextRenderColor(bSelected
-        ? FColor(130, 224, 255, 255)
-        : FColor(235, 240, 246, 220));
+        ? FColor(130, 224, 255, PresentedAlpha)
+        : FColor(235, 240, 246, PresentedAlpha));
 
     const FVector ToCamera = CameraLocation - LabelLocation;
     if (!ToCamera.IsNearlyZero())
