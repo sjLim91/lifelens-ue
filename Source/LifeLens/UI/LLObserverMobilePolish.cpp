@@ -96,10 +96,75 @@ void ALLObserverHUD::DrawSelectionFeedback(const FLLResidentData& Selected, floa
     PlayerController->GetViewportSize(ViewportX, ViewportY);
     const FVector2D ViewportSize(ViewportX, ViewportY);
 
+    auto DrawOffscreenCue = [this, PlayerController, Actor, ViewportSize, UIScale]()
+    {
+        if (!Canvas)
+        {
+            return;
+        }
+
+        FVector BoundsOrigin = FVector::ZeroVector;
+        FVector BoundsExtent = FVector::ZeroVector;
+        Actor->GetActorBounds(false, BoundsOrigin, BoundsExtent, false);
+
+        FVector2D Projected;
+        if (!PlayerController->ProjectWorldLocationToScreen(BoundsOrigin, Projected, false))
+        {
+            return;
+        }
+
+        const FVector2D CanvasPoint = ViewportToCanvas(Projected, ViewportSize);
+        const FVector2D CanvasCenter(Canvas->ClipX * 0.5f, Canvas->ClipY * 0.5f);
+        FVector2D Direction = CanvasPoint - CanvasCenter;
+        if (!Direction.Normalize())
+        {
+            Direction = FVector2D(0.0f, -1.0f);
+        }
+
+        const FSafeInsets Insets = SafeInsets(UIScale);
+        const float EdgePad = 20.0f * UIScale;
+        const float MinX = Insets.Left + EdgePad;
+        const float MaxX = FMath::Max(MinX, Canvas->ClipX - Insets.Right - EdgePad);
+        const float MinY = Insets.Top + EdgePad;
+        const float MaxY = FMath::Max(MinY, Canvas->ClipY - Insets.Bottom - EdgePad);
+
+        const float SafeDx = FMath::Abs(Direction.X) > KINDA_SMALL_NUMBER
+            ? ((Direction.X > 0.0f ? MaxX : MinX) - CanvasCenter.X) / Direction.X
+            : BIG_NUMBER;
+        const float SafeDy = FMath::Abs(Direction.Y) > KINDA_SMALL_NUMBER
+            ? ((Direction.Y > 0.0f ? MaxY : MinY) - CanvasCenter.Y) / Direction.Y
+            : BIG_NUMBER;
+        const float ScaleToEdge = FMath::Max(0.0f, FMath::Min(SafeDx, SafeDy));
+        const FVector2D EdgePoint = CanvasCenter + Direction * ScaleToEdge;
+
+        const FVector2D Perpendicular(-Direction.Y, Direction.X);
+        const float TipLength = 16.0f * UIScale;
+        const float Wing = 8.0f * UIScale;
+        const FVector2D Tip = EdgePoint + Direction * TipLength * 0.45f;
+        const FVector2D Base = EdgePoint - Direction * TipLength * 0.55f;
+
+        FLinearColor CueColor = FocusColor;
+        CueColor.A = 0.92f;
+        DrawLine(Tip.X, Tip.Y,
+            Base.X + Perpendicular.X * Wing, Base.Y + Perpendicular.Y * Wing,
+            CueColor, FMath::Max(1.0f, 2.0f * UIScale));
+        DrawLine(Tip.X, Tip.Y,
+            Base.X - Perpendicular.X * Wing, Base.Y - Perpendicular.Y * Wing,
+            CueColor, FMath::Max(1.0f, 2.0f * UIScale));
+        DrawLine(
+            EdgePoint.X - Perpendicular.X * 5.0f * UIScale,
+            EdgePoint.Y - Perpendicular.Y * 5.0f * UIScale,
+            EdgePoint.X + Perpendicular.X * 5.0f * UIScale,
+            EdgePoint.Y + Perpendicular.Y * 5.0f * UIScale,
+            CueColor,
+            FMath::Max(1.0f, UIScale));
+    };
+
     FBox2D BoundsScreen;
     FBox2D UnusedTapRect;
     if (!ProjectResidentTapRect(PlayerController, Actor, 0.0f, BoundsScreen, UnusedTapRect))
     {
+        DrawOffscreenCue();
         return;
     }
 
@@ -108,6 +173,16 @@ void ALLObserverHUD::DrawSelectionFeedback(const FLLResidentData& Selected, floa
         ViewportToCanvas(BoundsScreen.Max, ViewportSize));
     if (!Bounds.bIsValid)
     {
+        DrawOffscreenCue();
+        return;
+    }
+
+    const bool bOutsideCanvas =
+        Bounds.Max.X < 0.0f || Bounds.Min.X > Canvas->ClipX
+        || Bounds.Max.Y < 0.0f || Bounds.Min.Y > Canvas->ClipY;
+    if (bOutsideCanvas)
+    {
+        DrawOffscreenCue();
         return;
     }
 
