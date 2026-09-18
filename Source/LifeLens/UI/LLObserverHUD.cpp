@@ -935,6 +935,7 @@ void ALLObserverHUD::DrawQuickInspector(const FLLResidentData& Resident, float U
     {
         float LineW = 0.0f, MeasureH = 0.0f;
         GetTextSize(Line.Text, LineW, MeasureH, Font, Line.Scale);
+        const float VisualLineHeight = FMath::Max(Line.Height, MeasureH);
 
         if (Line.Style == EQuickLineStyle::Action)
         {
@@ -945,7 +946,7 @@ void ALLObserverHUD::DrawQuickInspector(const FLLResidentData& Resident, float U
                 TextX - PillPadX,
                 CursorY - PillPadY,
                 FMath::Min(LineW + 2.0f * PillPadX, PanelWidth - 2.0f * InnerPadX),
-                Line.Height + 2.0f * PillPadY);
+                VisualLineHeight + 2.0f * PillPadY);
         }
         else if (Line.Style == EQuickLineStyle::Status)
         {
@@ -955,7 +956,7 @@ void ALLObserverHUD::DrawQuickInspector(const FLLResidentData& Resident, float U
                 TextX - 7.0f * UIScale,
                 CursorY + 1.0f * UIScale,
                 StatusBarW,
-                FMath::Max(2.0f, Line.Height - 2.0f * UIScale));
+                FMath::Max(2.0f, VisualLineHeight - 2.0f * UIScale));
         }
         else if (Line.Style == EQuickLineStyle::Hint)
         {
