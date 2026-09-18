@@ -46,17 +46,24 @@ namespace
     constexpr float TabPadY          = 6.0f;
     constexpr float TabUnderline     = 2.0f;
 
-    constexpr float OverviewAlpha    = 0.22f;
-    constexpr float InspectorAlpha   = 0.45f;
-    constexpr float DetailAlpha      = 0.60f;
+    constexpr float OverviewAlpha    = 0.34f;
+    constexpr float InspectorAlpha   = 0.72f;
+    constexpr float DetailAlpha      = 0.82f;
 
     const FLinearColor TextPrimary   (1.00f, 1.00f, 1.00f, 1.0f);
-    const FLinearColor TextSecondary (0.88f, 0.90f, 0.94f, 1.0f);
-    const FLinearColor TextMuted     (0.80f, 0.84f, 0.90f, 0.55f);
-    const FLinearColor TextHint      (0.80f, 0.84f, 0.90f, 0.35f);
-    const FLinearColor TextAction    (0.75f, 0.90f, 1.00f, 1.0f);
-    const FLinearColor TextSection   (0.70f, 0.78f, 0.90f, 0.85f);
-    const FLinearColor TabActiveLine (0.75f, 0.90f, 1.00f, 0.9f);
+    const FLinearColor TextSecondary (0.88f, 0.91f, 0.95f, 1.0f);
+    const FLinearColor TextMuted     (0.77f, 0.82f, 0.89f, 0.64f);
+    const FLinearColor TextHint      (0.72f, 0.78f, 0.86f, 0.48f);
+    const FLinearColor TextAction    (0.72f, 0.91f, 1.00f, 1.0f);
+    const FLinearColor TextSection   (0.68f, 0.79f, 0.92f, 0.92f);
+    const FLinearColor TabActiveLine (0.47f, 0.82f, 1.00f, 1.0f);
+    const FLinearColor HUDSurface    (0.018f, 0.026f, 0.040f, 0.88f);
+    const FLinearColor HUDSurfaceSoft(0.020f, 0.030f, 0.047f, 0.72f);
+    const FLinearColor HUDHeader     (0.035f, 0.055f, 0.082f, 0.88f);
+    const FLinearColor HUDStroke     (0.44f, 0.63f, 0.82f, 0.24f);
+    const FLinearColor HUDAccent     (0.42f, 0.82f, 1.00f, 0.96f);
+    const FLinearColor HUDAccentSoft (0.18f, 0.56f, 0.78f, 0.24f);
+    const FLinearColor HUDShadow     (0.00f, 0.00f, 0.00f, 0.28f);
 
     UFont* HUDFont()
     {
@@ -668,7 +675,9 @@ float ALLObserverHUD::DrawOverview(const ULLSimulationSubsystem& Simulation, con
     const float Gap = LineGap * UIScale;
     const float BandHeight = TopPad + StatusH + Gap + StripH + Pad;
 
-    DrawRect(FLinearColor(0.0f, 0.0f, 0.0f, OverviewAlpha), 0.0f, 0.0f, Canvas->ClipX, BandHeight);
+    DrawRect(FLinearColor(0.012f, 0.020f, 0.032f, OverviewAlpha), 0.0f, 0.0f, Canvas->ClipX, BandHeight);
+    DrawRect(HUDAccentSoft, 0.0f, 0.0f, Canvas->ClipX, FMath::Max(2.0f, 2.0f * UIScale));
+    DrawRect(HUDStroke, 0.0f, BandHeight - FMath::Max(1.0f, UIScale), Canvas->ClipX, FMath::Max(1.0f, UIScale));
     OverviewBandRect = FBox2D(FVector2D(0.0f, 0.0f), FVector2D(Canvas->ClipX, BandHeight));
 
     float CursorY = TopPad;
@@ -805,7 +814,12 @@ void ALLObserverHUD::DrawWorldOverview(const ULLSimulationSubsystem& Simulation,
     const float PanelX = Insets.Left;
     const float PanelY = TopY + Margin * UIScale;
 
-    DrawRect(FLinearColor(0.0f, 0.0f, 0.0f, InspectorAlpha), PanelX, PanelY, PanelWidth, PanelHeight);
+    const float CardShadowOffset = 4.0f * UIScale;
+    const float CardAccentWidth = FMath::Max(3.0f, 3.0f * UIScale);
+    DrawRect(HUDShadow, PanelX + CardShadowOffset, PanelY + CardShadowOffset, PanelWidth, PanelHeight);
+    DrawRect(HUDSurfaceSoft, PanelX, PanelY, PanelWidth, PanelHeight);
+    DrawRect(HUDAccent, PanelX, PanelY, CardAccentWidth, PanelHeight);
+    DrawRect(HUDStroke, PanelX, PanelY, PanelWidth, FMath::Max(1.0f, UIScale));
     WorldOverviewRect = FBox2D(FVector2D(PanelX, PanelY), FVector2D(PanelX + PanelWidth, PanelY + PanelHeight));
 
     float CursorY = PanelY + Pad;
@@ -827,13 +841,18 @@ void ALLObserverHUD::DrawQuickInspector(const FLLResidentData& Resident, float U
 {
     UFont* Font = HUDFont();
 
-    const float NameScale     = 1.15f * UIScale;
-    const float BodyScale     = 0.95f * UIScale;
+    const float NameScale     = 1.18f * UIScale;
+    const float IdentityScale = 0.82f * UIScale;
+    const float BodyScale     = 0.94f * UIScale;
     const float SummaryScale  = 0.90f * UIScale;
-    const float WordsScale    = 0.85f * UIScale;
-    const float HintScale     = 0.80f * UIScale;
+    const float WordsScale    = 0.84f * UIScale;
+    const float HintScale     = 0.78f * UIScale;
 
-    const FString NameLine = FString::Printf(TEXT("%s   %d"), *Resident.DisplayName, Resident.AgeYears);
+    const FString NameLine = Resident.DisplayName;
+    const FString IdentityLine = FString::Printf(
+        TEXT("%d세  ·  %s"),
+        Resident.AgeYears,
+        *LLObserverLabels::LifeStageToString(Resident.LifeStage));
     const FString Action = CurrentActionFor(Resident);
     const FString NowLine = Action.IsEmpty() ? FString() : FString(LLObserverText::NowPrefix) + Action;
 
@@ -842,20 +861,29 @@ void ALLObserverHUD::DrawQuickInspector(const FLLResidentData& Resident, float U
     const FLinearColor SummaryColor = LLObserverLabels::NeedColorForLevel(WorstLevel);
     const FString WordsLine = LLObserverLabels::PersonalityWords(Resident);
 
-    struct FEntry { FString Text; FLinearColor Color; float Scale; };
+    enum class EQuickLineStyle : uint8
+    {
+        Normal,
+        Identity,
+        Action,
+        Status,
+        Hint
+    };
+    struct FEntry { FString Text; FLinearColor Color; float Scale; EQuickLineStyle Style; };
     TArray<FEntry> Entries;
-    Entries.Add({ NameLine, TextPrimary, NameScale });
-    if (!NowLine.IsEmpty()) Entries.Add({ NowLine, TextAction, BodyScale });
-    Entries.Add({ SummaryLine, SummaryColor, SummaryScale });
+    Entries.Add({ NameLine, TextPrimary, NameScale, EQuickLineStyle::Normal });
+    Entries.Add({ IdentityLine, TextMuted, IdentityScale, EQuickLineStyle::Identity });
+    if (!NowLine.IsEmpty()) Entries.Add({ NowLine, TextAction, BodyScale, EQuickLineStyle::Action });
+    Entries.Add({ SummaryLine, SummaryColor, SummaryScale, EQuickLineStyle::Status });
 
     // On narrow mobile viewports, keep the quick card about "what is happening
     // now"; personality remains one tap away in LEVEL 2 and no data is lost.
     const float LogicalWidth = Canvas->ClipX / FMath::Max(0.01f, UIScale);
     if (LogicalWidth >= 720.0f)
     {
-        Entries.Add({ WordsLine, TextSecondary, WordsScale });
+        Entries.Add({ WordsLine, TextSecondary, WordsScale, EQuickLineStyle::Normal });
     }
-    Entries.Add({ FString(LLObserverText::DetailsHint), TextHint, HintScale });
+    Entries.Add({ FString(LLObserverText::DetailsHint), TextHint, HintScale, EQuickLineStyle::Hint });
 
     const float Gap = LineGap * UIScale;
     const float Pad = PadY * UIScale;
@@ -873,7 +901,7 @@ void ALLObserverHUD::DrawQuickInspector(const FLLResidentData& Resident, float U
     const float PanelWidth = FMath::Clamp(WidestLine + 2.0f * InnerPadX, MinPanelWidth, MaxPanelWidth);
     const float TextMaxWidth = PanelWidth - 2.0f * InnerPadX;
 
-    struct FLine { FString Text; FLinearColor Color; float Scale; float Height; };
+    struct FLine { FString Text; FLinearColor Color; float Scale; float Height; EQuickLineStyle Style; };
     TArray<FLine> Lines;
     float ContentHeight = 0.0f;
     for (const FEntry& Entry : Entries)
@@ -882,7 +910,7 @@ void ALLObserverHUD::DrawQuickInspector(const FLLResidentData& Resident, float U
         {
             float W = 0.0f, H = 0.0f;
             GetTextSize(Wrapped, W, H, Font, Entry.Scale);
-            Lines.Add({ Wrapped, Entry.Color, Entry.Scale, H });
+            Lines.Add({ Wrapped, Entry.Color, Entry.Scale, H, Entry.Style });
             ContentHeight += H;
         }
     }
@@ -893,13 +921,52 @@ void ALLObserverHUD::DrawQuickInspector(const FLLResidentData& Resident, float U
     const float PanelX = FMath::Max(Insets.Left, Canvas->ClipX - PanelWidth - Insets.Right);
     const float PanelY = TopY + Margin * UIScale;
 
-    DrawRect(FLinearColor(0.0f, 0.0f, 0.0f, InspectorAlpha * PanelFade), PanelX, PanelY, PanelWidth, PanelHeight);
+    const float QuickShadowOffset = 5.0f * UIScale;
+    const float QuickAccentWidth = FMath::Max(3.0f, 3.0f * UIScale);
+    DrawRect(Faded(HUDShadow), PanelX + QuickShadowOffset, PanelY + QuickShadowOffset, PanelWidth, PanelHeight);
+    DrawRect(Faded(HUDSurface), PanelX, PanelY, PanelWidth, PanelHeight);
+    DrawRect(Faded(HUDAccent), PanelX, PanelY, QuickAccentWidth, PanelHeight);
+    DrawRect(Faded(HUDStroke), PanelX, PanelY, PanelWidth, FMath::Max(1.0f, UIScale));
     QuickInspectorRect = FBox2D(FVector2D(PanelX, PanelY), FVector2D(PanelX + PanelWidth, PanelY + PanelHeight));
 
     float CursorY = PanelY + Pad;
-    const float TextX = PanelX + InnerPadX;
+    const float TextX = PanelX + InnerPadX + QuickAccentWidth * 0.55f;
     for (const FLine& Line : Lines)
     {
+        float LineW = 0.0f, MeasureH = 0.0f;
+        GetTextSize(Line.Text, LineW, MeasureH, Font, Line.Scale);
+
+        if (Line.Style == EQuickLineStyle::Action)
+        {
+            const float PillPadX = 7.0f * UIScale;
+            const float PillPadY = 3.0f * UIScale;
+            DrawRect(
+                Faded(HUDAccentSoft),
+                TextX - PillPadX,
+                CursorY - PillPadY,
+                FMath::Min(LineW + 2.0f * PillPadX, PanelWidth - 2.0f * InnerPadX),
+                Line.Height + 2.0f * PillPadY);
+        }
+        else if (Line.Style == EQuickLineStyle::Status)
+        {
+            const float StatusBarW = FMath::Max(2.0f, 2.0f * UIScale);
+            DrawRect(
+                Faded(Line.Color),
+                TextX - 7.0f * UIScale,
+                CursorY + 1.0f * UIScale,
+                StatusBarW,
+                FMath::Max(2.0f, Line.Height - 2.0f * UIScale));
+        }
+        else if (Line.Style == EQuickLineStyle::Hint)
+        {
+            DrawRect(
+                Faded(HUDStroke),
+                TextX,
+                CursorY - Gap * 0.5f,
+                FMath::Max(0.0f, PanelWidth - 2.0f * InnerPadX - QuickAccentWidth),
+                FMath::Max(1.0f, UIScale));
+        }
+
         DrawText(Line.Text, Faded(Line.Color), TextX, CursorY, Font, Line.Scale, false);
         CursorY += Line.Height + Gap;
     }
@@ -1398,12 +1465,23 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
     const float DesiredHeight = Pad + BackRowHeight + TabBarHeight + Gap + ContentHeight + Pad;
     const float PanelHeight = FMath::Min(DesiredHeight, FMath::Max(0.0f, MaxPanelBottom - PanelY));
 
-    DrawRect(FLinearColor(0.0f, 0.0f, 0.0f, DetailAlpha * PanelFade), PanelX, PanelY, PanelWidth, PanelHeight);
+    const float DetailShadowOffset = 5.0f * UIScale;
+    const float DetailAccentWidth = FMath::Max(3.0f, 3.0f * UIScale);
+    DrawRect(Faded(HUDShadow), PanelX + DetailShadowOffset, PanelY + DetailShadowOffset, PanelWidth, PanelHeight);
+    DrawRect(Faded(HUDSurface), PanelX, PanelY, PanelWidth, PanelHeight);
+    DrawRect(Faded(HUDAccent), PanelX, PanelY, DetailAccentWidth, PanelHeight);
+    DrawRect(Faded(HUDStroke), PanelX, PanelY, PanelWidth, FMath::Max(1.0f, UIScale));
     DetailPanelRect = FBox2D(FVector2D(PanelX, PanelY), FVector2D(PanelX + PanelWidth, PanelY + PanelHeight));
 
-    const float TextX = PanelX + InnerPadX;
+    const float TextX = PanelX + InnerPadX + DetailAccentWidth * 0.55f;
 
     const float BackRowTop = PanelY + Pad;
+    DrawRect(
+        Faded(HUDHeader),
+        TextX - InnerPadX * 0.45f,
+        BackRowTop,
+        FMath::Max(0.0f, PanelWidth - InnerPadX - DetailAccentWidth),
+        BackRowHeight);
     DrawText(BackText, Faded(TextMuted), TextX, BackRowTop + (BackRowHeight - BackH) * 0.5f, Font, TabScale, false);
     DetailBackRect = FBox2D(FVector2D(PanelX, BackRowTop), FVector2D(PanelX + PanelWidth, BackRowTop + BackRowHeight));
 
@@ -1418,15 +1496,31 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
         const float TitleX = BoxX + (BoxW - Box.W) * 0.5f;
         const float TitleY = BoxY + (BoxH - Box.H) * 0.5f;
 
+        if (bActive)
+        {
+            DrawRect(
+                Faded(HUDAccentSoft),
+                BoxX + 1.0f * UIScale,
+                BoxY + 2.0f * UIScale,
+                FMath::Max(0.0f, BoxW - 2.0f * UIScale),
+                FMath::Max(0.0f, BoxH - 4.0f * UIScale));
+        }
         DrawText(Box.Title, Faded(bActive ? TextPrimary : TextMuted), TitleX, TitleY, Font, TabScale, false);
         if (bActive)
         {
-            DrawRect(Faded(TabActiveLine), TitleX, BoxY + BoxH - TabUnderline * UIScale, Box.W, TabUnderline * UIScale);
+            DrawRect(Faded(TabActiveLine), BoxX + 4.0f * UIScale, BoxY + BoxH - TabUnderline * UIScale,
+                FMath::Max(0.0f, BoxW - 8.0f * UIScale), TabUnderline * UIScale);
         }
         DetailTabRects[static_cast<int32>(Box.Tab)] = FBox2D(FVector2D(BoxX, BoxY), FVector2D(BoxX + BoxW, BoxY + BoxH));
     }
 
     const float ContentTop = TabBarTop + TabBarHeight + Gap;
+    DrawRect(
+        Faded(HUDStroke),
+        TextX,
+        ContentTop - Gap * 0.5f,
+        FMath::Max(0.0f, PanelWidth - 2.0f * InnerPadX - DetailAccentWidth),
+        FMath::Max(1.0f, UIScale));
     const float PanelBottom = PanelY + PanelHeight - Pad;
     const float ContentViewportHeight = FMath::Max(0.0f, PanelBottom - ContentTop);
     DetailScrollMax = FMath::Max(0.0f, ContentHeight - ContentViewportHeight);
