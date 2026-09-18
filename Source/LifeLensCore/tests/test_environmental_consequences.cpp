@@ -1,6 +1,7 @@
 #include "lifelens/EnvironmentalConsequences.h"
 #include "lifelens/Planner.h"
 #include "lifelens/PrimitiveFireProgression.h"
+#include "lifelens/Simulation.h"
 
 #include <cassert>
 #include <cmath>
@@ -96,7 +97,10 @@ int main()
     world.characters = {resident};
     const EnvironmentalConsequenceProfile startProfile = deriveEnvironmentalConsequences(
         deriveDynamicEnvironment(world.genesisIdentity(),selected.region.coord,world.minute));
-    applyStartRegionEnvironmentalNeedPressure(world);
+    applyResidentEnvironmentalNeedPressure(
+        world,
+        world.characters.front(),
+        world.initialStartRegionCenterGrid());
     assert(near(world.characters.front().needs.hunger,startProfile.perMinuteNeedsDelta.hunger));
     assert(near(world.characters.front().needs.thirst,startProfile.perMinuteNeedsDelta.thirst));
     assert(near(world.characters.front().needs.sleep,startProfile.perMinuteNeedsDelta.sleep));
@@ -108,6 +112,81 @@ int main()
     const int adjustedTravel = environmentAdjustedTravelTicks(world,from,to);
     assert(adjustedTravel >= baseTravel);
     assert(adjustedTravel == environmentAdjustedTravelTicks(world,from,to));
+
+    // Integration: residents in different authoritative chunks receive local
+    // environmental Need pressure during Simulation::step().
+    Simulation localPressure(20260918);
+    localPressure.setupNewGame();
+    SimulationStateSnapshot snapshot = localPressure.captureSnapshot();
+    assert(snapshot.world.characters.size() >= 2);
+    snapshot.world.minute = 123;
+
+    Character& firstResident = snapshot.world.characters[0];
+    Character& secondResident = snapshot.world.characters[1];
+    firstResident.needs = {};
+    secondResident.needs = {};
+    firstResident.metabolism = 1.0;
+    secondResident.metabolism = 1.0;
+    firstResident.sleepTendency = 1.0;
+    secondResident.sleepTendency = 1.0;
+    snapshot.runtime[firstResident.id].plan.clear();
+    snapshot.runtime[secondResident.id].plan.clear();
+
+    const WorldGenesisIdentity identity = snapshot.world.genesisIdentity();
+    ChunkCoord firstCoord = snapshot.world.initialStartRegionCoord;
+    ChunkCoord secondCoord = firstCoord;
+    EnvironmentalConsequenceProfile firstProfile{};
+    EnvironmentalConsequenceProfile secondProfile{};
+    bool foundDifferentClimate = false;
+
+    for(int radius=4; radius<=48 && !foundDifferentClimate; radius+=4){
+        const std::array<ChunkCoord,8> candidates = {{
+            {firstCoord.x+radius,firstCoord.y},
+            {firstCoord.x-radius,firstCoord.y},
+            {firstCoord.x,firstCoord.y+radius},
+            {firstCoord.x,firstCoord.y-radius},
+            {firstCoord.x+radius,firstCoord.y+radius},
+            {firstCoord.x-radius,firstCoord.y+radius},
+            {firstCoord.x+radius,firstCoord.y-radius},
+            {firstCoord.x-radius,firstCoord.y-radius}
+        }};
+        firstProfile = deriveEnvironmentalConsequences(
+            deriveDynamicEnvironment(identity,firstCoord,snapshot.world.minute+1));
+        for(const ChunkCoord candidate : candidates){
+            const EnvironmentalConsequenceProfile candidateProfile =
+                deriveEnvironmentalConsequences(
+                    deriveDynamicEnvironment(identity,candidate,snapshot.world.minute+1));
+            const double delta =
+                std::abs(firstProfile.perMinuteNeedsDelta.hunger-candidateProfile.perMinuteNeedsDelta.hunger)
+                + std::abs(firstProfile.perMinuteNeedsDelta.thirst-candidateProfile.perMinuteNeedsDelta.thirst)
+                + std::abs(firstProfile.perMinuteNeedsDelta.sleep-candidateProfile.perMinuteNeedsDelta.sleep)
+                + std::abs(firstProfile.perMinuteNeedsDelta.hygiene-candidateProfile.perMinuteNeedsDelta.hygiene);
+            if(delta > 1e-8){
+                secondCoord = candidate;
+                secondProfile = candidateProfile;
+                foundDifferentClimate = true;
+                break;
+            }
+        }
+    }
+    assert(foundDifferentClimate);
+
+    snapshot.runtime[firstResident.id].pos = chunkOriginGrid(firstCoord);
+    snapshot.runtime[secondResident.id].pos = chunkOriginGrid(secondCoord);
+
+    std::string restoreError;
+    assert(localPressure.restoreSnapshot(snapshot,&restoreError));
+    assert(restoreError.empty());
+    localPressure.step();
+
+    const Character& firstAfter = localPressure.world().characters[0];
+    const Character& secondAfter = localPressure.world().characters[1];
+    const double postDelta =
+        std::abs(firstAfter.needs.hunger-secondAfter.needs.hunger)
+        + std::abs(firstAfter.needs.thirst-secondAfter.needs.thirst)
+        + std::abs(firstAfter.needs.sleep-secondAfter.needs.sleep)
+        + std::abs(firstAfter.needs.hygiene-secondAfter.needs.hygiene);
+    assert(postDelta > 1e-8);
 
     return 0;
 }

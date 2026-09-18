@@ -956,6 +956,19 @@ void Simulation::step(){
         if(!r.plan.empty()) advanceAction(c,r);
     }
     ++world_.minute;
+
+    // Environmental pressure follows each resident's authoritative Core runtime
+    // position. Do not apply one start-region climate to residents who have
+    // moved into a different chunk.
+    for(auto& character:world_.characters){
+        if(!character.alive) continue;
+        const auto runtimeIt=runtime_.find(character.id);
+        const GridPos position=runtimeIt!=runtime_.end()
+            ? runtimeIt->second.pos
+            : world_.initialStartRegionCenterGrid();
+        applyResidentEnvironmentalNeedPressure(world_,character,position);
+    }
+
     advancePrimitiveFireOneMinute(world_);
     world_.environmentalResidues.advanceToMinute(world_.minute);
     if(world_.minute%(24*60)==0) regenerateCivilizationEnvironment(world_);
