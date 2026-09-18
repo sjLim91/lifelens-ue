@@ -29,7 +29,9 @@ SOURCE = "Poly Haven"
 LICENSE = "CC0 1.0"
 
 # Keep the first wave compact enough for repo/import iteration while replacing
-# the most visibly stylized classes in the current scene.
+# the most visibly stylized classes in the current scene. Payload budgets are
+# validated before any file for that asset is downloaded, so an accidentally
+# huge scan fails fast instead of consuming the Unreal CI runner.
 CURATED = {
     # Keep production-local-view assets inside a practical mobile/repository
     # geometry budget. Very high-poly Poly Haven trees (for example the
