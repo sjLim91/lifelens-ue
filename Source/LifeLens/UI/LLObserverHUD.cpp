@@ -172,6 +172,37 @@ namespace
         return TEXT("잔잔");
     }
 
+    FString RelationshipBondLabel(float SocialBond)
+    {
+        const float Bond = FMath::Clamp(SocialBond, -1.0f, 1.0f);
+        if (Bond >= 0.70f) { return TEXT("매우 가까움"); }
+        if (Bond >= 0.38f) { return TEXT("가까움"); }
+        if (Bond >= 0.12f) { return TEXT("친숙"); }
+        if (Bond > -0.12f) { return TEXT("중립"); }
+        if (Bond > -0.38f) { return TEXT("서먹함"); }
+        return TEXT("적대적"); 
+    }
+
+    FString RelationshipRomanceLabel(float RomancePotential)
+    {
+        const float Romance = FMath::Clamp(RomancePotential, 0.0f, 1.0f);
+        if (Romance >= 0.70f) { return TEXT("강한 호감"); }
+        if (Romance >= 0.40f) { return TEXT("호감"); }
+        if (Romance >= 0.18f) { return TEXT("가능성"); }
+        return TEXT("낮음");
+    }
+
+    FString RelationshipFrictionLabel(const FLLCoreRelationshipSnapshot& Relation)
+    {
+        const float Friction = FMath::Max(
+            FMath::Max(Relation.Conflict, Relation.Grudge),
+            FMath::Max(Relation.Fear, Relation.Jealousy));
+        if (Friction >= 0.70f) { return TEXT("긴장 높음"); }
+        if (Friction >= 0.42f) { return TEXT("갈등 있음"); }
+        if (Friction >= 0.20f) { return TEXT("약한 마찰"); }
+        return TEXT("안정");
+    }
+
     FString Scalar02(float Value)
     {
         return FString::Printf(TEXT("%.2f"), Value);
@@ -1371,35 +1402,64 @@ void ALLObserverHUD::DrawDetailPanel(const FLLResidentData& Resident, float UISc
 
             for (const FLLCoreRelationshipSnapshot& Relation : Relations)
             {
+                const FString TargetName = Relation.TargetName.IsEmpty()
+                    ? FString(LLObserverKorean::Resident)
+                    : Relation.TargetName;
+                const FString BondState = RelationshipBondLabel(Relation.SocialBond);
+                const FString RomanceState = RelationshipRomanceLabel(Relation.RomancePotential);
+                const FString FrictionState = RelationshipFrictionLabel(Relation);
+
                 FRow Header;
-                Header.Left = Relation.TargetName.IsEmpty() ? LLObserverKorean::Resident : Relation.TargetName;
-                Header.Right = FString::Printf(TEXT("%s %s · %s %s"), LLObserverKorean::Bond, *Scalar02(Relation.SocialBond), LLObserverKorean::Romance, *Scalar02(Relation.RomancePotential));
-                Header.RightColor = TextPrimary;
+                Header.Left = TargetName;
+                Header.Right = BondState + TEXT(" · ") + RomanceState;
+                Header.RightColor = Relation.SocialBond >= 0.38f ? TextAction : TextPrimary;
                 Header.Scale = RowScale;
                 Header.GapBefore = Rows.Num() > 0 ? SectionGap : 0.0f;
                 Rows.Add(Header);
 
-                FRow Social;
-                Social.Left = FString::Printf(TEXT("%s %s · %s %s · %s %s · %s %s · %s %s"),
-                    LLObserverKorean::Affection, *Scalar02(Relation.Affection), LLObserverKorean::Trust, *Scalar02(Relation.Trust),
-                    LLObserverKorean::Respect, *Scalar02(Relation.Respect), LLObserverKorean::Comfort, *Scalar02(Relation.Comfort),
-                    LLObserverKorean::Familiarity, *Scalar02(Relation.Familiarity));
-                Social.Scale = SectionScale;
-                Rows.Add(Social);
+                FRow Summary;
+                Summary.Left = FString::Printf(
+                    TEXT("%s %.0f%% · %s %.0f%%"),
+                    LLObserverKorean::Bond,
+                    FMath::Clamp((Relation.SocialBond + 1.0f) * 0.5f, 0.0f, 1.0f) * 100.0f,
+                    LLObserverKorean::Romance,
+                    FMath::Clamp(Relation.RomancePotential, 0.0f, 1.0f) * 100.0f);
+                Summary.Right = FrictionState;
+                Summary.RightColor = FrictionState == TEXT("안정")
+                    ? TextMuted
+                    : FLinearColor(1.0f, 0.70f, 0.52f, 1.0f);
+                Summary.Scale = SectionScale;
+                Rows.Add(Summary);
 
-                FRow Attraction;
-                Attraction.Left = FString::Printf(TEXT("%s %s · %s %s · %s %s · %s %s"),
-                    LLObserverKorean::Attraction, *Scalar02(Relation.Attraction), LLObserverKorean::RomanticInterest, *Scalar02(Relation.RomanticInterest),
-                    LLObserverKorean::SexualAttraction, *Scalar02(Relation.SexualAttraction), LLObserverKorean::Commitment, *Scalar02(Relation.Commitment));
-                Attraction.Scale = SectionScale;
-                Rows.Add(Attraction);
+                const float StrongestPositive = FMath::Max(
+                    FMath::Max(Relation.Affection, Relation.Trust),
+                    FMath::Max(Relation.Respect, Relation.Comfort));
+                if (StrongestPositive >= 0.45f)
+                {
+                    FRow Social;
+                    Social.Left = FString::Printf(
+                        TEXT("%s %.0f%% · %s %.0f%% · %s %.0f%%"),
+                        LLObserverKorean::Affection, FMath::Clamp(Relation.Affection, 0.0f, 1.0f) * 100.0f,
+                        LLObserverKorean::Trust, FMath::Clamp(Relation.Trust, 0.0f, 1.0f) * 100.0f,
+                        LLObserverKorean::Comfort, FMath::Clamp(Relation.Comfort, 0.0f, 1.0f) * 100.0f);
+                    Social.Scale = SectionScale;
+                    Rows.Add(Social);
+                }
 
-                FRow Friction;
-                Friction.Left = FString::Printf(TEXT("%s %s · %s %s · %s %s · %s %s"),
-                    LLObserverKorean::Conflict, *Scalar02(Relation.Conflict), LLObserverKorean::Jealousy, *Scalar02(Relation.Jealousy),
-                    LLObserverKorean::Fear, *Scalar02(Relation.Fear), LLObserverKorean::Grudge, *Scalar02(Relation.Grudge));
-                Friction.Scale = SectionScale;
-                Rows.Add(Friction);
+                const float StrongestRomantic = FMath::Max(
+                    FMath::Max(Relation.Attraction, Relation.RomanticInterest),
+                    Relation.Commitment);
+                if (StrongestRomantic >= 0.28f)
+                {
+                    FRow Attraction;
+                    Attraction.Left = FString::Printf(
+                        TEXT("%s %.0f%% · %s %.0f%% · %s %.0f%%"),
+                        LLObserverKorean::Attraction, FMath::Clamp(Relation.Attraction, 0.0f, 1.0f) * 100.0f,
+                        LLObserverKorean::RomanticInterest, FMath::Clamp(Relation.RomanticInterest, 0.0f, 1.0f) * 100.0f,
+                        LLObserverKorean::Commitment, FMath::Clamp(Relation.Commitment, 0.0f, 1.0f) * 100.0f);
+                    Attraction.Scale = SectionScale;
+                    Rows.Add(Attraction);
+                }
             }
             break;
         }
