@@ -270,6 +270,7 @@ void ALLObserverPlayerController::PlayerTick(float DeltaTime)
         return;
     }
 
+    SyncObservedResidentSelection();
     UpdateMouseCameraInput();
     UpdateTouchCameraInput();
     UpdateObservedResidentFocus();
@@ -810,6 +811,41 @@ void ALLObserverPlayerController::FocusObservedResident(ALLResidentCharacter* Re
             ObservedResidentFocusElevationDegrees,
             MinElevation,
             MaxElevation);
+    }
+}
+
+void ALLObserverPlayerController::SyncObservedResidentSelection()
+{
+    UGameInstance* GameInstance = GetGameInstance();
+    ULLObservationSubsystem* Observation =
+        GameInstance ? GameInstance->GetSubsystem<ULLObservationSubsystem>() : nullptr;
+    if (!Observation)
+    {
+        return;
+    }
+
+    // Selection can now originate outside this controller (lifecycle cards,
+    // future family/history surfaces). Reframe only when the observed resident
+    // actually changes so manual pan/orbit still suspends follow for the same
+    // selected resident.
+    if (!Observation->HasObservedResident())
+    {
+        if (FocusedResidentId.IsValid())
+        {
+            RestoreWorldOverview();
+        }
+        return;
+    }
+
+    const FGuid ObservedId = Observation->GetObservedResidentId();
+    if (!ObservedId.IsValid() || ObservedId == FocusedResidentId)
+    {
+        return;
+    }
+
+    if (ALLResidentCharacter* Resident = FindResidentActor(ObservedId))
+    {
+        FocusObservedResident(Resident, true);
     }
 }
 
