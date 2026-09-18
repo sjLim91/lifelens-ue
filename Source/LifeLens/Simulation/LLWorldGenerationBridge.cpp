@@ -119,6 +119,31 @@ FLLCoreWorldGenerationObservation ULLCoreBridgeSubsystem::GetWorldGenerationObse
     return Result;
 }
 
+TArray<FLLCoreNaturalChunkObservation> ULLCoreBridgeSubsystem::GetMaterializedNaturalChunkObservations() const
+{
+    TArray<FLLCoreNaturalChunkObservation> Result;
+    if (!CoreSimulation)
+    {
+        return Result;
+    }
+
+    const lifelens::World& World = CoreSimulation->world();
+    Result.Reserve(static_cast<int32>(FMath::Min<std::size_t>(
+        World.generatedNaturalChunks.size(),
+        static_cast<std::size_t>(MAX_int32))));
+
+    // World::materializeNaturalChunk keeps this registry sorted by ChunkCoord,
+    // so the projected list is deterministic and independent of exploration
+    // request order.
+    for (const lifelens::GeneratedNaturalChunk& Chunk : World.generatedNaturalChunks)
+    {
+        FLLCoreNaturalChunkObservation Observation;
+        FillNaturalChunkObservation(World, Chunk, Observation);
+        Result.Add(MoveTemp(Observation));
+    }
+    return Result;
+}
+
 bool ULLCoreBridgeSubsystem::GetNaturalChunkObservation(
     int32 ChunkX,
     int32 ChunkY,

@@ -1538,21 +1538,14 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         BuiltResourceQuantitySignature = CurrentResourceQuantitySignature;
         ClearInstances();
         BuildGround(World);
-        BuildChunkDressing(World, World.InitialChunk);
 
-        const int32 Rings = FMath::Clamp(
-            FMath::CeilToInt(FMath::Sqrt(static_cast<float>(FMath::Max(1, World.MaterializedChunkCount)))), 1, 4);
-        for (int32 OffsetX = -Rings; OffsetX <= Rings; ++OffsetX)
+        const TArray<FLLCoreNaturalChunkObservation> MaterializedChunks =
+            Bridge->GetMaterializedNaturalChunkObservations();
+        for (const FLLCoreNaturalChunkObservation& Chunk : MaterializedChunks)
         {
-            for (int32 OffsetY = -Rings; OffsetY <= Rings; ++OffsetY)
+            if (Chunk.bMaterialized)
             {
-                if (OffsetX == 0 && OffsetY == 0) { continue; }
-                FLLCoreNaturalChunkObservation Neighbour;
-                if (Bridge->GetNaturalChunkObservation(World.InitialChunkX + OffsetX, World.InitialChunkY + OffsetY, Neighbour)
-                    && Neighbour.bMaterialized)
-                {
-                    BuildChunkDressing(World, Neighbour);
-                }
+                BuildChunkDressing(World, Chunk);
             }
         }
     }
