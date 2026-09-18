@@ -101,7 +101,47 @@ Historical PR #100 remains superseded by #134.
 Stale PR #98 remains selective-salvage only and must not overwrite current HUD/controller wholesale.
 Android Gate B remains paused by user.
 
-# 4. New Priority Order
+# 4. Macro Execution Model — C / D / E / F
+
+The roadmap is now presented as four large execution stages. Existing milestone content remains authoritative inside these stages; nothing is deleted.
+
+## Stage C — Settlement, Survival & Early Civilization
+Maps former C1-A~C1-F:
+- facility authority.
+- autonomous need recognition.
+- facility effects/maintenance.
+- water/food persistence, storage, spoilage, cultivation.
+- emergent settlement shape.
+- Tin/Bronze and early material progression.
+
+## Stage D — Long-Run Simulation & Civilization Engine
+Maps former C2+C3:
+- long-run scale/history fast-forward/cleanup.
+- Knowledge / Capability / Technology / CivilizationTransformation.
+- discovery, reproducibility, diffusion, adoption, loss and rediscovery.
+
+## Stage E — Human Society, Health, Education, Economy & Migration
+Maps former C4+C5+C6:
+- health/disease/population resilience.
+- education/recording/specialization/economy/institutions.
+- exploration/migration/multiple settlements/trade networks.
+
+## Stage F — Historical Civilization to Open Future
+Maps former F1~F8:
+- advanced metallurgy/urban/science.
+- industrial.
+- electrical/chemical/modern.
+- digital/network.
+- AI/robotics/automation.
+- advanced energy/materials/biotech.
+- planetary/space.
+- open future/unknown civilization.
+
+**Important:** C/D/E/F are planning labels only, never simulation-time era gates.
+
+---
+
+# 5. New Priority Order
 
 ## Priority -1 — Whole-Source Audit Stabilization — DONE
 
@@ -157,7 +197,7 @@ Before migration / multi-settlement:
 
 After this stabilization, return to the existing C1 sequence without reordering its product intent.
 
-# 5. P0 Core / World Foundation Track
+# 6. P0 Core / World Foundation Track
 
 ## Milestone T1 — Simulation Time Authority & Variable Speed
 
@@ -318,7 +358,7 @@ Android policy:
 
 ---
 
-# 6. P1 Survival / Settlement Track
+# 7. Stage C — Settlement, Survival & Early Civilization
 
 ## Milestone C1 — Settlement & Subsistence Foundation
 
@@ -397,7 +437,7 @@ Acceptance:
 - seasonal/resource shocks expose real settlement weaknesses.
 - Save/Load does not duplicate projects, materials or completion.
 
-# 7. P1 Long-Run Reliability Track
+# 8. Stage D — Long-Run Reliability
 
 ## Milestone C2 — Long-Run Scale, History Fast-Forward & Cleanup
 
@@ -425,7 +465,7 @@ Acceptance:
 
 ---
 
-# 8. P2 Open-Ended Civilization Framework
+# 9. Stage D — Open-Ended Civilization Engine
 
 ## Milestone C3 — Open-Ended Civilization Framework v1
 
@@ -461,7 +501,7 @@ Environment is now a first-class innovation driver:
 
 ---
 
-# 9. P2 Population / Society Foundations
+# 10. Stage E — Human Society Foundations
 
 ## Milestone C4 — Health / Disease / Population Resilience
 
@@ -513,7 +553,7 @@ Scope:
 
 ---
 
-# 10. Presentation Track — Parallel, Not Blocking Core
+# 11. Presentation Track — Parallel, Not Blocking Core
 
 The 2026-09-18 Presentation Catch-up sprint is substantially complete and no longer blocks C1.
 
@@ -575,7 +615,7 @@ Next quality path:
 
 Presentation quality may continue in parallel, but should not create a second simulation truth or block C1 unless a real contract gap is found.
 
-# 11. Historical-to-Future Content Expansion
+# 12. Stage F — Historical-to-Future Content Expansion
 
 These are **content bands on top of C3**, not forced era gates.
 
@@ -653,7 +693,7 @@ LifeLens should eventually surprise the observer **without abandoning causality*
 
 ---
 
-# 12. Reconciliation With Previous Roadmap
+# 13. Reconciliation With Previous Roadmap
 
 | Previous item | New disposition | Reason |
 |---|---|---|
@@ -674,21 +714,18 @@ LifeLens should eventually surprise the observer **without abandoning causality*
 
 ---
 
-# 13. Current Parallel Dispatch
+# 14. Current Parallel Dispatch
 
-## C1 mainline — ACTIVE
+## Stage C mainline — ACTIVE
 
-1. **C1-B Autonomous Settlement Need Recognition.**
-2. C1-C Facility Effects + Maintenance.
-3. C1-D Water/Food Persistence + Cultivation.
-4. C1-E Emergent Settlement Geometry.
-5. C1-F Tin/Bronze after real prerequisites.
-6. C2 Long-Run Scale + History Fast-Forward.
-7. C3 Open-Ended Civilization Framework v1.
-8. C4 Health / Disease / Population Resilience.
-9. C5 Education / Recording / Specialization / Economy / Institutions.
-10. C6 Migration / Multiple Settlements / Trade Networks.
-11. F1 -> F8 historical / modern / future expansion.
+1. **C-S1 Autonomous Settlement Need Recognition.**
+2. C-S2 Facility Effects + Maintenance.
+3. C-S3 Water/Food Persistence + Cultivation.
+4. C-S4 Emergent Settlement Geometry.
+5. C-S5 Tin/Bronze after real prerequisites.
+6. **Stage D** — long-run reliability + open-ended civilization engine.
+7. **Stage E** — health + education/economy/institutions + migration/trade.
+8. **Stage F** — historical/industrial/modern/digital/AI/advanced/space/open-future expansion.
 
 ## Audit follow-up
 
@@ -704,11 +741,11 @@ Presentation catch-up remains integrated; runtime visual/device QA continues inc
 Gate B remains PAUSED BY USER.
 Do not launch a long Android build until the user explicitly resumes it.
 
-# 14. Immediate Next Feature
+# 15. Immediate Next Feature
 
 Current immediate implementation target:
 
-> **C1-B — Autonomous Settlement Need Recognition**
+> **Stage C / C-S1 — Autonomous Settlement Need Recognition**
 
 First delivery:
 - sleep/outdoor-rest pressure -> SleepingPlace utility.
