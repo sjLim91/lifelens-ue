@@ -337,3 +337,23 @@ C1 세부 순서:
 
 **이유**
 - Unreal Engine을 선택한 핵심 가치 중 하나인 실시간 고품질 렌더링 능력을 활용하면서도 Android-first delivery와 동일한 자율 시뮬레이션을 유지하기 위함이다.
+
+---
+
+## D-018 — Unreal PCG와 Water System을 자연환경 presentation 기반으로 사용한다
+
+**결정**
+- LifeLens는 Unreal Engine 5.6 내장 `PCG`와 `Water` plugin을 project-level environment tool로 활성화한다.
+- PCG는 나무/풀/바위/ground cover/biome dressing 같은 procedural **presentation placement**에 사용한다.
+- PCG가 gameplay resource나 facility의 존재를 독자적으로 결정하지 않는다. interactable/resource state는 Core/World authority를 따른다.
+- Water System은 강/호수/해안/바다의 mesh/shading/spline presentation에 사용하지만, 수계의 존재/종류/염도/흐름/가용성은 authoritative Hydrology read model을 따른다.
+- Android에서 runtime PCG/고급 water rendering 비용이 크면 bake/cache/LOD/단순 material path로 낮출 수 있다. 동일 world truth는 유지한다.
+- Experimental PCG extension/GPU 기능은 별도 validation 전에는 필수 production dependency로 두지 않는다.
+
+**이유**
+- 직접 만든 단순 scatter/cube 기반 환경을 계속 확장하는 대신 Unreal-native world-building 기능을 활용해 품질과 유지보수성을 동시에 높이기 위함이다.
+- cinematic PC와 mobile Android의 표현 수준을 분리하면서도 한 개의 deterministic LifeLens world를 유지하기 위함이다.
+
+**Canonical presentation doc**
+- `docs/WORLD_VISUAL_ENVIRONMENT_v1.md`
+- `docs/CINEMATIC_RENDERING_STRATEGY_v1.md`

@@ -48,6 +48,9 @@ if missing:
 
 project = json.loads((root / 'LifeLens.uproject').read_text(encoding='utf-8'))
 assert project['Modules'][0]['Name'] == 'LifeLens'
+enabled_plugins = {p['Name'] for p in project.get('Plugins', []) if p.get('Enabled') is True}
+for plugin in ('Niagara', 'PCG', 'Water'):
+    assert plugin in enabled_plugins, f'Missing required Unreal-native presentation plugin: {plugin}'
 
 build_rules = (root / 'Source/LifeLens/LifeLens.Build.cs').read_text(encoding='utf-8')
 assert 'PublicIncludePaths.Add(ModuleDirectory);' in build_rules
