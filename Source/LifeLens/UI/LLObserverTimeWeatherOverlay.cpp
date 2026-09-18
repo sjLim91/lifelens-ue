@@ -8,6 +8,7 @@
 #include "Components/CanvasPanelSlot.h"
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
+#include "Components/ProgressBar.h"
 #include "Components/SizeBox.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
@@ -95,6 +96,8 @@ void ULLObserverTimeWeatherOverlay::NativeConstruct()
         UTextBlock::StaticClass(), TEXT("ObserverTimeWeatherStatus"));
     WeatherText = WidgetTree->ConstructWidget<UTextBlock>(
         UTextBlock::StaticClass(), TEXT("ObserverTimeWeatherWeather"));
+    DayProgressBar = WidgetTree->ConstructWidget<UProgressBar>(
+        UProgressBar::StaticClass(), TEXT("ObserverDayProgress"));
     UHorizontalBox* SpeedRow = WidgetTree->ConstructWidget<UHorizontalBox>(
         UHorizontalBox::StaticClass(), TEXT("ObserverSpeedRow"));
 
@@ -126,7 +129,18 @@ void ULLObserverTimeWeatherOverlay::NativeConstruct()
     WeatherText->SetVisibility(ESlateVisibility::HitTestInvisible);
     if (UVerticalBoxSlot* WeatherSlot = Content->AddChildToVerticalBox(WeatherText))
     {
-        WeatherSlot->SetPadding(FMargin(4.0f, 0.0f, 4.0f, 7.0f));
+        WeatherSlot->SetPadding(FMargin(4.0f, 0.0f, 4.0f, 4.0f));
+    }
+
+    if (DayProgressBar)
+    {
+        DayProgressBar->SetPercent(0.0f);
+        DayProgressBar->SetFillColorAndOpacity(FLinearColor(0.98f, 0.72f, 0.34f, 0.94f));
+        DayProgressBar->SetVisibility(ESlateVisibility::HitTestInvisible);
+        if (UVerticalBoxSlot* ProgressSlot = Content->AddChildToVerticalBox(DayProgressBar))
+        {
+            ProgressSlot->SetPadding(FMargin(4.0f, 0.0f, 4.0f, 7.0f));
+        }
     }
 
     if (UVerticalBoxSlot* SpeedSlot = Content->AddChildToVerticalBox(SpeedRow))
@@ -270,6 +284,21 @@ void ULLObserverTimeWeatherOverlay::RefreshStatus(bool bForce)
             Weather.bAvailable
                 ? WeatherColor(Weather.WeatherSummary)
                 : FLinearColor(0.68f, 0.75f, 0.84f, 1.0f)));
+    }
+
+    if (DayProgressBar)
+    {
+        const float MinuteOfDay = static_cast<float>(
+            FMath::Clamp(Time.HourOfDay * 60 + Time.MinuteOfHour, 0, 1439));
+        const float DayProgress01 = MinuteOfDay / 1439.0f;
+        DayProgressBar->SetPercent(DayProgress01);
+
+        const float NoonDistance = FMath::Abs(DayProgress01 - 0.5f) * 2.0f;
+        const float DaylightWarmth = 1.0f - FMath::Clamp(NoonDistance, 0.0f, 1.0f);
+        const FLinearColor NightColor(0.28f, 0.44f, 0.76f, 0.92f);
+        const FLinearColor DayColor(1.0f, 0.74f, 0.30f, 0.96f);
+        DayProgressBar->SetFillColorAndOpacity(
+            FMath::Lerp(NightColor, DayColor, DaylightWarmth));
     }
 
     RefreshButtonState(SpeedPreset);
