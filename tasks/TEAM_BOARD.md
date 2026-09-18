@@ -187,6 +187,17 @@ Target presets:
 Dagyeom Observer may implement the control surface after T1 exposes the authoritative runtime contract.
 Do not directly scale Core truth from UI tick rate.
 
+### Hydrology -> Water presentation projection — provider ready
+
+Jjun bridge now exposes deterministic, read-only local-surface water presentation observations for materialized chunks:
+
+- authoritative `SurfaceWaterId`, kind and salinity.
+- stable chunk-center grid anchor.
+- downstream center target for spring/stream/river where Core exposes downstream.
+- deterministic suggested channel width / area radius derived from authoritative kind, availability and flow.
+
+These are **presentation hints**, not new water simulation truth. Dagyeom may use them to build Unreal Water splines/bodies without inventing a second hydrology layout. Gameplay drinking, resource availability, flow and salinity remain Core authority.
+
 ### Calendar / Environment — provider pending E1/E2
 
 Planned provider state:
