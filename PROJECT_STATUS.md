@@ -20,7 +20,7 @@ AUDIT-0A / 0B / 0C automated source gates are complete.
 
 Runtime-only visual/input smoke (actual PIE/device layout, touch feel, animation/VFX/performance) remains a QA track and is not represented as CI-verified.
 
-**Current execution focus: late-2026-09-18 Presentation/Observer quality sprint in parallel with the Stage C simulation roadmap.**
+**Current execution focus: late-2026-09-18 Presentation/Observer quality sprint; #216~#224 are merged and the next screen wave is ready to dispatch in parallel with the Stage C simulation roadmap.**
 
 Canonical audit:
 - `docs/SOURCE_AUDIT_2026-09-18.md`
@@ -175,6 +175,21 @@ The Presentation/Observer sprint advanced far beyond the earlier #158 audit snap
 - `docs/PRESENTATION_WORK_STATE_2026-09-18.md`
 
 For current PR/CI truth, actual GitHub main / open PR / Actions remains authoritative.
+
+### Latest merged Presentation checkpoint
+
+Merged after exact-head Preflight + Unreal Linux Compile:
+- #216 Detail resident navigation v1.
+- #217 Sleep site posture v7.
+- #218 Resource depletion visual v2.
+- #219 Selected social counterpart v7.
+- #220 Snow cover accumulation v6.
+- #221 Detailed daypart chrome v5.
+- #222 Resident identity badge v7.
+- #223 Offscreen action cue v4.
+- #224 World event focus return v2.
+
+#225 is the docs-only synchronization PR for this checkpoint.
 
 ## Canonical documents
 
