@@ -234,6 +234,8 @@ void ALLDynamicEnvironmentPresentationActor::ResolveWorldComponents()
     {
         HeightFog->SetMobility(EComponentMobility::Movable);
         HeightFog->SetFogDensity(ClearFogDensity);
+        HeightFog->SetStartDistance(FMath::Max(0.0f, HorizonFogStartDistanceUU));
+        HeightFog->SetFogMaxOpacity(FMath::Clamp(HorizonFogMaxOpacity, 0.0f, 1.0f));
     }
 }
 
