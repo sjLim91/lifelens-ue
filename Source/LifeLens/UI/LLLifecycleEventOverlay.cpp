@@ -81,6 +81,7 @@ void ULLLifecycleEventOverlay::ResetObservationState()
 {
     PreviousResidents.Reset();
     PreviousPregnancyPairs.Reset();
+    PreviousRomancePairs.Reset();
     Notices.Reset();
     ObservedLifeHistory.Reset();
     LastObservedSimulationMinute = -1;
@@ -102,6 +103,38 @@ FString ULLLifecycleEventOverlay::LifeStageLabel(ELLCoreLifeStage Stage)
         case ELLCoreLifeStage::Elderly: return TEXT("노년");
     }
     return TEXT("미상");
+}
+
+FString ULLLifecycleEventOverlay::RomanceStageLabel(ELLCoreRomanceStage Stage)
+{
+    switch (Stage)
+    {
+        case ELLCoreRomanceStage::Dating: return TEXT("연애 중");
+        case ELLCoreRomanceStage::Engaged: return TEXT("약혼");
+        case ELLCoreRomanceStage::Married: return TEXT("결혼");
+        case ELLCoreRomanceStage::Separated: return TEXT("별거");
+        case ELLCoreRomanceStage::Divorced: return TEXT("이혼");
+        case ELLCoreRomanceStage::Widowed: return TEXT("사별");
+        case ELLCoreRomanceStage::FormerPartners: return TEXT("이전 연인");
+        case ELLCoreRomanceStage::None:
+        default: return TEXT("관계 없음");
+    }
+}
+
+FString ULLLifecycleEventOverlay::RomanceEventPrefix(ELLCoreRomanceStage Stage)
+{
+    switch (Stage)
+    {
+        case ELLCoreRomanceStage::Dating: return TEXT("[연애]");
+        case ELLCoreRomanceStage::Engaged: return TEXT("[약혼]");
+        case ELLCoreRomanceStage::Married: return TEXT("[결혼]");
+        case ELLCoreRomanceStage::Separated: return TEXT("[별거]");
+        case ELLCoreRomanceStage::Divorced: return TEXT("[이혼]");
+        case ELLCoreRomanceStage::Widowed: return TEXT("[사별]");
+        case ELLCoreRomanceStage::FormerPartners: return TEXT("[관계 종료]");
+        case ELLCoreRomanceStage::None:
+        default: return TEXT("[관계]");
+    }
 }
 
 FString ULLLifecycleEventOverlay::FormatObservedMoment(int64 SimulationMinute)
@@ -141,6 +174,7 @@ void ULLLifecycleEventOverlay::RefreshFromCore()
 
     TMap<FGuid, FResidentVisualState> CurrentResidents;
     TSet<FString> CurrentPregnancyPairs;
+    TMap<FString, FRomanceVisualState> CurrentRomancePairs;
     TMap<FString, FString> PregnancyLabels;
     TMap<FString, FGuid> PregnancySubjects;
     TMap<FString, FGuid> PregnancyPartners;
@@ -162,23 +196,62 @@ void ULLLifecycleEventOverlay::RefreshFromCore()
         }
 
         FLLCoreFamilyObservation Family;
-        if (!Bridge->GetFamilyObservation(Resident.ResidentId, Family)
-            || !Family.bExpectingChild
-            || !Family.PregnancyPartnerResidentId.IsValid())
+        if (!Bridge->GetFamilyObservation(Resident.ResidentId, Family))
         {
             continue;
         }
 
-        const FString PairKey = PregnancyPairKey(Resident.ResidentId, Family.PregnancyPartnerResidentId);
-        CurrentPregnancyPairs.Add(PairKey);
-        if (!PregnancyLabels.Contains(PairKey))
+        if (Family.bHasRomanceHistory && Family.PartnerResidentId.IsValid())
         {
-            const FString PartnerName = Family.PregnancyPartnerName.IsEmpty()
-                ? TEXT("상대 주민")
-                : Family.PregnancyPartnerName;
-            PregnancyLabels.Add(PairKey, Resident.DisplayName + TEXT(" · ") + PartnerName);
-            PregnancySubjects.Add(PairKey, Resident.ResidentId);
-            PregnancyPartners.Add(PairKey, Family.PregnancyPartnerResidentId);
+            const FString RomanceKey =
+                PregnancyPairKey(Resident.ResidentId, Family.PartnerResidentId);
+            if (!CurrentRomancePairs.Contains(RomanceKey))
+            {
+                const FString ResidentKey =
+                    Resident.ResidentId.ToString(EGuidFormats::Digits);
+                const FString PartnerKey =
+                    Family.PartnerResidentId.ToString(EGuidFormats::Digits);
+                const FString PartnerName = Family.PartnerName.IsEmpty()
+                    ? TEXT("상대 주민")
+                    : Family.PartnerName;
+
+                FRomanceVisualState Romance;
+                if (ResidentKey < PartnerKey)
+                {
+                    Romance.FirstResidentId = Resident.ResidentId;
+                    Romance.FirstName = Resident.DisplayName;
+                    Romance.SecondResidentId = Family.PartnerResidentId;
+                    Romance.SecondName = PartnerName;
+                }
+                else
+                {
+                    Romance.FirstResidentId = Family.PartnerResidentId;
+                    Romance.FirstName = PartnerName;
+                    Romance.SecondResidentId = Resident.ResidentId;
+                    Romance.SecondName = Resident.DisplayName;
+                }
+                Romance.Stage = Family.PartnerStage;
+                Romance.bCohabiting = Family.bCohabitingWithPartner;
+                CurrentRomancePairs.Add(RomanceKey, MoveTemp(Romance));
+            }
+        }
+
+        if (Family.bExpectingChild && Family.PregnancyPartnerResidentId.IsValid())
+        {
+            const FString PairKey =
+                PregnancyPairKey(Resident.ResidentId, Family.PregnancyPartnerResidentId);
+            CurrentPregnancyPairs.Add(PairKey);
+            if (!PregnancyLabels.Contains(PairKey))
+            {
+                const FString PartnerName = Family.PregnancyPartnerName.IsEmpty()
+                    ? TEXT("상대 주민")
+                    : Family.PregnancyPartnerName;
+                PregnancyLabels.Add(
+                    PairKey,
+                    Resident.DisplayName + TEXT(" · ") + PartnerName);
+                PregnancySubjects.Add(PairKey, Resident.ResidentId);
+                PregnancyPartners.Add(PairKey, Family.PregnancyPartnerResidentId);
+            }
         }
     }
 
@@ -186,6 +259,7 @@ void ULLLifecycleEventOverlay::RefreshFromCore()
     {
         PreviousResidents = MoveTemp(CurrentResidents);
         PreviousPregnancyPairs = MoveTemp(CurrentPregnancyPairs);
+        PreviousRomancePairs = MoveTemp(CurrentRomancePairs);
         LastObservedSimulationMinute = WorldObservation.SimulationMinute;
         bBaselineReady = true;
         return;
@@ -225,6 +299,52 @@ void ULLLifecycleEventOverlay::RefreshFromCore()
         }
     }
 
+    for (const TPair<FString, FRomanceVisualState>& Pair : CurrentRomancePairs)
+    {
+        const FRomanceVisualState& Current = Pair.Value;
+        const FRomanceVisualState* Previous = PreviousRomancePairs.Find(Pair.Key);
+        const FString Names = Current.FirstName + TEXT(" · ") + Current.SecondName;
+
+        if (!Previous)
+        {
+            if (Current.Stage != ELLCoreRomanceStage::None)
+            {
+                PushNotice(
+                    RomanceEventPrefix(Current.Stage) + TEXT(" ") + Names,
+                    Current.FirstResidentId,
+                    Current.SecondResidentId,
+                    WorldObservation.SimulationMinute);
+            }
+            if (Current.bCohabiting)
+            {
+                PushNotice(
+                    TEXT("[동거] ") + Names,
+                    Current.FirstResidentId,
+                    Current.SecondResidentId,
+                    WorldObservation.SimulationMinute);
+            }
+            continue;
+        }
+
+        if (Previous->Stage != Current.Stage)
+        {
+            PushNotice(
+                RomanceEventPrefix(Current.Stage) + TEXT(" ") + Names,
+                Current.FirstResidentId,
+                Current.SecondResidentId,
+                WorldObservation.SimulationMinute);
+        }
+
+        if (Previous->bCohabiting != Current.bCohabiting)
+        {
+            PushNotice(
+                (Current.bCohabiting ? TEXT("[동거] ") : TEXT("[동거 종료] ")) + Names,
+                Current.FirstResidentId,
+                Current.SecondResidentId,
+                WorldObservation.SimulationMinute);
+        }
+    }
+
     for (const FString& PairKey : CurrentPregnancyPairs)
     {
         if (!PreviousPregnancyPairs.Contains(PairKey))
@@ -239,6 +359,7 @@ void ULLLifecycleEventOverlay::RefreshFromCore()
 
     PreviousResidents = MoveTemp(CurrentResidents);
     PreviousPregnancyPairs = MoveTemp(CurrentPregnancyPairs);
+    PreviousRomancePairs = MoveTemp(CurrentRomancePairs);
     LastObservedSimulationMinute = WorldObservation.SimulationMinute;
 }
 
@@ -278,9 +399,16 @@ void ULLLifecycleEventOverlay::RefreshSelectedResidentCard()
     {
         if (Family.bHasActivePartner)
         {
-            Status += FString::Printf(TEXT("\n파트너 · %s%s"),
+            Status += FString::Printf(TEXT("\n파트너 · %s · %s%s"),
                 Family.PartnerName.IsEmpty() ? TEXT("이름 미상") : *Family.PartnerName,
+                *RomanceStageLabel(Family.PartnerStage),
                 Family.bCohabitingWithPartner ? TEXT(" · 동거") : TEXT(""));
+        }
+        else if (Family.bHasRomanceHistory && Family.PartnerResidentId.IsValid())
+        {
+            Status += FString::Printf(TEXT("\n관계 이력 · %s · %s"),
+                Family.PartnerName.IsEmpty() ? TEXT("이름 미상") : *Family.PartnerName,
+                *RomanceStageLabel(Family.PartnerStage));
         }
         if (Family.bExpectingChild)
         {
