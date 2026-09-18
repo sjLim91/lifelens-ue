@@ -94,3 +94,13 @@ making the stylized fallback the production art direction.
 ### LifeLens geometry/payload guard
 
 The baseline intentionally rejects ultra-heavy photogrammetry hero meshes when the selected model payload exceeds the per-asset budget. For example, high-detail multi-million-triangle trees are not an acceptable universal Android-first baseline merely because their textures are requested at 1K. Curated saplings/ground-cover assets are used until explicit PC-only/HLOD tiers are introduced.
+
+
+### Pack 3 facility/primitive-civilization extension
+
+Validated source pages (Poly Haven, CC0 1.0):
+- `stone_fire_pit` — completed FirePit hero visual.
+- `wicker_basket_01` — storage/container visual.
+- `wooden_axe` — early work-tool visual.
+
+These assets are acquired/imported through the same deterministic Poly Haven pipeline and remain presentation-only. Their presence does not create a facility, inventory, tool capability, or technology in Core.
