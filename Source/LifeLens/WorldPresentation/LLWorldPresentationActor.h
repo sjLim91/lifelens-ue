@@ -266,6 +266,13 @@ private:
     UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> FacilityCargoInstances;
     UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> FacilityAccentInstances;
 
+    // Optional photoreal CC0 facility/prop slots. These never replace Core
+    // facility truth; they only replace bootstrap cube visuals when the
+    // corresponding imported asset exists.
+    UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> PhotorealFirePitInstances;
+    UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> PhotorealStorageBasketInstances;
+    UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> PhotorealWorkToolInstances;
+
     // Shared palette materials keep facility silhouettes readable without
     // multiplying draw components per facility. Shape/state still comes solely
     // from authoritative facility DTOs.
