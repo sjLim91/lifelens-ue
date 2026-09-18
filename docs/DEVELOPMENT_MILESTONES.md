@@ -103,19 +103,59 @@ Android Gate B remains paused by user.
 
 # 4. New Priority Order
 
-이번 재정렬의 핵심은 **시간과 동적 환경을 정착/농업/장기 문명보다 먼저 안정화**하는 것이다.
-이유는 농업, 수면, 저장, 장기 생존, 세대 진행, 건강, 기술 압력 모두 시간/환경 축을 공유하기 때문이다.
+## Priority -1 — Whole-Source Audit Stabilization — ACTIVE NOW
 
-## Priority 0 — Documentation / Integration Closeout
+Canonical audit:
+`docs/SOURCE_AUDIT_2026-09-18.md`
 
-1. #134 merge state를 canonical docs에 반영.
-2. #133 roadmap/docs PR closeout.
-3. #100은 superseded로 정리.
-4. Android Gate B는 계속 PAUSED BY USER.
+C1-B보다 먼저 다음을 끝낸다.
 
-이 단계가 끝나면 다음 기능 작업은 아래 P0 Core 순서로 진행한다.
+### AUDIT-0A — Observer time/weather/speed duplicate UI consolidation
 
----
+Current main contains both:
+- `ALLRuntimeObserverHUD::DrawRuntimeChrome()`.
+- `ULLObserverTimeWeatherOverlay` auto-created by its presentation subsystem.
+
+Both render time/weather/speed and both can change the simulation speed preset.
+
+Acceptance:
+- exactly one production control surface.
+- one input/hit path.
+- Core time authority unchanged.
+- PC/Android interaction checked.
+- Preflight + Unreal Compile + PIE smoke green.
+
+### AUDIT-0B — Resident-local environmental Need pressure
+
+Current per-minute environmental Need pressure samples the initial start region once and applies it to all living residents.
+
+Acceptance:
+- resident authoritative GridPos -> chunk -> DynamicEnvironment.
+- different chunks can produce different Need pressure in the same simulation minute.
+- deterministic snapshot continuation remains valid.
+- Core regression added.
+
+### AUDIT-0C — Whole regression
+
+Before resuming C1-B:
+- Core Tests.
+- deterministic harness.
+- Structural Preflight.
+- Unreal Linux Compile.
+- PIE visual/input smoke checklist.
+
+### AUDIT-1A — Materialized chunk enumeration — P1 follow-up
+
+WorldPresentation / obstacle collision currently infer materialized coordinates from count + initial-region ring scanning.
+
+Before migration / multi-settlement:
+- expose authoritative materialized chunk coordinate list through Core read bridge.
+- consume the list directly.
+- remove count-based coordinate guessing.
+
+**Stop-the-line:** AUDIT-0A/B/C must be green before C1-B is merged.
+
+After this stabilization, return to the existing C1 sequence without reordering its product intent.
 
 # 5. P0 Core / World Foundation Track
 
@@ -636,57 +676,46 @@ LifeLens should eventually surprise the observer **without abandoning causality*
 
 # 13. Current Parallel Dispatch
 
-## Jjun Core / World lane
+## Whole-product stabilization lane — FIRST
 
-1. **C1-B Autonomous Settlement Need Recognition.**
-2. **C1-C Facility Effects + Maintenance.**
-3. **C1-D Water/Food Persistence + Cultivation.**
-4. **C1-E Emergent Settlement Geometry.**
-5. **C1-F Tin/Bronze after real prerequisites.**
-6. **C2 Long-Run Scale + History Fast-Forward.**
-7. **C3 Open-Ended Civilization Framework v1.**
+1. **AUDIT-0A** — consolidate duplicate Observer time/weather/speed UI.
+2. **AUDIT-0B** — resident-local environmental Need pressure.
+3. **AUDIT-0C** — full regression + PIE smoke.
+4. **AUDIT-1A** — explicit materialized chunk enumeration before migration/multi-settlement.
+
+Ownership labels do not split this audit. The repository is reviewed and stabilized as one LifeLens product.
+
+## C1 lane — resumes after AUDIT-0C
+
+1. C1-B Autonomous Settlement Need Recognition.
+2. C1-C Facility Effects + Maintenance.
+3. C1-D Water/Food Persistence + Cultivation.
+4. C1-E Emergent Settlement Geometry.
+5. C1-F Tin/Bronze after real prerequisites.
+6. C2 Long-Run Scale + History Fast-Forward.
+7. C3 Open-Ended Civilization Framework v1.
 8. C4 Health / Disease / Population Resilience.
 9. C5 Education / Recording / Specialization / Economy / Institutions.
 10. C6 Migration / Multiple Settlements / Trade Networks.
 11. F1 -> F8 historical / modern / future expansion.
 
-## Dagyeom Presentation lane
+## Presentation quality lane
 
-Presentation Catch-up is integrated through #151.
-
-Independent quality work may continue:
-- authored animation improvements.
-- panel/readability polish.
-- environment VFX/material polish.
-- lifecycle/deceased visual polish.
-- C1 facility presentation consumers as Core contracts land.
-
-Correct responsibility beats artificial file separation.
-If both lanes legitimately need the same canonical file, coordinate/rebase instead of inventing duplicate architecture.
+The previous catch-up remains integrated through #151/#154.
+Only incremental quality work continues unless it intersects AUDIT-0A.
 
 ## Android / Device lane
 
-Gate B remains **PAUSED BY USER**.
-
-Known recovery evidence:
-- #141 probe confirmed a prebuilt UE 5.6 Linux development image includes UnrealEditor / RunUAT / UBT plus Android platform payload.
-- production recovery should be rebuilt from fresh main using that prebuilt-host direction.
-- do not merge stale #141 as-is.
-- do not launch a long Android build until the user explicitly resumes Gate B.
+Gate B remains PAUSED BY USER.
+Do not launch a long Android build until the user explicitly resumes it.
 
 # 14. Immediate Next Feature
 
-Current next Jjun-owned implementation target:
+Current immediate implementation target:
 
-> **C1-B — Autonomous Settlement Need Recognition**
+> **AUDIT-0A — consolidate duplicate Observer time/weather/speed UI.**
 
-First delivery:
-- convert sleep/environment/crafting pressure into utility for SleepingPlace / Shelter / WorkSurface.
-- feed missing project materials into gathering demand.
-- make Plan / DeliverMaterial / Work use authoritative spatial ContextAction targets.
-- preserve same-seed determinism and snapshot continuation.
-- do not bundle agriculture, Bronze and long-run scale into the same PR.
+Then:
+`AUDIT-0B -> AUDIT-0C -> C1-B`
 
-After C1-B is stable:
-C1-C facility effects/maintenance -> C1-D durable water/food/cultivation -> C1-E emergent settlement geometry -> C1-F early metallurgy expansion.
-
+C1-B remains the next product feature milestone, but it is temporarily blocked by the audit stabilization gate so settlement is not built on a duplicated UI responsibility or incorrect environment-location basis.
