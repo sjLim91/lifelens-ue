@@ -16,7 +16,7 @@
 >
 > Historical audit: `docs/INTEGRATED_AUDIT_2026-09-17.md` (point-in-time only; do not treat as live status).
 
-Last reconciled: **2026-09-18 23:45 KST during the expanded Presentation/Observer sprint (#216~#224 in flight)**.
+Last reconciled: **2026-09-18 23:55 KST after #216~#224 merged; #225 docs sync remains open**.
 
 ---
 
@@ -267,7 +267,7 @@ Canonical detailed snapshot:
 Merged since the earlier work-state snapshot:
 - #159~#215, including environment, character appearance/motion, facility readability, observer camera/HUD, lifecycle/social/family navigation and Dagyeom #98 integration via #202.
 
-Current active wave at 23:45 KST:
+Latest merged wave:
 - #216 Detail resident navigation v1.
 - #217 Sleep site posture v7.
 - #218 Resource depletion visual v2.
@@ -277,5 +277,8 @@ Current active wave at 23:45 KST:
 - #222 Resident identity badge v7.
 - #223 Offscreen action cue v4.
 - #224 World event focus return v2.
+
+Each merged only after its exact-head Preflight + Unreal Linux Compile succeeded.
+Current open synchronization item: #225 docs-only current-work reconciliation.
 
 The previous practical four-PR batch cap is removed. Independent canonical files may now be developed/compiled in larger parallel batches while same-file responsibilities are sequenced or combined.
