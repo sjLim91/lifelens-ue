@@ -14,6 +14,8 @@
 #include "ReferenceSkeleton.h"
 #include "Simulation/LLCoreActionTypes.h"
 #include "Simulation/LLCoreBridgeSubsystem.h"
+#include "World/LLWorldDirector.h"
+#include "EngineUtils.h"
 #include "UObject/ConstructorHelpers.h"
 
 namespace
@@ -271,7 +273,23 @@ UAnimSequence* ULLResidentMotionComponent::LegacyContextAnimation() const
 ELLResidentContextMotion ULLResidentMotionComponent::ResolveDirectPhysicalMotion() const
 {
     const ALLResidentCharacter* Resident = Cast<ALLResidentCharacter>(GetOwner());
-    if (!Resident || !Resident->HasReachedMovementTarget())
+    const UWorld* World = GetWorld();
+    if (!Resident || !World || !Resident->GetResidentId().IsValid())
+    {
+        return ELLResidentContextMotion::None;
+    }
+
+    const ALLWorldDirector* WorldDirector = nullptr;
+    for (TActorIterator<ALLWorldDirector> It(World); It; ++It)
+    {
+        WorldDirector = *It;
+        break;
+    }
+
+    // Do not infer "performing" from a cleared movement target. WorldDirector
+    // owns the physical-use window and exposes its actual runtime state.
+    if (!WorldDirector
+        || !WorldDirector->IsResidentPerformingPhysicalAction(Resident->GetResidentId()))
     {
         return ELLResidentContextMotion::None;
     }

@@ -160,6 +160,14 @@ bool ALLWorldDirector::IsResidentUsingEmergencyFallback(FGuid ResidentId) const
         && Runtime->ActiveAffordanceTier == ELLWorldAffordanceTier::Emergency;
 }
 
+bool ALLWorldDirector::IsResidentPerformingPhysicalAction(FGuid ResidentId) const
+{
+    const FLLResidentRuntimeState* Runtime = RuntimeStates.Find(ResidentId);
+    return Runtime
+        && Runtime->bPerformingAction
+        && Runtime->LastActivityKind == ELLCoreObservedActivityKind::Physical;
+}
+
 int32 ALLWorldDirector::GetEnvironmentalResidueVisualCount() const
 {
     return EnvironmentalResidueVisualizer

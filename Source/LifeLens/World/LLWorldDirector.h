@@ -56,6 +56,11 @@ public:
     UFUNCTION(BlueprintPure, Category="LifeLens|World")
     bool IsResidentUsingEmergencyFallback(FGuid ResidentId) const;
 
+    // Presentation truth signal: true only while WorldDirector is actually
+    // executing a Core Physical activity at its resolved use point.
+    UFUNCTION(BlueprintPure, Category="LifeLens|World")
+    bool IsResidentPerformingPhysicalAction(FGuid ResidentId) const;
+
     UFUNCTION(BlueprintPure, Category="LifeLens|World|Environment")
     int32 GetEnvironmentalResidueVisualCount() const;
 
