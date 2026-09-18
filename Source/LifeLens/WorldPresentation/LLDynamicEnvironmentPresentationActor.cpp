@@ -102,8 +102,10 @@ ALLDynamicEnvironmentPresentationActor::ALLDynamicEnvironmentPresentationActor()
     FogEffect->SetupAttachment(SceneRoot);
     FogEffect->SetAutoActivate(false);
 
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> FallbackMeshFinder(TEXT("/Engine/BasicShapes/Cube.Cube"));
-    FallbackPrecipitationMesh = FallbackMeshFinder.Succeeded() ? FallbackMeshFinder.Object : nullptr;
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> FallbackRainMeshFinder(TEXT("/Engine/BasicShapes/Cube.Cube"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> FallbackSnowMeshFinder(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
+    FallbackRainMesh = FallbackRainMeshFinder.Succeeded() ? FallbackRainMeshFinder.Object : nullptr;
+    FallbackSnowMesh = FallbackSnowMeshFinder.Succeeded() ? FallbackSnowMeshFinder.Object : nullptr;
 
     RainFallback = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("RainFallback"));
     RainFallback->SetupAttachment(SceneRoot);
@@ -241,18 +243,13 @@ void ALLDynamicEnvironmentPresentationActor::ConfigureEffectAssets()
 
 void ALLDynamicEnvironmentPresentationActor::ConfigureFallbackPrecipitation()
 {
-    if (!FallbackPrecipitationMesh)
+    auto Configure = [this](UInstancedStaticMeshComponent* Component, UStaticMesh* Mesh, int32 MaxInstances)
     {
-        return;
-    }
-
-    auto Configure = [this](UInstancedStaticMeshComponent* Component, int32 MaxInstances)
-    {
-        if (!Component)
+        if (!Component || !Mesh)
         {
             return;
         }
-        Component->SetStaticMesh(FallbackPrecipitationMesh);
+        Component->SetStaticMesh(Mesh);
         Component->ClearInstances();
         const int32 Count = FMath::Max(1, MaxInstances);
         for (int32 Index = 0; Index < Count; ++Index)
@@ -261,8 +258,8 @@ void ALLDynamicEnvironmentPresentationActor::ConfigureFallbackPrecipitation()
         }
     };
 
-    Configure(RainFallback, MaxFallbackRainInstances);
-    Configure(SnowFallback, MaxFallbackSnowInstances);
+    Configure(RainFallback, FallbackRainMesh, MaxFallbackRainInstances);
+    Configure(SnowFallback, FallbackSnowMesh, MaxFallbackSnowInstances);
 }
 
 void ALLDynamicEnvironmentPresentationActor::UpdateEffectAnchor()
@@ -326,14 +323,26 @@ void ALLDynamicEnvironmentPresentationActor::UpdateFallbackPrecipitation(float D
                 const float NY = StableNoise01(Index, bSnow ? 4.0f : 2.0f) * 2.0f - 1.0f;
                 const float Phase = StableNoise01(Index, bSnow ? 6.0f : 5.0f);
                 const float Fall01 = FMath::Fmod(FallbackVisualTime * Speed / Height + Phase, 1.0f);
-                const float WindShift = (1.0f - Fall01) * FallbackWind01 * (bSnow ? 500.0f : 300.0f);
-                const FVector Location(NX * Radius + WindShift, NY * Radius, FMath::Lerp(-400.0f, Height, 1.0f - Fall01));
+                const float DriftPhase = FallbackVisualTime * (bSnow ? 0.75f : 0.20f)
+                    + StableNoise01(Index, 9.0f) * 2.0f * PI;
+                const float WindShift = (1.0f - Fall01) * FallbackWind01 * (bSnow ? 520.0f : 320.0f);
+                const float SideDrift = bSnow
+                    ? FMath::Sin(DriftPhase) * (90.0f + 170.0f * FallbackWind01)
+                    : 0.0f;
+                const FVector Location(
+                    NX * Radius + WindShift,
+                    NY * Radius + SideDrift,
+                    FMath::Lerp(-400.0f, Height, 1.0f - Fall01));
+                const float SnowScale = FMath::Lerp(0.025f, 0.055f, StableNoise01(Index, 10.0f));
                 const FVector Scale = bSnow
-                    ? FVector(0.05f, 0.05f, 0.05f)
-                    : FVector(0.018f, 0.018f, 0.42f);
+                    ? FVector(SnowScale)
+                    : FVector(0.014f, 0.014f, 0.46f);
                 const FRotator Rotation = bSnow
-                    ? FRotator(0.0f, StableNoise01(Index, 8.0f) * 360.0f, 0.0f)
-                    : FRotator(0.0f, 0.0f, -FallbackWind01 * 10.0f);
+                    ? FRotator(
+                        FMath::Sin(DriftPhase) * 18.0f,
+                        StableNoise01(Index, 8.0f) * 360.0f + FallbackVisualTime * 24.0f,
+                        FMath::Cos(DriftPhase) * 18.0f)
+                    : FRotator(0.0f, 0.0f, -FallbackWind01 * 12.0f);
                 Transform = FTransform(Rotation, Location, Scale);
             }
             Component->UpdateInstanceTransform(Index, Transform, false, Index == Count - 1, true);
@@ -547,8 +556,17 @@ void ALLDynamicEnvironmentPresentationActor::ApplyWeatherEffects(
     FallbackRainIntensity01 = Rain01;
     FallbackSnowIntensity01 = Snow01;
     FallbackWind01 = Wind01;
-    bFallbackRainActive = Rain01 >= EffectActivationThreshold && (!RainEffect || RainEffect->GetAsset() == nullptr);
-    bFallbackSnowActive = Snow01 >= EffectActivationThreshold && (!SnowEffect || SnowEffect->GetAsset() == nullptr);
+
+    const float OffThreshold = FMath::Clamp(
+        FMath::Min(EffectActivationThreshold, EffectDeactivationThreshold),
+        0.0f,
+        EffectActivationThreshold);
+    const bool bNeedsRainFallback = !RainEffect || RainEffect->GetAsset() == nullptr;
+    const bool bNeedsSnowFallback = !SnowEffect || SnowEffect->GetAsset() == nullptr;
+    bFallbackRainActive = bNeedsRainFallback
+        && (bFallbackRainActive ? Rain01 >= OffThreshold : Rain01 >= EffectActivationThreshold);
+    bFallbackSnowActive = bNeedsSnowFallback
+        && (bFallbackSnowActive ? Snow01 >= OffThreshold : Snow01 >= EffectActivationThreshold);
     if (RainFallback) { RainFallback->SetVisibility(bFallbackRainActive, true); }
     if (SnowFallback) { SnowFallback->SetVisibility(bFallbackSnowActive, true); }
 }
