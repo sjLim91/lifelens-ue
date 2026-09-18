@@ -25,13 +25,13 @@ curated imported Unreal assets only.
 ## First photoreal wave — Poly Haven CC0
 
 Models:
-- pine_tree_01
 - fir_sapling
-- tree_small_02
+- pine_sapling_small
 - boulder_01
-- rock_07
-- rock_09
 - tree_stump_01
+- shrub_02
+- shrub_03
+- weed_plant_02
 - dead_tree_trunk
 
 Surface references:
@@ -49,6 +49,7 @@ acquisition tool and must send the LifeLens-specific User-Agent.
 
 ### Desktop / PC
 - retain up to 2K imported photoreal textures in this first wave.
+- baseline local-view meshes must remain within explicit per-asset payload budgets; ultra-heavy hero scans are not silently accepted.
 - use higher-detail static meshes and authored PBR materials.
 - future PC-only tier may use Nanite/high-detail variants after the universal
   mobile fallback is proven.
