@@ -66,6 +66,13 @@ int main()
         world,actor,center,FacilityKind::SleepingPlace);
     CHECK(sleepPressure>=0.24);
 
+    const UnifiedUtilityDecision unifiedSleep=
+        chooseUnifiedUtilityDecisionAtPosition(
+            world,actor,simulation.relationships(),center,2.0,0.14);
+    CHECK(unifiedSleep.kind==UnifiedDecisionKind::Civilization);
+    CHECK(unifiedSleep.civilization.facilityKind==FacilityKind::SleepingPlace);
+    CHECK(unifiedSleep.civilization.facilityAction==FacilityBuildAction::Plan);
+
     CivilizationUtilityDecision sleepPlan=
         bestSettlementFoundationDecision(world,actor,center);
     CHECK(sleepPlan.intent==CivilizationIntent::Craft);
