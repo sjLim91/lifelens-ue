@@ -179,6 +179,7 @@ private:
     float SmoothedSpeed = 0.0f;
     float DesiredYaw = 0.0f;
     float SmoothedYaw = 0.0f;
+    float PresentedSleepPitchDegrees = 0.0f;
     float PresentedSleepRollDegrees = 0.0f;
     bool bHasPreviousLocation = false;
     bool bLocomotionPlaying = false;
