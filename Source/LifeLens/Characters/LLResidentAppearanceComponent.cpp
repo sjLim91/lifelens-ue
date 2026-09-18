@@ -62,6 +62,21 @@ namespace
         return Palette[FMath::Clamp(static_cast<int32>(Axis * Count), 0, Count - 1)];
     }
 
+    FLinearColor OutfitTint(int32 Variant)
+    {
+        static const FLinearColor Palette[] = {
+            FLinearColor(0.92f, 0.86f, 0.72f), // flax
+            FLinearColor(0.72f, 0.82f, 0.66f), // sage
+            FLinearColor(0.72f, 0.74f, 0.86f), // faded blue
+            FLinearColor(0.82f, 0.68f, 0.58f), // clay
+            FLinearColor(0.68f, 0.60f, 0.50f), // earth
+            FLinearColor(0.78f, 0.72f, 0.80f), // muted plum
+        };
+        const int32 Count = UE_ARRAY_COUNT(Palette);
+        const int32 Index = Count > 0 ? FMath::Abs(Variant) % Count : 0;
+        return Palette[Index];
+    }
+
     float MeshBindPoseHeight(const USkeletalMesh* Mesh)
     {
         if (!Mesh)
@@ -379,8 +394,10 @@ void ULLResidentAppearanceComponent::ApplyHair()
 
     const FLinearColor Tint = HairTint(Inputs.HairColorAxis);
 
-    // Eyebrows are part of the body mesh (slot MI_Hair_1 / MI_Hair_2); tint them like the hair.
-    if (UMaterialInstanceDynamic* BrowMaterial = MakeSlotMaterial(TEXT("Hair")))
+    // Eyebrows are part of the body mesh (slot MI_Hair_1 / MI_Hair_2); keep
+    // the dynamic material so lifecycle greying can update it later.
+    BrowMaterial = MakeSlotMaterial(TEXT("Hair"));
+    if (BrowMaterial)
     {
         BrowMaterial->SetVectorParameterValue(ParamBaseColorFactor, Tint);
     }
@@ -395,7 +412,8 @@ void ULLResidentAppearanceComponent::ApplyHair()
     }
     if (Beard)
     {
-        if (UMaterialInstanceDynamic* BeardMaterial = Beard->CreateAndSetMaterialInstanceDynamic(0))
+        BeardMaterial = Beard->CreateAndSetMaterialInstanceDynamic(0);
+        if (BeardMaterial)
         {
             BeardMaterial->SetVectorParameterValue(ParamBaseColorFactor, Tint);
         }
@@ -435,6 +453,14 @@ void ULLResidentAppearanceComponent::ApplyOutfit()
             {
                 OutfitMaterial->SetTextureParameterValue(ParamBaseColorTexture, PeasantAltBaseColor);
             }
+            if (OutfitMaterial)
+            {
+                // Expand the single peasant set into several deterministic,
+                // subdued cloth tones without introducing another identity source.
+                OutfitMaterial->SetVectorParameterValue(
+                    ParamBaseColorFactor,
+                    OutfitTint(Inputs.OutfitVariant));
+            }
         }
         else if (Slot.Contains(TEXT("Regular")))
         {
@@ -452,6 +478,100 @@ void ULLResidentAppearanceComponent::ApplyOutfit()
                 OutfitSkinMaterial->SetVectorParameterValue(ParamBaseColorFactor, SkinTintColor);
             }
         }
+    }
+}
+
+void ULLResidentAppearanceComponent::ApplyLifecycleAgePresentation(
+    ELLCoreLifeStage LifeStage,
+    int32 AgeYears)
+{
+    Inputs.LifeStage = LifeStage;
+    const int32 StageIndex = FMath::Clamp(static_cast<int32>(LifeStage), 0, 7);
+
+    // Hair volume grows into the adult style rather than rendering a full adult
+    // hairstyle on a baby-sized head. The selected style itself never changes.
+    static constexpr float HairStageScale[8] = {
+        0.38f, 0.58f, 0.78f, 0.92f, 1.0f, 1.0f, 1.0f, 0.98f
+    };
+    if (Hair)
+    {
+        Hair->SetRelativeScale3D(FVector(HairStageScale[StageIndex]));
+    }
+
+    const bool bBeardAge =
+        LifeStage == ELLCoreLifeStage::YoungAdult
+        || LifeStage == ELLCoreLifeStage::Adult
+        || LifeStage == ELLCoreLifeStage::MiddleAge
+        || LifeStage == ELLCoreLifeStage::Elderly;
+    if (Beard)
+    {
+        Beard->SetVisibility(bBeardAge, true);
+    }
+
+    // Preserve genetically/deterministically selected hair colour through most
+    // of life, then blend it toward grey as Core age advances.
+    float GreyAlpha = 0.0f;
+    if (LifeStage == ELLCoreLifeStage::MiddleAge)
+    {
+        GreyAlpha = FMath::Clamp(
+            (static_cast<float>(AgeYears) - 45.0f) / 20.0f,
+            0.0f,
+            1.0f) * 0.38f;
+    }
+    else if (LifeStage == ELLCoreLifeStage::Elderly)
+    {
+        GreyAlpha = FMath::Clamp(
+            0.55f + (static_cast<float>(AgeYears) - 65.0f) / 35.0f * 0.35f,
+            0.55f,
+            0.90f);
+    }
+
+    const FLinearColor IdentityHair = HairTint(Inputs.HairColorAxis);
+    const FLinearColor AgeGrey(0.66f, 0.67f, 0.65f, 1.0f);
+    const FLinearColor PresentedHair =
+        IdentityHair * (1.0f - GreyAlpha) + AgeGrey * GreyAlpha;
+    if (HairMaterial)
+    {
+        HairMaterial->SetVectorParameterValue(ParamBaseColorFactor, PresentedHair);
+    }
+    if (BeardMaterial)
+    {
+        BeardMaterial->SetVectorParameterValue(ParamBaseColorFactor, PresentedHair);
+    }
+    if (BrowMaterial)
+    {
+        BrowMaterial->SetVectorParameterValue(ParamBaseColorFactor, PresentedHair);
+    }
+
+    // Without wrinkle/normal-map variants, use only a restrained loss of skin
+    // saturation in later life. The resident's original skin axis remains the
+    // base and therefore Save/Load identity is unchanged.
+    float SkinAgeAlpha = 0.0f;
+    if (LifeStage == ELLCoreLifeStage::MiddleAge)
+    {
+        SkinAgeAlpha = 0.06f;
+    }
+    else if (LifeStage == ELLCoreLifeStage::Elderly)
+    {
+        SkinAgeAlpha = 0.14f;
+    }
+
+    const float SkinMean =
+        (SkinTintColor.R + SkinTintColor.G + SkinTintColor.B) / 3.0f;
+    const FLinearColor NeutralSkin(
+        SkinMean * 0.98f,
+        SkinMean * 0.97f,
+        SkinMean * 0.95f,
+        1.0f);
+    const FLinearColor PresentedSkin =
+        SkinTintColor * (1.0f - SkinAgeAlpha) + NeutralSkin * SkinAgeAlpha;
+    if (SkinMaterial)
+    {
+        SkinMaterial->SetVectorParameterValue(ParamBaseColorFactor, PresentedSkin);
+    }
+    if (OutfitSkinMaterial)
+    {
+        OutfitSkinMaterial->SetVectorParameterValue(ParamBaseColorFactor, PresentedSkin);
     }
 }
 
