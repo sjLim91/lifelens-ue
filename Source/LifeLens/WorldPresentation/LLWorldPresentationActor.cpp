@@ -768,6 +768,17 @@ uint32 ALLWorldPresentationActor::FacilitySignature(const FLLCoreCivilizationWor
         Hash = MixHash(Hash, static_cast<uint32>(FMath::Max(0, Facility.BurnMinutesRemaining)));
         Hash = MixHash(Hash, Facility.bLit ? 1u : 0u);
     }
+
+    // Primitive storage visuals depend on linked authoritative storage totals.
+    // Include storage truth in the presentation signature so adding/removing
+    // inventory refreshes cargo without touching Core state.
+    for (const FLLCoreCivilizationStorageObservation& Storage : Civilization.Storages)
+    {
+        const uint64 Id = static_cast<uint64>(Storage.StorageId);
+        Hash = MixHash(Hash, static_cast<uint32>(Id & 0xFFFFFFFFu));
+        Hash = MixHash(Hash, static_cast<uint32>((Id >> 32) & 0xFFFFFFFFu));
+        Hash = MixHash(Hash, static_cast<uint32>(FMath::Max(0, Storage.TotalUnits)));
+    }
     return Hash;
 }
 
@@ -915,6 +926,19 @@ void ALLWorldPresentationActor::BuildFacilities(
 
         if (Facility.Kind == ELLCoreFacilityKind::PrimitiveStorage)
         {
+            int32 LinkedStoredUnits = 0;
+            if (Facility.LinkedStorageId != 0)
+            {
+                for (const FLLCoreCivilizationStorageObservation& Storage : Civilization.Storages)
+                {
+                    if (Storage.StorageId == Facility.LinkedStorageId)
+                    {
+                        LinkedStoredUnits = FMath::Max(0, Storage.TotalUnits);
+                        break;
+                    }
+                }
+            }
+
             if (FacilityFoundationInstances)
             {
                 const float PlannedScale = Facility.State == ELLCoreFacilityState::Planned ? 0.72f : 1.0f;
@@ -933,15 +957,24 @@ void ALLWorldPresentationActor::BuildFacilities(
                     FRotator::ZeroRotator,Base + FVector(PostOffsets[Index].X, PostOffsets[Index].Y, 55.0f * HeightFactor),
                     FVector(0.14f, 0.14f, 1.1f * HeightFactor)));
             }
-            const int32 CargoCount = bStructurallyComplete ? 6 : FMath::Clamp(FMath::CeilToInt(MaterialProgress * 6.0f), 0, 6);
+            // Construction still shows delivered build material. Once the
+            // storage is operational, cargo switches to the linked authoritative
+            // inventory total instead of always drawing six fake crates.
+            const int32 CargoCount = bStructurallyComplete
+                ? FMath::Clamp(LinkedStoredUnits, 0, 8)
+                : FMath::Clamp(FMath::CeilToInt(MaterialProgress * 6.0f), 0, 6);
             for (int32 Index = 0; Index < CargoCount; ++Index)
             {
                 if (!FacilityCargoInstances) { break; }
-                const int32 Column = Index % 3;
-                const int32 Row = Index / 3;
+                const int32 Column = Index % 4;
+                const int32 Row = Index / 4;
                 FacilityCargoInstances->AddInstance(FTransform(
                     FRotator(0.0f, (Index % 2 == 0) ? 0.0f : 90.0f, 0.0f),
-                    Base + FVector(-65.0f + Column * 65.0f, -22.0f + Row * 48.0f, 25.0f),FVector(0.55f, 0.32f, 0.28f)));
+                    Base + FVector(
+                        -78.0f + Column * 52.0f,
+                        -26.0f + Row * 52.0f,
+                        24.0f),
+                    FVector(0.45f, 0.28f, 0.25f)));
             }
             if ((bStructurallyComplete || WorkProgress >= 0.65f) && FacilityRoofInstances)
             {
