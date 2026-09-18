@@ -28,6 +28,11 @@ class LIFELENS_API ALLObserverPlayerController : public APlayerController
 public:
     ALLObserverPlayerController();
 
+    // Presentation surfaces such as lifecycle/facility event cards can move
+    // the observer to an authoritative world location without inventing a
+    // resident selection or mutating simulation state.
+    void FocusWorldLocation(const FVector& WorldLocation, float FocusDistanceUU = 4200.0f);
+
 protected:
     virtual void BeginPlay() override;
     virtual void SetupInputComponent() override;

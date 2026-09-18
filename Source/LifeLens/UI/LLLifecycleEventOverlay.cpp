@@ -1,7 +1,10 @@
 #include "UI/LLLifecycleEventOverlay.h"
 
 #include "UI/LLObservationSubsystem.h"
+#include "UI/LLObserverPlayerController.h"
 #include "Simulation/LLCoreBridgeSubsystem.h"
+#include "Simulation/LLWorldGenerationReadTypes.h"
+#include "World/LLWorldSpatialContract.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/Border.h"
 #include "Components/TextBlock.h"
@@ -29,6 +32,14 @@ namespace
         {
             return FLinearColor(0.50f, 0.82f, 1.00f, 1.0f);
         }
+        if (Text.StartsWith(TEXT("[건설 시작]")) || Text.StartsWith(TEXT("[시설 완공]")))
+        {
+            return FLinearColor(1.00f, 0.74f, 0.38f, 1.0f);
+        }
+        if (Text.StartsWith(TEXT("[시설 폐허]")))
+        {
+            return FLinearColor(0.72f, 0.58f, 0.50f, 1.0f);
+        }
         if (Text.StartsWith(TEXT("[사망]")) || Text.StartsWith(TEXT("[사별]"))
             || Text.StartsWith(TEXT("[이혼]")) || Text.StartsWith(TEXT("[별거]"))
             || Text.StartsWith(TEXT("[관계 종료]")) || Text.StartsWith(TEXT("[동거 종료]")))
@@ -55,7 +66,11 @@ namespace
         {
             return 3;
         }
-        if (Text.StartsWith(TEXT("[새 주민]")))
+        if (Text.StartsWith(TEXT("[시설 폐허]")) || Text.StartsWith(TEXT("[시설 완공]")))
+        {
+            return 4;
+        }
+        if (Text.StartsWith(TEXT("[건설 시작]")) || Text.StartsWith(TEXT("[새 주민]")))
         {
             return 2;
         }
@@ -64,6 +79,20 @@ namespace
             return 1;
         }
         return 2;
+    }
+
+    FString FacilityKindLabel(ELLCoreFacilityKind Kind)
+    {
+        switch (Kind)
+        {
+            case ELLCoreFacilityKind::PrimitiveStorage: return TEXT("저장소");
+            case ELLCoreFacilityKind::WorkSurface: return TEXT("작업대");
+            case ELLCoreFacilityKind::SleepingPlace: return TEXT("잠자리");
+            case ELLCoreFacilityKind::Shelter: return TEXT("쉼터");
+            case ELLCoreFacilityKind::Furnace: return TEXT("용광로");
+            case ELLCoreFacilityKind::FirePit: return TEXT("화로");
+            default: return TEXT("시설");
+        }
     }
 }
 
@@ -192,21 +221,32 @@ FReply ULLLifecycleEventOverlay::HandleNoticePointer(const FVector2D& ScreenPosi
         const FGuid TargetResidentId = Notice.SubjectResidentId.IsValid()
             ? Notice.SubjectResidentId
             : Notice.RelatedResidentId;
-        if (!TargetResidentId.IsValid())
+
+        if (TargetResidentId.IsValid())
         {
-            return FReply::Unhandled();
+            UGameInstance* GameInstance = GetGameInstance();
+            ULLObservationSubsystem* Observation =
+                GameInstance ? GameInstance->GetSubsystem<ULLObservationSubsystem>() : nullptr;
+            if (!Observation)
+            {
+                return FReply::Unhandled();
+            }
+
+            Observation->ObserveResident(TargetResidentId);
+            return FReply::Handled();
         }
 
-        UGameInstance* GameInstance = GetGameInstance();
-        ULLObservationSubsystem* Observation =
-            GameInstance ? GameInstance->GetSubsystem<ULLObservationSubsystem>() : nullptr;
-        if (!Observation)
+        if (Notice.bHasWorldFocus)
         {
-            return FReply::Unhandled();
+            if (ALLObserverPlayerController* Controller =
+                    Cast<ALLObserverPlayerController>(GetOwningPlayer()))
+            {
+                Controller->FocusWorldLocation(Notice.WorldFocus);
+                return FReply::Handled();
+            }
         }
 
-        Observation->ObserveResident(TargetResidentId);
-        return FReply::Handled();
+        return FReply::Unhandled();
     }
 
     const int32 RecentCount = FMath::Min(RecentNoticeHitBorders.Num(), RecentNotices.Num());
@@ -233,21 +273,32 @@ FReply ULLLifecycleEventOverlay::HandleNoticePointer(const FVector2D& ScreenPosi
         const FGuid TargetResidentId = Notice.SubjectResidentId.IsValid()
             ? Notice.SubjectResidentId
             : Notice.RelatedResidentId;
-        if (!TargetResidentId.IsValid())
+
+        if (TargetResidentId.IsValid())
         {
-            return FReply::Unhandled();
+            UGameInstance* GameInstance = GetGameInstance();
+            ULLObservationSubsystem* Observation =
+                GameInstance ? GameInstance->GetSubsystem<ULLObservationSubsystem>() : nullptr;
+            if (!Observation)
+            {
+                return FReply::Unhandled();
+            }
+
+            Observation->ObserveResident(TargetResidentId);
+            return FReply::Handled();
         }
 
-        UGameInstance* GameInstance = GetGameInstance();
-        ULLObservationSubsystem* Observation =
-            GameInstance ? GameInstance->GetSubsystem<ULLObservationSubsystem>() : nullptr;
-        if (!Observation)
+        if (Notice.bHasWorldFocus)
         {
-            return FReply::Unhandled();
+            if (ALLObserverPlayerController* Controller =
+                    Cast<ALLObserverPlayerController>(GetOwningPlayer()))
+            {
+                Controller->FocusWorldLocation(Notice.WorldFocus);
+                return FReply::Handled();
+            }
         }
 
-        Observation->ObserveResident(TargetResidentId);
-        return FReply::Handled();
+        return FReply::Unhandled();
     }
 
     return FReply::Unhandled();
@@ -258,6 +309,7 @@ void ULLLifecycleEventOverlay::ResetObservationState()
     PreviousResidents.Reset();
     PreviousPregnancyPairs.Reset();
     PreviousRomancePairs.Reset();
+    PreviousFacilities.Reset();
     Notices.Reset();
     RecentNotices.Reset();
     ObservedLifeHistory.Reset();
@@ -352,6 +404,7 @@ void ULLLifecycleEventOverlay::RefreshFromCore()
     TMap<FGuid, FResidentVisualState> CurrentResidents;
     TSet<FString> CurrentPregnancyPairs;
     TMap<FString, FRomanceVisualState> CurrentRomancePairs;
+    TMap<int64, FFacilityVisualState> CurrentFacilities;
     TMap<FString, FString> PregnancyLabels;
     TMap<FString, FGuid> PregnancySubjects;
     TMap<FString, FGuid> PregnancyPartners;
@@ -432,11 +485,25 @@ void ULLLifecycleEventOverlay::RefreshFromCore()
         }
     }
 
+    const FLLCoreCivilizationWorldObservation Civilization =
+        Bridge->GetCivilizationWorldObservation(0);
+    CurrentFacilities.Reserve(Civilization.Facilities.Num());
+    for (const FLLCoreCivilizationFacilityObservation& Facility : Civilization.Facilities)
+    {
+        FFacilityVisualState State;
+        State.Kind = Facility.Kind;
+        State.State = Facility.State;
+        State.GridX = Facility.GridX;
+        State.GridY = Facility.GridY;
+        CurrentFacilities.Add(Facility.FacilityId, State);
+    }
+
     if (!bBaselineReady)
     {
         PreviousResidents = MoveTemp(CurrentResidents);
         PreviousPregnancyPairs = MoveTemp(CurrentPregnancyPairs);
         PreviousRomancePairs = MoveTemp(CurrentRomancePairs);
+        PreviousFacilities = MoveTemp(CurrentFacilities);
         LastObservedSimulationMinute = WorldObservation.SimulationMinute;
         bBaselineReady = true;
         return;
@@ -534,9 +601,66 @@ void ULLLifecycleEventOverlay::RefreshFromCore()
         }
     }
 
+    const FLLCoreWorldGenerationObservation Generation =
+        Bridge->GetWorldGenerationObservation();
+    const bool bHasWorldGeneration =
+        Generation.bAvailable && Generation.bHasInitialStartRegion;
+    for (const TPair<int64, FFacilityVisualState>& Pair : CurrentFacilities)
+    {
+        const FFacilityVisualState* Previous = PreviousFacilities.Find(Pair.Key);
+        const FFacilityVisualState& Current = Pair.Value;
+        if (!Previous || Previous->State == Current.State)
+        {
+            continue;
+        }
+
+        FString Prefix;
+        switch (Current.State)
+        {
+            case ELLCoreFacilityState::UnderConstruction:
+                Prefix = TEXT("[건설 시작]");
+                break;
+            case ELLCoreFacilityState::Operational:
+                Prefix = TEXT("[시설 완공]");
+                break;
+            case ELLCoreFacilityState::Ruined:
+                Prefix = TEXT("[시설 폐허]");
+                break;
+            case ELLCoreFacilityState::Planned:
+            default:
+                break;
+        }
+        if (Prefix.IsEmpty())
+        {
+            continue;
+        }
+
+        FVector WorldFocus = FVector::ZeroVector;
+        bool bHasWorldFocus = false;
+        if (bHasWorldGeneration)
+        {
+            WorldFocus = FVector(
+                static_cast<float>(Current.GridX - Generation.InitialCenterGridX)
+                    * LLWorldSpatialContract::GridCellSizeUU,
+                static_cast<float>(Current.GridY - Generation.InitialCenterGridY)
+                    * LLWorldSpatialContract::GridCellSizeUU,
+                0.0f);
+            bHasWorldFocus = true;
+        }
+
+        PushNotice(
+            Prefix + TEXT(" ") + FacilityKindLabel(Current.Kind),
+            FGuid(),
+            FGuid(),
+            WorldObservation.SimulationMinute,
+            WorldFocus,
+            bHasWorldFocus);
+    }
+
     PreviousResidents = MoveTemp(CurrentResidents);
     PreviousPregnancyPairs = MoveTemp(CurrentPregnancyPairs);
     PreviousRomancePairs = MoveTemp(CurrentRomancePairs);
+    PreviousFacilities = MoveTemp(CurrentFacilities);
     LastObservedSimulationMinute = WorldObservation.SimulationMinute;
 }
 
@@ -616,7 +740,7 @@ void ULLLifecycleEventOverlay::RefreshSelectedResidentCard()
 }
 
 void ULLLifecycleEventOverlay::PushNotice(const FString& Text, FGuid SubjectResidentId,
-    FGuid RelatedResidentId, int64 SimulationMinute)
+    FGuid RelatedResidentId, int64 SimulationMinute, FVector WorldFocus, bool bHasWorldFocus)
 {
     if (Text.IsEmpty())
     {
@@ -638,6 +762,8 @@ void ULLLifecycleEventOverlay::PushNotice(const FString& Text, FGuid SubjectResi
     Notice.Text = Text;
     Notice.SubjectResidentId = SubjectResidentId;
     Notice.RelatedResidentId = RelatedResidentId;
+    Notice.WorldFocus = WorldFocus;
+    Notice.bHasWorldFocus = bHasWorldFocus;
     Notice.SimulationMinute = SimulationMinute;
     Notice.ExpireAtRealSeconds = Now + NoticeLifetimeSeconds;
 
@@ -722,7 +848,9 @@ void ULLLifecycleEventOverlay::RefreshNoticeWidgets()
             ? Notice.SubjectResidentId
             : Notice.RelatedResidentId;
         const FString MomentLine = FormatObservedMoment(Notice.SimulationMinute)
-            + (FocusResidentId.IsValid() ? TEXT(" · 탭하여 추적") : TEXT(""));
+            + ((FocusResidentId.IsValid() || Notice.bHasWorldFocus)
+                ? TEXT(" · 탭하여 추적")
+                : TEXT(""));
         Moment->SetText(FText::FromString(MomentLine));
         Moment->SetAutoWrapText(false);
         Moment->SetColorAndOpacity(FSlateColor(FLinearColor(
@@ -775,7 +903,9 @@ void ULLLifecycleEventOverlay::RefreshNoticeWidgets()
             RowText->SetText(FText::FromString(
                 FString(TEXT("최근 · ")) + Notice.Text
                 + TEXT(" · ") + FormatObservedMoment(Notice.SimulationMinute)
-                + (FocusResidentId.IsValid() ? TEXT(" · 탭하여 추적") : TEXT(""))));
+                + ((FocusResidentId.IsValid() || Notice.bHasWorldFocus)
+                    ? TEXT(" · 탭하여 추적")
+                    : TEXT(""))));
             RowText->SetAutoWrapText(true);
             RowText->SetColorAndOpacity(FSlateColor(FLinearColor(
                 0.78f + Accent.R * 0.12f,

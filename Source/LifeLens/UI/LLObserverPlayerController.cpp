@@ -788,6 +788,40 @@ void ALLObserverPlayerController::ResolveObservedResidentFocusFraming(
         + MovementLead;
 }
 
+void ALLObserverPlayerController::FocusWorldLocation(
+    const FVector& WorldLocation,
+    float FocusDistanceUU)
+{
+    // Preserve the currently selected resident in the observer UI, but suspend
+    // camera follow so SyncObservedResidentSelection does not immediately pull
+    // the camera away from the event location. Re-selecting/tapping a resident
+    // resumes normal resident framing.
+    SuspendObservedResidentFollow();
+
+    UGameInstance* GameInstance = GetGameInstance();
+    ULLObservationSubsystem* Observation =
+        GameInstance ? GameInstance->GetSubsystem<ULLObservationSubsystem>() : nullptr;
+    if (Observation && Observation->HasObservedResident())
+    {
+        FocusedResidentId = Observation->GetObservedResidentId();
+    }
+
+    DesiredOrbitTarget = WorldLocation + FVector(0.0f, 0.0f, 55.0f);
+    const float MinDistance = FMath::Max(100.0f, CameraMinDistanceUU);
+    const float MaxDistance = FMath::Max(MinDistance, CameraMaxDistanceUU);
+    DesiredOrbitDistanceUU = FMath::Clamp(
+        FocusDistanceUU,
+        MinDistance,
+        MaxDistance);
+
+    const float MinElevation = FMath::Clamp(CameraMinElevationDegrees, 1.0f, 89.0f);
+    const float MaxElevation = FMath::Clamp(CameraMaxElevationDegrees, MinElevation, 89.0f);
+    DesiredOrbitElevationDegrees = FMath::Clamp(
+        50.0f,
+        MinElevation,
+        MaxElevation);
+}
+
 void ALLObserverPlayerController::FocusObservedResident(ALLResidentCharacter* Resident, bool bReframe)
 {
     if (!Resident)
