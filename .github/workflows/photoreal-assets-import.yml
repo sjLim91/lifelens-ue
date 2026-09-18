@@ -65,6 +65,21 @@ jobs:
           docker pull "$UE_IMAGE"
           df -h /
 
+      - name: Compile LifeLensEditor module for headless import
+        timeout-minutes: 35
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/Binaries" "$GITHUB_WORKSPACE/Intermediate"
+          sudo chmod -R a+rwX "$GITHUB_WORKSPACE"
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -w "$UE_ROOT_IN_CONTAINER" \
+            "$UE_IMAGE" \
+            bash -lc './Engine/Build/BatchFiles/Linux/Build.sh LifeLensEditor Linux Development /workspace/LifeLens.uproject -WaitMutex -NoEngineChanges'
+          test -d "$GITHUB_WORKSPACE/Binaries/Linux"
+          find "$GITHUB_WORKSPACE/Binaries/Linux" -maxdepth 2 -type f -printf '%p %s bytes\n' | sort | head -100
+
       - name: Headless Unreal import
         shell: bash
         run: |
