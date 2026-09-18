@@ -51,6 +51,11 @@ private:
     void UpdateMouseCameraInput();
     void UpdateTouchCameraInput();
     void ApplyCameraTransform(float DeltaTime);
+    void UpdateObservedResidentFocus();
+    void FocusObservedResident(ALLResidentCharacter* Resident, bool bReframe);
+    void RestoreWorldOverview();
+    void SuspendObservedResidentFollow();
+    ALLResidentCharacter* FindResidentActor(FGuid ResidentId) const;
     void RotateByScreenDelta(const FVector2D& Delta, float DegreesPerPixel);
     void PanByScreenDelta(const FVector2D& Delta, float ScaleMultiplier = 1.0f);
     void ZoomByScale(float Scale);
@@ -100,6 +105,17 @@ private:
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera", meta=(ClampMin="0.1"))
     float CameraSmoothingSpeed = 10.0f;
 
+    // Selecting a resident transitions into a closer observer framing and
+    // follows that resident until the observer manually manipulates the camera.
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera|Focus", meta=(ClampMin="500.0"))
+    float ObservedResidentFocusDistanceUU = 3200.0f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera|Focus", meta=(ClampMin="1.0", ClampMax="89.0"))
+    float ObservedResidentFocusElevationDegrees = 42.0f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera|Focus", meta=(ClampMin="-500.0", ClampMax="1000.0"))
+    float ObservedResidentFocusHeightOffsetUU = 70.0f;
+
     TWeakObjectPtr<ACameraActor> ObserverCamera;
     bool bCameraInitialized = false;
 
@@ -111,6 +127,18 @@ private:
     float DesiredOrbitElevationDegrees = 45.0f;
     float CurrentOrbitDistanceUU = 5000.0f;
     float DesiredOrbitDistanceUU = 5000.0f;
+
+    // Initial overview framing is captured once from the production camera so
+    // LEVEL 1 -> LEVEL 0 can smoothly return without inventing a hard-coded
+    // world target.
+    FVector WorldOverviewTarget = FVector::ZeroVector;
+    float WorldOverviewYawDegrees = 0.0f;
+    float WorldOverviewElevationDegrees = 45.0f;
+    float WorldOverviewDistanceUU = 5000.0f;
+    bool bWorldOverviewCaptured = false;
+
+    FGuid FocusedResidentId;
+    bool bFollowObservedResident = false;
 
     bool bRightMouseDragging = false;
     bool bMiddleMouseDragging = false;

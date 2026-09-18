@@ -66,6 +66,7 @@ void ALLObserverPlayerController::PlayerTick(float DeltaTime)
 
     UpdateMouseCameraInput();
     UpdateTouchCameraInput();
+    UpdateObservedResidentFocus();
     ApplyCameraTransform(DeltaTime);
 }
 
@@ -136,6 +137,16 @@ void ALLObserverPlayerController::EnsureCameraInitialized()
     DesiredOrbitElevationDegrees = CurrentOrbitElevationDegrees;
     CurrentOrbitDistanceUU = FMath::Clamp(RawDistance, MinDistance, MaxDistance);
     DesiredOrbitDistanceUU = CurrentOrbitDistanceUU;
+
+    if (!bWorldOverviewCaptured)
+    {
+        WorldOverviewTarget = InitialTarget;
+        WorldOverviewYawDegrees = CurrentOrbitYawDegrees;
+        WorldOverviewElevationDegrees = CurrentOrbitElevationDegrees;
+        WorldOverviewDistanceUU = CurrentOrbitDistanceUU;
+        bWorldOverviewCaptured = true;
+    }
+
     bCameraInitialized = true;
 }
 
@@ -221,6 +232,7 @@ void ALLObserverPlayerController::UpdateMouseCameraInput()
 
 void ALLObserverPlayerController::RotateByScreenDelta(const FVector2D& Delta, float DegreesPerPixel)
 {
+    SuspendObservedResidentFollow();
     DesiredOrbitYawDegrees = FMath::UnwindDegrees(DesiredOrbitYawDegrees + Delta.X * DegreesPerPixel);
 
     const float MinElevation = FMath::Clamp(CameraMinElevationDegrees, 1.0f, 89.0f);
@@ -233,6 +245,7 @@ void ALLObserverPlayerController::RotateByScreenDelta(const FVector2D& Delta, fl
 
 void ALLObserverPlayerController::PanByScreenDelta(const FVector2D& Delta, float ScaleMultiplier)
 {
+    SuspendObservedResidentFollow();
     ACameraActor* Camera = ObserverCamera.Get();
     if (!Camera)
     {
@@ -259,6 +272,7 @@ void ALLObserverPlayerController::PanByScreenDelta(const FVector2D& Delta, float
 
 void ALLObserverPlayerController::ZoomByScale(float Scale)
 {
+    SuspendObservedResidentFollow();
     const float MinDistance = FMath::Max(100.0f, CameraMinDistanceUU);
     const float MaxDistance = FMath::Max(MinDistance, CameraMaxDistanceUU);
     DesiredOrbitDistanceUU = FMath::Clamp(DesiredOrbitDistanceUU * FMath::Max(0.01f, Scale), MinDistance, MaxDistance);
@@ -485,6 +499,109 @@ void ALLObserverPlayerController::UpdateTouchCameraInput()
     LastTouch1 = Current1;
 }
 
+ALLResidentCharacter* ALLObserverPlayerController::FindResidentActor(FGuid ResidentId) const
+{
+    if (!ResidentId.IsValid() || !GetWorld())
+    {
+        return nullptr;
+    }
+    for (TActorIterator<ALLResidentCharacter> It(GetWorld()); It; ++It)
+    {
+        if (It->GetResidentId() == ResidentId)
+        {
+            return *It;
+        }
+    }
+    return nullptr;
+}
+
+void ALLObserverPlayerController::SuspendObservedResidentFollow()
+{
+    bFollowObservedResident = false;
+}
+
+void ALLObserverPlayerController::FocusObservedResident(ALLResidentCharacter* Resident, bool bReframe)
+{
+    if (!Resident)
+    {
+        return;
+    }
+
+    FocusedResidentId = Resident->GetResidentId();
+    bFollowObservedResident = FocusedResidentId.IsValid();
+
+    FVector Origin = Resident->GetActorLocation();
+    FVector Extent = FVector::ZeroVector;
+    Resident->GetActorBounds(false, Origin, Extent, false);
+    DesiredOrbitTarget = Origin + FVector(0.0f, 0.0f, ObservedResidentFocusHeightOffsetUU);
+
+    if (bReframe)
+    {
+        const float MinDistance = FMath::Max(100.0f, CameraMinDistanceUU);
+        const float MaxDistance = FMath::Max(MinDistance, CameraMaxDistanceUU);
+        DesiredOrbitDistanceUU = FMath::Clamp(
+            ObservedResidentFocusDistanceUU,
+            MinDistance,
+            MaxDistance);
+
+        const float MinElevation = FMath::Clamp(CameraMinElevationDegrees, 1.0f, 89.0f);
+        const float MaxElevation = FMath::Clamp(CameraMaxElevationDegrees, MinElevation, 89.0f);
+        DesiredOrbitElevationDegrees = FMath::Clamp(
+            ObservedResidentFocusElevationDegrees,
+            MinElevation,
+            MaxElevation);
+    }
+}
+
+void ALLObserverPlayerController::UpdateObservedResidentFocus()
+{
+    if (!bFollowObservedResident)
+    {
+        return;
+    }
+
+    UGameInstance* GameInstance = GetGameInstance();
+    ULLObservationSubsystem* Observation =
+        GameInstance ? GameInstance->GetSubsystem<ULLObservationSubsystem>() : nullptr;
+    if (!Observation || !Observation->HasObservedResident())
+    {
+        bFollowObservedResident = false;
+        FocusedResidentId.Invalidate();
+        return;
+    }
+
+    const FGuid ObservedId = Observation->GetObservedResidentId();
+    ALLResidentCharacter* Resident = FindResidentActor(ObservedId);
+    if (!Resident)
+    {
+        bFollowObservedResident = false;
+        FocusedResidentId.Invalidate();
+        return;
+    }
+
+    FocusedResidentId = ObservedId;
+    FVector Origin = Resident->GetActorLocation();
+    FVector Extent = FVector::ZeroVector;
+    Resident->GetActorBounds(false, Origin, Extent, false);
+    DesiredOrbitTarget = Origin + FVector(0.0f, 0.0f, ObservedResidentFocusHeightOffsetUU);
+}
+
+void ALLObserverPlayerController::RestoreWorldOverview()
+{
+    bFollowObservedResident = false;
+    FocusedResidentId.Invalidate();
+
+    if (!bWorldOverviewCaptured)
+    {
+        return;
+    }
+
+    DesiredOrbitTarget = WorldOverviewTarget;
+    DesiredOrbitYawDegrees = WorldOverviewYawDegrees;
+    DesiredOrbitElevationDegrees = WorldOverviewElevationDegrees;
+    DesiredOrbitDistanceUU = WorldOverviewDistanceUU;
+}
+
 void ALLObserverPlayerController::ApplyCameraTransform(float DeltaTime)
 {
     ACameraActor* Camera = ObserverCamera.Get();
@@ -591,9 +708,15 @@ void ALLObserverPlayerController::ApplyTap(const FVector2D& ScreenPosition, ALLR
     if (ALLResidentCharacter* Picked = NearResident ? NearResident : ExactHit)
     {
         Observation->ObserveResident(Picked->GetResidentId());
+        FocusObservedResident(Picked, true);
         return;
     }
 
-    // 3. Empty space: one level back (LEVEL 2 -> 1 -> 0).
+    // 3. Empty space: one level back (LEVEL 2 -> 1 -> 0). Returning to
+    // LEVEL 0 restores the captured production overview framing.
     Observation->StepBack();
+    if (Observation->GetObservationLevel() == ELLObservationLevel::World)
+    {
+        RestoreWorldOverview();
+    }
 }
