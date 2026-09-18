@@ -501,7 +501,13 @@ UAnimSequence* ULLResidentMotionComponent::ClipForContextMotion(ELLResidentConte
         case ELLResidentContextMotion::StrikeSwing: return StrikeAnimation;
         case ELLResidentContextMotion::DigWork:     return DigAnimation;
         case ELLResidentContextMotion::CraftWork:   return BuildAnimation;
-        case ELLResidentContextMotion::HaulPush:    return HaulAnimation;
+        case ELLResidentContextMotion::HaulPush:
+            // Travel hauling should read as walking while carrying the visible
+            // container, not as a stationary push loop sliding across terrain.
+            // Returning no context clip releases animation ownership to the
+            // locomotion BlendSpace while ActiveContextMotion still keeps the
+            // carry prop visible from the authoritative delivery directive.
+            return nullptr;
         case ELLResidentContextMotion::FireTend:    return FireAnimation;
         case ELLResidentContextMotion::CrouchLow:   return CrouchAnimation;
         case ELLResidentContextMotion::SeatedCare:  return SeatedCareAnimation;
@@ -759,8 +765,9 @@ void ULLResidentMotionComponent::UpdateHeldToolVisualState()
         else if (ActiveContextMotion == ELLResidentContextMotion::HaulPush)
         {
             DesiredMesh = SimpleContainerMesh.Get();
-            RelativeScale = FVector(0.18f, 0.18f, 0.15f);
-            RelativeLocation = FVector(10.0f, 2.0f, -3.0f);
+            RelativeScale = FVector(0.20f, 0.20f, 0.17f);
+            RelativeRotation = FRotator(4.0f, -8.0f, 12.0f);
+            RelativeLocation = FVector(12.0f, 1.0f, -8.0f);
             PropColor = FLinearColor(0.48f, 0.30f, 0.14f, 1.0f);
         }
     }
