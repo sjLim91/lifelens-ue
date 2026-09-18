@@ -60,6 +60,9 @@ public:
     static constexpr float RingThickness   = 2.0f;
     static constexpr float RingQuickIntensity  = 0.55f;
     static constexpr float RingDetailIntensity = 1.0f;
+    static constexpr float RingDetailRadiusScale = 1.14f;
+    static constexpr float RingPulseFraction = 0.055f;
+    static constexpr float RingPulseRadiansPerSecond = 4.2f;
 
     // ---- Name label LOD (camera distance, world units) ----------------------
     static constexpr float LabelNearDistance = 1500.0f;
