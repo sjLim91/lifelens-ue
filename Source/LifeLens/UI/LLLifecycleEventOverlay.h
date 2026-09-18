@@ -36,6 +36,16 @@ private:
         bool bAlive = true;
     };
 
+    struct FRomanceVisualState
+    {
+        FString FirstName;
+        FString SecondName;
+        FGuid FirstResidentId;
+        FGuid SecondResidentId;
+        ELLCoreRomanceStage Stage = ELLCoreRomanceStage::None;
+        bool bCohabiting = false;
+    };
+
     struct FTransientNotice
     {
         FString Text;
@@ -54,6 +64,8 @@ private:
     static FString FormatObservedMoment(int64 SimulationMinute);
 
     static FString LifeStageLabel(ELLCoreLifeStage Stage);
+    static FString RomanceStageLabel(ELLCoreRomanceStage Stage);
+    static FString RomanceEventPrefix(ELLCoreRomanceStage Stage);
     static FString PregnancyPairKey(const FGuid& First, const FGuid& Second);
 
     UPROPERTY(Transient)
@@ -76,6 +88,7 @@ private:
 
     TMap<FGuid, FResidentVisualState> PreviousResidents;
     TSet<FString> PreviousPregnancyPairs;
+    TMap<FString, FRomanceVisualState> PreviousRomancePairs;
     TArray<FTransientNotice> Notices;
     TMap<FGuid, TArray<FString>> ObservedLifeHistory;
 
