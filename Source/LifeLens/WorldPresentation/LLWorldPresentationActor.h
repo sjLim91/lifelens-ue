@@ -7,6 +7,7 @@
 class UHierarchicalInstancedStaticMeshComponent;
 class ULLCoreBridgeSubsystem;
 class UMaterialInterface;
+class UMaterialInstanceDynamic;
 class UStaticMesh;
 class UStaticMeshComponent;
 struct FLLCoreCivilizationWorldObservation;
@@ -170,6 +171,7 @@ private:
     void RefreshFromCore(bool bForce);
     void ClearInstances();
     void ClearFacilityInstances();
+    void ApplyFacilityMaterialPalette();
     void BuildGround(const struct FLLCoreWorldGenerationObservation& World);
     void BuildChunkDressing(const struct FLLCoreWorldGenerationObservation& World,
                             const FLLCoreNaturalChunkObservation& Chunk);
@@ -198,6 +200,8 @@ private:
     UPROPERTY() TObjectPtr<UMaterialInterface> GroundGrass;
     UPROPERTY() TObjectPtr<UMaterialInterface> GroundDry;
     UPROPERTY() TObjectPtr<UMaterialInterface> GroundTransition;
+    UPROPERTY() TObjectPtr<UMaterialInterface> FacilitySurfaceMaterial;
+    UPROPERTY() TObjectPtr<UMaterialInterface> FacilityAccentMaterial;
 
     // Natural runtime presentation.
     UPROPERTY() TObjectPtr<UStaticMeshComponent> Ground;
@@ -212,6 +216,16 @@ private:
     UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> FacilityPostInstances;
     UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> FacilityRoofInstances;
     UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> FacilityCargoInstances;
+    UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> FacilityAccentInstances;
+
+    // Shared palette materials keep facility silhouettes readable without
+    // multiplying draw components per facility. Shape/state still comes solely
+    // from authoritative facility DTOs.
+    UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> FacilityFoundationMaterial;
+    UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> FacilityPostMaterial;
+    UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> FacilityRoofMaterial;
+    UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> FacilityCargoMaterial;
+    UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> FacilityAccentDynamicMaterial;
 
     float RefreshAccumulator = 0.0f;
     int64 BuiltWorldSeed = 0;
