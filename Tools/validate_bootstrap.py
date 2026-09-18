@@ -560,4 +560,14 @@ for target in ('Source/LifeLens.Target.cs', 'Source/LifeLensEditor.Target.cs'):
     assert 'EngineIncludeOrderVersion.Unreal5_6' in target_text
     assert 'ExtraModuleNames.Add("LifeLens")' in target_text
 
+world_generation_types = (root / 'Source/LifeLens/Simulation/LLWorldGenerationReadTypes.h').read_text(encoding='utf-8')
+assert world_generation_types.count('VisualSeed = 0') >= 2, 'Missing deterministic PCG visual seed contract'
+
+world_generation_bridge = (root / 'Source/LifeLens/Simulation/LLWorldGenerationBridge.cpp').read_text(encoding='utf-8')
+for token in (
+    'Chunk.chunkSeed & 0x7fffffffffffffffULL',
+    'Patch.detailSeed & 0x7fffffffffffffffULL',
+):
+    assert token in world_generation_bridge, f'Missing deterministic PCG seed projection: {token}'
+
 print('LifeLens autonomous observer structural validation: PASS')
