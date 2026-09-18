@@ -154,7 +154,7 @@ public:
     // horizon surface prevents the bootstrap/materialized square from floating
     // in grey void. It never creates Core chunks/resources/facilities.
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|FarWorld", meta=(ClampMin="16.0", ClampMax="96.0"))
-    float FarGroundMinSpanChunks = 48.0f;
+    float FarGroundMinSpanChunks = 72.0f;
 
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|FarWorld", meta=(ClampMin="2.0", ClampMax="12.0"))
     float FarGroundActiveSpanMultiplier = 6.0f;
