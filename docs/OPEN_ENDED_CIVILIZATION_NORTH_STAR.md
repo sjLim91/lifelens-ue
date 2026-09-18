@@ -4,6 +4,8 @@
 >
 > Execution order: `docs/DEVELOPMENT_MILESTONES.md`
 >
+> Earth / human architecture: `docs/EARTH_AND_HUMAN_FOUNDATION.md`
+>
 > Live state: `tasks/WORK_STATE.md`
 >
 > Ownership / locks / IR: `tasks/TEAM_BOARD.md`
@@ -17,6 +19,10 @@
 LifeLens의 장기 목표는 다음과 같다.
 
 > **초기 인간 4명으로 시작하여, 외부 스크립트가 시대를 강제하지 않고 생존·지식·발견·사회 변화의 결과로 원시사회부터 현재 인류 수준을 지나 아직 현실세계가 마주하지 않은 미지의 미래문명까지 자율적으로 발전할 수 있는 관찰형 시뮬레이션.**
+
+LifeLens의 인간은 작은 디오라마에 존재하는 것이 아니라 **Earth-scale physical environment** 안의 개인이다. 가까운 생활권은 세밀한 Local Surface로 시뮬레이션하고, 멀리 떨어진 지역은 deterministic Simulation LOD로 유지하며, 장기적으로 Observer는 Regional -> Planetary -> Orbital -> Interplanetary scale로 이동할 수 있어야 한다.
+
+지구 규모의 환경은 Terrain / Hydrology / Climate / Geology / Ecology를 포함한다. 강·호수·해안·바다는 단순 장식이 아니라 인간의 식수, 정착, 농업, 교통, 산업과 문명 발전을 제약하고 가능하게 하는 Core world state다.
 
 LifeLens는 특정 시대를 순서대로 해금하는 기술트리 게임이 아니다.
 각 주민과 집단이 실제 생활에서 겪는 문제, 자원, 지식, 관계, 환경, 제도와 선택이 다음 발전 가능성을 만든다.
