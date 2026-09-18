@@ -7,6 +7,8 @@
 class UAnimSequence;
 class UBlendSpace;
 class ULLResidentAppearanceComponent;
+class UMaterialInstanceDynamic;
+class UMaterialInterface;
 class USkeletalMeshComponent;
 class UStaticMesh;
 class UStaticMeshComponent;
@@ -160,6 +162,8 @@ private:
     UPROPERTY() TObjectPtr<UStaticMesh> SimpleContainerMesh;
     UPROPERTY() TObjectPtr<UStaticMesh> FoodProxyMesh;
     UPROPERTY() TObjectPtr<UStaticMesh> DrinkProxyMesh;
+    UPROPERTY() TObjectPtr<UMaterialInterface> HeldPropMaterialBase;
+    UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> HeldPropMaterial;
     UPROPERTY() TObjectPtr<UStaticMeshComponent> HeldToolMesh;
 
     UPROPERTY() TObjectPtr<ULLResidentAppearanceComponent> Appearance;
