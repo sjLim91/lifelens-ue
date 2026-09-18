@@ -131,6 +131,16 @@ public:
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.1", ClampMax="1.0"))
     float ActivityZoneResourceScale = 0.8f;
 
+    // As civilization expands away from the initial settlement center, each
+    // authoritative facility opens a smaller local readability envelope.
+    // This prevents later neighborhoods from disappearing inside untouched
+    // ambient forest without inventing roads, zoning or simulation clearing.
+    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.0", ClampMax="1600.0"))
+    float FacilityClearRadiusUU = 420.0f;
+
+    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.0", ClampMax="3000.0"))
+    float FacilityActivityRadiusUU = 1050.0f;
+
     // ---- Initial sight line (IR-E-1 mitigation) --------------------------------
     // Residents are visible the moment play starts and then disappear behind the
     // canopy that loads between the observer camera and the settlement. This
@@ -178,10 +188,15 @@ private:
     void BuildFacilities(const struct FLLCoreWorldGenerationObservation& World,
                          const FLLCoreCivilizationWorldObservation& Civilization);
     uint32 FacilitySignature(const FLLCoreCivilizationWorldObservation& Civilization) const;
+    uint32 FacilityLayoutSignature(const FLLCoreCivilizationWorldObservation& Civilization) const;
+    void RefreshFacilityReadabilityReferences(
+        const struct FLLCoreWorldGenerationObservation& World,
+        const FLLCoreCivilizationWorldObservation& Civilization);
     FVector ChunkOriginUU(const struct FLLCoreWorldGenerationObservation& World,
                           int32 ChunkX, int32 ChunkY) const;
 
     float AmbientDressingKeepFactor(const FVector2D& LocationUU, ELLDressingLayer Layer) const;
+    float FacilityDressingKeepFactor(const FVector2D& LocationUU, ELLDressingLayer Layer) const;
     FVector2D SettlementReferenceUU(const struct FLLCoreWorldGenerationObservation& World) const;
     float ResourcePatchScaleFactor(const FVector2D& LocationUU) const;
     float InitialSightlineKeepFactor(const FVector2D& LocationUU) const;
@@ -232,6 +247,7 @@ private:
     int32 BuiltGenerationVersion = -1;
     int32 BuiltChunkCount = -1;
     uint32 BuiltFacilitySignature = 0;
+    uint32 BuiltFacilityLayoutSignature = 0;
     bool bBuiltFacilityPresentation = false;
     int32 PlacedTrees = 0;
     int32 PlacedShrubs = 0;
@@ -239,6 +255,7 @@ private:
     int32 PlacedRocks = 0;
     int32 SuppressedDressing = 0;
     FVector2D CachedSettlementReferenceUU = FVector2D::ZeroVector;
+    TArray<FVector2D> CachedFacilityReadabilityCentersUU;
     FVector2D InitialViewOriginUU = FVector2D::ZeroVector;
     bool bInitialViewCaptured = false;
     int32 SightlineCleared = 0;
