@@ -28,10 +28,6 @@ public:
 
 private:
     void RefreshCollisionProxies(bool bForce);
-    void CollectMaterializedChunks(
-        ULLCoreBridgeSubsystem& Bridge,
-        const FLLCoreWorldGenerationObservation& World,
-        TArray<FLLCoreNaturalChunkObservation>& OutChunks) const;
     uint32 ComputeCoreSignature(
         const FLLCoreWorldGenerationObservation& World,
         const TArray<FLLCoreNaturalChunkObservation>& Chunks) const;
