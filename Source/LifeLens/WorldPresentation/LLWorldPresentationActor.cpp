@@ -653,10 +653,13 @@ void ALLWorldPresentationActor::BuildFacilities(
             ? FMath::Clamp(static_cast<float>(Facility.DeliveredMaterialUnits) / static_cast<float>(Facility.RequiredMaterialUnits), 0.0f, 1.0f)
             : 0.0f;
         const float WorkProgress = FMath::Clamp(Facility.WorkProgress, 0.0f, 1.0f);
-        const bool bOperational = Facility.State == ELLCoreFacilityState::Operational && Facility.bActive;
+        // Structural completion and runtime activity are different truths.
+        // An Operational facility stays fully built even while temporarily
+        // inactive; activity only affects the work/fire presentation.
+        const bool bStructurallyComplete = Facility.State == ELLCoreFacilityState::Operational;
         const bool bRuined = Facility.State == ELLCoreFacilityState::Ruined;
         const float Durability = FMath::Clamp(Facility.Durability, 0.0f, 1.0f);
-        const float BuildProgress = bOperational ? 1.0f : FMath::Max(MaterialProgress, WorkProgress);
+        const float BuildProgress = bStructurallyComplete ? 1.0f : FMath::Max(MaterialProgress, WorkProgress);
 
         // Ruins stay visible as low, scattered debris instead of disappearing.
         // This is deliberately generic: Core owns the Ruined state; Presentation
@@ -695,6 +698,41 @@ void ALLWorldPresentationActor::BuildFacilities(
             continue;
         }
 
+        // Operational damage should be legible before the facility becomes a
+        // full ruin. Project a small amount of loose debris from authoritative
+        // durability without changing collision, navigation or Core state.
+        if (bStructurallyComplete && Durability < 0.78f && FacilityCargoInstances)
+        {
+            const float Damage01 = 1.0f - Durability;
+            const int32 DebrisCount = FMath::Clamp(
+                FMath::CeilToInt(Damage01 * 4.0f),
+                1,
+                3);
+            const float FacilityPhase = static_cast<float>(
+                FMath::Abs(static_cast<int64>(Facility.FacilityId)) % 360);
+            for (int32 Index = 0; Index < DebrisCount; ++Index)
+            {
+                const float AngleDegrees = FMath::Fmod(
+                    FacilityPhase + 121.0f * static_cast<float>(Index),
+                    360.0f);
+                const float AngleRadians = FMath::DegreesToRadians(AngleDegrees);
+                const float Radius = 82.0f + 18.0f * static_cast<float>(Index);
+                FacilityCargoInstances->AddInstance(FTransform(
+                    FRotator(
+                        5.0f + 4.0f * static_cast<float>(Index),
+                        AngleDegrees,
+                        (Index % 2 == 0) ? 8.0f : -7.0f),
+                    Base + FVector(
+                        FMath::Cos(AngleRadians) * Radius,
+                        FMath::Sin(AngleRadians) * Radius,
+                        10.0f + 3.0f * static_cast<float>(Index)),
+                    FVector(
+                        FMath::Lerp(0.22f, 0.42f, Damage01),
+                        0.15f + 0.03f * static_cast<float>(Index),
+                        0.10f + 0.02f * static_cast<float>(Index))));
+            }
+        }
+
         if (Facility.Kind == ELLCoreFacilityKind::PrimitiveStorage)
         {
             if (FacilityFoundationInstances)
@@ -706,16 +744,16 @@ void ALLWorldPresentationActor::BuildFacilities(
             const FVector2D PostOffsets[4] = {
                 FVector2D(-90.0f, -60.0f), FVector2D(90.0f, -60.0f),
                 FVector2D(-90.0f, 60.0f), FVector2D(90.0f, 60.0f)};
-            const int32 PostCount = bOperational ? 4 : FMath::Clamp(FMath::CeilToInt(BuildProgress * 4.0f), 0, 4);
+            const int32 PostCount = bStructurallyComplete ? 4 : FMath::Clamp(FMath::CeilToInt(BuildProgress * 4.0f), 0, 4);
             for (int32 Index = 0; Index < PostCount; ++Index)
             {
                 if (!FacilityPostInstances) { break; }
-                const float HeightFactor = bOperational ? 1.0f : FMath::Clamp(0.35f + 0.65f * BuildProgress, 0.35f, 1.0f);
+                const float HeightFactor = bStructurallyComplete ? 1.0f : FMath::Clamp(0.35f + 0.65f * BuildProgress, 0.35f, 1.0f);
                 FacilityPostInstances->AddInstance(FTransform(
                     FRotator::ZeroRotator,Base + FVector(PostOffsets[Index].X, PostOffsets[Index].Y, 55.0f * HeightFactor),
                     FVector(0.14f, 0.14f, 1.1f * HeightFactor)));
             }
-            const int32 CargoCount = bOperational ? 6 : FMath::Clamp(FMath::CeilToInt(MaterialProgress * 6.0f), 0, 6);
+            const int32 CargoCount = bStructurallyComplete ? 6 : FMath::Clamp(FMath::CeilToInt(MaterialProgress * 6.0f), 0, 6);
             for (int32 Index = 0; Index < CargoCount; ++Index)
             {
                 if (!FacilityCargoInstances) { break; }
@@ -725,9 +763,9 @@ void ALLWorldPresentationActor::BuildFacilities(
                     FRotator(0.0f, (Index % 2 == 0) ? 0.0f : 90.0f, 0.0f),
                     Base + FVector(-65.0f + Column * 65.0f, -22.0f + Row * 48.0f, 25.0f),FVector(0.55f, 0.32f, 0.28f)));
             }
-            if ((bOperational || WorkProgress >= 0.65f) && FacilityRoofInstances)
+            if ((bStructurallyComplete || WorkProgress >= 0.65f) && FacilityRoofInstances)
             {
-                const float RoofScale = bOperational ? 1.0f : FMath::Clamp((WorkProgress - 0.65f) / 0.35f, 0.25f, 1.0f);
+                const float RoofScale = bStructurallyComplete ? 1.0f : FMath::Clamp((WorkProgress - 0.65f) / 0.35f, 0.25f, 1.0f);
                 FacilityRoofInstances->AddInstance(FTransform(
                     FRotator::ZeroRotator,Base + FVector(0.0f, 0.0f, 118.0f),FVector(2.15f * RoofScale, 1.55f, 0.12f)));
             }
@@ -753,7 +791,7 @@ void ALLWorldPresentationActor::BuildFacilities(
             const FVector2D LegOffsets[4] = {
                 FVector2D(-68.0f, -32.0f), FVector2D(68.0f, -32.0f),
                 FVector2D(-68.0f, 32.0f), FVector2D(68.0f, 32.0f)};
-            const int32 LegCount = bOperational
+            const int32 LegCount = bStructurallyComplete
                 ? 4
                 : FMath::Clamp(FMath::CeilToInt(BuildProgress * 4.0f), 0, 4);
             for (int32 Index = 0; Index < LegCount; ++Index)
@@ -766,9 +804,9 @@ void ALLWorldPresentationActor::BuildFacilities(
                     FVector(0.12f, 0.12f, Height)));
             }
 
-            if ((bOperational || WorkProgress >= 0.45f) && FacilityRoofInstances)
+            if ((bStructurallyComplete || WorkProgress >= 0.45f) && FacilityRoofInstances)
             {
-                const float TopScale = bOperational
+                const float TopScale = bStructurallyComplete
                     ? 1.0f
                     : FMath::Clamp((WorkProgress - 0.45f) / 0.55f, 0.25f, 1.0f);
                 FacilityRoofInstances->AddInstance(FTransform(
@@ -777,7 +815,7 @@ void ALLWorldPresentationActor::BuildFacilities(
                     FVector(1.65f * TopScale, 0.82f, 0.12f * Integrity)));
             }
 
-            const int32 LooseMaterialCount = bOperational
+            const int32 LooseMaterialCount = bStructurallyComplete
                 ? 2
                 : FMath::Clamp(FMath::CeilToInt(MaterialProgress * 3.0f), 0, 3);
             for (int32 Index = 0; Index < LooseMaterialCount; ++Index)
@@ -807,7 +845,7 @@ void ALLWorldPresentationActor::BuildFacilities(
                     FVector(1.85f * FrameScale, 0.92f * FrameScale, 0.12f)));
             }
 
-            const int32 RailCount = bOperational
+            const int32 RailCount = bStructurallyComplete
                 ? 2
                 : FMath::Clamp(FMath::CeilToInt(BuildProgress * 2.0f), 0, 2);
             for (int32 Index = 0; Index < RailCount; ++Index)
@@ -820,16 +858,16 @@ void ALLWorldPresentationActor::BuildFacilities(
                     FVector(1.72f, 0.11f, 0.16f * Integrity)));
             }
 
-            if ((bOperational || MaterialProgress >= 0.55f) && FacilityCargoInstances)
+            if ((bStructurallyComplete || MaterialProgress >= 0.55f) && FacilityCargoInstances)
             {
-                const float BeddingScale = bOperational
+                const float BeddingScale = bStructurallyComplete
                     ? 1.0f
                     : FMath::Clamp((MaterialProgress - 0.55f) / 0.45f, 0.30f, 1.0f);
                 FacilityCargoInstances->AddInstance(FTransform(
                     FRotator(0.0f, 0.0f, DamageTilt),
                     Base + FVector(0.0f, 0.0f, 31.0f * Integrity),
                     FVector(1.58f * BeddingScale, 0.72f, 0.16f)));
-                if (bOperational)
+                if (bStructurallyComplete)
                 {
                     FacilityCargoInstances->AddInstance(FTransform(
                         FRotator(0.0f, 0.0f, DamageTilt * 0.65f),
@@ -859,7 +897,7 @@ void ALLWorldPresentationActor::BuildFacilities(
             const FVector2D PostOffsets[4] = {
                 FVector2D(-92.0f, -70.0f), FVector2D(92.0f, -70.0f),
                 FVector2D(-92.0f, 70.0f), FVector2D(92.0f, 70.0f)};
-            const int32 PostCount = bOperational
+            const int32 PostCount = bStructurallyComplete
                 ? 4
                 : FMath::Clamp(FMath::CeilToInt(BuildProgress * 4.0f), 0, 4);
             for (int32 Index = 0; Index < PostCount; ++Index)
@@ -872,9 +910,9 @@ void ALLWorldPresentationActor::BuildFacilities(
                     FVector(0.14f, 0.14f, 1.48f * Integrity)));
             }
 
-            if ((bOperational || WorkProgress >= 0.58f) && FacilityRoofInstances)
+            if ((bStructurallyComplete || WorkProgress >= 0.58f) && FacilityRoofInstances)
             {
-                const float RoofProgress = bOperational
+                const float RoofProgress = bStructurallyComplete
                     ? 1.0f
                     : FMath::Clamp((WorkProgress - 0.58f) / 0.42f, 0.25f, 1.0f);
                 FacilityRoofInstances->AddInstance(FTransform(
@@ -883,9 +921,9 @@ void ALLWorldPresentationActor::BuildFacilities(
                     FVector(2.25f * RoofProgress, 1.75f, 0.13f * Integrity)));
             }
 
-            if ((bOperational || MaterialProgress >= 0.70f) && FacilityCargoInstances)
+            if ((bStructurallyComplete || MaterialProgress >= 0.70f) && FacilityCargoInstances)
             {
-                const float WallProgress = bOperational
+                const float WallProgress = bStructurallyComplete
                     ? 1.0f
                     : FMath::Clamp((MaterialProgress - 0.70f) / 0.30f, 0.25f, 1.0f);
                 FacilityCargoInstances->AddInstance(FTransform(
@@ -900,14 +938,14 @@ void ALLWorldPresentationActor::BuildFacilities(
         {
             // Android-safe visual-only furnace. Chamber/charge/output are derived
             // solely from the authoritative facility read DTO.
-            const float Structure = bOperational ? 1.0f : FMath::Clamp(BuildProgress, 0.0f, 1.0f);
+            const float Structure = bStructurallyComplete ? 1.0f : FMath::Clamp(BuildProgress, 0.0f, 1.0f);
             if (FacilityFoundationInstances && Structure > 0.0f)
             {
                 FacilityFoundationInstances->AddInstance(FTransform(
                     FRotator::ZeroRotator,Base + FVector(0.0f, 0.0f, 8.0f),FVector(1.55f * Structure, 1.35f * Structure, 0.16f)));
             }
             const FVector2D WallOffsets[3] = { FVector2D(-58.0f,0.0f), FVector2D(58.0f,0.0f), FVector2D(0.0f,52.0f) };
-            const int32 WallCount = bOperational ? 3 : FMath::Clamp(FMath::CeilToInt(Structure * 3.0f),0,3);
+            const int32 WallCount = bStructurallyComplete ? 3 : FMath::Clamp(FMath::CeilToInt(Structure * 3.0f),0,3);
             for (int32 Index=0; Index<WallCount; ++Index)
             {
                 if (!FacilityPostInstances) { break; }
@@ -917,7 +955,7 @@ void ALLWorldPresentationActor::BuildFacilities(
                     Base + FVector(WallOffsets[Index].X, WallOffsets[Index].Y, 62.0f),
                     bSide ? FVector(0.22f,1.15f,1.05f) : FVector(1.15f,0.22f,1.05f)));
             }
-            if ((bOperational || WorkProgress>=0.70f) && FacilityRoofInstances)
+            if ((bStructurallyComplete || WorkProgress>=0.70f) && FacilityRoofInstances)
             {
                 FacilityRoofInstances->AddInstance(FTransform(
                     FRotator::ZeroRotator,Base + FVector(0.0f,0.0f,126.0f),FVector(1.30f,1.10f,0.16f)));
@@ -957,7 +995,7 @@ void ALLWorldPresentationActor::BuildFacilities(
 
         if (Facility.Kind != ELLCoreFacilityKind::FirePit) { continue; }
 
-        const int32 StoneCount = bOperational ? 8 : FMath::Clamp(FMath::CeilToInt(BuildProgress * 8.0f), 0, 8);
+        const int32 StoneCount = bStructurallyComplete ? 8 : FMath::Clamp(FMath::CeilToInt(BuildProgress * 8.0f), 0, 8);
         for (int32 Index = 0; Index < StoneCount; ++Index)
         {
             if (!FacilityFoundationInstances) { break; }
@@ -967,12 +1005,12 @@ void ALLWorldPresentationActor::BuildFacilities(
             FacilityFoundationInstances->AddInstance(FTransform(
                 FRotator(0.0f, AngleDegrees, 0.0f),Base + Offset,FVector(0.48f, 0.28f, 0.20f)));
         }
-        if (bOperational && FacilityFoundationInstances)
+        if (bStructurallyComplete && FacilityFoundationInstances)
         {
             FacilityFoundationInstances->AddInstance(FTransform(
                 FRotator::ZeroRotator,Base + FVector(0.0f, 0.0f, 5.0f),FVector(1.05f, 1.05f, 0.08f)));
         }
-        const int32 LogCount = bOperational ? FMath::Clamp(Facility.FuelUnits, 0, 3)
+        const int32 LogCount = bStructurallyComplete ? FMath::Clamp(Facility.FuelUnits, 0, 3)
             : FMath::Clamp(FMath::CeilToInt(MaterialProgress * 2.0f), 0, 2);
         for (int32 Index = 0; Index < LogCount; ++Index)
         {
