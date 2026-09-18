@@ -6,12 +6,14 @@
 
 class UDirectionalLightComponent;
 class UExponentialHeightFogComponent;
+class UInstancedStaticMeshComponent;
 class UNiagaraComponent;
 class UNiagaraSystem;
 class UPostProcessComponent;
 class USceneComponent;
 class USkyAtmosphereComponent;
 class USkyLightComponent;
+class UStaticMesh;
 
 /**
  * Read-only presentation of authoritative Core time/weather.
@@ -36,7 +38,9 @@ public:
 private:
     void ResolveWorldComponents();
     void ConfigureEffectAssets();
+    void ConfigureFallbackPrecipitation();
     void UpdateEffectAnchor();
+    void UpdateFallbackPrecipitation(float DeltaSeconds);
     void RefreshFromCore(bool bForce);
     void ApplyLighting(float Daylight01, float CloudCover01, float Visibility01, int32 MinuteOfDay, float AnnualPhase);
     void ApplyFog(float Daylight01, float CloudCover01, float Visibility01, float Humidity01, float Precipitation01);
@@ -54,6 +58,9 @@ private:
     UPROPERTY() TObjectPtr<UNiagaraComponent> SnowEffect;
     UPROPERTY() TObjectPtr<UNiagaraComponent> FogEffect;
     UPROPERTY() TObjectPtr<UPostProcessComponent> PostProcess;
+    UPROPERTY() TObjectPtr<UInstancedStaticMeshComponent> RainFallback;
+    UPROPERTY() TObjectPtr<UInstancedStaticMeshComponent> SnowFallback;
+    UPROPERTY() TObjectPtr<UStaticMesh> FallbackPrecipitationMesh;
 
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Environment", meta=(ClampMin="0.05", ClampMax="5.0"))
     float RefreshIntervalSeconds = 0.25f;
@@ -88,6 +95,21 @@ private:
 
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|VFX")
     TSoftObjectPtr<UNiagaraSystem> FogSystem;
+
+    // Code-only Android-safe fallback used only when an authored Niagara system
+    // has not been assigned. This makes rain/snow visible in packaged builds
+    // today while preserving Niagara as the preferred upgrade path.
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|VFX|Fallback", meta=(ClampMin="8", ClampMax="256"))
+    int32 MaxFallbackRainInstances = 96;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|VFX|Fallback", meta=(ClampMin="8", ClampMax="192"))
+    int32 MaxFallbackSnowInstances = 64;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|VFX|Fallback", meta=(ClampMin="500.0", ClampMax="6000.0"))
+    float FallbackPrecipitationRadiusUU = 2200.0f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|VFX|Fallback", meta=(ClampMin="500.0", ClampMax="6000.0"))
+    float FallbackPrecipitationHeightUU = 2600.0f;
 
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Lighting", meta=(ClampMin="0.0"))
     float DaySunIntensity = 8.0f;
@@ -139,4 +161,10 @@ private:
 
     float RefreshAccumulator = 0.0f;
     int64 LastAppliedSimulationMinute = TNumericLimits<int64>::Lowest();
+    float FallbackVisualTime = 0.0f;
+    float FallbackRainIntensity01 = 0.0f;
+    float FallbackSnowIntensity01 = 0.0f;
+    float FallbackWind01 = 0.0f;
+    bool bFallbackRainActive = false;
+    bool bFallbackSnowActive = false;
 };
