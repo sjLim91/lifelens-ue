@@ -69,6 +69,16 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
     FacilitySurfaceMaterial = FacilitySurfaceMatFinder.Succeeded() ? FacilitySurfaceMatFinder.Object : nullptr;
     FacilityAccentMaterial = FacilityAccentMatFinder.Succeeded() ? FacilityAccentMatFinder.Object : nullptr;
 
+    // Photoreal CC0 assets are the preferred production art path. The
+    // Quaternius set remains a zero-cost fallback so source-only/CI branches and
+    // partial asset checkouts still boot cleanly.
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoTreePine(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/pine_tree_01/SM_LL_pine_tree_01.SM_LL_pine_tree_01"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoTreeSmall(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/tree_small_02/SM_LL_tree_small_02.SM_LL_tree_small_02"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoBoulder(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/boulder_01/SM_LL_boulder_01.SM_LL_boulder_01"));
+
     static ConstructorHelpers::FObjectFinder<UStaticMesh> TreeA(TEXT("/Game/Environment/Quaternius/StylizedNature/CommonTree_1/StaticMeshes/CommonTree_1.CommonTree_1"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> TreeB(TEXT("/Game/Environment/Quaternius/StylizedNature/Pine_1/StaticMeshes/Pine_1.Pine_1"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> TreeC(TEXT("/Game/Environment/Quaternius/StylizedNature/TwistedTree_2/StaticMeshes/TwistedTree_2.TwistedTree_2"));
@@ -79,15 +89,41 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
     static ConstructorHelpers::FObjectFinder<UStaticMesh> RockA(TEXT("/Game/Environment/Quaternius/StylizedNature/Rock_Medium_1/StaticMeshes/Rock_Medium_1.Rock_Medium_1"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> RockB(TEXT("/Game/Environment/Quaternius/StylizedNature/Pebble_Round_2/StaticMeshes/Pebble_Round_2.Pebble_Round_2"));
 
-    if (TreeA.Succeeded()) { TreeMeshes.Add(TreeA.Object); }
-    if (TreeB.Succeeded()) { TreeMeshes.Add(TreeB.Object); }
-    if (TreeC.Succeeded()) { TreeMeshes.Add(TreeC.Object); }
+    const bool bHasPhotorealTrees =
+        PhotoTreePine.Succeeded() || PhotoTreeSmall.Succeeded();
+    if (bHasPhotorealTrees)
+    {
+        if (PhotoTreePine.Succeeded()) { TreeMeshes.Add(PhotoTreePine.Object); }
+        if (PhotoTreeSmall.Succeeded()) { TreeMeshes.Add(PhotoTreeSmall.Object); }
+    }
+    else
+    {
+        if (TreeA.Succeeded()) { TreeMeshes.Add(TreeA.Object); }
+        if (TreeB.Succeeded()) { TreeMeshes.Add(TreeB.Object); }
+        if (TreeC.Succeeded()) { TreeMeshes.Add(TreeC.Object); }
+    }
+
     if (ShrubA.Succeeded()) { ShrubMeshes.Add(ShrubA.Object); }
     if (ShrubB.Succeeded()) { ShrubMeshes.Add(ShrubB.Object); }
     if (GrassA.Succeeded()) { GrassMeshes.Add(GrassA.Object); }
     if (GrassB.Succeeded()) { GrassMeshes.Add(GrassB.Object); }
-    if (RockA.Succeeded()) { RockMeshes.Add(RockA.Object); }
-    if (RockB.Succeeded()) { RockMeshes.Add(RockB.Object); }
+
+    if (PhotoBoulder.Succeeded())
+    {
+        RockMeshes.Add(PhotoBoulder.Object);
+    }
+    else
+    {
+        if (RockA.Succeeded()) { RockMeshes.Add(RockA.Object); }
+        if (RockB.Succeeded()) { RockMeshes.Add(RockB.Object); }
+    }
+
+    UE_LOG(LogTemp, Log,
+        TEXT("LLWorldPresentation natural art: photorealTrees=%d photorealRock=%d treeMeshes=%d rockMeshes=%d"),
+        bHasPhotorealTrees ? 1 : 0,
+        PhotoBoulder.Succeeded() ? 1 : 0,
+        TreeMeshes.Num(),
+        RockMeshes.Num());
 
     Ground = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("GeneratedGround"));
     Ground->SetupAttachment(Root);
