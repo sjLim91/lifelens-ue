@@ -60,13 +60,20 @@ private:
     UPROPERTY() TObjectPtr<UPostProcessComponent> PostProcess;
     UPROPERTY() TObjectPtr<UInstancedStaticMeshComponent> RainFallback;
     UPROPERTY() TObjectPtr<UInstancedStaticMeshComponent> SnowFallback;
-    UPROPERTY() TObjectPtr<UStaticMesh> FallbackPrecipitationMesh;
+    UPROPERTY() TObjectPtr<UStaticMesh> FallbackRainMesh;
+    UPROPERTY() TObjectPtr<UStaticMesh> FallbackSnowMesh;
 
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Environment", meta=(ClampMin="0.05", ClampMax="5.0"))
     float RefreshIntervalSeconds = 0.25f;
 
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Environment", meta=(ClampMin="0.0", ClampMax="0.25"))
     float EffectActivationThreshold = 0.02f;
+
+    // Lower threshold for shutting an already-visible weather effect off.
+    // The small hysteresis prevents one-minute intensity noise from repeatedly
+    // popping rain/snow VFX on and off near the activation boundary.
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Environment", meta=(ClampMin="0.0", ClampMax="0.25"))
+    float EffectDeactivationThreshold = 0.012f;
 
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Environment", meta=(ClampMin="0.0", ClampMax="5000.0"))
     float EffectAnchorHeightUU = 1200.0f;
