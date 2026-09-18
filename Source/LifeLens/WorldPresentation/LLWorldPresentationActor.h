@@ -270,13 +270,20 @@ private:
     UPROPERTY() TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>> RockInstances;
     UPROPERTY() TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>> FarRockInstances;
 
-    // Facility presentation uses simple Engine cube composition until a suitable
-    // CC0 prop set is added. These components are visual-only and collision-free.
+    // Construction-progress and not-yet-upgraded facility structure still uses
+    // lightweight modular composition. Approved completed hero props use the
+    // photoreal CC0 components below; missing hero art must not silently regress
+    // to an obvious Engine primitive substitute. All components are visual-only
+    // and collision-free.
     UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> FacilityFoundationInstances;
     UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> FacilityPostInstances;
     UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> FacilityRoofInstances;
     UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> FacilityCargoInstances;
     UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> FacilityAccentInstances;
+
+    UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> PhotorealFirePitInstances;
+    UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> PhotorealStorageBasketInstances;
+    UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> PhotorealWorkToolInstances;
 
     // Shared palette materials keep facility silhouettes readable without
     // multiplying draw components per facility. Shape/state still comes solely
