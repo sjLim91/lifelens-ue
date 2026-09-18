@@ -1,9 +1,11 @@
 #include "WorldPresentation/LLWorldPresentationActor.h"
 
+#include "Characters/LLResidentCharacter.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/GameInstance.h"
 #include "Engine/StaticMesh.h"
+#include "EngineUtils.h"
 #include "Engine/World.h"
 #include "Materials/MaterialInterface.h"
 #include "Simulation/LLCivilizationReadTypes.h"
@@ -132,15 +134,22 @@ void ALLWorldPresentationActor::BeginPlay()
 {
     Super::BeginPlay();
     RefreshFromCore(true);
+    UpdateDynamicObserverCanopyVisibility();
 }
 
 void ALLWorldPresentationActor::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
     RefreshAccumulator += DeltaSeconds;
-    if (RefreshAccumulator < RefreshIntervalSeconds) { return; }
-    RefreshAccumulator = 0.0f;
-    RefreshFromCore(false);
+    if (RefreshAccumulator >= RefreshIntervalSeconds)
+    {
+        RefreshAccumulator = 0.0f;
+        RefreshFromCore(false);
+    }
+
+    // Camera readability is presentation state and must follow the observer,
+    // not the much slower Core/world refresh cadence.
+    UpdateDynamicObserverCanopyVisibility();
 }
 
 void ALLWorldPresentationActor::ClearInstances()
@@ -155,6 +164,8 @@ void ALLWorldPresentationActor::ClearInstances()
     PlacedRocks = 0;
     SuppressedDressing = 0;
     SightlineCleared = 0;
+    DynamicCanopySuppressed = 0;
+    DynamicCanopyInstances.Reset();
 }
 
 void ALLWorldPresentationActor::ClearFacilityInstances()
@@ -212,6 +223,139 @@ bool ALLWorldPresentationActor::CaptureInitialViewOrigin()
     InitialViewOriginUU = FVector2D(CameraLocation.X, CameraLocation.Y);
     bInitialViewCaptured = true;
     return true;
+}
+
+void ALLWorldPresentationActor::RegisterDynamicCanopyInstance(
+    UHierarchicalInstancedStaticMeshComponent* Component,
+    int32 InstanceIndex,
+    const FTransform& BaseTransform)
+{
+    if (!Component || InstanceIndex == INDEX_NONE)
+    {
+        return;
+    }
+
+    FDynamicCanopyInstance Record;
+    Record.Component = Component;
+    Record.InstanceIndex = InstanceIndex;
+    Record.BaseTransform = BaseTransform;
+    DynamicCanopyInstances.Add(MoveTemp(Record));
+}
+
+void ALLWorldPresentationActor::UpdateDynamicObserverCanopyVisibility()
+{
+    if (DynamicCanopyInstances.Num() == 0)
+    {
+        DynamicCanopySuppressed = 0;
+        return;
+    }
+
+    const UWorld* World = GetWorld();
+    const APlayerController* Controller = World ? World->GetFirstPlayerController() : nullptr;
+    const APlayerCameraManager* CameraManager = Controller ? Controller->PlayerCameraManager : nullptr;
+    if (!World || !CameraManager)
+    {
+        return;
+    }
+
+    const FVector CameraLocation3D = CameraManager->GetCameraLocation();
+    const FVector2D CameraLocation(CameraLocation3D.X, CameraLocation3D.Y);
+
+    TArray<FVector2D> VisibilityTargets;
+    for (TActorIterator<ALLResidentCharacter> It(World); It; ++It)
+    {
+        const ALLResidentCharacter* Resident = *It;
+        if (!Resident || Resident->IsHidden())
+        {
+            continue;
+        }
+        const FVector Location = Resident->GetActorLocation();
+        VisibilityTargets.Add(FVector2D(Location.X, Location.Y));
+    }
+
+    VisibilityTargets.Sort([CameraLocation](const FVector2D& A, const FVector2D& B)
+    {
+        return FVector2D::DistSquared(A, CameraLocation) < FVector2D::DistSquared(B, CameraLocation);
+    });
+    if (VisibilityTargets.Num() > MaxDynamicVisibilityTargets)
+    {
+        VisibilityTargets.SetNum(FMath::Max(1, MaxDynamicVisibilityTargets));
+    }
+
+    TSet<UHierarchicalInstancedStaticMeshComponent*> DirtyComponents;
+    int32 SuppressedNow = 0;
+
+    for (FDynamicCanopyInstance& Record : DynamicCanopyInstances)
+    {
+        UHierarchicalInstancedStaticMeshComponent* Component = Record.Component.Get();
+        if (!Component || Record.InstanceIndex < 0 || Record.InstanceIndex >= Component->GetInstanceCount())
+        {
+            continue;
+        }
+
+        bool bShouldSuppress = false;
+        if (bDynamicObserverCanopyVisibility && VisibilityTargets.Num() > 0)
+        {
+            const FVector TreeWorld3D = Component->GetComponentTransform().TransformPosition(Record.BaseTransform.GetLocation());
+            const FVector2D TreeWorld(TreeWorld3D.X, TreeWorld3D.Y);
+            const float CorridorRadius = Record.bSuppressed
+                ? FMath::Max(DynamicCanopyHideRadiusUU, DynamicCanopyRestoreRadiusUU)
+                : FMath::Max(1.0f, DynamicCanopyHideRadiusUU);
+            const float CorridorRadiusSq = FMath::Square(CorridorRadius);
+
+            for (const FVector2D& Target : VisibilityTargets)
+            {
+                const FVector2D Segment = Target - CameraLocation;
+                const float SegmentLengthSq = Segment.SizeSquared();
+                if (SegmentLengthSq <= KINDA_SMALL_NUMBER)
+                {
+                    continue;
+                }
+
+                const float Projection = FVector2D::DotProduct(TreeWorld - CameraLocation, Segment) / SegmentLengthSq;
+                // Only canopy truly between camera and resident may collapse;
+                // trees behind either endpoint remain untouched.
+                if (Projection <= 0.03f || Projection >= 0.97f)
+                {
+                    continue;
+                }
+
+                const FVector2D Closest = CameraLocation + Segment * Projection;
+                if (FVector2D::DistSquared(TreeWorld, Closest) <= CorridorRadiusSq)
+                {
+                    bShouldSuppress = true;
+                    break;
+                }
+            }
+        }
+
+        if (bShouldSuppress != Record.bSuppressed)
+        {
+            FTransform Updated = Record.BaseTransform;
+            if (bShouldSuppress)
+            {
+                Updated.SetScale3D(Record.BaseTransform.GetScale3D()
+                    * FMath::Clamp(DynamicCanopyHiddenScale, 0.001f, 0.20f));
+            }
+            Component->UpdateInstanceTransform(Record.InstanceIndex, Updated, false, false, true);
+            Record.bSuppressed = bShouldSuppress;
+            DirtyComponents.Add(Component);
+        }
+
+        if (Record.bSuppressed)
+        {
+            ++SuppressedNow;
+        }
+    }
+
+    for (UHierarchicalInstancedStaticMeshComponent* Component : DirtyComponents)
+    {
+        if (Component)
+        {
+            Component->MarkRenderStateDirty();
+        }
+    }
+    DynamicCanopySuppressed = SuppressedNow;
 }
 
 float ALLWorldPresentationActor::InitialSightlineKeepFactor(const FVector2D& LocationUU) const
@@ -349,8 +493,16 @@ void ALLWorldPresentationActor::BuildChunkDressing(const FLLCoreWorldGenerationO
             }
             if (UHierarchicalInstancedStaticMeshComponent* Component = Components[Slot])
             {
-                Component->AddInstance(FTransform(
-                    FRotator(TiltPitch, Yaw, TiltRoll),Location,FVector(Scale, Scale, Scale * HeightJitter)));
+                const FTransform InstanceTransform(
+                    FRotator(TiltPitch, Yaw, TiltRoll), Location, FVector(Scale, Scale, Scale * HeightJitter));
+                const int32 InstanceIndex = Component->AddInstance(InstanceTransform);
+                if (Layer == ELLDressingLayer::Canopy)
+                {
+                    // Only ambient canopy enters the reversible sightline set.
+                    // Authoritative resource-patch trees are added later through
+                    // a separate path and are never registered here.
+                    RegisterDynamicCanopyInstance(Component, InstanceIndex, InstanceTransform);
+                }
                 ++Placed;
             }
         }
@@ -679,11 +831,11 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         + (FacilityCargoInstances ? FacilityCargoInstances->GetInstanceCount() : 0);
 
     UE_LOG(LogTemp, Log,
-        TEXT("LLWorldPresentation seed=%lld gen=%d chunks=%d natural=%d/%d/%d/%d facilities=%d facilityInstances=%d thinned=%d sightline=%d/%d core=%.0f activity=%.0f ground=%s"),
+        TEXT("LLWorldPresentation seed=%lld gen=%d chunks=%d natural=%d/%d/%d/%d facilities=%d facilityInstances=%d thinned=%d sightline=%d/%d dynamicCanopy=%d core=%.0f activity=%.0f ground=%s"),
         World.WorldSeed, World.GenerationVersion, World.MaterializedChunkCount,
         TreeInstanceCount, ShrubInstanceCount, GrassInstanceCount, RockInstanceCount,
         Civilization.FacilityCount, FacilityInstanceCount,
-        SuppressedDressing, SightlineCleared, bInitialViewCaptured ? 1 : 0,
+        SuppressedDressing, SightlineCleared, bInitialViewCaptured ? 1 : 0, DynamicCanopySuppressed,
         CoreClearRadiusUU, ActivityRadiusUU,
         (Ground && Ground->GetStaticMesh()) ? TEXT("yes") : TEXT("no"));
 }
