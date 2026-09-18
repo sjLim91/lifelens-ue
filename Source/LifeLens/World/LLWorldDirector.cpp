@@ -156,7 +156,8 @@ ELLWorldAffordanceTier ALLWorldDirector::GetResidentAffordanceTier(FGuid Residen
 bool ALLWorldDirector::IsResidentUsingEmergencyFallback(FGuid ResidentId) const
 {
     const FLLResidentRuntimeState* Runtime = RuntimeStates.Find(ResidentId);
-    return Runtime && Runtime->bUsingEmergencyFallback;
+    return Runtime
+        && Runtime->ActiveAffordanceTier == ELLWorldAffordanceTier::Emergency;
 }
 
 int32 ALLWorldDirector::GetEnvironmentalResidueVisualCount() const
