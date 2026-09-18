@@ -105,6 +105,7 @@ public:
 
 private:
     void EnsureLocomotionPlaying();
+    bool ResolveInteractionTargetYaw(float& OutYawDegrees) const;
     void UpdateBodyOrientation(float DeltaTime);
     void UpdateContextAnimationState(float DeltaTime);
     void UpdateHeldToolVisualState();

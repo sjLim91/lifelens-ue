@@ -825,6 +825,63 @@ void ULLResidentMotionComponent::UpdateHeldToolVisualState()
     HeldToolMesh->SetVisibility(true, true);
 }
 
+bool ULLResidentMotionComponent::ResolveInteractionTargetYaw(float& OutYawDegrees) const
+{
+    const ALLResidentCharacter* Resident = Cast<ALLResidentCharacter>(GetOwner());
+    const UWorld* World = GetWorld();
+    const UGameInstance* GameInstance = World ? World->GetGameInstance() : nullptr;
+    const ULLCoreBridgeSubsystem* Bridge =
+        GameInstance ? GameInstance->GetSubsystem<ULLCoreBridgeSubsystem>() : nullptr;
+    if (!Resident || !World || !Bridge || !Resident->GetResidentId().IsValid())
+    {
+        return false;
+    }
+
+    FLLCoreActionDirective Directive;
+    bool bHasDirective =
+        Bridge->GetResidentPendingContextDirective(Resident->GetResidentId(), Directive);
+    if (!bHasDirective)
+    {
+        bHasDirective =
+            Bridge->GetResidentActionDirective(Resident->GetResidentId(), Directive);
+    }
+    if (!bHasDirective || !Directive.TargetResidentId.IsValid())
+    {
+        return false;
+    }
+
+    const bool bInterpersonalDirective =
+        Directive.ContextActionKind == ELLCoreContextActionKind::Social
+        || Directive.ContextActionKind == ELLCoreContextActionKind::KnowledgeTeaching
+        || Directive.ContextActionKind == ELLCoreContextActionKind::Parenting
+        || Directive.ActivityKind == ELLCoreObservedActivityKind::Social;
+    if (!bInterpersonalDirective)
+    {
+        return false;
+    }
+
+    for (TActorIterator<ALLResidentCharacter> It(World); It; ++It)
+    {
+        const ALLResidentCharacter* Target = *It;
+        if (!Target || Target->GetResidentId() != Directive.TargetResidentId)
+        {
+            continue;
+        }
+
+        FVector ToTarget = Target->GetActorLocation() - Resident->GetActorLocation();
+        ToTarget.Z = 0.0f;
+        if (ToTarget.IsNearlyZero())
+        {
+            return false;
+        }
+
+        OutYawDegrees = ToTarget.Rotation().Yaw;
+        return true;
+    }
+
+    return false;
+}
+
 void ULLResidentMotionComponent::UpdateBodyOrientation(float DeltaTime)
 {
     if (!Body)
@@ -848,7 +905,22 @@ void ULLResidentMotionComponent::UpdateBodyOrientation(float DeltaTime)
         return;
     }
 
-    const float TargetYaw = SmoothedSpeed > 0.0f ? DesiredYaw : OwnerYaw;
+    float TargetYaw = SmoothedSpeed > 0.0f ? DesiredYaw : OwnerYaw;
+
+    // Social/teaching/parenting work is much easier to read when participants
+    // face one another. Only stationary interpersonal presentation may override
+    // facing; movement remains owned by the actual travel direction.
+    const bool bCanFaceInteractionTarget =
+        SmoothedSpeed <= IdleSpeedThreshold
+        && (bSocialInteractionActive
+            || ActiveContextMotion == ELLResidentContextMotion::Talk
+            || ActiveContextMotion == ELLResidentContextMotion::Learn
+            || ActiveContextMotion == ELLResidentContextMotion::SeatedCare);
+    float InteractionYaw = TargetYaw;
+    if (bCanFaceInteractionTarget && ResolveInteractionTargetYaw(InteractionYaw))
+    {
+        TargetYaw = InteractionYaw;
+    }
 
     SmoothedYaw = FMath::FInterpTo(
         SmoothedYaw,
