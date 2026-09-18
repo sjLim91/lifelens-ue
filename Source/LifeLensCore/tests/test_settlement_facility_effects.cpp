@@ -140,6 +140,8 @@ int main()
             world,actor,FacilityKind::WorkSurface,workSite.pos);
     CHECK(workSurface!=nullptr);
 
+    const FacilityId workSurfaceId=workSurface->id;
+
     actor.civilization.knowledge.learn(
         TechniqueId::SharpFlake,KnowledgeLevel::Reproducible,0.95);
     actor.civilization.inventory.add({
@@ -276,6 +278,11 @@ int main()
     const double shelterDurabilityBefore=shelter->durability;
     advanceSettlementFacilityWearOneMinute(world);
     CHECK(shelter->durability<shelterDurabilityBefore);
+
+    // Building Shelter may reallocate world.facilities, so reacquire the
+    // authoritative facility by stable id instead of retaining a vector pointer.
+    workSurface=findCivilizationFacility(world,workSurfaceId);
+    CHECK(workSurface!=nullptr);
 
     // Durability reaching zero removes every benefit and turns the facility
     // into a ruined historical object. C-S1 can then plan a replacement.
