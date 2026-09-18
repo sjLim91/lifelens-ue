@@ -12,6 +12,33 @@
 #include "GameFramework/PlayerController.h"
 #include "Stats/Stats.h"
 
+namespace
+{
+    FLinearColor LifecycleNoticeAccent(const FString& Text)
+    {
+        if (Text.StartsWith(TEXT("[탄생]")) || Text.StartsWith(TEXT("[임신]")))
+        {
+            return FLinearColor(0.50f, 0.91f, 0.72f, 1.0f);
+        }
+        if (Text.StartsWith(TEXT("[연애]")) || Text.StartsWith(TEXT("[약혼]"))
+            || Text.StartsWith(TEXT("[결혼]")) || Text.StartsWith(TEXT("[동거]")))
+        {
+            return FLinearColor(1.00f, 0.63f, 0.78f, 1.0f);
+        }
+        if (Text.StartsWith(TEXT("[성장]")) || Text.StartsWith(TEXT("[새 주민]")))
+        {
+            return FLinearColor(0.50f, 0.82f, 1.00f, 1.0f);
+        }
+        if (Text.StartsWith(TEXT("[사망]")) || Text.StartsWith(TEXT("[사별]"))
+            || Text.StartsWith(TEXT("[이혼]")) || Text.StartsWith(TEXT("[별거]"))
+            || Text.StartsWith(TEXT("[관계 종료]")) || Text.StartsWith(TEXT("[동거 종료]")))
+        {
+            return FLinearColor(0.80f, 0.68f, 0.66f, 1.0f);
+        }
+        return FLinearColor(0.68f, 0.82f, 0.96f, 1.0f);
+    }
+}
+
 void ULLLifecycleEventOverlay::NativeConstruct()
 {
     Super::NativeConstruct();
@@ -30,8 +57,8 @@ void ULLLifecycleEventOverlay::NativeConstruct()
     ResidentHistoryText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("ResidentLifecycleHistoryText"));
 
     EventBorder->SetContent(EventList);
-    EventBorder->SetPadding(FMargin(12.0f, 8.0f));
-    EventBorder->SetBrushColor(FLinearColor(0.015f, 0.02f, 0.03f, 0.72f));
+    EventBorder->SetPadding(FMargin(8.0f, 7.0f));
+    EventBorder->SetBrushColor(FLinearColor(0.012f, 0.020f, 0.032f, 0.58f));
     EventBorder->SetVisibility(ESlateVisibility::Collapsed);
 
     ResidentStatusText->SetAutoWrapText(true);
@@ -44,8 +71,8 @@ void ULLLifecycleEventOverlay::NativeConstruct()
     }
     StatusStack->AddChildToVerticalBox(ResidentHistoryText);
     ResidentStatusBorder->SetContent(StatusStack);
-    ResidentStatusBorder->SetPadding(FMargin(12.0f, 9.0f));
-    ResidentStatusBorder->SetBrushColor(FLinearColor(0.02f, 0.025f, 0.04f, 0.70f));
+    ResidentStatusBorder->SetPadding(FMargin(13.0f, 10.0f));
+    ResidentStatusBorder->SetBrushColor(FLinearColor(0.018f, 0.028f, 0.045f, 0.84f));
     ResidentStatusBorder->SetVisibility(ESlateVisibility::Collapsed);
 
     if (UVerticalBoxSlot* EventSlot = RootStack->AddChildToVerticalBox(EventBorder))
@@ -509,13 +536,25 @@ void ULLLifecycleEventOverlay::RefreshNoticeWidgets()
     EventBorder->SetVisibility(ESlateVisibility::HitTestInvisible);
     for (const FTransientNotice& Notice : Notices)
     {
+        UBorder* NoticeBorder = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass());
         UTextBlock* Label = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
+        const FLinearColor Accent = LifecycleNoticeAccent(Notice.Text);
+
         Label->SetText(FText::FromString(Notice.Text));
         Label->SetAutoWrapText(true);
-        Label->SetColorAndOpacity(FSlateColor(FLinearColor(0.94f, 0.96f, 1.0f, 1.0f)));
+        Label->SetColorAndOpacity(FSlateColor(FLinearColor(0.95f, 0.97f, 1.0f, 1.0f)));
         Label->SetVisibility(ESlateVisibility::HitTestInvisible);
 
-        if (UVerticalBoxSlot* Slot = EventList->AddChildToVerticalBox(Label))
+        NoticeBorder->SetPadding(FMargin(10.0f, 6.0f, 10.0f, 6.0f));
+        NoticeBorder->SetBrushColor(FLinearColor(
+            Accent.R * 0.16f,
+            Accent.G * 0.16f,
+            Accent.B * 0.16f,
+            0.90f));
+        NoticeBorder->SetContent(Label);
+        NoticeBorder->SetVisibility(ESlateVisibility::HitTestInvisible);
+
+        if (UVerticalBoxSlot* Slot = EventList->AddChildToVerticalBox(NoticeBorder))
         {
             Slot->SetPadding(FMargin(0.0f, 2.0f));
         }
