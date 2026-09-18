@@ -14,6 +14,7 @@
 #include "SceneView.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "GameFramework/PlayerController.h"
+#include "Camera/PlayerCameraManager.h"
 #include "HAL/IConsoleManager.h"
 
 static_assert(static_cast<int32>(ELLDetailTab::Count) == ALLObserverHUD::DetailTabCount, "DetailTabCount must match ELLDetailTab::Count");
@@ -573,14 +574,48 @@ float ALLObserverHUD::DrawOverview(const ULLSimulationSubsystem& Simulation, con
     const float TitleScale = 1.0f * UIScale;
     const float StripScale = 0.85f * UIScale;
 
-    const FString StatusLine = FString::Printf(TEXT("%s   %lld%s  %02d:%02d   %d%s"),
-        LLObserverText::OverviewTitle, static_cast<long long>(Day), LLObserverKorean::Day,
-        Hour, Minute, Residents.Num(), LLObserverText::ResidentsSuffix);
+    // Adaptive information density: the observer should see less chrome when
+    // the phone viewport is tight or the camera is pulled far away. This is
+    // presentation-only and uses rendered resident distance, never Core state.
+    const float LogicalWidth = Canvas->ClipX / FMath::Max(0.01f, UIScale);
+    float ClosestResidentDistanceUU = TNumericLimits<float>::Max();
+    if (const APlayerController* PlayerController = GetOwningPlayerController())
+    {
+        const APlayerCameraManager* CameraManager = PlayerController->PlayerCameraManager;
+        if (CameraManager)
+        {
+            const FVector CameraLocation = CameraManager->GetCameraLocation();
+            for (const FLLResidentData& Resident : Residents)
+            {
+                if (const ALLResidentCharacter* Actor = FindResidentActor(GetWorld(), Resident.ResidentId))
+                {
+                    ClosestResidentDistanceUU = FMath::Min(
+                        ClosestResidentDistanceUU,
+                        FVector::Dist(CameraLocation, Actor->GetActorLocation()));
+                }
+            }
+        }
+    }
+
+    const bool bCompactDensity = LogicalWidth < 620.0f || ClosestResidentDistanceUU > 7000.0f;
+    const bool bReducedDensity = bCompactDensity || LogicalWidth < 900.0f || ClosestResidentDistanceUU > 4000.0f;
+
+    const FString StatusLine = bCompactDensity
+        ? FString::Printf(TEXT("%s   %d%s"), LLObserverText::OverviewTitle, Residents.Num(), LLObserverText::ResidentsSuffix)
+        : FString::Printf(TEXT("%s   %lld%s  %02d:%02d   %d%s"),
+            LLObserverText::OverviewTitle, static_cast<long long>(Day), LLObserverKorean::Day,
+            Hour, Minute, Residents.Num(), LLObserverText::ResidentsSuffix);
 
     TArray<FString> StripItems;
     StripItems.Reserve(Residents.Num());
     for (const FLLResidentData& Resident : Residents)
     {
+        if (bReducedDensity)
+        {
+            StripItems.Add(Resident.DisplayName);
+            continue;
+        }
+
         const FString Action = CurrentActionFor(Resident);
         StripItems.Add(Action.IsEmpty()
             ? Resident.DisplayName
@@ -812,7 +847,14 @@ void ALLObserverHUD::DrawQuickInspector(const FLLResidentData& Resident, float U
     Entries.Add({ NameLine, TextPrimary, NameScale });
     if (!NowLine.IsEmpty()) Entries.Add({ NowLine, TextAction, BodyScale });
     Entries.Add({ SummaryLine, SummaryColor, SummaryScale });
-    Entries.Add({ WordsLine, TextSecondary, WordsScale });
+
+    // On narrow mobile viewports, keep the quick card about "what is happening
+    // now"; personality remains one tap away in LEVEL 2 and no data is lost.
+    const float LogicalWidth = Canvas->ClipX / FMath::Max(0.01f, UIScale);
+    if (LogicalWidth >= 720.0f)
+    {
+        Entries.Add({ WordsLine, TextSecondary, WordsScale });
+    }
     Entries.Add({ FString(LLObserverText::DetailsHint), TextHint, HintScale });
 
     const float Gap = LineGap * UIScale;
