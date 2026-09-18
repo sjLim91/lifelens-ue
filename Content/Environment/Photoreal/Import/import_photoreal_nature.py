@@ -98,6 +98,33 @@ def import_file(path: Path, destination: str, pipeline):
     return objects
 
 
+def canonicalize_primary_mesh(folder: str, asset_id: str):
+    """Give the primary imported mesh a stable project-owned asset path.
+
+    Poly Haven source filenames/Interchange folder layout may change without
+    changing the semantic asset. Runtime C++ should depend on LifeLens-owned
+    names, not third-party importer internals.
+    """
+    mesh_paths = []
+    for asset_path in EAL.list_assets(folder, recursive=True, include_folder=False):
+        data = EAL.find_asset_data(asset_path)
+        if str(data.asset_class_path.asset_name) == "StaticMesh":
+            mesh_paths.append(asset_path)
+    mesh_paths.sort()
+    if not mesh_paths:
+        raise RuntimeError(f"no StaticMesh imported for {asset_id}")
+
+    canonical_name = "SM_LL_" + asset_id
+    canonical_path = f"{folder}/{canonical_name}"
+    if mesh_paths[0] != canonical_path:
+        if EAL.does_asset_exist(canonical_path):
+            EAL.delete_asset(canonical_path)
+        if not EAL.rename_asset(mesh_paths[0], canonical_path):
+            raise RuntimeError(
+                f"failed to canonicalize {mesh_paths[0]} -> {canonical_path}")
+    return canonical_path
+
+
 def configure_imported_assets(folder: str):
     meshes = 0
     textures = 0
@@ -163,8 +190,11 @@ def main():
             EAL.make_directory(destination)
         log(f"import {asset_id}: {source_model}")
         import_file(source_model, destination, pipeline)
+        canonical_mesh = canonicalize_primary_mesh(destination, asset_id)
         meshes, textures = configure_imported_assets(destination)
-        log(f"{asset_id}: meshes={meshes} textures={textures}")
+        log(
+            f"{asset_id}: canonical={canonical_mesh} "
+            f"meshes={meshes} textures={textures}")
         imported += 1
 
     EAL.save_directory(DEST_ROOT, only_if_is_dirty=False, recursive=True)
