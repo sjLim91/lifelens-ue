@@ -147,6 +147,20 @@ A new blocker is triaged before unrelated follow-up work. This does **not** mean
 - plugin is desktop-only and treated as a presentation implementation detail.
 - release after merge/close and board reconciliation.
 
+### ASSIST_LOCK-GFX-FACILITY-COMPLETE-2 — Jjun scoped completed-facility visual assist
+
+- helper: Jjun.
+- owner/reviewer: Dagyeom.
+- branch: `integration/photoreal-facility-completion-v2`.
+- supersedes: conflicted #279 / v1 after #278 merged.
+- scope:
+  - completed SleepingPlace desktop frame uses approved photoreal timber.
+  - completed Furnace desktop shell uses the already-approved photoreal boulder asset.
+  - completed FirePit desktop fuel uses approved photoreal timber.
+  - Android preserves lightweight facility presentation and must not hard-reference the desktop timber/boulder completion path.
+  - construction-progress truth and Core authority remain unchanged.
+- release after merge/close and board reconciliation.
+
 ## Open Integration Requests
 
 ### IR-GFX-CINEMATIC-1 — Desktop cinematic presentation adoption (Windows + macOS)
