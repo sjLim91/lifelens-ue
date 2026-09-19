@@ -105,8 +105,19 @@ require(world_presentation, (
     "SM_LL_shrub_03",
     "SM_LL_weed_plant_02",
 ), "photoreal natural presentation")
-assert "/Game/Environment/Quaternius/" not in world_presentation, (
-    "production WorldPresentation must not silently restore Quaternius local-view fallback"
+android_split = world_presentation.index("#if PLATFORM_ANDROID")
+desktop_split = world_presentation.index("#else", android_split)
+split_end = world_presentation.index("#endif", desktop_split)
+android_nature = world_presentation[android_split:desktop_split]
+desktop_nature = world_presentation[desktop_split:split_end]
+assert "/Game/Environment/Quaternius/" in android_nature, (
+    "Android presentation must keep an explicit lightweight nature set"
+)
+assert "/Game/Environment/Quaternius/" not in desktop_nature, (
+    "desktop production WorldPresentation must not silently restore Quaternius local-view fallback"
+)
+assert "/Game/Environment/Photoreal/PolyHaven/" not in android_nature, (
+    "Android nature block must not hard-reference desktop photoreal dressing"
 )
 
 print("LifeLens graphics foundation regression gate: PASS")
