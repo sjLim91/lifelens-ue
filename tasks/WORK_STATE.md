@@ -348,3 +348,21 @@ Parallel follow-up branches started:
 - seam-compatible terrain presentation contract: expose deterministic shared corner elevation samples for future non-flat local terrain without creating a second terrain authority.
 
 Android Gate B remains paused until the user explicitly resumes device/APK validation.
+
+
+---
+
+## Platform content / cook boundary — ACTIVE
+
+Goal:
+- one repository / one simulation truth.
+- platform packages contain only required presentation payloads.
+
+Implemented on active PR:
+- Android compile-time nature refs use lightweight Quaternius set.
+- desktop nature refs use photoreal Poly Haven set.
+- AndroidGame.ini excludes desktop nature + current desktop PCG groups.
+- WindowsGame.ini / MacGame.ini exclude future `/Game/Mobile`.
+- Preflight + Android workflow run `validate_platform_cook_boundaries.py`.
+
+Android Gate B remains PAUSED; no APK claim is made until actual packaging resumes.
