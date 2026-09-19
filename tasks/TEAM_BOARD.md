@@ -128,6 +128,25 @@ A new blocker is triaged before unrelated follow-up work. This does **not** mean
   - no hydrology/gameplay authority changes.
 - release after merge/close and board reconciliation.
 
+### ASSIST_LOCK-GFX-SMOOTH-TERRAIN-2 — Jjun scoped smooth-terrain assist
+
+- helper: Jjun.
+- owner/reviewer: Dagyeom.
+- branch: `integration/desktop-smooth-terrain-v2`.
+- integration status: retargeted to `main` to validate the full #276 Water + smooth-terrain stack; merge #276 first.
+- supersedes: #274 / v1 after Water was reconstructed as #276.
+- cross-owner files:
+  - `Source/LifeLens/WorldPresentation/LLDesktopTerrainPresentationActor.cpp`
+  - `Source/LifeLens/WorldPresentation/LLDesktopTerrainPresentationActor.h`.
+- scope:
+  - replace visible desktop chunk-flatness with a smooth procedural overlay.
+  - authoritative Core terrain corners/center remain the only elevation input.
+  - flatten around settlement/facilities for readability and existing interaction geometry.
+  - visual-only: no collision/navigation/terrain gameplay authority.
+  - Android keeps its existing lightweight ground path.
+- plugin is desktop-only and treated as a presentation implementation detail.
+- release after merge/close and board reconciliation.
+
 ## Open Integration Requests
 
 ### IR-GFX-CINEMATIC-1 — Desktop cinematic presentation adoption (Windows + macOS)

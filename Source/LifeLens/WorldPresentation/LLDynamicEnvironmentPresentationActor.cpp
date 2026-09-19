@@ -27,6 +27,7 @@
 #include "UObject/ConstructorHelpers.h"
 #include "UObject/UObjectIterator.h"
 #include "WorldPresentation/LLWorldPresentationActor.h"
+#include "WorldPresentation/LLDesktopTerrainPresentationActor.h"
 
 namespace
 {
@@ -679,9 +680,14 @@ void ALLDynamicEnvironmentPresentationActor::ApplySurfaceMaterials(
         return;
     }
 
-    for (TActorIterator<ALLWorldPresentationActor> It(World); It; ++It)
+    auto ApplyWeatherParameters = [&](AActor* Actor)
     {
-        TInlineComponentArray<UMeshComponent*> MeshComponents(*It);
+        if (!Actor)
+        {
+            return;
+        }
+
+        TInlineComponentArray<UMeshComponent*> MeshComponents(Actor);
         for (UMeshComponent* Mesh : MeshComponents)
         {
             if (!Mesh)
@@ -694,7 +700,19 @@ void ALLDynamicEnvironmentPresentationActor::ApplySurfaceMaterials(
             Mesh->SetScalarParameterValueOnMaterials(PrecipitationMaterialParameter, Precipitation01);
             Mesh->SetScalarParameterValueOnMaterials(AirTemperatureMaterialParameter, AirTemperatureC);
         }
+    };
+
+    for (TActorIterator<ALLWorldPresentationActor> It(World); It; ++It)
+    {
+        ApplyWeatherParameters(*It);
     }
+
+#if !PLATFORM_ANDROID
+    for (TActorIterator<ALLDesktopTerrainPresentationActor> It(World); It; ++It)
+    {
+        ApplyWeatherParameters(*It);
+    }
+#endif
 }
 
 void ALLDynamicEnvironmentPresentationActor::ApplyWeatherEffects(
