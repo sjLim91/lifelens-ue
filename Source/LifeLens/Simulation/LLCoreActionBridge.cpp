@@ -56,6 +56,7 @@ ELLCoreCivilizationAction ToUnrealCivilizationAction(lifelens::CivilizationActiv
     {
         case lifelens::CivilizationActivityKind::Gather: return ELLCoreCivilizationAction::Gather;
         case lifelens::CivilizationActivityKind::Store: return ELLCoreCivilizationAction::Store;
+        case lifelens::CivilizationActivityKind::Retrieve: return ELLCoreCivilizationAction::Retrieve;
         case lifelens::CivilizationActivityKind::Experiment: return ELLCoreCivilizationAction::Experiment;
         case lifelens::CivilizationActivityKind::Craft: return ELLCoreCivilizationAction::Craft;
         case lifelens::CivilizationActivityKind::None:

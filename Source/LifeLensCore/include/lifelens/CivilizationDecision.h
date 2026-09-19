@@ -22,7 +22,9 @@ enum class CivilizationIntent {
     Gather,
     Store,
     Experiment,
-    Craft
+    Craft,
+    // Appended so existing enum ordinals remain stable.
+    Retrieve
 };
 
 enum class FacilityBuildAction {
@@ -45,6 +47,7 @@ inline const char* civilizationIntentName(CivilizationIntent intent)
         case CivilizationIntent::Store: return "Store";
         case CivilizationIntent::Experiment: return "Experiment";
         case CivilizationIntent::Craft: return "Craft";
+        case CivilizationIntent::Retrieve: return "Retrieve";
         default: return "None";
     }
 }
@@ -279,10 +282,30 @@ inline CivilizationUtilityDecision bestGatherDecision(const World& world,const C
             settlementMissing,
             std::max(storageMissing,std::max(fireMissing,furnaceMissing)));
         const int materialDemand=constructionMissing+repairMissing;
-        const int baseTarget=(node.material==MaterialKind::Water || node.material==MaterialKind::PlantFood) ? 4 : 5;
-        const int fireFuelReserve=(hasOperationalFirePit(world) && node.material==MaterialKind::Wood) ? 3 : 0;
-        const int target=baseTarget+std::min(4,materialDemand)+fireFuelReserve;
-        const double gap=clampCivilization01(static_cast<double>(std::max(0,target-held-std::min(stored,2)))/static_cast<double>(std::max(1,target)));
+        const bool provision=
+            node.material==MaterialKind::Water
+            || node.material==MaterialKind::PlantFood;
+        const int baseTarget=provision ? 4 : 5;
+        const int settlementReserveTarget=
+            node.material==MaterialKind::Water ? 8
+            : (node.material==MaterialKind::PlantFood ? 8 : 0);
+        const int reserveGap=std::max(0,settlementReserveTarget-stored);
+        const int fireFuelReserve=
+            (hasOperationalFirePit(world) && node.material==MaterialKind::Wood)
+                ? 3 : 0;
+        const int target=
+            baseTarget
+            +std::min(4,materialDemand)
+            +fireFuelReserve
+            +(provision && !world.storageSites.empty()
+                ? std::min(4,reserveGap)
+                : 0);
+        const int storedCredit=provision
+            ? std::min(stored,settlementReserveTarget)
+            : std::min(stored,2);
+        const double gap=clampCivilization01(
+            static_cast<double>(std::max(0,target-held-storedCredit))
+            /static_cast<double>(std::max(1,target)));
         const double demand=materialProgressDemand(self,node.material);
         const double constructionDemand=constructionMissing>0
             ? clampCivilization01(0.45+0.12*static_cast<double>(constructionMissing))
@@ -294,7 +317,12 @@ inline CivilizationUtilityDecision bestGatherDecision(const World& world,const C
         const double score=clampCivilization01(
             0.07+0.12*self.personality.curiosity+0.05*self.personality.adaptability+
             0.08*self.civilization.gatheringSkill+0.16*demand+0.13*gap+
-            0.30*constructionDemand+0.24*maintenanceDemand+0.07*preference);
+            0.30*constructionDemand+0.24*maintenanceDemand+0.07*preference+
+            (provision && !world.storageSites.empty()
+                ? 0.12*clampCivilization01(
+                    static_cast<double>(reserveGap)
+                    /static_cast<double>(std::max(1,settlementReserveTarget)))
+                : 0.0));
         CivilizationUtilityDecision candidate;
         candidate.intent=CivilizationIntent::Gather;
         candidate.utility=score;
@@ -990,23 +1018,106 @@ inline CivilizationUtilityDecision bestCraftDecision(
         world,self,civilizationSanitationReferencePosition(world));
 }
 
+inline CivilizationUtilityDecision bestRetrieveDecision(
+    const World& world,
+    const Character& self)
+{
+    CivilizationUtilityDecision best;
+
+    // Durable subsistence v1 deliberately starts with provisions. The transfer
+    // primitive itself is generic, but autonomous retrieval only pulls Water /
+    // PlantFood until storage policy for tools/material projects is explicit.
+    const std::array<std::pair<MaterialKind,double>,2> provisions={{
+        {MaterialKind::Water,clampCivilization01(self.needs.thirst)},
+        {MaterialKind::PlantFood,clampCivilization01(self.needs.hunger)}
+    }};
+
+    for(const StorageSite& storage:world.storageSites){
+        if(storage.id==0) continue;
+        for(const auto& provision:provisions){
+            const MaterialKind material=provision.first;
+            const double need=provision.second;
+            if(need<0.35) continue;
+
+            const int held=self.civilization.inventory.count(
+                ItemKind::RawMaterial,material);
+            if(held>=2) continue;
+
+            const int stored=storage.inventory.count(
+                ItemKind::RawMaterial,material);
+            if(stored<=0) continue;
+
+            const int requested=std::min(stored,std::max(1,2-held));
+            const double carryGap=clampCivilization01(
+                static_cast<double>(2-held)/2.0);
+            const double preference=civilizationPreference(
+                world.seed,self.id,
+                450ULL+static_cast<std::uint64_t>(material));
+
+            CivilizationUtilityDecision candidate;
+            candidate.intent=CivilizationIntent::Retrieve;
+            candidate.utility=clampCivilization01(
+                0.20
+                +0.55*need
+                +0.12*carryGap
+                +0.05*self.personality.orderliness
+                +0.03*preference);
+            candidate.storage=storage.id;
+            candidate.item=ItemKind::RawMaterial;
+            candidate.material=material;
+            candidate.quantity=requested;
+            considerCivilizationDecision(best,candidate);
+        }
+    }
+    return best;
+}
+
 inline CivilizationUtilityDecision bestStoreDecision(const World& world,const Character& self)
 {
     CivilizationUtilityDecision best;
     if(world.storageSites.empty()) return best;
-    const int total=inventoryUnitCount(self.civilization.inventory);
-    if(total<7) return best;
 
-    const StorageId storage=world.storageSites.front().id;
+    // The first primitive store remains the settlement stockpile authority.
+    // Multiple-storage selection becomes a later settlement-logistics policy.
+    const StorageSite& targetStorage=world.storageSites.front();
+    const StorageId storage=targetStorage.id;
+    const int total=inventoryUnitCount(self.civilization.inventory);
+
     for(const auto& stack:self.civilization.inventory.stacks()){
-        const int keep=stack.kind==ItemKind::RawMaterial ? 4 : 1;
+        const bool provision=stack.kind==ItemKind::RawMaterial
+            && (stack.material==MaterialKind::Water
+                || stack.material==MaterialKind::PlantFood);
+        const int keep=provision ? 2 : (stack.kind==ItemKind::RawMaterial ? 4 : 1);
         const int surplus=stack.quantity-keep;
         if(surplus<=0) continue;
-        const double fullness=clampCivilization01(static_cast<double>(std::max(0,total-6))/10.0);
-        const double preference=civilizationPreference(world.seed,self.id,400ULL+static_cast<std::uint64_t>(stack.kind)*32ULL+static_cast<std::uint64_t>(stack.material));
+
+        // Ordinary material stockpiling still waits for meaningful carrying
+        // pressure. Provisions are different: once storage exists, a resident
+        // may bank surplus Water/Food even with a light total inventory.
+        if(total<7 && !provision) continue;
+
+        const int stored=targetStorage.inventory.count(stack.kind,stack.material);
+        const int reserveTarget=stack.material==MaterialKind::Water
+            ? 8
+            : (stack.material==MaterialKind::PlantFood ? 8 : 0);
+        const double reserveNeed=reserveTarget>0
+            ? clampCivilization01(
+                static_cast<double>(std::max(0,reserveTarget-stored))
+                / static_cast<double>(reserveTarget))
+            : 0.0;
+        const double fullness=clampCivilization01(
+            static_cast<double>(std::max(0,total-6))/10.0);
+        const double preference=civilizationPreference(
+            world.seed,self.id,
+            400ULL+static_cast<std::uint64_t>(stack.kind)*32ULL
+                +static_cast<std::uint64_t>(stack.material));
         const double score=clampCivilization01(
-            0.07+0.15*self.personality.orderliness+0.09*self.personality.conscientiousness+
-            0.13*fullness+0.04*preference);
+            0.07
+            +0.15*self.personality.orderliness
+            +0.09*self.personality.conscientiousness
+            +0.13*fullness
+            +0.04*preference
+            +(provision ? 0.30*reserveNeed : 0.0));
 
         CivilizationUtilityDecision candidate;
         candidate.intent=CivilizationIntent::Store;
@@ -1014,7 +1125,7 @@ inline CivilizationUtilityDecision bestStoreDecision(const World& world,const Ch
         candidate.storage=storage;
         candidate.item=stack.kind;
         candidate.material=stack.material;
-        candidate.quantity=std::min(surplus,3);
+        candidate.quantity=std::min(surplus,provision ? 4 : 3);
         considerCivilizationDecision(best,candidate);
     }
     return best;
@@ -1030,6 +1141,7 @@ inline CivilizationUtilityDecision chooseCivilizationUtilityDecisionAtPosition(
     considerCivilizationDecision(best,bestExperimentDecision(world,self));
     considerCivilizationDecision(
         best,bestCraftDecisionAtPosition(world,self,authoritativePosition));
+    considerCivilizationDecision(best,bestRetrieveDecision(world,self));
     considerCivilizationDecision(best,bestStoreDecision(world,self));
     considerCivilizationDecision(best,bestGatherDecision(world,self));
     return best;
@@ -1079,6 +1191,17 @@ inline CivilizationExecutionResult executeCivilizationDecision(World& world,Char
             StorageSite* storage=findCivilizationStorage(world,decision.storage);
             if(!storage) return result;
             result.event=storeItems(self.civilization,*storage,decision.item,decision.material,std::max(1,decision.quantity));
+            result.executed=result.event.quantity>0;
+            result.success=result.executed;
+            return result;
+        }
+        case CivilizationIntent::Retrieve: {
+            StorageSite* storage=findCivilizationStorage(world,decision.storage);
+            if(!storage) return result;
+            result.event=retrieveItems(
+                self.civilization,*storage,
+                decision.item,decision.material,
+                std::max(1,decision.quantity));
             result.executed=result.event.quantity>0;
             result.success=result.executed;
             return result;

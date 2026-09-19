@@ -333,7 +333,10 @@ enum class CivilizationEventType {
     Stored,
     ExperimentFailed,
     Discovered,
-    Crafted
+    Crafted,
+    // Appended to preserve the numeric values of existing persisted/debug
+    // event kinds. Retrieval moves already-stored authority back to a resident.
+    Retrieved
 };
 
 struct CivilizationEvent {
@@ -668,6 +671,26 @@ inline CivilizationEvent storeItems(
     event.item=kind;
     event.material=material;
     if(individual.inventory.transferTo(storage.inventory,kind,material,quantity,anyMaterial)) event.quantity=quantity;
+    return event;
+}
+
+inline CivilizationEvent retrieveItems(
+    IndividualCivilizationState& individual,
+    StorageSite& storage,
+    ItemKind kind,
+    MaterialKind material,
+    int quantity,
+    bool anyMaterial=false)
+{
+    CivilizationEvent event;
+    event.type=CivilizationEventType::Retrieved;
+    event.actor=individual.character;
+    event.item=kind;
+    event.material=material;
+    if(storage.inventory.transferTo(
+        individual.inventory,kind,material,quantity,anyMaterial)){
+        event.quantity=quantity;
+    }
     return event;
 }
 

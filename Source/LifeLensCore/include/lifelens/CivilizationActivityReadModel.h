@@ -11,7 +11,8 @@ enum class CivilizationActivityKind {
     Gather,
     Store,
     Experiment,
-    Craft
+    Craft,
+    Retrieve
 };
 
 inline CivilizationActivityKind civilizationActivityKindFromEvent(CivilizationEventType type)
@@ -19,6 +20,7 @@ inline CivilizationActivityKind civilizationActivityKindFromEvent(CivilizationEv
     switch(type){
         case CivilizationEventType::Gathered: return CivilizationActivityKind::Gather;
         case CivilizationEventType::Stored: return CivilizationActivityKind::Store;
+        case CivilizationEventType::Retrieved: return CivilizationActivityKind::Retrieve;
         case CivilizationEventType::ExperimentFailed:
         case CivilizationEventType::Discovered: return CivilizationActivityKind::Experiment;
         case CivilizationEventType::Crafted: return CivilizationActivityKind::Craft;
@@ -31,6 +33,7 @@ inline const char* civilizationActivityKindName(CivilizationActivityKind kind)
     switch(kind){
         case CivilizationActivityKind::Gather: return "Gather";
         case CivilizationActivityKind::Store: return "Store";
+        case CivilizationActivityKind::Retrieve: return "Retrieve";
         case CivilizationActivityKind::Experiment: return "Experiment";
         case CivilizationActivityKind::Craft: return "Craft";
         case CivilizationActivityKind::None:
@@ -58,7 +61,7 @@ struct ResidentCivilizationActivityObservation {
 
     // Only contexts with a real Core-authored position may set this true.
     // Current sanitation-site creation/improvement can provide such a target;
-    // ordinary Gather/Store must not invent scenery coordinates in Presentation.
+    // ordinary Gather/Store/Retrieve must not invent scenery coordinates in Presentation.
     bool hasSpatialTarget=false;
     int targetGridX=0;
     int targetGridY=0;

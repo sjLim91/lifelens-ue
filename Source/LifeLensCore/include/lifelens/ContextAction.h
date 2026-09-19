@@ -132,6 +132,7 @@ inline int contextActionDurationTicks(const PendingContextAction& action)
             switch(action.civilization.intent){
                 case CivilizationIntent::Gather: return 5;
                 case CivilizationIntent::Store: return 3;
+                case CivilizationIntent::Retrieve: return 3;
                 case CivilizationIntent::Experiment: return 7;
                 case CivilizationIntent::Craft: return 8;
                 case CivilizationIntent::None:
@@ -170,6 +171,7 @@ inline bool resolveCivilizationContextTarget(
         case CivilizationIntent::Gather:
             return resolveCivilizationResourceGridPosition(world,decision.resourceNode,outTarget);
         case CivilizationIntent::Store:
+        case CivilizationIntent::Retrieve:
             return resolveCivilizationStorageGridPosition(world,decision.storage,outTarget);
         case CivilizationIntent::Experiment:
             if(decision.experiment==ExperimentKind::DesignateSanitationArea){
@@ -349,7 +351,9 @@ inline bool resolveCivilizationContextTarget(
 
 inline bool civilizationContextRequiresSpatialTarget(const CivilizationUtilityDecision& decision)
 {
-    if(decision.intent==CivilizationIntent::Gather || decision.intent==CivilizationIntent::Store) return true;
+    if(decision.intent==CivilizationIntent::Gather
+       || decision.intent==CivilizationIntent::Store
+       || decision.intent==CivilizationIntent::Retrieve) return true;
     if(decision.intent==CivilizationIntent::Experiment){
         return decision.experiment==ExperimentKind::DesignateSanitationArea
             || decision.experiment==ExperimentKind::DigSanitationPit
