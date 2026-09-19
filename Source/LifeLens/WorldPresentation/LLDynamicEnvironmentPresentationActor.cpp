@@ -242,8 +242,8 @@ void ALLDynamicEnvironmentPresentationActor::ResolveWorldComponents()
         HeightFog->SetFogDensity(ClearFogDensity);
         HeightFog->SetStartDistance(FMath::Max(0.0f, HorizonFogStartDistanceUU));
         HeightFog->SetFogMaxOpacity(FMath::Clamp(HorizonFogMaxOpacity, 0.0f, 1.0f));
-#if PLATFORM_WINDOWS
-        // Cinematic desktop depth. This uses the same authoritative fog amount
+#if PLATFORM_WINDOWS || PLATFORM_MAC
+        // Cinematic desktop depth on both Windows and macOS. This uses the same authoritative fog amount
         // as the cheap exponential path; only the renderer representation is
         // richer on Windows.
         HeightFog->SetVolumetricFog(true);
