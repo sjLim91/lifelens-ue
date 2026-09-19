@@ -1443,6 +1443,7 @@ void ALLWorldPresentationActor::BuildChunkDressing(
         int32 MaxTotal = 0;
         float MinScale = 1.0f;
         float MaxScale = 1.3f;
+        bool bStonePatch = false;
 
         if (Material.Contains(TEXT("wood")) || Material.Contains(TEXT("timber")) || Material.Contains(TEXT("tree")))
         {
@@ -1450,7 +1451,12 @@ void ALLWorldPresentationActor::BuildChunkDressing(
         }
         else if (Material.Contains(TEXT("stone")) || Material.Contains(TEXT("rock")) || Material.Contains(TEXT("flint")))
         {
-            Target = &RockInstances; PlacedCounter = &PlacedRocks; MaxTotal = MaxRockInstances; MinScale = 1.0f; MaxScale = 1.9f;
+            Target = &RockInstances;
+            PlacedCounter = &PlacedRocks;
+            MaxTotal = MaxRockInstances;
+            MinScale = 0.82f;
+            MaxScale = 1.35f;
+            bStonePatch = true;
         }
         else if (Material.Contains(TEXT("berry")) || Material.Contains(TEXT("plant"))
             || Material.Contains(TEXT("fiber")) || Material.Contains(TEXT("food")))
@@ -1473,12 +1479,17 @@ void ALLWorldPresentationActor::BuildChunkDressing(
             0.0f,
             1.0f)
             * FMath::Sqrt(Quantity01);
+        const FVector2D PatchCenter(PatchX, PatchY);
+        const float PatchReadabilityScale = ResourcePatchScaleFactor(PatchCenter);
+        const float CountScale = bStonePatch
+            ? FMath::Lerp(0.35f, 1.0f, PatchReadabilityScale)
+            : 1.0f;
         const int32 PatchInstances = Quantity01 <= KINDA_SMALL_NUMBER
             ? 0
             : FMath::Clamp(
-                FMath::RoundToInt(VisibleDensity * 6.0f) + 1,
+                FMath::RoundToInt((VisibleDensity * 6.0f + 1.0f) * CountScale),
                 1,
-                8);
+                bStonePatch ? 5 : 8);
         uint32 PatchState = Patch.VisualSeed != 0
             ? PresentationSeed(Patch.VisualSeed)
             : MixHash(State, static_cast<uint32>(
