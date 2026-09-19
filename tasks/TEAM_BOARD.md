@@ -166,7 +166,7 @@ A new blocker is triaged before unrelated follow-up work. This does **not** mean
 - helper: Jjun.
 - owner/reviewer: Dagyeom.
 - branch: `integration/environment-density-v1`.
-- stacked after: #279.
+- stacked after: #279; validation runs independently while #279 compiles.
 - scope:
   - increase Windows/macOS near/far decorative density without changing Core resources.
   - preserve Android visual budgets.
