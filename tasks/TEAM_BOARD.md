@@ -97,6 +97,21 @@ A new blocker is triaged before unrelated follow-up work. This does **not** mean
   - Android does not spawn/link the PCG runtime path.
 - release after merge/close and board reconciliation.
 
+
+### ASSIST_LOCK-GFX-WATER-ALIGN-2 — Jjun scoped Water terrain alignment assist
+
+- helper: Jjun.
+- owner/reviewer: Dagyeom.
+- branch: `integration/water-terrain-alignment-v2`.
+- cross-owner files:
+  - `Source/LifeLens/WorldPresentation/LLWaterPresentationActor.cpp`
+  - `Source/LifeLens/WorldPresentation/LLWaterPresentationActor.h`.
+- scope:
+  - project authoritative Water surfaces onto the same Core terrain relief used by WorldPresentation.
+  - preserve the flat initial settlement baseline.
+  - no hydrology/gameplay authority changes.
+- release after merge/close and board reconciliation.
+
 ## Open Integration Requests
 
 ### IR-GFX-CINEMATIC-1 — Desktop cinematic presentation adoption (Windows + macOS)
