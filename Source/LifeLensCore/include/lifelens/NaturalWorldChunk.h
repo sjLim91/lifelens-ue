@@ -121,14 +121,16 @@ inline double naturalPotentialForMaterial(const MacroRegionFacts& facts, Materia
         case MaterialKind::PlantFood: return facts.foodPotential;
         case MaterialKind::CopperOre:
             return clampMacro01(
-                facts.stonePotential*0.42
-                +facts.elevation*0.18
-                +facts.hazardPotential*0.12);
+                facts.stonePotential*0.25
+                +facts.elevation*0.10
+                +facts.hazardPotential*0.07
+                -0.04);
         case MaterialKind::TinOre:
             return clampMacro01(
-                facts.stonePotential*0.28
-                +facts.elevation*0.16
-                +facts.hazardPotential*0.10);
+                facts.stonePotential*0.18
+                +facts.elevation*0.09
+                +facts.hazardPotential*0.06
+                -0.06);
         default: return 0.0;
     }
 }
