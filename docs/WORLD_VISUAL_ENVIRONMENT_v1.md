@@ -57,6 +57,8 @@
 - PCG가 생성한 위치/밀도는 visual decoration authority만 가진다. 채집 가능한 나무/광물/식량 등 gameplay resource 존재 여부는 반드시 Core/World read contract를 따른다.
 - Windows에서는 고밀도/고품질 PCG 결과를 허용하고, Android에서는 partition/bake/LOD/HISM/density scaling으로 비용을 낮춘다.
 - 초반에는 visual-only decoration과 authoritative resource node를 명확히 구분한다.
+- project-authored baseline graph `/Game/Environment/PCG/PCG_LL_GroundCover`는 승인된 `weed_plant_02` CC0 mesh만 사용해 **decorative ground cover**를 배치한다. 이 graph는 CPU path, collision/navigation off, distance culling/density scaling을 기본값으로 하며 gameplay 자원을 생성하지 않는다.
+- PCG graph asset authoring은 headless Unreal workflow로 재현 가능해야 하며, binary `.uasset`만 수동 편집한 상태를 canonical source로 두지 않는다.
 
 ### 4. Observer Readability
 - 캐릭터가 배경에 묻히지 않도록 명암/밀도/높이를 조절한다.
