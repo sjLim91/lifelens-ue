@@ -103,7 +103,8 @@ require(water, (
     "WaterBody->SetActorEnableCollision(false);",
     "Component->SetCanEverAffectNavigation(false);",
     "ELLCoreSurfaceWaterKind::Ocean",
-    "marineDeferred",
+    "marineLocalSurface",
+    "bHasMarineNeighbour",
 ), "authoritative Unreal Water projection")
 
 world_presentation = read(
