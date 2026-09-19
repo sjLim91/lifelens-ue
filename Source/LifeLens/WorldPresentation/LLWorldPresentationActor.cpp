@@ -632,8 +632,7 @@ float ALLWorldPresentationActor::FacilityDressingKeepFactor(
     const FVector2D& LocationUU,
     ELLDressingLayer Layer) const
 {
-    if (Layer == ELLDressingLayer::GroundDetail
-        || CachedFacilityReadabilityCentersUU.Num() == 0)
+    if (CachedFacilityReadabilityCentersUU.Num() == 0)
     {
         return 1.0f;
     }
@@ -659,14 +658,16 @@ float ALLWorldPresentationActor::FacilityDressingKeepFactor(
     }
 
     const bool bCanopy = Layer == ELLDressingLayer::Canopy;
-    // Local facility envelopes are intentionally softer than the original
-    // settlement core so an expanding town still feels embedded in nature.
+    const bool bGroundDetail = Layer == ELLDressingLayer::GroundDetail;
+    // Ground-detail boulders must not occupy the lived-in/facility core.
+    // Canopy and undergrowth recover outside the readable activity envelope.
     const float BaseCoreKeep = FMath::Clamp(
-        bCanopy ? CoreZoneCanopyKeep : CoreZoneUndergrowthKeep,
+        bGroundDetail ? 0.08f
+            : (bCanopy ? CoreZoneCanopyKeep : CoreZoneUndergrowthKeep),
         0.0f,
         1.0f);
     const float LocalCoreKeep = FMath::Clamp(
-        BaseCoreKeep + (bCanopy ? 0.06f : 0.10f),
+        BaseCoreKeep + (bGroundDetail ? 0.04f : (bCanopy ? 0.06f : 0.10f)),
         0.0f,
         1.0f);
     if (Distance <= ClearRadius)
@@ -678,7 +679,8 @@ float ALLWorldPresentationActor::FacilityDressingKeepFactor(
     const float Progress = FMath::Clamp((Distance - ClearRadius) / Band, 0.0f, 1.0f);
     const float Exponent = FMath::Max(
         1.0f,
-        bCanopy ? CanopyRecoveryExponent : UndergrowthRecoveryExponent);
+        bGroundDetail ? 1.35f
+            : (bCanopy ? CanopyRecoveryExponent : UndergrowthRecoveryExponent));
     return FMath::Lerp(
         LocalCoreKeep,
         1.0f,
@@ -687,15 +689,17 @@ float ALLWorldPresentationActor::FacilityDressingKeepFactor(
 
 float ALLWorldPresentationActor::AmbientDressingKeepFactor(const FVector2D& LocationUU, ELLDressingLayer Layer) const
 {
-    // Ground detail is low enough that it never hides a resident.
-    if (Layer == ELLDressingLayer::GroundDetail) { return 1.0f; }
-
     const float CoreRadius = FMath::Max(0.0f, CoreClearRadiusUU);
     const float ActivityRadius = FMath::Max(CoreRadius, ActivityRadiusUU);
     const float Distance = (LocationUU - CachedSettlementReferenceUU).Size();
 
     const bool bCanopy = Layer == ELLDressingLayer::Canopy;
-    const float CoreKeep = FMath::Clamp(bCanopy ? CoreZoneCanopyKeep : CoreZoneUndergrowthKeep, 0.0f, 1.0f);
+    const bool bGroundDetail = Layer == ELLDressingLayer::GroundDetail;
+    const float CoreKeep = FMath::Clamp(
+        bGroundDetail ? 0.08f
+            : (bCanopy ? CoreZoneCanopyKeep : CoreZoneUndergrowthKeep),
+        0.0f,
+        1.0f);
     float SettlementKeep = 1.0f;
     if (ActivityRadius > KINDA_SMALL_NUMBER && Distance < ActivityRadius)
     {
@@ -708,7 +712,10 @@ float ALLWorldPresentationActor::AmbientDressingKeepFactor(const FVector2D& Loca
             // Activity zone: restore density with distance, canopy last.
             const float Band = FMath::Max(ActivityRadius - CoreRadius, KINDA_SMALL_NUMBER);
             const float Progress = FMath::Clamp((Distance - CoreRadius) / Band, 0.0f, 1.0f);
-            const float Exponent = FMath::Max(1.0f, bCanopy ? CanopyRecoveryExponent : UndergrowthRecoveryExponent);
+            const float Exponent = FMath::Max(
+                1.0f,
+                bGroundDetail ? 1.35f
+                    : (bCanopy ? CanopyRecoveryExponent : UndergrowthRecoveryExponent));
             SettlementKeep = FMath::Lerp(CoreKeep, 1.0f, FMath::Pow(Progress, Exponent));
         }
     }
@@ -1062,9 +1069,13 @@ UMaterialInterface* ALLWorldPresentationActor::GroundMaterialForChunk(const FLLC
         || Surface.Contains(TEXT("sand")) || Surface.Contains(TEXT("rock")) || Surface.Contains(TEXT("dirt"))
         || Biome.Contains(TEXT("desert")) || Biome.Contains(TEXT("arid"));
     const bool bLush = Chunk.Moisture > 0.6f && Chunk.FertilityPotential > 0.45f;
-    if (bDry && GroundDry) { return GroundDry; }
-    if (bLush && GroundGrass) { return GroundGrass; }
-    return GroundTransition ? GroundTransition.Get() : GroundGrass.Get();
+    // Recovery baseline: hard per-chunk dry/transition switches create visible
+    // rectangular/triangular seams and can fall back to the engine grey material
+    // on a platform where one instance fails to compile. Keep the active local
+    // surface continuous until a verified blended biome material replaces this.
+    if (GroundGrass) { return GroundGrass; }
+    if (GroundTransition) { return GroundTransition; }
+    return GroundDry.Get();
 }
 
 void ALLWorldPresentationActor::BuildGround(const FLLCoreWorldGenerationObservation& World)
