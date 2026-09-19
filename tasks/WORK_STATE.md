@@ -14,11 +14,31 @@
 >
 > Dagyeom presentation assist handoff: `docs/DAGYEOM_PRESENTATION_HANDOFF_2026-09-18.md`.
 >
+> **Current presentation freeze / Dagyeom handoff:** `docs/DAGYEOM_PRESENTATION_HANDOFF_2026-09-19.md`.
+>
 > Current late-day Presentation/Observer work state: `docs/PRESENTATION_WORK_STATE_2026-09-18.md`.
 >
 > Historical audit: `docs/INTEGRATED_AUDIT_2026-09-17.md` (point-in-time only; do not treat as live status).
 
 Last reconciled: **2026-09-19 KST after #238~#243 graphics/world foundation merges; #244/#245 active validation**.
+
+## 2026-09-19 CURRENT — Presentation frozen, Core lane resumed
+
+- user froze further Jjun-side visual polishing and handed Presentation back to Dagyeom.
+- current visual baseline is main after #282: `c58c63739c13cda24cd9994e26ff6ac5b1d43e76`.
+- #281 / #283 / #284 are Dagyeom-owned review/decision items; Jjun does not auto-merge them.
+- visual CI success is not runtime visual acceptance.
+- Jjun active implementation lane is **C1-D Durable Subsistence**:
+  - authoritative water carrying/storage.
+  - food storage/spoilage.
+  - cultivation/agriculture.
+  - renewable food production under real time/land/input constraints.
+  - season/moisture/fertility effects.
+  - scarcity pressure hooks.
+- Android Gate B remains paused until explicitly resumed.
+
+Canonical handoff: `docs/DAGYEOM_PRESENTATION_HANDOFF_2026-09-19.md`.
+
 
 ---
 
