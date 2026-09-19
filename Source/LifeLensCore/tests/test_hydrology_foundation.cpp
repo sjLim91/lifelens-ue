@@ -100,6 +100,20 @@ int main()
         assert(replay.surfaceWaterId == entry.second);
     }
 
+    // Generator v1 compatibility: old saves must never be silently reclassified
+    // through the v2 sea-level topology.
+    const WorldGenesisIdentity legacyV1 =
+        makeWorldGenesisIdentity(seed, 111ULL, 1);
+    for(int y = -12; y <= 12; ++y){
+        for(int x = -12; x <= 12; ++x){
+            const HydrologyFacts legacy =
+                deriveHydrologyFacts(legacyV1, {x,y});
+            assert(legacy.surfaceKind != SurfaceWaterKind::Coast);
+            assert(legacy.surfaceKind != SurfaceWaterKind::Ocean);
+            assert(legacy.salinity == WaterSalinity::Fresh);
+        }
+    }
+
     // A different world must differ in at least one hydrology fact.
     const WorldGenesisIdentity other =
         makeWorldGenesisIdentity(seed + 1ULL, 111ULL, CurrentWorldGenerationVersion);
