@@ -4,6 +4,11 @@
 >
 > This document records the late-2026-09-18 screen/presentation sprint so work can resume without reconstructing state from chat history.
 
+> **2026-09-19 handoff override:** the user froze further Jjun-side screen polishing and returned the Presentation lane to Dagyeom. The current code baseline is main after #282 (`c58c63739c13cda24cd9994e26ff6ac5b1d43e76`). #281 / #283 / #284 are Dagyeom review/decision items and are not to be auto-merged by Jjun. See `docs/DAGYEOM_PRESENTATION_HANDOFF_2026-09-19.md`.
+>
+> This 2026-09-18 file remains a historical sprint record. Where it conflicts with the 2026-09-19 handoff, the newer handoff wins.
+
+
 ## 1. Current product direction
 
 - Unreal-native autonomous life/civilization observer simulation.
@@ -160,7 +165,7 @@ From now on:
 - Do not distort architecture merely to create file independence.
 - If the correct responsibility belongs in the same file, sequence or combine the work instead.
 
-## 7. Immediate Presentation backlog after merged #216~#224 wave
+## 7. Historical Presentation backlog after merged #216~#224 wave
 
 High-value next work:
 - resident/family/relationship navigation polish after #216 runtime validation.

@@ -14,11 +14,31 @@
 >
 > Dagyeom presentation assist handoff: `docs/DAGYEOM_PRESENTATION_HANDOFF_2026-09-18.md`.
 >
+> **Current presentation freeze / Dagyeom handoff:** `docs/DAGYEOM_PRESENTATION_HANDOFF_2026-09-19.md`.
+>
 > Current late-day Presentation/Observer work state: `docs/PRESENTATION_WORK_STATE_2026-09-18.md`.
 >
 > Historical audit: `docs/INTEGRATED_AUDIT_2026-09-17.md` (point-in-time only; do not treat as live status).
 
-Last reconciled: **2026-09-19 KST after #238~#243 graphics/world foundation merges; #244/#245 active validation**.
+Last reconciled: **2026-09-19 KST after #282 runtime-visual hotfix merge and Presentation handoff to Dagyeom**.
+
+## 2026-09-19 CURRENT — Presentation frozen, Core lane resumed
+
+- user froze further Jjun-side visual polishing and handed Presentation back to Dagyeom.
+- current visual baseline is main after #282: `c58c63739c13cda24cd9994e26ff6ac5b1d43e76`.
+- #281 / #283 / #284 are Dagyeom-owned review/decision items; Jjun does not auto-merge them.
+- visual CI success is not runtime visual acceptance.
+- Jjun active implementation lane is **C1-D Durable Subsistence**:
+  - authoritative water carrying/storage.
+  - food storage/spoilage.
+  - cultivation/agriculture.
+  - renewable food production under real time/land/input constraints.
+  - season/moisture/fertility effects.
+  - scarcity pressure hooks.
+- Android Gate B remains paused until explicitly resumed.
+
+Canonical handoff: `docs/DAGYEOM_PRESENTATION_HANDOFF_2026-09-19.md`.
+
 
 ---
 
@@ -267,9 +287,9 @@ Immediate structural sequence:
 
 ---
 
-## 10. Late 2026-09-18 Presentation / Observer sprint
+## 10. Late 2026-09-18 Presentation / Observer sprint — HISTORICAL
 
-The earlier sections preserve Stage C / audit context, but the active screen lane moved substantially beyond the #158 snapshot.
+The earlier sections preserve Stage C / audit context. This section is historical; current Presentation execution is frozen on the Jjun side and handed to Dagyeom per the 2026-09-19 handoff.
 
 Canonical detailed snapshot:
 - `docs/PRESENTATION_WORK_STATE_2026-09-18.md`.
@@ -324,37 +344,46 @@ These fixes hide the bootstrap square/void at Local scale only; they are not the
 
 ---
 
-## 12. Cinematic / photoreal graphics foundation — ACTIVE
+## 12. Cinematic / photoreal graphics foundation — FROZEN / DAGYEOM OWNED
 
-Merged foundation:
+Merged foundation through the handoff baseline includes:
 - #238 zero-cost Poly Haven photoreal nature pipeline v2.
 - #239 Windows cinematic renderer tier v1.
-- #240 Unreal-native environment stack v1 (PCG + Water enabled).
+- #240 Unreal-native environment stack v1.
 - #241 photoreal primitive-facility asset wave v2.
 - #242 Hydrology -> Unreal Water presentation contract v1.
 - #243 deterministic PCG presentation seeds v1.
+- #269 platform content/cook boundary.
+- #271 desktop PCG runtime dressing.
+- #276 Water terrain alignment.
+- #277 completed primitive structure photoreal path.
+- #278 desktop smooth terrain overlay.
+- #279 remaining completed facility visual upgrade.
+- #280 whole-world environment density.
+- #282 screenshot-driven runtime visual sanity hotfix.
 
-Current renderer contract:
-- Windows PC: DX12 + SM6 + Lumen GI/Reflections + VSM + TSR + Nanite project support + Mesh Distance Fields.
-- Android: separate mobile-safe renderer tier; same world truth with reduced presentation cost.
-- production local-view hero art must not silently fall back to obvious Engine primitives when approved art is missing.
+Current visual baseline:
+- main `c58c63739c13cda24cd9994e26ff6ac5b1d43e76`.
 
-Active validation:
-- #244 photoreal WorldPresentation consumers v1 — Preflight PASS, Unreal compile pending at this checkpoint; Dagyeom review requested.
-- #245 SkyAtmosphere presentation provider v1 — Preflight PASS, Unreal compile pending at this checkpoint.
+Open handoff PRs:
+- #281 Character animation polish.
+- #283 Lighting / atmosphere polish.
+- #284 Observer UI / camera polish.
 
-Parallel follow-up branches started:
-- runtime renderer diagnostics: verify the effective renderer CVars that actually boot, rather than treating config/compile as runtime proof.
-- seam-compatible terrain presentation contract: expose deterministic shared corner elevation samples for future non-flat local terrain without creating a second terrain authority.
+These are Dagyeom review/decision items. Jjun does not auto-merge them.
+Actual latest-main runtime screenshots, not compile success alone, decide visual acceptance.
+
+Canonical handoff:
+- `docs/DAGYEOM_PRESENTATION_HANDOFF_2026-09-19.md`.
 
 Android Gate B remains paused until the user explicitly resumes device/APK validation.
 
 
 ---
 
-## Platform content / cook boundary — ACTIVE
+## Platform content / cook boundary — FOUNDATION MERGED
 
 - one repository / one simulation truth.
 - Android and Desktop packages carry only required presentation payloads.
-- active PR separates Android mobile nature hard refs from desktop photoreal nature and enforces platform never-cook rules.
+- #269 merged the Android/mobile vs desktop photoreal hard-reference and cook boundary. Future presentation payload changes are Dagyeom-owned unless a Core/provider contract is required.
 - Android Gate B remains paused; no APK artifact-size claim until actual packaging resumes.
