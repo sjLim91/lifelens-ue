@@ -45,14 +45,28 @@ for token in (
 
 # Settlement should remain readable without looking like a huge shaved clearing.
 for token in (
-    "CoreClearRadiusUU = 260.0f",
-    "ActivityRadiusUU = 1300.0f",
-    "CoreZoneCanopyKeep = 0.46f",
-    "CoreZoneUndergrowthKeep = 0.68f",
-    "FacilityClearRadiusUU = 240.0f",
-    "FacilityActivityRadiusUU = 720.0f",
+    "CoreClearRadiusUU = 520.0f",
+    "ActivityRadiusUU = 2200.0f",
+    "CoreZoneCanopyKeep = 0.18f",
+    "CoreZoneUndergrowthKeep = 0.32f",
+    "CoreZoneResourceScale = 0.32f",
+    "ActivityZoneResourceScale = 0.62f",
+    "FacilityClearRadiusUU = 340.0f",
+    "FacilityActivityRadiusUU = 900.0f",
 ):
     assert token in header, f"missing dense settlement-edge recovery: {token}"
+
+# Ground-detail boulders must participate in readability thinning.
+assert "if (Layer == ELLDressingLayer::GroundDetail) { return 1.0f; }" not in cpp
+assert "bGroundDetail ? 0.08f" in cpp
+assert "bStonePatch ? 5 : 8" in cpp
+
+# Active local terrain must not hard-switch to a dry material section during
+# screenshot-driven recovery; that produced giant grey chunk polygons.
+terrain_cpp = (root / "Source/LifeLens/WorldPresentation/LLDesktopTerrainPresentationActor.cpp").read_text(encoding="utf-8")
+assert "if (GroundGrass) { return GroundGrass; }" in terrain_cpp
+assert "if (bDry && GroundDry)" not in terrain_cpp
+assert "if (bDry && GroundDry)" not in cpp
 
 # Collision proxies remain physical-only and are doubly render-disabled.
 assert "Component.SetHiddenInGame(true);" in collision_cpp
