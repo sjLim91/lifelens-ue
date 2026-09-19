@@ -26,6 +26,18 @@ bool IsCinematicWindowsTier(const FLLRendererDiagnosticsSnapshot& Snapshot)
         && Snapshot.LumenHardwareRayTracing == 0;
 }
 
+bool IsCinematicMacTier(const FLLRendererDiagnosticsSnapshot& Snapshot)
+{
+    return Snapshot.DynamicGlobalIlluminationMethod == 1
+        && Snapshot.ReflectionMethod == 1
+        && Snapshot.VirtualShadowMaps == 0
+        && Snapshot.AntiAliasingMethod == 4
+        && Snapshot.NaniteProjectEnabled == 0
+        && Snapshot.GenerateMeshDistanceFields == 1
+        && Snapshot.LumenHardwareRayTracing == 0
+        && Snapshot.RayTracing == 0;
+}
+
 bool IsMobileSafeTier(const FLLRendererDiagnosticsSnapshot& Snapshot)
 {
     return Snapshot.DynamicGlobalIlluminationMethod == 0
@@ -51,6 +63,14 @@ void ULLRendererDiagnosticsSubsystem::Initialize(FSubsystemCollectionBase& Colle
         {
             UE_LOG(LogTemp, Warning,
                 TEXT("LifeLens Windows cinematic renderer contract is not fully active at runtime."));
+        }
+    }
+    else if (Snapshot.PlatformName.Contains(TEXT("Mac"), ESearchCase::IgnoreCase))
+    {
+        if (!IsCinematicMacTier(Snapshot))
+        {
+            UE_LOG(LogTemp, Warning,
+                TEXT("LifeLens macOS desktop renderer contract is not fully active at runtime."));
         }
     }
     else if (Snapshot.PlatformName.Contains(TEXT("Android"), ESearchCase::IgnoreCase))
