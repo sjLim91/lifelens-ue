@@ -50,7 +50,11 @@ private:
         float Daylight01,
         float CloudCover01,
         float Visibility01);
-    void ApplyFog(float Daylight01, float CloudCover01, float FogAmount01);
+    void ApplyFog(
+        float Daylight01,
+        float CloudCover01,
+        float Visibility01,
+        float FogAmount01);
     void ApplySurfaceMaterials(float SurfaceWetness01, float Snow01, float Precipitation01, float AirTemperatureC);
     void ApplyWeatherEffects(float Rain01, float Snow01, float Fog01, float Wind01);
     void ApplyPostProcess(float Daylight01, float CloudCover01, float Visibility01, float Precipitation01);
@@ -146,7 +150,7 @@ private:
     float DaySkyIntensity = 1.0f;
 
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Lighting", meta=(ClampMin="0.0"))
-    float NightSkyIntensity = 0.12f;
+    float NightSkyIntensity = 0.32f;
 
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Fog", meta=(ClampMin="0.0", ClampMax="0.2"))
     float ClearFogDensity = 0.004f;
@@ -166,10 +170,13 @@ private:
     float DayExposureBias = 0.0f;
 
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|PostProcess", meta=(ClampMin="-3.0", ClampMax="3.0"))
-    float NightExposureBias = -0.35f;
+    float NightExposureBias = 0.30f;
 
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|PostProcess", meta=(ClampMin="0.0", ClampMax="1.0"))
-    float MaximumStormExposureReduction = 0.30f;
+    float MaximumStormExposureReduction = 0.22f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|PostProcess", meta=(ClampMin="-1.0", ClampMax="2.0"))
+    float MinimumNightExposureBias = 0.18f;
 
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|PostProcess", meta=(ClampMin="0.0", ClampMax="2.0"))
     float ClearSaturation = 1.0f;
@@ -215,6 +222,11 @@ private:
     float PresentedRain01 = 0.0f;
     float PresentedSnowfall01 = 0.0f;
     float PresentedAirTemperatureC = 20.0f;
+    float PresentedSunElevationDegrees = 0.0f;
+    float PresentedSunAzimuthDegrees = 0.0f;
+    float PresentedSunIntensity01 = 0.0f;
+    float PresentedSkyBrightness01 = 0.0f;
+    float PresentedFogAmount01 = 0.0f;
     bool bPresentedEnvironmentInitialized = false;
 
     bool bFallbackRainActive = false;
