@@ -59,6 +59,9 @@ jobs:
       - name: Validate desktop PCG runtime dressing
         run: python Tools/validate_pcg_runtime_dressing.py
 
+      - name: Validate desktop smooth terrain
+        run: python Tools/validate_desktop_smooth_terrain.py
+
       - name: Verify Unreal project metadata
         run: |
           python - <<'PY'
