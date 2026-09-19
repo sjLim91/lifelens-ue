@@ -447,11 +447,9 @@ void ALLDynamicEnvironmentPresentationActor::RefreshFromCore(bool bForce)
         return;
     }
 
-    if (!bForce && Time.SimulationMinute == LastAppliedSimulationMinute)
-    {
-        return;
-    }
-
+    // Keep applying the same authoritative sample between simulation-minute
+    // changes so lighting/fog interpolation can actually converge instead of
+    // moving only one small step and freezing until the next Core minute.
     const int64 PreviousSimulationMinute = LastAppliedSimulationMinute;
     LastAppliedSimulationMinute = Time.SimulationMinute;
 
@@ -475,7 +473,9 @@ void ALLDynamicEnvironmentPresentationActor::RefreshFromCore(bool bForce)
         || PreviousSimulationMinute == TNumericLimits<int64>::Lowest()
         || Time.SimulationMinute < PreviousSimulationMinute;
     const float TransitionSpeed = FMath::Max(0.0f, EnvironmentTransitionInterpSpeed);
-    auto PresentValue = [this, bResetPresentedEnvironment, TransitionSpeed](
+    const float PresentationDeltaSeconds =
+        FMath::Max(RefreshIntervalSeconds, KINDA_SMALL_NUMBER);
+    auto PresentValue = [bResetPresentedEnvironment, TransitionSpeed, PresentationDeltaSeconds](
         float Current,
         float Target)
     {
@@ -486,8 +486,24 @@ void ALLDynamicEnvironmentPresentationActor::RefreshFromCore(bool bForce)
         return FMath::FInterpTo(
             Current,
             Target,
-            FMath::Max(RefreshIntervalSeconds, KINDA_SMALL_NUMBER),
+            PresentationDeltaSeconds,
             TransitionSpeed);
+    };
+    auto PresentAngle = [bResetPresentedEnvironment, TransitionSpeed, PresentationDeltaSeconds](
+        float Current,
+        float Target)
+    {
+        if (bResetPresentedEnvironment || TransitionSpeed <= KINDA_SMALL_NUMBER)
+        {
+            return FMath::UnwindDegrees(Target);
+        }
+        const float Delta = FMath::FindDeltaAngleDegrees(Current, Target);
+        const float Step = FMath::FInterpTo(
+            0.0f,
+            Delta,
+            PresentationDeltaSeconds,
+            TransitionSpeed);
+        return FMath::UnwindDegrees(Current + Step);
     };
 
     PresentedDaylight01 = Saturate(PresentValue(PresentedDaylight01, Daylight01));
@@ -502,6 +518,21 @@ void ALLDynamicEnvironmentPresentationActor::RefreshFromCore(bool bForce)
     PresentedAirTemperatureC = PresentValue(
         PresentedAirTemperatureC,
         Environment.AirTemperatureC);
+    PresentedSunElevationDegrees = PresentValue(
+        PresentedSunElevationDegrees,
+        Sky.SunElevationDegrees);
+    PresentedSunAzimuthDegrees = PresentAngle(
+        PresentedSunAzimuthDegrees,
+        Sky.SunAzimuthDegrees);
+    PresentedSunIntensity01 = Saturate(PresentValue(
+        PresentedSunIntensity01,
+        Saturate(Sky.SunIntensity01)));
+    PresentedSkyBrightness01 = Saturate(PresentValue(
+        PresentedSkyBrightness01,
+        Saturate(Sky.SkyBrightness01)));
+    PresentedFogAmount01 = Saturate(PresentValue(
+        PresentedFogAmount01,
+        Saturate(Sky.FogAmount01)));
     bPresentedEnvironmentInitialized = true;
 
     // SurfaceWetness01 is already authoritative Core residue. Snow currently
@@ -556,16 +587,23 @@ void ALLDynamicEnvironmentPresentationActor::RefreshFromCore(bool bForce)
         PresentedSnowCover01 = Saturate(PresentedSnowCover01);
     }
 
-    const float Fog01 = Saturate(Sky.FogAmount01);
+    FLLCoreSkyPresentationObservation PresentedSky = Sky;
+    PresentedSky.SunElevationDegrees = PresentedSunElevationDegrees;
+    PresentedSky.SunAzimuthDegrees = PresentedSunAzimuthDegrees;
+    PresentedSky.SunIntensity01 = PresentedSunIntensity01;
+    PresentedSky.SkyBrightness01 = PresentedSkyBrightness01;
+    PresentedSky.FogAmount01 = PresentedFogAmount01;
+    const float Fog01 = PresentedFogAmount01;
 
     ApplyLighting(
-        Sky,
+        PresentedSky,
         PresentedDaylight01,
         PresentedCloudCover01,
         PresentedVisibility01);
     ApplyFog(
         PresentedDaylight01,
         PresentedCloudCover01,
+        PresentedVisibility01,
         Fog01);
     ApplySurfaceMaterials(
         PresentedSurfaceWetness01,
@@ -639,6 +677,7 @@ void ALLDynamicEnvironmentPresentationActor::ApplyLighting(
 void ALLDynamicEnvironmentPresentationActor::ApplyFog(
     float Daylight01,
     float CloudCover01,
+    float Visibility01,
     float FogAmount01)
 {
     if (!HeightFog)
@@ -651,6 +690,23 @@ void ALLDynamicEnvironmentPresentationActor::ApplyFog(
         ClearFogDensity,
         SevereFogDensity,
         WeatherFog01));
+    HeightFog->SetStartDistance(FMath::Lerp(
+        FMath::Max(0.0f, HorizonFogStartDistanceUU * 0.38f),
+        FMath::Max(0.0f, HorizonFogStartDistanceUU),
+        Saturate(Visibility01)));
+
+#if PLATFORM_WINDOWS || PLATFORM_MAC
+    // Core still owns visibility/fog amount. Desktop only maps that authority
+    // into richer volumetric response; Android keeps the cheaper height fog.
+    HeightFog->SetVolumetricFogExtinctionScale(FMath::Lerp(
+        0.72f,
+        1.32f,
+        WeatherFog01));
+    HeightFog->SetVolumetricFogScatteringDistribution(FMath::Lerp(
+        0.18f,
+        0.34f,
+        1.0f - Saturate(Visibility01)));
+#endif
 
     const FLinearColor NightFog(0.045f, 0.065f, 0.11f, 1.0f);
     const FLinearColor DayFog(0.62f, 0.72f, 0.80f, 1.0f);
