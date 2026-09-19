@@ -282,10 +282,30 @@ inline CivilizationUtilityDecision bestGatherDecision(const World& world,const C
             settlementMissing,
             std::max(storageMissing,std::max(fireMissing,furnaceMissing)));
         const int materialDemand=constructionMissing+repairMissing;
-        const int baseTarget=(node.material==MaterialKind::Water || node.material==MaterialKind::PlantFood) ? 4 : 5;
-        const int fireFuelReserve=(hasOperationalFirePit(world) && node.material==MaterialKind::Wood) ? 3 : 0;
-        const int target=baseTarget+std::min(4,materialDemand)+fireFuelReserve;
-        const double gap=clampCivilization01(static_cast<double>(std::max(0,target-held-std::min(stored,2)))/static_cast<double>(std::max(1,target)));
+        const bool provision=
+            node.material==MaterialKind::Water
+            || node.material==MaterialKind::PlantFood;
+        const int baseTarget=provision ? 4 : 5;
+        const int settlementReserveTarget=
+            node.material==MaterialKind::Water ? 8
+            : (node.material==MaterialKind::PlantFood ? 8 : 0);
+        const int reserveGap=std::max(0,settlementReserveTarget-stored);
+        const int fireFuelReserve=
+            (hasOperationalFirePit(world) && node.material==MaterialKind::Wood)
+                ? 3 : 0;
+        const int target=
+            baseTarget
+            +std::min(4,materialDemand)
+            +fireFuelReserve
+            +(provision && !world.storageSites.empty()
+                ? std::min(4,reserveGap)
+                : 0);
+        const int storedCredit=provision
+            ? std::min(stored,settlementReserveTarget)
+            : std::min(stored,2);
+        const double gap=clampCivilization01(
+            static_cast<double>(std::max(0,target-held-storedCredit))
+            /static_cast<double>(std::max(1,target)));
         const double demand=materialProgressDemand(self,node.material);
         const double constructionDemand=constructionMissing>0
             ? clampCivilization01(0.45+0.12*static_cast<double>(constructionMissing))
@@ -297,7 +317,12 @@ inline CivilizationUtilityDecision bestGatherDecision(const World& world,const C
         const double score=clampCivilization01(
             0.07+0.12*self.personality.curiosity+0.05*self.personality.adaptability+
             0.08*self.civilization.gatheringSkill+0.16*demand+0.13*gap+
-            0.30*constructionDemand+0.24*maintenanceDemand+0.07*preference);
+            0.30*constructionDemand+0.24*maintenanceDemand+0.07*preference+
+            (provision && !world.storageSites.empty()
+                ? 0.12*clampCivilization01(
+                    static_cast<double>(reserveGap)
+                    /static_cast<double>(std::max(1,settlementReserveTarget)))
+                : 0.0));
         CivilizationUtilityDecision candidate;
         candidate.intent=CivilizationIntent::Gather;
         candidate.utility=score;
