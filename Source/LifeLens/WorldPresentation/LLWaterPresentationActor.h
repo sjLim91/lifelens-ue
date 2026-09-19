@@ -34,13 +34,25 @@ private:
         int32 GridX,
         int32 GridY,
         int32 InitialCenterGridX,
-        int32 InitialCenterGridY) const;
+        int32 InitialCenterGridY,
+        float SurfaceZUU) const;
+    float WaterSurfaceZForChunk(
+        class ULLCoreBridgeSubsystem* Bridge,
+        const struct FLLCoreWorldGenerationObservation& World,
+        int32 ChunkX,
+        int32 ChunkY) const;
+    int32 ChunkCoordForGrid(int32 GridCoordinate) const;
 
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Water", meta=(ClampMin="0.25", ClampMax="10.0"))
     float RefreshIntervalSeconds = 2.0f;
 
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Water", meta=(ClampMin="-1000.0", ClampMax="1000.0"))
     float WaterSurfaceZUU = 4.0f;
+
+    // Keep in visual lock-step with the current WorldPresentation macro relief.
+    // Water uses Core terrain observations; this is rendering height only.
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Water", meta=(ClampMin="0.0", ClampMax="500.0"))
+    float TerrainReliefAmplitudeUU = 180.0f;
 
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Water", meta=(ClampMin="8000.0", ClampMax="250000.0"))
     float WaterZoneExtentUU = 96000.0f;
