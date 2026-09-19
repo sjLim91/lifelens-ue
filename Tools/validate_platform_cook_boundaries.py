@@ -123,7 +123,7 @@ assert "bCookAll=True" not in default_game, (
 android_workflow = read(".github/workflows/android-apk.yml")
 require(
     android_workflow,
-    ("python Tools/validate_platform_cook_boundaries.py",),
+    ("python3 Tools/validate_platform_cook_boundaries.py",),
     "Android packaging workflow cook-boundary gate",
 )
 
