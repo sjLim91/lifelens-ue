@@ -118,9 +118,12 @@ private:
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|VFX")
     TSoftObjectPtr<UNiagaraSystem> FogSystem;
 
-    // Code-only Android-safe fallback used only when an authored Niagara system
-    // has not been assigned. This makes rain/snow visible in packaged builds
-    // today while preserving Niagara as the preferred upgrade path.
+    // Primitive fallback precipitation is development-only. Production defaults
+    // to omission when authored Niagara is missing; tiny Engine cube/sphere rain
+    // is not an acceptable local-view visual fallback.
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|VFX|Fallback")
+    bool bAllowPrimitivePrecipitationFallback = false;
+
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|VFX|Fallback", meta=(ClampMin="8", ClampMax="256"))
     int32 MaxFallbackRainInstances = 96;
 
