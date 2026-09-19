@@ -224,9 +224,9 @@ void ALLDynamicEnvironmentPresentationActor::ResolveWorldComponents()
     if (SkyLight)
     {
         SkyLight->SetMobility(EComponentMobility::Movable);
-#if PLATFORM_WINDOWS
-        // The cinematic Windows tier keeps SkyLight capture synchronized with
-        // dynamic SkyAtmosphere/time/weather. Mobile stays on the cheaper path.
+#if PLATFORM_WINDOWS || PLATFORM_MAC
+        // Desktop cinematic tiers keep SkyLight capture synchronized with
+        // dynamic SkyAtmosphere/time/weather. Android stays on the cheaper path.
         SkyLight->bRealTimeCapture = true;
 #else
         SkyLight->bRealTimeCapture = false;
