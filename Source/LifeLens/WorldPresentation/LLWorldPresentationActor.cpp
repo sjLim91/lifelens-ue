@@ -301,14 +301,21 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
             TEXT("PhotorealStructureLogs"), PhotoStructureLog.Object,
             FacilityCullStartUU, FacilityCullEndUU, true);
     }
+    if (PhotoBoulder.Succeeded())
+    {
+        PhotorealFurnaceStoneInstances = AddInstancedComponent(
+            TEXT("PhotorealFurnaceStones"), PhotoBoulder.Object,
+            FacilityCullStartUU, FacilityCullEndUU, true);
+    }
 #endif
 
     UE_LOG(LogTemp, Log,
-        TEXT("LLWorldPresentation approved facility art: firepit=%d basket=%d workTool=%d structureLog=%d deterministicSeeds=1"),
+        TEXT("LLWorldPresentation approved facility art: firepit=%d basket=%d workTool=%d structureLog=%d furnaceStone=%d deterministicSeeds=1"),
         PhotorealFirePitInstances ? 1 : 0,
         PhotorealStorageBasketInstances ? 1 : 0,
         PhotorealWorkToolInstances ? 1 : 0,
-        PhotorealStructureLogInstances ? 1 : 0);
+        PhotorealStructureLogInstances ? 1 : 0,
+        PhotorealFurnaceStoneInstances ? 1 : 0);
 }
 
 UHierarchicalInstancedStaticMeshComponent* ALLWorldPresentationActor::AddInstancedComponent(
@@ -393,6 +400,41 @@ void ALLWorldPresentationActor::AddPhotorealStructureLog(
         FTransform(Alignment, CenterUU, Scale));
 }
 
+void ALLWorldPresentationActor::AddPhotorealFurnaceStone(
+    const FVector& CenterUU,
+    float DiameterUU,
+    float YawDegrees,
+    float VerticalScale)
+{
+    if (!PhotorealFurnaceStoneInstances || DiameterUU <= KINDA_SMALL_NUMBER)
+    {
+        return;
+    }
+
+    UStaticMesh* Mesh = PhotorealFurnaceStoneInstances->GetStaticMesh();
+    if (!Mesh)
+    {
+        return;
+    }
+
+    const FVector NativeSize = Mesh->GetBounds().BoxExtent * 2.0f;
+    const float NativeMax = FMath::Max3(NativeSize.X, NativeSize.Y, NativeSize.Z);
+    if (NativeMax <= KINDA_SMALL_NUMBER)
+    {
+        return;
+    }
+
+    const float UniformScale = DiameterUU / NativeMax;
+    const FVector Scale(
+        UniformScale,
+        UniformScale,
+        UniformScale * FMath::Max(0.45f, VerticalScale));
+    PhotorealFurnaceStoneInstances->AddInstance(FTransform(
+        FRotator(0.0f, YawDegrees, 0.0f),
+        CenterUU,
+        Scale));
+}
+
 void ALLWorldPresentationActor::BeginPlay()
 {
     Super::BeginPlay();
@@ -448,6 +490,7 @@ void ALLWorldPresentationActor::ClearFacilityInstances()
     if (PhotorealFirePitInstances) { PhotorealFirePitInstances->ClearInstances(); }
     if (PhotorealStorageBasketInstances) { PhotorealStorageBasketInstances->ClearInstances(); }
     if (PhotorealStructureLogInstances) { PhotorealStructureLogInstances->ClearInstances(); }
+    if (PhotorealFurnaceStoneInstances) { PhotorealFurnaceStoneInstances->ClearInstances(); }
     if (PhotorealWorkToolInstances) { PhotorealWorkToolInstances->ClearInstances(); }
 }
 
@@ -1738,12 +1781,28 @@ void ALLWorldPresentationActor::BuildFacilities(
 
         if (Facility.Kind == ELLCoreFacilityKind::SleepingPlace)
         {
+            const bool bUsePhotorealSleepFrame =
+                bStructurallyComplete && PhotorealStructureLogInstances != nullptr;
+            if (bUsePhotorealSleepFrame)
+            {
+                AddPhotorealStructureLog(Base + FVector(0.0f, -42.0f, 18.0f), FVector::ForwardVector, 185.0f, 14.0f);
+                AddPhotorealStructureLog(Base + FVector(0.0f,  42.0f, 18.0f), FVector::ForwardVector, 185.0f, 14.0f);
+                for (int32 SlatIndex = -2; SlatIndex <= 2; ++SlatIndex)
+                {
+                    AddPhotorealStructureLog(
+                        Base + FVector(static_cast<float>(SlatIndex) * 40.0f, 0.0f, 20.0f),
+                        FVector::RightVector,
+                        92.0f,
+                        11.0f);
+                }
+            }
+
             // Primitive bedding: a raised frame plus layered fiber bed. The bed
             // remains visually low-tech and is clearly distinct from a WorkSurface.
             const float Integrity = FMath::Lerp(0.70f, 1.0f, Durability);
             const float DamageTilt = (1.0f - Durability) * 8.0f;
 
-            if (FacilityFoundationInstances)
+            if (!bUsePhotorealSleepFrame && FacilityFoundationInstances)
             {
                 const float FrameScale = Facility.State == ELLCoreFacilityState::Planned ? 0.70f : 1.0f;
                 FacilityFoundationInstances->AddInstance(FTransform(
@@ -1752,9 +1811,11 @@ void ALLWorldPresentationActor::BuildFacilities(
                     FVector(1.85f * FrameScale, 0.92f * FrameScale, 0.12f)));
             }
 
-            const int32 RailCount = bStructurallyComplete
-                ? 2
-                : FMath::Clamp(FMath::CeilToInt(BuildProgress * 2.0f), 0, 2);
+            const int32 RailCount = bUsePhotorealSleepFrame
+                ? 0
+                : (bStructurallyComplete
+                    ? 2
+                    : FMath::Clamp(FMath::CeilToInt(BuildProgress * 2.0f), 0, 2));
             for (int32 Index = 0; Index < RailCount; ++Index)
             {
                 if (!FacilityPostInstances) { break; }
@@ -1876,16 +1937,49 @@ void ALLWorldPresentationActor::BuildFacilities(
 
         if (Facility.Kind == ELLCoreFacilityKind::Furnace)
         {
+            const bool bUsePhotorealFurnace =
+                bStructurallyComplete && PhotorealFurnaceStoneInstances != nullptr;
+            if (bUsePhotorealFurnace)
+            {
+                for (int32 Ring = 0; Ring < 2; ++Ring)
+                {
+                    const int32 StoneCount = Ring == 0 ? 9 : 7;
+                    const float Radius = Ring == 0 ? 64.0f : 52.0f;
+                    const float Height = Ring == 0 ? 30.0f : 72.0f;
+                    const float Diameter = Ring == 0 ? 52.0f : 46.0f;
+                    for (int32 StoneIndex = 0; StoneIndex < StoneCount; ++StoneIndex)
+                    {
+                        const float AngleDegrees =
+                            (360.0f / static_cast<float>(StoneCount))
+                            * static_cast<float>(StoneIndex)
+                            + (Ring == 0 ? 0.0f : 18.0f);
+                        const float AngleRadians = FMath::DegreesToRadians(AngleDegrees);
+                        AddPhotorealFurnaceStone(
+                            Base + FVector(
+                                FMath::Cos(AngleRadians) * Radius,
+                                FMath::Sin(AngleRadians) * Radius,
+                                Height),
+                            Diameter,
+                            AngleDegrees + 90.0f,
+                            Ring == 0 ? 0.78f : 0.72f);
+                    }
+                }
+                AddPhotorealFurnaceStone(Base + FVector(-20.0f, 10.0f, 112.0f), 48.0f, 22.0f, 0.70f);
+                AddPhotorealFurnaceStone(Base + FVector( 22.0f,  8.0f, 114.0f), 46.0f, 77.0f, 0.68f);
+            }
+
             // Android-safe visual-only furnace. Chamber/charge/output are derived
             // solely from the authoritative facility read DTO.
             const float Structure = bStructurallyComplete ? 1.0f : FMath::Clamp(BuildProgress, 0.0f, 1.0f);
-            if (FacilityFoundationInstances && Structure > 0.0f)
+            if (!bUsePhotorealFurnace && FacilityFoundationInstances && Structure > 0.0f)
             {
                 FacilityFoundationInstances->AddInstance(FTransform(
                     FRotator::ZeroRotator,Base + FVector(0.0f, 0.0f, 8.0f),FVector(1.55f * Structure, 1.35f * Structure, 0.16f)));
             }
             const FVector2D WallOffsets[3] = { FVector2D(-58.0f,0.0f), FVector2D(58.0f,0.0f), FVector2D(0.0f,52.0f) };
-            const int32 WallCount = bStructurallyComplete ? 3 : FMath::Clamp(FMath::CeilToInt(Structure * 3.0f),0,3);
+            const int32 WallCount = bUsePhotorealFurnace
+                ? 0
+                : (bStructurallyComplete ? 3 : FMath::Clamp(FMath::CeilToInt(Structure * 3.0f),0,3));
             for (int32 Index=0; Index<WallCount; ++Index)
             {
                 if (!FacilityPostInstances) { break; }
@@ -1895,7 +1989,9 @@ void ALLWorldPresentationActor::BuildFacilities(
                     Base + FVector(WallOffsets[Index].X, WallOffsets[Index].Y, 62.0f),
                     bSide ? FVector(0.22f,1.15f,1.05f) : FVector(1.15f,0.22f,1.05f)));
             }
-            if ((bStructurallyComplete || WorkProgress>=0.70f) && FacilityRoofInstances)
+            if (!bUsePhotorealFurnace
+                && (bStructurallyComplete || WorkProgress>=0.70f)
+                && FacilityRoofInstances)
             {
                 FacilityRoofInstances->AddInstance(FTransform(
                     FRotator::ZeroRotator,Base + FVector(0.0f,0.0f,126.0f),FVector(1.30f,1.10f,0.16f)));
@@ -1979,6 +2075,18 @@ void ALLWorldPresentationActor::BuildFacilities(
             : FMath::Clamp(FMath::CeilToInt(MaterialProgress * 2.0f), 0, 2);
         for (int32 Index = 0; Index < LogCount; ++Index)
         {
+            if (bStructurallyComplete && PhotorealStructureLogInstances)
+            {
+                const float Yaw = Index % 2 == 0 ? 45.0f : 135.0f;
+                const float Radians = FMath::DegreesToRadians(Yaw);
+                AddPhotorealStructureLog(
+                    Base + FVector(0.0f, 0.0f, 22.0f + Index * 8.0f),
+                    FVector(FMath::Cos(Radians), FMath::Sin(Radians), 0.0f),
+                    92.0f,
+                    13.0f);
+                continue;
+            }
+
             if (!FacilityCargoInstances) { break; }
             FacilityCargoInstances->AddInstance(FTransform(
                 FRotator(0.0f, Index % 2 == 0 ? 45.0f : 135.0f, 0.0f),
@@ -2135,7 +2243,9 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         + (FacilityAccentInstances ? FacilityAccentInstances->GetInstanceCount() : 0)
         + (PhotorealFirePitInstances ? PhotorealFirePitInstances->GetInstanceCount() : 0)
         + (PhotorealStorageBasketInstances ? PhotorealStorageBasketInstances->GetInstanceCount() : 0)
-        + (PhotorealWorkToolInstances ? PhotorealWorkToolInstances->GetInstanceCount() : 0);
+        + (PhotorealWorkToolInstances ? PhotorealWorkToolInstances->GetInstanceCount() : 0)
+        + (PhotorealStructureLogInstances ? PhotorealStructureLogInstances->GetInstanceCount() : 0)
+        + (PhotorealFurnaceStoneInstances ? PhotorealFurnaceStoneInstances->GetInstanceCount() : 0);
 
     UE_LOG(LogTemp, Log,
         TEXT("LLWorldPresentation seed=%lld gen=%d chunks=%d groundTiles=%d natural=%d/%d/%d/%d facilities=%d facilityInstances=%d thinned=%d sightline=%d/%d dynamicCanopy=%d core=%.0f activity=%.0f ground=%s farGround=%s"),
