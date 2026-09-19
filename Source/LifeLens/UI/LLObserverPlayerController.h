@@ -57,7 +57,7 @@ private:
     void UpdateTouchCameraInput();
     void ApplyCameraTransform(float DeltaTime);
     void SyncObservedResidentSelection();
-    void UpdateObservedResidentFocus();
+    void UpdateObservedResidentFocus(float DeltaTime);
     void FocusObservedResident(ALLResidentCharacter* Resident, bool bReframe);
     void ResolveObservedResidentFocusFraming(const ALLResidentCharacter* Resident, FVector& OutTarget, float& OutDistance) const;
     void RestoreWorldOverview();
@@ -112,6 +112,12 @@ private:
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera", meta=(ClampMin="0.1"))
     float CameraSmoothingSpeed = 10.0f;
 
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera", meta=(ClampMin="0.1"))
+    float FocusTransitionSmoothingSpeed = 6.0f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera", meta=(ClampMin="0.1"))
+    float OverviewTransitionSmoothingSpeed = 5.5f;
+
     // Selecting a resident transitions into a closer observer framing and
     // follows that resident until the observer manually manipulates the camera.
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera|Focus", meta=(ClampMin="500.0"))
@@ -145,6 +151,9 @@ private:
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera|Focus", meta=(ClampMin="0.0", ClampMax="1000.0"))
     float ObservedResidentMaxMovementLeadUU = 180.0f;
 
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera|Focus", meta=(ClampMin="0.1", ClampMax="30.0"))
+    float ObservedResidentFollowSmoothingSpeed = 6.5f;
+
     TWeakObjectPtr<ACameraActor> ObserverCamera;
     bool bCameraInitialized = false;
 
@@ -169,6 +178,7 @@ private:
     FGuid FocusedResidentId;
     bool bFollowObservedResident = false;
     bool bWorldEventFocusActive = false;
+    bool bReturningToWorldOverview = false;
 
     bool bRightMouseDragging = false;
     bool bMiddleMouseDragging = false;
