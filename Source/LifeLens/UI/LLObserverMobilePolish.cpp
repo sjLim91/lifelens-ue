@@ -77,7 +77,11 @@ void ALLObserverHUD::UpdateFeedbackState(const ULLObservationSubsystem* Observat
         SelectionChangeTime = ObservedId.IsValid() ? Now : -100.0f;
     }
 
-    PanelFade = FMath::Clamp((Now - LevelChangeTime) / LevelFadeSeconds, 0.0f, 1.0f);
+    const float LinearFade = FMath::Clamp(
+        (Now - LevelChangeTime) / LevelFadeSeconds,
+        0.0f,
+        1.0f);
+    PanelFade = LinearFade * LinearFade * (3.0f - 2.0f * LinearFade);
 }
 
 void ALLObserverHUD::DrawSelectionFeedback(const FLLResidentData& Selected, float UIScale)
@@ -307,10 +311,11 @@ void ALLObserverHUD::DrawSelectionFeedback(const FLLResidentData& Selected, floa
         return;
     }
 
-    const float FlashPad = (FlashPadStart + FlashPadGrow * T) * UIScale;
+    const float EaseOut = 1.0f - FMath::Pow(1.0f - T, 3.0f);
+    const float FlashPad = (FlashPadStart + FlashPadGrow * EaseOut) * UIScale;
     const FBox2D Flash(Bounds.Min - FVector2D(FlashPad), Bounds.Max + FVector2D(FlashPad));
     FLinearColor FlashColor = FocusColor;
-    FlashColor.A *= (1.0f - T) * 0.72f;
+    FlashColor.A *= FMath::Square(1.0f - T) * 0.72f;
 
     const float FlashCorner = Corner + 6.0f * UIScale;
     auto DrawFlashCorner = [this, FlashCorner](const FVector2D& P, const FVector2D& Horizontal, const FVector2D& Vertical, const FLinearColor& Color)
