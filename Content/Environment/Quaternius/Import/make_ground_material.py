@@ -131,9 +131,14 @@ def build_parent():
     snow_color.set_editor_property("parameter_name", "SnowColor")
     snow_color.set_editor_property("default_value", unreal.LinearColor(0.82, 0.87, 0.91, 1.0))
 
-    wet_dark = MEL.create_material_expression(material, unreal.MaterialExpressionLinearInterpolate, 480, 160)
-    wet_dark.const_a = 1.0
-    wet_dark.const_b = 0.58
+    dry_multiplier = MEL.create_material_expression(material, unreal.MaterialExpressionConstant, 300, 120)
+    dry_multiplier.set_editor_property("r", 1.0)
+    wet_multiplier = MEL.create_material_expression(material, unreal.MaterialExpressionConstant, 300, 220)
+    wet_multiplier.set_editor_property("r", 0.58)
+
+    wet_dark = MEL.create_material_expression(material, unreal.MaterialExpressionLinearInterpolate, 520, 160)
+    MEL.connect_material_expressions(dry_multiplier, "", wet_dark, "A")
+    MEL.connect_material_expressions(wet_multiplier, "", wet_dark, "B")
     MEL.connect_material_expressions(wetness, "", wet_dark, "Alpha")
 
     wet_base = MEL.create_material_expression(material, unreal.MaterialExpressionMultiply, 700, 80)
@@ -145,14 +150,19 @@ def build_parent():
     MEL.connect_material_expressions(snow_color, "", final_base, "B")
     MEL.connect_material_expressions(snow, "", final_base, "Alpha")
 
-    wet_rough = MEL.create_material_expression(material, unreal.MaterialExpressionLinearInterpolate, 520, 560)
+    wet_roughness = MEL.create_material_expression(material, unreal.MaterialExpressionConstant, 300, 640)
+    wet_roughness.set_editor_property("r", 0.22)
+    snow_roughness = MEL.create_material_expression(material, unreal.MaterialExpressionConstant, 540, 760)
+    snow_roughness.set_editor_property("r", 0.82)
+
+    wet_rough = MEL.create_material_expression(material, unreal.MaterialExpressionLinearInterpolate, 560, 560)
     MEL.connect_material_expressions(rough, "R", wet_rough, "A")
-    wet_rough.const_b = 0.22
+    MEL.connect_material_expressions(wet_roughness, "", wet_rough, "B")
     MEL.connect_material_expressions(wetness, "", wet_rough, "Alpha")
 
-    final_rough = MEL.create_material_expression(material, unreal.MaterialExpressionLinearInterpolate, 760, 560)
+    final_rough = MEL.create_material_expression(material, unreal.MaterialExpressionLinearInterpolate, 800, 560)
     MEL.connect_material_expressions(wet_rough, "", final_rough, "A")
-    final_rough.const_b = 0.82
+    MEL.connect_material_expressions(snow_roughness, "", final_rough, "B")
     MEL.connect_material_expressions(snow, "", final_rough, "Alpha")
 
     MEL.connect_material_property(final_base, "", unreal.MaterialProperty.MP_BASE_COLOR)
