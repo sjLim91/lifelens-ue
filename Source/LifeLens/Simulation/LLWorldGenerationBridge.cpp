@@ -73,6 +73,9 @@ void FillHydrologyObservation(
     Out.DownstreamChunkX = Facts.downstream.x;
     Out.DownstreamChunkY = Facts.downstream.y;
     Out.bFreshSurfaceWater = lifelens::isFreshSurfaceWater(Facts);
+    Out.bHasMarineNeighbour = Facts.hasMarineNeighbour;
+    Out.MarineNeighbourChunkX = Facts.marineNeighbour.x;
+    Out.MarineNeighbourChunkY = Facts.marineNeighbour.y;
 }
 
 bool FillSurfaceWaterPresentationObservation(
@@ -100,6 +103,15 @@ bool FillSurfaceWaterPresentationObservation(
     Out.SurfaceAvailability = static_cast<float>(Facts.surfaceAvailability);
     Out.FlowPotential = static_cast<float>(Facts.flowPotential);
     Out.bFreshSurfaceWater = lifelens::isFreshSurfaceWater(Facts);
+
+    if (Facts.hasMarineNeighbour)
+    {
+        const lifelens::GridPos MarineOrigin =
+            lifelens::chunkOriginGrid(Facts.marineNeighbour);
+        Out.bHasMarineNeighbour = true;
+        Out.MarineCenterGridX = MarineOrigin.x + HalfChunk;
+        Out.MarineCenterGridY = MarineOrigin.y + HalfChunk;
+    }
 
     switch (Facts.surfaceKind)
     {
