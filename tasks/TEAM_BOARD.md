@@ -64,7 +64,7 @@ A new blocker is triaged before unrelated follow-up work. This does **not** mean
 
 ## Current Assist Locks
 
-### ASSIST_LOCK-GFX-VOLUMETRIC-1 — Jjun scoped environment presentation assist
+### ASSIST_LOCK-GFX-VOLUMETRIC-1 — Jjun scoped desktop environment presentation assist
 
 - explicit user direction: raise visible final graphics completion toward the 70% checkpoint.
 - helper: Jjun.
@@ -74,7 +74,7 @@ A new blocker is triaged before unrelated follow-up work. This does **not** mean
   - `Source/LifeLens/WorldPresentation/LLDynamicEnvironmentPresentationActor.cpp`
 - scope:
   - keep authoritative sky/fog input from Core provider.
-  - enable richer Windows volumetric fog representation.
+  - enable richer Windows/macOS volumetric fog representation.
   - keep Android exponential fog path lightweight.
 - no weather authority or simulation state is added.
 - release after stacked PR merge/close.
