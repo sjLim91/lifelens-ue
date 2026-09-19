@@ -126,24 +126,24 @@ ULLResidentMotionComponent::ULLResidentMotionComponent()
         TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Sitting_Exit.Sitting_Exit"));
     SeatedExitAnimation = SeatedExitFinder.Succeeded() ? SeatedExitFinder.Object : nullptr;
 
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> FlakeFinder(
-        TEXT("/Engine/BasicShapes/Cone.Cone"));
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> CuttingToolFinder(
-        TEXT("/Engine/BasicShapes/Cube.Cube"));
+    // Production held props must not fall back to visible Engine primitives.
+    // A generic woven basket already exists as approved CC0 art. The wooden
+    // bowl is imported by the paired daily-life prop wave and is neutral enough
+    // for generic Eat/Drink presentation without inventing a food species.
     static ConstructorHelpers::FObjectFinder<UStaticMesh> ContainerFinder(
-        TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> FoodFinder(
-        TEXT("/Engine/BasicShapes/Sphere.Sphere"));
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> DrinkFinder(
-        TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
-    static ConstructorHelpers::FObjectFinder<UMaterialInterface> HeldPropMaterialFinder(
-        TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
-    SharpFlakeMesh = FlakeFinder.Succeeded() ? FlakeFinder.Object : nullptr;
-    StoneCuttingToolMesh = CuttingToolFinder.Succeeded() ? CuttingToolFinder.Object : nullptr;
+        TEXT("/Game/Environment/Photoreal/PolyHaven/wicker_basket_01/SM_LL_wicker_basket_01.SM_LL_wicker_basket_01"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> BowlFinder(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/wooden_bowl_01/SM_LL_wooden_bowl_01.SM_LL_wooden_bowl_01"));
+
+    // Sharp flake / primitive cutting / digging / stone hammer remain
+    // intentionally art-pending. Omitting an unapproved tool is preferable to
+    // showing a Cube/Cone or a technologically misleading modern tool.
+    SharpFlakeMesh = nullptr;
+    StoneCuttingToolMesh = nullptr;
     SimpleContainerMesh = ContainerFinder.Succeeded() ? ContainerFinder.Object : nullptr;
-    FoodProxyMesh = FoodFinder.Succeeded() ? FoodFinder.Object : nullptr;
-    DrinkProxyMesh = DrinkFinder.Succeeded() ? DrinkFinder.Object : nullptr;
-    HeldPropMaterialBase = HeldPropMaterialFinder.Succeeded() ? HeldPropMaterialFinder.Object : nullptr;
+    FoodProxyMesh = BowlFinder.Succeeded() ? BowlFinder.Object : nullptr;
+    DrinkProxyMesh = BowlFinder.Succeeded() ? BowlFinder.Object : nullptr;
+    HeldPropMaterialBase = nullptr;
 }
 
 void ULLResidentMotionComponent::BeginPlay()
@@ -763,25 +763,25 @@ void ULLResidentMotionComponent::UpdateHeldToolVisualState()
         if (ActiveContextMotion == ELLResidentContextMotion::Eat)
         {
             DesiredMesh = FoodProxyMesh.Get();
-            RelativeScale = FVector(0.10f);
-            RelativeLocation = FVector(8.0f, 2.0f, 0.0f);
-            PropColor = FLinearColor(0.78f, 0.48f, 0.20f, 1.0f);
+            RelativeScale = FVector(0.62f);
+            RelativeLocation = FVector(8.0f, 2.0f, -2.0f);
+            PropColor = FLinearColor::White;
         }
         else if (ActiveContextMotion == ELLResidentContextMotion::Drink)
         {
             DesiredMesh = DrinkProxyMesh.Get();
-            RelativeScale = FVector(0.075f, 0.075f, 0.16f);
-            RelativeRotation = FRotator(0.0f, 0.0f, 90.0f);
-            RelativeLocation = FVector(7.0f, 1.0f, 0.0f);
-            PropColor = FLinearColor(0.32f, 0.60f, 0.86f, 1.0f);
+            RelativeScale = FVector(0.62f);
+            RelativeRotation = FRotator(0.0f, 0.0f, 18.0f);
+            RelativeLocation = FVector(7.0f, 1.0f, -2.0f);
+            PropColor = FLinearColor::White;
         }
         else if (ActiveContextMotion == ELLResidentContextMotion::HaulPush)
         {
             DesiredMesh = SimpleContainerMesh.Get();
-            RelativeScale = FVector(0.20f, 0.20f, 0.17f);
+            RelativeScale = FVector(0.72f);
             RelativeRotation = FRotator(4.0f, -8.0f, 12.0f);
             RelativeLocation = FVector(12.0f, 1.0f, -8.0f);
-            PropColor = FLinearColor(0.48f, 0.30f, 0.14f, 1.0f);
+            PropColor = FLinearColor::White;
         }
     }
 
@@ -801,9 +801,9 @@ void ULLResidentMotionComponent::UpdateHeldToolVisualState()
             break;
         case ELLResidentHeldToolPresentation::SimpleContainer:
             DesiredMesh = SimpleContainerMesh.Get();
-            RelativeScale = FVector(0.09f, 0.09f, 0.12f);
+            RelativeScale = FVector(0.55f);
             RelativeLocation = FVector(5.0f, 0.0f, -3.0f);
-            PropColor = FLinearColor(0.50f, 0.31f, 0.15f, 1.0f);
+            PropColor = FLinearColor::White;
             break;
         case ELLResidentHeldToolPresentation::DiggingStick:
             DesiredMesh = StoneCuttingToolMesh.Get();
