@@ -50,7 +50,11 @@ private:
         float Daylight01,
         float CloudCover01,
         float Visibility01);
-    void ApplyFog(float Daylight01, float CloudCover01, float FogAmount01);
+    void ApplyFog(
+        float Daylight01,
+        float CloudCover01,
+        float Visibility01,
+        float FogAmount01);
     void ApplySurfaceMaterials(float SurfaceWetness01, float Snow01, float Precipitation01, float AirTemperatureC);
     void ApplyWeatherEffects(float Rain01, float Snow01, float Fog01, float Wind01);
     void ApplyPostProcess(float Daylight01, float CloudCover01, float Visibility01, float Precipitation01);
@@ -215,6 +219,11 @@ private:
     float PresentedRain01 = 0.0f;
     float PresentedSnowfall01 = 0.0f;
     float PresentedAirTemperatureC = 20.0f;
+    float PresentedSunElevationDegrees = 0.0f;
+    float PresentedSunAzimuthDegrees = 0.0f;
+    float PresentedSunIntensity01 = 0.0f;
+    float PresentedSkyBrightness01 = 0.0f;
+    float PresentedFogAmount01 = 0.0f;
     bool bPresentedEnvironmentInitialized = false;
 
     bool bFallbackRainActive = false;
