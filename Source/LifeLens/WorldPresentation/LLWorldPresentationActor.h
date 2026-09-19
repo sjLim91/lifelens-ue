@@ -123,12 +123,12 @@ public:
     //                                 distance, canopy last
     //   beyond ActivityRadius         untouched natural density
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.0"))
-    float CoreClearRadiusUU = 260.0f;
+    float CoreClearRadiusUU = 520.0f;
 
     // Matches the observed resident activity range. Core movement is not
     // clamped to it; it only says how far the visual thinning reaches.
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.0"))
-    float ActivityRadiusUU = 1300.0f;
+    float ActivityRadiusUU = 2200.0f;
 
     // Recovery curves across the activity band. Canopy recovers latest because
     // it blocks the most.
@@ -141,28 +141,28 @@ public:
     // A little dressing survives in the living core so the settlement does not
     // read as a cut clearing.
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.0", ClampMax="0.8"))
-    float CoreZoneCanopyKeep = 0.46f;
+    float CoreZoneCanopyKeep = 0.18f;
 
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.0", ClampMax="1.0"))
-    float CoreZoneUndergrowthKeep = 0.68f;
+    float CoreZoneUndergrowthKeep = 0.32f;
 
     // Authoritative resource patches are never hidden; inside the settlement
     // they are only drawn smaller.
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.1", ClampMax="1.0"))
-    float CoreZoneResourceScale = 0.55f;
+    float CoreZoneResourceScale = 0.32f;
 
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.1", ClampMax="1.0"))
-    float ActivityZoneResourceScale = 0.8f;
+    float ActivityZoneResourceScale = 0.62f;
 
     // As civilization expands away from the initial settlement center, each
     // authoritative facility opens a smaller local readability envelope.
     // This prevents later neighborhoods from disappearing inside untouched
     // ambient forest without inventing roads, zoning or simulation clearing.
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.0", ClampMax="1600.0"))
-    float FacilityClearRadiusUU = 240.0f;
+    float FacilityClearRadiusUU = 340.0f;
 
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.0", ClampMax="3000.0"))
-    float FacilityActivityRadiusUU = 720.0f;
+    float FacilityActivityRadiusUU = 900.0f;
 
     // ---- Visual-only far world envelope --------------------------------------
     // The authoritative simulation only materializes nearby chunks. The
