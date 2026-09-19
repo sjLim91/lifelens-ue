@@ -15,6 +15,7 @@ for token in (
     "InitialChunk.VisualSeed",
     "PCG->Seed",
     "GenerateLocal(true)",
+    "if (!bEnableGroundCoverPCG)",
     "#if PLATFORM_ANDROID",
 ):
     assert token in actor, f"missing desktop PCG runtime token: {token}"
@@ -38,5 +39,14 @@ assert pcg is not None and pcg.get("Enabled") is True
 allow = set(pcg.get("PlatformAllowList", []))
 assert {"Win64", "Mac", "Linux"} <= allow
 assert "Android" not in allow
+
+header = read("Source/LifeLens/WorldPresentation/LLPCGGroundCoverPresentationActor.h")
+assert "bEnableGroundCoverPCG = false" in header, (
+    "known-bad weed graph must fail closed until regenerated"
+)
+
+pcg_import = read("Content/Environment/PCG/Import/create_lifelens_groundcover_pcg.py")
+assert "Grass_Common_Tall" in pcg_import
+assert "weed_plant_02" not in pcg_import
 
 print("LifeLens desktop PCG runtime dressing: PASS")
