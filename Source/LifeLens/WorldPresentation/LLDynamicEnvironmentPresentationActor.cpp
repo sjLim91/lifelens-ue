@@ -260,6 +260,13 @@ void ALLDynamicEnvironmentPresentationActor::ConfigureEffectAssets()
 
 void ALLDynamicEnvironmentPresentationActor::ConfigureFallbackPrecipitation()
 {
+    if (!bAllowPrimitivePrecipitationFallback)
+    {
+        if (RainFallback) { RainFallback->SetVisibility(false, true); }
+        if (SnowFallback) { SnowFallback->SetVisibility(false, true); }
+        return;
+    }
+
     if (FallbackPrecipitationMaterial)
     {
         FallbackRainMaterial = UMaterialInstanceDynamic::Create(FallbackPrecipitationMaterial, this);
@@ -705,8 +712,10 @@ void ALLDynamicEnvironmentPresentationActor::ApplyWeatherEffects(
         FMath::Min(EffectActivationThreshold, EffectDeactivationThreshold),
         0.0f,
         EffectActivationThreshold);
-    const bool bNeedsRainFallback = !RainEffect || RainEffect->GetAsset() == nullptr;
-    const bool bNeedsSnowFallback = !SnowEffect || SnowEffect->GetAsset() == nullptr;
+    const bool bNeedsRainFallback = bAllowPrimitivePrecipitationFallback
+        && (!RainEffect || RainEffect->GetAsset() == nullptr);
+    const bool bNeedsSnowFallback = bAllowPrimitivePrecipitationFallback
+        && (!SnowEffect || SnowEffect->GetAsset() == nullptr);
     bFallbackRainActive = bNeedsRainFallback
         && (bFallbackRainActive ? Rain01 >= OffThreshold : Rain01 >= EffectActivationThreshold);
     bFallbackSnowActive = bNeedsSnowFallback
