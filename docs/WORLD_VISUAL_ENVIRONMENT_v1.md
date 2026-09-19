@@ -173,3 +173,14 @@ Project plugins:
 - biome / procedural environment
 
 후속 확장도 Core state를 읽어 표현하며 presentation 자체가 simulation 결과를 결정하지 않는다.
+
+
+### Headless PCG authoring evidence
+
+The project-authored `PCG_LL_GroundCover.uasset` was regenerated successfully in Unreal Engine 5.6 headless CI from `create_lifelens_groundcover_pcg.py`.
+
+- generated graph size: ~48 KiB.
+- source mesh: approved Poly Haven `SM_LL_weed_plant_02`.
+- graph path: `/Game/Environment/PCG/PCG_LL_GroundCover`.
+- authoring run completed after the required Unreal Water plugin collision profile was supplied.
+- runtime use remains decorative-only until the consumer PR attaches the graph to materialized chunks.
