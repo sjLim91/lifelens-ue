@@ -225,6 +225,36 @@ int main()
     // an explicit project and required real delivery/work before operation.
     CHECK(world.facilities.size()>=3);
 
-    std::cout << "Stage C-S1 autonomous settlement recognition passed\n";
+    // C1-E: site selection should form an activity cluster around real existing
+    // facilities instead of always accepting the first seed-rotated empty slot.
+    Simulation layoutSimulation(991731);
+    layoutSimulation.setupNewGame();
+    World& layout=layoutSimulation.world();
+    layout.resourceNodes.clear();
+    layout.storageSites.clear();
+    layout.primitiveSanitationSites.clear();
+    layout.facilities.clear();
+    Character& planner=layout.characters.front();
+    const GridPos layoutCenter=layout.initialStartRegionCenterGrid();
+    ConstructedFacility anchorFacility=makeFacilityConstructionSite(
+        1,FacilityKind::SleepingPlace,
+        {layoutCenter.x+3,layoutCenter.y},planner.id,layout.minute);
+    CHECK(anchorFacility.id!=0);
+    for(auto& requirement:anchorFacility.requirements){
+        requirement.delivered=requirement.required;
+    }
+    anchorFacility.constructionWork=anchorFacility.requiredWork;
+    CHECK(activateConstructedFacility(anchorFacility,0,layout.minute));
+    layout.facilities.push_back(anchorFacility);
+
+    const SettlementFacilitySiteOpportunity clustered=
+        chooseSettlementFacilitySite(
+            layout,planner.id,FacilityKind::Shelter);
+    CHECK(clustered.available);
+    // Immediate overlap is forbidden (<=2), so the best functional cluster
+    // should occupy the nearest legal ring around the sleeping activity anchor.
+    CHECK(manhattan(clustered.pos,anchorFacility.pos)==3);
+
+    std::cout << "Stage C-S1 autonomous settlement recognition + C1-E clustering passed\n";
     return 0;
 }

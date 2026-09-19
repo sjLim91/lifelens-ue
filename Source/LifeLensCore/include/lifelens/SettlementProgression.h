@@ -318,6 +318,71 @@ struct SettlementFacilitySiteOpportunity {
     GridPos pos{};
 };
 
+inline double settlementFunctionalAffinity(
+    FacilityKind planned,
+    FacilityKind existing)
+{
+    if(planned==FacilityKind::SleepingPlace){
+        if(existing==FacilityKind::Shelter) return 1.00;
+        if(existing==FacilityKind::FirePit) return 0.42;
+        if(existing==FacilityKind::PrimitiveStorage) return 0.30;
+        return 0.16;
+    }
+    if(planned==FacilityKind::Shelter){
+        if(existing==FacilityKind::SleepingPlace) return 1.00;
+        if(existing==FacilityKind::PrimitiveStorage) return 0.44;
+        if(existing==FacilityKind::FirePit) return 0.34;
+        return 0.18;
+    }
+    if(planned==FacilityKind::WorkSurface){
+        if(existing==FacilityKind::PrimitiveStorage) return 1.00;
+        if(existing==FacilityKind::FirePit) return 0.72;
+        if(existing==FacilityKind::Furnace) return 0.66;
+        if(existing==FacilityKind::Shelter) return 0.26;
+        return 0.14;
+    }
+    return 0.0;
+}
+
+inline double settlementActivityCenterScore(
+    const World& world,
+    GridPos candidate,
+    FacilityKind planned)
+{
+    double score=0.0;
+    for(const auto& facility:world.facilities){
+        if(!facilityOperationalAndActive(facility)) continue;
+        const int distance=manhattan(candidate,facility.pos);
+        if(distance>12) continue;
+        const double proximity=
+            1.0-static_cast<double>(std::max(0,distance-3))/10.0;
+        score+=settlementFunctionalAffinity(planned,facility.kind)
+            *std::max(0.0,proximity);
+    }
+
+    // Compatibility/early stockpiles may exist before a linked storage facility.
+    for(const auto& storage:world.storageSites){
+        const int distance=manhattan(candidate,storage.pos);
+        if(distance>12) continue;
+        const double proximity=
+            1.0-static_cast<double>(std::max(0,distance-3))/10.0;
+        const double affinity=
+            planned==FacilityKind::WorkSurface ? 0.72 : 0.24;
+        score+=affinity*std::max(0.0,proximity);
+    }
+
+    // The hard block already keeps sanitation out of the immediate living core.
+    // This softer ring discourages dense living/work growth directly beside it.
+    for(const auto& sanitation:world.primitiveSanitationSites){
+        if(!sanitation.active) continue;
+        const int distance=manhattan(candidate,sanitation.pos);
+        if(distance<9){
+            score-=0.10*static_cast<double>(9-distance);
+        }
+    }
+    return score;
+}
+
 inline SettlementFacilitySiteOpportunity chooseSettlementFacilitySite(
     const World& world,
     CharacterId planner,
@@ -344,13 +409,24 @@ inline SettlementFacilitySiteOpportunity chooseSettlementFacilitySite(
         ^ (static_cast<std::uint64_t>(kind)+1ULL)*0x9e3779b97f4a7c15ULL;
     const std::uint64_t mixed=civilizationMix((world.seed ? world.seed : 1)^planner^salt);
     const std::size_t start=static_cast<std::size_t>(mixed%offsets.size());
+
+    bool found=false;
+    double bestScore=-1.0e9;
+    std::size_t bestOrder=offsets.size();
     for(std::size_t i=0;i<offsets.size();++i){
         const GridPos offset=offsets[(start+i)%offsets.size()];
         const GridPos candidate{center.x+offset.x,center.y+offset.y};
         if(settlementFacilitySiteBlocked(world,candidate)) continue;
-        result.available=true;
-        result.pos=candidate;
-        return result;
+
+        const double score=settlementActivityCenterScore(world,candidate,kind);
+        if(!found || score>bestScore+1e-12
+           || (std::abs(score-bestScore)<=1e-12 && i<bestOrder)){
+            found=true;
+            bestScore=score;
+            bestOrder=i;
+            result.available=true;
+            result.pos=candidate;
+        }
     }
     return result;
 }
