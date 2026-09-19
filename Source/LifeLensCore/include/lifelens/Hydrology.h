@@ -167,7 +167,16 @@ inline HydrologyFacts deriveHydrologyFacts(
         + 0.34 * center.waterPotential
         + 0.20 * clampMacro01(downhillDrop * 9.0));
 
-    if(center.biome == MacroBiome::Wetland
+    const MacroSurfaceFacts macroSurface =
+        deriveMacroSurfaceFacts(identity, coord);
+
+    if(macroSurface.surfaceClass == MacroSurfaceClass::Ocean){
+        result.surfaceKind = SurfaceWaterKind::Ocean;
+        result.salinity = WaterSalinity::Salt;
+    }else if(macroSurface.surfaceClass == MacroSurfaceClass::Coast){
+        result.surfaceKind = SurfaceWaterKind::Coast;
+        result.salinity = WaterSalinity::Brackish;
+    }else if(center.biome == MacroBiome::Wetland
        && center.waterPotential >= 0.66
        && center.moisture >= 0.60){
         result.surfaceKind = SurfaceWaterKind::Wetland;
@@ -185,10 +194,9 @@ inline HydrologyFacts deriveHydrologyFacts(
         result.surfaceKind = SurfaceWaterKind::Spring;
     }
 
-    // Coast/Ocean are part of the stable contract now but are intentionally
-    // not generated until the planetary sea-level/surface topology contract
-    // lands. Current macro chunks are a local-surface compatibility projection.
-    result.salinity = WaterSalinity::Fresh;
+    if(macroSurface.surfaceClass == MacroSurfaceClass::Land){
+        result.salinity = WaterSalinity::Fresh;
+    }
 
     switch(result.surfaceKind){
         case SurfaceWaterKind::River:
@@ -226,7 +234,13 @@ inline HydrologyFacts deriveHydrologyFacts(
             result.flowPotential = 0.18 * result.rechargePotential;
             break;
         case SurfaceWaterKind::Coast:
+            result.surfaceAvailability = 1.0;
+            result.flowPotential = 0.16 * result.runoffPotential;
+            break;
         case SurfaceWaterKind::Ocean:
+            result.surfaceAvailability = 1.0;
+            result.flowPotential = 0.06 * result.runoffPotential;
+            break;
         case SurfaceWaterKind::None:
             break;
     }
