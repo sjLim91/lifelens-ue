@@ -157,20 +157,18 @@ float ALLDesktopTerrainPresentationActor::SurfaceZUU(
         RelativeHeight(Terrain.NorthWestElevation01),
         RelativeHeight(Terrain.NorthEastElevation01),
         U);
-    const float Bilinear = FMath::Lerp(South, North, V);
-    const float BilinearCenter = 0.25f * (
-        RelativeHeight(Terrain.SouthWestElevation01)
-        + RelativeHeight(Terrain.SouthEastElevation01)
-        + RelativeHeight(Terrain.NorthWestElevation01)
-        + RelativeHeight(Terrain.NorthEastElevation01));
-    const float CenterDelta =
-        RelativeHeight(Terrain.CenterElevation01) - BilinearCenter;
-    const float CenterWeight =
-        16.0f * U * (1.0f - U) * V * (1.0f - V);
-    const float SmoothHeight = Bilinear + CenterDelta * CenterWeight;
+    const float CornerSurface = FMath::Lerp(South, North, V);
+    const float CenterSurface = RelativeHeight(Terrain.CenterElevation01);
 
-    return SurfaceLiftUU
-        + SmoothHeight * ReliefBlend(LocationUU, FacilityCentersUU);
+    // Keep the desktop procedural surface on the same height contract used by
+    // WorldPresentation when it places trees, rocks and resources. The old
+    // center-weighted surface could diverge from dressing Z and leave objects
+    // visibly floating or buried.
+    const float SharedSurface =
+        FMath::Lerp(CenterSurface, CornerSurface, 0.72f)
+        * ReliefBlend(LocationUU, FacilityCentersUU);
+
+    return SurfaceLiftUU + SharedSurface;
 }
 
 UMaterialInterface* ALLDesktopTerrainPresentationActor::MaterialForChunk(
