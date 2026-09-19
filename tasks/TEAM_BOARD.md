@@ -64,7 +64,21 @@ A new blocker is triaged before unrelated follow-up work. This does **not** mean
 
 ## Current Assist Locks
 
-**None.**
+### ASSIST_LOCK-GFX-SKY-CONSUMER-1 — Jjun scoped integration assist
+
+- explicit user direction: continue all safely parallelizable cinematic graphics integration.
+- helper: Jjun.
+- owner/reviewer: Dagyeom.
+- branch: `integration/sky-atmosphere-consumer-v1`.
+- allowed files:
+  - `Source/LifeLens/WorldPresentation/LLDynamicEnvironmentPresentationActor.cpp`
+  - `Source/LifeLens/WorldPresentation/LLDynamicEnvironmentPresentationActor.h`
+  - directly-related validation only when needed.
+- scope:
+  - consume `FLLCoreSkyPresentationObservation` from provider PR #245.
+  - remove duplicate Presentation sun-path / fog-authority calculations where the provider now supplies rendering hints.
+  - preserve weather VFX/material/post-process behavior and never feed rendering state back into Core.
+- release: after this stacked integration PR is merged/closed and TEAM_BOARD is reconciled.
 
 ## Open Integration Requests
 
