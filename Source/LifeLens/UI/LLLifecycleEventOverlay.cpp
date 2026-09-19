@@ -804,11 +804,11 @@ void ULLLifecycleEventOverlay::PushNotice(const FString& Text, FGuid SubjectResi
         int32 LowestPriority = LifecycleNoticePriority(Notices[RemoveIndex].Text);
         for (int32 Index = Notices.Num() - 2; Index >= 0; --Index)
         {
-            const int32 Priority = LifecycleNoticePriority(Notices[Index].Text);
-            if (Priority < LowestPriority
-                || (Priority == LowestPriority && Index > RemoveIndex))
+            const int32 NoticePriority = LifecycleNoticePriority(Notices[Index].Text);
+            if (NoticePriority < LowestPriority
+                || (NoticePriority == LowestPriority && Index > RemoveIndex))
             {
-                LowestPriority = Priority;
+                LowestPriority = NoticePriority;
                 RemoveIndex = Index;
             }
         }
@@ -876,9 +876,9 @@ void ULLLifecycleEventOverlay::RefreshNoticeWidgets()
         NoticeBorder->SetVisibility(ESlateVisibility::HitTestInvisible);
         NoticeHitBorders.Add(NoticeBorder);
 
-        if (UVerticalBoxSlot* Slot = EventList->AddChildToVerticalBox(NoticeBorder))
+        if (UVerticalBoxSlot* EventRowSlot = EventList->AddChildToVerticalBox(NoticeBorder))
         {
-            Slot->SetPadding(FMargin(0.0f, 2.0f));
+            EventRowSlot->SetPadding(FMargin(0.0f, 2.0f));
         }
     }
 
@@ -924,9 +924,9 @@ void ULLLifecycleEventOverlay::RefreshNoticeWidgets()
             RowBorder->SetVisibility(ESlateVisibility::HitTestInvisible);
             RecentNoticeHitBorders.Add(RowBorder);
 
-            if (UVerticalBoxSlot* Slot = RecentEventList->AddChildToVerticalBox(RowBorder))
+            if (UVerticalBoxSlot* RecentEventRowSlot = RecentEventList->AddChildToVerticalBox(RowBorder))
             {
-                Slot->SetPadding(FMargin(0.0f, 1.0f));
+                RecentEventRowSlot->SetPadding(FMargin(0.0f, 1.0f));
             }
         }
     }
