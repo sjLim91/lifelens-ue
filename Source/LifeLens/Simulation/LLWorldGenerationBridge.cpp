@@ -201,18 +201,16 @@ void FillTerrainPresentationObservation(
     Out.SouthEastElevation01 = TerrainCornerElevation(
         Identity, Center, East, South, SouthEast);
 
-    const float Minimum = FMath::Min5(
+    const float Minimum = FMath::Min(
         Out.CenterElevation01,
-        Out.NorthWestElevation01,
-        Out.NorthEastElevation01,
-        Out.SouthWestElevation01,
-        Out.SouthEastElevation01);
-    const float Maximum = FMath::Max5(
+        FMath::Min(
+            FMath::Min(Out.NorthWestElevation01, Out.NorthEastElevation01),
+            FMath::Min(Out.SouthWestElevation01, Out.SouthEastElevation01)));
+    const float Maximum = FMath::Max(
         Out.CenterElevation01,
-        Out.NorthWestElevation01,
-        Out.NorthEastElevation01,
-        Out.SouthWestElevation01,
-        Out.SouthEastElevation01);
+        FMath::Max(
+            FMath::Max(Out.NorthWestElevation01, Out.NorthEastElevation01),
+            FMath::Max(Out.SouthWestElevation01, Out.SouthEastElevation01)));
     Out.Relief01 = FMath::Clamp(Maximum - Minimum, 0.0f, 1.0f);
 }
 
