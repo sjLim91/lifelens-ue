@@ -43,6 +43,11 @@ struct HydrologyFacts {
 
     bool hasDownstream = false;
     ChunkCoord downstream{};
+
+    // Coastline orientation hint derived from the same authoritative macro
+    // topology. Presentation may use it to clip a local coastal water surface.
+    bool hasMarineNeighbour = false;
+    ChunkCoord marineNeighbour{};
 };
 
 inline const char* surfaceWaterKindName(SurfaceWaterKind kind)
@@ -176,6 +181,8 @@ inline HydrologyFacts deriveHydrologyFacts(
     }else if(macroSurface.surfaceClass == MacroSurfaceClass::Coast){
         result.surfaceKind = SurfaceWaterKind::Coast;
         result.salinity = WaterSalinity::Brackish;
+        result.hasMarineNeighbour = macroSurface.hasMarineNeighbour;
+        result.marineNeighbour = macroSurface.marineNeighbour;
     }else if(center.biome == MacroBiome::Wetland
        && center.waterPotential >= 0.66
        && center.moisture >= 0.60){
@@ -289,6 +296,16 @@ inline bool validHydrologyFacts(const HydrologyFacts& facts)
 
     if(facts.hasDownstream
        && !isCardinalNeighbour(facts.coord, facts.downstream)){
+        return false;
+    }
+
+    if(facts.hasMarineNeighbour
+       && !isCardinalNeighbour(facts.coord, facts.marineNeighbour)){
+        return false;
+    }
+
+    if(facts.surfaceKind == SurfaceWaterKind::Coast
+       && !facts.hasMarineNeighbour){
         return false;
     }
 
