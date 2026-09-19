@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cstddef>
 #include <queue>
+#include <functional>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -34,6 +36,7 @@ struct GenerationContinuityReport {
     bool adultShortage=false;
     bool reproductiveBaseLow=false;
     bool nextGenerationAbsent=false;
+    bool lineageCycleDetected=false;
 
     bool extinct() const { return status==ContinuityStatus::Extinct; }
     bool atRisk() const { return status==ContinuityStatus::AtRisk || status==ContinuityStatus::Extinct; }
@@ -65,6 +68,70 @@ inline int ancestorDepth(const GenealogyBook& genealogy,CharacterId id,int maxDe
     return deepest;
 }
 
+struct GenerationDepthIndex {
+    std::unordered_map<CharacterId,int> depthByCharacter;
+    bool cycleDetected=false;
+    bool safetyLimitReached=false;
+};
+
+inline GenerationDepthIndex buildGenerationDepthIndex(
+    const GenealogyBook& genealogy,
+    int safetyDepth=4096)
+{
+    GenerationDepthIndex result;
+    const int safeLimit=std::max(1,safetyDepth);
+
+    std::unordered_map<CharacterId,const GenealogyNode*> nodes;
+    nodes.reserve(genealogy.all().size());
+    for(const GenealogyNode& node:genealogy.all()){
+        if(node.characterId!=0) nodes[node.characterId]=&node;
+    }
+
+    // 0 = unseen, 1 = visiting, 2 = complete.
+    std::unordered_map<CharacterId,std::uint8_t> state;
+    state.reserve(nodes.size());
+
+    std::function<int(CharacterId,int)> visit=
+        [&](CharacterId id,int recursionDepth)->int {
+            if(id==0) return 0;
+            if(recursionDepth>safeLimit){
+                result.safetyLimitReached=true;
+                return safeLimit;
+            }
+
+            const auto memo=result.depthByCharacter.find(id);
+            const auto stateIt=state.find(id);
+            if(stateIt!=state.end() && stateIt->second==2
+               && memo!=result.depthByCharacter.end()){
+                return memo->second;
+            }
+            if(stateIt!=state.end() && stateIt->second==1){
+                result.cycleDetected=true;
+                return 0;
+            }
+
+            state[id]=1;
+            int depth=0;
+            const auto nodeIt=nodes.find(id);
+            if(nodeIt!=nodes.end()){
+                for(CharacterId parent:nodeIt->second->parents){
+                    if(parent==0) continue;
+                    depth=std::max(
+                        depth,
+                        1+visit(parent,recursionDepth+1));
+                }
+            }
+            state[id]=2;
+            result.depthByCharacter[id]=depth;
+            return depth;
+        };
+
+    for(const auto& entry:nodes){
+        visit(entry.first,0);
+    }
+    return result;
+}
+
 inline std::size_t countActivePregnancies(const PregnancyBook& pregnancies)
 {
     std::size_t count=0;
@@ -81,6 +148,10 @@ inline GenerationContinuityReport assessGenerationContinuity(
     GenerationContinuityReport report;
     report.population=summarizePopulation(residents);
     report.activePregnancies=countActivePregnancies(pregnancies);
+    const GenerationDepthIndex generationDepths=
+        buildGenerationDepthIndex(genealogy);
+    report.lineageCycleDetected=generationDepths.cycleDetected
+        || generationDepths.safetyLimitReached;
 
     for(const Character* resident:residents){
         if(resident==nullptr || !resident->alive) continue;
@@ -92,8 +163,13 @@ inline GenerationContinuityReport assessGenerationContinuity(
 
         const GenealogyNode* node=genealogy.find(resident->id);
         if(node!=nullptr && !node->parents.empty()) ++report.livingWithParents;
+        const auto depthIt=
+            generationDepths.depthByCharacter.find(resident->id);
+        const int depth=depthIt!=generationDepths.depthByCharacter.end()
+            ? depthIt->second
+            : 0;
         report.maxGenerationDepth=std::max(
-            report.maxGenerationDepth,ancestorDepth(genealogy,resident->id));
+            report.maxGenerationDepth,depth);
     }
 
     if(report.population.living==0){
