@@ -2,6 +2,7 @@
 
 #include "lifelens/Civilization.h"
 #include "lifelens/Hydrology.h"
+#include "lifelens/MacroWorldGenesis.h"
 #include "lifelens/NaturalPhysicalObstacle.h"
 #include "lifelens/NaturalWorldChunk.h"
 #include "lifelens/Simulation.h"
@@ -148,6 +149,71 @@ bool FillSurfaceWaterPresentationObservation(
     }
 
     return true;
+}
+
+
+float TerrainCornerElevation(
+    const lifelens::WorldGenesisIdentity& Identity,
+    lifelens::ChunkCoord A,
+    lifelens::ChunkCoord B,
+    lifelens::ChunkCoord C,
+    lifelens::ChunkCoord D)
+{
+    return static_cast<float>((
+        lifelens::deriveMacroRegionFacts(Identity, A).elevation
+        + lifelens::deriveMacroRegionFacts(Identity, B).elevation
+        + lifelens::deriveMacroRegionFacts(Identity, C).elevation
+        + lifelens::deriveMacroRegionFacts(Identity, D).elevation) * 0.25);
+}
+
+void FillTerrainPresentationObservation(
+    const lifelens::WorldGenesisIdentity& Identity,
+    const lifelens::GeneratedNaturalChunk& Chunk,
+    FLLCoreTerrainPresentationObservation& Out)
+{
+    Out = FLLCoreTerrainPresentationObservation{};
+
+    const lifelens::ChunkCoord Center = Chunk.coord;
+    const lifelens::ChunkCoord West{Center.x - 1, Center.y};
+    const lifelens::ChunkCoord East{Center.x + 1, Center.y};
+    const lifelens::ChunkCoord North{Center.x, Center.y + 1};
+    const lifelens::ChunkCoord South{Center.x, Center.y - 1};
+    const lifelens::ChunkCoord NorthWest{Center.x - 1, Center.y + 1};
+    const lifelens::ChunkCoord NorthEast{Center.x + 1, Center.y + 1};
+    const lifelens::ChunkCoord SouthWest{Center.x - 1, Center.y - 1};
+    const lifelens::ChunkCoord SouthEast{Center.x + 1, Center.y - 1};
+
+    const lifelens::GridPos Origin = lifelens::chunkOriginGrid(Center);
+    const int32 HalfChunk = lifelens::WorldChunkSpanGridCells / 2;
+
+    Out.bAvailable = true;
+    Out.ChunkX = Center.x;
+    Out.ChunkY = Center.y;
+    Out.CenterGridX = Origin.x + HalfChunk;
+    Out.CenterGridY = Origin.y + HalfChunk;
+    Out.CenterElevation01 = static_cast<float>(Chunk.elevation);
+    Out.NorthWestElevation01 = TerrainCornerElevation(
+        Identity, Center, West, North, NorthWest);
+    Out.NorthEastElevation01 = TerrainCornerElevation(
+        Identity, Center, East, North, NorthEast);
+    Out.SouthWestElevation01 = TerrainCornerElevation(
+        Identity, Center, West, South, SouthWest);
+    Out.SouthEastElevation01 = TerrainCornerElevation(
+        Identity, Center, East, South, SouthEast);
+
+    const float Minimum = FMath::Min5(
+        Out.CenterElevation01,
+        Out.NorthWestElevation01,
+        Out.NorthEastElevation01,
+        Out.SouthWestElevation01,
+        Out.SouthEastElevation01);
+    const float Maximum = FMath::Max5(
+        Out.CenterElevation01,
+        Out.NorthWestElevation01,
+        Out.NorthEastElevation01,
+        Out.SouthWestElevation01,
+        Out.SouthEastElevation01);
+    Out.Relief01 = FMath::Clamp(Maximum - Minimum, 0.0f, 1.0f);
 }
 
 void FillNaturalChunkObservation(
@@ -297,6 +363,56 @@ bool ULLCoreBridgeSubsystem::GetNaturalChunkObservation(
     }
 
     FillNaturalChunkObservation(World, *Chunk, OutObservation);
+    return true;
+}
+
+
+TArray<FLLCoreTerrainPresentationObservation>
+ULLCoreBridgeSubsystem::GetMaterializedTerrainPresentationObservations() const
+{
+    TArray<FLLCoreTerrainPresentationObservation> Result;
+    if (!CoreSimulation)
+    {
+        return Result;
+    }
+
+    const lifelens::World& World = CoreSimulation->world();
+    const lifelens::WorldGenesisIdentity Identity = World.genesisIdentity();
+    Result.Reserve(static_cast<int32>(FMath::Min<std::size_t>(
+        World.generatedNaturalChunks.size(),
+        static_cast<std::size_t>(MAX_int32))));
+
+    for (const lifelens::GeneratedNaturalChunk& Chunk : World.generatedNaturalChunks)
+    {
+        FLLCoreTerrainPresentationObservation Observation;
+        FillTerrainPresentationObservation(Identity, Chunk, Observation);
+        Result.Add(MoveTemp(Observation));
+    }
+    return Result;
+}
+
+bool ULLCoreBridgeSubsystem::GetTerrainPresentationObservation(
+    int32 ChunkX,
+    int32 ChunkY,
+    FLLCoreTerrainPresentationObservation& OutObservation) const
+{
+    OutObservation = FLLCoreTerrainPresentationObservation{};
+    if (!CoreSimulation)
+    {
+        return false;
+    }
+
+    const lifelens::World& World = CoreSimulation->world();
+    const lifelens::ChunkCoord Coord{ChunkX, ChunkY};
+    const lifelens::GeneratedNaturalChunk* Chunk =
+        World.findGeneratedNaturalChunk(Coord);
+    if (!Chunk)
+    {
+        return false;
+    }
+
+    FillTerrainPresentationObservation(
+        World.genesisIdentity(), *Chunk, OutObservation);
     return true;
 }
 
