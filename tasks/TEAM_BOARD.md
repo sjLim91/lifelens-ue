@@ -113,6 +113,21 @@ A new blocker is triaged before unrelated follow-up work. This does **not** mean
 - dependency: wooden bowl asset PR #268 must merge before this consumer.
 - release after merge/close and board reconciliation.
 
+### ASSIST_LOCK-GFX-WATER-ALIGN-3 — Jjun scoped Water terrain alignment assist
+
+- helper: Jjun.
+- owner/reviewer: Dagyeom.
+- branch: `integration/water-terrain-alignment-v3`.
+- supersedes: conflicted #272 / v2 after #271 merged.
+- cross-owner files:
+  - `Source/LifeLens/WorldPresentation/LLWaterPresentationActor.cpp`
+  - `Source/LifeLens/WorldPresentation/LLWaterPresentationActor.h`.
+- scope:
+  - project authoritative Water surfaces onto the same Core terrain relief used by WorldPresentation.
+  - preserve the flat initial settlement baseline.
+  - no hydrology/gameplay authority changes.
+- release after merge/close and board reconciliation.
+
 ## Open Integration Requests
 
 ### IR-GFX-CINEMATIC-1 — Desktop cinematic presentation adoption (Windows + macOS)
