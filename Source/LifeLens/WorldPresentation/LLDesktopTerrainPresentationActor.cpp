@@ -2,6 +2,7 @@
 
 #if !PLATFORM_ANDROID
 
+#include "Engine/GameInstance.h"
 #include "KismetProceduralMeshLibrary.h"
 #include "Materials/MaterialInterface.h"
 #include "ProceduralMeshComponent.h"
