@@ -2,6 +2,8 @@
 
 Status: canonical rendering companion for Master Spec §6 / §20.
 
+Desktop capability/QA matrix: `docs/DESKTOP_PLATFORM_MATRIX_v1.md`.
+
 ## 1. Product goal
 
 LifeLens keeps one authoritative simulation and one world identity, but does **not** force the desktop visual ceiling down to the Android renderer budget.
