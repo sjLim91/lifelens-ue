@@ -369,3 +369,15 @@ C1 세부 순서:
 - macOS broad baseline은 Lumen software GI/reflections + TSR + Mesh Distance Fields이며 Nanite/VSM/Hardware RT는 모든 Mac의 필수 조건으로 두지 않는다.
 - 공통 desktop presentation은 기능상 이유가 없으면 `PLATFORM_WINDOWS || PLATFORM_MAC`로 함께 진행한다.
 - Windows/macOS 각각 native runtime visual QA를 통과해야 desktop graphics 완료로 본다.
+
+
+## D-020 — 플랫폼별 최종 패키지는 필요한 Presentation payload만 포함한다
+
+**결정**
+- LifeLens는 한 저장소와 한 Core/World/Save truth를 유지하지만 Android APK와 Desktop 패키지는 서로의 전용 Presentation payload를 포함하지 않는다.
+- 신규 플랫폼 전용 Content는 `/Game/Desktop/**`, `/Game/Mobile/**`, 공용은 `/Game/Shared/**` 경계를 우선 사용한다.
+- 기존 binary asset은 대량 이동 대신 platform cook exclusion + compile-time asset reference 분리를 우선한다.
+- Android는 desktop photoreal nature 및 desktop PCG payload를 cook하지 않는다.
+- Windows/macOS는 future Mobile-only content를 cook하지 않는다.
+- 작은 공용 facility hero asset은 mobile replacement 전까지 Shared exception으로 유지할 수 있다.
+- Canonical policy: `docs/PLATFORM_CONTENT_COOK_POLICY_v1.md`.
