@@ -16,6 +16,7 @@ class USceneComponent;
 class USkyAtmosphereComponent;
 class USkyLightComponent;
 class UStaticMesh;
+struct FLLCoreSkyPresentationObservation;
 
 /**
  * Read-only presentation of authoritative Core time/weather.
@@ -44,8 +45,12 @@ private:
     void UpdateEffectAnchor();
     void UpdateFallbackPrecipitation(float DeltaSeconds);
     void RefreshFromCore(bool bForce);
-    void ApplyLighting(float Daylight01, float CloudCover01, float Visibility01, int32 MinuteOfDay, float AnnualPhase);
-    void ApplyFog(float Daylight01, float CloudCover01, float Visibility01, float Humidity01, float Precipitation01);
+    void ApplyLighting(
+        const FLLCoreSkyPresentationObservation& Sky,
+        float Daylight01,
+        float CloudCover01,
+        float Visibility01);
+    void ApplyFog(float Daylight01, float CloudCover01, float FogAmount01);
     void ApplySurfaceMaterials(float SurfaceWetness01, float Snow01, float Precipitation01, float AirTemperatureC);
     void ApplyWeatherEffects(float Rain01, float Snow01, float Fog01, float Wind01);
     void ApplyPostProcess(float Daylight01, float CloudCover01, float Visibility01, float Precipitation01);
@@ -140,15 +145,6 @@ private:
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Lighting", meta=(ClampMin="0.0"))
     float NightSkyIntensity = 0.12f;
 
-    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Lighting", meta=(ClampMin="0.0", ClampMax="1.0"))
-    float MaximumCloudLightReduction = 0.55f;
-
-    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Lighting", meta=(ClampMin="-360.0", ClampMax="360.0"))
-    float SunAzimuthDegrees = 125.0f;
-
-    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Lighting", meta=(ClampMin="0.0", ClampMax="45.0"))
-    float SeasonalAzimuthSwingDegrees = 10.0f;
-
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Fog", meta=(ClampMin="0.0", ClampMax="0.2"))
     float ClearFogDensity = 0.004f;
 
@@ -162,12 +158,6 @@ private:
 
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Fog", meta=(ClampMin="0.0", ClampMax="1.0"))
     float HorizonFogMaxOpacity = 0.78f;
-
-    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Fog", meta=(ClampMin="0.0", ClampMax="1.0"))
-    float HumidityFogWeight = 0.35f;
-
-    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Fog", meta=(ClampMin="0.0", ClampMax="1.0"))
-    float PrecipitationFogWeight = 0.40f;
 
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|PostProcess", meta=(ClampMin="-3.0", ClampMax="3.0"))
     float DayExposureBias = 0.0f;
