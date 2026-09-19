@@ -967,3 +967,26 @@
   - 말풍선(#126)과 사회 사건 패널 가독성도 양호
 - 알려진 한계 (신규 결함 아님): 시야 원뿔은 초기 카메라 자세 고정이므로 회전·패닝하면 효과가 사라진다. IR-E-1에 `MITIGATED`로 이미 기록되어 있다.
 - 결론: #100 계열 작업은 종결한다. 다음은 Dagyeom lane 1번 Character Context Motion v2.
+
+### 2026-09-19 — Cinematic / photoreal graphics foundation checkpoint
+
+- 작성자: 쭌 측 AI
+- 기준 main: `baa986b08d504765d8baa05ee8886b415b1eacd4`
+- 완료/병합:
+  - #238 Poly Haven photoreal nature pipeline v2.
+  - #239 Windows cinematic renderer tier v1.
+  - #240 Unreal-native PCG/Water environment stack v1.
+  - #241 photoreal primitive-facility asset wave v2.
+  - #242 Hydrology -> Unreal Water presentation read contract.
+  - #243 deterministic PCG presentation seeds.
+- 검증:
+  - 각 기능 PR은 merge 전 required Preflight/Unreal compile 또는 headless import gate를 통과한 것만 병합.
+  - 실제 PC/Android 런타임 시각 품질은 아직 별도 QA 대상이며 compile 성공과 동일시하지 않는다.
+- 진행 중:
+  - #244 imported photoreal prop + deterministic seed WorldPresentation consumer.
+  - #245 Core time/weather -> SkyAtmosphere rendering hint provider.
+  - renderer runtime diagnostics / seam-compatible terrain provider를 독립 병렬 라인으로 시작.
+- 상대가 알아야 할 점:
+  - Dagyeom presentation ownership은 유지한다. #244는 scoped assist + review 요청 방식.
+  - Core/World remains authority. PCG/Water/SkyAtmosphere는 presentation consumer다.
+  - Android Gate B는 사용자 지시대로 계속 PAUSED.
