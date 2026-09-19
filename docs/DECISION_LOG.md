@@ -357,3 +357,25 @@ C1 세부 순서:
 **Canonical presentation doc**
 - `docs/WORLD_VISUAL_ENVIRONMENT_v1.md`
 - `docs/CINEMATIC_RENDERING_STRATEGY_v1.md`
+
+
+## D-019 — PC 버전은 Windows와 macOS를 함께 진행한다
+
+**결정**
+- LifeLens의 PC 제품 타깃은 Windows 고정이 아니라 **Windows + macOS**다.
+- Android와 PC를 별도 게임으로 만들지 않는 기존 원칙과 동일하게, Windows와 macOS도 같은 Core/World/Save truth와 같은 PC 기능 로드맵을 공유한다.
+- 플랫폼별 renderer capability 차이 때문에 설정값은 달라질 수 있지만, 기능 진행/문서/QA에서 macOS를 후순위 임시 플랫폼으로 취급하지 않는다.
+- Windows는 DX12 + SM6 + Lumen + VSM + TSR + Nanite baseline을 유지한다.
+- macOS broad baseline은 UE 5.6의 지원 범위를 기준으로 Lumen software GI/reflections + TSR + Mesh Distance Fields를 사용한다.
+- UE 5.6에서 Nanite/VSM은 Apple Silicon M2+ Beta이므로 모든 Mac의 필수 baseline으로 강제하지 않는다. 실제 M2+ 장비 profiling 후 선택형 Mac High tier로 확장한다.
+- Desktop presentation code는 기능상 이유가 없으면 `PLATFORM_WINDOWS` 전용으로 작성하지 않고 Windows/macOS를 함께 고려한다.
+
+**구현 기준**
+- `Config/Windows/WindowsEngine.ini`
+- `Config/Mac/MacEngine.ini`
+- `Config/DefaultDeviceProfiles.ini`
+- `docs/CINEMATIC_RENDERING_STRATEGY_v1.md`
+
+**QA**
+- compile green만으로 PC 그래픽 완료로 간주하지 않는다.
+- Windows와 Mac 각각에서 runtime renderer diagnostics + 실제 화면 QA를 수행한다.
