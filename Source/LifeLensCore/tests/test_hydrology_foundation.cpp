@@ -20,7 +20,9 @@ bool sameHydrology(const HydrologyFacts& a, const HydrologyFacts& b)
         && a.rechargePotential == b.rechargePotential
         && a.runoffPotential == b.runoffPotential
         && a.hasDownstream == b.hasDownstream
-        && a.downstream == b.downstream;
+        && a.downstream == b.downstream
+        && a.hasMarineNeighbour == b.hasMarineNeighbour
+        && a.marineNeighbour == b.marineNeighbour;
 }
 
 } // namespace
@@ -67,6 +69,8 @@ int main()
             if(a.surfaceKind == SurfaceWaterKind::Coast){
                 ++coastCount;
                 assert(a.salinity == WaterSalinity::Brackish);
+                assert(a.hasMarineNeighbour);
+                assert(isCardinalNeighbour(a.coord, a.marineNeighbour));
                 assert(!isFreshSurfaceWater(a));
             }
             if(a.surfaceKind == SurfaceWaterKind::Ocean){
