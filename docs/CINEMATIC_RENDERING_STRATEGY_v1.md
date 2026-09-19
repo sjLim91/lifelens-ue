@@ -148,3 +148,13 @@ Android acceptance:
 - RTX-class hardware is not a mandatory baseline requirement.
 - visual quality never becomes simulation authority.
 - Android-first delivery does not mean PC graphics are permanently capped at mobile quality.
+
+
+## Platform package payload boundary
+
+The source repository is shared, but final platform packages carry only the presentation payload they need.
+
+Canonical packaging/content boundary:
+- `docs/PLATFORM_CONTENT_COOK_POLICY_v1.md`.
+
+In particular, Android must not inherit desktop-only photoreal nature or desktop-authored PCG dependencies merely because those assets exist in the repository. Windows/macOS likewise exclude future mobile-only content.
