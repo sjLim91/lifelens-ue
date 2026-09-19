@@ -626,4 +626,7 @@ for token in (
     assert token in dynamic_environment_presentation, f'Missing authoritative sky consumer: {token}'
 assert 'SolarElevationDegrees =' not in dynamic_environment_presentation, 'Presentation must not reconstruct a second solar elevation path'
 
+default_engine = (root / 'Config/DefaultEngine.ini').read_text(encoding='utf-8')
+assert 'Name="WaterBodyCollision"' in default_engine, 'Unreal Water plugin requires WaterBodyCollision profile during editor/runtime load'
+
 print('LifeLens autonomous observer structural validation: PASS')
