@@ -133,6 +133,7 @@ A new blocker is triaged before unrelated follow-up work. This does **not** mean
 - helper: Jjun.
 - owner/reviewer: Dagyeom.
 - branch: `integration/desktop-smooth-terrain-v2`.
+- integration status: retargeted to `main` to validate the full #276 Water + smooth-terrain stack; merge #276 first.
 - supersedes: #274 / v1 after Water was reconstructed as #276.
 - cross-owner files:
   - `Source/LifeLens/WorldPresentation/LLDesktopTerrainPresentationActor.cpp`
