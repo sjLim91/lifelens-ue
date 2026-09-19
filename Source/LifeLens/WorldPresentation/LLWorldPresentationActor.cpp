@@ -216,7 +216,7 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
     }
 
     UE_LOG(LogTemp, Log,
-        TEXT("LLWorldPresentation approved facility art: firepit=%d basket=%d workTool=%d"),
+        TEXT("LLWorldPresentation approved facility art: firepit=%d basket=%d workTool=%d deterministicSeeds=1"),
         PhotorealFirePitInstances ? 1 : 0,
         PhotorealStorageBasketInstances ? 1 : 0,
         PhotorealWorkToolInstances ? 1 : 0);
