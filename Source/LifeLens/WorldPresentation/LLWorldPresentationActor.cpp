@@ -1089,7 +1089,18 @@ void ALLWorldPresentationActor::BuildGround(const FLLCoreWorldGenerationObservat
             * FMath::Max(16.0f, FarGroundMinSpanChunks));
 
     const float Thickness = 20.0f;
-    Ground->SetRelativeLocation(FVector(0.0f, 0.0f, -Thickness * 0.5f));
+#if PLATFORM_ANDROID
+    constexpr float LocalGroundUnderlayDropUU = 0.0f;
+#else
+    // Desktop local detail is owned by LLDesktopTerrainPresentationActor.
+    // Keep this continuity underlay a few centimetres below it so it cannot
+    // z-fight or poke through the smooth surface during camera movement.
+    constexpr float LocalGroundUnderlayDropUU = 3.0f;
+#endif
+    Ground->SetRelativeLocation(FVector(
+        0.0f,
+        0.0f,
+        -Thickness * 0.5f - LocalGroundUnderlayDropUU));
     Ground->SetRelativeScale3D(FVector(
         ActiveSpanUU / LLWorldSpatialContract::EngineCubeSideUU,
         ActiveSpanUU / LLWorldSpatialContract::EngineCubeSideUU,
@@ -1129,6 +1140,13 @@ void ALLWorldPresentationActor::BuildChunkGround(
     const FLLCoreNaturalChunkObservation& Chunk,
     const FLLCoreTerrainPresentationObservation& Terrain)
 {
+#if !PLATFORM_ANDROID
+    // Desktop has a continuous procedural terrain actor. The legacy planar
+    // chunk cubes used to coexist only ~0.65 UU below that surface, so their
+    // approximation could poke through and recreate rectangular/grey seams.
+    // Keep them strictly mobile-only.
+    return;
+#else
     if (!Chunk.bMaterialized || !GroundMesh)
     {
         return;
@@ -1178,6 +1196,7 @@ void ALLWorldPresentationActor::BuildChunkGround(
             0.0f,
             TerrainZ - TileThicknessUU * 0.5f + SurfaceLiftUU),
         FVector(SpanScale, SpanScale, HeightScale)));
+#endif
 }
 
 void ALLWorldPresentationActor::BuildFarEnvironment(
