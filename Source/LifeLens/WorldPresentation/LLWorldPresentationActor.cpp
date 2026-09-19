@@ -53,6 +53,44 @@ namespace
         Hash = MixHash(Hash, static_cast<uint32>((Word >> 32) & 0xFFFFFFFFu));
         return Hash != 0 ? Hash : 0x4C4C5043u; // LLPC
     }
+
+    uint32 NaturalChunkPresentationSignature(
+        const TArray<FLLCoreNaturalChunkObservation>& Chunks)
+    {
+        uint32 Hash = 0x4E415431u; // NAT1
+        Hash = MixHash(Hash, static_cast<uint32>(Chunks.Num()));
+        for (const FLLCoreNaturalChunkObservation& Chunk : Chunks)
+        {
+            Hash = MixHash(Hash, static_cast<uint32>(Chunk.ChunkX));
+            Hash = MixHash(Hash, static_cast<uint32>(Chunk.ChunkY));
+
+            const uint64 VisualSeed = static_cast<uint64>(Chunk.VisualSeed);
+            Hash = MixHash(Hash, static_cast<uint32>(VisualSeed & 0xFFFFFFFFu));
+            Hash = MixHash(Hash, static_cast<uint32>((VisualSeed >> 32) & 0xFFFFFFFFu));
+            Hash = MixHash(Hash, GetTypeHash(Chunk.Biome));
+            Hash = MixHash(Hash, GetTypeHash(Chunk.Surface));
+            Hash = MixHash(
+                Hash,
+                static_cast<uint32>(FMath::RoundToInt(Chunk.Elevation * 100000.0f)));
+            Hash = MixHash(
+                Hash,
+                static_cast<uint32>(FMath::RoundToInt(Chunk.Moisture * 100000.0f)));
+
+            Hash = MixHash(Hash, static_cast<uint32>(Chunk.ResourcePatches.Num()));
+            for (const FLLCoreNaturalResourcePatchObservation& Patch : Chunk.ResourcePatches)
+            {
+                const uint64 ResourceId = static_cast<uint64>(Patch.ResourceNodeId);
+                Hash = MixHash(Hash, static_cast<uint32>(ResourceId & 0xFFFFFFFFu));
+                Hash = MixHash(Hash, static_cast<uint32>((ResourceId >> 32) & 0xFFFFFFFFu));
+                Hash = MixHash(Hash, GetTypeHash(Patch.Material));
+                Hash = MixHash(Hash, static_cast<uint32>(Patch.GridX));
+                Hash = MixHash(Hash, static_cast<uint32>(Patch.GridY));
+                Hash = MixHash(Hash, static_cast<uint32>(FMath::Max(0, Patch.CurrentQuantity)));
+                Hash = MixHash(Hash, static_cast<uint32>(FMath::Max(0, Patch.MaxQuantity)));
+            }
+        }
+        return Hash;
+    }
 }
 
 ALLWorldPresentationActor::ALLWorldPresentationActor()
@@ -1072,15 +1110,36 @@ UMaterialInterface* ALLWorldPresentationActor::GroundMaterialForChunk(const FLLC
     return GroundDry.Get();
 }
 
-void ALLWorldPresentationActor::BuildGround(const FLLCoreWorldGenerationObservation& World)
+void ALLWorldPresentationActor::BuildGround(
+    const FLLCoreWorldGenerationObservation& World,
+    const TArray<FLLCoreNaturalChunkObservation>& MaterializedChunks)
 {
     if (!Ground || !GroundMesh) { return; }
 
+    int32 MaxChunkRadius = 0;
+    for (const FLLCoreNaturalChunkObservation& Chunk : MaterializedChunks)
+    {
+        if (!Chunk.bMaterialized)
+        {
+            continue;
+        }
+
+        MaxChunkRadius = FMath::Max(
+            MaxChunkRadius,
+            FMath::Max(
+                FMath::Abs(Chunk.ChunkX - World.InitialChunkX),
+                FMath::Abs(Chunk.ChunkY - World.InitialChunkY)));
+    }
+
+    // Count alone cannot describe a sparse/non-contiguous materialized set.
+    // Keep the broad continuity underlay centred on the start region, but size
+    // it from the actual authoritative coordinate extent as well as count.
+    const int32 CountRadius = FMath::CeilToInt(FMath::Sqrt(static_cast<float>(
+        FMath::Max(1, MaterializedChunks.Num()))));
     const int32 Rings = FMath::Clamp(
-        FMath::CeilToInt(FMath::Sqrt(static_cast<float>(
-            FMath::Max(1, World.MaterializedChunkCount)))),
+        FMath::Max(CountRadius, MaxChunkRadius + 1),
         1,
-        9);
+        512);
     const float ActiveSpanUU =
         LLWorldSpatialContract::ChunkSpanUU * (2.0f * Rings + 1.0f);
     const float FarSpanUU = FMath::Max(
@@ -2389,6 +2448,10 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
 
     const FLLCoreWorldGenerationObservation World = Bridge->GetWorldGenerationObservation();
     if (!World.bAvailable || !World.bHasInitialStartRegion) { return; }
+    const TArray<FLLCoreNaturalChunkObservation> MaterializedChunks =
+        Bridge->GetMaterializedNaturalChunkObservations();
+    const uint32 CurrentNaturalChunkSignature =
+        NaturalChunkPresentationSignature(MaterializedChunks);
     const FLLCoreCivilizationWorldObservation Civilization = Bridge->GetCivilizationWorldObservation(0);
     const FLLCoreTimeObservation Time = Bridge->GetTimeObservation();
     const bool bNightPresentation = Time.bIsNight || Time.Daylight01 < 0.22f;
@@ -2420,6 +2483,7 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         || World.WorldSeed != BuiltWorldSeed
         || World.GenerationVersion != BuiltGenerationVersion
         || World.MaterializedChunkCount != BuiltChunkCount
+        || CurrentNaturalChunkSignature != BuiltNaturalChunkSignature
         || bFacilityLayoutChanged
         || bResourceQuantityChanged
         || (bSightlinePending && bInitialViewCaptured);
@@ -2440,12 +2504,11 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         BuiltWorldSeed = World.WorldSeed;
         BuiltGenerationVersion = World.GenerationVersion;
         BuiltChunkCount = World.MaterializedChunkCount;
+        BuiltNaturalChunkSignature = CurrentNaturalChunkSignature;
         BuiltResourceQuantitySignature = CurrentResourceQuantitySignature;
         ClearInstances();
-        BuildGround(World);
+        BuildGround(World, MaterializedChunks);
 
-        const TArray<FLLCoreNaturalChunkObservation> MaterializedChunks =
-            Bridge->GetMaterializedNaturalChunkObservations();
         for (const FLLCoreNaturalChunkObservation& Chunk : MaterializedChunks)
         {
             if (Chunk.bMaterialized)
