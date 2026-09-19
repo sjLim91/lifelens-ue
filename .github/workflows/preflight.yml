@@ -65,6 +65,9 @@ jobs:
       - name: Validate photoreal facility completion
         run: python Tools/validate_photoreal_facility_completion.py
 
+      - name: Validate environment density v1
+        run: python Tools/validate_environment_density_v1.py
+
       - name: Verify Unreal project metadata
         run: |
           python - <<'PY'
