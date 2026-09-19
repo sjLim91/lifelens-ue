@@ -121,6 +121,8 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
         TEXT("/Game/Environment/Photoreal/PolyHaven/wicker_basket_01/SM_LL_wicker_basket_01.SM_LL_wicker_basket_01"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoWoodenAxe(
         TEXT("/Game/Environment/Photoreal/PolyHaven/wooden_axe/SM_LL_wooden_axe.SM_LL_wooden_axe"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoStructureLog(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/dead_tree_trunk/SM_LL_dead_tree_trunk.SM_LL_dead_tree_trunk"));
 
     if (PhotoTreeFirSapling.Succeeded()) { TreeMeshes.Add(PhotoTreeFirSapling.Object); }
     if (PhotoTreePineSapling.Succeeded()) { TreeMeshes.Add(PhotoTreePineSapling.Object); }
@@ -247,12 +249,19 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
             TEXT("PhotorealWorkTools"), PhotoWoodenAxe.Object,
             FacilityCullStartUU, FacilityCullEndUU, true);
     }
+    if (PhotoStructureLog.Succeeded())
+    {
+        PhotorealStructureLogInstances = AddInstancedComponent(
+            TEXT("PhotorealStructureLogs"), PhotoStructureLog.Object,
+            FacilityCullStartUU, FacilityCullEndUU, true);
+    }
 
     UE_LOG(LogTemp, Log,
-        TEXT("LLWorldPresentation approved facility art: firepit=%d basket=%d workTool=%d deterministicSeeds=1"),
+        TEXT("LLWorldPresentation approved facility art: firepit=%d basket=%d workTool=%d structureLog=%d deterministicSeeds=1"),
         PhotorealFirePitInstances ? 1 : 0,
         PhotorealStorageBasketInstances ? 1 : 0,
-        PhotorealWorkToolInstances ? 1 : 0);
+        PhotorealWorkToolInstances ? 1 : 0,
+        PhotorealStructureLogInstances ? 1 : 0);
 }
 
 UHierarchicalInstancedStaticMeshComponent* ALLWorldPresentationActor::AddInstancedComponent(
@@ -269,6 +278,72 @@ UHierarchicalInstancedStaticMeshComponent* ALLWorldPresentationActor::AddInstanc
     Component->InstanceStartCullDistance = static_cast<int32>(CullStartUU);
     Component->InstanceEndCullDistance = static_cast<int32>(CullEndUU);
     return Component;
+}
+
+void ALLWorldPresentationActor::AddPhotorealStructureLog(
+    const FVector& CenterUU,
+    const FVector& DirectionUU,
+    float LengthUU,
+    float DiameterUU)
+{
+    if (!PhotorealStructureLogInstances || LengthUU <= KINDA_SMALL_NUMBER || DiameterUU <= KINDA_SMALL_NUMBER)
+    {
+        return;
+    }
+
+    UStaticMesh* Mesh = PhotorealStructureLogInstances->GetStaticMesh();
+    if (!Mesh)
+    {
+        return;
+    }
+
+    const FVector NativeSize = Mesh->GetBounds().BoxExtent * 2.0f;
+    if (NativeSize.X <= KINDA_SMALL_NUMBER
+        || NativeSize.Y <= KINDA_SMALL_NUMBER
+        || NativeSize.Z <= KINDA_SMALL_NUMBER)
+    {
+        return;
+    }
+
+    int32 LongAxis = 0;
+    if (NativeSize.Y > NativeSize.X && NativeSize.Y >= NativeSize.Z)
+    {
+        LongAxis = 1;
+    }
+    else if (NativeSize.Z > NativeSize.X && NativeSize.Z > NativeSize.Y)
+    {
+        LongAxis = 2;
+    }
+
+    FVector Scale(
+        DiameterUU / NativeSize.X,
+        DiameterUU / NativeSize.Y,
+        DiameterUU / NativeSize.Z);
+    FVector LocalLongAxis = FVector::ForwardVector;
+    if (LongAxis == 0)
+    {
+        Scale.X = LengthUU / NativeSize.X;
+    }
+    else if (LongAxis == 1)
+    {
+        LocalLongAxis = FVector::RightVector;
+        Scale.Y = LengthUU / NativeSize.Y;
+    }
+    else
+    {
+        LocalLongAxis = FVector::UpVector;
+        Scale.Z = LengthUU / NativeSize.Z;
+    }
+
+    const FVector TargetDirection = DirectionUU.GetSafeNormal();
+    if (TargetDirection.IsNearlyZero())
+    {
+        return;
+    }
+
+    const FQuat Alignment = FQuat::FindBetweenNormals(LocalLongAxis, TargetDirection);
+    PhotorealStructureLogInstances->AddInstance(
+        FTransform(Alignment, CenterUU, Scale));
 }
 
 void ALLWorldPresentationActor::BeginPlay()
@@ -325,6 +400,7 @@ void ALLWorldPresentationActor::ClearFacilityInstances()
     if (FacilityAccentInstances) { FacilityAccentInstances->ClearInstances(); }
     if (PhotorealFirePitInstances) { PhotorealFirePitInstances->ClearInstances(); }
     if (PhotorealStorageBasketInstances) { PhotorealStorageBasketInstances->ClearInstances(); }
+    if (PhotorealStructureLogInstances) { PhotorealStructureLogInstances->ClearInstances(); }
     if (PhotorealWorkToolInstances) { PhotorealWorkToolInstances->ClearInstances(); }
 }
 
@@ -1422,6 +1498,25 @@ void ALLWorldPresentationActor::BuildFacilities(
 
         if (Facility.Kind == ELLCoreFacilityKind::PrimitiveStorage)
         {
+            if (bStructurallyComplete && PhotorealStructureLogInstances)
+            {
+                AddPhotorealStructureLog(Base + FVector(0.0f, -60.0f, 12.0f), FVector::ForwardVector, 210.0f, 18.0f);
+                AddPhotorealStructureLog(Base + FVector(0.0f,  60.0f, 12.0f), FVector::ForwardVector, 210.0f, 18.0f);
+                AddPhotorealStructureLog(Base + FVector(-90.0f, 0.0f, 12.0f), FVector::RightVector, 140.0f, 18.0f);
+                AddPhotorealStructureLog(Base + FVector( 90.0f, 0.0f, 12.0f), FVector::RightVector, 140.0f, 18.0f);
+                const FVector2D CompletePostOffsets[4] = {
+                    FVector2D(-90.0f, -60.0f), FVector2D(90.0f, -60.0f),
+                    FVector2D(-90.0f,  60.0f), FVector2D(90.0f,  60.0f)};
+                for (const FVector2D& Offset : CompletePostOffsets)
+                {
+                    AddPhotorealStructureLog(Base + FVector(Offset.X, Offset.Y, 62.0f), FVector::UpVector, 112.0f, 18.0f);
+                }
+                AddPhotorealStructureLog(Base + FVector(0.0f, -60.0f, 118.0f), FVector::ForwardVector, 210.0f, 16.0f);
+                AddPhotorealStructureLog(Base + FVector(0.0f,  60.0f, 118.0f), FVector::ForwardVector, 210.0f, 16.0f);
+                AddPhotorealStructureLog(Base + FVector(-90.0f, 0.0f, 118.0f), FVector::RightVector, 140.0f, 16.0f);
+                AddPhotorealStructureLog(Base + FVector( 90.0f, 0.0f, 118.0f), FVector::RightVector, 140.0f, 16.0f);
+            }
+
             int32 LinkedStoredUnits = 0;
             if (Facility.LinkedStorageId != 0)
             {
@@ -1435,7 +1530,7 @@ void ALLWorldPresentationActor::BuildFacilities(
                 }
             }
 
-            if (FacilityFoundationInstances)
+            if (!bStructurallyComplete && FacilityFoundationInstances)
             {
                 const float PlannedScale = Facility.State == ELLCoreFacilityState::Planned ? 0.72f : 1.0f;
                 FacilityFoundationInstances->AddInstance(FTransform(
@@ -1444,7 +1539,7 @@ void ALLWorldPresentationActor::BuildFacilities(
             const FVector2D PostOffsets[4] = {
                 FVector2D(-90.0f, -60.0f), FVector2D(90.0f, -60.0f),
                 FVector2D(-90.0f, 60.0f), FVector2D(90.0f, 60.0f)};
-            const int32 PostCount = bStructurallyComplete ? 4 : FMath::Clamp(FMath::CeilToInt(BuildProgress * 4.0f), 0, 4);
+            const int32 PostCount = bStructurallyComplete ? 0 : FMath::Clamp(FMath::CeilToInt(BuildProgress * 4.0f), 0, 4);
             for (int32 Index = 0; Index < PostCount; ++Index)
             {
                 if (!FacilityPostInstances) { break; }
@@ -1493,7 +1588,7 @@ void ALLWorldPresentationActor::BuildFacilities(
                         24.0f),
                     FVector(0.45f, 0.28f, 0.25f)));
             }
-            if ((bStructurallyComplete || WorkProgress >= 0.65f) && FacilityRoofInstances)
+            if (!bStructurallyComplete && WorkProgress >= 0.65f && FacilityRoofInstances)
             {
                 const float RoofScale = bStructurallyComplete ? 1.0f : FMath::Clamp((WorkProgress - 0.65f) / 0.35f, 0.25f, 1.0f);
                 FacilityRoofInstances->AddInstance(FTransform(
@@ -1504,12 +1599,26 @@ void ALLWorldPresentationActor::BuildFacilities(
 
         if (Facility.Kind == ELLCoreFacilityKind::WorkSurface)
         {
-            // Low primitive workbench. Construction visibly grows from delivered
+            if (bStructurallyComplete && PhotorealStructureLogInstances)
+            {
+                const FVector2D CompleteLegOffsets[4] = {
+                    FVector2D(-68.0f, -32.0f), FVector2D(68.0f, -32.0f),
+                    FVector2D(-68.0f,  32.0f), FVector2D(68.0f,  32.0f)};
+                for (const FVector2D& Offset : CompleteLegOffsets)
+                {
+                    AddPhotorealStructureLog(Base + FVector(Offset.X, Offset.Y, 36.0f), FVector::UpVector, 64.0f, 14.0f);
+                }
+                AddPhotorealStructureLog(Base + FVector(0.0f, -30.0f, 72.0f), FVector::ForwardVector, 172.0f, 16.0f);
+                AddPhotorealStructureLog(Base + FVector(0.0f,   0.0f, 74.0f), FVector::ForwardVector, 172.0f, 16.0f);
+                AddPhotorealStructureLog(Base + FVector(0.0f,  30.0f, 72.0f), FVector::ForwardVector, 172.0f, 16.0f);
+            }
+
+            // Construction visibly grows from delivered
             // materials to legs to a usable top. Durability subtly sags the top.
             const float Integrity = FMath::Lerp(0.72f, 1.0f, Durability);
             const float DamageTilt = (1.0f - Durability) * 11.0f;
 
-            if (FacilityFoundationInstances)
+            if (!bStructurallyComplete && FacilityFoundationInstances)
             {
                 const float FootprintScale = Facility.State == ELLCoreFacilityState::Planned ? 0.72f : 1.0f;
                 FacilityFoundationInstances->AddInstance(FTransform(
@@ -1522,7 +1631,7 @@ void ALLWorldPresentationActor::BuildFacilities(
                 FVector2D(-68.0f, -32.0f), FVector2D(68.0f, -32.0f),
                 FVector2D(-68.0f, 32.0f), FVector2D(68.0f, 32.0f)};
             const int32 LegCount = bStructurallyComplete
-                ? 4
+                ? 0
                 : FMath::Clamp(FMath::CeilToInt(BuildProgress * 4.0f), 0, 4);
             for (int32 Index = 0; Index < LegCount; ++Index)
             {
@@ -1534,7 +1643,7 @@ void ALLWorldPresentationActor::BuildFacilities(
                     FVector(0.12f, 0.12f, Height)));
             }
 
-            if ((bStructurallyComplete || WorkProgress >= 0.45f) && FacilityRoofInstances)
+            if (!bStructurallyComplete && WorkProgress >= 0.45f && FacilityRoofInstances)
             {
                 const float TopScale = bStructurallyComplete
                     ? 1.0f
@@ -1618,12 +1727,37 @@ void ALLWorldPresentationActor::BuildFacilities(
 
         if (Facility.Kind == ELLCoreFacilityKind::Shelter)
         {
-            // Four-post primitive shelter. Partial projects show posts first,
+            if (bStructurallyComplete && PhotorealStructureLogInstances)
+            {
+                AddPhotorealStructureLog(Base + FVector(0.0f, -70.0f, 12.0f), FVector::ForwardVector, 220.0f, 20.0f);
+                AddPhotorealStructureLog(Base + FVector(0.0f,  70.0f, 12.0f), FVector::ForwardVector, 220.0f, 20.0f);
+                AddPhotorealStructureLog(Base + FVector(-92.0f, 0.0f, 12.0f), FVector::RightVector, 160.0f, 20.0f);
+                AddPhotorealStructureLog(Base + FVector( 92.0f, 0.0f, 12.0f), FVector::RightVector, 160.0f, 20.0f);
+                const FVector2D CompleteShelterPosts[4] = {
+                    FVector2D(-92.0f, -70.0f), FVector2D(92.0f, -70.0f),
+                    FVector2D(-92.0f,  70.0f), FVector2D(92.0f,  70.0f)};
+                for (const FVector2D& Offset : CompleteShelterPosts)
+                {
+                    AddPhotorealStructureLog(Base + FVector(Offset.X, Offset.Y, 84.0f), FVector::UpVector, 150.0f, 20.0f);
+                }
+                AddPhotorealStructureLog(Base + FVector(0.0f, -70.0f, 156.0f), FVector::ForwardVector, 220.0f, 18.0f);
+                AddPhotorealStructureLog(Base + FVector(0.0f,  70.0f, 156.0f), FVector::ForwardVector, 220.0f, 18.0f);
+                for (int32 RafterIndex = -2; RafterIndex <= 2; ++RafterIndex)
+                {
+                    AddPhotorealStructureLog(
+                        Base + FVector(static_cast<float>(RafterIndex) * 44.0f, 0.0f, 160.0f),
+                        FVector::RightVector,
+                        160.0f,
+                        15.0f);
+                }
+            }
+
+            // Partial projects show posts first,
             // then roof coverage. Wear is projected as roof sag/tilt.
             const float Integrity = FMath::Lerp(0.68f, 1.0f, Durability);
             const float DamageTilt = (1.0f - Durability) * 13.0f;
 
-            if (FacilityFoundationInstances)
+            if (!bStructurallyComplete && FacilityFoundationInstances)
             {
                 const float PlannedScale = Facility.State == ELLCoreFacilityState::Planned ? 0.72f : 1.0f;
                 FacilityFoundationInstances->AddInstance(FTransform(
@@ -1636,7 +1770,7 @@ void ALLWorldPresentationActor::BuildFacilities(
                 FVector2D(-92.0f, -70.0f), FVector2D(92.0f, -70.0f),
                 FVector2D(-92.0f, 70.0f), FVector2D(92.0f, 70.0f)};
             const int32 PostCount = bStructurallyComplete
-                ? 4
+                ? 0
                 : FMath::Clamp(FMath::CeilToInt(BuildProgress * 4.0f), 0, 4);
             for (int32 Index = 0; Index < PostCount; ++Index)
             {
@@ -1648,7 +1782,7 @@ void ALLWorldPresentationActor::BuildFacilities(
                     FVector(0.14f, 0.14f, 1.48f * Integrity)));
             }
 
-            if ((bStructurallyComplete || WorkProgress >= 0.58f) && FacilityRoofInstances)
+            if (!bStructurallyComplete && WorkProgress >= 0.58f && FacilityRoofInstances)
             {
                 const float RoofProgress = bStructurallyComplete
                     ? 1.0f
@@ -1659,7 +1793,7 @@ void ALLWorldPresentationActor::BuildFacilities(
                     FVector(2.25f * RoofProgress, 1.75f, 0.13f * Integrity)));
             }
 
-            if ((bStructurallyComplete || MaterialProgress >= 0.70f) && FacilityCargoInstances)
+            if (!bStructurallyComplete && MaterialProgress >= 0.70f && FacilityCargoInstances)
             {
                 const float WallProgress = bStructurallyComplete
                     ? 1.0f
