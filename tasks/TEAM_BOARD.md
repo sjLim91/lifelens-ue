@@ -213,24 +213,19 @@ Jjun bridge now exposes deterministic, read-only local-surface water presentatio
 
 These are **presentation hints**, not new water simulation truth. Dagyeom may use them to build Unreal Water splines/bodies without inventing a second hydrology layout. Gameplay drinking, resource availability, flow and salinity remain Core authority.
 
-### Calendar / Environment — provider pending E1/E2
+### Calendar / Environment / Sky presentation projection — provider ready
 
-Planned provider state:
+Available provider state:
+- authoritative time of day / day / year / annual phase / season.
+- authoritative daylight/night summary.
+- deterministic local temperature / precipitation / cloud / wind / humidity / visibility / wetness.
+- `FLLCoreSkyPresentationObservation` rendering hints for initial-region SkyAtmosphere consumers:
+  - sun elevation / azimuth.
+  - sun intensity.
+  - sky brightness.
+  - cloud / fog / wind / surface wetness.
 
-- time of day / day / year / annual phase.
-- daylight/darkness.
-- derived season summary.
-- local temperature.
-- precipitation.
-- cloud/wind/humidity/visibility/wetness summary.
-
-Dagyeom consumes these for:
-
-- sun/sky/day-night.
-- weather VFX.
-- season/weather/date/time Observer readouts.
-
-Presentation does not generate weather outcomes independently.
+The sky DTO is a deterministic **presentation projection** of Core time + weather, not a second astronomy/weather simulation. Dagyeom should drive sun/sky/fog/material parameters from it rather than reconstructing a competing clock or weather model.
 
 ---
 
