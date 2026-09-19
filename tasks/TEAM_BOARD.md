@@ -64,20 +64,32 @@ A new blocker is triaged before unrelated follow-up work. This does **not** mean
 
 ## Current Assist Locks
 
-**None.**
+### ASSIST_LOCK-GFX-DESKTOP-MAC-1 — Jjun scoped desktop platform parity assist
+
+- explicit user direction: PC means Windows + macOS and both advance together.
+- helper: Jjun.
+- owner/reviewer for presentation source: Dagyeom.
+- branch: `integration/desktop-windows-mac-renderer-v1`.
+- allowed cross-lane file:
+  - `Source/LifeLens/WorldPresentation/LLDynamicEnvironmentPresentationActor.cpp`
+- scope:
+  - make real-time desktop SkyLight capture run on both Windows and macOS.
+  - no weather/time authority changes.
+- Jjun-owned Config/diagnostics/docs establish the Mac desktop renderer baseline.
+- release after this PR merges/closes and TEAM_BOARD is reconciled.
 
 ## Open Integration Requests
 
-### IR-GFX-CINEMATIC-1 — Windows cinematic presentation adoption
+### IR-GFX-CINEMATIC-1 — Desktop cinematic presentation adoption (Windows + macOS)
 
 - requester: Jjun.
 - needed owner: Dagyeom.
-- target: Windows cinematic renderer tier integration after Config foundation.
+- target: Windows + macOS desktop cinematic renderer integration after Config foundation.
 - requested areas: `Content/Environment/**`, `Content/Maps/**`, `Content/WorldPresentation/**` and presentation-owned environment setup as needed.
 - needed work:
-  - opt approved high-detail static assets into Nanite on the Windows presentation path while preserving Android fallback LOD/mesh.
+  - opt approved high-detail static assets into Nanite on Windows; on macOS use the broad-compatible baseline first and enable M2+ Nanite/VSM only after profiling, while preserving Android fallback LOD/mesh.
   - tune Sky Atmosphere / volumetric fog/cloud / exposure and dynamic environment lighting against authoritative time/weather state.
-  - verify terrain/water/material presentation under the Windows Lumen/VSM/TSR path.
+  - verify terrain/water/material presentation on both Windows and macOS desktop paths; capability-specific differences are allowed but both remain first-class PC targets.
   - adopt the enabled Unreal `PCG` plugin for natural dressing/biome placement without inventing resource authority.
   - project authoritative Hydrology into the enabled Unreal `Water` system for river/lake/coast/ocean visuals, with an Android-safe fallback path.
   - do not restore Engine Cube/Cone or visibly prototype local-view fallback art.
