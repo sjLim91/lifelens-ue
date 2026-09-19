@@ -37,6 +37,9 @@ uint32 SurfaceWaterSignature(
         Hash = MixWaterHash(Hash, static_cast<uint32>(Water.ChunkY));
         Hash = MixWaterHash(Hash, static_cast<uint32>(Water.DownstreamCenterGridX));
         Hash = MixWaterHash(Hash, static_cast<uint32>(Water.DownstreamCenterGridY));
+        Hash = MixWaterHash(Hash, Water.bHasMarineNeighbour ? 1u : 0u);
+        Hash = MixWaterHash(Hash, static_cast<uint32>(Water.MarineCenterGridX));
+        Hash = MixWaterHash(Hash, static_cast<uint32>(Water.MarineCenterGridY));
         Hash = MixWaterHash(
             Hash,
             static_cast<uint32>(FMath::RoundToInt(
@@ -288,7 +291,7 @@ void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
 
     int32 LinearCount = 0;
     int32 AreaCount = 0;
-    int32 DeferredMarineCount = 0;
+    int32 MarineCount = 0;
 
     for (const FLLCoreSurfaceWaterPresentationObservation& Water : Waters)
     {
@@ -297,11 +300,16 @@ void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
             continue;
         }
 
-        const float CenterWaterZUU = WaterSurfaceZForChunk(
-            Bridge,
-            World,
-            Water.ChunkX,
-            Water.ChunkY);
+        const bool bMarine =
+            Water.SurfaceKind == ELLCoreSurfaceWaterKind::Coast
+            || Water.SurfaceKind == ELLCoreSurfaceWaterKind::Ocean;
+        const float CenterWaterZUU = bMarine
+            ? WaterSurfaceZUU
+            : WaterSurfaceZForChunk(
+                Bridge,
+                World,
+                Water.ChunkX,
+                Water.ChunkY);
         const FVector Center = GridToWorld(
             Water.CenterGridX,
             Water.CenterGridY,
@@ -366,13 +374,99 @@ void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
             continue;
         }
 
-        if (Water.SurfaceKind == ELLCoreSurfaceWaterKind::Coast
-            || Water.SurfaceKind == ELLCoreSurfaceWaterKind::Ocean)
+        if (bMarine)
         {
-            // A runtime Ocean spline describes shoreline/exclusion semantics,
-            // not merely a local water disc. Defer until the planetary coastline
-            // contract can place it without accidentally flooding the local map.
-            ++DeferredMarineCount;
+            // Local Surface presentation deliberately uses bounded lake-style
+            // polygons for marine chunks. AWaterBodyOcean is reserved for the
+            // later Planetary representation because its exclusion/shoreline
+            // semantics can flood an unbounded local map when spawned per chunk.
+            AWaterBodyLake* Marine = GetWorld()->SpawnActor<AWaterBodyLake>(
+                AWaterBodyLake::StaticClass(),
+                FVector::ZeroVector,
+                FRotator::ZeroRotator);
+            if (!Marine)
+            {
+                continue;
+            }
+
+            ConfigurePresentationOnlyWater(Marine);
+            UWaterSplineComponent* Spline = Marine->GetWaterSpline();
+            if (!Spline)
+            {
+                Marine->Destroy();
+                continue;
+            }
+
+            const float HalfChunkUU =
+                LLWorldSpatialContract::ChunkSpanUU * 0.515f;
+            Spline->ClearSplinePoints(false);
+
+            if (Water.SurfaceKind == ELLCoreSurfaceWaterKind::Ocean)
+            {
+                const FVector Corners[4] = {
+                    Center + FVector(-HalfChunkUU, -HalfChunkUU, 0.0f),
+                    Center + FVector( HalfChunkUU, -HalfChunkUU, 0.0f),
+                    Center + FVector( HalfChunkUU,  HalfChunkUU, 0.0f),
+                    Center + FVector(-HalfChunkUU,  HalfChunkUU, 0.0f)
+                };
+                for (const FVector& Corner : Corners)
+                {
+                    Spline->AddSplinePoint(
+                        Corner,
+                        ESplineCoordinateSpace::World,
+                        false);
+                }
+            }
+            else
+            {
+                if (!Water.bHasMarineNeighbour)
+                {
+                    Marine->Destroy();
+                    continue;
+                }
+
+                const FVector MarineCenter = GridToWorld(
+                    Water.MarineCenterGridX,
+                    Water.MarineCenterGridY,
+                    World.InitialCenterGridX,
+                    World.InitialCenterGridY,
+                    WaterSurfaceZUU);
+                FVector2D Direction(
+                    MarineCenter.X - Center.X,
+                    MarineCenter.Y - Center.Y);
+                if (!Direction.Normalize())
+                {
+                    Marine->Destroy();
+                    continue;
+                }
+
+                const FVector2D Perpendicular(-Direction.Y, Direction.X);
+                const FVector2D Center2D(Center.X, Center.Y);
+                const FVector2D ShoreLine =
+                    Center2D + Direction * (HalfChunkUU * 0.04f);
+                const FVector2D MarineEdge =
+                    Center2D + Direction * HalfChunkUU;
+
+                const FVector2D Points[4] = {
+                    ShoreLine + Perpendicular * HalfChunkUU,
+                    MarineEdge + Perpendicular * HalfChunkUU,
+                    MarineEdge - Perpendicular * HalfChunkUU,
+                    ShoreLine - Perpendicular * HalfChunkUU
+                };
+                for (const FVector2D& Point : Points)
+                {
+                    Spline->AddSplinePoint(
+                        FVector(Point.X, Point.Y, WaterSurfaceZUU),
+                        ESplineCoordinateSpace::World,
+                        false);
+                }
+            }
+
+            Spline->SetClosedLoop(true, false);
+            Spline->UpdateSpline();
+            NotifyWaterShapeChanged(Marine);
+            SpawnedWaterActors.Add(Marine);
+            ++MarineCount;
             continue;
         }
 
@@ -430,9 +524,9 @@ void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
     }
 
     UE_LOG(LogTemp, Log,
-        TEXT("LifeLens Unreal Water projection: observations=%d linear=%d area=%d marineDeferred=%d"),
+        TEXT("LifeLens Unreal Water projection: observations=%d linear=%d area=%d marineLocalSurface=%d"),
         Waters.Num(),
         LinearCount,
         AreaCount,
-        DeferredMarineCount);
+        MarineCount);
 }
