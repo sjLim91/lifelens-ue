@@ -9,7 +9,8 @@ for token in (
     "GetMaterializedTerrainPresentationObservations",
     "GetMaterializedNaturalChunkObservations",
     "GetCivilizationWorldObservation",
-    "CenterWeight",
+    "CornerSurface",
+    "FMath::Lerp(CenterSurface, CornerSurface, 0.72f)",
     "FacilityCentersUU",
     "CreateMeshSection",
     "SetCollisionEnabled(ECollisionEnabled::NoCollision)",
@@ -27,6 +28,14 @@ assert 'PrivateDependencyModuleNames.Add("ProceduralMeshComponent")' in build
 header = (root / "Source/LifeLens/WorldPresentation/LLDesktopTerrainPresentationActor.h").read_text(encoding="utf-8")
 assert "UProceduralMeshComponent* TerrainMesh = nullptr;" in header
 assert "TObjectPtr<UProceduralMeshComponent>" not in header
+
+world_presentation = (root / "Source/LifeLens/WorldPresentation/LLWorldPresentationActor.cpp").read_text(encoding="utf-8")
+chunk_start = world_presentation.index("void ALLWorldPresentationActor::BuildChunkGround")
+chunk_end = world_presentation.index("void ALLWorldPresentationActor::BuildFarEnvironment", chunk_start)
+chunk_block = world_presentation[chunk_start:chunk_end]
+assert "#if !PLATFORM_ANDROID" in chunk_block
+assert "Keep them strictly mobile-only." in chunk_block
+assert "LocalGroundUnderlayDropUU = 3.0f" in world_presentation
 
 dynamic_environment = (root / "Source/LifeLens/WorldPresentation/LLDynamicEnvironmentPresentationActor.cpp").read_text(encoding="utf-8")
 assert "ALLDesktopTerrainPresentationActor" in dynamic_environment

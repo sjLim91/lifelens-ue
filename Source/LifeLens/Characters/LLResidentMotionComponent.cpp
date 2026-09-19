@@ -429,7 +429,10 @@ ELLResidentContextMotion ULLResidentMotionComponent::ResolveContextMotion() cons
                 case ELLCoreParentingAction::Hold:
                 case ELLCoreParentingAction::Comfort:
                 case ELLCoreParentingAction::HealthCare:
-                    return ELLResidentContextMotion::SeatedCare;
+                    // These directives do not currently carry an authoritative
+                    // seat/furniture affordance. Use a standing interaction clip
+                    // instead of inventing a chair and visibly sitting in empty space.
+                    return ELLResidentContextMotion::Learn;
                 case ELLCoreParentingAction::Educate:
                 case ELLCoreParentingAction::Discipline:
                     return ELLResidentContextMotion::Talk;
@@ -439,18 +442,18 @@ ELLResidentContextMotion ULLResidentMotionComponent::ResolveContextMotion() cons
                 case ELLCoreParentingAction::ToiletAssist:
                     return ELLResidentContextMotion::CrouchLow;
                 case ELLCoreParentingAction::PutToSleep:
-                    // Quiet sitting reads more naturally than continuous
-                    // talking while settling a child. The action still comes
-                    // exclusively from the authoritative parenting directive.
-                    return ELLResidentContextMotion::SeatedQuiet;
+                    // No seat-supporting affordance is attached to this context
+                    // action yet. Keep the interaction grounded and standing;
+                    // a seated pose may return only when a real seat is resolved.
+                    return ELLResidentContextMotion::Learn;
                 default:
                     return ELLResidentContextMotion::Talk;
             }
 
         case ELLCoreContextActionKind::Social:
-            return Directive.SocialIntent == ELLCoreSocialIntent::Comfort
-                ? ELLResidentContextMotion::SeatedCare
-                : ELLResidentContextMotion::Talk;
+            // Social directives contain a partner, not a seat. Keep comfort
+            // conversations standing until World resolves explicit furniture.
+            return ELLResidentContextMotion::Talk;
 
         default:
             break;

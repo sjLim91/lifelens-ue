@@ -279,8 +279,48 @@ void ALLObserverPlayerController::PlayerTick(float DeltaTime)
 
 void ALLObserverPlayerController::EnsureCameraInitialized()
 {
+    static const FName ProductionObserverCameraTag(TEXT("LifeLens.ObserverCamera"));
+
     ACameraActor* Camera = Cast<ACameraActor>(GetViewTarget());
-    if (!Camera)
+    const bool bProductionCameraActive =
+        Camera && Camera->ActorHasTag(ProductionObserverCameraTag);
+
+    if (!bProductionCameraActive)
+    {
+        Camera = nullptr;
+
+        // Primary recovery path: GameMode retains the exact camera it spawned.
+        if (UWorld* World = GetWorld())
+        {
+            if (ALLLifeLensGameMode* GameMode =
+                    World->GetAuthGameMode<ALLLifeLensGameMode>())
+            {
+                Camera = GameMode->GetObserverCamera();
+            }
+
+            // Fallback for lifecycle/order edge cases: recover by stable tag.
+            if (!IsValid(Camera))
+            {
+                for (TActorIterator<ACameraActor> It(World); It; ++It)
+                {
+                    if (IsValid(*It) && It->ActorHasTag(ProductionObserverCameraTag))
+                    {
+                        Camera = *It;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (IsValid(Camera))
+        {
+            SetViewTarget(Camera);
+            UE_LOG(LogTemp, Warning,
+                TEXT("LifeLens observer view recovered to the production camera."));
+        }
+    }
+
+    if (!IsValid(Camera))
     {
         ObserverCamera.Reset();
         bCameraInitialized = false;

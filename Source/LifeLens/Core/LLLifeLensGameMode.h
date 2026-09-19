@@ -4,6 +4,7 @@
 #include "GameFramework/GameModeBase.h"
 #include "LLLifeLensGameMode.generated.h"
 
+class ACameraActor;
 class UStaticMesh;
 
 UCLASS(Config=Game, DefaultConfig)
@@ -13,6 +14,11 @@ class LIFELENS_API ALLLifeLensGameMode : public AGameModeBase
 
 public:
     ALLLifeLensGameMode();
+
+    ACameraActor* GetObserverCamera() const
+    {
+        return ObserverCamera.Get();
+    }
 
     float GetObserverCameraTargetHeightUU() const
     {
@@ -28,6 +34,12 @@ private:
 
     UPROPERTY()
     TObjectPtr<UStaticMesh> RuntimeFloorMesh;
+
+    // Keep the production observer camera discoverable after BeginPlay. The
+    // PlayerController uses this to recover if a transient/invalid view target
+    // would otherwise leave the runtime showing only sky.
+    UPROPERTY()
+    TObjectPtr<ACameraActor> ObserverCamera;
 
     // Observer framing is presentation tuning. DefaultGame.ini is the normal
     // source of truth; these C++ values are safe fallbacks if config is absent.

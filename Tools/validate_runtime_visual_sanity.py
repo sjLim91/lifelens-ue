@@ -68,6 +68,31 @@ assert "if (GroundGrass) { return GroundGrass; }" in terrain_cpp
 assert "if (bDry && GroundDry)" not in terrain_cpp
 assert "if (bDry && GroundDry)" not in cpp
 
+# Resident bootstrap geometry must never flash before identity/appearance binds.
+resident_cpp = (root / "Source/LifeLens/Characters/LLResidentCharacter.cpp").read_text(encoding="utf-8")
+for token in (
+    "DebugBody->SetVisibility(false, true);",
+    "DebugBody->SetHiddenInGame(true, true);",
+    "DebugBody->SetCastShadow(false);",
+):
+    assert token in resident_cpp, f"resident debug cube visibility regression: {token}"
+
+# Environmental residue is a real visible consequence; it may not fall back to
+# an unmaterialed grey square.
+residue_cpp = (root / "Source/LifeLens/World/LLEnvironmentalResidueVisualizerComponent.cpp").read_text(encoding="utf-8")
+assert "/Engine/BasicShapes/Cylinder.Cylinder" in residue_cpp
+assert "MI_Ground_DryEarth.MI_Ground_DryEarth" in residue_cpp
+assert "/Engine/BasicShapes/Cube.Cube" not in residue_cpp
+
+# Desktop smooth terrain owns the active local surface. Planar chunk cubes are
+# mobile-only and the broad continuity underlay stays below the smooth mesh.
+chunk_start = cpp.index("void ALLWorldPresentationActor::BuildChunkGround")
+chunk_end = cpp.index("void ALLWorldPresentationActor::BuildFarEnvironment", chunk_start)
+chunk_block = cpp[chunk_start:chunk_end]
+assert "#if !PLATFORM_ANDROID" in chunk_block
+assert "Keep them strictly mobile-only." in chunk_block
+assert "LocalGroundUnderlayDropUU = 3.0f" in cpp
+
 # Collision proxies remain physical-only and are doubly render-disabled.
 assert "Component.SetHiddenInGame(true);" in collision_cpp
 assert "Component.SetVisibility(false, true);" in collision_cpp

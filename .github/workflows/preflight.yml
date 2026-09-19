@@ -71,6 +71,12 @@ jobs:
       - name: Validate runtime visual sanity
         run: python Tools/validate_runtime_visual_sanity.py
 
+      - name: Validate character animation truth and polish
+        run: python Tools/validate_character_animation_polish.py
+
+      - name: Validate observer UI and camera resilience
+        run: python Tools/validate_ui_camera_polish.py
+
       - name: Verify Unreal project metadata
         run: |
           python - <<'PY'

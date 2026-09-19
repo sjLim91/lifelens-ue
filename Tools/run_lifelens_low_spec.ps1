@@ -1,6 +1,7 @@
 param(
     [string]$Project = "D:\\LifeLens\\LifeLens.uproject",
-    [string]$UnrealEditor = "D:\\Epic Games\\UE_5.6\\UE_5.6\\Engine\\Binaries\\Win64\\UnrealEditor.exe"
+    [string]$UnrealEditor = "D:\\Epic Games\\UE_5.6\\UE_5.6\\Engine\\Binaries\\Win64\\UnrealEditor.exe",
+    [switch]$LegacyD3D11
 )
 
 $ErrorActionPreference = "Stop"
@@ -8,8 +9,18 @@ $ErrorActionPreference = "Stop"
 if (!(Test-Path $Project)) { throw "LifeLens project not found: $Project" }
 if (!(Test-Path $UnrealEditor)) { throw "UnrealEditor not found: $UnrealEditor" }
 
-# Local verification profile for legacy/low-end Windows GPUs such as Intel HD 530.
-# Project renderer defaults remain unchanged.
+# Compatibility profile for low-end Windows GPUs.
+#
+# Keep DX12 as the default because the production Windows renderer is authored
+# for DX12/SM6. A previous helper always forced D3D11, which could put testing on
+# a different RHI than production and matched the D3D11RHI GPU-crash reports.
+# D3D11 remains available only as an explicit diagnostic/legacy fallback.
+$RHIArgs = @("-dx12")
+if ($LegacyD3D11) {
+    Write-Warning "Launching legacy D3D11 fallback. This is diagnostic-only and not the production renderer path."
+    $RHIArgs = @("-d3d11", "-NoRHIThread")
+}
+
 $ExecCmds = @(
     "r.Nanite 0",
     "r.Shadow.Virtual.Enable 0",
@@ -29,4 +40,4 @@ $ExecCmds = @(
     "r.ScreenPercentage 65"
 ) -join ","
 
-& $UnrealEditor $Project -d3d11 -NoRHIThread -ResX=1280 -ResY=720 -Windowed "-ExecCmds=$ExecCmds"
+& $UnrealEditor $Project @RHIArgs -ResX=1280 -ResY=720 -Windowed "-ExecCmds=$ExecCmds"

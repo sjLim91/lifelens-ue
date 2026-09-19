@@ -25,5 +25,21 @@ for token in (
     assert token in cpp, f"missing authoritative motion contract: {token}"
 
 assert "OutPlayRate = FMath::Lerp(0.96f, 1.04f, RateUnit);" in cpp
-assert "return ELLResidentContextMotion::SeatedQuiet;" in cpp
-print("LifeLens character animation polish v1: PASS")
+
+# A seated clip is valid only when presentation has a real seat-support
+# affordance. Current parenting/social directives do not carry that contract,
+# so they must not synthesize sitting in empty space.
+parenting_start = cpp.index("case ELLCoreContextActionKind::Parenting:")
+social_start = cpp.index("case ELLCoreContextActionKind::Social:", parenting_start)
+parenting_block = cpp[parenting_start:social_start]
+assert "ELLResidentContextMotion::SeatedCare" not in parenting_block
+assert "ELLResidentContextMotion::SeatedQuiet" not in parenting_block
+assert "No seat-supporting affordance" in parenting_block
+assert parenting_block.count("return ELLResidentContextMotion::Learn;") >= 3
+
+social_end = cpp.index("default:", social_start)
+social_block = cpp[social_start:social_end]
+assert "ELLResidentContextMotion::SeatedCare" not in social_block
+assert "return ELLResidentContextMotion::Talk;" in social_block
+
+print("LifeLens character animation truth/polish: PASS")
