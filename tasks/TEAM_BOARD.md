@@ -103,6 +103,7 @@ A new blocker is triaged before unrelated follow-up work. This does **not** mean
 - helper: Jjun.
 - owner/reviewer: Dagyeom.
 - branch: `integration/water-terrain-alignment-v2`.
+- integration status: #271 desktop PCG runtime is merged to `main`; #272 is retargeted to latest `main` for fresh CI validation.
 - cross-owner files:
   - `Source/LifeLens/WorldPresentation/LLWaterPresentationActor.cpp`
   - `Source/LifeLens/WorldPresentation/LLWaterPresentationActor.h`.
