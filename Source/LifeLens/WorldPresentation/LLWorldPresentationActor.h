@@ -12,6 +12,7 @@ class UStaticMesh;
 class UStaticMeshComponent;
 struct FLLCoreCivilizationWorldObservation;
 struct FLLCoreNaturalChunkObservation;
+struct FLLCoreTerrainPresentationObservation;
 
 // How strongly a piece of ambient dressing blocks the observer's view of the
 // residents. Purely a presentation classification; Core knows nothing about it.
@@ -36,21 +37,6 @@ public:
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaSeconds) override;
 
-    // ---- Android budget ------------------------------------------------------
-    // Visual Catch-up v2 tightens the ambient HISM envelope before adding
-    // weather VFX. Resource/facility truth is untouched; these values only
-    // cap presentation density and distance so precipitation/post-process has
-    // headroom on the Android target.
-    static constexpr int32 MaxTreeInstances  = 620;
-    static constexpr int32 MaxShrubInstances = 760;
-    static constexpr int32 MaxGrassInstances = 1800;
-    static constexpr int32 MaxRockInstances  = 720;
-
-    static constexpr int32 MaxTreesPerChunk  = 96;
-    static constexpr int32 MaxShrubsPerChunk = 115;
-    static constexpr int32 MaxGrassPerChunk  = 300;
-    static constexpr int32 MaxRocksPerChunk  = 105;
-
     // Visual-only far world envelope. These instances never represent
     // interactable Core resources and carry no collision/navigation authority.
     static constexpr int32 MaxFarTreeInstances = 180;
@@ -66,6 +52,30 @@ public:
     static constexpr float FacilityCullEndUU = 18000.0f;
 
     static constexpr float RefreshIntervalSeconds = 2.0f;
+
+    // ---- Platform visual density --------------------------------------------
+#if PLATFORM_ANDROID
+    static constexpr int32 MaxTreeInstances  = 620;
+    static constexpr int32 MaxShrubInstances = 760;
+    static constexpr int32 MaxGrassInstances = 1800;
+    static constexpr int32 MaxRockInstances  = 720;
+
+    static constexpr int32 MaxTreesPerChunk  = 96;
+    static constexpr int32 MaxShrubsPerChunk = 115;
+    static constexpr int32 MaxGrassPerChunk  = 300;
+    static constexpr int32 MaxRocksPerChunk  = 105;
+#else
+    // Desktop cinematic tier is not capped by the Android presentation budget.
+    static constexpr int32 MaxTreeInstances  = 1180;
+    static constexpr int32 MaxShrubInstances = 1480;
+    static constexpr int32 MaxGrassInstances = 4200;
+    static constexpr int32 MaxRockInstances  = 1250;
+
+    static constexpr int32 MaxTreesPerChunk  = 154;
+    static constexpr int32 MaxShrubsPerChunk = 190;
+    static constexpr int32 MaxGrassPerChunk  = 560;
+    static constexpr int32 MaxRocksPerChunk  = 165;
+#endif
 
     // ---- Dynamic observer canopy visibility ---------------------------------
     // Presentation-only. Ambient canopy that crosses the current camera ->
@@ -165,6 +175,23 @@ public:
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|FarWorld", meta=(ClampMin="0.2", ClampMax="1.0"))
     float FarDressingOuterRadiusFraction = 0.43f;
 
+    // ---- Gentle authoritative terrain relief --------------------------------
+    // The bootstrap collision plane and resident locomotion remain flat around
+    // the active settlement. Outside that readability envelope, Core macro
+    // elevation is projected into gentle visual relief so the world no longer
+    // reads as a perfectly flat board.
+    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Terrain", meta=(ClampMin="0.0", ClampMax="500.0"))
+    float TerrainReliefAmplitudeUU = 180.0f;
+
+    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Terrain", meta=(ClampMin="0.0", ClampMax="5000.0"))
+    float TerrainReliefFlattenRadiusUU = 2400.0f;
+
+    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Terrain", meta=(ClampMin="100.0", ClampMax="6000.0"))
+    float TerrainReliefBlendBandUU = 1800.0f;
+
+    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Terrain", meta=(ClampMin="0.0", ClampMax="12.0"))
+    float TerrainMaxTiltDegrees = 5.5f;
+
     // ---- Initial sight line (IR-E-1 mitigation) --------------------------------
     // Residents are visible the moment play starts and then disappear behind the
     // canopy that loads between the observer camera and the settlement. This
@@ -209,13 +236,16 @@ private:
     void BuildGround(const struct FLLCoreWorldGenerationObservation& World);
     void BuildChunkGround(
         const struct FLLCoreWorldGenerationObservation& World,
-        const FLLCoreNaturalChunkObservation& Chunk);
+        const FLLCoreNaturalChunkObservation& Chunk,
+        const FLLCoreTerrainPresentationObservation& Terrain);
     void BuildFarEnvironment(
         const struct FLLCoreWorldGenerationObservation& World,
         float ActiveGroundSpanUU,
         float FarGroundSpanUU);
-    void BuildChunkDressing(const struct FLLCoreWorldGenerationObservation& World,
-                            const FLLCoreNaturalChunkObservation& Chunk);
+    void BuildChunkDressing(
+        const struct FLLCoreWorldGenerationObservation& World,
+        const FLLCoreNaturalChunkObservation& Chunk,
+        const FLLCoreTerrainPresentationObservation& Terrain);
     void BuildFacilities(const struct FLLCoreWorldGenerationObservation& World,
                          const FLLCoreCivilizationWorldObservation& Civilization,
                          bool bNightPresentation);
@@ -227,6 +257,15 @@ private:
         const FLLCoreCivilizationWorldObservation& Civilization);
     FVector ChunkOriginUU(const struct FLLCoreWorldGenerationObservation& World,
                           int32 ChunkX, int32 ChunkY) const;
+    float TerrainReliefBlend(const FVector2D& LocationUU) const;
+    float TerrainSurfaceZUU(
+        const struct FLLCoreWorldGenerationObservation& World,
+        const FLLCoreTerrainPresentationObservation& Terrain,
+        const FVector2D& LocationUU) const;
+    FRotator TerrainTileRotation(
+        const struct FLLCoreWorldGenerationObservation& World,
+        const FLLCoreTerrainPresentationObservation& Terrain,
+        const FVector2D& CenterUU) const;
 
     float AmbientDressingKeepFactor(const FVector2D& LocationUU, ELLDressingLayer Layer) const;
     float FacilityDressingKeepFactor(const FVector2D& LocationUU, ELLDressingLayer Layer) const;
@@ -270,13 +309,20 @@ private:
     UPROPERTY() TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>> RockInstances;
     UPROPERTY() TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>> FarRockInstances;
 
-    // Facility presentation uses simple Engine cube composition until a suitable
-    // CC0 prop set is added. These components are visual-only and collision-free.
+    // Construction-progress and not-yet-upgraded facility structure still uses
+    // lightweight modular composition. Approved completed hero props use the
+    // photoreal CC0 components below; missing hero art must not silently regress
+    // to an obvious Engine primitive substitute. All components are visual-only
+    // and collision-free.
     UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> FacilityFoundationInstances;
     UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> FacilityPostInstances;
     UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> FacilityRoofInstances;
     UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> FacilityCargoInstances;
     UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> FacilityAccentInstances;
+
+    UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> PhotorealFirePitInstances;
+    UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> PhotorealStorageBasketInstances;
+    UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> PhotorealWorkToolInstances;
 
     // Shared palette materials keep facility silhouettes readable without
     // multiplying draw components per facility. Shape/state still comes solely
