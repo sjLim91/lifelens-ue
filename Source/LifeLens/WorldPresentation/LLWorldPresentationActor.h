@@ -123,12 +123,12 @@ public:
     //                                 distance, canopy last
     //   beyond ActivityRadius         untouched natural density
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.0"))
-    float CoreClearRadiusUU = 1200.0f;
+    float CoreClearRadiusUU = 480.0f;
 
     // Matches the observed resident activity range. Core movement is not
     // clamped to it; it only says how far the visual thinning reaches.
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.0"))
-    float ActivityRadiusUU = 3000.0f;
+    float ActivityRadiusUU = 1800.0f;
 
     // Recovery curves across the activity band. Canopy recovers latest because
     // it blocks the most.
@@ -141,10 +141,10 @@ public:
     // A little dressing survives in the living core so the settlement does not
     // read as a cut clearing.
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.0", ClampMax="0.3"))
-    float CoreZoneCanopyKeep = 0.04f;
+    float CoreZoneCanopyKeep = 0.28f;
 
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.0", ClampMax="0.5"))
-    float CoreZoneUndergrowthKeep = 0.10f;
+    float CoreZoneUndergrowthKeep = 0.42f;
 
     // Authoritative resource patches are never hidden; inside the settlement
     // they are only drawn smaller.
