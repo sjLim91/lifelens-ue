@@ -84,6 +84,9 @@ struct FLLCoreHydrologyObservation
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology") int32 DownstreamChunkX = 0;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology") int32 DownstreamChunkY = 0;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology") bool bFreshSurfaceWater = false;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology") bool bHasMarineNeighbour = false;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology") int32 MarineNeighbourChunkX = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology") int32 MarineNeighbourChunkY = 0;
 };
 
 /**
@@ -121,6 +124,12 @@ struct FLLCoreSurfaceWaterPresentationObservation
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Presentation") float SurfaceAvailability = 0.0f;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Presentation") float FlowPotential = 0.0f;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Presentation") bool bFreshSurfaceWater = false;
+
+    // Coast-only orientation hint. The neighbour is authoritative macro ocean;
+    // consumers may use its center direction to clip the local water polygon.
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Presentation") bool bHasMarineNeighbour = false;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Presentation") int32 MarineCenterGridX = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Presentation") int32 MarineCenterGridY = 0;
 };
 
 /**
