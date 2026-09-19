@@ -64,28 +64,20 @@ A new blocker is triaged before unrelated follow-up work. This does **not** mean
 
 ## Current Assist Locks
 
-### ASSIST_LOCK-GFX-VISIBLE-70-1 — Jjun scoped visual uplift integration
+### ASSIST_LOCK-GFX-WATER-ALIGN-1 — Jjun scoped Water presentation assist
 
-- explicit user direction: raise visible final graphics completion toward the 70% checkpoint now.
+- explicit user direction: push visible graphics through finalization.
 - helper: Jjun.
 - owner/reviewer: Dagyeom.
-- branch: `integration/visible-world-uplift-70-v1`.
-- allowed presentation files:
-  - `Source/LifeLens/WorldPresentation/LLWorldPresentationActor.cpp`
-  - `Source/LifeLens/WorldPresentation/LLWorldPresentationActor.h`
-  - related structural validation/docs only.
+- branch: `integration/water-terrain-alignment-v1`.
+- cross-owner files:
+  - `Source/LifeLens/WorldPresentation/LLWaterPresentationActor.cpp`
+  - `Source/LifeLens/WorldPresentation/LLWaterPresentationActor.h`.
 - scope:
-  - consume merged deterministic visual seeds and terrain presentation provider.
-  - use already-imported approved photoreal facility hero props.
-  - add already-imported photoreal vegetation variants to reduce repetition.
-  - increase desktop cinematic dressing density without raising Android budgets.
-  - add gentle visual terrain relief outside the active settlement/facility flattening envelopes.
-  - no new simulation/resource/facility authority.
-- safety:
-  - settlement locomotion/collision baseline remains flat.
-  - visual terrain adds hills only; it does not lower presentation below the hidden bootstrap collision plane.
-  - do not merge over an overlapping Dagyeom PR; request review before closeout.
-- release: after the uplift PR is merged/closed and TEAM_BOARD is reconciled.
+  - align authoritative Unreal Water projection with the Core terrain presentation relief.
+  - preserve the flat initial settlement baseline.
+  - no hydrology/gameplay authority changes.
+- release after PR merge/close.
 
 ## Open Integration Requests
 
