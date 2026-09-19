@@ -4,6 +4,8 @@ root = Path(__file__).resolve().parents[1]
 cpp = (root / "Source/LifeLens/UI/LLObserverPlayerController.cpp").read_text(encoding="utf-8")
 header = (root / "Source/LifeLens/UI/LLObserverPlayerController.h").read_text(encoding="utf-8")
 polish = (root / "Source/LifeLens/UI/LLObserverMobilePolish.cpp").read_text(encoding="utf-8")
+game_mode_cpp = (root / "Source/LifeLens/Core/LLLifeLensGameMode.cpp").read_text(encoding="utf-8")
+game_mode_header = (root / "Source/LifeLens/Core/LLLifeLensGameMode.h").read_text(encoding="utf-8")
 
 for token in (
     "ObservedResidentFollowSmoothingSpeed",
@@ -29,4 +31,20 @@ for token in (
 ):
     assert token in cpp, f"observer input contract regressed: {token}"
 
-print("LifeLens UI/camera polish v1: PASS")
+# The initial observer view must be recoverable. A transient bad view target
+# must not strand the product on a sky-only frame.
+for token in (
+    "LifeLens.ObserverCamera",
+    "GetObserverCamera()",
+    "SetViewTarget(Camera)",
+    "TActorIterator<ACameraActor>",
+    "observer view recovered",
+):
+    assert token in cpp or token in game_mode_cpp or token in game_mode_header, (
+        f"observer camera recovery contract regressed: {token}"
+    )
+
+assert "ObserverCamera = GetWorld()->SpawnActor<ACameraActor>" in game_mode_cpp
+assert "TObjectPtr<ACameraActor> ObserverCamera;" in game_mode_header
+
+print("LifeLens UI/camera resilience polish: PASS")
