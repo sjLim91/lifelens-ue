@@ -1,0 +1,92 @@
+name: LifeLens Photoreal Asset Audit
+
+on:
+  push:
+    branches:
+      - qa/photoreal-asset-audit-v1
+    paths:
+      - '.github/workflows/photoreal-asset-audit.yml'
+      - 'Tools/unreal/audit_photoreal_assets.py'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lifelens-photoreal-asset-audit
+  cancel-in-progress: true
+
+jobs:
+  audit-photoreal:
+    if: ${{ github.event.repository.private == false }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    env:
+      UE_IMAGE: ghcr.io/epicgames/unreal-engine:dev-slim-5.6.0
+      UE_ROOT_IN_CONTAINER: /home/ue4/UnrealEngine
+      DIAGNOSTICS: ${{ github.workspace }}/Diagnostics/PhotorealAssetAudit
+
+    steps:
+      - name: Checkout audit branch
+        uses: actions/checkout@v4
+
+      - name: Preflight Epic GHCR credential
+        shell: bash
+        env:
+          EPIC_GHCR_PAT: ${{ secrets.EPIC_GHCR_PAT }}
+        run: |
+          set -euo pipefail
+          test -n "$EPIC_GHCR_PAT" || { echo 'EPIC_GHCR_PAT secret is missing'; exit 91; }
+          mkdir -p "$DIAGNOSTICS"
+          echo "$EPIC_GHCR_PAT" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+
+      - name: Reclaim disk and pull Unreal 5.6
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL || true
+          sudo apt-get clean || true
+          sudo docker system prune -af || true
+          docker pull "$UE_IMAGE"
+
+      - name: Compile LifeLensEditor
+        timeout-minutes: 35
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/Binaries" "$GITHUB_WORKSPACE/Intermediate" "$DIAGNOSTICS"
+          sudo chmod -R a+rwX "$GITHUB_WORKSPACE"
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -w "$UE_ROOT_IN_CONTAINER" \
+            "$UE_IMAGE" \
+            bash -lc './Engine/Build/BatchFiles/Linux/Build.sh LifeLensEditor Linux Development /workspace/LifeLens.uproject -WaitMutex -NoEngineChanges' \
+            2>&1 | tee "$DIAGNOSTICS/editor-compile.log"
+
+      - name: Audit imported photoreal StaticMeshes
+        timeout-minutes: 10
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo chmod -R a+rwX "$GITHUB_WORKSPACE"
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -e LL_PHOTOREAL_AUDIT_OUT=/workspace/Diagnostics/PhotorealAssetAudit/photoreal-asset-audit.json \
+            -w "$UE_ROOT_IN_CONTAINER" \
+            "$UE_IMAGE" \
+            bash -lc './Engine/Binaries/Linux/UnrealEditor-Cmd /workspace/LifeLens.uproject \
+              -run=pythonscript \
+              -script=/workspace/Tools/unreal/audit_photoreal_assets.py \
+              -EnablePlugins=PythonScriptPlugin -nullrhi -unattended -nopause -nosplash -stdout -FullStdOutLogOutput' \
+            2>&1 | tee "$DIAGNOSTICS/audit.log"
+
+          test -s "$DIAGNOSTICS/photoreal-asset-audit.json"
+          python -m json.tool "$DIAGNOSTICS/photoreal-asset-audit.json" >/dev/null
+
+      - name: Upload photoreal QA report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: LifeLens-Photoreal-Asset-Audit
+          path: Diagnostics/PhotorealAssetAudit/
+          if-no-files-found: error
+          retention-days: 14
