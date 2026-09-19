@@ -78,7 +78,8 @@ A new blocker is triaged before unrelated follow-up work. This does **not** mean
   - consume `FLLCoreSkyPresentationObservation` from provider PR #245.
   - remove duplicate Presentation sun-path / fog-authority calculations where the provider now supplies rendering hints.
   - preserve weather VFX/material/post-process behavior and never feed rendering state back into Core.
-- release: after this stacked integration PR is merged/closed and TEAM_BOARD is reconciled.
+  - production weather fallback policy: missing authored Niagara omits decorative precipitation instead of showing Engine Cube/Sphere precipitation; primitive fallback remains opt-in development-only.
+- release: after this stacked integration chain is merged/closed and TEAM_BOARD is reconciled.
 
 ## Open Integration Requests
 
