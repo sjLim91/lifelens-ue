@@ -114,9 +114,11 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
         GrassMeshes.Num(),
         RockMeshes.Num());
 #else
-    // Desktop production local-view art uses the curated photoreal catalogue.
-    // Missing approved assets are omitted rather than silently regressing to
-    // prototype geometry.
+    // Desktop recovery tier:
+    // Keep the existing compact photoreal scans, but do not make a sapling-only
+    // catalogue responsible for the whole canopy. The mature Quaternius meshes
+    // are already shipped in the repository and act as a dense mid/far-canopy
+    // layer until a production-grade mature CC0 tree set replaces them.
     static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoTreeFirSapling(
         TEXT("/Game/Environment/Photoreal/PolyHaven/fir_sapling/SM_LL_fir_sapling.SM_LL_fir_sapling"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoTreePineSapling(
@@ -129,6 +131,24 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
         TEXT("/Game/Environment/Photoreal/PolyHaven/pine_sapling_small/pine_sapling_small_1k/StaticMeshes/pine_sapling_small_b.pine_sapling_small_b"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoTreePineC(
         TEXT("/Game/Environment/Photoreal/PolyHaven/pine_sapling_small/pine_sapling_small_1k/StaticMeshes/pine_sapling_small_c.pine_sapling_small_c"));
+
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> MatureCommon1(
+        TEXT("/Game/Environment/Quaternius/StylizedNature/CommonTree_1/StaticMeshes/CommonTree_1.CommonTree_1"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> MatureCommon2(
+        TEXT("/Game/Environment/Quaternius/StylizedNature/CommonTree_2/StaticMeshes/CommonTree_2.CommonTree_2"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> MatureCommon3(
+        TEXT("/Game/Environment/Quaternius/StylizedNature/CommonTree_3/StaticMeshes/CommonTree_3.CommonTree_3"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> MaturePine1(
+        TEXT("/Game/Environment/Quaternius/StylizedNature/Pine_1/StaticMeshes/Pine_1.Pine_1"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> MaturePine2(
+        TEXT("/Game/Environment/Quaternius/StylizedNature/Pine_2/StaticMeshes/Pine_2.Pine_2"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> MaturePine3(
+        TEXT("/Game/Environment/Quaternius/StylizedNature/Pine_3/StaticMeshes/Pine_3.Pine_3"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> MaturePine4(
+        TEXT("/Game/Environment/Quaternius/StylizedNature/Pine_4/StaticMeshes/Pine_4.Pine_4"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> MatureTwisted2(
+        TEXT("/Game/Environment/Quaternius/StylizedNature/TwistedTree_2/StaticMeshes/TwistedTree_2.TwistedTree_2"));
+
     static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoBoulder(
         TEXT("/Game/Environment/Photoreal/PolyHaven/boulder_01/SM_LL_boulder_01.SM_LL_boulder_01"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoShrubA(
@@ -143,6 +163,14 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
         TEXT("/Game/Environment/Photoreal/PolyHaven/shrub_03/shrub_03_1k/StaticMeshes/shrub_03_b.shrub_03_b"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoShrub03C(
         TEXT("/Game/Environment/Photoreal/PolyHaven/shrub_03/shrub_03_1k/StaticMeshes/shrub_03_c.shrub_03_c"));
+
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> FlowerBush(
+        TEXT("/Game/Environment/Quaternius/StylizedNature/Bush_Common_Flowers/StaticMeshes/Bush_Common_Flowers.Bush_Common_Flowers"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> Fern(
+        TEXT("/Game/Environment/Quaternius/StylizedNature/Fern_1/StaticMeshes/Fern_1.Fern_1"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PlantBig(
+        TEXT("/Game/Environment/Quaternius/StylizedNature/Plant_1_Big/StaticMeshes/Plant_1_Big.Plant_1_Big"));
+
     static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoGroundCover(
         TEXT("/Game/Environment/Photoreal/PolyHaven/weed_plant_02/SM_LL_weed_plant_02.SM_LL_weed_plant_02"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoGroundCoverB(
@@ -151,6 +179,23 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
         TEXT("/Game/Environment/Photoreal/PolyHaven/weed_plant_02/weed_plant_02_1k/StaticMeshes/weed_plant_02_c_LOD0.weed_plant_02_c_LOD0"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoGroundCoverD(
         TEXT("/Game/Environment/Photoreal/PolyHaven/weed_plant_02/weed_plant_02_1k/StaticMeshes/weed_plant_02_d_LOD0.weed_plant_02_d_LOD0"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> GrassTall(
+        TEXT("/Game/Environment/Quaternius/StylizedNature/Grass_Common_Tall/StaticMeshes/Grass_Common_Tall.Grass_Common_Tall"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> GrassWispyTall(
+        TEXT("/Game/Environment/Quaternius/StylizedNature/Grass_Wispy_Tall/StaticMeshes/Grass_Wispy_Tall.Grass_Wispy_Tall"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> FlowerGroup(
+        TEXT("/Game/Environment/Quaternius/StylizedNature/Flower_3_Group/StaticMeshes/Flower_3_Group.Flower_3_Group"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> Clover(
+        TEXT("/Game/Environment/Quaternius/StylizedNature/Clover_1/StaticMeshes/Clover_1.Clover_1"));
+
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> RockMedium1(
+        TEXT("/Game/Environment/Quaternius/StylizedNature/Rock_Medium_1/StaticMeshes/Rock_Medium_1.Rock_Medium_1"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> RockMedium2(
+        TEXT("/Game/Environment/Quaternius/StylizedNature/Rock_Medium_2/StaticMeshes/Rock_Medium_2.Rock_Medium_2"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> RockMedium3(
+        TEXT("/Game/Environment/Quaternius/StylizedNature/Rock_Medium_3/StaticMeshes/Rock_Medium_3.Rock_Medium_3"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PebbleRound2(
+        TEXT("/Game/Environment/Quaternius/StylizedNature/Pebble_Round_2/StaticMeshes/Pebble_Round_2.Pebble_Round_2"));
 
     if (PhotoTreeFirSapling.Succeeded()) { TreeMeshes.Add(PhotoTreeFirSapling.Object); }
     if (PhotoTreePineSapling.Succeeded()) { TreeMeshes.Add(PhotoTreePineSapling.Object); }
@@ -158,20 +203,45 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
     if (PhotoTreeFirC.Succeeded()) { TreeMeshes.Add(PhotoTreeFirC.Object); }
     if (PhotoTreePineB.Succeeded()) { TreeMeshes.Add(PhotoTreePineB.Object); }
     if (PhotoTreePineC.Succeeded()) { TreeMeshes.Add(PhotoTreePineC.Object); }
+
+    if (MatureCommon1.Succeeded()) { TreeMeshes.Add(MatureCommon1.Object); }
+    if (MatureCommon2.Succeeded()) { TreeMeshes.Add(MatureCommon2.Object); }
+    if (MatureCommon3.Succeeded()) { TreeMeshes.Add(MatureCommon3.Object); }
+    if (MaturePine1.Succeeded()) { TreeMeshes.Add(MaturePine1.Object); }
+    if (MaturePine2.Succeeded()) { TreeMeshes.Add(MaturePine2.Object); }
+    if (MaturePine3.Succeeded()) { TreeMeshes.Add(MaturePine3.Object); }
+    if (MaturePine4.Succeeded()) { TreeMeshes.Add(MaturePine4.Object); }
+    if (MatureTwisted2.Succeeded()) { TreeMeshes.Add(MatureTwisted2.Object); }
+
     if (PhotoShrubA.Succeeded()) { ShrubMeshes.Add(PhotoShrubA.Object); }
     if (PhotoShrubB.Succeeded()) { ShrubMeshes.Add(PhotoShrubB.Object); }
     if (PhotoShrub02B.Succeeded()) { ShrubMeshes.Add(PhotoShrub02B.Object); }
     if (PhotoShrub02C.Succeeded()) { ShrubMeshes.Add(PhotoShrub02C.Object); }
     if (PhotoShrub03B.Succeeded()) { ShrubMeshes.Add(PhotoShrub03B.Object); }
     if (PhotoShrub03C.Succeeded()) { ShrubMeshes.Add(PhotoShrub03C.Object); }
-    if (PhotoGroundCover.Succeeded()) { GrassMeshes.Add(PhotoGroundCover.Object); }
-    if (PhotoGroundCoverB.Succeeded()) { GrassMeshes.Add(PhotoGroundCoverB.Object); }
-    if (PhotoGroundCoverC.Succeeded()) { GrassMeshes.Add(PhotoGroundCoverC.Object); }
-    if (PhotoGroundCoverD.Succeeded()) { GrassMeshes.Add(PhotoGroundCoverD.Object); }
-    if (PhotoBoulder.Succeeded()) { RockMeshes.Add(PhotoBoulder.Object); }
+    if (FlowerBush.Succeeded()) { ShrubMeshes.Add(FlowerBush.Object); }
+    if (Fern.Succeeded()) { ShrubMeshes.Add(Fern.Object); }
+    if (PlantBig.Succeeded()) { ShrubMeshes.Add(PlantBig.Object); }
+
+    // The imported weed_plant_02 variants currently render chalk-white in the
+    // observed desktop runtime. Keep the references available for future material
+    // repair, but do not let them dominate ambient ground cover during recovery.
+    if (GrassTall.Succeeded()) { GrassMeshes.Add(GrassTall.Object); }
+    if (GrassWispyTall.Succeeded()) { GrassMeshes.Add(GrassWispyTall.Object); }
+    if (FlowerGroup.Succeeded()) { GrassMeshes.Add(FlowerGroup.Object); }
+    if (Clover.Succeeded()) { GrassMeshes.Add(Clover.Object); }
+
+    // boulder_01 stays available for the reviewed furnace structure path, but
+    // its current ambient rendering is over-bright/white in runtime screenshots.
+    // Use the stable varied rock set for natural dressing until that material is
+    // repaired and visually re-approved.
+    if (RockMedium1.Succeeded()) { RockMeshes.Add(RockMedium1.Object); }
+    if (RockMedium2.Succeeded()) { RockMeshes.Add(RockMedium2.Object); }
+    if (RockMedium3.Succeeded()) { RockMeshes.Add(RockMedium3.Object); }
+    if (PebbleRound2.Succeeded()) { RockMeshes.Add(PebbleRound2.Object); }
 
     UE_LOG(LogTemp, Log,
-        TEXT("LLWorldPresentation desktop photoreal nature art: trees=%d shrubs=%d groundCover=%d rocks=%d"),
+        TEXT("LLWorldPresentation desktop layered nature art: trees=%d shrubs=%d groundCover=%d rocks=%d"),
         TreeMeshes.Num(),
         ShrubMeshes.Num(),
         GrassMeshes.Num(),
@@ -270,21 +340,22 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
             false));
     }
 
+#if PLATFORM_ANDROID
+    // Mobile keeps the compact primitive facility path.
     FacilityFoundationInstances = AddInstancedComponent(TEXT("FacilityFoundations"), GroundMesh, FacilityCullStartUU, FacilityCullEndUU, true);
     FacilityPostInstances = AddInstancedComponent(TEXT("FacilityPosts"), GroundMesh, FacilityCullStartUU, FacilityCullEndUU, true);
     FacilityRoofInstances = AddInstancedComponent(TEXT("FacilityRoofs"), GroundMesh, FacilityCullStartUU, FacilityCullEndUU, true);
     FacilityCargoInstances = AddInstancedComponent(TEXT("FacilityCargo"), GroundMesh, FacilityCullStartUU, FacilityCullEndUU, true);
-    FacilityAccentInstances = AddInstancedComponent(TEXT("FacilityAccents"), GroundMesh, FacilityCullStartUU, FacilityCullEndUU, false);
-
-#if !PLATFORM_ANDROID
-    // Desktop production must never expose stretched Engine cubes as visible
-    // construction art. Keep these components alive for the lightweight mobile
-    // path and existing bookkeeping, but hide them on Windows/macOS/Linux.
-    if (FacilityFoundationInstances) { FacilityFoundationInstances->SetVisibility(false, true); }
-    if (FacilityPostInstances) { FacilityPostInstances->SetVisibility(false, true); }
-    if (FacilityRoofInstances) { FacilityRoofInstances->SetVisibility(false, true); }
-    if (FacilityCargoInstances) { FacilityCargoInstances->SetVisibility(false, true); }
+#else
+    // Desktop recovery invariant: Engine BasicShape cubes are not even created
+    // for structural facility presentation. This removes the failure mode that
+    // exposed giant stretched proxy slabs when visibility/state drifted.
+    FacilityFoundationInstances = nullptr;
+    FacilityPostInstances = nullptr;
+    FacilityRoofInstances = nullptr;
+    FacilityCargoInstances = nullptr;
 #endif
+    FacilityAccentInstances = AddInstancedComponent(TEXT("FacilityAccents"), GroundMesh, FacilityCullStartUU, FacilityCullEndUU, false);
 
     if (PhotoFirePit.Succeeded())
     {
@@ -1342,11 +1413,11 @@ void ALLWorldPresentationActor::BuildChunkDressing(
     constexpr float TreeMinScale = 0.82f;
     constexpr float TreeMaxScale = 1.72f;
 #else
-    // Current desktop catalogue is sapling-heavy. A moderate presentation-only
-    // scale lift makes young trees read at observer distance until mature CC0
-    // canopy assets are added; Core ecology/resource quantities are unchanged.
-    constexpr float TreeMinScale = 1.10f;
-    constexpr float TreeMaxScale = 2.20f;
+    // Desktop now mixes compact photoreal saplings with mature canopy meshes.
+    // Keep scale variation natural instead of compensating for a sapling-only
+    // catalogue with oversized instances.
+    constexpr float TreeMinScale = 0.92f;
+    constexpr float TreeMaxScale = 1.65f;
 #endif
     Place(TreeInstances, TreeCount, PlacedTrees, MaxTreeInstances, TreeMinScale, TreeMaxScale, 3.5f, ELLDressingLayer::Canopy);
     Place(ShrubInstances, ShrubCount, PlacedShrubs, MaxShrubInstances, 0.62f, 1.58f, 6.0f, ELLDressingLayer::Undergrowth);
