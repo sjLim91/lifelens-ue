@@ -25,7 +25,12 @@ namespace
         Component.SetGenerateOverlapEvents(false);
         Component.SetCanEverAffectNavigation(false);
         Component.SetCastShadow(false);
+
+        // Collision authority must never become visible presentation. HiddenInGame
+        // alone can still leak editor/PIE proxy geometry when viewport visibility
+        // state changes, so disable rendering explicitly while retaining collision.
         Component.SetHiddenInGame(true);
+        Component.SetVisibility(false, true);
     }
 
     uint32 MixSignature(uint32 Seed, uint32 Value)
