@@ -188,13 +188,6 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
     static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoWoodenAxe(
         TEXT("/Game/Environment/Photoreal/PolyHaven/wooden_axe/SM_LL_wooden_axe.SM_LL_wooden_axe"));
 
-    UE_LOG(LogTemp, Log,
-        TEXT("LLWorldPresentation production natural art: trees=%d shrubs=%d groundCover=%d rocks=%d"),
-        TreeMeshes.Num(),
-        ShrubMeshes.Num(),
-        GrassMeshes.Num(),
-        RockMeshes.Num());
-
     Ground = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("GeneratedGround"));
     Ground->SetupAttachment(Root);
     Ground->SetMobility(EComponentMobility::Movable);
