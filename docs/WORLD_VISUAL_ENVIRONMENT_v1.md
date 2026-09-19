@@ -183,4 +183,4 @@ The project-authored `PCG_LL_GroundCover.uasset` was regenerated successfully in
 - source mesh: approved Poly Haven `SM_LL_weed_plant_02`.
 - graph path: `/Game/Environment/PCG/PCG_LL_GroundCover`.
 - authoring run completed after the required Unreal Water plugin collision profile was supplied.
-- runtime use remains decorative-only until the consumer PR attaches the graph to materialized chunks.
+- desktop runtime now consumes the graph for the initial observer region using the authoritative initial-chunk `VisualSeed`. Broader chunk-by-chunk PCG expansion remains a later optimization/coverage step; gameplay resource truth is still Core-owned.
