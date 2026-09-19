@@ -6,6 +6,7 @@
 #include "lifelens/NaturalPhysicalObstacle.h"
 #include "lifelens/NaturalWorldChunk.h"
 #include "lifelens/Simulation.h"
+#include "lifelens/WorldHierarchy.h"
 
 namespace
 {
@@ -72,6 +73,9 @@ void FillHydrologyObservation(
     Out.DownstreamChunkX = Facts.downstream.x;
     Out.DownstreamChunkY = Facts.downstream.y;
     Out.bFreshSurfaceWater = lifelens::isFreshSurfaceWater(Facts);
+    Out.bHasMarineNeighbour = Facts.hasMarineNeighbour;
+    Out.MarineNeighbourChunkX = Facts.marineNeighbour.x;
+    Out.MarineNeighbourChunkY = Facts.marineNeighbour.y;
 }
 
 bool FillSurfaceWaterPresentationObservation(
@@ -99,6 +103,15 @@ bool FillSurfaceWaterPresentationObservation(
     Out.SurfaceAvailability = static_cast<float>(Facts.surfaceAvailability);
     Out.FlowPotential = static_cast<float>(Facts.flowPotential);
     Out.bFreshSurfaceWater = lifelens::isFreshSurfaceWater(Facts);
+
+    if (Facts.hasMarineNeighbour)
+    {
+        const lifelens::GridPos MarineOrigin =
+            lifelens::chunkOriginGrid(Facts.marineNeighbour);
+        Out.bHasMarineNeighbour = true;
+        Out.MarineCenterGridX = MarineOrigin.x + HalfChunk;
+        Out.MarineCenterGridY = MarineOrigin.y + HalfChunk;
+    }
 
     switch (Facts.surfaceKind)
     {
@@ -279,6 +292,43 @@ void FillNaturalChunkObservation(
         Out.PhysicalObstacles.Add(Read);
     }
 }
+}
+
+
+FLLCoreWorldHierarchyObservation
+ULLCoreBridgeSubsystem::GetWorldHierarchyObservation() const
+{
+    FLLCoreWorldHierarchyObservation Result;
+    if (!CoreSimulation)
+    {
+        return Result;
+    }
+
+    const lifelens::World& World = CoreSimulation->world();
+    const lifelens::WorldGenesisIdentity Identity = World.genesisIdentity();
+    const lifelens::PlanetIdentity Planet =
+        lifelens::derivePrimaryPlanetIdentity(Identity);
+
+    Result.bAvailable = lifelens::validPlanetIdentity(Planet);
+    Result.PlanetId = static_cast<int64>(Planet.id);
+    Result.PlanetSeed = static_cast<int64>(Planet.seed & 0x7fffffffffffffffULL);
+    Result.SurfaceRegionSpanChunks = lifelens::SurfaceRegionSpanChunks;
+
+    if (World.hasInitialStartRegionSelection)
+    {
+        const lifelens::SurfaceRegionIdentity Region =
+            lifelens::deriveSurfaceRegionIdentityForChunk(
+                Identity,
+                World.initialStartRegionCoord);
+        Result.bHasInitialSurfaceRegion =
+            lifelens::validSurfaceRegionIdentity(Region);
+        Result.InitialSurfaceRegionId = static_cast<int64>(Region.id);
+        Result.InitialSurfaceRegionSeed =
+            static_cast<int64>(Region.seed & 0x7fffffffffffffffULL);
+        Result.InitialSurfaceRegionX = Region.coord.x;
+        Result.InitialSurfaceRegionY = Region.coord.y;
+    }
+    return Result;
 }
 
 FLLCoreWorldGenerationObservation ULLCoreBridgeSubsystem::GetWorldGenerationObservation() const

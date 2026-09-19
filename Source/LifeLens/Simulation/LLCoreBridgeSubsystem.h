@@ -152,6 +152,9 @@ public:
     UFUNCTION(BlueprintPure, Category="LifeLens|Core|WorldGeneration")
     FLLCoreWorldGenerationObservation GetWorldGenerationObservation() const;
 
+    UFUNCTION(BlueprintPure, Category="LifeLens|Core|WorldHierarchy")
+    FLLCoreWorldHierarchyObservation GetWorldHierarchyObservation() const;
+
     // Authoritative materialized natural chunks in Core registry order.
     // Consumers must use this instead of guessing coordinates from a count/radius.
     UFUNCTION(BlueprintPure, Category="LifeLens|Core|WorldGeneration")

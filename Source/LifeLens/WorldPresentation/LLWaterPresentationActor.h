@@ -11,8 +11,9 @@ class AActor;
  *
  * This actor is presentation-only: it never creates Core water/resources,
  * never changes salinity/flow/availability, and disables gameplay collision on
- * the spawned Water actors. Coast/ocean geometry remains deferred until the
- * planetary/coastline contract is rich enough to avoid flooding the local map.
+ * the spawned Water actors. Coast/ocean use bounded Local Surface polygons;
+ * the later Planetary layer may use a true globe/ocean representation without
+ * changing Core hydrology authority.
  */
 UCLASS(Config=Game, DefaultConfig)
 class LIFELENS_API ALLWaterPresentationActor : public AActor

@@ -10,7 +10,10 @@ using WorldSeed = std::uint64_t;
 using PopulationSeed = std::uint64_t;
 using WorldGenerationVersion = std::uint32_t;
 
-inline constexpr WorldGenerationVersion CurrentWorldGenerationVersion = 1;
+// v2 introduces deterministic land/coast/ocean macro topology. v1 remains
+// fully readable/replayable and retains the original all-land local-surface
+// generator semantics.
+inline constexpr WorldGenerationVersion CurrentWorldGenerationVersion = 2;
 
 // Logical Core grid cells per chunk. This is a simulation-coordinate contract,
 // not a statement that one grid cell equals one physical meter in presentation.

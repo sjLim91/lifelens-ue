@@ -18,7 +18,9 @@ enum class NaturalSurfaceKind : std::uint8_t {
     RockyGround,
     WetGround,
     DryGround,
-    ColdGround
+    ColdGround,
+    Coast,
+    Ocean
 };
 
 inline const char* naturalSurfaceKindName(NaturalSurfaceKind kind)
@@ -31,6 +33,8 @@ inline const char* naturalSurfaceKindName(NaturalSurfaceKind kind)
         case NaturalSurfaceKind::WetGround: return "WetGround";
         case NaturalSurfaceKind::DryGround: return "DryGround";
         case NaturalSurfaceKind::ColdGround: return "ColdGround";
+        case NaturalSurfaceKind::Coast: return "Coast";
+        case NaturalSurfaceKind::Ocean: return "Ocean";
     }
     return "Plains";
 }
@@ -45,6 +49,8 @@ inline bool validNaturalSurfaceKind(NaturalSurfaceKind kind)
         case NaturalSurfaceKind::WetGround:
         case NaturalSurfaceKind::DryGround:
         case NaturalSurfaceKind::ColdGround:
+        case NaturalSurfaceKind::Coast:
+        case NaturalSurfaceKind::Ocean:
             return true;
     }
     return false;
@@ -205,7 +211,13 @@ inline GeneratedNaturalChunk deriveGeneratedNaturalChunk(
     chunk.chunkSeed = untouched.chunkSeed;
     chunk.generationVersion = identity.generationVersion;
     chunk.biome = macro.biome;
-    chunk.surface = naturalSurfaceForBiome(macro.biome);
+    const MacroSurfaceFacts macroSurface =
+        deriveMacroSurfaceFacts(identity, coord);
+    chunk.surface = macroSurface.surfaceClass == MacroSurfaceClass::Ocean
+        ? NaturalSurfaceKind::Ocean
+        : (macroSurface.surfaceClass == MacroSurfaceClass::Coast
+            ? NaturalSurfaceKind::Coast
+            : naturalSurfaceForBiome(macro.biome));
     chunk.elevation = macro.elevation;
     chunk.moisture = macro.moisture;
     chunk.temperature = macro.temperature;
@@ -227,8 +239,20 @@ inline GeneratedNaturalChunk deriveGeneratedNaturalChunk(
         MaterialKind::TinOre
     };
 
+    // Ocean is represented by hydrology, not a drinkable Water ResourceNode
+    // or terrestrial resource catalogue. Coastal land may keep terrestrial
+    // materials, but brackish/salt surface water is not synthesized as fresh
+    // inventory water.
+    if(macroSurface.surfaceClass == MacroSurfaceClass::Ocean){
+        return chunk;
+    }
+
     const GridPos origin = chunkOriginGrid(coord);
     for(MaterialKind material : materials){
+        if(material == MaterialKind::Water
+           && macroSurface.surfaceClass != MacroSurfaceClass::Land){
+            continue;
+        }
         const double potential = naturalPotentialForMaterial(macro, material);
         const bool metalOre=
             material==MaterialKind::CopperOre

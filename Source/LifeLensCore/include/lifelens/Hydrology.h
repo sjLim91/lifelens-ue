@@ -43,6 +43,11 @@ struct HydrologyFacts {
 
     bool hasDownstream = false;
     ChunkCoord downstream{};
+
+    // Coastline orientation hint derived from the same authoritative macro
+    // topology. Presentation may use it to clip a local coastal water surface.
+    bool hasMarineNeighbour = false;
+    ChunkCoord marineNeighbour{};
 };
 
 inline const char* surfaceWaterKindName(SurfaceWaterKind kind)
@@ -167,7 +172,18 @@ inline HydrologyFacts deriveHydrologyFacts(
         + 0.34 * center.waterPotential
         + 0.20 * clampMacro01(downhillDrop * 9.0));
 
-    if(center.biome == MacroBiome::Wetland
+    const MacroSurfaceFacts macroSurface =
+        deriveMacroSurfaceFacts(identity, coord);
+
+    if(macroSurface.surfaceClass == MacroSurfaceClass::Ocean){
+        result.surfaceKind = SurfaceWaterKind::Ocean;
+        result.salinity = WaterSalinity::Salt;
+    }else if(macroSurface.surfaceClass == MacroSurfaceClass::Coast){
+        result.surfaceKind = SurfaceWaterKind::Coast;
+        result.salinity = WaterSalinity::Brackish;
+        result.hasMarineNeighbour = macroSurface.hasMarineNeighbour;
+        result.marineNeighbour = macroSurface.marineNeighbour;
+    }else if(center.biome == MacroBiome::Wetland
        && center.waterPotential >= 0.66
        && center.moisture >= 0.60){
         result.surfaceKind = SurfaceWaterKind::Wetland;
@@ -185,10 +201,9 @@ inline HydrologyFacts deriveHydrologyFacts(
         result.surfaceKind = SurfaceWaterKind::Spring;
     }
 
-    // Coast/Ocean are part of the stable contract now but are intentionally
-    // not generated until the planetary sea-level/surface topology contract
-    // lands. Current macro chunks are a local-surface compatibility projection.
-    result.salinity = WaterSalinity::Fresh;
+    if(macroSurface.surfaceClass == MacroSurfaceClass::Land){
+        result.salinity = WaterSalinity::Fresh;
+    }
 
     switch(result.surfaceKind){
         case SurfaceWaterKind::River:
@@ -226,7 +241,13 @@ inline HydrologyFacts deriveHydrologyFacts(
             result.flowPotential = 0.18 * result.rechargePotential;
             break;
         case SurfaceWaterKind::Coast:
+            result.surfaceAvailability = 1.0;
+            result.flowPotential = 0.16 * result.runoffPotential;
+            break;
         case SurfaceWaterKind::Ocean:
+            result.surfaceAvailability = 1.0;
+            result.flowPotential = 0.06 * result.runoffPotential;
+            break;
         case SurfaceWaterKind::None:
             break;
     }
@@ -275,6 +296,16 @@ inline bool validHydrologyFacts(const HydrologyFacts& facts)
 
     if(facts.hasDownstream
        && !isCardinalNeighbour(facts.coord, facts.downstream)){
+        return false;
+    }
+
+    if(facts.hasMarineNeighbour
+       && !isCardinalNeighbour(facts.coord, facts.marineNeighbour)){
+        return false;
+    }
+
+    if(facts.surfaceKind == SurfaceWaterKind::Coast
+       && !facts.hasMarineNeighbour){
         return false;
     }
 

@@ -41,6 +41,21 @@ struct InitialStartRegionSelection {
     int evaluatedCandidates = 0;
 };
 
+inline constexpr double MacroSeaLevel01 = 0.43;
+
+enum class MacroSurfaceClass : std::uint8_t {
+    Land = 0,
+    Coast,
+    Ocean
+};
+
+struct MacroSurfaceFacts {
+    ChunkCoord coord{};
+    MacroSurfaceClass surfaceClass = MacroSurfaceClass::Land;
+    bool hasMarineNeighbour = false;
+    ChunkCoord marineNeighbour{};
+};
+
 inline double clampMacro01(double value)
 {
     return std::max(0.0,std::min(1.0,value));
@@ -182,6 +197,64 @@ inline MacroRegionFacts deriveMacroRegionFacts(
     return facts;
 }
 
+inline MacroSurfaceFacts deriveMacroSurfaceFacts(
+    const WorldGenesisIdentity& identity,
+    ChunkCoord coord)
+{
+    MacroSurfaceFacts surface;
+    surface.coord = coord;
+
+    // Generation v1 shipped as an all-land local-surface projection. Never
+    // reinterpret an old v1 save through the v2 sea-level contract.
+    if (identity.generationVersion < 2)
+    {
+        return surface;
+    }
+
+    const MacroRegionFacts center = deriveMacroRegionFacts(identity, coord);
+    if (center.elevation < MacroSeaLevel01)
+    {
+        surface.surfaceClass = MacroSurfaceClass::Ocean;
+        return surface;
+    }
+
+    const ChunkCoord neighbours[4] = {
+        {coord.x + 1, coord.y},
+        {coord.x - 1, coord.y},
+        {coord.x, coord.y + 1},
+        {coord.x, coord.y - 1}
+    };
+
+    bool foundMarine = false;
+    double lowestMarineElevation = 2.0;
+    ChunkCoord lowestMarine{};
+    for (const ChunkCoord neighbour : neighbours)
+    {
+        const double elevation =
+            deriveMacroRegionFacts(identity, neighbour).elevation;
+        if (elevation >= MacroSeaLevel01)
+        {
+            continue;
+        }
+        if (!foundMarine
+            || elevation < lowestMarineElevation
+            || (elevation == lowestMarineElevation && neighbour < lowestMarine))
+        {
+            foundMarine = true;
+            lowestMarineElevation = elevation;
+            lowestMarine = neighbour;
+        }
+    }
+
+    if (foundMarine)
+    {
+        surface.surfaceClass = MacroSurfaceClass::Coast;
+        surface.hasMarineNeighbour = true;
+        surface.marineNeighbour = lowestMarine;
+    }
+    return surface;
+}
+
 inline double scoreInitialStartRegion(const MacroRegionFacts& facts)
 {
     // Water/food dominate early survival; material diversity and traversal make
@@ -218,9 +291,14 @@ inline InitialStartRegionSelection selectInitialStartRegion(
 
     for(int y=-radius;y<=radius;++y){
         for(int x=-radius;x<=radius;++x){
-            const MacroRegionFacts facts=deriveMacroRegionFacts(identity,{x,y});
-            const double viability=scoreInitialStartRegion(facts);
+            const ChunkCoord coord{x,y};
+            const MacroRegionFacts facts=deriveMacroRegionFacts(identity,coord);
+            const MacroSurfaceFacts surface=deriveMacroSurfaceFacts(identity,coord);
+            const double viability=surface.surfaceClass==MacroSurfaceClass::Land
+                ? scoreInitialStartRegion(facts)
+                : 0.0;
             ++best.evaluatedCandidates;
+            if(surface.surfaceClass!=MacroSurfaceClass::Land) continue;
             if(!hasBest || viability>best.viability ||
                (viability==best.viability && facts.coord<best.region.coord)){
                 best.region=facts;

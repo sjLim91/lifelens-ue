@@ -20,7 +20,9 @@ bool sameHydrology(const HydrologyFacts& a, const HydrologyFacts& b)
         && a.rechargePotential == b.rechargePotential
         && a.runoffPotential == b.runoffPotential
         && a.hasDownstream == b.hasDownstream
-        && a.downstream == b.downstream;
+        && a.downstream == b.downstream
+        && a.hasMarineNeighbour == b.hasMarineNeighbour
+        && a.marineNeighbour == b.marineNeighbour;
 }
 
 } // namespace
@@ -36,6 +38,9 @@ int main()
     int surfaceCount = 0;
     int flowingCount = 0;
     int freshCount = 0;
+    int coastCount = 0;
+    int oceanCount = 0;
+    int saltOrBrackishCount = 0;
     std::map<std::pair<int,int>, WaterBodyId> ids;
 
     for(int y = -24; y <= 24; ++y){
@@ -61,6 +66,21 @@ int main()
             if(isFreshSurfaceWater(a)){
                 ++freshCount;
             }
+            if(a.surfaceKind == SurfaceWaterKind::Coast){
+                ++coastCount;
+                assert(a.salinity == WaterSalinity::Brackish);
+                assert(a.hasMarineNeighbour);
+                assert(isCardinalNeighbour(a.coord, a.marineNeighbour));
+                assert(!isFreshSurfaceWater(a));
+            }
+            if(a.surfaceKind == SurfaceWaterKind::Ocean){
+                ++oceanCount;
+                assert(a.salinity == WaterSalinity::Salt);
+                assert(!isFreshSurfaceWater(a));
+            }
+            if(a.salinity != WaterSalinity::Fresh){
+                ++saltOrBrackishCount;
+            }
         }
     }
 
@@ -69,12 +89,29 @@ int main()
     assert(surfaceCount > 0);
     assert(flowingCount > 0);
     assert(freshCount > 0);
+    assert(coastCount > 0);
+    assert(oceanCount > 0);
+    assert(saltOrBrackishCount > 0);
 
     // Stable ids reproduce exactly for the same seed/coord/kind.
     for(const auto& entry : ids){
         const ChunkCoord coord{entry.first.first, entry.first.second};
         const HydrologyFacts replay = deriveHydrologyFacts(peopleA, coord);
         assert(replay.surfaceWaterId == entry.second);
+    }
+
+    // Generator v1 compatibility: old saves must never be silently reclassified
+    // through the v2 sea-level topology.
+    const WorldGenesisIdentity legacyV1 =
+        makeWorldGenesisIdentity(seed, 111ULL, 1);
+    for(int y = -12; y <= 12; ++y){
+        for(int x = -12; x <= 12; ++x){
+            const HydrologyFacts legacy =
+                deriveHydrologyFacts(legacyV1, {x,y});
+            assert(legacy.surfaceKind != SurfaceWaterKind::Coast);
+            assert(legacy.surfaceKind != SurfaceWaterKind::Ocean);
+            assert(legacy.salinity == WaterSalinity::Fresh);
+        }
     }
 
     // A different world must differ in at least one hydrology fact.
@@ -90,8 +127,8 @@ int main()
     }
     assert(differs);
 
-    // Coast/Ocean are reserved until the planetary sea-level contract lands.
-    // Their salinity rule is already enforced by the validation contract.
+    // Marine surface is now generated from the deterministic macro sea-level
+    // contract; validation still rejects impossible fresh oceans.
     HydrologyFacts invalidOcean;
     invalidOcean.coord = {0,0};
     invalidOcean.surfaceKind = SurfaceWaterKind::Ocean;

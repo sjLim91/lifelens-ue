@@ -1306,6 +1306,16 @@ void ALLWorldPresentationActor::BuildChunkDressing(
     const FLLCoreTerrainPresentationObservation& Terrain)
 {
     if (!Chunk.bMaterialized) { return; }
+
+    const bool bOceanSurface = Chunk.Surface == FName(TEXT("Ocean"));
+    const bool bCoastSurface = Chunk.Surface == FName(TEXT("Coast"));
+    if (bOceanSurface)
+    {
+        // Marine Local Surface is owned by LLWaterPresentationActor. Do not
+        // plant terrestrial canopy/undergrowth beneath a visible ocean body.
+        return;
+    }
+
     const FVector ChunkOrigin = ChunkOriginUU(World, Chunk.ChunkX, Chunk.ChunkY);
     const float HalfSpan = LLWorldSpatialContract::ChunkSpanUU * 0.5f;
     uint32 State = Chunk.VisualSeed != 0
@@ -1322,13 +1332,13 @@ void ALLWorldPresentationActor::BuildChunkDressing(
     constexpr float AmbientDensityGain = 1.22f;
     constexpr float RockDensityGain = 1.12f;
 #endif
-    const int32 TreeCount = ScaledCount(
+    const int32 TreeCount = bCoastSurface ? 0 : ScaledCount(
         FMath::Clamp(Fertility * Moisture * AmbientDensityGain, 0.0f, 1.0f),
         MaxTreesPerChunk);
-    const int32 ShrubCount = ScaledCount(
+    const int32 ShrubCount = bCoastSurface ? 0 : ScaledCount(
         FMath::Clamp((Fertility * 0.8f + Moisture * 0.2f) * AmbientDensityGain, 0.0f, 1.0f),
         MaxShrubsPerChunk);
-    const int32 GrassCount = ScaledCount(
+    const int32 GrassCount = bCoastSurface ? 0 : ScaledCount(
         FMath::Clamp((Fertility * 0.6f + Moisture * 0.4f) * AmbientDensityGain, 0.0f, 1.0f),
         MaxGrassPerChunk);
     const int32 RockCount = ScaledCount(
@@ -1451,6 +1461,18 @@ void ALLWorldPresentationActor::BuildChunkDressing(
     for (const FLLCoreNaturalResourcePatchObservation& Patch : Chunk.ResourcePatches)
     {
         const FString Material = Patch.Material.ToString().ToLower();
+        if (bCoastSurface
+            && (Material.Contains(TEXT("wood"))
+                || Material.Contains(TEXT("timber"))
+                || Material.Contains(TEXT("tree"))
+                || Material.Contains(TEXT("berry"))
+                || Material.Contains(TEXT("plant"))
+                || Material.Contains(TEXT("fiber"))
+                || Material.Contains(TEXT("food"))))
+        {
+            continue;
+        }
+
         TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>>* Target = nullptr;
         int32* PlacedCounter = nullptr;
         int32 MaxTotal = 0;

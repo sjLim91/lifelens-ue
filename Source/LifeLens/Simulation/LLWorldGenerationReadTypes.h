@@ -3,6 +3,39 @@
 #include "CoreMinimal.h"
 #include "LLWorldGenerationReadTypes.generated.h"
 
+
+UENUM(BlueprintType)
+enum class ELLObserverWorldScale : uint8
+{
+    LocalSurface,
+    Regional,
+    Planetary,
+    Orbital,
+    Interplanetary
+};
+
+/**
+ * Read-only hierarchy identity for the authoritative generated world.
+ *
+ * Planet and surface-region ids are deterministic derivatives of WorldSeed and
+ * GenerationVersion. They are not a second Save authority.
+ */
+USTRUCT(BlueprintType)
+struct FLLCoreWorldHierarchyObservation
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldHierarchy") bool bAvailable = false;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldHierarchy") int64 PlanetId = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldHierarchy") int64 PlanetSeed = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldHierarchy") int32 SurfaceRegionSpanChunks = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldHierarchy") bool bHasInitialSurfaceRegion = false;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldHierarchy") int64 InitialSurfaceRegionId = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldHierarchy") int64 InitialSurfaceRegionSeed = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldHierarchy") int32 InitialSurfaceRegionX = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldHierarchy") int32 InitialSurfaceRegionY = 0;
+};
+
 UENUM(BlueprintType)
 enum class ELLCoreNaturalObstacleKind : uint8
 {
@@ -51,6 +84,9 @@ struct FLLCoreHydrologyObservation
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology") int32 DownstreamChunkX = 0;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology") int32 DownstreamChunkY = 0;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology") bool bFreshSurfaceWater = false;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology") bool bHasMarineNeighbour = false;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology") int32 MarineNeighbourChunkX = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology") int32 MarineNeighbourChunkY = 0;
 };
 
 /**
@@ -88,6 +124,12 @@ struct FLLCoreSurfaceWaterPresentationObservation
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Presentation") float SurfaceAvailability = 0.0f;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Presentation") float FlowPotential = 0.0f;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Presentation") bool bFreshSurfaceWater = false;
+
+    // Coast-only orientation hint. The neighbour is authoritative macro ocean;
+    // consumers may use its center direction to clip the local water polygon.
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Presentation") bool bHasMarineNeighbour = false;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Presentation") int32 MarineCenterGridX = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Presentation") int32 MarineCenterGridY = 0;
 };
 
 /**
