@@ -186,6 +186,45 @@ public:
         return true;
     }
 
+    int agePlantFoodOneDay(
+        double freshnessLoss,
+        double spoilThreshold=0.08)
+    {
+        const double loss=std::max(0.0,freshnessLoss);
+        const double threshold=clamp01(spoilThreshold);
+        int spoiled=0;
+        for(auto& stack:stacks_){
+            if(stack.kind!=ItemKind::RawMaterial
+               || stack.material!=MaterialKind::PlantFood
+               || stack.quantity<=0) continue;
+            stack.quality=clamp01(stack.quality-loss);
+            if(stack.quality<=threshold){
+                spoiled+=stack.quantity;
+                stack.quantity=0;
+            }
+        }
+        stacks_.erase(
+            std::remove_if(
+                stacks_.begin(),stacks_.end(),
+                [](const ItemStack& stack){ return stack.quantity<=0; }),
+            stacks_.end());
+        return spoiled;
+    }
+
+    double averagePlantFoodFreshness() const
+    {
+        int units=0;
+        double weighted=0.0;
+        for(const auto& stack:stacks_){
+            if(stack.kind!=ItemKind::RawMaterial
+               || stack.material!=MaterialKind::PlantFood
+               || stack.quantity<=0) continue;
+            units+=stack.quantity;
+            weighted+=stack.quality*static_cast<double>(stack.quantity);
+        }
+        return units>0 ? clamp01(weighted/static_cast<double>(units)) : 0.0;
+    }
+
 private:
     static double clamp01(double value){ return std::max(0.0,std::min(1.0,value)); }
     static bool near(double a,double b){ return a>b ? a-b<1e-9 : b-a<1e-9; }
