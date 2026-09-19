@@ -50,6 +50,9 @@ jobs:
       - name: Validate World Generation Milestone A
         run: python Tools/validate_world_generation_milestone_a.py
 
+      - name: Validate graphics foundation invariants
+        run: python Tools/validate_graphics_foundation.py
+
       - name: Verify Unreal project metadata
         run: |
           python - <<'PY'
