@@ -54,6 +54,33 @@ namespace
         }
         return NAME_None;
     }
+
+    void ResolveResidentLoopVariation(
+        const AActor* Owner,
+        const UAnimSequence* Clip,
+        float& OutPlayRate,
+        float& OutPhase01)
+    {
+        OutPlayRate = 1.0f;
+        OutPhase01 = 0.0f;
+
+        const ALLResidentCharacter* Resident = Cast<ALLResidentCharacter>(Owner);
+        if (!Resident || !Resident->GetResidentId().IsValid() || !Clip)
+        {
+            return;
+        }
+
+        uint32 Hash = GetTypeHash(Resident->GetResidentId());
+        Hash = HashCombine(Hash, GetTypeHash(Clip->GetFName()));
+        const float RateUnit = static_cast<float>(Hash & 0xFFFFu) / 65535.0f;
+        const float PhaseUnit =
+            static_cast<float>((Hash >> 16) & 0xFFFFu) / 65535.0f;
+
+        // Presentation-only micro-variation prevents residents from looking
+        // synchronized without changing authoritative action timing or travel.
+        OutPlayRate = FMath::Lerp(0.96f, 1.04f, RateUnit);
+        OutPhase01 = PhaseUnit;
+    }
 }
 
 ULLResidentMotionComponent::ULLResidentMotionComponent()
@@ -117,6 +144,10 @@ ULLResidentMotionComponent::ULLResidentMotionComponent()
     static ConstructorHelpers::FObjectFinder<UAnimSequence> SeatedEnterFinder(
         TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Sitting_Enter.Sitting_Enter"));
     SeatedEnterAnimation = SeatedEnterFinder.Succeeded() ? SeatedEnterFinder.Object : nullptr;
+
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> SeatedIdleFinder(
+        TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Sitting_Idle_Loop.Sitting_Idle_Loop"));
+    SeatedIdleAnimation = SeatedIdleFinder.Succeeded() ? SeatedIdleFinder.Object : nullptr;
 
     static ConstructorHelpers::FObjectFinder<UAnimSequence> SeatedCareFinder(
         TEXT("/Game/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Sitting_Talking_Loop.Sitting_Talking_Loop"));
@@ -408,11 +439,10 @@ ELLResidentContextMotion ULLResidentMotionComponent::ResolveContextMotion() cons
                 case ELLCoreParentingAction::ToiletAssist:
                     return ELLResidentContextMotion::CrouchLow;
                 case ELLCoreParentingAction::PutToSleep:
-                    // No authored lying/settling clip exists in the imported
-                    // pack, so this stays a seated care pose and is recorded as
-                    // a Context Motion v2 asset gap rather than dressed up with
-                    // an unrelated clip.
-                    return ELLResidentContextMotion::SeatedCare;
+                    // Quiet sitting reads more naturally than continuous
+                    // talking while settling a child. The action still comes
+                    // exclusively from the authoritative parenting directive.
+                    return ELLResidentContextMotion::SeatedQuiet;
                 default:
                     return ELLResidentContextMotion::Talk;
             }
@@ -510,6 +540,7 @@ UAnimSequence* ULLResidentMotionComponent::ClipForContextMotion(ELLResidentConte
             return nullptr;
         case ELLResidentContextMotion::FireTend:    return FireAnimation;
         case ELLResidentContextMotion::CrouchLow:   return CrouchAnimation;
+        case ELLResidentContextMotion::SeatedQuiet: return SeatedIdleAnimation;
         case ELLResidentContextMotion::SeatedCare:  return SeatedCareAnimation;
         case ELLResidentContextMotion::None:
         default:                                    return nullptr;
@@ -586,6 +617,23 @@ void ULLResidentMotionComponent::UpdateContextAnimationState(float DeltaTime)
         }
         Body->SetAnimationMode(EAnimationMode::AnimationSingleNode);
         Body->PlayAnimation(Clip, bLoop);
+
+        if (bLoop)
+        {
+            float PlayRate = 1.0f;
+            float Phase01 = 0.0f;
+            ResolveResidentLoopVariation(GetOwner(), Clip, PlayRate, Phase01);
+            if (UAnimSingleNodeInstance* SingleNode = Body->GetSingleNodeInstance())
+            {
+                SingleNode->SetPlayRate(PlayRate);
+                const float ClipLength = Clip->GetPlayLength();
+                if (ClipLength > KINDA_SMALL_NUMBER)
+                {
+                    SingleNode->SetPosition(ClipLength * Phase01, false);
+                }
+            }
+        }
+
         ActiveContextAnimation = Clip;
         bLocomotionPlaying = false;
     };
@@ -642,9 +690,28 @@ void ULLResidentMotionComponent::UpdateContextAnimationState(float DeltaTime)
 
         if (bSeatedEntered)
         {
-            PlayClip(SeatedCareAnimation, true);
-            ActiveContextMotion = ELLResidentContextMotion::SeatedCare;
-            return;
+            const bool bStillWantsSeated =
+                DesiredMotion == ELLResidentContextMotion::SeatedCare
+                || DesiredMotion == ELLResidentContextMotion::SeatedQuiet;
+            if (bStillWantsSeated)
+            {
+                UAnimSequence* SettledClip =
+                    DesiredMotion == ELLResidentContextMotion::SeatedQuiet
+                        ? SeatedIdleAnimation.Get()
+                        : SeatedCareAnimation.Get();
+                PlayClip(SettledClip, true);
+                ActiveContextMotion = DesiredMotion;
+                return;
+            }
+
+            if (SeatedExitAnimation)
+            {
+                bSeatedEntered = false;
+                PlayClip(SeatedExitAnimation, false);
+                SeatedTransitionRemaining = SeatedExitAnimation->GetPlayLength();
+                ActiveContextMotion = ELLResidentContextMotion::None;
+                return;
+            }
         }
 
         // The stand-up clip finished. Release the body explicitly, otherwise
@@ -656,14 +723,16 @@ void ULLResidentMotionComponent::UpdateContextAnimationState(float DeltaTime)
     }
 
     const bool bWasSeated = bSeatedEntered;
-    const bool bWantsSeated = DesiredMotion == ELLResidentContextMotion::SeatedCare;
+    const bool bWantsSeated =
+        DesiredMotion == ELLResidentContextMotion::SeatedCare
+        || DesiredMotion == ELLResidentContextMotion::SeatedQuiet;
 
     if (bWantsSeated && !bWasSeated && SeatedEnterAnimation)
     {
         PlayClip(SeatedEnterAnimation, false);
         SeatedTransitionRemaining = SeatedEnterAnimation->GetPlayLength();
         bSeatedEntered = true;
-        ActiveContextMotion = ELLResidentContextMotion::SeatedCare;
+        ActiveContextMotion = DesiredMotion;
         return;
     }
 
@@ -698,6 +767,19 @@ void ULLResidentMotionComponent::UpdateContextAnimationState(float DeltaTime)
     {
         Body->SetAnimationMode(EAnimationMode::AnimationSingleNode);
         Body->PlayAnimation(IdleAnimation, true);
+        float IdlePlayRate = 1.0f;
+        float IdlePhase01 = 0.0f;
+        ResolveResidentLoopVariation(
+            GetOwner(), IdleAnimation, IdlePlayRate, IdlePhase01);
+        if (UAnimSingleNodeInstance* SingleNode = Body->GetSingleNodeInstance())
+        {
+            SingleNode->SetPlayRate(IdlePlayRate);
+            const float IdleLength = IdleAnimation->GetPlayLength();
+            if (IdleLength > KINDA_SMALL_NUMBER)
+            {
+                SingleNode->SetPosition(IdleLength * IdlePhase01, false);
+            }
+        }
     }
 }
 
@@ -969,6 +1051,7 @@ void ULLResidentMotionComponent::UpdateBodyOrientation(float DeltaTime)
         && (bSocialInteractionActive
             || ActiveContextMotion == ELLResidentContextMotion::Talk
             || ActiveContextMotion == ELLResidentContextMotion::Learn
+            || ActiveContextMotion == ELLResidentContextMotion::SeatedQuiet
             || ActiveContextMotion == ELLResidentContextMotion::SeatedCare);
     float InteractionYaw = TargetYaw;
     if (bCanFaceInteractionTarget && ResolveInteractionTargetYaw(InteractionYaw))
