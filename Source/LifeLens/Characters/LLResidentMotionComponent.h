@@ -55,7 +55,8 @@ enum class ELLResidentContextMotion : uint8
     HaulPush,       // Push_Loop          - material delivery
     FireTend,       // Idle_Torch_Loop    - ignite, fuel, charcoal collection
     CrouchLow,      // Crouch_Idle_Loop   - sanitation site use, hygiene
-    SeatedCare      // Sitting_* sequence - parenting care and comfort
+    SeatedQuiet,    // Sitting_Idle_Loop  - quiet parenting / settling
+    SeatedCare      // Sitting_Talking_Loop - active parenting care/comfort
 };
 
 // Character Motion Bootstrap: locomotion + lightweight context presentation.
@@ -153,6 +154,7 @@ private:
     UPROPERTY() TObjectPtr<UAnimSequence> FireAnimation;
     UPROPERTY() TObjectPtr<UAnimSequence> CrouchAnimation;
     UPROPERTY() TObjectPtr<UAnimSequence> SeatedEnterAnimation;
+    UPROPERTY() TObjectPtr<UAnimSequence> SeatedIdleAnimation;
     UPROPERTY() TObjectPtr<UAnimSequence> SeatedCareAnimation;
     UPROPERTY() TObjectPtr<UAnimSequence> SeatedExitAnimation;
 
@@ -187,9 +189,9 @@ private:
     ELLResidentWorkPresentationMode WorkPresentationMode = ELLResidentWorkPresentationMode::None;
     ELLResidentHeldToolPresentation HeldToolPresentation = ELLResidentHeldToolPresentation::None;
 
-    // Seated care is the only motion with authored enter/exit clips, so it is
-    // the only one that needs a transition state machine. Everything else is a
-    // single looping clip swap.
+    // Seated motions share authored enter/exit clips, so they use the only
+    // explicit transition state in this lightweight single-node presentation.
+    // Other context motions remain direct looping clip swaps.
     ELLResidentContextMotion ActiveContextMotion = ELLResidentContextMotion::None;
     float SeatedTransitionRemaining = 0.0f;
     bool bSeatedEntered = false;
