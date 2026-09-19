@@ -56,6 +56,7 @@ Canonical milestone roadmap: `docs/DEVELOPMENT_MILESTONES.md`.
 - Unreal-native runtime. Legacy LOCAL OBSERVER HTML/JS는 요구사항 참고자료일 뿐 런타임 기반이 아니다.
 - Android가 첫 실제 제품 타깃이다.
 - PC 제품 타깃은 Windows + macOS다. 기능/그래픽 로드맵에서 함께 진행하며 renderer capability 차이는 platform config/profile로 분리한다.
+- 플랫폼별 최종 패키지는 필요한 Presentation payload만 포함한다. 공통 저장소를 쓴다는 이유로 Desktop-only asset/source dependency를 APK에 싣지 않는다.
 - `LifeLensCore`는 표준 C++17이며 Unreal 타입에 의존하지 않는다.
 - 초기 NEW GAME은 남자 2 + 여자 2, 자연환경, **문명 인프라 0**에서 시작한다.
 - 이름/특성은 초기 시작 시 새로 부여할 수 있지만 자연 세계는 WorldSeed/GenerationVersion 계약을 따른다.
@@ -96,6 +97,7 @@ Canonical milestone roadmap: `docs/DEVELOPMENT_MILESTONES.md`.
 - `docs/LIFELENS_SPEC_v1.1.md` — 제품 최상위 요구사항 / 불변조건.
 - `docs/SOCIAL_COMMUNICATION_LOCALIZATION_v1.md` — 한국어 UI + 주민 사회행동 관찰 표현 canonical companion.
 - `docs/DEVELOPMENT_MILESTONES.md` — 큰 개발 단위와 gate 순서.
+- `docs/PLATFORM_CONTENT_COOK_POLICY_v1.md` — Android/Desktop content root, cook exclusion, platform hard-reference 경계.
 - `docs/DECISION_LOG.md` — 대화 중 확정된 설계·정리·작업 판단 원칙.
 - `tasks/WORK_STATE.md` — **현재 active/ready/blocked state만** 기록.
 - `tasks/TEAM_BOARD.md` — ownership / active locks / Integration Requests만 기록.
