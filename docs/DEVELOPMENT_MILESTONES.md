@@ -7,6 +7,7 @@
 - 시간/배속/환경 계약: `docs/TIME_AND_DYNAMIC_ENVIRONMENT.md`
 - 현재 실행 상태: `tasks/WORK_STATE.md`
 - ownership / locks / IR: `tasks/TEAM_BOARD.md`
+- current Presentation freeze / handoff: `docs/DAGYEOM_PRESENTATION_HANDOFF_2026-09-19.md`
 - 2026-09-17 통합감사: `docs/INTEGRATED_AUDIT_2026-09-17.md` — historical point-in-time evidence로 보존
 
 ---
@@ -682,7 +683,7 @@ Remaining:
 - optional truthful death-specific animation.
 - better child/life-stage visual assets.
 
-## Milestone P5 — Dynamic Environment Visual Quality — ACTIVE ASSET/POLISH PATH
+## Milestone P5 — Dynamic Environment Visual Quality — HANDED TO DAGYEOM / ITERATIVE QUALITY
 
 Merged:
 - #139 environment presentation foundation.
@@ -695,7 +696,13 @@ Next quality path:
 - fire/furnace light/smoke polish.
 - Android LOD/performance validation.
 
-Presentation quality may continue in parallel, but should not create a second simulation truth or block C1 unless a real contract gap is found.
+Presentation quality may continue in parallel under Dagyeom ownership, but should not create a second simulation truth or block Core work unless a real contract gap is found.
+
+2026-09-19 checkpoint:
+- Jjun-side broad visual polishing is frozen by user direction.
+- current baseline is main after #282.
+- #281 / #283 / #284 are Dagyeom review/decision items.
+- runtime screenshot acceptance is required before calling later visual work complete.
 
 # 12. Stage F — Historical-to-Future Content Expansion
 
@@ -800,14 +807,14 @@ LifeLens should eventually surprise the observer **without abandoning causality*
 
 ## Stage C mainline — ACTIVE
 
-1. **C-S1 Autonomous Settlement Need Recognition.**
-2. C-S2 Facility Effects + Maintenance.
-3. C-S3 Water/Food Persistence + Cultivation.
-4. C-S4 Emergent Settlement Geometry.
-5. C-S5 Tin/Bronze after real prerequisites.
-6. **Stage D** — long-run reliability + open-ended civilization engine.
-7. **Stage E** — health + education/economy/institutions + migration/trade.
-8. **Stage F** — historical/industrial/modern/digital/AI/advanced/space/open-future expansion.
+C1-A / C1-B / C1-C are complete. Current Jjun Core sequence:
+
+1. **C1-D Durable Subsistence** — water carrying/storage, food storage/spoilage, cultivation, renewable food.
+2. **C1-E Emergent Settlement Form**.
+3. **C1-F Early Material Progression**.
+4. **Stage D** — long-run reliability + open-ended civilization engine.
+5. **Stage E** — health + education/economy/institutions + migration/trade.
+6. **Stage F** — historical/industrial/modern/digital/AI/advanced/space/open-future expansion.
 
 ## Audit follow-up
 
@@ -825,17 +832,21 @@ Do not launch a long Android build until the user explicitly resumes it.
 
 # 15. Immediate Next Feature
 
-Current immediate implementation target:
+Current immediate Jjun implementation target:
 
-> **Earth & Human Foundation / EH-0 -> EH-1**
+> **C1-D — Durable Subsistence**
 
-First delivery:
-- sleep/outdoor-rest pressure -> SleepingPlace utility.
-- resident-local environmental exposure -> Shelter utility.
-- repeated craft/build pressure -> WorkSurface utility.
-- missing construction materials -> Gather demand.
-- Plan / DeliverMaterial / Work -> authoritative spatial ContextAction / ACK.
-- preserve deterministic Save/Load continuation.
+First delivery order:
+- authoritative water carrying and storage.
+- food storage and spoilage pressure.
+- cultivation/agriculture foundation.
+- renewable food production under real time / land / input constraints.
+- season / moisture / fertility effects.
+- scarcity-driven search and future migration-pressure hooks.
+- deterministic Save/Load continuation and regression coverage.
+
+Presentation is not the active Jjun lane. It is frozen at the #282 main baseline and handed to Dagyeom per `docs/DAGYEOM_PRESENTATION_HANDOFF_2026-09-19.md`.
+
 
 
 ---
