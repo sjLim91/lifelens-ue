@@ -31,10 +31,23 @@ jobs:
       UE_IMAGE: ghcr.io/epicgames/unreal-engine:dev-slim-5.6.0
       UE_ROOT_IN_CONTAINER: /home/ue4/UnrealEngine
       DIAGNOSTICS: ${{ github.workspace }}/Diagnostics
+      UE_PROJECT_CACHE_VERSION: ue56-linux-dev-v1
 
     steps:
       - name: Checkout LifeLens source
         uses: actions/checkout@v4
+
+      - name: Restore reusable Unreal project compile cache
+        id: ue-project-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            Intermediate/Build/Linux
+            Binaries/Linux/*.target
+            Binaries/Linux/*.modules
+          key: ${{ env.UE_PROJECT_CACHE_VERSION }}-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            ${{ env.UE_PROJECT_CACHE_VERSION }}-${{ runner.os }}-
 
       - name: Preflight zero-cost runner and Epic GHCR credential
         shell: bash
@@ -48,22 +61,32 @@ jobs:
           test -f "$GITHUB_WORKSPACE/LifeLens.uproject"
           mkdir -p "$DIAGNOSTICS"
           echo "$EPIC_GHCR_PAT" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          echo "PROJECT_COMPILE_CACHE_HIT=${{ steps.ue-project-cache.outputs.cache-hit }}"
           echo 'ZERO COST: public GitHub-hosted Linux runner; Linux compile only, no Android/cook/package.'
 
-      - name: Reclaim disk before Unreal image pull
+      - name: Reclaim disk without evicting a reusable Unreal image
         shell: bash
         run: |
           set -euo pipefail
           sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL || true
           sudo apt-get clean || true
-          sudo docker system prune -af || true
+          # Do not use "docker system prune -a": it deletes a locally reusable
+          # Unreal image. Hosted runners are usually cold, but preserving a hit
+          # also makes this workflow ready for persistent/self-hosted runners.
+          sudo docker container prune -f || true
+          sudo docker builder prune -af || true
           df -h /
 
-      - name: Pull prebuilt Unreal 5.6 Linux development image
+      - name: Reuse or pull prebuilt Unreal 5.6 Linux development image
         shell: bash
         run: |
           set -euo pipefail
-          docker pull "$UE_IMAGE" 2>&1 | tee "$DIAGNOSTICS/docker-pull.log"
+          if docker image inspect "$UE_IMAGE" >/dev/null 2>&1; then
+            echo 'UE_IMAGE_CACHE_HIT: reusing local Unreal image'
+          else
+            echo 'UE_IMAGE_CACHE_MISS: pulling Unreal image from GHCR'
+            docker pull "$UE_IMAGE" 2>&1 | tee "$DIAGNOSTICS/docker-pull.log"
+          fi
           docker image inspect "$UE_IMAGE" --format '{{.Id}} {{.Size}}'
           df -h /
 
