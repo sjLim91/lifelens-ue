@@ -7,6 +7,7 @@ on:
     paths:
       - '.github/workflows/pcg-groundcover-authoring.yml'
       - 'Content/Environment/PCG/Import/create_lifelens_groundcover_pcg.py'
+      - 'Config/DefaultEngine.ini'
 
 permissions:
   contents: write
