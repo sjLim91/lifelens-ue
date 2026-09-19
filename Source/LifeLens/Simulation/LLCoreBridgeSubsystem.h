@@ -160,6 +160,15 @@ public:
         int32 ChunkY,
         FLLCoreNaturalChunkObservation& OutObservation) const;
 
+    UFUNCTION(BlueprintPure, Category="LifeLens|Core|WorldGeneration|Terrain|Presentation")
+    TArray<FLLCoreTerrainPresentationObservation> GetMaterializedTerrainPresentationObservations() const;
+
+    UFUNCTION(BlueprintCallable, Category="LifeLens|Core|WorldGeneration|Terrain|Presentation")
+    bool GetTerrainPresentationObservation(
+        int32 ChunkX,
+        int32 ChunkY,
+        FLLCoreTerrainPresentationObservation& OutObservation) const;
+
     // Deterministic Core hydrology projected for authoritative materialized chunks.
     UFUNCTION(BlueprintPure, Category="LifeLens|Core|WorldGeneration|Hydrology")
     TArray<FLLCoreHydrologyObservation> GetMaterializedHydrologyObservations() const;
