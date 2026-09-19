@@ -68,6 +68,9 @@ jobs:
       - name: Validate environment density v1
         run: python Tools/validate_environment_density_v1.py
 
+      - name: Validate runtime visual sanity
+        run: python Tools/validate_runtime_visual_sanity.py
+
       - name: Verify Unreal project metadata
         run: |
           python - <<'PY'
