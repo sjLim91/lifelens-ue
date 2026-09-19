@@ -14,8 +14,8 @@ DEST_FOLDER = "/Game/Environment/PCG"
 GRAPH_NAME = "PCG_LL_GroundCover"
 GRAPH_PATH = f"{DEST_FOLDER}/{GRAPH_NAME}"
 GROUND_COVER_MESH_PATH = (
-    "/Game/Environment/Photoreal/PolyHaven/weed_plant_02/"
-    "SM_LL_weed_plant_02.SM_LL_weed_plant_02"
+    "/Game/Environment/Quaternius/StylizedNature/Grass_Common_Tall/"
+    "StaticMeshes/Grass_Common_Tall.Grass_Common_Tall"
 )
 
 EAL = unreal.EditorAssetLibrary
