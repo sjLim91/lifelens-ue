@@ -45,6 +45,14 @@ namespace
     {
         return FMath::Clamp(FMath::RoundToInt(FMath::Clamp(Factor, 0.0f, 1.0f) * MaxCount), 0, MaxCount);
     }
+
+    uint32 PresentationSeed(int64 Seed)
+    {
+        const uint64 Word = static_cast<uint64>(Seed);
+        uint32 Hash = static_cast<uint32>(Word & 0xFFFFFFFFu);
+        Hash = MixHash(Hash, static_cast<uint32>((Word >> 32) & 0xFFFFFFFFu));
+        return Hash != 0 ? Hash : 0x4C4C5043u; // LLPC
+    }
 }
 
 ALLWorldPresentationActor::ALLWorldPresentationActor()
@@ -77,20 +85,59 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
         TEXT("/Game/Environment/Photoreal/PolyHaven/fir_sapling/SM_LL_fir_sapling.SM_LL_fir_sapling"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoTreePineSapling(
         TEXT("/Game/Environment/Photoreal/PolyHaven/pine_sapling_small/SM_LL_pine_sapling_small.SM_LL_pine_sapling_small"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoTreeFirB(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/fir_sapling/fir_sapling_1k/StaticMeshes/fir_sapling_b.fir_sapling_b"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoTreeFirC(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/fir_sapling/fir_sapling_1k/StaticMeshes/fir_sapling_c.fir_sapling_c"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoTreePineB(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/pine_sapling_small/pine_sapling_small_1k/StaticMeshes/pine_sapling_small_b.pine_sapling_small_b"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoTreePineC(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/pine_sapling_small/pine_sapling_small_1k/StaticMeshes/pine_sapling_small_c.pine_sapling_small_c"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoBoulder(
         TEXT("/Game/Environment/Photoreal/PolyHaven/boulder_01/SM_LL_boulder_01.SM_LL_boulder_01"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoShrubA(
         TEXT("/Game/Environment/Photoreal/PolyHaven/shrub_02/SM_LL_shrub_02.SM_LL_shrub_02"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoShrubB(
         TEXT("/Game/Environment/Photoreal/PolyHaven/shrub_03/SM_LL_shrub_03.SM_LL_shrub_03"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoShrub02B(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/shrub_02/shrub_02_1k/StaticMeshes/shrub_02_b.shrub_02_b"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoShrub02C(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/shrub_02/shrub_02_1k/StaticMeshes/shrub_02_c.shrub_02_c"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoShrub03B(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/shrub_03/shrub_03_1k/StaticMeshes/shrub_03_b.shrub_03_b"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoShrub03C(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/shrub_03/shrub_03_1k/StaticMeshes/shrub_03_c.shrub_03_c"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoGroundCover(
         TEXT("/Game/Environment/Photoreal/PolyHaven/weed_plant_02/SM_LL_weed_plant_02.SM_LL_weed_plant_02"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoGroundCoverB(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/weed_plant_02/weed_plant_02_1k/StaticMeshes/weed_plant_02_b_LOD0.weed_plant_02_b_LOD0"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoGroundCoverC(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/weed_plant_02/weed_plant_02_1k/StaticMeshes/weed_plant_02_c_LOD0.weed_plant_02_c_LOD0"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoGroundCoverD(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/weed_plant_02/weed_plant_02_1k/StaticMeshes/weed_plant_02_d_LOD0.weed_plant_02_d_LOD0"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoFirePit(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/stone_fire_pit/SM_LL_stone_fire_pit.SM_LL_stone_fire_pit"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoStorageBasket(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/wicker_basket_01/SM_LL_wicker_basket_01.SM_LL_wicker_basket_01"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoWoodenAxe(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/wooden_axe/SM_LL_wooden_axe.SM_LL_wooden_axe"));
 
     if (PhotoTreeFirSapling.Succeeded()) { TreeMeshes.Add(PhotoTreeFirSapling.Object); }
     if (PhotoTreePineSapling.Succeeded()) { TreeMeshes.Add(PhotoTreePineSapling.Object); }
+    if (PhotoTreeFirB.Succeeded()) { TreeMeshes.Add(PhotoTreeFirB.Object); }
+    if (PhotoTreeFirC.Succeeded()) { TreeMeshes.Add(PhotoTreeFirC.Object); }
+    if (PhotoTreePineB.Succeeded()) { TreeMeshes.Add(PhotoTreePineB.Object); }
+    if (PhotoTreePineC.Succeeded()) { TreeMeshes.Add(PhotoTreePineC.Object); }
     if (PhotoShrubA.Succeeded()) { ShrubMeshes.Add(PhotoShrubA.Object); }
     if (PhotoShrubB.Succeeded()) { ShrubMeshes.Add(PhotoShrubB.Object); }
+    if (PhotoShrub02B.Succeeded()) { ShrubMeshes.Add(PhotoShrub02B.Object); }
+    if (PhotoShrub02C.Succeeded()) { ShrubMeshes.Add(PhotoShrub02C.Object); }
+    if (PhotoShrub03B.Succeeded()) { ShrubMeshes.Add(PhotoShrub03B.Object); }
+    if (PhotoShrub03C.Succeeded()) { ShrubMeshes.Add(PhotoShrub03C.Object); }
     if (PhotoGroundCover.Succeeded()) { GrassMeshes.Add(PhotoGroundCover.Object); }
+    if (PhotoGroundCoverB.Succeeded()) { GrassMeshes.Add(PhotoGroundCoverB.Object); }
+    if (PhotoGroundCoverC.Succeeded()) { GrassMeshes.Add(PhotoGroundCoverC.Object); }
+    if (PhotoGroundCoverD.Succeeded()) { GrassMeshes.Add(PhotoGroundCoverD.Object); }
     if (PhotoBoulder.Succeeded()) { RockMeshes.Add(PhotoBoulder.Object); }
 
     UE_LOG(LogTemp, Log,
@@ -181,6 +228,31 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
     FacilityRoofInstances = AddInstancedComponent(TEXT("FacilityRoofs"), GroundMesh, FacilityCullStartUU, FacilityCullEndUU, true);
     FacilityCargoInstances = AddInstancedComponent(TEXT("FacilityCargo"), GroundMesh, FacilityCullStartUU, FacilityCullEndUU, true);
     FacilityAccentInstances = AddInstancedComponent(TEXT("FacilityAccents"), GroundMesh, FacilityCullStartUU, FacilityCullEndUU, false);
+
+    if (PhotoFirePit.Succeeded())
+    {
+        PhotorealFirePitInstances = AddInstancedComponent(
+            TEXT("PhotorealFirePits"), PhotoFirePit.Object,
+            FacilityCullStartUU, FacilityCullEndUU, true);
+    }
+    if (PhotoStorageBasket.Succeeded())
+    {
+        PhotorealStorageBasketInstances = AddInstancedComponent(
+            TEXT("PhotorealStorageBaskets"), PhotoStorageBasket.Object,
+            FacilityCullStartUU, FacilityCullEndUU, true);
+    }
+    if (PhotoWoodenAxe.Succeeded())
+    {
+        PhotorealWorkToolInstances = AddInstancedComponent(
+            TEXT("PhotorealWorkTools"), PhotoWoodenAxe.Object,
+            FacilityCullStartUU, FacilityCullEndUU, true);
+    }
+
+    UE_LOG(LogTemp, Log,
+        TEXT("LLWorldPresentation approved facility art: firepit=%d basket=%d workTool=%d deterministicSeeds=1"),
+        PhotorealFirePitInstances ? 1 : 0,
+        PhotorealStorageBasketInstances ? 1 : 0,
+        PhotorealWorkToolInstances ? 1 : 0);
 }
 
 UHierarchicalInstancedStaticMeshComponent* ALLWorldPresentationActor::AddInstancedComponent(
@@ -251,6 +323,9 @@ void ALLWorldPresentationActor::ClearFacilityInstances()
     if (FacilityRoofInstances) { FacilityRoofInstances->ClearInstances(); }
     if (FacilityCargoInstances) { FacilityCargoInstances->ClearInstances(); }
     if (FacilityAccentInstances) { FacilityAccentInstances->ClearInstances(); }
+    if (PhotorealFirePitInstances) { PhotorealFirePitInstances->ClearInstances(); }
+    if (PhotorealStorageBasketInstances) { PhotorealStorageBasketInstances->ClearInstances(); }
+    if (PhotorealWorkToolInstances) { PhotorealWorkToolInstances->ClearInstances(); }
 }
 
 void ALLWorldPresentationActor::ApplyFacilityMaterialPalette()
@@ -627,6 +702,111 @@ FVector ALLWorldPresentationActor::ChunkOriginUU(const FLLCoreWorldGenerationObs
     return FVector(OffsetX, OffsetY, 0.0f);
 }
 
+float ALLWorldPresentationActor::TerrainReliefBlend(const FVector2D& LocationUU) const
+{
+    const float Start = FMath::Max(0.0f, TerrainReliefFlattenRadiusUU);
+    const float End = Start + FMath::Max(100.0f, TerrainReliefBlendBandUU);
+    const float SettlementDistance = (LocationUU - CachedSettlementReferenceUU).Size();
+    float Blend = FMath::SmoothStep(
+        0.0f,
+        1.0f,
+        FMath::Clamp((SettlementDistance - Start) / FMath::Max(End - Start, 1.0f), 0.0f, 1.0f));
+
+    for (const FVector2D& FacilityCenter : CachedFacilityReadabilityCentersUU)
+    {
+        const float Distance = (LocationUU - FacilityCenter).Size();
+        const float LocalStart = FMath::Max(0.0f, FacilityClearRadiusUU);
+        const float LocalEnd = FMath::Max(LocalStart + 100.0f, FacilityActivityRadiusUU);
+        const float FacilityBlend = FMath::SmoothStep(
+            0.0f,
+            1.0f,
+            FMath::Clamp((Distance - LocalStart) / FMath::Max(LocalEnd - LocalStart, 1.0f), 0.0f, 1.0f));
+        Blend = FMath::Min(Blend, FacilityBlend);
+    }
+    return FMath::Clamp(Blend, 0.0f, 1.0f);
+}
+
+float ALLWorldPresentationActor::TerrainSurfaceZUU(
+    const FLLCoreWorldGenerationObservation& World,
+    const FLLCoreTerrainPresentationObservation& Terrain,
+    const FVector2D& LocationUU) const
+{
+    if (!Terrain.bAvailable || TerrainReliefAmplitudeUU <= KINDA_SMALL_NUMBER)
+    {
+        return 0.0f;
+    }
+
+    const float Blend = TerrainReliefBlend(LocationUU);
+    if (Blend <= KINDA_SMALL_NUMBER)
+    {
+        return 0.0f;
+    }
+
+    auto ElevationOffset = [&](float Elevation01)
+    {
+        // Preserve the flat locomotion/collision baseline and add hills only.
+        // This avoids hiding visual terrain beneath the collision-only bootstrap
+        // floor while still making macro elevation readable at observer range.
+        return FMath::Max(
+            0.0f,
+            Elevation01 - World.InitialChunk.Elevation)
+            * FMath::Max(0.0f, TerrainReliefAmplitudeUU);
+    };
+
+    const FVector ChunkCenter3D = ChunkOriginUU(World, Terrain.ChunkX, Terrain.ChunkY);
+    const FVector2D ChunkCenter(ChunkCenter3D.X, ChunkCenter3D.Y);
+    const float Half = LLWorldSpatialContract::ChunkSpanUU * 0.5f;
+    const float U = FMath::Clamp((LocationUU.X - (ChunkCenter.X - Half))
+        / FMath::Max(LLWorldSpatialContract::ChunkSpanUU, 1.0f), 0.0f, 1.0f);
+    const float V = FMath::Clamp((LocationUU.Y - (ChunkCenter.Y - Half))
+        / FMath::Max(LLWorldSpatialContract::ChunkSpanUU, 1.0f), 0.0f, 1.0f);
+
+    const float South = FMath::Lerp(
+        ElevationOffset(Terrain.SouthWestElevation01),
+        ElevationOffset(Terrain.SouthEastElevation01),
+        U);
+    const float North = FMath::Lerp(
+        ElevationOffset(Terrain.NorthWestElevation01),
+        ElevationOffset(Terrain.NorthEastElevation01),
+        U);
+    const float CornerSurface = FMath::Lerp(South, North, V);
+    const float CenterSurface = ElevationOffset(Terrain.CenterElevation01);
+
+    // Center truth stabilizes the tile while seam-compatible corners drive most
+    // of the local shape.
+    return FMath::Lerp(CenterSurface, CornerSurface, 0.72f) * Blend;
+}
+
+FRotator ALLWorldPresentationActor::TerrainTileRotation(
+    const FLLCoreWorldGenerationObservation& World,
+    const FLLCoreTerrainPresentationObservation& Terrain,
+    const FVector2D& CenterUU) const
+{
+    const float Half = LLWorldSpatialContract::ChunkSpanUU * 0.5f;
+    const float WestZ = TerrainSurfaceZUU(
+        World, Terrain, CenterUU + FVector2D(-Half, 0.0f));
+    const float EastZ = TerrainSurfaceZUU(
+        World, Terrain, CenterUU + FVector2D(Half, 0.0f));
+    const float SouthZ = TerrainSurfaceZUU(
+        World, Terrain, CenterUU + FVector2D(0.0f, -Half));
+    const float NorthZ = TerrainSurfaceZUU(
+        World, Terrain, CenterUU + FVector2D(0.0f, Half));
+
+    const float Pitch = FMath::Clamp(
+        -FMath::RadiansToDegrees(FMath::Atan2(
+            EastZ - WestZ,
+            FMath::Max(LLWorldSpatialContract::ChunkSpanUU, 1.0f))),
+        -TerrainMaxTiltDegrees,
+        TerrainMaxTiltDegrees);
+    const float Roll = FMath::Clamp(
+        FMath::RadiansToDegrees(FMath::Atan2(
+            NorthZ - SouthZ,
+            FMath::Max(LLWorldSpatialContract::ChunkSpanUU, 1.0f))),
+        -TerrainMaxTiltDegrees,
+        TerrainMaxTiltDegrees);
+    return FRotator(Pitch, 0.0f, Roll);
+}
+
 UMaterialInterface* ALLWorldPresentationActor::GroundMaterialForChunk(const FLLCoreNaturalChunkObservation& Chunk) const
 {
     const FString Surface = Chunk.Surface.ToString().ToLower();
@@ -694,7 +874,8 @@ void ALLWorldPresentationActor::BuildGround(const FLLCoreWorldGenerationObservat
 
 void ALLWorldPresentationActor::BuildChunkGround(
     const FLLCoreWorldGenerationObservation& World,
-    const FLLCoreNaturalChunkObservation& Chunk)
+    const FLLCoreNaturalChunkObservation& Chunk,
+    const FLLCoreTerrainPresentationObservation& Terrain)
 {
     if (!Chunk.bMaterialized || !GroundMesh)
     {
@@ -724,6 +905,9 @@ void ALLWorldPresentationActor::BuildChunkGround(
     }
 
     const FVector ChunkOrigin = ChunkOriginUU(World, Chunk.ChunkX, Chunk.ChunkY);
+    const FVector2D ChunkCenterUU(ChunkOrigin.X, ChunkOrigin.Y);
+    const float TerrainZ = TerrainSurfaceZUU(World, Terrain, ChunkCenterUU);
+    const FRotator TerrainRotation = TerrainTileRotation(World, Terrain, ChunkCenterUU);
     constexpr float TileThicknessUU = 8.0f;
     constexpr float SurfaceLiftUU = 0.35f;
     const float SpanScale =
@@ -736,11 +920,11 @@ void ALLWorldPresentationActor::BuildChunkGround(
     // Slight XY overlap removes precision cracks between adjacent tiles. The top
     // face sits 0.35 UU above the broad continuity ground, avoiding z-fighting.
     Target->AddInstance(FTransform(
-        FRotator::ZeroRotator,
+        TerrainRotation,
         ChunkOrigin + FVector(
             0.0f,
             0.0f,
-            -TileThicknessUU * 0.5f + SurfaceLiftUU),
+            TerrainZ - TileThicknessUU * 0.5f + SurfaceLiftUU),
         FVector(SpanScale, SpanScale, HeightScale)));
 }
 
@@ -845,12 +1029,17 @@ void ALLWorldPresentationActor::BuildFarEnvironment(
     PlaceRing(FarRockInstances, RockCount, 0.65f, 1.55f, 0.85f);
 }
 
-void ALLWorldPresentationActor::BuildChunkDressing(const FLLCoreWorldGenerationObservation& World, const FLLCoreNaturalChunkObservation& Chunk)
+void ALLWorldPresentationActor::BuildChunkDressing(
+    const FLLCoreWorldGenerationObservation& World,
+    const FLLCoreNaturalChunkObservation& Chunk,
+    const FLLCoreTerrainPresentationObservation& Terrain)
 {
     if (!Chunk.bMaterialized) { return; }
     const FVector ChunkOrigin = ChunkOriginUU(World, Chunk.ChunkX, Chunk.ChunkY);
     const float HalfSpan = LLWorldSpatialContract::ChunkSpanUU * 0.5f;
-    uint32 State = ChunkHash(World.WorldSeed, World.GenerationVersion, Chunk.ChunkX, Chunk.ChunkY);
+    uint32 State = Chunk.VisualSeed != 0
+        ? PresentationSeed(Chunk.VisualSeed)
+        : ChunkHash(World.WorldSeed, World.GenerationVersion, Chunk.ChunkX, Chunk.ChunkY);
 
     const float Fertility = FMath::Clamp(Chunk.FertilityPotential, 0.0f, 1.0f);
     const float Moisture = FMath::Clamp(Chunk.Moisture, 0.0f, 1.0f);
@@ -877,8 +1066,13 @@ void ALLWorldPresentationActor::BuildChunkDressing(const FLLCoreWorldGenerationO
             const float HeightJitter = FMath::Lerp(0.92f, 1.12f, HashUnit(State));
             const int32 Slot = static_cast<int32>(HashUnit(State) * Components.Num()) % Components.Num();
             const float KeepRoll = HashUnit(State);
-            const FVector Location = ChunkOrigin + FVector(X, Y, 0.0f);
-            const FVector2D Location2D(Location.X, Location.Y);
+            const FVector2D Location2D(
+                ChunkOrigin.X + X,
+                ChunkOrigin.Y + Y);
+            const FVector Location(
+                Location2D.X,
+                Location2D.Y,
+                TerrainSurfaceZUU(World, Terrain, Location2D));
             float KeepFactor = AmbientDressingKeepFactor(Location2D, Layer);
             if (Layer == ELLDressingLayer::Canopy && !bDynamicObserverCanopyVisibility)
             {
@@ -962,20 +1156,29 @@ void ALLWorldPresentationActor::BuildChunkDressing(const FLLCoreWorldGenerationO
                 FMath::RoundToInt(VisibleDensity * 6.0f) + 1,
                 1,
                 8);
+        uint32 PatchState = Patch.VisualSeed != 0
+            ? PresentationSeed(Patch.VisualSeed)
+            : MixHash(State, static_cast<uint32>(
+                static_cast<uint64>(Patch.ResourceNodeId) & 0xFFFFFFFFu));
         for (int32 Index = 0; Index < PatchInstances && *PlacedCounter < MaxTotal; ++Index)
         {
-            const float SpreadX = (HashUnit(State) * 2.0f - 1.0f) * LLWorldSpatialContract::GridCellSizeUU;
-            const float SpreadY = (HashUnit(State) * 2.0f - 1.0f) * LLWorldSpatialContract::GridCellSizeUU;
-            float Scale = FMath::Lerp(MinScale, MaxScale, HashUnit(State));
+            const float SpreadX = (HashUnit(PatchState) * 2.0f - 1.0f) * LLWorldSpatialContract::GridCellSizeUU;
+            const float SpreadY = (HashUnit(PatchState) * 2.0f - 1.0f) * LLWorldSpatialContract::GridCellSizeUU;
+            float Scale = FMath::Lerp(MinScale, MaxScale, HashUnit(PatchState));
             Scale *= FMath::Lerp(0.62f, 1.0f, FMath::Sqrt(Quantity01));
-            const float Yaw = HashUnit(State) * 360.0f;
-            const int32 Slot = static_cast<int32>(HashUnit(State) * Target->Num()) % Target->Num();
+            const float Yaw = HashUnit(PatchState) * 360.0f;
+            const int32 Slot = static_cast<int32>(HashUnit(PatchState) * Target->Num()) % Target->Num();
             const FVector2D PatchLocation(PatchX + SpreadX, PatchY + SpreadY);
             Scale *= ResourcePatchScaleFactor(PatchLocation);
             if (UHierarchicalInstancedStaticMeshComponent* Component = (*Target)[Slot])
             {
                 Component->AddInstance(FTransform(
-                    FRotator(0.0f, Yaw, 0.0f),FVector(PatchLocation.X, PatchLocation.Y, 0.0f),FVector(Scale, Scale, Scale)));
+                    FRotator(0.0f, Yaw, 0.0f),
+                    FVector(
+                        PatchLocation.X,
+                        PatchLocation.Y,
+                        TerrainSurfaceZUU(World, Terrain, PatchLocation)),
+                    FVector(Scale, Scale, Scale)));
                 ++(*PlacedCounter);
             }
         }
@@ -1251,10 +1454,31 @@ void ALLWorldPresentationActor::BuildFacilities(
                     FVector(0.14f, 0.14f, 1.1f * HeightFactor)));
             }
             // Construction still shows delivered build material. Once the
-            // storage is operational, cargo switches to the linked authoritative
-            // inventory total instead of always drawing six fake crates.
+            // storage is operational, approved CC0 baskets replace fake cargo
+            // cubes. If that approved art is unavailable, do not invent extra
+            // completed-storage cargo visuals.
+            if (bStructurallyComplete && PhotorealStorageBasketInstances)
+            {
+                const int32 BasketCount = FMath::Clamp(
+                    FMath::CeilToInt(static_cast<float>(LinkedStoredUnits) / 2.0f),
+                    0,
+                    4);
+                for (int32 Index = 0; Index < BasketCount; ++Index)
+                {
+                    const int32 Column = Index % 2;
+                    const int32 Row = Index / 2;
+                    PhotorealStorageBasketInstances->AddInstance(FTransform(
+                        FRotator(0.0f, 18.0f + 71.0f * static_cast<float>(Index), 0.0f),
+                        Base + FVector(
+                            -52.0f + Column * 104.0f,
+                            -30.0f + Row * 66.0f,
+                            0.0f),
+                        FVector(0.92f)));
+                }
+            }
+
             const int32 CargoCount = bStructurallyComplete
-                ? FMath::Clamp(LinkedStoredUnits, 0, 8)
+                ? 0
                 : FMath::Clamp(FMath::CeilToInt(MaterialProgress * 6.0f), 0, 6);
             for (int32 Index = 0; Index < CargoCount; ++Index)
             {
@@ -1319,6 +1543,14 @@ void ALLWorldPresentationActor::BuildFacilities(
                     FRotator(0.0f, 0.0f, DamageTilt),
                     Base + FVector(0.0f, 0.0f, 72.0f * Integrity),
                     FVector(1.65f * TopScale, 0.82f, 0.12f * Integrity)));
+            }
+
+            if (bStructurallyComplete && PhotorealWorkToolInstances)
+            {
+                PhotorealWorkToolInstances->AddInstance(FTransform(
+                    FRotator(0.0f, 18.0f, 82.0f),
+                    Base + FVector(18.0f, 0.0f, 84.0f * Integrity),
+                    FVector(0.92f)));
             }
 
             const int32 LooseMaterialCount = bStructurallyComplete
@@ -1516,7 +1748,20 @@ void ALLWorldPresentationActor::BuildFacilities(
 
         if (Facility.Kind != ELLCoreFacilityKind::FirePit) { continue; }
 
-        const int32 StoneCount = bStructurallyComplete ? 8 : FMath::Clamp(FMath::CeilToInt(BuildProgress * 8.0f), 0, 8);
+        if (bStructurallyComplete && PhotorealFirePitInstances)
+        {
+            PhotorealFirePitInstances->AddInstance(FTransform(
+                FRotator::ZeroRotator,
+                Base,
+                FVector(1.0f)));
+        }
+
+        // Construction may use reviewed lightweight progress pieces, but an
+        // operational production firepit never falls back to the old Engine
+        // cube ring if the approved photoreal hero asset is unavailable.
+        const int32 StoneCount = bStructurallyComplete
+            ? 0
+            : FMath::Clamp(FMath::CeilToInt(BuildProgress * 8.0f), 0, 8);
         for (int32 Index = 0; Index < StoneCount; ++Index)
         {
             if (!FacilityFoundationInstances) { break; }
@@ -1526,11 +1771,8 @@ void ALLWorldPresentationActor::BuildFacilities(
             FacilityFoundationInstances->AddInstance(FTransform(
                 FRotator(0.0f, AngleDegrees, 0.0f),Base + Offset,FVector(0.48f, 0.28f, 0.20f)));
         }
-        if (bStructurallyComplete && FacilityFoundationInstances)
-        {
-            FacilityFoundationInstances->AddInstance(FTransform(
-                FRotator::ZeroRotator,Base + FVector(0.0f, 0.0f, 5.0f),FVector(1.05f, 1.05f, 0.08f)));
-        }
+        // No completed Engine-cube hearth fallback: the imported CC0 asset
+        // above is the only hero structure for an operational firepit.
         const int32 LogCount = bStructurallyComplete ? FMath::Clamp(Facility.FuelUnits, 0, 3)
             : FMath::Clamp(FMath::CeilToInt(MaterialProgress * 2.0f), 0, 2);
         for (int32 Index = 0; Index < LogCount; ++Index)
@@ -1644,8 +1886,19 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         {
             if (Chunk.bMaterialized)
             {
-                BuildChunkGround(World, Chunk);
-                BuildChunkDressing(World, Chunk);
+                FLLCoreTerrainPresentationObservation Terrain;
+                if (!Bridge->GetTerrainPresentationObservation(
+                    Chunk.ChunkX,
+                    Chunk.ChunkY,
+                    Terrain))
+                {
+                    Terrain.bAvailable = false;
+                    Terrain.ChunkX = Chunk.ChunkX;
+                    Terrain.ChunkY = Chunk.ChunkY;
+                    Terrain.CenterElevation01 = Chunk.Elevation;
+                }
+                BuildChunkGround(World, Chunk, Terrain);
+                BuildChunkDressing(World, Chunk, Terrain);
             }
         }
     }
@@ -1677,7 +1930,10 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         + (FacilityPostInstances ? FacilityPostInstances->GetInstanceCount() : 0)
         + (FacilityRoofInstances ? FacilityRoofInstances->GetInstanceCount() : 0)
         + (FacilityCargoInstances ? FacilityCargoInstances->GetInstanceCount() : 0)
-        + (FacilityAccentInstances ? FacilityAccentInstances->GetInstanceCount() : 0);
+        + (FacilityAccentInstances ? FacilityAccentInstances->GetInstanceCount() : 0)
+        + (PhotorealFirePitInstances ? PhotorealFirePitInstances->GetInstanceCount() : 0)
+        + (PhotorealStorageBasketInstances ? PhotorealStorageBasketInstances->GetInstanceCount() : 0)
+        + (PhotorealWorkToolInstances ? PhotorealWorkToolInstances->GetInstanceCount() : 0);
 
     UE_LOG(LogTemp, Log,
         TEXT("LLWorldPresentation seed=%lld gen=%d chunks=%d groundTiles=%d natural=%d/%d/%d/%d facilities=%d facilityInstances=%d thinned=%d sightline=%d/%d dynamicCanopy=%d core=%.0f activity=%.0f ground=%s farGround=%s"),
