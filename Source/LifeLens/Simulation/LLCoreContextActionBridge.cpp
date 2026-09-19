@@ -38,6 +38,7 @@ ELLCoreCivilizationAction ContextActionToUnrealCivilizationAction(lifelens::Civi
     {
         case lifelens::CivilizationIntent::Gather: return ELLCoreCivilizationAction::Gather;
         case lifelens::CivilizationIntent::Store: return ELLCoreCivilizationAction::Store;
+        case lifelens::CivilizationIntent::Retrieve: return ELLCoreCivilizationAction::Retrieve;
         case lifelens::CivilizationIntent::Experiment: return ELLCoreCivilizationAction::Experiment;
         case lifelens::CivilizationIntent::Craft: return ELLCoreCivilizationAction::Craft;
         case lifelens::CivilizationIntent::None:
