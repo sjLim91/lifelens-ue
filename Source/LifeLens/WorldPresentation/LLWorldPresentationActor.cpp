@@ -1210,10 +1210,25 @@ void ALLWorldPresentationActor::BuildChunkDressing(
     const float Fertility = FMath::Clamp(Chunk.FertilityPotential, 0.0f, 1.0f);
     const float Moisture = FMath::Clamp(Chunk.Moisture, 0.0f, 1.0f);
     const float Traversal = FMath::Clamp(Chunk.TraversalEase, 0.0f, 1.0f);
-    const int32 TreeCount = ScaledCount(Fertility * Moisture, MaxTreesPerChunk);
-    const int32 ShrubCount = ScaledCount(Fertility * 0.8f + Moisture * 0.2f, MaxShrubsPerChunk);
-    const int32 GrassCount = ScaledCount(Fertility * 0.6f + Moisture * 0.4f, MaxGrassPerChunk);
-    const int32 RockCount = ScaledCount((1.0f - Fertility) * 0.7f + (1.0f - Traversal) * 0.3f, MaxRocksPerChunk);
+#if PLATFORM_ANDROID
+    constexpr float AmbientDensityGain = 1.0f;
+    constexpr float RockDensityGain = 1.0f;
+#else
+    constexpr float AmbientDensityGain = 1.22f;
+    constexpr float RockDensityGain = 1.12f;
+#endif
+    const int32 TreeCount = ScaledCount(
+        FMath::Clamp(Fertility * Moisture * AmbientDensityGain, 0.0f, 1.0f),
+        MaxTreesPerChunk);
+    const int32 ShrubCount = ScaledCount(
+        FMath::Clamp((Fertility * 0.8f + Moisture * 0.2f) * AmbientDensityGain, 0.0f, 1.0f),
+        MaxShrubsPerChunk);
+    const int32 GrassCount = ScaledCount(
+        FMath::Clamp((Fertility * 0.6f + Moisture * 0.4f) * AmbientDensityGain, 0.0f, 1.0f),
+        MaxGrassPerChunk);
+    const int32 RockCount = ScaledCount(
+        FMath::Clamp(((1.0f - Fertility) * 0.7f + (1.0f - Traversal) * 0.3f) * RockDensityGain, 0.0f, 1.0f),
+        MaxRocksPerChunk);
 
     auto Place = [&](TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>>& Components,
                      int32 Count, int32& Placed, int32 MaxTotal,
@@ -1221,10 +1236,50 @@ void ALLWorldPresentationActor::BuildChunkDressing(
                      ELLDressingLayer Layer)
     {
         if (Components.Num() == 0) { return; }
+
+        // Natural dressing is rarely white-noise uniform. Undergrowth and small
+        // rocks form deterministic micro-clusters so the whole world reads as
+        // authored ecology without creating any new Core resource truth.
+        FVector2D ClusterAnchor = FVector2D::ZeroVector;
+        int32 ClusterRemaining = 0;
+
         for (int32 Index = 0; Index < Count && Placed < MaxTotal; ++Index)
         {
-            const float X = (HashUnit(State) * 2.0f - 1.0f) * HalfSpan;
-            const float Y = (HashUnit(State) * 2.0f - 1.0f) * HalfSpan;
+            float X = (HashUnit(State) * 2.0f - 1.0f) * HalfSpan;
+            float Y = (HashUnit(State) * 2.0f - 1.0f) * HalfSpan;
+
+            const bool bClusterable = Layer != ELLDressingLayer::Canopy;
+            if (bClusterable && ClusterRemaining > 0)
+            {
+                const float ClusterAngle = HashUnit(State) * 2.0f * PI;
+                const float ClusterRadiusMax =
+                    Layer == ELLDressingLayer::Undergrowth ? 260.0f : 190.0f;
+                const float ClusterRadius =
+                    FMath::Sqrt(HashUnit(State)) * ClusterRadiusMax;
+                X = FMath::Clamp(
+                    ClusterAnchor.X + FMath::Cos(ClusterAngle) * ClusterRadius,
+                    -HalfSpan,
+                    HalfSpan);
+                Y = FMath::Clamp(
+                    ClusterAnchor.Y + FMath::Sin(ClusterAngle) * ClusterRadius,
+                    -HalfSpan,
+                    HalfSpan);
+                --ClusterRemaining;
+            }
+            else if (bClusterable)
+            {
+                const float ClusterChance =
+                    Layer == ELLDressingLayer::Undergrowth ? 0.72f : 0.48f;
+                if (HashUnit(State) < ClusterChance)
+                {
+                    ClusterAnchor = FVector2D(X, Y);
+                    const int32 ClusterSpan =
+                        Layer == ELLDressingLayer::Undergrowth ? 5 : 3;
+                    ClusterRemaining =
+                        1 + FMath::FloorToInt(HashUnit(State) * ClusterSpan);
+                }
+            }
+
             const float Yaw = HashUnit(State) * 360.0f;
             const float Scale = FMath::Lerp(MinScale, MaxScale, HashUnit(State));
             const float TiltPitch = (HashUnit(State) * 2.0f - 1.0f) * TiltDegrees;
@@ -1273,10 +1328,10 @@ void ALLWorldPresentationActor::BuildChunkDressing(
         }
     };
 
-    Place(TreeInstances, TreeCount, PlacedTrees, MaxTreeInstances, 0.85f, 1.6f, 3.0f, ELLDressingLayer::Canopy);
-    Place(ShrubInstances, ShrubCount, PlacedShrubs, MaxShrubInstances, 0.7f, 1.5f, 5.0f, ELLDressingLayer::Undergrowth);
-    Place(GrassInstances, GrassCount, PlacedGrass, MaxGrassInstances, 0.7f, 1.7f, 4.0f, ELLDressingLayer::Undergrowth);
-    Place(RockInstances, RockCount, PlacedRocks, MaxRockInstances, 0.7f, 1.8f, 8.0f, ELLDressingLayer::GroundDetail);
+    Place(TreeInstances, TreeCount, PlacedTrees, MaxTreeInstances, 0.82f, 1.72f, 3.5f, ELLDressingLayer::Canopy);
+    Place(ShrubInstances, ShrubCount, PlacedShrubs, MaxShrubInstances, 0.62f, 1.58f, 6.0f, ELLDressingLayer::Undergrowth);
+    Place(GrassInstances, GrassCount, PlacedGrass, MaxGrassInstances, 0.58f, 1.78f, 5.0f, ELLDressingLayer::Undergrowth);
+    Place(RockInstances, RockCount, PlacedRocks, MaxRockInstances, 0.62f, 1.92f, 10.0f, ELLDressingLayer::GroundDetail);
 
     for (const FLLCoreNaturalResourcePatchObservation& Patch : Chunk.ResourcePatches)
     {
