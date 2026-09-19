@@ -273,7 +273,7 @@ void ALLObserverPlayerController::PlayerTick(float DeltaTime)
     SyncObservedResidentSelection();
     UpdateMouseCameraInput();
     UpdateTouchCameraInput();
-    UpdateObservedResidentFocus();
+    UpdateObservedResidentFocus(DeltaTime);
     ApplyCameraTransform(DeltaTime);
 }
 
@@ -440,6 +440,7 @@ void ALLObserverPlayerController::UpdateMouseCameraInput()
 void ALLObserverPlayerController::RotateByScreenDelta(const FVector2D& Delta, float DegreesPerPixel)
 {
     SuspendObservedResidentFollow();
+    bReturningToWorldOverview = false;
     DesiredOrbitYawDegrees = FMath::UnwindDegrees(DesiredOrbitYawDegrees + Delta.X * DegreesPerPixel);
 
     const float MinElevation = FMath::Clamp(CameraMinElevationDegrees, 1.0f, 89.0f);
@@ -453,6 +454,7 @@ void ALLObserverPlayerController::RotateByScreenDelta(const FVector2D& Delta, fl
 void ALLObserverPlayerController::PanByScreenDelta(const FVector2D& Delta, float ScaleMultiplier)
 {
     SuspendObservedResidentFollow();
+    bReturningToWorldOverview = false;
     ACameraActor* Camera = ObserverCamera.Get();
     if (!Camera)
     {
@@ -480,6 +482,7 @@ void ALLObserverPlayerController::PanByScreenDelta(const FVector2D& Delta, float
 void ALLObserverPlayerController::ZoomByScale(float Scale)
 {
     SuspendObservedResidentFollow();
+    bReturningToWorldOverview = false;
     const float MinDistance = FMath::Max(100.0f, CameraMinDistanceUU);
     const float MaxDistance = FMath::Max(MinDistance, CameraMaxDistanceUU);
     DesiredOrbitDistanceUU = FMath::Clamp(DesiredOrbitDistanceUU * FMath::Max(0.01f, Scale), MinDistance, MaxDistance);
@@ -797,6 +800,7 @@ void ALLObserverPlayerController::FocusWorldLocation(
     // the camera away from the event location. Re-selecting/tapping a resident
     // resumes normal resident framing.
     SuspendObservedResidentFollow();
+    bReturningToWorldOverview = false;
     bWorldEventFocusActive = true;
 
     UGameInstance* GameInstance = GetGameInstance();
@@ -832,6 +836,7 @@ void ALLObserverPlayerController::FocusObservedResident(ALLResidentCharacter* Re
 
     FocusedResidentId = Resident->GetResidentId();
     bFollowObservedResident = FocusedResidentId.IsValid();
+    bReturningToWorldOverview = false;
     bWorldEventFocusActive = false;
 
     float FocusDistance = ObservedResidentFocusDistanceUU;
@@ -885,7 +890,7 @@ void ALLObserverPlayerController::SyncObservedResidentSelection()
     }
 }
 
-void ALLObserverPlayerController::UpdateObservedResidentFocus()
+void ALLObserverPlayerController::UpdateObservedResidentFocus(float DeltaTime)
 {
     if (!bFollowObservedResident)
     {
@@ -912,14 +917,26 @@ void ALLObserverPlayerController::UpdateObservedResidentFocus()
     }
 
     FocusedResidentId = ObservedId;
+    FVector ResolvedTarget = DesiredOrbitTarget;
     float FocusDistance = DesiredOrbitDistanceUU;
-    ResolveObservedResidentFocusFraming(Resident, DesiredOrbitTarget, FocusDistance);
+    ResolveObservedResidentFocusFraming(Resident, ResolvedTarget, FocusDistance);
+
+    // Follow the authoritative resident position without feeding every tiny
+    // velocity/sample change directly into the orbit target. This is camera
+    // damping only; resident movement itself remains untouched.
+    const float FollowSpeed = FMath::Max(0.1f, ObservedResidentFollowSmoothingSpeed);
+    DesiredOrbitTarget = FMath::VInterpTo(
+        DesiredOrbitTarget,
+        ResolvedTarget,
+        FMath::Max(0.0f, DeltaTime),
+        FollowSpeed);
 }
 
 void ALLObserverPlayerController::RestoreWorldOverview()
 {
     bFollowObservedResident = false;
     bWorldEventFocusActive = false;
+    bReturningToWorldOverview = true;
     FocusedResidentId.Invalidate();
 
     if (!bWorldOverviewCaptured)
@@ -941,7 +958,14 @@ void ALLObserverPlayerController::ApplyCameraTransform(float DeltaTime)
         return;
     }
 
-    const float Alpha = 1.0f - FMath::Exp(-FMath::Max(0.1f, CameraSmoothingSpeed) * FMath::Max(0.0f, DeltaTime));
+    const float EffectiveSmoothingSpeed = bReturningToWorldOverview
+        ? OverviewTransitionSmoothingSpeed
+        : ((bFollowObservedResident || bWorldEventFocusActive)
+            ? FocusTransitionSmoothingSpeed
+            : CameraSmoothingSpeed);
+    const float Alpha = 1.0f - FMath::Exp(
+        -FMath::Max(0.1f, EffectiveSmoothingSpeed)
+        * FMath::Max(0.0f, DeltaTime));
 
     CurrentOrbitTarget = FMath::Lerp(CurrentOrbitTarget, DesiredOrbitTarget, Alpha);
     CurrentOrbitYawDegrees = FMath::UnwindDegrees(
@@ -960,6 +984,22 @@ void ALLObserverPlayerController::ApplyCameraTransform(float DeltaTime)
     const FVector CameraLocation = CurrentOrbitTarget + OffsetDirection * CurrentOrbitDistanceUU;
     const FRotator CameraRotation = (CurrentOrbitTarget - CameraLocation).Rotation();
     Camera->SetActorLocationAndRotation(CameraLocation, CameraRotation);
+
+    if (bReturningToWorldOverview)
+    {
+        const bool bTargetSettled =
+            FVector::DistSquared(CurrentOrbitTarget, DesiredOrbitTarget) <= FMath::Square(2.0f);
+        const bool bDistanceSettled =
+            FMath::Abs(CurrentOrbitDistanceUU - DesiredOrbitDistanceUU) <= 2.0f;
+        const bool bYawSettled =
+            FMath::Abs(FMath::FindDeltaAngleDegrees(CurrentOrbitYawDegrees, DesiredOrbitYawDegrees)) <= 0.15f;
+        const bool bElevationSettled =
+            FMath::Abs(CurrentOrbitElevationDegrees - DesiredOrbitElevationDegrees) <= 0.15f;
+        if (bTargetSettled && bDistanceSettled && bYawSettled && bElevationSettled)
+        {
+            bReturningToWorldOverview = false;
+        }
+    }
 }
 
 ALLResidentCharacter* ALLObserverPlayerController::FindResidentAtScreenPosition(const FVector2D& ScreenPosition, float RadiusPixels, float& OutDistance) const
