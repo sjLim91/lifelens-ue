@@ -273,6 +273,15 @@ When explicitly resumed, prefer cached/fast smoke paths before long engine build
 
 ## Recently completed coordination items
 
+### PR #251 — Authoritative Unreal Water consumer v1 — DONE
+
+- merged after exact-head Structural Preflight + Unreal Linux Compile PASS.
+- Core Hydrology presentation DTO now drives runtime Unreal Water river/lake/wetland projection.
+- spawned water remains presentation-only; collision/navigation and gameplay authority stay outside Unreal Water.
+- coast/ocean remains deferred until planetary coastline geometry is sufficiently explicit.
+- ASSIST_LOCK-GFX-WATER-CONSUMER-1 released.
+
+
 ### PR #134 — PR #100 WorldPresentation current-main reapplication — DONE
 
 - owner/integration: Jjun.
