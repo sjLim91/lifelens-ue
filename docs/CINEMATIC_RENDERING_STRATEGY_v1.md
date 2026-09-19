@@ -4,22 +4,26 @@ Status: canonical rendering companion for Master Spec §6 / §20.
 
 ## 1. Product goal
 
-LifeLens keeps one authoritative simulation and one world identity, but does **not** force the Windows visual ceiling down to the Android renderer budget.
+LifeLens keeps one authoritative simulation and one world identity, but does **not** force the desktop visual ceiling down to the Android renderer budget.
 
 ```
 LifeLens Core / World / Save
         |
         +-----------------------------+
         |                             |
-Windows PC Presentation        Android Presentation
-cinematic real-time tier       mobile-optimized tier
+Desktop PC Presentation       Android Presentation
+Windows + macOS tiers          mobile-optimized tier
 ```
 
 The same resident, facility, resource, terrain state, weather and event must remain semantically identical across platforms. Rendering quality may differ; simulation truth may not.
 
-## 2. Windows PC cinematic baseline
+## 2. Desktop PC cinematic baseline
 
-The Windows target uses Unreal Engine 5.6's native high-fidelity real-time stack:
+LifeLens PC means **Windows + macOS**. Both share one PC feature roadmap while renderer switches follow platform capability.
+
+### Windows baseline
+
+Windows uses Unreal Engine 5.6's native high-fidelity real-time stack:
 
 - DirectX 12 + Shader Model 6.
 - Lumen Global Illumination.
@@ -32,6 +36,21 @@ The Windows target uses Unreal Engine 5.6's native high-fidelity real-time stack
 - PBR photoreal source assets, material layering, weather/wetness response and high-detail local-view presentation.
 
 Baseline Lumen uses **software tracing**, not mandatory hardware ray tracing. Hardware RT is a future optional PC Ultra tier only after minimum-spec profiling.
+
+### macOS broad baseline
+
+macOS is a first-class PC/editor/runtime target.
+
+Broad baseline:
+- Lumen Global Illumination with software tracing.
+- Lumen Reflections.
+- Temporal Super Resolution.
+- Mesh Distance Fields.
+- Sky Atmosphere / dynamic environment presentation.
+- desktop texture residency.
+- desktop volumetric fog.
+
+Compatibility baseline keeps Hardware RT, Nanite and Virtual Shadow Maps off. A later Apple Silicon M2+ high tier may opt into Nanite/VSM only after actual-device profiling.
 
 ## 3. Android baseline
 
@@ -102,6 +121,11 @@ Canonical platform overrides:
   - TSR.
   - Nanite project support.
   - Mesh Distance Fields.
+- `Config/Mac/MacEngine.ini`
+  - Lumen software GI/reflections.
+  - TSR + Mesh Distance Fields.
+  - broad-compatible shadow path.
+  - Nanite/VSM/Hardware RT off in broad baseline.
 - `Config/Android/AndroidEngine.ini`
   - mobile-safe GI/reflection/shadow/AA path.
   - Lumen/Nanite/VSM disabled.
@@ -121,7 +145,7 @@ Config alone cannot produce cinematic imagery. The presentation lane must also s
 5. terrain material layering and slope/height/wetness response.
 6. water material/presentation driven by authoritative Hydrology.
 7. quality-scaled foliage/ground cover.
-8. runtime visual QA on representative PC and Android devices.
+8. runtime visual QA on representative Windows PC, Mac and Android devices.
 
 ## 9. Validation
 
@@ -134,6 +158,13 @@ Windows acceptance:
 - TSR active.
 - approved Nanite assets show Nanite rendering while fallback meshes remain valid.
 - GPU/frame-time profiling captured for representative local-view scenes.
+
+macOS acceptance:
+- native Mac Editor/project opens and compiles.
+- Lumen software GI/reflections and TSR visibly active.
+- SkyAtmosphere / real-time SkyLight / volumetric fog follow authoritative time/weather.
+- runtime renderer diagnostics match the Mac baseline.
+- representative scene frame-time and memory are captured.
 
 Android acceptance:
 - APK/device launch succeeds.
