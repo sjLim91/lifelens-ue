@@ -1,5 +1,6 @@
 from pathlib import Path
 import json
+import re
 
 root = Path(__file__).resolve().parents[1]
 
@@ -113,8 +114,39 @@ desktop_nature = world_presentation[desktop_split:split_end]
 assert "/Game/Environment/Quaternius/" in android_nature, (
     "Android presentation must keep an explicit lightweight nature set"
 )
-assert "/Game/Environment/Quaternius/" not in desktop_nature, (
-    "desktop production WorldPresentation must not silently restore Quaternius local-view fallback"
+# Screenshot-driven recovery: the photoreal-only catalogue currently contains
+# saplings but no mature canopy. Permit only the explicitly reviewed, already-
+# shipped mature/understory recovery set on desktop; do not reopen an arbitrary
+# catch-all fallback path.
+allowed_desktop_recovery = {
+    "/Game/Environment/Quaternius/StylizedNature/CommonTree_1/StaticMeshes/CommonTree_1.CommonTree_1",
+    "/Game/Environment/Quaternius/StylizedNature/CommonTree_2/StaticMeshes/CommonTree_2.CommonTree_2",
+    "/Game/Environment/Quaternius/StylizedNature/CommonTree_3/StaticMeshes/CommonTree_3.CommonTree_3",
+    "/Game/Environment/Quaternius/StylizedNature/Pine_1/StaticMeshes/Pine_1.Pine_1",
+    "/Game/Environment/Quaternius/StylizedNature/Pine_2/StaticMeshes/Pine_2.Pine_2",
+    "/Game/Environment/Quaternius/StylizedNature/Pine_3/StaticMeshes/Pine_3.Pine_3",
+    "/Game/Environment/Quaternius/StylizedNature/Pine_4/StaticMeshes/Pine_4.Pine_4",
+    "/Game/Environment/Quaternius/StylizedNature/TwistedTree_2/StaticMeshes/TwistedTree_2.TwistedTree_2",
+    "/Game/Environment/Quaternius/StylizedNature/Bush_Common_Flowers/StaticMeshes/Bush_Common_Flowers.Bush_Common_Flowers",
+    "/Game/Environment/Quaternius/StylizedNature/Fern_1/StaticMeshes/Fern_1.Fern_1",
+    "/Game/Environment/Quaternius/StylizedNature/Plant_1_Big/StaticMeshes/Plant_1_Big.Plant_1_Big",
+    "/Game/Environment/Quaternius/StylizedNature/Grass_Common_Tall/StaticMeshes/Grass_Common_Tall.Grass_Common_Tall",
+    "/Game/Environment/Quaternius/StylizedNature/Grass_Wispy_Tall/StaticMeshes/Grass_Wispy_Tall.Grass_Wispy_Tall",
+    "/Game/Environment/Quaternius/StylizedNature/Flower_3_Group/StaticMeshes/Flower_3_Group.Flower_3_Group",
+    "/Game/Environment/Quaternius/StylizedNature/Clover_1/StaticMeshes/Clover_1.Clover_1",
+    "/Game/Environment/Quaternius/StylizedNature/Rock_Medium_1/StaticMeshes/Rock_Medium_1.Rock_Medium_1",
+    "/Game/Environment/Quaternius/StylizedNature/Rock_Medium_2/StaticMeshes/Rock_Medium_2.Rock_Medium_2",
+    "/Game/Environment/Quaternius/StylizedNature/Rock_Medium_3/StaticMeshes/Rock_Medium_3.Rock_Medium_3",
+    "/Game/Environment/Quaternius/StylizedNature/Pebble_Round_2/StaticMeshes/Pebble_Round_2.Pebble_Round_2",
+}
+desktop_quaternius = set(re.findall(
+    r'"/Game/Environment/Quaternius/[^"]+"',
+    desktop_nature,
+))
+desktop_quaternius = {value.strip('"') for value in desktop_quaternius}
+assert desktop_quaternius == allowed_desktop_recovery, (
+    "desktop Quaternius recovery set drifted; only the screenshot-reviewed "
+    f"mature/understory set is allowed: {desktop_quaternius ^ allowed_desktop_recovery}"
 )
 assert "/Game/Environment/Photoreal/PolyHaven/" not in android_nature, (
     "Android nature block must not hard-reference desktop photoreal dressing"
