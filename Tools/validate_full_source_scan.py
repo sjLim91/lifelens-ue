@@ -31,7 +31,6 @@ files = production_files()
 require(len(files) >= 130, f"unexpectedly small production source set: {len(files)}")
 
 conflict_markers = []
-hardcoded_founders = []
 marine_deferred = []
 for path in files:
     text = path.read_text(encoding="utf-8", errors="strict")
@@ -48,8 +47,20 @@ for path in files:
         marine_deferred.append(rel)
 
 require(not conflict_markers, f"merge conflict markers in production source: {conflict_markers}")
-require(not hardcoded_founders, f"hard-coded prototype founder identity in production source: {hardcoded_founders}")
 require(not marine_deferred, f"coast/ocean presentation still explicitly deferred: {marine_deferred}")
+
+initial_population = (SOURCE / "LifeLensCore/include/lifelens/InitialPopulation.h").read_text(encoding="utf-8")
+require("std::shuffle(maleNames.begin(),maleNames.end(),rng);" in initial_population,
+        "male founder names are no longer randomized")
+require("std::shuffle(femaleNames.begin(),femaleNames.end(),rng);" in initial_population,
+        "female founder names are no longer randomized")
+require('generateFounder(1,maleNames[0]' in initial_population
+        and 'generateFounder(2,maleNames[1]' in initial_population
+        and 'generateFounder(3,femaleNames[0]' in initial_population
+        and 'generateFounder(4,femaleNames[1]' in initial_population,
+        "production founders regressed to fixed display names")
+require(not re.search(r"generateFounder\\([^,]+,\\s*\"", initial_population),
+        "production founder construction contains a literal fixed name")
 
 hierarchy = (SOURCE / "LifeLensCore/include/lifelens/WorldHierarchy.h").read_text(encoding="utf-8")
 for token in (
@@ -103,5 +114,5 @@ require("DefaultGraphicsRHI=DefaultGraphicsRHI_DX11" not in windows_ini,
 
 print(
     "Full production source scan: PASS "
-    f"({len(files)} files; conflict/dev-identity/marine-defer/earth-hierarchy guards)"
+    f"({len(files)} files; conflict/founder-randomization/marine-defer/earth-hierarchy guards)"
 )
