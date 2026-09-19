@@ -56,6 +56,9 @@ jobs:
       - name: Validate platform content cook boundaries
         run: python Tools/validate_platform_cook_boundaries.py
 
+      - name: Validate desktop PCG runtime dressing
+        run: python Tools/validate_pcg_runtime_dressing.py
+
       - name: Verify Unreal project metadata
         run: |
           python - <<'PY'
