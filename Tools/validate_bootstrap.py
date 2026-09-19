@@ -629,4 +629,35 @@ assert 'SolarElevationDegrees =' not in dynamic_environment_presentation, 'Prese
 default_engine = (root / 'Config/DefaultEngine.ini').read_text(encoding='utf-8')
 assert 'Name="WaterBodyCollision"' in default_engine, 'Unreal Water plugin requires WaterBodyCollision profile during editor/runtime load'
 
+
+world_presentation = (root / 'Source/LifeLens/WorldPresentation/LLWorldPresentationActor.cpp').read_text(encoding='utf-8')
+world_presentation_header = (root / 'Source/LifeLens/WorldPresentation/LLWorldPresentationActor.h').read_text(encoding='utf-8')
+for token in (
+    'PresentationSeed(Chunk.VisualSeed)',
+    'PresentationSeed(Patch.VisualSeed)',
+    'SM_LL_stone_fire_pit',
+    'SM_LL_wicker_basket_01',
+    'SM_LL_wooden_axe',
+    'PhotorealFirePitInstances',
+    'PhotorealStorageBasketInstances',
+    'PhotorealWorkToolInstances',
+    'TerrainSurfaceZUU',
+    'TerrainTileRotation',
+    'GetTerrainPresentationObservation',
+    'fir_sapling_b',
+    'pine_sapling_small_b',
+    'shrub_02_b',
+    'weed_plant_02_b_LOD0',
+):
+    assert token in world_presentation, f'Missing visible-world uplift consumer: {token}'
+for token in (
+    '#if PLATFORM_ANDROID',
+    'MaxTreeInstances  = 1180',
+    'MaxGrassInstances = 4200',
+    'TerrainReliefAmplitudeUU = 180.0f',
+    'FLLCoreTerrainPresentationObservation',
+):
+    assert token in world_presentation_header, f'Missing platform/terrain presentation policy: {token}'
+assert 'const int32 StoneCount = bStructurallyComplete ? 8' not in world_presentation, 'Completed firepit must not regress to the Engine-cube ring'
+
 print('LifeLens autonomous observer structural validation: PASS')
