@@ -55,6 +55,7 @@ Canonical milestone roadmap: `docs/DEVELOPMENT_MILESTONES.md`.
 
 - Unreal-native runtime. Legacy LOCAL OBSERVER HTML/JS는 요구사항 참고자료일 뿐 런타임 기반이 아니다.
 - Android가 첫 실제 제품 타깃이다.
+- PC 제품 타깃은 Windows + macOS다. 기능/그래픽 로드맵에서 함께 진행하며 renderer capability 차이는 platform config/profile로 분리한다.
 - `LifeLensCore`는 표준 C++17이며 Unreal 타입에 의존하지 않는다.
 - 초기 NEW GAME은 남자 2 + 여자 2, 자연환경, **문명 인프라 0**에서 시작한다.
 - 이름/특성은 초기 시작 시 새로 부여할 수 있지만 자연 세계는 WorldSeed/GenerationVersion 계약을 따른다.
@@ -75,7 +76,7 @@ Canonical milestone roadmap: `docs/DEVELOPMENT_MILESTONES.md`.
 - `Source/LifeLens/AI/**`
 - `Source/LifeLens/Simulation/**`
 - `Source/LifeLens/World/**`
-- Save/Load / Bridge / build / CI / Android
+- Save/Load / Bridge / build / CI / Android / Windows / macOS platform integration
 - `Config/**`와 project startup/default map/plugin integration
 
 ### Dagyeom lane

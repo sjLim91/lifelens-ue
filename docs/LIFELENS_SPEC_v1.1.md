@@ -93,13 +93,13 @@ LIFELENS의 핵심 런타임에서 제거: HTML, JavaScript 중심 구조, Three
 - **현실적인 동작:** 앉기, 눕기, 잡기, 사용하기, 대화하기
 - **관찰:** 관찰 카메라, 캐릭터 Follow, 시네마틱 카메라, 사건 자동 추적
 - **UI:** Observer-first UI
-- **플랫폼:** Android, Windows PC
+- **플랫폼:** Android, Desktop PC (Windows + macOS)
 
 ---
 
 ## 6. 플랫폼 전략
 
-개발 우선순위: **1. Android → 2. Windows PC**
+개발 우선순위: **1. Android → 2. Desktop PC (Windows + macOS)**
 
 Core Simulation은 두 플랫폼에서 동일하게 유지한다. PC와 Android는 그래픽 품질과 일부 성능 예산만 다르게 한다.
 
@@ -120,9 +120,10 @@ PC Presentation        Android Presentation
 
 모바일이라고 캐릭터의 기본 AI 철학을 바꾸지 않는다. 단, Simulation LOD를 이용하여 계산 비용을 줄일 수 있다.
 
-**그래픽 품질의 상한은 플랫폼별로 분리한다.** Android 우선 개발은 Windows PC의 시각 품질을 모바일 수준으로 제한한다는 뜻이 아니다.
+**그래픽 품질의 상한은 플랫폼별로 분리한다.** Android 우선 개발은 Desktop PC의 시각 품질을 모바일 수준으로 제한한다는 뜻이 아니다.
 
 - Windows PC: Unreal의 cinematic real-time stack(Lumen GI/Reflections, Nanite eligible assets, Virtual Shadow Maps, TSR, 고품질 PBR/atmosphere)을 적극 활용한다.
+- macOS: PC 제품 타깃이자 정상적인 Unreal Editor/그래픽 검수 환경이다. broad baseline은 Lumen software GI/reflections + TSR + Mesh Distance Fields를 사용하며 M2+ 고급 기능은 실제 장비 profiling 후 올린다.
 - Android: 동일한 World/Character/Facility identity를 유지하면서 conventional LOD/HLOD, 경량 material/shadow/foliage/texture 정책으로 다운스케일한다.
 - 그래픽 LOD 차이는 presentation 차이일 뿐이며 Core/World/Save truth를 바꾸지 않는다.
 - PC 고품질 자산은 Android용 fallback mesh/LOD 또는 별도 경량 presentation path를 가져야 한다.
@@ -1227,7 +1228,7 @@ LifeLens의 세계는 가족·인구 증가에서 끝나지 않는다.
 - **관계/가족:** Relationship, Romance, Marriage, Cohabitation, Household, Pregnancy, Birth, Genetics, Parenting, Growth, Aging, Death, Generations, Genealogy
 - **세계/사건:** Time, Weather, Events, Witness, Evidence, Statements
 - **관찰:** Observer-first UI, Character Inspector, World Overview, Cinematic Observer, Event Director
-- **플랫폼:** Android, Windows PC
+- **플랫폼:** Android, Desktop PC (Windows + macOS)
 
 ---
 

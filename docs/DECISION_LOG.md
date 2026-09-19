@@ -357,3 +357,15 @@ C1 세부 순서:
 **Canonical presentation doc**
 - `docs/WORLD_VISUAL_ENVIRONMENT_v1.md`
 - `docs/CINEMATIC_RENDERING_STRATEGY_v1.md`
+
+
+## D-019 — PC 버전은 Windows와 macOS를 함께 진행한다
+
+**결정**
+- LifeLens PC 제품 타깃은 Windows + macOS다.
+- 두 플랫폼은 같은 Core/World/Save truth와 같은 PC 기능/그래픽 로드맵을 공유한다.
+- platform renderer capability 차이는 Config/DeviceProfile에서 분리한다.
+- Windows baseline은 DX12/SM6 + Lumen + VSM + TSR + Nanite.
+- macOS broad baseline은 Lumen software GI/reflections + TSR + Mesh Distance Fields이며 Nanite/VSM/Hardware RT는 모든 Mac의 필수 조건으로 두지 않는다.
+- 공통 desktop presentation은 기능상 이유가 없으면 `PLATFORM_WINDOWS || PLATFORM_MAC`로 함께 진행한다.
+- Windows/macOS 각각 native runtime visual QA를 통과해야 desktop graphics 완료로 본다.

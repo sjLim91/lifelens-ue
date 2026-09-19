@@ -64,41 +64,33 @@ A new blocker is triaged before unrelated follow-up work. This does **not** mean
 
 ## Current Assist Locks
 
-### ASSIST_LOCK-GFX-VISIBLE-70-1 — Jjun scoped visual uplift integration
+### ASSIST_LOCK-GFX-DESKTOP-PARITY-2 — Jjun scoped desktop platform parity assist
 
-- explicit user direction: raise visible final graphics completion toward the 70% checkpoint now.
+- explicit user direction: PC means Windows + macOS and both advance together.
 - helper: Jjun.
-- owner/reviewer: Dagyeom.
-- branch: `integration/visible-world-uplift-70-v1`.
-- allowed presentation files:
-  - `Source/LifeLens/WorldPresentation/LLWorldPresentationActor.cpp`
-  - `Source/LifeLens/WorldPresentation/LLWorldPresentationActor.h`
-  - related structural validation/docs only.
+- owner/reviewer for presentation source: Dagyeom.
+- branch: `integration/desktop-windows-mac-parity-v2`.
+- cross-owner file:
+  - `Source/LifeLens/WorldPresentation/LLDynamicEnvironmentPresentationActor.cpp`.
 - scope:
-  - consume merged deterministic visual seeds and terrain presentation provider.
-  - use already-imported approved photoreal facility hero props.
-  - add already-imported photoreal vegetation variants to reduce repetition.
-  - increase desktop cinematic dressing density without raising Android budgets.
-  - add gentle visual terrain relief outside the active settlement/facility flattening envelopes.
-  - no new simulation/resource/facility authority.
-- safety:
-  - settlement locomotion/collision baseline remains flat.
-  - visual terrain adds hills only; it does not lower presentation below the hidden bootstrap collision plane.
-  - do not merge over an overlapping Dagyeom PR; request review before closeout.
-- release: after the uplift PR is merged/closed and TEAM_BOARD is reconciled.
+  - real-time SkyLight capture on Windows + macOS.
+  - desktop volumetric fog on Windows + macOS.
+  - Mac renderer Config/diagnostics/docs.
+  - no time/weather authority changes.
+- release after PR merge/close and state reconciliation.
 
 ## Open Integration Requests
 
-### IR-GFX-CINEMATIC-1 — Windows cinematic presentation adoption
+### IR-GFX-CINEMATIC-1 — Desktop cinematic presentation adoption (Windows + macOS)
 
 - requester: Jjun.
 - needed owner: Dagyeom.
-- target: Windows cinematic renderer tier integration after Config foundation.
+- target: Windows + macOS desktop renderer integration after Config foundation.
 - requested areas: `Content/Environment/**`, `Content/Maps/**`, `Content/WorldPresentation/**` and presentation-owned environment setup as needed.
 - needed work:
-  - opt approved high-detail static assets into Nanite on the Windows presentation path while preserving Android fallback LOD/mesh.
+  - opt approved high-detail static assets into Nanite on the desktop presentation path while preserving Android fallback LOD/mesh.
   - tune Sky Atmosphere / volumetric fog/cloud / exposure and dynamic environment lighting against authoritative time/weather state.
-  - verify terrain/water/material presentation under the Windows Lumen/VSM/TSR path.
+  - verify terrain/water/material presentation under the Windows/macOS desktop renderer paths.
   - adopt the enabled Unreal `PCG` plugin for natural dressing/biome placement without inventing resource authority.
   - project authoritative Hydrology into the enabled Unreal `Water` system for river/lake/coast/ocean visuals, with an Android-safe fallback path.
   - do not restore Engine Cube/Cone or visibly prototype local-view fallback art.
