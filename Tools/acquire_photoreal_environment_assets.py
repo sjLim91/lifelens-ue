@@ -49,6 +49,9 @@ CURATED = {
     "stone_fire_pit": {"kind": "model", "resolution": "2k", "format": "gltf", "max_mib": 70},
     "wicker_basket_01": {"kind": "model", "resolution": "2k", "format": "gltf", "max_mib": 65},
     "wooden_axe": {"kind": "model", "resolution": "2k", "format": "gltf", "max_mib": 50},
+    # Primitive-compatible daily-life vessel; neutral enough for generic food/
+    # drink presentation without inventing a specific crop/species.
+    "wooden_bowl_01": {"kind": "model", "resolution": "1k", "format": "gltf", "max_mib": 25},
     "forest_floor": {"kind": "texture", "resolution": "2k"},
     "forrest_ground_01": {"kind": "texture", "resolution": "2k"},
     "mossy_rock": {"kind": "texture", "resolution": "2k"},
