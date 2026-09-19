@@ -61,6 +61,12 @@ void ALLPCGGroundCoverPresentationActor::Tick(float DeltaSeconds)
 
 void ALLPCGGroundCoverPresentationActor::TryGenerateFromCore()
 {
+    if (!bEnableGroundCoverPCG)
+    {
+        SetActorTickEnabled(false);
+        return;
+    }
+
 #if PLATFORM_ANDROID
     SetActorTickEnabled(false);
     return;
