@@ -69,6 +69,25 @@ bool isRoutineDevelopmentalCare(ParentingAction action)
            action==ParentingAction::Discipline;
 }
 
+void advanceFoodSpoilageOneDay(World& world)
+{
+    // C1-D v1: PlantFood freshness is carried by the existing serialized
+    // ItemStack::quality field. Organized storage slows spoilage but does not
+    // stop it; no food is created or destroyed except through explicit spoilage.
+    constexpr double CarriedFreshnessLossPerDay=0.085;
+    constexpr double StoredFreshnessLossPerDay=0.045;
+
+    for(auto& character:world.characters){
+        if(!character.alive) continue;
+        character.civilization.inventory.agePlantFoodOneDay(
+            CarriedFreshnessLossPerDay);
+    }
+    for(auto& storage:world.storageSites){
+        storage.inventory.agePlantFoodOneDay(
+            StoredFreshnessLossPerDay);
+    }
+}
+
 } // namespace
 
 Simulation::Simulation(
@@ -989,7 +1008,10 @@ void Simulation::step(){
     advanceSettlementFacilityWearOneMinute(world_);
     advancePrimitiveFireOneMinute(world_);
     world_.environmentalResidues.advanceToMinute(world_.minute);
-    if(world_.minute%(24*60)==0) regenerateCivilizationEnvironment(world_);
+    if(world_.minute%(24*60)==0){
+        regenerateCivilizationEnvironment(world_);
+        advanceFoodSpoilageOneDay(world_);
+    }
     advanceCivilizationKnowledgeTeaching();
     advanceAutonomousFamilyProgression();
 }
