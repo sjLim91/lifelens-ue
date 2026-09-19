@@ -45,7 +45,7 @@
 ### 2. Sky / Lighting / Atmosphere
 - 시간대에 따라 읽히는 하늘과 조명 구조를 만든다.
 - 낮/밤 표현은 authoritative simulation minute / weather provider에 연결한다.
-- Windows PC는 `docs/CINEMATIC_RENDERING_STRATEGY_v1.md`의 Lumen/VSM/TSR/atmosphere cinematic tier를 사용한다.
+- Desktop PC (Windows + macOS)는 `docs/CINEMATIC_RENDERING_STRATEGY_v1.md`의 Lumen/VSM/TSR/atmosphere cinematic tier를 사용한다.
 - Android는 동일한 환경 truth를 mobile-safe light/shadow/fog/material path로 표현한다.
 - Android 우선 검증이 Windows 시각 품질의 상한이 되어서는 안 된다.
 
@@ -55,7 +55,7 @@
 - Unreal PCG Framework를 기본 procedural placement tool로 사용할 수 있다.
 - `FLLCoreNaturalChunkObservation.VisualSeed`와 각 resource patch의 `VisualSeed`를 deterministic PCG seed로 사용해 같은 WorldSeed/World state에서 장식 배치가 불필요하게 흔들리지 않게 한다.
 - PCG가 생성한 위치/밀도는 visual decoration authority만 가진다. 채집 가능한 나무/광물/식량 등 gameplay resource 존재 여부는 반드시 Core/World read contract를 따른다.
-- Windows에서는 고밀도/고품질 PCG 결과를 허용하고, Android에서는 partition/bake/LOD/HISM/density scaling으로 비용을 낮춘다.
+- Windows/macOS desktop에서는 고밀도/고품질 PCG 결과를 허용하고, Android에서는 partition/bake/LOD/HISM/density scaling으로 비용을 낮춘다.
 - 초반에는 visual-only decoration과 authoritative resource node를 명확히 구분한다.
 - project-authored baseline graph `/Game/Environment/PCG/PCG_LL_GroundCover`는 승인된 `weed_plant_02` CC0 mesh만 사용해 **decorative ground cover**를 배치한다. 이 graph는 CPU path, collision/navigation off, distance culling/density scaling을 기본값으로 하며 gameplay 자원을 생성하지 않는다.
 - PCG graph asset authoring은 headless Unreal workflow로 재현 가능해야 하며, binary `.uasset`만 수동 편집한 상태를 canonical source로 두지 않는다.
@@ -71,7 +71,7 @@
 - Presentation이 보기 좋은 위치에 임의의 강/호수를 만들거나 Core 수계를 재추측하지 않는다.
 - Water spline/body/mesh가 필요하면 authoritative hydrology read model을 projection하여 생성한다.
 - Bridge의 `FLLCoreSurfaceWaterPresentationObservation`은 materialized water의 stable center/downstream target과 deterministic width/radius **rendering hint**를 제공한다. 이 값은 Unreal Water spline/body 제작용이며 gameplay 수량/깊이/유량의 새 authority가 아니다.
-- Windows는 고품질 반사/수면/대기 상호작용을 사용할 수 있고 Android는 경량 water material/mesh/LOD path를 유지한다.
+- Windows/macOS desktop은 고품질 반사/수면/대기 상호작용을 사용할 수 있고 Android는 경량 water material/mesh/LOD path를 유지한다.
 - 수영/음용/채집/홍수 같은 gameplay consequence는 Water plugin 자체가 아니라 Core/World 계약이 결정한다.
 
 ### 6. Mobile-first Performance
