@@ -28,6 +28,12 @@ header = (root / "Source/LifeLens/WorldPresentation/LLDesktopTerrainPresentation
 assert "UProceduralMeshComponent* TerrainMesh = nullptr;" in header
 assert "TObjectPtr<UProceduralMeshComponent>" not in header
 
+dynamic_environment = (root / "Source/LifeLens/WorldPresentation/LLDynamicEnvironmentPresentationActor.cpp").read_text(encoding="utf-8")
+assert "ALLDesktopTerrainPresentationActor" in dynamic_environment
+assert "ApplyWeatherParameters" in dynamic_environment
+assert "SetScalarParameterValueOnMaterials(WetnessMaterialParameter" in dynamic_environment
+assert "SetScalarParameterValueOnMaterials(SnowMaterialParameter" in dynamic_environment
+
 project = json.loads((root / "LifeLens.uproject").read_text(encoding="utf-8"))
 plugin = next((p for p in project["Plugins"] if p["Name"] == "ProceduralMeshComponent"), None)
 assert plugin is not None and plugin.get("Enabled") is True
