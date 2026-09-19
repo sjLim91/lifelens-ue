@@ -660,4 +660,20 @@ for token in (
     assert token in world_presentation_header, f'Missing platform/terrain presentation policy: {token}'
 assert 'const int32 StoneCount = bStructurallyComplete ? 8' not in world_presentation, 'Completed firepit must not regress to the Engine-cube ring'
 
+
+resident_motion = (root / 'Source/LifeLens/Characters/LLResidentMotionComponent.cpp').read_text(encoding='utf-8')
+for token in (
+    'SM_LL_wicker_basket_01',
+    'SM_LL_wooden_bowl_01',
+    'SharpFlakeMesh = nullptr',
+    'StoneCuttingToolMesh = nullptr',
+):
+    assert token in resident_motion, f'Missing production held-prop policy: {token}'
+for forbidden in (
+    '/Engine/BasicShapes/Cone.Cone',
+    '/Engine/BasicShapes/Cylinder.Cylinder',
+    '/Engine/BasicShapes/Sphere.Sphere',
+):
+    assert forbidden not in resident_motion, f'Production held props must not use Engine primitive: {forbidden}'
+
 print('LifeLens autonomous observer structural validation: PASS')
