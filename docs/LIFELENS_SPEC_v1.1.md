@@ -1228,7 +1228,7 @@ LifeLens의 세계는 가족·인구 증가에서 끝나지 않는다.
 - **관계/가족:** Relationship, Romance, Marriage, Cohabitation, Household, Pregnancy, Birth, Genetics, Parenting, Growth, Aging, Death, Generations, Genealogy
 - **세계/사건:** Time, Weather, Events, Witness, Evidence, Statements
 - **관찰:** Observer-first UI, Character Inspector, World Overview, Cinematic Observer, Event Director
-- **플랫폼:** Android, Windows PC
+- **플랫폼:** Android, Desktop PC (Windows + macOS)
 
 ---
 
