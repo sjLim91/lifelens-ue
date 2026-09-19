@@ -452,6 +452,13 @@ jobs:
           echo "ENGINE_COMPILE_CACHE_RESTORED kind=$CACHE_KIND"
           du -sh "$CACHE_FILE"
 
+      - name: Validate Android content cook boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$PROJECT_ROOT"
+          python3 Tools/validate_platform_cook_boundaries.py
+
       - name: Compile LifeLens Android Development
         timeout-minutes: 300
         shell: bash

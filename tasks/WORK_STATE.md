@@ -348,3 +348,13 @@ Parallel follow-up branches started:
 - seam-compatible terrain presentation contract: expose deterministic shared corner elevation samples for future non-flat local terrain without creating a second terrain authority.
 
 Android Gate B remains paused until the user explicitly resumes device/APK validation.
+
+
+---
+
+## Platform content / cook boundary — ACTIVE
+
+- one repository / one simulation truth.
+- Android and Desktop packages carry only required presentation payloads.
+- active PR separates Android mobile nature hard refs from desktop photoreal nature and enforces platform never-cook rules.
+- Android Gate B remains paused; no APK artifact-size claim until actual packaging resumes.

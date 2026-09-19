@@ -64,20 +64,22 @@ A new blocker is triaged before unrelated follow-up work. This does **not** mean
 
 ## Current Assist Locks
 
-### ASSIST_LOCK-GFX-DESKTOP-PARITY-2 — Jjun scoped desktop platform parity assist
+### ASSIST_LOCK-GFX-PLATFORM-COOK-2 — Jjun scoped platform packaging assist
 
-- explicit user direction: PC means Windows + macOS and both advance together.
+- explicit user direction: keep desktop payload out of Android APK now.
 - helper: Jjun.
 - owner/reviewer for presentation source: Dagyeom.
-- branch: `integration/desktop-windows-mac-parity-v2`.
+- branch: `integration/platform-content-cook-boundary-v2`.
 - cross-owner file:
-  - `Source/LifeLens/WorldPresentation/LLDynamicEnvironmentPresentationActor.cpp`.
+  - `Source/LifeLens/WorldPresentation/LLWorldPresentationActor.cpp`.
 - scope:
-  - real-time SkyLight capture on Windows + macOS.
-  - desktop volumetric fog on Windows + macOS.
-  - Mac renderer Config/diagnostics/docs.
-  - no time/weather authority changes.
-- release after PR merge/close and state reconciliation.
+  - Android loads lightweight Quaternius nature.
+  - Windows/macOS load desktop photoreal nature.
+  - Android cook excludes desktop nature/PCG payload.
+  - desktop packages exclude future `/Game/Mobile`.
+  - no simulation authority changes.
+- compact firepit/basket/axe remain a documented shared exception until mobile replacements exist.
+- release after merge/close and board reconciliation.
 
 ## Open Integration Requests
 
