@@ -55,6 +55,7 @@ public class LifeLens : ModuleRules
             || Target.Platform == UnrealTargetPlatform.Linux)
         {
             PrivateDependencyModuleNames.Add("PCG");
+            PrivateDependencyModuleNames.Add("ProceduralMeshComponent");
         }
     }
 }
