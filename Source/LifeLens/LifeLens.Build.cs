@@ -47,5 +47,14 @@ public class LifeLens : ModuleRules
             // plugin without giving it simulation authority.
             "Water"
         });
+
+        // PCG is a desktop presentation dependency only. Android uses the
+        // lightweight HISM/mobile dressing path and must not link the PCG module.
+        if (Target.Platform == UnrealTargetPlatform.Win64
+            || Target.Platform == UnrealTargetPlatform.Mac
+            || Target.Platform == UnrealTargetPlatform.Linux)
+        {
+            PrivateDependencyModuleNames.Add("PCG");
+        }
     }
 }
