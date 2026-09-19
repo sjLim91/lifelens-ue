@@ -4,6 +4,9 @@
 #include "World/LLWorldSpatialContract.h"
 #include "WorldPresentation/LLDynamicEnvironmentPresentationActor.h"
 #include "WorldPresentation/LLWaterPresentationActor.h"
+#if !PLATFORM_ANDROID
+#include "WorldPresentation/LLPCGGroundCoverPresentationActor.h"
+#endif
 #include "UI/LLSocialObserverHUD.h"
 #include "UI/LLObserverPlayerController.h"
 #include "Camera/CameraActor.h"
@@ -48,6 +51,12 @@ void ALLLifeLensGameMode::BeginPlay()
             ALLWaterPresentationActor::StaticClass(),
             FVector::ZeroVector,
             FRotator::ZeroRotator);
+#if !PLATFORM_ANDROID
+        GetWorld()->SpawnActor<ALLPCGGroundCoverPresentationActor>(
+            ALLPCGGroundCoverPresentationActor::StaticClass(),
+            FVector::ZeroVector,
+            FRotator::ZeroRotator);
+#endif
     }
 
     SpawnObserverCamera();
