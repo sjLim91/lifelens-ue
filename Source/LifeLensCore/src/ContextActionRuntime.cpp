@@ -271,6 +271,9 @@ bool Simulation::completeContextAction(
                 case CivilizationEventType::Stored:
                     log<<" "<<materialName(result.event.material)<<" x"<<result.event.quantity;
                     break;
+                case CivilizationEventType::Retrieved:
+                    log<<" "<<materialName(result.event.material)<<" x"<<result.event.quantity;
+                    break;
                 case CivilizationEventType::ExperimentFailed:
                     log<<" failed "<<techniqueName(result.event.technique);
                     break;
