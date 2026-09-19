@@ -90,24 +90,27 @@ float ALLDesktopTerrainPresentationActor::ReliefBlend(
     const float SettlementStart = FMath::Max(0.0f, SettlementFlattenRadiusUU);
     const float SettlementEnd =
         SettlementStart + FMath::Max(100.0f, SettlementBlendBandUU);
-    float Blend = FMath::SmoothStep(
+    const float SettlementAlpha = FMath::Clamp(
+        static_cast<float>(
+            (LocationUU.Size() - static_cast<double>(SettlementStart))
+            / static_cast<double>(FMath::Max(SettlementEnd - SettlementStart, 1.0f))),
         0.0f,
-        1.0f,
-        FMath::Clamp(
-            (LocationUU.Size() - SettlementStart)
-                / FMath::Max(SettlementEnd - SettlementStart, 1.0f),
-            0.0f,
-            1.0f));
+        1.0f);
+    float Blend = SettlementAlpha * SettlementAlpha * (3.0f - 2.0f * SettlementAlpha);
 
     for (const FVector2D& FacilityCenter : FacilityCentersUU)
     {
-        const float Distance = FVector2D::Distance(LocationUU, FacilityCenter);
+        const double Distance = FVector2D::Distance(LocationUU, FacilityCenter);
         const float Start = FMath::Max(0.0f, FacilityFlattenRadiusUU);
         const float End = Start + FMath::Max(50.0f, FacilityBlendBandUU);
-        const float FacilityBlend = FMath::SmoothStep(
+        const float FacilityAlpha = FMath::Clamp(
+            static_cast<float>(
+                (Distance - static_cast<double>(Start))
+                / static_cast<double>(FMath::Max(End - Start, 1.0f))),
             0.0f,
-            1.0f,
-            FMath::Clamp((Distance - Start) / FMath::Max(End - Start, 1.0f), 0.0f, 1.0f));
+            1.0f);
+        const float FacilityBlend =
+            FacilityAlpha * FacilityAlpha * (3.0f - 2.0f * FacilityAlpha);
         Blend = FMath::Min(Blend, FacilityBlend);
     }
 
