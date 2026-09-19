@@ -77,10 +77,46 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
     FacilitySurfaceMaterial = FacilitySurfaceMatFinder.Succeeded() ? FacilitySurfaceMatFinder.Object : nullptr;
     FacilityAccentMaterial = FacilityAccentMatFinder.Succeeded() ? FacilityAccentMatFinder.Object : nullptr;
 
-    // Production local-view art only uses the curated photoreal catalogue.
+    // Platform content boundary:
+    // - Android loads only the lightweight mobile fallback set.
+    // - Desktop (Windows + macOS) loads the curated photoreal nature catalogue.
+    //
+    // This compile-time split is paired with AndroidGame.ini cook exclusions so
+    // desktop-only nature packages are not pulled into the APK by hard refs.
+#if PLATFORM_ANDROID
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> MobileTreePine(
+        TEXT("/Game/Environment/Quaternius/StylizedNature/Pine_1/StaticMeshes/Pine_1.Pine_1"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> MobileTreeCommon(
+        TEXT("/Game/Environment/Quaternius/StylizedNature/CommonTree_1/StaticMeshes/CommonTree_1.CommonTree_1"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> MobileShrub(
+        TEXT("/Game/Environment/Quaternius/StylizedNature/Bush_Common/StaticMeshes/Bush_Common.Bush_Common"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> MobileGrassCommon(
+        TEXT("/Game/Environment/Quaternius/StylizedNature/Grass_Common_Short/StaticMeshes/Grass_Common_Short.Grass_Common_Short"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> MobileGrassWispy(
+        TEXT("/Game/Environment/Quaternius/StylizedNature/Grass_Wispy_Short/StaticMeshes/Grass_Wispy_Short.Grass_Wispy_Short"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> MobileRockA(
+        TEXT("/Game/Environment/Quaternius/StylizedNature/Rock_Medium_1/StaticMeshes/Rock_Medium_1.Rock_Medium_1"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> MobileRockB(
+        TEXT("/Game/Environment/Quaternius/StylizedNature/Rock_Medium_2/StaticMeshes/Rock_Medium_2.Rock_Medium_2"));
+
+    if (MobileTreePine.Succeeded()) { TreeMeshes.Add(MobileTreePine.Object); }
+    if (MobileTreeCommon.Succeeded()) { TreeMeshes.Add(MobileTreeCommon.Object); }
+    if (MobileShrub.Succeeded()) { ShrubMeshes.Add(MobileShrub.Object); }
+    if (MobileGrassCommon.Succeeded()) { GrassMeshes.Add(MobileGrassCommon.Object); }
+    if (MobileGrassWispy.Succeeded()) { GrassMeshes.Add(MobileGrassWispy.Object); }
+    if (MobileRockA.Succeeded()) { RockMeshes.Add(MobileRockA.Object); }
+    if (MobileRockB.Succeeded()) { RockMeshes.Add(MobileRockB.Object); }
+
+    UE_LOG(LogTemp, Log,
+        TEXT("LLWorldPresentation Android mobile nature art: trees=%d shrubs=%d groundCover=%d rocks=%d"),
+        TreeMeshes.Num(),
+        ShrubMeshes.Num(),
+        GrassMeshes.Num(),
+        RockMeshes.Num());
+#else
+    // Desktop production local-view art uses the curated photoreal catalogue.
     // Missing approved assets are omitted rather than silently regressing to
-    // obvious prototype geometry. Stylized assets remain available in Content
-    // for explicit bootstrap/LOD/developer modes, not as the normal hero path.
+    // prototype geometry.
     static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoTreeFirSapling(
         TEXT("/Game/Environment/Photoreal/PolyHaven/fir_sapling/SM_LL_fir_sapling.SM_LL_fir_sapling"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoTreePineSapling(
@@ -115,12 +151,6 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
         TEXT("/Game/Environment/Photoreal/PolyHaven/weed_plant_02/weed_plant_02_1k/StaticMeshes/weed_plant_02_c_LOD0.weed_plant_02_c_LOD0"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoGroundCoverD(
         TEXT("/Game/Environment/Photoreal/PolyHaven/weed_plant_02/weed_plant_02_1k/StaticMeshes/weed_plant_02_d_LOD0.weed_plant_02_d_LOD0"));
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoFirePit(
-        TEXT("/Game/Environment/Photoreal/PolyHaven/stone_fire_pit/SM_LL_stone_fire_pit.SM_LL_stone_fire_pit"));
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoStorageBasket(
-        TEXT("/Game/Environment/Photoreal/PolyHaven/wicker_basket_01/SM_LL_wicker_basket_01.SM_LL_wicker_basket_01"));
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoWoodenAxe(
-        TEXT("/Game/Environment/Photoreal/PolyHaven/wooden_axe/SM_LL_wooden_axe.SM_LL_wooden_axe"));
 
     if (PhotoTreeFirSapling.Succeeded()) { TreeMeshes.Add(PhotoTreeFirSapling.Object); }
     if (PhotoTreePineSapling.Succeeded()) { TreeMeshes.Add(PhotoTreePineSapling.Object); }
@@ -139,6 +169,24 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
     if (PhotoGroundCoverC.Succeeded()) { GrassMeshes.Add(PhotoGroundCoverC.Object); }
     if (PhotoGroundCoverD.Succeeded()) { GrassMeshes.Add(PhotoGroundCoverD.Object); }
     if (PhotoBoulder.Succeeded()) { RockMeshes.Add(PhotoBoulder.Object); }
+
+    UE_LOG(LogTemp, Log,
+        TEXT("LLWorldPresentation desktop photoreal nature art: trees=%d shrubs=%d groundCover=%d rocks=%d"),
+        TreeMeshes.Num(),
+        ShrubMeshes.Num(),
+        GrassMeshes.Num(),
+        RockMeshes.Num());
+#endif
+
+    // Small facility hero props are currently shared because the complete set is
+    // ~1.3 MiB in source and materially improves Android readability. They can
+    // move to /Game/Desktop once dedicated mobile replacements exist.
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoFirePit(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/stone_fire_pit/SM_LL_stone_fire_pit.SM_LL_stone_fire_pit"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoStorageBasket(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/wicker_basket_01/SM_LL_wicker_basket_01.SM_LL_wicker_basket_01"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoWoodenAxe(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/wooden_axe/SM_LL_wooden_axe.SM_LL_wooden_axe"));
 
     UE_LOG(LogTemp, Log,
         TEXT("LLWorldPresentation production natural art: trees=%d shrubs=%d groundCover=%d rocks=%d"),
