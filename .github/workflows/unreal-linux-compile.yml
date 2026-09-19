@@ -1,6 +1,15 @@
 name: LifeLens Unreal Linux Compile
 
 on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'Source/LifeLens/**'
+      - 'Source/LifeLensCore/**'
+      - 'Source/LifeLens.Target.cs'
+      - 'Source/LifeLensEditor.Target.cs'
+      - 'LifeLens.uproject'
+      - '.github/workflows/unreal-linux-compile.yml'
   pull_request:
     branches: [ main ]
     paths:
