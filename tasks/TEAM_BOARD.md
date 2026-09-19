@@ -87,6 +87,7 @@ A new blocker is triaged before unrelated follow-up work. This does **not** mean
 - helper: Jjun.
 - owner/reviewer: Dagyeom.
 - branch: `integration/desktop-pcg-runtime-dressing-v2`.
+- integration status: platform cook boundary #269 is merged to `main`; #271 is retargeted to `main` for fresh CI validation.
 - cross-owner files:
   - `Source/LifeLens/WorldPresentation/LLPCGGroundCoverPresentationActor.cpp`
   - `Source/LifeLens/WorldPresentation/LLPCGGroundCoverPresentationActor.h`.
