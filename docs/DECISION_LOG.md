@@ -357,3 +357,23 @@ C1 세부 순서:
 **Canonical presentation doc**
 - `docs/WORLD_VISUAL_ENVIRONMENT_v1.md`
 - `docs/CINEMATIC_RENDERING_STRATEGY_v1.md`
+
+
+## D-020 — 플랫폼별 최종 패키지는 필요한 Presentation payload만 포함한다
+
+**결정**
+- LifeLens는 한 저장소와 한 Core/World/Save truth를 유지하지만, Android APK와 Desktop 패키지가 서로의 전용 Presentation payload를 함께 포함할 필요는 없다.
+- 신규 플랫폼 전용 Content는 `/Game/Desktop/**`, `/Game/Mobile/**`, 공용은 `/Game/Shared/**` 경계를 우선 사용한다.
+- 기존 binary asset은 redirector/reference churn을 피하기 위해 일괄 이동하지 않고, platform cook exclusion + compile-time asset reference 분리를 먼저 적용한다.
+- Android는 desktop photoreal nature와 현재 desktop-authored PCG graph를 cook하지 않는다.
+- Windows/macOS는 future Mobile-only content를 cook하지 않는다.
+- 작은 공용 facility hero asset은 전용 mobile replacement가 생기기 전까지 Shared exception으로 유지할 수 있다.
+- 동일 기능/세계 상태는 유지하되 그래픽 payload만 플랫폼별로 분리한다.
+
+**Canonical companion**
+- `docs/PLATFORM_CONTENT_COOK_POLICY_v1.md`
+
+**검증**
+- `Tools/validate_platform_cook_boundaries.py`
+- PR Preflight.
+- Android Gate B 재개 시 실제 APK/package content/size 검증.
