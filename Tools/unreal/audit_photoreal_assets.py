@@ -90,7 +90,6 @@ def main():
         raise RuntimeError(f"missing photoreal root {ROOT}")
 
     rows = []
-    folders = sorted(EAL.list_assets(ROOT, recursive=False, include_folder=True))
     # EditorAssetLibrary folder listing differs between engine minor versions,
     # so discover asset ids from all recursive asset paths instead.
     asset_ids = set()
