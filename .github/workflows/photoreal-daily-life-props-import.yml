@@ -6,6 +6,7 @@ on:
       - integration/photoreal-daily-life-props-v1
     paths:
       - '.github/workflows/photoreal-daily-life-props-import.yml'
+      - 'Tools/acquire_photoreal_environment_assets.py'
 
 permissions:
   contents: write
