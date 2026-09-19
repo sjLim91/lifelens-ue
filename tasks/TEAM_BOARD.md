@@ -161,6 +161,19 @@ A new blocker is triaged before unrelated follow-up work. This does **not** mean
   - construction-progress truth and Core authority remain unchanged.
 - release after merge/close and board reconciliation.
 
+### ASSIST_LOCK-GFX-CHAR-ANIM-POLISH-2 — Jjun character animation polish assist
+
+- helper: Jjun.
+- owner/reviewer: Dagyeom.
+- branch: `integration/character-animation-polish-v2`.
+- supersedes: conflicted #281 v1 after #279 merged.
+- scope:
+  - deterministic per-resident loop phase/play-rate variation for context and idle clips.
+  - quiet seated parenting uses Sitting_Idle_Loop instead of continuous talking.
+  - preserve authoritative Core/World action windows, locomotion speed and movement targets.
+  - no gameplay/action authority changes.
+- release after merge/close and board reconciliation.
+
 ## Open Integration Requests
 
 ### IR-GFX-CINEMATIC-1 — Desktop cinematic presentation adoption (Windows + macOS)
