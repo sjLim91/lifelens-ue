@@ -172,3 +172,5 @@ lifelens_add_test(test_world_generation_sanitation_reference)
 lifelens_add_test(test_hydrology_foundation)
 
 lifelens_add_test(test_early_survival)
+
+lifelens_add_test(test_durable_water_storage)
