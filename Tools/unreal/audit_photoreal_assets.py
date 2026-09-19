@@ -48,7 +48,18 @@ def audit_mesh(asset_id, asset_path, sibling_meshes):
         raise RuntimeError(f"failed to load StaticMesh {asset_path}")
 
     box = mesh.get_bounding_box()
-    center, dimensions = box.get_box_center_size()
+    box_min = box.get_editor_property("min")
+    box_max = box.get_editor_property("max")
+    center = unreal.Vector(
+        (box_min.x + box_max.x) * 0.5,
+        (box_min.y + box_max.y) * 0.5,
+        (box_min.z + box_max.z) * 0.5,
+    )
+    dimensions = unreal.Vector(
+        box_max.x - box_min.x,
+        box_max.y - box_min.y,
+        box_max.z - box_min.z,
+    )
     nanite = mesh.get_editor_property("nanite_settings")
 
     lods = int(mesh.get_num_lods())
