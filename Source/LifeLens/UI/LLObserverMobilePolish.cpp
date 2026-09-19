@@ -2,6 +2,7 @@
 #include "Core/LLTypes.h"
 #include "Characters/LLResidentCharacter.h"
 #include "Engine/Engine.h"
+#include "Engine/Canvas.h"
 #include "EngineUtils.h"
 #include "Framework/Application/SlateApplication.h"
 #include "GenericPlatform/GenericApplication.h"
