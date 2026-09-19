@@ -27,6 +27,15 @@
     {
       "Name": "Water",
       "Enabled": true
+    },
+    {
+      "Name": "ProceduralMeshComponent",
+      "Enabled": true,
+      "PlatformAllowList": [
+        "Win64",
+        "Mac",
+        "Linux"
+      ]
     }
   ]
 }
