@@ -90,6 +90,32 @@ struct FLLCoreSurfaceWaterPresentationObservation
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Presentation") bool bFreshSurfaceWater = false;
 };
 
+/**
+ * Seam-compatible chunk terrain samples for Presentation.
+ *
+ * Core elevation remains the macro terrain truth. Corner samples are
+ * deterministic averages of neighboring Core macro elevation fields so adjacent
+ * rendered chunks can share the same edge/corner height without Presentation
+ * inventing a second terrain generator.
+ */
+USTRUCT(BlueprintType)
+struct FLLCoreTerrainPresentationObservation
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Terrain|Presentation") bool bAvailable = false;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Terrain|Presentation") int32 ChunkX = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Terrain|Presentation") int32 ChunkY = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Terrain|Presentation") int32 CenterGridX = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Terrain|Presentation") int32 CenterGridY = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Terrain|Presentation") float CenterElevation01 = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Terrain|Presentation") float NorthWestElevation01 = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Terrain|Presentation") float NorthEastElevation01 = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Terrain|Presentation") float SouthWestElevation01 = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Terrain|Presentation") float SouthEastElevation01 = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Terrain|Presentation") float Relief01 = 0.0f;
+};
+
 USTRUCT(BlueprintType)
 struct FLLCoreNaturalObstacleObservation
 {
