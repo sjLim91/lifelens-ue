@@ -175,6 +175,20 @@ A new blocker is triaged before unrelated follow-up work. This does **not** mean
   - no gameplay, resource, collision or navigation authority changes.
 - release after merge/close and board reconciliation.
 
+### ASSIST_LOCK-RUNTIME-VISUAL-SANITY-1 — Jjun screenshot-driven runtime visual hotfix
+
+- helper: Jjun.
+- owner/reviewer: Dagyeom.
+- branch: `hotfix/runtime-visual-sanity-v1`.
+- evidence: local editor screenshots show sparse settlement dressing and visible stretched primitive facility blocks.
+- scope:
+  - hide Engine BasicShape facility structure proxies on desktop production.
+  - show staged photoreal timber/stone for planned/in-progress desktop facilities.
+  - reduce over-aggressive settlement-wide vegetation clearing.
+  - improve visibility of the current sapling-heavy desktop canopy catalogue.
+  - preserve Android lightweight presentation and Core gameplay authority.
+- release after exact-head Preflight + Unreal compile and runtime recheck.
+
 ## Open Integration Requests
 
 ### IR-GFX-CINEMATIC-1 — Desktop cinematic presentation adoption (Windows + macOS)

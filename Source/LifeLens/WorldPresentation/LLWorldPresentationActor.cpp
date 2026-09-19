@@ -276,6 +276,16 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
     FacilityCargoInstances = AddInstancedComponent(TEXT("FacilityCargo"), GroundMesh, FacilityCullStartUU, FacilityCullEndUU, true);
     FacilityAccentInstances = AddInstancedComponent(TEXT("FacilityAccents"), GroundMesh, FacilityCullStartUU, FacilityCullEndUU, false);
 
+#if !PLATFORM_ANDROID
+    // Desktop production must never expose stretched Engine cubes as visible
+    // construction art. Keep these components alive for the lightweight mobile
+    // path and existing bookkeeping, but hide them on Windows/macOS/Linux.
+    if (FacilityFoundationInstances) { FacilityFoundationInstances->SetVisibility(false, true); }
+    if (FacilityPostInstances) { FacilityPostInstances->SetVisibility(false, true); }
+    if (FacilityRoofInstances) { FacilityRoofInstances->SetVisibility(false, true); }
+    if (FacilityCargoInstances) { FacilityCargoInstances->SetVisibility(false, true); }
+#endif
+
     if (PhotoFirePit.Succeeded())
     {
         PhotorealFirePitInstances = AddInstancedComponent(
@@ -1328,7 +1338,17 @@ void ALLWorldPresentationActor::BuildChunkDressing(
         }
     };
 
-    Place(TreeInstances, TreeCount, PlacedTrees, MaxTreeInstances, 0.82f, 1.72f, 3.5f, ELLDressingLayer::Canopy);
+#if PLATFORM_ANDROID
+    constexpr float TreeMinScale = 0.82f;
+    constexpr float TreeMaxScale = 1.72f;
+#else
+    // Current desktop catalogue is sapling-heavy. A moderate presentation-only
+    // scale lift makes young trees read at observer distance until mature CC0
+    // canopy assets are added; Core ecology/resource quantities are unchanged.
+    constexpr float TreeMinScale = 1.10f;
+    constexpr float TreeMaxScale = 2.20f;
+#endif
+    Place(TreeInstances, TreeCount, PlacedTrees, MaxTreeInstances, TreeMinScale, TreeMaxScale, 3.5f, ELLDressingLayer::Canopy);
     Place(ShrubInstances, ShrubCount, PlacedShrubs, MaxShrubInstances, 0.62f, 1.58f, 6.0f, ELLDressingLayer::Undergrowth);
     Place(GrassInstances, GrassCount, PlacedGrass, MaxGrassInstances, 0.58f, 1.78f, 5.0f, ELLDressingLayer::Undergrowth);
     Place(RockInstances, RockCount, PlacedRocks, MaxRockInstances, 0.62f, 1.92f, 10.0f, ELLDressingLayer::GroundDetail);
@@ -1520,6 +1540,57 @@ void ALLWorldPresentationActor::BuildFacilities(
         const bool bRuined = Facility.State == ELLCoreFacilityState::Ruined;
         const float Durability = FMath::Clamp(Facility.Durability, 0.0f, 1.0f);
         const float BuildProgress = bStructurallyComplete ? 1.0f : FMath::Max(MaterialProgress, WorkProgress);
+
+#if !PLATFORM_ANDROID
+        // Desktop construction is allowed to be incomplete, but never to look
+        // like stretched Engine BasicShapes. Show truthful staged raw material
+        // instead: timber for general facilities and stones for furnaces.
+        if (bPlanned && PhotorealStructureLogInstances)
+        {
+            AddPhotorealStructureLog(Base + FVector(0.0f, -54.0f, 7.0f), FVector::ForwardVector, 150.0f, 10.0f);
+            AddPhotorealStructureLog(Base + FVector(0.0f,  54.0f, 7.0f), FVector::ForwardVector, 150.0f, 10.0f);
+        }
+        else if (!bStructurallyComplete && !bRuined && BuildProgress > 0.02f)
+        {
+            if (Facility.Kind == ELLCoreFacilityKind::Furnace && PhotorealFurnaceStoneInstances)
+            {
+                const int32 StoneCount = FMath::Clamp(FMath::CeilToInt(BuildProgress * 10.0f), 2, 10);
+                for (int32 StoneIndex = 0; StoneIndex < StoneCount; ++StoneIndex)
+                {
+                    const float AngleDegrees =
+                        (360.0f / static_cast<float>(StoneCount)) * static_cast<float>(StoneIndex);
+                    const float AngleRadians = FMath::DegreesToRadians(AngleDegrees);
+                    AddPhotorealFurnaceStone(
+                        Base + FVector(
+                            FMath::Cos(AngleRadians) * 58.0f,
+                            FMath::Sin(AngleRadians) * 58.0f,
+                            25.0f + BuildProgress * 18.0f),
+                        44.0f,
+                        AngleDegrees + 90.0f,
+                        0.72f);
+                }
+            }
+            else if (PhotorealStructureLogInstances)
+            {
+                const int32 LogCount = FMath::Clamp(FMath::CeilToInt(BuildProgress * 8.0f), 2, 8);
+                for (int32 LogIndex = 0; LogIndex < LogCount; ++LogIndex)
+                {
+                    const bool bAcross = (LogIndex % 2) != 0;
+                    const int32 Layer = LogIndex / 2;
+                    const FVector Direction = bAcross ? FVector::RightVector : FVector::ForwardVector;
+                    const FVector Offset(
+                        bAcross ? -42.0f + 28.0f * static_cast<float>(Layer) : 0.0f,
+                        bAcross ? 0.0f : -42.0f + 28.0f * static_cast<float>(Layer),
+                        10.0f + 12.0f * static_cast<float>(Layer));
+                    AddPhotorealStructureLog(
+                        Base + Offset,
+                        Direction,
+                        bAcross ? 125.0f : 165.0f,
+                        13.0f);
+                }
+            }
+        }
+#endif
 
         // Ruins stay visible as low, scattered debris instead of disappearing.
         // This is deliberately generic: Core owns the Ruined state; Presentation
