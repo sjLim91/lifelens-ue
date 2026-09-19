@@ -652,8 +652,10 @@ for token in (
     assert token in world_presentation, f'Missing visible-world uplift consumer: {token}'
 for token in (
     '#if PLATFORM_ANDROID',
-    'MaxTreeInstances  = 1180',
-    'MaxGrassInstances = 4200',
+    'MaxTreeInstances  = 620',
+    'MaxGrassInstances = 1800',
+    'MaxTreeInstances  = 1480',
+    'MaxGrassInstances = 6400',
     'TerrainReliefAmplitudeUU = 180.0f',
     'FLLCoreTerrainPresentationObservation',
 ):

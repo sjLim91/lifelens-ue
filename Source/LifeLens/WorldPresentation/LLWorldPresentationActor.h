@@ -39,8 +39,13 @@ public:
 
     // Visual-only far world envelope. These instances never represent
     // interactable Core resources and carry no collision/navigation authority.
+#if PLATFORM_ANDROID
     static constexpr int32 MaxFarTreeInstances = 180;
     static constexpr int32 MaxFarRockInstances = 96;
+#else
+    static constexpr int32 MaxFarTreeInstances = 320;
+    static constexpr int32 MaxFarRockInstances = 160;
+#endif
     static constexpr float FarDressingCullStartUU = 10000.0f;
     static constexpr float FarDressingCullEndUU = 72000.0f;
 
@@ -65,16 +70,17 @@ public:
     static constexpr int32 MaxGrassPerChunk  = 300;
     static constexpr int32 MaxRocksPerChunk  = 105;
 #else
-    // Desktop cinematic tier is not capped by the Android presentation budget.
-    static constexpr int32 MaxTreeInstances  = 1180;
-    static constexpr int32 MaxShrubInstances = 1480;
-    static constexpr int32 MaxGrassInstances = 4200;
-    static constexpr int32 MaxRockInstances  = 1250;
+    // Desktop cinematic tier keeps substantially more ambient dressing while
+    // HISM culling and the observer readability envelope bound visible cost.
+    static constexpr int32 MaxTreeInstances  = 1480;
+    static constexpr int32 MaxShrubInstances = 2100;
+    static constexpr int32 MaxGrassInstances = 6400;
+    static constexpr int32 MaxRockInstances  = 1650;
 
-    static constexpr int32 MaxTreesPerChunk  = 154;
-    static constexpr int32 MaxShrubsPerChunk = 190;
-    static constexpr int32 MaxGrassPerChunk  = 560;
-    static constexpr int32 MaxRocksPerChunk  = 165;
+    static constexpr int32 MaxTreesPerChunk  = 180;
+    static constexpr int32 MaxShrubsPerChunk = 250;
+    static constexpr int32 MaxGrassPerChunk  = 780;
+    static constexpr int32 MaxRocksPerChunk  = 210;
 #endif
 
     // ---- Dynamic observer canopy visibility ---------------------------------
@@ -173,7 +179,7 @@ public:
     float FarGroundDropUU = 2.0f;
 
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|FarWorld", meta=(ClampMin="0.2", ClampMax="1.0"))
-    float FarDressingOuterRadiusFraction = 0.43f;
+    float FarDressingOuterRadiusFraction = 0.47f;
 
     // ---- Gentle authoritative terrain relief --------------------------------
     // The bootstrap collision plane and resident locomotion remain flat around
