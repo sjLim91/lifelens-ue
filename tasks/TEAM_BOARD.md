@@ -98,6 +98,21 @@ A new blocker is triaged before unrelated follow-up work. This does **not** mean
   - Android does not spawn/link the PCG runtime path.
 - release after merge/close and board reconciliation.
 
+### ASSIST_LOCK-GFX-CHARACTER-PROPS-1 — Jjun scoped character presentation assist
+
+- explicit user direction: push visible graphics through finalization.
+- helper: Jjun.
+- owner/reviewer: Dagyeom.
+- branch: `integration/character-held-props-production-v1`.
+- cross-owner file:
+  - `Source/LifeLens/Characters/LLResidentMotionComponent.cpp`.
+- scope:
+  - replace visible Engine primitive daily-life props with approved CC0 basket/bowl art.
+  - fail closed for primitive tools that still lack semantically correct art.
+  - no action/tool/technology authority changes.
+- dependency: wooden bowl asset PR #268 must merge before this consumer.
+- release after merge/close and board reconciliation.
+
 ## Open Integration Requests
 
 ### IR-GFX-CINEMATIC-1 — Desktop cinematic presentation adoption (Windows + macOS)
