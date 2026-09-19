@@ -167,18 +167,62 @@ void ALLWaterPresentationActor::EndPlay(const EEndPlayReason::Type EndPlayReason
     Super::EndPlay(EndPlayReason);
 }
 
+int32 ALLWaterPresentationActor::ChunkCoordForGrid(int32 GridCoordinate) const
+{
+    const int32 Span = FMath::Max(1, LLWorldSpatialContract::ChunkSpanGridCells);
+    int32 Quotient = GridCoordinate / Span;
+    const int32 Remainder = GridCoordinate % Span;
+    if (Remainder < 0)
+    {
+        --Quotient;
+    }
+    return Quotient;
+}
+
+float ALLWaterPresentationActor::WaterSurfaceZForChunk(
+    ULLCoreBridgeSubsystem* Bridge,
+    const FLLCoreWorldGenerationObservation& World,
+    int32 ChunkX,
+    int32 ChunkY) const
+{
+    if (!Bridge)
+    {
+        return WaterSurfaceZUU;
+    }
+
+    FLLCoreTerrainPresentationObservation Terrain;
+    if (!Bridge->GetTerrainPresentationObservation(
+            ChunkX,
+            ChunkY,
+            Terrain)
+        || !Terrain.bAvailable)
+    {
+        return WaterSurfaceZUU;
+    }
+
+    // WorldPresentation currently preserves the flat initial settlement and
+    // adds positive macro relief outside it. Match that baseline so Water
+    // bodies do not visibly cut through or float above raised chunk surfaces.
+    const float RelativeElevation = FMath::Max(
+        0.0f,
+        Terrain.CenterElevation01 - World.InitialChunk.Elevation);
+    return WaterSurfaceZUU
+        + RelativeElevation * FMath::Max(0.0f, TerrainReliefAmplitudeUU);
+}
+
 FVector ALLWaterPresentationActor::GridToWorld(
     int32 GridX,
     int32 GridY,
     int32 InitialCenterGridX,
-    int32 InitialCenterGridY) const
+    int32 InitialCenterGridY,
+    float SurfaceZUU) const
 {
     return FVector(
         static_cast<float>(GridX - InitialCenterGridX)
             * LLWorldSpatialContract::GridCellSizeUU,
         static_cast<float>(GridY - InitialCenterGridY)
             * LLWorldSpatialContract::GridCellSizeUU,
-        WaterSurfaceZUU);
+        SurfaceZUU);
 }
 
 void ALLWaterPresentationActor::EnsureWaterZone()
@@ -253,11 +297,17 @@ void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
             continue;
         }
 
+        const float CenterWaterZUU = WaterSurfaceZForChunk(
+            Bridge,
+            World,
+            Water.ChunkX,
+            Water.ChunkY);
         const FVector Center = GridToWorld(
             Water.CenterGridX,
             Water.CenterGridY,
             World.InitialCenterGridX,
-            World.InitialCenterGridY);
+            World.InitialCenterGridY,
+            CenterWaterZUU);
 
         if (Water.bLinearChannel && Water.bHasDownstreamTarget)
         {
@@ -273,11 +323,21 @@ void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
             ConfigurePresentationOnlyWater(River);
             if (UWaterSplineComponent* Spline = River->GetWaterSpline())
             {
+                const int32 DownstreamChunkX =
+                    ChunkCoordForGrid(Water.DownstreamCenterGridX);
+                const int32 DownstreamChunkY =
+                    ChunkCoordForGrid(Water.DownstreamCenterGridY);
+                const float DownstreamWaterZUU = WaterSurfaceZForChunk(
+                    Bridge,
+                    World,
+                    DownstreamChunkX,
+                    DownstreamChunkY);
                 const FVector Downstream = GridToWorld(
                     Water.DownstreamCenterGridX,
                     Water.DownstreamCenterGridY,
                     World.InitialCenterGridX,
-                    World.InitialCenterGridY);
+                    World.InitialCenterGridY,
+                    DownstreamWaterZUU);
                 Spline->ClearSplinePoints(false);
                 Spline->AddSplinePoint(
                     Center,
