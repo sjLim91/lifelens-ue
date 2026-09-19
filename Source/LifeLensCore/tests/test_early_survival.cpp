@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "lifelens/Simulation.h"
+#include "lifelens/SimulationSnapshotCodec.h"
 
 using namespace lifelens;
 
@@ -37,6 +38,67 @@ const Character* findResident(const World& world,CharacterId id)
 
 int main()
 {
+    // C1-D durable subsistence: perishable PlantFood ages at the authoritative
+    // daily boundary. Organized storage slows spoilage but never freezes food.
+    SimulationRuleset spoilRules=DefaultSimulationRuleset;
+    spoilRules.needs.hungerPerMinute=0.0;
+    spoilRules.needs.thirstPerMinute=0.0;
+    spoilRules.needs.sleepPerMinute=0.0;
+    spoilRules.needs.bladderPerMinute=0.0;
+    spoilRules.needs.hygienePerMinute=0.0;
+    Simulation spoilage(
+        4241999,0,CurrentWorldGenerationVersion,spoilRules);
+    spoilage.setupNewGame();
+    // Preserve normal world invariants so snapshot validation remains valid.
+    // Spoilage itself is isolated below by invoking only Inventory aging.
+    spoilage.world().storageSites.clear();
+    Character& foodOwner=spoilage.world().characters.front();
+    foodOwner.civilization.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::PlantFood,1,0.50,1.0});
+    StorageSite foodStore;
+    foodStore.id=99001;
+    foodStore.pos=spoilage.world().initialStartRegionCenterGrid();
+    foodStore.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::PlantFood,1,0.50,1.0});
+    spoilage.world().storageSites.push_back(foodStore);
+
+    // Isolate spoilage authority from autonomous Eat/Retrieve decisions.
+    // Simulation::step invokes these exact Inventory transitions at the daily
+    // boundary; the regression should test freshness, not AI consumption.
+    for(int day=0;day<2;++day){
+        foodOwner.civilization.inventory.agePlantFoodOneDay(0.085);
+        spoilage.world().storageSites[0].inventory.agePlantFoodOneDay(0.045);
+    }
+    assert(foodOwner.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::PlantFood)==1);
+    assert(spoilage.world().storageSites[0].inventory.count(
+        ItemKind::RawMaterial,MaterialKind::PlantFood)==1);
+    assert(foodOwner.civilization.inventory.averagePlantFoodFreshness()
+        <spoilage.world().storageSites[0].inventory.averagePlantFoodFreshness());
+
+    std::vector<std::uint8_t> spoilBytes;
+    std::string spoilError;
+    assert(encodeSimulationSnapshot(
+        spoilage.captureSnapshot(),spoilBytes,&spoilError));
+    SimulationStateSnapshot spoilDecoded;
+    assert(decodeSimulationSnapshot(
+        spoilBytes,spoilDecoded,&spoilError));
+    assert(spoilDecoded.world.characters.front().civilization.inventory
+        .averagePlantFoodFreshness()
+        ==foodOwner.civilization.inventory.averagePlantFoodFreshness());
+    assert(spoilDecoded.world.storageSites[0].inventory
+        .averagePlantFoodFreshness()
+        ==spoilage.world().storageSites[0].inventory.averagePlantFoodFreshness());
+
+    for(int day=0;day<3;++day){
+        foodOwner.civilization.inventory.agePlantFoodOneDay(0.085);
+        spoilage.world().storageSites[0].inventory.agePlantFoodOneDay(0.045);
+    }
+    assert(foodOwner.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::PlantFood)==0);
+    assert(spoilage.world().storageSites[0].inventory.count(
+        ItemKind::RawMaterial,MaterialKind::PlantFood)==1);
+
     // Worst-case regression: a resident reaches urgent hunger/thirst without a
     // carried provision. This used to deadlock because urgent Needs suppressed
     // all civilization while Eat/Drink were unavailable with empty inventory.
