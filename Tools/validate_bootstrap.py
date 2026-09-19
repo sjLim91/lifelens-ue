@@ -613,4 +613,7 @@ for token in (
 ):
     assert token in environment_bridge, f'Missing sky/atmosphere provider projection: {token}'
 
+default_engine = (root / 'Config/DefaultEngine.ini').read_text(encoding='utf-8')
+assert 'Name="WaterBodyCollision"' in default_engine, 'Unreal Water plugin requires WaterBodyCollision profile during editor/runtime load'
+
 print('LifeLens autonomous observer structural validation: PASS')
