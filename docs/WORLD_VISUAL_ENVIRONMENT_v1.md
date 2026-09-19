@@ -108,6 +108,14 @@
 - publisher 이름만 보고 CC0라고 추정하지 않는다.
 - 이후 asset 교체가 쉽도록 gameplay authority에 vendor asset id를 넣지 않는다.
 
+## 2026-09-19 실행 메모
+
+- 사용자 지시로 Jjun의 광범위한 화면/그래픽 폴리싱은 #282 main 기준에서 동결한다.
+- 이후 Environment / WorldPresentation / Character presentation / UI / camera / lighting 품질 작업은 다겸 소유 레인이다.
+- Jjun은 Core/World provider 또는 authority contract가 필요한 경우에만 Integration Request 기준으로 이 레인을 지원한다.
+- 시각 완료 판정은 CI green만으로 하지 않고 실제 latest-main runtime 화면 확인을 요구한다.
+- canonical handoff: `docs/DAGYEOM_PRESENTATION_HANDOFF_2026-09-19.md`.
+
 ## 다겸 소유 범위
 
 기본 허용 경로:
