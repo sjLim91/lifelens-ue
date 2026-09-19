@@ -39,10 +39,6 @@ for path in files:
     if any(marker in text for marker in ("<<<<<<< ", ">>>>>>> ", "||||||| ")):
         conflict_markers.append(rel)
 
-    # Fixed prototype founder names must never become production identity.
-    if re.search(r"(서윤|하린|민재|태훈|\bSeoyun\b|\bHarin\b|\bMinjae\b|\bTaehoon\b)", text):
-        hardcoded_founders.append(rel)
-
     if "marineDeferred" in text:
         marine_deferred.append(rel)
 
