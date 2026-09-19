@@ -1,0 +1,127 @@
+name: LifeLens PCG Ground Cover Authoring
+
+on:
+  push:
+    branches:
+      - integration/pcg-groundcover-asset-v1
+    paths:
+      - '.github/workflows/pcg-groundcover-authoring.yml'
+      - 'Content/Environment/PCG/Import/create_lifelens_groundcover_pcg.py'
+      - 'Config/DefaultEngine.ini'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lifelens-pcg-groundcover-authoring
+  cancel-in-progress: true
+
+jobs:
+  author-groundcover:
+    if: ${{ github.event.repository.private == false }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      UE_IMAGE: ghcr.io/epicgames/unreal-engine:dev-slim-5.6.0
+      UE_ROOT_IN_CONTAINER: /home/ue4/UnrealEngine
+      DIAGNOSTICS: ${{ github.workspace }}/Diagnostics/PCGGroundCover
+
+    steps:
+      - name: Checkout PCG authoring branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Verify approved source mesh exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f Content/Environment/Photoreal/PolyHaven/weed_plant_02/SM_LL_weed_plant_02.uasset
+          mkdir -p "$DIAGNOSTICS"
+
+      - name: Preflight Epic GHCR credential
+        shell: bash
+        env:
+          EPIC_GHCR_PAT: ${{ secrets.EPIC_GHCR_PAT }}
+        run: |
+          set -euo pipefail
+          test -n "$EPIC_GHCR_PAT" || { echo 'EPIC_GHCR_PAT secret is missing'; exit 91; }
+          echo "$EPIC_GHCR_PAT" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+
+      - name: Reclaim disk and pull Unreal 5.6
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL || true
+          sudo apt-get clean || true
+          sudo docker system prune -af || true
+          docker pull "$UE_IMAGE"
+          df -h /
+
+      - name: Compile LifeLensEditor
+        timeout-minutes: 35
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/Binaries" "$GITHUB_WORKSPACE/Intermediate" "$DIAGNOSTICS"
+          sudo chmod -R a+rwX "$GITHUB_WORKSPACE"
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -w "$UE_ROOT_IN_CONTAINER" \
+            "$UE_IMAGE" \
+            bash -lc './Engine/Build/BatchFiles/Linux/Build.sh LifeLensEditor Linux Development /workspace/LifeLens.uproject -WaitMutex -NoEngineChanges' \
+            2>&1 | tee "$DIAGNOSTICS/editor-compile.log"
+
+      - name: Author deterministic PCG ground-cover graph
+        timeout-minutes: 10
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo chmod -R a+rwX "$GITHUB_WORKSPACE"
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -w "$UE_ROOT_IN_CONTAINER" \
+            "$UE_IMAGE" \
+            bash -lc './Engine/Binaries/Linux/UnrealEditor-Cmd /workspace/LifeLens.uproject \
+              -run=pythonscript \
+              -script=/workspace/Content/Environment/PCG/Import/create_lifelens_groundcover_pcg.py \
+              -EnablePlugins=PythonScriptPlugin -nullrhi -unattended -nopause -nosplash -stdout -FullStdOutLogOutput' \
+            2>&1 | tee "$DIAGNOSTICS/pcg-authoring.log"
+
+          test -f Content/Environment/PCG/PCG_LL_GroundCover.uasset
+          ls -lh Content/Environment/PCG/PCG_LL_GroundCover.uasset
+
+      - name: Guard generated asset size
+        shell: bash
+        run: |
+          set -euo pipefail
+          size="$(stat -c '%s' Content/Environment/PCG/PCG_LL_GroundCover.uasset)"
+          test "$size" -gt 0
+          if [ "$size" -gt $((20 * 1024 * 1024)) ]; then
+            echo "PCG graph unexpectedly exceeds 20 MiB: $size"
+            exit 92
+          fi
+
+      - name: Commit project-authored PCG graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "LifeLens Asset Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add Content/Environment/PCG/PCG_LL_GroundCover.uasset
+          if git diff --cached --quiet; then
+            echo "No PCG graph change"
+            exit 0
+          fi
+          git commit -m "Author deterministic PCG ground-cover graph [skip ci]"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+
+      - name: Upload PCG authoring diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: LifeLens-PCG-GroundCover-Authoring-Diagnostics
+          path: Diagnostics/PCGGroundCover/
+          if-no-files-found: ignore
+          retention-days: 7
