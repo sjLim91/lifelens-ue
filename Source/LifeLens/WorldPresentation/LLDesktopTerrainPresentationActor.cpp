@@ -174,19 +174,8 @@ float ALLDesktopTerrainPresentationActor::SurfaceZUU(
 }
 
 UMaterialInterface* ALLDesktopTerrainPresentationActor::MaterialForChunk(
-    const FLLCoreNaturalChunkObservation& Chunk) const
+    const FLLCoreNaturalChunkObservation& /*Chunk*/) const
 {
-    const FString Surface = Chunk.Surface.ToString().ToLower();
-    const FString Biome = Chunk.Biome.ToString().ToLower();
-    const bool bDry = Chunk.Moisture < 0.33f
-        || Surface.Contains(TEXT("sand"))
-        || Surface.Contains(TEXT("rock"))
-        || Surface.Contains(TEXT("dirt"))
-        || Biome.Contains(TEXT("desert"))
-        || Biome.Contains(TEXT("arid"));
-    const bool bLush =
-        Chunk.Moisture > 0.6f && Chunk.FertilityPotential > 0.45f;
-
     // Recovery baseline: avoid hard per-chunk material boundaries on the
     // procedural overlay. One failing dry/transition material section otherwise
     // appears as a giant engine-grey polygon. Biome variation will return via a
