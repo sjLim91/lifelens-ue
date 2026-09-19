@@ -42,7 +42,10 @@ public class LifeLens : ModuleRules
             // FDisplayMetrics::RebuildDisplayMetrics is implemented by
             // ApplicationCore. The game target linked transitively before, but
             // LifeLensEditor requires the explicit module dependency.
-            "ApplicationCore"
+            "ApplicationCore",
+            // Runtime river/lake presentation consumes the enabled Unreal Water
+            // plugin without giving it simulation authority.
+            "Water"
         });
     }
 }
