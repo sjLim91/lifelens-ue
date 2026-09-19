@@ -37,6 +37,13 @@ private:
     UPROPERTY()
     TObjectPtr<UObject> GroundCoverGraphAsset;
 
+    // The current authored graph still references weed_plant_02, which is
+    // visibly chalk-white in the observed desktop runtime. Keep the runtime
+    // consumer available, but fail closed until the graph is regenerated with
+    // an approved ground-cover mesh.
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|PCG")
+    bool bEnableGroundCoverPCG = false;
+
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|PCG", meta=(ClampMin="0.1", ClampMax="10.0"))
     float RetryIntervalSeconds = 1.0f;
 
