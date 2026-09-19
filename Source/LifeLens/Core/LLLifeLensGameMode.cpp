@@ -6,6 +6,7 @@
 #include "WorldPresentation/LLWaterPresentationActor.h"
 #if !PLATFORM_ANDROID
 #include "WorldPresentation/LLPCGGroundCoverPresentationActor.h"
+#include "WorldPresentation/LLDesktopTerrainPresentationActor.h"
 #endif
 #include "UI/LLSocialObserverHUD.h"
 #include "UI/LLObserverPlayerController.h"
@@ -54,6 +55,10 @@ void ALLLifeLensGameMode::BeginPlay()
 #if !PLATFORM_ANDROID
         GetWorld()->SpawnActor<ALLPCGGroundCoverPresentationActor>(
             ALLPCGGroundCoverPresentationActor::StaticClass(),
+            FVector::ZeroVector,
+            FRotator::ZeroRotator);
+        GetWorld()->SpawnActor<ALLDesktopTerrainPresentationActor>(
+            ALLDesktopTerrainPresentationActor::StaticClass(),
             FVector::ZeroVector,
             FRotator::ZeroRotator);
 #endif
