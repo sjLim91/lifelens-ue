@@ -53,6 +53,9 @@ jobs:
       - name: Validate graphics foundation invariants
         run: python Tools/validate_graphics_foundation.py
 
+      - name: Validate desktop PCG runtime dressing
+        run: python Tools/validate_pcg_runtime_dressing.py
+
       - name: Verify Unreal project metadata
         run: |
           python - <<'PY'
