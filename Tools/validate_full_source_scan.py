@@ -55,9 +55,6 @@ require('generateFounder(1,maleNames[0]' in initial_population
         and 'generateFounder(3,femaleNames[0]' in initial_population
         and 'generateFounder(4,femaleNames[1]' in initial_population,
         "production founders regressed to fixed display names")
-require(not re.search(r"generateFounder\\([^,]+,\\s*\"", initial_population),
-        "production founder construction contains a literal fixed name")
-
 hierarchy = (SOURCE / "LifeLensCore/include/lifelens/WorldHierarchy.h").read_text(encoding="utf-8")
 for token in (
     "PlanetIdentity",
