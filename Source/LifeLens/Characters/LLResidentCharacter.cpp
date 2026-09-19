@@ -37,6 +37,13 @@ ALLResidentCharacter::ALLResidentCharacter()
     DebugBody->SetupAttachment(RootComponent);
     DebugBody->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     DebugBody->SetRelativeScale3D(FVector(0.55f, 0.55f, 0.9f));
+    DebugBody->SetCastShadow(false);
+
+    // Never expose the bootstrap cube while resident identity/appearance binds.
+    // Presentation may build a proper human body or its explicit silhouette
+    // fallback after BindResident, but the Engine cube is diagnostics-only.
+    DebugBody->SetVisibility(false, true);
+    DebugBody->SetHiddenInGame(true, true);
 
     // /Engine/BasicShapes/Capsule is not present in the UE 5.6 slim build image.
     // Cube is a stable engine asset already used by the runtime smoke world, so
