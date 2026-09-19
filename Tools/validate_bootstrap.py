@@ -590,4 +590,27 @@ for token in (
 ):
     assert token in world_generation_bridge, f'Missing deterministic PCG seed projection: {token}'
 
+
+environment_types = (root / 'Source/LifeLens/Simulation/LLEnvironmentReadTypes.h').read_text(encoding='utf-8')
+for token in (
+    'FLLCoreSkyPresentationObservation',
+    'SunElevationDegrees',
+    'SunAzimuthDegrees',
+    'SunIntensity01',
+    'FogAmount01',
+    'SurfaceWetness01',
+):
+    assert token in environment_types, f'Missing sky/atmosphere presentation DTO: {token}'
+
+environment_bridge = (root / 'Source/LifeLens/Simulation/LLEnvironmentBridge.cpp').read_text(encoding='utf-8')
+for token in (
+    'GetInitialRegionSkyPresentationObservation',
+    'deriveSimulationCalendar',
+    'SimulationSunriseMinute',
+    'SimulationSunsetMinute',
+    'CoreEnvironment.cloudCover01',
+    'CoreEnvironment.visibility01',
+):
+    assert token in environment_bridge, f'Missing sky/atmosphere provider projection: {token}'
+
 print('LifeLens autonomous observer structural validation: PASS')

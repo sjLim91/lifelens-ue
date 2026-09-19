@@ -65,6 +65,33 @@ struct FLLCoreEnvironmentObservation
  * Presentation/physical execution must consume this DTO rather than create a
  * second weather truth.
  */
+/**
+ * Read-only rendering hints for Unreal SkyAtmosphere / directional light /
+ * fog consumers. These values are deterministic projections of authoritative
+ * Core time + initial-region weather; they are not a second astronomy/weather
+ * simulation.
+ */
+USTRUCT(BlueprintType)
+struct FLLCoreSkyPresentationObservation
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Environment|SkyPresentation") bool bAvailable = false;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Environment|SkyPresentation") int64 SimulationMinute = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Environment|SkyPresentation") int32 MinuteOfDay = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Environment|SkyPresentation") float SolarDayProgress01 = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Environment|SkyPresentation") bool bSunAboveHorizon = false;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Environment|SkyPresentation") float SunElevationDegrees = -18.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Environment|SkyPresentation") float SunAzimuthDegrees = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Environment|SkyPresentation") float SunIntensity01 = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Environment|SkyPresentation") float SkyBrightness01 = 0.04f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Environment|SkyPresentation") float CloudCover01 = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Environment|SkyPresentation") float FogAmount01 = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Environment|SkyPresentation") float WindIntensity01 = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Environment|SkyPresentation") float SurfaceWetness01 = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Environment|SkyPresentation") ELLCoreWeatherSummary WeatherSummary = ELLCoreWeatherSummary::Clear;
+};
+
 USTRUCT(BlueprintType)
 struct FLLCoreDynamicEnvironmentObservation
 {

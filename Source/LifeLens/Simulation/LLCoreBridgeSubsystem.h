@@ -146,6 +146,9 @@ public:
     UFUNCTION(BlueprintPure, Category="LifeLens|Core|Environment|Weather")
     FLLCoreDynamicEnvironmentObservation GetInitialRegionDynamicEnvironmentObservation() const;
 
+    UFUNCTION(BlueprintPure, Category="LifeLens|Core|Environment|SkyPresentation")
+    FLLCoreSkyPresentationObservation GetInitialRegionSkyPresentationObservation() const;
+
     UFUNCTION(BlueprintPure, Category="LifeLens|Core|WorldGeneration")
     FLLCoreWorldGenerationObservation GetWorldGenerationObservation() const;
 

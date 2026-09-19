@@ -2,6 +2,7 @@
 
 #include "lifelens/EnvironmentalConsequences.h"
 #include "lifelens/Simulation.h"
+#include "lifelens/SimulationCalendar.h"
 #include "lifelens/SimulationClimate.h"
 
 namespace
@@ -148,4 +149,105 @@ FLLCoreDynamicEnvironmentObservation ULLCoreBridgeSubsystem::GetInitialRegionDyn
         ? CoreWorld.initialStartRegionCoord
         : CoreWorld.initialStartRegion().region.coord;
     return GetDynamicEnvironmentObservation(Coord.x, Coord.y);
+}
+
+
+FLLCoreSkyPresentationObservation ULLCoreBridgeSubsystem::GetInitialRegionSkyPresentationObservation() const
+{
+    FLLCoreSkyPresentationObservation Result;
+    if (!CoreSimulation)
+    {
+        return Result;
+    }
+
+    const lifelens::World& CoreWorld = CoreSimulation->world();
+    const lifelens::ChunkCoord Coord = CoreWorld.hasInitialStartRegionSelection
+        ? CoreWorld.initialStartRegionCoord
+        : CoreWorld.initialStartRegion().region.coord;
+    const lifelens::SimulationCalendarObservation CoreTime =
+        lifelens::deriveSimulationCalendar(static_cast<std::int64_t>(CoreWorld.minute));
+    const lifelens::DynamicEnvironmentObservation CoreEnvironment =
+        lifelens::deriveDynamicEnvironment(
+            CoreWorld.genesisIdentity(),
+            Coord,
+            static_cast<std::int64_t>(CoreWorld.minute));
+
+    constexpr float Pi = 3.14159265358979323846f;
+    constexpr float MaxSunElevationDegrees = 70.0f;
+    constexpr float MaxNightDepressionDegrees = 18.0f;
+
+    const float SolarDayProgress = FMath::Clamp(
+        static_cast<float>(CoreTime.minuteOfDay)
+            / static_cast<float>(lifelens::SimulationMinutesPerDay),
+        0.0f,
+        1.0f);
+
+    float SunElevation = 0.0f;
+    if (CoreTime.isDay)
+    {
+        const float DayProgress = FMath::Clamp(
+            static_cast<float>(CoreTime.minuteOfDay - lifelens::SimulationSunriseMinute)
+                / static_cast<float>(
+                    lifelens::SimulationSunsetMinute - lifelens::SimulationSunriseMinute),
+            0.0f,
+            1.0f);
+        SunElevation = FMath::Sin(Pi * DayProgress) * MaxSunElevationDegrees;
+    }
+    else
+    {
+        const int32 ExtendedMinute = CoreTime.minuteOfDay < lifelens::SimulationSunriseMinute
+            ? CoreTime.minuteOfDay + lifelens::SimulationMinutesPerDay
+            : CoreTime.minuteOfDay;
+        const float NightProgress = FMath::Clamp(
+            static_cast<float>(ExtendedMinute - lifelens::SimulationSunsetMinute)
+                / static_cast<float>(
+                    lifelens::SimulationMinutesPerDay
+                    - lifelens::SimulationSunsetMinute
+                    + lifelens::SimulationSunriseMinute),
+            0.0f,
+            1.0f);
+        SunElevation = -FMath::Sin(Pi * NightProgress) * MaxNightDepressionDegrees;
+    }
+
+    const float CloudCover = FMath::Clamp(
+        static_cast<float>(CoreEnvironment.cloudCover01), 0.0f, 1.0f);
+    const float Visibility = FMath::Clamp(
+        static_cast<float>(CoreEnvironment.visibility01), 0.0f, 1.0f);
+    const float Humidity = FMath::Clamp(
+        static_cast<float>(CoreEnvironment.humidity01), 0.0f, 1.0f);
+    const float Precipitation = FMath::Clamp(
+        static_cast<float>(CoreEnvironment.precipitationIntensity01), 0.0f, 1.0f);
+    const float Daylight = FMath::Clamp(
+        static_cast<float>(CoreTime.daylight01), 0.0f, 1.0f);
+
+    Result.bAvailable = true;
+    Result.SimulationMinute = CoreTime.totalMinute;
+    Result.MinuteOfDay = CoreTime.minuteOfDay;
+    Result.SolarDayProgress01 = SolarDayProgress;
+    Result.bSunAboveHorizon = CoreTime.isDay;
+    Result.SunElevationDegrees = SunElevation;
+    Result.SunAzimuthDegrees = FMath::Fmod(SolarDayProgress * 360.0f, 360.0f);
+    Result.SunIntensity01 = FMath::Clamp(
+        Daylight
+        * (1.0f - 0.55f * CloudCover)
+        * (0.35f + 0.65f * Visibility),
+        0.0f,
+        1.0f);
+    Result.SkyBrightness01 = FMath::Clamp(
+        0.04f + 0.96f * Daylight - 0.18f * CloudCover,
+        0.02f,
+        1.0f);
+    Result.CloudCover01 = CloudCover;
+    Result.FogAmount01 = FMath::Clamp(
+        0.75f * (1.0f - Visibility)
+        + 0.15f * Humidity
+        + 0.10f * Precipitation,
+        0.0f,
+        1.0f);
+    Result.WindIntensity01 = FMath::Clamp(
+        static_cast<float>(CoreEnvironment.windIntensity01), 0.0f, 1.0f);
+    Result.SurfaceWetness01 = FMath::Clamp(
+        static_cast<float>(CoreEnvironment.surfaceWetness01), 0.0f, 1.0f);
+    Result.WeatherSummary = ToUnrealWeatherSummary(CoreEnvironment.summary);
+    return Result;
 }
