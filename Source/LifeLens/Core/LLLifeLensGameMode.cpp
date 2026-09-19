@@ -122,21 +122,27 @@ void ALLLifeLensGameMode::SpawnObserverCamera()
     const FVector CameraTarget(0.0f, 0.0f, TargetHeightUU);
     const FRotator CameraRotation = (CameraTarget - CameraLocation).Rotation();
 
-    ACameraActor* Camera = GetWorld()->SpawnActor<ACameraActor>(
+    ObserverCamera = GetWorld()->SpawnActor<ACameraActor>(
         ACameraActor::StaticClass(), CameraLocation, CameraRotation);
 
-    if (!Camera)
+    if (!ObserverCamera)
     {
+        UE_LOG(LogTemp, Error,
+            TEXT("LifeLens observer camera spawn failed; controller recovery cannot establish a world view."));
         return;
     }
 
-    if (UCameraComponent* CameraComponent = Camera->GetCameraComponent())
+    // Stable runtime identity for the controller's self-healing view path.
+    // This is presentation-only metadata and never changes world authority.
+    ObserverCamera->Tags.AddUnique(FName(TEXT("LifeLens.ObserverCamera")));
+
+    if (UCameraComponent* CameraComponent = ObserverCamera->GetCameraComponent())
     {
         CameraComponent->SetFieldOfView(CameraFOVDegrees);
     }
 
     if (APlayerController* PlayerController = GetWorld()->GetFirstPlayerController())
     {
-        PlayerController->SetViewTarget(Camera);
+        PlayerController->SetViewTarget(ObserverCamera);
     }
 }
