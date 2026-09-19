@@ -147,6 +147,20 @@ A new blocker is triaged before unrelated follow-up work. This does **not** mean
 - plugin is desktop-only and treated as a presentation implementation detail.
 - release after merge/close and board reconciliation.
 
+### ASSIST_LOCK-GFX-UI-CAMERA-POLISH-1 — Jjun observer UI/camera polish assist
+
+- helper: Jjun.
+- owner/reviewer: Dagyeom.
+- branch: `integration/ui-camera-polish-v1`.
+- developed in parallel; CI waits for current Unreal runners to clear.
+- scope:
+  - smoother resident follow target damping.
+  - separate focus/overview/manual camera transition rates.
+  - eased HUD level transitions and resident-selection flash.
+  - preserve touch/mouse control semantics and observer selection authority.
+  - no simulation state changes.
+- release after merge/close and board reconciliation.
+
 ## Open Integration Requests
 
 ### IR-GFX-CINEMATIC-1 — Desktop cinematic presentation adoption (Windows + macOS)
