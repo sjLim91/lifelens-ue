@@ -57,6 +57,16 @@ require(android, (
     "r.RayTracing=False",
 ), "Android mobile renderer")
 
+low_spec_launcher = read("Tools/run_lifelens_low_spec.ps1")
+require(low_spec_launcher, (
+    "[switch]$LegacyD3D11",
+    '$RHIArgs = @("-dx12")',
+    '"-d3d11", "-NoRHIThread"',
+), "Windows low-spec RHI launcher")
+assert "A previous helper always forced D3D11" in low_spec_launcher, (
+    "low-spec launcher must document why DX12 is the safe default"
+)
+
 project = json.loads(read("LifeLens.uproject"))
 plugins = {p["Name"] for p in project.get("Plugins", []) if p.get("Enabled")}
 for plugin in ("Niagara", "PCG", "Water"):
