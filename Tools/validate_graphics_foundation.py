@@ -26,6 +26,25 @@ require(windows, (
     "r.Lumen.HardwareRayTracing=False",
 ), "Windows cinematic renderer")
 
+mac = read("Config/Mac/MacEngine.ini")
+require(mac, (
+    "r.GenerateMeshDistanceFields=True",
+    "r.DynamicGlobalIlluminationMethod=1",
+    "r.ReflectionMethod=1",
+    "r.Shadow.Virtual.Enable=0",
+    "r.AntiAliasingMethod=4",
+    "r.Nanite.ProjectEnabled=False",
+    "r.Lumen.HardwareRayTracing=False",
+    "r.RayTracing=False",
+), "macOS desktop cinematic renderer")
+
+profiles = read("Config/DefaultDeviceProfiles.ini")
+require(profiles, (
+    "[Windows DeviceProfile]",
+    "[Mac DeviceProfile]",
+    "[Android DeviceProfile]",
+), "cross-platform device profiles")
+
 android = read("Config/Android/AndroidEngine.ini")
 require(android, (
     "r.GenerateMeshDistanceFields=False",
@@ -51,6 +70,8 @@ require(diagnostics, (
     'ReadRendererCVar(TEXT("r.Nanite.ProjectEnabled"))',
     'ReadRendererCVar(TEXT("r.GenerateMeshDistanceFields"))',
     'LifeLens renderer effective tier:',
+    'IsCinematicMacTier',
+    'LifeLens macOS desktop renderer contract is not fully active at runtime.',
 ), "runtime renderer diagnostics")
 
 game_mode = read("Source/LifeLens/Core/LLLifeLensGameMode.cpp")
