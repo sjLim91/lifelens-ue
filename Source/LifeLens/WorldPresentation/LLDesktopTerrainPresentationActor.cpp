@@ -187,9 +187,13 @@ UMaterialInterface* ALLDesktopTerrainPresentationActor::MaterialForChunk(
     const bool bLush =
         Chunk.Moisture > 0.6f && Chunk.FertilityPotential > 0.45f;
 
-    if (bDry && GroundDry) { return GroundDry; }
-    if (bLush && GroundGrass) { return GroundGrass; }
-    return GroundTransition ? GroundTransition.Get() : GroundGrass.Get();
+    // Recovery baseline: avoid hard per-chunk material boundaries on the
+    // procedural overlay. One failing dry/transition material section otherwise
+    // appears as a giant engine-grey polygon. Biome variation will return via a
+    // verified blended material rather than section-wide swaps.
+    if (GroundGrass) { return GroundGrass; }
+    if (GroundTransition) { return GroundTransition; }
+    return GroundDry.Get();
 }
 
 void ALLDesktopTerrainPresentationActor::RefreshFromCore(bool bForce)
