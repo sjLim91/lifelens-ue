@@ -247,7 +247,9 @@ private:
     void ClearInstances();
     void ClearFacilityInstances();
     void ApplyFacilityMaterialPalette();
-    void BuildGround(const struct FLLCoreWorldGenerationObservation& World);
+    void BuildGround(
+        const struct FLLCoreWorldGenerationObservation& World,
+        const TArray<FLLCoreNaturalChunkObservation>& MaterializedChunks);
     void BuildChunkGround(
         const struct FLLCoreWorldGenerationObservation& World,
         const FLLCoreNaturalChunkObservation& Chunk,
@@ -353,6 +355,7 @@ private:
     int64 BuiltWorldSeed = 0;
     int32 BuiltGenerationVersion = -1;
     int32 BuiltChunkCount = -1;
+    uint32 BuiltNaturalChunkSignature = 0;
     uint32 BuiltFacilitySignature = 0;
     uint32 BuiltFacilityLayoutSignature = 0;
     uint32 BuiltResourceQuantitySignature = 0;
