@@ -4,11 +4,12 @@
 #include "Simulation/LLEnvironmentReadTypes.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
+#include "Materials/MaterialInterface.h"
 #include "UObject/ConstructorHelpers.h"
 
 namespace
 {
-constexpr float BasicCubeSizeUU = 100.0f;
+constexpr float ResidueMarkerNativeDiameterUU = 100.0f;
 constexpr int32 ResidueCustomDataFloats = 4;
 
 uint32 MixVisualHash(uint32 Seed, uint32 Value)
@@ -26,14 +27,21 @@ ULLEnvironmentalResidueVisualizerComponent::ULLEnvironmentalResidueVisualizerCom
     SetMobility(EComponentMobility::Movable);
     NumCustomDataFloats = ResidueCustomDataFloats;
 
-    // Cube is intentionally the dependency-free fallback already used by the
-    // project smoke world.  It is flattened into a ground marker here.  A
-    // presentation material/mesh can replace it later without changing Core.
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeFinder(
-        TEXT("/Engine/BasicShapes/Cube.Cube"));
-    if (CubeFinder.Succeeded())
+    // Residue is a visible world consequence, not a collision/debug proxy.
+    // A cylinder gives the patch a soft footprint and the authored dry-earth
+    // material prevents the default Engine grey rectangle from leaking into
+    // production when human-waste residue is present.
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> MarkerFinder(
+        TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
+    static ConstructorHelpers::FObjectFinder<UMaterialInterface> ResidueMaterialFinder(
+        TEXT("/Game/Environment/Materials/MI_Ground_DryEarth.MI_Ground_DryEarth"));
+    if (MarkerFinder.Succeeded())
     {
-        SetStaticMesh(CubeFinder.Object);
+        SetStaticMesh(MarkerFinder.Object);
+    }
+    if (ResidueMaterialFinder.Succeeded())
+    {
+        SetMaterial(0, ResidueMaterialFinder.Object);
     }
 }
 
@@ -140,7 +148,7 @@ void ULLEnvironmentalResidueVisualizerComponent::RefreshFromCore(
         const float AmountScale = 0.90f + AmountNorm * 0.35f;
         const float IntensityScale = 0.78f + Intensity * 0.22f;
         const float DiameterUU = CellSize * FootprintCells * AmountScale * IntensityScale;
-        const float XYScale = FMath::Max(0.04f, DiameterUU / BasicCubeSizeUU);
+        const float XYScale = FMath::Max(0.04f, DiameterUU / ResidueMarkerNativeDiameterUU);
         const float ZScale = FMath::Lerp(0.010f, 0.035f, Intensity);
 
         const FVector WorldLocation = ResolveSurfaceLocation(
