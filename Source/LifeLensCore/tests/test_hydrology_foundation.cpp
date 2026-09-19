@@ -36,6 +36,9 @@ int main()
     int surfaceCount = 0;
     int flowingCount = 0;
     int freshCount = 0;
+    int coastCount = 0;
+    int oceanCount = 0;
+    int saltOrBrackishCount = 0;
     std::map<std::pair<int,int>, WaterBodyId> ids;
 
     for(int y = -24; y <= 24; ++y){
@@ -61,6 +64,19 @@ int main()
             if(isFreshSurfaceWater(a)){
                 ++freshCount;
             }
+            if(a.surfaceKind == SurfaceWaterKind::Coast){
+                ++coastCount;
+                assert(a.salinity == WaterSalinity::Brackish);
+                assert(!isFreshSurfaceWater(a));
+            }
+            if(a.surfaceKind == SurfaceWaterKind::Ocean){
+                ++oceanCount;
+                assert(a.salinity == WaterSalinity::Salt);
+                assert(!isFreshSurfaceWater(a));
+            }
+            if(a.salinity != WaterSalinity::Fresh){
+                ++saltOrBrackishCount;
+            }
         }
     }
 
@@ -69,6 +85,9 @@ int main()
     assert(surfaceCount > 0);
     assert(flowingCount > 0);
     assert(freshCount > 0);
+    assert(coastCount > 0);
+    assert(oceanCount > 0);
+    assert(saltOrBrackishCount > 0);
 
     // Stable ids reproduce exactly for the same seed/coord/kind.
     for(const auto& entry : ids){
@@ -90,8 +109,8 @@ int main()
     }
     assert(differs);
 
-    // Coast/Ocean are reserved until the planetary sea-level contract lands.
-    // Their salinity rule is already enforced by the validation contract.
+    // Marine surface is now generated from the deterministic macro sea-level
+    // contract; validation still rejects impossible fresh oceans.
     HydrologyFacts invalidOcean;
     invalidOcean.coord = {0,0};
     invalidOcean.surfaceKind = SurfaceWaterKind::Ocean;
