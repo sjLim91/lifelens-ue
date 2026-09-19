@@ -271,6 +271,12 @@ inline double civilizationDispositionAffinity(
                 0.45 * preferences.order +
                 0.20 * preferences.comfort +
                 0.35 * traits.discipline);
+        case CivilizationIntent::Retrieve:
+            return socialClamp01(
+                0.30 * preferences.order +
+                0.30 * preferences.comfort +
+                0.25 * traits.resourcefulness +
+                0.15 * traits.discipline);
         case CivilizationIntent::Experiment:
             return socialClamp01(
                 0.30 * preferences.exploration +
@@ -315,6 +321,7 @@ inline CivilizationUtilityDecision chooseDispositionAwareCivilizationDecisionAtP
         best,
         applyCivilizationDispositionBias(
             self,bestCraftDecisionAtPosition(world,self,authoritativePosition)));
+    considerCivilizationDecision(best, applyCivilizationDispositionBias(self, bestRetrieveDecision(world, self)));
     considerCivilizationDecision(best, applyCivilizationDispositionBias(self, bestStoreDecision(world, self)));
     considerCivilizationDecision(best, applyCivilizationDispositionBias(self, bestGatherDecision(world, self)));
     return best;
@@ -369,57 +376,66 @@ inline double maximumResidentNeed(const Character& self)
 // a real matching ResourceNode may be gathered. This is still an authoritative
 // Civilization::Gather action; it does not synthesize food/water or unlock the
 // rest of civilization while the resident is in crisis.
+// Compatibility name retained because tests/callers already use it. The
+// decision now means "obtain an urgent provision": first from settlement
+// storage, then from a natural resource node. No food/water is synthesized.
 inline CivilizationUtilityDecision urgentSurvivalProvisionGatherDecision(
     const World& world,
     const Character& self)
 {
     constexpr double SurvivalProvisionThreshold = 0.74;
-    CivilizationUtilityDecision best;
 
-    const auto considerProvision = [&](Goal goal, MaterialKind material, double need) {
-        if (need < SurvivalProvisionThreshold) return;
-        if (objectAvailableFor(world, goal, self.id)) return;
-        if (self.civilization.inventory.count(ItemKind::RawMaterial, material) > 0) return;
+    const auto provisionDecision =
+        [&](Goal goal, MaterialKind material, double need) {
+            CivilizationUtilityDecision result;
+            if (need < SurvivalProvisionThreshold) return result;
+            if (objectAvailableFor(world, goal, self.id)) return result;
+            if (self.civilization.inventory.count(
+                    ItemKind::RawMaterial,material)>0) return result;
 
-        for (const auto& node : world.resourceNodes) {
-            if (node.id == 0 || node.quantity <= 0 || node.material != material) continue;
+            // A settlement reserve is useful only if residents actually use it.
+            // Prefer already-collected provision over another trip to nature.
+            for (const StorageSite& storage:world.storageSites) {
+                const int stored=storage.inventory.count(
+                    ItemKind::RawMaterial,material);
+                if(storage.id==0 || stored<=0) continue;
 
-            CivilizationUtilityDecision candidate;
-            candidate.intent = CivilizationIntent::Gather;
-            candidate.utility = socialClamp01(0.80 + 0.20 * need);
-            candidate.resourceNode = node.id;
-            candidate.material = material;
-            candidate.item = ItemKind::RawMaterial;
-            candidate.quantity = 2 + static_cast<int>(2.0 * clampCivilization01(self.civilization.gatheringSkill));
-            considerCivilizationDecision(best, candidate);
-        }
-    };
+                result.intent=CivilizationIntent::Retrieve;
+                result.utility=socialClamp01(0.84+0.16*need);
+                result.storage=storage.id;
+                result.material=material;
+                result.item=ItemKind::RawMaterial;
+                result.quantity=std::min(stored,2);
+                return result;
+            }
 
-    // Thirst wins exact ties because the production decay rate is higher.
-    considerProvision(Goal::Eat, MaterialKind::PlantFood, self.needs.hunger);
-    const double hungerUtility = best.utility;
-    CivilizationUtilityDecision thirstCandidate;
-    if (self.needs.thirst >= SurvivalProvisionThreshold
-        && !objectAvailableFor(world, Goal::Drink, self.id)
-        && self.civilization.inventory.count(ItemKind::RawMaterial, MaterialKind::Water) == 0) {
-        for (const auto& node : world.resourceNodes) {
-            if (node.id == 0 || node.quantity <= 0 || node.material != MaterialKind::Water) continue;
-            thirstCandidate.intent = CivilizationIntent::Gather;
-            thirstCandidate.utility = socialClamp01(0.80 + 0.20 * self.needs.thirst);
-            thirstCandidate.resourceNode = node.id;
-            thirstCandidate.material = MaterialKind::Water;
-            thirstCandidate.item = ItemKind::RawMaterial;
-            thirstCandidate.quantity = 2 + static_cast<int>(2.0 * clampCivilization01(self.civilization.gatheringSkill));
-            break;
-        }
+            for (const ResourceNode& node:world.resourceNodes) {
+                if(node.id==0 || node.quantity<=0 || node.material!=material) continue;
+                result.intent=CivilizationIntent::Gather;
+                result.utility=socialClamp01(0.80+0.20*need);
+                result.resourceNode=node.id;
+                result.material=material;
+                result.item=ItemKind::RawMaterial;
+                result.quantity=2+static_cast<int>(
+                    2.0*clampCivilization01(self.civilization.gatheringSkill));
+                return result;
+            }
+            return result;
+        };
+
+    const CivilizationUtilityDecision hunger=provisionDecision(
+        Goal::Eat,MaterialKind::PlantFood,self.needs.hunger);
+    const CivilizationUtilityDecision thirst=provisionDecision(
+        Goal::Drink,MaterialKind::Water,self.needs.thirst);
+
+    // Thirst wins exact ties because the production thirst decay is steeper.
+    if(thirst.intent!=CivilizationIntent::None
+       && (hunger.intent==CivilizationIntent::None
+           || thirst.utility>hunger.utility+1e-12
+           || std::abs(thirst.utility-hunger.utility)<=1e-12)){
+        return thirst;
     }
-    if (thirstCandidate.intent != CivilizationIntent::None
-        && (thirstCandidate.utility > hungerUtility + 1e-12
-            || std::abs(thirstCandidate.utility - hungerUtility) <= 1e-12)) {
-        best = thirstCandidate;
-    }
-
-    return best;
+    return hunger;
 }
 
 inline UnifiedUtilityDecision chooseUnifiedUtilityDecisionAtPosition(
