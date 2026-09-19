@@ -224,9 +224,9 @@ void ALLDynamicEnvironmentPresentationActor::ResolveWorldComponents()
     if (SkyLight)
     {
         SkyLight->SetMobility(EComponentMobility::Movable);
-#if PLATFORM_WINDOWS
-        // The cinematic Windows tier keeps SkyLight capture synchronized with
-        // dynamic SkyAtmosphere/time/weather. Mobile stays on the cheaper path.
+#if PLATFORM_WINDOWS || PLATFORM_MAC
+        // Desktop cinematic tiers keep SkyLight capture synchronized with
+        // dynamic SkyAtmosphere/time/weather. Android stays on the cheaper path.
         SkyLight->bRealTimeCapture = true;
 #else
         SkyLight->bRealTimeCapture = false;
@@ -242,6 +242,18 @@ void ALLDynamicEnvironmentPresentationActor::ResolveWorldComponents()
         HeightFog->SetFogDensity(ClearFogDensity);
         HeightFog->SetStartDistance(FMath::Max(0.0f, HorizonFogStartDistanceUU));
         HeightFog->SetFogMaxOpacity(FMath::Clamp(HorizonFogMaxOpacity, 0.0f, 1.0f));
+#if PLATFORM_WINDOWS || PLATFORM_MAC
+        // Rich desktop atmosphere; fog amount/color still come from Core.
+        HeightFog->SetVolumetricFog(true);
+        HeightFog->SetVolumetricFogStartDistance(0.0f);
+        HeightFog->SetVolumetricFogNearFadeInDistance(350.0f);
+        HeightFog->SetVolumetricFogDistance(26000.0f);
+        HeightFog->SetVolumetricFogScatteringDistribution(0.28f);
+        HeightFog->SetVolumetricFogExtinctionScale(1.0f);
+        HeightFog->SetVolumetricFogAlbedo(FColor(238, 242, 247));
+#else
+        HeightFog->SetVolumetricFog(false);
+#endif
     }
 }
 
