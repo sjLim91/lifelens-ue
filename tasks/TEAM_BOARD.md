@@ -64,36 +64,29 @@ A new blocker is triaged before unrelated follow-up work. This does **not** mean
 
 ## Current Assist Locks
 
-### ASSIST_LOCK-GFX-VISIBLE-70-1 — Jjun scoped visual uplift integration
+### ASSIST_LOCK-GFX-PLATFORM-COOK-1 — Jjun scoped platform packaging assist
 
-- explicit user direction: raise visible final graphics completion toward the 70% checkpoint now.
+- explicit user direction: establish the platform package boundary now.
 - helper: Jjun.
-- owner/reviewer: Dagyeom.
-- branch: `integration/visible-world-uplift-70-v1`.
-- allowed presentation files:
-  - `Source/LifeLens/WorldPresentation/LLWorldPresentationActor.cpp`
-  - `Source/LifeLens/WorldPresentation/LLWorldPresentationActor.h`
-  - related structural validation/docs only.
+- owner/reviewer for presentation source: Dagyeom.
+- branch: `integration/platform-content-cook-boundary-v1`.
+- cross-owner file:
+  - `Source/LifeLens/WorldPresentation/LLWorldPresentationActor.cpp`.
 - scope:
-  - consume merged deterministic visual seeds and terrain presentation provider.
-  - use already-imported approved photoreal facility hero props.
-  - add already-imported photoreal vegetation variants to reduce repetition.
-  - increase desktop cinematic dressing density without raising Android budgets.
-  - add gentle visual terrain relief outside the active settlement/facility flattening envelopes.
-  - no new simulation/resource/facility authority.
-- safety:
-  - settlement locomotion/collision baseline remains flat.
-  - visual terrain adds hills only; it does not lower presentation below the hidden bootstrap collision plane.
-  - do not merge over an overlapping Dagyeom PR; request review before closeout.
-- release: after the uplift PR is merged/closed and TEAM_BOARD is reconciled.
+  - Android loads a lightweight nature fallback set.
+  - Windows/macOS keep desktop photoreal nature.
+  - Config/CI prevent desktop nature and desktop PCG from entering Android cook.
+  - no simulation/resource/facility authority changes.
+- compact photoreal facility hero props remain a documented shared exception until mobile replacements exist.
+- release after PR merge/close and TEAM_BOARD reconciliation.
 
 ## Open Integration Requests
 
-### IR-GFX-CINEMATIC-1 — Windows cinematic presentation adoption
+### IR-GFX-CINEMATIC-1 — Desktop cinematic presentation adoption
 
 - requester: Jjun.
 - needed owner: Dagyeom.
-- target: Windows cinematic renderer tier integration after Config foundation.
+- target: Windows + macOS desktop renderer integration after Config foundation.
 - requested areas: `Content/Environment/**`, `Content/Maps/**`, `Content/WorldPresentation/**` and presentation-owned environment setup as needed.
 - needed work:
   - opt approved high-detail static assets into Nanite on the Windows presentation path while preserving Android fallback LOD/mesh.
