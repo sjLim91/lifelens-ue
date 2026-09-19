@@ -232,6 +232,10 @@ private:
                                   const FVector& DirectionUU,
                                   float LengthUU,
                                   float DiameterUU);
+    void AddPhotorealFurnaceStone(const FVector& CenterUU,
+                                  float DiameterUU,
+                                  float YawDegrees,
+                                  float VerticalScale = 1.0f);
 
     void RefreshFromCore(bool bForce);
     void ClearInstances();
@@ -328,6 +332,7 @@ private:
     UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> PhotorealStorageBasketInstances;
     UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> PhotorealWorkToolInstances;
     UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> PhotorealStructureLogInstances;
+    UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> PhotorealFurnaceStoneInstances;
 
     // Shared palette materials keep facility silhouettes readable without
     // multiplying draw components per facility. Shape/state still comes solely
