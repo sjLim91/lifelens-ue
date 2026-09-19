@@ -414,7 +414,9 @@ void ALLDynamicEnvironmentPresentationActor::RefreshFromCore(bool bForce)
     const FLLCoreTimeObservation Time = Bridge->GetTimeObservation();
     const FLLCoreDynamicEnvironmentObservation Environment =
         Bridge->GetInitialRegionDynamicEnvironmentObservation();
-    if (!Environment.bAvailable)
+    const FLLCoreSkyPresentationObservation Sky =
+        Bridge->GetInitialRegionSkyPresentationObservation();
+    if (!Environment.bAvailable || !Sky.bAvailable)
     {
         return;
     }
@@ -428,12 +430,12 @@ void ALLDynamicEnvironmentPresentationActor::RefreshFromCore(bool bForce)
     LastAppliedSimulationMinute = Time.SimulationMinute;
 
     const float Daylight01 = Saturate(Time.Daylight01);
-    const float CloudCover01 = Saturate(Environment.CloudCover01);
+    const float CloudCover01 = Saturate(Sky.CloudCover01);
     const float Visibility01 = Saturate(Environment.Visibility01);
     const float Humidity01 = Saturate(Environment.Humidity01);
     const float Precipitation01 = Saturate(Environment.PrecipitationIntensity01);
-    const float SurfaceWetness01 = Saturate(Environment.SurfaceWetness01);
-    const float Wind01 = Saturate(Environment.WindIntensity01);
+    const float SurfaceWetness01 = Saturate(Sky.SurfaceWetness01);
+    const float Wind01 = Saturate(Sky.WindIntensity01);
     const float Rain01 = Environment.PrecipitationType == ELLCorePrecipitationType::Rain
         ? Precipitation01
         : 0.0f;
@@ -528,23 +530,17 @@ void ALLDynamicEnvironmentPresentationActor::RefreshFromCore(bool bForce)
         PresentedSnowCover01 = Saturate(PresentedSnowCover01);
     }
 
-    const float Fog01 = Saturate(
-        (1.0f - PresentedVisibility01)
-        + 0.35f * PresentedHumidity01
-        + 0.25f * PresentedPrecipitation01);
+    const float Fog01 = Saturate(Sky.FogAmount01);
 
     ApplyLighting(
+        Sky,
         PresentedDaylight01,
         PresentedCloudCover01,
-        PresentedVisibility01,
-        Time.MinuteOfDay,
-        Saturate(Time.AnnualPhase));
+        PresentedVisibility01);
     ApplyFog(
         PresentedDaylight01,
         PresentedCloudCover01,
-        PresentedVisibility01,
-        PresentedHumidity01,
-        PresentedPrecipitation01);
+        Fog01);
     ApplySurfaceMaterials(
         PresentedSurfaceWetness01,
         PresentedSnowCover01,
@@ -563,25 +559,25 @@ void ALLDynamicEnvironmentPresentationActor::RefreshFromCore(bool bForce)
 }
 
 void ALLDynamicEnvironmentPresentationActor::ApplyLighting(
+    const FLLCoreSkyPresentationObservation& Sky,
     float Daylight01,
     float CloudCover01,
-    float Visibility01,
-    int32 MinuteOfDay,
-    float AnnualPhase)
+    float Visibility01)
 {
-    const float DayFraction = FMath::Fmod(FMath::Max(0.0f, static_cast<float>(MinuteOfDay)), 1440.0f) / 1440.0f;
-    const float SolarElevationDegrees =
-        FMath::Sin((DayFraction - 0.25f) * 2.0f * PI) * 90.0f;
-    const float SeasonalYaw =
-        FMath::Sin(AnnualPhase * 2.0f * PI) * SeasonalAzimuthSwingDegrees;
-
     if (SunLight)
     {
-        SunLight->SetWorldRotation(FRotator(-SolarElevationDegrees, SunAzimuthDegrees + SeasonalYaw, 0.0f));
+        // Rotation and normalized intensity come from the deterministic Core
+        // time/weather presentation provider. This actor only maps those hints
+        // into Unreal light units and color grading.
+        SunLight->SetWorldRotation(FRotator(
+            -Sky.SunElevationDegrees,
+            Sky.SunAzimuthDegrees,
+            0.0f));
 
-        const float CloudMultiplier =
-            1.0f - MaximumCloudLightReduction * CloudCover01;
-        const float SunIntensity = FMath::Lerp(NightSunIntensity, DaySunIntensity, Daylight01) * CloudMultiplier;
+        const float SunIntensity = FMath::Lerp(
+            NightSunIntensity,
+            DaySunIntensity,
+            Saturate(Sky.SunIntensity01));
         SunLight->SetIntensity(FMath::Max(0.0f, SunIntensity));
 
         const FLinearColor DayColor(1.0f, 0.94f, 0.82f, 1.0f);
@@ -594,22 +590,22 @@ void ALLDynamicEnvironmentPresentationActor::ApplyLighting(
         FLinearColor SunColor = BlendColor(DayColor, HorizonColor, HorizonWarmth);
         SunColor = BlendColor(NightColor, SunColor, Daylight01);
 
-        // Cloud and poor visibility gradually cool the direct light instead of
-        // only making it dimmer. Twilight warmth remains visible in clear air.
         const float WeatherCooling = Saturate(
             0.72f * CloudCover01
             + 0.28f * (1.0f - Visibility01));
-        SunColor = BlendColor(SunColor, OvercastColor, WeatherCooling * 0.62f);
+        SunColor = BlendColor(
+            SunColor,
+            OvercastColor,
+            WeatherCooling * 0.62f);
         SunLight->SetLightColor(SunColor);
     }
 
     if (SkyLight)
     {
-        const float VisibilityLift = FMath::Lerp(0.72f, 1.0f, Visibility01);
-        const float CloudMultiplier = FMath::Lerp(1.0f, 0.72f, CloudCover01);
-        const float SkyIntensity =
-            FMath::Lerp(NightSkyIntensity, DaySkyIntensity, Daylight01) *
-            VisibilityLift * CloudMultiplier;
+        const float SkyIntensity = FMath::Lerp(
+            NightSkyIntensity,
+            DaySkyIntensity,
+            Saturate(Sky.SkyBrightness01));
         SkyLight->SetIntensity(FMath::Max(0.0f, SkyIntensity));
     }
 }
@@ -617,29 +613,32 @@ void ALLDynamicEnvironmentPresentationActor::ApplyLighting(
 void ALLDynamicEnvironmentPresentationActor::ApplyFog(
     float Daylight01,
     float CloudCover01,
-    float Visibility01,
-    float Humidity01,
-    float Precipitation01)
+    float FogAmount01)
 {
     if (!HeightFog)
     {
         return;
     }
 
-    const float VisibilityPressure = 1.0f - Visibility01;
-    const float WeatherFog01 = Saturate(
-        VisibilityPressure +
-        HumidityFogWeight * Humidity01 +
-        PrecipitationFogWeight * Precipitation01);
-    HeightFog->SetFogDensity(FMath::Lerp(ClearFogDensity, SevereFogDensity, WeatherFog01));
+    const float WeatherFog01 = Saturate(FogAmount01);
+    HeightFog->SetFogDensity(FMath::Lerp(
+        ClearFogDensity,
+        SevereFogDensity,
+        WeatherFog01));
 
     const FLinearColor NightFog(0.045f, 0.065f, 0.11f, 1.0f);
     const FLinearColor DayFog(0.62f, 0.72f, 0.80f, 1.0f);
     const FLinearColor TwilightFog(0.74f, 0.43f, 0.30f, 1.0f);
     const FLinearColor StormFog(0.20f, 0.26f, 0.32f, 1.0f);
     FLinearColor FogColor = BlendColor(NightFog, DayFog, Daylight01);
-    FogColor = BlendColor(FogColor, TwilightFog, TwilightFactor(Daylight01) * (1.0f - 0.75f * CloudCover01));
-    FogColor = BlendColor(FogColor, StormFog, Saturate(0.65f * CloudCover01 + 0.35f * WeatherFog01));
+    FogColor = BlendColor(
+        FogColor,
+        TwilightFog,
+        TwilightFactor(Daylight01) * (1.0f - 0.75f * CloudCover01));
+    FogColor = BlendColor(
+        FogColor,
+        StormFog,
+        Saturate(0.65f * CloudCover01 + 0.35f * WeatherFog01));
     HeightFog->SetFogInscatteringColor(FogColor);
 }
 
