@@ -81,6 +81,23 @@ A new blocker is triaged before unrelated follow-up work. This does **not** mean
 - compact firepit/basket/axe remain a documented shared exception until mobile replacements exist.
 - release after merge/close and board reconciliation.
 
+
+### ASSIST_LOCK-GFX-PCG-RUNTIME-2 — Jjun scoped PCG presentation assist
+
+- helper: Jjun.
+- owner/reviewer: Dagyeom.
+- branch: `integration/desktop-pcg-runtime-dressing-v2`.
+- integration status: platform cook boundary #269 is merged to `main`; #271 is retargeted to `main` for fresh CI validation.
+- cross-owner files:
+  - `Source/LifeLens/WorldPresentation/LLPCGGroundCoverPresentationActor.cpp`
+  - `Source/LifeLens/WorldPresentation/LLPCGGroundCoverPresentationActor.h`.
+- scope:
+  - consume `PCG_LL_GroundCover` on Windows/macOS desktop runtime.
+  - seed from authoritative initial-chunk `VisualSeed`.
+  - decorative-only; no resource/facility authority.
+  - Android does not spawn/link the PCG runtime path.
+- release after merge/close and board reconciliation.
+
 ## Open Integration Requests
 
 ### IR-GFX-CINEMATIC-1 — Desktop cinematic presentation adoption (Windows + macOS)
