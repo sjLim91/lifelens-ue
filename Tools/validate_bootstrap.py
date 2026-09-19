@@ -613,4 +613,17 @@ for token in (
 ):
     assert token in environment_bridge, f'Missing sky/atmosphere provider projection: {token}'
 
+
+dynamic_environment_presentation = (root / 'Source/LifeLens/WorldPresentation/LLDynamicEnvironmentPresentationActor.cpp').read_text(encoding='utf-8')
+for token in (
+    'GetInitialRegionSkyPresentationObservation',
+    'Sky.SunElevationDegrees',
+    'Sky.SunAzimuthDegrees',
+    'Sky.SunIntensity01',
+    'Sky.SkyBrightness01',
+    'Sky.FogAmount01',
+):
+    assert token in dynamic_environment_presentation, f'Missing authoritative sky consumer: {token}'
+assert 'SolarElevationDegrees =' not in dynamic_environment_presentation, 'Presentation must not reconstruct a second solar elevation path'
+
 print('LifeLens autonomous observer structural validation: PASS')
