@@ -64,24 +64,7 @@ A new blocker is triaged before unrelated follow-up work. This does **not** mean
 
 ## Current Assist Locks
 
-### ASSIST_LOCK-GFX-WATER-CONSUMER-1 — Jjun scoped integration assist
-
-- explicit user direction: continue safely parallelizable cinematic graphics/world integration.
-- helper: Jjun.
-- owner/reviewer: Dagyeom.
-- branch: `integration/unreal-water-consumer-v1`.
-- allowed Dagyeom-owned files:
-  - `Source/LifeLens/WorldPresentation/LLWaterPresentationActor.cpp`
-  - `Source/LifeLens/WorldPresentation/LLWaterPresentationActor.h`
-- Jjun-owned integration files:
-  - `Source/LifeLens/LifeLens.Build.cs`
-  - `Source/LifeLens/Core/LLLifeLensGameMode.cpp`
-- scope:
-  - consume merged Hydrology -> Water presentation DTO.
-  - project spring/stream/river/lake/wetland into Unreal Water runtime actors.
-  - disable gameplay collision/navigation and avoid creating water authority.
-  - coast/ocean runtime projection remains deferred until planetary coastline geometry is sufficient.
-- release: after PR merge/close and TEAM_BOARD reconciliation.
+**None.**
 
 ## Open Integration Requests
 
@@ -274,6 +257,15 @@ When explicitly resumed, prefer cached/fast smoke paths before long engine build
 ---
 
 ## Recently completed coordination items
+
+### PR #251 — Authoritative Unreal Water consumer v1 — DONE
+
+- merged after exact-head Structural Preflight + Unreal Linux Compile PASS.
+- Core Hydrology presentation DTO now drives runtime Unreal Water river/lake/wetland projection.
+- spawned water remains presentation-only; collision/navigation and gameplay authority stay outside Unreal Water.
+- coast/ocean remains deferred until planetary coastline geometry is sufficiently explicit.
+- ASSIST_LOCK-GFX-WATER-CONSUMER-1 released.
+
 
 ### PR #134 — PR #100 WorldPresentation current-main reapplication — DONE
 
