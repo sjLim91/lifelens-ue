@@ -189,6 +189,19 @@ A new blocker is triaged before unrelated follow-up work. This does **not** mean
   - preserve Android lightweight presentation and Core gameplay authority.
 - release after exact-head Preflight + Unreal compile and runtime recheck.
 
+### ASSIST_LOCK-GFX-CHAR-ANIM-POLISH-3 — Jjun character animation polish assist
+
+- helper: Jjun.
+- owner/reviewer: Dagyeom.
+- branch: `integration/character-animation-polish-v3`.
+- supersedes: earlier #281 heads after #280/#282 advanced main.
+- scope:
+  - deterministic per-resident loop phase/play-rate variation.
+  - quiet seated parenting uses Sitting_Idle_Loop.
+  - preserve Core/World action timing, travel speed and movement targets.
+  - no gameplay authority changes.
+- release after merge/close and board reconciliation.
+
 ## Open Integration Requests
 
 ### IR-GFX-CINEMATIC-1 — Desktop cinematic presentation adoption (Windows + macOS)
