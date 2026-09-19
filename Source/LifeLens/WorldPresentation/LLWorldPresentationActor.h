@@ -228,6 +228,10 @@ private:
 
     UHierarchicalInstancedStaticMeshComponent* AddInstancedComponent(
         const TCHAR* Name, UStaticMesh* Mesh, float CullStartUU, float CullEndUU, bool bCastShadow);
+    void AddPhotorealStructureLog(const FVector& CenterUU,
+                                  const FVector& DirectionUU,
+                                  float LengthUU,
+                                  float DiameterUU);
 
     void RefreshFromCore(bool bForce);
     void ClearInstances();
@@ -323,6 +327,7 @@ private:
     UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> PhotorealFirePitInstances;
     UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> PhotorealStorageBasketInstances;
     UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> PhotorealWorkToolInstances;
+    UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> PhotorealStructureLogInstances;
 
     // Shared palette materials keep facility silhouettes readable without
     // multiplying draw components per facility. Shape/state still comes solely
