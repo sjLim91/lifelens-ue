@@ -42,6 +42,30 @@ int main()
         assert(validGeneratedNaturalChunk(a));
     }
 
+    // C1-F physical prerequisite foundation: copper and the rarer tin must
+    // exist as deterministic, finite geology before Bronze can ever be learned.
+    bool sawCopper=false;
+    bool sawTin=false;
+    for(int x=-24;x<=24 && !(sawCopper && sawTin);++x){
+        for(int y=-24;y<=24 && !(sawCopper && sawTin);++y){
+            const GeneratedNaturalChunk chunk=
+                deriveGeneratedNaturalChunk(identityA,{x,y},480);
+            for(const NaturalResourcePatch& patch:chunk.resourcePatches){
+                if(patch.material==MaterialKind::CopperOre
+                   || patch.material==MaterialKind::TinOre){
+                    assert(!patch.renewable);
+                    assert(patch.regenerationPerDay==0);
+                    assert(patch.baselineQuantity>0);
+                    assert(patch.maxQuantity==patch.baselineQuantity);
+                    if(patch.material==MaterialKind::CopperOre) sawCopper=true;
+                    if(patch.material==MaterialKind::TinOre) sawTin=true;
+                }
+            }
+        }
+    }
+    assert(sawCopper);
+    assert(sawTin);
+
     Simulation simulation(seed,peopleA,1);
     simulation.setupNewGame();
     World& world=simulation.world();
