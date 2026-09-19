@@ -106,13 +106,58 @@ def build_parent():
     tint.set_editor_property("parameter_name", "Tint")
     tint.set_editor_property("default_value", unreal.LinearColor(1.0, 1.0, 1.0, 1.0))
 
-    tinted = MEL.create_material_expression(material, unreal.MaterialExpressionMultiply, 420, 100)
+    tinted = MEL.create_material_expression(material, unreal.MaterialExpressionMultiply, 220, 50)
     MEL.connect_material_expressions(base, "RGB", tinted, "A")
     MEL.connect_material_expressions(tint, "", tinted, "B")
 
-    MEL.connect_material_property(tinted, "", unreal.MaterialProperty.MP_BASE_COLOR)
+    # Runtime weather parameters are driven by LLDynamicEnvironmentPresentationActor.
+    wetness = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, 80, 520)
+    wetness.set_editor_property("parameter_name", "Wetness")
+    wetness.set_editor_property("default_value", 0.0)
+
+    snow = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, 80, 680)
+    snow.set_editor_property("parameter_name", "Snow")
+    snow.set_editor_property("default_value", 0.0)
+
+    precipitation = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, 80, 840)
+    precipitation.set_editor_property("parameter_name", "Precipitation")
+    precipitation.set_editor_property("default_value", 0.0)
+
+    air_temperature = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, 80, 1000)
+    air_temperature.set_editor_property("parameter_name", "AirTemperatureC")
+    air_temperature.set_editor_property("default_value", 15.0)
+
+    snow_color = MEL.create_material_expression(material, unreal.MaterialExpressionVectorParameter, 80, -180)
+    snow_color.set_editor_property("parameter_name", "SnowColor")
+    snow_color.set_editor_property("default_value", unreal.LinearColor(0.82, 0.87, 0.91, 1.0))
+
+    wet_dark = MEL.create_material_expression(material, unreal.MaterialExpressionLinearInterpolate, 480, 160)
+    wet_dark.const_a = 1.0
+    wet_dark.const_b = 0.58
+    MEL.connect_material_expressions(wetness, "", wet_dark, "Alpha")
+
+    wet_base = MEL.create_material_expression(material, unreal.MaterialExpressionMultiply, 700, 80)
+    MEL.connect_material_expressions(tinted, "", wet_base, "A")
+    MEL.connect_material_expressions(wet_dark, "", wet_base, "B")
+
+    final_base = MEL.create_material_expression(material, unreal.MaterialExpressionLinearInterpolate, 920, 80)
+    MEL.connect_material_expressions(wet_base, "", final_base, "A")
+    MEL.connect_material_expressions(snow_color, "", final_base, "B")
+    MEL.connect_material_expressions(snow, "", final_base, "Alpha")
+
+    wet_rough = MEL.create_material_expression(material, unreal.MaterialExpressionLinearInterpolate, 520, 560)
+    MEL.connect_material_expressions(rough, "R", wet_rough, "A")
+    wet_rough.const_b = 0.22
+    MEL.connect_material_expressions(wetness, "", wet_rough, "Alpha")
+
+    final_rough = MEL.create_material_expression(material, unreal.MaterialExpressionLinearInterpolate, 760, 560)
+    MEL.connect_material_expressions(wet_rough, "", final_rough, "A")
+    final_rough.const_b = 0.82
+    MEL.connect_material_expressions(snow, "", final_rough, "Alpha")
+
+    MEL.connect_material_property(final_base, "", unreal.MaterialProperty.MP_BASE_COLOR)
     MEL.connect_material_property(normal, "RGB", unreal.MaterialProperty.MP_NORMAL)
-    MEL.connect_material_property(rough, "R", unreal.MaterialProperty.MP_ROUGHNESS)
+    MEL.connect_material_property(final_rough, "", unreal.MaterialProperty.MP_ROUGHNESS)
     MEL.connect_material_property(occlusion, "R", unreal.MaterialProperty.MP_AMBIENT_OCCLUSION)
 
     material.set_editor_property("two_sided", False)
@@ -143,7 +188,12 @@ def build_instance(parent, name, prefix):
         MEL.set_material_instance_texture_parameter_value(instance, param, texture)
 
     MEL.set_material_instance_scalar_parameter_value(instance, "TileSizeCm", DEFAULT_TILE_SIZE_CM)
+    MEL.set_material_instance_scalar_parameter_value(instance, "Wetness", 0.0)
+    MEL.set_material_instance_scalar_parameter_value(instance, "Snow", 0.0)
+    MEL.set_material_instance_scalar_parameter_value(instance, "Precipitation", 0.0)
+    MEL.set_material_instance_scalar_parameter_value(instance, "AirTemperatureC", 15.0)
     MEL.set_material_instance_vector_parameter_value(instance, "Tint", unreal.LinearColor(1.0, 1.0, 1.0, 1.0))
+    MEL.set_material_instance_vector_parameter_value(instance, "SnowColor", unreal.LinearColor(0.82, 0.87, 0.91, 1.0))
     EAL.save_asset(dest, only_if_is_dirty=False)
     log("built instance %s from %s" % (dest, prefix))
 
