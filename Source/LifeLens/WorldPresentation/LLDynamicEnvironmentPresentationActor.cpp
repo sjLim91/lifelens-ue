@@ -755,6 +755,15 @@ void ALLDynamicEnvironmentPresentationActor::ApplySurfaceMaterials(
             Mesh->SetScalarParameterValueOnMaterials(SnowMaterialParameter, Snow01);
             Mesh->SetScalarParameterValueOnMaterials(PrecipitationMaterialParameter, Precipitation01);
             Mesh->SetScalarParameterValueOnMaterials(AirTemperatureMaterialParameter, AirTemperatureC);
+
+            // Existing M_LL_Ground assets were authored before the LL_* naming
+            // contract and expose these exact parameter names. Write both forms
+            // during recovery so current cooked assets receive weather without
+            // breaking any newer materials already using the configured names.
+            Mesh->SetScalarParameterValueOnMaterials(TEXT("Wetness"), SurfaceWetness01);
+            Mesh->SetScalarParameterValueOnMaterials(TEXT("Snow"), Snow01);
+            Mesh->SetScalarParameterValueOnMaterials(TEXT("Precipitation"), Precipitation01);
+            Mesh->SetScalarParameterValueOnMaterials(TEXT("AirTemperatureC"), AirTemperatureC);
         }
     };
 
