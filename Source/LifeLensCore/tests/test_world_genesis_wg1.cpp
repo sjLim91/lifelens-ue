@@ -28,7 +28,7 @@ std::string founderSignature(const Simulation& simulation)
 
 int main()
 {
-    static_assert(CurrentWorldGenerationVersion == 1, "WG-1 baseline version changed unexpectedly");
+    static_assert(CurrentWorldGenerationVersion >= 2, "current generator must retain a post-WG1 version");
     static_assert(WorldChunkSpanGridCells > 0, "chunk span must be positive");
 
     // Chunk mapping must use floor semantics for negative world-grid positions.
@@ -44,7 +44,8 @@ int main()
     assert(chunkLocalGrid({32,33}).y == 1);
 
     const WorldSeed worldSeed = 0x123456789abcdef0ULL;
-    const WorldGenerationVersion generationVersion = CurrentWorldGenerationVersion;
+    // WG-1 remains the compatibility baseline even after later generators land.
+    const WorldGenerationVersion generationVersion = 1;
     const std::vector<ChunkCoord> coords = {
         {0,0},{1,0},{-1,0},{17,22},{-17,22},{17,-22},{-17,-22},{1024,-2048}
     };
