@@ -1,0 +1,123 @@
+name: LifeLens Ground PBR Authoring
+
+on:
+  push:
+    branches:
+      - integration/terrain-pbr-weather-material-v1
+    paths:
+      - '.github/workflows/ground-pbr-authoring.yml'
+      - 'Content/Environment/Quaternius/Import/make_ground_material.py'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lifelens-ground-pbr-authoring
+  cancel-in-progress: true
+
+jobs:
+  author-ground-pbr:
+    if: ${{ github.event.repository.private == false }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      UE_IMAGE: ghcr.io/epicgames/unreal-engine:dev-slim-5.6.0
+      UE_ROOT_IN_CONTAINER: /home/ue4/UnrealEngine
+      DIAGNOSTICS: ${{ github.workspace }}/Diagnostics/GroundPBR
+
+    steps:
+      - name: Checkout authoring branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Verify source textures
+        shell: bash
+        run: |
+          set -euo pipefail
+          for set in Grass004_1K-PNG Ground054_1K-PNG Ground037_1K-PNG; do
+            test -f "Content/Environment/ambientCG/${set}_Color.uasset"
+            test -f "Content/Environment/ambientCG/${set}_NormalGL.uasset"
+            test -f "Content/Environment/ambientCG/${set}_Roughness.uasset"
+            test -f "Content/Environment/ambientCG/${set}_AmbientOcclusion.uasset"
+          done
+          mkdir -p "$DIAGNOSTICS"
+
+      - name: Login Epic GHCR
+        shell: bash
+        env:
+          EPIC_GHCR_PAT: ${{ secrets.EPIC_GHCR_PAT }}
+        run: |
+          set -euo pipefail
+          test -n "$EPIC_GHCR_PAT" || { echo 'EPIC_GHCR_PAT secret is missing'; exit 91; }
+          echo "$EPIC_GHCR_PAT" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+
+      - name: Pull Unreal 5.6
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL || true
+          sudo apt-get clean || true
+          sudo docker system prune -af || true
+          docker pull "$UE_IMAGE"
+
+      - name: Compile LifeLensEditor
+        timeout-minutes: 35
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/Binaries" "$GITHUB_WORKSPACE/Intermediate" "$DIAGNOSTICS"
+          sudo chmod -R a+rwX "$GITHUB_WORKSPACE"
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -w "$UE_ROOT_IN_CONTAINER" \
+            "$UE_IMAGE" \
+            bash -lc './Engine/Build/BatchFiles/Linux/Build.sh LifeLensEditor Linux Development /workspace/LifeLens.uproject -WaitMutex -NoEngineChanges' \
+            2>&1 | tee "$DIAGNOSTICS/editor-compile.log"
+
+      - name: Author weather-responsive PBR ground materials
+        timeout-minutes: 10
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo chmod -R a+rwX "$GITHUB_WORKSPACE"
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -w "$UE_ROOT_IN_CONTAINER" \
+            "$UE_IMAGE" \
+            bash -lc './Engine/Binaries/Linux/UnrealEditor-Cmd /workspace/LifeLens.uproject \
+              -run=pythonscript \
+              -script=/workspace/Content/Environment/Quaternius/Import/make_ground_material.py \
+              -EnablePlugins=PythonScriptPlugin -nullrhi -unattended -nopause -nosplash -stdout -FullStdOutLogOutput' \
+            2>&1 | tee "$DIAGNOSTICS/ground-pbr-authoring.log"
+
+          for asset in M_LL_Ground MI_Ground_Grass MI_Ground_DryEarth MI_Ground_Transition; do
+            test -s "Content/Environment/Materials/${asset}.uasset"
+          done
+
+      - name: Commit authored ground materials
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "LifeLens Asset Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add Content/Environment/Materials/M_LL_Ground.uasset \
+                  Content/Environment/Materials/MI_Ground_Grass.uasset \
+                  Content/Environment/Materials/MI_Ground_DryEarth.uasset \
+                  Content/Environment/Materials/MI_Ground_Transition.uasset
+          if git diff --cached --quiet; then
+            echo "No ground material change"
+            exit 0
+          fi
+          git commit -m "Author weather-responsive PBR ground materials [skip ci]"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+
+      - name: Upload authoring diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: LifeLens-Ground-PBR-Authoring-Diagnostics
+          path: Diagnostics/GroundPBR/
+          if-no-files-found: ignore
+          retention-days: 7
