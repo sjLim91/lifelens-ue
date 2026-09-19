@@ -119,6 +119,16 @@ inline double naturalPotentialForMaterial(const MacroRegionFacts& facts, Materia
         case MaterialKind::Fiber: return clampMacro01(facts.fertilityPotential * 0.58 + facts.moisture * 0.32);
         case MaterialKind::Clay: return clampMacro01(facts.waterPotential * 0.48 + facts.fertilityPotential * 0.32 + (1.0 - facts.elevation) * 0.20);
         case MaterialKind::PlantFood: return facts.foodPotential;
+        case MaterialKind::CopperOre:
+            return clampMacro01(
+                facts.stonePotential*0.42
+                +facts.elevation*0.18
+                +facts.hazardPotential*0.12);
+        case MaterialKind::TinOre:
+            return clampMacro01(
+                facts.stonePotential*0.28
+                +facts.elevation*0.16
+                +facts.hazardPotential*0.10);
         default: return 0.0;
     }
 }
@@ -139,6 +149,8 @@ inline int naturalResourceBaseMinimum(MaterialKind material)
         case MaterialKind::Fiber: return 45;
         case MaterialKind::Clay: return 48;
         case MaterialKind::PlantFood: return 38;
+        case MaterialKind::CopperOre: return 12;
+        case MaterialKind::TinOre: return 8;
         default: return 20;
     }
 }
@@ -153,6 +165,8 @@ inline int naturalResourceBaseMaximum(MaterialKind material)
         case MaterialKind::Fiber: return 135;
         case MaterialKind::Clay: return 145;
         case MaterialKind::PlantFood: return 120;
+        case MaterialKind::CopperOre: return 54;
+        case MaterialKind::TinOre: return 36;
         default: return 80;
     }
 }
@@ -199,20 +213,27 @@ inline GeneratedNaturalChunk deriveGeneratedNaturalChunk(
     chunk.hazardPotential = macro.hazardPotential;
     chunk.materializedMinute = std::max(0, materializedMinute);
 
-    const std::array<MaterialKind, 7> materials = {
+    const std::array<MaterialKind, 9> materials = {
         MaterialKind::Water,
         MaterialKind::Wood,
         MaterialKind::Stone,
         MaterialKind::Flint,
         MaterialKind::Fiber,
         MaterialKind::Clay,
-        MaterialKind::PlantFood
+        MaterialKind::PlantFood,
+        MaterialKind::CopperOre,
+        MaterialKind::TinOre
     };
 
     const GridPos origin = chunkOriginGrid(coord);
     for(MaterialKind material : materials){
         const double potential = naturalPotentialForMaterial(macro, material);
-        const int maxPatches = material == MaterialKind::Water ? 3 : 4;
+        const bool metalOre=
+            material==MaterialKind::CopperOre
+            || material==MaterialKind::TinOre;
+        const int maxPatches=material==MaterialKind::Water
+            ? 3
+            : (metalOre ? 2 : 4);
         const int patchCount = naturalPatchCount(potential, maxPatches);
         for(int ordinal = 0; ordinal < patchCount; ++ordinal){
             const ResourceNodeId nodeId = deriveNaturalResourceNodeId(untouched.chunkSeed, material, ordinal);
@@ -261,6 +282,8 @@ inline bool validNaturalResourceMaterial(MaterialKind material)
         case MaterialKind::Fiber:
         case MaterialKind::Clay:
         case MaterialKind::PlantFood:
+        case MaterialKind::CopperOre:
+        case MaterialKind::TinOre:
             return true;
         default:
             return false;
