@@ -161,6 +161,20 @@ A new blocker is triaged before unrelated follow-up work. This does **not** mean
   - construction-progress truth and Core authority remain unchanged.
 - release after merge/close and board reconciliation.
 
+### ASSIST_LOCK-GFX-ENV-DENSITY-1 — Jjun whole-world environment density assist
+
+- helper: Jjun.
+- owner/reviewer: Dagyeom.
+- branch: `integration/environment-density-v1`.
+- stacked after: #279.
+- scope:
+  - increase Windows/macOS near/far decorative density without changing Core resources.
+  - preserve Android visual budgets.
+  - replace white-noise scattering with deterministic natural micro-clustering.
+  - preserve settlement/facility readability envelopes and dynamic canopy visibility.
+  - no gameplay, resource, collision or navigation authority changes.
+- release after merge/close and board reconciliation.
+
 ## Open Integration Requests
 
 ### IR-GFX-CINEMATIC-1 — Desktop cinematic presentation adoption (Windows + macOS)
