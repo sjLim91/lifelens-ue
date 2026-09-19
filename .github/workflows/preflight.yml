@@ -65,6 +65,9 @@ jobs:
       - name: Validate photoreal facility completion
         run: python Tools/validate_photoreal_facility_completion.py
 
+      - name: Validate character animation polish
+        run: python Tools/validate_character_animation_polish.py
+
       - name: Verify Unreal project metadata
         run: |
           python - <<'PY'
