@@ -204,6 +204,13 @@ inline MacroSurfaceFacts deriveMacroSurfaceFacts(
     MacroSurfaceFacts surface;
     surface.coord = coord;
 
+    // Generation v1 shipped as an all-land local-surface projection. Never
+    // reinterpret an old v1 save through the v2 sea-level contract.
+    if (identity.generationVersion < 2)
+    {
+        return surface;
+    }
+
     const MacroRegionFacts center = deriveMacroRegionFacts(identity, coord);
     if (center.elevation < MacroSeaLevel01)
     {
@@ -250,13 +257,6 @@ inline MacroSurfaceFacts deriveMacroSurfaceFacts(
 
 inline double scoreInitialStartRegion(const MacroRegionFacts& facts)
 {
-    // Marine surface is never a valid founder start even when nearby water and
-    // climate potentials would otherwise look attractive.
-    if (facts.elevation < MacroSeaLevel01)
-    {
-        return 0.0;
-    }
-
     // Water/food dominate early survival; material diversity and traversal make
     // experimentation possible. Extreme scarcity is heavily penalized, while a
     // small oversupply penalty avoids deliberately selecting a fully solved Eden.
