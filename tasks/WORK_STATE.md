@@ -18,7 +18,7 @@
 >
 > Historical audit: `docs/INTEGRATED_AUDIT_2026-09-17.md` (point-in-time only; do not treat as live status).
 
-Last reconciled: **2026-09-19 KST after #226/#227 merged; Earth & Human Foundation selected as the new structural priority**.
+Last reconciled: **2026-09-19 KST after #238~#243 graphics/world foundation merges; #244/#245 active validation**.
 
 ---
 
@@ -26,7 +26,7 @@ Last reconciled: **2026-09-19 KST after #226/#227 merged; Earth & Human Foundati
 
 Current main before this docs-only closeout sync:
 
-- main SHA: `87b4ca9e904f59e7e5c54e48c828a4ad0b81b178`.
+- main SHA: `baa986b08d504765d8baa05ee8886b415b1eacd4`.
 - #145 Character Context Motion v2 — MERGED.
 - #149 Visual Catch-up v3 packaged rain/snow fallback — MERGED.
 - #150 Lifecycle Presentation v2 — MERGED.
@@ -320,3 +320,31 @@ Latest local-surface presentation:
 - #227 Horizon atmosphere blend — MERGED.
 
 These fixes hide the bootstrap square/void at Local scale only; they are not the final planetary geometry.
+
+
+---
+
+## 12. Cinematic / photoreal graphics foundation — ACTIVE
+
+Merged foundation:
+- #238 zero-cost Poly Haven photoreal nature pipeline v2.
+- #239 Windows cinematic renderer tier v1.
+- #240 Unreal-native environment stack v1 (PCG + Water enabled).
+- #241 photoreal primitive-facility asset wave v2.
+- #242 Hydrology -> Unreal Water presentation contract v1.
+- #243 deterministic PCG presentation seeds v1.
+
+Current renderer contract:
+- Windows PC: DX12 + SM6 + Lumen GI/Reflections + VSM + TSR + Nanite project support + Mesh Distance Fields.
+- Android: separate mobile-safe renderer tier; same world truth with reduced presentation cost.
+- production local-view hero art must not silently fall back to obvious Engine primitives when approved art is missing.
+
+Active validation:
+- #244 photoreal WorldPresentation consumers v1 — Preflight PASS, Unreal compile pending at this checkpoint; Dagyeom review requested.
+- #245 SkyAtmosphere presentation provider v1 — Preflight PASS, Unreal compile pending at this checkpoint.
+
+Parallel follow-up branches started:
+- runtime renderer diagnostics: verify the effective renderer CVars that actually boot, rather than treating config/compile as runtime proof.
+- seam-compatible terrain presentation contract: expose deterministic shared corner elevation samples for future non-flat local terrain without creating a second terrain authority.
+
+Android Gate B remains paused until the user explicitly resumes device/APK validation.
