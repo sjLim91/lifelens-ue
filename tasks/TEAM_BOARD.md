@@ -30,6 +30,15 @@ Time/environment ownership clarification:
 - Dagyeom owns sun/sky/weather VFX, environment readability and Observer controls/readouts.
 - Dagyeom must consume provider contracts rather than calculate a second time/weather truth.
 
+### 2026-09-19 presentation freeze / handoff
+
+- user direction: freeze further Jjun-side screen polishing at the current baseline and hand Presentation back to Dagyeom.
+- canonical handoff: `docs/DAGYEOM_PRESENTATION_HANDOFF_2026-09-19.md`.
+- Jjun active lane returns to Core / AI / Simulation / World / Save / Bridge.
+- Dagyeom owns further visual quality, Character presentation, UI/Observer, camera, lighting/atmosphere and WorldPresentation.
+- #281 / #283 / #284 are Dagyeom review/decision items; Jjun does not auto-merge them on CI success.
+- runtime screenshot acceptance is required for visual completion; CI green alone is not visual acceptance.
+
 ---
 
 ## Collaboration model
@@ -62,7 +71,11 @@ A new blocker is triaged before unrelated follow-up work. This does **not** mean
 
 ---
 
-## Current Assist Locks
+## Released Jjun Presentation Assist Locks (historical)
+
+> All Jjun presentation assist locks below are **released by user direction as of 2026-09-19**.
+> They remain here only as historical scope/evidence. New cross-lane edits require a fresh Integration Request or explicit user direction.
+
 
 ### ASSIST_LOCK-GFX-PLATFORM-COOK-2 — Jjun scoped platform packaging assist
 
@@ -341,17 +354,16 @@ The sky DTO is a deterministic **presentation projection** of Core time + weathe
 
 ## Jjun Core / World lane
 
-1. **T1 Simulation Time Authority & Variable Speed**.
-2. **E1 Calendar + Day/Night Authority**.
-3. **E2 Seasons + Dynamic Weather Core v1**.
-4. **E3 Environmental Consequences v1**.
-5. **C1 Settlement & Subsistence Foundation**.
-6. **C2 Long-Run Scale + History Fast-Forward**.
-7. **C3 Open-Ended Civilization Framework v1**.
-8. Health / Disease / Population Resilience.
-9. Education / Recording / Specialization / Economy / Institutions.
-10. Migration / Multiple Settlements / Trade Networks.
-11. Historical -> industrial -> modern -> digital -> AI -> advanced energy/biotech -> space -> open future.
+Active after the 2026-09-19 Presentation handoff:
+
+1. **C1-D Durable Subsistence** — water carrying/storage, food storage/spoilage, cultivation and renewable food production.
+2. **C1-E Emergent Settlement Form**.
+3. **C1-F Early Material Progression**.
+4. **Stage D Long-Run Reliability + Open-Ended Civilization Engine**.
+5. Health / education / economy / institutions / migration / trade.
+6. Historical -> industrial -> modern -> digital -> AI -> advanced energy/biotech -> space -> open future.
+
+T1/E1/E2/E3 foundations are already integrated; do not restart them as if pending.
 
 Canonical architecture:
 
@@ -361,14 +373,16 @@ Canonical architecture:
 
 ## Dagyeom Presentation lane
 
-1. **Character Context Motion v2**.
-2. **Observer Readability + Real Scrolling**.
-3. **Time Controls / date-time readout** after T1/E1 provider lands.
-4. **Dynamic Environment Presentation v1** after E1/E2 provider lands.
-5. **Lifecycle Event Presentation v2**.
-6. settlement/civilization/future presentation consumers as provider contracts land.
+Presentation is explicitly handed back to Dagyeom from the frozen #282 main baseline.
 
-Parallel execution is expected. Dagyeom work does not block unrelated Jjun provider work unless an actual IR is opened.
+Immediate review set:
+1. #281 Character animation polish.
+2. #283 Lighting / atmosphere polish.
+3. #284 Observer UI / camera polish.
+4. runtime screenshot review of the latest main before accepting further visual changes.
+5. future environment/character/UI quality work as provider contracts permit.
+
+Parallel execution is expected. Dagyeom work does not block unrelated Jjun Core work unless an actual Integration Request is opened.
 
 ## Android / device lane
 
