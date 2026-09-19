@@ -102,5 +102,38 @@ int main()
     CHECK(extinct.continuityScore==0.0);
     CHECK(extinct.atRisk());
 
+    // C2 long-run reliability: continuity must retain exact lineage depth well
+    // beyond the old 16-generation reporting cap.
+    GenealogyBook deepGenealogy;
+    constexpr int DeepGenerations=64;
+    CharacterId lineageParent=1000;
+    for(int generation=1;generation<=DeepGenerations;++generation){
+        const CharacterId child=1000+static_cast<CharacterId>(generation);
+        const CharacterId sideParent=5000+static_cast<CharacterId>(generation);
+        CHECK(deepGenealogy.registerBirth(
+            child,lineageParent,sideParent));
+        lineageParent=child;
+    }
+    Character deepDescendant=
+        makeResident(lineageParent,LifeStage::Adult,1.0);
+    std::vector<Character*> deepResidents={&deepDescendant};
+    const auto deepReport=assessGenerationContinuity(
+        deepResidents,deepGenealogy,noPregnancies);
+    CHECK(deepReport.maxGenerationDepth==DeepGenerations);
+    CHECK(!deepReport.lineageCycleDetected);
+
+    // Malformed imported genealogy must never hang long-run analysis.
+    GenealogyBook cyclic;
+    CHECK(cyclic.registerBirth(2,1,101));
+    CHECK(cyclic.registerBirth(1,2,102));
+    const GenerationDepthIndex cyclicIndex=
+        buildGenerationDepthIndex(cyclic);
+    CHECK(cyclicIndex.cycleDetected);
+    Character cyclicResident=makeResident(2,LifeStage::Adult,1.0);
+    std::vector<Character*> cyclicResidents={&cyclicResident};
+    const auto cyclicReport=assessGenerationContinuity(
+        cyclicResidents,cyclic,noPregnancies);
+    CHECK(cyclicReport.lineageCycleDetected);
+
     return 0;
 }
