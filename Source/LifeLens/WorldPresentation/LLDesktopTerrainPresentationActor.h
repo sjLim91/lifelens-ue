@@ -44,8 +44,10 @@ private:
     UMaterialInterface* MaterialForChunk(
         const FLLCoreNaturalChunkObservation& Chunk) const;
 
-    UPROPERTY(VisibleAnywhere, Category="LifeLens|WorldPresentation|Terrain")
-    TObjectPtr<UProceduralMeshComponent> TerrainMesh;
+    // Not a UPROPERTY on purpose: the component is an Actor default subobject
+    // already owned by AActor, while avoiding a generated Android reference to
+    // the desktop-only ProceduralMeshComponent module.
+    UProceduralMeshComponent* TerrainMesh = nullptr;
 
     UPROPERTY()
     TObjectPtr<UMaterialInterface> GroundGrass;
