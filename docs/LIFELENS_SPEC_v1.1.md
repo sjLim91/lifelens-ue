@@ -93,7 +93,7 @@ LIFELENS의 핵심 런타임에서 제거: HTML, JavaScript 중심 구조, Three
 - **현실적인 동작:** 앉기, 눕기, 잡기, 사용하기, 대화하기
 - **관찰:** 관찰 카메라, 캐릭터 Follow, 시네마틱 카메라, 사건 자동 추적
 - **UI:** Observer-first UI
-- **플랫폼:** Android, Windows PC
+- **플랫폼:** Android, Desktop PC (Windows + macOS)
 
 ---
 
@@ -1064,7 +1064,7 @@ Preflight
 | P24 | Economy / Advanced Society |
 | P25 | Graphics Polish |
 | P26 | Android Optimization |
-| P27 | Windows High Quality |
+| P27 | Desktop High Quality (Windows + macOS) |
 
 ---
 
@@ -1152,7 +1152,7 @@ Goal 생성 → Goal 선택 → Plan → 실행 → 실패 대응 → 대안 탐
 
 ## 82. Graphics Acceptance Criteria
 
-- **최종 PC 목표:** Photorealistic / Cinematic
+- **최종 PC 목표 (Windows + macOS):** Photorealistic / Cinematic
 - **Android 목표:** 동일한 World와 Character Identity를 유지하면서 안정적인 성능 범위 내 최대 현실감.
 
 모바일은 "낮은 FPS의 과도한 그래픽"보다 **"안정적인 30fps의 높은 현실감"**을 우선한다.
