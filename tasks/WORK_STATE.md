@@ -348,3 +348,20 @@ Parallel follow-up branches started:
 - seam-compatible terrain presentation contract: expose deterministic shared corner elevation samples for future non-flat local terrain without creating a second terrain authority.
 
 Android Gate B remains paused until the user explicitly resumes device/APK validation.
+
+
+---
+
+## Desktop platform correction — Windows + macOS
+
+User-confirmed product rule:
+- PC target means **Windows + macOS**, not Windows-only.
+- both desktop platforms advance together in feature/presentation work.
+- platform renderer settings may differ according to Unreal/hardware capability.
+
+Current intended renderer split:
+- Windows: DX12/SM6 + Lumen + VSM + TSR + Nanite.
+- macOS broad baseline: Lumen software GI/reflections + TSR + Mesh Distance Fields; Nanite/VSM remain optional M2+ high-tier work after profiling.
+- Android: mobile-safe tier.
+
+Mac is also a normal editor/presentation validation environment for Dagyeom. Windows-only presentation conditionals are treated as bugs unless a feature is genuinely Windows-specific.
