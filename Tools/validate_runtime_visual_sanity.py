@@ -5,6 +5,10 @@ cpp = (root / "Source/LifeLens/WorldPresentation/LLWorldPresentationActor.cpp").
 header = (root / "Source/LifeLens/WorldPresentation/LLWorldPresentationActor.h").read_text(encoding="utf-8")
 collision_cpp = (root / "Source/LifeLens/World/LLWorldObstacleCollisionProxyActor.cpp").read_text(encoding="utf-8")
 environment_cpp = (root / "Source/LifeLens/WorldPresentation/LLDynamicEnvironmentPresentationActor.cpp").read_text(encoding="utf-8")
+water_cpp = (root / "Source/LifeLens/WorldPresentation/LLWaterPresentationActor.cpp").read_text(encoding="utf-8")
+water_header = (root / "Source/LifeLens/WorldPresentation/LLWaterPresentationActor.h").read_text(encoding="utf-8")
+world_bridge_cpp = (root / "Source/LifeLens/Simulation/LLWorldGenerationBridge.cpp").read_text(encoding="utf-8")
+world_bridge_header = (root / "Source/LifeLens/Simulation/LLCoreBridgeSubsystem.h").read_text(encoding="utf-8")
 
 # Regression guard: desktop must not rely on a sapling-only catalogue.
 for token in (
@@ -111,6 +115,34 @@ for token in (
     'TEXT("AirTemperatureC")',
 ):
     assert token in environment_cpp, f"missing ground weather compatibility token: {token}"
+
+# Water crossing from a materialized fresh-water chunk into a regional
+# downstream preview must use the same deterministic signed terrain relief.
+for token in (
+    "GetTerrainPreviewObservation",
+    "FillTerrainPresentationObservation",
+):
+    assert token in world_bridge_cpp or token in world_bridge_header, (
+        f"missing read-only terrain preview contract for water: {token}"
+    )
+preview_start = world_bridge_cpp.index("ULLCoreBridgeSubsystem::GetTerrainPreviewObservation")
+preview_end = world_bridge_cpp.index("ULLCoreBridgeSubsystem::GetTerrainPresentationObservation", preview_start)
+preview_block = world_bridge_cpp[preview_start:preview_end]
+assert "materializeNaturalChunk" in preview_block  # required explanatory guard
+assert "// or mutate generatedNaturalChunks here." in preview_block
+assert "World.findGeneratedNaturalChunk" not in preview_block
+
+for token in (
+    "Bridge->GetTerrainPreviewObservation",
+    "RegionalTerrainReliefAmplitudeUU",
+    "RegionalTerrainPreviewRadiusChunks",
+    "RegionalTerrainInnerFlatRingChunks",
+    "RawAlpha * RawAlpha * (3.0f - 2.0f * RawAlpha)",
+    "SurfaceAtChunkCenter(Amplitude, true)",
+):
+    assert token in water_cpp or token in water_header, (
+        f"missing water/regional-terrain alignment token: {token}"
+    )
 
 # Android retains the lightweight primitive presentation path.
 assert "#if PLATFORM_ANDROID" in cpp
