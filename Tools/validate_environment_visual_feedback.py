@@ -34,6 +34,12 @@ for token in [
     "SetCustomDataValue",
     "LineTraceSingleByChannel",
     "ELLCoreEnvironmentalResidueKind::HumanWaste",
+    "GetTypeHash(CoreOriginGridX)",
+    "GetTypeHash(CoreOriginGridY)",
+    "SurfaceOffsetUU * 1000.0f",
+    "Owner->GetActorLocation()",
+    "static_cast<uint8>(Residue.Kind)",
+    "Environment, CellSize, CoreOriginGridX, CoreOriginGridY",
 ]:
     require(cpp, token, "residue visualizer implementation")
 

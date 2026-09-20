@@ -36,7 +36,11 @@ public:
     int32 GetVisualInstanceCount() const { return GetInstanceCount(); }
 
 private:
-    uint32 BuildVisualSignature(const FLLCoreEnvironmentObservation& Environment) const;
+    uint32 BuildVisualSignature(
+        const FLLCoreEnvironmentObservation& Environment,
+        float CoreGridCellSizeUU,
+        int32 CoreOriginGridX,
+        int32 CoreOriginGridY) const;
     FVector ResolveSurfaceLocation(int32 GridX, int32 GridY, float CoreGridCellSizeUU, int32 CoreOriginGridX, int32 CoreOriginGridY) const;
 
     uint32 LastVisualSignature = 0;
