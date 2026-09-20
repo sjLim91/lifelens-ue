@@ -213,6 +213,21 @@ void ALLDesktopTerrainPresentationActor::RefreshFromCore(bool bForce)
     const FLLCoreCivilizationWorldObservation Civilization =
         Bridge->GetCivilizationWorldObservation(0);
     Signature = MixTerrainHash(Signature, static_cast<uint32>(Civilization.FacilityCount));
+    // Terrain flattening depends on the actual facility coordinates, not merely
+    // how many facilities exist. Same-count construction/migration must rebuild
+    // the visual surface around the new authoritative locations.
+    for (const FLLCoreCivilizationFacilityObservation& Facility : Civilization.Facilities)
+    {
+        const uint64 FacilityId = static_cast<uint64>(Facility.FacilityId);
+        Signature = MixTerrainHash(
+            Signature,
+            static_cast<uint32>(FacilityId & 0xFFFFFFFFu));
+        Signature = MixTerrainHash(
+            Signature,
+            static_cast<uint32>((FacilityId >> 32) & 0xFFFFFFFFu));
+        Signature = MixTerrainHash(Signature, static_cast<uint32>(Facility.GridX));
+        Signature = MixTerrainHash(Signature, static_cast<uint32>(Facility.GridY));
+    }
     if (!bForce && bBuiltOnce && Signature == LastSignature)
     {
         return;

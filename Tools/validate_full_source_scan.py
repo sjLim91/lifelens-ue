@@ -90,6 +90,19 @@ for token in (
 ):
     require(token in natural, f"natural world marine coherence missing {token}")
 
+world_presentation = (SOURCE / "LifeLens/WorldPresentation/LLWorldPresentationActor.cpp").read_text(encoding="utf-8")
+require("NaturalChunkPresentationSignature" in world_presentation,
+        "world presentation no longer tracks authoritative materialized chunk identity/state")
+require("CurrentNaturalChunkSignature != BuiltNaturalChunkSignature" in world_presentation,
+        "world presentation can miss same-count materialized chunk changes")
+require("BuildGround(World, MaterializedChunks)" in world_presentation,
+        "broad ground sizing regressed to count-only materialized chunk inference")
+
+desktop_terrain = (SOURCE / "LifeLens/WorldPresentation/LLDesktopTerrainPresentationActor.cpp").read_text(encoding="utf-8")
+require("static_cast<uint32>(Facility.GridX)" in desktop_terrain
+        and "static_cast<uint32>(Facility.GridY)" in desktop_terrain,
+        "desktop terrain signature no longer follows facility positions used for flattening")
+
 water = (SOURCE / "LifeLens/WorldPresentation/LLWaterPresentationActor.cpp").read_text(encoding="utf-8")
 for token in (
     "marineLocalSurface",
