@@ -40,7 +40,6 @@ private:
     float WaterSurfaceZForGrid(
         class ULLCoreBridgeSubsystem* Bridge,
         const struct FLLCoreWorldGenerationObservation& World,
-        const TArray<struct FLLCoreTerrainPresentationObservation>& RegionalTerrains,
         int32 GridX,
         int32 GridY,
         const TArray<FVector2D>& FacilityCentersUU) const;
