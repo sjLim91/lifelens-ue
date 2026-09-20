@@ -987,6 +987,76 @@ bool ULLResidentMotionComponent::ResolveInteractionTargetYaw(float& OutYawDegree
     return false;
 }
 
+void ULLResidentMotionComponent::UpdateVisualSurfaceGrounding(float DeltaTime)
+{
+    if (!Appearance)
+    {
+        if (AActor* Owner = GetOwner())
+        {
+            Appearance = Owner->FindComponentByClass<ULLResidentAppearanceComponent>();
+        }
+    }
+    if (!Appearance || !Appearance->HasBody())
+    {
+        return;
+    }
+
+#if PLATFORM_ANDROID
+    // Mobile keeps the lightweight flat local-surface renderer. Do not add a
+    // second height model here.
+    Appearance->SetPresentationGroundOffsetUU(0.0f);
+#else
+    const AActor* Owner = GetOwner();
+    UWorld* World = GetWorld();
+    if (!Owner || !World)
+    {
+        return;
+    }
+
+    const FVector OwnerLocation = Owner->GetActorLocation();
+    const float PhysicalGroundZ =
+        OwnerLocation.Z - Appearance->GetFeetOffset();
+
+    FCollisionQueryParams Params(
+        SCENE_QUERY_STAT(LLResidentVisualGrounding),
+        false,
+        Owner);
+    FHitResult Hit;
+    const FVector TraceStart(
+        OwnerLocation.X,
+        OwnerLocation.Y,
+        OwnerLocation.Z + 2500.0f);
+    const FVector TraceEnd(
+        OwnerLocation.X,
+        OwnerLocation.Y,
+        OwnerLocation.Z - 2500.0f);
+
+    float TargetOffset = 0.0f;
+    if (World->LineTraceSingleByChannel(
+            Hit,
+            TraceStart,
+            TraceEnd,
+            ECC_WorldStatic,
+            Params))
+    {
+        // Only lift presentation above the authoritative physical baseline.
+        // The hidden bootstrap floor can sit lower than that baseline, and must
+        // never drag a resident visually underground before smooth terrain is ready.
+        TargetOffset = FMath::Clamp(
+            Hit.ImpactPoint.Z - PhysicalGroundZ,
+            0.0f,
+            FMath::Max(0.0f, MaxVisualGroundLiftUU));
+    }
+
+    const float PresentedOffset = FMath::FInterpTo(
+        Appearance->GetPresentationGroundOffsetUU(),
+        TargetOffset,
+        FMath::Max(0.0f, DeltaTime),
+        FMath::Max(0.1f, VisualGroundingInterpSpeed));
+    Appearance->SetPresentationGroundOffsetUU(PresentedOffset);
+#endif
+}
+
 void ULLResidentMotionComponent::UpdateBodyOrientation(float DeltaTime)
 {
     if (!Body)
@@ -1081,6 +1151,7 @@ void ULLResidentMotionComponent::TickComponent(float DeltaTime, ELevelTick TickT
     UpdateContextAnimationState(DeltaTime);
     UpdateHeldToolVisualState();
     EnsureLocomotionPlaying();
+    UpdateVisualSurfaceGrounding(DeltaTime);
 
     const AActor* Owner = GetOwner();
     if (!Owner || DeltaTime <= KINDA_SMALL_NUMBER)
