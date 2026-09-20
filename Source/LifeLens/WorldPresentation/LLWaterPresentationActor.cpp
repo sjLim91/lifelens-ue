@@ -24,17 +24,39 @@ uint32 MixWaterHash(uint32 Seed, uint32 Value)
 }
 
 uint32 SurfaceWaterSignature(
+    const FLLCoreWorldGenerationObservation& World,
     const TArray<FLLCoreSurfaceWaterPresentationObservation>& Observations)
 {
     uint32 Hash = 0x57415452u; // WATR
+
+    // GridToWorld and terrain-relative water height depend on the selected
+    // world/start-region frame as well as the hydrology DTOs. Any of these
+    // changing must invalidate the already-spawned WaterBody actors.
+    const uint64 WorldSeed = static_cast<uint64>(World.WorldSeed);
+    Hash = MixWaterHash(Hash, static_cast<uint32>(WorldSeed & 0xFFFFFFFFu));
+    Hash = MixWaterHash(Hash, static_cast<uint32>((WorldSeed >> 32) & 0xFFFFFFFFu));
+    Hash = MixWaterHash(Hash, static_cast<uint32>(World.GenerationVersion));
+    Hash = MixWaterHash(Hash, static_cast<uint32>(World.InitialChunkX));
+    Hash = MixWaterHash(Hash, static_cast<uint32>(World.InitialChunkY));
+    Hash = MixWaterHash(Hash, static_cast<uint32>(World.InitialCenterGridX));
+    Hash = MixWaterHash(Hash, static_cast<uint32>(World.InitialCenterGridY));
+    Hash = MixWaterHash(
+        Hash,
+        static_cast<uint32>(FMath::RoundToInt(World.InitialChunk.Elevation * 1000.0f)));
+
     for (const FLLCoreSurfaceWaterPresentationObservation& Water : Observations)
     {
         const uint64 Id = static_cast<uint64>(Water.SurfaceWaterId);
         Hash = MixWaterHash(Hash, static_cast<uint32>(Id & 0xFFFFFFFFu));
         Hash = MixWaterHash(Hash, static_cast<uint32>((Id >> 32) & 0xFFFFFFFFu));
+        Hash = MixWaterHash(Hash, Water.bAvailable ? 1u : 0u);
         Hash = MixWaterHash(Hash, static_cast<uint32>(Water.SurfaceKind));
         Hash = MixWaterHash(Hash, static_cast<uint32>(Water.ChunkX));
         Hash = MixWaterHash(Hash, static_cast<uint32>(Water.ChunkY));
+        Hash = MixWaterHash(Hash, static_cast<uint32>(Water.CenterGridX));
+        Hash = MixWaterHash(Hash, static_cast<uint32>(Water.CenterGridY));
+        Hash = MixWaterHash(Hash, Water.bLinearChannel ? 1u : 0u);
+        Hash = MixWaterHash(Hash, Water.bHasDownstreamTarget ? 1u : 0u);
         Hash = MixWaterHash(Hash, static_cast<uint32>(Water.DownstreamCenterGridX));
         Hash = MixWaterHash(Hash, static_cast<uint32>(Water.DownstreamCenterGridY));
         Hash = MixWaterHash(Hash, Water.bHasMarineNeighbour ? 1u : 0u);
@@ -48,6 +70,10 @@ uint32 SurfaceWaterSignature(
             Hash,
             static_cast<uint32>(FMath::RoundToInt(
                 FMath::Max(0.0f, Water.SuggestedAreaRadiusCells) * 1000.0f)));
+        Hash = MixWaterHash(
+            Hash,
+            static_cast<uint32>(FMath::RoundToInt(
+                FMath::Clamp(Water.FlowPotential, 0.0f, 1.0f) * 1000.0f)));
     }
     return Hash;
 }
@@ -278,7 +304,7 @@ void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
 
     const TArray<FLLCoreSurfaceWaterPresentationObservation> Waters =
         Bridge->GetMaterializedSurfaceWaterPresentationObservations();
-    const uint32 Signature = SurfaceWaterSignature(Waters);
+    const uint32 Signature = SurfaceWaterSignature(World, Waters);
     if (!bForce && bBuiltOnce && Signature == BuiltSignature)
     {
         return;

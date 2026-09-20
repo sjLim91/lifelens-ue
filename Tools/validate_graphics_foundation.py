@@ -106,6 +106,19 @@ require(water, (
     "marineLocalSurface",
     "bHasMarineNeighbour",
 ), "authoritative Unreal Water projection")
+for token in (
+    "SurfaceWaterSignature(World, Waters)",
+    "World.InitialCenterGridX",
+    "World.InitialCenterGridY",
+    "World.InitialChunk.Elevation",
+    "Water.bAvailable",
+    "Water.CenterGridX",
+    "Water.CenterGridY",
+    "Water.bLinearChannel",
+    "Water.bHasDownstreamTarget",
+    "Water.FlowPotential",
+):
+    assert token in water, f"WaterBody refresh signature misses runtime input: {token}"
 
 world_presentation = read(
     "Source/LifeLens/WorldPresentation/LLWorldPresentationActor.cpp")
