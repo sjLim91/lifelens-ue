@@ -220,23 +220,84 @@ float ALLWaterPresentationActor::WaterSurfaceZForChunk(
     }
 
     FLLCoreTerrainPresentationObservation Terrain;
-    if (!Bridge->GetTerrainPresentationObservation(
+    const bool bMaterialized =
+        Bridge->GetTerrainPresentationObservation(
             ChunkX,
             ChunkY,
             Terrain)
-        || !Terrain.bAvailable)
+        && Terrain.bAvailable;
+    if (!bMaterialized
+        && (!Bridge->GetTerrainPreviewObservation(
+                ChunkX,
+                ChunkY,
+                Terrain)
+            || !Terrain.bAvailable))
     {
         return WaterSurfaceZUU;
     }
 
-    // WorldPresentation currently preserves the flat initial settlement and
-    // adds positive macro relief outside it. Match that baseline so Water
-    // bodies do not visibly cut through or float above raised chunk surfaces.
-    const float RelativeElevation = FMath::Max(
+    auto SurfaceAtChunkCenter = [&](float Amplitude, bool bSigned)
+    {
+        auto ElevationOffset = [&](float Elevation01)
+        {
+            const float Delta =
+                Elevation01 - World.InitialChunk.Elevation;
+            return (bSigned ? Delta : FMath::Max(0.0f, Delta))
+                * FMath::Max(0.0f, Amplitude);
+        };
+
+        const float CornerSurface =
+            (ElevationOffset(Terrain.NorthWestElevation01)
+                + ElevationOffset(Terrain.NorthEastElevation01)
+                + ElevationOffset(Terrain.SouthWestElevation01)
+                + ElevationOffset(Terrain.SouthEastElevation01))
+            * 0.25f;
+        const float CenterSurface =
+            ElevationOffset(Terrain.CenterElevation01);
+        return FMath::Lerp(CenterSurface, CornerSurface, 0.72f);
+    };
+
+    if (bMaterialized)
+    {
+        // Local/materialized ground keeps its locomotion baseline and positive
+        // relief policy. Freshwater starts outside the flattened founder core,
+        // so the chunk-center sample matches its visible local surface.
+        return WaterSurfaceZUU
+            + SurfaceAtChunkCenter(TerrainReliefAmplitudeUU, false);
+    }
+
+    // Downstream targets may cross into a deterministic regional preview chunk
+    // that Core intentionally has not materialized. Match WorldPresentation's
+    // signed relief ramp exactly so the continuation neither floats over valleys
+    // nor cuts through raised regional terrain.
+    const int32 Ring = FMath::Max(
+        FMath::Abs(ChunkX - World.InitialChunkX),
+        FMath::Abs(ChunkY - World.InitialChunkY));
+    const int32 Radius = FMath::Clamp(
+        RegionalTerrainPreviewRadiusChunks,
+        1,
+        16);
+    const int32 InnerRing = FMath::Clamp(
+        RegionalTerrainInnerFlatRingChunks,
+        0,
+        FMath::Max(0, Radius - 1));
+    const float Denominator =
+        static_cast<float>(FMath::Max(1, Radius - InnerRing));
+    const float RawAlpha = FMath::Clamp(
+        static_cast<float>(Ring - InnerRing) / Denominator,
         0.0f,
-        Terrain.CenterElevation01 - World.InitialChunk.Elevation);
+        1.0f);
+    const float ReliefAlpha =
+        RawAlpha * RawAlpha * (3.0f - 2.0f * RawAlpha);
+    const float Amplitude = FMath::Lerp(
+        FMath::Max(0.0f, TerrainReliefAmplitudeUU),
+        FMath::Max(
+            TerrainReliefAmplitudeUU,
+            RegionalTerrainReliefAmplitudeUU),
+        ReliefAlpha);
+
     return WaterSurfaceZUU
-        + RelativeElevation * FMath::Max(0.0f, TerrainReliefAmplitudeUU);
+        + SurfaceAtChunkCenter(Amplitude, true);
 }
 
 FVector ALLWaterPresentationActor::GridToWorld(
