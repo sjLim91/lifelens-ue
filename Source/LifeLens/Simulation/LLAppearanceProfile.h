@@ -9,9 +9,10 @@
  * Stable visual projection for a resident.
  *
  * ResidentId is already derived from WorldSeed + Core CharacterId by the Core bridge,
- * so this profile remains stable across Save/Load without creating a second authority.
- * Asset-specific presentation code maps these vendor-neutral values to actual meshes,
- * materials, hair, clothing and morphs.
+ * so style identity remains stable across Save/Load without creating a second authority.
+ * Inheritable phenotype axes come from the authoritative persisted Core GeneticsProfile
+ * when a resident observation is available. Asset-specific presentation maps these
+ * vendor-neutral values to meshes, materials, hair, clothing and future face morphs.
  */
 USTRUCT(BlueprintType)
 struct FLLAppearanceProfile
