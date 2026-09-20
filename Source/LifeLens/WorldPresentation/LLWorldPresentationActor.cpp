@@ -1462,6 +1462,97 @@ void ALLWorldPresentationActor::BuildChunkGround(
 #endif
 }
 
+void ALLWorldPresentationActor::BuildRegionalTerrainPreview(
+    const FLLCoreWorldGenerationObservation& World,
+    const TArray<FLLCoreTerrainPresentationObservation>& RegionalTerrains,
+    const TArray<FLLCoreNaturalChunkObservation>& MaterializedChunks)
+{
+    if (!RegionalTerrainTileInstances || !GroundMesh)
+    {
+        return;
+    }
+
+    TSet<FIntPoint> MaterializedCoords;
+    MaterializedCoords.Reserve(MaterializedChunks.Num());
+    for (const FLLCoreNaturalChunkObservation& Chunk : MaterializedChunks)
+    {
+        if (Chunk.bMaterialized)
+        {
+            MaterializedCoords.Add(FIntPoint(Chunk.ChunkX, Chunk.ChunkY));
+        }
+    }
+
+    const int32 TilesPerAxis =
+        FMath::Clamp(RegionalTerrainTilesPerChunk, 1, 3);
+    const int32 InnerFlatRing =
+        FMath::Max(0, RegionalTerrainInnerFlatRingChunks);
+    constexpr float TileThicknessUU = 12.0f;
+    constexpr float SurfaceLiftUU = 0.20f;
+    const float TileSpanUU =
+        LLWorldSpatialContract::ChunkSpanUU
+        / static_cast<float>(TilesPerAxis);
+    const float TileHalfUU = TileSpanUU * 0.5f;
+    const float ChunkHalfUU =
+        LLWorldSpatialContract::ChunkSpanUU * 0.5f;
+    const float SpanScale =
+        (TileSpanUU / LLWorldSpatialContract::EngineCubeSideUU) * 1.035f;
+    const float HeightScale =
+        TileThicknessUU / LLWorldSpatialContract::EngineCubeSideUU;
+
+    for (const FLLCoreTerrainPresentationObservation& Terrain : RegionalTerrains)
+    {
+        if (!Terrain.bAvailable)
+        {
+            continue;
+        }
+        const FIntPoint Coord(Terrain.ChunkX, Terrain.ChunkY);
+        if (MaterializedCoords.Contains(Coord))
+        {
+            continue;
+        }
+
+        const int32 Ring = FMath::Max(
+            FMath::Abs(Terrain.ChunkX - World.InitialChunkX),
+            FMath::Abs(Terrain.ChunkY - World.InitialChunkY));
+        if (Ring <= InnerFlatRing)
+        {
+            continue;
+        }
+
+        const FVector ChunkOrigin =
+            ChunkOriginUU(World, Terrain.ChunkX, Terrain.ChunkY);
+        for (int32 TileY = 0; TileY < TilesPerAxis; ++TileY)
+        {
+            for (int32 TileX = 0; TileX < TilesPerAxis; ++TileX)
+            {
+                const FVector2D TileCenterUU(
+                    ChunkOrigin.X - ChunkHalfUU
+                        + TileHalfUU
+                        + static_cast<float>(TileX) * TileSpanUU,
+                    ChunkOrigin.Y - ChunkHalfUU
+                        + TileHalfUU
+                        + static_cast<float>(TileY) * TileSpanUU);
+                const float Z = RegionalTerrainSurfaceZUU(
+                    World,
+                    Terrain,
+                    TileCenterUU);
+                const FRotator Rotation = RegionalTerrainTileRotation(
+                    World,
+                    Terrain,
+                    TileCenterUU,
+                    TileSpanUU);
+                RegionalTerrainTileInstances->AddInstance(FTransform(
+                    Rotation,
+                    FVector(
+                        TileCenterUU.X,
+                        TileCenterUU.Y,
+                        Z - TileThicknessUU * 0.5f + SurfaceLiftUU),
+                    FVector(SpanScale, SpanScale, HeightScale)));
+            }
+        }
+    }
+}
+
 void ALLWorldPresentationActor::BuildFarEnvironment(
     const FLLCoreWorldGenerationObservation& World,
     float ActiveGroundSpanUU,
