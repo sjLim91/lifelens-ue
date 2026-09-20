@@ -147,6 +147,25 @@ require("MakeGeneticAppearanceProfile" in appearance_profile,
 require("ResolveWithGenetics" in appearance_component,
         "resident appearance is not consuming Core genetic phenotype")
 
+# Human presentation must fail closed when vendor attachment/material contracts
+# drift, and lifecycle growth must not compound the stage-width multiplier.
+for token in (
+    'if (HeadIndex == INDEX_NONE)',
+    'appearance hair suppressed',
+    'bOutWithBeard = false;',
+    'FemaleSkinLight.Get() : MaleSkinLight.Get()',
+    'FemaleSkinDark.Get() : MaleSkinDark.Get()',
+):
+    require(token in appearance_component,
+            f"character appearance hardening missing {token}")
+require("AttachBone = HeadIndex != INDEX_NONE ? HeadBoneName : NAME_None" not in appearance_component,
+        "hair can still fall back to the body root when the Head bone is missing")
+require("BuiltStageWidthFactor" in resident_character,
+        "lifecycle growth no longer removes the initially built stage-width factor")
+require("AdultBodyScale.X /= BuiltStageFactor * BuiltStageWidthFactor;" in resident_character
+        and "AdultBodyScale.Y /= BuiltStageFactor * BuiltStageWidthFactor;" in resident_character,
+        "lifecycle XY normalization can compound child/baby width across growth")
+
 water = (SOURCE / "LifeLens/WorldPresentation/LLWaterPresentationActor.cpp").read_text(encoding="utf-8")
 for token in (
     "marineLocalSurface",
