@@ -55,6 +55,11 @@ public:
     UFUNCTION(BlueprintCallable, Category="LifeLens|Simulation")
     void AdvanceSimulationMinutes(int32 Minutes);
 
+    // Rebuild the compatibility/physical projection from the currently
+    // installed Core runtime. Used when Core is replaced outside the normal
+    // SimulationSubsystem NewGame/LoadGame entry points.
+    bool SynchronizeProjectionFromCore();
+
     UFUNCTION(BlueprintCallable, Category="LifeLens|Simulation|Time")
     void SetSimulationSpeedPreset(ELLSimulationSpeedPreset NewPreset);
 

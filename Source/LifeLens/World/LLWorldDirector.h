@@ -76,6 +76,7 @@ protected:
 
 private:
     void RefreshCorePresentationOrigin();
+    void SynchronizeAfterCoreRuntimeReplacement();
     void CollectActivityAnchors();
     void SpawnResidents();
     void MoveResidentToward(
@@ -146,6 +147,7 @@ private:
 
     float SimulationClockAccumulator = 0.0f;
     float EnvironmentalVisualRefreshAccumulator = 0.0f;
+    int64 ObservedCoreRuntimeGeneration = -1;
     FIntPoint CorePresentationOriginGrid = FIntPoint::ZeroValue;
 
     // Runtime tuning belongs in DefaultGame.ini so normal iteration does not
