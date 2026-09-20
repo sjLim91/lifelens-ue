@@ -71,6 +71,9 @@ jobs:
       - name: Validate desktop smooth terrain
         run: python Tools/validate_desktop_smooth_terrain.py
 
+      - name: Validate regional terrain preview
+        run: python Tools/validate_regional_terrain_preview.py
+
       - name: Validate photoreal facility completion
         run: python Tools/validate_photoreal_facility_completion.py
 

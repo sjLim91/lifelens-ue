@@ -181,6 +181,24 @@ public:
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|FarWorld", meta=(ClampMin="0.2", ClampMax="1.0"))
     float FarDressingOuterRadiusFraction = 0.47f;
 
+    // Read-only macro relief preview surrounding the tiny materialized activity
+    // set. It never materializes Core chunks or creates gameplay resources.
+    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|FarWorld", meta=(ClampMin="2", ClampMax="16"))
+    int32 RegionalTerrainPreviewRadiusChunks = 8;
+
+    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|FarWorld", meta=(ClampMin="1", ClampMax="3"))
+    int32 RegionalTerrainTilesPerChunk = 2;
+
+    // Regional-only exaggeration is intentionally larger than local physical
+    // relief. No resident/nav authority exists on these horizon tiles, so signed
+    // valleys and mountains can communicate macro geography without making the
+    // local settlement float above its collision plane.
+    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|FarWorld", meta=(ClampMin="180.0", ClampMax="2200.0"))
+    float RegionalTerrainReliefAmplitudeUU = 1100.0f;
+
+    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|FarWorld", meta=(ClampMin="0", ClampMax="4"))
+    int32 RegionalTerrainInnerFlatRingChunks = 1;
+
     // ---- Gentle authoritative terrain relief --------------------------------
     // The bootstrap collision plane and resident locomotion remain flat around
     // the active settlement. Outside that readability envelope, Core macro
@@ -249,6 +267,11 @@ private:
     void ApplyFacilityMaterialPalette();
     void BuildGround(
         const struct FLLCoreWorldGenerationObservation& World,
+        const TArray<FLLCoreNaturalChunkObservation>& MaterializedChunks,
+        const TArray<FLLCoreTerrainPresentationObservation>& RegionalTerrains);
+    void BuildRegionalTerrainPreview(
+        const struct FLLCoreWorldGenerationObservation& World,
+        const TArray<FLLCoreTerrainPresentationObservation>& RegionalTerrains,
         const TArray<FLLCoreNaturalChunkObservation>& MaterializedChunks);
     void BuildChunkGround(
         const struct FLLCoreWorldGenerationObservation& World,
@@ -257,7 +280,8 @@ private:
     void BuildFarEnvironment(
         const struct FLLCoreWorldGenerationObservation& World,
         float ActiveGroundSpanUU,
-        float FarGroundSpanUU);
+        float FarGroundSpanUU,
+        const TArray<FLLCoreTerrainPresentationObservation>& RegionalTerrains);
     void BuildChunkDressing(
         const struct FLLCoreWorldGenerationObservation& World,
         const FLLCoreNaturalChunkObservation& Chunk,
@@ -279,6 +303,16 @@ private:
         const FLLCoreTerrainPresentationObservation& Terrain,
         const FVector2D& LocationUU) const;
     FRotator TerrainTileRotation(
+        const struct FLLCoreWorldGenerationObservation& World,
+        const FLLCoreTerrainPresentationObservation& Terrain,
+        const FVector2D& CenterUU,
+        float SampleSpanUU) const;
+
+    float RegionalTerrainSurfaceZUU(
+        const struct FLLCoreWorldGenerationObservation& World,
+        const FLLCoreTerrainPresentationObservation& Terrain,
+        const FVector2D& LocationUU) const;
+    FRotator RegionalTerrainTileRotation(
         const struct FLLCoreWorldGenerationObservation& World,
         const FLLCoreTerrainPresentationObservation& Terrain,
         const FVector2D& CenterUU,
@@ -310,6 +344,8 @@ private:
     // Natural runtime presentation.
     UPROPERTY() TObjectPtr<UStaticMeshComponent> Ground;
     UPROPERTY() TObjectPtr<UStaticMeshComponent> FarGround;
+
+    UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> RegionalTerrainTileInstances;
 
     // Authoritative materialized-chunk surface overlay. The broad Ground/FarGround
     // remain continuity underlays; these HISM tiles project each Core chunk's
@@ -358,6 +394,7 @@ private:
     int32 BuiltChunkCount = -1;
     uint32 BuiltNaturalChunkSignature = 0;
     uint32 BuiltTerrainPresentationSignature = 0;
+    uint32 BuiltRegionalTerrainSignature = 0;
     uint32 BuiltFacilitySignature = 0;
     uint32 BuiltFacilityLayoutSignature = 0;
     uint32 BuiltResourceQuantitySignature = 0;

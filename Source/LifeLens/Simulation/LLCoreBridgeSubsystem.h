@@ -175,6 +175,14 @@ public:
     UFUNCTION(BlueprintPure, Category="LifeLens|Core|WorldGeneration|Terrain|Presentation")
     TArray<FLLCoreTerrainPresentationObservation> GetMaterializedTerrainPresentationObservations() const;
 
+    // Deterministic read-only macro terrain around the selected start region.
+    // This does NOT materialize Core chunks/resources/facilities; it exists only
+    // so Local/Regional presentation can show real world-scale relief beyond the
+    // tiny authoritative activity set.
+    UFUNCTION(BlueprintPure, Category="LifeLens|Core|WorldGeneration|Terrain|Presentation")
+    TArray<FLLCoreTerrainPresentationObservation> GetRegionalTerrainPreviewObservations(
+        int32 RadiusChunks = 8) const;
+
     UFUNCTION(BlueprintCallable, Category="LifeLens|Core|WorldGeneration|Terrain|Presentation")
     bool GetTerrainPresentationObservation(
         int32 ChunkX,
