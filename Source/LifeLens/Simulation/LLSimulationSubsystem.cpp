@@ -287,7 +287,14 @@ bool ULLSimulationSubsystem::RefreshProjectionFromCore()
         if (CoreBridge->GetFamilyObservation(CoreResident.ResidentId, Family))
         {
             Resident.PartnerId = Family.bHasActivePartner ? Family.PartnerResidentId : FGuid();
-            Resident.bPregnant = Family.bGestationalParent;
+
+            // Compatibility bPregnant means an active pregnancy, not merely
+            // "this resident is the gestational parent" in the family record.
+            // bExpectingChild may also be true for the non-gestational partner,
+            // so both flags are required to project the legacy boolean correctly.
+            Resident.bPregnant =
+                Family.bGestationalParent && Family.bExpectingChild;
+
             for (const FLLCoreFamilyMemberSnapshot& Parent : Family.Parents)
             {
                 if (Parent.ResidentId.IsValid()) Resident.ParentIds.Add(Parent.ResidentId);
