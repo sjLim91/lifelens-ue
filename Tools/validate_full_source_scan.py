@@ -184,6 +184,19 @@ require("AttachBone = HeadIndex != INDEX_NONE ? HeadBoneName : NAME_None" not in
         "hair can still fall back to the body root when the Head bone is missing")
 require("BuiltStageWidthFactor" in resident_character,
         "lifecycle growth no longer removes the initially built stage-width factor")
+
+core_read_types_movement = core_read_types
+require("float MovementScale = 1.0f;" in core_read_types_movement,
+        "Core lifecycle movement scale is not exposed to Unreal presentation")
+require("lifeStageProfile(CoreCharacter->lifeStage).movementScale" in core_bridge,
+        "Core Bridge is not projecting authoritative lifecycle movement scale")
+for token in (
+    "AdultRuntimeMoveSpeed",
+    "Observation.MovementScale",
+    "RuntimeMoveSpeed = AdultRuntimeMoveSpeed",
+):
+    require(token in resident_character,
+            f"resident physical presentation ignores lifecycle movement pacing: {token}")
 require("AdultBodyScale.X /= BuiltStageFactor * BuiltStageWidthFactor;" in resident_character
         and "AdultBodyScale.Y /= BuiltStageFactor * BuiltStageWidthFactor;" in resident_character,
         "lifecycle XY normalization can compound child/baby width across growth")

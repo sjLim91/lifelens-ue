@@ -387,6 +387,10 @@ bool ULLCoreBridgeSubsystem::BuildResidentObservation(
         ? lifelens::ageYearsFromMinutes(CoreCharacter->birthMinute, CoreSimulation->world().minute)
         : 0;
     OutObservation.LifeStage = ToUnrealLifeStage(CoreCharacter->lifeStage);
+    OutObservation.MovementScale = static_cast<float>(FMath::Clamp(
+        lifelens::lifeStageProfile(CoreCharacter->lifeStage).movementScale,
+        0.05,
+        2.0));
     OutObservation.bAlive = CoreCharacter->alive;
 
     OutObservation.Personality.Introversion = CoreScalar(CoreCharacter->personality.introversion);

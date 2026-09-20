@@ -267,6 +267,10 @@ struct FLLCoreResidentObservation
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") ELLCoreSex Sex = ELLCoreSex::Male;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") int32 AgeYears = 0;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") ELLCoreLifeStage LifeStage = ELLCoreLifeStage::Adult;
+    // Authoritative LifeStage profile locomotion multiplier. Unreal uses this
+    // only to pace the physical presentation executor; Core still owns action
+    // choice, target and lifecycle truth.
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") float MovementScale = 1.0f;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") bool bAlive = true;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") FLLCorePersonalitySnapshot Personality;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") FLLCoreGeneticsSnapshot Genetics;
