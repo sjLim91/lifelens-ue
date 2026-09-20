@@ -49,11 +49,30 @@ desktop_furnace_block = cpp[android_furnace_end:desktop_furnace_end]
 assert "PhotoBoulder.Succeeded()" in desktop_furnace_block
 assert boulder_component in desktop_furnace_block
 
-# Completed desktop facilities suppress the obvious Cube structure only when
-# approved art exists, so Android/missing-art fallback remains readable.
+# Completed facilities suppress the obvious Cube structure when approved hero
+# art exists, and incomplete facilities use the same approved staged materials
+# on Android/desktop before falling back to compact primitives.
 assert "!bUsePhotorealSleepFrame && FacilityFoundationInstances" in cpp
 assert "!bUsePhotorealFurnace && FacilityFoundationInstances" in cpp
 assert "bStructurallyComplete && PhotorealStructureLogInstances" in cpp
+for token in (
+    "bUsePhotorealConstructionStaging",
+    "Facility.Kind == ELLCoreFacilityKind::FirePit",
+    "PhotorealFurnaceStoneInstances != nullptr",
+    "PhotorealStructureLogInstances != nullptr",
+    "The staged hero material itself communicates Planned",
+):
+    assert token in cpp, f"mobile construction staging regression: {token}"
+
+staging_start = cpp.index("const bool bStoneConstruction")
+staging_end = cpp.index("// Ruins stay visible", staging_start)
+staging_block = cpp[staging_start:staging_end]
+assert "#if !PLATFORM_ANDROID" not in staging_block, (
+    "approved construction hero staging regressed to desktop-only"
+)
+assert "continue;" in staging_block, (
+    "hero-staged construction still falls through to Engine-cube structure"
+)
 
 # PrimitiveStorage contents are selected through the facility's authoritative
 # LinkedStorageId. Relinking must invalidate the facility presentation even when
