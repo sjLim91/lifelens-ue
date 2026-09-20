@@ -349,12 +349,21 @@ void ULLResidentAppearanceComponent::ApplyEyes()
 
 UStaticMesh* ULLResidentAppearanceComponent::PickHairMesh(bool& bOutWithBeard) const
 {
-    const TArray<TObjectPtr<UStaticMesh>>& Catalogue = Inputs.Sex == ELLCoreSex::Female ? FemaleHair : MaleHair;
-    bOutWithBeard = Inputs.Sex == ELLCoreSex::Male && (Inputs.HairStyleVariant / FMath::Max(1, Catalogue.Num())) % 3 == 0;
+    const TArray<TObjectPtr<UStaticMesh>>& Catalogue =
+        Inputs.Sex == ELLCoreSex::Female ? FemaleHair : MaleHair;
+
+    // Missing hairstyle art must fail closed. Do not leave the beard flag set
+    // when the catalogue itself is unavailable, otherwise a broken hair pack
+    // can render a floating beard with no head-attached hairstyle.
+    bOutWithBeard = false;
     if (Catalogue.Num() == 0)
     {
         return nullptr;
     }
+
+    bOutWithBeard =
+        Inputs.Sex == ELLCoreSex::Male
+        && (Inputs.HairStyleVariant / Catalogue.Num()) % 3 == 0;
     return Catalogue[Inputs.HairStyleVariant % Catalogue.Num()].Get();
 }
 
@@ -369,15 +378,30 @@ void ULLResidentAppearanceComponent::ApplyHair()
     // ("Origin at 0"), so attach to the Head bone with the inverse of the head's
     // bind-pose transform: aligned in bind pose, then follows the head.
     const USkeletalMesh* Mesh = Body->GetSkeletalMeshAsset();
+    if (!Mesh)
+    {
+        return;
+    }
+
     const FReferenceSkeleton& RefSkeleton = Mesh->GetRefSkeleton();
     const int32 HeadIndex = RefSkeleton.FindBoneIndex(HeadBoneName);
-    FTransform HeadBind = FTransform::Identity;
-    if (HeadIndex != INDEX_NONE)
+    if (HeadIndex == INDEX_NONE)
     {
-        HeadBind = FAnimationRuntime::GetComponentSpaceTransform(RefSkeleton, RefSkeleton.GetRefBonePose(), HeadIndex);
+        // Production visual policy is fail-closed: attaching origin-authored
+        // hair to the body root would place it near the resident's feet when a
+        // vendor skeleton loses/renames the expected Head bone.
+        UE_LOG(LogTemp, Warning,
+            TEXT("LifeLens appearance hair suppressed: mesh %s has no Head bone"),
+            *Mesh->GetName());
+        return;
     }
-    const FTransform HairRelative = HeadIndex != INDEX_NONE ? HeadBind.Inverse() : FTransform::Identity;
-    const FName AttachBone = HeadIndex != INDEX_NONE ? HeadBoneName : NAME_None;
+
+    const FTransform HeadBind = FAnimationRuntime::GetComponentSpaceTransform(
+        RefSkeleton,
+        RefSkeleton.GetRefBonePose(),
+        HeadIndex);
+    const FTransform HairRelative = HeadBind.Inverse();
+    const FName AttachBone = HeadBoneName;
 
     auto Attach = [&](const TCHAR* Name, UStaticMesh* HairMesh) -> UStaticMeshComponent*
     {
@@ -488,7 +512,10 @@ void ULLResidentAppearanceComponent::ApplyOutfit()
             OutfitSkinMaterial = Outfit->CreateAndSetMaterialInstanceDynamic(Index);
             if (OutfitSkinMaterial)
             {
-                UTexture* MatchingSkinBase = Inputs.SkinToneAxis < 0.5f ? MaleSkinLight.Get() : MaleSkinDark.Get();
+                const bool bFemale = Inputs.Sex == ELLCoreSex::Female;
+                UTexture* MatchingSkinBase = Inputs.SkinToneAxis < 0.5f
+                    ? (bFemale ? FemaleSkinLight.Get() : MaleSkinLight.Get())
+                    : (bFemale ? FemaleSkinDark.Get() : MaleSkinDark.Get());
                 if (MatchingSkinBase)
                 {
                     OutfitSkinMaterial->SetTextureParameterValue(ParamBaseColorTexture, MatchingSkinBase);
