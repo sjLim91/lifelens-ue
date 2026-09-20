@@ -128,8 +128,8 @@ for token in (
 preview_start = world_bridge_cpp.index("ULLCoreBridgeSubsystem::GetTerrainPreviewObservation")
 preview_end = world_bridge_cpp.index("ULLCoreBridgeSubsystem::GetTerrainPresentationObservation", preview_start)
 preview_block = world_bridge_cpp[preview_start:preview_end]
-assert "materializeNaturalChunk" in preview_block  # required explanatory guard
-assert "// or mutate generatedNaturalChunks here." in preview_block
+assert "materializeNaturalChunk(" not in preview_block
+assert "generatedNaturalChunks.push" not in preview_block
 assert "World.findGeneratedNaturalChunk" not in preview_block
 
 for token in (
