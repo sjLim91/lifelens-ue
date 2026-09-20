@@ -42,4 +42,13 @@ social_block = cpp[social_start:social_end]
 assert "ELLResidentContextMotion::SeatedCare" not in social_block
 assert "return ELLResidentContextMotion::Talk;" in social_block
 
+world_director_context = read("Source/LifeLens/World/LLWorldDirectorContextActions.cpp")
+parenting_gate_start = world_director_context.index("case ELLCoreContextActionKind::Parenting:")
+parenting_gate_end = world_director_context.index("case ELLCoreContextActionKind::Civilization:", parenting_gate_start)
+parenting_gate_block = world_director_context[parenting_gate_start:parenting_gate_end]
+assert "WorkAtTarget = ELLResidentWorkPresentationMode::Interact;" in parenting_gate_block, (
+    "parenting must open the at-target legacy presentation gate so the authoritative "
+    "ParentingAction can be refined by ResolveContextMotion"
+)
+
 print("LifeLens character animation truth/polish: PASS")
