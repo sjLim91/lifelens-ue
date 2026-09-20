@@ -44,6 +44,22 @@ header = read("Source/LifeLens/WorldPresentation/LLPCGGroundCoverPresentationAct
 assert "bEnableGroundCoverPCG = false" in header, (
     "known-bad weed graph must fail closed until regenerated"
 )
+for token in (
+    "LastGeneratedWorldSeed",
+    "LastGeneratedGenerationVersion",
+    "LastGeneratedChunkX",
+    "LastGeneratedChunkY",
+):
+    assert token in header, f"PCG regeneration identity missing: {token}"
+
+assert "const bool bSameGeneration" in actor
+assert "LastGeneratedWorldSeed == World.WorldSeed" in actor
+assert "LastGeneratedGenerationVersion == World.GenerationVersion" in actor
+assert "LastGeneratedChunkX == World.InitialChunkX" in actor
+assert "LastGeneratedChunkY == World.InitialChunkY" in actor
+assert "if (bGenerated)\n    {\n        return;\n    }" not in actor, (
+    "desktop PCG actor must keep checking for a changed authoritative world after first generation"
+)
 
 pcg_import = read("Content/Environment/PCG/Import/create_lifelens_groundcover_pcg.py")
 assert "Grass_Common_Tall" in pcg_import
