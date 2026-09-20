@@ -181,12 +181,13 @@ float TerrainCornerElevation(
 
 void FillTerrainPresentationObservation(
     const lifelens::WorldGenesisIdentity& Identity,
-    const lifelens::GeneratedNaturalChunk& Chunk,
+    lifelens::ChunkCoord Center,
     FLLCoreTerrainPresentationObservation& Out)
 {
     Out = FLLCoreTerrainPresentationObservation{};
 
-    const lifelens::ChunkCoord Center = Chunk.coord;
+    const lifelens::MacroRegionFacts CenterFacts =
+        lifelens::deriveMacroRegionFacts(Identity, Center);
     const lifelens::ChunkCoord West{Center.x - 1, Center.y};
     const lifelens::ChunkCoord East{Center.x + 1, Center.y};
     const lifelens::ChunkCoord North{Center.x, Center.y + 1};
@@ -204,7 +205,7 @@ void FillTerrainPresentationObservation(
     Out.ChunkY = Center.y;
     Out.CenterGridX = Origin.x + HalfChunk;
     Out.CenterGridY = Origin.y + HalfChunk;
-    Out.CenterElevation01 = static_cast<float>(Chunk.elevation);
+    Out.CenterElevation01 = static_cast<float>(CenterFacts.elevation);
     Out.NorthWestElevation01 = TerrainCornerElevation(
         Identity, Center, West, North, NorthWest);
     Out.NorthEastElevation01 = TerrainCornerElevation(
@@ -433,8 +434,46 @@ ULLCoreBridgeSubsystem::GetMaterializedTerrainPresentationObservations() const
     for (const lifelens::GeneratedNaturalChunk& Chunk : World.generatedNaturalChunks)
     {
         FLLCoreTerrainPresentationObservation Observation;
-        FillTerrainPresentationObservation(Identity, Chunk, Observation);
+        FillTerrainPresentationObservation(Identity, Chunk.coord, Observation);
         Result.Add(MoveTemp(Observation));
+    }
+    return Result;
+}
+
+TArray<FLLCoreTerrainPresentationObservation>
+ULLCoreBridgeSubsystem::GetRegionalTerrainPreviewObservations(
+    int32 RadiusChunks) const
+{
+    TArray<FLLCoreTerrainPresentationObservation> Result;
+    if (!CoreSimulation)
+    {
+        return Result;
+    }
+
+    const lifelens::World& World = CoreSimulation->world();
+    if (!World.hasInitialStartRegionSelection)
+    {
+        return Result;
+    }
+
+    // Bound presentation cost independently from simulation authority.
+    const int32 Radius = FMath::Clamp(RadiusChunks, 1, 16);
+    const int32 Diameter = Radius * 2 + 1;
+    Result.Reserve(Diameter * Diameter);
+
+    const lifelens::WorldGenesisIdentity Identity = World.genesisIdentity();
+    const lifelens::ChunkCoord Origin = World.initialStartRegionCoord;
+    for (int32 Y = -Radius; Y <= Radius; ++Y)
+    {
+        for (int32 X = -Radius; X <= Radius; ++X)
+        {
+            FLLCoreTerrainPresentationObservation Observation;
+            FillTerrainPresentationObservation(
+                Identity,
+                {Origin.x + X, Origin.y + Y},
+                Observation);
+            Result.Add(MoveTemp(Observation));
+        }
     }
     return Result;
 }
@@ -460,7 +499,7 @@ bool ULLCoreBridgeSubsystem::GetTerrainPresentationObservation(
     }
 
     FillTerrainPresentationObservation(
-        World.genesisIdentity(), *Chunk, OutObservation);
+        World.genesisIdentity(), Chunk->coord, OutObservation);
     return true;
 }
 
