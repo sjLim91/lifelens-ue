@@ -4,6 +4,7 @@
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "Simulation/LLCoreBridgeSubsystem.h"
+#include "Simulation/LLCivilizationReadTypes.h"
 #include "Simulation/LLWorldGenerationReadTypes.h"
 #include "UObject/UnrealType.h"
 #include "WaterBodyActor.h"
@@ -14,6 +15,7 @@
 #include "WaterSplineMetadata.h"
 #include "WaterZoneActor.h"
 #include "World/LLWorldSpatialContract.h"
+#include "WorldPresentation/LLTerrainPresentationContract.h"
 
 namespace
 {
@@ -25,7 +27,8 @@ uint32 MixWaterHash(uint32 Seed, uint32 Value)
 
 uint32 SurfaceWaterSignature(
     const FLLCoreWorldGenerationObservation& World,
-    const TArray<FLLCoreSurfaceWaterPresentationObservation>& Observations)
+    const TArray<FLLCoreSurfaceWaterPresentationObservation>& Observations,
+    const FLLCoreCivilizationWorldObservation& Civilization)
 {
     uint32 Hash = 0x57415452u; // WATR
 
@@ -43,6 +46,19 @@ uint32 SurfaceWaterSignature(
     Hash = MixWaterHash(
         Hash,
         static_cast<uint32>(FMath::RoundToInt(World.InitialChunk.Elevation * 1000.0f)));
+
+    // Facility positions alter the shared local terrain flattening envelope.
+    // Water must rebuild with the same surface when construction or migration
+    // moves that envelope, even if hydrology itself did not change.
+    Hash = MixWaterHash(Hash, static_cast<uint32>(Civilization.Facilities.Num()));
+    for (const FLLCoreCivilizationFacilityObservation& Facility : Civilization.Facilities)
+    {
+        const uint64 FacilityId = static_cast<uint64>(Facility.FacilityId);
+        Hash = MixWaterHash(Hash, static_cast<uint32>(FacilityId & 0xFFFFFFFFu));
+        Hash = MixWaterHash(Hash, static_cast<uint32>((FacilityId >> 32) & 0xFFFFFFFFu));
+        Hash = MixWaterHash(Hash, static_cast<uint32>(Facility.GridX));
+        Hash = MixWaterHash(Hash, static_cast<uint32>(Facility.GridY));
+    }
 
     for (const FLLCoreSurfaceWaterPresentationObservation& Water : Observations)
     {
@@ -208,35 +224,64 @@ int32 ALLWaterPresentationActor::ChunkCoordForGrid(int32 GridCoordinate) const
     return Quotient;
 }
 
-float ALLWaterPresentationActor::WaterSurfaceZForChunk(
+float ALLWaterPresentationActor::WaterSurfaceZForGrid(
     ULLCoreBridgeSubsystem* Bridge,
     const FLLCoreWorldGenerationObservation& World,
-    int32 ChunkX,
-    int32 ChunkY) const
+    const TArray<FLLCoreTerrainPresentationObservation>& RegionalTerrains,
+    int32 GridX,
+    int32 GridY,
+    const TArray<FVector2D>& FacilityCentersUU) const
 {
     if (!Bridge)
     {
         return WaterSurfaceZUU;
     }
 
+    const int32 ChunkX = ChunkCoordForGrid(GridX);
+    const int32 ChunkY = ChunkCoordForGrid(GridY);
     FLLCoreTerrainPresentationObservation Terrain;
-    if (!Bridge->GetTerrainPresentationObservation(
-            ChunkX,
-            ChunkY,
-            Terrain)
-        || !Terrain.bAvailable)
+    bool bHasTerrain = Bridge->GetTerrainPresentationObservation(
+        ChunkX,
+        ChunkY,
+        Terrain);
+
+    // A river spline may point into a deterministic downstream chunk that Core
+    // has not materialized yet. Regional preview terrain is read-only and lets
+    // the visual endpoint stay attached to the same macro surface without
+    // creating simulation authority.
+    if (!bHasTerrain || !Terrain.bAvailable)
+    {
+        for (const FLLCoreTerrainPresentationObservation& Candidate : RegionalTerrains)
+        {
+            if (Candidate.bAvailable
+                && Candidate.ChunkX == ChunkX
+                && Candidate.ChunkY == ChunkY)
+            {
+                Terrain = Candidate;
+                bHasTerrain = true;
+                break;
+            }
+        }
+    }
+
+    if (!bHasTerrain || !Terrain.bAvailable)
     {
         return WaterSurfaceZUU;
     }
 
-    // WorldPresentation currently preserves the flat initial settlement and
-    // adds positive macro relief outside it. Match that baseline so Water
-    // bodies do not visibly cut through or float above raised chunk surfaces.
-    const float RelativeElevation = FMath::Max(
-        0.0f,
-        Terrain.CenterElevation01 - World.InitialChunk.Elevation);
+    const FVector2D LocationUU(
+        static_cast<float>(GridX - World.InitialCenterGridX)
+            * LLWorldSpatialContract::GridCellSizeUU,
+        static_cast<float>(GridY - World.InitialCenterGridY)
+            * LLWorldSpatialContract::GridCellSizeUU);
+
     return WaterSurfaceZUU
-        + RelativeElevation * FMath::Max(0.0f, TerrainReliefAmplitudeUU);
+        + LLTerrainPresentationContract::LocalSurfaceZUU(
+            World,
+            Terrain,
+            LocationUU,
+            FVector2D::ZeroVector,
+            FacilityCentersUU);
 }
 
 FVector ALLWaterPresentationActor::GridToWorld(
@@ -320,7 +365,26 @@ void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
 
     const TArray<FLLCoreSurfaceWaterPresentationObservation> Waters =
         Bridge->GetMaterializedSurfaceWaterPresentationObservations();
-    const uint32 Signature = SurfaceWaterSignature(World, Waters);
+    const FLLCoreCivilizationWorldObservation Civilization =
+        Bridge->GetCivilizationWorldObservation(0);
+    const TArray<FLLCoreTerrainPresentationObservation> RegionalTerrains =
+        Bridge->GetRegionalTerrainPreviewObservations(8);
+
+    TArray<FVector2D> FacilityCentersUU;
+    FacilityCentersUU.Reserve(Civilization.Facilities.Num());
+    for (const FLLCoreCivilizationFacilityObservation& Facility : Civilization.Facilities)
+    {
+        FacilityCentersUU.Add(FVector2D(
+            static_cast<float>(Facility.GridX - World.InitialCenterGridX)
+                * LLWorldSpatialContract::GridCellSizeUU,
+            static_cast<float>(Facility.GridY - World.InitialCenterGridY)
+                * LLWorldSpatialContract::GridCellSizeUU));
+    }
+
+    const uint32 Signature = SurfaceWaterSignature(
+        World,
+        Waters,
+        Civilization);
     if (!bForce && bBuiltOnce && Signature == BuiltSignature)
     {
         return;
@@ -347,11 +411,13 @@ void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
             || Water.SurfaceKind == ELLCoreSurfaceWaterKind::Ocean;
         const float CenterWaterZUU = bMarine
             ? WaterSurfaceZUU
-            : WaterSurfaceZForChunk(
+            : WaterSurfaceZForGrid(
                 Bridge,
                 World,
-                Water.ChunkX,
-                Water.ChunkY);
+                RegionalTerrains,
+                Water.CenterGridX,
+                Water.CenterGridY,
+                FacilityCentersUU);
         const FVector Center = GridToWorld(
             Water.CenterGridX,
             Water.CenterGridY,
@@ -373,15 +439,13 @@ void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
             ConfigurePresentationOnlyWater(River);
             if (UWaterSplineComponent* Spline = River->GetWaterSpline())
             {
-                const int32 DownstreamChunkX =
-                    ChunkCoordForGrid(Water.DownstreamCenterGridX);
-                const int32 DownstreamChunkY =
-                    ChunkCoordForGrid(Water.DownstreamCenterGridY);
-                const float DownstreamWaterZUU = WaterSurfaceZForChunk(
+                const float DownstreamWaterZUU = WaterSurfaceZForGrid(
                     Bridge,
                     World,
-                    DownstreamChunkX,
-                    DownstreamChunkY);
+                    RegionalTerrains,
+                    Water.DownstreamCenterGridX,
+                    Water.DownstreamCenterGridY,
+                    FacilityCentersUU);
                 const FVector Downstream = GridToWorld(
                     Water.DownstreamCenterGridX,
                     Water.DownstreamCenterGridY,
