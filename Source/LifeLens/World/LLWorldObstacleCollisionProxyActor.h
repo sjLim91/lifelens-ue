@@ -12,9 +12,9 @@ struct FLLCoreNaturalChunkObservation;
 struct FLLCoreNaturalObstacleObservation;
 struct FLLCoreWorldGenerationObservation;
 
-// Query-only resident collision projected from authoritative Core natural
-// obstacle facts. This actor no longer inspects WorldPresentation instances;
-// visual dressing may decorate the same area but cannot create blocking truth.
+// Query-only resident physical collision projected from authoritative Core
+// materialized land and natural obstacle facts. This actor never inspects
+// WorldPresentation instances; visual dressing cannot create physical truth.
 UCLASS()
 class LIFELENS_API ALLWorldObstacleCollisionProxyActor : public AActor
 {
@@ -34,6 +34,9 @@ private:
     void RebuildFromCore(
         const FLLCoreWorldGenerationObservation& World,
         const TArray<FLLCoreNaturalChunkObservation>& Chunks);
+    void AddSurfaceProxy(
+        const FLLCoreWorldGenerationObservation& World,
+        const FLLCoreNaturalChunkObservation& Chunk);
     void AddObstacleProxy(
         const FLLCoreWorldGenerationObservation& World,
         const FLLCoreNaturalObstacleObservation& Obstacle);
@@ -46,6 +49,9 @@ private:
 
     UPROPERTY()
     TObjectPtr<UHierarchicalInstancedStaticMeshComponent> RockCollision;
+
+    UPROPERTY()
+    TObjectPtr<UHierarchicalInstancedStaticMeshComponent> SurfaceCollision;
 
     UPROPERTY()
     TObjectPtr<UStaticMesh> CollisionCube;
