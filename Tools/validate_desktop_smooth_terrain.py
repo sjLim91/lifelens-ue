@@ -18,6 +18,20 @@ for token in (
 ):
     assert token in actor, f"missing smooth-terrain token: {token}"
 
+for token in (
+    "Terrain.bAvailable",
+    "Terrain.NorthWestElevation01",
+    "Terrain.NorthEastElevation01",
+    "Terrain.SouthWestElevation01",
+    "Terrain.SouthEastElevation01",
+    "World.InitialChunkX",
+    "World.InitialChunkY",
+    "World.InitialCenterGridX",
+    "World.InitialCenterGridY",
+    "World.InitialChunk.Elevation",
+):
+    assert token in actor, f"smooth-terrain refresh signature misses rendered input: {token}"
+
 game_mode = (root / "Source/LifeLens/Core/LLLifeLensGameMode.cpp").read_text(encoding="utf-8")
 assert "ALLDesktopTerrainPresentationActor" in game_mode
 assert "#if !PLATFORM_ANDROID" in game_mode
