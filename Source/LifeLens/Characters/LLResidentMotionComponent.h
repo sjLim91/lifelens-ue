@@ -110,6 +110,7 @@ private:
     void EnsureLocomotionPlaying();
     bool ResolveInteractionTargetYaw(float& OutYawDegrees) const;
     void UpdateBodyOrientation(float DeltaTime);
+    void UpdateVisualSurfaceGrounding(float DeltaTime);
     void UpdateContextAnimationState(float DeltaTime);
     void UpdateHeldToolVisualState();
 
@@ -136,6 +137,14 @@ private:
 
     UPROPERTY(EditAnywhere, Category="LifeLens|Motion")
     float MeshForwardYawOffsetDegrees = -90.0f;
+
+    UPROPERTY(EditAnywhere, Category="LifeLens|Motion|Presentation",
+        meta=(ClampMin="0.1", ClampMax="30.0"))
+    float VisualGroundingInterpSpeed = 10.0f;
+
+    UPROPERTY(EditAnywhere, Category="LifeLens|Motion|Presentation",
+        meta=(ClampMin="0.0", ClampMax="300.0"))
+    float MaxVisualGroundLiftUU = 220.0f;
 
     UPROPERTY() TObjectPtr<UBlendSpace> LocomotionBlendSpace;
     UPROPERTY() TObjectPtr<UAnimSequence> IdleAnimation;

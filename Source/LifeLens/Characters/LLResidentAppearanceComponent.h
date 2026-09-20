@@ -50,6 +50,23 @@ public:
     // Distance from the actor origin down to the feet of the body.
     float GetFeetOffset() const { return FeetOffset; }
 
+    // Desktop terrain can be visually raised while Core locomotion remains on
+    // the flat physical contract. This presentation-only offset lifts the human
+    // mesh (and its attached outfit/hair/tools) onto the visible surface without
+    // moving the authoritative actor/capsule.
+    float GetPresentationGroundOffsetUU() const { return PresentationGroundOffsetUU; }
+    void SetPresentationGroundOffsetUU(float OffsetUU)
+    {
+        PresentationGroundOffsetUU = FMath::Clamp(OffsetUU, 0.0f, 300.0f);
+        if (Body)
+        {
+            Body->SetRelativeLocation(FVector(
+                0.0f,
+                0.0f,
+                -FeetOffset + PresentationGroundOffsetUU));
+        }
+    }
+
     // Lifecycle presentation can resize the authoritative character capsule.
     // Keep the visual body, its cached height, outfit/hair children and label
     // calculations aligned without rebuilding identity/genetics/materials.
@@ -59,7 +76,10 @@ public:
         BodyScaleZ = FMath::Max(0.01f, NewBodyScale.Z);
         if (Body)
         {
-            Body->SetRelativeLocation(FVector(0.0f, 0.0f, -FeetOffset));
+            Body->SetRelativeLocation(FVector(
+                0.0f,
+                0.0f,
+                -FeetOffset + PresentationGroundOffsetUU));
             Body->SetRelativeScale3D(NewBodyScale);
         }
     }
@@ -134,6 +154,7 @@ private:
 
     FLLResidentAppearanceInputs Inputs;
     float FeetOffset = 88.0f;
+    float PresentationGroundOffsetUU = 0.0f;
     float MeshHeight = 0.0f;   // unscaled bind-pose height of the chosen mesh
     float BodyScaleZ = 1.0f;
     FLinearColor SkinTintColor = FLinearColor::White; // shared by body skin and outfit-exposed skin
