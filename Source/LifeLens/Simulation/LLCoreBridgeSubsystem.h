@@ -98,6 +98,12 @@ public:
     UFUNCTION(BlueprintPure, Category="LifeLens|Core|Observer")
     int32 GetRuntimeSeed() const { return ActiveSeed; }
 
+    // Monotonic identity for the currently installed Core runtime instance.
+    // Presentation consumers use this to discard transition baselines when a
+    // NEW GAME / load / demo restart replaces the authoritative world.
+    UFUNCTION(BlueprintPure, Category="LifeLens|Core|Observer")
+    int64 GetRuntimeGeneration() const { return RuntimeGeneration; }
+
     UFUNCTION(BlueprintPure, Category="LifeLens|Core|Observer")
     FLLCoreWorldObservation GetWorldObservation() const;
 
@@ -270,6 +276,7 @@ private:
 
     lifelens::Simulation* CoreSimulation = nullptr;
     int32 ActiveSeed = 0;
+    int64 RuntimeGeneration = 0;
 
     TMap<uint64, FGuid> CoreToGuid;
     TMap<FGuid, uint64> GuidToCore;

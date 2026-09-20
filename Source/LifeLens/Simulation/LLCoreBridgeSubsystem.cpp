@@ -292,6 +292,18 @@ void ULLCoreBridgeSubsystem::ResetRuntime()
     CoreToGuid.Reset();
     GuidToCore.Reset();
     RecentEvents.Reset();
+
+    // Replacing/stopping the runtime invalidates every presentation baseline
+    // built from the previous Core instance even when seed/minute happen to be
+    // identical (for example loading a save at the same simulation minute).
+    if (RuntimeGeneration == MAX_int64)
+    {
+        RuntimeGeneration = 1;
+    }
+    else
+    {
+        ++RuntimeGeneration;
+    }
 }
 
 void ULLCoreBridgeSubsystem::RebuildGuidIndex()

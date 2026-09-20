@@ -314,6 +314,7 @@ void ULLLifecycleEventOverlay::ResetObservationState()
     RecentNotices.Reset();
     ObservedLifeHistory.Reset();
     LastObservedSimulationMinute = -1;
+    LastObservedRuntimeGeneration = -1;
     bBaselineReady = false;
     RefreshNoticeWidgets();
 }
@@ -393,6 +394,17 @@ void ULLLifecycleEventOverlay::RefreshFromCore()
             ResetObservationState();
         }
         return;
+    }
+
+    const int64 RuntimeGeneration = Bridge->GetRuntimeGeneration();
+    if (RuntimeGeneration != LastObservedRuntimeGeneration)
+    {
+        // A Core replacement is not a lifecycle event. Treat the first snapshot
+        // of the new runtime as a clean baseline so NEW GAME / load / demo
+        // restart cannot emit births, deaths, relationships or facilities by
+        // comparing two unrelated worlds.
+        ResetObservationState();
+        LastObservedRuntimeGeneration = RuntimeGeneration;
     }
 
     const FLLCoreWorldObservation WorldObservation = Bridge->GetWorldObservation();
