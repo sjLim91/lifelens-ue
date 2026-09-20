@@ -46,6 +46,10 @@ assert 'PrivateDependencyModuleNames.Add("ProceduralMeshComponent")' in build
 header = (root / "Source/LifeLens/WorldPresentation/LLDesktopTerrainPresentationActor.h").read_text(encoding="utf-8")
 assert "UProceduralMeshComponent* TerrainMesh = nullptr;" in header
 assert "TObjectPtr<UProceduralMeshComponent>" not in header
+assert "float SettlementFlattenRadiusUU = 650.0f;" in header, (
+    "start-chunk terrain must not be flattened across its full 3200 UU span"
+)
+assert "float SettlementBlendBandUU = 900.0f;" in header
 
 world_presentation = (root / "Source/LifeLens/WorldPresentation/LLWorldPresentationActor.cpp").read_text(encoding="utf-8")
 chunk_start = world_presentation.index("void ALLWorldPresentationActor::BuildChunkGround")
