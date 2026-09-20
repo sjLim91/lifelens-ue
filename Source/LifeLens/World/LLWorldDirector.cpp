@@ -254,26 +254,62 @@ TArray<FVector> ALLWorldDirector::BuildLocalAStarPath(
         }
     }
 
-    // Fully marine chunks are not walkable local surface. Coast remains
-    // partially traversable because the current Core DTO exposes shoreline
-    // direction but not a per-cell land polygon.
+    // Marine water is physical routing truth at Local Surface scale. Ocean is
+    // completely blocked. Coast uses the same deterministic marine-neighbour
+    // orientation exposed to WaterPresentation, so A* will not route residents
+    // across the visible marine half of a coastal chunk.
     const int32 ChunkSpan = FMath::Max(1, LLWorldSpatialContract::ChunkSpanGridCells);
-    for (const FLLCoreHydrologyObservation& Water :
-        CoreBridge->GetMaterializedHydrologyObservations())
+    for (const FLLCoreSurfaceWaterPresentationObservation& Water :
+        CoreBridge->GetMaterializedSurfaceWaterPresentationObservations())
     {
-        if (!Water.bAvailable
-            || Water.SurfaceKind != ELLCoreSurfaceWaterKind::Ocean)
+        if (!Water.bAvailable)
         {
             continue;
         }
 
         const int32 MinX = Water.ChunkX * ChunkSpan;
         const int32 MinY = Water.ChunkY * ChunkSpan;
+        if (Water.SurfaceKind == ELLCoreSurfaceWaterKind::Ocean)
+        {
+            for (int32 Y = MinY; Y < MinY + ChunkSpan; ++Y)
+            {
+                for (int32 X = MinX; X < MinX + ChunkSpan; ++X)
+                {
+                    Blocked.Add(FIntPoint(X, Y));
+                }
+            }
+            continue;
+        }
+
+        if (Water.SurfaceKind != ELLCoreSurfaceWaterKind::Coast
+            || !Water.bHasMarineNeighbour)
+        {
+            continue;
+        }
+
+        FVector2D MarineDirection(
+            static_cast<float>(Water.MarineCenterGridX - Water.CenterGridX),
+            static_cast<float>(Water.MarineCenterGridY - Water.CenterGridY));
+        if (!MarineDirection.Normalize())
+        {
+            continue;
+        }
+
+        // WaterPresentation places its shoreline at 4% of half-chunk toward
+        // the marine neighbour. Mirror that boundary in grid routing.
+        const float ShoreOffsetCells = static_cast<float>(ChunkSpan) * 0.02f;
         for (int32 Y = MinY; Y < MinY + ChunkSpan; ++Y)
         {
             for (int32 X = MinX; X < MinX + ChunkSpan; ++X)
             {
-                Blocked.Add(FIntPoint(X, Y));
+                const FVector2D CellDelta(
+                    static_cast<float>(X - Water.CenterGridX) + 0.5f,
+                    static_cast<float>(Y - Water.CenterGridY) + 0.5f);
+                if (FVector2D::DotProduct(CellDelta, MarineDirection)
+                    >= ShoreOffsetCells)
+                {
+                    Blocked.Add(FIntPoint(X, Y));
+                }
             }
         }
     }
