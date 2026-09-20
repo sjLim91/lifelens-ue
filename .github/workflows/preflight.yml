@@ -80,6 +80,9 @@ jobs:
       - name: Validate runtime visual sanity
         run: python Tools/validate_runtime_visual_sanity.py
 
+      - name: Validate stale world projection cleanup
+        run: python Tools/validate_stale_world_projection_cleanup.py
+
       - name: Validate character animation truth and polish
         run: python Tools/validate_character_animation_polish.py
 
