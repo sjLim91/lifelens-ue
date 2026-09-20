@@ -90,4 +90,12 @@ public:
     // temporary fallback otherwise.
     UFUNCTION(BlueprintPure, Category="LifeLens|Appearance")
     static FLLResidentAppearanceInputs Resolve(int32 WorldSeed, FGuid ResidentId, ELLCoreSex Sex, ELLCoreLifeStage LifeStage);
+
+    UFUNCTION(BlueprintPure, Category="LifeLens|Appearance")
+    static FLLResidentAppearanceInputs ResolveWithGenetics(
+        int32 WorldSeed,
+        FGuid ResidentId,
+        ELLCoreSex Sex,
+        ELLCoreLifeStage LifeStage,
+        const FLLCoreGeneticsSnapshot& Genetics);
 };
