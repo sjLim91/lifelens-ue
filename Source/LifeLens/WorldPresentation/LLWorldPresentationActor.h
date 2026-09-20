@@ -158,11 +158,8 @@ public:
     // authoritative facility opens a smaller local readability envelope.
     // This prevents later neighborhoods from disappearing inside untouched
     // ambient forest without inventing roads, zoning or simulation clearing.
-    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.0", ClampMax="1600.0"))
-    float FacilityClearRadiusUU = 340.0f;
-
-    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.0", ClampMax="3000.0"))
-    float FacilityActivityRadiusUU = 900.0f;
+    // Facility readability/terrain radii are shared with Water/Desktop terrain
+    // through LLTerrainPresentationContract; they are not independently tunable.
 
     // ---- Visual-only far world envelope --------------------------------------
     // The authoritative simulation only materializes nearby chunks. The
