@@ -281,7 +281,8 @@ private:
     FRotator TerrainTileRotation(
         const struct FLLCoreWorldGenerationObservation& World,
         const FLLCoreTerrainPresentationObservation& Terrain,
-        const FVector2D& CenterUU) const;
+        const FVector2D& CenterUU,
+        float SampleSpanUU) const;
 
     float AmbientDressingKeepFactor(const FVector2D& LocationUU, ELLDressingLayer Layer) const;
     float FacilityDressingKeepFactor(const FVector2D& LocationUU, ELLDressingLayer Layer) const;
