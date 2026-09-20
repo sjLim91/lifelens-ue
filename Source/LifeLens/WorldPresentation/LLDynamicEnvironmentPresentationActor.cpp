@@ -437,6 +437,11 @@ void ALLDynamicEnvironmentPresentationActor::RefreshFromCore(bool bForce)
         return;
     }
 
+    const int64 RuntimeGeneration = Bridge->GetRuntimeGeneration();
+    const bool bRuntimeReplaced =
+        RuntimeGeneration != LastObservedRuntimeGeneration;
+    LastObservedRuntimeGeneration = RuntimeGeneration;
+
     const FLLCoreTimeObservation Time = Bridge->GetTimeObservation();
     const FLLCoreDynamicEnvironmentObservation Environment =
         Bridge->GetInitialRegionDynamicEnvironmentObservation();
@@ -469,6 +474,7 @@ void ALLDynamicEnvironmentPresentationActor::RefreshFromCore(bool bForce)
 
     const bool bResetPresentedEnvironment =
         bForce
+        || bRuntimeReplaced
         || !bPresentedEnvironmentInitialized
         || PreviousSimulationMinute == TNumericLimits<int64>::Lowest()
         || Time.SimulationMinute < PreviousSimulationMinute;
@@ -540,7 +546,7 @@ void ALLDynamicEnvironmentPresentationActor::RefreshFromCore(bool bForce)
     // maintain presentation-only cover that can build across a storm and thaw
     // gradually afterwards. The simulation still owns precipitation and
     // temperature; this never feeds back into movement or resources.
-    if (!bPresentedSnowInitialized || bForce
+    if (!bPresentedSnowInitialized || bForce || bRuntimeReplaced
         || PreviousSimulationMinute == TNumericLimits<int64>::Lowest()
         || Time.SimulationMinute < PreviousSimulationMinute)
     {
