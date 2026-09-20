@@ -1176,6 +1176,103 @@ FRotator ALLWorldPresentationActor::TerrainTileRotation(
     return FRotator(Pitch, 0.0f, Roll);
 }
 
+float ALLWorldPresentationActor::RegionalTerrainSurfaceZUU(
+    const FLLCoreWorldGenerationObservation& World,
+    const FLLCoreTerrainPresentationObservation& Terrain,
+    const FVector2D& LocationUU) const
+{
+    if (!Terrain.bAvailable)
+    {
+        return 0.0f;
+    }
+
+    const int32 Ring = FMath::Max(
+        FMath::Abs(Terrain.ChunkX - World.InitialChunkX),
+        FMath::Abs(Terrain.ChunkY - World.InitialChunkY));
+    const int32 InnerRing = FMath::Clamp(
+        RegionalTerrainInnerFlatRingChunks,
+        0,
+        FMath::Max(0, RegionalTerrainPreviewRadiusChunks - 1));
+    const float Denominator = static_cast<float>(
+        FMath::Max(1, RegionalTerrainPreviewRadiusChunks - InnerRing));
+    const float RawAlpha = FMath::Clamp(
+        static_cast<float>(Ring - InnerRing) / Denominator,
+        0.0f,
+        1.0f);
+    const float ReliefAlpha =
+        RawAlpha * RawAlpha * (3.0f - 2.0f * RawAlpha);
+    const float Amplitude = FMath::Lerp(
+        FMath::Max(0.0f, TerrainReliefAmplitudeUU),
+        FMath::Max(TerrainReliefAmplitudeUU, RegionalTerrainReliefAmplitudeUU),
+        ReliefAlpha);
+
+    auto SignedElevationOffset = [&](float Elevation01)
+    {
+        return (Elevation01 - World.InitialChunk.Elevation) * Amplitude;
+    };
+
+    const FVector ChunkCenter3D =
+        ChunkOriginUU(World, Terrain.ChunkX, Terrain.ChunkY);
+    const FVector2D ChunkCenter(ChunkCenter3D.X, ChunkCenter3D.Y);
+    const float Half = LLWorldSpatialContract::ChunkSpanUU * 0.5f;
+    const float U = FMath::Clamp(
+        (LocationUU.X - (ChunkCenter.X - Half))
+            / FMath::Max(LLWorldSpatialContract::ChunkSpanUU, 1.0f),
+        0.0f,
+        1.0f);
+    const float V = FMath::Clamp(
+        (LocationUU.Y - (ChunkCenter.Y - Half))
+            / FMath::Max(LLWorldSpatialContract::ChunkSpanUU, 1.0f),
+        0.0f,
+        1.0f);
+
+    const float South = FMath::Lerp(
+        SignedElevationOffset(Terrain.SouthWestElevation01),
+        SignedElevationOffset(Terrain.SouthEastElevation01),
+        U);
+    const float North = FMath::Lerp(
+        SignedElevationOffset(Terrain.NorthWestElevation01),
+        SignedElevationOffset(Terrain.NorthEastElevation01),
+        U);
+    const float CornerSurface = FMath::Lerp(South, North, V);
+    const float CenterSurface =
+        SignedElevationOffset(Terrain.CenterElevation01);
+    return FMath::Lerp(CenterSurface, CornerSurface, 0.72f);
+}
+
+FRotator ALLWorldPresentationActor::RegionalTerrainTileRotation(
+    const FLLCoreWorldGenerationObservation& World,
+    const FLLCoreTerrainPresentationObservation& Terrain,
+    const FVector2D& CenterUU,
+    float SampleSpanUU) const
+{
+    const float SafeSampleSpanUU = FMath::Max(1.0f, SampleSpanUU);
+    const float Half = SafeSampleSpanUU * 0.5f;
+    const float WestZ = RegionalTerrainSurfaceZUU(
+        World, Terrain, CenterUU + FVector2D(-Half, 0.0f));
+    const float EastZ = RegionalTerrainSurfaceZUU(
+        World, Terrain, CenterUU + FVector2D(Half, 0.0f));
+    const float SouthZ = RegionalTerrainSurfaceZUU(
+        World, Terrain, CenterUU + FVector2D(0.0f, -Half));
+    const float NorthZ = RegionalTerrainSurfaceZUU(
+        World, Terrain, CenterUU + FVector2D(0.0f, Half));
+
+    constexpr float RegionalMaxTiltDegrees = 18.0f;
+    const float Pitch = FMath::Clamp(
+        -FMath::RadiansToDegrees(FMath::Atan2(
+            EastZ - WestZ,
+            SafeSampleSpanUU)),
+        -RegionalMaxTiltDegrees,
+        RegionalMaxTiltDegrees);
+    const float Roll = FMath::Clamp(
+        FMath::RadiansToDegrees(FMath::Atan2(
+            NorthZ - SouthZ,
+            SafeSampleSpanUU)),
+        -RegionalMaxTiltDegrees,
+        RegionalMaxTiltDegrees);
+    return FRotator(Pitch, 0.0f, Roll);
+}
+
 UMaterialInterface* ALLWorldPresentationActor::GroundMaterialForChunk(const FLLCoreNaturalChunkObservation& /*Chunk*/) const
 {
     // Recovery baseline: hard per-chunk dry/transition switches create visible
@@ -1368,7 +1465,8 @@ void ALLWorldPresentationActor::BuildChunkGround(
 void ALLWorldPresentationActor::BuildFarEnvironment(
     const FLLCoreWorldGenerationObservation& World,
     float ActiveGroundSpanUU,
-    float FarGroundSpanUU)
+    float FarGroundSpanUU,
+    const TArray<FLLCoreTerrainPresentationObservation>& RegionalTerrains)
 {
     if (FarGroundSpanUU <= ActiveGroundSpanUU)
     {
@@ -1422,6 +1520,22 @@ void ALLWorldPresentationActor::BuildFarEnvironment(
         World.InitialChunkX ^ 0x5A5A,
         World.InitialChunkY ^ 0xA5A5);
 
+    TMap<FIntPoint, const FLLCoreTerrainPresentationObservation*> TerrainByCoord;
+    TerrainByCoord.Reserve(RegionalTerrains.Num());
+    for (const FLLCoreTerrainPresentationObservation& Terrain : RegionalTerrains)
+    {
+        if (Terrain.bAvailable)
+        {
+            TerrainByCoord.Add(
+                FIntPoint(Terrain.ChunkX, Terrain.ChunkY),
+                &Terrain);
+        }
+    }
+
+    const float FallbackHorizonZ = -FMath::Max(
+        FMath::Max(0.0f, FarGroundDropUU),
+        FMath::Max(0.0f, RegionalTerrainReliefAmplitudeUU) + 24.0f);
+
     auto PlaceRing = [&](TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>>& Components,
                          int32 Count,
                          float MinScale,
@@ -1447,10 +1561,29 @@ void ALLWorldPresentationActor::BuildFarEnvironment(
 
             if (UHierarchicalInstancedStaticMeshComponent* Component = Components[Slot])
             {
-                const FVector Location(
-                    FMath::Cos(Angle) * Radius,
-                    FMath::Sin(Angle) * Radius,
-                    -FMath::Max(0.0f, FarGroundDropUU));
+                const float X = FMath::Cos(Angle) * Radius;
+                const float Y = FMath::Sin(Angle) * Radius;
+                const float HalfChunk =
+                    LLWorldSpatialContract::ChunkSpanUU * 0.5f;
+                const int32 OffsetX = FMath::FloorToInt(
+                    (X + HalfChunk)
+                    / FMath::Max(1.0f, LLWorldSpatialContract::ChunkSpanUU));
+                const int32 OffsetY = FMath::FloorToInt(
+                    (Y + HalfChunk)
+                    / FMath::Max(1.0f, LLWorldSpatialContract::ChunkSpanUU));
+                const FIntPoint Coord(
+                    World.InitialChunkX + OffsetX,
+                    World.InitialChunkY + OffsetY);
+                float Z = FallbackHorizonZ;
+                if (const FLLCoreTerrainPresentationObservation* const* Terrain =
+                        TerrainByCoord.Find(Coord))
+                {
+                    Z = RegionalTerrainSurfaceZUU(
+                        World,
+                        **Terrain,
+                        FVector2D(X, Y));
+                }
+                const FVector Location(X, Y, Z);
                 Component->AddInstance(FTransform(
                     FRotator(0.0f, Yaw, 0.0f),
                     Location,
