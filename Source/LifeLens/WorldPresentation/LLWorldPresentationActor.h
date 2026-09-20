@@ -190,10 +190,10 @@ public:
     float TerrainReliefAmplitudeUU = 180.0f;
 
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Terrain", meta=(ClampMin="0.0", ClampMax="5000.0"))
-    float TerrainReliefFlattenRadiusUU = 2400.0f;
+    float TerrainReliefFlattenRadiusUU = 650.0f;
 
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Terrain", meta=(ClampMin="100.0", ClampMax="6000.0"))
-    float TerrainReliefBlendBandUU = 1800.0f;
+    float TerrainReliefBlendBandUU = 900.0f;
 
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Terrain", meta=(ClampMin="0.0", ClampMax="12.0"))
     float TerrainMaxTiltDegrees = 5.5f;
