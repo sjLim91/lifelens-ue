@@ -423,6 +423,29 @@ void ALLDynamicEnvironmentPresentationActor::UpdateFallbackPrecipitation(float D
     }
 }
 
+void ALLDynamicEnvironmentPresentationActor::ClearTransientEnvironmentPresentation()
+{
+    // Weather VFX are read-only projections. If their authoritative Core source
+    // disappears, fail closed instead of leaving rain/snow/fog running over a
+    // world that no longer exists.
+    ApplyWeatherEffects(0.0f, 0.0f, 0.0f, 0.0f);
+
+    FallbackRainIntensity01 = 0.0f;
+    FallbackSnowIntensity01 = 0.0f;
+    FallbackWind01 = 0.0f;
+    FallbackVisualTime = 0.0f;
+    bFallbackRainActive = false;
+    bFallbackSnowActive = false;
+    if (RainFallback) { RainFallback->SetVisibility(false, true); }
+    if (SnowFallback) { SnowFallback->SetVisibility(false, true); }
+
+    LastAppliedSimulationMinute = TNumericLimits<int64>::Lowest();
+    LastObservedRuntimeGeneration = -1;
+    PresentedSnowCover01 = 0.0f;
+    bPresentedSnowInitialized = false;
+    bPresentedEnvironmentInitialized = false;
+}
+
 void ALLDynamicEnvironmentPresentationActor::RefreshFromCore(bool bForce)
 {
     UGameInstance* GameInstance = GetGameInstance();
@@ -434,6 +457,7 @@ void ALLDynamicEnvironmentPresentationActor::RefreshFromCore(bool bForce)
     ULLCoreBridgeSubsystem* Bridge = GameInstance->GetSubsystem<ULLCoreBridgeSubsystem>();
     if (!Bridge || !Bridge->IsCoreRunning())
     {
+        ClearTransientEnvironmentPresentation();
         return;
     }
 
@@ -449,6 +473,7 @@ void ALLDynamicEnvironmentPresentationActor::RefreshFromCore(bool bForce)
         Bridge->GetInitialRegionSkyPresentationObservation();
     if (!Environment.bAvailable || !Sky.bAvailable)
     {
+        ClearTransientEnvironmentPresentation();
         return;
     }
 
