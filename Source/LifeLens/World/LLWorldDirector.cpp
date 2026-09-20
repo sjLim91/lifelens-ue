@@ -8,6 +8,26 @@
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "Components/SceneComponent.h"
+#include "Algo/Reverse.h"
+
+namespace
+{
+    struct FLLAStarOpenNode
+    {
+        FIntPoint Cell = FIntPoint::ZeroValue;
+        int32 G = 0;
+        int32 F = 0;
+    };
+
+    int32 LLGridOctileHeuristic(const FIntPoint& A, const FIntPoint& B)
+    {
+        const int32 Dx = FMath::Abs(A.X - B.X);
+        const int32 Dy = FMath::Abs(A.Y - B.Y);
+        const int32 Diagonal = FMath::Min(Dx, Dy);
+        const int32 Straight = FMath::Max(Dx, Dy) - Diagonal;
+        return Diagonal * 14 + Straight * 10;
+    }
+}
 
 ALLWorldDirector::ALLWorldDirector()
 {
@@ -189,6 +209,240 @@ void ALLWorldDirector::RefreshCorePresentationOrigin()
         CorePresentationOriginGrid = FIntPoint(
             Genesis.InitialCenterGridX,
             Genesis.InitialCenterGridY);
+    }
+}
+
+FVector ALLWorldDirector::CoreGridToWorldCellCenter(
+    const FIntPoint& Grid,
+    float WorldZ) const
+{
+    const float CellSize = FMath::Max(1.0f, CoreGridCellSizeUU);
+    return GetActorLocation()
+        + FVector(
+            static_cast<float>(Grid.X - CorePresentationOriginGrid.X) * CellSize,
+            static_cast<float>(Grid.Y - CorePresentationOriginGrid.Y) * CellSize,
+            WorldZ - GetActorLocation().Z);
+}
+
+TArray<FVector> ALLWorldDirector::BuildLocalAStarPath(
+    const FVector& StartLocation,
+    const FVector& TargetLocation) const
+{
+    TArray<FVector> Result;
+    if (!CoreBridge)
+    {
+        return Result;
+    }
+
+    const FIntPoint Start = WorldLocationToCoreGrid(StartLocation);
+    const FIntPoint Goal = WorldLocationToCoreGrid(TargetLocation);
+    if (Start == Goal)
+    {
+        Result.Add(TargetLocation);
+        return Result;
+    }
+
+    TSet<FIntPoint> Blocked;
+
+    const TArray<FLLCoreNaturalChunkObservation> Chunks =
+        CoreBridge->GetMaterializedNaturalChunkObservations();
+    for (const FLLCoreNaturalChunkObservation& Chunk : Chunks)
+    {
+        for (const FLLCoreNaturalObstacleObservation& Obstacle : Chunk.PhysicalObstacles)
+        {
+            Blocked.Add(FIntPoint(Obstacle.GridX, Obstacle.GridY));
+        }
+    }
+
+    // Fully marine chunks are not walkable local surface. Coast remains
+    // partially traversable because the current Core DTO exposes shoreline
+    // direction but not a per-cell land polygon.
+    const int32 ChunkSpan = FMath::Max(1, LLWorldSpatialContract::ChunkSpanGridCells);
+    for (const FLLCoreHydrologyObservation& Water :
+        CoreBridge->GetMaterializedHydrologyObservations())
+    {
+        if (!Water.bAvailable
+            || Water.SurfaceKind != ELLCoreSurfaceWaterKind::Ocean)
+        {
+            continue;
+        }
+
+        const int32 MinX = Water.ChunkX * ChunkSpan;
+        const int32 MinY = Water.ChunkY * ChunkSpan;
+        for (int32 Y = MinY; Y < MinY + ChunkSpan; ++Y)
+        {
+            for (int32 X = MinX; X < MinX + ChunkSpan; ++X)
+            {
+                Blocked.Add(FIntPoint(X, Y));
+            }
+        }
+    }
+
+    // Constructed facilities occupy real Core grid sites. Route around other
+    // facilities, while allowing the actual goal cell so a resident can reach
+    // the facility it is currently using.
+    const FLLCoreCivilizationWorldObservation Civilization =
+        CoreBridge->GetCivilizationWorldObservation(0);
+    for (const FLLCoreCivilizationFacilityObservation& Facility :
+        Civilization.Facilities)
+    {
+        Blocked.Add(FIntPoint(Facility.GridX, Facility.GridY));
+    }
+
+    Blocked.Remove(Start);
+    Blocked.Remove(Goal);
+
+    const int32 Margin = FMath::Clamp(LocalAStarMarginCells, 2, 64);
+    const int32 MinX = FMath::Min(Start.X, Goal.X) - Margin;
+    const int32 MaxX = FMath::Max(Start.X, Goal.X) + Margin;
+    const int32 MinY = FMath::Min(Start.Y, Goal.Y) - Margin;
+    const int32 MaxY = FMath::Max(Start.Y, Goal.Y) + Margin;
+
+    TArray<FLLAStarOpenNode> Open;
+    TSet<FIntPoint> Closed;
+    TMap<FIntPoint, int32> GScore;
+    TMap<FIntPoint, FIntPoint> CameFrom;
+
+    Open.Add({Start, 0, LLGridOctileHeuristic(Start, Goal)});
+    GScore.Add(Start, 0);
+
+    static const FIntPoint Directions[8] = {
+        FIntPoint(1, 0), FIntPoint(-1, 0),
+        FIntPoint(0, 1), FIntPoint(0, -1),
+        FIntPoint(1, 1), FIntPoint(1, -1),
+        FIntPoint(-1, 1), FIntPoint(-1, -1)
+    };
+
+    int32 Expanded = 0;
+    const int32 ExpansionBudget =
+        FMath::Clamp(MaxLocalAStarExpandedNodes, 128, 32768);
+
+    while (Open.Num() > 0 && Expanded < ExpansionBudget)
+    {
+        int32 BestIndex = 0;
+        for (int32 Index = 1; Index < Open.Num(); ++Index)
+        {
+            const FLLAStarOpenNode& Candidate = Open[Index];
+            const FLLAStarOpenNode& Best = Open[BestIndex];
+            if (Candidate.F < Best.F
+                || (Candidate.F == Best.F && Candidate.G < Best.G)
+                || (Candidate.F == Best.F && Candidate.G == Best.G
+                    && (Candidate.Cell.X < Best.Cell.X
+                        || (Candidate.Cell.X == Best.Cell.X
+                            && Candidate.Cell.Y < Best.Cell.Y))))
+            {
+                BestIndex = Index;
+            }
+        }
+
+        const FLLAStarOpenNode Current = Open[BestIndex];
+        Open.RemoveAtSwap(BestIndex, 1, EAllowShrinking::No);
+
+        const int32* BestKnownG = GScore.Find(Current.Cell);
+        if (!BestKnownG || Current.G != *BestKnownG || Closed.Contains(Current.Cell))
+        {
+            continue;
+        }
+
+        if (Current.Cell == Goal)
+        {
+            TArray<FIntPoint> Cells;
+            FIntPoint Cursor = Goal;
+            while (Cursor != Start)
+            {
+                Cells.Add(Cursor);
+                const FIntPoint* Parent = CameFrom.Find(Cursor);
+                if (!Parent)
+                {
+                    Cells.Reset();
+                    break;
+                }
+                Cursor = *Parent;
+            }
+
+            Algo::Reverse(Cells);
+            Result.Reserve(Cells.Num() + 1);
+            for (const FIntPoint& Cell : Cells)
+            {
+                Result.Add(CoreGridToWorldCellCenter(Cell, StartLocation.Z));
+            }
+            if (Result.Num() == 0
+                || FVector::DistSquared2D(Result.Last(), TargetLocation)
+                    > FMath::Square(1.0f))
+            {
+                Result.Add(TargetLocation);
+            }
+            return Result;
+        }
+
+        Closed.Add(Current.Cell);
+        ++Expanded;
+
+        for (const FIntPoint& Direction : Directions)
+        {
+            const FIntPoint Next = Current.Cell + Direction;
+            if (Next.X < MinX || Next.X > MaxX
+                || Next.Y < MinY || Next.Y > MaxY
+                || Blocked.Contains(Next)
+                || Closed.Contains(Next))
+            {
+                continue;
+            }
+
+            const bool bDiagonal = Direction.X != 0 && Direction.Y != 0;
+            if (bDiagonal)
+            {
+                // No diagonal corner cutting between two blocked obstacle cells.
+                if (Blocked.Contains(Current.Cell + FIntPoint(Direction.X, 0))
+                    || Blocked.Contains(Current.Cell + FIntPoint(0, Direction.Y)))
+                {
+                    continue;
+                }
+            }
+
+            const int32 TentativeG = Current.G + (bDiagonal ? 14 : 10);
+            const int32* ExistingG = GScore.Find(Next);
+            if (ExistingG && TentativeG >= *ExistingG)
+            {
+                continue;
+            }
+
+            CameFrom.Add(Next, Current.Cell);
+            GScore.Add(Next, TentativeG);
+            Open.Add({
+                Next,
+                TentativeG,
+                TentativeG + LLGridOctileHeuristic(Next, Goal)
+            });
+        }
+    }
+
+    UE_LOG(LogTemp, Verbose,
+        TEXT("LifeLens local A* fallback to direct sweep: start=(%d,%d) goal=(%d,%d) expanded=%d blocked=%d"),
+        Start.X, Start.Y, Goal.X, Goal.Y, Expanded, Blocked.Num());
+    return Result;
+}
+
+void ALLWorldDirector::MoveResidentToward(
+    ALLResidentCharacter& Character,
+    const FVector& DesiredLocation)
+{
+    if (Character.IsMovingToward(DesiredLocation))
+    {
+        return;
+    }
+
+    const TArray<FVector> Path =
+        BuildLocalAStarPath(Character.GetActorLocation(), DesiredLocation);
+    if (Path.Num() > 0)
+    {
+        Character.SetMovementPath(Path, DesiredLocation);
+    }
+    else
+    {
+        // Collision sweep/slide remains a safe last-resort physical executor
+        // when no bounded route can be found.
+        Character.SetMovementTarget(DesiredLocation);
     }
 }
 
@@ -422,7 +676,7 @@ void ALLWorldDirector::ApplyCoreDirective(
         {
             Runtime.bPerformingAction = false;
             Runtime.PhysicalUseElapsedSeconds = 0.0f;
-            Character.SetMovementTarget(DesiredLocation);
+            MoveResidentToward(Character, DesiredLocation);
             return;
         }
 
@@ -510,7 +764,7 @@ void ALLWorldDirector::ApplyCoreDirective(
         if (!bAtDesiredLocation)
         {
             Runtime.bPerformingAction = false;
-            Character.SetMovementTarget(DesiredLocation);
+            MoveResidentToward(Character, DesiredLocation);
         }
         else
         {
