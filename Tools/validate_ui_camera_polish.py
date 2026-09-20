@@ -51,6 +51,20 @@ for token in (
 assert "ObserverCamera = GetWorld()->SpawnActor<ACameraActor>" in game_mode_cpp
 assert "TObjectPtr<ACameraActor> ObserverCamera;" in game_mode_header
 
+for token in (
+    "bFrameFreshSurfaceWaterInInitialView",
+    "GetMaterializedSurfaceWaterPresentationObservations",
+    "Water.bFreshSurfaceWater",
+    "InitialFreshWaterFocusWeight",
+    "InitialFreshWaterMaxFocusOffsetChunks",
+    "InitialFreshWaterDistanceBoostPerChunk",
+    "InitialFreshWaterMaxDistanceBoostChunks",
+    "LifeLens initial observer framing",
+):
+    assert token in game_mode_cpp or token in game_mode_header, (
+        f"initial freshwater framing contract regressed: {token}"
+    )
+
 # Lifecycle transition caches must reset when the authoritative Core runtime is
 # replaced, even if the new world has the same seed or simulation minute.
 for token in (
