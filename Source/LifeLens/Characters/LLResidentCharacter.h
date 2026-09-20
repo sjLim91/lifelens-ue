@@ -99,5 +99,6 @@ private:
     int32 LastLifecycleStageIndex = INDEX_NONE;
     float AdultCapsuleHalfHeight = 0.0f;
     float AdultCapsuleRadius = 0.0f;
+    float AdultRuntimeMoveSpeed = 0.0f;
     FVector AdultBodyScale = FVector::OneVector;
 };
