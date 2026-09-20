@@ -103,6 +103,27 @@ require("static_cast<uint32>(Facility.GridX)" in desktop_terrain
         and "static_cast<uint32>(Facility.GridY)" in desktop_terrain,
         "desktop terrain signature no longer follows facility positions used for flattening")
 
+core_read_types = (SOURCE / "LifeLens/Simulation/LLCoreReadTypes.h").read_text(encoding="utf-8")
+core_bridge = (SOURCE / "LifeLens/Simulation/LLCoreBridgeSubsystem.cpp").read_text(encoding="utf-8")
+appearance_profile = (SOURCE / "LifeLens/Simulation/LLAppearanceProfile.cpp").read_text(encoding="utf-8")
+appearance_component = (SOURCE / "LifeLens/Characters/LLResidentAppearanceComponent.cpp").read_text(encoding="utf-8")
+require("FLLCoreGeneticsSnapshot" in core_read_types,
+        "Core inherited genetics are not exposed to presentation DTOs")
+for token in (
+    "genetics.faceShape",
+    "genetics.eyePigment",
+    "genetics.hairPigment",
+    "genetics.skinTone",
+    "genetics.heightPotential",
+    "genetics.buildPotential",
+):
+    require(token in core_bridge,
+            f"Core genetic phenotype missing from bridge projection: {token}")
+require("MakeGeneticAppearanceProfile" in appearance_profile,
+        "appearance still ignores authoritative inherited genetics")
+require("ResolveWithGenetics" in appearance_component,
+        "resident appearance is not consuming Core genetic phenotype")
+
 water = (SOURCE / "LifeLens/WorldPresentation/LLWaterPresentationActor.cpp").read_text(encoding="utf-8")
 for token in (
     "marineLocalSurface",
