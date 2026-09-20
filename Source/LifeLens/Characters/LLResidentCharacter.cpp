@@ -45,9 +45,9 @@ ALLResidentCharacter::ALLResidentCharacter()
     DebugBody->SetVisibility(false, true);
     DebugBody->SetHiddenInGame(true, true);
 
-    // /Engine/BasicShapes/Capsule is not present in the UE 5.6 slim build image.
-    // Cube is a stable engine asset already used by the runtime smoke world, so
-    // keep the placeholder body dependency-free until real character meshes land.
+    // Diagnostics-only bootstrap geometry. The production human body is built
+    // by ULLResidentAppearanceComponent after stable resident identity binds;
+    // this hidden cube is retained only as a dependency-light QA sentinel.
     static ConstructorHelpers::FObjectFinder<UStaticMesh> BodyMesh(TEXT("/Engine/BasicShapes/Cube.Cube"));
     if (BodyMesh.Succeeded())
     {
