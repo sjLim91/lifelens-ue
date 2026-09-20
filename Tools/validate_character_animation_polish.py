@@ -42,7 +42,9 @@ social_block = cpp[social_start:social_end]
 assert "ELLResidentContextMotion::SeatedCare" not in social_block
 assert "return ELLResidentContextMotion::Talk;" in social_block
 
-world_director_context = read("Source/LifeLens/World/LLWorldDirectorContextActions.cpp")
+world_director_context = (
+    root / "Source/LifeLens/World/LLWorldDirectorContextActions.cpp"
+).read_text(encoding="utf-8")
 parenting_gate_start = world_director_context.index("case ELLCoreContextActionKind::Parenting:")
 parenting_gate_end = world_director_context.index("case ELLCoreContextActionKind::Civilization:", parenting_gate_start)
 parenting_gate_block = world_director_context[parenting_gate_start:parenting_gate_end]
