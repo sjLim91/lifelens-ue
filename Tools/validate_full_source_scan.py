@@ -118,7 +118,9 @@ for token in (
     "LLGridOctileHeuristic",
     "No diagonal corner cutting",
     "GetMaterializedNaturalChunkObservations",
-    "GetMaterializedHydrologyObservations",
+    "GetMaterializedSurfaceWaterPresentationObservations",
+    "ShoreOffsetCells",
+    "bHasMarineNeighbour",
     "MoveResidentToward",
 ):
     require(token in world_director,
