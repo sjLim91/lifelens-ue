@@ -97,11 +97,22 @@ require("CurrentNaturalChunkSignature != BuiltNaturalChunkSignature" in world_pr
         "world presentation can miss same-count materialized chunk changes")
 require("BuildGround(World, MaterializedChunks)" in world_presentation,
         "broad ground sizing regressed to count-only materialized chunk inference")
+for token in (
+    "ClearStaleWorldProjection",
+    "Ground->SetVisibility(false, true)",
+    "FarGround->SetVisibility(false, true)",
+    "bBuiltFacilityPresentation = false;",
+):
+    require(token in world_presentation,
+            f"world presentation does not fail closed when Core stops: {token}")
 
 desktop_terrain = (SOURCE / "LifeLens/WorldPresentation/LLDesktopTerrainPresentationActor.cpp").read_text(encoding="utf-8")
 require("static_cast<uint32>(Facility.GridX)" in desktop_terrain
         and "static_cast<uint32>(Facility.GridY)" in desktop_terrain,
         "desktop terrain signature no longer follows facility positions used for flattening")
+for token in ("ClearStaleTerrainProjection", "bBuiltOnce = false;"):
+    require(token in desktop_terrain,
+            f"desktop terrain can retain stale geometry after Core stops: {token}")
 
 resident_character = (SOURCE / "LifeLens/Characters/LLResidentCharacter.cpp").read_text(encoding="utf-8")
 world_director = (SOURCE / "LifeLens/World/LLWorldDirector.cpp").read_text(encoding="utf-8")
@@ -185,6 +196,9 @@ for token in (
     "ELLCoreSurfaceWaterKind::Ocean",
 ):
     require(token in water, f"marine presentation missing {token}")
+for token in ("ClearStaleWaterProjection", "bBuiltOnce = false;", "BuiltSignature = 0;"):
+    require(token in water,
+            f"water presentation can retain stale geometry after Core stops: {token}")
 
 windows_ini = (CONFIG / "Windows/WindowsEngine.ini").read_text(encoding="utf-8")
 require("DefaultGraphicsRHI=DefaultGraphicsRHI_DX12" in windows_ini,

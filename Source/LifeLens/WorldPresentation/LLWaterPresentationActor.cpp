@@ -290,8 +290,23 @@ void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
     UGameInstance* GameInstance = GetGameInstance();
     ULLCoreBridgeSubsystem* Bridge =
         GameInstance ? GameInstance->GetSubsystem<ULLCoreBridgeSubsystem>() : nullptr;
+
+    auto ClearStaleWaterProjection = [this]()
+    {
+        // Hydrology is a projection of Core authority. Once that authority is
+        // absent, old water bodies must not survive as if the previous world
+        // were still current.
+        if (bBuiltOnce || SpawnedWaterActors.Num() > 0)
+        {
+            ClearProjectedWater();
+        }
+        bBuiltOnce = false;
+        BuiltSignature = 0;
+    };
+
     if (!Bridge || !Bridge->IsCoreRunning() || !GetWorld())
     {
+        ClearStaleWaterProjection();
         return;
     }
 
@@ -299,6 +314,7 @@ void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
         Bridge->GetWorldGenerationObservation();
     if (!World.bAvailable || !World.bHasInitialStartRegion)
     {
+        ClearStaleWaterProjection();
         return;
     }
 

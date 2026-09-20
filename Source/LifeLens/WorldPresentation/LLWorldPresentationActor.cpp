@@ -2501,10 +2501,46 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
 {
     const UGameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
     ULLCoreBridgeSubsystem* Bridge = GameInstance ? GameInstance->GetSubsystem<ULLCoreBridgeSubsystem>() : nullptr;
-    if (!Bridge) { return; }
+
+    auto ClearStaleWorldProjection = [this]()
+    {
+        // Core world unavailable: fail closed instead of retaining geometry,
+        // facilities or dressing from the previous authoritative runtime.
+        ClearInstances();
+        ClearFacilityInstances();
+        if (Ground) { Ground->SetVisibility(false, true); }
+        if (FarGround) { FarGround->SetVisibility(false, true); }
+
+        BuiltWorldSeed = 0;
+        BuiltGenerationVersion = -1;
+        BuiltChunkCount = -1;
+        BuiltNaturalChunkSignature = 0;
+        BuiltTerrainPresentationSignature = 0;
+        BuiltFacilitySignature = 0;
+        BuiltFacilityLayoutSignature = 0;
+        BuiltResourceQuantitySignature = 0;
+        bBuiltFacilityPresentation = false;
+        CachedSettlementReferenceUU = FVector2D::ZeroVector;
+        CachedFacilityReadabilityCentersUU.Reset();
+        bInitialViewCaptured = false;
+        InitialViewOriginUU = FVector2D::ZeroVector;
+    };
+
+    if (!Bridge || !Bridge->IsCoreRunning())
+    {
+        ClearStaleWorldProjection();
+        return;
+    }
 
     const FLLCoreWorldGenerationObservation World = Bridge->GetWorldGenerationObservation();
-    if (!World.bAvailable || !World.bHasInitialStartRegion) { return; }
+    if (!World.bAvailable || !World.bHasInitialStartRegion)
+    {
+        ClearStaleWorldProjection();
+        return;
+    }
+
+    if (Ground) { Ground->SetVisibility(true, true); }
+    if (FarGround) { FarGround->SetVisibility(true, true); }
     const TArray<FLLCoreNaturalChunkObservation> MaterializedChunks =
         Bridge->GetMaterializedNaturalChunkObservations();
     const uint32 CurrentNaturalChunkSignature =

@@ -201,8 +201,26 @@ void ALLDesktopTerrainPresentationActor::RefreshFromCore(bool bForce)
     UGameInstance* GameInstance = GetGameInstance();
     ULLCoreBridgeSubsystem* Bridge =
         GameInstance ? GameInstance->GetSubsystem<ULLCoreBridgeSubsystem>() : nullptr;
-    if (!Bridge || !Bridge->IsCoreRunning() || !TerrainMesh)
+    if (!TerrainMesh)
     {
+        return;
+    }
+
+    auto ClearStaleTerrainProjection = [this]()
+    {
+        // The procedural surface is a read-only Core projection. Do not leave
+        // the previous world's terrain visible after its authority disappears.
+        if (bBuiltOnce)
+        {
+            TerrainMesh->ClearAllMeshSections();
+        }
+        LastSignature = 0;
+        bBuiltOnce = false;
+    };
+
+    if (!Bridge || !Bridge->IsCoreRunning())
+    {
+        ClearStaleTerrainProjection();
         return;
     }
 
@@ -210,6 +228,7 @@ void ALLDesktopTerrainPresentationActor::RefreshFromCore(bool bForce)
         Bridge->GetWorldGenerationObservation();
     if (!World.bAvailable || !World.bHasInitialStartRegion)
     {
+        ClearStaleTerrainProjection();
         return;
     }
 
@@ -219,6 +238,7 @@ void ALLDesktopTerrainPresentationActor::RefreshFromCore(bool bForce)
         Bridge->GetMaterializedNaturalChunkObservations();
     if (Terrains.Num() == 0 || Chunks.Num() == 0)
     {
+        ClearStaleTerrainProjection();
         return;
     }
 
