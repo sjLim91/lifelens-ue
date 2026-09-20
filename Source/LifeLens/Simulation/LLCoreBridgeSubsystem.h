@@ -183,6 +183,16 @@ public:
     TArray<FLLCoreTerrainPresentationObservation> GetRegionalTerrainPreviewObservations(
         int32 RadiusChunks = 8) const;
 
+    // Single-coordinate deterministic terrain preview. Unlike
+    // GetTerrainPresentationObservation this never requires/materializes a Core
+    // natural chunk and is safe for visual continuation such as river downstream
+    // segments crossing into the regional presentation ring.
+    UFUNCTION(BlueprintCallable, Category="LifeLens|Core|WorldGeneration|Terrain|Presentation")
+    bool GetTerrainPreviewObservation(
+        int32 ChunkX,
+        int32 ChunkY,
+        FLLCoreTerrainPresentationObservation& OutObservation) const;
+
     UFUNCTION(BlueprintCallable, Category="LifeLens|Core|WorldGeneration|Terrain|Presentation")
     bool GetTerrainPresentationObservation(
         int32 ChunkX,
