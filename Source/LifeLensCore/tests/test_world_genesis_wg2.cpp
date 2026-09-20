@@ -89,6 +89,37 @@ int main()
     const MacroRegionFacts different=deriveMacroRegionFacts(anotherWorld,{3,-4});
     assert(!sameMacroFacts(center,different));
 
+    const WorldGenesisIdentity currentPeopleA =
+        makeWorldGenesisIdentity(seed,111,CurrentWorldGenerationVersion);
+    const WorldGenesisIdentity currentPeopleB =
+        makeWorldGenesisIdentity(seed,222,CurrentWorldGenerationVersion);
+    const InitialStartRegionSelection currentStartA =
+        selectInitialFreshSurfaceWaterRegion(currentPeopleA);
+    const InitialStartRegionSelection currentStartB =
+        selectInitialFreshSurfaceWaterRegion(currentPeopleB);
+    assert(currentStartA.region.coord == currentStartB.region.coord);
+    assert(isFreshSurfaceWater(
+        deriveHydrologyFacts(currentPeopleA, currentStartA.region.coord)));
+
+    Simulation currentSimulation(
+        seed,111,CurrentWorldGenerationVersion);
+    currentSimulation.setupNewGame();
+    assert(currentSimulation.world().initialStartRegion().region.coord
+        == currentStartA.region.coord);
+
+    const GridPos currentWaterCenter =
+        currentSimulation.world().initialStartRegionCenterGrid();
+    bool foundAlignedFreshWaterNode = false;
+    for(const ResourceNode& node : currentSimulation.world().resourceNodes){
+        if(node.material != MaterialKind::Water){
+            continue;
+        }
+        assert(node.pos.x == currentWaterCenter.x);
+        assert(node.pos.y == currentWaterCenter.y);
+        foundAlignedFreshWaterNode = true;
+    }
+    assert(foundAlignedFreshWaterNode);
+
     World worldA(seed,111,1);
     World worldB(seed,222,1);
     assert(worldA.initialStartRegion().region.coord==worldB.initialStartRegion().region.coord);
