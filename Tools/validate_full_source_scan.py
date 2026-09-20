@@ -95,8 +95,10 @@ require("NaturalChunkPresentationSignature" in world_presentation,
         "world presentation no longer tracks authoritative materialized chunk identity/state")
 require("CurrentNaturalChunkSignature != BuiltNaturalChunkSignature" in world_presentation,
         "world presentation can miss same-count materialized chunk changes")
-require("BuildGround(World, MaterializedChunks)" in world_presentation,
-        "broad ground sizing regressed to count-only materialized chunk inference")
+require(
+    "BuildGround(World, MaterializedChunks, RegionalTerrains)" in world_presentation
+    and "const TArray<FLLCoreNaturalChunkObservation>& MaterializedChunks" in world_presentation,
+    "broad ground sizing regressed to count-only materialized chunk inference")
 for token in (
     "ClearStaleWorldProjection",
     "Ground->SetVisibility(false, true)",
