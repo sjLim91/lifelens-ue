@@ -94,31 +94,56 @@ int main()
     const WorldGenesisIdentity currentPeopleB =
         makeWorldGenesisIdentity(seed,222,CurrentWorldGenerationVersion);
     const InitialStartRegionSelection currentStartA =
-        selectInitialFreshSurfaceWaterRegion(currentPeopleA);
+        selectInitialFreshwaterAdjacentRegion(currentPeopleA);
     const InitialStartRegionSelection currentStartB =
-        selectInitialFreshSurfaceWaterRegion(currentPeopleB);
+        selectInitialFreshwaterAdjacentRegion(currentPeopleB);
     assert(currentStartA.region.coord == currentStartB.region.coord);
+    assert(deriveHydrologyFacts(
+        currentPeopleA,currentStartA.region.coord).surfaceKind == SurfaceWaterKind::None);
+
+    ChunkCoord currentFreshwaterA{};
+    ChunkCoord currentFreshwaterB{};
+    assert(findNearestFreshSurfaceWaterChunk(
+        currentPeopleA,
+        currentStartA.region.coord,
+        currentFreshwaterA,
+        FreshSurfaceNeighbourRadiusChunks));
+    assert(findNearestFreshSurfaceWaterChunk(
+        currentPeopleB,
+        currentStartB.region.coord,
+        currentFreshwaterB,
+        FreshSurfaceNeighbourRadiusChunks));
+    assert(currentFreshwaterA == currentFreshwaterB);
     assert(isFreshSurfaceWater(
-        deriveHydrologyFacts(currentPeopleA, currentStartA.region.coord)));
+        deriveHydrologyFacts(currentPeopleA,currentFreshwaterA)));
 
     Simulation currentSimulation(
         seed,111,CurrentWorldGenerationVersion);
     currentSimulation.setupNewGame();
     assert(currentSimulation.world().initialStartRegion().region.coord
         == currentStartA.region.coord);
+    assert(currentSimulation.world().findGeneratedNaturalChunk(
+        currentStartA.region.coord) != nullptr);
+    assert(currentSimulation.world().findGeneratedNaturalChunk(
+        currentFreshwaterA) != nullptr);
 
-    const GridPos currentWaterCenter =
-        currentSimulation.world().initialStartRegionCenterGrid();
-    bool foundAlignedFreshWaterNode = false;
+    const GridPos currentWaterOrigin =
+        chunkOriginGrid(currentFreshwaterA);
+    const GridPos currentWaterCenter = {
+        currentWaterOrigin.x + WorldChunkSpanGridCells / 2,
+        currentWaterOrigin.y + WorldChunkSpanGridCells / 2
+    };
+    int alignedFreshWaterNodeCount = 0;
     for(const ResourceNode& node : currentSimulation.world().resourceNodes){
         if(node.material != MaterialKind::Water){
             continue;
         }
+        assert(chunkCoordForGrid(node.pos) == currentFreshwaterA);
         assert(node.pos.x == currentWaterCenter.x);
         assert(node.pos.y == currentWaterCenter.y);
-        foundAlignedFreshWaterNode = true;
+        ++alignedFreshWaterNodeCount;
     }
-    assert(foundAlignedFreshWaterNode);
+    assert(alignedFreshWaterNodeCount == 1);
 
     World worldA(seed,111,1);
     World worldB(seed,222,1);
