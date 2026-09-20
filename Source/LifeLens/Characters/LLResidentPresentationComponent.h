@@ -12,15 +12,16 @@ class UStaticMesh;
 class UStaticMeshComponent;
 class UTextRenderComponent;
 
-// Presentation layer of a resident (DQ-02). Adds, never replaces:
-// - a silhouette (cylinder torso + sphere head, one matte unlit colour),
-//   height scaled by LifeStage, torso width by sex;
+// Presentation layer of a resident (DQ-02).
+// Production visuals come from ULLResidentAppearanceComponent. This component
+// owns observer readability:
+// - an optional QA-only primitive silhouette fallback (disabled by default);
 // - a selection ring at the feet, visible only for the observed resident,
 //   brighter at LEVEL 2 than LEVEL 1;
 // - name label LOD by camera distance (near: name + LifeStage badge,
 //   mid: name, far: hidden), always facing the camera, size scaled by distance.
 // Reads resident data through ULLSimulationSubsystem / ULLObservationSubsystem only.
-UCLASS(ClassGroup=(LifeLens), meta=(BlueprintSpawnableComponent))
+UCLASS(Config=Game, DefaultConfig, ClassGroup=(LifeLens), meta=(BlueprintSpawnableComponent))
 class LIFELENS_API ULLResidentPresentationComponent : public UActorComponent
 {
     GENERATED_BODY()
@@ -32,8 +33,8 @@ public:
     virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
     // Called once the owner knows which resident it represents. The human body
-    // can only be built then, so the fallback silhouette created in BeginPlay
-    // is removed here.
+    // can only be built then; a QA silhouette, if explicitly enabled, is
+    // removed once the human body becomes available.
     void OnResidentBound();
 
     // ---- Silhouette (adult, unscaled; multiplied by the LifeStage factor) ----
@@ -46,6 +47,11 @@ public:
     // opaque cube is hidden at runtime while the silhouette is shown. The
     // character's DebugBody component itself is untouched.
     static constexpr bool bHideDebugBody = true;
+
+    // Production policy: never mask a missing human asset with low-quality
+    // Engine primitives. Enable explicitly only for QA diagnostics.
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Presentation|QA")
+    bool bAllowPrimitiveSilhouetteFallback = false;
     static constexpr float SilhouetteBaseZ = -ReferenceBodyHeight * 0.5f;
     static constexpr float HeadRadius        = 8.0f;
     static constexpr float TorsoHeight       = ReferenceBodyHeight - 2.0f * HeadRadius;
@@ -128,9 +134,9 @@ private:
     UPROPERTY()
     TObjectPtr<UTextRenderComponent> Label;
 
-    // Character Appearance v1: when the owner's appearance component has built
-    // a human body, the silhouette is not created and the label sits above
-    // that body. The silhouette remains the fallback without assets.
+    // When the owner's appearance component has built a human body, the label
+    // sits above that body. Missing production art fails closed; primitive
+    // silhouette presentation requires explicit QA opt-in.
     UPROPERTY()
     TObjectPtr<ULLResidentAppearanceComponent> Appearance;
 
