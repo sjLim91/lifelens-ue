@@ -290,8 +290,24 @@ void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
     UGameInstance* GameInstance = GetGameInstance();
     ULLCoreBridgeSubsystem* Bridge =
         GameInstance ? GameInstance->GetSubsystem<ULLCoreBridgeSubsystem>() : nullptr;
-    if (!Bridge || !Bridge->IsCoreRunning() || !GetWorld())
+    if (!GetWorld())
     {
+        return;
+    }
+
+    auto ClearStaleWater = [this]()
+    {
+        if (bBuiltOnce || SpawnedWaterActors.Num() > 0)
+        {
+            ClearProjectedWater();
+            bBuiltOnce = false;
+            BuiltSignature = 0;
+        }
+    };
+
+    if (!Bridge || !Bridge->IsCoreRunning())
+    {
+        ClearStaleWater();
         return;
     }
 
@@ -299,6 +315,7 @@ void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
         Bridge->GetWorldGenerationObservation();
     if (!World.bAvailable || !World.bHasInitialStartRegion)
     {
+        ClearStaleWater();
         return;
     }
 
