@@ -653,7 +653,7 @@ for token in (
     'MaxGrassInstances = 1800',
     'MaxTreeInstances  = 1480',
     'MaxGrassInstances = 6400',
-    'TerrainReliefAmplitudeUU = 180.0f',
+    'LLTerrainPresentationContract::LocalReliefAmplitudeUU',
     'FLLCoreTerrainPresentationObservation',
 ):
     assert token in world_presentation_header, f'Missing platform/terrain presentation policy: {token}'
