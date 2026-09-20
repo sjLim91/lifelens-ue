@@ -13,8 +13,14 @@ for token in (
     "!Walkable.Contains(SideY)",
     "Character.ClearMovementTarget();",
     "Do not bypass the authoritative route mask with a direct sweep.",
+    "bHasFailedRouteTarget",
+    "LastFailedRouteTarget",
+    "NextRouteRetryWorldSeconds",
+    "FailedRouteRetrySeconds",
+    "SameFailedTargetToleranceUU",
 ):
-    assert token in cpp, f"missing materialized-surface pathfinding guard: {token}"
+    assert token in cpp or token in (root / "Source/LifeLens/World/LLWorldDirector.h").read_text(encoding="utf-8"), \
+        f"missing materialized-surface pathfinding guard: {token}"
 
 assert "Character.SetMovementTarget(DesiredLocation);" not in cpp[
     cpp.index("void ALLWorldDirector::MoveResidentToward"):

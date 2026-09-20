@@ -33,6 +33,13 @@ struct FLLResidentRuntimeState
     bool bUsingDesignatedSanitationSite = false;
     int64 CoreSanitationSiteId = 0;
     FTransform EmergencyUseTransform = FTransform::Identity;
+
+    // Presentation-only route failure backoff. An unreachable authoritative
+    // target stays pending in Core, but local A* must not recompute the same
+    // failed route every render frame.
+    bool bHasFailedRouteTarget = false;
+    FVector LastFailedRouteTarget = FVector::ZeroVector;
+    double NextRouteRetryWorldSeconds = 0.0;
 };
 
 UCLASS(Config=Game, DefaultConfig)
@@ -175,4 +182,7 @@ private:
 
     UPROPERTY(Config, EditAnywhere, Category="LifeLens|Movement|Pathfinding", meta=(ClampMin="128", ClampMax="32768"))
     int32 MaxLocalAStarExpandedNodes = 8192;
+
+    UPROPERTY(Config, EditAnywhere, Category="LifeLens|Movement|Pathfinding", meta=(ClampMin="0.05", ClampMax="5.0"))
+    float FailedRouteRetrySeconds = 0.50f;
 };

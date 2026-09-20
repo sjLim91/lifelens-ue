@@ -514,10 +514,33 @@ void ALLWorldDirector::MoveResidentToward(
         return;
     }
 
+    FLLResidentRuntimeState* Runtime =
+        RuntimeStates.Find(Character.GetResidentId());
+    const UWorld* World = GetWorld();
+    const double NowSeconds = World ? static_cast<double>(World->GetTimeSeconds()) : 0.0;
+    const float SameFailedTargetToleranceUU =
+        FMath::Max(1.0f, CoreGridCellSizeUU * 0.50f);
+
+    if (Runtime
+        && Runtime->bHasFailedRouteTarget
+        && FVector::DistSquared2D(
+            Runtime->LastFailedRouteTarget,
+            DesiredLocation)
+            <= FMath::Square(SameFailedTargetToleranceUU)
+        && NowSeconds < Runtime->NextRouteRetryWorldSeconds)
+    {
+        return;
+    }
+
     const TArray<FVector> Path =
         BuildLocalAStarPath(Character.GetActorLocation(), DesiredLocation);
     if (Path.Num() > 0)
     {
+        if (Runtime)
+        {
+            Runtime->bHasFailedRouteTarget = false;
+            Runtime->NextRouteRetryWorldSeconds = 0.0;
+        }
         Character.SetMovementPath(Path, DesiredLocation);
     }
     else
@@ -528,6 +551,14 @@ void ALLWorldDirector::MoveResidentToward(
         // visible sea or off the physical world. An unreachable Core target is
         // left pending for re-resolution instead of violating world geometry.
         Character.ClearMovementTarget();
+        if (Runtime)
+        {
+            Runtime->bHasFailedRouteTarget = true;
+            Runtime->LastFailedRouteTarget = DesiredLocation;
+            Runtime->NextRouteRetryWorldSeconds =
+                NowSeconds + static_cast<double>(
+                    FMath::Max(0.05f, FailedRouteRetrySeconds));
+        }
         UE_LOG(LogTemp, Verbose,
             TEXT("LifeLens resident route unavailable; movement held at %s toward %s"),
             *Character.GetActorLocation().ToCompactString(),
