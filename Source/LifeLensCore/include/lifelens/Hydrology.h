@@ -274,8 +274,43 @@ inline HydrologyFacts deriveHydrologyFacts(
 
 inline constexpr int FreshSurfaceStartSearchRadiusChunks =
     MacroStartSearchRadiusChunks * 2;
+inline constexpr int FreshSurfaceNeighbourRadiusChunks = 2;
 
-inline InitialStartRegionSelection selectInitialFreshSurfaceWaterRegion(
+inline bool findNearestFreshSurfaceWaterChunk(
+    const WorldGenesisIdentity& identity,
+    ChunkCoord origin,
+    ChunkCoord& outCoord,
+    int maxDistanceChunks=FreshSurfaceNeighbourRadiusChunks)
+{
+    const int radius = std::max(1, maxDistanceChunks);
+    bool found = false;
+    int bestDistance = 0;
+
+    for(int dy=-radius; dy<=radius; ++dy){
+        for(int dx=-radius; dx<=radius; ++dx){
+            if(dx==0 && dy==0) continue;
+            const int absX = dx < 0 ? -dx : dx;
+            const int absY = dy < 0 ? -dy : dy;
+            const int distance = absX + absY;
+            if(distance > radius) continue;
+
+            const ChunkCoord candidate{origin.x+dx,origin.y+dy};
+            const HydrologyFacts hydrology =
+                deriveHydrologyFacts(identity,candidate);
+            if(!isFreshSurfaceWater(hydrology)) continue;
+
+            if(!found || distance < bestDistance
+               || (distance == bestDistance && candidate < outCoord)){
+                outCoord = candidate;
+                bestDistance = distance;
+                found = true;
+            }
+        }
+    }
+    return found;
+}
+
+inline InitialStartRegionSelection selectInitialFreshwaterAdjacentRegion(
     const WorldGenesisIdentity& identity,
     int searchRadiusChunks=FreshSurfaceStartSearchRadiusChunks)
 {
@@ -293,9 +328,20 @@ inline InitialStartRegionSelection selectInitialFreshSurfaceWaterRegion(
                 continue;
             }
 
-            const HydrologyFacts hydrology =
+            // Founders begin on dry local surface, never inside the centered
+            // fresh-water shape rendered for this chunk.
+            const HydrologyFacts localHydrology =
                 deriveHydrologyFacts(identity, coord);
-            if(!isFreshSurfaceWater(hydrology)){
+            if(localHydrology.surfaceKind != SurfaceWaterKind::None){
+                continue;
+            }
+
+            ChunkCoord freshwaterCoord{};
+            if(!findNearestFreshSurfaceWaterChunk(
+                    identity,
+                    coord,
+                    freshwaterCoord,
+                    FreshSurfaceNeighbourRadiusChunks)){
                 continue;
             }
 
@@ -311,8 +357,6 @@ inline InitialStartRegionSelection selectInitialFreshSurfaceWaterRegion(
         }
     }
 
-    // The current search window is intentionally broad, but retain a
-    // deterministic fallback for pathological/custom generator versions.
     return hasBest
         ? best
         : selectInitialStartRegion(identity, radius);
