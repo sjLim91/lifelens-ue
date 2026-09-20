@@ -44,11 +44,9 @@ void ALLPCGGroundCoverPresentationActor::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
 
-    if (bGenerated)
-    {
-        return;
-    }
-
+    // Keep a low-frequency desktop watch alive after the first generation.
+    // A loaded/new world can change while this actor survives; bGenerated must
+    // not permanently freeze presentation on the first seed it observed.
     RetryAccumulator += FMath::Max(0.0f, DeltaSeconds);
     if (RetryAccumulator < RetryIntervalSeconds)
     {
@@ -102,7 +100,14 @@ void ALLPCGGroundCoverPresentationActor::TryGenerateFromCore()
     const int64 VisualSeed = InitialChunk.VisualSeed != 0
         ? InitialChunk.VisualSeed
         : World.WorldSeed;
-    if (bGenerated && LastGeneratedVisualSeed == VisualSeed)
+    const bool bSameGeneration =
+        bGenerated
+        && LastGeneratedVisualSeed == VisualSeed
+        && LastGeneratedWorldSeed == World.WorldSeed
+        && LastGeneratedGenerationVersion == World.GenerationVersion
+        && LastGeneratedChunkX == World.InitialChunkX
+        && LastGeneratedChunkY == World.InitialChunkY;
+    if (bSameGeneration)
     {
         return;
     }
@@ -121,8 +126,11 @@ void ALLPCGGroundCoverPresentationActor::TryGenerateFromCore()
     PCG->GenerateLocal(true);
 
     LastGeneratedVisualSeed = VisualSeed;
+    LastGeneratedWorldSeed = World.WorldSeed;
+    LastGeneratedGenerationVersion = World.GenerationVersion;
+    LastGeneratedChunkX = World.InitialChunkX;
+    LastGeneratedChunkY = World.InitialChunkY;
     bGenerated = true;
-    SetActorTickEnabled(false);
 
     UE_LOG(LogTemp, Log,
         TEXT("LifeLens desktop PCG ground cover generated: chunk=(%d,%d) visualSeed=%lld pcgSeed=%u"),
