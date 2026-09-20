@@ -165,12 +165,19 @@ ULLResidentMotionComponent::ULLResidentMotionComponent()
         TEXT("/Game/Environment/Photoreal/PolyHaven/wicker_basket_01/SM_LL_wicker_basket_01.SM_LL_wicker_basket_01"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> BowlFinder(
         TEXT("/Game/Environment/Photoreal/PolyHaven/wooden_bowl_01/SM_LL_wooden_bowl_01.SM_LL_wooden_bowl_01"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PrimitiveStoneFinder(
+        TEXT("/Game/Environment/Quaternius/StylizedNature/Pebble_Round_1/StaticMeshes/Pebble_Round_1.Pebble_Round_1"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PrimitiveStickFinder(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/dead_tree_trunk/SM_LL_dead_tree_trunk.SM_LL_dead_tree_trunk"));
 
-    // Sharp flake / primitive cutting / digging / stone hammer remain
-    // intentionally art-pending. Omitting an unapproved tool is preferable to
-    // showing a Cube/Cone or a technologically misleading modern tool.
-    SharpFlakeMesh = nullptr;
-    StoneCuttingToolMesh = nullptr;
+    // Reuse already-approved zero-cost natural assets rather than leaving Core
+    // tool actions visually empty. The same stone mesh is presented at different
+    // scales/orientations for a flake, cutting stone and hammerstone; the wood
+    // trunk is reduced to a narrow digging stick. No Engine primitive or modern
+    // manufactured tool is introduced.
+    SharpFlakeMesh = PrimitiveStoneFinder.Succeeded() ? PrimitiveStoneFinder.Object : nullptr;
+    StoneCuttingToolMesh = PrimitiveStoneFinder.Succeeded() ? PrimitiveStoneFinder.Object : nullptr;
+    DiggingStickMesh = PrimitiveStickFinder.Succeeded() ? PrimitiveStickFinder.Object : nullptr;
     SimpleContainerMesh = ContainerFinder.Succeeded() ? ContainerFinder.Object : nullptr;
     FoodProxyMesh = BowlFinder.Succeeded() ? BowlFinder.Object : nullptr;
     DrinkProxyMesh = BowlFinder.Succeeded() ? BowlFinder.Object : nullptr;
@@ -874,15 +881,15 @@ void ULLResidentMotionComponent::UpdateHeldToolVisualState()
     {
         case ELLResidentHeldToolPresentation::SharpFlake:
             DesiredMesh = SharpFlakeMesh.Get();
-            RelativeScale = FVector(0.035f, 0.055f, 0.025f);
+            RelativeScale = FVector(0.12f, 0.08f, 0.025f);
             RelativeRotation = FRotator(0.0f, 90.0f, 90.0f);
-            PropColor = FLinearColor(0.46f, 0.50f, 0.54f, 1.0f);
+            PropColor = FLinearColor::White;
             break;
         case ELLResidentHeldToolPresentation::StoneCuttingTool:
             DesiredMesh = StoneCuttingToolMesh.Get();
-            RelativeScale = FVector(0.035f, 0.035f, 0.20f);
-            RelativeRotation = FRotator(0.0f, 15.0f, 70.0f);
-            PropColor = FLinearColor(0.40f, 0.42f, 0.44f, 1.0f);
+            RelativeScale = FVector(0.16f, 0.09f, 0.055f);
+            RelativeRotation = FRotator(18.0f, 20.0f, 64.0f);
+            PropColor = FLinearColor::White;
             break;
         case ELLResidentHeldToolPresentation::SimpleContainer:
             DesiredMesh = SimpleContainerMesh.Get();
@@ -891,18 +898,20 @@ void ULLResidentMotionComponent::UpdateHeldToolVisualState()
             PropColor = FLinearColor::White;
             break;
         case ELLResidentHeldToolPresentation::DiggingStick:
-            DesiredMesh = StoneCuttingToolMesh.Get();
-            RelativeScale = FVector(0.022f, 0.022f, 0.28f);
-            RelativeRotation = FRotator(0.0f, 8.0f, 82.0f);
-            RelativeLocation = FVector(4.0f, 0.0f, -4.0f);
-            PropColor = FLinearColor(0.43f, 0.25f, 0.10f, 1.0f);
+            DesiredMesh = DiggingStickMesh.Get();
+            RelativeScale = FVector(0.018f, 0.018f, 0.20f);
+            RelativeRotation = FRotator(0.0f, 10.0f, 84.0f);
+            RelativeLocation = FVector(5.0f, 0.0f, -5.0f);
+            PropColor = FLinearColor::White;
             break;
         case ELLResidentHeldToolPresentation::StoneHammer:
+            // Primitive "hammer" is a hand-held hammerstone at this technology
+            // stage, not a modern hafted metal tool.
             DesiredMesh = StoneCuttingToolMesh.Get();
-            RelativeScale = FVector(0.065f, 0.045f, 0.16f);
-            RelativeRotation = FRotator(0.0f, 24.0f, 68.0f);
+            RelativeScale = FVector(0.18f, 0.14f, 0.12f);
+            RelativeRotation = FRotator(12.0f, 24.0f, 48.0f);
             RelativeLocation = FVector(3.0f, 0.0f, 1.0f);
-            PropColor = FLinearColor(0.34f, 0.36f, 0.40f, 1.0f);
+            PropColor = FLinearColor::White;
             break;
         case ELLResidentHeldToolPresentation::None:
         default:
