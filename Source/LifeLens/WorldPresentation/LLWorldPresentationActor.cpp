@@ -351,6 +351,8 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
     Ground->SetStaticMesh(GroundMesh);
     Ground->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     Ground->SetCanEverAffectNavigation(false);
+    Ground->SetVisibility(false, true);
+    Ground->SetHiddenInGame(true, true);
 
     FarGround = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FarVisualGround"));
     FarGround->SetupAttachment(Root);
@@ -359,6 +361,8 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
     FarGround->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     FarGround->SetCanEverAffectNavigation(false);
     FarGround->SetCastShadow(false);
+    FarGround->SetVisibility(false, true);
+    FarGround->SetHiddenInGame(true, true);
 
     GroundGrassTileInstances = AddInstancedComponent(
         TEXT("GroundGrassTiles"),
@@ -665,6 +669,37 @@ void ALLWorldPresentationActor::ClearFacilityInstances()
     if (PhotorealStructureLogInstances) { PhotorealStructureLogInstances->ClearInstances(); }
     if (PhotorealFurnaceStoneInstances) { PhotorealFurnaceStoneInstances->ClearInstances(); }
     if (PhotorealWorkToolInstances) { PhotorealWorkToolInstances->ClearInstances(); }
+}
+
+void ALLWorldPresentationActor::ClearProjectedWorld()
+{
+    ClearInstances();
+    ClearFacilityInstances();
+
+    if (Ground)
+    {
+        Ground->SetVisibility(false, true);
+        Ground->SetHiddenInGame(true, true);
+    }
+    if (FarGround)
+    {
+        FarGround->SetVisibility(false, true);
+        FarGround->SetHiddenInGame(true, true);
+    }
+
+    CachedFacilityReadabilityCentersUU.Reset();
+    CachedSettlementReferenceUU = FVector2D::ZeroVector;
+
+    BuiltWorldSeed = 0;
+    BuiltGenerationVersion = -1;
+    BuiltChunkCount = -1;
+    BuiltNaturalChunkSignature = 0;
+    BuiltTerrainPresentationSignature = 0;
+    BuiltFacilitySignature = 0;
+    BuiltFacilityLayoutSignature = 0;
+    BuiltResourceQuantitySignature = 0;
+    bBuiltFacilityPresentation = false;
+    bHasProjectedWorld = false;
 }
 
 void ALLWorldPresentationActor::ApplyFacilityMaterialPalette()
@@ -1169,6 +1204,14 @@ void ALLWorldPresentationActor::BuildGround(
     const TArray<FLLCoreNaturalChunkObservation>& MaterializedChunks)
 {
     if (!Ground || !GroundMesh) { return; }
+
+    Ground->SetVisibility(true, true);
+    Ground->SetHiddenInGame(false, true);
+    if (FarGround)
+    {
+        FarGround->SetVisibility(true, true);
+        FarGround->SetHiddenInGame(false, true);
+    }
 
     int32 MaxChunkRadius = 0;
     for (const FLLCoreNaturalChunkObservation& Chunk : MaterializedChunks)
@@ -2501,10 +2544,20 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
 {
     const UGameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
     ULLCoreBridgeSubsystem* Bridge = GameInstance ? GameInstance->GetSubsystem<ULLCoreBridgeSubsystem>() : nullptr;
-    if (!Bridge) { return; }
+    if (!Bridge || !Bridge->IsCoreRunning())
+    {
+        ClearProjectedWorld();
+        return;
+    }
 
     const FLLCoreWorldGenerationObservation World = Bridge->GetWorldGenerationObservation();
-    if (!World.bAvailable || !World.bHasInitialStartRegion) { return; }
+    if (!World.bAvailable || !World.bHasInitialStartRegion)
+    {
+        ClearProjectedWorld();
+        return;
+    }
+
+    const bool bProjectionNeedsBuild = !bHasProjectedWorld;
     const TArray<FLLCoreNaturalChunkObservation> MaterializedChunks =
         Bridge->GetMaterializedNaturalChunkObservations();
     const uint32 CurrentNaturalChunkSignature =
@@ -2527,7 +2580,8 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
     const uint32 CurrentFacilityLayoutSignature =
         FacilityLayoutSignature(Civilization);
     const bool bFacilityLayoutChanged =
-        bForce || CurrentFacilityLayoutSignature != BuiltFacilityLayoutSignature;
+        bForce || bProjectionNeedsBuild
+        || CurrentFacilityLayoutSignature != BuiltFacilityLayoutSignature;
     if (bFacilityLayoutChanged)
     {
         BuiltFacilityLayoutSignature = CurrentFacilityLayoutSignature;
@@ -2541,6 +2595,7 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         || CurrentResourceQuantitySignature != BuiltResourceQuantitySignature;
 
     const bool bNaturalChanged = bForce
+        || bProjectionNeedsBuild
         || World.WorldSeed != BuiltWorldSeed
         || World.GenerationVersion != BuiltGenerationVersion
         || World.MaterializedChunkCount != BuiltChunkCount
@@ -2556,7 +2611,9 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
     CurrentFacilitySignature = MixHash(
         CurrentFacilitySignature,
         bNightPresentation ? 0x4E494748u : 0x44415900u);
-    const bool bFacilitiesChanged = bForce || !bBuiltFacilityPresentation || CurrentFacilitySignature != BuiltFacilitySignature;
+    const bool bFacilitiesChanged =
+        bForce || bProjectionNeedsBuild || !bBuiltFacilityPresentation
+        || CurrentFacilitySignature != BuiltFacilitySignature;
     if (!bNaturalChanged && !bFacilitiesChanged) { return; }
 
     if (bNaturalChanged)
@@ -2600,6 +2657,8 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         ClearFacilityInstances();
         BuildFacilities(World, Civilization, bNightPresentation);
     }
+
+    bHasProjectedWorld = true;
 
     const int32 GroundTileCount =
         (GroundGrassTileInstances ? GroundGrassTileInstances->GetInstanceCount() : 0)
