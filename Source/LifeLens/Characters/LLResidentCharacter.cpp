@@ -45,9 +45,9 @@ ALLResidentCharacter::ALLResidentCharacter()
     DebugBody->SetVisibility(false, true);
     DebugBody->SetHiddenInGame(true, true);
 
-    // /Engine/BasicShapes/Capsule is not present in the UE 5.6 slim build image.
-    // Cube is a stable engine asset already used by the runtime smoke world, so
-    // keep the placeholder body dependency-free until real character meshes land.
+    // Diagnostics-only bootstrap geometry. The production human body is built
+    // by ULLResidentAppearanceComponent after stable resident identity binds;
+    // this hidden cube is retained only as a dependency-light QA sentinel.
     static ConstructorHelpers::FObjectFinder<UStaticMesh> BodyMesh(TEXT("/Engine/BasicShapes/Cube.Cube"));
     if (BodyMesh.Succeeded())
     {
@@ -81,15 +81,35 @@ void ALLResidentCharacter::Tick(float DeltaSeconds)
     }
 
     const FVector StartLocation = GetActorLocation();
-    FVector FlatTarget = MovementTarget;
+    const bool bHasRouteWaypoint =
+        MovementWaypointIndex >= 0
+        && MovementWaypointIndex < MovementWaypoints.Num();
+    FVector FlatTarget = bHasRouteWaypoint
+        ? MovementWaypoints[MovementWaypointIndex]
+        : MovementTarget;
     FlatTarget.Z = StartLocation.Z;
 
     FVector ToTarget = FlatTarget - StartLocation;
     ToTarget.Z = 0.0f;
     const float DistanceToTarget = ToTarget.Size2D();
-    if (DistanceToTarget <= FMath::Max(1.0f, TargetAcceptanceRadius))
+    const bool bIntermediateWaypoint =
+        bHasRouteWaypoint
+        && MovementWaypointIndex < MovementWaypoints.Num() - 1;
+    const float AcceptanceRadius = bIntermediateWaypoint
+        ? FMath::Max(1.0f, PathWaypointAcceptanceRadius)
+        : FMath::Max(1.0f, TargetAcceptanceRadius);
+    if (DistanceToTarget <= AcceptanceRadius)
     {
-        bHasMovementTarget = false;
+        if (bIntermediateWaypoint)
+        {
+            ++MovementWaypointIndex;
+        }
+        else
+        {
+            bHasMovementTarget = false;
+            MovementWaypoints.Reset();
+            MovementWaypointIndex = 0;
+        }
         return;
     }
 
@@ -300,13 +320,54 @@ void ALLResidentCharacter::RefreshLifecyclePresentation()
 
 void ALLResidentCharacter::SetMovementTarget(const FVector& TargetLocation)
 {
+    if (IsMovingToward(TargetLocation))
+    {
+        return;
+    }
+
     MovementTarget = TargetLocation;
+    MovementWaypoints.Reset();
+    MovementWaypointIndex = 0;
+    bHasMovementTarget = true;
+}
+
+void ALLResidentCharacter::SetMovementPath(
+    const TArray<FVector>& PathPoints,
+    const FVector& FinalTarget)
+{
+    if (IsMovingToward(FinalTarget))
+    {
+        return;
+    }
+
+    MovementTarget = FinalTarget;
+    MovementWaypoints = PathPoints;
+    MovementWaypointIndex = 0;
+
+    if (MovementWaypoints.Num() == 0
+        || FVector::DistSquared2D(MovementWaypoints.Last(), FinalTarget)
+            > FMath::Square(1.0f))
+    {
+        MovementWaypoints.Add(FinalTarget);
+    }
+
     bHasMovementTarget = true;
 }
 
 void ALLResidentCharacter::ClearMovementTarget()
 {
     bHasMovementTarget = false;
+    MovementWaypoints.Reset();
+    MovementWaypointIndex = 0;
+}
+
+bool ALLResidentCharacter::IsMovingToward(
+    const FVector& TargetLocation,
+    float ToleranceUU) const
+{
+    return bHasMovementTarget
+        && FVector::DistSquared2D(MovementTarget, TargetLocation)
+            <= FMath::Square(FMath::Max(0.0f, ToleranceUU));
 }
 
 bool ALLResidentCharacter::HasReachedMovementTarget() const

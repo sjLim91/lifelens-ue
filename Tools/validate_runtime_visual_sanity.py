@@ -70,6 +70,10 @@ assert "if (bDry && GroundDry)" not in cpp
 
 # Resident bootstrap geometry must never flash before identity/appearance binds.
 resident_cpp = (root / "Source/LifeLens/Characters/LLResidentCharacter.cpp").read_text(encoding="utf-8")
+resident_presentation_cpp = (root / "Source/LifeLens/Characters/LLResidentPresentationComponent.cpp").read_text(encoding="utf-8")
+resident_presentation_header = (root / "Source/LifeLens/Characters/LLResidentPresentationComponent.h").read_text(encoding="utf-8")
+assert "bAllowPrimitiveSilhouetteFallback = false" in resident_presentation_header
+assert "&& bAllowPrimitiveSilhouetteFallback" in resident_presentation_cpp
 for token in (
     "DebugBody->SetVisibility(false, true);",
     "DebugBody->SetHiddenInGame(true, true);",

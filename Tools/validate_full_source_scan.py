@@ -103,6 +103,50 @@ require("static_cast<uint32>(Facility.GridX)" in desktop_terrain
         and "static_cast<uint32>(Facility.GridY)" in desktop_terrain,
         "desktop terrain signature no longer follows facility positions used for flattening")
 
+resident_character = (SOURCE / "LifeLens/Characters/LLResidentCharacter.cpp").read_text(encoding="utf-8")
+world_director = (SOURCE / "LifeLens/World/LLWorldDirector.cpp").read_text(encoding="utf-8")
+world_collision = (SOURCE / "LifeLens/World/LLWorldObstacleCollisionProxyActor.cpp").read_text(encoding="utf-8")
+require("MaterializedSurfaceCollision" in world_collision,
+        "materialized land no longer projects an invisible resident support surface")
+require('Chunk.Surface != FName(TEXT("Ocean"))' in world_collision,
+        "ocean chunks must not receive walkable resident floor collision")
+
+require("SetMovementPath" in resident_character,
+        "resident locomotion lost multi-waypoint route support")
+for token in (
+    "BuildLocalAStarPath",
+    "LLGridOctileHeuristic",
+    "No diagonal corner cutting",
+    "GetMaterializedNaturalChunkObservations",
+    "GetMaterializedSurfaceWaterPresentationObservations",
+    "ShoreOffsetCells",
+    "bHasMarineNeighbour",
+    "MoveResidentToward",
+):
+    require(token in world_director,
+            f"local A* physical executor missing {token}")
+
+core_read_types = (SOURCE / "LifeLens/Simulation/LLCoreReadTypes.h").read_text(encoding="utf-8")
+core_bridge = (SOURCE / "LifeLens/Simulation/LLCoreBridgeSubsystem.cpp").read_text(encoding="utf-8")
+appearance_profile = (SOURCE / "LifeLens/Simulation/LLAppearanceProfile.cpp").read_text(encoding="utf-8")
+appearance_component = (SOURCE / "LifeLens/Characters/LLResidentAppearanceComponent.cpp").read_text(encoding="utf-8")
+require("FLLCoreGeneticsSnapshot" in core_read_types,
+        "Core inherited genetics are not exposed to presentation DTOs")
+for token in (
+    "genetics.faceShape",
+    "genetics.eyePigment",
+    "genetics.hairPigment",
+    "genetics.skinTone",
+    "genetics.heightPotential",
+    "genetics.buildPotential",
+):
+    require(token in core_bridge,
+            f"Core genetic phenotype missing from bridge projection: {token}")
+require("MakeGeneticAppearanceProfile" in appearance_profile,
+        "appearance still ignores authoritative inherited genetics")
+require("ResolveWithGenetics" in appearance_component,
+        "resident appearance is not consuming Core genetic phenotype")
+
 water = (SOURCE / "LifeLens/WorldPresentation/LLWaterPresentationActor.cpp").read_text(encoding="utf-8")
 for token in (
     "marineLocalSurface",

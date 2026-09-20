@@ -256,7 +256,7 @@ void ALLWorldDirector::ApplyPendingContextDirective(
         ClearContextPresentation();
         Runtime.bPerformingAction = false;
         Runtime.ContextUseElapsedSeconds = 0.0f;
-        Character.SetMovementTarget(DesiredLocation);
+        MoveResidentToward(Character, DesiredLocation);
         return;
     }
 

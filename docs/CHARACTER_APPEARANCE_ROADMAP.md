@@ -6,18 +6,20 @@
 
 ## 1. 현재 상태 — 중요
 
-현재 LifeLens의 Core/Observer/가족/문명 시스템은 실제 상태를 만들고 읽을 수 있지만, 캐릭터의 시각 표현은 아직 개발용 placeholder 단계다.
+현재 LifeLens의 캐릭터 표현은 초기 primitive placeholder 단계를 벗어났다.
 
-PR #29 Character Presentation v1의 현재 표현은:
-- Cylinder 기반 몸통
-- Sphere 기반 머리
-- 단색 Unlit/Emissive material
-- 선택 링
-- 이름/LifeStage 라벨 LOD
+현재 production runtime에는:
+- 공통 humanoid skeletal mesh 기반 남/녀 실제 인간 body
+- 피부/눈/머리 색 variation
+- 머리/수염 및 기본 의상
+- LifeStage 기반 체격/캡슐/노화 표현
+- locomotion BlendSpace + Core context-action animation
+- Core `GeneticsProfile` → Bridge → Appearance phenotype 연결
+- 선택 링, 이름/LifeStage 라벨 LOD
 
-즉, 현재 Unreal에서 피부/얼굴/눈/머리카락/의상 등이 보이지 않는 것은 정상이다. 실제 인간 외형 asset/pipeline은 아직 production implementation 전이다.
+가 들어가 있다.
 
-이 placeholder를 최종 그래픽으로 간주하지 않는다.
+다만 얼굴 morph 다양성, Motion Matching/Pose Search, Motion Warping, IK/Control Rig는 아직 production 구현이 없다. 따라서 현재 인간형 표현을 최종 AAA 완성본으로 간주하지 않는다.
 
 ## 2. 목표
 
@@ -154,12 +156,19 @@ Save/Load 후 외형이 바뀌면 안 된다.
 
 이 단계에서 외형/캐릭터가 가려지거나 UI가 과밀해지지 않게 Observer-first 원칙을 유지한다.
 
-### Phase F — Appearance Genetics & Lifecycle v1
+### Phase F — Appearance Genetics & Lifecycle v1 — IN PROGRESS
 
 기존 Core Genetics/Lifecycle과 시각 표현을 연결한다.
 
-범위:
-- 부모 phenotype/appearance parameter 조합
+현재 완료:
+- Core 부모 유전 → 자녀 `GeneticsProfile` 상속/variation
+- Bridge `FLLCoreGeneticsSnapshot` projection
+- 피부/눈/머리색/키/체형 phenotype의 실제 appearance 반영
+- LifeStage 성장/노화 크기 및 머리/피부 ageing
+
+잔여 범위:
+- 실제 face morph/face-shape asset 연결
+- 부모 phenotype/appearance parameter의 얼굴 형태 시각화
 - 출생 시 visual identity 생성
 - child → teen → adult → elder 단계별 외형 변화
 - 키/체형/얼굴 성숙도 변화

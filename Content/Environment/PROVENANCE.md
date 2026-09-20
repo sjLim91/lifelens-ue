@@ -104,3 +104,13 @@ Validated source pages (Poly Haven, CC0 1.0):
 - `wooden_axe` — early work-tool visual.
 
 These assets are acquired/imported through the same deterministic Poly Haven pipeline and remain presentation-only. Their presence does not create a facility, inventory, tool capability, or technology in Core.
+
+### Pack 3 daily-life / structure extensions
+
+Validated through the same Poly Haven CC0 API/acquisition pipeline:
+
+- `wooden_bowl_01` — compact Eat/Drink held-prop presentation. Imported by `.github/workflows/photoreal-daily-life-props-import.yml`.
+- `dead_tree_trunk` — desktop primitive timber structure/log presentation. Imported by `.github/workflows/photoreal-primitive-structure-assets-import.yml`.
+- `boulder_01` — also reused on desktop as furnace-stone structure material after its natural ambient rendering was disabled pending material repair.
+
+All three remain presentation-only. `wooden_bowl_01` does not create food/water; Core inventory and physical-action acknowledgement remain authoritative. `dead_tree_trunk` and `boulder_01` do not create facilities or construction progress.

@@ -392,6 +392,16 @@ bool ULLCoreBridgeSubsystem::BuildResidentObservation(
     OutObservation.Personality.Orderliness = CoreScalar(CoreCharacter->personality.orderliness);
     OutObservation.Personality.Adaptability = CoreScalar(CoreCharacter->personality.adaptability);
 
+    OutObservation.Genetics.FaceShape = CoreScalar(CoreCharacter->genetics.faceShape);
+    OutObservation.Genetics.EyePigment = CoreScalar(CoreCharacter->genetics.eyePigment);
+    OutObservation.Genetics.HairPigment = CoreScalar(CoreCharacter->genetics.hairPigment);
+    OutObservation.Genetics.SkinTone = CoreScalar(CoreCharacter->genetics.skinTone);
+    OutObservation.Genetics.HeightPotential = CoreScalar(CoreCharacter->genetics.heightPotential);
+    OutObservation.Genetics.BuildPotential = CoreScalar(CoreCharacter->genetics.buildPotential);
+    OutObservation.Genetics.HealthPotential = CoreScalar(CoreCharacter->genetics.healthPotential);
+    OutObservation.Genetics.LearningPotential = CoreScalar(CoreCharacter->genetics.learningPotential);
+    OutObservation.Genetics.TemperamentSensitivity = CoreScalar(CoreCharacter->genetics.temperamentSensitivity);
+
     OutObservation.Needs.Hunger = CoreScalar(CoreObservation.needs.hunger);
     OutObservation.Needs.Thirst = CoreScalar(CoreObservation.needs.thirst);
     OutObservation.Needs.Sleep = CoreScalar(CoreObservation.needs.sleep);

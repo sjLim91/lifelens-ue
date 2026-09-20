@@ -56,8 +56,9 @@ void ULLResidentPresentationComponent::BeginPlay()
         Appearance = Owner->FindComponentByClass<ULLResidentAppearanceComponent>();
     }
 
-    // Human body from Character Appearance v1 takes precedence; the
-    // cylinder/sphere silhouette is only the asset-less fallback.
+    // Human body from Character Appearance is the production path. Primitive
+    // silhouette geometry is QA-only and defaults off so missing art cannot
+    // silently regress the shipped local view to Cylinder/Sphere people.
     if (Appearance)
     {
         Appearance->EnsureBuilt();
@@ -70,7 +71,7 @@ void ULLResidentPresentationComponent::BeginPlay()
     const bool bAwaitingIdentity = Resident && !Resident->GetResidentId().IsValid();
 
     const bool bHasHumanBody = Appearance && Appearance->HasBody();
-    if (!bHasHumanBody && !bAwaitingIdentity)
+    if (!bHasHumanBody && !bAwaitingIdentity && bAllowPrimitiveSilhouetteFallback)
     {
         BuildSilhouette();
     }
@@ -94,17 +95,18 @@ void ULLResidentPresentationComponent::OnResidentBound()
     Appearance->EnsureBuilt();
     if (!Appearance->HasBody())
     {
-        // No human body for this resident: build the silhouette fallback that
-        // BeginPlay deferred.
-        if (!Torso)
+        // Fail closed in production. A missing human asset must remain visible
+        // through observer label/ring diagnostics rather than becoming an
+        // obvious Engine-primitive person.
+        if (bAllowPrimitiveSilhouetteFallback && !Torso)
         {
             BuildSilhouette();
         }
     }
     else if (Torso)
     {
-        // A human body arrived after a silhouette had already been built; drop
-        // the placeholder meshes.
+        // A human body arrived after a QA silhouette had already been built;
+        // drop the diagnostic meshes.
         Torso->DestroyComponent();
         Torso = nullptr;
         if (Head)

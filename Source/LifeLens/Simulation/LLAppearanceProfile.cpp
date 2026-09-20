@@ -64,3 +64,23 @@ FLLAppearanceProfile ULLAppearanceProfileLibrary::MakeDeterministicAppearancePro
     Result.OutfitVariant = Variant(Base, 0x4F5554464954ull, 8);
     return Result;
 }
+
+FLLAppearanceProfile ULLAppearanceProfileLibrary::MakeGeneticAppearanceProfile(
+    FGuid ResidentId,
+    ELLCoreSex Sex,
+    ELLCoreLifeStage LifeStage,
+    const FLLCoreGeneticsSnapshot& Genetics)
+{
+    FLLAppearanceProfile Result =
+        MakeDeterministicAppearanceProfile(ResidentId, Sex, LifeStage);
+
+    // Inheritable phenotype comes directly from Core. Identity hashing remains
+    // only for style/outfit catalogue choices that are not genetic truth.
+    Result.FaceAxis = FMath::Clamp(Genetics.FaceShape, 0.0f, 1.0f);
+    Result.SkinToneAxis = FMath::Clamp(Genetics.SkinTone, 0.0f, 1.0f);
+    Result.EyeColorAxis = FMath::Clamp(Genetics.EyePigment, 0.0f, 1.0f);
+    Result.HairColorAxis = FMath::Clamp(Genetics.HairPigment, 0.0f, 1.0f);
+    Result.HeightAxis = FMath::Clamp(Genetics.HeightPotential, 0.0f, 1.0f);
+    Result.BuildAxis = FMath::Clamp(Genetics.BuildPotential, 0.0f, 1.0f);
+    return Result;
+}

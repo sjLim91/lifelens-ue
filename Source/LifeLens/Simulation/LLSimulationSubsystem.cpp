@@ -383,6 +383,3 @@ bool ULLSimulationSubsystem::GetRelationship(FGuid A, FGuid B, FLLRelationshipDa
     return false;
 }
 
-// Legacy Preflight compatibility markers only: ApplyActionOutcome, ApplySocialInteraction.
-// No mutable projection API or implementation remains; authoritative outcomes flow
-// through LifeLensCore completion/ACK paths and are projected here read-only.
