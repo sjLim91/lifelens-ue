@@ -629,6 +629,7 @@ assert 'Name="WaterBodyCollision"' in default_engine, 'Unreal Water plugin requi
 
 world_presentation = (root / 'Source/LifeLens/WorldPresentation/LLWorldPresentationActor.cpp').read_text(encoding='utf-8')
 world_presentation_header = (root / 'Source/LifeLens/WorldPresentation/LLWorldPresentationActor.h').read_text(encoding='utf-8')
+terrain_contract = (root / 'Source/LifeLens/WorldPresentation/LLTerrainPresentationContract.h').read_text(encoding='utf-8')
 for token in (
     'PresentationSeed(Chunk.VisualSeed)',
     'PresentationSeed(Patch.VisualSeed)',
@@ -653,10 +654,11 @@ for token in (
     'MaxGrassInstances = 1800',
     'MaxTreeInstances  = 1480',
     'MaxGrassInstances = 6400',
-    'LLTerrainPresentationContract::LocalReliefAmplitudeUU',
     'FLLCoreTerrainPresentationObservation',
 ):
     assert token in world_presentation_header, f'Missing platform/terrain presentation policy: {token}'
+assert 'LocalReliefAmplitudeUU = 180.0f' in terrain_contract
+assert 'LLTerrainPresentationContract::LocalSurfaceZUU' in world_presentation
 assert 'const int32 StoneCount = bStructurallyComplete ? 8' not in world_presentation, 'Completed firepit must not regress to the Engine-cube ring'
 
 
