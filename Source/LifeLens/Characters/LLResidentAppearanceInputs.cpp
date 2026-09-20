@@ -35,7 +35,8 @@ namespace LLAppearanceInputsHash
 
 FLLResidentAppearanceInputs ULLResidentAppearanceInputSource::MakeTemporaryAppearanceInputs(int32 WorldSeed, FGuid ResidentId, ELLCoreSex Sex, ELLCoreLifeStage LifeStage)
 {
-    // TEMPORARY: presentation-only seed until PR #65 (FLLAppearanceProfile).
+    // Invalid-identity QA fallback only. Production residents resolve through
+    // stable Core identity and, when available, authoritative Core genetics.
     FLLResidentAppearanceInputs Inputs;
     Inputs.ResidentId = ResidentId;
     Inputs.Sex = Sex;
@@ -66,9 +67,9 @@ FLLResidentAppearanceInputs ULLResidentAppearanceInputSource::MakeTemporaryAppea
 
 FLLResidentAppearanceInputs ULLResidentAppearanceInputSource::Resolve(int32 WorldSeed, FGuid ResidentId, ELLCoreSex Sex, ELLCoreLifeStage LifeStage)
 {
-    // Bridge contract (PR #65): the profile is a deterministic projection of the
-    // stable ResidentId (WorldSeed + Core CharacterId) plus authoritative
-    // Sex/LifeStage, so it survives Save/Load without any presentation cache.
+    // Stable identity presentation path used when a genetics observation is
+    // unavailable. ResidentId comes from WorldSeed + Core CharacterId, so this
+    // remains deterministic across Save/Load without a presentation cache.
     if (ResidentId.IsValid())
     {
         const FLLAppearanceProfile Profile = ULLAppearanceProfileLibrary::MakeDeterministicAppearanceProfile(ResidentId, Sex, LifeStage);
@@ -91,8 +92,8 @@ FLLResidentAppearanceInputs ULLResidentAppearanceInputSource::Resolve(int32 Worl
         return Inputs;
     }
 
-    // Fallback only when no stable identity is available (should not happen
-    // for spawned residents): temporary presentation seed.
+    // QA fallback only when no stable identity is available. Production
+    // spawned residents should never enter this path.
     return MakeTemporaryAppearanceInputs(WorldSeed, ResidentId, Sex, LifeStage);
 }
 
