@@ -93,6 +93,13 @@ int main()
     assert(oceanCount > 0);
     assert(saltOrBrackishCount > 0);
 
+    const InitialStartRegionSelection freshStart =
+        selectInitialFreshSurfaceWaterRegion(peopleA);
+    const HydrologyFacts freshStartHydrology =
+        deriveHydrologyFacts(peopleA, freshStart.region.coord);
+    assert(isFreshSurfaceWater(freshStartHydrology));
+    assert(freshStartHydrology.surfaceWaterId != 0);
+
     // Stable ids reproduce exactly for the same seed/coord/kind.
     for(const auto& entry : ids){
         const ChunkCoord coord{entry.first.first, entry.first.second};
