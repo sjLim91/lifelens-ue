@@ -1785,46 +1785,70 @@ void ALLWorldPresentationActor::BuildFacilities(
         const float Durability = FMath::Clamp(Facility.Durability, 0.0f, 1.0f);
         const float BuildProgress = bStructurallyComplete ? 1.0f : FMath::Max(MaterialProgress, WorkProgress);
 
-#if !PLATFORM_ANDROID
-        // Desktop construction is allowed to be incomplete, but never to look
-        // like stretched Engine BasicShapes. Show truthful staged raw material
-        // instead: timber for general facilities and stones for furnaces.
-        if (bPlanned && PhotorealStructureLogInstances)
+        // Construction is incomplete, but it still should not look like
+        // stretched Engine BasicShapes on the mobile-first target. Reuse the
+        // already-approved staged materials on every platform: timber for most
+        // facilities and stone for fire/furnace work. If approved art is missing
+        // we fall through to the compact structural fallback below.
+        const bool bStoneConstruction =
+            Facility.Kind == ELLCoreFacilityKind::Furnace
+            || Facility.Kind == ELLCoreFacilityKind::FirePit;
+        const bool bUsePhotorealConstructionStaging =
+            !bStructurallyComplete
+            && !bRuined
+            && (bStoneConstruction
+                ? PhotorealFurnaceStoneInstances != nullptr
+                : PhotorealStructureLogInstances != nullptr);
+
+        if (bUsePhotorealConstructionStaging)
         {
-            AddPhotorealStructureLog(Base + FVector(0.0f, -54.0f, 7.0f), FVector::ForwardVector, 150.0f, 10.0f);
-            AddPhotorealStructureLog(Base + FVector(0.0f,  54.0f, 7.0f), FVector::ForwardVector, 150.0f, 10.0f);
-        }
-        else if (!bStructurallyComplete && !bRuined && BuildProgress > 0.02f)
-        {
-            if (Facility.Kind == ELLCoreFacilityKind::Furnace && PhotorealFurnaceStoneInstances)
+            if (bStoneConstruction)
             {
-                const int32 StoneCount = FMath::Clamp(FMath::CeilToInt(BuildProgress * 10.0f), 2, 10);
+                const float VisibleProgress = bPlanned
+                    ? 0.18f
+                    : FMath::Clamp(BuildProgress, 0.02f, 1.0f);
+                const int32 StoneCount = FMath::Clamp(
+                    FMath::CeilToInt(VisibleProgress * 10.0f),
+                    2,
+                    10);
                 for (int32 StoneIndex = 0; StoneIndex < StoneCount; ++StoneIndex)
                 {
                     const float AngleDegrees =
-                        (360.0f / static_cast<float>(StoneCount)) * static_cast<float>(StoneIndex);
+                        (360.0f / static_cast<float>(StoneCount))
+                        * static_cast<float>(StoneIndex);
                     const float AngleRadians = FMath::DegreesToRadians(AngleDegrees);
                     AddPhotorealFurnaceStone(
                         Base + FVector(
                             FMath::Cos(AngleRadians) * 58.0f,
                             FMath::Sin(AngleRadians) * 58.0f,
-                            25.0f + BuildProgress * 18.0f),
+                            18.0f + VisibleProgress * 20.0f),
                         44.0f,
                         AngleDegrees + 90.0f,
                         0.72f);
                 }
             }
-            else if (PhotorealStructureLogInstances)
+            else
             {
-                const int32 LogCount = FMath::Clamp(FMath::CeilToInt(BuildProgress * 8.0f), 2, 8);
+                const float VisibleProgress = bPlanned
+                    ? 0.22f
+                    : FMath::Clamp(BuildProgress, 0.02f, 1.0f);
+                const int32 LogCount = FMath::Clamp(
+                    FMath::CeilToInt(VisibleProgress * 8.0f),
+                    2,
+                    8);
                 for (int32 LogIndex = 0; LogIndex < LogCount; ++LogIndex)
                 {
                     const bool bAcross = (LogIndex % 2) != 0;
                     const int32 Layer = LogIndex / 2;
-                    const FVector Direction = bAcross ? FVector::RightVector : FVector::ForwardVector;
+                    const FVector Direction =
+                        bAcross ? FVector::RightVector : FVector::ForwardVector;
                     const FVector Offset(
-                        bAcross ? -42.0f + 28.0f * static_cast<float>(Layer) : 0.0f,
-                        bAcross ? 0.0f : -42.0f + 28.0f * static_cast<float>(Layer),
+                        bAcross
+                            ? -42.0f + 28.0f * static_cast<float>(Layer)
+                            : 0.0f,
+                        bAcross
+                            ? 0.0f
+                            : -42.0f + 28.0f * static_cast<float>(Layer),
                         10.0f + 12.0f * static_cast<float>(Layer));
                     AddPhotorealStructureLog(
                         Base + Offset,
@@ -1833,8 +1857,12 @@ void ALLWorldPresentationActor::BuildFacilities(
                         13.0f);
                 }
             }
+
+            // The staged hero material itself communicates Planned /
+            // UnderConstruction state. Do not layer the Android Engine-cube
+            // fallback structure on top of it.
+            continue;
         }
-#endif
 
         // Ruins stay visible as low, scattered debris instead of disappearing.
         // This is deliberately generic: Core owns the Ruined state; Presentation
