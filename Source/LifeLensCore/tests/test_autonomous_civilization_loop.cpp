@@ -248,7 +248,7 @@ int main()
     CHECK(!first.world().resourceNodes.empty());
     for(const auto& node:first.world().resourceNodes) CHECK(node.quantity==node.maxQuantity);
     CHECK(first.world().storageSites.empty());
-    CHECK(first.world().generatedNaturalChunks.size()==1);
+    CHECK(first.world().generatedNaturalChunks.size()==2);
 
     std::cout << "autonomous civilization utility + simulation loop passed\n";
     return 0;
