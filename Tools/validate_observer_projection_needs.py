@@ -11,6 +11,14 @@ assert "float Thirst" in types, "FLLNeedState must expose authoritative Core thi
 assert "Resident.Needs.Thirst = ToLegacyNeed(CoreResident.Needs.Thirst);" in projection, \
     "Core thirst must be projected into the observer DTO"
 
+# The legacy resident DTO's bPregnant flag is presentation compatibility only.
+# It must mean an active gestational pregnancy, not permanent gestational role
+# and not the non-gestational partner's "expecting child" state.
+assert "Family.bGestationalParent && Family.bExpectingChild" in projection, \
+    "legacy bPregnant must require active pregnancy plus gestational-parent role"
+assert "Resident.bPregnant = Family.bGestationalParent;" not in projection, \
+    "gestational-parent identity alone must not mark a resident permanently pregnant"
+
 # Projection is read-only. Physical/social outcomes are committed through the
 # authoritative Core completion/ACK path, never by mutating compatibility DTOs.
 for obsolete in (
