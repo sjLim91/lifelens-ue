@@ -691,6 +691,19 @@ void ALLWorldDirector::UpdateResident(ALLResidentCharacter& Character, float Del
         Character.ClearMovementTarget();
         Character.SetCurrentIntent(ELLActionIntent::Idle);
         Runtime->bPerformingAction = false;
+
+        // No authoritative directive means no context presentation may remain.
+        // A completed/cancelled context action can disappear before a replacement
+        // direct directive exists; without this fail-closed reset the resident
+        // could keep talking, working or holding a tool from the previous action.
+        if (Character.MotionComponent)
+        {
+            Character.MotionComponent->SetSocialInteractionActive(false);
+            Character.MotionComponent->SetWorkPresentationMode(
+                ELLResidentWorkPresentationMode::None);
+            Character.MotionComponent->SetHeldToolPresentation(
+                ELLResidentHeldToolPresentation::None);
+        }
         return;
     }
 
