@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "Civilization.h"
+#include "Hydrology.h"
 #include "MacroWorldGenesis.h"
 
 namespace lifelens {
@@ -213,6 +214,8 @@ inline GeneratedNaturalChunk deriveGeneratedNaturalChunk(
     chunk.biome = macro.biome;
     const MacroSurfaceFacts macroSurface =
         deriveMacroSurfaceFacts(identity, coord);
+    const HydrologyFacts hydrology =
+        deriveHydrologyFacts(identity, coord);
     chunk.surface = macroSurface.surfaceClass == MacroSurfaceClass::Ocean
         ? NaturalSurfaceKind::Ocean
         : (macroSurface.surfaceClass == MacroSurfaceClass::Coast
@@ -249,16 +252,22 @@ inline GeneratedNaturalChunk deriveGeneratedNaturalChunk(
 
     const GridPos origin = chunkOriginGrid(coord);
     for(MaterialKind material : materials){
-        if(material == MaterialKind::Water
-           && macroSurface.surfaceClass != MacroSurfaceClass::Land){
+        const bool waterMaterial = material == MaterialKind::Water;
+        if(waterMaterial && !isFreshSurfaceWater(hydrology)){
+            // Do not manufacture invisible "Water" inventory from a generic
+            // potential field. Drinkable natural Water must correspond to an
+            // actual authoritative fresh spring/stream/river/lake/wetland.
             continue;
         }
-        const double potential = naturalPotentialForMaterial(macro, material);
+
+        const double potential = waterMaterial
+            ? hydrology.surfaceAvailability
+            : naturalPotentialForMaterial(macro, material);
         const bool metalOre=
             material==MaterialKind::CopperOre
             || material==MaterialKind::TinOre;
-        const int maxPatches=material==MaterialKind::Water
-            ? 3
+        const int maxPatches = waterMaterial
+            ? 1
             : (metalOre ? 2 : 4);
         const int patchCount = naturalPatchCount(potential, maxPatches);
         for(int ordinal = 0; ordinal < patchCount; ++ordinal){
@@ -269,8 +278,16 @@ inline GeneratedNaturalChunk deriveGeneratedNaturalChunk(
             const double amountNoise = macroUnitFromWord(worldGenesisMix64(detailSeed ^ 0x414d4f554e543031ULL));
             const double densityNoise = macroUnitFromWord(worldGenesisMix64(detailSeed ^ 0x44454e5349545931ULL));
             const int localSpan = std::max(1, WorldChunkSpanGridCells - 4);
-            const int localX = 2 + static_cast<int>(worldGenesisMix64(detailSeed ^ 0x504f535f585f3031ULL) % static_cast<std::uint64_t>(localSpan));
-            const int localY = 2 + static_cast<int>(worldGenesisMix64(detailSeed ^ 0x504f535f595f3031ULL) % static_cast<std::uint64_t>(localSpan));
+            const int localX = waterMaterial
+                ? WorldChunkSpanGridCells / 2
+                : 2 + static_cast<int>(
+                    worldGenesisMix64(detailSeed ^ 0x504f535f585f3031ULL)
+                    % static_cast<std::uint64_t>(localSpan));
+            const int localY = waterMaterial
+                ? WorldChunkSpanGridCells / 2
+                : 2 + static_cast<int>(
+                    worldGenesisMix64(detailSeed ^ 0x504f535f595f3031ULL)
+                    % static_cast<std::uint64_t>(localSpan));
 
             const int minimum = naturalResourceBaseMinimum(material);
             const int maximum = naturalResourceBaseMaximum(material);
