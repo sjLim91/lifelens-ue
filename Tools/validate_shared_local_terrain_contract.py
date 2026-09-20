@@ -9,6 +9,8 @@ desktop_cpp = (root / 'Source/LifeLens/WorldPresentation/LLDesktopTerrainPresent
 desktop_h = (root / 'Source/LifeLens/WorldPresentation/LLDesktopTerrainPresentationActor.h').read_text(encoding='utf-8')
 water_cpp = (root / 'Source/LifeLens/WorldPresentation/LLWaterPresentationActor.cpp').read_text(encoding='utf-8')
 water_h = (root / 'Source/LifeLens/WorldPresentation/LLWaterPresentationActor.h').read_text(encoding='utf-8')
+bridge_cpp = (root / 'Source/LifeLens/Simulation/LLWorldGenerationBridge.cpp').read_text(encoding='utf-8')
+bridge_h = (root / 'Source/LifeLens/Simulation/LLCoreBridgeSubsystem.h').read_text(encoding='utf-8')
 
 for token in (
     'LocalReliefAmplitudeUU = 180.0f',
@@ -20,13 +22,19 @@ for token in (
     'FMath::Lerp(CenterSurface, CornerSurface, 0.72f)',
     'ReliefBlend(',
     'LocalSurfaceZUU(',
+    'RegionalPreviewRadiusChunks = 8',
+    'RegionalInnerFlatRingChunks = 1',
+    'RegionalReliefAmplitudeUU = 1100.0f',
+    'RegionalSurfaceZUU(',
 ):
     assert token in contract, f'missing shared local terrain contract token: {token}'
 
-# All local visual surface consumers must call the same implementation.
+# Local and regional visual surface consumers must call shared implementations.
 assert 'LLTerrainPresentationContract::LocalSurfaceZUU' in world_cpp
 assert 'LLTerrainPresentationContract::LocalSurfaceZUU' in desktop_cpp
 assert 'LLTerrainPresentationContract::LocalSurfaceZUU' in water_cpp
+assert 'LLTerrainPresentationContract::RegionalSurfaceZUU' in world_cpp
+assert 'LLTerrainPresentationContract::RegionalSurfaceZUU' in water_cpp
 
 # Old independently tunable height contracts are deliberately removed.
 for obsolete in (
@@ -61,11 +69,19 @@ for token in (
     'GridX - World.InitialCenterGridX',
     'GridY - World.InitialCenterGridY',
     'GetTerrainPresentationObservation',
-    'GetRegionalTerrainPreviewObservations(8)',
-    'Candidate.ChunkX == ChunkX',
-    'Candidate.ChunkY == ChunkY',
+    'GetTerrainPreviewObservation',
+    'bMaterializedTerrain',
+    'LLTerrainPresentationContract::RegionalSurfaceZUU',
 ):
     assert token in water_cpp, f'missing terrain-attached water projection: {token}'
+
+preview_start = bridge_cpp.index('ULLCoreBridgeSubsystem::GetTerrainPreviewObservation')
+preview_end = bridge_cpp.index('ULLCoreBridgeSubsystem::GetTerrainPresentationObservation', preview_start)
+preview_block = bridge_cpp[preview_start:preview_end]
+assert 'FillTerrainPresentationObservation' in preview_block
+assert 'materializeNaturalChunk(' not in preview_block
+assert 'generatedNaturalChunks.push' not in preview_block
+assert 'GetTerrainPreviewObservation' in bridge_h
 
 # Facility construction/migration changes the shared flattening surface. Even
 # unchanged hydrology must therefore invalidate/rebuild the water projection.
