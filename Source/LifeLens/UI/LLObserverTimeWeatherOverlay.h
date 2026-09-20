@@ -60,6 +60,7 @@ private:
     ELLCoreWeatherSummary LastWeatherSummary = ELLCoreWeatherSummary::Clear;
     float LastTemperatureC = 0.0f;
     bool bLastWeatherAvailable = false;
+    bool bLastCoreRunning = false;
     bool bHasRenderedStatus = false;
 };
 
