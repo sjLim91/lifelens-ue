@@ -71,6 +71,15 @@ private:
     void RefreshCorePresentationOrigin();
     void CollectActivityAnchors();
     void SpawnResidents();
+    void MoveResidentToward(
+        ALLResidentCharacter& Character,
+        const FVector& DesiredLocation);
+    TArray<FVector> BuildLocalAStarPath(
+        const FVector& StartLocation,
+        const FVector& TargetLocation) const;
+    FVector CoreGridToWorldCellCenter(
+        const FIntPoint& Grid,
+        float WorldZ) const;
     void UpdateResident(ALLResidentCharacter& Character, float DeltaSeconds);
     void ApplyPendingContextDirective(
         ALLResidentCharacter& Character,
@@ -158,4 +167,12 @@ private:
     // same authoritative Core target maps to the same Unreal distance.
     UPROPERTY(EditAnywhere, Category="LifeLens|World", meta=(ClampMin="1.0"))
     float CoreGridCellSizeUU = LLWorldSpatialContract::GridCellSizeUU;
+
+    // Local physical executor path search. Core still owns action target truth;
+    // this A* only selects collision-aware presentation waypoints.
+    UPROPERTY(Config, EditAnywhere, Category="LifeLens|Movement|Pathfinding", meta=(ClampMin="2", ClampMax="64"))
+    int32 LocalAStarMarginCells = 12;
+
+    UPROPERTY(Config, EditAnywhere, Category="LifeLens|Movement|Pathfinding", meta=(ClampMin="128", ClampMax="32768"))
+    int32 MaxLocalAStarExpandedNodes = 8192;
 };
