@@ -63,4 +63,21 @@ require(
     "AUDIT-0B regression: Simulation::step is not using authoritative resident runtime position",
 )
 
+# Direct observed Social activities bypass pending ContextAction, so WorldDirector
+# must open/close the motion presentation gate explicitly at the resolved target.
+world_director = read("Source/LifeLens/World/LLWorldDirector.cpp")
+for token in (
+    'Characters/LLResidentMotionComponent.h',
+    'SetSocialInteractionActive(false);',
+    'SetWorkPresentationMode(',
+    'ELLResidentWorkPresentationMode::None',
+    'SetHeldToolPresentation(',
+    'ELLResidentHeldToolPresentation::None',
+    'SetSocialInteractionActive(true);',
+):
+    require(
+        token in world_director,
+        f"direct social/context presentation reset contract missing {token}",
+    )
+
 print("Whole-source audit invariants: PASS")
