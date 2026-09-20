@@ -2821,6 +2821,7 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         BuiltChunkCount = -1;
         BuiltNaturalChunkSignature = 0;
         BuiltTerrainPresentationSignature = 0;
+        BuiltRegionalTerrainSignature = 0;
         BuiltFacilitySignature = 0;
         BuiltFacilityLayoutSignature = 0;
         BuiltResourceQuantitySignature = 0;
@@ -2854,6 +2855,11 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         Bridge->GetMaterializedTerrainPresentationObservations();
     const uint32 CurrentTerrainPresentationSignature =
         TerrainPresentationSignature(MaterializedTerrains);
+    const TArray<FLLCoreTerrainPresentationObservation> RegionalTerrains =
+        Bridge->GetRegionalTerrainPreviewObservations(
+            RegionalTerrainPreviewRadiusChunks);
+    const uint32 CurrentRegionalTerrainSignature =
+        TerrainPresentationSignature(RegionalTerrains);
     const FLLCoreCivilizationWorldObservation Civilization = Bridge->GetCivilizationWorldObservation(0);
     const FLLCoreTimeObservation Time = Bridge->GetTimeObservation();
     const bool bNightPresentation = Time.bIsNight || Time.Daylight01 < 0.22f;
@@ -2887,6 +2893,7 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         || World.MaterializedChunkCount != BuiltChunkCount
         || CurrentNaturalChunkSignature != BuiltNaturalChunkSignature
         || CurrentTerrainPresentationSignature != BuiltTerrainPresentationSignature
+        || CurrentRegionalTerrainSignature != BuiltRegionalTerrainSignature
         || bFacilityLayoutChanged
         || bResourceQuantityChanged
         || (bSightlinePending && bInitialViewCaptured);
@@ -2909,9 +2916,11 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         BuiltChunkCount = World.MaterializedChunkCount;
         BuiltNaturalChunkSignature = CurrentNaturalChunkSignature;
         BuiltTerrainPresentationSignature = CurrentTerrainPresentationSignature;
+        BuiltRegionalTerrainSignature = CurrentRegionalTerrainSignature;
         BuiltResourceQuantitySignature = CurrentResourceQuantitySignature;
         ClearInstances();
-        BuildGround(World, MaterializedChunks);
+        BuildGround(World, MaterializedChunks, RegionalTerrains);
+        BuildRegionalTerrainPreview(World, RegionalTerrains, MaterializedChunks);
 
         for (const FLLCoreNaturalChunkObservation& Chunk : MaterializedChunks)
         {
@@ -2942,10 +2951,16 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         BuildFacilities(World, Civilization, bNightPresentation);
     }
 
-    const int32 GroundTileCount =
+    const int32 LocalGroundTileCount =
         (GroundGrassTileInstances ? GroundGrassTileInstances->GetInstanceCount() : 0)
         + (GroundDryTileInstances ? GroundDryTileInstances->GetInstanceCount() : 0)
         + (GroundTransitionTileInstances ? GroundTransitionTileInstances->GetInstanceCount() : 0);
+    const int32 RegionalGroundTileCount =
+        RegionalTerrainTileInstances
+            ? RegionalTerrainTileInstances->GetInstanceCount()
+            : 0;
+    const int32 GroundTileCount =
+        LocalGroundTileCount + RegionalGroundTileCount;
 
     int32 TreeInstanceCount = 0;
     int32 ShrubInstanceCount = 0;
@@ -2969,9 +2984,9 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         + (PhotorealFurnaceStoneInstances ? PhotorealFurnaceStoneInstances->GetInstanceCount() : 0);
 
     UE_LOG(LogTemp, Log,
-        TEXT("LLWorldPresentation seed=%lld gen=%d chunks=%d groundTiles=%d natural=%d/%d/%d/%d facilities=%d facilityInstances=%d thinned=%d sightline=%d/%d dynamicCanopy=%d core=%.0f activity=%.0f ground=%s farGround=%s"),
+        TEXT("LLWorldPresentation seed=%lld gen=%d chunks=%d groundTiles=%d local=%d regional=%d natural=%d/%d/%d/%d facilities=%d facilityInstances=%d thinned=%d sightline=%d/%d dynamicCanopy=%d core=%.0f activity=%.0f ground=%s farGround=%s"),
         World.WorldSeed, World.GenerationVersion, World.MaterializedChunkCount,
-        GroundTileCount,
+        GroundTileCount, LocalGroundTileCount, RegionalGroundTileCount,
         TreeInstanceCount, ShrubInstanceCount, GrassInstanceCount, RockInstanceCount,
         Civilization.FacilityCount, FacilityInstanceCount,
         SuppressedDressing, SightlineCleared, bInitialViewCaptured ? 1 : 0, DynamicCanopySuppressed,
