@@ -501,6 +501,32 @@ ULLCoreBridgeSubsystem::GetRegionalTerrainPreviewObservations(
     return Result;
 }
 
+bool ULLCoreBridgeSubsystem::GetTerrainPreviewObservation(
+    int32 ChunkX,
+    int32 ChunkY,
+    FLLCoreTerrainPresentationObservation& OutObservation) const
+{
+    OutObservation = FLLCoreTerrainPresentationObservation{};
+    if (!CoreSimulation)
+    {
+        return false;
+    }
+
+    const lifelens::World& World = CoreSimulation->world();
+    if (!World.hasInitialStartRegionSelection)
+    {
+        return false;
+    }
+
+    // Pure deterministic projection only. Do not materialize a simulation
+    // chunk just because Presentation needs a continuation height.
+    FillTerrainPresentationObservation(
+        World.genesisIdentity(),
+        {ChunkX, ChunkY},
+        OutObservation);
+    return OutObservation.bAvailable;
+}
+
 bool ULLCoreBridgeSubsystem::GetTerrainPresentationObservation(
     int32 ChunkX,
     int32 ChunkY,
