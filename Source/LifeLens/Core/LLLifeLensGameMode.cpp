@@ -20,6 +20,31 @@
 #include "GameFramework/PlayerController.h"
 #include "UObject/ConstructorHelpers.h"
 
+namespace
+{
+template <typename TActor>
+TActor* EnsureSingletonWorldActor(UWorld* World)
+{
+    if (!World)
+    {
+        return nullptr;
+    }
+
+    for (TActorIterator<TActor> It(World); It; ++It)
+    {
+        if (IsValid(*It))
+        {
+            return *It;
+        }
+    }
+
+    return World->SpawnActor<TActor>(
+        TActor::StaticClass(),
+        FVector::ZeroVector,
+        FRotator::ZeroRotator);
+}
+}
+
 ALLLifeLensGameMode::ALLLifeLensGameMode()
 {
     DefaultPawnClass = nullptr;
@@ -39,52 +64,20 @@ void ALLLifeLensGameMode::BeginPlay()
 
     SpawnRuntimeFloor();
 
-    if (GetWorld())
+    if (UWorld* World = GetWorld())
     {
-        GetWorld()->SpawnActor<ALLWorldDirector>(ALLWorldDirector::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator);
-        GetWorld()->SpawnActor<ALLWorldObstacleCollisionProxyActor>(
-            ALLWorldObstacleCollisionProxyActor::StaticClass(),
-            FVector::ZeroVector,
-            FRotator::ZeroRotator);
-
-        // Natural ground/tree/rock dressing belongs to WorldPresentation.
-        // Some authored maps may already contain one, but runtime bootstrap must
-        // never depend on that editor placement: otherwise a clean/generated map
-        // runs with no trees or local-surface dressing at all.
-        bool bHasWorldPresentation = false;
-        for (TActorIterator<ALLWorldPresentationActor> It(GetWorld()); It; ++It)
-        {
-            if (IsValid(*It))
-            {
-                bHasWorldPresentation = true;
-                break;
-            }
-        }
-        if (!bHasWorldPresentation)
-        {
-            GetWorld()->SpawnActor<ALLWorldPresentationActor>(
-                ALLWorldPresentationActor::StaticClass(),
-                FVector::ZeroVector,
-                FRotator::ZeroRotator);
-        }
-
-        GetWorld()->SpawnActor<ALLDynamicEnvironmentPresentationActor>(
-            ALLDynamicEnvironmentPresentationActor::StaticClass(),
-            FVector::ZeroVector,
-            FRotator::ZeroRotator);
-        GetWorld()->SpawnActor<ALLWaterPresentationActor>(
-            ALLWaterPresentationActor::StaticClass(),
-            FVector::ZeroVector,
-            FRotator::ZeroRotator);
+        // Runtime support actors are singletons per world. Authored maps may
+        // already contain one of these; clean/generated maps may contain none.
+        // Always reuse the authored instance instead of stacking a second
+        // WorldDirector, collision proxy, terrain, water or weather projection.
+        EnsureSingletonWorldActor<ALLWorldDirector>(World);
+        EnsureSingletonWorldActor<ALLWorldObstacleCollisionProxyActor>(World);
+        EnsureSingletonWorldActor<ALLWorldPresentationActor>(World);
+        EnsureSingletonWorldActor<ALLDynamicEnvironmentPresentationActor>(World);
+        EnsureSingletonWorldActor<ALLWaterPresentationActor>(World);
 #if !PLATFORM_ANDROID
-        GetWorld()->SpawnActor<ALLPCGGroundCoverPresentationActor>(
-            ALLPCGGroundCoverPresentationActor::StaticClass(),
-            FVector::ZeroVector,
-            FRotator::ZeroRotator);
-        GetWorld()->SpawnActor<ALLDesktopTerrainPresentationActor>(
-            ALLDesktopTerrainPresentationActor::StaticClass(),
-            FVector::ZeroVector,
-            FRotator::ZeroRotator);
+        EnsureSingletonWorldActor<ALLPCGGroundCoverPresentationActor>(World);
+        EnsureSingletonWorldActor<ALLDesktopTerrainPresentationActor>(World);
 #endif
     }
 
