@@ -29,7 +29,15 @@ ALLDesktopTerrainPresentationActor::ALLDesktopTerrainPresentationActor()
     TerrainMesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("SmoothTerrain"));
     SetRootComponent(TerrainMesh);
     TerrainMesh->SetMobility(EComponentMobility::Movable);
-    TerrainMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    // Residents continue to use the flat authoritative physical surface; this
+    // query-only mesh exists so visual surface projections (environmental
+    // residue, future decals) can resolve the same smooth terrain the observer
+    // actually sees. It deliberately never blocks Pawn.
+    TerrainMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    TerrainMesh->SetCollisionResponseToAllChannels(ECR_Ignore);
+    TerrainMesh->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
+    TerrainMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+    TerrainMesh->SetGenerateOverlapEvents(false);
     TerrainMesh->SetCanEverAffectNavigation(false);
     TerrainMesh->SetCastShadow(true);
     TerrainMesh->bUseAsyncCooking = true;
@@ -385,7 +393,7 @@ void ALLDesktopTerrainPresentationActor::RefreshFromCore(bool bForce)
             UV0,
             VertexColors,
             Tangents,
-            false);
+            true);
 
         if (UMaterialInterface* Material = MaterialForChunk(*Chunk))
         {
