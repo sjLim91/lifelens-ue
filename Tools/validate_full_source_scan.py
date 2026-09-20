@@ -103,6 +103,21 @@ require("static_cast<uint32>(Facility.GridX)" in desktop_terrain
         and "static_cast<uint32>(Facility.GridY)" in desktop_terrain,
         "desktop terrain signature no longer follows facility positions used for flattening")
 
+resident_character = (SOURCE / "LifeLens/Characters/LLResidentCharacter.cpp").read_text(encoding="utf-8")
+world_director = (SOURCE / "LifeLens/World/LLWorldDirector.cpp").read_text(encoding="utf-8")
+require("SetMovementPath" in resident_character,
+        "resident locomotion lost multi-waypoint route support")
+for token in (
+    "BuildLocalAStarPath",
+    "LLGridOctileHeuristic",
+    "No diagonal corner cutting",
+    "GetMaterializedNaturalChunkObservations",
+    "GetMaterializedHydrologyObservations",
+    "MoveResidentToward",
+):
+    require(token in world_director,
+            f"local A* physical executor missing {token}")
+
 core_read_types = (SOURCE / "LifeLens/Simulation/LLCoreReadTypes.h").read_text(encoding="utf-8")
 core_bridge = (SOURCE / "LifeLens/Simulation/LLCoreBridgeSubsystem.cpp").read_text(encoding="utf-8")
 appearance_profile = (SOURCE / "LifeLens/Simulation/LLAppearanceProfile.cpp").read_text(encoding="utf-8")
