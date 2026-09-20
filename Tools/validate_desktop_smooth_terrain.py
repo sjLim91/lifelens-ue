@@ -46,8 +46,23 @@ assert 'PrivateDependencyModuleNames.Add("ProceduralMeshComponent")' in build
 header = (root / "Source/LifeLens/WorldPresentation/LLDesktopTerrainPresentationActor.h").read_text(encoding="utf-8")
 assert "UProceduralMeshComponent* TerrainMesh = nullptr;" in header
 assert "TObjectPtr<UProceduralMeshComponent>" not in header
+assert "float SettlementFlattenRadiusUU = 650.0f;" in header, (
+    "start-chunk terrain must not be flattened across its full 3200 UU span"
+)
+assert "float SettlementBlendBandUU = 900.0f;" in header
 
 world_presentation = (root / "Source/LifeLens/WorldPresentation/LLWorldPresentationActor.cpp").read_text(encoding="utf-8")
+world_presentation_header = (root / "Source/LifeLens/WorldPresentation/LLWorldPresentationActor.h").read_text(encoding="utf-8")
+assert "float TerrainReliefFlattenRadiusUU = 650.0f;" in world_presentation_header, (
+    "tree/resource surface projection must share the compact settlement flatten radius"
+)
+assert "float TerrainReliefBlendBandUU = 900.0f;" in world_presentation_header
+assert "MobileTerrainTilesPerAxis = 4" in world_presentation, (
+    "Android terrain must not regress to one flat 3200-UU chunk tile"
+)
+assert "TerrainTileRotation(World, Terrain, TileCenterUU, TileSpanUU)" in world_presentation
+assert "for (int32 TileY = 0; TileY < MobileTerrainTilesPerAxis; ++TileY)" in world_presentation
+assert "for (int32 TileX = 0; TileX < MobileTerrainTilesPerAxis; ++TileX)" in world_presentation
 chunk_start = world_presentation.index("void ALLWorldPresentationActor::BuildChunkGround")
 chunk_end = world_presentation.index("void ALLWorldPresentationActor::BuildFarEnvironment", chunk_start)
 chunk_block = world_presentation[chunk_start:chunk_end]
