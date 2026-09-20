@@ -189,7 +189,9 @@ void ULLResidentAppearanceComponent::EnsureBuilt()
 
 float ULLResidentAppearanceComponent::GetVisualTopOffset() const
 {
-    return Body ? (-FeetOffset + MeshHeight * BodyScaleZ) : 0.0f;
+    return Body
+        ? (-FeetOffset + PresentationGroundOffsetUU + MeshHeight * BodyScaleZ)
+        : 0.0f;
 }
 
 void ULLResidentAppearanceComponent::ResolveInputs()
@@ -290,7 +292,10 @@ void ULLResidentAppearanceComponent::BuildBody()
     Body->SetCastShadow(true);
     Body->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
     Body->SetupAttachment(Owner->GetRootComponent());
-    Body->SetRelativeLocation(FVector(0.0f, 0.0f, -FeetOffset));
+    Body->SetRelativeLocation(FVector(
+        0.0f,
+        0.0f,
+        -FeetOffset + PresentationGroundOffsetUU));
     Body->RegisterComponent();
 
     // Always measure the full body: the head-only variant has no legs, and the
