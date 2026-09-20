@@ -226,7 +226,8 @@ void ULLObserverTimeWeatherOverlay::RefreshStatus(bool bForce)
 
     if (!Bridge || !Bridge->IsCoreRunning())
     {
-        if (StatusText && (bForce || !bHasRenderedStatus || LastSpeedPreset != SpeedPreset))
+        if (StatusText && (bForce || !bHasRenderedStatus || bLastCoreRunning
+            || LastSpeedPreset != SpeedPreset))
         {
             StatusText->SetText(FText::FromString(TEXT("LifeLens 준비 중")));
             if (WeatherText)
@@ -237,6 +238,7 @@ void ULLObserverTimeWeatherOverlay::RefreshStatus(bool bForce)
             }
             RefreshButtonState(SpeedPreset);
             LastSpeedPreset = SpeedPreset;
+            bLastCoreRunning = false;
             bHasRenderedStatus = true;
         }
         return;
@@ -248,6 +250,7 @@ void ULLObserverTimeWeatherOverlay::RefreshStatus(bool bForce)
 
     const bool bChanged = bForce
         || !bHasRenderedStatus
+        || !bLastCoreRunning
         || Time.SimulationMinute != LastSimulationMinute
         || SpeedPreset != LastSpeedPreset
         || Weather.bAvailable != bLastWeatherAvailable
@@ -359,6 +362,7 @@ void ULLObserverTimeWeatherOverlay::RefreshStatus(bool bForce)
     bLastWeatherAvailable = Weather.bAvailable;
     LastWeatherSummary = Weather.WeatherSummary;
     LastTemperatureC = Weather.AirTemperatureC;
+    bLastCoreRunning = true;
     bHasRenderedStatus = true;
 }
 
