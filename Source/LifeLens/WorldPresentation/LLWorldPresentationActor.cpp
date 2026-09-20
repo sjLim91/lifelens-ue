@@ -1722,6 +1722,9 @@ uint32 ALLWorldPresentationActor::FacilitySignature(const FLLCoreCivilizationWor
         Hash = MixHash(Hash, static_cast<uint32>(Facility.State));
         Hash = MixHash(Hash, static_cast<uint32>(Facility.GridX));
         Hash = MixHash(Hash, static_cast<uint32>(Facility.GridY));
+        const uint64 LinkedStorageId = static_cast<uint64>(Facility.LinkedStorageId);
+        Hash = MixHash(Hash, static_cast<uint32>(LinkedStorageId & 0xFFFFFFFFu));
+        Hash = MixHash(Hash, static_cast<uint32>((LinkedStorageId >> 32) & 0xFFFFFFFFu));
         Hash = MixHash(Hash, static_cast<uint32>(FMath::RoundToInt(Facility.WorkProgress * 1000.0f)));
         Hash = MixHash(Hash, static_cast<uint32>(Facility.RequiredMaterialUnits));
         Hash = MixHash(Hash, static_cast<uint32>(Facility.DeliveredMaterialUnits));
