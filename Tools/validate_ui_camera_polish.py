@@ -68,4 +68,16 @@ for token in (
 ):
     assert token in lifecycle_cpp, f"lifecycle runtime reset contract missing: {token}"
 
+# Observer selection may survive a save load only when the selected stable ID
+# still exists in the replacement Core runtime. Unrelated-world IDs must close.
+assert "LastObservedCoreRuntimeGeneration" in header
+for token in (
+    "Bridge->GetRuntimeGeneration()",
+    "RuntimeGeneration != LastObservedCoreRuntimeGeneration",
+    "Bridge->GetResidentObservation(",
+    "Observation->ClearObservedResident();",
+    "RestoreWorldOverview();",
+):
+    assert token in cpp, f"observer runtime selection validation missing: {token}"
+
 print("LifeLens UI/camera resilience polish: PASS")
