@@ -78,6 +78,10 @@ for token in [
     "RuntimeGeneration != LastObservedRuntimeGeneration",
     "bRuntimeReplaced",
     "bForce || bRuntimeReplaced",
+    "ClearTransientEnvironmentPresentation",
+    "ApplyWeatherEffects(0.0f, 0.0f, 0.0f, 0.0f)",
+    "bPresentedEnvironmentInitialized = false",
+    "bPresentedSnowInitialized = false",
 ]:
     require(dynamic_cpp, token, "dynamic environment runtime reset implementation")
 
