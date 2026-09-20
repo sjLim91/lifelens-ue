@@ -40,6 +40,8 @@ assert 'MacroRegionFacts macroRegionFacts(ChunkCoord coord) const' in world
 assert 'InitialStartRegionSelection initialStartRegion() const' in world
 assert 'selectInitialFreshSurfaceWaterRegion(genesisIdentity())' in world
 assert 'selectInitialFreshSurfaceWaterRegion' in hydrology
+assert 'FreshSurfaceStartSearchRadiusChunks' in hydrology
+assert 'MacroStartSearchRadiusChunks * 2' in hydrology
 assert 'isFreshSurfaceWater(hydrology)' in natural
 assert 'WorldChunkSpanGridCells / 2' in natural
 assert 'lifelens_add_test(test_world_genesis_wg2)' in cmake
