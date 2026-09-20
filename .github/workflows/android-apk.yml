@@ -545,6 +545,41 @@ jobs:
           cp "$APK" "$GITHUB_WORKSPACE/LifeLens-Android-Development-arm64.apk"
           sha256sum "$GITHUB_WORKSPACE/LifeLens-Android-Development-arm64.apk" > "$GITHUB_WORKSPACE/LifeLens-Android-Development-arm64.sha256"
           ls -lh "$GITHUB_WORKSPACE/LifeLens-Android-Development-arm64.apk"
+          echo "LIFELENS_APK_FILE_PRESENT mode=${{ inputs.mode }}"
+
+      - name: Validate packaged APK integrity
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="$GITHUB_WORKSPACE/LifeLens-Android-Development-arm64.apk"
+          AAPT="$ANDROID_HOME/build-tools/${ANDROID_BUILD_TOOLS}/aapt"
+          APKSIGNER="$ANDROID_HOME/build-tools/${ANDROID_BUILD_TOOLS}/apksigner"
+          test -s "$APK"
+          test -x "$AAPT"
+          test -x "$APKSIGNER"
+
+          APK_BYTES=$(stat -c '%s' "$APK")
+          echo "APK_BYTES=$APK_BYTES"
+          test "$APK_BYTES" -gt 5000000 || { echo 'LIFELENS_APK_UNEXPECTEDLY_SMALL'; exit 45; }
+
+          "$AAPT" dump badging "$APK" | tee "$DIAGNOSTICS/apk-badging.txt"
+          grep -F "package: name='com.lifelens.sim'" "$DIAGNOSTICS/apk-badging.txt"
+          grep -F "sdkVersion:'30'" "$DIAGNOSTICS/apk-badging.txt"
+          grep -F "targetSdkVersion:'34'" "$DIAGNOSTICS/apk-badging.txt"
+          grep -F "launchable-activity:" "$DIAGNOSTICS/apk-badging.txt"
+
+          unzip -l "$APK" | tee "$DIAGNOSTICS/apk-contents.txt"
+          grep -Eq 'lib/arm64-v8a/[^ ]+\.so' "$DIAGNOSTICS/apk-contents.txt" || {
+            echo 'LIFELENS_APK_ARM64_NATIVE_LIBRARY_MISSING'
+            exit 46
+          }
+          if grep -Eq 'lib/x86_64/[^ ]+\.so' "$DIAGNOSTICS/apk-contents.txt"; then
+            echo 'LIFELENS_APK_UNEXPECTED_X86_64_LIBRARY'
+            exit 47
+          fi
+
+          "$APKSIGNER" verify --verbose --print-certs "$APK" | tee "$DIAGNOSTICS/apk-signature.txt"
+          echo 'LIFELENS_APK_INTEGRITY_PASS'
           echo "LIFELENS_APK_PIPELINE_PASS mode=${{ inputs.mode }}"
 
       - name: Upload LifeLens APK artifact
@@ -554,6 +589,9 @@ jobs:
           path: |
             LifeLens-Android-Development-arm64.apk
             LifeLens-Android-Development-arm64.sha256
+            Diagnostics/apk-badging.txt
+            Diagnostics/apk-contents.txt
+            Diagnostics/apk-signature.txt
           if-no-files-found: error
           retention-days: 14
 
