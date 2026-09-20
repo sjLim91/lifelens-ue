@@ -2,6 +2,7 @@
 #include "World/LLActivityAnchor.h"
 #include "World/LLEnvironmentalResidueVisualizerComponent.h"
 #include "Characters/LLResidentCharacter.h"
+#include "Characters/LLResidentMotionComponent.h"
 #include "Simulation/LLCoreBridgeSubsystem.h"
 #include "Simulation/LLSimulationSubsystem.h"
 #include "Engine/GameInstance.h"
@@ -702,6 +703,18 @@ void ALLWorldDirector::ApplyCoreDirective(
     const FLLCoreActionDirective& Directive,
     float DeltaSeconds)
 {
+    // Reaching this path means there is no pending ContextAction. Clear every
+    // legacy context presentation signal first so a cancelled/completed work
+    // action cannot leak its talk/work/tool pose into the next Core activity.
+    if (Character.MotionComponent)
+    {
+        Character.MotionComponent->SetSocialInteractionActive(false);
+        Character.MotionComponent->SetWorkPresentationMode(
+            ELLResidentWorkPresentationMode::None);
+        Character.MotionComponent->SetHeldToolPresentation(
+            ELLResidentHeldToolPresentation::None);
+    }
+
     const bool bDirectiveChanged =
         !Runtime.bInitialized
         || Runtime.LastActivityKind != Directive.ActivityKind
@@ -893,6 +906,15 @@ void ALLWorldDirector::ApplyCoreDirective(
 
             if (Directive.SocialIntent != ELLCoreSocialIntent::Avoid)
             {
+                // Direct observed Social activity does not use a pending
+                // ContextAction, so without this at-target gate the motion
+                // component never receives a LegacyContextAnimation signal and
+                // its ActionDirective social refinement is unreachable.
+                if (Character.MotionComponent)
+                {
+                    Character.MotionComponent->SetSocialInteractionActive(true);
+                }
+
                 FVector LookDirection = Target->GetActorLocation() - Character.GetActorLocation();
                 LookDirection.Z = 0.0f;
                 if (!LookDirection.IsNearlyZero())
