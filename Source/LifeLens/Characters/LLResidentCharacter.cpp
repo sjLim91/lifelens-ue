@@ -205,6 +205,7 @@ void ALLResidentCharacter::BindResident(const FLLResidentData& ResidentData)
         LastLifecycleStageIndex = INDEX_NONE;
         AdultCapsuleHalfHeight = 0.0f;
         AdultCapsuleRadius = 0.0f;
+        AdultRuntimeMoveSpeed = 0.0f;
         AdultBodyScale = FVector::OneVector;
     }
 
@@ -271,6 +272,9 @@ void ALLResidentCharacter::RefreshLifecyclePresentation()
     {
         AdultCapsuleHalfHeight = Capsule->GetUnscaledCapsuleHalfHeight();
         AdultCapsuleRadius = Capsule->GetUnscaledCapsuleRadius();
+        // RuntimeMoveSpeed is authored as the adult/reference presentation
+        // speed. Capture it once so stage transitions never compound scaling.
+        AdultRuntimeMoveSpeed = FMath::Max(0.0f, RuntimeMoveSpeed);
 
         const int32 BuiltStageIndex = FMath::Clamp(
             static_cast<int32>(AppearanceComponent->GetInputs().LifeStage), 0, 7);
@@ -292,6 +296,15 @@ void ALLResidentCharacter::RefreshLifecyclePresentation()
         AdultBodyScale.Z /= BuiltStageFactor;
         bLifecyclePresentationInitialized = true;
     }
+
+    // Core already defines lifecycle locomotion pacing (child 0.82, teen 0.95,
+    // elderly 0.78, etc.). Consume that DTO instead of making every rendered
+    // resident move at the same adult speed. Direct-care babies/toddlers remain
+    // governed by Core and normally have no autonomous plan.
+    RuntimeMoveSpeed = AdultRuntimeMoveSpeed * FMath::Clamp(
+        Observation.MovementScale,
+        0.05f,
+        2.0f);
 
     if (LastLifecycleStageIndex == StageIndex)
     {
