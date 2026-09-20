@@ -54,6 +54,7 @@ uint32 ULLEnvironmentalResidueVisualizerComponent::BuildVisualSignature(
     for (const FLLCoreEnvironmentalResidueObservation& Residue : Environment.Residues)
     {
         Hash = MixVisualHash(Hash, GetTypeHash(Residue.ResidueId));
+        Hash = MixVisualHash(Hash, static_cast<uint32>(Residue.Kind));
         Hash = MixVisualHash(Hash, GetTypeHash(Residue.GridX));
         Hash = MixVisualHash(Hash, GetTypeHash(Residue.GridY));
         Hash = MixVisualHash(Hash, GetTypeHash(Residue.RadiusTiles));
@@ -112,7 +113,21 @@ void ULLEnvironmentalResidueVisualizerComponent::RefreshFromCore(
 
     const FLLCoreEnvironmentObservation Environment =
         CoreBridge.GetEnvironmentObservation(FMath::Max(1, MaxResidueInstances));
-    const uint32 Signature = BuildVisualSignature(Environment);
+    uint32 Signature = BuildVisualSignature(Environment);
+
+    // Instance transforms are projected through the active Core-grid frame, so
+    // a restored/new world origin or presentation scale is part of the visual
+    // cache key even when the residue records themselves happen to match.
+    const float CellSize = FMath::Max(1.0f, CoreGridCellSizeUU);
+    Signature = MixVisualHash(
+        Signature,
+        GetTypeHash(FMath::RoundToInt(CellSize * 1000.0f)));
+    Signature = MixVisualHash(Signature, GetTypeHash(CoreOriginGridX));
+    Signature = MixVisualHash(Signature, GetTypeHash(CoreOriginGridY));
+    Signature = MixVisualHash(
+        Signature,
+        GetTypeHash(FMath::RoundToInt(SurfaceOffsetUU * 1000.0f)));
+
     if (!bForce && bHasVisualSignature && Signature == LastVisualSignature)
     {
         return;
@@ -122,7 +137,6 @@ void ULLEnvironmentalResidueVisualizerComponent::RefreshFromCore(
     bHasVisualSignature = true;
     ClearInstances();
 
-    const float CellSize = FMath::Max(1.0f, CoreGridCellSizeUU);
     for (const FLLCoreEnvironmentalResidueObservation& Residue : Environment.Residues)
     {
         if (Residue.Kind != ELLCoreEnvironmentalResidueKind::HumanWaste)
