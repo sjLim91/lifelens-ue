@@ -59,24 +59,45 @@ void ALLPCGGroundCoverPresentationActor::Tick(float DeltaSeconds)
 
 void ALLPCGGroundCoverPresentationActor::TryGenerateFromCore()
 {
-    if (!bEnableGroundCoverPCG)
-    {
-        SetActorTickEnabled(false);
-        return;
-    }
-
 #if PLATFORM_ANDROID
     SetActorTickEnabled(false);
     return;
 #else
+    UPCGComponent* PCG = Cast<UPCGComponent>(RuntimePCGComponent);
+
+    auto ClearStaleGroundCover = [this, PCG]()
+    {
+        if (PCG && bGenerated)
+        {
+            // Generated PCG components are presentation-only. When Core
+            // authority disappears or the feature is disabled, remove them
+            // instead of leaving vegetation from the previous runtime visible.
+            PCG->CleanupLocal(true, false);
+        }
+
+        LastGeneratedVisualSeed = 0;
+        LastGeneratedWorldSeed = 0;
+        LastGeneratedGenerationVersion = -1;
+        LastGeneratedChunkX = 0;
+        LastGeneratedChunkY = 0;
+        bGenerated = false;
+    };
+
+    if (!bEnableGroundCoverPCG)
+    {
+        ClearStaleGroundCover();
+        SetActorTickEnabled(false);
+        return;
+    }
+
     UGameInstance* GameInstance = GetGameInstance();
     ULLCoreBridgeSubsystem* Bridge =
         GameInstance ? GameInstance->GetSubsystem<ULLCoreBridgeSubsystem>() : nullptr;
-    UPCGComponent* PCG = Cast<UPCGComponent>(RuntimePCGComponent);
     UPCGGraph* Graph = Cast<UPCGGraph>(GroundCoverGraphAsset);
 
     if (!Bridge || !Bridge->IsCoreRunning() || !PCG || !Graph)
     {
+        ClearStaleGroundCover();
         return;
     }
 
@@ -84,6 +105,7 @@ void ALLPCGGroundCoverPresentationActor::TryGenerateFromCore()
         Bridge->GetWorldGenerationObservation();
     if (!World.bAvailable || !World.bHasInitialStartRegion)
     {
+        ClearStaleGroundCover();
         return;
     }
 
@@ -94,6 +116,7 @@ void ALLPCGGroundCoverPresentationActor::TryGenerateFromCore()
             InitialChunk)
         || !InitialChunk.bMaterialized)
     {
+        ClearStaleGroundCover();
         return;
     }
 
@@ -112,6 +135,9 @@ void ALLPCGGroundCoverPresentationActor::TryGenerateFromCore()
         return;
     }
 
+    // Force generation replaces the previous PCG projection for a changed
+    // authoritative world/seed; explicit stale cleanup above covers the
+    // no-authority path where generation never runs again.
     uint64 SeedWord = static_cast<uint64>(VisualSeed);
     uint32 Seed32 = static_cast<uint32>(SeedWord & 0xFFFFFFFFu)
         ^ static_cast<uint32>((SeedWord >> 32) & 0xFFFFFFFFu);
