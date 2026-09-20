@@ -1126,9 +1126,11 @@ float ALLWorldPresentationActor::TerrainSurfaceZUU(
 FRotator ALLWorldPresentationActor::TerrainTileRotation(
     const FLLCoreWorldGenerationObservation& World,
     const FLLCoreTerrainPresentationObservation& Terrain,
-    const FVector2D& CenterUU) const
+    const FVector2D& CenterUU,
+    float SampleSpanUU) const
 {
-    const float Half = LLWorldSpatialContract::ChunkSpanUU * 0.5f;
+    const float SafeSampleSpanUU = FMath::Max(1.0f, SampleSpanUU);
+    const float Half = SafeSampleSpanUU * 0.5f;
     const float WestZ = TerrainSurfaceZUU(
         World, Terrain, CenterUU + FVector2D(-Half, 0.0f));
     const float EastZ = TerrainSurfaceZUU(
@@ -1141,13 +1143,13 @@ FRotator ALLWorldPresentationActor::TerrainTileRotation(
     const float Pitch = FMath::Clamp(
         -FMath::RadiansToDegrees(FMath::Atan2(
             EastZ - WestZ,
-            FMath::Max(LLWorldSpatialContract::ChunkSpanUU, 1.0f))),
+            SafeSampleSpanUU)),
         -TerrainMaxTiltDegrees,
         TerrainMaxTiltDegrees);
     const float Roll = FMath::Clamp(
         FMath::RadiansToDegrees(FMath::Atan2(
             NorthZ - SouthZ,
-            FMath::Max(LLWorldSpatialContract::ChunkSpanUU, 1.0f))),
+            SafeSampleSpanUU)),
         -TerrainMaxTiltDegrees,
         TerrainMaxTiltDegrees);
     return FRotator(Pitch, 0.0f, Roll);
@@ -1288,27 +1290,50 @@ void ALLWorldPresentationActor::BuildChunkGround(
     }
 
     const FVector ChunkOrigin = ChunkOriginUU(World, Chunk.ChunkX, Chunk.ChunkY);
-    const FVector2D ChunkCenterUU(ChunkOrigin.X, ChunkOrigin.Y);
-    const float TerrainZ = TerrainSurfaceZUU(World, Terrain, ChunkCenterUU);
-    const FRotator TerrainRotation = TerrainTileRotation(World, Terrain, ChunkCenterUU);
+    constexpr int32 MobileTerrainTilesPerAxis = 4;
     constexpr float TileThicknessUU = 8.0f;
     constexpr float SurfaceLiftUU = 0.35f;
+    const float TileSpanUU =
+        LLWorldSpatialContract::ChunkSpanUU
+        / static_cast<float>(MobileTerrainTilesPerAxis);
+    const float TileHalfUU = TileSpanUU * 0.5f;
+    const float ChunkHalfUU = LLWorldSpatialContract::ChunkSpanUU * 0.5f;
     const float SpanScale =
-        (LLWorldSpatialContract::ChunkSpanUU
-            / LLWorldSpatialContract::EngineCubeSideUU)
-        * 1.0125f;
+        (TileSpanUU / LLWorldSpatialContract::EngineCubeSideUU)
+        * 1.025f;
     const float HeightScale =
         TileThicknessUU / LLWorldSpatialContract::EngineCubeSideUU;
 
-    // Slight XY overlap removes precision cracks between adjacent tiles. The top
-    // face sits 0.35 UU above the broad continuity ground, avoiding z-fighting.
-    Target->AddInstance(FTransform(
-        TerrainRotation,
-        ChunkOrigin + FVector(
-            0.0f,
-            0.0f,
-            TerrainZ - TileThicknessUU * 0.5f + SurfaceLiftUU),
-        FVector(SpanScale, SpanScale, HeightScale)));
+    // Mobile cannot afford the desktop procedural mesh, but one 3200-UU planar
+    // cube also erases every hill inside the only materialized start chunk.
+    // Sixteen lightweight HISM tiles keep draw cost tiny while sampling the same
+    // authoritative terrain presentation at local centres/slopes.
+    for (int32 TileY = 0; TileY < MobileTerrainTilesPerAxis; ++TileY)
+    {
+        for (int32 TileX = 0; TileX < MobileTerrainTilesPerAxis; ++TileX)
+        {
+            const FVector2D TileCenterUU(
+                ChunkOrigin.X - ChunkHalfUU
+                    + TileHalfUU + static_cast<float>(TileX) * TileSpanUU,
+                ChunkOrigin.Y - ChunkHalfUU
+                    + TileHalfUU + static_cast<float>(TileY) * TileSpanUU);
+            const float TerrainZ =
+                TerrainSurfaceZUU(World, Terrain, TileCenterUU);
+            const FRotator TerrainRotation =
+                TerrainTileRotation(World, Terrain, TileCenterUU, TileSpanUU);
+
+            Target->AddInstance(FTransform(
+                TerrainRotation,
+                FVector(
+                    TileCenterUU.X,
+                    TileCenterUU.Y,
+                    ChunkOrigin.Z
+                        + TerrainZ
+                        - TileThicknessUU * 0.5f
+                        + SurfaceLiftUU),
+                FVector(SpanScale, SpanScale, HeightScale)));
+        }
+    }
 #endif
 }
 
