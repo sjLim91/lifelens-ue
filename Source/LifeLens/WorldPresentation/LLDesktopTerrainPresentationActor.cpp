@@ -201,8 +201,24 @@ void ALLDesktopTerrainPresentationActor::RefreshFromCore(bool bForce)
     UGameInstance* GameInstance = GetGameInstance();
     ULLCoreBridgeSubsystem* Bridge =
         GameInstance ? GameInstance->GetSubsystem<ULLCoreBridgeSubsystem>() : nullptr;
-    if (!Bridge || !Bridge->IsCoreRunning() || !TerrainMesh)
+    if (!TerrainMesh)
     {
+        return;
+    }
+
+    auto ClearStaleTerrain = [this]()
+    {
+        if (bBuiltOnce)
+        {
+            TerrainMesh->ClearAllMeshSections();
+            LastSignature = 0;
+            bBuiltOnce = false;
+        }
+    };
+
+    if (!Bridge || !Bridge->IsCoreRunning())
+    {
+        ClearStaleTerrain();
         return;
     }
 
@@ -210,6 +226,7 @@ void ALLDesktopTerrainPresentationActor::RefreshFromCore(bool bForce)
         Bridge->GetWorldGenerationObservation();
     if (!World.bAvailable || !World.bHasInitialStartRegion)
     {
+        ClearStaleTerrain();
         return;
     }
 
@@ -219,6 +236,7 @@ void ALLDesktopTerrainPresentationActor::RefreshFromCore(bool bForce)
         Bridge->GetMaterializedNaturalChunkObservations();
     if (Terrains.Num() == 0 || Chunks.Num() == 0)
     {
+        ClearStaleTerrain();
         return;
     }
 
