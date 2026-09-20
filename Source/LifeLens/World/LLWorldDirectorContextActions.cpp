@@ -137,6 +137,15 @@ void ALLWorldDirector::ApplyPendingContextDirective(
             ArrivalRadius = FMath::Min(FMath::Max(1.0f, ContextResidentArrivalRadiusUU),AckSafeArrivalRadius);
             Character.SetCurrentIntent(ELLActionIntent::Socialize);
             bFaceTarget = true;
+
+            // Context Motion refines an already-open WorldDirector presentation
+            // window rather than deciding action timing itself. Parenting had no
+            // legacy talk/work signal at the resolved target, so its authoritative
+            // Parenting directive never reached ResolveContextMotion and residents
+            // visibly froze through Feed/Hold/Comfort/etc. Use the neutral standing
+            // interact signal as the at-target gate; the motion component then
+            // refines it to Talk/Learn/Crouch from the Core ParentingAction.
+            WorkAtTarget = ELLResidentWorkPresentationMode::Interact;
             break;
 
         case ELLCoreContextActionKind::Civilization:
