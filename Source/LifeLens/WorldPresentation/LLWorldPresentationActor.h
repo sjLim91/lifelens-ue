@@ -204,14 +204,9 @@ public:
     // the active settlement. Outside that readability envelope, Core macro
     // elevation is projected into gentle visual relief so the world no longer
     // reads as a perfectly flat board.
-    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Terrain", meta=(ClampMin="0.0", ClampMax="500.0"))
-    float TerrainReliefAmplitudeUU = 180.0f;
-
-    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Terrain", meta=(ClampMin="0.0", ClampMax="5000.0"))
-    float TerrainReliefFlattenRadiusUU = 650.0f;
-
-    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Terrain", meta=(ClampMin="100.0", ClampMax="6000.0"))
-    float TerrainReliefBlendBandUU = 900.0f;
+    // Local terrain height/flattening values live in
+    // LLTerrainPresentationContract so terrain, water and desktop projection
+    // cannot silently diverge.
 
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Terrain", meta=(ClampMin="0.0", ClampMax="12.0"))
     float TerrainMaxTiltDegrees = 5.5f;
