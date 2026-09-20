@@ -52,6 +52,11 @@ assert "float SettlementFlattenRadiusUU = 650.0f;" in header, (
 assert "float SettlementBlendBandUU = 900.0f;" in header
 
 world_presentation = (root / "Source/LifeLens/WorldPresentation/LLWorldPresentationActor.cpp").read_text(encoding="utf-8")
+world_presentation_header = (root / "Source/LifeLens/WorldPresentation/LLWorldPresentationActor.h").read_text(encoding="utf-8")
+assert "float TerrainReliefFlattenRadiusUU = 650.0f;" in world_presentation_header, (
+    "tree/resource surface projection must share the compact settlement flatten radius"
+)
+assert "float TerrainReliefBlendBandUU = 900.0f;" in world_presentation_header
 chunk_start = world_presentation.index("void ALLWorldPresentationActor::BuildChunkGround")
 chunk_end = world_presentation.index("void ALLWorldPresentationActor::BuildFarEnvironment", chunk_start)
 chunk_block = world_presentation[chunk_start:chunk_end]
