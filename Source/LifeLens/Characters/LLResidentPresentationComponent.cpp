@@ -472,6 +472,17 @@ void ULLResidentPresentationComponent::UpdateLabel()
     const bool bSelected = Resident && Observation && Observation->HasObservedResident()
         && Observation->GetObservedResidentId() == Resident->GetResidentId();
 
+    if (Appearance && Appearance->HasBody())
+    {
+        // Ground projection is interpolated every render tick. Keep the label
+        // attached to the visually grounded head instead of waiting for the
+        // slower resident-data refresh timer.
+        Label->SetRelativeLocation(FVector(
+            0.0f,
+            0.0f,
+            Appearance->GetVisualTopOffset() + LabelAboveHead));
+    }
+
     if (!bSelected && bCrowdLabelSuppressed)
     {
         Label->SetVisibility(false);
