@@ -71,6 +71,9 @@ jobs:
       - name: Validate desktop smooth terrain
         run: python Tools/validate_desktop_smooth_terrain.py
 
+      - name: Validate shared local terrain and water contract
+        run: python Tools/validate_shared_local_terrain_contract.py
+
       - name: Validate regional terrain preview
         run: python Tools/validate_regional_terrain_preview.py
 
