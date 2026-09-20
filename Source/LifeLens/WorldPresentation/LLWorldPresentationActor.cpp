@@ -1148,9 +1148,11 @@ float ALLWorldPresentationActor::RegionalTerrainSurfaceZUU(
         1.0f);
     const float ReliefAlpha =
         RawAlpha * RawAlpha * (3.0f - 2.0f * RawAlpha);
+    const float LocalAmplitude =
+        LLTerrainPresentationContract::LocalReliefAmplitudeUU;
     const float Amplitude = FMath::Lerp(
-        FMath::Max(0.0f, TerrainReliefAmplitudeUU),
-        FMath::Max(TerrainReliefAmplitudeUU, RegionalTerrainReliefAmplitudeUU),
+        LocalAmplitude,
+        FMath::Max(LocalAmplitude, RegionalTerrainReliefAmplitudeUU),
         ReliefAlpha);
 
     auto SignedElevationOffset = [&](float Elevation01)
