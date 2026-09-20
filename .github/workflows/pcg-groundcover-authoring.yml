@@ -37,7 +37,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test -f Content/Environment/Photoreal/PolyHaven/weed_plant_02/SM_LL_weed_plant_02.uasset
+          test -f Content/Environment/Quaternius/StylizedNature/Grass_Common_Tall/StaticMeshes/Grass_Common_Tall.uasset
           mkdir -p "$DIAGNOSTICS"
 
       - name: Preflight Epic GHCR credential
