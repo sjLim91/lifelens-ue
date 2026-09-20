@@ -57,6 +57,12 @@ assert "float TerrainReliefFlattenRadiusUU = 650.0f;" in world_presentation_head
     "tree/resource surface projection must share the compact settlement flatten radius"
 )
 assert "float TerrainReliefBlendBandUU = 900.0f;" in world_presentation_header
+assert "MobileTerrainTilesPerAxis = 4" in world_presentation, (
+    "Android terrain must not regress to one flat 3200-UU chunk tile"
+)
+assert "TerrainTileRotation(World, Terrain, TileCenterUU, TileSpanUU)" in world_presentation
+assert "for (int32 TileY = 0; TileY < MobileTerrainTilesPerAxis; ++TileY)" in world_presentation
+assert "for (int32 TileX = 0; TileX < MobileTerrainTilesPerAxis; ++TileX)" in world_presentation
 chunk_start = world_presentation.index("void ALLWorldPresentationActor::BuildChunkGround")
 chunk_end = world_presentation.index("void ALLWorldPresentationActor::BuildFarEnvironment", chunk_start)
 chunk_block = world_presentation[chunk_start:chunk_end]
