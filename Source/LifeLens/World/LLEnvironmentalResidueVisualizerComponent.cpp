@@ -46,14 +46,36 @@ ULLEnvironmentalResidueVisualizerComponent::ULLEnvironmentalResidueVisualizerCom
 }
 
 uint32 ULLEnvironmentalResidueVisualizerComponent::BuildVisualSignature(
-    const FLLCoreEnvironmentObservation& Environment) const
+    const FLLCoreEnvironmentObservation& Environment,
+    float CoreGridCellSizeUU,
+    int32 CoreOriginGridX,
+    int32 CoreOriginGridY) const
 {
     uint32 Hash = GetTypeHash(Environment.TotalResidues);
     Hash = MixVisualHash(Hash, GetTypeHash(Environment.Residues.Num()));
 
+    // Instance transforms are presentation outputs too.  If the selected Core
+    // origin, world scale, owner placement or surface offset changes while the
+    // authoritative residue DTO stays identical, the old HISM transforms must
+    // not survive merely because the residue data hash is unchanged.
+    const float CellSize = FMath::Max(1.0f, CoreGridCellSizeUU);
+    Hash = MixVisualHash(Hash, GetTypeHash(FMath::RoundToInt(CellSize * 1000.0f)));
+    Hash = MixVisualHash(Hash, GetTypeHash(CoreOriginGridX));
+    Hash = MixVisualHash(Hash, GetTypeHash(CoreOriginGridY));
+    Hash = MixVisualHash(Hash, GetTypeHash(FMath::RoundToInt(SurfaceOffsetUU * 1000.0f)));
+
+    if (const AActor* Owner = GetOwner())
+    {
+        const FVector OwnerLocation = Owner->GetActorLocation();
+        Hash = MixVisualHash(Hash, GetTypeHash(FMath::RoundToInt(OwnerLocation.X * 10.0f)));
+        Hash = MixVisualHash(Hash, GetTypeHash(FMath::RoundToInt(OwnerLocation.Y * 10.0f)));
+        Hash = MixVisualHash(Hash, GetTypeHash(FMath::RoundToInt(OwnerLocation.Z * 10.0f)));
+    }
+
     for (const FLLCoreEnvironmentalResidueObservation& Residue : Environment.Residues)
     {
         Hash = MixVisualHash(Hash, GetTypeHash(Residue.ResidueId));
+        Hash = MixVisualHash(Hash, GetTypeHash(static_cast<uint8>(Residue.Kind)));
         Hash = MixVisualHash(Hash, GetTypeHash(Residue.GridX));
         Hash = MixVisualHash(Hash, GetTypeHash(Residue.GridY));
         Hash = MixVisualHash(Hash, GetTypeHash(Residue.RadiusTiles));
@@ -112,7 +134,9 @@ void ULLEnvironmentalResidueVisualizerComponent::RefreshFromCore(
 
     const FLLCoreEnvironmentObservation Environment =
         CoreBridge.GetEnvironmentObservation(FMath::Max(1, MaxResidueInstances));
-    const uint32 Signature = BuildVisualSignature(Environment);
+    const float CellSize = FMath::Max(1.0f, CoreGridCellSizeUU);
+    const uint32 Signature = BuildVisualSignature(
+        Environment, CellSize, CoreOriginGridX, CoreOriginGridY);
     if (!bForce && bHasVisualSignature && Signature == LastVisualSignature)
     {
         return;
@@ -121,8 +145,6 @@ void ULLEnvironmentalResidueVisualizerComponent::RefreshFromCore(
     LastVisualSignature = Signature;
     bHasVisualSignature = true;
     ClearInstances();
-
-    const float CellSize = FMath::Max(1.0f, CoreGridCellSizeUU);
     for (const FLLCoreEnvironmentalResidueObservation& Residue : Environment.Residues)
     {
         if (Residue.Kind != ELLCoreEnvironmentalResidueKind::HumanWaste)
