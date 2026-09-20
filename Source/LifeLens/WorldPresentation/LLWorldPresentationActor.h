@@ -178,23 +178,12 @@ public:
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|FarWorld", meta=(ClampMin="0.2", ClampMax="1.0"))
     float FarDressingOuterRadiusFraction = 0.47f;
 
-    // Read-only macro relief preview surrounding the tiny materialized activity
-    // set. It never materializes Core chunks or creates gameplay resources.
-    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|FarWorld", meta=(ClampMin="2", ClampMax="16"))
-    int32 RegionalTerrainPreviewRadiusChunks = 8;
+    // Regional relief radius/amplitude/inner ring live in
+    // LLTerrainPresentationContract so Water and horizon terrain share one
+    // presentation shape contract.
 
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|FarWorld", meta=(ClampMin="1", ClampMax="3"))
     int32 RegionalTerrainTilesPerChunk = 2;
-
-    // Regional-only exaggeration is intentionally larger than local physical
-    // relief. No resident/nav authority exists on these horizon tiles, so signed
-    // valleys and mountains can communicate macro geography without making the
-    // local settlement float above its collision plane.
-    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|FarWorld", meta=(ClampMin="180.0", ClampMax="2200.0"))
-    float RegionalTerrainReliefAmplitudeUU = 1100.0f;
-
-    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|FarWorld", meta=(ClampMin="0", ClampMax="4"))
-    int32 RegionalTerrainInnerFlatRingChunks = 1;
 
     // ---- Gentle authoritative terrain relief --------------------------------
     // The bootstrap collision plane and resident locomotion remain flat around
