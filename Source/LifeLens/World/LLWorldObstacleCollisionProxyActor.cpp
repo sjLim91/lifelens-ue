@@ -57,6 +57,10 @@ ALLWorldObstacleCollisionProxyActor::ALLWorldObstacleCollisionProxyActor()
     RockCollision = CreateDefaultSubobject<UHierarchicalInstancedStaticMeshComponent>(TEXT("RockCollisionProxies"));
     RockCollision->SetupAttachment(SceneRoot);
     ConfigureCollisionProxy(*RockCollision, CollisionCube);
+
+    SurfaceCollision = CreateDefaultSubobject<UHierarchicalInstancedStaticMeshComponent>(TEXT("MaterializedSurfaceCollision"));
+    SurfaceCollision->SetupAttachment(SceneRoot);
+    ConfigureCollisionProxy(*SurfaceCollision, CollisionCube);
 }
 
 void ALLWorldObstacleCollisionProxyActor::BeginPlay()
@@ -83,12 +87,13 @@ void ALLWorldObstacleCollisionProxyActor::RefreshCollisionProxies(bool bForce)
 {
     const UGameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
     ULLCoreBridgeSubsystem* Bridge = GameInstance ? GameInstance->GetSubsystem<ULLCoreBridgeSubsystem>() : nullptr;
-    if (!Bridge || !CollisionCube || !TreeCollision || !RockCollision)
+    if (!Bridge || !CollisionCube || !TreeCollision || !RockCollision || !SurfaceCollision)
     {
-        if (bHasBuilt && TreeCollision && RockCollision)
+        if (bHasBuilt && TreeCollision && RockCollision && SurfaceCollision)
         {
             TreeCollision->ClearInstances();
             RockCollision->ClearInstances();
+            SurfaceCollision->ClearInstances();
             bHasBuilt = false;
             LastCoreSignature = 0;
         }
@@ -102,6 +107,7 @@ void ALLWorldObstacleCollisionProxyActor::RefreshCollisionProxies(bool bForce)
         {
             TreeCollision->ClearInstances();
             RockCollision->ClearInstances();
+            SurfaceCollision->ClearInstances();
             bHasBuilt = false;
             LastCoreSignature = 0;
         }
@@ -156,9 +162,19 @@ void ALLWorldObstacleCollisionProxyActor::RebuildFromCore(
 {
     TreeCollision->ClearInstances();
     RockCollision->ClearInstances();
+    SurfaceCollision->ClearInstances();
 
     for (const FLLCoreNaturalChunkObservation& Chunk : Chunks)
     {
+        // Materialized land is authoritative walkable support. The bootstrap
+        // floor only protects the first frame/start region; this invisible
+        // per-chunk surface keeps later materialized regions physically usable.
+        // Ocean chunks intentionally have no resident floor.
+        if (Chunk.bMaterialized && Chunk.Surface != FName(TEXT("Ocean")))
+        {
+            AddSurfaceProxy(World, Chunk);
+        }
+
         for (const FLLCoreNaturalObstacleObservation& Obstacle : Chunk.PhysicalObstacles)
         {
             AddObstacleProxy(World, Obstacle);
@@ -166,10 +182,35 @@ void ALLWorldObstacleCollisionProxyActor::RebuildFromCore(
     }
 
     UE_LOG(LogTemp, Log,
-        TEXT("LifeLens Core obstacle proxies: trees=%d rocks=%d chunks=%d"),
+        TEXT("LifeLens Core physical proxies: surfaces=%d trees=%d rocks=%d chunks=%d"),
+        SurfaceCollision->GetInstanceCount(),
         TreeCollision->GetInstanceCount(),
         RockCollision->GetInstanceCount(),
         Chunks.Num());
+}
+
+void ALLWorldObstacleCollisionProxyActor::AddSurfaceProxy(
+    const FLLCoreWorldGenerationObservation& World,
+    const FLLCoreNaturalChunkObservation& Chunk)
+{
+    if (!SurfaceCollision || !Chunk.bMaterialized)
+    {
+        return;
+    }
+
+    const float Span = LLWorldSpatialContract::ChunkSpanUU;
+    const float HalfThickness = 50.0f;
+    const float OffsetX = static_cast<float>(Chunk.ChunkX - World.InitialChunkX) * Span;
+    const float OffsetY = static_cast<float>(Chunk.ChunkY - World.InitialChunkY) * Span;
+    const FVector Center = GetActorLocation() + FVector(OffsetX, OffsetY, -HalfThickness);
+    const FVector Scale(
+        Span / EngineCubeSideUU,
+        Span / EngineCubeSideUU,
+        (HalfThickness * 2.0f) / EngineCubeSideUU);
+
+    SurfaceCollision->AddInstance(
+        FTransform(FRotator::ZeroRotator, Center, Scale),
+        true);
 }
 
 void ALLWorldObstacleCollisionProxyActor::AddObstacleProxy(
