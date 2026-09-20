@@ -683,11 +683,20 @@ for forbidden in (
 game_mode_cpp = (root / 'Source/LifeLens/Core/LLLifeLensGameMode.cpp').read_text(encoding='utf-8')
 for token in (
     '#include "WorldPresentation/LLWorldPresentationActor.h"',
-    'TActorIterator<ALLWorldPresentationActor>',
-    'bHasWorldPresentation',
-    'SpawnActor<ALLWorldPresentationActor>',
-    'ALLWorldPresentationActor::StaticClass()',
+    'template <typename TActor>',
+    'EnsureSingletonWorldActor',
+    'EnsureSingletonWorldActor<ALLWorldDirector>(World)',
+    'EnsureSingletonWorldActor<ALLWorldObstacleCollisionProxyActor>(World)',
+    'EnsureSingletonWorldActor<ALLWorldPresentationActor>(World)',
+    'EnsureSingletonWorldActor<ALLDynamicEnvironmentPresentationActor>(World)',
+    'EnsureSingletonWorldActor<ALLWaterPresentationActor>(World)',
+    'EnsureSingletonWorldActor<ALLPCGGroundCoverPresentationActor>(World)',
+    'EnsureSingletonWorldActor<ALLDesktopTerrainPresentationActor>(World)',
 ):
-    assert token in game_mode_cpp, f'Missing runtime WorldPresentation bootstrap: {token}'
+    assert token in game_mode_cpp, f'Missing singleton runtime world bootstrap: {token}'
+
+assert 'bHasWorldPresentation' not in game_mode_cpp, (
+    'WorldPresentation-only duplicate guard must not leave other runtime actors unguarded'
+)
 
 print('LifeLens autonomous observer structural validation: PASS')
