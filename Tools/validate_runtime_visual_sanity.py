@@ -5,6 +5,7 @@ cpp = (root / "Source/LifeLens/WorldPresentation/LLWorldPresentationActor.cpp").
 header = (root / "Source/LifeLens/WorldPresentation/LLWorldPresentationActor.h").read_text(encoding="utf-8")
 collision_cpp = (root / "Source/LifeLens/World/LLWorldObstacleCollisionProxyActor.cpp").read_text(encoding="utf-8")
 environment_cpp = (root / "Source/LifeLens/WorldPresentation/LLDynamicEnvironmentPresentationActor.cpp").read_text(encoding="utf-8")
+terrain_contract = (root / "Source/LifeLens/WorldPresentation/LLTerrainPresentationContract.h").read_text(encoding="utf-8")
 
 # Regression guard: desktop must not rely on a sapling-only catalogue.
 for token in (
@@ -51,10 +52,16 @@ for token in (
     "CoreZoneUndergrowthKeep = 0.32f",
     "CoreZoneResourceScale = 0.32f",
     "ActivityZoneResourceScale = 0.62f",
-    "FacilityClearRadiusUU = 340.0f",
-    "FacilityActivityRadiusUU = 900.0f",
 ):
     assert token in header, f"missing dense settlement-edge recovery: {token}"
+
+for token in (
+    "FacilityFlattenRadiusUU = 340.0f",
+    "FacilityBlendEndRadiusUU = 900.0f",
+):
+    assert token in terrain_contract, f"missing shared facility terrain/readability radius: {token}"
+assert "FacilityClearRadiusUU = 340.0f" not in header
+assert "FacilityActivityRadiusUU = 900.0f" not in header
 
 # Ground-detail boulders must participate in readability thinning.
 assert "if (Layer == ELLDressingLayer::GroundDetail) { return 1.0f; }" not in cpp

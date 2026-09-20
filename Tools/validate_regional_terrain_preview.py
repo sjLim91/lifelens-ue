@@ -7,6 +7,7 @@ bridge_cpp = (root / 'Source/LifeLens/Simulation/LLWorldGenerationBridge.cpp').r
 bridge_runtime_cpp = (root / 'Source/LifeLens/Simulation/LLCoreBridgeSubsystem.cpp').read_text(encoding='utf-8')
 world_h = (root / 'Source/LifeLens/WorldPresentation/LLWorldPresentationActor.h').read_text(encoding='utf-8')
 world_cpp = (root / 'Source/LifeLens/WorldPresentation/LLWorldPresentationActor.cpp').read_text(encoding='utf-8')
+terrain_contract = (root / 'Source/LifeLens/WorldPresentation/LLTerrainPresentationContract.h').read_text(encoding='utf-8')
 
 assert 'GetRegionalTerrainPreviewObservations' in bridge_h
 assert 'GetRegionalTerrainPreviewObservations' in bridge_cpp
@@ -14,7 +15,7 @@ assert 'FMath::Clamp(RadiusChunks, 1, 16)' in bridge_cpp
 assert 'deriveMacroRegionFacts(Identity, Center)' in bridge_cpp
 
 preview_start = bridge_cpp.index('ULLCoreBridgeSubsystem::GetRegionalTerrainPreviewObservations')
-preview_end = bridge_cpp.index('bool ULLCoreBridgeSubsystem::GetTerrainPresentationObservation', preview_start)
+preview_end = bridge_cpp.index('bool ULLCoreBridgeSubsystem::GetTerrainPreviewObservation', preview_start)
 preview_body = bridge_cpp[preview_start:preview_end]
 assert 'materializeNaturalChunk' not in preview_body, (
     'regional terrain preview must never materialize simulation chunks'
@@ -39,19 +40,42 @@ assert 'CachedRegionalTerrainPreview = Result;' in preview_body
 assert 'CachedRegionalTerrainPreview.Reset();' in bridge_runtime_cpp
 assert 'CachedRegionalTerrainRadiusChunks = -1;' in bridge_runtime_cpp
 
+single_preview_start = bridge_cpp.index('ULLCoreBridgeSubsystem::GetTerrainPreviewObservation')
+single_preview_end = bridge_cpp.index('ULLCoreBridgeSubsystem::GetTerrainPresentationObservation', single_preview_start)
+single_preview_body = bridge_cpp[single_preview_start:single_preview_end]
+for token in (
+    'FillTerrainPresentationObservation',
+    'World.genesisIdentity()',
+    '{ChunkX, ChunkY}',
+):
+    assert token in single_preview_body, f'missing single terrain preview token: {token}'
+for forbidden in (
+    'materializeNaturalChunk(',
+    'generatedNaturalChunks.push',
+    'resourceNodes',
+):
+    assert forbidden not in single_preview_body, (
+        f'single-coordinate terrain preview must remain read-only: {forbidden}'
+    )
+
 for token in [
     'RegionalTerrainTileInstances',
     'BuildRegionalTerrainPreview',
     'RegionalTerrainSurfaceZUU',
     'RegionalTerrainTileRotation',
-    'RegionalTerrainReliefAmplitudeUU',
+    'LLTerrainPresentationContract::RegionalSurfaceZUU',
     'GetRegionalTerrainPreviewObservations',
 ]:
     assert token in world_h or token in world_cpp, f'missing regional terrain presentation token: {token}'
 
-assert '(Elevation01 - World.InitialChunk.Elevation) * Amplitude' in world_cpp, (
-    'regional relief must preserve signed valleys as well as mountains'
-)
+for token in (
+    'RegionalPreviewRadiusChunks = 8',
+    'RegionalInnerFlatRingChunks = 1',
+    'RegionalReliefAmplitudeUU = 1100.0f',
+    '(Elevation01 - World.InitialChunk.Elevation) * Amplitude',
+):
+    assert token in terrain_contract, f'missing shared regional terrain contract token: {token}'
+assert 'LLTerrainPresentationContract::RegionalSurfaceZUU' in world_cpp
 assert 'MaterializedCoords.Contains(Coord)' in world_cpp, (
     'regional preview must not duplicate authoritative materialized surfaces'
 )

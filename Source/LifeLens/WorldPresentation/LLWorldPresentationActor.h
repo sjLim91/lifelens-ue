@@ -158,11 +158,8 @@ public:
     // authoritative facility opens a smaller local readability envelope.
     // This prevents later neighborhoods from disappearing inside untouched
     // ambient forest without inventing roads, zoning or simulation clearing.
-    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.0", ClampMax="1600.0"))
-    float FacilityClearRadiusUU = 340.0f;
-
-    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.0", ClampMax="3000.0"))
-    float FacilityActivityRadiusUU = 900.0f;
+    // Facility readability/terrain radii are shared with Water/Desktop terrain
+    // through LLTerrainPresentationContract; they are not independently tunable.
 
     // ---- Visual-only far world envelope --------------------------------------
     // The authoritative simulation only materializes nearby chunks. The
@@ -181,37 +178,21 @@ public:
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|FarWorld", meta=(ClampMin="0.2", ClampMax="1.0"))
     float FarDressingOuterRadiusFraction = 0.47f;
 
-    // Read-only macro relief preview surrounding the tiny materialized activity
-    // set. It never materializes Core chunks or creates gameplay resources.
-    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|FarWorld", meta=(ClampMin="2", ClampMax="16"))
-    int32 RegionalTerrainPreviewRadiusChunks = 8;
+    // Regional relief radius/amplitude/inner ring live in
+    // LLTerrainPresentationContract so Water and horizon terrain share one
+    // presentation shape contract.
 
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|FarWorld", meta=(ClampMin="1", ClampMax="3"))
     int32 RegionalTerrainTilesPerChunk = 2;
-
-    // Regional-only exaggeration is intentionally larger than local physical
-    // relief. No resident/nav authority exists on these horizon tiles, so signed
-    // valleys and mountains can communicate macro geography without making the
-    // local settlement float above its collision plane.
-    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|FarWorld", meta=(ClampMin="180.0", ClampMax="2200.0"))
-    float RegionalTerrainReliefAmplitudeUU = 1100.0f;
-
-    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|FarWorld", meta=(ClampMin="0", ClampMax="4"))
-    int32 RegionalTerrainInnerFlatRingChunks = 1;
 
     // ---- Gentle authoritative terrain relief --------------------------------
     // The bootstrap collision plane and resident locomotion remain flat around
     // the active settlement. Outside that readability envelope, Core macro
     // elevation is projected into gentle visual relief so the world no longer
     // reads as a perfectly flat board.
-    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Terrain", meta=(ClampMin="0.0", ClampMax="500.0"))
-    float TerrainReliefAmplitudeUU = 180.0f;
-
-    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Terrain", meta=(ClampMin="0.0", ClampMax="5000.0"))
-    float TerrainReliefFlattenRadiusUU = 650.0f;
-
-    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Terrain", meta=(ClampMin="100.0", ClampMax="6000.0"))
-    float TerrainReliefBlendBandUU = 900.0f;
+    // Local terrain height/flattening values live in
+    // LLTerrainPresentationContract so terrain, water and desktop projection
+    // cannot silently diverge.
 
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Terrain", meta=(ClampMin="0.0", ClampMax="12.0"))
     float TerrainMaxTiltDegrees = 5.5f;

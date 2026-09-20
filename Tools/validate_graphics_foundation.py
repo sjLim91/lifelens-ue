@@ -107,7 +107,9 @@ require(water, (
     "bHasMarineNeighbour",
 ), "authoritative Unreal Water projection")
 for token in (
-    "SurfaceWaterSignature(World, Waters)",
+    "SurfaceWaterSignature(",
+    "GetCivilizationWorldObservation(0)",
+    "Civilization.Facilities",
     "World.InitialCenterGridX",
     "World.InitialCenterGridY",
     "World.InitialChunk.Elevation",

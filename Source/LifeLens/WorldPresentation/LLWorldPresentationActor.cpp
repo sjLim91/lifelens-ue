@@ -16,6 +16,7 @@
 #include "GameFramework/PlayerController.h"
 #include "Camera/PlayerCameraManager.h"
 #include "World/LLWorldSpatialContract.h"
+#include "WorldPresentation/LLTerrainPresentationContract.h"
 
 namespace
 {
@@ -750,8 +751,8 @@ float ALLWorldPresentationActor::FacilityDressingKeepFactor(
         return 1.0f;
     }
 
-    const float ClearRadius = FMath::Max(0.0f, FacilityClearRadiusUU);
-    const float ActivityRadius = FMath::Max(ClearRadius, FacilityActivityRadiusUU);
+    const float ClearRadius = FMath::Max(0.0f, LLTerrainPresentationContract::FacilityFlattenRadiusUU);
+    const float ActivityRadius = FMath::Max(ClearRadius, LLTerrainPresentationContract::FacilityBlendEndRadiusUU);
     if (ActivityRadius <= KINDA_SMALL_NUMBER)
     {
         return 1.0f;
@@ -1045,13 +1046,13 @@ float ALLWorldPresentationActor::ResourcePatchScaleFactor(const FVector2D& Locat
                 FVector2D::DistSquared(LocationUU, FacilityCenter));
         }
         const float FacilityDistance = FMath::Sqrt(NearestDistanceSq);
-        if (FacilityDistance <= FMath::Max(0.0f, FacilityClearRadiusUU))
+        if (FacilityDistance <= FMath::Max(0.0f, LLTerrainPresentationContract::FacilityFlattenRadiusUU))
         {
             Scale = FMath::Min(
                 Scale,
                 FMath::Clamp(CoreZoneResourceScale + 0.15f, 0.1f, 1.0f));
         }
-        else if (FacilityDistance <= FMath::Max(FacilityClearRadiusUU, FacilityActivityRadiusUU))
+        else if (FacilityDistance <= FMath::Max(LLTerrainPresentationContract::FacilityFlattenRadiusUU, LLTerrainPresentationContract::FacilityBlendEndRadiusUU))
         {
             Scale = FMath::Min(
                 Scale,
@@ -1071,26 +1072,10 @@ FVector ALLWorldPresentationActor::ChunkOriginUU(const FLLCoreWorldGenerationObs
 
 float ALLWorldPresentationActor::TerrainReliefBlend(const FVector2D& LocationUU) const
 {
-    const float Start = FMath::Max(0.0f, TerrainReliefFlattenRadiusUU);
-    const float End = Start + FMath::Max(100.0f, TerrainReliefBlendBandUU);
-    const float SettlementDistance = (LocationUU - CachedSettlementReferenceUU).Size();
-    float Blend = FMath::SmoothStep(
-        0.0f,
-        1.0f,
-        FMath::Clamp((SettlementDistance - Start) / FMath::Max(End - Start, 1.0f), 0.0f, 1.0f));
-
-    for (const FVector2D& FacilityCenter : CachedFacilityReadabilityCentersUU)
-    {
-        const float Distance = (LocationUU - FacilityCenter).Size();
-        const float LocalStart = FMath::Max(0.0f, FacilityClearRadiusUU);
-        const float LocalEnd = FMath::Max(LocalStart + 100.0f, FacilityActivityRadiusUU);
-        const float FacilityBlend = FMath::SmoothStep(
-            0.0f,
-            1.0f,
-            FMath::Clamp((Distance - LocalStart) / FMath::Max(LocalEnd - LocalStart, 1.0f), 0.0f, 1.0f));
-        Blend = FMath::Min(Blend, FacilityBlend);
-    }
-    return FMath::Clamp(Blend, 0.0f, 1.0f);
+    return LLTerrainPresentationContract::ReliefBlend(
+        LocationUU,
+        CachedSettlementReferenceUU,
+        CachedFacilityReadabilityCentersUU);
 }
 
 float ALLWorldPresentationActor::TerrainSurfaceZUU(
@@ -1098,50 +1083,12 @@ float ALLWorldPresentationActor::TerrainSurfaceZUU(
     const FLLCoreTerrainPresentationObservation& Terrain,
     const FVector2D& LocationUU) const
 {
-    if (!Terrain.bAvailable || TerrainReliefAmplitudeUU <= KINDA_SMALL_NUMBER)
-    {
-        return 0.0f;
-    }
-
-    const float Blend = TerrainReliefBlend(LocationUU);
-    if (Blend <= KINDA_SMALL_NUMBER)
-    {
-        return 0.0f;
-    }
-
-    auto ElevationOffset = [&](float Elevation01)
-    {
-        // Preserve the flat locomotion/collision baseline and add hills only.
-        // This avoids hiding visual terrain beneath the collision-only bootstrap
-        // floor while still making macro elevation readable at observer range.
-        return FMath::Max(
-            0.0f,
-            Elevation01 - World.InitialChunk.Elevation)
-            * FMath::Max(0.0f, TerrainReliefAmplitudeUU);
-    };
-
-    const FVector ChunkCenter3D = ChunkOriginUU(World, Terrain.ChunkX, Terrain.ChunkY);
-    const FVector2D ChunkCenter(ChunkCenter3D.X, ChunkCenter3D.Y);
-    const float Half = LLWorldSpatialContract::ChunkSpanUU * 0.5f;
-    const float U = FMath::Clamp((LocationUU.X - (ChunkCenter.X - Half))
-        / FMath::Max(LLWorldSpatialContract::ChunkSpanUU, 1.0f), 0.0f, 1.0f);
-    const float V = FMath::Clamp((LocationUU.Y - (ChunkCenter.Y - Half))
-        / FMath::Max(LLWorldSpatialContract::ChunkSpanUU, 1.0f), 0.0f, 1.0f);
-
-    const float South = FMath::Lerp(
-        ElevationOffset(Terrain.SouthWestElevation01),
-        ElevationOffset(Terrain.SouthEastElevation01),
-        U);
-    const float North = FMath::Lerp(
-        ElevationOffset(Terrain.NorthWestElevation01),
-        ElevationOffset(Terrain.NorthEastElevation01),
-        U);
-    const float CornerSurface = FMath::Lerp(South, North, V);
-    const float CenterSurface = ElevationOffset(Terrain.CenterElevation01);
-
-    // Center truth stabilizes the tile while seam-compatible corners drive most
-    // of the local shape.
-    return FMath::Lerp(CenterSurface, CornerSurface, 0.72f) * Blend;
+    return LLTerrainPresentationContract::LocalSurfaceZUU(
+        World,
+        Terrain,
+        LocationUU,
+        CachedSettlementReferenceUU,
+        CachedFacilityReadabilityCentersUU);
 }
 
 FRotator ALLWorldPresentationActor::TerrainTileRotation(
@@ -1181,63 +1128,10 @@ float ALLWorldPresentationActor::RegionalTerrainSurfaceZUU(
     const FLLCoreTerrainPresentationObservation& Terrain,
     const FVector2D& LocationUU) const
 {
-    if (!Terrain.bAvailable)
-    {
-        return 0.0f;
-    }
-
-    const int32 Ring = FMath::Max(
-        FMath::Abs(Terrain.ChunkX - World.InitialChunkX),
-        FMath::Abs(Terrain.ChunkY - World.InitialChunkY));
-    const int32 InnerRing = FMath::Clamp(
-        RegionalTerrainInnerFlatRingChunks,
-        0,
-        FMath::Max(0, RegionalTerrainPreviewRadiusChunks - 1));
-    const float Denominator = static_cast<float>(
-        FMath::Max(1, RegionalTerrainPreviewRadiusChunks - InnerRing));
-    const float RawAlpha = FMath::Clamp(
-        static_cast<float>(Ring - InnerRing) / Denominator,
-        0.0f,
-        1.0f);
-    const float ReliefAlpha =
-        RawAlpha * RawAlpha * (3.0f - 2.0f * RawAlpha);
-    const float Amplitude = FMath::Lerp(
-        FMath::Max(0.0f, TerrainReliefAmplitudeUU),
-        FMath::Max(TerrainReliefAmplitudeUU, RegionalTerrainReliefAmplitudeUU),
-        ReliefAlpha);
-
-    auto SignedElevationOffset = [&](float Elevation01)
-    {
-        return (Elevation01 - World.InitialChunk.Elevation) * Amplitude;
-    };
-
-    const FVector ChunkCenter3D =
-        ChunkOriginUU(World, Terrain.ChunkX, Terrain.ChunkY);
-    const FVector2D ChunkCenter(ChunkCenter3D.X, ChunkCenter3D.Y);
-    const float Half = LLWorldSpatialContract::ChunkSpanUU * 0.5f;
-    const float U = FMath::Clamp(
-        (LocationUU.X - (ChunkCenter.X - Half))
-            / FMath::Max(LLWorldSpatialContract::ChunkSpanUU, 1.0f),
-        0.0f,
-        1.0f);
-    const float V = FMath::Clamp(
-        (LocationUU.Y - (ChunkCenter.Y - Half))
-            / FMath::Max(LLWorldSpatialContract::ChunkSpanUU, 1.0f),
-        0.0f,
-        1.0f);
-
-    const float South = FMath::Lerp(
-        SignedElevationOffset(Terrain.SouthWestElevation01),
-        SignedElevationOffset(Terrain.SouthEastElevation01),
-        U);
-    const float North = FMath::Lerp(
-        SignedElevationOffset(Terrain.NorthWestElevation01),
-        SignedElevationOffset(Terrain.NorthEastElevation01),
-        U);
-    const float CornerSurface = FMath::Lerp(South, North, V);
-    const float CenterSurface =
-        SignedElevationOffset(Terrain.CenterElevation01);
-    return FMath::Lerp(CenterSurface, CornerSurface, 0.72f);
+    return LLTerrainPresentationContract::RegionalSurfaceZUU(
+        World,
+        Terrain,
+        LocationUU);
 }
 
 FRotator ALLWorldPresentationActor::RegionalTerrainTileRotation(
@@ -1357,7 +1251,7 @@ void ALLWorldPresentationActor::BuildGround(
         // slab visually cap every depression.
         const float EffectiveFarGroundDropUU = FMath::Max(
             FMath::Max(0.0f, FarGroundDropUU),
-            FMath::Max(0.0f, RegionalTerrainReliefAmplitudeUU) + 24.0f);
+            FMath::Max(0.0f, LLTerrainPresentationContract::RegionalReliefAmplitudeUU) + 24.0f);
         FarGround->SetRelativeLocation(FVector(
             0.0f,
             0.0f,
@@ -1485,7 +1379,7 @@ void ALLWorldPresentationActor::BuildRegionalTerrainPreview(
     const int32 TilesPerAxis =
         FMath::Clamp(RegionalTerrainTilesPerChunk, 1, 3);
     const int32 InnerFlatRing =
-        FMath::Max(0, RegionalTerrainInnerFlatRingChunks);
+        FMath::Max(0, LLTerrainPresentationContract::RegionalInnerFlatRingChunks);
     constexpr float TileThicknessUU = 12.0f;
     constexpr float SurfaceLiftUU = 0.20f;
     const float TileSpanUU =
@@ -1625,7 +1519,7 @@ void ALLWorldPresentationActor::BuildFarEnvironment(
 
     const float FallbackHorizonZ = -FMath::Max(
         FMath::Max(0.0f, FarGroundDropUU),
-        FMath::Max(0.0f, RegionalTerrainReliefAmplitudeUU) + 24.0f);
+        FMath::Max(0.0f, LLTerrainPresentationContract::RegionalReliefAmplitudeUU) + 24.0f);
 
     auto PlaceRing = [&](TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>>& Components,
                          int32 Count,
@@ -2857,7 +2751,7 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         TerrainPresentationSignature(MaterializedTerrains);
     const TArray<FLLCoreTerrainPresentationObservation> RegionalTerrains =
         Bridge->GetRegionalTerrainPreviewObservations(
-            RegionalTerrainPreviewRadiusChunks);
+            LLTerrainPresentationContract::RegionalPreviewRadiusChunks);
     const uint32 CurrentRegionalTerrainSignature =
         TerrainPresentationSignature(RegionalTerrains);
     const FLLCoreCivilizationWorldObservation Civilization = Bridge->GetCivilizationWorldObservation(0);

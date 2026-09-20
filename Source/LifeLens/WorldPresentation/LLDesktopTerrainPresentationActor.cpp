@@ -11,6 +11,7 @@
 #include "Simulation/LLWorldGenerationReadTypes.h"
 #include "UObject/ConstructorHelpers.h"
 #include "World/LLWorldSpatialContract.h"
+#include "WorldPresentation/LLTerrainPresentationContract.h"
 
 namespace
 {
@@ -108,34 +109,10 @@ float ALLDesktopTerrainPresentationActor::ReliefBlend(
     const FVector2D& LocationUU,
     const TArray<FVector2D>& FacilityCentersUU) const
 {
-    const float SettlementStart = FMath::Max(0.0f, SettlementFlattenRadiusUU);
-    const float SettlementEnd =
-        SettlementStart + FMath::Max(100.0f, SettlementBlendBandUU);
-    const float SettlementAlpha = FMath::Clamp(
-        static_cast<float>(
-            (LocationUU.Size() - static_cast<double>(SettlementStart))
-            / static_cast<double>(FMath::Max(SettlementEnd - SettlementStart, 1.0f))),
-        0.0f,
-        1.0f);
-    float Blend = SettlementAlpha * SettlementAlpha * (3.0f - 2.0f * SettlementAlpha);
-
-    for (const FVector2D& FacilityCenter : FacilityCentersUU)
-    {
-        const double Distance = FVector2D::Distance(LocationUU, FacilityCenter);
-        const float Start = FMath::Max(0.0f, FacilityFlattenRadiusUU);
-        const float End = Start + FMath::Max(50.0f, FacilityBlendBandUU);
-        const float FacilityAlpha = FMath::Clamp(
-            static_cast<float>(
-                (Distance - static_cast<double>(Start))
-                / static_cast<double>(FMath::Max(End - Start, 1.0f))),
-            0.0f,
-            1.0f);
-        const float FacilityBlend =
-            FacilityAlpha * FacilityAlpha * (3.0f - 2.0f * FacilityAlpha);
-        Blend = FMath::Min(Blend, FacilityBlend);
-    }
-
-    return FMath::Clamp(Blend, 0.0f, 1.0f);
+    return LLTerrainPresentationContract::ReliefBlend(
+        LocationUU,
+        FVector2D::ZeroVector,
+        FacilityCentersUU);
 }
 
 float ALLDesktopTerrainPresentationActor::SurfaceZUU(
@@ -144,52 +121,13 @@ float ALLDesktopTerrainPresentationActor::SurfaceZUU(
     const FVector2D& LocationUU,
     const TArray<FVector2D>& FacilityCentersUU) const
 {
-    if (!Terrain.bAvailable || TerrainReliefAmplitudeUU <= KINDA_SMALL_NUMBER)
-    {
-        return SurfaceLiftUU;
-    }
-
-    const FVector2D ChunkCenter(
-        static_cast<float>(Terrain.ChunkX - World.InitialChunkX)
-            * LLWorldSpatialContract::ChunkSpanUU,
-        static_cast<float>(Terrain.ChunkY - World.InitialChunkY)
-            * LLWorldSpatialContract::ChunkSpanUU);
-    const float Half = LLWorldSpatialContract::ChunkSpanUU * 0.5f;
-    const float U = FMath::Clamp(
-        (LocationUU.X - (ChunkCenter.X - Half))
-            / FMath::Max(LLWorldSpatialContract::ChunkSpanUU, 1.0f),
-        0.0f, 1.0f);
-    const float V = FMath::Clamp(
-        (LocationUU.Y - (ChunkCenter.Y - Half))
-            / FMath::Max(LLWorldSpatialContract::ChunkSpanUU, 1.0f),
-        0.0f, 1.0f);
-
-    auto RelativeHeight = [&](float Elevation01)
-    {
-        return FMath::Max(0.0f, Elevation01 - World.InitialChunk.Elevation)
-            * FMath::Max(0.0f, TerrainReliefAmplitudeUU);
-    };
-
-    const float South = FMath::Lerp(
-        RelativeHeight(Terrain.SouthWestElevation01),
-        RelativeHeight(Terrain.SouthEastElevation01),
-        U);
-    const float North = FMath::Lerp(
-        RelativeHeight(Terrain.NorthWestElevation01),
-        RelativeHeight(Terrain.NorthEastElevation01),
-        U);
-    const float CornerSurface = FMath::Lerp(South, North, V);
-    const float CenterSurface = RelativeHeight(Terrain.CenterElevation01);
-
-    // Keep the desktop procedural surface on the same height contract used by
-    // WorldPresentation when it places trees, rocks and resources. The old
-    // center-weighted surface could diverge from dressing Z and leave objects
-    // visibly floating or buried.
-    const float SharedSurface =
-        FMath::Lerp(CenterSurface, CornerSurface, 0.72f)
-        * ReliefBlend(LocationUU, FacilityCentersUU);
-
-    return SurfaceLiftUU + SharedSurface;
+    return LLTerrainPresentationContract::LocalSurfaceZUU(
+        World,
+        Terrain,
+        LocationUU,
+        FVector2D::ZeroVector,
+        FacilityCentersUU,
+        LLTerrainPresentationContract::DesktopSurfaceLiftUU);
 }
 
 UMaterialInterface* ALLDesktopTerrainPresentationActor::MaterialForChunk(

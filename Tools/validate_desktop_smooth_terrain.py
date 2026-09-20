@@ -4,13 +4,13 @@ import json
 root = Path(__file__).resolve().parents[1]
 
 actor = (root / "Source/LifeLens/WorldPresentation/LLDesktopTerrainPresentationActor.cpp").read_text(encoding="utf-8")
+terrain_contract = (root / "Source/LifeLens/WorldPresentation/LLTerrainPresentationContract.h").read_text(encoding="utf-8")
 for token in (
     "UProceduralMeshComponent",
     "GetMaterializedTerrainPresentationObservations",
     "GetMaterializedNaturalChunkObservations",
     "GetCivilizationWorldObservation",
-    "CornerSurface",
-    "FMath::Lerp(CenterSurface, CornerSurface, 0.72f)",
+    "LLTerrainPresentationContract::LocalSurfaceZUU",
     "FacilityCentersUU",
     "CreateMeshSection",
     "SetCollisionEnabled(ECollisionEnabled::QueryOnly)",
@@ -46,17 +46,18 @@ assert 'PrivateDependencyModuleNames.Add("ProceduralMeshComponent")' in build
 header = (root / "Source/LifeLens/WorldPresentation/LLDesktopTerrainPresentationActor.h").read_text(encoding="utf-8")
 assert "UProceduralMeshComponent* TerrainMesh = nullptr;" in header
 assert "TObjectPtr<UProceduralMeshComponent>" not in header
-assert "float SettlementFlattenRadiusUU = 650.0f;" in header, (
-    "start-chunk terrain must not be flattened across its full 3200 UU span"
-)
-assert "float SettlementBlendBandUU = 900.0f;" in header
+assert "SettlementFlattenRadiusUU" not in header
+assert "SettlementBlendBandUU" not in header
+assert "LocalReliefAmplitudeUU = 180.0f" in terrain_contract
+assert "SettlementFlattenRadiusUU = 650.0f" in terrain_contract
+assert "SettlementBlendBandUU = 900.0f" in terrain_contract
+assert "FMath::Lerp(CenterSurface, CornerSurface, 0.72f)" in terrain_contract
 
 world_presentation = (root / "Source/LifeLens/WorldPresentation/LLWorldPresentationActor.cpp").read_text(encoding="utf-8")
 world_presentation_header = (root / "Source/LifeLens/WorldPresentation/LLWorldPresentationActor.h").read_text(encoding="utf-8")
-assert "float TerrainReliefFlattenRadiusUU = 650.0f;" in world_presentation_header, (
-    "tree/resource surface projection must share the compact settlement flatten radius"
-)
-assert "float TerrainReliefBlendBandUU = 900.0f;" in world_presentation_header
+assert "TerrainReliefFlattenRadiusUU" not in world_presentation_header
+assert "TerrainReliefBlendBandUU" not in world_presentation_header
+assert "LLTerrainPresentationContract::LocalSurfaceZUU" in world_presentation
 assert "MobileTerrainTilesPerAxis = 4" in world_presentation, (
     "Android terrain must not regress to one flat 3200-UU chunk tile"
 )
