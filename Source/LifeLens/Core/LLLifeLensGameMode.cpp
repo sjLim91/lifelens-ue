@@ -14,6 +14,9 @@
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
 #include "Engine/StaticMeshActor.h"
+#include "Engine/GameInstance.h"
+#include "Simulation/LLCoreBridgeSubsystem.h"
+#include "Simulation/LLWorldGenerationReadTypes.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
@@ -128,19 +131,97 @@ void ALLLifeLensGameMode::SpawnObserverCamera()
     // higher, steeper observer angle so generated tree canopies do not sit
     // between the initial camera and the founders. Framing values are product
     // presentation tuning in DefaultGame.ini, not Core spatial authority.
-    const float CameraDistanceChunks = FMath::Max(0.5f, ObserverCameraDistanceChunks);
+    float CameraDistanceChunks = FMath::Max(0.5f, ObserverCameraDistanceChunks);
     const float CameraHeightChunks = FMath::Max(0.5f, ObserverCameraHeightChunks);
-    const float CameraDistanceUU = LLWorldSpatialContract::ChunkSpanUU * CameraDistanceChunks;
-    const float CameraHeightUU = LLWorldSpatialContract::ChunkSpanUU * CameraHeightChunks;
     const float TargetHeightUU = FMath::Max(0.0f, ObserverCameraTargetHeightUU);
     const float CameraFOVDegrees = FMath::Clamp(ObserverCameraFOVDegrees, 30.0f, 90.0f);
 
-    const FVector CameraLocation(0.0f, -CameraDistanceUU, CameraHeightUU);
-    const FVector CameraTarget(0.0f, 0.0f, TargetHeightUU);
+    // NEW GAME deliberately starts the founders on dry land beside real fresh
+    // surface water. Keep both subjects in the opening observer composition:
+    // the settlement remains the primary focus, while the nearest materialized
+    // fresh-water body pulls the frame just enough to be immediately legible.
+    FVector2D InitialFocusUU = FVector2D::ZeroVector;
+    float FreshWaterDistanceChunks = 0.0f;
+    if (bFrameFreshSurfaceWaterInInitialView)
+    {
+        UGameInstance* GameInstance = GetWorld()->GetGameInstance();
+        ULLCoreBridgeSubsystem* Bridge =
+            GameInstance ? GameInstance->GetSubsystem<ULLCoreBridgeSubsystem>() : nullptr;
+        if (Bridge && Bridge->IsCoreRunning())
+        {
+            const FLLCoreWorldGenerationObservation World =
+                Bridge->GetWorldGenerationObservation();
+            const TArray<FLLCoreSurfaceWaterPresentationObservation> Waters =
+                Bridge->GetMaterializedSurfaceWaterPresentationObservations();
+
+            bool bFoundFreshWater = false;
+            float BestDistanceSquared = TNumericLimits<float>::Max();
+            FVector2D BestWaterUU = FVector2D::ZeroVector;
+            for (const FLLCoreSurfaceWaterPresentationObservation& Water : Waters)
+            {
+                if (!Water.bAvailable || !Water.bFreshSurfaceWater)
+                {
+                    continue;
+                }
+
+                const FVector2D WaterUU(
+                    static_cast<float>(Water.CenterGridX - World.InitialCenterGridX)
+                        * LLWorldSpatialContract::GridCellSizeUU,
+                    static_cast<float>(Water.CenterGridY - World.InitialCenterGridY)
+                        * LLWorldSpatialContract::GridCellSizeUU);
+                const float DistanceSquared = WaterUU.SizeSquared();
+                if (!bFoundFreshWater || DistanceSquared < BestDistanceSquared)
+                {
+                    bFoundFreshWater = true;
+                    BestDistanceSquared = DistanceSquared;
+                    BestWaterUU = WaterUU;
+                }
+            }
+
+            if (bFoundFreshWater)
+            {
+                FreshWaterDistanceChunks =
+                    FMath::Sqrt(BestDistanceSquared)
+                    / FMath::Max(1.0f, LLWorldSpatialContract::ChunkSpanUU);
+                InitialFocusUU =
+                    BestWaterUU
+                    * FMath::Clamp(InitialFreshWaterFocusWeight, 0.0f, 0.5f);
+                const float MaxFocusOffsetUU =
+                    FMath::Max(0.0f, InitialFreshWaterMaxFocusOffsetChunks)
+                    * LLWorldSpatialContract::ChunkSpanUU;
+                InitialFocusUU = InitialFocusUU.GetClampedToMaxSize(MaxFocusOffsetUU);
+
+                CameraDistanceChunks += FMath::Min(
+                    FMath::Max(0.0f, InitialFreshWaterMaxDistanceBoostChunks),
+                    FreshWaterDistanceChunks
+                        * FMath::Max(0.0f, InitialFreshWaterDistanceBoostPerChunk));
+            }
+        }
+    }
+
+    const float CameraDistanceUU =
+        LLWorldSpatialContract::ChunkSpanUU * CameraDistanceChunks;
+    const float CameraHeightUU =
+        LLWorldSpatialContract::ChunkSpanUU * CameraHeightChunks;
+    const FVector CameraLocation(
+        InitialFocusUU.X,
+        InitialFocusUU.Y - CameraDistanceUU,
+        CameraHeightUU);
+    const FVector CameraTarget(
+        InitialFocusUU.X,
+        InitialFocusUU.Y,
+        TargetHeightUU);
     const FRotator CameraRotation = (CameraTarget - CameraLocation).Rotation();
 
     ObserverCamera = GetWorld()->SpawnActor<ACameraActor>(
         ACameraActor::StaticClass(), CameraLocation, CameraRotation);
+
+    UE_LOG(LogTemp, Log,
+        TEXT("LifeLens initial observer framing: focus=(%.0f,%.0f) waterDistanceChunks=%.2f cameraDistanceChunks=%.2f"),
+        InitialFocusUU.X,
+        InitialFocusUU.Y,
+        FreshWaterDistanceChunks,
+        CameraDistanceChunks);
 
     if (!ObserverCamera)
     {
