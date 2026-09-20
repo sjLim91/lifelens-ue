@@ -123,17 +123,17 @@ private:
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|VFX")
     TSoftObjectPtr<UNiagaraSystem> FogSystem;
 
-    // Primitive precipitation is development/debug-only. Production local view
-    // fails closed when authored Niagara is missing rather than drawing obvious
-    // Engine Cube/Sphere rain or snow.
+    // Production safety fallback. Authored Niagara always wins when assigned;
+    // this path exists so authoritative rain/snow can never become invisible
+    // merely because an optional VFX asset is absent from a cook.
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|VFX|Fallback")
-    bool bAllowPrimitivePrecipitationFallback = false;
+    bool bAllowPrimitivePrecipitationFallback = true;
 
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|VFX|Fallback", meta=(ClampMin="8", ClampMax="256"))
-    int32 MaxFallbackRainInstances = 96;
+    int32 MaxFallbackRainInstances = 144;
 
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|VFX|Fallback", meta=(ClampMin="8", ClampMax="192"))
-    int32 MaxFallbackSnowInstances = 64;
+    int32 MaxFallbackSnowInstances = 96;
 
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|VFX|Fallback", meta=(ClampMin="500.0", ClampMax="6000.0"))
     float FallbackPrecipitationRadiusUU = 2200.0f;

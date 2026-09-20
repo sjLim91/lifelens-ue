@@ -20,6 +20,7 @@ read_types = text("Source/LifeLens/Simulation/LLEnvironmentReadTypes.h")
 doc = text("docs/WORLD_ENVIRONMENTAL_VISUAL_FEEDBACK_v1.md")
 dynamic_h = text("Source/LifeLens/WorldPresentation/LLDynamicEnvironmentPresentationActor.h")
 dynamic_cpp = text("Source/LifeLens/WorldPresentation/LLDynamicEnvironmentPresentationActor.cpp")
+default_game = text("Config/DefaultGame.ini")
 
 for token in [
     "UHierarchicalInstancedStaticMeshComponent",
@@ -72,6 +73,34 @@ for token in [
     "LastObservedRuntimeGeneration",
 ]:
     require(dynamic_h, token, "dynamic environment runtime reset header")
+
+for token in [
+    "bAllowPrimitivePrecipitationFallback = true",
+    "MaxFallbackRainInstances = 144",
+    "MaxFallbackSnowInstances = 96",
+]:
+    require(dynamic_h, token, "visible precipitation fallback header")
+
+for token in [
+    "bAllowPrimitivePrecipitationFallback=True",
+    "MaxFallbackRainInstances=144",
+    "MaxFallbackSnowInstances=96",
+]:
+    require(default_game, token, "visible precipitation production config")
+
+for token in [
+    "/Engine/BasicShapes/Cylinder.Cylinder",
+    "/Engine/BasicShapes/Sphere.Sphere",
+    "bNeedsRainFallback",
+    "bNeedsSnowFallback",
+    "RainEffect->GetAsset() == nullptr",
+    "SnowEffect->GetAsset() == nullptr",
+    "LifeLens precipitation safety fallback",
+]:
+    require(dynamic_cpp, token, "visible precipitation fallback implementation")
+
+if "bAllowPrimitivePrecipitationFallback = false" in dynamic_h:
+    raise SystemExit("authoritative rain/snow may not fail invisible when optional Niagara is absent")
 
 for token in [
     "Bridge->GetRuntimeGeneration()",
