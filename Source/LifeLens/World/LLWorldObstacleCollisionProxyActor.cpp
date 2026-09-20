@@ -135,11 +135,17 @@ uint32 ALLWorldObstacleCollisionProxyActor::ComputeCoreSignature(
     Signature = MixSignature(Signature, GetTypeHash(World.WorldSeed));
     Signature = MixSignature(Signature, GetTypeHash(World.GenerationVersion));
     Signature = MixSignature(Signature, GetTypeHash(World.MaterializedChunkCount));
+    Signature = MixSignature(Signature, GetTypeHash(World.InitialChunkX));
+    Signature = MixSignature(Signature, GetTypeHash(World.InitialChunkY));
+    Signature = MixSignature(Signature, GetTypeHash(World.InitialCenterGridX));
+    Signature = MixSignature(Signature, GetTypeHash(World.InitialCenterGridY));
 
     for (const FLLCoreNaturalChunkObservation& Chunk : Chunks)
     {
         Signature = MixSignature(Signature, GetTypeHash(Chunk.ChunkX));
         Signature = MixSignature(Signature, GetTypeHash(Chunk.ChunkY));
+        Signature = MixSignature(Signature, GetTypeHash(Chunk.bMaterialized));
+        Signature = MixSignature(Signature, GetTypeHash(Chunk.Surface));
         Signature = MixSignature(Signature, GetTypeHash(Chunk.PhysicalObstacles.Num()));
         for (const FLLCoreNaturalObstacleObservation& Obstacle : Chunk.PhysicalObstacles)
         {
@@ -151,6 +157,7 @@ uint32 ALLWorldObstacleCollisionProxyActor::ComputeCoreSignature(
             Signature = MixSignature(Signature, GetTypeHash(FMath::RoundToInt(Obstacle.OffsetYCells * 1000.0f)));
             Signature = MixSignature(Signature, GetTypeHash(FMath::RoundToInt(Obstacle.HalfExtentXCells * 1000.0f)));
             Signature = MixSignature(Signature, GetTypeHash(FMath::RoundToInt(Obstacle.HalfExtentYCells * 1000.0f)));
+            Signature = MixSignature(Signature, GetTypeHash(FMath::RoundToInt(Obstacle.HalfHeightCells * 1000.0f)));
         }
     }
     return Signature;

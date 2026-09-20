@@ -110,6 +110,17 @@ require("MaterializedSurfaceCollision" in world_collision,
         "materialized land no longer projects an invisible resident support surface")
 require('Chunk.Surface != FName(TEXT("Ocean"))' in world_collision,
         "ocean chunks must not receive walkable resident floor collision")
+for token in (
+    "World.InitialChunkX",
+    "World.InitialChunkY",
+    "World.InitialCenterGridX",
+    "World.InitialCenterGridY",
+    "Chunk.bMaterialized",
+    "GetTypeHash(Chunk.Surface)",
+    "Obstacle.HalfHeightCells",
+):
+    require(token in world_collision,
+            f"collision proxy rebuild signature/input contract missing {token}")
 
 require("SetMovementPath" in resident_character,
         "resident locomotion lost multi-waypoint route support")
