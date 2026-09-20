@@ -444,25 +444,40 @@ TArray<FLLCoreTerrainPresentationObservation>
 ULLCoreBridgeSubsystem::GetRegionalTerrainPreviewObservations(
     int32 RadiusChunks) const
 {
-    TArray<FLLCoreTerrainPresentationObservation> Result;
+    TArray<FLLCoreTerrainPresentationObservation> Empty;
     if (!CoreSimulation)
     {
-        return Result;
+        return Empty;
     }
 
     const lifelens::World& World = CoreSimulation->world();
     if (!World.hasInitialStartRegionSelection)
     {
-        return Result;
+        return Empty;
     }
 
     // Bound presentation cost independently from simulation authority.
     const int32 Radius = FMath::Clamp(RadiusChunks, 1, 16);
+    const lifelens::WorldGenesisIdentity Identity = World.genesisIdentity();
+    const lifelens::ChunkCoord Origin = World.initialStartRegionCoord;
+
+    const bool bCacheHit =
+        CachedRegionalTerrainRadiusChunks == Radius
+        && CachedRegionalTerrainWorldSeed == Identity.worldSeed
+        && CachedRegionalTerrainGenerationVersion
+            == static_cast<int32>(Identity.generationVersion)
+        && CachedRegionalTerrainStartChunkX == Origin.x
+        && CachedRegionalTerrainStartChunkY == Origin.y
+        && CachedRegionalTerrainPreview.Num() == (Radius * 2 + 1) * (Radius * 2 + 1);
+    if (bCacheHit)
+    {
+        return CachedRegionalTerrainPreview;
+    }
+
+    TArray<FLLCoreTerrainPresentationObservation> Result;
     const int32 Diameter = Radius * 2 + 1;
     Result.Reserve(Diameter * Diameter);
 
-    const lifelens::WorldGenesisIdentity Identity = World.genesisIdentity();
-    const lifelens::ChunkCoord Origin = World.initialStartRegionCoord;
     for (int32 Y = -Radius; Y <= Radius; ++Y)
     {
         for (int32 X = -Radius; X <= Radius; ++X)
@@ -475,6 +490,14 @@ ULLCoreBridgeSubsystem::GetRegionalTerrainPreviewObservations(
             Result.Add(MoveTemp(Observation));
         }
     }
+
+    CachedRegionalTerrainPreview = Result;
+    CachedRegionalTerrainWorldSeed = Identity.worldSeed;
+    CachedRegionalTerrainGenerationVersion =
+        static_cast<int32>(Identity.generationVersion);
+    CachedRegionalTerrainStartChunkX = Origin.x;
+    CachedRegionalTerrainStartChunkY = Origin.y;
+    CachedRegionalTerrainRadiusChunks = Radius;
     return Result;
 }
 
