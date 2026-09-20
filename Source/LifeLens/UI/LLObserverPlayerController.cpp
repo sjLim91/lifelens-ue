@@ -3,6 +3,7 @@
 #include "UI/LLObserverHUD.h"
 #include "Characters/LLResidentCharacter.h"
 #include "Core/LLLifeLensGameMode.h"
+#include "Simulation/LLCoreBridgeSubsystem.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
@@ -914,6 +915,34 @@ void ALLObserverPlayerController::SyncObservedResidentSelection()
     if (!Observation)
     {
         return;
+    }
+
+    ULLCoreBridgeSubsystem* Bridge =
+        GameInstance ? GameInstance->GetSubsystem<ULLCoreBridgeSubsystem>() : nullptr;
+    if (Bridge)
+    {
+        const int64 RuntimeGeneration = Bridge->GetRuntimeGeneration();
+        if (RuntimeGeneration != LastObservedCoreRuntimeGeneration)
+        {
+            LastObservedCoreRuntimeGeneration = RuntimeGeneration;
+
+            // A selection is meaningful only if that stable resident identity
+            // exists in the newly installed authoritative runtime. Preserve it
+            // across save loads when the resident still exists (including dead
+            // residents shown by lifecycle/history UI), but do not leave the
+            // observer stuck in Quick/Detail for an ID from a different world.
+            if (Observation->HasObservedResident())
+            {
+                FLLCoreResidentObservation Resident;
+                if (!Bridge->GetResidentObservation(
+                        Observation->GetObservedResidentId(), Resident))
+                {
+                    Observation->ClearObservedResident();
+                    RestoreWorldOverview();
+                    return;
+                }
+            }
+        }
     }
 
     // Selection can now originate outside this controller (lifecycle cards,

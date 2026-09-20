@@ -176,6 +176,7 @@ private:
     bool bWorldOverviewCaptured = false;
 
     FGuid FocusedResidentId;
+    int64 LastObservedCoreRuntimeGeneration = -1;
     bool bFollowObservedResident = false;
     bool bWorldEventFocusActive = false;
     bool bReturningToWorldOverview = false;
