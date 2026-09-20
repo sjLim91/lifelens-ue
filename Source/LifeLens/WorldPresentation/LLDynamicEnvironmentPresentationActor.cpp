@@ -786,33 +786,42 @@ void ALLDynamicEnvironmentPresentationActor::ApplyWeatherEffects(
     float Fog01,
     float Wind01)
 {
+    const float OffThreshold = FMath::Clamp(
+        FMath::Min(EffectActivationThreshold, EffectDeactivationThreshold),
+        0.0f,
+        EffectActivationThreshold);
+    const auto ShouldRemainActive = [this, OffThreshold](
+        const UNiagaraComponent* Component,
+        float Intensity01)
+    {
+        return Component && Component->IsActive()
+            ? Intensity01 >= OffThreshold
+            : Intensity01 >= EffectActivationThreshold;
+    };
+
     if (RainEffect)
     {
         RainEffect->SetVariableFloat(TEXT("User.Intensity"), Rain01);
         RainEffect->SetVariableFloat(TEXT("User.WindIntensity"), Wind01);
-        SetEffectActive(RainEffect, Rain01 >= EffectActivationThreshold);
+        SetEffectActive(RainEffect, ShouldRemainActive(RainEffect, Rain01));
     }
     if (SnowEffect)
     {
         SnowEffect->SetVariableFloat(TEXT("User.Intensity"), Snow01);
         SnowEffect->SetVariableFloat(TEXT("User.WindIntensity"), Wind01);
-        SetEffectActive(SnowEffect, Snow01 >= EffectActivationThreshold);
+        SetEffectActive(SnowEffect, ShouldRemainActive(SnowEffect, Snow01));
     }
     if (FogEffect)
     {
         FogEffect->SetVariableFloat(TEXT("User.Intensity"), Fog01);
         FogEffect->SetVariableFloat(TEXT("User.WindIntensity"), Wind01);
-        SetEffectActive(FogEffect, Fog01 >= EffectActivationThreshold);
+        SetEffectActive(FogEffect, ShouldRemainActive(FogEffect, Fog01));
     }
 
     FallbackRainIntensity01 = Rain01;
     FallbackSnowIntensity01 = Snow01;
     FallbackWind01 = Wind01;
 
-    const float OffThreshold = FMath::Clamp(
-        FMath::Min(EffectActivationThreshold, EffectDeactivationThreshold),
-        0.0f,
-        EffectActivationThreshold);
     const bool bNeedsRainFallback = bAllowPrimitivePrecipitationFallback
         && (!RainEffect || RainEffect->GetAsset() == nullptr);
     const bool bNeedsSnowFallback = bAllowPrimitivePrecipitationFallback
