@@ -42,7 +42,7 @@ assert 'selectInitialFreshwaterAdjacentRegion(genesisIdentity())' in world
 assert 'selectInitialFreshwaterAdjacentRegion' in hydrology
 assert 'findNearestFreshSurfaceWaterChunk' in hydrology
 assert 'FreshSurfaceStartSearchRadiusChunks' in hydrology
-assert 'MacroStartSearchRadiusChunks * 2' in hydrology
+assert 'MacroStartSearchRadiusChunks * 3' in hydrology
 assert 'isFreshSurfaceWater(hydrology)' in natural
 assert 'WorldChunkSpanGridCells / 2' in natural
 assert 'lifelens_add_test(test_world_genesis_wg2)' in cmake
@@ -51,6 +51,7 @@ assert 'startA.region.coord==startB.region.coord' in test
 assert 'currentStartA.region.coord == currentStartB.region.coord' in test
 assert 'currentFreshwaterA == currentFreshwaterB' in test
 assert 'alignedFreshWaterNodeCount == 1' in test
+assert 'makeWorldGenesisIdentity(26,111,CurrentWorldGenerationVersion)' in test
 assert 'simulation.world().objects.empty()' in test
 assert 'simulation.world().primitiveSanitationSites.empty()' in test
 assert 'Macro World' in doc and 'start-site' in doc
