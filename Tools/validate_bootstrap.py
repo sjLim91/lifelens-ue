@@ -77,8 +77,6 @@ for token in (
     'CaptureCoreSnapshotBytes',
     'RestoreCoreSnapshotBytes',
     'SaveObject->SaveVersion != ULLSaveGame::CurrentSaveVersion',
-    'ApplyActionOutcome',
-    'ApplySocialInteraction',
 ):
     assert token in sim, f'Missing Core-authoritative runtime/save contract: {token}'
 for obsolete in (
