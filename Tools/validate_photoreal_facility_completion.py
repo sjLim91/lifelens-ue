@@ -31,4 +31,11 @@ assert "!bUsePhotorealSleepFrame && FacilityFoundationInstances" in cpp
 assert "!bUsePhotorealFurnace && FacilityFoundationInstances" in cpp
 assert "bStructurallyComplete && PhotorealStructureLogInstances" in cpp
 
+# PrimitiveStorage contents are selected through the facility's authoritative
+# LinkedStorageId. Relinking must invalidate the facility presentation even when
+# the storage collection and its totals happen to remain otherwise unchanged.
+assert "const uint64 LinkedStorageId = static_cast<uint64>(Facility.LinkedStorageId);" in cpp
+assert "LinkedStorageId & 0xFFFFFFFFu" in cpp
+assert "(LinkedStorageId >> 32)" in cpp
+
 print("LifeLens photoreal facility completion: PASS")
