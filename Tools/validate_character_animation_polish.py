@@ -5,6 +5,19 @@ cpp = (root / "Source/LifeLens/Characters/LLResidentMotionComponent.cpp").read_t
 header = (root / "Source/LifeLens/Characters/LLResidentMotionComponent.h").read_text(encoding="utf-8")
 
 for token in (
+    "Pebble_Round_1.Pebble_Round_1",
+    "SM_LL_dead_tree_trunk.SM_LL_dead_tree_trunk",
+    "DiggingStickMesh",
+    "PrimitiveStoneFinder",
+    "PrimitiveStickFinder",
+):
+    assert token in cpp or token in header, f"missing visible primitive held-tool token: {token}"
+
+assert "SharpFlakeMesh = nullptr;" not in cpp
+assert "StoneCuttingToolMesh = nullptr;" not in cpp
+assert "DesiredMesh = DiggingStickMesh.Get();" in cpp
+
+for token in (
     "ResolveResidentLoopVariation",
     "HashCombine",
     "SetPlayRate",

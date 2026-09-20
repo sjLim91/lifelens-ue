@@ -664,10 +664,15 @@ resident_motion = (root / 'Source/LifeLens/Characters/LLResidentMotionComponent.
 for token in (
     'SM_LL_wicker_basket_01',
     'SM_LL_wooden_bowl_01',
-    'SharpFlakeMesh = nullptr',
-    'StoneCuttingToolMesh = nullptr',
+    'Pebble_Round_1.Pebble_Round_1',
+    'SM_LL_dead_tree_trunk.SM_LL_dead_tree_trunk',
+    'SharpFlakeMesh = PrimitiveStoneFinder.Succeeded()',
+    'StoneCuttingToolMesh = PrimitiveStoneFinder.Succeeded()',
+    'DiggingStickMesh = PrimitiveStickFinder.Succeeded()',
 ):
     assert token in resident_motion, f'Missing production held-prop policy: {token}'
+assert 'SharpFlakeMesh = nullptr' not in resident_motion
+assert 'StoneCuttingToolMesh = nullptr' not in resident_motion
 for forbidden in (
     '/Engine/BasicShapes/Cone.Cone',
     '/Engine/BasicShapes/Cylinder.Cylinder',

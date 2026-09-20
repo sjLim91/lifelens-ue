@@ -164,6 +164,7 @@ private:
     // attachment contract stay stable when proper art assets replace them.
     UPROPERTY() TObjectPtr<UStaticMesh> SharpFlakeMesh;
     UPROPERTY() TObjectPtr<UStaticMesh> StoneCuttingToolMesh;
+    UPROPERTY() TObjectPtr<UStaticMesh> DiggingStickMesh;
     UPROPERTY() TObjectPtr<UStaticMesh> SimpleContainerMesh;
     UPROPERTY() TObjectPtr<UStaticMesh> FoodProxyMesh;
     UPROPERTY() TObjectPtr<UStaticMesh> DrinkProxyMesh;
