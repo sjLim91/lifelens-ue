@@ -1,0 +1,134 @@
+name: LifeLens Android Prebuilt Project Compile Probe
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/android-prebuilt-project-compile-probe.yml'
+      - '.github/workflows/android-apk.yml'
+      - 'Config/Android/**'
+      - 'Source/**'
+      - 'LifeLens.uproject'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lifelens-android-prebuilt-project-probe-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UE_IMAGE: ghcr.io/epicgames/unreal-engine:dev-slim-5.6.0
+  ANDROID_API: '34'
+  ANDROID_BUILD_TOOLS: '34.0.0'
+  ANDROID_NDK_VERSION: '25.1.8937393'
+  PROJECT_ROOT: ${{ github.workspace }}
+  DIAGNOSTICS: ${{ github.workspace }}/Diagnostics
+
+jobs:
+  compile-android-with-prebuilt-host:
+    if: ${{ github.event.repository.private == false }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout LifeLens source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Reclaim runner disk and record resources
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/local/lib/node_modules || true
+          sudo apt-get clean || true
+          sudo docker system prune -af || true
+          mkdir -p "$DIAGNOSTICS"
+          echo "LIFELENS_SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          df -h /
+          free -h
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Ensure UE 5.6 Android SDK and NDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          ANDROID_HOME=/usr/local/lib/android/sdk
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          PACKAGES=()
+          test -d "$ANDROID_HOME/platform-tools" || PACKAGES+=('platform-tools')
+          test -d "$ANDROID_HOME/platforms/android-${ANDROID_API}" || PACKAGES+=("platforms;android-${ANDROID_API}")
+          test -d "$ANDROID_HOME/build-tools/${ANDROID_BUILD_TOOLS}" || PACKAGES+=("build-tools;${ANDROID_BUILD_TOOLS}")
+          test -d "$ANDROID_HOME/ndk/${ANDROID_NDK_VERSION}" || PACKAGES+=("ndk;${ANDROID_NDK_VERSION}")
+          if [ ${#PACKAGES[@]} -gt 0 ]; then
+            "$SDKMANAGER" "${PACKAGES[@]}"
+          fi
+          test -x "$ANDROID_HOME/ndk/${ANDROID_NDK_VERSION}/toolchains/llvm/prebuilt/linux-x86_64/bin/clang"
+          {
+            echo "ANDROID_HOME=$ANDROID_HOME"
+            echo "ANDROID_SDK_ROOT=$ANDROID_HOME"
+            echo "NDKROOT=$ANDROID_HOME/ndk/${ANDROID_NDK_VERSION}"
+            echo "NDK_ROOT=$ANDROID_HOME/ndk/${ANDROID_NDK_VERSION}"
+          } >> "$GITHUB_ENV"
+
+      - name: Authenticate Epic GHCR
+        shell: bash
+        env:
+          EPIC_GHCR_PAT: ${{ secrets.EPIC_GHCR_PAT }}
+        run: |
+          set -euo pipefail
+          test -n "$EPIC_GHCR_PAT" || { echo 'EPIC_GHCR_PAT secret is missing'; exit 91; }
+          echo "$EPIC_GHCR_PAT" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+
+      - name: Pull official UE 5.6 prebuilt host
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker pull "$UE_IMAGE"
+          docker image inspect "$UE_IMAGE" --format 'image={{.Id}} bytes={{.Size}}'
+          df -h /
+
+      - name: Compile LifeLens Android Development using prebuilt host
+        timeout-minutes: 95
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$DIAGNOSTICS"
+          docker run --rm             --user root             -v "$PROJECT_ROOT:/workspace"             -v "$ANDROID_HOME:$ANDROID_HOME"             -e ANDROID_HOME="$ANDROID_HOME"             -e ANDROID_SDK_ROOT="$ANDROID_SDK_ROOT"             -e NDKROOT="$NDKROOT"             -e NDK_ROOT="$NDK_ROOT"             -e HOME=/tmp/lifelens-home             "$UE_IMAGE" bash -lc '
+              set -euo pipefail
+              ROOT=/home/ue4/UnrealEngine
+              test -x "$ROOT/Engine/Build/BatchFiles/Linux/Build.sh"
+              test -x "$ANDROID_HOME/ndk/'"${ANDROID_NDK_VERSION}"'/toolchains/llvm/prebuilt/linux-x86_64/bin/clang"
+              mkdir -p "$HOME" /workspace/Diagnostics
+              cd "$ROOT"
+              /usr/bin/time -v ./Engine/Build/BatchFiles/Linux/Build.sh                 LifeLens Android Development /workspace/LifeLens.uproject -WaitMutex                 2>&1 | tee /workspace/Diagnostics/android-prebuilt-compile.log
+            '
+          test -d "$PROJECT_ROOT/Binaries/Android"
+          find "$PROJECT_ROOT/Binaries/Android" -maxdepth 2 -type f -printf '%p %s bytes\n' | sort | tee "$DIAGNOSTICS/android-binaries.txt"
+          test -s "$DIAGNOSTICS/android-binaries.txt"
+          echo 'PREBUILT_HOST_LIFELENS_ANDROID_COMPILE_PASS'
+
+      - name: Record final runner resources
+        if: always()
+        shell: bash
+        run: |
+          df -h /
+          free -h
+
+      - name: Upload probe diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: LifeLens-Android-Prebuilt-Compile-Probe
+          path: Diagnostics/
+          if-no-files-found: warn
+          retention-days: 7
