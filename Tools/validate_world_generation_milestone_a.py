@@ -28,6 +28,8 @@ for token in [
 
 assert 'populationSeed' not in natural, 'natural chunk detail must not depend on PopulationSeed'
 assert 'std::hash<' not in natural, 'natural chunk detail must use stable world-genesis mixer'
+assert 'isFreshSurfaceWater(hydrology)' in natural, 'Water resource nodes must map to authoritative fresh surface water'
+assert 'WorldChunkSpanGridCells / 2' in natural, 'Water resource node must align with the visible water center'
 for token in ['generatedNaturalChunks', 'materializeNaturalChunk', 'establishInitialStartRegion', 'initialStartRegionCenterGrid']:
     assert token in world, f'missing World materialization contract: {token}'
 for token in ['world_.storageSites.clear()', 'world_.materializeNaturalChunk', 'initialRuntime.pos']:
