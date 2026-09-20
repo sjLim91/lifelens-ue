@@ -38,8 +38,9 @@ assert 'std::hash<' not in macro, 'WG-2 macro geography must use the fixed world
 assert '#include "MacroWorldGenesis.h"' in world
 assert 'MacroRegionFacts macroRegionFacts(ChunkCoord coord) const' in world
 assert 'InitialStartRegionSelection initialStartRegion() const' in world
-assert 'selectInitialFreshSurfaceWaterRegion(genesisIdentity())' in world
-assert 'selectInitialFreshSurfaceWaterRegion' in hydrology
+assert 'selectInitialFreshwaterAdjacentRegion(genesisIdentity())' in world
+assert 'selectInitialFreshwaterAdjacentRegion' in hydrology
+assert 'findNearestFreshSurfaceWaterChunk' in hydrology
 assert 'FreshSurfaceStartSearchRadiusChunks' in hydrology
 assert 'MacroStartSearchRadiusChunks * 2' in hydrology
 assert 'isFreshSurfaceWater(hydrology)' in natural
@@ -48,7 +49,8 @@ assert 'lifelens_add_test(test_world_genesis_wg2)' in cmake
 assert 'peopleA' in test and 'peopleB' in test
 assert 'startA.region.coord==startB.region.coord' in test
 assert 'currentStartA.region.coord == currentStartB.region.coord' in test
-assert 'foundAlignedFreshWaterNode' in test
+assert 'currentFreshwaterA == currentFreshwaterB' in test
+assert 'alignedFreshWaterNodeCount == 1' in test
 assert 'simulation.world().objects.empty()' in test
 assert 'simulation.world().primitiveSanitationSites.empty()' in test
 assert 'Macro World' in doc and 'start-site' in doc
