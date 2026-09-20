@@ -43,6 +43,7 @@ assert "-FeetOffset + PresentationGroundOffsetUU" in appearance_header
 assert "-FeetOffset + PresentationGroundOffsetUU" in appearance_cpp
 assert "GroundOffset = Appearance" in presentation_cpp
 assert "-Feet + GroundOffset + RingThickness" in presentation_cpp
+assert "Appearance->GetVisualTopOffset() + LabelAboveHead" in presentation_cpp
 
 # Movement authority and blend-space speed mapping must remain intact.
 for token in (
