@@ -293,6 +293,13 @@ void ULLCoreBridgeSubsystem::ResetRuntime()
     GuidToCore.Reset();
     RecentEvents.Reset();
 
+    CachedRegionalTerrainPreview.Reset();
+    CachedRegionalTerrainWorldSeed = 0;
+    CachedRegionalTerrainGenerationVersion = -1;
+    CachedRegionalTerrainStartChunkX = 0;
+    CachedRegionalTerrainStartChunkY = 0;
+    CachedRegionalTerrainRadiusChunks = -1;
+
     // Replacing/stopping the runtime invalidates every presentation baseline
     // built from the previous Core instance even when seed/minute happen to be
     // identical (for example loading a save at the same simulation minute).

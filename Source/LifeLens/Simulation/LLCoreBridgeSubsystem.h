@@ -286,6 +286,16 @@ private:
     int32 ActiveSeed = 0;
     int64 RuntimeGeneration = 0;
 
+    // Regional terrain preview is deterministic for a fixed world/start frame.
+    // Cache it so presentation refreshes do not re-run hundreds of macro-noise
+    // samples every 0.5 seconds.
+    mutable TArray<FLLCoreTerrainPresentationObservation> CachedRegionalTerrainPreview;
+    mutable uint64 CachedRegionalTerrainWorldSeed = 0;
+    mutable int32 CachedRegionalTerrainGenerationVersion = -1;
+    mutable int32 CachedRegionalTerrainStartChunkX = 0;
+    mutable int32 CachedRegionalTerrainStartChunkY = 0;
+    mutable int32 CachedRegionalTerrainRadiusChunks = -1;
+
     TMap<uint64, FGuid> CoreToGuid;
     TMap<FGuid, uint64> GuidToCore;
 
