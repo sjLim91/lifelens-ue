@@ -52,6 +52,20 @@ for token in (
 ):
     assert token in header, f"PCG regeneration identity missing: {token}"
 
+for token in (
+    "ClearStaleGroundCover",
+    "PCG->CleanupLocal(true, false)",
+    "LastGeneratedVisualSeed = 0",
+    "LastGeneratedWorldSeed = 0",
+    "LastGeneratedGenerationVersion = -1",
+    "bGenerated = false",
+):
+    assert token in actor, f"missing stale PCG cleanup contract: {token}"
+
+assert actor.count("ClearStaleGroundCover();") >= 4, (
+    "all no-authority/invalid-world PCG exits must clear an old projection"
+)
+
 assert "const bool bSameGeneration" in actor
 assert "LastGeneratedWorldSeed == World.WorldSeed" in actor
 assert "LastGeneratedGenerationVersion == World.GenerationVersion" in actor
