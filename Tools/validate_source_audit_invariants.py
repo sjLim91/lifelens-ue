@@ -39,11 +39,29 @@ require(
 )
 
 overlay = read("Source/LifeLens/UI/LLObserverTimeWeatherOverlay.cpp")
+overlay_header = read("Source/LifeLens/UI/LLObserverTimeWeatherOverlay.h")
 require(
     "ULLObserverTimeWeatherPresentationSubsystem::Tick" in overlay
     and "OverlayWidget->AddToViewport(65);" in overlay,
     "AUDIT-0A regression: canonical observer time/weather overlay is not active",
 )
+for token in (
+    "bLastCoreRunning",
+):
+    require(
+        token in overlay_header,
+        f"AUDIT-0A runtime transition state missing {token}",
+    )
+for token in (
+    "bLastCoreRunning",
+    "!bLastCoreRunning",
+    "bLastCoreRunning = false;",
+    "bLastCoreRunning = true;",
+):
+    require(
+        token in overlay,
+        f"AUDIT-0A runtime transition render invalidation missing {token}",
+    )
 
 # AUDIT-0B: environmental Need pressure follows authoritative resident position.
 fire = read("Source/LifeLensCore/include/lifelens/PrimitiveFireProgression.h")
