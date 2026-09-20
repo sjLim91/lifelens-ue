@@ -61,6 +61,7 @@ namespace
         Hash = MixHash(Hash, static_cast<uint32>(Chunks.Num()));
         for (const FLLCoreNaturalChunkObservation& Chunk : Chunks)
         {
+            Hash = MixHash(Hash, Chunk.bMaterialized ? 1u : 0u);
             Hash = MixHash(Hash, static_cast<uint32>(Chunk.ChunkX));
             Hash = MixHash(Hash, static_cast<uint32>(Chunk.ChunkY));
 
@@ -75,6 +76,12 @@ namespace
             Hash = MixHash(
                 Hash,
                 static_cast<uint32>(FMath::RoundToInt(Chunk.Moisture * 100000.0f)));
+            Hash = MixHash(
+                Hash,
+                static_cast<uint32>(FMath::RoundToInt(Chunk.FertilityPotential * 100000.0f)));
+            Hash = MixHash(
+                Hash,
+                static_cast<uint32>(FMath::RoundToInt(Chunk.TraversalEase * 100000.0f)));
 
             Hash = MixHash(Hash, static_cast<uint32>(Chunk.ResourcePatches.Num()));
             for (const FLLCoreNaturalResourcePatchObservation& Patch : Chunk.ResourcePatches)
@@ -87,6 +94,43 @@ namespace
                 Hash = MixHash(Hash, static_cast<uint32>(Patch.GridY));
                 Hash = MixHash(Hash, static_cast<uint32>(FMath::Max(0, Patch.CurrentQuantity)));
                 Hash = MixHash(Hash, static_cast<uint32>(FMath::Max(0, Patch.MaxQuantity)));
+                Hash = MixHash(
+                    Hash,
+                    static_cast<uint32>(FMath::RoundToInt(
+                        FMath::Clamp(Patch.VisualDensity, 0.0f, 1.0f) * 100000.0f)));
+                const uint64 PatchVisualSeed = static_cast<uint64>(Patch.VisualSeed);
+                Hash = MixHash(Hash, static_cast<uint32>(PatchVisualSeed & 0xFFFFFFFFu));
+                Hash = MixHash(Hash, static_cast<uint32>((PatchVisualSeed >> 32) & 0xFFFFFFFFu));
+            }
+        }
+        return Hash;
+    }
+
+    uint32 TerrainPresentationSignature(
+        const TArray<FLLCoreTerrainPresentationObservation>& Terrains)
+    {
+        uint32 Hash = 0x54455232u; // TER2
+        Hash = MixHash(Hash, static_cast<uint32>(Terrains.Num()));
+        for (const FLLCoreTerrainPresentationObservation& Terrain : Terrains)
+        {
+            Hash = MixHash(Hash, Terrain.bAvailable ? 1u : 0u);
+            Hash = MixHash(Hash, static_cast<uint32>(Terrain.ChunkX));
+            Hash = MixHash(Hash, static_cast<uint32>(Terrain.ChunkY));
+            Hash = MixHash(Hash, static_cast<uint32>(Terrain.CenterGridX));
+            Hash = MixHash(Hash, static_cast<uint32>(Terrain.CenterGridY));
+            const float Samples[] = {
+                Terrain.CenterElevation01,
+                Terrain.NorthWestElevation01,
+                Terrain.NorthEastElevation01,
+                Terrain.SouthWestElevation01,
+                Terrain.SouthEastElevation01,
+                Terrain.Relief01
+            };
+            for (const float Sample : Samples)
+            {
+                Hash = MixHash(
+                    Hash,
+                    static_cast<uint32>(FMath::RoundToInt(Sample * 100000.0f)));
             }
         }
         return Hash;
@@ -2452,6 +2496,10 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         Bridge->GetMaterializedNaturalChunkObservations();
     const uint32 CurrentNaturalChunkSignature =
         NaturalChunkPresentationSignature(MaterializedChunks);
+    const TArray<FLLCoreTerrainPresentationObservation> MaterializedTerrains =
+        Bridge->GetMaterializedTerrainPresentationObservations();
+    const uint32 CurrentTerrainPresentationSignature =
+        TerrainPresentationSignature(MaterializedTerrains);
     const FLLCoreCivilizationWorldObservation Civilization = Bridge->GetCivilizationWorldObservation(0);
     const FLLCoreTimeObservation Time = Bridge->GetTimeObservation();
     const bool bNightPresentation = Time.bIsNight || Time.Daylight01 < 0.22f;
@@ -2484,6 +2532,7 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         || World.GenerationVersion != BuiltGenerationVersion
         || World.MaterializedChunkCount != BuiltChunkCount
         || CurrentNaturalChunkSignature != BuiltNaturalChunkSignature
+        || CurrentTerrainPresentationSignature != BuiltTerrainPresentationSignature
         || bFacilityLayoutChanged
         || bResourceQuantityChanged
         || (bSightlinePending && bInitialViewCaptured);
@@ -2505,6 +2554,7 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         BuiltGenerationVersion = World.GenerationVersion;
         BuiltChunkCount = World.MaterializedChunkCount;
         BuiltNaturalChunkSignature = CurrentNaturalChunkSignature;
+        BuiltTerrainPresentationSignature = CurrentTerrainPresentationSignature;
         BuiltResourceQuantitySignature = CurrentResourceQuantitySignature;
         ClearInstances();
         BuildGround(World, MaterializedChunks);

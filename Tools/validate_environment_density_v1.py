@@ -35,4 +35,24 @@ for token in (
     assert token in cpp, f"missing environment density token: {token}"
 
 assert "Core resource truth" in cpp
+
+# Natural dressing rebuild keys must cover every authoritative value that
+# controls count/placement/height. Otherwise unchanged IDs can leave stale art.
+for token in (
+    "Chunk.bMaterialized",
+    "Chunk.FertilityPotential",
+    "Chunk.TraversalEase",
+    "Patch.VisualDensity",
+    "Patch.VisualSeed",
+    "TerrainPresentationSignature",
+    "Terrain.NorthWestElevation01",
+    "Terrain.NorthEastElevation01",
+    "Terrain.SouthWestElevation01",
+    "Terrain.SouthEastElevation01",
+    "BuiltTerrainPresentationSignature",
+):
+    assert token in cpp or token in header, (
+        f"world-presentation refresh signature misses rendered input: {token}"
+    )
+
 print("LifeLens environment density v1: PASS")
