@@ -236,6 +236,15 @@ void ULLObserverTimeWeatherOverlay::RefreshStatus(bool bForce)
                     FString::Printf(TEXT("시뮬레이션 · %s"), *SpeedLabel(SpeedPreset))));
                 WeatherText->SetColorAndOpacity(FSlateColor(FLinearColor(0.68f, 0.75f, 0.84f, 1.0f)));
             }
+            if (DayProgressBar)
+            {
+                // The bar is part of the same authoritative time readout. Do
+                // not leave yesterday/another runtime's day position visible
+                // while the text correctly says the simulation is unavailable.
+                DayProgressBar->SetPercent(0.0f);
+                DayProgressBar->SetFillColorAndOpacity(
+                    FLinearColor(0.34f, 0.40f, 0.50f, 0.70f));
+            }
             RefreshButtonState(SpeedPreset);
             LastSpeedPreset = SpeedPreset;
             bLastCoreRunning = false;
