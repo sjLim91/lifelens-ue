@@ -751,8 +751,8 @@ float ALLWorldPresentationActor::FacilityDressingKeepFactor(
         return 1.0f;
     }
 
-    const float ClearRadius = FMath::Max(0.0f, FacilityClearRadiusUU);
-    const float ActivityRadius = FMath::Max(ClearRadius, FacilityActivityRadiusUU);
+    const float ClearRadius = FMath::Max(0.0f, LLTerrainPresentationContract::FacilityFlattenRadiusUU);
+    const float ActivityRadius = FMath::Max(ClearRadius, LLTerrainPresentationContract::FacilityBlendEndRadiusUU);
     if (ActivityRadius <= KINDA_SMALL_NUMBER)
     {
         return 1.0f;
@@ -1046,13 +1046,13 @@ float ALLWorldPresentationActor::ResourcePatchScaleFactor(const FVector2D& Locat
                 FVector2D::DistSquared(LocationUU, FacilityCenter));
         }
         const float FacilityDistance = FMath::Sqrt(NearestDistanceSq);
-        if (FacilityDistance <= FMath::Max(0.0f, FacilityClearRadiusUU))
+        if (FacilityDistance <= FMath::Max(0.0f, LLTerrainPresentationContract::FacilityFlattenRadiusUU))
         {
             Scale = FMath::Min(
                 Scale,
                 FMath::Clamp(CoreZoneResourceScale + 0.15f, 0.1f, 1.0f));
         }
-        else if (FacilityDistance <= FMath::Max(FacilityClearRadiusUU, FacilityActivityRadiusUU))
+        else if (FacilityDistance <= FMath::Max(LLTerrainPresentationContract::FacilityFlattenRadiusUU, LLTerrainPresentationContract::FacilityBlendEndRadiusUU))
         {
             Scale = FMath::Min(
                 Scale,
