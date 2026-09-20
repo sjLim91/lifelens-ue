@@ -272,9 +272,12 @@ inline HydrologyFacts deriveHydrologyFacts(
     return result;
 }
 
+inline constexpr int FreshSurfaceStartSearchRadiusChunks =
+    MacroStartSearchRadiusChunks * 2;
+
 inline InitialStartRegionSelection selectInitialFreshSurfaceWaterRegion(
     const WorldGenesisIdentity& identity,
-    int searchRadiusChunks=MacroStartSearchRadiusChunks)
+    int searchRadiusChunks=FreshSurfaceStartSearchRadiusChunks)
 {
     const int radius = std::max(1, searchRadiusChunks);
     InitialStartRegionSelection best;
