@@ -356,6 +356,7 @@ private:
     int32 BuiltGenerationVersion = -1;
     int32 BuiltChunkCount = -1;
     uint32 BuiltNaturalChunkSignature = 0;
+    uint32 BuiltTerrainPresentationSignature = 0;
     uint32 BuiltFacilitySignature = 0;
     uint32 BuiltFacilityLayoutSignature = 0;
     uint32 BuiltResourceQuantitySignature = 0;
