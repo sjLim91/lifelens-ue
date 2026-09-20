@@ -26,11 +26,18 @@ public:
     UFUNCTION(BlueprintCallable, Category="LifeLens|Resident")
     void SetMovementTarget(const FVector& TargetLocation);
 
+    // Presentation-side route from the authoritative current position to the
+    // authoritative Core target. Waypoints affect locomotion only; they never
+    // rewrite Core GridPos or action intent.
+    void SetMovementPath(const TArray<FVector>& PathPoints, const FVector& FinalTarget);
+
     UFUNCTION(BlueprintCallable, Category="LifeLens|Resident")
     void ClearMovementTarget();
 
     UFUNCTION(BlueprintPure, Category="LifeLens|Resident")
     bool HasReachedMovementTarget() const;
+
+    bool IsMovingToward(const FVector& TargetLocation, float ToleranceUU = 1.0f) const;
 
     UFUNCTION(BlueprintPure, Category="LifeLens|Resident")
     FGuid GetResidentId() const { return ResidentId; }
@@ -79,7 +86,12 @@ private:
     void RefreshLifecyclePresentation();
 
     FVector MovementTarget = FVector::ZeroVector;
+    TArray<FVector> MovementWaypoints;
+    int32 MovementWaypointIndex = 0;
     bool bHasMovementTarget = false;
+
+    UPROPERTY(EditAnywhere, Category="LifeLens|Movement", meta=(ClampMin="1.0", ClampMax="100.0"))
+    float PathWaypointAcceptanceRadius = 22.0f;
 
     // Presentation-only lifecycle cache. The Core LifeStage remains the sole
     // source of stage truth; these values only prevent cumulative rescaling.
