@@ -55,6 +55,18 @@ private:
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Water", meta=(ClampMin="0.0", ClampMax="500.0"))
     float TerrainReliefAmplitudeUU = 180.0f;
 
+    // Must stay aligned with LLWorldPresentation regional relief policy so
+    // a river continuing into an unmaterialized preview chunk follows the same
+    // mountains/valleys instead of falling back to the flat local-water plane.
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Water", meta=(ClampMin="0.0", ClampMax="5000.0"))
+    float RegionalTerrainReliefAmplitudeUU = 1100.0f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Water", meta=(ClampMin="1", ClampMax="16"))
+    int32 RegionalTerrainPreviewRadiusChunks = 8;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Water", meta=(ClampMin="0", ClampMax="15"))
+    int32 RegionalTerrainInnerFlatRingChunks = 1;
+
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Water", meta=(ClampMin="8000.0", ClampMax="250000.0"))
     float WaterZoneExtentUU = 96000.0f;
 
