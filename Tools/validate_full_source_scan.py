@@ -105,6 +105,12 @@ require("static_cast<uint32>(Facility.GridX)" in desktop_terrain
 
 resident_character = (SOURCE / "LifeLens/Characters/LLResidentCharacter.cpp").read_text(encoding="utf-8")
 world_director = (SOURCE / "LifeLens/World/LLWorldDirector.cpp").read_text(encoding="utf-8")
+world_collision = (SOURCE / "LifeLens/World/LLWorldObstacleCollisionProxyActor.cpp").read_text(encoding="utf-8")
+require("MaterializedSurfaceCollision" in world_collision,
+        "materialized land no longer projects an invisible resident support surface")
+require('Chunk.Surface != FName(TEXT("Ocean"))' in world_collision,
+        "ocean chunks must not receive walkable resident floor collision")
+
 require("SetMovementPath" in resident_character,
         "resident locomotion lost multi-waypoint route support")
 for token in (
