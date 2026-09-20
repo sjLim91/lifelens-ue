@@ -5,23 +5,16 @@
 #include "Simulation/LLCoreReadTypes.h"
 #include "LLResidentAppearanceInputs.generated.h"
 
-// Presentation-side appearance inputs (Character Appearance v1, Track B).
+// Presentation-side appearance inputs.
 //
-// This struct is the ONLY thing the appearance component consumes. It mirrors
-// the field set of the Bridge contract `FLLAppearanceProfile`
-// (Source/LifeLens/Simulation/LLAppearanceProfile.h, PR #65) so the producer
-// stays in one place:
+// Production resolution is Core-authoritative:
+//   - stable ResidentId supplies deterministic non-heritable style identity;
+//   - Core Sex/LifeStage supply lifecycle identity;
+//   - FLLCoreGeneticsSnapshot supplies inherited phenotype axes.
 //
-//   - `ULLResidentAppearanceInputSource::Resolve()` maps
-//     `ULLAppearanceProfileLibrary::MakeDeterministicAppearanceProfile` 1:1.
-//     The Bridge derives ResidentId from (WorldSeed, Core CharacterId), so the
-//     same restored resident yields the same look without any cache.
-//   - `MakeTemporaryAppearanceInputs()` is the fallback for an invalid
-//     ResidentId only: hash(WorldSeed, ResidentId), presentation-only, not
-//     authoritative, never saved.
-//
-// Determinism: same WorldSeed + ResidentId always yields the same inputs, so
-// NEW GAME residents differ per seed and Save/Load keeps each resident's look.
+// The struct is presentation-only and never persisted as a competing Save
+// authority. MakeTemporaryAppearanceInputs() exists only for invalid-identity
+// QA/error paths and should not be used by a normally spawned resident.
 USTRUCT(BlueprintType)
 struct FLLResidentAppearanceInputs
 {
@@ -69,7 +62,7 @@ struct FLLResidentAppearanceInputs
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Appearance")
     int32 OutfitVariant = 0;
 
-    // True when produced by the temporary hash path rather than the Bridge contract.
+    // True only for the invalid-identity QA hash path.
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Appearance")
     bool bTemporaryPresentationSeed = false;
 };
@@ -86,8 +79,8 @@ public:
     UFUNCTION(BlueprintPure, Category="LifeLens|Appearance")
     static FLLResidentAppearanceInputs MakeTemporaryAppearanceInputs(int32 WorldSeed, FGuid ResidentId, ELLCoreSex Sex, ELLCoreLifeStage LifeStage);
 
-    // Resolution point the appearance component calls: Bridge contract first,
-    // temporary fallback otherwise.
+    // Stable-identity resolution without genetics. Production Core residents
+    // normally use ResolveWithGenetics().
     UFUNCTION(BlueprintPure, Category="LifeLens|Appearance")
     static FLLResidentAppearanceInputs Resolve(int32 WorldSeed, FGuid ResidentId, ELLCoreSex Sex, ELLCoreLifeStage LifeStage);
 
