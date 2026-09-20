@@ -273,7 +273,7 @@ inline HydrologyFacts deriveHydrologyFacts(
 }
 
 inline constexpr int FreshSurfaceStartSearchRadiusChunks =
-    MacroStartSearchRadiusChunks * 2;
+    MacroStartSearchRadiusChunks * 3;
 inline constexpr int FreshSurfaceNeighbourRadiusChunks = 2;
 
 inline bool findNearestFreshSurfaceWaterChunk(
