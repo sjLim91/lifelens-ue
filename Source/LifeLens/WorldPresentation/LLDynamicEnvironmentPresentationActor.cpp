@@ -113,7 +113,7 @@ ALLDynamicEnvironmentPresentationActor::ALLDynamicEnvironmentPresentationActor()
     FogEffect->SetupAttachment(SceneRoot);
     FogEffect->SetAutoActivate(false);
 
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> FallbackRainMeshFinder(TEXT("/Engine/BasicShapes/Cube.Cube"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> FallbackRainMeshFinder(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> FallbackSnowMeshFinder(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
     static ConstructorHelpers::FObjectFinder<UMaterialInterface> FallbackPrecipitationMaterialFinder(
         TEXT("/Engine/EngineMaterials/EmissiveMeshMaterial.EmissiveMeshMaterial"));
@@ -275,6 +275,19 @@ void ALLDynamicEnvironmentPresentationActor::ConfigureEffectAssets()
     AssignSystem(RainEffect, RainSystem);
     AssignSystem(SnowEffect, SnowSystem);
     AssignSystem(FogEffect, FogSystem);
+
+    const bool bRainUsesFallback =
+        !RainEffect || RainEffect->GetAsset() == nullptr;
+    const bool bSnowUsesFallback =
+        !SnowEffect || SnowEffect->GetAsset() == nullptr;
+    if (bAllowPrimitivePrecipitationFallback
+        && (bRainUsesFallback || bSnowUsesFallback))
+    {
+        UE_LOG(LogTemp, Log,
+            TEXT("LifeLens precipitation safety fallback: rain=%s snow=%s"),
+            bRainUsesFallback ? TEXT("fallback") : TEXT("niagara"),
+            bSnowUsesFallback ? TEXT("fallback") : TEXT("niagara"));
+    }
 }
 
 void ALLDynamicEnvironmentPresentationActor::ConfigureFallbackPrecipitation()
@@ -397,10 +410,14 @@ void ALLDynamicEnvironmentPresentationActor::UpdateFallbackPrecipitation(float D
                     NX * Radius + WindShift,
                     NY * Radius + SideDrift,
                     FMath::Lerp(-400.0f, Height, 1.0f - Fall01));
-                const float SnowScale = FMath::Lerp(0.025f, 0.055f, StableNoise01(Index, 10.0f));
+                const float SnowScale = FMath::Lerp(0.016f, 0.035f, StableNoise01(Index, 10.0f));
+                const float RainLength = FMath::Lerp(
+                    0.24f,
+                    0.42f,
+                    StableNoise01(Index, 11.0f));
                 const FVector Scale = bSnow
                     ? FVector(SnowScale)
-                    : FVector(0.014f, 0.014f, 0.46f);
+                    : FVector(0.007f, 0.007f, RainLength);
                 const FRotator Rotation = bSnow
                     ? FRotator(
                         FMath::Sin(DriftPhase) * 18.0f,
