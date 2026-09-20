@@ -110,7 +110,9 @@ jobs:
               test -x "$ANDROID_HOME/ndk/'"${ANDROID_NDK_VERSION}"'/toolchains/llvm/prebuilt/linux-x86_64/bin/clang"
               mkdir -p "$HOME" /workspace/Diagnostics
               cd "$ROOT"
-              START=$(date +%s)\n              ./Engine/Build/BatchFiles/Linux/Build.sh LifeLens Android Development /workspace/LifeLens.uproject -WaitMutex 2>&1 | tee /workspace/Diagnostics/android-prebuilt-compile.log\n              echo "ANDROID_PREBUILT_COMPILE_SECONDS=$(( $(date +%s) - START ))"
+              START=$(date +%s)
+              ./Engine/Build/BatchFiles/Linux/Build.sh LifeLens Android Development /workspace/LifeLens.uproject -WaitMutex 2>&1 | tee /workspace/Diagnostics/android-prebuilt-compile.log
+              echo "ANDROID_PREBUILT_COMPILE_SECONDS=$(( $(date +%s) - START ))"
             '
           test -d "$PROJECT_ROOT/Binaries/Android"
           find "$PROJECT_ROOT/Binaries/Android" -maxdepth 2 -type f -printf '%p %s bytes\n' | sort | tee "$DIAGNOSTICS/android-binaries.txt"
