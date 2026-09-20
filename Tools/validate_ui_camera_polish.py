@@ -6,6 +6,10 @@ header = (root / "Source/LifeLens/UI/LLObserverPlayerController.h").read_text(en
 polish = (root / "Source/LifeLens/UI/LLObserverMobilePolish.cpp").read_text(encoding="utf-8")
 game_mode_cpp = (root / "Source/LifeLens/Core/LLLifeLensGameMode.cpp").read_text(encoding="utf-8")
 game_mode_header = (root / "Source/LifeLens/Core/LLLifeLensGameMode.h").read_text(encoding="utf-8")
+bridge_header = (root / "Source/LifeLens/Simulation/LLCoreBridgeSubsystem.h").read_text(encoding="utf-8")
+bridge_cpp = (root / "Source/LifeLens/Simulation/LLCoreBridgeSubsystem.cpp").read_text(encoding="utf-8")
+lifecycle_header = (root / "Source/LifeLens/UI/LLLifecycleEventOverlay.h").read_text(encoding="utf-8")
+lifecycle_cpp = (root / "Source/LifeLens/UI/LLLifecycleEventOverlay.cpp").read_text(encoding="utf-8")
 
 for token in (
     "ObservedResidentFollowSmoothingSpeed",
@@ -46,5 +50,22 @@ for token in (
 
 assert "ObserverCamera = GetWorld()->SpawnActor<ACameraActor>" in game_mode_cpp
 assert "TObjectPtr<ACameraActor> ObserverCamera;" in game_mode_header
+
+# Lifecycle transition caches must reset when the authoritative Core runtime is
+# replaced, even if the new world has the same seed or simulation minute.
+for token in (
+    "GetRuntimeGeneration() const",
+    "RuntimeGeneration = 0",
+):
+    assert token in bridge_header, f"missing Core runtime generation contract: {token}"
+assert "++RuntimeGeneration;" in bridge_cpp
+assert "LastObservedRuntimeGeneration" in lifecycle_header
+for token in (
+    "Bridge->GetRuntimeGeneration()",
+    "RuntimeGeneration != LastObservedRuntimeGeneration",
+    "ResetObservationState();",
+    "LastObservedRuntimeGeneration = RuntimeGeneration;",
+):
+    assert token in lifecycle_cpp, f"lifecycle runtime reset contract missing: {token}"
 
 print("LifeLens UI/camera resilience polish: PASS")
