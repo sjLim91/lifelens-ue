@@ -21,4 +21,18 @@ assert "GetInitialRegionSkyPresentationObservation" in cpp
 assert "SolarElevationDegrees =" not in cpp
 assert "#if PLATFORM_WINDOWS || PLATFORM_MAC" in cpp
 assert "HeightFog->SetVolumetricFog(false);" in cpp
+
+# Activation/deactivation hysteresis applies to authored Niagara too, not just
+# the QA primitive fallback. Near-threshold weather must not pop every sample.
+for token in (
+    "ShouldRemainActive",
+    "Component->IsActive()",
+    "Intensity01 >= OffThreshold",
+    "Intensity01 >= EffectActivationThreshold",
+    "SetEffectActive(RainEffect, ShouldRemainActive(RainEffect, Rain01))",
+    "SetEffectActive(SnowEffect, ShouldRemainActive(SnowEffect, Snow01))",
+    "SetEffectActive(FogEffect, ShouldRemainActive(FogEffect, Fog01))",
+):
+    assert token in cpp, f"missing authored-weather hysteresis guard: {token}"
+
 print("LifeLens lighting/atmosphere polish v1: PASS")
