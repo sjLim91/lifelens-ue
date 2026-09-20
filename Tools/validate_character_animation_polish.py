@@ -7,6 +7,52 @@ appearance_header = (root / "Source/LifeLens/Characters/LLResidentAppearanceComp
 appearance_cpp = (root / "Source/LifeLens/Characters/LLResidentAppearanceComponent.cpp").read_text(encoding="utf-8")
 presentation_cpp = (root / "Source/LifeLens/Characters/LLResidentPresentationComponent.cpp").read_text(encoding="utf-8")
 
+android_game = (root / "Config/Android/AndroidGame.ini").read_text(encoding="utf-8")
+
+# Hard runtime character/motion references must be backed by real cooked assets.
+# ConstructorHelpers makes these production dependencies, not optional editor art.
+required_character_assets = (
+    "Content/Characters/Quaternius/UBC/Male/Superhero_Male_FullBody/SkeletalMeshes/Superhero_Male_FullBody.uasset",
+    "Content/Characters/Quaternius/UBC/Female/Superhero_Female_FullBody/SkeletalMeshes/Superhero_Female_FullBody.uasset",
+    "Content/Characters/Quaternius/UBC/HeadOnly/Male/LL_Superhero_Male_HeadOnly/SkeletalMeshes/LL_Superhero_Male_HeadOnly.uasset",
+    "Content/Characters/Quaternius/UBC/HeadOnly/Female/LL_Superhero_Female_HeadOnly/SkeletalMeshes/LL_Superhero_Female_HeadOnly.uasset",
+    "Content/Characters/Quaternius/MCO/Peasant/Male/Male_Peasant/SkeletalMeshes/Male_Peasant.uasset",
+    "Content/Characters/Quaternius/MCO/Peasant/Female/Female_Peasant/SkeletalMeshes/Female_Peasant.uasset",
+    "Content/Characters/Quaternius/UAL/BS_ResidentLocomotion.uasset",
+    "Content/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Idle_Loop.uasset",
+    "Content/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Idle_Talking_Loop.uasset",
+    "Content/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Interact.uasset",
+    "Content/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/PickUp_Table.uasset",
+    "Content/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Fixing_Kneeling.uasset",
+    "Content/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Sword_Attack.uasset",
+    "Content/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Push_Loop.uasset",
+    "Content/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Idle_Torch_Loop.uasset",
+    "Content/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Crouch_Idle_Loop.uasset",
+    "Content/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Sitting_Enter.uasset",
+    "Content/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Sitting_Idle_Loop.uasset",
+    "Content/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Sitting_Talking_Loop.uasset",
+    "Content/Characters/Quaternius/UAL/UAL1_Standard/SkeletalMeshes/Sitting_Exit.uasset",
+    "Content/Environment/Photoreal/PolyHaven/wicker_basket_01/SM_LL_wicker_basket_01.uasset",
+    "Content/Environment/Photoreal/PolyHaven/wooden_bowl_01/SM_LL_wooden_bowl_01.uasset",
+    "Content/Environment/Quaternius/StylizedNature/Pebble_Round_1/StaticMeshes/Pebble_Round_1.uasset",
+    "Content/Environment/Photoreal/PolyHaven/dead_tree_trunk/SM_LL_dead_tree_trunk.uasset",
+)
+for rel in required_character_assets:
+    asset = root / rel
+    assert asset.is_file(), f"missing runtime character/motion asset: {rel}"
+    assert asset.stat().st_size > 1024, f"runtime character/motion asset looks empty/pointer-only: {rel}"
+
+for forbidden_cook_exclusion in (
+    '+DirectoriesToNeverCook=(Path="/Game/Characters")',
+    '+DirectoriesToNeverCook=(Path="/Game/Characters/Quaternius")',
+    '+DirectoriesToNeverCook=(Path="/Game/Environment/Photoreal/PolyHaven")',
+    '+DirectoriesToNeverCook=(Path="/Game/Environment/Quaternius")',
+):
+    assert forbidden_cook_exclusion not in android_game, (
+        f"Android cook would strip required resident assets: {forbidden_cook_exclusion}"
+    )
+
+
 for token in (
     "Pebble_Round_1.Pebble_Round_1",
     "SM_LL_dead_tree_trunk.SM_LL_dead_tree_trunk",
