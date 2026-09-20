@@ -272,6 +272,49 @@ inline HydrologyFacts deriveHydrologyFacts(
     return result;
 }
 
+inline InitialStartRegionSelection selectInitialFreshSurfaceWaterRegion(
+    const WorldGenesisIdentity& identity,
+    int searchRadiusChunks=MacroStartSearchRadiusChunks)
+{
+    const int radius = std::max(1, searchRadiusChunks);
+    InitialStartRegionSelection best;
+    bool hasBest = false;
+
+    for(int y=-radius; y<=radius; ++y){
+        for(int x=-radius; x<=radius; ++x){
+            const ChunkCoord coord{x,y};
+            const MacroSurfaceFacts surface =
+                deriveMacroSurfaceFacts(identity, coord);
+            ++best.evaluatedCandidates;
+            if(surface.surfaceClass != MacroSurfaceClass::Land){
+                continue;
+            }
+
+            const HydrologyFacts hydrology =
+                deriveHydrologyFacts(identity, coord);
+            if(!isFreshSurfaceWater(hydrology)){
+                continue;
+            }
+
+            const MacroRegionFacts facts =
+                deriveMacroRegionFacts(identity, coord);
+            const double viability = scoreInitialStartRegion(facts);
+            if(!hasBest || viability > best.viability
+               || (viability == best.viability && facts.coord < best.region.coord)){
+                best.region = facts;
+                best.viability = viability;
+                hasBest = true;
+            }
+        }
+    }
+
+    // The current search window is intentionally broad, but retain a
+    // deterministic fallback for pathological/custom generator versions.
+    return hasBest
+        ? best
+        : selectInitialStartRegion(identity, radius);
+}
+
 inline bool validHydrologyFacts(const HydrologyFacts& facts)
 {
     const auto inRange=[](double value){
