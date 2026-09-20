@@ -79,7 +79,7 @@ int main()
     source.setupNewGame();
     CHECK(source.world().characters.size()==4);
     CHECK(!source.world().resourceNodes.empty());
-    CHECK(source.world().generatedNaturalChunks.size()==1);
+    CHECK(source.world().generatedNaturalChunks.size()==2);
     CHECK(source.world().storageSites.empty());
 
     Character& discoverer=source.world().characters[0];

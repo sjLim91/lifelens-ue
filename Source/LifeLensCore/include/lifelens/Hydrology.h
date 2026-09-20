@@ -272,6 +272,96 @@ inline HydrologyFacts deriveHydrologyFacts(
     return result;
 }
 
+inline constexpr int FreshSurfaceStartSearchRadiusChunks =
+    MacroStartSearchRadiusChunks * 3;
+inline constexpr int FreshSurfaceNeighbourRadiusChunks = 2;
+
+inline bool findNearestFreshSurfaceWaterChunk(
+    const WorldGenesisIdentity& identity,
+    ChunkCoord origin,
+    ChunkCoord& outCoord,
+    int maxDistanceChunks=FreshSurfaceNeighbourRadiusChunks)
+{
+    const int radius = std::max(1, maxDistanceChunks);
+    bool found = false;
+    int bestDistance = 0;
+
+    for(int dy=-radius; dy<=radius; ++dy){
+        for(int dx=-radius; dx<=radius; ++dx){
+            if(dx==0 && dy==0) continue;
+            const int absX = dx < 0 ? -dx : dx;
+            const int absY = dy < 0 ? -dy : dy;
+            const int distance = absX + absY;
+            if(distance > radius) continue;
+
+            const ChunkCoord candidate{origin.x+dx,origin.y+dy};
+            const HydrologyFacts hydrology =
+                deriveHydrologyFacts(identity,candidate);
+            if(!isFreshSurfaceWater(hydrology)) continue;
+
+            if(!found || distance < bestDistance
+               || (distance == bestDistance && candidate < outCoord)){
+                outCoord = candidate;
+                bestDistance = distance;
+                found = true;
+            }
+        }
+    }
+    return found;
+}
+
+inline InitialStartRegionSelection selectInitialFreshwaterAdjacentRegion(
+    const WorldGenesisIdentity& identity,
+    int searchRadiusChunks=FreshSurfaceStartSearchRadiusChunks)
+{
+    const int radius = std::max(1, searchRadiusChunks);
+    InitialStartRegionSelection best;
+    bool hasBest = false;
+
+    for(int y=-radius; y<=radius; ++y){
+        for(int x=-radius; x<=radius; ++x){
+            const ChunkCoord coord{x,y};
+            const MacroSurfaceFacts surface =
+                deriveMacroSurfaceFacts(identity, coord);
+            ++best.evaluatedCandidates;
+            if(surface.surfaceClass != MacroSurfaceClass::Land){
+                continue;
+            }
+
+            // Founders begin on dry local surface, never inside the centered
+            // fresh-water shape rendered for this chunk.
+            const HydrologyFacts localHydrology =
+                deriveHydrologyFacts(identity, coord);
+            if(localHydrology.surfaceKind != SurfaceWaterKind::None){
+                continue;
+            }
+
+            ChunkCoord freshwaterCoord{};
+            if(!findNearestFreshSurfaceWaterChunk(
+                    identity,
+                    coord,
+                    freshwaterCoord,
+                    FreshSurfaceNeighbourRadiusChunks)){
+                continue;
+            }
+
+            const MacroRegionFacts facts =
+                deriveMacroRegionFacts(identity, coord);
+            const double viability = scoreInitialStartRegion(facts);
+            if(!hasBest || viability > best.viability
+               || (viability == best.viability && facts.coord < best.region.coord)){
+                best.region = facts;
+                best.viability = viability;
+                hasBest = true;
+            }
+        }
+    }
+
+    return hasBest
+        ? best
+        : selectInitialStartRegion(identity, radius);
+}
+
 inline bool validHydrologyFacts(const HydrologyFacts& facts)
 {
     const auto inRange=[](double value){

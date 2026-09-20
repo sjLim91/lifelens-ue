@@ -89,6 +89,81 @@ int main()
     const MacroRegionFacts different=deriveMacroRegionFacts(anotherWorld,{3,-4});
     assert(!sameMacroFacts(center,different));
 
+    const WorldGenesisIdentity currentPeopleA =
+        makeWorldGenesisIdentity(seed,111,CurrentWorldGenerationVersion);
+    const WorldGenesisIdentity currentPeopleB =
+        makeWorldGenesisIdentity(seed,222,CurrentWorldGenerationVersion);
+    const InitialStartRegionSelection currentStartA =
+        selectInitialFreshwaterAdjacentRegion(currentPeopleA);
+    const InitialStartRegionSelection currentStartB =
+        selectInitialFreshwaterAdjacentRegion(currentPeopleB);
+    assert(currentStartA.region.coord == currentStartB.region.coord);
+    assert(deriveHydrologyFacts(
+        currentPeopleA,currentStartA.region.coord).surfaceKind == SurfaceWaterKind::None);
+
+    ChunkCoord currentFreshwaterA{};
+    ChunkCoord currentFreshwaterB{};
+    assert(findNearestFreshSurfaceWaterChunk(
+        currentPeopleA,
+        currentStartA.region.coord,
+        currentFreshwaterA,
+        FreshSurfaceNeighbourRadiusChunks));
+    assert(findNearestFreshSurfaceWaterChunk(
+        currentPeopleB,
+        currentStartB.region.coord,
+        currentFreshwaterB,
+        FreshSurfaceNeighbourRadiusChunks));
+    assert(currentFreshwaterA == currentFreshwaterB);
+    assert(isFreshSurfaceWater(
+        deriveHydrologyFacts(currentPeopleA,currentFreshwaterA)));
+
+    Simulation currentSimulation(
+        seed,111,CurrentWorldGenerationVersion);
+    currentSimulation.setupNewGame();
+    assert(currentSimulation.world().initialStartRegion().region.coord
+        == currentStartA.region.coord);
+    assert(currentSimulation.world().findGeneratedNaturalChunk(
+        currentStartA.region.coord) != nullptr);
+    assert(currentSimulation.world().findGeneratedNaturalChunk(
+        currentFreshwaterA) != nullptr);
+
+    const GridPos currentWaterOrigin =
+        chunkOriginGrid(currentFreshwaterA);
+    const GridPos currentWaterCenter = {
+        currentWaterOrigin.x + WorldChunkSpanGridCells / 2,
+        currentWaterOrigin.y + WorldChunkSpanGridCells / 2
+    };
+    int alignedFreshWaterNodeCount = 0;
+    for(const ResourceNode& node : currentSimulation.world().resourceNodes){
+        if(node.material != MaterialKind::Water){
+            continue;
+        }
+        assert(chunkCoordForGrid(node.pos) == currentFreshwaterA);
+        assert(node.pos.x == currentWaterCenter.x);
+        assert(node.pos.y == currentWaterCenter.y);
+        ++alignedFreshWaterNodeCount;
+    }
+    assert(alignedFreshWaterNodeCount == 1);
+
+    // Regression: seed 26 has no valid dry-land + nearby-freshwater candidate
+    // inside the former 24-chunk search radius. Current generation must not
+    // silently fall back to a generic start and recreate a waterless NEW GAME.
+    const WorldGenesisIdentity sparseFreshwaterWorld =
+        makeWorldGenesisIdentity(26,111,CurrentWorldGenerationVersion);
+    const InitialStartRegionSelection sparseStart =
+        selectInitialFreshwaterAdjacentRegion(sparseFreshwaterWorld);
+    assert(deriveHydrologyFacts(
+        sparseFreshwaterWorld,sparseStart.region.coord).surfaceKind
+        == SurfaceWaterKind::None);
+    ChunkCoord sparseFreshwater{};
+    assert(findNearestFreshSurfaceWaterChunk(
+        sparseFreshwaterWorld,
+        sparseStart.region.coord,
+        sparseFreshwater,
+        FreshSurfaceNeighbourRadiusChunks));
+    assert(isFreshSurfaceWater(
+        deriveHydrologyFacts(sparseFreshwaterWorld,sparseFreshwater)));
+
     World worldA(seed,111,1);
     World worldB(seed,222,1);
     assert(worldA.initialStartRegion().region.coord==worldB.initialStartRegion().region.coord);

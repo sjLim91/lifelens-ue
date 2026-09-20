@@ -93,6 +93,23 @@ int main()
     assert(oceanCount > 0);
     assert(saltOrBrackishCount > 0);
 
+    const InitialStartRegionSelection dryStart =
+        selectInitialFreshwaterAdjacentRegion(peopleA);
+    const HydrologyFacts dryStartHydrology =
+        deriveHydrologyFacts(peopleA, dryStart.region.coord);
+    assert(dryStartHydrology.surfaceKind == SurfaceWaterKind::None);
+
+    ChunkCoord nearbyFreshwater{};
+    assert(findNearestFreshSurfaceWaterChunk(
+        peopleA,
+        dryStart.region.coord,
+        nearbyFreshwater,
+        FreshSurfaceNeighbourRadiusChunks));
+    const HydrologyFacts nearbyFreshwaterFacts =
+        deriveHydrologyFacts(peopleA, nearbyFreshwater);
+    assert(isFreshSurfaceWater(nearbyFreshwaterFacts));
+    assert(nearbyFreshwaterFacts.surfaceWaterId != 0);
+
     // Stable ids reproduce exactly for the same seed/coord/kind.
     for(const auto& entry : ids){
         const ChunkCoord coord{entry.first.first, entry.first.second};

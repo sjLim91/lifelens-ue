@@ -41,8 +41,8 @@ int main()
     first.setupNewGame();
     second.setupNewGame();
 
-    CHECK(first.world().generatedNaturalChunks.size() == 1);
-    CHECK(second.world().generatedNaturalChunks.size() == 1);
+    CHECK(first.world().generatedNaturalChunks.size() == 2);
+    CHECK(second.world().generatedNaturalChunks.size() == 2);
     CHECK(!first.world().resourceNodes.empty());
     CHECK(first.world().resourceNodes.size() == second.world().resourceNodes.size());
 

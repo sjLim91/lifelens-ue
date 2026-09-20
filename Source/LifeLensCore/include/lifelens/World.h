@@ -10,6 +10,7 @@
 #include "PrimitiveSanitation.h"
 #include "WorldGenesis.h"
 #include "MacroWorldGenesis.h"
+#include "Hydrology.h"
 #include "NaturalWorldChunk.h"
 namespace lifelens {
 struct World {
@@ -74,12 +75,16 @@ struct World {
             stored.evaluatedCandidates=(MacroStartSearchRadiusChunks*2+1)*(MacroStartSearchRadiusChunks*2+1);
             return stored;
         }
-        return selectInitialStartRegion(genesisIdentity());
+        return generationVersion >= 2
+            ? selectInitialFreshwaterAdjacentRegion(genesisIdentity())
+            : selectInitialStartRegion(genesisIdentity());
     }
 
     InitialStartRegionSelection establishInitialStartRegion()
     {
-        const InitialStartRegionSelection selected=selectInitialStartRegion(genesisIdentity());
+        const InitialStartRegionSelection selected = generationVersion >= 2
+            ? selectInitialFreshwaterAdjacentRegion(genesisIdentity())
+            : selectInitialStartRegion(genesisIdentity());
         hasInitialStartRegionSelection=true;
         initialStartRegionCoord=selected.region.coord;
         initialStartRegionViability=selected.viability;

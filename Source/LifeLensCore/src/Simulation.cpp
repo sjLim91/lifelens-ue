@@ -176,6 +176,20 @@ void Simulation::setupNewGame(){
     const InitialStartRegionSelection startRegion=world_.establishInitialStartRegion();
     world_.materializeNaturalChunk(startRegion.region.coord);
 
+    // v2+ starts on dry land but materializes its nearby authoritative fresh
+    // water source too, so WaterPresentation sees real local hydrology without
+    // placing founders inside a centered river/lake/wetland shape.
+    if(world_.generationVersion >= 2){
+        ChunkCoord freshwaterCoord{};
+        if(findNearestFreshSurfaceWaterChunk(
+                world_.genesisIdentity(),
+                startRegion.region.coord,
+                freshwaterCoord,
+                FreshSurfaceNeighbourRadiusChunks)){
+            world_.materializeNaturalChunk(freshwaterCoord);
+        }
+    }
+
     // World randomness and initial-population randomness are separate.
     // Founder generation must not advance the world RNG or affect future chunk
     // baselines merely because names/traits were regenerated.
