@@ -78,6 +78,31 @@ require(
 assert "/Game/Environment/Photoreal/PolyHaven/fir_sapling/" not in mobile_block
 assert "/Game/Environment/Photoreal/PolyHaven/weed_plant_02/" not in mobile_block
 
+mobile_asset_files = (
+    "Content/Environment/Quaternius/StylizedNature/Pine_1/StaticMeshes/Pine_1.uasset",
+    "Content/Environment/Quaternius/StylizedNature/CommonTree_1/StaticMeshes/CommonTree_1.uasset",
+    "Content/Environment/Quaternius/StylizedNature/Bush_Common/StaticMeshes/Bush_Common.uasset",
+    "Content/Environment/Quaternius/StylizedNature/Grass_Common_Short/StaticMeshes/Grass_Common_Short.uasset",
+    "Content/Environment/Quaternius/StylizedNature/Grass_Wispy_Short/StaticMeshes/Grass_Wispy_Short.uasset",
+    "Content/Environment/Quaternius/StylizedNature/Rock_Medium_1/StaticMeshes/Rock_Medium_1.uasset",
+    "Content/Environment/Quaternius/StylizedNature/Rock_Medium_2/StaticMeshes/Rock_Medium_2.uasset",
+)
+for relative in mobile_asset_files:
+    path = root / relative
+    assert path.is_file(), f"Android runtime nature asset is missing from source: {relative}"
+    assert path.stat().st_size > 1024, f"Android runtime nature asset is unexpectedly empty/tiny: {relative}"
+
+# The Android exclusion list must stay selective. A broad Quaternius or
+# StylizedNature exclusion would make ConstructorHelpers references compile while
+# producing a packaged runtime with no trees/ground cover.
+for forbidden in (
+    '/Game/Environment/Quaternius',
+    '/Game/Environment/Quaternius/StylizedNature',
+):
+    assert f'DirectoriesToNeverCook=(Path="{forbidden}")' not in android_game, (
+        f"Android cook must retain runtime nature assets; broad exclusion found: {forbidden}"
+    )
+
 require(
     desktop_block,
     (

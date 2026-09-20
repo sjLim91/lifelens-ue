@@ -680,4 +680,14 @@ for forbidden in (
 ):
     assert forbidden not in resident_motion, f'Production held props must not use Engine primitive: {forbidden}'
 
+game_mode_cpp = (root / 'Source/LifeLens/Core/LLLifeLensGameMode.cpp').read_text(encoding='utf-8')
+for token in (
+    '#include "WorldPresentation/LLWorldPresentationActor.h"',
+    'TActorIterator<ALLWorldPresentationActor>',
+    'bHasWorldPresentation',
+    'SpawnActor<ALLWorldPresentationActor>',
+    'ALLWorldPresentationActor::StaticClass()',
+):
+    assert token in game_mode_cpp, f'Missing runtime WorldPresentation bootstrap: {token}'
+
 print('LifeLens autonomous observer structural validation: PASS')
