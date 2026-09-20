@@ -464,6 +464,19 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
             TEXT("PhotorealStructureLogs"), PhotoStructureLog.Object,
             FacilityCullStartUU, FacilityCullEndUU, true);
     }
+#endif
+
+#if PLATFORM_ANDROID
+    // Reuse the already-cooked mobile rock hero for completed furnace masonry.
+    // This keeps the Android furnace readable without adding the larger desktop
+    // boulder package or falling back to stretched Engine cubes.
+    if (MobileRockA.Succeeded())
+    {
+        PhotorealFurnaceStoneInstances = AddInstancedComponent(
+            TEXT("PhotorealFurnaceStones"), MobileRockA.Object,
+            FacilityCullStartUU, FacilityCullEndUU, true);
+    }
+#else
     if (PhotoBoulder.Succeeded())
     {
         PhotorealFurnaceStoneInstances = AddInstancedComponent(
