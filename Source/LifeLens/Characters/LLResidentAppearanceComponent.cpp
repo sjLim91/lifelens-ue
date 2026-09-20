@@ -205,6 +205,8 @@ void ULLResidentAppearanceComponent::ResolveInputs()
     int32 WorldSeed = 0;
     ELLCoreSex Sex = ELLCoreSex::Male;
     ELLCoreLifeStage LifeStage = ELLCoreLifeStage::Adult;
+    FLLCoreGeneticsSnapshot Genetics;
+    bool bHasAuthoritativeGenetics = false;
 
     // Authoritative source first: Core Bridge read DTO.
     bool bResolved = false;
@@ -216,6 +218,8 @@ void ULLResidentAppearanceComponent::ResolveInputs()
         {
             Sex = Observation.Sex;
             LifeStage = Observation.LifeStage;
+            Genetics = Observation.Genetics;
+            bHasAuthoritativeGenetics = true;
             bResolved = true;
         }
     }
@@ -246,7 +250,11 @@ void ULLResidentAppearanceComponent::ResolveInputs()
         }
     }
 
-    Inputs = ULLResidentAppearanceInputSource::Resolve(WorldSeed, ResidentId, Sex, LifeStage);
+    Inputs = bHasAuthoritativeGenetics
+        ? ULLResidentAppearanceInputSource::ResolveWithGenetics(
+            WorldSeed, ResidentId, Sex, LifeStage, Genetics)
+        : ULLResidentAppearanceInputSource::Resolve(
+            WorldSeed, ResidentId, Sex, LifeStage);
 }
 
 void ULLResidentAppearanceComponent::BuildBody()
