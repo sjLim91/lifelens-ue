@@ -3,6 +3,7 @@
 #include "World/LLWorldObstacleCollisionProxyActor.h"
 #include "World/LLWorldSpatialContract.h"
 #include "WorldPresentation/LLDynamicEnvironmentPresentationActor.h"
+#include "WorldPresentation/LLWorldPresentationActor.h"
 #include "WorldPresentation/LLWaterPresentationActor.h"
 #if !PLATFORM_ANDROID
 #include "WorldPresentation/LLPCGGroundCoverPresentationActor.h"
@@ -15,6 +16,7 @@
 #include "Engine/StaticMeshActor.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/World.h"
+#include "EngineUtils.h"
 #include "GameFramework/PlayerController.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -44,6 +46,28 @@ void ALLLifeLensGameMode::BeginPlay()
             ALLWorldObstacleCollisionProxyActor::StaticClass(),
             FVector::ZeroVector,
             FRotator::ZeroRotator);
+
+        // Natural ground/tree/rock dressing belongs to WorldPresentation.
+        // Some authored maps may already contain one, but runtime bootstrap must
+        // never depend on that editor placement: otherwise a clean/generated map
+        // runs with no trees or local-surface dressing at all.
+        bool bHasWorldPresentation = false;
+        for (TActorIterator<ALLWorldPresentationActor> It(GetWorld()); It; ++It)
+        {
+            if (IsValid(*It))
+            {
+                bHasWorldPresentation = true;
+                break;
+            }
+        }
+        if (!bHasWorldPresentation)
+        {
+            GetWorld()->SpawnActor<ALLWorldPresentationActor>(
+                ALLWorldPresentationActor::StaticClass(),
+                FVector::ZeroVector,
+                FRotator::ZeroRotator);
+        }
+
         GetWorld()->SpawnActor<ALLDynamicEnvironmentPresentationActor>(
             ALLDynamicEnvironmentPresentationActor::StaticClass(),
             FVector::ZeroVector,
