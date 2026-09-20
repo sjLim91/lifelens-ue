@@ -95,3 +95,37 @@ FLLResidentAppearanceInputs ULLResidentAppearanceInputSource::Resolve(int32 Worl
     // for spawned residents): temporary presentation seed.
     return MakeTemporaryAppearanceInputs(WorldSeed, ResidentId, Sex, LifeStage);
 }
+
+FLLResidentAppearanceInputs ULLResidentAppearanceInputSource::ResolveWithGenetics(
+    int32 WorldSeed,
+    FGuid ResidentId,
+    ELLCoreSex Sex,
+    ELLCoreLifeStage LifeStage,
+    const FLLCoreGeneticsSnapshot& Genetics)
+{
+    if (!ResidentId.IsValid())
+    {
+        return MakeTemporaryAppearanceInputs(WorldSeed, ResidentId, Sex, LifeStage);
+    }
+
+    const FLLAppearanceProfile Profile =
+        ULLAppearanceProfileLibrary::MakeGeneticAppearanceProfile(
+            ResidentId, Sex, LifeStage, Genetics);
+
+    FLLResidentAppearanceInputs Inputs;
+    Inputs.ResidentId       = Profile.ResidentId;
+    Inputs.Sex              = Profile.Sex;
+    Inputs.LifeStage        = Profile.LifeStage;
+    Inputs.VisualSeed       = Profile.VisualSeed;
+    Inputs.FaceAxis         = Profile.FaceAxis;
+    Inputs.SkinToneAxis     = Profile.SkinToneAxis;
+    Inputs.EyeColorAxis     = Profile.EyeColorAxis;
+    Inputs.HairColorAxis    = Profile.HairColorAxis;
+    Inputs.HeightAxis       = Profile.HeightAxis;
+    Inputs.BuildAxis        = Profile.BuildAxis;
+    Inputs.FaceVariant      = Profile.FaceVariant;
+    Inputs.HairStyleVariant = Profile.HairStyleVariant;
+    Inputs.OutfitVariant    = Profile.OutfitVariant;
+    Inputs.bTemporaryPresentationSeed = false;
+    return Inputs;
+}
