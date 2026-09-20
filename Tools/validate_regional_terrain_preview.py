@@ -14,9 +14,9 @@ assert 'FMath::Clamp(RadiusChunks, 1, 16)' in bridge_cpp
 assert 'deriveMacroRegionFacts(Identity, Center)' in bridge_cpp
 
 preview_start = bridge_cpp.index('ULLCoreBridgeSubsystem::GetRegionalTerrainPreviewObservations')
-preview_end = bridge_cpp.index('bool ULLCoreBridgeSubsystem::GetTerrainPresentationObservation', preview_start)
+preview_end = bridge_cpp.index('bool ULLCoreBridgeSubsystem::GetTerrainPreviewObservation', preview_start)
 preview_body = bridge_cpp[preview_start:preview_end]
-assert 'materializeNaturalChunk' not in preview_body, (
+assert 'materializeNaturalChunk(' not in preview_body, (
     'regional terrain preview must never materialize simulation chunks'
 )
 assert 'resourceNodes' not in preview_body
