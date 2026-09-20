@@ -495,7 +495,7 @@ for token in (
     'SpawnResidents()',
     'GetResidentActionDirective',
     'ApplyCoreDirective',
-    'SetMovementTarget',
+    'MoveResidentToward',
     'ELLCoreSocialIntent::Avoid',
     'SaveGame()',
     'CoreBridge->GetSanitationUseTarget',
