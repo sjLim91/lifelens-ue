@@ -54,4 +54,19 @@ private:
 
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera", meta=(ClampMin="30.0", ClampMax="90.0"))
     float ObserverCameraFOVDegrees = 55.0f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera")
+    bool bFrameFreshSurfaceWaterInInitialView = true;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera", meta=(ClampMin="0.0", ClampMax="0.5"))
+    float InitialFreshWaterFocusWeight = 0.40f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera", meta=(ClampMin="0.0", ClampMax="2.0"))
+    float InitialFreshWaterMaxFocusOffsetChunks = 0.85f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera", meta=(ClampMin="0.0", ClampMax="1.0"))
+    float InitialFreshWaterDistanceBoostPerChunk = 0.25f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera", meta=(ClampMin="0.0", ClampMax="2.0"))
+    float InitialFreshWaterMaxDistanceBoostChunks = 0.60f;
 };
