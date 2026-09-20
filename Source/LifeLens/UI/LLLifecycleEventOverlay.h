@@ -127,6 +127,7 @@ private:
     TMap<FGuid, TArray<FString>> ObservedLifeHistory;
 
     int64 LastObservedSimulationMinute = -1;
+    int64 LastObservedRuntimeGeneration = -1;
     bool bBaselineReady = false;
 
     static constexpr int32 MaxVisibleNotices = 4;
