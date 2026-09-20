@@ -3,6 +3,9 @@ from pathlib import Path
 root = Path(__file__).resolve().parents[1]
 cpp = (root / "Source/LifeLens/Characters/LLResidentMotionComponent.cpp").read_text(encoding="utf-8")
 header = (root / "Source/LifeLens/Characters/LLResidentMotionComponent.h").read_text(encoding="utf-8")
+appearance_header = (root / "Source/LifeLens/Characters/LLResidentAppearanceComponent.h").read_text(encoding="utf-8")
+appearance_cpp = (root / "Source/LifeLens/Characters/LLResidentAppearanceComponent.cpp").read_text(encoding="utf-8")
+presentation_cpp = (root / "Source/LifeLens/Characters/LLResidentPresentationComponent.cpp").read_text(encoding="utf-8")
 
 for token in (
     "ResolveResidentLoopVariation",
@@ -14,6 +17,32 @@ for token in (
     "ELLResidentContextMotion::SeatedQuiet",
 ):
     assert token in cpp or token in header, f"missing character animation polish token: {token}"
+
+# Desktop smooth terrain is visual-only for locomotion authority, but the
+# rendered human body/ring must follow that visible surface instead of clipping
+# through raised terrain. Android intentionally stays on the flat mobile path.
+for token in (
+    "UpdateVisualSurfaceGrounding",
+    "LineTraceSingleByChannel",
+    "ECC_WorldStatic",
+    "Hit.ImpactPoint.Z - PhysicalGroundZ",
+    "MaxVisualGroundLiftUU",
+    "#if PLATFORM_ANDROID",
+):
+    assert token in cpp or token in header, f"missing visual terrain grounding token: {token}"
+
+for token in (
+    "GetPresentationGroundOffsetUU",
+    "SetPresentationGroundOffsetUU",
+    "PresentationGroundOffsetUU",
+):
+    assert token in appearance_header, f"missing appearance ground-offset contract: {token}"
+
+assert "PresentationGroundOffsetUU + MeshHeight * BodyScaleZ" in appearance_cpp
+assert "-FeetOffset + PresentationGroundOffsetUU" in appearance_header
+assert "-FeetOffset + PresentationGroundOffsetUU" in appearance_cpp
+assert "GroundOffset = Appearance" in presentation_cpp
+assert "-Feet + GroundOffset + RingThickness" in presentation_cpp
 
 # Movement authority and blend-space speed mapping must remain intact.
 for token in (
