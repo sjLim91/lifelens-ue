@@ -23,7 +23,12 @@ desktop_begin = cpp.index("#if !PLATFORM_ANDROID", cpp.index("PhotoWoodenAxe"))
 desktop_end = cpp.index("#endif", desktop_begin)
 desktop_block = cpp[desktop_begin:desktop_end]
 assert structure_ref in desktop_block
-assert "PhotoBoulder.Succeeded()" in cpp[desktop_begin:cpp.index("#endif", cpp.index("PhotorealFurnaceStones")) + len("#endif")]
+assert "PhotoBoulder.Succeeded()" in cpp
+android_furnace = cpp.index("#if PLATFORM_ANDROID", cpp.index("PhotorealStructureLogs"))
+android_furnace_end = cpp.index("#else", android_furnace)
+android_furnace_block = cpp[android_furnace:android_furnace_end]
+assert "MobileRockA.Succeeded()" in android_furnace_block
+assert boulder_component not in android_furnace_block
 
 # Completed desktop facilities suppress the obvious Cube structure only when
 # approved art exists, so Android/missing-art fallback remains readable.
