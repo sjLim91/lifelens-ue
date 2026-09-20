@@ -59,6 +59,7 @@ void ALLWorldDirector::BeginPlay()
         Simulation->NewGame();
     }
 
+    ObservedCoreRuntimeGeneration = CoreBridge->GetRuntimeGeneration();
     CoreBridge->SetExternalPhysicalExecutionEnabled(true);
     RefreshCorePresentationOrigin();
     CollectActivityAnchors();
@@ -77,6 +78,13 @@ void ALLWorldDirector::Tick(float DeltaSeconds)
     if (!Simulation || !CoreBridge)
     {
         return;
+    }
+
+    const int64 CurrentRuntimeGeneration = CoreBridge->GetRuntimeGeneration();
+    if (CurrentRuntimeGeneration != ObservedCoreRuntimeGeneration)
+    {
+        ObservedCoreRuntimeGeneration = CurrentRuntimeGeneration;
+        SynchronizeAfterCoreRuntimeReplacement();
     }
 
     CoreBridge->SetExternalPhysicalExecutionEnabled(true);
@@ -194,6 +202,54 @@ int32 ALLWorldDirector::GetEnvironmentalResidueVisualCount() const
     return EnvironmentalResidueVisualizer
         ? EnvironmentalResidueVisualizer->GetVisualInstanceCount()
         : 0;
+}
+
+void ALLWorldDirector::SynchronizeAfterCoreRuntimeReplacement()
+{
+    // Runtime replacement is a hard presentation boundary. Existing actors may
+    // have the same stable GUIDs after a save load, but their world positions,
+    // current motions, reservations and route caches belong to the old snapshot.
+    // Rebuild the physical projection immediately, including while paused.
+    for (auto& Pair : RuntimeStates)
+    {
+        ReleasePhysicalReservation(Pair.Key, Pair.Value);
+    }
+    RuntimeStates.Reset();
+
+    for (ALLResidentCharacter* Character : SpawnedResidents)
+    {
+        if (IsValid(Character))
+        {
+            Character->Destroy();
+        }
+    }
+    SpawnedResidents.Reset();
+
+    SimulationClockAccumulator = 0.0f;
+    EnvironmentalVisualRefreshAccumulator = 0.0f;
+
+    const bool bProjectionAvailable = Simulation->SynchronizeProjectionFromCore();
+    RefreshCorePresentationOrigin();
+    CollectActivityAnchors();
+
+    if (bProjectionAvailable && CoreBridge->IsCoreRunning())
+    {
+        SpawnResidents();
+    }
+
+    if (EnvironmentalResidueVisualizer)
+    {
+        EnvironmentalResidueVisualizer->ClearInstances();
+        if (bProjectionAvailable && CoreBridge->IsCoreRunning())
+        {
+            EnvironmentalResidueVisualizer->RefreshFromCore(
+                *CoreBridge,
+                CoreGridCellSizeUU,
+                true,
+                CorePresentationOriginGrid.X,
+                CorePresentationOriginGrid.Y);
+        }
+    }
 }
 
 void ALLWorldDirector::RefreshCorePresentationOrigin()

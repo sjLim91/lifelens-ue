@@ -41,6 +41,9 @@ jobs:
       - name: Validate whole-source audit invariants
         run: python Tools/validate_source_audit_invariants.py
 
+      - name: Validate runtime replacement projection
+        run: python Tools/validate_runtime_replacement_projection.py
+
       - name: Validate full production source scan
         run: python Tools/validate_full_source_scan.py
 

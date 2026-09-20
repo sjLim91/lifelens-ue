@@ -206,6 +206,21 @@ bool ULLSimulationSubsystem::LoadGame(const FString& SlotName)
     return true;
 }
 
+bool ULLSimulationSubsystem::SynchronizeProjectionFromCore()
+{
+    bCoreAuthoritativeRuntime = RefreshProjectionFromCore();
+    if (!bCoreAuthoritativeRuntime)
+    {
+        WorldSeed = 0;
+        SimulationMinute = 0;
+        Residents.Reset();
+        Relationships.Reset();
+    }
+
+    OnSimulationStateChanged.Broadcast();
+    return bCoreAuthoritativeRuntime;
+}
+
 void ULLSimulationSubsystem::AdvanceSimulationMinutes(int32 Minutes)
 {
     if (Minutes <= 0)
