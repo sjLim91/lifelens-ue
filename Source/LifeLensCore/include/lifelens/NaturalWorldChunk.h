@@ -251,23 +251,33 @@ inline GeneratedNaturalChunk deriveGeneratedNaturalChunk(
     }
 
     const GridPos origin = chunkOriginGrid(coord);
+    const bool bHydrologyAlignedResources = identity.generationVersion >= 2;
     for(MaterialKind material : materials){
         const bool waterMaterial = material == MaterialKind::Water;
-        if(waterMaterial && !isFreshSurfaceWater(hydrology)){
-            // Do not manufacture invisible "Water" inventory from a generic
-            // potential field. Drinkable natural Water must correspond to an
-            // actual authoritative fresh spring/stream/river/lake/wetland.
-            continue;
+        if(waterMaterial){
+            if(bHydrologyAlignedResources){
+                if(!isFreshSurfaceWater(hydrology)){
+                    // v2+: do not manufacture invisible "Water" inventory from
+                    // a generic potential field. Drinkable natural Water must
+                    // correspond to a real authoritative fresh surface source.
+                    continue;
+                }
+            }else if(macroSurface.surfaceClass != MacroSurfaceClass::Land){
+                // v1 compatibility path: preserve the original pre-hydrology
+                // water-patch eligibility exactly.
+                continue;
+            }
         }
 
-        const double potential = waterMaterial
-            ? hydrology.surfaceAvailability
-            : naturalPotentialForMaterial(macro, material);
+        const double potential =
+            waterMaterial && bHydrologyAlignedResources
+                ? hydrology.surfaceAvailability
+                : naturalPotentialForMaterial(macro, material);
         const bool metalOre=
             material==MaterialKind::CopperOre
             || material==MaterialKind::TinOre;
         const int maxPatches = waterMaterial
-            ? 1
+            ? (bHydrologyAlignedResources ? 1 : 3)
             : (metalOre ? 2 : 4);
         const int patchCount = naturalPatchCount(potential, maxPatches);
         for(int ordinal = 0; ordinal < patchCount; ++ordinal){
@@ -278,16 +288,18 @@ inline GeneratedNaturalChunk deriveGeneratedNaturalChunk(
             const double amountNoise = macroUnitFromWord(worldGenesisMix64(detailSeed ^ 0x414d4f554e543031ULL));
             const double densityNoise = macroUnitFromWord(worldGenesisMix64(detailSeed ^ 0x44454e5349545931ULL));
             const int localSpan = std::max(1, WorldChunkSpanGridCells - 4);
-            const int localX = waterMaterial
-                ? WorldChunkSpanGridCells / 2
-                : 2 + static_cast<int>(
-                    worldGenesisMix64(detailSeed ^ 0x504f535f585f3031ULL)
-                    % static_cast<std::uint64_t>(localSpan));
-            const int localY = waterMaterial
-                ? WorldChunkSpanGridCells / 2
-                : 2 + static_cast<int>(
-                    worldGenesisMix64(detailSeed ^ 0x504f535f595f3031ULL)
-                    % static_cast<std::uint64_t>(localSpan));
+            const int localX =
+                waterMaterial && bHydrologyAlignedResources
+                    ? WorldChunkSpanGridCells / 2
+                    : 2 + static_cast<int>(
+                        worldGenesisMix64(detailSeed ^ 0x504f535f585f3031ULL)
+                        % static_cast<std::uint64_t>(localSpan));
+            const int localY =
+                waterMaterial && bHydrologyAlignedResources
+                    ? WorldChunkSpanGridCells / 2
+                    : 2 + static_cast<int>(
+                        worldGenesisMix64(detailSeed ^ 0x504f535f595f3031ULL)
+                        % static_cast<std::uint64_t>(localSpan));
 
             const int minimum = naturalResourceBaseMinimum(material);
             const int maximum = naturalResourceBaseMaximum(material);
