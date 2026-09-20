@@ -13,7 +13,11 @@ for token in (
     "FMath::Lerp(CenterSurface, CornerSurface, 0.72f)",
     "FacilityCentersUU",
     "CreateMeshSection",
-    "SetCollisionEnabled(ECollisionEnabled::NoCollision)",
+    "SetCollisionEnabled(ECollisionEnabled::QueryOnly)",
+    "SetCollisionResponseToAllChannels(ECR_Ignore)",
+    "SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block)",
+    "SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore)",
+    "SetGenerateOverlapEvents(false)",
     "SetCanEverAffectNavigation(false)",
 ):
     assert token in actor, f"missing smooth-terrain token: {token}"
@@ -63,5 +67,11 @@ assert plugin is not None and plugin.get("Enabled") is True
 allow = set(plugin.get("PlatformAllowList", []))
 assert {"Win64", "Mac", "Linux"} <= allow
 assert "Android" not in allow
+
+section_pos = actor.index("TerrainMesh->CreateMeshSection")
+section_block = actor[section_pos:section_pos + 500]
+assert "Tangents,\n            true);" in section_block, (
+    "desktop smooth terrain must create query geometry for visual surface projection"
+)
 
 print("LifeLens desktop smooth terrain: PASS")
