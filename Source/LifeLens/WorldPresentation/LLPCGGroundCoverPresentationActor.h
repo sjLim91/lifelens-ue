@@ -49,5 +49,9 @@ private:
 
     float RetryAccumulator = 0.0f;
     int64 LastGeneratedVisualSeed = 0;
+    int64 LastGeneratedWorldSeed = 0;
+    int32 LastGeneratedGenerationVersion = 0;
+    int32 LastGeneratedChunkX = 0;
+    int32 LastGeneratedChunkY = 0;
     bool bGenerated = false;
 };
