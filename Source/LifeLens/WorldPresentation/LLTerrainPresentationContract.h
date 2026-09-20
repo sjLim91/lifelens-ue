@@ -23,6 +23,9 @@ namespace LLTerrainPresentationContract
     inline constexpr float FacilityFlattenRadiusUU = 340.0f;
     inline constexpr float FacilityBlendEndRadiusUU = 900.0f;
     inline constexpr float DesktopSurfaceLiftUU = 1.0f;
+    inline constexpr int32 RegionalPreviewRadiusChunks = 8;
+    inline constexpr int32 RegionalInnerFlatRingChunks = 1;
+    inline constexpr float RegionalReliefAmplitudeUU = 1100.0f;
 
     inline float SmoothBand(float Distance, float Start, float End)
     {
@@ -115,5 +118,70 @@ namespace LLTerrainPresentationContract
                 FacilityCentersUU);
 
         return SurfaceLiftUU + SharedSurface;
+    }
+
+    inline float RegionalSurfaceZUU(
+        const FLLCoreWorldGenerationObservation& World,
+        const FLLCoreTerrainPresentationObservation& Terrain,
+        const FVector2D& LocationUU)
+    {
+        if (!Terrain.bAvailable)
+        {
+            return 0.0f;
+        }
+
+        const int32 Ring = FMath::Max(
+            FMath::Abs(Terrain.ChunkX - World.InitialChunkX),
+            FMath::Abs(Terrain.ChunkY - World.InitialChunkY));
+        const int32 InnerRing = FMath::Clamp(
+            RegionalInnerFlatRingChunks,
+            0,
+            FMath::Max(0, RegionalPreviewRadiusChunks - 1));
+        const float Denominator = static_cast<float>(
+            FMath::Max(1, RegionalPreviewRadiusChunks - InnerRing));
+        const float RawAlpha = FMath::Clamp(
+            static_cast<float>(Ring - InnerRing) / Denominator,
+            0.0f,
+            1.0f);
+        const float ReliefAlpha =
+            RawAlpha * RawAlpha * (3.0f - 2.0f * RawAlpha);
+        const float Amplitude = FMath::Lerp(
+            LocalReliefAmplitudeUU,
+            FMath::Max(LocalReliefAmplitudeUU, RegionalReliefAmplitudeUU),
+            ReliefAlpha);
+
+        auto SignedHeight = [&](float Elevation01)
+        {
+            return (Elevation01 - World.InitialChunk.Elevation) * Amplitude;
+        };
+
+        const FVector2D ChunkCenter(
+            static_cast<float>(Terrain.ChunkX - World.InitialChunkX)
+                * LLWorldSpatialContract::ChunkSpanUU,
+            static_cast<float>(Terrain.ChunkY - World.InitialChunkY)
+                * LLWorldSpatialContract::ChunkSpanUU);
+        const float Half = LLWorldSpatialContract::ChunkSpanUU * 0.5f;
+        const float U = FMath::Clamp(
+            (LocationUU.X - (ChunkCenter.X - Half))
+                / FMath::Max(LLWorldSpatialContract::ChunkSpanUU, 1.0f),
+            0.0f,
+            1.0f);
+        const float V = FMath::Clamp(
+            (LocationUU.Y - (ChunkCenter.Y - Half))
+                / FMath::Max(LLWorldSpatialContract::ChunkSpanUU, 1.0f),
+            0.0f,
+            1.0f);
+
+        const float South = FMath::Lerp(
+            SignedHeight(Terrain.SouthWestElevation01),
+            SignedHeight(Terrain.SouthEastElevation01),
+            U);
+        const float North = FMath::Lerp(
+            SignedHeight(Terrain.NorthWestElevation01),
+            SignedHeight(Terrain.NorthEastElevation01),
+            U);
+        const float CornerSurface = FMath::Lerp(South, North, V);
+        const float CenterSurface = SignedHeight(Terrain.CenterElevation01);
+        return FMath::Lerp(CenterSurface, CornerSurface, 0.72f);
     }
 }
