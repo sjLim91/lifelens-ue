@@ -37,11 +37,13 @@ private:
         int32 InitialCenterGridX,
         int32 InitialCenterGridY,
         float SurfaceZUU) const;
-    float WaterSurfaceZForChunk(
+    float WaterSurfaceZForGrid(
         class ULLCoreBridgeSubsystem* Bridge,
         const struct FLLCoreWorldGenerationObservation& World,
-        int32 ChunkX,
-        int32 ChunkY) const;
+        const TArray<struct FLLCoreTerrainPresentationObservation>& RegionalTerrains,
+        int32 GridX,
+        int32 GridY,
+        const TArray<FVector2D>& FacilityCentersUU) const;
     int32 ChunkCoordForGrid(int32 GridCoordinate) const;
 
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Water", meta=(ClampMin="0.25", ClampMax="10.0"))
@@ -50,10 +52,8 @@ private:
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Water", meta=(ClampMin="-1000.0", ClampMax="1000.0"))
     float WaterSurfaceZUU = 4.0f;
 
-    // Keep in visual lock-step with the current WorldPresentation macro relief.
-    // Water uses Core terrain observations; this is rendering height only.
-    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Water", meta=(ClampMin="0.0", ClampMax="500.0"))
-    float TerrainReliefAmplitudeUU = 180.0f;
+    // Local terrain height/flattening is centralized in
+    // LLTerrainPresentationContract; Water only owns its small surface lift.
 
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Water", meta=(ClampMin="8000.0", ClampMax="250000.0"))
     float WaterZoneExtentUU = 96000.0f;
