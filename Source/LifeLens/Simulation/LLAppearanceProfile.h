@@ -69,4 +69,11 @@ public:
         FGuid ResidentId,
         ELLCoreSex Sex,
         ELLCoreLifeStage LifeStage);
+
+    UFUNCTION(BlueprintPure, Category="LifeLens|Appearance")
+    static FLLAppearanceProfile MakeGeneticAppearanceProfile(
+        FGuid ResidentId,
+        ELLCoreSex Sex,
+        ELLCoreLifeStage LifeStage,
+        const FLLCoreGeneticsSnapshot& Genetics);
 };
