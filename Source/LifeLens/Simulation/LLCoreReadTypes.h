@@ -120,6 +120,25 @@ struct FLLCorePersonalitySnapshot
 };
 
 USTRUCT(BlueprintType)
+struct FLLCoreGeneticsSnapshot
+{
+    GENERATED_BODY()
+
+    // Authoritative inherited phenotype/capacity axes from LifeLensCore.
+    // Founders are generated from the NEW GAME seed; children inherit a
+    // deterministic parent blend plus bounded Core mutation.
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Genetics") float FaceShape = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Genetics") float EyePigment = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Genetics") float HairPigment = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Genetics") float SkinTone = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Genetics") float HeightPotential = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Genetics") float BuildPotential = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Genetics") float HealthPotential = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Genetics") float LearningPotential = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Genetics") float TemperamentSensitivity = 0.5f;
+};
+
+USTRUCT(BlueprintType)
 struct FLLCoreTraitSnapshot
 {
     GENERATED_BODY()
@@ -250,6 +269,7 @@ struct FLLCoreResidentObservation
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") ELLCoreLifeStage LifeStage = ELLCoreLifeStage::Adult;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") bool bAlive = true;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") FLLCorePersonalitySnapshot Personality;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") FLLCoreGeneticsSnapshot Genetics;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") FLLCoreNeedSnapshot Needs;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") FLLCoreEmotionSnapshot Emotion;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core") ELLCoreObservedActivityKind ActivityKind = ELLCoreObservedActivityKind::Idle;
