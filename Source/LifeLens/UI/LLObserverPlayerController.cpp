@@ -578,8 +578,11 @@ void ALLObserverPlayerController::HandleTouchPressed(ETouchIndex::Type FingerInd
         if (ALLObserverHUD* ObserverHUD = GetHUD<ALLObserverHUD>();
             ObserverHUD && ObserverHUD->BeginDetailScrollDrag(Position, FVector2D(ViewportX, ViewportY)))
         {
+            // This is only a scroll *candidate* until movement crosses the same
+            // drag threshold as camera gestures. Keeping tap eligibility here
+            // lets linked resident rows inside LEVEL 2 content remain tappable
+            // on mobile instead of every press being consumed as a scroll.
             bHUDDetailScrollTouchActive = true;
-            bTouchGesture = true;
         }
     }
     else if (FingerIndex == ETouchIndex::Touch2 && bTouch1Tracked)
@@ -631,7 +634,6 @@ void ALLObserverPlayerController::HandleTouchReleased(ETouchIndex::Type FingerIn
     const bool bReleaseStayedWithinTapThreshold =
         (ReleasePosition - TouchStart1).Size() <= TouchDragThresholdPixels();
     const bool bTap = bTouch1Tracked
-        && !bWasHUDDetailScrollTouchActive
         && !bTouchGesture
         && !bTouchHadSecondFinger
         && bReleaseStayedWithinTapThreshold;
@@ -687,12 +689,21 @@ void ALLObserverPlayerController::UpdateTouchCameraInput()
 
     if (bHUDDetailScrollTouchActive)
     {
-        int32 ViewportX = 0;
-        int32 ViewportY = 0;
-        GetViewportSize(ViewportX, ViewportY);
-        if (ALLObserverHUD* ObserverHUD = GetHUD<ALLObserverHUD>())
+        const bool bCrossedScrollThreshold =
+            (Current1 - TouchStart1).Size() > TouchDragThresholdPixels();
+        if (bCrossedScrollThreshold)
         {
-            ObserverHUD->UpdateDetailScrollDrag(Current1, FVector2D(ViewportX, ViewportY));
+            bTouchGesture = true;
+
+            int32 ViewportX = 0;
+            int32 ViewportY = 0;
+            GetViewportSize(ViewportX, ViewportY);
+            if (ALLObserverHUD* ObserverHUD = GetHUD<ALLObserverHUD>())
+            {
+                ObserverHUD->UpdateDetailScrollDrag(
+                    Current1,
+                    FVector2D(ViewportX, ViewportY));
+            }
         }
         LastTouch1 = Current1;
         return;
