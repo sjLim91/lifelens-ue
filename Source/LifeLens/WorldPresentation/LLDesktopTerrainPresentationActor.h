@@ -61,23 +61,8 @@ private:
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Terrain", meta=(ClampMin="2", ClampMax="24"))
     int32 SubdivisionsPerChunk = 10;
 
-    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Terrain", meta=(ClampMin="0.0", ClampMax="500.0"))
-    float TerrainReliefAmplitudeUU = 180.0f;
-
-    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Terrain", meta=(ClampMin="0.0", ClampMax="5000.0"))
-    float SettlementFlattenRadiusUU = 650.0f;
-
-    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Terrain", meta=(ClampMin="100.0", ClampMax="6000.0"))
-    float SettlementBlendBandUU = 900.0f;
-
-    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Terrain", meta=(ClampMin="0.0", ClampMax="2000.0"))
-    float FacilityFlattenRadiusUU = 360.0f;
-
-    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Terrain", meta=(ClampMin="50.0", ClampMax="2500.0"))
-    float FacilityBlendBandUU = 520.0f;
-
-    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Terrain", meta=(ClampMin="0.0", ClampMax="10.0"))
-    float SurfaceLiftUU = 1.0f;
+    // Height/flattening/surface-lift values are centralized in
+    // LLTerrainPresentationContract and intentionally are not configurable here.
 
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Terrain", meta=(ClampMin="0.2", ClampMax="10.0"))
     float RefreshIntervalSeconds = 2.0f;
