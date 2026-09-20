@@ -37,7 +37,7 @@ assert "FacilityFoundationInstances->SetVisibility(false, true)" not in cpp, (
 for token in (
     "TreeMinScale = 0.92f",
     "TreeMaxScale = 1.65f",
-    "Desktop construction is allowed to be incomplete",
+    "bUsePhotorealConstructionStaging",
     "AddPhotorealFurnaceStone",
     "AddPhotorealStructureLog",
 ):
