@@ -80,4 +80,21 @@ for token in (
         f"direct social/context presentation reset contract missing {token}",
     )
 
+# Missing direct action data must also fail closed for legacy motion state.
+missing_directive_anchor = 'if (!CoreBridge->GetResidentActionDirective(Character.GetResidentId(), Directive))'
+missing_start = world_director.index(missing_directive_anchor)
+missing_end = world_director.index("ApplyCoreDirective(Character", missing_start)
+missing_block = world_director[missing_start:missing_end]
+for token in (
+    "SetSocialInteractionActive(false);",
+    "SetWorkPresentationMode(",
+    "ELLResidentWorkPresentationMode::None",
+    "SetHeldToolPresentation(",
+    "ELLResidentHeldToolPresentation::None",
+):
+    require(
+        token in missing_block,
+        f"missing-directive motion reset contract missing {token}",
+    )
+
 print("Whole-source audit invariants: PASS")
