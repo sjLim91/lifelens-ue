@@ -71,11 +71,24 @@ uint32 ALLDesktopTerrainPresentationActor::BuildSignature(
     uint32 Hash = 0x54455252u; // TERR
     for (const FLLCoreTerrainPresentationObservation& Terrain : Terrains)
     {
+        Hash = MixTerrainHash(Hash, Terrain.bAvailable ? 1u : 0u);
         Hash = MixTerrainHash(Hash, static_cast<uint32>(Terrain.ChunkX));
         Hash = MixTerrainHash(Hash, static_cast<uint32>(Terrain.ChunkY));
         Hash = MixTerrainHash(
             Hash,
             static_cast<uint32>(FMath::RoundToInt(Terrain.CenterElevation01 * 100000.0f)));
+        Hash = MixTerrainHash(
+            Hash,
+            static_cast<uint32>(FMath::RoundToInt(Terrain.NorthWestElevation01 * 100000.0f)));
+        Hash = MixTerrainHash(
+            Hash,
+            static_cast<uint32>(FMath::RoundToInt(Terrain.NorthEastElevation01 * 100000.0f)));
+        Hash = MixTerrainHash(
+            Hash,
+            static_cast<uint32>(FMath::RoundToInt(Terrain.SouthWestElevation01 * 100000.0f)));
+        Hash = MixTerrainHash(
+            Hash,
+            static_cast<uint32>(FMath::RoundToInt(Terrain.SouthEastElevation01 * 100000.0f)));
         Hash = MixTerrainHash(
             Hash,
             static_cast<uint32>(FMath::RoundToInt(Terrain.Relief01 * 100000.0f)));
@@ -210,6 +223,27 @@ void ALLDesktopTerrainPresentationActor::RefreshFromCore(bool bForce)
     }
 
     uint32 Signature = BuildSignature(Terrains);
+
+    // Mesh XY and relative Z are projected through the selected start-region
+    // frame. A new/restored world can reuse the same terrain sample values at a
+    // different origin, so the frame itself is part of the rendered signature.
+    const uint64 WorldSeed = static_cast<uint64>(World.WorldSeed);
+    Signature = MixTerrainHash(
+        Signature,
+        static_cast<uint32>(WorldSeed & 0xFFFFFFFFu));
+    Signature = MixTerrainHash(
+        Signature,
+        static_cast<uint32>((WorldSeed >> 32) & 0xFFFFFFFFu));
+    Signature = MixTerrainHash(Signature, static_cast<uint32>(World.GenerationVersion));
+    Signature = MixTerrainHash(Signature, static_cast<uint32>(World.InitialChunkX));
+    Signature = MixTerrainHash(Signature, static_cast<uint32>(World.InitialChunkY));
+    Signature = MixTerrainHash(Signature, static_cast<uint32>(World.InitialCenterGridX));
+    Signature = MixTerrainHash(Signature, static_cast<uint32>(World.InitialCenterGridY));
+    Signature = MixTerrainHash(
+        Signature,
+        static_cast<uint32>(FMath::RoundToInt(
+            World.InitialChunk.Elevation * 100000.0f)));
+
     const FLLCoreCivilizationWorldObservation Civilization =
         Bridge->GetCivilizationWorldObservation(0);
     Signature = MixTerrainHash(Signature, static_cast<uint32>(Civilization.FacilityCount));
