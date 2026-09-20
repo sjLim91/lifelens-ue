@@ -243,11 +243,30 @@ TArray<FVector> ALLWorldDirector::BuildLocalAStarPath(
     }
 
     TSet<FIntPoint> Blocked;
+    TSet<FIntPoint> Walkable;
 
+    const int32 ChunkSpan =
+        FMath::Max(1, LLWorldSpatialContract::ChunkSpanGridCells);
     const TArray<FLLCoreNaturalChunkObservation> Chunks =
         CoreBridge->GetMaterializedNaturalChunkObservations();
     for (const FLLCoreNaturalChunkObservation& Chunk : Chunks)
     {
+        // Physical locomotion may only traverse materialized non-ocean surface.
+        // Presentation can draw continuity beyond that area, but residents need
+        // an authoritative support surface underneath every routed grid cell.
+        if (Chunk.bMaterialized && Chunk.Surface != FName(TEXT("Ocean")))
+        {
+            const int32 ChunkMinX = Chunk.ChunkX * ChunkSpan;
+            const int32 ChunkMinY = Chunk.ChunkY * ChunkSpan;
+            for (int32 Y = ChunkMinY; Y < ChunkMinY + ChunkSpan; ++Y)
+            {
+                for (int32 X = ChunkMinX; X < ChunkMinX + ChunkSpan; ++X)
+                {
+                    Walkable.Add(FIntPoint(X, Y));
+                }
+            }
+        }
+
         for (const FLLCoreNaturalObstacleObservation& Obstacle : Chunk.PhysicalObstacles)
         {
             Blocked.Add(FIntPoint(Obstacle.GridX, Obstacle.GridY));
@@ -258,7 +277,6 @@ TArray<FVector> ALLWorldDirector::BuildLocalAStarPath(
     // completely blocked. Coast uses the same deterministic marine-neighbour
     // orientation exposed to WaterPresentation, so A* will not route residents
     // across the visible marine half of a coastal chunk.
-    const int32 ChunkSpan = FMath::Max(1, LLWorldSpatialContract::ChunkSpanGridCells);
     for (const FLLCoreSurfaceWaterPresentationObservation& Water :
         CoreBridge->GetMaterializedSurfaceWaterPresentationObservations())
     {
@@ -317,6 +335,12 @@ TArray<FVector> ALLWorldDirector::BuildLocalAStarPath(
     // Constructed facilities occupy real Core grid sites. Route around other
     // facilities, while allowing the actual goal cell so a resident can reach
     // the facility it is currently using.
+    // Environmental blockers are hard physical truth. Remember whether the
+    // requested goal itself is inside a tree/rock or visible marine surface
+    // before adding facilities, because the actual facility goal is the only
+    // blocker type that may be intentionally entered.
+    const bool bGoalEnvironmentBlocked = Blocked.Contains(Goal);
+
     const FLLCoreCivilizationWorldObservation Civilization =
         CoreBridge->GetCivilizationWorldObservation(0);
     for (const FLLCoreCivilizationFacilityObservation& Facility :
@@ -326,6 +350,21 @@ TArray<FVector> ALLWorldDirector::BuildLocalAStarPath(
     }
 
     Blocked.Remove(Start);
+    if (bGoalEnvironmentBlocked
+        || !Walkable.Contains(Start)
+        || !Walkable.Contains(Goal))
+    {
+        UE_LOG(LogTemp, Verbose,
+            TEXT("LifeLens local A* rejected unsupported/blocked endpoint: start=(%d,%d) goal=(%d,%d) startWalk=%d goalWalk=%d hardGoal=%d"),
+            Start.X, Start.Y, Goal.X, Goal.Y,
+            Walkable.Contains(Start) ? 1 : 0,
+            Walkable.Contains(Goal) ? 1 : 0,
+            bGoalEnvironmentBlocked ? 1 : 0);
+        return Result;
+    }
+
+    // Facilities are valid action destinations, so the selected goal facility
+    // may be entered while all other facility cells remain obstacles.
     Blocked.Remove(Goal);
 
     const int32 Margin = FMath::Clamp(LocalAStarMarginCells, 2, 64);
@@ -419,6 +458,7 @@ TArray<FVector> ALLWorldDirector::BuildLocalAStarPath(
             const FIntPoint Next = Current.Cell + Direction;
             if (Next.X < MinX || Next.X > MaxX
                 || Next.Y < MinY || Next.Y > MaxY
+                || !Walkable.Contains(Next)
                 || Blocked.Contains(Next)
                 || Closed.Contains(Next))
             {
@@ -429,8 +469,14 @@ TArray<FVector> ALLWorldDirector::BuildLocalAStarPath(
             if (bDiagonal)
             {
                 // No diagonal corner cutting between two blocked obstacle cells.
-                if (Blocked.Contains(Current.Cell + FIntPoint(Direction.X, 0))
-                    || Blocked.Contains(Current.Cell + FIntPoint(0, Direction.Y)))
+                const FIntPoint SideX =
+                    Current.Cell + FIntPoint(Direction.X, 0);
+                const FIntPoint SideY =
+                    Current.Cell + FIntPoint(0, Direction.Y);
+                if (!Walkable.Contains(SideX)
+                    || !Walkable.Contains(SideY)
+                    || Blocked.Contains(SideX)
+                    || Blocked.Contains(SideY))
                 {
                     continue;
                 }
@@ -476,9 +522,16 @@ void ALLWorldDirector::MoveResidentToward(
     }
     else
     {
-        // Collision sweep/slide remains a safe last-resort physical executor
-        // when no bounded route can be found.
-        Character.SetMovementTarget(DesiredLocation);
+        // Do not bypass the authoritative route mask with a direct sweep.
+        // Water presentation is collision-free and non-materialized chunks have
+        // no support surface, so a "fallback" straight line could walk through
+        // visible sea or off the physical world. An unreachable Core target is
+        // left pending for re-resolution instead of violating world geometry.
+        Character.ClearMovementTarget();
+        UE_LOG(LogTemp, Verbose,
+            TEXT("LifeLens resident route unavailable; movement held at %s toward %s"),
+            *Character.GetActorLocation().ToCompactString(),
+            *DesiredLocation.ToCompactString());
     }
 }
 
