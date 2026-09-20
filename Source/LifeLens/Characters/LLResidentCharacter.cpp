@@ -277,7 +277,19 @@ void ALLResidentCharacter::RefreshLifecyclePresentation()
         const float BuiltStageFactor = FMath::Max(
             0.01f,
             ULLResidentAppearanceComponent::StageHeightFactor[BuiltStageIndex]);
-        AdultBodyScale = Body->GetRelativeScale3D() / BuiltStageFactor;
+        const float BuiltStageWidthFactor = FMath::Max(
+            0.01f,
+            ULLResidentAppearanceComponent::StageWidthFactor[BuiltStageIndex]);
+
+        // Normalize the initially built stage back to the resident's adult
+        // genetic/body baseline. XY contains both stage height and stage-width
+        // shaping, while Z contains stage height only. Dividing the whole vector
+        // by BuiltStageFactor used to bake the birth/child width factor into the
+        // baseline and multiply it again on every later life-stage transition.
+        AdultBodyScale = Body->GetRelativeScale3D();
+        AdultBodyScale.X /= BuiltStageFactor * BuiltStageWidthFactor;
+        AdultBodyScale.Y /= BuiltStageFactor * BuiltStageWidthFactor;
+        AdultBodyScale.Z /= BuiltStageFactor;
         bLifecyclePresentationInitialized = true;
     }
 
