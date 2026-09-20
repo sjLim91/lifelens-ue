@@ -339,12 +339,11 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
         TEXT("/Game/Environment/Photoreal/PolyHaven/wicker_basket_01/SM_LL_wicker_basket_01.SM_LL_wicker_basket_01"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoWoodenAxe(
         TEXT("/Game/Environment/Photoreal/PolyHaven/wooden_axe/SM_LL_wooden_axe.SM_LL_wooden_axe"));
-#if !PLATFORM_ANDROID
-    // Completed timber structures are desktop-only so the Android cook does not
-    // acquire the larger photoreal structure asset through a hard reference.
+    // The approved dead-tree-trunk mesh is shared with Android completed timber
+    // facilities. This removes the stretched Engine-cube fallback on the
+    // mobile-first target while keeping facility authority in Core.
     static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoStructureLog(
         TEXT("/Game/Environment/Photoreal/PolyHaven/dead_tree_trunk/SM_LL_dead_tree_trunk.SM_LL_dead_tree_trunk"));
-#endif
 
     Ground = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("GeneratedGround"));
     Ground->SetupAttachment(Root);
@@ -457,13 +456,24 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
             TEXT("PhotorealWorkTools"), PhotoWoodenAxe.Object,
             FacilityCullStartUU, FacilityCullEndUU, true);
     }
-#if !PLATFORM_ANDROID
     if (PhotoStructureLog.Succeeded())
     {
         PhotorealStructureLogInstances = AddInstancedComponent(
             TEXT("PhotorealStructureLogs"), PhotoStructureLog.Object,
             FacilityCullStartUU, FacilityCullEndUU, true);
     }
+
+#if PLATFORM_ANDROID
+    // Reuse the already-cooked mobile rock hero for completed furnace masonry.
+    // Android must not fall back to stretched Engine cubes for a completed
+    // furnace just because the larger desktop boulder package is excluded.
+    if (MobileRockA.Succeeded())
+    {
+        PhotorealFurnaceStoneInstances = AddInstancedComponent(
+            TEXT("PhotorealFurnaceStones"), MobileRockA.Object,
+            FacilityCullStartUU, FacilityCullEndUU, true);
+    }
+#else
     if (PhotoBoulder.Succeeded())
     {
         PhotorealFurnaceStoneInstances = AddInstancedComponent(

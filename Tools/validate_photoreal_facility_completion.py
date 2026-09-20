@@ -14,16 +14,40 @@ for token in (
 ):
     assert token in cpp or token in header, f"missing facility completion token: {token}"
 
-# Desktop hero assets remain behind the explicit Android compile boundary.
+# Completed timber hero art is shared with Android so the mobile-first target
+# does not regress to stretched Engine cubes. Furnace masonry reuses the
+# already-cooked mobile rock while desktop keeps the photoreal boulder.
 structure_ref = 'SM_LL_dead_tree_trunk.SM_LL_dead_tree_trunk'
+structure_component = 'TEXT("PhotorealStructureLogs"), PhotoStructureLog.Object'
 boulder_component = 'TEXT("PhotorealFurnaceStones"), PhotoBoulder.Object'
 assert structure_ref in cpp
+assert structure_component in cpp
 assert boulder_component in cpp
-desktop_begin = cpp.index("#if !PLATFORM_ANDROID", cpp.index("PhotoWoodenAxe"))
-desktop_end = cpp.index("#endif", desktop_begin)
-desktop_block = cpp[desktop_begin:desktop_end]
-assert structure_ref in desktop_block
-assert "PhotoBoulder.Succeeded()" in cpp[desktop_begin:cpp.index("#endif", cpp.index("PhotorealFurnaceStones")) + len("#endif")]
+
+structure_ref_pos = cpp.index(structure_ref)
+nearest_android_guard = cpp.rfind("#if !PLATFORM_ANDROID", 0, structure_ref_pos)
+nearest_guard_end = cpp.rfind("#endif", 0, structure_ref_pos)
+assert nearest_android_guard <= nearest_guard_end, (
+    "completed structure log hard reference regressed behind desktop-only guard"
+)
+
+structure_component_pos = cpp.index(structure_component)
+nearest_component_guard = cpp.rfind("#if !PLATFORM_ANDROID", 0, structure_component_pos)
+nearest_component_guard_end = cpp.rfind("#endif", 0, structure_component_pos)
+assert nearest_component_guard <= nearest_component_guard_end, (
+    "PhotorealStructureLogs component regressed behind desktop-only guard"
+)
+
+android_furnace = cpp.index("#if PLATFORM_ANDROID", cpp.index("PhotorealStructureLogs"))
+android_furnace_end = cpp.index("#else", android_furnace)
+android_furnace_block = cpp[android_furnace:android_furnace_end]
+assert "MobileRockA.Succeeded()" in android_furnace_block
+assert boulder_component not in android_furnace_block
+
+desktop_furnace_end = cpp.index("#endif", android_furnace_end)
+desktop_furnace_block = cpp[android_furnace_end:desktop_furnace_end]
+assert "PhotoBoulder.Succeeded()" in desktop_furnace_block
+assert boulder_component in desktop_furnace_block
 
 # Completed desktop facilities suppress the obvious Cube structure only when
 # approved art exists, so Android/missing-art fallback remains readable.
