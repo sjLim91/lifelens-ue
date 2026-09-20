@@ -246,6 +246,7 @@ private:
     void RefreshFromCore(bool bForce);
     void ClearInstances();
     void ClearFacilityInstances();
+    void ClearProjectedWorld();
     void ApplyFacilityMaterialPalette();
     void BuildGround(
         const struct FLLCoreWorldGenerationObservation& World,
@@ -361,6 +362,7 @@ private:
     uint32 BuiltFacilityLayoutSignature = 0;
     uint32 BuiltResourceQuantitySignature = 0;
     bool bBuiltFacilityPresentation = false;
+    bool bHasProjectedWorld = false;
     int32 PlacedTrees = 0;
     int32 PlacedShrubs = 0;
     int32 PlacedGrass = 0;
