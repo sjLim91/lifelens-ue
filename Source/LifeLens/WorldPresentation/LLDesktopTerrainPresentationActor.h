@@ -65,10 +65,10 @@ private:
     float TerrainReliefAmplitudeUU = 180.0f;
 
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Terrain", meta=(ClampMin="0.0", ClampMax="5000.0"))
-    float SettlementFlattenRadiusUU = 2400.0f;
+    float SettlementFlattenRadiusUU = 650.0f;
 
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Terrain", meta=(ClampMin="100.0", ClampMax="6000.0"))
-    float SettlementBlendBandUU = 1800.0f;
+    float SettlementBlendBandUU = 900.0f;
 
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Terrain", meta=(ClampMin="0.0", ClampMax="2000.0"))
     float FacilityFlattenRadiusUU = 360.0f;
