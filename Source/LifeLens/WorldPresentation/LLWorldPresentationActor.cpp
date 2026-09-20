@@ -379,6 +379,13 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
         TreeCullEndUU,
         false);
 
+    RegionalTerrainTileInstances = AddInstancedComponent(
+        TEXT("RegionalTerrainTiles"),
+        GroundMesh,
+        0.0f,
+        FarDressingCullEndUU,
+        false);
+
     if (GroundGrassTileInstances && GroundGrass)
     {
         GroundGrassTileInstances->SetMaterial(0, GroundGrass);
@@ -390,6 +397,18 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
     if (GroundTransitionTileInstances && GroundTransition)
     {
         GroundTransitionTileInstances->SetMaterial(0, GroundTransition);
+    }
+
+    if (RegionalTerrainTileInstances)
+    {
+        if (GroundGrass)
+        {
+            RegionalTerrainTileInstances->SetMaterial(0, GroundGrass);
+        }
+        else if (GroundTransition)
+        {
+            RegionalTerrainTileInstances->SetMaterial(0, GroundTransition);
+        }
     }
 
     for (int32 Index = 0; Index < TreeMeshes.Num(); ++Index)
@@ -636,6 +655,8 @@ void ALLWorldPresentationActor::ClearInstances()
     if (GroundGrassTileInstances) { GroundGrassTileInstances->ClearInstances(); }
     if (GroundDryTileInstances) { GroundDryTileInstances->ClearInstances(); }
     if (GroundTransitionTileInstances) { GroundTransitionTileInstances->ClearInstances(); }
+
+    if (RegionalTerrainTileInstances) { RegionalTerrainTileInstances->ClearInstances(); }
 
     for (UHierarchicalInstancedStaticMeshComponent* Component : TreeInstances) { if (Component) { Component->ClearInstances(); } }
     for (UHierarchicalInstancedStaticMeshComponent* Component : ShrubInstances) { if (Component) { Component->ClearInstances(); } }
@@ -1168,7 +1189,8 @@ UMaterialInterface* ALLWorldPresentationActor::GroundMaterialForChunk(const FLLC
 
 void ALLWorldPresentationActor::BuildGround(
     const FLLCoreWorldGenerationObservation& World,
-    const TArray<FLLCoreNaturalChunkObservation>& MaterializedChunks)
+    const TArray<FLLCoreNaturalChunkObservation>& MaterializedChunks,
+    const TArray<FLLCoreTerrainPresentationObservation>& RegionalTerrains)
 {
     if (!Ground || !GroundMesh) { return; }
 
@@ -1233,10 +1255,16 @@ void ALLWorldPresentationActor::BuildGround(
         // presentation surface. Its overlap removes the visible square edge
         // without adding collision or simulation authority outside Core chunks.
         const float FarThickness = 18.0f;
+        // The regional preview contains signed valleys. Keep the broad fallback
+        // plane below the deepest possible preview instead of letting a flat
+        // slab visually cap every depression.
+        const float EffectiveFarGroundDropUU = FMath::Max(
+            FMath::Max(0.0f, FarGroundDropUU),
+            FMath::Max(0.0f, RegionalTerrainReliefAmplitudeUU) + 24.0f);
         FarGround->SetRelativeLocation(FVector(
             0.0f,
             0.0f,
-            -FarThickness * 0.5f - FMath::Max(0.0f, FarGroundDropUU)));
+            -FarThickness * 0.5f - EffectiveFarGroundDropUU));
         FarGround->SetRelativeScale3D(FVector(
             FarSpanUU / LLWorldSpatialContract::EngineCubeSideUU,
             FarSpanUU / LLWorldSpatialContract::EngineCubeSideUU,
@@ -1247,7 +1275,7 @@ void ALLWorldPresentationActor::BuildGround(
         }
     }
 
-    BuildFarEnvironment(World, ActiveSpanUU, FarSpanUU);
+    BuildFarEnvironment(World, ActiveSpanUU, FarSpanUU, RegionalTerrains);
 }
 
 void ALLWorldPresentationActor::BuildChunkGround(
