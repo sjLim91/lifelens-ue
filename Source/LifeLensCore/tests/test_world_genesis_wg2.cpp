@@ -145,6 +145,25 @@ int main()
     }
     assert(alignedFreshWaterNodeCount == 1);
 
+    // Regression: seed 26 has no valid dry-land + nearby-freshwater candidate
+    // inside the former 24-chunk search radius. Current generation must not
+    // silently fall back to a generic start and recreate a waterless NEW GAME.
+    const WorldGenesisIdentity sparseFreshwaterWorld =
+        makeWorldGenesisIdentity(26,111,CurrentWorldGenerationVersion);
+    const InitialStartRegionSelection sparseStart =
+        selectInitialFreshwaterAdjacentRegion(sparseFreshwaterWorld);
+    assert(deriveHydrologyFacts(
+        sparseFreshwaterWorld,sparseStart.region.coord).surfaceKind
+        == SurfaceWaterKind::None);
+    ChunkCoord sparseFreshwater{};
+    assert(findNearestFreshSurfaceWaterChunk(
+        sparseFreshwaterWorld,
+        sparseStart.region.coord,
+        sparseFreshwater,
+        FreshSurfaceNeighbourRadiusChunks));
+    assert(isFreshSurfaceWater(
+        deriveHydrologyFacts(sparseFreshwaterWorld,sparseFreshwater)));
+
     World worldA(seed,111,1);
     World worldB(seed,222,1);
     assert(worldA.initialStartRegion().region.coord==worldB.initialStartRegion().region.coord);
