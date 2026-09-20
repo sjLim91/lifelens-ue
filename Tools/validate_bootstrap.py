@@ -34,7 +34,6 @@ required = [
     'Source/LifeLensCore/tests/test_sanitation_problem_recognition.cpp',
     'Source/LifeLensCore/tests/test_primitive_sanitation_progression.cpp',
     'Source/LifeLensCore/tests/test_designated_sanitation_affordance.cpp',
-    'Source/LifeLens/AI/LLDecisionComponent.cpp',
     'Source/LifeLens/Characters/LLResidentCharacter.cpp',
     'Source/LifeLens/World/LLActivityAnchor.cpp',
     'Source/LifeLens/World/LLWorldDirector.cpp',
