@@ -309,6 +309,9 @@ void ULLResidentPresentationComponent::UpdateRing()
     }
 
     const float Feet = FeetOffset();
+    const float GroundOffset = Appearance
+        ? Appearance->GetPresentationGroundOffsetUU()
+        : 0.0f;
     const bool bDetail = bSelected && Observation && Observation->IsDetailOpen();
     const float TimeSeconds = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0f;
     const float Pulse = bSelected
@@ -325,7 +328,7 @@ void ULLResidentPresentationComponent::UpdateRing()
             OuterRadius / 50.0f,
             RingThickness / 100.0f));
         RingOuter->SetRelativeLocation(FVector(
-            0.0f, 0.0f, -Feet + RingThickness * 0.5f));
+            0.0f, 0.0f, -Feet + GroundOffset + RingThickness * 0.5f));
         RingOuter->SetVisibility(bSelected);
     }
     if (RingInner)
@@ -335,7 +338,7 @@ void ULLResidentPresentationComponent::UpdateRing()
             InnerRadius / 50.0f,
             RingThickness / 100.0f));
         RingInner->SetRelativeLocation(FVector(
-            0.0f, 0.0f, -Feet + RingThickness * 0.5f + 0.5f));
+            0.0f, 0.0f, -Feet + GroundOffset + RingThickness * 0.5f + 0.5f));
         RingInner->SetVisibility(bSelected);
     }
     if (bSelected && RingOuterMaterial)
