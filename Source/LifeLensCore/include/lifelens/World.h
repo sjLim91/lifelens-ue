@@ -76,14 +76,14 @@ struct World {
             return stored;
         }
         return generationVersion >= 2
-            ? selectInitialFreshSurfaceWaterRegion(genesisIdentity())
+            ? selectInitialFreshwaterAdjacentRegion(genesisIdentity())
             : selectInitialStartRegion(genesisIdentity());
     }
 
     InitialStartRegionSelection establishInitialStartRegion()
     {
         const InitialStartRegionSelection selected = generationVersion >= 2
-            ? selectInitialFreshSurfaceWaterRegion(genesisIdentity())
+            ? selectInitialFreshwaterAdjacentRegion(genesisIdentity())
             : selectInitialStartRegion(genesisIdentity());
         hasInitialStartRegionSelection=true;
         initialStartRegionCoord=selected.region.coord;
