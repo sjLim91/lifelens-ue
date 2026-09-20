@@ -57,6 +57,7 @@ for token in (
     "!bLastCoreRunning",
     "bLastCoreRunning = false;",
     "bLastCoreRunning = true;",
+    "DayProgressBar->SetPercent(0.0f);",
 ):
     require(
         token in overlay,
