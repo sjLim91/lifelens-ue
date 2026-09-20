@@ -18,6 +18,8 @@ director_h = text("Source/LifeLens/World/LLWorldDirector.h")
 director_cpp = text("Source/LifeLens/World/LLWorldDirector.cpp")
 read_types = text("Source/LifeLens/Simulation/LLEnvironmentReadTypes.h")
 doc = text("docs/WORLD_ENVIRONMENTAL_VISUAL_FEEDBACK_v1.md")
+dynamic_h = text("Source/LifeLens/WorldPresentation/LLDynamicEnvironmentPresentationActor.h")
+dynamic_cpp = text("Source/LifeLens/WorldPresentation/LLDynamicEnvironmentPresentationActor.cpp")
 
 for token in [
     "UHierarchicalInstancedStaticMeshComponent",
@@ -65,5 +67,18 @@ for token in [
     "HISM",
 ]:
     require(doc, token, "environment visual feedback canonical doc")
+
+for token in [
+    "LastObservedRuntimeGeneration",
+]:
+    require(dynamic_h, token, "dynamic environment runtime reset header")
+
+for token in [
+    "Bridge->GetRuntimeGeneration()",
+    "RuntimeGeneration != LastObservedRuntimeGeneration",
+    "bRuntimeReplaced",
+    "bForce || bRuntimeReplaced",
+]:
+    require(dynamic_cpp, token, "dynamic environment runtime reset implementation")
 
 print("Environmental visual feedback structural validation: PASS")

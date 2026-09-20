@@ -201,6 +201,7 @@ private:
 
     float RefreshAccumulator = 0.0f;
     int64 LastAppliedSimulationMinute = TNumericLimits<int64>::Lowest();
+    int64 LastObservedRuntimeGeneration = -1;
     float FallbackVisualTime = 0.0f;
     float FallbackRainIntensity01 = 0.0f;
     float FallbackSnowIntensity01 = 0.0f;
