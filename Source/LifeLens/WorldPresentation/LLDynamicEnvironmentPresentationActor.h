@@ -44,6 +44,7 @@ private:
     void ConfigureFallbackPrecipitation();
     void UpdateEffectAnchor();
     void UpdateFallbackPrecipitation(float DeltaSeconds);
+    void ClearTransientEnvironmentPresentation();
     void RefreshFromCore(bool bForce);
     void ApplyLighting(
         const FLLCoreSkyPresentationObservation& Sky,
