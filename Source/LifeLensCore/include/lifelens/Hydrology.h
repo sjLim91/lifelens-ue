@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <cmath>
 
 #include "MacroWorldGenesis.h"
 
@@ -105,6 +106,162 @@ inline bool isFreshSurfaceWater(const HydrologyFacts& facts)
         && facts.surfaceKind != SurfaceWaterKind::Ocean
         && facts.salinity == WaterSalinity::Fresh
         && facts.surfaceAvailability > 0.0;
+}
+
+struct SurfaceWaterGroundTraversalProfile {
+    // Gameplay/ground-locomotion authority. This is intentionally separate
+    // from Unreal presentation width/radius hints.
+    bool blocksGroundTraversal = false;
+    bool linearChannel = false;
+    double halfWidthCells = 0.0;
+    double radiusCells = 0.0;
+};
+
+inline GridPos surfaceWaterCenterGrid(const HydrologyFacts& facts)
+{
+    const GridPos origin = chunkOriginGrid(facts.coord);
+    const int half = WorldChunkSpanGridCells / 2;
+    return {origin.x + half, origin.y + half};
+}
+
+inline SurfaceWaterGroundTraversalProfile
+deriveSurfaceWaterGroundTraversalProfile(const HydrologyFacts& facts)
+{
+    SurfaceWaterGroundTraversalProfile result;
+    if(!isFreshSurfaceWater(facts)) return result;
+
+    switch(facts.surfaceKind){
+        case SurfaceWaterKind::Spring:
+            result.blocksGroundTraversal = true;
+            result.linearChannel = true;
+            result.halfWidthCells =
+                0.5 * (0.65 + 0.85 * facts.surfaceAvailability);
+            break;
+        case SurfaceWaterKind::Stream:
+            result.blocksGroundTraversal = true;
+            result.linearChannel = true;
+            result.halfWidthCells =
+                0.5 * (0.95
+                    + 1.35 * facts.surfaceAvailability
+                    + 0.45 * facts.flowPotential);
+            break;
+        case SurfaceWaterKind::River:
+            result.blocksGroundTraversal = true;
+            result.linearChannel = true;
+            result.halfWidthCells =
+                0.5 * (1.85
+                    + 2.75 * facts.surfaceAvailability
+                    + 1.10 * facts.flowPotential);
+            break;
+        case SurfaceWaterKind::Lake:
+            result.blocksGroundTraversal = true;
+            result.radiusCells =
+                2.50 + 4.25 * facts.surfaceAvailability;
+            break;
+        case SurfaceWaterKind::Wetland:
+            // Until terrain-cost movement exists, visible standing wetland
+            // water is treated as a hard ground-traversal footprint.
+            result.blocksGroundTraversal = true;
+            result.radiusCells =
+                3.00 + 4.00 * facts.surfaceAvailability;
+            break;
+        case SurfaceWaterKind::Coast:
+        case SurfaceWaterKind::Ocean:
+        case SurfaceWaterKind::None:
+        default:
+            break;
+    }
+
+    result.halfWidthCells = std::max(0.0, result.halfWidthCells);
+    result.radiusCells = std::max(0.0, result.radiusCells);
+    return result;
+}
+
+inline bool surfaceWaterGroundContainsGrid(
+    const HydrologyFacts& facts,
+    GridPos position)
+{
+    const SurfaceWaterGroundTraversalProfile profile =
+        deriveSurfaceWaterGroundTraversalProfile(facts);
+    if(!profile.blocksGroundTraversal) return false;
+
+    const GridPos center = surfaceWaterCenterGrid(facts);
+    const double px = static_cast<double>(position.x);
+    const double py = static_cast<double>(position.y);
+    const double ax = static_cast<double>(center.x);
+    const double ay = static_cast<double>(center.y);
+
+    if(profile.linearChannel && facts.hasDownstream){
+        const GridPos downstreamOrigin = chunkOriginGrid(facts.downstream);
+        const int half = WorldChunkSpanGridCells / 2;
+        const double bx = static_cast<double>(downstreamOrigin.x + half);
+        const double by = static_cast<double>(downstreamOrigin.y + half);
+        const double abx = bx - ax;
+        const double aby = by - ay;
+        const double ab2 = abx * abx + aby * aby;
+        const double t = ab2 > 0.0
+            ? std::max(0.0, std::min(
+                1.0,
+                ((px - ax) * abx + (py - ay) * aby) / ab2))
+            : 0.0;
+        const double dx = px - (ax + t * abx);
+        const double dy = py - (ay + t * aby);
+        return dx * dx + dy * dy
+            <= profile.halfWidthCells * profile.halfWidthCells;
+    }
+
+    const double radius = profile.linearChannel
+        ? profile.halfWidthCells
+        : profile.radiusCells;
+    const double dx = px - ax;
+    const double dy = py - ay;
+    return dx * dx + dy * dy <= radius * radius;
+}
+
+inline GridPos surfaceWaterGroundAccessGrid(const HydrologyFacts& facts)
+{
+    const SurfaceWaterGroundTraversalProfile profile =
+        deriveSurfaceWaterGroundTraversalProfile(facts);
+    const GridPos center = surfaceWaterCenterGrid(facts);
+    if(!profile.blocksGroundTraversal) return center;
+
+    const double footprintRadius = profile.linearChannel
+        ? profile.halfWidthCells
+        : profile.radiusCells;
+    const int offset = std::max(
+        1,
+        static_cast<int>(std::ceil(footprintRadius)) + 1);
+
+    int dx = 0;
+    int dy = 0;
+    if(profile.linearChannel && facts.hasDownstream){
+        const int flowX = facts.downstream.x - facts.coord.x;
+        const int flowY = facts.downstream.y - facts.coord.y;
+        // Choose one deterministic bank. Downstream is cardinal by contract.
+        const bool opposite =
+            (facts.surfaceWaterId & 1ULL) != 0ULL;
+        dx = -flowY;
+        dy = flowX;
+        if(opposite){
+            dx = -dx;
+            dy = -dy;
+        }
+    }else{
+        switch(static_cast<int>(facts.surfaceWaterId & 3ULL)){
+            case 0: dx = 1; break;
+            case 1: dx = -1; break;
+            case 2: dy = 1; break;
+            default: dy = -1; break;
+        }
+    }
+
+    GridPos access{center.x + dx * offset, center.y + dy * offset};
+    if(surfaceWaterGroundContainsGrid(facts, access)){
+        // Defensive deterministic fallback: the access point must never be
+        // inside the authoritative water footprint.
+        access = {center.x + offset, center.y};
+    }
+    return access;
 }
 
 inline bool isCardinalNeighbour(ChunkCoord a, ChunkCoord b)
