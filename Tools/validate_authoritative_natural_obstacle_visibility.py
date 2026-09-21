@@ -57,7 +57,20 @@ ambient = world.index(
     "Place(TreeInstances, TreeCount",
     authoritative,
 )
-assert authoritative < ambient
+resource_patch = world.index(
+    "for (const FLLCoreNaturalResourcePatchObservation& Patch : Chunk.ResourcePatches)",
+    authoritative,
+)
+assert authoritative < resource_patch < ambient, (
+    "authoritative obstacle/resource visuals must be placed before ambient ecology"
+)
+resource_block_end = world.index(
+    "Place(TreeInstances, TreeCount",
+    resource_patch,
+)
+resource_block = world[resource_patch:resource_block_end]
+assert "*PlacedCounter >= MaxTotal" not in resource_block
+assert "*PlacedCounter < MaxTotal" not in resource_block
 
 # WorldPresentation art itself must remain non-authoritative for collision.
 # LLWorldObstacleCollisionProxyActor is the sole movement-collision projection.
