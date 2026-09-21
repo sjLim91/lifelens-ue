@@ -1774,7 +1774,12 @@ void ALLWorldPresentationActor::BuildChunkDressing(
             Obstacle.Kind == ELLCoreNaturalObstacleKind::Rock
                 ? &RockInstances
                 : &TreeInstances;
-        if (!Target || Target->Num() == 0 || Obstacle.ObstacleId <= 0)
+        if (!Target
+            || Target->Num() == 0
+            || Obstacle.ObstacleId <= 0
+            || Obstacle.HalfExtentXCells <= 0.0f
+            || Obstacle.HalfExtentYCells <= 0.0f
+            || Obstacle.HalfHeightCells <= 0.0f)
         {
             continue;
         }
