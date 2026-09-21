@@ -66,6 +66,42 @@ int main()
         CHECK(resolved.y == patch.pos.y);
     }
 
+    // Generated v2 Water stays at the hydrology center as resource authority,
+    // while Gather resolves to a deterministic dry-bank access position.
+    bool checkedWaterAccess = false;
+    bool checkedNonWaterAccess = false;
+    for(const auto& chunk : first.world().generatedNaturalChunks){
+        for(const auto& patch : chunk.resourcePatches){
+            GridPos exact{};
+            GridPos access{};
+            CHECK(resolveCivilizationResourceGridPosition(
+                first.world(), patch.nodeId, exact));
+            CHECK(resolveCivilizationResourceAccessGridPosition(
+                first.world(), patch.nodeId, access));
+
+            if(patch.material == MaterialKind::Water){
+                const HydrologyFacts facts =
+                    deriveHydrologyFacts(first.world().genesisIdentity(), chunk.coord);
+                CHECK(isFreshSurfaceWater(facts));
+                CHECK(exact == surfaceWaterCenterGrid(facts));
+                CHECK(surfaceWaterGroundContainsGrid(facts, exact));
+                CHECK(!surfaceWaterGroundContainsGrid(facts, access));
+                CHECK(chunkCoordForGrid(access) == chunk.coord);
+
+                GridPos replayAccess{};
+                CHECK(resolveCivilizationResourceAccessGridPosition(
+                    second.world(), patch.nodeId, replayAccess));
+                CHECK(replayAccess == access);
+                checkedWaterAccess = true;
+            }else if(!checkedNonWaterAccess){
+                CHECK(access == exact);
+                checkedNonWaterAccess = true;
+            }
+        }
+    }
+    CHECK(checkedWaterAccess);
+    CHECK(checkedNonWaterAccess);
+
     // Storage is also a Core-owned spatial entity. Presentation should only
     // consume this resolved GridPos, never guess a nearby scenery object.
     const GridPos center = first.world().initialStartRegionCenterGrid();
@@ -84,6 +120,8 @@ int main()
     GridPos missing{};
     CHECK(!resolveCivilizationResourceGridPosition(first.world(), 0, missing));
     CHECK(!resolveCivilizationResourceGridPosition(first.world(), 999999999ULL, missing));
+    CHECK(!resolveCivilizationResourceAccessGridPosition(first.world(), 0, missing));
+    CHECK(!resolveCivilizationResourceAccessGridPosition(first.world(), 999999999ULL, missing));
     CHECK(!resolveCivilizationStorageGridPosition(first.world(), 0, missing));
     CHECK(!resolveCivilizationStorageGridPosition(first.world(), 999999999ULL, missing));
 
