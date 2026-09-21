@@ -72,4 +72,14 @@ component = world[component_start:component_end]
 assert "SetCollisionEnabled(ECollisionEnabled::NoCollision)" in component
 assert "SetCanEverAffectNavigation(false)" in component
 
+# Integration guard with the Android visible-terrain grounding audit: local
+# terrain may expose query-only WorldStatic geometry for mesh grounding, but
+# natural dressing itself must remain NoCollision and Core obstacle proxies
+# remain the sole movement blockers.
+if "#if PLATFORM_ANDROID" in world:
+    assert "EnableVisualGroundQuery" in world
+    assert "SetCollisionEnabled(ECollisionEnabled::QueryOnly)" in world
+    assert "SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block)" in world
+    assert "SetCollisionEnabled(ECollisionEnabled::NoCollision)" in component
+
 print("LifeLens authoritative natural obstacle visibility: PASS")
