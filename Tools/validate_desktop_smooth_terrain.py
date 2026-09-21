@@ -49,8 +49,9 @@ assert "TObjectPtr<UProceduralMeshComponent>" not in header
 assert "SettlementFlattenRadiusUU" not in header
 assert "SettlementBlendBandUU" not in header
 assert "LocalReliefAmplitudeUU = 220.0f" in terrain_contract
-assert "SettlementFlattenRadiusUU = 650.0f" in terrain_contract
-assert "SettlementBlendBandUU = 900.0f" in terrain_contract
+assert "SettlementFlattenRadiusUU" not in terrain_contract
+assert "SettlementBlendBandUU" not in terrain_contract
+assert "FacilityReliefBlend(" in terrain_contract
 assert "FMath::Lerp(CenterSurface, CornerSurface, 0.72f)" in terrain_contract
 
 world_presentation = (root / "Source/LifeLens/WorldPresentation/LLWorldPresentationActor.cpp").read_text(encoding="utf-8")
