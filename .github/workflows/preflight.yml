@@ -104,6 +104,9 @@ jobs:
       - name: Validate World v2 contract foundation
         run: python Tools/validate_world_v2_contract_foundation.py
 
+      - name: Validate Web client foundation
+        run: python Tools/validate_web_client_foundation.py
+
 
       - name: Validate photoreal facility completion
         run: python Tools/validate_photoreal_facility_completion.py
