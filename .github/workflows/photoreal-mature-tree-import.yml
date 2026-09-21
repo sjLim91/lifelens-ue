@@ -105,6 +105,7 @@ jobs:
             -v "$GITHUB_WORKSPACE:/workspace" \
             -e LL_ASSET_STAGING=/workspace/assets_staging \
             -e LL_PHOTOREAL_MODEL_IDS=pachira_aquatica_01,island_tree_02 \
+            -e LL_PHOTOREAL_COMBINE_STATIC_MESHES=1 \
             -w "$UE_ROOT_IN_CONTAINER" \
             "$UE_IMAGE" \
             bash -lc './Engine/Binaries/Linux/UnrealEditor-Cmd /workspace/LifeLens.uproject \
