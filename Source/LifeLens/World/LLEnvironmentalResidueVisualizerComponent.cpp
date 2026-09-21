@@ -155,23 +155,19 @@ FVector ULLEnvironmentalResidueVisualizerComponent::ResolveSurfaceLocation(
     const int32 ChunkX = ChunkCoordForGrid(GridX);
     const int32 ChunkY = ChunkCoordForGrid(GridY);
     FLLCoreTerrainPresentationObservation Terrain;
-    bool bHasTerrain =
+    const bool bMaterializedTerrain =
         CoreBridge.GetTerrainPresentationObservation(
             ChunkX,
             ChunkY,
             Terrain)
         && Terrain.bAvailable;
-    if (!bHasTerrain)
-    {
-        bHasTerrain =
-            CoreBridge.GetTerrainPreviewObservation(
+
+    if (!bMaterializedTerrain
+        && (!CoreBridge.GetTerrainPreviewObservation(
                 ChunkX,
                 ChunkY,
                 Terrain)
-            && Terrain.bAvailable;
-    }
-
-    if (!bHasTerrain)
+            || !Terrain.bAvailable))
     {
         Location.Z += SurfaceOffsetUU;
         return Location;
@@ -182,13 +178,17 @@ FVector ULLEnvironmentalResidueVisualizerComponent::ResolveSurfaceLocation(
             * LLWorldSpatialContract::GridCellSizeUU,
         static_cast<float>(GridY - World.InitialCenterGridY)
             * LLWorldSpatialContract::GridCellSizeUU);
-    const float SurfaceZUU =
-        LLTerrainPresentationContract::LocalSurfaceZUU(
+    const float SurfaceZUU = bMaterializedTerrain
+        ? LLTerrainPresentationContract::LocalSurfaceZUU(
             World,
             Terrain,
             SurfaceLocationUU,
             FVector2D::ZeroVector,
-            FacilityCentersUU);
+            FacilityCentersUU)
+        : LLTerrainPresentationContract::RegionalSurfaceZUU(
+            World,
+            Terrain,
+            SurfaceLocationUU);
 
     Location.Z = OwnerLocation.Z + SurfaceZUU + SurfaceOffsetUU;
     return Location;
