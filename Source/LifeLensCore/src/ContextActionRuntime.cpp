@@ -37,6 +37,40 @@ bool sameGridPosition(GridPos a,GridPos b)
     return a.x==b.x && a.y==b.y;
 }
 
+bool sameDependentCareHousehold(
+    const HouseholdBook& households,
+    CharacterId caregiver,
+    CharacterId child)
+{
+    const Household* caregiverHome=households.householdOf(caregiver);
+    const Household* childHome=households.householdOf(child);
+    return caregiverHome!=nullptr
+        && childHome!=nullptr
+        && caregiverHome->id==childHome->id;
+}
+
+bool closeDependentCareKin(
+    const GenealogyBook& genealogy,
+    CharacterId caregiver,
+    CharacterId child)
+{
+    const KinshipType kinship=genealogy.relationBetween(caregiver,child);
+    return kinship==KinshipType::Grandparent
+        || kinship==KinshipType::Sibling
+        || kinship==KinshipType::HalfSibling;
+}
+
+bool hasLivingBiologicalParent(
+    World& world,
+    const Character& child)
+{
+    for(CharacterId parentId:child.parentIds){
+        Character* parent=findContextCharacter(world,parentId);
+        if(parent!=nullptr && parent->alive) return true;
+    }
+    return false;
+}
+
 bool validatePendingSanitationSite(const World& world,const PendingContextAction& pending)
 {
     if(pending.sanitationSiteId==0) return false;
@@ -360,7 +394,31 @@ bool Simulation::completeContextAction(
 
         case ContextActionKind::Parenting: {
             Character* child=findContextCharacter(world_,pending.parentingTarget);
-            if(child==nullptr || !child->alive || !isParentOf(actor,*child)){
+            const bool biologicalParent =
+                child!=nullptr && isParentOf(actor,*child);
+            const bool eligibleFallbackAdult =
+                child!=nullptr
+                && !biologicalParent
+                && actor.alive
+                && child->alive
+                && lifeStageProfile(actor.lifeStage).canParent;
+            const bool householdCaregiver =
+                eligibleFallbackAdult
+                && sameDependentCareHousehold(
+                    households_,actor.id,child->id);
+            const bool kinCaregiver =
+                eligibleFallbackAdult
+                && closeDependentCareKin(
+                    genealogy_,actor.id,child->id);
+            const bool orphanCommunityCaregiver =
+                eligibleFallbackAdult
+                && !hasLivingBiologicalParent(world_,*child);
+            const bool fallbackCaregiver =
+                householdCaregiver
+                || kinCaregiver
+                || orphanCommunityCaregiver;
+            if(child==nullptr || !child->alive
+               || (!biologicalParent && !fallbackCaregiver)){
                 pending.clear();
                 return false;
             }
@@ -383,7 +441,8 @@ bool Simulation::completeContextAction(
             Relationship& parentToChild=relationships_.getOrCreate(actor.id,child->id);
             Relationship& childToParent=relationships_.getOrCreate(child->id,actor.id);
             const ParentingResult result=applyParentingAction(
-                actor,*child,parentToChild,childToParent,pending.parentingAction,context);
+                actor,*child,parentToChild,childToParent,
+                pending.parentingAction,context,fallbackCaregiver);
             if(result!=ParentingResult::Performed){
                 pending.clear();
                 return false;

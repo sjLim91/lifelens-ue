@@ -44,6 +44,9 @@ jobs:
       - name: Validate runtime replacement projection
         run: python Tools/validate_runtime_replacement_projection.py
 
+      - name: Validate household dependent-care fallback
+        run: python Tools/validate_household_dependent_care.py
+
       - name: Validate residue terrain grounding
         run: python Tools/validate_residue_terrain_grounding.py
 

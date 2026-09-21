@@ -211,11 +211,13 @@ inline ParentingResult applyParentingAction(
     Relationship& caregiverToChild,
     Relationship& childToCaregiver,
     ParentingAction action,
-    const ParentingContext& context)
+    const ParentingContext& context,
+    bool authorizedFallbackCaregiver=false)
 {
     if(caregiver.id==0 || child.id==0 || caregiver.id==child.id) return ParentingResult::Invalid;
     if(!caregiver.alive || !child.alive) return ParentingResult::Invalid;
-    if(!isParentOf(caregiver,child)) return ParentingResult::NotParent;
+    if(!isParentOf(caregiver,child) && !authorizedFallbackCaregiver)
+        return ParentingResult::NotParent;
     if(!parentingActionAllowed(action,child.lifeStage)) return ParentingResult::NotAllowedForStage;
     if(action==ParentingAction::Feed && !context.foodAvailable && !context.waterAvailable)
         return ParentingResult::UnavailableResources;
