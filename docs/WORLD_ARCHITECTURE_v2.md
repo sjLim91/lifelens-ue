@@ -864,15 +864,15 @@ World v2 foundation이 성공했다고 말할 수 있는 최소 기준:
 
 ## 21. 실행 상태
 
-현재 상태는 **IMPLEMENTATION ACTIVE — W2-0**.
+현재 상태는 **IMPLEMENTATION ACTIVE — W2-2 / W2-3 병렬**.
 
 2026-09-21 사용자의 시작 사인으로 World v2 구현 잠금이 해제되었다.
 
 현재 실행 경계:
 - Jjun Core/World/Simulation provider contract부터 진행.
 - 이미 구현된 authoritative materialized chunk enumeration은 재구현하지 않는다.
-- 첫 신규 계약은 spawn-independent world address + observer-centered deterministic terrain preview다.
-- WorldPresentation/Environment visual은 Dagyeom ownership을 존중하고 provider 준비 뒤 Integration Request/Assist Lock으로 연결한다.
+- W2-0 spawn-independent world address + centered terrain preview는 #374로 merge 완료. W2-1 continuous terrain Core field는 #375로 merge 완료. 현재 W2-2 hydrology graph(#378)와 W2-3 observer streaming(#379)을 병렬 진행한다.
+- provider 준비 뒤 Jjun이 WorldPresentation/Environment visual까지 직접 통합 구현할 수 있다. Dagyeom은 runtime screenshot review/visual polish 협업으로 활용한다.
 - Character appearance/motion/context 본격 audit/수정은 World v2 visual/physical foundation 이후까지 보류한다.
 - 문서와 audit ledger는 milestone close마다 GitHub truth와 동기화한다.
 
@@ -920,3 +920,13 @@ World history는 UI event log에만 남지 않고 필요할 때 환경에도 흔
 
 이 hook들은 첫 World v2 pass에서 모두 구현하는 요구사항이 아니다.
 단, Core/world identity와 persistence 구조가 나중에 이 기능들을 막지 않도록 한다.
+
+## 23. Implementation ownership update
+
+2026-09-21 사용자 결정으로 World v2는 human ownership handoff를 최소화한다.
+
+- Jjun이 Core provider부터 WorldPresentation/Environment integration까지 end-to-end로 진행 가능.
+- 별도 Dagyeom owner 승인을 기다리는 구조는 사용하지 않는다.
+- Dagyeom은 실제 화면을 보며 visual QA/polish를 돕거나 사용자가 명시적으로 넘긴 시각 작업을 수행할 수 있다.
+- Core/World truth vs Presentation consumer라는 소프트웨어 authority 분리는 그대로 유지한다.
+- active same-file branch가 존재하면 충돌 조정 후 진행한다.
