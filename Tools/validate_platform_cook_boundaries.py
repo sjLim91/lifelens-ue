@@ -128,6 +128,7 @@ require(
         "/Game/Environment/Photoreal/PolyHaven/stone_fire_pit/",
         "/Game/Environment/Photoreal/PolyHaven/wicker_basket_01/",
         "/Game/Environment/Photoreal/PolyHaven/wooden_axe/",
+        "/Game/Environment/Photoreal/PolyHaven/dead_tree_trunk/",
     ),
     "Shared compact facility hero refs",
 )

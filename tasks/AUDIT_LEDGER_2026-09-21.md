@@ -5,16 +5,13 @@
 
 ## Current checkpoint
 
-- main: `18b95d597d7f32c0dd16084b783f1a57534fc283`
-- latest merged/landed audit fixes on main:
-  - #364 coast nature/resource visibility recovery — merged.
-  - terrain relief scale reinforcement v2 — landed on main.
-  - opening settlement excessive ecology clearing reduction v2 — landed on main.
-- open:
-  - #370 CC0 photoreal broadleaf + hero canopy import.
-  - #372 Desktop photoreal canopy runtime tier; depends on #370 generated assets.
-  - #373 visible-water fallback terrain-burial fix.
-
+- source checkpoint before this docs sync: `255e0e49b6dc64987c7ba195d3674d43a4456908`.
+- #370 CC0 photoreal broadleaf + hero canopy import — **MERGED**.
+- #372 Desktop photoreal canopy runtime tier — **MERGED** after exact-head Preflight #1360 + Unreal Linux Compile #620 PASS.
+- #373 visible-water fallback terrain-clearance fix — **MERGED** after Preflight #1355 + Unreal Linux Compile #619 PASS.
+- #364 coast nature/resource visibility recovery — **MERGED**.
+- terrain relief v2 + opening-settlement ecology clearing v2 — landed on main.
+- Poly Haven mature-canopy provenance is recorded in `Content/Environment/PROVENANCE.md`.
 ## Resume rule — 반드시 지킨다
 
 1. 세션이 끊겨도 처음부터 다시 검사하지 않는다.
@@ -39,7 +36,7 @@
 - Planet / Surface Region / Chunk / Local Surface identity and hierarchy **존재 확인 완료**.
 - Local / Regional / Planetary / Orbital / Interplanetary scale enum/contract **존재 확인 완료**.
 - deterministic hydrology contract and explicit water-body observation path **구조 확인 완료**.
-- visible-water fallback existence **확인 완료**; 현재 남은 문제는 #373의 terrain-clearance 결함.
+- visible-water fallback + terrain clearance **#373까지 수정/검증/병합 완료**.
 - coast ecology hard-zero/resource suppression defect **#364에서 수정 완료**.
 
 ### C. Terrain / ecology runtime-visibility defects already handled
@@ -47,27 +44,29 @@
 - opening settlement vegetation over-clear → main의 ecology clearing v2로 축소.
 - coast에서 자연환경/자원 비가시성 → #364 merged.
 
-## CURRENT — 지금 여기서만 이어간다
+## CURRENT — 캐릭터 진입 전 환경/그래픽 source closeout 완료
 
-### 1. Water runtime visibility closeout
-- #373 검증/병합 여부 확인.
-- 목적: fallback water가 opaque terrain 아래에 묻히지 않는지 보장.
-- #373이 green + merge되면 water fallback은 DONE으로 이동.
+### Water / nature / terrain
+- #373 fallback water terrain clearance — DONE.
+- #370 asset import + #372 runtime canopy consumer — DONE.
+- Android never-cook boundary contains the desktop-only mature canopy pair.
+- Poly Haven provenance for the new pair is recorded and guarded by Preflight.
+- platform cook policy records the same exclusions/shared exceptions.
 
-### 2. Zero-cost production nature asset integration
-- #370 asset import gate 결과 확인.
-- #370 main 반영 후 #372 runtime consumer 재검증/병합.
-- Android cook exclusion / desktop-only hard-reference boundary 유지.
-- 이미 탈락한 oversized candidates를 같은 wave에서 다시 probe하지 않는다.
+### Source-level residual classification
+- authored Rain/Snow Niagara assets are still absent from the repository; the existing primitive precipitation path is an intentional packaged **safety fallback**, not final visual acceptance.
+- actual rainfall/snowfall look remains runtime visual QA / future authored-VFX work.
+- `island_tree_02` is a sparse desktop hero canopy; Windows/macOS native performance is still a runtime profiling gate.
+- these runtime-only quality/performance checks belong to final native QA and do not justify re-scanning completed Earth/hydrology contracts.
 
-## NEXT — CURRENT 끝난 뒤 순서
+### Mandatory handoff boundary
+- **Do not start the character appearance/motion/context manual audit until the user is told that the audit has reached the character boundary.**
+## NEXT — user notification 이후에만 진행
 
-1. graphics/materials/platform content boundary residual audit.
-2. character appearance / motion / context correctness.
-3. lifecycle / family / society continuity residual audit.
-4. Observer UI / camera / scale-transition **consumer wiring** audit.
-5. Android-first packaging + Windows/macOS native QA + Save/Load + long-run/performance/crash gates.
-
+1. character appearance / motion / context correctness.
+2. lifecycle / family / society continuity residual audit.
+3. Observer UI / camera / scale-transition **consumer wiring** audit.
+4. Android-first packaging + Windows/macOS native QA + Save/Load + long-run/performance/crash gates.
 ## Observer scale 중복 방지 메모
 
 WorldHierarchy의 scale enum과 Planet/Region identity 존재 여부는 이미 확인했다.

@@ -38,12 +38,14 @@ Platform cook config is authoritative even during that migration.
   - boulder_01
   - fir_sapling
   - pine_sapling_small
+  - pachira_aquatica_01
+  - island_tree_02
   - shrub_02
   - shrub_03
   - tree_stump_01
   - weed_plant_02
 
-At the time this policy was introduced those excluded nature source groups account for more than 25 MiB in the repository before platform cooking/compression.
+Those desktop-only nature groups are enforced by `Config/Android/AndroidGame.ini` and the cook-boundary validator. The mature `island_tree_02` hero mesh is never part of the Android catalogue or far-world ring.
 
 Android `LLWorldPresentationActor` hard references are compile-time separated and use a small Quaternius nature set:
 - Pine_1.
@@ -62,6 +64,7 @@ The following compact facility hero props remain shared for now:
 - `stone_fire_pit`.
 - `wicker_basket_01`.
 - `wooden_axe`.
+- `dead_tree_trunk` — shared completed-timber structure/log presentation.
 
 Together they are small compared with the nature catalogue and preserve facility readability on Android.
 

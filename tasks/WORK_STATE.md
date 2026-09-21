@@ -20,7 +20,7 @@
 >
 > Historical audit: `docs/INTEGRATED_AUDIT_2026-09-17.md` (point-in-time only; do not treat as live status).
 
-Last reconciled: **2026-09-21 KST at main `3b9ff13c45e74b44f2c1175d92a966cbacac4335`; whole-source audit dedup ledger added after terrain/ecology visibility fixes**.
+Last reconciled: **2026-09-21 KST after #370/#372/#373 merge; environment/graphics source audit reached the mandatory pre-character notification boundary**.
 
 
 ## 2026-09-21 CURRENT — Whole-source audit 후반부 / 지구·인간 완성도 검증
@@ -36,7 +36,10 @@ Current main checkpoint before this docs sync:
 - #360 high-speed route budget — MERGED.
 - #361 dependent care after parent loss — MERGED after Core Tests / Preflight / Unreal Linux Compile PASS.
 - #362 visible-water fallback — MERGED after Preflight / Unreal Linux Compile PASS and post-#361 mergeability refresh.
-- open follow-ups at reconciliation: #370 CC0 canopy import, #372 desktop canopy runtime tier, #373 water fallback terrain clearance.
+- #370 CC0 canopy import — MERGED.
+- #372 desktop canopy runtime tier — MERGED after Preflight #1360 / Unreal Linux Compile #620 PASS.
+- #373 water fallback terrain clearance — MERGED after Preflight #1355 / Unreal Linux Compile #619 PASS.
+- mature-canopy provenance is recorded; Android cook exclusion and desktop-only runtime tier are guarded.
 
 Current audit lane:
 - Earth / terrain / hydrology / vegetation / ecology runtime visibility.
@@ -49,13 +52,15 @@ Standing execution rule:
 - do not stop the whole-source audit after a successful merge.
 
 Next audit order:
-1. close #373 water runtime visibility clearance.
-2. close #370/#372 zero-cost photoreal canopy import/runtime integration.
-3. graphics / materials / platform content boundary residual audit.
-4. character appearance / motion / context correctness.
-5. lifecycle / family / society continuity.
-6. Observer UI / camera / scale-transition **consumer wiring** audit — do not re-check already confirmed scale enums/contracts.
-7. Android-first packaging, Windows/macOS native QA, Save/Load, long-run/performance/crash gates.
+1. **notify the user before entering character audit — mandatory boundary reached.**
+2. character appearance / motion / context correctness.
+3. lifecycle / family / society continuity.
+4. Observer UI / camera / scale-transition **consumer wiring** audit — do not re-check already confirmed scale enums/contracts.
+5. Android-first packaging, Windows/macOS native QA, Save/Load, long-run/performance/crash gates.
+
+Environment/graphics runtime-only carryovers:
+- authored Rain/Snow Niagara is not yet present; packaged primitive precipitation remains a safety fallback and requires later visual QA/authored-VFX work.
+- sparse high-poly hero canopy requires Windows/macOS native performance profiling before final visual acceptance.
 
 Visual completion rule:
 > source presence or green compile alone is not visual acceptance. The runtime must visibly show the intended terrain, water, vegetation, characters and interaction context.
@@ -68,7 +73,7 @@ External asset rule:
 
 - user froze further Jjun-side visual polishing and handed Presentation back to Dagyeom.
 - current visual baseline is main after #282: `c58c63739c13cda24cd9994e26ff6ac5b1d43e76`.
-- #281 / #283 / #284 are Dagyeom-owned review/decision items; Jjun does not auto-merge them.
+- historical note: #281 / #283 / #284 were later merged on 2026-09-19; this section is no longer live execution state.
 - visual CI success is not runtime visual acceptance.
 - Jjun active implementation lane is **C1-D Durable Subsistence**:
   - authoritative water carrying/storage.

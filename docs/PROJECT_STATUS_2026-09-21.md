@@ -7,7 +7,7 @@
 ## 1. 현재 체크포인트
 
 - 저장소: `sjLim91/lifelens-ue`
-- 기준 main: `4edae40b58a671e84032d17e1e84c39eae18d57b`
+- source checkpoint before this docs sync: `255e0e49b6dc64987c7ba195d3674d43a4456908`
 - #360 `[Audit] Consume high-speed movement budget across route waypoints`
   - main 병합 완료.
   - 16x/64x 고속 시뮬레이션에서 한 프레임 이동 예산을 단일 waypoint에 버리지 않고 최대 8 segment까지 연속 소비하도록 보강.
@@ -22,6 +22,23 @@
   - #361 병합 뒤 최신 main mergeability를 다시 확인하고 main 병합 완료.
   - Unreal Water 표시 경로가 실패해도 실제 수계가 화면에서 완전히 사라지지 않도록 presentation safety surface를 추가.
 
+## 1-A. 자연환경/그래픽 source closeout
+
+- #364 해안 자연환경/자원 가시성 복구 — MERGED.
+- 평면처럼 보이던 terrain relief scale 보강 v2 — main 반영.
+- 시작 정착지의 과도한 식생 제거 축소 v2 — main 반영.
+- #373 water fallback 지형 매몰 수정 — Preflight #1355 / Unreal Linux Compile #619 PASS 후 MERGED.
+- #370 Poly Haven CC0 `pachira_aquatica_01` + `island_tree_02` import — MERGED.
+- #372 Desktop photoreal canopy runtime tier — Preflight #1360 / Unreal Linux Compile #620 PASS 후 MERGED.
+- 새 canopy pair는 Android never-cook + compile-time desktop hard-ref 경계로 분리됨.
+- 신규 external asset provenance를 `Content/Environment/PROVENANCE.md`에 기록했고 Preflight 회귀 guard를 추가한다.
+
+Runtime-only carryover:
+- Rain/Snow authored Niagara asset은 아직 저장소에 없고 primitive precipitation은 packaged safety fallback이다. 실제 시각 품질은 authored VFX/runtime QA 대상으로 남긴다.
+- 고폴리 hero canopy의 Windows/macOS 실제 성능은 native profiling에서 확인한다.
+- 위 항목은 source audit를 처음부터 반복할 이유가 아니며 최종 visual/performance QA track에서 검증한다.
+
+**다음 수동 전수검사 구간은 캐릭터/모션이며, 사용자에게 먼저 알리기 전에는 진입하지 않는다.**
 ## 2. 즉시 실행 순서
 
 1. #360 / #361 / #362가 모두 들어간 최신 main을 기준으로 전수검사 다음 구간을 진행한다.
@@ -29,7 +46,7 @@
 3. 지형/수계/vegetation이 "구현 존재"가 아니라 실제 화면에서 보이도록 검증한다.
 4. 결손 지점에서 현재 asset으로 품질 목표를 달성하기 어렵다면 라이선스가 명확한 비용 0원 asset을 선별해 적용한다.
 5. 수정 단위마다 Preflight / relevant tests / Unreal Compile을 통과시키고 안전한 순서로 main에 병합한다.
-6. 자연환경 이후 캐릭터/모션 -> 생애/사회 -> Observer/UI -> 플랫폼/Save/최종 QA 순으로 계속 진행한다.
+6. 자연환경/그래픽 source closeout 뒤에는 **사용자에게 먼저 보고한 후** 캐릭터/모션 -> 생애/사회 -> Observer/UI -> 플랫폼/Save/최종 QA 순으로 진행한다.
 
 ## 3. 전수검사 잔여 우선순위
 

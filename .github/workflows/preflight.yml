@@ -83,6 +83,9 @@ jobs:
       - name: Validate platform content cook boundaries
         run: python Tools/validate_platform_cook_boundaries.py
 
+      - name: Validate zero-cost asset provenance
+        run: python Tools/validate_zero_cost_asset_provenance.py
+
       - name: Validate Android build and APK integrity contract
         run: python Tools/validate_android_build_pipeline.py
 
