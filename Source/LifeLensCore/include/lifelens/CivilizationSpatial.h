@@ -1,6 +1,7 @@
 #pragma once
 
 #include "World.h"
+#include "Hydrology.h"
 
 namespace lifelens {
 
@@ -47,6 +48,40 @@ inline bool resolveCivilizationResourceGridPosition(
     }
 
     outPosition=node->pos;
+    return true;
+}
+
+inline bool resolveCivilizationResourceAccessGridPosition(
+    const World& world,
+    ResourceNodeId id,
+    GridPos& outPosition)
+{
+    const ResourceNode* node=findCivilizationResourceNodeSpatial(world,id);
+    if(node==nullptr) return false;
+
+    GridPos exact{};
+    if(!resolveCivilizationResourceGridPosition(world,id,exact)) return false;
+
+    // Generation v1 resource locations predate authoritative hydrology.
+    // Preserve their exact spatial behavior for save compatibility.
+    if(world.generationVersion < 2 || node->material != MaterialKind::Water){
+        outPosition=exact;
+        return true;
+    }
+
+    const ChunkCoord coord=chunkCoordForGrid(exact);
+    const HydrologyFacts facts=deriveHydrologyFacts(world.genesisIdentity(),coord);
+    if(!isFreshSurfaceWater(facts)){
+        outPosition=exact;
+        return true;
+    }
+
+    const GridPos access=surfaceWaterGroundAccessGrid(facts);
+    if(surfaceWaterGroundContainsGrid(facts,access)){
+        return false;
+    }
+
+    outPosition=access;
     return true;
 }
 
