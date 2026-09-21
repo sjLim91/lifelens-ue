@@ -27,7 +27,12 @@ for token in (
     assert token in cpp, f"photoreal canopy runtime path missing: {token}"
 
 # The heavyweight hero source must never enter the normal/far catalogue.
-assert "TreeMeshes.Add(PhotoHeroIslandTree.Object)" not in cpp
+# Match the actual statement instead of a raw substring: "TreeMeshes.Add(...)"
+# is itself contained inside the valid "HeroTreeMeshes.Add(...)" spelling.
+assert "{ TreeMeshes.Add(PhotoHeroIslandTree.Object); }" not in cpp
+assert "TreeMeshes.Add(PhotoHeroIslandTree.Object);" not in [
+    line.strip() for line in cpp.splitlines()
+]
 assert "FarHeroTree" not in cpp
 
 # Android must retain the lightweight mobile catalogue and explicitly exclude
