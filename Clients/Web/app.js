@@ -1,9 +1,9 @@
 import { LifeLensCoreClient } from "./core-adapter.js";
-import { TruthMapRenderer } from "./truth-map-renderer.js";
+import { WorldSurfaceRenderer } from "./world-surface-renderer.js";
 
 const core = new LifeLensCoreClient();
 const canvas = document.querySelector("#worldCanvas");
-const renderer = new TruthMapRenderer(canvas);
+const renderer = new WorldSurfaceRenderer(canvas);
 
 const ui = {
   status: document.querySelector("#coreStatus"),
@@ -158,9 +158,7 @@ async function boot() {
     navigator.serviceWorker.register("./sw.js").catch(() => {});
   }
 
-  ui.rendererLabel.textContent = navigator.gpu
-    ? "WebGPU capable · truth preview"
-    : "Fallback truth preview";
+  ui.rendererLabel.textContent = renderer.mode;
 
   try {
     await core.load();
