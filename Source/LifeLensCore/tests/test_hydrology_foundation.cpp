@@ -87,7 +87,9 @@ int main()
                 assert(profile.linearChannel == replayProfile.linearChannel);
                 assert(profile.halfWidthCells == replayProfile.halfWidthCells);
                 assert(profile.radiusCells == replayProfile.radiusCells);
-                assert(access == surfaceWaterGroundAccessGrid(b));
+                const GridPos replayAccess = surfaceWaterGroundAccessGrid(b);
+                assert(access.x == replayAccess.x);
+                assert(access.y == replayAccess.y);
             }else{
                 const SurfaceWaterGroundTraversalProfile profile =
                     deriveSurfaceWaterGroundTraversalProfile(a);
