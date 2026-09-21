@@ -435,3 +435,13 @@ Decision:
 - 행동별 적절한 motion이 기존 저장소에 없으면 상업적 배포가 가능한 비용 0원 animation/mocap asset을 검색/다운로드/retarget하여 사용할 수 있다.
 - 외부 motion은 zero-cost asset policy의 license/provenance 및 character action-context truth를 반드시 지킨다.
 - World v2 시작 사인 전에는 실제 Character 구현/외부 animation acquisition을 시작하지 않는다.
+
+## 2026-09-21 — Integrated implementation ownership
+
+Decision:
+- retire the hard Jjun-vs-Dagyeom implementation ownership split.
+- Jjun is the default end-to-end implementation owner across Core/World/Simulation/WorldPresentation/Character/UI/Content/platform work when needed for a milestone.
+- Dagyeom is primarily a runtime visual QA, screenshot review and targeted visual-polish collaborator unless the user explicitly delegates a concrete implementation task.
+- this changes human workflow ownership only; simulation authority boundaries do not change.
+- Core/World remains truth, Presentation/Character remain consumers.
+- active same-file branches must still be coordinated and never blindly overwritten.
