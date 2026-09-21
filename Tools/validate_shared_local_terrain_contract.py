@@ -29,6 +29,7 @@ for token in (
 ):
     assert token in contract, f'missing shared local terrain contract token: {token}'
 
+# This validator also acts as the PR synchronize marker for the rebuilt latest-main terrain stack.
 # Local materialized relief must stay within the current resident presentation
 # grounding budget, while regional preview needs substantially larger macro relief.
 motion_h = (root / 'Source/LifeLens/Characters/LLResidentMotionComponent.h').read_text(encoding='utf-8')
