@@ -100,8 +100,6 @@ assert 'EffectiveFarGroundDropUU' in world_cpp, (
     'flat fallback must remain beneath signed regional valleys'
 )
 
-print('Regional terrain preview / World v2 centered-preview structural validation: PASS')
-
 # World v2 consumer must center Regional preview on ObserverInterest rather than
 # the initial spawn chunk.
 refresh_start = world_cpp.index('void ALLWorldPresentationActor::RefreshFromCore')
@@ -115,9 +113,8 @@ assert 'GetRegionalTerrainPreviewObservations(' not in refresh_body
 regional_start = world_cpp.index('void ALLWorldPresentationActor::BuildRegionalTerrainPreview')
 regional_end = world_cpp.index('void ALLWorldPresentationActor::BuildFarEnvironment', regional_start)
 regional_body = world_cpp[regional_start:regional_end]
-assert 'Terrain.ChunkX - ObserverCenterChunk.X' in regional_body
-assert 'Terrain.ChunkY - ObserverCenterChunk.Y' in regional_body
-assert 'Terrain.ChunkX - World.InitialChunkX' not in regional_body
-assert 'Terrain.ChunkY - World.InitialChunkY' not in regional_body
-
+assert 'MaterializedCoords.Contains(Coord)' in regional_body
+assert 'if (Ring == 0)' not in regional_body
 assert 'observer-center tile itself must render' in regional_body
+
+print('Regional terrain preview / World v2 centered-preview structural validation: PASS')
