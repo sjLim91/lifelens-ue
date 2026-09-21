@@ -4,6 +4,7 @@
 #include "Characters/LLResidentCharacter.h"
 #include "Core/LLLifeLensGameMode.h"
 #include "Simulation/LLCoreBridgeSubsystem.h"
+#include "Simulation/LLSimulationSubsystem.h"
 #include "World/LLWorldSpatialContract.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "Camera/CameraActor.h"
@@ -943,6 +944,9 @@ void ALLObserverPlayerController::SyncObservedResidentSelection()
 
     ULLCoreBridgeSubsystem* Bridge =
         GameInstance ? GameInstance->GetSubsystem<ULLCoreBridgeSubsystem>() : nullptr;
+
+    // Runtime replacement validation comes first. A temporarily missing
+    // physical actor/projection during LoadGame must not be mistaken for death.
     if (Bridge)
     {
         const int64 RuntimeGeneration = Bridge->GetRuntimeGeneration();
@@ -950,11 +954,6 @@ void ALLObserverPlayerController::SyncObservedResidentSelection()
         {
             LastObservedCoreRuntimeGeneration = RuntimeGeneration;
 
-            // A selection is meaningful only if that stable resident identity
-            // exists in the newly installed authoritative runtime. Preserve it
-            // across save loads when the resident still exists (including dead
-            // residents shown by lifecycle/history UI), but do not leave the
-            // observer stuck in Quick/Detail for an ID from a different world.
             if (Observation->HasObservedResident())
             {
                 FLLCoreResidentObservation Resident;
@@ -969,16 +968,62 @@ void ALLObserverPlayerController::SyncObservedResidentSelection()
         }
     }
 
-    // Selection can now originate outside this controller (lifecycle cards,
-    // future family/history surfaces). Reframe only when the observed resident
-    // actually changes so manual pan/orbit still suspends follow for the same
-    // selected resident.
+    if (Observation->HasObservedResident())
+    {
+        ULLSimulationSubsystem* Simulation =
+            GameInstance ? GameInstance->GetSubsystem<ULLSimulationSubsystem>() : nullptr;
+        FLLResidentData LivingResident;
+        const bool bProjectedLivingResident =
+            Simulation
+            && Simulation->IsCoreAuthoritativeRuntime()
+            && Simulation->FindResidentById(
+                Observation->GetObservedResidentId(),
+                LivingResident);
+
+        if (Simulation
+            && Simulation->IsCoreAuthoritativeRuntime()
+            && !bProjectedLivingResident
+            && Bridge)
+        {
+            FLLCoreResidentObservation CoreResident;
+            if (Bridge->GetResidentObservation(
+                    Observation->GetObservedResidentId(),
+                    CoreResident)
+                && !CoreResident.bAlive)
+            {
+                const bool bHadPhysicalFocus =
+                    Observation->GetObservationLevel()
+                        != ELLObservationLevel::World
+                    || FocusedResidentId.IsValid()
+                    || bFollowObservedResident
+                    || bWorldEventFocusActive;
+
+                // Preserve stable identity for lifecycle/genealogy history, but
+                // leave the physical Quick/Detail contract and camera follow.
+                Observation->ObserveHistoricalResident(
+                    Observation->GetObservedResidentId());
+                if (bHadPhysicalFocus)
+                {
+                    RestoreWorldOverview();
+                }
+                return;
+            }
+        }
+    }
+
+    // Selection can originate outside this controller (lifecycle cards,
+    // family/history links). A historical selection deliberately stays at
+    // LEVEL 0 and must never try to reacquire a physical resident actor.
     if (!Observation->HasObservedResident())
     {
         if (FocusedResidentId.IsValid())
         {
             RestoreWorldOverview();
         }
+        return;
+    }
+    if (Observation->GetObservationLevel() == ELLObservationLevel::World)
+    {
         return;
     }
 
