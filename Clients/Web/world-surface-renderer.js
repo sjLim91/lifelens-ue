@@ -74,13 +74,13 @@ function createProgram(gl) {
 
 function multiply4(a, b) {
   const out = new Float32Array(16);
-  for (let row = 0; row < 4; row += 1) {
-    for (let col = 0; col < 4; col += 1) {
-      let sum = 0;
-      for (let k = 0; k < 4; k += 1) {
-        sum += a[row * 4 + k] * b[k * 4 + col];
-      }
-      out[row * 4 + col] = sum;
+  for (let column = 0; column < 4; column += 1) {
+    for (let row = 0; row < 4; row += 1) {
+      out[column * 4 + row] =
+        a[0 * 4 + row] * b[column * 4 + 0] +
+        a[1 * 4 + row] * b[column * 4 + 1] +
+        a[2 * 4 + row] * b[column * 4 + 2] +
+        a[3 * 4 + row] * b[column * 4 + 3];
     }
   }
   return out;
@@ -146,6 +146,8 @@ export class WorldSurfaceRenderer {
     this.minDistance = 5;
     this.maxDistance = 90;
     this.drag = null;
+    this.pointers = new Map();
+    this.pinchDistance = null;
     this.vertexCount = 0;
     this.worldExtent = 10;
 
@@ -176,8 +178,6 @@ export class WorldSurfaceRenderer {
     gl.bindVertexArray(null);
 
     gl.enable(gl.DEPTH_TEST);
-    gl.enable(gl.CULL_FACE);
-    gl.cullFace(gl.BACK);
 
     this.mode = "WebGL2 3D truth surface";
     this.resizeObserver = new ResizeObserver(() => this.resize());
@@ -187,13 +187,55 @@ export class WorldSurfaceRenderer {
   }
 
   bindInput() {
+    const pointerDistance = () => {
+      const points = [...this.pointers.values()];
+      if (points.length < 2) return null;
+      return Math.hypot(
+        points[0].x - points[1].x,
+        points[0].y - points[1].y,
+      );
+    };
+
     this.canvas.addEventListener("pointerdown", (event) => {
-      this.drag = { x: event.clientX, y: event.clientY };
       this.canvas.setPointerCapture(event.pointerId);
+      this.pointers.set(event.pointerId, {
+        x: event.clientX,
+        y: event.clientY,
+      });
+      if (this.pointers.size === 1) {
+        this.drag = { x: event.clientX, y: event.clientY };
+      } else {
+        this.drag = null;
+        this.pinchDistance = pointerDistance();
+      }
     });
 
     this.canvas.addEventListener("pointermove", (event) => {
-      if (!this.drag) return;
+      if (!this.pointers.has(event.pointerId)) return;
+      this.pointers.set(event.pointerId, {
+        x: event.clientX,
+        y: event.clientY,
+      });
+
+      if (this.pointers.size >= 2) {
+        const nextDistance = pointerDistance();
+        if (nextDistance && this.pinchDistance) {
+          const scale = this.pinchDistance / nextDistance;
+          this.distance = Math.max(
+            this.minDistance,
+            Math.min(this.maxDistance, this.distance * scale),
+          );
+        }
+        this.pinchDistance = nextDistance;
+        this.draw();
+        return;
+      }
+
+      if (!this.drag) {
+        this.drag = { x: event.clientX, y: event.clientY };
+        return;
+      }
+
       const dx = event.clientX - this.drag.x;
       const dy = event.clientY - this.drag.y;
       this.drag = { x: event.clientX, y: event.clientY };
@@ -202,11 +244,14 @@ export class WorldSurfaceRenderer {
       this.draw();
     });
 
-    const stopDrag = () => {
-      this.drag = null;
+    const stopPointer = (event) => {
+      this.pointers.delete(event.pointerId);
+      this.pinchDistance = pointerDistance();
+      const remaining = [...this.pointers.values()];
+      this.drag = remaining.length === 1 ? { ...remaining[0] } : null;
     };
-    this.canvas.addEventListener("pointerup", stopDrag);
-    this.canvas.addEventListener("pointercancel", stopDrag);
+    this.canvas.addEventListener("pointerup", stopPointer);
+    this.canvas.addEventListener("pointercancel", stopPointer);
 
     this.canvas.addEventListener(
       "wheel",
