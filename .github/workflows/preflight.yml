@@ -77,6 +77,9 @@ jobs:
       - name: Validate visible water fallback
         run: python Tools/validate_visible_water_fallback.py
 
+      - name: Validate coastal ecology visibility
+        run: python Tools/validate_coastal_ecology_visibility.py
+
       - name: Validate platform content cook boundaries
         run: python Tools/validate_platform_cook_boundaries.py
 

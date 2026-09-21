@@ -1677,14 +1677,31 @@ void ALLWorldPresentationActor::BuildChunkDressing(
     constexpr float AmbientDensityGain = 1.22f;
     constexpr float RockDensityGain = 1.12f;
 #endif
-    const int32 TreeCount = bCoastSurface ? 0 : ScaledCount(
-        FMath::Clamp(Fertility * Moisture * AmbientDensityGain, 0.0f, 1.0f),
+    // Coast is still terrestrial surface. Keep it visually sparser than inland
+    // terrain, but never erase all ambient ecology just because a chunk borders
+    // marine water. Ocean chunks already return above and remain vegetation-free.
+    const float CoastTreeDensityScale = bCoastSurface ? 0.32f : 1.0f;
+    const float CoastShrubDensityScale = bCoastSurface ? 0.55f : 1.0f;
+    const float CoastGrassDensityScale = bCoastSurface ? 0.72f : 1.0f;
+    const int32 TreeCount = ScaledCount(
+        FMath::Clamp(
+            Fertility * Moisture * AmbientDensityGain * CoastTreeDensityScale,
+            0.0f,
+            1.0f),
         MaxTreesPerChunk);
-    const int32 ShrubCount = bCoastSurface ? 0 : ScaledCount(
-        FMath::Clamp((Fertility * 0.8f + Moisture * 0.2f) * AmbientDensityGain, 0.0f, 1.0f),
+    const int32 ShrubCount = ScaledCount(
+        FMath::Clamp(
+            (Fertility * 0.8f + Moisture * 0.2f)
+                * AmbientDensityGain * CoastShrubDensityScale,
+            0.0f,
+            1.0f),
         MaxShrubsPerChunk);
-    const int32 GrassCount = bCoastSurface ? 0 : ScaledCount(
-        FMath::Clamp((Fertility * 0.6f + Moisture * 0.4f) * AmbientDensityGain, 0.0f, 1.0f),
+    const int32 GrassCount = ScaledCount(
+        FMath::Clamp(
+            (Fertility * 0.6f + Moisture * 0.4f)
+                * AmbientDensityGain * CoastGrassDensityScale,
+            0.0f,
+            1.0f),
         MaxGrassPerChunk);
     const int32 RockCount = ScaledCount(
         FMath::Clamp(((1.0f - Fertility) * 0.7f + (1.0f - Traversal) * 0.3f) * RockDensityGain, 0.0f, 1.0f),
@@ -1895,17 +1912,9 @@ void ALLWorldPresentationActor::BuildChunkDressing(
     for (const FLLCoreNaturalResourcePatchObservation& Patch : Chunk.ResourcePatches)
     {
         const FString Material = Patch.Material.ToString().ToLower();
-        if (bCoastSurface
-            && (Material.Contains(TEXT("wood"))
-                || Material.Contains(TEXT("timber"))
-                || Material.Contains(TEXT("tree"))
-                || Material.Contains(TEXT("berry"))
-                || Material.Contains(TEXT("plant"))
-                || Material.Contains(TEXT("fiber"))
-                || Material.Contains(TEXT("food"))))
-        {
-            continue;
-        }
+        // Authoritative resource patches must stay visible on terrestrial coast.
+        // Presentation may thin decorative ecology, but it must not hide Core
+        // wood/food/fiber nodes that residents can actually discover and use.
 
         TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>>* Target = nullptr;
         int32* PlacedCounter = nullptr;
