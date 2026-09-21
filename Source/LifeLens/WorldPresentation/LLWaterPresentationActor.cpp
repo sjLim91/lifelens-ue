@@ -1,6 +1,11 @@
 #include "WorldPresentation/LLWaterPresentationActor.h"
 
 #include "Components/SplineComponent.h"
+#include "Components/HierarchicalInstancedStaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "Materials/MaterialInterface.h"
+#include "UObject/ConstructorHelpers.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
@@ -179,11 +184,60 @@ ALLWaterPresentationActor::ALLWaterPresentationActor()
 {
     PrimaryActorTick.bCanEverTick = true;
     PrimaryActorTick.TickInterval = 0.5f;
+
+    FallbackChannelInstances =
+        CreateDefaultSubobject<UHierarchicalInstancedStaticMeshComponent>(
+            TEXT("FallbackWaterChannels"));
+    SetRootComponent(FallbackChannelInstances);
+
+    FallbackAreaInstances =
+        CreateDefaultSubobject<UHierarchicalInstancedStaticMeshComponent>(
+            TEXT("FallbackWaterAreas"));
+    FallbackAreaInstances->SetupAttachment(FallbackChannelInstances);
+
+    auto ConfigureFallbackComponent =
+        [](UHierarchicalInstancedStaticMeshComponent* Component)
+        {
+            if (!Component)
+            {
+                return;
+            }
+            Component->SetMobility(EComponentMobility::Movable);
+            Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+            Component->SetCanEverAffectNavigation(false);
+            Component->SetGenerateOverlapEvents(false);
+            Component->SetCastShadow(false);
+        };
+
+    ConfigureFallbackComponent(FallbackChannelInstances);
+    ConfigureFallbackComponent(FallbackAreaInstances);
+
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PlaneFinder(
+        TEXT("/Engine/BasicShapes/Plane.Plane"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> CylinderFinder(
+        TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
+    static ConstructorHelpers::FObjectFinder<UMaterialInterface> MaterialFinder(
+        TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
+
+    if (PlaneFinder.Succeeded())
+    {
+        FallbackChannelInstances->SetStaticMesh(PlaneFinder.Object);
+    }
+    if (CylinderFinder.Succeeded())
+    {
+        FallbackAreaInstances->SetStaticMesh(CylinderFinder.Object);
+    }
+    if (MaterialFinder.Succeeded())
+    {
+        FallbackChannelInstances->SetMaterial(0, MaterialFinder.Object);
+        FallbackAreaInstances->SetMaterial(0, MaterialFinder.Object);
+    }
 }
 
 void ALLWaterPresentationActor::BeginPlay()
 {
     Super::BeginPlay();
+    EnsureFallbackWaterMaterial();
     EnsureWaterZone();
     RefreshFromCore(true);
 }
@@ -294,6 +348,146 @@ FVector ALLWaterPresentationActor::GridToWorld(
         SurfaceZUU);
 }
 
+void ALLWaterPresentationActor::EnsureFallbackWaterMaterial()
+{
+    if (!bEnableVisibleWaterFallback
+        || FallbackWaterMaterial
+        || !FallbackChannelInstances)
+    {
+        return;
+    }
+
+    UMaterialInterface* BaseMaterial =
+        FallbackChannelInstances->GetMaterial(0);
+    if (!BaseMaterial && FallbackAreaInstances)
+    {
+        BaseMaterial = FallbackAreaInstances->GetMaterial(0);
+    }
+    if (!BaseMaterial)
+    {
+        return;
+    }
+
+    FallbackWaterMaterial =
+        UMaterialInstanceDynamic::Create(BaseMaterial, this);
+    if (!FallbackWaterMaterial)
+    {
+        return;
+    }
+
+    const FLinearColor SafetyWaterColor(
+        0.015f,
+        0.16f,
+        0.36f,
+        1.0f);
+    FallbackWaterMaterial->SetVectorParameterValue(
+        TEXT("Color"),
+        SafetyWaterColor);
+    FallbackWaterMaterial->SetVectorParameterValue(
+        TEXT("BaseColor"),
+        SafetyWaterColor);
+
+    FallbackChannelInstances->SetMaterial(
+        0,
+        FallbackWaterMaterial);
+    if (FallbackAreaInstances)
+    {
+        FallbackAreaInstances->SetMaterial(
+            0,
+            FallbackWaterMaterial);
+    }
+}
+
+void ALLWaterPresentationActor::AddFallbackWaterChannel(
+    const FVector& Start,
+    const FVector& End,
+    float WidthUU)
+{
+    if (!bEnableVisibleWaterFallback
+        || !FallbackChannelInstances
+        || !FallbackChannelInstances->GetStaticMesh())
+    {
+        return;
+    }
+
+    const int32 SegmentCount =
+        FMath::Clamp(FallbackRiverSegments, 1, 12);
+    const float SafeWidthUU =
+        FMath::Max(55.0f, WidthUU);
+
+    for (int32 SegmentIndex = 0;
+         SegmentIndex < SegmentCount;
+         ++SegmentIndex)
+    {
+        const float Alpha0 =
+            static_cast<float>(SegmentIndex)
+            / static_cast<float>(SegmentCount);
+        const float Alpha1 =
+            static_cast<float>(SegmentIndex + 1)
+            / static_cast<float>(SegmentCount);
+        const FVector SegmentStart =
+            FMath::Lerp(Start, End, Alpha0);
+        const FVector SegmentEnd =
+            FMath::Lerp(Start, End, Alpha1);
+        const FVector SegmentDelta =
+            SegmentEnd - SegmentStart;
+        const float SegmentLengthUU =
+            SegmentDelta.Size();
+        if (SegmentLengthUU <= KINDA_SMALL_NUMBER)
+        {
+            continue;
+        }
+
+        FVector Center =
+            (SegmentStart + SegmentEnd) * 0.5f;
+        Center.Z -=
+            FMath::Max(
+                1.0f,
+                FallbackWaterDepthBelowSurfaceUU);
+
+        const FRotator Rotation =
+            SegmentDelta.Rotation();
+        const FVector Scale(
+            SegmentLengthUU / 100.0f,
+            SafeWidthUU / 100.0f,
+            1.0f);
+        FallbackChannelInstances->AddInstance(
+            FTransform(Rotation, Center, Scale));
+    }
+}
+
+void ALLWaterPresentationActor::AddFallbackWaterArea(
+    const FVector& Center,
+    float RadiusUU)
+{
+    if (!bEnableVisibleWaterFallback
+        || !FallbackAreaInstances
+        || !FallbackAreaInstances->GetStaticMesh())
+    {
+        return;
+    }
+
+    const float SafeRadiusUU =
+        FMath::Max(80.0f, RadiusUU);
+    FVector FallbackCenter = Center;
+    FallbackCenter.Z -=
+        FMath::Max(
+            1.0f,
+            FallbackWaterDepthBelowSurfaceUU)
+        + 1.0f;
+
+    const float DiameterScale =
+        (SafeRadiusUU * 2.0f) / 100.0f;
+    FallbackAreaInstances->AddInstance(
+        FTransform(
+            FRotator::ZeroRotator,
+            FallbackCenter,
+            FVector(
+                DiameterScale,
+                DiameterScale,
+                0.02f)));
+}
+
 void ALLWaterPresentationActor::EnsureWaterZone()
 {
     if (!GetWorld())
@@ -345,6 +539,15 @@ void ALLWaterPresentationActor::ClearProjectedWater()
         }
     }
     SpawnedWaterActors.Reset();
+
+    if (FallbackChannelInstances)
+    {
+        FallbackChannelInstances->ClearInstances();
+    }
+    if (FallbackAreaInstances)
+    {
+        FallbackAreaInstances->ClearInstances();
+    }
 }
 
 void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
@@ -440,6 +643,28 @@ void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
 
         if (Water.bLinearChannel && Water.bHasDownstreamTarget)
         {
+            const float DownstreamWaterZUU = WaterSurfaceZForGrid(
+                Bridge,
+                World,
+                Water.DownstreamCenterGridX,
+                Water.DownstreamCenterGridY,
+                FacilityCentersUU);
+            const FVector Downstream = GridToWorld(
+                Water.DownstreamCenterGridX,
+                Water.DownstreamCenterGridY,
+                World.InitialCenterGridX,
+                World.InitialCenterGridY,
+                DownstreamWaterZUU);
+            const float ChannelWidthUU =
+                FMath::Max(
+                    55.0f,
+                    Water.SuggestedChannelWidthCells
+                        * LLWorldSpatialContract::GridCellSizeUU);
+            AddFallbackWaterChannel(
+                Center,
+                Downstream,
+                ChannelWidthUU);
+
             AWaterBodyRiver* River = GetWorld()->SpawnActor<AWaterBodyRiver>(
                 AWaterBodyRiver::StaticClass(),
                 FVector::ZeroVector,
@@ -452,18 +677,6 @@ void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
             ConfigurePresentationOnlyWater(River);
             if (UWaterSplineComponent* Spline = River->GetWaterSpline())
             {
-                const float DownstreamWaterZUU = WaterSurfaceZForGrid(
-                    Bridge,
-                    World,
-                    Water.DownstreamCenterGridX,
-                    Water.DownstreamCenterGridY,
-                    FacilityCentersUU);
-                const FVector Downstream = GridToWorld(
-                    Water.DownstreamCenterGridX,
-                    Water.DownstreamCenterGridY,
-                    World.InitialCenterGridX,
-                    World.InitialCenterGridY,
-                    DownstreamWaterZUU);
                 Spline->ClearSplinePoints(false);
                 Spline->AddSplinePoint(
                     Center,
@@ -478,8 +691,7 @@ void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
 
                 ConfigureRiverMetadata(
                     River,
-                    Water.SuggestedChannelWidthCells
-                        * LLWorldSpatialContract::GridCellSizeUU,
+                    ChannelWidthUU,
                     Water.FlowPotential);
                 NotifyWaterShapeChanged(River);
                 SpawnedWaterActors.Add(River);
@@ -495,9 +707,59 @@ void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
         if (bMarine)
         {
             // Local Surface presentation deliberately uses bounded lake-style
-            // polygons for marine chunks. AWaterBodyOcean is reserved for the
-            // later Planetary representation because its exclusion/shoreline
-            // semantics can flood an unbounded local map when spawned per chunk.
+            // polygons for marine chunks. The safety fallback mirrors the same
+            // local footprint but does not become hydrology/gameplay authority.
+            const float HalfChunkUU =
+                LLWorldSpatialContract::ChunkSpanUU * 0.515f;
+
+            bool bValidMarineShape = true;
+            FVector2D CoastDirection = FVector2D::ZeroVector;
+            if (Water.SurfaceKind == ELLCoreSurfaceWaterKind::Ocean)
+            {
+                AddFallbackWaterChannel(
+                    Center + FVector(-HalfChunkUU, 0.0f, 0.0f),
+                    Center + FVector( HalfChunkUU, 0.0f, 0.0f),
+                    HalfChunkUU * 2.0f);
+            }
+            else
+            {
+                if (!Water.bHasMarineNeighbour)
+                {
+                    bValidMarineShape = false;
+                }
+                else
+                {
+                    const FVector MarineCenter = GridToWorld(
+                        Water.MarineCenterGridX,
+                        Water.MarineCenterGridY,
+                        World.InitialCenterGridX,
+                        World.InitialCenterGridY,
+                        WaterSurfaceZUU);
+                    CoastDirection = FVector2D(
+                        MarineCenter.X - Center.X,
+                        MarineCenter.Y - Center.Y);
+                    if (!CoastDirection.Normalize())
+                    {
+                        bValidMarineShape = false;
+                    }
+                    else
+                    {
+                        AddFallbackWaterChannel(
+                            Center,
+                            Center + FVector(
+                                CoastDirection.X * HalfChunkUU,
+                                CoastDirection.Y * HalfChunkUU,
+                                0.0f),
+                            HalfChunkUU * 2.0f);
+                    }
+                }
+            }
+
+            if (!bValidMarineShape)
+            {
+                continue;
+            }
+
             AWaterBodyLake* Marine = GetWorld()->SpawnActor<AWaterBodyLake>(
                 AWaterBodyLake::StaticClass(),
                 FVector::ZeroVector,
@@ -515,8 +777,6 @@ void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
                 continue;
             }
 
-            const float HalfChunkUU =
-                LLWorldSpatialContract::ChunkSpanUU * 0.515f;
             Spline->ClearSplinePoints(false);
 
             if (Water.SurfaceKind == ELLCoreSurfaceWaterKind::Ocean)
@@ -537,33 +797,14 @@ void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
             }
             else
             {
-                if (!Water.bHasMarineNeighbour)
-                {
-                    Marine->Destroy();
-                    continue;
-                }
-
-                const FVector MarineCenter = GridToWorld(
-                    Water.MarineCenterGridX,
-                    Water.MarineCenterGridY,
-                    World.InitialCenterGridX,
-                    World.InitialCenterGridY,
-                    WaterSurfaceZUU);
-                FVector2D Direction(
-                    MarineCenter.X - Center.X,
-                    MarineCenter.Y - Center.Y);
-                if (!Direction.Normalize())
-                {
-                    Marine->Destroy();
-                    continue;
-                }
-
-                const FVector2D Perpendicular(-Direction.Y, Direction.X);
+                const FVector2D Perpendicular(
+                    -CoastDirection.Y,
+                    CoastDirection.X);
                 const FVector2D Center2D(Center.X, Center.Y);
                 const FVector2D ShoreLine =
-                    Center2D + Direction * (HalfChunkUU * 0.04f);
+                    Center2D + CoastDirection * (HalfChunkUU * 0.04f);
                 const FVector2D MarineEdge =
-                    Center2D + Direction * HalfChunkUU;
+                    Center2D + CoastDirection * HalfChunkUU;
 
                 const FVector2D Points[4] = {
                     ShoreLine + Perpendicular * HalfChunkUU,
@@ -600,6 +841,12 @@ void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
             continue;
         }
 
+        const float RadiusUU =
+            RadiusCells * LLWorldSpatialContract::GridCellSizeUU;
+        AddFallbackWaterArea(
+            Center,
+            RadiusUU);
+
         AWaterBodyLake* Lake = GetWorld()->SpawnActor<AWaterBodyLake>(
             AWaterBodyLake::StaticClass(),
             FVector::ZeroVector,
@@ -612,8 +859,6 @@ void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
         ConfigurePresentationOnlyWater(Lake);
         if (UWaterSplineComponent* Spline = Lake->GetWaterSpline())
         {
-            const float RadiusUU =
-                RadiusCells * LLWorldSpatialContract::GridCellSizeUU;
             constexpr int32 PointCount = 8;
             Spline->ClearSplinePoints(false);
             for (int32 Index = 0; Index < PointCount; ++Index)

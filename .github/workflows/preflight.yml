@@ -74,6 +74,9 @@ jobs:
       - name: Validate graphics foundation invariants
         run: python Tools/validate_graphics_foundation.py
 
+      - name: Validate visible water fallback
+        run: python Tools/validate_visible_water_fallback.py
+
       - name: Validate platform content cook boundaries
         run: python Tools/validate_platform_cook_boundaries.py
 
