@@ -899,3 +899,42 @@ Local presentation checkpoint:
 - #227 Horizon atmosphere blend — MERGED.
 
 These are Local Surface LOD fixes only, not an infinite-flat-world architecture.
+
+## Parallel Client Track — Web/PWA
+
+World v2 / Core 작업과 파일 충돌이 없는 범위에서 Web client는 병렬 진행한다.
+
+### WEB-0 — Browser/PWA foundation
+- `LifeLensCore` WebClientBridge.
+- Emscripten/Embind target.
+- PWA shell.
+- real Core overview/resident/terrain/hydrology truth preview.
+- fail-closed when WASM is absent.
+- native Core regression tests.
+
+### WEB-1 — WebGPU world surface
+- continuous terrain mesh.
+- observer-centered streaming.
+- water rendering.
+- pan/orbit/zoom.
+- same logical world address as Unreal.
+
+### WEB-2 — Ecology presentation
+- biome coverage consumer.
+- instanced vegetation.
+- near/mid/far forest representation.
+
+### WEB-3 — Human presentation
+- glTF/GLB residents.
+- semantic action/motion mapping.
+- observer detail/family/relationship UI.
+
+### WEB-4 — Product/PWA
+- Core snapshot save/load through OPFS/IndexedDB.
+- offline runtime cache.
+- installable PWA.
+- browser/mobile performance QA.
+
+Canonical architecture: `docs/WEB_CLIENT_ARCHITECTURE_v1.md`.
+
+Web client는 World v2 native critical path를 막는 새 직렬 gate가 아니다. Core/shared contract 변경이 필요한 합류점에서만 통합한다.
