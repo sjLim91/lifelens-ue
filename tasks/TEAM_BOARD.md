@@ -12,50 +12,36 @@
 
 ## Ownership
 
-| Lane | Owner | Default scope |
+| Responsibility | Primary | Collaboration |
 |---|---|---|
-| Core / AI / Simulation / World / Save / Bridge | Jjun | `Source/LifeLensCore/**`, `Source/LifeLens/AI/**`, `Source/LifeLens/Simulation/**`, `Source/LifeLens/World/**` |
-| Build / CI / Android / Config | Jjun | `.github/workflows/**`, build pipeline, `Config/**`, startup/default map, project integration |
-| UI / Observer | Dagyeom | `Source/LifeLens/UI/**`, `Content/UI/**` |
-| Character presentation | Dagyeom | `Source/LifeLens/Characters/**`, `Content/Characters/**` |
-| Environment visual / maps / WorldPresentation | Dagyeom | `Source/LifeLens/WorldPresentation/**`, `Content/Environment/**`, `Content/Maps/**`, `Content/WorldPresentation/**` |
+| Integrated implementation across Core / AI / Simulation / World / WorldPresentation / Character / UI / Content / platform | Jjun | Dagyeom visual review/polish as needed |
+| Runtime visual QA / screenshot-driven polish feedback | Dagyeom | Jjun |
+| Build / CI / Android / Windows / macOS | Jjun | — |
 
-Authority rule:
+Authority rule remains:
 
-> Core / World owns simulation truth. Presentation consumes authoritative read/action contracts and never invents resources, facilities, outcomes, lifecycle state, emotion, knowledge, time, weather or technology.
+> Core / World owns simulation truth. Presentation and Character consume authoritative contracts and never invent resources, outcomes, lifecycle state, knowledge, time, weather, technology or movement authority.
 
-Time/environment ownership clarification:
-
-- Jjun owns authoritative simulation time, calendar, season/weather state and gameplay effects.
-- Dagyeom owns sun/sky/weather VFX, environment readability and Observer controls/readouts.
-- Dagyeom must consume provider contracts rather than calculate a second time/weather truth.
-
-### 2026-09-19 presentation freeze / handoff
-
-- user direction: freeze further Jjun-side screen polishing at the current baseline and hand Presentation back to Dagyeom.
-- canonical handoff: `docs/DAGYEOM_PRESENTATION_HANDOFF_2026-09-19.md`.
-- Jjun active lane returns to Core / AI / Simulation / World / Save / Bridge.
-- Dagyeom owns further visual quality, Character presentation, UI/Observer, camera, lighting/atmosphere and WorldPresentation.
-- #281 / #283 / #284 are Dagyeom review/decision items; Jjun does not auto-merge them on CI success.
-- runtime screenshot acceptance is required for visual completion; CI green alone is not visual acceptance.
-
----
+**2026-09-21 ownership update**
+- previous hard split between Jjun and Dagyeom implementation lanes is retired.
+- Jjun may modify Presentation/Character/UI/Content when required by an integrated milestone.
+- Dagyeom is primarily a visual QA / targeted polish collaborator unless the user explicitly delegates a concrete implementation task.
+- active branches still require same-file conflict coordination; this change is not permission to overwrite another live branch blindly.
 
 ## Collaboration model
 
-LifeLens uses **one integrated roadmap with parallel ownership lanes**.
+LifeLens uses **one integrated implementation roadmap with optional visual collaboration**.
 
 Rules:
 
-- Jjun defines Core/World truth and provider contracts.
-- Dagyeom consumes those contracts for Character/UI/WorldPresentation.
-- each owner stays in their lane by default.
-- direct cross-owner edits require an Integration Request or explicit scoped Assist Lock.
+- Jjun owns end-to-end milestone implementation by default.
+- Core/World authority and Presentation/Character consumer boundaries remain architectural boundaries, not human ownership barriers.
+- Dagyeom may review screenshots/runtime and take explicitly delegated visual polish work.
+- same-file active work is coordinated before edits; do not overwrite live branches blindly.
 - Jjun does not push directly to `dagyeom/*` branches.
 - stale branches are not merged wholesale; valid missing ideas are reconstructed from latest `main`.
-- new civilization/time/environment systems expose provider contracts before presentation depends on them.
-- Dagyeom-owned work may merge independently after CI if it does not conflict with active provider ownership.
-- conflict resolution compares both sides; never overwrite current main blindly.
+- provider contracts should still exist before consumers depend on them, even when one implementer handles both sides.
+- conflict resolution compares both sides and preserves current-main truth.
 
 ### Cross-lane request checkpoint cadence
 
