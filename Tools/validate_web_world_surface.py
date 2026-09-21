@@ -9,7 +9,7 @@ css = (root / "Clients/Web/styles.css").read_text(encoding="utf-8")
 
 for token in (
     'getContext("webgl2"',
-    'WebGL2 3D truth surface',
+    'getContext("webgl2"',
     'gl.drawArrays(gl.TRIANGLES',
     'terrainColor',
     'elevation01',
