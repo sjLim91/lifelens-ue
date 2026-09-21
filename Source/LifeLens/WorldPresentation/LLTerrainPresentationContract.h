@@ -150,9 +150,22 @@ namespace LLTerrainPresentationContract
             FMath::Max(LocalReliefAmplitudeUU, RegionalReliefAmplitudeUU),
             ReliefAlpha);
 
-        auto SignedHeight = [&](float Elevation01)
+        auto RegionalHeight = [&](float Elevation01)
         {
-            return (Elevation01 - World.InitialChunk.Elevation) * Amplitude;
+            const float Delta =
+                Elevation01 - World.InitialChunk.Elevation;
+
+            // Ring 1 is rendered now, but it must meet the materialized local
+            // surface without suddenly exposing a signed valley/cliff at the
+            // bootstrap boundary. Keep the local non-negative baseline policy
+            // through the compatibility ring, then allow signed macro valleys
+            // once the observer is farther from local gameplay authority.
+            if (Ring <= InnerRing)
+            {
+                return FMath::Max(0.0f, Delta)
+                    * LocalReliefAmplitudeUU;
+            }
+            return Delta * Amplitude;
         };
 
         const FVector2D ChunkCenter(
@@ -173,15 +186,15 @@ namespace LLTerrainPresentationContract
             1.0f);
 
         const float South = FMath::Lerp(
-            SignedHeight(Terrain.SouthWestElevation01),
-            SignedHeight(Terrain.SouthEastElevation01),
+            RegionalHeight(Terrain.SouthWestElevation01),
+            RegionalHeight(Terrain.SouthEastElevation01),
             U);
         const float North = FMath::Lerp(
-            SignedHeight(Terrain.NorthWestElevation01),
-            SignedHeight(Terrain.NorthEastElevation01),
+            RegionalHeight(Terrain.NorthWestElevation01),
+            RegionalHeight(Terrain.NorthEastElevation01),
             U);
         const float CornerSurface = FMath::Lerp(South, North, V);
-        const float CenterSurface = SignedHeight(Terrain.CenterElevation01);
+        const float CenterSurface = RegionalHeight(Terrain.CenterElevation01);
         return FMath::Lerp(CenterSurface, CornerSurface, 0.72f);
     }
 }
