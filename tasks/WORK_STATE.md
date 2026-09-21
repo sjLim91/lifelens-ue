@@ -478,3 +478,16 @@ Motion asset decision:
 - provenance / license / skeleton / root-motion / retarget / semantic-action mapping 기록 필수.
 
 Execution lock remains unchanged: **World v2 start signal 전 구현 없음.**
+
+## 2026-09-21 OWNERSHIP UPDATE — integrated implementation
+
+User direction:
+- do not block World/Character/Presentation work behind a separate Dagyeom ownership lane.
+- Jjun handles end-to-end implementation across Core, World, WorldPresentation, Character, UI and required Content as milestones demand.
+- Dagyeom remains available for actual-screen review, visual QA and explicitly delegated polish.
+- architectural authority boundaries remain unchanged: Core/World truth stays authoritative; Presentation/Character do not invent simulation outcomes.
+- same-file active branch conflicts are still coordinated before edits.
+
+Effect on World v2:
+- after provider contracts stabilize, Jjun may directly continue into `Source/LifeLens/WorldPresentation/**` and environment Content instead of waiting for a handoff.
+- runtime screenshot acceptance remains mandatory.
