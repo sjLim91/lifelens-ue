@@ -921,3 +921,13 @@ World history는 UI event log에만 남지 않고 필요할 때 환경에도 흔
 
 이 hook들은 첫 World v2 pass에서 모두 구현하는 요구사항이 아니다.
 단, Core/world identity와 persistence 구조가 나중에 이 기능들을 막지 않도록 한다.
+
+## 23. Implementation ownership update
+
+2026-09-21 사용자 결정으로 World v2는 human ownership handoff를 최소화한다.
+
+- Jjun이 Core provider부터 WorldPresentation/Environment integration까지 end-to-end로 진행 가능.
+- 별도 Dagyeom owner 승인을 기다리는 구조는 사용하지 않는다.
+- Dagyeom은 실제 화면을 보며 visual QA/polish를 돕거나 사용자가 명시적으로 넘긴 시각 작업을 수행할 수 있다.
+- 단, Core/World truth vs Presentation consumer라는 소프트웨어 authority 분리는 그대로 유지한다.
+- active same-file branch가 존재하면 충돌 조정 후 진행한다.
