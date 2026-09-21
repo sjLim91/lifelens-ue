@@ -80,114 +80,209 @@ void ALLResidentCharacter::Tick(float DeltaSeconds)
         return;
     }
 
-    const FVector StartLocation = GetActorLocation();
-    const bool bHasRouteWaypoint =
-        MovementWaypointIndex >= 0
-        && MovementWaypointIndex < MovementWaypoints.Num();
-    FVector FlatTarget = bHasRouteWaypoint
-        ? MovementWaypoints[MovementWaypointIndex]
-        : MovementTarget;
-    FlatTarget.Z = StartLocation.Z;
-
-    FVector ToTarget = FlatTarget - StartLocation;
-    ToTarget.Z = 0.0f;
-    const float DistanceToTarget = ToTarget.Size2D();
-    const bool bIntermediateWaypoint =
-        bHasRouteWaypoint
-        && MovementWaypointIndex < MovementWaypoints.Num() - 1;
-    const float AcceptanceRadius = bIntermediateWaypoint
-        ? FMath::Max(1.0f, PathWaypointAcceptanceRadius)
-        : FMath::Max(1.0f, TargetAcceptanceRadius);
-    if (DistanceToTarget <= AcceptanceRadius)
+    const float MoveSpeed = FMath::Max(0.0f, RuntimeMoveSpeed);
+    float RemainingMoveDistance =
+        FMath::Max(0.0f, DeltaSeconds) * MoveSpeed;
+    if (RemainingMoveDistance <= KINDA_SMALL_NUMBER)
     {
-        if (bIntermediateWaypoint)
+        return;
+    }
+
+    const FVector TickStartLocation = GetActorLocation();
+    const int32 SegmentBudget =
+        FMath::Clamp(MaxMovementSegmentsPerTick, 1, 32);
+    int32 SegmentsProcessed = 0;
+
+    while (bHasMovementTarget
+        && RemainingMoveDistance > KINDA_SMALL_NUMBER
+        && SegmentsProcessed < SegmentBudget)
+    {
+        ++SegmentsProcessed;
+
+        const FVector SegmentStart = GetActorLocation();
+        const bool bHasRouteWaypoint =
+            MovementWaypointIndex >= 0
+            && MovementWaypointIndex < MovementWaypoints.Num();
+        FVector FlatTarget = bHasRouteWaypoint
+            ? MovementWaypoints[MovementWaypointIndex]
+            : MovementTarget;
+        FlatTarget.Z = SegmentStart.Z;
+
+        FVector ToTarget = FlatTarget - SegmentStart;
+        ToTarget.Z = 0.0f;
+        const float DistanceToTarget = ToTarget.Size2D();
+        const bool bIntermediateWaypoint =
+            bHasRouteWaypoint
+            && MovementWaypointIndex < MovementWaypoints.Num() - 1;
+        const float AcceptanceRadius = bIntermediateWaypoint
+            ? FMath::Max(1.0f, PathWaypointAcceptanceRadius)
+            : FMath::Max(1.0f, TargetAcceptanceRadius);
+
+        // Consuming an already-reached waypoint must not discard the rest of
+        // this frame's movement budget. This is what lets 16x/64x physical
+        // execution keep pace with the scaled Core clock.
+        if (DistanceToTarget <= AcceptanceRadius)
         {
-            ++MovementWaypointIndex;
-        }
-        else
-        {
+            if (bIntermediateWaypoint)
+            {
+                ++MovementWaypointIndex;
+                continue;
+            }
+
             bHasMovementTarget = false;
             MovementWaypoints.Reset();
             MovementWaypointIndex = 0;
+            break;
         }
-        return;
-    }
 
-    // Preserve the existing constant-speed movement contract, then sweep the
-    // resulting frame step so authoritative blockers can redirect it.
-    const FVector ForwardDestination = FMath::VInterpConstantTo(
-        StartLocation,
-        FlatTarget,
-        FMath::Max(0.0f, DeltaSeconds),
-        FMath::Max(0.0f, RuntimeMoveSpeed));
-    FVector ForwardStep = ForwardDestination - StartLocation;
-    ForwardStep.Z = 0.0f;
-    const float StepDistance = ForwardStep.Size2D();
-    if (StepDistance <= KINDA_SMALL_NUMBER)
-    {
-        return;
-    }
-
-    const FVector Forward = ForwardStep.GetSafeNormal2D();
-
-    FHitResult ForwardHit;
-    SetActorLocation(ForwardDestination, true, &ForwardHit, ETeleportType::None);
-
-    if (ForwardHit.bBlockingHit)
-    {
-        const FVector ImpactLocation = GetActorLocation();
-        const float ForwardTravelDistance = FMath::Clamp(
-            (ImpactLocation - StartLocation).Size2D(),
-            0.0f,
-            StepDistance);
-        const float RemainingStepDistance = FMath::Max(0.0f, StepDistance - ForwardTravelDistance);
-
-        if (RemainingStepDistance > KINDA_SMALL_NUMBER)
+        const float RequestedStepDistance =
+            FMath::Min(DistanceToTarget, RemainingMoveDistance);
+        if (RequestedStepDistance <= KINDA_SMALL_NUMBER)
         {
-            FVector Remaining = FlatTarget - ImpactLocation;
-            Remaining.Z = 0.0f;
+            break;
+        }
 
-            FVector SlideDirection = FVector::VectorPlaneProject(Remaining, ForwardHit.ImpactNormal);
-            SlideDirection.Z = 0.0f;
-            const bool bHadProjectedSlide = SlideDirection.Normalize();
-            if (!bHadProjectedSlide)
+        const FVector Forward =
+            ToTarget.GetSafeNormal2D();
+        const FVector ForwardDestination =
+            SegmentStart + Forward * RequestedStepDistance;
+
+        FHitResult ForwardHit;
+        SetActorLocation(
+            ForwardDestination,
+            true,
+            &ForwardHit,
+            ETeleportType::None);
+
+        if (ForwardHit.bBlockingHit)
+        {
+            const FVector ImpactLocation = GetActorLocation();
+            const float ForwardTravelDistance = FMath::Clamp(
+                (ImpactLocation - SegmentStart).Size2D(),
+                0.0f,
+                RequestedStepDistance);
+            const float RemainingStepDistance =
+                FMath::Max(
+                    0.0f,
+                    RequestedStepDistance - ForwardTravelDistance);
+
+            if (RemainingStepDistance > KINDA_SMALL_NUMBER)
             {
-                SlideDirection = StableSideDirection(Forward, ResidentId);
-            }
+                FVector Remaining = FlatTarget - ImpactLocation;
+                Remaining.Z = 0.0f;
 
-            const FVector BeforeSlide = GetActorLocation();
-            FHitResult SlideHit;
-            SetActorLocation(
-                BeforeSlide + SlideDirection * RemainingStepDistance,
-                true,
-                &SlideHit,
-                ETeleportType::None);
+                FVector SlideDirection =
+                    FVector::VectorPlaneProject(
+                        Remaining,
+                        ForwardHit.ImpactNormal);
+                SlideDirection.Z = 0.0f;
+                const bool bHadProjectedSlide =
+                    SlideDirection.Normalize();
+                if (!bHadProjectedSlide)
+                {
+                    SlideDirection =
+                        StableSideDirection(Forward, ResidentId);
+                }
 
-            // A near head-on hit against a flat box can yield a tangent that is
-            // immediately blocked by a neighbouring proxy. If the first sidestep
-            // made effectively no progress, try the stable tangent on the other
-            // side rather than repeating the same blocked direction or oscillating.
-            // The alternate attempt reuses the same remaining frame budget.
-            const float SlideProgressSquared = FVector::DistSquared2D(BeforeSlide, GetActorLocation());
-            if (SlideProgressSquared <= FMath::Square(1.0f))
-            {
-                const FVector StableSide = StableSideDirection(Forward, ResidentId);
-                const FVector AlternateSide = FVector::DotProduct(SlideDirection, StableSide) >= 0.0f
-                    ? -StableSide
-                    : StableSide;
+                const FVector BeforeSlide = GetActorLocation();
+                FHitResult SlideHit;
                 SetActorLocation(
-                    BeforeSlide + AlternateSide * RemainingStepDistance,
+                    BeforeSlide
+                        + SlideDirection * RemainingStepDistance,
                     true,
-                    nullptr,
+                    &SlideHit,
                     ETeleportType::None);
+
+                // A near head-on hit against a flat box can yield a tangent
+                // that is immediately blocked by a neighbouring proxy.
+                if (FVector::DistSquared2D(
+                        BeforeSlide,
+                        GetActorLocation())
+                    <= FMath::Square(1.0f))
+                {
+                    const FVector StableSide =
+                        StableSideDirection(Forward, ResidentId);
+                    const FVector AlternateSide =
+                        FVector::DotProduct(
+                            SlideDirection,
+                            StableSide) >= 0.0f
+                            ? -StableSide
+                            : StableSide;
+                    SetActorLocation(
+                        BeforeSlide
+                            + AlternateSide * RemainingStepDistance,
+                        true,
+                        nullptr,
+                        ETeleportType::None);
+                }
             }
+        }
+
+        const float ActualSegmentMove =
+            FVector::Dist2D(
+                SegmentStart,
+                GetActorLocation());
+
+        // Time/distance budget is consumed by the attempted swept segment,
+        // even when collision makes the net displacement shorter.
+        RemainingMoveDistance =
+            FMath::Max(
+                0.0f,
+                RemainingMoveDistance - RequestedStepDistance);
+
+        if (ActualSegmentMove <= 0.5f)
+        {
+            // Never spin through the route-segment budget against a wall.
+            break;
+        }
+
+        // If collision prevented reaching the current waypoint, leave the
+        // remaining route for the next render tick rather than repeatedly
+        // sweeping into the same blocker inside one frame.
+        if (ForwardHit.bBlockingHit)
+        {
+            const FVector Current = GetActorLocation();
+            if (FVector::DistSquared2D(Current, FlatTarget)
+                > FMath::Square(AcceptanceRadius))
+            {
+                break;
+            }
+        }
+
+        const FVector Current = GetActorLocation();
+        if (FVector::DistSquared2D(Current, FlatTarget)
+            <= FMath::Square(AcceptanceRadius))
+        {
+            if (bIntermediateWaypoint)
+            {
+                ++MovementWaypointIndex;
+                continue;
+            }
+
+            bHasMovementTarget = false;
+            MovementWaypoints.Reset();
+            MovementWaypointIndex = 0;
+            break;
+        }
+
+        // The current waypoint was farther away than the remaining distance
+        // budget. No later waypoint can be reached in this tick.
+        if (RequestedStepDistance + KINDA_SMALL_NUMBER
+            < DistanceToTarget)
+        {
+            break;
         }
     }
 
-    const FVector ActualMove = GetActorLocation() - StartLocation;
+    const FVector ActualMove =
+        GetActorLocation() - TickStartLocation;
     if (ActualMove.SizeSquared2D() > FMath::Square(0.5f))
     {
-        SetActorRotation(FRotator(0.0f, ActualMove.Rotation().Yaw, 0.0f));
+        SetActorRotation(
+            FRotator(
+                0.0f,
+                ActualMove.Rotation().Yaw,
+                0.0f));
     }
 }
 

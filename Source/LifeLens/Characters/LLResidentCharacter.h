@@ -93,6 +93,13 @@ private:
     UPROPERTY(EditAnywhere, Category="LifeLens|Movement", meta=(ClampMin="1.0", ClampMax="100.0"))
     float PathWaypointAcceptanceRadius = 22.0f;
 
+    // A high observer speed can provide enough movement budget to cross several
+    // Core-grid waypoints in one render tick. Bound the amount of route work so
+    // unused distance is not discarded, while a pathological hitch cannot skip
+    // an unbounded number of swept collision segments.
+    UPROPERTY(EditAnywhere, Category="LifeLens|Movement", meta=(ClampMin="1", ClampMax="32"))
+    int32 MaxMovementSegmentsPerTick = 8;
+
     // Presentation-only lifecycle cache. The Core LifeStage remains the sole
     // source of stage truth; these values only prevent cumulative rescaling.
     bool bLifecyclePresentationInitialized = false;
