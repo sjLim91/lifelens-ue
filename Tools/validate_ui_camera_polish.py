@@ -101,6 +101,24 @@ for token in (
 ):
     assert token in lifecycle_cpp, f"lifecycle runtime reset contract missing: {token}"
 
+for token in (
+    "const bool bSameWorldFocus",
+    "Existing.bHasWorldFocus == bHasWorldFocus",
+    "Existing.WorldFocus.Equals(WorldFocus, 1.0f)",
+    "Existing.SubjectResidentId == SubjectResidentId",
+    "Existing.RelatedResidentId == RelatedResidentId",
+    "Existing.SimulationMinute == SimulationMinute",
+    "const bool bSameEvent",
+):
+    assert token in lifecycle_cpp, f"lifecycle notice identity dedupe missing: {token}"
+
+push_start = lifecycle_cpp.index("void ULLLifecycleEventOverlay::PushNotice")
+push_end = lifecycle_cpp.index("void ULLLifecycleEventOverlay::RefreshNoticeWidgets", push_start)
+push_block = lifecycle_cpp[push_start:push_end]
+assert "if (Existing.Text == Text)" not in push_block, (
+    "lifecycle notices must not dedupe distinct events by text alone"
+)
+
 # Observer selection may survive a save load only when the selected stable ID
 # still exists in the replacement Core runtime. Unrelated-world IDs must close.
 assert "LastObservedCoreRuntimeGeneration" in header
