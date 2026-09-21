@@ -176,3 +176,16 @@ A context-motion slice is DONE only when:
 7. Consume the typed Core civilization contract for `Gather/Store/Experiment/Craft`; use `Craft + DugSanitationPit` for pit-work presentation and do not invent standalone Work/Dig/Build/Carry actions.
 8. Add authoritative spatialization for resource/storage targets in a later Core/World slice before scenery-specific gather/store alignment is attempted.
 9. Replace generic fallbacks over time with dedicated validated free/CC0 animations.
+
+## Human Realism companion — 2026-09-21
+
+Canonical companion: `docs/HUMAN_REALISM_FOUNDATION_v1.md`.
+
+추가 원칙:
+- Motion은 authoritative action/context를 표현하며 행동 결과를 발명하지 않는다.
+- perception/knowledge, place memory, habit/routine, embodied state, personal space, ownership/reservation을 확장 가능한 입력으로 둔다.
+- 주민 겹침/동일 목적지 pile-up은 animation 문제가 아니라 destination reservation + separation + interaction-slot 문제로도 취급한다.
+- 행동별 motion gap이 확인되면 **상업적 배포 가능한 무료 animation asset을 적극 선별/다운로드/retarget**할 수 있다.
+- 외부 motion은 license/provenance, source skeleton, root-motion/in-place, loop/contact, retarget 결과, action mapping을 기록한다.
+- generic idle로 모든 생활행동을 대체하지 않으며, animation을 사용하기 위해 가짜 Core action을 추가하지 않는다.
+- 현재는 World v2 구현 HOLD이므로 실제 asset acquisition/character implementation도 시작 사인 이후 진행한다.

@@ -95,3 +95,35 @@ asset이 늘어나면 별도 manifest를 유지하고, 최소한 PR 본문과 ca
 - runtime 시각 확인이 필요한 asset은 screenshot/device QA 항목을 남긴다.
 
 무료 에셋 사용은 허용하지만 **권리 불명확한 에셋을 품질 때문에 예외 처리하지 않는다.**
+
+## Animation / motion asset policy
+
+무료 외부 animation/mocap도 이 정책의 적용 대상이다.
+
+허용 조건:
+- 상업적 게임/앱 배포 및 packaged redistribution이 명확히 허용될 것.
+- source/provider/license URL과 확인일을 기록할 것.
+- attribution이 필요하면 실제 배포에서 준수 가능할 것.
+- Unreal 5.6 retarget 가능성을 확인할 것.
+
+금지:
+- ripped game animation.
+- NC / personal-use-only / editorial-only.
+- license가 불명확한 animation dump.
+- 다른 IP 캐릭터 고유 motion을 추출한 자료.
+
+Animation별 추가 provenance:
+- source skeleton / rig.
+- root motion 또는 in-place.
+- loop 여부.
+- retarget target.
+- semantic action mapping.
+- contact-sensitive 여부(IK/Motion Warp 필요 여부).
+- 수정/trim/blend 처리.
+- Android/Desktop 포함 여부.
+
+선정 원칙:
+- LifeLens의 실제 행동 gap을 채우기 위해 사용한다.
+- asset이 있다는 이유로 행동을 설계하지 않는다.
+- 일상생활 모션은 자연스러움과 접촉 정확도를 우선한다.
+- 필요 시 여러 무료 source를 조합할 수 있으나 동일 license/provenance 기준을 적용한다.

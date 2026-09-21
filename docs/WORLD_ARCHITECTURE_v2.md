@@ -876,3 +876,48 @@ World v2 foundation이 성공했다고 말할 수 있는 최소 기준:
 - 기존 CI 결과 확인.
 - 설계 질의/수정.
 - 사용자가 요청한 브리핑.
+
+## 22. Canonical future hooks — 살아 있는 지구
+
+World v2 foundation이 향후 재설계 없이 확장할 수 있도록 다음 hook을 canonical로 예약한다.
+
+### Ecological succession / decay
+- 벌목지의 regrowth.
+- 화재/홍수 후 천이.
+- 버려진 농경지의 자연 회복.
+- 인간 활동이 줄어든 지역의 vegetation recovery.
+- 시설/도로/폐허의 decay.
+
+### Fauna Population LOD
+- 종/생태군별 habitat suitability.
+- regional population density.
+- reproduction / mortality / migration.
+- hunting/fishing/predation pressure.
+- local observer/simulation interest에서만 individual actor materialization.
+- 지구 전체 동물을 Actor로 유지하지 않는다.
+
+### Regional Weather Cells
+- 지구 전체 단일 날씨 금지.
+- 지역별 temperature / humidity / precipitation / wind state.
+- 이동하는 weather cell.
+- elevation / coast / mountain 영향.
+- Local presentation은 해당 region/weather cell을 소비.
+
+### Persistent Historical Traces
+- path / road.
+- abandoned camp.
+- ruin.
+- grave / memorial place.
+- old field.
+- logged forest.
+- drained/altered land.
+- historic infrastructure.
+
+World history는 UI event log에만 남지 않고 필요할 때 환경에도 흔적을 남긴다.
+
+### Sensory environment
+- sound/smell/smoke 등 spatial affordance를 후속 contract로 지원.
+- perception/knowledge 연결은 `docs/HUMAN_REALISM_FOUNDATION_v1.md`가 canonical이다.
+
+이 hook들은 첫 World v2 pass에서 모두 구현하는 요구사항이 아니다.
+단, Core/world identity와 persistence 구조가 나중에 이 기능들을 막지 않도록 한다.

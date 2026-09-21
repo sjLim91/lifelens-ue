@@ -455,3 +455,26 @@ Android Gate B remains paused until the user explicitly resumes device/APK valid
 - Android and Desktop packages carry only required presentation payloads.
 - #269 merged the Android/mobile vs desktop photoreal hard-reference and cook boundary. Future presentation payload changes are Dagyeom-owned unless a Core/provider contract is required.
 - Android Gate B remains paused; no APK artifact-size claim until actual packaging resumes.
+
+## 2026-09-21 DESIGN ADDENDUM — Earth + Human realism hooks
+
+Canonical human companion: `docs/HUMAN_REALISM_FOUNDATION_v1.md`.
+
+Added future-safe hooks:
+- Perception / Knowledge / Belief confidence.
+- Place Memory / Attachment.
+- Habit / Routine / Preference.
+- embodied health/need effects on motion and decisions.
+- personal space / social distance / destination reservation.
+- ownership / familiarity.
+- sensory sound/smell affordances.
+- ecological succession / regrowth / decay.
+- fauna population LOD.
+- regional weather cells.
+- persistent historical traces.
+
+Motion asset decision:
+- actual behavior gap이 있으면 commercial/package-compatible 비용 0원 animation asset을 선별/다운로드/retarget해 사용 가능.
+- provenance / license / skeleton / root-motion / retarget / semantic-action mapping 기록 필수.
+
+Execution lock remains unchanged: **World v2 start signal 전 구현 없음.**

@@ -424,3 +424,14 @@ Decision: `docs/WORLD_ARCHITECTURE_v2.md` is the canonical world architecture.
 - Existing WorldSeed / Planet / Region / Chunk / hydrology / Observer-scale foundations are preserved and migrated rather than rewritten.
 - The latest environment source closeout is not accepted as visual completion; actual runtime screenshots are the acceptance source for visual world quality.
 - Implementation is explicitly held until the user gives a separate start signal. Character audit is held behind World v2 visual foundation.
+
+## 2026-09-21 — Human realism hooks + zero-cost motion reuse
+
+Decision:
+- `docs/HUMAN_REALISM_FOUNDATION_v1.md`을 인간적 행동 확장의 canonical companion으로 추가.
+- World truth와 resident knowledge를 분리하고 Perception -> Memory -> Belief/Confidence 경계를 둔다.
+- Place Memory/Attachment, Habit/Routine, Embodied state, Personal Space, Ownership/Reservation을 장기 구조에 포함한다.
+- World에는 Ecological Succession, Fauna Population LOD, Regional Weather Cells, Persistent Historical Traces, sensory affordance hook을 예약한다.
+- 행동별 적절한 motion이 기존 저장소에 없으면 상업적 배포가 가능한 비용 0원 animation/mocap asset을 검색/다운로드/retarget하여 사용할 수 있다.
+- 외부 motion은 zero-cost asset policy의 license/provenance 및 character action-context truth를 반드시 지킨다.
+- World v2 시작 사인 전에는 실제 Character 구현/외부 animation acquisition을 시작하지 않는다.
