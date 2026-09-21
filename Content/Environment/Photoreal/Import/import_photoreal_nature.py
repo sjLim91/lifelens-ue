@@ -74,7 +74,12 @@ def make_static_pipeline():
     mesh = pipeline.get_editor_property("mesh_pipeline")
     set_prop(mesh, ["import_static_meshes"], True)
     set_prop(mesh, ["import_skeletal_meshes"], False)
-    set_prop(mesh, ["combine_static_meshes"], False)
+    combine_static_meshes = os.environ.get(
+        "LL_PHOTOREAL_COMBINE_STATIC_MESHES", ""
+    ).strip().lower() in {"1", "true", "yes", "on"}
+    if not set_prop(mesh, ["combine_static_meshes"], combine_static_meshes):
+        raise RuntimeError("Interchange mesh pipeline has no combine_static_meshes property")
+    log(f"combine_static_meshes={combine_static_meshes}")
     animation = pipeline.get_editor_property("animation_pipeline")
     set_prop(animation, ["import_animations"], False)
     material = pipeline.get_editor_property("material_pipeline")
@@ -204,6 +209,12 @@ def main():
         import_file(source_model, destination, pipeline)
         canonical_mesh = canonicalize_primary_mesh(destination, asset_id)
         meshes, textures = configure_imported_assets(destination)
+        combine_static_meshes = os.environ.get(
+            "LL_PHOTOREAL_COMBINE_STATIC_MESHES", ""
+        ).strip().lower() in {"1", "true", "yes", "on"}
+        if combine_static_meshes and meshes != 1:
+            raise RuntimeError(
+                f"{asset_id}: combined import expected exactly 1 StaticMesh, found {meshes}")
         log(
             f"{asset_id}: canonical={canonical_mesh} "
             f"meshes={meshes} textures={textures}")
