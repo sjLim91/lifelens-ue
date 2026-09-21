@@ -53,7 +53,8 @@ for token in (
 ):
     assert token in spatial, f"water resource access contract missing: {token}"
 
-gather_start = context.index("case CivilizationIntent::Gather:")
+resolver_start = context.index("inline bool resolveCivilizationContextTarget(")
+gather_start = context.index("case CivilizationIntent::Gather:", resolver_start)
 gather_end = context.index("case CivilizationIntent::Store:", gather_start)
 gather = context[gather_start:gather_end]
 assert "resolveCivilizationResourceAccessGridPosition" in gather
