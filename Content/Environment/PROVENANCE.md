@@ -96,6 +96,32 @@ making the stylized fallback the production art direction.
 The baseline intentionally rejects ultra-heavy photogrammetry hero meshes when the selected model payload exceeds the per-asset budget. For example, high-detail multi-million-triangle trees are not an acceptable universal Android-first baseline merely because their textures are requested at 1K. Curated saplings/ground-cover assets are used until explicit PC-only/HLOD tiers are introduced.
 
 
+### Pack 3 mature broadleaf / hero canopy extension — 2026-09-21
+
+Validated source pages (Poly Haven, CC0 1.0):
+- `pachira_aquatica_01` — https://polyhaven.com/a/pachira_aquatica_01
+  - imported LifeLens path: `/Game/Environment/Photoreal/PolyHaven/pachira_aquatica_01`
+  - selected source payload: 1K glTF, probe approximately 4.9 MiB
+  - purpose: desktop normal photoreal broadleaf canopy layer
+  - platform tier: Windows + macOS Desktop; Android package exclusion is enforced by the platform cook boundary
+  - attribution required: no (CC0 1.0)
+- `island_tree_02` — https://polyhaven.com/a/island_tree_02
+  - imported LifeLens path: `/Game/Environment/Photoreal/PolyHaven/island_tree_02`
+  - selected source payload: 1K glTF, probe approximately 44.0 MiB
+  - purpose: sparse desktop hero canopy only; never the far-world catalogue
+  - platform tier: Windows + macOS Desktop; Android package exclusion is enforced by the platform cook boundary
+  - attribution required: no (CC0 1.0)
+
+Acquisition/import contract:
+- provider: Poly Haven
+- license checked: 2026-09-21
+- license: CC0 1.0
+- acquisition: `Tools/acquire_photoreal_environment_assets.py`
+- import: `Content/Environment/Photoreal/Import/import_photoreal_nature.py`
+- the CI provenance manifest verifies each asset's Poly Haven source page, resolution and glTF format before import.
+- `tree_small_02` and `jacaranda_tree` were rejected for this wave after payload probing exceeded the 90 MiB source budget; they are not approved substitutes for this wave.
+- source files remain outside Git staging; generated Unreal assets are the committed runtime payload.
+
 ### Pack 3 facility/primitive-civilization extension
 
 Validated source pages (Poly Haven, CC0 1.0):
