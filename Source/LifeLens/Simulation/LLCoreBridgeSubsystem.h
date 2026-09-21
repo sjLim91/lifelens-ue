@@ -313,9 +313,9 @@ private:
     int32 ActiveSeed = 0;
     int64 RuntimeGeneration = 0;
 
-    // Regional terrain preview is deterministic for a fixed world/start frame.
-    // Cache it so presentation refreshes do not re-run hundreds of macro-noise
-    // samples every 0.5 seconds.
+    // Terrain preview is deterministic for a fixed world identity + logical
+    // center. Cache the most recent observer/compatibility window so refreshes
+    // do not re-run hundreds of macro-noise samples every tick.
     mutable TArray<FLLCoreTerrainPresentationObservation> CachedTerrainPreview;
     mutable uint64 CachedTerrainPreviewWorldSeed = 0;
     mutable int32 CachedTerrainPreviewGenerationVersion = -1;
