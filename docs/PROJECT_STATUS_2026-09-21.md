@@ -5,7 +5,7 @@
 > 상태 판단 우선순위: **실제 GitHub main / PR / Actions > canonical repository docs > 대화 기억**.
 
 
-## 0. 최신 방향 전환 — World Architecture v2 설계 완료 / 구현 대기
+## 0. 최신 방향 전환 — World Architecture v2 구현 시작 / W2-0 ACTIVE
 
 Canonical: `docs/WORLD_ARCHITECTURE_v2.md`.
 
@@ -24,7 +24,10 @@ Canonical: `docs/WORLD_ARCHITECTURE_v2.md`.
 - settlement는 human activity 결과다.
 - camera scroll은 deterministic world streaming으로 계속 이어져야 한다.
 - start-centred terrain flatten / ecology clear는 v2 natural baseline에서 폐기한다.
-- 구현 시작은 **사용자의 별도 시작 사인 이후**다.
+- **2026-09-21 사용자 시작 사인 수신. W2-0 provider contract foundation 구현을 시작했다.**
+- 현재 branch: `jjun/world-v2-contract-foundation`.
+- 기존 materialized chunk explicit enumeration은 이미 구현되어 있어 재작업하지 않는다.
+- 첫 신규 계약은 spawn-independent world address + observer-centered deterministic terrain preview다.
 - character audit은 World v2 visual foundation 이후까지 보류한다.
 
 ## 1. 현재 체크포인트
