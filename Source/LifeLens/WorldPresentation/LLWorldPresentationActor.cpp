@@ -84,6 +84,41 @@ namespace
                 Hash,
                 static_cast<uint32>(FMath::RoundToInt(Chunk.TraversalEase * 100000.0f)));
 
+            Hash = MixHash(Hash, static_cast<uint32>(Chunk.PhysicalObstacles.Num()));
+            for (const FLLCoreNaturalObstacleObservation& Obstacle : Chunk.PhysicalObstacles)
+            {
+                const uint64 ObstacleId = static_cast<uint64>(Obstacle.ObstacleId);
+                const uint64 SourceResourceId =
+                    static_cast<uint64>(Obstacle.SourceResourceNodeId);
+                Hash = MixHash(Hash, static_cast<uint32>(ObstacleId & 0xFFFFFFFFu));
+                Hash = MixHash(Hash, static_cast<uint32>((ObstacleId >> 32) & 0xFFFFFFFFu));
+                Hash = MixHash(Hash, static_cast<uint32>(Obstacle.Kind));
+                Hash = MixHash(Hash, static_cast<uint32>(SourceResourceId & 0xFFFFFFFFu));
+                Hash = MixHash(Hash, static_cast<uint32>((SourceResourceId >> 32) & 0xFFFFFFFFu));
+                Hash = MixHash(Hash, static_cast<uint32>(Obstacle.GridX));
+                Hash = MixHash(Hash, static_cast<uint32>(Obstacle.GridY));
+                Hash = MixHash(
+                    Hash,
+                    static_cast<uint32>(FMath::RoundToInt(
+                        Obstacle.OffsetXCells * 1000.0f)));
+                Hash = MixHash(
+                    Hash,
+                    static_cast<uint32>(FMath::RoundToInt(
+                        Obstacle.OffsetYCells * 1000.0f)));
+                Hash = MixHash(
+                    Hash,
+                    static_cast<uint32>(FMath::RoundToInt(
+                        Obstacle.HalfExtentXCells * 1000.0f)));
+                Hash = MixHash(
+                    Hash,
+                    static_cast<uint32>(FMath::RoundToInt(
+                        Obstacle.HalfExtentYCells * 1000.0f)));
+                Hash = MixHash(
+                    Hash,
+                    static_cast<uint32>(FMath::RoundToInt(
+                        Obstacle.HalfHeightCells * 1000.0f)));
+            }
+
             Hash = MixHash(Hash, static_cast<uint32>(Chunk.ResourcePatches.Num()));
             for (const FLLCoreNaturalResourcePatchObservation& Patch : Chunk.ResourcePatches)
             {
@@ -1728,6 +1763,95 @@ void ALLWorldPresentationActor::BuildChunkDressing(
             }
         }
     };
+
+    // Core PhysicalObstacles are the authoritative movement blockers consumed
+    // by LLWorldObstacleCollisionProxyActor. Guarantee a visible tree/rock at
+    // the exact same XY before ambient ecology consumes the presentation budget,
+    // otherwise residents can appear to route around empty ground.
+    for (const FLLCoreNaturalObstacleObservation& Obstacle : Chunk.PhysicalObstacles)
+    {
+        TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>>* Target =
+            Obstacle.Kind == ELLCoreNaturalObstacleKind::Rock
+                ? &RockInstances
+                : &TreeInstances;
+        if (!Target || Target->Num() == 0 || Obstacle.ObstacleId <= 0)
+        {
+            continue;
+        }
+
+        uint32 ObstacleState = PresentationSeed(Obstacle.ObstacleId);
+        const int32 Slot =
+            static_cast<int32>(HashUnit(ObstacleState) * Target->Num())
+            % Target->Num();
+        UHierarchicalInstancedStaticMeshComponent* Component = (*Target)[Slot];
+        if (!Component || !Component->GetStaticMesh())
+        {
+            continue;
+        }
+
+        const float CellSize = LLWorldSpatialContract::GridCellSizeUU;
+        const FVector2D ObstacleLocation(
+            (static_cast<float>(Obstacle.GridX - World.InitialCenterGridX)
+                + Obstacle.OffsetXCells) * CellSize,
+            (static_cast<float>(Obstacle.GridY - World.InitialCenterGridY)
+                + Obstacle.OffsetYCells) * CellSize);
+        const float GroundZ =
+            TerrainSurfaceZUU(World, Terrain, ObstacleLocation);
+        const float Yaw = HashUnit(ObstacleState) * 360.0f;
+
+        const FVector NativeSize =
+            Component->GetStaticMesh()->GetBounds().BoxExtent * 2.0f;
+        const float TargetWidthUU = FMath::Max(
+            55.0f,
+            FMath::Max(
+                Obstacle.HalfExtentXCells,
+                Obstacle.HalfExtentYCells)
+                * CellSize * 2.0f);
+        const float TargetHeightUU = FMath::Max(
+            75.0f,
+            Obstacle.HalfHeightCells * CellSize * 2.0f);
+
+        FVector VisualScale = FVector::OneVector;
+        if (Obstacle.Kind == ELLCoreNaturalObstacleKind::Rock)
+        {
+            VisualScale.X = FMath::Clamp(
+                TargetWidthUU / FMath::Max(1.0f, NativeSize.X),
+                0.35f,
+                2.80f);
+            VisualScale.Y = FMath::Clamp(
+                TargetWidthUU / FMath::Max(1.0f, NativeSize.Y),
+                0.35f,
+                2.80f);
+            VisualScale.Z = FMath::Clamp(
+                TargetHeightUU / FMath::Max(1.0f, NativeSize.Z),
+                0.35f,
+                2.80f);
+        }
+        else
+        {
+            // Trees stay naturally proportioned; Core obstacle height selects
+            // a uniform authored-mesh scale rather than stretching the trunk.
+            const float UniformScale = FMath::Clamp(
+                TargetHeightUU / FMath::Max(1.0f, NativeSize.Z),
+                0.65f,
+                2.25f);
+            VisualScale = FVector(UniformScale);
+        }
+
+        Component->AddInstance(FTransform(
+            FRotator(0.0f, Yaw, 0.0f),
+            FVector(ObstacleLocation.X, ObstacleLocation.Y, GroundZ),
+            VisualScale));
+
+        if (Obstacle.Kind == ELLCoreNaturalObstacleKind::Rock)
+        {
+            ++PlacedRocks;
+        }
+        else
+        {
+            ++PlacedTrees;
+        }
+    }
 
 #if PLATFORM_ANDROID
     constexpr float TreeMinScale = 0.82f;
