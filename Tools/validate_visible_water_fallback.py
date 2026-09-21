@@ -68,7 +68,8 @@ assert "FallbackWaterDepthBelowSurfaceUU" in cpp
 assert "WaterSurfaceZUU = 4.0f" in header
 assert "FallbackWaterDepthBelowSurfaceUU = 2.0f" in header
 assert "WaterBody->SetActorEnableCollision(false)" in cpp
-assert "GetMaterializedSurfaceWaterPresentationObservations()" in cpp
+assert "GetSurfaceWaterPreviewObservationsAroundChunk(" in cpp
+assert "ObserverCenterChunk" in cpp
 
 for token in (
     "[/Script/LifeLens.LLWaterPresentationActor]",
