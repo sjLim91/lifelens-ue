@@ -46,5 +46,91 @@ int main(){
     CHECK(!sim.observePendingContextAction(second.actor).active);
     CHECK(!sim.completeExternalContextAction(second.actor,second.token,childPos));
     CHECK(sim.world().environmentalResidues.all().size()==residueBefore+1);
+    // If both biological parents are unavailable, a living adult in the same
+    // household can provide temporary dependent care without rewriting genealogy.
+    Simulation fallback(30303); fallback.setupNewGame();
+    SimulationStateSnapshot orphanSnapshot=fallback.captureSnapshot();
+    CHECK(orphanSnapshot.world.characters.size()>=4);
+    const CharacterId deadParentA=orphanSnapshot.world.characters[0].id;
+    const CharacterId householdCaregiver=orphanSnapshot.world.characters[1].id;
+    const CharacterId deadParentB=orphanSnapshot.world.characters[2].id;
+    const int orphanCareMinute=orphanSnapshot.world.minute;
+
+    for(auto& resident:orphanSnapshot.world.characters){
+        resident.needs={0.05,0.05,0.05,0.05,0.05};
+        if(resident.id==deadParentA || resident.id==deadParentB){
+            resident.alive=false;
+        }
+    }
+
+    Character orphan;
+    orphan.id=199;
+    orphan.name="HouseholdCareBaby";
+    orphan.sex=Sex::Male;
+    orphan.hasBirthMinute=true;
+    orphan.birthMinute=orphanCareMinute;
+    orphan.lifeStage=LifeStage::Baby;
+    orphan.parentIds={deadParentA,deadParentB};
+    orphan.civilization.character=orphan.id;
+    orphan.needs={0.01,0.01,0.01,0.96,0.01};
+    orphan.development.attachment=0.55;
+    orphan.development.confidence=0.45;
+    orphan.development.socialSkill=0.15;
+    orphan.development.emotionalSecurity=0.50;
+    orphan.development.health=1.0;
+    applyLifeStageProfile(orphan,LifeStage::Baby);
+    orphanSnapshot.world.characters.push_back(orphan);
+
+    SimulationRuntimeSnapshot orphanRuntime;
+    orphanRuntime.pos=orphanSnapshot.runtime[householdCaregiver].pos;
+    orphanSnapshot.runtime.emplace(orphan.id,orphanRuntime);
+    CHECK(orphanSnapshot.genealogy.registerBirth(
+        orphan.id,deadParentA,deadParentB));
+
+    orphanSnapshot.households=HouseholdBook{};
+    CHECK(orphanSnapshot.households.create(
+        990,{householdCaregiver,orphan.id},0,0.0));
+
+    auto& caregiverToOrphan=
+        orphanSnapshot.relationships.getOrCreate(
+            householdCaregiver,orphan.id);
+    caregiverToOrphan.affection=0.80;
+    caregiverToOrphan.commitment=0.78;
+    caregiverToOrphan.comfort=0.82;
+    auto& orphanToCaregiver=
+        orphanSnapshot.relationships.getOrCreate(
+            orphan.id,householdCaregiver);
+    orphanToCaregiver.affection=0.70;
+    orphanToCaregiver.comfort=0.76;
+
+    std::string fallbackError;
+    CHECK(fallback.restoreSnapshot(orphanSnapshot,&fallbackError));
+    CHECK(fallbackError.empty());
+    fallback.setExternalPhysicalExecution(true);
+    fallback.step();
+
+    const PendingContextActionObservation fallbackPending=
+        fallback.observePendingContextAction(householdCaregiver);
+    CHECK(fallbackPending.active);
+    CHECK(fallbackPending.kind==ContextActionKind::Parenting);
+    CHECK(fallbackPending.targetResident==orphan.id);
+    CHECK(fallbackPending.parentingAction==ParentingAction::ToiletAssist);
+
+    GridPos orphanPos{};
+    CHECK(fallback.runtimePosition(orphan.id,orphanPos));
+    Character* liveOrphan=findCharacter(fallback,orphan.id);
+    CHECK(liveOrphan!=nullptr);
+    const double orphanBladderBefore=liveOrphan->needs.bladder;
+    CHECK(fallback.completeExternalContextAction(
+        householdCaregiver,fallbackPending.token,orphanPos));
+    CHECK(liveOrphan->needs.bladder<orphanBladderBefore);
+    CHECK(liveOrphan->parentIds.size()==2);
+    CHECK(liveOrphan->parentIds[0]==deadParentA);
+    CHECK(liveOrphan->parentIds[1]==deadParentB);
+    CHECK(fallback.genealogy().relationBetween(
+        orphan.id,deadParentA)==KinshipType::Parent);
+    CHECK(fallback.genealogy().relationBetween(
+        orphan.id,deadParentB)==KinshipType::Parent);
+
     std::cout << "competing parenting arbitration passed\n"; return 0;
 }
