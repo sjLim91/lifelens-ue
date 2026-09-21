@@ -44,6 +44,9 @@ jobs:
       - name: Validate runtime replacement projection
         run: python Tools/validate_runtime_replacement_projection.py
 
+      - name: Validate residue terrain grounding
+        run: python Tools/validate_residue_terrain_grounding.py
+
       - name: Validate autosave write throttle
         run: python Tools/validate_autosave_throttle.py
 
