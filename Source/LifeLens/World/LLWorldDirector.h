@@ -147,6 +147,8 @@ private:
 
     float SimulationClockAccumulator = 0.0f;
     float EnvironmentalVisualRefreshAccumulator = 0.0f;
+    float AutosaveRealSecondsSinceLastWrite = 0.0f;
+    bool bAutosavePending = false;
     int64 ObservedCoreRuntimeGeneration = -1;
     FIntPoint CorePresentationOriginGrid = FIntPoint::ZeroValue;
 
@@ -164,6 +166,14 @@ private:
     // unbounded Core catch-up loop. Backlog remains queued in the accumulator.
     UPROPERTY(Config, EditAnywhere, Category="LifeLens|Time", meta=(ClampMin="1", ClampMax="512"))
     int32 MaxSimulationMinutesPerFrame = 32;
+
+    // Preserve simulation-time autosave intent without allowing high observer
+    // speeds to serialize/write a complete snapshot multiple times per second.
+    UPROPERTY(Config, EditAnywhere, Category="LifeLens|Time|Autosave", meta=(ClampMin="1", ClampMax="1440"))
+    int32 AutosaveSimulationMinutes = 60;
+
+    UPROPERTY(Config, EditAnywhere, Category="LifeLens|Time|Autosave", meta=(ClampMin="1.0", ClampMax="300.0"))
+    float AutosaveMinimumRealSeconds = 10.0f;
 
     UPROPERTY(Config, EditAnywhere, Category="LifeLens|Action|Context", meta=(ClampMin="1.0"))
     float ContextWorldTargetArrivalRadiusUU = 165.0f;
