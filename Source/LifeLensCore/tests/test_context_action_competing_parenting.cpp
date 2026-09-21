@@ -132,5 +132,97 @@ int main(){
     CHECK(fallback.genealogy().relationBetween(
         orphan.id,deadParentB)==KinshipType::Child);
 
+    // A nuclear-household orphan can still receive community care when no
+    // parent, co-resident adult, or close adult kin remains available.
+    Simulation community(40404); community.setupNewGame();
+    SimulationStateSnapshot communitySnapshot=community.captureSnapshot();
+    CHECK(communitySnapshot.world.characters.size()>=4);
+    const CharacterId communityDeadA=communitySnapshot.world.characters[0].id;
+    const CharacterId communityAdultA=communitySnapshot.world.characters[1].id;
+    const CharacterId communityDeadB=communitySnapshot.world.characters[2].id;
+    const CharacterId communityAdultB=communitySnapshot.world.characters[3].id;
+
+    for(auto& resident:communitySnapshot.world.characters){
+        resident.needs={0.05,0.05,0.05,0.05,0.05};
+        if(resident.id==communityDeadA || resident.id==communityDeadB){
+            resident.alive=false;
+        }
+    }
+
+    Character loneOrphan;
+    loneOrphan.id=299;
+    loneOrphan.name="CommunityCareBaby";
+    loneOrphan.sex=Sex::Female;
+    loneOrphan.hasBirthMinute=true;
+    loneOrphan.birthMinute=communitySnapshot.world.minute;
+    loneOrphan.lifeStage=LifeStage::Baby;
+    loneOrphan.parentIds={communityDeadA,communityDeadB};
+    loneOrphan.civilization.character=loneOrphan.id;
+    loneOrphan.needs={0.01,0.01,0.01,0.97,0.01};
+    loneOrphan.development.attachment=0.45;
+    loneOrphan.development.confidence=0.40;
+    loneOrphan.development.socialSkill=0.12;
+    loneOrphan.development.emotionalSecurity=0.42;
+    loneOrphan.development.health=1.0;
+    applyLifeStageProfile(loneOrphan,LifeStage::Baby);
+    communitySnapshot.world.characters.push_back(loneOrphan);
+
+    SimulationRuntimeSnapshot loneRuntime;
+    loneRuntime.pos=communitySnapshot.runtime[communityAdultA].pos;
+    communitySnapshot.runtime.emplace(loneOrphan.id,loneRuntime);
+    CHECK(communitySnapshot.genealogy.registerBirth(
+        loneOrphan.id,communityDeadA,communityDeadB));
+
+    communitySnapshot.households=HouseholdBook{};
+    CHECK(communitySnapshot.households.create(
+        991,{loneOrphan.id},0,0.0));
+
+    for(CharacterId caregiverId:{communityAdultA,communityAdultB}){
+        auto& toChild=communitySnapshot.relationships.getOrCreate(
+            caregiverId,loneOrphan.id);
+        toChild.affection=0.60;
+        toChild.commitment=0.52;
+        toChild.comfort=0.62;
+        auto& fromChild=communitySnapshot.relationships.getOrCreate(
+            loneOrphan.id,caregiverId);
+        fromChild.affection=0.50;
+        fromChild.comfort=0.55;
+    }
+
+    std::string communityError;
+    CHECK(community.restoreSnapshot(communitySnapshot,&communityError));
+    CHECK(communityError.empty());
+    community.setExternalPhysicalExecution(true);
+    community.step();
+
+    PendingContextActionObservation communityPending;
+    int communityCareCount=0;
+    for(CharacterId caregiverId:{communityAdultA,communityAdultB}){
+        const PendingContextActionObservation pending=
+            community.observePendingContextAction(caregiverId);
+        if(pending.active
+           && pending.kind==ContextActionKind::Parenting
+           && pending.targetResident==loneOrphan.id){
+            ++communityCareCount;
+            communityPending=pending;
+        }
+    }
+    CHECK(communityCareCount==1);
+    CHECK(communityPending.active);
+
+    GridPos loneOrphanPos{};
+    CHECK(community.runtimePosition(loneOrphan.id,loneOrphanPos));
+    Character* liveLoneOrphan=findCharacter(community,loneOrphan.id);
+    CHECK(liveLoneOrphan!=nullptr);
+    const double loneBladderBefore=liveLoneOrphan->needs.bladder;
+    CHECK(community.completeExternalContextAction(
+        communityPending.actor,communityPending.token,loneOrphanPos));
+    CHECK(liveLoneOrphan->needs.bladder<loneBladderBefore);
+    CHECK(liveLoneOrphan->parentIds.size()==2);
+    CHECK(community.genealogy().relationBetween(
+        loneOrphan.id,communityDeadA)==KinshipType::Child);
+    CHECK(community.genealogy().relationBetween(
+        loneOrphan.id,communityDeadB)==KinshipType::Child);
+
     std::cout << "competing parenting arbitration passed\n"; return 0;
 }
