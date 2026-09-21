@@ -51,6 +51,10 @@ public:
     UFUNCTION(BlueprintCallable, Category="LifeLens|Resident")
     void SetCurrentIntent(ELLActionIntent NewIntent) { CurrentIntent = NewIntent; }
 
+    // Presentation-only vertical projection onto the rendered local terrain.
+    // The authoritative actor/capsule stays on the flat Core locomotion plane.
+    void SetPresentationGroundOffsetUU(float OffsetUU);
+
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="LifeLens|Presentation")
     TObjectPtr<ULLResidentAppearanceComponent> AppearanceComponent;
 
