@@ -191,6 +191,14 @@ void ALLResidentCharacter::Tick(float DeltaSeconds)
     }
 }
 
+void ALLResidentCharacter::SetPresentationGroundOffsetUU(float OffsetUU)
+{
+    if (AppearanceComponent)
+    {
+        AppearanceComponent->SetPresentationGroundOffsetUU(OffsetUU);
+    }
+}
+
 void ALLResidentCharacter::BindResident(const FLLResidentData& ResidentData)
 {
     const bool bIdentityChanged = ResidentId.IsValid() && ResidentId != ResidentData.ResidentId;
