@@ -1500,17 +1500,10 @@ void ALLWorldPresentationActor::BuildRegionalTerrainPreview(
             continue;
         }
 
-        const int32 Ring = FMath::Max(
-            FMath::Abs(Terrain.ChunkX - ObserverCenterChunk.X),
-            FMath::Abs(Terrain.ChunkY - ObserverCenterChunk.Y));
-        // Ring 0 belongs to the authoritative/materialized local surface.
-        // Ring 1 is intentionally rendered: the shared terrain contract keeps
-        // it on local-amplitude, non-negative relief so the opening view gains
-        // nearby hills without a hard seam at the gameplay boundary.
-        if (Ring == 0)
-        {
-            continue;
-        }
+        // Materialized coordinates were already excluded above. Therefore the
+        // observer-center tile itself must render when the camera is looking at
+        // read-only remote geography; otherwise every streamed preview develops
+        // a one-chunk hole at its center.
 
         const FVector ChunkOrigin =
             ChunkOriginUU(World, Terrain.ChunkX, Terrain.ChunkY);
