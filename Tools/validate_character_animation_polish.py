@@ -172,4 +172,40 @@ assert "WorkAtTarget = ELLResidentWorkPresentationMode::Interact;" in parenting_
     "ParentingAction can be refined by ResolveContextMotion"
 )
 
+resident_cpp = (
+    root / "Source/LifeLens/Characters/LLResidentCharacter.cpp"
+).read_text(encoding="utf-8")
+resident_header = (
+    root / "Source/LifeLens/Characters/LLResidentCharacter.h"
+).read_text(encoding="utf-8")
+
+# High observer speeds scale resident Tick delta. A route must consume the
+# resulting distance budget across multiple Core-grid waypoints instead of
+# discarding all remaining movement after one waypoint per render frame.
+for token in (
+    "MaxMovementSegmentsPerTick = 8",
+    "RemainingMoveDistance",
+    "SegmentBudget",
+    "while (bHasMovementTarget",
+    "SegmentsProcessed < SegmentBudget",
+    "RequestedStepDistance",
+    "RemainingMoveDistance - RequestedStepDistance",
+    "if (bIntermediateWaypoint)",
+    "++MovementWaypointIndex;",
+    "continue;",
+    "ForwardHit.bBlockingHit",
+    "ActualSegmentMove <= 0.5f",
+):
+    assert token in resident_cpp or token in resident_header, (
+        f"high-speed resident route budget missing: {token}"
+    )
+
+tick_start = resident_cpp.index("void ALLResidentCharacter::Tick(float DeltaSeconds)")
+tick_end = resident_cpp.index("void ALLResidentCharacter::BindResident", tick_start)
+tick_block = resident_cpp[tick_start:tick_end]
+assert "FMath::VInterpConstantTo" not in tick_block, (
+    "single-target interpolation would discard distance budget at route waypoints"
+)
+assert "MaxMovementSegmentsPerTick" in resident_header
+
 print("LifeLens character animation truth/polish: PASS")
