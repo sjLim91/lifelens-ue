@@ -341,7 +341,6 @@ float ALLWaterPresentationActor::WaterSurfaceZForGrid(
             World,
             Terrain,
             LocationUU,
-            FVector2D::ZeroVector,
             FacilityCentersUU)
         : LLTerrainPresentationContract::RegionalSurfaceZUU(
             World,
