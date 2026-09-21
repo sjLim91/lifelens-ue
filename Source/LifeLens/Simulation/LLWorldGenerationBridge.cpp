@@ -379,6 +379,40 @@ ULLCoreBridgeSubsystem::GetWorldHierarchyObservation() const
     return Result;
 }
 
+FLLCoreWorldAddressObservation
+ULLCoreBridgeSubsystem::GetWorldAddressForChunk(
+    int32 ChunkX,
+    int32 ChunkY) const
+{
+    FLLCoreWorldAddressObservation Result;
+    if (!CoreSimulation)
+    {
+        return Result;
+    }
+
+    const lifelens::WorldGenesisIdentity Identity =
+        CoreSimulation->world().genesisIdentity();
+    const lifelens::PlanetIdentity Planet =
+        lifelens::derivePrimaryPlanetIdentity(Identity);
+    const lifelens::SurfaceRegionIdentity Region =
+        lifelens::deriveSurfaceRegionIdentityForChunk(
+            Identity,
+            {ChunkX, ChunkY});
+
+    Result.bAvailable =
+        lifelens::validPlanetIdentity(Planet)
+        && lifelens::validSurfaceRegionIdentity(Region);
+    Result.PlanetId = static_cast<int64>(Planet.id);
+    Result.SurfaceRegionX = Region.coord.x;
+    Result.SurfaceRegionY = Region.coord.y;
+    Result.SurfaceRegionId = static_cast<int64>(Region.id);
+    Result.SurfaceRegionSeed =
+        static_cast<int64>(Region.seed & 0x7fffffffffffffffULL);
+    Result.ChunkX = ChunkX;
+    Result.ChunkY = ChunkY;
+    return Result;
+}
+
 FLLCoreWorldGenerationObservation ULLCoreBridgeSubsystem::GetWorldGenerationObservation() const
 {
     FLLCoreWorldGenerationObservation Result;
@@ -503,22 +537,42 @@ ULLCoreBridgeSubsystem::GetRegionalTerrainPreviewObservations(
         return Empty;
     }
 
-    // Bound presentation cost independently from simulation authority.
+    // Compatibility only: old consumers remain anchored to the initial spawn.
+    // World v2 streaming/observer code supplies its own logical center below.
+    return GetTerrainPreviewObservationsAroundChunk(
+        World.initialStartRegionCoord.x,
+        World.initialStartRegionCoord.y,
+        RadiusChunks);
+}
+
+TArray<FLLCoreTerrainPresentationObservation>
+ULLCoreBridgeSubsystem::GetTerrainPreviewObservationsAroundChunk(
+    int32 CenterChunkX,
+    int32 CenterChunkY,
+    int32 RadiusChunks) const
+{
+    TArray<FLLCoreTerrainPresentationObservation> Empty;
+    if (!CoreSimulation)
+    {
+        return Empty;
+    }
+
     const int32 Radius = FMath::Clamp(RadiusChunks, 1, 16);
-    const lifelens::WorldGenesisIdentity Identity = World.genesisIdentity();
-    const lifelens::ChunkCoord Origin = World.initialStartRegionCoord;
+    const lifelens::WorldGenesisIdentity Identity =
+        CoreSimulation->world().genesisIdentity();
+    const lifelens::ChunkCoord Center{CenterChunkX, CenterChunkY};
 
     const bool bCacheHit =
-        CachedRegionalTerrainRadiusChunks == Radius
-        && CachedRegionalTerrainWorldSeed == Identity.worldSeed
-        && CachedRegionalTerrainGenerationVersion
+        CachedTerrainPreviewRadiusChunks == Radius
+        && CachedTerrainPreviewWorldSeed == Identity.worldSeed
+        && CachedTerrainPreviewGenerationVersion
             == static_cast<int32>(Identity.generationVersion)
-        && CachedRegionalTerrainStartChunkX == Origin.x
-        && CachedRegionalTerrainStartChunkY == Origin.y
-        && CachedRegionalTerrainPreview.Num() == (Radius * 2 + 1) * (Radius * 2 + 1);
+        && CachedTerrainPreviewCenterChunkX == Center.x
+        && CachedTerrainPreviewCenterChunkY == Center.y
+        && CachedTerrainPreview.Num() == (Radius * 2 + 1) * (Radius * 2 + 1);
     if (bCacheHit)
     {
-        return CachedRegionalTerrainPreview;
+        return CachedTerrainPreview;
     }
 
     TArray<FLLCoreTerrainPresentationObservation> Result;
@@ -532,19 +586,19 @@ ULLCoreBridgeSubsystem::GetRegionalTerrainPreviewObservations(
             FLLCoreTerrainPresentationObservation Observation;
             FillTerrainPresentationObservation(
                 Identity,
-                {Origin.x + X, Origin.y + Y},
+                {Center.x + X, Center.y + Y},
                 Observation);
             Result.Add(MoveTemp(Observation));
         }
     }
 
-    CachedRegionalTerrainPreview = Result;
-    CachedRegionalTerrainWorldSeed = Identity.worldSeed;
-    CachedRegionalTerrainGenerationVersion =
+    CachedTerrainPreview = Result;
+    CachedTerrainPreviewWorldSeed = Identity.worldSeed;
+    CachedTerrainPreviewGenerationVersion =
         static_cast<int32>(Identity.generationVersion);
-    CachedRegionalTerrainStartChunkX = Origin.x;
-    CachedRegionalTerrainStartChunkY = Origin.y;
-    CachedRegionalTerrainRadiusChunks = Radius;
+    CachedTerrainPreviewCenterChunkX = Center.x;
+    CachedTerrainPreviewCenterChunkY = Center.y;
+    CachedTerrainPreviewRadiusChunks = Radius;
     return Result;
 }
 
