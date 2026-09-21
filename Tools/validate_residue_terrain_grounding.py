@@ -7,6 +7,8 @@ header = (root / "Source/LifeLens/World/LLEnvironmentalResidueVisualizerComponen
 
 for token in (
     "LLTerrainPresentationContract::LocalSurfaceZUU",
+    "LLTerrainPresentationContract::RegionalSurfaceZUU",
+    "bMaterializedTerrain",
     "GetWorldGenerationObservation()",
     "GetCivilizationWorldObservation(0)",
     "GetTerrainPresentationObservation",
@@ -42,6 +44,10 @@ for token in (
 surface_start = cpp.index("ResolveSurfaceLocation(")
 surface_end = cpp.index("RefreshFromCore(", surface_start)
 surface = cpp[surface_start:surface_end]
+assert "const float SurfaceZUU = bMaterializedTerrain" in surface
+assert "? LLTerrainPresentationContract::LocalSurfaceZUU" in surface
+assert ": LLTerrainPresentationContract::RegionalSurfaceZUU" in surface
+
 for forbidden in (
     "LineTraceSingleByChannel",
     "ECC_WorldStatic",
