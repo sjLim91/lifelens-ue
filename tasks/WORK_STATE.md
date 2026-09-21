@@ -36,11 +36,11 @@ User-approved direction:
 - Local -> Regional -> Planetary -> Orbital -> Interplanetary remain one world identity at different representation levels.
 
 **Execution state:** user start signal received on 2026-09-21.
-- W2-0 provider-contract foundation is ACTIVE on `jjun/world-v2-contract-foundation`.
+- W2-0 provider-contract foundation merged as PR #374 / main `f311e90e2fd63f6e5e78b996c8d30fca1cc0cc3d`.
 - current main already has authoritative `GetMaterializedNaturalChunkObservations()` over `generatedNaturalChunks`; the historical count/ring concern is not being redone.
 - current new work: spawn-independent `Planet -> SurfaceRegion -> Chunk` address projection + observer-centered read-only terrain preview.
 - Character appearance/motion/context implementation remains deferred until World v2 visual/physical foundation.
-- Presentation-owned files remain untouched in W2-0.
+- implementation ownership is now integrated: after provider contracts stabilize, Jjun may continue directly into WorldPresentation/Environment/Character/UI as the milestone requires; Dagyeom remains visual QA/targeted-polish collaboration.
 
 The previous environment source closeout is reclassified as **structural/source closeout only, not runtime visual acceptance** because the latest runtime screenshots still show flat local terrain, missing forest canopy/water continuity and visible gray/white proxy artifacts.
 
@@ -479,3 +479,16 @@ Motion asset decision:
 - provenance / license / skeleton / root-motion / retarget / semantic-action mapping 기록 필수.
 
 Execution lock remains unchanged: **World v2 start signal 전 구현 없음.**
+
+## 2026-09-21 OWNERSHIP UPDATE — integrated implementation
+
+User direction:
+- do not block World/Character/Presentation work behind a separate Dagyeom ownership lane.
+- Jjun handles end-to-end implementation across Core, World, WorldPresentation, Character, UI and required Content as milestones demand.
+- Dagyeom remains available for actual-screen review, visual QA and explicitly delegated polish.
+- architectural authority boundaries remain unchanged: Core/World truth stays authoritative; Presentation/Character do not invent simulation outcomes.
+- same-file active branch conflicts are still coordinated before edits.
+
+Effect on World v2:
+- provider contract -> Presentation handoff is no longer a human ownership gate.
+- runtime screenshot acceptance remains mandatory.
