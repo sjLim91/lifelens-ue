@@ -3,7 +3,7 @@ name: LifeLens Photoreal Mature Tree Import
 on:
   push:
     branches:
-      - integration/photoreal-mature-tree-wave-1
+      - integration/photoreal-mature-tree-wave-1-v2
     paths:
       - '.github/workflows/photoreal-mature-tree-import.yml'
       - 'Tools/acquire_photoreal_environment_assets.py'
