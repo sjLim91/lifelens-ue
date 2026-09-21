@@ -1455,8 +1455,7 @@ void ALLWorldPresentationActor::BuildChunkGround(
 void ALLWorldPresentationActor::BuildRegionalTerrainPreview(
     const FLLCoreWorldGenerationObservation& World,
     const TArray<FLLCoreTerrainPresentationObservation>& RegionalTerrains,
-    const TArray<FLLCoreNaturalChunkObservation>& MaterializedChunks,
-    const FIntPoint& ObserverCenterChunk)
+    const TArray<FLLCoreNaturalChunkObservation>& MaterializedChunks)
 {
     if (!RegionalTerrainTileInstances || !GroundMesh)
     {
@@ -3044,8 +3043,7 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         BuildRegionalTerrainPreview(
             World,
             RegionalTerrains,
-            MaterializedChunks,
-            ObserverCenterChunk);
+            MaterializedChunks);
 
         for (const FLLCoreNaturalChunkObservation& Chunk : MaterializedChunks)
         {
