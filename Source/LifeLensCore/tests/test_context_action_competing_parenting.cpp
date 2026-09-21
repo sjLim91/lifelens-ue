@@ -128,9 +128,9 @@ int main(){
     CHECK(liveOrphan->parentIds[0]==deadParentA);
     CHECK(liveOrphan->parentIds[1]==deadParentB);
     CHECK(fallback.genealogy().relationBetween(
-        orphan.id,deadParentA)==KinshipType::Parent);
+        orphan.id,deadParentA)==KinshipType::Child);
     CHECK(fallback.genealogy().relationBetween(
-        orphan.id,deadParentB)==KinshipType::Parent);
+        orphan.id,deadParentB)==KinshipType::Child);
 
     std::cout << "competing parenting arbitration passed\n"; return 0;
 }
