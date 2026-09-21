@@ -68,6 +68,61 @@ static void advanceToDailyDecision(Simulation& sim,int targetMinute)
     sim.step();
 }
 
+static void makePairBrokenDown(
+    Simulation& sim,
+    CharacterId firstId,
+    CharacterId secondId)
+{
+    Relationship& firstToSecond=
+        sim.relationships().getOrCreate(firstId,secondId);
+    Relationship& secondToFirst=
+        sim.relationships().getOrCreate(secondId,firstId);
+    for(Relationship* relation:{&firstToSecond,&secondToFirst}){
+        relation->affection=0.03;
+        relation->trust=0.02;
+        relation->respect=0.08;
+        relation->comfort=0.03;
+        relation->familiarity=0.90;
+        relation->attraction=0.04;
+        relation->romanticInterest=0.03;
+        relation->sexualAttraction=0.02;
+        relation->commitment=0.04;
+        relation->conflict=0.96;
+        relation->jealousy=0.88;
+        relation->fear=0.72;
+        relation->grudge=0.94;
+    }
+}
+
+static bool establishDirectMarriage(
+    Simulation& sim,
+    CharacterId firstId,
+    CharacterId secondId,
+    HouseholdId householdId,
+    double sharedMoney,
+    int marriageMinute)
+{
+    makePairReady(sim,firstId,secondId);
+    if(!sim.romances().startDating(
+            firstId,secondId,firstId,marriageMinute-20)) return false;
+    if(!sim.romances().engage(
+            firstId,secondId,marriageMinute-10)) return false;
+    if(!sim.romances().marry(
+            firstId,secondId,marriageMinute)) return false;
+    if(!sim.genealogy().linkSpouses(firstId,secondId)) return false;
+    if(!sim.households().create(
+            householdId,{firstId,secondId},0,sharedMoney)) return false;
+
+    Character* first=characterById(sim,firstId);
+    Character* second=characterById(sim,secondId);
+    if(first==nullptr || second==nullptr) return false;
+    recordLifeEvent(
+        first->lifeHistory,LifeEventType::Married,marriageMinute,{secondId});
+    recordLifeEvent(
+        second->lifeHistory,LifeEventType::Married,marriageMinute,{firstId});
+    return true;
+}
+
 static bool sameGenetics(const GeneticsProfile& a,const GeneticsProfile& b)
 {
     return a.faceShape==b.faceShape &&
@@ -190,6 +245,87 @@ int main()
     CHECK(first.conceptionMinute==repeated.conceptionMinute);
     CHECK(first.birthMinute==repeated.birthMinute);
     CHECK(sameGenetics(first.childGenetics,repeated.childGenetics));
+
+    // A healthy marriage remains stable after the breakdown grace period.
+    Simulation stableMarriage(330011);
+    stableMarriage.setupNewGame();
+    const CharacterId stableA=stableMarriage.world().characters[0].id;
+    const CharacterId stableB=stableMarriage.world().characters[2].id;
+    const int stableMarriageMinute=FamilyProgressionDecisionMinuteOfDay;
+    CHECK(establishDirectMarriage(
+        stableMarriage,stableA,stableB,700,800.0,stableMarriageMinute));
+    advanceToDailyDecision(
+        stableMarriage,
+        stableMarriageMinute+FamilyMarriageBreakdownGraceMinutes);
+    const RomancePair* stablePair=
+        stableMarriage.romances().findLatest(stableA,stableB);
+    CHECK(stablePair!=nullptr);
+    CHECK(stablePair->stage==RomanceStage::Married);
+
+    // Severe sustained mutual breakdown now progresses through the already
+    // modeled Separated/Divorced states instead of leaving every living
+    // marriage permanently locked in Married.
+    Simulation breakdown(440022);
+    breakdown.setupNewGame();
+    const CharacterId breakdownA=breakdown.world().characters[0].id;
+    const CharacterId breakdownB=breakdown.world().characters[2].id;
+    const int breakdownMarriageMinute=FamilyProgressionDecisionMinuteOfDay;
+    CHECK(establishDirectMarriage(
+        breakdown,breakdownA,breakdownB,800,1000.0,breakdownMarriageMinute));
+    makePairBrokenDown(breakdown,breakdownA,breakdownB);
+
+    advanceToDailyDecision(
+        breakdown,
+        breakdownMarriageMinute+FamilyMarriageBreakdownGraceMinutes);
+    const RomancePair* breakdownPair=
+        breakdown.romances().findLatest(breakdownA,breakdownB);
+    CHECK(breakdownPair!=nullptr);
+    CHECK(breakdownPair->stage==RomanceStage::Separated);
+    Character* breakdownFirst=characterById(breakdown,breakdownA);
+    Character* breakdownSecond=characterById(breakdown,breakdownB);
+    CHECK(breakdownFirst!=nullptr);
+    CHECK(breakdownSecond!=nullptr);
+    const LifeHistoryEntry* separatedEvent=
+        latestLifeEvent(
+            breakdownFirst->lifeHistory,
+            LifeEventType::Separated);
+    CHECK(separatedEvent!=nullptr);
+    CHECK(breakdown.genealogy().relationBetween(
+        breakdownA,breakdownB)==KinshipType::Spouse);
+    const Household* separatedHomeA=
+        breakdown.households().householdOf(breakdownA);
+    const Household* separatedHomeB=
+        breakdown.households().householdOf(breakdownB);
+    CHECK(separatedHomeA!=nullptr);
+    CHECK(separatedHomeB!=nullptr);
+    CHECK(separatedHomeA->id==separatedHomeB->id);
+
+    advanceToDailyDecision(
+        breakdown,
+        separatedEvent->minute+FamilySeparationToDivorceMinutes);
+    breakdownPair=breakdown.romances().findLatest(
+        breakdownA,breakdownB);
+    CHECK(breakdownPair!=nullptr);
+    CHECK(breakdownPair->stage==RomanceStage::Divorced);
+    CHECK(latestLifeEvent(
+        breakdownFirst->lifeHistory,
+        LifeEventType::Divorced)!=nullptr);
+    CHECK(latestLifeEvent(
+        breakdownSecond->lifeHistory,
+        LifeEventType::Divorced)!=nullptr);
+    CHECK(breakdown.genealogy().relationBetween(
+        breakdownA,breakdownB)!=KinshipType::Spouse);
+
+    const Household* divorcedHomeA=
+        breakdown.households().householdOf(breakdownA);
+    const Household* divorcedHomeB=
+        breakdown.households().householdOf(breakdownB);
+    CHECK(divorcedHomeA!=nullptr);
+    CHECK(divorcedHomeB!=nullptr);
+    CHECK(divorcedHomeA->id!=divorcedHomeB->id);
+    CHECK(std::abs(
+        (divorcedHomeA->sharedMoney+divorcedHomeB->sharedMoney)
+        -1000.0)<1e-9);
 
     return 0;
 }
