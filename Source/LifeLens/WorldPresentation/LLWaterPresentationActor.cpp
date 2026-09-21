@@ -1,6 +1,11 @@
 #include "WorldPresentation/LLWaterPresentationActor.h"
 
 #include "Components/SplineComponent.h"
+#include "Components/HierarchicalInstancedStaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "Materials/MaterialInterface.h"
+#include "UObject/ConstructorHelpers.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
@@ -179,11 +184,60 @@ ALLWaterPresentationActor::ALLWaterPresentationActor()
 {
     PrimaryActorTick.bCanEverTick = true;
     PrimaryActorTick.TickInterval = 0.5f;
+
+    FallbackChannelInstances =
+        CreateDefaultSubobject<UHierarchicalInstancedStaticMeshComponent>(
+            TEXT("FallbackWaterChannels"));
+    SetRootComponent(FallbackChannelInstances);
+
+    FallbackAreaInstances =
+        CreateDefaultSubobject<UHierarchicalInstancedStaticMeshComponent>(
+            TEXT("FallbackWaterAreas"));
+    FallbackAreaInstances->SetupAttachment(FallbackChannelInstances);
+
+    auto ConfigureFallbackComponent =
+        [](UHierarchicalInstancedStaticMeshComponent* Component)
+        {
+            if (!Component)
+            {
+                return;
+            }
+            Component->SetMobility(EComponentMobility::Movable);
+            Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+            Component->SetCanEverAffectNavigation(false);
+            Component->SetGenerateOverlapEvents(false);
+            Component->SetCastShadow(false);
+        };
+
+    ConfigureFallbackComponent(FallbackChannelInstances);
+    ConfigureFallbackComponent(FallbackAreaInstances);
+
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PlaneFinder(
+        TEXT("/Engine/BasicShapes/Plane.Plane"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> CylinderFinder(
+        TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
+    static ConstructorHelpers::FObjectFinder<UMaterialInterface> MaterialFinder(
+        TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
+
+    if (PlaneFinder.Succeeded())
+    {
+        FallbackChannelInstances->SetStaticMesh(PlaneFinder.Object);
+    }
+    if (CylinderFinder.Succeeded())
+    {
+        FallbackAreaInstances->SetStaticMesh(CylinderFinder.Object);
+    }
+    if (MaterialFinder.Succeeded())
+    {
+        FallbackChannelInstances->SetMaterial(0, MaterialFinder.Object);
+        FallbackAreaInstances->SetMaterial(0, MaterialFinder.Object);
+    }
 }
 
 void ALLWaterPresentationActor::BeginPlay()
 {
     Super::BeginPlay();
+    EnsureFallbackWaterMaterial();
     EnsureWaterZone();
     RefreshFromCore(true);
 }
@@ -345,6 +399,15 @@ void ALLWaterPresentationActor::ClearProjectedWater()
         }
     }
     SpawnedWaterActors.Reset();
+
+    if (FallbackChannelInstances)
+    {
+        FallbackChannelInstances->ClearInstances();
+    }
+    if (FallbackAreaInstances)
+    {
+        FallbackAreaInstances->ClearInstances();
+    }
 }
 
 void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
