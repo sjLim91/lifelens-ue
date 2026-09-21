@@ -220,6 +220,14 @@ public:
         int32 ChunkY,
         FLLCoreHydrologyObservation& OutObservation) const;
 
+    // Deterministic read-only hydrology preview around any logical chunk.
+    // Observer/presentation queries never materialize Core simulation state.
+    UFUNCTION(BlueprintPure, Category="LifeLens|Core|WorldGeneration|Hydrology|Preview")
+    TArray<FLLCoreHydrologyObservation> GetHydrologyPreviewObservationsAroundChunk(
+        int32 CenterChunkX,
+        int32 CenterChunkY,
+        int32 RadiusChunks = 8) const;
+
     // Read-only deterministic geometry hints for projecting authoritative
     // materialized hydrology into Unreal Water/mesh presentation.
     UFUNCTION(BlueprintPure, Category="LifeLens|Core|WorldGeneration|Hydrology|Presentation")
@@ -230,6 +238,16 @@ public:
         int32 ChunkX,
         int32 ChunkY,
         FLLCoreSurfaceWaterPresentationObservation& OutObservation) const;
+
+    // Read-only water geometry preview around an arbitrary observer chunk.
+    // Only chunks whose deterministic hydrology contains surface water are
+    // returned; no resource/facility/chunk materialization occurs.
+    UFUNCTION(BlueprintPure, Category="LifeLens|Core|WorldGeneration|Hydrology|Presentation|Preview")
+    TArray<FLLCoreSurfaceWaterPresentationObservation>
+    GetSurfaceWaterPreviewObservationsAroundChunk(
+        int32 CenterChunkX,
+        int32 CenterChunkY,
+        int32 RadiusChunks = 8) const;
 
     // Gameplay routing truth for materialized fresh surface water. This is
     // intentionally separate from Water presentation width/radius hints.
