@@ -10,6 +10,7 @@ bridge_header = (root / "Source/LifeLens/Simulation/LLCoreBridgeSubsystem.h").re
 bridge_cpp = (root / "Source/LifeLens/Simulation/LLCoreBridgeSubsystem.cpp").read_text(encoding="utf-8")
 lifecycle_header = (root / "Source/LifeLens/UI/LLLifecycleEventOverlay.h").read_text(encoding="utf-8")
 lifecycle_cpp = (root / "Source/LifeLens/UI/LLLifecycleEventOverlay.cpp").read_text(encoding="utf-8")
+default_game = (root / "Config/DefaultGame.ini").read_text(encoding="utf-8")
 
 for token in (
     "ObservedResidentFollowSmoothingSpeed",
@@ -19,6 +20,24 @@ for token in (
     "FMath::VInterpTo",
 ):
     assert token in cpp or token in header, f"missing camera polish token: {token}"
+
+for token in (
+    "ManualPanMaxRadiusChunks = 3.0f",
+    "LLWorldSpatialContract::ChunkSpanUU",
+    "ProposedTarget",
+    "WorldOverviewTarget",
+    "Offset.GetClampedToMaxSize(MaxPanRadiusUU)",
+):
+    assert token in cpp or token in header, f"manual pan world-boundary guard missing: {token}"
+assert "ManualPanMaxRadiusChunks=3.000000" in default_game
+
+pan_start = cpp.index("void ALLObserverPlayerController::PanByScreenDelta")
+pan_end = cpp.index("void ALLObserverPlayerController::ZoomByScale", pan_start)
+pan_block = cpp[pan_start:pan_end]
+assert "DesiredOrbitTarget += " not in pan_block, (
+    "manual pan must not remain unbounded after the regional presentation boundary guard"
+)
+assert "if (bWorldOverviewCaptured)" in pan_block
 
 for token in (
     "LinearFade * LinearFade * (3.0f - 2.0f * LinearFade)",
