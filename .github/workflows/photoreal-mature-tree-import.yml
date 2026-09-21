@@ -1,0 +1,145 @@
+name: LifeLens Photoreal Mature Tree Import
+
+on:
+  push:
+    branches:
+      - integration/photoreal-mature-tree-wave-1
+    paths:
+      - '.github/workflows/photoreal-mature-tree-import.yml'
+      - 'Tools/acquire_photoreal_environment_assets.py'
+      - 'Content/Environment/Photoreal/Import/import_photoreal_nature.py'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lifelens-photoreal-mature-tree-import
+  cancel-in-progress: true
+
+jobs:
+  import-mature-tree:
+    if: ${{ github.event.repository.private == false }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      UE_IMAGE: ghcr.io/epicgames/unreal-engine:dev-slim-5.6.0
+      UE_ROOT_IN_CONTAINER: /home/ue4/UnrealEngine
+      STAGING: ${{ github.workspace }}/assets_staging
+      DIAGNOSTICS: ${{ github.workspace }}/Diagnostics/PhotorealMatureTreeImport
+
+    steps:
+      - name: Checkout asset branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Acquire CC0 mature broadleaf
+        shell: bash
+        run: |
+          set -euo pipefail
+          python Tools/acquire_photoreal_environment_assets.py \
+            --staging "$STAGING" \
+            --resolution 1k \
+            --asset jacaranda_tree
+          du -sh "$STAGING" || true
+
+      - name: Verify provenance manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, pathlib
+          p = pathlib.Path("assets_staging/PolyHaven/manifest.json")
+          m = json.loads(p.read_text(encoding="utf-8"))
+          assert m["source"] == "Poly Haven"
+          assert m["license"] == "CC0 1.0"
+          a = m["assets"]["jacaranda_tree"]
+          assert a["source_page"] == "https://polyhaven.com/a/jacaranda_tree"
+          assert a["spec"]["resolution"] == "1k"
+          assert a["spec"]["format"] == "gltf"
+          print("LifeLens mature-tree provenance: PASS")
+          PY
+
+      - name: Preflight Epic GHCR credential
+        shell: bash
+        env:
+          EPIC_GHCR_PAT: ${{ secrets.EPIC_GHCR_PAT }}
+        run: |
+          set -euo pipefail
+          test -n "$EPIC_GHCR_PAT" || { echo 'EPIC_GHCR_PAT secret is missing'; exit 91; }
+          echo "$EPIC_GHCR_PAT" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+
+      - name: Reclaim disk and pull Unreal 5.6
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL || true
+          sudo apt-get clean || true
+          sudo docker system prune -af || true
+          docker pull "$UE_IMAGE"
+          df -h /
+
+      - name: Compile LifeLensEditor module for headless import
+        timeout-minutes: 35
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/Binaries" "$GITHUB_WORKSPACE/Intermediate" "$DIAGNOSTICS"
+          sudo chmod -R a+rwX "$GITHUB_WORKSPACE"
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -w "$UE_ROOT_IN_CONTAINER" \
+            "$UE_IMAGE" \
+            bash -lc './Engine/Build/BatchFiles/Linux/Build.sh LifeLensEditor Linux Development /workspace/LifeLens.uproject -WaitMutex -NoEngineChanges' \
+            2>&1 | tee "$DIAGNOSTICS/editor-compile.log"
+
+      - name: Headless Unreal import mature tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo chmod -R a+rwX "$GITHUB_WORKSPACE"
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -e LL_ASSET_STAGING=/workspace/assets_staging \
+            -e LL_PHOTOREAL_MODEL_IDS=jacaranda_tree \
+            -w "$UE_ROOT_IN_CONTAINER" \
+            "$UE_IMAGE" \
+            bash -lc './Engine/Binaries/Linux/UnrealEditor-Cmd /workspace/LifeLens.uproject \
+              -run=pythonscript \
+              -script=/workspace/Content/Environment/Photoreal/Import/import_photoreal_nature.py \
+              -EnablePlugins=PythonScriptPlugin -nullrhi -unattended -nopause -nosplash -stdout -FullStdOutLogOutput'
+          test -e "$GITHUB_WORKSPACE/Content/Environment/Photoreal/PolyHaven/jacaranda_tree/SM_LL_jacaranda_tree.uasset"
+
+      - name: Guard repository file size
+        shell: bash
+        run: |
+          set -euo pipefail
+          oversize="$(find Content/Environment/Photoreal/PolyHaven/jacaranda_tree -type f -size +95M -print -quit || true)"
+          if [ -n "$oversize" ]; then
+            echo "Imported file exceeds safe GitHub size budget: $oversize"
+            exit 92
+          fi
+
+      - name: Commit imported Unreal asset
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "LifeLens Asset Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add Content/Environment/Photoreal/PolyHaven/jacaranda_tree
+          if git diff --cached --quiet; then
+            echo "No new imported assets"
+            exit 0
+          fi
+          git commit -m "Import CC0 mature broadleaf tree [skip ci]"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+
+      - name: Upload mature-tree import diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: LifeLens-Photoreal-Mature-Tree-Import-Diagnostics
+          path: Diagnostics/PhotorealMatureTreeImport/
+          if-no-files-found: ignore
+          retention-days: 7
