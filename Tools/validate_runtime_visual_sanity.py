@@ -44,6 +44,18 @@ for token in (
 ):
     assert token in cpp, f"missing runtime visual sanity token: {token}"
 
+# Desktop canopy must contain a guaranteed photoreal tier while keeping the
+# expensive hero mesh out of the generic ambient catalogue.
+for token in (
+    "PhotorealBroadleafInstances",
+    "PhotorealHeroTreeInstances",
+    "SM_LL_pachira_aquatica_01",
+    "SM_LL_island_tree_02",
+    "MaxHeroTreeInstances",
+):
+    assert token in cpp or token in header, f"missing photoreal canopy sanity token: {token}"
+assert "TreeMeshes.Add(PhotoHeroIslandTree.Object)" not in cpp
+
 # Settlement should remain readable without looking like a huge shaved clearing.
 for token in (
     "CoreClearRadiusUU = 360.0f",
