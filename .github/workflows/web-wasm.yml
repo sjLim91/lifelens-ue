@@ -1,0 +1,62 @@
+name: LifeLens Web WASM
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'Source/LifeLensCore/**'
+      - 'Clients/Web/**'
+      - 'Tools/build_web_client.py'
+      - 'Tools/validate_web_client_foundation.py'
+      - '.github/workflows/web-wasm.yml'
+  push:
+    branches: [ main ]
+    paths:
+      - 'Source/LifeLensCore/**'
+      - 'Clients/Web/**'
+      - 'Tools/build_web_client.py'
+      - 'Tools/validate_web_client_foundation.py'
+      - '.github/workflows/web-wasm.yml'
+  workflow_dispatch:
+
+jobs:
+  wasm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Emscripten
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y emscripten
+
+      - name: Build LifeLensCore WASM
+        run: python Tools/build_web_client.py
+
+      - name: Verify generated runtime
+        run: |
+          test -s Clients/Web/generated/lifelens_core.js
+          test -s Clients/Web/generated/lifelens_core.wasm
+          echo "LifeLens Web WASM artifacts: PASS"
+
+      - name: Upload browser runtime artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lifelens-web-runtime
+          path: |
+            Clients/Web/generated/lifelens_core.js
+            Clients/Web/generated/lifelens_core.wasm
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Check browser JavaScript syntax
+        run: |
+          node --check Clients/Web/app.js
+          node --check Clients/Web/core-adapter.js
+          node --check Clients/Web/truth-map-renderer.js
+          node --check Clients/Web/sw.js
+
+      - name: Validate Web foundation
+        run: python Tools/validate_web_client_foundation.py

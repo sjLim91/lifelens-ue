@@ -10,6 +10,7 @@
 > - 확장형 세계 생성/청크/이주 구조는 `docs/WORLD_GENESIS_CHUNK_MIGRATION_v1.md`가 canonical companion이며, 고정 소형 arena를 제품 월드 구조로 사용하지 않는다.
 > - 문명이 원시 정착에서 현대를 지나 미지의 미래까지 자율적으로 발전하는 장기 방향은 `docs/OPEN_ENDED_CIVILIZATION_NORTH_STAR.md`가 canonical companion이다. 시대 라벨은 Core unlock timer가 아니다.
 > - PC cinematic / Android mobile rendering 분리는 `docs/CINEMATIC_RENDERING_STRATEGY_v1.md`가 canonical companion이다.
+> - Browser/PWA client 구조와 LifeLensCore WASM 계약은 `docs/WEB_CLIENT_ARCHITECTURE_v1.md`가 canonical companion이다. 새 Web client는 Legacy LOCAL OBSERVER의 runtime을 재사용하지 않는다.
 > - 실제 구현 순서는 `docs/DEVELOPMENT_MILESTONES.md`, 현재 상태는 `tasks/WORK_STATE.md`를 따른다.
 
 ---
@@ -25,10 +26,12 @@
 ### 최우선 작업 원칙
 
 - 계획만 설명하지 말고 가능한 작업은 실제 수행한다.
-- 처음부터 Unreal-native 구조로 설계한다.
-- 기존 웹 구조를 억지로 Unreal에 이식하지 않는다.
-- 기존 LOCAL OBSERVER는 요구사항/아이디어 참고자료로 사용한다.
-- HTML/JS/Vercel 기반 게임 런타임은 제거한다.
+- 처음부터 **LifeLensCore 중심 multi-client 구조**로 설계한다.
+- Unreal Native client는 Unreal-native 구조를 유지한다.
+- 새 Web/PWA client는 같은 LifeLensCore를 WASM으로 소비한다.
+- 기존 웹 구조를 Unreal이나 새 Web client에 억지로 이식하지 않는다.
+- 기존 LOCAL OBSERVER는 요구사항/아이디어 참고자료로만 사용한다.
+- 과거 HTML/JS/Vercel 기반 LOCAL OBSERVER 게임 런타임은 제거 상태를 유지한다. 새 Web client는 별도 구조다.
 - 기능 수보다 안정적인 기반이 우선이다.
 - Android를 가장 먼저 실제 실행 가능 상태로 만든다. 이후 Windows PC를 지원한다.
 - 유료 API / 유료 클라우드 / 유료 런타임에 의존하지 않는다. 무료 범위에서 개발/빌드가 가능해야 한다.
@@ -94,15 +97,17 @@ LIFELENS의 핵심 런타임에서 제거: HTML, JavaScript 중심 구조, Three
 - **현실적인 동작:** 앉기, 눕기, 잡기, 사용하기, 대화하기
 - **관찰:** 관찰 카메라, 캐릭터 Follow, 시네마틱 카메라, 사건 자동 추적
 - **UI:** Observer-first UI
-- **플랫폼:** Android, Desktop PC (Windows + macOS)
+- **플랫폼:** Android Native, Desktop Native (Windows + macOS), Web/PWA
 
 ---
 
 ## 6. 플랫폼 전략
 
-개발 우선순위: **1. Android → 2. Desktop PC (Windows + macOS)**
+Native 개발 우선순위: **1. Android → 2. Desktop PC (Windows + macOS)**
 
-Core Simulation은 두 플랫폼에서 동일하게 유지한다. PC와 Android는 그래픽 품질과 일부 성능 예산만 다르게 한다.
+동시에 Web/PWA를 별도 병렬 client track으로 유지한다.
+
+Core Simulation은 모든 client에서 동일한 `LifeLensCore` truth를 사용한다. Native와 Web은 그래픽 품질/입력/렌더링 예산만 다르게 한다.
 
 ```
 Core Simulation
@@ -116,7 +121,7 @@ Core Simulation
     |
     +--------------------------+
     |                          |
-PC Presentation        Android Presentation
+PC/macOS Unreal     Android Unreal      Web/PWA
 ```
 
 모바일이라고 캐릭터의 기본 AI 철학을 바꾸지 않는다. 단, Simulation LOD를 이용하여 계산 비용을 줄일 수 있다.
@@ -1222,14 +1227,14 @@ LifeLens의 세계는 가족·인구 증가에서 끝나지 않는다.
 
 ## 86. 절대 빠지면 안 되는 핵심 요구사항
 
-- **아키텍처:** Unreal-native Architecture, 무료 개발/빌드 원칙, 빠르고 반복 가능한 Build Pipeline
+- **아키텍처:** LifeLensCore-first multi-client Architecture, Unreal Native + Web/PWA, 무료 개발/빌드 원칙, 빠르고 반복 가능한 Build Pipeline
 - **캐릭터:** Extreme Realistic Human Character, Natural Human Animation, Autonomous AI
 - **초기 인구:** Procedural Initial Population, NEW GAME마다 Male 2 / Female 2 생성, NEW GAME마다 새로운 이름 / 외모 / Personality / Traits / Skills, WorldSeed, Character GUID
 - **내면 시스템:** Needs, Personality, Emotion, Memory, Belief
 - **관계/가족:** Relationship, Romance, Marriage, Cohabitation, Household, Pregnancy, Birth, Genetics, Parenting, Growth, Aging, Death, Generations, Genealogy
 - **세계/사건:** Time, Weather, Events, Witness, Evidence, Statements
 - **관찰:** Observer-first UI, Character Inspector, World Overview, Cinematic Observer, Event Director
-- **플랫폼:** Android, Desktop PC (Windows + macOS)
+- **플랫폼:** Android, Desktop PC (Windows + macOS), Web/PWA
 
 ---
 
@@ -1279,3 +1284,24 @@ Android APK Gate B는 제품 우선순위에서 삭제된 것이 아니라 사�
 ---
 
 *END OF PROJECT LIFELENS MASTER DESIGN SPEC v1.1*
+
+## 88. Multi-client 제품 구조 — 2026-09-21
+
+LifeLens 자체를 Unreal 프로젝트와 동일시하지 않는다.
+
+```text
+LifeLensCore
+├─ Unreal Native Client
+│  ├─ Android
+│  ├─ Windows
+│  └─ macOS
+└─ Web/PWA Client
+```
+
+- 동일 Seed/GenerationVersion/Save는 client가 달라도 같은 logical world를 의미한다.
+- Unreal의 강점은 high-end rendering, native physics/navigation, character animation/VFX다.
+- Web의 강점은 즉시 접근, 빠른 iteration, PWA 배포, observer 중심 사용성이다.
+- Web은 JavaScript로 별도 AI/world simulation을 만들지 않는다.
+- Core WASM이 없거나 실패하면 Web client는 fail-closed한다.
+- WebGPU/WebGL의 표현 budget 차이는 simulation truth 차이가 아니다.
+- 구체 계약은 `docs/WEB_CLIENT_ARCHITECTURE_v1.md`가 우선한다.

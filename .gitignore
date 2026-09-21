@@ -14,3 +14,7 @@ __pycache__/
 
 # Downloaded third-party source assets stay outside version control.
 assets_staging/
+
+# Web/WASM generated artifacts
+build-web/
+Clients/Web/generated/

@@ -495,3 +495,23 @@ User direction:
 Effect on World v2:
 - provider contract -> Presentation handoff is no longer a human ownership gate.
 - runtime screenshot acceptance remains mandatory.
+
+## 2026-09-21 ACTIVE — Web/PWA first-class client foundation
+
+User decision:
+- retain Unreal Native as high-quality client.
+- add Web/PWA as a first-class client sharing the same `LifeLensCore`.
+
+Active branch:
+- `jjun/web-client-foundation-v1`
+
+WEB-0 scope:
+- platform-neutral `WebClientBridge`.
+- native contract test.
+- Emscripten/Embind build target.
+- PWA shell.
+- actual Core world overview/resident/terrain/hydrology truth preview.
+- explicit fail-closed state when WASM is unavailable.
+- canonical architecture/docs/preflight.
+
+This lane is parallel to active World v2 work and must not fork simulation truth.

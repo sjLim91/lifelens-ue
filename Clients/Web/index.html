@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#101711">
+  <title>LifeLens Web</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div>
+        <strong>LifeLens</strong>
+        <span class="edition">WEB OBSERVER</span>
+      </div>
+      <div id="coreStatus" class="status pending">Core loading…</div>
+    </header>
+
+    <main class="layout">
+      <section class="world">
+        <canvas id="worldCanvas" aria-label="LifeLens world observer"></canvas>
+        <div class="world-overlay">
+          <span id="worldSeedLabel">WorldSeed —</span>
+          <span id="minuteLabel">Day —</span>
+          <span id="rendererLabel">Truth preview</span>
+        </div>
+        <div id="unavailable" class="unavailable hidden">
+          <strong>LifeLensCore WASM unavailable</strong>
+          <span>웹은 가짜 데이터를 만들지 않습니다. Core WASM을 빌드한 뒤 실제 월드를 표시합니다.</span>
+        </div>
+      </section>
+
+      <aside class="observer">
+        <section class="panel controls">
+          <h2>World</h2>
+          <label>
+            WorldSeed
+            <input id="seedInput" inputmode="numeric" value="42" autocomplete="off">
+          </label>
+          <div class="button-row">
+            <button id="newWorldButton">NEW WORLD</button>
+            <button id="stepButton" disabled>+10 MIN</button>
+            <button id="hourButton" disabled>+1 HOUR</button>
+          </div>
+        </section>
+
+        <section class="panel overview">
+          <h2>Observer</h2>
+          <div class="metrics">
+            <div><span>Living</span><strong id="livingMetric">—</strong></div>
+            <div><span>Households</span><strong id="householdMetric">—</strong></div>
+            <div><span>Couples</span><strong id="coupleMetric">—</strong></div>
+            <div><span>Life events</span><strong id="eventMetric">—</strong></div>
+          </div>
+        </section>
+
+        <section class="panel residents">
+          <div class="panel-heading">
+            <h2>Residents</h2>
+            <span id="residentCount">0</span>
+          </div>
+          <div id="residentList" class="resident-list">
+            <div class="empty">Core 연결 대기 중</div>
+          </div>
+        </section>
+
+        <section class="panel navigation">
+          <h2>World truth preview</h2>
+          <div class="chunk-controls">
+            <button id="leftButton" disabled>←</button>
+            <button id="upButton" disabled>↑</button>
+            <button id="downButton" disabled>↓</button>
+            <button id="rightButton" disabled>→</button>
+          </div>
+          <span id="chunkLabel">Chunk 0, 0</span>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

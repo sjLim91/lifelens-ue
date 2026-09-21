@@ -13,6 +13,7 @@ add_library(lifelens_core STATIC
     src/CivilizationKnowledgeTransmission.cpp
     src/SimulationSnapshot.cpp
     src/SimulationSnapshotCodec.cpp
+    src/WebClientBridge.cpp
 )
 
 target_include_directories(lifelens_core PUBLIC include)
@@ -179,6 +180,30 @@ lifelens_add_test(test_world_generation_sanitation_reference)
 
 lifelens_add_test(test_hydrology_foundation)
 
+lifelens_add_test(test_web_client_bridge)
+
 lifelens_add_test(test_early_survival)
 
 lifelens_add_test(test_durable_water_storage)
+
+
+# Browser client: compile the same LifeLensCore into WebAssembly. The generated
+# .js/.wasm files are build artifacts and are never committed as source truth.
+if(EMSCRIPTEN)
+    add_executable(lifelens_web_core wasm/LifeLensWebBindings.cpp)
+    target_link_libraries(lifelens_web_core PRIVATE lifelens_core)
+    set_target_properties(lifelens_web_core PROPERTIES
+        OUTPUT_NAME "lifelens_core"
+        SUFFIX ".js"
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/web"
+    )
+    target_link_options(lifelens_web_core PRIVATE
+        "--bind"
+        "-sMODULARIZE=1"
+        "-sEXPORT_ES6=1"
+        "-sEXPORT_NAME=createLifeLensCoreModule"
+        "-sALLOW_MEMORY_GROWTH=1"
+        "-sENVIRONMENT=web"
+        "-sFILESYSTEM=0"
+    )
+endif()

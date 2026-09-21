@@ -445,3 +445,20 @@ Decision:
 - this changes human workflow ownership only; simulation authority boundaries do not change.
 - Core/World remains truth; Presentation/Character remain consumers.
 - active same-file branches must still be coordinated and never blindly overwritten.
+
+## 2026-09-21 — LifeLens Core-first multi-client + Web/PWA
+
+Decision:
+- LifeLens를 Unreal 프로젝트 그 자체로 정의하지 않는다.
+- `LifeLensCore`를 platform-neutral simulation truth로 유지한다.
+- Unreal은 Android/Windows/macOS의 native/high-end presentation client로 유지한다.
+- Web/PWA를 같은 Core를 WASM으로 소비하는 정식 client로 추가한다.
+- Legacy LOCAL OBSERVER HTML/JS runtime은 부활시키지 않는다. 새 Web client는 현재 Core contracts를 기준으로 새로 만든다.
+- 동일 WorldSeed/PopulationSeed/GenerationVersion/save는 client가 달라도 동일 logical world를 의미한다.
+- 64-bit seed/entity ID는 JavaScript Number 정밀도 손실을 피하도록 string/명시적 BigInt contract로 전달한다.
+- WASM이 없으면 Web은 fake simulation을 표시하지 않고 fail-closed한다.
+- baseline Web/PWA는 유료 API/클라우드 없이 로컬 실행 가능해야 한다.
+- Web client는 World v2 Unreal 작업과 독립 가능한 부분을 병렬 진행한다.
+
+Canonical companion:
+- `docs/WEB_CLIENT_ARCHITECTURE_v1.md`
