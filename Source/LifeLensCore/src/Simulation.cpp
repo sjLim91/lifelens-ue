@@ -648,8 +648,13 @@ void Simulation::advanceDependentCare()
             };
 
         // Biological parents remain the first-choice caregivers.
+        bool hasLivingBiologicalParent=false;
         for(CharacterId parentId:child.parentIds){
-            considerCaregiver(findFamilyCharacter(world_,parentId));
+            Character* parent=findFamilyCharacter(world_,parentId);
+            if(parent!=nullptr && parent->alive){
+                hasLivingBiologicalParent=true;
+            }
+            considerCaregiver(parent);
         }
 
         // If no biological parent is currently able to care, another living
@@ -669,6 +674,31 @@ void Simulation::advanceDependentCare()
                     considerCaregiver(
                         findFamilyCharacter(world_,member.characterId));
                 }
+            }
+        }
+
+        // Close living relatives can visit and provide care even when they are
+        // in another household. This avoids forcing genealogy or inheritance
+        // changes merely to keep a dependent alive.
+        if(chosenCaregiver==nullptr){
+            for(auto& candidate:world_.characters){
+                const KinshipType kinship=
+                    genealogy_.relationBetween(candidate.id,child.id);
+                if(kinship!=KinshipType::Grandparent
+                   && kinship!=KinshipType::Sibling
+                   && kinship!=KinshipType::HalfSibling){
+                    continue;
+                }
+                considerCaregiver(&candidate);
+            }
+        }
+
+        // A truly orphaned dependent with no available household/kin caregiver
+        // may receive community care from another eligible adult. This stage is
+        // deliberately disabled while any biological parent is still alive.
+        if(chosenCaregiver==nullptr && !hasLivingBiologicalParent){
+            for(auto& candidate:world_.characters){
+                considerCaregiver(&candidate);
             }
         }
 
