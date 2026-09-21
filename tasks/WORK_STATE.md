@@ -23,7 +23,7 @@
 Last reconciled: **2026-09-21 KST after #370/#372/#373 merge; environment/graphics source audit reached the mandatory pre-character notification boundary**.
 
 
-## 2026-09-21 CURRENT — World Architecture v2 design hold
+## 2026-09-21 CURRENT — World Architecture v2 IMPLEMENTATION ACTIVE / W2-0
 
 Canonical design: `docs/WORLD_ARCHITECTURE_v2.md`.
 
@@ -35,11 +35,12 @@ User-approved direction:
 - SimulationInterest and ObserverInterest are separate; observer preview must not invent simulation truth.
 - Local -> Regional -> Planetary -> Orbital -> Interplanetary remain one world identity at different representation levels.
 
-**Execution lock:** user will provide a separate start signal. Until then:
-- no World v2 C++ implementation.
-- no character appearance/motion/context audit.
-- no new world asset wave based on v2.
-- docs/design clarification only.
+**Execution state:** user start signal received on 2026-09-21.
+- W2-0 provider-contract foundation is ACTIVE on `jjun/world-v2-contract-foundation`.
+- current main already has authoritative `GetMaterializedNaturalChunkObservations()` over `generatedNaturalChunks`; the historical count/ring concern is not being redone.
+- current new work: spawn-independent `Planet -> SurfaceRegion -> Chunk` address projection + observer-centered read-only terrain preview.
+- Character appearance/motion/context implementation remains deferred until World v2 visual/physical foundation.
+- Presentation-owned files remain untouched in W2-0.
 
 The previous environment source closeout is reclassified as **structural/source closeout only, not runtime visual acceptance** because the latest runtime screenshots still show flat local terrain, missing forest canopy/water continuity and visible gray/white proxy artifacts.
 

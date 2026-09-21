@@ -7,7 +7,7 @@
 
 > **2026-09-21 runtime correction:** latest screenshots invalidated the earlier visual-closeout assumption. The previously completed checks remain valid as source/contract checks, but Earth/environment runtime visual acceptance is REOPENED under `docs/WORLD_ARCHITECTURE_v2.md`.
 >
-> **Execution hold:** do not enter character audit and do not implement World v2 until the user gives a new start signal.
+> **Execution update 2026-09-21:** user start signal received. World v2 W2-0 is ACTIVE. Character audit remains deferred until the World v2 visual/physical foundation is accepted.
 
 
 - source checkpoint before this docs sync: `255e0e49b6dc64987c7ba195d3674d43a4456908`.
@@ -49,7 +49,7 @@
 - opening settlement vegetation over-clear → main의 ecology clearing v2로 축소.
 - coast에서 자연환경/자원 비가시성 → #364 merged.
 
-## CURRENT — World v2 설계 완료 / 환경 runtime acceptance 재오픈 / 구현 대기
+## CURRENT — World v2 W2-0 provider contract foundation ACTIVE
 
 ### Water / nature / terrain
 - #373 fallback water terrain clearance — DONE.
@@ -93,3 +93,11 @@ WorldHierarchy의 scale enum과 Planet/Region identity 존재 여부는 이미 �
 - C++/UHT/UBT risk가 있으면 Unreal Compile.
 - visual/runtime acceptance가 필요한 항목은 compile green과 별개로 runtime QA requirement를 남긴다.
 - 완료 후 이 ledger의 CURRENT/NEXT만 갱신한다. 과거 DONE 항목을 재서술하며 다시 훑지 않는다.
+
+
+### W2-0 dedup note — explicit materialized coordinates already exist
+
+- `ULLCoreBridgeSubsystem::GetMaterializedNaturalChunkObservations()` already iterates authoritative `World.generatedNaturalChunks` in registry order.
+- materialized terrain/hydrology projections consume that same registry.
+- the historical AUDIT-1A/count-radius concern is therefore resolved in current main and must not be reimplemented.
+- W2-0 missing contract is spawn-independent world address resolution plus observer-centered deterministic preview.

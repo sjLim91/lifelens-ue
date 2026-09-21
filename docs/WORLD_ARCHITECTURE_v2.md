@@ -1,10 +1,10 @@
 # LifeLens World Architecture v2 — World-first Continuous Earth
 
-> Status: **CANONICAL DESIGN / IMPLEMENTATION HOLD**
+> Status: **CANONICAL DESIGN / IMPLEMENTATION ACTIVE — W2-0**
 >
 > Date: 2026-09-21 KST
 >
-> User decision: 설계는 확정하되 **사용자의 별도 시작 사인 전에는 구현에 들어가지 않는다.**
+> User decision update (2026-09-21): **구현 시작 사인 수신. World v2를 W2-0부터 진행한다. Character 본격 통합은 World v2 visual/physical foundation 이후로 유지한다.**
 >
 > Scope: Earth-scale world identity, coordinates, terrain, hydrology, biome/ecology, chunk streaming, visual LOD, human environmental change, observer-scale continuity, persistence and platform budgets.
 >
@@ -862,20 +862,19 @@ World v2 foundation이 성공했다고 말할 수 있는 최소 기준:
 
 ---
 
-## 21. 실행 잠금
+## 21. 실행 상태
 
-현재 상태는 **DESIGN COMPLETE / IMPLEMENTATION HOLD**.
+현재 상태는 **IMPLEMENTATION ACTIVE — W2-0**.
 
-사용자가 명시적으로 시작 사인을 주기 전에는:
-- World v2 C++ 구현 시작 금지.
-- Character audit 재개 금지.
-- World v2를 이유로 대규모 asset 변경 금지.
+2026-09-21 사용자의 시작 사인으로 World v2 구현 잠금이 해제되었다.
 
-허용:
-- 문서 정리.
-- 기존 CI 결과 확인.
-- 설계 질의/수정.
-- 사용자가 요청한 브리핑.
+현재 실행 경계:
+- Jjun Core/World/Simulation provider contract부터 진행.
+- 이미 구현된 authoritative materialized chunk enumeration은 재구현하지 않는다.
+- 첫 신규 계약은 spawn-independent world address + observer-centered deterministic terrain preview다.
+- WorldPresentation/Environment visual은 Dagyeom ownership을 존중하고 provider 준비 뒤 Integration Request/Assist Lock으로 연결한다.
+- Character appearance/motion/context 본격 audit/수정은 World v2 visual/physical foundation 이후까지 보류한다.
+- 문서와 audit ledger는 milestone close마다 GitHub truth와 동기화한다.
 
 ## 22. Canonical future hooks — 살아 있는 지구
 

@@ -441,3 +441,20 @@ When explicitly resumed, prefer cached/fast smoke paths before long engine build
 - IR-B character facing — RESOLVED by #102.
 - IR-A WorldPresentation owner path — RESOLVED.
 - IR-C production map + observer framing — RESOLVED by #96.
+
+
+## 2026-09-21 Active World v2 coordination
+
+### Jjun — W2-0 provider contract foundation — ACTIVE
+
+- branch: `jjun/world-v2-contract-foundation`.
+- owner scope:
+  - `Source/LifeLens/Simulation/**`
+  - `.github/workflows/preflight.yml`
+  - canonical docs/state.
+- purpose:
+  - generic Planet/SurfaceRegion/Chunk logical address projection.
+  - observer-centered deterministic terrain preview without Core materialization.
+  - legacy initial-region preview remains a compatibility wrapper.
+- Presentation/Environment-owned source/content is not modified in W2-0.
+- before W2-4 terrain/water/vegetation presentation migration, open a fresh Integration Request / scoped Assist Lock for Dagyeom-owned `Source/LifeLens/WorldPresentation/**` and Content paths.

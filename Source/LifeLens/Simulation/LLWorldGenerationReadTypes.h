@@ -36,6 +36,26 @@ struct FLLCoreWorldHierarchyObservation
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldHierarchy") int32 InitialSurfaceRegionY = 0;
 };
 
+/**
+ * Deterministic logical address for any surface chunk on the primary planet.
+ * This contract is independent of spawn/settlement state and never materializes
+ * simulation state merely because an observer asks where a chunk belongs.
+ */
+USTRUCT(BlueprintType)
+struct FLLCoreWorldAddressObservation
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldHierarchy") bool bAvailable = false;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldHierarchy") int64 PlanetId = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldHierarchy") int32 SurfaceRegionX = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldHierarchy") int32 SurfaceRegionY = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldHierarchy") int64 SurfaceRegionId = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldHierarchy") int64 SurfaceRegionSeed = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldHierarchy") int32 ChunkX = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldHierarchy") int32 ChunkY = 0;
+};
+
 UENUM(BlueprintType)
 enum class ELLCoreNaturalObstacleKind : uint8
 {
