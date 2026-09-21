@@ -387,6 +387,30 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
         FarDressingCullEndUU,
         false);
 
+#if PLATFORM_ANDROID
+    // Mobile local terrain is visual relief, while resident locomotion remains
+    // on the flat authoritative plane. Expose only the rendered local tiles as
+    // query geometry so resident meshes can visually ground to what the player
+    // actually sees without making those tiles block Pawn/navigation.
+    auto EnableVisualGroundQuery =
+        [](UHierarchicalInstancedStaticMeshComponent* Component)
+        {
+            if (!Component)
+            {
+                return;
+            }
+            Component->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+            Component->SetCollisionResponseToAllChannels(ECR_Ignore);
+            Component->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
+            Component->SetGenerateOverlapEvents(false);
+            Component->SetCanEverAffectNavigation(false);
+        };
+
+    EnableVisualGroundQuery(GroundGrassTileInstances);
+    EnableVisualGroundQuery(GroundDryTileInstances);
+    EnableVisualGroundQuery(GroundTransitionTileInstances);
+#endif
+
     if (GroundGrassTileInstances && GroundGrass)
     {
         GroundGrassTileInstances->SetMaterial(0, GroundGrass);
