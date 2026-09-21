@@ -73,25 +73,39 @@ Canonical milestone roadmap: `docs/DEVELOPMENT_MILESTONES.md`.
 
 ## 4. Ownership
 
-### Jjun lane
+### Integrated implementation owner — Jjun
+
+LifeLens의 기본 구현 ownership은 더 이상 Core/Presentation/Character로 강하게 분리하지 않는다.
+
+Jjun이 milestone 단위로 필요하면 아래 전 영역을 직접 수정할 수 있다.
+
 - `Source/LifeLensCore/**`
 - `Source/LifeLens/AI/**`
 - `Source/LifeLens/Simulation/**`
 - `Source/LifeLens/World/**`
-- Save/Load / Bridge / build / CI / Android / Windows / macOS platform integration
-- `Config/**`와 project startup/default map/plugin integration
-
-### Dagyeom lane
+- `Source/LifeLens/WorldPresentation/**`
+- `Source/LifeLens/Characters/**`
 - `Source/LifeLens/UI/**`
-- Character appearance/presentation/animation
-- `Content/UI/**`
-- `Content/Characters/**`
 - `Content/Environment/**`
 - `Content/Maps/**`
 - `Content/WorldPresentation/**`
-- Observer visual UX
+- `Content/Characters/**`
+- `Content/UI/**`
+- Save/Load / Bridge / build / CI / Android / Windows / macOS platform integration
+- `Config/**`와 project startup/default map/plugin integration
 
-상대 영역 수정이 필요하면 `tasks/TEAM_BOARD.md`의 Integration Request를 사용한다. Jjun의 Dagyeom 지원은 기본 REVIEW_ONLY이며 `dagyeom/*` direct push 금지다.
+목표는 authority를 섞는 것이 아니라 **구현 handoff 병목을 없애는 것**이다. Core/World truth, Presentation consumer, Character motion truth의 책임 경계는 그대로 유지한다.
+
+### Dagyeom collaboration
+
+Dagyeom은 기본 구현 owner gate가 아니라 **runtime visual QA / screenshot review / targeted polish collaborator**다.
+
+- 실제 화면을 보고 시각적 이상/완성도 피드백.
+- 사용자가 명시적으로 넘긴 visual polish 작업.
+- camera / lighting / material / animation / UI polish 제안 또는 수정.
+- 같은 파일을 동시에 수정할 가능성이 있을 때는 TEAM_BOARD에서 충돌만 조정.
+
+Jjun은 Dagyeom의 active branch를 무시하고 덮어쓰지 않으며, `dagyeom/*`에 직접 push하지 않는다.
 
 ## 5. Shared state documents
 
