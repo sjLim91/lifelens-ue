@@ -18,6 +18,25 @@ void ULLObservationSubsystem::ObserveResident(FGuid ResidentId)
     SetLevel(ELLObservationLevel::Quick);
 }
 
+void ULLObservationSubsystem::ObserveHistoricalResident(FGuid ResidentId)
+{
+    if (!ResidentId.IsValid())
+    {
+        ClearObservedResident();
+        return;
+    }
+
+    if (ObservedResidentId != ResidentId)
+    {
+        ObservedResidentId = ResidentId;
+        OnObservedResidentChanged.Broadcast(ObservedResidentId);
+    }
+
+    // Historical/genealogy cards retain the stable identity, but physical
+    // resident Quick/Detail is only meaningful for a living projected actor.
+    SetLevel(ELLObservationLevel::World);
+}
+
 void ULLObservationSubsystem::ClearObservedResident()
 {
     if (!ObservedResidentId.IsValid())
@@ -59,6 +78,13 @@ void ULLObservationSubsystem::StepBack()
             ClearObservedResident();
             break;
         case ELLObservationLevel::World:
+            // LEVEL 0 may still retain a historical resident identity for the
+            // lifecycle card. Empty-space back clears that history selection.
+            if (ObservedResidentId.IsValid())
+            {
+                ClearObservedResident();
+            }
+            break;
         default:
             break;
     }
