@@ -16,6 +16,7 @@ for token in (
 ):
     assert token in header, f"settlement nature/readability contract missing: {token}"
 
+# Latest-main CI marker: this guard is intentionally versioned with the envelope change.
 # The opening landscape must not return to the old nearly-whole-chunk shaved
 # envelope. The authoritative start chunk is 3200 UU wide in presentation.
 for forbidden in (
