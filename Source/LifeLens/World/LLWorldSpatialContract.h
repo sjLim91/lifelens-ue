@@ -40,6 +40,38 @@ namespace LLWorldSpatialContract
     inline constexpr float ObserverCameraTargetHeightUU = GridCellSizeUU;
     inline constexpr float ObserverCameraFOVDegrees = 60.0f;
 
+    // Map presentation-space XY back to the logical chunk grid. The initial
+    // Core chunk remains the presentation anchor, but the observer may move to
+    // any other logical chunk without changing simulation authority.
+    inline int32 PresentationChunkOffsetForAxis(float AxisUU)
+    {
+        const float HalfChunkUU = ChunkSpanUU * 0.5f;
+        return FMath::FloorToInt(
+            (AxisUU + HalfChunkUU)
+            / FMath::Max(1.0f, ChunkSpanUU));
+    }
+
+    inline FIntPoint LogicalChunkForPresentationLocation(
+        int32 AnchorChunkX,
+        int32 AnchorChunkY,
+        const FVector2D& LocationUU)
+    {
+        return FIntPoint(
+            AnchorChunkX + PresentationChunkOffsetForAxis(LocationUU.X),
+            AnchorChunkY + PresentationChunkOffsetForAxis(LocationUU.Y));
+    }
+
+    inline FVector2D PresentationLocationForLogicalChunk(
+        int32 AnchorChunkX,
+        int32 AnchorChunkY,
+        int32 ChunkX,
+        int32 ChunkY)
+    {
+        return FVector2D(
+            static_cast<float>(ChunkX - AnchorChunkX) * ChunkSpanUU,
+            static_cast<float>(ChunkY - AnchorChunkY) * ChunkSpanUU);
+    }
+
     static_assert(ChunkSpanGridCells > 0, "World chunk span must stay positive");
     static_assert(GridCellSizeUU > 0.0f, "Presentation grid scale must stay positive");
     static_assert(ObserverCameraDistanceUU > ChunkSpanUU, "Observer camera must frame beyond one start chunk");
