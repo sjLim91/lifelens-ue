@@ -70,8 +70,8 @@ for token in [
 
 for token in (
     'RegionalPreviewRadiusChunks = 8',
-    'RegionalInnerFlatRingChunks = 1',
-    'RegionalReliefAmplitudeUU = 1100.0f',
+    'RegionalInnerFlatRingChunks = 0',
+    'RegionalReliefAmplitudeUU = 8000.0f',
     'const float Delta =',
     'if (Ring <= InnerRing)',
     'FMath::Max(0.0f, Delta)',
