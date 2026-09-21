@@ -86,8 +86,8 @@ assert 'LLTerrainPresentationContract::RegionalSurfaceZUU' in world_cpp
 assert 'MaterializedCoords.Contains(Coord)' in world_cpp, (
     'regional preview must not duplicate authoritative materialized surfaces'
 )
-assert 'if (Ring == 0)' in world_cpp, (
-    'regional preview must reserve only the local origin ring itself'
+assert 'if (Ring == 0)' not in world_cpp, (
+    'observer-centered remote preview must not leave a hole at ring 0'
 )
 assert 'if (Ring <= InnerFlatRing)' not in world_cpp, (
     'ring 1 must render seam-compatible relief instead of falling back to the flat underlay'
@@ -119,3 +119,5 @@ assert 'Terrain.ChunkX - ObserverCenterChunk.X' in regional_body
 assert 'Terrain.ChunkY - ObserverCenterChunk.Y' in regional_body
 assert 'Terrain.ChunkX - World.InitialChunkX' not in regional_body
 assert 'Terrain.ChunkY - World.InitialChunkY' not in regional_body
+
+assert 'observer-center tile itself must render' in regional_body
