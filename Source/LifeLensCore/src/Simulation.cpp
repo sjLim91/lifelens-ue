@@ -566,7 +566,8 @@ void Simulation::advanceDependentCare()
         world_.minute%FamilyProgressionDayMinutes==FamilyProgressionDecisionMinuteOfDay;
 
     for(auto& child:world_.characters){
-        if(!child.alive || !isDependentStage(child.lifeStage) || child.parentIds.empty()) continue;
+        if(!child.alive || !isDependentStage(child.lifeStage)) continue;
+
         const double maxPhysicalNeed=std::max({
             child.needs.hunger,child.needs.thirst,child.needs.sleep,
             child.needs.bladder,child.needs.hygiene});
@@ -577,52 +578,106 @@ void Simulation::advanceDependentCare()
         const bool urgentDistress=distress>=0.40;
         if(!urgentPhysical && !urgentDistress && !dailyDevelopmentWindow) continue;
 
-        Character* chosenParent=nullptr;
+        Character* chosenCaregiver=nullptr;
         ParentingDecision chosenDecision;
         ParentingContext chosenContext;
         chosenDecision.utility=-1.0;
 
+        const auto considerCaregiver=
+            [&](Character* caregiver)
+            {
+                if(caregiver==nullptr
+                   || caregiver->id==child.id
+                   || !caregiver->alive
+                   || !lifeStageProfile(caregiver->lifeStage).canParent){
+                    return;
+                }
+
+                auto caregiverRuntime=runtime_.find(caregiver->id);
+                if(caregiverRuntime==runtime_.end()
+                   || caregiverRuntime->second.pendingContext.active()
+                   || !caregiverRuntime->second.plan.empty()){
+                    return;
+                }
+
+                Relationship& caregiverToChild=
+                    relationships_.getOrCreate(caregiver->id,child.id);
+                ParentingContext context;
+                const double caregiverNeed=std::max({
+                    caregiver->needs.hunger,caregiver->needs.thirst,
+                    caregiver->needs.sleep,caregiver->needs.bladder,
+                    caregiver->needs.hygiene});
+                context.timeAvailable=
+                    clampDevelopment(1.0-0.65*caregiverNeed);
+                context.caregiverStress=
+                    clampDevelopment(caregiver->development.stress);
+                context.warmth=clampDevelopment(
+                    0.35+0.35*caregiver->personality.empathy+
+                    0.30*caregiver->personality.patience);
+                context.consistency=clampDevelopment(
+                    0.35+0.40*caregiver->personality.conscientiousness+
+                    0.25*caregiver->personality.patience);
+                context.harshness=clampDevelopment(
+                    0.08+0.28*caregiver->personality.impulsiveness-
+                    0.18*caregiver->personality.patience);
+                context.foodAvailable=
+                    caregiver->civilization.inventory.count(
+                        ItemKind::RawMaterial,MaterialKind::PlantFood)>0;
+                context.waterAvailable=
+                    caregiver->civilization.inventory.count(
+                        ItemKind::RawMaterial,MaterialKind::Water)>0;
+
+                ParentingDecision decision=chooseParentingAction(
+                    *caregiver,child,caregiverToChild,context);
+                if(!decision.valid) return;
+                if(!dailyDevelopmentWindow
+                   && isRoutineDevelopmentalCare(decision.action)){
+                    return;
+                }
+                if(!urgentDistress && !dailyDevelopmentWindow
+                   && (decision.action==ParentingAction::Hold
+                       || decision.action==ParentingAction::Comfort)){
+                    return;
+                }
+
+                if(decision.utility>chosenDecision.utility){
+                    chosenCaregiver=caregiver;
+                    chosenDecision=decision;
+                    chosenContext=context;
+                }
+            };
+
+        // Biological parents remain the first-choice caregivers.
         for(CharacterId parentId:child.parentIds){
-            Character* parent=findFamilyCharacter(world_,parentId);
-            if(parent==nullptr || !parent->alive || !lifeStageProfile(parent->lifeStage).canParent) continue;
-            auto parentRuntime=runtime_.find(parent->id);
-            if(parentRuntime==runtime_.end()
-               || parentRuntime->second.pendingContext.active()
-               || !parentRuntime->second.plan.empty()) continue;
+            considerCaregiver(findFamilyCharacter(world_,parentId));
+        }
 
-            Relationship& parentToChild=relationships_.getOrCreate(parent->id,child.id);
-            ParentingContext context;
-            const double parentNeed=std::max({
-                parent->needs.hunger,parent->needs.thirst,parent->needs.sleep,
-                parent->needs.bladder,parent->needs.hygiene});
-            context.timeAvailable=clampDevelopment(1.0-0.65*parentNeed);
-            context.caregiverStress=clampDevelopment(parent->development.stress);
-            context.warmth=clampDevelopment(
-                0.35+0.35*parent->personality.empathy+0.30*parent->personality.patience);
-            context.consistency=clampDevelopment(
-                0.35+0.40*parent->personality.conscientiousness+0.25*parent->personality.patience);
-            context.harshness=clampDevelopment(
-                0.08+0.28*parent->personality.impulsiveness-0.18*parent->personality.patience);
-            context.foodAvailable=parent->civilization.inventory.count(
-                ItemKind::RawMaterial,MaterialKind::PlantFood)>0;
-            context.waterAvailable=parent->civilization.inventory.count(
-                ItemKind::RawMaterial,MaterialKind::Water)>0;
-
-            ParentingDecision decision=chooseParentingAction(*parent,child,parentToChild,context);
-            if(!decision.valid) continue;
-            if(!dailyDevelopmentWindow && isRoutineDevelopmentalCare(decision.action)) continue;
-            if(!urgentDistress && !dailyDevelopmentWindow &&
-               (decision.action==ParentingAction::Hold || decision.action==ParentingAction::Comfort)) continue;
-            if(decision.utility>chosenDecision.utility){
-                chosenParent=parent;
-                chosenDecision=decision;
-                chosenContext=context;
+        // If no biological parent is currently able to care, another living
+        // adult in the same household may act as a temporary caregiver. This
+        // does not rewrite genealogy or parentIds.
+        if(chosenCaregiver==nullptr){
+            const Household* childHome=households_.householdOf(child.id);
+            if(childHome!=nullptr){
+                for(const HouseholdMember& member:childHome->members){
+                    if(member.characterId==child.id) continue;
+                    if(std::find(
+                            child.parentIds.begin(),
+                            child.parentIds.end(),
+                            member.characterId)!=child.parentIds.end()){
+                        continue;
+                    }
+                    considerCaregiver(
+                        findFamilyCharacter(world_,member.characterId));
+                }
             }
         }
 
-        if(chosenParent==nullptr || !chosenDecision.valid) continue;
-        auto parentRuntime=runtime_.find(chosenParent->id);
-        if(parentRuntime==runtime_.end() || parentRuntime->second.pendingContext.active()) continue;
+        if(chosenCaregiver==nullptr || !chosenDecision.valid) continue;
+        auto caregiverRuntime=runtime_.find(chosenCaregiver->id);
+        if(caregiverRuntime==runtime_.end()
+           || caregiverRuntime->second.pendingContext.active()){
+            continue;
+        }
 
         PendingContextAction pending;
         pending.token=nextContextActionToken();
@@ -631,19 +686,22 @@ void Simulation::advanceDependentCare()
         pending.parentingTarget=child.id;
         pending.parentingAction=chosenDecision.action;
         pending.parentingContext=chosenContext;
-        parentRuntime->second.pendingContext=pending;
-        parentRuntime->second.civilizationActive=false;
-        parentRuntime->second.socialActive=false;
-        parentRuntime->second.socialIntent=SocialIntent::None;
-        parentRuntime->second.socialTarget=0;
+        caregiverRuntime->second.pendingContext=pending;
+        caregiverRuntime->second.civilizationActive=false;
+        caregiverRuntime->second.socialActive=false;
+        caregiverRuntime->second.socialIntent=SocialIntent::None;
+        caregiverRuntime->second.socialTarget=0;
 
         if(!world_.externalPhysicalExecution){
             const auto childRuntime=runtime_.find(child.id);
             const GridPos completionPos=childRuntime!=runtime_.end()
                 ? childRuntime->second.pos
-                : parentRuntime->second.pos;
+                : caregiverRuntime->second.pos;
             completeContextAction(
-                *chosenParent,parentRuntime->second,pending.token,completionPos);
+                *chosenCaregiver,
+                caregiverRuntime->second,
+                pending.token,
+                completionPos);
         }
     }
 }
