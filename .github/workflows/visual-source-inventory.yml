@@ -1,0 +1,20 @@
+name: LifeLens Visual Source Inventory
+
+on:
+  push:
+    branches:
+      - audit/visual-source-inventory-68-2026-09-21
+
+permissions:
+  contents: read
+
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout audit branch
+        uses: actions/checkout@v4
+
+      - name: Inventory production visual primitive paths
+        run: python Tools/audit_visual_source_inventory.py
