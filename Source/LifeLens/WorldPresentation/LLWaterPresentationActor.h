@@ -5,6 +5,8 @@
 #include "LLWaterPresentationActor.generated.h"
 
 class AActor;
+class UHierarchicalInstancedStaticMeshComponent;
+class UMaterialInstanceDynamic;
 
 /**
  * Runtime projection of authoritative Core hydrology into Unreal Water bodies.
@@ -31,6 +33,14 @@ private:
     void RefreshFromCore(bool bForce);
     void ClearProjectedWater();
     void EnsureWaterZone();
+    void EnsureFallbackWaterMaterial();
+    void AddFallbackWaterChannel(
+        const FVector& Start,
+        const FVector& End,
+        float WidthUU);
+    void AddFallbackWaterArea(
+        const FVector& Center,
+        float RadiusUU);
     FVector GridToWorld(
         int32 GridX,
         int32 GridY,
@@ -57,12 +67,33 @@ private:
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Water", meta=(ClampMin="8000.0", ClampMax="250000.0"))
     float WaterZoneExtentUU = 96000.0f;
 
+    // Lightweight safety net underneath Unreal Water bodies. It never owns
+    // gameplay collision or hydrology; it only prevents surface water from
+    // disappearing completely when a platform Water material/zone fails.
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Water|Fallback")
+    bool bEnableVisibleWaterFallback = true;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Water|Fallback", meta=(ClampMin="1.0", ClampMax="40.0"))
+    float FallbackWaterDepthBelowSurfaceUU = 6.0f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Water|Fallback", meta=(ClampMin="1", ClampMax="12"))
+    int32 FallbackRiverSegments = 4;
+
     float RefreshAccumulator = 0.0f;
     uint32 BuiltSignature = 0;
     bool bBuiltOnce = false;
 
     UPROPERTY()
     TArray<TObjectPtr<AActor>> SpawnedWaterActors;
+
+    UPROPERTY(VisibleAnywhere, Category="LifeLens|WorldPresentation|Water|Fallback")
+    TObjectPtr<UHierarchicalInstancedStaticMeshComponent> FallbackChannelInstances;
+
+    UPROPERTY(VisibleAnywhere, Category="LifeLens|WorldPresentation|Water|Fallback")
+    TObjectPtr<UHierarchicalInstancedStaticMeshComponent> FallbackAreaInstances;
+
+    UPROPERTY(Transient)
+    TObjectPtr<UMaterialInstanceDynamic> FallbackWaterMaterial;
 
     UPROPERTY()
     TObjectPtr<AActor> SpawnedWaterZone;
