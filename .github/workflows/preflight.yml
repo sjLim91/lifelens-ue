@@ -56,6 +56,9 @@ jobs:
       - name: Validate materialized surface pathfinding
         run: python Tools/validate_materialized_surface_pathfinding.py
 
+      - name: Validate authoritative freshwater ground traversal
+        run: python Tools/validate_freshwater_ground_traversal.py
+
       - name: Validate World Genesis WG-1
         run: python Tools/validate_world_genesis_wg1.py
 

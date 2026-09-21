@@ -169,7 +169,8 @@ inline bool resolveCivilizationContextTarget(
 
     switch(decision.intent){
         case CivilizationIntent::Gather:
-            return resolveCivilizationResourceGridPosition(world,decision.resourceNode,outTarget);
+            return resolveCivilizationResourceAccessGridPosition(
+                world,decision.resourceNode,outTarget);
         case CivilizationIntent::Store:
         case CivilizationIntent::Retrieve:
             return resolveCivilizationStorageGridPosition(world,decision.storage,outTarget);

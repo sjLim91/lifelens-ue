@@ -395,7 +395,7 @@ bool ULLCoreBridgeSubsystem::GetResidentActionDirective(
                 bool bResolved = false;
                 if (Civilization.kind == lifelens::CivilizationActivityKind::Gather)
                 {
-                    bResolved = lifelens::resolveCivilizationResourceGridPosition(
+                    bResolved = lifelens::resolveCivilizationResourceAccessGridPosition(
                         CoreSimulation->world(), Civilization.resourceNode, Target);
                 }
                 else if (Civilization.kind == lifelens::CivilizationActivityKind::Store)

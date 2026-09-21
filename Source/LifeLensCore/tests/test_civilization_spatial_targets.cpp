@@ -66,6 +66,107 @@ int main()
         CHECK(resolved.y == patch.pos.y);
     }
 
+    // Generated v2 Water stays at the hydrology center as resource authority,
+    // while Gather resolves to a deterministic dry-bank access position.
+    bool checkedAnyWaterAccess = false;
+    bool checkedNonWaterAccess = false;
+    ResourceNodeId checkedWaterNodeId = 0;
+    GridPos firstWaterAccess{};
+    ChunkCoord checkedWaterChunk{};
+    for(const auto& chunk : first.world().generatedNaturalChunks){
+        for(const auto& patch : chunk.resourcePatches){
+            GridPos exact{};
+            GridPos access{};
+            CHECK(resolveCivilizationResourceGridPosition(
+                first.world(), patch.nodeId, exact));
+            CHECK(resolveCivilizationResourceAccessGridPosition(
+                first.world(), patch.nodeId, access));
+
+            if(patch.material == MaterialKind::Water){
+                const HydrologyFacts facts =
+                    deriveHydrologyFacts(first.world().genesisIdentity(), chunk.coord);
+                CHECK(isFreshSurfaceWater(facts));
+                const GridPos waterCenter = surfaceWaterCenterGrid(facts);
+                CHECK(exact.x == waterCenter.x);
+                CHECK(exact.y == waterCenter.y);
+                CHECK(surfaceWaterGroundContainsGrid(facts, exact));
+                CHECK(!surfaceWaterGroundContainsGrid(facts, access));
+                CHECK(chunkCoordForGrid(access) == chunk.coord);
+
+                const std::vector<NaturalPhysicalObstacle> obstacles =
+                    deriveNaturalPhysicalObstacles(chunk);
+                for(const NaturalPhysicalObstacle& obstacle : obstacles){
+                    CHECK(obstacle.grid.x != access.x || obstacle.grid.y != access.y);
+                }
+                for(const ConstructedFacility& facility : first.world().facilities){
+                    CHECK(facility.pos.x != access.x || facility.pos.y != access.y);
+                }
+
+                GridPos replayAccess{};
+                CHECK(resolveCivilizationResourceAccessGridPosition(
+                    second.world(), patch.nodeId, replayAccess));
+                CHECK(replayAccess.x == access.x);
+                CHECK(replayAccess.y == access.y);
+
+                if(!checkedAnyWaterAccess){
+                    checkedWaterNodeId = patch.nodeId;
+                    firstWaterAccess = access;
+                    checkedWaterChunk = chunk.coord;
+                }
+                checkedAnyWaterAccess = true;
+            }else if(!checkedNonWaterAccess){
+                CHECK(access.x == exact.x);
+                CHECK(access.y == exact.y);
+                checkedNonWaterAccess = true;
+            }
+        }
+    }
+    CHECK(checkedAnyWaterAccess);
+    CHECK(checkedNonWaterAccess);
+
+    // If the preferred dry bank later becomes occupied by a constructed
+    // facility, the same Water ResourceNode must deterministically resolve to
+    // another dry, materialized, obstacle-free bank cell instead of becoming
+    // permanently unreachable.
+    CHECK(checkedWaterNodeId != 0);
+    ConstructedFacility waterBankBlocker;
+    waterBankBlocker.id = 990001;
+    waterBankBlocker.pos = firstWaterAccess;
+    first.world().facilities.push_back(waterBankBlocker);
+
+    GridPos reroutedWaterAccess{};
+    CHECK(resolveCivilizationResourceAccessGridPosition(
+        first.world(), checkedWaterNodeId, reroutedWaterAccess));
+    CHECK(
+        reroutedWaterAccess.x != firstWaterAccess.x
+        || reroutedWaterAccess.y != firstWaterAccess.y);
+    CHECK(chunkCoordForGrid(reroutedWaterAccess) == checkedWaterChunk);
+    const HydrologyFacts reroutedWaterFacts =
+        deriveHydrologyFacts(first.world().genesisIdentity(), checkedWaterChunk);
+    CHECK(!surfaceWaterGroundContainsGrid(
+        reroutedWaterFacts, reroutedWaterAccess));
+    for(const ConstructedFacility& facility : first.world().facilities){
+        CHECK(
+            facility.pos.x != reroutedWaterAccess.x
+            || facility.pos.y != reroutedWaterAccess.y);
+    }
+    if(const GeneratedNaturalChunk* waterChunk =
+            first.world().findGeneratedNaturalChunk(checkedWaterChunk)){
+        for(const NaturalPhysicalObstacle& obstacle :
+                deriveNaturalPhysicalObstacles(*waterChunk)){
+            CHECK(
+                obstacle.grid.x != reroutedWaterAccess.x
+                || obstacle.grid.y != reroutedWaterAccess.y);
+        }
+    }
+
+    // The temporary blocker exists only to exercise bank re-resolution.
+    // Do not leak an intentionally incomplete fixture into the unrelated
+    // snapshot-persistence assertions below.
+    CHECK(!first.world().facilities.empty());
+    CHECK(first.world().facilities.back().id == waterBankBlocker.id);
+    first.world().facilities.pop_back();
+
     // Storage is also a Core-owned spatial entity. Presentation should only
     // consume this resolved GridPos, never guess a nearby scenery object.
     const GridPos center = first.world().initialStartRegionCenterGrid();
@@ -84,6 +185,8 @@ int main()
     GridPos missing{};
     CHECK(!resolveCivilizationResourceGridPosition(first.world(), 0, missing));
     CHECK(!resolveCivilizationResourceGridPosition(first.world(), 999999999ULL, missing));
+    CHECK(!resolveCivilizationResourceAccessGridPosition(first.world(), 0, missing));
+    CHECK(!resolveCivilizationResourceAccessGridPosition(first.world(), 999999999ULL, missing));
     CHECK(!resolveCivilizationStorageGridPosition(first.world(), 0, missing));
     CHECK(!resolveCivilizationStorageGridPosition(first.world(), 999999999ULL, missing));
 

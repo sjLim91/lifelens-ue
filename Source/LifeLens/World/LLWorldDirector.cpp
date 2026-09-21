@@ -411,6 +411,116 @@ TArray<FVector> ALLWorldDirector::BuildLocalAStarPath(
         }
     }
 
+    // Fresh surface water has a separate Core gameplay footprint. Do not use
+    // WaterPresentation width/radius hints as movement authority.
+    for (const FLLCoreFreshSurfaceWaterTraversalObservation& Water :
+        CoreBridge->GetMaterializedFreshSurfaceWaterTraversalObservations())
+    {
+        if (!Water.bAvailable
+            || !Water.bBlocksGroundTraversal
+            || !Water.bHasGroundAccessTarget)
+        {
+            continue;
+        }
+
+        const FVector2D A(
+            static_cast<float>(Water.CenterGridX),
+            static_cast<float>(Water.CenterGridY));
+
+        if (Water.bLinearChannel)
+        {
+            const FVector2D B = Water.bHasDownstreamTarget
+                ? FVector2D(
+                    static_cast<float>(Water.DownstreamCenterGridX),
+                    static_cast<float>(Water.DownstreamCenterGridY))
+                : A;
+            const float HalfWidth =
+                FMath::Max(0.0f, Water.GroundHalfWidthCells);
+            const int32 Radius =
+                FMath::Max(1, FMath::CeilToInt(HalfWidth));
+            const int32 MinWaterX =
+                FMath::FloorToInt(FMath::Min(A.X, B.X)) - Radius;
+            const int32 MaxWaterX =
+                FMath::CeilToInt(FMath::Max(A.X, B.X)) + Radius;
+            const int32 MinWaterY =
+                FMath::FloorToInt(FMath::Min(A.Y, B.Y)) - Radius;
+            const int32 MaxWaterY =
+                FMath::CeilToInt(FMath::Max(A.Y, B.Y)) + Radius;
+            const FVector2D AB = B - A;
+            const float AB2 = AB.SizeSquared();
+
+            for (int32 Y = MinWaterY; Y <= MaxWaterY; ++Y)
+            {
+                for (int32 X = MinWaterX; X <= MaxWaterX; ++X)
+                {
+                    const FIntPoint Cell(X, Y);
+                    if (!Walkable.Contains(Cell))
+                    {
+                        continue;
+                    }
+
+                    const FVector2D P(
+                        static_cast<float>(X),
+                        static_cast<float>(Y));
+                    const float T = AB2 > KINDA_SMALL_NUMBER
+                        ? FMath::Clamp(
+                            FVector2D::DotProduct(P - A, AB) / AB2,
+                            0.0f,
+                            1.0f)
+                        : 0.0f;
+                    const FVector2D Closest = A + AB * T;
+                    if (FVector2D::DistSquared(P, Closest)
+                        <= FMath::Square(HalfWidth))
+                    {
+                        Blocked.Add(Cell);
+                    }
+                }
+            }
+        }
+        else
+        {
+            const float WaterRadius =
+                FMath::Max(0.0f, Water.GroundRadiusCells);
+            const int32 Radius =
+                FMath::Max(1, FMath::CeilToInt(WaterRadius));
+            for (int32 Y = Water.CenterGridY - Radius;
+                 Y <= Water.CenterGridY + Radius;
+                 ++Y)
+            {
+                for (int32 X = Water.CenterGridX - Radius;
+                     X <= Water.CenterGridX + Radius;
+                     ++X)
+                {
+                    const FIntPoint Cell(X, Y);
+                    if (!Walkable.Contains(Cell))
+                    {
+                        continue;
+                    }
+
+                    const FVector2D P(
+                        static_cast<float>(X),
+                        static_cast<float>(Y));
+                    if (FVector2D::DistSquared(P, A)
+                        <= FMath::Square(WaterRadius))
+                    {
+                        Blocked.Add(Cell);
+                    }
+                }
+            }
+        }
+
+        // This is the Core-authoritative dry bank target for Water ResourceNode
+        // gathering. It should be outside every footprint by construction.
+        ensureMsgf(
+            !Blocked.Contains(FIntPoint(
+                Water.GroundAccessGridX,
+                Water.GroundAccessGridY)),
+            TEXT("Freshwater access target unexpectedly lies inside blocked water: id=%lld access=(%d,%d)"),
+            static_cast<long long>(Water.SurfaceWaterId),
+            Water.GroundAccessGridX,
+            Water.GroundAccessGridY);
+    }
+
     // Constructed facilities occupy real Core grid sites. Route around other
     // facilities, while allowing the actual goal cell so a resident can reach
     // the facility it is currently using.

@@ -65,6 +65,35 @@ int main()
             }
             if(isFreshSurfaceWater(a)){
                 ++freshCount;
+
+                const SurfaceWaterGroundTraversalProfile profile =
+                    deriveSurfaceWaterGroundTraversalProfile(a);
+                assert(profile.blocksGroundTraversal);
+                if(profile.linearChannel){
+                    assert(profile.halfWidthCells > 0.0);
+                }else{
+                    assert(profile.radiusCells > 0.0);
+                }
+
+                const GridPos center = surfaceWaterCenterGrid(a);
+                const GridPos access = surfaceWaterGroundAccessGrid(a);
+                assert(surfaceWaterGroundContainsGrid(a, center));
+                assert(!surfaceWaterGroundContainsGrid(a, access));
+                assert(chunkCoordForGrid(access) == a.coord);
+
+                const SurfaceWaterGroundTraversalProfile replayProfile =
+                    deriveSurfaceWaterGroundTraversalProfile(b);
+                assert(profile.blocksGroundTraversal == replayProfile.blocksGroundTraversal);
+                assert(profile.linearChannel == replayProfile.linearChannel);
+                assert(profile.halfWidthCells == replayProfile.halfWidthCells);
+                assert(profile.radiusCells == replayProfile.radiusCells);
+                const GridPos replayAccess = surfaceWaterGroundAccessGrid(b);
+                assert(access.x == replayAccess.x);
+                assert(access.y == replayAccess.y);
+            }else{
+                const SurfaceWaterGroundTraversalProfile profile =
+                    deriveSurfaceWaterGroundTraversalProfile(a);
+                assert(!profile.blocksGroundTraversal);
             }
             if(a.surfaceKind == SurfaceWaterKind::Coast){
                 ++coastCount;
