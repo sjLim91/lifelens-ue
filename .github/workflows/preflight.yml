@@ -83,6 +83,9 @@ jobs:
       - name: Validate platform content cook boundaries
         run: python Tools/validate_platform_cook_boundaries.py
 
+      - name: Validate photoreal canopy tiers
+        run: python Tools/validate_photoreal_canopy_tiers.py
+
       - name: Validate Android build and APK integrity contract
         run: python Tools/validate_android_build_pipeline.py
 
