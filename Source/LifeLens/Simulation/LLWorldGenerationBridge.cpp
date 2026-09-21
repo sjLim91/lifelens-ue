@@ -164,6 +164,53 @@ bool FillSurfaceWaterPresentationObservation(
     return true;
 }
 
+bool FillFreshSurfaceWaterTraversalObservation(
+    const lifelens::HydrologyFacts& Facts,
+    FLLCoreFreshSurfaceWaterTraversalObservation& Out)
+{
+    Out = FLLCoreFreshSurfaceWaterTraversalObservation{};
+
+    const lifelens::SurfaceWaterGroundTraversalProfile Profile =
+        lifelens::deriveSurfaceWaterGroundTraversalProfile(Facts);
+    if (!Profile.blocksGroundTraversal || !lifelens::isFreshSurfaceWater(Facts))
+    {
+        return false;
+    }
+
+    const lifelens::GridPos Center =
+        lifelens::surfaceWaterCenterGrid(Facts);
+    const lifelens::GridPos Access =
+        lifelens::surfaceWaterGroundAccessGrid(Facts);
+
+    Out.bAvailable = true;
+    Out.SurfaceWaterId = static_cast<int64>(Facts.surfaceWaterId);
+    Out.SurfaceKind = ToUnrealSurfaceWaterKind(Facts.surfaceKind);
+    Out.ChunkX = Facts.coord.x;
+    Out.ChunkY = Facts.coord.y;
+    Out.CenterGridX = Center.x;
+    Out.CenterGridY = Center.y;
+    Out.bBlocksGroundTraversal = Profile.blocksGroundTraversal;
+    Out.bLinearChannel = Profile.linearChannel;
+    Out.GroundHalfWidthCells = static_cast<float>(Profile.halfWidthCells);
+    Out.GroundRadiusCells = static_cast<float>(Profile.radiusCells);
+
+    if (Profile.linearChannel && Facts.hasDownstream)
+    {
+        const lifelens::GridPos DownstreamOrigin =
+            lifelens::chunkOriginGrid(Facts.downstream);
+        const int32 HalfChunk = lifelens::WorldChunkSpanGridCells / 2;
+        Out.bHasDownstreamTarget = true;
+        Out.DownstreamCenterGridX = DownstreamOrigin.x + HalfChunk;
+        Out.DownstreamCenterGridY = DownstreamOrigin.y + HalfChunk;
+    }
+
+    Out.bHasGroundAccessTarget =
+        !lifelens::surfaceWaterGroundContainsGrid(Facts, Access);
+    Out.GroundAccessGridX = Access.x;
+    Out.GroundAccessGridY = Access.y;
+    return Out.bHasGroundAccessTarget;
+}
+
 
 float TerrainCornerElevation(
     const lifelens::WorldGenesisIdentity& Identity,
@@ -653,4 +700,32 @@ bool ULLCoreBridgeSubsystem::GetSurfaceWaterPresentationObservation(
     const lifelens::HydrologyFacts Facts =
         lifelens::deriveHydrologyFacts(World.genesisIdentity(), Coord);
     return FillSurfaceWaterPresentationObservation(Facts, OutObservation);
+}
+
+
+TArray<FLLCoreFreshSurfaceWaterTraversalObservation>
+ULLCoreBridgeSubsystem::GetMaterializedFreshSurfaceWaterTraversalObservations() const
+{
+    TArray<FLLCoreFreshSurfaceWaterTraversalObservation> Result;
+    if (!CoreSimulation)
+    {
+        return Result;
+    }
+
+    const lifelens::World& World = CoreSimulation->world();
+    Result.Reserve(static_cast<int32>(FMath::Min<std::size_t>(
+        World.generatedNaturalChunks.size(),
+        static_cast<std::size_t>(MAX_int32))));
+
+    for (const lifelens::GeneratedNaturalChunk& Chunk : World.generatedNaturalChunks)
+    {
+        const lifelens::HydrologyFacts Facts =
+            lifelens::deriveHydrologyFacts(World.genesisIdentity(), Chunk.coord);
+        FLLCoreFreshSurfaceWaterTraversalObservation Observation;
+        if (FillFreshSurfaceWaterTraversalObservation(Facts, Observation))
+        {
+            Result.Add(MoveTemp(Observation));
+        }
+    }
+    return Result;
 }
