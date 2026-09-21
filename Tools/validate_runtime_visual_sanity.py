@@ -46,10 +46,10 @@ for token in (
 
 # Settlement should remain readable without looking like a huge shaved clearing.
 for token in (
-    "CoreClearRadiusUU = 520.0f",
-    "ActivityRadiusUU = 2200.0f",
-    "CoreZoneCanopyKeep = 0.18f",
-    "CoreZoneUndergrowthKeep = 0.32f",
+    "CoreClearRadiusUU = 360.0f",
+    "ActivityRadiusUU = 1350.0f",
+    "CoreZoneCanopyKeep = 0.30f",
+    "CoreZoneUndergrowthKeep = 0.48f",
     "CoreZoneResourceScale = 0.32f",
     "ActivityZoneResourceScale = 0.62f",
 ):
