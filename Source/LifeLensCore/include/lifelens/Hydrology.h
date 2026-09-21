@@ -6,6 +6,7 @@
 #include <cmath>
 
 #include "MacroWorldGenesis.h"
+#include "ContinuousTerrain.h"
 
 namespace lifelens {
 
@@ -41,6 +42,12 @@ struct HydrologyFacts {
     double groundwaterPotential = 0.0;
     double rechargePotential = 0.0;
     double runoffPotential = 0.0;
+
+    // World v2 drainage-graph signal. Legacy generation versions leave this at
+    // zero; v3+ derives it from upstream cells that actually drain through this
+    // chunk on the continuous terrain field.
+    double drainageAccumulationPotential = 0.0;
+    WaterBodyId drainageSystemId = 0;
 
     bool hasDownstream = false;
     ChunkCoord downstream{};
@@ -272,7 +279,7 @@ inline bool isCardinalNeighbour(ChunkCoord a, ChunkCoord b)
         || (dy == 0 && (dx == 1 || dx == -1));
 }
 
-inline HydrologyFacts deriveHydrologyFacts(
+inline HydrologyFacts deriveLegacyHydrologyFacts(
     const WorldGenesisIdentity& identity,
     ChunkCoord coord)
 {
@@ -429,6 +436,392 @@ inline HydrologyFacts deriveHydrologyFacts(
     return result;
 }
 
+
+inline GridPos continuousHydrologyChunkCenterGrid(ChunkCoord coord)
+{
+    const GridPos origin = chunkOriginGrid(coord);
+    const int half = WorldChunkSpanGridCells / 2;
+    return {origin.x + half, origin.y + half};
+}
+
+inline double continuousHydrologyElevation01(
+    const WorldGenesisIdentity& identity,
+    ChunkCoord coord)
+{
+    return deriveContinuousSurfaceElevation01(
+        identity,
+        continuousHydrologyChunkCenterGrid(coord));
+}
+
+inline MacroSurfaceFacts deriveContinuousHydrologySurfaceFacts(
+    const WorldGenesisIdentity& identity,
+    ChunkCoord coord)
+{
+    MacroSurfaceFacts result;
+    result.coord = coord;
+
+    const double centerElevation =
+        continuousHydrologyElevation01(identity, coord);
+    if(centerElevation < MacroSeaLevel01){
+        result.surfaceClass = MacroSurfaceClass::Ocean;
+        return result;
+    }
+
+    const std::array<ChunkCoord,4> neighbours = {{
+        {coord.x + 1, coord.y},
+        {coord.x - 1, coord.y},
+        {coord.x, coord.y + 1},
+        {coord.x, coord.y - 1}
+    }};
+
+    bool foundMarine = false;
+    double lowestMarineElevation = 2.0;
+    ChunkCoord lowestMarine{};
+    for(const ChunkCoord neighbour : neighbours){
+        const double elevation =
+            continuousHydrologyElevation01(identity, neighbour);
+        if(elevation >= MacroSeaLevel01) continue;
+        if(!foundMarine
+           || elevation < lowestMarineElevation
+           || (elevation == lowestMarineElevation && neighbour < lowestMarine)){
+            foundMarine = true;
+            lowestMarineElevation = elevation;
+            lowestMarine = neighbour;
+        }
+    }
+
+    if(foundMarine){
+        result.surfaceClass = MacroSurfaceClass::Coast;
+        result.hasMarineNeighbour = true;
+        result.marineNeighbour = lowestMarine;
+    }
+    return result;
+}
+
+inline bool tryDeriveContinuousHydrologyDownstream(
+    const WorldGenesisIdentity& identity,
+    ChunkCoord coord,
+    ChunkCoord& outDownstream,
+    double* outDrop = nullptr)
+{
+    const double centerElevation =
+        continuousHydrologyElevation01(identity, coord);
+    const std::array<ChunkCoord,4> neighbours = {{
+        {coord.x + 1, coord.y},
+        {coord.x - 1, coord.y},
+        {coord.x, coord.y + 1},
+        {coord.x, coord.y - 1}
+    }};
+
+    bool found = false;
+    double lowestElevation = centerElevation;
+    ChunkCoord lowestCoord = coord;
+    for(const ChunkCoord neighbour : neighbours){
+        const double elevation =
+            continuousHydrologyElevation01(identity, neighbour);
+        if(elevation < lowestElevation - 1e-12
+           || (found && elevation == lowestElevation && neighbour < lowestCoord)){
+            found = true;
+            lowestElevation = elevation;
+            lowestCoord = neighbour;
+        }
+    }
+
+    if(!found){
+        if(outDrop) *outDrop = 0.0;
+        return false;
+    }
+
+    outDownstream = lowestCoord;
+    if(outDrop){
+        *outDrop = std::max(0.0, centerElevation - lowestElevation);
+    }
+    return true;
+}
+
+inline ChunkCoord traceContinuousDrainageTerminal(
+    const WorldGenesisIdentity& identity,
+    ChunkCoord start,
+    int maxSteps = 256)
+{
+    ChunkCoord current = start;
+    const int steps = std::max(1, maxSteps);
+    for(int i = 0; i < steps; ++i){
+        if(continuousHydrologyElevation01(identity, current) < MacroSeaLevel01){
+            return current;
+        }
+        ChunkCoord next{};
+        if(!tryDeriveContinuousHydrologyDownstream(identity, current, next)){
+            return current;
+        }
+        current = next;
+    }
+    return current;
+}
+
+inline WaterBodyId deriveContinuousDrainageSystemId(
+    const WorldGenesisIdentity& identity,
+    ChunkCoord coord)
+{
+    constexpr std::uint64_t DrainageDomain = 0x5732485944524f44ULL; // W2HYDROD
+    const ChunkCoord terminal =
+        traceContinuousDrainageTerminal(identity, coord);
+
+    std::uint64_t state = worldGenesisMix64(
+        normalizeWorldSeed(identity.worldSeed) ^ DrainageDomain);
+    state = combineWorldGenesisWord(
+        state,
+        normalizeWorldGenerationVersion(identity.generationVersion));
+    state = combineWorldGenesisWord(
+        state,
+        stableSignedCoordinateWord(terminal.x));
+    state = combineWorldGenesisWord(
+        state,
+        stableSignedCoordinateWord(terminal.y));
+
+    WaterBodyId id =
+        worldGenesisMix64(state) & 0x3fffffffffffffffULL;
+    id |= 0x2400000000000000ULL;
+    return id;
+}
+
+inline double deriveContinuousDrainageAccumulationPotential(
+    const WorldGenesisIdentity& identity,
+    ChunkCoord target,
+    int radiusChunks = 3)
+{
+    const int radius = std::max(1, radiusChunks);
+    double contribution = 0.0;
+
+    for(int dy = -radius; dy <= radius; ++dy){
+        for(int dx = -radius; dx <= radius; ++dx){
+            const int distance = std::abs(dx) + std::abs(dy);
+            if(distance == 0 || distance > radius) continue;
+
+            const ChunkCoord source{target.x + dx, target.y + dy};
+            const MacroSurfaceFacts sourceSurface =
+                deriveContinuousHydrologySurfaceFacts(identity, source);
+            if(sourceSurface.surfaceClass == MacroSurfaceClass::Ocean) continue;
+
+            ChunkCoord current = source;
+            bool reachesTarget = false;
+            const int maxSteps = radius * 3 + 4;
+            for(int step = 0; step < maxSteps; ++step){
+                ChunkCoord next{};
+                if(!tryDeriveContinuousHydrologyDownstream(
+                        identity, current, next)){
+                    break;
+                }
+                if(next == target){
+                    reachesTarget = true;
+                    break;
+                }
+                if(std::abs(next.x - target.x)
+                        + std::abs(next.y - target.y)
+                    > radius + 2){
+                    break;
+                }
+                current = next;
+            }
+
+            if(!reachesTarget) continue;
+
+            const MacroRegionFacts sourceFacts =
+                deriveMacroRegionFacts(identity, source);
+            const double sourceRunoff = clampMacro01(
+                0.55 * sourceFacts.moisture
+                + 0.45 * sourceFacts.waterPotential);
+            contribution +=
+                sourceRunoff / (1.0 + 0.30 * static_cast<double>(distance));
+        }
+    }
+
+    return clampMacro01(contribution / 4.0);
+}
+
+inline HydrologyFacts deriveContinuousHydrologyFacts(
+    const WorldGenesisIdentity& identity,
+    ChunkCoord coord)
+{
+    const MacroRegionFacts climate =
+        deriveMacroRegionFacts(identity, coord);
+    const MacroSurfaceFacts surface =
+        deriveContinuousHydrologySurfaceFacts(identity, coord);
+    const double elevation =
+        continuousHydrologyElevation01(identity, coord);
+
+    const std::array<ChunkCoord,4> neighbours = {{
+        {coord.x + 1, coord.y},
+        {coord.x - 1, coord.y},
+        {coord.x, coord.y + 1},
+        {coord.x, coord.y - 1}
+    }};
+
+    double minimumNeighbourElevation = 2.0;
+    for(const ChunkCoord neighbour : neighbours){
+        minimumNeighbourElevation = std::min(
+            minimumNeighbourElevation,
+            continuousHydrologyElevation01(identity, neighbour));
+    }
+
+    ChunkCoord downstream{};
+    double downhillDrop = 0.0;
+    const bool hasTerrainDownstream =
+        tryDeriveContinuousHydrologyDownstream(
+            identity,
+            coord,
+            downstream,
+            &downhillDrop);
+    const double basinDepth = std::max(
+        0.0,
+        minimumNeighbourElevation - elevation);
+
+    HydrologyFacts result;
+    result.coord = coord;
+    result.groundwaterPotential = clampMacro01(
+        0.48 * climate.waterPotential
+        + 0.34 * climate.moisture
+        + 0.18 * (1.0 - elevation));
+    result.rechargePotential = clampMacro01(
+        0.52 * climate.moisture
+        + 0.30 * climate.waterPotential
+        + 0.18 * (1.0 - climate.hazardPotential));
+    result.runoffPotential = clampMacro01(
+        0.38 * climate.moisture
+        + 0.30 * climate.waterPotential
+        + 0.32 * clampMacro01(downhillDrop * 14.0));
+    result.drainageAccumulationPotential =
+        deriveContinuousDrainageAccumulationPotential(identity, coord);
+
+    const double channelPotential = clampMacro01(
+        0.34 * result.runoffPotential
+        + 0.24 * climate.waterPotential
+        + 0.42 * result.drainageAccumulationPotential);
+
+    if(surface.surfaceClass == MacroSurfaceClass::Ocean){
+        result.surfaceKind = SurfaceWaterKind::Ocean;
+        result.salinity = WaterSalinity::Salt;
+    }else if(surface.surfaceClass == MacroSurfaceClass::Coast){
+        result.surfaceKind = SurfaceWaterKind::Coast;
+        result.salinity = WaterSalinity::Brackish;
+        result.hasMarineNeighbour = surface.hasMarineNeighbour;
+        result.marineNeighbour = surface.marineNeighbour;
+    }else if(!hasTerrainDownstream
+             && basinDepth >= 0.0015
+             && climate.waterPotential >= 0.56
+             && result.rechargePotential >= 0.48){
+        result.surfaceKind = SurfaceWaterKind::Lake;
+    }else if(climate.moisture >= 0.66
+             && climate.waterPotential >= 0.66
+             && downhillDrop < 0.0045){
+        result.surfaceKind = SurfaceWaterKind::Wetland;
+    }else if(hasTerrainDownstream
+             && result.drainageAccumulationPotential >= 0.42
+             && channelPotential >= 0.52){
+        result.surfaceKind = SurfaceWaterKind::River;
+    }else if(hasTerrainDownstream
+             && result.drainageAccumulationPotential >= 0.12
+             && channelPotential >= 0.38){
+        result.surfaceKind = SurfaceWaterKind::Stream;
+    }else if(result.groundwaterPotential >= 0.68
+             && climate.waterPotential >= 0.50){
+        result.surfaceKind = SurfaceWaterKind::Spring;
+    }
+
+    if(surface.surfaceClass == MacroSurfaceClass::Land){
+        result.salinity = WaterSalinity::Fresh;
+    }
+
+    switch(result.surfaceKind){
+        case SurfaceWaterKind::River:
+            result.surfaceAvailability = clampMacro01(
+                0.56
+                + 0.22 * climate.waterPotential
+                + 0.14 * result.rechargePotential
+                + 0.08 * result.drainageAccumulationPotential);
+            result.flowPotential = clampMacro01(
+                0.42 * channelPotential
+                + 0.30 * clampMacro01(downhillDrop * 16.0)
+                + 0.28 * result.drainageAccumulationPotential);
+            break;
+        case SurfaceWaterKind::Stream:
+            result.surfaceAvailability = clampMacro01(
+                0.30
+                + 0.34 * climate.waterPotential
+                + 0.22 * result.rechargePotential
+                + 0.14 * result.drainageAccumulationPotential);
+            result.flowPotential = clampMacro01(
+                0.38 * channelPotential
+                + 0.38 * clampMacro01(downhillDrop * 14.0)
+                + 0.24 * result.drainageAccumulationPotential);
+            break;
+        case SurfaceWaterKind::Lake:
+            result.surfaceAvailability = clampMacro01(
+                0.50
+                + 0.28 * climate.waterPotential
+                + 0.22 * result.rechargePotential);
+            result.flowPotential = 0.05 * result.rechargePotential;
+            break;
+        case SurfaceWaterKind::Wetland:
+            result.surfaceAvailability = clampMacro01(
+                0.42
+                + 0.34 * climate.waterPotential
+                + 0.24 * climate.moisture);
+            result.flowPotential = 0.10 * result.runoffPotential;
+            break;
+        case SurfaceWaterKind::Spring:
+            result.surfaceAvailability = clampMacro01(
+                0.24
+                + 0.52 * result.groundwaterPotential
+                + 0.24 * result.rechargePotential);
+            result.flowPotential = hasTerrainDownstream
+                ? 0.16 * result.rechargePotential
+                : 0.04 * result.rechargePotential;
+            break;
+        case SurfaceWaterKind::Coast:
+            result.surfaceAvailability = 1.0;
+            result.flowPotential = 0.16 * result.runoffPotential;
+            break;
+        case SurfaceWaterKind::Ocean:
+            result.surfaceAvailability = 1.0;
+            result.flowPotential = 0.06 * result.runoffPotential;
+            break;
+        case SurfaceWaterKind::None:
+            break;
+    }
+
+    if((result.surfaceKind == SurfaceWaterKind::Stream
+        || result.surfaceKind == SurfaceWaterKind::River
+        || result.surfaceKind == SurfaceWaterKind::Spring)
+       && hasTerrainDownstream){
+        result.hasDownstream = true;
+        result.downstream = downstream;
+    }
+
+    if(result.surfaceKind != SurfaceWaterKind::None){
+        result.drainageSystemId =
+            deriveContinuousDrainageSystemId(identity, coord);
+    }
+
+    // Keep the existing segment id contract for compatibility while exposing a
+    // stable drainage-system id for World v2 river/lake grouping.
+    result.surfaceWaterId = deriveSurfaceWaterId(
+        identity,
+        coord,
+        result.surfaceKind);
+    return result;
+}
+
+inline HydrologyFacts deriveHydrologyFacts(
+    const WorldGenesisIdentity& identity,
+    ChunkCoord coord)
+{
+    if(identity.generationVersion >= ContinuousTerrainGenerationVersion){
+        return deriveContinuousHydrologyFacts(identity, coord);
+    }
+    return deriveLegacyHydrologyFacts(identity, coord);
+}
+
 inline constexpr int FreshSurfaceStartSearchRadiusChunks =
     MacroStartSearchRadiusChunks * 3;
 inline constexpr int FreshSurfaceNeighbourRadiusChunks = 2;
@@ -529,7 +922,8 @@ inline bool validHydrologyFacts(const HydrologyFacts& facts)
        || !inRange(facts.flowPotential)
        || !inRange(facts.groundwaterPotential)
        || !inRange(facts.rechargePotential)
-       || !inRange(facts.runoffPotential)){
+       || !inRange(facts.runoffPotential)
+       || !inRange(facts.drainageAccumulationPotential)){
         return false;
     }
 
