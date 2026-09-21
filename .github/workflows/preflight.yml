@@ -110,6 +110,9 @@ jobs:
       - name: Validate Web 3D truth surface
         run: python Tools/validate_web_world_surface.py
 
+      - name: Validate Web ecology projection
+        run: python Tools/validate_web_ecology_projection.py
+
       - name: Validate World v2 observer streaming interest
         run: python Tools/validate_world_v2_streaming_interest.py
 
