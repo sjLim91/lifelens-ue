@@ -703,6 +703,42 @@ bool ULLCoreBridgeSubsystem::GetHydrologyObservation(
 }
 
 
+TArray<FLLCoreHydrologyObservation>
+ULLCoreBridgeSubsystem::GetHydrologyPreviewObservationsAroundChunk(
+    int32 CenterChunkX,
+    int32 CenterChunkY,
+    int32 RadiusChunks) const
+{
+    TArray<FLLCoreHydrologyObservation> Result;
+    if (!CoreSimulation)
+    {
+        return Result;
+    }
+
+    const int32 Radius = FMath::Clamp(RadiusChunks, 0, 16);
+    const lifelens::WorldGenesisIdentity Identity =
+        CoreSimulation->world().genesisIdentity();
+    const int32 Diameter = Radius * 2 + 1;
+    Result.Reserve(Diameter * Diameter);
+
+    for (int32 Y = -Radius; Y <= Radius; ++Y)
+    {
+        for (int32 X = -Radius; X <= Radius; ++X)
+        {
+            const lifelens::ChunkCoord Coord{
+                CenterChunkX + X,
+                CenterChunkY + Y};
+            const lifelens::HydrologyFacts Facts =
+                lifelens::deriveHydrologyFacts(Identity, Coord);
+            FLLCoreHydrologyObservation Observation;
+            FillHydrologyObservation(Facts, Observation);
+            Result.Add(MoveTemp(Observation));
+        }
+    }
+    return Result;
+}
+
+
 TArray<FLLCoreSurfaceWaterPresentationObservation>
 ULLCoreBridgeSubsystem::GetMaterializedSurfaceWaterPresentationObservations() const
 {
@@ -751,6 +787,42 @@ bool ULLCoreBridgeSubsystem::GetSurfaceWaterPresentationObservation(
     const lifelens::HydrologyFacts Facts =
         lifelens::deriveHydrologyFacts(World.genesisIdentity(), Coord);
     return FillSurfaceWaterPresentationObservation(Facts, OutObservation);
+}
+
+
+TArray<FLLCoreSurfaceWaterPresentationObservation>
+ULLCoreBridgeSubsystem::GetSurfaceWaterPreviewObservationsAroundChunk(
+    int32 CenterChunkX,
+    int32 CenterChunkY,
+    int32 RadiusChunks) const
+{
+    TArray<FLLCoreSurfaceWaterPresentationObservation> Result;
+    if (!CoreSimulation)
+    {
+        return Result;
+    }
+
+    const int32 Radius = FMath::Clamp(RadiusChunks, 0, 16);
+    const lifelens::WorldGenesisIdentity Identity =
+        CoreSimulation->world().genesisIdentity();
+
+    for (int32 Y = -Radius; Y <= Radius; ++Y)
+    {
+        for (int32 X = -Radius; X <= Radius; ++X)
+        {
+            const lifelens::ChunkCoord Coord{
+                CenterChunkX + X,
+                CenterChunkY + Y};
+            const lifelens::HydrologyFacts Facts =
+                lifelens::deriveHydrologyFacts(Identity, Coord);
+            FLLCoreSurfaceWaterPresentationObservation Observation;
+            if (FillSurfaceWaterPresentationObservation(Facts, Observation))
+            {
+                Result.Add(MoveTemp(Observation));
+            }
+        }
+    }
+    return Result;
 }
 
 
