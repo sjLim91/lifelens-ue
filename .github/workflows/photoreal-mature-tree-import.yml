@@ -112,8 +112,17 @@ jobs:
               -run=pythonscript \
               -script=/workspace/Content/Environment/Photoreal/Import/import_photoreal_nature.py \
               -EnablePlugins=PythonScriptPlugin -nullrhi -unattended -nopause -nosplash -stdout -FullStdOutLogOutput'
-          test -e "$GITHUB_WORKSPACE/Content/Environment/Photoreal/PolyHaven/pachira_aquatica_01/SM_LL_pachira_aquatica_01.uasset"
-          test -e "$GITHUB_WORKSPACE/Content/Environment/Photoreal/PolyHaven/island_tree_02/SM_LL_island_tree_02.uasset"
+          for required_asset in \
+            "Content/Environment/Photoreal/PolyHaven/pachira_aquatica_01/SM_LL_pachira_aquatica_01.uasset" \
+            "Content/Environment/Photoreal/PolyHaven/pachira_aquatica_01/pachira_aquatica_01_1k/Materials/pachira_aquatica_01_bark.uasset" \
+            "Content/Environment/Photoreal/PolyHaven/pachira_aquatica_01/pachira_aquatica_01_1k/Materials/pachira_aquatica_01_leaves.uasset" \
+            "Content/Environment/Photoreal/PolyHaven/island_tree_02/SM_LL_island_tree_02.uasset" \
+            "Content/Environment/Photoreal/PolyHaven/island_tree_02/island_tree_02_1k/Materials/island_tree_02.uasset" \
+            "Content/Environment/Photoreal/PolyHaven/island_tree_02/island_tree_02_1k/Materials/island_tree_02_branches.uasset" \
+            "Content/Environment/Photoreal/PolyHaven/island_tree_02/island_tree_02_1k/Materials/island_tree_02_leaves.uasset"
+          do
+            test -s "$GITHUB_WORKSPACE/$required_asset"
+          done
 
       - name: Guard repository file size
         shell: bash
