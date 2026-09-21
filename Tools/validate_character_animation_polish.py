@@ -7,6 +7,10 @@ appearance_header = (root / "Source/LifeLens/Characters/LLResidentAppearanceComp
 appearance_cpp = (root / "Source/LifeLens/Characters/LLResidentAppearanceComponent.cpp").read_text(encoding="utf-8")
 presentation_cpp = (root / "Source/LifeLens/Characters/LLResidentPresentationComponent.cpp").read_text(encoding="utf-8")
 
+world_presentation_cpp = (
+    root / "Source/LifeLens/WorldPresentation/LLWorldPresentationActor.cpp"
+).read_text(encoding="utf-8")
+
 android_game = (root / "Config/Android/AndroidGame.ini").read_text(encoding="utf-8")
 
 # Hard runtime character/motion references must be backed by real cooked assets.
@@ -77,18 +81,44 @@ for token in (
 ):
     assert token in cpp or token in header, f"missing character animation polish token: {token}"
 
-# Desktop smooth terrain is visual-only for locomotion authority, but the
-# rendered human body/ring must follow that visible surface instead of clipping
-# through raised terrain. Android intentionally stays on the flat mobile path.
+# Terrain relief is presentation-only on every platform. The resident capsule
+# stays on the flat authoritative locomotion plane, while the rendered human
+# body/ring follows the actual visible local surface. Android local HISM tiles
+# therefore expose query-only WorldStatic geometry without blocking Pawn.
 for token in (
     "UpdateVisualSurfaceGrounding",
     "LineTraceSingleByChannel",
     "ECC_WorldStatic",
     "Hit.ImpactPoint.Z - PhysicalGroundZ",
     "MaxVisualGroundLiftUU",
-    "#if PLATFORM_ANDROID",
 ):
     assert token in cpp or token in header, f"missing visual terrain grounding token: {token}"
+
+grounding_start = cpp.index("void ULLResidentMotionComponent::UpdateVisualSurfaceGrounding")
+grounding_end = cpp.index("void ULLResidentMotionComponent::UpdateBodyOrientation", grounding_start)
+grounding_block = cpp[grounding_start:grounding_end]
+assert "#if PLATFORM_ANDROID" not in grounding_block
+assert "SetPresentationGroundOffsetUU(0.0f)" not in grounding_block
+
+for token in (
+    "EnableVisualGroundQuery",
+    "SetCollisionEnabled(ECollisionEnabled::QueryOnly)",
+    "SetCollisionResponseToAllChannels(ECR_Ignore)",
+    "SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block)",
+    "EnableVisualGroundQuery(GroundGrassTileInstances)",
+    "EnableVisualGroundQuery(GroundDryTileInstances)",
+    "EnableVisualGroundQuery(GroundTransitionTileInstances)",
+):
+    assert token in world_presentation_cpp, (
+        f"Android local terrain grounding query contract missing: {token}"
+    )
+
+# Regional/far terrain remains presentation-only and query-free; resident
+# physical routing never leaves materialized local chunks.
+query_start = world_presentation_cpp.index("auto EnableVisualGroundQuery")
+query_end = world_presentation_cpp.index("#endif", query_start)
+query_block = world_presentation_cpp[query_start:query_end]
+assert "RegionalTerrainTileInstances" not in query_block
 
 for token in (
     "GetPresentationGroundOffsetUU",
