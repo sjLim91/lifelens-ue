@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <limits>
 #include <sstream>
+#include <system_error>
 
 #include "lifelens/ContinuousTerrain.h"
 #include "lifelens/Hydrology.h"
