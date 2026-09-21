@@ -7,29 +7,29 @@
 ## 1. 현재 체크포인트
 
 - 저장소: `sjLim91/lifelens-ue`
-- 기준 main: `ea7d16fd1227ace7cb48f9ea3c3e37a00ced923f`
+- 기준 main: `4edae40b58a671e84032d17e1e84c39eae18d57b`
 - #360 `[Audit] Consume high-speed movement budget across route waypoints`
   - main 병합 완료.
   - 16x/64x 고속 시뮬레이션에서 한 프레임 이동 예산을 단일 waypoint에 버리지 않고 최대 8 segment까지 연속 소비하도록 보강.
 - #361 `[Audit] Preserve dependent care after parent loss`
   - Core Tests PASS.
   - Preflight PASS.
-  - Unreal Linux Compile 진행 중.
-  - #360 병합으로 main이 이동했으므로 mergeability를 최신 main 기준으로 재검증해야 한다.
+  - Unreal Linux Compile PASS.
+  - 최신 main mergeability 확인 후 main 병합 완료.
 - #362 `[Audit] Keep surface water visible when Water rendering fails`
   - Preflight PASS.
-  - Unreal Linux Compile 진행 중.
+  - Unreal Linux Compile PASS.
+  - #361 병합 뒤 최신 main mergeability를 다시 확인하고 main 병합 완료.
   - Unreal Water 표시 경로가 실패해도 실제 수계가 화면에서 완전히 사라지지 않도록 presentation safety surface를 추가.
-  - 최신 main 기준 mergeability 재검증이 필요하다.
 
 ## 2. 즉시 실행 순서
 
-1. #361 / #362 exact-head Unreal Compile 결과 회수.
-2. 실패 시 로그 원인 수정 후 동일 gate 재실행.
-3. 통과 시 최신 main 기준 mergeability / overlap 재검증.
-4. 안전한 PR부터 expected-head SHA를 사용해 병합.
-5. 병합 후 최신 main 통합 회귀 검증.
-6. 이후 전수검사를 중단하지 않고 다음 영역으로 진행.
+1. #360 / #361 / #362가 모두 들어간 최신 main을 기준으로 전수검사 다음 구간을 진행한다.
+2. 자연환경 소스와 runtime contract를 전수 확인한다.
+3. 지형/수계/vegetation이 "구현 존재"가 아니라 실제 화면에서 보이도록 검증한다.
+4. 결손 지점에서 현재 asset으로 품질 목표를 달성하기 어렵다면 라이선스가 명확한 비용 0원 asset을 선별해 적용한다.
+5. 수정 단위마다 Preflight / relevant tests / Unreal Compile을 통과시키고 안전한 순서로 main에 병합한다.
+6. 자연환경 이후 캐릭터/모션 -> 생애/사회 -> Observer/UI -> 플랫폼/Save/최종 QA 순으로 계속 진행한다.
 
 ## 3. 전수검사 잔여 우선순위
 
