@@ -1,5 +1,9 @@
 #pragma once
 
+#include <array>
+#include <cmath>
+#include <vector>
+
 #include "World.h"
 #include "Hydrology.h"
 #include "NaturalPhysicalObstacle.h"
