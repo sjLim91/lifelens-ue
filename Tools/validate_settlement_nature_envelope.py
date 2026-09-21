@@ -37,6 +37,8 @@ for token in (
     assert token in header or token in cpp, f"readability safety path missing: {token}"
 
 # Resource patches remain independent of decorative thinning.
+# Anchor after BuildChunkDressing so the similarly named signature/hash loop
+# earlier in the translation unit cannot produce a false positive.
 build_chunk_start = cpp.index(
     "void ALLWorldPresentationActor::BuildChunkDressing"
 )
