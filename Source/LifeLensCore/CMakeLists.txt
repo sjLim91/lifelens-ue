@@ -167,6 +167,8 @@ lifelens_add_test(test_world_genesis_wg1)
 
 lifelens_add_test(test_world_genesis_wg2)
 
+lifelens_add_test(test_continuous_terrain)
+
 lifelens_add_test(test_world_generation_milestone_a)
 
 lifelens_add_test(test_world_generation_sanitation_reference)
