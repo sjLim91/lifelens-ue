@@ -38,6 +38,10 @@ CURATED = {
     # 17M-triangle pine_tree_01) are intentionally excluded from the baseline.
     "fir_sapling": {"kind": "model", "resolution": "2k", "format": "gltf", "max_mib": 90},
     "pine_sapling_small": {"kind": "model", "resolution": "2k", "format": "gltf", "max_mib": 90},
+    # Mature broadleaf replacement for the temporary stylized desktop canopy.
+    # Poly Haven reports ~312K source triangles and authored LODs; the pipeline
+    # still selects only the 1K glTF payload and enforces a hard byte budget.
+    "jacaranda_tree": {"kind": "model", "resolution": "1k", "format": "gltf", "max_mib": 90},
     "boulder_01": {"kind": "model", "resolution": "2k", "format": "gltf", "max_mib": 45},
     "tree_stump_01": {"kind": "model", "resolution": "2k", "format": "gltf", "max_mib": 45},
     "shrub_02": {"kind": "model", "resolution": "2k", "format": "gltf", "max_mib": 45},
@@ -251,11 +255,40 @@ def main() -> int:
 
         selected_bytes = sum(int(item.get("size") or 0) for item in chosen)
         max_mib = spec.get("max_mib")
-        if max_mib and selected_bytes > int(max_mib) * 1024 * 1024:
+        over_budget = bool(max_mib and selected_bytes > int(max_mib) * 1024 * 1024)
+        if args.dry_run or over_budget:
+            print(
+                f"[LifeLens assets] selected payload detail for {asset_id}: "
+                f"{len(chosen)} files, {selected_bytes / 1024 / 1024:.1f} MiB")
+            for item in sorted(
+                chosen,
+                key=lambda candidate: int(candidate.get("size") or 0),
+                reverse=True,
+            ):
+                leaf_path = "/".join(item.get("path") or [])
+                leaf_size = int(item.get("size") or 0) / 1024 / 1024
+                leaf_name = Path(item["url"].split("?", 1)[0]).name
+                print(
+                    f"[LifeLens assets] selected leaf: "
+                    f"{leaf_path} | {leaf_name} | {leaf_size:.1f} MiB")
+
+        if over_budget:
+            largest = sorted(
+                chosen,
+                key=lambda item: int(item.get("size") or 0),
+                reverse=True,
+            )[:12]
+            detail = "; ".join(
+                f"{'/'.join(item.get('path') or [])}="
+                f"{int(item.get('size') or 0) / 1024 / 1024:.1f}MiB"
+                for item in largest
+            )
             raise RuntimeError(
                 f"{asset_id} selected payload is {selected_bytes / 1024 / 1024:.1f} MiB, "
                 f"over the {max_mib} MiB LifeLens baseline budget. "
-                "Choose a lower-geometry asset instead of silently importing a hero scan.")
+                f"Largest selected leaves: {detail}. "
+                "Choose a lower-geometry asset or narrow the selected LOD/variant "
+                "instead of silently importing a hero scan.")
 
         asset_dir = root / asset_id
         downloaded = [download(item, asset_dir, args.dry_run) for item in chosen]
