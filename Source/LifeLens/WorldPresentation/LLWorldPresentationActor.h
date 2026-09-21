@@ -77,6 +77,15 @@ public:
     static constexpr int32 MaxGrassInstances = 6400;
     static constexpr int32 MaxRockInstances  = 1650;
 
+    // Dedicated desktop photoreal canopy budgets. The light broadleaf tier
+    // replaces part of the ambient tree count; the high-detail hero tree stays
+    // deliberately rare so a production-looking silhouette cannot turn into a
+    // multi-million-triangle forest.
+    static constexpr int32 MaxPhotorealBroadleafInstances = 260;
+    static constexpr int32 MaxPhotorealBroadleafTreesPerChunk = 32;
+    static constexpr int32 MaxHeroTreeInstances = 8;
+    static constexpr int32 MaxHeroTreesPerChunk = 1;
+
     static constexpr int32 MaxTreesPerChunk  = 180;
     static constexpr int32 MaxShrubsPerChunk = 250;
     static constexpr int32 MaxGrassPerChunk  = 780;
@@ -341,6 +350,11 @@ private:
 
     UPROPERTY() TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>> TreeInstances;
     UPROPERTY() TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>> FarTreeInstances;
+    // Desktop-only photoreal canopy tiers. They are separate from TreeInstances
+    // so high-detail assets can never be selected by the generic 1,480-instance
+    // ambient pool.
+    UPROPERTY() TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>> PhotorealBroadleafInstances;
+    UPROPERTY() TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>> PhotorealHeroTreeInstances;
     UPROPERTY() TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>> ShrubInstances;
     UPROPERTY() TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>> GrassInstances;
     UPROPERTY() TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>> RockInstances;
@@ -384,6 +398,8 @@ private:
     uint32 BuiltResourceQuantitySignature = 0;
     bool bBuiltFacilityPresentation = false;
     int32 PlacedTrees = 0;
+    int32 PlacedPhotorealBroadleafTrees = 0;
+    int32 PlacedHeroTrees = 0;
     int32 PlacedShrubs = 0;
     int32 PlacedGrass = 0;
     int32 PlacedRocks = 0;
