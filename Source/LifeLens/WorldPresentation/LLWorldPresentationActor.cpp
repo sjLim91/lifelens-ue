@@ -1863,11 +1863,6 @@ void ALLWorldPresentationActor::BuildChunkDressing(
     constexpr float TreeMinScale = 0.92f;
     constexpr float TreeMaxScale = 1.65f;
 #endif
-    Place(TreeInstances, TreeCount, PlacedTrees, MaxTreeInstances, TreeMinScale, TreeMaxScale, 3.5f, ELLDressingLayer::Canopy);
-    Place(ShrubInstances, ShrubCount, PlacedShrubs, MaxShrubInstances, 0.62f, 1.58f, 6.0f, ELLDressingLayer::Undergrowth);
-    Place(GrassInstances, GrassCount, PlacedGrass, MaxGrassInstances, 0.58f, 1.78f, 5.0f, ELLDressingLayer::Undergrowth);
-    Place(RockInstances, RockCount, PlacedRocks, MaxRockInstances, 0.62f, 1.92f, 10.0f, ELLDressingLayer::GroundDetail);
-
     for (const FLLCoreNaturalResourcePatchObservation& Patch : Chunk.ResourcePatches)
     {
         const FString Material = Patch.Material.ToString().ToLower();
@@ -1909,7 +1904,7 @@ void ALLWorldPresentationActor::BuildChunkDressing(
             Target = &ShrubInstances; PlacedCounter = &PlacedShrubs; MaxTotal = MaxShrubInstances; MinScale = 0.9f; MaxScale = 1.5f;
         }
 
-        if (!Target || Target->Num() == 0 || !PlacedCounter || *PlacedCounter >= MaxTotal) { continue; }
+        if (!Target || Target->Num() == 0 || !PlacedCounter) { continue; }
         const float PatchX = static_cast<float>(Patch.GridX - World.InitialCenterGridX) * LLWorldSpatialContract::GridCellSizeUU;
         const float PatchY = static_cast<float>(Patch.GridY - World.InitialCenterGridY) * LLWorldSpatialContract::GridCellSizeUU;
         const float Quantity01 = Patch.MaxQuantity > 0
@@ -1939,7 +1934,7 @@ void ALLWorldPresentationActor::BuildChunkDressing(
             ? PresentationSeed(Patch.VisualSeed)
             : MixHash(State, static_cast<uint32>(
                 static_cast<uint64>(Patch.ResourceNodeId) & 0xFFFFFFFFu));
-        for (int32 Index = 0; Index < PatchInstances && *PlacedCounter < MaxTotal; ++Index)
+        for (int32 Index = 0; Index < PatchInstances; ++Index)
         {
             const float SpreadX = (HashUnit(PatchState) * 2.0f - 1.0f) * LLWorldSpatialContract::GridCellSizeUU;
             const float SpreadY = (HashUnit(PatchState) * 2.0f - 1.0f) * LLWorldSpatialContract::GridCellSizeUU;
@@ -1962,6 +1957,13 @@ void ALLWorldPresentationActor::BuildChunkDressing(
             }
         }
     }
+
+    // Decorative ecology is budgeted only after every authoritative obstacle
+    // and resource patch has received a visible representation.
+    Place(TreeInstances, TreeCount, PlacedTrees, MaxTreeInstances, TreeMinScale, TreeMaxScale, 3.5f, ELLDressingLayer::Canopy);
+    Place(ShrubInstances, ShrubCount, PlacedShrubs, MaxShrubInstances, 0.62f, 1.58f, 6.0f, ELLDressingLayer::Undergrowth);
+    Place(GrassInstances, GrassCount, PlacedGrass, MaxGrassInstances, 0.58f, 1.78f, 5.0f, ELLDressingLayer::Undergrowth);
+    Place(RockInstances, RockCount, PlacedRocks, MaxRockInstances, 0.62f, 1.92f, 10.0f, ELLDressingLayer::GroundDetail);
 }
 
 uint32 ALLWorldPresentationActor::ResourceQuantitySignature(
