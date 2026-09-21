@@ -41,6 +41,16 @@ jobs:
           test -s Clients/Web/generated/lifelens_core.wasm
           echo "LifeLens Web WASM artifacts: PASS"
 
+      - name: Upload browser runtime artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lifelens-web-runtime
+          path: |
+            Clients/Web/generated/lifelens_core.js
+            Clients/Web/generated/lifelens_core.wasm
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Check browser JavaScript syntax
         run: |
           node --check Clients/Web/app.js
