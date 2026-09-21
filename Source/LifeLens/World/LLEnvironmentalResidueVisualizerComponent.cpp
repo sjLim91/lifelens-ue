@@ -1,7 +1,11 @@
 #include "World/LLEnvironmentalResidueVisualizerComponent.h"
 
 #include "Simulation/LLCoreBridgeSubsystem.h"
+#include "Simulation/LLCivilizationReadTypes.h"
 #include "Simulation/LLEnvironmentReadTypes.h"
+#include "Simulation/LLWorldGenerationReadTypes.h"
+#include "World/LLWorldSpatialContract.h"
+#include "WorldPresentation/LLTerrainPresentationContract.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 #include "Materials/MaterialInterface.h"
@@ -15,6 +19,18 @@ constexpr int32 ResidueCustomDataFloats = 4;
 uint32 MixVisualHash(uint32 Seed, uint32 Value)
 {
     return HashCombine(Seed, Value);
+}
+
+int32 ChunkCoordForGrid(int32 GridCoordinate)
+{
+    const int32 Span = FMath::Max(1, LLWorldSpatialContract::ChunkSpanGridCells);
+    int32 Quotient = GridCoordinate / Span;
+    const int32 Remainder = GridCoordinate % Span;
+    if (Remainder < 0)
+    {
+        --Quotient;
+    }
+    return Quotient;
 }
 }
 
@@ -47,6 +63,8 @@ ULLEnvironmentalResidueVisualizerComponent::ULLEnvironmentalResidueVisualizerCom
 
 uint32 ULLEnvironmentalResidueVisualizerComponent::BuildVisualSignature(
     const FLLCoreEnvironmentObservation& Environment,
+    const FLLCoreWorldGenerationObservation& World,
+    const FLLCoreCivilizationWorldObservation& Civilization,
     float CoreGridCellSizeUU,
     int32 CoreOriginGridX,
     int32 CoreOriginGridY) const
@@ -54,10 +72,33 @@ uint32 ULLEnvironmentalResidueVisualizerComponent::BuildVisualSignature(
     uint32 Hash = GetTypeHash(Environment.TotalResidues);
     Hash = MixVisualHash(Hash, GetTypeHash(Environment.Residues.Num()));
 
-    // Instance transforms are presentation outputs too.  If the selected Core
-    // origin, world scale, owner placement or surface offset changes while the
-    // authoritative residue DTO stays identical, the old HISM transforms must
-    // not survive merely because the residue data hash is unchanged.
+    // Terrain projection is deterministic from this world/start frame, while
+    // facility positions alter the shared flattening envelope. Both therefore
+    // belong in the visual transform signature, not only the residue records.
+    const uint64 Seed = static_cast<uint64>(World.WorldSeed);
+    Hash = MixVisualHash(Hash, static_cast<uint32>(Seed & 0xFFFFFFFFu));
+    Hash = MixVisualHash(Hash, static_cast<uint32>((Seed >> 32) & 0xFFFFFFFFu));
+    Hash = MixVisualHash(Hash, GetTypeHash(World.GenerationVersion));
+    Hash = MixVisualHash(Hash, GetTypeHash(World.InitialChunkX));
+    Hash = MixVisualHash(Hash, GetTypeHash(World.InitialChunkY));
+    Hash = MixVisualHash(Hash, GetTypeHash(World.InitialCenterGridX));
+    Hash = MixVisualHash(Hash, GetTypeHash(World.InitialCenterGridY));
+    Hash = MixVisualHash(
+        Hash,
+        GetTypeHash(FMath::RoundToInt(World.InitialChunk.Elevation * 100000.0f)));
+
+    Hash = MixVisualHash(Hash, GetTypeHash(Civilization.Facilities.Num()));
+    for (const FLLCoreCivilizationFacilityObservation& Facility : Civilization.Facilities)
+    {
+        const uint64 FacilityId = static_cast<uint64>(Facility.FacilityId);
+        Hash = MixVisualHash(Hash, static_cast<uint32>(FacilityId & 0xFFFFFFFFu));
+        Hash = MixVisualHash(Hash, static_cast<uint32>((FacilityId >> 32) & 0xFFFFFFFFu));
+        Hash = MixVisualHash(Hash, GetTypeHash(Facility.GridX));
+        Hash = MixVisualHash(Hash, GetTypeHash(Facility.GridY));
+    }
+
+    // Instance transforms are presentation outputs too. If world scale/owner
+    // placement/surface lift changes, stale HISM transforms must rebuild.
     const float CellSize = FMath::Max(1.0f, CoreGridCellSizeUU);
     Hash = MixVisualHash(Hash, GetTypeHash(FMath::RoundToInt(CellSize * 1000.0f)));
     Hash = MixVisualHash(Hash, GetTypeHash(CoreOriginGridX));
@@ -87,6 +128,9 @@ uint32 ULLEnvironmentalResidueVisualizerComponent::BuildVisualSignature(
 }
 
 FVector ULLEnvironmentalResidueVisualizerComponent::ResolveSurfaceLocation(
+    const ULLCoreBridgeSubsystem& CoreBridge,
+    const FLLCoreWorldGenerationObservation& World,
+    const TArray<FVector2D>& FacilityCentersUU,
     int32 GridX,
     int32 GridY,
     float CoreGridCellSizeUU,
@@ -94,30 +138,59 @@ FVector ULLEnvironmentalResidueVisualizerComponent::ResolveSurfaceLocation(
     int32 CoreOriginGridY) const
 {
     const AActor* Owner = GetOwner();
+    const FVector OwnerLocation =
+        Owner ? Owner->GetActorLocation() : FVector::ZeroVector;
     const float CellSize = FMath::Max(1.0f, CoreGridCellSizeUU);
-    FVector Location = Owner ? Owner->GetActorLocation() : FVector::ZeroVector;
+
+    FVector Location = OwnerLocation;
     Location.X += static_cast<float>(GridX - CoreOriginGridX) * CellSize;
     Location.Y += static_cast<float>(GridY - CoreOriginGridY) * CellSize;
 
-    UWorld* World = GetWorld();
-    if (!World)
+    if (!World.bAvailable || !World.bHasInitialStartRegion)
     {
         Location.Z += SurfaceOffsetUU;
         return Location;
     }
 
-    FCollisionQueryParams Params(SCENE_QUERY_STAT(LLEnvironmentResidueSurface), false, Owner);
-    FHitResult Hit;
-    const FVector TraceStart(Location.X, Location.Y, Location.Z + 2500.0f);
-    const FVector TraceEnd(Location.X, Location.Y, Location.Z - 2500.0f);
-    if (World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic, Params))
+    const int32 ChunkX = ChunkCoordForGrid(GridX);
+    const int32 ChunkY = ChunkCoordForGrid(GridY);
+    FLLCoreTerrainPresentationObservation Terrain;
+    bool bHasTerrain =
+        CoreBridge.GetTerrainPresentationObservation(
+            ChunkX,
+            ChunkY,
+            Terrain)
+        && Terrain.bAvailable;
+    if (!bHasTerrain)
     {
-        Location.Z = Hit.ImpactPoint.Z + SurfaceOffsetUU;
+        bHasTerrain =
+            CoreBridge.GetTerrainPreviewObservation(
+                ChunkX,
+                ChunkY,
+                Terrain)
+            && Terrain.bAvailable;
     }
-    else
+
+    if (!bHasTerrain)
     {
         Location.Z += SurfaceOffsetUU;
+        return Location;
     }
+
+    const FVector2D SurfaceLocationUU(
+        static_cast<float>(GridX - World.InitialCenterGridX)
+            * LLWorldSpatialContract::GridCellSizeUU,
+        static_cast<float>(GridY - World.InitialCenterGridY)
+            * LLWorldSpatialContract::GridCellSizeUU);
+    const float SurfaceZUU =
+        LLTerrainPresentationContract::LocalSurfaceZUU(
+            World,
+            Terrain,
+            SurfaceLocationUU,
+            FVector2D::ZeroVector,
+            FacilityCentersUU);
+
+    Location.Z = OwnerLocation.Z + SurfaceZUU + SurfaceOffsetUU;
     return Location;
 }
 
@@ -134,9 +207,30 @@ void ULLEnvironmentalResidueVisualizerComponent::RefreshFromCore(
 
     const FLLCoreEnvironmentObservation Environment =
         CoreBridge.GetEnvironmentObservation(FMath::Max(1, MaxResidueInstances));
+    const FLLCoreWorldGenerationObservation World =
+        CoreBridge.GetWorldGenerationObservation();
+    const FLLCoreCivilizationWorldObservation Civilization =
+        CoreBridge.GetCivilizationWorldObservation(0);
+
+    TArray<FVector2D> FacilityCentersUU;
+    FacilityCentersUU.Reserve(Civilization.Facilities.Num());
+    for (const FLLCoreCivilizationFacilityObservation& Facility : Civilization.Facilities)
+    {
+        FacilityCentersUU.Add(FVector2D(
+            static_cast<float>(Facility.GridX - World.InitialCenterGridX)
+                * LLWorldSpatialContract::GridCellSizeUU,
+            static_cast<float>(Facility.GridY - World.InitialCenterGridY)
+                * LLWorldSpatialContract::GridCellSizeUU));
+    }
+
     const float CellSize = FMath::Max(1.0f, CoreGridCellSizeUU);
     const uint32 Signature = BuildVisualSignature(
-        Environment, CellSize, CoreOriginGridX, CoreOriginGridY);
+        Environment,
+        World,
+        Civilization,
+        CellSize,
+        CoreOriginGridX,
+        CoreOriginGridY);
     if (!bForce && bHasVisualSignature && Signature == LastVisualSignature)
     {
         return;
@@ -174,8 +268,14 @@ void ULLEnvironmentalResidueVisualizerComponent::RefreshFromCore(
         const float ZScale = FMath::Lerp(0.010f, 0.035f, Intensity);
 
         const FVector WorldLocation = ResolveSurfaceLocation(
-            Residue.GridX, Residue.GridY, CellSize,
-            CoreOriginGridX, CoreOriginGridY);
+            CoreBridge,
+            World,
+            FacilityCentersUU,
+            Residue.GridX,
+            Residue.GridY,
+            CellSize,
+            CoreOriginGridX,
+            CoreOriginGridY);
         const FTransform InstanceTransform(
             FRotator::ZeroRotator,
             WorldLocation,
