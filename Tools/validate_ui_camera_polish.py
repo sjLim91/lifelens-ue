@@ -23,23 +23,25 @@ for token in (
 ):
     assert token in cpp or token in header, f"missing camera polish token: {token}"
 
+# World v2 free-pan changes ObserverInterest rather than being clamped to
+# the opening overview. Streaming must follow the smoothed camera target without
+# promoting remote chunks into simulation authority.
 for token in (
-    "ManualPanMaxRadiusChunks = 3.0f",
-    "LLWorldSpatialContract::ChunkSpanUU",
+    "LLWorldStreamingSubsystem",
+    "SetObserverPresentationTarget(CurrentOrbitTarget)",
     "ProposedTarget",
-    "WorldOverviewTarget",
-    "Offset.GetClampedToMaxSize(MaxPanRadiusUU)",
+    "DesiredOrbitTarget = ProposedTarget",
 ):
-    assert token in cpp or token in header, f"manual pan world-boundary guard missing: {token}"
-assert "ManualPanMaxRadiusChunks=3.000000" in default_game
+    assert token in cpp or token in header, f"observer streaming camera contract missing: {token}"
+
+assert "ManualPanMaxRadiusChunks" not in header
+assert "ManualPanMaxRadiusChunks" not in default_game
 
 pan_start = cpp.index("void ALLObserverPlayerController::PanByScreenDelta")
 pan_end = cpp.index("void ALLObserverPlayerController::ZoomByScale", pan_start)
 pan_block = cpp[pan_start:pan_end]
-assert "DesiredOrbitTarget += " not in pan_block, (
-    "manual pan must not remain unbounded after the regional presentation boundary guard"
-)
-assert "if (bWorldOverviewCaptured)" in pan_block
+assert "GetClampedToMaxSize(MaxPanRadiusUU)" not in pan_block
+assert "if (bWorldOverviewCaptured)" not in pan_block
 
 for token in (
     "LinearFade * LinearFade * (3.0f - 2.0f * LinearFade)",
