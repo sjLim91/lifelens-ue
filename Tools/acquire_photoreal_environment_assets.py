@@ -38,6 +38,15 @@ CURATED = {
     # 17M-triangle pine_tree_01) are intentionally excluded from the baseline.
     "fir_sapling": {"kind": "model", "resolution": "2k", "format": "gltf", "max_mib": 90},
     "pine_sapling_small": {"kind": "model", "resolution": "2k", "format": "gltf", "max_mib": 90},
+    # Mature broadleaf replacement for the temporary stylized desktop canopy.
+    # Poly Haven reports ~312K source triangles and authored LODs; the pipeline
+    # still selects only the 1K glTF payload and enforces a hard byte budget.
+    "jacaranda_tree": {"kind": "model", "resolution": "1k", "format": "gltf", "max_mib": 90},
+    "pachira_aquatica_01": {"kind": "model", "resolution": "1k", "format": "gltf", "max_mib": 90},
+    "quiver_tree_01": {"kind": "model", "resolution": "1k", "format": "gltf", "max_mib": 90},
+    "quiver_tree_02": {"kind": "model", "resolution": "1k", "format": "gltf", "max_mib": 90},
+    "tree_small_02": {"kind": "model", "resolution": "1k", "format": "gltf", "max_mib": 90},
+    "island_tree_02": {"kind": "model", "resolution": "1k", "format": "gltf", "max_mib": 90},
     "boulder_01": {"kind": "model", "resolution": "2k", "format": "gltf", "max_mib": 45},
     "tree_stump_01": {"kind": "model", "resolution": "2k", "format": "gltf", "max_mib": 45},
     "shrub_02": {"kind": "model", "resolution": "2k", "format": "gltf", "max_mib": 45},
@@ -178,6 +187,52 @@ def select_files(files: Any, spec: dict[str, str]) -> list[dict[str, Any]]:
     return [dedup[url] for url in sorted(dedup)]
 
 
+
+def inspect_gltf_metadata(chosen: list[dict[str, Any]]) -> None:
+    """Fetch only the tiny .gltf JSON and report its scene/LOD structure."""
+    gltf_items = [item for item in chosen if extension(item["url"]) == ".gltf"]
+    if not gltf_items:
+        print("[LifeLens assets] glTF metadata probe: no .gltf leaf selected")
+        return
+    for item in gltf_items:
+        reported_size = int(item.get("size") or 0)
+        if reported_size > 2 * 1024 * 1024:
+            raise RuntimeError(
+                f"Refusing metadata probe for unexpectedly large glTF JSON: "
+                f"{reported_size / 1024 / 1024:.1f} MiB")
+        req = urllib.request.Request(item["url"], headers={"User-Agent": USER_AGENT})
+        with urllib.request.urlopen(req, timeout=60) as response:
+            doc = json.load(response)
+
+        print(
+            f"[LifeLens assets] glTF metadata: "
+            f"scenes={len(doc.get('scenes', []))} "
+            f"nodes={len(doc.get('nodes', []))} "
+            f"meshes={len(doc.get('meshes', []))} "
+            f"buffers={len(doc.get('buffers', []))} "
+            f"extensionsUsed={doc.get('extensionsUsed', [])}")
+
+        for index, buffer in enumerate(doc.get("buffers", [])):
+            print(
+                f"[LifeLens assets] glTF buffer[{index}]: "
+                f"uri={buffer.get('uri', '')} "
+                f"byteLength={int(buffer.get('byteLength') or 0)}")
+
+        for index, mesh in enumerate(doc.get("meshes", [])):
+            print(
+                f"[LifeLens assets] glTF mesh[{index}]: "
+                f"name={mesh.get('name', '')!r} "
+                f"primitives={len(mesh.get('primitives', []))}")
+
+        for index, node in enumerate(doc.get("nodes", [])):
+            name = str(node.get("name") or "")
+            lowered = name.lower()
+            if "lod" in lowered or "static" in lowered or "geometry" in lowered:
+                print(
+                    f"[LifeLens assets] glTF node[{index}]: "
+                    f"name={name!r} mesh={node.get('mesh')} "
+                    f"children={node.get('children', [])}")
+
 def md5_file(path: Path) -> str:
     digest = hashlib.md5()
     with path.open("rb") as handle:
@@ -225,6 +280,10 @@ def main() -> int:
     parser.add_argument("--resolution", choices=["1k", "2k", "4k"],
                         help="override curated resolution for this acquisition run")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--inspect-gltf",
+        action="store_true",
+        help="fetch only selected .gltf JSON and print mesh/node/LOD structure")
     args = parser.parse_args()
 
     ids = args.asset or list(CURATED)
@@ -249,13 +308,45 @@ def main() -> int:
                 f"No matching files returned for {asset_id}; "
                 f"API structure may have changed.")
 
+        if args.inspect_gltf:
+            inspect_gltf_metadata(chosen)
+
         selected_bytes = sum(int(item.get("size") or 0) for item in chosen)
         max_mib = spec.get("max_mib")
-        if max_mib and selected_bytes > int(max_mib) * 1024 * 1024:
+        over_budget = bool(max_mib and selected_bytes > int(max_mib) * 1024 * 1024)
+        if args.dry_run or over_budget:
+            print(
+                f"[LifeLens assets] selected payload detail for {asset_id}: "
+                f"{len(chosen)} files, {selected_bytes / 1024 / 1024:.1f} MiB")
+            for item in sorted(
+                chosen,
+                key=lambda candidate: int(candidate.get("size") or 0),
+                reverse=True,
+            ):
+                leaf_path = "/".join(item.get("path") or [])
+                leaf_size = int(item.get("size") or 0) / 1024 / 1024
+                leaf_name = Path(item["url"].split("?", 1)[0]).name
+                print(
+                    f"[LifeLens assets] selected leaf: "
+                    f"{leaf_path} | {leaf_name} | {leaf_size:.1f} MiB")
+
+        if over_budget:
+            largest = sorted(
+                chosen,
+                key=lambda item: int(item.get("size") or 0),
+                reverse=True,
+            )[:12]
+            detail = "; ".join(
+                f"{'/'.join(item.get('path') or [])}="
+                f"{int(item.get('size') or 0) / 1024 / 1024:.1f}MiB"
+                for item in largest
+            )
             raise RuntimeError(
                 f"{asset_id} selected payload is {selected_bytes / 1024 / 1024:.1f} MiB, "
                 f"over the {max_mib} MiB LifeLens baseline budget. "
-                "Choose a lower-geometry asset instead of silently importing a hero scan.")
+                f"Largest selected leaves: {detail}. "
+                "Choose a lower-geometry asset or narrow the selected LOD/variant "
+                "instead of silently importing a hero scan.")
 
         asset_dir = root / asset_id
         downloaded = [download(item, asset_dir, args.dry_run) for item in chosen]
