@@ -195,6 +195,15 @@ private:
     UPROPERTY(Config, EditAnywhere, Category="LifeLens|Movement|Pathfinding", meta=(ClampMin="128", ClampMax="32768"))
     int32 MaxLocalAStarExpandedNodes = 8192;
 
+    // Core macro terrain is gameplay routing authority. Keep these penalties
+    // intentionally modest: rough/steep routes remain possible but are less
+    // attractive than comparably short gentle routes.
+    UPROPERTY(Config, EditAnywhere, Category="LifeLens|Movement|Pathfinding", meta=(ClampMin="0", ClampMax="20"))
+    int32 TerrainTraversalEaseMaxStepCost = 6;
+
+    UPROPERTY(Config, EditAnywhere, Category="LifeLens|Movement|Pathfinding", meta=(ClampMin="0.0", ClampMax="200.0"))
+    float TerrainElevationTransitionCostScale = 40.0f;
+
     UPROPERTY(Config, EditAnywhere, Category="LifeLens|Movement|Pathfinding", meta=(ClampMin="0.05", ClampMax="5.0"))
     float FailedRouteRetrySeconds = 0.50f;
 };

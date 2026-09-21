@@ -323,6 +323,8 @@ TArray<FVector> ALLWorldDirector::BuildLocalAStarPath(
 
     TSet<FIntPoint> Blocked;
     TSet<FIntPoint> Walkable;
+    TMap<FIntPoint, float> ChunkTraversalEase;
+    TMap<FIntPoint, float> ChunkElevation;
 
     const int32 ChunkSpan =
         FMath::Max(1, LLWorldSpatialContract::ChunkSpanGridCells);
@@ -335,6 +337,14 @@ TArray<FVector> ALLWorldDirector::BuildLocalAStarPath(
         // an authoritative support surface underneath every routed grid cell.
         if (Chunk.bMaterialized && Chunk.Surface != FName(TEXT("Ocean")))
         {
+            const FIntPoint ChunkCoord(Chunk.ChunkX, Chunk.ChunkY);
+            ChunkTraversalEase.Add(
+                ChunkCoord,
+                FMath::Clamp(Chunk.TraversalEase, 0.0f, 1.0f));
+            ChunkElevation.Add(
+                ChunkCoord,
+                FMath::Clamp(Chunk.Elevation, 0.0f, 1.0f));
+
             const int32 ChunkMinX = Chunk.ChunkX * ChunkSpan;
             const int32 ChunkMinY = Chunk.ChunkY * ChunkSpan;
             for (int32 Y = ChunkMinY; Y < ChunkMinY + ChunkSpan; ++Y)
@@ -577,6 +587,59 @@ TArray<FVector> ALLWorldDirector::BuildLocalAStarPath(
         FIntPoint(-1, 1), FIntPoint(-1, -1)
     };
 
+    const auto ChunkForCell =
+        [ChunkSpan](const FIntPoint& Cell)
+        {
+            return FIntPoint(
+                FMath::FloorToInt(
+                    static_cast<double>(Cell.X)
+                    / static_cast<double>(ChunkSpan)),
+                FMath::FloorToInt(
+                    static_cast<double>(Cell.Y)
+                    / static_cast<double>(ChunkSpan)));
+        };
+
+    const auto TerrainMovePenalty =
+        [this, &ChunkTraversalEase, &ChunkElevation, &ChunkForCell](
+            const FIntPoint& From,
+            const FIntPoint& To)
+        {
+            const FIntPoint FromChunk = ChunkForCell(From);
+            const FIntPoint ToChunk = ChunkForCell(To);
+
+            const float* FromEase = ChunkTraversalEase.Find(FromChunk);
+            const float* ToEase = ChunkTraversalEase.Find(ToChunk);
+            const float AverageEase = FMath::Clamp(
+                0.5f
+                * (FromEase ? *FromEase : 1.0f)
+                + 0.5f
+                * (ToEase ? *ToEase : 1.0f),
+                0.0f,
+                1.0f);
+            const int32 EasePenalty = FMath::RoundToInt(
+                (1.0f - AverageEase)
+                * static_cast<float>(
+                    FMath::Clamp(TerrainTraversalEaseMaxStepCost, 0, 20)));
+
+            int32 ElevationPenalty = 0;
+            if (FromChunk != ToChunk)
+            {
+                const float* FromElevation = ChunkElevation.Find(FromChunk);
+                const float* ToElevation = ChunkElevation.Find(ToChunk);
+                if (FromElevation && ToElevation)
+                {
+                    ElevationPenalty = FMath::RoundToInt(
+                        FMath::Abs(*ToElevation - *FromElevation)
+                        * FMath::Clamp(
+                            TerrainElevationTransitionCostScale,
+                            0.0f,
+                            200.0f));
+                }
+            }
+
+            return FMath::Max(0, EasePenalty + ElevationPenalty);
+        };
+
     int32 Expanded = 0;
     const int32 ExpansionBudget =
         FMath::Clamp(MaxLocalAStarExpandedNodes, 128, 32768);
@@ -671,7 +734,11 @@ TArray<FVector> ALLWorldDirector::BuildLocalAStarPath(
                 }
             }
 
-            const int32 TentativeG = Current.G + (bDiagonal ? 14 : 10);
+            const int32 BaseMoveCost = bDiagonal ? 14 : 10;
+            const int32 TerrainPenalty =
+                TerrainMovePenalty(Current.Cell, Next);
+            const int32 TentativeG =
+                Current.G + BaseMoveCost + TerrainPenalty;
             const int32* ExistingG = GScore.Find(Next);
             if (ExistingG && TentativeG >= *ExistingG)
             {
