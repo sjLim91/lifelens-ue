@@ -249,6 +249,12 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
         TEXT("/Game/Environment/Photoreal/PolyHaven/pine_sapling_small/pine_sapling_small_1k/StaticMeshes/pine_sapling_small_b.pine_sapling_small_b"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoTreePineC(
         TEXT("/Game/Environment/Photoreal/PolyHaven/pine_sapling_small/pine_sapling_small_1k/StaticMeshes/pine_sapling_small_c.pine_sapling_small_c"));
+    // New CC0 pair: a lightweight photoreal broadleaf for normal canopy mixing
+    // and a much heavier coastal tree reserved for a tiny hero-canopy budget.
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoTreePachira(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/pachira_aquatica_01/SM_LL_pachira_aquatica_01.SM_LL_pachira_aquatica_01"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoHeroIslandTree(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/island_tree_02/SM_LL_island_tree_02.SM_LL_island_tree_02"));
 
     static ConstructorHelpers::FObjectFinder<UStaticMesh> MatureCommon1(
         TEXT("/Game/Environment/Quaternius/StylizedNature/CommonTree_1/StaticMeshes/CommonTree_1.CommonTree_1"));
@@ -321,6 +327,8 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
     if (PhotoTreeFirC.Succeeded()) { TreeMeshes.Add(PhotoTreeFirC.Object); }
     if (PhotoTreePineB.Succeeded()) { TreeMeshes.Add(PhotoTreePineB.Object); }
     if (PhotoTreePineC.Succeeded()) { TreeMeshes.Add(PhotoTreePineC.Object); }
+    if (PhotoTreePachira.Succeeded()) { TreeMeshes.Add(PhotoTreePachira.Object); }
+    if (PhotoHeroIslandTree.Succeeded()) { HeroTreeMeshes.Add(PhotoHeroIslandTree.Object); }
 
     if (MatureCommon1.Succeeded()) { TreeMeshes.Add(MatureCommon1.Object); }
     if (MatureCommon2.Succeeded()) { TreeMeshes.Add(MatureCommon2.Object); }
@@ -359,8 +367,9 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
     if (PebbleRound2.Succeeded()) { RockMeshes.Add(PebbleRound2.Object); }
 
     UE_LOG(LogTemp, Log,
-        TEXT("LLWorldPresentation desktop layered nature art: trees=%d shrubs=%d groundCover=%d rocks=%d"),
+        TEXT("LLWorldPresentation desktop layered nature art: trees=%d heroTrees=%d shrubs=%d groundCover=%d rocks=%d"),
         TreeMeshes.Num(),
+        HeroTreeMeshes.Num(),
         ShrubMeshes.Num(),
         GrassMeshes.Num(),
         RockMeshes.Num());
@@ -480,6 +489,16 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
             FarDressingCullStartUU,
             FarDressingCullEndUU,
             false));
+    }
+    for (int32 Index = 0; Index < HeroTreeMeshes.Num(); ++Index)
+    {
+        // Never mirror heavyweight hero meshes into FarTreeInstances.
+        HeroTreeInstances.Add(AddInstancedComponent(
+            *FString::Printf(TEXT("HeroTrees_%d"), Index),
+            HeroTreeMeshes[Index],
+            HeroTreeCullStartUU,
+            HeroTreeCullEndUU,
+            true));
     }
     for (int32 Index = 0; Index < ShrubMeshes.Num(); ++Index)
     {
@@ -719,12 +738,14 @@ void ALLWorldPresentationActor::ClearInstances()
     if (RegionalTerrainTileInstances) { RegionalTerrainTileInstances->ClearInstances(); }
 
     for (UHierarchicalInstancedStaticMeshComponent* Component : TreeInstances) { if (Component) { Component->ClearInstances(); } }
+    for (UHierarchicalInstancedStaticMeshComponent* Component : HeroTreeInstances) { if (Component) { Component->ClearInstances(); } }
     for (UHierarchicalInstancedStaticMeshComponent* Component : ShrubInstances) { if (Component) { Component->ClearInstances(); } }
     for (UHierarchicalInstancedStaticMeshComponent* Component : GrassInstances) { if (Component) { Component->ClearInstances(); } }
     for (UHierarchicalInstancedStaticMeshComponent* Component : RockInstances) { if (Component) { Component->ClearInstances(); } }
     for (UHierarchicalInstancedStaticMeshComponent* Component : FarTreeInstances) { if (Component) { Component->ClearInstances(); } }
     for (UHierarchicalInstancedStaticMeshComponent* Component : FarRockInstances) { if (Component) { Component->ClearInstances(); } }
     PlacedTrees = 0;
+    PlacedHeroTrees = 0;
     PlacedShrubs = 0;
     PlacedGrass = 0;
     PlacedRocks = 0;
@@ -1689,6 +1710,17 @@ void ALLWorldPresentationActor::BuildChunkDressing(
             0.0f,
             1.0f),
         MaxTreesPerChunk);
+#if PLATFORM_ANDROID
+    const int32 HeroTreeCount = 0;
+#else
+    // Heavy island_tree_02 is a sparse cinematic accent, not a forest baseline.
+    const int32 HeroTreeCount = ScaledCount(
+        FMath::Clamp(
+            Fertility * Moisture * 0.42f * CoastTreeDensityScale,
+            0.0f,
+            1.0f),
+        MaxHeroTreesPerChunk);
+#endif
     const int32 ShrubCount = ScaledCount(
         FMath::Clamp(
             (Fertility * 0.8f + Moisture * 0.2f)
@@ -2000,6 +2032,9 @@ void ALLWorldPresentationActor::BuildChunkDressing(
     Place(ShrubInstances, ShrubCount, PlacedShrubs, MaxShrubInstances, 0.62f, 1.58f, 6.0f, ELLDressingLayer::Undergrowth);
     Place(GrassInstances, GrassCount, PlacedGrass, MaxGrassInstances, 0.58f, 1.78f, 5.0f, ELLDressingLayer::Undergrowth);
     Place(RockInstances, RockCount, PlacedRocks, MaxRockInstances, 0.62f, 1.92f, 10.0f, ELLDressingLayer::GroundDetail);
+    // Append hero placement after the legacy dressing sequence so adding the
+    // photoreal accent does not reshuffle deterministic existing ecology.
+    Place(HeroTreeInstances, HeroTreeCount, PlacedHeroTrees, MaxHeroTreeInstances, 0.86f, 1.18f, 2.0f, ELLDressingLayer::Canopy);
 }
 
 uint32 ALLWorldPresentationActor::ResourceQuantitySignature(
