@@ -51,7 +51,14 @@ button:disabled { opacity: .35; cursor: default; }
     radial-gradient(circle at 50% 35%, rgba(55, 82, 59, .18), transparent 40%),
     #0a100c;
 }
-#worldCanvas { width: 100%; height: 100%; display: block; }
+#worldCanvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+  cursor: grab;
+}
+#worldCanvas:active { cursor: grabbing; }
 .world-overlay {
   position: absolute;
   top: 14px;
@@ -139,4 +146,9 @@ button:disabled { opacity: .35; cursor: default; }
   .observer { border-left: 0; border-top: 1px solid #243329; }
   .topbar { padding: 0 12px; }
   .edition { display: none; }
+}
+
+.cameraHint { color: #91a394; }
+@media (max-width: 800px) {
+  .cameraHint { display: none; }
 }
