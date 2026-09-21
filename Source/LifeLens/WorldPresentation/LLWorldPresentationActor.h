@@ -266,8 +266,7 @@ private:
     void BuildRegionalTerrainPreview(
         const struct FLLCoreWorldGenerationObservation& World,
         const TArray<FLLCoreTerrainPresentationObservation>& RegionalTerrains,
-        const TArray<FLLCoreNaturalChunkObservation>& MaterializedChunks,
-        const FIntPoint& ObserverCenterChunk);
+        const TArray<FLLCoreNaturalChunkObservation>& MaterializedChunks);
     void BuildChunkGround(
         const struct FLLCoreWorldGenerationObservation& World,
         const FLLCoreNaturalChunkObservation& Chunk,
