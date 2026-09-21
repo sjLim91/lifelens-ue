@@ -29,6 +29,12 @@ public:
     UFUNCTION(BlueprintCallable, Category="LifeLens|Observation")
     void ObserveResident(FGuid ResidentId);
 
+    // Keep a resident identity available to lifecycle/genealogy history while
+    // explicitly leaving the physical Quick/Detail camera contract at LEVEL 0.
+    // Used when a previously observed resident dies.
+    UFUNCTION(BlueprintCallable, Category="LifeLens|Observation")
+    void ObserveHistoricalResident(FGuid ResidentId);
+
     // Back to LEVEL 0.
     UFUNCTION(BlueprintCallable, Category="LifeLens|Observation")
     void ClearObservedResident();
