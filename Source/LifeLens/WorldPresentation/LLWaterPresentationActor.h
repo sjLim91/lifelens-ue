@@ -73,8 +73,11 @@ private:
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Water|Fallback")
     bool bEnableVisibleWaterFallback = true;
 
+    // The authored/plugin water plane is lifted 4 UU above the terrain. Keep
+    // the safety surface slightly below that water plane but still above the
+    // opaque terrain; a depth >= WaterSurfaceZUU can bury the fallback.
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Water|Fallback", meta=(ClampMin="1.0", ClampMax="40.0"))
-    float FallbackWaterDepthBelowSurfaceUU = 6.0f;
+    float FallbackWaterDepthBelowSurfaceUU = 2.0f;
 
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Water|Fallback", meta=(ClampMin="1", ClampMax="12"))
     int32 FallbackRiverSegments = 4;

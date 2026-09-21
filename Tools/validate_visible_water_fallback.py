@@ -8,7 +8,8 @@ config = (root / "Config/DefaultGame.ini").read_text(encoding="utf-8")
 
 for token in (
     "bEnableVisibleWaterFallback = true",
-    "FallbackWaterDepthBelowSurfaceUU = 6.0f",
+    "WaterSurfaceZUU = 4.0f",
+    "FallbackWaterDepthBelowSurfaceUU = 2.0f",
     "FallbackRiverSegments = 4",
     "FallbackChannelInstances",
     "FallbackAreaInstances",
@@ -58,17 +59,21 @@ assert area.index("AddFallbackWaterArea(") < area.index(
     "SpawnActor<AWaterBodyLake>"
 ), "area safety surface must exist even if WaterBody spawn fails"
 
-# Fallback stays below the authored/plugin surface and never becomes collision
-# or hydrology authority.
+# Fallback stays below the authored/plugin surface but must remain above the
+# opaque terrain. With WaterSurfaceZUU=4 and depth=2, channel fallback sits
+# 2 UU above terrain; the area fallback's extra 1 UU offset still leaves 1 UU
+# of visible clearance.
 assert "Center.Z -=" in cpp
 assert "FallbackWaterDepthBelowSurfaceUU" in cpp
+assert "WaterSurfaceZUU = 4.0f" in header
+assert "FallbackWaterDepthBelowSurfaceUU = 2.0f" in header
 assert "WaterBody->SetActorEnableCollision(false)" in cpp
 assert "GetMaterializedSurfaceWaterPresentationObservations()" in cpp
 
 for token in (
     "[/Script/LifeLens.LLWaterPresentationActor]",
     "bEnableVisibleWaterFallback=True",
-    "FallbackWaterDepthBelowSurfaceUU=6.000000",
+    "FallbackWaterDepthBelowSurfaceUU=2.000000",
     "FallbackRiverSegments=4",
 ):
     assert token in config, f"visible water fallback config missing: {token}"
