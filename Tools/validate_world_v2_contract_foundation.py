@@ -50,6 +50,14 @@ for token in (
 for forbidden in ('initialStartRegionCoord', 'materializeNaturalChunk(', 'generatedNaturalChunks.push', 'resourceNodes'):
     assert forbidden not in preview_body, f'generic terrain preview must stay spawn-independent/read-only: {forbidden}'
 
+single_start = bridge_cpp.index('ULLCoreBridgeSubsystem::GetTerrainPreviewObservation')
+single_end = bridge_cpp.index('ULLCoreBridgeSubsystem::GetTerrainPresentationObservation', single_start)
+single_body = bridge_cpp[single_start:single_end]
+assert 'initialStartRegionCoord' not in single_body
+assert 'hasInitialStartRegionSelection' not in single_body
+assert 'materializeNaturalChunk(' not in single_body
+assert 'FillTerrainPresentationObservation' in single_body
+
 legacy_start = bridge_cpp.index('ULLCoreBridgeSubsystem::GetRegionalTerrainPreviewObservations')
 legacy_end = bridge_cpp.index('ULLCoreBridgeSubsystem::GetTerrainPreviewObservationsAroundChunk', legacy_start)
 legacy_body = bridge_cpp[legacy_start:legacy_end]
