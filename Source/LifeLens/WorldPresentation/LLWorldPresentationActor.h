@@ -51,6 +51,9 @@ public:
 
     static constexpr float TreeCullStartUU = 12000.0f;
     static constexpr float TreeCullEndUU   = 26000.0f;
+    // High-poly photoreal hero canopy is intentionally local-view only.
+    static constexpr float HeroTreeCullStartUU = 5500.0f;
+    static constexpr float HeroTreeCullEndUU = 14000.0f;
     static constexpr float SmallCullStartUU = 3800.0f;
     static constexpr float SmallCullEndUU   = 10500.0f;
     static constexpr float FacilityCullStartUU = 7000.0f;
@@ -61,11 +64,13 @@ public:
     // ---- Platform visual density --------------------------------------------
 #if PLATFORM_ANDROID
     static constexpr int32 MaxTreeInstances  = 620;
+    static constexpr int32 MaxHeroTreeInstances = 0;
     static constexpr int32 MaxShrubInstances = 760;
     static constexpr int32 MaxGrassInstances = 1800;
     static constexpr int32 MaxRockInstances  = 720;
 
     static constexpr int32 MaxTreesPerChunk  = 96;
+    static constexpr int32 MaxHeroTreesPerChunk = 0;
     static constexpr int32 MaxShrubsPerChunk = 115;
     static constexpr int32 MaxGrassPerChunk  = 300;
     static constexpr int32 MaxRocksPerChunk  = 105;
@@ -73,11 +78,15 @@ public:
     // Desktop cinematic tier keeps substantially more ambient dressing while
     // HISM culling and the observer readability envelope bound visible cost.
     static constexpr int32 MaxTreeInstances  = 1480;
+    // island_tree_02 is a ~2M-triangle hero source mesh. Keep it very sparse
+    // and never use it for the far-world ring.
+    static constexpr int32 MaxHeroTreeInstances = 8;
     static constexpr int32 MaxShrubInstances = 2100;
     static constexpr int32 MaxGrassInstances = 6400;
     static constexpr int32 MaxRockInstances  = 1650;
 
     static constexpr int32 MaxTreesPerChunk  = 180;
+    static constexpr int32 MaxHeroTreesPerChunk = 1;
     static constexpr int32 MaxShrubsPerChunk = 250;
     static constexpr int32 MaxGrassPerChunk  = 780;
     static constexpr int32 MaxRocksPerChunk  = 210;
@@ -315,6 +324,8 @@ private:
 
     // Catalogue (referenced in the constructor so it is cooked).
     UPROPERTY() TArray<TObjectPtr<UStaticMesh>> TreeMeshes;
+    // Desktop-only heavyweight canopy catalogue; left empty on Android.
+    UPROPERTY() TArray<TObjectPtr<UStaticMesh>> HeroTreeMeshes;
     UPROPERTY() TArray<TObjectPtr<UStaticMesh>> ShrubMeshes;
     UPROPERTY() TArray<TObjectPtr<UStaticMesh>> GrassMeshes;
     UPROPERTY() TArray<TObjectPtr<UStaticMesh>> RockMeshes;
@@ -340,6 +351,7 @@ private:
     UPROPERTY() TObjectPtr<UHierarchicalInstancedStaticMeshComponent> GroundTransitionTileInstances;
 
     UPROPERTY() TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>> TreeInstances;
+    UPROPERTY() TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>> HeroTreeInstances;
     UPROPERTY() TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>> FarTreeInstances;
     UPROPERTY() TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>> ShrubInstances;
     UPROPERTY() TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>> GrassInstances;
@@ -384,6 +396,7 @@ private:
     uint32 BuiltResourceQuantitySignature = 0;
     bool bBuiltFacilityPresentation = false;
     int32 PlacedTrees = 0;
+    int32 PlacedHeroTrees = 0;
     int32 PlacedShrubs = 0;
     int32 PlacedGrass = 0;
     int32 PlacedRocks = 0;
