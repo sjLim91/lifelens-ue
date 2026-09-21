@@ -29,6 +29,15 @@ for token in (
 # Exact Core XY formula must remain aligned with the collision proxy. The visual
 # layer may change art/scale/yaw but not obstacle identity/location.
 for token in (
+    "Obstacle.ObstacleId <= 0",
+    "Obstacle.HalfExtentXCells <= 0.0f",
+    "Obstacle.HalfExtentYCells <= 0.0f",
+    "Obstacle.HalfHeightCells <= 0.0f",
+):
+    assert token in world, f"visible obstacle validity drift: {token}"
+    assert token in proxy, f"collision obstacle validity drift: {token}"
+
+for token in (
     "Obstacle.GridX - World.InitialCenterGridX",
     "Obstacle.GridY - World.InitialCenterGridY",
     "+ Obstacle.OffsetXCells",
