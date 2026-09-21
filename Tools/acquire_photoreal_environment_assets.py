@@ -255,7 +255,24 @@ def main() -> int:
 
         selected_bytes = sum(int(item.get("size") or 0) for item in chosen)
         max_mib = spec.get("max_mib")
-        if max_mib and selected_bytes > int(max_mib) * 1024 * 1024:
+        over_budget = bool(max_mib and selected_bytes > int(max_mib) * 1024 * 1024)
+        if args.dry_run or over_budget:
+            print(
+                f"[LifeLens assets] selected payload detail for {asset_id}: "
+                f"{len(chosen)} files, {selected_bytes / 1024 / 1024:.1f} MiB")
+            for item in sorted(
+                chosen,
+                key=lambda candidate: int(candidate.get("size") or 0),
+                reverse=True,
+            ):
+                leaf_path = "/".join(item.get("path") or [])
+                leaf_size = int(item.get("size") or 0) / 1024 / 1024
+                leaf_name = Path(item["url"].split("?", 1)[0]).name
+                print(
+                    f"[LifeLens assets] selected leaf: "
+                    f"{leaf_path} | {leaf_name} | {leaf_size:.1f} MiB")
+
+        if over_budget:
             largest = sorted(
                 chosen,
                 key=lambda item: int(item.get("size") or 0),
