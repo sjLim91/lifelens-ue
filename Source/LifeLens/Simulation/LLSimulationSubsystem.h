@@ -42,6 +42,7 @@ class LIFELENS_API ULLSimulationSubsystem : public UGameInstanceSubsystem
 
 public:
     virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+    virtual void Deinitialize() override;
 
     UFUNCTION(BlueprintCallable, Category="LifeLens|Simulation")
     void NewGame(int32 OptionalSeed = 0);
@@ -101,6 +102,8 @@ public:
 
 private:
     static float SpeedMultiplierForPreset(ELLSimulationSpeedPreset Preset);
+    void FlushAutosaveForApplicationLifecycle();
+
 
     ULLCoreBridgeSubsystem* GetCoreBridge() const;
     bool RefreshProjectionFromCore();
@@ -122,4 +125,7 @@ private:
 
     UPROPERTY()
     TArray<FLLRelationshipData> Relationships;
+
+    FDelegateHandle ApplicationWillEnterBackgroundHandle;
+    FDelegateHandle ApplicationWillTerminateHandle;
 };
