@@ -250,6 +250,13 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
     static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoTreePineC(
         TEXT("/Game/Environment/Photoreal/PolyHaven/pine_sapling_small/pine_sapling_small_1k/StaticMeshes/pine_sapling_small_c.pine_sapling_small_c"));
 
+    // Lightweight photoreal broadleaf is a dedicated ambient tier; the larger
+    // island tree is a rare hero silhouette and never enters generic TreeMeshes.
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoTreePachira(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/pachira_aquatica_01/SM_LL_pachira_aquatica_01.SM_LL_pachira_aquatica_01"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PhotoHeroIslandTree(
+        TEXT("/Game/Environment/Photoreal/PolyHaven/island_tree_02/SM_LL_island_tree_02.SM_LL_island_tree_02"));
+
     static ConstructorHelpers::FObjectFinder<UStaticMesh> MatureCommon1(
         TEXT("/Game/Environment/Quaternius/StylizedNature/CommonTree_1/StaticMeshes/CommonTree_1.CommonTree_1"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> MatureCommon2(
@@ -481,6 +488,31 @@ ALLWorldPresentationActor::ALLWorldPresentationActor()
             FarDressingCullEndUU,
             false));
     }
+#if !PLATFORM_ANDROID
+    if (PhotoTreePachira.Succeeded())
+    {
+        PhotorealBroadleafInstances.Add(AddInstancedComponent(
+            TEXT("PhotorealBroadleaf_Pachira"),
+            PhotoTreePachira.Object,
+            TreeCullStartUU,
+            TreeCullEndUU,
+            true));
+    }
+    if (PhotoHeroIslandTree.Succeeded())
+    {
+        PhotorealHeroTreeInstances.Add(AddInstancedComponent(
+            TEXT("PhotorealHero_IslandTree"),
+            PhotoHeroIslandTree.Object,
+            9000.0f,
+            18000.0f,
+            true));
+    }
+    UE_LOG(LogTemp, Log,
+        TEXT("LLWorldPresentation desktop photoreal canopy: broadleaf=%d hero=%d heroGlobalCap=%d"),
+        PhotorealBroadleafInstances.Num(),
+        PhotorealHeroTreeInstances.Num(),
+        MaxHeroTreeInstances);
+#endif
     for (int32 Index = 0; Index < ShrubMeshes.Num(); ++Index)
     {
         ShrubInstances.Add(AddInstancedComponent(*FString::Printf(TEXT("Shrubs_%d"), Index), ShrubMeshes[Index], SmallCullStartUU, SmallCullEndUU, false));
@@ -719,12 +751,16 @@ void ALLWorldPresentationActor::ClearInstances()
     if (RegionalTerrainTileInstances) { RegionalTerrainTileInstances->ClearInstances(); }
 
     for (UHierarchicalInstancedStaticMeshComponent* Component : TreeInstances) { if (Component) { Component->ClearInstances(); } }
+    for (UHierarchicalInstancedStaticMeshComponent* Component : PhotorealBroadleafInstances) { if (Component) { Component->ClearInstances(); } }
+    for (UHierarchicalInstancedStaticMeshComponent* Component : PhotorealHeroTreeInstances) { if (Component) { Component->ClearInstances(); } }
     for (UHierarchicalInstancedStaticMeshComponent* Component : ShrubInstances) { if (Component) { Component->ClearInstances(); } }
     for (UHierarchicalInstancedStaticMeshComponent* Component : GrassInstances) { if (Component) { Component->ClearInstances(); } }
     for (UHierarchicalInstancedStaticMeshComponent* Component : RockInstances) { if (Component) { Component->ClearInstances(); } }
     for (UHierarchicalInstancedStaticMeshComponent* Component : FarTreeInstances) { if (Component) { Component->ClearInstances(); } }
     for (UHierarchicalInstancedStaticMeshComponent* Component : FarRockInstances) { if (Component) { Component->ClearInstances(); } }
     PlacedTrees = 0;
+    PlacedPhotorealBroadleafTrees = 0;
+    PlacedHeroTrees = 0;
     PlacedShrubs = 0;
     PlacedGrass = 0;
     PlacedRocks = 0;
@@ -1996,7 +2032,47 @@ void ALLWorldPresentationActor::BuildChunkDressing(
 
     // Decorative ecology is budgeted only after every authoritative obstacle
     // and resource patch has received a visible representation.
+#if PLATFORM_ANDROID
     Place(TreeInstances, TreeCount, PlacedTrees, MaxTreeInstances, TreeMinScale, TreeMaxScale, 3.5f, ELLDressingLayer::Canopy);
+#else
+    // Replace part of the desktop ambient canopy with the compact photoreal
+    // broadleaf instead of merely adding more trees on top. The high-detail
+    // island tree is a separate one-per-suitable-chunk hero tier with a hard
+    // global cap, so it can never flood the generic 1,480-tree pool.
+    const int32 PhotorealBroadleafCount = FMath::Clamp(
+        FMath::RoundToInt(static_cast<float>(TreeCount) * 0.28f),
+        0,
+        MaxPhotorealBroadleafTreesPerChunk);
+    const bool bHeroBiomeSuitable =
+        !bCoastSurface && Fertility >= 0.42f && Moisture >= 0.35f;
+    const int32 HeroTreeCount =
+        bHeroBiomeSuitable && TreeCount >= 72
+            ? MaxHeroTreesPerChunk
+            : 0;
+    const int32 StandardTreeCount = FMath::Max(
+        0,
+        TreeCount - PhotorealBroadleafCount - HeroTreeCount);
+
+    Place(TreeInstances, StandardTreeCount, PlacedTrees, MaxTreeInstances, TreeMinScale, TreeMaxScale, 3.5f, ELLDressingLayer::Canopy);
+    Place(
+        PhotorealBroadleafInstances,
+        PhotorealBroadleafCount,
+        PlacedPhotorealBroadleafTrees,
+        MaxPhotorealBroadleafInstances,
+        0.90f,
+        1.25f,
+        2.5f,
+        ELLDressingLayer::Canopy);
+    Place(
+        PhotorealHeroTreeInstances,
+        HeroTreeCount,
+        PlacedHeroTrees,
+        MaxHeroTreeInstances,
+        0.82f,
+        1.08f,
+        1.5f,
+        ELLDressingLayer::Canopy);
+#endif
     Place(ShrubInstances, ShrubCount, PlacedShrubs, MaxShrubInstances, 0.62f, 1.58f, 6.0f, ELLDressingLayer::Undergrowth);
     Place(GrassInstances, GrassCount, PlacedGrass, MaxGrassInstances, 0.58f, 1.78f, 5.0f, ELLDressingLayer::Undergrowth);
     Place(RockInstances, RockCount, PlacedRocks, MaxRockInstances, 0.62f, 1.92f, 10.0f, ELLDressingLayer::GroundDetail);
