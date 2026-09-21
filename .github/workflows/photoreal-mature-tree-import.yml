@@ -34,14 +34,15 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Acquire CC0 mature broadleaf
+      - name: Acquire CC0 photoreal broadleaf pair
         shell: bash
         run: |
           set -euo pipefail
           python Tools/acquire_photoreal_environment_assets.py \
             --staging "$STAGING" \
             --resolution 1k \
-            --asset jacaranda_tree
+            --asset pachira_aquatica_01 \
+            --asset island_tree_02
           du -sh "$STAGING" || true
 
       - name: Verify provenance manifest
@@ -54,10 +55,11 @@ jobs:
           m = json.loads(p.read_text(encoding="utf-8"))
           assert m["source"] == "Poly Haven"
           assert m["license"] == "CC0 1.0"
-          a = m["assets"]["jacaranda_tree"]
-          assert a["source_page"] == "https://polyhaven.com/a/jacaranda_tree"
-          assert a["spec"]["resolution"] == "1k"
-          assert a["spec"]["format"] == "gltf"
+          for asset_id in ("pachira_aquatica_01", "island_tree_02"):
+              a = m["assets"][asset_id]
+              assert a["source_page"] == f"https://polyhaven.com/a/{asset_id}"
+              assert a["spec"]["resolution"] == "1k"
+              assert a["spec"]["format"] == "gltf"
           print("LifeLens mature-tree provenance: PASS")
           PY
 
@@ -102,20 +104,24 @@ jobs:
           docker run --rm \
             -v "$GITHUB_WORKSPACE:/workspace" \
             -e LL_ASSET_STAGING=/workspace/assets_staging \
-            -e LL_PHOTOREAL_MODEL_IDS=jacaranda_tree \
+            -e LL_PHOTOREAL_MODEL_IDS=pachira_aquatica_01,island_tree_02 \
             -w "$UE_ROOT_IN_CONTAINER" \
             "$UE_IMAGE" \
             bash -lc './Engine/Binaries/Linux/UnrealEditor-Cmd /workspace/LifeLens.uproject \
               -run=pythonscript \
               -script=/workspace/Content/Environment/Photoreal/Import/import_photoreal_nature.py \
               -EnablePlugins=PythonScriptPlugin -nullrhi -unattended -nopause -nosplash -stdout -FullStdOutLogOutput'
-          test -e "$GITHUB_WORKSPACE/Content/Environment/Photoreal/PolyHaven/jacaranda_tree/SM_LL_jacaranda_tree.uasset"
+          test -e "$GITHUB_WORKSPACE/Content/Environment/Photoreal/PolyHaven/pachira_aquatica_01/SM_LL_pachira_aquatica_01.uasset"
+          test -e "$GITHUB_WORKSPACE/Content/Environment/Photoreal/PolyHaven/island_tree_02/SM_LL_island_tree_02.uasset"
 
       - name: Guard repository file size
         shell: bash
         run: |
           set -euo pipefail
-          oversize="$(find Content/Environment/Photoreal/PolyHaven/jacaranda_tree -type f -size +95M -print -quit || true)"
+          oversize="$(find \
+            Content/Environment/Photoreal/PolyHaven/pachira_aquatica_01 \
+            Content/Environment/Photoreal/PolyHaven/island_tree_02 \
+            -type f -size +95M -print -quit || true)"
           if [ -n "$oversize" ]; then
             echo "Imported file exceeds safe GitHub size budget: $oversize"
             exit 92
@@ -127,7 +133,9 @@ jobs:
           set -euo pipefail
           git config user.name "LifeLens Asset Bot"
           git config user.email "actions@users.noreply.github.com"
-          git add Content/Environment/Photoreal/PolyHaven/jacaranda_tree
+          git add \
+            Content/Environment/Photoreal/PolyHaven/pachira_aquatica_01 \
+            Content/Environment/Photoreal/PolyHaven/island_tree_02
           if git diff --cached --quiet; then
             echo "No new imported assets"
             exit 0
