@@ -1,6 +1,7 @@
 # LifeLens — World Genesis / Chunk / Migration v1
 
 Status: **CANONICAL DESIGN v1**  
+**2026-09-21 precedence:** `docs/WORLD_ARCHITECTURE_v2.md` supersedes this document for current world-first continuous-Earth coordinates, streaming, terrain/hydrology/biome presentation and no-start-settlement semantics. WG-1/WG-2 history and deterministic chunk contracts remain valid unless explicitly migrated.  
 Date: 2026-09-15 KST  
 Scope: initial natural world generation, scalable map topology, chunk lifecycle, persistent world history, population pressure, migration and multi-settlement expansion.
 

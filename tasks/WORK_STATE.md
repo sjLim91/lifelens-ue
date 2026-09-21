@@ -23,6 +23,27 @@
 Last reconciled: **2026-09-21 KST after #370/#372/#373 merge; environment/graphics source audit reached the mandatory pre-character notification boundary**.
 
 
+## 2026-09-21 CURRENT — World Architecture v2 design hold
+
+Canonical design: `docs/WORLD_ARCHITECTURE_v2.md`.
+
+User-approved direction:
+- World-first: characters appear on an already-existing Earth surface; the spawn point is not a settlement/living-zone authority.
+- continuous Earth: camera scrolling must keep revealing deterministic terrain/water/biome instead of a decorated island on a flat plate.
+- settlement emerges from repeated human activity and facilities; natural terrain/vegetation is not cleared around the initial spawn just because it is the initial spawn.
+- terrain, hydrology, biome, resources and persistent human deltas share one world-coordinate truth.
+- SimulationInterest and ObserverInterest are separate; observer preview must not invent simulation truth.
+- Local -> Regional -> Planetary -> Orbital -> Interplanetary remain one world identity at different representation levels.
+
+**Execution lock:** user will provide a separate start signal. Until then:
+- no World v2 C++ implementation.
+- no character appearance/motion/context audit.
+- no new world asset wave based on v2.
+- docs/design clarification only.
+
+The previous environment source closeout is reclassified as **structural/source closeout only, not runtime visual acceptance** because the latest runtime screenshots still show flat local terrain, missing forest canopy/water continuity and visible gray/white proxy artifacts.
+
+
 ## 2026-09-21 CURRENT — Whole-source audit 후반부 / 지구·인간 완성도 검증
 
 Canonical checkpoint:

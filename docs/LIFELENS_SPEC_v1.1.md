@@ -6,6 +6,7 @@
 > - 이 파일은 MASTER DESIGN SPEC v1.1 원문을 Markdown으로 재정리한 것이다. 내용·의도·항목은 원문과 동일하며, 형식만 바꿨다.
 > - 원문의 섹션 번호를 그대로 유지한다. 다른 문서가 "31절", "72~76절"처럼 번호로 참조한다.
 > - 빌드/검증 방식(72~76절)은 `docs/BUILD_STRATEGY_v1.2.md`가 우선한다. 그 외 모든 섹션은 이 문서가 기준이다.
+> - **Earth-scale 월드 구조/좌표/스트리밍/지형/수계/biome/정착지 발생 규칙은 `docs/WORLD_ARCHITECTURE_v2.md`가 최우선 canonical companion이다. 기존 world 문구와 충돌하면 v2가 우선한다.**
 > - 확장형 세계 생성/청크/이주 구조는 `docs/WORLD_GENESIS_CHUNK_MIGRATION_v1.md`가 canonical companion이며, 고정 소형 arena를 제품 월드 구조로 사용하지 않는다.
 > - 문명이 원시 정착에서 현대를 지나 미지의 미래까지 자율적으로 발전하는 장기 방향은 `docs/OPEN_ENDED_CIVILIZATION_NORTH_STAR.md`가 canonical companion이다. 시대 라벨은 Core unlock timer가 아니다.
 > - PC cinematic / Android mobile rendering 분리는 `docs/CINEMATIC_RENDERING_STRATEGY_v1.md`가 canonical companion이다.

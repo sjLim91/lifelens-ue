@@ -2,6 +2,8 @@
 
 > Status: **Canonical architecture direction**
 >
+> **World architecture update (2026-09-21):** Earth-scale world implementation details are now canonical in `docs/WORLD_ARCHITECTURE_v2.md`. This document remains canonical for the broader Earth + human/civilization direction; where world-generation, start-area, settlement, streaming or presentation wording conflicts, World Architecture v2 wins.
+>
 > This document expands the existing autonomous-life/civilization design without discarding the current Core.
 >
 > Truth order: actual GitHub main / PR / Actions > this document > older roadmap wording.

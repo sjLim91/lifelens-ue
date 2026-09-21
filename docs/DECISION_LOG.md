@@ -409,3 +409,18 @@ C1 세부 순서:
 - platform content boundary 확인.
 - relevant Preflight / Unreal compile / cook validation.
 - 실제 runtime에서 시각 품질 확인.
+
+
+## 2026-09-21 — World-first Continuous Earth / no starting settlement
+
+Decision: `docs/WORLD_ARCHITECTURE_v2.md` is the canonical world architecture.
+
+- The four founders spawn at one location on an already-existing Earth; the spawn point is not a settlement authority.
+- Terrain/water/biome/resources exist independently of characters.
+- Settlement/living areas emerge from repeated human activity and facilities.
+- Start-centred terrain flattening and ecology clearing are deprecated for the natural baseline.
+- Camera scrolling must reveal continuous deterministic world data through streaming, not a decorated local patch surrounded by a flat plate.
+- SimulationInterest and ObserverInterest are separate.
+- Existing WorldSeed / Planet / Region / Chunk / hydrology / Observer-scale foundations are preserved and migrated rather than rewritten.
+- The latest environment source closeout is not accepted as visual completion; actual runtime screenshots are the acceptance source for visual world quality.
+- Implementation is explicitly held until the user gives a separate start signal. Character audit is held behind World v2 visual foundation.

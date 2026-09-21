@@ -4,6 +4,29 @@
 >
 > 상태 판단 우선순위: **실제 GitHub main / PR / Actions > canonical repository docs > 대화 기억**.
 
+
+## 0. 최신 방향 전환 — World Architecture v2 설계 완료 / 구현 대기
+
+Canonical: `docs/WORLD_ARCHITECTURE_v2.md`.
+
+최신 실제 runtime 스크린샷에서 확인된 문제:
+- 시작 지점 주변이 별도 장식 구역처럼 보이고 외곽은 평평한 판처럼 읽힘.
+- 생활 시야에서 지형 굴곡이 약함.
+- 풀/바위는 많지만 큰 나무/숲 mass가 부족하거나 안 보임.
+- 수계가 지구 표면의 연속 geography로 읽히지 않음.
+- gray/white proxy가 production 화면에 노출됨.
+
+따라서 기존 environment/graphics "source closeout"은 **source-level 완료 기록만 유지**하고 visual/runtime closeout은 취소한다.
+
+새 기준:
+- spawn point는 settlement가 아니다.
+- Earth natural baseline이 먼저 존재한다.
+- settlement는 human activity 결과다.
+- camera scroll은 deterministic world streaming으로 계속 이어져야 한다.
+- start-centred terrain flatten / ecology clear는 v2 natural baseline에서 폐기한다.
+- 구현 시작은 **사용자의 별도 시작 사인 이후**다.
+- character audit은 World v2 visual foundation 이후까지 보류한다.
+
 ## 1. 현재 체크포인트
 
 - 저장소: `sjLim91/lifelens-ue`

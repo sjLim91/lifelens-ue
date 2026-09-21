@@ -5,6 +5,11 @@
 
 ## Current checkpoint
 
+> **2026-09-21 runtime correction:** latest screenshots invalidated the earlier visual-closeout assumption. The previously completed checks remain valid as source/contract checks, but Earth/environment runtime visual acceptance is REOPENED under `docs/WORLD_ARCHITECTURE_v2.md`.
+>
+> **Execution hold:** do not enter character audit and do not implement World v2 until the user gives a new start signal.
+
+
 - source checkpoint before this docs sync: `255e0e49b6dc64987c7ba195d3674d43a4456908`.
 - #370 CC0 photoreal broadleaf + hero canopy import — **MERGED**.
 - #372 Desktop photoreal canopy runtime tier — **MERGED** after exact-head Preflight #1360 + Unreal Linux Compile #620 PASS.
@@ -44,7 +49,7 @@
 - opening settlement vegetation over-clear → main의 ecology clearing v2로 축소.
 - coast에서 자연환경/자원 비가시성 → #364 merged.
 
-## CURRENT — 캐릭터 진입 전 환경/그래픽 source closeout 완료
+## CURRENT — World v2 설계 완료 / 환경 runtime acceptance 재오픈 / 구현 대기
 
 ### Water / nature / terrain
 - #373 fallback water terrain clearance — DONE.
@@ -61,12 +66,15 @@
 
 ### Mandatory handoff boundary
 - **Do not start the character appearance/motion/context manual audit until the user is told that the audit has reached the character boundary.**
-## NEXT — user notification 이후에만 진행
+## NEXT — 사용자 시작 사인 이후에만 진행
 
-1. character appearance / motion / context correctness.
-2. lifecycle / family / society continuity residual audit.
-3. Observer UI / camera / scale-transition **consumer wiring** audit.
-4. Android-first packaging + Windows/macOS native QA + Save/Load + long-run/performance/crash gates.
+1. World v2 contract cleanup / explicit materialized coordinate set.
+2. continuous terrain + hydrology + streaming + biome presentation migration.
+3. runtime visual acceptance: terrain/water/forest continuity + proxy removal.
+4. **그 뒤에만** character appearance / motion / context correctness.
+5. lifecycle / family / society continuity residual audit.
+6. Observer scale-transition consumer wiring.
+7. platform / Save / long-run / performance / crash gates.
 ## Observer scale 중복 방지 메모
 
 WorldHierarchy의 scale enum과 Planet/Region identity 존재 여부는 이미 확인했다.
