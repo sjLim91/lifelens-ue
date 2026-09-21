@@ -8,6 +8,13 @@ on:
       - '.github/workflows/photoreal-mature-tree-probe.yml'
       - 'Tools/acquire_photoreal_environment_assets.py'
 
+permissions:
+  contents: read
+
+concurrency:
+  group: lifelens-mature-tree-payload-probe-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   probe-mature-tree-payload:
     if: ${{ github.event.repository.private == false }}
