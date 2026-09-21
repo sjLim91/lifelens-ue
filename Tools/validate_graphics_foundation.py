@@ -122,6 +122,20 @@ for token in (
 ):
     assert token in water, f"WaterBody refresh signature misses runtime input: {token}"
 
+water_header = read("Source/LifeLens/WorldPresentation/LLWaterPresentationActor.h")
+for token in (
+    "TActorIterator<AWaterZone>",
+    "bOwnsWaterZone = true",
+    "bOwnsWaterZone = false",
+    "reusing authored WaterZone",
+):
+    assert token in water, f"WaterZone singleton/ownership guard missing: {token}"
+assert "bool bOwnsWaterZone = false;" in water_header
+assert "if (SpawnedWaterZone && bOwnsWaterZone)" in water
+assert water.index("TActorIterator<AWaterZone>") < water.index("SpawnActor<AWaterZone>"), (
+    "Water presentation must search for an authored WaterZone before spawning one"
+)
+
 world_presentation = read(
     "Source/LifeLens/WorldPresentation/LLWorldPresentationActor.cpp")
 require(world_presentation, (

@@ -66,4 +66,8 @@ private:
 
     UPROPERTY()
     TObjectPtr<AActor> SpawnedWaterZone;
+
+    // True only when this presentation actor created the WaterZone. Authored
+    // map zones may be reused but must never be destroyed by this actor.
+    bool bOwnsWaterZone = false;
 };

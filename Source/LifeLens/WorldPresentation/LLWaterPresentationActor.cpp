@@ -3,6 +3,7 @@
 #include "Components/SplineComponent.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
+#include "EngineUtils.h"
 #include "Simulation/LLCoreBridgeSubsystem.h"
 #include "Simulation/LLCivilizationReadTypes.h"
 #include "Simulation/LLWorldGenerationReadTypes.h"
@@ -204,11 +205,12 @@ void ALLWaterPresentationActor::Tick(float DeltaSeconds)
 void ALLWaterPresentationActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
     ClearProjectedWater();
-    if (SpawnedWaterZone)
+    if (SpawnedWaterZone && bOwnsWaterZone)
     {
         SpawnedWaterZone->Destroy();
-        SpawnedWaterZone = nullptr;
     }
+    SpawnedWaterZone = nullptr;
+    bOwnsWaterZone = false;
     Super::EndPlay(EndPlayReason);
 }
 
@@ -294,9 +296,30 @@ FVector ALLWaterPresentationActor::GridToWorld(
 
 void ALLWaterPresentationActor::EnsureWaterZone()
 {
-    if (SpawnedWaterZone || !GetWorld())
+    if (!GetWorld())
     {
         return;
+    }
+    if (IsValid(SpawnedWaterZone))
+    {
+        return;
+    }
+
+    SpawnedWaterZone = nullptr;
+    bOwnsWaterZone = false;
+
+    // Authored production maps may already provide a WaterZone. Reuse it
+    // instead of stacking a second zone over the same local surface.
+    for (TActorIterator<AWaterZone> It(GetWorld()); It; ++It)
+    {
+        if (IsValid(*It))
+        {
+            SpawnedWaterZone = *It;
+            UE_LOG(LogTemp, Log,
+                TEXT("LifeLens Water projection reusing authored WaterZone: %s"),
+                *It->GetName());
+            return;
+        }
     }
 
     if (AWaterZone* Zone = GetWorld()->SpawnActor<AWaterZone>(
@@ -308,6 +331,7 @@ void ALLWaterPresentationActor::EnsureWaterZone()
             FMath::Max(8000.0f, WaterZoneExtentUU),
             FMath::Max(8000.0f, WaterZoneExtentUU)));
         SpawnedWaterZone = Zone;
+        bOwnsWaterZone = true;
     }
 }
 
