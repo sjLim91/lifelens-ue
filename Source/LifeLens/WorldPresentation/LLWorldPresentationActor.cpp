@@ -1880,20 +1880,18 @@ void ALLWorldPresentationActor::BuildChunkDressing(
 
         TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>>* Target = nullptr;
         int32* PlacedCounter = nullptr;
-        int32 MaxTotal = 0;
         float MinScale = 1.0f;
         float MaxScale = 1.3f;
         bool bStonePatch = false;
 
         if (Material.Contains(TEXT("wood")) || Material.Contains(TEXT("timber")) || Material.Contains(TEXT("tree")))
         {
-            Target = &TreeInstances; PlacedCounter = &PlacedTrees; MaxTotal = MaxTreeInstances; MinScale = 1.1f; MaxScale = 1.7f;
+            Target = &TreeInstances; PlacedCounter = &PlacedTrees; MinScale = 1.1f; MaxScale = 1.7f;
         }
         else if (Material.Contains(TEXT("stone")) || Material.Contains(TEXT("rock")) || Material.Contains(TEXT("flint")))
         {
             Target = &RockInstances;
             PlacedCounter = &PlacedRocks;
-            MaxTotal = MaxRockInstances;
             MinScale = 0.82f;
             MaxScale = 1.35f;
             bStonePatch = true;
@@ -1901,7 +1899,7 @@ void ALLWorldPresentationActor::BuildChunkDressing(
         else if (Material.Contains(TEXT("berry")) || Material.Contains(TEXT("plant"))
             || Material.Contains(TEXT("fiber")) || Material.Contains(TEXT("food")))
         {
-            Target = &ShrubInstances; PlacedCounter = &PlacedShrubs; MaxTotal = MaxShrubInstances; MinScale = 0.9f; MaxScale = 1.5f;
+            Target = &ShrubInstances; PlacedCounter = &PlacedShrubs; MinScale = 0.9f; MaxScale = 1.5f;
         }
 
         if (!Target || Target->Num() == 0 || !PlacedCounter) { continue; }
