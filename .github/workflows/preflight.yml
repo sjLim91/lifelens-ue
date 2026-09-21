@@ -104,6 +104,9 @@ jobs:
       - name: Validate environment density v1
         run: python Tools/validate_environment_density_v1.py
 
+      - name: Validate settlement nature envelope
+        run: python Tools/validate_settlement_nature_envelope.py
+
       - name: Validate authoritative natural obstacle visibility
         run: python Tools/validate_authoritative_natural_obstacle_visibility.py
 
