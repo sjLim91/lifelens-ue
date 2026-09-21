@@ -54,8 +54,11 @@ Canonical milestone roadmap: `docs/DEVELOPMENT_MILESTONES.md`.
 
 ## 3. Absolute product rules
 
-- Unreal-native runtime. Legacy LOCAL OBSERVER HTML/JS는 요구사항 참고자료일 뿐 런타임 기반이 아니다.
-- Android가 첫 실제 제품 타깃이다.
+- LifeLens는 **Core-first multi-client product**다. `LifeLensCore`가 simulation truth이며 Unreal Native와 Web/PWA는 별도 presentation client다.
+- Legacy LOCAL OBSERVER HTML/JS는 요구사항 참고자료일 뿐이며 새 Web client의 runtime/authority 기반으로 재사용하지 않는다.
+- Unreal은 Android + Windows + macOS native client의 고품질 runtime이다.
+- Web/PWA는 같은 `LifeLensCore`를 WASM으로 소비하는 정식 browser client다.
+- Android native는 계속 핵심 실제 제품 타깃이며, Web은 빠른 검증/접근성과 browser product를 위한 병렬 client track이다.
 - PC 제품 타깃은 Windows + macOS다. 기능/그래픽 로드맵에서 함께 진행하며 renderer capability 차이는 platform config/profile로 분리한다.
 - 플랫폼별 최종 패키지는 필요한 Presentation payload만 포함한다. 공통 저장소를 쓴다는 이유로 Desktop-only asset/source dependency를 APK에 싣지 않는다.
 - `LifeLensCore`는 표준 C++17이며 Unreal 타입에 의존하지 않는다.
@@ -86,12 +89,14 @@ Jjun은 milestone 목표에 필요하면 다음 전 영역을 end-to-end로 수�
 - `Source/LifeLens/WorldPresentation/**`
 - `Source/LifeLens/Characters/**`
 - `Source/LifeLens/UI/**`
+- `Clients/Web/**`
+- Web/WASM adapter, PWA, WebGPU/WebGL presentation
 - `Content/Environment/**`
 - `Content/Maps/**`
 - `Content/WorldPresentation/**`
 - `Content/Characters/**`
 - `Content/UI/**`
-- Save/Load / Bridge / build / CI / Android / Windows / macOS platform integration
+- Save/Load / Bridge / build / CI / Android / Windows / macOS / Web platform integration
 - `Config/**`와 project startup/default map/plugin integration
 
 목표는 authority를 섞는 것이 아니라 **구현 handoff 병목을 없애는 것**이다. Core/World truth, Presentation consumer, Character motion truth의 책임 경계는 그대로 유지한다.
@@ -113,6 +118,7 @@ Jjun은 Dagyeom의 active branch를 무시하고 덮어쓰지 않으며, `dagyeo
 - `docs/SOCIAL_COMMUNICATION_LOCALIZATION_v1.md` — 한국어 UI + 주민 사회행동 관찰 표현 canonical companion.
 - `docs/DEVELOPMENT_MILESTONES.md` — 큰 개발 단위와 gate 순서.
 - `docs/PLATFORM_CONTENT_COOK_POLICY_v1.md` — Android/Desktop content root, cook exclusion, platform hard-reference 경계.
+- `docs/WEB_CLIENT_ARCHITECTURE_v1.md` — LifeLensCore WASM + Web/PWA client canonical architecture.
 - `docs/DECISION_LOG.md` — 대화 중 확정된 설계·정리·작업 판단 원칙.
 - `tasks/WORK_STATE.md` — **현재 active/ready/blocked state만** 기록.
 - `tasks/TEAM_BOARD.md` — ownership / active locks / Integration Requests만 기록.
