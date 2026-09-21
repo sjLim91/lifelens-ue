@@ -218,6 +218,12 @@ public:
         int32 ChunkY,
         FLLCoreSurfaceWaterPresentationObservation& OutObservation) const;
 
+    // Gameplay routing truth for materialized fresh surface water. This is
+    // intentionally separate from Water presentation width/radius hints.
+    UFUNCTION(BlueprintPure, Category="LifeLens|Core|WorldGeneration|Hydrology|Traversal")
+    TArray<FLLCoreFreshSurfaceWaterTraversalObservation>
+    GetMaterializedFreshSurfaceWaterTraversalObservations() const;
+
     // Native persistence bridge.
     // Unreal SaveGame stores these bytes; it never
     // serializes the compatibility resident projection as a second authority.
