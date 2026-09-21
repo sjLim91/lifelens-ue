@@ -11,6 +11,8 @@ bridge_cpp = (root / "Source/LifeLens/Simulation/LLCoreBridgeSubsystem.cpp").rea
 lifecycle_header = (root / "Source/LifeLens/UI/LLLifecycleEventOverlay.h").read_text(encoding="utf-8")
 lifecycle_cpp = (root / "Source/LifeLens/UI/LLLifecycleEventOverlay.cpp").read_text(encoding="utf-8")
 default_game = (root / "Config/DefaultGame.ini").read_text(encoding="utf-8")
+observation_header = (root / "Source/LifeLens/UI/LLObservationSubsystem.h").read_text(encoding="utf-8")
+observation_cpp = (root / "Source/LifeLens/UI/LLObservationSubsystem.cpp").read_text(encoding="utf-8")
 
 for token in (
     "ObservedResidentFollowSmoothingSpeed",
@@ -130,5 +132,56 @@ for token in (
     "RestoreWorldOverview();",
 ):
     assert token in cpp, f"observer runtime selection validation missing: {token}"
+
+# Deceased residents retain a stable history/genealogy identity without
+# leaving the observer in physical Quick/Detail or following a destroyed actor.
+for token in (
+    "ObserveHistoricalResident",
+    "SetLevel(ELLObservationLevel::World)",
+):
+    assert token in observation_header or token in observation_cpp, (
+        f"historical observation contract missing: {token}"
+    )
+
+historical_start = observation_cpp.index(
+    "void ULLObservationSubsystem::ObserveHistoricalResident"
+)
+historical_end = observation_cpp.index(
+    "void ULLObservationSubsystem::ClearObservedResident",
+    historical_start,
+)
+historical_block = observation_cpp[historical_start:historical_end]
+assert "ObservedResidentId = ResidentId" in historical_block
+assert "OnObservedResidentChanged.Broadcast" in historical_block
+assert "SetLevel(ELLObservationLevel::World)" in historical_block
+
+step_start = observation_cpp.index("void ULLObservationSubsystem::StepBack")
+step_end = observation_cpp.index("void ULLObservationSubsystem::SetLevel", step_start)
+step_block = observation_cpp[step_start:step_end]
+assert "case ELLObservationLevel::World:" in step_block
+assert "if (ObservedResidentId.IsValid())" in step_block
+assert "ClearObservedResident();" in step_block
+
+sync_start = cpp.index("void ALLObserverPlayerController::SyncObservedResidentSelection")
+sync_end = cpp.index("void ALLObserverPlayerController::UpdateObservedResidentFocus", sync_start)
+sync_block = cpp[sync_start:sync_end]
+for token in (
+    "Simulation->IsCoreAuthoritativeRuntime()",
+    "Simulation->FindResidentById(",
+    "Bridge->GetResidentObservation(",
+    "!CoreResident.bAlive",
+    "Observation->ObserveHistoricalResident(",
+    "Observation->GetObservationLevel() == ELLObservationLevel::World",
+    "RestoreWorldOverview();",
+):
+    assert token in sync_block, f"deceased observer cleanup missing: {token}"
+
+# Do not erase the stable deceased identity merely because the physical actor
+# left the living projection; lifecycle/history UI still consumes that ID.
+death_branch = sync_block[
+    sync_block.index("!CoreResident.bAlive"):
+    sync_block.index("// Selection can originate outside this controller")
+]
+assert "Observation->ClearObservedResident();" not in death_branch
 
 print("LifeLens UI/camera resilience polish: PASS")
