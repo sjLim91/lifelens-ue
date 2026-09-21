@@ -59,7 +59,7 @@ public:
     static constexpr float FacilityCullStartUU = 7000.0f;
     static constexpr float FacilityCullEndUU = 18000.0f;
 
-    static constexpr float RefreshIntervalSeconds = 2.0f;
+    static constexpr float RefreshIntervalSeconds = 0.5f;
 
     // ---- Platform visual density --------------------------------------------
 #if PLATFORM_ANDROID
@@ -261,7 +261,8 @@ private:
     void BuildGround(
         const struct FLLCoreWorldGenerationObservation& World,
         const TArray<FLLCoreNaturalChunkObservation>& MaterializedChunks,
-        const TArray<FLLCoreTerrainPresentationObservation>& RegionalTerrains);
+        const TArray<FLLCoreTerrainPresentationObservation>& RegionalTerrains,
+        const FIntPoint& ObserverCenterChunk);
     void BuildRegionalTerrainPreview(
         const struct FLLCoreWorldGenerationObservation& World,
         const TArray<FLLCoreTerrainPresentationObservation>& RegionalTerrains,
@@ -274,7 +275,9 @@ private:
         const struct FLLCoreWorldGenerationObservation& World,
         float ActiveGroundSpanUU,
         float FarGroundSpanUU,
-        const TArray<FLLCoreTerrainPresentationObservation>& RegionalTerrains);
+        const TArray<FLLCoreTerrainPresentationObservation>& RegionalTerrains,
+        const FIntPoint& ObserverCenterChunk,
+        const FVector2D& ObserverCenterUU);
     void BuildChunkDressing(
         const struct FLLCoreWorldGenerationObservation& World,
         const FLLCoreNaturalChunkObservation& Chunk,
@@ -290,6 +293,8 @@ private:
         const FLLCoreCivilizationWorldObservation& Civilization);
     FVector ChunkOriginUU(const struct FLLCoreWorldGenerationObservation& World,
                           int32 ChunkX, int32 ChunkY) const;
+    FIntPoint ResolveObserverCenterChunk(
+        const struct FLLCoreWorldGenerationObservation& World) const;
     float TerrainReliefBlend(const FVector2D& LocationUU) const;
     float TerrainSurfaceZUU(
         const struct FLLCoreWorldGenerationObservation& World,
@@ -387,6 +392,8 @@ private:
     float RefreshAccumulator = 0.0f;
     int64 BuiltWorldSeed = 0;
     int32 BuiltGenerationVersion = -1;
+    int32 BuiltObserverCenterChunkX = MAX_int32;
+    int32 BuiltObserverCenterChunkY = MAX_int32;
     int32 BuiltChunkCount = -1;
     uint32 BuiltNaturalChunkSignature = 0;
     uint32 BuiltTerrainPresentationSignature = 0;

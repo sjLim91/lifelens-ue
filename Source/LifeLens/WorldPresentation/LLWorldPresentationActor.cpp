@@ -16,6 +16,7 @@
 #include "GameFramework/PlayerController.h"
 #include "Camera/PlayerCameraManager.h"
 #include "World/LLWorldSpatialContract.h"
+#include "World/LLWorldStreamingSubsystem.h"
 #include "WorldPresentation/LLTerrainPresentationContract.h"
 
 namespace
@@ -1150,6 +1151,23 @@ FVector ALLWorldPresentationActor::ChunkOriginUU(const FLLCoreWorldGenerationObs
     return FVector(OffsetX, OffsetY, 0.0f);
 }
 
+FIntPoint ALLWorldPresentationActor::ResolveObserverCenterChunk(
+    const FLLCoreWorldGenerationObservation& World) const
+{
+    if (const UWorld* UnrealWorld = GetWorld())
+    {
+        if (const ULLWorldStreamingSubsystem* Streaming =
+                UnrealWorld->GetSubsystem<ULLWorldStreamingSubsystem>())
+        {
+            return Streaming->ResolveObserverCenterChunk(
+                World.InitialChunkX,
+                World.InitialChunkY);
+        }
+    }
+
+    return FIntPoint(World.InitialChunkX, World.InitialChunkY);
+}
+
 float ALLWorldPresentationActor::TerrainReliefBlend(const FVector2D& LocationUU) const
 {
     return LLTerrainPresentationContract::ReliefBlend(
@@ -1261,34 +1279,26 @@ UMaterialInterface* ALLWorldPresentationActor::GroundMaterialForChunk(const FLLC
 void ALLWorldPresentationActor::BuildGround(
     const FLLCoreWorldGenerationObservation& World,
     const TArray<FLLCoreNaturalChunkObservation>& MaterializedChunks,
-    const TArray<FLLCoreTerrainPresentationObservation>& RegionalTerrains)
+    const TArray<FLLCoreTerrainPresentationObservation>& RegionalTerrains,
+    const FIntPoint& ObserverCenterChunk)
 {
     if (!Ground || !GroundMesh) { return; }
 
-    int32 MaxChunkRadius = 0;
-    for (const FLLCoreNaturalChunkObservation& Chunk : MaterializedChunks)
-    {
-        if (!Chunk.bMaterialized)
-        {
-            continue;
-        }
-
-        MaxChunkRadius = FMath::Max(
-            MaxChunkRadius,
-            FMath::Max(
-                FMath::Abs(Chunk.ChunkX - World.InitialChunkX),
-                FMath::Abs(Chunk.ChunkY - World.InitialChunkY)));
-    }
-
-    // Count alone cannot describe a sparse/non-contiguous materialized set.
-    // Keep the broad continuity underlay centred on the start region, but size
-    // it from the actual authoritative coordinate extent as well as count.
+    // The broad visual underlay follows ObserverInterest, not the opening
+    // settlement/materialized set. Simulation chunks remain where Core put them.
     const int32 CountRadius = FMath::CeilToInt(FMath::Sqrt(static_cast<float>(
         FMath::Max(1, MaterializedChunks.Num()))));
     const int32 Rings = FMath::Clamp(
-        FMath::Max(CountRadius, MaxChunkRadius + 1),
+        FMath::Max(
+            CountRadius,
+            LLTerrainPresentationContract::RegionalPreviewRadiusChunks + 1),
         1,
         512);
+    const FVector ObserverCenter3D =
+        ChunkOriginUU(World, ObserverCenterChunk.X, ObserverCenterChunk.Y);
+    const FVector2D ObserverCenterUU(
+        ObserverCenter3D.X,
+        ObserverCenter3D.Y);
     const float ActiveSpanUU =
         LLWorldSpatialContract::ChunkSpanUU * (2.0f * Rings + 1.0f);
     const float FarSpanUU = FMath::Max(
@@ -1306,8 +1316,8 @@ void ALLWorldPresentationActor::BuildGround(
     constexpr float LocalGroundUnderlayDropUU = 3.0f;
 #endif
     Ground->SetRelativeLocation(FVector(
-        0.0f,
-        0.0f,
+        ObserverCenterUU.X,
+        ObserverCenterUU.Y,
         -Thickness * 0.5f - LocalGroundUnderlayDropUU));
     Ground->SetRelativeScale3D(FVector(
         ActiveSpanUU / LLWorldSpatialContract::EngineCubeSideUU,
@@ -1333,8 +1343,8 @@ void ALLWorldPresentationActor::BuildGround(
             FMath::Max(0.0f, FarGroundDropUU),
             FMath::Max(0.0f, LLTerrainPresentationContract::RegionalReliefAmplitudeUU) + 24.0f);
         FarGround->SetRelativeLocation(FVector(
-            0.0f,
-            0.0f,
+            ObserverCenterUU.X,
+            ObserverCenterUU.Y,
             -FarThickness * 0.5f - EffectiveFarGroundDropUU));
         FarGround->SetRelativeScale3D(FVector(
             FarSpanUU / LLWorldSpatialContract::EngineCubeSideUU,
@@ -1346,7 +1356,13 @@ void ALLWorldPresentationActor::BuildGround(
         }
     }
 
-    BuildFarEnvironment(World, ActiveSpanUU, FarSpanUU, RegionalTerrains);
+    BuildFarEnvironment(
+        World,
+        ActiveSpanUU,
+        FarSpanUU,
+        RegionalTerrains,
+        ObserverCenterChunk,
+        ObserverCenterUU);
 }
 
 void ALLWorldPresentationActor::BuildChunkGround(
@@ -1483,17 +1499,10 @@ void ALLWorldPresentationActor::BuildRegionalTerrainPreview(
             continue;
         }
 
-        const int32 Ring = FMath::Max(
-            FMath::Abs(Terrain.ChunkX - World.InitialChunkX),
-            FMath::Abs(Terrain.ChunkY - World.InitialChunkY));
-        // Ring 0 belongs to the authoritative/materialized local surface.
-        // Ring 1 is intentionally rendered: the shared terrain contract keeps
-        // it on local-amplitude, non-negative relief so the opening view gains
-        // nearby hills without a hard seam at the gameplay boundary.
-        if (Ring == 0)
-        {
-            continue;
-        }
+        // Materialized coordinates were already excluded above. Therefore the
+        // observer-center tile itself must render when the camera is looking at
+        // read-only remote geography; otherwise every streamed preview develops
+        // a one-chunk hole at its center.
 
         const FVector ChunkOrigin =
             ChunkOriginUU(World, Terrain.ChunkX, Terrain.ChunkY);
@@ -1533,7 +1542,9 @@ void ALLWorldPresentationActor::BuildFarEnvironment(
     const FLLCoreWorldGenerationObservation& World,
     float ActiveGroundSpanUU,
     float FarGroundSpanUU,
-    const TArray<FLLCoreTerrainPresentationObservation>& RegionalTerrains)
+    const TArray<FLLCoreTerrainPresentationObservation>& RegionalTerrains,
+    const FIntPoint& ObserverCenterChunk,
+    const FVector2D& ObserverCenterUU)
 {
     if (FarGroundSpanUU <= ActiveGroundSpanUU)
     {
@@ -1584,8 +1595,8 @@ void ALLWorldPresentationActor::BuildFarEnvironment(
     uint32 State = ChunkHash(
         World.WorldSeed,
         World.GenerationVersion,
-        World.InitialChunkX ^ 0x5A5A,
-        World.InitialChunkY ^ 0xA5A5);
+        ObserverCenterChunk.X ^ 0x5A5A,
+        ObserverCenterChunk.Y ^ 0xA5A5);
 
     TMap<FIntPoint, const FLLCoreTerrainPresentationObservation*> TerrainByCoord;
     TerrainByCoord.Reserve(RegionalTerrains.Num());
@@ -1628,19 +1639,21 @@ void ALLWorldPresentationActor::BuildFarEnvironment(
 
             if (UHierarchicalInstancedStaticMeshComponent* Component = Components[Slot])
             {
-                const float X = FMath::Cos(Angle) * Radius;
-                const float Y = FMath::Sin(Angle) * Radius;
+                const float LocalX = FMath::Cos(Angle) * Radius;
+                const float LocalY = FMath::Sin(Angle) * Radius;
+                const float X = ObserverCenterUU.X + LocalX;
+                const float Y = ObserverCenterUU.Y + LocalY;
                 const float HalfChunk =
                     LLWorldSpatialContract::ChunkSpanUU * 0.5f;
                 const int32 OffsetX = FMath::FloorToInt(
-                    (X + HalfChunk)
+                    (LocalX + HalfChunk)
                     / FMath::Max(1.0f, LLWorldSpatialContract::ChunkSpanUU));
                 const int32 OffsetY = FMath::FloorToInt(
-                    (Y + HalfChunk)
+                    (LocalY + HalfChunk)
                     / FMath::Max(1.0f, LLWorldSpatialContract::ChunkSpanUU));
                 const FIntPoint Coord(
-                    World.InitialChunkX + OffsetX,
-                    World.InitialChunkY + OffsetY);
+                    ObserverCenterChunk.X + OffsetX,
+                    ObserverCenterChunk.Y + OffsetY);
                 float Z = FallbackHorizonZ;
                 if (const FLLCoreTerrainPresentationObservation* const* Terrain =
                         TerrainByCoord.Find(Coord))
@@ -2911,6 +2924,8 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
 
         BuiltWorldSeed = 0;
         BuiltGenerationVersion = -1;
+        BuiltObserverCenterChunkX = MAX_int32;
+        BuiltObserverCenterChunkY = MAX_int32;
         BuiltChunkCount = -1;
         BuiltNaturalChunkSignature = 0;
         BuiltTerrainPresentationSignature = 0;
@@ -2948,8 +2963,12 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         Bridge->GetMaterializedTerrainPresentationObservations();
     const uint32 CurrentTerrainPresentationSignature =
         TerrainPresentationSignature(MaterializedTerrains);
+    const FIntPoint ObserverCenterChunk =
+        ResolveObserverCenterChunk(World);
     const TArray<FLLCoreTerrainPresentationObservation> RegionalTerrains =
-        Bridge->GetRegionalTerrainPreviewObservations(
+        Bridge->GetTerrainPreviewObservationsAroundChunk(
+            ObserverCenterChunk.X,
+            ObserverCenterChunk.Y,
             LLTerrainPresentationContract::RegionalPreviewRadiusChunks);
     const uint32 CurrentRegionalTerrainSignature =
         TerrainPresentationSignature(RegionalTerrains);
@@ -2983,6 +3002,8 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
     const bool bNaturalChanged = bForce
         || World.WorldSeed != BuiltWorldSeed
         || World.GenerationVersion != BuiltGenerationVersion
+        || ObserverCenterChunk.X != BuiltObserverCenterChunkX
+        || ObserverCenterChunk.Y != BuiltObserverCenterChunkY
         || World.MaterializedChunkCount != BuiltChunkCount
         || CurrentNaturalChunkSignature != BuiltNaturalChunkSignature
         || CurrentTerrainPresentationSignature != BuiltTerrainPresentationSignature
@@ -3006,14 +3027,23 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         CachedSettlementReferenceUU = SettlementReferenceUU(World);
         BuiltWorldSeed = World.WorldSeed;
         BuiltGenerationVersion = World.GenerationVersion;
+        BuiltObserverCenterChunkX = ObserverCenterChunk.X;
+        BuiltObserverCenterChunkY = ObserverCenterChunk.Y;
         BuiltChunkCount = World.MaterializedChunkCount;
         BuiltNaturalChunkSignature = CurrentNaturalChunkSignature;
         BuiltTerrainPresentationSignature = CurrentTerrainPresentationSignature;
         BuiltRegionalTerrainSignature = CurrentRegionalTerrainSignature;
         BuiltResourceQuantitySignature = CurrentResourceQuantitySignature;
         ClearInstances();
-        BuildGround(World, MaterializedChunks, RegionalTerrains);
-        BuildRegionalTerrainPreview(World, RegionalTerrains, MaterializedChunks);
+        BuildGround(
+            World,
+            MaterializedChunks,
+            RegionalTerrains,
+            ObserverCenterChunk);
+        BuildRegionalTerrainPreview(
+            World,
+            RegionalTerrains,
+            MaterializedChunks);
 
         for (const FLLCoreNaturalChunkObservation& Chunk : MaterializedChunks)
         {

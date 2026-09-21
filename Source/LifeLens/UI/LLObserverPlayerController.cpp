@@ -6,6 +6,7 @@
 #include "Simulation/LLCoreBridgeSubsystem.h"
 #include "Simulation/LLSimulationSubsystem.h"
 #include "World/LLWorldSpatialContract.h"
+#include "World/LLWorldStreamingSubsystem.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
@@ -278,6 +279,18 @@ void ALLObserverPlayerController::PlayerTick(float DeltaTime)
     UpdateTouchCameraInput();
     UpdateObservedResidentFocus(DeltaTime);
     ApplyCameraTransform(DeltaTime);
+
+    // Observer interest is presentation-only. Publishing the actual smoothed
+    // orbit target lets World v2 re-center read-only terrain/biome streaming
+    // without materializing simulation chunks.
+    if (UWorld* World = GetWorld())
+    {
+        if (ULLWorldStreamingSubsystem* Streaming =
+                World->GetSubsystem<ULLWorldStreamingSubsystem>())
+        {
+            Streaming->SetObserverPresentationTarget(CurrentOrbitTarget);
+        }
+    }
 }
 
 void ALLObserverPlayerController::EnsureCameraInitialized()
@@ -523,25 +536,10 @@ void ALLObserverPlayerController::PanByScreenDelta(const FVector2D& Delta, float
         DesiredOrbitTarget
         + (-Right * Delta.X + Forward * Delta.Y) * WorldPerPixel;
 
-    // Local/Regional presentation is currently centred on the captured opening
-    // overview. Free pan must not escape that rendered envelope and reveal the
-    // broad continuity underlay as if it were actual explored terrain.
-    if (bWorldOverviewCaptured)
-    {
-        const float MaxPanRadiusUU =
-            FMath::Max(0.0f, ManualPanMaxRadiusChunks)
-            * LLWorldSpatialContract::ChunkSpanUU;
-        if (MaxPanRadiusUU > KINDA_SMALL_NUMBER)
-        {
-            FVector2D Offset(
-                ProposedTarget.X - WorldOverviewTarget.X,
-                ProposedTarget.Y - WorldOverviewTarget.Y);
-            Offset = Offset.GetClampedToMaxSize(MaxPanRadiusUU);
-            ProposedTarget.X = WorldOverviewTarget.X + Offset.X;
-            ProposedTarget.Y = WorldOverviewTarget.Y + Offset.Y;
-        }
-    }
-
+    // World v2 observer streaming follows this target across logical chunks.
+    // Do not clamp free exploration back to the opening overview; the camera
+    // changes ObserverInterest only and never promotes remote chunks into
+    // simulation authority.
     DesiredOrbitTarget = ProposedTarget;
 }
 

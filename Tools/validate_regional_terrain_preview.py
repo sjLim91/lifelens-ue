@@ -66,7 +66,8 @@ for token in [
     'RegionalTerrainSurfaceZUU',
     'RegionalTerrainTileRotation',
     'LLTerrainPresentationContract::RegionalSurfaceZUU',
-    'GetRegionalTerrainPreviewObservations',
+    'GetTerrainPreviewObservationsAroundChunk',
+    'ObserverCenterChunk',
 ]:
     assert token in world_h or token in world_cpp, f'missing regional terrain presentation token: {token}'
 
@@ -85,16 +86,35 @@ assert 'LLTerrainPresentationContract::RegionalSurfaceZUU' in world_cpp
 assert 'MaterializedCoords.Contains(Coord)' in world_cpp, (
     'regional preview must not duplicate authoritative materialized surfaces'
 )
-assert 'if (Ring == 0)' in world_cpp, (
-    'regional preview must reserve only the local origin ring itself'
+assert 'if (Ring == 0)' not in world_cpp, (
+    'observer-centered remote preview must not leave a hole at ring 0'
 )
 assert 'if (Ring <= InnerFlatRing)' not in world_cpp, (
     'ring 1 must render seam-compatible relief instead of falling back to the flat underlay'
 )
-assert 'BuildFarEnvironment(World, ActiveSpanUU, FarSpanUU, RegionalTerrains)' in world_cpp
+assert 'BuildFarEnvironment(' in world_cpp
+assert 'ObserverCenterChunk' in world_cpp
+assert 'ObserverCenterUU' in world_cpp
 assert 'RegionalTerrainSurfaceZUU(' in world_cpp
 assert 'EffectiveFarGroundDropUU' in world_cpp, (
     'flat fallback must remain beneath signed regional valleys'
 )
+
+# World v2 consumer must center Regional preview on ObserverInterest rather than
+# the initial spawn chunk.
+refresh_start = world_cpp.index('void ALLWorldPresentationActor::RefreshFromCore')
+refresh_body = world_cpp[refresh_start:]
+assert 'ResolveObserverCenterChunk(World)' in refresh_body
+assert 'GetTerrainPreviewObservationsAroundChunk(' in refresh_body
+assert 'ObserverCenterChunk.X' in refresh_body
+assert 'ObserverCenterChunk.Y' in refresh_body
+assert 'GetRegionalTerrainPreviewObservations(' not in refresh_body
+
+regional_start = world_cpp.index('void ALLWorldPresentationActor::BuildRegionalTerrainPreview')
+regional_end = world_cpp.index('void ALLWorldPresentationActor::BuildFarEnvironment', regional_start)
+regional_body = world_cpp[regional_start:regional_end]
+assert 'MaterializedCoords.Contains(Coord)' in regional_body
+assert 'if (Ring == 0)' not in regional_body
+assert 'observer-center tile itself must render' in regional_body
 
 print('Regional terrain preview / World v2 centered-preview structural validation: PASS')
