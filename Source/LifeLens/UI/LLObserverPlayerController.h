@@ -100,6 +100,12 @@ private:
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera", meta=(ClampMin="0.0001"))
     float PanWorldPerPixelDistanceFactor = 0.0015f;
 
+    // Manual pan remains inside the currently rendered Local/Regional envelope.
+    // Resident/event focus may still move beyond this when real authoritative
+    // content exists there; only free-drag exploration is bounded.
+    UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera", meta=(ClampMin="0.0", ClampMax="8.0"))
+    float ManualPanMaxRadiusChunks = 3.0f;
+
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|Observer|Camera", meta=(ClampMin="0.01", ClampMax="0.8"))
     float MouseWheelZoomFraction = 0.12f;
 
