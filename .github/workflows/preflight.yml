@@ -104,6 +104,9 @@ jobs:
       - name: Validate World v2 contract foundation
         run: python Tools/validate_world_v2_contract_foundation.py
 
+      - name: Validate World v2 observer streaming interest
+        run: python Tools/validate_world_v2_streaming_interest.py
+
 
       - name: Validate photoreal facility completion
         run: python Tools/validate_photoreal_facility_completion.py
