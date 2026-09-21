@@ -20,6 +20,8 @@ desktop_nature_dirs = (
     "/Game/Environment/Photoreal/PolyHaven/boulder_01",
     "/Game/Environment/Photoreal/PolyHaven/fir_sapling",
     "/Game/Environment/Photoreal/PolyHaven/pine_sapling_small",
+    "/Game/Environment/Photoreal/PolyHaven/pachira_aquatica_01",
+    "/Game/Environment/Photoreal/PolyHaven/island_tree_02",
     "/Game/Environment/Photoreal/PolyHaven/shrub_02",
     "/Game/Environment/Photoreal/PolyHaven/shrub_03",
     "/Game/Environment/Photoreal/PolyHaven/tree_stump_01",
@@ -76,6 +78,8 @@ require(
 )
 
 assert "/Game/Environment/Photoreal/PolyHaven/fir_sapling/" not in mobile_block
+assert "/Game/Environment/Photoreal/PolyHaven/pachira_aquatica_01/" not in mobile_block
+assert "/Game/Environment/Photoreal/PolyHaven/island_tree_02/" not in mobile_block
 assert "/Game/Environment/Photoreal/PolyHaven/weed_plant_02/" not in mobile_block
 
 mobile_asset_files = (
@@ -108,6 +112,8 @@ require(
     (
         "/Game/Environment/Photoreal/PolyHaven/fir_sapling/",
         "/Game/Environment/Photoreal/PolyHaven/pine_sapling_small/",
+        "/Game/Environment/Photoreal/PolyHaven/pachira_aquatica_01/",
+        "/Game/Environment/Photoreal/PolyHaven/island_tree_02/",
         "/Game/Environment/Photoreal/PolyHaven/boulder_01/",
         "/Game/Environment/Photoreal/PolyHaven/shrub_02/",
         "/Game/Environment/Photoreal/PolyHaven/shrub_03/",
