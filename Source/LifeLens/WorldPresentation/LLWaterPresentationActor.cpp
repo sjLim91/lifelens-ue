@@ -348,6 +348,146 @@ FVector ALLWaterPresentationActor::GridToWorld(
         SurfaceZUU);
 }
 
+void ALLWaterPresentationActor::EnsureFallbackWaterMaterial()
+{
+    if (!bEnableVisibleWaterFallback
+        || FallbackWaterMaterial
+        || !FallbackChannelInstances)
+    {
+        return;
+    }
+
+    UMaterialInterface* BaseMaterial =
+        FallbackChannelInstances->GetMaterial(0);
+    if (!BaseMaterial && FallbackAreaInstances)
+    {
+        BaseMaterial = FallbackAreaInstances->GetMaterial(0);
+    }
+    if (!BaseMaterial)
+    {
+        return;
+    }
+
+    FallbackWaterMaterial =
+        UMaterialInstanceDynamic::Create(BaseMaterial, this);
+    if (!FallbackWaterMaterial)
+    {
+        return;
+    }
+
+    const FLinearColor SafetyWaterColor(
+        0.015f,
+        0.16f,
+        0.36f,
+        1.0f);
+    FallbackWaterMaterial->SetVectorParameterValue(
+        TEXT("Color"),
+        SafetyWaterColor);
+    FallbackWaterMaterial->SetVectorParameterValue(
+        TEXT("BaseColor"),
+        SafetyWaterColor);
+
+    FallbackChannelInstances->SetMaterial(
+        0,
+        FallbackWaterMaterial);
+    if (FallbackAreaInstances)
+    {
+        FallbackAreaInstances->SetMaterial(
+            0,
+            FallbackWaterMaterial);
+    }
+}
+
+void ALLWaterPresentationActor::AddFallbackWaterChannel(
+    const FVector& Start,
+    const FVector& End,
+    float WidthUU)
+{
+    if (!bEnableVisibleWaterFallback
+        || !FallbackChannelInstances
+        || !FallbackChannelInstances->GetStaticMesh())
+    {
+        return;
+    }
+
+    const int32 SegmentCount =
+        FMath::Clamp(FallbackRiverSegments, 1, 12);
+    const float SafeWidthUU =
+        FMath::Max(55.0f, WidthUU);
+
+    for (int32 SegmentIndex = 0;
+         SegmentIndex < SegmentCount;
+         ++SegmentIndex)
+    {
+        const float Alpha0 =
+            static_cast<float>(SegmentIndex)
+            / static_cast<float>(SegmentCount);
+        const float Alpha1 =
+            static_cast<float>(SegmentIndex + 1)
+            / static_cast<float>(SegmentCount);
+        const FVector SegmentStart =
+            FMath::Lerp(Start, End, Alpha0);
+        const FVector SegmentEnd =
+            FMath::Lerp(Start, End, Alpha1);
+        const FVector SegmentDelta =
+            SegmentEnd - SegmentStart;
+        const float SegmentLengthUU =
+            SegmentDelta.Size();
+        if (SegmentLengthUU <= KINDA_SMALL_NUMBER)
+        {
+            continue;
+        }
+
+        FVector Center =
+            (SegmentStart + SegmentEnd) * 0.5f;
+        Center.Z -=
+            FMath::Max(
+                1.0f,
+                FallbackWaterDepthBelowSurfaceUU);
+
+        const FRotator Rotation =
+            SegmentDelta.Rotation();
+        const FVector Scale(
+            SegmentLengthUU / 100.0f,
+            SafeWidthUU / 100.0f,
+            1.0f);
+        FallbackChannelInstances->AddInstance(
+            FTransform(Rotation, Center, Scale));
+    }
+}
+
+void ALLWaterPresentationActor::AddFallbackWaterArea(
+    const FVector& Center,
+    float RadiusUU)
+{
+    if (!bEnableVisibleWaterFallback
+        || !FallbackAreaInstances
+        || !FallbackAreaInstances->GetStaticMesh())
+    {
+        return;
+    }
+
+    const float SafeRadiusUU =
+        FMath::Max(80.0f, RadiusUU);
+    FVector FallbackCenter = Center;
+    FallbackCenter.Z -=
+        FMath::Max(
+            1.0f,
+            FallbackWaterDepthBelowSurfaceUU)
+        + 1.0f;
+
+    const float DiameterScale =
+        (SafeRadiusUU * 2.0f) / 100.0f;
+    FallbackAreaInstances->AddInstance(
+        FTransform(
+            FRotator::ZeroRotator,
+            FallbackCenter,
+            FVector(
+                DiameterScale,
+                DiameterScale,
+                0.02f)));
+}
+
 void ALLWaterPresentationActor::EnsureWaterZone()
 {
     if (!GetWorld())
