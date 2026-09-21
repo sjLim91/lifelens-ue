@@ -1,0 +1,28 @@
+name: LifeLens Mature Tree Payload Probe
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/photoreal-mature-tree-probe.yml'
+      - 'Tools/acquire_photoreal_environment_assets.py'
+
+jobs:
+  probe-mature-tree-payload:
+    if: ${{ github.event.repository.private == false }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout candidate branch
+        uses: actions/checkout@v4
+
+      - name: Probe Poly Haven 1K glTF selection
+        shell: bash
+        run: |
+          set -o pipefail
+          python Tools/acquire_photoreal_environment_assets.py \
+            --staging "${{ runner.temp }}/lifelens-asset-probe" \
+            --resolution 1k \
+            --asset jacaranda_tree \
+            --dry-run
