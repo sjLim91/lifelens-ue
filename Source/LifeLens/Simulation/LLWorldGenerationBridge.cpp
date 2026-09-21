@@ -35,6 +35,7 @@ ELLCoreSurfaceWaterKind ToUnrealSurfaceWaterKind(lifelens::SurfaceWaterKind Kind
     case lifelens::SurfaceWaterKind::Wetland: return ELLCoreSurfaceWaterKind::Wetland;
     case lifelens::SurfaceWaterKind::Coast: return ELLCoreSurfaceWaterKind::Coast;
     case lifelens::SurfaceWaterKind::Ocean: return ELLCoreSurfaceWaterKind::Ocean;
+    case lifelens::SurfaceWaterKind::Pond: return ELLCoreSurfaceWaterKind::Pond;
     case lifelens::SurfaceWaterKind::None:
     default:
         return ELLCoreSurfaceWaterKind::None;
@@ -137,6 +138,10 @@ bool FillSurfaceWaterPresentationObservation(
     case lifelens::SurfaceWaterKind::Lake:
         Out.SuggestedAreaRadiusCells =
             2.50f + 4.25f * Out.SurfaceAvailability;
+        break;
+    case lifelens::SurfaceWaterKind::Pond:
+        Out.SuggestedAreaRadiusCells =
+            1.35f + 2.15f * Out.SurfaceAvailability;
         break;
     case lifelens::SurfaceWaterKind::Wetland:
         Out.SuggestedAreaRadiusCells =
