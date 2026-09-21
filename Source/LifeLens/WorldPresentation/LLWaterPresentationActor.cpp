@@ -643,6 +643,28 @@ void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
 
         if (Water.bLinearChannel && Water.bHasDownstreamTarget)
         {
+            const float DownstreamWaterZUU = WaterSurfaceZForGrid(
+                Bridge,
+                World,
+                Water.DownstreamCenterGridX,
+                Water.DownstreamCenterGridY,
+                FacilityCentersUU);
+            const FVector Downstream = GridToWorld(
+                Water.DownstreamCenterGridX,
+                Water.DownstreamCenterGridY,
+                World.InitialCenterGridX,
+                World.InitialCenterGridY,
+                DownstreamWaterZUU);
+            const float ChannelWidthUU =
+                FMath::Max(
+                    55.0f,
+                    Water.SuggestedChannelWidthCells
+                        * LLWorldSpatialContract::GridCellSizeUU);
+            AddFallbackWaterChannel(
+                Center,
+                Downstream,
+                ChannelWidthUU);
+
             AWaterBodyRiver* River = GetWorld()->SpawnActor<AWaterBodyRiver>(
                 AWaterBodyRiver::StaticClass(),
                 FVector::ZeroVector,
@@ -655,18 +677,6 @@ void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
             ConfigurePresentationOnlyWater(River);
             if (UWaterSplineComponent* Spline = River->GetWaterSpline())
             {
-                const float DownstreamWaterZUU = WaterSurfaceZForGrid(
-                    Bridge,
-                    World,
-                    Water.DownstreamCenterGridX,
-                    Water.DownstreamCenterGridY,
-                    FacilityCentersUU);
-                const FVector Downstream = GridToWorld(
-                    Water.DownstreamCenterGridX,
-                    Water.DownstreamCenterGridY,
-                    World.InitialCenterGridX,
-                    World.InitialCenterGridY,
-                    DownstreamWaterZUU);
                 Spline->ClearSplinePoints(false);
                 Spline->AddSplinePoint(
                     Center,
@@ -681,8 +691,7 @@ void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
 
                 ConfigureRiverMetadata(
                     River,
-                    Water.SuggestedChannelWidthCells
-                        * LLWorldSpatialContract::GridCellSizeUU,
+                    ChannelWidthUU,
                     Water.FlowPotential);
                 NotifyWaterShapeChanged(River);
                 SpawnedWaterActors.Add(River);
@@ -698,9 +707,59 @@ void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
         if (bMarine)
         {
             // Local Surface presentation deliberately uses bounded lake-style
-            // polygons for marine chunks. AWaterBodyOcean is reserved for the
-            // later Planetary representation because its exclusion/shoreline
-            // semantics can flood an unbounded local map when spawned per chunk.
+            // polygons for marine chunks. The safety fallback mirrors the same
+            // local footprint but does not become hydrology/gameplay authority.
+            const float HalfChunkUU =
+                LLWorldSpatialContract::ChunkSpanUU * 0.515f;
+
+            bool bValidMarineShape = true;
+            FVector2D CoastDirection = FVector2D::ZeroVector;
+            if (Water.SurfaceKind == ELLCoreSurfaceWaterKind::Ocean)
+            {
+                AddFallbackWaterChannel(
+                    Center + FVector(-HalfChunkUU, 0.0f, 0.0f),
+                    Center + FVector( HalfChunkUU, 0.0f, 0.0f),
+                    HalfChunkUU * 2.0f);
+            }
+            else
+            {
+                if (!Water.bHasMarineNeighbour)
+                {
+                    bValidMarineShape = false;
+                }
+                else
+                {
+                    const FVector MarineCenter = GridToWorld(
+                        Water.MarineCenterGridX,
+                        Water.MarineCenterGridY,
+                        World.InitialCenterGridX,
+                        World.InitialCenterGridY,
+                        WaterSurfaceZUU);
+                    CoastDirection = FVector2D(
+                        MarineCenter.X - Center.X,
+                        MarineCenter.Y - Center.Y);
+                    if (!CoastDirection.Normalize())
+                    {
+                        bValidMarineShape = false;
+                    }
+                    else
+                    {
+                        AddFallbackWaterChannel(
+                            Center,
+                            Center + FVector(
+                                CoastDirection.X * HalfChunkUU,
+                                CoastDirection.Y * HalfChunkUU,
+                                0.0f),
+                            HalfChunkUU * 2.0f);
+                    }
+                }
+            }
+
+            if (!bValidMarineShape)
+            {
+                continue;
+            }
+
             AWaterBodyLake* Marine = GetWorld()->SpawnActor<AWaterBodyLake>(
                 AWaterBodyLake::StaticClass(),
                 FVector::ZeroVector,
@@ -718,8 +777,6 @@ void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
                 continue;
             }
 
-            const float HalfChunkUU =
-                LLWorldSpatialContract::ChunkSpanUU * 0.515f;
             Spline->ClearSplinePoints(false);
 
             if (Water.SurfaceKind == ELLCoreSurfaceWaterKind::Ocean)
@@ -740,33 +797,14 @@ void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
             }
             else
             {
-                if (!Water.bHasMarineNeighbour)
-                {
-                    Marine->Destroy();
-                    continue;
-                }
-
-                const FVector MarineCenter = GridToWorld(
-                    Water.MarineCenterGridX,
-                    Water.MarineCenterGridY,
-                    World.InitialCenterGridX,
-                    World.InitialCenterGridY,
-                    WaterSurfaceZUU);
-                FVector2D Direction(
-                    MarineCenter.X - Center.X,
-                    MarineCenter.Y - Center.Y);
-                if (!Direction.Normalize())
-                {
-                    Marine->Destroy();
-                    continue;
-                }
-
-                const FVector2D Perpendicular(-Direction.Y, Direction.X);
+                const FVector2D Perpendicular(
+                    -CoastDirection.Y,
+                    CoastDirection.X);
                 const FVector2D Center2D(Center.X, Center.Y);
                 const FVector2D ShoreLine =
-                    Center2D + Direction * (HalfChunkUU * 0.04f);
+                    Center2D + CoastDirection * (HalfChunkUU * 0.04f);
                 const FVector2D MarineEdge =
-                    Center2D + Direction * HalfChunkUU;
+                    Center2D + CoastDirection * HalfChunkUU;
 
                 const FVector2D Points[4] = {
                     ShoreLine + Perpendicular * HalfChunkUU,
@@ -803,6 +841,12 @@ void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
             continue;
         }
 
+        const float RadiusUU =
+            RadiusCells * LLWorldSpatialContract::GridCellSizeUU;
+        AddFallbackWaterArea(
+            Center,
+            RadiusUU);
+
         AWaterBodyLake* Lake = GetWorld()->SpawnActor<AWaterBodyLake>(
             AWaterBodyLake::StaticClass(),
             FVector::ZeroVector,
@@ -815,8 +859,6 @@ void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
         ConfigurePresentationOnlyWater(Lake);
         if (UWaterSplineComponent* Spline = Lake->GetWaterSpline())
         {
-            const float RadiusUU =
-                RadiusCells * LLWorldSpatialContract::GridCellSizeUU;
             constexpr int32 PointCount = 8;
             Spline->ClearSplinePoints(false);
             for (int32 Index = 0; Index < PointCount; ++Index)
