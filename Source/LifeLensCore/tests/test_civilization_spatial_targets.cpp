@@ -160,6 +160,13 @@ int main()
         }
     }
 
+    // The temporary blocker exists only to exercise bank re-resolution.
+    // Do not leak an intentionally incomplete fixture into the unrelated
+    // snapshot-persistence assertions below.
+    CHECK(!first.world().facilities.empty());
+    CHECK(first.world().facilities.back().id == waterBankBlocker.id);
+    first.world().facilities.pop_back();
+
     // Storage is also a Core-owned spatial entity. Presentation should only
     // consume this resolved GridPos, never guess a nearby scenery object.
     const GridPos center = first.world().initialStartRegionCenterGrid();
