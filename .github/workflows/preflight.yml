@@ -101,6 +101,10 @@ jobs:
       - name: Validate regional terrain preview
         run: python Tools/validate_regional_terrain_preview.py
 
+      - name: Validate World v2 contract foundation
+        run: python Tools/validate_world_v2_contract_foundation.py
+
+
       - name: Validate photoreal facility completion
         run: python Tools/validate_photoreal_facility_completion.py
 
