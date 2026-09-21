@@ -18,6 +18,12 @@ for token in (
     "NextRouteRetryWorldSeconds",
     "FailedRouteRetrySeconds",
     "SameFailedTargetToleranceUU",
+    "GetMaterializedFreshSurfaceWaterTraversalObservations",
+    "bBlocksGroundTraversal",
+    "GroundHalfWidthCells",
+    "GroundRadiusCells",
+    "GroundAccessGridX",
+    "GroundAccessGridY",
 ):
     assert token in cpp or token in (root / "Source/LifeLens/World/LLWorldDirector.h").read_text(encoding="utf-8"), \
         f"missing materialized-surface pathfinding guard: {token}"
@@ -35,5 +41,17 @@ assert "Blocked.Remove(Goal);" in endpoint_block
 assert endpoint_block.index("bGoalEnvironmentBlocked") < endpoint_block.index("Blocked.Remove(Goal);")
 assert "!Walkable.Contains(Start)" in endpoint_block
 assert "!Walkable.Contains(Goal)" in endpoint_block
+
+astar_start = cpp.index("TArray<FVector> ALLWorldDirector::BuildLocalAStarPath")
+astar_end = cpp.index("void ALLWorldDirector::MoveResidentToward", astar_start)
+astar = cpp[astar_start:astar_end]
+assert "SuggestedChannelWidthCells" not in astar
+assert "SuggestedAreaRadiusCells" not in astar
+assert "GetMaterializedSurfaceWaterPresentationObservations" in astar, (
+    "marine routing still consumes marine orientation from presentation DTO"
+)
+assert "GetMaterializedFreshSurfaceWaterTraversalObservations" in astar, (
+    "freshwater routing must consume the gameplay traversal DTO"
+)
 
 print("LifeLens materialized surface pathfinding: PASS")
