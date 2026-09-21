@@ -38,6 +38,10 @@ CURATED = {
     # 17M-triangle pine_tree_01) are intentionally excluded from the baseline.
     "fir_sapling": {"kind": "model", "resolution": "2k", "format": "gltf", "max_mib": 90},
     "pine_sapling_small": {"kind": "model", "resolution": "2k", "format": "gltf", "max_mib": 90},
+    # Mature broadleaf replacement for the temporary stylized desktop canopy.
+    # Poly Haven reports ~312K source triangles and authored LODs; the pipeline
+    # still selects only the 1K glTF payload and enforces a hard byte budget.
+    "jacaranda_tree": {"kind": "model", "resolution": "1k", "format": "gltf", "max_mib": 90},
     "boulder_01": {"kind": "model", "resolution": "2k", "format": "gltf", "max_mib": 45},
     "tree_stump_01": {"kind": "model", "resolution": "2k", "format": "gltf", "max_mib": 45},
     "shrub_02": {"kind": "model", "resolution": "2k", "format": "gltf", "max_mib": 45},
