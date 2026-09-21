@@ -212,6 +212,17 @@ struct FLLCoreTerrainPresentationObservation
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Terrain|Presentation") float SouthWestElevation01 = 0.5f;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Terrain|Presentation") float SouthEastElevation01 = 0.5f;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Terrain|Presentation") float Relief01 = 0.0f;
+
+    // World v2 continuous ecology sampled at the chunk centre. These are
+    // deterministic coverage/presentation facts, not ResourceNode inventory.
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Ecology|Presentation") FName EcologyBiome;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Ecology|Presentation") float EcologyMoisture01 = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Ecology|Presentation") float EcologyTemperature01 = 0.5f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Ecology|Presentation") float ForestCoverage01 = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Ecology|Presentation") float GrassCoverage01 = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Ecology|Presentation") float ShrubCoverage01 = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Ecology|Presentation") float RockCoverage01 = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Ecology|Presentation") float WetlandCoverage01 = 0.0f;
 };
 
 USTRUCT(BlueprintType)
