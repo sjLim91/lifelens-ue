@@ -50,6 +50,11 @@ for token in (
     "node->material != MaterialKind::Water",
     "surfaceWaterGroundAccessGrid",
     "surfaceWaterGroundContainsGrid",
+    "deriveNaturalPhysicalObstacles",
+    "world.facilities",
+    "isEnvironmentBlocked",
+    "validAccess",
+    "chunkCoordForGrid(candidate)!=coord",
 ):
     assert token in spatial, f"water resource access contract missing: {token}"
 
@@ -63,6 +68,15 @@ assert "resolveCivilizationResourceGridPosition" not in gather
 # Bridge fallback must agree with the Core pending target when a legacy/read
 # observation lacks a spatial target.
 assert "resolveCivilizationResourceAccessGridPosition" in action_bridge
+
+# A dry bank is not sufficient if a tree/rock/facility occupies the same
+# A* grid cell. Core must deterministically reroute to another local bank.
+for token in (
+    "for(int extra=0;extra<=4;++extra)",
+    "for(std::size_t ordinal=0;ordinal<directions.size();++ordinal)",
+    "if(validAccess(candidate))",
+):
+    assert token in spatial, f"freshwater bank fallback search missing: {token}"
 
 astar_start = director.index("TArray<FVector> ALLWorldDirector::BuildLocalAStarPath")
 astar_end = director.index("void ALLWorldDirector::MoveResidentToward", astar_start)
