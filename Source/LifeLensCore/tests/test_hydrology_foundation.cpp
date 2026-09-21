@@ -19,6 +19,8 @@ bool sameHydrology(const HydrologyFacts& a, const HydrologyFacts& b)
         && a.groundwaterPotential == b.groundwaterPotential
         && a.rechargePotential == b.rechargePotential
         && a.runoffPotential == b.runoffPotential
+        && a.drainageAccumulationPotential == b.drainageAccumulationPotential
+        && a.drainageSystemId == b.drainageSystemId
         && a.hasDownstream == b.hasDownstream
         && a.downstream == b.downstream
         && a.hasMarineNeighbour == b.hasMarineNeighbour
