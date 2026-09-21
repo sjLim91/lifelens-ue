@@ -72,12 +72,22 @@ for token in (
     'RegionalPreviewRadiusChunks = 8',
     'RegionalInnerFlatRingChunks = 1',
     'RegionalReliefAmplitudeUU = 1100.0f',
-    '(Elevation01 - World.InitialChunk.Elevation) * Amplitude',
+    'const float Delta =',
+    'if (Ring <= InnerRing)',
+    'FMath::Max(0.0f, Delta)',
+    '* LocalReliefAmplitudeUU',
+    'return Delta * Amplitude',
 ):
     assert token in terrain_contract, f'missing shared regional terrain contract token: {token}'
 assert 'LLTerrainPresentationContract::RegionalSurfaceZUU' in world_cpp
 assert 'MaterializedCoords.Contains(Coord)' in world_cpp, (
     'regional preview must not duplicate authoritative materialized surfaces'
+)
+assert 'if (Ring == 0)' in world_cpp, (
+    'regional preview must reserve only the local origin ring itself'
+)
+assert 'if (Ring <= InnerFlatRing)' not in world_cpp, (
+    'ring 1 must render seam-compatible relief instead of falling back to the flat underlay'
 )
 assert 'BuildFarEnvironment(World, ActiveSpanUU, FarSpanUU, RegionalTerrains)' in world_cpp
 assert 'RegionalTerrainSurfaceZUU(' in world_cpp
