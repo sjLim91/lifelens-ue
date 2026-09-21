@@ -97,7 +97,8 @@ assert game_mode.index("FloorComponent->SetStaticMesh(RuntimeFloorMesh);") < gam
 
 water = read("Source/LifeLens/WorldPresentation/LLWaterPresentationActor.cpp")
 require(water, (
-    "GetMaterializedSurfaceWaterPresentationObservations()",
+    "GetSurfaceWaterPreviewObservationsAroundChunk(",
+    "ResolveObserverCenterChunk(World)",
     "AWaterBodyRiver",
     "AWaterBodyLake",
     "WaterBody->SetActorEnableCollision(false);",
@@ -121,6 +122,10 @@ for token in (
     "Water.FlowPotential",
 ):
     assert token in water, f"WaterBody refresh signature misses runtime input: {token}"
+
+assert "GetMaterializedSurfaceWaterPresentationObservations()" not in water[water.index("void ALLWaterPresentationActor::RefreshFromCore"):], (
+    "observer Water presentation must consume read-only preview, not materialized-only visual water"
+)
 
 water_header = read("Source/LifeLens/WorldPresentation/LLWaterPresentationActor.h")
 for token in (

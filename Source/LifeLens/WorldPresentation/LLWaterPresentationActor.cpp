@@ -21,6 +21,7 @@
 #include "WaterSplineMetadata.h"
 #include "WaterZoneActor.h"
 #include "World/LLWorldSpatialContract.h"
+#include "World/LLWorldStreamingSubsystem.h"
 #include "WorldPresentation/LLTerrainPresentationContract.h"
 
 namespace
@@ -278,6 +279,23 @@ int32 ALLWaterPresentationActor::ChunkCoordForGrid(int32 GridCoordinate) const
         --Quotient;
     }
     return Quotient;
+}
+
+FIntPoint ALLWaterPresentationActor::ResolveObserverCenterChunk(
+    const FLLCoreWorldGenerationObservation& World) const
+{
+    if (const UWorld* UnrealWorld = GetWorld())
+    {
+        if (const ULLWorldStreamingSubsystem* Streaming =
+                UnrealWorld->GetSubsystem<ULLWorldStreamingSubsystem>())
+        {
+            return Streaming->ResolveObserverCenterChunk(
+                World.InitialChunkX,
+                World.InitialChunkY);
+        }
+    }
+
+    return FIntPoint(World.InitialChunkX, World.InitialChunkY);
 }
 
 float ALLWaterPresentationActor::WaterSurfaceZForGrid(
@@ -567,6 +585,8 @@ void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
         }
         bBuiltOnce = false;
         BuiltSignature = 0;
+        BuiltObserverCenterChunkX = MAX_int32;
+        BuiltObserverCenterChunkY = MAX_int32;
     };
 
     if (!Bridge || !Bridge->IsCoreRunning() || !GetWorld())
@@ -583,8 +603,13 @@ void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
         return;
     }
 
+    const FIntPoint ObserverCenterChunk =
+        ResolveObserverCenterChunk(World);
     const TArray<FLLCoreSurfaceWaterPresentationObservation> Waters =
-        Bridge->GetMaterializedSurfaceWaterPresentationObservations();
+        Bridge->GetSurfaceWaterPreviewObservationsAroundChunk(
+            ObserverCenterChunk.X,
+            ObserverCenterChunk.Y,
+            LLTerrainPresentationContract::RegionalPreviewRadiusChunks);
     const FLLCoreCivilizationWorldObservation Civilization =
         Bridge->GetCivilizationWorldObservation(0);
     TArray<FVector2D> FacilityCentersUU;
@@ -598,19 +623,46 @@ void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
                 * LLWorldSpatialContract::GridCellSizeUU));
     }
 
-    const uint32 Signature = SurfaceWaterSignature(
+    uint32 Signature = SurfaceWaterSignature(
         World,
         Waters,
         Civilization);
-    if (!bForce && bBuiltOnce && Signature == BuiltSignature)
+    Signature = MixWaterHash(
+        Signature,
+        static_cast<uint32>(ObserverCenterChunk.X));
+    Signature = MixWaterHash(
+        Signature,
+        static_cast<uint32>(ObserverCenterChunk.Y));
+
+    if (!bForce
+        && bBuiltOnce
+        && Signature == BuiltSignature
+        && ObserverCenterChunk.X == BuiltObserverCenterChunkX
+        && ObserverCenterChunk.Y == BuiltObserverCenterChunkY)
     {
         return;
     }
 
     bBuiltOnce = true;
     BuiltSignature = Signature;
+    BuiltObserverCenterChunkX = ObserverCenterChunk.X;
+    BuiltObserverCenterChunkY = ObserverCenterChunk.Y;
     ClearProjectedWater();
     EnsureWaterZone();
+
+    if (SpawnedWaterZone && bOwnsWaterZone)
+    {
+        const FVector2D ObserverCenterUU =
+            LLWorldSpatialContract::PresentationLocationForLogicalChunk(
+                World.InitialChunkX,
+                World.InitialChunkY,
+                ObserverCenterChunk.X,
+                ObserverCenterChunk.Y);
+        SpawnedWaterZone->SetActorLocation(FVector(
+            ObserverCenterUU.X,
+            ObserverCenterUU.Y,
+            0.0f));
+    }
 
     int32 LinearCount = 0;
     int32 AreaCount = 0;
@@ -887,7 +939,9 @@ void ALLWaterPresentationActor::RefreshFromCore(bool bForce)
     }
 
     UE_LOG(LogTemp, Log,
-        TEXT("LifeLens Unreal Water projection: observations=%d linear=%d area=%d marineLocalSurface=%d"),
+        TEXT("LifeLens Unreal Water projection: observerChunk=(%d,%d) observations=%d linear=%d area=%d marineLocalSurface=%d"),
+        ObserverCenterChunk.X,
+        ObserverCenterChunk.Y,
         Waters.Num(),
         LinearCount,
         AreaCount,

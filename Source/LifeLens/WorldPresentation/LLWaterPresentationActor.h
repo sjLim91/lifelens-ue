@@ -54,9 +54,11 @@ private:
         int32 GridY,
         const TArray<FVector2D>& FacilityCentersUU) const;
     int32 ChunkCoordForGrid(int32 GridCoordinate) const;
+    FIntPoint ResolveObserverCenterChunk(
+        const struct FLLCoreWorldGenerationObservation& World) const;
 
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Water", meta=(ClampMin="0.25", ClampMax="10.0"))
-    float RefreshIntervalSeconds = 2.0f;
+    float RefreshIntervalSeconds = 0.5f;
 
     UPROPERTY(Config, EditDefaultsOnly, Category="LifeLens|WorldPresentation|Water", meta=(ClampMin="-1000.0", ClampMax="1000.0"))
     float WaterSurfaceZUU = 4.0f;
@@ -85,6 +87,8 @@ private:
     float RefreshAccumulator = 0.0f;
     uint32 BuiltSignature = 0;
     bool bBuiltOnce = false;
+    int32 BuiltObserverCenterChunkX = MAX_int32;
+    int32 BuiltObserverCenterChunkY = MAX_int32;
 
     UPROPERTY()
     TArray<TObjectPtr<AActor>> SpawnedWaterActors;
