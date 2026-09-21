@@ -32,4 +32,5 @@ jobs:
             --staging "${{ runner.temp }}/lifelens-asset-probe" \
             --resolution 1k \
             --asset jacaranda_tree \
-            --dry-run
+            --dry-run \
+            --inspect-gltf
