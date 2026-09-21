@@ -38,7 +38,7 @@ User-approved direction:
 **Execution state:** user start signal received on 2026-09-21.
 - W2-0 provider-contract foundation merged as PR #374 / main `f311e90e2fd63f6e5e78b996c8d30fca1cc0cc3d`.
 - W2-1 deterministic continuous terrain Core field merged as PR #375 / main `1336c23453b2707b40823d223aeb76d198981893`.
-- W2-2 continuous-terrain drainage graph hydrology is active as PR #378.
+- W2-2 continuous-terrain drainage graph hydrology merged as PR #378 / main `5c5f18286efa89036a6d622d11a96e9c61524ac4`.
 - W2-3 observer-centered streaming interest is active as PR #379.
 - current main already has authoritative `GetMaterializedNaturalChunkObservations()` over `generatedNaturalChunks`; the historical count/ring concern is not being redone.
 - current new work: continuous-terrain hydrology graph + observer-centered read-only streaming/presentation.
