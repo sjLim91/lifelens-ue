@@ -4,6 +4,7 @@
 #include "Characters/LLResidentCharacter.h"
 #include "Core/LLLifeLensGameMode.h"
 #include "Simulation/LLCoreBridgeSubsystem.h"
+#include "World/LLWorldSpatialContract.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
@@ -517,7 +518,30 @@ void ALLObserverPlayerController::PanByScreenDelta(const FVector2D& Delta, float
     // Grab-style pan: moving the pointer/fingers right drags the world right,
     // so the camera target moves left. Vertical screen movement maps to the
     // camera's ground-projected forward axis.
-    DesiredOrbitTarget += (-Right * Delta.X + Forward * Delta.Y) * WorldPerPixel;
+    FVector ProposedTarget =
+        DesiredOrbitTarget
+        + (-Right * Delta.X + Forward * Delta.Y) * WorldPerPixel;
+
+    // Local/Regional presentation is currently centred on the captured opening
+    // overview. Free pan must not escape that rendered envelope and reveal the
+    // broad continuity underlay as if it were actual explored terrain.
+    if (bWorldOverviewCaptured)
+    {
+        const float MaxPanRadiusUU =
+            FMath::Max(0.0f, ManualPanMaxRadiusChunks)
+            * LLWorldSpatialContract::ChunkSpanUU;
+        if (MaxPanRadiusUU > KINDA_SMALL_NUMBER)
+        {
+            FVector2D Offset(
+                ProposedTarget.X - WorldOverviewTarget.X,
+                ProposedTarget.Y - WorldOverviewTarget.Y);
+            Offset = Offset.GetClampedToMaxSize(MaxPanRadiusUU);
+            ProposedTarget.X = WorldOverviewTarget.X + Offset.X;
+            ProposedTarget.Y = WorldOverviewTarget.Y + Offset.Y;
+        }
+    }
+
+    DesiredOrbitTarget = ProposedTarget;
 }
 
 void ALLObserverPlayerController::ZoomByScale(float Scale)
