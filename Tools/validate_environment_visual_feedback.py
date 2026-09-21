@@ -35,16 +35,31 @@ for token in [
     "ClearInstances()",
     "AddInstance(InstanceTransform, true)",
     "SetCustomDataValue",
-    "LineTraceSingleByChannel",
+    "LLTerrainPresentationContract::LocalSurfaceZUU",
+    "GetTerrainPresentationObservation",
+    "GetTerrainPreviewObservation",
+    "GetCivilizationWorldObservation(0)",
     "ELLCoreEnvironmentalResidueKind::HumanWaste",
     "GetTypeHash(CoreOriginGridX)",
     "GetTypeHash(CoreOriginGridY)",
     "SurfaceOffsetUU * 1000.0f",
     "Owner->GetActorLocation()",
     "static_cast<uint8>(Residue.Kind)",
-    "Environment, CellSize, CoreOriginGridX, CoreOriginGridY",
+    "Environment,",
+    "World,",
+    "Civilization,",
+    "FacilityCentersUU",
 ]:
     require(cpp, token, "residue visualizer implementation")
+
+for forbidden_surface_probe in [
+    "LineTraceSingleByChannel",
+    "SCENE_QUERY_STAT(LLEnvironmentResidueSurface)",
+]:
+    if forbidden_surface_probe in cpp:
+        raise SystemExit(
+            f"residue presentation must use deterministic shared terrain projection: {forbidden_surface_probe!r}"
+        )
 
 for forbidden in ["deposit(", "containHumanWasteAt(", "CompleteResidentPhysicalAction("]:
     if forbidden in cpp:
