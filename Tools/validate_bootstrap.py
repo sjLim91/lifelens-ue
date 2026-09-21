@@ -668,7 +668,7 @@ for token in (
     'FLLCoreTerrainPresentationObservation',
 ):
     assert token in world_presentation_header, f'Missing platform/terrain presentation policy: {token}'
-assert 'LocalReliefAmplitudeUU = 180.0f' in terrain_contract
+assert 'LocalReliefAmplitudeUU = 220.0f' in terrain_contract
 assert 'LLTerrainPresentationContract::LocalSurfaceZUU' in world_presentation
 assert 'const int32 StoneCount = bStructurallyComplete ? 8' not in world_presentation, 'Completed firepit must not regress to the Engine-cube ring'
 
