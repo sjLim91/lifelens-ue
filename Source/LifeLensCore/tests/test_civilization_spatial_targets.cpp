@@ -68,10 +68,10 @@ int main()
 
     // Generated v2 Water stays at the hydrology center as resource authority,
     // while Gather resolves to a deterministic dry-bank access position.
-    bool checkedWaterAccess = false;
+    bool checkedAnyWaterAccess = false;
     bool checkedNonWaterAccess = false;
     ResourceNodeId checkedWaterNodeId = 0;
-    GridPos checkedWaterAccess{};
+    GridPos firstWaterAccess{};
     ChunkCoord checkedWaterChunk{};
     for(const auto& chunk : first.world().generatedNaturalChunks){
         for(const auto& patch : chunk.resourcePatches){
@@ -108,12 +108,12 @@ int main()
                 CHECK(replayAccess.x == access.x);
                 CHECK(replayAccess.y == access.y);
 
-                if(!checkedWaterAccess){
+                if(!checkedAnyWaterAccess){
                     checkedWaterNodeId = patch.nodeId;
-                    checkedWaterAccess = access;
+                    firstWaterAccess = access;
                     checkedWaterChunk = chunk.coord;
                 }
-                checkedWaterAccess = true;
+                checkedAnyWaterAccess = true;
             }else if(!checkedNonWaterAccess){
                 CHECK(access.x == exact.x);
                 CHECK(access.y == exact.y);
@@ -121,7 +121,7 @@ int main()
             }
         }
     }
-    CHECK(checkedWaterAccess);
+    CHECK(checkedAnyWaterAccess);
     CHECK(checkedNonWaterAccess);
 
     // If the preferred dry bank later becomes occupied by a constructed
@@ -131,15 +131,15 @@ int main()
     CHECK(checkedWaterNodeId != 0);
     ConstructedFacility waterBankBlocker;
     waterBankBlocker.id = 990001;
-    waterBankBlocker.pos = checkedWaterAccess;
+    waterBankBlocker.pos = firstWaterAccess;
     first.world().facilities.push_back(waterBankBlocker);
 
     GridPos reroutedWaterAccess{};
     CHECK(resolveCivilizationResourceAccessGridPosition(
         first.world(), checkedWaterNodeId, reroutedWaterAccess));
     CHECK(
-        reroutedWaterAccess.x != checkedWaterAccess.x
-        || reroutedWaterAccess.y != checkedWaterAccess.y);
+        reroutedWaterAccess.x != firstWaterAccess.x
+        || reroutedWaterAccess.y != firstWaterAccess.y);
     CHECK(chunkCoordForGrid(reroutedWaterAccess) == checkedWaterChunk);
     const HydrologyFacts reroutedWaterFacts =
         deriveHydrologyFacts(first.world().genesisIdentity(), checkedWaterChunk);
