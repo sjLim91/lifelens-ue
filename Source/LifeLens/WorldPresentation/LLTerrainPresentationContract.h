@@ -21,8 +21,6 @@ namespace LLTerrainPresentationContract
     // budget while using the whole available range. The previous 180 UU ceiling
     // made coherent neighbouring elevation differences read almost perfectly flat.
     inline constexpr float LocalReliefAmplitudeUU = 220.0f;
-    inline constexpr float SettlementFlattenRadiusUU = 650.0f;
-    inline constexpr float SettlementBlendBandUU = 900.0f;
     inline constexpr float FacilityFlattenRadiusUU = 340.0f;
     inline constexpr float FacilityBlendEndRadiusUU = 900.0f;
     inline constexpr float DesktopSurfaceLiftUU = 1.0f;
@@ -47,16 +45,14 @@ namespace LLTerrainPresentationContract
         return Alpha * Alpha * (3.0f - 2.0f * Alpha);
     }
 
-    inline float ReliefBlend(
+    inline float FacilityReliefBlend(
         const FVector2D& LocationUU,
-        const FVector2D& SettlementReferenceUU,
         const TArray<FVector2D>& FacilityCentersUU)
     {
-        float Blend = SmoothBand(
-            FVector2D::Distance(LocationUU, SettlementReferenceUU),
-            SettlementFlattenRadiusUU,
-            SettlementFlattenRadiusUU + SettlementBlendBandUU);
-
+        // World v2 natural terrain exists before residents. The opening spawn
+        // point is only a coordinate anchor and must never flatten the baseline.
+        // Only actual constructed facilities may request a local visual pad.
+        float Blend = 1.0f;
         for (const FVector2D& FacilityCenter : FacilityCentersUU)
         {
             Blend = FMath::Min(
@@ -73,7 +69,6 @@ namespace LLTerrainPresentationContract
         const FLLCoreWorldGenerationObservation& World,
         const FLLCoreTerrainPresentationObservation& Terrain,
         const FVector2D& LocationUU,
-        const FVector2D& SettlementReferenceUU,
         const TArray<FVector2D>& FacilityCentersUU,
         float SurfaceLiftUU = 0.0f)
     {
@@ -101,8 +96,9 @@ namespace LLTerrainPresentationContract
 
         auto RelativeHeight = [&](float Elevation01)
         {
-            // Local gameplay stays on the flat bootstrap plane. Visual relief
-            // therefore raises only terrain above the selected start baseline.
+            // Local physical gameplay still uses the compatibility plane, so
+            // this milestone keeps local relief non-negative. Unlike the old
+            // contract, the spawn point no longer suppresses natural relief.
             return FMath::Max(
                 0.0f,
                 Elevation01 - World.InitialChunk.Elevation)
@@ -121,9 +117,8 @@ namespace LLTerrainPresentationContract
         const float CenterSurface = RelativeHeight(Terrain.CenterElevation01);
         const float SharedSurface =
             FMath::Lerp(CenterSurface, CornerSurface, 0.72f)
-            * ReliefBlend(
+            * FacilityReliefBlend(
                 LocationUU,
-                SettlementReferenceUU,
                 FacilityCentersUU);
 
         return SurfaceLiftUU + SharedSurface;
