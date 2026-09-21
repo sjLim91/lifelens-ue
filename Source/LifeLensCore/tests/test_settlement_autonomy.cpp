@@ -226,7 +226,8 @@ int main()
     CHECK(world.facilities.size()>=3);
 
     // C1-E: site selection should form an activity cluster around real existing
-    // facilities instead of always accepting the first seed-rotated empty slot.
+    // facilities, while terrain/water suitability can override a marginally
+    // closer but physically worse tile.
     Simulation layoutSimulation(991731);
     layoutSimulation.setupNewGame();
     World& layout=layoutSimulation.world();
@@ -251,10 +252,44 @@ int main()
         chooseSettlementFacilitySite(
             layout,planner.id,FacilityKind::Shelter);
     CHECK(clustered.available);
-    // Immediate overlap is forbidden (<=2), so the best functional cluster
-    // should occupy the nearest legal ring around the sleeping activity anchor.
-    CHECK(manhattan(clustered.pos,anchorFacility.pos)==3);
+    // Immediate overlap is forbidden (<=2). Terrain authority may now prefer a
+    // slightly farther site, but the new foundation must remain a local cluster
+    // and never occupy an authoritative surface-water footprint.
+    CHECK(manhattan(clustered.pos,anchorFacility.pos)>=3);
+    CHECK(manhattan(clustered.pos,anchorFacility.pos)<=8);
+    const HydrologyFacts clusteredWater=deriveHydrologyFacts(
+        layout.genesisIdentity(),
+        chunkCoordForGrid(clustered.pos));
+    CHECK(!surfaceWaterGroundContainsGrid(clusteredWater,clustered.pos));
 
-    std::cout << "Stage C-S1 autonomous settlement recognition + C1-E clustering passed\n";
+    // World-generation v3 uses the continuous terrain field. Verify that the
+    // exact same autonomous settlement path chooses a viable physical site on
+    // that terrain rather than ignoring slope/hydrology.
+    Simulation terrainSimulation(991731,0,3);
+    terrainSimulation.setupNewGame();
+    World& terrainWorld=terrainSimulation.world();
+    terrainWorld.resourceNodes.clear();
+    terrainWorld.storageSites.clear();
+    terrainWorld.primitiveSanitationSites.clear();
+    terrainWorld.facilities.clear();
+    Character& terrainPlanner=terrainWorld.characters.front();
+    const SettlementFacilitySiteOpportunity terrainSite=
+        chooseSettlementFacilitySite(
+            terrainWorld,
+            terrainPlanner.id,
+            FacilityKind::Shelter);
+    CHECK(terrainSite.available);
+    CHECK(settlementTerrainHabitabilityScore(
+        terrainWorld,
+        terrainSite.pos,
+        FacilityKind::Shelter)>-100.0);
+    const HydrologyFacts terrainSiteWater=deriveHydrologyFacts(
+        terrainWorld.genesisIdentity(),
+        chunkCoordForGrid(terrainSite.pos));
+    CHECK(!surfaceWaterGroundContainsGrid(
+        terrainSiteWater,
+        terrainSite.pos));
+
+    std::cout << "Stage C-S1 autonomous settlement recognition + terrain-aware clustering passed\n";
     return 0;
 }
