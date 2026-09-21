@@ -20,20 +20,23 @@
 >
 > Historical audit: `docs/INTEGRATED_AUDIT_2026-09-17.md` (point-in-time only; do not treat as live status).
 
-Last reconciled: **2026-09-21 KST after #360/#361/#362 merge; whole-source audit continues with Earth/nature runtime visibility**.
+Last reconciled: **2026-09-21 KST at main `3b9ff13c45e74b44f2c1175d92a966cbacac4335`; whole-source audit dedup ledger added after terrain/ecology visibility fixes**.
 
 
 ## 2026-09-21 CURRENT — Whole-source audit 후반부 / 지구·인간 완성도 검증
 
 Canonical checkpoint:
 - `docs/PROJECT_STATUS_2026-09-21.md`.
+- **whole-source audit resume/dedup ledger: `tasks/AUDIT_LEDGER_2026-09-21.md`.**
 - zero-cost external asset policy: `docs/ZERO_COST_ASSET_POLICY_v1.md`.
 
-Current main:
-- `4edae40b58a671e84032d17e1e84c39eae18d57b`.
+Current main checkpoint before this docs sync:
+- terrain relief v2 and opening settlement ecology clearing v2 are landed on main.
+- #364 coast nature/resource visibility recovery — MERGED.
 - #360 high-speed route budget — MERGED.
 - #361 dependent care after parent loss — MERGED after Core Tests / Preflight / Unreal Linux Compile PASS.
 - #362 visible-water fallback — MERGED after Preflight / Unreal Linux Compile PASS and post-#361 mergeability refresh.
+- open follow-ups at reconciliation: #370 CC0 canopy import, #372 desktop canopy runtime tier, #373 water fallback terrain clearance.
 
 Current audit lane:
 - Earth / terrain / hydrology / vegetation / ecology runtime visibility.
@@ -46,12 +49,13 @@ Standing execution rule:
 - do not stop the whole-source audit after a successful merge.
 
 Next audit order:
-1. Earth / terrain / hydrology / vegetation / ecology runtime visibility.
-2. graphics / materials / zero-cost production assets / platform content boundaries.
-3. character appearance / motion / context correctness.
-4. lifecycle / family / society continuity.
-5. Observer UI / camera / scale transitions.
-6. Android-first packaging, Windows/macOS native QA, Save/Load, long-run/performance/crash gates.
+1. close #373 water runtime visibility clearance.
+2. close #370/#372 zero-cost photoreal canopy import/runtime integration.
+3. graphics / materials / platform content boundary residual audit.
+4. character appearance / motion / context correctness.
+5. lifecycle / family / society continuity.
+6. Observer UI / camera / scale-transition **consumer wiring** audit — do not re-check already confirmed scale enums/contracts.
+7. Android-first packaging, Windows/macOS native QA, Save/Load, long-run/performance/crash gates.
 
 Visual completion rule:
 > source presence or green compile alone is not visual acceptance. The runtime must visibly show the intended terrain, water, vegetation, characters and interaction context.
