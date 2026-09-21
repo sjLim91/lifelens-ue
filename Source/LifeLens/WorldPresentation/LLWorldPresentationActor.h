@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Simulation/LLWorldGenerationReadTypes.h"
 #include "LLWorldPresentationActor.generated.h"
 
 class UHierarchicalInstancedStaticMeshComponent;
@@ -308,6 +309,7 @@ private:
     void RegisterDynamicCanopyInstance(UHierarchicalInstancedStaticMeshComponent* Component,
                                        int32 InstanceIndex, const FTransform& BaseTransform);
     void UpdateDynamicObserverCanopyVisibility();
+    void UpdateResidentTerrainProjection();
     UMaterialInterface* GroundMaterialForChunk(const FLLCoreNaturalChunkObservation& Chunk) const;
 
     // Catalogue (referenced in the constructor so it is cooked).
@@ -387,6 +389,9 @@ private:
     int32 SuppressedDressing = 0;
     FVector2D CachedSettlementReferenceUU = FVector2D::ZeroVector;
     TArray<FVector2D> CachedFacilityReadabilityCentersUU;
+    FLLCoreWorldGenerationObservation CachedTerrainWorld;
+    TMap<FIntPoint, FLLCoreTerrainPresentationObservation> CachedMaterializedTerrainByCoord;
+    bool bHasCachedTerrainProjection = false;
     FVector2D InitialViewOriginUU = FVector2D::ZeroVector;
     bool bInitialViewCaptured = false;
     int32 SightlineCleared = 0;
