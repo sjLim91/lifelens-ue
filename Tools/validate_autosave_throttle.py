@@ -58,4 +58,26 @@ assert "AutosaveRealSecondsSinceLastWrite = 0.0f" in save_block
 assert "if (bSaved)" in save_block
 assert "bAutosavePending = false" in save_block
 
+# Mobile/application lifecycle must flush the authoritative Core snapshot before
+# the process can be suspended or destroyed.
+sim_header = (root / "Source/LifeLens/Simulation/LLSimulationSubsystem.h").read_text(encoding="utf-8")
+sim_cpp = (root / "Source/LifeLens/Simulation/LLSimulationSubsystem.cpp").read_text(encoding="utf-8")
+for token in (
+    "virtual void Deinitialize() override",
+    "FlushAutosaveForApplicationLifecycle",
+    "ApplicationWillEnterBackgroundHandle",
+    "ApplicationWillTerminateHandle",
+):
+    assert token in sim_header, f"missing lifecycle autosave header contract: {token}"
+
+for token in (
+    "FCoreDelegates::ApplicationWillEnterBackgroundDelegate.AddUObject",
+    "FCoreDelegates::ApplicationWillTerminateDelegate.AddUObject",
+    "FCoreDelegates::ApplicationWillEnterBackgroundDelegate.Remove",
+    "FCoreDelegates::ApplicationWillTerminateDelegate.Remove",
+    "FlushAutosaveForApplicationLifecycle();",
+    "if (SaveGame())",
+):
+    assert token in sim_cpp, f"missing lifecycle autosave implementation: {token}"
+
 print("LifeLens autosave write throttle: PASS")

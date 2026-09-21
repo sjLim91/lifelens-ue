@@ -5,6 +5,7 @@
 #include "Engine/GameInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/DateTime.h"
+#include "Misc/CoreDelegates.h"
 #include "Subsystems/SubsystemCollection.h"
 
 namespace
@@ -74,6 +75,57 @@ void ULLSimulationSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
     Collection.InitializeDependency<ULLCoreBridgeSubsystem>();
+
+    ApplicationWillEnterBackgroundHandle =
+        FCoreDelegates::ApplicationWillEnterBackgroundDelegate.AddUObject(
+            this,
+            &ULLSimulationSubsystem::FlushAutosaveForApplicationLifecycle);
+    ApplicationWillTerminateHandle =
+        FCoreDelegates::ApplicationWillTerminateDelegate.AddUObject(
+            this,
+            &ULLSimulationSubsystem::FlushAutosaveForApplicationLifecycle);
+}
+
+void ULLSimulationSubsystem::Deinitialize()
+{
+    FlushAutosaveForApplicationLifecycle();
+
+    if (ApplicationWillEnterBackgroundHandle.IsValid())
+    {
+        FCoreDelegates::ApplicationWillEnterBackgroundDelegate.Remove(
+            ApplicationWillEnterBackgroundHandle);
+        ApplicationWillEnterBackgroundHandle = FDelegateHandle();
+    }
+    if (ApplicationWillTerminateHandle.IsValid())
+    {
+        FCoreDelegates::ApplicationWillTerminateDelegate.Remove(
+            ApplicationWillTerminateHandle);
+        ApplicationWillTerminateHandle = FDelegateHandle();
+    }
+
+    Super::Deinitialize();
+}
+
+void ULLSimulationSubsystem::FlushAutosaveForApplicationLifecycle()
+{
+    ULLCoreBridgeSubsystem* CoreBridge = GetCoreBridge();
+    if (!bCoreAuthoritativeRuntime
+        || !CoreBridge
+        || !CoreBridge->IsCoreRunning())
+    {
+        return;
+    }
+
+    if (SaveGame())
+    {
+        UE_LOG(LogTemp, Log,
+            TEXT("LifeLens lifecycle autosave flush completed."));
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning,
+            TEXT("LifeLens lifecycle autosave flush failed."));
+    }
 }
 
 float ULLSimulationSubsystem::SpeedMultiplierForPreset(ELLSimulationSpeedPreset Preset)
