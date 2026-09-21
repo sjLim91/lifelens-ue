@@ -17,8 +17,9 @@
 6. `docs/DECISION_LOG.md`
 7. actual `main` HEAD / target branch / PR / Actions
 8. `tasks/WORK_STATE.md`
-9. `tasks/TEAM_BOARD.md`
-10. `tasks/HANDOFF_LOG.md` 최신 의미 있는 항목
+9. `tasks/AUDIT_LEDGER_2026-09-21.md` — 전수검사 재개 시 중복 방지 체크포인트
+10. `tasks/TEAM_BOARD.md`
+11. `tasks/HANDOFF_LOG.md` 최신 의미 있는 항목
 
 `tasks/DAGYEOM_READY_QUEUE.md`는 과거 링크 호환용이다. **새 dispatch의 canonical source로 사용하지 않는다.**
 
@@ -123,3 +124,5 @@ PR closeout 시:
 ## 7. Interruption / recovery
 
 세션 중단이나 timeout 뒤에는 이전 행동이 성공했다고 추측하지 않는다. actual GitHub를 다시 조회하고 `WORK_STATE`/`TEAM_BOARD`를 reconcile한 뒤 마지막 검증된 checkpoint에서 이어간다.
+
+전수검사 중에는 `tasks/AUDIT_LEDGER_2026-09-21.md`도 반드시 확인한다. ledger의 DONE 범위는 관련 파일이 이후 main 변경으로 실제 영향을 받지 않은 한 다시 처음부터 검사하지 않는다. 관련 변경이 있으면 전체 영역 재검사가 아니라 변경 diff와 직접 영향 범위만 재검증한다. 특히 이미 확인한 enum/계약의 존재 여부를 반복 탐색하지 말고, 후속 단계에서는 실제 runtime consumer/wiring만 검증한다.
