@@ -614,13 +614,10 @@ bool ULLCoreBridgeSubsystem::GetTerrainPreviewObservation(
     }
 
     const lifelens::World& World = CoreSimulation->world();
-    if (!World.hasInitialStartRegionSelection)
-    {
-        return false;
-    }
 
-    // Pure deterministic projection only. Do not materialize a simulation
-    // chunk just because Presentation needs a continuation height.
+    // Pure deterministic projection for any logical coordinate. Spawn selection
+    // is unrelated to geography lookup and must not gate observer streaming.
+    // Do not materialize a simulation chunk merely for visual continuation.
     FillTerrainPresentationObservation(
         World.genesisIdentity(),
         {ChunkX, ChunkY},
