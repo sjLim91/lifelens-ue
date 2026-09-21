@@ -256,10 +256,22 @@ def main() -> int:
         selected_bytes = sum(int(item.get("size") or 0) for item in chosen)
         max_mib = spec.get("max_mib")
         if max_mib and selected_bytes > int(max_mib) * 1024 * 1024:
+            largest = sorted(
+                chosen,
+                key=lambda item: int(item.get("size") or 0),
+                reverse=True,
+            )[:12]
+            detail = "; ".join(
+                f"{'/'.join(item.get('path') or [])}="
+                f"{int(item.get('size') or 0) / 1024 / 1024:.1f}MiB"
+                for item in largest
+            )
             raise RuntimeError(
                 f"{asset_id} selected payload is {selected_bytes / 1024 / 1024:.1f} MiB, "
                 f"over the {max_mib} MiB LifeLens baseline budget. "
-                "Choose a lower-geometry asset instead of silently importing a hero scan.")
+                f"Largest selected leaves: {detail}. "
+                "Choose a lower-geometry asset or narrow the selected LOD/variant "
+                "instead of silently importing a hero scan.")
 
         asset_dir = root / asset_id
         downloaded = [download(item, asset_dir, args.dry_run) for item in chosen]
