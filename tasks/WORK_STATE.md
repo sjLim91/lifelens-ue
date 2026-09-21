@@ -20,7 +20,7 @@
 >
 > Historical audit: `docs/INTEGRATED_AUDIT_2026-09-17.md` (point-in-time only; do not treat as live status).
 
-Last reconciled: **2026-09-21 KST after #360 merge; #361/#362 exact-head CI in progress**.
+Last reconciled: **2026-09-21 KST after #360/#361/#362 merge; whole-source audit continues with Earth/nature runtime visibility**.
 
 
 ## 2026-09-21 CURRENT — Whole-source audit 후반부 / 지구·인간 완성도 검증
@@ -30,19 +30,15 @@ Canonical checkpoint:
 - zero-cost external asset policy: `docs/ZERO_COST_ASSET_POLICY_v1.md`.
 
 Current main:
-- `ea7d16fd1227ace7cb48f9ea3c3e37a00ced923f`.
+- `4edae40b58a671e84032d17e1e84c39eae18d57b`.
 - #360 high-speed route budget — MERGED.
+- #361 dependent care after parent loss — MERGED after Core Tests / Preflight / Unreal Linux Compile PASS.
+- #362 visible-water fallback — MERGED after Preflight / Unreal Linux Compile PASS and post-#361 mergeability refresh.
 
-Open audit chain:
-- #361 dependent care after parent loss
-  - Core Tests PASS.
-  - Preflight PASS.
-  - Unreal Linux Compile in progress at the reconciliation checkpoint.
-  - re-evaluate mergeability against moved main before merge.
-- #362 visible-water fallback
-  - Preflight PASS.
-  - Unreal Linux Compile in progress at the reconciliation checkpoint.
-  - re-evaluate mergeability against moved main before merge.
+Current audit lane:
+- Earth / terrain / hydrology / vegetation / ecology runtime visibility.
+- source presence alone is not completion; actual runtime visibility and context correctness are required.
+- zero-cost external production assets may be integrated under `docs/ZERO_COST_ASSET_POLICY_v1.md`.
 
 Standing execution rule:
 - compile/CI failure -> inspect root cause, fix, rerun.
