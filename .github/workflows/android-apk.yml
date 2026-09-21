@@ -1,259 +1,63 @@
-name: LifeLens UE 5.6 Android Build
+name: LifeLens UE 5.6 Android APK
 
 on:
   workflow_dispatch:
     inputs:
       mode:
-        description: 'Build mode: fast reuses the encrypted engine cache; seed creates it once; full is the slow fallback.'
+        description: 'Build mode. container reuses the prebuilt UE 5.6 Linux host instead of compiling UnrealEditor from source.'
         required: true
-        default: fast
+        default: container
         type: choice
         options:
-          - fast
-          - seed
-          - full
+          - container
+  push:
+    branches: [ main ]
+    paths:
+      - 'tasks/ANDROID_BUILD_REQUEST.md'
 
 permissions:
   contents: write
+  packages: read
 
 concurrency:
-  group: lifelens-android-${{ inputs.mode }}
+  group: lifelens-android-apk
   cancel-in-progress: true
 
 env:
-  UE_BRANCH: '5.6'
+  UE_IMAGE: ghcr.io/epicgames/unreal-engine:dev-slim-5.6.0
+  UE_ROOT_IN_CONTAINER: /home/ue4/UnrealEngine
   ANDROID_API: '34'
   ANDROID_BUILD_TOOLS: '34.0.0'
   ANDROID_NDK_VERSION: '25.1.8937393'
   PROJECT_ROOT: ${{ github.workspace }}
-  UE_ROOT: ${{ github.workspace }}/UnrealEngine
   BUILD_OUTPUT: ${{ github.workspace }}/AndroidOutput
   DIAGNOSTICS: ${{ github.workspace }}/Diagnostics
-  ENGINE_REUSE_DIR: ${{ github.workspace }}/EngineReuse
-  ENGINE_HOST_CACHE_FILE: ${{ github.workspace }}/EngineReuse/ue56-linux-host-v1.tar.zst.enc
-  ENGINE_ANDROID_CACHE_FILE: ${{ github.workspace }}/EngineReuse/ue56-android-engine-v1.tar.zst.enc
 
 jobs:
-  seed-engine:
-    if: ${{ github.event.repository.private == false && inputs.mode == 'seed' }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 360
-
-    steps:
-      - name: Checkout LifeLens source
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      - name: Enforce zero-cost runner and reclaim disk
-        shell: bash
-        run: |
-          set -euo pipefail
-          test '${{ github.event.repository.private }}' = 'false'
-          test '${{ runner.os }}' = 'Linux'
-          echo 'BUILD_PHASE=seed-engine'
-          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/local/lib/node_modules || true
-          sudo apt-get clean || true
-          sudo docker system prune -af || true
-          mkdir -p "$DIAGNOSTICS" "$ENGINE_REUSE_DIR"
-          test -f "$PROJECT_ROOT/LifeLens.uproject"
-          df -h /
-
-      - name: Set up Java 21
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: '21'
-
-      - name: Resolve exact Epic UE 5.6 revision
-        id: epic
-        shell: bash
-        env:
-          EPIC_GITHUB_PAT: ${{ secrets.EPIC_GHCR_PAT }}
-        run: |
-          set -euo pipefail
-          test -n "$EPIC_GITHUB_PAT" || { echo 'EPIC_GHCR_PAT secret is missing'; exit 91; }
-          ASKPASS="$RUNNER_TEMP/epic-git-askpass.sh"
-          cat > "$ASKPASS" <<'EOF'
-          #!/bin/sh
-          case "$1" in
-            *Username*) echo 'x-access-token' ;;
-            *Password*) echo "$EPIC_GITHUB_PAT" ;;
-          esac
-          EOF
-          chmod 700 "$ASKPASS"
-          export GIT_ASKPASS="$ASKPASS"
-          export GIT_TERMINAL_PROMPT=0
-          UE_SHA=$(git ls-remote --exit-code https://github.com/EpicGames/UnrealEngine.git "refs/heads/${UE_BRANCH}" | awk '{print $1}')
-          test -n "$UE_SHA"
-          echo "ue_sha=$UE_SHA" >> "$GITHUB_OUTPUT"
-          echo "UE_SOURCE_SHA=$UE_SHA" >> "$GITHUB_ENV"
-          echo 'EPIC_UE56_SOURCE_ACCESS=OK'
-
-      - name: Clone Unreal Engine 5.6 source
-        shell: bash
-        env:
-          EPIC_GITHUB_PAT: ${{ secrets.EPIC_GHCR_PAT }}
-        run: |
-          set -euo pipefail
-          ASKPASS="$RUNNER_TEMP/epic-git-askpass.sh"
-          export GIT_ASKPASS="$ASKPASS"
-          export GIT_TERMINAL_PROMPT=0
-          rm -rf "$UE_ROOT"
-          git clone --depth 1 --single-branch --branch "$UE_BRANCH" https://github.com/EpicGames/UnrealEngine.git "$UE_ROOT"
-          test "$(git -C "$UE_ROOT" rev-parse HEAD)" = "$UE_SOURCE_SHA"
-          rm -f "$ASKPASS"
-          du -sh "$UE_ROOT"
-
-      - name: Align known AutomationTool package dependencies
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          import os
-          import xml.etree.ElementTree as ET
-          from pathlib import Path
-          root = Path(os.environ['UE_ROOT']) / 'Engine'
-          fixes = {
-              'Magick.NET-Q16-HDRI-AnyCPU': ('14.8.1', '14.17.1'),
-              'Microsoft.Build': ('17.11.4', '17.11.48'),
-              'Microsoft.Build.Framework': ('17.11.4', '17.11.48'),
-              'Microsoft.Build.Tasks.Core': ('17.11.4', '17.11.48'),
-              'Microsoft.Build.Utilities.Core': ('17.11.4', '17.11.48'),
-          }
-          def local(tag):
-              return tag.rsplit('}', 1)[-1] if isinstance(tag, str) else ''
-          changed_files = 0
-          for path in root.rglob('*'):
-              if path.suffix not in {'.csproj', '.props', '.targets'}:
-                  continue
-              try:
-                  tree = ET.parse(path)
-              except ET.ParseError:
-                  continue
-              changed = False
-              for node in tree.iter():
-                  if local(node.tag) not in {'PackageReference', 'PackageVersion'}:
-                      continue
-                  name = node.get('Include') or node.get('Update')
-                  if name not in fixes:
-                      continue
-                  old, new = fixes[name]
-                  for attr in ('Version', 'VersionOverride'):
-                      if node.get(attr) == old:
-                          node.set(attr, new)
-                          changed = True
-                  for child in node:
-                      if local(child.tag) in {'Version', 'VersionOverride'} and (child.text or '').strip() == old:
-                          child.text = new
-                          changed = True
-              if changed:
-                  tree.write(path, encoding='utf-8', xml_declaration=True)
-                  changed_files += 1
-          print('AUTOMATION_DEPENDENCY_PATCH_FILES', changed_files)
-          PY
-
-      - name: Download Linux host and Android engine dependencies
-        timeout-minutes: 60
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd "$UE_ROOT"
-          ./Setup.sh \
-            -exclude=Win32 -exclude=Win64 -exclude=Windows \
-            -exclude=Mac -exclude=TVOS \
-            -exclude=HoloLens -exclude=HTML5 \
-            -exclude=PS4 -exclude=PS5 -exclude=XboxOne -exclude=XSX -exclude=Switch \
-            2>&1 | tee "$DIAGNOSTICS/setup.log"
-          if grep -Eqi 'Invalid command line parameter|Failed to download|Failed to update' "$DIAGNOSTICS/setup.log"; then
-            echo 'ENGINE_DEPENDENCY_SETUP_FAILED'
-            exit 47
-          fi
-
-      - name: Generate Unreal Engine project files
-        timeout-minutes: 30
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd "$UE_ROOT"
-          ./GenerateProjectFiles.sh 2>&1 | tee "$DIAGNOSTICS/generate-project-files.log"
-          test -f Engine/Binaries/DotNET/UnrealBuildTool/UnrealBuildTool.dll
-
-      - name: Seed Linux cook tools
-        timeout-minutes: 300
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd "$UE_ROOT"
-          ./Engine/Build/BatchFiles/Linux/Build.sh UnrealEditor Linux Development -WaitMutex \
-            2>&1 | tee "$DIAGNOSTICS/seed-unreal-editor.log"
-          ./Engine/Build/BatchFiles/Linux/Build.sh ShaderCompileWorker Linux Development -WaitMutex \
-            2>&1 | tee "$DIAGNOSTICS/seed-shader-worker.log"
-
-      - name: Create encrypted host-engine cache
-        timeout-minutes: 45
-        shell: bash
-        env:
-          ENGINE_CACHE_SECRET: ${{ secrets.EPIC_GHCR_PAT }}
-        run: |
-          set -euo pipefail
-          LIST="$RUNNER_TEMP/host-engine-cache-paths.txt"
-          cd "$UE_ROOT"
-          find Engine -type d -path '*/Binaries/Linux' -prune -print | sort -u > "$LIST"
-          test -s "$LIST"
-          mkdir -p "$ENGINE_REUSE_DIR"
-          tar -I 'zstd -T0 -3' -cf - -T "$LIST" \
-            | openssl enc -aes-256-cbc -pbkdf2 -salt \
-                -pass env:ENGINE_CACHE_SECRET \
-                -out "$ENGINE_HOST_CACHE_FILE"
-          SIZE=$(stat -c '%s' "$ENGINE_HOST_CACHE_FILE")
-          echo "HOST_ENGINE_CACHE_BYTES=$SIZE"
-          du -sh "$ENGINE_HOST_CACHE_FILE"
-          if [ "$SIZE" -gt 9000000000 ]; then
-            echo 'HOST_ENGINE_CACHE_TOO_LARGE'
-            exit 48
-          fi
-
-      - name: Save encrypted host-engine cache
-        uses: actions/cache/save@v4
-        with:
-          path: EngineReuse/ue56-linux-host-v1.tar.zst.enc
-          key: lifelens-ue56-linux-host-${{ steps.epic.outputs.ue_sha }}-v1
-
-      - name: Upload seed diagnostics on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: LifeLens-Android-Diagnostics-seed-engine
-          path: Diagnostics/
-          if-no-files-found: ignore
-          retention-days: 7
-
   build-android:
-    needs: seed-engine
-    if: ${{ always() && github.event.repository.private == false && (inputs.mode != 'seed' || needs.seed-engine.result == 'success') }}
+    if: ${{ github.event.repository.private == false }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 360
+    timeout-minutes: 240
 
     steps:
-      - name: Checkout LifeLens source
+      - name: Checkout latest LifeLens source
         uses: actions/checkout@v4
-        with:
-          persist-credentials: false
 
-      - name: Enforce zero-cost runner and reclaim disk
+      - name: Record source and reclaim runner disk
         shell: bash
         run: |
           set -euo pipefail
           test '${{ github.event.repository.private }}' = 'false'
           test '${{ runner.os }}' = 'Linux'
-          echo "BUILD_PHASE=build-android mode=${{ inputs.mode }}"
-          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/local/lib/node_modules || true
-          sudo apt-get clean || true
-          sudo docker system prune -af || true
-          mkdir -p "$DIAGNOSTICS" "$ENGINE_REUSE_DIR"
-          test -f "$PROJECT_ROOT/LifeLens.uproject"
+          mkdir -p "$DIAGNOSTICS" "$BUILD_OUTPUT"
           echo "LIFELENS_SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          echo "BUILD_PHASE=android-container-v2"
+          echo "LIFELENS_SOURCE_SHA=$(git rev-parse HEAD)"
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL || true
+          sudo apt-get clean || true
+          sudo docker container prune -f || true
+          sudo docker builder prune -af || true
+          sudo chmod -R a+rwX "$GITHUB_WORKSPACE"
           df -h /
 
       - name: Set up Java 21
@@ -285,255 +89,69 @@ jobs:
             echo "NDKROOT=$ANDROID_HOME/ndk/${ANDROID_NDK_VERSION}"
             echo "NDK_ROOT=$ANDROID_HOME/ndk/${ANDROID_NDK_VERSION}"
           } >> "$GITHUB_ENV"
+          echo "ANDROID_TOOLCHAIN_READY sdk=${ANDROID_API} buildTools=${ANDROID_BUILD_TOOLS} ndk=${ANDROID_NDK_VERSION}"
 
-      - name: Resolve exact Epic UE 5.6 revision
-        id: epic
-        shell: bash
-        env:
-          EPIC_GITHUB_PAT: ${{ secrets.EPIC_GHCR_PAT }}
-        run: |
-          set -euo pipefail
-          test -n "$EPIC_GITHUB_PAT" || { echo 'EPIC_GHCR_PAT secret is missing'; exit 91; }
-          ASKPASS="$RUNNER_TEMP/epic-git-askpass.sh"
-          cat > "$ASKPASS" <<'EOF'
-          #!/bin/sh
-          case "$1" in
-            *Username*) echo 'x-access-token' ;;
-            *Password*) echo "$EPIC_GITHUB_PAT" ;;
-          esac
-          EOF
-          chmod 700 "$ASKPASS"
-          export GIT_ASKPASS="$ASKPASS"
-          export GIT_TERMINAL_PROMPT=0
-          UE_SHA=$(git ls-remote --exit-code https://github.com/EpicGames/UnrealEngine.git "refs/heads/${UE_BRANCH}" | awk '{print $1}')
-          test -n "$UE_SHA"
-          echo "ue_sha=$UE_SHA" >> "$GITHUB_OUTPUT"
-          echo "UE_SOURCE_SHA=$UE_SHA" >> "$GITHUB_ENV"
-          echo 'EPIC_UE56_SOURCE_ACCESS=OK'
-
-      - name: Restore encrypted Android engine cache
-        id: engine-cache
-        if: ${{ inputs.mode == 'fast' }}
-        uses: actions/cache/restore@v4
-        with:
-          path: EngineReuse/ue56-android-engine-v1.tar.zst.enc
-          key: lifelens-ue56-android-r25b-${{ steps.epic.outputs.ue_sha }}-v1
-
-      - name: Require Android engine cache in fast mode
-        if: ${{ inputs.mode == 'fast' && steps.engine-cache.outputs.cache-hit != 'true' }}
-        shell: bash
-        run: |
-          echo 'FAST_ENGINE_CACHE_MISS'
-          echo 'Run this workflow once with mode=seed. Fast mode never falls back to a full engine rebuild.'
-          exit 42
-
-      - name: Restore encrypted host-engine cache
-        id: host-cache
-        if: ${{ inputs.mode == 'seed' }}
-        uses: actions/cache/restore@v4
-        with:
-          path: EngineReuse/ue56-linux-host-v1.tar.zst.enc
-          key: lifelens-ue56-linux-host-${{ steps.epic.outputs.ue_sha }}-v1
-
-      - name: Require host-engine cache after seed job
-        if: ${{ inputs.mode == 'seed' && steps.host-cache.outputs.cache-hit != 'true' }}
-        shell: bash
-        run: |
-          echo 'SEED_HOST_ENGINE_CACHE_MISS'
-          exit 43
-
-      - name: Clone Unreal Engine 5.6 source
-        shell: bash
-        env:
-          EPIC_GITHUB_PAT: ${{ secrets.EPIC_GHCR_PAT }}
-        run: |
-          set -euo pipefail
-          ASKPASS="$RUNNER_TEMP/epic-git-askpass.sh"
-          export GIT_ASKPASS="$ASKPASS"
-          export GIT_TERMINAL_PROMPT=0
-          rm -rf "$UE_ROOT"
-          git clone --depth 1 --single-branch --branch "$UE_BRANCH" https://github.com/EpicGames/UnrealEngine.git "$UE_ROOT"
-          test "$(git -C "$UE_ROOT" rev-parse HEAD)" = "$UE_SOURCE_SHA"
-          rm -f "$ASKPASS"
-          du -sh "$UE_ROOT"
-
-      - name: Align known AutomationTool package dependencies
+      - name: Validate Android source and cook boundaries
         shell: bash
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          import os
-          import xml.etree.ElementTree as ET
-          from pathlib import Path
-          root = Path(os.environ['UE_ROOT']) / 'Engine'
-          fixes = {
-              'Magick.NET-Q16-HDRI-AnyCPU': ('14.8.1', '14.17.1'),
-              'Microsoft.Build': ('17.11.4', '17.11.48'),
-              'Microsoft.Build.Framework': ('17.11.4', '17.11.48'),
-              'Microsoft.Build.Tasks.Core': ('17.11.4', '17.11.48'),
-              'Microsoft.Build.Utilities.Core': ('17.11.4', '17.11.48'),
-          }
-          def local(tag):
-              return tag.rsplit('}', 1)[-1] if isinstance(tag, str) else ''
-          changed_files = 0
-          for path in root.rglob('*'):
-              if path.suffix not in {'.csproj', '.props', '.targets'}:
-                  continue
-              try:
-                  tree = ET.parse(path)
-              except ET.ParseError:
-                  continue
-              changed = False
-              for node in tree.iter():
-                  if local(node.tag) not in {'PackageReference', 'PackageVersion'}:
-                      continue
-                  name = node.get('Include') or node.get('Update')
-                  if name not in fixes:
-                      continue
-                  old, new = fixes[name]
-                  for attr in ('Version', 'VersionOverride'):
-                      if node.get(attr) == old:
-                          node.set(attr, new)
-                          changed = True
-                  for child in node:
-                      if local(child.tag) in {'Version', 'VersionOverride'} and (child.text or '').strip() == old:
-                          child.text = new
-                          changed = True
-              if changed:
-                  tree.write(path, encoding='utf-8', xml_declaration=True)
-                  changed_files += 1
-          print('AUTOMATION_DEPENDENCY_PATCH_FILES', changed_files)
-          PY
-
-      - name: Download Linux host and Android engine dependencies
-        timeout-minutes: 60
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd "$UE_ROOT"
-          ./Setup.sh \
-            -exclude=Win32 -exclude=Win64 -exclude=Windows \
-            -exclude=Mac -exclude=TVOS \
-            -exclude=HoloLens -exclude=HTML5 \
-            -exclude=PS4 -exclude=PS5 -exclude=XboxOne -exclude=XSX -exclude=Switch \
-            2>&1 | tee "$DIAGNOSTICS/setup.log"
-          if grep -Eqi 'Invalid command line parameter|Failed to download|Failed to update' "$DIAGNOSTICS/setup.log"; then
-            echo 'ENGINE_DEPENDENCY_SETUP_FAILED'
-            exit 47
-          fi
-
-      - name: Generate Unreal Engine project files
-        timeout-minutes: 30
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd "$UE_ROOT"
-          ./GenerateProjectFiles.sh 2>&1 | tee "$DIAGNOSTICS/generate-project-files.log"
-          test -f Engine/Binaries/DotNET/UnrealBuildTool/UnrealBuildTool.dll
-
-      - name: Restore compiled engine files into source tree
-        if: ${{ inputs.mode != 'full' }}
-        shell: bash
-        env:
-          ENGINE_CACHE_SECRET: ${{ secrets.EPIC_GHCR_PAT }}
-        run: |
-          set -euo pipefail
-          CACHE_FILE="$ENGINE_ANDROID_CACHE_FILE"
-          CACHE_KIND='android'
-          if [ '${{ inputs.mode }}' = 'seed' ]; then
-            CACHE_FILE="$ENGINE_HOST_CACHE_FILE"
-            CACHE_KIND='host'
-          fi
-          test -s "$CACHE_FILE"
-          openssl enc -d -aes-256-cbc -pbkdf2 \
-            -pass env:ENGINE_CACHE_SECRET \
-            -in "$CACHE_FILE" \
-            | tar --zstd -xf - -C "$UE_ROOT"
-          echo "ENGINE_COMPILE_CACHE_RESTORED kind=$CACHE_KIND"
-          du -sh "$CACHE_FILE"
-
-      - name: Validate Android content cook boundary
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd "$PROJECT_ROOT"
           python3 Tools/validate_platform_cook_boundaries.py
+          python3 Tools/validate_zero_cost_asset_provenance.py
+          python3 Tools/validate_android_build_pipeline.py
 
-      - name: Compile LifeLens Android Development
-        timeout-minutes: 300
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd "$UE_ROOT"
-          EXTRA_ARGS=()
-          if [ '${{ inputs.mode }}' = 'fast' ]; then
-            EXTRA_ARGS+=('-NoEngineChanges')
-          fi
-          ./Engine/Build/BatchFiles/Linux/Build.sh \
-            LifeLens Android Development "$PROJECT_ROOT/LifeLens.uproject" -WaitMutex "${EXTRA_ARGS[@]}" \
-            2>&1 | tee "$DIAGNOSTICS/android-compile.log"
-          echo "LIFELENS_ANDROID_COMPILE_PASS mode=${{ inputs.mode }}"
-
-      - name: Create encrypted Android engine cache
-        if: ${{ inputs.mode == 'seed' }}
-        timeout-minutes: 60
+      - name: Login and pull prebuilt Unreal 5.6 host
         shell: bash
         env:
-          ENGINE_CACHE_SECRET: ${{ secrets.EPIC_GHCR_PAT }}
+          EPIC_GHCR_PAT: ${{ secrets.EPIC_GHCR_PAT }}
         run: |
           set -euo pipefail
-          LIST="$RUNNER_TEMP/android-engine-cache-paths.txt"
-          cd "$UE_ROOT"
-          {
-            find Engine -type d -path '*/Binaries/Linux' -prune -print
-            find Engine -type d -path '*/Binaries/Android' -prune -print
-            find Engine -type d -path '*/Intermediate/Build/Android' -prune -print
-          } | sort -u > "$LIST"
-          test -s "$LIST"
-          mkdir -p "$ENGINE_REUSE_DIR"
-          tar -I 'zstd -T0 -3' -cf - -T "$LIST" \
-            | openssl enc -aes-256-cbc -pbkdf2 -salt \
-                -pass env:ENGINE_CACHE_SECRET \
-                -out "$ENGINE_ANDROID_CACHE_FILE"
-          SIZE=$(stat -c '%s' "$ENGINE_ANDROID_CACHE_FILE")
-          echo "ENGINE_CACHE_BYTES=$SIZE"
-          du -sh "$ENGINE_ANDROID_CACHE_FILE"
-          if [ "$SIZE" -gt 9000000000 ]; then
-            echo 'ENGINE_CACHE_TOO_LARGE_FOR_DEFAULT_ZERO_COST_CACHE_LIMIT'
-            exit 48
+          test -n "$EPIC_GHCR_PAT" || { echo 'EPIC_GHCR_PAT secret is missing'; exit 91; }
+          echo "$EPIC_GHCR_PAT" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          if docker image inspect "$UE_IMAGE" >/dev/null 2>&1; then
+            echo 'UE_IMAGE_CACHE_HIT'
+          else
+            echo 'UE_IMAGE_CACHE_MISS'
+            docker pull "$UE_IMAGE"
           fi
+          docker image inspect "$UE_IMAGE" --format '{{.Id}} {{.Size}}'
+          df -h /
 
-      - name: Save encrypted Android engine cache
-        if: ${{ inputs.mode == 'seed' }}
-        uses: actions/cache/save@v4
-        with:
-          path: EngineReuse/ue56-android-engine-v1.tar.zst.enc
-          key: lifelens-ue56-android-r25b-${{ steps.epic.outputs.ue_sha }}-v1
+      - name: Verify prebuilt host has Android build support
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm "$UE_IMAGE" bash -lc "
+            test -x '$UE_ROOT_IN_CONTAINER/Engine/Build/BatchFiles/Linux/Build.sh' &&
+            test -x '$UE_ROOT_IN_CONTAINER/Engine/Build/BatchFiles/RunUAT.sh' &&
+            test -f '$UE_ROOT_IN_CONTAINER/Engine/Source/Programs/UnrealBuildTool/Platform/Android/UEBuildAndroid.cs' &&
+            test -f '$UE_ROOT_IN_CONTAINER/Engine/Binaries/DotNET/UnrealBuildTool/UnrealBuildTool.dll'
+          "
+          echo 'UE56_PREBUILT_ANDROID_HOST_READY'
 
-      - name: Cook and package LifeLens APK
-        timeout-minutes: 100
+      - name: Compile LifeLens Android Development and Cook and package LifeLens APK
+        timeout-minutes: 190
         shell: bash
         run: |
           set -euo pipefail
           rm -rf "$BUILD_OUTPUT"
-          mkdir -p "$BUILD_OUTPUT"
-          cd "$UE_ROOT"
-          BUILD_ARGS=()
-          if [ '${{ inputs.mode }}' = 'full' ]; then
-            BUILD_ARGS+=('-build')
-          else
-            BUILD_ARGS+=('-nocompileeditor')
-          fi
-          ./Engine/Build/BatchFiles/RunUAT.sh \
-            BuildCookRun \
-            -project="$PROJECT_ROOT/LifeLens.uproject" \
-            -targetplatform=Android \
-            -cookflavor=ASTC \
-            -clientconfig=Development \
-            "${BUILD_ARGS[@]}" -cook -stage -pak -package -archive \
-            -archivedirectory="$BUILD_OUTPUT" \
-            -noP4 -unattended -utf8output \
-            2>&1 | tee "$DIAGNOSTICS/android-package.log"
+          mkdir -p "$BUILD_OUTPUT" "$DIAGNOSTICS"
+          sudo chmod -R a+rwX "$GITHUB_WORKSPACE"
+
+          docker run --name lifelens-android-build             -v "$GITHUB_WORKSPACE:/workspace"             -v "$ANDROID_HOME:/opt/android-sdk:ro"             -v "$JAVA_HOME:/opt/jdk:ro"             -e ANDROID_HOME=/opt/android-sdk             -e ANDROID_SDK_ROOT=/opt/android-sdk             -e NDKROOT=/opt/android-sdk/ndk/${ANDROID_NDK_VERSION}             -e NDK_ROOT=/opt/android-sdk/ndk/${ANDROID_NDK_VERSION}             -e JAVA_HOME=/opt/jdk             -e HOME=/tmp/lifelens-home             -w "$UE_ROOT_IN_CONTAINER"             "$UE_IMAGE"             bash -lc '
+              set -euo pipefail
+              export PATH="/opt/jdk/bin:/opt/android-sdk/platform-tools:/opt/android-sdk/build-tools/34.0.0:$PATH"
+              mkdir -p "$HOME" /workspace/Diagnostics /workspace/AndroidOutput
+
+              echo "BUILD_PHASE=android-compile"
+              ./Engine/Build/BatchFiles/Linux/Build.sh                 LifeLens Android Development /workspace/LifeLens.uproject -WaitMutex                 2>&1 | tee /workspace/Diagnostics/android-compile.log
+              echo "LIFELENS_ANDROID_COMPILE_PASS"
+
+              echo "BUILD_PHASE=android-package"
+              ./Engine/Build/BatchFiles/RunUAT.sh                 BuildCookRun                 -project=/workspace/LifeLens.uproject                 -targetplatform=Android                 -cookflavor=ASTC                 -clientconfig=Development                 -build -cook -stage -pak -package -archive                 -archivedirectory=/workspace/AndroidOutput                 -noP4 -unattended -utf8output                 2>&1 | tee /workspace/Diagnostics/android-package.log
+              echo "LIFELENS_ANDROID_PACKAGE_PASS"
+            '
+
+          docker rm -f lifelens-android-build >/dev/null 2>&1 || true
           find "$BUILD_OUTPUT" -type f -printf '%p %s bytes\n' | sort
 
       - name: Verify APK exists
@@ -545,7 +163,7 @@ jobs:
           cp "$APK" "$GITHUB_WORKSPACE/LifeLens-Android-Development-arm64.apk"
           sha256sum "$GITHUB_WORKSPACE/LifeLens-Android-Development-arm64.apk" > "$GITHUB_WORKSPACE/LifeLens-Android-Development-arm64.sha256"
           ls -lh "$GITHUB_WORKSPACE/LifeLens-Android-Development-arm64.apk"
-          echo "LIFELENS_APK_FILE_PRESENT mode=${{ inputs.mode }}"
+          echo "LIFELENS_APK_FILE_PRESENT"
 
       - name: Validate packaged APK integrity
         shell: bash
@@ -580,12 +198,12 @@ jobs:
 
           "$APKSIGNER" verify --verbose --print-certs "$APK" | tee "$DIAGNOSTICS/apk-signature.txt"
           echo 'LIFELENS_APK_INTEGRITY_PASS'
-          echo "LIFELENS_APK_PIPELINE_PASS mode=${{ inputs.mode }}"
+          echo 'LIFELENS_APK_PIPELINE_PASS'
 
       - name: Upload LifeLens APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: LifeLens-Android-APK-${{ inputs.mode }}
+          name: LifeLens-Android-APK-container
           path: |
             LifeLens-Android-Development-arm64.apk
             LifeLens-Android-Development-arm64.sha256
@@ -599,7 +217,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: LifeLens-Android-Diagnostics-${{ inputs.mode }}
+          name: LifeLens-Android-Diagnostics-container
           path: Diagnostics/
           if-no-files-found: ignore
           retention-days: 7
@@ -610,9 +228,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          TAG="lifelens-android-${{ inputs.mode }}-${GITHUB_RUN_NUMBER}"
-          gh release create "$TAG" \
-            LifeLens-Android-Development-arm64.apk \
-            LifeLens-Android-Development-arm64.sha256 \
-            --title "LifeLens Android ${{ inputs.mode }} build #${GITHUB_RUN_NUMBER}" \
-            --notes "UE 5.6 Android Development APK. Source: ${LIFELENS_SOURCE_SHA}. Engine revision: ${UE_SOURCE_SHA}. Mode: ${{ inputs.mode }}. Seed and APK phases use separate GitHub-hosted jobs."
+          TAG="lifelens-android-container-${GITHUB_RUN_NUMBER}"
+          gh release create "$TAG"             LifeLens-Android-Development-arm64.apk             LifeLens-Android-Development-arm64.sha256             --title "LifeLens Android container build #${GITHUB_RUN_NUMBER}"             --notes "UE 5.6 Android Development APK. Source: ${LIFELENS_SOURCE_SHA}. Host image: ${UE_IMAGE}. SDK 34 / NDK r25b / Java 21."

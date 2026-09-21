@@ -14,19 +14,20 @@ project = json.loads(text("LifeLens.uproject"))
 
 for token in (
     "workflow_dispatch:",
-    "- fast",
-    "- seed",
-    "- full",
+    "- container",
+    "tasks/ANDROID_BUILD_REQUEST.md",
+    "ghcr.io/epicgames/unreal-engine:dev-slim-5.6.0",
     "ANDROID_API: '34'",
     "ANDROID_BUILD_TOOLS: '34.0.0'",
     "ANDROID_NDK_VERSION: '25.1.8937393'",
     "python3 Tools/validate_platform_cook_boundaries.py",
+    "python3 Tools/validate_zero_cost_asset_provenance.py",
     "LifeLens Android Development",
     "BuildCookRun",
     "-targetplatform=Android",
     "-cookflavor=ASTC",
     "-clientconfig=Development",
-    "-cook -stage -pak -package -archive",
+    "-build -cook -stage -pak -package -archive",
     "Verify APK exists",
     "Validate packaged APK integrity",
     "dump badging",
@@ -43,6 +44,13 @@ for token in (
     "LIFELENS_APK_PIPELINE_PASS",
 ):
     assert token in workflow, f"Android build workflow missing required gate: {token}"
+
+assert "Seed Linux cook tools" not in workflow, (
+    "Android pipeline regressed to rebuilding the full Linux UnrealEditor from source"
+)
+assert "git clone --depth 1 --single-branch --branch" not in workflow, (
+    "container Android path must reuse the prebuilt UE host instead of cloning/rebuilding Engine"
+)
 
 compile_pos = workflow.index("Compile LifeLens Android Development")
 package_pos = workflow.index("Cook and package LifeLens APK")
@@ -84,5 +92,7 @@ for desktop_only in ("PCG", "ProceduralMeshComponent"):
 
 assert 'DirectoriesToNeverCook=(Path="/Game/Desktop")' in android_game
 assert 'DirectoriesToNeverCook=(Path="/Game/Environment/PCG")' in android_game
+assert 'DirectoriesToNeverCook=(Path="/Game/Environment/Photoreal/PolyHaven/pachira_aquatica_01")' in android_game
+assert 'DirectoriesToNeverCook=(Path="/Game/Environment/Photoreal/PolyHaven/island_tree_02")' in android_game
 
-print("LifeLens Android build/APK integrity contract: PASS")
+print("LifeLens Android container build/APK integrity contract: PASS")
