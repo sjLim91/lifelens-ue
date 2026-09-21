@@ -2,6 +2,8 @@ from pathlib import Path
 
 root = Path(__file__).resolve().parents[1]
 cpp = (root / "Source/LifeLens/World/LLWorldDirector.cpp").read_text(encoding="utf-8")
+header = (root / "Source/LifeLens/World/LLWorldDirector.h").read_text(encoding="utf-8")
+config = (root / "Config/DefaultGame.ini").read_text(encoding="utf-8")
 
 for token in (
     "TSet<FIntPoint> Walkable;",
@@ -53,5 +55,41 @@ assert "GetMaterializedSurfaceWaterPresentationObservations" in astar, (
 assert "GetMaterializedFreshSurfaceWaterTraversalObservations" in astar, (
     "freshwater routing must consume the gameplay traversal DTO"
 )
+
+# Core macro terrain must influence route preference without allowing visual
+# terrain presentation to become gameplay authority.
+for token in (
+    "TerrainTraversalEaseMaxStepCost",
+    "TerrainElevationTransitionCostScale",
+):
+    assert token in header, f"terrain-aware path config missing: {token}"
+
+for token in (
+    "TMap<FIntPoint, float> ChunkTraversalEase",
+    "TMap<FIntPoint, float> ChunkElevation",
+    "Chunk.TraversalEase",
+    "Chunk.Elevation",
+    "TerrainMovePenalty",
+    "AverageEase",
+    "ElevationPenalty",
+    "BaseMoveCost + TerrainPenalty",
+):
+    assert token in astar, f"terrain-aware A* contract missing: {token}"
+
+for forbidden in (
+    "FLLCoreTerrainPresentationObservation",
+    "TerrainSurfaceZUU",
+    "LocalSurfaceZUU",
+    "RegionalSurfaceZUU",
+):
+    assert forbidden not in astar, (
+        f"A* must not use presentation terrain as gameplay authority: {forbidden}"
+    )
+
+for token in (
+    "TerrainTraversalEaseMaxStepCost=6",
+    "TerrainElevationTransitionCostScale=40.000000",
+):
+    assert token in config, f"terrain-aware production path config missing: {token}"
 
 print("LifeLens materialized surface pathfinding: PASS")
