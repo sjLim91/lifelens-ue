@@ -973,11 +973,10 @@ void ALLObserverPlayerController::SyncObservedResidentSelection()
         {
             LastObservedCoreRuntimeGeneration = RuntimeGeneration;
 
-            // A selection is meaningful only if that stable resident identity
-            // exists in the newly installed authoritative runtime. Preserve it
-            // across save loads when the resident still exists (including dead
-            // residents shown by lifecycle/history UI), but do not leave the
-            // observer stuck in Quick/Detail for an ID from a different world.
+            // A living physical selection is meaningful only if that stable
+            // identity exists in the newly installed authoritative runtime.
+            // Death/history remains available through Core lifecycle/family
+            // surfaces, but Quick/Detail resident focus is for living actors.
             if (Observation->HasObservedResident())
             {
                 FLLCoreResidentObservation Resident;
