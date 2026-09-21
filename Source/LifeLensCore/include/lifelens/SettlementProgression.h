@@ -3,7 +3,10 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <cmath>
 #include <utility>
+
+#include "ContinuousEcology.h"
 
 #include "EnvironmentalConsequences.h"
 #include "Facility.h"
@@ -383,6 +386,106 @@ inline double settlementActivityCenterScore(
     return score;
 }
 
+inline double settlementTerrainHabitabilityScore(
+    const World& world,
+    GridPos candidate,
+    FacilityKind planned)
+{
+    const WorldGenesisIdentity identity=world.genesisIdentity();
+    const ContinuousTerrainSample terrain=
+        deriveContinuousTerrainSample(identity,candidate);
+
+    const double slopePerGrid=std::hypot(
+        terrain.gradientXPerGrid,
+        terrain.gradientYPerGrid);
+    const double slopeSeverity=std::clamp(
+        slopePerGrid*static_cast<double>(WorldChunkSpanGridCells)*8.0,
+        0.0,
+        1.0);
+    const double flatness=1.0-slopeSeverity;
+    const double flatnessWeight=
+        planned==FacilityKind::SleepingPlace ? 0.90
+        : planned==FacilityKind::Shelter ? 0.82
+        : 0.62;
+
+    double score=flatnessWeight*flatness;
+
+    // Extreme high/low ground is possible, but early settlement prefers a
+    // usable middle band unless another strong survival signal compensates.
+    const double elevationComfort=1.0-std::clamp(
+        std::abs(terrain.elevation01-0.52)*1.8,
+        0.0,
+        1.0);
+    score+=0.16*elevationComfort;
+
+    // Vegetation offers building material, shade and food opportunity, while
+    // saturated ground is a poor default foundation. Work areas tolerate more
+    // exposed rock than sleeping/shelter sites.
+    const ContinuousEcologySample ecology=
+        deriveContinuousEcologySample(identity,candidate);
+    const double vegetation=
+        0.55*ecology.forestCoverage01
+        +0.25*ecology.grassCoverage01
+        +0.20*ecology.shrubCoverage01;
+    score+=0.14*vegetation;
+    score-=0.22*ecology.wetlandCoverage01;
+    if(planned==FacilityKind::WorkSurface){
+        score+=0.08*ecology.rockCoverage01;
+    }
+
+    const ChunkCoord localChunk=chunkCoordForGrid(candidate);
+    const HydrologyFacts localWater=
+        deriveHydrologyFacts(identity,localChunk);
+
+    // Never place a settlement foundation in the authoritative ground-water
+    // footprint itself. Wetland/coastal ground is allowed only with a strong
+    // penalty so later societies can still deliberately inhabit it.
+    if(localWater.surfaceKind==SurfaceWaterKind::Ocean
+       || surfaceWaterGroundContainsGrid(localWater,candidate)){
+        return -1000.0;
+    }
+    if(localWater.surfaceKind==SurfaceWaterKind::Wetland) score-=0.55;
+    if(localWater.surfaceKind==SurfaceWaterKind::Coast) score-=0.20;
+
+    bool foundFreshWater=false;
+    int nearestFreshDistance=1000000;
+    double nearestFreshAvailability=0.0;
+    for(int dy=-FreshSurfaceNeighbourRadiusChunks;
+        dy<=FreshSurfaceNeighbourRadiusChunks;
+        ++dy){
+        for(int dx=-FreshSurfaceNeighbourRadiusChunks;
+            dx<=FreshSurfaceNeighbourRadiusChunks;
+            ++dx){
+            const ChunkCoord coord{localChunk.x+dx,localChunk.y+dy};
+            const HydrologyFacts water=deriveHydrologyFacts(identity,coord);
+            if(!isFreshSurfaceWater(water)) continue;
+
+            const GridPos access=surfaceWaterGroundAccessGrid(water);
+            const int distance=manhattan(candidate,access);
+            if(!foundFreshWater
+               || distance<nearestFreshDistance
+               || (distance==nearestFreshDistance
+                   && water.surfaceAvailability>nearestFreshAvailability)){
+                foundFreshWater=true;
+                nearestFreshDistance=distance;
+                nearestFreshAvailability=water.surfaceAvailability;
+            }
+        }
+    }
+
+    if(foundFreshWater){
+        const double proximity=1.0-std::clamp(
+            static_cast<double>(std::max(0,nearestFreshDistance-3))/80.0,
+            0.0,
+            1.0);
+        score+=0.48*proximity+0.16*nearestFreshAvailability;
+    }else{
+        score-=0.35;
+    }
+
+    return score;
+}
+
 inline SettlementFacilitySiteOpportunity chooseSettlementFacilitySite(
     const World& world,
     CharacterId planner,
@@ -418,7 +521,9 @@ inline SettlementFacilitySiteOpportunity chooseSettlementFacilitySite(
         const GridPos candidate{center.x+offset.x,center.y+offset.y};
         if(settlementFacilitySiteBlocked(world,candidate)) continue;
 
-        const double score=settlementActivityCenterScore(world,candidate,kind);
+        const double score=
+            settlementActivityCenterScore(world,candidate,kind)
+            +settlementTerrainHabitabilityScore(world,candidate,kind);
         if(!found || score>bestScore+1e-12
            || (std::abs(score-bestScore)<=1e-12 && i<bestOrder)){
             found=true;
