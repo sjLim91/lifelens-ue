@@ -930,6 +930,92 @@ void Simulation::evaluateDailyFamilyTransitions()
                     emit(first->name+" and "+second->name+" got married");
                 }
             }
+        }else if(snapshot.stage==RomanceStage::Married){
+            const int marriedDuration=snapshot.marriedMinute>=0
+                ? world_.minute-snapshot.marriedMinute
+                : 0;
+            const double breakdownPressure=
+                familyMutualRelationshipBreakdownPressure(
+                    firstToSecond,secondToFirst);
+            if(marriedDuration>=FamilyMarriageBreakdownGraceMinutes &&
+               breakdownPressure>=FamilySeparationPressureThreshold &&
+               romances_.separate(first->id,second->id,world_.minute)){
+                recordPairLifeEvent(
+                    *first,*second,LifeEventType::Separated,world_.minute);
+                emit(first->name+" and "+second->name+" separated");
+            }
+        }else if(snapshot.stage==RomanceStage::Separated){
+            const LifeHistoryEntry* firstSeparated=
+                latestLifeEvent(first->lifeHistory,LifeEventType::Separated);
+            const LifeHistoryEntry* secondSeparated=
+                latestLifeEvent(second->lifeHistory,LifeEventType::Separated);
+            int separatedMinute=-1;
+            if(firstSeparated!=nullptr) separatedMinute=firstSeparated->minute;
+            if(secondSeparated!=nullptr){
+                separatedMinute=separatedMinute<0
+                    ? secondSeparated->minute
+                    : std::max(separatedMinute,secondSeparated->minute);
+            }
+
+            const double breakdownPressure=
+                familyMutualRelationshipBreakdownPressure(
+                    firstToSecond,secondToFirst);
+            if(separatedMinute>=0 &&
+               world_.minute-separatedMinute>=FamilySeparationToDivorceMinutes &&
+               breakdownPressure>=FamilyDivorcePressureThreshold &&
+               romances_.divorce(first->id,second->id,world_.minute)){
+                genealogy_.unlinkSpouses(first->id,second->id);
+                recordPairLifeEvent(
+                    *first,*second,LifeEventType::Divorced,world_.minute);
+
+                if(shareHousehold(households_,first->id,second->id)){
+                    Household* shared=households_.householdOf(first->id);
+                    if(shared!=nullptr){
+                        const HouseholdId sharedId=shared->id;
+                        const double originalMoney=shared->sharedMoney;
+                        const double movingMoney=0.5*originalMoney;
+                        const std::uint64_t dayEpoch=
+                            static_cast<std::uint64_t>(
+                                world_.minute/FamilyProgressionDayMinutes);
+                        const bool firstLeaves=deterministicFamilyRoll(
+                            world_.seed,
+                            first->id,
+                            second->id,
+                            dayEpoch+0xD1A0CEull)<0.5;
+                        const CharacterId leavingId=
+                            firstLeaves ? first->id : second->id;
+                        const HouseholdId newHouseholdId=nextHouseholdId();
+
+                        if(households_.removeMember(leavingId)){
+                            Household* remaining=households_.find(sharedId);
+                            if(remaining!=nullptr){
+                                remaining->sharedMoney=
+                                    std::max(0.0,originalMoney-movingMoney);
+                            }
+
+                            if(households_.create(
+                                    newHouseholdId,
+                                    {leavingId},
+                                    0,
+                                    movingMoney)){
+                                households_.pruneEmpty();
+                                recordPairLifeEvent(
+                                    *first,*second,
+                                    LifeEventType::HouseholdChanged,
+                                    world_.minute);
+                            }else{
+                                households_.addMember(sharedId,leavingId);
+                                remaining=households_.find(sharedId);
+                                if(remaining!=nullptr){
+                                    remaining->sharedMoney=originalMoney;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                emit(first->name+" and "+second->name+" divorced");
+            }
         }
     }
 
