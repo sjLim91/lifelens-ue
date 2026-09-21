@@ -1170,9 +1170,8 @@ FIntPoint ALLWorldPresentationActor::ResolveObserverCenterChunk(
 
 float ALLWorldPresentationActor::TerrainReliefBlend(const FVector2D& LocationUU) const
 {
-    return LLTerrainPresentationContract::ReliefBlend(
+    return LLTerrainPresentationContract::FacilityReliefBlend(
         LocationUU,
-        CachedSettlementReferenceUU,
         CachedFacilityReadabilityCentersUU);
 }
 
@@ -1185,7 +1184,6 @@ float ALLWorldPresentationActor::TerrainSurfaceZUU(
         World,
         Terrain,
         LocationUU,
-        CachedSettlementReferenceUU,
         CachedFacilityReadabilityCentersUU);
 }
 
