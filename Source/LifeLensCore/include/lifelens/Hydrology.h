@@ -19,7 +19,10 @@ enum class SurfaceWaterKind : std::uint8_t {
     Lake,
     Wetland,
     Coast,
-    Ocean
+    Ocean,
+    // Appended to preserve deterministic numeric identities of all existing
+    // water kinds used by deriveSurfaceWaterId().
+    Pond
 };
 
 enum class WaterSalinity : std::uint8_t {
@@ -62,6 +65,7 @@ inline const char* surfaceWaterKindName(SurfaceWaterKind kind)
         case SurfaceWaterKind::Wetland: return "Wetland";
         case SurfaceWaterKind::Coast: return "Coast";
         case SurfaceWaterKind::Ocean: return "Ocean";
+        case SurfaceWaterKind::Pond: return "Pond";
     }
     return "None";
 }
@@ -157,6 +161,11 @@ deriveSurfaceWaterGroundTraversalProfile(const HydrologyFacts& facts)
             result.blocksGroundTraversal = true;
             result.radiusCells =
                 2.50 + 4.25 * facts.surfaceAvailability;
+            break;
+        case SurfaceWaterKind::Pond:
+            result.blocksGroundTraversal = true;
+            result.radiusCells =
+                1.35 + 2.15 * facts.surfaceAvailability;
             break;
         case SurfaceWaterKind::Wetland:
             // Until terrain-cost movement exists, visible standing wetland
@@ -347,6 +356,10 @@ inline HydrologyFacts deriveHydrologyFacts(
     }else if(basinDepth >= 0.010
              && center.waterPotential >= 0.58){
         result.surfaceKind = SurfaceWaterKind::Lake;
+    }else if(basinDepth >= 0.004
+             && center.waterPotential >= 0.50
+             && center.moisture >= 0.44){
+        result.surfaceKind = SurfaceWaterKind::Pond;
     }else if(channelPotential >= 0.70
              && downhillDrop >= 0.002){
         result.surfaceKind = SurfaceWaterKind::River;
@@ -384,6 +397,13 @@ inline HydrologyFacts deriveHydrologyFacts(
                 0.52 + 0.34 * center.waterPotential
                 + 0.14 * result.rechargePotential);
             result.flowPotential = 0.08 * result.rechargePotential;
+            break;
+        case SurfaceWaterKind::Pond:
+            result.surfaceAvailability = clampMacro01(
+                0.28 + 0.40 * center.waterPotential
+                + 0.20 * result.rechargePotential
+                + 0.12 * center.moisture);
+            result.flowPotential = 0.04 * result.rechargePotential;
             break;
         case SurfaceWaterKind::Wetland:
             result.surfaceAvailability = clampMacro01(
