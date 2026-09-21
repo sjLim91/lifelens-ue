@@ -24,13 +24,35 @@ jobs:
       - name: Checkout candidate branch
         uses: actions/checkout@v4
 
-      - name: Probe Poly Haven 1K glTF selection
+      - name: Probe Poly Haven 1K glTF candidates
         shell: bash
         run: |
-          set -o pipefail
-          python Tools/acquire_photoreal_environment_assets.py \
-            --staging "${{ runner.temp }}/lifelens-asset-probe" \
-            --resolution 1k \
-            --asset jacaranda_tree \
-            --dry-run \
-            --inspect-gltf
+          set -uo pipefail
+          passed=0
+          for asset in \
+            pachira_aquatica_01 \
+            quiver_tree_01 \
+            quiver_tree_02 \
+            tree_small_02 \
+            island_tree_02
+          do
+            echo "::group::LifeLens candidate $asset"
+            if python Tools/acquire_photoreal_environment_assets.py \
+              --staging "${{ runner.temp }}/lifelens-asset-probe" \
+              --resolution 1k \
+              --asset "$asset" \
+              --dry-run \
+              --inspect-gltf
+            then
+              echo "[LifeLens assets] CANDIDATE_PASS=$asset"
+              passed=$((passed + 1))
+            else
+              echo "[LifeLens assets] CANDIDATE_REJECT=$asset"
+            fi
+            echo "::endgroup::"
+          done
+          if [ "$passed" -lt 1 ]; then
+            echo "No candidate satisfied the 90 MiB budget."
+            exit 93
+          fi
+          echo "[LifeLens assets] viable candidate count=$passed"
