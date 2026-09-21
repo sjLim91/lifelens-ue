@@ -381,3 +381,31 @@ C1 세부 순서:
 - Windows/macOS는 future Mobile-only content를 cook하지 않는다.
 - 작은 공용 facility hero asset은 mobile replacement 전까지 Shared exception으로 유지할 수 있다.
 - Canonical policy: `docs/PLATFORM_CONTENT_COOK_POLICY_v1.md`.
+
+
+---
+
+# 2026-09-21
+
+## D-021 — 비용 0원 외부 에셋은 라이선스 검증 후 적극 사용할 수 있다
+
+**결정**
+- LifeLens의 시각 품질을 높이기 위해 비용 0원의 외부 에셋을 다운로드/가공/적용할 수 있다.
+- 단순히 "무료 다운로드"라는 이유만으로 사용하지 않는다. 상업적 게임 packaging/배포가 가능한 명시적 라이선스를 확인한다.
+- CC0 / Public Domain을 최우선으로 하고, permissive commercial-use license와 attribution 이행이 가능한 CC-BY 계열도 사용할 수 있다.
+- NC / Personal Use Only / Editorial Only / 권리 불명 / ripped content는 사용하지 않는다.
+- 신규 외부 에셋은 이름, 제작자/제공처, 원본 출처, 라이선스, 확인일, attribution, LifeLens 경로/용도, 플랫폼 tier를 추적 가능하게 남긴다.
+- 기존 Poly Haven photoreal path와 Quaternius zero-cost nature path는 승인된 방향으로 유지한다.
+- Windows/macOS desktop과 Android mobile의 asset/cook budget을 분리하며, desktop 고해상도 payload가 Android APK에 불필요하게 포함되지 않게 한다.
+- 외부 에셋은 Presentation 품질을 개선하지만 Core/World의 resource/hydrology/facility/simulation truth를 독자적으로 결정하지 않는다.
+- production local-view에서 저품질 Engine primitive를 "무료니까" 최종 fallback으로 남기는 방식은 허용하지 않는다.
+
+**Canonical companion**
+- `docs/ZERO_COST_ASSET_POLICY_v1.md`
+- `docs/PROJECT_STATUS_2026-09-21.md`
+
+**완료 기준**
+- license/provenance 기록.
+- platform content boundary 확인.
+- relevant Preflight / Unreal compile / cook validation.
+- 실제 runtime에서 시각 품질 확인.

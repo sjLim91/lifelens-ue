@@ -20,7 +20,45 @@
 >
 > Historical audit: `docs/INTEGRATED_AUDIT_2026-09-17.md` (point-in-time only; do not treat as live status).
 
-Last reconciled: **2026-09-19 KST after #282 runtime-visual hotfix merge and Presentation handoff to Dagyeom**.
+Last reconciled: **2026-09-21 KST after #360/#361/#362 merge; whole-source audit continues with Earth/nature runtime visibility**.
+
+
+## 2026-09-21 CURRENT — Whole-source audit 후반부 / 지구·인간 완성도 검증
+
+Canonical checkpoint:
+- `docs/PROJECT_STATUS_2026-09-21.md`.
+- zero-cost external asset policy: `docs/ZERO_COST_ASSET_POLICY_v1.md`.
+
+Current main:
+- `4edae40b58a671e84032d17e1e84c39eae18d57b`.
+- #360 high-speed route budget — MERGED.
+- #361 dependent care after parent loss — MERGED after Core Tests / Preflight / Unreal Linux Compile PASS.
+- #362 visible-water fallback — MERGED after Preflight / Unreal Linux Compile PASS and post-#361 mergeability refresh.
+
+Current audit lane:
+- Earth / terrain / hydrology / vegetation / ecology runtime visibility.
+- source presence alone is not completion; actual runtime visibility and context correctness are required.
+- zero-cost external production assets may be integrated under `docs/ZERO_COST_ASSET_POLICY_v1.md`.
+
+Standing execution rule:
+- compile/CI failure -> inspect root cause, fix, rerun.
+- exact-head required CI green + latest-main mergeability/overlap check -> merge using expected head SHA.
+- do not stop the whole-source audit after a successful merge.
+
+Next audit order:
+1. Earth / terrain / hydrology / vegetation / ecology runtime visibility.
+2. graphics / materials / zero-cost production assets / platform content boundaries.
+3. character appearance / motion / context correctness.
+4. lifecycle / family / society continuity.
+5. Observer UI / camera / scale transitions.
+6. Android-first packaging, Windows/macOS native QA, Save/Load, long-run/performance/crash gates.
+
+Visual completion rule:
+> source presence or green compile alone is not visual acceptance. The runtime must visibly show the intended terrain, water, vegetation, characters and interaction context.
+
+External asset rule:
+> zero-cost assets may be downloaded and integrated when they improve production quality, but every new external asset must have verified commercial/package-compatible licensing and recorded provenance. Ambiguous, NC, personal-use-only, editorial-only and ripped assets are prohibited.
+
 
 ## 2026-09-19 CURRENT — Presentation frozen, Core lane resumed
 
