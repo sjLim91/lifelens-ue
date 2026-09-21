@@ -14,13 +14,11 @@ bridge_h = (root / 'Source/LifeLens/Simulation/LLCoreBridgeSubsystem.h').read_te
 
 for token in (
     'LocalReliefAmplitudeUU = 220.0f',
-    'SettlementFlattenRadiusUU = 650.0f',
-    'SettlementBlendBandUU = 900.0f',
     'FacilityFlattenRadiusUU = 340.0f',
     'FacilityBlendEndRadiusUU = 900.0f',
     'DesktopSurfaceLiftUU = 1.0f',
     'FMath::Lerp(CenterSurface, CornerSurface, 0.72f)',
-    'ReliefBlend(',
+    'FacilityReliefBlend(',
     'LocalSurfaceZUU(',
     'RegionalPreviewRadiusChunks = 8',
     'RegionalInnerFlatRingChunks = 0',
@@ -37,10 +35,19 @@ assert 'MaxVisualGroundLiftUU = 220.0f' in motion_h
 assert 'LocalReliefAmplitudeUU = 220.0f' in contract
 assert 'RegionalReliefAmplitudeUU = 8000.0f' in contract
 
+# World v2: the initial spawn is a coordinate anchor, never a settlement pad.
+# Natural relief may only be flattened by actual facility footprints.
+assert 'SettlementFlattenRadiusUU' not in contract
+assert 'SettlementBlendBandUU' not in contract
+assert 'SettlementReferenceUU' not in contract
+assert 'FacilityReliefBlend(' in contract
+
 # Local and regional visual surface consumers must call shared implementations.
 assert 'LLTerrainPresentationContract::LocalSurfaceZUU' in world_cpp
 assert 'LLTerrainPresentationContract::LocalSurfaceZUU' in desktop_cpp
 assert 'LLTerrainPresentationContract::LocalSurfaceZUU' in water_cpp
+assert 'LLTerrainPresentationContract::FacilityReliefBlend' in world_cpp
+assert 'LLTerrainPresentationContract::FacilityReliefBlend' in desktop_cpp
 assert 'LLTerrainPresentationContract::RegionalSurfaceZUU' in world_cpp
 assert 'LLTerrainPresentationContract::RegionalSurfaceZUU' in water_cpp
 

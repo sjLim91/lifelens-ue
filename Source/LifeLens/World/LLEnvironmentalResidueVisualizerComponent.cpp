@@ -183,7 +183,6 @@ FVector ULLEnvironmentalResidueVisualizerComponent::ResolveSurfaceLocation(
             World,
             Terrain,
             SurfaceLocationUU,
-            FVector2D::ZeroVector,
             FacilityCentersUU)
         : LLTerrainPresentationContract::RegionalSurfaceZUU(
             World,
