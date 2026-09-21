@@ -199,6 +199,21 @@ The Web client must be static-hostable.
 
 No paid API or required cloud backend is allowed for the baseline product.
 
+Generated browser runtime binaries are not committed to source. The canonical
+zero-cost publication path builds `LifeLensCore` with Emscripten in GitHub
+Actions and replaces the stable `web-runtime-latest` GitHub Release assets:
+
+- `lifelens_core.js`
+- `lifelens_core.wasm`
+- `SHA256SUMS.txt`
+
+A static browser host may load that stable runtime release. Hosting remains a
+replaceable presentation concern and never becomes simulation authority.
+
+GitHub Pages is not a required/canonical deployment dependency. If repository
+integration permissions cannot create a Pages site, that must not block Web
+runtime publication or the local single-player product.
+
 A backend may later provide optional synchronization/multiplayer/community
 features, but local single-player simulation must remain functional without it.
 
