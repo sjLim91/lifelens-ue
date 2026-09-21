@@ -161,6 +161,13 @@ public:
     UFUNCTION(BlueprintPure, Category="LifeLens|Core|WorldHierarchy")
     FLLCoreWorldHierarchyObservation GetWorldHierarchyObservation() const;
 
+    // Deterministic Planet -> SurfaceRegion -> Chunk address for any logical
+    // chunk. Read-only: querying an observer location never materializes Core.
+    UFUNCTION(BlueprintPure, Category="LifeLens|Core|WorldHierarchy")
+    FLLCoreWorldAddressObservation GetWorldAddressForChunk(
+        int32 ChunkX,
+        int32 ChunkY) const;
+
     // Authoritative materialized natural chunks in Core registry order.
     // Consumers must use this instead of guessing coordinates from a count/radius.
     UFUNCTION(BlueprintPure, Category="LifeLens|Core|WorldGeneration")
@@ -175,12 +182,18 @@ public:
     UFUNCTION(BlueprintPure, Category="LifeLens|Core|WorldGeneration|Terrain|Presentation")
     TArray<FLLCoreTerrainPresentationObservation> GetMaterializedTerrainPresentationObservations() const;
 
-    // Deterministic read-only macro terrain around the selected start region.
-    // This does NOT materialize Core chunks/resources/facilities; it exists only
-    // so Local/Regional presentation can show real world-scale relief beyond the
-    // tiny authoritative activity set.
+    // Compatibility wrapper around the initial spawn anchor. New World v2
+    // consumers should use GetTerrainPreviewObservationsAroundChunk.
     UFUNCTION(BlueprintPure, Category="LifeLens|Core|WorldGeneration|Terrain|Presentation")
     TArray<FLLCoreTerrainPresentationObservation> GetRegionalTerrainPreviewObservations(
+        int32 RadiusChunks = 8) const;
+
+    // Deterministic read-only terrain preview around any logical chunk.
+    // This never materializes Core chunks/resources/facilities.
+    UFUNCTION(BlueprintPure, Category="LifeLens|Core|WorldGeneration|Terrain|Presentation")
+    TArray<FLLCoreTerrainPresentationObservation> GetTerrainPreviewObservationsAroundChunk(
+        int32 CenterChunkX,
+        int32 CenterChunkY,
         int32 RadiusChunks = 8) const;
 
     // Single-coordinate deterministic terrain preview for visual continuation.
@@ -303,12 +316,12 @@ private:
     // Regional terrain preview is deterministic for a fixed world/start frame.
     // Cache it so presentation refreshes do not re-run hundreds of macro-noise
     // samples every 0.5 seconds.
-    mutable TArray<FLLCoreTerrainPresentationObservation> CachedRegionalTerrainPreview;
-    mutable uint64 CachedRegionalTerrainWorldSeed = 0;
-    mutable int32 CachedRegionalTerrainGenerationVersion = -1;
-    mutable int32 CachedRegionalTerrainStartChunkX = 0;
-    mutable int32 CachedRegionalTerrainStartChunkY = 0;
-    mutable int32 CachedRegionalTerrainRadiusChunks = -1;
+    mutable TArray<FLLCoreTerrainPresentationObservation> CachedTerrainPreview;
+    mutable uint64 CachedTerrainPreviewWorldSeed = 0;
+    mutable int32 CachedTerrainPreviewGenerationVersion = -1;
+    mutable int32 CachedTerrainPreviewCenterChunkX = 0;
+    mutable int32 CachedTerrainPreviewCenterChunkY = 0;
+    mutable int32 CachedTerrainPreviewRadiusChunks = -1;
 
     TMap<uint64, FGuid> CoreToGuid;
     TMap<FGuid, uint64> GuidToCore;
