@@ -864,14 +864,14 @@ World v2 foundation이 성공했다고 말할 수 있는 최소 기준:
 
 ## 21. 실행 상태
 
-현재 상태는 **IMPLEMENTATION ACTIVE — W2-2 / W2-3 병렬**.
+현재 상태는 **IMPLEMENTATION ACTIVE — W2-3 + ecology foundation 병렬**.
 
 2026-09-21 사용자의 시작 사인으로 World v2 구현 잠금이 해제되었다.
 
 현재 실행 경계:
 - Jjun Core/World/Simulation provider contract부터 진행.
 - 이미 구현된 authoritative materialized chunk enumeration은 재구현하지 않는다.
-- W2-0 spawn-independent world address + centered terrain preview는 #374로 merge 완료. W2-1 continuous terrain Core field는 #375로 merge 완료. 현재 W2-2 hydrology graph(#378)와 W2-3 observer streaming(#379)을 병렬 진행한다.
+- W2-0 #374, W2-1 #375, W2-2 continuous-terrain drainage graph #378은 merge 완료. 현재 W2-3 observer streaming(#379)과 후속 ecology/biome coverage foundation을 병렬 진행한다.
 - provider 준비 뒤 Jjun이 WorldPresentation/Environment visual까지 직접 통합 구현할 수 있다. Dagyeom은 runtime screenshot review/visual polish 협업으로 활용한다.
 - Character appearance/motion/context 본격 audit/수정은 World v2 visual/physical foundation 이후까지 보류한다.
 - 문서와 audit ledger는 milestone close마다 GitHub truth와 동기화한다.
