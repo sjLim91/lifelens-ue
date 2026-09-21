@@ -6,6 +6,8 @@
 
 class ULLCoreBridgeSubsystem;
 struct FLLCoreEnvironmentObservation;
+struct FLLCoreWorldGenerationObservation;
+struct FLLCoreCivilizationWorldObservation;
 
 /**
  * Read-only presentation of authoritative environmental residues.
@@ -38,10 +40,20 @@ public:
 private:
     uint32 BuildVisualSignature(
         const FLLCoreEnvironmentObservation& Environment,
+        const FLLCoreWorldGenerationObservation& World,
+        const FLLCoreCivilizationWorldObservation& Civilization,
         float CoreGridCellSizeUU,
         int32 CoreOriginGridX,
         int32 CoreOriginGridY) const;
-    FVector ResolveSurfaceLocation(int32 GridX, int32 GridY, float CoreGridCellSizeUU, int32 CoreOriginGridX, int32 CoreOriginGridY) const;
+    FVector ResolveSurfaceLocation(
+        const ULLCoreBridgeSubsystem& CoreBridge,
+        const FLLCoreWorldGenerationObservation& World,
+        const TArray<FVector2D>& FacilityCentersUU,
+        int32 GridX,
+        int32 GridY,
+        float CoreGridCellSizeUU,
+        int32 CoreOriginGridX,
+        int32 CoreOriginGridY) const;
 
     uint32 LastVisualSignature = 0;
     bool bHasVisualSignature = false;
