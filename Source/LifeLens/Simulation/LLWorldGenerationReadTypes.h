@@ -133,6 +133,42 @@ struct FLLCoreSurfaceWaterPresentationObservation
 };
 
 /**
+ * Authoritative ground-traversal projection for fresh surface water.
+ *
+ * Unlike FLLCoreSurfaceWaterPresentationObservation, these dimensions are
+ * gameplay routing truth. Presentation may become wider/narrower without
+ * silently changing where residents are allowed to walk.
+ */
+USTRUCT(BlueprintType)
+struct FLLCoreFreshSurfaceWaterTraversalObservation
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Traversal") bool bAvailable = false;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Traversal") int64 SurfaceWaterId = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Traversal") ELLCoreSurfaceWaterKind SurfaceKind = ELLCoreSurfaceWaterKind::None;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Traversal") int32 ChunkX = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Traversal") int32 ChunkY = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Traversal") int32 CenterGridX = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Traversal") int32 CenterGridY = 0;
+
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Traversal") bool bBlocksGroundTraversal = false;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Traversal") bool bLinearChannel = false;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Traversal") float GroundHalfWidthCells = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Traversal") float GroundRadiusCells = 0.0f;
+
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Traversal") bool bHasDownstreamTarget = false;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Traversal") int32 DownstreamCenterGridX = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Traversal") int32 DownstreamCenterGridY = 0;
+
+    // Stable dry-bank access point used by authoritative Water ResourceNode
+    // gathering. The resource remains at its generated hydrology center.
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Traversal") bool bHasGroundAccessTarget = false;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Traversal") int32 GroundAccessGridX = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|WorldGeneration|Hydrology|Traversal") int32 GroundAccessGridY = 0;
+};
+
+/**
  * Seam-compatible chunk terrain samples for Presentation.
  *
  * Core elevation remains the macro terrain truth. Corner samples are
