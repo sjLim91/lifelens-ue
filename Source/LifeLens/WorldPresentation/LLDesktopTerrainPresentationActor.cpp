@@ -109,9 +109,8 @@ float ALLDesktopTerrainPresentationActor::ReliefBlend(
     const FVector2D& LocationUU,
     const TArray<FVector2D>& FacilityCentersUU) const
 {
-    return LLTerrainPresentationContract::ReliefBlend(
+    return LLTerrainPresentationContract::FacilityReliefBlend(
         LocationUU,
-        FVector2D::ZeroVector,
         FacilityCentersUU);
 }
 
@@ -125,7 +124,6 @@ float ALLDesktopTerrainPresentationActor::SurfaceZUU(
         World,
         Terrain,
         LocationUU,
-        FVector2D::ZeroVector,
         FacilityCentersUU,
         LLTerrainPresentationContract::DesktopSurfaceLiftUU);
 }
