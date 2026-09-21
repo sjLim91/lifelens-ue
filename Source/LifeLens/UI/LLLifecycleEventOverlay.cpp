@@ -761,7 +761,16 @@ void ULLLifecycleEventOverlay::PushNotice(const FString& Text, FGuid SubjectResi
 
     for (const FTransientNotice& Existing : Notices)
     {
-        if (Existing.Text == Text)
+        const bool bSameWorldFocus =
+            Existing.bHasWorldFocus == bHasWorldFocus
+            && (!bHasWorldFocus || Existing.WorldFocus.Equals(WorldFocus, 1.0f));
+        const bool bSameEvent =
+            Existing.Text == Text
+            && Existing.SubjectResidentId == SubjectResidentId
+            && Existing.RelatedResidentId == RelatedResidentId
+            && Existing.SimulationMinute == SimulationMinute
+            && bSameWorldFocus;
+        if (bSameEvent)
         {
             return;
         }
