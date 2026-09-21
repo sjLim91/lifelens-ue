@@ -7,6 +7,7 @@
 #include <sstream>
 #include <system_error>
 
+#include "lifelens/ContinuousEcology.h"
 #include "lifelens/ContinuousTerrain.h"
 #include "lifelens/Hydrology.h"
 
@@ -194,6 +195,7 @@ std::string WebClientBridge::terrainWindowJson(
     out << "\"centerChunkX\":" << centerChunkX << ",";
     out << "\"centerChunkY\":" << centerChunkY << ",";
     out << "\"radiusChunks\":" << radius << ",";
+    out << "\"worldSeed\":\"" << identity.worldSeed << "\",";
     out << "\"chunks\":[";
 
     bool first = true;
@@ -211,6 +213,8 @@ std::string WebClientBridge::terrainWindowJson(
                 deriveContinuousTerrainSample(identity, center);
             const HydrologyFacts water =
                 deriveHydrologyFacts(identity, coord);
+            const ContinuousEcologySample ecology =
+                deriveContinuousEcologySample(identity, center);
 
             if (!first) out << ",";
             first = false;
@@ -222,7 +226,15 @@ std::string WebClientBridge::terrainWindowJson(
             out << "\"gradientY\":"; appendDouble(out, terrain.gradientYPerGrid); out << ",";
             out << "\"waterKind\":\"" << surfaceWaterKindName(water.surfaceKind) << "\",";
             out << "\"salinity\":\"" << waterSalinityName(water.salinity) << "\",";
-            out << "\"waterAvailability\":"; appendDouble(out, water.surfaceAvailability);
+            out << "\"waterAvailability\":"; appendDouble(out, water.surfaceAvailability); out << ",";
+            out << "\"biome\":\"" << continuousEcologyBiomeName(ecology.biome) << "\",";
+            out << "\"moisture01\":"; appendDouble(out, ecology.moisture01); out << ",";
+            out << "\"temperature01\":"; appendDouble(out, ecology.temperature01); out << ",";
+            out << "\"forestCoverage01\":"; appendDouble(out, ecology.forestCoverage01); out << ",";
+            out << "\"grassCoverage01\":"; appendDouble(out, ecology.grassCoverage01); out << ",";
+            out << "\"shrubCoverage01\":"; appendDouble(out, ecology.shrubCoverage01); out << ",";
+            out << "\"rockCoverage01\":"; appendDouble(out, ecology.rockCoverage01); out << ",";
+            out << "\"wetlandCoverage01\":"; appendDouble(out, ecology.wetlandCoverage01);
             out << "}";
         }
     }

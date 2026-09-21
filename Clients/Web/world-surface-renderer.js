@@ -25,6 +25,15 @@ function clamp01(value) {
   return Math.max(0, Math.min(1, Number(value) || 0));
 }
 
+function mixColor(a, b, amount) {
+  const t = clamp01(amount);
+  return [
+    a[0] + (b[0] - a[0]) * t,
+    a[1] + (b[1] - a[1]) * t,
+    a[2] + (b[2] - a[2]) * t,
+  ];
+}
+
 function terrainColor(chunk) {
   const water = chunk?.waterKind;
   if (water === "Ocean") return [0.10, 0.27, 0.36];
@@ -36,11 +45,134 @@ function terrainColor(chunk) {
   if (water === "Wetland") return [0.25, 0.42, 0.31];
 
   const e = clamp01(chunk?.elevation01);
-  if (e < 0.34) return [0.16, 0.31, 0.20];
-  if (e < 0.48) return [0.23, 0.40, 0.24];
-  if (e < 0.62) return [0.37, 0.48, 0.27];
-  if (e < 0.76) return [0.48, 0.48, 0.35];
-  return [0.65, 0.64, 0.56];
+  let base;
+  if (e < 0.34) base = [0.16, 0.31, 0.20];
+  else if (e < 0.48) base = [0.23, 0.40, 0.24];
+  else if (e < 0.62) base = [0.37, 0.48, 0.27];
+  else if (e < 0.76) base = [0.48, 0.48, 0.35];
+  else base = [0.65, 0.64, 0.56];
+
+  base = mixColor(base, [0.12, 0.34, 0.17], clamp01(chunk?.forestCoverage01) * 0.48);
+  base = mixColor(base, [0.34, 0.50, 0.20], clamp01(chunk?.grassCoverage01) * 0.28);
+  base = mixColor(base, [0.42, 0.39, 0.34], clamp01(chunk?.rockCoverage01) * 0.34);
+  base = mixColor(base, [0.22, 0.40, 0.31], clamp01(chunk?.wetlandCoverage01) * 0.36);
+  return base;
+}
+
+function presentationHash01(seedText, x, y, index, salt) {
+  const input = `${seedText}:${x}:${y}:${index}:${salt}`;
+  let hash = 2166136261 >>> 0;
+  for (let i = 0; i < input.length; ++i) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 16777619) >>> 0;
+  }
+  hash ^= hash >>> 16;
+  hash = Math.imul(hash, 2246822519) >>> 0;
+  hash ^= hash >>> 13;
+  return (hash >>> 0) / 4294967295;
+}
+
+function appendCrossedBillboard(vertices, x, y, z, width, height, color) {
+  const half = width * 0.5;
+  const top = z + height;
+  const planes = [
+    [[x - half, y, z], [x + half, y, z], [x + half, y, top], [x - half, y, top]],
+    [[x, y - half, z], [x, y + half, z], [x, y + half, top], [x, y - half, top]],
+  ];
+
+  for (const quad of planes) {
+    appendVertex(vertices, ...quad[0], color);
+    appendVertex(vertices, ...quad[1], color);
+    appendVertex(vertices, ...quad[2], color);
+    appendVertex(vertices, ...quad[0], color);
+    appendVertex(vertices, ...quad[2], color);
+    appendVertex(vertices, ...quad[3], color);
+  }
+}
+
+function appendRockMarker(vertices, x, y, z, size, color) {
+  const top = [x, y, z + size];
+  const p0 = [x - size * 0.45, y - size * 0.35, z];
+  const p1 = [x + size * 0.48, y - size * 0.30, z];
+  const p2 = [x + size * 0.36, y + size * 0.42, z];
+  const p3 = [x - size * 0.40, y + size * 0.34, z];
+  for (const pair of [[p0, p1], [p1, p2], [p2, p3], [p3, p0]]) {
+    appendVertex(vertices, ...pair[0], color);
+    appendVertex(vertices, ...pair[1], color);
+    appendVertex(vertices, ...top, color);
+  }
+}
+
+function appendEcologyPresentation(vertices, chunks, centerX, centerY, heightScale, worldSeed) {
+  for (const chunk of chunks) {
+    if (chunk.waterKind === "Ocean") continue;
+
+    const baseX = chunk.x - centerX;
+    const baseY = chunk.y - centerY;
+    const baseZ = (clamp01(chunk.elevation01) - 0.48) * heightScale + 0.02;
+
+    const forest = clamp01(chunk.forestCoverage01);
+    const shrubs = clamp01(chunk.shrubCoverage01);
+    const rocks = clamp01(chunk.rockCoverage01);
+    const wetland = clamp01(chunk.wetlandCoverage01);
+
+    const treeCount = forest < 0.18 ? 0 : Math.min(5, 1 + Math.floor(forest * 5));
+    for (let i = 0; i < treeCount; ++i) {
+      const ox = (presentationHash01(worldSeed, chunk.x, chunk.y, i, "tree-x") - 0.5) * 0.72;
+      const oy = (presentationHash01(worldSeed, chunk.x, chunk.y, i, "tree-y") - 0.5) * 0.72;
+      const sizeJitter = 0.80 + presentationHash01(worldSeed, chunk.x, chunk.y, i, "tree-s") * 0.42;
+      appendCrossedBillboard(
+        vertices,
+        baseX + ox,
+        baseY + oy,
+        baseZ,
+        (0.16 + forest * 0.15) * sizeJitter,
+        (0.58 + forest * 0.85) * sizeJitter,
+        mixColor([0.08, 0.24, 0.10], [0.17, 0.39, 0.14], forest),
+      );
+    }
+
+    const shrubCount = shrubs < 0.30 ? 0 : Math.min(3, Math.floor(shrubs * 4));
+    for (let i = 0; i < shrubCount; ++i) {
+      const ox = (presentationHash01(worldSeed, chunk.x, chunk.y, i, "shrub-x") - 0.5) * 0.78;
+      const oy = (presentationHash01(worldSeed, chunk.x, chunk.y, i, "shrub-y") - 0.5) * 0.78;
+      appendCrossedBillboard(
+        vertices,
+        baseX + ox,
+        baseY + oy,
+        baseZ,
+        0.16 + shrubs * 0.12,
+        0.13 + shrubs * 0.22,
+        [0.24, 0.39, 0.16],
+      );
+    }
+
+    const rockCount = rocks < 0.36 ? 0 : Math.min(2, Math.floor(rocks * 3));
+    for (let i = 0; i < rockCount; ++i) {
+      const ox = (presentationHash01(worldSeed, chunk.x, chunk.y, i, "rock-x") - 0.5) * 0.74;
+      const oy = (presentationHash01(worldSeed, chunk.x, chunk.y, i, "rock-y") - 0.5) * 0.74;
+      appendRockMarker(
+        vertices,
+        baseX + ox,
+        baseY + oy,
+        baseZ,
+        0.15 + rocks * 0.18,
+        [0.43, 0.43, 0.39],
+      );
+    }
+
+    if (wetland >= 0.46 && chunk.waterKind === "None") {
+      appendCrossedBillboard(
+        vertices,
+        baseX,
+        baseY,
+        baseZ,
+        0.46,
+        0.05 + wetland * 0.08,
+        [0.22, 0.42, 0.31],
+      );
+    }
+  }
 }
 
 function compileShader(gl, type, source) {
@@ -179,7 +311,7 @@ export class WorldSurfaceRenderer {
 
     gl.enable(gl.DEPTH_TEST);
 
-    this.mode = "WebGL2 3D truth surface";
+    this.mode = "WebGL2 3D terrain + ecology truth";
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(canvas);
     this.bindInput();
@@ -352,6 +484,15 @@ export class WorldSurfaceRenderer {
         appendVertex(vertices, ...pd, terrainColor(d));
       }
     }
+
+    appendEcologyPresentation(
+      vertices,
+      data.chunks,
+      centerX,
+      centerY,
+      heightScale,
+      String(data.worldSeed ?? "0"),
+    );
 
     this.worldExtent = Math.max(6, Math.max(maxX - minX, maxY - minY));
     this.minDistance = Math.max(4, this.worldExtent * 0.55);

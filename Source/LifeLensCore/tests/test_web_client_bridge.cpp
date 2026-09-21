@@ -31,6 +31,13 @@ int main()
     assert(terrain.find("\"radiusChunks\":1") != std::string::npos);
     assert(terrain.find("\"elevation01\":") != std::string::npos);
     assert(terrain.find("\"waterKind\":") != std::string::npos);
+    assert(terrain.find("\"worldSeed\":") != std::string::npos);
+    assert(terrain.find("\"biome\":") != std::string::npos);
+    assert(terrain.find("\"forestCoverage01\":") != std::string::npos);
+    assert(terrain.find("\"grassCoverage01\":") != std::string::npos);
+    assert(terrain.find("\"shrubCoverage01\":") != std::string::npos);
+    assert(terrain.find("\"rockCoverage01\":") != std::string::npos);
+    assert(terrain.find("\"wetlandCoverage01\":") != std::string::npos);
 
     const std::string before = bridge.worldOverviewJson();
     bridge.runMinutes(5);
