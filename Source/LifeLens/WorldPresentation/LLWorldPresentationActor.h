@@ -123,12 +123,13 @@ public:
     //                                 distance, canopy last
     //   beyond ActivityRadius         untouched natural density
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.0"))
-    float CoreClearRadiusUU = 520.0f;
+    float CoreClearRadiusUU = 360.0f;
 
-    // Matches the observed resident activity range. Core movement is not
-    // clamped to it; it only says how far the visual thinning reaches.
+    // Keep the activity clearing inside most of the 3200-UU start chunk rather
+    // than thinning almost the entire opening landscape. Core movement is not
+    // clamped to it; dynamic canopy visibility handles camera-specific occlusion.
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.0"))
-    float ActivityRadiusUU = 2200.0f;
+    float ActivityRadiusUU = 1350.0f;
 
     // Recovery curves across the activity band. Canopy recovers latest because
     // it blocks the most.
@@ -138,13 +139,15 @@ public:
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="1.0", ClampMax="6.0"))
     float UndergrowthRecoveryExponent = 1.2f;
 
-    // A little dressing survives in the living core so the settlement does not
-    // read as a cut clearing.
+    // Natural dressing remains clearly present even in the living core. The
+    // reversible observer-canopy system hides only trees that actually block a
+    // camera-to-resident sightline, so a huge permanently shaved clearing is not
+    // required for readability.
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.0", ClampMax="0.8"))
-    float CoreZoneCanopyKeep = 0.18f;
+    float CoreZoneCanopyKeep = 0.30f;
 
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.0", ClampMax="1.0"))
-    float CoreZoneUndergrowthKeep = 0.32f;
+    float CoreZoneUndergrowthKeep = 0.48f;
 
     // Authoritative resource patches are never hidden; inside the settlement
     // they are only drawn smaller.
