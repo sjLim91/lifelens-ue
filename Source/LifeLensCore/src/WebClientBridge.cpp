@@ -1,6 +1,7 @@
 #include "lifelens/WebClientBridge.h"
 
 #include <algorithm>
+#include <charconv>
 #include <iomanip>
 #include <limits>
 #include <sstream>
@@ -43,15 +44,15 @@ std::uint64_t parseUnsigned64(
     std::uint64_t fallback)
 {
     if (text.empty()) return fallback;
-    try {
-        std::size_t consumed = 0;
-        const unsigned long long value =
-            std::stoull(text, &consumed, 10);
-        if (consumed != text.size()) return fallback;
-        return static_cast<std::uint64_t>(value);
-    } catch (...) {
+
+    std::uint64_t value = 0;
+    const char* begin = text.data();
+    const char* end = begin + text.size();
+    const auto result = std::from_chars(begin, end, value, 10);
+    if (result.ec != std::errc{} || result.ptr != end) {
         return fallback;
     }
+    return value;
 }
 
 void appendDouble(std::ostringstream& out, double value)
