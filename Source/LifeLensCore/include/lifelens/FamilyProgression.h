@@ -18,6 +18,10 @@ constexpr int FamilyCohabitationToEngagementMinutes=30*FamilyProgressionDayMinut
 constexpr int FamilyEngagementToMarriageMinutes=60*FamilyProgressionDayMinutes;
 constexpr int FamilyMarriageToPregnancyMinutes=30*FamilyProgressionDayMinutes;
 constexpr int FamilyPregnancyAttemptIntervalDays=7;
+constexpr int FamilyMarriageBreakdownGraceMinutes=30*FamilyProgressionDayMinutes;
+constexpr int FamilySeparationToDivorceMinutes=30*FamilyProgressionDayMinutes;
+constexpr double FamilySeparationPressureThreshold=0.74;
+constexpr double FamilyDivorcePressureThreshold=0.62;
 
 inline double clampFamilyProgression(double value)
 {
@@ -57,6 +61,38 @@ inline double familyExternalStress(const Character& actor,const Relationship& to
         0.18*towardPartner.grudge+
         0.12*actor.emotion.anxiety+
         0.08*actor.emotion.anger);
+}
+
+inline double familyRelationshipBreakdownPressure(const Relationship& towardPartner)
+{
+    const double bondLoss=1.0-towardPartner.socialBond();
+    const double romanceLoss=1.0-towardPartner.romancePotential();
+    const double negative=clampFamilyProgression(
+        (towardPartner.conflict+
+         towardPartner.fear+
+         towardPartner.grudge+
+         towardPartner.jealousy)/4.0);
+    const double commitmentLoss=1.0-clampFamilyProgression(towardPartner.commitment);
+    const double trustLoss=1.0-clampFamilyProgression(towardPartner.trust);
+    return clampFamilyProgression(
+        0.30*bondLoss+
+        0.25*romanceLoss+
+        0.20*negative+
+        0.15*commitmentLoss+
+        0.10*trustLoss);
+}
+
+inline double familyMutualRelationshipBreakdownPressure(
+    const Relationship& firstToSecond,
+    const Relationship& secondToFirst)
+{
+    const double first=familyRelationshipBreakdownPressure(firstToSecond);
+    const double second=familyRelationshipBreakdownPressure(secondToFirst);
+    // Mutual average keeps one transiently upset partner from instantly
+    // dissolving a healthy marriage, while the worse side still matters.
+    return clampFamilyProgression(
+        0.75*(0.5*(first+second))+
+        0.25*std::max(first,second));
 }
 
 inline RomanceContext autonomousRomanceContext(
