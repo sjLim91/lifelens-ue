@@ -513,7 +513,18 @@ assert 'ApplyActionOutcome(' not in world, 'WorldDirector must not mutate projec
 assert 'ApplySocialInteraction(' not in world, 'WorldDirector must not mutate projected relationships as social authority'
 
 character = (root / 'Source/LifeLens/Characters/LLResidentCharacter.cpp').read_text(encoding='utf-8')
-assert 'VInterpConstantTo' in character
+character_header = (root / 'Source/LifeLens/Characters/LLResidentCharacter.h').read_text(encoding='utf-8')
+for token in (
+    'RemainingMoveDistance',
+    'while (bHasMovementTarget',
+    'RequestedStepDistance',
+    '++MovementWaypointIndex;',
+):
+    assert token in character, f'Missing resident route distance-budget contract: {token}'
+assert 'MaxMovementSegmentsPerTick' in character_header
+assert 'FMath::VInterpConstantTo' not in character, (
+    'resident movement must not regress to single-target interpolation that discards waypoint budget'
+)
 assert 'NameLabel->SetText' in character
 
 controller = (root / 'Source/LifeLens/UI/LLObserverPlayerController.cpp').read_text(encoding='utf-8')
