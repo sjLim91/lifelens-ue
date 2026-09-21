@@ -941,6 +941,29 @@ void ALLObserverPlayerController::SyncObservedResidentSelection()
         return;
     }
 
+    // Observation selection drives the physical Quick/Detail camera contract.
+    // Deceased residents remain available through Core genealogy/history DTOs,
+    // but they are deliberately removed from Simulation's living resident
+    // projection and have no ALLResidentCharacter to focus. Clear that stale
+    // physical selection immediately instead of leaving the UI in Quick/Detail
+    // while the camera points at the last living position.
+    if (Observation->HasObservedResident())
+    {
+        ULLSimulationSubsystem* Simulation =
+            GameInstance ? GameInstance->GetSubsystem<ULLSimulationSubsystem>() : nullptr;
+        FLLResidentData LivingResident;
+        if (Simulation
+            && Simulation->IsCoreAuthoritativeRuntime()
+            && !Simulation->FindResidentById(
+                Observation->GetObservedResidentId(),
+                LivingResident))
+        {
+            Observation->ClearObservedResident();
+            RestoreWorldOverview();
+            return;
+        }
+    }
+
     ULLCoreBridgeSubsystem* Bridge =
         GameInstance ? GameInstance->GetSubsystem<ULLCoreBridgeSubsystem>() : nullptr;
     if (Bridge)
