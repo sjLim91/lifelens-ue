@@ -1,6 +1,7 @@
 #include "Simulation/LLCoreBridgeSubsystem.h"
 
 #include "lifelens/Civilization.h"
+#include "lifelens/ContinuousEcology.h"
 #include "lifelens/Hydrology.h"
 #include "lifelens/MacroWorldGenesis.h"
 #include "lifelens/NaturalPhysicalObstacle.h"
@@ -273,6 +274,20 @@ void FillTerrainPresentationObservation(
             FMath::Max(Out.NorthWestElevation01, Out.NorthEastElevation01),
             FMath::Max(Out.SouthWestElevation01, Out.SouthEastElevation01)));
     Out.Relief01 = FMath::Clamp(Maximum - Minimum, 0.0f, 1.0f);
+
+    const lifelens::ContinuousEcologySample Ecology =
+        lifelens::deriveContinuousEcologySample(
+            Identity,
+            lifelens::GridPos{Out.CenterGridX, Out.CenterGridY});
+    Out.EcologyBiome = FName(
+        UTF8_TO_TCHAR(lifelens::continuousEcologyBiomeName(Ecology.biome)));
+    Out.EcologyMoisture01 = static_cast<float>(Ecology.moisture01);
+    Out.EcologyTemperature01 = static_cast<float>(Ecology.temperature01);
+    Out.ForestCoverage01 = static_cast<float>(Ecology.forestCoverage01);
+    Out.GrassCoverage01 = static_cast<float>(Ecology.grassCoverage01);
+    Out.ShrubCoverage01 = static_cast<float>(Ecology.shrubCoverage01);
+    Out.RockCoverage01 = static_cast<float>(Ecology.rockCoverage01);
+    Out.WetlandCoverage01 = static_cast<float>(Ecology.wetlandCoverage01);
 }
 
 void FillNaturalChunkObservation(
