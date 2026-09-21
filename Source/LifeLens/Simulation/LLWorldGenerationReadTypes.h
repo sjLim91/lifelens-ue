@@ -53,7 +53,9 @@ enum class ELLCoreSurfaceWaterKind : uint8
     Lake,
     Wetland,
     Coast,
-    Ocean
+    Ocean,
+    // Appended so existing Blueprint enum numeric values remain stable.
+    Pond
 };
 
 UENUM(BlueprintType)
