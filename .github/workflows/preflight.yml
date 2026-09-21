@@ -89,6 +89,9 @@ jobs:
       - name: Validate environment density v1
         run: python Tools/validate_environment_density_v1.py
 
+      - name: Validate authoritative natural obstacle visibility
+        run: python Tools/validate_authoritative_natural_obstacle_visibility.py
+
       - name: Validate runtime visual sanity
         run: python Tools/validate_runtime_visual_sanity.py
 
