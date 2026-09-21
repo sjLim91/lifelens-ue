@@ -83,7 +83,9 @@ int main()
                 const HydrologyFacts facts =
                     deriveHydrologyFacts(first.world().genesisIdentity(), chunk.coord);
                 CHECK(isFreshSurfaceWater(facts));
-                CHECK(exact == surfaceWaterCenterGrid(facts));
+                const GridPos waterCenter = surfaceWaterCenterGrid(facts);
+                CHECK(exact.x == waterCenter.x);
+                CHECK(exact.y == waterCenter.y);
                 CHECK(surfaceWaterGroundContainsGrid(facts, exact));
                 CHECK(!surfaceWaterGroundContainsGrid(facts, access));
                 CHECK(chunkCoordForGrid(access) == chunk.coord);
@@ -91,10 +93,12 @@ int main()
                 GridPos replayAccess{};
                 CHECK(resolveCivilizationResourceAccessGridPosition(
                     second.world(), patch.nodeId, replayAccess));
-                CHECK(replayAccess == access);
+                CHECK(replayAccess.x == access.x);
+                CHECK(replayAccess.y == access.y);
                 checkedWaterAccess = true;
             }else if(!checkedNonWaterAccess){
-                CHECK(access == exact);
+                CHECK(access.x == exact.x);
+                CHECK(access.y == exact.y);
                 checkedNonWaterAccess = true;
             }
         }
