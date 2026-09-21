@@ -1378,8 +1378,6 @@ void ALLWorldPresentationActor::BuildRegionalTerrainPreview(
 
     const int32 TilesPerAxis =
         FMath::Clamp(RegionalTerrainTilesPerChunk, 1, 3);
-    const int32 InnerFlatRing =
-        FMath::Max(0, LLTerrainPresentationContract::RegionalInnerFlatRingChunks);
     constexpr float TileThicknessUU = 12.0f;
     constexpr float SurfaceLiftUU = 0.20f;
     const float TileSpanUU =
@@ -1408,7 +1406,11 @@ void ALLWorldPresentationActor::BuildRegionalTerrainPreview(
         const int32 Ring = FMath::Max(
             FMath::Abs(Terrain.ChunkX - World.InitialChunkX),
             FMath::Abs(Terrain.ChunkY - World.InitialChunkY));
-        if (Ring <= InnerFlatRing)
+        // Ring 0 belongs to the authoritative/materialized local surface.
+        // Ring 1 is intentionally rendered: the shared terrain contract keeps
+        // it on local-amplitude, non-negative relief so the opening view gains
+        // nearby hills without a hard seam at the gameplay boundary.
+        if (Ring == 0)
         {
             continue;
         }
