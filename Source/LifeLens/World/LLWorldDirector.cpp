@@ -91,6 +91,7 @@ void ALLWorldDirector::Tick(float DeltaSeconds)
 
     const float RealDeltaSeconds = FMath::Max(0.0f, DeltaSeconds);
     const float SpeedMultiplier = FMath::Max(0.0f, Simulation->GetSimulationSpeedMultiplier());
+    AutosaveRealSecondsSinceLastWrite += RealDeltaSeconds;
 
     bool bAdvancedSimulation = false;
     if (SpeedMultiplier > KINDA_SMALL_NUMBER)
@@ -109,10 +110,29 @@ void ALLWorldDirector::Tick(float DeltaSeconds)
             ++StepsThisFrame;
             bAdvancedSimulation = true;
 
-            if ((Simulation->GetSimulationMinute() % 60) == 0)
+            const int32 AutosaveMinutes =
+                FMath::Max(1, AutosaveSimulationMinutes);
+            if ((Simulation->GetSimulationMinute() % AutosaveMinutes) == 0)
             {
-                Simulation->SaveGame();
+                // Multiple simulation-hour boundaries can be crossed in one
+                // render frame at 16x/64x. Coalesce them into one pending write.
+                bAutosavePending = true;
             }
+        }
+    }
+
+    const float MinimumAutosaveInterval =
+        FMath::Max(1.0f, AutosaveMinimumRealSeconds);
+    if (bAutosavePending
+        && AutosaveRealSecondsSinceLastWrite >= MinimumAutosaveInterval)
+    {
+        const bool bSaved = Simulation->SaveGame();
+        // Back off even after a failed write so a persistent storage failure
+        // cannot turn into one SaveGame attempt every render frame.
+        AutosaveRealSecondsSinceLastWrite = 0.0f;
+        if (bSaved)
+        {
+            bAutosavePending = false;
         }
     }
 
@@ -227,6 +247,8 @@ void ALLWorldDirector::SynchronizeAfterCoreRuntimeReplacement()
 
     SimulationClockAccumulator = 0.0f;
     EnvironmentalVisualRefreshAccumulator = 0.0f;
+    AutosaveRealSecondsSinceLastWrite = 0.0f;
+    bAutosavePending = false;
 
     const bool bProjectionAvailable = Simulation->SynchronizeProjectionFromCore();
     RefreshCorePresentationOrigin();
