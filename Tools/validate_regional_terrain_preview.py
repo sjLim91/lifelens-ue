@@ -14,7 +14,9 @@ assert 'GetRegionalTerrainPreviewObservations' in bridge_cpp
 assert 'FMath::Clamp(RadiusChunks, 1, 16)' in bridge_cpp
 assert 'deriveMacroRegionFacts(Identity, Center)' in bridge_cpp
 
-preview_start = bridge_cpp.index('ULLCoreBridgeSubsystem::GetRegionalTerrainPreviewObservations')
+assert 'GetTerrainPreviewObservationsAroundChunk' in bridge_h
+assert 'GetTerrainPreviewObservationsAroundChunk' in bridge_cpp
+preview_start = bridge_cpp.index('ULLCoreBridgeSubsystem::GetTerrainPreviewObservationsAroundChunk')
 preview_end = bridge_cpp.index('bool ULLCoreBridgeSubsystem::GetTerrainPreviewObservation', preview_start)
 preview_body = bridge_cpp[preview_start:preview_end]
 assert 'materializeNaturalChunk' not in preview_body, (
@@ -24,21 +26,21 @@ assert 'resourceNodes' not in preview_body
 assert 'generatedNaturalChunks.push' not in preview_body
 
 for token in [
-    'CachedRegionalTerrainPreview',
-    'CachedRegionalTerrainWorldSeed',
-    'CachedRegionalTerrainGenerationVersion',
-    'CachedRegionalTerrainStartChunkX',
-    'CachedRegionalTerrainStartChunkY',
-    'CachedRegionalTerrainRadiusChunks',
+    'CachedTerrainPreview',
+    'CachedTerrainPreviewWorldSeed',
+    'CachedTerrainPreviewGenerationVersion',
+    'CachedTerrainPreviewCenterChunkX',
+    'CachedTerrainPreviewCenterChunkY',
+    'CachedTerrainPreviewRadiusChunks',
 ]:
     assert token in bridge_h, f'missing regional terrain cache key: {token}'
 
 assert 'const bool bCacheHit' in preview_body
 assert 'if (bCacheHit)' in preview_body
-assert 'return CachedRegionalTerrainPreview;' in preview_body
-assert 'CachedRegionalTerrainPreview = Result;' in preview_body
-assert 'CachedRegionalTerrainPreview.Reset();' in bridge_runtime_cpp
-assert 'CachedRegionalTerrainRadiusChunks = -1;' in bridge_runtime_cpp
+assert 'return CachedTerrainPreview;' in preview_body
+assert 'CachedTerrainPreview = Result;' in preview_body
+assert 'CachedTerrainPreview.Reset();' in bridge_runtime_cpp
+assert 'CachedTerrainPreviewRadiusChunks = -1;' in bridge_runtime_cpp
 
 single_preview_start = bridge_cpp.index('ULLCoreBridgeSubsystem::GetTerrainPreviewObservation')
 single_preview_end = bridge_cpp.index('ULLCoreBridgeSubsystem::GetTerrainPresentationObservation', single_preview_start)
@@ -95,4 +97,4 @@ assert 'EffectiveFarGroundDropUU' in world_cpp, (
     'flat fallback must remain beneath signed regional valleys'
 )
 
-print('Regional terrain preview structural validation: PASS')
+print('Regional terrain preview / World v2 centered-preview structural validation: PASS')
