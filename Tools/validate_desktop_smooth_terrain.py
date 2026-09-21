@@ -48,7 +48,7 @@ assert "UProceduralMeshComponent* TerrainMesh = nullptr;" in header
 assert "TObjectPtr<UProceduralMeshComponent>" not in header
 assert "SettlementFlattenRadiusUU" not in header
 assert "SettlementBlendBandUU" not in header
-assert "LocalReliefAmplitudeUU = 180.0f" in terrain_contract
+assert "LocalReliefAmplitudeUU = 220.0f" in terrain_contract
 assert "SettlementFlattenRadiusUU = 650.0f" in terrain_contract
 assert "SettlementBlendBandUU = 900.0f" in terrain_contract
 assert "FMath::Lerp(CenterSurface, CornerSurface, 0.72f)" in terrain_contract

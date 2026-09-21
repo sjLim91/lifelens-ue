@@ -17,15 +17,24 @@
  */
 namespace LLTerrainPresentationContract
 {
-    inline constexpr float LocalReliefAmplitudeUU = 180.0f;
+    // Keep local materialized relief within the resident visual-grounding lift
+    // budget while using the whole available range. The previous 180 UU ceiling
+    // made coherent neighbouring elevation differences read almost perfectly flat.
+    inline constexpr float LocalReliefAmplitudeUU = 220.0f;
     inline constexpr float SettlementFlattenRadiusUU = 650.0f;
     inline constexpr float SettlementBlendBandUU = 900.0f;
     inline constexpr float FacilityFlattenRadiusUU = 340.0f;
     inline constexpr float FacilityBlendEndRadiusUU = 900.0f;
     inline constexpr float DesktopSurfaceLiftUU = 1.0f;
     inline constexpr int32 RegionalPreviewRadiusChunks = 8;
-    inline constexpr int32 RegionalInnerFlatRingChunks = 1;
-    inline constexpr float RegionalReliefAmplitudeUU = 1100.0f;
+    // Only the materialized start surface needs the local flat compatibility
+    // envelope. Regional preview is presentation-only and can immediately begin
+    // building macro relief outside it.
+    inline constexpr int32 RegionalInnerFlatRingChunks = 0;
+    // Macro terrain needs metre-scale relief to read as hills/valleys at the
+    // Observer camera distance. 8000 UU is an 80 m full-range presentation
+    // envelope; coherent neighbour deltas use only a fraction of it.
+    inline constexpr float RegionalReliefAmplitudeUU = 8000.0f;
 
     inline float SmoothBand(float Distance, float Start, float End)
     {
