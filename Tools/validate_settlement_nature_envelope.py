@@ -37,8 +37,12 @@ for token in (
     assert token in header or token in cpp, f"readability safety path missing: {token}"
 
 # Resource patches remain independent of decorative thinning.
+build_chunk_start = cpp.index(
+    "void ALLWorldPresentationActor::BuildChunkDressing"
+)
 resource_start = cpp.index(
-    "for (const FLLCoreNaturalResourcePatchObservation& Patch : Chunk.ResourcePatches)"
+    "for (const FLLCoreNaturalResourcePatchObservation& Patch : Chunk.ResourcePatches)",
+    build_chunk_start,
 )
 resource_end = cpp.index(
     "// Decorative ecology is budgeted only after every authoritative obstacle",
