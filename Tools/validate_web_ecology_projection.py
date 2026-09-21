@@ -10,21 +10,21 @@ for token in (
     '#include "lifelens/ContinuousEcology.h"',
     "deriveContinuousEcologySample(identity, center)",
     "continuousEcologyBiomeName(ecology.biome)",
-    '"forestCoverage01"',
-    '"grassCoverage01"',
-    '"shrubCoverage01"',
-    '"rockCoverage01"',
-    '"wetlandCoverage01"',
-    '"worldSeed"',
+    "forestCoverage01",
+    "grassCoverage01",
+    "shrubCoverage01",
+    "rockCoverage01",
+    "wetlandCoverage01",
+    "worldSeed",
 ):
     assert token in bridge, f"WEB-2 bridge ecology contract missing: {token}"
 
 for token in (
-    '"biome"',
-    '"forestCoverage01"',
-    '"grassCoverage01"',
-    '"rockCoverage01"',
-    '"wetlandCoverage01"',
+    "biome",
+    "forestCoverage01",
+    "grassCoverage01",
+    "rockCoverage01",
+    "wetlandCoverage01",
 ):
     assert token in bridge_test, f"WEB-2 bridge test missing ecology field: {token}"
 
