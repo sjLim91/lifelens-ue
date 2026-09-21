@@ -1010,11 +1010,6 @@ void ULLResidentMotionComponent::UpdateVisualSurfaceGrounding(float DeltaTime)
         return;
     }
 
-#if PLATFORM_ANDROID
-    // Mobile keeps the lightweight flat local-surface renderer. Do not add a
-    // second height model here.
-    Appearance->SetPresentationGroundOffsetUU(0.0f);
-#else
     const AActor* Owner = GetOwner();
     UWorld* World = GetWorld();
     if (!Owner || !World)
@@ -1049,8 +1044,10 @@ void ULLResidentMotionComponent::UpdateVisualSurfaceGrounding(float DeltaTime)
             Params))
     {
         // Only lift presentation above the authoritative physical baseline.
-        // The hidden bootstrap floor can sit lower than that baseline, and must
-        // never drag a resident visually underground before smooth terrain is ready.
+        // Desktop smooth terrain and Android local HISM relief both expose a
+        // query-only WorldStatic surface. Neither blocks Pawn/navigation.
+        // The hidden bootstrap floor can sit lower than that baseline and must
+        // never drag a resident visually underground before terrain is ready.
         TargetOffset = FMath::Clamp(
             Hit.ImpactPoint.Z - PhysicalGroundZ,
             0.0f,
@@ -1063,7 +1060,6 @@ void ULLResidentMotionComponent::UpdateVisualSurfaceGrounding(float DeltaTime)
         FMath::Max(0.0f, DeltaTime),
         FMath::Max(0.1f, VisualGroundingInterpSpeed));
     Appearance->SetPresentationGroundOffsetUU(PresentedOffset);
-#endif
 }
 
 void ULLResidentMotionComponent::UpdateBodyOrientation(float DeltaTime)
