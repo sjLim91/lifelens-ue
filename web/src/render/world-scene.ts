@@ -20,6 +20,7 @@ export interface WorldSceneCameraState {
 interface TerrainMeshEntry {
   mesh: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
   key: string;
+  signature: string;
 }
 
 export class WorldScene {
@@ -86,20 +87,48 @@ export class WorldScene {
       chunkWorldSize: 8,
       elevationScale: 48,
     });
+    const chunkMap = new Map(
+      window.chunks.map((chunk) => [`${chunk.x}:${chunk.y}`, chunk]),
+    );
+    const terrainSignature = (chunk: TerrainChunk): string => {
+      const neighborhood: string[] = [];
+      for (let dy = -1; dy <= 1; dy += 1) {
+        for (let dx = -1; dx <= 1; dx += 1) {
+          const neighbor = chunkMap.get(
+            `${chunk.x + dx}:${chunk.y + dy}`,
+          );
+          neighborhood.push(
+            neighbor
+              ? (Number(neighbor.elevation01) || 0).toFixed(5)
+              : 'x',
+          );
+        }
+      }
+      return `${chunk.waterKind}|${neighborhood.join(",")}`;
+    };
+
     this.waterLayer.setTerrain(window);
     this.vegetationLayer.setTerrain(window);
 
     for (const chunk of window.chunks) {
       const key = this.chunkKey(chunk);
+      const signature = terrainSignature(chunk);
       active.add(key);
       const existing = this.terrainMeshes.get(key);
       if (existing) {
-        this.updateTerrainMesh(existing.mesh, chunk, window, buildGeometry);
+        this.positionTerrainMesh(existing.mesh, chunk, window);
+        if (existing.signature !== signature) {
+          const previousGeometry = existing.mesh.geometry;
+          existing.mesh.geometry = buildGeometry(chunk);
+          previousGeometry.dispose();
+          existing.mesh.material.color.set(this.terrainColor(chunk));
+          existing.signature = signature;
+        }
         continue;
       }
 
       const mesh = this.createTerrainMesh(chunk, window, buildGeometry);
-      this.terrainMeshes.set(key, { mesh, key });
+      this.terrainMeshes.set(key, { mesh, key, signature });
       this.terrainGroup.add(mesh);
     }
 
@@ -142,28 +171,22 @@ export class WorldScene {
     });
 
     const mesh = new THREE.Mesh(geometry, material);
-    this.updateTerrainMesh(mesh, chunk, window, buildGeometry);
+    this.positionTerrainMesh(mesh, chunk, window);
     return mesh;
   }
 
-  private updateTerrainMesh(
+  private positionTerrainMesh(
     mesh: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>,
     chunk: TerrainChunk,
     window: TerrainWindow,
-    buildGeometry: (chunk: TerrainChunk) => THREE.BufferGeometry,
   ): void {
     const chunkWorldSize = 8;
-    const previousGeometry = mesh.geometry;
-    mesh.geometry = buildGeometry(chunk);
-    previousGeometry.dispose();
-
     mesh.position.set(
       (chunk.x - window.centerChunkX) * chunkWorldSize,
       0,
       (chunk.y - window.centerChunkY) * chunkWorldSize,
     );
     mesh.scale.set(1, 1, 1);
-    mesh.material.color.set(this.terrainColor(chunk));
   }
 
   private terrainColor(chunk: TerrainChunk): number {
