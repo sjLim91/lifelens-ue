@@ -308,10 +308,6 @@ export function SelectedResidentReadout({
   const partner = family?.hasActivePartner && family.partnerName
     ? `${family.partnerName} · ${formatPartnerStage(family.partnerStage)}`
     : '현재 파트너 없음';
-  const activityTarget = resident.activityTargetName
-    ? ` → ${resident.activityTargetName}`
-    : '';
-
   return (
     <article className="focused-life">
       <div className="focused-life-heading">
@@ -329,7 +325,7 @@ export function SelectedResidentReadout({
       </div>
 
       <p className="focused-life-activity">
-        현재 <b>{formatResidentCurrentAction(resident)}</b>{activityTarget}
+        현재 <b>{formatResidentCurrentAction(resident)}</b>
       </p>
 
       <ResidentNeedsGrid resident={resident} />
