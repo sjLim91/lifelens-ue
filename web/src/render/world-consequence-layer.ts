@@ -1164,7 +1164,6 @@ export class WorldConsequenceLayer {
             );
           }
         }
-        material.needsUpdate = true;
       }
     });
   }
