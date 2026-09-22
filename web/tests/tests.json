@@ -35,7 +35,8 @@
       "deterministic male and female appearance variants",
       "sex-aware skinned geometry deformation",
       "garment surface volume",
-      "Core activity to contextual motion mapping",
+      "Core action-context-motion truth",
+      "contextless interaction pose suppression",
       "head-bone hair attachment",
       "deterministic animation phase desynchronization",
       "CC0 Quaternius character asset integration",
@@ -65,10 +66,10 @@
       "Wait for the status badge to leave Core loading…",
       "Verify a stalled same-origin runtime request cannot leave the UI in Core loading… indefinitely",
       "Verify an older Core runtime without dynamicEnvironmentJson does not crash the observer and only disables weather projection",
-      "Wait for the status badge to show Core WASM LIVE",
+      "Wait for the status badge to show Core 연결됨",
       "Tap 새 월드 with no Seed entry and verify Core reports a generated WorldSeed",
       "Open Seed로 동일한 월드 재현, enter 12345, and create that world",
-      "Verify the resident cards include both Male and Female Core sex values",
+      "Verify the resident cards represent both authoritative Core sexes as 남성 and 여성",
       "Observe all four founders through several automatic simulation refreshes and verify none blink out between refreshes",
       "On mobile, verify the initial camera opens on the local inhabited area rather than fitting the entire terrain window into a miniature island",
       "Pinch or wheel through multiple zoom levels and verify resident bodies stay proportionate to the terrain instead of remaining fixed-size",
@@ -81,7 +82,7 @@
       "On desktop right-drag to orbit, middle-drag to pan, wheel to zoom, and left-click to select",
       "Tap 현재 주민 위치로 돌아가기 and verify the observer returns to the resident group"
     ],
-    "expected": "The status must leave Core loading… within the runtime timeout window; a missing optional weather binding must not fail LifeLensCore startup; if same-origin runtime delivery stalls, GitHub raw fallback is attempted, and the status shows Core WASM LIVE before WorldSeed 12345 is created, Living is 4, all four resident cards and 3D residents remain continuously visible without one-refresh disappearance/reappearance, the founder cards expose authoritative Core sex values and the terrain shows visually distinct male and female 3D residents with different skinned body geometry, garment silhouettes, deterministic clothing, proportions, and head-locked hair while remaining map-scale and clustered near their authoritative Core positions with readable labels. Resident body size and separation change with the same world zoom as the terrain while labels remain readable but visually subordinate, mobile opens focused on the inhabited local area instead of a tiny full-window diorama, wide-zoom forests merge into canopy masses instead of dot noise, open water does not expose a debug tile grid, mature trees read several times taller than a resident at comparable depth rather than as miniature props, a short tap on a Three World resident ray-picks that resident by GUID, shows a subtle focus ring and opens focused-life details backed by authoritative Core emotion, needs, personality/traits, directional relationships, family, memories, and beliefs without confusing camera drags for taps, movement between authoritative Core positions is visually smoothed, movement uses walking animation, supported Core activities select contextual idle/talking/sitting/interact motions, resident animation phases are visibly desynchronized, and compact fallback markers appear only while the 3D asset is still loading or if it fails. Resident labels avoid actor/label overlap while staying close to their resident; displaced labels use a subtle leader line instead of floating ambiguously."
+    "expected": "The status must leave the loading state within the runtime timeout window; a missing optional weather binding must not fail LifeLensCore startup; if same-origin runtime delivery stalls, GitHub raw fallback is attempted, and the status shows Core 연결됨 before WorldSeed 12345 is created with living resident count 4, all four resident cards and 3D residents remain continuously visible without one-refresh disappearance/reappearance, the founder cards expose authoritative Core sex values and the terrain shows visually distinct male and female 3D residents with different skinned body geometry, garment silhouettes, deterministic clothing, proportions, and head-locked hair while remaining map-scale and clustered near their authoritative Core positions with readable labels. Resident body size and separation change with the same world zoom as the terrain while labels remain readable but visually subordinate, mobile opens focused on the inhabited local area instead of a tiny full-window diorama, wide-zoom forests merge into canopy masses instead of dot noise, open water does not expose a debug tile grid, mature trees read several times taller than a resident at comparable depth rather than as miniature props, a short tap on a Three World resident ray-picks that resident by GUID, shows a subtle focus ring and opens focused-life details backed by authoritative Core emotion, needs, personality/traits, directional relationships, family, memories, and beliefs without confusing camera drags for taps, movement between authoritative Core positions is visually smoothed, movement uses walking animation, unsupported or contextless interaction activities fall back to neutral idle instead of inventing sitting/tool-use context, target-backed nearby Talk may use talking animation, resident animation phases are visibly desynchronized, and compact fallback markers appear only while the 3D asset is still loading or if it fails. Resident labels avoid actor/label overlap while staying close to their resident; displaced labels use a subtle leader line instead of floating ambiguously."
   },
   {
     "name": "Advance simulation time with canonical observer speeds",
@@ -114,7 +115,9 @@
       "generation v3 continuous terrain",
       "natural connected hydrology rendering",
       "Core ecology coverage rendering",
-      "continuous dramatic elevation relief presentation",
+      "Core-authoritative continuous elevation presentation",
+      "no presentation-only synthetic terrain relief",
+      "vegetation grounded to the shared Core elevation sampler",
       "authoritative dynamic weather projection",
       "weather-driven fog and daylight attenuation",
       "Core-driven rain and snow particles",
@@ -134,7 +137,7 @@
       "Observe the weather badge and verify temperature/weather summary are present",
       "Increase observer speed and verify weather changes remain driven by Core simulation state rather than random browser effects"
     ],
-    "expected": "The Chunk badge shows Chunk 2, 0, the Biome badge reports the Core biome and forest coverage, and deterministic terrain is rendered as one connected relief surface with visible slopes, non-rectangular river or stream paths where hydrology exists, with at most two flow exits per river/stream chunk, no synthetic cross-grid fallback channels, and minor streams/springs progressively hidden at wider zoom levels, and clustered vegetation rather than a debug-like tile grid. The world overlay exposes the authoritative Core weather summary and temperature; cloud, precipitation, visibility and wind alter Three World atmosphere and rain/snow presentation from the same Core state."
+    "expected": "Panning across chunk boundaries changes the observer-centered Core terrain/environment query window without changing simulation authority. The biome overlay reports Core biome/forest coverage, and deterministic terrain is rendered only from Core-provided elevation as one connected surface with authoritative slopes, non-rectangular river or stream paths where hydrology exists, with at most two flow exits per river/stream chunk, no synthetic cross-grid fallback channels, and minor streams/springs progressively hidden at wider zoom levels, and clustered vegetation rather than a debug-like tile grid. The world overlay exposes the authoritative Core weather summary and temperature; cloud, precipitation, visibility and wind alter Three World atmosphere and rain/snow presentation from the same Core state."
   },
   {
     "name": "Create a normal New Game without developer Seed input",
@@ -146,7 +149,7 @@
       "Korean default user-facing localization",
       "48px mobile touch targets and safe-area padding"
     ],
-    "description": "Verifies normal NEW GAME follows the canonical contract: users do not need to provide a Seed, while explicit Seed entry remains available only as a secondary deterministic replay affordance."
+    "description": "Verifies normal NEW GAME follows the canonical contract: users do not need to provide a Seed, while explicit Seed entry remains available only as a secondary deterministic replay affordance.",
     "steps": [
       "Wait for Core 연결됨",
       "Tap 새 월드 without opening the Seed replay section",
