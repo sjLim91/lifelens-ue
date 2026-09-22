@@ -369,6 +369,9 @@ export class ResidentWorldLayer {
   private ready = false;
   private pendingResidents: Resident[] = [];
   private pendingTerrain: TerrainWindow | null = null;
+  private pendingElevationSampler: ReturnType<
+    typeof createTerrainElevationSampler
+  > | null = null;
   private pendingCenterX = 0;
   private pendingCenterY = 0;
   private simulationSpeed: SimulationSpeed =
@@ -431,6 +434,9 @@ export class ResidentWorldLayer {
 
     this.pendingResidents = residents;
     this.pendingTerrain = terrain;
+    this.pendingElevationSampler = createTerrainElevationSampler(
+      terrain,
+    );
     this.pendingCenterX = centerX;
     this.pendingCenterY = centerY;
 
@@ -671,6 +677,7 @@ export class ResidentWorldLayer {
       this.group.remove(actor.statusSprite);
     }
     this.actors.clear();
+    this.pendingElevationSampler = null;
     for (const mark of this.trailMarks) {
       mark.mesh.material.dispose();
       this.trailGroup.remove(mark.mesh);
@@ -880,14 +887,15 @@ export class ResidentWorldLayer {
       const localY = (
         gridY - chunkY * gridCellsPerChunk
       ) / gridCellsPerChunk;
-      const sampleElevation = createTerrainElevationSampler(
-        this.pendingTerrain,
-      );
-      const groundY = sampleElevation(
-        chunkX,
-        chunkY,
-        localX,
-        localY,
+      const groundY = (
+        this.pendingElevationSampler
+          ? this.pendingElevationSampler(
+              chunkX,
+              chunkY,
+              localX,
+              localY,
+            )
+          : 0
       ) * WORLD_GRID_CONTRACT.elevationScale;
       const targetX = (
         chunkX - this.pendingCenterX + localX - 0.5
