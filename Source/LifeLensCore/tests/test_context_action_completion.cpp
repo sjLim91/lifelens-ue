@@ -79,13 +79,17 @@ int main()
         CHECK(actor->memory.entries.size()==actorMemoryBefore);
         CHECK(target->memory.entries.size()==targetMemoryBefore);
 
-        // Unfinished transport work is deliberately not serialized/replayed.
+        // Unfinished authoritative movement/context must survive save/restore.
         const SimulationStateSnapshot pendingSnapshot=sim.captureSnapshot();
         Simulation restored(1);
         std::string restoreError;
         CHECK(restored.restoreSnapshot(pendingSnapshot,&restoreError));
         CHECK(restoreError.empty());
-        CHECK(!restored.observePendingContextAction(pending.actor).active);
+        const auto restoredPending=
+            restored.observePendingContextAction(pending.actor);
+        CHECK(restoredPending.active);
+        CHECK(restoredPending.token==pending.token);
+        CHECK(restoredPending.kind==pending.kind);
 
         CHECK(sim.completeExternalContextAction(
             pending.actor,pending.token,completionPos));
