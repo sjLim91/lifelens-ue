@@ -6,7 +6,7 @@ header = (root / "Source/LifeLens/WorldPresentation/LLWorldPresentationActor.h")
 cpp = (root / "Source/LifeLens/WorldPresentation/LLWorldPresentationActor.cpp").read_text(encoding="utf-8")
 
 for token in (
-    "Initial spawn is only the world-entry coordinate",
+    "The initial spawn region is only a coordinate frame / world-entry point.",
     "FacilityDressingKeepFactor",
     "UpdateDynamicObserverCanopyVisibility",
     "RegisterDynamicCanopyInstance",
