@@ -1260,6 +1260,9 @@ uniform float uLifeLensGroundWindIntensity;`,
       if (mesh.instanceColor) {
         mesh.instanceColor.needsUpdate = true;
       }
+      if (mesh.count > 0) {
+        mesh.computeBoundingSphere();
+      }
     }
 
     this.applyLod();
