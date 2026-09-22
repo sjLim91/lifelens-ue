@@ -44,16 +44,26 @@ for token in (
 ):
     assert token in cpp, f"missing runtime visual sanity token: {token}"
 
-# Settlement should remain readable without looking like a huge shaved clearing.
+# NEW GAME's initial spawn is not an implicit settlement/living-zone
+# readability authority. Natural density changes only around real facilities,
+# while reversible observer-canopy hiding keeps residents visible.
 for token in (
-    "CoreClearRadiusUU = 360.0f",
-    "ActivityRadiusUU = 1350.0f",
     "CoreZoneCanopyKeep = 0.30f",
     "CoreZoneUndergrowthKeep = 0.48f",
     "CoreZoneResourceScale = 0.32f",
     "ActivityZoneResourceScale = 0.62f",
+    "bClearInitialSightlineCanopy = false",
 ):
-    assert token in header, f"missing dense settlement-edge recovery: {token}"
+    assert token in header, f"missing emergent settlement readability contract: {token}"
+
+for forbidden in (
+    "CoreClearRadiusUU",
+    "ActivityRadiusUU",
+):
+    assert forbidden not in header, f"spawn-centered living-zone contract returned: {forbidden}"
+
+assert "return FacilityDressingKeepFactor(LocationUU, Layer);" in cpp
+assert "spawnEnvelope=off" in cpp
 
 for token in (
     "FacilityFlattenRadiusUU = 340.0f",
