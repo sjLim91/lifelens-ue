@@ -68,6 +68,8 @@ export function startObserverEngine(): void {
   let angle = -0.68;
   const compactViewport = window.matchMedia('(max-width: 800px)').matches;
   let zoom = compactViewport ? 2.15 : 1.25;
+  let localPanX = 0;
+  let localPanZ = 0;
   new CameraInput(canvas, {
     initialAngle: angle,
     initialZoom: zoom,
@@ -80,6 +82,56 @@ export function startObserverEngine(): void {
         centerChunkY: centerY,
         angle,
         zoom,
+        panX: localPanX,
+        panZ: localPanZ,
+      });
+      drawWorld();
+    },
+    onPan(deltaX, deltaY) {
+      if (!worldSession) return;
+
+      if (followResidents) {
+        worldSession.moveObserver(0, 0);
+        followResidents = false;
+      }
+
+      const worldUnitsPerPixel = 0.18 / Math.max(0.55, zoom);
+      const sin = Math.sin(angle);
+      const cos = Math.cos(angle);
+
+      localPanX += (
+        (sin * deltaX) - (cos * deltaY)
+      ) * worldUnitsPerPixel;
+      localPanZ += (
+        (-cos * deltaX) - (sin * deltaY)
+      ) * worldUnitsPerPixel;
+
+      const chunkWorldSize = 8;
+      const stepX = Math.trunc(localPanX / chunkWorldSize);
+      const stepY = Math.trunc(localPanZ / chunkWorldSize);
+
+      if (stepX !== 0 || stepY !== 0) {
+        localPanX -= stepX * chunkWorldSize;
+        localPanZ -= stepY * chunkWorldSize;
+        worldSession.moveObserver(stepX, stepY);
+        refresh();
+        return;
+      }
+
+      observerStore.updateCamera({
+        centerChunkX: centerX,
+        centerChunkY: centerY,
+        angle,
+        zoom,
+        followResidents: false,
+      });
+      threeWorldRenderer?.setCamera({
+        centerChunkX: centerX,
+        centerChunkY: centerY,
+        angle,
+        zoom,
+        panX: localPanX,
+        panZ: localPanZ,
       });
       drawWorld();
     },
@@ -158,6 +210,8 @@ export function startObserverEngine(): void {
       centerChunkY: centerY,
       angle,
       zoom,
+      panX: localPanX,
+      panZ: localPanZ,
     });
     drawWorld();
   }
@@ -168,6 +222,8 @@ export function startObserverEngine(): void {
     centerX = 0;
     centerY = 0;
     followResidents = true;
+    localPanX = 0;
+    localPanZ = 0;
     residentSnapshot = [];
     terrain = null;
     characterLayer?.clearResidents();
@@ -185,7 +241,17 @@ export function startObserverEngine(): void {
   }
   
   function move(dx: number, dy: number): void {
+    localPanX = 0;
+    localPanZ = 0;
     worldSession?.moveObserver(dx, dy);
+    refresh();
+  }
+
+  function recenterObserver(): void {
+    if (!worldSession) return;
+    localPanX = 0;
+    localPanZ = 0;
+    worldSession.resetFollow();
     refresh();
   }
   
@@ -222,6 +288,7 @@ export function startObserverEngine(): void {
     createWorld,
     stepMinutes,
     moveObserver: move,
+    recenterObserver,
     selectResident,
   });
   
