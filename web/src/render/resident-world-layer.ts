@@ -3,6 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import type {
   Resident,
+  ResidentPresentationDirective,
   TerrainWindow,
 } from '../runtime/core-types';
 import {
@@ -37,8 +38,10 @@ interface ResidentActor {
   active: MotionName | '';
   activityLabel: string;
   activityTargetId: string;
+  presentation: ResidentPresentationDirective | null;
   current: THREE.Vector3;
   target: THREE.Vector3;
+  walkStateGraceSeconds: number;
   initialized: boolean;
 }
 
@@ -208,12 +211,16 @@ export class ResidentWorldLayer {
       if (actor.initialized) {
         const direction = next.clone().sub(actor.target);
         if (direction.lengthSq() > 0.0004) {
-          actor.root.rotation.y = Math.atan2(direction.x, direction.z);
+          actor.root.rotation.y = this.visualFacingYaw(
+            direction.x,
+            direction.z,
+          );
         }
       }
 
       actor.activityLabel = resident.activityLabel ?? 'Idle';
       actor.activityTargetId = resident.activityTargetId ?? '';
+      actor.presentation = resident.presentation ?? null;
       actor.target.copy(next);
 
       if (!actor.initialized) {
@@ -276,7 +283,10 @@ export class ResidentWorldLayer {
         distance > RESIDENT_PRESENTATION_CONTRACT.movementEpsilonWorldUnits;
 
       if (moving) {
-        actor.root.rotation.y = Math.atan2(delta.x, delta.z);
+        actor.root.rotation.y = this.visualFacingYaw(
+          delta.x,
+          delta.z,
+        );
         if (distance <= maxDistance) {
           actor.current.copy(actor.target);
         } else if (maxDistance > 0) {
@@ -285,6 +295,22 @@ export class ResidentWorldLayer {
             maxDistance,
           );
         }
+      } else {
+        this.faceInteractionTarget(actor);
+      }
+
+      if (
+        this.simulationSpeed > 0
+        && actor.presentation?.active
+        && actor.presentation.phase === 'Moving'
+      ) {
+        actor.walkStateGraceSeconds =
+          RESIDENT_PRESENTATION_CONTRACT.walkStateGraceSeconds;
+      } else {
+        actor.walkStateGraceSeconds = Math.max(
+          0,
+          actor.walkStateGraceSeconds - dt,
+        );
       }
 
       actor.root.position.copy(actor.current);
@@ -354,7 +380,6 @@ export class ResidentWorldLayer {
       source.position.x -= center.x;
       source.position.y -= box.min.y;
       source.position.z -= center.z;
-      source.rotation.y = Math.PI;
 
       const normalized = new THREE.Group();
       normalized.add(source);
@@ -449,14 +474,82 @@ export class ResidentWorldLayer {
       active: idle ? 'idle' : '',
       activityLabel: resident.activityLabel ?? 'Idle',
       activityTargetId: resident.activityTargetId ?? '',
+      presentation: resident.presentation ?? null,
       current: new THREE.Vector3(),
       target: new THREE.Vector3(),
+      walkStateGraceSeconds: 0,
       initialized: false,
     };
 
     this.actors.set(resident.id, actor);
     this.group.add(root);
     return actor;
+  }
+
+  private faceInteractionTarget(actor: ResidentActor): void {
+    const presentation = actor.presentation;
+    if (
+      !presentation?.active
+      || presentation.phase !== 'Interacting'
+    ) {
+      return;
+    }
+
+    let targetX: number | null = null;
+    let targetZ: number | null = null;
+    const targetResidentId = presentation.targetResidentId ?? '';
+    const targetActor = targetResidentId
+      ? this.actors.get(targetResidentId)
+      : undefined;
+
+    if (targetActor?.root.visible && targetActor.initialized) {
+      targetX = targetActor.current.x;
+      targetZ = targetActor.current.z;
+    } else if (
+      presentation.hasTargetGrid
+      && typeof presentation.targetGridX === 'number'
+      && typeof presentation.targetGridY === 'number'
+    ) {
+      const gridCellsPerChunk = WORLD_GRID_CONTRACT.gridCellsPerChunk;
+      const chunkWorldSize = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
+      const chunkX = Math.floor(
+        presentation.targetGridX / gridCellsPerChunk,
+      );
+      const chunkY = Math.floor(
+        presentation.targetGridY / gridCellsPerChunk,
+      );
+      const localX = (
+        presentation.targetGridX - (chunkX * gridCellsPerChunk)
+      ) / gridCellsPerChunk;
+      const localY = (
+        presentation.targetGridY - (chunkY * gridCellsPerChunk)
+      ) / gridCellsPerChunk;
+      targetX = (
+        chunkX - this.pendingCenterX + localX - 0.5
+      ) * chunkWorldSize;
+      targetZ = (
+        chunkY - this.pendingCenterY + localY - 0.5
+      ) * chunkWorldSize;
+    }
+
+    if (targetX === null || targetZ === null) return;
+
+    const dx = targetX - actor.current.x;
+    const dz = targetZ - actor.current.z;
+    if (
+      (dx * dx) + (dz * dz)
+      <= RESIDENT_PRESENTATION_CONTRACT.movementEpsilonWorldUnits ** 2
+    ) {
+      return;
+    }
+
+    actor.root.rotation.y = this.visualFacingYaw(dx, dz);
+  }
+
+  private visualFacingYaw(dx: number, dz: number): number {
+    // The Quaternius resident source faces +Z. Keep that source orientation
+    // intact and align +Z directly with the authoritative travel vector.
+    return Math.atan2(dx, dz);
   }
 
   private actionFor(
@@ -473,22 +566,95 @@ export class ResidentWorldLayer {
   }
 
   private restMotion(actor: ResidentActor): MotionName {
-    // Do not invent a chair, bed, toilet, tool, work surface or interaction
-    // slot from an activity label alone. Until the authoritative action-motion
-    // DTO carries validated target/slot/alignment context, object-bound actions
-    // must remain neutral rather than playing a false interaction animation.
+    const presentation = actor.presentation;
     if (
-      actor.activityLabel === 'Talk'
-      && actor.activityTargetId
+      !presentation?.active
+      || presentation.phase !== 'Interacting'
+    ) {
+      return 'idle';
+    }
+
+    const targetResidentId = presentation.targetResidentId ?? '';
+    const targetActor = targetResidentId
+      ? this.actors.get(targetResidentId)
+      : undefined;
+    const hasNearbyResidentTarget = Boolean(
+      targetActor?.root.visible
+      && targetActor.initialized
+      && actor.current.distanceTo(targetActor.current) <= 3,
+    );
+
+    const supportsResidentConversation =
+      presentation.kind === 'KnowledgeTeaching'
+      || (
+        presentation.kind === 'Social'
+        && (
+          presentation.socialIntent === 'Approach'
+          || presentation.socialIntent === 'Repair'
+          || presentation.socialIntent === 'Comfort'
+        )
+      );
+
+    if (
+      supportsResidentConversation
+      && hasNearbyResidentTarget
       && actor.talk
     ) {
-      const targetActor = this.actors.get(actor.activityTargetId);
-      if (
-        targetActor?.root.visible
-        && targetActor.initialized
-        && actor.current.distanceTo(targetActor.current) <= 3
-      ) {
-        return 'talk';
+      return 'talk';
+    }
+
+    if (
+      presentation.kind === 'Parenting'
+      && hasNearbyResidentTarget
+    ) {
+      switch (presentation.parentingAction) {
+        case 'Comfort':
+        case 'Educate':
+        case 'Discipline':
+        case 'Play':
+          return actor.talk ? 'talk' : 'idle';
+        case 'Feed':
+        case 'Hold':
+        case 'Bathe':
+        case 'HealthCare':
+          return actor.interact ? 'interact' : 'idle';
+        case 'PutToSleep':
+        case 'ToiletAssist':
+        default:
+          // Lie-down / dependent sanitation need dedicated validated
+          // presentation sequences. Never substitute a generic sitting pose.
+          return 'idle';
+      }
+    }
+
+    if (
+      presentation.kind === 'Civilization'
+      && presentation.hasTargetGrid
+      && actor.interact
+    ) {
+      return 'interact';
+    }
+
+    if (presentation.kind === 'Physical') {
+      switch (presentation.physicalGoal) {
+        case 'Eat':
+        case 'Drink':
+          // Emergency variants still consume real carried provisions in Core,
+          // so a generic self-interaction fallback is truthful.
+          return actor.interact ? 'interact' : 'idle';
+        case 'Wash':
+          return (
+            presentation.hasObjectTarget
+            || presentation.emergencyFallback
+          ) && actor.interact
+            ? 'interact'
+            : 'idle';
+        case 'Sleep':
+        case 'UseToilet':
+        default:
+          // Sleep needs a validated lie sequence; toilet needs the canonical
+          // privacy/alignment sequence. Do not revive the old fake sit mapping.
+          return 'idle';
       }
     }
 
@@ -496,7 +662,17 @@ export class ResidentWorldLayer {
   }
 
   private setAction(actor: ResidentActor, moving: boolean): void {
-    const desired: MotionName = moving && actor.walk
+    const authoritativeWalking = Boolean(
+      this.simulationSpeed > 0
+      && (
+        (
+          actor.presentation?.active
+          && actor.presentation.phase === 'Moving'
+        )
+        || actor.walkStateGraceSeconds > 0
+      )
+    );
+    const desired: MotionName = (moving || authoritativeWalking) && actor.walk
       ? 'walk'
       : this.restMotion(actor);
     if (actor.active === desired) return;
@@ -508,7 +684,14 @@ export class ResidentWorldLayer {
     if (!next) return;
 
     previous?.fadeOut(0.18);
-    next.reset().fadeIn(0.18).play();
+    if (desired === 'walk') {
+      // Keep the locomotion clip's phase across brief authoritative snapshot
+      // gaps instead of restarting the gait cycle on every walk re-entry.
+      next.enabled = true;
+      next.fadeIn(0.18).play();
+    } else {
+      next.reset().fadeIn(0.18).play();
+    }
     actor.active = desired;
   }
 }
