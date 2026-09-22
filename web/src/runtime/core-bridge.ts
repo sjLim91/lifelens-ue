@@ -1,5 +1,6 @@
 import type {
   CoreModule,
+  DynamicEnvironment,
   Resident,
   ResidentsPayload,
   RuntimeClient,
@@ -249,6 +250,19 @@ export class LifeLensCoreBridge {
     return parseJson<ResidentsPayload>(
       this.client.residentsJson(),
       { available: false, residents: [] },
+    );
+  }
+
+  dynamicEnvironment(x: number, y: number): DynamicEnvironment {
+    return parseJson<DynamicEnvironment>(
+      this.client.dynamicEnvironmentJson(x, y),
+      {
+        available: false,
+        centerChunkX: x,
+        centerChunkY: y,
+        precipitationType: 'None',
+        summary: 'Clear',
+      },
     );
   }
 
