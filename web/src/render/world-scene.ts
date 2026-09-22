@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { TerrainChunk, TerrainWindow } from '../runtime/core-types';
+import { buildChunkGeometry } from './terrain-geometry';
 import { VegetationLayer } from './vegetation-layer';
 import { WaterLayer } from './water-layer';
 
@@ -101,8 +102,7 @@ export class WorldScene {
     chunk: TerrainChunk,
     window: TerrainWindow,
   ): THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial> {
-    const geometry = new THREE.PlaneGeometry(1, 1, 1, 1);
-    geometry.rotateX(-Math.PI / 2);
+    const geometry = buildChunkGeometry(chunk, window);
 
     const material = new THREE.MeshStandardMaterial({
       color: this.terrainColor(chunk),
@@ -121,14 +121,19 @@ export class WorldScene {
     window: TerrainWindow,
   ): void {
     const chunkWorldSize = 8;
-    const elevationScale = 48;
+    const previousGeometry = mesh.geometry;
+    mesh.geometry = buildChunkGeometry(chunk, window, {
+      chunkWorldSize,
+      elevationScale: 48,
+    });
+    previousGeometry.dispose();
 
     mesh.position.set(
       (chunk.x - window.centerChunkX) * chunkWorldSize,
-      chunk.elevation01 * elevationScale,
+      0,
       (chunk.y - window.centerChunkY) * chunkWorldSize,
     );
-    mesh.scale.set(chunkWorldSize, chunkWorldSize, chunkWorldSize);
+    mesh.scale.set(1, 1, 1);
     mesh.material.color.set(this.terrainColor(chunk));
   }
 
