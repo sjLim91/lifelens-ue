@@ -280,11 +280,83 @@ export interface DynamicEnvironment {
   summary?: WeatherSummary;
 }
 
+export type FacilityKind =
+  | 'PrimitiveStorage'
+  | 'FirePit'
+  | 'WorkSurface'
+  | 'SleepingPlace'
+  | 'Shelter'
+  | 'Furnace';
+
+export type FacilityState =
+  | 'Planned'
+  | 'UnderConstruction'
+  | 'Operational'
+  | 'Ruined';
+
+export interface WorldFacility {
+  id: string;
+  kind: FacilityKind;
+  state: FacilityState;
+  gridX: number;
+  gridY: number;
+  initiatedBy?: string;
+  lastWorkedBy?: string;
+  startedMinute?: number;
+  completedMinute?: number;
+  workProgress?: number;
+  durability?: number;
+  active?: boolean;
+  lit?: boolean;
+  heatLevel?: number;
+  fuelUnits?: number;
+  charcoalUnits?: number;
+  oreUnits?: number;
+  metalUnits?: number;
+}
+
+export type PrimitiveSanitationSiteKind = 'DesignatedArea' | 'DugPit';
+
+export interface WorldSanitationSite {
+  id: string;
+  kind: PrimitiveSanitationSiteKind;
+  gridX: number;
+  gridY: number;
+  establishedBy?: string;
+  establishedMinute?: number;
+  active?: boolean;
+  useCount?: number;
+  improvementProgress?: number;
+}
+
+export interface WorldResidue {
+  id: string;
+  kind: 'HumanWaste';
+  gridX: number;
+  gridY: number;
+  sourceCharacter?: string;
+  ageMinutes?: number;
+  amount?: number;
+  intensity?: number;
+  radiusTiles?: number;
+}
+
+export interface WorldPresentationSnapshot {
+  available?: boolean;
+  minute?: number;
+  facilities?: WorldFacility[];
+  sanitationSites?: WorldSanitationSite[];
+  residues?: WorldResidue[];
+  aggregateWasteAmount?: number;
+  peakWasteIntensity?: number;
+}
+
 export interface RuntimeClient {
   newGame(worldSeed: string, populationSeed: string, generationVersion: number): boolean;
   runMinutes(minutes: number): void;
   worldOverviewJson(): string;
   residentsJson(): string;
+  worldPresentationJson?: () => string;
   dynamicEnvironmentJson?: (x: number, y: number) => string;
   terrainWindowJson(x: number, y: number, radius: number): string;
   delete?: () => void;
