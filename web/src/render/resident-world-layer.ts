@@ -122,6 +122,27 @@ export class ResidentWorldLayer {
     centerX: number,
     centerY: number,
   ): void {
+    const previousCenterX = this.pendingCenterX;
+    const previousCenterY = this.pendingCenterY;
+    const centerChanged = this.pendingTerrain !== null
+      && (
+        previousCenterX !== centerX
+        || previousCenterY !== centerY
+      );
+
+    if (centerChanged) {
+      const offsetX = (previousCenterX - centerX) * 8;
+      const offsetZ = (previousCenterY - centerY) * 8;
+      for (const actor of this.actors.values()) {
+        if (!actor.initialized) continue;
+        actor.current.x += offsetX;
+        actor.current.z += offsetZ;
+        actor.target.x += offsetX;
+        actor.target.z += offsetZ;
+        actor.root.position.copy(actor.current);
+      }
+    }
+
     this.pendingResidents = residents;
     this.pendingTerrain = terrain;
     this.pendingCenterX = centerX;
