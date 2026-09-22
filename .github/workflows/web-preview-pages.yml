@@ -10,7 +10,9 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
 
 concurrency:
   group: lifelens-web-preview
@@ -39,12 +41,8 @@ jobs:
       - name: Fetch pinned LifeLensCore runtime
         run: |
           mkdir -p public/runtime
-          curl --fail --location --retry 3 \
-            https://github.com/sjLim91/lifelens-ue/releases/download/web-runtime-latest/lifelens_core.js \
-            --output public/runtime/lifelens_core.js
-          curl --fail --location --retry 3 \
-            https://github.com/sjLim91/lifelens-ue/releases/download/web-runtime-latest/lifelens_core.wasm \
-            --output public/runtime/lifelens_core.wasm
+          curl --fail --location --retry 3             https://github.com/sjLim91/lifelens-ue/releases/download/web-runtime-latest/lifelens_core.js             --output public/runtime/lifelens_core.js
+          curl --fail --location --retry 3             https://github.com/sjLim91/lifelens-ue/releases/download/web-runtime-latest/lifelens_core.wasm             --output public/runtime/lifelens_core.wasm
 
       - name: Typecheck
         run: npm run typecheck
@@ -52,11 +50,37 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Publish preview branch
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./web/dist
-          publish_branch: gh-pages
-          force_orphan: true
-          commit_message: "preview: ${{ github.sha }}"
+          path: ./web/dist
+
+  enable-pages:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure GitHub Pages is enabled for Actions
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh api "repos/${GITHUB_REPOSITORY}/pages" >/dev/null 2>&1; then
+            echo "Pages already enabled"
+            exit 0
+          fi
+
+          echo "Pages not enabled; attempting Actions-based enablement"
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/pages"             -f build_type=workflow
+
+  deploy:
+    needs: [build, enable-pages]
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
