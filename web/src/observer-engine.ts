@@ -13,6 +13,13 @@ import { LegacyCanvasWorldRenderer } from './render/legacy-canvas-world-renderer
 import { readRenderMode } from './render/render-mode';
 import { WorldRenderer } from './render/world-renderer';
 
+function generateWorldSeed(): string {
+  const words = new Uint32Array(2);
+  globalThis.crypto.getRandomValues(words);
+  const value = (BigInt(words[0]) << 32n) | BigInt(words[1]);
+  return (value === 0n ? 1n : value).toString();
+}
+
 function requireCanvas(selector: string): HTMLCanvasElement {
   const element = document.querySelector<HTMLCanvasElement>(selector);
   if (!element) throw new Error(`Missing canvas: ${selector}`);
@@ -226,7 +233,9 @@ export function startObserverEngine(): void {
   
   function createWorld(seed: string): void {
     if (!worldSession) return;
-    worldSession.createWorld(seed);
+    const requestedSeed = seed.trim();
+    const effectiveSeed = requestedSeed || generateWorldSeed();
+    worldSession.createWorld(effectiveSeed);
     centerX = 0;
     centerY = 0;
     followResidents = true;
@@ -312,7 +321,7 @@ export function startObserverEngine(): void {
       const core = await LifeLensCoreBridge.connect();
       worldSession = new WorldSession(core, residentContinuity);
       observerStore.setRuntime('ready');
-      createWorld('42');
+      createWorld('');
       startSimulationClock();
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
