@@ -158,6 +158,7 @@ export class GroundDetailLayer {
   private readonly scale = new THREE.Vector3();
   private readonly rotation = new THREE.Quaternion();
   private readonly euler = new THREE.Euler();
+  private readonly instanceColor = new THREE.Color();
 
   private terrain: TerrainWindow | null = null;
   private presentation: WorldPresentationSnapshot | null = null;
@@ -535,6 +536,8 @@ export class GroundDetailLayer {
       yaw: number,
       tiltX = 0,
       tiltZ = 0,
+      colorBase?: THREE.Color,
+      colorVariation = 0,
     ): void => {
       this.position.set(x, y, z);
       this.euler.set(tiltX, yaw, tiltZ);
@@ -542,6 +545,18 @@ export class GroundDetailLayer {
       this.scale.set(sx, sy, sz);
       this.matrix.compose(this.position, this.rotation, this.scale);
       mesh.setMatrixAt(index, this.matrix);
+      if (colorBase && colorVariation > 0) {
+        const tone = Math.sin(
+          x * 1.37 + z * 1.91 + index * 0.73,
+        );
+        this.instanceColor.copy(colorBase);
+        this.instanceColor.offsetHSL(
+          tone * colorVariation * 0.18,
+          tone * colorVariation * 0.12,
+          tone * colorVariation,
+        );
+        mesh.setColorAt(index, this.instanceColor);
+      }
     };
 
     const slopeAt = (
@@ -654,6 +669,8 @@ export class GroundDetailLayer {
           hash01(seed, chunk.x, chunk.y, index, 15) * Math.PI * 2,
           0,
           (hash01(seed, chunk.x, chunk.y, index, 16) - 0.5) * 0.18,
+          this.grassBase,
+          0.055,
         );
         grassCount += 1;
       }
@@ -739,6 +756,10 @@ export class GroundDetailLayer {
           scaleBase * (0.52 - shoreFlattening * 0.18),
           scaleBase * (0.96 + shoreFlattening * 0.22),
           hash01(seed, chunk.x, chunk.y, index, 36) * Math.PI * 2,
+          0,
+          0,
+          this.pebbleBase,
+          0.07,
         );
         pebbleCount += 1;
       }
@@ -799,6 +820,8 @@ export class GroundDetailLayer {
           hash01(seed, chunk.x, chunk.y, index, 56) * Math.PI * 2,
           (hash01(seed, chunk.x, chunk.y, index, 57) - 0.5) * 0.24,
           (hash01(seed, chunk.x, chunk.y, index, 58) - 0.5) * 0.24,
+          this.rockBase,
+          0.065,
         );
         rockCount += 1;
       }
@@ -873,6 +896,8 @@ export class GroundDetailLayer {
           hash01(seed, chunk.x, chunk.y, index, 66) * Math.PI * 2,
           (hash01(seed, chunk.x, chunk.y, index, 67) - 0.5) * 0.28,
           (hash01(seed, chunk.x, chunk.y, index, 68) - 0.5) * 0.28,
+          this.boulderBase,
+          0.055,
         );
         boulderCount += 1;
       }
@@ -930,6 +955,8 @@ export class GroundDetailLayer {
           hash01(seed, chunk.x, chunk.y, index, 76) * Math.PI * 2,
           0,
           Math.PI * 0.5,
+          this.deadwoodBase,
+          0.045,
         );
         deadwoodCount += 1;
       }
@@ -949,6 +976,9 @@ export class GroundDetailLayer {
       this.deadwood,
     ]) {
       mesh.instanceMatrix.needsUpdate = true;
+      if (mesh.instanceColor) {
+        mesh.instanceColor.needsUpdate = true;
+      }
     }
 
     this.applyLod();
