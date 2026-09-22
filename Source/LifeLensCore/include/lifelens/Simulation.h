@@ -177,6 +177,7 @@ private:
         int navigationArrivalRadius=0;
         bool navigationHasTarget=false;
         bool navigationArrived=false;
+        bool navigationRouteFailed=false;
 
         // Presentation provenance for the civilization action that actually
         // executed. Intentionally omitted from SimulationRuntimeSnapshot so
