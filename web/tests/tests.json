@@ -20,6 +20,10 @@
       "zoom-coupled resident scale",
       "zoom-coupled resident spacing",
       "real-world human to vegetation scale",
+      "mobile local-life default framing",
+      "overview forest canopy LOD",
+      "open-water grid suppression",
+      "compact resident labels",
       "authoritative Core resident sex",
       "deterministic male and female appearance variants",
       "sex-aware skinned geometry deformation",
@@ -41,10 +45,12 @@
       "Enter 12345 in WorldSeed and click NEW WORLD",
       "Verify the resident cards include both Male and Female Core sex values",
       "Observe all four founders through several automatic simulation refreshes and verify none blink out between refreshes",
+      "On mobile, verify the initial camera opens on the local inhabited area rather than fitting the entire terrain window into a miniature island",
       "Pinch or wheel through multiple zoom levels and verify resident bodies stay proportionate to the terrain instead of remaining fixed-size",
+      "At wide zoom verify forests read as canopy masses rather than hundreds of dot-like tree markers",
       "At close zoom compare a resident against nearby mature trees and verify the resident no longer reads as taller than the vegetation"
     ],
-    "expected": "The status shows Core WASM LIVE, WorldSeed 12345 is shown, Living is 4, all four resident cards and 3D residents remain continuously visible without one-refresh disappearance/reappearance, the founder cards expose authoritative Core sex values and the terrain shows visually distinct male and female 3D residents with different skinned body geometry, garment silhouettes, deterministic clothing, proportions, and head-locked hair while remaining map-scale and clustered near their authoritative Core positions with readable labels. Resident body size and separation change with the same world zoom as the terrain while labels remain readable, mature trees read several times taller than a resident at comparable depth rather than as miniature props, movement between authoritative Core positions is visually smoothed, movement uses walking animation, supported Core activities select contextual idle/talking/sitting/interact motions, resident animation phases are visibly desynchronized, and compact fallback markers appear only while the 3D asset is still loading or if it fails. Resident labels avoid actor/label overlap while staying close to their resident; displaced labels use a subtle leader line instead of floating ambiguously."
+    "expected": "The status shows Core WASM LIVE, WorldSeed 12345 is shown, Living is 4, all four resident cards and 3D residents remain continuously visible without one-refresh disappearance/reappearance, the founder cards expose authoritative Core sex values and the terrain shows visually distinct male and female 3D residents with different skinned body geometry, garment silhouettes, deterministic clothing, proportions, and head-locked hair while remaining map-scale and clustered near their authoritative Core positions with readable labels. Resident body size and separation change with the same world zoom as the terrain while labels remain readable but visually subordinate, mobile opens focused on the inhabited local area instead of a tiny full-window diorama, wide-zoom forests merge into canopy masses instead of dot noise, open water does not expose a debug tile grid, mature trees read several times taller than a resident at comparable depth rather than as miniature props, movement between authoritative Core positions is visually smoothed, movement uses walking animation, supported Core activities select contextual idle/talking/sitting/interact motions, resident animation phases are visibly desynchronized, and compact fallback markers appear only while the 3D asset is still loading or if it fails. Resident labels avoid actor/label overlap while staying close to their resident; displaced labels use a subtle leader line instead of floating ambiguously."
   },
   {
     "name": "Advance simulation time automatically and fast-forward",
