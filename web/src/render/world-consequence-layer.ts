@@ -15,6 +15,16 @@ function clamp01(value: number | undefined): number {
   return Math.max(0, Math.min(1, Number(value) || 0));
 }
 
+function hash01(value: string, salt = 0): number {
+  let hash = (2166136261 ^ salt) >>> 0;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619) >>> 0;
+  }
+  hash ^= hash >>> 16;
+  return (hash >>> 0) / 4294967295;
+}
+
 function facilityLabel(
   facility: WorldFacility,
   storedUnits?: number,
@@ -50,17 +60,17 @@ function makeLabelSprite(text: string): THREE.Sprite {
   const context = canvas.getContext('2d');
   if (!context) return new THREE.Sprite();
 
-  context.fillStyle = 'rgba(7, 13, 9, 0.82)';
-  context.roundRect(8, 8, 496, 96, 22);
+  context.fillStyle = 'rgba(7, 13, 9, 0.70)';
+  context.roundRect(14, 16, 484, 80, 20);
   context.fill();
-  context.strokeStyle = 'rgba(191, 213, 193, 0.55)';
-  context.lineWidth = 3;
+  context.strokeStyle = 'rgba(185, 205, 187, 0.36)';
+  context.lineWidth = 2;
   context.stroke();
-  context.fillStyle = '#eef5ee';
-  context.font = '600 36px sans-serif';
+  context.fillStyle = '#edf4ed';
+  context.font = '600 31px sans-serif';
   context.textAlign = 'center';
   context.textBaseline = 'middle';
-  context.fillText(text, 256, 56, 470);
+  context.fillText(text, 256, 56, 452);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -72,7 +82,7 @@ function makeLabelSprite(text: string): THREE.Sprite {
     depthWrite: false,
   });
   const sprite = new THREE.Sprite(material);
-  sprite.scale.set(7.5, 1.65, 1);
+  sprite.scale.set(5.5, 1.18, 1);
   sprite.renderOrder = 12;
   return sprite;
 }
@@ -110,94 +120,332 @@ function addBox(
   group.add(mesh);
 }
 
+function addCylinder(
+  group: THREE.Group,
+  radiusTop: number,
+  radiusBottom: number,
+  height: number,
+  pos: [number, number, number],
+  material: THREE.Material,
+  rotation: [number, number, number] = [0, 0, 0],
+  radialSegments = 8,
+): THREE.Mesh {
+  const mesh = new THREE.Mesh(
+    new THREE.CylinderGeometry(
+      radiusTop,
+      radiusBottom,
+      height,
+      radialSegments,
+    ),
+    material,
+  );
+  mesh.position.set(...pos);
+  mesh.rotation.set(...rotation);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  group.add(mesh);
+  return mesh;
+}
+
+function addLog(
+  group: THREE.Group,
+  length: number,
+  radius: number,
+  pos: [number, number, number],
+  yaw: number,
+  material: THREE.Material,
+): void {
+  addCylinder(
+    group,
+    radius * 0.86,
+    radius,
+    length,
+    pos,
+    material,
+    [Math.PI * 0.5, yaw, 0],
+    7,
+  );
+}
+
+function addStone(
+  group: THREE.Group,
+  radius: number,
+  pos: [number, number, number],
+  material: THREE.Material,
+  seed: number,
+): void {
+  const mesh = new THREE.Mesh(
+    new THREE.DodecahedronGeometry(radius, 0),
+    material,
+  );
+  mesh.position.set(...pos);
+  mesh.scale.set(
+    0.82 + (seed % 7) * 0.035,
+    0.62 + (seed % 5) * 0.04,
+    0.9 + (seed % 3) * 0.05,
+  );
+  mesh.rotation.set(
+    (seed % 11) * 0.07,
+    (seed % 17) * 0.11,
+    (seed % 13) * 0.05,
+  );
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  group.add(mesh);
+}
+
 function addFacilityShape(
   group: THREE.Group,
   facility: WorldFacility,
 ): void {
   const progress = facility.state === 'Operational'
     ? 1
-    : Math.max(0.18, clamp01(facility.workProgress));
+    : Math.max(0.16, clamp01(facility.workProgress));
   const ruined = facility.state === 'Ruined';
   const construction = facility.state === 'Planned'
     || facility.state === 'UnderConstruction';
-  const main = disposableMaterial(
-    ruined ? 0x554f46 : construction ? 0x9b815d : 0x766040,
-    { opacity: construction ? 0.72 : 1 },
+  const wood = disposableMaterial(
+    ruined ? 0x4c453a : construction ? 0x876f4e : 0x675137,
+    { opacity: construction ? 0.78 : 1 },
   );
-  const stone = disposableMaterial(ruined ? 0x55514b : 0x77746b);
-  const fiber = disposableMaterial(ruined ? 0x625b49 : 0x9a8d61);
+  const freshWood = disposableMaterial(
+    ruined ? 0x51493e : 0x866744,
+    { opacity: construction ? 0.76 : 1 },
+  );
+  const stone = disposableMaterial(ruined ? 0x4f4d49 : 0x77756e);
+  const fiber = disposableMaterial(
+    ruined ? 0x625b49 : 0x9a8b5f,
+    { opacity: construction ? 0.78 : 1 },
+  );
+  const earth = disposableMaterial(0x564333);
   const fire = disposableMaterial(
     0x5f2c16,
     facility.lit
-      ? { emissive: 0xff7a1a, emissiveIntensity: 2.2 }
+      ? { emissive: 0xff6b12, emissiveIntensity: 2.8 }
       : {},
   );
 
   switch (facility.kind) {
-    case 'PrimitiveStorage':
-      addBox(group, [2.8, 0.5, 2.2], [0, 0.3, 0], main);
-      addBox(group, [2.4, 0.9 * progress, 1.8], [0, 0.75 * progress, 0], fiber);
+    case 'PrimitiveStorage': {
+      addBox(group, [3.0, 0.18, 2.35], [0, 0.13, 0], earth);
+      for (const z of [-0.82, -0.28, 0.28, 0.82]) {
+        addLog(
+          group,
+          2.65,
+          0.14,
+          [0, 0.38 + progress * 0.18, z],
+          Math.PI * 0.5,
+          wood,
+        );
+      }
+      for (const x of [-1.22, 1.22]) {
+        addCylinder(
+          group,
+          0.11,
+          0.14,
+          1.5 * progress,
+          [x, 0.75 * progress, -0.92],
+          wood,
+        );
+        addCylinder(
+          group,
+          0.11,
+          0.14,
+          1.5 * progress,
+          [x, 0.75 * progress, 0.92],
+          wood,
+        );
+      }
+      if (progress > 0.52) {
+        const cover = new THREE.Mesh(
+          new THREE.BoxGeometry(2.75, 0.16, 2.0),
+          fiber,
+        );
+        cover.position.set(0, 1.25 * progress, 0);
+        cover.rotation.z = -0.05;
+        cover.castShadow = true;
+        group.add(cover);
+      }
       break;
+    }
     case 'FirePit': {
-      const ring = new THREE.Mesh(
-        new THREE.TorusGeometry(1.2, 0.28, 10, 24),
-        stone,
-      );
-      ring.rotation.x = Math.PI * 0.5;
-      ring.position.y = 0.18;
-      group.add(ring);
+      for (let index = 0; index < 11; index += 1) {
+        const angle = (Math.PI * 2 * index) / 11;
+        addStone(
+          group,
+          0.33,
+          [
+            Math.cos(angle) * 1.18,
+            0.22,
+            Math.sin(angle) * 1.18,
+          ],
+          stone,
+          index + Number(facility.id),
+        );
+      }
+      addLog(group, 1.65, 0.13, [0, 0.28, 0], Math.PI * 0.25, freshWood);
+      addLog(group, 1.65, 0.13, [0, 0.31, 0], -Math.PI * 0.25, freshWood);
       const ember = new THREE.Mesh(
-        new THREE.CircleGeometry(0.9, 24),
+        new THREE.CircleGeometry(0.82, 28),
         fire,
       );
       ember.rotation.x = -Math.PI * 0.5;
-      ember.position.y = 0.21;
+      ember.position.y = 0.16;
       group.add(ember);
       if (facility.lit) {
-        const light = new THREE.PointLight(0xff8b32, 1.7, 16);
-        light.position.y = 1.2;
+        const flame = new THREE.Mesh(
+          new THREE.ConeGeometry(0.38, 1.05, 7),
+          disposableMaterial(
+            0xff8a22,
+            { emissive: 0xff5b0a, emissiveIntensity: 3.4, opacity: 0.82 },
+          ),
+        );
+        flame.position.y = 0.72;
+        flame.scale.z = 0.72;
+        group.add(flame);
+        const light = new THREE.PointLight(0xff8b32, 2.25, 22, 2);
+        light.position.y = 1.25;
+        light.castShadow = false;
         group.add(light);
       }
       break;
     }
-    case 'WorkSurface':
-      addBox(group, [3.4, 0.35, 2.1], [0, 1.1 * progress, 0], main);
-      for (const x of [-1.3, 1.3]) {
-        for (const z of [-0.7, 0.7]) {
-          addBox(group, [0.28, 2 * progress, 0.28], [x, progress, z], main);
+    case 'WorkSurface': {
+      const topY = 1.55 * progress;
+      addBox(group, [3.55, 0.24, 2.05], [0, topY, 0], freshWood);
+      for (const x of [-1.35, 1.35]) {
+        for (const z of [-0.68, 0.68]) {
+          addCylinder(
+            group,
+            0.12,
+            0.16,
+            1.55 * progress,
+            [x, 0.78 * progress, z],
+            wood,
+          );
         }
       }
+      if (progress > 0.7) {
+        addStone(group, 0.32, [-0.72, topY + 0.25, 0.2], stone, 11);
+        addLog(group, 1.15, 0.08, [0.55, topY + 0.22, -0.22], 0.32, wood);
+      }
       break;
-    case 'SleepingPlace':
-      addBox(group, [3.2, 0.32, 1.8], [0, 0.25, 0], fiber);
-      addBox(group, [3.0, 0.18, 1.6], [0, 0.48 * progress, 0], main);
-      break;
-    case 'Shelter': {
-      const frame = new THREE.Mesh(
-        new THREE.ConeGeometry(3.1, 4.2 * progress, 4),
+    }
+    case 'SleepingPlace': {
+      addLog(group, 3.4, 0.15, [0, 0.22, -0.82], Math.PI * 0.5, wood);
+      addLog(group, 3.4, 0.15, [0, 0.22, 0.82], Math.PI * 0.5, wood);
+      addBox(
+        group,
+        [3.25, 0.22, 1.55],
+        [0, 0.34 + progress * 0.08, 0],
         fiber,
       );
-      frame.position.y = 2.1 * progress;
-      frame.rotation.y = Math.PI * 0.25;
-      group.add(frame);
+      if (progress > 0.65) {
+        addCylinder(
+          group,
+          0.28,
+          0.28,
+          1.1,
+          [-1.0, 0.62, 0],
+          fiber,
+          [0, 0, Math.PI * 0.5],
+          10,
+        );
+      }
+      break;
+    }
+    case 'Shelter': {
+      const frameHeight = 4.5 * progress;
+      for (const z of [-1.9, 1.9]) {
+        addCylinder(
+          group,
+          0.12,
+          0.16,
+          5.15 * progress,
+          [-1.75, 2.05 * progress, z],
+          wood,
+          [0, 0, -0.72],
+        );
+        addCylinder(
+          group,
+          0.12,
+          0.16,
+          5.15 * progress,
+          [1.75, 2.05 * progress, z],
+          wood,
+          [0, 0, 0.72],
+        );
+      }
+      addLog(
+        group,
+        4.3,
+        0.15,
+        [0, frameHeight, 0],
+        0,
+        freshWood,
+      );
+      if (progress > 0.38) {
+        const roofMaterial = disposableMaterial(
+          ruined ? 0x554c3d : 0x756f47,
+          { opacity: construction ? 0.82 : 1 },
+        );
+        for (const side of [-1, 1]) {
+          const roof = new THREE.Mesh(
+            new THREE.BoxGeometry(2.75, 0.16, 4.4),
+            roofMaterial,
+          );
+          roof.position.set(side * 1.13, 3.2 * progress, 0);
+          roof.rotation.z = side * 0.72;
+          roof.castShadow = true;
+          roof.receiveShadow = true;
+          group.add(roof);
+        }
+      }
+      addBox(group, [3.4, 0.16, 3.55], [0, 0.1, 0], earth);
       break;
     }
     case 'Furnace': {
       const body = new THREE.Mesh(
-        new THREE.CylinderGeometry(1.5, 1.8, 2.8 * progress, 14),
+        new THREE.CylinderGeometry(
+          1.32,
+          1.62,
+          2.65 * progress,
+          14,
+        ),
         stone,
       );
-      body.position.y = 1.4 * progress;
+      body.position.y = 1.33 * progress;
+      body.castShadow = true;
+      body.receiveShadow = true;
       group.add(body);
+      if (progress > 0.55) {
+        const chimney = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.62, 0.78, 1.45 * progress, 12),
+          stone,
+        );
+        chimney.position.y = 3.18 * progress;
+        chimney.castShadow = true;
+        group.add(chimney);
+      }
       const mouth = new THREE.Mesh(
-        new THREE.CircleGeometry(0.58, 18),
+        new THREE.CircleGeometry(0.55, 18),
         fire,
       );
-      mouth.position.set(0, 0.8, 1.55);
+      mouth.position.set(0, 0.82, 1.49);
       group.add(mouth);
+      for (let index = 0; index < 8; index += 1) {
+        const angle = (Math.PI * 2 * index) / 8;
+        addStone(
+          group,
+          0.34,
+          [Math.cos(angle) * 1.45, 0.24, Math.sin(angle) * 1.45],
+          stone,
+          index + 31,
+        );
+      }
       if (facility.lit) {
-        const light = new THREE.PointLight(0xff7921, 2.1, 18);
-        light.position.set(0, 1.2, 1.4);
+        const light = new THREE.PointLight(0xff7921, 2.45, 20, 2);
+        light.position.set(0, 1.05, 1.65);
         group.add(light);
       }
       break;
@@ -206,18 +454,36 @@ function addFacilityShape(
 
   if (construction) {
     const footprint = new THREE.Mesh(
-      new THREE.RingGeometry(2.2, 2.55, 28),
+      new THREE.RingGeometry(2.1, 2.35, 28),
       new THREE.MeshBasicMaterial({
-        color: 0xd7b878,
+        color: 0xd3b277,
         transparent: true,
-        opacity: 0.6,
+        opacity: facility.state === 'Planned' ? 0.48 : 0.24,
         side: THREE.DoubleSide,
         depthWrite: false,
       }),
     );
     footprint.rotation.x = -Math.PI * 0.5;
-    footprint.position.y = 0.05;
+    footprint.position.y = 0.045;
     group.add(footprint);
+
+    for (let index = 0; index < 4; index += 1) {
+      const angle = Math.PI * 0.25 + (Math.PI * 0.5 * index);
+      addCylinder(
+        group,
+        0.055,
+        0.075,
+        1.15,
+        [
+          Math.cos(angle) * 2.28,
+          0.575,
+          Math.sin(angle) * 2.28,
+        ],
+        freshWood,
+        [0, 0, 0.03 * (index % 2 ? -1 : 1)],
+        6,
+      );
+    }
   }
 }
 
@@ -225,51 +491,80 @@ function addSanitationShape(
   group: THREE.Group,
   site: WorldSanitationSite,
 ): void {
-  const ringMaterial = new THREE.MeshStandardMaterial({
-    color: site.kind === 'DugPit' ? 0x5e4935 : 0x8a815c,
-    roughness: 0.95,
-  });
-  const ring = new THREE.Mesh(
-    new THREE.RingGeometry(
-      site.kind === 'DugPit' ? 1.2 : 1.8,
-      site.kind === 'DugPit' ? 1.7 : 2.2,
-      32,
-    ),
-    ringMaterial,
-  );
-  ring.rotation.x = -Math.PI * 0.5;
-  ring.position.y = 0.06;
-  group.add(ring);
+  const wood = disposableMaterial(0x705638);
+  const earth = disposableMaterial(0x4f3d2f);
+  const rim = disposableMaterial(0x6f6758);
+  const radius = site.kind === 'DugPit' ? 1.28 : 2.0;
 
   if (site.kind === 'DugPit') {
     const pit = new THREE.Mesh(
-      new THREE.CircleGeometry(1.12, 28),
+      new THREE.CircleGeometry(1.08, 30),
       new THREE.MeshStandardMaterial({
-        color: 0x30271f,
+        color: 0x271f19,
         roughness: 1,
       }),
     );
     pit.rotation.x = -Math.PI * 0.5;
-    pit.position.y = 0.04;
+    pit.position.y = 0.035;
     group.add(pit);
-  } else {
-    for (let i = 0; i < 4; i += 1) {
-      const angle = (Math.PI * 2 * i) / 4;
-      addBox(
+    for (let index = 0; index < 10; index += 1) {
+      const angle = (Math.PI * 2 * index) / 10;
+      addStone(
         group,
-        [0.15, 1.4, 0.15],
-        [Math.cos(angle) * 2, 0.7, Math.sin(angle) * 2],
-        ringMaterial,
+        0.28,
+        [
+          Math.cos(angle) * 1.32,
+          0.18,
+          Math.sin(angle) * 1.32,
+        ],
+        rim,
+        index + Number(site.id),
+      );
+    }
+  } else {
+    const worn = new THREE.Mesh(
+      new THREE.CircleGeometry(radius, 30),
+      new THREE.MeshStandardMaterial({
+        color: 0x62513b,
+        roughness: 1,
+        transparent: true,
+        opacity: 0.32,
+        depthWrite: false,
+      }),
+    );
+    worn.rotation.x = -Math.PI * 0.5;
+    worn.position.y = 0.035;
+    group.add(worn);
+    for (let index = 0; index < 4; index += 1) {
+      const angle = Math.PI * 0.25 + (Math.PI * 0.5 * index);
+      addCylinder(
+        group,
+        0.055,
+        0.075,
+        1.45,
+        [
+          Math.cos(angle) * radius,
+          0.725,
+          Math.sin(angle) * radius,
+        ],
+        wood,
+        [0, 0, 0.04 * (index % 2 ? -1 : 1)],
+        6,
       );
     }
   }
 
+  if (site.kind === 'DugPit') {
+    addBox(group, [2.9, 0.12, 0.35], [0, 0.15, -1.75], earth);
+  }
+
   const label = makeLabelSprite(
     site.kind === 'DugPit'
-      ? `구덩이식 위생시설 · 사용 ${site.useCount ?? 0}회`
+      ? `위생 구덩이 · 사용 ${site.useCount ?? 0}회`
       : `지정 위생구역 · 사용 ${site.useCount ?? 0}회`,
   );
-  label.position.y = 3.2;
+  label.scale.multiplyScalar(0.82);
+  label.position.y = 2.75;
   group.add(label);
 }
 
@@ -302,37 +597,47 @@ function addResourceShape(
     CopperMetal: 0xb46d43,
   };
   const color = materialColors[resource.material] ?? 0x77756f;
-  const marker = new THREE.Mesh(
-    new THREE.RingGeometry(0.72, 0.95, 22),
-    new THREE.MeshBasicMaterial({
-      color,
-      transparent: true,
-      opacity: 0.38,
-      side: THREE.DoubleSide,
-      depthWrite: false,
-    }),
-  );
-  marker.rotation.x = -Math.PI * 0.5;
-  marker.position.y = 0.045;
-  group.add(marker);
+  group.rotation.y = hash01(resource.id, 19) * Math.PI * 2;
 
   if (resource.material === 'Wood') {
-    addBox(
+    const logMaterial = disposableMaterial(color);
+    addLog(
       group,
-      [0.36, 1.3 * quantityRatio, 0.36],
-      [0, 0.65 * quantityRatio, 0],
-      disposableMaterial(color),
+      1.75 * quantityRatio + 0.6,
+      0.16,
+      [0, 0.22, 0],
+      0.35,
+      logMaterial,
+    );
+    addLog(
+      group,
+      1.45 * quantityRatio + 0.55,
+      0.13,
+      [0.22, 0.28, -0.18],
+      -0.58,
+      logMaterial,
     );
   } else if (resource.material === 'Fiber' || resource.material === 'PlantFood') {
-    const tuft = new THREE.Mesh(
-      new THREE.ConeGeometry(0.6, 1.15 * quantityRatio, 7),
-      disposableMaterial(color),
-    );
-    tuft.position.y = 0.58 * quantityRatio;
-    group.add(tuft);
+    const tuftMaterial = disposableMaterial(color);
+    for (let index = 0; index < 3; index += 1) {
+      const tuft = new THREE.Mesh(
+        new THREE.IcosahedronGeometry(
+          0.34 + quantityRatio * 0.22,
+          1,
+        ),
+        tuftMaterial,
+      );
+      tuft.position.set(
+        (index - 1) * 0.36,
+        0.28 + index * 0.08,
+        index % 2 ? 0.22 : -0.12,
+      );
+      tuft.scale.y = 0.85 + index * 0.08;
+      group.add(tuft);
+    }
   } else if (resource.material === 'Water') {
     const water = new THREE.Mesh(
-      new THREE.CircleGeometry(0.72, 24),
+      new THREE.CircleGeometry(0.92 + quantityRatio * 0.34, 28),
       new THREE.MeshStandardMaterial({
         color,
         roughness: 0.18,
@@ -345,13 +650,24 @@ function addResourceShape(
     water.position.y = 0.05;
     group.add(water);
   } else {
-    const rock = new THREE.Mesh(
-      new THREE.DodecahedronGeometry(0.62 * quantityRatio + 0.18, 0),
-      disposableMaterial(color),
-    );
-    rock.scale.y = 0.72;
-    rock.position.y = 0.4 * quantityRatio;
-    group.add(rock);
+    const rockMaterial = disposableMaterial(color);
+    for (let index = 0; index < 3; index += 1) {
+      const rock = new THREE.Mesh(
+        new THREE.DodecahedronGeometry(
+          (0.4 + index * 0.12) * quantityRatio + 0.16,
+          0,
+        ),
+        rockMaterial,
+      );
+      rock.scale.set(1.15, 0.68, 0.9);
+      rock.position.set(
+        (index - 1) * 0.42,
+        0.28 + index * 0.07,
+        index % 2 ? 0.24 : -0.18,
+      );
+      rock.rotation.y = index * 0.72;
+      group.add(rock);
+    }
   }
 }
 
@@ -364,38 +680,54 @@ function addResidueShape(
     WORLD_GRID_CONTRACT.worldUnitsPerChunk
     / WORLD_GRID_CONTRACT.gridCellsPerChunk;
   const radius = Math.max(
-    cellSize * 0.8,
+    cellSize * 0.7,
     (Number(residue.radiusTiles) || 1) * cellSize,
   );
-  const patch = new THREE.Mesh(
-    new THREE.CircleGeometry(radius, 36),
-    new THREE.MeshStandardMaterial({
-      color: 0x493622,
-      roughness: 1,
-      transparent: true,
-      opacity: Math.min(0.68, 0.16 + intensity * 0.52),
-      depthWrite: false,
-    }),
-  );
-  patch.rotation.x = -Math.PI * 0.5;
-  patch.position.y = 0.055;
-  patch.renderOrder = 3;
-  group.add(patch);
+  const patchMaterial = new THREE.MeshStandardMaterial({
+    color: 0x493622,
+    roughness: 1,
+    transparent: true,
+    opacity: Math.min(0.54, 0.12 + intensity * 0.42),
+    depthWrite: false,
+  });
 
-  if (intensity >= 0.36) {
-    const inner = new THREE.Mesh(
-      new THREE.CircleGeometry(radius * 0.46, 28),
+  for (let index = 0; index < 4; index += 1) {
+    const seed = hash01(residue.id, index * 41);
+    const angle = seed * Math.PI * 2;
+    const spread = index === 0 ? 0 : radius * (0.16 + seed * 0.28);
+    const patchRadius = radius * (
+      index === 0
+        ? 0.72
+        : 0.28 + hash01(residue.id, index * 67) * 0.25
+    );
+    const patch = new THREE.Mesh(
+      new THREE.CircleGeometry(patchRadius, 28),
+      patchMaterial,
+    );
+    patch.rotation.x = -Math.PI * 0.5;
+    patch.position.set(
+      Math.cos(angle) * spread,
+      0.045 + index * 0.002,
+      Math.sin(angle) * spread,
+    );
+    patch.renderOrder = 3;
+    group.add(patch);
+  }
+
+  if (intensity >= 0.48) {
+    const darkSpot = new THREE.Mesh(
+      new THREE.CircleGeometry(radius * 0.22, 22),
       new THREE.MeshBasicMaterial({
-        color: 0x2c2017,
+        color: 0x241b14,
         transparent: true,
-        opacity: Math.min(0.72, 0.24 + intensity * 0.45),
+        opacity: 0.5 + intensity * 0.16,
         depthWrite: false,
       }),
     );
-    inner.rotation.x = -Math.PI * 0.5;
-    inner.position.y = 0.065;
-    inner.renderOrder = 4;
-    group.add(inner);
+    darkSpot.rotation.x = -Math.PI * 0.5;
+    darkSpot.position.y = 0.058;
+    darkSpot.renderOrder = 4;
+    group.add(darkSpot);
   }
 }
 
@@ -521,7 +853,7 @@ export class WorldConsequenceLayer {
       const label = makeLabelSprite(
         facilityLabel(facility, storedUnits),
       );
-      label.position.y = facility.kind === 'Shelter' ? 5.1 : 3.7;
+      label.position.y = facility.kind === 'Shelter' ? 5.35 : 3.25;
       object.add(label);
       this.group.add(object);
     }
