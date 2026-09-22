@@ -7,6 +7,7 @@ import type {
   Resident,
   TerrainWindow,
   WorldOverview,
+  WorldPresentationSnapshot,
 } from '../runtime/core-types';
 
 export type RuntimeStatus = 'loading' | 'ready' | 'error';
@@ -30,6 +31,7 @@ export interface ObserverSnapshot {
   residents: Resident[];
   terrain: TerrainWindow | null;
   environment: DynamicEnvironment | null;
+  presentation: WorldPresentationSnapshot | null;
   camera: CameraState;
   runtime: RuntimeState;
   simulationSpeed: number;
@@ -44,6 +46,7 @@ const INITIAL_STATE: ObserverSnapshot = {
   residents: [],
   terrain: null,
   environment: null,
+  presentation: null,
   camera: {
     centerChunkX: 0,
     centerChunkY: 0,
@@ -131,6 +134,7 @@ class ObserverStore {
       residents: [],
       terrain: null,
       environment: null,
+      presentation: null,
       simulationSpeed: SIMULATION_TIME_CONTRACT.defaultSpeed,
       selectedResidentId: null,
       camera: {
