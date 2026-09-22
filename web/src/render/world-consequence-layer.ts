@@ -975,6 +975,50 @@ function addResidueShape(
   }
 }
 
+function addConstructionDust(
+  group: THREE.Group,
+  facilityId: string,
+  progressDelta: number,
+): void {
+  const count = Math.max(
+    3,
+    Math.min(9, 3 + Math.ceil(progressDelta * 20)),
+  );
+  for (let index = 0; index < count; index += 1) {
+    const seed = hash01(facilityId, 700 + index * 31);
+    const angle = seed * Math.PI * 2;
+    const radius = 0.35 + hash01(facilityId, 900 + index * 17) * 1.15;
+    const material = new THREE.MeshBasicMaterial({
+      color: 0xb6a17e,
+      transparent: true,
+      opacity: 0.16,
+      depthWrite: false,
+    });
+    const dust = new THREE.Mesh(
+      new THREE.SphereGeometry(
+        0.16 + hash01(facilityId, 1100 + index * 13) * 0.14,
+        7,
+        5,
+      ),
+      material,
+    );
+    dust.position.set(
+      Math.cos(angle) * radius,
+      0.18 + seed * 0.45,
+      Math.sin(angle) * radius,
+    );
+    dust.scale.y = 0.58;
+    dust.userData.lifeLensConstructionDust = true;
+    dust.userData.ageSeconds = 0;
+    dust.userData.lifetimeSeconds = 0.75 + seed * 0.85;
+    dust.userData.velocityX = Math.cos(angle) * (0.12 + seed * 0.1);
+    dust.userData.velocityY = 0.34 + seed * 0.2;
+    dust.userData.velocityZ = Math.sin(angle) * (0.12 + seed * 0.1);
+    dust.renderOrder = 7;
+    group.add(dust);
+  }
+}
+
 function disposeObject(object: THREE.Object3D): void {
   object.traverse((child) => {
     if (child instanceof THREE.Mesh) {
@@ -997,6 +1041,7 @@ export class WorldConsequenceLayer {
   private lastSignature = '';
   private animationTime = 0;
   private cameraZoom = 1.25;
+  private readonly facilityProgress = new Map<string, number>();
 
   setCameraZoom(zoom: number): void {
     this.cameraZoom = Math.max(0.1, Number(zoom) || 1);
@@ -1055,6 +1100,35 @@ export class WorldConsequenceLayer {
       }
       if (
         object instanceof THREE.Mesh
+        && object.userData.lifeLensConstructionDust
+      ) {
+        const age = (Number(object.userData.ageSeconds) || 0)
+          + Math.max(0, deltaSeconds);
+        const lifetime = Math.max(
+          0.1,
+          Number(object.userData.lifetimeSeconds) || 1,
+        );
+        object.userData.ageSeconds = age;
+        object.position.x += (
+          Number(object.userData.velocityX) || 0
+        ) * deltaSeconds;
+        object.position.y += (
+          Number(object.userData.velocityY) || 0
+        ) * deltaSeconds;
+        object.position.z += (
+          Number(object.userData.velocityZ) || 0
+        ) * deltaSeconds;
+        const life = Math.max(0, 1 - age / lifetime);
+        object.scale.multiplyScalar(0.995);
+        const material = object.material;
+        if (material instanceof THREE.MeshBasicMaterial) {
+          material.opacity = 0.16 * life * life;
+          material.visible = life > 0;
+        }
+      }
+
+      if (
+        object instanceof THREE.Mesh
         && object.userData.lifeLensSmoke
       ) {
         const baseY = Number(object.userData.baseY) || 0;
@@ -1082,6 +1156,22 @@ export class WorldConsequenceLayer {
     centerX: number,
     centerY: number,
   ): void {
+    const constructionDeltas = new Map<string, number>();
+    for (const facility of snapshot?.facilities ?? []) {
+      const current = clamp01(facility.workProgress);
+      const previous = this.facilityProgress.get(facility.id);
+      if (
+        previous !== undefined
+        && current > previous + 0.0001
+        && facility.state === 'UnderConstruction'
+      ) {
+        constructionDeltas.set(
+          facility.id,
+          Math.max(0, current - previous),
+        );
+      }
+    }
+
     const signature = snapshot?.available
       ? [
           centerX,
@@ -1107,6 +1197,14 @@ export class WorldConsequenceLayer {
 
     if (signature === this.lastSignature) return;
     this.lastSignature = signature;
+
+    this.facilityProgress.clear();
+    for (const facility of snapshot?.facilities ?? []) {
+      this.facilityProgress.set(
+        facility.id,
+        clamp01(facility.workProgress),
+      );
+    }
 
     for (const child of [...this.group.children]) {
       this.group.remove(child);
@@ -1171,6 +1269,10 @@ export class WorldConsequenceLayer {
       const object = new THREE.Group();
       object.position.copy(positionAt(facility.gridX, facility.gridY));
       addFacilityShape(object, facility);
+      const progressDelta = constructionDeltas.get(facility.id) ?? 0;
+      if (progressDelta > 0) {
+        addConstructionDust(object, facility.id, progressDelta);
+      }
       const storage = storageByGrid.get(
         `${facility.gridX}:${facility.gridY}`,
       );
@@ -1191,6 +1293,7 @@ export class WorldConsequenceLayer {
 
   dispose(): void {
     this.lastSignature = '';
+    this.facilityProgress.clear();
     for (const child of [...this.group.children]) {
       this.group.remove(child);
       disposeObject(child);
