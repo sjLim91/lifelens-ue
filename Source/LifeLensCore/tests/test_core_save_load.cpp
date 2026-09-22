@@ -64,6 +64,51 @@ static bool sameCharacter(const Character& a,const Character& b)
         a.baseSleepTendency==b.baseSleepTendency && a.metabolism==b.metabolism && a.sleepTendency==b.sleepTendency;
 }
 
+static bool samePendingContext(
+    const PendingContextAction& a,
+    const PendingContextAction& b)
+{
+    return a.token==b.token
+        && a.kind==b.kind
+        && a.issuedMinute==b.issuedMinute
+        && a.social.intent==b.social.intent
+        && a.social.target==b.social.target
+        && a.social.utility==b.social.utility
+        && a.civilization.intent==b.civilization.intent
+        && a.civilization.utility==b.civilization.utility
+        && a.civilization.resourceNode==b.civilization.resourceNode
+        && a.civilization.storage==b.civilization.storage
+        && a.civilization.experiment==b.civilization.experiment
+        && a.civilization.material==b.civilization.material
+        && a.civilization.technique==b.civilization.technique
+        && a.civilization.item==b.civilization.item
+        && a.civilization.quantity==b.civilization.quantity
+        && a.civilization.facilityAction==b.civilization.facilityAction
+        && a.civilization.facility==b.civilization.facility
+        && a.civilization.facilityKind==b.civilization.facilityKind
+        && a.civilization.hasFacilityTarget==b.civilization.hasFacilityTarget
+        && a.civilization.facilityTargetPos.x==b.civilization.facilityTargetPos.x
+        && a.civilization.facilityTargetPos.y==b.civilization.facilityTargetPos.y
+        && a.civilization.facilityWork==b.civilization.facilityWork
+        && a.parentingTarget==b.parentingTarget
+        && a.parentingAction==b.parentingAction
+        && a.parentingContext.timeAvailable==b.parentingContext.timeAvailable
+        && a.parentingContext.resources==b.parentingContext.resources
+        && a.parentingContext.caregiverStress==b.parentingContext.caregiverStress
+        && a.parentingContext.warmth==b.parentingContext.warmth
+        && a.parentingContext.consistency==b.parentingContext.consistency
+        && a.parentingContext.harshness==b.parentingContext.harshness
+        && a.parentingContext.foodAvailable==b.parentingContext.foodAvailable
+        && a.parentingContext.waterAvailable==b.parentingContext.waterAvailable
+        && a.knowledgeTeachingTarget==b.knowledgeTeachingTarget
+        && a.knowledgeTeachingTechnique==b.knowledgeTeachingTechnique
+        && a.knowledgeTeachingScore==b.knowledgeTeachingScore
+        && a.hasSpatialTarget==b.hasSpatialTarget
+        && a.targetPos.x==b.targetPos.x
+        && a.targetPos.y==b.targetPos.y
+        && a.sanitationSiteId==b.sanitationSiteId;
+}
+
 static bool sameSnapshot(const SimulationStateSnapshot& a,const SimulationStateSnapshot& b)
 {
     CHECK(a.version==b.version);
@@ -130,7 +175,8 @@ static bool sameSnapshot(const SimulationStateSnapshot& a,const SimulationStateS
         CHECK(x.goal==y.goal && x.actionIndex==y.actionIndex && x.pos.x==y.pos.x && x.pos.y==y.pos.y && x.announced==y.announced &&
               x.lastGoal==y.lastGoal && x.repeatCount==y.repeatCount && x.consecutiveFailures==y.consecutiveFailures &&
               x.penaltyUntilMinute==y.penaltyUntilMinute && x.socialCooldownUntilMinute==y.socialCooldownUntilMinute &&
-              x.socialActive==y.socialActive && x.socialIntent==y.socialIntent && x.socialTarget==y.socialTarget && x.plan.size()==y.plan.size());
+              x.socialActive==y.socialActive && x.socialIntent==y.socialIntent && x.socialTarget==y.socialTarget &&
+              samePendingContext(x.pendingContext,y.pendingContext) && x.plan.size()==y.plan.size());
         for(std::size_t i=0;i<x.plan.size();++i) CHECK(x.plan[i].type==y.plan[i].type && x.plan[i].objectId==y.plan[i].objectId && x.plan[i].remainingTicks==y.plan[i].remainingTicks);
     }
     CHECK(a.logs==b.logs);
