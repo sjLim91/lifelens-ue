@@ -128,21 +128,19 @@ inline double outdoorReliefAvoidanceScore(
     return physicalExposure*1.35+remembered*0.85;
 }
 
-inline GridPos chooseLowExposureOutdoorReliefPosition(
+template <typename CandidateAllowed>
+inline GridPos chooseLowExposureOutdoorReliefPositionIf(
     std::uint64_t worldSeed,
     const Character& character,
     const EnvironmentalResidueField& field,
     int currentMinute,
-    GridPos referencePosition={})
+    GridPos referencePosition,
+    CandidateAllowed&& allowed)
 {
     static constexpr std::array<GridPos,8> Directions={{
         {1,0},{1,1},{0,1},{-1,1},{-1,0},{-1,-1},{0,-1},{1,-1}
     }};
 
-    // Outdoor relief is selected 5-7 Core cells away from the supplied
-    // settlement/runtime reference. Before World Genesis this implicitly used
-    // absolute grid (0,0); production callers now pass the selected start-region
-    // center so a non-origin world does not send residents across the map.
     const std::uint64_t mixed=environmentalMix(
         (worldSeed?worldSeed:1ULL)^environmentalMix(character.id));
     const int startDirection=static_cast<int>(mixed%Directions.size());
@@ -152,6 +150,7 @@ inline GridPos chooseLowExposureOutdoorReliefPosition(
     double bestScore=1.0e9;
     int stableOrder=0;
     int bestOrder=1000000;
+    bool found=false;
 
     for(int distanceOffset=0;distanceOffset<3;++distanceOffset){
         const int distance=5+((startDistance-5+distanceOffset)%3);
@@ -161,11 +160,18 @@ inline GridPos chooseLowExposureOutdoorReliefPosition(
             const GridPos candidate{
                 referencePosition.x+direction.x*distance,
                 referencePosition.y+direction.y*distance};
+            if(!allowed(candidate)){
+                ++stableOrder;
+                continue;
+            }
+
             const double score=outdoorReliefAvoidanceScore(
                 character,field,candidate,currentMinute);
 
-            if(score+1.0e-9<bestScore
+            if(!found
+               || score+1.0e-9<bestScore
                || (std::abs(score-bestScore)<=1.0e-9 && stableOrder<bestOrder)){
+                found=true;
                 best=candidate;
                 bestScore=score;
                 bestOrder=stableOrder;
@@ -174,7 +180,23 @@ inline GridPos chooseLowExposureOutdoorReliefPosition(
         }
     }
 
-    return best;
+    return found ? best : referencePosition;
+}
+
+inline GridPos chooseLowExposureOutdoorReliefPosition(
+    std::uint64_t worldSeed,
+    const Character& character,
+    const EnvironmentalResidueField& field,
+    int currentMinute,
+    GridPos referencePosition={})
+{
+    return chooseLowExposureOutdoorReliefPositionIf(
+        worldSeed,
+        character,
+        field,
+        currentMinute,
+        referencePosition,
+        [](GridPos){ return true; });
 }
 
 } // namespace lifelens
