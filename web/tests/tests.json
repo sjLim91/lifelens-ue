@@ -30,6 +30,7 @@
       "overlapping resident separation",
       "resident nameplate collision avoidance",
       "nameplates clear resident head and upper body",
+      "nameplates remain visually anchored to their resident",
       "resident group auto tracking",
       "world overview"
     ],
@@ -41,7 +42,7 @@
       "Observe all four founders through several automatic simulation refreshes and verify none blink out between refreshes",
       "Pinch or wheel through multiple zoom levels and verify resident bodies stay proportionate to the terrain instead of remaining fixed-size"
     ],
-    "expected": "The status shows Core WASM LIVE, WorldSeed 12345 is shown, Living is 4, all four resident cards and 3D residents remain continuously visible without one-refresh disappearance/reappearance, the founder cards expose authoritative Core sex values and the terrain shows visually distinct male and female 3D residents with different skinned body geometry, garment silhouettes, deterministic clothing, proportions, and head-locked hair while remaining map-scale and clustered near their authoritative Core positions with readable labels, resident body size and separation change with the same world zoom as the terrain while labels remain readable, movement between authoritative Core positions is visually smoothed, movement uses walking animation, supported Core activities select contextual idle/talking/sitting/interact motions, resident animation phases are visibly desynchronized, and compact fallback markers appear only while the 3D asset is still loading or if it fails. Resident labels remain above the actor and avoid overlapping other resident labels."
+    "expected": "The status shows Core WASM LIVE, WorldSeed 12345 is shown, Living is 4, all four resident cards and 3D residents remain continuously visible without one-refresh disappearance/reappearance, the founder cards expose authoritative Core sex values and the terrain shows visually distinct male and female 3D residents with different skinned body geometry, garment silhouettes, deterministic clothing, proportions, and head-locked hair while remaining map-scale and clustered near their authoritative Core positions with readable labels, resident body size and separation change with the same world zoom as the terrain while labels remain readable, movement between authoritative Core positions is visually smoothed, movement uses walking animation, supported Core activities select contextual idle/talking/sitting/interact motions, resident animation phases are visibly desynchronized, and compact fallback markers appear only while the 3D asset is still loading or if it fails. Resident labels avoid actor/label overlap while staying close to their resident; displaced labels use a subtle leader line instead of floating ambiguously."
   },
   {
     "name": "Advance simulation time automatically and fast-forward",
@@ -75,6 +76,7 @@
       "connected river and stream topology",
       "no artificial orthogonal water grid",
       "no synthetic isolated-stream fallback segments",
+      "zoom-aware hydrology level of detail",
       "clustered vegetation presentation",
       "observer chunk navigation"
     ],
@@ -84,7 +86,7 @@
       "Read the Biome badge above the terrain canvas",
       "Click the right-arrow world truth control twice and inspect the terrain canvas"
     ],
-    "expected": "The Chunk badge shows Chunk 2, 0, the Biome badge reports the Core biome and forest coverage, and deterministic terrain is rendered as one connected relief surface with visible slopes, non-rectangular river or stream paths where hydrology exists, with at most two flow exits per river/stream chunk and no synthetic cross-grid fallback channels, and clustered vegetation rather than a debug-like tile grid."
+    "expected": "The Chunk badge shows Chunk 2, 0, the Biome badge reports the Core biome and forest coverage, and deterministic terrain is rendered as one connected relief surface with visible slopes, non-rectangular river or stream paths where hydrology exists, with at most two flow exits per river/stream chunk, no synthetic cross-grid fallback channels, and minor streams/springs progressively hidden at wider zoom levels, and clustered vegetation rather than a debug-like tile grid."
   },
   {
     "name": "Reject empty WorldSeed on mobile",
