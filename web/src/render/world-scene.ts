@@ -134,6 +134,7 @@ export class WorldScene {
       centerX,
       centerY,
     );
+    this.vegetationLayer.setPresentation(snapshot, terrain);
   }
 
   setResidents(

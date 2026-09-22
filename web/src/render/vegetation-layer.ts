@@ -1,11 +1,16 @@
 import * as THREE from 'three';
-import type { TerrainWindow } from '../runtime/core-types';
+import type {
+  TerrainWindow,
+  WorldPresentationSnapshot,
+  WorldResourceNode,
+} from '../runtime/core-types';
 import { WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
 import { createTerrainElevationSampler } from './terrain-geometry';
 
 const MAX_TREES = 4096;
 const MAX_SHRUBS = 6144;
 const MAX_ROCKS = 3072;
+const MAX_STUMPS = 2048;
 
 function hash01(seed: string, x: number, y: number, index: number): number {
   const input = `${seed}:${x}:${y}:${index}`;
@@ -32,6 +37,12 @@ export class VegetationLayer {
   private readonly upperCrownGeometry = new THREE.IcosahedronGeometry(1, 1);
   private readonly shrubGeometry = new THREE.IcosahedronGeometry(0.52, 1);
   private readonly rockGeometry = new THREE.DodecahedronGeometry(0.48, 0);
+  private readonly stumpGeometry = new THREE.CylinderGeometry(
+    0.22,
+    0.28,
+    0.34,
+    8,
+  );
 
   private readonly trunkMaterial = new THREE.MeshStandardMaterial({
     color: 0x4b3827,
@@ -60,6 +71,11 @@ export class VegetationLayer {
   });
   private readonly rockMaterial = new THREE.MeshStandardMaterial({
     color: 0x6b6b63,
+    roughness: 1,
+    metalness: 0,
+  });
+  private readonly stumpMaterial = new THREE.MeshStandardMaterial({
+    color: 0x66503a,
     roughness: 1,
     metalness: 0,
   });
@@ -94,12 +110,19 @@ export class VegetationLayer {
     this.rockMaterial,
     MAX_ROCKS,
   );
+  private readonly stumps = new THREE.InstancedMesh(
+    this.stumpGeometry,
+    this.stumpMaterial,
+    MAX_STUMPS,
+  );
 
   private readonly matrix = new THREE.Matrix4();
   private readonly rotation = new THREE.Quaternion();
   private readonly scale = new THREE.Vector3();
   private readonly position = new THREE.Vector3();
   private readonly up = new THREE.Vector3(0, 1, 0);
+  private resources: WorldResourceNode[] = [];
+  private lastResourceSignature = '';
 
   constructor() {
     for (const mesh of [
@@ -109,6 +132,7 @@ export class VegetationLayer {
       this.upperCrowns,
       this.shrubs,
       this.rocks,
+      this.stumps,
     ]) {
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       mesh.castShadow = false;
@@ -116,6 +140,20 @@ export class VegetationLayer {
       mesh.frustumCulled = true;
       this.group.add(mesh);
     }
+  }
+
+  setPresentation(
+    snapshot: WorldPresentationSnapshot | null,
+    window: TerrainWindow,
+  ): void {
+    const resources = snapshot?.resources ?? [];
+    const signature = resources.map((resource) => (
+      `${resource.id}:${resource.material}:${resource.quantity}:${resource.maxQuantity ?? 0}:${resource.gridX}:${resource.gridY}`
+    )).join('|');
+    if (signature === this.lastResourceSignature) return;
+    this.lastResourceSignature = signature;
+    this.resources = resources;
+    this.setTerrain(window);
   }
 
   setTerrain(window: TerrainWindow): void {
@@ -126,6 +164,55 @@ export class VegetationLayer {
     let treeCountTotal = 0;
     let shrubCountTotal = 0;
     let rockCountTotal = 0;
+    let stumpCountTotal = 0;
+    const gridCellsPerChunk = WORLD_GRID_CONTRACT.gridCellsPerChunk;
+    const worldUnitsPerGrid = chunkWorldSize / gridCellsPerChunk;
+
+    const resourceInfluence = (
+      material: string,
+      worldX: number,
+      worldZ: number,
+    ): number => {
+      let retention = 1;
+      for (const resource of this.resources) {
+        if (resource.material !== material) continue;
+        const maxQuantity = Math.max(
+          1,
+          Number(resource.maxQuantity) || Number(resource.quantity) || 1,
+        );
+        const ratio = Math.max(
+          0,
+          Math.min(1, (Number(resource.quantity) || 0) / maxQuantity),
+        );
+        const nodeChunkX = Math.floor(resource.gridX / gridCellsPerChunk);
+        const nodeChunkY = Math.floor(resource.gridY / gridCellsPerChunk);
+        const nodeLocalX = resource.gridX - nodeChunkX * gridCellsPerChunk;
+        const nodeLocalY = resource.gridY - nodeChunkY * gridCellsPerChunk;
+        const nodeWorldX = (
+          nodeChunkX - window.centerChunkX
+          + nodeLocalX / gridCellsPerChunk
+          - 0.5
+        ) * chunkWorldSize;
+        const nodeWorldZ = (
+          nodeChunkY - window.centerChunkY
+          + nodeLocalY / gridCellsPerChunk
+          - 0.5
+        ) * chunkWorldSize;
+        const distance = Math.hypot(
+          worldX - nodeWorldX,
+          worldZ - nodeWorldZ,
+        );
+        const radius = Math.max(
+          worldUnitsPerGrid * 5,
+          chunkWorldSize * 0.28,
+        );
+        if (distance >= radius) continue;
+        const falloff = 1 - distance / radius;
+        const localRetention = 1 - (1 - ratio) * falloff;
+        retention = Math.min(retention, localRetention);
+      }
+      return Math.max(0.03, Math.min(1, retention));
+    };
 
     const groundAt = (
       chunkX: number,
@@ -206,6 +293,13 @@ export class VegetationLayer {
         const worldZ = (
           chunk.y - window.centerChunkY
         ) * chunkWorldSize + offsetZ;
+        const treeRetention = resourceInfluence('Wood', worldX, worldZ);
+        const treePresenceRoll = hash01(
+          seed,
+          chunk.x,
+          chunk.y,
+          1010 + index * 7,
+        );
         const groundY = groundAt(
           chunk.x,
           chunk.y,
@@ -215,21 +309,40 @@ export class VegetationLayer {
 
         this.rotation.setFromAxisAngle(this.up, yaw);
 
-        const trunkHeight = 3.05 * treeScale;
+        if (treePresenceRoll > treeRetention) {
+          if (stumpCountTotal < MAX_STUMPS && treeRetention < 0.82) {
+            this.position.set(
+              worldX,
+              groundY + 0.17,
+              worldZ,
+            );
+            const stumpScale = 0.78
+              + hash01(seed, chunk.x, chunk.y, 1020 + index * 7) * 0.52;
+            this.scale.set(stumpScale, 0.72, stumpScale);
+            this.matrix.compose(this.position, this.rotation, this.scale);
+            this.stumps.setMatrixAt(stumpCountTotal, this.matrix);
+            stumpCountTotal += 1;
+          }
+          continue;
+        }
+
+        const regrowthScale = 0.52 + treeRetention * 0.48;
+        const visualTreeScale = treeScale * regrowthScale;
+        const trunkHeight = 3.05 * visualTreeScale;
         this.position.set(
           worldX,
           groundY + trunkHeight * 0.5,
           worldZ,
         );
         this.scale.set(
-          treeScale * (0.9 + widthScale * 0.1),
-          treeScale,
-          treeScale * (0.9 + widthScale * 0.1),
+          visualTreeScale * (0.9 + widthScale * 0.1),
+          visualTreeScale,
+          visualTreeScale * (0.9 + widthScale * 0.1),
         );
         this.matrix.compose(this.position, this.rotation, this.scale);
         this.trunks.setMatrixAt(treeCountTotal, this.matrix);
 
-        const crownBaseY = groundY + trunkHeight - 0.2 * treeScale;
+        const crownBaseY = groundY + trunkHeight - 0.2 * visualTreeScale;
         const crownLayers: Array<{
           mesh: THREE.InstancedMesh;
           y: number;
@@ -241,30 +354,30 @@ export class VegetationLayer {
         }> = [
           {
             mesh: this.lowerCrowns,
-            y: crownBaseY + 1.15 * treeScale,
-            x: asymmetry * treeScale,
-            z: -asymmetry * 0.45 * treeScale,
-            sx: 1.7 * treeScale * widthScale,
-            sy: 1.28 * treeScale,
-            sz: 1.55 * treeScale * widthScale,
+            y: crownBaseY + 1.15 * visualTreeScale,
+            x: asymmetry * visualTreeScale,
+            z: -asymmetry * 0.45 * visualTreeScale,
+            sx: 1.7 * visualTreeScale * widthScale,
+            sy: 1.28 * visualTreeScale,
+            sz: 1.55 * visualTreeScale * widthScale,
           },
           {
             mesh: this.middleCrowns,
-            y: crownBaseY + 2.35 * treeScale,
-            x: -asymmetry * 0.5 * treeScale,
-            z: asymmetry * treeScale,
-            sx: 1.45 * treeScale * widthScale,
-            sy: 1.22 * treeScale,
-            sz: 1.38 * treeScale * widthScale,
+            y: crownBaseY + 2.35 * visualTreeScale,
+            x: -asymmetry * 0.5 * visualTreeScale,
+            z: asymmetry * visualTreeScale,
+            sx: 1.45 * visualTreeScale * widthScale,
+            sy: 1.22 * visualTreeScale,
+            sz: 1.38 * visualTreeScale * widthScale,
           },
           {
             mesh: this.upperCrowns,
-            y: crownBaseY + 3.45 * treeScale,
-            x: asymmetry * 0.3 * treeScale,
-            z: asymmetry * 0.22 * treeScale,
-            sx: 1.05 * treeScale * widthScale,
-            sy: 1.05 * treeScale,
-            sz: 1.02 * treeScale * widthScale,
+            y: crownBaseY + 3.45 * visualTreeScale,
+            x: asymmetry * 0.3 * visualTreeScale,
+            z: asymmetry * 0.22 * visualTreeScale,
+            sx: 1.05 * visualTreeScale * widthScale,
+            sy: 1.05 * visualTreeScale,
+            sz: 1.02 * visualTreeScale * widthScale,
           },
         ];
         for (const layer of crownLayers) {
@@ -306,6 +419,16 @@ export class VegetationLayer {
           offsetX,
           offsetZ,
         );
+        const fiberRetention = resourceInfluence('Fiber', worldX, worldZ);
+        const foodRetention = resourceInfluence('PlantFood', worldX, worldZ);
+        const shrubRetention = Math.min(fiberRetention, foodRetention);
+        const shrubPresenceRoll = hash01(
+          seed,
+          chunk.x,
+          chunk.y,
+          3004 + index * 5,
+        );
+        if (shrubPresenceRoll > shrubRetention) continue;
         const yaw = hash01(
           seed,
           chunk.x,
@@ -318,10 +441,11 @@ export class VegetationLayer {
           groundY + scaleBase * 0.42,
           worldZ,
         );
+        const regrowthScale = 0.58 + shrubRetention * 0.42;
         this.scale.set(
-          scaleBase * 1.35,
-          scaleBase * 0.85,
-          scaleBase,
+          scaleBase * 1.35 * regrowthScale,
+          scaleBase * 0.85 * regrowthScale,
+          scaleBase * regrowthScale,
         );
         this.matrix.compose(this.position, this.rotation, this.scale);
         this.shrubs.setMatrixAt(shrubCountTotal, this.matrix);
@@ -382,6 +506,7 @@ export class VegetationLayer {
     this.upperCrowns.count = treeCountTotal;
     this.shrubs.count = shrubCountTotal;
     this.rocks.count = rockCountTotal;
+    this.stumps.count = stumpCountTotal;
 
     for (const mesh of [
       this.trunks,
@@ -390,6 +515,7 @@ export class VegetationLayer {
       this.upperCrowns,
       this.shrubs,
       this.rocks,
+      this.stumps,
     ]) {
       mesh.instanceMatrix.needsUpdate = true;
     }
@@ -402,11 +528,13 @@ export class VegetationLayer {
     this.upperCrownGeometry.dispose();
     this.shrubGeometry.dispose();
     this.rockGeometry.dispose();
+    this.stumpGeometry.dispose();
     this.trunkMaterial.dispose();
     this.lowerCrownMaterial.dispose();
     this.middleCrownMaterial.dispose();
     this.upperCrownMaterial.dispose();
     this.shrubMaterial.dispose();
     this.rockMaterial.dispose();
+    this.stumpMaterial.dispose();
   }
 }
