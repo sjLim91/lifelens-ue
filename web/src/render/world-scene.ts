@@ -306,6 +306,7 @@ export class WorldScene {
       roughness: 0.96,
       metalness: 0,
     });
+    this.enableTerrainMicroSurface(material);
 
     this.applyTerrainWeatherMaterial(material);
 
@@ -327,6 +328,70 @@ export class WorldScene {
       (chunk.y - window.centerChunkY) * chunkWorldSize,
     );
     mesh.scale.set(1, 1, 1);
+  }
+
+  private enableTerrainMicroSurface(
+    material: THREE.MeshStandardMaterial,
+  ): void {
+    material.onBeforeCompile = (shader) => {
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <common>',
+        `#include <common>
+varying vec3 vLifeLensGroundWorldPos;`,
+      );
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <project_vertex>',
+        `vLifeLensGroundWorldPos =
+  (modelMatrix * vec4(transformed, 1.0)).xyz;
+#include <project_vertex>`,
+      );
+
+      shader.fragmentShader = shader.fragmentShader.replace(
+        '#include <common>',
+        `#include <common>
+varying vec3 vLifeLensGroundWorldPos;`,
+      );
+      shader.fragmentShader = shader.fragmentShader.replace(
+        '#include <color_fragment>',
+        `#include <color_fragment>
+float lifeLensGroundBroad =
+  sin(vLifeLensGroundWorldPos.x * 0.73
+    + vLifeLensGroundWorldPos.z * 0.51)
+  * 0.5
+  + sin(vLifeLensGroundWorldPos.x * -1.31
+    + vLifeLensGroundWorldPos.z * 1.07)
+  * 0.25;
+float lifeLensGroundFine =
+  sin(vLifeLensGroundWorldPos.x * 4.31
+    + vLifeLensGroundWorldPos.z * 3.79)
+  * sin(vLifeLensGroundWorldPos.x * 2.17
+    - vLifeLensGroundWorldPos.z * 2.83);
+float lifeLensGroundTone =
+  clamp(
+    0.985
+    + lifeLensGroundBroad * 0.024
+    + lifeLensGroundFine * 0.012,
+    0.935,
+    1.045
+  );
+diffuseColor.rgb *= lifeLensGroundTone;`,
+      );
+      shader.fragmentShader = shader.fragmentShader.replace(
+        '#include <roughnessmap_fragment>',
+        `#include <roughnessmap_fragment>
+float lifeLensRoughVariation =
+  sin(vLifeLensGroundWorldPos.x * 2.63
+    + vLifeLensGroundWorldPos.z * 2.29)
+  * 0.025;
+roughnessFactor = clamp(
+  roughnessFactor + lifeLensRoughVariation,
+  0.55,
+  1.0
+);`,
+      );
+    };
+    material.customProgramCacheKey = () => 'lifelens-terrain-micro-v1';
+    material.needsUpdate = true;
   }
 
   private applyTerrainWeatherMaterial(
