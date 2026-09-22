@@ -109,6 +109,17 @@ static bool samePendingContext(
         && a.sanitationSiteId==b.sanitationSiteId;
 }
 
+static bool sameGridRoute(
+    const std::vector<GridPos>& a,
+    const std::vector<GridPos>& b)
+{
+    if(a.size()!=b.size()) return false;
+    for(std::size_t i=0;i<a.size();++i){
+        if(a[i].x!=b[i].x || a[i].y!=b[i].y) return false;
+    }
+    return true;
+}
+
 static bool sameSnapshot(const SimulationStateSnapshot& a,const SimulationStateSnapshot& b)
 {
     CHECK(a.version==b.version);
@@ -177,7 +188,7 @@ static bool sameSnapshot(const SimulationStateSnapshot& a,const SimulationStateS
               x.penaltyUntilMinute==y.penaltyUntilMinute && x.socialCooldownUntilMinute==y.socialCooldownUntilMinute &&
               x.socialActive==y.socialActive && x.socialIntent==y.socialIntent && x.socialTarget==y.socialTarget &&
               samePendingContext(x.pendingContext,y.pendingContext) &&
-              x.navigationRoute==y.navigationRoute &&
+              sameGridRoute(x.navigationRoute,y.navigationRoute) &&
               x.navigationRouteIndex==y.navigationRouteIndex &&
               x.navigationTarget.x==y.navigationTarget.x &&
               x.navigationTarget.y==y.navigationTarget.y &&
