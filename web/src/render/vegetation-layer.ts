@@ -24,6 +24,11 @@ function hash01(seed: string, x: number, y: number, index: number): number {
   return (hash >>> 0) / 4294967295;
 }
 
+interface WindUniformSet {
+  time: { value: number };
+  intensity: { value: number };
+}
+
 export class VegetationLayer {
   readonly group = new THREE.Group();
 
@@ -125,8 +130,16 @@ export class VegetationLayer {
   private resources: WorldResourceNode[] = [];
   private facilities: WorldFacility[] = [];
   private lastResourceSignature = '';
+  private readonly windUniforms: WindUniformSet[] = [];
+  private windTime = 0;
+  private windIntensity = 0;
 
   constructor() {
+    this.enableWind(this.lowerCrownMaterial, 0.16);
+    this.enableWind(this.middleCrownMaterial, 0.2);
+    this.enableWind(this.upperCrownMaterial, 0.24);
+    this.enableWind(this.shrubMaterial, 0.22);
+
     for (const mesh of [
       this.trunks,
       this.lowerCrowns,
@@ -142,6 +155,73 @@ export class VegetationLayer {
       mesh.frustumCulled = true;
       this.group.add(mesh);
     }
+  }
+
+  setWindIntensity(intensity01: number): void {
+    this.windIntensity = Math.max(
+      0,
+      Math.min(1, Number(intensity01) || 0),
+    );
+    for (const uniforms of this.windUniforms) {
+      uniforms.intensity.value = this.windIntensity;
+    }
+  }
+
+  update(deltaSeconds: number): void {
+    this.windTime += Math.min(
+      0.05,
+      Math.max(0, deltaSeconds),
+    );
+    for (const uniforms of this.windUniforms) {
+      uniforms.time.value = this.windTime;
+      uniforms.intensity.value = this.windIntensity;
+    }
+  }
+
+  private enableWind(
+    material: THREE.MeshStandardMaterial,
+    strength: number,
+  ): void {
+    material.onBeforeCompile = (shader) => {
+      const uniforms: WindUniformSet = {
+        time: { value: this.windTime },
+        intensity: { value: this.windIntensity },
+      };
+      shader.uniforms.uLifeLensWindTime = uniforms.time;
+      shader.uniforms.uLifeLensWindIntensity = uniforms.intensity;
+      this.windUniforms.push(uniforms);
+
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <common>',
+        `#include <common>
+uniform float uLifeLensWindTime;
+uniform float uLifeLensWindIntensity;`,
+      );
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <begin_vertex>',
+        `#include <begin_vertex>
+#ifdef USE_INSTANCING
+  float lifeLensWindPhase =
+    uLifeLensWindTime * 1.85
+    + instanceMatrix[3].x * 0.071
+    + instanceMatrix[3].z * 0.093;
+  float lifeLensWindHeight = clamp(position.y + 1.15, 0.0, 2.4);
+  float lifeLensWindAmount =
+    uLifeLensWindIntensity * ${strength.toFixed(3)};
+  transformed.x +=
+    sin(lifeLensWindPhase) * lifeLensWindAmount * lifeLensWindHeight;
+  transformed.z +=
+    cos(lifeLensWindPhase * 0.83)
+    * lifeLensWindAmount
+    * lifeLensWindHeight
+    * 0.55;
+#endif`,
+      );
+    };
+    material.customProgramCacheKey = () => (
+      `lifelens-wind-v2-${strength.toFixed(3)}`
+    );
+    material.needsUpdate = true;
   }
 
   setPresentation(
@@ -591,5 +671,6 @@ export class VegetationLayer {
     this.shrubMaterial.dispose();
     this.rockMaterial.dispose();
     this.stumpMaterial.dispose();
+    this.windUniforms.length = 0;
   }
 }
