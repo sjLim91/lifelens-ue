@@ -153,6 +153,8 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
     pending.knowledgeTeachingTarget=best.learner;
     pending.knowledgeTeachingTechnique=best.technique;
     pending.knowledgeTeachingScore=best.score;
+    pending.hasSpatialTarget=true;
+    pending.targetPos=learnerRuntime->second.pos;
 
     Runtime& runtime=teacherRuntime->second;
     runtime.pendingContext=pending;
