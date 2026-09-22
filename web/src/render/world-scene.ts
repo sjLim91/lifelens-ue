@@ -106,6 +106,7 @@ export class WorldScene {
 
   setSimulationMinute(minute: number): void {
     this.atmosphere.setSimulationMinute(minute);
+    this.residentLayer.setSimulationMinute(minute);
   }
 
   setEnvironment(environment: DynamicEnvironment | null): void {
