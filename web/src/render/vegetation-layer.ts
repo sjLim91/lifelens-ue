@@ -2,7 +2,9 @@ import * as THREE from 'three';
 import type { TerrainWindow } from '../runtime/core-types';
 import { WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
 import { createTerrainElevationSampler } from './terrain-geometry';
+import { InstancedTreeAsset } from './tree-asset-layer';
 import {
+  TREE_ASSET_CONTRACT,
   TREE_BARK_PALETTE,
   TREE_CROWN_LOBE_LAYOUT,
   TREE_FOLIAGE_PALETTE,
@@ -32,6 +34,7 @@ export class VegetationLayer {
   readonly group = new THREE.Group();
 
   private readonly mobileProfile = useMobileVegetationProfile();
+  private readonly treeMatrices = new Float32Array(MAX_TREES * 16);
   private readonly crownGeometry = new THREE.IcosahedronGeometry(1, 0);
   private readonly trunkGeometry = new THREE.CylinderGeometry(
     0.72,
@@ -66,6 +69,11 @@ export class VegetationLayer {
     this.barkMaterial,
     MAX_BRANCHES,
   );
+  private readonly actualTrees = new InstancedTreeAsset({
+    maxInstances: MAX_TREES,
+    url: TREE_ASSET_CONTRACT.modelUrl,
+    onReady: () => this.setFallbackVisible(false),
+  });
   private readonly matrix = new THREE.Matrix4();
   private readonly rotation = new THREE.Quaternion();
   private readonly branchRotation = new THREE.Quaternion();
@@ -85,6 +93,7 @@ export class VegetationLayer {
     this.group.add(this.trunks);
     this.group.add(this.branches);
     this.group.add(this.crowns);
+    this.group.add(this.actualTrees.group);
   }
 
   setTerrain(window: TerrainWindow): void {
@@ -154,11 +163,21 @@ export class VegetationLayer {
           localY01,
         ) * WORLD_GRID_CONTRACT.elevationScale;
 
+        const fullTreeHeight = profile.treeHeightWorldUnits * treeScale;
+        this.rotation.setFromAxisAngle(UP, yaw);
+        this.position.set(worldX, groundY, worldZ);
+        this.scale.set(
+          fullTreeHeight * widthScale,
+          fullTreeHeight,
+          fullTreeHeight * widthScale,
+        );
+        this.matrix.compose(this.position, this.rotation, this.scale);
+        this.matrix.toArray(this.treeMatrices, treeIndex * 16);
+
         const trunkHeight = profile.trunkHeightWorldUnits * treeScale;
         const trunkRadius =
           profile.trunkRadiusWorldUnits * treeScale * widthScale;
 
-        this.rotation.setFromAxisAngle(UP, yaw);
         this.position.set(
           worldX,
           groundY + trunkHeight * 0.5,
@@ -267,7 +286,6 @@ export class VegetationLayer {
         const sinYaw = Math.sin(yaw);
         const crownRadius =
           profile.crownRadiusWorldUnits * treeScale * widthScale;
-        const treeHeight = profile.treeHeightWorldUnits * treeScale;
 
         for (
           let lobeIndex = 0;
@@ -292,7 +310,7 @@ export class VegetationLayer {
 
           this.position.set(
             worldX + rotatedX,
-            groundY + treeHeight * lobe.y,
+            groundY + fullTreeHeight * lobe.y,
             worldZ + rotatedZ,
           );
           this.scale.set(
@@ -326,6 +344,8 @@ export class VegetationLayer {
       }
     }
 
+    this.actualTrees.setInstances(this.treeMatrices, treeIndex);
+
     this.trunks.count = treeIndex;
     this.branches.count = branchIndex;
     this.crowns.count = crownIndex;
@@ -350,10 +370,17 @@ export class VegetationLayer {
   }
 
   dispose(): void {
+    this.actualTrees.dispose();
     this.crownGeometry.dispose();
     this.trunkGeometry.dispose();
     this.branchGeometry.dispose();
     this.crownMaterial.dispose();
     this.barkMaterial.dispose();
+  }
+
+  private setFallbackVisible(visible: boolean): void {
+    this.trunks.visible = visible;
+    this.branches.visible = visible;
+    this.crowns.visible = visible;
   }
 }
