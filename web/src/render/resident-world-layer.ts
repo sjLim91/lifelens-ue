@@ -28,6 +28,7 @@ interface ResidentActor {
   interact?: THREE.AnimationAction;
   active: MotionName | '';
   activityLabel: string;
+  activityTargetId: string;
   current: THREE.Vector3;
   target: THREE.Vector3;
   initialized: boolean;
@@ -176,6 +177,7 @@ export class ResidentWorldLayer {
       }
 
       actor.activityLabel = resident.activityLabel ?? 'Idle';
+      actor.activityTargetId = resident.activityTargetId ?? '';
       actor.target.copy(next);
 
       if (!actor.initialized) {
@@ -381,6 +383,7 @@ export class ResidentWorldLayer {
       interact,
       active: idle ? 'idle' : '',
       activityLabel: resident.activityLabel ?? 'Idle',
+      activityTargetId: resident.activityTargetId ?? '',
       current: new THREE.Vector3(),
       target: new THREE.Vector3(),
       initialized: false,
@@ -405,31 +408,23 @@ export class ResidentWorldLayer {
   }
 
   private restMotion(actor: ResidentActor): MotionName {
-    const activity = actor.activityLabel;
-
+    // Do not invent a chair, bed, toilet, tool, work surface or interaction
+    // slot from an activity label alone. Until the authoritative action-motion
+    // DTO carries validated target/slot/alignment context, object-bound actions
+    // must remain neutral rather than playing a false interaction animation.
     if (
-      (activity === 'Sleep' || activity === 'UseToilet')
-      && actor.sit
-    ) {
-      return 'sit';
-    }
-
-    if (
-      (activity === 'Eat'
-        || activity === 'Drink'
-        || activity === 'Wash')
-      && actor.interact
-    ) {
-      return 'interact';
-    }
-
-    if (
-      (activity === 'Approach'
-        || activity === 'Repair'
-        || activity === 'Comfort')
+      actor.activityLabel === 'Talk'
+      && actor.activityTargetId
       && actor.talk
     ) {
-      return 'talk';
+      const targetActor = this.actors.get(actor.activityTargetId);
+      if (
+        targetActor?.root.visible
+        && targetActor.initialized
+        && actor.current.distanceTo(targetActor.current) <= 3
+      ) {
+        return 'talk';
+      }
     }
 
     return 'idle';
