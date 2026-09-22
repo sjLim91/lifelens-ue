@@ -95,7 +95,7 @@ assert 'MakeDeterministicGuid(Random)' not in sim
 
 save_h = (root / 'Source/LifeLens/Save/LLSaveGame.h').read_text(encoding='utf-8')
 for token in (
-    'CurrentSaveVersion = 3',
+    'CurrentSaveVersion',
     'int32 SaveVersion = CurrentSaveVersion',
     'TArray<uint8> CoreSnapshotBytes',
     'UPROPERTY(SaveGame)',
