@@ -3,10 +3,6 @@ name: External Preview Probe
 on:
   push:
     branches: [ main ]
-    paths:
-      - '.github/workflows/external-preview-probe.yml'
-  pull_request:
-    branches: [ main ]
   workflow_dispatch:
 
 permissions:
@@ -21,16 +17,16 @@ jobs:
         run: |
           set -euo pipefail
           BASE="https://raw.githack.com/sjLim91/lifelens-ue/gh-pages"
-          LAUNCH="$BASE/launch.svg"
+          LAUNCH="$BASE/launch.html"
           INDEX="$BASE/index.html"
 
           echo "== launcher GET =="
-          launch_code=$(curl -L -sS -o /tmp/launch.svg -w "%{http_code}"             -H "Sec-Fetch-Dest: document" "$LAUNCH")
+          launch_code=$(curl -L -sS -o /tmp/launch.html -w "%{http_code}"             -H "Sec-Fetch-Dest: document" "$LAUNCH")
           launch_type=$(curl -L -sSI "$LAUNCH" | tr -d '\r' | awk 'BEGIN{IGNORECASE=1}/^content-type:/{print $0}' | tail -1)
           echo "LAUNCH_STATUS=$launch_code"
           echo "LAUNCH_CONTENT_TYPE=$launch_type"
           test "$launch_code" = "200"
-          grep -q "LifeLens" /tmp/launch.svg
+          grep -q "LifeLens Preview" /tmp/launch.html
 
           echo "== confirmation POST =="
           curl -sS -o /tmp/post-body -D /tmp/post-headers             -c /tmp/cookies             -X POST             -H "Referer: $LAUNCH"             "$LAUNCH" || true
@@ -56,6 +52,7 @@ jobs:
             echo "ATTEMPT=$attempt APP_STATUS=$app_code ASSET=$asset ASSET_STATUS=$asset_code"
             if [ "$app_code" = "200" ] \
               && grep -q "LifeLens Web Observer" /tmp/index.html \
+              && grep -q "lifelens-bootstrap" /tmp/index.html \
               && [ "$asset_code" = "200" ]; then
               preview_ready=1
               break
