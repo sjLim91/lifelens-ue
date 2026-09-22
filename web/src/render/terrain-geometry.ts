@@ -12,6 +12,38 @@ function average(values: Array<number | null>, fallback: number): number {
   return valid.reduce((sum, value) => sum + value, 0) / valid.length;
 }
 
+function hash01(value: string): number {
+  let hash = 2166136261 >>> 0;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619) >>> 0;
+  }
+  hash ^= hash >>> 16;
+  return (hash >>> 0) / 4294967295;
+}
+
+function localRelief(
+  seed: string,
+  chunkX: number,
+  chunkY: number,
+  localX01: number,
+  localY01: number,
+): number {
+  const tx = Math.max(0, Math.min(1, localX01));
+  const ty = Math.max(0, Math.min(1, localY01));
+  const envelope = Math.sin(Math.PI * tx) * Math.sin(Math.PI * ty);
+  if (envelope <= 0.00001) return 0;
+
+  const phaseA = hash01(`${seed}:${chunkX}:${chunkY}:ridge-a`) * Math.PI * 2;
+  const phaseB = hash01(`${seed}:${chunkX}:${chunkY}:ridge-b`) * Math.PI * 2;
+  const ridgeA = Math.sin(((tx * 1.7) + (ty * 1.1)) * Math.PI * 2 + phaseA);
+  const ridgeB = Math.sin(((tx * 0.8) - (ty * 2.1)) * Math.PI * 2 + phaseB);
+  const amplitude = 0.006
+    + hash01(`${seed}:${chunkX}:${chunkY}:relief`) * 0.008;
+
+  return ((ridgeA * 0.62) + (ridgeB * 0.38)) * envelope * amplitude;
+}
+
 export function createTerrainElevationSampler(
   window: TerrainWindow,
 ): (
@@ -20,6 +52,7 @@ export function createTerrainElevationSampler(
   localX01: number,
   localY01: number,
 ) => number {
+  const seed = window.worldSeed ?? '0';
   const elevations = new Map(
     window.chunks.map((chunk) => [
       `${chunk.x}:${chunk.y}`,
@@ -56,7 +89,8 @@ export function createTerrainElevationSampler(
     const ty = Math.max(0, Math.min(1, localY01));
     const north = h00 + ((h10 - h00) * tx);
     const south = h01 + ((h11 - h01) * tx);
-    return north + ((south - north) * ty);
+    const base = north + ((south - north) * ty);
+    return base + localRelief(seed, chunkX, chunkY, tx, ty);
   };
 }
 
@@ -70,31 +104,51 @@ export function createTerrainGeometryBuilder(
   const sampleElevation = createTerrainElevationSampler(window);
 
   return (chunk: TerrainChunk): THREE.BufferGeometry => {
-    const h00 = sampleElevation(chunk.x, chunk.y, 0, 0) * elevationScale;
-    const h10 = sampleElevation(chunk.x, chunk.y, 1, 0) * elevationScale;
-    const h11 = sampleElevation(chunk.x, chunk.y, 1, 1) * elevationScale;
-    const h01 = sampleElevation(chunk.x, chunk.y, 0, 1) * elevationScale;
+    const subdivisions = 6;
+    const verticesPerSide = subdivisions + 1;
+    const positions: number[] = [];
+    const uvs: number[] = [];
+    const indices: number[] = [];
 
-    const positions = new Float32Array([
-      -half, h00, -half,
-       half, h10, -half,
-       half, h11,  half,
-      -half, h01,  half,
-    ]);
-    const indices = [0, 2, 1, 0, 3, 2];
-    const uvs = new Float32Array([
-      0, 0,
-      1, 0,
-      1, 1,
-      0, 1,
-    ]);
+    for (let y = 0; y <= subdivisions; y += 1) {
+      const ty = y / subdivisions;
+      const z = -half + (ty * chunkWorldSize);
+
+      for (let x = 0; x <= subdivisions; x += 1) {
+        const tx = x / subdivisions;
+        const px = -half + (tx * chunkWorldSize);
+        const elevation = sampleElevation(
+          chunk.x,
+          chunk.y,
+          tx,
+          ty,
+        ) * elevationScale;
+
+        positions.push(px, elevation, z);
+        uvs.push(tx, ty);
+      }
+    }
+
+    for (let y = 0; y < subdivisions; y += 1) {
+      for (let x = 0; x < subdivisions; x += 1) {
+        const a = (y * verticesPerSide) + x;
+        const b = a + 1;
+        const d = ((y + 1) * verticesPerSide) + x;
+        const c = d + 1;
+
+        indices.push(a, c, b, a, d, c);
+      }
+    }
 
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute(
       'position',
-      new THREE.BufferAttribute(positions, 3),
+      new THREE.Float32BufferAttribute(positions, 3),
     );
-    geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+    geometry.setAttribute(
+      'uv',
+      new THREE.Float32BufferAttribute(uvs, 2),
+    );
     geometry.setIndex(indices);
     geometry.computeVertexNormals();
     geometry.computeBoundingBox();
