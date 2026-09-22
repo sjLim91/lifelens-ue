@@ -1409,17 +1409,28 @@ void Simulation::step(){
             continue;
         }
         if(r.pendingContext.active()){
+            if(!world_.externalPhysicalExecution){
+                advancePendingContext(c,r);
+                if(r.pendingContext.active() && r.navigationRouteFailed){
+                    emit(c.name+" context action route failed");
+                    r.pendingContext.clear();
+                    clearNavigation(r);
+                    r.penaltyUntilMinute=std::max(
+                        r.penaltyUntilMinute,
+                        world_.minute+5);
+                }
+                continue;
+            }
+
             if(contextActionExpired(r.pendingContext,world_.minute)){
                 emit(c.name+" context action timed out");
                 r.pendingContext.clear();
                 clearNavigation(r);
-                r.penaltyUntilMinute=std::max(r.penaltyUntilMinute,world_.minute+5);
-            }else if(!world_.externalPhysicalExecution){
-                advancePendingContext(c,r);
-                continue;
-            }else{
-                continue;
+                r.penaltyUntilMinute=std::max(
+                    r.penaltyUntilMinute,
+                    world_.minute+5);
             }
+            continue;
         }
         if(r.plan.empty() && world_.minute%5==0) beginPlan(c,r);
         if(!r.plan.empty()) advanceAction(c,r);
