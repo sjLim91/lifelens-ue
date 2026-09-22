@@ -35,6 +35,11 @@ function hash01(
   return (hash >>> 0) / 4294967295;
 }
 
+interface GroundWindUniforms {
+  time: { value: number };
+  intensity: { value: number };
+}
+
 function createGrassGeometry(): THREE.BufferGeometry {
   const positions: number[] = [];
   const indices: number[] = [];
@@ -164,8 +169,13 @@ export class GroundDetailLayer {
   private presentation: WorldPresentationSnapshot | null = null;
   private lastSignature = '';
   private zoom = 1.25;
+  private windTime = 0;
+  private windIntensity = 0;
+  private grassWindUniforms: GroundWindUniforms | null = null;
 
   constructor() {
+    this.enableGrassWind();
+
     for (const mesh of [
       this.grass,
       this.pebbles,
@@ -202,6 +212,11 @@ export class GroundDetailLayer {
   }
 
   setEnvironment(environment: DynamicEnvironment | null): void {
+    this.windIntensity = clamp01(environment?.windIntensity01);
+    if (this.grassWindUniforms) {
+      this.grassWindUniforms.intensity.value = this.windIntensity;
+    }
+
     const snow = environment?.precipitationType === 'Snow'
       ? clamp01(environment?.precipitationIntensity01)
       : 0;
@@ -232,6 +247,56 @@ export class GroundDetailLayer {
     apply(this.deadwoodMaterial, this.deadwoodBase, 0.14, 0.09);
   }
 
+  update(deltaSeconds: number): void {
+    this.windTime += Math.min(
+      0.05,
+      Math.max(0, deltaSeconds),
+    );
+    if (this.grassWindUniforms) {
+      this.grassWindUniforms.time.value = this.windTime;
+      this.grassWindUniforms.intensity.value = this.windIntensity;
+    }
+  }
+
+  private enableGrassWind(): void {
+    this.grassMaterial.onBeforeCompile = (shader) => {
+      const uniforms: GroundWindUniforms = {
+        time: { value: this.windTime },
+        intensity: { value: this.windIntensity },
+      };
+      this.grassWindUniforms = uniforms;
+      shader.uniforms.uLifeLensGroundWindTime = uniforms.time;
+      shader.uniforms.uLifeLensGroundWindIntensity = uniforms.intensity;
+
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <common>',
+        `#include <common>
+uniform float uLifeLensGroundWindTime;
+uniform float uLifeLensGroundWindIntensity;`,
+      );
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <begin_vertex>',
+        `#include <begin_vertex>
+#ifdef USE_INSTANCING
+  float lifeLensGroundWindPhase =
+    uLifeLensGroundWindTime * 2.15
+    + instanceMatrix[3].x * 0.19
+    + instanceMatrix[3].z * 0.23;
+  float lifeLensBladeHeight = clamp(position.y / 0.55, 0.0, 1.0);
+  float lifeLensGroundWind =
+    uLifeLensGroundWindIntensity
+    * 0.12
+    * lifeLensBladeHeight
+    * lifeLensBladeHeight;
+  transformed.x += sin(lifeLensGroundWindPhase) * lifeLensGroundWind;
+  transformed.z += cos(lifeLensGroundWindPhase * 0.81) * lifeLensGroundWind * 0.55;
+#endif`,
+      );
+    };
+    this.grassMaterial.customProgramCacheKey = () => 'lifelens-ground-wind-v1';
+    this.grassMaterial.needsUpdate = true;
+  }
+
   dispose(): void {
     this.grassGeometry.dispose();
     this.pebbleGeometry.dispose();
@@ -243,6 +308,7 @@ export class GroundDetailLayer {
     this.rockMaterial.dispose();
     this.boulderMaterial.dispose();
     this.deadwoodMaterial.dispose();
+    this.grassWindUniforms = null;
   }
 
   private applyLod(): void {
