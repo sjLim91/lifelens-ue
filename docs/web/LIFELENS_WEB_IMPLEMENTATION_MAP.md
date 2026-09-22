@@ -82,7 +82,7 @@ Pure display formatting helpers.
 
 React observer shell.
 
-The current controls are still bound by the engine after mount, but read-only state now comes from the typed observer store.
+WorldSeed, world creation, time stepping, and chunk movement are now React events routed through `observer-actions.ts`. Read-only state comes from the typed observer store.
 
 ## Input
 
@@ -127,13 +127,13 @@ Deterministic presentation helpers for terrain color, shading, seeded visual has
 
 ## Target unified Three.js renderer
 
-The following files are development foundations and are not production-connected yet.
+The following files form the development-only Three World path. It is connected behind a local render-mode switch but is not the default production-compatible renderer.
 
 ### src/render/world-scene.ts
 
 One Three.js scene/camera foundation.
 
-It already composes prototype terrain meshes, WaterLayer, and VegetationLayer.
+It composes continuous corner-height terrain meshes, WaterLayer, and instanced VegetationLayer.
 
 ### src/render/world-renderer.ts
 
@@ -164,7 +164,7 @@ Current responsibilities:
 - bind temporary legacy buttons,
 - coordinate the simulation clock.
 
-The next cleanup is to move control actions into React so the engine no longer queries WorldSeed/buttons or manually attaches click handlers.
+The remaining engine DOM dependency is canvas acquisition after React mount. World controls/readouts no longer require engine DOM mutation.
 
 ## Validation
 
