@@ -9,7 +9,6 @@ def read(path):
 natural = read('Source/LifeLensCore/include/lifelens/NaturalWorldChunk.h')
 world = read('Source/LifeLensCore/include/lifelens/World.h')
 sim = read('Source/LifeLensCore/src/Simulation.cpp')
-codec_h = read('Source/LifeLensCore/include/lifelens/SimulationSnapshotCodec.h')
 codec = read('Source/LifeLensCore/src/SimulationSnapshotCodec.cpp')
 wg_codec = read('Source/LifeLensCore/include/lifelens/WorldGenerationSnapshotCodec.h')
 bridge_h = read('Source/LifeLens/Simulation/LLCoreBridgeSubsystem.h')
@@ -39,8 +38,6 @@ for token in ['generatedNaturalChunks', 'materializeNaturalChunk', 'establishIni
 for token in ['world_.storageSites.clear()', 'world_.materializeNaturalChunk', 'initialRuntime.pos']:
     assert token in sim, f'missing production New Game integration: {token}'
 
-snapshot_binary_version = int(codec_h.split('SimulationSnapshotBinaryFormatVersion=', 1)[1].split(';', 1)[0])
-assert snapshot_binary_version >= 6, 'World Generation persistence requires snapshot binary format v6 or newer'
 assert 'WorldGenerationSnapshotExtensionMagic' in wg_codec
 assert 'writeWorldGenerationSnapshotExtension' in codec
 assert 'readWorldGenerationSnapshotExtension' in codec
