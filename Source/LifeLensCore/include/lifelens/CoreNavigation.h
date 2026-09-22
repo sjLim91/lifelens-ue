@@ -84,6 +84,48 @@ inline double coreGroundTraversalCost(
     return 1.0 + terrainPenalty + elevationPenalty + weatherPenalty;
 }
 
+inline bool tryBuildDirectCoreGroundRoute(
+    const World& world,
+    GridPos start,
+    GridPos target,
+    int arrivalRadius,
+    bool horizontalFirst,
+    std::vector<GridPos>& outRoute)
+{
+    outRoute.clear();
+    const int radius=std::max(0,arrivalRadius);
+    GridPos current=start;
+
+    const auto advanceAxis=[&](
+        bool horizontal,
+        std::vector<GridPos>& route)->bool
+    {
+        while(!gridWithinRadius(current,target,radius)){
+            int* coordinate=horizontal ? &current.x : &current.y;
+            const int targetCoordinate=horizontal ? target.x : target.y;
+            if(*coordinate==targetCoordinate) break;
+
+            *coordinate += *coordinate<targetCoordinate ? 1 : -1;
+            if(!coreGroundTraversable(world,current)){
+                route.clear();
+                return false;
+            }
+            route.push_back(current);
+        }
+        return true;
+    };
+
+    if(horizontalFirst){
+        if(!advanceAxis(true,outRoute)) return false;
+        if(!advanceAxis(false,outRoute)) return false;
+    }else{
+        if(!advanceAxis(false,outRoute)) return false;
+        if(!advanceAxis(true,outRoute)) return false;
+    }
+
+    return gridWithinRadius(current,target,radius);
+}
+
 struct CoreGroundRouteNode {
     GridPos pos{};
     double g = 0.0;
@@ -116,6 +158,24 @@ inline bool buildCoreGroundRoute(
 
     if(gridWithinRadius(start, target, radius)) return true;
     if(!coreGroundTraversable(world, start)) return false;
+
+    // Most everyday movement is locally unobstructed. Resolve the two
+    // deterministic Manhattan-L candidates first and reserve A* for actual
+    // water/terrain detours. This keeps long-run headless simulation cheap
+    // without bypassing Core traversal truth.
+    std::vector<GridPos> horizontalFirst;
+    if(tryBuildDirectCoreGroundRoute(
+            world,start,target,radius,true,horizontalFirst)){
+        outRoute=std::move(horizontalFirst);
+        return true;
+    }
+
+    std::vector<GridPos> verticalFirst;
+    if(tryBuildDirectCoreGroundRoute(
+            world,start,target,radius,false,verticalFirst)){
+        outRoute=std::move(verticalFirst);
+        return true;
+    }
 
     const int directDistance = manhattan(start, target);
     const int margin = std::max(
