@@ -78,8 +78,28 @@ button:disabled { opacity: .33; cursor: default; }
 @media (max-width: 800px) {
   .topbar { padding: 0 11px; }
   .brand span { display: none; }
-  .layout { height: auto; min-height: calc(100vh - 58px); grid-template-columns: 1fr; grid-template-rows: 56vh auto; }
-  .observer { border-left: 0; border-top: 1px solid #243329; }
-  .world-overlay { top: 9px; left: 9px; right: 9px; }
-  .world-overlay span { font-size: .64rem; }
+  .layout {
+    height: auto;
+    min-height: calc(100svh - 58px);
+    grid-template-columns: 1fr;
+    grid-template-rows: 72svh auto;
+  }
+  .world { min-height: 72svh; }
+  .observer {
+    border-left: 0;
+    border-top: 1px solid #243329;
+    padding: 8px 10px 28px;
+  }
+  .panel { padding: 12px 8px; }
+  .world-overlay {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    gap: .32rem;
+  }
+  .world-overlay span {
+    padding: .28rem .44rem;
+    font-size: .6rem;
+    background: rgba(8, 13, 10, .68);
+  }
 }
