@@ -258,7 +258,8 @@ bool Simulation::completeContextAction(
                 result=establishPendingDesignatedSanitationArea(
                     world_,actor,pending.targetPos);
             }else{
-                result=executeCivilizationDecision(world_,actor,decision);
+                result=executeCivilizationDecisionAtPosition(
+                    world_,actor,decision,resolvedPosition);
             }
             if(!result.executed){
                 pending.clear();
