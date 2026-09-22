@@ -32,6 +32,8 @@ export class WorldScene {
   private readonly waterLayer = new WaterLayer();
   private readonly vegetationLayer = new VegetationLayer();
   private readonly residentLayer = new ResidentWorldLayer();
+  private readonly raycaster = new THREE.Raycaster();
+  private readonly pointer = new THREE.Vector2();
   private readonly atmosphere: AtmosphereLayer;
 
   constructor() {
@@ -61,6 +63,16 @@ export class WorldScene {
 
   setSimulationMinute(minute: number): void {
     this.atmosphere.setSimulationMinute(minute);
+  }
+
+  pickResident(normalizedX: number, normalizedY: number): string | null {
+    this.pointer.set(normalizedX, normalizedY);
+    this.raycaster.setFromCamera(this.pointer, this.camera);
+    return this.residentLayer.pickResident(this.raycaster);
+  }
+
+  setSelectedResident(residentId: string | null): void {
+    this.residentLayer.setSelectedResident(residentId);
   }
 
   setResidents(

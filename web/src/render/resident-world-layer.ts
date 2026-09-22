@@ -87,6 +87,17 @@ export class ResidentWorldLayer {
 
   private readonly loader = new GLTFLoader();
   private readonly actors = new Map<string, ResidentActor>();
+  private readonly selectionRing = new THREE.Mesh(
+    new THREE.RingGeometry(0.62, 0.84, 36),
+    new THREE.MeshBasicMaterial({
+      color: 0xdde9c8,
+      transparent: true,
+      opacity: 0.72,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    }),
+  );
+  private selectedResidentId: string | null = null;
   private template: THREE.Group | null = null;
   private clips: THREE.AnimationClip[] = [];
   private ready = false;
@@ -96,6 +107,10 @@ export class ResidentWorldLayer {
   private pendingCenterY = 0;
 
   constructor() {
+    this.selectionRing.rotation.x = -Math.PI * 0.5;
+    this.selectionRing.visible = false;
+    this.selectionRing.renderOrder = 4;
+    this.group.add(this.selectionRing);
     void this.loadAssets();
   }
 
@@ -173,6 +188,29 @@ export class ResidentWorldLayer {
     }
   }
 
+  setSelectedResident(residentId: string | null): void {
+    this.selectedResidentId = residentId;
+    this.updateSelectionRing();
+  }
+
+  pickResident(raycaster: THREE.Raycaster): string | null {
+    const roots = [...this.actors.values()]
+      .filter((actor) => actor.root.visible)
+      .map((actor) => actor.root);
+    const intersections = raycaster.intersectObjects(roots, true);
+
+    for (const intersection of intersections) {
+      let current: THREE.Object3D | null = intersection.object;
+      while (current && current !== this.group) {
+        const residentId = current.userData.residentId;
+        if (typeof residentId === 'string') return residentId;
+        current = current.parent;
+      }
+    }
+
+    return null;
+  }
+
   update(deltaSeconds: number): void {
     const dt = Math.min(0.05, Math.max(0, deltaSeconds));
     const ease = 1 - Math.exp(-dt * 7.5);
@@ -186,6 +224,8 @@ export class ResidentWorldLayer {
       this.setAction(actor, distance > 0.025);
       actor.mixer.update(dt);
     }
+
+    this.updateSelectionRing();
   }
 
   dispose(): void {
@@ -199,6 +239,27 @@ export class ResidentWorldLayer {
       });
     }
     this.actors.clear();
+    this.selectionRing.geometry.dispose();
+    const selectionMaterial = this.selectionRing.material;
+    if (!Array.isArray(selectionMaterial)) selectionMaterial.dispose();
+  }
+
+  private updateSelectionRing(): void {
+    const actor = this.selectedResidentId
+      ? this.actors.get(this.selectedResidentId)
+      : undefined;
+
+    if (!actor?.root.visible || !actor.initialized) {
+      this.selectionRing.visible = false;
+      return;
+    }
+
+    this.selectionRing.position.set(
+      actor.current.x,
+      actor.current.y + 0.035,
+      actor.current.z,
+    );
+    this.selectionRing.visible = true;
   }
 
   private async loadAssets(): Promise<void> {
@@ -263,6 +324,7 @@ export class ResidentWorldLayer {
 
     const variantSeed = stableHash(resident.id);
     const root = new THREE.Group();
+    root.userData.residentId = resident.id;
     const model = cloneSkeleton(this.template) as THREE.Group;
     cloneActorMaterials(model, variantSeed);
     root.add(model);

@@ -83,6 +83,11 @@ export function startObserverEngine(): void {
       });
       drawWorld();
     },
+    onTap(clientX, clientY) {
+      if (!threeWorldRenderer) return;
+      const residentId = threeWorldRenderer.pickResident(clientX, clientY);
+      selectResident(residentId);
+    },
   });
   
   function resizeCanvas(): void {
@@ -134,6 +139,8 @@ export function startObserverEngine(): void {
       zoom,
       followResidents,
     });
+    const selectedResidentId = observerStore.getSnapshot().selectedResidentId;
+    threeWorldRenderer?.setSelectedResident(selectedResidentId);
     threeWorldRenderer?.setTerrain(terrain);
     threeWorldRenderer?.setResidents(
       residentSnapshot,
@@ -164,7 +171,15 @@ export function startObserverEngine(): void {
     characterLayer?.clearResidents();
     simulationClock?.resetAccumulator();
     observerStore.resetWorld();
+    threeWorldRenderer?.setSelectedResident(null);
     refresh();
+  }
+
+  function selectResident(residentId: string | null): void {
+    observerStore.selectResident(residentId);
+    threeWorldRenderer?.setSelectedResident(
+      observerStore.getSnapshot().selectedResidentId,
+    );
   }
   
   function move(dx: number, dy: number): void {
@@ -205,6 +220,7 @@ export function startObserverEngine(): void {
     createWorld,
     stepMinutes,
     moveObserver: move,
+    selectResident,
   });
   
   new ResizeObserver(resizeCanvas).observe(canvas);
