@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { TerrainWindow } from '../runtime/core-types';
+import { createTerrainElevationSampler } from './terrain-geometry';
 
 const MAX_TREES = 4096;
 
@@ -57,6 +58,7 @@ export class VegetationLayer {
 
   setTerrain(window: TerrainWindow): void {
     const seed = window.worldSeed ?? '0';
+    const sampleElevation = createTerrainElevationSampler(window);
     let count = 0;
 
     for (const chunk of window.chunks) {
@@ -76,7 +78,14 @@ export class VegetationLayer {
         const yaw = hash01(seed, chunk.x, chunk.y, index + 47) * Math.PI * 2;
         const worldX = (chunk.x - window.centerChunkX) * 8 + offsetX;
         const worldZ = (chunk.y - window.centerChunkY) * 8 + offsetZ;
-        const groundY = chunk.elevation01 * 48;
+        const localX01 = Math.max(0, Math.min(1, (offsetX + 4) / 8));
+        const localY01 = Math.max(0, Math.min(1, (offsetZ + 4) / 8));
+        const groundY = sampleElevation(
+          chunk.x,
+          chunk.y,
+          localX01,
+          localY01,
+        ) * 48;
         const trunkHeight = 1.7 * treeScale;
         const crownHeight = 3.8 * treeScale;
 
