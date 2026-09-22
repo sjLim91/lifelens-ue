@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { TerrainWindow } from '../runtime/core-types';
+import { WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
 import { createTerrainElevationSampler } from './terrain-geometry';
 
 const MAX_TREES = 4096;
@@ -76,16 +77,26 @@ export class VegetationLayer {
         const treeScale = 0.82 + hash01(seed, chunk.x, chunk.y, index + 19) * 0.68;
         const widthScale = 0.82 + hash01(seed, chunk.x, chunk.y, index + 31) * 0.36;
         const yaw = hash01(seed, chunk.x, chunk.y, index + 47) * Math.PI * 2;
-        const worldX = (chunk.x - window.centerChunkX) * 8 + offsetX;
-        const worldZ = (chunk.y - window.centerChunkY) * 8 + offsetZ;
-        const localX01 = Math.max(0, Math.min(1, (offsetX + 4) / 8));
-        const localY01 = Math.max(0, Math.min(1, (offsetZ + 4) / 8));
+        const chunkWorldSize = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
+        const halfChunk = chunkWorldSize * 0.5;
+        const worldX =
+          (chunk.x - window.centerChunkX) * chunkWorldSize + offsetX;
+        const worldZ =
+          (chunk.y - window.centerChunkY) * chunkWorldSize + offsetZ;
+        const localX01 = Math.max(
+          0,
+          Math.min(1, (offsetX + halfChunk) / chunkWorldSize),
+        );
+        const localY01 = Math.max(
+          0,
+          Math.min(1, (offsetZ + halfChunk) / chunkWorldSize),
+        );
         const groundY = sampleElevation(
           chunk.x,
           chunk.y,
           localX01,
           localY01,
-        ) * 48;
+        ) * WORLD_GRID_CONTRACT.elevationScale;
         const trunkHeight = 1.7 * treeScale;
         const crownHeight = 3.8 * treeScale;
 
