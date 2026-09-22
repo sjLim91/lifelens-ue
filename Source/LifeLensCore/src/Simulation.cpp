@@ -316,6 +316,7 @@ void Simulation::clearNavigation(Runtime& r){
     r.navigationHasTarget=false;
     r.navigationArrived=false;
     r.navigationRouteFailed=false;
+    r.navigationNextStepMinute=0;
 }
 
 bool Simulation::advanceNavigation(
@@ -359,8 +360,14 @@ bool Simulation::advanceNavigation(
         }
     }
 
+    if(world_.minute<r.navigationNextStepMinute){
+        return false;
+    }
+
     if(r.navigationRouteIndex<r.navigationRoute.size()){
         r.pos=r.navigationRoute[r.navigationRouteIndex++];
+        r.navigationNextStepMinute=
+            world_.minute + coreGroundStepIntervalMinutes(world_,r.pos);
     }
 
     if(gridWithinRadius(r.pos,target,radius)){
