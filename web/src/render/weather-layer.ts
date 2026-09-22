@@ -1,51 +1,97 @@
 import * as THREE from 'three';
 import type { DynamicEnvironment } from '../runtime/core-types';
 
-const MAX_PARTICLES = 900;
+const MAX_RAIN_DROPS = 1100;
+const MAX_SNOW_FLAKES = 800;
 
 function clamp01(value: unknown): number {
   return Math.max(0, Math.min(1, Number(value) || 0));
 }
 
+function seeded01(index: number, salt: number): number {
+  const value = Math.sin(
+    index * 12.9898 + salt * 78.233,
+  ) * 43758.5453;
+  return value - Math.floor(value);
+}
+
 export class WeatherLayer {
   readonly group = new THREE.Group();
 
-  private readonly positions = new Float32Array(MAX_PARTICLES * 3);
-  private readonly geometry = new THREE.BufferGeometry();
-  private readonly material = new THREE.PointsMaterial({
-    color: 0xc7deea,
-    size: 0.34,
+  private readonly rainPositions = new Float32Array(
+    MAX_RAIN_DROPS * 2 * 3,
+  );
+  private readonly rainGeometry = new THREE.BufferGeometry();
+  private readonly rainMaterial = new THREE.LineBasicMaterial({
+    color: 0xc4dce8,
     transparent: true,
-    opacity: 0.72,
+    opacity: 0.68,
+    depthWrite: false,
+  });
+  private readonly rainLines: THREE.LineSegments;
+
+  private readonly snowPositions = new Float32Array(
+    MAX_SNOW_FLAKES * 3,
+  );
+  private readonly snowGeometry = new THREE.BufferGeometry();
+  private readonly snowMaterial = new THREE.PointsMaterial({
+    color: 0xf2f6f7,
+    size: 0.82,
+    transparent: true,
+    opacity: 0.9,
     depthWrite: false,
     sizeAttenuation: true,
   });
-  private readonly particles: THREE.Points;
-  private activeCount = 0;
+  private readonly snowPoints: THREE.Points;
+
   private precipitation: 'None' | 'Rain' | 'Snow' = 'None';
   private intensity = 0;
   private wind = 0;
+  private activeRainCount = 0;
+  private activeSnowCount = 0;
+  private animationTime = 0;
 
   constructor() {
-    for (let index = 0; index < MAX_PARTICLES; index += 1) {
-      const offset = index * 3;
-      const a = ((index * 16807) % 2147483647) / 2147483647;
-      const b = ((index * 48271 + 17) % 2147483647) / 2147483647;
-      const c = ((index * 69621 + 31) % 2147483647) / 2147483647;
-      this.positions[offset] = (a - 0.5) * 150;
-      this.positions[offset + 1] = 8 + b * 85;
-      this.positions[offset + 2] = (c - 0.5) * 150;
-    }
+    this.initializeRain();
+    this.initializeSnow();
 
-    this.geometry.setAttribute(
+    this.rainGeometry.setAttribute(
       'position',
-      new THREE.BufferAttribute(this.positions, 3),
+      new THREE.BufferAttribute(this.rainPositions, 3),
     );
-    this.geometry.setDrawRange(0, 0);
-    this.particles = new THREE.Points(this.geometry, this.material);
-    this.particles.frustumCulled = false;
-    this.group.add(this.particles);
+    this.snowGeometry.setAttribute(
+      'position',
+      new THREE.BufferAttribute(this.snowPositions, 3),
+    );
+
+    this.rainGeometry.setDrawRange(0, 0);
+    this.snowGeometry.setDrawRange(0, 0);
+
+    this.rainLines = new THREE.LineSegments(
+      this.rainGeometry,
+      this.rainMaterial,
+    );
+    this.rainLines.frustumCulled = false;
+    this.rainLines.renderOrder = 30;
+
+    this.snowPoints = new THREE.Points(
+      this.snowGeometry,
+      this.snowMaterial,
+    );
+    this.snowPoints.frustumCulled = false;
+    this.snowPoints.renderOrder = 30;
+
+    this.group.add(this.rainLines);
+    this.group.add(this.snowPoints);
     this.group.visible = false;
+  }
+
+  setAnchor(x: number, y: number, z: number): void {
+    this.group.position.set(
+      Number(x) || 0,
+      Number(y) || 0,
+      Number(z) || 0,
+    );
   }
 
   setEnvironment(environment: DynamicEnvironment | null): void {
@@ -53,58 +99,188 @@ export class WeatherLayer {
     this.intensity = clamp01(environment?.precipitationIntensity01);
     this.wind = clamp01(environment?.windIntensity01);
 
-    const active = this.precipitation !== 'None' && this.intensity >= 0.03;
-    this.activeCount = active
-      ? Math.max(90, Math.round(MAX_PARTICLES * this.intensity))
+    const active = this.precipitation !== 'None'
+      && this.intensity >= 0.025;
+
+    this.activeRainCount = (
+      active && this.precipitation === 'Rain'
+    )
+      ? Math.max(
+          180,
+          Math.round(MAX_RAIN_DROPS * this.intensity),
+        )
       : 0;
-    this.geometry.setDrawRange(0, this.activeCount);
+
+    this.activeSnowCount = (
+      active && this.precipitation === 'Snow'
+    )
+      ? Math.max(
+          120,
+          Math.round(MAX_SNOW_FLAKES * this.intensity),
+        )
+      : 0;
+
+    this.rainGeometry.setDrawRange(
+      0,
+      this.activeRainCount * 2,
+    );
+    this.snowGeometry.setDrawRange(
+      0,
+      this.activeSnowCount,
+    );
+
+    this.rainLines.visible = this.activeRainCount > 0;
+    this.snowPoints.visible = this.activeSnowCount > 0;
     this.group.visible = active;
 
-    if (this.precipitation === 'Snow') {
-      this.material.color.set(0xe8f0f3);
-      this.material.size = 0.72;
-      this.material.opacity = 0.82;
-    } else {
-      this.material.color.set(0xaecfdf);
-      this.material.size = 0.28;
-      this.material.opacity = 0.66 + this.intensity * 0.2;
-    }
-    this.material.needsUpdate = true;
+    this.rainMaterial.opacity = Math.min(
+      0.9,
+      0.5 + this.intensity * 0.4,
+    );
+    this.snowMaterial.opacity = Math.min(
+      0.96,
+      0.74 + this.intensity * 0.22,
+    );
+    this.snowMaterial.size = 0.68 + this.intensity * 0.7;
+
+    this.rainMaterial.needsUpdate = true;
+    this.snowMaterial.needsUpdate = true;
   }
 
   update(deltaSeconds: number): void {
-    if (!this.group.visible || this.activeCount <= 0) return;
+    if (!this.group.visible) return;
 
     const dt = Math.min(0.05, Math.max(0, deltaSeconds));
-    const fallSpeed = this.precipitation === 'Snow'
-      ? 5 + this.intensity * 4
-      : 34 + this.intensity * 44;
-    const drift = (this.wind - 0.25) * (
-      this.precipitation === 'Snow' ? 7 : 13
-    );
+    this.animationTime += dt;
 
-    for (let index = 0; index < this.activeCount; index += 1) {
-      const offset = index * 3;
-      this.positions[offset] += drift * dt;
-      this.positions[offset + 1] -= fallSpeed * dt;
+    if (this.activeRainCount > 0) {
+      this.updateRain(dt);
+    }
+    if (this.activeSnowCount > 0) {
+      this.updateSnow(dt);
+    }
+  }
 
-      if (this.positions[offset + 1] < -2) {
-        this.positions[offset + 1] = 72 + ((index * 37) % 23);
-        this.positions[offset] = (((index * 97) % 1000) / 1000 - 0.5) * 150;
+  dispose(): void {
+    this.rainGeometry.dispose();
+    this.rainMaterial.dispose();
+    this.snowGeometry.dispose();
+    this.snowMaterial.dispose();
+  }
+
+  private initializeRain(): void {
+    for (let index = 0; index < MAX_RAIN_DROPS; index += 1) {
+      const x = (seeded01(index, 1) - 0.5) * 120;
+      const y = 6 + seeded01(index, 2) * 78;
+      const z = (seeded01(index, 3) - 0.5) * 120;
+      const length = 1.2 + seeded01(index, 4) * 2.1;
+
+      const base = index * 6;
+      this.rainPositions[base] = x;
+      this.rainPositions[base + 1] = y;
+      this.rainPositions[base + 2] = z;
+      this.rainPositions[base + 3] = x;
+      this.rainPositions[base + 4] = y - length;
+      this.rainPositions[base + 5] = z;
+    }
+  }
+
+  private initializeSnow(): void {
+    for (let index = 0; index < MAX_SNOW_FLAKES; index += 1) {
+      const base = index * 3;
+      this.snowPositions[base] = (
+        seeded01(index, 11) - 0.5
+      ) * 120;
+      this.snowPositions[base + 1] = (
+        5 + seeded01(index, 12) * 72
+      );
+      this.snowPositions[base + 2] = (
+        seeded01(index, 13) - 0.5
+      ) * 120;
+    }
+  }
+
+  private updateRain(dt: number): void {
+    const fallSpeed = 38 + this.intensity * 58;
+    const windX = (this.wind - 0.18) * 16;
+
+    for (let index = 0; index < this.activeRainCount; index += 1) {
+      const base = index * 6;
+      let x = this.rainPositions[base];
+      let y = this.rainPositions[base + 1];
+      let z = this.rainPositions[base + 2];
+
+      x += windX * dt;
+      z += windX * 0.22 * dt;
+      y -= fallSpeed * dt;
+
+      if (y < -1.5) {
+        x = (seeded01(index, 21) - 0.5) * 120;
+        y = 62 + seeded01(index, 22) * 28;
+        z = (seeded01(index, 23) - 0.5) * 120;
       }
 
-      if (this.positions[offset] > 82) this.positions[offset] = -82;
-      if (this.positions[offset] < -82) this.positions[offset] = 82;
+      if (x > 64) x = -64;
+      if (x < -64) x = 64;
+      if (z > 64) z = -64;
+      if (z < -64) z = 64;
+
+      const length = 1.4 + this.intensity * 2.8;
+      const slant = windX * 0.035;
+
+      this.rainPositions[base] = x;
+      this.rainPositions[base + 1] = y;
+      this.rainPositions[base + 2] = z;
+      this.rainPositions[base + 3] = x - slant;
+      this.rainPositions[base + 4] = y - length;
+      this.rainPositions[base + 5] = z - slant * 0.18;
     }
 
-    const attribute = this.geometry.getAttribute('position');
+    const attribute = this.rainGeometry.getAttribute('position');
     if (attribute instanceof THREE.BufferAttribute) {
       attribute.needsUpdate = true;
     }
   }
 
-  dispose(): void {
-    this.geometry.dispose();
-    this.material.dispose();
+  private updateSnow(dt: number): void {
+    const fallSpeed = 3.4 + this.intensity * 5.2;
+    const windX = (this.wind - 0.16) * 5.5;
+
+    for (let index = 0; index < this.activeSnowCount; index += 1) {
+      const base = index * 3;
+      let x = this.snowPositions[base];
+      let y = this.snowPositions[base + 1];
+      let z = this.snowPositions[base + 2];
+
+      const phase = this.animationTime * 0.8
+        + index * 0.37;
+
+      x += (
+        windX
+        + Math.sin(phase) * 0.75
+      ) * dt;
+      z += Math.cos(phase * 0.73) * 0.6 * dt;
+      y -= fallSpeed * dt;
+
+      if (y < -1) {
+        x = (seeded01(index, 31) - 0.5) * 120;
+        y = 58 + seeded01(index, 32) * 26;
+        z = (seeded01(index, 33) - 0.5) * 120;
+      }
+
+      if (x > 64) x = -64;
+      if (x < -64) x = 64;
+      if (z > 64) z = -64;
+      if (z < -64) z = 64;
+
+      this.snowPositions[base] = x;
+      this.snowPositions[base + 1] = y;
+      this.snowPositions[base + 2] = z;
+    }
+
+    const attribute = this.snowGeometry.getAttribute('position');
+    if (attribute instanceof THREE.BufferAttribute) {
+      attribute.needsUpdate = true;
+    }
   }
 }
