@@ -108,6 +108,7 @@ export class WorldScene {
     this.atmosphere.setEnvironment(environment);
     this.weatherLayer.setEnvironment(environment);
     this.waterLayer.setEnvironment(environment);
+    this.consequenceLayer.setEnvironment(environment);
     this.vegetationLayer.setWindIntensity(
       Number(environment?.windIntensity01) || 0,
     );
@@ -335,12 +336,12 @@ export class WorldScene {
     if (snow && precipitation > 0) {
       tint.lerp(
         new THREE.Color(0xdce6e7),
-        Math.min(0.34, precipitation * 0.3),
+        Math.min(0.52, precipitation * 0.48),
       );
     } else if (rain && precipitation > 0) {
       tint.lerp(
-        new THREE.Color(0xd7e0dc),
-        Math.min(0.18, precipitation * 0.15),
+        new THREE.Color(0xd3ddd8),
+        Math.min(0.22, precipitation * 0.2),
       );
     }
     if (cloud > 0.45) {
