@@ -65,7 +65,11 @@ jobs:
           sed 's#Clients/Web/generated/##g' public/runtime/SHA256SUMS.txt \
             | (cd public/runtime && sha256sum -c -)
 
-          grep -q 'dynamicEnvironmentJson' public/runtime/lifelens_core.js
+          if ! grep -aq 'dynamicEnvironmentJson' public/runtime/lifelens_core.js \
+            && ! grep -aq 'dynamicEnvironmentJson' public/runtime/lifelens_core.wasm; then
+            echo "dynamicEnvironmentJson binding missing from downloaded runtime"
+            exit 1
+          fi
 
       - name: Typecheck
         run: npm run typecheck
