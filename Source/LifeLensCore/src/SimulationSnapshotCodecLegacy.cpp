@@ -652,6 +652,7 @@ bool encodeSimulationSnapshot(const SimulationStateSnapshot& snapshot,std::vecto
     std::sort(runtimeIds.begin(),runtimeIds.end());
     w.u32(static_cast<std::uint32_t>(runtimeIds.size()));
     for(CharacterId id:runtimeIds){ w.u64(id); writeRuntime(w,snapshot.runtime.at(id)); }
+    w.u64(snapshot.nextContextActionToken);
     writeCollection(w,snapshot.logs,writeStringValue);
     outBytes=std::move(w.bytes); if(error) error->clear(); return true;
 }
@@ -677,6 +678,10 @@ bool decodeSimulationSnapshot(const std::vector<std::uint8_t>& bytes,SimulationS
     for(std::uint32_t i=0;i<runtimeCount;++i){
         CharacterId id=0; SimulationRuntimeSnapshot runtime;
         if(!r.u64(id)||!readRuntime(r,runtime)||!decoded.runtime.emplace(id,std::move(runtime)).second){ setError(error,"invalid runtime payload"); return false; }
+    }
+    if(!r.u64(decoded.nextContextActionToken) || decoded.nextContextActionToken==0){
+        setError(error,"invalid next context action token");
+        return false;
     }
     if(!readVector(r,decoded.logs,readStringValue)){ setError(error,"invalid log payload"); return false; }
     if(!r.done()){ setError(error,"snapshot contains trailing bytes"); return false; }
