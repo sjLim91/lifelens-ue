@@ -142,7 +142,7 @@ export class WorldScene {
     });
 
     const mesh = new THREE.Mesh(geometry, material);
-    this.updateTerrainMesh(mesh, chunk, window);
+    this.updateTerrainMesh(mesh, chunk, window, buildGeometry);
     return mesh;
   }
 
