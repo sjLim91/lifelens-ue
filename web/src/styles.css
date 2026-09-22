@@ -355,3 +355,22 @@ button:disabled { opacity: .33; cursor: default; }
     grid-template-columns: 1fr 1fr;
   }
 }
+
+
+.time-speed-control {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: .38rem;
+  margin-top: .58rem;
+}
+.time-speed-control button {
+  min-width: 0;
+  padding: .52rem .3rem;
+  border-radius: 9px;
+}
+.time-speed-control button.active {
+  border-color: #91aa91;
+  background: #233829;
+  color: #f2f7f1;
+  box-shadow: inset 0 0 0 1px rgba(177, 203, 177, .12);
+}
