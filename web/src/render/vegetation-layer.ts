@@ -127,6 +127,7 @@ export class VegetationLayer {
   private readonly rotation = new THREE.Quaternion();
   private readonly scale = new THREE.Vector3();
   private readonly position = new THREE.Vector3();
+  private readonly instanceColor = new THREE.Color();
   private readonly up = new THREE.Vector3(0, 1, 0);
   private resources: WorldResourceNode[] = [];
   private facilities: WorldFacility[] = [];
@@ -538,6 +539,13 @@ uniform float uLifeLensWindIntensity;`,
             this.scale.set(stumpScale, 0.72, stumpScale);
             this.matrix.compose(this.position, this.rotation, this.scale);
             this.stumps.setMatrixAt(stumpCountTotal, this.matrix);
+            this.instanceColor.setHex(0xffffff);
+            this.instanceColor.offsetHSL(
+              0,
+              0,
+              (hash01(seed, chunk.x, chunk.y, 1021 + index * 7) - 0.5) * 0.09,
+            );
+            this.stumps.setColorAt(stumpCountTotal, this.instanceColor);
             stumpCountTotal += 1;
           }
           continue;
@@ -570,6 +578,15 @@ uniform float uLifeLensWindIntensity;`,
           : formRoll > 1 - saplingBias
             ? 'Sapling'
             : 'Broadleaf';
+
+        const treeTint = treeForm === 'Conifer'
+          ? 0xd5e2d6
+          : treeForm === 'Sapling'
+            ? 0xf1fff0
+            : 0xffffff;
+        const toneJitter = (
+          hash01(seed, chunk.x, chunk.y, 1031 + index * 11) - 0.5
+        ) * 0.08;
 
         const formHeight = treeForm === 'Conifer'
           ? 1.16
@@ -607,6 +624,9 @@ uniform float uLifeLensWindIntensity;`,
         );
         this.matrix.compose(this.position, this.rotation, this.scale);
         this.trunks.setMatrixAt(treeCountTotal, this.matrix);
+        this.instanceColor.setHex(0xffffff);
+        this.instanceColor.offsetHSL(0, 0, toneJitter * 0.45);
+        this.trunks.setColorAt(treeCountTotal, this.instanceColor);
 
         const crownBaseY = groundY
           + trunkHeight
@@ -731,6 +751,16 @@ uniform float uLifeLensWindIntensity;`,
             treeCountTotal,
             this.matrix,
           );
+          this.instanceColor.setHex(treeTint);
+          this.instanceColor.offsetHSL(
+            toneJitter * 0.12,
+            toneJitter * 0.18,
+            toneJitter + layerIndex * 0.008,
+          );
+          crownMeshes[layerIndex].setColorAt(
+            treeCountTotal,
+            this.instanceColor,
+          );
         }
 
         treeCountTotal += 1;
@@ -795,6 +825,16 @@ uniform float uLifeLensWindIntensity;`,
         );
         this.matrix.compose(this.position, this.rotation, this.scale);
         this.shrubs.setMatrixAt(shrubCountTotal, this.matrix);
+        this.instanceColor.setHex(0xffffff);
+        const shrubTone = (
+          hash01(seed, chunk.x, chunk.y, 3005 + index * 5) - 0.5
+        ) * 0.11;
+        this.instanceColor.offsetHSL(
+          shrubTone * 0.12,
+          shrubTone * 0.2,
+          shrubTone,
+        );
+        this.shrubs.setColorAt(shrubCountTotal, this.instanceColor);
         shrubCountTotal += 1;
       }
 
@@ -842,6 +882,16 @@ uniform float uLifeLensWindIntensity;`,
         );
         this.matrix.compose(this.position, this.rotation, this.scale);
         this.rocks.setMatrixAt(rockCountTotal, this.matrix);
+        this.instanceColor.setHex(0xffffff);
+        const rockTone = (
+          hash01(seed, chunk.x, chunk.y, 5004 + index * 5) - 0.5
+        ) * 0.1;
+        this.instanceColor.offsetHSL(
+          rockTone * 0.05,
+          rockTone * 0.08,
+          rockTone,
+        );
+        this.rocks.setColorAt(rockCountTotal, this.instanceColor);
         rockCountTotal += 1;
       }
     }
@@ -864,6 +914,9 @@ uniform float uLifeLensWindIntensity;`,
       this.stumps,
     ]) {
       mesh.instanceMatrix.needsUpdate = true;
+      if (mesh.instanceColor) {
+        mesh.instanceColor.needsUpdate = true;
+      }
     }
   }
 
