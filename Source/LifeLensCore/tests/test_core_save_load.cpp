@@ -124,6 +124,7 @@ static bool sameSnapshot(const SimulationStateSnapshot& a,const SimulationStateS
 {
     CHECK(a.version==b.version);
     CHECK(a.world.minute==b.world.minute && a.world.seed==b.world.seed);
+    CHECK(a.nextContextActionToken==b.nextContextActionToken);
     std::ostringstream arng,brng; arng<<a.world.rng; brng<<b.world.rng; CHECK(arng.str()==brng.str());
     CHECK(a.world.characters.size()==b.world.characters.size());
     for(std::size_t i=0;i<a.world.characters.size();++i) CHECK(sameCharacter(a.world.characters[i],b.world.characters[i]));
