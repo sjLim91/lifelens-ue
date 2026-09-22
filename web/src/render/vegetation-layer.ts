@@ -17,24 +17,42 @@ function hash01(seed: string, x: number, y: number, index: number): number {
 export class VegetationLayer {
   readonly group = new THREE.Group();
 
-  private readonly treeGeometry = new THREE.ConeGeometry(0.42, 2.1, 6);
-  private readonly treeMaterial = new THREE.MeshStandardMaterial({
+  private readonly crownGeometry = new THREE.ConeGeometry(0.72, 3.8, 7);
+  private readonly trunkGeometry = new THREE.CylinderGeometry(0.12, 0.17, 1.7, 6);
+  private readonly crownMaterial = new THREE.MeshStandardMaterial({
     color: 0x214b27,
     roughness: 0.94,
     metalness: 0,
   });
-  private readonly trees = new THREE.InstancedMesh(
-    this.treeGeometry,
-    this.treeMaterial,
+  private readonly trunkMaterial = new THREE.MeshStandardMaterial({
+    color: 0x4b3926,
+    roughness: 0.96,
+    metalness: 0,
+  });
+  private readonly crowns = new THREE.InstancedMesh(
+    this.crownGeometry,
+    this.crownMaterial,
+    MAX_TREES,
+  );
+  private readonly trunks = new THREE.InstancedMesh(
+    this.trunkGeometry,
+    this.trunkMaterial,
     MAX_TREES,
   );
   private readonly matrix = new THREE.Matrix4();
+  private readonly rotation = new THREE.Quaternion();
+  private readonly scale = new THREE.Vector3();
+  private readonly position = new THREE.Vector3();
 
   constructor() {
-    this.trees.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    this.trees.castShadow = false;
-    this.trees.receiveShadow = false;
-    this.group.add(this.trees);
+    this.crowns.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.trunks.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.crowns.castShadow = false;
+    this.crowns.receiveShadow = false;
+    this.trunks.castShadow = false;
+    this.trunks.receiveShadow = false;
+    this.group.add(this.trunks);
+    this.group.add(this.crowns);
   }
 
   setTerrain(window: TerrainWindow): void {
@@ -46,32 +64,67 @@ export class VegetationLayer {
         0,
         Math.min(1, Number(chunk.forestCoverage01) || 0),
       );
-      const treeCount = forest < 0.12 ? 0 : Math.min(5, 1 + Math.floor(forest * 5));
+      const treeCount = forest < 0.12
+        ? 0
+        : Math.min(9, 1 + Math.floor(forest * 8));
 
       for (let index = 0; index < treeCount && count < MAX_TREES; index += 1) {
-        const offsetX = (hash01(seed, chunk.x, chunk.y, index * 2) - 0.5) * 6.2;
-        const offsetZ = (hash01(seed, chunk.x, chunk.y, index * 2 + 1) - 0.5) * 6.2;
-        const scale = 0.72 + hash01(seed, chunk.x, chunk.y, index + 19) * 0.72;
+        const offsetX = (hash01(seed, chunk.x, chunk.y, index * 2) - 0.5) * 6.5;
+        const offsetZ = (hash01(seed, chunk.x, chunk.y, index * 2 + 1) - 0.5) * 6.5;
+        const treeScale = 0.82 + hash01(seed, chunk.x, chunk.y, index + 19) * 0.68;
+        const widthScale = 0.82 + hash01(seed, chunk.x, chunk.y, index + 31) * 0.36;
+        const yaw = hash01(seed, chunk.x, chunk.y, index + 47) * Math.PI * 2;
         const worldX = (chunk.x - window.centerChunkX) * 8 + offsetX;
         const worldZ = (chunk.y - window.centerChunkY) * 8 + offsetZ;
-        const worldY = chunk.elevation01 * 48 + scale;
+        const groundY = chunk.elevation01 * 48;
+        const trunkHeight = 1.7 * treeScale;
+        const crownHeight = 3.8 * treeScale;
 
-        this.matrix.compose(
-          new THREE.Vector3(worldX, worldY, worldZ),
-          new THREE.Quaternion(),
-          new THREE.Vector3(scale, scale, scale),
+        this.rotation.setFromAxisAngle(
+          new THREE.Vector3(0, 1, 0),
+          yaw,
         );
-        this.trees.setMatrixAt(count, this.matrix);
+
+        this.position.set(
+          worldX,
+          groundY + (trunkHeight * 0.5),
+          worldZ,
+        );
+        this.scale.set(
+          treeScale * widthScale,
+          treeScale,
+          treeScale * widthScale,
+        );
+        this.matrix.compose(this.position, this.rotation, this.scale);
+        this.trunks.setMatrixAt(count, this.matrix);
+
+        this.position.set(
+          worldX,
+          groundY + trunkHeight + (crownHeight * 0.5) - (0.35 * treeScale),
+          worldZ,
+        );
+        this.scale.set(
+          treeScale * widthScale,
+          treeScale,
+          treeScale * widthScale,
+        );
+        this.matrix.compose(this.position, this.rotation, this.scale);
+        this.crowns.setMatrixAt(count, this.matrix);
+
         count += 1;
       }
     }
 
-    this.trees.count = count;
-    this.trees.instanceMatrix.needsUpdate = true;
+    this.crowns.count = count;
+    this.trunks.count = count;
+    this.crowns.instanceMatrix.needsUpdate = true;
+    this.trunks.instanceMatrix.needsUpdate = true;
   }
 
   dispose(): void {
-    this.treeGeometry.dispose();
-    this.treeMaterial.dispose();
+    this.crownGeometry.dispose();
+    this.trunkGeometry.dispose();
+    this.crownMaterial.dispose();
+    this.trunkMaterial.dispose();
   }
 }
