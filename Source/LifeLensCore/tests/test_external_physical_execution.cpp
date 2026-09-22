@@ -2,6 +2,7 @@
 #include <string>
 
 #include "lifelens/Simulation.h"
+#include "lifelens/SimulationCalendar.h"
 
 using namespace lifelens;
 
@@ -105,7 +106,12 @@ int main()
         resident.needs={0.01,0.01,0.01,0.01,0.01};
     }
     autonomous.world().characters.front().needs.bladder=0.99;
-    autonomous.runMinutes(30);
+    for(int minute=0;
+        minute<SimulationMinutesPerDay
+        && autonomous.observeEnvironment().humanWasteResidues==0;
+        ++minute){
+        autonomous.step();
+    }
     assert(autonomous.observeEnvironment().humanWasteResidues>=1);
 
     return 0;
