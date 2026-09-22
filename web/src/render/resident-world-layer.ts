@@ -106,6 +106,7 @@ export class ResidentWorldLayer {
   private pendingTerrain: TerrainWindow | null = null;
   private pendingCenterX = 0;
   private pendingCenterY = 0;
+  private simulationSpeed = 1;
 
   constructor() {
     this.selectionRing.rotation.x = -Math.PI * 0.5;
@@ -190,6 +191,10 @@ export class ResidentWorldLayer {
     }
   }
 
+  setSimulationSpeed(speed: number): void {
+    this.simulationSpeed = [0, 1, 4, 16, 64].includes(speed) ? speed : 1;
+  }
+
   setSelectedResident(residentId: string | null): void {
     this.selectedResidentId = residentId;
     this.updateSelectionRing();
@@ -215,15 +220,35 @@ export class ResidentWorldLayer {
 
   update(deltaSeconds: number): void {
     const dt = Math.min(0.05, Math.max(0, deltaSeconds));
-    const ease = 1 - Math.exp(-dt * 7.5);
+    // Core grid scale: 32 cells per 8 world units => 0.25 world unit/cell.
+    // Canonical 1x time: one simulation minute per ~1/3 real second.
+    // Therefore one authoritative cell/minute reads as ~0.75 world unit/sec.
+    // The renderer may catch up to the latest Core snapshot, but never moves
+    // farther than this speed budget in a single frame.
+    const effectiveSpeed = Math.max(1, this.simulationSpeed);
+    const maxDistance = 0.75 * effectiveSpeed * dt;
 
     for (const actor of this.actors.values()) {
       if (!actor.root.visible) continue;
 
-      const distance = actor.current.distanceTo(actor.target);
-      actor.current.lerp(actor.target, ease);
+      const delta = actor.target.clone().sub(actor.current);
+      const distance = delta.length();
+      const moving = distance > 0.01;
+
+      if (moving) {
+        actor.root.rotation.y = Math.atan2(delta.x, delta.z);
+        if (distance <= maxDistance) {
+          actor.current.copy(actor.target);
+        } else if (maxDistance > 0) {
+          actor.current.addScaledVector(
+            delta.multiplyScalar(1 / distance),
+            maxDistance,
+          );
+        }
+      }
+
       actor.root.position.copy(actor.current);
-      this.setAction(actor, distance > 0.025);
+      this.setAction(actor, moving);
       actor.mixer.update(dt);
     }
 
