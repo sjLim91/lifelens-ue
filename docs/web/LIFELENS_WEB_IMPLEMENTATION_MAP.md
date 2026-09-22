@@ -133,19 +133,31 @@ The following files form the development-only Three World path. It is connected 
 
 One Three.js scene/camera foundation.
 
-It composes continuous corner-height terrain meshes, WaterLayer, and instanced VegetationLayer.
+It composes continuous corner-height terrain meshes, connected WaterLayer geometry, instanced VegetationLayer, AtmosphereLayer, and ResidentWorldLayer.
 
 ### src/render/world-renderer.ts
 
-Renderer lifecycle wrapper for WorldScene.
+Renderer lifecycle wrapper for WorldScene. It owns the animation frame loop and advances resident interpolation/mixers before rendering.
 
 ### src/render/water-layer.ts
 
-World-space water mesh prototype.
+World-space water layer using connected flow geometry for streams/rivers and surface meshes for lake/wetland/coast/ocean categories.
 
 ### src/render/vegetation-layer.ts
 
 Instanced vegetation prototype.
+
+### src/render/atmosphere-layer.ts
+
+Core-minute-driven day/night presentation with sun, moon, hemisphere lighting, sky color, and fog.
+
+### src/render/resident-world-layer.ts
+
+Unified-world resident actors using the existing real GLB model and free animation library. Actors are persistent by resident GUID, consume authoritative Core positions/activities, interpolate movement, and select walk/contextual rest motions.
+
+### src/render/resident-world-coordinates.ts
+
+Maps resident grid positions into Three World coordinates.
 
 The target is to move terrain, water, vegetation, residents, structures, effects, and picking into this single scene and then delete the legacy Canvas2D renderer and transparent character overlay.
 
@@ -183,3 +195,7 @@ Connector-originated commits have not produced a visible workflow run in the cur
 GitHub `web/` is the development source of truth.
 
 Nothing in this implementation map authorizes deployment. AppDeploy synchronization happens only after an explicit user request.
+
+## Worker preparation
+
+`src/runtime/core-worker-protocol.ts` defines typed create-world/step/snapshot/dispose messages for the future off-main-thread Core runtime. `snapshot-sequencer.ts` provides monotonic stale-response rejection for that async path.
