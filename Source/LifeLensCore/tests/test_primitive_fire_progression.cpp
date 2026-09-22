@@ -36,7 +36,11 @@ int main()
     assert(!hasOperationalFirePit(world));
     assert(primitiveFirePitProject(world)==nullptr);
 
-    const PrimitiveFirePitSiteOpportunity site=choosePrimitiveFirePitSite(world,resident.id);
+    const GridPos activityAnchor=world.hasInitialStartRegionSelection
+        ? world.initialStartRegionCenterGrid()
+        : GridPos{};
+
+    const PrimitiveFirePitSiteOpportunity site=choosePrimitiveFirePitSite(world,resident.id,activityAnchor);
     assert(site.available);
     ConstructedFacility* project=establishPrimitiveFirePitProject(world,resident,site.pos);
     assert(project!=nullptr);
@@ -114,8 +118,11 @@ int main()
     Character ignorant;
     ignorant.id=9;
     ignorant.civilization.character=9;
+    const GridPos ignorantAnchor=ignorantWorld.hasInitialStartRegionSelection
+        ? ignorantWorld.initialStartRegionCenterGrid()
+        : GridPos{};
     const PrimitiveFirePitSiteOpportunity ignorantSite=
-        choosePrimitiveFirePitSite(ignorantWorld,ignorant.id);
+        choosePrimitiveFirePitSite(ignorantWorld,ignorant.id,ignorantAnchor);
     assert(ignorantSite.available);
     assert(establishPrimitiveFirePitProject(
         ignorantWorld,ignorant,ignorantSite.pos)==nullptr);

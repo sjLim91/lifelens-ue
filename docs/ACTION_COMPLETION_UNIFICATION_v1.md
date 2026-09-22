@@ -23,19 +23,26 @@ Physical Eat/Drink/Sleep/Toilet/Hygiene already use the same authority principle
 
 ## Pending action lifetime
 
-`PendingContextAction` lives only in `Simulation::Runtime`.
+`PendingContextAction` is authoritative Core runtime state.
 
-It is intentionally omitted from `SimulationStateSnapshot`:
-- Save/Load never replays unfinished movement or animation.
-- after restore, Utility AI may make a fresh decision from restored authoritative state.
-- the monotonic transport token is not simulation randomness and is not serialized.
+Since Core-owned headless locomotion now advances over multiple simulation minutes,
+Save/Load preserves the in-flight authoritative continuation state:
+- pending context kind, stable target identifiers, target GridPos and token;
+- deterministic context-token sequence;
+- Core navigation route, route index, target, arrival radius and route status.
 
-Timeouts prevent an unreachable presentation target from freezing a resident forever:
-- Social: 45 simulation minutes.
-- Parenting: 45 simulation minutes.
-- Civilization: 120 simulation minutes.
+Presentation-only transforms, animation phase and IK state are still not simulation
+authority and are not serialized.
 
-A timeout applies no action outcome.
+External physical execution keeps the presentation timeout contract so a missing
+native ACK cannot freeze a resident forever. A timeout applies no action outcome.
+
+Headless Core does not expire a valid action merely because walking took longer
+than a presentation timeout. It advances the authoritative route until:
+- the resident reaches the validated interaction neighborhood and Core completes
+  the action through the same completion implementation; or
+- Core routing declares the target unreachable, in which case the pending action
+  is cleared with no action outcome and normal replanning may resume.
 
 ## Social
 
@@ -84,9 +91,19 @@ At ACK:
 
 ## Headless Core compatibility
 
-Standalone Core tests and deterministic simulation runs normally have external execution disabled. In that mode, the same pending action is created and completed synchronously through `completeContextAction`.
+Standalone Core tests and the Web/WASM simulation normally run with external
+physical execution disabled.
 
-This preserves deterministic headless progression while ensuring there is only one authoritative completion implementation.
+In that mode Core itself owns locomotion:
+- a pending contextual action is created from the same authoritative decision;
+- `GridPos` advances incrementally through Core traversal truth instead of
+  snapping to the destination;
+- target validity is rechecked at arrival;
+- the outcome is applied through the same `completeContextAction`
+  implementation used by the external ACK path.
+
+This preserves one simulation authority while making headless/Web movement a
+real part of simulation truth rather than presentation interpolation.
 
 ## Unreal integration
 
@@ -110,7 +127,13 @@ Required before merge:
 - Gather resource/inventory totals are unchanged before ACK and mutate after correct target ACK.
 - Parenting care waits for ACK.
 - assisted toilet residue appears only after ACK at the resolved location.
-- pending context state is absent after Save/Load restore.
+- in-flight pending context, deterministic token sequence and authoritative
+  navigation continuation survive Save/Load exactly.
+- restored Core and uninterrupted Core continue into the same deterministic
+  future.
+- headless movement advances through authoritative GridPos cells and never
+  completes a contextual action by destination teleport.
+- unreachable headless routes produce no action outcome.
 - existing headless deterministic behavior remains stable.
 - Core test suite PASS.
 - Preflight PASS.

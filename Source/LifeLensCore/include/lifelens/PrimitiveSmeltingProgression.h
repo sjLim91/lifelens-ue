@@ -69,15 +69,14 @@ inline bool primitiveFurnaceSiteBlocked(const World& world,GridPos pos)
 
 inline PrimitiveFurnaceSiteOpportunity choosePrimitiveFurnaceSite(
     const World& world,
-    CharacterId planner)
+    CharacterId planner,
+    GridPos activityAnchor)
 {
     PrimitiveFurnaceSiteOpportunity result;
     if(planner==0 || primitiveFurnaceProject(world)!=nullptr
        || !hasOperationalFirePitForSmelting(world)) return result;
 
-    const GridPos center=world.hasInitialStartRegionSelection
-        ? world.initialStartRegionCenterGrid()
-        : GridPos{};
+    const GridPos center=activityAnchor;
     constexpr std::array<GridPos,12> offsets={
         GridPos{6,4},GridPos{-6,4},GridPos{-6,-4},GridPos{6,-4},
         GridPos{7,2},GridPos{-7,2},GridPos{-7,-2},GridPos{7,-2},
