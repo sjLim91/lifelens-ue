@@ -26,7 +26,6 @@ jobs:
           python Tools/acquire_photoreal_environment_assets.py \
             --resolution 1k \
             --inspect-gltf \
-            --asset tree_small_02 \
             --asset fir_sapling \
             --asset pine_sapling_small
 
@@ -34,7 +33,6 @@ jobs:
         run: |
           python Tools/prepare_web_photoreal_assets.py \
             --clean \
-            --asset tree_small_02 \
             --asset fir_sapling \
             --asset pine_sapling_small
           python - <<'PY'
