@@ -75,14 +75,24 @@ inline double coreGroundTraversalCost(
     const double terrainPenalty =
         (1.0 - clampMacro01(region.traversalEase)) * 1.75;
 
+    return 1.0 + terrainPenalty + elevationPenalty;
+}
+
+inline int coreGroundStepIntervalMinutes(
+    const World& world,
+    GridPos position)
+{
     const DynamicEnvironmentObservation environment =
-        deriveDynamicEnvironment(identity, chunkCoordForGrid(from), world.minute);
+        deriveDynamicEnvironment(
+            world.genesisIdentity(),
+            chunkCoordForGrid(position),
+            world.minute);
     const EnvironmentalConsequenceProfile consequence =
         deriveEnvironmentalConsequences(environment);
-    const double weatherPenalty =
-        consequence.travelFriction01 * 1.5;
-
-    return 1.0 + terrainPenalty + elevationPenalty + weatherPenalty;
+    return std::max(
+        1,
+        static_cast<int>(
+            std::ceil(1.0 + 1.50 * consequence.travelFriction01)));
 }
 
 inline bool tryBuildDirectCoreGroundRoute(
