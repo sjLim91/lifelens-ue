@@ -90,6 +90,39 @@ bool validateSnapshot(const SimulationStateSnapshot& snapshot,std::string* error
         if(item.second.actionIndex>item.second.plan.size()) return fail("runtime action index exceeds plan size");
         if(item.second.socialTarget!=0 && characterIds.count(item.second.socialTarget)==0)
             return fail("runtime social target is missing");
+
+        const PendingContextAction& pending=item.second.pendingContext;
+        const bool tokenPresent=pending.token!=0;
+        const bool kindPresent=pending.kind!=ContextActionKind::None;
+        if(tokenPresent!=kindPresent)
+            return fail("runtime pending context token/kind mismatch");
+        if(pending.active()){
+            if(pending.issuedMinute<0 || pending.issuedMinute>snapshot.world.minute)
+                return fail("runtime pending context minute is invalid");
+
+            switch(pending.kind){
+                case ContextActionKind::Social:
+                    if(pending.social.target==0
+                       || pending.social.target==item.first
+                       || characterIds.count(pending.social.target)==0)
+                        return fail("runtime pending social target is invalid");
+                    break;
+                case ContextActionKind::Parenting:
+                    if(pending.parentingTarget==0
+                       || characterIds.count(pending.parentingTarget)==0)
+                        return fail("runtime pending parenting target is invalid");
+                    break;
+                case ContextActionKind::KnowledgeTeaching:
+                    if(pending.knowledgeTeachingTarget==0
+                       || characterIds.count(pending.knowledgeTeachingTarget)==0)
+                        return fail("runtime pending teaching target is invalid");
+                    break;
+                case ContextActionKind::Civilization:
+                case ContextActionKind::None:
+                default:
+                    break;
+            }
+        }
     }
     for(CharacterId id:characterIds){
         if(snapshot.runtime.find(id)==snapshot.runtime.end()) return fail("character is missing runtime state");
@@ -193,6 +226,7 @@ SimulationStateSnapshot Simulation::captureSnapshot() const
         target.socialActive=source.socialActive;
         target.socialIntent=source.socialIntent;
         target.socialTarget=source.socialTarget;
+        target.pendingContext=source.pendingContext;
         snapshot.runtime.emplace(item.first,std::move(target));
     }
     return snapshot;
@@ -224,6 +258,7 @@ bool Simulation::restoreSnapshot(const SimulationStateSnapshot& snapshot,std::st
         target.socialActive=source.socialActive;
         target.socialIntent=source.socialIntent;
         target.socialTarget=source.socialTarget;
+        target.pendingContext=source.pendingContext;
         restoredRuntime.emplace(item.first,std::move(target));
     }
 
