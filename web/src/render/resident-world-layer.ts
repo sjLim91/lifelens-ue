@@ -380,7 +380,6 @@ export class ResidentWorldLayer {
       source.position.x -= center.x;
       source.position.y -= box.min.y;
       source.position.z -= center.z;
-      source.rotation.y = Math.PI;
 
       const normalized = new THREE.Group();
       normalized.add(source);
@@ -548,10 +547,9 @@ export class ResidentWorldLayer {
   }
 
   private visualFacingYaw(dx: number, dz: number): number {
-    // The normalized resident template keeps a 180-degree source correction.
-    // Compensate at the presentation root so the visible character faces the
-    // same direction as the authoritative movement/interaction vector.
-    return Math.atan2(dx, dz) + Math.PI;
+    // The Quaternius resident source faces +Z. Keep that source orientation
+    // intact and align +Z directly with the authoritative travel vector.
+    return Math.atan2(dx, dz);
   }
 
   private actionFor(
