@@ -48,6 +48,7 @@ export class WorldScene {
   private readonly raycaster = new THREE.Raycaster();
   private readonly pointer = new THREE.Vector2();
   private readonly atmosphere: AtmosphereLayer;
+  private environment: DynamicEnvironment | null = null;
   private cameraInitialized = false;
   private currentCameraState: WorldSceneCameraState = {
     centerChunkX: 0,
@@ -99,8 +100,12 @@ export class WorldScene {
   }
 
   setEnvironment(environment: DynamicEnvironment | null): void {
+    this.environment = environment;
     this.atmosphere.setEnvironment(environment);
     this.weatherLayer.setEnvironment(environment);
+    for (const entry of this.terrainMeshes.values()) {
+      this.applyTerrainWeatherMaterial(entry.mesh.material);
+    }
   }
 
   setSimulationSpeed(speed: number): void {
@@ -160,6 +165,7 @@ export class WorldScene {
     this.applyCamera(current);
 
     this.residentLayer.update(deltaSeconds);
+    this.consequenceLayer.update(deltaSeconds);
     this.weatherLayer.update(deltaSeconds);
   }
 
@@ -271,6 +277,8 @@ export class WorldScene {
       metalness: 0,
     });
 
+    this.applyTerrainWeatherMaterial(material);
+
     const mesh = new THREE.Mesh(geometry, material);
     mesh.receiveShadow = true;
     this.positionTerrainMesh(mesh, chunk, window);
@@ -289,6 +297,45 @@ export class WorldScene {
       (chunk.y - window.centerChunkY) * chunkWorldSize,
     );
     mesh.scale.set(1, 1, 1);
+  }
+
+  private applyTerrainWeatherMaterial(
+    material: THREE.MeshStandardMaterial,
+  ): void {
+    const precipitation = Math.max(
+      0,
+      Math.min(1, Number(this.environment?.precipitationIntensity01) || 0),
+    );
+    const cloud = Math.max(
+      0,
+      Math.min(1, Number(this.environment?.cloudCover01) || 0),
+    );
+    const snow = this.environment?.precipitationType === 'Snow';
+    const rain = this.environment?.precipitationType === 'Rain';
+
+    const tint = new THREE.Color(0xffffff);
+    if (snow && precipitation > 0) {
+      tint.lerp(
+        new THREE.Color(0xdce6e7),
+        Math.min(0.34, precipitation * 0.3),
+      );
+    } else if (rain && precipitation > 0) {
+      tint.lerp(
+        new THREE.Color(0xd7e0dc),
+        Math.min(0.18, precipitation * 0.15),
+      );
+    }
+    if (cloud > 0.45) {
+      tint.multiplyScalar(1 - (cloud - 0.45) * 0.045);
+    }
+
+    material.color.copy(tint);
+    material.roughness = rain
+      ? Math.max(0.7, 0.96 - precipitation * 0.2)
+      : snow
+        ? 0.92
+        : 0.96;
+    material.needsUpdate = true;
   }
 
   private applyTerrainVertexColors(
