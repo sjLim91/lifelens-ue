@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { TerrainChunk, TerrainWindow } from '../runtime/core-types';
-import { buildChunkGeometry } from './terrain-geometry';
+import { createTerrainGeometryBuilder } from './terrain-geometry';
 import { VegetationLayer } from './vegetation-layer';
 import { WaterLayer } from './water-layer';
 
@@ -58,6 +58,10 @@ export class WorldScene {
 
   setTerrain(window: TerrainWindow): void {
     const active = new Set<string>();
+    const buildGeometry = createTerrainGeometryBuilder(window, {
+      chunkWorldSize: 8,
+      elevationScale: 48,
+    });
     this.waterLayer.setTerrain(window);
     this.vegetationLayer.setTerrain(window);
 
@@ -66,11 +70,11 @@ export class WorldScene {
       active.add(key);
       const existing = this.terrainMeshes.get(key);
       if (existing) {
-        this.updateTerrainMesh(existing.mesh, chunk, window);
+        this.updateTerrainMesh(existing.mesh, chunk, window, buildGeometry);
         continue;
       }
 
-      const mesh = this.createTerrainMesh(chunk, window);
+      const mesh = this.createTerrainMesh(chunk, window, buildGeometry);
       this.terrainMeshes.set(key, { mesh, key });
       this.terrainGroup.add(mesh);
     }
@@ -101,8 +105,9 @@ export class WorldScene {
   private createTerrainMesh(
     chunk: TerrainChunk,
     window: TerrainWindow,
+    buildGeometry: (chunk: TerrainChunk) => THREE.BufferGeometry,
   ): THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial> {
-    const geometry = buildChunkGeometry(chunk, window);
+    const geometry = buildGeometry(chunk);
 
     const material = new THREE.MeshStandardMaterial({
       color: this.terrainColor(chunk),
@@ -119,13 +124,11 @@ export class WorldScene {
     mesh: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>,
     chunk: TerrainChunk,
     window: TerrainWindow,
+    buildGeometry: (chunk: TerrainChunk) => THREE.BufferGeometry,
   ): void {
     const chunkWorldSize = 8;
     const previousGeometry = mesh.geometry;
-    mesh.geometry = buildChunkGeometry(chunk, window, {
-      chunkWorldSize,
-      elevationScale: 48,
-    });
+    mesh.geometry = buildGeometry(chunk);
     previousGeometry.dispose();
 
     mesh.position.set(
