@@ -45,7 +45,14 @@ interface ResidentActor {
   statusSprite: THREE.Sprite;
   statusText: string;
   groundShadow: THREE.Mesh;
+  lastTrailPosition: THREE.Vector3;
+  trailSide: 1 | -1;
   initialized: boolean;
+}
+
+interface ResidentTrailMark {
+  mesh: THREE.Mesh<THREE.CircleGeometry, THREE.MeshBasicMaterial>;
+  ageSeconds: number;
 }
 
 function stableHash(value: string): number {
@@ -333,6 +340,9 @@ export class ResidentWorldLayer {
     this.socialLinkMaterial,
   );
   private readonly actors = new Map<string, ResidentActor>();
+  private readonly trailGeometry = new THREE.CircleGeometry(0.16, 10);
+  private readonly trailMarks: ResidentTrailMark[] = [];
+  private readonly trailGroup = new THREE.Group();
   private readonly selectionRing = new THREE.Mesh(
     new THREE.RingGeometry(0.62, 0.84, 36),
     new THREE.MeshBasicMaterial({
@@ -361,6 +371,8 @@ export class ResidentWorldLayer {
     this.selectionRing.renderOrder = 4;
     this.socialLinks.renderOrder = 8;
     this.socialLinks.frustumCulled = false;
+    this.trailGroup.renderOrder = 3;
+    this.group.add(this.trailGroup);
     this.group.add(this.socialLinks);
     this.group.add(this.selectionRing);
     void this.loadAssets();
@@ -389,7 +401,13 @@ export class ResidentWorldLayer {
         actor.current.z += offsetZ;
         actor.target.x += offsetX;
         actor.target.z += offsetZ;
+        actor.lastTrailPosition.x += offsetX;
+        actor.lastTrailPosition.z += offsetZ;
         actor.root.position.copy(actor.current);
+      }
+      for (const mark of this.trailMarks) {
+        mark.mesh.position.x += offsetX;
+        mark.mesh.position.z += offsetZ;
       }
     }
 
@@ -478,6 +496,7 @@ export class ResidentWorldLayer {
       if (!actor.initialized) {
         actor.current.copy(next);
         actor.root.position.copy(next);
+        actor.lastTrailPosition.copy(next);
         actor.initialized = true;
       }
 
@@ -566,6 +585,7 @@ export class ResidentWorldLayer {
       }
 
       actor.root.position.copy(actor.current);
+      if (moving) this.maybeAddTrailMark(actor);
       actor.groundShadow.visible = actor.root.visible;
       actor.statusSprite.position.set(
         actor.current.x,
@@ -581,6 +601,7 @@ export class ResidentWorldLayer {
       actor.mixer.update(dt);
     }
 
+    this.updateTrailMarks(dt);
     this.updateActionLinks();
     this.selectionPulseSeconds += dt;
     this.updateSelectionRing();
@@ -603,11 +624,76 @@ export class ResidentWorldLayer {
       this.group.remove(actor.statusSprite);
     }
     this.actors.clear();
+    for (const mark of this.trailMarks) {
+      mark.mesh.material.dispose();
+      this.trailGroup.remove(mark.mesh);
+    }
+    this.trailMarks.length = 0;
+    this.trailGeometry.dispose();
     this.socialLinkGeometry.dispose();
     this.socialLinkMaterial.dispose();
     this.selectionRing.geometry.dispose();
     const selectionMaterial = this.selectionRing.material;
     if (!Array.isArray(selectionMaterial)) selectionMaterial.dispose();
+  }
+
+  private maybeAddTrailMark(actor: ResidentActor): void {
+    const distance = actor.current.distanceTo(actor.lastTrailPosition);
+    if (distance < 0.72) return;
+
+    const yaw = actor.root.rotation.y;
+    const side = actor.trailSide;
+    const lateralOffset = 0.16 * side;
+    const rightX = Math.cos(yaw) * lateralOffset;
+    const rightZ = -Math.sin(yaw) * lateralOffset;
+
+    const material = new THREE.MeshBasicMaterial({
+      color: 0x4b3d2f,
+      transparent: true,
+      opacity: 0.18,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    });
+    const mark = new THREE.Mesh(this.trailGeometry, material);
+    mark.rotation.x = -Math.PI * 0.5;
+    mark.rotation.z = -yaw;
+    mark.scale.set(0.62, 1.45, 1);
+    mark.position.set(
+      actor.current.x + rightX,
+      actor.current.y + 0.018,
+      actor.current.z + rightZ,
+    );
+    mark.renderOrder = 3;
+    this.trailGroup.add(mark);
+    this.trailMarks.push({ mesh: mark, ageSeconds: 0 });
+
+    actor.lastTrailPosition.copy(actor.current);
+    actor.trailSide = side === 1 ? -1 : 1;
+
+    const maxMarks = 120;
+    while (this.trailMarks.length > maxMarks) {
+      const oldest = this.trailMarks.shift();
+      if (!oldest) break;
+      oldest.mesh.material.dispose();
+      this.trailGroup.remove(oldest.mesh);
+    }
+  }
+
+  private updateTrailMarks(deltaSeconds: number): void {
+    const lifetimeSeconds = 28;
+    for (let index = this.trailMarks.length - 1; index >= 0; index -= 1) {
+      const mark = this.trailMarks[index];
+      mark.ageSeconds += Math.max(0, deltaSeconds);
+      const life = Math.max(
+        0,
+        1 - mark.ageSeconds / lifetimeSeconds,
+      );
+      mark.mesh.material.opacity = 0.18 * life * life;
+      if (life > 0) continue;
+      mark.mesh.material.dispose();
+      this.trailGroup.remove(mark.mesh);
+      this.trailMarks.splice(index, 1);
+    }
   }
 
   private updateActionLinks(): void {
@@ -922,6 +1008,8 @@ export class ResidentWorldLayer {
       statusSprite,
       statusText: '',
       groundShadow,
+      lastTrailPosition: new THREE.Vector3(),
+      trailSide: variantSeed % 2 === 0 ? 1 : -1,
       initialized: false,
     };
 
