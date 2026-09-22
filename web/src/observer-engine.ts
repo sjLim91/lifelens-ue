@@ -112,6 +112,12 @@ function refresh(): void {
     followResidents,
   });
   threeWorldRenderer?.setTerrain(terrain);
+  threeWorldRenderer?.setResidents(
+    residentSnapshot,
+    terrain,
+    centerX,
+    centerY,
+  );
   threeWorldRenderer?.setSimulationMinute(
     Number(snapshot.overview.minute) || 0,
   );
