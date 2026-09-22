@@ -17,6 +17,10 @@ on:
 permissions:
   contents: write
 
+env:
+  GH_TOKEN: ${{ github.token }}
+  RELEASE_TAG: web-runtime-latest
+
 concurrency:
   group: lifelens-web-preview
   cancel-in-progress: true
@@ -42,11 +46,26 @@ jobs:
       - name: Install dependencies
         run: npm install --ignore-scripts --no-audit --no-fund
 
-      - name: Fetch pinned LifeLensCore runtime
+      - name: Fetch current LifeLensCore release assets
         run: |
+          rm -rf public/runtime
           mkdir -p public/runtime
-          curl --fail --location --retry 3             https://github.com/sjLim91/lifelens-ue/releases/download/web-runtime-latest/lifelens_core.js             --output public/runtime/lifelens_core.js
-          curl --fail --location --retry 3             https://github.com/sjLim91/lifelens-ue/releases/download/web-runtime-latest/lifelens_core.wasm             --output public/runtime/lifelens_core.wasm
+          gh release download "$RELEASE_TAG" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --pattern 'lifelens_core.js' \
+            --pattern 'lifelens_core.wasm' \
+            --pattern 'SHA256SUMS.txt' \
+            --dir public/runtime \
+            --clobber
+
+          test -s public/runtime/lifelens_core.js
+          test -s public/runtime/lifelens_core.wasm
+          test -s public/runtime/SHA256SUMS.txt
+
+          sed 's#Clients/Web/generated/##g' public/runtime/SHA256SUMS.txt \
+            | (cd public/runtime && sha256sum -c -)
+
+          grep -q 'dynamicEnvironmentJson' public/runtime/lifelens_core.js
 
       - name: Typecheck
         run: npm run typecheck

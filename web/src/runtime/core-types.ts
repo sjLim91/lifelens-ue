@@ -234,7 +234,7 @@ export interface RuntimeClient {
   runMinutes(minutes: number): void;
   worldOverviewJson(): string;
   residentsJson(): string;
-  dynamicEnvironmentJson(x: number, y: number): string;
+  dynamicEnvironmentJson?: (x: number, y: number) => string;
   terrainWindowJson(x: number, y: number, radius: number): string;
   delete?: () => void;
 }

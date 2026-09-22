@@ -40,7 +40,11 @@ jobs:
         run: |
           test -s Clients/Web/generated/lifelens_core.js
           test -s Clients/Web/generated/lifelens_core.wasm
-          sha256sum             Clients/Web/generated/lifelens_core.js             Clients/Web/generated/lifelens_core.wasm             > Clients/Web/generated/SHA256SUMS.txt
+          grep -q 'dynamicEnvironmentJson' Clients/Web/generated/lifelens_core.js
+          (
+            cd Clients/Web/generated
+            sha256sum lifelens_core.js lifelens_core.wasm > SHA256SUMS.txt
+          )
 
       - name: Create release if needed
         shell: bash

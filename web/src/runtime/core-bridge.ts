@@ -254,15 +254,24 @@ export class LifeLensCoreBridge {
   }
 
   dynamicEnvironment(x: number, y: number): DynamicEnvironment {
+    const fallback: DynamicEnvironment = {
+      available: false,
+      centerChunkX: x,
+      centerChunkY: y,
+      precipitationType: 'None',
+      summary: 'Clear',
+    };
+
+    if (typeof this.client.dynamicEnvironmentJson !== 'function') {
+      console.warn(
+        'LifeLensCore runtime is older than the web client; weather projection is temporarily unavailable.',
+      );
+      return fallback;
+    }
+
     return parseJson<DynamicEnvironment>(
       this.client.dynamicEnvironmentJson(x, y),
-      {
-        available: false,
-        centerChunkX: x,
-        centerChunkY: y,
-        precipitationType: 'None',
-        summary: 'Clear',
-      },
+      fallback,
     );
   }
 
