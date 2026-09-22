@@ -11,6 +11,7 @@ import type {
   WorldOverview,
 } from './runtime/core-types';
 import { observerStore } from './state/observer-store';
+import { createWorldProjector } from './render/world-projection';
 
 const $ = <T extends Element>(selector: string): T => {
   const node = document.querySelector<T>(selector);
@@ -25,7 +26,6 @@ if (!ctx) throw new Error('Canvas 2D context unavailable');
 const characterLayer = new CharacterLayer(characterCanvas, () => drawWorld());
 
 const ui = {
-  status: $<HTMLElement>('#status'),
   seed: $<HTMLInputElement>('#seedInput'),
   seedError: $<HTMLElement>('#seedError'),
   newWorld: $<HTMLButtonElement>('#newWorld'),
@@ -35,18 +35,6 @@ const ui = {
   right: $<HTMLButtonElement>('#right'),
   up: $<HTMLButtonElement>('#up'),
   down: $<HTMLButtonElement>('#down'),
-  living: $<HTMLElement>('#living'),
-  households: $<HTMLElement>('#households'),
-  couples: $<HTMLElement>('#couples'),
-  events: $<HTMLElement>('#events'),
-  residentCount: $<HTMLElement>('#residentCount'),
-  residentList: $<HTMLElement>('#residentList'),
-  seedLabel: $<HTMLElement>('#seedLabel'),
-  timeLabel: $<HTMLElement>('#timeLabel'),
-  chunkLabel: $<HTMLElement>('#chunkLabel'),
-  biomeLabel: $<HTMLElement>('#biomeLabel'),
-  errorCard: $<HTMLElement>('#errorCard'),
-  errorText: $<HTMLElement>('#errorText'),
 };
 
 let runtime: LifeLensCoreBridge | null = null;
@@ -67,37 +55,10 @@ let drag: { x: number; y: number } | null = null;
 const pointers = new Map<number, { x: number; y: number }>();
 let pinchDistance: number | null = null;
 
-function setStatus(text: string, kind: 'pending' | 'ready' | 'error'): void {
-  ui.status.textContent = text;
-  ui.status.className = `status ${kind}`;
-}
-
 function controls(enabled: boolean): void {
   [ui.step10, ui.step60, ui.left, ui.right, ui.up, ui.down].forEach((button) => {
     button.disabled = !enabled;
   });
-}
-
-function dayLabel(minuteValue: unknown): string {
-  const minute = Math.max(0, Number(minuteValue) || 0);
-  const day = Math.floor(minute / 1440) + 1;
-  const clock = minute % 1440;
-  const hour = String(Math.floor(clock / 60)).padStart(2, '0');
-  const min = String(clock % 60).padStart(2, '0');
-  return `Day ${day} · ${hour}:${min}`;
-}
-
-function percent(value: unknown): string {
-  return `${Math.round(Math.max(0, Math.min(1, Number(value) || 0)) * 100)}%`;
-}
-
-function escapeHtml(value: unknown): string {
-  return String(value)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;');
 }
 
 function clamp01(value: unknown): number {
@@ -232,21 +193,16 @@ function drawWorld(): void {
     return 0.16 + (curved * 0.72);
   };
 
-  const tile = Math.min(width / (extent * 1.22), height / (extent * 0.7)) * zoom;
-  const centerPxX = width * 0.5;
-  const centerPxY = height * 0.62;
+  const projector = createWorldProjector({
+    width,
+    height,
+    extent,
+    zoom,
+    angle,
+  });
+  const { tile, project } = projector;
   const cos = Math.cos(angle);
   const sin = Math.sin(angle);
-  const heightScale = tile * 6.25;
-
-  const project = (x: number, y: number, elevation: number): [number, number] => {
-    const rx = x * cos - y * sin;
-    const ry = x * sin + y * cos;
-    return [
-      centerPxX + rx * tile,
-      centerPxY + ry * tile * 0.52 - (elevation - 0.5) * heightScale,
-    ];
-  };
 
   const sorted = [...terrain.chunks].sort((a, b) => {
     const da = (a.x - centerX) * sin + (a.y - centerY) * cos;
@@ -536,28 +492,6 @@ function drawWorld(): void {
   runtimeDiagnostics.recordRender(performance.now() - renderStartedAt);
 }
 
-function renderResidents(data: { residents?: Resident[] }): void {
-  const residents = data.residents ?? [];
-  ui.residentCount.textContent = String(residents.length);
-  if (residents.length === 0) {
-    ui.residentList.innerHTML = '<div class="empty">표시할 주민이 없습니다.</div>';
-    return;
-  }
-
-  ui.residentList.innerHTML = residents.map((resident) => `
-    <article class="resident-card">
-      <div class="resident-title"><strong>${escapeHtml(resident.name)}</strong><span>${escapeHtml(resident.sex || '—')} · ${escapeHtml(resident.activityLabel || 'Idle')}</span></div>
-      <div class="need-grid">
-        <span>배고픔 <b>${percent(resident.needs?.hunger)}</b></span>
-        <span>갈증 <b>${percent(resident.needs?.thirst)}</b></span>
-        <span>수면 <b>${percent(resident.needs?.sleep)}</b></span>
-        <span>위생 <b>${percent(resident.needs?.hygiene)}</b></span>
-      </div>
-      <small>${resident.hasPosition ? `Grid ${resident.gridX}, ${resident.gridY}` : 'Position unavailable'}</small>
-    </article>
-  `).join('');
-}
-
 function refresh(): void {
   if (!runtime) return;
   const queryStartedAt = performance.now();
@@ -614,17 +548,6 @@ function refresh(): void {
     };
   }
 
-  ui.seedLabel.textContent = overview.worldSeed ? `WorldSeed ${overview.worldSeed}` : 'WorldSeed —';
-  ui.timeLabel.textContent = dayLabel(overview.minute);
-  ui.chunkLabel.textContent = `Chunk ${centerX}, ${centerY}`;
-  const centerChunk = terrain.chunks.find((chunk) => chunk.x === centerX && chunk.y === centerY);
-  ui.biomeLabel.textContent = centerChunk
-    ? `Biome ${centerChunk.biome ?? '—'} · Forest ${Math.round(clamp01(centerChunk.forestCoverage01) * 100)}%`
-    : 'Biome —';
-  ui.living.textContent = String(overview.livingResidents ?? '—');
-  ui.households.textContent = String(overview.households ?? '—');
-  ui.couples.textContent = String(overview.activeCouples ?? '—');
-  ui.events.textContent = String(overview.majorLifeEvents ?? '—');
   runtimeDiagnostics.recordCoreQuery(
     performance.now() - queryStartedAt,
     residentSnapshot.length,
@@ -642,7 +565,6 @@ function refresh(): void {
     zoom,
     followResidents,
   });
-  renderResidents({ residents: residentSnapshot });
   drawWorld();
 }
 
@@ -674,6 +596,11 @@ function move(dx: number, dy: number): void {
   followResidents = false;
   centerX += dx;
   centerY += dy;
+  observerStore.updateCamera({
+    centerChunkX: centerX,
+    centerChunkY: centerY,
+    followResidents,
+  });
   refresh();
 }
 
@@ -722,13 +649,17 @@ canvas.addEventListener('pointermove', (event) => {
   pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
   if (pointers.size >= 2) {
     const next = pointerDistance();
-    if (next && pinchDistance) zoom = Math.max(0.55, Math.min(2.7, zoom * (next / pinchDistance)));
+    if (next && pinchDistance) {
+      zoom = Math.max(0.55, Math.min(2.7, zoom * (next / pinchDistance)));
+      observerStore.updateCamera({ zoom });
+    }
     pinchDistance = next;
     drawWorld();
     return;
   }
   if (!drag) return;
   angle += (event.clientX - drag.x) * 0.008;
+  observerStore.updateCamera({ angle });
   drag = { x: event.clientX, y: event.clientY };
   drawWorld();
 });
@@ -744,6 +675,7 @@ canvas.addEventListener('pointercancel', stopPointer);
 canvas.addEventListener('wheel', (event) => {
   event.preventDefault();
   zoom = Math.max(0.55, Math.min(2.7, zoom * Math.exp(-event.deltaY * 0.001)));
+  observerStore.updateCamera({ zoom });
   drawWorld();
 }, { passive: false });
 
@@ -765,24 +697,18 @@ new ResizeObserver(resizeCanvas).observe(canvas);
 
 async function boot(): Promise<void> {
   controls(false);
-  ui.errorCard.classList.add('hidden');
-  setStatus('Core loading…', 'pending');
   observerStore.setRuntime('loading');
 
   try {
     runtime = await LifeLensCoreBridge.connect();
     controls(true);
-    setStatus('Core WASM LIVE', 'ready');
     observerStore.setRuntime('ready');
     createWorld();
     startSimulationClock();
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error('LifeLensCore boot failed', error);
-    setStatus('Core load failed', 'error');
     observerStore.setRuntime('error', message);
-    ui.errorText.textContent = message;
-    ui.errorCard.classList.remove('hidden');
     controls(false);
     drawWorld();
   }
