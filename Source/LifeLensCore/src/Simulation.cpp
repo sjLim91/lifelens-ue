@@ -574,7 +574,7 @@ bool Simulation::tryCivilizationDecision(Character& c,Runtime& r){
     GridPos target{};
     SanitationSiteId sanitationSiteId=0;
     const bool resolved=resolveCivilizationContextTarget(
-        world_,c,decision.civilization,target,sanitationSiteId);
+        world_,c,decision.civilization,r.pos,target,sanitationSiteId);
     if(civilizationContextRequiresSpatialTarget(decision.civilization) && !resolved) return false;
     if(resolved){
         pending.hasSpatialTarget=true;
