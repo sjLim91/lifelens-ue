@@ -76,6 +76,7 @@ export const OBSERVER_RUNTIME_CONTRACT = {
 export const RESIDENT_PRESENTATION_CONTRACT = {
   movementEpsilonWorldUnits: 0.01,
   maxAnimationDeltaSeconds: 0.05,
+  walkStateGraceSeconds: SIMULATION_TIME_CONTRACT.refreshIntervalMs / 1000,
 } as const;
 
 export function simulationTimeHint(): string {
