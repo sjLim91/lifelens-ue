@@ -11,11 +11,11 @@
 #include "ObserverReadModelV2.h"
 #include "Planner.h"
 #include "SimulationRuleset.h"
+#include "SimulationSnapshotVersions.h"
 #include "WitnessRumor.h"
 
 namespace lifelens {
 
-constexpr std::uint32_t SimulationSnapshotVersion=3;
 
 struct SimulationRuntimeSnapshot {
     Goal goal=Goal::Idle;
