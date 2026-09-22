@@ -161,9 +161,16 @@ export class VegetationLayer {
   setEnvironment(
     environment: DynamicEnvironment | null,
   ): void {
-    this.setWindIntensity(
-      Number(environment?.windIntensity01) || 0,
+    this.windIntensity = Math.max(
+      0,
+      Math.min(
+        1,
+        Number(environment?.windIntensity01) || 0,
+      ),
     );
+    for (const uniforms of this.windUniforms) {
+      uniforms.intensity.value = this.windIntensity;
+    }
 
     const snow = environment?.precipitationType === 'Snow'
       ? Math.max(
