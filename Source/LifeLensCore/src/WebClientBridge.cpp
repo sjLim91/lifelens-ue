@@ -201,8 +201,31 @@ std::string WebClientBridge::worldOverviewJson() const
 
     const WorldOverviewObservation overview =
         simulation_->observeWorldOverview();
-    const WorldGenesisIdentity identity =
-        simulation_->world().genesisIdentity();
+    const World& world = simulation_->world();
+    const WorldGenesisIdentity identity = world.genesisIdentity();
+
+    struct MajorLifeEventItem {
+        const Character* character = nullptr;
+        const LifeHistoryEntry* event = nullptr;
+    };
+
+    std::vector<MajorLifeEventItem> majorEvents;
+    for (const Character& character : world.characters) {
+        for (const LifeHistoryEntry& event : character.lifeHistory) {
+            if (!isMajorObserverLifeEvent(event.type)) continue;
+            majorEvents.push_back(MajorLifeEventItem{&character, &event});
+        }
+    }
+    std::sort(
+        majorEvents.begin(),
+        majorEvents.end(),
+        [](const MajorLifeEventItem& a, const MajorLifeEventItem& b) {
+            if (a.event->minute != b.event->minute) {
+                return a.event->minute > b.event->minute;
+            }
+            return a.character->id < b.character->id;
+        });
+    if (majorEvents.size() > 16) majorEvents.resize(16);
 
     std::ostringstream out;
     out << "{";
@@ -217,7 +240,36 @@ std::string WebClientBridge::worldOverviewJson() const
     out << "\"households\":" << overview.households << ",";
     out << "\"activeCouples\":" << overview.activeCouples << ",";
     out << "\"activePregnancies\":" << overview.activePregnancies << ",";
-    out << "\"majorLifeEvents\":" << overview.majorLifeEvents;
+    out << "\"majorLifeEvents\":" << overview.majorLifeEvents << ",";
+    out << "\"majorLifeEventItems\":[";
+    for (std::size_t i = 0; i < majorEvents.size(); ++i) {
+        if (i != 0) out << ",";
+        const MajorLifeEventItem& item = majorEvents[i];
+        out << "{";
+        out << "\"type\":\"" << lifeEventName(item.event->type) << "\",";
+        out << "\"minute\":" << item.event->minute << ",";
+        out << "\"residentId\":\"" << item.character->id << "\",";
+        out << "\"residentName\":\"" << escapeJson(item.character->name) << "\",";
+        out << "\"value\":" << item.event->value << ",";
+        out << "\"related\":[";
+        for (std::size_t relatedIndex = 0;
+             relatedIndex < item.event->relatedCharacters.size();
+             ++relatedIndex) {
+            if (relatedIndex != 0) out << ",";
+            const CharacterId relatedId =
+                item.event->relatedCharacters[relatedIndex];
+            const Character* related =
+                findObservedCharacter(world, relatedId);
+            out << "{";
+            out << "\"id\":\"" << relatedId << "\",";
+            out << "\"name\":\""
+                << escapeJson(related ? related->name : std::string{}) << "\"";
+            out << "}";
+        }
+        out << "]";
+        out << "}";
+    }
+    out << "]";
     out << "}";
     return out.str();
 }
