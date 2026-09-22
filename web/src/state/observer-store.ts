@@ -27,6 +27,7 @@ export interface ObserverSnapshot {
   environment: DynamicEnvironment | null;
   camera: CameraState;
   runtime: RuntimeState;
+  simulationSpeed: number;
   selectedResidentId: string | null;
   revision: number;
 }
@@ -49,6 +50,7 @@ const INITIAL_STATE: ObserverSnapshot = {
     status: 'loading',
     errorMessage: null,
   },
+  simulationSpeed: 1,
   selectedResidentId: null,
   revision: 0,
 };
@@ -123,6 +125,7 @@ class ObserverStore {
       residents: [],
       terrain: null,
       environment: null,
+      simulationSpeed: 1,
       selectedResidentId: null,
       camera: {
         ...INITIAL_STATE.camera,
