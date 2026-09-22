@@ -255,6 +255,175 @@ ResidentObservation Simulation::observeResident(CharacterId id) const{
         socialActive,socialIntent,socialTarget);
 }
 
+ResidentPresentationObservation Simulation::observeResidentPresentation(CharacterId id) const{
+    ResidentPresentationObservation dto;
+    dto.residentId=id;
+
+    const Character* character=findObservedCharacter(world_,id);
+    const auto it=runtime_.find(id);
+    if(character==nullptr || !character->alive || it==runtime_.end()) return dto;
+
+    const Runtime& r=it->second;
+
+    if(r.pendingContext.active()){
+        const PendingContextAction& pending=r.pendingContext;
+        dto.active=true;
+        dto.contextActionToken=pending.token;
+        dto.durationTicks=contextActionDurationTicks(pending);
+        dto.hasTargetGrid=pending.hasSpatialTarget;
+        dto.targetGrid=pending.targetPos;
+        dto.sanitationSiteId=pending.sanitationSiteId;
+
+        switch(pending.kind){
+            case ContextActionKind::Social:
+                dto.kind=PresentationActionKind::Social;
+                dto.socialIntent=pending.social.intent;
+                dto.targetResidentId=pending.social.target;
+                break;
+            case ContextActionKind::Civilization:
+                dto.kind=PresentationActionKind::Civilization;
+                dto.civilizationIntent=pending.civilization.intent;
+                break;
+            case ContextActionKind::Parenting:
+                dto.kind=PresentationActionKind::Parenting;
+                dto.parentingAction=pending.parentingAction;
+                dto.targetResidentId=pending.parentingTarget;
+                break;
+            case ContextActionKind::KnowledgeTeaching:
+                dto.kind=PresentationActionKind::KnowledgeTeaching;
+                dto.targetResidentId=pending.knowledgeTeachingTarget;
+                break;
+            case ContextActionKind::None:
+            default:
+                dto.active=false;
+                return dto;
+        }
+
+        bool nearTarget=false;
+        if(dto.targetResidentId!=0){
+            const auto targetRuntime=runtime_.find(dto.targetResidentId);
+            if(targetRuntime!=runtime_.end()){
+                dto.hasTargetGrid=true;
+                dto.targetGrid=targetRuntime->second.pos;
+                nearTarget=contextActionNearTarget(r.pos,targetRuntime->second.pos,1);
+            }
+        }else if(dto.hasTargetGrid){
+            nearTarget=contextActionNearTarget(r.pos,dto.targetGrid,1);
+        }else{
+            nearTarget=true;
+        }
+
+        if(pending.kind==ContextActionKind::Social
+           && pending.social.intent==SocialIntent::Avoid){
+            nearTarget=dto.targetResidentId!=0
+                && runtime_.find(dto.targetResidentId)!=runtime_.end()
+                && !sameGridPos(
+                    r.pos,
+                    runtime_.find(dto.targetResidentId)->second.pos);
+        }
+
+        dto.phase=nearTarget
+            ? PresentationActionPhase::Interacting
+            : PresentationActionPhase::Moving;
+        return dto;
+    }
+
+    if(r.goal!=Goal::Idle && !r.plan.empty() && !r.socialActive){
+        dto.active=true;
+        dto.kind=PresentationActionKind::Physical;
+        dto.physicalGoal=r.goal;
+
+        const Action* current=r.actionIndex<r.plan.size()
+            ? &r.plan[r.actionIndex]
+            : nullptr;
+        if(current==nullptr) return dto;
+
+        dto.durationTicks=std::max(0,current->remainingTicks);
+        if(current->type==ActionType::MoveTo){
+            dto.phase=PresentationActionPhase::Moving;
+        }else if(current->type==ActionType::Use
+              || current->type==ActionType::EmergencyUse){
+            dto.phase=PresentationActionPhase::Interacting;
+        }
+
+        if(current->objectId!=0){
+            for(const SmartObject& object:world_.objects){
+                if(object.id!=current->objectId) continue;
+                dto.hasObjectTarget=true;
+                dto.objectId=object.id;
+                dto.objectKind=object.kind;
+                dto.hasTargetGrid=true;
+                dto.targetGrid=object.pos;
+                break;
+            }
+        }
+
+        if(current->type==ActionType::EmergencyUse){
+            dto.emergencyFallback=true;
+            if(r.goal==Goal::UseToilet){
+                SanitationUseTarget target;
+                if(sanitationUseTarget(id,target)){
+                    dto.hasTargetGrid=true;
+                    dto.targetGrid=r.navigationHasTarget
+                        ? r.navigationTarget
+                        : target.pos;
+                    dto.designatedSanitationSite=
+                        target.kind==SanitationUseTargetKind::DesignatedArea;
+                    dto.sanitationSiteId=target.siteId;
+                    dto.emergencyFallback=!dto.designatedSanitationSite;
+                }
+            }
+        }
+        return dto;
+    }
+
+    if(r.socialActive && r.socialIntent!=SocialIntent::None){
+        dto.active=true;
+        dto.kind=PresentationActionKind::Social;
+        dto.phase=PresentationActionPhase::Interacting;
+        dto.socialIntent=r.socialIntent;
+        dto.targetResidentId=r.socialTarget;
+        const auto targetRuntime=runtime_.find(r.socialTarget);
+        if(targetRuntime!=runtime_.end()){
+            dto.hasTargetGrid=true;
+            dto.targetGrid=targetRuntime->second.pos;
+        }
+        return dto;
+    }
+
+    if(r.civilizationActive){
+        dto.active=true;
+        dto.kind=PresentationActionKind::Civilization;
+        dto.phase=PresentationActionPhase::Interacting;
+        dto.hasTargetGrid=r.civilizationHasSpatialTarget;
+        dto.targetGrid=r.civilizationTargetPos;
+        switch(r.civilizationEvent.type){
+            case CivilizationEventType::Gathered:
+                dto.civilizationIntent=CivilizationIntent::Gather;
+                break;
+            case CivilizationEventType::Stored:
+                dto.civilizationIntent=CivilizationIntent::Store;
+                break;
+            case CivilizationEventType::Retrieved:
+                dto.civilizationIntent=CivilizationIntent::Retrieve;
+                break;
+            case CivilizationEventType::Crafted:
+                dto.civilizationIntent=CivilizationIntent::Craft;
+                break;
+            case CivilizationEventType::Discovered:
+            case CivilizationEventType::ExperimentFailed:
+                dto.civilizationIntent=CivilizationIntent::Experiment;
+                break;
+            default:
+                dto.civilizationIntent=CivilizationIntent::None;
+                break;
+        }
+        return dto;
+    }
+
+    return dto;
+}
+
 ResidentCivilizationActivityObservation Simulation::observeResidentCivilizationActivity(CharacterId id) const{
     ResidentCivilizationActivityObservation dto;
     dto.residentId=id;
