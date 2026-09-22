@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { TerrainChunk, TerrainWindow } from '../runtime/core-types';
-import { buildWaterGeometry } from './water-geometry';
+import { createWaterGeometryBuilder } from './water-geometry';
 
 const WATER_KINDS = new Set(['Spring', 'Stream', 'River', 'Lake', 'Coast', 'Ocean']);
 
@@ -11,6 +11,7 @@ export class WaterLayer {
 
   setTerrain(window: TerrainWindow): void {
     const active = new Set<string>();
+    const buildGeometry = createWaterGeometryBuilder(window, 8);
 
     for (const chunk of window.chunks) {
       if (!WATER_KINDS.has(chunk.waterKind)) continue;
@@ -19,12 +20,12 @@ export class WaterLayer {
 
       let mesh = this.entries.get(key);
       if (!mesh) {
-        mesh = this.createMesh(chunk, window);
+        mesh = this.createMesh(chunk, buildGeometry);
         this.entries.set(key, mesh);
         this.group.add(mesh);
       } else {
         const previous = mesh.geometry;
-        mesh.geometry = buildWaterGeometry(chunk, window, 8);
+        mesh.geometry = buildGeometry(chunk);
         previous.dispose();
       }
 
@@ -58,9 +59,9 @@ export class WaterLayer {
 
   private createMesh(
     chunk: TerrainChunk,
-    window: TerrainWindow,
+    buildGeometry: (chunk: TerrainChunk) => THREE.BufferGeometry,
   ): THREE.Mesh {
-    const geometry = buildWaterGeometry(chunk, window, 8);
+    const geometry = buildGeometry(chunk);
     const material = new THREE.MeshStandardMaterial({
       color: this.colorFor(chunk),
       transparent: true,
