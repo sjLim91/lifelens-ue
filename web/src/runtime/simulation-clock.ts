@@ -3,6 +3,8 @@ export interface SimulationClockOptions {
   tickIntervalMs?: number;
   refreshIntervalMs?: number;
   maxCatchupMs?: number;
+  maxAdvanceMinutesPerTick?: number;
+  initialSpeed?: number;
   onAdvance: (minutes: number) => void;
   onRefresh: () => void;
   onError?: (phase: 'advance' | 'refresh', error: unknown) => void;
@@ -13,6 +15,7 @@ export class SimulationClock {
   private readonly tickIntervalMs: number;
   private readonly refreshIntervalMs: number;
   private readonly maxCatchupMs: number;
+  private readonly maxAdvanceMinutesPerTick: number;
   private readonly onAdvance: (minutes: number) => void;
   private readonly onRefresh: () => void;
   private readonly onError?: (phase: 'advance' | 'refresh', error: unknown) => void;
@@ -20,14 +23,20 @@ export class SimulationClock {
   private tickTimer: number | null = null;
   private refreshTimer: number | null = null;
   private lastWallMs = Date.now();
-  private accumulatorMs = 0;
+  private accumulatorSimulationMinutes = 0;
+  private speed = 1;
 
   constructor(options: SimulationClockOptions) {
+    // Canonical LifeLens time contract:
+    // 1x = 8 real minutes per 1 simulation day.
+    // 480 real seconds / 1440 simulation minutes = 1/3 second per sim minute.
     this.realMsPerSimulationMinute =
-      options.realMsPerSimulationMinute ?? 1000;
-    this.tickIntervalMs = options.tickIntervalMs ?? 250;
-    this.refreshIntervalMs = options.refreshIntervalMs ?? 1000;
-    this.maxCatchupMs = options.maxCatchupMs ?? 5 * 60 * 1000;
+      options.realMsPerSimulationMinute ?? (1000 / 3);
+    this.tickIntervalMs = options.tickIntervalMs ?? 125;
+    this.refreshIntervalMs = options.refreshIntervalMs ?? 500;
+    this.maxCatchupMs = options.maxCatchupMs ?? 10 * 1000;
+    this.maxAdvanceMinutesPerTick = options.maxAdvanceMinutesPerTick ?? 240;
+    this.speed = this.normalizeSpeed(options.initialSpeed ?? 1);
     this.onAdvance = options.onAdvance;
     this.onRefresh = options.onRefresh;
     this.onError = options.onError;
@@ -56,38 +65,70 @@ export class SimulationClock {
     document.removeEventListener('visibilitychange', this.handleVisibilityChange);
   }
 
+  setSpeed(speed: number): void {
+    this.tick();
+    this.speed = this.normalizeSpeed(speed);
+    this.resetAccumulator();
+  }
+
+  getSpeed(): number {
+    return this.speed;
+  }
+
   resetAccumulator(): void {
     this.lastWallMs = Date.now();
-    this.accumulatorMs = 0;
+    this.accumulatorSimulationMinutes = 0;
+  }
+
+  private normalizeSpeed(speed: number): number {
+    return [0, 1, 4, 16, 64].includes(speed) ? speed : 1;
   }
 
   private readonly handleVisibilityChange = (): void => {
     if (document.visibilityState !== 'visible') return;
 
-    // Browser timers are heavily throttled in background tabs. Catch up from
-    // wall time immediately on resume, then repaint without waiting for the
-    // next interval so the observer never appears frozen.
+    // Browser throttling must never become an unbounded history jump.
+    // We catch up only inside the canonical simulation work budget.
     this.tick();
     this.refresh();
   };
 
   private tick(): void {
     const now = Date.now();
-    const elapsed = Math.max(0, now - this.lastWallMs);
-    this.lastWallMs = now;
-    this.accumulatorMs = Math.min(
-      this.maxCatchupMs,
-      this.accumulatorMs + elapsed,
+    const elapsed = Math.max(
+      0,
+      Math.min(this.maxCatchupMs, now - this.lastWallMs),
     );
+    this.lastWallMs = now;
 
-    const minutes = Math.floor(
-      this.accumulatorMs / this.realMsPerSimulationMinute,
+    if (this.speed <= 0) {
+      this.accumulatorSimulationMinutes = 0;
+      return;
+    }
+
+    this.accumulatorSimulationMinutes += (
+      elapsed / this.realMsPerSimulationMinute
+    ) * this.speed;
+
+    const availableMinutes = Math.floor(this.accumulatorSimulationMinutes);
+    const minutes = Math.min(
+      availableMinutes,
+      this.maxAdvanceMinutesPerTick,
     );
     if (minutes <= 0) return;
 
     try {
       this.onAdvance(minutes);
-      this.accumulatorMs -= minutes * this.realMsPerSimulationMinute;
+      this.accumulatorSimulationMinutes -= minutes;
+
+      // Preserve causality while bounding one-frame work. Excessive wall-clock
+      // backlog is capped rather than replayed without limit.
+      if (availableMinutes > this.maxAdvanceMinutesPerTick) {
+        this.accumulatorSimulationMinutes = Math.min(
+          this.accumulatorSimulationMinutes,
+          this.maxAdvanceMinutesPerTick,
+        );
+      }
     } catch (error) {
       this.onError?.('advance', error);
     }
