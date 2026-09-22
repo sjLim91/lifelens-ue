@@ -5,12 +5,16 @@ import {
   formatBiome,
   formatDay,
   formatBeliefText,
+  formatFacilityKind,
+  formatFacilityState,
   formatLifeEventType,
   formatLifeStage,
   formatMemoryLocation,
   formatMemoryText,
   formatPartnerStage,
   formatPercent,
+  formatResidentCurrentAction,
+  formatSocialEventType,
   formatSex,
   formatWeather,
 } from './observer-format';
@@ -74,6 +78,19 @@ export function ObserverMetrics({
 }) {
   const majorEvents = snapshot.world.majorLifeEventItems ?? [];
   const totalMajorEvents = snapshot.world.majorLifeEvents ?? 0;
+  const socialEvents = [...(snapshot.presentation?.socialEvents ?? [])]
+    .reverse()
+    .slice(0, 6);
+  const facilities = snapshot.presentation?.facilities ?? [];
+  const visibleFacilities = facilities
+    .filter((facility) => facility.state !== 'Ruined')
+    .slice(0, 6);
+  const sanitationSites = snapshot.presentation?.sanitationSites ?? [];
+  const residues = snapshot.presentation?.residues ?? [];
+  const activeProjects = facilities.filter(
+    (facility) => facility.state === 'Planned'
+      || facility.state === 'UnderConstruction',
+  ).length;
 
   return (
     <>
@@ -82,6 +99,74 @@ export function ObserverMetrics({
         <div><span>가구</span><b id="households">{snapshot.world.households ?? '—'}</b></div>
         <div><span>커플</span><b id="couples">{snapshot.world.activeCouples ?? '—'}</b></div>
         <div><span>주요 사건</span><b id="events">{snapshot.world.majorLifeEvents ?? '—'}</b></div>
+      </div>
+
+      <div className="world-consequence-summary">
+        <div>
+          <span>생활 시설</span>
+          <b>{facilities.length}</b>
+          <small>{activeProjects > 0 ? `건설 중 ${activeProjects}` : '진행 공사 없음'}</small>
+        </div>
+        <div>
+          <span>위생시설</span>
+          <b>{sanitationSites.length}</b>
+          <small>{sanitationSites.some((site) => site.kind === 'DugPit') ? '구덩이 시설 사용 중' : '초기 위생 단계'}</small>
+        </div>
+        <div>
+          <span>오염 지점</span>
+          <b>{residues.length}</b>
+          <small>최대 강도 {formatPercent(snapshot.presentation?.peakWasteIntensity)}</small>
+        </div>
+      </div>
+
+      {visibleFacilities.length > 0 ? (
+        <div className="world-event-list">
+          <div className="world-event-heading">
+            <h3>생활 기반</h3>
+            <span>Core 실제 시설</span>
+          </div>
+          {visibleFacilities.map((facility) => (
+            <div className="world-event-row facility-row" key={facility.id}>
+              <div>
+                <strong>{formatFacilityKind(facility.kind)}</strong>
+                <span>{formatFacilityState(facility.state)}</span>
+              </div>
+              <small>
+                좌표 {facility.gridX}, {facility.gridY}
+                {facility.state === 'UnderConstruction'
+                  ? ` · 공정 ${Math.round((Number(facility.workProgress) || 0) * 100)}%`
+                  : ''}
+                {facility.lit ? ' · 불 사용 중' : ''}
+              </small>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      <div className="world-event-list social-event-list">
+        <div className="world-event-heading">
+          <h3>사람들 사이</h3>
+          <span>{socialEvents.length > 0 ? '최근 상호작용' : '아직 기록 없음'}</span>
+        </div>
+        {socialEvents.length > 0
+          ? socialEvents.map((event) => (
+              <div
+                className={`world-event-row social-event-row ${String(event.presentationLevel ?? '').toLowerCase()}`}
+                key={event.sequence}
+              >
+                <div>
+                  <strong>{event.actorName || '주민'} → {event.targetName || '주민'}</strong>
+                  <span>{formatSocialEventType(event.type)}</span>
+                </div>
+                <small>
+                  {formatDay(event.minute)}
+                  {Number(event.intensity) > 0
+                    ? ` · 강도 ${formatPercent(event.intensity)}`
+                    : ''}
+                </small>
+              </div>
+            ))
+          : <div className="focused-life-muted">아직 관찰된 사회적 상호작용이 없습니다.</div>}
       </div>
 
       <div className="world-event-list">
@@ -152,7 +237,7 @@ function ResidentCard({
     >
       <div className="resident-title">
         <strong>{resident.name}</strong>
-        <span>{formatSex(resident.sex)} · {formatActivity(resident.activityLabel)}</span>
+        <span>{formatSex(resident.sex)} · {formatResidentCurrentAction(resident)}</span>
       </div>
       <ResidentNeedsGrid resident={resident} />
       <small>
@@ -244,7 +329,7 @@ export function SelectedResidentReadout({
       </div>
 
       <p className="focused-life-activity">
-        현재 <b>{formatActivity(resident.activityLabel)}</b>{activityTarget}
+        현재 <b>{formatResidentCurrentAction(resident)}</b>{activityTarget}
       </p>
 
       <ResidentNeedsGrid resident={resident} />
