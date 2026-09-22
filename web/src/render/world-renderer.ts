@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type {
+  DynamicEnvironment,
   Resident,
   TerrainWindow,
 } from '../runtime/core-types';
@@ -58,6 +59,10 @@ export class WorldRenderer {
 
   setSimulationMinute(minute: number): void {
     this.world.setSimulationMinute(minute);
+  }
+
+  setEnvironment(environment: DynamicEnvironment | null): void {
+    this.world.setEnvironment(environment);
   }
 
   pickResident(clientX: number, clientY: number): string | null {
