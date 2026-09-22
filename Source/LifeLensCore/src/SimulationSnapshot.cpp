@@ -88,6 +88,8 @@ bool validateSnapshot(const SimulationStateSnapshot& snapshot,std::string* error
     for(const auto& item:snapshot.runtime){
         if(characterIds.count(item.first)==0) return fail("runtime references missing character");
         if(item.second.actionIndex>item.second.plan.size()) return fail("runtime action index exceeds plan size");
+        if(item.second.navigationRouteIndex>item.second.navigationRoute.size())
+            return fail("runtime navigation route index exceeds route size");
         if(item.second.socialTarget!=0 && characterIds.count(item.second.socialTarget)==0)
             return fail("runtime social target is missing");
 
@@ -227,6 +229,13 @@ SimulationStateSnapshot Simulation::captureSnapshot() const
         target.socialIntent=source.socialIntent;
         target.socialTarget=source.socialTarget;
         target.pendingContext=source.pendingContext;
+        target.navigationRoute=source.navigationRoute;
+        target.navigationRouteIndex=source.navigationRouteIndex;
+        target.navigationTarget=source.navigationTarget;
+        target.navigationArrivalRadius=source.navigationArrivalRadius;
+        target.navigationHasTarget=source.navigationHasTarget;
+        target.navigationArrived=source.navigationArrived;
+        target.navigationRouteFailed=source.navigationRouteFailed;
         snapshot.runtime.emplace(item.first,std::move(target));
     }
     return snapshot;
@@ -259,6 +268,13 @@ bool Simulation::restoreSnapshot(const SimulationStateSnapshot& snapshot,std::st
         target.socialIntent=source.socialIntent;
         target.socialTarget=source.socialTarget;
         target.pendingContext=source.pendingContext;
+        target.navigationRoute=source.navigationRoute;
+        target.navigationRouteIndex=source.navigationRouteIndex;
+        target.navigationTarget=source.navigationTarget;
+        target.navigationArrivalRadius=source.navigationArrivalRadius;
+        target.navigationHasTarget=source.navigationHasTarget;
+        target.navigationArrived=source.navigationArrived;
+        target.navigationRouteFailed=source.navigationRouteFailed;
         restoredRuntime.emplace(item.first,std::move(target));
     }
 
