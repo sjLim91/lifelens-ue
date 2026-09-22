@@ -10,9 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: lifelens-web-preview
@@ -50,37 +48,17 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: ./web/dist
-
-  enable-pages:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Ensure GitHub Pages is enabled for Actions
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Verify preview launcher is bundled
         run: |
-          set -euo pipefail
-          if gh api "repos/${GITHUB_REPOSITORY}/pages" >/dev/null 2>&1; then
-            echo "Pages already enabled"
-            exit 0
-          fi
+          test -s dist/launch.svg
+          test -s dist/runtime/lifelens_core.js
+          test -s dist/runtime/lifelens_core.wasm
 
-          echo "Pages not enabled; attempting Actions-based enablement"
-          gh api --method POST "repos/${GITHUB_REPOSITORY}/pages"             -f build_type=workflow
-
-  deploy:
-    needs: [build, enable-pages]
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Publish preview branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./web/dist
+          publish_branch: gh-pages
+          force_orphan: true
+          commit_message: "preview: ${{ github.sha }}"
