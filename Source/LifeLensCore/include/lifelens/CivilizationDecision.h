@@ -335,10 +335,13 @@ inline CivilizationUtilityDecision bestGatherDecision(const World& world,const C
     return best;
 }
 
-inline CivilizationUtilityDecision bestExperimentDecision(const World& world,const Character& self)
+inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
+    const World& world,
+    const Character& self,
+    GridPos authoritativePosition)
 {
     CivilizationUtilityDecision best;
-    const GridPos sanitationReference=civilizationSanitationReferencePosition(world);
+    const GridPos sanitationReference=authoritativePosition;
     const PrimitiveSanitationOpportunity sanitationOpportunity=
         evaluatePrimitiveSanitationOpportunity(
             world.seed,self,world.environmentalResidues,world.minute,sanitationReference);
@@ -425,6 +428,14 @@ inline CivilizationUtilityDecision bestExperimentDecision(const World& world,con
         considerCivilizationDecision(best,candidate);
     }
     return best;
+}
+
+inline CivilizationUtilityDecision bestExperimentDecision(
+    const World& world,
+    const Character& self)
+{
+    return bestExperimentDecisionAtPosition(
+        world,self,civilizationSanitationReferencePosition(world));
 }
 
 inline int desiredTechniqueOutputStock(TechniqueId technique)
@@ -575,7 +586,8 @@ inline CivilizationUtilityDecision bestSettlementFoundationDecision(
 
         if(project==nullptr){
             const SettlementFacilitySiteOpportunity site=
-                chooseSettlementFacilitySite(world,self.id,kind);
+                chooseSettlementFacilitySite(
+                    world,self.id,kind,authoritativePosition);
             if(!site.available) continue;
             candidate.facilityAction=FacilityBuildAction::Plan;
             candidate.hasFacilityTarget=true;
@@ -636,7 +648,8 @@ inline CivilizationUtilityDecision bestSettlementFoundationDecision(
 
 inline CivilizationUtilityDecision bestPrimitiveStorageConstructionDecision(
     const World& world,
-    const Character& self)
+    const Character& self,
+    GridPos authoritativePosition)
 {
     CivilizationUtilityDecision candidate;
     if(!self.civilization.knowledge.knowsAtLeast(
@@ -653,7 +666,8 @@ inline CivilizationUtilityDecision bestPrimitiveStorageConstructionDecision(
     candidate.item=ItemKind::RawMaterial;
 
     if(project==nullptr){
-        const PrimitiveStorageSiteOpportunity site=choosePrimitiveStorageSite(world,self.id);
+        const PrimitiveStorageSiteOpportunity site=
+            choosePrimitiveStorageSite(world,self.id,authoritativePosition);
         if(!site.available) return CivilizationUtilityDecision{};
         candidate.facilityAction=FacilityBuildAction::Plan;
         candidate.hasFacilityTarget=true;
@@ -703,7 +717,8 @@ inline CivilizationUtilityDecision bestPrimitiveStorageConstructionDecision(
 
 inline CivilizationUtilityDecision bestPrimitiveFirePitDecision(
     const World& world,
-    const Character& self)
+    const Character& self,
+    GridPos authoritativePosition)
 {
     CivilizationUtilityDecision candidate;
     if(!self.civilization.knowledge.knowsAtLeast(
@@ -719,7 +734,8 @@ inline CivilizationUtilityDecision bestPrimitiveFirePitDecision(
     candidate.item=ItemKind::RawMaterial;
 
     if(project==nullptr){
-        const PrimitiveFirePitSiteOpportunity site=choosePrimitiveFirePitSite(world,self.id);
+        const PrimitiveFirePitSiteOpportunity site=
+            choosePrimitiveFirePitSite(world,self.id,authoritativePosition);
         if(!site.available) return CivilizationUtilityDecision{};
         candidate.facilityAction=FacilityBuildAction::Plan;
         candidate.hasFacilityTarget=true;
@@ -802,7 +818,8 @@ inline CivilizationUtilityDecision bestPrimitiveFirePitDecision(
 
 inline CivilizationUtilityDecision bestPrimitiveFurnaceDecision(
     const World& world,
-    const Character& self)
+    const Character& self,
+    GridPos authoritativePosition)
 {
     CivilizationUtilityDecision candidate;
     if(!primitiveFurnaceKnowledgeReady(self) || !hasOperationalFirePitForSmelting(world)) return candidate;
@@ -817,7 +834,8 @@ inline CivilizationUtilityDecision bestPrimitiveFurnaceDecision(
     candidate.item=ItemKind::RawMaterial;
 
     if(project==nullptr){
-        const PrimitiveFurnaceSiteOpportunity site=choosePrimitiveFurnaceSite(world,self.id);
+        const PrimitiveFurnaceSiteOpportunity site=
+            choosePrimitiveFurnaceSite(world,self.id,authoritativePosition);
         if(!site.available) return CivilizationUtilityDecision{};
         candidate.facilityAction=FacilityBuildAction::Plan;
         candidate.hasFacilityTarget=true;
@@ -904,13 +922,19 @@ inline CivilizationUtilityDecision bestCraftDecisionAtPosition(
     GridPos authoritativePosition)
 {
     CivilizationUtilityDecision best;
-    const GridPos sanitationReference=civilizationSanitationReferencePosition(world);
+    const GridPos sanitationReference=authoritativePosition;
 
     considerCivilizationDecision(
         best,bestSettlementFoundationDecision(world,self,authoritativePosition));
-    considerCivilizationDecision(best,bestPrimitiveStorageConstructionDecision(world,self));
-    considerCivilizationDecision(best,bestPrimitiveFirePitDecision(world,self));
-    considerCivilizationDecision(best,bestPrimitiveFurnaceDecision(world,self));
+    considerCivilizationDecision(
+        best,bestPrimitiveStorageConstructionDecision(
+            world,self,authoritativePosition));
+    considerCivilizationDecision(
+        best,bestPrimitiveFirePitDecision(
+            world,self,authoritativePosition));
+    considerCivilizationDecision(
+        best,bestPrimitiveFurnaceDecision(
+            world,self,authoritativePosition));
 
     if(self.civilization.knowledge.knowsAtLeast(
         TechniqueId::DesignatedSanitationArea,KnowledgeLevel::Reproducible)
@@ -1138,7 +1162,9 @@ inline CivilizationUtilityDecision chooseCivilizationUtilityDecisionAtPosition(
 {
     CivilizationUtilityDecision best;
     if(self.id==0 || self.civilization.character!=self.id) return best;
-    considerCivilizationDecision(best,bestExperimentDecision(world,self));
+    considerCivilizationDecision(
+        best,bestExperimentDecisionAtPosition(
+            world,self,authoritativePosition));
     considerCivilizationDecision(
         best,bestCraftDecisionAtPosition(world,self,authoritativePosition));
     considerCivilizationDecision(best,bestRetrieveDecision(world,self));
