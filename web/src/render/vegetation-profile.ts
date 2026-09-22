@@ -6,6 +6,14 @@ import {
 const TREE_HEIGHT_WORLD_UNITS =
   WORLD_GRID_CONTRACT.worldUnitsPerChunk * 0.92;
 
+export const TREE_ASSET_CONTRACT = {
+  modelUrl:
+    'https://raw.githubusercontent.com/anshaneja5/skyline-run/0c41526d8d4130c37c15e219c2c3737fa8cb4ad8/public/assets/models/tree3.glb',
+  source: 'Quaternius Stylized Nature MegaKit',
+  license: 'CC0-1.0',
+  compressedBytes: 332440,
+} as const;
+
 export const VEGETATION_PRESENTATION_CONTRACT = {
   maxTrees: 3072,
   minForestCoverage01: 0.12,
