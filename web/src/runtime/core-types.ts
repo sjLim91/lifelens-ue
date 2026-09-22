@@ -196,6 +196,45 @@ export interface ResidentPresentationDirective {
   durationTicks?: number;
 }
 
+export interface ResidentContextAction {
+  active?: boolean;
+  kind?: ResidentPresentationKind;
+  issuedMinute?: number;
+  durationTicks?: number;
+  socialIntent?: string;
+  targetResidentId?: string;
+  civilizationIntent?: string;
+  material?: string;
+  technique?: string;
+  quantity?: number;
+  resourceNode?: string;
+  storage?: string;
+  facilityAction?: string;
+  facilityId?: string;
+  facilityKind?: FacilityKind;
+  parentingAction?: string;
+  hasSpatialTarget?: boolean;
+  targetGridX?: number;
+  targetGridY?: number;
+  sanitationSiteId?: string;
+}
+
+export interface ResidentCivilizationActivity {
+  active?: boolean;
+  kind?: string;
+  material?: string;
+  technique?: string;
+  quantity?: number;
+  minute?: number;
+  resourceNode?: string;
+  storage?: string;
+  success?: boolean;
+  hasSpatialTarget?: boolean;
+  targetGridX?: number;
+  targetGridY?: number;
+  sanitationSiteId?: string;
+}
+
 export interface Resident {
   id: string;
   name: string;
@@ -210,6 +249,8 @@ export interface Resident {
   activityTargetId?: string;
   activityTargetName?: string;
   presentation?: ResidentPresentationDirective;
+  contextAction?: ResidentContextAction;
+  civilizationActivity?: ResidentCivilizationActivity;
   emotion?: ResidentEmotion;
   needs?: ResidentNeeds;
   personality?: ResidentPersonality;
@@ -341,12 +382,39 @@ export interface WorldResidue {
   radiusTiles?: number;
 }
 
+export type SocialEventType =
+  | 'PositiveInteraction'
+  | 'Help'
+  | 'Comfort'
+  | 'Conflict'
+  | 'Betrayal'
+  | 'Rejection'
+  | 'Apology'
+  | 'Intimacy'
+  | 'Commitment';
+
+export interface WorldSocialEvent {
+  sequence: string;
+  actorId: string;
+  actorName: string;
+  targetId: string;
+  targetName: string;
+  type: SocialEventType;
+  intensity?: number;
+  importance?: number;
+  minute: number;
+  where?: string;
+  presentationLevel?: 'Everyday' | 'Meaningful' | 'Important';
+  successful?: boolean;
+}
+
 export interface WorldPresentationSnapshot {
   available?: boolean;
   minute?: number;
   facilities?: WorldFacility[];
   sanitationSites?: WorldSanitationSite[];
   residues?: WorldResidue[];
+  socialEvents?: WorldSocialEvent[];
   aggregateWasteAmount?: number;
   peakWasteIntensity?: number;
 }
