@@ -152,6 +152,7 @@ std::string WebClientBridge::residentsJson() const
         out << "{";
         out << "\"id\":\"" << resident.id << "\",";
         out << "\"name\":\"" << escapeJson(resident.name) << "\",";
+        out << "\"sex\":\"" << sexName(resident.sex) << "\",";
         out << "\"activityKind\":\""
             << activityKindName(resident.activityKind) << "\",";
         out << "\"activityLabel\":\""
