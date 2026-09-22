@@ -45,7 +45,16 @@ int main()
     assert(residents.find("\"hasObjectTarget\":") != std::string::npos);
     assert(residents.find("\"emergencyFallback\":") != std::string::npos);
     assert(residents.find("\"contextActionToken\":") != std::string::npos);
+    assert(residents.find("\"contextAction\":{") != std::string::npos);
+    assert(residents.find("\"civilizationActivity\":{") != std::string::npos);
     assert(residents.find("\"hasPosition\":true") != std::string::npos);
+
+    const std::string presentation = bridge.worldPresentationJson();
+    assert(presentation.find("\"available\":true") != std::string::npos);
+    assert(presentation.find("\"facilities\":[") != std::string::npos);
+    assert(presentation.find("\"sanitationSites\":[") != std::string::npos);
+    assert(presentation.find("\"residues\":[") != std::string::npos);
+    assert(presentation.find("\"socialEvents\":[") != std::string::npos);
 
     const std::string environment = bridge.dynamicEnvironmentJson(0, 0);
     assert(environment.find("\"available\":true") != std::string::npos);
