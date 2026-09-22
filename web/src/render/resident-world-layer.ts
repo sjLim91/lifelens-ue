@@ -581,7 +581,7 @@ export class ResidentWorldLayer {
       actor.mixer.update(dt);
     }
 
-    this.updateSocialLinks();
+    this.updateActionLinks();
     this.selectionPulseSeconds += dt;
     this.updateSelectionRing();
   }
@@ -610,7 +610,7 @@ export class ResidentWorldLayer {
     if (!Array.isArray(selectionMaterial)) selectionMaterial.dispose();
   }
 
-  private updateSocialLinks(): void {
+  private updateActionLinks(): void {
     const positions: number[] = [];
     const colors: number[] = [];
     const seen = new Set<string>();
@@ -636,6 +636,53 @@ export class ResidentWorldLayer {
           && action.kind !== 'Parenting'
         )
       ) {
+        continue;
+      }
+
+      if (
+        action.kind === 'Civilization'
+        && action.hasSpatialTarget
+        && typeof action.targetGridX === 'number'
+        && typeof action.targetGridY === 'number'
+        && sourceActor?.initialized
+        && sourceActor.root.visible
+        && this.pendingTerrain
+      ) {
+        const gridCellsPerChunk = WORLD_GRID_CONTRACT.gridCellsPerChunk;
+        const chunkWorldSize = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
+        const chunkX = Math.floor(action.targetGridX / gridCellsPerChunk);
+        const chunkY = Math.floor(action.targetGridY / gridCellsPerChunk);
+        const localX = (
+          action.targetGridX - chunkX * gridCellsPerChunk
+        ) / gridCellsPerChunk;
+        const localY = (
+          action.targetGridY - chunkY * gridCellsPerChunk
+        ) / gridCellsPerChunk;
+        const sampleElevation = createTerrainElevationSampler(
+          this.pendingTerrain,
+        );
+        const groundY = sampleElevation(
+          chunkX,
+          chunkY,
+          localX,
+          localY,
+        ) * WORLD_GRID_CONTRACT.elevationScale;
+        const targetX = (
+          chunkX - this.pendingCenterX + localX - 0.5
+        ) * chunkWorldSize;
+        const targetZ = (
+          chunkY - this.pendingCenterY + localY - 0.5
+        ) * chunkWorldSize;
+
+        positions.push(
+          sourceActor.current.x,
+          sourceActor.current.y + 0.75,
+          sourceActor.current.z,
+          targetX,
+          groundY + 0.16,
+          targetZ,
+        );
+        pushColor(new THREE.Color(0xb99661));
         continue;
       }
 
