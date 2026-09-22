@@ -173,6 +173,7 @@ inline bool buildCoreGroundRoute(
     const WorldGenesisIdentity identity = world.genesisIdentity();
     struct ChunkTraversalFacts {
         MacroSurfaceFacts surface{};
+        MacroRegionFacts region{};
         HydrologyFacts hydrology{};
     };
     std::unordered_map<std::uint64_t, ChunkTraversalFacts> chunkFacts;
@@ -194,6 +195,7 @@ inline bool buildCoreGroundRoute(
             if(it==chunkFacts.end()){
                 ChunkTraversalFacts facts;
                 facts.surface=deriveMacroSurfaceFacts(identity,chunk);
+                facts.region=deriveMacroRegionFacts(identity,chunk);
                 facts.hydrology=deriveHydrologyFacts(identity,chunk);
                 it=chunkFacts.emplace(key,std::move(facts)).first;
             }
@@ -206,6 +208,37 @@ inline bool buildCoreGroundRoute(
         };
 
     if(!traversable(start)) return false;
+
+    std::unordered_map<std::uint64_t, double> elevationCache;
+    const auto elevationAt=
+        [&](GridPos position)->double
+        {
+            const std::uint64_t key=gridRouteKey(position);
+            const auto existing=elevationCache.find(key);
+            if(existing!=elevationCache.end()) return existing->second;
+            const double value=
+                deriveContinuousSurfaceElevation01(identity,position);
+            elevationCache.emplace(key,value);
+            return value;
+        };
+
+    const auto traversalCost=
+        [&](GridPos from,GridPos to)->double
+        {
+            const ChunkCoord chunk=chunkCoordForGrid(to);
+            const std::uint64_t key=chunkKey(chunk);
+            auto factsIt=chunkFacts.find(key);
+            if(factsIt==chunkFacts.end()){
+                traversable(to);
+                factsIt=chunkFacts.find(key);
+            }
+
+            const double elevationPenalty=
+                std::abs(elevationAt(to)-elevationAt(from))*42.0;
+            const double terrainPenalty=
+                (1.0-clampMacro01(factsIt->second.region.traversalEase))*1.75;
+            return 1.0+terrainPenalty+elevationPenalty;
+        };
 
     // Most everyday movement is locally unobstructed. Resolve the two
     // deterministic Manhattan-L candidates first and reserve A* for actual
@@ -303,7 +336,7 @@ inline bool buildCoreGroundRoute(
             if(!traversable(next)) continue;
 
             const double tentative =
-                current.g + coreGroundTraversalCost(world, current.pos, next);
+                current.g + traversalCost(current.pos,next);
             const std::uint64_t nextKey = gridRouteKey(next);
             const auto existing = best.find(nextKey);
             if(existing != best.end()
