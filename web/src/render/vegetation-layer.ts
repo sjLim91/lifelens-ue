@@ -342,35 +342,64 @@ uniform float uLifeLensWindIntensity;`,
     const gridCellsPerChunk = WORLD_GRID_CONTRACT.gridCellsPerChunk;
     const worldUnitsPerGrid = chunkWorldSize / gridCellsPerChunk;
 
+    const toWorldPoint = (
+      gridX: number,
+      gridY: number,
+    ): { x: number; z: number } => {
+      const chunkX = Math.floor(gridX / gridCellsPerChunk);
+      const chunkY = Math.floor(gridY / gridCellsPerChunk);
+      const localX = gridX - chunkX * gridCellsPerChunk;
+      const localY = gridY - chunkY * gridCellsPerChunk;
+      return {
+        x: (
+          chunkX - window.centerChunkX
+          + localX / gridCellsPerChunk
+          - 0.5
+        ) * chunkWorldSize,
+        z: (
+          chunkY - window.centerChunkY
+          + localY / gridCellsPerChunk
+          - 0.5
+        ) * chunkWorldSize,
+      };
+    };
+
+    const facilityPoints = this.facilities.map((facility) => ({
+      ...toWorldPoint(facility.gridX, facility.gridY),
+      kind: facility.kind,
+    }));
+    const resourcePointsByMaterial = new Map<
+      string,
+      Array<{
+        x: number;
+        z: number;
+        ratio: number;
+      }>
+    >();
+    for (const resource of this.resources) {
+      const maxQuantity = Math.max(
+        1,
+        Number(resource.maxQuantity) || Number(resource.quantity) || 1,
+      );
+      const ratio = Math.max(
+        0,
+        Math.min(1, (Number(resource.quantity) || 0) / maxQuantity),
+      );
+      const point = toWorldPoint(resource.gridX, resource.gridY);
+      const points = resourcePointsByMaterial.get(resource.material) ?? [];
+      points.push({ ...point, ratio });
+      resourcePointsByMaterial.set(resource.material, points);
+    }
+
     const facilityReadability = (
       worldX: number,
       worldZ: number,
     ): number => {
       let factor = 1;
-      for (const facility of this.facilities) {
-        const facilityChunkX = Math.floor(
-          facility.gridX / gridCellsPerChunk,
-        );
-        const facilityChunkY = Math.floor(
-          facility.gridY / gridCellsPerChunk,
-        );
-        const facilityLocalX =
-          facility.gridX - facilityChunkX * gridCellsPerChunk;
-        const facilityLocalY =
-          facility.gridY - facilityChunkY * gridCellsPerChunk;
-        const facilityWorldX = (
-          facilityChunkX - window.centerChunkX
-          + facilityLocalX / gridCellsPerChunk
-          - 0.5
-        ) * chunkWorldSize;
-        const facilityWorldZ = (
-          facilityChunkY - window.centerChunkY
-          + facilityLocalY / gridCellsPerChunk
-          - 0.5
-        ) * chunkWorldSize;
+      for (const facility of facilityPoints) {
         const distance = Math.hypot(
-          worldX - facilityWorldX,
-          worldZ - facilityWorldZ,
+          worldX - facility.x,
+          worldZ - facility.z,
         );
         const radius = facility.kind === 'Shelter' ? 3.4 : 2.6;
         if (distance >= radius) continue;
@@ -387,33 +416,11 @@ uniform float uLifeLensWindIntensity;`,
       worldZ: number,
     ): number => {
       let retention = 1;
-      for (const resource of this.resources) {
-        if (resource.material !== material) continue;
-        const maxQuantity = Math.max(
-          1,
-          Number(resource.maxQuantity) || Number(resource.quantity) || 1,
-        );
-        const ratio = Math.max(
-          0,
-          Math.min(1, (Number(resource.quantity) || 0) / maxQuantity),
-        );
-        const nodeChunkX = Math.floor(resource.gridX / gridCellsPerChunk);
-        const nodeChunkY = Math.floor(resource.gridY / gridCellsPerChunk);
-        const nodeLocalX = resource.gridX - nodeChunkX * gridCellsPerChunk;
-        const nodeLocalY = resource.gridY - nodeChunkY * gridCellsPerChunk;
-        const nodeWorldX = (
-          nodeChunkX - window.centerChunkX
-          + nodeLocalX / gridCellsPerChunk
-          - 0.5
-        ) * chunkWorldSize;
-        const nodeWorldZ = (
-          nodeChunkY - window.centerChunkY
-          + nodeLocalY / gridCellsPerChunk
-          - 0.5
-        ) * chunkWorldSize;
+      const resources = resourcePointsByMaterial.get(material) ?? [];
+      for (const resource of resources) {
         const distance = Math.hypot(
-          worldX - nodeWorldX,
-          worldZ - nodeWorldZ,
+          worldX - resource.x,
+          worldZ - resource.z,
         );
         const radius = Math.max(
           worldUnitsPerGrid * 5,
@@ -421,7 +428,9 @@ uniform float uLifeLensWindIntensity;`,
         );
         if (distance >= radius) continue;
         const falloff = 1 - distance / radius;
-        const localRetention = 1 - (1 - ratio) * falloff;
+        const localRetention = (
+          1 - (1 - resource.ratio) * falloff
+        );
         retention = Math.min(retention, localRetention);
       }
       return Math.max(0.03, Math.min(1, retention));
