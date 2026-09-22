@@ -58,6 +58,12 @@ jobs:
             --dir public/runtime \
             --clobber
 
+          gh release download "$RELEASE_TAG" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --pattern 'RUNTIME_COMMIT.txt' \
+            --dir public/runtime \
+            --clobber || true
+
           test -s public/runtime/lifelens_core.js
           test -s public/runtime/lifelens_core.wasm
           test -s public/runtime/SHA256SUMS.txt
@@ -65,7 +71,18 @@ jobs:
           sed 's#Clients/Web/generated/##g' public/runtime/SHA256SUMS.txt \
             | (cd public/runtime && sha256sum -c -)
 
-          grep -q 'dynamicEnvironmentJson' public/runtime/lifelens_core.js
+          if [ -s public/runtime/RUNTIME_COMMIT.txt ]; then
+            echo "Runtime source commit: $(cat public/runtime/RUNTIME_COMMIT.txt)"
+          fi
+
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            test -s public/runtime/RUNTIME_COMMIT.txt
+            expected="${{ github.event.workflow_run.head_sha }}"
+            actual="$(tr -d '\r\n' < public/runtime/RUNTIME_COMMIT.txt)"
+            echo "Expected runtime commit: $expected"
+            echo "Actual runtime commit:   $actual"
+            test "$actual" = "$expected"
+          fi
 
       - name: Typecheck
         run: npm run typecheck
