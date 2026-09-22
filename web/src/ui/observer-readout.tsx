@@ -6,15 +6,21 @@ import {
   formatBeliefText,
   formatFacilityKind,
   formatFacilityState,
+  formatItemKind,
+  formatKnowledgeLevel,
+  formatKnowledgeSource,
   formatLifeEventType,
   formatLifeStage,
+  formatMaterialName,
   formatMemoryLocation,
+  formatMemorySource,
   formatMemoryText,
   formatPartnerStage,
   formatPercent,
   formatResidentCurrentAction,
   formatSocialEventType,
   formatSex,
+  formatTechniqueName,
   formatWeather,
 } from './observer-format';
 
@@ -81,6 +87,11 @@ export function ObserverMetrics({
     .reverse()
     .slice(0, 6);
   const facilities = snapshot.presentation?.facilities ?? [];
+  const resources = snapshot.presentation?.resources ?? [];
+  const storages = snapshot.presentation?.storages ?? [];
+  const discoveries = [...(snapshot.presentation?.discoveries ?? [])]
+    .reverse()
+    .slice(0, 5);
   const visibleFacilities = facilities
     .filter((facility) => facility.state !== 'Ruined')
     .slice(0, 6);
@@ -102,9 +113,14 @@ export function ObserverMetrics({
 
       <div className="world-consequence-summary">
         <div>
+          <span>자원 노드</span>
+          <b>{resources.length}</b>
+          <small>Core 실제 채집 대상</small>
+        </div>
+        <div>
           <span>생활 시설</span>
           <b>{facilities.length}</b>
-          <small>{activeProjects > 0 ? `건설 중 ${activeProjects}` : '진행 공사 없음'}</small>
+          <small>{activeProjects > 0 ? `건설 중 ${activeProjects}` : `저장소 ${storages.length}`}</small>
         </div>
         <div>
           <span>위생시설</span>
@@ -136,6 +152,32 @@ export function ObserverMetrics({
                   ? ` · 공정 ${Math.round((Number(facility.workProgress) || 0) * 100)}%`
                   : ''}
                 {facility.lit ? ' · 불 사용 중' : ''}
+              </small>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {discoveries.length > 0 ? (
+        <div className="world-event-list discovery-event-list">
+          <div className="world-event-heading">
+            <h3>기술 발견과 전파</h3>
+            <span>Core 지식 계보</span>
+          </div>
+          {discoveries.map((discovery) => (
+            <div className="world-event-row discovery-event-row" key={discovery.factId}>
+              <div>
+                <strong>{discovery.discovererName || '주민'}</strong>
+                <span>{formatTechniqueName(discovery.technique)} 발견</span>
+              </div>
+              <small>
+                {formatDay(discovery.minute)}
+                {Number(discovery.livingKnowerCount) > 1
+                  ? ` · 현재 아는 주민 ${discovery.livingKnowerCount}명`
+                  : ''}
+                {Number(discovery.recipientCount) > 0
+                  ? ` · 전달 ${discovery.recipientCount}명`
+                  : ''}
               </small>
             </div>
           ))}
@@ -355,6 +397,49 @@ export function SelectedResidentReadout({
       </div>
 
       <div className="focused-life-section">
+        <h3>생활 기술과 소지품</h3>
+        <div className="focused-life-inline">
+          <span>채집 <b>{formatPercent(resident.civilization?.gatheringSkill)}</b></span>
+          <span>제작 <b>{formatPercent(resident.civilization?.craftingSkill)}</b></span>
+          <span>학습 <b>{formatPercent(resident.civilization?.learningSkill)}</b></span>
+          <span>소지품 <b>{resident.civilization?.totalInventoryUnits ?? 0}</b></span>
+        </div>
+        {(resident.civilization?.inventory ?? []).length > 0 ? (
+          <div className="civilization-item-grid">
+            {(resident.civilization?.inventory ?? []).slice(0, 6).map((item, index) => (
+              <span key={`${item.item}:${item.material}:${index}`}>
+                {item.item === 'RawMaterial'
+                  ? formatMaterialName(item.material)
+                  : formatItemKind(item.item)}
+                <b> ×{item.quantity ?? 0}</b>
+              </span>
+            ))}
+          </div>
+        ) : <div className="focused-life-muted">아직 들고 있는 물건이 없습니다.</div>}
+        {(resident.civilization?.techniques ?? []).length > 0 ? (
+          <div className="technique-list">
+            {(resident.civilization?.techniques ?? []).slice(0, 8).map((technique, index) => (
+              <div className="technique-row" key={`${technique.technique}:${index}`}>
+                <div>
+                  <strong>{formatTechniqueName(technique.technique)}</strong>
+                  <span>{formatKnowledgeLevel(technique.level)}</span>
+                </div>
+                <small>
+                  확신 {formatPercent(technique.confidence)}
+                  {technique.hasProvenance
+                    ? ` · ${formatKnowledgeSource(technique.source)}`
+                    : ''}
+                  {Number(technique.successfulUses) > 0
+                    ? ` · 사용 ${technique.successfulUses}회`
+                    : ''}
+                </small>
+              </div>
+            ))}
+          </div>
+        ) : <div className="focused-life-muted">아직 습득한 생활 기술이 없습니다.</div>}
+      </div>
+
+      <div className="focused-life-section">
         <h3>관계</h3>
         {importantRelationships.length > 0
           ? importantRelationships.map((relationship) => (
@@ -390,6 +475,7 @@ export function SelectedResidentReadout({
                 <span>{formatMemoryText(memory.what)}</span>
                 <small>
                   신뢰도 {formatPercent(memory.effectiveConfidence ?? memory.confidence)}
+                  {memory.source ? ` · ${formatMemorySource(memory.source)}` : ''}
                   {memory.where ? ` · ${formatMemoryLocation(memory.where)}` : ''}
                 </small>
               </div>
