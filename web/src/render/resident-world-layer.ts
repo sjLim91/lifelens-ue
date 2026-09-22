@@ -41,6 +41,7 @@ interface ResidentActor {
   presentation: ResidentPresentationDirective | null;
   current: THREE.Vector3;
   target: THREE.Vector3;
+  walkStateGraceSeconds: number;
   initialized: boolean;
 }
 
@@ -210,7 +211,10 @@ export class ResidentWorldLayer {
       if (actor.initialized) {
         const direction = next.clone().sub(actor.target);
         if (direction.lengthSq() > 0.0004) {
-          actor.root.rotation.y = Math.atan2(direction.x, direction.z);
+          actor.root.rotation.y = this.visualFacingYaw(
+            direction.x,
+            direction.z,
+          );
         }
       }
 
@@ -279,7 +283,10 @@ export class ResidentWorldLayer {
         distance > RESIDENT_PRESENTATION_CONTRACT.movementEpsilonWorldUnits;
 
       if (moving) {
-        actor.root.rotation.y = Math.atan2(delta.x, delta.z);
+        actor.root.rotation.y = this.visualFacingYaw(
+          delta.x,
+          delta.z,
+        );
         if (distance <= maxDistance) {
           actor.current.copy(actor.target);
         } else if (maxDistance > 0) {
@@ -290,6 +297,20 @@ export class ResidentWorldLayer {
         }
       } else {
         this.faceInteractionTarget(actor);
+      }
+
+      if (
+        this.simulationSpeed > 0
+        && actor.presentation?.active
+        && actor.presentation.phase === 'Moving'
+      ) {
+        actor.walkStateGraceSeconds =
+          RESIDENT_PRESENTATION_CONTRACT.walkStateGraceSeconds;
+      } else {
+        actor.walkStateGraceSeconds = Math.max(
+          0,
+          actor.walkStateGraceSeconds - dt,
+        );
       }
 
       actor.root.position.copy(actor.current);
@@ -457,6 +478,7 @@ export class ResidentWorldLayer {
       presentation: resident.presentation ?? null,
       current: new THREE.Vector3(),
       target: new THREE.Vector3(),
+      walkStateGraceSeconds: 0,
       initialized: false,
     };
 
@@ -522,7 +544,14 @@ export class ResidentWorldLayer {
       return;
     }
 
-    actor.root.rotation.y = Math.atan2(dx, dz);
+    actor.root.rotation.y = this.visualFacingYaw(dx, dz);
+  }
+
+  private visualFacingYaw(dx: number, dz: number): number {
+    // The normalized resident template keeps a 180-degree source correction.
+    // Compensate at the presentation root so the visible character faces the
+    // same direction as the authoritative movement/interaction vector.
+    return Math.atan2(dx, dz) + Math.PI;
   }
 
   private actionFor(
@@ -637,8 +666,13 @@ export class ResidentWorldLayer {
   private setAction(actor: ResidentActor, moving: boolean): void {
     const authoritativeWalking = Boolean(
       this.simulationSpeed > 0
-      && actor.presentation?.active
-      && actor.presentation.phase === 'Moving'
+      && (
+        (
+          actor.presentation?.active
+          && actor.presentation.phase === 'Moving'
+        )
+        || actor.walkStateGraceSeconds > 0
+      )
     );
     const desired: MotionName = (moving || authoritativeWalking) && actor.walk
       ? 'walk'
@@ -652,7 +686,14 @@ export class ResidentWorldLayer {
     if (!next) return;
 
     previous?.fadeOut(0.18);
-    next.reset().fadeIn(0.18).play();
+    if (desired === 'walk') {
+      // Keep the locomotion clip's phase across brief authoritative snapshot
+      // gaps instead of restarting the gait cycle on every walk re-entry.
+      next.enabled = true;
+      next.fadeIn(0.18).play();
+    } else {
+      next.reset().fadeIn(0.18).play();
+    }
     actor.active = desired;
   }
 }
