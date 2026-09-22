@@ -78,3 +78,18 @@ A real TypeScript dependency install/typecheck has not yet run in this session b
 Do not perform AppDeploy deployment/update during normal development.
 
 Only deploy after the user explicitly requests deployment. Before deploying, compare GitHub `web/` against the live AppDeploy snapshot, sync reviewed changes only, run QA, and report the production result.
+
+
+## 2026-09-22 visual regression fix — Legacy preview
+
+The mobile preview exposed two presentation regressions in the production-compatible Legacy renderer.
+
+Fixed in GitHub development source:
+- Legacy river/stream/spring rendering no longer connects every surrounding wet/lake cell.
+- Flow rendering is capped to a natural maximum of two exits for river/stream chunks and one exit for springs.
+- Synthetic horizontal/vertical fallback channels were removed.
+- Water stroke width/bend amplitude were reduced to avoid road-grid appearance.
+- Resident nameplates now anchor above the full character height rather than near the upper torso.
+- Nameplates perform simple collision avoidance and stack vertically when residents cluster.
+
+These fixes are covered by the web regression contract and are automatically published to the static preview branch after typecheck/build succeeds.
