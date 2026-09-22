@@ -80,12 +80,12 @@ export function startObserverEngine(): void {
     : null;
   let followResidents = false;
   let simulationClock: SimulationClock | null = null;
-  let angle = OBSERVER_CAMERA_CONTRACT.defaultAngleRadians;
-  let elevation = OBSERVER_CAMERA_CONTRACT.defaultElevationRadians;
+  let angle: number = OBSERVER_CAMERA_CONTRACT.defaultAngleRadians;
+  let elevation: number = OBSERVER_CAMERA_CONTRACT.defaultElevationRadians;
   const compactViewport = window.matchMedia(
     `(max-width: ${OBSERVER_CAMERA_CONTRACT.compactViewportMaxWidthPx}px)`,
   ).matches;
-  let zoom = compactViewport
+  let zoom: number = compactViewport
     ? OBSERVER_CAMERA_CONTRACT.defaultMobileZoom
     : OBSERVER_CAMERA_CONTRACT.defaultDesktopZoom;
   let localPanX = 0;
