@@ -90,6 +90,7 @@ export function startObserverEngine(): void {
     : OBSERVER_CAMERA_CONTRACT.defaultDesktopZoom;
   let localPanX = 0;
   let localPanZ = 0;
+  let autoFrameActivity = true;
   new CameraInput(canvas, {
     initialAngle: angle,
     initialElevation: elevation,
@@ -117,6 +118,7 @@ export function startObserverEngine(): void {
         worldSession.moveObserver(0, 0);
         followResidents = false;
       }
+      autoFrameActivity = false;
 
       const worldUnitsPerPixel =
         OBSERVER_CAMERA_CONTRACT.panWorldUnitsPerPixelAtZoom1
@@ -192,6 +194,81 @@ export function startObserverEngine(): void {
       angle,
     });
   }
+
+  function gridToLocalWorld(gridX: number, gridY: number): {
+    x: number;
+    z: number;
+  } {
+    const cells = WORLD_GRID_CONTRACT.gridCellsPerChunk;
+    const chunkWorldSize = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
+    const chunkX = Math.floor(gridX / cells);
+    const chunkY = Math.floor(gridY / cells);
+    const localX = (gridX - chunkX * cells) / cells;
+    const localY = (gridY - chunkY * cells) / cells;
+    return {
+      x: (chunkX - centerX + localX - 0.5) * chunkWorldSize,
+      z: (chunkY - centerY + localY - 0.5) * chunkWorldSize,
+    };
+  }
+
+  function updateActivityFrame(
+    residents: Resident[],
+    facilities: Array<{ gridX: number; gridY: number; state?: string }>,
+  ): void {
+    if (!autoFrameActivity) return;
+
+    const selectedId = observerStore.getSnapshot().selectedResidentId;
+    const selected = selectedId
+      ? residents.find((resident) => resident.id === selectedId)
+      : undefined;
+
+    if (
+      selected?.hasPosition
+      && typeof selected.gridX === 'number'
+      && typeof selected.gridY === 'number'
+    ) {
+      const point = gridToLocalWorld(selected.gridX, selected.gridY);
+      localPanX = point.x;
+      localPanZ = point.z;
+      return;
+    }
+
+    const points: Array<{ x: number; z: number; weight: number }> = [];
+    for (const resident of residents) {
+      if (
+        !resident.hasPosition
+        || typeof resident.gridX !== 'number'
+        || typeof resident.gridY !== 'number'
+      ) {
+        continue;
+      }
+      const point = gridToLocalWorld(resident.gridX, resident.gridY);
+      points.push({ ...point, weight: 2 });
+    }
+    for (const facility of facilities) {
+      if (
+        facility.state === 'Ruined'
+        || typeof facility.gridX !== 'number'
+        || typeof facility.gridY !== 'number'
+      ) {
+        continue;
+      }
+      const point = gridToLocalWorld(facility.gridX, facility.gridY);
+      points.push({ ...point, weight: 1 });
+    }
+
+    if (points.length === 0) return;
+    let weightedX = 0;
+    let weightedZ = 0;
+    let weightTotal = 0;
+    for (const point of points) {
+      weightedX += point.x * point.weight;
+      weightedZ += point.z * point.weight;
+      weightTotal += point.weight;
+    }
+    localPanX = weightedX / Math.max(1, weightTotal);
+    localPanZ = weightedZ / Math.max(1, weightTotal);
+  }
   
   function refresh(): void {
     if (!worldSession) return;
@@ -225,6 +302,10 @@ export function startObserverEngine(): void {
       followResidents,
     });
     const selectedResidentId = observerStore.getSnapshot().selectedResidentId;
+    updateActivityFrame(
+      residentSnapshot,
+      snapshot.presentation?.facilities ?? [],
+    );
     threeWorldRenderer?.setSelectedResident(selectedResidentId);
     threeWorldRenderer?.setTerrain(terrain);
     threeWorldRenderer?.setResidents(
@@ -263,6 +344,7 @@ export function startObserverEngine(): void {
     centerX = 0;
     centerY = 0;
     followResidents = false;
+    autoFrameActivity = true;
     localPanX = 0;
     localPanZ = 0;
     residentSnapshot = [];
@@ -276,9 +358,33 @@ export function startObserverEngine(): void {
 
   function selectResident(residentId: string | null): void {
     observerStore.selectResident(residentId);
+    autoFrameActivity = residentId !== null;
+    if (residentId !== null) {
+      const selected = residentSnapshot.find(
+        (resident) => resident.id === residentId,
+      );
+      if (
+        selected?.hasPosition
+        && typeof selected.gridX === 'number'
+        && typeof selected.gridY === 'number'
+      ) {
+        const point = gridToLocalWorld(selected.gridX, selected.gridY);
+        localPanX = point.x;
+        localPanZ = point.z;
+      }
+    }
     threeWorldRenderer?.setSelectedResident(
       observerStore.getSnapshot().selectedResidentId,
     );
+    threeWorldRenderer?.setCamera({
+      centerChunkX: centerX,
+      centerChunkY: centerY,
+      angle,
+      elevation,
+      zoom,
+      panX: localPanX,
+      panZ: localPanZ,
+    });
   }
   
   function move(dx: number, dy: number): void {
@@ -290,6 +396,7 @@ export function startObserverEngine(): void {
 
   function recenterObserver(): void {
     if (!worldSession) return;
+    autoFrameActivity = true;
     localPanX = 0;
     localPanZ = 0;
     worldSession.recenterToResidents();
