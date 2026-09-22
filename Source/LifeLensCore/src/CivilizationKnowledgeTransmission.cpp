@@ -165,13 +165,7 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
     runtime.socialIntent=SocialIntent::None;
     runtime.socialTarget=0;
 
-    if(!world_.externalPhysicalExecution){
-        completeContextAction(
-            *teacher,
-            runtime,
-            pending.token,
-            learnerRuntime->second.pos);
-    }
+    clearNavigation(runtime);
 }
 
 } // namespace lifelens
