@@ -18,6 +18,7 @@ import { CameraInput } from './input/camera-input';
 import { LegacyCanvasWorldRenderer } from './render/legacy-canvas-world-renderer';
 import { readRenderMode } from './render/render-mode';
 import { WorldRenderer } from './render/world-renderer';
+import { createTerrainElevationSampler } from './render/terrain-geometry';
 
 function generateWorldSeed(): string {
   const words = new Uint32Array(2);
@@ -89,6 +90,7 @@ export function startObserverEngine(): void {
     ? OBSERVER_CAMERA_CONTRACT.defaultMobileZoom
     : OBSERVER_CAMERA_CONTRACT.defaultDesktopZoom;
   let localPanX = 0;
+  let localPanY = 0;
   let localPanZ = 0;
   let autoFrameActivity = true;
   let autoFrameZoom = true;
@@ -111,6 +113,7 @@ export function startObserverEngine(): void {
         elevation,
         zoom,
         panX: localPanX,
+        panY: localPanY,
         panZ: localPanZ,
       });
       drawWorld();
@@ -164,6 +167,7 @@ export function startObserverEngine(): void {
         elevation,
         zoom,
         panX: localPanX,
+        panY: localPanY,
         panZ: localPanZ,
       });
       drawWorld();
@@ -201,6 +205,7 @@ export function startObserverEngine(): void {
 
   function gridToLocalWorld(gridX: number, gridY: number): {
     x: number;
+    y: number;
     z: number;
   } {
     const cells = WORLD_GRID_CONTRACT.gridCellsPerChunk;
@@ -209,8 +214,17 @@ export function startObserverEngine(): void {
     const chunkY = Math.floor(gridY / cells);
     const localX = (gridX - chunkX * cells) / cells;
     const localY = (gridY - chunkY * cells) / cells;
+    const elevation = terrain
+      ? createTerrainElevationSampler(terrain)(
+          chunkX,
+          chunkY,
+          localX,
+          localY,
+        ) * WORLD_GRID_CONTRACT.elevationScale
+      : 0;
     return {
       x: (chunkX - centerX + localX - 0.5) * chunkWorldSize,
+      y: elevation,
       z: (chunkY - centerY + localY - 0.5) * chunkWorldSize,
     };
   }
@@ -233,6 +247,7 @@ export function startObserverEngine(): void {
     ) {
       const point = gridToLocalWorld(selected.gridX, selected.gridY);
       localPanX = point.x;
+      localPanY = point.y;
       localPanZ = point.z;
       if (autoFrameZoom) {
         zoom = compactViewport ? 2.25 : 1.9;
@@ -240,7 +255,7 @@ export function startObserverEngine(): void {
       return;
     }
 
-    const points: Array<{ x: number; z: number; weight: number }> = [];
+    const points: Array<{ x: number; y: number; z: number; weight: number }> = [];
     for (const resident of residents) {
       if (
         !resident.hasPosition
@@ -266,14 +281,17 @@ export function startObserverEngine(): void {
 
     if (points.length === 0) return;
     let weightedX = 0;
+    let weightedY = 0;
     let weightedZ = 0;
     let weightTotal = 0;
     for (const point of points) {
       weightedX += point.x * point.weight;
+      weightedY += point.y * point.weight;
       weightedZ += point.z * point.weight;
       weightTotal += point.weight;
     }
     localPanX = weightedX / Math.max(1, weightTotal);
+    localPanY = weightedY / Math.max(1, weightTotal);
     localPanZ = weightedZ / Math.max(1, weightTotal);
 
     if (autoFrameZoom) {
@@ -375,6 +393,7 @@ export function startObserverEngine(): void {
     autoFrameActivity = true;
     autoFrameZoom = true;
     localPanX = 0;
+    localPanY = 0;
     localPanZ = 0;
     residentSnapshot = [];
     terrain = null;
@@ -400,6 +419,7 @@ export function startObserverEngine(): void {
       ) {
         const point = gridToLocalWorld(selected.gridX, selected.gridY);
         localPanX = point.x;
+        localPanY = point.y;
         localPanZ = point.z;
       }
     }
@@ -419,6 +439,7 @@ export function startObserverEngine(): void {
   
   function move(dx: number, dy: number): void {
     localPanX = 0;
+    localPanY = 0;
     localPanZ = 0;
     worldSession?.moveObserver(dx, dy);
     refresh();
@@ -429,6 +450,7 @@ export function startObserverEngine(): void {
     autoFrameActivity = true;
     autoFrameZoom = true;
     localPanX = 0;
+    localPanY = 0;
     localPanZ = 0;
     worldSession.recenterToResidents();
     refresh();
