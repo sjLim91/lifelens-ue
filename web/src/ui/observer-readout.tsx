@@ -4,7 +4,11 @@ import {
   formatActivity,
   formatBiome,
   formatDay,
+  formatBeliefText,
+  formatLifeEventType,
   formatLifeStage,
+  formatMemoryLocation,
+  formatMemoryText,
   formatPartnerStage,
   formatPercent,
   formatSex,
@@ -68,13 +72,53 @@ export function ObserverMetrics({
 }: {
   snapshot: ObserverSnapshot;
 }) {
+  const majorEvents = snapshot.world.majorLifeEventItems ?? [];
+  const totalMajorEvents = snapshot.world.majorLifeEvents ?? 0;
+
   return (
-    <div className="metrics">
-      <div><span>생존 인구</span><b id="living">{snapshot.world.livingResidents ?? '—'}</b></div>
-      <div><span>가구</span><b id="households">{snapshot.world.households ?? '—'}</b></div>
-      <div><span>커플</span><b id="couples">{snapshot.world.activeCouples ?? '—'}</b></div>
-      <div><span>주요 사건</span><b id="events">{snapshot.world.majorLifeEvents ?? '—'}</b></div>
-    </div>
+    <>
+      <div className="metrics">
+        <div><span>생존 인구</span><b id="living">{snapshot.world.livingResidents ?? '—'}</b></div>
+        <div><span>가구</span><b id="households">{snapshot.world.households ?? '—'}</b></div>
+        <div><span>커플</span><b id="couples">{snapshot.world.activeCouples ?? '—'}</b></div>
+        <div><span>주요 사건</span><b id="events">{snapshot.world.majorLifeEvents ?? '—'}</b></div>
+      </div>
+
+      <div className="world-event-list">
+        <div className="world-event-heading">
+          <h3>최근 주요 사건</h3>
+          <span>
+            {totalMajorEvents > 0
+              ? `최근 ${majorEvents.length}건 · 누적 ${totalMajorEvents}건`
+              : '아직 주요 사건 없음'}
+          </span>
+        </div>
+        {majorEvents.length > 0
+          ? majorEvents.map((event, index) => {
+              const relatedNames = (event.related ?? [])
+                .map((related) => related.name)
+                .filter((name): name is string => Boolean(name));
+              return (
+                <div
+                  className="world-event-row"
+                  key={`${event.minute}:${event.residentId}:${event.type}:${index}`}
+                >
+                  <div>
+                    <strong>{event.residentName || '주민'}</strong>
+                    <span>{formatLifeEventType(event.type)}</span>
+                  </div>
+                  <small>
+                    {formatDay(event.minute)}
+                    {relatedNames.length > 0
+                      ? ` · 관련: ${relatedNames.join(', ')}`
+                      : ''}
+                  </small>
+                </div>
+              );
+            })
+          : <div className="focused-life-muted">아직 기록된 주요 사건이 없습니다.</div>}
+      </div>
+    </>
   );
 }
 
@@ -263,10 +307,10 @@ export function SelectedResidentReadout({
         {memories.length > 0
           ? memories.map((memory, index) => (
               <div className="memory-row" key={`${memory.minute ?? 0}:${index}`}>
-                <span>{memory.what || '기억'}</span>
+                <span>{formatMemoryText(memory.what)}</span>
                 <small>
                   신뢰도 {formatPercent(memory.effectiveConfidence ?? memory.confidence)}
-                  {memory.where ? ` · ${memory.where}` : ''}
+                  {memory.where ? ` · ${formatMemoryLocation(memory.where)}` : ''}
                 </small>
               </div>
             ))
@@ -278,7 +322,7 @@ export function SelectedResidentReadout({
           <h3>믿음</h3>
           {beliefs.map((belief, index) => (
             <div className="belief-row" key={`${belief.subject ?? '0'}:${index}`}>
-              <span>{belief.proposition || '형성 중인 믿음'}</span>
+              <span>{formatBeliefText(belief.proposition, belief.stance)}</span>
               <small>확신 {formatPercent(belief.confidence)}</small>
             </div>
           ))}
