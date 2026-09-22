@@ -95,6 +95,57 @@ inline int coreGroundStepIntervalMinutes(
             std::ceil(1.0 + 1.50 * consequence.travelFriction01)));
 }
 
+
+inline bool chooseTargetwardCoreGroundStep(
+    const World& world,
+    GridPos current,
+    GridPos target,
+    int arrivalRadius,
+    GridPos& outStep)
+{
+    const int radius=std::max(0,arrivalRadius);
+    if(gridWithinRadius(current,target,radius)) return false;
+
+    std::vector<GridPos> candidates;
+    candidates.reserve(2);
+
+    const int xDistance=target.x-current.x;
+    const int yDistance=target.y-current.y;
+    if(std::abs(xDistance)>radius){
+        candidates.push_back({
+            current.x+(xDistance>0 ? 1 : -1),
+            current.y
+        });
+    }
+    if(std::abs(yDistance)>radius){
+        candidates.push_back({
+            current.x,
+            current.y+(yDistance>0 ? 1 : -1)
+        });
+    }
+
+    bool found=false;
+    double bestCost=std::numeric_limits<double>::infinity();
+    GridPos best{};
+
+    for(const GridPos candidate:candidates){
+        if(!coreGroundTraversable(world,candidate)) continue;
+        const double cost=coreGroundTraversalCost(
+            world,
+            current,
+            candidate);
+        if(!found || cost<bestCost){
+            found=true;
+            bestCost=cost;
+            best=candidate;
+        }
+    }
+
+    if(!found) return false;
+    outStep=best;
+    return true;
+}
+
 template <typename TraversableFn>
 inline bool tryBuildDirectCoreGroundRoute(
     GridPos start,
