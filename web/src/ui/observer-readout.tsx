@@ -13,7 +13,8 @@ export function RuntimeBadge({
       ? 'Core load failed'
       : 'Core loading…';
 
-  return <div id="status" className={`status ${runtime.status}`}>{text}</div>;
+  const className = runtime.status === 'loading' ? 'pending' : runtime.status;
+  return <div id="status" className={`status ${className}`}>{text}</div>;
 }
 
 export function WorldOverlay({
