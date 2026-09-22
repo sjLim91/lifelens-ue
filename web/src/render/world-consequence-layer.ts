@@ -306,6 +306,10 @@ function addFacilityShape(
         const light = new THREE.PointLight(0xff8b32, 2.25, 22, 2);
         light.position.y = 1.25;
         light.castShadow = false;
+        light.userData.lifeLensFireLight = true;
+        light.userData.baseIntensity = 2.25;
+        flame.userData.lifeLensFireFlame = true;
+        flame.userData.baseScaleY = 1;
         group.add(light);
       }
       break;
@@ -446,6 +450,8 @@ function addFacilityShape(
       if (facility.lit) {
         const light = new THREE.PointLight(0xff7921, 2.45, 20, 2);
         light.position.set(0, 1.05, 1.65);
+        light.userData.lifeLensFireLight = true;
+        light.userData.baseIntensity = 2.45;
         group.add(light);
       }
       break;
@@ -751,6 +757,31 @@ function disposeObject(object: THREE.Object3D): void {
 export class WorldConsequenceLayer {
   readonly group = new THREE.Group();
   private lastSignature = '';
+  private animationTime = 0;
+
+  update(deltaSeconds: number): void {
+    this.animationTime += Math.min(0.05, Math.max(0, deltaSeconds));
+    const slow = Math.sin(this.animationTime * 8.1);
+    const fast = Math.sin(this.animationTime * 17.3 + 0.7);
+
+    this.group.traverse((object) => {
+      if (
+        object instanceof THREE.PointLight
+        && object.userData.lifeLensFireLight
+      ) {
+        const base = Number(object.userData.baseIntensity) || 1;
+        object.intensity = base * (0.9 + slow * 0.055 + fast * 0.035);
+      }
+      if (
+        object instanceof THREE.Mesh
+        && object.userData.lifeLensFireFlame
+      ) {
+        const baseScaleY = Number(object.userData.baseScaleY) || 1;
+        object.scale.y = baseScaleY * (0.94 + fast * 0.08);
+        object.rotation.y = slow * 0.08;
+      }
+    });
+  }
 
   setSnapshot(
     snapshot: WorldPresentationSnapshot | null,
