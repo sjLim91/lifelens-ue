@@ -65,6 +65,10 @@ export class WorldRenderer {
     this.world.setEnvironment(environment);
   }
 
+  setSimulationSpeed(speed: number): void {
+    this.world.setSimulationSpeed(speed);
+  }
+
   pickResident(clientX: number, clientY: number): string | null {
     const rect = this.renderer.domElement.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) return null;
