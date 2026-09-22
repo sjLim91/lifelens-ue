@@ -233,7 +233,6 @@ export class VegetationLayer {
         0.55,
         baseRoughness - wetness * 0.18,
       );
-      material.needsUpdate = true;
     };
 
     applySurface(this.trunkMaterial, 0.05, 0.08);
