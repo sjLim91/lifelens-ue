@@ -374,6 +374,7 @@ export class ResidentWorldLayer {
   private simulationSpeed: SimulationSpeed =
     SIMULATION_TIME_CONTRACT.defaultSpeed;
   private simulationMinute = 0;
+  private cameraZoom = 1.25;
   private selectionPulseSeconds = 0;
 
   constructor() {
@@ -540,6 +541,10 @@ export class ResidentWorldLayer {
     this.simulationSpeed = normalizeSimulationSpeed(speed);
   }
 
+  setCameraZoom(zoom: number): void {
+    this.cameraZoom = Math.max(0.1, Number(zoom) || 1);
+  }
+
   setSimulationMinute(minute: number): void {
     this.simulationMinute = Math.max(0, Number(minute) || 0);
     this.updateWearRecovery();
@@ -633,6 +638,11 @@ export class ResidentWorldLayer {
             % 3
           ) * 0.12,
         actor.current.z,
+      );
+      actor.statusSprite.visible = Boolean(actor.statusText) && (
+        this.cameraZoom >= 1.04
+        || String(actor.root.userData.residentId ?? '')
+          === this.selectedResidentId
       );
       this.setAction(actor, moving);
       actor.mixer.update(dt);
@@ -1048,7 +1058,10 @@ export class ResidentWorldLayer {
     if (positions.length > 0) {
       this.socialLinkGeometry.computeBoundingSphere();
     }
-    this.socialLinks.visible = positions.length > 0;
+    this.socialLinks.visible = (
+      positions.length > 0
+      && this.cameraZoom >= 0.92
+    );
   }
 
   private updateSelectionRing(): void {
