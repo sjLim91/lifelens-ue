@@ -17,6 +17,8 @@ export interface WorldSceneCameraState {
   centerChunkY: number;
   zoom: number;
   angle: number;
+  panX?: number;
+  panZ?: number;
 }
 
 interface TerrainMeshEntry {
@@ -61,8 +63,15 @@ export class WorldScene {
     const horizontal = Math.cos(state.angle) * distance;
     const depth = Math.sin(state.angle) * distance;
 
-    this.camera.position.set(horizontal, distance * 0.8, depth);
-    this.camera.lookAt(0, 0, 0);
+    const panX = Number(state.panX) || 0;
+    const panZ = Number(state.panZ) || 0;
+
+    this.camera.position.set(
+      horizontal + panX,
+      distance * 0.8,
+      depth + panZ,
+    );
+    this.camera.lookAt(panX, 0, panZ);
   }
 
   setSimulationMinute(minute: number): void {
