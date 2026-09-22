@@ -32,17 +32,18 @@ export function WorldOverlay({
 
   return (
     <div className="world-overlay">
-      <span id="seedLabel">
-        {snapshot.world.worldSeed !== undefined
-          ? `WorldSeed ${snapshot.world.worldSeed}`
-          : 'WorldSeed —'}
-      </span>
-      <span id="timeLabel">{formatDay(snapshot.world.minute)}</span>
-      <span id="chunkLabel">
-        Chunk {snapshot.camera.centerChunkX}, {snapshot.camera.centerChunkY}
+      <span id="timeLabel" className="world-overlay-primary">
+        {formatDay(snapshot.world.minute)}
       </span>
       <span id="biomeLabel">
-        {center ? `Biome ${center.biome ?? '—'} · Forest ${forest}%` : 'Biome —'}
+        {center
+          ? `${center.biome ?? 'Unknown'} · 숲 ${forest}%`
+          : '환경 분석 중'}
+      </span>
+      <span id="livingOverlay">
+        {snapshot.world.livingResidents !== undefined
+          ? `인구 ${snapshot.world.livingResidents}`
+          : '인구 —'}
       </span>
     </div>
   );
