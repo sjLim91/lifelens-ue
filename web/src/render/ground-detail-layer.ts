@@ -237,7 +237,6 @@ export class GroundDetailLayer {
         );
       }
       material.roughness = Math.max(0.62, 1 - wet * 0.22);
-      material.needsUpdate = true;
     };
 
     apply(this.grassMaterial, this.grassBase, 0.2, 0.1);
