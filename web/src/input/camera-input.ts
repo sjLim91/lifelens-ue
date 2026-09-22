@@ -9,6 +9,7 @@ export interface CameraInputOptions {
   minZoom?: number;
   maxZoom?: number;
   onChange: (state: CameraInputState) => void;
+  onTap?: (clientX: number, clientY: number) => void;
 }
 
 export class CameraInput {
@@ -19,6 +20,12 @@ export class CameraInput {
   private readonly pointers = new Map<number, { x: number; y: number }>();
   private drag: { x: number; y: number } | null = null;
   private pinchDistance: number | null = null;
+  private tapCandidate: {
+    pointerId: number;
+    startX: number;
+    startY: number;
+    moved: boolean;
+  } | null = null;
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -70,8 +77,15 @@ export class CameraInput {
 
     if (this.pointers.size === 1) {
       this.drag = { x: event.clientX, y: event.clientY };
+      this.tapCandidate = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        moved: false,
+      };
     } else {
       this.drag = null;
+      this.tapCandidate = null;
       this.pinchDistance = this.pointerDistance();
     }
   };
@@ -84,7 +98,18 @@ export class CameraInput {
       y: event.clientY,
     });
 
+    if (
+      this.tapCandidate?.pointerId === event.pointerId
+      && Math.hypot(
+        event.clientX - this.tapCandidate.startX,
+        event.clientY - this.tapCandidate.startY,
+      ) > 8
+    ) {
+      this.tapCandidate.moved = true;
+    }
+
     if (this.pointers.size >= 2) {
+      this.tapCandidate = null;
       const next = this.pointerDistance();
       if (next && this.pinchDistance) {
         this.zoom = Math.max(
@@ -104,10 +129,23 @@ export class CameraInput {
   };
 
   private readonly onPointerStop = (event: PointerEvent): void => {
+    const shouldTap = event.type === 'pointerup'
+      && this.tapCandidate?.pointerId === event.pointerId
+      && this.tapCandidate.moved === false
+      && this.pointers.size === 1;
+
     this.pointers.delete(event.pointerId);
     this.pinchDistance = this.pointerDistance();
     const remaining = [...this.pointers.values()];
     this.drag = remaining.length === 1 ? { ...remaining[0] } : null;
+
+    if (shouldTap) {
+      this.options.onTap?.(event.clientX, event.clientY);
+    }
+
+    if (this.tapCandidate?.pointerId === event.pointerId) {
+      this.tapCandidate = null;
+    }
   };
 
   private readonly onWheel = (event: WheelEvent): void => {
