@@ -9,7 +9,9 @@
 #include <vector>
 
 #include "ContinuousTerrain.h"
+#include "EnvironmentalConsequences.h"
 #include "Hydrology.h"
+#include "SimulationClimate.h"
 #include "World.h"
 
 namespace lifelens {
