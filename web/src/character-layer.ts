@@ -562,7 +562,7 @@ export class CharacterLayer {
     }
   }
 
-  private restMotion(actor: Actor): MotionName {
+  private restMotion(): MotionName {
     // Canonical Human Realism rule:
     // presentation must not invent interaction context. Legacy presentation has
     // no authoritative interaction slot/affordance DTO, so unsupported
@@ -571,7 +571,7 @@ export class CharacterLayer {
   }
 
   private setAction(actor: Actor, moving: boolean): void {
-    const desired: MotionName = moving && actor.walk ? 'walk' : this.restMotion(actor);
+    const desired: MotionName = moving && actor.walk ? 'walk' : this.restMotion();
     if (actor.active === desired) return;
 
     const previous = actor.active ? this.actionFor(actor, actor.active) : undefined;
