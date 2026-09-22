@@ -4,6 +4,7 @@ import type {
   Resident,
   TerrainChunk,
   TerrainWindow,
+  WorldPresentationSnapshot,
 } from '../runtime/core-types';
 import {
   OBSERVER_CAMERA_CONTRACT,
@@ -15,6 +16,7 @@ import { createTerrainGeometryBuilder } from './terrain-geometry';
 import { VegetationLayer } from './vegetation-layer';
 import { WaterLayer } from './water-layer';
 import { WeatherLayer } from './weather-layer';
+import { WorldConsequenceLayer } from './world-consequence-layer';
 
 export interface WorldSceneCameraState {
   centerChunkX: number;
@@ -41,6 +43,7 @@ export class WorldScene {
   private readonly waterLayer = new WaterLayer();
   private readonly vegetationLayer = new VegetationLayer();
   private readonly residentLayer = new ResidentWorldLayer();
+  private readonly consequenceLayer = new WorldConsequenceLayer();
   private readonly weatherLayer = new WeatherLayer();
   private readonly raycaster = new THREE.Raycaster();
   private readonly pointer = new THREE.Vector2();
@@ -63,6 +66,7 @@ export class WorldScene {
     this.scene.add(this.terrainGroup);
     this.scene.add(this.waterLayer.group);
     this.scene.add(this.vegetationLayer.group);
+    this.scene.add(this.consequenceLayer.group);
     this.scene.add(this.residentLayer.group);
     this.scene.add(this.weatherLayer.group);
     this.atmosphere = new AtmosphereLayer(this.scene);
@@ -111,6 +115,20 @@ export class WorldScene {
 
   setSelectedResident(residentId: string | null): void {
     this.residentLayer.setSelectedResident(residentId);
+  }
+
+  setWorldPresentation(
+    snapshot: WorldPresentationSnapshot | null,
+    terrain: TerrainWindow,
+    centerX: number,
+    centerY: number,
+  ): void {
+    this.consequenceLayer.setSnapshot(
+      snapshot,
+      terrain,
+      centerX,
+      centerY,
+    );
   }
 
   setResidents(
@@ -228,6 +246,7 @@ export class WorldScene {
     this.terrainMeshes.clear();
     this.waterLayer.dispose();
     this.vegetationLayer.dispose();
+    this.consequenceLayer.dispose();
     this.residentLayer.dispose();
     this.weatherLayer.dispose();
     this.atmosphere.dispose();
