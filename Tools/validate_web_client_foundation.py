@@ -12,6 +12,10 @@ html = (root / "Clients/Web/index.html").read_text(encoding="utf-8")
 sw = (root / "Clients/Web/sw.js").read_text(encoding="utf-8")
 manifest = (root / "Clients/Web/manifest.webmanifest").read_text(encoding="utf-8")
 architecture = (root / "docs/WEB_CLIENT_ARCHITECTURE_v1.md").read_text(encoding="utf-8")
+web_package = (root / "web/package.json").read_text(encoding="utf-8")
+web_contract_generator = (root / "web/scripts/generate-core-contract.mjs").read_text(encoding="utf-8")
+web_generated_contract = (root / "web/src/runtime/generated-core-contract.ts").read_text(encoding="utf-8")
+web_contract = (root / "web/src/runtime/lifelens-contract.ts").read_text(encoding="utf-8")
 
 for token in (
     "class WebClientBridge",
@@ -30,6 +34,32 @@ for token in (
     "deriveHydrologyFacts",
 ):
     assert token in bridge_cpp, f"web bridge must consume Core truth: {token}"
+
+
+for token in (
+    "WorldGenesis.h",
+    "SimulationCalendar.h",
+    "WorldChunkSpanGridCells",
+    "SimulationMinutesPerHour",
+    "SimulationHoursPerDay",
+    "generated-core-contract.ts",
+):
+    assert token in web_contract_generator, f"missing Core -> Web contract generation: {token}"
+
+for token in (
+    "CORE_WORLD_CHUNK_SPAN_GRID_CELLS",
+    "CORE_SIMULATION_MINUTES_PER_DAY",
+):
+    assert token in web_generated_contract, f"missing generated Core Web contract: {token}"
+    assert token in web_contract, f"Web contract must consume generated Core authority: {token}"
+
+for token in (
+    '"generate:core-contract"',
+    '"predev"',
+    '"pretypecheck"',
+    '"prebuild"',
+):
+    assert token in web_package, f"missing automatic Core contract generation hook: {token}"
 
 # JavaScript must not reimplement simulation truth.
 for forbidden in (
