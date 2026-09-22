@@ -13,6 +13,7 @@ EMSCRIPTEN_BINDINGS(lifelens_web_core)
         .function("runMinutes", &lifelens::WebClientBridge::runMinutes)
         .function("worldOverviewJson", &lifelens::WebClientBridge::worldOverviewJson)
         .function("residentsJson", &lifelens::WebClientBridge::residentsJson)
+        .function("worldPresentationJson", &lifelens::WebClientBridge::worldPresentationJson)
         .function("dynamicEnvironmentJson", &lifelens::WebClientBridge::dynamicEnvironmentJson)
         .function("terrainWindowJson", &lifelens::WebClientBridge::terrainWindowJson);
 }

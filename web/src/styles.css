@@ -446,3 +446,127 @@ button:disabled { opacity: .33; cursor: default; }
     min-height: 48px;
   }
 }
+
+
+/* Observable world consequences and social life */
+.world-consequence-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .42rem;
+  margin-top: .7rem;
+}
+.world-consequence-summary > div {
+  display: grid;
+  gap: .14rem;
+  min-width: 0;
+  padding: .5rem .52rem;
+  border: 1px solid rgba(75, 100, 81, .42);
+  border-radius: 9px;
+  background: rgba(13, 23, 16, .72);
+}
+.world-consequence-summary span,
+.world-consequence-summary small {
+  color: #7d8e81;
+  font-size: .58rem;
+}
+.world-consequence-summary b {
+  color: #e6eee5;
+  font-size: .9rem;
+}
+.facility-row {
+  border-left-color: #927953;
+}
+.social-event-row {
+  border-left-color: #536c59;
+}
+.social-event-row.meaningful {
+  border-left-color: #8a8154;
+}
+.social-event-row.important {
+  border-left-color: #95605d;
+  background: rgba(35, 20, 20, .58);
+}
+.social-event-row.important span {
+  color: #e6b9b4;
+}
+
+@media (max-width: 800px) {
+  .world-consequence-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .world-consequence-summary > div {
+    padding: .46rem .42rem;
+  }
+  .world-consequence-summary small {
+    line-height: 1.28;
+  }
+}
+
+
+.discovery-event-row {
+  border-left-color: #6f7652;
+}
+.civilization-item-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .32rem;
+}
+.civilization-item-grid span {
+  padding: .28rem .4rem;
+  border: 1px solid #394838;
+  border-radius: 7px;
+  background: rgba(18, 29, 20, .72);
+  color: #a8b7aa;
+  font-size: .62rem;
+}
+.civilization-item-grid b {
+  color: #e4ece2;
+}
+.technique-list {
+  display: grid;
+  gap: .32rem;
+}
+.technique-row {
+  display: grid;
+  gap: .13rem;
+  padding: .38rem .46rem;
+  border-left: 2px solid #596b4b;
+  background: rgba(12, 22, 15, .6);
+}
+.technique-row > div {
+  display: flex;
+  gap: .42rem;
+  align-items: baseline;
+}
+.technique-row strong {
+  color: #dce7da;
+  font-size: .66rem;
+}
+.technique-row span {
+  color: #a9b78b;
+  font-size: .6rem;
+}
+.technique-row small {
+  color: #748478;
+  font-size: .59rem;
+}
+
+
+.family-line {
+  display: grid;
+  grid-template-columns: 68px 1fr;
+  gap: .45rem;
+  align-items: baseline;
+  padding: .28rem .4rem;
+  border-radius: 7px;
+  background: rgba(12, 22, 15, .55);
+}
+.family-line span {
+  color: #778a7b;
+  font-size: .61rem;
+}
+.family-line b {
+  color: #dbe5da;
+  font-size: .64rem;
+  font-weight: 600;
+}

@@ -42,6 +42,8 @@ interface ResidentActor {
   current: THREE.Vector3;
   target: THREE.Vector3;
   walkStateGraceSeconds: number;
+  statusSprite: THREE.Sprite;
+  statusText: string;
   initialized: boolean;
 }
 
@@ -65,6 +67,221 @@ function findClip(
     ?? clips.find((clip) => (
       clip.name.toLowerCase().includes(contains.toLowerCase())
     ));
+}
+
+function residentTargetName(
+  resident: Resident,
+  residentsById: Map<string, Resident>,
+): string {
+  const targetId = resident.contextAction?.targetResidentId
+    ?? resident.presentation?.targetResidentId
+    ?? resident.activityTargetId
+    ?? '';
+  return targetId
+    ? (residentsById.get(targetId)?.name ?? resident.activityTargetName ?? '상대')
+    : (resident.activityTargetName ?? '상대');
+}
+
+function facilityKindKorean(kind: string | undefined): string {
+  const labels: Record<string, string> = {
+    PrimitiveStorage: '원시 저장소',
+    FirePit: '화덕',
+    WorkSurface: '작업대',
+    SleepingPlace: '잠자리',
+    Shelter: '쉼터',
+    Furnace: '용광로',
+  };
+  return kind ? (labels[kind] ?? '시설') : '시설';
+}
+
+function materialKorean(material: string | undefined): string {
+  const labels: Record<string, string> = {
+    Stone: '돌',
+    Flint: '부싯돌',
+    Wood: '나무',
+    Fiber: '섬유',
+    Clay: '점토',
+    Water: '물',
+    PlantFood: '먹을거리',
+    Bone: '뼈',
+    Hide: '가죽',
+    CopperOre: '구리 광석',
+    TinOre: '주석 광석',
+    IronOre: '철 광석',
+    Charcoal: '숯',
+    CopperMetal: '구리',
+  };
+  return material ? (labels[material] ?? '재료') : '재료';
+}
+
+function techniqueKorean(technique: string | undefined): string {
+  const labels: Record<string, string> = {
+    SharpFlake: '날카로운 박편',
+    ChippedStoneTool: '뗀석기',
+    FireMaking: '불 피우기',
+    FiberCordage: '섬유 끈',
+    SimpleContainer: '간이 용기',
+    DesignatedSanitationArea: '지정 위생구역',
+    DugSanitationPit: '구덩이식 위생시설',
+    PrimitiveStorage: '원시 저장소',
+    DiggingStick: '굴착봉',
+    StoneHammer: '돌망치',
+    CopperSmelting: '구리 제련',
+  };
+  return technique ? (labels[technique] ?? '기술') : '기술';
+}
+
+function residentActionText(
+  resident: Resident,
+  residentsById: Map<string, Resident>,
+): string {
+  const presentation = resident.presentation;
+  const action = resident.contextAction;
+  const phase = presentation?.phase ?? 'Idle';
+  const moving = phase === 'Moving';
+  const targetName = residentTargetName(resident, residentsById);
+
+  if (action?.active) {
+    switch (action.kind) {
+      case 'Social':
+        switch (action.socialIntent) {
+          case 'Approach': return moving ? `${targetName}에게 가는 중` : `${targetName}와 대화 중`;
+          case 'Repair': return moving ? `${targetName}에게 사과하러 가는 중` : `${targetName}에게 사과 중`;
+          case 'Comfort': return moving ? `${targetName}을 위로하러 가는 중` : `${targetName}을 위로 중`;
+          case 'Avoid': return `${targetName}을 피하는 중`;
+          default: return moving ? `${targetName}에게 이동 중` : `${targetName}와 상호작용 중`;
+        }
+      case 'KnowledgeTeaching':
+        return moving
+          ? `${targetName}에게 기술을 가르치러 가는 중`
+          : `${targetName}에게 ${techniqueKorean(action.technique)} 가르치는 중`;
+      case 'Parenting': {
+        const labels: Record<string, string> = {
+          Feed: '먹이는 중',
+          PutToSleep: '재우는 중',
+          Bathe: '씻기는 중',
+          ToiletAssist: '화장실을 도와주는 중',
+          Hold: '안아주는 중',
+          Play: '놀아주는 중',
+          Educate: '가르치는 중',
+          Discipline: '훈육하는 중',
+          Comfort: '달래주는 중',
+          HealthCare: '돌보는 중',
+        };
+        return moving
+          ? `${targetName}을 돌보러 가는 중`
+          : `${targetName}을 ${labels[action.parentingAction ?? ''] ?? '돌보는 중'}`;
+      }
+      case 'Civilization': {
+        const facility = facilityKindKorean(action.facilityKind);
+        const buildLabels: Record<string, string> = {
+          Plan: `${facility} 자리 정하는 중`,
+          DeliverMaterial: `${facility} 재료 운반 중`,
+          Work: `${facility} 건설 중`,
+          Repair: `${facility} 수리 중`,
+          Fuel: `${facility}에 연료 넣는 중`,
+          Ignite: `${facility}에 불 붙이는 중`,
+          CollectCharcoal: '숯 거두는 중',
+          LoadSmeltCharge: '용광로에 광석과 숯 넣는 중',
+          CollectMetal: '제련한 구리 거두는 중',
+        };
+        if (action.facilityAction && action.facilityAction !== 'None') {
+          return buildLabels[action.facilityAction] ?? `${facility} 작업 중`;
+        }
+        switch (action.civilizationIntent) {
+          case 'Gather': return `${materialKorean(action.material)} 채집 중`;
+          case 'Store': return `${materialKorean(action.material)} 저장 중`;
+          case 'Retrieve': return `${materialKorean(action.material)} 꺼내는 중`;
+          case 'Experiment': return `${techniqueKorean(action.technique)} 실험 중`;
+          case 'Craft': return `${techniqueKorean(action.technique)} 제작 중`;
+          default: return '생활 기반 작업 중';
+        }
+      }
+      default:
+        break;
+    }
+  }
+
+  if (presentation?.active && presentation.kind === 'Physical') {
+    const movingSuffix = moving ? '하러 가는 중' : '중';
+    switch (presentation.physicalGoal) {
+      case 'Eat': return moving ? '먹을거리 찾으러 가는 중' : '먹는 중';
+      case 'Drink': return moving ? '물을 마시러 가는 중' : '물 마시는 중';
+      case 'Sleep': return moving ? '잠자리로 가는 중' : '자는 중';
+      case 'Wash': return moving ? '씻으러 가는 중' : '씻는 중';
+      case 'UseToilet':
+        if (presentation.designatedSanitationSite) {
+          return moving ? '위생시설로 가는 중' : '위생시설 이용 중';
+        }
+        return moving ? '야외 배변 장소로 가는 중' : '야외에서 용변 보는 중';
+      default:
+        return movingSuffix === '중' ? '생활 행동 중' : '생활 행동하러 가는 중';
+    }
+  }
+
+  if (resident.civilizationActivity?.active) {
+    switch (resident.civilizationActivity.kind) {
+      case 'Gather': return `${materialKorean(resident.civilizationActivity.material)} 채집 완료`;
+      case 'Store': return `${materialKorean(resident.civilizationActivity.material)} 저장 완료`;
+      case 'Retrieve': return `${materialKorean(resident.civilizationActivity.material)} 꺼냄`;
+      case 'Experiment': return `${techniqueKorean(resident.civilizationActivity.technique)} 실험`;
+      case 'Craft': return `${techniqueKorean(resident.civilizationActivity.technique)} 제작`;
+      default: break;
+    }
+  }
+
+  return '';
+}
+
+function makeStatusSprite(): THREE.Sprite {
+  const material = new THREE.SpriteMaterial({
+    transparent: true,
+    depthTest: false,
+    depthWrite: false,
+  });
+  const sprite = new THREE.Sprite(material);
+  sprite.scale.set(7.2, 1.55, 1);
+  sprite.renderOrder = 20;
+  sprite.visible = false;
+  return sprite;
+}
+
+function updateStatusSprite(sprite: THREE.Sprite, text: string): void {
+  if (!text) {
+    sprite.visible = false;
+    return;
+  }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 640;
+  canvas.height = 128;
+  const context = canvas.getContext('2d');
+  if (!context) {
+    sprite.visible = false;
+    return;
+  }
+
+  context.fillStyle = 'rgba(7, 13, 9, 0.86)';
+  context.roundRect(8, 8, 624, 112, 26);
+  context.fill();
+  context.strokeStyle = 'rgba(174, 202, 178, 0.58)';
+  context.lineWidth = 3;
+  context.stroke();
+  context.fillStyle = '#f0f6ef';
+  context.font = '600 34px sans-serif';
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.fillText(text, 320, 64, 590);
+
+  const nextTexture = new THREE.CanvasTexture(canvas);
+  nextTexture.colorSpace = THREE.SRGBColorSpace;
+  nextTexture.minFilter = THREE.LinearFilter;
+
+  const material = sprite.material;
+  material.map?.dispose();
+  material.map = nextTexture;
+  material.needsUpdate = true;
+  sprite.visible = true;
 }
 
 function cloneActorMaterials(
@@ -163,10 +380,15 @@ export class ResidentWorldLayer {
     if (!this.ready || !this.template) return;
 
     const sampleElevation = createTerrainElevationSampler(terrain);
+    const residentsById = new Map(
+      residents.map((resident) => [resident.id, resident]),
+    );
     const activeIds = new Set(residents.map((resident) => resident.id));
 
     for (const [id, actor] of this.actors) {
-      actor.root.visible = activeIds.has(id);
+      const visible = activeIds.has(id);
+      actor.root.visible = visible;
+      if (!visible) actor.statusSprite.visible = false;
     }
 
     for (const resident of residents) {
@@ -221,6 +443,11 @@ export class ResidentWorldLayer {
       actor.activityLabel = resident.activityLabel ?? 'Idle';
       actor.activityTargetId = resident.activityTargetId ?? '';
       actor.presentation = resident.presentation ?? null;
+      const nextStatusText = residentActionText(resident, residentsById);
+      if (actor.statusText !== nextStatusText) {
+        actor.statusText = nextStatusText;
+        updateStatusSprite(actor.statusSprite, nextStatusText);
+      }
       actor.target.copy(next);
 
       if (!actor.initialized) {
@@ -314,6 +541,11 @@ export class ResidentWorldLayer {
       }
 
       actor.root.position.copy(actor.current);
+      actor.statusSprite.position.set(
+        actor.current.x,
+        actor.current.y + 2.65,
+        actor.current.z,
+      );
       this.setAction(actor, moving);
       actor.mixer.update(dt);
     }
@@ -330,6 +562,12 @@ export class ResidentWorldLayer {
           : [object.material];
         for (const material of materials) material.dispose();
       });
+    }
+    for (const actor of this.actors.values()) {
+      const statusMaterial = actor.statusSprite.material;
+      statusMaterial.map?.dispose();
+      statusMaterial.dispose();
+      this.group.remove(actor.statusSprite);
     }
     this.actors.clear();
     this.selectionRing.geometry.dispose();
@@ -463,6 +701,9 @@ export class ResidentWorldLayer {
         * Math.max(0.001, idle.getClip().duration);
     }
 
+    const statusSprite = makeStatusSprite();
+    this.group.add(statusSprite);
+
     const actor: ResidentActor = {
       root,
       mixer,
@@ -478,6 +719,8 @@ export class ResidentWorldLayer {
       current: new THREE.Vector3(),
       target: new THREE.Vector3(),
       walkStateGraceSeconds: 0,
+      statusSprite,
+      statusText: '',
       initialized: false,
     };
 

@@ -3,6 +3,7 @@ import type {
   DynamicEnvironment,
   Resident,
   TerrainWindow,
+  WorldPresentationSnapshot,
 } from '../runtime/core-types';
 import { WorldScene, type WorldSceneCameraState } from './world-scene';
 
@@ -80,6 +81,20 @@ export class WorldRenderer {
 
   setSelectedResident(residentId: string | null): void {
     this.world.setSelectedResident(residentId);
+  }
+
+  setWorldPresentation(
+    snapshot: WorldPresentationSnapshot | null,
+    terrain: TerrainWindow,
+    centerX: number,
+    centerY: number,
+  ): void {
+    this.world.setWorldPresentation(
+      snapshot,
+      terrain,
+      centerX,
+      centerY,
+    );
   }
 
   setResidents(

@@ -214,6 +214,7 @@ export function startObserverEngine(): void {
       residents: residentSnapshot,
       terrain,
       environment: snapshot.environment,
+      presentation: snapshot.presentation,
     });
     observerStore.updateCamera({
       centerChunkX: centerX,
@@ -228,6 +229,12 @@ export function startObserverEngine(): void {
     threeWorldRenderer?.setTerrain(terrain);
     threeWorldRenderer?.setResidents(
       residentSnapshot,
+      terrain,
+      centerX,
+      centerY,
+    );
+    threeWorldRenderer?.setWorldPresentation(
+      snapshot.presentation,
       terrain,
       centerX,
       centerY,

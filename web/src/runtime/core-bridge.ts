@@ -6,6 +6,7 @@ import type {
   RuntimeClient,
   TerrainWindow,
   WorldOverview,
+  WorldPresentationSnapshot,
 } from './core-types';
 
 import {
@@ -152,6 +153,29 @@ export class LifeLensCoreBridge {
 
   residents(): ResidentsPayload {
     return readResidents(this.client.residentsJson());
+  }
+
+  worldPresentation(): WorldPresentationSnapshot {
+    const fallback: WorldPresentationSnapshot = {
+      available: false,
+      facilities: [],
+      sanitationSites: [],
+      residues: [],
+      aggregateWasteAmount: 0,
+      peakWasteIntensity: 0,
+    };
+
+    if (typeof this.client.worldPresentationJson !== 'function') {
+      console.warn(
+        'LifeLensCore runtime is older than the web client; world consequence projection is temporarily unavailable.',
+      );
+      return fallback;
+    }
+
+    return parseJson<WorldPresentationSnapshot>(
+      this.client.worldPresentationJson(),
+      fallback,
+    );
   }
 
   dynamicEnvironment(x: number, y: number): DynamicEnvironment {

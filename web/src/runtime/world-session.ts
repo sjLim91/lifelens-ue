@@ -5,6 +5,7 @@ import type {
   Resident,
   TerrainWindow,
   WorldOverview,
+  WorldPresentationSnapshot,
 } from './core-types';
 import { ResidentContinuity } from './resident-continuity';
 
@@ -13,6 +14,7 @@ export interface WorldSessionSnapshot {
   residents: Resident[];
   terrain: TerrainWindow;
   environment: DynamicEnvironment;
+  presentation: WorldPresentationSnapshot;
   centerX: number;
   centerY: number;
   followResidents: boolean;
@@ -135,12 +137,14 @@ export class WorldSession {
       this.centerX,
       this.centerY,
     );
+    const presentation = this.core.worldPresentation();
 
     return {
       overview,
       residents,
       terrain,
       environment,
+      presentation,
       centerX: this.centerX,
       centerY: this.centerY,
       followResidents: this.followResidents,

@@ -1,3 +1,5 @@
+import type { Resident } from '../runtime/core-types';
+
 export function formatDay(minuteValue: unknown): string {
   const minute = Math.max(0, Number(minuteValue) || 0);
   const day = Math.floor(minute / 1440) + 1;
@@ -205,4 +207,230 @@ export function formatLifeEventType(value: string | undefined): string {
     Bereavement: '상실과 애도',
   };
   return value ? (labels[value] ?? '주요 사건') : '주요 사건';
+}
+
+
+export function formatSocialEventType(value: string | undefined): string {
+  const labels: Record<string, string> = {
+    PositiveInteraction: '대화를 나눔',
+    Help: '도움을 줌',
+    Comfort: '위로함',
+    Conflict: '갈등',
+    Betrayal: '배신',
+    Rejection: '거절',
+    Apology: '사과',
+    Intimacy: '친밀한 교류',
+    Commitment: '관계 약속',
+  };
+  return value ? (labels[value] ?? '사회적 상호작용') : '사회적 상호작용';
+}
+
+export function formatFacilityKind(value: string | undefined): string {
+  const labels: Record<string, string> = {
+    PrimitiveStorage: '원시 저장소',
+    FirePit: '화덕',
+    WorkSurface: '작업대',
+    SleepingPlace: '잠자리',
+    Shelter: '쉼터',
+    Furnace: '용광로',
+  };
+  return value ? (labels[value] ?? '시설') : '시설';
+}
+
+export function formatFacilityState(value: string | undefined): string {
+  const labels: Record<string, string> = {
+    Planned: '계획됨',
+    UnderConstruction: '건설 중',
+    Operational: '사용 가능',
+    Ruined: '폐허',
+  };
+  return value ? (labels[value] ?? '상태 확인 중') : '상태 확인 중';
+}
+
+function actionTargetName(
+  resident: Resident,
+  residents: Resident[],
+): string {
+  const targetId = resident.contextAction?.targetResidentId
+    ?? resident.presentation?.targetResidentId
+    ?? resident.activityTargetId
+    ?? '';
+  if (!targetId) return resident.activityTargetName ?? '상대';
+  return residents.find((candidate) => candidate.id === targetId)?.name
+    ?? resident.activityTargetName
+    ?? '상대';
+}
+
+export function formatMaterialName(value: string | undefined): string {
+  const labels: Record<string, string> = {
+    Stone: '돌',
+    Flint: '부싯돌',
+    Wood: '나무',
+    Fiber: '섬유',
+    Clay: '점토',
+    Water: '물',
+    PlantFood: '먹을거리',
+    Bone: '뼈',
+    Hide: '가죽',
+    CopperOre: '구리 광석',
+    TinOre: '주석 광석',
+    IronOre: '철 광석',
+    Charcoal: '숯',
+    CopperMetal: '구리',
+  };
+  return value ? (labels[value] ?? '재료') : '재료';
+}
+
+export function formatTechniqueName(value: string | undefined): string {
+  const labels: Record<string, string> = {
+    SharpFlake: '날카로운 박편',
+    ChippedStoneTool: '뗀석기',
+    FireMaking: '불 피우기',
+    FiberCordage: '섬유 끈',
+    SimpleContainer: '간이 용기',
+    DesignatedSanitationArea: '지정 위생구역',
+    DugSanitationPit: '구덩이식 위생시설',
+    PrimitiveStorage: '원시 저장소',
+    DiggingStick: '굴착봉',
+    StoneHammer: '돌망치',
+    CopperSmelting: '구리 제련',
+  };
+  return value ? (labels[value] ?? '기술') : '기술';
+}
+
+export function formatResidentCurrentAction(
+  resident: Resident,
+  residents: Resident[] = [],
+): string {
+  const presentation = resident.presentation;
+  const action = resident.contextAction;
+  const moving = presentation?.phase === 'Moving';
+  const target = actionTargetName(resident, residents);
+
+  if (action?.active) {
+    if (action.kind === 'Social') {
+      switch (action.socialIntent) {
+        case 'Approach': return moving ? `${target}에게 다가가는 중` : `${target}와 대화 중`;
+        case 'Repair': return moving ? `${target}에게 사과하러 가는 중` : `${target}에게 사과 중`;
+        case 'Comfort': return moving ? `${target}을 위로하러 가는 중` : `${target}을 위로 중`;
+        case 'Avoid': return `${target}을 피하는 중`;
+        default: return `${target}와 상호작용 중`;
+      }
+    }
+
+    if (action.kind === 'KnowledgeTeaching') {
+      return moving
+        ? `${target}에게 기술을 가르치러 가는 중`
+        : `${target}에게 ${formatTechniqueName(action.technique)} 기술을 가르치는 중`;
+    }
+
+    if (action.kind === 'Parenting') {
+      const labels: Record<string, string> = {
+        Feed: '먹이는 중',
+        PutToSleep: '재우는 중',
+        Bathe: '씻기는 중',
+        ToiletAssist: '화장실을 도와주는 중',
+        Hold: '안아주는 중',
+        Play: '놀아주는 중',
+        Educate: '가르치는 중',
+        Discipline: '훈육하는 중',
+        Comfort: '달래주는 중',
+        HealthCare: '돌보는 중',
+      };
+      return moving
+        ? `${target}을 돌보러 가는 중`
+        : `${target}을 ${labels[action.parentingAction ?? ''] ?? '돌보는 중'}`;
+    }
+
+    if (action.kind === 'Civilization') {
+      const facility = formatFacilityKind(action.facilityKind);
+      const build: Record<string, string> = {
+        Plan: `${facility} 자리 선정 중`,
+        DeliverMaterial: `${facility} 재료 운반 중`,
+        Work: `${facility} 건설 중`,
+        Repair: `${facility} 수리 중`,
+        Fuel: `${facility}에 연료 공급 중`,
+        Ignite: `${facility}에 불 붙이는 중`,
+        CollectCharcoal: '숯을 거두는 중',
+        LoadSmeltCharge: '용광로에 광석과 숯을 넣는 중',
+        CollectMetal: '제련한 구리를 거두는 중',
+      };
+      if (action.facilityAction && action.facilityAction !== 'None') {
+        return build[action.facilityAction] ?? `${facility} 작업 중`;
+      }
+      switch (action.civilizationIntent) {
+        case 'Gather': return `${formatMaterialName(action.material)} 채집 중`;
+        case 'Store': return `${formatMaterialName(action.material)} 저장 중`;
+        case 'Retrieve': return `${formatMaterialName(action.material)} 꺼내는 중`;
+        case 'Experiment': return `${formatTechniqueName(action.technique)} 실험 중`;
+        case 'Craft': return `${formatTechniqueName(action.technique)} 제작 중`;
+        default: return '생활 기반 작업 중';
+      }
+    }
+  }
+
+  if (presentation?.active && presentation.kind === 'Physical') {
+    switch (presentation.physicalGoal) {
+      case 'Eat': return moving ? '먹을거리로 이동 중' : '식사 중';
+      case 'Drink': return moving ? '물로 이동 중' : '물을 마시는 중';
+      case 'Sleep': return moving ? '잠자리로 이동 중' : '수면 중';
+      case 'Wash': return moving ? '씻을 곳으로 이동 중' : '씻는 중';
+      case 'UseToilet':
+        if (presentation.designatedSanitationSite) {
+          return moving ? '위생시설로 이동 중' : '위생시설 이용 중';
+        }
+        return moving ? '야외 배변 장소로 이동 중' : '야외에서 용변 보는 중';
+      default:
+        break;
+    }
+  }
+
+  return formatActivity(resident.activityLabel);
+}
+
+
+export function formatItemKind(value: string | undefined): string {
+  const labels: Record<string, string> = {
+    RawMaterial: '원재료',
+    SharpFlake: '날카로운 박편',
+    StoneCuttingTool: '뗀석기 도구',
+    Cordage: '섬유 끈',
+    SimpleContainer: '간이 용기',
+    FuelBundle: '연료 묶음',
+    DiggingStick: '굴착봉',
+    StoneHammer: '돌망치',
+  };
+  return value ? (labels[value] ?? '물품') : '물품';
+}
+
+export function formatKnowledgeLevel(value: string | undefined): string {
+  const labels: Record<string, string> = {
+    Unknown: '모름',
+    Observed: '목격',
+    Hypothesized: '가설',
+    Understood: '이해',
+    Reproducible: '재현 가능',
+    Practiced: '숙련',
+    Mastered: '통달',
+  };
+  return value ? (labels[value] ?? '알고 있음') : '알고 있음';
+}
+
+export function formatKnowledgeSource(value: string | undefined): string {
+  const labels: Record<string, string> = {
+    Unknown: '출처 불명',
+    SelfDiscovery: '직접 발견',
+    DirectWitness: '직접 목격',
+    Teaching: '다른 주민에게 배움',
+  };
+  return value ? (labels[value] ?? '출처 불명') : '출처 불명';
+}
+
+export function formatMemorySource(value: string | undefined): string {
+  const labels: Record<string, string> = {
+    DirectWitness: '직접 경험/목격',
+    ToldByOther: '다른 사람에게 전해 들음',
+    Inferred: '추론해서 형성',
+  };
+  return value ? (labels[value] ?? '출처 불명') : '출처 불명';
 }

@@ -196,6 +196,79 @@ export interface ResidentPresentationDirective {
   durationTicks?: number;
 }
 
+export interface ResidentContextAction {
+  active?: boolean;
+  kind?: ResidentPresentationKind;
+  issuedMinute?: number;
+  durationTicks?: number;
+  socialIntent?: string;
+  targetResidentId?: string;
+  civilizationIntent?: string;
+  material?: string;
+  technique?: string;
+  quantity?: number;
+  resourceNode?: string;
+  storage?: string;
+  facilityAction?: string;
+  facilityId?: string;
+  facilityKind?: FacilityKind;
+  parentingAction?: string;
+  hasSpatialTarget?: boolean;
+  targetGridX?: number;
+  targetGridY?: number;
+  sanitationSiteId?: string;
+}
+
+export interface ResidentCivilizationActivity {
+  active?: boolean;
+  kind?: string;
+  material?: string;
+  technique?: string;
+  quantity?: number;
+  minute?: number;
+  resourceNode?: string;
+  storage?: string;
+  success?: boolean;
+  hasSpatialTarget?: boolean;
+  targetGridX?: number;
+  targetGridY?: number;
+  sanitationSiteId?: string;
+}
+
+export interface CivilizationItem {
+  item?: string;
+  material?: string;
+  quantity?: number;
+  quality?: number;
+  durability?: number;
+}
+
+export interface ResidentTechnique {
+  technique?: string;
+  level?: string;
+  confidence?: number;
+  successfulUses?: number;
+  hasProvenance?: boolean;
+  originResidentId?: string;
+  immediateSourceId?: string;
+  source?: 'Unknown' | 'SelfDiscovery' | 'DirectWitness' | 'Teaching';
+  learnedMinute?: number;
+  hopCount?: number;
+}
+
+export interface ResidentCivilization {
+  totalInventoryUnits?: number;
+  gatheringSkill?: number;
+  craftingSkill?: number;
+  learningSkill?: number;
+  knownTechniqueCount?: number;
+  reproducibleTechniqueCount?: number;
+  latestKnowledgeMinute?: number;
+  latestTechnique?: string;
+  inventory?: CivilizationItem[];
+  techniques?: ResidentTechnique[];
+}
+
 export interface Resident {
   id: string;
   name: string;
@@ -210,6 +283,9 @@ export interface Resident {
   activityTargetId?: string;
   activityTargetName?: string;
   presentation?: ResidentPresentationDirective;
+  contextAction?: ResidentContextAction;
+  civilizationActivity?: ResidentCivilizationActivity;
+  civilization?: ResidentCivilization;
   emotion?: ResidentEmotion;
   needs?: ResidentNeeds;
   personality?: ResidentPersonality;
@@ -280,11 +356,142 @@ export interface DynamicEnvironment {
   summary?: WeatherSummary;
 }
 
+export type FacilityKind =
+  | 'PrimitiveStorage'
+  | 'FirePit'
+  | 'WorkSurface'
+  | 'SleepingPlace'
+  | 'Shelter'
+  | 'Furnace';
+
+export type FacilityState =
+  | 'Planned'
+  | 'UnderConstruction'
+  | 'Operational'
+  | 'Ruined';
+
+export interface WorldFacility {
+  id: string;
+  kind: FacilityKind;
+  state: FacilityState;
+  gridX: number;
+  gridY: number;
+  initiatedBy?: string;
+  lastWorkedBy?: string;
+  startedMinute?: number;
+  completedMinute?: number;
+  workProgress?: number;
+  durability?: number;
+  active?: boolean;
+  lit?: boolean;
+  heatLevel?: number;
+  fuelUnits?: number;
+  charcoalUnits?: number;
+  oreUnits?: number;
+  metalUnits?: number;
+}
+
+export type PrimitiveSanitationSiteKind = 'DesignatedArea' | 'DugPit';
+
+export interface WorldSanitationSite {
+  id: string;
+  kind: PrimitiveSanitationSiteKind;
+  gridX: number;
+  gridY: number;
+  establishedBy?: string;
+  establishedMinute?: number;
+  active?: boolean;
+  useCount?: number;
+  improvementProgress?: number;
+}
+
+export interface WorldResidue {
+  id: string;
+  kind: 'HumanWaste';
+  gridX: number;
+  gridY: number;
+  sourceCharacter?: string;
+  ageMinutes?: number;
+  amount?: number;
+  intensity?: number;
+  radiusTiles?: number;
+}
+
+export type SocialEventType =
+  | 'PositiveInteraction'
+  | 'Help'
+  | 'Comfort'
+  | 'Conflict'
+  | 'Betrayal'
+  | 'Rejection'
+  | 'Apology'
+  | 'Intimacy'
+  | 'Commitment';
+
+export interface WorldSocialEvent {
+  sequence: string;
+  actorId: string;
+  actorName: string;
+  targetId: string;
+  targetName: string;
+  type: SocialEventType;
+  intensity?: number;
+  importance?: number;
+  minute: number;
+  where?: string;
+  presentationLevel?: 'Everyday' | 'Meaningful' | 'Important';
+  successful?: boolean;
+}
+
+export interface WorldResourceNode {
+  id: string;
+  material: string;
+  quantity: number;
+  maxQuantity?: number;
+  renewable?: boolean;
+  regenerationPerDay?: number;
+  gridX: number;
+  gridY: number;
+}
+
+export interface WorldStorageSite {
+  id: string;
+  gridX: number;
+  gridY: number;
+  totalUnits?: number;
+  inventory?: CivilizationItem[];
+}
+
+export interface WorldDiscovery {
+  factId: string;
+  technique: string;
+  discovererId: string;
+  discovererName: string;
+  minute: number;
+  recipientCount?: number;
+  livingKnowerCount?: number;
+}
+
+export interface WorldPresentationSnapshot {
+  available?: boolean;
+  minute?: number;
+  resources?: WorldResourceNode[];
+  storages?: WorldStorageSite[];
+  discoveries?: WorldDiscovery[];
+  facilities?: WorldFacility[];
+  sanitationSites?: WorldSanitationSite[];
+  residues?: WorldResidue[];
+  socialEvents?: WorldSocialEvent[];
+  aggregateWasteAmount?: number;
+  peakWasteIntensity?: number;
+}
+
 export interface RuntimeClient {
   newGame(worldSeed: string, populationSeed: string, generationVersion: number): boolean;
   runMinutes(minutes: number): void;
   worldOverviewJson(): string;
   residentsJson(): string;
+  worldPresentationJson?: () => string;
   dynamicEnvironmentJson?: (x: number, y: number) => string;
   terrainWindowJson(x: number, y: number, radius: number): string;
   delete?: () => void;
