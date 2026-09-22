@@ -51,31 +51,77 @@ export function WorldOverlay({
   const forest = Math.round(
     Math.max(0, Math.min(1, Number(center?.forestCoverage01) || 0)) * 100,
   );
+  const latestSocial = [...(snapshot.presentation?.socialEvents ?? [])]
+    .reverse()[0];
+  const activeConstruction = (snapshot.presentation?.facilities ?? [])
+    .find((facility) => facility.state === 'UnderConstruction');
+  const latestDiscovery = [...(snapshot.presentation?.discoveries ?? [])]
+    .reverse()[0];
+  const residueCount = snapshot.presentation?.residues?.length ?? 0;
 
   return (
-    <div className="world-overlay">
-      <span id="timeLabel" className="world-overlay-primary">
-        {formatDay(snapshot.world.minute)}
-      </span>
-      <span id="biomeLabel">
-        {center
-          ? `${formatBiome(center.biome)} · 숲 ${forest}%`
-          : '환경 분석 중'}
-      </span>
-      <span id="weatherLabel">
-        {snapshot.environment?.available
-          ? `${formatWeather(snapshot.environment.summary)} · ${Math.round(Number(snapshot.environment.airTemperatureC) || 0)}°C`
-          : '날씨 분석 중'}
-      </span>
-      <span id="livingOverlay">
-        {snapshot.world.livingResidents !== undefined
-          ? `인구 ${snapshot.world.livingResidents}`
-          : '인구 —'}
-      </span>
-    </div>
+    <>
+      <div className="world-overlay">
+        <span id="timeLabel" className="world-overlay-primary">
+          {formatDay(snapshot.world.minute)}
+        </span>
+        <span id="biomeLabel">
+          {center
+            ? `${formatBiome(center.biome)} · 숲 ${forest}%`
+            : '환경 분석 중'}
+        </span>
+        <span id="weatherLabel">
+          {snapshot.environment?.available
+            ? `${formatWeather(snapshot.environment.summary)} · ${Math.round(Number(snapshot.environment.airTemperatureC) || 0)}°C`
+            : '날씨 분석 중'}
+        </span>
+        <span id="livingOverlay">
+          {snapshot.world.livingResidents !== undefined
+            ? `인구 ${snapshot.world.livingResidents}`
+            : '인구 —'}
+        </span>
+      </div>
+
+      <div className="world-moment-stack" aria-label="현재 월드 상황">
+        {latestSocial ? (
+          <div className={`world-moment social ${String(latestSocial.presentationLevel ?? '').toLowerCase()}`}>
+            <span>사람들 사이</span>
+            <strong>
+              {latestSocial.actorName || '주민'} → {latestSocial.targetName || '주민'}
+            </strong>
+            <small>
+              {formatSocialEventType(latestSocial.type)} · {formatDay(latestSocial.minute)}
+            </small>
+          </div>
+        ) : null}
+
+        {activeConstruction ? (
+          <div className="world-moment construction">
+            <span>공사 중</span>
+            <strong>{formatFacilityKind(activeConstruction.kind)}</strong>
+            <small>
+              진행 {Math.round((Number(activeConstruction.workProgress) || 0) * 100)}%
+            </small>
+          </div>
+        ) : latestDiscovery ? (
+          <div className="world-moment discovery">
+            <span>새로운 기술</span>
+            <strong>{formatTechniqueName(latestDiscovery.technique)}</strong>
+            <small>
+              {latestDiscovery.discovererName || '주민'} · {formatDay(latestDiscovery.minute)}
+            </small>
+          </div>
+        ) : residueCount > 0 ? (
+          <div className="world-moment contamination">
+            <span>환경 변화</span>
+            <strong>오염 지점 {residueCount}곳</strong>
+            <small>주민 행동이 지면에 흔적을 남기고 있음</small>
+          </div>
+        ) : null}
+      </div>
+    </>
   );
 }
-
 export function ObserverMetrics({
   snapshot,
 }: {

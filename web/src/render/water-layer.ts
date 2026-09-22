@@ -51,9 +51,10 @@ export class WaterLayer {
         entry.mesh.geometry = buildGeometry(chunk);
         previous.dispose();
         const material = entry.mesh.material;
-        if (material instanceof THREE.MeshStandardMaterial) {
+        if (material instanceof THREE.MeshPhysicalMaterial) {
           material.color.set(this.colorFor(chunk));
-          material.opacity = chunk.waterKind === 'Ocean' ? 0.86 : 0.76;
+          material.opacity = chunk.waterKind === 'Ocean' ? 0.82 : 0.7;
+          material.roughness = chunk.waterKind === 'Ocean' ? 0.16 : 0.12;
         }
         entry.signature = signature;
       }
@@ -91,25 +92,29 @@ export class WaterLayer {
     buildGeometry: (chunk: TerrainChunk) => THREE.BufferGeometry,
   ): THREE.Mesh {
     const geometry = buildGeometry(chunk);
-    const material = new THREE.MeshStandardMaterial({
+    const material = new THREE.MeshPhysicalMaterial({
       color: this.colorFor(chunk),
       transparent: true,
-      opacity: chunk.waterKind === 'Ocean' ? 0.86 : 0.76,
-      roughness: 0.28,
-      metalness: 0.04,
-      depthWrite: true,
+      opacity: chunk.waterKind === 'Ocean' ? 0.82 : 0.7,
+      roughness: chunk.waterKind === 'Ocean' ? 0.16 : 0.12,
+      metalness: 0.02,
+      clearcoat: 0.42,
+      clearcoatRoughness: 0.18,
+      reflectivity: 0.62,
+      depthWrite: false,
+      side: THREE.DoubleSide,
     });
     return new THREE.Mesh(geometry, material);
   }
 
   private colorFor(chunk: TerrainChunk): number {
     switch (chunk.waterKind) {
-      case 'Ocean': return 0x174b67;
-      case 'Coast': return 0x2f7487;
-      case 'Lake': return 0x2e7188;
-      case 'River': return 0x3f8daa;
-      case 'Stream': return 0x55a0ba;
-      default: return 0x63acc2;
+      case 'Ocean': return 0x1d536c;
+      case 'Coast': return 0x337889;
+      case 'Lake': return 0x33768a;
+      case 'River': return 0x438eaa;
+      case 'Stream': return 0x58a4ba;
+      default: return 0x67aec1;
     }
   }
 }

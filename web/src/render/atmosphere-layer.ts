@@ -15,16 +15,26 @@ export class AtmosphereLayer {
 
   private readonly hemisphere = new THREE.HemisphereLight(
     0xdcecff,
-    0x233126,
+    0x27382d,
     1.2,
   );
-  private readonly sun = new THREE.DirectionalLight(0xfff3d6, 1.8);
-  private readonly moon = new THREE.DirectionalLight(0xa9c5ff, 0.14);
+  private readonly sun = new THREE.DirectionalLight(0xfff0cf, 1.8);
+  private readonly moon = new THREE.DirectionalLight(0xa9c5ff, 0.24);
   private minuteValue = 8 * 60;
   private environment: DynamicEnvironment | null = null;
 
   constructor(private readonly scene: THREE.Scene) {
     this.sun.position.set(-80, 160, 110);
+    this.sun.castShadow = true;
+    this.sun.shadow.mapSize.set(1024, 1024);
+    this.sun.shadow.camera.near = 8;
+    this.sun.shadow.camera.far = 420;
+    this.sun.shadow.camera.left = -110;
+    this.sun.shadow.camera.right = 110;
+    this.sun.shadow.camera.top = 110;
+    this.sun.shadow.camera.bottom = -110;
+    this.sun.shadow.bias = -0.00035;
+    this.sun.shadow.normalBias = 0.035;
     this.moon.position.set(80, 100, -120);
 
     this.group.add(this.hemisphere);
@@ -78,15 +88,15 @@ export class AtmosphereLayer {
     const cloudLightLoss = 1 - (cloud * 0.48 + precipitation * 0.24);
     this.sun.intensity = (0.08 + daylight01 * 2.15)
       * Math.max(0.3, cloudLightLoss);
-    this.moon.intensity = 0.04
-      + (1 - daylight01) * 0.34 * Math.max(0.55, 1 - cloud * 0.25);
+    this.moon.intensity = 0.1
+      + (1 - daylight01) * 0.52 * Math.max(0.58, 1 - cloud * 0.25);
     this.hemisphere.intensity = (
-      0.22 + daylight01 * 1.35
-    ) * Math.max(0.48, 1 - cloud * 0.35);
+      0.38 + daylight01 * 1.22
+    ) * Math.max(0.54, 1 - cloud * 0.34);
 
-    const night = new THREE.Color(0x03080d);
-    const dawn = new THREE.Color(0x59483d);
-    const day = new THREE.Color(0x9dc5d9);
+    const night = new THREE.Color(0x0b1420);
+    const dawn = new THREE.Color(0x6a5040);
+    const day = new THREE.Color(0xa8cad9);
     const overcast = new THREE.Color(storm ? 0x38434a : 0x697b7d);
     const sky = night.clone().lerp(day, daylight01);
     if (daylight01 > 0.02 && daylight01 < 0.72) {
@@ -96,8 +106,8 @@ export class AtmosphereLayer {
     this.scene.background = sky;
 
     if (this.scene.fog instanceof THREE.FogExp2) {
-      const fogNight = new THREE.Color(0x07100d);
-      const fogDay = new THREE.Color(0x6f8e83);
+      const fogNight = new THREE.Color(0x101c20);
+      const fogDay = new THREE.Color(0x728f83);
       const fogWeather = new THREE.Color(
         storm ? 0x495458 : 0x83918c,
       );
@@ -109,7 +119,7 @@ export class AtmosphereLayer {
           clamp01((1 - visibility) * 0.72 + humidity * 0.12),
         );
 
-      const dayFog = 0.0046 - daylight01 * 0.0019;
+      const dayFog = 0.0042 - daylight01 * 0.0017;
       const weatherFog = (1 - visibility) * 0.015
         + precipitation * 0.004
         + Math.max(0, humidity - 0.8) * 0.006;
