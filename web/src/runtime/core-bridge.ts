@@ -29,19 +29,67 @@ function decodeBase64(value: string): Uint8Array {
   return bytes;
 }
 
-async function loadStaticRuntime(): Promise<{
+const STATIC_RUNTIME_TIMEOUT_MS = 6000;
+const MODULE_INIT_TIMEOUT_MS = 12000;
+const RAW_GITHUB_RUNTIME_BASE =
+  'https://raw.githubusercontent.com/sjLim91/lifelens-ue/gh-pages/';
+
+async function fetchWithTimeout(
+  url: string,
+  timeoutMs = STATIC_RUNTIME_TIMEOUT_MS,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, {
+      cache: 'no-store',
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new Error(`Core runtime request timed out after ${timeoutMs}ms: ${url}`);
+    }
+    throw error;
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  label: string,
+): Promise<T> {
+  let timer: number | null = null;
+
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timer = window.setTimeout(
+          () => reject(new Error(`${label} timed out after ${timeoutMs}ms`)),
+          timeoutMs,
+        );
+      }),
+    ]);
+  } finally {
+    if (timer !== null) window.clearTimeout(timer);
+  }
+}
+
+async function loadRuntimeFromBase(base: string): Promise<{
   js: string;
   wasmBuffer: ArrayBuffer;
 }> {
-  const base = import.meta.env.BASE_URL || './';
   const [jsResponse, wasmResponse] = await Promise.all([
-    fetch(`${base}runtime/lifelens_core.js`, { cache: 'no-store' }),
-    fetch(`${base}runtime/lifelens_core.wasm`, { cache: 'no-store' }),
+    fetchWithTimeout(`${base}runtime/lifelens_core.js`),
+    fetchWithTimeout(`${base}runtime/lifelens_core.wasm`),
   ]);
 
   if (!jsResponse.ok || !wasmResponse.ok) {
     throw new Error(
-      `Static Core runtime unavailable: JS ${jsResponse.status}, WASM ${wasmResponse.status}`,
+      `Core runtime unavailable from ${base}: JS ${jsResponse.status}, WASM ${wasmResponse.status}`,
     );
   }
 
@@ -51,13 +99,26 @@ async function loadStaticRuntime(): Promise<{
   };
 }
 
+async function loadStaticRuntime(): Promise<{
+  js: string;
+  wasmBuffer: ArrayBuffer;
+}> {
+  const base = import.meta.env.BASE_URL || './';
+  return loadRuntimeFromBase(base);
+}
+
+async function loadRawGitHubRuntime(): Promise<{
+  js: string;
+  wasmBuffer: ArrayBuffer;
+}> {
+  return loadRuntimeFromBase(RAW_GITHUB_RUNTIME_BASE);
+}
+
 async function loadBackendRuntime(): Promise<{
   js: string;
   wasmBuffer: ArrayBuffer;
 }> {
-  const response = await fetch('/api/runtime/core', {
-    cache: 'no-store',
-  });
+  const response = await fetchWithTimeout('/api/runtime/core');
 
   if (!response.ok) {
     throw new Error(
@@ -86,14 +147,35 @@ async function loadRuntime(): Promise<{
   js: string;
   wasmBuffer: ArrayBuffer;
 }> {
+  const failures: string[] = [];
+
   try {
     return await loadStaticRuntime();
   } catch (staticError) {
+    failures.push(`same-origin: ${String(staticError)}`);
     console.info(
-      'LifeLens static runtime unavailable; trying backend runtime',
+      'LifeLens same-origin runtime unavailable; trying GitHub raw runtime',
       staticError,
     );
-    return loadBackendRuntime();
+  }
+
+  try {
+    return await loadRawGitHubRuntime();
+  } catch (rawError) {
+    failures.push(`github-raw: ${String(rawError)}`);
+    console.info(
+      'LifeLens GitHub raw runtime unavailable; trying backend runtime',
+      rawError,
+    );
+  }
+
+  try {
+    return await loadBackendRuntime();
+  } catch (backendError) {
+    failures.push(`backend: ${String(backendError)}`);
+    throw new Error(
+      `LifeLensCore runtime loading failed. ${failures.join(' | ')}`,
+    );
   }
 }
 
@@ -111,21 +193,29 @@ export class LifeLensCoreBridge {
     );
 
     try {
-      const wasmModule = await import(
-        /* @vite-ignore */
-        jsUrl
-      ) as { default?: (options?: unknown) => Promise<CoreModule> };
+      const wasmModule = await withTimeout(
+        import(
+          /* @vite-ignore */
+          jsUrl
+        ) as Promise<{ default?: (options?: unknown) => Promise<CoreModule> }>,
+        MODULE_INIT_TIMEOUT_MS,
+        'LifeLensCore JavaScript module import',
+      );
 
       if (typeof wasmModule.default !== 'function') {
         throw new Error('Emscripten module factory not found');
       }
 
-      const module = await wasmModule.default({
-        locateFile(path: string): string {
-          if (path.endsWith('.wasm')) return wasmUrl;
-          return path;
-        },
-      });
+      const module = await withTimeout(
+        wasmModule.default({
+          locateFile(path: string): string {
+            if (path.endsWith('.wasm')) return wasmUrl;
+            return path;
+          },
+        }),
+        MODULE_INIT_TIMEOUT_MS,
+        'LifeLensCore WASM initialization',
+      );
 
       if (!module.LifeLensWebClient) {
         throw new Error('LifeLensWebClient binding unavailable');
