@@ -217,8 +217,8 @@ export class WorldScene {
         if (existing.signature !== signature) {
           const previousGeometry = existing.mesh.geometry;
           existing.mesh.geometry = buildGeometry(chunk);
+          this.applyTerrainVertexColors(existing.mesh.geometry, chunk);
           previousGeometry.dispose();
-          existing.mesh.material.color.set(this.terrainColor(chunk));
           existing.signature = signature;
         }
         continue;
@@ -262,10 +262,12 @@ export class WorldScene {
     buildGeometry: (chunk: TerrainChunk) => THREE.BufferGeometry,
   ): THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial> {
     const geometry = buildGeometry(chunk);
+    this.applyTerrainVertexColors(geometry, chunk);
 
     const material = new THREE.MeshStandardMaterial({
-      color: this.terrainColor(chunk),
-      roughness: 0.92,
+      color: 0xffffff,
+      vertexColors: true,
+      roughness: 0.96,
       metalness: 0,
     });
 
@@ -289,17 +291,86 @@ export class WorldScene {
     mesh.scale.set(1, 1, 1);
   }
 
+  private applyTerrainVertexColors(
+    geometry: THREE.BufferGeometry,
+    chunk: TerrainChunk,
+  ): void {
+    const position = geometry.getAttribute('position');
+    if (!(position instanceof THREE.BufferAttribute)) return;
+
+    const base = new THREE.Color(this.terrainColor(chunk));
+    const forest = Math.max(
+      0,
+      Math.min(1, Number(chunk.forestCoverage01) || 0),
+    );
+    const grass = Math.max(
+      0,
+      Math.min(1, Number(chunk.grassCoverage01) || 0),
+    );
+    const rock = Math.max(
+      0,
+      Math.min(1, Number(chunk.rockCoverage01) || 0),
+    );
+    const wetland = Math.max(
+      0,
+      Math.min(1, Number(chunk.wetlandCoverage01) || 0),
+    );
+    const rockTone = new THREE.Color(0x7a766b);
+    const wetTone = new THREE.Color(0x405d4b);
+    const grassTone = new THREE.Color(0x68784a);
+    const forestTone = new THREE.Color(0x31513a);
+    const color = new THREE.Color();
+    const colors = new Float32Array(position.count * 3);
+
+    for (let index = 0; index < position.count; index += 1) {
+      const x = position.getX(index);
+      const y = position.getY(index);
+      const z = position.getZ(index);
+      const worldNoise = Math.sin(
+        (chunk.x * 9.37 + x * 0.41)
+        + (chunk.y * 7.13 + z * 0.53),
+      ) * 0.5 + Math.sin(
+        (chunk.x * 3.17 - z * 0.27)
+        + (chunk.y * 5.91 + x * 0.31),
+      ) * 0.5;
+      const height01 = Math.max(
+        0,
+        Math.min(1, y / Math.max(0.001, WORLD_GRID_CONTRACT.elevationScale)),
+      );
+
+      color.copy(base);
+      color.lerp(forestTone, forest * 0.28);
+      color.lerp(grassTone, grass * 0.18);
+      color.lerp(wetTone, wetland * 0.32);
+      color.lerp(rockTone, rock * (0.12 + height01 * 0.24));
+      color.offsetHSL(
+        worldNoise * 0.012,
+        worldNoise * 0.018,
+        worldNoise * 0.028 + (height01 - 0.5) * 0.018,
+      );
+
+      colors[index * 3] = color.r;
+      colors[index * 3 + 1] = color.g;
+      colors[index * 3 + 2] = color.b;
+    }
+
+    geometry.setAttribute(
+      'color',
+      new THREE.BufferAttribute(colors, 3),
+    );
+  }
+
   private terrainColor(chunk: TerrainChunk): number {
     switch (chunk.waterKind) {
       case 'Ocean': return 0x1b4b63;
       case 'Coast': return 0x276878;
-      case 'Wetland': return 0x496e58;
+      case 'Wetland': return 0x506b55;
       default:
-        if (chunk.elevation01 < 0.34) return 0x294b31;
-        if (chunk.elevation01 < 0.48) return 0x3b6439;
-        if (chunk.elevation01 < 0.62) return 0x64794a;
-        if (chunk.elevation01 < 0.76) return 0x807d5c;
-        return 0xaaa78f;
+        if (chunk.elevation01 < 0.34) return 0x3f5a3d;
+        if (chunk.elevation01 < 0.48) return 0x506b41;
+        if (chunk.elevation01 < 0.62) return 0x65764c;
+        if (chunk.elevation01 < 0.76) return 0x77765b;
+        return 0x92907d;
     }
   }
 }
