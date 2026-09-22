@@ -11,6 +11,7 @@ export interface CameraState {
   centerChunkX: number;
   centerChunkY: number;
   angle: number;
+  elevation: number;
   zoom: number;
   followResidents: boolean;
 }
@@ -43,6 +44,7 @@ const INITIAL_STATE: ObserverSnapshot = {
     centerChunkX: 0,
     centerChunkY: 0,
     angle: -0.68,
+    elevation: 0.67,
     zoom: 1,
     followResidents: true,
   },
