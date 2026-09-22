@@ -190,6 +190,11 @@ Engineering targets, not device guarantees:
 - rebuild deterministic nature buffers only when terrain/presentation signature
   actually changes, not every render frame.
 - shader animation for wind/water preferred over CPU per-instance transforms.
+- weather/time refreshes that only alter color, roughness or shader uniforms must
+  not set `material.needsUpdate`; shader program recompilation is reserved for
+  actual defines/program-layout changes.
+- DEV diagnostics records Three frame time, draw calls, triangles, geometry and
+  texture counts so visual density changes can be profiled instead of guessed.
 
 ## 7. Ground-detail distribution rules
 
@@ -291,6 +296,8 @@ Required:
 8. residents remain readable against environment.
 9. manual camera control remains stable.
 10. screenshot/device QA before calling the slice visually complete.
+11. inspect DEV Three diagnostics after density/material changes; unexpected
+    draw-call, triangle, geometry or texture growth blocks visual acceptance.
 
 ## 14. Implementation order
 
