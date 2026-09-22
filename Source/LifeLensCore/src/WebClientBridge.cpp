@@ -204,6 +204,44 @@ const char* environmentalResidueKindName(EnvironmentalResidueKind kind)
     return "HumanWaste";
 }
 
+const char* contextActionKindName(ContextActionKind kind)
+{
+    switch (kind) {
+        case ContextActionKind::Social: return "Social";
+        case ContextActionKind::Civilization: return "Civilization";
+        case ContextActionKind::Parenting: return "Parenting";
+        case ContextActionKind::KnowledgeTeaching: return "KnowledgeTeaching";
+        case ContextActionKind::None:
+        default: return "None";
+    }
+}
+
+const char* socialEventTypeName(SocialEventType type)
+{
+    switch (type) {
+        case SocialEventType::PositiveInteraction: return "PositiveInteraction";
+        case SocialEventType::Help: return "Help";
+        case SocialEventType::Comfort: return "Comfort";
+        case SocialEventType::Conflict: return "Conflict";
+        case SocialEventType::Betrayal: return "Betrayal";
+        case SocialEventType::Rejection: return "Rejection";
+        case SocialEventType::Apology: return "Apology";
+        case SocialEventType::Intimacy: return "Intimacy";
+        case SocialEventType::Commitment: return "Commitment";
+    }
+    return "PositiveInteraction";
+}
+
+const char* socialPresentationLevelName(SocialPresentationLevel level)
+{
+    switch (level) {
+        case SocialPresentationLevel::Everyday: return "Everyday";
+        case SocialPresentationLevel::Meaningful: return "Meaningful";
+        case SocialPresentationLevel::Important: return "Important";
+    }
+    return "Everyday";
+}
+
 } // namespace
 
 WebClientBridge::WebClientBridge() = default;
@@ -339,6 +377,10 @@ std::string WebClientBridge::residentsJson() const
             simulation_->observeFamily(resident.id);
         const ResidentPresentationObservation presentation =
             simulation_->observeResidentPresentation(resident.id);
+        const PendingContextActionObservation contextAction =
+            simulation_->observePendingContextAction(resident.id);
+        const ResidentCivilizationActivityObservation civilizationActivity =
+            simulation_->observeResidentCivilizationActivity(resident.id);
 
         const TraitProfile traits = character
             ? deriveTraitProfile(character->personality, character->genetics)
@@ -436,6 +478,45 @@ std::string WebClientBridge::residentsJson() const
         out << "\"sanitationSiteId\":\"" << presentation.sanitationSiteId << "\",";
         out << "\"contextActionToken\":\"" << presentation.contextActionToken << "\",";
         out << "\"durationTicks\":" << presentation.durationTicks;
+        out << "},";
+
+        out << "\"contextAction\":{";
+        out << "\"active\":" << (contextAction.active ? "true" : "false") << ",";
+        out << "\"kind\":\"" << contextActionKindName(contextAction.kind) << "\",";
+        out << "\"issuedMinute\":" << contextAction.issuedMinute << ",";
+        out << "\"durationTicks\":" << contextAction.durationTicks << ",";
+        out << "\"socialIntent\":\"" << socialIntentName(contextAction.socialIntent) << "\",";
+        out << "\"targetResidentId\":\"" << contextAction.targetResident << "\",";
+        out << "\"civilizationIntent\":\"" << civilizationIntentName(contextAction.civilizationIntent) << "\",";
+        out << "\"material\":\"" << materialName(contextAction.material) << "\",";
+        out << "\"technique\":\"" << techniqueName(contextAction.technique) << "\",";
+        out << "\"quantity\":" << contextAction.quantity << ",";
+        out << "\"resourceNode\":\"" << contextAction.resourceNode << "\",";
+        out << "\"storage\":\"" << contextAction.storage << "\",";
+        out << "\"facilityAction\":\"" << facilityBuildActionName(contextAction.facilityAction) << "\",";
+        out << "\"facilityId\":\"" << contextAction.facility << "\",";
+        out << "\"facilityKind\":\"" << facilityKindName(contextAction.facilityKind) << "\",";
+        out << "\"parentingAction\":\"" << parentingActionName(contextAction.parentingAction) << "\",";
+        out << "\"hasSpatialTarget\":" << (contextAction.hasSpatialTarget ? "true" : "false") << ",";
+        out << "\"targetGridX\":" << contextAction.targetPos.x << ",";
+        out << "\"targetGridY\":" << contextAction.targetPos.y << ",";
+        out << "\"sanitationSiteId\":\"" << contextAction.sanitationSiteId << "\"";
+        out << "},";
+
+        out << "\"civilizationActivity\":{";
+        out << "\"active\":" << (civilizationActivity.active ? "true" : "false") << ",";
+        out << "\"kind\":\"" << civilizationActivityKindName(civilizationActivity.kind) << "\",";
+        out << "\"material\":\"" << materialName(civilizationActivity.material) << "\",";
+        out << "\"technique\":\"" << techniqueName(civilizationActivity.technique) << "\",";
+        out << "\"quantity\":" << civilizationActivity.quantity << ",";
+        out << "\"minute\":" << civilizationActivity.minute << ",";
+        out << "\"resourceNode\":\"" << civilizationActivity.resourceNode << "\",";
+        out << "\"storage\":\"" << civilizationActivity.storage << "\",";
+        out << "\"success\":" << (civilizationActivity.success ? "true" : "false") << ",";
+        out << "\"hasSpatialTarget\":" << (civilizationActivity.hasSpatialTarget ? "true" : "false") << ",";
+        out << "\"targetGridX\":" << civilizationActivity.targetGridX << ",";
+        out << "\"targetGridY\":" << civilizationActivity.targetGridY << ",";
+        out << "\"sanitationSiteId\":\"" << civilizationActivity.sanitationSiteId << "\"";
         out << "},";
 
         out << "\"emotion\":{";
@@ -618,6 +699,8 @@ std::string WebClientBridge::worldPresentationJson() const
         simulation_->observeCivilizationWorld(0);
     const EnvironmentObservation environment =
         simulation_->observeEnvironment(96);
+    const std::vector<SocialCommunicationObservation> socialEvents =
+        simulation_->observeRecentSocialEvents(24);
     const World& world = simulation_->world();
 
     std::ostringstream out;
@@ -698,7 +781,30 @@ std::string WebClientBridge::worldPresentationJson() const
     }
     out << "],";
     out << "\"aggregateWasteAmount\":"; appendDouble(out, environment.aggregateAmount); out << ",";
-    out << "\"peakWasteIntensity\":"; appendDouble(out, environment.peakIntensity);
+    out << "\"peakWasteIntensity\":"; appendDouble(out, environment.peakIntensity); out << ",";
+
+    out << "\"socialEvents\":[";
+    for (std::size_t i = 0; i < socialEvents.size(); ++i) {
+        if (i != 0) out << ",";
+        const SocialCommunicationObservation& event = socialEvents[i];
+        const Character* actor = findObservedCharacter(world, event.actor);
+        const Character* target = findObservedCharacter(world, event.target);
+        out << "{";
+        out << "\"sequence\":\"" << event.sequence << "\",";
+        out << "\"actorId\":\"" << event.actor << "\",";
+        out << "\"actorName\":\"" << escapeJson(actor ? actor->name : std::string{}) << "\",";
+        out << "\"targetId\":\"" << event.target << "\",";
+        out << "\"targetName\":\"" << escapeJson(target ? target->name : std::string{}) << "\",";
+        out << "\"type\":\"" << socialEventTypeName(event.type) << "\",";
+        out << "\"intensity\":"; appendDouble(out, event.intensity); out << ",";
+        out << "\"importance\":"; appendDouble(out, event.importance); out << ",";
+        out << "\"minute\":" << event.minute << ",";
+        out << "\"where\":\"" << escapeJson(event.where) << "\",";
+        out << "\"presentationLevel\":\"" << socialPresentationLevelName(event.presentationLevel) << "\",";
+        out << "\"successful\":" << (event.successful ? "true" : "false");
+        out << "}";
+    }
+    out << "]";
     out << "}";
     return out.str();
 }
