@@ -109,9 +109,7 @@ export class WorldScene {
     this.weatherLayer.setEnvironment(environment);
     this.waterLayer.setEnvironment(environment);
     this.consequenceLayer.setEnvironment(environment);
-    this.vegetationLayer.setWindIntensity(
-      Number(environment?.windIntensity01) || 0,
-    );
+    this.vegetationLayer.setEnvironment(environment);
     for (const entry of this.terrainMeshes.values()) {
       this.applyTerrainWeatherMaterial(entry.mesh.material);
     }
