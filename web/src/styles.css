@@ -550,3 +550,23 @@ button:disabled { opacity: .33; cursor: default; }
   color: #748478;
   font-size: .59rem;
 }
+
+
+.family-line {
+  display: grid;
+  grid-template-columns: 68px 1fr;
+  gap: .45rem;
+  align-items: baseline;
+  padding: .28rem .4rem;
+  border-radius: 7px;
+  background: rgba(12, 22, 15, .55);
+}
+.family-line span {
+  color: #778a7b;
+  font-size: .61rem;
+}
+.family-line b {
+  color: #dbe5da;
+  font-size: .64rem;
+  font-weight: 600;
+}
