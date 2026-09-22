@@ -299,6 +299,13 @@ for token in (
 ):
     assert token in simulation_cpp, f'Missing runtime SimulationRuleset wiring: {token}'
 
+snapshot_versions_h = (root / 'Source/LifeLensCore/include/lifelens/SimulationSnapshotVersions.h').read_text(encoding='utf-8')
+for token in (
+    'SimulationSnapshotVersion',
+    'SimulationSnapshotBinaryFormatVersion',
+):
+    assert token in snapshot_versions_h, f'Missing centralized snapshot version contract: {token}'
+
 snapshot_state_h = (root / 'Source/LifeLensCore/include/lifelens/SimulationSnapshot.h').read_text(encoding='utf-8')
 for token in (
     'SimulationSnapshotVersion',
@@ -308,7 +315,7 @@ for token in (
     assert token in snapshot_state_h, f'Missing ruleset snapshot state contract: {token}'
 
 snapshot_h = (root / 'Source/LifeLensCore/include/lifelens/SimulationSnapshotCodec.h').read_text(encoding='utf-8')
-assert 'SimulationSnapshotBinaryFormatVersion' in snapshot_h
+assert 'SimulationSnapshotVersions.h' in snapshot_h
 assert 'MinimumSupportedSimulationSnapshotBinaryFormatVersion' not in snapshot_h
 
 snapshot_codec = (root / 'Source/LifeLensCore/src/SimulationSnapshotCodec.cpp').read_text(encoding='utf-8')
