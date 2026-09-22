@@ -142,35 +142,107 @@ export class LegacyCanvasWorldRenderer {
         ctx.lineWidth = Math.max(0.35, canvas.width / 2400);
         ctx.stroke();
     
-        const waterLike = (value: WaterKind): boolean => ['Spring', 'Stream', 'River', 'Lake', 'Wetland'].includes(value);
+        const flowLike = (value: WaterKind): boolean => (
+          value === 'Spring'
+          || value === 'Stream'
+          || value === 'River'
+        );
         if (chunk.waterKind === 'River' || chunk.waterKind === 'Stream' || chunk.waterKind === 'Spring') {
           const [cx, cy] = project(lx, ly, e + 0.014);
-          const connected = ([
+          const currentElevation = Number(chunk.elevation01) || 0;
+          const candidates = ([
             [1, 0], [-1, 0], [0, 1], [0, -1],
-          ] as Array<[number, number]>).filter(([dx, dy]) => {
-            const neighbor = chunkMap.get(`${chunk.x + dx}:${chunk.y + dy}`);
-            return neighbor ? waterLike(neighbor.waterKind) : false;
-          });
-          const fallbackHorizontal = presentationHash01(terrain.worldSeed ?? '0', chunk.x, chunk.y, 0, 'water-dir') > 0.5;
-          const exits = connected.length > 0
-            ? connected
-            : (fallbackHorizontal ? [[-1, 0], [1, 0]] : [[0, -1], [0, 1]]) as Array<[number, number]>;
-          ctx.strokeStyle = chunk.waterKind === 'River' ? 'rgba(54,132,164,.94)' : 'rgba(76,151,178,.9)';
-          ctx.lineWidth = Math.max(2.2, tile * (chunk.waterKind === 'River' ? 0.18 : 0.1));
+          ] as Array<[number, number]>)
+            .map(([dx, dy]) => {
+              const neighbor = chunkMap.get(`${chunk.x + dx}:${chunk.y + dy}`);
+              if (!neighbor) return null;
+              const connectsToFlow = flowLike(neighbor.waterKind);
+              const connectsToLake = (
+                neighbor.waterKind === 'Lake'
+                && chunk.waterKind !== 'Spring'
+              );
+              if (!connectsToFlow && !connectsToLake) return null;
+              return {
+                dx,
+                dy,
+                elevation: Number(neighbor.elevation01) || 0,
+                kind: neighbor.waterKind,
+              };
+            })
+            .filter((candidate): candidate is {
+              dx: number;
+              dy: number;
+              elevation: number;
+              kind: WaterKind;
+            } => candidate !== null);
+
+          const exits: Array<{ dx: number; dy: number }> = [];
+          if (candidates.length > 0) {
+            const downstream = [...candidates].sort((a, b) => (
+              a.elevation - b.elevation
+            ))[0];
+            exits.push(downstream);
+
+            if (chunk.waterKind !== 'Spring' && candidates.length > 1) {
+              const remaining = candidates.filter((candidate) => candidate !== downstream);
+              const upstream = [...remaining].sort((a, b) => {
+                const aDelta = Math.abs(a.elevation - currentElevation);
+                const bDelta = Math.abs(b.elevation - currentElevation);
+                return bDelta - aDelta;
+              })[0];
+              if (upstream) exits.push(upstream);
+            }
+          }
+
+          ctx.strokeStyle = chunk.waterKind === 'River'
+            ? 'rgba(49,126,157,.9)'
+            : 'rgba(69,146,174,.84)';
+          ctx.lineWidth = Math.max(
+            1.4,
+            Math.min(
+              tile * (chunk.waterKind === 'River' ? 0.13 : 0.075),
+              chunk.waterKind === 'River' ? 7 : 4.5,
+            ),
+          );
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
-          for (const [dx, dy] of exits) {
-            const [ex, ey] = project(lx + (dx * 0.54), ly + (dy * 0.54), e + 0.012);
-            const bend = (presentationHash01(terrain.worldSeed ?? '0', chunk.x, chunk.y, (dx + 2) * 7 + dy, 'water-bend') - 0.5) * tile * 0.28;
+
+          for (const { dx, dy } of exits) {
+            const [ex, ey] = project(
+              lx + (dx * 0.52),
+              ly + (dy * 0.52),
+              e + 0.012,
+            );
+            const bend = (
+              presentationHash01(
+                terrain.worldSeed ?? '0',
+                chunk.x,
+                chunk.y,
+                (dx + 2) * 7 + dy,
+                'water-bend',
+              ) - 0.5
+            ) * tile * 0.16;
             ctx.beginPath();
             ctx.moveTo(cx, cy);
-            ctx.quadraticCurveTo((cx + ex) * 0.5 + bend, (cy + ey) * 0.5 - bend * 0.35, ex, ey);
+            ctx.quadraticCurveTo(
+              (cx + ex) * 0.5 + bend,
+              (cy + ey) * 0.5 - bend * 0.28,
+              ex,
+              ey,
+            );
             ctx.stroke();
           }
+
           if (chunk.waterKind === 'Spring') {
-            ctx.fillStyle = 'rgba(87,170,194,.95)';
+            ctx.fillStyle = 'rgba(87,170,194,.9)';
             ctx.beginPath();
-            ctx.arc(cx, cy, Math.max(2.4, tile * 0.12), 0, Math.PI * 2);
+            ctx.arc(
+              cx,
+              cy,
+              Math.max(2.1, Math.min(tile * 0.09, 5.5)),
+              0,
+              Math.PI * 2,
+            );
             ctx.fill();
           }
         } else if (chunk.waterKind === 'Lake') {
@@ -300,6 +372,12 @@ export class LegacyCanvasWorldRenderer {
       });
     
       const placedResidents: Array<{ x: number; y: number }> = [];
+      const placedLabels: Array<{
+        left: number;
+        right: number;
+        top: number;
+        bottom: number;
+      }> = [];
       const characterPlacements: ResidentPlacement[] = [];
       for (const projected of projectedResidents) {
         const anchorX = projected.rawX;
@@ -354,20 +432,68 @@ export class LegacyCanvasWorldRenderer {
           ctx.fill();
         }
     
-        const fontSize = Math.max(10 * displayDpr, Math.min(14 * displayDpr, characterHeightDevicePx * 0.3));
+        const fontSize = Math.max(
+          9.5 * displayDpr,
+          Math.min(12.5 * displayDpr, characterHeightDevicePx * 0.25),
+        );
         ctx.font = `700 ${fontSize}px system-ui`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        const labelHeight = Math.max(22 * displayDpr, fontSize * 1.42);
-        const labelWidth = ctx.measureText(projected.resident.name).width + Math.max(14 * displayDpr, avatarRadius * 0.6);
-        const labelY = characterLayer.ready
-          ? py - (characterHeightDevicePx * 0.72)
-          : py - avatarRadius * 1.5;
-        ctx.fillStyle = 'rgba(5,12,8,.88)';
-        ctx.strokeStyle = 'rgba(221,236,220,.18)';
-        ctx.lineWidth = Math.max(1 * displayDpr, avatarRadius * 0.035);
+        const labelHeight = Math.max(20 * displayDpr, fontSize * 1.36);
+        const labelWidth = Math.min(
+          width * 0.34,
+          ctx.measureText(projected.resident.name).width
+            + Math.max(12 * displayDpr, avatarRadius * 0.5),
+        );
+
+        const baseLabelY = characterLayer.ready
+          ? py - (characterHeightDevicePx * 1.04) - (labelHeight * 0.18)
+          : py - avatarRadius * 1.7;
+
+        let labelY = baseLabelY;
+        let labelLeft = px - labelWidth / 2;
+        let labelRight = px + labelWidth / 2;
+        let labelTop = labelY - labelHeight / 2;
+        let labelBottom = labelY + labelHeight / 2;
+
+        for (let attempt = 0; attempt < 6; attempt += 1) {
+          const overlaps = placedLabels.some((label) => !(
+            labelRight + 4 * displayDpr < label.left
+            || labelLeft - 4 * displayDpr > label.right
+            || labelBottom + 3 * displayDpr < label.top
+            || labelTop - 3 * displayDpr > label.bottom
+          ));
+          if (!overlaps) break;
+
+          labelY -= labelHeight * 1.08;
+          labelTop = labelY - labelHeight / 2;
+          labelBottom = labelY + labelHeight / 2;
+        }
+
+        if (labelTop < 4 * displayDpr) {
+          labelY = baseLabelY + labelHeight * 1.15;
+          labelTop = labelY - labelHeight / 2;
+          labelBottom = labelY + labelHeight / 2;
+        }
+
+        placedLabels.push({
+          left: labelLeft,
+          right: labelRight,
+          top: labelTop,
+          bottom: labelBottom,
+        });
+
+        ctx.fillStyle = 'rgba(5,12,8,.9)';
+        ctx.strokeStyle = 'rgba(221,236,220,.16)';
+        ctx.lineWidth = Math.max(1 * displayDpr, avatarRadius * 0.03);
         ctx.beginPath();
-        ctx.roundRect(px - labelWidth / 2, labelY - labelHeight / 2, labelWidth, labelHeight, Math.max(6 * displayDpr, avatarRadius * 0.22));
+        ctx.roundRect(
+          labelLeft,
+          labelTop,
+          labelWidth,
+          labelHeight,
+          Math.max(5 * displayDpr, avatarRadius * 0.18),
+        );
         ctx.fill();
         ctx.stroke();
         ctx.fillStyle = '#f4f8f2';
