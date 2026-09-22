@@ -1,6 +1,11 @@
 import * as THREE from 'three';
-import type { TerrainChunk, TerrainWindow } from '../runtime/core-types';
+import type {
+  Resident,
+  TerrainChunk,
+  TerrainWindow,
+} from '../runtime/core-types';
 import { AtmosphereLayer } from './atmosphere-layer';
+import { ResidentWorldLayer } from './resident-world-layer';
 import { createTerrainGeometryBuilder } from './terrain-geometry';
 import { VegetationLayer } from './vegetation-layer';
 import { WaterLayer } from './water-layer';
@@ -25,12 +30,14 @@ export class WorldScene {
   private readonly terrainMeshes = new Map<string, TerrainMeshEntry>();
   private readonly waterLayer = new WaterLayer();
   private readonly vegetationLayer = new VegetationLayer();
+  private readonly residentLayer = new ResidentWorldLayer();
   private readonly atmosphere: AtmosphereLayer;
 
   constructor() {
     this.scene.add(this.terrainGroup);
     this.scene.add(this.waterLayer.group);
     this.scene.add(this.vegetationLayer.group);
+    this.scene.add(this.residentLayer.group);
     this.atmosphere = new AtmosphereLayer(this.scene);
 
     this.camera.position.set(0, 160, 180);
@@ -53,6 +60,24 @@ export class WorldScene {
 
   setSimulationMinute(minute: number): void {
     this.atmosphere.setSimulationMinute(minute);
+  }
+
+  setResidents(
+    residents: Resident[],
+    terrain: TerrainWindow,
+    centerX: number,
+    centerY: number,
+  ): void {
+    this.residentLayer.setResidents(
+      residents,
+      terrain,
+      centerX,
+      centerY,
+    );
+  }
+
+  update(deltaSeconds: number): void {
+    this.residentLayer.update(deltaSeconds);
   }
 
   setTerrain(window: TerrainWindow): void {
@@ -95,6 +120,7 @@ export class WorldScene {
     this.terrainMeshes.clear();
     this.waterLayer.dispose();
     this.vegetationLayer.dispose();
+    this.residentLayer.dispose();
     this.atmosphere.dispose();
   }
 
