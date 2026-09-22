@@ -104,7 +104,7 @@ export class WorldScene {
           );
         }
       }
-      return `${chunk.waterKind}|${neighborhood.join(",")}`;
+      return `${window.worldSeed ?? '0'}|${chunk.waterKind}|${neighborhood.join(",")}`;
     };
 
     this.waterLayer.setTerrain(window);
@@ -171,6 +171,7 @@ export class WorldScene {
     });
 
     const mesh = new THREE.Mesh(geometry, material);
+    mesh.receiveShadow = true;
     this.positionTerrainMesh(mesh, chunk, window);
     return mesh;
   }
