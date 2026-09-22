@@ -699,10 +699,15 @@ void Simulation::advanceAction(Character& c,Runtime& r){
             if(--a.remainingTicks<=0){ ++r.actionIndex; r.announced=false; } break;
         case ActionType::EmergencyUse:
             if(r.goal==Goal::UseToilet){
-                const GridPos reliefTarget=r.navigationHasTarget
-                    ? r.navigationTarget
-                    : deterministicOutdoorReliefPosition(
-                        world_.seed,c.id,r.pos);
+                GridPos reliefTarget=r.navigationTarget;
+                if(!r.navigationHasTarget){
+                    SanitationUseTarget sanitationTarget;
+                    if(!sanitationUseTarget(c.id,sanitationTarget)){
+                        failPlan(c,r);
+                        return;
+                    }
+                    reliefTarget=sanitationTarget.pos;
+                }
                 if(!advanceNavigation(r,reliefTarget,0)){
                     if(r.navigationRouteFailed){
                         failPlan(c,r);
