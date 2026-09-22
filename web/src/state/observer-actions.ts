@@ -1,6 +1,6 @@
 export interface ObserverActionHandlers {
   createWorld: (seed: string) => void;
-  stepMinutes: (minutes: number) => void;
+  setSimulationSpeed: (speed: number) => void;
   moveObserver: (dx: number, dy: number) => void;
   recenterObserver: () => void;
   selectResident: (residentId: string | null) => void;
@@ -21,8 +21,8 @@ class ObserverActions {
     this.handlers?.createWorld(seed);
   }
 
-  stepMinutes(minutes: number): void {
-    this.handlers?.stepMinutes(minutes);
+  setSimulationSpeed(speed: number): void {
+    this.handlers?.setSimulationSpeed(speed);
   }
 
   moveObserver(dx: number, dy: number): void {
