@@ -162,6 +162,7 @@ inline bool resolveCivilizationContextTarget(
     const World& world,
     const Character& actor,
     const CivilizationUtilityDecision& decision,
+    GridPos authoritativePosition,
     GridPos& outTarget,
     SanitationSiteId& outSanitationSiteId)
 {
@@ -179,7 +180,7 @@ inline bool resolveCivilizationContextTarget(
             if(decision.experiment==ExperimentKind::DesignateSanitationArea){
                 const PrimitiveSanitationOpportunity opportunity=evaluatePrimitiveSanitationOpportunity(
                     world.seed,actor,world.environmentalResidues,world.minute,
-                    civilizationSanitationReferencePosition(world));
+                    authoritativePosition);
                 if(!opportunity.siteAvailable) return false;
                 outTarget=opportunity.suggestedSite;
                 return true;
@@ -221,7 +222,8 @@ inline bool resolveCivilizationContextTarget(
                 if(decision.facilityAction==FacilityBuildAction::Plan){
                     const SettlementFacilitySiteOpportunity opportunity=
                         chooseSettlementFacilitySite(
-                            world,actor.id,decision.facilityKind);
+                            world,actor.id,decision.facilityKind,
+                            authoritativePosition);
                     if(!opportunity.available
                        || opportunity.pos.x!=decision.facilityTargetPos.x
                        || opportunity.pos.y!=decision.facilityTargetPos.y) return false;
@@ -253,7 +255,9 @@ inline bool resolveCivilizationContextTarget(
             if(decision.technique==TechniqueId::PrimitiveStorage){
                 if(!decision.hasFacilityTarget) return false;
                 if(decision.facilityAction==FacilityBuildAction::Plan){
-                    const PrimitiveStorageSiteOpportunity opportunity=choosePrimitiveStorageSite(world,actor.id);
+                    const PrimitiveStorageSiteOpportunity opportunity=
+                        choosePrimitiveStorageSite(
+                            world,actor.id,authoritativePosition);
                     if(!opportunity.available
                        || opportunity.pos.x!=decision.facilityTargetPos.x
                        || opportunity.pos.y!=decision.facilityTargetPos.y) return false;
@@ -276,7 +280,9 @@ inline bool resolveCivilizationContextTarget(
                && decision.facilityKind==FacilityKind::FirePit){
                 if(!decision.hasFacilityTarget) return false;
                 if(decision.facilityAction==FacilityBuildAction::Plan){
-                    const PrimitiveFirePitSiteOpportunity opportunity=choosePrimitiveFirePitSite(world,actor.id);
+                    const PrimitiveFirePitSiteOpportunity opportunity=
+                        choosePrimitiveFirePitSite(
+                            world,actor.id,authoritativePosition);
                     if(!opportunity.available
                        || opportunity.pos.x!=decision.facilityTargetPos.x
                        || opportunity.pos.y!=decision.facilityTargetPos.y) return false;
@@ -305,7 +311,9 @@ inline bool resolveCivilizationContextTarget(
                    || decision.technique==TechniqueId::CopperSmelting)){
                 if(!decision.hasFacilityTarget) return false;
                 if(decision.facilityAction==FacilityBuildAction::Plan){
-                    const PrimitiveFurnaceSiteOpportunity opportunity=choosePrimitiveFurnaceSite(world,actor.id);
+                    const PrimitiveFurnaceSiteOpportunity opportunity=
+                        choosePrimitiveFurnaceSite(
+                            world,actor.id,authoritativePosition);
                     if(!opportunity.available
                        || opportunity.pos.x!=decision.facilityTargetPos.x
                        || opportunity.pos.y!=decision.facilityTargetPos.y) return false;
@@ -332,7 +340,7 @@ inline bool resolveCivilizationContextTarget(
             if(decision.technique==TechniqueId::DesignatedSanitationArea){
                 const PrimitiveSanitationOpportunity opportunity=evaluateDesignatedSanitationSiteCreationOpportunity(
                     world.seed,actor,world.environmentalResidues,world.minute,
-                    civilizationSanitationReferencePosition(world));
+                    authoritativePosition);
                 if(!opportunity.siteAvailable) return false;
                 outTarget=opportunity.suggestedSite;
                 return true;
