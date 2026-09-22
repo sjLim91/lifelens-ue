@@ -5,6 +5,7 @@
 #include "lifelens/EnvironmentalResidue.h"
 #include "lifelens/Planner.h"
 #include "lifelens/Simulation.h"
+#include "lifelens/SimulationCalendar.h"
 #include "lifelens/SimulationSnapshotCodec.h"
 
 using namespace lifelens;
@@ -85,7 +86,12 @@ int main()
     }
     const CharacterId sanitationActor=production.world().characters.front().id;
     production.world().characters.front().needs.bladder=0.98;
-    production.runMinutes(20);
+    for(int minute=0;
+        minute<SimulationMinutesPerDay
+        && production.observeEnvironment().humanWasteResidues==0;
+        ++minute){
+        production.step();
+    }
     const auto runtimeEnvironment=production.observeEnvironment();
     assert(runtimeEnvironment.humanWasteResidues>=1);
     bool foundActorResidue=false;
