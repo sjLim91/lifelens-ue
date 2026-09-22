@@ -301,14 +301,14 @@ for token in (
 
 snapshot_state_h = (root / 'Source/LifeLensCore/include/lifelens/SimulationSnapshot.h').read_text(encoding='utf-8')
 for token in (
-    'SimulationSnapshotVersion=2',
+    'SimulationSnapshotVersion=3',
     'SimulationRuleset ruleset=DefaultSimulationRuleset',
 ):
     assert token in snapshot_state_h, f'Missing ruleset snapshot state contract: {token}'
 
 snapshot_h = (root / 'Source/LifeLensCore/include/lifelens/SimulationSnapshotCodec.h').read_text(encoding='utf-8')
 snapshot_binary_version = int(snapshot_h.split('SimulationSnapshotBinaryFormatVersion=', 1)[1].split(';', 1)[0])
-assert snapshot_binary_version == 7, 'Cleanup B current-only ruleset persistence requires snapshot binary format v7'
+assert snapshot_binary_version == 8, 'Pending headless context persistence requires snapshot binary format v8'
 assert 'MinimumSupportedSimulationSnapshotBinaryFormatVersion' not in snapshot_h
 
 snapshot_codec = (root / 'Source/LifeLensCore/src/SimulationSnapshotCodec.cpp').read_text(encoding='utf-8')
