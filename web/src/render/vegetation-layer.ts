@@ -442,6 +442,15 @@ uniform float uLifeLensWindIntensity;`,
         0,
         Math.min(1, Number(chunk.rockCoverage01) || 0),
       );
+      const moisture = Math.max(
+        0,
+        Math.min(1, Number(chunk.moisture01) || 0),
+      );
+      const elevation = Math.max(
+        0,
+        Math.min(1, Number(chunk.elevation01) || 0),
+      );
+      const biome = chunk.biome ?? 'Plains';
 
       const treeCount = forest < 0.1
         ? 0
@@ -517,68 +526,193 @@ uniform float uLifeLensWindIntensity;`,
         }
 
         const regrowthScale = 0.52 + treeRetention * 0.48;
-        const visualTreeScale = treeScale * regrowthScale;
-        const trunkHeight = 3.05 * visualTreeScale;
+        const formRoll = hash01(
+          seed,
+          chunk.x,
+          chunk.y,
+          1030 + index * 11,
+        );
+        const coniferBias = (
+          biome === 'ColdSteppe'
+          || biome === 'RockyHighland'
+          || elevation > 0.68
+        )
+          ? 0.58
+          : biome === 'TemperateForest'
+            ? 0.2
+            : 0.08;
+        const saplingBias = Math.min(
+          0.28,
+          0.08
+          + (1 - treeRetention) * 0.24
+          + (forest < 0.35 ? 0.06 : 0),
+        );
+        const treeForm = formRoll < coniferBias
+          ? 'Conifer'
+          : formRoll > 1 - saplingBias
+            ? 'Sapling'
+            : 'Broadleaf';
+
+        const formHeight = treeForm === 'Conifer'
+          ? 1.16
+          : treeForm === 'Sapling'
+            ? 0.68
+            : 1;
+        const formWidth = treeForm === 'Conifer'
+          ? 0.72
+          : treeForm === 'Sapling'
+            ? 0.76
+            : 1;
+        const moistureScale = 0.9 + moisture * 0.18;
+        const visualTreeScale =
+          treeScale
+          * regrowthScale
+          * moistureScale;
+        const trunkHeight =
+          3.05
+          * visualTreeScale
+          * formHeight;
+
         this.position.set(
           worldX,
           groundY + trunkHeight * 0.5,
           worldZ,
         );
         this.scale.set(
-          visualTreeScale * (0.9 + widthScale * 0.1),
-          visualTreeScale,
-          visualTreeScale * (0.9 + widthScale * 0.1),
+          visualTreeScale
+            * formWidth
+            * (0.9 + widthScale * 0.1),
+          visualTreeScale * formHeight,
+          visualTreeScale
+            * formWidth
+            * (0.9 + widthScale * 0.1),
         );
         this.matrix.compose(this.position, this.rotation, this.scale);
         this.trunks.setMatrixAt(treeCountTotal, this.matrix);
 
-        const crownBaseY = groundY + trunkHeight - 0.2 * visualTreeScale;
-        const crownLayers: Array<{
-          mesh: THREE.InstancedMesh;
-          y: number;
-          x: number;
-          z: number;
-          sx: number;
-          sy: number;
-          sz: number;
-        }> = [
+        const crownBaseY = groundY
+          + trunkHeight
+          - 0.2 * visualTreeScale;
+
+        const broadleaf = [
           {
-            mesh: this.lowerCrowns,
-            y: crownBaseY + 1.15 * visualTreeScale,
-            x: asymmetry * visualTreeScale,
-            z: -asymmetry * 0.45 * visualTreeScale,
-            sx: 1.7 * visualTreeScale * widthScale * canopyFactor,
-            sy: 1.28 * visualTreeScale * (0.62 + canopyFactor * 0.38),
-            sz: 1.55 * visualTreeScale * widthScale * canopyFactor,
+            y: 1.12,
+            x: 1,
+            z: -0.45,
+            sx: 1.72,
+            sy: 1.28,
+            sz: 1.56,
           },
           {
-            mesh: this.middleCrowns,
-            y: crownBaseY + 2.35 * visualTreeScale,
-            x: -asymmetry * 0.5 * visualTreeScale,
-            z: asymmetry * visualTreeScale,
-            sx: 1.45 * visualTreeScale * widthScale * canopyFactor,
-            sy: 1.22 * visualTreeScale * (0.62 + canopyFactor * 0.38),
-            sz: 1.38 * visualTreeScale * widthScale * canopyFactor,
+            y: 2.3,
+            x: -0.5,
+            z: 1,
+            sx: 1.46,
+            sy: 1.22,
+            sz: 1.4,
           },
           {
-            mesh: this.upperCrowns,
-            y: crownBaseY + 3.45 * visualTreeScale,
-            x: asymmetry * 0.3 * visualTreeScale,
-            z: asymmetry * 0.22 * visualTreeScale,
-            sx: 1.05 * visualTreeScale * widthScale * canopyFactor,
-            sy: 1.05 * visualTreeScale * (0.62 + canopyFactor * 0.38),
-            sz: 1.02 * visualTreeScale * widthScale * canopyFactor,
+            y: 3.38,
+            x: 0.3,
+            z: 0.22,
+            sx: 1.04,
+            sy: 1.04,
+            sz: 1.02,
           },
         ];
-        for (const layer of crownLayers) {
+        const conifer = [
+          {
+            y: 0.92,
+            x: 0.28,
+            z: -0.16,
+            sx: 1.34,
+            sy: 1.46,
+            sz: 1.3,
+          },
+          {
+            y: 2.12,
+            x: -0.18,
+            z: 0.22,
+            sx: 1.02,
+            sy: 1.38,
+            sz: 1,
+          },
+          {
+            y: 3.28,
+            x: 0.08,
+            z: 0.08,
+            sx: 0.64,
+            sy: 1.24,
+            sz: 0.64,
+          },
+        ];
+        const sapling = [
+          {
+            y: 0.92,
+            x: 0.45,
+            z: -0.25,
+            sx: 1.34,
+            sy: 1.12,
+            sz: 1.2,
+          },
+          {
+            y: 1.82,
+            x: -0.28,
+            z: 0.45,
+            sx: 1.06,
+            sy: 1.04,
+            sz: 1,
+          },
+          {
+            y: 2.66,
+            x: 0.18,
+            z: 0.12,
+            sx: 0.72,
+            sy: 0.9,
+            sz: 0.7,
+          },
+        ];
+        const silhouette = treeForm === 'Conifer'
+          ? conifer
+          : treeForm === 'Sapling'
+            ? sapling
+            : broadleaf;
+        const crownMeshes = [
+          this.lowerCrowns,
+          this.middleCrowns,
+          this.upperCrowns,
+        ];
+
+        for (let layerIndex = 0; layerIndex < crownMeshes.length; layerIndex += 1) {
+          const shape = silhouette[layerIndex];
+          const layerAsymmetry = treeForm === 'Conifer'
+            ? asymmetry * 0.35
+            : asymmetry;
           this.position.set(
-            worldX + layer.x,
-            layer.y,
-            worldZ + layer.z,
+            worldX + shape.x * layerAsymmetry * visualTreeScale,
+            crownBaseY + shape.y * visualTreeScale * formHeight,
+            worldZ + shape.z * layerAsymmetry * visualTreeScale,
           );
-          this.scale.set(layer.sx, layer.sy, layer.sz);
+          this.scale.set(
+            shape.sx
+              * visualTreeScale
+              * widthScale
+              * canopyFactor
+              * formWidth,
+            shape.sy
+              * visualTreeScale
+              * (0.62 + canopyFactor * 0.38),
+            shape.sz
+              * visualTreeScale
+              * widthScale
+              * canopyFactor
+              * formWidth,
+          );
           this.matrix.compose(this.position, this.rotation, this.scale);
-          layer.mesh.setMatrixAt(treeCountTotal, this.matrix);
+          crownMeshes[layerIndex].setMatrixAt(
+            treeCountTotal,
+            this.matrix,
+          );
         }
 
         treeCountTotal += 1;
