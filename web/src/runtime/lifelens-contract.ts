@@ -1,16 +1,23 @@
+export const SIMULATION_SPEED_MODES = [
+  { speed: 0, label: '⏸', title: '일시정지' },
+  { speed: 1, label: '1×', title: '관찰' },
+  { speed: 4, label: '4×', title: '빠르게' },
+  { speed: 16, label: '16×', title: '더 빠르게' },
+  { speed: 64, label: '64×', title: '고속 관찰' },
+] as const;
+
+export type SimulationSpeed =
+  (typeof SIMULATION_SPEED_MODES)[number]['speed'];
+
 export const SIMULATION_TIME_CONTRACT = {
   simulationMinutesPerDay: 24 * 60,
   realMinutesPerSimulationDayAt1x: 8,
-  speeds: [0, 1, 4, 16, 64] as const,
-  defaultSpeed: 1,
+  defaultSpeed: SIMULATION_SPEED_MODES[1].speed,
   tickIntervalMs: 125,
   refreshIntervalMs: 500,
   maxCatchupMs: 10_000,
   maxAdvanceMinutesPerTick: 240,
 } as const;
-
-export type SimulationSpeed =
-  (typeof SIMULATION_TIME_CONTRACT.speeds)[number];
 
 export const REAL_MS_PER_SIMULATION_MINUTE_AT_1X = (
   SIMULATION_TIME_CONTRACT.realMinutesPerSimulationDayAt1x
@@ -19,24 +26,11 @@ export const REAL_MS_PER_SIMULATION_MINUTE_AT_1X = (
 ) / SIMULATION_TIME_CONTRACT.simulationMinutesPerDay;
 
 export function normalizeSimulationSpeed(speed: number): SimulationSpeed {
-  return SIMULATION_TIME_CONTRACT.speeds.includes(
-    speed as SimulationSpeed,
-  )
-    ? speed as SimulationSpeed
-    : SIMULATION_TIME_CONTRACT.defaultSpeed;
+  const mode = SIMULATION_SPEED_MODES.find(
+    (candidate) => candidate.speed === speed,
+  );
+  return mode?.speed ?? SIMULATION_TIME_CONTRACT.defaultSpeed;
 }
-
-export const SIMULATION_SPEED_PRESETS = [
-  { speed: 0, label: '⏸', title: '일시정지' },
-  { speed: 1, label: '1×', title: '관찰' },
-  { speed: 4, label: '4×', title: '빠르게' },
-  { speed: 16, label: '16×', title: '더 빠르게' },
-  { speed: 64, label: '64×', title: '고속 관찰' },
-] as const satisfies ReadonlyArray<{
-  speed: SimulationSpeed;
-  label: string;
-  title: string;
-}>;
 
 export const WORLD_GRID_CONTRACT = {
   gridCellsPerChunk: 32,
