@@ -27,11 +27,14 @@ void learnPrerequisites(Character& character)
     character.civilization.knowledge.learn(TechniqueId::PrimitiveStorage,KnowledgeLevel::Reproducible,0.90);
 }
 
-ConstructedFacility* buildOperationalFirePit(World& world,Character& builder)
+ConstructedFacility* buildOperationalFirePit(
+    World& world,
+    Character& builder,
+    GridPos activityAnchor)
 {
     builder.civilization.inventory.add({ItemKind::RawMaterial,MaterialKind::Stone,5,0.5,1.0});
     builder.civilization.inventory.add({ItemKind::RawMaterial,MaterialKind::Wood,2,0.5,1.0});
-    const PrimitiveFirePitSiteOpportunity site=choosePrimitiveFirePitSite(world,builder.id);
+    const PrimitiveFirePitSiteOpportunity site=choosePrimitiveFirePitSite(world,builder.id,activityAnchor);
     assert(site.available);
     ConstructedFacility* fire=establishPrimitiveFirePitProject(world,builder,site.pos);
     assert(fire!=nullptr);
@@ -59,12 +62,15 @@ int main()
     Character& builder=simulation.world().characters.front();
     learnPrerequisites(builder);
 
+    GridPos activityAnchor{};
+    assert(simulation.runtimePosition(builder.id,activityAnchor));
+
     // No free metal infrastructure: furnace planning requires a real operational fire pit.
-    assert(!choosePrimitiveFurnaceSite(simulation.world(),builder.id).available);
-    ConstructedFacility* fire=buildOperationalFirePit(simulation.world(),builder);
+    assert(!choosePrimitiveFurnaceSite(simulation.world(),builder.id,activityAnchor).available);
+    ConstructedFacility* fire=buildOperationalFirePit(simulation.world(),builder,activityAnchor);
     assert(fire!=nullptr && fire->state==FacilityState::Operational && fire->active);
 
-    const PrimitiveFurnaceSiteOpportunity site=choosePrimitiveFurnaceSite(simulation.world(),builder.id);
+    const PrimitiveFurnaceSiteOpportunity site=choosePrimitiveFurnaceSite(simulation.world(),builder.id,activityAnchor);
     assert(site.available);
     ConstructedFacility* furnace=establishPrimitiveFurnaceProject(simulation.world(),builder,site.pos);
     assert(furnace!=nullptr);
