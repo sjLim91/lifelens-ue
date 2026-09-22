@@ -429,18 +429,137 @@ bool readAction(Reader& r,Action& a)
 {
     return r.enumeration(a.type)&&r.u64(a.objectId)&&r.i32(a.remainingTicks);
 }
+
+void writeSocialUtilityDecision(Writer& w,const SocialUtilityDecision& x)
+{
+    w.enumeration(x.intent);
+    w.u64(x.target);
+    w.real(x.utility);
+}
+bool readSocialUtilityDecision(Reader& r,SocialUtilityDecision& x)
+{
+    return r.enumeration(x.intent)
+        && r.u64(x.target)
+        && r.real(x.utility);
+}
+
+void writeCivilizationUtilityDecision(
+    Writer& w,
+    const CivilizationUtilityDecision& x)
+{
+    w.enumeration(x.intent);
+    w.real(x.utility);
+    w.u64(x.resourceNode);
+    w.u64(x.storage);
+    w.enumeration(x.experiment);
+    w.enumeration(x.material);
+    w.enumeration(x.technique);
+    w.enumeration(x.item);
+    w.i32(x.quantity);
+    w.enumeration(x.facilityAction);
+    w.u64(x.facility);
+    w.enumeration(x.facilityKind);
+    w.boolean(x.hasFacilityTarget);
+    w.i32(x.facilityTargetPos.x);
+    w.i32(x.facilityTargetPos.y);
+    w.real(x.facilityWork);
+}
+bool readCivilizationUtilityDecision(
+    Reader& r,
+    CivilizationUtilityDecision& x)
+{
+    return r.enumeration(x.intent)
+        && r.real(x.utility)
+        && r.u64(x.resourceNode)
+        && r.u64(x.storage)
+        && r.enumeration(x.experiment)
+        && r.enumeration(x.material)
+        && r.enumeration(x.technique)
+        && r.enumeration(x.item)
+        && r.i32(x.quantity)
+        && r.enumeration(x.facilityAction)
+        && r.u64(x.facility)
+        && r.enumeration(x.facilityKind)
+        && r.boolean(x.hasFacilityTarget)
+        && r.i32(x.facilityTargetPos.x)
+        && r.i32(x.facilityTargetPos.y)
+        && r.real(x.facilityWork);
+}
+
+void writeParentingContext(Writer& w,const ParentingContext& x)
+{
+    w.real(x.timeAvailable);
+    w.real(x.resources);
+    w.real(x.caregiverStress);
+    w.real(x.warmth);
+    w.real(x.consistency);
+    w.real(x.harshness);
+    w.boolean(x.foodAvailable);
+    w.boolean(x.waterAvailable);
+}
+bool readParentingContext(Reader& r,ParentingContext& x)
+{
+    return r.real(x.timeAvailable)
+        && r.real(x.resources)
+        && r.real(x.caregiverStress)
+        && r.real(x.warmth)
+        && r.real(x.consistency)
+        && r.real(x.harshness)
+        && r.boolean(x.foodAvailable)
+        && r.boolean(x.waterAvailable);
+}
+
+void writePendingContextAction(Writer& w,const PendingContextAction& x)
+{
+    w.u64(x.token);
+    w.enumeration(x.kind);
+    w.i32(x.issuedMinute);
+    writeSocialUtilityDecision(w,x.social);
+    writeCivilizationUtilityDecision(w,x.civilization);
+    w.u64(x.parentingTarget);
+    w.enumeration(x.parentingAction);
+    writeParentingContext(w,x.parentingContext);
+    w.u64(x.knowledgeTeachingTarget);
+    w.enumeration(x.knowledgeTeachingTechnique);
+    w.real(x.knowledgeTeachingScore);
+    w.boolean(x.hasSpatialTarget);
+    w.i32(x.targetPos.x);
+    w.i32(x.targetPos.y);
+    w.u64(x.sanitationSiteId);
+}
+bool readPendingContextAction(Reader& r,PendingContextAction& x)
+{
+    return r.u64(x.token)
+        && r.enumeration(x.kind)
+        && r.i32(x.issuedMinute)
+        && readSocialUtilityDecision(r,x.social)
+        && readCivilizationUtilityDecision(r,x.civilization)
+        && r.u64(x.parentingTarget)
+        && r.enumeration(x.parentingAction)
+        && readParentingContext(r,x.parentingContext)
+        && r.u64(x.knowledgeTeachingTarget)
+        && r.enumeration(x.knowledgeTeachingTechnique)
+        && r.real(x.knowledgeTeachingScore)
+        && r.boolean(x.hasSpatialTarget)
+        && r.i32(x.targetPos.x)
+        && r.i32(x.targetPos.y)
+        && r.u64(x.sanitationSiteId);
+}
+
 void writeRuntime(Writer& w,const SimulationRuntimeSnapshot& x)
 {
     w.enumeration(x.goal); writeCollection(w,x.plan,writeAction); w.u64(static_cast<std::uint64_t>(x.actionIndex));
     w.i32(x.pos.x); w.i32(x.pos.y); w.boolean(x.announced); w.enumeration(x.lastGoal); w.i32(x.repeatCount); w.i32(x.consecutiveFailures);
     w.i32(x.penaltyUntilMinute); w.i32(x.socialCooldownUntilMinute); w.boolean(x.socialActive); w.enumeration(x.socialIntent); w.u64(x.socialTarget);
+    writePendingContextAction(w,x.pendingContext);
 }
 bool readRuntime(Reader& r,SimulationRuntimeSnapshot& x)
 {
     std::uint64_t actionIndex=0;
     if(!r.enumeration(x.goal)||!readVector(r,x.plan,readAction)||!r.u64(actionIndex)||actionIndex>std::numeric_limits<std::size_t>::max()||
        !r.i32(x.pos.x)||!r.i32(x.pos.y)||!r.boolean(x.announced)||!r.enumeration(x.lastGoal)||!r.i32(x.repeatCount)||!r.i32(x.consecutiveFailures)||
-       !r.i32(x.penaltyUntilMinute)||!r.i32(x.socialCooldownUntilMinute)||!r.boolean(x.socialActive)||!r.enumeration(x.socialIntent)||!r.u64(x.socialTarget)) return false;
+       !r.i32(x.penaltyUntilMinute)||!r.i32(x.socialCooldownUntilMinute)||!r.boolean(x.socialActive)||!r.enumeration(x.socialIntent)||!r.u64(x.socialTarget)||
+       !readPendingContextAction(r,x.pendingContext)) return false;
     x.actionIndex=static_cast<std::size_t>(actionIndex); return true;
 }
 
