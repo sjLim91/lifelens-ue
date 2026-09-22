@@ -489,16 +489,18 @@ inline double settlementTerrainHabitabilityScore(
 inline SettlementFacilitySiteOpportunity chooseSettlementFacilitySite(
     const World& world,
     CharacterId planner,
-    FacilityKind kind)
+    FacilityKind kind,
+    GridPos activityAnchor)
 {
     SettlementFacilitySiteOpportunity result;
     if(planner==0 || !isSettlementFoundationFacility(kind)
        || hasOperationalSettlementFacility(world,kind)
        || settlementFacilityProject(world,kind)!=nullptr) return result;
 
-    const GridPos center=world.hasInitialStartRegionSelection
-        ? world.initialStartRegionCenterGrid()
-        : GridPos{};
+    // Settlement emerges from where this resident is actually living/acting.
+    // Initial spawn is only a world-entry coordinate and has no settlement
+    // authority after simulation begins.
+    const GridPos center=activityAnchor;
 
     constexpr std::array<GridPos,16> offsets={
         GridPos{3,0},GridPos{0,3},GridPos{-3,0},GridPos{0,-3},
