@@ -20,6 +20,24 @@ export class AtmosphereLayer {
   );
   private readonly sun = new THREE.DirectionalLight(0xfff0cf, 1.8);
   private readonly moon = new THREE.DirectionalLight(0xa9c5ff, 0.24);
+  private readonly sunDisc = new THREE.Sprite(
+    new THREE.SpriteMaterial({
+      color: 0xffe2a1,
+      transparent: true,
+      opacity: 0.86,
+      depthTest: false,
+      depthWrite: false,
+    }),
+  );
+  private readonly moonDisc = new THREE.Sprite(
+    new THREE.SpriteMaterial({
+      color: 0xcad7ff,
+      transparent: true,
+      opacity: 0.72,
+      depthTest: false,
+      depthWrite: false,
+    }),
+  );
   private minuteValue = 8 * 60;
   private environment: DynamicEnvironment | null = null;
 
@@ -37,9 +55,16 @@ export class AtmosphereLayer {
     this.sun.shadow.normalBias = 0.035;
     this.moon.position.set(80, 100, -120);
 
+    this.sunDisc.scale.set(18, 18, 1);
+    this.moonDisc.scale.set(10, 10, 1);
+    this.sunDisc.renderOrder = -10;
+    this.moonDisc.renderOrder = -10;
+
     this.group.add(this.hemisphere);
     this.group.add(this.sun);
     this.group.add(this.moon);
+    this.group.add(this.sunDisc);
+    this.group.add(this.moonDisc);
     this.scene.add(this.group);
     this.scene.fog = new THREE.FogExp2(0x0b1510, 0.0032);
 
@@ -57,6 +82,8 @@ export class AtmosphereLayer {
   }
 
   dispose(): void {
+    this.sunDisc.material.dispose();
+    this.moonDisc.material.dispose();
     this.scene.remove(this.group);
   }
 
@@ -84,12 +111,26 @@ export class AtmosphereLayer {
       Math.sin(dayAngle) * sunDistance * 0.55,
     );
     this.moon.position.copy(this.sun.position).multiplyScalar(-0.8);
+    this.sunDisc.position.copy(this.sun.position).normalize().multiplyScalar(780);
+    this.moonDisc.position.copy(this.moon.position).normalize().multiplyScalar(760);
 
     const cloudLightLoss = 1 - (cloud * 0.48 + precipitation * 0.24);
     this.sun.intensity = (0.08 + daylight01 * 2.15)
       * Math.max(0.3, cloudLightLoss);
     this.moon.intensity = 0.1
       + (1 - daylight01) * 0.52 * Math.max(0.58, 1 - cloud * 0.25);
+    const sunMaterial = this.sunDisc.material;
+    const moonMaterial = this.moonDisc.material;
+    sunMaterial.opacity = Math.max(
+      0,
+      daylight01 * (0.92 - cloud * 0.62 - precipitation * 0.16),
+    );
+    moonMaterial.opacity = Math.max(
+      0,
+      (1 - daylight01) * (0.76 - cloud * 0.35),
+    );
+    this.sunDisc.visible = sunMaterial.opacity > 0.02;
+    this.moonDisc.visible = moonMaterial.opacity > 0.02;
     this.hemisphere.intensity = (
       0.38 + daylight01 * 1.22
     ) * Math.max(0.54, 1 - cloud * 0.34);
