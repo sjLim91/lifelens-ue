@@ -113,15 +113,14 @@ const TECHNIQUE_LABELS: Record<number, string> = {
 function formatTechniqueProposition(value: string): string | null {
   const match = /^demonstrated civilization technique:(\d+)$/.exec(value);
   if (!match) return null;
-  const label = TECHNIQUE_LABELS[Number(match[1])] ?? '문명 기술';
-  return `${label} 기술을 시연함`;
+  return TECHNIQUE_LABELS[Number(match[1])] ?? '문명 기술';
 }
 
 export function formatMemoryText(value: string | undefined): string {
   if (!value) return '기록된 경험';
 
   const technique = formatTechniqueProposition(value);
-  if (technique) return `${technique}을 목격함`;
+  if (technique) return `${technique} 기술 시연을 목격함`;
 
   const labels: Record<string, string> = {
     'experienced unsanitary surroundings': '비위생적인 주변 환경을 경험함',
@@ -150,8 +149,8 @@ export function formatBeliefText(
   const technique = formatTechniqueProposition(value);
   if (technique) {
     return supports
-      ? `${technique}을 사실로 믿음`
-      : `${technique}이라는 주장에 동의하지 않음`;
+      ? `${technique} 기술을 시연했다고 믿음`
+      : `${technique} 기술을 시연했다는 주장에 동의하지 않음`;
   }
 
   if (value === 'human-waste contamination is a recurring sanitation problem') {
@@ -160,6 +159,7 @@ export function formatBeliefText(
       : '인분 오염이 반복적인 위생 문제라는 판단에 동의하지 않음';
   }
 
+  const normalized = value.trim().toLowerCase().replace(/\s+/g, '_');
   const labels: Record<string, [string, string]> = {
     is_friendly: ['대상이 친근한 사람이라고 생각함', '대상이 친근하지 않다고 생각함'],
     is_reliable: ['대상이 믿고 의지할 만하다고 생각함', '대상이 믿고 의지하기 어렵다고 생각함'],
@@ -170,7 +170,7 @@ export function formatBeliefText(
     wants_repair: ['대상이 관계 회복을 원한다고 생각함', '대상이 관계 회복을 원하지 않는다고 생각함'],
     is_committed: ['대상이 관계에 헌신하고 있다고 생각함', '대상이 관계에 헌신하지 않는다고 생각함'],
   };
-  const pair = labels[value];
+  const pair = labels[normalized];
   return pair ? pair[supports ? 0 : 1] : '형성된 믿음';
 }
 
