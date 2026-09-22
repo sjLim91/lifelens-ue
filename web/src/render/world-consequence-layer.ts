@@ -418,6 +418,7 @@ function disposeObject(object: THREE.Object3D): void {
 
 export class WorldConsequenceLayer {
   readonly group = new THREE.Group();
+  private lastSignature = '';
 
   setSnapshot(
     snapshot: WorldPresentationSnapshot | null,
@@ -425,6 +426,32 @@ export class WorldConsequenceLayer {
     centerX: number,
     centerY: number,
   ): void {
+    const signature = snapshot?.available
+      ? [
+          centerX,
+          centerY,
+          terrain.worldSeed ?? '0',
+          ...(snapshot.resources ?? []).map((item) => (
+            `r:${item.id}:${item.quantity}:${item.gridX}:${item.gridY}`
+          )),
+          ...(snapshot.facilities ?? []).map((item) => (
+            `f:${item.id}:${item.state}:${item.workProgress ?? 0}:${item.durability ?? 0}:${item.lit ? 1 : 0}:${item.gridX}:${item.gridY}`
+          )),
+          ...(snapshot.storages ?? []).map((item) => (
+            `s:${item.id}:${item.totalUnits ?? 0}:${item.gridX}:${item.gridY}`
+          )),
+          ...(snapshot.sanitationSites ?? []).map((item) => (
+            `t:${item.id}:${item.kind}:${item.useCount ?? 0}:${item.improvementProgress ?? 0}:${item.gridX}:${item.gridY}`
+          )),
+          ...(snapshot.residues ?? []).map((item) => (
+            `w:${item.id}:${item.amount ?? 0}:${item.intensity ?? 0}:${item.radiusTiles ?? 0}:${item.gridX}:${item.gridY}`
+          )),
+        ].join('|')
+      : 'unavailable';
+
+    if (signature === this.lastSignature) return;
+    this.lastSignature = signature;
+
     for (const child of [...this.group.children]) {
       this.group.remove(child);
       disposeObject(child);
@@ -501,6 +528,7 @@ export class WorldConsequenceLayer {
   }
 
   dispose(): void {
+    this.lastSignature = '';
     for (const child of [...this.group.children]) {
       this.group.remove(child);
       disposeObject(child);
