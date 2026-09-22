@@ -82,6 +82,7 @@ export class PhotorealNatureLayer {
 
   private terrain: TerrainWindow | null = null;
   private presentation: WorldPresentationSnapshot | null = null;
+  private environment: DynamicEnvironment | null = null;
   private zoom = 1.25;
   private loading = false;
   private loaded = false;
@@ -116,6 +117,7 @@ export class PhotorealNatureLayer {
   }
 
   setEnvironment(environment: DynamicEnvironment | null): void {
+    this.environment = environment;
     const snow = environment?.precipitationType === 'Snow'
       ? clamp01(environment?.precipitationIntensity01)
       : 0;
@@ -233,7 +235,10 @@ export class PhotorealNatureLayer {
       this.loaded = this.entries.size > 0;
       this.unavailable = !this.loaded;
       this.group.visible = this.loaded && this.zoom >= 1.02;
-      if (this.loaded) this.rebuildIfNeeded(true);
+      if (this.loaded) {
+        this.setEnvironment(this.environment);
+        this.rebuildIfNeeded(true);
+      }
     } catch (error) {
       this.unavailable = true;
       console.warn(
