@@ -40,6 +40,11 @@ export function WorldOverlay({
           ? `${center.biome ?? 'Unknown'} · 숲 ${forest}%`
           : '환경 분석 중'}
       </span>
+      <span id="weatherLabel">
+        {snapshot.environment?.available
+          ? `${snapshot.environment.summary ?? 'Clear'} · ${Math.round(Number(snapshot.environment.airTemperatureC) || 0)}°C`
+          : '날씨 분석 중'}
+      </span>
       <span id="livingOverlay">
         {snapshot.world.livingResidents !== undefined
           ? `인구 ${snapshot.world.livingResidents}`
