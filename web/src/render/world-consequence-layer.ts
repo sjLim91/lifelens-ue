@@ -3,6 +3,7 @@ import type {
   TerrainWindow,
   WorldFacility,
   WorldPresentationSnapshot,
+  WorldResourceNode,
   WorldResidue,
   WorldSanitationSite,
 } from '../runtime/core-types';
@@ -14,7 +15,10 @@ function clamp01(value: number | undefined): number {
   return Math.max(0, Math.min(1, Number(value) || 0));
 }
 
-function facilityLabel(facility: WorldFacility): string {
+function facilityLabel(
+  facility: WorldFacility,
+  storedUnits?: number,
+): string {
   const kinds: Record<WorldFacility['kind'], string> = {
     PrimitiveStorage: '원시 저장소',
     FirePit: '화덕',
@@ -30,9 +34,13 @@ function facilityLabel(facility: WorldFacility): string {
     Ruined: '폐허',
   };
   const progress = Math.round(clamp01(facility.workProgress) * 100);
+  const storageSuffix = facility.kind === 'PrimitiveStorage'
+    && Number(storedUnits) > 0
+    ? ` · 보관 ${storedUnits}`
+    : '';
   return facility.state === 'UnderConstruction'
     ? `${kinds[facility.kind]} · ${states[facility.state]} ${progress}%`
-    : `${kinds[facility.kind]} · ${states[facility.state]}`;
+    : `${kinds[facility.kind]} · ${states[facility.state]}${storageSuffix}`;
 }
 
 function makeLabelSprite(text: string): THREE.Sprite {
@@ -265,6 +273,88 @@ function addSanitationShape(
   group.add(label);
 }
 
+function addResourceShape(
+  group: THREE.Group,
+  resource: WorldResourceNode,
+): void {
+  const quantityRatio = Math.max(
+    0.18,
+    Math.min(
+      1,
+      (Number(resource.quantity) || 0)
+      / Math.max(1, Number(resource.maxQuantity) || Number(resource.quantity) || 1),
+    ),
+  );
+  const materialColors: Record<string, number> = {
+    Stone: 0x77756f,
+    Flint: 0x4f5455,
+    Wood: 0x6f5536,
+    Fiber: 0x83945b,
+    Clay: 0x936b52,
+    Water: 0x3c86a0,
+    PlantFood: 0x7b9147,
+    Bone: 0xc8c1a7,
+    Hide: 0x8a6948,
+    CopperOre: 0x8c684d,
+    TinOre: 0x7d8586,
+    IronOre: 0x635d59,
+    Charcoal: 0x292a28,
+    CopperMetal: 0xb46d43,
+  };
+  const color = materialColors[resource.material] ?? 0x77756f;
+  const marker = new THREE.Mesh(
+    new THREE.RingGeometry(0.72, 0.95, 22),
+    new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      opacity: 0.38,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    }),
+  );
+  marker.rotation.x = -Math.PI * 0.5;
+  marker.position.y = 0.045;
+  group.add(marker);
+
+  if (resource.material === 'Wood') {
+    addBox(
+      group,
+      [0.36, 1.3 * quantityRatio, 0.36],
+      [0, 0.65 * quantityRatio, 0],
+      disposableMaterial(color),
+    );
+  } else if (resource.material === 'Fiber' || resource.material === 'PlantFood') {
+    const tuft = new THREE.Mesh(
+      new THREE.ConeGeometry(0.6, 1.15 * quantityRatio, 7),
+      disposableMaterial(color),
+    );
+    tuft.position.y = 0.58 * quantityRatio;
+    group.add(tuft);
+  } else if (resource.material === 'Water') {
+    const water = new THREE.Mesh(
+      new THREE.CircleGeometry(0.72, 24),
+      new THREE.MeshStandardMaterial({
+        color,
+        roughness: 0.18,
+        metalness: 0.02,
+        transparent: true,
+        opacity: 0.72,
+      }),
+    );
+    water.rotation.x = -Math.PI * 0.5;
+    water.position.y = 0.05;
+    group.add(water);
+  } else {
+    const rock = new THREE.Mesh(
+      new THREE.DodecahedronGeometry(0.62 * quantityRatio + 0.18, 0),
+      disposableMaterial(color),
+    );
+    rock.scale.y = 0.72;
+    rock.position.y = 0.4 * quantityRatio;
+    group.add(rock);
+  }
+}
+
 function addResidueShape(
   group: THREE.Group,
   residue: WorldResidue,
@@ -359,6 +449,20 @@ export class WorldConsequenceLayer {
       return new THREE.Vector3(pos.x, pos.y, pos.z);
     };
 
+    const visibleChunks = new Set(
+      terrain.chunks.map((chunk) => `${chunk.x}:${chunk.y}`),
+    );
+    const cells = WORLD_GRID_CONTRACT.gridCellsPerChunk;
+    for (const resource of snapshot.resources ?? []) {
+      const chunkX = Math.floor(resource.gridX / cells);
+      const chunkY = Math.floor(resource.gridY / cells);
+      if (!visibleChunks.has(`${chunkX}:${chunkY}`)) continue;
+      const object = new THREE.Group();
+      object.position.copy(positionAt(resource.gridX, resource.gridY));
+      addResourceShape(object, resource);
+      this.group.add(object);
+    }
+
     for (const residue of snapshot.residues ?? []) {
       const object = new THREE.Group();
       object.position.copy(positionAt(residue.gridX, residue.gridY));
@@ -374,11 +478,22 @@ export class WorldConsequenceLayer {
       this.group.add(object);
     }
 
+    const storageByGrid = new Map(
+      (snapshot.storages ?? []).map((storage) => [
+        `${storage.gridX}:${storage.gridY}`,
+        Number(storage.totalUnits) || 0,
+      ]),
+    );
     for (const facility of snapshot.facilities ?? []) {
       const object = new THREE.Group();
       object.position.copy(positionAt(facility.gridX, facility.gridY));
       addFacilityShape(object, facility);
-      const label = makeLabelSprite(facilityLabel(facility));
+      const storedUnits = storageByGrid.get(
+        `${facility.gridX}:${facility.gridY}`,
+      );
+      const label = makeLabelSprite(
+        facilityLabel(facility, storedUnits),
+      );
       label.position.y = facility.kind === 'Shelter' ? 5.1 : 3.7;
       object.add(label);
       this.group.add(object);
