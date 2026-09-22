@@ -60,6 +60,19 @@ export class WorldRenderer {
     this.world.setSimulationMinute(minute);
   }
 
+  pickResident(clientX: number, clientY: number): string | null {
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return null;
+
+    const normalizedX = ((clientX - rect.left) / rect.width) * 2 - 1;
+    const normalizedY = -(((clientY - rect.top) / rect.height) * 2 - 1);
+    return this.world.pickResident(normalizedX, normalizedY);
+  }
+
+  setSelectedResident(residentId: string | null): void {
+    this.world.setSelectedResident(residentId);
+  }
+
   setResidents(
     residents: Resident[],
     terrain: TerrainWindow,
