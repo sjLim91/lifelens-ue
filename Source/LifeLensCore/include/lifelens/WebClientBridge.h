@@ -30,6 +30,9 @@ public:
 
     std::string worldOverviewJson() const;
     std::string residentsJson() const;
+    std::string dynamicEnvironmentJson(
+        int centerChunkX,
+        int centerChunkY) const;
     std::string terrainWindowJson(
         int centerChunkX,
         int centerChunkY,

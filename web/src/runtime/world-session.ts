@@ -1,5 +1,6 @@
 import { LifeLensCoreBridge } from './core-bridge';
 import type {
+  DynamicEnvironment,
   Resident,
   TerrainWindow,
   WorldOverview,
@@ -10,6 +11,7 @@ export interface WorldSessionSnapshot {
   overview: WorldOverview;
   residents: Resident[];
   terrain: TerrainWindow;
+  environment: DynamicEnvironment;
   centerX: number;
   centerY: number;
   followResidents: boolean;
@@ -132,10 +134,16 @@ export class WorldSession {
       };
     }
 
+    const environment = this.core.dynamicEnvironment(
+      this.centerX,
+      this.centerY,
+    );
+
     return {
       overview,
       residents,
       terrain,
+      environment,
       centerX: this.centerX,
       centerY: this.centerY,
       followResidents: this.followResidents,

@@ -98,6 +98,9 @@
       "natural connected hydrology rendering",
       "Core ecology coverage rendering",
       "continuous dramatic elevation relief presentation",
+      "authoritative dynamic weather projection",
+      "weather-driven fog and daylight attenuation",
+      "Core-driven rain and snow particles",
       "shared-corner terrain continuity",
       "connected river and stream topology",
       "no artificial orthogonal water grid",
@@ -110,9 +113,11 @@
     "steps": [
       "Create WorldSeed 42",
       "Read the Biome badge above the terrain canvas",
-      "Click the right-arrow world truth control twice and inspect the terrain canvas"
+      "Click the right-arrow world truth control twice and inspect the terrain canvas",
+      "Observe the weather badge and verify temperature/weather summary are present",
+      "Fast-forward time and verify weather changes remain driven by Core simulation state rather than random browser effects"
     ],
-    "expected": "The Chunk badge shows Chunk 2, 0, the Biome badge reports the Core biome and forest coverage, and deterministic terrain is rendered as one connected relief surface with visible slopes, non-rectangular river or stream paths where hydrology exists, with at most two flow exits per river/stream chunk, no synthetic cross-grid fallback channels, and minor streams/springs progressively hidden at wider zoom levels, and clustered vegetation rather than a debug-like tile grid."
+    "expected": "The Chunk badge shows Chunk 2, 0, the Biome badge reports the Core biome and forest coverage, and deterministic terrain is rendered as one connected relief surface with visible slopes, non-rectangular river or stream paths where hydrology exists, with at most two flow exits per river/stream chunk, no synthetic cross-grid fallback channels, and minor streams/springs progressively hidden at wider zoom levels, and clustered vegetation rather than a debug-like tile grid. The world overlay exposes the authoritative Core weather summary and temperature; cloud, precipitation, visibility and wind alter Three World atmosphere and rain/snow presentation from the same Core state."
   },
   {
     "name": "Reject empty WorldSeed on mobile",

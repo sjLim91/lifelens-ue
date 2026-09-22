@@ -10,6 +10,7 @@
 #include "lifelens/ContinuousEcology.h"
 #include "lifelens/ContinuousTerrain.h"
 #include "lifelens/Hydrology.h"
+#include "lifelens/SimulationClimate.h"
 #include "lifelens/TraitsPreferences.h"
 
 namespace lifelens {
@@ -81,6 +82,31 @@ const char* memorySourceName(MemorySource source)
         case MemorySource::Inferred: return "Inferred";
     }
     return "Inferred";
+}
+
+const char* precipitationTypeName(PrecipitationType type)
+{
+    switch (type) {
+        case PrecipitationType::None: return "None";
+        case PrecipitationType::Rain: return "Rain";
+        case PrecipitationType::Snow: return "Snow";
+    }
+    return "None";
+}
+
+const char* weatherSummaryName(WeatherSummary summary)
+{
+    switch (summary) {
+        case WeatherSummary::Clear: return "Clear";
+        case WeatherSummary::Cloudy: return "Cloudy";
+        case WeatherSummary::Rain: return "Rain";
+        case WeatherSummary::Snow: return "Snow";
+        case WeatherSummary::Fog: return "Fog";
+        case WeatherSummary::Storm: return "Storm";
+        case WeatherSummary::Heat: return "Heat";
+        case WeatherSummary::Cold: return "Cold";
+    }
+    return "Clear";
 }
 
 } // namespace
@@ -408,6 +434,39 @@ std::string WebClientBridge::residentsJson() const
         out << "}";
     }
     out << "]}";
+    return out.str();
+}
+
+std::string WebClientBridge::dynamicEnvironmentJson(
+    int centerChunkX,
+    int centerChunkY) const
+{
+    if (!simulation_) return "{\"available\":false}";
+
+    const WorldGenesisIdentity identity =
+        simulation_->world().genesisIdentity();
+    const DynamicEnvironmentObservation environment =
+        deriveDynamicEnvironment(
+            identity,
+            ChunkCoord{centerChunkX, centerChunkY},
+            simulation_->world().minute);
+
+    std::ostringstream out;
+    out << "{";
+    out << "\"available\":true,";
+    out << "\"centerChunkX\":" << centerChunkX << ",";
+    out << "\"centerChunkY\":" << centerChunkY << ",";
+    out << "\"simulationMinute\":" << environment.simulationMinute << ",";
+    out << "\"airTemperatureC\":"; appendDouble(out, environment.airTemperatureC); out << ",";
+    out << "\"precipitationIntensity01\":"; appendDouble(out, environment.precipitationIntensity01); out << ",";
+    out << "\"cloudCover01\":"; appendDouble(out, environment.cloudCover01); out << ",";
+    out << "\"windIntensity01\":"; appendDouble(out, environment.windIntensity01); out << ",";
+    out << "\"humidity01\":"; appendDouble(out, environment.humidity01); out << ",";
+    out << "\"visibility01\":"; appendDouble(out, environment.visibility01); out << ",";
+    out << "\"surfaceWetness01\":"; appendDouble(out, environment.surfaceWetness01); out << ",";
+    out << "\"precipitationType\":\"" << precipitationTypeName(environment.precipitationType) << "\",";
+    out << "\"summary\":\"" << weatherSummaryName(environment.summary) << "\"";
+    out << "}";
     return out.str();
 }
 

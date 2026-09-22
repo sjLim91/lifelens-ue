@@ -203,11 +203,38 @@ export interface WorldOverview {
   [key: string]: unknown;
 }
 
+export type WeatherSummary =
+  | 'Clear'
+  | 'Cloudy'
+  | 'Rain'
+  | 'Snow'
+  | 'Fog'
+  | 'Storm'
+  | 'Heat'
+  | 'Cold';
+
+export interface DynamicEnvironment {
+  available?: boolean;
+  centerChunkX?: number;
+  centerChunkY?: number;
+  simulationMinute?: number;
+  airTemperatureC?: number;
+  precipitationIntensity01?: number;
+  cloudCover01?: number;
+  windIntensity01?: number;
+  humidity01?: number;
+  visibility01?: number;
+  surfaceWetness01?: number;
+  precipitationType?: 'None' | 'Rain' | 'Snow';
+  summary?: WeatherSummary;
+}
+
 export interface RuntimeClient {
   newGame(worldSeed: string, populationSeed: string, generationVersion: number): boolean;
   runMinutes(minutes: number): void;
   worldOverviewJson(): string;
   residentsJson(): string;
+  dynamicEnvironmentJson(x: number, y: number): string;
   terrainWindowJson(x: number, y: number, radius: number): string;
   delete?: () => void;
 }
