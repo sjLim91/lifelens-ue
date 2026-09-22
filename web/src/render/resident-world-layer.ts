@@ -853,69 +853,141 @@ export class ResidentWorldLayer {
       );
     };
 
+    const pushGridLink = (
+      sourceActor: ResidentActor,
+      gridX: number,
+      gridY: number,
+      color: THREE.Color,
+    ): void => {
+      if (!this.pendingTerrain) return;
+      const gridCellsPerChunk = WORLD_GRID_CONTRACT.gridCellsPerChunk;
+      const chunkWorldSize = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
+      const chunkX = Math.floor(gridX / gridCellsPerChunk);
+      const chunkY = Math.floor(gridY / gridCellsPerChunk);
+      const localX = (
+        gridX - chunkX * gridCellsPerChunk
+      ) / gridCellsPerChunk;
+      const localY = (
+        gridY - chunkY * gridCellsPerChunk
+      ) / gridCellsPerChunk;
+      const sampleElevation = createTerrainElevationSampler(
+        this.pendingTerrain,
+      );
+      const groundY = sampleElevation(
+        chunkX,
+        chunkY,
+        localX,
+        localY,
+      ) * WORLD_GRID_CONTRACT.elevationScale;
+      const targetX = (
+        chunkX - this.pendingCenterX + localX - 0.5
+      ) * chunkWorldSize;
+      const targetZ = (
+        chunkY - this.pendingCenterY + localY - 0.5
+      ) * chunkWorldSize;
+
+      positions.push(
+        sourceActor.current.x,
+        sourceActor.current.y + 0.75,
+        sourceActor.current.z,
+        targetX,
+        groundY + 0.16,
+        targetZ,
+      );
+      pushColor(color);
+    };
+
     for (const resident of this.pendingResidents) {
       const action = resident.contextAction;
-      if (!action?.active) continue;
+      const presentation = resident.presentation;
+      const hasAction = Boolean(action?.active);
+      const hasPresentation = Boolean(presentation?.active);
+      if (!hasAction && !hasPresentation) continue;
 
       const sourceActor = this.actors.get(resident.id);
       if (!sourceActor?.initialized || !sourceActor.root.visible) {
         continue;
       }
 
-      if (
-        action.kind === 'Civilization'
-        && action.hasSpatialTarget
-        && typeof action.targetGridX === 'number'
-        && typeof action.targetGridY === 'number'
-        && this.pendingTerrain
-      ) {
-        const gridCellsPerChunk = WORLD_GRID_CONTRACT.gridCellsPerChunk;
-        const chunkWorldSize = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
-        const chunkX = Math.floor(action.targetGridX / gridCellsPerChunk);
-        const chunkY = Math.floor(action.targetGridY / gridCellsPerChunk);
-        const localX = (
-          action.targetGridX - chunkX * gridCellsPerChunk
-        ) / gridCellsPerChunk;
-        const localY = (
-          action.targetGridY - chunkY * gridCellsPerChunk
-        ) / gridCellsPerChunk;
-        const sampleElevation = createTerrainElevationSampler(
-          this.pendingTerrain,
-        );
-        const groundY = sampleElevation(
-          chunkX,
-          chunkY,
-          localX,
-          localY,
-        ) * WORLD_GRID_CONTRACT.elevationScale;
-        const targetX = (
-          chunkX - this.pendingCenterX + localX - 0.5
-        ) * chunkWorldSize;
-        const targetZ = (
-          chunkY - this.pendingCenterY + localY - 0.5
-        ) * chunkWorldSize;
+      const kind = action?.kind ?? presentation?.kind ?? 'None';
 
-        positions.push(
-          sourceActor.current.x,
-          sourceActor.current.y + 0.75,
-          sourceActor.current.z,
-          targetX,
-          groundY + 0.16,
-          targetZ,
+      if (kind === 'Civilization') {
+        const hasGrid = Boolean(
+          (
+            action?.active
+            && action.hasSpatialTarget
+            && typeof action.targetGridX === 'number'
+            && typeof action.targetGridY === 'number'
+          )
+          || (
+            presentation?.active
+            && presentation.hasTargetGrid
+            && typeof presentation.targetGridX === 'number'
+            && typeof presentation.targetGridY === 'number'
+          )
         );
-        pushColor(new THREE.Color(0xb99661));
+        if (hasGrid) {
+          const gridX = Number(
+            action?.targetGridX ?? presentation?.targetGridX,
+          );
+          const gridY = Number(
+            action?.targetGridY ?? presentation?.targetGridY,
+          );
+          pushGridLink(
+            sourceActor,
+            gridX,
+            gridY,
+            new THREE.Color(0xb99661),
+          );
+          continue;
+        }
+      }
+
+      if (
+        kind === 'Physical'
+        && presentation?.active
+        && presentation.hasTargetGrid
+        && typeof presentation.targetGridX === 'number'
+        && typeof presentation.targetGridY === 'number'
+      ) {
+        let color = new THREE.Color(0x93a48a);
+        switch (presentation.physicalGoal) {
+          case 'Drink':
+          case 'Wash':
+            color = new THREE.Color(0x6f9fb5);
+            break;
+          case 'Eat':
+            color = new THREE.Color(0xa6a46f);
+            break;
+          case 'UseToilet':
+            color = new THREE.Color(0x8d7358);
+            break;
+          case 'Sleep':
+            color = new THREE.Color(0x8a86a8);
+            break;
+          default:
+            break;
+        }
+        pushGridLink(
+          sourceActor,
+          presentation.targetGridX,
+          presentation.targetGridY,
+          color,
+        );
         continue;
       }
 
       if (
-        action.kind !== 'Social'
-        && action.kind !== 'KnowledgeTeaching'
-        && action.kind !== 'Parenting'
+        kind !== 'Social'
+        && kind !== 'KnowledgeTeaching'
+        && kind !== 'Parenting'
       ) {
         continue;
       }
 
-      const targetId = action.targetResidentId ?? '';
+      const targetId = action?.targetResidentId
+        ?? presentation?.targetResidentId
+        ?? '';
       if (!targetId) continue;
       const targetActor = this.actors.get(targetId);
       if (
@@ -939,12 +1011,15 @@ export class ResidentWorldLayer {
       );
 
       let color = new THREE.Color(0xa9c9af);
-      if (action.kind === 'KnowledgeTeaching') {
+      if (kind === 'KnowledgeTeaching') {
         color = new THREE.Color(0xb9b878);
-      } else if (action.kind === 'Parenting') {
+      } else if (kind === 'Parenting') {
         color = new THREE.Color(0xc9a894);
       } else {
-        switch (action.socialIntent) {
+        switch (
+          action?.socialIntent
+          ?? presentation?.socialIntent
+        ) {
           case 'Comfort':
             color = new THREE.Color(0x9bb9cf);
             break;
@@ -970,7 +1045,9 @@ export class ResidentWorldLayer {
       'color',
       new THREE.Float32BufferAttribute(colors, 3),
     );
-    this.socialLinkGeometry.computeBoundingSphere();
+    if (positions.length > 0) {
+      this.socialLinkGeometry.computeBoundingSphere();
+    }
     this.socialLinks.visible = positions.length > 0;
   }
 
