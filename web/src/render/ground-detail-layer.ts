@@ -429,6 +429,9 @@ uniform float uLifeLensGroundWindIntensity;`,
 
     const seed = window.worldSeed ?? '0';
     const size = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
+    const worldUnitsPerGrid = (
+      size / WORLD_GRID_CONTRACT.gridCellsPerChunk
+    );
     const elevationScale = WORLD_GRID_CONTRACT.elevationScale;
     const sampleElevation = createTerrainElevationSampler(window);
     const chunkMap = new Map(
