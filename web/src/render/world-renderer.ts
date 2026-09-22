@@ -1,5 +1,8 @@
 import * as THREE from 'three';
-import type { TerrainWindow } from '../runtime/core-types';
+import type {
+  Resident,
+  TerrainWindow,
+} from '../runtime/core-types';
 import { WorldScene, type WorldSceneCameraState } from './world-scene';
 
 export class WorldRenderer {
@@ -21,7 +24,14 @@ export class WorldRenderer {
   start(): void {
     if (this.animationFrame !== null) return;
 
-    const render = (): void => {
+    let lastFrame = performance.now();
+    const render = (frameTime: number): void => {
+      const deltaSeconds = Math.min(
+        0.05,
+        Math.max(0, (frameTime - lastFrame) / 1000),
+      );
+      lastFrame = frameTime;
+      this.world.update(deltaSeconds);
       this.renderer.render(this.world.scene, this.world.camera);
       this.animationFrame = requestAnimationFrame(render);
     };
@@ -48,6 +58,20 @@ export class WorldRenderer {
 
   setSimulationMinute(minute: number): void {
     this.world.setSimulationMinute(minute);
+  }
+
+  setResidents(
+    residents: Resident[],
+    terrain: TerrainWindow,
+    centerX: number,
+    centerY: number,
+  ): void {
+    this.world.setResidents(
+      residents,
+      terrain,
+      centerX,
+      centerY,
+    );
   }
 
   setTerrain(window: TerrainWindow): void {
