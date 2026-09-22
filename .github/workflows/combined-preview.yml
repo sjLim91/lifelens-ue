@@ -54,6 +54,31 @@ jobs:
           cache: npm
           cache-dependency-path: web/package.json
 
+      - name: Setup Python for Web nature assets
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Cache Web nature staging
+        uses: actions/cache@v4
+        with:
+          path: assets_staging/PolyHaven
+          key: combined-web-nature-1k-v1-${{ hashFiles('Tools/acquire_photoreal_environment_assets.py', 'Tools/prepare_web_photoreal_assets.py') }}
+
+      - name: Prepare compact CC0 Web nature pack
+        run: |
+          python Tools/acquire_photoreal_environment_assets.py \
+            --resolution 1k \
+            --asset boulder_01 \
+            --asset shrub_03 \
+            --asset tree_stump_01
+          python Tools/prepare_web_photoreal_assets.py \
+            --clean \
+            --asset boulder_01 \
+            --asset shrub_03 \
+            --asset tree_stump_01
+          test -s web/public/vendor/lifelens-nature/manifest.json
+
       - name: Install Web dependencies
         working-directory: web
         run: npm install --ignore-scripts --no-audit --no-fund
@@ -72,6 +97,7 @@ jobs:
           test -s web/dist/launch.html
           test -s web/dist/runtime/lifelens_core.js
           test -s web/dist/runtime/lifelens_core.wasm
+          test -s web/dist/vendor/lifelens-nature/manifest.json
           grep -q "LifeLens Preview" web/dist/launch.html
 
       - name: Publish combined preview
