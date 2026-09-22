@@ -327,6 +327,12 @@ uniform float uLifeLensWindIntensity;`,
   setTerrain(window: TerrainWindow): void {
     const seed = window.worldSeed ?? '0';
     const sampleElevation = createTerrainElevationSampler(window);
+    const chunkMap = new Map(
+      window.chunks.map((chunk) => [
+        `${chunk.x}:${chunk.y}`,
+        chunk,
+      ]),
+    );
     const chunkWorldSize = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
     const halfChunk = chunkWorldSize * 0.5;
     let treeCountTotal = 0;
@@ -469,13 +475,67 @@ uniform float uLifeLensWindIntensity;`,
         Math.min(1, Number(chunk.elevation01) || 0),
       );
       const biome = chunk.biome ?? 'Plains';
+      const neighborForestValues = (
+        ([
+          [1, 0],
+          [-1, 0],
+          [0, 1],
+          [0, -1],
+        ] as Array<[number, number]>)
+          .map(([dx, dy]) => (
+            chunkMap.get(`${chunk.x + dx}:${chunk.y + dy}`)
+          ))
+          .filter((neighbor) => neighbor !== undefined)
+          .map((neighbor) => Math.max(
+            0,
+            Math.min(
+              1,
+              Number(neighbor?.forestCoverage01) || 0,
+            ),
+          ))
+      );
+      const neighborForest = neighborForestValues.length > 0
+        ? neighborForestValues.reduce(
+            (sum, value) => sum + value,
+            0,
+          ) / neighborForestValues.length
+        : forest;
+      const forestEdge = Math.max(
+        0,
+        Math.min(
+          1,
+          Math.abs(forest - neighborForest) * 1.65
+          + (
+            forest > 0.32 && neighborForest < 0.24
+              ? 0.24
+              : 0
+          ),
+        ),
+      );
+      const forestInterior = Math.max(
+        0,
+        Math.min(
+          1,
+          forest * 1.08 - forestEdge * 0.38,
+        ),
+      );
 
       const treeCount = forest < 0.1
         ? 0
-        : Math.min(12, 1 + Math.floor(forest * 11));
+        : Math.min(
+            12,
+            1 + Math.floor(
+              forest * 10.4 + forestInterior * 1.6,
+            ),
+          );
       const shrubCount = Math.min(
         18,
-        Math.floor(shrub * 10 + grass * 5 + forest * 4),
+        Math.floor(
+          shrub * 10
+          + grass * 5
+          + forest * 3
+          + forestEdge * 4.2,
+        ),
       );
       const rockCount = Math.min(8, Math.floor(rock * 8));
 
@@ -496,7 +556,7 @@ uniform float uLifeLensWindIntensity;`,
           + hash01(seed, chunk.x, chunk.y, 1003 + index * 7) * 0.48;
         const asymmetry = (
           hash01(seed, chunk.x, chunk.y, 1004 + index * 7) - 0.5
-        ) * 0.45;
+        ) * (0.32 + forestEdge * 0.42);
         const yaw = hash01(
           seed,
           chunk.x,
@@ -598,10 +658,14 @@ uniform float uLifeLensWindIntensity;`,
             ? 0.76
             : 1;
         const moistureScale = 0.9 + moisture * 0.18;
+        const edgeHeightScale = 0.94
+          + forestInterior * 0.08
+          - forestEdge * 0.04;
         const visualTreeScale =
           treeScale
           * regrowthScale
-          * moistureScale;
+          * moistureScale
+          * edgeHeightScale;
         const trunkHeight =
           3.05
           * visualTreeScale
@@ -735,7 +799,8 @@ uniform float uLifeLensWindIntensity;`,
               * visualTreeScale
               * widthScale
               * canopyFactor
-              * formWidth,
+              * formWidth
+              * (1 + forestEdge * 0.1),
             shape.sy
               * visualTreeScale
               * (0.62 + canopyFactor * 0.38),
@@ -743,7 +808,8 @@ uniform float uLifeLensWindIntensity;`,
               * visualTreeScale
               * widthScale
               * canopyFactor
-              * formWidth,
+              * formWidth
+              * (1 + forestEdge * 0.1),
           );
           this.matrix.compose(this.position, this.rotation, this.scale);
           crownMeshes[layerIndex].setMatrixAt(
