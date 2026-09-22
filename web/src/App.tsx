@@ -194,7 +194,7 @@ function ObserverPanel({
         <h2>카메라</h2>
         <button
           onClick={() => observerActions.recenterObserver()}
-          disabled={controlsDisabled || snapshot.camera.followResidents}
+          disabled={controlsDisabled}
         >
           현재 주민 위치로 돌아가기
         </button>
