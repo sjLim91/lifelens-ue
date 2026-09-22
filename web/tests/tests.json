@@ -8,6 +8,8 @@
       "same-origin runtime proxy backend",
       "new world creation",
       "React observer UI shell",
+      "React observer action controls",
+      "typed observer store readouts",
       "resident projection",
       "resident terrain position overlay",
       "stable resident marker continuity",
@@ -67,6 +69,8 @@
       "natural connected hydrology rendering",
       "Core ecology coverage rendering",
       "continuous dramatic elevation relief presentation",
+      "shared-corner terrain continuity",
+      "connected river and stream topology",
       "clustered vegetation presentation",
       "observer chunk navigation"
     ],
