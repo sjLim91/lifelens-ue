@@ -6,39 +6,41 @@ header = (root / "Source/LifeLens/WorldPresentation/LLWorldPresentationActor.h")
 cpp = (root / "Source/LifeLens/WorldPresentation/LLWorldPresentationActor.cpp").read_text(encoding="utf-8")
 
 for token in (
-    "CoreClearRadiusUU = 360.0f",
-    "ActivityRadiusUU = 1350.0f",
-    "CoreZoneCanopyKeep = 0.30f",
-    "CoreZoneUndergrowthKeep = 0.48f",
-    "bDynamicObserverCanopyVisibility = true",
-    "DynamicCanopyHideRadiusUU = 220.0f",
-    "DynamicCanopyRestoreRadiusUU = 300.0f",
-):
-    assert token in header, f"settlement nature/readability contract missing: {token}"
-
-# Latest-main CI marker: this guard is intentionally versioned with the envelope change.
-# The opening landscape must not return to the old nearly-whole-chunk shaved
-# envelope. The authoritative start chunk is 3200 UU wide in presentation.
-for forbidden in (
-    "CoreClearRadiusUU = 520.0f",
-    "ActivityRadiusUU = 2200.0f",
-    "CoreZoneCanopyKeep = 0.18f",
-    "CoreZoneUndergrowthKeep = 0.32f",
-):
-    assert forbidden not in header, f"over-cleared settlement baseline returned: {forbidden}"
-
-for token in (
-    "AmbientDressingKeepFactor",
+    "Initial spawn is only the world-entry coordinate",
     "FacilityDressingKeepFactor",
     "UpdateDynamicObserverCanopyVisibility",
     "RegisterDynamicCanopyInstance",
     "Authoritative resource patches are never hidden",
 ):
-    assert token in header or token in cpp, f"readability safety path missing: {token}"
+    assert token in header or token in cpp, f"authority-derived readability contract missing: {token}"
 
-# Resource patches remain independent of decorative thinning.
-# Anchor after BuildChunkDressing so the similarly named signature/hash loop
-# earlier in the translation unit cannot produce a false positive.
+# The legacy serialized radius fields may remain for config compatibility, but
+# runtime nature thinning must not read them as a spawn-centered living zone.
+ambient_start = cpp.index("float ALLWorldPresentationActor::AmbientDressingKeepFactor")
+ambient_end = cpp.index("bool ALLWorldPresentationActor::CaptureInitialViewOrigin", ambient_start)
+ambient_block = cpp[ambient_start:ambient_end]
+assert "return FacilityDressingKeepFactor(LocationUU, Layer);" in ambient_block
+assert "CachedSettlementReferenceUU" not in ambient_block
+assert "CoreClearRadiusUU" not in ambient_block
+assert "ActivityRadiusUU" not in ambient_block
+
+sight_start = cpp.index("float ALLWorldPresentationActor::InitialSightlineKeepFactor")
+sight_end = cpp.index("float ALLWorldPresentationActor::ResourcePatchScaleFactor", sight_start)
+sight_block = cpp[sight_start:sight_end]
+assert "return 1.0f;" in sight_block
+assert "CachedSettlementReferenceUU" not in sight_block
+assert "InitialViewOriginUU" not in sight_block
+
+resource_start = cpp.index("float ALLWorldPresentationActor::ResourcePatchScaleFactor")
+resource_end = cpp.index("FVector ALLWorldPresentationActor::ChunkOriginUU", resource_start)
+resource_scale_block = cpp[resource_start:resource_end]
+assert "CachedSettlementReferenceUU" not in resource_scale_block
+assert "CoreClearRadiusUU" not in resource_scale_block
+assert "ActivityRadiusUU" not in resource_scale_block
+assert "CachedFacilityReadabilityCentersUU" in resource_scale_block
+
+# Authoritative resource patches remain independent of ambient decorative
+# thinning. They are always instantiated and only their visual scale may change.
 build_chunk_start = cpp.index(
     "void ALLWorldPresentationActor::BuildChunkDressing"
 )
@@ -54,4 +56,4 @@ resource_block = cpp[resource_start:resource_end]
 assert "AmbientDressingKeepFactor" not in resource_block
 assert "Component->AddInstance" in resource_block
 
-print("LifeLens settlement nature envelope: PASS")
+print("LifeLens authority-derived settlement nature envelope: PASS")
