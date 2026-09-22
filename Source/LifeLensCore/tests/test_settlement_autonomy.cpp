@@ -237,9 +237,12 @@ int main()
     layout.facilities.clear();
     Character& planner=layout.characters.front();
     const GridPos layoutCenter=layout.initialStartRegionCenterGrid();
+    // Spawn is only an entry coordinate. Move the lived activity anchor away
+    // from it and prove new settlement infrastructure follows activity instead.
+    const GridPos emergentCenter{layoutCenter.x+12,layoutCenter.y};
     ConstructedFacility anchorFacility=makeFacilityConstructionSite(
         1,FacilityKind::SleepingPlace,
-        {layoutCenter.x+3,layoutCenter.y},planner.id,layout.minute);
+        {emergentCenter.x+3,emergentCenter.y},planner.id,layout.minute);
     CHECK(anchorFacility.id!=0);
     for(auto& requirement:anchorFacility.requirements){
         requirement.delivered=requirement.required;
@@ -250,13 +253,15 @@ int main()
 
     const SettlementFacilitySiteOpportunity clustered=
         chooseSettlementFacilitySite(
-            layout,planner.id,FacilityKind::Shelter);
+            layout,planner.id,FacilityKind::Shelter,emergentCenter);
     CHECK(clustered.available);
     // Immediate overlap is forbidden (<=2). Terrain authority may now prefer a
     // slightly farther site, but the new foundation must remain a local cluster
     // and never occupy an authoritative surface-water footprint.
     CHECK(manhattan(clustered.pos,anchorFacility.pos)>=3);
     CHECK(manhattan(clustered.pos,anchorFacility.pos)<=8);
+    CHECK(manhattan(clustered.pos,emergentCenter)<=10);
+    CHECK(manhattan(clustered.pos,layoutCenter)>=6);
     const HydrologyFacts clusteredWater=deriveHydrologyFacts(
         layout.genesisIdentity(),
         chunkCoordForGrid(clustered.pos));
@@ -277,7 +282,8 @@ int main()
         chooseSettlementFacilitySite(
             terrainWorld,
             terrainPlanner.id,
-            FacilityKind::Shelter);
+            FacilityKind::Shelter,
+            terrainWorld.initialStartRegionCenterGrid());
     CHECK(terrainSite.available);
     CHECK(settlementTerrainHabitabilityScore(
         terrainWorld,
