@@ -229,6 +229,20 @@ export interface ResidentsPayload {
   residents?: Resident[];
 }
 
+export interface MajorLifeEventRelatedResident {
+  id: string;
+  name?: string;
+}
+
+export interface MajorLifeEventItem {
+  type: string;
+  minute: number;
+  residentId: string;
+  residentName: string;
+  value?: number;
+  related?: MajorLifeEventRelatedResident[];
+}
+
 export interface WorldOverview {
   worldSeed?: string | number;
   minute?: number;
@@ -236,6 +250,7 @@ export interface WorldOverview {
   households?: number;
   activeCouples?: number;
   majorLifeEvents?: number;
+  majorLifeEventItems?: MajorLifeEventItem[];
   [key: string]: unknown;
 }
 

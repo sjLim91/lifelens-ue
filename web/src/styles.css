@@ -62,6 +62,54 @@ button:disabled { opacity: .33; cursor: default; }
 .metrics div, .runtime div { border: 1px solid #28382d; border-radius: 8px; background: #0c140e; padding: .68rem; }
 .metrics span, .runtime span { display: block; color: #7f9283; font-size: .68rem; }
 .metrics b, .runtime b { display: block; margin-top: .2rem; color: #e1ebe2; font-size: 1.04rem; font-weight: 600; }
+.world-event-list {
+  display: grid;
+  gap: .46rem;
+  margin-top: .72rem;
+  padding-top: .64rem;
+  border-top: 1px solid rgba(83, 108, 89, .24);
+}
+.world-event-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .6rem;
+}
+.world-event-heading h3 {
+  margin: 0;
+  color: #879b8a;
+  font-size: .68rem;
+  letter-spacing: .06em;
+}
+.world-event-heading span {
+  color: #718076;
+  font-size: .61rem;
+}
+.world-event-row {
+  display: grid;
+  gap: .18rem;
+  padding: .48rem .54rem;
+  border-left: 2px solid #665d36;
+  border-radius: 0 8px 8px 0;
+  background: rgba(16, 26, 19, .72);
+}
+.world-event-row > div {
+  display: flex;
+  align-items: baseline;
+  gap: .45rem;
+}
+.world-event-row strong {
+  color: #e5eee5;
+  font-size: .7rem;
+}
+.world-event-row span {
+  color: #d7cc91;
+  font-size: .66rem;
+}
+.world-event-row small {
+  color: #738379;
+  font-size: .61rem;
+}
 .runtime { display: grid; gap: .45rem; }
 .runtime b { font-size: .78rem; }
 
