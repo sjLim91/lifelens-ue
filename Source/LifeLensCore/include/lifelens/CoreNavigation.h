@@ -17,6 +17,19 @@
 
 namespace lifelens {
 
+struct CoreNavigationContract {
+    static constexpr double ElevationPenaltyWeight=42.0;
+    static constexpr double TerrainPenaltyWeight=1.75;
+    static constexpr double WeatherFrictionWeight=1.50;
+    static constexpr int MinimumSearchMarginCells=8;
+    static constexpr int MaximumSearchMarginCells=28;
+    static constexpr int SearchMarginDistanceDivisor=3;
+    static constexpr int SearchMarginBaseCells=6;
+    static constexpr long long MinimumExpandedNodes=2048;
+    static constexpr long long MaximumExpandedNodes=40000;
+    static constexpr double CostComparisonEpsilon=CoreNavigationContract::CostComparisonEpsilon;
+};
+
 inline bool sameGridPos(GridPos a, GridPos b)
 {
     return a.x == b.x && a.y == b.y;
@@ -71,9 +84,9 @@ inline double coreGroundTraversalCost(
     const double elevationTo =
         deriveContinuousSurfaceElevation01(identity, to);
     const double elevationPenalty =
-        std::abs(elevationTo - elevationFrom) * 42.0;
+        std::abs(elevationTo - elevationFrom) * CoreNavigationContract::ElevationPenaltyWeight;
     const double terrainPenalty =
-        (1.0 - clampMacro01(region.traversalEase)) * 1.75;
+        (1.0 - clampMacro01(region.traversalEase)) * CoreNavigationContract::TerrainPenaltyWeight;
 
     return 1.0 + terrainPenalty + elevationPenalty;
 }
@@ -92,7 +105,10 @@ inline int coreGroundStepIntervalMinutes(
     return std::max(
         1,
         static_cast<int>(
-            std::ceil(1.0 + 1.50 * consequence.travelFriction01)));
+            std::ceil(
+                1.0
+                + CoreNavigationContract::WeatherFrictionWeight
+                    * consequence.travelFriction01)));
 }
 
 
@@ -201,8 +217,8 @@ struct CoreGroundRouteNodeGreater {
         const CoreGroundRouteNode& a,
         const CoreGroundRouteNode& b) const
     {
-        if(std::abs(a.f - b.f) > 1e-9) return a.f > b.f;
-        if(std::abs(a.g - b.g) > 1e-9) return a.g > b.g;
+        if(std::abs(a.f - b.f) > CoreNavigationContract::CostComparisonEpsilon) return a.f > b.f;
+        if(std::abs(a.g - b.g) > CoreNavigationContract::CostComparisonEpsilon) return a.g > b.g;
         if(a.pos.x != b.pos.x) return a.pos.x > b.pos.x;
         if(a.pos.y != b.pos.y) return a.pos.y > b.pos.y;
         return a.sequence > b.sequence;
@@ -311,8 +327,12 @@ inline bool buildCoreGroundRoute(
 
     const int directDistance = manhattan(start, target);
     const int margin = std::max(
-        8,
-        std::min(28, directDistance / 3 + 6));
+        CoreNavigationContract::MinimumSearchMarginCells,
+        std::min(
+            CoreNavigationContract::MaximumSearchMarginCells,
+            directDistance
+                / CoreNavigationContract::SearchMarginDistanceDivisor
+                + CoreNavigationContract::SearchMarginBaseCells));
     const int minX = std::min(start.x, target.x) - margin;
     const int maxX = std::max(start.x, target.x) + margin;
     const int minY = std::min(start.y, target.y) - margin;
@@ -322,9 +342,9 @@ inline bool buildCoreGroundRoute(
     const int spanY = std::max(1, maxY - minY + 1);
     const std::size_t maxExpanded = static_cast<std::size_t>(
         std::min(
-            40000LL,
+            CoreNavigationContract::MaximumExpandedNodes,
             std::max(
-                2048LL,
+                CoreNavigationContract::MinimumExpandedNodes,
                 static_cast<long long>(spanX)
                     * static_cast<long long>(spanY))));
 
@@ -362,7 +382,7 @@ inline bool buildCoreGroundRoute(
 
         const std::uint64_t currentKey = gridRouteKey(current.pos);
         const auto bestIt = best.find(currentKey);
-        if(bestIt == best.end() || current.g > bestIt->second + 1e-9){
+        if(bestIt == best.end() || current.g > bestIt->second + CoreNavigationContract::CostComparisonEpsilon){
             continue;
         }
 
@@ -391,7 +411,7 @@ inline bool buildCoreGroundRoute(
             const std::uint64_t nextKey = gridRouteKey(next);
             const auto existing = best.find(nextKey);
             if(existing != best.end()
-               && tentative >= existing->second - 1e-9){
+               && tentative >= existing->second - CoreNavigationContract::CostComparisonEpsilon){
                 continue;
             }
 
