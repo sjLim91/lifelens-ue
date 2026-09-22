@@ -1,3 +1,5 @@
+import { OBSERVER_CAMERA_CONTRACT } from '../runtime/lifelens-contract';
+
 export interface CameraInputState {
   angle: number;
   elevation: number;
@@ -54,11 +56,11 @@ export class CameraInput {
     this.angle = options.initialAngle;
     this.elevation = options.initialElevation;
     this.zoom = options.initialZoom;
-    this.minZoom = options.minZoom ?? 0.55;
-    this.maxZoom = options.maxZoom ?? 2.7;
-    this.minElevation = options.minElevation ?? 0.28;
-    this.maxElevation = options.maxElevation ?? 1.18;
-    this.rotateSensitivity = options.rotateSensitivity ?? 0.006;
+    this.minZoom = options.minZoom ?? OBSERVER_CAMERA_CONTRACT.minZoom;
+    this.maxZoom = options.maxZoom ?? OBSERVER_CAMERA_CONTRACT.maxZoom;
+    this.minElevation = options.minElevation ?? OBSERVER_CAMERA_CONTRACT.minElevationRadians;
+    this.maxElevation = options.maxElevation ?? OBSERVER_CAMERA_CONTRACT.maxElevationRadians;
+    this.rotateSensitivity = options.rotateSensitivity ?? OBSERVER_CAMERA_CONTRACT.rotateSensitivity;
 
     canvas.style.touchAction = 'none';
     canvas.addEventListener('contextmenu', this.onContextMenu);
@@ -193,7 +195,7 @@ export class CameraInput {
       && Math.hypot(
         event.clientX - this.tapCandidate.startX,
         event.clientY - this.tapCandidate.startY,
-      ) > 8
+      ) > OBSERVER_CAMERA_CONTRACT.tapMoveThresholdPx
     ) {
       this.tapCandidate.moved = true;
     }
@@ -220,7 +222,7 @@ export class CameraInput {
       if (nextCentroid && this.pinchCentroid) {
         const deltaX = nextCentroid.x - this.pinchCentroid.x;
         const deltaY = nextCentroid.y - this.pinchCentroid.y;
-        if (Math.abs(deltaX) > 0.01 || Math.abs(deltaY) > 0.01) {
+        if (Math.abs(deltaX) > OBSERVER_CAMERA_CONTRACT.pointerMotionEpsilonPx || Math.abs(deltaY) > OBSERVER_CAMERA_CONTRACT.pointerMotionEpsilonPx) {
           // Canonical Android contract: two fingers moving together pan.
           this.options.onPan?.(deltaX, deltaY);
         }
@@ -236,7 +238,7 @@ export class CameraInput {
     const deltaY = event.clientY - this.drag.y;
     this.drag = { x: event.clientX, y: event.clientY };
 
-    if (Math.abs(deltaX) <= 0.01 && Math.abs(deltaY) <= 0.01) return;
+    if (Math.abs(deltaX) <= OBSERVER_CAMERA_CONTRACT.pointerMotionEpsilonPx && Math.abs(deltaY) <= OBSERVER_CAMERA_CONTRACT.pointerMotionEpsilonPx) return;
 
     if (this.dragMode === 'orbit') {
       this.orbit(deltaX, deltaY);
@@ -280,7 +282,9 @@ export class CameraInput {
       this.minZoom,
       Math.min(
         this.maxZoom,
-        this.zoom * Math.exp(-event.deltaY * 0.001),
+        this.zoom * Math.exp(
+          -event.deltaY * OBSERVER_CAMERA_CONTRACT.wheelZoomSensitivity,
+        ),
       ),
     );
     this.emit();
