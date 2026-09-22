@@ -29,6 +29,7 @@ jobs:
         run: |
           python Tools/acquire_photoreal_environment_assets.py \
             --resolution 1k \
+            --inspect-gltf \
             --asset boulder_01 \
             --asset tree_stump_01 \
             --asset shrub_02 \
