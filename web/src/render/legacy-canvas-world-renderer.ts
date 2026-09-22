@@ -147,7 +147,32 @@ export class LegacyCanvasWorldRenderer {
           || value === 'Stream'
           || value === 'River'
         );
-        if (chunk.waterKind === 'River' || chunk.waterKind === 'Stream' || chunk.waterKind === 'Spring') {
+        const streamVisibilityThreshold = zoom < 0.78
+          ? 0.7
+          : zoom < 1.05
+            ? 0.5
+            : zoom < 1.35
+              ? 0.34
+              : 0.18;
+        const shouldRenderFlow = (
+          kind: WaterKind,
+          availability: number,
+        ): boolean => {
+          if (kind === 'River') return true;
+          if (kind === 'Stream') {
+            return clamp01(availability) >= streamVisibilityThreshold;
+          }
+          if (kind === 'Spring') {
+            return zoom >= 1.18 && clamp01(availability) >= 0.42;
+          }
+          return false;
+        };
+        if (
+          shouldRenderFlow(
+            chunk.waterKind,
+            Number(chunk.waterAvailability) || 0,
+          )
+        ) {
           const [cx, cy] = project(lx, ly, e + 0.014);
           const currentElevation = Number(chunk.elevation01) || 0;
           const candidates = ([
@@ -156,7 +181,13 @@ export class LegacyCanvasWorldRenderer {
             .map(([dx, dy]) => {
               const neighbor = chunkMap.get(`${chunk.x + dx}:${chunk.y + dy}`);
               if (!neighbor) return null;
-              const connectsToFlow = flowLike(neighbor.waterKind);
+              const connectsToFlow = (
+                flowLike(neighbor.waterKind)
+                && shouldRenderFlow(
+                  neighbor.waterKind,
+                  Number(neighbor.waterAvailability) || 0,
+                )
+              );
               const connectsToLake = (
                 neighbor.waterKind === 'Lake'
                 && chunk.waterKind !== 'Spring'
@@ -195,13 +226,13 @@ export class LegacyCanvasWorldRenderer {
           }
 
           ctx.strokeStyle = chunk.waterKind === 'River'
-            ? 'rgba(49,126,157,.9)'
-            : 'rgba(69,146,174,.84)';
+            ? 'rgba(47,123,154,.88)'
+            : 'rgba(72,146,172,.72)';
           ctx.lineWidth = Math.max(
-            1.4,
+            1.15,
             Math.min(
-              tile * (chunk.waterKind === 'River' ? 0.13 : 0.075),
-              chunk.waterKind === 'River' ? 7 : 4.5,
+              tile * (chunk.waterKind === 'River' ? 0.11 : 0.055),
+              chunk.waterKind === 'River' ? 6 : 3.4,
             ),
           );
           ctx.lineCap = 'round';
@@ -433,48 +464,101 @@ export class LegacyCanvasWorldRenderer {
         }
     
         const fontSize = Math.max(
-          9.5 * displayDpr,
-          Math.min(12.5 * displayDpr, characterHeightDevicePx * 0.25),
+          8.4 * displayDpr,
+          Math.min(11.2 * displayDpr, characterHeightDevicePx * 0.22),
         );
         ctx.font = `700 ${fontSize}px system-ui`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        const labelHeight = Math.max(20 * displayDpr, fontSize * 1.36);
+        const labelHeight = Math.max(17 * displayDpr, fontSize * 1.28);
         const labelWidth = Math.min(
-          width * 0.34,
+          width * 0.3,
           ctx.measureText(projected.resident.name).width
-            + Math.max(12 * displayDpr, avatarRadius * 0.5),
+            + Math.max(10 * displayDpr, avatarRadius * 0.42),
         );
 
-        const baseLabelY = characterLayer.ready
-          ? py - (characterHeightDevicePx * 1.04) - (labelHeight * 0.18)
-          : py - avatarRadius * 1.7;
+        const headY = characterLayer.ready
+          ? py - characterHeightDevicePx
+          : py - avatarRadius * 1.45;
+        const baseLabelY = headY - labelHeight * 0.62;
+        const horizontalGap = Math.max(
+          labelWidth * 0.72,
+          characterHeightDevicePx * 0.66,
+        );
+        const verticalLift = Math.max(
+          labelHeight * 0.95,
+          characterHeightDevicePx * 0.24,
+        );
 
+        const candidates = [
+          { x: px, y: baseLabelY },
+          { x: px - horizontalGap, y: baseLabelY + labelHeight * 0.12 },
+          { x: px + horizontalGap, y: baseLabelY + labelHeight * 0.12 },
+          { x: px - horizontalGap * 0.82, y: baseLabelY - verticalLift },
+          { x: px + horizontalGap * 0.82, y: baseLabelY - verticalLift },
+          { x: px, y: baseLabelY - verticalLift },
+          { x: px, y: baseLabelY + labelHeight * 1.08 },
+        ];
+
+        let labelX = px;
         let labelY = baseLabelY;
-        let labelLeft = px - labelWidth / 2;
-        let labelRight = px + labelWidth / 2;
-        let labelTop = labelY - labelHeight / 2;
-        let labelBottom = labelY + labelHeight / 2;
+        let bestScore = Number.POSITIVE_INFINITY;
 
-        for (let attempt = 0; attempt < 6; attempt += 1) {
-          const overlaps = placedLabels.some((label) => !(
-            labelRight + 4 * displayDpr < label.left
-            || labelLeft - 4 * displayDpr > label.right
-            || labelBottom + 3 * displayDpr < label.top
-            || labelTop - 3 * displayDpr > label.bottom
-          ));
-          if (!overlaps) break;
+        for (const candidate of candidates) {
+          const left = candidate.x - labelWidth / 2;
+          const right = candidate.x + labelWidth / 2;
+          const top = candidate.y - labelHeight / 2;
+          const bottom = candidate.y + labelHeight / 2;
 
-          labelY -= labelHeight * 1.08;
-          labelTop = labelY - labelHeight / 2;
-          labelBottom = labelY + labelHeight / 2;
+          if (
+            left < 4 * displayDpr
+            || right > width - 4 * displayDpr
+            || top < 4 * displayDpr
+            || bottom > height - 4 * displayDpr
+          ) {
+            continue;
+          }
+
+          let score = Math.abs(candidate.x - px) * 0.12
+            + Math.abs(candidate.y - baseLabelY) * 0.08;
+
+          for (const label of placedLabels) {
+            const overlapWidth = Math.max(
+              0,
+              Math.min(right, label.right) - Math.max(left, label.left),
+            );
+            const overlapHeight = Math.max(
+              0,
+              Math.min(bottom, label.bottom) - Math.max(top, label.top),
+            );
+            score += overlapWidth * overlapHeight * 10;
+          }
+
+          const actorLeft = px - characterHeightDevicePx * 0.36;
+          const actorRight = px + characterHeightDevicePx * 0.36;
+          const actorTop = py - characterHeightDevicePx * 1.04;
+          const actorBottom = py + characterHeightDevicePx * 0.08;
+          const actorOverlapWidth = Math.max(
+            0,
+            Math.min(right, actorRight) - Math.max(left, actorLeft),
+          );
+          const actorOverlapHeight = Math.max(
+            0,
+            Math.min(bottom, actorBottom) - Math.max(top, actorTop),
+          );
+          score += actorOverlapWidth * actorOverlapHeight * 16;
+
+          if (score < bestScore) {
+            bestScore = score;
+            labelX = candidate.x;
+            labelY = candidate.y;
+          }
         }
 
-        if (labelTop < 4 * displayDpr) {
-          labelY = baseLabelY + labelHeight * 1.15;
-          labelTop = labelY - labelHeight / 2;
-          labelBottom = labelY + labelHeight / 2;
-        }
+        const labelLeft = labelX - labelWidth / 2;
+        const labelRight = labelX + labelWidth / 2;
+        const labelTop = labelY - labelHeight / 2;
+        const labelBottom = labelY + labelHeight / 2;
 
         placedLabels.push({
           left: labelLeft,
@@ -483,21 +567,33 @@ export class LegacyCanvasWorldRenderer {
           bottom: labelBottom,
         });
 
+        if (
+          Math.abs(labelX - px) > labelWidth * 0.32
+          || Math.abs(labelY - baseLabelY) > labelHeight * 0.55
+        ) {
+          ctx.strokeStyle = 'rgba(228,238,226,.28)';
+          ctx.lineWidth = Math.max(0.75 * displayDpr, 1);
+          ctx.beginPath();
+          ctx.moveTo(labelX, labelY + labelHeight * 0.48);
+          ctx.lineTo(px, headY + Math.max(1.5 * displayDpr, 2));
+          ctx.stroke();
+        }
+
         ctx.fillStyle = 'rgba(5,12,8,.9)';
-        ctx.strokeStyle = 'rgba(221,236,220,.16)';
-        ctx.lineWidth = Math.max(1 * displayDpr, avatarRadius * 0.03);
+        ctx.strokeStyle = 'rgba(221,236,220,.14)';
+        ctx.lineWidth = Math.max(0.9 * displayDpr, avatarRadius * 0.025);
         ctx.beginPath();
         ctx.roundRect(
           labelLeft,
           labelTop,
           labelWidth,
           labelHeight,
-          Math.max(5 * displayDpr, avatarRadius * 0.18),
+          Math.max(4.5 * displayDpr, avatarRadius * 0.16),
         );
         ctx.fill();
         ctx.stroke();
         ctx.fillStyle = '#f4f8f2';
-        ctx.fillText(projected.resident.name, px, labelY);
+        ctx.fillText(projected.resident.name, labelX, labelY);
       }
       characterLayer.setResidents(characterPlacements);
       runtimeDiagnostics.recordRender(performance.now() - renderStartedAt);
