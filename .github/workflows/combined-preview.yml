@@ -1,0 +1,84 @@
+name: LifeLens Combined Preview
+
+on:
+  push:
+    branches:
+      - preview/all-current-fixes-20260922
+    paths:
+      - 'web/**'
+      - 'Source/LifeLensCore/**'
+      - 'Clients/Web/**'
+      - 'Tools/build_web_client.py'
+      - '.github/workflows/combined-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lifelens-combined-preview
+  cancel-in-progress: true
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout combined preview
+        uses: actions/checkout@v4
+
+      - name: Install Emscripten
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y emscripten
+
+      - name: Build current Core WASM
+        run: python Tools/build_web_client.py
+
+      - name: Stage current runtime into Web
+        run: |
+          rm -rf web/public/runtime
+          mkdir -p web/public/runtime
+          cp Clients/Web/generated/lifelens_core.js web/public/runtime/
+          cp Clients/Web/generated/lifelens_core.wasm web/public/runtime/
+          (
+            cd web/public/runtime
+            sha256sum lifelens_core.js lifelens_core.wasm > SHA256SUMS.txt
+            printf '%s\n' "$GITHUB_SHA" > RUNTIME_COMMIT.txt
+          )
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package.json
+
+      - name: Install Web dependencies
+        working-directory: web
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Typecheck
+        working-directory: web
+        run: npm run typecheck
+
+      - name: Build Web
+        working-directory: web
+        run: npm run build
+
+      - name: Verify combined preview
+        run: |
+          test -s web/dist/index.html
+          test -s web/dist/launch.html
+          test -s web/dist/runtime/lifelens_core.js
+          test -s web/dist/runtime/lifelens_core.wasm
+          grep -q "LifeLens Preview" web/dist/launch.html
+
+      - name: Publish combined preview
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./web/dist
+          publish_branch: gh-pages
+          force_orphan: true
+          commit_message: "combined preview: ${{ github.sha }}"
