@@ -27,7 +27,7 @@ WEB_ASSET_BUDGETS = {
     "dead_tree_trunk": 14,
     "tree_small_02": 18,
     "fir_sapling": 18,
-    "pine_sapling_small": 18,
+    "pine_sapling_small": 24,
 }
 WEB_BASELINE_ASSETS = (
     "boulder_01",
