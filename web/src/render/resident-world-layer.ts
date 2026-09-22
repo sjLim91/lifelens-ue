@@ -12,6 +12,7 @@ import {
   WORLD_GRID_CONTRACT,
   normalizeSimulationSpeed,
 } from '../runtime/lifelens-contract';
+import type { SimulationSpeed } from '../runtime/lifelens-contract';
 import { createTerrainElevationSampler } from './terrain-geometry';
 import { residentToWorldPosition } from './resident-world-coordinates';
 
@@ -113,7 +114,8 @@ export class ResidentWorldLayer {
   private pendingTerrain: TerrainWindow | null = null;
   private pendingCenterX = 0;
   private pendingCenterY = 0;
-  private simulationSpeed = SIMULATION_TIME_CONTRACT.defaultSpeed;
+  private simulationSpeed: SimulationSpeed =
+    SIMULATION_TIME_CONTRACT.defaultSpeed;
 
   constructor() {
     this.selectionRing.rotation.x = -Math.PI * 0.5;
