@@ -2,8 +2,22 @@ import * as THREE from 'three';
 import type { TerrainWindow } from '../runtime/core-types';
 import { WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
 import { createTerrainElevationSampler } from './terrain-geometry';
+import { InstancedTreeAsset } from './tree-asset-layer';
+import {
+  TREE_ASSET_CONTRACT,
+  TREE_BARK_PALETTE,
+  TREE_CROWN_LOBE_LAYOUT,
+  TREE_FOLIAGE_PALETTE,
+  VEGETATION_PRESENTATION_CONTRACT,
+  useMobileVegetationProfile,
+} from './vegetation-profile';
 
-const MAX_TREES = 4096;
+const MAX_TREES = VEGETATION_PRESENTATION_CONTRACT.maxTrees;
+const MAX_BRANCHES =
+  MAX_TREES * VEGETATION_PRESENTATION_CONTRACT.branchCountPerTree;
+const MAX_CROWN_LOBES =
+  MAX_TREES * VEGETATION_PRESENTATION_CONTRACT.crownLobeCountPerTree;
+const UP = new THREE.Vector3(0, 1, 0);
 
 function hash01(seed: string, x: number, y: number, index: number): number {
   const input = `${seed}:${x}:${y}:${index}`;
@@ -19,66 +33,117 @@ function hash01(seed: string, x: number, y: number, index: number): number {
 export class VegetationLayer {
   readonly group = new THREE.Group();
 
-  private readonly crownGeometry = new THREE.ConeGeometry(0.72, 3.8, 7);
-  private readonly trunkGeometry = new THREE.CylinderGeometry(0.12, 0.17, 1.7, 6);
-  private readonly crownMaterial = new THREE.MeshStandardMaterial({
-    color: 0x214b27,
-    roughness: 0.94,
-    metalness: 0,
+  private readonly mobileProfile = useMobileVegetationProfile();
+  private readonly treeMatrices = new Float32Array(MAX_TREES * 16);
+  private readonly crownGeometry = new THREE.IcosahedronGeometry(1, 0);
+  private readonly trunkGeometry = new THREE.CylinderGeometry(
+    0.72,
+    1,
+    1,
+    8,
+  );
+  private readonly branchGeometry = new THREE.CylinderGeometry(
+    0.5,
+    1,
+    1,
+    6,
+  );
+  private readonly crownMaterial = new THREE.MeshLambertMaterial({
+    color: 0xffffff,
   });
-  private readonly trunkMaterial = new THREE.MeshStandardMaterial({
-    color: 0x4b3926,
-    roughness: 0.96,
-    metalness: 0,
+  private readonly barkMaterial = new THREE.MeshLambertMaterial({
+    color: 0xffffff,
   });
   private readonly crowns = new THREE.InstancedMesh(
     this.crownGeometry,
     this.crownMaterial,
-    MAX_TREES,
+    MAX_CROWN_LOBES,
   );
   private readonly trunks = new THREE.InstancedMesh(
     this.trunkGeometry,
-    this.trunkMaterial,
+    this.barkMaterial,
     MAX_TREES,
   );
+  private readonly branches = new THREE.InstancedMesh(
+    this.branchGeometry,
+    this.barkMaterial,
+    MAX_BRANCHES,
+  );
+  private readonly actualTrees = new InstancedTreeAsset({
+    maxInstances: MAX_TREES,
+    url: TREE_ASSET_CONTRACT.modelUrl,
+    onReady: () => this.setFallbackVisible(false),
+  });
   private readonly matrix = new THREE.Matrix4();
   private readonly rotation = new THREE.Quaternion();
+  private readonly branchRotation = new THREE.Quaternion();
   private readonly scale = new THREE.Vector3();
   private readonly position = new THREE.Vector3();
+  private readonly branchDirection = new THREE.Vector3();
+  private readonly treeColor = new THREE.Color();
 
   constructor() {
-    this.crowns.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    this.trunks.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    this.crowns.castShadow = false;
-    this.crowns.receiveShadow = false;
-    this.trunks.castShadow = false;
-    this.trunks.receiveShadow = false;
+    for (const mesh of [this.crowns, this.trunks, this.branches]) {
+      mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      mesh.castShadow = false;
+      mesh.receiveShadow = false;
+      mesh.frustumCulled = true;
+    }
+
     this.group.add(this.trunks);
+    this.group.add(this.branches);
     this.group.add(this.crowns);
+    this.group.add(this.actualTrees.group);
   }
 
   setTerrain(window: TerrainWindow): void {
     const seed = window.worldSeed ?? '0';
     const sampleElevation = createTerrainElevationSampler(window);
-    let count = 0;
+    const profile = VEGETATION_PRESENTATION_CONTRACT;
+    const maxTreesPerChunk = this.mobileProfile
+      ? profile.mobileMaxTreesPerChunk
+      : profile.desktopMaxTreesPerChunk;
+    const chunkWorldSize = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
+    const halfChunk = chunkWorldSize * 0.5;
+    const placementSpan =
+      chunkWorldSize * profile.placementSpanChunkRatio;
+
+    let treeIndex = 0;
+    let branchIndex = 0;
+    let crownIndex = 0;
 
     for (const chunk of window.chunks) {
+      if (treeIndex >= MAX_TREES) break;
+
       const forest = Math.max(
         0,
         Math.min(1, Number(chunk.forestCoverage01) || 0),
       );
-      const treeCount = forest < 0.12
+      const treesInChunk = forest < profile.minForestCoverage01
         ? 0
-        : Math.min(9, 1 + Math.floor(forest * 8));
+        : Math.min(
+          maxTreesPerChunk,
+          1 + Math.floor(forest * maxTreesPerChunk),
+        );
 
-      for (let index = 0; index < treeCount && count < MAX_TREES; index += 1) {
-        const offsetX = (hash01(seed, chunk.x, chunk.y, index * 2) - 0.5) * 6.5;
-        const offsetZ = (hash01(seed, chunk.x, chunk.y, index * 2 + 1) - 0.5) * 6.5;
-        const treeScale = 0.82 + hash01(seed, chunk.x, chunk.y, index + 19) * 0.68;
-        const widthScale = 0.82 + hash01(seed, chunk.x, chunk.y, index + 31) * 0.36;
-        const yaw = hash01(seed, chunk.x, chunk.y, index + 47) * Math.PI * 2;
-        const chunkWorldSize = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
-        const halfChunk = chunkWorldSize * 0.5;
+      for (
+        let localTreeIndex = 0;
+        localTreeIndex < treesInChunk && treeIndex < MAX_TREES;
+        localTreeIndex += 1
+      ) {
+        const offsetX =
+          (hash01(seed, chunk.x, chunk.y, localTreeIndex * 2) - 0.5)
+          * placementSpan;
+        const offsetZ =
+          (hash01(seed, chunk.x, chunk.y, localTreeIndex * 2 + 1) - 0.5)
+          * placementSpan;
+        const treeScale =
+          0.9 + hash01(seed, chunk.x, chunk.y, localTreeIndex + 19) * 0.55;
+        const widthScale =
+          0.88 + hash01(seed, chunk.x, chunk.y, localTreeIndex + 31) * 0.26;
+        const yaw =
+          hash01(seed, chunk.x, chunk.y, localTreeIndex + 47)
+          * Math.PI * 2;
         const worldX =
           (chunk.x - window.centerChunkX) * chunkWorldSize + offsetX;
         const worldZ =
@@ -97,54 +162,225 @@ export class VegetationLayer {
           localX01,
           localY01,
         ) * WORLD_GRID_CONTRACT.elevationScale;
-        const trunkHeight = 1.7 * treeScale;
-        const crownHeight = 3.8 * treeScale;
 
-        this.rotation.setFromAxisAngle(
-          new THREE.Vector3(0, 1, 0),
-          yaw,
+        const fullTreeHeight = profile.treeHeightWorldUnits * treeScale;
+        this.rotation.setFromAxisAngle(UP, yaw);
+        this.position.set(worldX, groundY, worldZ);
+        this.scale.set(
+          fullTreeHeight * widthScale,
+          fullTreeHeight,
+          fullTreeHeight * widthScale,
         );
+        this.matrix.compose(this.position, this.rotation, this.scale);
+        this.matrix.toArray(this.treeMatrices, treeIndex * 16);
+
+        const trunkHeight = profile.trunkHeightWorldUnits * treeScale;
+        const trunkRadius =
+          profile.trunkRadiusWorldUnits * treeScale * widthScale;
 
         this.position.set(
           worldX,
-          groundY + (trunkHeight * 0.5),
+          groundY + trunkHeight * 0.5,
           worldZ,
         );
         this.scale.set(
-          treeScale * widthScale,
-          treeScale,
-          treeScale * widthScale,
+          trunkRadius,
+          trunkHeight,
+          trunkRadius,
         );
         this.matrix.compose(this.position, this.rotation, this.scale);
-        this.trunks.setMatrixAt(count, this.matrix);
+        this.trunks.setMatrixAt(treeIndex, this.matrix);
 
-        this.position.set(
-          worldX,
-          groundY + trunkHeight + (crownHeight * 0.5) - (0.35 * treeScale),
-          worldZ,
+        const barkColorIndex = Math.min(
+          TREE_BARK_PALETTE.length - 1,
+          Math.floor(
+            hash01(seed, chunk.x, chunk.y, localTreeIndex + 73)
+            * TREE_BARK_PALETTE.length,
+          ),
         );
-        this.scale.set(
-          treeScale * widthScale,
-          treeScale,
-          treeScale * widthScale,
-        );
-        this.matrix.compose(this.position, this.rotation, this.scale);
-        this.crowns.setMatrixAt(count, this.matrix);
+        this.treeColor.setHex(TREE_BARK_PALETTE[barkColorIndex]);
+        this.trunks.setColorAt(treeIndex, this.treeColor);
 
-        count += 1;
+        for (
+          let localBranchIndex = 0;
+          localBranchIndex < profile.branchCountPerTree
+            && branchIndex < MAX_BRANCHES;
+          localBranchIndex += 1
+        ) {
+          const branchYaw =
+            yaw
+            + (localBranchIndex / profile.branchCountPerTree)
+              * Math.PI * 2
+            + (
+              hash01(
+                seed,
+                chunk.x,
+                chunk.y,
+                localTreeIndex * 17 + localBranchIndex + 101,
+              ) - 0.5
+            ) * 0.55;
+          const branchTilt =
+            0.82
+            + hash01(
+              seed,
+              chunk.x,
+              chunk.y,
+              localTreeIndex * 17 + localBranchIndex + 151,
+            ) * 0.28;
+          const branchLength =
+            profile.branchLengthWorldUnits
+            * treeScale
+            * (
+              0.82
+              + hash01(
+                seed,
+                chunk.x,
+                chunk.y,
+                localTreeIndex * 17 + localBranchIndex + 211,
+              ) * 0.36
+            );
+          const branchRadius =
+            profile.branchRadiusWorldUnits * treeScale * widthScale;
+          const branchStartHeight =
+            trunkHeight * (0.48 + localBranchIndex * 0.075);
+
+          this.branchDirection.set(
+            Math.cos(branchYaw) * Math.sin(branchTilt),
+            Math.cos(branchTilt),
+            Math.sin(branchYaw) * Math.sin(branchTilt),
+          ).normalize();
+          this.branchRotation.setFromUnitVectors(
+            UP,
+            this.branchDirection,
+          );
+          this.position.set(
+            worldX + this.branchDirection.x * branchLength * 0.5,
+            groundY
+              + branchStartHeight
+              + this.branchDirection.y * branchLength * 0.5,
+            worldZ + this.branchDirection.z * branchLength * 0.5,
+          );
+          this.scale.set(
+            branchRadius,
+            branchLength,
+            branchRadius,
+          );
+          this.matrix.compose(
+            this.position,
+            this.branchRotation,
+            this.scale,
+          );
+          this.branches.setMatrixAt(branchIndex, this.matrix);
+          this.branches.setColorAt(branchIndex, this.treeColor);
+          branchIndex += 1;
+        }
+
+        const foliageColorIndex = Math.min(
+          TREE_FOLIAGE_PALETTE.length - 1,
+          Math.floor(
+            hash01(seed, chunk.x, chunk.y, localTreeIndex + 281)
+            * TREE_FOLIAGE_PALETTE.length,
+          ),
+        );
+        const cosYaw = Math.cos(yaw);
+        const sinYaw = Math.sin(yaw);
+        const crownRadius =
+          profile.crownRadiusWorldUnits * treeScale * widthScale;
+
+        for (
+          let lobeIndex = 0;
+          lobeIndex < TREE_CROWN_LOBE_LAYOUT.length
+            && crownIndex < MAX_CROWN_LOBES;
+          lobeIndex += 1
+        ) {
+          const lobe = TREE_CROWN_LOBE_LAYOUT[lobeIndex];
+          const localX = lobe.x * crownRadius;
+          const localZ = lobe.z * crownRadius;
+          const rotatedX = localX * cosYaw - localZ * sinYaw;
+          const rotatedZ = localX * sinYaw + localZ * cosYaw;
+          const lobeJitter =
+            0.93
+            + hash01(
+              seed,
+              chunk.x,
+              chunk.y,
+              localTreeIndex * 23 + lobeIndex + 337,
+            ) * 0.14;
+          const lobeRadius = crownRadius * lobe.radius * lobeJitter;
+
+          this.position.set(
+            worldX + rotatedX,
+            groundY + fullTreeHeight * lobe.y,
+            worldZ + rotatedZ,
+          );
+          this.scale.set(
+            lobeRadius,
+            lobeRadius * (0.88 + lobeIndex * 0.025),
+            lobeRadius,
+          );
+          this.matrix.compose(this.position, this.rotation, this.scale);
+          this.crowns.setMatrixAt(crownIndex, this.matrix);
+
+          this.treeColor.setHex(
+            TREE_FOLIAGE_PALETTE[foliageColorIndex],
+          );
+          this.treeColor.offsetHSL(
+            0,
+            0,
+            (
+              hash01(
+                seed,
+                chunk.x,
+                chunk.y,
+                localTreeIndex * 29 + lobeIndex + 401,
+              ) - 0.5
+            ) * 0.08,
+          );
+          this.crowns.setColorAt(crownIndex, this.treeColor);
+          crownIndex += 1;
+        }
+
+        treeIndex += 1;
       }
     }
 
-    this.crowns.count = count;
-    this.trunks.count = count;
-    this.crowns.instanceMatrix.needsUpdate = true;
+    this.actualTrees.setInstances(this.treeMatrices, treeIndex);
+
+    this.trunks.count = treeIndex;
+    this.branches.count = branchIndex;
+    this.crowns.count = crownIndex;
+
     this.trunks.instanceMatrix.needsUpdate = true;
+    this.branches.instanceMatrix.needsUpdate = true;
+    this.crowns.instanceMatrix.needsUpdate = true;
+
+    if (this.trunks.instanceColor) {
+      this.trunks.instanceColor.needsUpdate = true;
+    }
+    if (this.branches.instanceColor) {
+      this.branches.instanceColor.needsUpdate = true;
+    }
+    if (this.crowns.instanceColor) {
+      this.crowns.instanceColor.needsUpdate = true;
+    }
+
+    this.trunks.computeBoundingSphere();
+    this.branches.computeBoundingSphere();
+    this.crowns.computeBoundingSphere();
   }
 
   dispose(): void {
+    this.actualTrees.dispose();
     this.crownGeometry.dispose();
     this.trunkGeometry.dispose();
+    this.branchGeometry.dispose();
     this.crownMaterial.dispose();
-    this.trunkMaterial.dispose();
+    this.barkMaterial.dispose();
+  }
+
+  private setFallbackVisible(visible: boolean): void {
+    this.trunks.visible = visible;
+    this.branches.visible = visible;
+    this.crowns.visible = visible;
   }
 }

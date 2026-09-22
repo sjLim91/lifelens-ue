@@ -25,3 +25,13 @@ See:
 ## Current implementation map
 
 See [LIFELENS_WEB_IMPLEMENTATION_MAP.md](../docs/web/LIFELENS_WEB_IMPLEMENTATION_MAP.md) for the module-by-module development state and migration boundary.
+
+
+## Runtime visual assets
+
+The web observer may use pinned zero-cost runtime assets when they materially improve presentation without changing simulation authority.
+
+- Vegetation: Quaternius Stylized Nature MegaKit `tree3.glb`, CC0-1.0, pinned through commit `0c41526d8d4130c37c15e219c2c3737fa8cb4ad8` from `anshaneja5/skyline-run`.
+- The tree GLB is approximately 332 KB and is normalized once, then rendered through `InstancedMesh` batches.
+- Compact/coarse-pointer devices reduce vegetation density while keeping the same tree asset; the visual does not fall back to cone/cylinder trees for performance reasons.
+- A procedural broadleaf mesh remains only as a network/asset-load failure fallback.
