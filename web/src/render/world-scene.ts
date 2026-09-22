@@ -5,6 +5,10 @@ import type {
   TerrainChunk,
   TerrainWindow,
 } from '../runtime/core-types';
+import {
+  OBSERVER_CAMERA_CONTRACT,
+  WORLD_GRID_CONTRACT,
+} from '../runtime/lifelens-contract';
 import { AtmosphereLayer } from './atmosphere-layer';
 import { ResidentWorldLayer } from './resident-world-layer';
 import { createTerrainGeometryBuilder } from './terrain-geometry';
@@ -45,9 +49,9 @@ export class WorldScene {
   private currentCameraState: WorldSceneCameraState = {
     centerChunkX: 0,
     centerChunkY: 0,
-    zoom: 1,
-    angle: -0.68,
-    elevation: 0.67,
+    zoom: OBSERVER_CAMERA_CONTRACT.defaultDesktopZoom,
+    angle: OBSERVER_CAMERA_CONTRACT.defaultAngleRadians,
+    elevation: OBSERVER_CAMERA_CONTRACT.defaultElevationRadians,
     panX: 0,
     panZ: 0,
   };
@@ -159,8 +163,8 @@ export class WorldScene {
   setTerrain(window: TerrainWindow): void {
     const active = new Set<string>();
     const buildGeometry = createTerrainGeometryBuilder(window, {
-      chunkWorldSize: 8,
-      elevationScale: 48,
+      chunkWorldSize: WORLD_GRID_CONTRACT.worldUnitsPerChunk,
+      elevationScale: WORLD_GRID_CONTRACT.elevationScale,
     });
     const chunkMap = new Map(
       window.chunks.map((chunk) => [`${chunk.x}:${chunk.y}`, chunk]),
@@ -257,7 +261,7 @@ export class WorldScene {
     chunk: TerrainChunk,
     window: TerrainWindow,
   ): void {
-    const chunkWorldSize = 8;
+    const chunkWorldSize = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
     mesh.position.set(
       (chunk.x - window.centerChunkX) * chunkWorldSize,
       0,
