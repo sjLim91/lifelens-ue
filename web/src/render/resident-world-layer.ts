@@ -240,7 +240,7 @@ function makeStatusSprite(): THREE.Sprite {
     depthWrite: false,
   });
   const sprite = new THREE.Sprite(material);
-  sprite.scale.set(7.2, 1.55, 1);
+  sprite.scale.set(5.25, 1.08, 1);
   sprite.renderOrder = 20;
   sprite.visible = false;
   return sprite;
@@ -261,17 +261,20 @@ function updateStatusSprite(sprite: THREE.Sprite, text: string): void {
     return;
   }
 
-  context.fillStyle = 'rgba(7, 13, 9, 0.86)';
-  context.roundRect(8, 8, 624, 112, 26);
+  const background = context.createLinearGradient(0, 0, 640, 128);
+  background.addColorStop(0, 'rgba(9, 18, 12, 0.78)');
+  background.addColorStop(1, 'rgba(17, 31, 21, 0.70)');
+  context.fillStyle = background;
+  context.roundRect(12, 14, 616, 100, 24);
   context.fill();
-  context.strokeStyle = 'rgba(174, 202, 178, 0.58)';
-  context.lineWidth = 3;
+  context.strokeStyle = 'rgba(177, 204, 181, 0.38)';
+  context.lineWidth = 2;
   context.stroke();
-  context.fillStyle = '#f0f6ef';
-  context.font = '600 34px sans-serif';
+  context.fillStyle = '#edf5ed';
+  context.font = '600 30px sans-serif';
   context.textAlign = 'center';
   context.textBaseline = 'middle';
-  context.fillText(text, 320, 64, 590);
+  context.fillText(text, 320, 64, 574);
 
   const nextTexture = new THREE.CanvasTexture(canvas);
   nextTexture.colorSpace = THREE.SRGBColorSpace;
@@ -315,6 +318,17 @@ export class ResidentWorldLayer {
   readonly group = new THREE.Group();
 
   private readonly loader = new GLTFLoader();
+  private readonly socialLinkGeometry = new THREE.BufferGeometry();
+  private readonly socialLinkMaterial = new THREE.LineBasicMaterial({
+    color: 0xb7d7bd,
+    transparent: true,
+    opacity: 0.34,
+    depthWrite: false,
+  });
+  private readonly socialLinks = new THREE.LineSegments(
+    this.socialLinkGeometry,
+    this.socialLinkMaterial,
+  );
   private readonly actors = new Map<string, ResidentActor>();
   private readonly selectionRing = new THREE.Mesh(
     new THREE.RingGeometry(0.62, 0.84, 36),
@@ -336,11 +350,15 @@ export class ResidentWorldLayer {
   private pendingCenterY = 0;
   private simulationSpeed: SimulationSpeed =
     SIMULATION_TIME_CONTRACT.defaultSpeed;
+  private selectionPulseSeconds = 0;
 
   constructor() {
     this.selectionRing.rotation.x = -Math.PI * 0.5;
     this.selectionRing.visible = false;
     this.selectionRing.renderOrder = 4;
+    this.socialLinks.renderOrder = 8;
+    this.socialLinks.frustumCulled = false;
+    this.group.add(this.socialLinks);
     this.group.add(this.selectionRing);
     void this.loadAssets();
   }
@@ -388,7 +406,9 @@ export class ResidentWorldLayer {
     for (const [id, actor] of this.actors) {
       const visible = activeIds.has(id);
       actor.root.visible = visible;
-      if (!visible) actor.statusSprite.visible = false;
+      if (!visible) {
+        actor.statusSprite.visible = false;
+      }
     }
 
     for (const resident of residents) {
@@ -447,6 +467,8 @@ export class ResidentWorldLayer {
       if (actor.statusText !== nextStatusText) {
         actor.statusText = nextStatusText;
         updateStatusSprite(actor.statusSprite, nextStatusText);
+      } else {
+        actor.statusSprite.visible = Boolean(nextStatusText);
       }
       actor.target.copy(next);
 
@@ -543,13 +565,15 @@ export class ResidentWorldLayer {
       actor.root.position.copy(actor.current);
       actor.statusSprite.position.set(
         actor.current.x,
-        actor.current.y + 2.65,
+        actor.current.y + 2.48 + (stableHash(actor.statusText || 'idle') % 3) * 0.12,
         actor.current.z,
       );
       this.setAction(actor, moving);
       actor.mixer.update(dt);
     }
 
+    this.updateSocialLinks();
+    this.selectionPulseSeconds += dt;
     this.updateSelectionRing();
   }
 
@@ -570,9 +594,63 @@ export class ResidentWorldLayer {
       this.group.remove(actor.statusSprite);
     }
     this.actors.clear();
+    this.socialLinkGeometry.dispose();
+    this.socialLinkMaterial.dispose();
     this.selectionRing.geometry.dispose();
     const selectionMaterial = this.selectionRing.material;
     if (!Array.isArray(selectionMaterial)) selectionMaterial.dispose();
+  }
+
+  private updateSocialLinks(): void {
+    const positions: number[] = [];
+    const seen = new Set<string>();
+
+    for (const resident of this.pendingResidents) {
+      const action = resident.contextAction;
+      if (
+        !action?.active
+        || (
+          action.kind !== 'Social'
+          && action.kind !== 'KnowledgeTeaching'
+          && action.kind !== 'Parenting'
+        )
+      ) {
+        continue;
+      }
+
+      const targetId = action.targetResidentId ?? '';
+      if (!targetId) continue;
+      const sourceActor = this.actors.get(resident.id);
+      const targetActor = this.actors.get(targetId);
+      if (
+        !sourceActor?.initialized
+        || !targetActor?.initialized
+        || !sourceActor.root.visible
+        || !targetActor.root.visible
+      ) {
+        continue;
+      }
+
+      const pairKey = [resident.id, targetId].sort().join(':');
+      if (seen.has(pairKey)) continue;
+      seen.add(pairKey);
+
+      positions.push(
+        sourceActor.current.x,
+        sourceActor.current.y + 1.0,
+        sourceActor.current.z,
+        targetActor.current.x,
+        targetActor.current.y + 1.0,
+        targetActor.current.z,
+      );
+    }
+
+    this.socialLinkGeometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute(positions, 3),
+    );
+    this.socialLinkGeometry.computeBoundingSphere();
+    this.socialLinks.visible = positions.length > 0;
   }
 
   private updateSelectionRing(): void {
@@ -590,6 +668,12 @@ export class ResidentWorldLayer {
       actor.current.y + 0.035,
       actor.current.z,
     );
+    const pulse = 1 + Math.sin(this.selectionPulseSeconds * 4.2) * 0.07;
+    this.selectionRing.scale.setScalar(pulse);
+    const material = this.selectionRing.material;
+    if (!Array.isArray(material)) {
+      material.opacity = 0.56 + Math.sin(this.selectionPulseSeconds * 4.2) * 0.12;
+    }
     this.selectionRing.visible = true;
   }
 
