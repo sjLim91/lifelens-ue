@@ -93,3 +93,18 @@ Fixed in GitHub development source:
 - Nameplates perform simple collision avoidance and stack vertically when residents cluster.
 
 These fixes are covered by the web regression contract and are automatically published to the static preview branch after typecheck/build succeeds.
+
+
+## 2026-09-22 real-world scale + clock-resume hardening
+
+Parallel web work now treats visible scale as a simulation contract rather than a cosmetic tweak.
+
+- Legacy resident body height is reduced from billboard-like tile scale toward map scale.
+- Resident collision/separation radius follows the reduced body scale instead of forcing people apart like oversized markers.
+- Forest clusters can contain more mature trees at close zoom.
+- Tree crown/trunk scale is increased so mature vegetation reads several times taller than nearby residents.
+- Labels remain screen-readable independently from resident body scale; body geometry is no longer enlarged just to preserve text readability.
+- SimulationClock now listens for browser visibility resume. When a throttled/backgrounded tab becomes visible it immediately catches up elapsed wall time and refreshes the observer, instead of waiting for the next interval and appearing frozen.
+- The web regression contract explicitly checks both human-to-tree scale and visibility-resume clock behavior.
+
+Deployment policy is unchanged: keep development in GitHub/static preview flow and do not touch AppDeploy unless explicitly requested.

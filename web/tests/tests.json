@@ -19,6 +19,7 @@
       "normalized map-scale 3D residents",
       "zoom-coupled resident scale",
       "zoom-coupled resident spacing",
+      "real-world human to vegetation scale",
       "authoritative Core resident sex",
       "deterministic male and female appearance variants",
       "sex-aware skinned geometry deformation",
@@ -40,9 +41,10 @@
       "Enter 12345 in WorldSeed and click NEW WORLD",
       "Verify the resident cards include both Male and Female Core sex values",
       "Observe all four founders through several automatic simulation refreshes and verify none blink out between refreshes",
-      "Pinch or wheel through multiple zoom levels and verify resident bodies stay proportionate to the terrain instead of remaining fixed-size"
+      "Pinch or wheel through multiple zoom levels and verify resident bodies stay proportionate to the terrain instead of remaining fixed-size",
+      "At close zoom compare a resident against nearby mature trees and verify the resident no longer reads as taller than the vegetation"
     ],
-    "expected": "The status shows Core WASM LIVE, WorldSeed 12345 is shown, Living is 4, all four resident cards and 3D residents remain continuously visible without one-refresh disappearance/reappearance, the founder cards expose authoritative Core sex values and the terrain shows visually distinct male and female 3D residents with different skinned body geometry, garment silhouettes, deterministic clothing, proportions, and head-locked hair while remaining map-scale and clustered near their authoritative Core positions with readable labels, resident body size and separation change with the same world zoom as the terrain while labels remain readable, movement between authoritative Core positions is visually smoothed, movement uses walking animation, supported Core activities select contextual idle/talking/sitting/interact motions, resident animation phases are visibly desynchronized, and compact fallback markers appear only while the 3D asset is still loading or if it fails. Resident labels avoid actor/label overlap while staying close to their resident; displaced labels use a subtle leader line instead of floating ambiguously."
+    "expected": "The status shows Core WASM LIVE, WorldSeed 12345 is shown, Living is 4, all four resident cards and 3D residents remain continuously visible without one-refresh disappearance/reappearance, the founder cards expose authoritative Core sex values and the terrain shows visually distinct male and female 3D residents with different skinned body geometry, garment silhouettes, deterministic clothing, proportions, and head-locked hair while remaining map-scale and clustered near their authoritative Core positions with readable labels. Resident body size and separation change with the same world zoom as the terrain while labels remain readable, mature trees read several times taller than a resident at comparable depth rather than as miniature props, movement between authoritative Core positions is visually smoothed, movement uses walking animation, supported Core activities select contextual idle/talking/sitting/interact motions, resident animation phases are visibly desynchronized, and compact fallback markers appear only while the 3D asset is still loading or if it fails. Resident labels avoid actor/label overlap while staying close to their resident; displaced labels use a subtle leader line instead of floating ambiguously."
   },
   {
     "name": "Advance simulation time automatically and fast-forward",
@@ -51,6 +53,7 @@
       "automatic Core simulation clock",
       "clock and render loop isolation",
       "timer-throttle catch-up",
+      "visibility-resume immediate catch-up",
       "Core simulation stepping",
       "manual fast-forward",
       "observer refresh"
@@ -59,9 +62,10 @@
     "steps": [
       "Create WorldSeed 42 and read the Day/time label",
       "Observe the Day/time label for several seconds without pressing a time button",
+      "Background the browser tab briefly, return to it, and read the Day/time label immediately",
       "Click +1 HOUR"
     ],
-    "expected": "The Day/time label advances on its own without pressing a time button, rendering refreshes cannot stop the simulation clock, delayed browser timer callbacks catch up from elapsed wall time, then +1 HOUR advances by an additional hour with Core WASM remaining LIVE."
+    "expected": "The Day/time label advances on its own without pressing a time button, rendering refreshes cannot stop the simulation clock, delayed browser timer callbacks catch up from elapsed wall time, returning to a visible tab triggers an immediate catch-up and repaint instead of appearing frozen until the next interval, then +1 HOUR advances by an additional hour with Core WASM remaining LIVE."
   },
   {
     "name": "Move observer across deterministic terrain",
