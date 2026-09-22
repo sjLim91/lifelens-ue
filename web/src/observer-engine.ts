@@ -47,7 +47,8 @@ const legacyRenderer = new LegacyCanvasWorldRenderer(
 let followResidents = true;
 let simulationClock: SimulationClock | null = null;
 let angle = -0.68;
-let zoom = 1;
+const compactViewport = window.matchMedia('(max-width: 800px)').matches;
+let zoom = compactViewport ? 2.15 : 1.25;
 new CameraInput(canvas, {
   initialAngle: angle,
   initialZoom: zoom,
