@@ -1,6 +1,6 @@
 # LifeLens Web Observer — Working State
 
-Last updated: 2026-09-22
+Last updated: 2026-09-23
 
 ## Authority
 
@@ -27,6 +27,10 @@ This file records implementation status only. It must not override canonical des
 - Normal NEW GAME generates a WorldSeed automatically. Explicit Seed entry is secondary deterministic replay UI.
 - Normal user-facing Observer UI defaults to Korean; diagnostics and renderer switching remain development-only.
 - Mobile observer chrome uses safe-area padding and a 48 logical-pixel touch-target baseline.
+- Web visual work follows `docs/WEB_VISUAL_OPTIMIZATION_GUIDE_v1.md`: Core-authoritative terrain/ecology, deterministic clustered near-ground detail, zoom LOD, resource-depletion visual feedback and observer-readability budgets.
+- Near-ground presentation now includes instanced short grass, pebbles, small rocks and deadwood, while larger vegetation keeps clustered tree/shrub/rock/stump presentation.
+- Tree silhouettes vary deterministically across broadleaf/conifer-like/sapling forms from Core biome/elevation/moisture context.
+- Resident selection is highlight/detail only; it does not move the camera. Explicit recenter/initial framing may perform a one-shot activity-group frame.
 
 ## Canonical time contract
 
