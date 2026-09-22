@@ -25,6 +25,9 @@ WEB_BASELINE_ASSETS = {
     "shrub_03": 8,
     "weed_plant_02": 8,
     "dead_tree_trunk": 14,
+    "tree_small_02": 18,
+    "fir_sapling": 18,
+    "pine_sapling_small": 18,
 }
 ALLOWED_EXTENSIONS = {
     ".gltf",
