@@ -112,6 +112,9 @@ function refresh(): void {
     followResidents,
   });
   threeWorldRenderer?.setTerrain(terrain);
+  threeWorldRenderer?.setSimulationMinute(
+    Number(snapshot.overview.minute) || 0,
+  );
   threeWorldRenderer?.setCamera({
     centerChunkX: centerX,
     centerChunkY: centerY,
