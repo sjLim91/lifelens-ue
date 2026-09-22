@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { TerrainChunk, TerrainWindow } from '../runtime/core-types';
+import { WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
 import { createWaterGeometryBuilder } from './water-geometry';
 
 const WATER_KINDS = new Set(['Spring', 'Stream', 'River', 'Lake', 'Coast', 'Ocean']);
@@ -16,7 +17,10 @@ export class WaterLayer {
 
   setTerrain(window: TerrainWindow): void {
     const active = new Set<string>();
-    const buildGeometry = createWaterGeometryBuilder(window, 8);
+    const buildGeometry = createWaterGeometryBuilder(
+      window,
+      WORLD_GRID_CONTRACT.worldUnitsPerChunk,
+    );
     const chunkMap = new Map(
       window.chunks.map((chunk) => [`${chunk.x}:${chunk.y}`, chunk]),
     );
@@ -57,7 +61,7 @@ export class WaterLayer {
       const size = 8;
       entry.mesh.position.set(
         (chunk.x - window.centerChunkX) * size,
-        (chunk.elevation01 * 48) + 0.08,
+        (chunk.elevation01 * WORLD_GRID_CONTRACT.elevationScale) + 0.08,
         (chunk.y - window.centerChunkY) * size,
       );
       entry.mesh.scale.set(1, 1, 1);
