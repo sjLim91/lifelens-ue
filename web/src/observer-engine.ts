@@ -131,6 +131,7 @@ export function startObserverEngine(): void {
       world: snapshot.overview,
       residents: residentSnapshot,
       terrain,
+      environment: snapshot.environment,
     });
     observerStore.updateCamera({
       centerChunkX: centerX,
@@ -151,6 +152,7 @@ export function startObserverEngine(): void {
     threeWorldRenderer?.setSimulationMinute(
       Number(snapshot.overview.minute) || 0,
     );
+    threeWorldRenderer?.setEnvironment(snapshot.environment);
     threeWorldRenderer?.setCamera({
       centerChunkX: centerX,
       centerChunkY: centerY,
