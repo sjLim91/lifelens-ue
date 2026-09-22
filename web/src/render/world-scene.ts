@@ -107,6 +107,7 @@ export class WorldScene {
     this.environment = environment;
     this.atmosphere.setEnvironment(environment);
     this.weatherLayer.setEnvironment(environment);
+    this.waterLayer.setEnvironment(environment);
     this.vegetationLayer.setWindIntensity(
       Number(environment?.windIntensity01) || 0,
     );
@@ -178,6 +179,7 @@ export class WorldScene {
     this.residentLayer.update(deltaSeconds);
     this.consequenceLayer.update(deltaSeconds);
     this.vegetationLayer.update(deltaSeconds);
+    this.waterLayer.update(deltaSeconds);
     this.atmosphere.update(deltaSeconds);
     this.weatherLayer.update(deltaSeconds);
   }
