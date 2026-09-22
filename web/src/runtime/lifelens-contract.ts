@@ -70,6 +70,10 @@ export const OBSERVER_CAMERA_CONTRACT = {
   maxRenderDevicePixelRatio: 2,
 } as const;
 
+export const OBSERVER_RUNTIME_CONTRACT = {
+  residentContinuityGraceMs: 10_000,
+} as const;
+
 export const RESIDENT_PRESENTATION_CONTRACT = {
   movementEpsilonWorldUnits: 0.01,
   maxAnimationDeltaSeconds: 0.05,
