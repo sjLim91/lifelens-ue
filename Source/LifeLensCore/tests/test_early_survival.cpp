@@ -5,6 +5,7 @@
 
 #include "lifelens/Simulation.h"
 #include "lifelens/SimulationSnapshotCodec.h"
+#include "lifelens/SimulationCalendar.h"
 
 using namespace lifelens;
 
@@ -117,7 +118,19 @@ int main()
     assert(actor.civilization.inventory.count(
         ItemKind::RawMaterial,MaterialKind::PlantFood)==0);
 
-    urgent.runMinutes(120);
+    for(int minute=0;
+        minute<SimulationMinutesPerDay
+        && (
+            !containsLog(
+                urgent.logs(),
+                actorName+" completed Drink via emergency fallback")
+            || !containsLog(
+                urgent.logs(),
+                actorName+" completed Eat via emergency fallback")
+        );
+        ++minute){
+        urgent.step();
+    }
 
     assert(containsLog(urgent.logs(),actorName+" -> Civilization Gather Water"));
     assert(containsLog(urgent.logs(),actorName+" completed Drink via emergency fallback"));

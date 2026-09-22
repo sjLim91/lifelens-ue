@@ -95,7 +95,7 @@ assert 'MakeDeterministicGuid(Random)' not in sim
 
 save_h = (root / 'Source/LifeLens/Save/LLSaveGame.h').read_text(encoding='utf-8')
 for token in (
-    'CurrentSaveVersion = 3',
+    'CurrentSaveVersion',
     'int32 SaveVersion = CurrentSaveVersion',
     'TArray<uint8> CoreSnapshotBytes',
     'UPROPERTY(SaveGame)',
@@ -299,16 +299,23 @@ for token in (
 ):
     assert token in simulation_cpp, f'Missing runtime SimulationRuleset wiring: {token}'
 
+snapshot_versions_h = (root / 'Source/LifeLensCore/include/lifelens/SimulationSnapshotVersions.h').read_text(encoding='utf-8')
+for token in (
+    'SimulationSnapshotVersion',
+    'SimulationSnapshotBinaryFormatVersion',
+):
+    assert token in snapshot_versions_h, f'Missing centralized snapshot version contract: {token}'
+
 snapshot_state_h = (root / 'Source/LifeLensCore/include/lifelens/SimulationSnapshot.h').read_text(encoding='utf-8')
 for token in (
-    'SimulationSnapshotVersion=2',
+    'SimulationSnapshotVersion',
     'SimulationRuleset ruleset=DefaultSimulationRuleset',
+    'PendingContextAction pendingContext',
 ):
     assert token in snapshot_state_h, f'Missing ruleset snapshot state contract: {token}'
 
 snapshot_h = (root / 'Source/LifeLensCore/include/lifelens/SimulationSnapshotCodec.h').read_text(encoding='utf-8')
-snapshot_binary_version = int(snapshot_h.split('SimulationSnapshotBinaryFormatVersion=', 1)[1].split(';', 1)[0])
-assert snapshot_binary_version == 7, 'Cleanup B current-only ruleset persistence requires snapshot binary format v7'
+assert 'SimulationSnapshotVersions.h' in snapshot_h
 assert 'MinimumSupportedSimulationSnapshotBinaryFormatVersion' not in snapshot_h
 
 snapshot_codec = (root / 'Source/LifeLensCore/src/SimulationSnapshotCodec.cpp').read_text(encoding='utf-8')

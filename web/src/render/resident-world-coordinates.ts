@@ -1,4 +1,5 @@
 import type { Resident } from '../runtime/core-types';
+import { WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
 
 export interface ResidentWorldPosition {
   x: number;
@@ -27,9 +28,12 @@ export function residentToWorldPosition(
     return null;
   }
 
-  const chunkGridSize = options.chunkGridSize ?? 32;
-  const chunkWorldSize = options.chunkWorldSize ?? 8;
-  const elevationScale = options.elevationScale ?? 48;
+  const chunkGridSize =
+    options.chunkGridSize ?? WORLD_GRID_CONTRACT.gridCellsPerChunk;
+  const chunkWorldSize =
+    options.chunkWorldSize ?? WORLD_GRID_CONTRACT.worldUnitsPerChunk;
+  const elevationScale =
+    options.elevationScale ?? WORLD_GRID_CONTRACT.elevationScale;
 
   const chunkX = Math.floor(resident.gridX / chunkGridSize);
   const chunkY = Math.floor(resident.gridY / chunkGridSize);

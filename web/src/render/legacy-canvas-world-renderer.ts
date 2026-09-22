@@ -1,4 +1,5 @@
 import { CharacterLayer, type ResidentPlacement } from '../character-layer';
+import { WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
 import type {
   Resident,
   TerrainWindow,
@@ -457,11 +458,16 @@ export class LegacyCanvasWorldRenderer {
       const projectedResidents = residentSnapshot.flatMap((resident, index) => {
         const position = residentContinuity.positionFor(resident);
         if (!position) return [];
-        const chunkX = Math.floor(position.x / 32);
-        const chunkY = Math.floor(position.y / 32);
+        const gridCellsPerChunk = WORLD_GRID_CONTRACT.gridCellsPerChunk;
+        const chunkX = Math.floor(position.x / gridCellsPerChunk);
+        const chunkY = Math.floor(position.y / gridCellsPerChunk);
         const residentChunk = chunkMap.get(`${chunkX}:${chunkY}`);
-        const localX = ((position.x - (chunkX * 32)) / 32) - 0.5;
-        const localY = ((position.y - (chunkY * 32)) / 32) - 0.5;
+        const localX = (
+          (position.x - (chunkX * gridCellsPerChunk)) / gridCellsPerChunk
+        ) - 0.5;
+        const localY = (
+          (position.y - (chunkY * gridCellsPerChunk)) / gridCellsPerChunk
+        ) - 0.5;
         const residentElevation = residentChunk
           ? visualElevation(Number(residentChunk.elevation01) || 0)
           : fallbackElevation;

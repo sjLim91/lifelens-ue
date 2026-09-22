@@ -1,3 +1,9 @@
+import {
+  REAL_MS_PER_SIMULATION_MINUTE_AT_1X,
+  SIMULATION_TIME_CONTRACT,
+  normalizeSimulationSpeed,
+} from './lifelens-contract';
+
 export interface SimulationClockOptions {
   realMsPerSimulationMinute?: number;
   tickIntervalMs?: number;
@@ -27,16 +33,24 @@ export class SimulationClock {
   private speed = 1;
 
   constructor(options: SimulationClockOptions) {
-    // Canonical LifeLens time contract:
-    // 1x = 8 real minutes per 1 simulation day.
-    // 480 real seconds / 1440 simulation minutes = 1/3 second per sim minute.
     this.realMsPerSimulationMinute =
-      options.realMsPerSimulationMinute ?? (1000 / 3);
-    this.tickIntervalMs = options.tickIntervalMs ?? 125;
-    this.refreshIntervalMs = options.refreshIntervalMs ?? 500;
-    this.maxCatchupMs = options.maxCatchupMs ?? 10 * 1000;
-    this.maxAdvanceMinutesPerTick = options.maxAdvanceMinutesPerTick ?? 240;
-    this.speed = this.normalizeSpeed(options.initialSpeed ?? 1);
+      options.realMsPerSimulationMinute
+      ?? REAL_MS_PER_SIMULATION_MINUTE_AT_1X;
+    this.tickIntervalMs =
+      options.tickIntervalMs
+      ?? SIMULATION_TIME_CONTRACT.tickIntervalMs;
+    this.refreshIntervalMs =
+      options.refreshIntervalMs
+      ?? SIMULATION_TIME_CONTRACT.refreshIntervalMs;
+    this.maxCatchupMs =
+      options.maxCatchupMs
+      ?? SIMULATION_TIME_CONTRACT.maxCatchupMs;
+    this.maxAdvanceMinutesPerTick =
+      options.maxAdvanceMinutesPerTick
+      ?? SIMULATION_TIME_CONTRACT.maxAdvanceMinutesPerTick;
+    this.speed = normalizeSimulationSpeed(
+      options.initialSpeed ?? SIMULATION_TIME_CONTRACT.defaultSpeed,
+    );
     this.onAdvance = options.onAdvance;
     this.onRefresh = options.onRefresh;
     this.onError = options.onError;
@@ -67,7 +81,7 @@ export class SimulationClock {
 
   setSpeed(speed: number): void {
     this.tick();
-    this.speed = this.normalizeSpeed(speed);
+    this.speed = normalizeSimulationSpeed(speed);
     this.resetAccumulator();
   }
 
@@ -78,10 +92,6 @@ export class SimulationClock {
   resetAccumulator(): void {
     this.lastWallMs = Date.now();
     this.accumulatorSimulationMinutes = 0;
-  }
-
-  private normalizeSpeed(speed: number): number {
-    return [0, 1, 4, 16, 64].includes(speed) ? speed : 1;
   }
 
   private readonly handleVisibilityChange = (): void => {

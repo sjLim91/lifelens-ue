@@ -12,14 +12,13 @@ using namespace lifelens;
 
 namespace {
 
-void assertLocalToStartRegion(GridPos pos, GridPos startCenter, ChunkCoord startChunk)
+void assertLocalToReference(GridPos pos, GridPos reference)
 {
-    const int dx = std::abs(pos.x - startCenter.x);
-    const int dy = std::abs(pos.y - startCenter.y);
+    const int dx = std::abs(pos.x - reference.x);
+    const int dy = std::abs(pos.y - reference.y);
     const int chebyshevDistance = std::max(dx, dy);
     assert(chebyshevDistance >= 5);
     assert(chebyshevDistance <= 7);
-    assert(chunkCoordForGrid(pos) == startChunk);
 }
 
 } // namespace
@@ -68,9 +67,10 @@ int main()
         assert(target.pos.x == recommended.x);
         assert(target.pos.y == recommended.y);
 
-        // A start-center-relative 5-7 cell target stays inside the selected
-        // 32x32 start chunk instead of sending a founder toward grid (0,0).
-        assertLocalToStartRegion(recommended, startCenter, startChunk);
+        // Outdoor relief follows the resident's current authoritative
+        // position. The initial spawn region is not a permanent living-area
+        // anchor and must not pull a resident back after they move.
+        assertLocalToReference(recommended, runtime);
 
         const int legacyOriginDistance = std::max(
             std::abs(recommended.x), std::abs(recommended.y));
@@ -103,7 +103,8 @@ int main()
     assert(established.success);
     assert(established.sanitationSiteId != 0);
     assert(simulation.world().primitiveSanitationSites.size() == 1);
-    assertLocalToStartRegion(established.sanitationSitePos, startCenter, startChunk);
+    assertLocalToReference(established.sanitationSitePos, startCenter);
+    assert(chunkCoordForGrid(established.sanitationSitePos) == startChunk);
 
     const PrimitiveSanitationSite* site = findPrimitiveSanitationSite(
         simulation.world().primitiveSanitationSites,

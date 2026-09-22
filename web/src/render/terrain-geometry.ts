@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { TerrainChunk, TerrainWindow } from '../runtime/core-types';
+import { WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
 
 export interface TerrainGeometryOptions {
   chunkWorldSize?: number;
@@ -64,8 +65,10 @@ export function createTerrainGeometryBuilder(
   window: TerrainWindow,
   options: TerrainGeometryOptions = {},
 ): (chunk: TerrainChunk) => THREE.BufferGeometry {
-  const chunkWorldSize = options.chunkWorldSize ?? 8;
-  const elevationScale = options.elevationScale ?? 48;
+  const chunkWorldSize =
+    options.chunkWorldSize ?? WORLD_GRID_CONTRACT.worldUnitsPerChunk;
+  const elevationScale =
+    options.elevationScale ?? WORLD_GRID_CONTRACT.elevationScale;
   const half = chunkWorldSize * 0.5;
   const sampleElevation = createTerrainElevationSampler(window);
 

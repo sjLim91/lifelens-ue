@@ -147,12 +147,14 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
        || learnerRuntime->second.pendingContext.active()) return;
 
     PendingContextAction pending;
-    pending.token=nextContextActionToken();
+    pending.token=issueContextActionToken();
     pending.kind=ContextActionKind::KnowledgeTeaching;
     pending.issuedMinute=world_.minute;
     pending.knowledgeTeachingTarget=best.learner;
     pending.knowledgeTeachingTechnique=best.technique;
     pending.knowledgeTeachingScore=best.score;
+    pending.hasSpatialTarget=true;
+    pending.targetPos=learnerRuntime->second.pos;
 
     Runtime& runtime=teacherRuntime->second;
     runtime.pendingContext=pending;
@@ -165,13 +167,7 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
     runtime.socialIntent=SocialIntent::None;
     runtime.socialTarget=0;
 
-    if(!world_.externalPhysicalExecution){
-        completeContextAction(
-            *teacher,
-            runtime,
-            pending.token,
-            learnerRuntime->second.pos);
-    }
+    clearNavigation(runtime);
 }
 
 } // namespace lifelens

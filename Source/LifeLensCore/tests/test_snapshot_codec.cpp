@@ -100,6 +100,58 @@ int main()
     const int savedBurnMinutes=firePit->burnMinutesRemaining;
     const double savedHeat=firePit->heatLevel;
 
+    {
+        // Explicit non-default pending context fixture. Headless locomotion now
+        // keeps social/parenting/teaching actions alive while the actor walks,
+        // so the binary codec must preserve that in-flight authority.
+        SimulationStateSnapshot pendingSnapshot=source.captureSnapshot();
+        auto actorRuntime=pendingSnapshot.runtime.find(a.id);
+        auto targetRuntime=pendingSnapshot.runtime.find(b.id);
+        CHECK(actorRuntime!=pendingSnapshot.runtime.end());
+        CHECK(targetRuntime!=pendingSnapshot.runtime.end());
+
+        PendingContextAction pending;
+        pending.token=987654321ULL;
+        pending.kind=ContextActionKind::Social;
+        pending.issuedMinute=pendingSnapshot.world.minute;
+        pending.social.intent=SocialIntent::Approach;
+        pending.social.target=b.id;
+        pending.social.utility=0.73;
+        pending.hasSpatialTarget=true;
+        pending.targetPos=targetRuntime->second.pos;
+        actorRuntime->second.pendingContext=pending;
+
+        std::vector<std::uint8_t> pendingBytes;
+        std::string pendingError;
+        CHECK(encodeSimulationSnapshot(
+            pendingSnapshot,pendingBytes,&pendingError));
+        CHECK(pendingError.empty());
+
+        SimulationStateSnapshot pendingDecoded;
+        CHECK(decodeSimulationSnapshot(
+            pendingBytes,pendingDecoded,&pendingError));
+        CHECK(pendingError.empty());
+
+        const auto decodedRuntime=pendingDecoded.runtime.find(a.id);
+        CHECK(decodedRuntime!=pendingDecoded.runtime.end());
+        const PendingContextAction& decodedPending=
+            decodedRuntime->second.pendingContext;
+        CHECK(decodedPending.token==pending.token);
+        CHECK(decodedPending.kind==pending.kind);
+        CHECK(decodedPending.issuedMinute==pending.issuedMinute);
+        CHECK(decodedPending.social.intent==pending.social.intent);
+        CHECK(decodedPending.social.target==pending.social.target);
+        CHECK(decodedPending.social.utility==pending.social.utility);
+        CHECK(decodedPending.hasSpatialTarget);
+        CHECK(decodedPending.targetPos.x==pending.targetPos.x);
+        CHECK(decodedPending.targetPos.y==pending.targetPos.y);
+
+        std::vector<std::uint8_t> pendingReencoded;
+        CHECK(encodeSimulationSnapshot(
+            pendingDecoded,pendingReencoded,&pendingError));
+        CHECK(pendingBytes==pendingReencoded);
+    }
+
     const SimulationStateSnapshot snapshot=source.captureSnapshot();
     CHECK(snapshot.version==SimulationSnapshotVersion);
     CHECK(sameSimulationRuleset(snapshot.ruleset,rules));

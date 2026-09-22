@@ -1,4 +1,5 @@
 #include "lifelens/Simulation.h"
+#include "lifelens/CoreNavigation.h"
 #include "lifelens/FamilyProgression.h"
 #include "lifelens/InitialPopulation.h"
 #include "lifelens/EmotionRuntime.h"
@@ -98,6 +99,7 @@ Simulation::Simulation(
     :ruleset_(ruleset),world_(worldSeed,populationSeed,generationVersion){}
 
 void Simulation::setupDemo(){
+    nextContextActionToken_=InitialContextActionToken;
     world_.characters.clear(); world_.objects.clear(); world_.environmentalResidues.clear(); relationships_=RelationshipBook{}; genealogy_=GenealogyBook{}; romances_=RomanceBook{}; households_=HouseholdBook{}; pregnancies_=PregnancyBook{}; births_=BirthBook{}; socialKnowledge_.clear(); runtime_.clear(); logs_.clear(); world_.minute=7*60;
     Character c; c.id=1; c.name="DevResident"; c.personality=Personality::generate(world_.rng);
     std::uniform_real_distribution<double> start(0.10,0.42);
@@ -115,6 +117,7 @@ void Simulation::setupDemo(){
 }
 
 void Simulation::setupSocialDemo(){
+    nextContextActionToken_=InitialContextActionToken;
     world_.characters.clear(); world_.objects.clear(); world_.environmentalResidues.clear(); relationships_=RelationshipBook{}; genealogy_=GenealogyBook{}; romances_=RomanceBook{}; households_=HouseholdBook{}; pregnancies_=PregnancyBook{}; births_=BirthBook{}; socialKnowledge_.clear(); runtime_.clear(); logs_.clear(); world_.minute=7*60;
 
     Character a;
@@ -154,6 +157,7 @@ void Simulation::setupSocialDemo(){
 }
 
 void Simulation::setupNewGame(){
+    nextContextActionToken_=InitialContextActionToken;
     world_.characters.clear();
     world_.objects.clear();
     relationships_=RelationshipBook{};
@@ -307,7 +311,221 @@ std::string Simulation::stamp() const{
 void Simulation::emit(const std::string& message){ const std::string line=stamp()+message; logs_.push_back(line); for(auto& cb:callbacks_) cb(line); }
 void Simulation::onEvent(EventCallback cb){ callbacks_.push_back(std::move(cb)); }
 SmartObject* Simulation::objectById(ObjectId id){ for(auto& o:world_.objects) if(o.id==id) return &o; return nullptr; }
+void Simulation::clearNavigation(Runtime& r){
+    r.navigationRoute.clear();
+    r.navigationRouteIndex=0;
+    r.navigationTarget={};
+    r.navigationArrivalRadius=0;
+    r.navigationHasTarget=false;
+    r.navigationArrived=false;
+    r.navigationRouteFailed=false;
+}
+
+bool Simulation::advanceNavigation(
+    Runtime& r,
+    GridPos target,
+    int arrivalRadius)
+{
+    const int radius=std::max(0,arrivalRadius);
+    const bool targetChanged=
+        !r.navigationHasTarget
+        || !sameGridPos(r.navigationTarget,target)
+        || r.navigationArrivalRadius!=radius;
+
+    if(targetChanged){
+        clearNavigation(r);
+        r.navigationTarget=target;
+        r.navigationArrivalRadius=radius;
+        r.navigationHasTarget=true;
+    }
+
+    if(gridWithinRadius(r.pos,target,radius)){
+        r.navigationArrived=true;
+        r.navigationRouteFailed=false;
+        return true;
+    }
+
+    if(r.navigationRouteFailed) return false;
+
+    const int stepInterval=
+        coreGroundStepIntervalMinutes(world_,r.pos);
+    if(stepInterval>1 && world_.minute%stepInterval!=0){
+        return false;
+    }
+
+    // A previously computed detour is authoritative until it is consumed.
+    if(r.navigationRouteIndex<r.navigationRoute.size()){
+        r.pos=r.navigationRoute[r.navigationRouteIndex++];
+    }else{
+        r.navigationRoute.clear();
+        r.navigationRouteIndex=0;
+
+        // Ordinary movement is incremental. Check only the next targetward
+        // cell(s); do not precompute the entire unobstructed journey.
+        GridPos directStep{};
+        if(chooseTargetwardCoreGroundStep(
+                world_,
+                r.pos,
+                target,
+                radius,
+                directStep)){
+            r.pos=directStep;
+        }else{
+            // Only actual local blockage pays the A* detour cost.
+            if(!buildCoreGroundRoute(
+                    world_,
+                    r.pos,
+                    target,
+                    radius,
+                    r.navigationRoute)){
+                r.navigationRouteFailed=true;
+                return false;
+            }
+
+            if(r.navigationRouteIndex<r.navigationRoute.size()){
+                r.pos=r.navigationRoute[r.navigationRouteIndex++];
+            }
+        }
+    }
+
+    if(gridWithinRadius(r.pos,target,radius)){
+        r.navigationArrived=true;
+        return true;
+    }
+
+    return false;
+}
+
+bool Simulation::advancePendingContext(
+    Character& actor,
+    Runtime& runtime)
+{
+    PendingContextAction& pending=runtime.pendingContext;
+    if(!pending.active()) return false;
+
+    GridPos target=runtime.pos;
+    int arrivalRadius=0;
+    bool requiresMovement=false;
+
+    switch(pending.kind){
+        case ContextActionKind::Civilization:
+            if(pending.hasSpatialTarget){
+                target=pending.targetPos;
+                arrivalRadius=1;
+                requiresMovement=true;
+            }
+            break;
+
+        case ContextActionKind::Social: {
+            const auto targetRuntime=runtime_.find(pending.social.target);
+            if(targetRuntime==runtime_.end()) return false;
+            if(pending.social.intent==SocialIntent::Avoid){
+                const GridPos other=targetRuntime->second.pos;
+                if(gridWithinRadius(runtime.pos,other,0)){
+                    const GridPos candidates[4]={
+                        {runtime.pos.x+1,runtime.pos.y},
+                        {runtime.pos.x,runtime.pos.y+1},
+                        {runtime.pos.x-1,runtime.pos.y},
+                        {runtime.pos.x,runtime.pos.y-1}
+                    };
+                    bool found=false;
+                    for(const GridPos candidate:candidates){
+                        if(coreGroundTraversable(world_,candidate)){
+                            target=candidate;
+                            found=true;
+                            break;
+                        }
+                    }
+                    if(!found) return false;
+                    requiresMovement=true;
+                }
+            }else{
+                if(!pending.hasSpatialTarget){
+                    pending.hasSpatialTarget=true;
+                    pending.targetPos=targetRuntime->second.pos;
+                }
+                target=pending.targetPos;
+                arrivalRadius=1;
+                requiresMovement=true;
+            }
+            break;
+        }
+
+        case ContextActionKind::KnowledgeTeaching: {
+            const auto learnerRuntime=
+                runtime_.find(pending.knowledgeTeachingTarget);
+            if(learnerRuntime==runtime_.end()) return false;
+            if(!pending.hasSpatialTarget){
+                pending.hasSpatialTarget=true;
+                pending.targetPos=learnerRuntime->second.pos;
+            }
+            target=pending.targetPos;
+            arrivalRadius=1;
+            requiresMovement=true;
+            break;
+        }
+
+        case ContextActionKind::Parenting: {
+            const auto childRuntime=runtime_.find(pending.parentingTarget);
+            if(childRuntime==runtime_.end()) return false;
+            if(!pending.hasSpatialTarget){
+                pending.hasSpatialTarget=true;
+                pending.targetPos=childRuntime->second.pos;
+            }
+            target=pending.targetPos;
+            arrivalRadius=1;
+            requiresMovement=true;
+            break;
+        }
+
+        case ContextActionKind::None:
+        default:
+            return false;
+    }
+
+    if(requiresMovement){
+        if(!advanceNavigation(runtime,target,arrivalRadius)){
+            return false;
+        }
+    }
+
+    const auto retargetMovingResident=
+        [&](CharacterId targetId)->bool
+        {
+            const auto targetRuntime=runtime_.find(targetId);
+            if(targetRuntime==runtime_.end()) return false;
+            if(contextActionNearTarget(runtime.pos,targetRuntime->second.pos,1))
+                return false;
+
+            pending.hasSpatialTarget=true;
+            pending.targetPos=targetRuntime->second.pos;
+            clearNavigation(runtime);
+            return true;
+        };
+
+    if(pending.kind==ContextActionKind::Social
+       && pending.social.intent!=SocialIntent::Avoid
+       && retargetMovingResident(pending.social.target)){
+        return false;
+    }
+    if(pending.kind==ContextActionKind::KnowledgeTeaching
+       && retargetMovingResident(pending.knowledgeTeachingTarget)){
+        return false;
+    }
+    if(pending.kind==ContextActionKind::Parenting
+       && retargetMovingResident(pending.parentingTarget)){
+        return false;
+    }
+
+    const std::uint64_t token=pending.token;
+    const bool completed=
+        completeContextAction(actor,runtime,token,runtime.pos);
+    if(completed) clearNavigation(runtime);
+    return completed;
+}
+
 void Simulation::failPlan(Character& character,Runtime& r){
+    clearNavigation(r);
     r.plan.clear(); r.actionIndex=0; r.announced=false; r.pendingContext.clear();
     r.socialActive=false; r.socialIntent=SocialIntent::None; r.socialTarget=0;
     r.civilizationActive=false;
@@ -319,6 +537,7 @@ void Simulation::failPlan(Character& character,Runtime& r){
     }
 }
 void Simulation::clearRuntimeActivity(Runtime& r){
+    clearNavigation(r);
     r.goal=Goal::Idle;
     r.plan.clear();
     r.actionIndex=0;
@@ -348,7 +567,7 @@ bool Simulation::tryCivilizationDecision(Character& c,Runtime& r){
     if(decision.kind!=UnifiedDecisionKind::Civilization || decision.civilization.intent==CivilizationIntent::None) return false;
 
     PendingContextAction pending;
-    pending.token=nextContextActionToken();
+    pending.token=issueContextActionToken();
     pending.kind=ContextActionKind::Civilization;
     pending.issuedMinute=world_.minute;
     pending.civilization=decision.civilization;
@@ -373,10 +592,7 @@ bool Simulation::tryCivilizationDecision(Character& c,Runtime& r){
     r.actionIndex=0;
     r.announced=false;
 
-    if(!world_.externalPhysicalExecution){
-        const GridPos completionPos=pending.hasSpatialTarget ? pending.targetPos : r.pos;
-        return completeContextAction(c,r,pending.token,completionPos);
-    }
+    clearNavigation(r);
     return true;
 }
 
@@ -395,10 +611,15 @@ bool Simulation::trySocialDecision(Character& c,Runtime& r){
     if(target==nullptr || !target->alive) return false;
 
     PendingContextAction pending;
-    pending.token=nextContextActionToken();
+    pending.token=issueContextActionToken();
     pending.kind=ContextActionKind::Social;
     pending.issuedMinute=world_.minute;
     pending.social=decision.social;
+    const auto targetRuntime=runtime_.find(decision.social.target);
+    if(targetRuntime!=runtime_.end() && decision.social.intent!=SocialIntent::Avoid){
+        pending.hasSpatialTarget=true;
+        pending.targetPos=targetRuntime->second.pos;
+    }
     r.pendingContext=pending;
     r.civilizationActive=false;
     r.socialActive=false;
@@ -409,15 +630,7 @@ bool Simulation::trySocialDecision(Character& c,Runtime& r){
     r.actionIndex=0;
     r.announced=false;
 
-    if(!world_.externalPhysicalExecution){
-        GridPos completionPos=r.pos;
-        const auto targetRuntime=runtime_.find(decision.social.target);
-        if(targetRuntime!=runtime_.end()){
-            completionPos=targetRuntime->second.pos;
-            if(decision.social.intent==SocialIntent::Avoid) ++completionPos.x;
-        }
-        return completeContextAction(c,r,pending.token,completionPos);
-    }
+    clearNavigation(r);
     return true;
 }
 
@@ -438,6 +651,7 @@ void Simulation::beginPlan(Character& c,Runtime& r){
     Goal chosen=(world_.minute<r.penaltyUntilMinute)?Goal::Idle:chooseGoal(world_,c,ruleset_.utilityAI);
     if(chosen==r.lastGoal){ ++r.repeatCount; } else { r.lastGoal=chosen; r.repeatCount=1; }
     if(r.repeatCount>=5){ chosen=Goal::Idle; r.repeatCount=0; }
+    clearNavigation(r);
     r.goal=chosen; r.plan=buildPlan(world_,c,chosen,r.pos); r.actionIndex=0; r.announced=false;
     if(r.plan.empty()){ failPlan(c,r); return; }
     std::ostringstream s; s<<c.name<<" -> "<<goalName(chosen)<<" (need "<<std::fixed<<std::setprecision(2)<<needForGoal(c,chosen)<<")"; emit(s.str());
@@ -459,7 +673,22 @@ void Simulation::advanceAction(Character& c,Runtime& r){
             if(!obj || (obj->reservedBy && *obj->reservedBy!=c.id)){ failPlan(c,r); return; }
             obj->reservedBy=c.id; ++r.actionIndex; r.announced=false; break;
         case ActionType::MoveTo:
-            if(--a.remainingTicks<=0){ if(obj) r.pos=obj->pos; ++r.actionIndex; r.announced=false; } break;
+            if(!obj){ failPlan(c,r); return; }
+            if(advanceNavigation(r,obj->pos,0)){
+                clearNavigation(r);
+                a.remainingTicks=0;
+                ++r.actionIndex;
+                r.announced=false;
+            }else if(r.navigationRouteFailed){
+                failPlan(c,r);
+                return;
+            }else{
+                a.remainingTicks=std::max(
+                    1,
+                    static_cast<int>(
+                        r.navigationRoute.size()-r.navigationRouteIndex));
+            }
+            break;
         case ActionType::Use:
             if(!obj){ failPlan(c,r); return; }
             {
@@ -469,6 +698,23 @@ void Simulation::advanceAction(Character& c,Runtime& r){
             }
             if(--a.remainingTicks<=0){ ++r.actionIndex; r.announced=false; } break;
         case ActionType::EmergencyUse:
+            if(r.goal==Goal::UseToilet){
+                GridPos reliefTarget=r.navigationTarget;
+                if(!r.navigationHasTarget){
+                    SanitationUseTarget sanitationTarget;
+                    if(!sanitationUseTarget(c.id,sanitationTarget)){
+                        failPlan(c,r);
+                        return;
+                    }
+                    reliefTarget=sanitationTarget.pos;
+                }
+                if(!advanceNavigation(r,reliefTarget,0)){
+                    if(r.navigationRouteFailed){
+                        failPlan(c,r);
+                    }
+                    return;
+                }
+            }
             {
             ConstructedFacility* settlementSleepFacility=
                 r.goal==Goal::Sleep
@@ -490,7 +736,6 @@ void Simulation::advanceAction(Character& c,Runtime& r){
             }
             if(--a.remainingTicks<=0){
                 if(r.goal==Goal::UseToilet){
-                    r.pos=deterministicOutdoorReliefPosition(world_.seed,c.id,r.pos);
                     const auto& residue=world_.environmentalResidues.deposit(
                         EnvironmentalResidueKind::HumanWaste,r.pos,c.id,world_.minute,1.0,0.42,3);
                     c.needs.hygiene=Needs::clamp01(c.needs.hygiene+0.025);
@@ -501,6 +746,7 @@ void Simulation::advanceAction(Character& c,Runtime& r){
                     emit(consequence.str());
                 }
                 emit(c.name+" completed "+std::string(goalName(r.goal))+" via emergency fallback");
+                clearNavigation(r);
                 ++r.actionIndex; r.announced=false; r.consecutiveFailures=0;
             }
             break;
@@ -710,29 +956,24 @@ void Simulation::advanceDependentCare()
         }
 
         PendingContextAction pending;
-        pending.token=nextContextActionToken();
+        pending.token=issueContextActionToken();
         pending.kind=ContextActionKind::Parenting;
         pending.issuedMinute=world_.minute;
         pending.parentingTarget=child.id;
         pending.parentingAction=chosenDecision.action;
         pending.parentingContext=chosenContext;
+        const auto childRuntime=runtime_.find(child.id);
+        if(childRuntime!=runtime_.end()){
+            pending.hasSpatialTarget=true;
+            pending.targetPos=childRuntime->second.pos;
+        }
         caregiverRuntime->second.pendingContext=pending;
         caregiverRuntime->second.civilizationActive=false;
         caregiverRuntime->second.socialActive=false;
         caregiverRuntime->second.socialIntent=SocialIntent::None;
         caregiverRuntime->second.socialTarget=0;
 
-        if(!world_.externalPhysicalExecution){
-            const auto childRuntime=runtime_.find(child.id);
-            const GridPos completionPos=childRuntime!=runtime_.end()
-                ? childRuntime->second.pos
-                : caregiverRuntime->second.pos;
-            completeContextAction(
-                *chosenCaregiver,
-                caregiverRuntime->second,
-                pending.token,
-                completionPos);
-        }
+        clearNavigation(caregiverRuntime->second);
     }
 }
 
@@ -1168,13 +1409,28 @@ void Simulation::step(){
             continue;
         }
         if(r.pendingContext.active()){
+            if(!world_.externalPhysicalExecution){
+                advancePendingContext(c,r);
+                if(r.pendingContext.active() && r.navigationRouteFailed){
+                    emit(c.name+" context action route failed");
+                    r.pendingContext.clear();
+                    clearNavigation(r);
+                    r.penaltyUntilMinute=std::max(
+                        r.penaltyUntilMinute,
+                        world_.minute+5);
+                }
+                continue;
+            }
+
             if(contextActionExpired(r.pendingContext,world_.minute)){
                 emit(c.name+" context action timed out");
                 r.pendingContext.clear();
-                r.penaltyUntilMinute=std::max(r.penaltyUntilMinute,world_.minute+5);
-            }else{
-                continue;
+                clearNavigation(r);
+                r.penaltyUntilMinute=std::max(
+                    r.penaltyUntilMinute,
+                    world_.minute+5);
             }
+            continue;
         }
         if(r.plan.empty() && world_.minute%5==0) beginPlan(c,r);
         if(!r.plan.empty()) advanceAction(c,r);

@@ -85,7 +85,11 @@ int main()
     Simulation restored(1);
     CHECK(restored.restoreSnapshot(snapshot,&error));
     CHECK(error.empty());
-    CHECK(!restored.observePendingContextAction(teacher.id).active);
+    const auto restoredPending=
+        restored.observePendingContextAction(teacher.id);
+    CHECK(restoredPending.active);
+    CHECK(restoredPending.token==pending.token);
+    CHECK(restoredPending.kind==ContextActionKind::KnowledgeTeaching);
     CHECK(restored.socialKnowledge().findReceipt(learner.id,factId)==nullptr);
 
     CHECK(sim.completeExternalContextAction(

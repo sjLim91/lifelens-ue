@@ -13,6 +13,8 @@ namespace lifelens {
 constexpr char PrimitiveSanitationSnapshotExtensionMagic[]={'L','L','S','A','N','0','0','1'};
 constexpr std::uint32_t PrimitiveSanitationSnapshotExtensionVersion=2;
 constexpr std::uint32_t MinimumPrimitiveSanitationSnapshotExtensionVersion=1;
+constexpr std::uint32_t PrimitiveSanitationSnapshotImprovementFieldsVersion=
+    PrimitiveSanitationSnapshotExtensionVersion;
 
 template<typename WriterT>
 void writePrimitiveSanitationSite(WriterT& w,const PrimitiveSanitationSite& site)
@@ -45,12 +47,12 @@ bool readPrimitiveSanitationSite(
        || !r.boolean(site.active)
        || !r.i32(site.useCount)) return false;
 
-    if(extensionVersion>=2){
+    if(extensionVersion>=PrimitiveSanitationSnapshotImprovementFieldsVersion){
         if(!r.real(site.improvementWork)
            || !r.u64(site.improvedBy)
            || !r.i32(site.improvedMinute)) return false;
     }else{
-        // v5 / sanitation extension v1 only knew the designated-area state.
+        // Older sanitation extension payloads only knew the designated-area state.
         // Preserve that exact meaning instead of inventing an upgrade on load.
         if(site.kind!=PrimitiveSanitationSiteKind::DesignatedArea) return false;
         site.improvementWork=0.0;

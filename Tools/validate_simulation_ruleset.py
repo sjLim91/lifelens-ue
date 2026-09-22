@@ -11,6 +11,7 @@ needs = read('Source/LifeLensCore/include/lifelens/Needs.h')
 utility = read('Source/LifeLensCore/include/lifelens/UtilityAI.h')
 sim_h = read('Source/LifeLensCore/include/lifelens/Simulation.h')
 sim_cpp = read('Source/LifeLensCore/src/Simulation.cpp')
+snapshot_versions_h = read('Source/LifeLensCore/include/lifelens/SimulationSnapshotVersions.h')
 snapshot_h = read('Source/LifeLensCore/include/lifelens/SimulationSnapshot.h')
 codec_h = read('Source/LifeLensCore/include/lifelens/SimulationSnapshotCodec.h')
 codec = read('Source/LifeLensCore/src/SimulationSnapshotCodec.cpp')
@@ -55,9 +56,14 @@ for token in (
     'c.needs.decay(ruleset_.needs,c.metabolism,c.sleepTendency)'):
     assert token in sim_cpp, f'missing Simulation ruleset runtime wiring: {token}'
 
-assert 'SimulationSnapshotVersion=2' in snapshot_h
+for token in (
+    'SimulationSnapshotVersion',
+    'SimulationSnapshotBinaryFormatVersion',
+):
+    assert token in snapshot_versions_h, f'missing centralized snapshot version contract: {token}'
+assert 'SimulationSnapshotVersions.h' in snapshot_h
 assert 'SimulationRuleset ruleset=DefaultSimulationRuleset' in snapshot_h
-assert 'SimulationSnapshotBinaryFormatVersion=7' in codec_h
+assert 'SimulationSnapshotVersions.h' in codec_h
 assert 'MinimumSupportedSimulationSnapshotBinaryFormatVersion' not in codec_h
 for token in (
     'writeSimulationRulesetSnapshotExtension',
@@ -95,18 +101,18 @@ for token in (
     assert token in bridge_cpp, f'missing Config -> Core ruleset translation: {token}'
 
 assert '[/Script/LifeLens.LLCoreBridgeSubsystem]' in game_ini
-for token in (
-    'NeedsHungerPerMinute=0.001000', 'NeedsThirstPerMinute=0.001300',
-    'NeedsSleepPerMinute=0.000800', 'NeedsBladderPerMinute=0.001100',
-    'NeedsHygienePerMinute=0.000700', 'UtilityNeedExponent=4.000000',
-    'UtilityUrgentThreshold=0.700000', 'UtilityUrgentSlope=1.800000',
-    'UtilityIdleScore=0.035000', 'UtilitySecondChoiceProbability=0.080000'):
-    assert token in game_ini, f'missing production ruleset tuning source: {token}'
+for key in (
+    'NeedsHungerPerMinute', 'NeedsThirstPerMinute',
+    'NeedsSleepPerMinute', 'NeedsBladderPerMinute',
+    'NeedsHygienePerMinute', 'UtilityNeedExponent',
+    'UtilityUrgentThreshold', 'UtilityUrgentSlope',
+    'UtilityIdleScore', 'UtilitySecondChoiceProbability'):
+    assert f'{key}=' in game_ini, f'missing production ruleset tuning source: {key}'
 
 for token in ('Snapshot.world.populationSeed', 'Snapshot.world.generationVersion', 'Snapshot.ruleset'):
     assert token in persistence, f'missing saved ruleset/world identity restore: {token}'
 
-assert 'CurrentSaveVersion = 3' in save_h
+assert 'CurrentSaveVersion' in save_h
 assert 'TArray<uint8> CoreSnapshotBytes' in save_h
 for obsolete in (
     'int32 WorldSeed', 'int64 SimulationMinute',

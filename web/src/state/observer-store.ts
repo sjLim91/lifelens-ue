@@ -1,3 +1,7 @@
+import {
+  OBSERVER_CAMERA_CONTRACT,
+  SIMULATION_TIME_CONTRACT,
+} from '../runtime/lifelens-contract';
 import type {
   DynamicEnvironment,
   Resident,
@@ -43,16 +47,16 @@ const INITIAL_STATE: ObserverSnapshot = {
   camera: {
     centerChunkX: 0,
     centerChunkY: 0,
-    angle: -0.68,
-    elevation: 0.67,
-    zoom: 1,
+    angle: OBSERVER_CAMERA_CONTRACT.defaultAngleRadians,
+    elevation: OBSERVER_CAMERA_CONTRACT.defaultElevationRadians,
+    zoom: OBSERVER_CAMERA_CONTRACT.defaultDesktopZoom,
     followResidents: false,
   },
   runtime: {
     status: 'loading',
     errorMessage: null,
   },
-  simulationSpeed: 1,
+  simulationSpeed: SIMULATION_TIME_CONTRACT.defaultSpeed,
   selectedResidentId: null,
   revision: 0,
 };
@@ -127,7 +131,7 @@ class ObserverStore {
       residents: [],
       terrain: null,
       environment: null,
-      simulationSpeed: 1,
+      simulationSpeed: SIMULATION_TIME_CONTRACT.defaultSpeed,
       selectedResidentId: null,
       camera: {
         ...INITIAL_STATE.camera,

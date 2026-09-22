@@ -1,4 +1,5 @@
 import { LifeLensCoreBridge } from './core-bridge';
+import { WORLD_GRID_CONTRACT } from './lifelens-contract';
 import type {
   DynamicEnvironment,
   Resident,
@@ -76,10 +77,10 @@ export class WorldSession {
 
     if (this.recenterRequested && visiblePositions.length > 0) {
       const chunkXs = visiblePositions.map(
-        (position) => Math.floor(position.x / 32),
+        (position) => Math.floor(position.x / WORLD_GRID_CONTRACT.gridCellsPerChunk),
       );
       const chunkYs = visiblePositions.map(
-        (position) => Math.floor(position.y / 32),
+        (position) => Math.floor(position.y / WORLD_GRID_CONTRACT.gridCellsPerChunk),
       );
 
       this.centerX = Math.round(
@@ -92,8 +93,8 @@ export class WorldSession {
     }
 
     const residentRadius = visiblePositions.reduce((radius, position) => {
-      const chunkX = Math.floor(position.x / 32);
-      const chunkY = Math.floor(position.y / 32);
+      const chunkX = Math.floor(position.x / WORLD_GRID_CONTRACT.gridCellsPerChunk);
+      const chunkY = Math.floor(position.y / WORLD_GRID_CONTRACT.gridCellsPerChunk);
       return Math.max(
         radius,
         Math.abs(chunkX - this.centerX),

@@ -5,6 +5,14 @@ import type {
   Resident,
   TerrainWindow,
 } from '../runtime/core-types';
+import {
+  RESIDENT_PRESENTATION_CONTRACT,
+  RESIDENT_VISUAL_SPEED_WORLD_UNITS_PER_SECOND_AT_1X,
+  SIMULATION_TIME_CONTRACT,
+  WORLD_GRID_CONTRACT,
+  normalizeSimulationSpeed,
+} from '../runtime/lifelens-contract';
+import type { SimulationSpeed } from '../runtime/lifelens-contract';
 import { createTerrainElevationSampler } from './terrain-geometry';
 import { residentToWorldPosition } from './resident-world-coordinates';
 
@@ -106,6 +114,8 @@ export class ResidentWorldLayer {
   private pendingTerrain: TerrainWindow | null = null;
   private pendingCenterX = 0;
   private pendingCenterY = 0;
+  private simulationSpeed: SimulationSpeed =
+    SIMULATION_TIME_CONTRACT.defaultSpeed;
 
   constructor() {
     this.selectionRing.rotation.x = -Math.PI * 0.5;
@@ -121,6 +131,27 @@ export class ResidentWorldLayer {
     centerX: number,
     centerY: number,
   ): void {
+    const previousCenterX = this.pendingCenterX;
+    const previousCenterY = this.pendingCenterY;
+    const centerChanged = this.pendingTerrain !== null
+      && (
+        previousCenterX !== centerX
+        || previousCenterY !== centerY
+      );
+
+    if (centerChanged) {
+      const offsetX = (previousCenterX - centerX) * WORLD_GRID_CONTRACT.worldUnitsPerChunk;
+      const offsetZ = (previousCenterY - centerY) * WORLD_GRID_CONTRACT.worldUnitsPerChunk;
+      for (const actor of this.actors.values()) {
+        if (!actor.initialized) continue;
+        actor.current.x += offsetX;
+        actor.current.z += offsetZ;
+        actor.target.x += offsetX;
+        actor.target.z += offsetZ;
+        actor.root.position.copy(actor.current);
+      }
+    }
+
     this.pendingResidents = residents;
     this.pendingTerrain = terrain;
     this.pendingCenterX = centerX;
@@ -144,10 +175,15 @@ export class ResidentWorldLayer {
         continue;
       }
 
-      const chunkX = Math.floor(resident.gridX / 32);
-      const chunkY = Math.floor(resident.gridY / 32);
-      const localX = (resident.gridX - (chunkX * 32)) / 32;
-      const localY = (resident.gridY - (chunkY * 32)) / 32;
+      const gridCellsPerChunk = WORLD_GRID_CONTRACT.gridCellsPerChunk;
+      const chunkX = Math.floor(resident.gridX / gridCellsPerChunk);
+      const chunkY = Math.floor(resident.gridY / gridCellsPerChunk);
+      const localX = (
+        resident.gridX - (chunkX * gridCellsPerChunk)
+      ) / gridCellsPerChunk;
+      const localY = (
+        resident.gridY - (chunkY * gridCellsPerChunk)
+      ) / gridCellsPerChunk;
       const elevation = sampleElevation(
         chunkX,
         chunkY,
@@ -190,6 +226,10 @@ export class ResidentWorldLayer {
     }
   }
 
+  setSimulationSpeed(speed: number): void {
+    this.simulationSpeed = normalizeSimulationSpeed(speed);
+  }
+
   setSelectedResident(residentId: string | null): void {
     this.selectedResidentId = residentId;
     this.updateSelectionRing();
@@ -214,16 +254,41 @@ export class ResidentWorldLayer {
   }
 
   update(deltaSeconds: number): void {
-    const dt = Math.min(0.05, Math.max(0, deltaSeconds));
-    const ease = 1 - Math.exp(-dt * 7.5);
+    const dt = Math.min(
+      RESIDENT_PRESENTATION_CONTRACT.maxAnimationDeltaSeconds,
+      Math.max(0, deltaSeconds),
+    );
+    const effectiveSpeed = Math.max(
+      SIMULATION_TIME_CONTRACT.defaultSpeed,
+      this.simulationSpeed,
+    );
+    const maxDistance =
+      RESIDENT_VISUAL_SPEED_WORLD_UNITS_PER_SECOND_AT_1X
+      * effectiveSpeed
+      * dt;
 
     for (const actor of this.actors.values()) {
       if (!actor.root.visible) continue;
 
-      const distance = actor.current.distanceTo(actor.target);
-      actor.current.lerp(actor.target, ease);
+      const delta = actor.target.clone().sub(actor.current);
+      const distance = delta.length();
+      const moving =
+        distance > RESIDENT_PRESENTATION_CONTRACT.movementEpsilonWorldUnits;
+
+      if (moving) {
+        actor.root.rotation.y = Math.atan2(delta.x, delta.z);
+        if (distance <= maxDistance) {
+          actor.current.copy(actor.target);
+        } else if (maxDistance > 0) {
+          actor.current.addScaledVector(
+            delta.multiplyScalar(1 / distance),
+            maxDistance,
+          );
+        }
+      }
+
       actor.root.position.copy(actor.current);
-      this.setAction(actor, distance > 0.025);
+      this.setAction(actor, moving);
       actor.mixer.update(dt);
     }
 

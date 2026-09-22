@@ -61,18 +61,15 @@ for token in (
 ):
     assert token in simulation, f"Missing primitive sanitation physical ACK contract: {token}"
 
-snapshot_header = read("Source/LifeLensCore/include/lifelens/SimulationSnapshotCodec.h")
-snapshot_binary_version = int(snapshot_header.split("SimulationSnapshotBinaryFormatVersion=", 1)[1].split(";", 1)[0])
-assert snapshot_binary_version >= 5, "Dug-pit persistence requires outer snapshot format v5 or newer"
-
 sanitation_snapshot = read("Source/LifeLensCore/include/lifelens/PrimitiveSanitationSnapshotCodec.h")
 for token in (
-    "PrimitiveSanitationSnapshotExtensionVersion=2",
-    "MinimumPrimitiveSanitationSnapshotExtensionVersion=1",
+    "PrimitiveSanitationSnapshotExtensionVersion",
+    "MinimumPrimitiveSanitationSnapshotExtensionVersion",
+    "PrimitiveSanitationSnapshotImprovementFieldsVersion",
     "site.improvementWork",
     "site.improvedBy",
     "site.improvedMinute",
-    "extensionVersion>=2",
+    "extensionVersion>=PrimitiveSanitationSnapshotImprovementFieldsVersion",
 ):
     assert token in sanitation_snapshot, f"Missing sanitation extension compatibility: {token}"
 

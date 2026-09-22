@@ -2,6 +2,12 @@ import { CharacterLayer } from './character-layer';
 import { LifeLensCoreBridge } from './runtime/core-bridge';
 import { runtimeDiagnostics } from './runtime/runtime-diagnostics';
 import { SimulationClock } from './runtime/simulation-clock';
+import {
+  OBSERVER_CAMERA_CONTRACT,
+  OBSERVER_RUNTIME_CONTRACT,
+  WORLD_GRID_CONTRACT,
+  normalizeSimulationSpeed,
+} from './runtime/lifelens-contract';
 import type { Resident, TerrainWindow } from './runtime/core-types';
 import { ResidentContinuity } from './runtime/resident-continuity';
 import { WorldSession } from './runtime/world-session';
@@ -62,7 +68,9 @@ export function startObserverEngine(): void {
   let centerY = 0;
   let terrain: TerrainWindow | null = null;
   let residentSnapshot: Resident[] = [];
-  const residentContinuity = new ResidentContinuity(10000);
+  const residentContinuity = new ResidentContinuity(
+    OBSERVER_RUNTIME_CONTRACT.residentContinuityGraceMs,
+  );
   const legacyRenderer = characterLayer
     ? new LegacyCanvasWorldRenderer(
       canvas,
@@ -70,12 +78,16 @@ export function startObserverEngine(): void {
       residentContinuity,
     )
     : null;
-  let followResidents = true;
+  let followResidents = false;
   let simulationClock: SimulationClock | null = null;
-  let angle = -0.68;
-  let elevation = 0.67;
-  const compactViewport = window.matchMedia('(max-width: 800px)').matches;
-  let zoom = compactViewport ? 2.15 : 1.25;
+  let angle: number = OBSERVER_CAMERA_CONTRACT.defaultAngleRadians;
+  let elevation: number = OBSERVER_CAMERA_CONTRACT.defaultElevationRadians;
+  const compactViewport = window.matchMedia(
+    `(max-width: ${OBSERVER_CAMERA_CONTRACT.compactViewportMaxWidthPx}px)`,
+  ).matches;
+  let zoom: number = compactViewport
+    ? OBSERVER_CAMERA_CONTRACT.defaultMobileZoom
+    : OBSERVER_CAMERA_CONTRACT.defaultDesktopZoom;
   let localPanX = 0;
   let localPanZ = 0;
   new CameraInput(canvas, {
@@ -106,7 +118,9 @@ export function startObserverEngine(): void {
         followResidents = false;
       }
 
-      const worldUnitsPerPixel = 0.18 / Math.max(0.55, zoom);
+      const worldUnitsPerPixel =
+        OBSERVER_CAMERA_CONTRACT.panWorldUnitsPerPixelAtZoom1
+        / Math.max(OBSERVER_CAMERA_CONTRACT.minZoom, zoom);
       const sin = Math.sin(angle);
       const cos = Math.cos(angle);
 
@@ -117,7 +131,7 @@ export function startObserverEngine(): void {
         (-cos * deltaX) - (sin * deltaY)
       ) * worldUnitsPerPixel;
 
-      const chunkWorldSize = 8;
+      const chunkWorldSize = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
       const stepX = Math.trunc(localPanX / chunkWorldSize);
       const stepY = Math.trunc(localPanZ / chunkWorldSize);
 
@@ -157,7 +171,10 @@ export function startObserverEngine(): void {
   
   function resizeCanvas(): void {
     const rect = canvas.getBoundingClientRect();
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = Math.min(
+      window.devicePixelRatio || 1,
+      OBSERVER_CAMERA_CONTRACT.maxRenderDevicePixelRatio,
+    );
     canvas.width = Math.max(1, Math.round(rect.width * dpr));
     canvas.height = Math.max(1, Math.round(rect.height * dpr));
     characterLayer?.resize(rect.width, rect.height, dpr);
@@ -273,8 +290,9 @@ export function startObserverEngine(): void {
   }
   
   function setSimulationSpeed(speed: number): void {
-    const canonicalSpeed = [0, 1, 4, 16, 64].includes(speed) ? speed : 1;
+    const canonicalSpeed = normalizeSimulationSpeed(speed);
     simulationClock?.setSpeed(canonicalSpeed);
+    threeWorldRenderer?.setSimulationSpeed(canonicalSpeed);
     observerStore.update({ simulationSpeed: canonicalSpeed });
     refreshSafely();
   }
@@ -290,8 +308,10 @@ export function startObserverEngine(): void {
   
   function startSimulationClock(): void {
     simulationClock?.stop();
+    const initialSpeed = observerStore.getSnapshot().simulationSpeed;
+    threeWorldRenderer?.setSimulationSpeed(initialSpeed);
     simulationClock = new SimulationClock({
-      initialSpeed: observerStore.getSnapshot().simulationSpeed,
+      initialSpeed,
       onAdvance(minutes) {
         worldSession?.runMinutes(minutes);
       },

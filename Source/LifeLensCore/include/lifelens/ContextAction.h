@@ -1,7 +1,6 @@
 #pragma once
 
 #include <algorithm>
-#include <atomic>
 #include <cstdint>
 
 #include "CivilizationDecision.h"
@@ -71,11 +70,13 @@ struct PendingContextActionObservation {
     SanitationSiteId sanitationSiteId=0;
 };
 
-inline std::uint64_t nextContextActionToken()
+inline constexpr std::uint64_t InitialContextActionToken=1;
+
+inline std::uint64_t consumeContextActionToken(std::uint64_t& nextToken)
 {
-    static std::atomic<std::uint64_t> next{1};
-    std::uint64_t token=next.fetch_add(1,std::memory_order_relaxed);
-    if(token==0) token=next.fetch_add(1,std::memory_order_relaxed);
+    if(nextToken==0) nextToken=InitialContextActionToken;
+    const std::uint64_t token=nextToken++;
+    if(nextToken==0) nextToken=InitialContextActionToken;
     return token;
 }
 

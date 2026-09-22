@@ -4,6 +4,7 @@ import type {
   TerrainWindow,
   WaterKind,
 } from '../runtime/core-types';
+import { WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
 
 const FLOW_KINDS = new Set<WaterKind>([
   'Spring',
@@ -15,7 +16,7 @@ const FLOW_KINDS = new Set<WaterKind>([
 
 export function createWaterGeometryBuilder(
   window: TerrainWindow,
-  chunkWorldSize = 8,
+  chunkWorldSize = WORLD_GRID_CONTRACT.worldUnitsPerChunk,
 ): (chunk: TerrainChunk) => THREE.BufferGeometry {
   const map = new Map(
     window.chunks.map((entry) => [
@@ -129,7 +130,7 @@ export function createWaterGeometryBuilder(
 export function buildWaterGeometry(
   chunk: TerrainChunk,
   window: TerrainWindow,
-  chunkWorldSize = 8,
+  chunkWorldSize = WORLD_GRID_CONTRACT.worldUnitsPerChunk,
 ): THREE.BufferGeometry {
   return createWaterGeometryBuilder(window, chunkWorldSize)(chunk);
 }

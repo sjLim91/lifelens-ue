@@ -26,6 +26,8 @@ bool validateSnapshot(const SimulationStateSnapshot& snapshot,std::string* error
     if(snapshot.version!=SimulationSnapshotVersion) return fail("unsupported snapshot version");
     if(!validSimulationRuleset(snapshot.ruleset)) return fail("snapshot contains invalid simulation ruleset");
     if(snapshot.world.seed==0) return fail("snapshot world seed must be nonzero");
+    if(snapshot.nextContextActionToken==0)
+        return fail("snapshot next context action token must be nonzero");
     if(snapshot.world.minute<0) return fail("snapshot minute must be nonnegative");
 
     std::unordered_set<CharacterId> characterIds;
@@ -88,8 +90,43 @@ bool validateSnapshot(const SimulationStateSnapshot& snapshot,std::string* error
     for(const auto& item:snapshot.runtime){
         if(characterIds.count(item.first)==0) return fail("runtime references missing character");
         if(item.second.actionIndex>item.second.plan.size()) return fail("runtime action index exceeds plan size");
+        if(item.second.navigationRouteIndex>item.second.navigationRoute.size())
+            return fail("runtime navigation route index exceeds route size");
         if(item.second.socialTarget!=0 && characterIds.count(item.second.socialTarget)==0)
             return fail("runtime social target is missing");
+
+        const PendingContextAction& pending=item.second.pendingContext;
+        const bool tokenPresent=pending.token!=0;
+        const bool kindPresent=pending.kind!=ContextActionKind::None;
+        if(tokenPresent!=kindPresent)
+            return fail("runtime pending context token/kind mismatch");
+        if(pending.active()){
+            if(pending.issuedMinute<0 || pending.issuedMinute>snapshot.world.minute)
+                return fail("runtime pending context minute is invalid");
+
+            switch(pending.kind){
+                case ContextActionKind::Social:
+                    if(pending.social.target==0
+                       || pending.social.target==item.first
+                       || characterIds.count(pending.social.target)==0)
+                        return fail("runtime pending social target is invalid");
+                    break;
+                case ContextActionKind::Parenting:
+                    if(pending.parentingTarget==0
+                       || characterIds.count(pending.parentingTarget)==0)
+                        return fail("runtime pending parenting target is invalid");
+                    break;
+                case ContextActionKind::KnowledgeTeaching:
+                    if(pending.knowledgeTeachingTarget==0
+                       || characterIds.count(pending.knowledgeTeachingTarget)==0)
+                        return fail("runtime pending teaching target is invalid");
+                    break;
+                case ContextActionKind::Civilization:
+                case ContextActionKind::None:
+                default:
+                    break;
+            }
+        }
     }
     for(CharacterId id:characterIds){
         if(snapshot.runtime.find(id)==snapshot.runtime.end()) return fail("character is missing runtime state");
@@ -174,6 +211,7 @@ SimulationStateSnapshot Simulation::captureSnapshot() const
     snapshot.pregnancies=pregnancies_;
     snapshot.births=births_;
     snapshot.socialKnowledge=socialKnowledge_;
+    snapshot.nextContextActionToken=nextContextActionToken_;
     snapshot.logs=logs_;
 
     snapshot.runtime.reserve(runtime_.size());
@@ -193,6 +231,14 @@ SimulationStateSnapshot Simulation::captureSnapshot() const
         target.socialActive=source.socialActive;
         target.socialIntent=source.socialIntent;
         target.socialTarget=source.socialTarget;
+        target.pendingContext=source.pendingContext;
+        target.navigationRoute=source.navigationRoute;
+        target.navigationRouteIndex=source.navigationRouteIndex;
+        target.navigationTarget=source.navigationTarget;
+        target.navigationArrivalRadius=source.navigationArrivalRadius;
+        target.navigationHasTarget=source.navigationHasTarget;
+        target.navigationArrived=source.navigationArrived;
+        target.navigationRouteFailed=source.navigationRouteFailed;
         snapshot.runtime.emplace(item.first,std::move(target));
     }
     return snapshot;
@@ -224,6 +270,14 @@ bool Simulation::restoreSnapshot(const SimulationStateSnapshot& snapshot,std::st
         target.socialActive=source.socialActive;
         target.socialIntent=source.socialIntent;
         target.socialTarget=source.socialTarget;
+        target.pendingContext=source.pendingContext;
+        target.navigationRoute=source.navigationRoute;
+        target.navigationRouteIndex=source.navigationRouteIndex;
+        target.navigationTarget=source.navigationTarget;
+        target.navigationArrivalRadius=source.navigationArrivalRadius;
+        target.navigationHasTarget=source.navigationHasTarget;
+        target.navigationArrived=source.navigationArrived;
+        target.navigationRouteFailed=source.navigationRouteFailed;
         restoredRuntime.emplace(item.first,std::move(target));
     }
 
@@ -235,6 +289,7 @@ bool Simulation::restoreSnapshot(const SimulationStateSnapshot& snapshot,std::st
     pregnancies_=snapshot.pregnancies;
     births_=snapshot.births;
     socialKnowledge_=snapshot.socialKnowledge;
+    nextContextActionToken_=snapshot.nextContextActionToken;
     runtime_=std::move(restoredRuntime);
     logs_=snapshot.logs;
 

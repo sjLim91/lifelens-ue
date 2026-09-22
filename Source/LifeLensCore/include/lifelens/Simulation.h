@@ -53,12 +53,9 @@ public:
             if(candidate.id==id){ character=&candidate; break; }
         }
         if(character==nullptr || !character->alive) return false;
-        const GridPos settlementReference=world_.hasInitialStartRegionSelection
-            ? world_.initialStartRegionCenterGrid()
-            : GridPos{};
         outPosition=chooseLowExposureOutdoorReliefPosition(
             world_.seed,*character,world_.environmentalResidues,world_.minute,
-            settlementReference);
+            runtimeIt->second.pos);
         return true;
     }
     bool sanitationUseTarget(CharacterId id,SanitationUseTarget& outTarget) const {
@@ -69,12 +66,9 @@ public:
             if(candidate.id==id){ character=&candidate; break; }
         }
         if(character==nullptr || !character->alive) return false;
-        const GridPos settlementReference=world_.hasInitialStartRegionSelection
-            ? world_.initialStartRegionCenterGrid()
-            : GridPos{};
         outTarget=resolveSanitationUseTarget(
             world_.seed,*character,world_.environmentalResidues,
-            world_.primitiveSanitationSites,world_.minute,settlementReference);
+            world_.primitiveSanitationSites,world_.minute,runtimeIt->second.pos);
         return true;
     }
     bool settlementSleepTarget(
@@ -168,6 +162,17 @@ private:
         CharacterId socialTarget=0;
         PendingContextAction pendingContext{};
 
+        // Headless/Core-owned locomotion continuation state. Save/restore
+        // persists this because route choice/index affects deterministic future
+        // simulation truth; presentation transforms remain separate.
+        std::vector<GridPos> navigationRoute;
+        std::size_t navigationRouteIndex=0;
+        GridPos navigationTarget{};
+        int navigationArrivalRadius=0;
+        bool navigationHasTarget=false;
+        bool navigationArrived=false;
+        bool navigationRouteFailed=false;
+
         // Presentation provenance for the civilization action that actually
         // executed. Intentionally omitted from SimulationRuntimeSnapshot so
         // save/restore never replays stale work animations.
@@ -193,6 +198,7 @@ private:
     std::vector<EventCallback> callbacks_;
     std::vector<std::string> logs_;
     std::vector<SocialCommunicationObservation> recentSocialEvents_;
+    std::uint64_t nextContextActionToken_=InitialContextActionToken;
     std::uint64_t nextSocialEventSequence_=1;
     static constexpr std::size_t MaxRecentSocialEvents=64;
     void emit(const std::string& message);
@@ -207,6 +213,9 @@ private:
                     recentSocialEvents_.size()-MaxRecentSocialEvents));
         }
     }
+    std::uint64_t issueContextActionToken(){
+        return consumeContextActionToken(nextContextActionToken_);
+    }
     void clearRecentSocialEvents(){
         recentSocialEvents_.clear();
         nextSocialEventSequence_=1;
@@ -217,6 +226,9 @@ private:
     void advanceAction(Character& c,Runtime& r);
     void failPlan(Character& character,Runtime& r);
     void clearRuntimeActivity(Runtime& r);
+    void clearNavigation(Runtime& r);
+    bool advanceNavigation(Runtime& r,GridPos target,int arrivalRadius);
+    bool advancePendingContext(Character& actor,Runtime& runtime);
     bool completeContextAction(Character& actor,Runtime& runtime,std::uint64_t token,GridPos resolvedPosition);
     bool tryCivilizationDecision(Character& c,Runtime& r);
     bool trySocialDecision(Character& c,Runtime& r);

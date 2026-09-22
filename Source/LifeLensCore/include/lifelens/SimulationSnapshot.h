@@ -6,15 +6,16 @@
 #include <vector>
 
 #include "Birth.h"
+#include "ContextAction.h"
 #include "DecisionExecution.h"
 #include "ObserverReadModelV2.h"
 #include "Planner.h"
 #include "SimulationRuleset.h"
+#include "SimulationSnapshotVersions.h"
 #include "WitnessRumor.h"
 
 namespace lifelens {
 
-constexpr std::uint32_t SimulationSnapshotVersion=2;
 
 struct SimulationRuntimeSnapshot {
     Goal goal=Goal::Idle;
@@ -30,6 +31,14 @@ struct SimulationRuntimeSnapshot {
     bool socialActive=false;
     SocialIntent socialIntent=SocialIntent::None;
     CharacterId socialTarget=0;
+    PendingContextAction pendingContext{};
+    std::vector<GridPos> navigationRoute;
+    std::size_t navigationRouteIndex=0;
+    GridPos navigationTarget{};
+    int navigationArrivalRadius=0;
+    bool navigationHasTarget=false;
+    bool navigationArrived=false;
+    bool navigationRouteFailed=false;
 };
 
 struct SimulationStateSnapshot {
@@ -43,6 +52,7 @@ struct SimulationStateSnapshot {
     PregnancyBook pregnancies;
     BirthBook births;
     SocialKnowledgeBook socialKnowledge;
+    std::uint64_t nextContextActionToken=InitialContextActionToken;
     std::unordered_map<CharacterId,SimulationRuntimeSnapshot> runtime;
     std::vector<std::string> logs;
 };
