@@ -46,7 +46,7 @@ const INITIAL_STATE: ObserverSnapshot = {
     angle: -0.68,
     elevation: 0.67,
     zoom: 1,
-    followResidents: true,
+    followResidents: false,
   },
   runtime: {
     status: 'loading',
