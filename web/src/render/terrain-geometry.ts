@@ -12,38 +12,6 @@ function average(values: Array<number | null>, fallback: number): number {
   return valid.reduce((sum, value) => sum + value, 0) / valid.length;
 }
 
-function hash01(value: string): number {
-  let hash = 2166136261 >>> 0;
-  for (let index = 0; index < value.length; index += 1) {
-    hash ^= value.charCodeAt(index);
-    hash = Math.imul(hash, 16777619) >>> 0;
-  }
-  hash ^= hash >>> 16;
-  return (hash >>> 0) / 4294967295;
-}
-
-function localRelief(
-  seed: string,
-  chunkX: number,
-  chunkY: number,
-  localX01: number,
-  localY01: number,
-): number {
-  const tx = Math.max(0, Math.min(1, localX01));
-  const ty = Math.max(0, Math.min(1, localY01));
-  const envelope = Math.sin(Math.PI * tx) * Math.sin(Math.PI * ty);
-  if (envelope <= 0.00001) return 0;
-
-  const phaseA = hash01(`${seed}:${chunkX}:${chunkY}:ridge-a`) * Math.PI * 2;
-  const phaseB = hash01(`${seed}:${chunkX}:${chunkY}:ridge-b`) * Math.PI * 2;
-  const ridgeA = Math.sin(((tx * 1.7) + (ty * 1.1)) * Math.PI * 2 + phaseA);
-  const ridgeB = Math.sin(((tx * 0.8) - (ty * 2.1)) * Math.PI * 2 + phaseB);
-  const amplitude = 0.006
-    + hash01(`${seed}:${chunkX}:${chunkY}:relief`) * 0.008;
-
-  return ((ridgeA * 0.62) + (ridgeB * 0.38)) * envelope * amplitude;
-}
-
 export function createTerrainElevationSampler(
   window: TerrainWindow,
 ): (
@@ -52,7 +20,6 @@ export function createTerrainElevationSampler(
   localX01: number,
   localY01: number,
 ) => number {
-  const seed = window.worldSeed ?? '0';
   const elevations = new Map(
     window.chunks.map((chunk) => [
       `${chunk.x}:${chunk.y}`,
@@ -89,8 +56,7 @@ export function createTerrainElevationSampler(
     const ty = Math.max(0, Math.min(1, localY01));
     const north = h00 + ((h10 - h00) * tx);
     const south = h01 + ((h11 - h01) * tx);
-    const base = north + ((south - north) * ty);
-    return base + localRelief(seed, chunkX, chunkY, tx, ty);
+    return north + ((south - north) * ty);
   };
 }
 
