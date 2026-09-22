@@ -23,6 +23,7 @@ export class WorldSession {
   private followResidents = true;
   private stableTerrain: TerrainWindow | null = null;
   private stableTerrainCenterKey: string | null = null;
+  private recenterRequested = false;
 
   constructor(
     private readonly core: LifeLensCoreBridge,
@@ -36,6 +37,7 @@ export class WorldSession {
     this.followResidents = true;
     this.stableTerrain = null;
     this.stableTerrainCenterKey = null;
+    this.recenterRequested = false;
     this.continuity.reset();
   }
 
@@ -51,6 +53,7 @@ export class WorldSession {
 
   resetFollow(): void {
     this.followResidents = true;
+    this.recenterRequested = true;
   }
 
   refresh(): WorldSessionSnapshot {
@@ -85,7 +88,7 @@ export class WorldSession {
         (y) => Math.abs(y - this.centerY) > 6,
       );
 
-      if (outsideTrackingEnvelope) {
+      if (this.recenterRequested || outsideTrackingEnvelope) {
         this.centerX = Math.round(
           (Math.min(...chunkXs) + Math.max(...chunkXs)) * 0.5,
         );
@@ -93,6 +96,7 @@ export class WorldSession {
           (Math.min(...chunkYs) + Math.max(...chunkYs)) * 0.5,
         );
       }
+      this.recenterRequested = false;
     }
 
     const residentRadius = visiblePositions.reduce((radius, position) => {
