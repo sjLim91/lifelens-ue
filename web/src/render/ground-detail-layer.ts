@@ -296,7 +296,6 @@ export class GroundDetailLayer {
 
     const seed = window.worldSeed ?? '0';
     const size = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
-    const half = size * 0.5;
     const elevationScale = WORLD_GRID_CONTRACT.elevationScale;
     const sampleElevation = createTerrainElevationSampler(window);
 
