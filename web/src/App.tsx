@@ -166,7 +166,7 @@ function ObserverPanel({
           onClick={() => observerActions.recenterObserver()}
           disabled={controlsDisabled || snapshot.camera.followResidents}
         >
-          주민 생활권으로 돌아가기
+          현재 주민 위치로 돌아가기
         </button>
         <p className="hint">
           한 손가락 드래그: 지역 이동 · 핀치: 확대/축소 · 두 손가락 좌우 이동: 시점 회전
