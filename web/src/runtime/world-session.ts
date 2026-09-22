@@ -20,7 +20,7 @@ export interface WorldSessionSnapshot {
 export class WorldSession {
   private centerX = 0;
   private centerY = 0;
-  private followResidents = true;
+  private followResidents = false;
   private stableTerrain: TerrainWindow | null = null;
   private stableTerrainCenterKey: string | null = null;
   private recenterRequested = false;
@@ -34,10 +34,10 @@ export class WorldSession {
     this.core.createWorld(seed, '', 3);
     this.centerX = 0;
     this.centerY = 0;
-    this.followResidents = true;
+    this.followResidents = false;
     this.stableTerrain = null;
     this.stableTerrainCenterKey = null;
-    this.recenterRequested = false;
+    this.recenterRequested = true;
     this.continuity.reset();
   }
 
@@ -51,8 +51,8 @@ export class WorldSession {
     this.centerY += dy;
   }
 
-  resetFollow(): void {
-    this.followResidents = true;
+  recenterToResidents(): void {
+    this.followResidents = false;
     this.recenterRequested = true;
   }
 
@@ -74,7 +74,7 @@ export class WorldSession {
         position !== undefined
       ));
 
-    if (this.followResidents && visiblePositions.length > 0) {
+    if (this.recenterRequested && visiblePositions.length > 0) {
       const chunkXs = visiblePositions.map(
         (position) => Math.floor(position.x / 32),
       );
@@ -82,20 +82,12 @@ export class WorldSession {
         (position) => Math.floor(position.y / 32),
       );
 
-      const outsideTrackingEnvelope = chunkXs.some(
-        (x) => Math.abs(x - this.centerX) > 6,
-      ) || chunkYs.some(
-        (y) => Math.abs(y - this.centerY) > 6,
+      this.centerX = Math.round(
+        (Math.min(...chunkXs) + Math.max(...chunkXs)) * 0.5,
       );
-
-      if (this.recenterRequested || outsideTrackingEnvelope) {
-        this.centerX = Math.round(
-          (Math.min(...chunkXs) + Math.max(...chunkXs)) * 0.5,
-        );
-        this.centerY = Math.round(
-          (Math.min(...chunkYs) + Math.max(...chunkYs)) * 0.5,
-        );
-      }
+      this.centerY = Math.round(
+        (Math.min(...chunkYs) + Math.max(...chunkYs)) * 0.5,
+      );
       this.recenterRequested = false;
     }
 
