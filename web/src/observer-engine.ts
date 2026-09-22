@@ -10,13 +10,25 @@ import { observerStore } from './state/observer-store';
 import { CameraInput } from './input/camera-input';
 
 import { LegacyCanvasWorldRenderer } from './render/legacy-canvas-world-renderer';
+import { readRenderMode } from './render/render-mode';
+import { WorldRenderer } from './render/world-renderer';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#worldCanvas');
+const threeWorldCanvas = document.querySelector<HTMLCanvasElement>('#threeWorldCanvas');
 const characterCanvas = document.querySelector<HTMLCanvasElement>('#characterCanvas');
-if (!canvas || !characterCanvas) {
+if (!canvas || !threeWorldCanvas || !characterCanvas) {
   throw new Error('LifeLens observer canvases are missing');
 }
+const renderMode = readRenderMode();
+canvas.style.opacity = renderMode === 'legacy-canvas' ? '1' : '0';
+threeWorldCanvas.style.opacity = renderMode === 'three-world' ? '1' : '0';
+characterCanvas.style.opacity = renderMode === 'legacy-canvas' ? '1' : '0';
+
 const characterLayer = new CharacterLayer(characterCanvas, () => drawWorld());
+const threeWorldRenderer = renderMode === 'three-world'
+  ? new WorldRenderer(threeWorldCanvas)
+  : null;
+threeWorldRenderer?.start();
 
 let worldSession: WorldSession | null = null;
 let centerX = 0;
@@ -40,6 +52,12 @@ new CameraInput(canvas, {
     angle = next.angle;
     zoom = next.zoom;
     observerStore.updateCamera({ angle, zoom });
+    threeWorldRenderer?.setCamera({
+      centerChunkX: centerX,
+      centerChunkY: centerY,
+      angle,
+      zoom,
+    });
     drawWorld();
   },
 });
@@ -50,6 +68,7 @@ function resizeCanvas(): void {
   canvas.width = Math.max(1, Math.round(rect.width * dpr));
   canvas.height = Math.max(1, Math.round(rect.height * dpr));
   characterLayer.resize(rect.width, rect.height, dpr);
+  threeWorldRenderer?.resize(rect.width, rect.height);
   drawWorld();
 }
 
@@ -91,6 +110,13 @@ function refresh(): void {
     angle,
     zoom,
     followResidents,
+  });
+  threeWorldRenderer?.setTerrain(terrain);
+  threeWorldRenderer?.setCamera({
+    centerChunkX: centerX,
+    centerChunkY: centerY,
+    angle,
+    zoom,
   });
   drawWorld();
 }
