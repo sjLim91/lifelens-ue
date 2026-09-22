@@ -7,7 +7,7 @@ export class WorldRenderer {
   private readonly world = new WorldScene();
   private animationFrame: number | null = null;
 
-  constructor(private readonly canvas: HTMLCanvasElement) {
+  constructor(canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({
       canvas,
       antialias: true,
