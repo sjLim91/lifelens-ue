@@ -495,9 +495,19 @@ export class ResidentWorldLayer {
       && actor.current.distanceTo(targetActor.current) <= 3,
     );
 
+    const supportsResidentConversation =
+      presentation.kind === 'KnowledgeTeaching'
+      || (
+        presentation.kind === 'Social'
+        && (
+          presentation.socialIntent === 'Approach'
+          || presentation.socialIntent === 'Repair'
+          || presentation.socialIntent === 'Comfort'
+        )
+      );
+
     if (
-      (presentation.kind === 'Social'
-        || presentation.kind === 'KnowledgeTeaching')
+      supportsResidentConversation
       && hasNearbyResidentTarget
       && actor.talk
     ) {
@@ -563,7 +573,12 @@ export class ResidentWorldLayer {
   }
 
   private setAction(actor: ResidentActor, moving: boolean): void {
-    const desired: MotionName = moving && actor.walk
+    const authoritativeWalking = Boolean(
+      this.simulationSpeed > 0
+      && actor.presentation?.active
+      && actor.presentation.phase === 'Moving'
+    );
+    const desired: MotionName = (moving || authoritativeWalking) && actor.walk
       ? 'walk'
       : this.restMotion(actor);
     if (actor.active === desired) return;
