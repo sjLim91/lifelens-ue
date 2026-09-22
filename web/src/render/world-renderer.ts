@@ -46,6 +46,10 @@ export class WorldRenderer {
     this.world.setCamera(state);
   }
 
+  setSimulationMinute(minute: number): void {
+    this.world.setSimulationMinute(minute);
+  }
+
   setTerrain(window: TerrainWindow): void {
     this.world.setTerrain(window);
   }
