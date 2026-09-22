@@ -161,35 +161,15 @@ function ObserverPanel({
       </section>
 
       <section className="panel">
-        <h2>World truth</h2>
-        <div className="chunk-controls">
-          <button
-            onClick={() => observerActions.moveObserver(-1, 0)}
-            disabled={controlsDisabled}
-          >
-            ←
-          </button>
-          <button
-            onClick={() => observerActions.moveObserver(0, 1)}
-            disabled={controlsDisabled}
-          >
-            ↑
-          </button>
-          <button
-            onClick={() => observerActions.moveObserver(0, -1)}
-            disabled={controlsDisabled}
-          >
-            ↓
-          </button>
-          <button
-            onClick={() => observerActions.moveObserver(1, 0)}
-            disabled={controlsDisabled}
-          >
-            →
-          </button>
-        </div>
+        <h2>Camera</h2>
+        <button
+          onClick={() => observerActions.recenterObserver()}
+          disabled={controlsDisabled || snapshot.camera.followResidents}
+        >
+          주민 생활권으로 돌아가기
+        </button>
         <p className="hint">
-          드래그: 시점 회전 · 휠/핀치: 확대/축소 · 화살표: 관찰 Chunk 이동
+          한 손가락 드래그: 지역 이동 · 핀치: 확대/축소 · 두 손가락 좌우 이동: 시점 회전
         </p>
       </section>
 
