@@ -6,6 +6,8 @@
 #include <string>
 
 #include "CivilizationDecision.h"
+#include "CivilizationSpatial.h"
+#include "CoreNavigation.h"
 #include "Relationship.h"
 #include "TraitsPreferences.h"
 #include "UtilityAI.h"
@@ -381,7 +383,8 @@ inline double maximumResidentNeed(const Character& self)
 // storage, then from a natural resource node. No food/water is synthesized.
 inline CivilizationUtilityDecision urgentSurvivalProvisionGatherDecision(
     const World& world,
-    const Character& self)
+    const Character& self,
+    GridPos authoritativePosition)
 {
     constexpr double SurvivalProvisionThreshold = 0.74;
 
@@ -393,32 +396,77 @@ inline CivilizationUtilityDecision urgentSurvivalProvisionGatherDecision(
             if (self.civilization.inventory.count(
                     ItemKind::RawMaterial,material)>0) return result;
 
-            // A settlement reserve is useful only if residents actually use it.
-            // Prefer already-collected provision over another trip to nature.
+            // Prefer already-collected provision, but only when the reserve is
+            // actually reachable from the resident's authoritative position.
+            const StorageSite* bestStorage=nullptr;
+            std::size_t bestStorageSteps=std::numeric_limits<std::size_t>::max();
             for (const StorageSite& storage:world.storageSites) {
                 const int stored=storage.inventory.count(
                     ItemKind::RawMaterial,material);
                 if(storage.id==0 || stored<=0) continue;
 
+                GridPos target{};
+                if(!resolveCivilizationStorageGridPosition(world,storage.id,target))
+                    continue;
+
+                std::vector<GridPos> route;
+                if(!buildCoreGroundRoute(
+                        world,authoritativePosition,target,0,route))
+                    continue;
+
+                if(bestStorage==nullptr
+                   || route.size()<bestStorageSteps
+                   || (route.size()==bestStorageSteps
+                       && storage.id<bestStorage->id)){
+                    bestStorage=&storage;
+                    bestStorageSteps=route.size();
+                }
+            }
+
+            if(bestStorage!=nullptr){
+                const int stored=bestStorage->inventory.count(
+                    ItemKind::RawMaterial,material);
                 result.intent=CivilizationIntent::Retrieve;
                 result.utility=socialClamp01(0.84+0.16*need);
-                result.storage=storage.id;
+                result.storage=bestStorage->id;
                 result.material=material;
                 result.item=ItemKind::RawMaterial;
                 result.quantity=std::min(stored,2);
                 return result;
             }
 
+            const ResourceNode* bestNode=nullptr;
+            std::size_t bestNodeSteps=std::numeric_limits<std::size_t>::max();
             for (const ResourceNode& node:world.resourceNodes) {
-                if(node.id==0 || node.quantity<=0 || node.material!=material) continue;
+                if(node.id==0 || node.quantity<=0 || node.material!=material)
+                    continue;
+
+                GridPos target{};
+                if(!resolveCivilizationResourceAccessGridPosition(
+                        world,node.id,target))
+                    continue;
+
+                std::vector<GridPos> route;
+                if(!buildCoreGroundRoute(
+                        world,authoritativePosition,target,0,route))
+                    continue;
+
+                if(bestNode==nullptr
+                   || route.size()<bestNodeSteps
+                   || (route.size()==bestNodeSteps && node.id<bestNode->id)){
+                    bestNode=&node;
+                    bestNodeSteps=route.size();
+                }
+            }
+
+            if(bestNode!=nullptr){
                 result.intent=CivilizationIntent::Gather;
                 result.utility=socialClamp01(0.80+0.20*need);
-                result.resourceNode=node.id;
+                result.resourceNode=bestNode->id;
                 result.material=material;
                 result.item=ItemKind::RawMaterial;
                 result.quantity=2+static_cast<int>(
                     2.0*clampCivilization01(self.civilization.gatheringSkill));
-                return result;
             }
             return result;
         };
@@ -438,6 +486,16 @@ inline CivilizationUtilityDecision urgentSurvivalProvisionGatherDecision(
     return hunger;
 }
 
+inline CivilizationUtilityDecision urgentSurvivalProvisionGatherDecision(
+    const World& world,
+    const Character& self)
+{
+    return urgentSurvivalProvisionGatherDecision(
+        world,
+        self,
+        civilizationSanitationReferencePosition(world));
+}
+
 inline UnifiedUtilityDecision chooseUnifiedUtilityDecisionAtPosition(
     const World& world,
     const Character& self,
@@ -451,7 +509,9 @@ inline UnifiedUtilityDecision chooseUnifiedUtilityDecisionAtPosition(
     const CivilizationUtilityDecision civilization =
         chooseDispositionAwareCivilizationDecisionAtPosition(
             world,self,authoritativePosition);
-    const CivilizationUtilityDecision survivalProvision = urgentSurvivalProvisionGatherDecision(world, self);
+    const CivilizationUtilityDecision survivalProvision =
+        urgentSurvivalProvisionGatherDecision(
+            world,self,authoritativePosition);
 
     UnifiedUtilityDecision decision;
     decision.physicalGoal = physical.first;
