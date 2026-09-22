@@ -33,7 +33,8 @@
       "deterministic male and female appearance variants",
       "sex-aware skinned geometry deformation",
       "garment surface volume",
-      "Core activity to contextual motion mapping",
+      "Core action-context-motion truth",
+      "contextless interaction pose suppression",
       "head-bone hair attachment",
       "deterministic animation phase desynchronization",
       "CC0 Quaternius character asset integration",
@@ -69,7 +70,7 @@
       "Tap a visible resident without dragging and verify that resident becomes the focused life",
       "Drag to rotate the world and verify the gesture does not accidentally select a resident"
     ],
-    "expected": "The status must leave Core loading… within the runtime timeout window; a missing optional weather binding must not fail LifeLensCore startup; if same-origin runtime delivery stalls, GitHub raw fallback is attempted, and the status shows Core WASM LIVE before WorldSeed 12345 is created, Living is 4, all four resident cards and 3D residents remain continuously visible without one-refresh disappearance/reappearance, the founder cards expose authoritative Core sex values and the terrain shows visually distinct male and female 3D residents with different skinned body geometry, garment silhouettes, deterministic clothing, proportions, and head-locked hair while remaining map-scale and clustered near their authoritative Core positions with readable labels. Resident body size and separation change with the same world zoom as the terrain while labels remain readable but visually subordinate, mobile opens focused on the inhabited local area instead of a tiny full-window diorama, wide-zoom forests merge into canopy masses instead of dot noise, open water does not expose a debug tile grid, mature trees read several times taller than a resident at comparable depth rather than as miniature props, a short tap on a Three World resident ray-picks that resident by GUID, shows a subtle focus ring and opens focused-life details backed by authoritative Core emotion, needs, personality/traits, directional relationships, family, memories, and beliefs without confusing camera drags for taps, movement between authoritative Core positions is visually smoothed, movement uses walking animation, supported Core activities select contextual idle/talking/sitting/interact motions, resident animation phases are visibly desynchronized, and compact fallback markers appear only while the 3D asset is still loading or if it fails. Resident labels avoid actor/label overlap while staying close to their resident; displaced labels use a subtle leader line instead of floating ambiguously."
+    "expected": "The status must leave Core loading… within the runtime timeout window; a missing optional weather binding must not fail LifeLensCore startup; if same-origin runtime delivery stalls, GitHub raw fallback is attempted, and the status shows Core WASM LIVE before WorldSeed 12345 is created, Living is 4, all four resident cards and 3D residents remain continuously visible without one-refresh disappearance/reappearance, the founder cards expose authoritative Core sex values and the terrain shows visually distinct male and female 3D residents with different skinned body geometry, garment silhouettes, deterministic clothing, proportions, and head-locked hair while remaining map-scale and clustered near their authoritative Core positions with readable labels. Resident body size and separation change with the same world zoom as the terrain while labels remain readable but visually subordinate, mobile opens focused on the inhabited local area instead of a tiny full-window diorama, wide-zoom forests merge into canopy masses instead of dot noise, open water does not expose a debug tile grid, mature trees read several times taller than a resident at comparable depth rather than as miniature props, a short tap on a Three World resident ray-picks that resident by GUID, shows a subtle focus ring and opens focused-life details backed by authoritative Core emotion, needs, personality/traits, directional relationships, family, memories, and beliefs without confusing camera drags for taps, movement between authoritative Core positions is visually smoothed, movement uses walking animation, unsupported or contextless interaction activities fall back to neutral idle instead of inventing sitting/tool-use context, target-backed nearby Talk may use talking animation, resident animation phases are visibly desynchronized, and compact fallback markers appear only while the 3D asset is still loading or if it fails. Resident labels avoid actor/label overlap while staying close to their resident; displaced labels use a subtle leader line instead of floating ambiguously."
   },
   {
     "name": "Advance simulation time automatically and fast-forward",
@@ -100,7 +101,9 @@
       "generation v3 continuous terrain",
       "natural connected hydrology rendering",
       "Core ecology coverage rendering",
-      "continuous dramatic elevation relief presentation",
+      "Core-authoritative continuous elevation presentation",
+      "no presentation-only synthetic terrain relief",
+      "vegetation grounded to the shared Core elevation sampler",
       "authoritative dynamic weather projection",
       "weather-driven fog and daylight attenuation",
       "Core-driven rain and snow particles",
@@ -120,7 +123,7 @@
       "Observe the weather badge and verify temperature/weather summary are present",
       "Fast-forward time and verify weather changes remain driven by Core simulation state rather than random browser effects"
     ],
-    "expected": "The Chunk badge shows Chunk 2, 0, the Biome badge reports the Core biome and forest coverage, and deterministic terrain is rendered as one connected relief surface with visible slopes, non-rectangular river or stream paths where hydrology exists, with at most two flow exits per river/stream chunk, no synthetic cross-grid fallback channels, and minor streams/springs progressively hidden at wider zoom levels, and clustered vegetation rather than a debug-like tile grid. The world overlay exposes the authoritative Core weather summary and temperature; cloud, precipitation, visibility and wind alter Three World atmosphere and rain/snow presentation from the same Core state."
+    "expected": "The Chunk badge shows Chunk 2, 0, the Biome badge reports the Core biome and forest coverage, and deterministic terrain is rendered from Core-provided elevation as one connected surface with visible authoritative slopes, non-rectangular river or stream paths where hydrology exists, with at most two flow exits per river/stream chunk, no synthetic cross-grid fallback channels, and minor streams/springs progressively hidden at wider zoom levels, and clustered vegetation rather than a debug-like tile grid. The world overlay exposes the authoritative Core weather summary and temperature; cloud, precipitation, visibility and wind alter Three World atmosphere and rain/snow presentation from the same Core state."
   },
   {
     "name": "Reject empty WorldSeed on mobile",
