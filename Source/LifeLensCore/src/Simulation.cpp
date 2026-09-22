@@ -415,7 +415,11 @@ bool Simulation::advancePendingContext(
                     requiresMovement=true;
                 }
             }else{
-                target=targetRuntime->second.pos;
+                if(!pending.hasSpatialTarget){
+                    pending.hasSpatialTarget=true;
+                    pending.targetPos=targetRuntime->second.pos;
+                }
+                target=pending.targetPos;
                 arrivalRadius=1;
                 requiresMovement=true;
             }
@@ -426,7 +430,11 @@ bool Simulation::advancePendingContext(
             const auto learnerRuntime=
                 runtime_.find(pending.knowledgeTeachingTarget);
             if(learnerRuntime==runtime_.end()) return false;
-            target=learnerRuntime->second.pos;
+            if(!pending.hasSpatialTarget){
+                pending.hasSpatialTarget=true;
+                pending.targetPos=learnerRuntime->second.pos;
+            }
+            target=pending.targetPos;
             arrivalRadius=1;
             requiresMovement=true;
             break;
@@ -435,7 +443,11 @@ bool Simulation::advancePendingContext(
         case ContextActionKind::Parenting: {
             const auto childRuntime=runtime_.find(pending.parentingTarget);
             if(childRuntime==runtime_.end()) return false;
-            target=childRuntime->second.pos;
+            if(!pending.hasSpatialTarget){
+                pending.hasSpatialTarget=true;
+                pending.targetPos=childRuntime->second.pos;
+            }
+            target=pending.targetPos;
             arrivalRadius=1;
             requiresMovement=true;
             break;
@@ -450,6 +462,34 @@ bool Simulation::advancePendingContext(
         if(!advanceNavigation(runtime,target,arrivalRadius)){
             return false;
         }
+    }
+
+    const auto retargetMovingResident=
+        [&](CharacterId targetId)->bool
+        {
+            const auto targetRuntime=runtime_.find(targetId);
+            if(targetRuntime==runtime_.end()) return false;
+            if(contextActionNearTarget(runtime.pos,targetRuntime->second.pos,1))
+                return false;
+
+            pending.hasSpatialTarget=true;
+            pending.targetPos=targetRuntime->second.pos;
+            clearNavigation(runtime);
+            return true;
+        };
+
+    if(pending.kind==ContextActionKind::Social
+       && pending.social.intent!=SocialIntent::Avoid
+       && retargetMovingResident(pending.social.target)){
+        return false;
+    }
+    if(pending.kind==ContextActionKind::KnowledgeTeaching
+       && retargetMovingResident(pending.knowledgeTeachingTarget)){
+        return false;
+    }
+    if(pending.kind==ContextActionKind::Parenting
+       && retargetMovingResident(pending.parentingTarget)){
+        return false;
     }
 
     const std::uint64_t token=pending.token;
@@ -550,6 +590,11 @@ bool Simulation::trySocialDecision(Character& c,Runtime& r){
     pending.kind=ContextActionKind::Social;
     pending.issuedMinute=world_.minute;
     pending.social=decision.social;
+    const auto targetRuntime=runtime_.find(decision.social.target);
+    if(targetRuntime!=runtime_.end() && decision.social.intent!=SocialIntent::Avoid){
+        pending.hasSpatialTarget=true;
+        pending.targetPos=targetRuntime->second.pos;
+    }
     r.pendingContext=pending;
     r.civilizationActive=false;
     r.socialActive=false;
@@ -887,6 +932,11 @@ void Simulation::advanceDependentCare()
         pending.parentingTarget=child.id;
         pending.parentingAction=chosenDecision.action;
         pending.parentingContext=chosenContext;
+        const auto childRuntime=runtime_.find(child.id);
+        if(childRuntime!=runtime_.end()){
+            pending.hasSpatialTarget=true;
+            pending.targetPos=childRuntime->second.pos;
+        }
         caregiverRuntime->second.pendingContext=pending;
         caregiverRuntime->second.civilizationActive=false;
         caregiverRuntime->second.socialActive=false;
