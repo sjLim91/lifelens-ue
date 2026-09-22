@@ -816,14 +816,17 @@ function addResourceShape(
   group: THREE.Group,
   resource: WorldResourceNode,
 ): void {
-  const quantityRatio = Math.max(
-    0.18,
-    Math.min(
-      1,
-      (Number(resource.quantity) || 0)
-      / Math.max(1, Number(resource.maxQuantity) || Number(resource.quantity) || 1),
-    ),
+  const quantity = Math.max(0, Number(resource.quantity) || 0);
+  const maxQuantity = Math.max(
+    1,
+    Number(resource.maxQuantity) || quantity || 1,
   );
+  const quantityRatio = Math.max(
+    0,
+    Math.min(1, quantity / maxQuantity),
+  );
+  const depletion = 1 - quantityRatio;
+
   const materialColors: Record<string, number> = {
     Stone: 0x77756f,
     Flint: 0x4f5455,
@@ -843,51 +846,120 @@ function addResourceShape(
   const color = materialColors[resource.material] ?? 0x77756f;
   group.rotation.y = hash01(resource.id, 19) * Math.PI * 2;
 
+  if (
+    depletion > 0.18
+    && resource.material !== 'Water'
+    && resource.material !== 'Fiber'
+    && resource.material !== 'PlantFood'
+  ) {
+    const scar = new THREE.Mesh(
+      new THREE.CircleGeometry(
+        0.72 + depletion * 0.92,
+        30,
+      ),
+      new THREE.MeshStandardMaterial({
+        color:
+          resource.material === 'Clay'
+            ? 0x705443
+            : resource.material === 'Wood'
+              ? 0x514431
+              : 0x5a554d,
+        roughness: 1,
+        transparent: true,
+        opacity: 0.08 + depletion * 0.18,
+        depthWrite: false,
+      }),
+    );
+    scar.rotation.x = -Math.PI * 0.5;
+    scar.position.y = 0.028;
+    scar.renderOrder = 1;
+    group.add(scar);
+
+    if (
+      depletion > 0.55
+      && resource.material !== 'Wood'
+    ) {
+      const hollow = new THREE.Mesh(
+        new THREE.CircleGeometry(
+          0.34 + depletion * 0.45,
+          26,
+        ),
+        new THREE.MeshBasicMaterial({
+          color: 0x3f352e,
+          transparent: true,
+          opacity: 0.06 + depletion * 0.13,
+          depthWrite: false,
+        }),
+      );
+      hollow.rotation.x = -Math.PI * 0.5;
+      hollow.position.y = 0.035;
+      hollow.renderOrder = 2;
+      group.add(hollow);
+    }
+  }
+
   if (resource.material === 'Wood') {
+    if (quantityRatio <= 0.03) return;
     const logMaterial = disposableMaterial(color);
     addLog(
       group,
-      1.75 * quantityRatio + 0.6,
-      0.16,
-      [0, 0.22, 0],
+      0.65 + 1.7 * quantityRatio,
+      0.12 + 0.05 * quantityRatio,
+      [0, 0.2, 0],
       0.35,
       logMaterial,
     );
-    addLog(
-      group,
-      1.45 * quantityRatio + 0.55,
-      0.13,
-      [0.22, 0.28, -0.18],
-      -0.58,
-      logMaterial,
-    );
-  } else if (resource.material === 'Fiber' || resource.material === 'PlantFood') {
+    if (quantityRatio > 0.34) {
+      addLog(
+        group,
+        0.55 + 1.35 * quantityRatio,
+        0.1 + 0.04 * quantityRatio,
+        [0.22, 0.27, -0.18],
+        -0.58,
+        logMaterial,
+      );
+    }
+  } else if (
+    resource.material === 'Fiber'
+    || resource.material === 'PlantFood'
+  ) {
     const tuftMaterial = disposableMaterial(color);
-    for (let index = 0; index < 3; index += 1) {
+    const tuftCount = quantityRatio <= 0.03
+      ? 0
+      : quantityRatio < 0.34
+        ? 1
+        : quantityRatio < 0.67
+          ? 2
+          : 3;
+    for (let index = 0; index < tuftCount; index += 1) {
       const tuft = new THREE.Mesh(
         new THREE.IcosahedronGeometry(
-          0.34 + quantityRatio * 0.22,
+          0.26 + quantityRatio * 0.28,
           1,
         ),
         tuftMaterial,
       );
       tuft.position.set(
         (index - 1) * 0.36,
-        0.28 + index * 0.08,
+        0.22 + index * 0.08,
         index % 2 ? 0.22 : -0.12,
       );
-      tuft.scale.y = 0.85 + index * 0.08;
+      tuft.scale.y = 0.72 + quantityRatio * 0.28 + index * 0.04;
       group.add(tuft);
     }
   } else if (resource.material === 'Water') {
+    if (quantityRatio <= 0.01) return;
     const water = new THREE.Mesh(
-      new THREE.CircleGeometry(0.92 + quantityRatio * 0.34, 28),
+      new THREE.CircleGeometry(
+        0.28 + quantityRatio * 1.02,
+        28,
+      ),
       new THREE.MeshStandardMaterial({
         color,
         roughness: 0.18,
         metalness: 0.02,
         transparent: true,
-        opacity: 0.72,
+        opacity: 0.3 + quantityRatio * 0.42,
       }),
     );
     water.rotation.x = -Math.PI * 0.5;
@@ -895,10 +967,17 @@ function addResourceShape(
     group.add(water);
   } else {
     const rockMaterial = disposableMaterial(color);
-    for (let index = 0; index < 3; index += 1) {
+    const rockCount = quantityRatio <= 0.03
+      ? 0
+      : quantityRatio < 0.34
+        ? 1
+        : quantityRatio < 0.67
+          ? 2
+          : 3;
+    for (let index = 0; index < rockCount; index += 1) {
       const rock = new THREE.Mesh(
         new THREE.DodecahedronGeometry(
-          (0.4 + index * 0.12) * quantityRatio + 0.16,
+          (0.24 + index * 0.1) * (0.55 + quantityRatio * 0.65),
           0,
         ),
         rockMaterial,
@@ -906,7 +985,7 @@ function addResourceShape(
       rock.scale.set(1.15, 0.68, 0.9);
       rock.position.set(
         (index - 1) * 0.42,
-        0.28 + index * 0.07,
+        0.22 + index * 0.07,
         index % 2 ? 0.24 : -0.18,
       );
       rock.rotation.y = index * 0.72;
