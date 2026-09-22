@@ -552,6 +552,17 @@ void writeRuntime(Writer& w,const SimulationRuntimeSnapshot& x)
     w.i32(x.pos.x); w.i32(x.pos.y); w.boolean(x.announced); w.enumeration(x.lastGoal); w.i32(x.repeatCount); w.i32(x.consecutiveFailures);
     w.i32(x.penaltyUntilMinute); w.i32(x.socialCooldownUntilMinute); w.boolean(x.socialActive); w.enumeration(x.socialIntent); w.u64(x.socialTarget);
     writePendingContextAction(w,x.pendingContext);
+    writeCollection(w,x.navigationRoute,[](Writer& writer,const GridPos& pos){
+        writer.i32(pos.x);
+        writer.i32(pos.y);
+    });
+    w.u64(static_cast<std::uint64_t>(x.navigationRouteIndex));
+    w.i32(x.navigationTarget.x);
+    w.i32(x.navigationTarget.y);
+    w.i32(x.navigationArrivalRadius);
+    w.boolean(x.navigationHasTarget);
+    w.boolean(x.navigationArrived);
+    w.boolean(x.navigationRouteFailed);
 }
 bool readRuntime(Reader& r,SimulationRuntimeSnapshot& x)
 {
@@ -560,7 +571,22 @@ bool readRuntime(Reader& r,SimulationRuntimeSnapshot& x)
        !r.i32(x.pos.x)||!r.i32(x.pos.y)||!r.boolean(x.announced)||!r.enumeration(x.lastGoal)||!r.i32(x.repeatCount)||!r.i32(x.consecutiveFailures)||
        !r.i32(x.penaltyUntilMinute)||!r.i32(x.socialCooldownUntilMinute)||!r.boolean(x.socialActive)||!r.enumeration(x.socialIntent)||!r.u64(x.socialTarget)||
        !readPendingContextAction(r,x.pendingContext)) return false;
-    x.actionIndex=static_cast<std::size_t>(actionIndex); return true;
+    std::uint64_t navigationRouteIndex=0;
+    const auto readGridPos=[](Reader& reader,GridPos& pos){
+        return reader.i32(pos.x)&&reader.i32(pos.y);
+    };
+    if(!readVector(r,x.navigationRoute,readGridPos)
+       || !r.u64(navigationRouteIndex)
+       || navigationRouteIndex>std::numeric_limits<std::size_t>::max()
+       || !r.i32(x.navigationTarget.x)
+       || !r.i32(x.navigationTarget.y)
+       || !r.i32(x.navigationArrivalRadius)
+       || !r.boolean(x.navigationHasTarget)
+       || !r.boolean(x.navigationArrived)
+       || !r.boolean(x.navigationRouteFailed)) return false;
+    x.actionIndex=static_cast<std::size_t>(actionIndex);
+    x.navigationRouteIndex=static_cast<std::size_t>(navigationRouteIndex);
+    return true;
 }
 
 bool rebuildRelationshipBook(const std::vector<Relationship>& items,RelationshipBook& book)
