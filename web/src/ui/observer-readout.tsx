@@ -1,6 +1,15 @@
 import type { Resident } from '../runtime/core-types';
 import type { ObserverSnapshot } from '../state/observer-store';
-import { formatDay, formatPercent } from './observer-format';
+import {
+  formatActivity,
+  formatBiome,
+  formatDay,
+  formatLifeStage,
+  formatPartnerStage,
+  formatPercent,
+  formatSex,
+  formatWeather,
+} from './observer-format';
 
 export function RuntimeBadge({
   runtime,
@@ -8,10 +17,10 @@ export function RuntimeBadge({
   runtime: ObserverSnapshot['runtime'];
 }) {
   const text = runtime.status === 'ready'
-    ? 'Core WASM LIVE'
+    ? 'Core 연결됨'
     : runtime.status === 'error'
-      ? 'Core load failed'
-      : 'Core loading…';
+      ? 'Core 연결 실패'
+      : 'Core 불러오는 중…';
 
   const className = runtime.status === 'loading' ? 'pending' : runtime.status;
   return <div id="status" className={`status ${className}`}>{text}</div>;
@@ -37,12 +46,12 @@ export function WorldOverlay({
       </span>
       <span id="biomeLabel">
         {center
-          ? `${center.biome ?? 'Unknown'} · 숲 ${forest}%`
+          ? `${formatBiome(center.biome)} · 숲 ${forest}%`
           : '환경 분석 중'}
       </span>
       <span id="weatherLabel">
         {snapshot.environment?.available
-          ? `${snapshot.environment.summary ?? 'Clear'} · ${Math.round(Number(snapshot.environment.airTemperatureC) || 0)}°C`
+          ? `${formatWeather(snapshot.environment.summary)} · ${Math.round(Number(snapshot.environment.airTemperatureC) || 0)}°C`
           : '날씨 분석 중'}
       </span>
       <span id="livingOverlay">
@@ -61,10 +70,10 @@ export function ObserverMetrics({
 }) {
   return (
     <div className="metrics">
-      <div><span>Living</span><b id="living">{snapshot.world.livingResidents ?? '—'}</b></div>
-      <div><span>Households</span><b id="households">{snapshot.world.households ?? '—'}</b></div>
-      <div><span>Couples</span><b id="couples">{snapshot.world.activeCouples ?? '—'}</b></div>
-      <div><span>Life events</span><b id="events">{snapshot.world.majorLifeEvents ?? '—'}</b></div>
+      <div><span>생존 인구</span><b id="living">{snapshot.world.livingResidents ?? '—'}</b></div>
+      <div><span>가구</span><b id="households">{snapshot.world.households ?? '—'}</b></div>
+      <div><span>커플</span><b id="couples">{snapshot.world.activeCouples ?? '—'}</b></div>
+      <div><span>주요 사건</span><b id="events">{snapshot.world.majorLifeEvents ?? '—'}</b></div>
     </div>
   );
 }
@@ -99,13 +108,13 @@ function ResidentCard({
     >
       <div className="resident-title">
         <strong>{resident.name}</strong>
-        <span>{resident.sex ?? '—'} · {resident.activityLabel ?? 'Idle'}</span>
+        <span>{formatSex(resident.sex)} · {formatActivity(resident.activityLabel)}</span>
       </div>
       <ResidentNeedsGrid resident={resident} />
       <small>
         {resident.hasPosition
-          ? `Grid ${resident.gridX}, ${resident.gridY}`
-          : 'Position unavailable'}
+          ? `좌표 ${resident.gridX}, ${resident.gridY}`
+          : '위치 확인 불가'}
       </small>
     </button>
   );
@@ -168,7 +177,7 @@ export function SelectedResidentReadout({
 
   const family = resident.family;
   const partner = family?.hasActivePartner && family.partnerName
-    ? `${family.partnerName} · ${family.partnerStage ?? 'Partner'}`
+    ? `${family.partnerName} · ${formatPartnerStage(family.partnerStage)}`
     : '현재 파트너 없음';
   const activityTarget = resident.activityTargetName
     ? ` → ${resident.activityTargetName}`
@@ -178,20 +187,20 @@ export function SelectedResidentReadout({
     <article className="focused-life">
       <div className="focused-life-heading">
         <div>
-          <span>FOCUSED LIFE</span>
+          <span>집중 관찰</span>
           <strong>{resident.name}</strong>
         </div>
         <button type="button" onClick={onClear} aria-label="선택 해제">×</button>
       </div>
 
       <div className="focused-life-identity">
-        <span>{resident.sex ?? '—'}</span>
-        <span>{resident.lifeStage ?? '—'}</span>
+        <span>{formatSex(resident.sex)}</span>
+        <span>{formatLifeStage(resident.lifeStage)}</span>
         <span>{resident.ageYears !== undefined ? `${resident.ageYears}세` : '나이 —'}</span>
       </div>
 
       <p className="focused-life-activity">
-        현재 <b>{resident.activityLabel ?? 'Idle'}</b>{activityTarget}
+        현재 <b>{formatActivity(resident.activityLabel)}</b>{activityTarget}
       </p>
 
       <ResidentNeedsGrid resident={resident} />
@@ -278,7 +287,7 @@ export function SelectedResidentReadout({
 
       <small>
         {resident.hasPosition
-          ? `현재 위치 Grid ${resident.gridX}, ${resident.gridY}`
+          ? `현재 좌표 ${resident.gridX}, ${resident.gridY}`
           : '현재 위치를 확인하는 중'}
       </small>
     </article>
@@ -297,7 +306,7 @@ export function ResidentReadout({
   return (
     <>
       <div className="panel-heading">
-        <h2>Residents</h2>
+        <h2>주민</h2>
         <span id="residentCount">{residents.length}</span>
       </div>
       <div id="residentList" className="resident-list">
