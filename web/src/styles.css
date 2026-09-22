@@ -103,3 +103,106 @@ button:disabled { opacity: .33; cursor: default; }
     background: rgba(8, 13, 10, .68);
   }
 }
+
+
+/* Observer-first shell: the world remains primary; controls live in a secondary sheet. */
+.observer-fab {
+  display: none;
+  position: absolute;
+  z-index: 7;
+  right: 14px;
+  bottom: 14px;
+  min-width: 64px;
+  border-radius: 999px;
+  background: rgba(14, 29, 20, .88);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .28);
+}
+.observer-sheet-handle { display: none; }
+
+@media (max-width: 800px) {
+  .layout {
+    height: calc(100svh - 58px);
+    min-height: 0;
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+  }
+
+  .world {
+    min-height: 0;
+    height: 100%;
+  }
+
+  .observer-fab {
+    display: block;
+  }
+
+  .observer {
+    position: fixed;
+    z-index: 9;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-height: min(58svh, 620px);
+    overflow-y: auto;
+    border-left: 0;
+    border-top: 1px solid rgba(89, 117, 96, .45);
+    border-radius: 18px 18px 0 0;
+    background: rgba(10, 18, 13, .96);
+    backdrop-filter: blur(16px);
+    box-shadow: 0 -18px 50px rgba(0, 0, 0, .34);
+    padding: 0 10px 24px;
+    transition: transform .22s ease;
+  }
+
+  .observer.mobile-closed {
+    transform: translateY(calc(100% - 48px));
+  }
+
+  .observer.mobile-open {
+    transform: translateY(0);
+  }
+
+  .observer-sheet-handle {
+    position: sticky;
+    z-index: 2;
+    top: 0;
+    display: flex;
+    width: calc(100% + 20px);
+    height: 48px;
+    margin: 0 -10px 2px;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 0;
+    border-bottom: 1px solid rgba(85, 111, 91, .28);
+    border-radius: 18px 18px 0 0;
+    background: rgba(12, 22, 15, .97);
+    color: #c8d5c9;
+    font-size: .72rem;
+  }
+
+  .observer-sheet-handle span {
+    width: 34px;
+    height: 4px;
+    border-radius: 999px;
+    background: #607566;
+  }
+
+  .observer.mobile-open ~ * { pointer-events: auto; }
+
+  .world-overlay {
+    max-width: calc(100% - 86px);
+  }
+
+  .world-overlay span {
+    border-color: rgba(125, 151, 129, .18);
+    background: rgba(7, 13, 9, .55);
+    backdrop-filter: blur(8px);
+  }
+
+  .world-overlay-primary {
+    font-weight: 700;
+    color: #f0f6ef !important;
+  }
+}

@@ -26,7 +26,11 @@ function Topbar() {
   );
 }
 
-function WorldViewport() {
+function WorldViewport({
+  onToggleObserver,
+}: {
+  onToggleObserver: () => void;
+}) {
   const snapshot = useObserverSnapshot();
 
   return (
@@ -35,6 +39,14 @@ function WorldViewport() {
       <canvas id="threeWorldCanvas" aria-label="LifeLens experimental Three.js world" />
       <canvas id="characterCanvas" aria-label="LifeLens residents" />
       <WorldOverlay snapshot={snapshot} />
+      <button
+        className="observer-fab"
+        type="button"
+        onClick={onToggleObserver}
+        aria-label="관찰 패널 열기"
+      >
+        관찰
+      </button>
       <div
         id="errorCard"
         className={`error-card ${snapshot.runtime.status === 'error' ? '' : 'hidden'}`}
@@ -48,7 +60,13 @@ function WorldViewport() {
   );
 }
 
-function ObserverPanel() {
+function ObserverPanel({
+  mobileOpen,
+  onToggleMobile,
+}: {
+  mobileOpen: boolean;
+  onToggleMobile: () => void;
+}) {
   const snapshot = useObserverSnapshot();
   const [seed, setSeed] = useState('42');
   const [seedError, setSeedError] = useState(false);
@@ -66,7 +84,16 @@ function ObserverPanel() {
   };
 
   return (
-    <aside className="observer">
+    <aside className={`observer ${mobileOpen ? 'mobile-open' : 'mobile-closed'}`}>
+      <button
+        className="observer-sheet-handle"
+        type="button"
+        onClick={onToggleMobile}
+        aria-expanded={mobileOpen}
+      >
+        <span />
+        {mobileOpen ? '세계 보기' : '관찰 정보'}
+      </button>
       <section className="panel">
         <h2>World</h2>
         <label className="field">
@@ -164,6 +191,8 @@ function ObserverPanel() {
 }
 
 export default function App() {
+  const [mobileObserverOpen, setMobileObserverOpen] = useState(false);
+
   useEffect(() => {
     try {
       startObserverEngine();
@@ -178,8 +207,13 @@ export default function App() {
     <div id="app">
       <Topbar />
       <main className="layout">
-        <WorldViewport />
-        <ObserverPanel />
+        <WorldViewport
+          onToggleObserver={() => setMobileObserverOpen((open) => !open)}
+        />
+        <ObserverPanel
+          mobileOpen={mobileObserverOpen}
+          onToggleMobile={() => setMobileObserverOpen((open) => !open)}
+        />
       </main>
     </div>
   );
