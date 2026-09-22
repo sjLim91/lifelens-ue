@@ -46,8 +46,19 @@ interface ResidentActor {
   statusText: string;
   groundShadow: THREE.Mesh;
   lastTrailPosition: THREE.Vector3;
+  lastAuthoritativeGridKey: string;
   trailSide: 1 | -1;
   initialized: boolean;
+}
+
+interface ResidentTrailMark {
+  mesh: THREE.Mesh<THREE.CircleGeometry, THREE.MeshBasicMaterial>;
+  ageSeconds: number;
+}
+
+interface ResidentWearMark {
+  mesh: THREE.Mesh<THREE.CircleGeometry, THREE.MeshBasicMaterial>;
+  visits: number;
 }
 
 interface ResidentTrailMark {
@@ -343,6 +354,9 @@ export class ResidentWorldLayer {
   private readonly trailGeometry = new THREE.CircleGeometry(0.16, 10);
   private readonly trailMarks: ResidentTrailMark[] = [];
   private readonly trailGroup = new THREE.Group();
+  private readonly wearGeometry = new THREE.CircleGeometry(0.72, 18);
+  private readonly wearMarks = new Map<string, ResidentWearMark>();
+  private readonly wearGroup = new THREE.Group();
   private readonly selectionRing = new THREE.Mesh(
     new THREE.RingGeometry(0.62, 0.84, 36),
     new THREE.MeshBasicMaterial({
@@ -372,6 +386,8 @@ export class ResidentWorldLayer {
     this.socialLinks.renderOrder = 8;
     this.socialLinks.frustumCulled = false;
     this.trailGroup.renderOrder = 3;
+    this.wearGroup.renderOrder = 1;
+    this.group.add(this.wearGroup);
     this.group.add(this.trailGroup);
     this.group.add(this.socialLinks);
     this.group.add(this.selectionRing);
@@ -406,6 +422,10 @@ export class ResidentWorldLayer {
         actor.root.position.copy(actor.current);
       }
       for (const mark of this.trailMarks) {
+        mark.mesh.position.x += offsetX;
+        mark.mesh.position.z += offsetZ;
+      }
+      for (const mark of this.wearMarks.values()) {
         mark.mesh.position.x += offsetX;
         mark.mesh.position.z += offsetZ;
       }
@@ -492,6 +512,21 @@ export class ResidentWorldLayer {
         actor.statusSprite.visible = Boolean(nextStatusText);
       }
       actor.target.copy(next);
+
+      const authoritativeGridKey = `${resident.gridX}:${resident.gridY}`;
+      if (
+        actor.initialized
+        && actor.lastAuthoritativeGridKey
+        && actor.lastAuthoritativeGridKey !== authoritativeGridKey
+      ) {
+        this.recordWear(
+          authoritativeGridKey,
+          next.x,
+          next.y,
+          next.z,
+        );
+      }
+      actor.lastAuthoritativeGridKey = authoritativeGridKey;
 
       if (!actor.initialized) {
         actor.current.copy(next);
@@ -630,11 +665,75 @@ export class ResidentWorldLayer {
     }
     this.trailMarks.length = 0;
     this.trailGeometry.dispose();
+    for (const mark of this.wearMarks.values()) {
+      mark.mesh.material.dispose();
+      this.wearGroup.remove(mark.mesh);
+    }
+    this.wearMarks.clear();
+    this.wearGeometry.dispose();
     this.socialLinkGeometry.dispose();
     this.socialLinkMaterial.dispose();
     this.selectionRing.geometry.dispose();
     const selectionMaterial = this.selectionRing.material;
     if (!Array.isArray(selectionMaterial)) selectionMaterial.dispose();
+  }
+
+  private recordWear(
+    key: string,
+    x: number,
+    y: number,
+    z: number,
+  ): void {
+    const existing = this.wearMarks.get(key);
+    if (existing) {
+      existing.visits = Math.min(14, existing.visits + 1);
+      const strength = Math.min(1, existing.visits / 9);
+      existing.mesh.material.opacity = 0.018 + strength * 0.115;
+      existing.mesh.scale.set(
+        0.82 + strength * 0.34,
+        0.68 + strength * 0.18,
+        1,
+      );
+      return;
+    }
+
+    if (this.wearMarks.size >= 140) {
+      let weakestKey = '';
+      let weakestVisits = Number.POSITIVE_INFINITY;
+      for (const [candidateKey, candidate] of this.wearMarks) {
+        if (candidate.visits >= weakestVisits) continue;
+        weakestVisits = candidate.visits;
+        weakestKey = candidateKey;
+      }
+      const weakest = weakestKey
+        ? this.wearMarks.get(weakestKey)
+        : undefined;
+      if (weakest && weakest.visits <= 2) {
+        weakest.mesh.material.dispose();
+        this.wearGroup.remove(weakest.mesh);
+        this.wearMarks.delete(weakestKey);
+      } else {
+        return;
+      }
+    }
+
+    const material = new THREE.MeshBasicMaterial({
+      color: 0x5b4935,
+      transparent: true,
+      opacity: 0.025,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    });
+    const mesh = new THREE.Mesh(this.wearGeometry, material);
+    mesh.rotation.x = -Math.PI * 0.5;
+    mesh.rotation.z = (
+      stableHash(key) % 628
+    ) / 100;
+    mesh.scale.set(0.82, 0.68, 1);
+    mesh.position.set(x, y + 0.009, z);
+    mesh.renderOrder = 1;
+    this.wearGroup.add(mesh);
+    this.wearMarks.set(key, { mesh, visits: 1 });
   }
 
   private maybeAddTrailMark(actor: ResidentActor): void {
@@ -1009,6 +1108,7 @@ export class ResidentWorldLayer {
       statusText: '',
       groundShadow,
       lastTrailPosition: new THREE.Vector3(),
+      lastAuthoritativeGridKey: '',
       trailSide: variantSeed % 2 === 0 ? 1 : -1,
       initialized: false,
     };
