@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { startObserverEngine } from './observer-engine';
 import {
-  SIMULATION_SPEED_PRESETS,
+  SIMULATION_SPEED_MODES,
   simulationTimeHint,
 } from './runtime/lifelens-contract';
 import { observerActions } from './state/observer-actions';
@@ -148,7 +148,7 @@ function ObserverPanel({
         </details>
 
         <div className="time-speed-control" aria-label="시뮬레이션 관찰 속도">
-          {SIMULATION_SPEED_PRESETS.map((preset) => (
+          {SIMULATION_SPEED_MODES.map((preset) => (
             <button
               key={preset.speed}
               type="button"
