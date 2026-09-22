@@ -116,62 +116,45 @@ public:
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="1", ClampMax="64"))
     int32 MaxDynamicVisibilityTargets = 24;
 
-    // ---- Settlement readability envelope -------------------------------------
-    // Presentation-only. Residents live and act within a few thousand units of
-    // the settlement, and natural forest density there hides both the residents
-    // and what they are doing. Ambient dressing thins out near the settlement
-    // and returns to full natural density outside it.
+    // ---- Authority-derived readability -------------------------------------
+    // The initial spawn region is only a coordinate frame / world-entry point.
+    // It must not become a presentation-owned living zone.
     //
-    // Core is untouched: resident movement and action range are unchanged, and
-    // authoritative resource patches are never removed. The reference point is
-    // the Core start region (`InitialCenterGrid`), never a fixed world origin.
-    //
-    //   0 .. CoreClearRadiusUU        living core; canopy and undergrowth
-    //                                 almost fully suppressed
-    //   CoreClear .. ActivityRadius   activity zone; density restored with
-    //                                 distance, canopy last
-    //   beyond ActivityRadius         untouched natural density
+    // Natural dressing is thinned only around authoritative facilities, while
+    // camera-to-resident canopy occlusion is handled by the reversible dynamic
+    // visibility path. The legacy radius properties remain serialized for
+    // compatibility with existing configs but are intentionally presentation
+    // no-ops and must not regain authority.
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.0"))
     float CoreClearRadiusUU = 360.0f;
 
-    // Keep the activity clearing inside most of the 3200-UU start chunk rather
-    // than thinning almost the entire opening landscape. Core movement is not
-    // clamped to it; dynamic canopy visibility handles camera-specific occlusion.
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.0"))
     float ActivityRadiusUU = 1350.0f;
 
-    // Recovery curves across the activity band. Canopy recovers latest because
-    // it blocks the most.
+    // Facility-local recovery curves. Canopy recovers latest because it blocks
+    // residents and their actions most strongly.
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="1.0", ClampMax="6.0"))
     float CanopyRecoveryExponent = 1.7f;
 
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="1.0", ClampMax="6.0"))
     float UndergrowthRecoveryExponent = 1.2f;
 
-    // Natural dressing remains clearly present even in the living core. The
-    // reversible observer-canopy system hides only trees that actually block a
-    // camera-to-resident sightline, so a huge permanently shaved clearing is not
-    // required for readability.
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.0", ClampMax="0.8"))
     float CoreZoneCanopyKeep = 0.30f;
 
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.0", ClampMax="1.0"))
     float CoreZoneUndergrowthKeep = 0.48f;
 
-    // Authoritative resource patches are never hidden; inside the settlement
-    // they are only drawn smaller.
+    // Authoritative resource patches are never hidden. They may be drawn
+    // smaller only inside an actual facility readability envelope.
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.1", ClampMax="1.0"))
     float CoreZoneResourceScale = 0.32f;
 
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.1", ClampMax="1.0"))
     float ActivityZoneResourceScale = 0.62f;
 
-    // As civilization expands away from the initial settlement center, each
-    // authoritative facility opens a smaller local readability envelope.
-    // This prevents later neighborhoods from disappearing inside untouched
-    // ambient forest without inventing roads, zoning or simulation clearing.
-    // Facility readability/terrain radii are shared with Water/Desktop terrain
-    // through LLTerrainPresentationContract; they are not independently tunable.
+    // Actual facilities open local readability envelopes. Their radii are
+    // shared with Water/Desktop terrain through LLTerrainPresentationContract.
 
     // ---- Visual-only far world envelope --------------------------------------
     // The authoritative simulation only materializes nearby chunks. The
@@ -209,21 +192,11 @@ public:
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Terrain", meta=(ClampMin="0.0", ClampMax="12.0"))
     float TerrainMaxTiltDegrees = 5.5f;
 
-    // ---- Initial sight line (IR-E-1 mitigation) --------------------------------
-    // Residents are visible the moment play starts and then disappear behind the
-    // canopy that loads between the observer camera and the settlement. This
-    // clears canopy inside a cone from the initial camera position toward the
-    // settlement reference.
-    //
-    // Frozen at the initial camera pose, so it is now only the fallback used
-    // when Dynamic Observer Canopy Visibility is disabled. The default runtime
-    // path keeps all ambient canopy instances and reversibly collapses only the
-    // ones currently between the camera and a resident.
-    //
-    // The camera is read and never moved; Core and world-generation facts are
-    // untouched and resource patches are never removed.
+    // ---- Legacy initial sight-line compatibility -----------------------------
+    // Kept serialized so old configs load cleanly. The runtime function now
+    // returns 1.0 unconditionally; initial spawn/camera never clears ecology.
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability")
-    bool bClearInitialSightlineCanopy = true;
+    bool bClearInitialSightlineCanopy = false;
 
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="2.0", ClampMax="60.0"))
     float InitialSightlineHalfAngleDegrees = 16.0f;
