@@ -299,6 +299,25 @@ ResidentPresentationObservation Simulation::observeResidentPresentation(Characte
                 return dto;
         }
 
+        if(pending.kind==ContextActionKind::Social
+           && pending.social.intent==SocialIntent::Avoid){
+            const auto targetRuntime=runtime_.find(dto.targetResidentId);
+            if(targetRuntime==runtime_.end()){
+                dto.active=false;
+                return dto;
+            }
+
+            // Avoid is a separation action, not an interaction. Do not expose
+            // the other resident's position as if it were our movement target.
+            // A real navigation target is exposed only after Core owns one.
+            dto.hasTargetGrid=r.navigationHasTarget;
+            if(dto.hasTargetGrid) dto.targetGrid=r.navigationTarget;
+            dto.phase=sameGridPos(r.pos,targetRuntime->second.pos)
+                ? PresentationActionPhase::Moving
+                : PresentationActionPhase::Idle;
+            return dto;
+        }
+
         bool nearTarget=false;
         if(dto.targetResidentId!=0){
             const auto targetRuntime=runtime_.find(dto.targetResidentId);
@@ -311,15 +330,6 @@ ResidentPresentationObservation Simulation::observeResidentPresentation(Characte
             nearTarget=contextActionNearTarget(r.pos,dto.targetGrid,1);
         }else{
             nearTarget=true;
-        }
-
-        if(pending.kind==ContextActionKind::Social
-           && pending.social.intent==SocialIntent::Avoid){
-            nearTarget=dto.targetResidentId!=0
-                && runtime_.find(dto.targetResidentId)!=runtime_.end()
-                && !sameGridPos(
-                    r.pos,
-                    runtime_.find(dto.targetResidentId)->second.pos);
         }
 
         dto.phase=nearTarget
