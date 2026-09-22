@@ -168,6 +168,16 @@ private:
         CharacterId socialTarget=0;
         PendingContextAction pendingContext{};
 
+        // Headless/Core-owned locomotion cache. It is runtime-only on purpose:
+        // save/restore resumes from authoritative GridPos and replans instead
+        // of replaying stale presentation-era movement.
+        std::vector<GridPos> navigationRoute;
+        std::size_t navigationRouteIndex=0;
+        GridPos navigationTarget{};
+        int navigationArrivalRadius=0;
+        bool navigationHasTarget=false;
+        bool navigationArrived=false;
+
         // Presentation provenance for the civilization action that actually
         // executed. Intentionally omitted from SimulationRuntimeSnapshot so
         // save/restore never replays stale work animations.
@@ -217,6 +227,9 @@ private:
     void advanceAction(Character& c,Runtime& r);
     void failPlan(Character& character,Runtime& r);
     void clearRuntimeActivity(Runtime& r);
+    void clearNavigation(Runtime& r);
+    bool advanceNavigation(Runtime& r,GridPos target,int arrivalRadius);
+    bool advancePendingContext(Character& actor,Runtime& runtime);
     bool completeContextAction(Character& actor,Runtime& runtime,std::uint64_t token,GridPos resolvedPosition);
     bool tryCivilizationDecision(Character& c,Runtime& r);
     bool trySocialDecision(Character& c,Runtime& r);
