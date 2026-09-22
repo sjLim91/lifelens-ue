@@ -159,13 +159,12 @@ export class VegetationLayer {
   setTerrain(window: TerrainWindow): void {
     const seed = window.worldSeed ?? '0';
     const sampleElevation = createTerrainElevationSampler(window);
+    const chunkWorldSize = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
     const halfChunk = chunkWorldSize * 0.5;
     let treeCountTotal = 0;
     let shrubCountTotal = 0;
     let rockCountTotal = 0;
     let stumpCountTotal = 0;
-
-    const chunkWorldSize = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
     const gridCellsPerChunk = WORLD_GRID_CONTRACT.gridCellsPerChunk;
     const worldUnitsPerGrid = chunkWorldSize / gridCellsPerChunk;
 
