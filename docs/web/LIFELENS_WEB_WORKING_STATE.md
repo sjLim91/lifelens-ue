@@ -38,6 +38,8 @@ Completed in GitHub development source:
 - Three World terrain uses shared corner heights across adjacent chunks rather than one flat elevation plane per chunk.
 - Water geometry now builds connected river/stream arms from neighboring water topology instead of treating every flowing-water chunk as a full square.
 - Vegetation uses an instanced tree layer.
+- Three World now has a day/night atmosphere layer driven by authoritative Core simulation minutes, including sun/moon light, sky color, and fog changes.
+- Three World now renders real GLB resident actors using the existing free resident/animation assets rather than debug capsules. Actors are keyed by resident GUID, mapped from Core grid coordinates into world coordinates, interpolated between targets, and use walk/contextual rest animation selection.
 - Terrain and water builders reuse one indexed terrain window per refresh instead of rebuilding a full lookup map for every chunk.
 - A future Core Web Worker command/event protocol is defined.
 - `observer-engine.ts` has been reduced to a small orchestration layer rather than holding Core/query/input/render/readout behavior.
@@ -49,7 +51,7 @@ Deployment still requires an explicit user request.
 The production-compatible Legacy path still uses Canvas2D terrain plus a separate Three.js CharacterLayer.  
 LifeLensCore execution still shares the browser main thread.  
 Three World is connected only as a development render mode and is not the default path.  
-Residents are intentionally hidden in Three World until the real resident actor/model pipeline moves into WorldScene, avoiding misleading low-quality placeholder humans.  
+Three World now has a real resident actor pipeline, but it still needs the full Legacy appearance deformation/hair/material parity and more accurate terrain-foot grounding before it can replace the Legacy resident presentation.  
 Resident model/animation assets remain remote runtime dependencies.  
 Name labels remain part of the Legacy Canvas renderer.  
 Three World water/vegetation materials are still first-pass presentation and need LOD/material/shoreline refinement.
@@ -62,12 +64,12 @@ A real TypeScript dependency install/typecheck has not yet run in this session b
 
 ## Next parallel work order
 
-1. Move the real resident actor/model pipeline into a WorldScene ResidentLayer without introducing placeholder production humans.
-2. Add terrain mesh pooling/dirty-chunk updates so unchanged geometry is not recreated every snapshot.
-3. Refine river continuity, lake shoreline shapes, coast/ocean transitions, and water materials.
-4. Add atmosphere/day-night lighting and weather hooks to Three World.
+1. Bring Three World ResidentLayer appearance/animation parity closer to Legacy and improve foot grounding on sloped terrain.
+2. Add terrain/water dirty-chunk signatures so unchanged geometry is not recreated every snapshot.
+3. Refine river continuity, lake shoreline shapes, coast/ocean transitions, wave/material behavior, and shoreline blending.
+4. Add weather state hooks (rain, fog intensity, wind) on top of the new day/night atmosphere system.
 5. Implement the defined Worker protocol and move Core stepping/query work off the main thread.
-6. Add snapshot sequence rejection so stale responses can never overwrite newer state.
+6. Wire SnapshotSequencer into the async Worker path so stale responses can never overwrite newer state.
 7. Add structures/tools/traces layers and resident-object interaction anchors.
 8. Continue human animation/behavior presentation and society/life observation UI.
 
