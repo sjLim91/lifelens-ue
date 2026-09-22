@@ -37,7 +37,7 @@ export function RenderModeControl() {
         </button>
       </div>
       <p className="hint">
-        Three World는 지형·물·식생·실제 GLB 주민 통합 검증용입니다. 운영 기본값은 여전히 Legacy입니다.
+        Three World가 현재 기본 통합 렌더러입니다. Legacy는 WebGL/통합 렌더러 실패 시를 위한 비상 표현 경로입니다.
       </p>
     </section>
   );
