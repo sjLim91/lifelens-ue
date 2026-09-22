@@ -299,12 +299,25 @@ export class LegacyCanvasWorldRenderer {
           const wetland = clamp01(chunk.wetlandCoverage01);
     
           const cluster = presentationHash01(seed, chunk.x, chunk.y, 0, 'forest-cluster');
-          const treeCount = forest < 0.18 || cluster < 0.18 ? 0 : Math.min(5, 1 + Math.floor(forest * 4));
+          const treeCount = forest < 0.14 || cluster < 0.14
+            ? 0
+            : Math.min(
+              9,
+              1 + Math.floor(forest * 7) + (zoom >= 1.25 ? 1 : 0),
+            );
           for (let i = 0; i < treeCount; i += 1) {
-            const ox = (presentationHash01(seed, chunk.x, chunk.y, i, 'tree-x') - 0.5) * 0.72;
-            const oy = (presentationHash01(seed, chunk.x, chunk.y, i, 'tree-y') - 0.5) * 0.72;
+            const ox = (presentationHash01(seed, chunk.x, chunk.y, i, 'tree-x') - 0.5) * 0.78;
+            const oy = (presentationHash01(seed, chunk.x, chunk.y, i, 'tree-y') - 0.5) * 0.78;
             const [tx, ty] = project(lx + ox, ly + oy, e + 0.012);
-            const size = Math.max(2.2, tile * (0.055 + forest * 0.055) * (0.78 + presentationHash01(seed, chunk.x, chunk.y, i, 'tree-size') * 0.5));
+            const size = Math.max(
+              4.5,
+              Math.min(
+                tile * 0.48,
+                tile
+                  * (0.19 + forest * 0.13)
+                  * (0.78 + presentationHash01(seed, chunk.x, chunk.y, i, 'tree-size') * 0.48),
+              ),
+            );
             ctx.strokeStyle = '#4b3926';
             ctx.lineWidth = Math.max(0.8, size * 0.16);
             ctx.beginPath();
@@ -378,10 +391,21 @@ export class LegacyCanvasWorldRenderer {
     
       const displayDpr = Math.min(window.devicePixelRatio || 1, 2);
       const tileCssPx = tile / displayDpr;
-      const characterHeightCssPx = Math.max(12, Math.min(64, tileCssPx * 1.35));
+      // A Core chunk represents tens of metres. Keep humans at map scale instead
+      // of making them billboard-sized; mature trees should read several times taller.
+      const characterHeightCssPx = Math.max(
+        5.5,
+        Math.min(26, tileCssPx * 0.085),
+      );
       const characterHeightDevicePx = characterHeightCssPx * displayDpr;
-      const avatarRadius = Math.max(7 * displayDpr, characterHeightDevicePx * 0.28);
-      const residentRadius = Math.max(8 * displayDpr, characterHeightDevicePx * 0.32);
+      const avatarRadius = Math.max(
+        3 * displayDpr,
+        characterHeightDevicePx * 0.3,
+      );
+      const residentRadius = Math.max(
+        4 * displayDpr,
+        characterHeightDevicePx * 0.38,
+      );
       const fallbackElevation = visualElevation((rawMinElevation + rawMaxElevation) * 0.5);
       const projectedResidents = residentSnapshot.flatMap((resident, index) => {
         const position = residentContinuity.positionFor(resident);
