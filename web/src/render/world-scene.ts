@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { TerrainChunk, TerrainWindow } from '../runtime/core-types';
+import { AtmosphereLayer } from './atmosphere-layer';
 import { createTerrainGeometryBuilder } from './terrain-geometry';
 import { VegetationLayer } from './vegetation-layer';
 import { WaterLayer } from './water-layer';
@@ -24,19 +25,13 @@ export class WorldScene {
   private readonly terrainMeshes = new Map<string, TerrainMeshEntry>();
   private readonly waterLayer = new WaterLayer();
   private readonly vegetationLayer = new VegetationLayer();
+  private readonly atmosphere: AtmosphereLayer;
 
   constructor() {
-    this.scene.background = new THREE.Color(0x08100b);
     this.scene.add(this.terrainGroup);
     this.scene.add(this.waterLayer.group);
     this.scene.add(this.vegetationLayer.group);
-
-    const hemi = new THREE.HemisphereLight(0xf5f6ef, 0x29352e, 1.6);
-    this.scene.add(hemi);
-
-    const sun = new THREE.DirectionalLight(0xffffff, 1.8);
-    sun.position.set(-80, 160, 110);
-    this.scene.add(sun);
+    this.atmosphere = new AtmosphereLayer(this.scene);
 
     this.camera.position.set(0, 160, 180);
     this.camera.lookAt(0, 0, 0);
@@ -54,6 +49,10 @@ export class WorldScene {
 
     this.camera.position.set(horizontal, distance * 0.8, depth);
     this.camera.lookAt(0, 0, 0);
+  }
+
+  setSimulationMinute(minute: number): void {
+    this.atmosphere.setSimulationMinute(minute);
   }
 
   setTerrain(window: TerrainWindow): void {
@@ -96,6 +95,7 @@ export class WorldScene {
     this.terrainMeshes.clear();
     this.waterLayer.dispose();
     this.vegetationLayer.dispose();
+    this.atmosphere.dispose();
   }
 
   private chunkKey(chunk: TerrainChunk): string {
