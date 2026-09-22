@@ -354,6 +354,12 @@ uniform float uLifeLensGroundWindIntensity;`,
       ))
       .join('|');
 
+    const residueSig = (this.presentation?.residues ?? [])
+      .map((residue) => (
+        `${residue.id}:${Number(residue.intensity) || 0}:${Number(residue.radiusTiles) || 0}:${residue.gridX}:${residue.gridY}`
+      ))
+      .join('|');
+
     return [
       window.worldSeed ?? '0',
       window.centerChunkX,
@@ -361,6 +367,7 @@ uniform float uLifeLensGroundWindIntensity;`,
       terrainSig,
       facilitySig,
       resourceSig,
+      residueSig,
     ].join('#');
   }
 
@@ -550,6 +557,37 @@ uniform float uLifeLensGroundWindIntensity;`,
       })
       .filter((resource) => resource.depletion > 0.18);
 
+    const residuePoints = (this.presentation?.residues ?? [])
+      .map((residue) => ({
+        ...gridToWorld(residue.gridX, residue.gridY, window),
+        intensity: clamp01(residue.intensity),
+        radius: Math.max(
+          worldUnitsPerGrid * 0.7,
+          (Number(residue.radiusTiles) || 1) * worldUnitsPerGrid,
+        ),
+      }))
+      .filter((residue) => residue.intensity > 0.04);
+
+    const contaminationKeepAt = (
+      x: number,
+      z: number,
+    ): number => {
+      let keep = 1;
+      for (const residue of residuePoints) {
+        const distance = Math.hypot(
+          x - residue.x,
+          z - residue.z,
+        );
+        if (distance >= residue.radius) continue;
+        const falloff = 1 - distance / residue.radius;
+        keep = Math.min(
+          keep,
+          1 - residue.intensity * falloff * 0.76,
+        );
+      }
+      return clamp01(keep);
+    };
+
     const humanClearanceAt = (x: number, z: number): number => {
       let keep = 1;
       for (const facility of facilityPoints) {
@@ -731,7 +769,8 @@ uniform float uLifeLensGroundWindIntensity;`,
           || coastalEdgeFactor(chunk, localX, localY) > 0
         ) ? 0.42 : 1;
         const clearance = humanClearanceAt(x, z)
-          * resourceKeepAt(x, z, ['Fiber', 'PlantFood']);
+          * resourceKeepAt(x, z, ['Fiber', 'PlantFood'])
+          * contaminationKeepAt(x, z);
         const probability = clamp01(
           (grassCoverage * 0.78
             + shrubCoverage * 0.12
@@ -897,6 +936,7 @@ uniform float uLifeLensGroundWindIntensity;`,
           (rockCoverage * 0.72 + slope * 0.28)
           * (0.42 + cluster * 0.72)
           * humanClearanceAt(x, z)
+          * (0.72 + contaminationKeepAt(x, z) * 0.28)
           * (0.55 + depletionKeep * 0.45),
         );
         if (hash01(seed, chunk.x, chunk.y, index, 54) > probability) {
@@ -1037,7 +1077,8 @@ uniform float uLifeLensGroundWindIntensity;`,
           + depletionBoost * 0.55,
         ) * (0.45 + cluster * 0.68)
           * (1 - slope * 0.55)
-          * humanClearanceAt(x, z);
+          * humanClearanceAt(x, z)
+          * (0.72 + contaminationKeepAt(x, z) * 0.28);
         if (hash01(seed, chunk.x, chunk.y, index, 74) > probability) {
           continue;
         }
