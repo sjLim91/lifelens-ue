@@ -91,11 +91,15 @@ export function startObserverEngine(): void {
   let localPanX = 0;
   let localPanZ = 0;
   let autoFrameActivity = true;
+  let autoFrameZoom = true;
   new CameraInput(canvas, {
     initialAngle: angle,
     initialElevation: elevation,
     initialZoom: zoom,
     onChange(next) {
+      if (Math.abs(next.zoom - zoom) > 0.0001) {
+        autoFrameZoom = false;
+      }
       angle = next.angle;
       elevation = next.elevation;
       zoom = next.zoom;
@@ -230,6 +234,9 @@ export function startObserverEngine(): void {
       const point = gridToLocalWorld(selected.gridX, selected.gridY);
       localPanX = point.x;
       localPanZ = point.z;
+      if (autoFrameZoom) {
+        zoom = compactViewport ? 2.25 : 1.9;
+      }
       return;
     }
 
@@ -268,6 +275,27 @@ export function startObserverEngine(): void {
     }
     localPanX = weightedX / Math.max(1, weightTotal);
     localPanZ = weightedZ / Math.max(1, weightTotal);
+
+    if (autoFrameZoom) {
+      let maxRadius = 0;
+      for (const point of points) {
+        maxRadius = Math.max(
+          maxRadius,
+          Math.hypot(
+            point.x - localPanX,
+            point.z - localPanZ,
+          ),
+        );
+      }
+      const targetZoom = 86 / Math.max(30, maxRadius + 26);
+      zoom = Math.max(
+        OBSERVER_CAMERA_CONTRACT.minZoom,
+        Math.min(
+          compactViewport ? 2.25 : 2.15,
+          targetZoom,
+        ),
+      );
+    }
   }
   
   function refresh(): void {
@@ -345,6 +373,7 @@ export function startObserverEngine(): void {
     centerY = 0;
     followResidents = false;
     autoFrameActivity = true;
+    autoFrameZoom = true;
     localPanX = 0;
     localPanZ = 0;
     residentSnapshot = [];
@@ -359,6 +388,7 @@ export function startObserverEngine(): void {
   function selectResident(residentId: string | null): void {
     observerStore.selectResident(residentId);
     autoFrameActivity = residentId !== null;
+    if (residentId !== null) autoFrameZoom = true;
     if (residentId !== null) {
       const selected = residentSnapshot.find(
         (resident) => resident.id === residentId,
@@ -397,6 +427,7 @@ export function startObserverEngine(): void {
   function recenterObserver(): void {
     if (!worldSession) return;
     autoFrameActivity = true;
+    autoFrameZoom = true;
     localPanX = 0;
     localPanZ = 0;
     worldSession.recenterToResidents();
