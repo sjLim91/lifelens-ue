@@ -8,6 +8,7 @@ import {
   WorldOverlay,
 } from './ui/observer-readout';
 import { DiagnosticsPanel } from './ui/diagnostics-panel';
+import { RenderModeControl } from './ui/render-mode-control';
 
 function Topbar() {
   const snapshot = useObserverSnapshot();
@@ -29,6 +30,7 @@ function WorldViewport() {
   return (
     <section className="world">
       <canvas id="worldCanvas" aria-label="LifeLens world observer" />
+      <canvas id="threeWorldCanvas" aria-label="LifeLens experimental Three.js world" />
       <canvas id="characterCanvas" aria-label="LifeLens residents" />
       <WorldOverlay snapshot={snapshot} />
       <div
@@ -154,6 +156,7 @@ function ObserverPanel() {
       </section>
 
       <DiagnosticsPanel />
+      <RenderModeControl />
     </aside>
   );
 }
