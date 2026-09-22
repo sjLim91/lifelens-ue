@@ -45,6 +45,7 @@ export class SimulationClock {
       () => this.refresh(),
       this.refreshIntervalMs,
     );
+    document.addEventListener('visibilitychange', this.handleVisibilityChange);
   }
 
   stop(): void {
@@ -52,12 +53,23 @@ export class SimulationClock {
     if (this.refreshTimer !== null) window.clearInterval(this.refreshTimer);
     this.tickTimer = null;
     this.refreshTimer = null;
+    document.removeEventListener('visibilitychange', this.handleVisibilityChange);
   }
 
   resetAccumulator(): void {
     this.lastWallMs = Date.now();
     this.accumulatorMs = 0;
   }
+
+  private readonly handleVisibilityChange = (): void => {
+    if (document.visibilityState !== 'visible') return;
+
+    // Browser timers are heavily throttled in background tabs. Catch up from
+    // wall time immediately on resume, then repaint without waiting for the
+    // next interval so the observer never appears frozen.
+    this.tick();
+    this.refresh();
+  };
 
   private tick(): void {
     const now = Date.now();
