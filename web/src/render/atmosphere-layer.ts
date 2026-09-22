@@ -38,6 +38,16 @@ export class AtmosphereLayer {
       depthWrite: false,
     }),
   );
+  private readonly cloudGeometry = new THREE.SphereGeometry(1, 10, 7);
+  private readonly cloudMaterial = new THREE.MeshBasicMaterial({
+    color: 0xe1e5e2,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    fog: false,
+  });
+  private readonly cloudClusters: THREE.Group[] = [];
+  private cloudTime = 0;
   private minuteValue = 8 * 60;
   private environment: DynamicEnvironment | null = null;
 
@@ -65,6 +75,7 @@ export class AtmosphereLayer {
     this.group.add(this.moon);
     this.group.add(this.sunDisc);
     this.group.add(this.moonDisc);
+    this.createCloudField();
     this.scene.add(this.group);
     this.scene.fog = new THREE.FogExp2(0x0b1510, 0.0032);
 
@@ -81,10 +92,74 @@ export class AtmosphereLayer {
     return this.apply();
   }
 
+  update(deltaSeconds: number): void {
+    const dt = Math.min(0.05, Math.max(0, deltaSeconds));
+    this.cloudTime += dt;
+    const cloud = clamp01(this.environment?.cloudCover01);
+    const wind = clamp01(this.environment?.windIntensity01);
+    if (cloud <= 0.02) return;
+
+    const drift = 0.8 + wind * 3.6;
+    for (let index = 0; index < this.cloudClusters.length; index += 1) {
+      const cluster = this.cloudClusters[index];
+      cluster.position.x += dt * drift * (0.65 + (index % 4) * 0.08);
+      cluster.position.z += dt * drift * 0.24;
+      cluster.position.y += Math.sin(
+        this.cloudTime * 0.17 + index * 1.37,
+      ) * dt * 0.08;
+      if (cluster.position.x > 410) cluster.position.x = -410;
+      if (cluster.position.z > 300) cluster.position.z = -300;
+    }
+  }
+
   dispose(): void {
     this.sunDisc.material.dispose();
     this.moonDisc.material.dispose();
+    this.cloudGeometry.dispose();
+    this.cloudMaterial.dispose();
     this.scene.remove(this.group);
+  }
+
+  private createCloudField(): void {
+    for (let index = 0; index < 18; index += 1) {
+      const cluster = new THREE.Group();
+      const angle = (index / 18) * Math.PI * 2;
+      const radius = 220 + (index % 5) * 36;
+      cluster.position.set(
+        Math.cos(angle) * radius,
+        92 + (index % 4) * 15,
+        Math.sin(angle) * radius * 0.72,
+      );
+      const clusterScale = 14 + (index % 6) * 2.4;
+      cluster.scale.set(
+        clusterScale,
+        clusterScale * 0.38,
+        clusterScale * 0.78,
+      );
+
+      const puffCount = 3 + (index % 3);
+      for (let puffIndex = 0; puffIndex < puffCount; puffIndex += 1) {
+        const puff = new THREE.Mesh(
+          this.cloudGeometry,
+          this.cloudMaterial,
+        );
+        puff.position.set(
+          (puffIndex - (puffCount - 1) * 0.5) * 0.82,
+          (puffIndex % 2) * 0.28,
+          ((puffIndex * 37) % 3 - 1) * 0.34,
+        );
+        puff.scale.set(
+          1 + (puffIndex % 2) * 0.38,
+          0.72 + (puffIndex % 3) * 0.12,
+          0.9 + ((puffIndex + 1) % 2) * 0.34,
+        );
+        cluster.add(puff);
+      }
+
+      cluster.visible = false;
+      this.cloudClusters.push(cluster);
+      this.group.add(cluster);
+    }
   }
 
   private apply(): AtmosphereState {
@@ -145,6 +220,30 @@ export class AtmosphereLayer {
     }
     sky.lerp(overcast, clamp01(cloud * 0.62 + precipitation * 0.24));
     this.scene.background = sky;
+
+    const visibleClouds = Math.round(cloud * this.cloudClusters.length);
+    const cloudColor = new THREE.Color(0xe1e5e2)
+      .lerp(
+        new THREE.Color(storm ? 0x6d777b : 0xa8b2b0),
+        clamp01(cloud * 0.72 + precipitation * 0.25),
+      );
+    this.cloudMaterial.color.copy(cloudColor);
+    this.cloudMaterial.opacity = Math.max(
+      0,
+      Math.min(
+        0.56,
+        0.12 + cloud * 0.32 + precipitation * 0.12,
+      ),
+    );
+    for (let index = 0; index < this.cloudClusters.length; index += 1) {
+      const cluster = this.cloudClusters[index];
+      cluster.visible = index < visibleClouds;
+      const depthScale = 0.9 + cloud * 0.22 + (index % 4) * 0.025;
+      cluster.scale.multiplyScalar(
+        depthScale / Math.max(0.001, Number(cluster.userData.lastCloudScale) || 1),
+      );
+      cluster.userData.lastCloudScale = depthScale;
+    }
 
     if (this.scene.fog instanceof THREE.FogExp2) {
       const fogNight = new THREE.Color(0x101c20);
