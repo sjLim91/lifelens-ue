@@ -991,6 +991,9 @@ uniform float uLifeLensWindIntensity;`,
       if (mesh.instanceColor) {
         mesh.instanceColor.needsUpdate = true;
       }
+      if (mesh.count > 0) {
+        mesh.computeBoundingSphere();
+      }
     }
   }
 
