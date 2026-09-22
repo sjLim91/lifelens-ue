@@ -192,6 +192,8 @@ export class WorldScene {
     const panY = Number(state.panY) || 0;
     const panZ = Number(state.panZ) || 0;
 
+    this.weatherLayer.setAnchor(panX, panY, panZ);
+
     this.camera.position.set(
       Math.cos(state.angle) * groundRadius + panX,
       Math.sin(elevation) * distance + panY,
