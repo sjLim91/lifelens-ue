@@ -14,6 +14,8 @@ The repository now contains `web/` as the canonical browser development tree.
 
 Production AppDeploy is no longer treated as the only source copy. New work is committed to GitHub first.
 
+A GitHub Actions workflow at `.github/workflows/web-typecheck.yml` runs the TypeScript typecheck for changes under `web/`. This is a validation workflow only; it does not deploy.
+
 ## Current un-deployed patch
 
 The GitHub web source includes a zoom-coherence patch that is intentionally not deployed.
@@ -40,7 +42,7 @@ Terrain is still rebuilt as Canvas2D presentation instead of reusable world geom
 
 ## Next work order
 
-1. Validate the GitHub canonical web source and finish current zoom regression cleanup.
+1. Keep the GitHub canonical web source type-clean and finish current zoom regression cleanup.
 2. Split Core bridge, render state, camera state, and UI state out of `observer-engine.ts`.
 3. Replace direct DOM mutation with typed React subscriptions.
 4. Introduce a unified Three.js `WorldScene` and move terrain/camera projection into it.
