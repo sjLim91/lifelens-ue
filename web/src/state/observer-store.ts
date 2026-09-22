@@ -1,4 +1,5 @@
 import type {
+  DynamicEnvironment,
   Resident,
   TerrainWindow,
   WorldOverview,
@@ -23,6 +24,7 @@ export interface ObserverSnapshot {
   world: WorldOverview;
   residents: Resident[];
   terrain: TerrainWindow | null;
+  environment: DynamicEnvironment | null;
   camera: CameraState;
   runtime: RuntimeState;
   selectedResidentId: string | null;
@@ -35,6 +37,7 @@ const INITIAL_STATE: ObserverSnapshot = {
   world: {},
   residents: [],
   terrain: null,
+  environment: null,
   camera: {
     centerChunkX: 0,
     centerChunkY: 0,
@@ -119,6 +122,7 @@ class ObserverStore {
       world: {},
       residents: [],
       terrain: null,
+      environment: null,
       selectedResidentId: null,
       camera: {
         ...INITIAL_STATE.camera,
