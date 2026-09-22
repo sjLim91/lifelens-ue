@@ -194,6 +194,93 @@ function addStone(
   group.add(mesh);
 }
 
+function addConstructionMaterials(
+  group: THREE.Group,
+  facility: WorldFacility,
+  wood: THREE.Material,
+  stone: THREE.Material,
+  fiber: THREE.Material,
+): void {
+  if (
+    facility.state !== 'Planned'
+    && facility.state !== 'UnderConstruction'
+  ) {
+    return;
+  }
+
+  const progress = clamp01(facility.workProgress);
+  const woodCount = 2 + Math.floor(progress * 4);
+  const stoneCount = 2 + Math.floor(progress * 3);
+  for (let index = 0; index < woodCount; index += 1) {
+    const angle = -0.9 + index * 0.26;
+    addLog(
+      group,
+      1.3 + (index % 2) * 0.35,
+      0.09 + (index % 3) * 0.015,
+      [
+        -2.5 + (index % 3) * 0.32,
+        0.12 + Math.floor(index / 3) * 0.17,
+        1.65 + (index % 2) * 0.22,
+      ],
+      angle,
+      wood,
+    );
+  }
+  for (let index = 0; index < stoneCount; index += 1) {
+    addStone(
+      group,
+      0.22 + (index % 2) * 0.05,
+      [
+        2.1 + (index % 3) * 0.28,
+        0.15 + Math.floor(index / 3) * 0.12,
+        -1.45 + (index % 2) * 0.32,
+      ],
+      stone,
+      index + 93,
+    );
+  }
+
+  if (progress > 0.32) {
+    const bundle = new THREE.Mesh(
+      new THREE.BoxGeometry(1.25, 0.18, 0.92),
+      fiber,
+    );
+    bundle.position.set(-1.95, 0.14, -1.65);
+    bundle.rotation.y = -0.24;
+    bundle.castShadow = true;
+    group.add(bundle);
+  }
+}
+
+function addSmokePuffs(
+  group: THREE.Group,
+  baseY: number,
+  baseZ: number,
+): void {
+  const smokeMaterial = new THREE.MeshBasicMaterial({
+    color: 0xb5bab6,
+    transparent: true,
+    opacity: 0.13,
+    depthWrite: false,
+  });
+  for (let index = 0; index < 4; index += 1) {
+    const puff = new THREE.Mesh(
+      new THREE.SphereGeometry(0.25 + index * 0.08, 8, 6),
+      smokeMaterial.clone(),
+    );
+    puff.position.set(
+      (index % 2 ? 1 : -1) * 0.1,
+      baseY + index * 0.46,
+      baseZ + (index % 2 ? 0.06 : -0.04),
+    );
+    puff.userData.lifeLensSmoke = true;
+    puff.userData.baseY = puff.position.y;
+    puff.userData.phase = index * 1.7;
+    puff.renderOrder = 6;
+    group.add(puff);
+  }
+}
+
 function addFacilityShape(
   group: THREE.Group,
   facility: WorldFacility,
@@ -224,6 +311,8 @@ function addFacilityShape(
       ? { emissive: 0xff6b12, emissiveIntensity: 2.8 }
       : {},
   );
+
+  addConstructionMaterials(group, facility, freshWood, stone, fiber);
 
   switch (facility.kind) {
     case 'PrimitiveStorage': {
@@ -311,6 +400,7 @@ function addFacilityShape(
         flame.userData.lifeLensFireFlame = true;
         flame.userData.baseScaleY = 1;
         group.add(light);
+        addSmokePuffs(group, 1.45, 0);
       }
       break;
     }
@@ -453,6 +543,7 @@ function addFacilityShape(
         light.userData.lifeLensFireLight = true;
         light.userData.baseIntensity = 2.45;
         group.add(light);
+        addSmokePuffs(group, 3.85 * progress, 0);
       }
       break;
     }
@@ -779,6 +870,26 @@ export class WorldConsequenceLayer {
         const baseScaleY = Number(object.userData.baseScaleY) || 1;
         object.scale.y = baseScaleY * (0.94 + fast * 0.08);
         object.rotation.y = slow * 0.08;
+      }
+      if (
+        object instanceof THREE.Mesh
+        && object.userData.lifeLensSmoke
+      ) {
+        const baseY = Number(object.userData.baseY) || 0;
+        const phase = Number(object.userData.phase) || 0;
+        const cycle = (
+          this.animationTime * 0.34
+          + phase * 0.11
+        ) % 1;
+        object.position.y = baseY + cycle * 1.35;
+        object.position.x = Math.sin(
+          this.animationTime * 0.7 + phase,
+        ) * 0.18;
+        object.scale.setScalar(0.8 + cycle * 0.72);
+        const material = object.material;
+        if (material instanceof THREE.MeshBasicMaterial) {
+          material.opacity = 0.13 * (1 - cycle);
+        }
       }
     });
   }
