@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type {
+  DynamicEnvironment,
   TerrainWindow,
   WorldFacility,
   WorldPresentationSnapshot,
@@ -157,14 +158,65 @@ export class VegetationLayer {
     }
   }
 
-  setWindIntensity(intensity01: number): void {
-    this.windIntensity = Math.max(
-      0,
-      Math.min(1, Number(intensity01) || 0),
+  setEnvironment(
+    environment: DynamicEnvironment | null,
+  ): void {
+    this.setWindIntensity(
+      Number(environment?.windIntensity01) || 0,
     );
-    for (const uniforms of this.windUniforms) {
-      uniforms.intensity.value = this.windIntensity;
-    }
+
+    const snow = environment?.precipitationType === 'Snow'
+      ? Math.max(
+          0,
+          Math.min(
+            1,
+            Number(environment?.precipitationIntensity01) || 0,
+          ),
+        )
+      : 0;
+    const wetness = Math.max(
+      0,
+      Math.min(1, Number(environment?.surfaceWetness01) || 0),
+    );
+
+    const applySurface = (
+      material: THREE.MeshStandardMaterial,
+      snowAmount: number,
+      wetDarken: number,
+    ): void => {
+      if (!material.userData.lifeLensBaseColor) {
+        material.userData.lifeLensBaseColor = material.color.clone();
+      }
+      const baseColor = material.userData.lifeLensBaseColor;
+      if (baseColor instanceof THREE.Color) {
+        material.color.copy(baseColor);
+        material.color.multiplyScalar(1 - wetness * wetDarken);
+        if (snow > 0.02 && snowAmount > 0) {
+          material.color.lerp(
+            new THREE.Color(0xdde6df),
+            Math.min(snowAmount, snow * snowAmount),
+          );
+        }
+      }
+      const baseRoughness = Number(
+        material.userData.lifeLensBaseRoughness
+          ?? material.roughness,
+      );
+      material.userData.lifeLensBaseRoughness = baseRoughness;
+      material.roughness = Math.max(
+        0.55,
+        baseRoughness - wetness * 0.18,
+      );
+      material.needsUpdate = true;
+    };
+
+    applySurface(this.trunkMaterial, 0.05, 0.08);
+    applySurface(this.lowerCrownMaterial, 0.1, 0.1);
+    applySurface(this.middleCrownMaterial, 0.16, 0.1);
+    applySurface(this.upperCrownMaterial, 0.24, 0.1);
+    applySurface(this.shrubMaterial, 0.13, 0.1);
+    applySurface(this.rockMaterial, 0.2, 0.09);
+    applySurface(this.stumpMaterial, 0.08, 0.08);
   }
 
   update(deltaSeconds: number): void {
