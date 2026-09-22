@@ -176,7 +176,16 @@ static bool sameSnapshot(const SimulationStateSnapshot& a,const SimulationStateS
               x.lastGoal==y.lastGoal && x.repeatCount==y.repeatCount && x.consecutiveFailures==y.consecutiveFailures &&
               x.penaltyUntilMinute==y.penaltyUntilMinute && x.socialCooldownUntilMinute==y.socialCooldownUntilMinute &&
               x.socialActive==y.socialActive && x.socialIntent==y.socialIntent && x.socialTarget==y.socialTarget &&
-              samePendingContext(x.pendingContext,y.pendingContext) && x.plan.size()==y.plan.size());
+              samePendingContext(x.pendingContext,y.pendingContext) &&
+              x.navigationRoute==y.navigationRoute &&
+              x.navigationRouteIndex==y.navigationRouteIndex &&
+              x.navigationTarget.x==y.navigationTarget.x &&
+              x.navigationTarget.y==y.navigationTarget.y &&
+              x.navigationArrivalRadius==y.navigationArrivalRadius &&
+              x.navigationHasTarget==y.navigationHasTarget &&
+              x.navigationArrived==y.navigationArrived &&
+              x.navigationRouteFailed==y.navigationRouteFailed &&
+              x.plan.size()==y.plan.size());
         for(std::size_t i=0;i<x.plan.size();++i) CHECK(x.plan[i].type==y.plan[i].type && x.plan[i].objectId==y.plan[i].objectId && x.plan[i].remainingTicks==y.plan[i].remainingTicks);
     }
     CHECK(a.logs==b.logs);
