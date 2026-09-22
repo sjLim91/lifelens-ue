@@ -80,10 +80,14 @@ int main()
     CHECK(world.facilities.empty());
     CHECK(world.storageSites.empty());
 
+    const GridPos activityAnchor=world.hasInitialStartRegionSelection
+        ? world.initialStartRegionCenterGrid()
+        : GridPos{};
+
     // Discovery only grants know-how. Planning a real Core position is a
     // separate spatial action and still creates no usable storage by itself.
     CivilizationUtilityDecision plan=
-        bestPrimitiveStorageConstructionDecision(world,resident);
+        bestPrimitiveStorageConstructionDecision(world,resident,activityAnchor);
     CHECK(plan.intent==CivilizationIntent::Craft);
     CHECK(plan.technique==TechniqueId::PrimitiveStorage);
     CHECK(plan.facilityAction==FacilityBuildAction::Plan);
@@ -92,7 +96,7 @@ int main()
     GridPos resolved{};
     SanitationSiteId sanitationSite=0;
     CHECK(resolveCivilizationContextTarget(
-        world,resident,plan,resolved,sanitationSite));
+        world,resident,plan,activityAnchor,resolved,sanitationSite));
     CHECK(resolved.x==plan.facilityTargetPos.x);
     CHECK(resolved.y==plan.facilityTargetPos.y);
     CHECK(civilizationContextRequiresSpatialTarget(plan));
@@ -110,11 +114,11 @@ int main()
     int deliveredFiber=0;
     for(int i=0;i<8 && !facilityMaterialsComplete(world.facilities[0]);++i){
         CivilizationUtilityDecision delivery=
-            bestPrimitiveStorageConstructionDecision(world,resident);
+            bestPrimitiveStorageConstructionDecision(world,resident,activityAnchor);
         CHECK(delivery.facilityAction==FacilityBuildAction::DeliverMaterial);
         CHECK(delivery.facility==world.facilities[0].id);
         CHECK(resolveCivilizationContextTarget(
-            world,resident,delivery,resolved,sanitationSite));
+            world,resident,delivery,activityAnchor,resolved,sanitationSite));
         const int woodBefore=resident.civilization.inventory.count(
             ItemKind::RawMaterial,MaterialKind::Wood);
         const int fiberBefore=resident.civilization.inventory.count(
@@ -143,11 +147,11 @@ int main()
     int workActions=0;
     while(!hasOperationalPrimitiveStorage(world) && workActions<16){
         CivilizationUtilityDecision work=
-            bestPrimitiveStorageConstructionDecision(world,resident);
+            bestPrimitiveStorageConstructionDecision(world,resident,activityAnchor);
         CHECK(work.facilityAction==FacilityBuildAction::Work);
         CHECK(work.facilityWork>0.0);
         CHECK(resolveCivilizationContextTarget(
-            world,resident,work,resolved,sanitationSite));
+            world,resident,work,activityAnchor,resolved,sanitationSite));
         const CivilizationExecutionResult result=
             executeCivilizationDecision(world,resident,work);
         CHECK(result.executed && result.success);
