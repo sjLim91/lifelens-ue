@@ -242,6 +242,46 @@ const char* socialPresentationLevelName(SocialPresentationLevel level)
     return "Everyday";
 }
 
+const char* itemKindName(ItemKind item)
+{
+    switch (item) {
+        case ItemKind::RawMaterial: return "RawMaterial";
+        case ItemKind::SharpFlake: return "SharpFlake";
+        case ItemKind::StoneCuttingTool: return "StoneCuttingTool";
+        case ItemKind::Cordage: return "Cordage";
+        case ItemKind::SimpleContainer: return "SimpleContainer";
+        case ItemKind::FuelBundle: return "FuelBundle";
+        case ItemKind::DiggingStick: return "DiggingStick";
+        case ItemKind::StoneHammer: return "StoneHammer";
+    }
+    return "RawMaterial";
+}
+
+const char* knowledgeLevelName(KnowledgeLevel level)
+{
+    switch (level) {
+        case KnowledgeLevel::Unknown: return "Unknown";
+        case KnowledgeLevel::Observed: return "Observed";
+        case KnowledgeLevel::Hypothesized: return "Hypothesized";
+        case KnowledgeLevel::Understood: return "Understood";
+        case KnowledgeLevel::Reproducible: return "Reproducible";
+        case KnowledgeLevel::Practiced: return "Practiced";
+        case KnowledgeLevel::Mastered: return "Mastered";
+    }
+    return "Unknown";
+}
+
+const char* civilizationKnowledgeSourceName(CivilizationKnowledgeSource source)
+{
+    switch (source) {
+        case CivilizationKnowledgeSource::SelfDiscovery: return "SelfDiscovery";
+        case CivilizationKnowledgeSource::DirectWitness: return "DirectWitness";
+        case CivilizationKnowledgeSource::Teaching: return "Teaching";
+        case CivilizationKnowledgeSource::Unknown:
+        default: return "Unknown";
+    }
+}
+
 } // namespace
 
 WebClientBridge::WebClientBridge() = default;
@@ -381,6 +421,8 @@ std::string WebClientBridge::residentsJson() const
             simulation_->observePendingContextAction(resident.id);
         const ResidentCivilizationActivityObservation civilizationActivity =
             simulation_->observeResidentCivilizationActivity(resident.id);
+        const ResidentCivilizationObservation civilization =
+            simulation_->observeResidentCivilization(resident.id);
 
         const TraitProfile traits = character
             ? deriveTraitProfile(character->personality, character->genetics)
@@ -517,6 +559,54 @@ std::string WebClientBridge::residentsJson() const
         out << "\"targetGridX\":" << civilizationActivity.targetGridX << ",";
         out << "\"targetGridY\":" << civilizationActivity.targetGridY << ",";
         out << "\"sanitationSiteId\":\"" << civilizationActivity.sanitationSiteId << "\"";
+        out << "},";
+
+        out << "\"civilization\":{";
+        out << "\"totalInventoryUnits\":" << civilization.totalInventoryUnits << ",";
+        out << "\"gatheringSkill\":"; appendDouble(out, civilization.gatheringSkill); out << ",";
+        out << "\"craftingSkill\":"; appendDouble(out, civilization.craftingSkill); out << ",";
+        out << "\"learningSkill\":"; appendDouble(out, civilization.learningSkill); out << ",";
+        out << "\"knownTechniqueCount\":" << civilization.knownTechniqueCount << ",";
+        out << "\"reproducibleTechniqueCount\":" << civilization.reproducibleTechniqueCount << ",";
+        out << "\"latestKnowledgeMinute\":" << civilization.latestKnowledgeMinute << ",";
+        out << "\"latestTechnique\":\"" << techniqueName(civilization.latestTechnique) << "\",";
+        out << "\"inventory\":[";
+        for (std::size_t inventoryIndex = 0;
+             inventoryIndex < civilization.inventory.size();
+             ++inventoryIndex) {
+            if (inventoryIndex != 0) out << ",";
+            const CivilizationItemObservation& item =
+                civilization.inventory[inventoryIndex];
+            out << "{";
+            out << "\"item\":\"" << itemKindName(item.item) << "\",";
+            out << "\"material\":\"" << materialName(item.material) << "\",";
+            out << "\"quantity\":" << item.quantity << ",";
+            out << "\"quality\":"; appendDouble(out, item.quality); out << ",";
+            out << "\"durability\":"; appendDouble(out, item.durability);
+            out << "}";
+        }
+        out << "],";
+        out << "\"techniques\":[";
+        for (std::size_t techniqueIndex = 0;
+             techniqueIndex < civilization.techniques.size();
+             ++techniqueIndex) {
+            if (techniqueIndex != 0) out << ",";
+            const CivilizationTechniqueObservation& technique =
+                civilization.techniques[techniqueIndex];
+            out << "{";
+            out << "\"technique\":\"" << techniqueName(technique.technique) << "\",";
+            out << "\"level\":\"" << knowledgeLevelName(technique.level) << "\",";
+            out << "\"confidence\":"; appendDouble(out, technique.confidence); out << ",";
+            out << "\"successfulUses\":" << technique.successfulUses << ",";
+            out << "\"hasProvenance\":" << (technique.hasProvenance ? "true" : "false") << ",";
+            out << "\"originResidentId\":\"" << technique.originResidentId << "\",";
+            out << "\"immediateSourceId\":\"" << technique.immediateSourceId << "\",";
+            out << "\"source\":\"" << civilizationKnowledgeSourceName(technique.source) << "\",";
+            out << "\"learnedMinute\":" << technique.learnedMinute << ",";
+            out << "\"hopCount\":" << technique.hopCount;
+            out << "}";
+        }
+        out << "]";
         out << "},";
 
         out << "\"emotion\":{";
@@ -696,7 +786,7 @@ std::string WebClientBridge::worldPresentationJson() const
     }
 
     const CivilizationWorldObservation civilization =
-        simulation_->observeCivilizationWorld(0);
+        simulation_->observeCivilizationWorld(16);
     const EnvironmentObservation environment =
         simulation_->observeEnvironment(96);
     const std::vector<SocialCommunicationObservation> socialEvents =
@@ -707,6 +797,77 @@ std::string WebClientBridge::worldPresentationJson() const
     out << "{";
     out << "\"available\":true,";
     out << "\"minute\":" << world.minute << ",";
+
+    out << "\"resources\":[";
+    std::size_t emittedResources = 0;
+    for (const ResourceNode& resource : world.resourceNodes) {
+        if (resource.id == 0 || resource.quantity <= 0 || emittedResources >= 128) continue;
+        if (emittedResources != 0) out << ",";
+        ++emittedResources;
+        out << "{";
+        out << "\"id\":\"" << resource.id << "\",";
+        out << "\"material\":\"" << materialName(resource.material) << "\",";
+        out << "\"quantity\":" << resource.quantity << ",";
+        out << "\"maxQuantity\":" << resource.maxQuantity << ",";
+        out << "\"renewable\":" << (resource.renewable ? "true" : "false") << ",";
+        out << "\"regenerationPerDay\":" << resource.regenerationPerDay << ",";
+        out << "\"gridX\":" << resource.pos.x << ",";
+        out << "\"gridY\":" << resource.pos.y;
+        out << "}";
+    }
+    out << "],";
+
+    out << "\"storages\":[";
+    for (std::size_t storageIndex = 0;
+         storageIndex < world.storageSites.size();
+         ++storageIndex) {
+        if (storageIndex != 0) out << ",";
+        const StorageSite& storage = world.storageSites[storageIndex];
+        int totalUnits = 0;
+        for (const ItemStack& stack : storage.inventory.stacks()) {
+            totalUnits += std::max(0, stack.quantity);
+        }
+        out << "{";
+        out << "\"id\":\"" << storage.id << "\",";
+        out << "\"gridX\":" << storage.pos.x << ",";
+        out << "\"gridY\":" << storage.pos.y << ",";
+        out << "\"totalUnits\":" << totalUnits << ",";
+        out << "\"inventory\":[";
+        const auto& stacks = storage.inventory.stacks();
+        for (std::size_t itemIndex = 0; itemIndex < stacks.size(); ++itemIndex) {
+            if (itemIndex != 0) out << ",";
+            const ItemStack& stack = stacks[itemIndex];
+            out << "{";
+            out << "\"item\":\"" << itemKindName(stack.kind) << "\",";
+            out << "\"material\":\"" << materialName(stack.material) << "\",";
+            out << "\"quantity\":" << stack.quantity << ",";
+            out << "\"quality\":"; appendDouble(out, stack.quality); out << ",";
+            out << "\"durability\":"; appendDouble(out, stack.durability);
+            out << "}";
+        }
+        out << "]";
+        out << "}";
+    }
+    out << "],";
+
+    out << "\"discoveries\":[";
+    for (std::size_t discoveryIndex = 0;
+         discoveryIndex < civilization.recentDiscoveries.size();
+         ++discoveryIndex) {
+        if (discoveryIndex != 0) out << ",";
+        const CivilizationDiscoveryObservation& discovery =
+            civilization.recentDiscoveries[discoveryIndex];
+        out << "{";
+        out << "\"factId\":\"" << discovery.factId << "\",";
+        out << "\"technique\":\"" << techniqueName(discovery.technique) << "\",";
+        out << "\"discovererId\":\"" << discovery.discovererId << "\",";
+        out << "\"discovererName\":\"" << escapeJson(discovery.discovererName) << "\",";
+        out << "\"minute\":" << discovery.minute << ",";
+        out << "\"recipientCount\":" << discovery.recipientCount << ",";
+        out << "\"livingKnowerCount\":" << discovery.livingKnowerCount;
+        out << "}";
+    }
+    out << "],";
 
     out << "\"facilities\":[";
     for (std::size_t i = 0; i < civilization.facilities.size(); ++i) {
