@@ -261,7 +261,7 @@ function actionTargetName(
     ?? '상대';
 }
 
-function materialDisplay(value: string | undefined): string {
+export function formatMaterialName(value: string | undefined): string {
   const labels: Record<string, string> = {
     Stone: '돌',
     Flint: '부싯돌',
@@ -281,7 +281,7 @@ function materialDisplay(value: string | undefined): string {
   return value ? (labels[value] ?? '재료') : '재료';
 }
 
-function techniqueDisplay(value: string | undefined): string {
+export function formatTechniqueName(value: string | undefined): string {
   const labels: Record<string, string> = {
     SharpFlake: '날카로운 박편',
     ChippedStoneTool: '뗀석기',
@@ -321,7 +321,7 @@ export function formatResidentCurrentAction(
     if (action.kind === 'KnowledgeTeaching') {
       return moving
         ? `${target}에게 기술을 가르치러 가는 중`
-        : `${target}에게 ${techniqueDisplay(action.technique)} 기술을 가르치는 중`;
+        : `${target}에게 ${formatTechniqueName(action.technique)} 기술을 가르치는 중`;
     }
 
     if (action.kind === 'Parenting') {
@@ -359,11 +359,11 @@ export function formatResidentCurrentAction(
         return build[action.facilityAction] ?? `${facility} 작업 중`;
       }
       switch (action.civilizationIntent) {
-        case 'Gather': return `${materialDisplay(action.material)} 채집 중`;
-        case 'Store': return `${materialDisplay(action.material)} 저장 중`;
-        case 'Retrieve': return `${materialDisplay(action.material)} 꺼내는 중`;
-        case 'Experiment': return `${techniqueDisplay(action.technique)} 실험 중`;
-        case 'Craft': return `${techniqueDisplay(action.technique)} 제작 중`;
+        case 'Gather': return `${formatMaterialName(action.material)} 채집 중`;
+        case 'Store': return `${formatMaterialName(action.material)} 저장 중`;
+        case 'Retrieve': return `${formatMaterialName(action.material)} 꺼내는 중`;
+        case 'Experiment': return `${formatTechniqueName(action.technique)} 실험 중`;
+        case 'Craft': return `${formatTechniqueName(action.technique)} 제작 중`;
         default: return '생활 기반 작업 중';
       }
     }
@@ -386,4 +386,51 @@ export function formatResidentCurrentAction(
   }
 
   return formatActivity(resident.activityLabel);
+}
+
+
+export function formatItemKind(value: string | undefined): string {
+  const labels: Record<string, string> = {
+    RawMaterial: '원재료',
+    SharpFlake: '날카로운 박편',
+    StoneCuttingTool: '뗀석기 도구',
+    Cordage: '섬유 끈',
+    SimpleContainer: '간이 용기',
+    FuelBundle: '연료 묶음',
+    DiggingStick: '굴착봉',
+    StoneHammer: '돌망치',
+  };
+  return value ? (labels[value] ?? '물품') : '물품';
+}
+
+export function formatKnowledgeLevel(value: string | undefined): string {
+  const labels: Record<string, string> = {
+    Unknown: '모름',
+    Observed: '목격',
+    Hypothesized: '가설',
+    Understood: '이해',
+    Reproducible: '재현 가능',
+    Practiced: '숙련',
+    Mastered: '통달',
+  };
+  return value ? (labels[value] ?? '알고 있음') : '알고 있음';
+}
+
+export function formatKnowledgeSource(value: string | undefined): string {
+  const labels: Record<string, string> = {
+    Unknown: '출처 불명',
+    SelfDiscovery: '직접 발견',
+    DirectWitness: '직접 목격',
+    Teaching: '다른 주민에게 배움',
+  };
+  return value ? (labels[value] ?? '출처 불명') : '출처 불명';
+}
+
+export function formatMemorySource(value: string | undefined): string {
+  const labels: Record<string, string> = {
+    DirectWitness: '직접 경험/목격',
+    ToldByOther: '다른 사람에게 전해 들음',
+    Inferred: '추론해서 형성',
+  };
+  return value ? (labels[value] ?? '출처 불명') : '출처 불명';
 }
