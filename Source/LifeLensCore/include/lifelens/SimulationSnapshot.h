@@ -52,6 +52,7 @@ struct SimulationStateSnapshot {
     PregnancyBook pregnancies;
     BirthBook births;
     SocialKnowledgeBook socialKnowledge;
+    std::uint64_t nextContextActionToken=InitialContextActionToken;
     std::unordered_map<CharacterId,SimulationRuntimeSnapshot> runtime;
     std::vector<std::string> logs;
 };
