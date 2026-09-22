@@ -44,6 +44,7 @@ interface ResidentActor {
   walkStateGraceSeconds: number;
   statusSprite: THREE.Sprite;
   statusText: string;
+  groundShadow: THREE.Mesh;
   initialized: boolean;
 }
 
@@ -311,6 +312,8 @@ function cloneActorMaterials(
     object.material = Array.isArray(object.material)
       ? object.material.map(cloneMaterial)
       : cloneMaterial(object.material);
+    object.castShadow = true;
+    object.receiveShadow = false;
   });
 }
 
@@ -563,6 +566,7 @@ export class ResidentWorldLayer {
       }
 
       actor.root.position.copy(actor.current);
+      actor.groundShadow.visible = actor.root.visible;
       actor.statusSprite.position.set(
         actor.current.x,
         actor.current.y + 2.48 + (stableHash(actor.statusText || 'idle') % 3) * 0.12,
@@ -788,6 +792,20 @@ export class ResidentWorldLayer {
     const statusSprite = makeStatusSprite();
     this.group.add(statusSprite);
 
+    const groundShadow = new THREE.Mesh(
+      new THREE.CircleGeometry(0.48, 24),
+      new THREE.MeshBasicMaterial({
+        color: 0x000000,
+        transparent: true,
+        opacity: 0.2,
+        depthWrite: false,
+      }),
+    );
+    groundShadow.rotation.x = -Math.PI * 0.5;
+    groundShadow.position.y = 0.015;
+    groundShadow.renderOrder = 2;
+    root.add(groundShadow);
+
     const actor: ResidentActor = {
       root,
       mixer,
@@ -805,6 +823,7 @@ export class ResidentWorldLayer {
       walkStateGraceSeconds: 0,
       statusSprite,
       statusText: '',
+      groundShadow,
       initialized: false,
     };
 
