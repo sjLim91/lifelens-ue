@@ -13,6 +13,7 @@ const MAX_PEBBLES = 3600;
 const MAX_SMALL_ROCKS = 2200;
 const MAX_BOULDERS = 1200;
 const MAX_DEADWOOD = 1600;
+const MAX_LITTER = 3200;
 
 function clamp01(value: unknown): number {
   return Math.max(0, Math.min(1, Number(value) || 0));
@@ -68,6 +69,27 @@ function createGrassGeometry(): THREE.BufferGeometry {
   return geometry;
 }
 
+function createLitterGeometry(): THREE.BufferGeometry {
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute(
+    'position',
+    new THREE.Float32BufferAttribute([
+      -0.24, 0, -0.08,
+       0.03, 0, -0.17,
+       0.28, 0,  0.02,
+       0.08, 0,  0.16,
+      -0.19, 0,  0.13,
+    ], 3),
+  );
+  geometry.setIndex([
+    0, 1, 4,
+    1, 2, 3,
+    1, 3, 4,
+  ]);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
 function gridToWorld(
   gridX: number,
   gridY: number,
@@ -98,12 +120,14 @@ export class GroundDetailLayer {
     0.72,
     6,
   );
+  private readonly litterGeometry = createLitterGeometry();
 
   private readonly grassBase = new THREE.Color(0x5d7340);
   private readonly pebbleBase = new THREE.Color(0x77736a);
   private readonly rockBase = new THREE.Color(0x68665f);
   private readonly boulderBase = new THREE.Color(0x625f58);
   private readonly deadwoodBase = new THREE.Color(0x5c4935);
+  private readonly litterBase = new THREE.Color(0x62513a);
 
   private readonly grassMaterial = new THREE.MeshStandardMaterial({
     color: this.grassBase,
@@ -131,6 +155,12 @@ export class GroundDetailLayer {
     roughness: 1,
     metalness: 0,
   });
+  private readonly litterMaterial = new THREE.MeshStandardMaterial({
+    color: this.litterBase,
+    roughness: 1,
+    metalness: 0,
+    side: THREE.DoubleSide,
+  });
 
   private readonly grass = new THREE.InstancedMesh(
     this.grassGeometry,
@@ -157,6 +187,11 @@ export class GroundDetailLayer {
     this.deadwoodMaterial,
     MAX_DEADWOOD,
   );
+  private readonly litter = new THREE.InstancedMesh(
+    this.litterGeometry,
+    this.litterMaterial,
+    MAX_LITTER,
+  );
 
   private readonly matrix = new THREE.Matrix4();
   private readonly position = new THREE.Vector3();
@@ -182,6 +217,7 @@ export class GroundDetailLayer {
       this.rocks,
       this.boulders,
       this.deadwood,
+      this.litter,
     ]) {
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       mesh.castShadow = false;
@@ -244,6 +280,7 @@ export class GroundDetailLayer {
     apply(this.rockMaterial, this.rockBase, 0.3, 0.08);
     apply(this.boulderMaterial, this.boulderBase, 0.34, 0.08);
     apply(this.deadwoodMaterial, this.deadwoodBase, 0.14, 0.09);
+    apply(this.litterMaterial, this.litterBase, 0.16, 0.1);
   }
 
   update(deltaSeconds: number): void {
@@ -302,11 +339,13 @@ uniform float uLifeLensGroundWindIntensity;`,
     this.rockGeometry.dispose();
     this.boulderGeometry.dispose();
     this.deadwoodGeometry.dispose();
+    this.litterGeometry.dispose();
     this.grassMaterial.dispose();
     this.pebbleMaterial.dispose();
     this.rockMaterial.dispose();
     this.boulderMaterial.dispose();
     this.deadwoodMaterial.dispose();
+    this.litterMaterial.dispose();
     this.grassWindUniforms = null;
   }
 
@@ -316,6 +355,7 @@ uniform float uLifeLensGroundWindIntensity;`,
     this.rocks.visible = this.zoom >= 0.78;
     this.boulders.visible = this.zoom >= 0.6;
     this.deadwood.visible = this.zoom >= 0.96;
+    this.litter.visible = this.zoom >= 1.08;
   }
 
   private signature(): string {
@@ -379,6 +419,7 @@ uniform float uLifeLensGroundWindIntensity;`,
       this.rocks.count = 0;
       this.boulders.count = 0;
       this.deadwood.count = 0;
+      this.litter.count = 0;
       return;
     }
 
@@ -626,6 +667,7 @@ uniform float uLifeLensGroundWindIntensity;`,
     let rockCount = 0;
     let boulderCount = 0;
     let deadwoodCount = 0;
+    let litterCount = 0;
 
     const placeInstance = (
       mesh: THREE.InstancedMesh,
@@ -1110,6 +1152,90 @@ uniform float uLifeLensGroundWindIntensity;`,
         );
         deadwoodCount += 1;
       }
+
+      const litterCandidates = Math.min(
+        14,
+        Math.floor(
+          forestCoverage * 10
+          + shrubCoverage * 2
+          + (moisture > 0.35 ? 1 : 0),
+        ),
+      );
+      for (
+        let index = 0;
+        index < litterCandidates && litterCount < MAX_LITTER;
+        index += 1
+      ) {
+        const localX = hash01(seed, chunk.x, chunk.y, index, 81);
+        const localY = hash01(seed, chunk.x, chunk.y, index, 82);
+        const riverEdge = riverShoreFactor(chunk, localX, localY);
+        if (
+          riverEdge.water
+          || chunk.waterKind === 'Ocean'
+          || chunk.waterKind === 'Coast'
+          || chunk.waterKind === 'Lake'
+          || wetlandCoverage > 0.68
+        ) {
+          continue;
+        }
+
+        const x = chunkCenterX + (localX - 0.5) * size * 0.9;
+        const z = chunkCenterZ + (localY - 0.5) * size * 0.9;
+        const slope = slopeAt(chunk, localX, localY);
+        const cluster = hash01(
+          seed,
+          Math.floor((chunk.x + localX) * 3),
+          Math.floor((chunk.y + localY) * 3),
+          0,
+          83,
+        );
+        const keep = humanClearanceAt(x, z)
+          * contaminationKeepAt(x, z)
+          * resourceKeepAt(x, z, ['Wood']);
+        const probability = clamp01(
+          forestCoverage * 0.62
+          + shrubCoverage * 0.08,
+        )
+          * (0.42 + cluster * 0.7)
+          * (1 - slope * 0.7)
+          * keep;
+        if (
+          hash01(seed, chunk.x, chunk.y, index, 84)
+          > probability
+        ) {
+          continue;
+        }
+
+        const y = sampleElevation(
+          chunk.x,
+          chunk.y,
+          localX,
+          localY,
+        ) * elevationScale + 0.014;
+        const scaleBase = 0.72
+          + hash01(seed, chunk.x, chunk.y, index, 85) * 1.0;
+        const litterTint = new THREE.Color(
+          moisture > 0.58 ? 0x514936 : 0x6d593e,
+        );
+        placeInstance(
+          this.litter,
+          litterCount,
+          x,
+          y,
+          z,
+          scaleBase * 1.15,
+          scaleBase,
+          scaleBase,
+          hash01(seed, chunk.x, chunk.y, index, 86) * Math.PI * 2,
+          0,
+          0,
+          this.litterBase,
+          0.06,
+          litterTint,
+          0.16,
+        );
+        litterCount += 1;
+      }
     }
 
     this.grass.count = grassCount;
@@ -1117,6 +1243,7 @@ uniform float uLifeLensGroundWindIntensity;`,
     this.rocks.count = rockCount;
     this.boulders.count = boulderCount;
     this.deadwood.count = deadwoodCount;
+    this.litter.count = litterCount;
 
     for (const mesh of [
       this.grass,
@@ -1124,6 +1251,7 @@ uniform float uLifeLensGroundWindIntensity;`,
       this.rocks,
       this.boulders,
       this.deadwood,
+      this.litter,
     ]) {
       mesh.instanceMatrix.needsUpdate = true;
       if (mesh.instanceColor) {
