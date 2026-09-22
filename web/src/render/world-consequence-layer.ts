@@ -7,6 +7,7 @@ import type {
   WorldResidue,
   WorldSanitationSite,
   WorldStorageSite,
+  DynamicEnvironment,
 } from '../runtime/core-types';
 import { WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
 import { createTerrainElevationSampler } from './terrain-geometry';
@@ -1120,7 +1121,53 @@ export class WorldConsequenceLayer {
   private lastSignature = '';
   private animationTime = 0;
   private cameraZoom = 1.25;
+  private surfaceWetness = 0;
+  private snowIntensity = 0;
   private readonly facilityProgress = new Map<string, number>();
+
+  setEnvironment(
+    environment: DynamicEnvironment | null,
+  ): void {
+    this.surfaceWetness = clamp01(environment?.surfaceWetness01);
+    this.snowIntensity = environment?.precipitationType === 'Snow'
+      ? clamp01(environment?.precipitationIntensity01)
+      : 0;
+
+    this.group.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return;
+      const materials = Array.isArray(object.material)
+        ? object.material
+        : [object.material];
+
+      for (const material of materials) {
+        if (!(material instanceof THREE.MeshStandardMaterial)) continue;
+        const baseRoughness = Number(
+          material.userData.lifeLensBaseRoughness
+            ?? material.roughness,
+        );
+        material.userData.lifeLensBaseRoughness = baseRoughness;
+        material.roughness = Math.max(
+          0.38,
+          baseRoughness - this.surfaceWetness * 0.28,
+        );
+
+        if (!material.userData.lifeLensBaseColor) {
+          material.userData.lifeLensBaseColor = material.color.clone();
+        }
+        const baseColor = material.userData.lifeLensBaseColor;
+        if (baseColor instanceof THREE.Color) {
+          material.color.copy(baseColor);
+          if (this.snowIntensity > 0.02) {
+            material.color.lerp(
+              new THREE.Color(0xdde5df),
+              Math.min(0.32, this.snowIntensity * 0.3),
+            );
+          }
+        }
+        material.needsUpdate = true;
+      }
+    });
+  }
 
   setCameraZoom(zoom: number): void {
     this.cameraZoom = Math.max(0.1, Number(zoom) || 1);
@@ -1368,6 +1415,11 @@ export class WorldConsequenceLayer {
     }
 
     this.refreshLabelVisibility();
+    this.setEnvironment({
+      precipitationType: this.snowIntensity > 0 ? 'Snow' : 'None',
+      precipitationIntensity01: this.snowIntensity,
+      surfaceWetness01: this.surfaceWetness,
+    });
   }
 
   dispose(): void {
