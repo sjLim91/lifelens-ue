@@ -688,10 +688,17 @@ uniform float uLifeLensGroundWindIntensity;`,
           || chunk.waterKind === 'Lake'
         );
         if (fullyWaterCovered || riverEdge.water) continue;
+        const clusterSeed = hash01(
+          seed,
+          chunk.x,
+          chunk.y,
+          index,
+          117,
+        );
         const cluster = 0.5 + 0.5 * Math.sin(
           (chunk.x + localX) * 4.31
           + (chunk.y + localY) * 3.17
-          + Number.parseInt(seed.slice(-4), 10) * 0.001,
+          + clusterSeed * Math.PI * 2,
         );
         const waterPenalty = (
           riverEdge.shore > 0
