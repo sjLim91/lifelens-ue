@@ -32,9 +32,10 @@ button, input { font: inherit; }
 
 .layout { height: calc(100vh - 58px); display: grid; grid-template-columns: minmax(0, 1fr) 340px; }
 .world { position: relative; min-height: 0; overflow: hidden; background: radial-gradient(circle at 48% 32%, rgba(57, 91, 62, .16), transparent 42%), #08100b; }
-#worldCanvas { position: relative; z-index: 1; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+#worldCanvas { position: relative; z-index: 1; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; transition: opacity .18s ease; }
 #worldCanvas:active { cursor: grabbing; }
-#characterCanvas { position: absolute; z-index: 2; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+#threeWorldCanvas { position: absolute; z-index: 1; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; transition: opacity .18s ease; }
+#characterCanvas { position: absolute; z-index: 2; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; transition: opacity .18s ease; }
 .world-overlay { position: absolute; z-index: 4; top: 14px; left: 14px; display: flex; gap: .45rem; flex-wrap: wrap; pointer-events: none; }
 .world-overlay span { padding: .34rem .55rem; border: 1px solid rgba(125, 151, 129, .25); border-radius: 6px; background: rgba(8, 13, 10, .78); color: #d9e5da; font-size: .7rem; }
 
