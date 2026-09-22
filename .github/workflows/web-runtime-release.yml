@@ -48,6 +48,7 @@ jobs:
           (
             cd Clients/Web/generated
             sha256sum lifelens_core.js lifelens_core.wasm > SHA256SUMS.txt
+            printf '%s\n' "$GITHUB_SHA" > RUNTIME_COMMIT.txt
           )
 
       - name: Create release if needed
@@ -62,7 +63,14 @@ jobs:
 
       - name: Publish stable runtime assets
         run: |
-          gh release upload "$RELEASE_TAG"             Clients/Web/generated/lifelens_core.js             Clients/Web/generated/lifelens_core.wasm             Clients/Web/generated/SHA256SUMS.txt             --clobber
+          gh release upload "$RELEASE_TAG" \
+            Clients/Web/generated/lifelens_core.js \
+            Clients/Web/generated/lifelens_core.wasm \
+            Clients/Web/generated/SHA256SUMS.txt \
+            Clients/Web/generated/RUNTIME_COMMIT.txt \
+            --clobber
+
+          gh release edit "$RELEASE_TAG" --target "$GITHUB_SHA"
 
       - name: Verify public release metadata
         run: |
