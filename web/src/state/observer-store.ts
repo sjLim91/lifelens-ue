@@ -25,6 +25,7 @@ export interface ObserverSnapshot {
   terrain: TerrainWindow | null;
   camera: CameraState;
   runtime: RuntimeState;
+  selectedResidentId: string | null;
   revision: number;
 }
 
@@ -45,6 +46,7 @@ const INITIAL_STATE: ObserverSnapshot = {
     status: 'loading',
     errorMessage: null,
   },
+  selectedResidentId: null,
   revision: 0,
 };
 
@@ -60,9 +62,16 @@ class ObserverStore {
   };
 
   update(patch: Partial<Omit<ObserverSnapshot, 'revision'>>): void {
+    const nextResidents = patch.residents ?? this.snapshot.residents;
+    const selectedResidentId = this.snapshot.selectedResidentId
+      && nextResidents.some((resident) => resident.id === this.snapshot.selectedResidentId)
+      ? this.snapshot.selectedResidentId
+      : null;
+
     this.snapshot = {
       ...this.snapshot,
       ...patch,
+      selectedResidentId,
       revision: this.snapshot.revision + 1,
     };
     this.emit();
@@ -75,6 +84,21 @@ class ObserverStore {
         ...this.snapshot.camera,
         ...patch,
       },
+      revision: this.snapshot.revision + 1,
+    };
+    this.emit();
+  }
+
+  selectResident(residentId: string | null): void {
+    const next = residentId
+      && this.snapshot.residents.some((resident) => resident.id === residentId)
+      ? residentId
+      : null;
+    if (next === this.snapshot.selectedResidentId) return;
+
+    this.snapshot = {
+      ...this.snapshot,
+      selectedResidentId: next,
       revision: this.snapshot.revision + 1,
     };
     this.emit();
@@ -95,6 +119,7 @@ class ObserverStore {
       world: {},
       residents: [],
       terrain: null,
+      selectedResidentId: null,
       camera: {
         ...INITIAL_STATE.camera,
       },
