@@ -186,6 +186,7 @@ export class WorldScene {
 
     this.residentLayer.update(deltaSeconds);
     this.consequenceLayer.update(deltaSeconds);
+    this.groundDetailLayer.update(deltaSeconds);
     this.vegetationLayer.update(deltaSeconds);
     this.waterLayer.update(deltaSeconds);
     this.atmosphere.update(deltaSeconds);
