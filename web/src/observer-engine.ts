@@ -4,6 +4,7 @@ import { runtimeDiagnostics } from './runtime/runtime-diagnostics';
 import { SimulationClock } from './runtime/simulation-clock';
 import type { Resident, TerrainWindow } from './runtime/core-types';
 import { ResidentContinuity } from './runtime/resident-continuity';
+import { WorldSession } from './runtime/world-session';
 import { observerStore } from './state/observer-store';
 import { CameraInput } from './input/camera-input';
 
@@ -31,12 +32,10 @@ const ui = {
   down: $<HTMLButtonElement>('#down'),
 };
 
-let runtime: LifeLensCoreBridge | null = null;
+let worldSession: WorldSession | null = null;
 let centerX = 0;
 let centerY = 0;
 let terrain: TerrainWindow | null = null;
-let stableTerrain: TerrainWindow | null = null;
-let stableTerrainCenterKey: string | null = null;
 let residentSnapshot: Resident[] = [];
 const residentContinuity = new ResidentContinuity(10000);
 const legacyRenderer = new LegacyCanvasWorldRenderer(
@@ -86,58 +85,15 @@ function drawWorld(): void {
 }
 
 function refresh(): void {
-  if (!runtime) return;
+  if (!worldSession) return;
+
   const queryStartedAt = performance.now();
-  const overview = runtime.worldOverview();
-  const residentPayload = runtime.residents();
-  const expectedLiving = Math.max(0, Number(overview.livingResidents) || 0);
-  residentSnapshot = residentContinuity.stabilize(
-    residentPayload,
-    expectedLiving,
-  );
-  const visiblePositions = residentSnapshot
-    .map((resident) => residentContinuity.positionFor(resident))
-    .filter((position): position is { x: number; y: number } => (
-      position !== undefined
-    ));
-  if (followResidents && visiblePositions.length > 0) {
-    const chunkXs = visiblePositions.map((position) => Math.floor(position.x / 32));
-    const chunkYs = visiblePositions.map((position) => Math.floor(position.y / 32));
-    const minResidentX = Math.min(...chunkXs);
-    const maxResidentX = Math.max(...chunkXs);
-    const minResidentY = Math.min(...chunkYs);
-    const maxResidentY = Math.max(...chunkYs);
-    const outsideTrackingEnvelope = chunkXs.some((x) => Math.abs(x - centerX) > 6)
-      || chunkYs.some((y) => Math.abs(y - centerY) > 6);
-    if (outsideTrackingEnvelope) {
-      centerX = Math.round((minResidentX + maxResidentX) * 0.5);
-      centerY = Math.round((minResidentY + maxResidentY) * 0.5);
-    }
-  }
-  const residentRadius = visiblePositions.reduce((radius, position) => {
-    const chunkX = Math.floor(position.x / 32);
-    const chunkY = Math.floor(position.y / 32);
-    return Math.max(radius, Math.abs(chunkX - centerX), Math.abs(chunkY - centerY));
-  }, 8);
-  const queryRadius = Math.max(8, Math.min(16, residentRadius + 2));
-  const terrainCandidate = runtime.terrainWindow(centerX, centerY, queryRadius);
-  const terrainKey = `${centerX}:${centerY}`;
-  const terrainCandidateValid = terrainCandidate.available === true
-    && Array.isArray(terrainCandidate.chunks)
-    && terrainCandidate.chunks.length > 0;
-  if (terrainCandidateValid) {
-    terrain = terrainCandidate;
-    stableTerrain = terrainCandidate;
-    stableTerrainCenterKey = terrainKey;
-  } else if (stableTerrain && stableTerrainCenterKey === terrainKey) {
-    terrain = stableTerrain;
-  } else {
-    terrain = {
-      ...terrainCandidate,
-      available: false,
-      chunks: Array.isArray(terrainCandidate.chunks) ? terrainCandidate.chunks : [],
-    };
-  }
+  const snapshot = worldSession.refresh();
+  centerX = snapshot.centerX;
+  centerY = snapshot.centerY;
+  followResidents = snapshot.followResidents;
+  residentSnapshot = snapshot.residents;
+  terrain = snapshot.terrain;
 
   runtimeDiagnostics.recordCoreQuery(
     performance.now() - queryStartedAt,
@@ -145,7 +101,7 @@ function refresh(): void {
     terrain.chunks.length,
   );
   observerStore.update({
-    world: overview,
+    world: snapshot.overview,
     residents: residentSnapshot,
     terrain,
   });
@@ -160,22 +116,19 @@ function refresh(): void {
 }
 
 function createWorld(): void {
-  if (!runtime) return;
+  if (!worldSession) return;
   const seed = ui.seed.value.trim();
   if (!seed) {
     ui.seedError.classList.remove('hidden');
     return;
   }
   ui.seedError.classList.add('hidden');
-  runtime.createWorld(seed, '', 3);
+  worldSession.createWorld(seed);
   centerX = 0;
   centerY = 0;
   followResidents = true;
   residentSnapshot = [];
   terrain = null;
-  stableTerrain = null;
-  stableTerrainCenterKey = null;
-  residentContinuity.reset();
   characterLayer.clearResidents();
   simulationClock?.resetAccumulator();
   observerStore.resetWorld();
@@ -183,14 +136,7 @@ function createWorld(): void {
 }
 
 function move(dx: number, dy: number): void {
-  followResidents = false;
-  centerX += dx;
-  centerY += dy;
-  observerStore.updateCamera({
-    centerChunkX: centerX,
-    centerChunkY: centerY,
-    followResidents,
-  });
+  worldSession?.moveObserver(dx, dy);
   refresh();
 }
 
@@ -207,7 +153,7 @@ function startSimulationClock(): void {
   simulationClock?.stop();
   simulationClock = new SimulationClock({
     onAdvance(minutes) {
-      runtime?.runMinutes(minutes);
+      worldSession?.runMinutes(minutes);
     },
     onRefresh: refreshSafely,
     onError(phase, error) {
@@ -220,11 +166,11 @@ function startSimulationClock(): void {
 
 ui.newWorld.addEventListener('click', createWorld);
 ui.step10.addEventListener('click', () => {
-  runtime?.runMinutes(10);
+  worldSession?.runMinutes(10);
   refresh();
 });
 ui.step60.addEventListener('click', () => {
-  runtime?.runMinutes(60);
+  worldSession?.runMinutes(60);
   refresh();
 });
 ui.left.addEventListener('click', () => move(-1, 0));
@@ -239,7 +185,8 @@ async function boot(): Promise<void> {
   observerStore.setRuntime('loading');
 
   try {
-    runtime = await LifeLensCoreBridge.connect();
+    const core = await LifeLensCoreBridge.connect();
+    worldSession = new WorldSession(core, residentContinuity);
     controls(true);
     observerStore.setRuntime('ready');
     createWorld();
