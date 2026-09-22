@@ -23,16 +23,32 @@ export function startObserverEngine(): void {
   const canvas = requireCanvas('#worldCanvas');
   const threeWorldCanvas = requireCanvas('#threeWorldCanvas');
   const characterCanvas = requireCanvas('#characterCanvas');
-  const renderMode = readRenderMode();
-  canvas.style.opacity = renderMode === 'legacy-canvas' ? '1' : '0';
-  threeWorldCanvas.style.opacity = renderMode === 'three-world' ? '1' : '0';
-  characterCanvas.style.opacity = renderMode === 'legacy-canvas' ? '1' : '0';
-  
-  const characterLayer = new CharacterLayer(characterCanvas, () => drawWorld());
-  const threeWorldRenderer = renderMode === 'three-world'
-    ? new WorldRenderer(threeWorldCanvas)
-    : null;
-  threeWorldRenderer?.start();
+  const requestedRenderMode = readRenderMode();
+
+  let effectiveRenderMode = requestedRenderMode;
+  let threeWorldRenderer: WorldRenderer | null = null;
+  let characterLayer: CharacterLayer | null = null;
+
+  if (requestedRenderMode === 'three-world') {
+    try {
+      threeWorldRenderer = new WorldRenderer(threeWorldCanvas);
+      threeWorldRenderer.start();
+    } catch (error) {
+      effectiveRenderMode = 'legacy-canvas';
+      console.warn(
+        'LifeLens Three World unavailable; falling back to Legacy renderer',
+        error,
+      );
+    }
+  }
+
+  if (effectiveRenderMode === 'legacy-canvas') {
+    characterLayer = new CharacterLayer(characterCanvas, () => drawWorld());
+  }
+
+  canvas.style.opacity = effectiveRenderMode === 'legacy-canvas' ? '1' : '0';
+  threeWorldCanvas.style.opacity = effectiveRenderMode === 'three-world' ? '1' : '0';
+  characterCanvas.style.opacity = effectiveRenderMode === 'legacy-canvas' ? '1' : '0';
   
   let worldSession: WorldSession | null = null;
   let centerX = 0;
@@ -40,11 +56,13 @@ export function startObserverEngine(): void {
   let terrain: TerrainWindow | null = null;
   let residentSnapshot: Resident[] = [];
   const residentContinuity = new ResidentContinuity(10000);
-  const legacyRenderer = new LegacyCanvasWorldRenderer(
-    canvas,
-    characterLayer,
-    residentContinuity,
-  );
+  const legacyRenderer = characterLayer
+    ? new LegacyCanvasWorldRenderer(
+      canvas,
+      characterLayer,
+      residentContinuity,
+    )
+    : null;
   let followResidents = true;
   let simulationClock: SimulationClock | null = null;
   let angle = -0.68;
@@ -72,13 +90,13 @@ export function startObserverEngine(): void {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width = Math.max(1, Math.round(rect.width * dpr));
     canvas.height = Math.max(1, Math.round(rect.height * dpr));
-    characterLayer.resize(rect.width, rect.height, dpr);
+    characterLayer?.resize(rect.width, rect.height, dpr);
     threeWorldRenderer?.resize(rect.width, rect.height);
     drawWorld();
   }
   
   function drawWorld(): void {
-    legacyRenderer.draw({
+    legacyRenderer?.draw({
       terrain,
       residents: residentSnapshot,
       centerX,
@@ -143,7 +161,7 @@ export function startObserverEngine(): void {
     followResidents = true;
     residentSnapshot = [];
     terrain = null;
-    characterLayer.clearResidents();
+    characterLayer?.clearResidents();
     simulationClock?.resetAccumulator();
     observerStore.resetWorld();
     refresh();

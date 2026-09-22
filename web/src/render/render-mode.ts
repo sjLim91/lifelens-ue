@@ -4,7 +4,8 @@ const STORAGE_KEY = 'lifelens.web.renderMode';
 
 export function readRenderMode(): RenderMode {
   const value = globalThis.localStorage?.getItem(STORAGE_KEY);
-  return value === 'three-world' ? 'three-world' : 'legacy-canvas';
+  if (value === 'legacy-canvas') return 'legacy-canvas';
+  return 'three-world';
 }
 
 export function writeRenderMode(mode: RenderMode): void {
