@@ -237,7 +237,7 @@ export class WorldScene {
           );
           neighborhood.push(
             neighbor
-              ? (Number(neighbor.elevation01) || 0).toFixed(5)
+              ? `${(Number(neighbor.elevation01) || 0).toFixed(5)}:${neighbor.waterKind}`
               : 'x',
           );
         }
@@ -260,14 +260,23 @@ export class WorldScene {
         if (existing.signature !== signature) {
           const previousGeometry = existing.mesh.geometry;
           existing.mesh.geometry = buildGeometry(chunk);
-          this.applyTerrainVertexColors(existing.mesh.geometry, chunk);
+          this.applyTerrainVertexColors(
+            existing.mesh.geometry,
+            chunk,
+            chunkMap,
+          );
           previousGeometry.dispose();
           existing.signature = signature;
         }
         continue;
       }
 
-      const mesh = this.createTerrainMesh(chunk, window, buildGeometry);
+      const mesh = this.createTerrainMesh(
+        chunk,
+        window,
+        buildGeometry,
+        chunkMap,
+      );
       this.terrainMeshes.set(key, { mesh, key, signature });
       this.terrainGroup.add(mesh);
     }
@@ -305,9 +314,14 @@ export class WorldScene {
     chunk: TerrainChunk,
     window: TerrainWindow,
     buildGeometry: (chunk: TerrainChunk) => THREE.BufferGeometry,
+    chunkMap: Map<string, TerrainChunk>,
   ): THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial> {
     const geometry = buildGeometry(chunk);
-    this.applyTerrainVertexColors(geometry, chunk);
+    this.applyTerrainVertexColors(
+      geometry,
+      chunk,
+      chunkMap,
+    );
 
     const material = new THREE.MeshStandardMaterial({
       color: 0xffffff,
@@ -403,6 +417,129 @@ roughnessFactor = clamp(
     material.needsUpdate = true;
   }
 
+  private terrainShoreFactor(
+    chunk: TerrainChunk,
+    localX01: number,
+    localY01: number,
+    chunkMap: Map<string, TerrainChunk>,
+  ): number {
+    const size = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
+    const clamp01 = (value: number): number => (
+      Math.max(0, Math.min(1, value))
+    );
+
+    if (
+      chunk.waterKind === 'Ocean'
+      || chunk.waterKind === 'Coast'
+      || chunk.waterKind === 'Lake'
+    ) {
+      return 0;
+    }
+
+    if (
+      chunk.waterKind === 'River'
+      || chunk.waterKind === 'Stream'
+      || chunk.waterKind === 'Spring'
+    ) {
+      const px = (localX01 - 0.5) * size;
+      const pz = (localY01 - 0.5) * size;
+      const width = chunk.waterKind === 'River'
+        ? size * 0.22
+        : chunk.waterKind === 'Stream'
+          ? size * 0.11
+          : size * 0.08;
+      const halfWidth = width * 0.5;
+      const bankWidth = Math.max(0.8, size * 0.045);
+      const halfLength = size * 0.52;
+      const directions = (
+        ([
+          [1, 0],
+          [-1, 0],
+          [0, 1],
+          [0, -1],
+        ] as Array<[number, number]>).filter(([dx, dy]) => {
+          const neighbor = chunkMap.get(
+            `${chunk.x + dx}:${chunk.y + dy}`,
+          );
+          return neighbor
+            ? (
+                neighbor.waterKind === 'Spring'
+                || neighbor.waterKind === 'Stream'
+                || neighbor.waterKind === 'River'
+                || neighbor.waterKind === 'Lake'
+                || neighbor.waterKind === 'Wetland'
+              )
+            : false;
+        })
+      );
+      const activeDirections = directions.length > 0
+        ? directions
+        : ([[1, 0], [-1, 0]] as Array<[number, number]>);
+
+      const segmentDistance = (
+        ax: number,
+        az: number,
+        bx: number,
+        bz: number,
+      ): number => {
+        const abx = bx - ax;
+        const abz = bz - az;
+        const denom = abx * abx + abz * abz;
+        const t = denom <= 0.000001
+          ? 0
+          : clamp01(
+              ((px - ax) * abx + (pz - az) * abz) / denom,
+            );
+        const cx = ax + abx * t;
+        const cz = az + abz * t;
+        return Math.hypot(px - cx, pz - cz);
+      };
+
+      let distance = Math.hypot(px, pz);
+      for (const [dx, dy] of activeDirections) {
+        distance = Math.min(
+          distance,
+          segmentDistance(
+            0,
+            0,
+            dx * halfLength,
+            dy * halfLength,
+          ),
+        );
+      }
+      if (distance <= halfWidth) return 0;
+      return clamp01(
+        1 - (distance - halfWidth) / bankWidth,
+      );
+    }
+
+    let coastalFactor = 0;
+    const edges: Array<[number, number, number]> = [
+      [1, 0, 1 - localX01],
+      [-1, 0, localX01],
+      [0, 1, 1 - localY01],
+      [0, -1, localY01],
+    ];
+    for (const [dx, dy, edgeDistance] of edges) {
+      const neighbor = chunkMap.get(
+        `${chunk.x + dx}:${chunk.y + dy}`,
+      );
+      if (!neighbor) continue;
+      if (
+        neighbor.waterKind !== 'Ocean'
+        && neighbor.waterKind !== 'Coast'
+        && neighbor.waterKind !== 'Lake'
+      ) {
+        continue;
+      }
+      coastalFactor = Math.max(
+        coastalFactor,
+        clamp01(1 - edgeDistance / 0.18),
+      );
+    }
+    return coastalFactor;
+  }
+
   private applyTerrainWeatherMaterial(
     material: THREE.MeshStandardMaterial,
   ): void {
@@ -444,6 +581,7 @@ roughnessFactor = clamp(
   private applyTerrainVertexColors(
     geometry: THREE.BufferGeometry,
     chunk: TerrainChunk,
+    chunkMap: Map<string, TerrainChunk>,
   ): void {
     const position = geometry.getAttribute('position');
     const normal = geometry.getAttribute('normal');
@@ -477,6 +615,7 @@ roughnessFactor = clamp(
     const forestTone = new THREE.Color(0x34523a);
     const earthTone = new THREE.Color(0x705942);
     const dryTone = new THREE.Color(0x84745a);
+    const bankTone = new THREE.Color(0x625c48);
     const color = new THREE.Color();
     const colors = new Float32Array(position.count * 3);
     const size = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
@@ -487,6 +626,20 @@ roughnessFactor = clamp(
       const z = position.getZ(index);
       const absoluteX = chunk.x * size + x;
       const absoluteZ = chunk.y * size + z;
+      const localX01 = Math.max(
+        0,
+        Math.min(1, x / size + 0.5),
+      );
+      const localY01 = Math.max(
+        0,
+        Math.min(1, z / size + 0.5),
+      );
+      const shoreFactor = this.terrainShoreFactor(
+        chunk,
+        localX01,
+        localY01,
+        chunkMap,
+      );
       const broadNoise = (
         Math.sin(absoluteX * 0.31 + absoluteZ * 0.19)
         + Math.sin(absoluteX * -0.17 + absoluteZ * 0.37)
@@ -537,6 +690,12 @@ roughnessFactor = clamp(
           + slope * (0.18 + rock * 0.22),
         ),
       );
+      if (shoreFactor > 0) {
+        color.lerp(
+          bankTone,
+          Math.min(0.34, shoreFactor * 0.3),
+        );
+      }
       if (moisture < 0.32) {
         color.lerp(
           dryTone,
