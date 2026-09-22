@@ -1199,10 +1199,14 @@ inline ConstructedFacility* findCivilizationFacility(World& world,FacilityId id)
     return nullptr;
 }
 
-inline CivilizationExecutionResult executeCivilizationDecision(World& world,Character& self,const CivilizationUtilityDecision& decision)
+inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
+    World& world,
+    Character& self,
+    const CivilizationUtilityDecision& decision,
+    GridPos authoritativePosition)
 {
     CivilizationExecutionResult result;
-    const GridPos sanitationReference=civilizationSanitationReferencePosition(world);
+    const GridPos sanitationReference=authoritativePosition;
     switch(decision.intent){
         case CivilizationIntent::Gather: {
             ResourceNode* node=findCivilizationResource(world,decision.resourceNode);
@@ -1722,6 +1726,15 @@ inline CivilizationExecutionResult executeCivilizationDecision(World& world,Char
         default:
             return result;
     }
+}
+
+inline CivilizationExecutionResult executeCivilizationDecision(
+    World& world,
+    Character& self,
+    const CivilizationUtilityDecision& decision)
+{
+    return executeCivilizationDecisionAtPosition(
+        world,self,decision,civilizationSanitationReferencePosition(world));
 }
 
 inline void regenerateCivilizationEnvironment(World& world)
