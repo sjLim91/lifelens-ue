@@ -11,6 +11,7 @@ import { createTerrainElevationSampler } from './terrain-geometry';
 const MAX_GRASS = 7000;
 const MAX_PEBBLES = 3600;
 const MAX_SMALL_ROCKS = 2200;
+const MAX_BOULDERS = 1200;
 const MAX_DEADWOOD = 1600;
 
 function clamp01(value: unknown): number {
@@ -85,6 +86,7 @@ export class GroundDetailLayer {
   private readonly grassGeometry = createGrassGeometry();
   private readonly pebbleGeometry = new THREE.DodecahedronGeometry(0.075, 0);
   private readonly rockGeometry = new THREE.DodecahedronGeometry(0.17, 0);
+  private readonly boulderGeometry = new THREE.DodecahedronGeometry(0.42, 1);
   private readonly deadwoodGeometry = new THREE.CylinderGeometry(
     0.045,
     0.065,
@@ -95,6 +97,7 @@ export class GroundDetailLayer {
   private readonly grassBase = new THREE.Color(0x5d7340);
   private readonly pebbleBase = new THREE.Color(0x77736a);
   private readonly rockBase = new THREE.Color(0x68665f);
+  private readonly boulderBase = new THREE.Color(0x625f58);
   private readonly deadwoodBase = new THREE.Color(0x5c4935);
 
   private readonly grassMaterial = new THREE.MeshStandardMaterial({
@@ -110,6 +113,11 @@ export class GroundDetailLayer {
   });
   private readonly rockMaterial = new THREE.MeshStandardMaterial({
     color: this.rockBase,
+    roughness: 1,
+    metalness: 0,
+  });
+  private readonly boulderMaterial = new THREE.MeshStandardMaterial({
+    color: this.boulderBase,
     roughness: 1,
     metalness: 0,
   });
@@ -134,6 +142,11 @@ export class GroundDetailLayer {
     this.rockMaterial,
     MAX_SMALL_ROCKS,
   );
+  private readonly boulders = new THREE.InstancedMesh(
+    this.boulderGeometry,
+    this.boulderMaterial,
+    MAX_BOULDERS,
+  );
   private readonly deadwood = new THREE.InstancedMesh(
     this.deadwoodGeometry,
     this.deadwoodMaterial,
@@ -156,6 +169,7 @@ export class GroundDetailLayer {
       this.grass,
       this.pebbles,
       this.rocks,
+      this.boulders,
       this.deadwood,
     ]) {
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -213,6 +227,7 @@ export class GroundDetailLayer {
     apply(this.grassMaterial, this.grassBase, 0.2, 0.1);
     apply(this.pebbleMaterial, this.pebbleBase, 0.28, 0.08);
     apply(this.rockMaterial, this.rockBase, 0.3, 0.08);
+    apply(this.boulderMaterial, this.boulderBase, 0.34, 0.08);
     apply(this.deadwoodMaterial, this.deadwoodBase, 0.14, 0.09);
   }
 
@@ -220,10 +235,12 @@ export class GroundDetailLayer {
     this.grassGeometry.dispose();
     this.pebbleGeometry.dispose();
     this.rockGeometry.dispose();
+    this.boulderGeometry.dispose();
     this.deadwoodGeometry.dispose();
     this.grassMaterial.dispose();
     this.pebbleMaterial.dispose();
     this.rockMaterial.dispose();
+    this.boulderMaterial.dispose();
     this.deadwoodMaterial.dispose();
   }
 
@@ -231,6 +248,7 @@ export class GroundDetailLayer {
     this.grass.visible = this.zoom >= 0.92;
     this.pebbles.visible = this.zoom >= 1.05;
     this.rocks.visible = this.zoom >= 0.78;
+    this.boulders.visible = this.zoom >= 0.6;
     this.deadwood.visible = this.zoom >= 0.96;
   }
 
@@ -286,6 +304,7 @@ export class GroundDetailLayer {
       this.grass.count = 0;
       this.pebbles.count = 0;
       this.rocks.count = 0;
+      this.boulders.count = 0;
       this.deadwood.count = 0;
       return;
     }
@@ -298,6 +317,151 @@ export class GroundDetailLayer {
     const size = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
     const elevationScale = WORLD_GRID_CONTRACT.elevationScale;
     const sampleElevation = createTerrainElevationSampler(window);
+    const chunkMap = new Map(
+      window.chunks.map((chunk) => [
+        `${chunk.x}:${chunk.y}`,
+        chunk,
+      ]),
+    );
+
+    const waterDirections = (
+      chunk: TerrainChunk,
+    ): Array<[number, number]> => (
+      ([
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+      ] as Array<[number, number]>).filter(([dx, dy]) => {
+        const neighbor = chunkMap.get(
+          `${chunk.x + dx}:${chunk.y + dy}`,
+        );
+        return neighbor
+          ? (
+              neighbor.waterKind === 'Spring'
+              || neighbor.waterKind === 'Stream'
+              || neighbor.waterKind === 'River'
+              || neighbor.waterKind === 'Lake'
+              || neighbor.waterKind === 'Wetland'
+            )
+          : false;
+      })
+    );
+
+    const distanceToSegment = (
+      px: number,
+      pz: number,
+      ax: number,
+      az: number,
+      bx: number,
+      bz: number,
+    ): number => {
+      const abx = bx - ax;
+      const abz = bz - az;
+      const denom = abx * abx + abz * abz;
+      const t = denom <= 0.000001
+        ? 0
+        : Math.max(
+            0,
+            Math.min(
+              1,
+              ((px - ax) * abx + (pz - az) * abz) / denom,
+            ),
+          );
+      const cx = ax + abx * t;
+      const cz = az + abz * t;
+      return Math.hypot(px - cx, pz - cz);
+    };
+
+    const riverShoreFactor = (
+      chunk: TerrainChunk,
+      localX01: number,
+      localY01: number,
+    ): { shore: number; water: boolean } => {
+      if (
+        chunk.waterKind !== 'River'
+        && chunk.waterKind !== 'Stream'
+        && chunk.waterKind !== 'Spring'
+      ) {
+        return { shore: 0, water: false };
+      }
+
+      const px = (localX01 - 0.5) * size;
+      const pz = (localY01 - 0.5) * size;
+      const width = chunk.waterKind === 'River'
+        ? size * 0.22
+        : chunk.waterKind === 'Stream'
+          ? size * 0.11
+          : size * 0.08;
+      const halfWidth = width * 0.5;
+      const halfLength = size * 0.52;
+      const directions = waterDirections(chunk);
+      const activeDirections = directions.length > 0
+        ? directions
+        : ([[1, 0], [-1, 0]] as Array<[number, number]>);
+
+      let distance = Math.hypot(px, pz);
+      for (const [dx, dy] of activeDirections) {
+        distance = Math.min(
+          distance,
+          distanceToSegment(
+            px,
+            pz,
+            0,
+            0,
+            dx * halfLength,
+            dy * halfLength,
+          ),
+        );
+      }
+      const water = distance <= halfWidth;
+      const shoreWidth = 0.72;
+      const shore = water
+        ? 0
+        : clamp01(1 - (distance - halfWidth) / shoreWidth);
+      return { shore, water };
+    };
+
+    const coastalEdgeFactor = (
+      chunk: TerrainChunk,
+      localX01: number,
+      localY01: number,
+    ): number => {
+      if (
+        chunk.waterKind === 'Ocean'
+        || chunk.waterKind === 'Coast'
+        || chunk.waterKind === 'Lake'
+        || chunk.waterKind === 'Wetland'
+      ) {
+        return 0;
+      }
+
+      let factor = 0;
+      const neighbors: Array<[number, number, number]> = [
+        [1, 0, localX01],
+        [-1, 0, 1 - localX01],
+        [0, 1, localY01],
+        [0, -1, 1 - localY01],
+      ];
+      for (const [dx, dy, edgeDistance01] of neighbors) {
+        const neighbor = chunkMap.get(
+          `${chunk.x + dx}:${chunk.y + dy}`,
+        );
+        if (!neighbor) continue;
+        if (
+          neighbor.waterKind !== 'Ocean'
+          && neighbor.waterKind !== 'Coast'
+          && neighbor.waterKind !== 'Lake'
+        ) {
+          continue;
+        }
+        factor = Math.max(
+          factor,
+          clamp01(1 - edgeDistance01 / 0.18),
+        );
+      }
+      return factor;
+    };
 
     const facilityPoints = (this.presentation?.facilities ?? [])
       .filter((facility) => facility.state !== 'Ruined')
@@ -356,6 +520,7 @@ export class GroundDetailLayer {
     let grassCount = 0;
     let pebbleCount = 0;
     let rockCount = 0;
+    let boulderCount = 0;
     let deadwoodCount = 0;
 
     const placeInstance = (
@@ -431,17 +596,26 @@ export class GroundDetailLayer {
         const x = chunkCenterX + (localX - 0.5) * size * 0.94;
         const z = chunkCenterZ + (localY - 0.5) * size * 0.94;
         const slope = slopeAt(chunk, localX, localY);
+        const riverEdge = riverShoreFactor(
+          chunk,
+          localX,
+          localY,
+        );
+        const fullyWaterCovered = (
+          chunk.waterKind === 'Ocean'
+          || chunk.waterKind === 'Coast'
+          || chunk.waterKind === 'Lake'
+        );
+        if (fullyWaterCovered || riverEdge.water) continue;
         const cluster = 0.5 + 0.5 * Math.sin(
           (chunk.x + localX) * 4.31
           + (chunk.y + localY) * 3.17
           + Number.parseInt(seed.slice(-4), 10) * 0.001,
         );
         const waterPenalty = (
-          chunk.waterKind === 'Ocean'
-          || chunk.waterKind === 'Lake'
-          || chunk.waterKind === 'River'
-          || chunk.waterKind === 'Stream'
-        ) ? 0.12 : 1;
+          riverEdge.shore > 0
+          || coastalEdgeFactor(chunk, localX, localY) > 0
+        ) ? 0.42 : 1;
         const clearance = humanClearanceAt(x, z)
           * resourceKeepAt(x, z, ['Fiber', 'PlantFood']);
         const probability = clamp01(
@@ -505,11 +679,28 @@ export class GroundDetailLayer {
         const x = chunkCenterX + (localX - 0.5) * size * 0.96;
         const z = chunkCenterZ + (localY - 0.5) * size * 0.96;
         const slope = slopeAt(chunk, localX, localY);
-        const shorelineBoost = (
-          chunk.waterKind === 'Coast'
-          || chunk.waterKind === 'River'
-          || chunk.waterKind === 'Stream'
-        ) ? 0.32 : 0;
+        const riverEdge = riverShoreFactor(
+          chunk,
+          localX,
+          localY,
+        );
+        if (
+          riverEdge.water
+          || chunk.waterKind === 'Ocean'
+          || chunk.waterKind === 'Coast'
+          || chunk.waterKind === 'Lake'
+        ) {
+          continue;
+        }
+        const coastalEdge = coastalEdgeFactor(
+          chunk,
+          localX,
+          localY,
+        );
+        const shorelineBoost = Math.max(
+          riverEdge.shore * 0.62,
+          coastalEdge * 0.72,
+        );
         const cluster = hash01(
           seed,
           Math.floor((chunk.x + localX) * 3),
@@ -534,15 +725,19 @@ export class GroundDetailLayer {
         ) * elevationScale + 0.018;
         const scaleBase = 0.65
           + hash01(seed, chunk.x, chunk.y, index, 35) * 0.9;
+        const shoreFlattening = Math.max(
+          riverEdge.shore,
+          coastalEdge,
+        );
         placeInstance(
           this.pebbles,
           pebbleCount,
           x,
           y,
           z,
-          scaleBase * 1.25,
-          scaleBase * 0.55,
-          scaleBase,
+          scaleBase * (1.2 + shoreFlattening * 0.35),
+          scaleBase * (0.52 - shoreFlattening * 0.18),
+          scaleBase * (0.96 + shoreFlattening * 0.22),
           hash01(seed, chunk.x, chunk.y, index, 36) * Math.PI * 2,
         );
         pebbleCount += 1;
@@ -608,6 +803,80 @@ export class GroundDetailLayer {
         rockCount += 1;
       }
 
+      const boulderCandidates = Math.min(
+        5,
+        Math.floor(
+          rockCoverage * 3.5
+          + (Number(chunk.elevation01) > 0.64 ? 1.5 : 0),
+        ),
+      );
+      for (
+        let index = 0;
+        index < boulderCandidates && boulderCount < MAX_BOULDERS;
+        index += 1
+      ) {
+        const localX = hash01(seed, chunk.x, chunk.y, index, 61);
+        const localY = hash01(seed, chunk.x, chunk.y, index, 62);
+        const riverEdge = riverShoreFactor(chunk, localX, localY);
+        if (
+          riverEdge.water
+          || chunk.waterKind === 'Ocean'
+          || chunk.waterKind === 'Coast'
+          || chunk.waterKind === 'Lake'
+        ) {
+          continue;
+        }
+        const x = chunkCenterX + (localX - 0.5) * size * 0.88;
+        const z = chunkCenterZ + (localY - 0.5) * size * 0.88;
+        const slope = slopeAt(chunk, localX, localY);
+        const cluster = hash01(
+          seed,
+          Math.floor((chunk.x + localX) * 1.6),
+          Math.floor((chunk.y + localY) * 1.6),
+          0,
+          63,
+        );
+        const depletionKeep = resourceKeepAt(
+          x,
+          z,
+          ['Stone', 'Clay'],
+        );
+        const probability = clamp01(
+          rockCoverage * 0.52
+          + slope * 0.34
+          + Math.max(0, Number(chunk.elevation01) - 0.58) * 0.42,
+        )
+          * (0.35 + cluster * 0.72)
+          * humanClearanceAt(x, z)
+          * (0.58 + depletionKeep * 0.42);
+        if (hash01(seed, chunk.x, chunk.y, index, 64) > probability) {
+          continue;
+        }
+
+        const y = sampleElevation(
+          chunk.x,
+          chunk.y,
+          localX,
+          localY,
+        ) * elevationScale - 0.18;
+        const scaleBase = 0.58
+          + hash01(seed, chunk.x, chunk.y, index, 65) * 1.05;
+        placeInstance(
+          this.boulders,
+          boulderCount,
+          x,
+          y,
+          z,
+          scaleBase * 1.25,
+          scaleBase * (0.72 + slope * 0.18),
+          scaleBase,
+          hash01(seed, chunk.x, chunk.y, index, 66) * Math.PI * 2,
+          (hash01(seed, chunk.x, chunk.y, index, 67) - 0.5) * 0.28,
+          (hash01(seed, chunk.x, chunk.y, index, 68) - 0.5) * 0.28,
+        );
+        boulderCount += 1;
+      }
+
       const deadwoodCandidates = Math.min(
         7,
         Math.floor(forestCoverage * 6),
@@ -669,12 +938,14 @@ export class GroundDetailLayer {
     this.grass.count = grassCount;
     this.pebbles.count = pebbleCount;
     this.rocks.count = rockCount;
+    this.boulders.count = boulderCount;
     this.deadwood.count = deadwoodCount;
 
     for (const mesh of [
       this.grass,
       this.pebbles,
       this.rocks,
+      this.boulders,
       this.deadwood,
     ]) {
       mesh.instanceMatrix.needsUpdate = true;
