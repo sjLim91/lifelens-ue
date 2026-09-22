@@ -95,12 +95,13 @@ inline int coreGroundStepIntervalMinutes(
             std::ceil(1.0 + 1.50 * consequence.travelFriction01)));
 }
 
+template <typename TraversableFn>
 inline bool tryBuildDirectCoreGroundRoute(
-    const World& world,
     GridPos start,
     GridPos target,
     int arrivalRadius,
     bool horizontalFirst,
+    TraversableFn&& traversable,
     std::vector<GridPos>& outRoute)
 {
     outRoute.clear();
@@ -117,7 +118,7 @@ inline bool tryBuildDirectCoreGroundRoute(
             if(*coordinate==targetCoordinate) break;
 
             *coordinate += *coordinate<targetCoordinate ? 1 : -1;
-            if(!coreGroundTraversable(world,current)){
+            if(!traversable(current)){
                 route.clear();
                 return false;
             }
@@ -168,7 +169,43 @@ inline bool buildCoreGroundRoute(
     const int radius = std::max(0, arrivalRadius);
 
     if(gridWithinRadius(start, target, radius)) return true;
-    if(!coreGroundTraversable(world, start)) return false;
+
+    const WorldGenesisIdentity identity = world.genesisIdentity();
+    struct ChunkTraversalFacts {
+        MacroSurfaceFacts surface{};
+        HydrologyFacts hydrology{};
+    };
+    std::unordered_map<std::uint64_t, ChunkTraversalFacts> chunkFacts;
+
+    const auto chunkKey=[](ChunkCoord chunk)->std::uint64_t
+    {
+        return (
+            static_cast<std::uint64_t>(
+                static_cast<std::uint32_t>(chunk.x)) << 32U)
+            | static_cast<std::uint32_t>(chunk.y);
+    };
+
+    const auto traversable=
+        [&](GridPos position)->bool
+        {
+            const ChunkCoord chunk=chunkCoordForGrid(position);
+            const std::uint64_t key=chunkKey(chunk);
+            auto it=chunkFacts.find(key);
+            if(it==chunkFacts.end()){
+                ChunkTraversalFacts facts;
+                facts.surface=deriveMacroSurfaceFacts(identity,chunk);
+                facts.hydrology=deriveHydrologyFacts(identity,chunk);
+                it=chunkFacts.emplace(key,std::move(facts)).first;
+            }
+
+            if(it->second.surface.surfaceClass==MacroSurfaceClass::Ocean)
+                return false;
+            return !surfaceWaterGroundContainsGrid(
+                it->second.hydrology,
+                position);
+        };
+
+    if(!traversable(start)) return false;
 
     // Most everyday movement is locally unobstructed. Resolve the two
     // deterministic Manhattan-L candidates first and reserve A* for actual
@@ -176,14 +213,14 @@ inline bool buildCoreGroundRoute(
     // without bypassing Core traversal truth.
     std::vector<GridPos> horizontalFirst;
     if(tryBuildDirectCoreGroundRoute(
-            world,start,target,radius,true,horizontalFirst)){
+            start,target,radius,true,traversable,horizontalFirst)){
         outRoute=std::move(horizontalFirst);
         return true;
     }
 
     std::vector<GridPos> verticalFirst;
     if(tryBuildDirectCoreGroundRoute(
-            world,start,target,radius,false,verticalFirst)){
+            start,target,radius,false,traversable,verticalFirst)){
         outRoute=std::move(verticalFirst);
         return true;
     }
@@ -263,7 +300,7 @@ inline bool buildCoreGroundRoute(
                || next.y < minY || next.y > maxY){
                 continue;
             }
-            if(!coreGroundTraversable(world, next)) continue;
+            if(!traversable(next)) continue;
 
             const double tentative =
                 current.g + coreGroundTraversalCost(world, current.pos, next);
