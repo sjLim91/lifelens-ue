@@ -215,8 +215,9 @@ export class PhotorealNatureLayer {
             maxInstances,
           );
           mesh.count = 0;
-          mesh.castShadow = false;
-          mesh.receiveShadow = false;
+          mesh.castShadow = id === 'boulder_01'
+            || id === 'tree_stump_01';
+          mesh.receiveShadow = true;
           mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
           mesh.frustumCulled = true;
           this.entries.set(id, {
