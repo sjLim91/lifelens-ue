@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react';
 import { startObserverEngine } from './observer-engine';
+import {
+  SIMULATION_SPEED_PRESETS,
+  simulationTimeHint,
+} from './runtime/lifelens-contract';
 import { observerActions } from './state/observer-actions';
 import { observerStore } from './state/observer-store';
 import { useObserverSnapshot } from './state/use-observer-snapshot';
@@ -144,13 +148,7 @@ function ObserverPanel({
         </details>
 
         <div className="time-speed-control" aria-label="시뮬레이션 관찰 속도">
-          {[
-            { speed: 0, label: '⏸', title: '일시정지' },
-            { speed: 1, label: '1×', title: '관찰' },
-            { speed: 4, label: '4×', title: '빠르게' },
-            { speed: 16, label: '16×', title: '더 빠르게' },
-            { speed: 64, label: '64×', title: '고속 관찰' },
-          ].map((preset) => (
+          {SIMULATION_SPEED_PRESETS.map((preset) => (
             <button
               key={preset.speed}
               type="button"
@@ -165,7 +163,7 @@ function ObserverPanel({
           ))}
         </div>
         <p className="hint">
-          1× = 현실 8분에 LifeLens 1일 · 시간 점프 없이 관찰 배속만 조절
+          {simulationTimeHint()}
         </p>
       </section>
 
