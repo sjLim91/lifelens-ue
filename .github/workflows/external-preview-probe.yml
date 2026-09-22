@@ -3,10 +3,6 @@ name: External Preview Probe
 on:
   push:
     branches: [ main ]
-    paths:
-      - '.github/workflows/external-preview-probe.yml'
-  pull_request:
-    branches: [ main ]
   workflow_dispatch:
 
 permissions:
