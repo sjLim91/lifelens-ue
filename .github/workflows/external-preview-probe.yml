@@ -1,6 +1,10 @@
 name: External Preview Probe
 
 on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/external-preview-probe.yml'
   pull_request:
     branches: [ main ]
   workflow_dispatch:
@@ -12,49 +16,41 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Probe RawGitHack and jsDelivr
+      - name: Verify one-click RawGitHack launcher
         shell: bash
         run: |
-          set -u
-          RAW_BASE="https://raw.githack.com/sjLim91/lifelens-ue/gh-pages"
-          JSD_BASE="https://cdn.jsdelivr.net/gh/sjLim91/lifelens-ue@gh-pages"
+          set -euo pipefail
+          BASE="https://raw.githack.com/sjLim91/lifelens-ue/gh-pages"
+          LAUNCH="$BASE/launch.svg"
+          INDEX="$BASE/index.html"
 
-          probe_site () {
-            local name="$1"
-            local base="$2"
-            echo "===== $name ====="
-            local code
-            code=$(curl -L -sS -o /tmp/index.html -w "%{http_code}" "$base/index.html" || true)
-            echo "INDEX_STATUS=$code"
-            if [ "$code" != "200" ]; then
-              echo "RESULT=$name:FAIL:index"
-              return
-            fi
+          echo "== launcher GET =="
+          launch_code=$(curl -L -sS -o /tmp/launch.svg -w "%{http_code}"             -H "Sec-Fetch-Dest: document" "$LAUNCH")
+          launch_type=$(curl -L -sSI "$LAUNCH" | tr -d '\r' | awk 'BEGIN{IGNORECASE=1}/^content-type:/{print $0}' | tail -1)
+          echo "LAUNCH_STATUS=$launch_code"
+          echo "LAUNCH_CONTENT_TYPE=$launch_type"
+          test "$launch_code" = "200"
+          grep -q "LifeLens" /tmp/launch.svg
 
-            local ctype
-            ctype=$(curl -L -sSI "$base/index.html" | tr -d '\r' | awk 'BEGIN{IGNORECASE=1}/^content-type:/{print $0}' | tail -1)
-            echo "INDEX_CONTENT_TYPE=$ctype"
+          echo "== confirmation POST =="
+          curl -sS -o /tmp/post-body -D /tmp/post-headers             -c /tmp/cookies             -X POST             -H "Referer: $LAUNCH"             "$LAUNCH" || true
+          cat /tmp/post-headers
+          grep -qi "set-cookie: __Http-phish=1" /tmp/post-headers
 
-            local asset
-            asset=$(grep -oE 'src="\./assets/[^"]+\.js"' /tmp/index.html | head -1 | sed 's/src="\.\///;s/"//g')
-            echo "ASSET=$asset"
-            local asset_code
-            asset_code=$(curl -L -sS -o /tmp/app.js -w "%{http_code}" "$base/$asset" || true)
-            echo "ASSET_STATUS=$asset_code"
+          echo "== app HTML with cookie =="
+          app_code=$(curl -L -sS -o /tmp/index.html -w "%{http_code}"             -b /tmp/cookies             -H "Sec-Fetch-Dest: document"             "$INDEX")
+          echo "APP_STATUS=$app_code"
+          test "$app_code" = "200"
+          grep -q "LifeLens Web Observer" /tmp/index.html
 
-            local wasm_code
-            wasm_code=$(curl -L -sS -o /tmp/core.wasm -w "%{http_code}" "$base/runtime/lifelens_core.wasm" || true)
-            echo "WASM_STATUS=$wasm_code"
-            local wasm_bytes
-            wasm_bytes=$(wc -c < /tmp/core.wasm 2>/dev/null || echo 0)
-            echo "WASM_BYTES=$wasm_bytes"
+          asset=$(grep -oE 'src="\./assets/[^"]+\.js"' /tmp/index.html | head -1 | sed 's/src="\.\///;s/"//g')
+          asset_code=$(curl -L -sS -o /tmp/app.js -w "%{http_code}" "$BASE/$asset")
+          wasm_code=$(curl -L -sS -o /tmp/core.wasm -w "%{http_code}" "$BASE/runtime/lifelens_core.wasm")
+          echo "ASSET_STATUS=$asset_code"
+          echo "WASM_STATUS=$wasm_code"
+          echo "WASM_BYTES=$(wc -c < /tmp/core.wasm)"
+          test "$asset_code" = "200"
+          test "$wasm_code" = "200"
+          test "$(wc -c < /tmp/core.wasm)" -gt 1000
 
-            if [ "$asset_code" = "200" ] && [ "$wasm_code" = "200" ] && [ "$wasm_bytes" -gt 1000 ]; then
-              echo "RESULT=$name:PASS:$base/index.html"
-            else
-              echo "RESULT=$name:FAIL:assets"
-            fi
-          }
-
-          probe_site "RAWGITHACK" "$RAW_BASE"
-          probe_site "JSDELIVR" "$JSD_BASE"
+          echo "LIFELENS_PREVIEW_PASS=$LAUNCH"
