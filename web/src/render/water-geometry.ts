@@ -4,6 +4,7 @@ import type {
   TerrainWindow,
   WaterKind,
 } from '../runtime/core-types';
+import { WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
 
 const FLOW_KINDS = new Set<WaterKind>([
   'Spring',
