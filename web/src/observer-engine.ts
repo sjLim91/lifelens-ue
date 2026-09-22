@@ -275,6 +275,7 @@ export function startObserverEngine(): void {
   function setSimulationSpeed(speed: number): void {
     const canonicalSpeed = [0, 1, 4, 16, 64].includes(speed) ? speed : 1;
     simulationClock?.setSpeed(canonicalSpeed);
+    threeWorldRenderer?.setSimulationSpeed(canonicalSpeed);
     observerStore.update({ simulationSpeed: canonicalSpeed });
     refreshSafely();
   }
@@ -290,8 +291,10 @@ export function startObserverEngine(): void {
   
   function startSimulationClock(): void {
     simulationClock?.stop();
+    const initialSpeed = observerStore.getSnapshot().simulationSpeed;
+    threeWorldRenderer?.setSimulationSpeed(initialSpeed);
     simulationClock = new SimulationClock({
-      initialSpeed: observerStore.getSnapshot().simulationSpeed,
+      initialSpeed,
       onAdvance(minutes) {
         worldSession?.runMinutes(minutes);
       },
