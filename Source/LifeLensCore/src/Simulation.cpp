@@ -99,6 +99,7 @@ Simulation::Simulation(
     :ruleset_(ruleset),world_(worldSeed,populationSeed,generationVersion){}
 
 void Simulation::setupDemo(){
+    nextContextActionToken_=InitialContextActionToken;
     world_.characters.clear(); world_.objects.clear(); world_.environmentalResidues.clear(); relationships_=RelationshipBook{}; genealogy_=GenealogyBook{}; romances_=RomanceBook{}; households_=HouseholdBook{}; pregnancies_=PregnancyBook{}; births_=BirthBook{}; socialKnowledge_.clear(); runtime_.clear(); logs_.clear(); world_.minute=7*60;
     Character c; c.id=1; c.name="DevResident"; c.personality=Personality::generate(world_.rng);
     std::uniform_real_distribution<double> start(0.10,0.42);
@@ -116,6 +117,7 @@ void Simulation::setupDemo(){
 }
 
 void Simulation::setupSocialDemo(){
+    nextContextActionToken_=InitialContextActionToken;
     world_.characters.clear(); world_.objects.clear(); world_.environmentalResidues.clear(); relationships_=RelationshipBook{}; genealogy_=GenealogyBook{}; romances_=RomanceBook{}; households_=HouseholdBook{}; pregnancies_=PregnancyBook{}; births_=BirthBook{}; socialKnowledge_.clear(); runtime_.clear(); logs_.clear(); world_.minute=7*60;
 
     Character a;
@@ -155,6 +157,7 @@ void Simulation::setupSocialDemo(){
 }
 
 void Simulation::setupNewGame(){
+    nextContextActionToken_=InitialContextActionToken;
     world_.characters.clear();
     world_.objects.clear();
     relationships_=RelationshipBook{};
@@ -564,7 +567,7 @@ bool Simulation::tryCivilizationDecision(Character& c,Runtime& r){
     if(decision.kind!=UnifiedDecisionKind::Civilization || decision.civilization.intent==CivilizationIntent::None) return false;
 
     PendingContextAction pending;
-    pending.token=nextContextActionToken();
+    pending.token=issueContextActionToken();
     pending.kind=ContextActionKind::Civilization;
     pending.issuedMinute=world_.minute;
     pending.civilization=decision.civilization;
@@ -608,7 +611,7 @@ bool Simulation::trySocialDecision(Character& c,Runtime& r){
     if(target==nullptr || !target->alive) return false;
 
     PendingContextAction pending;
-    pending.token=nextContextActionToken();
+    pending.token=issueContextActionToken();
     pending.kind=ContextActionKind::Social;
     pending.issuedMinute=world_.minute;
     pending.social=decision.social;
@@ -948,7 +951,7 @@ void Simulation::advanceDependentCare()
         }
 
         PendingContextAction pending;
-        pending.token=nextContextActionToken();
+        pending.token=issueContextActionToken();
         pending.kind=ContextActionKind::Parenting;
         pending.issuedMinute=world_.minute;
         pending.parentingTarget=child.id;
