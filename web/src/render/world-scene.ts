@@ -11,6 +11,7 @@ import {
   WORLD_GRID_CONTRACT,
 } from '../runtime/lifelens-contract';
 import { AtmosphereLayer } from './atmosphere-layer';
+import { GroundDetailLayer } from './ground-detail-layer';
 import { ResidentWorldLayer } from './resident-world-layer';
 import { createTerrainGeometryBuilder } from './terrain-geometry';
 import { VegetationLayer } from './vegetation-layer';
@@ -42,6 +43,7 @@ export class WorldScene {
   private readonly terrainGroup = new THREE.Group();
   private readonly terrainMeshes = new Map<string, TerrainMeshEntry>();
   private readonly waterLayer = new WaterLayer();
+  private readonly groundDetailLayer = new GroundDetailLayer();
   private readonly vegetationLayer = new VegetationLayer();
   private readonly residentLayer = new ResidentWorldLayer();
   private readonly consequenceLayer = new WorldConsequenceLayer();
@@ -68,6 +70,7 @@ export class WorldScene {
   constructor() {
     this.scene.add(this.terrainGroup);
     this.scene.add(this.waterLayer.group);
+    this.scene.add(this.groundDetailLayer.group);
     this.scene.add(this.vegetationLayer.group);
     this.scene.add(this.consequenceLayer.group);
     this.scene.add(this.residentLayer.group);
@@ -91,6 +94,7 @@ export class WorldScene {
       panZ: Number(state.panZ) || 0,
     };
     this.consequenceLayer.setCameraZoom(this.desiredCameraState.zoom);
+    this.groundDetailLayer.setCameraZoom(this.desiredCameraState.zoom);
 
     if (!this.cameraInitialized) {
       this.currentCameraState = { ...this.desiredCameraState };
@@ -109,6 +113,7 @@ export class WorldScene {
     this.weatherLayer.setEnvironment(environment);
     this.waterLayer.setEnvironment(environment);
     this.consequenceLayer.setEnvironment(environment);
+    this.groundDetailLayer.setEnvironment(environment);
     this.vegetationLayer.setEnvironment(environment);
     for (const entry of this.terrainMeshes.values()) {
       this.applyTerrainWeatherMaterial(entry.mesh.material);
@@ -141,6 +146,7 @@ export class WorldScene {
       centerX,
       centerY,
     );
+    this.groundDetailLayer.setPresentation(snapshot, terrain);
     this.vegetationLayer.setPresentation(snapshot, terrain);
   }
 
@@ -167,6 +173,7 @@ export class WorldScene {
     current.elevation += (desired.elevation - current.elevation) * t;
     current.zoom += (desired.zoom - current.zoom) * t;
     this.consequenceLayer.setCameraZoom(current.zoom);
+    this.groundDetailLayer.setCameraZoom(current.zoom);
     current.panX = (Number(current.panX) || 0)
       + ((Number(desired.panX) || 0) - (Number(current.panX) || 0)) * t;
     current.panY = (Number(current.panY) || 0)
@@ -228,6 +235,7 @@ export class WorldScene {
     };
 
     this.waterLayer.setTerrain(window);
+    this.groundDetailLayer.setTerrain(window);
     this.vegetationLayer.setTerrain(window);
 
     for (const chunk of window.chunks) {
@@ -268,6 +276,7 @@ export class WorldScene {
     }
     this.terrainMeshes.clear();
     this.waterLayer.dispose();
+    this.groundDetailLayer.dispose();
     this.vegetationLayer.dispose();
     this.consequenceLayer.dispose();
     this.residentLayer.dispose();
