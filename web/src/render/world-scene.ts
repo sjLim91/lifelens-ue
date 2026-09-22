@@ -87,6 +87,7 @@ export class WorldScene {
       panX: Number(state.panX) || 0,
       panZ: Number(state.panZ) || 0,
     };
+    this.consequenceLayer.setCameraZoom(this.desiredCameraState.zoom);
 
     if (!this.cameraInitialized) {
       this.currentCameraState = { ...this.desiredCameraState };
@@ -159,6 +160,7 @@ export class WorldScene {
     current.angle += (desired.angle - current.angle) * t;
     current.elevation += (desired.elevation - current.elevation) * t;
     current.zoom += (desired.zoom - current.zoom) * t;
+    this.consequenceLayer.setCameraZoom(current.zoom);
     current.panX = (Number(current.panX) || 0)
       + ((Number(desired.panX) || 0) - (Number(current.panX) || 0)) * t;
     current.panZ = (Number(current.panZ) || 0)
