@@ -32,6 +32,13 @@ struct SimulationRuntimeSnapshot {
     SocialIntent socialIntent=SocialIntent::None;
     CharacterId socialTarget=0;
     PendingContextAction pendingContext{};
+    std::vector<GridPos> navigationRoute;
+    std::size_t navigationRouteIndex=0;
+    GridPos navigationTarget{};
+    int navigationArrivalRadius=0;
+    bool navigationHasTarget=false;
+    bool navigationArrived=false;
+    bool navigationRouteFailed=false;
 };
 
 struct SimulationStateSnapshot {
