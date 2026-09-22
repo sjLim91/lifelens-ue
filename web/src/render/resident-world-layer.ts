@@ -45,7 +45,21 @@ interface ResidentActor {
   statusSprite: THREE.Sprite;
   statusText: string;
   groundShadow: THREE.Mesh;
+  lastTrailPosition: THREE.Vector3;
+  lastAuthoritativeGridKey: string;
+  trailSide: 1 | -1;
   initialized: boolean;
+}
+
+interface ResidentTrailMark {
+  mesh: THREE.Mesh<THREE.CircleGeometry, THREE.MeshBasicMaterial>;
+  ageSeconds: number;
+}
+
+interface ResidentWearMark {
+  mesh: THREE.Mesh<THREE.CircleGeometry, THREE.MeshBasicMaterial>;
+  visits: number;
+  lastUsedMinute: number;
 }
 
 function stableHash(value: string): number {
@@ -333,6 +347,12 @@ export class ResidentWorldLayer {
     this.socialLinkMaterial,
   );
   private readonly actors = new Map<string, ResidentActor>();
+  private readonly trailGeometry = new THREE.CircleGeometry(0.16, 10);
+  private readonly trailMarks: ResidentTrailMark[] = [];
+  private readonly trailGroup = new THREE.Group();
+  private readonly wearGeometry = new THREE.CircleGeometry(0.72, 18);
+  private readonly wearMarks = new Map<string, ResidentWearMark>();
+  private readonly wearGroup = new THREE.Group();
   private readonly selectionRing = new THREE.Mesh(
     new THREE.RingGeometry(0.62, 0.84, 36),
     new THREE.MeshBasicMaterial({
@@ -349,10 +369,15 @@ export class ResidentWorldLayer {
   private ready = false;
   private pendingResidents: Resident[] = [];
   private pendingTerrain: TerrainWindow | null = null;
+  private pendingElevationSampler: ReturnType<
+    typeof createTerrainElevationSampler
+  > | null = null;
   private pendingCenterX = 0;
   private pendingCenterY = 0;
   private simulationSpeed: SimulationSpeed =
     SIMULATION_TIME_CONTRACT.defaultSpeed;
+  private simulationMinute = 0;
+  private cameraZoom = 1.25;
   private selectionPulseSeconds = 0;
 
   constructor() {
@@ -361,6 +386,10 @@ export class ResidentWorldLayer {
     this.selectionRing.renderOrder = 4;
     this.socialLinks.renderOrder = 8;
     this.socialLinks.frustumCulled = false;
+    this.trailGroup.renderOrder = 3;
+    this.wearGroup.renderOrder = 1;
+    this.group.add(this.wearGroup);
+    this.group.add(this.trailGroup);
     this.group.add(this.socialLinks);
     this.group.add(this.selectionRing);
     void this.loadAssets();
@@ -389,12 +418,25 @@ export class ResidentWorldLayer {
         actor.current.z += offsetZ;
         actor.target.x += offsetX;
         actor.target.z += offsetZ;
+        actor.lastTrailPosition.x += offsetX;
+        actor.lastTrailPosition.z += offsetZ;
         actor.root.position.copy(actor.current);
+      }
+      for (const mark of this.trailMarks) {
+        mark.mesh.position.x += offsetX;
+        mark.mesh.position.z += offsetZ;
+      }
+      for (const mark of this.wearMarks.values()) {
+        mark.mesh.position.x += offsetX;
+        mark.mesh.position.z += offsetZ;
       }
     }
 
     this.pendingResidents = residents;
     this.pendingTerrain = terrain;
+    this.pendingElevationSampler = createTerrainElevationSampler(
+      terrain,
+    );
     this.pendingCenterX = centerX;
     this.pendingCenterY = centerY;
 
@@ -475,9 +517,25 @@ export class ResidentWorldLayer {
       }
       actor.target.copy(next);
 
+      const authoritativeGridKey = `${resident.gridX}:${resident.gridY}`;
+      if (
+        actor.initialized
+        && actor.lastAuthoritativeGridKey
+        && actor.lastAuthoritativeGridKey !== authoritativeGridKey
+      ) {
+        this.recordWear(
+          authoritativeGridKey,
+          next.x,
+          next.y,
+          next.z,
+        );
+      }
+      actor.lastAuthoritativeGridKey = authoritativeGridKey;
+
       if (!actor.initialized) {
         actor.current.copy(next);
         actor.root.position.copy(next);
+        actor.lastTrailPosition.copy(next);
         actor.initialized = true;
       }
 
@@ -487,6 +545,15 @@ export class ResidentWorldLayer {
 
   setSimulationSpeed(speed: number): void {
     this.simulationSpeed = normalizeSimulationSpeed(speed);
+  }
+
+  setCameraZoom(zoom: number): void {
+    this.cameraZoom = Math.max(0.1, Number(zoom) || 1);
+  }
+
+  setSimulationMinute(minute: number): void {
+    this.simulationMinute = Math.max(0, Number(minute) || 0);
+    this.updateWearRecovery();
   }
 
   setSelectedResident(residentId: string | null): void {
@@ -566,6 +633,7 @@ export class ResidentWorldLayer {
       }
 
       actor.root.position.copy(actor.current);
+      if (moving) this.maybeAddTrailMark(actor);
       actor.groundShadow.visible = actor.root.visible;
       actor.statusSprite.position.set(
         actor.current.x,
@@ -577,10 +645,16 @@ export class ResidentWorldLayer {
           ) * 0.12,
         actor.current.z,
       );
+      actor.statusSprite.visible = Boolean(actor.statusText) && (
+        this.cameraZoom >= 1.04
+        || String(actor.root.userData.residentId ?? '')
+          === this.selectedResidentId
+      );
       this.setAction(actor, moving);
       actor.mixer.update(dt);
     }
 
+    this.updateTrailMarks(dt);
     this.updateActionLinks();
     this.selectionPulseSeconds += dt;
     this.updateSelectionRing();
@@ -603,11 +677,181 @@ export class ResidentWorldLayer {
       this.group.remove(actor.statusSprite);
     }
     this.actors.clear();
+    this.pendingElevationSampler = null;
+    for (const mark of this.trailMarks) {
+      mark.mesh.material.dispose();
+      this.trailGroup.remove(mark.mesh);
+    }
+    this.trailMarks.length = 0;
+    this.trailGeometry.dispose();
+    for (const mark of this.wearMarks.values()) {
+      mark.mesh.material.dispose();
+      this.wearGroup.remove(mark.mesh);
+    }
+    this.wearMarks.clear();
+    this.wearGeometry.dispose();
     this.socialLinkGeometry.dispose();
     this.socialLinkMaterial.dispose();
     this.selectionRing.geometry.dispose();
     const selectionMaterial = this.selectionRing.material;
     if (!Array.isArray(selectionMaterial)) selectionMaterial.dispose();
+  }
+
+  private recordWear(
+    key: string,
+    x: number,
+    y: number,
+    z: number,
+  ): void {
+    const existing = this.wearMarks.get(key);
+    if (existing) {
+      existing.visits = Math.min(14, existing.visits + 1);
+      existing.lastUsedMinute = this.simulationMinute;
+      const strength = Math.min(1, existing.visits / 9);
+      existing.mesh.material.opacity = 0.018 + strength * 0.115;
+      existing.mesh.scale.set(
+        0.82 + strength * 0.34,
+        0.68 + strength * 0.18,
+        1,
+      );
+      return;
+    }
+
+    if (this.wearMarks.size >= 140) {
+      let weakestKey = '';
+      let weakestVisits = Number.POSITIVE_INFINITY;
+      for (const [candidateKey, candidate] of this.wearMarks) {
+        if (candidate.visits >= weakestVisits) continue;
+        weakestVisits = candidate.visits;
+        weakestKey = candidateKey;
+      }
+      const weakest = weakestKey
+        ? this.wearMarks.get(weakestKey)
+        : undefined;
+      if (weakest && weakest.visits <= 2) {
+        weakest.mesh.material.dispose();
+        this.wearGroup.remove(weakest.mesh);
+        this.wearMarks.delete(weakestKey);
+      } else {
+        return;
+      }
+    }
+
+    const material = new THREE.MeshBasicMaterial({
+      color: 0x5b4935,
+      transparent: true,
+      opacity: 0.025,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    });
+    const mesh = new THREE.Mesh(this.wearGeometry, material);
+    mesh.rotation.x = -Math.PI * 0.5;
+    mesh.rotation.z = (
+      stableHash(key) % 628
+    ) / 100;
+    mesh.scale.set(0.82, 0.68, 1);
+    mesh.position.set(x, y + 0.009, z);
+    mesh.renderOrder = 1;
+    this.wearGroup.add(mesh);
+    this.wearMarks.set(key, {
+      mesh,
+      visits: 1,
+      lastUsedMinute: this.simulationMinute,
+    });
+  }
+
+  private updateWearRecovery(): void {
+    const dayMinutes = Math.max(
+      1,
+      SIMULATION_TIME_CONTRACT.simulationMinutesPerDay,
+    );
+
+    for (const [key, mark] of this.wearMarks) {
+      const unusedMinutes = Math.max(
+        0,
+        this.simulationMinute - mark.lastUsedMinute,
+      );
+      const persistenceMinutes = (
+        dayMinutes * (0.35 + Math.min(1, mark.visits / 10) * 1.25)
+      );
+      const life = Math.max(
+        0,
+        1 - unusedMinutes / persistenceMinutes,
+      );
+      const strength = Math.min(1, mark.visits / 9) * life;
+      mark.mesh.material.opacity = (
+        0.01 + strength * 0.12
+      ) * life;
+      mark.mesh.scale.set(
+        0.8 + strength * 0.36,
+        0.66 + strength * 0.2,
+        1,
+      );
+
+      if (life > 0.02) continue;
+      mark.mesh.material.dispose();
+      this.wearGroup.remove(mark.mesh);
+      this.wearMarks.delete(key);
+    }
+  }
+
+  private maybeAddTrailMark(actor: ResidentActor): void {
+    const distance = actor.current.distanceTo(actor.lastTrailPosition);
+    if (distance < 0.72) return;
+
+    const yaw = actor.root.rotation.y;
+    const side = actor.trailSide;
+    const lateralOffset = 0.16 * side;
+    const rightX = Math.cos(yaw) * lateralOffset;
+    const rightZ = -Math.sin(yaw) * lateralOffset;
+
+    const material = new THREE.MeshBasicMaterial({
+      color: 0x4b3d2f,
+      transparent: true,
+      opacity: 0.18,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    });
+    const mark = new THREE.Mesh(this.trailGeometry, material);
+    mark.rotation.x = -Math.PI * 0.5;
+    mark.rotation.z = -yaw;
+    mark.scale.set(0.62, 1.45, 1);
+    mark.position.set(
+      actor.current.x + rightX,
+      actor.current.y + 0.018,
+      actor.current.z + rightZ,
+    );
+    mark.renderOrder = 3;
+    this.trailGroup.add(mark);
+    this.trailMarks.push({ mesh: mark, ageSeconds: 0 });
+
+    actor.lastTrailPosition.copy(actor.current);
+    actor.trailSide = side === 1 ? -1 : 1;
+
+    const maxMarks = 120;
+    while (this.trailMarks.length > maxMarks) {
+      const oldest = this.trailMarks.shift();
+      if (!oldest) break;
+      oldest.mesh.material.dispose();
+      this.trailGroup.remove(oldest.mesh);
+    }
+  }
+
+  private updateTrailMarks(deltaSeconds: number): void {
+    const lifetimeSeconds = 28;
+    for (let index = this.trailMarks.length - 1; index >= 0; index -= 1) {
+      const mark = this.trailMarks[index];
+      mark.ageSeconds += Math.max(0, deltaSeconds);
+      const life = Math.max(
+        0,
+        1 - mark.ageSeconds / lifetimeSeconds,
+      );
+      mark.mesh.material.opacity = 0.18 * life * life;
+      if (life > 0) continue;
+      mark.mesh.material.dispose();
+      this.trailGroup.remove(mark.mesh);
+      this.trailMarks.splice(index, 1);
+    }
   }
 
   private updateActionLinks(): void {
@@ -626,69 +870,142 @@ export class ResidentWorldLayer {
       );
     };
 
+    const pushGridLink = (
+      sourceActor: ResidentActor,
+      gridX: number,
+      gridY: number,
+      color: THREE.Color,
+    ): void => {
+      if (!this.pendingTerrain) return;
+      const gridCellsPerChunk = WORLD_GRID_CONTRACT.gridCellsPerChunk;
+      const chunkWorldSize = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
+      const chunkX = Math.floor(gridX / gridCellsPerChunk);
+      const chunkY = Math.floor(gridY / gridCellsPerChunk);
+      const localX = (
+        gridX - chunkX * gridCellsPerChunk
+      ) / gridCellsPerChunk;
+      const localY = (
+        gridY - chunkY * gridCellsPerChunk
+      ) / gridCellsPerChunk;
+      const groundY = (
+        this.pendingElevationSampler
+          ? this.pendingElevationSampler(
+              chunkX,
+              chunkY,
+              localX,
+              localY,
+            )
+          : 0
+      ) * WORLD_GRID_CONTRACT.elevationScale;
+      const targetX = (
+        chunkX - this.pendingCenterX + localX - 0.5
+      ) * chunkWorldSize;
+      const targetZ = (
+        chunkY - this.pendingCenterY + localY - 0.5
+      ) * chunkWorldSize;
+
+      positions.push(
+        sourceActor.current.x,
+        sourceActor.current.y + 0.75,
+        sourceActor.current.z,
+        targetX,
+        groundY + 0.16,
+        targetZ,
+      );
+      pushColor(color);
+    };
+
     for (const resident of this.pendingResidents) {
       const action = resident.contextAction;
-      if (!action?.active) continue;
+      const presentation = resident.presentation;
+      const hasAction = Boolean(action?.active);
+      const hasPresentation = Boolean(presentation?.active);
+      if (!hasAction && !hasPresentation) continue;
 
       const sourceActor = this.actors.get(resident.id);
       if (!sourceActor?.initialized || !sourceActor.root.visible) {
         continue;
       }
 
-      if (
-        action.kind === 'Civilization'
-        && action.hasSpatialTarget
-        && typeof action.targetGridX === 'number'
-        && typeof action.targetGridY === 'number'
-        && this.pendingTerrain
-      ) {
-        const gridCellsPerChunk = WORLD_GRID_CONTRACT.gridCellsPerChunk;
-        const chunkWorldSize = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
-        const chunkX = Math.floor(action.targetGridX / gridCellsPerChunk);
-        const chunkY = Math.floor(action.targetGridY / gridCellsPerChunk);
-        const localX = (
-          action.targetGridX - chunkX * gridCellsPerChunk
-        ) / gridCellsPerChunk;
-        const localY = (
-          action.targetGridY - chunkY * gridCellsPerChunk
-        ) / gridCellsPerChunk;
-        const sampleElevation = createTerrainElevationSampler(
-          this.pendingTerrain,
-        );
-        const groundY = sampleElevation(
-          chunkX,
-          chunkY,
-          localX,
-          localY,
-        ) * WORLD_GRID_CONTRACT.elevationScale;
-        const targetX = (
-          chunkX - this.pendingCenterX + localX - 0.5
-        ) * chunkWorldSize;
-        const targetZ = (
-          chunkY - this.pendingCenterY + localY - 0.5
-        ) * chunkWorldSize;
+      const kind = action?.kind ?? presentation?.kind ?? 'None';
 
-        positions.push(
-          sourceActor.current.x,
-          sourceActor.current.y + 0.75,
-          sourceActor.current.z,
-          targetX,
-          groundY + 0.16,
-          targetZ,
+      if (kind === 'Civilization') {
+        const hasGrid = Boolean(
+          (
+            action?.active
+            && action.hasSpatialTarget
+            && typeof action.targetGridX === 'number'
+            && typeof action.targetGridY === 'number'
+          )
+          || (
+            presentation?.active
+            && presentation.hasTargetGrid
+            && typeof presentation.targetGridX === 'number'
+            && typeof presentation.targetGridY === 'number'
+          )
         );
-        pushColor(new THREE.Color(0xb99661));
+        if (hasGrid) {
+          const gridX = Number(
+            action?.targetGridX ?? presentation?.targetGridX,
+          );
+          const gridY = Number(
+            action?.targetGridY ?? presentation?.targetGridY,
+          );
+          pushGridLink(
+            sourceActor,
+            gridX,
+            gridY,
+            new THREE.Color(0xb99661),
+          );
+          continue;
+        }
+      }
+
+      if (
+        kind === 'Physical'
+        && presentation?.active
+        && presentation.hasTargetGrid
+        && typeof presentation.targetGridX === 'number'
+        && typeof presentation.targetGridY === 'number'
+      ) {
+        let color = new THREE.Color(0x93a48a);
+        switch (presentation.physicalGoal) {
+          case 'Drink':
+          case 'Wash':
+            color = new THREE.Color(0x6f9fb5);
+            break;
+          case 'Eat':
+            color = new THREE.Color(0xa6a46f);
+            break;
+          case 'UseToilet':
+            color = new THREE.Color(0x8d7358);
+            break;
+          case 'Sleep':
+            color = new THREE.Color(0x8a86a8);
+            break;
+          default:
+            break;
+        }
+        pushGridLink(
+          sourceActor,
+          presentation.targetGridX,
+          presentation.targetGridY,
+          color,
+        );
         continue;
       }
 
       if (
-        action.kind !== 'Social'
-        && action.kind !== 'KnowledgeTeaching'
-        && action.kind !== 'Parenting'
+        kind !== 'Social'
+        && kind !== 'KnowledgeTeaching'
+        && kind !== 'Parenting'
       ) {
         continue;
       }
 
-      const targetId = action.targetResidentId ?? '';
+      const targetId = action?.targetResidentId
+        ?? presentation?.targetResidentId
+        ?? '';
       if (!targetId) continue;
       const targetActor = this.actors.get(targetId);
       if (
@@ -712,12 +1029,15 @@ export class ResidentWorldLayer {
       );
 
       let color = new THREE.Color(0xa9c9af);
-      if (action.kind === 'KnowledgeTeaching') {
+      if (kind === 'KnowledgeTeaching') {
         color = new THREE.Color(0xb9b878);
-      } else if (action.kind === 'Parenting') {
+      } else if (kind === 'Parenting') {
         color = new THREE.Color(0xc9a894);
       } else {
-        switch (action.socialIntent) {
+        switch (
+          action?.socialIntent
+          ?? presentation?.socialIntent
+        ) {
           case 'Comfort':
             color = new THREE.Color(0x9bb9cf);
             break;
@@ -743,8 +1063,13 @@ export class ResidentWorldLayer {
       'color',
       new THREE.Float32BufferAttribute(colors, 3),
     );
-    this.socialLinkGeometry.computeBoundingSphere();
-    this.socialLinks.visible = positions.length > 0;
+    if (positions.length > 0) {
+      this.socialLinkGeometry.computeBoundingSphere();
+    }
+    this.socialLinks.visible = (
+      positions.length > 0
+      && this.cameraZoom >= 0.92
+    );
   }
 
   private updateSelectionRing(): void {
@@ -922,6 +1247,9 @@ export class ResidentWorldLayer {
       statusSprite,
       statusText: '',
       groundShadow,
+      lastTrailPosition: new THREE.Vector3(),
+      lastAuthoritativeGridKey: '',
+      trailSide: variantSeed % 2 === 0 ? 1 : -1,
       initialized: false,
     };
 

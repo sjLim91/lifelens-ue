@@ -6,6 +6,8 @@ import type {
   WorldResourceNode,
   WorldResidue,
   WorldSanitationSite,
+  WorldStorageSite,
+  DynamicEnvironment,
 } from '../runtime/core-types';
 import { WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
 import { createTerrainElevationSampler } from './terrain-geometry';
@@ -53,7 +55,10 @@ function facilityLabel(
     : `${kinds[facility.kind]} · ${states[facility.state]}${storageSuffix}`;
 }
 
-function makeLabelSprite(text: string): THREE.Sprite {
+function makeLabelSprite(
+  text: string,
+  priority = 1,
+): THREE.Sprite {
   const canvas = document.createElement('canvas');
   canvas.width = 512;
   canvas.height = 112;
@@ -83,6 +88,8 @@ function makeLabelSprite(text: string): THREE.Sprite {
   });
   const sprite = new THREE.Sprite(material);
   sprite.scale.set(5.5, 1.18, 1);
+  sprite.userData.lifeLensContextLabel = true;
+  sprite.userData.lifeLensLabelPriority = priority;
   sprite.renderOrder = 12;
   return sprite;
 }
@@ -281,6 +288,144 @@ function addSmokePuffs(
   }
 }
 
+function addFacilityGroundWear(
+  group: THREE.Group,
+  facility: WorldFacility,
+): void {
+  if (facility.state === 'Ruined') return;
+  const construction = facility.state === 'Planned'
+    || facility.state === 'UnderConstruction';
+  const radius = facility.kind === 'Shelter'
+    ? 3.2
+    : facility.kind === 'WorkSurface'
+      ? 2.7
+      : 2.35;
+  const wear = new THREE.Mesh(
+    new THREE.CircleGeometry(radius, 36),
+    new THREE.MeshStandardMaterial({
+      color: construction ? 0x65513a : 0x5a4b38,
+      roughness: 1,
+      transparent: true,
+      opacity: construction ? 0.22 : 0.12,
+      depthWrite: false,
+    }),
+  );
+  wear.rotation.x = -Math.PI * 0.5;
+  wear.position.y = 0.025;
+  wear.renderOrder = 1;
+  group.add(wear);
+}
+
+function addStorageContents(
+  group: THREE.Group,
+  storage: WorldStorageSite | undefined,
+): void {
+  if (!storage?.inventory?.length) return;
+
+  const wood = disposableMaterial(0x73563a);
+  const stone = disposableMaterial(0x77736a);
+  const fiber = disposableMaterial(0x887d55);
+  const clay = disposableMaterial(0x8d6550);
+  const charcoal = disposableMaterial(0x292824);
+  const metal = disposableMaterial(0xa96f50);
+
+  let slot = 0;
+  for (const stack of storage.inventory.slice(0, 6)) {
+    const quantity = Math.max(0, Number(stack.quantity) || 0);
+    if (quantity <= 0) continue;
+    const x = -1.0 + (slot % 3) * 0.95;
+    const z = -0.45 + Math.floor(slot / 3) * 0.95;
+    const visibleCount = Math.max(1, Math.min(4, Math.ceil(quantity / 3)));
+
+    for (let index = 0; index < visibleCount; index += 1) {
+      const ox = x + (index % 2) * 0.18;
+      const oz = z + Math.floor(index / 2) * 0.2;
+      const y = 0.34 + Math.floor(index / 2) * 0.14;
+      switch (stack.material) {
+        case 'Wood':
+          addLog(
+            group,
+            0.82,
+            0.07,
+            [ox, y, oz],
+            0.32 + index * 0.26,
+            wood,
+          );
+          break;
+        case 'Fiber':
+        case 'PlantFood': {
+          const bundle = new THREE.Mesh(
+            new THREE.IcosahedronGeometry(0.16, 1),
+            fiber,
+          );
+          bundle.position.set(ox, y, oz);
+          bundle.scale.set(1.25, 0.72, 0.92);
+          group.add(bundle);
+          break;
+        }
+        case 'Clay': {
+          const lump = new THREE.Mesh(
+            new THREE.SphereGeometry(0.15, 8, 6),
+            clay,
+          );
+          lump.position.set(ox, y, oz);
+          lump.scale.y = 0.72;
+          group.add(lump);
+          break;
+        }
+        case 'Charcoal': {
+          const lump = new THREE.Mesh(
+            new THREE.DodecahedronGeometry(0.12, 0),
+            charcoal,
+          );
+          lump.position.set(ox, y, oz);
+          group.add(lump);
+          break;
+        }
+        case 'CopperMetal': {
+          const ingot = new THREE.Mesh(
+            new THREE.BoxGeometry(0.32, 0.08, 0.16),
+            metal,
+          );
+          ingot.position.set(ox, y, oz);
+          group.add(ingot);
+          break;
+        }
+        default:
+          addStone(
+            group,
+            0.13,
+            [ox, y, oz],
+            stone,
+            slot * 11 + index,
+          );
+          break;
+      }
+    }
+    slot += 1;
+  }
+}
+
+function facilityLabelPriority(
+  facility: WorldFacility,
+): number {
+  if (
+    facility.state === 'Planned'
+    || facility.state === 'UnderConstruction'
+  ) return 4;
+  if (
+    (facility.kind === 'FirePit' || facility.kind === 'Furnace')
+    && facility.lit
+  ) return 4;
+  if (facility.kind === 'Shelter') return 3;
+  if (
+    facility.kind === 'PrimitiveStorage'
+    || facility.kind === 'WorkSurface'
+    || facility.kind === 'Furnace'
+  ) return 2;
+  return 1;
+}
+
 function addFacilityShape(
   group: THREE.Group,
   facility: WorldFacility,
@@ -305,6 +450,8 @@ function addFacilityShape(
     { opacity: construction ? 0.78 : 1 },
   );
   const earth = disposableMaterial(0x564333);
+  addFacilityGroundWear(group, facility);
+
   const fire = disposableMaterial(
     0x5f2c16,
     facility.lit
@@ -659,6 +806,7 @@ function addSanitationShape(
     site.kind === 'DugPit'
       ? `위생 구덩이 · 사용 ${site.useCount ?? 0}회`
       : `지정 위생구역 · 사용 ${site.useCount ?? 0}회`,
+    site.kind === 'DugPit' ? 3 : 2,
   );
   label.scale.multiplyScalar(0.82);
   label.position.y = 2.75;
@@ -669,14 +817,17 @@ function addResourceShape(
   group: THREE.Group,
   resource: WorldResourceNode,
 ): void {
-  const quantityRatio = Math.max(
-    0.18,
-    Math.min(
-      1,
-      (Number(resource.quantity) || 0)
-      / Math.max(1, Number(resource.maxQuantity) || Number(resource.quantity) || 1),
-    ),
+  const quantity = Math.max(0, Number(resource.quantity) || 0);
+  const maxQuantity = Math.max(
+    1,
+    Number(resource.maxQuantity) || quantity || 1,
   );
+  const quantityRatio = Math.max(
+    0,
+    Math.min(1, quantity / maxQuantity),
+  );
+  const depletion = 1 - quantityRatio;
+
   const materialColors: Record<string, number> = {
     Stone: 0x77756f,
     Flint: 0x4f5455,
@@ -696,51 +847,120 @@ function addResourceShape(
   const color = materialColors[resource.material] ?? 0x77756f;
   group.rotation.y = hash01(resource.id, 19) * Math.PI * 2;
 
+  if (
+    depletion > 0.18
+    && resource.material !== 'Water'
+    && resource.material !== 'Fiber'
+    && resource.material !== 'PlantFood'
+  ) {
+    const scar = new THREE.Mesh(
+      new THREE.CircleGeometry(
+        0.72 + depletion * 0.92,
+        30,
+      ),
+      new THREE.MeshStandardMaterial({
+        color:
+          resource.material === 'Clay'
+            ? 0x705443
+            : resource.material === 'Wood'
+              ? 0x514431
+              : 0x5a554d,
+        roughness: 1,
+        transparent: true,
+        opacity: 0.08 + depletion * 0.18,
+        depthWrite: false,
+      }),
+    );
+    scar.rotation.x = -Math.PI * 0.5;
+    scar.position.y = 0.028;
+    scar.renderOrder = 1;
+    group.add(scar);
+
+    if (
+      depletion > 0.55
+      && resource.material !== 'Wood'
+    ) {
+      const hollow = new THREE.Mesh(
+        new THREE.CircleGeometry(
+          0.34 + depletion * 0.45,
+          26,
+        ),
+        new THREE.MeshBasicMaterial({
+          color: 0x3f352e,
+          transparent: true,
+          opacity: 0.06 + depletion * 0.13,
+          depthWrite: false,
+        }),
+      );
+      hollow.rotation.x = -Math.PI * 0.5;
+      hollow.position.y = 0.035;
+      hollow.renderOrder = 2;
+      group.add(hollow);
+    }
+  }
+
   if (resource.material === 'Wood') {
+    if (quantityRatio <= 0.03) return;
     const logMaterial = disposableMaterial(color);
     addLog(
       group,
-      1.75 * quantityRatio + 0.6,
-      0.16,
-      [0, 0.22, 0],
+      0.65 + 1.7 * quantityRatio,
+      0.12 + 0.05 * quantityRatio,
+      [0, 0.2, 0],
       0.35,
       logMaterial,
     );
-    addLog(
-      group,
-      1.45 * quantityRatio + 0.55,
-      0.13,
-      [0.22, 0.28, -0.18],
-      -0.58,
-      logMaterial,
-    );
-  } else if (resource.material === 'Fiber' || resource.material === 'PlantFood') {
+    if (quantityRatio > 0.34) {
+      addLog(
+        group,
+        0.55 + 1.35 * quantityRatio,
+        0.1 + 0.04 * quantityRatio,
+        [0.22, 0.27, -0.18],
+        -0.58,
+        logMaterial,
+      );
+    }
+  } else if (
+    resource.material === 'Fiber'
+    || resource.material === 'PlantFood'
+  ) {
     const tuftMaterial = disposableMaterial(color);
-    for (let index = 0; index < 3; index += 1) {
+    const tuftCount = quantityRatio <= 0.03
+      ? 0
+      : quantityRatio < 0.34
+        ? 1
+        : quantityRatio < 0.67
+          ? 2
+          : 3;
+    for (let index = 0; index < tuftCount; index += 1) {
       const tuft = new THREE.Mesh(
         new THREE.IcosahedronGeometry(
-          0.34 + quantityRatio * 0.22,
+          0.26 + quantityRatio * 0.28,
           1,
         ),
         tuftMaterial,
       );
       tuft.position.set(
         (index - 1) * 0.36,
-        0.28 + index * 0.08,
+        0.22 + index * 0.08,
         index % 2 ? 0.22 : -0.12,
       );
-      tuft.scale.y = 0.85 + index * 0.08;
+      tuft.scale.y = 0.72 + quantityRatio * 0.28 + index * 0.04;
       group.add(tuft);
     }
   } else if (resource.material === 'Water') {
+    if (quantityRatio <= 0.01) return;
     const water = new THREE.Mesh(
-      new THREE.CircleGeometry(0.92 + quantityRatio * 0.34, 28),
+      new THREE.CircleGeometry(
+        0.28 + quantityRatio * 1.02,
+        28,
+      ),
       new THREE.MeshStandardMaterial({
         color,
         roughness: 0.18,
         metalness: 0.02,
         transparent: true,
-        opacity: 0.72,
+        opacity: 0.3 + quantityRatio * 0.42,
       }),
     );
     water.rotation.x = -Math.PI * 0.5;
@@ -748,10 +968,17 @@ function addResourceShape(
     group.add(water);
   } else {
     const rockMaterial = disposableMaterial(color);
-    for (let index = 0; index < 3; index += 1) {
+    const rockCount = quantityRatio <= 0.03
+      ? 0
+      : quantityRatio < 0.34
+        ? 1
+        : quantityRatio < 0.67
+          ? 2
+          : 3;
+    for (let index = 0; index < rockCount; index += 1) {
       const rock = new THREE.Mesh(
         new THREE.DodecahedronGeometry(
-          (0.4 + index * 0.12) * quantityRatio + 0.16,
+          (0.24 + index * 0.1) * (0.55 + quantityRatio * 0.65),
           0,
         ),
         rockMaterial,
@@ -759,7 +986,7 @@ function addResourceShape(
       rock.scale.set(1.15, 0.68, 0.9);
       rock.position.set(
         (index - 1) * 0.42,
-        0.28 + index * 0.07,
+        0.22 + index * 0.07,
         index % 2 ? 0.24 : -0.18,
       );
       rock.rotation.y = index * 0.72;
@@ -828,6 +1055,50 @@ function addResidueShape(
   }
 }
 
+function addConstructionDust(
+  group: THREE.Group,
+  facilityId: string,
+  progressDelta: number,
+): void {
+  const count = Math.max(
+    3,
+    Math.min(9, 3 + Math.ceil(progressDelta * 20)),
+  );
+  for (let index = 0; index < count; index += 1) {
+    const seed = hash01(facilityId, 700 + index * 31);
+    const angle = seed * Math.PI * 2;
+    const radius = 0.35 + hash01(facilityId, 900 + index * 17) * 1.15;
+    const material = new THREE.MeshBasicMaterial({
+      color: 0xb6a17e,
+      transparent: true,
+      opacity: 0.16,
+      depthWrite: false,
+    });
+    const dust = new THREE.Mesh(
+      new THREE.SphereGeometry(
+        0.16 + hash01(facilityId, 1100 + index * 13) * 0.14,
+        7,
+        5,
+      ),
+      material,
+    );
+    dust.position.set(
+      Math.cos(angle) * radius,
+      0.18 + seed * 0.45,
+      Math.sin(angle) * radius,
+    );
+    dust.scale.y = 0.58;
+    dust.userData.lifeLensConstructionDust = true;
+    dust.userData.ageSeconds = 0;
+    dust.userData.lifetimeSeconds = 0.75 + seed * 0.85;
+    dust.userData.velocityX = Math.cos(angle) * (0.12 + seed * 0.1);
+    dust.userData.velocityY = 0.34 + seed * 0.2;
+    dust.userData.velocityZ = Math.sin(angle) * (0.12 + seed * 0.1);
+    dust.renderOrder = 7;
+    group.add(dust);
+  }
+}
+
 function disposeObject(object: THREE.Object3D): void {
   object.traverse((child) => {
     if (child instanceof THREE.Mesh) {
@@ -849,6 +1120,87 @@ export class WorldConsequenceLayer {
   readonly group = new THREE.Group();
   private lastSignature = '';
   private animationTime = 0;
+  private cameraZoom = 1.25;
+  private surfaceWetness = 0;
+  private snowIntensity = 0;
+  private readonly facilityProgress = new Map<string, number>();
+
+  setEnvironment(
+    environment: DynamicEnvironment | null,
+  ): void {
+    this.surfaceWetness = clamp01(environment?.surfaceWetness01);
+    this.snowIntensity = environment?.precipitationType === 'Snow'
+      ? clamp01(environment?.precipitationIntensity01)
+      : 0;
+
+    this.group.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return;
+      const materials = Array.isArray(object.material)
+        ? object.material
+        : [object.material];
+
+      for (const material of materials) {
+        if (!(material instanceof THREE.MeshStandardMaterial)) continue;
+        const baseRoughness = Number(
+          material.userData.lifeLensBaseRoughness
+            ?? material.roughness,
+        );
+        material.userData.lifeLensBaseRoughness = baseRoughness;
+        material.roughness = Math.max(
+          0.38,
+          baseRoughness - this.surfaceWetness * 0.28,
+        );
+
+        if (!material.userData.lifeLensBaseColor) {
+          material.userData.lifeLensBaseColor = material.color.clone();
+        }
+        const baseColor = material.userData.lifeLensBaseColor;
+        if (baseColor instanceof THREE.Color) {
+          material.color.copy(baseColor);
+          if (this.snowIntensity > 0.02) {
+            material.color.lerp(
+              new THREE.Color(0xdde5df),
+              Math.min(0.32, this.snowIntensity * 0.3),
+            );
+          }
+        }
+      }
+    });
+  }
+
+  setCameraZoom(zoom: number): void {
+    this.cameraZoom = Math.max(0.1, Number(zoom) || 1);
+    this.refreshLabelVisibility();
+  }
+
+  private refreshLabelVisibility(): void {
+    const zoom = this.cameraZoom;
+    const minPriority = zoom < 0.9
+      ? 4
+      : zoom < 1.3
+        ? 3
+        : zoom < 2.0
+          ? 2
+          : 1;
+    const scaleFactor = Math.max(
+      0.72,
+      Math.min(1, 0.74 + zoom * 0.12),
+    );
+
+    this.group.traverse((object) => {
+      if (
+        !(object instanceof THREE.Sprite)
+        || !object.userData.lifeLensContextLabel
+      ) return;
+      const priority = Number(object.userData.lifeLensLabelPriority) || 1;
+      object.visible = priority >= minPriority;
+      object.scale.set(
+        5.5 * scaleFactor,
+        1.18 * scaleFactor,
+        1,
+      );
+    });
+  }
 
   update(deltaSeconds: number): void {
     this.animationTime += Math.min(0.05, Math.max(0, deltaSeconds));
@@ -871,6 +1223,35 @@ export class WorldConsequenceLayer {
         object.scale.y = baseScaleY * (0.94 + fast * 0.08);
         object.rotation.y = slow * 0.08;
       }
+      if (
+        object instanceof THREE.Mesh
+        && object.userData.lifeLensConstructionDust
+      ) {
+        const age = (Number(object.userData.ageSeconds) || 0)
+          + Math.max(0, deltaSeconds);
+        const lifetime = Math.max(
+          0.1,
+          Number(object.userData.lifetimeSeconds) || 1,
+        );
+        object.userData.ageSeconds = age;
+        object.position.x += (
+          Number(object.userData.velocityX) || 0
+        ) * deltaSeconds;
+        object.position.y += (
+          Number(object.userData.velocityY) || 0
+        ) * deltaSeconds;
+        object.position.z += (
+          Number(object.userData.velocityZ) || 0
+        ) * deltaSeconds;
+        const life = Math.max(0, 1 - age / lifetime);
+        object.scale.multiplyScalar(0.995);
+        const material = object.material;
+        if (material instanceof THREE.MeshBasicMaterial) {
+          material.opacity = 0.16 * life * life;
+          material.visible = life > 0;
+        }
+      }
+
       if (
         object instanceof THREE.Mesh
         && object.userData.lifeLensSmoke
@@ -900,6 +1281,22 @@ export class WorldConsequenceLayer {
     centerX: number,
     centerY: number,
   ): void {
+    const constructionDeltas = new Map<string, number>();
+    for (const facility of snapshot?.facilities ?? []) {
+      const current = clamp01(facility.workProgress);
+      const previous = this.facilityProgress.get(facility.id);
+      if (
+        previous !== undefined
+        && current > previous + 0.0001
+        && facility.state === 'UnderConstruction'
+      ) {
+        constructionDeltas.set(
+          facility.id,
+          Math.max(0, current - previous),
+        );
+      }
+    }
+
     const signature = snapshot?.available
       ? [
           centerX,
@@ -925,6 +1322,14 @@ export class WorldConsequenceLayer {
 
     if (signature === this.lastSignature) return;
     this.lastSignature = signature;
+
+    this.facilityProgress.clear();
+    for (const facility of snapshot?.facilities ?? []) {
+      this.facilityProgress.set(
+        facility.id,
+        clamp01(facility.workProgress),
+      );
+    }
 
     for (const child of [...this.group.children]) {
       this.group.remove(child);
@@ -982,27 +1387,43 @@ export class WorldConsequenceLayer {
     const storageByGrid = new Map(
       (snapshot.storages ?? []).map((storage) => [
         `${storage.gridX}:${storage.gridY}`,
-        Number(storage.totalUnits) || 0,
+        storage,
       ]),
     );
     for (const facility of snapshot.facilities ?? []) {
       const object = new THREE.Group();
       object.position.copy(positionAt(facility.gridX, facility.gridY));
       addFacilityShape(object, facility);
-      const storedUnits = storageByGrid.get(
+      const progressDelta = constructionDeltas.get(facility.id) ?? 0;
+      if (progressDelta > 0) {
+        addConstructionDust(object, facility.id, progressDelta);
+      }
+      const storage = storageByGrid.get(
         `${facility.gridX}:${facility.gridY}`,
       );
+      if (facility.kind === 'PrimitiveStorage') {
+        addStorageContents(object, storage);
+      }
       const label = makeLabelSprite(
-        facilityLabel(facility, storedUnits),
+        facilityLabel(facility, Number(storage?.totalUnits) || 0),
+        facilityLabelPriority(facility),
       );
       label.position.y = facility.kind === 'Shelter' ? 5.35 : 3.25;
       object.add(label);
       this.group.add(object);
     }
+
+    this.refreshLabelVisibility();
+    this.setEnvironment({
+      precipitationType: this.snowIntensity > 0 ? 'Snow' : 'None',
+      precipitationIntensity01: this.snowIntensity,
+      surfaceWetness01: this.surfaceWetness,
+    });
   }
 
   dispose(): void {
     this.lastSignature = '';
+    this.facilityProgress.clear();
     for (const child of [...this.group.children]) {
       this.group.remove(child);
       disposeObject(child);

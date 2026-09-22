@@ -11,6 +11,8 @@ import {
   WORLD_GRID_CONTRACT,
 } from '../runtime/lifelens-contract';
 import { AtmosphereLayer } from './atmosphere-layer';
+import { GroundDetailLayer } from './ground-detail-layer';
+import { PhotorealNatureLayer } from './photoreal-nature-layer';
 import { ResidentWorldLayer } from './resident-world-layer';
 import { createTerrainGeometryBuilder } from './terrain-geometry';
 import { VegetationLayer } from './vegetation-layer';
@@ -25,6 +27,7 @@ export interface WorldSceneCameraState {
   angle: number;
   elevation: number;
   panX?: number;
+  panY?: number;
   panZ?: number;
 }
 
@@ -41,6 +44,8 @@ export class WorldScene {
   private readonly terrainGroup = new THREE.Group();
   private readonly terrainMeshes = new Map<string, TerrainMeshEntry>();
   private readonly waterLayer = new WaterLayer();
+  private readonly groundDetailLayer = new GroundDetailLayer();
+  private readonly photorealNatureLayer = new PhotorealNatureLayer();
   private readonly vegetationLayer = new VegetationLayer();
   private readonly residentLayer = new ResidentWorldLayer();
   private readonly consequenceLayer = new WorldConsequenceLayer();
@@ -57,6 +62,7 @@ export class WorldScene {
     angle: OBSERVER_CAMERA_CONTRACT.defaultAngleRadians,
     elevation: OBSERVER_CAMERA_CONTRACT.defaultElevationRadians,
     panX: 0,
+    panY: 0,
     panZ: 0,
   };
   private desiredCameraState: WorldSceneCameraState = {
@@ -66,6 +72,8 @@ export class WorldScene {
   constructor() {
     this.scene.add(this.terrainGroup);
     this.scene.add(this.waterLayer.group);
+    this.scene.add(this.groundDetailLayer.group);
+    this.scene.add(this.photorealNatureLayer.group);
     this.scene.add(this.vegetationLayer.group);
     this.scene.add(this.consequenceLayer.group);
     this.scene.add(this.residentLayer.group);
@@ -85,8 +93,14 @@ export class WorldScene {
     this.desiredCameraState = {
       ...state,
       panX: Number(state.panX) || 0,
+      panY: Number(state.panY) || 0,
       panZ: Number(state.panZ) || 0,
     };
+    this.consequenceLayer.setCameraZoom(this.desiredCameraState.zoom);
+    this.groundDetailLayer.setCameraZoom(this.desiredCameraState.zoom);
+    this.photorealNatureLayer.setCameraZoom(this.desiredCameraState.zoom);
+    this.vegetationLayer.setCameraZoom(this.desiredCameraState.zoom);
+    this.residentLayer.setCameraZoom(this.desiredCameraState.zoom);
 
     if (!this.cameraInitialized) {
       this.currentCameraState = { ...this.desiredCameraState };
@@ -97,12 +111,18 @@ export class WorldScene {
 
   setSimulationMinute(minute: number): void {
     this.atmosphere.setSimulationMinute(minute);
+    this.residentLayer.setSimulationMinute(minute);
   }
 
   setEnvironment(environment: DynamicEnvironment | null): void {
     this.environment = environment;
     this.atmosphere.setEnvironment(environment);
     this.weatherLayer.setEnvironment(environment);
+    this.waterLayer.setEnvironment(environment);
+    this.consequenceLayer.setEnvironment(environment);
+    this.groundDetailLayer.setEnvironment(environment);
+    this.photorealNatureLayer.setEnvironment(environment);
+    this.vegetationLayer.setEnvironment(environment);
     for (const entry of this.terrainMeshes.values()) {
       this.applyTerrainWeatherMaterial(entry.mesh.material);
     }
@@ -134,6 +154,8 @@ export class WorldScene {
       centerX,
       centerY,
     );
+    this.groundDetailLayer.setPresentation(snapshot, terrain);
+    this.photorealNatureLayer.setPresentation(snapshot, terrain);
     this.vegetationLayer.setPresentation(snapshot, terrain);
   }
 
@@ -159,14 +181,25 @@ export class WorldScene {
     current.angle += (desired.angle - current.angle) * t;
     current.elevation += (desired.elevation - current.elevation) * t;
     current.zoom += (desired.zoom - current.zoom) * t;
+    this.consequenceLayer.setCameraZoom(current.zoom);
+    this.groundDetailLayer.setCameraZoom(current.zoom);
+    this.photorealNatureLayer.setCameraZoom(current.zoom);
+    this.vegetationLayer.setCameraZoom(current.zoom);
+    this.residentLayer.setCameraZoom(current.zoom);
     current.panX = (Number(current.panX) || 0)
       + ((Number(desired.panX) || 0) - (Number(current.panX) || 0)) * t;
+    current.panY = (Number(current.panY) || 0)
+      + ((Number(desired.panY) || 0) - (Number(current.panY) || 0)) * t;
     current.panZ = (Number(current.panZ) || 0)
       + ((Number(desired.panZ) || 0) - (Number(current.panZ) || 0)) * t;
     this.applyCamera(current);
 
     this.residentLayer.update(deltaSeconds);
     this.consequenceLayer.update(deltaSeconds);
+    this.groundDetailLayer.update(deltaSeconds);
+    this.vegetationLayer.update(deltaSeconds);
+    this.waterLayer.update(deltaSeconds);
+    this.atmosphere.update(deltaSeconds);
     this.weatherLayer.update(deltaSeconds);
   }
 
@@ -175,14 +208,17 @@ export class WorldScene {
     const elevation = Math.max(0.12, Math.min(1.35, state.elevation));
     const groundRadius = Math.cos(elevation) * distance;
     const panX = Number(state.panX) || 0;
+    const panY = Number(state.panY) || 0;
     const panZ = Number(state.panZ) || 0;
+
+    this.weatherLayer.setAnchor(panX, panY, panZ);
 
     this.camera.position.set(
       Math.cos(state.angle) * groundRadius + panX,
-      Math.sin(elevation) * distance,
+      Math.sin(elevation) * distance + panY,
       Math.sin(state.angle) * groundRadius + panZ,
     );
-    this.camera.lookAt(panX, 0, panZ);
+    this.camera.lookAt(panX, panY, panZ);
   }
 
   setTerrain(window: TerrainWindow): void {
@@ -203,7 +239,7 @@ export class WorldScene {
           );
           neighborhood.push(
             neighbor
-              ? (Number(neighbor.elevation01) || 0).toFixed(5)
+              ? `${(Number(neighbor.elevation01) || 0).toFixed(5)}:${neighbor.waterKind}`
               : 'x',
           );
         }
@@ -212,6 +248,8 @@ export class WorldScene {
     };
 
     this.waterLayer.setTerrain(window);
+    this.groundDetailLayer.setTerrain(window);
+    this.photorealNatureLayer.setTerrain(window);
     this.vegetationLayer.setTerrain(window);
 
     for (const chunk of window.chunks) {
@@ -224,14 +262,23 @@ export class WorldScene {
         if (existing.signature !== signature) {
           const previousGeometry = existing.mesh.geometry;
           existing.mesh.geometry = buildGeometry(chunk);
-          this.applyTerrainVertexColors(existing.mesh.geometry, chunk);
+          this.applyTerrainVertexColors(
+            existing.mesh.geometry,
+            chunk,
+            chunkMap,
+          );
           previousGeometry.dispose();
           existing.signature = signature;
         }
         continue;
       }
 
-      const mesh = this.createTerrainMesh(chunk, window, buildGeometry);
+      const mesh = this.createTerrainMesh(
+        chunk,
+        window,
+        buildGeometry,
+        chunkMap,
+      );
       this.terrainMeshes.set(key, { mesh, key, signature });
       this.terrainGroup.add(mesh);
     }
@@ -252,6 +299,8 @@ export class WorldScene {
     }
     this.terrainMeshes.clear();
     this.waterLayer.dispose();
+    this.groundDetailLayer.dispose();
+    this.photorealNatureLayer.dispose();
     this.vegetationLayer.dispose();
     this.consequenceLayer.dispose();
     this.residentLayer.dispose();
@@ -267,9 +316,14 @@ export class WorldScene {
     chunk: TerrainChunk,
     window: TerrainWindow,
     buildGeometry: (chunk: TerrainChunk) => THREE.BufferGeometry,
+    chunkMap: Map<string, TerrainChunk>,
   ): THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial> {
     const geometry = buildGeometry(chunk);
-    this.applyTerrainVertexColors(geometry, chunk);
+    this.applyTerrainVertexColors(
+      geometry,
+      chunk,
+      chunkMap,
+    );
 
     const material = new THREE.MeshStandardMaterial({
       color: 0xffffff,
@@ -277,6 +331,7 @@ export class WorldScene {
       roughness: 0.96,
       metalness: 0,
     });
+    this.enableTerrainMicroSurface(material);
 
     this.applyTerrainWeatherMaterial(material);
 
@@ -300,6 +355,193 @@ export class WorldScene {
     mesh.scale.set(1, 1, 1);
   }
 
+  private enableTerrainMicroSurface(
+    material: THREE.MeshStandardMaterial,
+  ): void {
+    material.onBeforeCompile = (shader) => {
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <common>',
+        `#include <common>
+varying vec3 vLifeLensGroundWorldPos;`,
+      );
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <project_vertex>',
+        `vLifeLensGroundWorldPos =
+  (modelMatrix * vec4(transformed, 1.0)).xyz;
+#include <project_vertex>`,
+      );
+
+      shader.fragmentShader = shader.fragmentShader.replace(
+        '#include <common>',
+        `#include <common>
+varying vec3 vLifeLensGroundWorldPos;`,
+      );
+      shader.fragmentShader = shader.fragmentShader.replace(
+        '#include <color_fragment>',
+        `#include <color_fragment>
+float lifeLensGroundBroad =
+  sin(vLifeLensGroundWorldPos.x * 0.73
+    + vLifeLensGroundWorldPos.z * 0.51)
+  * 0.5
+  + sin(vLifeLensGroundWorldPos.x * -1.31
+    + vLifeLensGroundWorldPos.z * 1.07)
+  * 0.25;
+float lifeLensGroundFine =
+  sin(vLifeLensGroundWorldPos.x * 4.31
+    + vLifeLensGroundWorldPos.z * 3.79)
+  * sin(vLifeLensGroundWorldPos.x * 2.17
+    - vLifeLensGroundWorldPos.z * 2.83);
+float lifeLensGroundTone =
+  clamp(
+    0.985
+    + lifeLensGroundBroad * 0.024
+    + lifeLensGroundFine * 0.012,
+    0.935,
+    1.045
+  );
+diffuseColor.rgb *= lifeLensGroundTone;`,
+      );
+      shader.fragmentShader = shader.fragmentShader.replace(
+        '#include <roughnessmap_fragment>',
+        `#include <roughnessmap_fragment>
+float lifeLensRoughVariation =
+  sin(vLifeLensGroundWorldPos.x * 2.63
+    + vLifeLensGroundWorldPos.z * 2.29)
+  * 0.025;
+roughnessFactor = clamp(
+  roughnessFactor + lifeLensRoughVariation,
+  0.55,
+  1.0
+);`,
+      );
+    };
+    material.customProgramCacheKey = () => 'lifelens-terrain-micro-v1';
+    material.needsUpdate = true;
+  }
+
+  private terrainShoreFactor(
+    chunk: TerrainChunk,
+    localX01: number,
+    localY01: number,
+    chunkMap: Map<string, TerrainChunk>,
+  ): number {
+    const size = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
+    const clamp01 = (value: number): number => (
+      Math.max(0, Math.min(1, value))
+    );
+
+    if (
+      chunk.waterKind === 'Ocean'
+      || chunk.waterKind === 'Coast'
+      || chunk.waterKind === 'Lake'
+    ) {
+      return 0;
+    }
+
+    if (
+      chunk.waterKind === 'River'
+      || chunk.waterKind === 'Stream'
+      || chunk.waterKind === 'Spring'
+    ) {
+      const px = (localX01 - 0.5) * size;
+      const pz = (localY01 - 0.5) * size;
+      const width = chunk.waterKind === 'River'
+        ? size * 0.22
+        : chunk.waterKind === 'Stream'
+          ? size * 0.11
+          : size * 0.08;
+      const halfWidth = width * 0.5;
+      const bankWidth = Math.max(0.8, size * 0.045);
+      const halfLength = size * 0.52;
+      const directions = (
+        ([
+          [1, 0],
+          [-1, 0],
+          [0, 1],
+          [0, -1],
+        ] as Array<[number, number]>).filter(([dx, dy]) => {
+          const neighbor = chunkMap.get(
+            `${chunk.x + dx}:${chunk.y + dy}`,
+          );
+          return neighbor
+            ? (
+                neighbor.waterKind === 'Spring'
+                || neighbor.waterKind === 'Stream'
+                || neighbor.waterKind === 'River'
+                || neighbor.waterKind === 'Lake'
+                || neighbor.waterKind === 'Wetland'
+              )
+            : false;
+        })
+      );
+      const activeDirections = directions.length > 0
+        ? directions
+        : ([[1, 0], [-1, 0]] as Array<[number, number]>);
+
+      const segmentDistance = (
+        ax: number,
+        az: number,
+        bx: number,
+        bz: number,
+      ): number => {
+        const abx = bx - ax;
+        const abz = bz - az;
+        const denom = abx * abx + abz * abz;
+        const t = denom <= 0.000001
+          ? 0
+          : clamp01(
+              ((px - ax) * abx + (pz - az) * abz) / denom,
+            );
+        const cx = ax + abx * t;
+        const cz = az + abz * t;
+        return Math.hypot(px - cx, pz - cz);
+      };
+
+      let distance = Math.hypot(px, pz);
+      for (const [dx, dy] of activeDirections) {
+        distance = Math.min(
+          distance,
+          segmentDistance(
+            0,
+            0,
+            dx * halfLength,
+            dy * halfLength,
+          ),
+        );
+      }
+      if (distance <= halfWidth) return 0;
+      return clamp01(
+        1 - (distance - halfWidth) / bankWidth,
+      );
+    }
+
+    let coastalFactor = 0;
+    const edges: Array<[number, number, number]> = [
+      [1, 0, 1 - localX01],
+      [-1, 0, localX01],
+      [0, 1, 1 - localY01],
+      [0, -1, localY01],
+    ];
+    for (const [dx, dy, edgeDistance] of edges) {
+      const neighbor = chunkMap.get(
+        `${chunk.x + dx}:${chunk.y + dy}`,
+      );
+      if (!neighbor) continue;
+      if (
+        neighbor.waterKind !== 'Ocean'
+        && neighbor.waterKind !== 'Coast'
+        && neighbor.waterKind !== 'Lake'
+      ) {
+        continue;
+      }
+      coastalFactor = Math.max(
+        coastalFactor,
+        clamp01(1 - edgeDistance / 0.18),
+      );
+    }
+    return coastalFactor;
+  }
+
   private applyTerrainWeatherMaterial(
     material: THREE.MeshStandardMaterial,
   ): void {
@@ -318,12 +560,12 @@ export class WorldScene {
     if (snow && precipitation > 0) {
       tint.lerp(
         new THREE.Color(0xdce6e7),
-        Math.min(0.34, precipitation * 0.3),
+        Math.min(0.52, precipitation * 0.48),
       );
     } else if (rain && precipitation > 0) {
       tint.lerp(
-        new THREE.Color(0xd7e0dc),
-        Math.min(0.18, precipitation * 0.15),
+        new THREE.Color(0xd3ddd8),
+        Math.min(0.22, precipitation * 0.2),
       );
     }
     if (cloud > 0.45) {
@@ -336,14 +578,15 @@ export class WorldScene {
       : snow
         ? 0.92
         : 0.96;
-    material.needsUpdate = true;
   }
 
   private applyTerrainVertexColors(
     geometry: THREE.BufferGeometry,
     chunk: TerrainChunk,
+    chunkMap: Map<string, TerrainChunk>,
   ): void {
     const position = geometry.getAttribute('position');
+    const normal = geometry.getAttribute('normal');
     if (!(position instanceof THREE.BufferAttribute)) return;
 
     const base = new THREE.Color(this.terrainColor(chunk));
@@ -363,38 +606,112 @@ export class WorldScene {
       0,
       Math.min(1, Number(chunk.wetlandCoverage01) || 0),
     );
-    const rockTone = new THREE.Color(0x7a766b);
-    const wetTone = new THREE.Color(0x405d4b);
-    const grassTone = new THREE.Color(0x68784a);
-    const forestTone = new THREE.Color(0x31513a);
+    const moisture = Math.max(
+      0,
+      Math.min(1, Number(chunk.moisture01) || 0),
+    );
+
+    const rockTone = new THREE.Color(0x77736a);
+    const wetTone = new THREE.Color(0x3f5c4c);
+    const grassTone = new THREE.Color(0x66784a);
+    const forestTone = new THREE.Color(0x34523a);
+    const earthTone = new THREE.Color(0x705942);
+    const dryTone = new THREE.Color(0x84745a);
+    const bankTone = new THREE.Color(0x625c48);
     const color = new THREE.Color();
     const colors = new Float32Array(position.count * 3);
+    const size = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
 
     for (let index = 0; index < position.count; index += 1) {
       const x = position.getX(index);
       const y = position.getY(index);
       const z = position.getZ(index);
-      const worldNoise = Math.sin(
-        (chunk.x * 9.37 + x * 0.41)
-        + (chunk.y * 7.13 + z * 0.53),
-      ) * 0.5 + Math.sin(
-        (chunk.x * 3.17 - z * 0.27)
-        + (chunk.y * 5.91 + x * 0.31),
+      const absoluteX = chunk.x * size + x;
+      const absoluteZ = chunk.y * size + z;
+      const localX01 = Math.max(
+        0,
+        Math.min(1, x / size + 0.5),
+      );
+      const localY01 = Math.max(
+        0,
+        Math.min(1, z / size + 0.5),
+      );
+      const shoreFactor = this.terrainShoreFactor(
+        chunk,
+        localX01,
+        localY01,
+        chunkMap,
+      );
+      const broadNoise = (
+        Math.sin(absoluteX * 0.31 + absoluteZ * 0.19)
+        + Math.sin(absoluteX * -0.17 + absoluteZ * 0.37)
+      ) * 0.5;
+      const fineNoise = (
+        Math.sin(absoluteX * 1.17 + absoluteZ * 0.83)
+        + Math.sin(absoluteX * -0.71 + absoluteZ * 1.43)
       ) * 0.5;
       const height01 = Math.max(
         0,
-        Math.min(1, y / Math.max(0.001, WORLD_GRID_CONTRACT.elevationScale)),
+        Math.min(
+          1,
+          y / Math.max(
+            0.001,
+            WORLD_GRID_CONTRACT.elevationScale,
+          ),
+        ),
+      );
+      const normalY = normal instanceof THREE.BufferAttribute
+        ? Math.max(0, Math.min(1, normal.getY(index)))
+        : 1;
+      const slope = Math.max(
+        0,
+        Math.min(1, (1 - normalY) * 2.4),
       );
 
       color.copy(base);
-      color.lerp(forestTone, forest * 0.28);
-      color.lerp(grassTone, grass * 0.18);
-      color.lerp(wetTone, wetland * 0.32);
-      color.lerp(rockTone, rock * (0.12 + height01 * 0.24));
+
+      const exposedEarth = Math.max(
+        0,
+        0.26
+        + (1 - grass) * 0.18
+        + (1 - forest) * 0.05
+        - wetland * 0.2,
+      );
+      color.lerp(earthTone, exposedEarth * 0.22);
+      color.lerp(forestTone, forest * 0.24);
+      color.lerp(grassTone, grass * 0.17);
+      color.lerp(
+        wetTone,
+        wetland * 0.34 + moisture * 0.08,
+      );
+      color.lerp(
+        rockTone,
+        Math.min(
+          0.52,
+          rock * (0.14 + height01 * 0.2)
+          + slope * (0.18 + rock * 0.22),
+        ),
+      );
+      if (shoreFactor > 0) {
+        color.lerp(
+          bankTone,
+          Math.min(0.34, shoreFactor * 0.3),
+        );
+      }
+      if (moisture < 0.32) {
+        color.lerp(
+          dryTone,
+          (0.32 - moisture) * 0.22,
+        );
+      }
+
       color.offsetHSL(
-        worldNoise * 0.012,
-        worldNoise * 0.018,
-        worldNoise * 0.028 + (height01 - 0.5) * 0.018,
+        broadNoise * 0.012 + fineNoise * 0.004,
+        broadNoise * 0.014,
+        broadNoise * 0.024
+          + fineNoise * 0.012
+          + (height01 - 0.5) * 0.014
+          - moisture * 0.01,
       );
 
       colors[index * 3] = color.r;

@@ -1,0 +1,66 @@
+name: Web Photoreal Asset Probe
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'Tools/prepare_web_photoreal_assets.py'
+      - '.github/workflows/web-photoreal-assets-probe.yml'
+  pull_request:
+    paths:
+      - 'Tools/prepare_web_photoreal_assets.py'
+      - '.github/workflows/web-photoreal-assets-probe.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Acquire compact CC0 Web nature sources
+        run: |
+          python Tools/acquire_photoreal_environment_assets.py \
+            --resolution 1k \
+            --inspect-gltf \
+            --asset boulder_01 \
+            --asset tree_stump_01 \
+            --asset shrub_02 \
+            --asset shrub_03 \
+            --asset weed_plant_02 \
+            --asset dead_tree_trunk
+
+      - name: Prepare same-origin Web nature pack
+        run: |
+          python Tools/prepare_web_photoreal_assets.py --clean
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          manifest = json.loads(
+              Path("web/public/vendor/lifelens-nature/manifest.json")
+              .read_text(encoding="utf-8")
+          )
+          print(
+              "[LifeLens Web assets] total MiB:",
+              round(manifest["payload_bytes"] / 1024 / 1024, 2),
+          )
+          print(
+              "[LifeLens Web assets] assets:",
+              ", ".join(sorted(manifest["assets"])),
+          )
+          PY
+
+      - name: Upload probe pack
+        uses: actions/upload-artifact@v4
+        with:
+          name: lifelens-web-nature-probe
+          path: web/public/vendor/lifelens-nature
+          retention-days: 3
+          if-no-files-found: error

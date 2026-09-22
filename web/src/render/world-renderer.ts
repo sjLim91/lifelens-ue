@@ -5,6 +5,7 @@ import type {
   TerrainWindow,
   WorldPresentationSnapshot,
 } from '../runtime/core-types';
+import { runtimeDiagnostics } from '../runtime/runtime-diagnostics';
 import { WorldScene, type WorldSceneCameraState } from './world-scene';
 
 export class WorldRenderer {
@@ -37,8 +38,17 @@ export class WorldRenderer {
         Math.max(0, (frameTime - lastFrame) / 1000),
       );
       lastFrame = frameTime;
+      const renderStartedAt = performance.now();
       this.world.update(deltaSeconds);
       this.renderer.render(this.world.scene, this.world.camera);
+      const info = this.renderer.info;
+      runtimeDiagnostics.recordThreeRender(
+        performance.now() - renderStartedAt,
+        info.render.calls,
+        info.render.triangles,
+        info.memory.geometries,
+        info.memory.textures,
+      );
       this.animationFrame = requestAnimationFrame(render);
     };
 

@@ -1,5 +1,10 @@
 import * as THREE from 'three';
-import type { TerrainChunk, TerrainWindow } from '../runtime/core-types';
+import type {
+  DynamicEnvironment,
+  TerrainChunk,
+  TerrainWindow,
+  WaterKind,
+} from '../runtime/core-types';
 import { WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
 import { createWaterGeometryBuilder } from './water-geometry';
 
@@ -10,10 +15,52 @@ interface WaterEntry {
   signature: string;
 }
 
+interface WaterUniformSet {
+  time: { value: number };
+  energy: { value: number };
+}
+
 export class WaterLayer {
   readonly group = new THREE.Group();
 
   private readonly entries = new Map<string, WaterEntry>();
+  private readonly waterUniforms: WaterUniformSet[] = [];
+  private animationTime = 0;
+  private weatherEnergy = 0;
+
+  setEnvironment(
+    environment: DynamicEnvironment | null,
+  ): void {
+    const wind = Math.max(
+      0,
+      Math.min(1, Number(environment?.windIntensity01) || 0),
+    );
+    const precipitation = Math.max(
+      0,
+      Math.min(
+        1,
+        Number(environment?.precipitationIntensity01) || 0,
+      ),
+    );
+    this.weatherEnergy = Math.max(
+      0,
+      Math.min(1, wind * 0.72 + precipitation * 0.44),
+    );
+    for (const uniforms of this.waterUniforms) {
+      uniforms.energy.value = this.weatherEnergy;
+    }
+  }
+
+  update(deltaSeconds: number): void {
+    this.animationTime += Math.min(
+      0.05,
+      Math.max(0, deltaSeconds),
+    );
+    for (const uniforms of this.waterUniforms) {
+      uniforms.time.value = this.animationTime;
+      uniforms.energy.value = this.weatherEnergy;
+    }
+  }
 
   setTerrain(window: TerrainWindow): void {
     const active = new Set<string>();
@@ -85,6 +132,63 @@ export class WaterLayer {
       if (!Array.isArray(material)) material.dispose();
     }
     this.entries.clear();
+    this.waterUniforms.length = 0;
+  }
+
+  private enableWaterMotion(
+    material: THREE.MeshPhysicalMaterial,
+    waterKind: WaterKind,
+  ): void {
+    const amplitudeByKind: Partial<Record<WaterKind, number>> = {
+      Ocean: 0.085,
+      Coast: 0.062,
+      Lake: 0.032,
+      River: 0.038,
+      Stream: 0.022,
+      Spring: 0.015,
+      Wetland: 0.012,
+    };
+    const amplitude = amplitudeByKind[waterKind] ?? 0.02;
+
+    material.onBeforeCompile = (shader) => {
+      const uniforms: WaterUniformSet = {
+        time: { value: this.animationTime },
+        energy: { value: this.weatherEnergy },
+      };
+      shader.uniforms.uLifeLensWaterTime = uniforms.time;
+      shader.uniforms.uLifeLensWaterEnergy = uniforms.energy;
+      this.waterUniforms.push(uniforms);
+
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <common>',
+        `#include <common>
+uniform float uLifeLensWaterTime;
+uniform float uLifeLensWaterEnergy;`,
+      );
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <begin_vertex>',
+        `#include <begin_vertex>
+float lifeLensWaterPhaseA =
+  position.x * 0.47
+  + position.z * 0.31
+  + uLifeLensWaterTime * 1.45;
+float lifeLensWaterPhaseB =
+  position.x * -0.29
+  + position.z * 0.61
+  + uLifeLensWaterTime * 2.05;
+float lifeLensWaterMotion =
+  sin(lifeLensWaterPhaseA)
+  + sin(lifeLensWaterPhaseB) * 0.44;
+transformed.y +=
+  lifeLensWaterMotion
+  * ${amplitude.toFixed(4)}
+  * (0.38 + uLifeLensWaterEnergy * 0.72);`,
+      );
+    };
+    material.customProgramCacheKey = () => (
+      `lifelens-water-v2-${amplitude.toFixed(4)}`
+    );
+    material.needsUpdate = true;
   }
 
   private createMesh(
@@ -104,6 +208,7 @@ export class WaterLayer {
       depthWrite: false,
       side: THREE.DoubleSide,
     });
+    this.enableWaterMotion(material, chunk.waterKind);
     return new THREE.Mesh(geometry, material);
   }
 

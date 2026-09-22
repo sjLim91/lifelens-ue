@@ -51,6 +51,9 @@ int main()
 
     const std::string presentation = bridge.worldPresentationJson();
     assert(presentation.find("\"available\":true") != std::string::npos);
+    assert(presentation.find("\"resources\":[") != std::string::npos);
+    assert(presentation.find("\"quantity\":") != std::string::npos);
+    assert(presentation.find("\"maxQuantity\":") != std::string::npos);
     assert(presentation.find("\"facilities\":[") != std::string::npos);
     assert(presentation.find("\"sanitationSites\":[") != std::string::npos);
     assert(presentation.find("\"residues\":[") != std::string::npos);

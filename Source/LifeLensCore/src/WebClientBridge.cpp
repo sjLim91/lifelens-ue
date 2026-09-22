@@ -801,7 +801,10 @@ std::string WebClientBridge::worldPresentationJson() const
     out << "\"resources\":[";
     std::size_t emittedResources = 0;
     for (const ResourceNode& resource : world.resourceNodes) {
-        if (resource.id == 0 || resource.quantity <= 0 || emittedResources >= 128) continue;
+        // Depleted nodes stay observable so presentation layers can show
+        // harvesting scars and renewable regrowth instead of snapping back
+        // to the untouched genesis appearance when quantity reaches zero.
+        if (resource.id == 0 || emittedResources >= 128) continue;
         if (emittedResources != 0) out << ",";
         ++emittedResources;
         out << "{";

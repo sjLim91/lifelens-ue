@@ -18,6 +18,7 @@ import { CameraInput } from './input/camera-input';
 import { LegacyCanvasWorldRenderer } from './render/legacy-canvas-world-renderer';
 import { readRenderMode } from './render/render-mode';
 import { WorldRenderer } from './render/world-renderer';
+import { createTerrainElevationSampler } from './render/terrain-geometry';
 
 function generateWorldSeed(): string {
   const words = new Uint32Array(2);
@@ -89,13 +90,18 @@ export function startObserverEngine(): void {
     ? OBSERVER_CAMERA_CONTRACT.defaultMobileZoom
     : OBSERVER_CAMERA_CONTRACT.defaultDesktopZoom;
   let localPanX = 0;
+  let localPanY = 0;
   let localPanZ = 0;
   let autoFrameActivity = true;
+  let autoFrameZoom = true;
   new CameraInput(canvas, {
     initialAngle: angle,
     initialElevation: elevation,
     initialZoom: zoom,
     onChange(next) {
+      if (Math.abs(next.zoom - zoom) > 0.0001) {
+        autoFrameZoom = false;
+      }
       angle = next.angle;
       elevation = next.elevation;
       zoom = next.zoom;
@@ -107,6 +113,7 @@ export function startObserverEngine(): void {
         elevation,
         zoom,
         panX: localPanX,
+        panY: localPanY,
         panZ: localPanZ,
       });
       drawWorld();
@@ -160,6 +167,7 @@ export function startObserverEngine(): void {
         elevation,
         zoom,
         panX: localPanX,
+        panY: localPanY,
         panZ: localPanZ,
       });
       drawWorld();
@@ -197,6 +205,7 @@ export function startObserverEngine(): void {
 
   function gridToLocalWorld(gridX: number, gridY: number): {
     x: number;
+    y: number;
     z: number;
   } {
     const cells = WORLD_GRID_CONTRACT.gridCellsPerChunk;
@@ -205,8 +214,17 @@ export function startObserverEngine(): void {
     const chunkY = Math.floor(gridY / cells);
     const localX = (gridX - chunkX * cells) / cells;
     const localY = (gridY - chunkY * cells) / cells;
+    const elevation = terrain
+      ? createTerrainElevationSampler(terrain)(
+          chunkX,
+          chunkY,
+          localX,
+          localY,
+        ) * WORLD_GRID_CONTRACT.elevationScale
+      : 0;
     return {
       x: (chunkX - centerX + localX - 0.5) * chunkWorldSize,
+      y: elevation,
       z: (chunkY - centerY + localY - 0.5) * chunkWorldSize,
     };
   }
@@ -217,23 +235,7 @@ export function startObserverEngine(): void {
   ): void {
     if (!autoFrameActivity) return;
 
-    const selectedId = observerStore.getSnapshot().selectedResidentId;
-    const selected = selectedId
-      ? residents.find((resident) => resident.id === selectedId)
-      : undefined;
-
-    if (
-      selected?.hasPosition
-      && typeof selected.gridX === 'number'
-      && typeof selected.gridY === 'number'
-    ) {
-      const point = gridToLocalWorld(selected.gridX, selected.gridY);
-      localPanX = point.x;
-      localPanZ = point.z;
-      return;
-    }
-
-    const points: Array<{ x: number; z: number; weight: number }> = [];
+    const points: Array<{ x: number; y: number; z: number; weight: number }> = [];
     for (const resident of residents) {
       if (
         !resident.hasPosition
@@ -259,15 +261,44 @@ export function startObserverEngine(): void {
 
     if (points.length === 0) return;
     let weightedX = 0;
+    let weightedY = 0;
     let weightedZ = 0;
     let weightTotal = 0;
     for (const point of points) {
       weightedX += point.x * point.weight;
+      weightedY += point.y * point.weight;
       weightedZ += point.z * point.weight;
       weightTotal += point.weight;
     }
     localPanX = weightedX / Math.max(1, weightTotal);
+    localPanY = weightedY / Math.max(1, weightTotal);
     localPanZ = weightedZ / Math.max(1, weightTotal);
+
+    if (autoFrameZoom) {
+      let maxRadius = 0;
+      for (const point of points) {
+        maxRadius = Math.max(
+          maxRadius,
+          Math.hypot(
+            point.x - localPanX,
+            point.z - localPanZ,
+          ),
+        );
+      }
+      const targetZoom = 86 / Math.max(30, maxRadius + 26);
+      zoom = Math.max(
+        OBSERVER_CAMERA_CONTRACT.minZoom,
+        Math.min(
+          compactViewport ? 2.25 : 2.15,
+          targetZoom,
+        ),
+      );
+    }
+
+    // Canonical observer behavior: initial/recenter framing is one-shot.
+    // Selection and ordinary simulation movement do not keep dragging camera.
+    autoFrameActivity = false;
+    autoFrameZoom = false;
   }
   
   function refresh(): void {
@@ -331,6 +362,7 @@ export function startObserverEngine(): void {
       elevation,
       zoom,
       panX: localPanX,
+      panY: localPanY,
       panZ: localPanZ,
     });
     drawWorld();
@@ -345,7 +377,9 @@ export function startObserverEngine(): void {
     centerY = 0;
     followResidents = false;
     autoFrameActivity = true;
+    autoFrameZoom = true;
     localPanX = 0;
+    localPanY = 0;
     localPanZ = 0;
     residentSnapshot = [];
     terrain = null;
@@ -358,37 +392,14 @@ export function startObserverEngine(): void {
 
   function selectResident(residentId: string | null): void {
     observerStore.selectResident(residentId);
-    autoFrameActivity = residentId !== null;
-    if (residentId !== null) {
-      const selected = residentSnapshot.find(
-        (resident) => resident.id === residentId,
-      );
-      if (
-        selected?.hasPosition
-        && typeof selected.gridX === 'number'
-        && typeof selected.gridY === 'number'
-      ) {
-        const point = gridToLocalWorld(selected.gridX, selected.gridY);
-        localPanX = point.x;
-        localPanZ = point.z;
-      }
-    }
     threeWorldRenderer?.setSelectedResident(
       observerStore.getSnapshot().selectedResidentId,
     );
-    threeWorldRenderer?.setCamera({
-      centerChunkX: centerX,
-      centerChunkY: centerY,
-      angle,
-      elevation,
-      zoom,
-      panX: localPanX,
-      panZ: localPanZ,
-    });
   }
-  
+
   function move(dx: number, dy: number): void {
     localPanX = 0;
+    localPanY = 0;
     localPanZ = 0;
     worldSession?.moveObserver(dx, dy);
     refresh();
@@ -397,7 +408,9 @@ export function startObserverEngine(): void {
   function recenterObserver(): void {
     if (!worldSession) return;
     autoFrameActivity = true;
+    autoFrameZoom = true;
     localPanX = 0;
+    localPanY = 0;
     localPanZ = 0;
     worldSession.recenterToResidents();
     refresh();
