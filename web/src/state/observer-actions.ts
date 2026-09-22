@@ -2,6 +2,7 @@ export interface ObserverActionHandlers {
   createWorld: (seed: string) => void;
   stepMinutes: (minutes: number) => void;
   moveObserver: (dx: number, dy: number) => void;
+  recenterObserver: () => void;
   selectResident: (residentId: string | null) => void;
 }
 
@@ -26,6 +27,10 @@ class ObserverActions {
 
   moveObserver(dx: number, dy: number): void {
     this.handlers?.moveObserver(dx, dy);
+  }
+
+  recenterObserver(): void {
+    this.handlers?.recenterObserver();
   }
 
   selectResident(residentId: string | null): void {
