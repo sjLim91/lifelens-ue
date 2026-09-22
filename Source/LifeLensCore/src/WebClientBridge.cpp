@@ -239,7 +239,7 @@ std::string WebClientBridge::residentsJson() const
         out << "\\\"activityTargetId\\\":\\\""
             << resident.activityTargetId << "\\\",";
         out << "\\\"activityTargetName\\\":\\\""
-            << escapeJson(resident.activityTargetName) << "\\",";
+            << escapeJson(resident.activityTargetName) << "\\\",";
 
         out << "\\\"emotion\\\":{";
         if (character) {
@@ -344,7 +344,7 @@ std::string WebClientBridge::residentsJson() const
                 out << "\\\"id\\\":\\\"" << member.id << "\\\",";
                 out << "\\\"name\\\":\\\"" << escapeJson(member.name) << "\\\",";
                 out << "\\\"alive\\\":" << (member.alive ? "true" : "false") << ",";
-                out << "\\\"lifeStage\\\":\\\"" << lifeStageName(member.lifeStage) << "\\"";
+                out << "\\\"lifeStage\\\":\\\"" << lifeStageName(member.lifeStage) << "\\\"";
                 out << "}";
             }
             out << "]";
@@ -381,7 +381,7 @@ std::string WebClientBridge::residentsJson() const
             out << "\\\"confidence\\\":"; appendDouble(out, memory.confidence); out << ",";
             out << "\\\"effectiveConfidence\\\":"; appendDouble(out, memory.effectiveConfidence(world.minute)); out << ",";
             out << "\\\"witnessed\\\":" << (memory.witnessed ? "true" : "false") << ",";
-            out << "\\\"source\\\":\\\"" << memorySourceName(memory.source) << "\\"";
+            out << "\\\"source\\\":\\\"" << memorySourceName(memory.source) << "\\\"";
             out << "}";
         }
         out << "],";
