@@ -26,6 +26,17 @@ int main()
     assert(residents.find("\"sex\":\"Male\"") != std::string::npos);
     assert(residents.find("\"sex\":\"Female\"") != std::string::npos);
     assert(residents.find("\"needs\":{") != std::string::npos);
+    assert(residents.find("\"bladder\":") != std::string::npos);
+    assert(residents.find("\"emotion\":{") != std::string::npos);
+    assert(residents.find("\"personality\":{") != std::string::npos);
+    assert(residents.find("\"traits\":{") != std::string::npos);
+    assert(residents.find("\"preferences\":{") != std::string::npos);
+    assert(residents.find("\"relationships\":[") != std::string::npos);
+    assert(residents.find("\"family\":{") != std::string::npos);
+    assert(residents.find("\"memories\":[") != std::string::npos);
+    assert(residents.find("\"beliefs\":[") != std::string::npos);
+    assert(residents.find("\"lifeStage\":") != std::string::npos);
+    assert(residents.find("\"activityTargetName\":") != std::string::npos);
     assert(residents.find("\"hasPosition\":true") != std::string::npos);
 
     const std::string terrain = bridge.terrainWindowJson(0, 0, 1);

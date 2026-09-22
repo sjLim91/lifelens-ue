@@ -36,15 +36,153 @@ export interface ResidentNeeds {
   hunger?: number;
   thirst?: number;
   sleep?: number;
+  bladder?: number;
   hygiene?: number;
+}
+
+export interface ResidentEmotion {
+  joy?: number;
+  sadness?: number;
+  anger?: number;
+  fear?: number;
+  embarrassment?: number;
+  pride?: number;
+  jealousy?: number;
+  affection?: number;
+  anxiety?: number;
+  relief?: number;
+  grief?: number;
+  valence?: number;
+  arousal?: number;
+  intensity?: number;
+}
+
+export interface ResidentPersonality {
+  introversion?: number;
+  conscientiousness?: number;
+  openness?: number;
+  agreeableness?: number;
+  emotionalStability?: number;
+  empathy?: number;
+  impulsiveness?: number;
+  riskTolerance?: number;
+  ambition?: number;
+  patience?: number;
+  sociability?: number;
+  curiosity?: number;
+  orderliness?: number;
+  adaptability?: number;
+}
+
+export interface ResidentTraits {
+  resilience?: number;
+  creativity?: number;
+  discipline?: number;
+  compassion?: number;
+  adaptability?: number;
+  boldness?: number;
+  perseverance?: number;
+  resourcefulness?: number;
+}
+
+export interface ResidentPreferences {
+  socializing?: number;
+  solitude?: number;
+  exploration?: number;
+  crafting?: number;
+  gathering?: number;
+  comfort?: number;
+  novelty?: number;
+  order?: number;
+}
+
+export interface ResidentRelationship {
+  targetId: string;
+  targetName: string;
+  affection?: number;
+  trust?: number;
+  respect?: number;
+  comfort?: number;
+  familiarity?: number;
+  attraction?: number;
+  romanticInterest?: number;
+  sexualAttraction?: number;
+  commitment?: number;
+  conflict?: number;
+  jealousy?: number;
+  fear?: number;
+  grudge?: number;
+  socialBond?: number;
+  romancePotential?: number;
+}
+
+export interface ResidentFamilyMember {
+  id: string;
+  name: string;
+  alive?: boolean;
+  lifeStage?: string;
+}
+
+export interface ResidentFamily {
+  householdId?: string;
+  hasActivePartner?: boolean;
+  partnerId?: string;
+  partnerName?: string;
+  partnerStage?: string;
+  cohabitingWithPartner?: boolean;
+  expectingChild?: boolean;
+  pregnancyPartnerId?: string;
+  pregnancyPartnerName?: string;
+  parents?: ResidentFamilyMember[];
+  children?: ResidentFamilyMember[];
+  siblings?: ResidentFamilyMember[];
+}
+
+export interface ResidentMemory {
+  who?: string;
+  sourceCharacter?: string;
+  what?: string;
+  where?: string;
+  minute?: number;
+  emotionValence?: number;
+  emotionIntensity?: number;
+  importance?: number;
+  confidence?: number;
+  effectiveConfidence?: number;
+  witnessed?: boolean;
+  source?: 'DirectWitness' | 'ToldByOther' | 'Inferred';
+}
+
+export interface ResidentBelief {
+  subject?: string;
+  proposition?: string;
+  stance?: number;
+  confidence?: number;
+  lastUpdatedMinute?: number;
 }
 
 export interface Resident {
   id: string;
   name: string;
   sex?: 'Male' | 'Female';
+  alive?: boolean;
+  lifeStage?: string;
+  ageYears?: number;
+  activityKind?: 'Idle' | 'Physical' | 'Social';
   activityLabel?: string;
+  physicalGoal?: string;
+  socialIntent?: string;
+  activityTargetId?: string;
+  activityTargetName?: string;
+  emotion?: ResidentEmotion;
   needs?: ResidentNeeds;
+  personality?: ResidentPersonality;
+  traits?: ResidentTraits;
+  preferences?: ResidentPreferences;
+  relationships?: ResidentRelationship[];
+  family?: ResidentFamily;
+  memories?: ResidentMemory[];
+  beliefs?: ResidentBelief[];
   hasPosition?: boolean;
   gridX?: number;
   gridY?: number;

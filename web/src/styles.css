@@ -264,3 +264,94 @@ button:disabled { opacity: .33; cursor: default; }
 }
 .focused-life p b { color: #e6eee5; }
 .focused-life small { color: #748478; }
+
+
+/* Authoritative inner-life detail */
+.focused-life-identity,
+.focused-life-inline,
+.focused-life-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .36rem;
+}
+.focused-life-identity span,
+.focused-life-chips span,
+.life-event-chip {
+  padding: .28rem .42rem;
+  border: 1px solid #304236;
+  border-radius: 999px;
+  background: #101a13;
+  color: #aebdb0;
+  font-size: .64rem;
+}
+.focused-life-activity {
+  padding: .5rem .58rem;
+  border-radius: 8px;
+  background: rgba(30, 49, 35, .48);
+}
+.focused-life-section {
+  display: grid;
+  gap: .42rem;
+  padding-top: .52rem;
+  border-top: 1px solid rgba(83, 108, 89, .24);
+}
+.focused-life-section h3 {
+  margin: 0;
+  color: #879b8a;
+  font-size: .62rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.focused-life-inline span {
+  color: #8fa092;
+  font-size: .67rem;
+}
+.focused-life-inline b,
+.focused-life-chips b {
+  color: #e4ece2;
+  font-weight: 600;
+}
+.relationship-row {
+  display: grid;
+  grid-template-columns: minmax(88px, 1.2fr) repeat(3, auto);
+  gap: .36rem .5rem;
+  align-items: center;
+  padding: .42rem .48rem;
+  border-radius: 8px;
+  background: rgba(13, 23, 16, .72);
+  font-size: .64rem;
+}
+.relationship-row strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.relationship-row span { color: #90a192; }
+.memory-row,
+.belief-row {
+  display: grid;
+  gap: .14rem;
+  padding: .4rem .48rem;
+  border-left: 2px solid #3d5544;
+  background: rgba(11, 20, 14, .58);
+}
+.memory-row span,
+.belief-row span {
+  color: #d8e2d8;
+  font-size: .68rem;
+}
+.memory-row small,
+.belief-row small,
+.focused-life-muted {
+  color: #728377;
+  font-size: .62rem;
+}
+.life-event-chip {
+  border-color: #665d36 !important;
+  color: #e6dca8 !important;
+}
+@media (max-width: 800px) {
+  .relationship-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}

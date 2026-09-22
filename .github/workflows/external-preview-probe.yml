@@ -37,19 +37,38 @@ jobs:
           cat /tmp/post-headers
           grep -qi "set-cookie: __Http-phish=1" /tmp/post-headers
 
-          echo "== app HTML with cookie =="
-          app_code=$(curl -L -sS -o /tmp/index.html -w "%{http_code}"             -b /tmp/cookies             -H "Sec-Fetch-Dest: document"             "$INDEX")
-          echo "APP_STATUS=$app_code"
-          test "$app_code" = "200"
-          grep -q "LifeLens Web Observer" /tmp/index.html
+          echo "== app HTML + hashed asset consistency =="
+          preview_ready=0
+          for attempt in 1 2 3 4 5 6; do
+            cache_bust="$(date +%s)-$attempt"
+            app_code=$(curl -L -sS -o /tmp/index.html -w "%{http_code}" \
+              -b /tmp/cookies \
+              -H "Sec-Fetch-Dest: document" \
+              "$INDEX?v=$cache_bust")
 
-          asset=$(grep -oE 'src="\./assets/[^"]+\.js"' /tmp/index.html | head -1 | sed 's/src="\.\///;s/"//g')
-          asset_code=$(curl -L -sS -o /tmp/app.js -w "%{http_code}" "$BASE/$asset")
-          wasm_code=$(curl -L -sS -o /tmp/core.wasm -w "%{http_code}" "$BASE/runtime/lifelens_core.wasm")
-          echo "ASSET_STATUS=$asset_code"
+            asset=$(grep -oE 'src="\./assets/[^"]+\.js"' /tmp/index.html | head -1 | sed 's/src="\.\///;s/"//g' || true)
+            asset_code=000
+            if [ "$app_code" = "200" ] && [ -n "$asset" ]; then
+              asset_code=$(curl -L -sS -o /tmp/app.js -w "%{http_code}" \
+                "$BASE/$asset?v=$cache_bust")
+            fi
+
+            echo "ATTEMPT=$attempt APP_STATUS=$app_code ASSET=$asset ASSET_STATUS=$asset_code"
+            if [ "$app_code" = "200" ] \
+              && grep -q "LifeLens Web Observer" /tmp/index.html \
+              && [ "$asset_code" = "200" ]; then
+              preview_ready=1
+              break
+            fi
+
+            sleep $((attempt * 2))
+          done
+          test "$preview_ready" = "1"
+
+          wasm_code=$(curl -L -sS -o /tmp/core.wasm -w "%{http_code}" \
+            "$BASE/runtime/lifelens_core.wasm?v=$(date +%s)")
           echo "WASM_STATUS=$wasm_code"
           echo "WASM_BYTES=$(wc -c < /tmp/core.wasm)"
-          test "$asset_code" = "200"
           test "$wasm_code" = "200"
           test "$(wc -c < /tmp/core.wasm)" -gt 1000
 

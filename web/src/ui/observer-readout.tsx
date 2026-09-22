@@ -70,6 +70,7 @@ function ResidentNeedsGrid({ resident }: { resident: Resident }) {
       <span>배고픔 <b>{formatPercent(resident.needs?.hunger)}</b></span>
       <span>갈증 <b>{formatPercent(resident.needs?.thirst)}</b></span>
       <span>수면 <b>{formatPercent(resident.needs?.sleep)}</b></span>
+      <span>방광 <b>{formatPercent(resident.needs?.bladder)}</b></span>
       <span>위생 <b>{formatPercent(resident.needs?.hygiene)}</b></span>
     </div>
   );
@@ -120,6 +121,54 @@ export function SelectedResidentReadout({
     );
   }
 
+  const relationships = resident.relationships ?? [];
+  const importantRelationships = relationships.slice(0, 4);
+  const memories = (resident.memories ?? []).slice(0, 3);
+  const beliefs = (resident.beliefs ?? []).slice(0, 3);
+  const traitLabels: Record<string, string> = {
+    resilience: '회복력',
+    creativity: '창의성',
+    discipline: '규율',
+    compassion: '공감/연민',
+    adaptability: '적응력',
+    boldness: '대담성',
+    perseverance: '끈기',
+    resourcefulness: '생활력',
+  };
+  const topTraits = Object.entries(resident.traits ?? {})
+    .filter((entry): entry is [string, number] => typeof entry[1] === 'number')
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4);
+  const emotionLabels: Record<string, string> = {
+    joy: '기쁨',
+    sadness: '슬픔',
+    anger: '분노',
+    fear: '두려움',
+    embarrassment: '당혹',
+    pride: '자부심',
+    jealousy: '질투',
+    affection: '애정',
+    anxiety: '불안',
+    relief: '안도',
+    grief: '비탄',
+  };
+  const strongestEmotion = Object.entries(resident.emotion ?? {})
+    .filter(
+      (entry): entry is [string, number] => (
+        entry[0] in emotionLabels
+        && typeof entry[1] === 'number'
+      ),
+    )
+    .sort((a, b) => b[1] - a[1])[0];
+
+  const family = resident.family;
+  const partner = family?.hasActivePartner && family.partnerName
+    ? `${family.partnerName} · ${family.partnerStage ?? 'Partner'}`
+    : '현재 파트너 없음';
+  const activityTarget = resident.activityTargetName
+    ? ` → ${resident.activityTargetName}`
+    : '';
+
   return (
     <article className="focused-life">
       <div className="focused-life-heading">
@@ -129,10 +178,99 @@ export function SelectedResidentReadout({
         </div>
         <button type="button" onClick={onClear} aria-label="선택 해제">×</button>
       </div>
-      <p>
-        {resident.sex ?? '—'} · 현재 행동 <b>{resident.activityLabel ?? 'Idle'}</b>
+
+      <div className="focused-life-identity">
+        <span>{resident.sex ?? '—'}</span>
+        <span>{resident.lifeStage ?? '—'}</span>
+        <span>{resident.ageYears !== undefined ? `${resident.ageYears}세` : '나이 —'}</span>
+      </div>
+
+      <p className="focused-life-activity">
+        현재 <b>{resident.activityLabel ?? 'Idle'}</b>{activityTarget}
       </p>
+
       <ResidentNeedsGrid resident={resident} />
+
+      <div className="focused-life-section">
+        <h3>감정</h3>
+        <div className="focused-life-inline">
+          <span>
+            중심 감정 <b>{strongestEmotion ? emotionLabels[strongestEmotion[0]] : '평온'}</b>
+          </span>
+          <span>
+            강도 <b>{formatPercent(resident.emotion?.intensity)}</b>
+          </span>
+        </div>
+      </div>
+
+      <div className="focused-life-section">
+        <h3>성향</h3>
+        <div className="focused-life-chips">
+          {topTraits.length > 0
+            ? topTraits.map(([key, value]) => (
+                <span key={key}>
+                  {traitLabels[key] ?? key} <b>{formatPercent(value)}</b>
+                </span>
+              ))
+            : <span>성향 데이터 확인 중</span>}
+        </div>
+      </div>
+
+      <div className="focused-life-section">
+        <h3>관계</h3>
+        {importantRelationships.length > 0
+          ? importantRelationships.map((relationship) => (
+              <div className="relationship-row" key={relationship.targetId}>
+                <strong>{relationship.targetName || relationship.targetId}</strong>
+                <span>유대 {formatPercent(relationship.socialBond)}</span>
+                <span>신뢰 {formatPercent(relationship.trust)}</span>
+                {Number(relationship.conflict) > 0.05
+                  ? <span>갈등 {formatPercent(relationship.conflict)}</span>
+                  : null}
+                {Number(relationship.romancePotential) > 0.2
+                  ? <span>연애 {formatPercent(relationship.romancePotential)}</span>
+                  : null}
+              </div>
+            ))
+          : <div className="focused-life-muted">아직 뚜렷한 관계가 없습니다.</div>}
+      </div>
+
+      <div className="focused-life-section">
+        <h3>가족</h3>
+        <div className="focused-life-inline">
+          <span>파트너 <b>{partner}</b></span>
+          <span>자녀 <b>{family?.children?.length ?? 0}</b></span>
+          {family?.expectingChild ? <span className="life-event-chip">임신 진행 중</span> : null}
+        </div>
+      </div>
+
+      <div className="focused-life-section">
+        <h3>기억</h3>
+        {memories.length > 0
+          ? memories.map((memory, index) => (
+              <div className="memory-row" key={`${memory.minute ?? 0}:${index}`}>
+                <span>{memory.what || '기억'}</span>
+                <small>
+                  신뢰도 {formatPercent(memory.effectiveConfidence ?? memory.confidence)}
+                  {memory.where ? ` · ${memory.where}` : ''}
+                </small>
+              </div>
+            ))
+          : <div className="focused-life-muted">아직 강하게 남은 기억이 없습니다.</div>}
+      </div>
+
+      {beliefs.length > 0 ? (
+        <div className="focused-life-section">
+          <h3>믿음</h3>
+          {beliefs.map((belief, index) => (
+            <div className="belief-row" key={`${belief.subject ?? '0'}:${index}`}>
+              <span>{belief.proposition || '형성 중인 믿음'}</span>
+              <small>확신 {formatPercent(belief.confidence)}</small>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
       <small>
         {resident.hasPosition
           ? `현재 위치 Grid ${resident.gridX}, ${resident.gridY}`
