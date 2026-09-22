@@ -4,13 +4,19 @@ import { runtimeDiagnostics } from './runtime/runtime-diagnostics';
 import { SimulationClock } from './runtime/simulation-clock';
 import type {
   Resident,
-  ResidentsPayload,
   TerrainChunk,
   TerrainWindow,
   WaterKind,
-  WorldOverview,
 } from './runtime/core-types';
+import { ResidentContinuity } from './runtime/resident-continuity';
 import { observerStore } from './state/observer-store';
+import { CameraInput } from './input/camera-input';
+import {
+  clamp01,
+  presentationHash01,
+  shade,
+  terrainColor,
+} from './render/terrain-presentation';
 import { createWorldProjector } from './render/world-projection';
 
 const $ = <T extends Element>(selector: string): T => {
@@ -44,109 +50,26 @@ let terrain: TerrainWindow | null = null;
 let stableTerrain: TerrainWindow | null = null;
 let stableTerrainCenterKey: string | null = null;
 let residentSnapshot: Resident[] = [];
-const lastKnownResidentPositions = new Map<string, { x: number; y: number }>();
-const lastKnownResidents = new Map<string, { resident: Resident; seenAt: number }>();
-const RESIDENT_CONTINUITY_MS = 10000;
+const residentContinuity = new ResidentContinuity(10000);
 let followResidents = true;
 let simulationClock: SimulationClock | null = null;
 let angle = -0.68;
 let zoom = 1;
-let drag: { x: number; y: number } | null = null;
-const pointers = new Map<number, { x: number; y: number }>();
-let pinchDistance: number | null = null;
+const cameraInput = new CameraInput(canvas, {
+  initialAngle: angle,
+  initialZoom: zoom,
+  onChange(next) {
+    angle = next.angle;
+    zoom = next.zoom;
+    observerStore.updateCamera({ angle, zoom });
+    drawWorld();
+  },
+});
 
 function controls(enabled: boolean): void {
   [ui.step10, ui.step60, ui.left, ui.right, ui.up, ui.down].forEach((button) => {
     button.disabled = !enabled;
   });
-}
-
-function clamp01(value: unknown): number {
-  return Math.max(0, Math.min(1, Number(value) || 0));
-}
-
-function stabilizeResidents(payload: ResidentsPayload, expectedLiving: number): Resident[] {
-  const now = performance.now();
-  const incoming = Array.isArray(payload.residents) ? payload.residents : [];
-
-  for (const resident of incoming) {
-    lastKnownResidents.set(resident.id, { resident, seenAt: now });
-  }
-
-  for (const [id, cached] of lastKnownResidents) {
-    if (now - cached.seenAt > RESIDENT_CONTINUITY_MS) lastKnownResidents.delete(id);
-  }
-
-  if (expectedLiving <= 0) {
-    lastKnownResidents.clear();
-    return [];
-  }
-
-  if (payload.available !== false && incoming.length >= expectedLiving) return incoming;
-
-  const merged = new Map(incoming.map((resident) => [resident.id, resident]));
-  const cached = [...lastKnownResidents.values()]
-    .sort((a, b) => b.seenAt - a.seenAt);
-
-  for (const entry of cached) {
-    if (merged.size >= expectedLiving) break;
-    if (!merged.has(entry.resident.id)) merged.set(entry.resident.id, entry.resident);
-  }
-
-  return [...merged.values()];
-}
-
-function mixHex(base: string, target: string, amount: number): string {
-  const t = clamp01(amount);
-  const a = Number.parseInt(base.slice(1), 16);
-  const b = Number.parseInt(target.slice(1), 16);
-  const channel = (shift: number): number => Math.round(
-    (((a >> shift) & 255) * (1 - t)) + (((b >> shift) & 255) * t),
-  );
-  return `#${channel(16).toString(16).padStart(2, '0')}${channel(8).toString(16).padStart(2, '0')}${channel(0).toString(16).padStart(2, '0')}`;
-}
-
-function terrainColor(chunk: TerrainChunk): string {
-  switch (chunk.waterKind) {
-    case 'Ocean': return '#1b4b63';
-    case 'Coast': return '#276878';
-    case 'Wetland': return '#496e58';
-    default: break;
-  }
-
-  const e = clamp01(chunk.elevation01);
-  let base = e < 0.34 ? '#294b31'
-    : e < 0.48 ? '#3b6439'
-      : e < 0.62 ? '#64794a'
-        : e < 0.76 ? '#807d5c'
-          : '#aaa78f';
-
-  base = mixHex(base, '#1e5a2b', clamp01(chunk.forestCoverage01) * 0.5);
-  base = mixHex(base, '#6f8f38', clamp01(chunk.grassCoverage01) * 0.24);
-  base = mixHex(base, '#77746d', clamp01(chunk.rockCoverage01) * 0.3);
-  base = mixHex(base, '#386b57', clamp01(chunk.wetlandCoverage01) * 0.34);
-  return base;
-}
-
-function presentationHash01(seed: string, x: number, y: number, index: number, salt: string): number {
-  const input = `${seed}:${x}:${y}:${index}:${salt}`;
-  let hash = 2166136261 >>> 0;
-  for (let i = 0; i < input.length; i += 1) {
-    hash ^= input.charCodeAt(i);
-    hash = Math.imul(hash, 16777619) >>> 0;
-  }
-  hash ^= hash >>> 16;
-  hash = Math.imul(hash, 2246822519) >>> 0;
-  hash ^= hash >>> 13;
-  return (hash >>> 0) / 4294967295;
-}
-
-function shade(hex: string, factor: number): string {
-  const value = Number.parseInt(hex.slice(1), 16);
-  const r = Math.max(0, Math.min(255, Math.round(((value >> 16) & 255) * factor)));
-  const g = Math.max(0, Math.min(255, Math.round(((value >> 8) & 255) * factor)));
-  const b = Math.max(0, Math.min(255, Math.round((value & 255) * factor)));
-  return `rgb(${r} ${g} ${b})`;
 }
 
 function resizeCanvas(): void {
@@ -393,10 +316,7 @@ function drawWorld(): void {
   const residentRadius = Math.max(8 * displayDpr, characterHeightDevicePx * 0.32);
   const fallbackElevation = visualElevation((rawMinElevation + rawMaxElevation) * 0.5);
   const projectedResidents = residentSnapshot.flatMap((resident, index) => {
-    const currentPosition = resident.hasPosition && resident.gridX !== undefined && resident.gridY !== undefined
-      ? { x: resident.gridX, y: resident.gridY }
-      : null;
-    const position = currentPosition ?? lastKnownResidentPositions.get(resident.id);
+    const position = residentContinuity.positionFor(resident);
     if (!position) return [];
     const chunkX = Math.floor(position.x / 32);
     const chunkY = Math.floor(position.y / 32);
@@ -496,19 +416,17 @@ function refresh(): void {
   if (!runtime) return;
   const queryStartedAt = performance.now();
   const overview = runtime.worldOverview();
-  const residentPayload: ResidentsPayload = runtime.residents();
+  const residentPayload = runtime.residents();
   const expectedLiving = Math.max(0, Number(overview.livingResidents) || 0);
-  residentSnapshot = stabilizeResidents(residentPayload, expectedLiving);
-  for (const resident of residentSnapshot) {
-    if (resident.hasPosition && resident.gridX !== undefined && resident.gridY !== undefined) {
-      lastKnownResidentPositions.set(resident.id, { x: resident.gridX, y: resident.gridY });
-    }
-  }
+  residentSnapshot = residentContinuity.stabilize(
+    residentPayload,
+    expectedLiving,
+  );
   const visiblePositions = residentSnapshot
-    .map((resident) => resident.hasPosition && resident.gridX !== undefined && resident.gridY !== undefined
-      ? { x: resident.gridX, y: resident.gridY }
-      : lastKnownResidentPositions.get(resident.id))
-    .filter((position): position is { x: number; y: number } => position !== undefined);
+    .map((resident) => residentContinuity.positionFor(resident))
+    .filter((position): position is { x: number; y: number } => (
+      position !== undefined
+    ));
   if (followResidents && visiblePositions.length > 0) {
     const chunkXs = visiblePositions.map((position) => Math.floor(position.x / 32));
     const chunkYs = visiblePositions.map((position) => Math.floor(position.y / 32));
@@ -554,7 +472,7 @@ function refresh(): void {
     terrain.chunks.length,
   );
   observerStore.update({
-    world: overview as WorldOverview,
+    world: overview,
     residents: residentSnapshot,
     terrain,
   });
@@ -584,8 +502,7 @@ function createWorld(): void {
   terrain = null;
   stableTerrain = null;
   stableTerrainCenterKey = null;
-  lastKnownResidentPositions.clear();
-  lastKnownResidents.clear();
+  residentContinuity.reset();
   characterLayer.clearResidents();
   simulationClock?.resetAccumulator();
   observerStore.resetWorld();
@@ -627,57 +544,6 @@ function startSimulationClock(): void {
   });
   simulationClock.start();
 }
-
-function pointerDistance(): number | null {
-  const values = [...pointers.values()];
-  if (values.length < 2) return null;
-  return Math.hypot(values[0].x - values[1].x, values[0].y - values[1].y);
-}
-
-canvas.addEventListener('pointerdown', (event) => {
-  canvas.setPointerCapture(event.pointerId);
-  pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
-  if (pointers.size === 1) drag = { x: event.clientX, y: event.clientY };
-  else {
-    drag = null;
-    pinchDistance = pointerDistance();
-  }
-});
-
-canvas.addEventListener('pointermove', (event) => {
-  if (!pointers.has(event.pointerId)) return;
-  pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
-  if (pointers.size >= 2) {
-    const next = pointerDistance();
-    if (next && pinchDistance) {
-      zoom = Math.max(0.55, Math.min(2.7, zoom * (next / pinchDistance)));
-      observerStore.updateCamera({ zoom });
-    }
-    pinchDistance = next;
-    drawWorld();
-    return;
-  }
-  if (!drag) return;
-  angle += (event.clientX - drag.x) * 0.008;
-  observerStore.updateCamera({ angle });
-  drag = { x: event.clientX, y: event.clientY };
-  drawWorld();
-});
-
-const stopPointer = (event: PointerEvent): void => {
-  pointers.delete(event.pointerId);
-  pinchDistance = pointerDistance();
-  const remaining = [...pointers.values()];
-  drag = remaining.length === 1 ? { ...remaining[0] } : null;
-};
-canvas.addEventListener('pointerup', stopPointer);
-canvas.addEventListener('pointercancel', stopPointer);
-canvas.addEventListener('wheel', (event) => {
-  event.preventDefault();
-  zoom = Math.max(0.55, Math.min(2.7, zoom * Math.exp(-event.deltaY * 0.001)));
-  observerStore.updateCamera({ zoom });
-  drawWorld();
-}, { passive: false });
 
 ui.newWorld.addEventListener('click', createWorld);
 ui.step10.addEventListener('click', () => {
