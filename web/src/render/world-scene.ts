@@ -369,6 +369,7 @@ export class WorldScene {
     chunk: TerrainChunk,
   ): void {
     const position = geometry.getAttribute('position');
+    const normal = geometry.getAttribute('normal');
     if (!(position instanceof THREE.BufferAttribute)) return;
 
     const base = new THREE.Color(this.terrainColor(chunk));
@@ -388,38 +389,91 @@ export class WorldScene {
       0,
       Math.min(1, Number(chunk.wetlandCoverage01) || 0),
     );
-    const rockTone = new THREE.Color(0x7a766b);
-    const wetTone = new THREE.Color(0x405d4b);
-    const grassTone = new THREE.Color(0x68784a);
-    const forestTone = new THREE.Color(0x31513a);
+    const moisture = Math.max(
+      0,
+      Math.min(1, Number(chunk.moisture01) || 0),
+    );
+
+    const rockTone = new THREE.Color(0x77736a);
+    const wetTone = new THREE.Color(0x3f5c4c);
+    const grassTone = new THREE.Color(0x66784a);
+    const forestTone = new THREE.Color(0x34523a);
+    const earthTone = new THREE.Color(0x705942);
+    const dryTone = new THREE.Color(0x84745a);
     const color = new THREE.Color();
     const colors = new Float32Array(position.count * 3);
+    const size = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
 
     for (let index = 0; index < position.count; index += 1) {
       const x = position.getX(index);
       const y = position.getY(index);
       const z = position.getZ(index);
-      const worldNoise = Math.sin(
-        (chunk.x * 9.37 + x * 0.41)
-        + (chunk.y * 7.13 + z * 0.53),
-      ) * 0.5 + Math.sin(
-        (chunk.x * 3.17 - z * 0.27)
-        + (chunk.y * 5.91 + x * 0.31),
+      const absoluteX = chunk.x * size + x;
+      const absoluteZ = chunk.y * size + z;
+      const broadNoise = (
+        Math.sin(absoluteX * 0.31 + absoluteZ * 0.19)
+        + Math.sin(absoluteX * -0.17 + absoluteZ * 0.37)
+      ) * 0.5;
+      const fineNoise = (
+        Math.sin(absoluteX * 1.17 + absoluteZ * 0.83)
+        + Math.sin(absoluteX * -0.71 + absoluteZ * 1.43)
       ) * 0.5;
       const height01 = Math.max(
         0,
-        Math.min(1, y / Math.max(0.001, WORLD_GRID_CONTRACT.elevationScale)),
+        Math.min(
+          1,
+          y / Math.max(
+            0.001,
+            WORLD_GRID_CONTRACT.elevationScale,
+          ),
+        ),
+      );
+      const normalY = normal instanceof THREE.BufferAttribute
+        ? Math.max(0, Math.min(1, normal.getY(index)))
+        : 1;
+      const slope = Math.max(
+        0,
+        Math.min(1, (1 - normalY) * 2.4),
       );
 
       color.copy(base);
-      color.lerp(forestTone, forest * 0.28);
-      color.lerp(grassTone, grass * 0.18);
-      color.lerp(wetTone, wetland * 0.32);
-      color.lerp(rockTone, rock * (0.12 + height01 * 0.24));
+
+      const exposedEarth = Math.max(
+        0,
+        0.26
+        + (1 - grass) * 0.18
+        + (1 - forest) * 0.05
+        - wetland * 0.2,
+      );
+      color.lerp(earthTone, exposedEarth * 0.22);
+      color.lerp(forestTone, forest * 0.24);
+      color.lerp(grassTone, grass * 0.17);
+      color.lerp(
+        wetTone,
+        wetland * 0.34 + moisture * 0.08,
+      );
+      color.lerp(
+        rockTone,
+        Math.min(
+          0.52,
+          rock * (0.14 + height01 * 0.2)
+          + slope * (0.18 + rock * 0.22),
+        ),
+      );
+      if (moisture < 0.32) {
+        color.lerp(
+          dryTone,
+          (0.32 - moisture) * 0.22,
+        );
+      }
+
       color.offsetHSL(
-        worldNoise * 0.012,
-        worldNoise * 0.018,
-        worldNoise * 0.028 + (height01 - 0.5) * 0.018,
+        broadNoise * 0.012 + fineNoise * 0.004,
+        broadNoise * 0.014,
+        broadNoise * 0.024
+          + fineNoise * 0.012
+          + (height01 - 0.5) * 0.014
+          - moisture * 0.01,
       );
 
       colors[index * 3] = color.r;
