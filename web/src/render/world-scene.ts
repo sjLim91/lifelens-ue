@@ -95,6 +95,10 @@ export class WorldScene {
     this.weatherLayer.setEnvironment(environment);
   }
 
+  setSimulationSpeed(speed: number): void {
+    this.residentLayer.setSimulationSpeed(speed);
+  }
+
   pickResident(normalizedX: number, normalizedY: number): string | null {
     this.pointer.set(normalizedX, normalizedY);
     this.raycaster.setFromCamera(this.pointer, this.camera);
