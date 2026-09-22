@@ -66,21 +66,25 @@ export function startObserverEngine(): void {
   let followResidents = true;
   let simulationClock: SimulationClock | null = null;
   let angle = -0.68;
+  let elevation = 0.67;
   const compactViewport = window.matchMedia('(max-width: 800px)').matches;
   let zoom = compactViewport ? 2.15 : 1.25;
   let localPanX = 0;
   let localPanZ = 0;
   new CameraInput(canvas, {
     initialAngle: angle,
+    initialElevation: elevation,
     initialZoom: zoom,
     onChange(next) {
       angle = next.angle;
+      elevation = next.elevation;
       zoom = next.zoom;
-      observerStore.updateCamera({ angle, zoom });
+      observerStore.updateCamera({ angle, elevation, zoom });
       threeWorldRenderer?.setCamera({
         centerChunkX: centerX,
         centerChunkY: centerY,
         angle,
+        elevation,
         zoom,
         panX: localPanX,
         panZ: localPanZ,
@@ -122,6 +126,7 @@ export function startObserverEngine(): void {
         centerChunkX: centerX,
         centerChunkY: centerY,
         angle,
+        elevation,
         zoom,
         followResidents: false,
       });
@@ -129,6 +134,7 @@ export function startObserverEngine(): void {
         centerChunkX: centerX,
         centerChunkY: centerY,
         angle,
+        elevation,
         zoom,
         panX: localPanX,
         panZ: localPanZ,
@@ -189,6 +195,7 @@ export function startObserverEngine(): void {
       centerChunkX: centerX,
       centerChunkY: centerY,
       angle,
+      elevation,
       zoom,
       followResidents,
     });
@@ -209,6 +216,7 @@ export function startObserverEngine(): void {
       centerChunkX: centerX,
       centerChunkY: centerY,
       angle,
+      elevation,
       zoom,
       panX: localPanX,
       panZ: localPanZ,
