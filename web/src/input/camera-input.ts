@@ -9,6 +9,7 @@ export interface CameraInputOptions {
   minZoom?: number;
   maxZoom?: number;
   onChange: (state: CameraInputState) => void;
+  onPan?: (deltaX: number, deltaY: number) => void;
   onTap?: (clientX: number, clientY: number) => void;
 }
 
@@ -20,6 +21,7 @@ export class CameraInput {
   private readonly pointers = new Map<number, { x: number; y: number }>();
   private drag: { x: number; y: number } | null = null;
   private pinchDistance: number | null = null;
+  private pinchCentroid: { x: number; y: number } | null = null;
   private tapCandidate: {
     pointerId: number;
     startX: number;
@@ -36,6 +38,7 @@ export class CameraInput {
     this.minZoom = options.minZoom ?? 0.55;
     this.maxZoom = options.maxZoom ?? 2.7;
 
+    canvas.style.touchAction = 'none';
     canvas.addEventListener('pointerdown', this.onPointerDown);
     canvas.addEventListener('pointermove', this.onPointerMove);
     canvas.addEventListener('pointerup', this.onPointerStop);
@@ -64,11 +67,21 @@ export class CameraInput {
     );
   }
 
+  private pointerCentroid(): { x: number; y: number } | null {
+    const values = [...this.pointers.values()];
+    if (values.length < 2) return null;
+    return {
+      x: (values[0].x + values[1].x) * 0.5,
+      y: (values[0].y + values[1].y) * 0.5,
+    };
+  }
+
   private emit(): void {
     this.options.onChange(this.snapshot());
   }
 
   private readonly onPointerDown = (event: PointerEvent): void => {
+    event.preventDefault();
     this.canvas.setPointerCapture(event.pointerId);
     this.pointers.set(event.pointerId, {
       x: event.clientX,
@@ -87,11 +100,13 @@ export class CameraInput {
       this.drag = null;
       this.tapCandidate = null;
       this.pinchDistance = this.pointerDistance();
+      this.pinchCentroid = this.pointerCentroid();
     }
   };
 
   private readonly onPointerMove = (event: PointerEvent): void => {
     if (!this.pointers.has(event.pointerId)) return;
+    event.preventDefault();
 
     this.pointers.set(event.pointerId, {
       x: event.clientX,
@@ -110,25 +125,47 @@ export class CameraInput {
 
     if (this.pointers.size >= 2) {
       this.tapCandidate = null;
-      const next = this.pointerDistance();
-      if (next && this.pinchDistance) {
+      const nextDistance = this.pointerDistance();
+      const nextCentroid = this.pointerCentroid();
+      let changed = false;
+
+      if (nextDistance && this.pinchDistance) {
         this.zoom = Math.max(
           this.minZoom,
-          Math.min(this.maxZoom, this.zoom * (next / this.pinchDistance)),
+          Math.min(
+            this.maxZoom,
+            this.zoom * (nextDistance / this.pinchDistance),
+          ),
         );
-        this.emit();
+        changed = true;
       }
-      this.pinchDistance = next;
+
+      if (nextCentroid && this.pinchCentroid) {
+        const centroidDx = nextCentroid.x - this.pinchCentroid.x;
+        if (Math.abs(centroidDx) > 0.01) {
+          this.angle += centroidDx * 0.006;
+          changed = true;
+        }
+      }
+
+      this.pinchDistance = nextDistance;
+      this.pinchCentroid = nextCentroid;
+      if (changed) this.emit();
       return;
     }
 
     if (!this.drag) return;
-    this.angle += (event.clientX - this.drag.x) * 0.008;
+    const deltaX = event.clientX - this.drag.x;
+    const deltaY = event.clientY - this.drag.y;
     this.drag = { x: event.clientX, y: event.clientY };
-    this.emit();
+
+    if (Math.abs(deltaX) > 0.01 || Math.abs(deltaY) > 0.01) {
+      this.options.onPan?.(deltaX, deltaY);
+    }
   };
 
   private readonly onPointerStop = (event: PointerEvent): void => {
+    event.preventDefault();
     const shouldTap = event.type === 'pointerup'
       && this.tapCandidate?.pointerId === event.pointerId
       && this.tapCandidate.moved === false
@@ -136,6 +173,7 @@ export class CameraInput {
 
     this.pointers.delete(event.pointerId);
     this.pinchDistance = this.pointerDistance();
+    this.pinchCentroid = this.pointerCentroid();
     const remaining = [...this.pointers.values()];
     this.drag = remaining.length === 1 ? { ...remaining[0] } : null;
 
