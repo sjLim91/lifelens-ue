@@ -84,7 +84,7 @@ int main()
     GridPos resolved{};
     SanitationSiteId sanitation=0;
     CHECK(resolveCivilizationContextTarget(
-        world,actor,sleepPlan,resolved,sanitation));
+        world,actor,sleepPlan,center,resolved,sanitation));
     CHECK(resolved.x==sleepPlan.facilityTargetPos.x);
     CHECK(resolved.y==sleepPlan.facilityTargetPos.y);
 
@@ -148,7 +148,7 @@ int main()
         GridPos target{};
         SanitationSiteId targetSanitation=0;
         CHECK(resolveCivilizationContextTarget(
-            world,actor,decision,target,targetSanitation));
+            world,actor,decision,center,target,targetSanitation));
         CHECK(target.x==decision.facilityTargetPos.x);
         CHECK(target.y==decision.facilityTargetPos.y);
 
