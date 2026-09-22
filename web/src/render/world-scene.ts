@@ -25,6 +25,7 @@ export interface WorldSceneCameraState {
   angle: number;
   elevation: number;
   panX?: number;
+  panY?: number;
   panZ?: number;
 }
 
@@ -57,6 +58,7 @@ export class WorldScene {
     angle: OBSERVER_CAMERA_CONTRACT.defaultAngleRadians,
     elevation: OBSERVER_CAMERA_CONTRACT.defaultElevationRadians,
     panX: 0,
+    panY: 0,
     panZ: 0,
   };
   private desiredCameraState: WorldSceneCameraState = {
@@ -85,6 +87,7 @@ export class WorldScene {
     this.desiredCameraState = {
       ...state,
       panX: Number(state.panX) || 0,
+      panY: Number(state.panY) || 0,
       panZ: Number(state.panZ) || 0,
     };
     this.consequenceLayer.setCameraZoom(this.desiredCameraState.zoom);
@@ -163,6 +166,8 @@ export class WorldScene {
     this.consequenceLayer.setCameraZoom(current.zoom);
     current.panX = (Number(current.panX) || 0)
       + ((Number(desired.panX) || 0) - (Number(current.panX) || 0)) * t;
+    current.panY = (Number(current.panY) || 0)
+      + ((Number(desired.panY) || 0) - (Number(current.panY) || 0)) * t;
     current.panZ = (Number(current.panZ) || 0)
       + ((Number(desired.panZ) || 0) - (Number(current.panZ) || 0)) * t;
     this.applyCamera(current);
@@ -178,14 +183,15 @@ export class WorldScene {
     const elevation = Math.max(0.12, Math.min(1.35, state.elevation));
     const groundRadius = Math.cos(elevation) * distance;
     const panX = Number(state.panX) || 0;
+    const panY = Number(state.panY) || 0;
     const panZ = Number(state.panZ) || 0;
 
     this.camera.position.set(
       Math.cos(state.angle) * groundRadius + panX,
-      Math.sin(elevation) * distance,
+      Math.sin(elevation) * distance + panY,
       Math.sin(state.angle) * groundRadius + panZ,
     );
-    this.camera.lookAt(panX, 0, panZ);
+    this.camera.lookAt(panX, panY, panZ);
   }
 
   setTerrain(window: TerrainWindow): void {
