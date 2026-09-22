@@ -40,7 +40,11 @@ jobs:
         run: |
           test -s Clients/Web/generated/lifelens_core.js
           test -s Clients/Web/generated/lifelens_core.wasm
-          grep -q 'dynamicEnvironmentJson' Clients/Web/generated/lifelens_core.js
+          if ! grep -aq 'dynamicEnvironmentJson' Clients/Web/generated/lifelens_core.js \
+            && ! grep -aq 'dynamicEnvironmentJson' Clients/Web/generated/lifelens_core.wasm; then
+            echo "dynamicEnvironmentJson binding missing from generated runtime"
+            exit 1
+          fi
           (
             cd Clients/Web/generated
             sha256sum lifelens_core.js lifelens_core.wasm > SHA256SUMS.txt
