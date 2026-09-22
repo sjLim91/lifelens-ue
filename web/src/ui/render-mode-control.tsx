@@ -37,7 +37,7 @@ export function RenderModeControl() {
         </button>
       </div>
       <p className="hint">
-        Three World는 개발 중인 단일 월드 렌더러 검증용이며 운영 기본값은 Legacy입니다.
+        Three World는 지형·물·식생 통합 검증용입니다. 주민 WorldScene 이관 전까지 캐릭터는 숨겨지며 운영 기본값은 Legacy입니다.
       </p>
     </section>
   );
