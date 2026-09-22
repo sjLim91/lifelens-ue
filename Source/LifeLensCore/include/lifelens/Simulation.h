@@ -10,6 +10,7 @@
 #include "CivilizationKnowledgeTransmission.h"
 #include "CivilizationObserverReadModel.h"
 #include "ContextAction.h"
+#include "CoreNavigation.h"
 #include "Death.h"
 #include "DecisionExecution.h"
 #include "EmotionRuntime.h"
@@ -53,10 +54,13 @@ public:
             if(candidate.id==id){ character=&candidate; break; }
         }
         if(character==nullptr || !character->alive) return false;
-        outPosition=chooseLowExposureOutdoorReliefPosition(
+        outPosition=chooseLowExposureOutdoorReliefPositionIf(
             world_.seed,*character,world_.environmentalResidues,world_.minute,
-            runtimeIt->second.pos);
-        return true;
+            runtimeIt->second.pos,
+            [&](GridPos candidate){
+                return coreGroundTraversable(world_,candidate);
+            });
+        return coreGroundTraversable(world_,outPosition);
     }
     bool sanitationUseTarget(CharacterId id,SanitationUseTarget& outTarget) const {
         const auto runtimeIt=runtime_.find(id);
@@ -69,6 +73,16 @@ public:
         outTarget=resolveSanitationUseTarget(
             world_.seed,*character,world_.environmentalResidues,
             world_.primitiveSanitationSites,world_.minute,runtimeIt->second.pos);
+
+        if(outTarget.kind==SanitationUseTargetKind::EmergencyOutdoor){
+            outTarget.pos=chooseLowExposureOutdoorReliefPositionIf(
+                world_.seed,*character,world_.environmentalResidues,world_.minute,
+                runtimeIt->second.pos,
+                [&](GridPos candidate){
+                    return coreGroundTraversable(world_,candidate);
+                });
+            return coreGroundTraversable(world_,outTarget.pos);
+        }
         return true;
     }
     bool settlementSleepTarget(
