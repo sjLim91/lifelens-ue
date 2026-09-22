@@ -59,11 +59,7 @@ interface ResidentTrailMark {
 interface ResidentWearMark {
   mesh: THREE.Mesh<THREE.CircleGeometry, THREE.MeshBasicMaterial>;
   visits: number;
-}
-
-interface ResidentTrailMark {
-  mesh: THREE.Mesh<THREE.CircleGeometry, THREE.MeshBasicMaterial>;
-  ageSeconds: number;
+  lastUsedMinute: number;
 }
 
 function stableHash(value: string): number {
@@ -377,6 +373,7 @@ export class ResidentWorldLayer {
   private pendingCenterY = 0;
   private simulationSpeed: SimulationSpeed =
     SIMULATION_TIME_CONTRACT.defaultSpeed;
+  private simulationMinute = 0;
   private selectionPulseSeconds = 0;
 
   constructor() {
@@ -543,6 +540,11 @@ export class ResidentWorldLayer {
     this.simulationSpeed = normalizeSimulationSpeed(speed);
   }
 
+  setSimulationMinute(minute: number): void {
+    this.simulationMinute = Math.max(0, Number(minute) || 0);
+    this.updateWearRecovery();
+  }
+
   setSelectedResident(residentId: string | null): void {
     this.selectedResidentId = residentId;
     this.updateSelectionRing();
@@ -687,6 +689,7 @@ export class ResidentWorldLayer {
     const existing = this.wearMarks.get(key);
     if (existing) {
       existing.visits = Math.min(14, existing.visits + 1);
+      existing.lastUsedMinute = this.simulationMinute;
       const strength = Math.min(1, existing.visits / 9);
       existing.mesh.material.opacity = 0.018 + strength * 0.115;
       existing.mesh.scale.set(
@@ -733,7 +736,46 @@ export class ResidentWorldLayer {
     mesh.position.set(x, y + 0.009, z);
     mesh.renderOrder = 1;
     this.wearGroup.add(mesh);
-    this.wearMarks.set(key, { mesh, visits: 1 });
+    this.wearMarks.set(key, {
+      mesh,
+      visits: 1,
+      lastUsedMinute: this.simulationMinute,
+    });
+  }
+
+  private updateWearRecovery(): void {
+    const dayMinutes = Math.max(
+      1,
+      SIMULATION_TIME_CONTRACT.simulationMinutesPerDay,
+    );
+
+    for (const [key, mark] of this.wearMarks) {
+      const unusedMinutes = Math.max(
+        0,
+        this.simulationMinute - mark.lastUsedMinute,
+      );
+      const persistenceMinutes = (
+        dayMinutes * (0.35 + Math.min(1, mark.visits / 10) * 1.25)
+      );
+      const life = Math.max(
+        0,
+        1 - unusedMinutes / persistenceMinutes,
+      );
+      const strength = Math.min(1, mark.visits / 9) * life;
+      mark.mesh.material.opacity = (
+        0.01 + strength * 0.12
+      ) * life;
+      mark.mesh.scale.set(
+        0.8 + strength * 0.36,
+        0.66 + strength * 0.2,
+        1,
+      );
+
+      if (life > 0.02) continue;
+      mark.mesh.material.dispose();
+      this.wearGroup.remove(mark.mesh);
+      this.wearMarks.delete(key);
+    }
   }
 
   private maybeAddTrailMark(actor: ResidentActor): void {
