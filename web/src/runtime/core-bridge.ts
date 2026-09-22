@@ -1,4 +1,3 @@
-import { api } from '@appdeploy/client';
 import type {
   CoreModule,
   Resident,
@@ -30,22 +29,79 @@ function decodeBase64(value: string): Uint8Array {
   return bytes;
 }
 
+async function loadStaticRuntime(): Promise<{
+  js: string;
+  wasmBytes: Uint8Array;
+}> {
+  const base = import.meta.env.BASE_URL || './';
+  const [jsResponse, wasmResponse] = await Promise.all([
+    fetch(`${base}runtime/lifelens_core.js`, { cache: 'no-store' }),
+    fetch(`${base}runtime/lifelens_core.wasm`, { cache: 'no-store' }),
+  ]);
+
+  if (!jsResponse.ok || !wasmResponse.ok) {
+    throw new Error(
+      `Static Core runtime unavailable: JS ${jsResponse.status}, WASM ${wasmResponse.status}`,
+    );
+  }
+
+  return {
+    js: await jsResponse.text(),
+    wasmBytes: new Uint8Array(await wasmResponse.arrayBuffer()),
+  };
+}
+
+async function loadBackendRuntime(): Promise<{
+  js: string;
+  wasmBytes: Uint8Array;
+}> {
+  const response = await fetch('/api/runtime/core', {
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Backend Core runtime unavailable: ${response.status}`,
+    );
+  }
+
+  const payload = await response.json() as RuntimePayload;
+  if (!payload?.js || !payload?.wasmBase64) {
+    throw new Error('LifeLensCore runtime payload unavailable');
+  }
+
+  return {
+    js: payload.js,
+    wasmBytes: decodeBase64(payload.wasmBase64),
+  };
+}
+
+async function loadRuntime(): Promise<{
+  js: string;
+  wasmBytes: Uint8Array;
+}> {
+  try {
+    return await loadStaticRuntime();
+  } catch (staticError) {
+    console.info(
+      'LifeLens static runtime unavailable; trying backend runtime',
+      staticError,
+    );
+    return loadBackendRuntime();
+  }
+}
+
 export class LifeLensCoreBridge {
   private constructor(private readonly client: RuntimeClient) {}
 
   static async connect(): Promise<LifeLensCoreBridge> {
-    const response = await api.get<RuntimePayload>('/api/runtime/core');
-    const payload = response.data;
-    if (!payload?.js || !payload?.wasmBase64) {
-      throw new Error('LifeLensCore runtime payload unavailable');
-    }
+    const payload = await loadRuntime();
 
     const jsUrl = URL.createObjectURL(
       new Blob([payload.js], { type: 'text/javascript' }),
     );
-    const wasmBytes = decodeBase64(payload.wasmBase64);
     const wasmUrl = URL.createObjectURL(
-      new Blob([wasmBytes], { type: 'application/wasm' }),
+      new Blob([payload.wasmBytes], { type: 'application/wasm' }),
     );
 
     try {
