@@ -238,7 +238,7 @@ export function startObserverEngine(): void {
     worldSession.createWorld(effectiveSeed);
     centerX = 0;
     centerY = 0;
-    followResidents = true;
+    followResidents = false;
     localPanX = 0;
     localPanZ = 0;
     residentSnapshot = [];
@@ -268,7 +268,7 @@ export function startObserverEngine(): void {
     if (!worldSession) return;
     localPanX = 0;
     localPanZ = 0;
-    worldSession.resetFollow();
+    worldSession.recenterToResidents();
     refresh();
   }
   
