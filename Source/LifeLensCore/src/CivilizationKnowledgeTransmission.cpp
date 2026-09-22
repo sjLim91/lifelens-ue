@@ -147,7 +147,7 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
        || learnerRuntime->second.pendingContext.active()) return;
 
     PendingContextAction pending;
-    pending.token=nextContextActionToken();
+    pending.token=issueContextActionToken();
     pending.kind=ContextActionKind::KnowledgeTeaching;
     pending.issuedMinute=world_.minute;
     pending.knowledgeTeachingTarget=best.learner;
