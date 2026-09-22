@@ -603,6 +603,8 @@ uniform float uLifeLensGroundWindIntensity;`,
       tiltZ = 0,
       colorBase?: THREE.Color,
       colorVariation = 0,
+      colorTint?: THREE.Color,
+      colorTintStrength = 0,
     ): void => {
       this.position.set(x, y, z);
       this.euler.set(tiltX, yaw, tiltZ);
@@ -620,6 +622,12 @@ uniform float uLifeLensGroundWindIntensity;`,
           tone * colorVariation * 0.12,
           tone * colorVariation,
         );
+        if (colorTint && colorTintStrength > 0) {
+          this.instanceColor.lerp(
+            colorTint,
+            clamp01(colorTintStrength),
+          );
+        }
         mesh.setColorAt(index, this.instanceColor);
       }
     };
@@ -654,6 +662,25 @@ uniform float uLifeLensGroundWindIntensity;`,
       const rockCoverage = clamp01(chunk.rockCoverage01);
       const wetlandCoverage = clamp01(chunk.wetlandCoverage01);
       const moisture = clamp01(chunk.moisture01);
+      const elevation = clamp01(chunk.elevation01);
+      const grassTint = new THREE.Color(
+        moisture > 0.62 || wetlandCoverage > 0.42
+          ? 0x4f6c3c
+          : moisture < 0.28
+            ? 0x817449
+            : 0x667748,
+      );
+      const stoneTint = new THREE.Color(
+        elevation > 0.66
+          ? 0x777b78
+          : moisture > 0.62
+            ? 0x686d66
+            : 0x746f66,
+      );
+      const shoreTint = new THREE.Color(0x8a8477);
+      const deadwoodTint = new THREE.Color(
+        moisture > 0.58 ? 0x504735 : 0x66513b,
+      );
 
       const chunkCenterX = (
         chunk.x - window.centerChunkX
@@ -743,6 +770,8 @@ uniform float uLifeLensGroundWindIntensity;`,
           (hash01(seed, chunk.x, chunk.y, index, 16) - 0.5) * 0.18,
           this.grassBase,
           0.055,
+          grassTint,
+          0.12 + Math.abs(moisture - 0.5) * 0.18,
         );
         grassCount += 1;
       }
@@ -832,6 +861,8 @@ uniform float uLifeLensGroundWindIntensity;`,
           0,
           this.pebbleBase,
           0.07,
+          shorelineBoost > 0.12 ? shoreTint : stoneTint,
+          shorelineBoost > 0.12 ? 0.22 : 0.1,
         );
         pebbleCount += 1;
       }
@@ -894,6 +925,8 @@ uniform float uLifeLensGroundWindIntensity;`,
           (hash01(seed, chunk.x, chunk.y, index, 58) - 0.5) * 0.24,
           this.rockBase,
           0.065,
+          stoneTint,
+          0.14,
         );
         rockCount += 1;
       }
@@ -970,6 +1003,8 @@ uniform float uLifeLensGroundWindIntensity;`,
           (hash01(seed, chunk.x, chunk.y, index, 68) - 0.5) * 0.28,
           this.boulderBase,
           0.055,
+          stoneTint,
+          0.12,
         );
         boulderCount += 1;
       }
@@ -1029,6 +1064,8 @@ uniform float uLifeLensGroundWindIntensity;`,
           Math.PI * 0.5,
           this.deadwoodBase,
           0.045,
+          deadwoodTint,
+          0.14,
         );
         deadwoodCount += 1;
       }
