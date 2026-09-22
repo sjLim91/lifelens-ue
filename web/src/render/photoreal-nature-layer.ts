@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type {
   DynamicEnvironment,
+  TerrainChunk,
   TerrainWindow,
   WorldPresentationSnapshot,
 } from '../runtime/core-types';
@@ -351,6 +352,150 @@ export class PhotorealNatureLayer {
     const cells = WORLD_GRID_CONTRACT.gridCellsPerChunk;
     const elevationScale = WORLD_GRID_CONTRACT.elevationScale;
     const sampleElevation = createTerrainElevationSampler(terrain);
+    const chunkMap = new Map(
+      terrain.chunks.map((chunk) => [
+        `${chunk.x}:${chunk.y}`,
+        chunk,
+      ]),
+    );
+
+    const facilityPoints = (this.presentation?.facilities ?? [])
+      .filter((facility) => facility.state !== 'Ruined')
+      .map((facility) => {
+        const chunkX = Math.floor(facility.gridX / cells);
+        const chunkY = Math.floor(facility.gridY / cells);
+        const localX = (
+          facility.gridX - chunkX * cells
+        ) / cells;
+        const localY = (
+          facility.gridY - chunkY * cells
+        ) / cells;
+        return {
+          x: (
+            chunkX - terrain.centerChunkX + localX - 0.5
+          ) * size,
+          z: (
+            chunkY - terrain.centerChunkY + localY - 0.5
+          ) * size,
+          radius: facility.kind === 'Shelter' ? 3.1 : 2.35,
+        };
+      });
+
+    const clearOfFacilities = (
+      x: number,
+      z: number,
+      extra = 0,
+    ): boolean => {
+      for (const facility of facilityPoints) {
+        if (
+          Math.hypot(x - facility.x, z - facility.z)
+          < facility.radius + extra
+        ) {
+          return false;
+        }
+      }
+      return true;
+    };
+
+    const waterNeighbors = (
+      chunk: TerrainChunk,
+    ): Array<[number, number]> => (
+      ([
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+      ] as Array<[number, number]>).filter(([dx, dy]) => {
+        const neighbor = chunkMap.get(
+          `${chunk.x + dx}:${chunk.y + dy}`,
+        );
+        return neighbor
+          ? (
+              neighbor.waterKind === 'Spring'
+              || neighbor.waterKind === 'Stream'
+              || neighbor.waterKind === 'River'
+              || neighbor.waterKind === 'Lake'
+              || neighbor.waterKind === 'Wetland'
+            )
+          : false;
+      })
+    );
+
+    const distanceToSegment = (
+      px: number,
+      pz: number,
+      ax: number,
+      az: number,
+      bx: number,
+      bz: number,
+    ): number => {
+      const abx = bx - ax;
+      const abz = bz - az;
+      const denom = abx * abx + abz * abz;
+      const t = denom <= 0.000001
+        ? 0
+        : Math.max(
+            0,
+            Math.min(
+              1,
+              ((px - ax) * abx + (pz - az) * abz) / denom,
+            ),
+          );
+      const cx = ax + abx * t;
+      const cz = az + abz * t;
+      return Math.hypot(px - cx, pz - cz);
+    };
+
+    const pointIsWater = (
+      chunk: TerrainChunk,
+      localX: number,
+      localY: number,
+    ): boolean => {
+      if (
+        chunk.waterKind === 'Ocean'
+        || chunk.waterKind === 'Coast'
+        || chunk.waterKind === 'Lake'
+      ) {
+        return true;
+      }
+      if (
+        chunk.waterKind !== 'River'
+        && chunk.waterKind !== 'Stream'
+        && chunk.waterKind !== 'Spring'
+      ) {
+        return false;
+      }
+
+      const px = (localX - 0.5) * size;
+      const pz = (localY - 0.5) * size;
+      const width = chunk.waterKind === 'River'
+        ? size * 0.22
+        : chunk.waterKind === 'Stream'
+          ? size * 0.11
+          : size * 0.08;
+      const halfWidth = width * 0.5;
+      const halfLength = size * 0.52;
+      const directions = waterNeighbors(chunk);
+      const activeDirections = directions.length > 0
+        ? directions
+        : ([[1, 0], [-1, 0]] as Array<[number, number]>);
+
+      let distance = Math.hypot(px, pz);
+      for (const [dx, dy] of activeDirections) {
+        distance = Math.min(
+          distance,
+          distanceToSegment(
+            px,
+            pz,
+            0,
+            0,
+            dx * halfLength,
+            dy * halfLength,
+          ),
+        );
+      }
+      return distance <= halfWidth;
+    };
 
     const boulder = this.entries.get('boulder_01');
     const shrub = this.entries.get('shrub_03');
@@ -412,6 +557,12 @@ export class PhotorealNatureLayer {
           const localY = 0.18 + hash01(seed, chunk.x, chunk.y, 403) * 0.64;
           const x = centerX + (localX - 0.5) * size;
           const z = centerZ + (localY - 0.5) * size;
+          if (
+            pointIsWater(chunk, localX, localY)
+            || !clearOfFacilities(x, z, 0.9)
+          ) {
+            continue;
+          }
           const y = sampleElevation(
             chunk.x,
             chunk.y,
@@ -447,6 +598,12 @@ export class PhotorealNatureLayer {
           const localY = 0.12 + hash01(seed, chunk.x, chunk.y, 423) * 0.76;
           const x = centerX + (localX - 0.5) * size;
           const z = centerZ + (localY - 0.5) * size;
+          if (
+            pointIsWater(chunk, localX, localY)
+            || !clearOfFacilities(x, z, 0.45)
+          ) {
+            continue;
+          }
           const y = sampleElevation(
             chunk.x,
             chunk.y,
@@ -500,6 +657,9 @@ export class PhotorealNatureLayer {
         const z = (
           chunkY - terrain.centerChunkY + localY - 0.5
         ) * size;
+        if (!clearOfFacilities(x, z, 0.18)) {
+          continue;
+        }
         const y = sampleElevation(
           chunkX,
           chunkY,
