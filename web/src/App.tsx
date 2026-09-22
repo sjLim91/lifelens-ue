@@ -36,9 +36,9 @@ function WorldViewport({
 
   return (
     <section className="world">
-      <canvas id="worldCanvas" aria-label="LifeLens world observer" />
-      <canvas id="threeWorldCanvas" aria-label="LifeLens experimental Three.js world" />
-      <canvas id="characterCanvas" aria-label="LifeLens residents" />
+      <canvas id="worldCanvas" aria-label="LifeLens 월드 관찰 화면" />
+      <canvas id="threeWorldCanvas" aria-label="LifeLens 3D 월드" />
+      <canvas id="characterCanvas" aria-label="LifeLens 주민" />
       <WorldOverlay snapshot={snapshot} />
       <button
         className="observer-fab"
