@@ -17,6 +17,9 @@ export interface WorldSceneCameraState {
   centerChunkY: number;
   zoom: number;
   angle: number;
+  elevation: number;
+  panX?: number;
+  panZ?: number;
 }
 
 interface TerrainMeshEntry {
@@ -38,6 +41,19 @@ export class WorldScene {
   private readonly raycaster = new THREE.Raycaster();
   private readonly pointer = new THREE.Vector2();
   private readonly atmosphere: AtmosphereLayer;
+  private cameraInitialized = false;
+  private currentCameraState: WorldSceneCameraState = {
+    centerChunkX: 0,
+    centerChunkY: 0,
+    zoom: 1,
+    angle: -0.68,
+    elevation: 0.67,
+    panX: 0,
+    panZ: 0,
+  };
+  private desiredCameraState: WorldSceneCameraState = {
+    ...this.currentCameraState,
+  };
 
   constructor() {
     this.scene.add(this.terrainGroup);
@@ -57,12 +73,17 @@ export class WorldScene {
   }
 
   setCamera(state: WorldSceneCameraState): void {
-    const distance = 180 / Math.max(0.35, state.zoom);
-    const horizontal = Math.cos(state.angle) * distance;
-    const depth = Math.sin(state.angle) * distance;
+    this.desiredCameraState = {
+      ...state,
+      panX: Number(state.panX) || 0,
+      panZ: Number(state.panZ) || 0,
+    };
 
-    this.camera.position.set(horizontal, distance * 0.8, depth);
-    this.camera.lookAt(0, 0, 0);
+    if (!this.cameraInitialized) {
+      this.currentCameraState = { ...this.desiredCameraState };
+      this.cameraInitialized = true;
+      this.applyCamera(this.currentCameraState);
+    }
   }
 
   setSimulationMinute(minute: number): void {
@@ -99,8 +120,36 @@ export class WorldScene {
   }
 
   update(deltaSeconds: number): void {
+    const t = 1 - Math.exp(-Math.max(0, deltaSeconds) * 9);
+    const current = this.currentCameraState;
+    const desired = this.desiredCameraState;
+
+    current.angle += (desired.angle - current.angle) * t;
+    current.elevation += (desired.elevation - current.elevation) * t;
+    current.zoom += (desired.zoom - current.zoom) * t;
+    current.panX = (Number(current.panX) || 0)
+      + ((Number(desired.panX) || 0) - (Number(current.panX) || 0)) * t;
+    current.panZ = (Number(current.panZ) || 0)
+      + ((Number(desired.panZ) || 0) - (Number(current.panZ) || 0)) * t;
+    this.applyCamera(current);
+
     this.residentLayer.update(deltaSeconds);
     this.weatherLayer.update(deltaSeconds);
+  }
+
+  private applyCamera(state: WorldSceneCameraState): void {
+    const distance = 180 / Math.max(0.35, state.zoom);
+    const elevation = Math.max(0.12, Math.min(1.35, state.elevation));
+    const groundRadius = Math.cos(elevation) * distance;
+    const panX = Number(state.panX) || 0;
+    const panZ = Number(state.panZ) || 0;
+
+    this.camera.position.set(
+      Math.cos(state.angle) * groundRadius + panX,
+      Math.sin(elevation) * distance,
+      Math.sin(state.angle) * groundRadius + panZ,
+    );
+    this.camera.lookAt(panX, 0, panZ);
   }
 
   setTerrain(window: TerrainWindow): void {

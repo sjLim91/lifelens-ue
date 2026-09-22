@@ -20,7 +20,7 @@ function Topbar() {
     <header className="topbar">
       <div className="brand">
         <strong>LifeLens</strong>
-        <span>LIVE WEB OBSERVER</span>
+        <span>실시간 관찰</span>
       </div>
       <RuntimeBadge runtime={snapshot.runtime} />
     </header>
@@ -36,9 +36,9 @@ function WorldViewport({
 
   return (
     <section className="world">
-      <canvas id="worldCanvas" aria-label="LifeLens world observer" />
-      <canvas id="threeWorldCanvas" aria-label="LifeLens experimental Three.js world" />
-      <canvas id="characterCanvas" aria-label="LifeLens residents" />
+      <canvas id="worldCanvas" aria-label="LifeLens 월드 관찰 화면" />
+      <canvas id="threeWorldCanvas" aria-label="LifeLens 3D 월드" />
+      <canvas id="characterCanvas" aria-label="LifeLens 주민" />
       <WorldOverlay snapshot={snapshot} />
       <button
         className="observer-fab"
@@ -69,7 +69,7 @@ function ObserverPanel({
   onToggleMobile: () => void;
 }) {
   const snapshot = useObserverSnapshot();
-  const [seed, setSeed] = useState('42');
+  const [seed, setSeed] = useState('');
   const [seedError, setSeedError] = useState(false);
   const controlsDisabled = snapshot.runtime.status !== 'ready';
   const selectedResident = snapshot.selectedResidentId
@@ -79,6 +79,11 @@ function ObserverPanel({
     : null;
 
   const createWorld = (): void => {
+    setSeedError(false);
+    observerActions.createWorld('');
+  };
+
+  const createWorldFromSeed = (): void => {
     const trimmed = seed.trim();
     if (!trimmed) {
       setSeedError(true);
@@ -101,46 +106,71 @@ function ObserverPanel({
         {mobileOpen ? '세계 보기' : '관찰 정보'}
       </button>
       <section className="panel">
-        <h2>World</h2>
-        <label className="field">
-          WorldSeed
-          <input
-            inputMode="numeric"
-            value={seed}
-            autoComplete="off"
-            onChange={(event) => {
-              setSeed(event.target.value);
-              if (seedError) setSeedError(false);
-            }}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') createWorld();
-            }}
-          />
-        </label>
-        <p className={`field-error ${seedError ? '' : 'hidden'}`}>
-          WorldSeed를 입력해 주세요.
-        </p>
-        <div className="button-row">
+        <h2>월드</h2>
+        <div className="button-row single">
           <button onClick={createWorld} disabled={controlsDisabled}>
-            NEW WORLD
-          </button>
-          <button
-            onClick={() => observerActions.stepMinutes(10)}
-            disabled={controlsDisabled}
-          >
-            +10 MIN
-          </button>
-          <button
-            onClick={() => observerActions.stepMinutes(60)}
-            disabled={controlsDisabled}
-          >
-            +1 HOUR
+            새 월드
           </button>
         </div>
+
+        <details className="seed-replay">
+          <summary>Seed로 동일한 월드 재현</summary>
+          <label className="field">
+            WorldSeed
+            <input
+              inputMode="numeric"
+              value={seed}
+              autoComplete="off"
+              placeholder="재현할 Seed 입력"
+              onChange={(event) => {
+                setSeed(event.target.value);
+                if (seedError) setSeedError(false);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') createWorldFromSeed();
+              }}
+            />
+          </label>
+          <p className={`field-error ${seedError ? '' : 'hidden'}`}>
+            재현할 WorldSeed를 입력해 주세요.
+          </p>
+          <button
+            type="button"
+            onClick={createWorldFromSeed}
+            disabled={controlsDisabled}
+          >
+            이 Seed로 생성
+          </button>
+        </details>
+
+        <div className="time-speed-control" aria-label="시뮬레이션 관찰 속도">
+          {[
+            { speed: 0, label: '⏸', title: '일시정지' },
+            { speed: 1, label: '1×', title: '관찰' },
+            { speed: 4, label: '4×', title: '빠르게' },
+            { speed: 16, label: '16×', title: '더 빠르게' },
+            { speed: 64, label: '64×', title: '고속 관찰' },
+          ].map((preset) => (
+            <button
+              key={preset.speed}
+              type="button"
+              title={preset.title}
+              className={snapshot.simulationSpeed === preset.speed ? 'active' : ''}
+              onClick={() => observerActions.setSimulationSpeed(preset.speed)}
+              disabled={controlsDisabled}
+              aria-pressed={snapshot.simulationSpeed === preset.speed}
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
+        <p className="hint">
+          1× = 현실 8분에 LifeLens 1일 · 시간 점프 없이 관찰 배속만 조절
+        </p>
       </section>
 
       <section className="panel">
-        <h2>Focused life</h2>
+        <h2>선택한 삶</h2>
         <SelectedResidentReadout
           resident={selectedResident}
           onClear={() => observerActions.selectResident(null)}
@@ -148,7 +178,7 @@ function ObserverPanel({
       </section>
 
       <section className="panel">
-        <h2>Observer</h2>
+        <h2>관찰 정보</h2>
         <ObserverMetrics snapshot={snapshot} />
       </section>
 
@@ -161,45 +191,16 @@ function ObserverPanel({
       </section>
 
       <section className="panel">
-        <h2>World truth</h2>
-        <div className="chunk-controls">
-          <button
-            onClick={() => observerActions.moveObserver(-1, 0)}
-            disabled={controlsDisabled}
-          >
-            ←
-          </button>
-          <button
-            onClick={() => observerActions.moveObserver(0, 1)}
-            disabled={controlsDisabled}
-          >
-            ↑
-          </button>
-          <button
-            onClick={() => observerActions.moveObserver(0, -1)}
-            disabled={controlsDisabled}
-          >
-            ↓
-          </button>
-          <button
-            onClick={() => observerActions.moveObserver(1, 0)}
-            disabled={controlsDisabled}
-          >
-            →
-          </button>
-        </div>
+        <h2>카메라</h2>
+        <button
+          onClick={() => observerActions.recenterObserver()}
+          disabled={controlsDisabled}
+        >
+          현재 주민 위치로 돌아가기
+        </button>
         <p className="hint">
-          드래그: 시점 회전 · 휠/핀치: 확대/축소 · 화살표: 관찰 Chunk 이동
+          모바일: 한 손가락 드래그 회전 · 두 손가락 이동 팬 · 핀치 줌 · PC: 우클릭 회전 · 중클릭 팬 · 휠 줌
         </p>
-      </section>
-
-      <section className="panel runtime">
-        <h2>Runtime</h2>
-        <div><span>UI</span><b>React 19 + TypeScript</b></div>
-        <div><span>Authority</span><b>LifeLensCore C++</b></div>
-        <div><span>Client</span><b>Web / WASM</b></div>
-        <div><span>Characters</span><b>Quaternius CC0 / Three.js</b></div>
-        <div><span>Fallback</span><b>Fake world 없음</b></div>
       </section>
 
       <DiagnosticsPanel />

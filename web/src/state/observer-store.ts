@@ -11,6 +11,7 @@ export interface CameraState {
   centerChunkX: number;
   centerChunkY: number;
   angle: number;
+  elevation: number;
   zoom: number;
   followResidents: boolean;
 }
@@ -27,6 +28,7 @@ export interface ObserverSnapshot {
   environment: DynamicEnvironment | null;
   camera: CameraState;
   runtime: RuntimeState;
+  simulationSpeed: number;
   selectedResidentId: string | null;
   revision: number;
 }
@@ -42,13 +44,15 @@ const INITIAL_STATE: ObserverSnapshot = {
     centerChunkX: 0,
     centerChunkY: 0,
     angle: -0.68,
+    elevation: 0.67,
     zoom: 1,
-    followResidents: true,
+    followResidents: false,
   },
   runtime: {
     status: 'loading',
     errorMessage: null,
   },
+  simulationSpeed: 1,
   selectedResidentId: null,
   revision: 0,
 };
@@ -123,6 +127,7 @@ class ObserverStore {
       residents: [],
       terrain: null,
       environment: null,
+      simulationSpeed: 1,
       selectedResidentId: null,
       camera: {
         ...INITIAL_STATE.camera,

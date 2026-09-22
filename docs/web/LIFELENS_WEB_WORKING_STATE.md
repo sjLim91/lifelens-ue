@@ -2,109 +2,126 @@
 
 Last updated: 2026-09-22
 
-## Production baseline
+## Authority
 
-The current production AppDeploy preview runs React 19 + TypeScript, Canvas2D terrain, Three.js residents, and LifeLensCore WASM delivered through a backend proxy.
+The Web/PWA client is a presentation/observer client for the same `LifeLensCore` truth used by native clients.
 
-Production fixes already applied before source/deployment separation include resident continuity caching, last-known resident positions, transient terrain retention, independent simulation and refresh timers, elapsed wall-time catch-up, and protection against resume-frame resident flicker.
+Canonical priority for current web work:
 
-## Canonical development source
+1. `docs/LIFELENS_SPEC_v1.1.md`
+2. domain canonical companions such as `WORLD_ARCHITECTURE_v2.md`, `TIME_AND_DYNAMIC_ENVIRONMENT.md`, `HUMAN_REALISM_FOUNDATION_v1.md`, and `OBSERVER_CAMERA_CONTROL_v1.md`
+3. `docs/WEB_CLIENT_ARCHITECTURE_v1.md`
+4. this working-state document
 
-The repository now contains `web/` as the canonical browser development tree.
+This file records implementation status only. It must not override canonical design contracts.
 
-Production AppDeploy is no longer treated as the only source copy. New work is committed to GitHub first.
+## Current implementation baseline
 
-A GitHub Actions workflow at `.github/workflows/web-typecheck.yml` runs the TypeScript typecheck for changes under `web/`. This is a validation workflow only; it does not deploy.
+- React 19 + TypeScript observer UI.
+- LifeLensCore C++ WASM remains simulation authority.
+- Three World is the normal integrated terrain/water/vegetation/resident presentation path; Legacy Canvas remains an emergency presentation fallback only.
+- One Three.js world coordinate system is used for Three World terrain, water, vegetation and residents.
+- Core-backed focused resident detail exposes needs, emotion, personality/traits, directional relationships, family, memories and beliefs.
+- Dynamic weather presentation consumes Core weather state.
+- Resident continuity prevents transient payload gaps from destroying actors.
+- Normal NEW GAME generates a WorldSeed automatically. Explicit Seed entry is secondary deterministic replay UI.
+- Normal user-facing Observer UI defaults to Korean; diagnostics and renderer switching remain development-only.
+- Mobile observer chrome uses safe-area padding and a 48 logical-pixel touch-target baseline.
 
-## Current un-deployed development state
+## Canonical time contract
 
-The GitHub web source now contains both the zoom-coherence fix and a large architecture split. None of these changes have been deployed.
+The web clock follows `docs/TIME_AND_DYNAMIC_ENVIRONMENT.md`.
 
-Completed in GitHub development source:
+- Pause: 0x
+- Observe: 1x
+- Fast: 4x
+- Faster: 16x
+- Rapid: 64x
+- 1x target: 8 real minutes per LifeLens day
+- no +10 minute / +1 hour product time-jump controls
+- catch-up is bounded; render refresh failure must not stop Core time
+- History mode is not faked as a large multiplier and remains a separate future adaptive/coarse-step system
 
-- Resident height no longer uses fixed 43/51 screen pixels.
-- Resident size, spacing, and label anchor follow current terrain scale.
-- Screen-edge resident magnet/clamp behavior is removed.
-- Core/WASM loading and typed access moved to `runtime/core-bridge.ts`.
-- Simulation timing moved to `runtime/simulation-clock.ts`.
-- Resident continuity moved to `runtime/resident-continuity.ts`.
-- World query, observer tracking, and stable terrain retention moved to `runtime/world-session.ts`.
-- Camera gestures moved to `input/camera-input.ts`.
-- React readouts now subscribe to `observer-store.ts` via `useSyncExternalStore`.
-- WorldSeed/new-world/time/chunk navigation controls now use typed React actions instead of DOM click bindings.
-- Legacy Canvas2D drawing moved out of `observer-engine.ts` into `render/legacy-canvas-world-renderer.ts`.
-- Shared projection and terrain presentation math are isolated.
-- A development-only unified Three.js mode is now wired through `WorldRenderer` and can be selected locally without changing the default Legacy mode.
-- Three World terrain uses shared corner heights across adjacent chunks rather than one flat elevation plane per chunk.
-- Water geometry now builds connected river/stream arms from neighboring water topology instead of treating every flowing-water chunk as a full square.
-- Vegetation uses an instanced tree layer.
-- Three World now has a day/night atmosphere layer driven by authoritative Core simulation minutes, including sun/moon light, sky color, and fog changes.
-- Three World now renders real GLB resident actors using the existing free resident/animation assets rather than debug capsules. Actors are keyed by resident GUID, mapped from Core grid coordinates into world coordinates, interpolated between targets, and use walk/contextual rest animation selection.
-- Terrain and water builders reuse one indexed terrain window per refresh instead of rebuilding a full lookup map for every chunk.
-- A future Core Web Worker command/event protocol is defined.
-- `observer-engine.ts` has been reduced to a small orchestration layer rather than holding Core/query/input/render/readout behavior.
+## Canonical camera contract
 
-Deployment still requires an explicit user request.
+The web camera follows `docs/OBSERVER_CAMERA_CONTROL_v1.md` while respecting the newer World v2 no-start-settlement rule.
 
-## Transitional technical debt
+Android:
+- short one-finger tap: resident selection
+- one-finger drag: orbit yaw/elevation
+- two-finger movement together: pan
+- pinch: zoom
 
-The production-compatible Legacy path still uses Canvas2D terrain plus a separate Three.js CharacterLayer.  
-LifeLensCore execution still shares the browser main thread.  
-Three World is connected only as a development render mode and is not the default path.  
-Three World now has a real resident actor pipeline, but it still needs the full Legacy appearance deformation/hair/material parity and more accurate terrain-foot grounding before it can replace the Legacy resident presentation.  
-Resident model/animation assets remain remote runtime dependencies.  
-Name labels remain part of the Legacy Canvas renderer.  
-Three World water/vegetation materials are still first-pass presentation and need LOD/material/shoreline refinement.
+Desktop:
+- left click: resident selection
+- right drag: orbit
+- middle drag: pan
+- wheel: zoom
 
-## Validation state
+Orbit elevation and distance are bounded and presentation motion is smoothed. Panning changes ObserverInterest only; it must not materialize simulation state or redefine Core world truth. The recenter affordance means current resident group, not a pre-authored settlement/living-area center.
 
-Static/source-boundary review has been performed after the refactor.
+## World v2 presentation alignment
 
-A real TypeScript dependency install/typecheck has not yet run in this session because the local sandbox cannot resolve external GitHub/npm DNS, and connector-originated commits have not shown a GitHub Actions workflow run. Treat typecheck as a gate before any future deployment.
+Web presentation must not manufacture geography.
 
-## Next parallel work order
+- Terrain subdivision may interpolate Core-provided elevation, but presentation-only synthetic ridge/relief height is forbidden.
+- Vegetation placement may use deterministic presentation hashes from Core ecology coverage, but tree ground height uses the same authoritative elevation sampler as terrain/residents.
+- Hydrology topology comes from Core observations.
+- Observer movement requests different deterministic Core windows instead of revealing a decorated finite board.
+- The initial spawn coordinate is not a settlement or permanent living-area authority.
 
-1. Bring Three World ResidentLayer appearance/animation parity closer to Legacy and improve foot grounding on sloped terrain.
-2. Add terrain/water dirty-chunk signatures so unchanged geometry is not recreated every snapshot.
-3. Refine river continuity, lake shoreline shapes, coast/ocean transitions, wave/material behavior, and shoreline blending.
-4. Add weather state hooks (rain, fog intensity, wind) on top of the new day/night atmosphere system.
-5. Implement the defined Worker protocol and move Core stepping/query work off the main thread.
-6. Wire SnapshotSequencer into the async Worker path so stale responses can never overwrite newer state.
-7. Add structures/tools/traces layers and resident-object interaction anchors.
-8. Continue human animation/behavior presentation and society/life observation UI.
+More detailed continuous surface sampling, regional/planetary representation and persistent human world deltas remain World v2 follow-up work.
 
-## Deployment gate
+## Human motion truth
 
-Do not perform AppDeploy deployment/update during normal development.
+The browser must follow `docs/HUMAN_REALISM_FOUNDATION_v1.md`.
 
-Only deploy after the user explicitly requests deployment. Before deploying, compare GitHub `web/` against the live AppDeploy snapshot, sync reviewed changes only, run QA, and report the production result.
+- movement may use locomotion animation
+- an activity label alone is not enough to play sit/use/tool interaction motion
+- Sleep/UseToilet/Eat/Drink/Wash/Repair do not invent chairs, beds, toilets, tools or interaction slots
+- unsupported/contextless object-bound actions fall back to neutral idle
+- target-backed social motion may be shown only when the target/context is actually present
+- future action/motion DTO work must carry authoritative target, slot, facing/distance and alignment context
 
+## Reliability
 
-## 2026-09-22 visual regression fix — Legacy preview
+- Core failure is explicit; no fake browser residents/world truth.
+- Older runtime optional-feature skew may disable that presentation feature but must not fabricate simulation state.
+- Runtime release/preview validation must keep JS/WASM assets version-compatible.
+- stale async snapshots must not overwrite newer truth once the Worker path is active.
 
-The mobile preview exposed two presentation regressions in the production-compatible Legacy renderer.
+## Known canonical gaps / not complete yet
 
-Fixed in GitHub development source:
-- Legacy river/stream/spring rendering no longer connects every surrounding wet/lake cell.
-- Flow rendering is capped to a natural maximum of two exits for river/stream chunks and one exit for springs.
-- Synthetic horizontal/vertical fallback channels were removed.
-- Water stroke width/bend amplitude were reduced to avoid road-grid appearance.
-- Resident nameplates now anchor above the full character height rather than near the upper torso.
-- Nameplates perform simple collision avoidance and stack vertically when residents cluster.
+These are not approved deviations; they are outstanding implementation work.
 
-These fixes are covered by the web regression contract and are automatically published to the static preview branch after typecheck/build succeeds.
+1. **Permanent resident GUID contract**
+   - Core currently uses `CharacterId = uint64_t` with sequential founder IDs.
+   - Master Spec calls for permanent GUID identity.
+   - This requires a deliberate Core/Save/Relationship/Family migration, not a browser-only patch.
 
+2. **Experience-based place memory / living area**
+   - World v2 correctly treats spawn as an initial coordinate only.
+   - Human Realism defines place memory, attachment, routine and familiar routes.
+   - A complete resident/household learned home-range model is not finished yet.
 
-## 2026-09-22 real-world scale + clock-resume hardening
+3. **Web Worker execution**
+   - Worker protocol and `SnapshotSequencer` exist, but LifeLensCore still executes on the browser main thread.
+   - Moving Core/query work into the Worker remains required by the web architecture roadmap.
 
-Parallel web work now treats visible scale as a simulation contract rather than a cosmetic tweak.
+4. **Web save/load persistence**
+   - OPFS/IndexedDB transport around the shared Core save codec is not complete.
 
-- Legacy resident body height is reduced from billboard-like tile scale toward map scale.
-- Resident collision/separation radius follows the reduced body scale instead of forcing people apart like oversized markers.
-- Forest clusters can contain more mature trees at close zoom.
-- Tree crown/trunk scale is increased so mature vegetation reads several times taller than nearby residents.
-- Labels remain screen-readable independently from resident body scale; body geometry is no longer enlarged just to preserve text readability.
-- SimulationClock now listens for browser visibility resume. When a throttled/backgrounded tab becomes visible it immediately catches up elapsed wall time and refreshes the observer, instead of waiting for the next interval and appearing frozen.
-- The web regression contract explicitly checks both human-to-tree scale and visibility-resume clock behavior.
+5. **Observer scale transitions**
+   - Local/Regional/Planetary/Orbital/Interplanetary representation continuity is not complete.
 
-Deployment policy is unchanged: keep development in GitHub/static preview flow and do not touch AppDeploy unless explicitly requested.
+6. **Action/motion presentation DTO**
+   - Web currently lacks the authoritative interaction-slot/alignment payload needed for rich object-bound motion.
+   - Until that exists, neutral fallback is intentional and canonical.
+
+7. **World v2 visual completeness**
+   - Near/mid/far ecology, coast/ocean material polish, structures/tools/traces and persistent human deltas remain incomplete.
+   - Runtime screenshots/device QA remain the acceptance source; source/CI success alone is not visual completion.
+
+## Deployment rule
+
+Normal source work does not trigger AppDeploy. Deployment/public-preview changes occur only when explicitly requested. Source, tests and working-state documentation are updated first.

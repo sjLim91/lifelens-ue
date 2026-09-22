@@ -39,6 +39,7 @@ interface Actor {
   variantSeed: number;
   sex: ResidentSex;
   activityLabel: string;
+  activityTargetId: string;
   mixer: THREE.AnimationMixer;
   idle?: THREE.AnimationAction;
   walk?: THREE.AnimationAction;
@@ -420,6 +421,7 @@ export class CharacterLayer {
         actor.root.rotation.y = Math.PI + Math.max(-0.34, Math.min(0.34, dx * 0.01));
       }
       actor.activityLabel = placement.activityLabel || 'Idle';
+      actor.activityTargetId = '';
       actor.lastSeenAt = now;
       actor.heightPx = placement.heightPx;
       this.applyActorScale(actor);
@@ -517,6 +519,7 @@ export class CharacterLayer {
       variantSeed,
       sex: placement.sex,
       activityLabel: placement.activityLabel || 'Idle',
+      activityTargetId: '',
       mixer,
       idle,
       walk,
@@ -559,16 +562,16 @@ export class CharacterLayer {
     }
   }
 
-  private restMotion(actor: Actor): MotionName {
-    const label = actor.activityLabel;
-    if ((label === 'Sleep' || label === 'UseToilet') && actor.sit) return 'sit';
-    if ((label === 'Eat' || label === 'Drink' || label === 'Wash') && actor.interact) return 'interact';
-    if ((label === 'Approach' || label === 'Repair' || label === 'Comfort') && actor.talk) return 'talk';
+  private restMotion(): MotionName {
+    // Canonical Human Realism rule:
+    // presentation must not invent interaction context. Legacy presentation has
+    // no authoritative interaction slot/affordance DTO, so unsupported
+    // target-bound actions remain neutral rather than sitting/using empty space.
     return 'idle';
   }
 
   private setAction(actor: Actor, moving: boolean): void {
-    const desired: MotionName = moving && actor.walk ? 'walk' : this.restMotion(actor);
+    const desired: MotionName = moving && actor.walk ? 'walk' : this.restMotion();
     if (actor.active === desired) return;
 
     const previous = actor.active ? this.actionFor(actor, actor.active) : undefined;

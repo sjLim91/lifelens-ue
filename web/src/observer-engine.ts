@@ -13,6 +13,13 @@ import { LegacyCanvasWorldRenderer } from './render/legacy-canvas-world-renderer
 import { readRenderMode } from './render/render-mode';
 import { WorldRenderer } from './render/world-renderer';
 
+function generateWorldSeed(): string {
+  const words = new Uint32Array(2);
+  globalThis.crypto.getRandomValues(words);
+  const value = (BigInt(words[0]) << 32n) | BigInt(words[1]);
+  return (value === 0n ? 1n : value).toString();
+}
+
 function requireCanvas(selector: string): HTMLCanvasElement {
   const element = document.querySelector<HTMLCanvasElement>(selector);
   if (!element) throw new Error(`Missing canvas: ${selector}`);
@@ -66,20 +73,78 @@ export function startObserverEngine(): void {
   let followResidents = true;
   let simulationClock: SimulationClock | null = null;
   let angle = -0.68;
+  let elevation = 0.67;
   const compactViewport = window.matchMedia('(max-width: 800px)').matches;
   let zoom = compactViewport ? 2.15 : 1.25;
+  let localPanX = 0;
+  let localPanZ = 0;
   new CameraInput(canvas, {
     initialAngle: angle,
+    initialElevation: elevation,
     initialZoom: zoom,
     onChange(next) {
       angle = next.angle;
+      elevation = next.elevation;
       zoom = next.zoom;
-      observerStore.updateCamera({ angle, zoom });
+      observerStore.updateCamera({ angle, elevation, zoom });
       threeWorldRenderer?.setCamera({
         centerChunkX: centerX,
         centerChunkY: centerY,
         angle,
+        elevation,
         zoom,
+        panX: localPanX,
+        panZ: localPanZ,
+      });
+      drawWorld();
+    },
+    onPan(deltaX, deltaY) {
+      if (!worldSession) return;
+
+      if (followResidents) {
+        worldSession.moveObserver(0, 0);
+        followResidents = false;
+      }
+
+      const worldUnitsPerPixel = 0.18 / Math.max(0.55, zoom);
+      const sin = Math.sin(angle);
+      const cos = Math.cos(angle);
+
+      localPanX += (
+        (sin * deltaX) - (cos * deltaY)
+      ) * worldUnitsPerPixel;
+      localPanZ += (
+        (-cos * deltaX) - (sin * deltaY)
+      ) * worldUnitsPerPixel;
+
+      const chunkWorldSize = 8;
+      const stepX = Math.trunc(localPanX / chunkWorldSize);
+      const stepY = Math.trunc(localPanZ / chunkWorldSize);
+
+      if (stepX !== 0 || stepY !== 0) {
+        localPanX -= stepX * chunkWorldSize;
+        localPanZ -= stepY * chunkWorldSize;
+        worldSession.moveObserver(stepX, stepY);
+        refresh();
+        return;
+      }
+
+      observerStore.updateCamera({
+        centerChunkX: centerX,
+        centerChunkY: centerY,
+        angle,
+        elevation,
+        zoom,
+        followResidents: false,
+      });
+      threeWorldRenderer?.setCamera({
+        centerChunkX: centerX,
+        centerChunkY: centerY,
+        angle,
+        elevation,
+        zoom,
+        panX: localPanX,
+        panZ: localPanZ,
       });
       drawWorld();
     },
@@ -137,6 +202,7 @@ export function startObserverEngine(): void {
       centerChunkX: centerX,
       centerChunkY: centerY,
       angle,
+      elevation,
       zoom,
       followResidents,
     });
@@ -157,17 +223,24 @@ export function startObserverEngine(): void {
       centerChunkX: centerX,
       centerChunkY: centerY,
       angle,
+      elevation,
       zoom,
+      panX: localPanX,
+      panZ: localPanZ,
     });
     drawWorld();
   }
   
   function createWorld(seed: string): void {
     if (!worldSession) return;
-    worldSession.createWorld(seed);
+    const requestedSeed = seed.trim();
+    const effectiveSeed = requestedSeed || generateWorldSeed();
+    worldSession.createWorld(effectiveSeed);
     centerX = 0;
     centerY = 0;
-    followResidents = true;
+    followResidents = false;
+    localPanX = 0;
+    localPanZ = 0;
     residentSnapshot = [];
     terrain = null;
     characterLayer?.clearResidents();
@@ -185,13 +258,25 @@ export function startObserverEngine(): void {
   }
   
   function move(dx: number, dy: number): void {
+    localPanX = 0;
+    localPanZ = 0;
     worldSession?.moveObserver(dx, dy);
     refresh();
   }
-  
-  function stepMinutes(minutes: number): void {
-    worldSession?.runMinutes(minutes);
+
+  function recenterObserver(): void {
+    if (!worldSession) return;
+    localPanX = 0;
+    localPanZ = 0;
+    worldSession.recenterToResidents();
     refresh();
+  }
+  
+  function setSimulationSpeed(speed: number): void {
+    const canonicalSpeed = [0, 1, 4, 16, 64].includes(speed) ? speed : 1;
+    simulationClock?.setSpeed(canonicalSpeed);
+    observerStore.update({ simulationSpeed: canonicalSpeed });
+    refreshSafely();
   }
   
   function refreshSafely(): void {
@@ -206,6 +291,7 @@ export function startObserverEngine(): void {
   function startSimulationClock(): void {
     simulationClock?.stop();
     simulationClock = new SimulationClock({
+      initialSpeed: observerStore.getSnapshot().simulationSpeed,
       onAdvance(minutes) {
         worldSession?.runMinutes(minutes);
       },
@@ -220,8 +306,9 @@ export function startObserverEngine(): void {
   
   observerActions.bind({
     createWorld,
-    stepMinutes,
+    setSimulationSpeed,
     moveObserver: move,
+    recenterObserver,
     selectResident,
   });
   
@@ -234,7 +321,7 @@ export function startObserverEngine(): void {
       const core = await LifeLensCoreBridge.connect();
       worldSession = new WorldSession(core, residentContinuity);
       observerStore.setRuntime('ready');
-      createWorld('42');
+      createWorld('');
       startSimulationClock();
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
