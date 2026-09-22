@@ -7,6 +7,7 @@ import {
   ObserverMetrics,
   ResidentReadout,
   RuntimeBadge,
+  SelectedResidentReadout,
   WorldOverlay,
 } from './ui/observer-readout';
 import { DiagnosticsPanel } from './ui/diagnostics-panel';
@@ -71,6 +72,11 @@ function ObserverPanel({
   const [seed, setSeed] = useState('42');
   const [seedError, setSeedError] = useState(false);
   const controlsDisabled = snapshot.runtime.status !== 'ready';
+  const selectedResident = snapshot.selectedResidentId
+    ? snapshot.residents.find(
+      (resident) => resident.id === snapshot.selectedResidentId,
+    ) ?? null
+    : null;
 
   const createWorld = (): void => {
     const trimmed = seed.trim();
@@ -134,12 +140,24 @@ function ObserverPanel({
       </section>
 
       <section className="panel">
+        <h2>Focused life</h2>
+        <SelectedResidentReadout
+          resident={selectedResident}
+          onClear={() => observerActions.selectResident(null)}
+        />
+      </section>
+
+      <section className="panel">
         <h2>Observer</h2>
         <ObserverMetrics snapshot={snapshot} />
       </section>
 
       <section className="panel">
-        <ResidentReadout residents={snapshot.residents} />
+        <ResidentReadout
+          residents={snapshot.residents}
+          selectedResidentId={snapshot.selectedResidentId}
+          onSelect={(residentId) => observerActions.selectResident(residentId)}
+        />
       </section>
 
       <section className="panel">
@@ -192,6 +210,11 @@ function ObserverPanel({
 
 export default function App() {
   const [mobileObserverOpen, setMobileObserverOpen] = useState(false);
+  const snapshot = useObserverSnapshot();
+
+  useEffect(() => {
+    if (snapshot.selectedResidentId) setMobileObserverOpen(true);
+  }, [snapshot.selectedResidentId]);
 
   useEffect(() => {
     try {
