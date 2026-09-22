@@ -8,6 +8,16 @@ import type {
   WorldOverview,
 } from './core-types';
 
+import {
+  connectRuntimeSources,
+  DEFAULT_RUNTIME_LOAD_POLICY,
+  readRuntimeResponse,
+  withRuntimeDeadline,
+  type RuntimeBytes,
+  type RuntimeLoadPolicy,
+} from './runtime-loading';
+import { readResidents, readWorldOverview } from './core-response';
+
 interface RuntimePayload {
   js: string;
   wasmBase64: string;
@@ -30,161 +40,46 @@ function decodeBase64(value: string): Uint8Array {
   return bytes;
 }
 
-const STATIC_RUNTIME_TIMEOUT_MS = 6000;
-const MODULE_INIT_TIMEOUT_MS = 12000;
 const RAW_GITHUB_RUNTIME_BASE =
   'https://raw.githubusercontent.com/sjLim91/lifelens-ue/gh-pages/';
 
-async function fetchWithTimeout(
-  url: string,
-  timeoutMs = STATIC_RUNTIME_TIMEOUT_MS,
-): Promise<Response> {
-  const controller = new AbortController();
-  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    return await fetch(url, {
-      cache: 'no-store',
-      signal: controller.signal,
-    });
-  } catch (error) {
-    if (controller.signal.aborted) {
-      throw new Error(`Core runtime request timed out after ${timeoutMs}ms: ${url}`);
-    }
-    throw error;
-  } finally {
-    window.clearTimeout(timer);
-  }
-}
-
-async function withTimeout<T>(
-  promise: Promise<T>,
-  timeoutMs: number,
-  label: string,
-): Promise<T> {
-  let timer: number | null = null;
-
-  try {
-    return await Promise.race([
-      promise,
-      new Promise<T>((_, reject) => {
-        timer = window.setTimeout(
-          () => reject(new Error(`${label} timed out after ${timeoutMs}ms`)),
-          timeoutMs,
-        );
-      }),
-    ]);
-  } finally {
-    if (timer !== null) window.clearTimeout(timer);
-  }
-}
-
-async function loadRuntimeFromBase(base: string): Promise<{
-  js: string;
-  wasmBuffer: ArrayBuffer;
-}> {
-  const [jsResponse, wasmResponse] = await Promise.all([
-    fetchWithTimeout(`${base}runtime/lifelens_core.js`),
-    fetchWithTimeout(`${base}runtime/lifelens_core.wasm`),
+async function loadRuntimeFromBase(base: string, policy: RuntimeLoadPolicy): Promise<RuntimeBytes> {
+  const [js, wasmBuffer] = await Promise.all([
+    readRuntimeResponse(`${base}runtime/lifelens_core.js`, response => response.text(), policy.requestTimeoutMs),
+    readRuntimeResponse(`${base}runtime/lifelens_core.wasm`, response => response.arrayBuffer(), policy.requestTimeoutMs),
   ]);
-
-  if (!jsResponse.ok || !wasmResponse.ok) {
-    throw new Error(
-      `Core runtime unavailable from ${base}: JS ${jsResponse.status}, WASM ${wasmResponse.status}`,
-    );
-  }
-
-  return {
-    js: await jsResponse.text(),
-    wasmBuffer: await wasmResponse.arrayBuffer(),
-  };
+  return { js, wasmBuffer };
 }
 
-async function loadStaticRuntime(): Promise<{
-  js: string;
-  wasmBuffer: ArrayBuffer;
-}> {
-  const base = import.meta.env.BASE_URL || './';
-  return loadRuntimeFromBase(base);
-}
-
-async function loadRawGitHubRuntime(): Promise<{
-  js: string;
-  wasmBuffer: ArrayBuffer;
-}> {
-  return loadRuntimeFromBase(RAW_GITHUB_RUNTIME_BASE);
-}
-
-async function loadBackendRuntime(): Promise<{
-  js: string;
-  wasmBuffer: ArrayBuffer;
-}> {
-  const response = await fetchWithTimeout('/api/runtime/core');
-
-  if (!response.ok) {
-    throw new Error(
-      `Backend Core runtime unavailable: ${response.status}`,
-    );
-  }
-
-  const payload = await response.json() as RuntimePayload;
-  if (!payload?.js || !payload?.wasmBase64) {
-    throw new Error('LifeLensCore runtime payload unavailable');
-  }
-
+async function loadBackendRuntime(policy: RuntimeLoadPolicy): Promise<RuntimeBytes> {
+  const payload = await readRuntimeResponse('/api/runtime/core', async response => {
+    const value: unknown = await response.json();
+    if (!value || typeof value !== 'object') throw new Error('Core runtime payload unavailable');
+    const candidate = value as RuntimePayload;
+    if (typeof candidate.js !== 'string' || typeof candidate.wasmBase64 !== 'string') {
+      throw new Error('Core runtime payload unavailable');
+    }
+    return candidate;
+  }, policy.requestTimeoutMs);
   const bytes = decodeBase64(payload.wasmBase64);
-  const wasmBuffer = bytes.buffer.slice(
-    bytes.byteOffset,
-    bytes.byteOffset + bytes.byteLength,
-  ) as ArrayBuffer;
-
   return {
     js: payload.js,
-    wasmBuffer,
+    wasmBuffer: bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer,
   };
-}
-
-async function loadRuntime(): Promise<{
-  js: string;
-  wasmBuffer: ArrayBuffer;
-}> {
-  const failures: string[] = [];
-
-  try {
-    return await loadStaticRuntime();
-  } catch (staticError) {
-    failures.push(`same-origin: ${String(staticError)}`);
-    console.info(
-      'LifeLens same-origin runtime unavailable; trying GitHub raw runtime',
-      staticError,
-    );
-  }
-
-  try {
-    return await loadRawGitHubRuntime();
-  } catch (rawError) {
-    failures.push(`github-raw: ${String(rawError)}`);
-    console.info(
-      'LifeLens GitHub raw runtime unavailable; trying backend runtime',
-      rawError,
-    );
-  }
-
-  try {
-    return await loadBackendRuntime();
-  } catch (backendError) {
-    failures.push(`backend: ${String(backendError)}`);
-    throw new Error(
-      `LifeLensCore runtime loading failed. ${failures.join(' | ')}`,
-    );
-  }
 }
 
 export class LifeLensCoreBridge {
   private constructor(private readonly client: RuntimeClient) {}
 
-  static async connect(): Promise<LifeLensCoreBridge> {
-    const payload = await loadRuntime();
+  static async connect(policy: RuntimeLoadPolicy = DEFAULT_RUNTIME_LOAD_POLICY): Promise<LifeLensCoreBridge> {
+    return connectRuntimeSources([
+      { name: 'same-origin', load: () => loadRuntimeFromBase(import.meta.env.BASE_URL || './', policy) },
+      { name: 'github-raw', load: () => loadRuntimeFromBase(RAW_GITHUB_RUNTIME_BASE, policy) },
+      { name: 'backend', load: () => loadBackendRuntime(policy) },
+    ], payload => this.initialize(payload, policy));
+  }
+
+  private static async initialize(payload: RuntimeBytes, policy: RuntimeLoadPolicy): Promise<LifeLensCoreBridge> {
 
     const jsUrl = URL.createObjectURL(
       new Blob([payload.js], { type: 'text/javascript' }),
@@ -194,12 +89,12 @@ export class LifeLensCoreBridge {
     );
 
     try {
-      const wasmModule = await withTimeout(
+      const wasmModule = await withRuntimeDeadline(
         import(
           /* @vite-ignore */
           jsUrl
         ) as Promise<{ default?: (options?: unknown) => Promise<CoreModule> }>,
-        MODULE_INIT_TIMEOUT_MS,
+        policy.initializationTimeoutMs,
         'LifeLensCore JavaScript module import',
       );
 
@@ -207,14 +102,14 @@ export class LifeLensCoreBridge {
         throw new Error('Emscripten module factory not found');
       }
 
-      const module = await withTimeout(
+      const module = await withRuntimeDeadline(
         wasmModule.default({
           locateFile(path: string): string {
             if (path.endsWith('.wasm')) return wasmUrl;
             return path;
           },
         }),
-        MODULE_INIT_TIMEOUT_MS,
+        policy.initializationTimeoutMs,
         'LifeLensCore WASM initialization',
       );
 
@@ -222,7 +117,16 @@ export class LifeLensCoreBridge {
         throw new Error('LifeLensWebClient binding unavailable');
       }
 
-      return new LifeLensCoreBridge(new module.LifeLensWebClient());
+      const client = new module.LifeLensWebClient();
+      try {
+        for (const method of ['newGame', 'runMinutes', 'worldOverviewJson', 'residentsJson', 'terrainWindowJson'] as const) {
+          if (typeof client[method] !== 'function') throw new Error(`Core binding missing: ${method}`);
+        }
+        return new LifeLensCoreBridge(client);
+      } catch (error) {
+        client.delete?.();
+        throw error;
+      }
     } finally {
       URL.revokeObjectURL(jsUrl);
       URL.revokeObjectURL(wasmUrl);
@@ -243,14 +147,11 @@ export class LifeLensCoreBridge {
   }
 
   worldOverview(): WorldOverview {
-    return parseJson<WorldOverview>(this.client.worldOverviewJson(), {});
+    return readWorldOverview(this.client.worldOverviewJson());
   }
 
   residents(): ResidentsPayload {
-    return parseJson<ResidentsPayload>(
-      this.client.residentsJson(),
-      { available: false, residents: [] },
-    );
+    return readResidents(this.client.residentsJson());
   }
 
   dynamicEnvironment(x: number, y: number): DynamicEnvironment {

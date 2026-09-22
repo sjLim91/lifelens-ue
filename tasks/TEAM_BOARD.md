@@ -445,3 +445,14 @@ When explicitly resumed, prefer cached/fast smoke paths before long engine build
   - legacy initial-region preview remains a compatibility wrapper.
 - Presentation/Environment-owned source/content is not modified in W2-0.
 - before W2-4 terrain/water/vegetation presentation migration, open a fresh Integration Request / scoped Assist Lock for Dagyeom-owned `Source/LifeLens/WorldPresentation/**` and Content paths.
+
+## 2026-09-22 Work Mode — Web runtime resilience scope
+
+- Owner: Jjun / this Work Mode session.
+- Branch: `work/web-runtime-resilience-20260922`.
+- Reserved files: `web/src/runtime/core-bridge.ts`, new `core-response.ts`, new
+  `runtime-loading.ts`, `web/tests/runtime-resilience/**`, and new
+  `.github/workflows/web-runtime-resilience.yml`.
+- Scope: bounded runtime loading, initialization fallback, mandatory response validation.
+- Active PR #421 camera/clock/Core locomotion/actor files and #417 release workflows excluded.
+- No automatic merge or deployment. Handoff: `tasks/WEB_RUNTIME_RESILIENCE_2026-09-22.md`.

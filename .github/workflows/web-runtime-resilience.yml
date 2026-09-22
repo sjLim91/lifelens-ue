@@ -1,0 +1,36 @@
+name: LifeLens Web Runtime Resilience
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'web/src/runtime/**'
+      - 'web/tests/runtime-resilience/**'
+      - 'web/package.json'
+      - 'web/tsconfig.json'
+      - '.github/workflows/web-runtime-resilience.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  runtime-resilience:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install web dependencies
+        working-directory: web
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Check web types
+        working-directory: web
+        run: npm run typecheck
+      - name: Exercise loading and response failure paths
+        run: node web/tests/runtime-resilience/run.mjs
+      - name: Build browser client
+        working-directory: web
+        run: npm run build

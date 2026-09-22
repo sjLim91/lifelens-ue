@@ -515,3 +515,12 @@ WEB-0 scope:
 - canonical architecture/docs/preflight.
 
 This lane is parallel to active World v2 work and must not fork simulation truth.
+
+## 2026-09-22 Work Mode — Web runtime resilience / local validation complete
+
+- Branch: `work/web-runtime-resilience-20260922`, base `6abf47f`.
+- Implemented: full-response deadlines, initialization-level fallback, corrupt
+  overview/resident rejection, standalone regression suite and scoped PR CI.
+- Local gate: 17 regression checks + TypeScript + Vite production build PASS.
+- Integration pending. Do not merge/deploy automatically while Chat work continues.
+- Scope / known limits: `tasks/WEB_RUNTIME_RESILIENCE_2026-09-22.md`.
