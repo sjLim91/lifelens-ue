@@ -134,6 +134,7 @@ export class VegetationLayer {
   private readonly windUniforms: WindUniformSet[] = [];
   private windTime = 0;
   private windIntensity = 0;
+  private cameraZoom = 1.25;
 
   constructor() {
     this.enableWind(this.lowerCrownMaterial, 0.16);
@@ -156,6 +157,23 @@ export class VegetationLayer {
       mesh.frustumCulled = true;
       this.group.add(mesh);
     }
+    this.applyLod();
+  }
+
+  setCameraZoom(zoom: number): void {
+    this.cameraZoom = Math.max(0.1, Number(zoom) || 1);
+    this.applyLod();
+  }
+
+  private applyLod(): void {
+    const zoom = this.cameraZoom;
+    this.trunks.visible = zoom >= 0.5;
+    this.lowerCrowns.visible = zoom >= 0.5;
+    this.middleCrowns.visible = zoom >= 0.5;
+    this.upperCrowns.visible = zoom >= 0.5;
+    this.shrubs.visible = zoom >= 0.82;
+    this.rocks.visible = zoom >= 0.72;
+    this.stumps.visible = zoom >= 0.92;
   }
 
   setEnvironment(
