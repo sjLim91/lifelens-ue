@@ -1,70 +1,16 @@
-import { api } from '@appdeploy/client';
 import { CharacterLayer, type ResidentPlacement } from './character-layer';
-
-interface RuntimePayload {
-  js: string;
-  wasmBase64: string;
-}
-
-type WaterKind = 'None' | 'Spring' | 'Stream' | 'River' | 'Lake' | 'Wetland' | 'Coast' | 'Ocean';
-
-interface TerrainChunk {
-  x: number;
-  y: number;
-  elevation01: number;
-  waterKind: WaterKind;
-  waterAvailability: number;
-  biome?: string;
-  moisture01?: number;
-  temperature01?: number;
-  forestCoverage01?: number;
-  grassCoverage01?: number;
-  shrubCoverage01?: number;
-  rockCoverage01?: number;
-  wetlandCoverage01?: number;
-}
-
-interface TerrainWindow {
-  available: boolean;
-  centerChunkX: number;
-  centerChunkY: number;
-  worldSeed?: string;
-  chunks: TerrainChunk[];
-}
-
-interface Resident {
-  id: string;
-  name: string;
-  sex?: 'Male' | 'Female';
-  activityLabel?: string;
-  needs?: {
-    hunger?: number;
-    thirst?: number;
-    sleep?: number;
-    hygiene?: number;
-  };
-  hasPosition?: boolean;
-  gridX?: number;
-  gridY?: number;
-}
-
-interface ResidentsPayload {
-  available?: boolean;
-  residents?: Resident[];
-}
-
-interface RuntimeClient {
-  newGame(worldSeed: string, populationSeed: string, generationVersion: number): boolean;
-  runMinutes(minutes: number): void;
-  worldOverviewJson(): string;
-  residentsJson(): string;
-  terrainWindowJson(x: number, y: number, radius: number): string;
-  delete?: () => void;
-}
-
-interface CoreModule {
-  LifeLensWebClient: new () => RuntimeClient;
-}
+import { LifeLensCoreBridge } from './runtime/core-bridge';
+import { runtimeDiagnostics } from './runtime/runtime-diagnostics';
+import { SimulationClock } from './runtime/simulation-clock';
+import type {
+  Resident,
+  ResidentsPayload,
+  TerrainChunk,
+  TerrainWindow,
+  WaterKind,
+  WorldOverview,
+} from './runtime/core-types';
+import { observerStore } from './state/observer-store';
 
 const $ = <T extends Element>(selector: string): T => {
   const node = document.querySelector<T>(selector);
@@ -103,7 +49,7 @@ const ui = {
   errorText: $<HTMLElement>('#errorText'),
 };
 
-let runtime: RuntimeClient | null = null;
+let runtime: LifeLensCoreBridge | null = null;
 let centerX = 0;
 let centerY = 0;
 let terrain: TerrainWindow | null = null;
@@ -113,13 +59,8 @@ let residentSnapshot: Resident[] = [];
 const lastKnownResidentPositions = new Map<string, { x: number; y: number }>();
 const lastKnownResidents = new Map<string, { resident: Resident; seenAt: number }>();
 const RESIDENT_CONTINUITY_MS = 10000;
-const REAL_MS_PER_CORE_MINUTE = 1000;
-const MAX_CLOCK_CATCHUP_MS = 5 * 60 * 1000;
 let followResidents = true;
-let simulationTickTimer: number | null = null;
-let refreshTimer: number | null = null;
-let simulationLastWallMs = Date.now();
-let simulationAccumulatorMs = 0;
+let simulationClock: SimulationClock | null = null;
 let angle = -0.68;
 let zoom = 1;
 let drag: { x: number; y: number } | null = null;
@@ -135,21 +76,6 @@ function controls(enabled: boolean): void {
   [ui.step10, ui.step60, ui.left, ui.right, ui.up, ui.down].forEach((button) => {
     button.disabled = !enabled;
   });
-}
-
-function parseJson<T>(text: string, fallback: T): T {
-  try {
-    return JSON.parse(text) as T;
-  } catch {
-    return fallback;
-  }
-}
-
-function decodeBase64(value: string): Uint8Array {
-  const binary = atob(value);
-  const bytes = new Uint8Array(binary.length);
-  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
-  return bytes;
 }
 
 function dayLabel(minuteValue: unknown): string {
@@ -272,6 +198,7 @@ function resizeCanvas(): void {
 }
 
 function drawWorld(): void {
+  const renderStartedAt = performance.now();
   const width = canvas.width;
   const height = canvas.height;
   ctx.clearRect(0, 0, width, height);
@@ -283,6 +210,7 @@ function drawWorld(): void {
     ctx.textAlign = 'center';
     ctx.font = `${Math.max(14, width / 55)}px system-ui`;
     ctx.fillText('LifeLensCore world truth loading…', width / 2, height / 2);
+    runtimeDiagnostics.recordRender(performance.now() - renderStartedAt);
     return;
   }
 
@@ -605,6 +533,7 @@ function drawWorld(): void {
     ctx.fillText(projected.resident.name, px, labelY);
   }
   characterLayer.setResidents(characterPlacements);
+  runtimeDiagnostics.recordRender(performance.now() - renderStartedAt);
 }
 
 function renderResidents(data: { residents?: Resident[] }): void {
@@ -631,11 +560,9 @@ function renderResidents(data: { residents?: Resident[] }): void {
 
 function refresh(): void {
   if (!runtime) return;
-  const overview = parseJson<Record<string, unknown>>(runtime.worldOverviewJson(), {});
-  const residentPayload = parseJson<ResidentsPayload>(
-    runtime.residentsJson(),
-    { available: false, residents: [] },
-  );
+  const queryStartedAt = performance.now();
+  const overview = runtime.worldOverview();
+  const residentPayload: ResidentsPayload = runtime.residents();
   const expectedLiving = Math.max(0, Number(overview.livingResidents) || 0);
   residentSnapshot = stabilizeResidents(residentPayload, expectedLiving);
   for (const resident of residentSnapshot) {
@@ -668,10 +595,7 @@ function refresh(): void {
     return Math.max(radius, Math.abs(chunkX - centerX), Math.abs(chunkY - centerY));
   }, 8);
   const queryRadius = Math.max(8, Math.min(16, residentRadius + 2));
-  const terrainCandidate = parseJson<TerrainWindow>(
-    runtime.terrainWindowJson(centerX, centerY, queryRadius),
-    { available: false, centerChunkX: centerX, centerChunkY: centerY, chunks: [] },
-  );
+  const terrainCandidate = runtime.terrainWindow(centerX, centerY, queryRadius);
   const terrainKey = `${centerX}:${centerY}`;
   const terrainCandidateValid = terrainCandidate.available === true
     && Array.isArray(terrainCandidate.chunks)
@@ -701,6 +625,23 @@ function refresh(): void {
   ui.households.textContent = String(overview.households ?? '—');
   ui.couples.textContent = String(overview.activeCouples ?? '—');
   ui.events.textContent = String(overview.majorLifeEvents ?? '—');
+  runtimeDiagnostics.recordCoreQuery(
+    performance.now() - queryStartedAt,
+    residentSnapshot.length,
+    terrain.chunks.length,
+  );
+  observerStore.update({
+    world: overview as WorldOverview,
+    residents: residentSnapshot,
+    terrain,
+  });
+  observerStore.updateCamera({
+    centerChunkX: centerX,
+    centerChunkY: centerY,
+    angle,
+    zoom,
+    followResidents,
+  });
   renderResidents({ residents: residentSnapshot });
   drawWorld();
 }
@@ -713,7 +654,7 @@ function createWorld(): void {
     return;
   }
   ui.seedError.classList.add('hidden');
-  runtime.newGame(seed, '', 3);
+  runtime.createWorld(seed, '', 3);
   centerX = 0;
   centerY = 0;
   followResidents = true;
@@ -724,8 +665,8 @@ function createWorld(): void {
   lastKnownResidentPositions.clear();
   lastKnownResidents.clear();
   characterLayer.clearResidents();
-  simulationLastWallMs = Date.now();
-  simulationAccumulatorMs = 0;
+  simulationClock?.resetAccumulator();
+  observerStore.resetWorld();
   refresh();
 }
 
@@ -740,37 +681,24 @@ function refreshSafely(): void {
   try {
     refresh();
   } catch (error) {
+    runtimeDiagnostics.recordCoreFailure();
     console.warn('LifeLens observer refresh failed; simulation clock remains active', error);
   }
 }
 
-function advanceSimulationClock(): void {
-  if (!runtime) return;
-  const now = Date.now();
-  const elapsed = Math.max(0, now - simulationLastWallMs);
-  simulationLastWallMs = now;
-  simulationAccumulatorMs = Math.min(
-    MAX_CLOCK_CATCHUP_MS,
-    simulationAccumulatorMs + elapsed,
-  );
-  const minutesToRun = Math.floor(simulationAccumulatorMs / REAL_MS_PER_CORE_MINUTE);
-  if (minutesToRun <= 0) return;
-
-  try {
-    runtime.runMinutes(minutesToRun);
-    simulationAccumulatorMs -= minutesToRun * REAL_MS_PER_CORE_MINUTE;
-  } catch (error) {
-    console.warn('LifeLens simulation tick failed; clock will retry on the next tick', error);
-  }
-}
-
 function startSimulationClock(): void {
-  if (simulationTickTimer !== null) window.clearInterval(simulationTickTimer);
-  if (refreshTimer !== null) window.clearInterval(refreshTimer);
-  simulationLastWallMs = Date.now();
-  simulationAccumulatorMs = 0;
-  simulationTickTimer = window.setInterval(advanceSimulationClock, 250);
-  refreshTimer = window.setInterval(refreshSafely, 1000);
+  simulationClock?.stop();
+  simulationClock = new SimulationClock({
+    onAdvance(minutes) {
+      runtime?.runMinutes(minutes);
+    },
+    onRefresh: refreshSafely,
+    onError(phase, error) {
+      if (phase === 'refresh') runtimeDiagnostics.recordCoreFailure();
+      console.warn(`LifeLens simulation ${phase} failed; clock remains active`, error);
+    },
+  });
+  simulationClock.start();
 }
 
 function pointerDistance(): number | null {
@@ -839,35 +767,20 @@ async function boot(): Promise<void> {
   controls(false);
   ui.errorCard.classList.add('hidden');
   setStatus('Core loading…', 'pending');
+  observerStore.setRuntime('loading');
 
   try {
-    const response = await api.get('/api/runtime/core');
-    const payload = response.data as RuntimePayload;
-    if (!payload?.js || !payload?.wasmBase64) throw new Error('LifeLensCore runtime payload unavailable');
-
-    const jsUrl = URL.createObjectURL(new Blob([payload.js], { type: 'text/javascript' }));
-    const wasmBytes = decodeBase64(payload.wasmBase64);
-    const wasmUrl = URL.createObjectURL(new Blob([wasmBytes], { type: 'application/wasm' }));
-    const wasmModule = await import(/* @vite-ignore */ jsUrl) as { default?: (options?: unknown) => Promise<CoreModule> };
-    if (typeof wasmModule.default !== 'function') throw new Error('Emscripten module factory not found');
-
-    const module = await wasmModule.default({
-      locateFile(path: string): string {
-        if (path.endsWith('.wasm')) return wasmUrl;
-        return path;
-      },
-    });
-
-    if (!module.LifeLensWebClient) throw new Error('LifeLensWebClient binding unavailable');
-    runtime = new module.LifeLensWebClient();
+    runtime = await LifeLensCoreBridge.connect();
     controls(true);
     setStatus('Core WASM LIVE', 'ready');
+    observerStore.setRuntime('ready');
     createWorld();
     startSimulationClock();
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error('LifeLensCore boot failed', error);
     setStatus('Core load failed', 'error');
+    observerStore.setRuntime('error', message);
     ui.errorText.textContent = message;
     ui.errorCard.classList.remove('hidden');
     controls(false);
