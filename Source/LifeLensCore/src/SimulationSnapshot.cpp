@@ -26,6 +26,8 @@ bool validateSnapshot(const SimulationStateSnapshot& snapshot,std::string* error
     if(snapshot.version!=SimulationSnapshotVersion) return fail("unsupported snapshot version");
     if(!validSimulationRuleset(snapshot.ruleset)) return fail("snapshot contains invalid simulation ruleset");
     if(snapshot.world.seed==0) return fail("snapshot world seed must be nonzero");
+    if(snapshot.nextContextActionToken==0)
+        return fail("snapshot next context action token must be nonzero");
     if(snapshot.world.minute<0) return fail("snapshot minute must be nonnegative");
 
     std::unordered_set<CharacterId> characterIds;
@@ -209,6 +211,7 @@ SimulationStateSnapshot Simulation::captureSnapshot() const
     snapshot.pregnancies=pregnancies_;
     snapshot.births=births_;
     snapshot.socialKnowledge=socialKnowledge_;
+    snapshot.nextContextActionToken=nextContextActionToken_;
     snapshot.logs=logs_;
 
     snapshot.runtime.reserve(runtime_.size());
@@ -286,6 +289,7 @@ bool Simulation::restoreSnapshot(const SimulationStateSnapshot& snapshot,std::st
     pregnancies_=snapshot.pregnancies;
     births_=snapshot.births;
     socialKnowledge_=snapshot.socialKnowledge;
+    nextContextActionToken_=snapshot.nextContextActionToken;
     runtime_=std::move(restoredRuntime);
     logs_=snapshot.logs;
 
