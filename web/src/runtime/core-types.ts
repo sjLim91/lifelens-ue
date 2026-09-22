@@ -235,6 +235,40 @@ export interface ResidentCivilizationActivity {
   sanitationSiteId?: string;
 }
 
+export interface CivilizationItem {
+  item?: string;
+  material?: string;
+  quantity?: number;
+  quality?: number;
+  durability?: number;
+}
+
+export interface ResidentTechnique {
+  technique?: string;
+  level?: string;
+  confidence?: number;
+  successfulUses?: number;
+  hasProvenance?: boolean;
+  originResidentId?: string;
+  immediateSourceId?: string;
+  source?: 'Unknown' | 'SelfDiscovery' | 'DirectWitness' | 'Teaching';
+  learnedMinute?: number;
+  hopCount?: number;
+}
+
+export interface ResidentCivilization {
+  totalInventoryUnits?: number;
+  gatheringSkill?: number;
+  craftingSkill?: number;
+  learningSkill?: number;
+  knownTechniqueCount?: number;
+  reproducibleTechniqueCount?: number;
+  latestKnowledgeMinute?: number;
+  latestTechnique?: string;
+  inventory?: CivilizationItem[];
+  techniques?: ResidentTechnique[];
+}
+
 export interface Resident {
   id: string;
   name: string;
@@ -251,6 +285,7 @@ export interface Resident {
   presentation?: ResidentPresentationDirective;
   contextAction?: ResidentContextAction;
   civilizationActivity?: ResidentCivilizationActivity;
+  civilization?: ResidentCivilization;
   emotion?: ResidentEmotion;
   needs?: ResidentNeeds;
   personality?: ResidentPersonality;
@@ -408,9 +443,41 @@ export interface WorldSocialEvent {
   successful?: boolean;
 }
 
+export interface WorldResourceNode {
+  id: string;
+  material: string;
+  quantity: number;
+  maxQuantity?: number;
+  renewable?: boolean;
+  regenerationPerDay?: number;
+  gridX: number;
+  gridY: number;
+}
+
+export interface WorldStorageSite {
+  id: string;
+  gridX: number;
+  gridY: number;
+  totalUnits?: number;
+  inventory?: CivilizationItem[];
+}
+
+export interface WorldDiscovery {
+  factId: string;
+  technique: string;
+  discovererId: string;
+  discovererName: string;
+  minute: number;
+  recipientCount?: number;
+  livingKnowerCount?: number;
+}
+
 export interface WorldPresentationSnapshot {
   available?: boolean;
   minute?: number;
+  resources?: WorldResourceNode[];
+  storages?: WorldStorageSite[];
+  discoveries?: WorldDiscovery[];
   facilities?: WorldFacility[];
   sanitationSites?: WorldSanitationSite[];
   residues?: WorldResidue[];
