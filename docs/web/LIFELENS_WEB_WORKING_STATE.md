@@ -31,22 +31,28 @@ Completed in GitHub development source:
 - World query, observer tracking, and stable terrain retention moved to `runtime/world-session.ts`.
 - Camera gestures moved to `input/camera-input.ts`.
 - React readouts now subscribe to `observer-store.ts` via `useSyncExternalStore`.
+- WorldSeed/new-world/time/chunk navigation controls now use typed React actions instead of DOM click bindings.
 - Legacy Canvas2D drawing moved out of `observer-engine.ts` into `render/legacy-canvas-world-renderer.ts`.
 - Shared projection and terrain presentation math are isolated.
-- A non-production-connected unified Three.js foundation now exists: WorldScene, WorldRenderer, WaterLayer, and VegetationLayer.
-- `observer-engine.ts` has been reduced to an orchestration layer of roughly 200 lines instead of holding all Core/query/input/render/readout behavior.
+- A development-only unified Three.js mode is now wired through `WorldRenderer` and can be selected locally without changing the default Legacy mode.
+- Three World terrain uses shared corner heights across adjacent chunks rather than one flat elevation plane per chunk.
+- Water geometry now builds connected river/stream arms from neighboring water topology instead of treating every flowing-water chunk as a full square.
+- Vegetation uses an instanced tree layer.
+- Terrain and water builders reuse one indexed terrain window per refresh instead of rebuilding a full lookup map for every chunk.
+- A future Core Web Worker command/event protocol is defined.
+- `observer-engine.ts` has been reduced to a small orchestration layer rather than holding Core/query/input/render/readout behavior.
 
 Deployment still requires an explicit user request.
 
 ## Transitional technical debt
 
-Canvas2D terrain and Three.js residents still use separate render pipelines.  
-World controls still use temporary DOM lookup/click binding instead of React actions.  
+The production-compatible Legacy path still uses Canvas2D terrain plus a separate Three.js CharacterLayer.  
 LifeLensCore execution still shares the browser main thread.  
-The unified Three.js WorldScene exists but is not yet connected to the visible viewport.  
-Residents still render in the legacy transparent CharacterLayer rather than as actors inside WorldScene.  
+Three World is connected only as a development render mode and is not the default path.  
+Residents are intentionally hidden in Three World until the real resident actor/model pipeline moves into WorldScene, avoiding misleading low-quality placeholder humans.  
 Resident model/animation assets remain remote runtime dependencies.  
-Labels remain part of the legacy Canvas renderer.
+Name labels remain part of the Legacy Canvas renderer.  
+Three World water/vegetation materials are still first-pass presentation and need LOD/material/shoreline refinement.
 
 ## Validation state
 
@@ -56,14 +62,14 @@ A real TypeScript dependency install/typecheck has not yet run in this session b
 
 ## Next parallel work order
 
-1. Convert WorldSeed/new-world/time/chunk controls to React actions and remove remaining control DOM queries from `observer-engine.ts`.
-2. Connect the new WorldRenderer behind a development-only render-mode boundary without replacing the legacy renderer yet.
-3. Improve WorldScene terrain geometry from one flat chunk plane to continuous corner-height geometry.
-4. Improve WaterLayer topology for rivers/streams/lakes instead of one water plane per wet chunk.
-5. Move resident actor/model logic toward a WorldScene ResidentLayer.
-6. Define Worker snapshot protocol and move Core stepping/query work off the main thread.
-7. Add development diagnostics UI/frame/query counters.
-8. Resume environment density, human motion, day/night/weather, structures/tools, and society/life presentation.
+1. Move the real resident actor/model pipeline into a WorldScene ResidentLayer without introducing placeholder production humans.
+2. Add terrain mesh pooling/dirty-chunk updates so unchanged geometry is not recreated every snapshot.
+3. Refine river continuity, lake shoreline shapes, coast/ocean transitions, and water materials.
+4. Add atmosphere/day-night lighting and weather hooks to Three World.
+5. Implement the defined Worker protocol and move Core stepping/query work off the main thread.
+6. Add snapshot sequence rejection so stale responses can never overwrite newer state.
+7. Add structures/tools/traces layers and resident-object interaction anchors.
+8. Continue human animation/behavior presentation and society/life observation UI.
 
 ## Deployment gate
 
