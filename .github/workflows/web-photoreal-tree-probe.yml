@@ -26,14 +26,12 @@ jobs:
           python Tools/acquire_photoreal_environment_assets.py \
             --resolution 1k \
             --inspect-gltf \
-            --asset fir_sapling \
             --asset pine_sapling_small
 
       - name: Prepare Web tree candidate pack
         run: |
           python Tools/prepare_web_photoreal_assets.py \
             --clean \
-            --asset fir_sapling \
             --asset pine_sapling_small
           python - <<'PY'
           import json
