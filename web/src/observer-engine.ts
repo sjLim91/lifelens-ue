@@ -5,32 +5,18 @@ import { SimulationClock } from './runtime/simulation-clock';
 import type { Resident, TerrainWindow } from './runtime/core-types';
 import { ResidentContinuity } from './runtime/resident-continuity';
 import { WorldSession } from './runtime/world-session';
+import { observerActions } from './state/observer-actions';
 import { observerStore } from './state/observer-store';
 import { CameraInput } from './input/camera-input';
 
 import { LegacyCanvasWorldRenderer } from './render/legacy-canvas-world-renderer';
 
-const $ = <T extends Element>(selector: string): T => {
-  const node = document.querySelector<T>(selector);
-  if (!node) throw new Error(`Missing UI element: ${selector}`);
-  return node;
-};
-
-const canvas = $<HTMLCanvasElement>('#worldCanvas');
-const characterCanvas = $<HTMLCanvasElement>('#characterCanvas');
+const canvas = document.querySelector<HTMLCanvasElement>('#worldCanvas');
+const characterCanvas = document.querySelector<HTMLCanvasElement>('#characterCanvas');
+if (!canvas || !characterCanvas) {
+  throw new Error('LifeLens observer canvases are missing');
+}
 const characterLayer = new CharacterLayer(characterCanvas, () => drawWorld());
-
-const ui = {
-  seed: $<HTMLInputElement>('#seedInput'),
-  seedError: $<HTMLElement>('#seedError'),
-  newWorld: $<HTMLButtonElement>('#newWorld'),
-  step10: $<HTMLButtonElement>('#step10'),
-  step60: $<HTMLButtonElement>('#step60'),
-  left: $<HTMLButtonElement>('#left'),
-  right: $<HTMLButtonElement>('#right'),
-  up: $<HTMLButtonElement>('#up'),
-  down: $<HTMLButtonElement>('#down'),
-};
 
 let worldSession: WorldSession | null = null;
 let centerX = 0;
@@ -57,12 +43,6 @@ new CameraInput(canvas, {
     drawWorld();
   },
 });
-
-function controls(enabled: boolean): void {
-  [ui.step10, ui.step60, ui.left, ui.right, ui.up, ui.down].forEach((button) => {
-    button.disabled = !enabled;
-  });
-}
 
 function resizeCanvas(): void {
   const rect = canvas.getBoundingClientRect();
@@ -115,14 +95,8 @@ function refresh(): void {
   drawWorld();
 }
 
-function createWorld(): void {
+function createWorld(seed: string): void {
   if (!worldSession) return;
-  const seed = ui.seed.value.trim();
-  if (!seed) {
-    ui.seedError.classList.remove('hidden');
-    return;
-  }
-  ui.seedError.classList.add('hidden');
   worldSession.createWorld(seed);
   centerX = 0;
   centerY = 0;
@@ -137,6 +111,11 @@ function createWorld(): void {
 
 function move(dx: number, dy: number): void {
   worldSession?.moveObserver(dx, dy);
+  refresh();
+}
+
+function stepMinutes(minutes: number): void {
+  worldSession?.runMinutes(minutes);
   refresh();
 }
 
@@ -164,38 +143,27 @@ function startSimulationClock(): void {
   simulationClock.start();
 }
 
-ui.newWorld.addEventListener('click', createWorld);
-ui.step10.addEventListener('click', () => {
-  worldSession?.runMinutes(10);
-  refresh();
+observerActions.bind({
+  createWorld,
+  stepMinutes,
+  moveObserver: move,
 });
-ui.step60.addEventListener('click', () => {
-  worldSession?.runMinutes(60);
-  refresh();
-});
-ui.left.addEventListener('click', () => move(-1, 0));
-ui.right.addEventListener('click', () => move(1, 0));
-ui.up.addEventListener('click', () => move(0, 1));
-ui.down.addEventListener('click', () => move(0, -1));
 
 new ResizeObserver(resizeCanvas).observe(canvas);
 
 async function boot(): Promise<void> {
-  controls(false);
   observerStore.setRuntime('loading');
 
   try {
     const core = await LifeLensCoreBridge.connect();
     worldSession = new WorldSession(core, residentContinuity);
-    controls(true);
     observerStore.setRuntime('ready');
-    createWorld();
+    createWorld('42');
     startSimulationClock();
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error('LifeLensCore boot failed', error);
     observerStore.setRuntime('error', message);
-    controls(false);
     drawWorld();
   }
 }
