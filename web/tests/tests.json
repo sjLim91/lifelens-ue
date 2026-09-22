@@ -51,7 +51,7 @@
       "memory and belief projection",
       "tap versus camera gesture arbitration",
       "free camera pan across chunk boundaries",
-      "resident-area recenter control",
+      "current resident group recenter control",
       "single-finger pan and two-finger rotate gesture contract",
       "world overview"
     ],
@@ -73,7 +73,7 @@
       "Drag with one finger and verify the observer moves freely across the terrain instead of rotating in place",
       "Continue dragging across a chunk boundary and verify the authoritative terrain/weather query center moves with the camera",
       "Use a two-finger horizontal gesture to rotate the viewpoint and pinch to zoom",
-      "Tap 주민 생활권으로 돌아가기 and verify the observer returns to the resident group"
+      "Tap 현재 주민 위치로 돌아가기 and verify the observer returns to the resident group"
     ],
     "expected": "The status must leave Core loading… within the runtime timeout window; a missing optional weather binding must not fail LifeLensCore startup; if same-origin runtime delivery stalls, GitHub raw fallback is attempted, and the status shows Core WASM LIVE before WorldSeed 12345 is created, Living is 4, all four resident cards and 3D residents remain continuously visible without one-refresh disappearance/reappearance, the founder cards expose authoritative Core sex values and the terrain shows visually distinct male and female 3D residents with different skinned body geometry, garment silhouettes, deterministic clothing, proportions, and head-locked hair while remaining map-scale and clustered near their authoritative Core positions with readable labels. Resident body size and separation change with the same world zoom as the terrain while labels remain readable but visually subordinate, mobile opens focused on the inhabited local area instead of a tiny full-window diorama, wide-zoom forests merge into canopy masses instead of dot noise, open water does not expose a debug tile grid, mature trees read several times taller than a resident at comparable depth rather than as miniature props, a short tap on a Three World resident ray-picks that resident by GUID, shows a subtle focus ring and opens focused-life details backed by authoritative Core emotion, needs, personality/traits, directional relationships, family, memories, and beliefs without confusing camera drags for taps, movement between authoritative Core positions is visually smoothed, movement uses walking animation, supported Core activities select contextual idle/talking/sitting/interact motions, resident animation phases are visibly desynchronized, and compact fallback markers appear only while the 3D asset is still loading or if it fails. Resident labels avoid actor/label overlap while staying close to their resident; displaced labels use a subtle leader line instead of floating ambiguously."
   },
