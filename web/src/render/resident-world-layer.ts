@@ -288,6 +288,8 @@ export class ResidentWorldLayer {
             maxDistance,
           );
         }
+      } else {
+        this.faceInteractionTarget(actor);
       }
 
       actor.root.position.copy(actor.current);
@@ -461,6 +463,66 @@ export class ResidentWorldLayer {
     this.actors.set(resident.id, actor);
     this.group.add(root);
     return actor;
+  }
+
+  private faceInteractionTarget(actor: ResidentActor): void {
+    const presentation = actor.presentation;
+    if (
+      !presentation?.active
+      || presentation.phase !== 'Interacting'
+    ) {
+      return;
+    }
+
+    let targetX: number | null = null;
+    let targetZ: number | null = null;
+    const targetResidentId = presentation.targetResidentId ?? '';
+    const targetActor = targetResidentId
+      ? this.actors.get(targetResidentId)
+      : undefined;
+
+    if (targetActor?.root.visible && targetActor.initialized) {
+      targetX = targetActor.current.x;
+      targetZ = targetActor.current.z;
+    } else if (
+      presentation.hasTargetGrid
+      && typeof presentation.targetGridX === 'number'
+      && typeof presentation.targetGridY === 'number'
+    ) {
+      const gridCellsPerChunk = WORLD_GRID_CONTRACT.gridCellsPerChunk;
+      const chunkWorldSize = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
+      const chunkX = Math.floor(
+        presentation.targetGridX / gridCellsPerChunk,
+      );
+      const chunkY = Math.floor(
+        presentation.targetGridY / gridCellsPerChunk,
+      );
+      const localX = (
+        presentation.targetGridX - (chunkX * gridCellsPerChunk)
+      ) / gridCellsPerChunk;
+      const localY = (
+        presentation.targetGridY - (chunkY * gridCellsPerChunk)
+      ) / gridCellsPerChunk;
+      targetX = (
+        chunkX - this.pendingCenterX + localX - 0.5
+      ) * chunkWorldSize;
+      targetZ = (
+        chunkY - this.pendingCenterY + localY - 0.5
+      ) * chunkWorldSize;
+    }
+
+    if (targetX === null || targetZ === null) return;
+
+    const dx = targetX - actor.current.x;
+    const dz = targetZ - actor.current.z;
+    if (
+      (dx * dx) + (dz * dz)
+      <= RESIDENT_PRESENTATION_CONTRACT.movementEpsilonWorldUnits ** 2
+    ) {
+      return;
+    }
+
+    actor.root.rotation.y = Math.atan2(dx, dz);
   }
 
   private actionFor(
