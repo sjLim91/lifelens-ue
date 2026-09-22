@@ -21,3 +21,7 @@ The current Canvas2D terrain + Three.js resident overlay is transitional. The ta
 See:
 - ../docs/web/LIFELENS_WEB_MASTER_SPEC.md
 - ../docs/web/LIFELENS_WEB_WORKING_STATE.md
+
+## Current implementation map
+
+See [LIFELENS_WEB_IMPLEMENTATION_MAP.md](../docs/web/LIFELENS_WEB_IMPLEMENTATION_MAP.md) for the module-by-module development state and migration boundary.
