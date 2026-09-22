@@ -1,4 +1,4 @@
-import { CharacterLayer, type ResidentPlacement } from './character-layer';
+import { CharacterLayer } from './character-layer';
 import { LifeLensCoreBridge } from './runtime/core-bridge';
 import { runtimeDiagnostics } from './runtime/runtime-diagnostics';
 import { SimulationClock } from './runtime/simulation-clock';
@@ -47,7 +47,7 @@ let followResidents = true;
 let simulationClock: SimulationClock | null = null;
 let angle = -0.68;
 let zoom = 1;
-const cameraInput = new CameraInput(canvas, {
+new CameraInput(canvas, {
   initialAngle: angle,
   initialZoom: zoom,
   onChange(next) {
