@@ -12,7 +12,8 @@ import { createTerrainElevationSampler } from './terrain-geometry';
 type PhotorealAssetId =
   | 'boulder_01'
   | 'shrub_03'
-  | 'tree_stump_01';
+  | 'tree_stump_01'
+  | 'pine_sapling_small';
 
 interface WebNatureManifest {
   assets?: Record<string, {
@@ -36,12 +37,14 @@ const INSTANCE_CAPS: Record<PhotorealAssetId, number> = {
   boulder_01: 16,
   shrub_03: 36,
   tree_stump_01: 24,
+  pine_sapling_small: 28,
 };
 
 const TRIANGLE_BUDGETS: Record<PhotorealAssetId, number> = {
   boulder_01: 320_000,
   shrub_03: 240_000,
   tree_stump_01: 220_000,
+  pine_sapling_small: 420_000,
 };
 
 function clamp01(value: unknown): number {
@@ -192,6 +195,7 @@ export class PhotorealNatureLayer {
         'boulder_01',
         'shrub_03',
         'tree_stump_01',
+        'pine_sapling_small',
       ];
       for (const id of ids) {
         const model = manifest.assets?.[id]?.models?.[0];
@@ -339,6 +343,14 @@ export class PhotorealNatureLayer {
       chunks,
       wood,
     ].join('#');
+  }
+
+  isTreeReplacementActive(): boolean {
+    return (
+      this.loaded
+      && this.zoom >= 1.02
+      && (this.entries.get('pine_sapling_small')?.mesh.count ?? 0) > 0
+    );
   }
 
   private rebuildIfNeeded(force = false): void {
@@ -502,9 +514,11 @@ export class PhotorealNatureLayer {
     const boulder = this.entries.get('boulder_01');
     const shrub = this.entries.get('shrub_03');
     const stump = this.entries.get('tree_stump_01');
+    const pine = this.entries.get('pine_sapling_small');
     let boulderCount = 0;
     let shrubCount = 0;
     let stumpCount = 0;
+    let pineCount = 0;
 
     const place = (
       entry: PhotorealEntry,
@@ -583,6 +597,44 @@ export class PhotorealNatureLayer {
             (hash01(seed, chunk.x, chunk.y, 407) - 0.5) * 0.22,
           );
           boulderCount += 1;
+        }
+      }
+
+      if (
+        pine
+        && pineCount < pine.maxInstances
+        && clamp01(chunk.forestCoverage01) >= 0.24
+      ) {
+        const roll = hash01(seed, chunk.x, chunk.y, 451);
+        const threshold = clamp01(
+          Number(chunk.forestCoverage01) * 0.74,
+        );
+        if (roll < threshold) {
+          const localX = 0.12 + hash01(seed, chunk.x, chunk.y, 452) * 0.76;
+          const localY = 0.12 + hash01(seed, chunk.x, chunk.y, 453) * 0.76;
+          const x = centerX + (localX - 0.5) * size;
+          const z = centerZ + (localY - 0.5) * size;
+          if (
+            !pointIsWater(chunk, localX, localY)
+            && clearOfFacilities(x, z, 0.72)
+          ) {
+            const y = sampleElevation(
+              chunk.x,
+              chunk.y,
+              localX,
+              localY,
+            ) * elevationScale;
+            place(
+              pine,
+              pineCount,
+              x,
+              y,
+              z,
+              5.1 + hash01(seed, chunk.x, chunk.y, 454) * 2.6,
+              hash01(seed, chunk.x, chunk.y, 455) * Math.PI * 2,
+            );
+            pineCount += 1;
+          }
         }
       }
 
@@ -705,6 +757,13 @@ export class PhotorealNatureLayer {
       stump.mesh.instanceMatrix.needsUpdate = true;
       if (stumpCount > 0) {
         stump.mesh.computeBoundingSphere();
+      }
+    }
+    if (pine) {
+      pine.mesh.count = pineCount;
+      pine.mesh.instanceMatrix.needsUpdate = true;
+      if (pineCount > 0) {
+        pine.mesh.computeBoundingSphere();
       }
     }
   }

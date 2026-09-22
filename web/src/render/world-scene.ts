@@ -100,6 +100,9 @@ export class WorldScene {
     this.groundDetailLayer.setCameraZoom(this.desiredCameraState.zoom);
     this.photorealNatureLayer.setCameraZoom(this.desiredCameraState.zoom);
     this.vegetationLayer.setCameraZoom(this.desiredCameraState.zoom);
+    this.vegetationLayer.setPhotorealTreeReplacementActive(
+      this.photorealNatureLayer.isTreeReplacementActive(),
+    );
     this.residentLayer.setCameraZoom(this.desiredCameraState.zoom);
 
     if (!this.cameraInitialized) {
@@ -185,6 +188,9 @@ export class WorldScene {
     this.groundDetailLayer.setCameraZoom(current.zoom);
     this.photorealNatureLayer.setCameraZoom(current.zoom);
     this.vegetationLayer.setCameraZoom(current.zoom);
+    this.vegetationLayer.setPhotorealTreeReplacementActive(
+      this.photorealNatureLayer.isTreeReplacementActive(),
+    );
     this.residentLayer.setCameraZoom(current.zoom);
     current.panX = (Number(current.panX) || 0)
       + ((Number(desired.panX) || 0) - (Number(current.panX) || 0)) * t;

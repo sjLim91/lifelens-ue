@@ -18,14 +18,25 @@ from pathlib import Path
 import shutil
 from typing import Any
 
-WEB_BASELINE_ASSETS = {
+WEB_ASSET_BUDGETS = {
     "boulder_01": 10,
     "tree_stump_01": 12,
     "shrub_02": 8,
     "shrub_03": 8,
     "weed_plant_02": 8,
     "dead_tree_trunk": 14,
+    "tree_small_02": 18,
+    "fir_sapling": 18,
+    "pine_sapling_small": 24,
 }
+WEB_BASELINE_ASSETS = (
+    "boulder_01",
+    "tree_stump_01",
+    "shrub_02",
+    "shrub_03",
+    "weed_plant_02",
+    "dead_tree_trunk",
+)
 ALLOWED_EXTENSIONS = {
     ".gltf",
     ".glb",
@@ -65,7 +76,7 @@ def main() -> int:
     parser.add_argument(
         "--asset",
         action="append",
-        choices=sorted(WEB_BASELINE_ASSETS),
+        choices=sorted(WEB_ASSET_BUDGETS),
         help="optional subset; defaults to the compact Web baseline",
     )
     parser.add_argument(
@@ -148,7 +159,7 @@ def main() -> int:
         if not has_model:
             raise RuntimeError(f"{asset_id}: no glTF/GLB model selected for Web")
 
-        budget_mib = WEB_BASELINE_ASSETS[asset_id]
+        budget_mib = WEB_ASSET_BUDGETS[asset_id]
         if asset_bytes > budget_mib * 1024 * 1024:
             raise RuntimeError(
                 f"{asset_id}: Web payload {mib(asset_bytes):.1f} MiB exceeds "

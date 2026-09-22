@@ -63,12 +63,14 @@ jobs:
             --resolution 1k \
             --asset boulder_01 \
             --asset shrub_03 \
-            --asset tree_stump_01
+            --asset tree_stump_01 \
+            --asset pine_sapling_small
           python Tools/prepare_web_photoreal_assets.py \
             --clean \
             --asset boulder_01 \
             --asset shrub_03 \
-            --asset tree_stump_01
+            --asset tree_stump_01 \
+            --asset pine_sapling_small
           test -s web/public/vendor/lifelens-nature/manifest.json
 
       - name: Install dependencies

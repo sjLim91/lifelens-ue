@@ -136,6 +136,7 @@ export class VegetationLayer {
   private windTime = 0;
   private windIntensity = 0;
   private cameraZoom = 1.25;
+  private photorealTreeReplacementActive = false;
 
   constructor() {
     this.enableWind(this.lowerCrownMaterial, 0.16);
@@ -166,12 +167,21 @@ export class VegetationLayer {
     this.applyLod();
   }
 
+  setPhotorealTreeReplacementActive(active: boolean): void {
+    this.photorealTreeReplacementActive = Boolean(active);
+    this.applyLod();
+  }
+
   private applyLod(): void {
     const zoom = this.cameraZoom;
-    this.trunks.visible = zoom >= 0.5;
-    this.lowerCrowns.visible = zoom >= 0.5;
-    this.middleCrowns.visible = zoom >= 0.5;
-    this.upperCrowns.visible = zoom >= 0.5;
+    const showProceduralTrees = (
+      zoom >= 0.5
+      && !(this.photorealTreeReplacementActive && zoom >= 1.02)
+    );
+    this.trunks.visible = showProceduralTrees;
+    this.lowerCrowns.visible = showProceduralTrees;
+    this.middleCrowns.visible = showProceduralTrees;
+    this.upperCrowns.visible = showProceduralTrees;
     this.shrubs.visible = zoom >= 0.82;
     this.rocks.visible = zoom >= 0.72;
     this.stumps.visible = zoom >= 0.92;
