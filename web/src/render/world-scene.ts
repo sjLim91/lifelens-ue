@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type {
+  DynamicEnvironment,
   Resident,
   TerrainChunk,
   TerrainWindow,
@@ -9,6 +10,7 @@ import { ResidentWorldLayer } from './resident-world-layer';
 import { createTerrainGeometryBuilder } from './terrain-geometry';
 import { VegetationLayer } from './vegetation-layer';
 import { WaterLayer } from './water-layer';
+import { WeatherLayer } from './weather-layer';
 
 export interface WorldSceneCameraState {
   centerChunkX: number;
@@ -32,6 +34,7 @@ export class WorldScene {
   private readonly waterLayer = new WaterLayer();
   private readonly vegetationLayer = new VegetationLayer();
   private readonly residentLayer = new ResidentWorldLayer();
+  private readonly weatherLayer = new WeatherLayer();
   private readonly raycaster = new THREE.Raycaster();
   private readonly pointer = new THREE.Vector2();
   private readonly atmosphere: AtmosphereLayer;
@@ -41,6 +44,7 @@ export class WorldScene {
     this.scene.add(this.waterLayer.group);
     this.scene.add(this.vegetationLayer.group);
     this.scene.add(this.residentLayer.group);
+    this.scene.add(this.weatherLayer.group);
     this.atmosphere = new AtmosphereLayer(this.scene);
 
     this.camera.position.set(0, 160, 180);
@@ -63,6 +67,11 @@ export class WorldScene {
 
   setSimulationMinute(minute: number): void {
     this.atmosphere.setSimulationMinute(minute);
+  }
+
+  setEnvironment(environment: DynamicEnvironment | null): void {
+    this.atmosphere.setEnvironment(environment);
+    this.weatherLayer.setEnvironment(environment);
   }
 
   pickResident(normalizedX: number, normalizedY: number): string | null {
@@ -91,6 +100,7 @@ export class WorldScene {
 
   update(deltaSeconds: number): void {
     this.residentLayer.update(deltaSeconds);
+    this.weatherLayer.update(deltaSeconds);
   }
 
   setTerrain(window: TerrainWindow): void {
@@ -162,6 +172,7 @@ export class WorldScene {
     this.waterLayer.dispose();
     this.vegetationLayer.dispose();
     this.residentLayer.dispose();
+    this.weatherLayer.dispose();
     this.atmosphere.dispose();
   }
 
