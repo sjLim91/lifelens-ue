@@ -688,14 +688,23 @@ export class PhotorealNatureLayer {
     if (boulder) {
       boulder.mesh.count = boulderCount;
       boulder.mesh.instanceMatrix.needsUpdate = true;
+      if (boulderCount > 0) {
+        boulder.mesh.computeBoundingSphere();
+      }
     }
     if (shrub) {
       shrub.mesh.count = shrubCount;
       shrub.mesh.instanceMatrix.needsUpdate = true;
+      if (shrubCount > 0) {
+        shrub.mesh.computeBoundingSphere();
+      }
     }
     if (stump) {
       stump.mesh.count = stumpCount;
       stump.mesh.instanceMatrix.needsUpdate = true;
+      if (stumpCount > 0) {
+        stump.mesh.computeBoundingSphere();
+      }
     }
   }
 }
