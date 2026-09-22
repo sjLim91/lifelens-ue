@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "Birth.h"
+#include "ContextAction.h"
 #include "DecisionExecution.h"
 #include "ObserverReadModelV2.h"
 #include "Planner.h"
@@ -14,7 +15,7 @@
 
 namespace lifelens {
 
-constexpr std::uint32_t SimulationSnapshotVersion=2;
+constexpr std::uint32_t SimulationSnapshotVersion=3;
 
 struct SimulationRuntimeSnapshot {
     Goal goal=Goal::Idle;
@@ -30,6 +31,7 @@ struct SimulationRuntimeSnapshot {
     bool socialActive=false;
     SocialIntent socialIntent=SocialIntent::None;
     CharacterId socialTarget=0;
+    PendingContextAction pendingContext{};
 };
 
 struct SimulationStateSnapshot {
