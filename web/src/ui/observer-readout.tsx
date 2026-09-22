@@ -1,7 +1,6 @@
 import type { Resident } from '../runtime/core-types';
 import type { ObserverSnapshot } from '../state/observer-store';
 import {
-  formatActivity,
   formatBiome,
   formatDay,
   formatBeliefText,
