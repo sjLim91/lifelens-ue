@@ -20,6 +20,8 @@ int main()
     assert(overview.find("\"worldSeed\":\"1234567890123456789\"")
         != std::string::npos);
     assert(overview.find("\"totalResidents\":4") != std::string::npos);
+    assert(overview.find("\"majorLifeEvents\":") != std::string::npos);
+    assert(overview.find("\"majorLifeEventItems\":[") != std::string::npos);
 
     const std::string residents = bridge.residentsJson();
     assert(residents.find("\"residents\":[") != std::string::npos);
