@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { observerActions } from './state/observer-actions';
 import { useObserverSnapshot } from './state/use-observer-snapshot';
 import {
   ObserverMetrics,
@@ -6,6 +7,7 @@ import {
   RuntimeBadge,
   WorldOverlay,
 } from './ui/observer-readout';
+import { DiagnosticsPanel } from './ui/diagnostics-panel';
 
 function Topbar() {
   const snapshot = useObserverSnapshot();
@@ -44,6 +46,20 @@ function WorldViewport() {
 
 function ObserverPanel() {
   const snapshot = useObserverSnapshot();
+  const [seed, setSeed] = useState('42');
+  const [seedError, setSeedError] = useState(false);
+  const controlsDisabled = snapshot.runtime.status !== 'ready';
+
+  const createWorld = (): void => {
+    const trimmed = seed.trim();
+    if (!trimmed) {
+      setSeedError(true);
+      return;
+    }
+
+    setSeedError(false);
+    observerActions.createWorld(trimmed);
+  };
 
   return (
     <aside className="observer">
@@ -52,19 +68,37 @@ function ObserverPanel() {
         <label className="field">
           WorldSeed
           <input
-            id="seedInput"
             inputMode="numeric"
-            defaultValue="42"
+            value={seed}
             autoComplete="off"
+            onChange={(event) => {
+              setSeed(event.target.value);
+              if (seedError) setSeedError(false);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') createWorld();
+            }}
           />
         </label>
-        <p id="seedError" className="field-error hidden">
+        <p className={`field-error ${seedError ? '' : 'hidden'}`}>
           WorldSeed를 입력해 주세요.
         </p>
         <div className="button-row">
-          <button id="newWorld">NEW WORLD</button>
-          <button id="step10" disabled>+10 MIN</button>
-          <button id="step60" disabled>+1 HOUR</button>
+          <button onClick={createWorld} disabled={controlsDisabled}>
+            NEW WORLD
+          </button>
+          <button
+            onClick={() => observerActions.stepMinutes(10)}
+            disabled={controlsDisabled}
+          >
+            +10 MIN
+          </button>
+          <button
+            onClick={() => observerActions.stepMinutes(60)}
+            disabled={controlsDisabled}
+          >
+            +1 HOUR
+          </button>
         </div>
       </section>
 
@@ -80,10 +114,30 @@ function ObserverPanel() {
       <section className="panel">
         <h2>World truth</h2>
         <div className="chunk-controls">
-          <button id="left" disabled>←</button>
-          <button id="up" disabled>↑</button>
-          <button id="down" disabled>↓</button>
-          <button id="right" disabled>→</button>
+          <button
+            onClick={() => observerActions.moveObserver(-1, 0)}
+            disabled={controlsDisabled}
+          >
+            ←
+          </button>
+          <button
+            onClick={() => observerActions.moveObserver(0, 1)}
+            disabled={controlsDisabled}
+          >
+            ↑
+          </button>
+          <button
+            onClick={() => observerActions.moveObserver(0, -1)}
+            disabled={controlsDisabled}
+          >
+            ↓
+          </button>
+          <button
+            onClick={() => observerActions.moveObserver(1, 0)}
+            disabled={controlsDisabled}
+          >
+            →
+          </button>
         </div>
         <p className="hint">
           드래그: 시점 회전 · 휠/핀치: 확대/축소 · 화살표: 관찰 Chunk 이동
@@ -98,6 +152,8 @@ function ObserverPanel() {
         <div><span>Characters</span><b>Quaternius CC0 / Three.js</b></div>
         <div><span>Fallback</span><b>Fake world 없음</b></div>
       </section>
+
+      <DiagnosticsPanel />
     </aside>
   );
 }
