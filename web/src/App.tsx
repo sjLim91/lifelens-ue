@@ -124,19 +124,32 @@ function ObserverPanel({
           <button onClick={createWorld} disabled={controlsDisabled}>
             NEW WORLD
           </button>
-          <button
-            onClick={() => observerActions.stepMinutes(10)}
-            disabled={controlsDisabled}
-          >
-            +10 MIN
-          </button>
-          <button
-            onClick={() => observerActions.stepMinutes(60)}
-            disabled={controlsDisabled}
-          >
-            +1 HOUR
-          </button>
         </div>
+
+        <div className="time-speed-control" aria-label="시뮬레이션 관찰 속도">
+          {[
+            { speed: 0, label: '⏸', title: 'Pause' },
+            { speed: 1, label: '1×', title: 'Observe' },
+            { speed: 4, label: '4×', title: 'Fast' },
+            { speed: 16, label: '16×', title: 'Faster' },
+            { speed: 64, label: '64×', title: 'Rapid' },
+          ].map((preset) => (
+            <button
+              key={preset.speed}
+              type="button"
+              title={preset.title}
+              className={snapshot.simulationSpeed === preset.speed ? 'active' : ''}
+              onClick={() => observerActions.setSimulationSpeed(preset.speed)}
+              disabled={controlsDisabled}
+              aria-pressed={snapshot.simulationSpeed === preset.speed}
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
+        <p className="hint">
+          1× = 현실 8분에 LifeLens 1일 · 시간 점프 없이 관찰 배속만 조절
+        </p>
       </section>
 
       <section className="panel">
