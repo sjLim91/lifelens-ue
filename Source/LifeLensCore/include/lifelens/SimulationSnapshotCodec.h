@@ -10,7 +10,7 @@ namespace lifelens {
 
 // Pre-release project: only the current on-disk format is supported.
 // There are no shipped user saves to migrate.
-constexpr std::uint32_t SimulationSnapshotBinaryFormatVersion=7;
+constexpr std::uint32_t SimulationSnapshotBinaryFormatVersion=8;
 
 bool encodeSimulationSnapshot(
     const SimulationStateSnapshot& snapshot,
