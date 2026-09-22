@@ -465,6 +465,30 @@ export function SelectedResidentReadout({
           <span>자녀 <b>{family?.children?.length ?? 0}</b></span>
           {family?.expectingChild ? <span className="life-event-chip">임신 진행 중</span> : null}
         </div>
+        {(family?.parents?.length ?? 0) > 0 ? (
+          <div className="family-line">
+            <span>부모</span>
+            <b>{family?.parents?.map((member) => member.name).filter(Boolean).join(', ')}</b>
+          </div>
+        ) : null}
+        {(family?.siblings?.length ?? 0) > 0 ? (
+          <div className="family-line">
+            <span>형제자매</span>
+            <b>{family?.siblings?.map((member) => member.name).filter(Boolean).join(', ')}</b>
+          </div>
+        ) : null}
+        {(family?.children?.length ?? 0) > 0 ? (
+          <div className="family-line">
+            <span>자녀</span>
+            <b>{family?.children?.map((member) => member.name).filter(Boolean).join(', ')}</b>
+          </div>
+        ) : null}
+        {family?.expectingChild && family.pregnancyPartnerName ? (
+          <div className="family-line">
+            <span>임신 관련</span>
+            <b>{family.pregnancyPartnerName}</b>
+          </div>
+        ) : null}
       </div>
 
       <div className="focused-life-section">
