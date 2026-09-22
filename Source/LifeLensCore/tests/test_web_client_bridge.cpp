@@ -39,6 +39,15 @@ int main()
     assert(residents.find("\"activityTargetName\":") != std::string::npos);
     assert(residents.find("\"hasPosition\":true") != std::string::npos);
 
+    const std::string environment = bridge.dynamicEnvironmentJson(0, 0);
+    assert(environment.find("\"available\":true") != std::string::npos);
+    assert(environment.find("\"airTemperatureC\":") != std::string::npos);
+    assert(environment.find("\"precipitationIntensity01\":") != std::string::npos);
+    assert(environment.find("\"cloudCover01\":") != std::string::npos);
+    assert(environment.find("\"windIntensity01\":") != std::string::npos);
+    assert(environment.find("\"visibility01\":") != std::string::npos);
+    assert(environment.find("\"summary\":") != std::string::npos);
+
     const std::string terrain = bridge.terrainWindowJson(0, 0, 1);
     assert(terrain.find("\"available\":true") != std::string::npos);
     assert(terrain.find("\"radiusChunks\":1") != std::string::npos);
