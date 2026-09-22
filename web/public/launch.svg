@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="480" viewBox="0 0 720 480">
+  <rect width="720" height="480" fill="#08100b"/>
+  <text x="360" y="220" text-anchor="middle" fill="#edf4ed"
+        font-family="system-ui, sans-serif" font-size="34" font-weight="700">
+    LifeLens
+  </text>
+  <text x="360" y="270" text-anchor="middle" fill="#9fb4a4"
+        font-family="system-ui, sans-serif" font-size="20">
+    Opening latest web preview…
+  </text>
+  <script><![CDATA[
+    (async () => {
+      const target = new URL('./index.html', window.location.href).href;
+      const key = 'lifelens:githack-confirmed';
+
+      try {
+        if (!sessionStorage.getItem(key)) {
+          sessionStorage.setItem(key, '1');
+          await fetch(window.location.href, {
+            method: 'POST',
+            credentials: 'include',
+            redirect: 'follow',
+            cache: 'no-store'
+          });
+        }
+      } catch (error) {
+        console.warn('LifeLens preview confirmation bootstrap failed', error);
+      }
+
+      window.location.replace(target);
+    })();
+  ]]></script>
+</svg>
