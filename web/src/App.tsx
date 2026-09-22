@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
+import { startObserverEngine } from './observer-engine';
 import { observerActions } from './state/observer-actions';
+import { observerStore } from './state/observer-store';
 import { useObserverSnapshot } from './state/use-observer-snapshot';
 import {
   ObserverMetrics,
@@ -163,7 +165,13 @@ function ObserverPanel() {
 
 export default function App() {
   useEffect(() => {
-    void import('./observer-engine');
+    try {
+      startObserverEngine();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('LifeLens observer engine startup failed', error);
+      observerStore.setRuntime('error', message);
+    }
   }, []);
 
   return (
