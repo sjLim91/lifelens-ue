@@ -1,15 +1,15 @@
 {
-  "name": "html-static-app",
+  "name": "lifelens-web-observer",
   "private": true,
   "version": "0.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "typecheck": "tsc --noEmit",
     "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
-    "lucide": "^0.469.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "three": "^0.180.0"
