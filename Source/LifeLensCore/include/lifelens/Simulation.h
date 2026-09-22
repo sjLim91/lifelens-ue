@@ -204,6 +204,7 @@ private:
     std::vector<EventCallback> callbacks_;
     std::vector<std::string> logs_;
     std::vector<SocialCommunicationObservation> recentSocialEvents_;
+    std::uint64_t nextContextActionToken_=InitialContextActionToken;
     std::uint64_t nextSocialEventSequence_=1;
     static constexpr std::size_t MaxRecentSocialEvents=64;
     void emit(const std::string& message);
@@ -217,6 +218,9 @@ private:
                 recentSocialEvents_.begin()+static_cast<std::ptrdiff_t>(
                     recentSocialEvents_.size()-MaxRecentSocialEvents));
         }
+    }
+    std::uint64_t issueContextActionToken(){
+        return consumeContextActionToken(nextContextActionToken_);
     }
     void clearRecentSocialEvents(){
         recentSocialEvents_.clear();
