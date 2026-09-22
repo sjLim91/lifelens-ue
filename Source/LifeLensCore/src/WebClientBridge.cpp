@@ -144,14 +144,14 @@ std::string WebClientBridge::worldOverviewJson() const
 
 std::string WebClientBridge::residentsJson() const
 {
-    if (!simulation_) return "{\\\"available\\\":false,\\\"residents\\\":[]}";
+    if (!simulation_) return "{\"available\":false,\"residents\":[]}";
 
     const std::vector<ResidentObservation> residents =
         simulation_->observeAllResidents();
     const World& world = simulation_->world();
 
     std::ostringstream out;
-    out << "{\\\"available\\\":true,\\\"residents\\\":[";
+    out << "{\"available\":true,\"residents\":[";
     bool first = true;
     for (const ResidentObservation& resident : residents) {
         if (!first) out << ",";
@@ -220,117 +220,117 @@ std::string WebClientBridge::residentsJson() const
             : 0;
 
         out << "{";
-        out << "\\\"id\\\":\\\"" << resident.id << "\\\",";
-        out << "\\\"name\\\":\\\"" << escapeJson(resident.name) << "\\\",";
-        out << "\\\"sex\\\":\\\"" << sexName(resident.sex) << "\\\",";
-        out << "\\\"alive\\\":" << (character && character->alive ? "true" : "false") << ",";
-        out << "\\\"lifeStage\\\":\\\""
-            << (character ? lifeStageName(character->lifeStage) : "Unknown") << "\\\",";
-        out << "\\\"ageYears\\\":" << ageYears << ",";
+        out << "\"id\":\"" << resident.id << "\",";
+        out << "\"name\":\"" << escapeJson(resident.name) << "\",";
+        out << "\"sex\":\"" << sexName(resident.sex) << "\",";
+        out << "\"alive\":" << (character && character->alive ? "true" : "false") << ",";
+        out << "\"lifeStage\":\""
+            << (character ? lifeStageName(character->lifeStage) : "Unknown") << "\",";
+        out << "\"ageYears\":" << ageYears << ",";
 
-        out << "\\\"activityKind\\\":\\\""
-            << activityKindName(resident.activityKind) << "\\\",";
-        out << "\\\"activityLabel\\\":\\\""
-            << escapeJson(resident.activityLabel) << "\\\",";
-        out << "\\\"physicalGoal\\\":\\\""
-            << goalName(resident.physicalGoal) << "\\\",";
-        out << "\\\"socialIntent\\\":\\\""
-            << socialIntentName(resident.socialIntent) << "\\\",";
-        out << "\\\"activityTargetId\\\":\\\""
-            << resident.activityTargetId << "\\\",";
-        out << "\\\"activityTargetName\\\":\\\""
-            << escapeJson(resident.activityTargetName) << "\\\",";
+        out << "\"activityKind\":\""
+            << activityKindName(resident.activityKind) << "\",";
+        out << "\"activityLabel\":\""
+            << escapeJson(resident.activityLabel) << "\",";
+        out << "\"physicalGoal\":\""
+            << goalName(resident.physicalGoal) << "\",";
+        out << "\"socialIntent\":\""
+            << socialIntentName(resident.socialIntent) << "\",";
+        out << "\"activityTargetId\":\""
+            << resident.activityTargetId << "\",";
+        out << "\"activityTargetName\":\""
+            << escapeJson(resident.activityTargetName) << "\",";
 
-        out << "\\\"emotion\\\":{";
+        out << "\"emotion\":{";
         if (character) {
-            out << "\\\"joy\\\":"; appendDouble(out, character->emotion.joy); out << ",";
-            out << "\\\"sadness\\\":"; appendDouble(out, character->emotion.sadness); out << ",";
-            out << "\\\"anger\\\":"; appendDouble(out, character->emotion.anger); out << ",";
-            out << "\\\"fear\\\":"; appendDouble(out, character->emotion.fear); out << ",";
-            out << "\\\"embarrassment\\\":"; appendDouble(out, character->emotion.embarrassment); out << ",";
-            out << "\\\"pride\\\":"; appendDouble(out, character->emotion.pride); out << ",";
-            out << "\\\"jealousy\\\":"; appendDouble(out, character->emotion.jealousy); out << ",";
-            out << "\\\"affection\\\":"; appendDouble(out, character->emotion.affection); out << ",";
-            out << "\\\"anxiety\\\":"; appendDouble(out, character->emotion.anxiety); out << ",";
-            out << "\\\"relief\\\":"; appendDouble(out, character->emotion.relief); out << ",";
-            out << "\\\"grief\\\":"; appendDouble(out, character->emotion.grief); out << ",";
+            out << "\"joy\":"; appendDouble(out, character->emotion.joy); out << ",";
+            out << "\"sadness\":"; appendDouble(out, character->emotion.sadness); out << ",";
+            out << "\"anger\":"; appendDouble(out, character->emotion.anger); out << ",";
+            out << "\"fear\":"; appendDouble(out, character->emotion.fear); out << ",";
+            out << "\"embarrassment\":"; appendDouble(out, character->emotion.embarrassment); out << ",";
+            out << "\"pride\":"; appendDouble(out, character->emotion.pride); out << ",";
+            out << "\"jealousy\":"; appendDouble(out, character->emotion.jealousy); out << ",";
+            out << "\"affection\":"; appendDouble(out, character->emotion.affection); out << ",";
+            out << "\"anxiety\":"; appendDouble(out, character->emotion.anxiety); out << ",";
+            out << "\"relief\":"; appendDouble(out, character->emotion.relief); out << ",";
+            out << "\"grief\":"; appendDouble(out, character->emotion.grief); out << ",";
         }
-        out << "\\\"valence\\\":"; appendDouble(out, resident.emotionValence); out << ",";
-        out << "\\\"arousal\\\":"; appendDouble(out, resident.emotionArousal); out << ",";
-        out << "\\\"intensity\\\":"; appendDouble(out, resident.emotionIntensity);
+        out << "\"valence\":"; appendDouble(out, resident.emotionValence); out << ",";
+        out << "\"arousal\":"; appendDouble(out, resident.emotionArousal); out << ",";
+        out << "\"intensity\":"; appendDouble(out, resident.emotionIntensity);
         out << "},";
 
-        out << "\\\"needs\\\":{";
-        out << "\\\"hunger\\\":"; appendDouble(out, resident.needs.hunger); out << ",";
-        out << "\\\"thirst\\\":"; appendDouble(out, resident.needs.thirst); out << ",";
-        out << "\\\"sleep\\\":"; appendDouble(out, resident.needs.sleep); out << ",";
-        out << "\\\"bladder\\\":"; appendDouble(out, resident.needs.bladder); out << ",";
-        out << "\\\"hygiene\\\":"; appendDouble(out, resident.needs.hygiene);
+        out << "\"needs\":{";
+        out << "\"hunger\":"; appendDouble(out, resident.needs.hunger); out << ",";
+        out << "\"thirst\":"; appendDouble(out, resident.needs.thirst); out << ",";
+        out << "\"sleep\":"; appendDouble(out, resident.needs.sleep); out << ",";
+        out << "\"bladder\":"; appendDouble(out, resident.needs.bladder); out << ",";
+        out << "\"hygiene\":"; appendDouble(out, resident.needs.hygiene);
         out << "},";
 
-        out << "\\\"personality\\\":{";
+        out << "\"personality\":{";
         if (character) {
-            out << "\\\"introversion\\\":"; appendDouble(out, character->personality.introversion); out << ",";
-            out << "\\\"conscientiousness\\\":"; appendDouble(out, character->personality.conscientiousness); out << ",";
-            out << "\\\"openness\\\":"; appendDouble(out, character->personality.openness); out << ",";
-            out << "\\\"agreeableness\\\":"; appendDouble(out, character->personality.agreeableness); out << ",";
-            out << "\\\"emotionalStability\\\":"; appendDouble(out, character->personality.emotionalStability); out << ",";
-            out << "\\\"empathy\\\":"; appendDouble(out, character->personality.empathy); out << ",";
-            out << "\\\"impulsiveness\\\":"; appendDouble(out, character->personality.impulsiveness); out << ",";
-            out << "\\\"riskTolerance\\\":"; appendDouble(out, character->personality.riskTolerance); out << ",";
-            out << "\\\"ambition\\\":"; appendDouble(out, character->personality.ambition); out << ",";
-            out << "\\\"patience\\\":"; appendDouble(out, character->personality.patience); out << ",";
-            out << "\\\"sociability\\\":"; appendDouble(out, character->personality.sociability); out << ",";
-            out << "\\\"curiosity\\\":"; appendDouble(out, character->personality.curiosity); out << ",";
-            out << "\\\"orderliness\\\":"; appendDouble(out, character->personality.orderliness); out << ",";
-            out << "\\\"adaptability\\\":"; appendDouble(out, character->personality.adaptability);
+            out << "\"introversion\":"; appendDouble(out, character->personality.introversion); out << ",";
+            out << "\"conscientiousness\":"; appendDouble(out, character->personality.conscientiousness); out << ",";
+            out << "\"openness\":"; appendDouble(out, character->personality.openness); out << ",";
+            out << "\"agreeableness\":"; appendDouble(out, character->personality.agreeableness); out << ",";
+            out << "\"emotionalStability\":"; appendDouble(out, character->personality.emotionalStability); out << ",";
+            out << "\"empathy\":"; appendDouble(out, character->personality.empathy); out << ",";
+            out << "\"impulsiveness\":"; appendDouble(out, character->personality.impulsiveness); out << ",";
+            out << "\"riskTolerance\":"; appendDouble(out, character->personality.riskTolerance); out << ",";
+            out << "\"ambition\":"; appendDouble(out, character->personality.ambition); out << ",";
+            out << "\"patience\":"; appendDouble(out, character->personality.patience); out << ",";
+            out << "\"sociability\":"; appendDouble(out, character->personality.sociability); out << ",";
+            out << "\"curiosity\":"; appendDouble(out, character->personality.curiosity); out << ",";
+            out << "\"orderliness\":"; appendDouble(out, character->personality.orderliness); out << ",";
+            out << "\"adaptability\":"; appendDouble(out, character->personality.adaptability);
         }
         out << "},";
 
-        out << "\\\"traits\\\":{";
-        out << "\\\"resilience\\\":"; appendDouble(out, traits.resilience); out << ",";
-        out << "\\\"creativity\\\":"; appendDouble(out, traits.creativity); out << ",";
-        out << "\\\"discipline\\\":"; appendDouble(out, traits.discipline); out << ",";
-        out << "\\\"compassion\\\":"; appendDouble(out, traits.compassion); out << ",";
-        out << "\\\"adaptability\\\":"; appendDouble(out, traits.adaptability); out << ",";
-        out << "\\\"boldness\\\":"; appendDouble(out, traits.boldness); out << ",";
-        out << "\\\"perseverance\\\":"; appendDouble(out, traits.perseverance); out << ",";
-        out << "\\\"resourcefulness\\\":"; appendDouble(out, traits.resourcefulness);
+        out << "\"traits\":{";
+        out << "\"resilience\":"; appendDouble(out, traits.resilience); out << ",";
+        out << "\"creativity\":"; appendDouble(out, traits.creativity); out << ",";
+        out << "\"discipline\":"; appendDouble(out, traits.discipline); out << ",";
+        out << "\"compassion\":"; appendDouble(out, traits.compassion); out << ",";
+        out << "\"adaptability\":"; appendDouble(out, traits.adaptability); out << ",";
+        out << "\"boldness\":"; appendDouble(out, traits.boldness); out << ",";
+        out << "\"perseverance\":"; appendDouble(out, traits.perseverance); out << ",";
+        out << "\"resourcefulness\":"; appendDouble(out, traits.resourcefulness);
         out << "},";
 
-        out << "\\\"preferences\\\":{";
-        out << "\\\"socializing\\\":"; appendDouble(out, preferences.socializing); out << ",";
-        out << "\\\"solitude\\\":"; appendDouble(out, preferences.solitude); out << ",";
-        out << "\\\"exploration\\\":"; appendDouble(out, preferences.exploration); out << ",";
-        out << "\\\"crafting\\\":"; appendDouble(out, preferences.crafting); out << ",";
-        out << "\\\"gathering\\\":"; appendDouble(out, preferences.gathering); out << ",";
-        out << "\\\"comfort\\\":"; appendDouble(out, preferences.comfort); out << ",";
-        out << "\\\"novelty\\\":"; appendDouble(out, preferences.novelty); out << ",";
-        out << "\\\"order\\\":"; appendDouble(out, preferences.order);
+        out << "\"preferences\":{";
+        out << "\"socializing\":"; appendDouble(out, preferences.socializing); out << ",";
+        out << "\"solitude\":"; appendDouble(out, preferences.solitude); out << ",";
+        out << "\"exploration\":"; appendDouble(out, preferences.exploration); out << ",";
+        out << "\"crafting\":"; appendDouble(out, preferences.crafting); out << ",";
+        out << "\"gathering\":"; appendDouble(out, preferences.gathering); out << ",";
+        out << "\"comfort\":"; appendDouble(out, preferences.comfort); out << ",";
+        out << "\"novelty\":"; appendDouble(out, preferences.novelty); out << ",";
+        out << "\"order\":"; appendDouble(out, preferences.order);
         out << "},";
 
-        out << "\\\"relationships\\\":[";
+        out << "\"relationships\":[";
         for (std::size_t i = 0; i < relationships.size(); ++i) {
             if (i != 0) out << ",";
             const RelationshipObservation& relation = relationships[i];
             out << "{";
-            out << "\\\"targetId\\\":\\\"" << relation.targetId << "\\\",";
-            out << "\\\"targetName\\\":\\\"" << escapeJson(relation.targetName) << "\\\",";
-            out << "\\\"affection\\\":"; appendDouble(out, relation.affection); out << ",";
-            out << "\\\"trust\\\":"; appendDouble(out, relation.trust); out << ",";
-            out << "\\\"respect\\\":"; appendDouble(out, relation.respect); out << ",";
-            out << "\\\"comfort\\\":"; appendDouble(out, relation.comfort); out << ",";
-            out << "\\\"familiarity\\\":"; appendDouble(out, relation.familiarity); out << ",";
-            out << "\\\"attraction\\\":"; appendDouble(out, relation.attraction); out << ",";
-            out << "\\\"romanticInterest\\\":"; appendDouble(out, relation.romanticInterest); out << ",";
-            out << "\\\"sexualAttraction\\\":"; appendDouble(out, relation.sexualAttraction); out << ",";
-            out << "\\\"commitment\\\":"; appendDouble(out, relation.commitment); out << ",";
-            out << "\\\"conflict\\\":"; appendDouble(out, relation.conflict); out << ",";
-            out << "\\\"jealousy\\\":"; appendDouble(out, relation.jealousy); out << ",";
-            out << "\\\"fear\\\":"; appendDouble(out, relation.fear); out << ",";
-            out << "\\\"grudge\\\":"; appendDouble(out, relation.grudge); out << ",";
-            out << "\\\"socialBond\\\":"; appendDouble(out, relation.socialBond); out << ",";
-            out << "\\\"romancePotential\\\":"; appendDouble(out, relation.romancePotential);
+            out << "\"targetId\":\"" << relation.targetId << "\",";
+            out << "\"targetName\":\"" << escapeJson(relation.targetName) << "\",";
+            out << "\"affection\":"; appendDouble(out, relation.affection); out << ",";
+            out << "\"trust\":"; appendDouble(out, relation.trust); out << ",";
+            out << "\"respect\":"; appendDouble(out, relation.respect); out << ",";
+            out << "\"comfort\":"; appendDouble(out, relation.comfort); out << ",";
+            out << "\"familiarity\":"; appendDouble(out, relation.familiarity); out << ",";
+            out << "\"attraction\":"; appendDouble(out, relation.attraction); out << ",";
+            out << "\"romanticInterest\":"; appendDouble(out, relation.romanticInterest); out << ",";
+            out << "\"sexualAttraction\":"; appendDouble(out, relation.sexualAttraction); out << ",";
+            out << "\"commitment\":"; appendDouble(out, relation.commitment); out << ",";
+            out << "\"conflict\":"; appendDouble(out, relation.conflict); out << ",";
+            out << "\"jealousy\":"; appendDouble(out, relation.jealousy); out << ",";
+            out << "\"fear\":"; appendDouble(out, relation.fear); out << ",";
+            out << "\"grudge\":"; appendDouble(out, relation.grudge); out << ",";
+            out << "\"socialBond\":"; appendDouble(out, relation.socialBond); out << ",";
+            out << "\"romancePotential\":"; appendDouble(out, relation.romancePotential);
             out << "}";
         }
         out << "],";
@@ -341,69 +341,69 @@ std::string WebClientBridge::residentsJson() const
                 if (i != 0) out << ",";
                 const FamilyMemberObservation& member = members[i];
                 out << "{";
-                out << "\\\"id\\\":\\\"" << member.id << "\\\",";
-                out << "\\\"name\\\":\\\"" << escapeJson(member.name) << "\\\",";
-                out << "\\\"alive\\\":" << (member.alive ? "true" : "false") << ",";
-                out << "\\\"lifeStage\\\":\\\"" << lifeStageName(member.lifeStage) << "\\\"";
+                out << "\"id\":\"" << member.id << "\",";
+                out << "\"name\":\"" << escapeJson(member.name) << "\",";
+                out << "\"alive\":" << (member.alive ? "true" : "false") << ",";
+                out << "\"lifeStage\":\"" << lifeStageName(member.lifeStage) << "\"";
                 out << "}";
             }
             out << "]";
         };
 
-        out << "\\\"family\\\":{";
-        out << "\\\"householdId\\\":\\\"" << family.householdId << "\\\",";
-        out << "\\\"hasActivePartner\\\":" << (family.hasActivePartner ? "true" : "false") << ",";
-        out << "\\\"partnerId\\\":\\\"" << family.partnerId << "\\\",";
-        out << "\\\"partnerName\\\":\\\"" << escapeJson(family.partnerName) << "\\\",";
-        out << "\\\"partnerStage\\\":\\\"" << romanceStageName(family.partnerStage) << "\\\",";
-        out << "\\\"cohabitingWithPartner\\\":" << (family.cohabitingWithPartner ? "true" : "false") << ",";
-        out << "\\\"expectingChild\\\":" << (family.expectingChild ? "true" : "false") << ",";
-        out << "\\\"pregnancyPartnerId\\\":\\\"" << family.pregnancyPartnerId << "\\\",";
-        out << "\\\"pregnancyPartnerName\\\":\\\"" << escapeJson(family.pregnancyPartnerName) << "\\\",";
-        out << "\\\"parents\\\":"; appendFamilyMembers(family.parents); out << ",";
-        out << "\\\"children\\\":"; appendFamilyMembers(family.children); out << ",";
-        out << "\\\"siblings\\\":"; appendFamilyMembers(family.siblings);
+        out << "\"family\":{";
+        out << "\"householdId\":\"" << family.householdId << "\",";
+        out << "\"hasActivePartner\":" << (family.hasActivePartner ? "true" : "false") << ",";
+        out << "\"partnerId\":\"" << family.partnerId << "\",";
+        out << "\"partnerName\":\"" << escapeJson(family.partnerName) << "\",";
+        out << "\"partnerStage\":\"" << romanceStageName(family.partnerStage) << "\",";
+        out << "\"cohabitingWithPartner\":" << (family.cohabitingWithPartner ? "true" : "false") << ",";
+        out << "\"expectingChild\":" << (family.expectingChild ? "true" : "false") << ",";
+        out << "\"pregnancyPartnerId\":\"" << family.pregnancyPartnerId << "\",";
+        out << "\"pregnancyPartnerName\":\"" << escapeJson(family.pregnancyPartnerName) << "\",";
+        out << "\"parents\":"; appendFamilyMembers(family.parents); out << ",";
+        out << "\"children\":"; appendFamilyMembers(family.children); out << ",";
+        out << "\"siblings\":"; appendFamilyMembers(family.siblings);
         out << "},";
 
-        out << "\\\"memories\\\":[";
+        out << "\"memories\":[";
         for (std::size_t i = 0; i < memories.size(); ++i) {
             if (i != 0) out << ",";
             const MemoryRecord& memory = *memories[i];
             out << "{";
-            out << "\\\"who\\\":\\\"" << memory.who << "\\\",";
-            out << "\\\"sourceCharacter\\\":\\\"" << memory.sourceCharacter << "\\\",";
-            out << "\\\"what\\\":\\\"" << escapeJson(memory.what) << "\\\",";
-            out << "\\\"where\\\":\\\"" << escapeJson(memory.where) << "\\\",";
-            out << "\\\"minute\\\":" << memory.minute << ",";
-            out << "\\\"emotionValence\\\":"; appendDouble(out, memory.emotionValence); out << ",";
-            out << "\\\"emotionIntensity\\\":"; appendDouble(out, memory.emotionIntensity); out << ",";
-            out << "\\\"importance\\\":"; appendDouble(out, memory.importance); out << ",";
-            out << "\\\"confidence\\\":"; appendDouble(out, memory.confidence); out << ",";
-            out << "\\\"effectiveConfidence\\\":"; appendDouble(out, memory.effectiveConfidence(world.minute)); out << ",";
-            out << "\\\"witnessed\\\":" << (memory.witnessed ? "true" : "false") << ",";
-            out << "\\\"source\\\":\\\"" << memorySourceName(memory.source) << "\\\"";
+            out << "\"who\":\"" << memory.who << "\",";
+            out << "\"sourceCharacter\":\"" << memory.sourceCharacter << "\",";
+            out << "\"what\":\"" << escapeJson(memory.what) << "\",";
+            out << "\"where\":\"" << escapeJson(memory.where) << "\",";
+            out << "\"minute\":" << memory.minute << ",";
+            out << "\"emotionValence\":"; appendDouble(out, memory.emotionValence); out << ",";
+            out << "\"emotionIntensity\":"; appendDouble(out, memory.emotionIntensity); out << ",";
+            out << "\"importance\":"; appendDouble(out, memory.importance); out << ",";
+            out << "\"confidence\":"; appendDouble(out, memory.confidence); out << ",";
+            out << "\"effectiveConfidence\":"; appendDouble(out, memory.effectiveConfidence(world.minute)); out << ",";
+            out << "\"witnessed\":" << (memory.witnessed ? "true" : "false") << ",";
+            out << "\"source\":\"" << memorySourceName(memory.source) << "\"";
             out << "}";
         }
         out << "],";
 
-        out << "\\\"beliefs\\\":[";
+        out << "\"beliefs\":[";
         for (std::size_t i = 0; i < beliefs.size(); ++i) {
             if (i != 0) out << ",";
             const BeliefRecord& belief = *beliefs[i];
             out << "{";
-            out << "\\\"subject\\\":\\\"" << belief.subject << "\\\",";
-            out << "\\\"proposition\\\":\\\"" << escapeJson(belief.proposition) << "\\\",";
-            out << "\\\"stance\\\":"; appendDouble(out, belief.stance); out << ",";
-            out << "\\\"confidence\\\":"; appendDouble(out, belief.confidence); out << ",";
-            out << "\\\"lastUpdatedMinute\\\":" << belief.lastUpdatedMinute;
+            out << "\"subject\":\"" << belief.subject << "\",";
+            out << "\"proposition\":\"" << escapeJson(belief.proposition) << "\",";
+            out << "\"stance\":"; appendDouble(out, belief.stance); out << ",";
+            out << "\"confidence\":"; appendDouble(out, belief.confidence); out << ",";
+            out << "\"lastUpdatedMinute\":" << belief.lastUpdatedMinute;
             out << "}";
         }
         out << "],";
 
-        out << "\\\"hasPosition\\\":" << (hasPosition ? "true" : "false");
+        out << "\"hasPosition\":" << (hasPosition ? "true" : "false");
         if (hasPosition) {
-            out << ",\\\"gridX\\\":" << position.x;
-            out << ",\\\"gridY\\\":" << position.y;
+            out << ",\"gridX\":" << position.x;
+            out << ",\"gridY\":" << position.y;
         }
         out << "}";
     }
