@@ -13,12 +13,15 @@ import { LegacyCanvasWorldRenderer } from './render/legacy-canvas-world-renderer
 import { readRenderMode } from './render/render-mode';
 import { WorldRenderer } from './render/world-renderer';
 
-const canvas = document.querySelector<HTMLCanvasElement>('#worldCanvas');
-const threeWorldCanvas = document.querySelector<HTMLCanvasElement>('#threeWorldCanvas');
-const characterCanvas = document.querySelector<HTMLCanvasElement>('#characterCanvas');
-if (!canvas || !threeWorldCanvas || !characterCanvas) {
-  throw new Error('LifeLens observer canvases are missing');
+function requireCanvas(selector: string): HTMLCanvasElement {
+  const element = document.querySelector<HTMLCanvasElement>(selector);
+  if (!element) throw new Error(`Missing canvas: ${selector}`);
+  return element;
 }
+
+const canvas = requireCanvas('#worldCanvas');
+const threeWorldCanvas = requireCanvas('#threeWorldCanvas');
+const characterCanvas = requireCanvas('#characterCanvas');
 const renderMode = readRenderMode();
 canvas.style.opacity = renderMode === 'legacy-canvas' ? '1' : '0';
 threeWorldCanvas.style.opacity = renderMode === 'three-world' ? '1' : '0';
