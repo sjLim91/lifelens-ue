@@ -127,8 +127,22 @@ export class LegacyCanvasWorldRenderer {
         const p3 = project(lx - 0.5, ly + 0.5, e3);
         const base = terrainColor(chunk);
         const slopeLight = ((e0 + e3) - (e1 + e2)) * 0.34 + ((e0 + e1) - (e2 + e3)) * 0.22;
-        const surfaceVariation = (presentationHash01(terrain.worldSeed ?? '0', chunk.x, chunk.y, 0, 'ground') - 0.5) * 0.12;
-        const light = Math.max(0.68, Math.min(1.2, 0.9 + slopeLight + (e * 0.1) + surfaceVariation));
+        const isOpenWater = chunk.waterKind === 'Ocean' || chunk.waterKind === 'Coast';
+        const surfaceVariation = isOpenWater
+          ? 0
+          : (presentationHash01(
+            terrain.worldSeed ?? '0',
+            chunk.x,
+            chunk.y,
+            0,
+            'ground',
+          ) - 0.5) * 0.055;
+        const light = isOpenWater
+          ? 0.92
+          : Math.max(
+            0.72,
+            Math.min(1.16, 0.91 + slopeLight * 0.72 + (e * 0.08) + surfaceVariation),
+          );
     
         ctx.beginPath();
         ctx.moveTo(...p0);
@@ -138,9 +152,11 @@ export class LegacyCanvasWorldRenderer {
         ctx.closePath();
         ctx.fillStyle = shade(base, light);
         ctx.fill();
-        ctx.strokeStyle = 'rgba(8,18,12,.018)';
-        ctx.lineWidth = Math.max(0.35, canvas.width / 2400);
-        ctx.stroke();
+        if (zoom >= 1.45 && !isOpenWater) {
+          ctx.strokeStyle = 'rgba(8,18,12,.012)';
+          ctx.lineWidth = Math.max(0.22, canvas.width / 3200);
+          ctx.stroke();
+        }
     
         const flowLike = (value: WaterKind): boolean => (
           value === 'Spring'
@@ -298,24 +314,55 @@ export class LegacyCanvasWorldRenderer {
           const rocks = clamp01(chunk.rockCoverage01);
           const wetland = clamp01(chunk.wetlandCoverage01);
     
+          if (zoom < 1.18 && forest >= 0.18) {
+            const canopyCount = Math.min(3, 1 + Math.floor(forest * 2.4));
+            for (let i = 0; i < canopyCount; i += 1) {
+              const ox = (
+                presentationHash01(seed, chunk.x, chunk.y, i, 'canopy-x') - 0.5
+              ) * 0.54;
+              const oy = (
+                presentationHash01(seed, chunk.x, chunk.y, i, 'canopy-y') - 0.5
+              ) * 0.54;
+              const [fx, fy] = project(lx + ox, ly + oy, e + 0.008);
+              const radius = Math.max(
+                2.2,
+                tile * (0.16 + forest * 0.13),
+              );
+              ctx.fillStyle = i % 2 === 0
+                ? 'rgba(24,62,32,.62)'
+                : 'rgba(34,75,39,.54)';
+              ctx.beginPath();
+              ctx.ellipse(
+                fx,
+                fy,
+                radius * 1.25,
+                radius * 0.72,
+                -0.18,
+                0,
+                Math.PI * 2,
+              );
+              ctx.fill();
+            }
+          }
+
           const cluster = presentationHash01(seed, chunk.x, chunk.y, 0, 'forest-cluster');
-          const treeCount = forest < 0.14 || cluster < 0.14
+          const treeCount = zoom < 1.18 || forest < 0.14 || cluster < 0.14
             ? 0
             : Math.min(
-              9,
-              1 + Math.floor(forest * 7) + (zoom >= 1.25 ? 1 : 0),
+              10,
+              2 + Math.floor(forest * 8) + (zoom >= 1.7 ? 1 : 0),
             );
           for (let i = 0; i < treeCount; i += 1) {
             const ox = (presentationHash01(seed, chunk.x, chunk.y, i, 'tree-x') - 0.5) * 0.78;
             const oy = (presentationHash01(seed, chunk.x, chunk.y, i, 'tree-y') - 0.5) * 0.78;
             const [tx, ty] = project(lx + ox, ly + oy, e + 0.012);
             const size = Math.max(
-              4.5,
+              4.8,
               Math.min(
-                tile * 0.48,
+                tile * 0.72,
                 tile
-                  * (0.19 + forest * 0.13)
-                  * (0.78 + presentationHash01(seed, chunk.x, chunk.y, i, 'tree-size') * 0.48),
+                  * (0.38 + forest * 0.18)
+                  * (0.82 + presentationHash01(seed, chunk.x, chunk.y, i, 'tree-size') * 0.42),
               ),
             );
             ctx.strokeStyle = '#4b3926';
@@ -394,8 +441,8 @@ export class LegacyCanvasWorldRenderer {
       // A Core chunk represents tens of metres. Keep humans at map scale instead
       // of making them billboard-sized; mature trees should read several times taller.
       const characterHeightCssPx = Math.max(
-        5.5,
-        Math.min(26, tileCssPx * 0.085),
+        3.2,
+        Math.min(18, tileCssPx * 0.075),
       );
       const characterHeightDevicePx = characterHeightCssPx * displayDpr;
       const avatarRadius = Math.max(
@@ -488,15 +535,15 @@ export class LegacyCanvasWorldRenderer {
         }
     
         const fontSize = Math.max(
-          8.4 * displayDpr,
-          Math.min(11.2 * displayDpr, characterHeightDevicePx * 0.22),
+          7.1 * displayDpr,
+          Math.min(9.8 * displayDpr, characterHeightDevicePx * 0.2),
         );
         ctx.font = `700 ${fontSize}px system-ui`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        const labelHeight = Math.max(17 * displayDpr, fontSize * 1.28);
+        const labelHeight = Math.max(14.5 * displayDpr, fontSize * 1.22);
         const labelWidth = Math.min(
-          width * 0.3,
+          width * 0.24,
           ctx.measureText(projected.resident.name).width
             + Math.max(10 * displayDpr, avatarRadius * 0.42),
         );
@@ -603,7 +650,7 @@ export class LegacyCanvasWorldRenderer {
           ctx.stroke();
         }
 
-        ctx.fillStyle = 'rgba(5,12,8,.9)';
+        ctx.fillStyle = 'rgba(5,12,8,.8)';
         ctx.strokeStyle = 'rgba(221,236,220,.14)';
         ctx.lineWidth = Math.max(0.9 * displayDpr, avatarRadius * 0.025);
         ctx.beginPath();
