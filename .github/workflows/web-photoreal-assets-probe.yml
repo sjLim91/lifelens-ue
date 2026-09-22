@@ -2,6 +2,10 @@ name: Web Photoreal Asset Probe
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - 'Tools/prepare_web_photoreal_assets.py'
+      - '.github/workflows/web-photoreal-assets-probe.yml'
   pull_request:
     paths:
       - 'Tools/prepare_web_photoreal_assets.py'
