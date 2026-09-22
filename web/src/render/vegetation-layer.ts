@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type {
   TerrainWindow,
+  WorldFacility,
   WorldPresentationSnapshot,
   WorldResourceNode,
 } from '../runtime/core-types';
@@ -122,6 +123,7 @@ export class VegetationLayer {
   private readonly position = new THREE.Vector3();
   private readonly up = new THREE.Vector3(0, 1, 0);
   private resources: WorldResourceNode[] = [];
+  private facilities: WorldFacility[] = [];
   private lastResourceSignature = '';
 
   constructor() {
@@ -147,12 +149,21 @@ export class VegetationLayer {
     window: TerrainWindow,
   ): void {
     const resources = snapshot?.resources ?? [];
-    const signature = resources.map((resource) => (
-      `${resource.id}:${resource.material}:${resource.quantity}:${resource.maxQuantity ?? 0}:${resource.gridX}:${resource.gridY}`
-    )).join('|');
+    const facilities = (snapshot?.facilities ?? []).filter(
+      (facility) => facility.state !== 'Ruined',
+    );
+    const signature = [
+      ...resources.map((resource) => (
+        `r:${resource.id}:${resource.material}:${resource.quantity}:${resource.maxQuantity ?? 0}:${resource.gridX}:${resource.gridY}`
+      )),
+      ...facilities.map((facility) => (
+        `f:${facility.id}:${facility.state}:${facility.gridX}:${facility.gridY}`
+      )),
+    ].join('|');
     if (signature === this.lastResourceSignature) return;
     this.lastResourceSignature = signature;
     this.resources = resources;
+    this.facilities = facilities;
     this.setTerrain(window);
   }
 
@@ -167,6 +178,45 @@ export class VegetationLayer {
     let stumpCountTotal = 0;
     const gridCellsPerChunk = WORLD_GRID_CONTRACT.gridCellsPerChunk;
     const worldUnitsPerGrid = chunkWorldSize / gridCellsPerChunk;
+
+    const facilityReadability = (
+      worldX: number,
+      worldZ: number,
+    ): number => {
+      let factor = 1;
+      for (const facility of this.facilities) {
+        const facilityChunkX = Math.floor(
+          facility.gridX / gridCellsPerChunk,
+        );
+        const facilityChunkY = Math.floor(
+          facility.gridY / gridCellsPerChunk,
+        );
+        const facilityLocalX =
+          facility.gridX - facilityChunkX * gridCellsPerChunk;
+        const facilityLocalY =
+          facility.gridY - facilityChunkY * gridCellsPerChunk;
+        const facilityWorldX = (
+          facilityChunkX - window.centerChunkX
+          + facilityLocalX / gridCellsPerChunk
+          - 0.5
+        ) * chunkWorldSize;
+        const facilityWorldZ = (
+          facilityChunkY - window.centerChunkY
+          + facilityLocalY / gridCellsPerChunk
+          - 0.5
+        ) * chunkWorldSize;
+        const distance = Math.hypot(
+          worldX - facilityWorldX,
+          worldZ - facilityWorldZ,
+        );
+        const radius = facility.kind === 'Shelter' ? 3.4 : 2.6;
+        if (distance >= radius) continue;
+        const t = Math.max(0, Math.min(1, distance / radius));
+        const localFactor = 0.46 + t * 0.54;
+        factor = Math.min(factor, localFactor);
+      }
+      return factor;
+    };
 
     const resourceInfluence = (
       material: string,
@@ -294,6 +344,7 @@ export class VegetationLayer {
           chunk.y - window.centerChunkY
         ) * chunkWorldSize + offsetZ;
         const treeRetention = resourceInfluence('Wood', worldX, worldZ);
+        const canopyFactor = facilityReadability(worldX, worldZ);
         const treePresenceRoll = hash01(
           seed,
           chunk.x,
@@ -357,27 +408,27 @@ export class VegetationLayer {
             y: crownBaseY + 1.15 * visualTreeScale,
             x: asymmetry * visualTreeScale,
             z: -asymmetry * 0.45 * visualTreeScale,
-            sx: 1.7 * visualTreeScale * widthScale,
-            sy: 1.28 * visualTreeScale,
-            sz: 1.55 * visualTreeScale * widthScale,
+            sx: 1.7 * visualTreeScale * widthScale * canopyFactor,
+            sy: 1.28 * visualTreeScale * (0.62 + canopyFactor * 0.38),
+            sz: 1.55 * visualTreeScale * widthScale * canopyFactor,
           },
           {
             mesh: this.middleCrowns,
             y: crownBaseY + 2.35 * visualTreeScale,
             x: -asymmetry * 0.5 * visualTreeScale,
             z: asymmetry * visualTreeScale,
-            sx: 1.45 * visualTreeScale * widthScale,
-            sy: 1.22 * visualTreeScale,
-            sz: 1.38 * visualTreeScale * widthScale,
+            sx: 1.45 * visualTreeScale * widthScale * canopyFactor,
+            sy: 1.22 * visualTreeScale * (0.62 + canopyFactor * 0.38),
+            sz: 1.38 * visualTreeScale * widthScale * canopyFactor,
           },
           {
             mesh: this.upperCrowns,
             y: crownBaseY + 3.45 * visualTreeScale,
             x: asymmetry * 0.3 * visualTreeScale,
             z: asymmetry * 0.22 * visualTreeScale,
-            sx: 1.05 * visualTreeScale * widthScale,
-            sy: 1.05 * visualTreeScale,
-            sz: 1.02 * visualTreeScale * widthScale,
+            sx: 1.05 * visualTreeScale * widthScale * canopyFactor,
+            sy: 1.05 * visualTreeScale * (0.62 + canopyFactor * 0.38),
+            sz: 1.02 * visualTreeScale * widthScale * canopyFactor,
           },
         ];
         for (const layer of crownLayers) {
@@ -442,10 +493,14 @@ export class VegetationLayer {
           worldZ,
         );
         const regrowthScale = 0.58 + shrubRetention * 0.42;
+        const groundReadability = Math.max(
+          0.58,
+          facilityReadability(worldX, worldZ),
+        );
         this.scale.set(
-          scaleBase * 1.35 * regrowthScale,
-          scaleBase * 0.85 * regrowthScale,
-          scaleBase * regrowthScale,
+          scaleBase * 1.35 * regrowthScale * groundReadability,
+          scaleBase * 0.85 * regrowthScale * groundReadability,
+          scaleBase * regrowthScale * groundReadability,
         );
         this.matrix.compose(this.position, this.rotation, this.scale);
         this.shrubs.setMatrixAt(shrubCountTotal, this.matrix);
