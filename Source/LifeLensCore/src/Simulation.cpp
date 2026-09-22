@@ -344,29 +344,45 @@ bool Simulation::advanceNavigation(
 
     if(r.navigationRouteFailed) return false;
 
-    if(r.navigationRoute.empty()
-       || r.navigationRouteIndex>=r.navigationRoute.size()){
-        r.navigationRoute.clear();
-        r.navigationRouteIndex=0;
-        if(!buildCoreGroundRoute(
-                world_,
-                r.pos,
-                target,
-                radius,
-                r.navigationRoute)){
-            r.navigationRouteFailed=true;
-            return false;
-        }
-    }
-
     const int stepInterval=
         coreGroundStepIntervalMinutes(world_,r.pos);
     if(stepInterval>1 && world_.minute%stepInterval!=0){
         return false;
     }
 
+    // A previously computed detour is authoritative until it is consumed.
     if(r.navigationRouteIndex<r.navigationRoute.size()){
         r.pos=r.navigationRoute[r.navigationRouteIndex++];
+    }else{
+        r.navigationRoute.clear();
+        r.navigationRouteIndex=0;
+
+        // Ordinary movement is incremental. Check only the next targetward
+        // cell(s); do not precompute the entire unobstructed journey.
+        GridPos directStep{};
+        if(chooseTargetwardCoreGroundStep(
+                world_,
+                r.pos,
+                target,
+                radius,
+                directStep)){
+            r.pos=directStep;
+        }else{
+            // Only actual local blockage pays the A* detour cost.
+            if(!buildCoreGroundRoute(
+                    world_,
+                    r.pos,
+                    target,
+                    radius,
+                    r.navigationRoute)){
+                r.navigationRouteFailed=true;
+                return false;
+            }
+
+            if(r.navigationRouteIndex<r.navigationRoute.size()){
+                r.pos=r.navigationRoute[r.navigationRouteIndex++];
+            }
+        }
     }
 
     if(gridWithinRadius(r.pos,target,radius)){
