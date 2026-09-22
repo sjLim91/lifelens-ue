@@ -365,7 +365,6 @@ export class WorldScene {
       : snow
         ? 0.92
         : 0.96;
-    material.needsUpdate = true;
   }
 
   private applyTerrainVertexColors(
