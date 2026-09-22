@@ -569,7 +569,12 @@ export class ResidentWorldLayer {
       actor.groundShadow.visible = actor.root.visible;
       actor.statusSprite.position.set(
         actor.current.x,
-        actor.current.y + 2.48 + (stableHash(actor.statusText || 'idle') % 3) * 0.12,
+        actor.current.y
+          + 2.48
+          + (
+            stableHash(String(actor.root.userData.residentId ?? actor.statusText))
+            % 3
+          ) * 0.12,
         actor.current.z,
       );
       this.setAction(actor, moving);
