@@ -182,7 +182,11 @@
       "zoom-driven near/mid/far nature LOD",
       "Core-ecology-driven broadleaf conifer sapling silhouettes",
       "resident selection without forced camera movement",
-      "one-shot explicit recenter framing"
+      "one-shot explicit recenter framing",
+      "lazy same-origin photoreal nature accents",
+      "photoreal per-asset triangle budgets",
+      "procedural fallback when photoreal pack is unavailable",
+      "near-only photoreal nature LOD"
     ],
     "description": "Verifies moving the observer asks Core for a different logical terrain/ecology window without creating fake terrain or resources.",
     "steps": [
@@ -200,9 +204,13 @@
       "Deplete Wood/Fiber/PlantFood/Stone/Clay resources and verify nearby decorative detail thins or changes without restoring the untouched baseline at zero quantity",
       "Zoom out and verify tiny grass/pebble/stump detail is progressively culled while forest mass and major terrain remain readable",
       "Inspect multiple ecology regions and verify tree silhouettes mix broadleaf, conifer-like and sapling forms deterministically from Core biome/elevation/moisture context",
-      "Select a resident and verify selection alone highlights the resident without moving the camera; use the explicit recenter control and verify framing changes only then"
+      "Select a resident and verify selection alone highlights the resident without moving the camera; use the explicit recenter control and verify framing changes only then",
+      "At near zoom, verify the optional same-origin photoreal boulder/shrub/stump accents appear only after their manifest/assets load and do not replace the procedural fallback mass",
+      "Block or remove the photoreal nature pack and verify terrain, vegetation, rocks and depletion stumps remain visible via procedural fallback without a blank world",
+      "Zoom out below the photoreal threshold and verify photoreal accents hide while procedural mid/far nature remains readable",
+      "Inspect DEV Three diagnostics and verify photoreal accent instance counts are bounded by the configured per-asset triangle budgets rather than increasing with every visible chunk"
     ],
-    "expected": "Panning across chunk boundaries changes the observer-centered Core terrain/environment query window without changing simulation authority. The biome overlay reports Core biome/forest coverage, and deterministic terrain is rendered only from Core-provided elevation as one connected surface with authoritative slopes, non-rectangular river or stream paths where hydrology exists, with at most two flow exits per river/stream chunk, no synthetic cross-grid fallback channels, and minor streams/springs progressively hidden at wider zoom levels, and clustered vegetation rather than a debug-like tile grid. The world overlay exposes the authoritative Core weather summary and temperature; cloud, precipitation, visibility and wind alter Three World atmosphere and rain/snow presentation from the same Core state. Vegetation reads as layered mature woodland with understory and rocks rather than repeated cone props; terrain uses subtle vertex-level ecology/elevation variation so chunk color bands are visually suppressed, rain produces a modest wet-surface response, and nighttime remains dark but readable rather than collapsing into near-black. Near view also contains deterministic clustered short grass, pebbles, small rocks and deadwood placed from Core ecology/moisture/slope with facility/resource clearings; tiny detail culls at wider zoom while forest mass remains. Tree silhouettes vary by Core biome/elevation/moisture without changing simulation truth. Resident selection never forces a camera jump; explicit recenter performs a one-shot group framing."
+    "expected": "Panning across chunk boundaries changes the observer-centered Core terrain/environment query window without changing simulation authority. The biome overlay reports Core biome/forest coverage, and deterministic terrain is rendered only from Core-provided elevation as one connected surface with authoritative slopes, non-rectangular river or stream paths where hydrology exists, with at most two flow exits per river/stream chunk, no synthetic cross-grid fallback channels, and minor streams/springs progressively hidden at wider zoom levels, and clustered vegetation rather than a debug-like tile grid. The world overlay exposes the authoritative Core weather summary and temperature; cloud, precipitation, visibility and wind alter Three World atmosphere and rain/snow presentation from the same Core state. Vegetation reads as layered mature woodland with understory and rocks rather than repeated cone props; terrain uses subtle vertex-level ecology/elevation variation so chunk color bands are visually suppressed, rain produces a modest wet-surface response, and nighttime remains dark but readable rather than collapsing into near-black. Near view also contains deterministic clustered short grass, pebbles, small rocks and deadwood placed from Core ecology/moisture/slope with facility/resource clearings; tiny detail culls at wider zoom while forest mass remains. Tree silhouettes vary by Core biome/elevation/moisture without changing simulation truth. Resident selection never forces a camera jump; explicit recenter performs a one-shot group framing. Optional photoreal boulder/shrub/stump accents are lazy, same-origin, near-only and triangle-budgeted; failure to load them never removes the procedural fallback world or changes Core truth."
   },
   {
     "name": "Create a normal New Game without developer Seed input",
