@@ -235,26 +235,6 @@ export function startObserverEngine(): void {
   ): void {
     if (!autoFrameActivity) return;
 
-    const selectedId = observerStore.getSnapshot().selectedResidentId;
-    const selected = selectedId
-      ? residents.find((resident) => resident.id === selectedId)
-      : undefined;
-
-    if (
-      selected?.hasPosition
-      && typeof selected.gridX === 'number'
-      && typeof selected.gridY === 'number'
-    ) {
-      const point = gridToLocalWorld(selected.gridX, selected.gridY);
-      localPanX = point.x;
-      localPanY = point.y;
-      localPanZ = point.z;
-      if (autoFrameZoom) {
-        zoom = compactViewport ? 2.25 : 1.9;
-      }
-      return;
-    }
-
     const points: Array<{ x: number; y: number; z: number; weight: number }> = [];
     for (const resident of residents) {
       if (
@@ -314,6 +294,11 @@ export function startObserverEngine(): void {
         ),
       );
     }
+
+    // Canonical observer behavior: initial/recenter framing is one-shot.
+    // Selection and ordinary simulation movement do not keep dragging camera.
+    autoFrameActivity = false;
+    autoFrameZoom = false;
   }
   
   function refresh(): void {
@@ -377,6 +362,7 @@ export function startObserverEngine(): void {
       elevation,
       zoom,
       panX: localPanX,
+      panY: localPanY,
       panZ: localPanZ,
     });
     drawWorld();
@@ -406,37 +392,11 @@ export function startObserverEngine(): void {
 
   function selectResident(residentId: string | null): void {
     observerStore.selectResident(residentId);
-    autoFrameActivity = residentId !== null;
-    if (residentId !== null) autoFrameZoom = true;
-    if (residentId !== null) {
-      const selected = residentSnapshot.find(
-        (resident) => resident.id === residentId,
-      );
-      if (
-        selected?.hasPosition
-        && typeof selected.gridX === 'number'
-        && typeof selected.gridY === 'number'
-      ) {
-        const point = gridToLocalWorld(selected.gridX, selected.gridY);
-        localPanX = point.x;
-        localPanY = point.y;
-        localPanZ = point.z;
-      }
-    }
     threeWorldRenderer?.setSelectedResident(
       observerStore.getSnapshot().selectedResidentId,
     );
-    threeWorldRenderer?.setCamera({
-      centerChunkX: centerX,
-      centerChunkY: centerY,
-      angle,
-      elevation,
-      zoom,
-      panX: localPanX,
-      panZ: localPanZ,
-    });
   }
-  
+
   function move(dx: number, dy: number): void {
     localPanX = 0;
     localPanY = 0;
