@@ -27,7 +27,7 @@ struct CoreNavigationContract {
     static constexpr int SearchMarginBaseCells=6;
     static constexpr long long MinimumExpandedNodes=2048;
     static constexpr long long MaximumExpandedNodes=40000;
-    static constexpr double CostComparisonEpsilon=CoreNavigationContract::CostComparisonEpsilon;
+    static constexpr double CostComparisonEpsilon=1e-9;
 };
 
 inline bool sameGridPos(GridPos a, GridPos b)
@@ -301,9 +301,11 @@ inline bool buildCoreGroundRoute(
             }
 
             const double elevationPenalty=
-                std::abs(elevationAt(to)-elevationAt(from))*42.0;
+                std::abs(elevationAt(to)-elevationAt(from))
+                * CoreNavigationContract::ElevationPenaltyWeight;
             const double terrainPenalty=
-                (1.0-clampMacro01(factsIt->second.region.traversalEase))*1.75;
+                (1.0-clampMacro01(factsIt->second.region.traversalEase))
+                * CoreNavigationContract::TerrainPenaltyWeight;
             return 1.0+terrainPenalty+elevationPenalty;
         };
 
