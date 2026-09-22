@@ -12,6 +12,8 @@
       "GitHub raw runtime fallback",
       "same-origin runtime proxy backend",
       "new world creation",
+      "automatic WorldSeed generation for normal NEW GAME",
+      "optional explicit seed replay",
       "React observer UI shell",
       "React observer action controls",
       "typed observer store readouts",
@@ -64,7 +66,8 @@
       "Verify a stalled same-origin runtime request cannot leave the UI in Core loading… indefinitely",
       "Verify an older Core runtime without dynamicEnvironmentJson does not crash the observer and only disables weather projection",
       "Wait for the status badge to show Core WASM LIVE",
-      "Enter 12345 in WorldSeed and click NEW WORLD",
+      "Tap 새 월드 with no Seed entry and verify Core reports a generated WorldSeed",
+      "Open Seed로 동일한 월드 재현, enter 12345, and create that world",
       "Verify the resident cards include both Male and Female Core sex values",
       "Observe all four founders through several automatic simulation refreshes and verify none blink out between refreshes",
       "On mobile, verify the initial camera opens on the local inhabited area rather than fitting the entire terrain window into a miniature island",
@@ -134,18 +137,22 @@
     "expected": "The Chunk badge shows Chunk 2, 0, the Biome badge reports the Core biome and forest coverage, and deterministic terrain is rendered as one connected relief surface with visible slopes, non-rectangular river or stream paths where hydrology exists, with at most two flow exits per river/stream chunk, no synthetic cross-grid fallback channels, and minor streams/springs progressively hidden at wider zoom levels, and clustered vegetation rather than a debug-like tile grid. The world overlay exposes the authoritative Core weather summary and temperature; cloud, precipitation, visibility and wind alter Three World atmosphere and rain/snow presentation from the same Core state."
   },
   {
-    "name": "Reject empty WorldSeed on mobile",
+    "name": "Create a normal New Game without developer Seed input",
     "viewport": "mobile",
     "covers": [
-      "WorldSeed validation",
-      "mobile observer controls"
+      "automatic WorldSeed generation",
+      "optional deterministic seed replay",
+      "mobile observer controls",
+      "Korean default user-facing localization",
+      "48px mobile touch targets and safe-area padding"
     ],
-    "description": "Verifies invalid world creation is blocked on the mobile layout.",
+    "description": "Verifies normal NEW GAME follows the canonical contract: users do not need to provide a Seed, while explicit Seed entry remains available only as a secondary deterministic replay affordance."
     "steps": [
-      "Wait for Core WASM LIVE",
-      "Clear the WorldSeed field",
-      "Tap NEW WORLD"
+      "Wait for Core 연결됨",
+      "Tap 새 월드 without opening the Seed replay section",
+      "Verify the observer creates a world with a non-empty generated WorldSeed",
+      "Verify primary user-facing labels are Korean and mobile controls have usable touch targets inside safe areas"
     ],
-    "expected": "A visible WorldSeed validation message is shown and no new world request is made."
+    "expected": "A new deterministic world is created from an automatically generated WorldSeed. Seed entry is secondary replay/developer UI, not a requirement for normal New Game. User-facing observer labels default to Korean and mobile touch chrome respects the 48px/safe-area contract."
   }
 ]
