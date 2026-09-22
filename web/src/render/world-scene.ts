@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import type { TerrainChunk, TerrainWindow } from '../runtime/core-types';
+import { VegetationLayer } from './vegetation-layer';
+import { WaterLayer } from './water-layer';
 
 export interface WorldSceneCameraState {
   centerChunkX: number;
@@ -19,10 +21,14 @@ export class WorldScene {
 
   private readonly terrainGroup = new THREE.Group();
   private readonly terrainMeshes = new Map<string, TerrainMeshEntry>();
+  private readonly waterLayer = new WaterLayer();
+  private readonly vegetationLayer = new VegetationLayer();
 
   constructor() {
     this.scene.background = new THREE.Color(0x08100b);
     this.scene.add(this.terrainGroup);
+    this.scene.add(this.waterLayer.group);
+    this.scene.add(this.vegetationLayer.group);
 
     const hemi = new THREE.HemisphereLight(0xf5f6ef, 0x29352e, 1.6);
     this.scene.add(hemi);
@@ -51,6 +57,8 @@ export class WorldScene {
 
   setTerrain(window: TerrainWindow): void {
     const active = new Set<string>();
+    this.waterLayer.setTerrain(window);
+    this.vegetationLayer.setTerrain(window);
 
     for (const chunk of window.chunks) {
       const key = this.chunkKey(chunk);
@@ -81,6 +89,8 @@ export class WorldScene {
       entry.mesh.material.dispose();
     }
     this.terrainMeshes.clear();
+    this.waterLayer.dispose();
+    this.vegetationLayer.dispose();
   }
 
   private chunkKey(chunk: TerrainChunk): string {
