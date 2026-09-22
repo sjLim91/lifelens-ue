@@ -110,9 +110,10 @@ export class PhotorealNatureLayer {
 
   setCameraZoom(zoom: number): void {
     this.zoom = Math.max(0.1, Number(zoom) || 1);
+    const shouldPreload = this.zoom >= 0.82;
     const shouldShow = this.zoom >= 1.02;
     this.group.visible = shouldShow && this.loaded;
-    if (shouldShow && !this.loaded && !this.unavailable) {
+    if (shouldPreload && !this.loaded && !this.unavailable) {
       void this.ensureLoaded();
     }
   }
