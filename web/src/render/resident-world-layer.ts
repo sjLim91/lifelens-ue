@@ -5,6 +5,7 @@ import type {
   Resident,
   TerrainWindow,
 } from '../runtime/core-types';
+import { createTerrainElevationSampler } from './terrain-geometry';
 import { residentToWorldPosition } from './resident-world-coordinates';
 
 const BASE_MODEL_COMMIT = 'ddd5fc34a445bcded3cf9836607aaeebc19a5c78';
@@ -111,9 +112,7 @@ export class ResidentWorldLayer {
 
     if (!this.ready || !this.template) return;
 
-    const terrainMap = new Map(
-      terrain.chunks.map((chunk) => [`${chunk.x}:${chunk.y}`, chunk]),
-    );
+    const sampleElevation = createTerrainElevationSampler(terrain);
     const activeIds = new Set(residents.map((resident) => resident.id));
 
     for (const [id, actor] of this.actors) {
@@ -131,8 +130,14 @@ export class ResidentWorldLayer {
 
       const chunkX = Math.floor(resident.gridX / 32);
       const chunkY = Math.floor(resident.gridY / 32);
-      const terrainChunk = terrainMap.get(`${chunkX}:${chunkY}`);
-      const elevation = Number(terrainChunk?.elevation01) || 0;
+      const localX = (resident.gridX - (chunkX * 32)) / 32;
+      const localY = (resident.gridY - (chunkY * 32)) / 32;
+      const elevation = sampleElevation(
+        chunkX,
+        chunkY,
+        localX,
+        localY,
+      );
       const position = residentToWorldPosition(
         resident,
         centerX,

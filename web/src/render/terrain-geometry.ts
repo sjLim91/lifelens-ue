@@ -12,13 +12,14 @@ function average(values: Array<number | null>, fallback: number): number {
   return valid.reduce((sum, value) => sum + value, 0) / valid.length;
 }
 
-export function createTerrainGeometryBuilder(
+export function createTerrainElevationSampler(
   window: TerrainWindow,
-  options: TerrainGeometryOptions = {},
-): (chunk: TerrainChunk) => THREE.BufferGeometry {
-  const chunkWorldSize = options.chunkWorldSize ?? 8;
-  const elevationScale = options.elevationScale ?? 48;
-  const half = chunkWorldSize * 0.5;
+): (
+  chunkX: number,
+  chunkY: number,
+  localX01: number,
+  localY01: number,
+) => number {
   const elevations = new Map(
     window.chunks.map((chunk) => [
       `${chunk.x}:${chunk.y}`,
@@ -30,22 +31,49 @@ export function createTerrainGeometryBuilder(
     elevations.get(`${x}:${y}`) ?? null
   );
 
-  return (chunk: TerrainChunk): THREE.BufferGeometry => {
-    const center = Number(chunk.elevation01) || 0;
+  return (
+    chunkX: number,
+    chunkY: number,
+    localX01: number,
+    localY01: number,
+  ): number => {
+    const center = elevationAt(chunkX, chunkY) ?? 0;
     const corner = (sx: number, sy: number): number => average(
       [
-        elevationAt(chunk.x, chunk.y),
-        elevationAt(chunk.x + sx, chunk.y),
-        elevationAt(chunk.x, chunk.y + sy),
-        elevationAt(chunk.x + sx, chunk.y + sy),
+        elevationAt(chunkX, chunkY),
+        elevationAt(chunkX + sx, chunkY),
+        elevationAt(chunkX, chunkY + sy),
+        elevationAt(chunkX + sx, chunkY + sy),
       ],
       center,
-    ) * elevationScale;
+    );
 
     const h00 = corner(-1, -1);
     const h10 = corner(1, -1);
     const h11 = corner(1, 1);
     const h01 = corner(-1, 1);
+    const tx = Math.max(0, Math.min(1, localX01));
+    const ty = Math.max(0, Math.min(1, localY01));
+    const north = h00 + ((h10 - h00) * tx);
+    const south = h01 + ((h11 - h01) * tx);
+    return north + ((south - north) * ty);
+  };
+}
+
+export function createTerrainGeometryBuilder(
+  window: TerrainWindow,
+  options: TerrainGeometryOptions = {},
+): (chunk: TerrainChunk) => THREE.BufferGeometry {
+  const chunkWorldSize = options.chunkWorldSize ?? 8;
+  const elevationScale = options.elevationScale ?? 48;
+  const half = chunkWorldSize * 0.5;
+  const sampleElevation = createTerrainElevationSampler(window);
+
+  return (chunk: TerrainChunk): THREE.BufferGeometry => {
+    const h00 = sampleElevation(chunk.x, chunk.y, 0, 0) * elevationScale;
+    const h10 = sampleElevation(chunk.x, chunk.y, 1, 0) * elevationScale;
+    const h11 = sampleElevation(chunk.x, chunk.y, 1, 1) * elevationScale;
+    const h01 = sampleElevation(chunk.x, chunk.y, 0, 1) * elevationScale;
 
     const positions = new Float32Array([
       -half, h00, -half,
