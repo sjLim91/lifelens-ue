@@ -323,9 +323,9 @@ export class ResidentWorldLayer {
   private readonly loader = new GLTFLoader();
   private readonly socialLinkGeometry = new THREE.BufferGeometry();
   private readonly socialLinkMaterial = new THREE.LineBasicMaterial({
-    color: 0xb7d7bd,
+    vertexColors: true,
     transparent: true,
-    opacity: 0.34,
+    opacity: 0.38,
     depthWrite: false,
   });
   private readonly socialLinks = new THREE.LineSegments(
@@ -612,7 +612,19 @@ export class ResidentWorldLayer {
 
   private updateSocialLinks(): void {
     const positions: number[] = [];
+    const colors: number[] = [];
     const seen = new Set<string>();
+
+    const pushColor = (color: THREE.Color): void => {
+      colors.push(
+        color.r,
+        color.g,
+        color.b,
+        color.r,
+        color.g,
+        color.b,
+      );
+    };
 
     for (const resident of this.pendingResidents) {
       const action = resident.contextAction;
@@ -652,11 +664,38 @@ export class ResidentWorldLayer {
         targetActor.current.y + 1.0,
         targetActor.current.z,
       );
+
+      let color = new THREE.Color(0xa9c9af);
+      if (action.kind === 'KnowledgeTeaching') {
+        color = new THREE.Color(0xb9b878);
+      } else if (action.kind === 'Parenting') {
+        color = new THREE.Color(0xc9a894);
+      } else {
+        switch (action.socialIntent) {
+          case 'Comfort':
+            color = new THREE.Color(0x9bb9cf);
+            break;
+          case 'Repair':
+            color = new THREE.Color(0xb8a276);
+            break;
+          case 'Avoid':
+            color = new THREE.Color(0x8d8f92);
+            break;
+          default:
+            color = new THREE.Color(0xa9c9af);
+            break;
+        }
+      }
+      pushColor(color);
     }
 
     this.socialLinkGeometry.setAttribute(
       'position',
       new THREE.Float32BufferAttribute(positions, 3),
+    );
+    this.socialLinkGeometry.setAttribute(
+      'color',
+      new THREE.Float32BufferAttribute(colors, 3),
     );
     this.socialLinkGeometry.computeBoundingSphere();
     this.socialLinks.visible = positions.length > 0;
@@ -753,12 +792,15 @@ export class ResidentWorldLayer {
     root.add(model);
 
     const baseHeight = 1.68;
-    const heightJitter = (((variantSeed >>> 8) % 9) - 4) * 0.015;
-    const bodyWidth = resident.sex === 'Female' ? 0.94 : 1;
+    const heightJitter = (((variantSeed >>> 8) % 13) - 6) * 0.018;
+    const widthJitter = (((variantSeed >>> 16) % 9) - 4) * 0.012;
+    const bodyWidth = (
+      resident.sex === 'Female' ? 0.94 : 1
+    ) + widthJitter;
     root.scale.set(
       bodyWidth,
       baseHeight + heightJitter,
-      bodyWidth,
+      bodyWidth * (0.985 + ((variantSeed >>> 20) % 5) * 0.008),
     );
 
     const mixer = new THREE.AnimationMixer(root);
@@ -787,6 +829,11 @@ export class ResidentWorldLayer {
     [idle, walk, talk, sit, interact].forEach((action) => {
       action?.setLoop(THREE.LoopRepeat, Infinity);
     });
+    const motionTempo = 0.94 + ((variantSeed >>> 24) % 9) * 0.015;
+    idle?.setEffectiveTimeScale(0.96 + (motionTempo - 1) * 0.4);
+    walk?.setEffectiveTimeScale(motionTempo);
+    talk?.setEffectiveTimeScale(0.95 + (motionTempo - 1) * 0.65);
+    interact?.setEffectiveTimeScale(motionTempo);
 
     idle?.play();
     if (idle) {
