@@ -64,6 +64,15 @@ export const OBSERVER_CAMERA_CONTRACT = {
   rotateSensitivity: 0.006,
   panWorldUnitsPerPixelAtZoom1: 0.18,
   compactViewportMaxWidthPx: 800,
+  tapMoveThresholdPx: 8,
+  pointerMotionEpsilonPx: 0.01,
+  wheelZoomSensitivity: 0.001,
+  maxRenderDevicePixelRatio: 2,
+} as const;
+
+export const RESIDENT_PRESENTATION_CONTRACT = {
+  movementEpsilonWorldUnits: 0.01,
+  maxAnimationDeltaSeconds: 0.05,
 } as const;
 
 export function simulationTimeHint(): string {
