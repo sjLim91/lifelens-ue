@@ -6,6 +6,7 @@ import type {
   WorldResourceNode,
   WorldResidue,
   WorldSanitationSite,
+  WorldStorageSite,
 } from '../runtime/core-types';
 import { WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
 import { createTerrainElevationSampler } from './terrain-geometry';
@@ -53,7 +54,10 @@ function facilityLabel(
     : `${kinds[facility.kind]} · ${states[facility.state]}${storageSuffix}`;
 }
 
-function makeLabelSprite(text: string): THREE.Sprite {
+function makeLabelSprite(
+  text: string,
+  priority = 1,
+): THREE.Sprite {
   const canvas = document.createElement('canvas');
   canvas.width = 512;
   canvas.height = 112;
@@ -83,6 +87,8 @@ function makeLabelSprite(text: string): THREE.Sprite {
   });
   const sprite = new THREE.Sprite(material);
   sprite.scale.set(5.5, 1.18, 1);
+  sprite.userData.lifeLensContextLabel = true;
+  sprite.userData.lifeLensLabelPriority = priority;
   sprite.renderOrder = 12;
   return sprite;
 }
@@ -281,6 +287,144 @@ function addSmokePuffs(
   }
 }
 
+function addFacilityGroundWear(
+  group: THREE.Group,
+  facility: WorldFacility,
+): void {
+  if (facility.state === 'Ruined') return;
+  const construction = facility.state === 'Planned'
+    || facility.state === 'UnderConstruction';
+  const radius = facility.kind === 'Shelter'
+    ? 3.2
+    : facility.kind === 'WorkSurface'
+      ? 2.7
+      : 2.35;
+  const wear = new THREE.Mesh(
+    new THREE.CircleGeometry(radius, 36),
+    new THREE.MeshStandardMaterial({
+      color: construction ? 0x65513a : 0x5a4b38,
+      roughness: 1,
+      transparent: true,
+      opacity: construction ? 0.22 : 0.12,
+      depthWrite: false,
+    }),
+  );
+  wear.rotation.x = -Math.PI * 0.5;
+  wear.position.y = 0.025;
+  wear.renderOrder = 1;
+  group.add(wear);
+}
+
+function addStorageContents(
+  group: THREE.Group,
+  storage: WorldStorageSite | undefined,
+): void {
+  if (!storage?.inventory?.length) return;
+
+  const wood = disposableMaterial(0x73563a);
+  const stone = disposableMaterial(0x77736a);
+  const fiber = disposableMaterial(0x887d55);
+  const clay = disposableMaterial(0x8d6550);
+  const charcoal = disposableMaterial(0x292824);
+  const metal = disposableMaterial(0xa96f50);
+
+  let slot = 0;
+  for (const stack of storage.inventory.slice(0, 6)) {
+    const quantity = Math.max(0, Number(stack.quantity) || 0);
+    if (quantity <= 0) continue;
+    const x = -1.0 + (slot % 3) * 0.95;
+    const z = -0.45 + Math.floor(slot / 3) * 0.95;
+    const visibleCount = Math.max(1, Math.min(4, Math.ceil(quantity / 3)));
+
+    for (let index = 0; index < visibleCount; index += 1) {
+      const ox = x + (index % 2) * 0.18;
+      const oz = z + Math.floor(index / 2) * 0.2;
+      const y = 0.34 + Math.floor(index / 2) * 0.14;
+      switch (stack.material) {
+        case 'Wood':
+          addLog(
+            group,
+            0.82,
+            0.07,
+            [ox, y, oz],
+            0.32 + index * 0.26,
+            wood,
+          );
+          break;
+        case 'Fiber':
+        case 'PlantFood': {
+          const bundle = new THREE.Mesh(
+            new THREE.IcosahedronGeometry(0.16, 1),
+            fiber,
+          );
+          bundle.position.set(ox, y, oz);
+          bundle.scale.set(1.25, 0.72, 0.92);
+          group.add(bundle);
+          break;
+        }
+        case 'Clay': {
+          const lump = new THREE.Mesh(
+            new THREE.SphereGeometry(0.15, 8, 6),
+            clay,
+          );
+          lump.position.set(ox, y, oz);
+          lump.scale.y = 0.72;
+          group.add(lump);
+          break;
+        }
+        case 'Charcoal': {
+          const lump = new THREE.Mesh(
+            new THREE.DodecahedronGeometry(0.12, 0),
+            charcoal,
+          );
+          lump.position.set(ox, y, oz);
+          group.add(lump);
+          break;
+        }
+        case 'CopperMetal': {
+          const ingot = new THREE.Mesh(
+            new THREE.BoxGeometry(0.32, 0.08, 0.16),
+            metal,
+          );
+          ingot.position.set(ox, y, oz);
+          group.add(ingot);
+          break;
+        }
+        default:
+          addStone(
+            group,
+            0.13,
+            [ox, y, oz],
+            stone,
+            slot * 11 + index,
+          );
+          break;
+      }
+    }
+    slot += 1;
+  }
+}
+
+function facilityLabelPriority(
+  facility: WorldFacility,
+): number {
+  if (
+    facility.state === 'Planned'
+    || facility.state === 'UnderConstruction'
+  ) return 4;
+  if (
+    (facility.kind === 'FirePit' || facility.kind === 'Furnace')
+    && facility.lit
+  ) return 4;
+  if (facility.kind === 'Shelter') return 3;
+  if (
+    facility.kind === 'PrimitiveStorage'
+    || facility.kind === 'WorkSurface'
+    || facility.kind === 'Furnace'
+  ) return 2;
+  return 1;
+}
+
 function addFacilityShape(
   group: THREE.Group,
   facility: WorldFacility,
@@ -305,6 +449,8 @@ function addFacilityShape(
     { opacity: construction ? 0.78 : 1 },
   );
   const earth = disposableMaterial(0x564333);
+  addFacilityGroundWear(group, facility);
+
   const fire = disposableMaterial(
     0x5f2c16,
     facility.lit
@@ -659,6 +805,7 @@ function addSanitationShape(
     site.kind === 'DugPit'
       ? `위생 구덩이 · 사용 ${site.useCount ?? 0}회`
       : `지정 위생구역 · 사용 ${site.useCount ?? 0}회`,
+    site.kind === 'DugPit' ? 3 : 2,
   );
   label.scale.multiplyScalar(0.82);
   label.position.y = 2.75;
@@ -849,6 +996,41 @@ export class WorldConsequenceLayer {
   readonly group = new THREE.Group();
   private lastSignature = '';
   private animationTime = 0;
+  private cameraZoom = 1.25;
+
+  setCameraZoom(zoom: number): void {
+    this.cameraZoom = Math.max(0.1, Number(zoom) || 1);
+    this.refreshLabelVisibility();
+  }
+
+  private refreshLabelVisibility(): void {
+    const zoom = this.cameraZoom;
+    const minPriority = zoom < 0.9
+      ? 4
+      : zoom < 1.3
+        ? 3
+        : zoom < 2.0
+          ? 2
+          : 1;
+    const scaleFactor = Math.max(
+      0.72,
+      Math.min(1, 0.74 + zoom * 0.12),
+    );
+
+    this.group.traverse((object) => {
+      if (
+        !(object instanceof THREE.Sprite)
+        || !object.userData.lifeLensContextLabel
+      ) return;
+      const priority = Number(object.userData.lifeLensLabelPriority) || 1;
+      object.visible = priority >= minPriority;
+      object.scale.set(
+        5.5 * scaleFactor,
+        1.18 * scaleFactor,
+        1,
+      );
+    });
+  }
 
   update(deltaSeconds: number): void {
     this.animationTime += Math.min(0.05, Math.max(0, deltaSeconds));
@@ -982,23 +1164,29 @@ export class WorldConsequenceLayer {
     const storageByGrid = new Map(
       (snapshot.storages ?? []).map((storage) => [
         `${storage.gridX}:${storage.gridY}`,
-        Number(storage.totalUnits) || 0,
+        storage,
       ]),
     );
     for (const facility of snapshot.facilities ?? []) {
       const object = new THREE.Group();
       object.position.copy(positionAt(facility.gridX, facility.gridY));
       addFacilityShape(object, facility);
-      const storedUnits = storageByGrid.get(
+      const storage = storageByGrid.get(
         `${facility.gridX}:${facility.gridY}`,
       );
+      if (facility.kind === 'PrimitiveStorage') {
+        addStorageContents(object, storage);
+      }
       const label = makeLabelSprite(
-        facilityLabel(facility, storedUnits),
+        facilityLabel(facility, Number(storage?.totalUnits) || 0),
+        facilityLabelPriority(facility),
       );
       label.position.y = facility.kind === 'Shelter' ? 5.35 : 3.25;
       object.add(label);
       this.group.add(object);
     }
+
+    this.refreshLabelVisibility();
   }
 
   dispose(): void {
