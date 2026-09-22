@@ -6,6 +6,7 @@
     "covers": [
       "LifeLensCore WASM loading",
       "runtime fetch timeout protection",
+      "observer engine bundled startup",
       "GitHub raw runtime fallback",
       "same-origin runtime proxy backend",
       "new world creation",
@@ -43,7 +44,8 @@
     ],
     "description": "Verifies the React-based public observer mounts successfully, loads the real C++ LifeLensCore runtime, and creates a world rather than using fake browser data.",
     "steps": [
-      "Open the public preview directly and wait for the status badge to leave Core loading…",
+      "Open the public preview directly and verify observer startup does not depend on a separately fetched observer-engine JavaScript chunk",
+      "Wait for the status badge to leave Core loading…",
       "Verify a stalled same-origin runtime request cannot leave the UI in Core loading… indefinitely",
       "Wait for the status badge to show Core WASM LIVE",
       "Enter 12345 in WorldSeed and click NEW WORLD",
