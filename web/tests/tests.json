@@ -5,6 +5,8 @@
     "viewport": "desktop",
     "covers": [
       "LifeLensCore WASM loading",
+      "runtime fetch timeout protection",
+      "GitHub raw runtime fallback",
       "same-origin runtime proxy backend",
       "new world creation",
       "React observer UI shell",
@@ -41,6 +43,8 @@
     ],
     "description": "Verifies the React-based public observer mounts successfully, loads the real C++ LifeLensCore runtime, and creates a world rather than using fake browser data.",
     "steps": [
+      "Open the public preview directly and wait for the status badge to leave Core loading…",
+      "Verify a stalled same-origin runtime request cannot leave the UI in Core loading… indefinitely",
       "Wait for the status badge to show Core WASM LIVE",
       "Enter 12345 in WorldSeed and click NEW WORLD",
       "Verify the resident cards include both Male and Female Core sex values",
@@ -50,7 +54,7 @@
       "At wide zoom verify forests read as canopy masses rather than hundreds of dot-like tree markers",
       "At close zoom compare a resident against nearby mature trees and verify the resident no longer reads as taller than the vegetation"
     ],
-    "expected": "The status shows Core WASM LIVE, WorldSeed 12345 is shown, Living is 4, all four resident cards and 3D residents remain continuously visible without one-refresh disappearance/reappearance, the founder cards expose authoritative Core sex values and the terrain shows visually distinct male and female 3D residents with different skinned body geometry, garment silhouettes, deterministic clothing, proportions, and head-locked hair while remaining map-scale and clustered near their authoritative Core positions with readable labels. Resident body size and separation change with the same world zoom as the terrain while labels remain readable but visually subordinate, mobile opens focused on the inhabited local area instead of a tiny full-window diorama, wide-zoom forests merge into canopy masses instead of dot noise, open water does not expose a debug tile grid, mature trees read several times taller than a resident at comparable depth rather than as miniature props, movement between authoritative Core positions is visually smoothed, movement uses walking animation, supported Core activities select contextual idle/talking/sitting/interact motions, resident animation phases are visibly desynchronized, and compact fallback markers appear only while the 3D asset is still loading or if it fails. Resident labels avoid actor/label overlap while staying close to their resident; displaced labels use a subtle leader line instead of floating ambiguously."
+    "expected": "The status must leave Core loading… within the runtime timeout window; if same-origin runtime delivery stalls, GitHub raw fallback is attempted, and the status shows Core WASM LIVE before WorldSeed 12345 is created, Living is 4, all four resident cards and 3D residents remain continuously visible without one-refresh disappearance/reappearance, the founder cards expose authoritative Core sex values and the terrain shows visually distinct male and female 3D residents with different skinned body geometry, garment silhouettes, deterministic clothing, proportions, and head-locked hair while remaining map-scale and clustered near their authoritative Core positions with readable labels. Resident body size and separation change with the same world zoom as the terrain while labels remain readable but visually subordinate, mobile opens focused on the inhabited local area instead of a tiny full-window diorama, wide-zoom forests merge into canopy masses instead of dot noise, open water does not expose a debug tile grid, mature trees read several times taller than a resident at comparable depth rather than as miniature props, movement between authoritative Core positions is visually smoothed, movement uses walking animation, supported Core activities select contextual idle/talking/sitting/interact motions, resident animation phases are visibly desynchronized, and compact fallback markers appear only while the 3D asset is still loading or if it fails. Resident labels avoid actor/label overlap while staying close to their resident; displaced labels use a subtle leader line instead of floating ambiguously."
   },
   {
     "name": "Advance simulation time automatically and fast-forward",
