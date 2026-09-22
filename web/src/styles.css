@@ -659,3 +659,83 @@ button:disabled { opacity: .33; cursor: default; }
       );
   }
 }
+
+
+/* Small in-world situation cards: readable without opening the observer sheet. */
+.world-moment-stack {
+  position: absolute;
+  z-index: 5;
+  left: 14px;
+  bottom: 14px;
+  display: grid;
+  gap: 7px;
+  width: min(280px, calc(100% - 28px));
+  pointer-events: none;
+}
+.world-moment {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 9px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 8px 10px;
+  border: 1px solid rgba(111, 143, 119, .3);
+  border-left: 3px solid rgba(120, 151, 126, .65);
+  border-radius: 9px;
+  background: rgba(8, 15, 10, .68);
+  backdrop-filter: blur(12px) saturate(1.08);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+}
+.world-moment > span {
+  grid-row: 1 / span 2;
+  align-self: center;
+  color: #819486;
+  font-size: .55rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.world-moment strong {
+  overflow: hidden;
+  color: #edf4ed;
+  font-size: .68rem;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.world-moment small {
+  color: #93a398;
+  font-size: .58rem;
+  line-height: 1.35;
+}
+.world-moment.social.meaningful {
+  border-left-color: #a99b63;
+}
+.world-moment.social.important {
+  border-left-color: #b47772;
+}
+.world-moment.construction {
+  border-left-color: #a8895d;
+}
+.world-moment.discovery {
+  border-left-color: #8b9c63;
+}
+.world-moment.contamination {
+  border-left-color: #86654f;
+}
+
+@media (max-width: 800px) {
+  .world-moment-stack {
+    left: 8px;
+    bottom: 54px;
+    width: min(245px, calc(100% - 78px));
+    gap: 5px;
+  }
+  .world-moment {
+    padding: 7px 9px;
+    border-radius: 8px;
+    background: rgba(7, 13, 9, .58);
+  }
+  .world-moment:nth-child(n+2) {
+    display: none;
+  }
+}
