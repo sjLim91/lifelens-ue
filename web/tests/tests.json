@@ -174,7 +174,15 @@
       "understory shrubs and rocks from Core ecology coverage",
       "terrain vertex color blending without chunk bands",
       "wet-weather terrain response",
-      "readable night lighting"
+      "readable night lighting",
+      "clustered near-ground detail layer",
+      "grass pebble small-rock deadwood instancing",
+      "slope moisture ecology ground-detail distribution",
+      "resource-depletion clearing in ground detail",
+      "zoom-driven near/mid/far nature LOD",
+      "Core-ecology-driven broadleaf conifer sapling silhouettes",
+      "resident selection without forced camera movement",
+      "one-shot explicit recenter framing"
     ],
     "description": "Verifies moving the observer asks Core for a different logical terrain/ecology window without creating fake terrain or resources.",
     "steps": [
@@ -186,9 +194,15 @@
       "Inspect forested terrain and verify trees use layered irregular crowns with varied mature scale instead of identical cones",
       "Inspect shrub/rock-rich chunks and verify understory density follows Core ecology coverage without debug markers",
       "Pan across chunk boundaries and verify terrain tone variation is continuous enough that square color bands do not dominate the landscape",
-      "Observe rain/snow and night transitions and verify terrain material response plus moon/hemisphere light preserve readable silhouettes"
+      "Observe rain/snow and night transitions and verify terrain material response plus moon/hemisphere light preserve readable silhouettes",
+      "Zoom into local terrain and verify short grass, pebbles, small rocks and deadwood fill the scale gap between terrain and large vegetation without forming a uniform carpet",
+      "Compare slopes, wet areas, forest floor and rock-rich chunks and verify ground detail distribution changes from Core ecology/moisture/slope rather than using one universal density",
+      "Deplete Wood/Fiber/PlantFood/Stone/Clay resources and verify nearby decorative detail thins or changes without restoring the untouched baseline at zero quantity",
+      "Zoom out and verify tiny grass/pebble/stump detail is progressively culled while forest mass and major terrain remain readable",
+      "Inspect multiple ecology regions and verify tree silhouettes mix broadleaf, conifer-like and sapling forms deterministically from Core biome/elevation/moisture context",
+      "Select a resident and verify selection alone highlights the resident without moving the camera; use the explicit recenter control and verify framing changes only then"
     ],
-    "expected": "Panning across chunk boundaries changes the observer-centered Core terrain/environment query window without changing simulation authority. The biome overlay reports Core biome/forest coverage, and deterministic terrain is rendered only from Core-provided elevation as one connected surface with authoritative slopes, non-rectangular river or stream paths where hydrology exists, with at most two flow exits per river/stream chunk, no synthetic cross-grid fallback channels, and minor streams/springs progressively hidden at wider zoom levels, and clustered vegetation rather than a debug-like tile grid. The world overlay exposes the authoritative Core weather summary and temperature; cloud, precipitation, visibility and wind alter Three World atmosphere and rain/snow presentation from the same Core state. Vegetation reads as layered mature woodland with understory and rocks rather than repeated cone props; terrain uses subtle vertex-level ecology/elevation variation so chunk color bands are visually suppressed, rain produces a modest wet-surface response, and nighttime remains dark but readable rather than collapsing into near-black."
+    "expected": "Panning across chunk boundaries changes the observer-centered Core terrain/environment query window without changing simulation authority. The biome overlay reports Core biome/forest coverage, and deterministic terrain is rendered only from Core-provided elevation as one connected surface with authoritative slopes, non-rectangular river or stream paths where hydrology exists, with at most two flow exits per river/stream chunk, no synthetic cross-grid fallback channels, and minor streams/springs progressively hidden at wider zoom levels, and clustered vegetation rather than a debug-like tile grid. The world overlay exposes the authoritative Core weather summary and temperature; cloud, precipitation, visibility and wind alter Three World atmosphere and rain/snow presentation from the same Core state. Vegetation reads as layered mature woodland with understory and rocks rather than repeated cone props; terrain uses subtle vertex-level ecology/elevation variation so chunk color bands are visually suppressed, rain produces a modest wet-surface response, and nighttime remains dark but readable rather than collapsing into near-black. Near view also contains deterministic clustered short grass, pebbles, small rocks and deadwood placed from Core ecology/moisture/slope with facility/resource clearings; tiny detail culls at wider zoom while forest mass remains. Tree silhouettes vary by Core biome/elevation/moisture without changing simulation truth. Resident selection never forces a camera jump; explicit recenter performs a one-shot group framing."
   },
   {
     "name": "Create a normal New Game without developer Seed input",
