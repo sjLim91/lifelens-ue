@@ -1,3 +1,8 @@
+import {
+  CORE_SIMULATION_MINUTES_PER_DAY,
+  CORE_WORLD_CHUNK_SPAN_GRID_CELLS,
+} from './generated-core-contract';
+
 export const SIMULATION_SPEED_MODES = [
   { speed: 0, label: '⏸', title: '일시정지' },
   { speed: 1, label: '1×', title: '관찰' },
@@ -10,7 +15,7 @@ export type SimulationSpeed =
   (typeof SIMULATION_SPEED_MODES)[number]['speed'];
 
 export const SIMULATION_TIME_CONTRACT = {
-  simulationMinutesPerDay: 24 * 60,
+  simulationMinutesPerDay: CORE_SIMULATION_MINUTES_PER_DAY,
   realMinutesPerSimulationDayAt1x: 8,
   defaultSpeed: SIMULATION_SPEED_MODES[1].speed,
   tickIntervalMs: 125,
@@ -33,7 +38,7 @@ export function normalizeSimulationSpeed(speed: number): SimulationSpeed {
 }
 
 export const WORLD_GRID_CONTRACT = {
-  gridCellsPerChunk: 32,
+  gridCellsPerChunk: CORE_WORLD_CHUNK_SPAN_GRID_CELLS,
   worldUnitsPerChunk: 8,
   elevationScale: 48,
 } as const;
