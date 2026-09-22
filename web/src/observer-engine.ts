@@ -255,9 +255,11 @@ export function startObserverEngine(): void {
     refresh();
   }
   
-  function stepMinutes(minutes: number): void {
-    worldSession?.runMinutes(minutes);
-    refresh();
+  function setSimulationSpeed(speed: number): void {
+    const canonicalSpeed = [0, 1, 4, 16, 64].includes(speed) ? speed : 1;
+    simulationClock?.setSpeed(canonicalSpeed);
+    observerStore.update({ simulationSpeed: canonicalSpeed });
+    refreshSafely();
   }
   
   function refreshSafely(): void {
@@ -272,6 +274,7 @@ export function startObserverEngine(): void {
   function startSimulationClock(): void {
     simulationClock?.stop();
     simulationClock = new SimulationClock({
+      initialSpeed: observerStore.getSnapshot().simulationSpeed,
       onAdvance(minutes) {
         worldSession?.runMinutes(minutes);
       },
@@ -286,7 +289,7 @@ export function startObserverEngine(): void {
   
   observerActions.bind({
     createWorld,
-    stepMinutes,
+    setSimulationSpeed,
     moveObserver: move,
     recenterObserver,
     selectResident,
