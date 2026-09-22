@@ -16,6 +16,94 @@ using namespace lifelens;
     } \
 } while(false)
 
+
+static void diagnoseSnapshotDifference(
+    const SimulationStateSnapshot& a,
+    const SimulationStateSnapshot& b)
+{
+    std::cerr<<"snapshot diff: minute "<<a.world.minute<<" vs "<<b.world.minute
+             <<", token "<<a.nextContextActionToken<<" vs "<<b.nextContextActionToken
+             <<", logs "<<a.logs.size()<<" vs "<<b.logs.size()<<"\n";
+
+    const std::size_t sharedLogs=std::min(a.logs.size(),b.logs.size());
+    for(std::size_t i=0;i<sharedLogs;++i){
+        if(a.logs[i]==b.logs[i]) continue;
+        std::cerr<<"first log diff @"<<i<<"\nA: "<<a.logs[i]
+                 <<"\nB: "<<b.logs[i]<<"\n";
+        break;
+    }
+
+    std::vector<CharacterId> ids;
+    ids.reserve(a.runtime.size()+b.runtime.size());
+    for(const auto& item:a.runtime) ids.push_back(item.first);
+    for(const auto& item:b.runtime){
+        if(std::find(ids.begin(),ids.end(),item.first)==ids.end())
+            ids.push_back(item.first);
+    }
+    std::sort(ids.begin(),ids.end());
+
+    for(CharacterId id:ids){
+        const auto ia=a.runtime.find(id);
+        const auto ib=b.runtime.find(id);
+        if(ia==a.runtime.end() || ib==b.runtime.end()){
+            std::cerr<<"runtime presence diff id="<<id<<"\n";
+            continue;
+        }
+        const auto& x=ia->second;
+        const auto& y=ib->second;
+        if(x.pos.x!=y.pos.x || x.pos.y!=y.pos.y
+           || x.goal!=y.goal
+           || x.actionIndex!=y.actionIndex
+           || x.pendingContext.kind!=y.pendingContext.kind
+           || x.pendingContext.token!=y.pendingContext.token
+           || x.navigationRouteIndex!=y.navigationRouteIndex
+           || x.navigationRoute.size()!=y.navigationRoute.size()
+           || x.navigationTarget.x!=y.navigationTarget.x
+           || x.navigationTarget.y!=y.navigationTarget.y){
+            std::cerr<<"runtime diff id="<<id
+                     <<" pos("<<x.pos.x<<","<<x.pos.y<<") vs ("
+                     <<y.pos.x<<","<<y.pos.y<<")"
+                     <<" goal "<<static_cast<int>(x.goal)<<" vs "<<static_cast<int>(y.goal)
+                     <<" action "<<x.actionIndex<<" vs "<<y.actionIndex
+                     <<" pending "<<static_cast<int>(x.pendingContext.kind)<<"/"<<x.pendingContext.token
+                     <<" vs "<<static_cast<int>(y.pendingContext.kind)<<"/"<<y.pendingContext.token
+                     <<" route "<<x.navigationRouteIndex<<"/"<<x.navigationRoute.size()
+                     <<" vs "<<y.navigationRouteIndex<<"/"<<y.navigationRoute.size()
+                     <<" target("<<x.navigationTarget.x<<","<<x.navigationTarget.y<<") vs ("
+                     <<y.navigationTarget.x<<","<<y.navigationTarget.y<<")\n";
+        }
+    }
+
+    const std::size_t characters=std::min(
+        a.world.characters.size(),b.world.characters.size());
+    for(std::size_t i=0;i<characters;++i){
+        const auto& x=a.world.characters[i];
+        const auto& y=b.world.characters[i];
+        if(x.id!=y.id
+           || x.needs.hunger!=y.needs.hunger
+           || x.needs.thirst!=y.needs.thirst
+           || x.needs.sleep!=y.needs.sleep
+           || x.needs.bladder!=y.needs.bladder
+           || x.needs.hygiene!=y.needs.hygiene
+           || inventoryUnitCount(x.civilization.inventory)
+                !=inventoryUnitCount(y.civilization.inventory)
+           || x.civilization.knowledge.all().size()
+                !=y.civilization.knowledge.all().size()){
+            std::cerr<<"character diff index="<<i
+                     <<" id "<<x.id<<" vs "<<y.id
+                     <<" needs H "<<x.needs.hunger<<" vs "<<y.needs.hunger
+                     <<" T "<<x.needs.thirst<<" vs "<<y.needs.thirst
+                     <<" S "<<x.needs.sleep<<" vs "<<y.needs.sleep
+                     <<" B "<<x.needs.bladder<<" vs "<<y.needs.bladder
+                     <<" Y "<<x.needs.hygiene<<" vs "<<y.needs.hygiene
+                     <<" inv "<<inventoryUnitCount(x.civilization.inventory)
+                     <<" vs "<<inventoryUnitCount(y.civilization.inventory)
+                     <<" knowledge "<<x.civilization.knowledge.all().size()
+                     <<" vs "<<y.civilization.knowledge.all().size()<<"\n";
+        }
+    }
+}
+
 int main()
 {
     SimulationRuleset rules=DefaultSimulationRuleset;
@@ -203,9 +291,14 @@ int main()
     // And must continue into the exact same future, proving RNG/runtime/ruleset state.
     source.runMinutes(10000);
     restored.runMinutes(10000);
+    const SimulationStateSnapshot futureSnapshotA=source.captureSnapshot();
+    const SimulationStateSnapshot futureSnapshotB=restored.captureSnapshot();
     std::vector<std::uint8_t> futureA,futureB;
-    CHECK(encodeSimulationSnapshot(source.captureSnapshot(),futureA,&error));
-    CHECK(encodeSimulationSnapshot(restored.captureSnapshot(),futureB,&error));
+    CHECK(encodeSimulationSnapshot(futureSnapshotA,futureA,&error));
+    CHECK(encodeSimulationSnapshot(futureSnapshotB,futureB,&error));
+    if(futureA!=futureB){
+        diagnoseSnapshotDifference(futureSnapshotA,futureSnapshotB);
+    }
     CHECK(futureA==futureB);
 
     // Corruption/format mismatches are rejected cleanly.
