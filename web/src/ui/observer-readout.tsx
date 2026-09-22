@@ -64,23 +64,79 @@ export function ObserverMetrics({
   );
 }
 
-function ResidentCard({ resident }: { resident: Resident }) {
+function ResidentNeedsGrid({ resident }: { resident: Resident }) {
   return (
-    <article className="resident-card">
+    <div className="need-grid">
+      <span>배고픔 <b>{formatPercent(resident.needs?.hunger)}</b></span>
+      <span>갈증 <b>{formatPercent(resident.needs?.thirst)}</b></span>
+      <span>수면 <b>{formatPercent(resident.needs?.sleep)}</b></span>
+      <span>위생 <b>{formatPercent(resident.needs?.hygiene)}</b></span>
+    </div>
+  );
+}
+
+function ResidentCard({
+  resident,
+  selected,
+  onSelect,
+}: {
+  resident: Resident;
+  selected: boolean;
+  onSelect: (residentId: string) => void;
+}) {
+  return (
+    <button
+      type="button"
+      className={`resident-card resident-card-button ${selected ? 'selected' : ''}`}
+      onClick={() => onSelect(resident.id)}
+      aria-pressed={selected}
+    >
       <div className="resident-title">
         <strong>{resident.name}</strong>
         <span>{resident.sex ?? '—'} · {resident.activityLabel ?? 'Idle'}</span>
       </div>
-      <div className="need-grid">
-        <span>배고픔 <b>{formatPercent(resident.needs?.hunger)}</b></span>
-        <span>갈증 <b>{formatPercent(resident.needs?.thirst)}</b></span>
-        <span>수면 <b>{formatPercent(resident.needs?.sleep)}</b></span>
-        <span>위생 <b>{formatPercent(resident.needs?.hygiene)}</b></span>
-      </div>
+      <ResidentNeedsGrid resident={resident} />
       <small>
         {resident.hasPosition
           ? `Grid ${resident.gridX}, ${resident.gridY}`
           : 'Position unavailable'}
+      </small>
+    </button>
+  );
+}
+
+export function SelectedResidentReadout({
+  resident,
+  onClear,
+}: {
+  resident: Resident | null;
+  onClear: () => void;
+}) {
+  if (!resident) {
+    return (
+      <div className="focused-life-empty">
+        월드의 사람을 터치하면 그 사람의 현재 삶을 자세히 관찰할 수 있습니다.
+      </div>
+    );
+  }
+
+  return (
+    <article className="focused-life">
+      <div className="focused-life-heading">
+        <div>
+          <span>FOCUSED LIFE</span>
+          <strong>{resident.name}</strong>
+        </div>
+        <button type="button" onClick={onClear} aria-label="선택 해제">×</button>
+      </div>
+      <p>
+        {resident.sex ?? '—'} · 현재 행동 <b>{resident.activityLabel ?? 'Idle'}</b>
+      </p>
+      <ResidentNeedsGrid resident={resident} />
+      <small>
+        {resident.hasPosition
+          ? `현재 위치 Grid ${resident.gridX}, ${resident.gridY}`
+          : '현재 위치를 확인하는 중'}
       </small>
     </article>
   );
@@ -88,8 +144,12 @@ function ResidentCard({ resident }: { resident: Resident }) {
 
 export function ResidentReadout({
   residents,
+  selectedResidentId,
+  onSelect,
 }: {
   residents: Resident[];
+  selectedResidentId: string | null;
+  onSelect: (residentId: string) => void;
 }) {
   return (
     <>
@@ -100,7 +160,12 @@ export function ResidentReadout({
       <div id="residentList" className="resident-list">
         {residents.length > 0
           ? residents.map((resident) => (
-              <ResidentCard key={resident.id} resident={resident} />
+              <ResidentCard
+                key={resident.id}
+                resident={resident}
+                selected={resident.id === selectedResidentId}
+                onSelect={onSelect}
+              />
             ))
           : <div className="empty">표시할 주민이 없습니다.</div>}
       </div>
