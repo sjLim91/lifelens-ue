@@ -31,7 +31,7 @@ function decodeBase64(value: string): Uint8Array {
 
 async function loadStaticRuntime(): Promise<{
   js: string;
-  wasmBytes: Uint8Array;
+  wasmBuffer: ArrayBuffer;
 }> {
   const base = import.meta.env.BASE_URL || './';
   const [jsResponse, wasmResponse] = await Promise.all([
@@ -47,13 +47,13 @@ async function loadStaticRuntime(): Promise<{
 
   return {
     js: await jsResponse.text(),
-    wasmBytes: new Uint8Array(await wasmResponse.arrayBuffer()),
+    wasmBuffer: await wasmResponse.arrayBuffer(),
   };
 }
 
 async function loadBackendRuntime(): Promise<{
   js: string;
-  wasmBytes: Uint8Array;
+  wasmBuffer: ArrayBuffer;
 }> {
   const response = await fetch('/api/runtime/core', {
     cache: 'no-store',
@@ -70,15 +70,21 @@ async function loadBackendRuntime(): Promise<{
     throw new Error('LifeLensCore runtime payload unavailable');
   }
 
+  const bytes = decodeBase64(payload.wasmBase64);
+  const wasmBuffer = bytes.buffer.slice(
+    bytes.byteOffset,
+    bytes.byteOffset + bytes.byteLength,
+  ) as ArrayBuffer;
+
   return {
     js: payload.js,
-    wasmBytes: decodeBase64(payload.wasmBase64),
+    wasmBuffer,
   };
 }
 
 async function loadRuntime(): Promise<{
   js: string;
-  wasmBytes: Uint8Array;
+  wasmBuffer: ArrayBuffer;
 }> {
   try {
     return await loadStaticRuntime();
@@ -101,7 +107,7 @@ export class LifeLensCoreBridge {
       new Blob([payload.js], { type: 'text/javascript' }),
     );
     const wasmUrl = URL.createObjectURL(
-      new Blob([payload.wasmBytes], { type: 'application/wasm' }),
+      new Blob([payload.wasmBuffer], { type: 'application/wasm' }),
     );
 
     try {
