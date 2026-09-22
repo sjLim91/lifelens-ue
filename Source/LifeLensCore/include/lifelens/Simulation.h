@@ -168,9 +168,9 @@ private:
         CharacterId socialTarget=0;
         PendingContextAction pendingContext{};
 
-        // Headless/Core-owned locomotion cache. It is runtime-only on purpose:
-        // save/restore resumes from authoritative GridPos and replans instead
-        // of replaying stale presentation-era movement.
+        // Headless/Core-owned locomotion continuation state. Save/restore
+        // persists this because route choice/index affects deterministic future
+        // simulation truth; presentation transforms remain separate.
         std::vector<GridPos> navigationRoute;
         std::size_t navigationRouteIndex=0;
         GridPos navigationTarget{};
