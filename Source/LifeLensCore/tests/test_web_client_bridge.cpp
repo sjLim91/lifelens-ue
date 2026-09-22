@@ -23,6 +23,8 @@ int main()
 
     const std::string residents = bridge.residentsJson();
     assert(residents.find("\"residents\":[") != std::string::npos);
+    assert(residents.find("\"sex\":\"Male\"") != std::string::npos);
+    assert(residents.find("\"sex\":\"Female\"") != std::string::npos);
     assert(residents.find("\"needs\":{") != std::string::npos);
     assert(residents.find("\"hasPosition\":true") != std::string::npos);
 

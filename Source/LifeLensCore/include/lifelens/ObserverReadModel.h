@@ -40,6 +40,7 @@ struct RelationshipObservation {
 struct ResidentObservation {
     CharacterId id = 0;
     std::string name;
+    Sex sex = Sex::Male;
 
     Needs needs;
 
@@ -105,6 +106,7 @@ inline ResidentObservation buildResidentObservation(
     ResidentObservation dto;
     dto.id = character.id;
     dto.name = character.name;
+    dto.sex = character.sex;
     dto.needs = character.needs;
     dto.emotionValence = character.emotion.valence;
     dto.emotionArousal = character.emotion.arousal;
