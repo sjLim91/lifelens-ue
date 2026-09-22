@@ -327,7 +327,6 @@ function createHairOverlay(sex: ResidentSex, variantSeed: number, palette: Palet
 }
 
 export class CharacterLayer {
-  private readonly canvas: HTMLCanvasElement;
   private readonly renderer: THREE.WebGLRenderer;
   private readonly scene = new THREE.Scene();
   private readonly camera = new THREE.OrthographicCamera(0, 1, 1, 0, -100, 100);
@@ -345,7 +344,6 @@ export class CharacterLayer {
   private lastFrame = performance.now();
 
   constructor(canvas: HTMLCanvasElement, onReady?: () => void) {
-    this.canvas = canvas;
     this.onReady = onReady;
     this.renderer = new THREE.WebGLRenderer({
       canvas,
