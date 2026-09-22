@@ -628,14 +628,10 @@ export class ResidentWorldLayer {
 
     for (const resident of this.pendingResidents) {
       const action = resident.contextAction;
-      if (
-        !action?.active
-        || (
-          action.kind !== 'Social'
-          && action.kind !== 'KnowledgeTeaching'
-          && action.kind !== 'Parenting'
-        )
-      ) {
+      if (!action?.active) continue;
+
+      const sourceActor = this.actors.get(resident.id);
+      if (!sourceActor?.initialized || !sourceActor.root.visible) {
         continue;
       }
 
@@ -644,8 +640,6 @@ export class ResidentWorldLayer {
         && action.hasSpatialTarget
         && typeof action.targetGridX === 'number'
         && typeof action.targetGridY === 'number'
-        && sourceActor?.initialized
-        && sourceActor.root.visible
         && this.pendingTerrain
       ) {
         const gridCellsPerChunk = WORLD_GRID_CONTRACT.gridCellsPerChunk;
@@ -686,14 +680,19 @@ export class ResidentWorldLayer {
         continue;
       }
 
+      if (
+        action.kind !== 'Social'
+        && action.kind !== 'KnowledgeTeaching'
+        && action.kind !== 'Parenting'
+      ) {
+        continue;
+      }
+
       const targetId = action.targetResidentId ?? '';
       if (!targetId) continue;
-      const sourceActor = this.actors.get(resident.id);
       const targetActor = this.actors.get(targetId);
       if (
-        !sourceActor?.initialized
-        || !targetActor?.initialized
-        || !sourceActor.root.visible
+        !targetActor?.initialized
         || !targetActor.root.visible
       ) {
         continue;
