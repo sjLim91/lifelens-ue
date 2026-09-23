@@ -113,6 +113,9 @@ jobs:
       - name: Validate Web ecology projection
         run: python Tools/validate_web_ecology_projection.py
 
+      - name: Validate Web resident locomotion continuity
+        run: python Tools/validate_web_resident_motion.py
+
       - name: Validate World v2 observer streaming interest
         run: python Tools/validate_world_v2_streaming_interest.py
 
