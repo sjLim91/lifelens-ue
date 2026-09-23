@@ -108,7 +108,7 @@ export function createResidentAppearanceProfile(
     widthScale: sexWidthBias * widthVariation,
     depthScale: depthVariation,
     garmentColor: GARMENT_PALETTE[garmentIndex],
-    garmentMix: 0.28 + hash01(seed, 43) * 0.2,
+    garmentMix: 0.4 + hash01(seed, 43) * 0.22,
     skinLightnessShift: (hash01(seed, 47) - 0.5) * 0.055,
     hairStyle: Math.floor(hash01(seed, 53) * 4),
     hairColor: HAIR_PALETTE[hairIndex],
@@ -165,11 +165,12 @@ export function applyResidentMaterialVariant(
         return cloned;
       }
 
+      const materialSalt = stableHash(identity);
       cloned.color.lerp(garmentColor, profile.garmentMix);
       cloned.color.offsetHSL(
-        (hash01(profile.seed, object.id + 71) - 0.5) * 0.035,
+        (hash01(profile.seed, materialSalt + 71) - 0.5) * 0.035,
         0.04,
-        (hash01(profile.seed, object.id + 73) - 0.5) * 0.04,
+        (hash01(profile.seed, materialSalt + 73) - 0.5) * 0.04,
       );
       return cloned;
     };
