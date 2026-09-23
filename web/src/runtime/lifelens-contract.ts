@@ -76,6 +76,14 @@ export const OBSERVER_RUNTIME_CONTRACT = {
 export const RESIDENT_PRESENTATION_CONTRACT = {
   movementEpsilonWorldUnits: 0.01,
   maxAnimationDeltaSeconds: 0.05,
+  movementSampleSeconds:
+    SIMULATION_TIME_CONTRACT.refreshIntervalMs / 1000,
+  targetArrivalPaddingSeconds: 0.04,
+  walkStopGraceSeconds:
+    (SIMULATION_TIME_CONTRACT.refreshIntervalMs / 1000) * 0.45,
+  animationCrossFadeSeconds: 0.14,
+  turnResponsivenessPerSecond: 12,
+  modelForwardYawOffsetRadians: 0,
 } as const;
 
 export function simulationTimeHint(): string {

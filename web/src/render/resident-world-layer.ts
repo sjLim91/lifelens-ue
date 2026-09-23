@@ -39,6 +39,9 @@ interface ResidentActor {
   activityTargetId: string;
   current: THREE.Vector3;
   target: THREE.Vector3;
+  targetYaw: number;
+  travelSpeedWorldUnitsPerSecond: number;
+  walkGraceRemainingSeconds: number;
   initialized: boolean;
 }
 
@@ -206,9 +209,43 @@ export class ResidentWorldLayer {
       );
 
       if (actor.initialized) {
-        const direction = next.clone().sub(actor.target);
-        if (direction.lengthSq() > 0.0004) {
-          actor.root.rotation.y = Math.atan2(direction.x, direction.z);
+        const targetDelta = next.clone().sub(actor.target);
+        const targetChanged = targetDelta.lengthSq()
+          > (
+            RESIDENT_PRESENTATION_CONTRACT.movementEpsilonWorldUnits
+            ** 2
+          );
+
+        if (targetChanged) {
+          const travelDelta = next.clone().sub(actor.current);
+          const travelDistance = travelDelta.length();
+
+          if (
+            travelDistance
+            > RESIDENT_PRESENTATION_CONTRACT.movementEpsilonWorldUnits
+          ) {
+            actor.targetYaw =
+              Math.atan2(travelDelta.x, travelDelta.z)
+              + RESIDENT_PRESENTATION_CONTRACT.modelForwardYawOffsetRadians;
+
+            const effectiveSpeed = Math.max(
+              SIMULATION_TIME_CONTRACT.defaultSpeed,
+              this.simulationSpeed,
+            );
+            const locomotionBudget =
+              RESIDENT_VISUAL_SPEED_WORLD_UNITS_PER_SECOND_AT_1X
+              * effectiveSpeed;
+            const presentationSeconds =
+              RESIDENT_PRESENTATION_CONTRACT.movementSampleSeconds
+              + RESIDENT_PRESENTATION_CONTRACT.targetArrivalPaddingSeconds;
+
+            actor.travelSpeedWorldUnitsPerSecond = Math.min(
+              locomotionBudget,
+              travelDistance / Math.max(0.001, presentationSeconds),
+            );
+            actor.walkGraceRemainingSeconds =
+              RESIDENT_PRESENTATION_CONTRACT.walkStopGraceSeconds;
+          }
         }
       }
 
@@ -219,6 +256,9 @@ export class ResidentWorldLayer {
       if (!actor.initialized) {
         actor.current.copy(next);
         actor.root.position.copy(next);
+        actor.targetYaw = actor.root.rotation.y;
+        actor.travelSpeedWorldUnitsPerSecond = 0;
+        actor.walkGraceRemainingSeconds = 0;
         actor.initialized = true;
       }
 
@@ -258,15 +298,6 @@ export class ResidentWorldLayer {
       RESIDENT_PRESENTATION_CONTRACT.maxAnimationDeltaSeconds,
       Math.max(0, deltaSeconds),
     );
-    const effectiveSpeed = Math.max(
-      SIMULATION_TIME_CONTRACT.defaultSpeed,
-      this.simulationSpeed,
-    );
-    const maxDistance =
-      RESIDENT_VISUAL_SPEED_WORLD_UNITS_PER_SECOND_AT_1X
-      * effectiveSpeed
-      * dt;
-
     for (const actor of this.actors.values()) {
       if (!actor.root.visible) continue;
 
@@ -276,7 +307,20 @@ export class ResidentWorldLayer {
         distance > RESIDENT_PRESENTATION_CONTRACT.movementEpsilonWorldUnits;
 
       if (moving) {
-        actor.root.rotation.y = Math.atan2(delta.x, delta.z);
+        actor.walkGraceRemainingSeconds =
+          RESIDENT_PRESENTATION_CONTRACT.walkStopGraceSeconds;
+
+        const yawDelta = Math.atan2(
+          Math.sin(actor.targetYaw - actor.root.rotation.y),
+          Math.cos(actor.targetYaw - actor.root.rotation.y),
+        );
+        const turnBlend = 1 - Math.exp(
+          -RESIDENT_PRESENTATION_CONTRACT.turnResponsivenessPerSecond * dt,
+        );
+        actor.root.rotation.y += yawDelta * turnBlend;
+
+        const maxDistance =
+          actor.travelSpeedWorldUnitsPerSecond * dt;
         if (distance <= maxDistance) {
           actor.current.copy(actor.target);
         } else if (maxDistance > 0) {
@@ -285,10 +329,17 @@ export class ResidentWorldLayer {
             maxDistance,
           );
         }
+      } else {
+        actor.walkGraceRemainingSeconds = Math.max(
+          0,
+          actor.walkGraceRemainingSeconds - dt,
+        );
       }
 
       actor.root.position.copy(actor.current);
-      this.setAction(actor, moving);
+      const presentationMoving =
+        moving || actor.walkGraceRemainingSeconds > 0;
+      this.setAction(actor, presentationMoving);
       actor.mixer.update(dt);
     }
 
@@ -354,7 +405,6 @@ export class ResidentWorldLayer {
       source.position.x -= center.x;
       source.position.y -= box.min.y;
       source.position.z -= center.z;
-      source.rotation.y = Math.PI;
 
       const normalized = new THREE.Group();
       normalized.add(source);
@@ -451,6 +501,9 @@ export class ResidentWorldLayer {
       activityTargetId: resident.activityTargetId ?? '',
       current: new THREE.Vector3(),
       target: new THREE.Vector3(),
+      targetYaw: 0,
+      travelSpeedWorldUnitsPerSecond: 0,
+      walkGraceRemainingSeconds: 0,
       initialized: false,
     };
 
@@ -507,8 +560,11 @@ export class ResidentWorldLayer {
     const next = this.actionFor(actor, desired) ?? actor.idle;
     if (!next) return;
 
-    previous?.fadeOut(0.18);
-    next.reset().fadeIn(0.18).play();
+    const blendSeconds =
+      RESIDENT_PRESENTATION_CONTRACT.animationCrossFadeSeconds;
+    previous?.fadeOut(blendSeconds);
+    next.enabled = true;
+    next.play().fadeIn(blendSeconds);
     actor.active = desired;
   }
 }
