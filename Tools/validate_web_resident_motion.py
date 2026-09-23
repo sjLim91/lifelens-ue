@@ -85,4 +85,8 @@ assert "const hueShift = ((variantSeed % 17) - 8) * 0.006;" not in resident, (
     "resident identity must not collapse back to tiny whole-model hue jitter"
 )
 
-print("LifeLens web resident gait and appearance diversity: PASS")
+assert "defaultMobileZoom: 2.55" in contract
+assert "maxZoom: 4.6" in contract
+assert "garmentMix: 0.64 + hash01(seed, 43) * 0.18" in appearance
+
+print("LifeLens web resident gait, readability and appearance diversity: PASS")
