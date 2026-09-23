@@ -15,14 +15,14 @@ export interface ResidentAppearanceProfile {
 }
 
 const GARMENT_PALETTE = [
-  0x405b70,
-  0x6e493c,
-  0x536445,
-  0x725d38,
-  0x4f496d,
-  0x6b4d59,
-  0x375d58,
-  0x665f50,
+  0x2f5f86,
+  0x8a4d35,
+  0x4f7448,
+  0x8a6b2f,
+  0x62528c,
+  0x8a5067,
+  0x2f746a,
+  0x6e6654,
 ] as const;
 
 const HAIR_PALETTE = [
@@ -70,14 +70,14 @@ function heightForResident(
     : resident.sex === 'Female'
       ? 1.65
       : 1.685;
-  const individualVariation = (hash01(seed, 23) - 0.5) * 0.2;
+  const individualVariation = (hash01(seed, 23) - 0.5) * 0.28;
   const elderAdjustment =
     Number.isFinite(age) && age >= 70
       ? -Math.min(0.08, (age - 70) * 0.0025)
       : 0;
 
   return Math.max(
-    1.48,
+    1.46,
     sexMean + individualVariation + elderAdjustment,
   );
 }
@@ -87,12 +87,12 @@ export function createResidentAppearanceProfile(
 ): ResidentAppearanceProfile {
   const seed = stableHash(resident.id);
   const sexWidthBias = resident.sex === 'Male'
-    ? 1.025
+    ? 1.05
     : resident.sex === 'Female'
-      ? 0.965
-      : 0.995;
-  const widthVariation = 0.9 + hash01(seed, 29) * 0.18;
-  const depthVariation = 0.92 + hash01(seed, 31) * 0.16;
+      ? 0.94
+      : 1;
+  const widthVariation = 0.86 + hash01(seed, 29) * 0.26;
+  const depthVariation = 0.88 + hash01(seed, 31) * 0.22;
   const garmentIndex = Math.min(
     GARMENT_PALETTE.length - 1,
     Math.floor(hash01(seed, 37) * GARMENT_PALETTE.length),
@@ -108,7 +108,7 @@ export function createResidentAppearanceProfile(
     widthScale: sexWidthBias * widthVariation,
     depthScale: depthVariation,
     garmentColor: GARMENT_PALETTE[garmentIndex],
-    garmentMix: 0.4 + hash01(seed, 43) * 0.22,
+    garmentMix: 0.64 + hash01(seed, 43) * 0.18,
     skinLightnessShift: (hash01(seed, 47) - 0.5) * 0.055,
     hairStyle: Math.floor(hash01(seed, 53) * 4),
     hairColor: HAIR_PALETTE[hairIndex],
@@ -169,8 +169,8 @@ export function applyResidentMaterialVariant(
       cloned.color.lerp(garmentColor, profile.garmentMix);
       cloned.color.offsetHSL(
         (hash01(profile.seed, materialSalt + 71) - 0.5) * 0.035,
-        0.04,
-        (hash01(profile.seed, materialSalt + 73) - 0.5) * 0.04,
+        0.08,
+        (hash01(profile.seed, materialSalt + 73) - 0.5) * 0.06,
       );
       return cloned;
     };
