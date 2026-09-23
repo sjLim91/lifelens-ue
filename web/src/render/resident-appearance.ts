@@ -181,10 +181,7 @@ export function applyResidentMaterialVariant(
 }
 
 function makeHairMaterial(color: number): THREE.MeshLambertMaterial {
-  return new THREE.MeshLambertMaterial({
-    color,
-    roughness: 1,
-  } as THREE.MeshLambertMaterialParameters);
+  return new THREE.MeshLambertMaterial({ color });
 }
 
 export function addResidentHairVariant(
