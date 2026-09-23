@@ -14,6 +14,11 @@ import {
 } from '../runtime/lifelens-contract';
 import type { SimulationSpeed } from '../runtime/lifelens-contract';
 import { createTerrainElevationSampler } from './terrain-geometry';
+import {
+  addResidentHairVariant,
+  applyResidentMaterialVariant,
+  createResidentAppearanceProfile,
+} from './resident-appearance';
 import { residentToWorldPosition } from './resident-world-coordinates';
 
 const BASE_MODEL_COMMIT = 'ddd5fc34a445bcded3cf9836607aaeebc19a5c78';
@@ -40,19 +45,11 @@ interface ResidentActor {
   current: THREE.Vector3;
   target: THREE.Vector3;
   targetYaw: number;
-  travelSpeedWorldUnitsPerSecond: number;
+  targetTravelSpeedWorldUnitsPerSecond: number;
+  smoothedTravelSpeedWorldUnitsPerSecond: number;
   walkGraceRemainingSeconds: number;
+  gaitRateBias: number;
   initialized: boolean;
-}
-
-function stableHash(value: string): number {
-  let hash = 2166136261 >>> 0;
-  for (let index = 0; index < value.length; index += 1) {
-    hash ^= value.charCodeAt(index);
-    hash = Math.imul(hash, 16777619) >>> 0;
-  }
-  hash ^= hash >>> 16;
-  return hash >>> 0;
 }
 
 function findClip(
@@ -65,33 +62,6 @@ function findClip(
     ?? clips.find((clip) => (
       clip.name.toLowerCase().includes(contains.toLowerCase())
     ));
-}
-
-function cloneActorMaterials(
-  root: THREE.Object3D,
-  variantSeed: number,
-): void {
-  const hueShift = ((variantSeed % 17) - 8) * 0.006;
-
-  root.traverse((object) => {
-    if (!(object instanceof THREE.Mesh)) return;
-
-    const cloneMaterial = (
-      material: THREE.Material,
-    ): THREE.Material => {
-      const cloned = material.clone();
-      if (cloned instanceof THREE.MeshStandardMaterial) {
-        cloned.roughness = Math.max(0.48, cloned.roughness);
-        cloned.metalness = Math.min(0.04, cloned.metalness);
-        cloned.color.offsetHSL(hueShift, 0, 0);
-      }
-      return cloned;
-    };
-
-    object.material = Array.isArray(object.material)
-      ? object.material.map(cloneMaterial)
-      : cloneMaterial(object.material);
-  });
 }
 
 export class ResidentWorldLayer {
@@ -239,7 +209,7 @@ export class ResidentWorldLayer {
               RESIDENT_PRESENTATION_CONTRACT.movementSampleSeconds
               + RESIDENT_PRESENTATION_CONTRACT.targetArrivalPaddingSeconds;
 
-            actor.travelSpeedWorldUnitsPerSecond = Math.min(
+            actor.targetTravelSpeedWorldUnitsPerSecond = Math.min(
               locomotionBudget,
               travelDistance / Math.max(0.001, presentationSeconds),
             );
@@ -257,7 +227,8 @@ export class ResidentWorldLayer {
         actor.current.copy(next);
         actor.root.position.copy(next);
         actor.targetYaw = actor.root.rotation.y;
-        actor.travelSpeedWorldUnitsPerSecond = 0;
+        actor.targetTravelSpeedWorldUnitsPerSecond = 0;
+        actor.smoothedTravelSpeedWorldUnitsPerSecond = 0;
         actor.walkGraceRemainingSeconds = 0;
         actor.initialized = true;
       }
@@ -306,6 +277,17 @@ export class ResidentWorldLayer {
       const moving =
         distance > RESIDENT_PRESENTATION_CONTRACT.movementEpsilonWorldUnits;
 
+      const desiredTravelSpeed = moving
+        ? actor.targetTravelSpeedWorldUnitsPerSecond
+        : 0;
+      const speedBlend = 1 - Math.exp(
+        -RESIDENT_PRESENTATION_CONTRACT.speedResponsivenessPerSecond * dt,
+      );
+      actor.smoothedTravelSpeedWorldUnitsPerSecond += (
+        desiredTravelSpeed
+        - actor.smoothedTravelSpeedWorldUnitsPerSecond
+      ) * speedBlend;
+
       if (moving) {
         actor.walkGraceRemainingSeconds =
           RESIDENT_PRESENTATION_CONTRACT.walkStopGraceSeconds;
@@ -320,7 +302,7 @@ export class ResidentWorldLayer {
         actor.root.rotation.y += yawDelta * turnBlend;
 
         const maxDistance =
-          actor.travelSpeedWorldUnitsPerSecond * dt;
+          actor.smoothedTravelSpeedWorldUnitsPerSecond * dt;
         if (distance <= maxDistance) {
           actor.current.copy(actor.target);
         } else if (maxDistance > 0) {
@@ -330,6 +312,7 @@ export class ResidentWorldLayer {
           );
         }
       } else {
+        actor.targetTravelSpeedWorldUnitsPerSecond = 0;
         actor.walkGraceRemainingSeconds = Math.max(
           0,
           actor.walkGraceRemainingSeconds - dt,
@@ -339,6 +322,7 @@ export class ResidentWorldLayer {
       actor.root.position.copy(actor.current);
       const presentationMoving =
         moving || actor.walkGraceRemainingSeconds > 0;
+      this.syncWalkPlaybackRate(actor);
       this.setAction(actor, presentationMoving);
       actor.mixer.update(dt);
     }
@@ -439,20 +423,23 @@ export class ResidentWorldLayer {
       throw new Error('Three World resident template is not loaded');
     }
 
-    const variantSeed = stableHash(resident.id);
+    const appearance = createResidentAppearanceProfile(resident);
     const root = new THREE.Group();
     root.userData.residentId = resident.id;
-    const model = cloneSkeleton(this.template) as THREE.Group;
-    cloneActorMaterials(model, variantSeed);
-    root.add(model);
 
-    const baseHeight = 1.68;
-    const heightJitter = (((variantSeed >>> 8) % 9) - 4) * 0.015;
-    const bodyWidth = resident.sex === 'Female' ? 0.94 : 1;
+    const model = cloneSkeleton(this.template) as THREE.Group;
+    applyResidentMaterialVariant(model, appearance);
+
+    const visual = new THREE.Group();
+    visual.name = 'LifeLensResidentVisual';
+    visual.add(model);
+    addResidentHairVariant(visual, appearance);
+    root.add(visual);
+
     root.scale.set(
-      bodyWidth,
-      baseHeight + heightJitter,
-      bodyWidth,
+      appearance.widthScale,
+      appearance.heightWorldUnits,
+      appearance.depthScale,
     );
 
     const mixer = new THREE.AnimationMixer(root);
@@ -482,10 +469,17 @@ export class ResidentWorldLayer {
       action?.setLoop(THREE.LoopRepeat, Infinity);
     });
 
+    const idlePhase01 = (appearance.seed % 997) / 997;
+    const walkPhase01 = ((appearance.seed >>> 8) % 991) / 991;
+
     idle?.play();
     if (idle) {
-      idle.time = ((variantSeed % 997) / 997)
+      idle.time = idlePhase01
         * Math.max(0.001, idle.getClip().duration);
+    }
+    if (walk) {
+      walk.time = walkPhase01
+        * Math.max(0.001, walk.getClip().duration);
     }
 
     const actor: ResidentActor = {
@@ -502,14 +496,33 @@ export class ResidentWorldLayer {
       current: new THREE.Vector3(),
       target: new THREE.Vector3(),
       targetYaw: 0,
-      travelSpeedWorldUnitsPerSecond: 0,
+      targetTravelSpeedWorldUnitsPerSecond: 0,
+      smoothedTravelSpeedWorldUnitsPerSecond: 0,
       walkGraceRemainingSeconds: 0,
+      gaitRateBias: appearance.gaitRateBias,
       initialized: false,
     };
 
     this.actors.set(resident.id, actor);
     this.group.add(root);
     return actor;
+  }
+
+  private syncWalkPlaybackRate(actor: ResidentActor): void {
+    if (!actor.walk) return;
+
+    const referenceSpeed = Math.max(
+      0.001,
+      RESIDENT_PRESENTATION_CONTRACT.walkReferenceSpeedWorldUnitsPerSecond,
+    );
+    const normalizedSpeed =
+      actor.smoothedTravelSpeedWorldUnitsPerSecond / referenceSpeed;
+    const timeScale = THREE.MathUtils.clamp(
+      normalizedSpeed * actor.gaitRateBias,
+      RESIDENT_PRESENTATION_CONTRACT.walkMinTimeScale,
+      RESIDENT_PRESENTATION_CONTRACT.walkMaxTimeScale,
+    );
+    actor.walk.setEffectiveTimeScale(timeScale);
   }
 
   private actionFor(

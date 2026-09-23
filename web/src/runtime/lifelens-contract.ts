@@ -74,15 +74,19 @@ export const OBSERVER_RUNTIME_CONTRACT = {
 } as const;
 
 export const RESIDENT_PRESENTATION_CONTRACT = {
-  movementEpsilonWorldUnits: 0.01,
+  movementEpsilonWorldUnits: 0.008,
   maxAnimationDeltaSeconds: 0.05,
   movementSampleSeconds:
     SIMULATION_TIME_CONTRACT.refreshIntervalMs / 1000,
-  targetArrivalPaddingSeconds: 0.04,
-  walkStopGraceSeconds:
-    (SIMULATION_TIME_CONTRACT.refreshIntervalMs / 1000) * 0.45,
-  animationCrossFadeSeconds: 0.14,
-  turnResponsivenessPerSecond: 12,
+  targetArrivalPaddingSeconds: 0.58,
+  walkStopGraceSeconds: 0.8,
+  speedResponsivenessPerSecond: 7,
+  animationCrossFadeSeconds: 0.18,
+  turnResponsivenessPerSecond: 9,
+  walkReferenceSpeedWorldUnitsPerSecond:
+    RESIDENT_VISUAL_SPEED_WORLD_UNITS_PER_SECOND_AT_1X,
+  walkMinTimeScale: 0.72,
+  walkMaxTimeScale: 1.55,
   modelForwardYawOffsetRadians: 0,
 } as const;
 
