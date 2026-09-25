@@ -24,3 +24,9 @@
 - The current web source still uses one male base mesh for both sexes. This repair does not claim separate female mesh or completed character fidelity. A licensed body-variant asset integration remains follow-up.
 - Core motion/weather/lifecycle truth unchanged. No new external assets vendored.
 - Product merge and exact-head checks recorded in closeout.
+
+## Integration
+
+- PR #449 merged as `9f5fa4653e27f304fe5f8851dfffed9bbde78e53` after all four exact-head GitHub checks passed.
+- CI includes 43 checks (six character, seven weather, 30 existing runtime) and typecheck/build.
+- Scope released; separate body assets and real-device visual acceptance remain open.

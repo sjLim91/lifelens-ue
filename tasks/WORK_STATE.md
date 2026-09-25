@@ -531,3 +531,10 @@ This lane is parallel to active World v2 work and must not fork simulation truth
 - Seven weather + 30 existing regression checks, typecheck/build and all four GitHub checks pass.
 - Follow-up: real-device visual QA (cloud browser cannot create WebGL). Preview publication tracked through existing GitHub Pages workflow.
 - Checkpoint: `tasks/WEB_RAIN_HANDOFF_2026-09-25.md`.
+
+## 2026-09-25 — Web character appearance repair integrated (#449)
+
+- Appearance range/proportion, skin/garment coloring and head-attached hair repair merged as `9f5fa4653e27f304fe5f8851dfffed9bbde78e53`.
+- All four GitHub checks pass, including 43 regression checks and typecheck/build. Actual GLB rig binding checked without GPU.
+- Remaining: separate female base asset and real-device appearance/gait validation; #423 remains the action-context lane.
+- Checkpoint: `tasks/WEB_CHARACTER_HANDOFF_2026-09-25.md`.

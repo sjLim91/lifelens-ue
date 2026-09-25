@@ -474,3 +474,9 @@ When explicitly resumed, prefer cached/fast smoke paths before long engine build
 - Branch: `work/web-rain-20260925`; weather-layer.ts, weather tests and existing Web test workflow.
 - Merged at user request as `e11119280ae122879c38a0e13d496124679b9064`; no active lock remains.
 - Core, actors and other open PR ownership preserved. Real-device visual QA remains pending.
+
+## 2026-09-25 Work Mode — Web character appearance / released: #449 merged
+
+- Branch: `work/web-character-repair-20260925`; appearance renderer, narrow model-scale/disposal edits, tests and existing web CI.
+- Merged `9f5fa4653e27f304fe5f8851dfffed9bbde78e53`; no active lock remains.
+- #423 action-context work was preserved. Separate female asset and real-device QA remain follow-up.

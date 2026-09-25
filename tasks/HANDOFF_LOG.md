@@ -1006,3 +1006,11 @@
 - Explicit dry/unavailable Core observations stop precipitation; missing-field summary compatibility retained.
 - Seven new weather checks plus 30 runtime checks, typecheck/build pass. Live browser reached the app but GPU/WebGL was disabled; no visual acceptance claimed.
 - Checkpoint: `tasks/WEB_RAIN_HANDOFF_2026-09-25.md`.
+
+## 2026-09-25 — Web character appearance repair (#449)
+
+- Merged `9f5fa4653e27f304fe5f8851dfffed9bbde78e53` after all four exact-head GitHub checks passed; 43 regression cases and typecheck/build pass.
+- Fixed signed appearance hashing, height scaling on all axes and hair attachment to Head. Actual pinned GLB shares a jade material; exposed skin now uses skeletal weights while body garments, eyes and eyebrows receive separate colors. Per-resident geometry ownership/disposal added.
+- Actual model and Walk_Loop parsed and exercised without GPU: 7,281 body color vertices, animated Head attachment verified. Cloud WebGL limitation remains; no final visual acceptance claimed.
+- Existing single male mesh for both sexes is explicitly not resolved by this patch. #423 remains separate.
+- Resume from `tasks/WEB_CHARACTER_HANDOFF_2026-09-25.md`.
