@@ -19,8 +19,10 @@ for token in (
     "summary === 'Storm'",
     "visibleFloor",
     "Math.max(reportedIntensity, visibleFloor)",
-    "LineSegments",
-    "MAX_RAIN_STREAKS",
+    "ShaderMaterial",
+    "gl_PointCoord",
+    "gl_PointSize",
+    "MAX_RAIN_DROPS",
     "setFocus(worldX: number, worldZ: number)",
 ):
     assert token in weather, f"missing visible web precipitation token: {token}"
