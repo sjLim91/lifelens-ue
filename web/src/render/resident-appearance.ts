@@ -9,6 +9,7 @@ export interface ResidentAppearanceProfile {
   garmentColor: number;
   garmentMix: number;
   skinLightnessShift: number;
+  skinColor: number;
   hairStyle: number;
   hairColor: number;
   gaitRateBias: number;
@@ -50,7 +51,7 @@ function hash01(seed: number, salt: number): number {
   value ^= value >>> 15;
   value = Math.imul(value, 0x846ca68b) >>> 0;
   value ^= value >>> 16;
-  return value / 4294967295;
+  return (value >>> 0) / 4294967296;
 }
 
 function heightForResident(
@@ -110,6 +111,9 @@ export function createResidentAppearanceProfile(
     garmentColor: GARMENT_PALETTE[garmentIndex],
     garmentMix: 0.64 + hash01(seed, 43) * 0.18,
     skinLightnessShift: (hash01(seed, 47) - 0.5) * 0.055,
+    skinColor: [0xe0b394, 0xc99573, 0xb47e5e, 0x946344, 0x704b38][
+      Math.floor(hash01(seed, 61) * 5)
+    ],
     hairStyle: Math.floor(hash01(seed, 53) * 4),
     hairColor: HAIR_PALETTE[hairIndex],
     gaitRateBias: 0.94 + hash01(seed, 59) * 0.12,
@@ -152,12 +156,29 @@ export function applyResidentMaterialVariant(
       cloned.metalness = Math.min(0.035, cloned.metalness);
       const identity = materialIdentity(object, cloned);
 
+      // The current pinned GLB shares one jade material across body and eyes.
+      // Use its actual skinning groups to preserve exposed head/hand skin.
+      if (object instanceof THREE.SkinnedMesh && object.name === 'SuperHero_Male') {
+        applyBodyColors(object, profile);
+        cloned.color.set(0xffffff);
+        cloned.vertexColors = true;
+        return cloned;
+      }
+      if (/eyebrow/i.test(identity)) {
+        cloned.color.set(profile.hairColor);
+        return cloned;
+      }
+      if (/^eyes\b/i.test(identity)) {
+        cloned.color.set(0xe8e0d4);
+        return cloned;
+      }
+
       if (isDetailMaterial(identity)) {
         return cloned;
       }
 
       if (isSkinMaterial(identity)) {
-        cloned.color.offsetHSL(
+        cloned.color.set(profile.skinColor).offsetHSL(
           0,
           0,
           profile.skinLightnessShift,
@@ -179,6 +200,36 @@ export function applyResidentMaterialVariant(
       ? object.material.map(cloneMaterial)
       : cloneMaterial(object.material);
   });
+}
+
+function applyBodyColors(
+  mesh: THREE.SkinnedMesh,
+  profile: ResidentAppearanceProfile,
+): void {
+  const joints = mesh.geometry.getAttribute('skinIndex');
+  const weights = mesh.geometry.getAttribute('skinWeight');
+  if (!joints || !weights) return;
+  // Geometry is shared by SkeletonUtils.clone; color buffers must be per person.
+  mesh.geometry = mesh.geometry.clone();
+  mesh.userData.residentOwnsGeometry = true;
+  const skinBones = new Set(mesh.skeleton.bones.flatMap((bone, index) =>
+    /^(Head|neck_01|hand_[lr]|(?:thumb|index|middle|ring|pinky)_\d+.*)$/i.test(bone.name)
+      ? [index] : []));
+  const colors = new Float32Array(joints.count * 3);
+  const garment = new THREE.Color(profile.garmentColor);
+  const skin = new THREE.Color(profile.skinColor);
+  const color = new THREE.Color();
+  for (let vertex = 0; vertex < joints.count; vertex++) {
+    let skinWeight = 0;
+    for (let component = 0; component < 4; component++) {
+      if (skinBones.has(joints.getComponent(vertex, component))) {
+        skinWeight += weights.getComponent(vertex, component);
+      }
+    }
+    color.copy(garment).lerp(skin, THREE.MathUtils.smoothstep(skinWeight, 0.25, 0.75));
+    color.toArray(colors, vertex * 3);
+  }
+  mesh.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 }
 
 function makeHairMaterial(color: number): THREE.MeshLambertMaterial {
@@ -230,4 +281,21 @@ export function addResidentHairVariant(
     }
   });
   normalizedModel.add(hair);
+  normalizedModel.updateMatrixWorld(true);
+  let head: THREE.Bone | undefined;
+  normalizedModel.traverse((object) => {
+    if (object instanceof THREE.Bone && /^head$/i.test(object.name)) head = object;
+  });
+  // Preserve the fitted bind-pose transform, then follow head animation.
+  if (head) head.attach(hair);
+  else {
+    normalizedModel.remove(hair);
+    hair.traverse((object) => {
+      if (object instanceof THREE.Mesh) object.geometry.dispose();
+    });
+    material.dispose();
+  }
+  hair.traverse((object) => {
+    if (object instanceof THREE.Mesh) object.userData.residentOwnsGeometry = true;
+  });
 }
