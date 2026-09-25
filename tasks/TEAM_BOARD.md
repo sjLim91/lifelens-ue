@@ -446,7 +446,7 @@ When explicitly resumed, prefer cached/fast smoke paths before long engine build
 - Presentation/Environment-owned source/content is not modified in W2-0.
 - before W2-4 terrain/water/vegetation presentation migration, open a fresh Integration Request / scoped Assist Lock for Dagyeom-owned `Source/LifeLens/WorldPresentation/**` and Content paths.
 
-## 2026-09-22 Work Mode — Web runtime resilience scope
+## 2026-09-22 Work Mode — Web runtime resilience scope (released: #422 merged)
 
 - Owner: Jjun / this Work Mode session.
 - Branch: `work/web-runtime-resilience-20260922`.
@@ -456,3 +456,13 @@ When explicitly resumed, prefer cached/fast smoke paths before long engine build
 - Scope: bounded runtime loading, initialization fallback, mandatory response validation.
 - Active PR #421 camera/clock/Core locomotion/actor files and #417 release workflows excluded.
 - No automatic merge or deployment. Handoff: `tasks/WEB_RUNTIME_RESILIENCE_2026-09-22.md`.
+
+## 2026-09-25 Work Mode — Resident continuity / review pending
+
+- Owner: Jjun / Work Mode.
+- Branch: `work/web-resident-continuity-20260925`.
+- Scope: `web/src/runtime/resident-continuity.ts`, new
+  `web/tests/runtime-resilience/continuity.mjs`, `.github/workflows/web-runtime-resilience.yml`.
+- Excluded: Chat actor/weather/tree rendering, camera, clock, Core simulation and runtime release lanes.
+- Checkpoint and resumption: `tasks/WEB_CONTINUITY_HANDOFF_2026-09-25.md`.
+- No automatic main merge or deployment.
