@@ -1021,3 +1021,10 @@
 - Ground follows two-finger drag; vertical orbit corrected. Tap jitter does not rotate; multi-touch stays latched until all fingers release, preventing accidental orbit; lost capture/cancel clears stale input.
 - Selected-life details precede world setup, sheet scroll resets on open/selection and selected sheet height retains more world area. Canonical gestures remain unchanged.
 - Device visual/sensitivity acceptance remains pending. Checkpoint: `tasks/WEB_TOUCH_HANDOFF_2026-09-25.md`.
+
+## 2026-09-26 — Device-reported hair regression corrected (#451)
+
+- Merged `d8fcd616a344833a0da13707c80be18d8c8638c4` after all three final-head checks passed; 49 regression cases plus typecheck/build.
+- User screenshot exposed an incorrect spherical hair fit that bone-follow-only tests missed. Removed those proxies and applied color to actual upper Head-weighted scalp vertices; face/neck remain skin, eyes darkened.
+- Old structural validator required the deleted proxy function. Updated guard to assert scalp coverage, isolated geometry and no spherical hair; gait guards unchanged.
+- Actual GLB and CPU close-up inspected previously, but no real-device acceptance claimed. Follow-up remains licensed body variants and device visual review.

@@ -485,3 +485,8 @@ When explicitly resumed, prefer cached/fast smoke paths before long engine build
 
 - Branch: `work/web-touch-20260925`; input, observer pan wiring, App sheet, CSS and tests.
 - Merged `ae6d90fc4abd7c907d1aa9b41d07cbe4d4e126a8`; no active lock remains. #423 action-context work untouched.
+
+## 2026-09-26 Work Mode — Scalp repair / released: #451 merged
+
+- Branch: `work/web-scalp-fix-20260925`; appearance renderer, removal of hair call, character tests, structural validator.
+- Merged `d8fcd616a344833a0da13707c80be18d8c8638c4`; no active lock remains. #423 motion context remains separate.

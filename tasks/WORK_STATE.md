@@ -544,3 +544,9 @@ This lane is parallel to active World v2 work and must not fork simulation truth
 - Merged `ae6d90fc4abd7c907d1aa9b41d07cbe4d4e126a8`: corrected pan/vertical orbit direction, tap slop and multi-touch release transitions; selected-life-first mobile sheet.
 - Four exact-head GitHub checks and 50 regression cases pass. Subjective device touch/visual acceptance remains open.
 - Checkpoint: `tasks/WEB_TOUCH_HANDOFF_2026-09-25.md`.
+
+## 2026-09-26 — Scalp regression correction integrated (#451)
+
+- Merged `d8fcd616a344833a0da13707c80be18d8c8638c4`: removed collar-like spherical hair proxies; actual skinned scalp coverage and darker eyes.
+- All three final-head checks pass, including 49 regression cases. Device visual acceptance remains pending; CPU model close-up is diagnostic only.
+- Checkpoint: `tasks/WEB_SCALP_HANDOFF_2026-09-25.md`.

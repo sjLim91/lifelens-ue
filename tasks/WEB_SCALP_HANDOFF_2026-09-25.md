@@ -17,3 +17,9 @@ Remove the spherical cap/bun/back proxies entirely. Apply close-cropped hair col
 - CPU triangle-rendered close-up of the actual posed GLB inspected: scalp covered, face exposed, collar-shaped hair geometry absent. This diagnostic is not a WebGL/device screenshot.
 - Typecheck and production build pass. Cloud WebGL remains unavailable; final device appearance still needs confirmation.
 - Existing single male body model limitation remains separate; no claim of complete character fidelity.
+
+## 2026-09-26 integration
+
+- PR #451 merged as `d8fcd616a344833a0da13707c80be18d8c8638c4` after all three final-head checks passed: structural-preflight, typecheck, runtime-resilience (49 regressions plus build).
+- Initial preflight failed because the old structural validator required the removed addResidentHairVariant proxy function. Updated it to require skinned scalp coverage, geometry isolation and absence of spherical hair proxies; gait assertions retained.
+- Scope released. Device visual acceptance remains pending.
