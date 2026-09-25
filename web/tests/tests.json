@@ -135,6 +135,9 @@
       "authoritative dynamic weather projection",
       "weather-driven fog and daylight attenuation",
       "Core-driven rain and snow particles",
+      "rain and snow remain visible around the active observer camera",
+      "weather-driven terrain wetness",
+      "rain-summary visibility floor",
       "shared-corner terrain continuity",
       "connected river and stream topology",
       "no artificial orthogonal water grid",
@@ -149,9 +152,11 @@
       "Read the Biome badge above the terrain canvas",
       "Drag the world across multiple chunk boundaries and inspect the terrain canvas",
       "Observe the weather badge and verify temperature/weather summary are present",
+      "When the badge reports rain, snow, or storm, verify precipitation is visibly rendered around the current camera, the ground darkens/loses roughness from wetness, and overcast/fog response is visible",
+      "Pan the camera while precipitation is active and verify rain/snow follows the observer instead of remaining behind at the original world origin",
       "Increase observer speed and verify weather changes remain driven by Core simulation state rather than random browser effects"
     ],
-    "expected": "Panning across chunk boundaries changes the observer-centered Core terrain/environment query window without changing simulation authority. The biome overlay reports Core biome/forest coverage, and deterministic terrain is rendered only from Core-provided elevation as one connected surface with authoritative slopes, non-rectangular river or stream paths where hydrology exists, with at most two flow exits per river/stream chunk, no synthetic cross-grid fallback channels, and minor streams/springs progressively hidden at wider zoom levels, and clustered vegetation rather than a debug-like tile grid. The world overlay exposes the authoritative Core weather summary and temperature; cloud, precipitation, visibility and wind alter Three World atmosphere and rain/snow presentation from the same Core state."
+    "expected": "Panning across chunk boundaries changes the observer-centered Core terrain/environment query window without changing simulation authority. The biome overlay reports Core biome/forest coverage, and deterministic terrain is rendered only from Core-provided elevation as one connected surface with authoritative slopes, non-rectangular river or stream paths where hydrology exists, with at most two flow exits per river/stream chunk, no synthetic cross-grid fallback channels, and minor streams/springs progressively hidden at wider zoom levels, and clustered vegetation rather than a debug-like tile grid. The world overlay exposes the authoritative Core weather summary and temperature; cloud, precipitation, visibility and wind alter Three World atmosphere and rain/snow presentation from the same Core state. If the summary says rain/snow/storm, precipitation may not be visually silent merely because the reported intensity is tiny: a presentation visibility floor keeps streaks/flakes readable, the precipitation volume follows the observer focus while panning, wet weather darkens and smooths the terrain surface, and overcast/fog response is visible."
   },
   {
     "name": "Create a normal New Game without developer Seed input",

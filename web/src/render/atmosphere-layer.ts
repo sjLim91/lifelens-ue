@@ -57,15 +57,33 @@ export class AtmosphereLayer {
     const daylight01 = clamp01((solar + 0.18) / 1.18);
     const twilight = 1 - Math.abs((daylight01 * 2) - 1);
 
-    const cloud = clamp01(this.environment?.cloudCover01);
-    const precipitation = clamp01(
+    const summary = this.environment?.summary;
+    const storm = summary === 'Storm';
+    const rain = summary === 'Rain';
+    const snow = summary === 'Snow';
+    const reportedCloud = clamp01(this.environment?.cloudCover01);
+    const reportedPrecipitation = clamp01(
       this.environment?.precipitationIntensity01,
     );
-    const visibility = this.environment?.available === false
+    const precipitation = Math.max(
+      reportedPrecipitation,
+      storm ? 0.72 : rain || snow ? 0.34 : 0,
+    );
+    const cloud = Math.max(
+      reportedCloud,
+      storm ? 0.9 : rain || snow ? 0.72 : 0,
+    );
+    const reportedVisibility = this.environment?.available === false
       ? 1
       : clamp01(this.environment?.visibility01 ?? 1);
-    const humidity = clamp01(this.environment?.humidity01);
-    const storm = this.environment?.summary === 'Storm';
+    const visibility = Math.min(
+      reportedVisibility,
+      storm ? 0.62 : rain ? 0.78 : snow ? 0.72 : 1,
+    );
+    const humidity = Math.max(
+      clamp01(this.environment?.humidity01),
+      rain || storm || snow ? 0.76 : 0,
+    );
 
     const sunDistance = 220;
     this.sun.position.set(
@@ -87,7 +105,9 @@ export class AtmosphereLayer {
     const night = new THREE.Color(0x03080d);
     const dawn = new THREE.Color(0x59483d);
     const day = new THREE.Color(0x9dc5d9);
-    const overcast = new THREE.Color(storm ? 0x38434a : 0x697b7d);
+    const overcast = new THREE.Color(
+      storm ? 0x313c43 : rain ? 0x526369 : snow ? 0x6e7a7d : 0x697b7d,
+    );
     const sky = night.clone().lerp(day, daylight01);
     if (daylight01 > 0.02 && daylight01 < 0.72) {
       sky.lerp(dawn, twilight * 0.22);
@@ -99,7 +119,7 @@ export class AtmosphereLayer {
       const fogNight = new THREE.Color(0x07100d);
       const fogDay = new THREE.Color(0x6f8e83);
       const fogWeather = new THREE.Color(
-        storm ? 0x495458 : 0x83918c,
+        storm ? 0x465157 : rain ? 0x64736f : snow ? 0x899496 : 0x83918c,
       );
       this.scene.fog.color
         .copy(fogNight)

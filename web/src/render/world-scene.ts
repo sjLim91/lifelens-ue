@@ -30,6 +30,7 @@ interface TerrainMeshEntry {
   mesh: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
   key: string;
   signature: string;
+  baseColor: number;
 }
 
 export class WorldScene {
@@ -45,6 +46,7 @@ export class WorldScene {
   private readonly raycaster = new THREE.Raycaster();
   private readonly pointer = new THREE.Vector2();
   private readonly atmosphere: AtmosphereLayer;
+  private surfaceWetness01 = 0;
   private cameraInitialized = false;
   private currentCameraState: WorldSceneCameraState = {
     centerChunkX: 0,
@@ -97,6 +99,31 @@ export class WorldScene {
   setEnvironment(environment: DynamicEnvironment | null): void {
     this.atmosphere.setEnvironment(environment);
     this.weatherLayer.setEnvironment(environment);
+
+    const precipitation = Math.max(
+      0,
+      Math.min(1, Number(environment?.precipitationIntensity01) || 0),
+    );
+    const summaryFloor = environment?.summary === 'Storm'
+      ? 0.78
+      : environment?.summary === 'Rain'
+        ? 0.5
+        : environment?.summary === 'Snow'
+          ? 0.24
+          : 0;
+    const wetness = Math.max(
+      Math.max(
+        0,
+        Math.min(1, Number(environment?.surfaceWetness01) || 0),
+      ),
+      precipitation * 0.76,
+      summaryFloor,
+    );
+    this.surfaceWetness01 = Math.max(
+      0,
+      Math.min(1, wetness),
+    );
+    this.updateTerrainWeather();
   }
 
   setSimulationSpeed(speed: number): void {
@@ -158,6 +185,7 @@ export class WorldScene {
       Math.sin(state.angle) * groundRadius + panZ,
     );
     this.camera.lookAt(panX, 0, panZ);
+    this.weatherLayer.setFocus(panX, panZ);
   }
 
   setTerrain(window: TerrainWindow): void {
@@ -200,14 +228,25 @@ export class WorldScene {
           const previousGeometry = existing.mesh.geometry;
           existing.mesh.geometry = buildGeometry(chunk);
           previousGeometry.dispose();
-          existing.mesh.material.color.set(this.terrainColor(chunk));
+          const baseColor = this.terrainColor(chunk);
+          existing.baseColor = baseColor;
+          this.applyTerrainWeather(existing.mesh.material, baseColor);
           existing.signature = signature;
         }
         continue;
       }
 
-      const mesh = this.createTerrainMesh(chunk, window, buildGeometry);
-      this.terrainMeshes.set(key, { mesh, key, signature });
+      const baseColor = this.terrainColor(chunk);
+      const mesh = this.createTerrainMesh(
+        chunk,
+        window,
+        buildGeometry,
+        baseColor,
+      );
+      this.terrainMeshes.set(
+        key,
+        { mesh, key, signature, baseColor },
+      );
       this.terrainGroup.add(mesh);
     }
 
@@ -241,14 +280,16 @@ export class WorldScene {
     chunk: TerrainChunk,
     window: TerrainWindow,
     buildGeometry: (chunk: TerrainChunk) => THREE.BufferGeometry,
+    baseColor: number,
   ): THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial> {
     const geometry = buildGeometry(chunk);
 
     const material = new THREE.MeshStandardMaterial({
-      color: this.terrainColor(chunk),
+      color: baseColor,
       roughness: 0.92,
       metalness: 0,
     });
+    this.applyTerrainWeather(material, baseColor);
 
     const mesh = new THREE.Mesh(geometry, material);
     mesh.receiveShadow = true;
@@ -268,6 +309,26 @@ export class WorldScene {
       (chunk.y - window.centerChunkY) * chunkWorldSize,
     );
     mesh.scale.set(1, 1, 1);
+  }
+
+  private updateTerrainWeather(): void {
+    for (const entry of this.terrainMeshes.values()) {
+      this.applyTerrainWeather(entry.mesh.material, entry.baseColor);
+    }
+  }
+
+  private applyTerrainWeather(
+    material: THREE.MeshStandardMaterial,
+    baseColor: number,
+  ): void {
+    const wetness = this.surfaceWetness01;
+    material.color
+      .set(baseColor)
+      .multiplyScalar(1 - wetness * 0.3);
+    material.roughness = Math.max(
+      0.42,
+      0.92 - wetness * 0.46,
+    );
   }
 
   private terrainColor(chunk: TerrainChunk): number {
