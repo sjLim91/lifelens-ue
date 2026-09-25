@@ -15,7 +15,6 @@ import {
 import type { SimulationSpeed } from '../runtime/lifelens-contract';
 import { createTerrainElevationSampler } from './terrain-geometry';
 import {
-  addResidentHairVariant,
   applyResidentMaterialVariant,
   createResidentAppearanceProfile,
 } from './resident-appearance';
@@ -434,7 +433,6 @@ export class ResidentWorldLayer {
     const visual = new THREE.Group();
     visual.name = 'LifeLensResidentVisual';
     visual.add(model);
-    addResidentHairVariant(visual, appearance);
     root.add(visual);
 
     root.scale.set(

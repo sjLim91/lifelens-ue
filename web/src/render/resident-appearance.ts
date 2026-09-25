@@ -140,6 +140,7 @@ export function applyResidentMaterialVariant(
   profile: ResidentAppearanceProfile,
 ): void {
   const garmentColor = new THREE.Color(profile.garmentColor);
+  root.updateMatrixWorld(true);
 
   root.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return;
@@ -169,7 +170,7 @@ export function applyResidentMaterialVariant(
         return cloned;
       }
       if (/^eyes\b/i.test(identity)) {
-        cloned.color.set(0xe8e0d4);
+        cloned.color.set(0x302720);
         return cloned;
       }
 
@@ -215,6 +216,31 @@ function applyBodyColors(
   const skinBones = new Set(mesh.skeleton.bones.flatMap((bone, index) =>
     /^(Head|neck_01|hand_[lr]|(?:thumb|index|middle|ring|pinky)_\d+.*)$/i.test(bone.name)
       ? [index] : []));
+  const headIndex = mesh.skeleton.bones.findIndex(bone => /^head$/i.test(bone.name));
+  const positions = mesh.geometry.getAttribute('position');
+  const headWeights = new Float32Array(joints.count);
+  const heights = new Float32Array(joints.count);
+  const point = new THREE.Vector3();
+  let headBottom = Infinity;
+  let headTop = -Infinity;
+  for (let vertex = 0; vertex < joints.count; vertex++) {
+    for (let component = 0; component < 4; component++) {
+      if (joints.getComponent(vertex, component) === headIndex) {
+        headWeights[vertex] += weights.getComponent(vertex, component);
+      }
+    }
+    point.fromBufferAttribute(positions, vertex).applyMatrix4(mesh.matrixWorld);
+    heights[vertex] = point.y;
+    if (headWeights[vertex] > 0.5) {
+      headBottom = Math.min(headBottom, point.y);
+      headTop = Math.max(headTop, point.y);
+    }
+  }
+  const headHeight = headTop - headBottom;
+  const hairColor = new THREE.Color(profile.hairColor);
+  // Color the actual skinned scalp, not a fixed-height sphere that can become
+  // a collar when the imported rig changes pose. Keep face and neck uncovered.
+  const hairline = 0.64 + profile.hairStyle * 0.025;
   const colors = new Float32Array(joints.count * 3);
   const garment = new THREE.Color(profile.garmentColor);
   const skin = new THREE.Color(profile.skinColor);
@@ -227,75 +253,11 @@ function applyBodyColors(
       }
     }
     color.copy(garment).lerp(skin, THREE.MathUtils.smoothstep(skinWeight, 0.25, 0.75));
+    if (headWeights[vertex] > 0.5 && Number.isFinite(headHeight) && headHeight > 0.0001) {
+      const scalpHeight = (heights[vertex] - headBottom) / headHeight;
+      color.lerp(hairColor, THREE.MathUtils.smoothstep(scalpHeight, hairline, hairline + 0.05));
+    }
     color.toArray(colors, vertex * 3);
   }
   mesh.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-}
-
-function makeHairMaterial(color: number): THREE.MeshLambertMaterial {
-  return new THREE.MeshLambertMaterial({ color });
-}
-
-export function addResidentHairVariant(
-  normalizedModel: THREE.Group,
-  profile: ResidentAppearanceProfile,
-): void {
-  const material = makeHairMaterial(profile.hairColor);
-  const hair = new THREE.Group();
-  hair.name = 'LifeLensResidentHairVariant';
-
-  const cap = new THREE.Mesh(
-    new THREE.SphereGeometry(0.105, 10, 6),
-    material,
-  );
-  cap.position.set(0, 0.925, 0);
-  cap.scale.set(1.02, 0.55, 1.02);
-  hair.add(cap);
-
-  if (profile.hairStyle === 1) {
-    cap.scale.set(1.08, 0.72, 1.08);
-    cap.position.y = 0.93;
-  } else if (profile.hairStyle === 2) {
-    const side = hash01(profile.seed, 79) > 0.5 ? 1 : -1;
-    const bun = new THREE.Mesh(
-      new THREE.SphereGeometry(0.055, 8, 5),
-      material,
-    );
-    bun.position.set(side * 0.095, 0.915, -0.025);
-    bun.scale.set(0.9, 1.05, 0.9);
-    hair.add(bun);
-  } else if (profile.hairStyle === 3) {
-    const back = new THREE.Mesh(
-      new THREE.SphereGeometry(0.072, 8, 5),
-      material,
-    );
-    back.position.set(0, 0.855, -0.065);
-    back.scale.set(0.82, 1.55, 0.72);
-    hair.add(back);
-  }
-
-  hair.traverse((object) => {
-    if (object instanceof THREE.Mesh) {
-      object.castShadow = false;
-      object.receiveShadow = false;
-    }
-  });
-  normalizedModel.add(hair);
-  normalizedModel.updateMatrixWorld(true);
-  let head: THREE.Bone | undefined;
-  normalizedModel.traverse((object) => {
-    if (object instanceof THREE.Bone && /^head$/i.test(object.name)) head = object;
-  });
-  // Preserve the fitted bind-pose transform, then follow head animation.
-  if (head) head.attach(hair);
-  else {
-    normalizedModel.remove(hair);
-    hair.traverse((object) => {
-      if (object instanceof THREE.Mesh) object.geometry.dispose();
-    });
-    material.dispose();
-  }
-  hair.traverse((object) => {
-    if (object instanceof THREE.Mesh) object.userData.residentOwnsGeometry = true;
-  });
 }
