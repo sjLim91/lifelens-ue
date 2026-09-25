@@ -13,7 +13,7 @@ import { ResidentContinuity } from './runtime/resident-continuity';
 import { WorldSession } from './runtime/world-session';
 import { observerActions } from './state/observer-actions';
 import { observerStore } from './state/observer-store';
-import { CameraInput } from './input/camera-input';
+import { CameraInput, cameraPanDelta } from './input/camera-input';
 
 import { LegacyCanvasWorldRenderer } from './render/legacy-canvas-world-renderer';
 import { readRenderMode } from './render/render-mode';
@@ -121,15 +121,9 @@ export function startObserverEngine(): void {
       const worldUnitsPerPixel =
         OBSERVER_CAMERA_CONTRACT.panWorldUnitsPerPixelAtZoom1
         / Math.max(OBSERVER_CAMERA_CONTRACT.minZoom, zoom);
-      const sin = Math.sin(angle);
-      const cos = Math.cos(angle);
-
-      localPanX += (
-        (sin * deltaX) - (cos * deltaY)
-      ) * worldUnitsPerPixel;
-      localPanZ += (
-        (-cos * deltaX) - (sin * deltaY)
-      ) * worldUnitsPerPixel;
+      const pan = cameraPanDelta(angle, deltaX, deltaY);
+      localPanX += pan.x * worldUnitsPerPixel;
+      localPanZ += pan.z * worldUnitsPerPixel;
 
       const chunkWorldSize = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
       const stepX = Math.trunc(localPanX / chunkWorldSize);

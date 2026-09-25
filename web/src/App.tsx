@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { startObserverEngine } from './observer-engine';
 import {
   SIMULATION_SPEED_MODES,
@@ -33,7 +33,9 @@ function Topbar() {
 
 function WorldViewport({
   onToggleObserver,
+  observerOpen,
 }: {
+  observerOpen: boolean;
   onToggleObserver: () => void;
 }) {
   const snapshot = useObserverSnapshot();
@@ -48,7 +50,9 @@ function WorldViewport({
         className="observer-fab"
         type="button"
         onClick={onToggleObserver}
-        aria-label="관찰 패널 열기"
+        aria-label={observerOpen ? '관찰 패널 닫기' : '관찰 패널 열기'}
+        aria-expanded={observerOpen}
+        aria-controls="observer-panel"
       >
         관찰
       </button>
@@ -73,6 +77,10 @@ function ObserverPanel({
   onToggleMobile: () => void;
 }) {
   const snapshot = useObserverSnapshot();
+  const panelRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (mobileOpen && panelRef.current) panelRef.current.scrollTop = 0;
+  }, [mobileOpen, snapshot.selectedResidentId]);
   const [seed, setSeed] = useState('');
   const [seedError, setSeedError] = useState(false);
   const controlsDisabled = snapshot.runtime.status !== 'ready';
@@ -99,7 +107,8 @@ function ObserverPanel({
   };
 
   return (
-    <aside className={`observer ${mobileOpen ? 'mobile-open' : 'mobile-closed'}`}>
+    <aside id="observer-panel" ref={panelRef}
+      className={`observer ${mobileOpen ? 'mobile-open' : 'mobile-closed'} ${selectedResident ? 'has-selection' : ''}`}>
       <button
         className="observer-sheet-handle"
         type="button"
@@ -109,6 +118,14 @@ function ObserverPanel({
         <span />
         {mobileOpen ? '세계 보기' : '관찰 정보'}
       </button>
+      <section className="panel">
+        <h2>선택한 삶</h2>
+        <SelectedResidentReadout
+          resident={selectedResident}
+          onClear={() => observerActions.selectResident(null)}
+        />
+      </section>
+
       <section className="panel">
         <h2>월드</h2>
         <div className="button-row single">
@@ -167,13 +184,6 @@ function ObserverPanel({
         </p>
       </section>
 
-      <section className="panel">
-        <h2>선택한 삶</h2>
-        <SelectedResidentReadout
-          resident={selectedResident}
-          onClear={() => observerActions.selectResident(null)}
-        />
-      </section>
 
       <section className="panel">
         <h2>관찰 정보</h2>
@@ -230,6 +240,7 @@ export default function App() {
       <Topbar />
       <main className="layout">
         <WorldViewport
+          observerOpen={mobileObserverOpen}
           onToggleObserver={() => setMobileObserverOpen((open) => !open)}
         />
         <ObserverPanel

@@ -5,6 +5,11 @@ on:
     branches: [main]
     paths:
       - 'web/src/runtime/**'
+      - 'web/src/input/**'
+      - 'web/src/observer-engine.ts'
+      - 'web/src/App.tsx'
+      - 'web/src/styles.css'
+      - 'web/tests/input/**'
       - 'web/src/render/weather-layer.ts'
       - 'web/src/render/resident-appearance.ts'
       - 'web/src/render/resident-world-layer.ts'
@@ -42,6 +47,8 @@ jobs:
         run: node web/tests/weather/run.mjs
       - name: Exercise character appearance and head attachment
         run: node web/tests/characters/run.mjs
+      - name: Exercise touch gesture direction and transitions
+        run: node web/tests/input/run.mjs
       - name: Build browser client
         working-directory: web
         run: npm run build

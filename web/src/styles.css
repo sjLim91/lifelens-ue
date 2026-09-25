@@ -398,3 +398,13 @@ button:disabled { opacity: .33; cursor: default; }
     min-height: 48px;
   }
 }
+
+/* Keep the world visible while inspecting a resident on a phone. */
+@media (max-width: 800px) {
+  .observer.has-selection { max-height: min(46svh, 520px); }
+  .observer { overscroll-behavior: contain; }
+  .observer.mobile-closed { overflow-y: hidden; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .observer { transition: none; }
+}
