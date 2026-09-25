@@ -1014,3 +1014,10 @@
 - Actual model and Walk_Loop parsed and exercised without GPU: 7,281 body color vertices, animated Head attachment verified. Cloud WebGL limitation remains; no final visual acceptance claimed.
 - Existing single male mesh for both sexes is explicitly not resolved by this patch. #423 remains separate.
 - Resume from `tasks/WEB_CHARACTER_HANDOFF_2026-09-25.md`.
+
+## 2026-09-25 — Web touch and selection sheet correction (#450)
+
+- Merged `ae6d90fc4abd7c907d1aa9b41d07cbe4d4e126a8` after four exact-head checks passed; 50 regressions plus typecheck/build pass.
+- Ground follows two-finger drag; vertical orbit corrected. Tap jitter does not rotate; multi-touch stays latched until all fingers release, preventing accidental orbit; lost capture/cancel clears stale input.
+- Selected-life details precede world setup, sheet scroll resets on open/selection and selected sheet height retains more world area. Canonical gestures remain unchanged.
+- Device visual/sensitivity acceptance remains pending. Checkpoint: `tasks/WEB_TOUCH_HANDOFF_2026-09-25.md`.

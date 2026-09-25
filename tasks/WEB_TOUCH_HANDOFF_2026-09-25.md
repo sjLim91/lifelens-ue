@@ -18,3 +18,9 @@
 - Typecheck/build pass; pre-existing bundle size warning remains.
 - Cloud browser previously reports WebGL disabled; no real-device visual acceptance claimed. Device checks still needed for subjective sensitivity and panel layout.
 - Existing #423 action-context lane untouched; no actor/asset/weather edits.
+
+## Integration
+
+- PR #450 merged as `ae6d90fc4abd7c907d1aa9b41d07cbe4d4e126a8` after all four exact-head GitHub checks passed.
+- CI executes 50 regressions including seven new input cases; typecheck/build pass.
+- Scope released. Device interaction/visual acceptance remains pending.

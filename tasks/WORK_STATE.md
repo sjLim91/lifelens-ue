@@ -538,3 +538,9 @@ This lane is parallel to active World v2 work and must not fork simulation truth
 - All four GitHub checks pass, including 43 regression checks and typecheck/build. Actual GLB rig binding checked without GPU.
 - Remaining: separate female base asset and real-device appearance/gait validation; #423 remains the action-context lane.
 - Checkpoint: `tasks/WEB_CHARACTER_HANDOFF_2026-09-25.md`.
+
+## 2026-09-25 — Web touch interaction correction integrated (#450)
+
+- Merged `ae6d90fc4abd7c907d1aa9b41d07cbe4d4e126a8`: corrected pan/vertical orbit direction, tap slop and multi-touch release transitions; selected-life-first mobile sheet.
+- Four exact-head GitHub checks and 50 regression cases pass. Subjective device touch/visual acceptance remains open.
+- Checkpoint: `tasks/WEB_TOUCH_HANDOFF_2026-09-25.md`.

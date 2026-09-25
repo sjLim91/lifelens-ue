@@ -480,3 +480,8 @@ When explicitly resumed, prefer cached/fast smoke paths before long engine build
 - Branch: `work/web-character-repair-20260925`; appearance renderer, narrow model-scale/disposal edits, tests and existing web CI.
 - Merged `9f5fa4653e27f304fe5f8851dfffed9bbde78e53`; no active lock remains.
 - #423 action-context work was preserved. Separate female asset and real-device QA remain follow-up.
+
+## 2026-09-25 Work Mode — Web touch / released: #450 merged
+
+- Branch: `work/web-touch-20260925`; input, observer pan wiring, App sheet, CSS and tests.
+- Merged `ae6d90fc4abd7c907d1aa9b41d07cbe4d4e126a8`; no active lock remains. #423 action-context work untouched.
