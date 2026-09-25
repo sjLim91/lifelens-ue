@@ -20,6 +20,13 @@ export interface CameraInputOptions {
   onTap?: (clientX: number, clientY: number) => void;
 }
 
+/** Camera translation that makes the ground follow a screen-space drag. */
+export function cameraPanDelta(angle: number, deltaX: number, deltaY: number) {
+  const sin = Math.sin(angle);
+  const cos = Math.cos(angle);
+  return { x: -sin * deltaX + cos * deltaY, z: cos * deltaX + sin * deltaY };
+}
+
 type DragMode = 'select' | 'orbit' | 'pan' | null;
 
 interface PointerPoint {
@@ -41,6 +48,7 @@ export class CameraInput {
   private drag: { x: number; y: number } | null = null;
   private dragMode: DragMode = null;
   private pinchDistance: number | null = null;
+  private multiTouchGesture = false;
   private pinchCentroid: { x: number; y: number } | null = null;
   private tapCandidate: {
     pointerId: number;
@@ -68,6 +76,7 @@ export class CameraInput {
     canvas.addEventListener('pointermove', this.onPointerMove);
     canvas.addEventListener('pointerup', this.onPointerStop);
     canvas.addEventListener('pointercancel', this.onPointerStop);
+    canvas.addEventListener('lostpointercapture', this.onPointerStop);
     canvas.addEventListener('wheel', this.onWheel, { passive: false });
   }
 
@@ -85,6 +94,7 @@ export class CameraInput {
     this.canvas.removeEventListener('pointermove', this.onPointerMove);
     this.canvas.removeEventListener('pointerup', this.onPointerStop);
     this.canvas.removeEventListener('pointercancel', this.onPointerStop);
+    this.canvas.removeEventListener('lostpointercapture', this.onPointerStop);
     this.canvas.removeEventListener('wheel', this.onWheel);
   }
 
@@ -93,7 +103,7 @@ export class CameraInput {
   }
 
   private pointerDistance(): number | null {
-    const values = [...this.pointers.values()];
+    const values = [...this.pointers.values()].filter(point => point.pointerType === 'touch');
     if (values.length < 2) return null;
     return Math.hypot(
       values[0].x - values[1].x,
@@ -102,7 +112,7 @@ export class CameraInput {
   }
 
   private pointerCentroid(): { x: number; y: number } | null {
-    const values = [...this.pointers.values()];
+    const values = [...this.pointers.values()].filter(point => point.pointerType === 'touch');
     if (values.length < 2) return null;
     return {
       x: (values[0].x + values[1].x) * 0.5,
@@ -117,7 +127,7 @@ export class CameraInput {
   private orbit(deltaX: number, deltaY: number): void {
     this.angle += deltaX * this.rotateSensitivity;
     this.elevation = this.clampElevation(
-      this.elevation - deltaY * this.rotateSensitivity,
+      this.elevation + deltaY * this.rotateSensitivity,
     );
     this.emit();
   }
@@ -137,6 +147,7 @@ export class CameraInput {
 
     if (event.pointerType === 'touch') {
       if (this.pointers.size === 1) {
+        this.multiTouchGesture = false;
         // Canonical Android contract:
         // one-finger drag = orbit, short one-finger release = select.
         this.dragMode = 'orbit';
@@ -148,7 +159,8 @@ export class CameraInput {
           moved: false,
         };
       } else {
-        // Two-finger gesture owns pan + pinch and can never become a tap.
+        // Keep this gesture multi-touch until all fingers are released.
+        this.multiTouchGesture = true;
         this.dragMode = null;
         this.drag = null;
         this.tapCandidate = null;
@@ -203,7 +215,8 @@ export class CameraInput {
     const touchPointers = [...this.pointers.values()]
       .filter((pointer) => pointer.pointerType === 'touch');
 
-    if (touchPointers.length >= 2) {
+    if (touchPointers.length > 2) return;
+    if (touchPointers.length === 2) {
       this.tapCandidate = null;
       const nextDistance = this.pointerDistance();
       const nextCentroid = this.pointerCentroid();
@@ -233,6 +246,9 @@ export class CameraInput {
       return;
     }
 
+    if (event.pointerType === 'touch' && this.multiTouchGesture) return;
+    // A tap must not rotate the camera underneath the selection ray.
+    if (this.tapCandidate && !this.tapCandidate.moved) return;
     if (!this.drag) return;
     const deltaX = event.clientX - this.drag.x;
     const deltaY = event.clientY - this.drag.y;
@@ -248,10 +264,14 @@ export class CameraInput {
   };
 
   private readonly onPointerStop = (event: PointerEvent): void => {
+    if (!this.pointers.has(event.pointerId)) return;
     event.preventDefault();
     const shouldTap = event.type === 'pointerup'
       && this.tapCandidate?.pointerId === event.pointerId
       && this.tapCandidate.moved === false
+      && !this.multiTouchGesture
+      && Math.hypot(event.clientX - this.tapCandidate.startX,
+        event.clientY - this.tapCandidate.startY) <= OBSERVER_CAMERA_CONTRACT.tapMoveThresholdPx
       && this.pointers.size === 1;
 
     this.pointers.delete(event.pointerId);
@@ -259,13 +279,15 @@ export class CameraInput {
     this.pinchCentroid = this.pointerCentroid();
 
     const remaining = [...this.pointers.values()];
-    if (remaining.length === 1 && remaining[0].pointerType === 'touch') {
+    if (!this.multiTouchGesture && remaining.length === 1 && remaining[0].pointerType === 'touch') {
       this.dragMode = 'orbit';
       this.drag = { x: remaining[0].x, y: remaining[0].y };
     } else {
       this.dragMode = null;
       this.drag = null;
     }
+
+    if (remaining.length === 0) this.multiTouchGesture = false;
 
     if (shouldTap) {
       this.options.onTap?.(event.clientX, event.clientY);
