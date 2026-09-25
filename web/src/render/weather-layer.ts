@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import type { DynamicEnvironment } from '../runtime/core-types';
 
-const MAX_RAIN_STREAKS = 1100;
+const MAX_RAIN_DROPS = 1600;
 const MAX_SNOW_PARTICLES = 700;
-const WEATHER_SPAN = 120;
-const WEATHER_TOP = 72;
+const WEATHER_SPAN = 96;
+const WEATHER_TOP = 68;
 
 function clamp01(value: unknown): number {
   return Math.max(0, Math.min(1, Number(value) || 0));
@@ -20,15 +20,52 @@ export class WeatherLayer {
   readonly group = new THREE.Group();
 
   private readonly rainPositions =
-    new Float32Array(MAX_RAIN_STREAKS * 2 * 3);
+    new Float32Array(MAX_RAIN_DROPS * 3);
   private readonly rainGeometry = new THREE.BufferGeometry();
-  private readonly rainMaterial = new THREE.LineBasicMaterial({
-    color: 0xb9d7e7,
+  private readonly rainMaterial = new THREE.ShaderMaterial({
+    uniforms: {
+      uColor: { value: new THREE.Color(0xc3dce8) },
+      uIntensity: { value: 0.4 },
+      uWind: { value: 0 },
+    },
+    vertexShader: `
+      uniform float uIntensity;
+
+      void main() {
+        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+        gl_Position = projectionMatrix * mvPosition;
+        gl_PointSize = mix(9.0, 14.0, clamp(uIntensity, 0.0, 1.0));
+      }
+    `,
+    fragmentShader: `
+      uniform vec3 uColor;
+      uniform float uIntensity;
+      uniform float uWind;
+
+      void main() {
+        vec2 uv = gl_PointCoord;
+        float y = uv.y - 0.5;
+        float slant = y * uWind * 0.22;
+        float xDistance = abs((uv.x - 0.5) - slant);
+
+        float core = 1.0 - smoothstep(0.035, 0.105, xDistance);
+        float tipFade = smoothstep(0.0, 0.14, uv.y)
+          * (1.0 - smoothstep(0.86, 1.0, uv.y));
+        float alpha = core * tipFade * mix(
+          0.48,
+          0.82,
+          clamp(uIntensity, 0.0, 1.0)
+        );
+
+        if (alpha < 0.025) discard;
+        gl_FragColor = vec4(uColor, alpha);
+      }
+    `,
     transparent: true,
-    opacity: 0.76,
     depthWrite: false,
+    depthTest: true,
   });
-  private readonly rain: THREE.LineSegments;
+  private readonly rain: THREE.Points;
 
   private readonly snowPositions =
     new Float32Array(MAX_SNOW_PARTICLES * 3);
@@ -50,15 +87,15 @@ export class WeatherLayer {
   private snowCount = 0;
 
   constructor() {
-    for (let index = 0; index < MAX_RAIN_STREAKS; index += 1) {
-      this.resetRainStreak(index, seeded01(index, 3) * WEATHER_TOP);
+    for (let index = 0; index < MAX_RAIN_DROPS; index += 1) {
+      this.resetRainDrop(index, seeded01(index, 3) * WEATHER_TOP);
     }
     this.rainGeometry.setAttribute(
       'position',
       new THREE.BufferAttribute(this.rainPositions, 3),
     );
     this.rainGeometry.setDrawRange(0, 0);
-    this.rain = new THREE.LineSegments(
+    this.rain = new THREE.Points(
       this.rainGeometry,
       this.rainMaterial,
     );
@@ -123,8 +160,8 @@ export class WeatherLayer {
 
     this.rainCount = this.precipitation === 'Rain'
       ? Math.max(
-        220,
-        Math.round(MAX_RAIN_STREAKS * this.intensity),
+        420,
+        Math.round(MAX_RAIN_DROPS * this.intensity),
       )
       : 0;
     this.snowCount = this.precipitation === 'Snow'
@@ -134,16 +171,18 @@ export class WeatherLayer {
       )
       : 0;
 
-    this.rainGeometry.setDrawRange(0, this.rainCount * 2);
+    this.rainGeometry.setDrawRange(0, this.rainCount);
     this.snowGeometry.setDrawRange(0, this.snowCount);
     this.rain.visible = this.rainCount > 0;
     this.snow.visible = this.snowCount > 0;
     this.group.visible = this.rain.visible || this.snow.visible;
 
-    this.rainMaterial.opacity = 0.62 + this.intensity * 0.3;
-    this.rainMaterial.color.set(
-      summary === 'Storm' ? 0xaec8d6 : 0xc3dce8,
-    );
+    this.rainMaterial.uniforms.uIntensity.value = this.intensity;
+    this.rainMaterial.uniforms.uWind.value =
+      (this.wind - 0.25) * 1.2;
+    (
+      this.rainMaterial.uniforms.uColor.value as THREE.Color
+    ).set(summary === 'Storm' ? 0xadc4cf : 0xbdd6e3);
     this.snowMaterial.opacity = 0.76 + this.intensity * 0.18;
   }
 
@@ -171,28 +210,27 @@ export class WeatherLayer {
   }
 
   private updateRain(dt: number): void {
-    const fallSpeed = 38 + this.intensity * 42;
-    const drift = (this.wind - 0.25) * 15;
+    const fallSpeed = 34 + this.intensity * 38;
+    const drift = (this.wind - 0.25) * 8;
 
     for (let index = 0; index < this.rainCount; index += 1) {
-      const offset = index * 6;
+      const offset = index * 3;
       this.rainPositions[offset] += drift * dt;
-      this.rainPositions[offset + 3] += drift * dt;
       this.rainPositions[offset + 1] -= fallSpeed * dt;
-      this.rainPositions[offset + 4] -= fallSpeed * dt;
 
-      if (this.rainPositions[offset + 1] < -3) {
-        this.resetRainStreak(
+      if (this.rainPositions[offset + 1] < -2) {
+        this.resetRainDrop(
           index,
-          WEATHER_TOP + seeded01(index, 23) * 18,
+          WEATHER_TOP + seeded01(index, 23) * 14,
         );
       }
 
-      const x = this.rainPositions[offset];
-      if (x > WEATHER_SPAN * 0.55) {
-        this.shiftRainStreakX(index, -WEATHER_SPAN);
-      } else if (x < -WEATHER_SPAN * 0.55) {
-        this.shiftRainStreakX(index, WEATHER_SPAN);
+      if (this.rainPositions[offset] > WEATHER_SPAN * 0.55) {
+        this.rainPositions[offset] -= WEATHER_SPAN;
+      } else if (
+        this.rainPositions[offset] < -WEATHER_SPAN * 0.55
+      ) {
+        this.rainPositions[offset] += WEATHER_SPAN;
       }
     }
 
@@ -235,23 +273,12 @@ export class WeatherLayer {
     }
   }
 
-  private resetRainStreak(index: number, y: number): void {
-    const offset = index * 6;
-    const x = (seeded01(index, 41) - 0.5) * WEATHER_SPAN;
-    const z = (seeded01(index, 43) - 0.5) * WEATHER_SPAN;
-    const length = 1.2 + seeded01(index, 47) * 2.2;
-
-    this.rainPositions[offset] = x;
+  private resetRainDrop(index: number, y: number): void {
+    const offset = index * 3;
+    this.rainPositions[offset] =
+      (seeded01(index, 41) - 0.5) * WEATHER_SPAN;
     this.rainPositions[offset + 1] = y;
-    this.rainPositions[offset + 2] = z;
-    this.rainPositions[offset + 3] = x;
-    this.rainPositions[offset + 4] = y - length;
-    this.rainPositions[offset + 5] = z;
-  }
-
-  private shiftRainStreakX(index: number, deltaX: number): void {
-    const offset = index * 6;
-    this.rainPositions[offset] += deltaX;
-    this.rainPositions[offset + 3] += deltaX;
+    this.rainPositions[offset + 2] =
+      (seeded01(index, 43) - 0.5) * WEATHER_SPAN;
   }
 }
