@@ -31,6 +31,8 @@ jobs:
         run: npm run typecheck
       - name: Exercise loading and response failure paths
         run: node web/tests/runtime-resilience/run.mjs
+      - name: Exercise resident cache continuity
+        run: node web/tests/runtime-resilience/continuity.mjs
       - name: Build browser client
         working-directory: web
         run: npm run build

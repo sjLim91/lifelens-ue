@@ -516,11 +516,11 @@ WEB-0 scope:
 
 This lane is parallel to active World v2 work and must not fork simulation truth.
 
-## 2026-09-22 Work Mode — Web runtime resilience / local validation complete
+## 2026-09-25 Work Mode — Resident continuity / integration pending
 
-- Branch: `work/web-runtime-resilience-20260922`, base `6abf47f`.
-- Implemented: full-response deadlines, initialization-level fallback, corrupt
-  overview/resident rejection, standalone regression suite and scoped PR CI.
-- Local gate: 17 regression checks + TypeScript + Vite production build PASS.
-- Integration pending. Do not merge/deploy automatically while Chat work continues.
-- Scope / known limits: `tasks/WEB_RUNTIME_RESILIENCE_2026-09-22.md`.
+- Previous Work PR #422 is merged (actual GitHub confirmed); its old integration-pending state is superseded.
+- Branch: `work/web-resident-continuity-20260925`, base `9b895a2`.
+- Cache identity/coordinate expiry and authoritative removal implemented.
+- Local checks: 13 new + 17 existing regression cases, typecheck, production build PASS.
+- Review/integration pending; no automatic merge/deploy while Chat work continues.
+- Recovery instructions: `tasks/WEB_CONTINUITY_HANDOFF_2026-09-25.md`.
