@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'web/src/runtime/**'
+      - 'web/src/render/weather-layer.ts'
+      - 'web/tests/weather/**'
       - 'web/tests/runtime-resilience/**'
       - 'web/package.json'
       - 'web/tsconfig.json'
@@ -33,6 +35,8 @@ jobs:
         run: node web/tests/runtime-resilience/run.mjs
       - name: Exercise resident cache continuity
         run: node web/tests/runtime-resilience/continuity.mjs
+      - name: Exercise weather distribution and Core state transitions
+        run: node web/tests/weather/run.mjs
       - name: Build browser client
         working-directory: web
         run: npm run build
