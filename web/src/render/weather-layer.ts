@@ -11,9 +11,11 @@ function clamp01(value: unknown): number {
 }
 
 function seeded01(index: number, salt: number): number {
-  let value = Math.imul(index + 1, 1103515245) + salt * 12345;
-  value ^= value >>> 16;
-  return (value >>> 0) / 4294967295;
+  // Avalanche both inputs: adding a small salt leaves x/y/z almost identical.
+  let value = Math.imul(index + 1, 0x9e3779b1) ^ Math.imul(salt, 0x85ebca6b);
+  value = Math.imul(value ^ (value >>> 16), 0x7feb352d);
+  value = Math.imul(value ^ (value >>> 15), 0x846ca68b);
+  return ((value ^ (value >>> 16)) >>> 0) / 4294967296;
 }
 
 export class WeatherLayer {
@@ -26,31 +28,45 @@ export class WeatherLayer {
     uniforms: {
       uColor: { value: new THREE.Color(0xc3dce8) },
       uIntensity: { value: 0.4 },
-      uWind: { value: 0 },
+      uVelocity: { value: new THREE.Vector3(0, -50, 0) },
+      uViewport: { value: new THREE.Vector2(1, 1) },
+      uPixelRatio: { value: 1 },
     },
     vertexShader: `
       uniform float uIntensity;
+      uniform float uPixelRatio;
+      uniform vec2 uViewport;
+      uniform vec3 uVelocity;
+      varying vec2 vDirection;
 
       void main() {
         vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
         gl_Position = projectionMatrix * mvPosition;
-        gl_PointSize = mix(9.0, 14.0, clamp(uIntensity, 0.0, 1.0));
+        vec4 nextPosition = projectionMatrix * (mvPosition
+          + vec4(mat3(modelViewMatrix) * uVelocity * 0.015, 0.0));
+        vec2 motion = (nextPosition.xy / nextPosition.w
+          - gl_Position.xy / gl_Position.w) * uViewport;
+        // Point coordinates have a downward y axis, unlike clip coordinates.
+        motion.y = -motion.y;
+        vDirection = length(motion) > 0.0001
+          ? normalize(motion) : vec2(0.0, 1.0);
+        gl_PointSize = mix(9.0, 14.0, clamp(uIntensity, 0.0, 1.0)) * uPixelRatio;
       }
     `,
     fragmentShader: `
       uniform vec3 uColor;
       uniform float uIntensity;
-      uniform float uWind;
+      varying vec2 vDirection;
 
       void main() {
-        vec2 uv = gl_PointCoord;
-        float y = uv.y - 0.5;
-        float slant = y * uWind * 0.22;
-        float xDistance = abs((uv.x - 0.5) - slant);
-
-        float core = 1.0 - smoothstep(0.035, 0.105, xDistance);
-        float tipFade = smoothstep(0.0, 0.14, uv.y)
-          * (1.0 - smoothstep(0.86, 1.0, uv.y));
+        vec2 centered = gl_PointCoord - 0.5;
+        float along = dot(centered, vDirection) + 0.5;
+        float across = abs(dot(centered, vec2(-vDirection.y, vDirection.x)));
+        // Fixed CSS-pixel width and length at every zoom and device pixel ratio.
+        float lengthPx = mix(9.0, 14.0, clamp(uIntensity, 0.0, 1.0));
+        float core = 1.0 - smoothstep(0.35, 0.85, across * lengthPx);
+        float tipFade = smoothstep(0.04, 0.22, along)
+          * (1.0 - smoothstep(0.78, 0.96, along));
         float alpha = core * tipFade * mix(
           0.48,
           0.82,
@@ -101,6 +117,10 @@ export class WeatherLayer {
     );
     this.rain.frustumCulled = false;
     this.rain.renderOrder = 5;
+    this.rain.onBeforeRender = (renderer) => {
+      renderer.getSize(this.rainMaterial.uniforms.uViewport.value);
+      this.rainMaterial.uniforms.uPixelRatio.value = renderer.getPixelRatio();
+    };
 
     for (let index = 0; index < MAX_SNOW_PARTICLES; index += 1) {
       const offset = index * 3;
@@ -129,8 +149,9 @@ export class WeatherLayer {
   }
 
   setEnvironment(environment: DynamicEnvironment | null): void {
-    const summary = environment?.summary;
-    const declaredType = environment?.precipitationType ?? 'None';
+    const observation = environment?.available === false ? null : environment;
+    const summary = observation?.summary;
+    const declaredType = observation?.precipitationType;
     const summaryType: 'None' | 'Rain' | 'Snow' =
       summary === 'Snow'
         ? 'Snow'
@@ -139,10 +160,10 @@ export class WeatherLayer {
           : 'None';
 
     this.precipitation =
-      declaredType !== 'None' ? declaredType : summaryType;
+      declaredType ?? summaryType;
 
     const reportedIntensity = clamp01(
-      environment?.precipitationIntensity01,
+      observation?.precipitationIntensity01,
     );
     const visibleFloor =
       summary === 'Storm'
@@ -153,18 +174,20 @@ export class WeatherLayer {
             ? 0.18
             : 0;
 
-    this.intensity = this.precipitation === 'None'
+    const explicitlyDry = this.precipitation === 'None'
+      || observation?.precipitationIntensity01 === 0;
+    this.intensity = explicitlyDry
       ? 0
       : Math.max(reportedIntensity, visibleFloor);
-    this.wind = clamp01(environment?.windIntensity01);
+    this.wind = clamp01(observation?.windIntensity01);
 
-    this.rainCount = this.precipitation === 'Rain'
+    this.rainCount = this.precipitation === 'Rain' && this.intensity > 0
       ? Math.max(
         420,
         Math.round(MAX_RAIN_DROPS * this.intensity),
       )
       : 0;
-    this.snowCount = this.precipitation === 'Snow'
+    this.snowCount = this.precipitation === 'Snow' && this.intensity > 0
       ? Math.max(
         140,
         Math.round(MAX_SNOW_PARTICLES * this.intensity),
@@ -178,8 +201,9 @@ export class WeatherLayer {
     this.group.visible = this.rain.visible || this.snow.visible;
 
     this.rainMaterial.uniforms.uIntensity.value = this.intensity;
-    this.rainMaterial.uniforms.uWind.value =
-      (this.wind - 0.25) * 1.2;
+    (this.rainMaterial.uniforms.uVelocity.value as THREE.Vector3).set(
+      (this.wind - 0.25) * 8, -(34 + this.intensity * 38), 0,
+    );
     (
       this.rainMaterial.uniforms.uColor.value as THREE.Color
     ).set(summary === 'Storm' ? 0xadc4cf : 0xbdd6e3);
@@ -219,10 +243,8 @@ export class WeatherLayer {
       this.rainPositions[offset + 1] -= fallSpeed * dt;
 
       if (this.rainPositions[offset + 1] < -2) {
-        this.resetRainDrop(
-          index,
-          WEATHER_TOP + seeded01(index, 23) * 14,
-        );
+        // Preserve each drop's phase and overshoot, avoiding respawn pulses.
+        this.rainPositions[offset + 1] += WEATHER_TOP + 2;
       }
 
       if (this.rainPositions[offset] > WEATHER_SPAN * 0.55) {
