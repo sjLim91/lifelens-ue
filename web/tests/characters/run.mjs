@@ -12,7 +12,7 @@ try {
   writeFileSync(path, ts.transpileModule(readFileSync(new URL('../../src/render/resident-appearance.ts', import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.ES2022, target: ts.ScriptTarget.ES2022 },
   }).outputText);
-  const { createResidentAppearanceProfile: profile, applyResidentMaterialVariant: material, addResidentHairVariant: hair } = await import(pathToFileURL(path));
+  const { createResidentAppearanceProfile: profile, applyResidentMaterialVariant: material } = await import(pathToFileURL(path));
   test('1000 identities stay within valid palette, body and hair ranges', () => {
     const styles = new Set(), colors = new Set();
     for (let i = 0; i < 1000; i++) {
@@ -30,24 +30,6 @@ try {
     const resident = { id: 'saved-guid', ageYears: 32, sex: 'Female' };
     const before = profile(resident); profile({ id: 'another' });
     assert.deepEqual(profile(resident), before);
-  });
-  test('hair follows the head bone while preserving its bind-pose fit', () => {
-    const model = new THREE.Group(), head = new THREE.Bone();
-    head.name = 'Head'; head.position.y = 0.82; model.add(head);
-    hair(model, profile({ id: 'hair-test' }));
-    const accessory = model.getObjectByName('LifeLensResidentHairVariant');
-    assert.equal(accessory.parent, head);
-    const before = accessory.children[0].getWorldPosition(new THREE.Vector3());
-    assert.ok(before.y > 0.9 && before.y < 0.95);
-    head.position.y += 0.2; model.updateMatrixWorld(true);
-    const after = accessory.children[0].getWorldPosition(new THREE.Vector3());
-    assert.ok(Math.abs(after.y - before.y - 0.2) < 1e-6);
-    head.rotation.z = 0.5; model.updateMatrixWorld(true);
-    assert.ok(Math.abs(accessory.children[0].getWorldPosition(new THREE.Vector3()).x - before.x) > 0.01);
-  });
-  test('missing head bone does not leave a floating rigid hair accessory', () => {
-    const model = new THREE.Group(); hair(model, profile({ id: 'no-head' }));
-    assert.equal(model.getObjectByName('LifeLensResidentHairVariant'), undefined);
   });
   test('shared jade body gets separate skin and garment colors without changing other residents', () => {
     const geometry = new THREE.BufferGeometry();
@@ -68,11 +50,26 @@ try {
     assert.ok(Math.abs(colors.getX(1)-garment.r) < 1e-6);
     assert.equal(mesh.userData.residentOwnsGeometry, true);
   });
+  test('scalp follows actual head vertices, with no separate collar geometry', () => {
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute([0,2,0, 0,1.8,0, 0,1.5,0, 0,0,0],3));
+    geometry.setAttribute('skinIndex', new THREE.Uint16BufferAttribute([0,0,0,0, 0,0,0,0, 0,0,0,0, 1,0,0,0],4));
+    geometry.setAttribute('skinWeight', new THREE.Float32BufferAttribute([1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0],4));
+    const mesh = new THREE.SkinnedMesh(geometry, new THREE.MeshStandardMaterial()); mesh.name='SuperHero_Male';
+    const head=new THREE.Bone(), pelvis=new THREE.Bone();head.name='Head';pelvis.name='pelvis';
+    mesh.bind(new THREE.Skeleton([head,pelvis]));const root=new THREE.Group();root.add(mesh);
+    const p=profile({id:'scalp'});material(root,p);const colors=mesh.geometry.getAttribute('color');
+    const hairColor=new THREE.Color(p.hairColor),skinColor=new THREE.Color(p.skinColor);
+    assert.ok(Math.abs(colors.getX(0)-hairColor.r)<1e-6);
+    assert.ok(Math.abs(colors.getX(2)-skinColor.r)<1e-6);
+    assert.equal(root.children.length,1);assert.equal(root.getObjectByName('LifeLensResidentHairVariant'),undefined);
+    assert.deepEqual([...mesh.geometry.getAttribute('position').array],[...geometry.getAttribute('position').array]);
+  });
   test('eyes and eyebrows no longer inherit the garment tint', () => {
     const root = new THREE.Group();
     for (const name of ['Eyes', 'Eyebrows']) { const mesh = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshStandardMaterial({ color: 0x77a88d })); mesh.name = name; root.add(mesh); }
     const p = profile({ id: 'face-test' }); material(root,p);
-    assert.equal(root.children[0].material.color.getHex(), 0xe8e0d4);
+    assert.equal(root.children[0].material.color.getHex(), 0x302720);
     assert.equal(root.children[1].material.color.getHex(), p.hairColor);
   });
   console.log(`${passed} character regression checks passed`);

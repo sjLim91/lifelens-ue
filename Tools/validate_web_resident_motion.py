@@ -64,7 +64,7 @@ assert "next.reset().fadeIn" not in resident, (
 
 # Residents are deterministic individuals, not one cloned visual with only a
 # tiny hue jitter. Identity drives overlapping height/body-width, clothing,
-# hair silhouette and gait phase/rate variation.
+# scalp coverage and gait phase/rate variation.
 for token in (
     "createResidentAppearanceProfile",
     "heightWorldUnits",
@@ -75,7 +75,11 @@ for token in (
     "hairStyle",
     "gaitRateBias",
     "applyResidentMaterialVariant",
-    "addResidentHairVariant",
+    "headWeights",
+    "headBottom",
+    "headTop",
+    "hairline",
+    "color.lerp(hairColor",
 ):
     assert token in appearance or token in resident, (
         f"missing resident appearance diversity token: {token}"
@@ -88,5 +92,12 @@ assert "const hueShift = ((variantSeed % 17) - 8) * 0.006;" not in resident, (
 assert "defaultMobileZoom: 2.3" in contract
 assert "maxZoom: 3.6" in contract
 assert "garmentMix: 0.64 + hash01(seed, 43) * 0.18" in appearance
+
+# The scalp belongs to the skinned body. Fixed-height spherical proxies caused
+# the exposed-scalp/collar regression reported on a real device.
+assert "addResidentHairVariant" not in resident + appearance
+assert "new THREE.SphereGeometry" not in appearance
+assert "mesh.geometry = mesh.geometry.clone()" in appearance
+assert "mesh.geometry.setAttribute(\'color\'" in appearance
 
 print("LifeLens web resident gait, readability and appearance diversity: PASS")
