@@ -524,3 +524,10 @@ This lane is parallel to active World v2 work and must not fork simulation truth
 - Local checks: 13 new + 17 existing regression cases, typecheck, production build PASS.
 - User requested merge: #447 merged as `4ddf85b`; all four exact-head CI checks passed. Existing main-triggered preview publication is separate from merge completion.
 - Recovery instructions: `tasks/WEB_CONTINUITY_HANDOFF_2026-09-25.md`.
+
+## 2026-09-25 — Web rain correction integrated (#448)
+
+- Rain distribution, projected streak direction, DPR sizing and explicit dry-state transitions merged as `e11119280ae122879c38a0e13d496124679b9064`.
+- Seven weather + 30 existing regression checks, typecheck/build and all four GitHub checks pass.
+- Follow-up: real-device visual QA (cloud browser cannot create WebGL). Preview publication tracked through existing GitHub Pages workflow.
+- Checkpoint: `tasks/WEB_RAIN_HANDOFF_2026-09-25.md`.

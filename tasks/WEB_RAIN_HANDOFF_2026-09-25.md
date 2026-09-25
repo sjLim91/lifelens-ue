@@ -17,3 +17,8 @@ Explicit Core None/zero precipitation and unavailable observations stop particle
 - Typecheck and production build pass; existing large bundle warning remains.
 - Browser reached the live GitHub Pages app, but WebGL context creation failed in this cloud browser. No runtime visual acceptance is claimed. Real-device checks still needed: rain/storm at near/far zoom, camera rotation, mobile DPR, wet-to-dry transition.
 - Product PR/merge and deployment result will be recorded at closeout.
+
+## Integration
+
+- PR #448 merged as `e11119280ae122879c38a0e13d496124679b9064` after all four exact-head GitHub checks passed (runtime-resilience, structural-preflight, two typecheck runs).
+- Scope released. Cloud WebGL was disabled; real-device visual acceptance remains open.

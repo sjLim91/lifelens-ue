@@ -468,3 +468,9 @@ When explicitly resumed, prefer cached/fast smoke paths before long engine build
 - No automatic main merge or deployment.
 
 - #447 merged at user request as `4ddf85bb9104f51d68a2d4b925eed66dbd49cecc`; this scope lock is released.
+
+## 2026-09-25 Work Mode — Web rain / released: #448 merged
+
+- Branch: `work/web-rain-20260925`; weather-layer.ts, weather tests and existing Web test workflow.
+- Merged at user request as `e11119280ae122879c38a0e13d496124679b9064`; no active lock remains.
+- Core, actors and other open PR ownership preserved. Real-device visual QA remains pending.

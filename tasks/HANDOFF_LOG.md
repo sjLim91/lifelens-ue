@@ -998,3 +998,11 @@
 - 13 new + 17 existing tests, build/typecheck and all four exact-head CI checks passed.
 - Scope released; recovery document: `tasks/WEB_CONTINUITY_HANDOFF_2026-09-25.md`.
 - Publication follows existing main workflows; merge is not evidence of deployment success.
+
+## 2026-09-25 — Web rain distribution and rendering correction (#448)
+
+- Merged `e11119280ae122879c38a0e13d496124679b9064` after four exact-head GitHub checks passed.
+- Old seed function placed all 544 sampled drops near x=z and occupied only 8/64 ground cells. Replaced correlated coordinates, preserved rain wrap phase, aligned streaks to projected motion and maintained CSS-pixel sizing across DPR.
+- Explicit dry/unavailable Core observations stop precipitation; missing-field summary compatibility retained.
+- Seven new weather checks plus 30 runtime checks, typecheck/build pass. Live browser reached the app but GPU/WebGL was disabled; no visual acceptance claimed.
+- Checkpoint: `tasks/WEB_RAIN_HANDOFF_2026-09-25.md`.
