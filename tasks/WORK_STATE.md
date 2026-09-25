@@ -516,11 +516,11 @@ WEB-0 scope:
 
 This lane is parallel to active World v2 work and must not fork simulation truth.
 
-## 2026-09-25 Work Mode — Resident continuity / integration pending
+## 2026-09-25 Work Mode — Resident continuity / DONE
 
 - Previous Work PR #422 is merged (actual GitHub confirmed); its old integration-pending state is superseded.
 - Branch: `work/web-resident-continuity-20260925`, base `9b895a2`.
 - Cache identity/coordinate expiry and authoritative removal implemented.
 - Local checks: 13 new + 17 existing regression cases, typecheck, production build PASS.
-- Review/integration pending; no automatic merge/deploy while Chat work continues.
+- User requested merge: #447 merged as `4ddf85b`; all four exact-head CI checks passed. Existing main-triggered preview publication is separate from merge completion.
 - Recovery instructions: `tasks/WEB_CONTINUITY_HANDOFF_2026-09-25.md`.

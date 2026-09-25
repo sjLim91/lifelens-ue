@@ -457,7 +457,7 @@ When explicitly resumed, prefer cached/fast smoke paths before long engine build
 - Active PR #421 camera/clock/Core locomotion/actor files and #417 release workflows excluded.
 - No automatic merge or deployment. Handoff: `tasks/WEB_RUNTIME_RESILIENCE_2026-09-22.md`.
 
-## 2026-09-25 Work Mode — Resident continuity / review pending
+## 2026-09-25 Work Mode — Resident continuity / released: #447 merged
 
 - Owner: Jjun / Work Mode.
 - Branch: `work/web-resident-continuity-20260925`.
@@ -466,3 +466,5 @@ When explicitly resumed, prefer cached/fast smoke paths before long engine build
 - Excluded: Chat actor/weather/tree rendering, camera, clock, Core simulation and runtime release lanes.
 - Checkpoint and resumption: `tasks/WEB_CONTINUITY_HANDOFF_2026-09-25.md`.
 - No automatic main merge or deployment.
+
+- #447 merged at user request as `4ddf85bb9104f51d68a2d4b925eed66dbd49cecc`; this scope lock is released.

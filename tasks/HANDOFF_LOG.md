@@ -990,3 +990,11 @@
   - Dagyeom presentation ownership은 유지한다. #244는 scoped assist + review 요청 방식.
   - Core/World remains authority. PCG/Water/SkyAtmosphere는 presentation consumer다.
   - Android Gate B는 사용자 지시대로 계속 PAUSED.
+
+### 2026-09-25 — Work resident continuity #447 merged
+
+- User explicitly requested merge. Squash commit: `4ddf85bb9104f51d68a2d4b925eed66dbd49cecc`.
+- Resident identity/coordinate cache expiry and authoritative removal fixed; no visual/Core edits.
+- 13 new + 17 existing tests, build/typecheck and all four exact-head CI checks passed.
+- Scope released; recovery document: `tasks/WEB_CONTINUITY_HANDOFF_2026-09-25.md`.
+- Publication follows existing main workflows; merge is not evidence of deployment success.

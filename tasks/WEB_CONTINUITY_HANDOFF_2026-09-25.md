@@ -1,6 +1,6 @@
 # Web resident continuity — recoverable Work Mode checkpoint
 
-Status: implementation and local validation complete; await separate PR integration.
+Status: DONE — #447 merged on explicit user request as `4ddf85bb9104f51d68a2d4b925eed66dbd49cecc`. All four exact-head CI checks succeeded.
 Branch: `work/web-resident-continuity-20260925`.
 Base: `9b895a2d61535100d32e33f5fb44438ac6f7de44`.
 
@@ -40,3 +40,6 @@ Base: `9b895a2d61535100d32e33f5fb44438ac6f7de44`.
 Previous Work PR #422 is already merged, verified through GitHub on this turn.
 No background automation or indefinite execution has been scheduled. This checkpoint
 is the safe stopping boundary; future work begins with fresh conflict inspection.
+
+## Closeout
+The earlier no-merge instruction above was superseded by the user's explicit merge request. Code integrated; scope lock released. Existing main-triggered preview publication may run; no independent hosting deployment invoked.
