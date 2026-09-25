@@ -6,6 +6,9 @@ on:
     paths:
       - 'web/src/runtime/**'
       - 'web/src/render/weather-layer.ts'
+      - 'web/src/render/resident-appearance.ts'
+      - 'web/src/render/resident-world-layer.ts'
+      - 'web/tests/characters/**'
       - 'web/tests/weather/**'
       - 'web/tests/runtime-resilience/**'
       - 'web/package.json'
@@ -37,6 +40,8 @@ jobs:
         run: node web/tests/runtime-resilience/continuity.mjs
       - name: Exercise weather distribution and Core state transitions
         run: node web/tests/weather/run.mjs
+      - name: Exercise character appearance and head attachment
+        run: node web/tests/characters/run.mjs
       - name: Build browser client
         working-directory: web
         run: npm run build

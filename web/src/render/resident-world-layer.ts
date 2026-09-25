@@ -338,6 +338,7 @@ export class ResidentWorldLayer {
           ? object.material
           : [object.material];
         for (const material of materials) material.dispose();
+        if (object.userData.residentOwnsGeometry) object.geometry.dispose();
       });
     }
     this.actors.clear();
@@ -437,9 +438,9 @@ export class ResidentWorldLayer {
     root.add(visual);
 
     root.scale.set(
-      appearance.widthScale,
+      appearance.heightWorldUnits * appearance.widthScale,
       appearance.heightWorldUnits,
-      appearance.depthScale,
+      appearance.heightWorldUnits * appearance.depthScale,
     );
 
     const mixer = new THREE.AnimationMixer(root);
