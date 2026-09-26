@@ -15,6 +15,10 @@ import {
   WorldOverlay,
 } from './ui/observer-readout';
 import { DiagnosticsPanel } from './ui/diagnostics-panel';
+import {
+  ObservationFeedOverlay,
+  ObservationFeedPanel,
+} from './ui/observation-feed';
 import { RenderModeControl } from './ui/render-mode-control';
 
 function Topbar() {
@@ -46,6 +50,10 @@ function WorldViewport({
       <canvas id="threeWorldCanvas" aria-label="LifeLens 3D 월드" />
       <canvas id="characterCanvas" aria-label="LifeLens 주민" />
       <WorldOverlay snapshot={snapshot} />
+      <ObservationFeedOverlay
+        observations={snapshot.observations}
+        onSelect={(residentId) => observerActions.selectResident(residentId)}
+      />
       <button
         className="observer-fab"
         type="button"
@@ -188,6 +196,14 @@ function ObserverPanel({
       <section className="panel">
         <h2>관찰 정보</h2>
         <ObserverMetrics snapshot={snapshot} />
+      </section>
+
+      <section className="panel">
+        <h2>최근 관찰 포착</h2>
+        <ObservationFeedPanel
+          observations={snapshot.observations}
+          onSelect={(residentId) => observerActions.selectResident(residentId)}
+        />
       </section>
 
       <section className="panel">
