@@ -1,7 +1,8 @@
 # PROJECT LIFELENS — WEB OBSERVER MASTER SPEC
 
-Version: 1.0  
+Version: 1.1  
 Baseline date: 2026-09-22  
+Last reconciled: 2026-09-27  
 Status: Active
 
 ## 1. Purpose
@@ -21,7 +22,7 @@ The web path exists to provide fast iteration, phone/desktop access, easy visual
 - Human actions and animation must be driven by actual activity/state rather than unrelated random poses.
 - Runtime dependencies and assets should remain free unless the user explicitly changes that constraint.
 - Android web is a primary verification target; desktop receives more visual headroom, not a different simulation.
-- GitHub is the development source of truth. Production deployment occurs only after an explicit user deployment request.
+- GitHub is the development source of truth. The canonical checkable Web preview is GitHub Pages; AppDeploy is not part of the LifeLens Web workflow.
 
 ## 3. Canonical stack
 
@@ -29,7 +30,7 @@ UI: React 19 + TypeScript
 Bundler: Vite  
 3D renderer: Three.js/WebGL2, with future capability-based WebGPU evaluation  
 Simulation authority: LifeLensCore C++ compiled to WASM  
-Runtime proxy: backend route serving pinned Core JS/WASM artifacts  
+Runtime delivery: pinned LifeLensCore JS/WASM artifacts consumed through the typed Core bridge  
 Assets: free-license assets pinned by immutable commit/version
 
 React component state must not become a second simulation database.
@@ -191,9 +192,13 @@ Every user-visible fixed bug gets regression coverage before deployment.
 
 Normal flow:
 
-GitHub `web/` edit/refactor → test update → working-state document update → source review/compile validation → wait → explicit user deployment request → compare GitHub with live AppDeploy snapshot → sync reviewed changes → production QA.
+GitHub `web/` edit/refactor → test update → working-state document update → source review/CI validation → merge to `main` → GitHub Pages preview publish → real-device/browser QA.
 
-AppDeploy production source must never be the only copy of a fix.
+Canonical preview pattern:
+
+`https://sjlim91.github.io/lifelens-ue/?v=<main-short-sha>`
+
+AppDeploy is not used for LifeLens Web. GitHub source and GitHub Pages remain the only canonical development/preview path unless the user explicitly changes that rule.
 
 ## 14. Roadmap
 
