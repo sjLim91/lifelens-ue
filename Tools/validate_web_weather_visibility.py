@@ -27,6 +27,13 @@ for token in (
 ):
     assert token in weather, f"missing visible web precipitation token: {token}"
 
+# Snow must be a soft screen-space flake, never the default square PointsMaterial.
+assert "private readonly snowMaterial = new THREE.ShaderMaterial" in weather
+assert "length(centered)" in weather
+assert "smoothstep(0.28, 0.5, radius)" in weather
+assert "snow.onBeforeRender" in weather
+assert "new THREE.PointsMaterial" not in weather
+
 # Precipitation follows the observer focus so panning or close inspection does
 # not leave the rain volume behind at the original world origin.
 assert "this.weatherLayer.setFocus(panX, panZ)" in scene
