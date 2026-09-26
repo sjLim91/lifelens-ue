@@ -1,6 +1,7 @@
 # LifeLens Web Motion Handoff — 2026-09-27
 
-Canonical source baseline: `523dccd8d1f72d0607e70a94926d676a649fafba` (#465)
+Canonical source baseline for motion mapping: `523dccd8d1f72d0607e70a94926d676a649fafba` (#465)  
+Current main at reconciliation: `996c7bc059ab839f15dc69d3ee803c3974deed4a` (#466 Social Cue)
 
 ## Purpose
 
@@ -192,7 +193,8 @@ Review the available UAL2/free-license motion inventory for:
 
 For each candidate, first determine whether current Core presentation DTO contains enough authority. Add only the safe subset in the next isolated motion PR.
 
-After this motion tranche, return to the observation roadmap:
-- Social Cue,
-- Observer Director,
-- deeper authoritative Human Trace / lived-space accumulation.
+Observation roadmap status after this handoff:
+- Social Cue v1 — DONE (#466).
+- Observer Director — NEXT.
+- motion tranche 2 remains a parallel/next asset lane and must stay isolated from Observer Director.
+- deeper authoritative Human Trace / lived-space accumulation follows when Core carries the required durable facts.
