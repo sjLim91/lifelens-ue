@@ -884,40 +884,10 @@ float ALLWorldPresentationActor::FacilityDressingKeepFactor(
 
 float ALLWorldPresentationActor::AmbientDressingKeepFactor(const FVector2D& LocationUU, ELLDressingLayer Layer) const
 {
-    const float CoreRadius = FMath::Max(0.0f, CoreClearRadiusUU);
-    const float ActivityRadius = FMath::Max(CoreRadius, ActivityRadiusUU);
-    const float Distance = (LocationUU - CachedSettlementReferenceUU).Size();
-
-    const bool bCanopy = Layer == ELLDressingLayer::Canopy;
-    const bool bGroundDetail = Layer == ELLDressingLayer::GroundDetail;
-    const float CoreKeep = FMath::Clamp(
-        bGroundDetail ? 0.08f
-            : (bCanopy ? CoreZoneCanopyKeep : CoreZoneUndergrowthKeep),
-        0.0f,
-        1.0f);
-    float SettlementKeep = 1.0f;
-    if (ActivityRadius > KINDA_SMALL_NUMBER && Distance < ActivityRadius)
-    {
-        if (Distance <= CoreRadius)
-        {
-            SettlementKeep = CoreKeep;
-        }
-        else
-        {
-            // Activity zone: restore density with distance, canopy last.
-            const float Band = FMath::Max(ActivityRadius - CoreRadius, KINDA_SMALL_NUMBER);
-            const float Progress = FMath::Clamp((Distance - CoreRadius) / Band, 0.0f, 1.0f);
-            const float Exponent = FMath::Max(
-                1.0f,
-                bGroundDetail ? 1.35f
-                    : (bCanopy ? CanopyRecoveryExponent : UndergrowthRecoveryExponent));
-            SettlementKeep = FMath::Lerp(CoreKeep, 1.0f, FMath::Pow(Progress, Exponent));
-        }
-    }
-
-    return FMath::Min(
-        SettlementKeep,
-        FacilityDressingKeepFactor(LocationUU, Layer));
+    // The initial spawn/start region is not a settlement authority. Ambient
+    // ecology is thinned only around authoritative facilities; resident
+    // visibility itself is handled by the reversible observer-canopy system.
+    return FacilityDressingKeepFactor(LocationUU, Layer);
 }
 
 bool ALLWorldPresentationActor::CaptureInitialViewOrigin()
@@ -1104,18 +1074,10 @@ float ALLWorldPresentationActor::InitialSightlineKeepFactor(const FVector2D& Loc
 
 float ALLWorldPresentationActor::ResourcePatchScaleFactor(const FVector2D& LocationUU) const
 {
-    // An authoritative resource is never removed for readability; inside the
-    // settlement or immediately beside a real facility it is only drawn smaller.
-    const float Distance = (LocationUU - CachedSettlementReferenceUU).Size();
+    // An authoritative resource is never removed for readability. NEW GAME's
+    // initial location gets no special visual treatment; only real facilities
+    // can reduce nearby patch presentation scale.
     float Scale = 1.0f;
-    if (Distance <= FMath::Max(0.0f, CoreClearRadiusUU))
-    {
-        Scale = FMath::Clamp(CoreZoneResourceScale, 0.1f, 1.0f);
-    }
-    else if (Distance <= FMath::Max(CoreClearRadiusUU, ActivityRadiusUU))
-    {
-        Scale = FMath::Clamp(ActivityZoneResourceScale, 0.1f, 1.0f);
-    }
 
     if (CachedFacilityReadabilityCentersUU.Num() > 0)
     {
@@ -3021,7 +2983,8 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
 
     if (bNaturalChanged)
     {
-        // Measured from the Core start-region centre, not the world origin.
+        // Retained only for the optional legacy initial-sightline fallback.
+        // It no longer defines ambient density, resource scale or a living zone.
         CachedSettlementReferenceUU = SettlementReferenceUU(World);
         BuiltWorldSeed = World.WorldSeed;
         BuiltGenerationVersion = World.GenerationVersion;
@@ -3105,13 +3068,12 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         + (PhotorealFurnaceStoneInstances ? PhotorealFurnaceStoneInstances->GetInstanceCount() : 0);
 
     UE_LOG(LogTemp, Log,
-        TEXT("LLWorldPresentation seed=%lld gen=%d chunks=%d groundTiles=%d local=%d regional=%d natural=%d/%d/%d/%d facilities=%d facilityInstances=%d thinned=%d sightline=%d/%d dynamicCanopy=%d core=%.0f activity=%.0f ground=%s farGround=%s"),
+        TEXT("LLWorldPresentation seed=%lld gen=%d chunks=%d groundTiles=%d local=%d regional=%d natural=%d/%d/%d/%d facilities=%d facilityInstances=%d thinned=%d sightline=%d/%d dynamicCanopy=%d spawnEnvelope=off ground=%s farGround=%s"),
         World.WorldSeed, World.GenerationVersion, World.MaterializedChunkCount,
         GroundTileCount, LocalGroundTileCount, RegionalGroundTileCount,
         TreeInstanceCount, ShrubInstanceCount, GrassInstanceCount, RockInstanceCount,
         Civilization.FacilityCount, FacilityInstanceCount,
         SuppressedDressing, SightlineCleared, bInitialViewCaptured ? 1 : 0, DynamicCanopySuppressed,
-        CoreClearRadiusUU, ActivityRadiusUU,
         (Ground && Ground->GetStaticMesh()) ? TEXT("yes") : TEXT("no"),
         (FarGround && FarGround->GetStaticMesh()) ? TEXT("yes") : TEXT("no"));
 }

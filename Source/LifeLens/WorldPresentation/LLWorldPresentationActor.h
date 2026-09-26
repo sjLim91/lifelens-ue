@@ -116,32 +116,15 @@ public:
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="1", ClampMax="64"))
     int32 MaxDynamicVisibilityTargets = 24;
 
-    // ---- Settlement readability envelope -------------------------------------
-    // Presentation-only. Residents live and act within a few thousand units of
-    // the settlement, and natural forest density there hides both the residents
-    // and what they are doing. Ambient dressing thins out near the settlement
-    // and returns to full natural density outside it.
+    // ---- Emergent activity readability ---------------------------------------
+    // Presentation-only. The initial spawn/start region has no permanent
+    // readability envelope and is never treated as an implicit living zone.
+    // Natural dressing remains untouched unless an authoritative facility
+    // actually exists nearby or a tree temporarily blocks the observer's view
+    // of a resident. This keeps settlement appearance coupled to lived activity
+    // rather than to where NEW GAME happened to place the founders.
     //
-    // Core is untouched: resident movement and action range are unchanged, and
-    // authoritative resource patches are never removed. The reference point is
-    // the Core start region (`InitialCenterGrid`), never a fixed world origin.
-    //
-    //   0 .. CoreClearRadiusUU        living core; canopy and undergrowth
-    //                                 almost fully suppressed
-    //   CoreClear .. ActivityRadius   activity zone; density restored with
-    //                                 distance, canopy last
-    //   beyond ActivityRadius         untouched natural density
-    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.0"))
-    float CoreClearRadiusUU = 360.0f;
-
-    // Keep the activity clearing inside most of the 3200-UU start chunk rather
-    // than thinning almost the entire opening landscape. Core movement is not
-    // clamped to it; dynamic canopy visibility handles camera-specific occlusion.
-    UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="0.0"))
-    float ActivityRadiusUU = 1350.0f;
-
-    // Recovery curves across the activity band. Canopy recovers latest because
-    // it blocks the most.
+    // Recovery curves are used only by facility-local readability envelopes.
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="1.0", ClampMax="6.0"))
     float CanopyRecoveryExponent = 1.7f;
 
@@ -223,7 +206,7 @@ public:
     // The camera is read and never moved; Core and world-generation facts are
     // untouched and resource patches are never removed.
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability")
-    bool bClearInitialSightlineCanopy = true;
+    bool bClearInitialSightlineCanopy = false;
 
     UPROPERTY(EditAnywhere, Category="LifeLens|WorldPresentation|Readability", meta=(ClampMin="2.0", ClampMax="60.0"))
     float InitialSightlineHalfAngleDegrees = 16.0f;

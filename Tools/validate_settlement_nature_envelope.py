@@ -6,22 +6,22 @@ header = (root / "Source/LifeLens/WorldPresentation/LLWorldPresentationActor.h")
 cpp = (root / "Source/LifeLens/WorldPresentation/LLWorldPresentationActor.cpp").read_text(encoding="utf-8")
 
 for token in (
-    "CoreClearRadiusUU = 360.0f",
-    "ActivityRadiusUU = 1350.0f",
     "CoreZoneCanopyKeep = 0.30f",
     "CoreZoneUndergrowthKeep = 0.48f",
     "bDynamicObserverCanopyVisibility = true",
+    "bClearInitialSightlineCanopy = false",
     "DynamicCanopyHideRadiusUU = 220.0f",
     "DynamicCanopyRestoreRadiusUU = 300.0f",
 ):
     assert token in header, f"settlement nature/readability contract missing: {token}"
 
-# Latest-main CI marker: this guard is intentionally versioned with the envelope change.
-# The opening landscape must not return to the old nearly-whole-chunk shaved
-# envelope. The authoritative start chunk is 3200 UU wide in presentation.
+# NEW GAME's initial region is not a living-zone authority. There must be no
+# permanent start-centred ambient clearing contract and the legacy initial
+# sightline wedge must not be enabled by default.
 for forbidden in (
-    "CoreClearRadiusUU = 520.0f",
-    "ActivityRadiusUU = 2200.0f",
+    "CoreClearRadiusUU",
+    "ActivityRadiusUU",
+    "bClearInitialSightlineCanopy = true",
     "CoreZoneCanopyKeep = 0.18f",
     "CoreZoneUndergrowthKeep = 0.32f",
 ):
@@ -30,6 +30,8 @@ for forbidden in (
 for token in (
     "AmbientDressingKeepFactor",
     "FacilityDressingKeepFactor",
+    "return FacilityDressingKeepFactor(LocationUU, Layer);",
+    "spawnEnvelope=off",
     "UpdateDynamicObserverCanopyVisibility",
     "RegisterDynamicCanopyInstance",
     "Authoritative resource patches are never hidden",
@@ -52,6 +54,7 @@ resource_end = cpp.index(
 )
 resource_block = cpp[resource_start:resource_end]
 assert "AmbientDressingKeepFactor" not in resource_block
+assert "CachedSettlementReferenceUU" not in resource_block
 assert "Component->AddInstance" in resource_block
 
 print("LifeLens settlement nature envelope: PASS")
