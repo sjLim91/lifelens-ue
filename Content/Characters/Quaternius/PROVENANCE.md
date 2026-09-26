@@ -31,6 +31,18 @@ Canonical rule: `docs/CHARACTER_ASSET_TRACK.md` (Track B, Quaternius CC0). Each 
   - `Unreal-Godot/UAL1_Standard_RM.glb` (root motion baked) — not imported in v1
 - Skeleton: same 65-joint set as Universal Base Characters.
 
+## Pack 2B — Universal Animation Library 2 [Standard] — Web runtime only
+
+- Official source page: https://quaternius.com/packs/universalanimationlibrary2.html
+- License: CC0 1.0 Universal, as stated by the official Quaternius pack and independently recorded for the mirrored animation bundle.
+- Runtime use: Web observer only; loaded as a secondary animation library after the existing UAL1 baseline.
+- Pinned public mirror: `richardanaya/metaverse-avatar` commit `84fd636910bf713099010efbab7f3c84550f4bcb`.
+- Consumed file only: `anims/UAL2_Standard.glb`, Git blob `dc684c2a664927964307e8eb7b27b0000ebf6a18`, 8,061,600 bytes.
+- The mirror also contains unrelated avatar meshes under other licenses. LifeLens does **not** request, bundle, import or redistribute those meshes; only the Quaternius UAL2 GLB above is referenced.
+- Initial Web mappings are deliberately narrow: `Consume` for authoritative Eat/Drink, `Farm_Harvest` for authoritative PlantFood gathering, and `Walk_Carry_Loop` for authoritative facility material delivery.
+- `TreeChopping_Loop` is present in UAL2 Standard but is intentionally not wired until the Web presentation contract exposes an authoritative tool/source fact. Material `Wood` alone is not sufficient evidence that the resident is chopping a tree.
+- UAL2 is fail-soft. If it cannot load, UAL1 locomotion and existing resident presentation continue; missing semantic clips fall back to Walk/Idle rather than an unrelated gesture.
+
 ## Pack 3 — Modular Character Outfits - Fantasy [Standard]
 
 - Source page: https://quaternius.itch.io/modular-character-outfits-fantasy (pack page: https://quaternius.com/packs/modularcharacteroutfitsfantasy.html)
