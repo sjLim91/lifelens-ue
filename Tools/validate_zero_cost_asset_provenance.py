@@ -5,6 +5,9 @@ root = Path(__file__).resolve().parents[1]
 provenance = (root / "Content/Environment/PROVENANCE.md").read_text(encoding="utf-8")
 polyhaven_root = root / "Content/Environment/Photoreal/PolyHaven"
 policy = (root / "docs/ZERO_COST_ASSET_POLICY_v1.md").read_text(encoding="utf-8")
+character_provenance = (
+    root / "Content/Characters/Quaternius/PROVENANCE.md"
+).read_text(encoding="utf-8")
 
 assert "CC0" in policy, "zero-cost asset policy lost the CC0/permissive baseline"
 assert polyhaven_root.is_dir(), "Poly Haven runtime asset root is missing"
@@ -30,7 +33,21 @@ for token in (
 ):
     assert token in provenance, f"mature-canopy provenance contract missing: {token}"
 
+for token in (
+    "Universal Animation Library 2 [Standard]",
+    "https://quaternius.com/packs/universalanimationlibrary2.html",
+    "CC0 1.0 Universal",
+    "84fd636910bf713099010efbab7f3c84550f4bcb",
+    "dc684c2a664927964307e8eb7b27b0000ebf6a18",
+    "8,061,600 bytes",
+    "anims/UAL2_Standard.glb",
+    "does **not** request, bundle, import or redistribute those meshes",
+):
+    assert token in character_provenance, (
+        f"UAL2 Web runtime provenance contract missing: {token}"
+    )
+
 print(
     "LifeLens zero-cost asset provenance: PASS "
-    f"({len(asset_dirs)} Poly Haven runtime asset groups documented)"
+    f"({len(asset_dirs)} Poly Haven runtime asset groups + pinned Quaternius UAL2 documented)"
 )
