@@ -177,14 +177,16 @@ These are not approved deviations; they are outstanding implementation work.
 5. **Observer scale transitions**
    - Local/Regional/Planetary/Orbital/Interplanetary representation continuity is not complete.
 
-6. **Action/motion presentation DTO**
-   - Web currently lacks the authoritative interaction-slot/alignment payload needed for rich object-bound motion.
-   - Until that exists, neutral fallback is intentional and canonical.
+6. **Rich object-bound motion alignment**
+   - The authoritative Action Context DTO now exists and drives current semantic motion.
+   - Rich object-bound actions still need stronger slot/alignment/tool/source facts before clips such as chopping, digging, ground pickup and sleep transitions can be bound safely.
+   - Until those facts and reviewed clips exist, neutral fallback is intentional and canonical.
 
 7. **World v2 visual completeness**
-   - Near/mid/far ecology, coast/ocean material polish, structures/tools/traces and persistent human deltas remain incomplete.
+   - Near/mid/far ecology, coast/ocean material polish and richer structures/tools remain incomplete.
+   - Human Trace v1 is present, but lived paths/activity centers require deeper authoritative accumulation.
    - Runtime screenshots/device QA remain the acceptance source; source/CI success alone is not visual completion.
 
 ## Deployment rule
 
-Normal source work does not trigger AppDeploy. Deployment/public-preview changes occur only when explicitly requested. Source, tests and working-state documentation are updated first.
+GitHub is source truth and GitHub Pages is the canonical checkable Web preview. A merge may publish the Pages preview through the repository workflow. AppDeploy is not used for LifeLens Web.
