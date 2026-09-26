@@ -10,6 +10,7 @@
 #include "lifelens/ContinuousEcology.h"
 #include "lifelens/ContinuousTerrain.h"
 #include "lifelens/Hydrology.h"
+#include "lifelens/HumanTraceReadModel.h"
 #include "lifelens/SimulationClimate.h"
 #include "lifelens/TraitsPreferences.h"
 
@@ -62,6 +63,85 @@ std::uint64_t parseUnsigned64(
 void appendDouble(std::ostringstream& out, double value)
 {
     out << std::fixed << std::setprecision(6) << value;
+}
+
+const char* traceMaterialName(MaterialKind kind)
+{
+    switch (kind) {
+        case MaterialKind::Stone: return "Stone";
+        case MaterialKind::Flint: return "Flint";
+        case MaterialKind::Wood: return "Wood";
+        case MaterialKind::Fiber: return "Fiber";
+        case MaterialKind::Clay: return "Clay";
+        case MaterialKind::Water: return "Water";
+        case MaterialKind::PlantFood: return "PlantFood";
+        case MaterialKind::Bone: return "Bone";
+        case MaterialKind::Hide: return "Hide";
+        case MaterialKind::CopperOre: return "CopperOre";
+        case MaterialKind::TinOre: return "TinOre";
+        case MaterialKind::IronOre: return "IronOre";
+        case MaterialKind::Charcoal: return "Charcoal";
+        case MaterialKind::CopperMetal: return "CopperMetal";
+        default: return "Unknown";
+    }
+}
+
+const char* traceFacilityName(FacilityKind kind)
+{
+    switch (kind) {
+        case FacilityKind::PrimitiveStorage: return "PrimitiveStorage";
+        case FacilityKind::FirePit: return "FirePit";
+        case FacilityKind::WorkSurface: return "WorkSurface";
+        case FacilityKind::SleepingPlace: return "SleepingPlace";
+        case FacilityKind::Shelter: return "Shelter";
+        case FacilityKind::Furnace: return "Furnace";
+    }
+    return "Unknown";
+}
+
+const char* traceFacilityStateName(FacilityState state)
+{
+    switch (state) {
+        case FacilityState::Planned: return "Planned";
+        case FacilityState::UnderConstruction: return "UnderConstruction";
+        case FacilityState::Operational: return "Operational";
+        case FacilityState::Ruined: return "Ruined";
+    }
+    return "Unknown";
+}
+
+void appendHumanTraces(std::ostringstream& out, const HumanTraceWindowObservation& traces)
+{
+    out << "{\"total\":" << traces.total << ",\"entries\":[";
+    bool first = true;
+    for (const auto& trace : traces.entries) {
+        if (!first) out << ",";
+        first = false;
+        out << "{\"id\":\"" << trace.id << "\",\"gridX\":" << trace.pos.x
+            << ",\"gridY\":" << trace.pos.y;
+        if (trace.kind == HumanTraceKind::ResourceUse) {
+            out << ",\"kind\":\"ResourceUse\",\"material\":\"" << traceMaterialName(trace.material)
+                << "\",\"quantity\":" << trace.quantity
+                << ",\"baselineQuantity\":" << trace.baselineQuantity
+                << ",\"renewable\":" << (trace.renewable ? "true" : "false");
+        } else if (trace.kind == HumanTraceKind::Residue) {
+            out << ",\"kind\":\"Residue\",\"sourceResidentId\":\"" << trace.sourceCharacter << "\""
+                << ",\"amount\":"; appendDouble(out, trace.amount);
+            out << ",\"intensity\":"; appendDouble(out, trace.intensity);
+            out << ",\"radiusTiles\":" << trace.radiusTiles;
+        } else {
+            out << ",\"kind\":\"Facility\",\"sourceResidentId\":\"" << trace.sourceCharacter << "\""
+                << ",\"facilityKind\":\"" << traceFacilityName(trace.facilityKind)
+                << "\",\"state\":\"" << traceFacilityStateName(trace.facilityState) << "\""
+                << ",\"progress01\":"; appendDouble(out, trace.progress01);
+            out << ",\"deliveredMaterialUnits\":" << trace.deliveredMaterialUnits
+                << ",\"requiredMaterialUnits\":" << trace.requiredMaterialUnits
+                << ",\"active\":" << (trace.active ? "true" : "false")
+                << ",\"lit\":" << (trace.lit ? "true" : "false");
+        }
+        out << "}";
+    }
+    out << "]}";
 }
 
 const char* activityKindName(ObservedActivityKind kind)
@@ -613,7 +693,10 @@ std::string WebClientBridge::terrainWindowJson(
         }
     }
 
-    out << "]}";
+    out << "],\"humanTraces\":";
+    appendHumanTraces(out, buildHumanTraceWindowObservation(
+        simulation_->world(), {centerChunkX, centerChunkY}, radius));
+    out << "}";
     return out.str();
 }
 

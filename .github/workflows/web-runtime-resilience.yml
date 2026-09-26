@@ -24,6 +24,8 @@ on:
       - 'web/tests/runtime-resilience/**'
       - 'web/tests/observation-feed/**'
       - 'web/tests/action-context/**'
+      - 'web/tests/human-traces/**'
+      - 'web/src/render/human-trace-layer.ts'
       - 'web/package.json'
       - 'web/tsconfig.json'
       - '.github/workflows/web-runtime-resilience.yml'
@@ -61,6 +63,8 @@ jobs:
         run: node web/tests/observation-feed/run.mjs
       - name: Exercise authoritative resident action context
         run: node web/tests/action-context/run.mjs
+      - name: Exercise authoritative human traces and place focus
+        run: node web/tests/human-traces/run.mjs
       - name: Exercise terrain camera and water presentation
         run: node web/tests/presentation/run.mjs
       - name: Build browser client

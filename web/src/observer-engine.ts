@@ -13,6 +13,7 @@ import { ResidentContinuity } from './runtime/resident-continuity';
 import { WorldSession } from './runtime/world-session';
 import { observerActions } from './state/observer-actions';
 import { observerStore } from './state/observer-store';
+import { humanTraceFocus, visibleHumanTraces } from './state/human-traces';
 import { CameraInput, cameraPanDelta } from './input/camera-input';
 
 import { LegacyCanvasWorldRenderer } from './render/legacy-canvas-world-renderer';
@@ -159,7 +160,8 @@ export function startObserverEngine(): void {
     onTap(clientX, clientY) {
       if (!threeWorldRenderer) return;
       const residentId = threeWorldRenderer.pickResident(clientX, clientY);
-      selectResident(residentId);
+      if (residentId) selectResident(residentId);
+      else selectHumanTrace(threeWorldRenderer.pickHumanTrace(clientX, clientY));
     },
   });
   
@@ -220,6 +222,7 @@ export function startObserverEngine(): void {
     const selectedResidentId = observerStore.getSnapshot().selectedResidentId;
     threeWorldRenderer?.setSelectedResident(selectedResidentId);
     threeWorldRenderer?.setTerrain(terrain);
+    threeWorldRenderer?.setSelectedHumanTrace(observerStore.getSnapshot().selectedHumanTraceId);
     threeWorldRenderer?.setResidents(
       residentSnapshot,
       terrain,
@@ -258,14 +261,30 @@ export function startObserverEngine(): void {
     simulationClock?.resetAccumulator();
     observerStore.resetWorld();
     threeWorldRenderer?.setSelectedResident(null);
+    threeWorldRenderer?.setSelectedHumanTrace(null);
     refresh();
   }
 
   function selectResident(residentId: string | null): void {
     observerStore.selectResident(residentId);
+    threeWorldRenderer?.setSelectedHumanTrace(null);
     threeWorldRenderer?.setSelectedResident(
       observerStore.getSnapshot().selectedResidentId,
     );
+  }
+
+  function selectHumanTrace(id: string | null, focus = false): void {
+    observerStore.selectHumanTrace(id);
+    const selectedId = observerStore.getSnapshot().selectedHumanTraceId;
+    threeWorldRenderer?.setSelectedResident(null);
+    threeWorldRenderer?.setSelectedHumanTrace(selectedId);
+    const trace = visibleHumanTraces(terrain).find(candidate => candidate.id === selectedId);
+    if (!focus || !trace || !worldSession) return;
+    const target = humanTraceFocus(trace);
+    localPanX = target.panX;
+    localPanZ = target.panZ;
+    worldSession.moveObserver(target.centerChunkX - centerX, target.centerChunkY - centerY);
+    refresh();
   }
   
   function move(dx: number, dy: number): void {
@@ -324,6 +343,7 @@ export function startObserverEngine(): void {
     moveObserver: move,
     recenterObserver,
     selectResident,
+    selectHumanTrace,
   });
   
   new ResizeObserver(resizeCanvas).observe(canvas);

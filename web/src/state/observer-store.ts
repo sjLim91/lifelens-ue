@@ -13,6 +13,7 @@ import {
   mergeObservationEvents,
   type ObservationEvent,
 } from './observation-feed';
+import { visibleHumanTraces } from './human-traces';
 
 export type RuntimeStatus = 'loading' | 'ready' | 'error';
 
@@ -39,6 +40,7 @@ export interface ObserverSnapshot {
   runtime: RuntimeState;
   simulationSpeed: number;
   selectedResidentId: string | null;
+  selectedHumanTraceId: string | null;
   observations: ObservationEvent[];
   revision: number;
 }
@@ -64,6 +66,7 @@ const INITIAL_STATE: ObserverSnapshot = {
   },
   simulationSpeed: SIMULATION_TIME_CONTRACT.defaultSpeed,
   selectedResidentId: null,
+  selectedHumanTraceId: null,
   observations: [],
   revision: 0,
 };
@@ -110,6 +113,10 @@ class ObserverStore {
       ...this.snapshot,
       ...patch,
       selectedResidentId,
+      selectedHumanTraceId: !worldChanged && visibleHumanTraces(
+        patch.terrain !== undefined ? patch.terrain : this.snapshot.terrain,
+      ).some(trace => trace.id === this.snapshot.selectedHumanTraceId)
+        ? this.snapshot.selectedHumanTraceId : null,
       observations,
       revision: this.snapshot.revision + 1,
     };
@@ -133,11 +140,23 @@ class ObserverStore {
       && this.snapshot.residents.some((resident) => resident.id === residentId)
       ? residentId
       : null;
-    if (next === this.snapshot.selectedResidentId) return;
+    if (next === this.snapshot.selectedResidentId && !this.snapshot.selectedHumanTraceId) return;
 
     this.snapshot = {
       ...this.snapshot,
       selectedResidentId: next,
+      selectedHumanTraceId: null,
+      revision: this.snapshot.revision + 1,
+    };
+    this.emit();
+  }
+
+  selectHumanTrace(id: string | null): void {
+    const next = visibleHumanTraces(this.snapshot.terrain).some(trace => trace.id === id) ? id : null;
+    this.snapshot = {
+      ...this.snapshot,
+      selectedHumanTraceId: next,
+      selectedResidentId: null,
       revision: this.snapshot.revision + 1,
     };
     this.emit();
@@ -161,6 +180,7 @@ class ObserverStore {
       environment: null,
       simulationSpeed: SIMULATION_TIME_CONTRACT.defaultSpeed,
       selectedResidentId: null,
+      selectedHumanTraceId: null,
       observations: [],
       camera: {
         ...INITIAL_STATE.camera,

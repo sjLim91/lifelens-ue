@@ -72,6 +72,7 @@ int main()
     assert(terrain.find("\"shrubCoverage01\":") != std::string::npos);
     assert(terrain.find("\"rockCoverage01\":") != std::string::npos);
     assert(terrain.find("\"wetlandCoverage01\":") != std::string::npos);
+    assert(terrain.find("\"humanTraces\":{\"total\":0,\"entries\":[]}") != std::string::npos);
 
     const std::string before = bridge.worldOverviewJson();
     bridge.runMinutes(5);

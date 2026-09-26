@@ -35,7 +35,24 @@ export interface TerrainWindow {
   centerChunkY: number;
   worldSeed?: string;
   chunks: TerrainChunk[];
+  humanTraces?: { total: number; entries: HumanTrace[] };
 }
+
+interface HumanTracePosition {
+  id: string;
+  gridX: number;
+  gridY: number;
+}
+
+export type HumanTrace = HumanTracePosition & (
+  | { kind: 'ResourceUse'; material: string; quantity: number;
+      baselineQuantity: number; renewable: boolean }
+  | { kind: 'Residue'; sourceResidentId: string; amount: number;
+      intensity: number; radiusTiles: number }
+  | { kind: 'Facility'; sourceResidentId: string; facilityKind: string;
+      state: string; progress01: number; deliveredMaterialUnits: number;
+      requiredMaterialUnits: number; active: boolean; lit: boolean }
+);
 
 export interface ResidentNeeds {
   hunger?: number;
