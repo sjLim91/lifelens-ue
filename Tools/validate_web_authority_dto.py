@@ -43,26 +43,26 @@ assert "GridPos pos{};" in civilization
 assert "observed.pos=node.pos;" in civilization
 assert "dto.pos=storage.pos;" in civilization
 for token in (
-    '\"gridX\"',
-    '\"gridY\"',
-    '\"resources\"',
-    '\"storages\"',
-    '\"facilities\"',
-    '\"recentDiscoveries\"',
+    '\\\"gridX\\\"',
+    '\\\"gridY\\\"',
+    '\\\"resources\\\"',
+    '\\\"storages\\\"',
+    '\\\"facilities\\\"',
+    '\\\"recentDiscoveries\\\"',
 ):
     assert token in bridge, f"civilization world JSON missing {token}"
 
 for token in (
-    '\"lifeHistory\"',
-    '\"lifeStages\"',
-    '\"datingCouples\"',
-    '\"engagedCouples\"',
-    '\"marriedCouples\"',
-    '\"separatedCouples\"',
-    '\"baselineTemperature01\"',
-    '\"seasonalTemperatureModifierC\"',
-    '\"dailyTemperatureModifierC\"',
-    '\"calendar\"',
+    '\\\"lifeHistory\\\"',
+    '\\\"lifeStages\\\"',
+    '\\\"datingCouples\\\"',
+    '\\\"engagedCouples\\\"',
+    '\\\"marriedCouples\\\"',
+    '\\\"separatedCouples\\\"',
+    '\\\"baselineTemperature01\\\"',
+    '\\\"seasonalTemperatureModifierC\\\"',
+    '\\\"dailyTemperatureModifierC\\\"',
+    '\\\"calendar\\\"',
 ):
     assert token in bridge, f"observer JSON missing {token}"
 
