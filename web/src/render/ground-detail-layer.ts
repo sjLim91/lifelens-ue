@@ -83,9 +83,11 @@ function createGrassGeometry(): THREE.BufferGeometry {
 
 function isOpenWater(chunk: TerrainChunk): boolean {
   return chunk.waterKind === 'Ocean'
+    || chunk.waterKind === 'Coast'
     || chunk.waterKind === 'Lake'
     || chunk.waterKind === 'River'
-    || chunk.waterKind === 'Stream';
+    || chunk.waterKind === 'Stream'
+    || chunk.waterKind === 'Spring';
 }
 
 export class GroundDetailLayer {
@@ -175,14 +177,10 @@ export class GroundDetailLayer {
           budgets.shrubs
           * Math.max(shrubCoverage, forestCoverage * 0.24),
         );
-      const rockCount = chunk.waterKind === 'Ocean'
+      const rockCount = isOpenWater(chunk)
         ? 0
         : Math.round(
-          budgets.rocks
-          * Math.max(
-            rockCoverage,
-            chunk.waterKind === 'Coast' ? 0.34 : 0,
-          ),
+          budgets.rocks * rockCoverage,
         );
 
       for (
