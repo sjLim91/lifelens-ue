@@ -28,13 +28,18 @@ for token in (
     )
 
 for forbidden in (
-    "chunk.waterKind =",
     "waterAvailability +=",
     "chunks.push(",
     "Math.random(",
 ):
     assert forbidden not in layer
     assert forbidden not in geometry
+
+# Avoid false-positive matching of equality checks such as `===`.
+assert "chunk.waterKind = '" not in layer
+assert 'chunk.waterKind = "' not in layer
+assert "chunk.waterKind = '" not in geometry
+assert 'chunk.waterKind = "' not in geometry
 
 # Open-water seams are hidden only by a tiny presentation overlap.
 assert "chunkWorldSize * 1.02" in geometry
