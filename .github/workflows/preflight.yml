@@ -113,6 +113,9 @@ jobs:
       - name: Validate Web ecology projection
         run: python Tools/validate_web_ecology_projection.py
 
+      - name: Validate Web presentation v2 environment
+        run: python Tools/validate_web_presentation_v2_environment.py
+
       - name: Validate Web visible weather
         run: python Tools/validate_web_weather_visibility.py
 
