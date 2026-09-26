@@ -46,11 +46,9 @@ export function createWaterGeometryBuilder(
       || chunk.waterKind === 'Lake'
       || chunk.waterKind === 'Wetland'
     ) {
-      // Slight overlap hides per-chunk seams without changing Core water
-      // topology or extending simulation authority beyond the source chunk.
       const plane = new THREE.PlaneGeometry(
-        chunkWorldSize * 1.02,
-        chunkWorldSize * 1.02,
+        chunkWorldSize * 0.96,
+        chunkWorldSize * 0.96,
       );
       plane.rotateX(-Math.PI / 2);
       return plane;
