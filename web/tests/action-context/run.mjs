@@ -31,6 +31,10 @@ const { residentActionCue } = load(resolve(
   import.meta.dirname,
   '../../src/render/resident-action-context.ts',
 ));
+const { resolveResidentSemanticMotion } = load(resolve(
+  import.meta.dirname,
+  '../../src/render/resident-semantic-motion.ts',
+));
 
 const resident = (extra = {}) => ({
   id: 'a',
@@ -173,3 +177,74 @@ testCase('civilization and parenting cues remain factual and compact', () => {
 });
 
 console.log(passed + ' action-context regression checks passed');
+
+
+testCase('semantic motion maps only authoritative safe interactions', () => {
+  assert.equal(resolveResidentSemanticMotion({
+    active: true,
+    kind: 'Civilization',
+    phase: 'Interacting',
+    civilizationIntent: 'Craft',
+    hasTargetGrid: true,
+  }, { moving: false, nearbyResident: false }), 'work');
+
+  assert.equal(resolveResidentSemanticMotion({
+    active: true,
+    kind: 'Physical',
+    phase: 'Interacting',
+    physicalGoal: 'UseToilet',
+    designatedSanitationSite: true,
+  }, { moving: false, nearbyResident: false }), 'crouch');
+
+  assert.equal(resolveResidentSemanticMotion({
+    active: true,
+    kind: 'Physical',
+    phase: 'Interacting',
+    physicalGoal: 'Wash',
+    hasObjectTarget: true,
+    objectKind: 'Sink',
+  }, { moving: false, nearbyResident: false }), 'interact');
+
+  assert.equal(resolveResidentSemanticMotion({
+    active: true,
+    kind: 'Social',
+    phase: 'Interacting',
+  }, { moving: false, nearbyResident: true }), 'talk');
+});
+
+testCase('unsupported daily-life actions fail closed instead of faking motion', () => {
+  for (const physicalGoal of ['Eat', 'Drink', 'Sleep']) {
+    assert.equal(resolveResidentSemanticMotion({
+      active: true,
+      kind: 'Physical',
+      phase: 'Interacting',
+      physicalGoal,
+      hasTargetGrid: true,
+    }, { moving: false, nearbyResident: false }), 'idle');
+  }
+
+  assert.equal(resolveResidentSemanticMotion({
+    active: true,
+    kind: 'Physical',
+    phase: 'Interacting',
+    physicalGoal: 'UseToilet',
+  }, { moving: false, nearbyResident: false }), 'idle');
+
+  assert.equal(resolveResidentSemanticMotion({
+    active: true,
+    kind: 'Civilization',
+    phase: 'Interacting',
+    civilizationIntent: 'Craft',
+    hasTargetGrid: false,
+  }, { moving: false, nearbyResident: false }), 'idle');
+});
+
+testCase('movement always keeps locomotion ownership', () => {
+  assert.equal(resolveResidentSemanticMotion({
+    active: true,
+    kind: 'Physical',
+    phase: 'Moving',
+    physicalGoal: 'UseToilet',
+    designatedSanitationSite: true,
+  }, { moving: true, nearbyResident: false }), 'walk');
+});
