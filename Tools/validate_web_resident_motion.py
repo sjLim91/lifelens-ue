@@ -139,4 +139,33 @@ assert "Sword_Attack" not in resident, (
     "web must not fake chopping/hammering with a sword clip"
 )
 
-print("LifeLens web resident gait, readability, appearance and semantic motion: PASS")
+# UAL2 is additive. UAL1 remains the locomotion baseline if the secondary
+# library cannot be fetched, and only verified Standard clip names are bound.
+for token in (
+    "ANIMATION2_COMMIT",
+    "84fd636910bf713099010efbab7f3c84550f4bcb",
+    "UAL2_Standard.glb",
+    "Consume",
+    "Farm_Harvest",
+    "Walk_Carry_Loop",
+    "UAL2 animation asset unavailable",
+    "...animation2Asset.animations",
+    "actor.carry?.setEffectiveTimeScale(timeScale)",
+):
+    assert token in resident, f"missing pinned UAL2 motion token: {token}"
+
+# TreeChopping_Loop exists in the free UAL2 pack, but the current Web
+# presentation DTO does not yet carry authoritative tool/source semantics.
+# Never infer chopping merely because the gathered material is Wood.
+assert "TreeChopping_Loop" not in resident + semantic
+assert "civilizationMaterial === 'Wood'" not in semantic
+assert "civilizationMaterial === 'PlantFood'" in semantic
+assert "facilityAction === 'DeliverMaterial'" in semantic
+assert "physicalGoal === 'Eat'" in semantic
+assert "presentation.physicalGoal === 'Drink'" in semantic
+
+# Sleep has no verified lie-down/sleep/wake sequence in the loaded libraries.
+# Behavioral regression tests keep it neutral until one is actually reviewed.
+assert "SleepRest" not in resident
+
+print("LifeLens web resident gait, readability, appearance and UAL2 semantic motion: PASS")
