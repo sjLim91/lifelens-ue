@@ -107,4 +107,38 @@ assert "new THREE.SphereGeometry" not in appearance
 assert "mesh.geometry = mesh.geometry.clone()" in appearance
 assert "mesh.geometry.setAttribute(\'color\'" in appearance
 
-print("LifeLens web resident gait, readability and appearance diversity: PASS")
+
+
+# Semantic motion mapping stays conservative: use already-imported CC0 clips
+# only for actions whose authoritative context supports the body pose. Daily
+# life actions without a dedicated clip fail closed to Idle instead of being
+# visually misrepresented.
+semantic = (
+    root / "web/src/render/resident-semantic-motion.ts"
+).read_text(encoding="utf-8")
+for token in (
+    "Fixing_Kneeling",
+    "Crouch_Idle_Loop",
+    "resolveResidentSemanticMotion",
+    "designatedSanitationSite === true",
+    "objectKind === 'Toilet'",
+    "objectKind === 'Sink'",
+    "civilizationIntent === 'Craft'",
+    "civilizationIntent === 'Experiment'",
+    "presentation.hasTargetGrid",
+):
+    assert token in resident + semantic, (
+        f"missing conservative semantic motion token: {token}"
+    )
+
+for goal in ("'Eat'", "'Drink'", "'Sleep'"):
+    assert goal in semantic
+assert "return 'idle';" in semantic
+assert "PickUp_Table" not in resident, (
+    "web must not fake ground gathering with the table-height pickup clip"
+)
+assert "Sword_Attack" not in resident, (
+    "web must not fake chopping/hammering with a sword clip"
+)
+
+print("LifeLens web resident gait, readability, appearance and semantic motion: PASS")
