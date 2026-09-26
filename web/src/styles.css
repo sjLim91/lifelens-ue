@@ -408,3 +408,112 @@ button:disabled { opacity: .33; cursor: default; }
 @media (prefers-reduced-motion: reduce) {
   .observer { transition: none; }
 }
+
+
+/* Live observation cues: derived only from authoritative snapshot changes. */
+.observation-feed-overlay {
+  position: absolute;
+  z-index: 6;
+  left: 14px;
+  bottom: 14px;
+  width: min(330px, calc(100% - 104px));
+  display: grid;
+  gap: .38rem;
+  padding: .58rem;
+  border: 1px solid rgba(93, 124, 101, .34);
+  border-radius: 12px;
+  background: rgba(8, 15, 10, .78);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .22);
+  pointer-events: auto;
+}
+.observation-feed-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #9bad9d;
+  font-size: .62rem;
+  letter-spacing: .08em;
+}
+.observation-feed-title b {
+  min-width: 20px;
+  text-align: center;
+  color: #dce7dd;
+}
+.observation-feed-items,
+.observation-feed-panel {
+  display: grid;
+  gap: .34rem;
+}
+.observation-event {
+  display: grid;
+  gap: .2rem;
+  width: 100%;
+  padding: .48rem .54rem;
+  border: 1px solid rgba(72, 99, 79, .38);
+  border-radius: 8px;
+  background: rgba(12, 22, 15, .8);
+  color: #dce7dd;
+  text-align: left;
+}
+.observation-event-button {
+  cursor: pointer;
+}
+.observation-event-button:hover {
+  background: rgba(25, 42, 30, .92);
+}
+.observation-event.compact {
+  padding: .4rem .46rem;
+}
+.observation-event-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .4rem;
+}
+.observation-event-heading small {
+  color: #718176;
+  font-size: .56rem;
+}
+.observation-event strong {
+  font-size: .68rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.observation-event-detail {
+  color: #8fa092;
+  font-size: .61rem;
+  line-height: 1.4;
+}
+.observation-kind {
+  padding: .15rem .34rem;
+  border-radius: 999px;
+  background: #1b2a20;
+  color: #a8b9aa;
+  font-size: .54rem;
+  letter-spacing: .04em;
+}
+.observation-kind.high {
+  background: #3b3320;
+  color: #eadca5;
+}
+.observation-kind.medium {
+  background: #203429;
+  color: #bed7c3;
+}
+
+@media (max-width: 800px) {
+  .observation-feed-overlay {
+    left: 8px;
+    bottom: 66px;
+    width: min(292px, calc(100% - 88px));
+    padding: .48rem;
+    background: rgba(7, 13, 9, .68);
+  }
+  .observation-feed-overlay .observation-event:nth-child(n + 3) {
+    display: none;
+  }
+  .observation-event.compact strong {
+    font-size: .62rem;
+  }
+}

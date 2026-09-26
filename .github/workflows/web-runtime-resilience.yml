@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'web/src/runtime/**'
+      - 'web/src/state/**'
+      - 'web/src/ui/**'
       - 'web/src/input/**'
       - 'web/src/observer-engine.ts'
       - 'web/src/App.tsx'
@@ -20,6 +22,7 @@ on:
       - 'web/tests/characters/**'
       - 'web/tests/weather/**'
       - 'web/tests/runtime-resilience/**'
+      - 'web/tests/observation-feed/**'
       - 'web/package.json'
       - 'web/tsconfig.json'
       - '.github/workflows/web-runtime-resilience.yml'
@@ -53,6 +56,8 @@ jobs:
         run: node web/tests/characters/run.mjs
       - name: Exercise touch gesture direction and transitions
         run: node web/tests/input/run.mjs
+      - name: Exercise authoritative observation feed
+        run: node web/tests/observation-feed/run.mjs
       - name: Exercise terrain camera and water presentation
         run: node web/tests/presentation/run.mjs
       - name: Build browser client
