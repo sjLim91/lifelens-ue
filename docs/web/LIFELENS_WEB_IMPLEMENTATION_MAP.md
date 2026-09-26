@@ -1,7 +1,7 @@
 # LifeLens Web Observer — Implementation Map
 
 Last reconciled: 2026-09-27 KST  
-Canonical main baseline: `523dccd8d1f72d0607e70a94926d676a649fafba` (#465)
+Canonical main baseline: `996c7bc059ab839f15dc69d3ee803c3974deed4a` (#466)
 
 This document maps the current Web Observer source to the live architecture. It is an implementation map, not a visual-acceptance claim.
 
@@ -208,6 +208,19 @@ Deterministic identity-based appearance profile:
 
 Current limitation: the Web runtime still relies on the existing base body model; appearance variation is not a full demographic body-topology system.
 
+### `src/render/resident-social-cues.ts`
+
+#466 bounded factual social-cue projection.
+
+Rules:
+- only active `Interacting` Social / KnowledgeTeaching / Parenting directives qualify,
+- the authoritative target resident must exist,
+- Social Avoid is excluded,
+- reciprocal duplicates collapse to one pair,
+- visible cue count is capped,
+- render distance is bounded,
+- relationships/emotions/memories do not create cues.
+
 ### `src/render/resident-world-coordinates.ts`
 
 Maps authoritative resident grid positions into active world coordinates.
@@ -245,12 +258,12 @@ Completed:
 4. Human Trace v1 (#463).
 5. conservative semantic motion v1 (#464).
 6. UAL2 authoritative action mappings (#465).
+7. authoritative in-world Social Cue v1 (#466).
 
 Next:
-1. motion tranche 2 — Sleep/Dig/Chop/Ground Gather/Carry variants only where both clip semantics and Core facts are adequate.
-2. Social Cue.
-3. Observer Director.
-4. deeper Human Trace / lived-space accumulation.
+1. Observer Director — next observation milestone.
+2. motion tranche 2 — Sleep/Dig/Chop/Ground Gather/Carry variants only where both clip semantics and Core facts are adequate.
+3. deeper Human Trace / lived-space accumulation.
 
 ## 8. Asset policy
 
@@ -280,7 +293,7 @@ Key current gates include:
 - Unreal Linux Compile,
 - Web Preview.
 
-Current #465 baseline passed all of the above.
+Current #466 baseline preserves the validated #465 motion/runtime gates; #466 adds isolated action-context/social-cue regression coverage and no Core authority changes.
 
 Automated success does **not** establish visual acceptance. Actual mobile/browser screenshots and interaction remain required.
 
