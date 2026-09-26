@@ -8,19 +8,14 @@ layer = (
 geometry = (
     root / "web/src/render/water-geometry.ts"
 ).read_text(encoding="utf-8")
-material = (
-    root / "web/src/render/water-surface-material.ts"
-).read_text(encoding="utf-8")
 scene = (
     root / "web/src/render/world-scene.ts"
 ).read_text(encoding="utf-8")
 
-# Water remains Core-topology-driven. Presentation may shade and slightly
-# overlap adjacent source chunks, but must not invent new water kinds/chunks.
+# Water remains projected only from authoritative Core topology.
 for token in (
     "createWaterGeometryBuilder",
     "chunk.waterKind",
-    "chunkMap",
     "WORLD_GRID_CONTRACT.worldUnitsPerChunk",
 ):
     assert token in layer or token in geometry, (
@@ -35,56 +30,36 @@ for forbidden in (
     assert forbidden not in layer
     assert forbidden not in geometry
 
-# Avoid false-positive matching of equality checks such as `===`.
-assert "chunk.waterKind = '" not in layer
-assert 'chunk.waterKind = "' not in layer
-assert "chunk.waterKind = '" not in geometry
-assert 'chunk.waterKind = "' not in geometry
+# Wetland is ecological ground, not a full-chunk open-water plane.
+water_kind_block = layer[
+    layer.index("const WATER_KINDS"):
+    layer.index("type VisibleWaterKind")
+]
+assert "'Wetland'" not in water_kind_block
+assert "| 'Wetland'" not in layer
 
-# Open-water seams are hidden only by a tiny presentation overlap.
-assert "chunkWorldSize * 1.02" in geometry
-assert "chunkWorldSize * 1.2" not in geometry
+# The failed v2 experiment used overlapping transparent/specular slabs.
+# Recovery keeps each source water tile bounded and opaque/stable.
+assert "chunkWorldSize * 0.96" in geometry
+assert "chunkWorldSize * 1.02" not in geometry
+assert "MeshStandardMaterial" in layer
+assert "transparent: false" in layer
+assert "opacity: 1" in layer
+assert "depthWrite: true" in layer
+assert "ShaderMaterial" not in layer
+assert "water-surface-material" not in layer
 
-# Mobile-friendly procedural shading: no texture/network dependency, animated
-# with a tiny fixed-cost fragment function and a flat source surface.
+# Weather/daylight can tint roughness/brightness, but cannot animate separate
+# per-chunk reflection fields or change hydrology.
 for token in (
-    "ShaderMaterial",
-    "uTime",
-    "uDeepColor",
-    "uShallowColor",
-    "uSkyColor",
-    "uWaveScale",
-    "uFlowSpeed",
-    "uFlow",
-    "uWind",
-    "uRain",
-    "uDaylight",
-    "waveField",
-    "fresnel",
-    "specular",
-):
-    assert token in material, f"missing water shader token: {token}"
-
-for forbidden in (
-    "TextureLoader",
-    "loadAsync(",
-    "sampler2D",
-):
-    assert forbidden not in material, (
-        f"web water shader must stay texture-free/mobile-cheap: {forbidden}"
-    )
-
-# Flow direction is projected from connected authoritative neighbors and
-# elevation; weather/time are presentation inputs only.
-for token in (
-    "configureFlow",
-    "candidate.chunk",
-    "elevation01",
     "setEnvironment",
     "setSimulationMinute",
-    "update(deltaSeconds",
+    "daylight01",
+    "wind01",
+    "rain01",
+    "material.roughness",
 ):
-    assert token in layer, f"missing dynamic water token: {token}"
+    assert token in layer, f"missing stable water response token: {token}"
 
 for token in (
     "this.waterLayer.setSimulationMinute(minute)",
@@ -93,4 +68,4 @@ for token in (
 ):
     assert token in scene, f"world scene does not drive water: {token}"
 
-print("LifeLens web animated water surface: PASS")
+print("LifeLens web stable water regression recovery: PASS")
