@@ -89,11 +89,11 @@ function createActionCueSprite(): ResidentActionCueSprite | null {
     map: texture,
     transparent: true,
     depthWrite: false,
-    depthTest: false,
+    depthTest: true,
     opacity: 0.96,
   });
   const sprite = new THREE.Sprite(material);
-  sprite.scale.set(4.6, 0.86, 1);
+  sprite.scale.set(3.6, 0.68, 1);
   sprite.renderOrder = 8;
   sprite.visible = false;
 
@@ -435,7 +435,7 @@ export class ResidentWorldLayer {
       if (actor.actionCue) {
         actor.actionCue.sprite.position.set(
           actor.current.x,
-          actor.current.y + 2.15,
+          actor.current.y + 2.0,
           actor.current.z,
         );
       }
