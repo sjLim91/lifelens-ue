@@ -20,6 +20,10 @@ import {
   createResidentAppearanceProfile,
 } from './resident-appearance';
 import { residentActionCue } from './resident-action-context';
+import {
+  resolveResidentSemanticMotion,
+  type ResidentSemanticMotion,
+} from './resident-semantic-motion';
 import { residentToWorldPosition } from './resident-world-coordinates';
 
 const BASE_MODEL_COMMIT = 'ddd5fc34a445bcded3cf9836607aaeebc19a5c78';
@@ -30,7 +34,7 @@ const ANIMATION_COMMIT = 'aa02a4e6d8337a0604d2da131bcbbeb1f01badf0';
 const ANIMATION_URL =
   `https://raw.githubusercontent.com/Seyamalam/blood-league-kickoff/${ANIMATION_COMMIT}/public/assets/vendor/quaternius/universal-animation-library.glb`;
 
-type MotionName = 'idle' | 'walk' | 'talk' | 'sit' | 'interact';
+type MotionName = ResidentSemanticMotion | 'sit';
 
 interface ResidentActionCueSprite {
   sprite: THREE.Sprite;
@@ -47,6 +51,8 @@ interface ResidentActor {
   talk?: THREE.AnimationAction;
   sit?: THREE.AnimationAction;
   interact?: THREE.AnimationAction;
+  crouch?: THREE.AnimationAction;
+  work?: THREE.AnimationAction;
   active: MotionName | '';
   activityLabel: string;
   activityTargetId: string;
@@ -581,6 +587,16 @@ export class ResidentWorldLayer {
       'sitting_idle',
     );
     const interactClip = findClip(this.clips, 'Interact', 'interact');
+    const crouchClip = findClip(
+      this.clips,
+      'Crouch_Idle_Loop',
+      'crouch_idle',
+    );
+    const workClip = findClip(
+      this.clips,
+      'Fixing_Kneeling',
+      'fixing_kneeling',
+    );
 
     const idle = idleClip ? mixer.clipAction(idleClip, root) : undefined;
     const walk = walkClip ? mixer.clipAction(walkClip, root) : undefined;
@@ -589,8 +605,14 @@ export class ResidentWorldLayer {
     const interact = interactClip
       ? mixer.clipAction(interactClip, root)
       : undefined;
+    const crouch = crouchClip
+      ? mixer.clipAction(crouchClip, root)
+      : undefined;
+    const work = workClip
+      ? mixer.clipAction(workClip, root)
+      : undefined;
 
-    [idle, walk, talk, sit, interact].forEach((action) => {
+    [idle, walk, talk, sit, interact, crouch, work].forEach((action) => {
       action?.setLoop(THREE.LoopRepeat, Infinity);
     });
 
@@ -615,6 +637,8 @@ export class ResidentWorldLayer {
       talk,
       sit,
       interact,
+      crouch,
+      work,
       active: idle ? 'idle' : '',
       activityLabel: resident.activityLabel ?? 'Idle',
       activityTargetId: resident.activityTargetId ?? '',
@@ -742,20 +766,15 @@ export class ResidentWorldLayer {
       case 'talk': return actor.talk;
       case 'sit': return actor.sit;
       case 'interact': return actor.interact;
+      case 'crouch': return actor.crouch;
+      case 'work': return actor.work;
       default: return actor.idle;
     }
   }
 
   private restMotion(actor: ResidentActor): MotionName {
     const presentation = actor.presentation;
-    if (
-      !presentation?.active
-      || presentation.phase !== 'Interacting'
-    ) {
-      return 'idle';
-    }
-
-    const targetResidentId = presentation.targetResidentId ?? '';
+    const targetResidentId = presentation?.targetResidentId ?? '';
     const targetActor = targetResidentId && targetResidentId !== '0'
       ? this.actors.get(targetResidentId)
       : undefined;
@@ -765,26 +784,31 @@ export class ResidentWorldLayer {
       && actor.current.distanceTo(targetActor.current) <= 3,
     );
 
-    if (
-      nearbyResident
-      && actor.talk
-      && (
-        presentation.kind === 'KnowledgeTeaching'
-        || presentation.kind === 'Social'
-      )
-    ) {
-      return 'talk';
-    }
+    const resolved = resolveResidentSemanticMotion(
+      presentation,
+      {
+        moving: false,
+        nearbyResident,
+      },
+    );
 
-    // Object-bound physical/civilization/parenting motions remain neutral in
-    // this tranche. The directive makes their intent visible, but we do not
-    // invent a chair, bed, toilet, tool alignment or hand interaction.
-    return 'idle';
+    // Missing vendor clips fail closed to neutral Idle. Core intent remains
+    // visible through the action cue, but Presentation never substitutes a
+    // semantically unrelated pose just to avoid standing still.
+    return this.actionFor(actor, resolved)
+      ? resolved
+      : 'idle';
   }
 
   private setAction(actor: ResidentActor, moving: boolean): void {
     const desired: MotionName = moving && actor.walk
-      ? 'walk'
+      ? resolveResidentSemanticMotion(
+        actor.presentation,
+        {
+          moving: true,
+          nearbyResident: false,
+        },
+      )
       : this.restMotion(actor);
     if (actor.active === desired) return;
 
