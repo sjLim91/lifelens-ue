@@ -37,6 +37,12 @@ int main()
     assert(residents.find("\"beliefs\":[") != std::string::npos);
     assert(residents.find("\"lifeStage\":") != std::string::npos);
     assert(residents.find("\"activityTargetName\":") != std::string::npos);
+    assert(residents.find("\"presentation\":{") != std::string::npos);
+    assert(residents.find("\"phase\":") != std::string::npos);
+    assert(residents.find("\"hasTargetGrid\":") != std::string::npos);
+    assert(residents.find("\"hasObjectTarget\":") != std::string::npos);
+    assert(residents.find("\"emergencyFallback\":") != std::string::npos);
+    assert(residents.find("\"contextActionToken\":") != std::string::npos);
     assert(residents.find("\"hasPosition\":true") != std::string::npos);
 
     const std::string environment = bridge.dynamicEnvironmentJson(0, 0);
