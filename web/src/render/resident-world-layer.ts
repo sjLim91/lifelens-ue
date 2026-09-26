@@ -34,6 +34,14 @@ const ANIMATION_COMMIT = 'aa02a4e6d8337a0604d2da131bcbbeb1f01badf0';
 const ANIMATION_URL =
   `https://raw.githubusercontent.com/Seyamalam/blood-league-kickoff/${ANIMATION_COMMIT}/public/assets/vendor/quaternius/universal-animation-library.glb`;
 
+// Quaternius Universal Animation Library 2 Standard, CC0 1.0.
+// Official source: https://quaternius.com/packs/universalanimationlibrary2.html
+// Pinned public mirror commit contains only the CC0 animation GLB we consume;
+// unrelated avatar meshes in that repository are never requested.
+const ANIMATION2_COMMIT = '84fd636910bf713099010efbab7f3c84550f4bcb';
+const ANIMATION2_URL =
+  `https://raw.githubusercontent.com/richardanaya/metaverse-avatar/${ANIMATION2_COMMIT}/anims/UAL2_Standard.glb`;
+
 type MotionName = ResidentSemanticMotion | 'sit';
 
 interface ResidentActionCueSprite {
@@ -53,6 +61,9 @@ interface ResidentActor {
   interact?: THREE.AnimationAction;
   crouch?: THREE.AnimationAction;
   work?: THREE.AnimationAction;
+  consume?: THREE.AnimationAction;
+  harvest?: THREE.AnimationAction;
+  carry?: THREE.AnimationAction;
   active: MotionName | '';
   activityLabel: string;
   activityTargetId: string;
@@ -511,6 +522,21 @@ export class ResidentWorldLayer {
         );
       }
 
+      try {
+        const animation2Asset = await this.loader.loadAsync(ANIMATION2_URL);
+        animationClips = [
+          ...animationClips,
+          ...animation2Asset.animations,
+        ];
+      } catch (error) {
+        // UAL2 is a presentation enhancement. Failure must never take down the
+        // resident layer or remove the proven UAL1 locomotion baseline.
+        console.warn(
+          'LifeLens Three World UAL2 animation asset unavailable',
+          error,
+        );
+      }
+
       const source = base.scene;
       source.updateMatrixWorld(true);
       const box = new THREE.Box3().setFromObject(source);
@@ -597,6 +623,21 @@ export class ResidentWorldLayer {
       'Fixing_Kneeling',
       'fixing_kneeling',
     );
+    const consumeClip = findClip(
+      this.clips,
+      'Consume',
+      'consume',
+    );
+    const harvestClip = findClip(
+      this.clips,
+      'Farm_Harvest',
+      'farm_harvest',
+    );
+    const carryClip = findClip(
+      this.clips,
+      'Walk_Carry_Loop',
+      'walk_carry',
+    );
 
     const idle = idleClip ? mixer.clipAction(idleClip, root) : undefined;
     const walk = walkClip ? mixer.clipAction(walkClip, root) : undefined;
@@ -611,8 +652,28 @@ export class ResidentWorldLayer {
     const work = workClip
       ? mixer.clipAction(workClip, root)
       : undefined;
+    const consume = consumeClip
+      ? mixer.clipAction(consumeClip, root)
+      : undefined;
+    const harvest = harvestClip
+      ? mixer.clipAction(harvestClip, root)
+      : undefined;
+    const carry = carryClip
+      ? mixer.clipAction(carryClip, root)
+      : undefined;
 
-    [idle, walk, talk, sit, interact, crouch, work].forEach((action) => {
+    [
+      idle,
+      walk,
+      talk,
+      sit,
+      interact,
+      crouch,
+      work,
+      consume,
+      harvest,
+      carry,
+    ].forEach((action) => {
       action?.setLoop(THREE.LoopRepeat, Infinity);
     });
 
@@ -639,6 +700,9 @@ export class ResidentWorldLayer {
       interact,
       crouch,
       work,
+      consume,
+      harvest,
+      carry,
       active: idle ? 'idle' : '',
       activityLabel: resident.activityLabel ?? 'Idle',
       activityTargetId: resident.activityTargetId ?? '',
@@ -755,6 +819,7 @@ export class ResidentWorldLayer {
       RESIDENT_PRESENTATION_CONTRACT.walkMaxTimeScale,
     );
     actor.walk.setEffectiveTimeScale(timeScale);
+    actor.carry?.setEffectiveTimeScale(timeScale);
   }
 
   private actionFor(
@@ -768,6 +833,9 @@ export class ResidentWorldLayer {
       case 'interact': return actor.interact;
       case 'crouch': return actor.crouch;
       case 'work': return actor.work;
+      case 'consume': return actor.consume;
+      case 'harvest': return actor.harvest;
+      case 'carry': return actor.carry;
       default: return actor.idle;
     }
   }
@@ -801,7 +869,7 @@ export class ResidentWorldLayer {
   }
 
   private setAction(actor: ResidentActor, moving: boolean): void {
-    const desired: MotionName = moving && actor.walk
+    let desired: MotionName = moving && actor.walk
       ? resolveResidentSemanticMotion(
         actor.presentation,
         {
@@ -810,6 +878,10 @@ export class ResidentWorldLayer {
         },
       )
       : this.restMotion(actor);
+
+    if (!this.actionFor(actor, desired)) {
+      desired = moving && actor.walk ? 'walk' : 'idle';
+    }
     if (actor.active === desired) return;
 
     const previous = actor.active
