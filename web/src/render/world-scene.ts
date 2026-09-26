@@ -344,7 +344,7 @@ export class WorldScene {
   private terrainColor(chunk: TerrainChunk): number {
     switch (chunk.waterKind) {
       case 'Ocean': return 0x1b4b63;
-      case 'Coast': return 0x276878;
+      case 'Coast': return 0x66705a;
       case 'Wetland': return 0x496e58;
       default:
         break;

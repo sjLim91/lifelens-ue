@@ -123,6 +123,16 @@ export class VegetationLayer {
 
     for (const chunk of window.chunks) {
       if (treeIndex >= MAX_TREES) break;
+      if (
+        chunk.waterKind === 'Ocean'
+        || chunk.waterKind === 'Coast'
+        || chunk.waterKind === 'Lake'
+        || chunk.waterKind === 'River'
+        || chunk.waterKind === 'Stream'
+        || chunk.waterKind === 'Spring'
+      ) {
+        continue;
+      }
 
       const forest = Math.max(
         0,

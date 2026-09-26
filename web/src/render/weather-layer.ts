@@ -86,13 +86,45 @@ export class WeatherLayer {
   private readonly snowPositions =
     new Float32Array(MAX_SNOW_PARTICLES * 3);
   private readonly snowGeometry = new THREE.BufferGeometry();
-  private readonly snowMaterial = new THREE.PointsMaterial({
-    color: 0xf0f5f7,
-    size: 0.62,
+  private readonly snowMaterial = new THREE.ShaderMaterial({
+    uniforms: {
+      uColor: { value: new THREE.Color(0xf0f5f7) },
+      uOpacity: { value: 0.86 },
+      uIntensity: { value: 0.4 },
+      uPixelRatio: { value: 1 },
+    },
+    vertexShader: `
+      uniform float uIntensity;
+      uniform float uPixelRatio;
+
+      void main() {
+        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+        gl_Position = projectionMatrix * mvPosition;
+        gl_PointSize = mix(
+          3.2,
+          5.8,
+          clamp(uIntensity, 0.0, 1.0)
+        ) * uPixelRatio;
+      }
+    `,
+    fragmentShader: `
+      uniform vec3 uColor;
+      uniform float uOpacity;
+
+      void main() {
+        vec2 centered = gl_PointCoord - 0.5;
+        float radius = length(centered);
+        float alpha = (
+          1.0 - smoothstep(0.28, 0.5, radius)
+        ) * uOpacity;
+
+        if (alpha < 0.02) discard;
+        gl_FragColor = vec4(uColor, alpha);
+      }
+    `,
     transparent: true,
-    opacity: 0.86,
     depthWrite: false,
-    sizeAttenuation: true,
+    depthTest: true,
   });
   private readonly snow: THREE.Points;
 
@@ -142,6 +174,10 @@ export class WeatherLayer {
     );
     this.snow.frustumCulled = false;
     this.snow.renderOrder = 5;
+    this.snow.onBeforeRender = (renderer) => {
+      this.snowMaterial.uniforms.uPixelRatio.value =
+        renderer.getPixelRatio();
+    };
 
     this.group.add(this.rain);
     this.group.add(this.snow);
@@ -207,7 +243,9 @@ export class WeatherLayer {
     (
       this.rainMaterial.uniforms.uColor.value as THREE.Color
     ).set(summary === 'Storm' ? 0xadc4cf : 0xbdd6e3);
-    this.snowMaterial.opacity = 0.76 + this.intensity * 0.18;
+    this.snowMaterial.uniforms.uOpacity.value =
+      0.76 + this.intensity * 0.18;
+    this.snowMaterial.uniforms.uIntensity.value = this.intensity;
   }
 
   setFocus(worldX: number, worldZ: number): void {
