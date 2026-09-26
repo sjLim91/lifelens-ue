@@ -75,7 +75,10 @@ int main()
         TechniqueId::FireMaking,KnowledgeLevel::Reproducible,0.9);
     a.civilization.inventory.add({ItemKind::RawMaterial,MaterialKind::Stone,5,0.5,1.0});
     a.civilization.inventory.add({ItemKind::RawMaterial,MaterialKind::Wood,4,0.5,1.0});
-    const PrimitiveFirePitSiteOpportunity fireSite=choosePrimitiveFirePitSite(source.world(),a.id);
+    GridPos fireActivityAnchor{};
+    CHECK(source.runtimePosition(a.id,fireActivityAnchor));
+    const PrimitiveFirePitSiteOpportunity fireSite=
+        choosePrimitiveFirePitSite(source.world(),a.id,fireActivityAnchor);
     CHECK(fireSite.available);
     ConstructedFacility* firePit=establishPrimitiveFirePitProject(source.world(),a,fireSite.pos);
     CHECK(firePit!=nullptr);

@@ -103,10 +103,13 @@ int main()
     actor.needs={0.08,0.08,0.08,0.08,0.08};
     actor.civilization.craftingSkill=0.20;
 
+    GridPos actorPosition{};
+    CHECK(simulation.runtimePosition(actor.id,actorPosition));
+
     // SleepingPlace is a real primitive sleep target and beats exposed ground.
     const SettlementFacilitySiteOpportunity sleepSite=
         chooseSettlementFacilitySite(
-            world,actor.id,FacilityKind::SleepingPlace);
+            world,actor.id,FacilityKind::SleepingPlace,actorPosition);
     CHECK(sleepSite.available);
     ConstructedFacility* sleeping=
         buildFoundation(
@@ -133,7 +136,7 @@ int main()
     // quality, and wears only after a successful use.
     const SettlementFacilitySiteOpportunity workSite=
         chooseSettlementFacilitySite(
-            world,actor.id,FacilityKind::WorkSurface);
+            world,actor.id,FacilityKind::WorkSurface,actorPosition);
     CHECK(workSite.available);
     ConstructedFacility* workSurface=
         buildFoundation(
@@ -162,7 +165,7 @@ int main()
     GridPos craftTarget{};
     SanitationSiteId sanitation=0;
     CHECK(resolveCivilizationContextTarget(
-        world,actor,craft,craftTarget,sanitation));
+        world,actor,craft,actorPosition,craftTarget,sanitation));
     CHECK(craftTarget.x==workSurface->pos.x);
     CHECK(craftTarget.y==workSurface->pos.y);
 
@@ -227,7 +230,7 @@ int main()
 
     GridPos repairTarget{};
     CHECK(resolveCivilizationContextTarget(
-        world,actor,repair,repairTarget,sanitation));
+        world,actor,repair,workSurface->pos,repairTarget,sanitation));
     CHECK(repairTarget.x==workSurface->pos.x);
     CHECK(repairTarget.y==workSurface->pos.y);
 
