@@ -203,6 +203,8 @@ export interface ResidentPresentationDirective {
   physicalGoal?: string;
   socialIntent?: string;
   civilizationIntent?: string;
+  civilizationMaterial?: string;
+  facilityAction?: string;
   parentingAction?: string;
   targetResidentId?: string;
   hasTargetGrid?: boolean;
