@@ -31,7 +31,8 @@ See [LIFELENS_WEB_IMPLEMENTATION_MAP.md](../docs/web/LIFELENS_WEB_IMPLEMENTATION
 
 The web observer may use pinned zero-cost runtime assets when they materially improve presentation without changing simulation authority.
 
-- Vegetation: Quaternius Stylized Nature MegaKit `tree3.glb`, CC0-1.0, pinned through commit `0c41526d8d4130c37c15e219c2c3737fa8cb4ad8` from `anshaneja5/skyline-run`.
-- The tree GLB is approximately 332 KB and is normalized once, then rendered through `InstancedMesh` batches.
-- Compact/coarse-pointer devices reduce vegetation density while keeping the same tree asset; the visual does not fall back to cone/cylinder trees for performance reasons.
+- Vegetation: Quaternius Stylized Nature MegaKit `tree1.glb`, `tree2.glb`, and `tree3.glb`, CC0-1.0, pinned through commit `0c41526d8d4130c37c15e219c2c3737fa8cb4ad8` from `anshaneja5/skyline-run`.
+- The three compressed tree variants total about 1.3 MB and are normalized once, then rendered through separate `InstancedMesh` batches so deterministic forests do not repeat one silhouette everywhere.
+- Compact/coarse-pointer devices reduce tree and ground-detail density rather than changing simulation truth.
+- Grass tufts, shrubs, and rocks are lightweight procedural presentation meshes driven only by authoritative Core coverage/elevation fields; they do not create resources, collision, or terrain height.
 - A procedural broadleaf mesh remains only as a network/asset-load failure fallback.
