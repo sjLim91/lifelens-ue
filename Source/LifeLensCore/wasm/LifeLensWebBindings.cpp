@@ -14,5 +14,8 @@ EMSCRIPTEN_BINDINGS(lifelens_web_core)
         .function("worldOverviewJson", &lifelens::WebClientBridge::worldOverviewJson)
         .function("residentsJson", &lifelens::WebClientBridge::residentsJson)
         .function("dynamicEnvironmentJson", &lifelens::WebClientBridge::dynamicEnvironmentJson)
+        .function("recentSocialEventsJson", &lifelens::WebClientBridge::recentSocialEventsJson)
+        .function("civilizationWorldJson", &lifelens::WebClientBridge::civilizationWorldJson)
+        .function("worldObjectsJson", &lifelens::WebClientBridge::worldObjectsJson)
         .function("terrainWindowJson", &lifelens::WebClientBridge::terrainWindowJson);
 }
