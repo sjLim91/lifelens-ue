@@ -33,8 +33,17 @@ struct ResidentPresentationObservation {
     SocialIntent socialIntent=SocialIntent::None;
     CivilizationIntent civilizationIntent=CivilizationIntent::None;
     MaterialKind civilizationMaterial=MaterialKind::Unknown;
+    ItemKind civilizationItem=ItemKind::RawMaterial;
+    TechniqueId civilizationTechnique=TechniqueId::None;
+    int civilizationQuantity=0;
+    ResourceNodeId civilizationResourceNode=0;
+    StorageId civilizationStorage=0;
     FacilityBuildAction facilityAction=FacilityBuildAction::None;
+    FacilityId facilityId=0;
+    FacilityKind facilityKind=FacilityKind::PrimitiveStorage;
     ParentingAction parentingAction=ParentingAction::Comfort;
+    TechniqueId knowledgeTeachingTechnique=TechniqueId::None;
+    int issuedMinute=-1;
 
     CharacterId targetResidentId=0;
     bool hasTargetGrid=false;
