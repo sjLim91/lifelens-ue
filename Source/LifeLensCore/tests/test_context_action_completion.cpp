@@ -68,8 +68,25 @@ int main()
         const std::size_t targetMemoryBefore=target->memory.entries.size();
         const EmotionState actorEmotionBefore=actor->emotion;
 
+        GridPos actorPos{};
         GridPos targetPos{};
+        CHECK(sim.runtimePosition(pending.actor,actorPos));
         CHECK(sim.runtimePosition(pending.targetResident,targetPos));
+
+        const ResidentPresentationObservation presentation=
+            sim.observeResidentPresentation(pending.actor);
+        CHECK(presentation.active);
+        CHECK(presentation.kind==PresentationActionKind::Social);
+        CHECK(presentation.socialIntent==pending.socialIntent);
+        if(pending.socialIntent==SocialIntent::Avoid){
+            CHECK(!presentation.hasTargetGrid);
+            const bool separated=
+                actorPos.x!=targetPos.x || actorPos.y!=targetPos.y;
+            CHECK(presentation.phase==(
+                separated
+                    ? PresentationActionPhase::Idle
+                    : PresentationActionPhase::Moving));
+        }
         GridPos completionPos=targetPos;
         if(pending.socialIntent==SocialIntent::Avoid) completionPos.x+=1;
 

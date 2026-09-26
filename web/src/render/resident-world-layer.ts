@@ -3,6 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import type {
   Resident,
+  ResidentPresentationDirective,
   TerrainWindow,
 } from '../runtime/core-types';
 import {
@@ -18,6 +19,7 @@ import {
   applyResidentMaterialVariant,
   createResidentAppearanceProfile,
 } from './resident-appearance';
+import { residentActionCue } from './resident-action-context';
 import { residentToWorldPosition } from './resident-world-coordinates';
 
 const BASE_MODEL_COMMIT = 'ddd5fc34a445bcded3cf9836607aaeebc19a5c78';
@@ -30,6 +32,13 @@ const ANIMATION_URL =
 
 type MotionName = 'idle' | 'walk' | 'talk' | 'sit' | 'interact';
 
+interface ResidentActionCueSprite {
+  sprite: THREE.Sprite;
+  texture: THREE.CanvasTexture;
+  canvas: HTMLCanvasElement;
+  text: string;
+}
+
 interface ResidentActor {
   root: THREE.Group;
   mixer: THREE.AnimationMixer;
@@ -41,6 +50,8 @@ interface ResidentActor {
   active: MotionName | '';
   activityLabel: string;
   activityTargetId: string;
+  presentation: ResidentPresentationDirective | null;
+  actionCue: ResidentActionCueSprite | null;
   current: THREE.Vector3;
   target: THREE.Vector3;
   targetYaw: number;
@@ -61,6 +72,82 @@ function findClip(
     ?? clips.find((clip) => (
       clip.name.toLowerCase().includes(contains.toLowerCase())
     ));
+}
+
+function createActionCueSprite(): ResidentActionCueSprite | null {
+  if (typeof document === 'undefined') return null;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 96;
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+
+  const material = new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true,
+    depthWrite: false,
+    depthTest: true,
+    opacity: 0.96,
+  });
+  const sprite = new THREE.Sprite(material);
+  sprite.scale.set(3.6, 0.68, 1);
+  sprite.renderOrder = 8;
+  sprite.visible = false;
+
+  return {
+    sprite,
+    texture,
+    canvas,
+    text: '',
+  };
+}
+
+function paintActionCue(
+  cue: ResidentActionCueSprite,
+  text: string,
+  phase: ResidentPresentationDirective['phase'],
+): void {
+  if (cue.text === text) return;
+  cue.text = text;
+
+  const context = cue.canvas.getContext('2d');
+  if (!context) return;
+
+  context.clearRect(0, 0, cue.canvas.width, cue.canvas.height);
+  context.fillStyle = 'rgba(8, 15, 11, 0.84)';
+  context.fillRect(4, 8, cue.canvas.width - 8, cue.canvas.height - 16);
+
+  context.strokeStyle = phase === 'Moving'
+    ? 'rgba(150, 190, 169, 0.72)'
+    : 'rgba(222, 201, 143, 0.76)';
+  context.lineWidth = 3;
+  context.strokeRect(5.5, 9.5, cue.canvas.width - 11, cue.canvas.height - 19);
+
+  const safeText = text.length > 28
+    ? `${text.slice(0, 27)}…`
+    : text;
+  let fontSize = 30;
+  context.font = `600 ${fontSize}px system-ui, sans-serif`;
+  while (
+    fontSize > 21
+    && context.measureText(safeText).width > cue.canvas.width - 38
+  ) {
+    fontSize -= 1;
+    context.font = `600 ${fontSize}px system-ui, sans-serif`;
+  }
+
+  context.fillStyle = '#f0f5ef';
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.fillText(
+    safeText,
+    cue.canvas.width * 0.5,
+    cue.canvas.height * 0.5,
+  );
+  cue.texture.needsUpdate = true;
 }
 
 export class ResidentWorldLayer {
@@ -136,6 +223,7 @@ export class ResidentWorldLayer {
 
     for (const [id, actor] of this.actors) {
       actor.root.visible = activeIds.has(id);
+      if (actor.actionCue) actor.actionCue.sprite.visible = false;
     }
 
     for (const resident of residents) {
@@ -220,6 +308,8 @@ export class ResidentWorldLayer {
 
       actor.activityLabel = resident.activityLabel ?? 'Idle';
       actor.activityTargetId = resident.activityTargetId ?? '';
+      actor.presentation = resident.presentation ?? null;
+      this.updateActionCue(actor, resident, residents);
       actor.target.copy(next);
 
       if (!actor.initialized) {
@@ -316,9 +406,39 @@ export class ResidentWorldLayer {
           0,
           actor.walkGraceRemainingSeconds - dt,
         );
+
+        const interactionYaw = this.interactionTargetYaw(actor);
+        if (interactionYaw !== null) {
+          const yawDelta = Math.atan2(
+            Math.sin(interactionYaw - actor.root.rotation.y),
+            Math.cos(interactionYaw - actor.root.rotation.y),
+          );
+          const turnBlend = 1 - Math.exp(
+            -RESIDENT_PRESENTATION_CONTRACT.turnResponsivenessPerSecond * dt,
+          );
+          actor.root.rotation.y += yawDelta * turnBlend;
+        }
+      }
+
+      if (
+        this.simulationSpeed > 0
+        && actor.presentation?.active
+        && actor.presentation.phase === 'Moving'
+      ) {
+        actor.walkGraceRemainingSeconds = Math.max(
+          actor.walkGraceRemainingSeconds,
+          RESIDENT_PRESENTATION_CONTRACT.walkStopGraceSeconds,
+        );
       }
 
       actor.root.position.copy(actor.current);
+      if (actor.actionCue) {
+        actor.actionCue.sprite.position.set(
+          actor.current.x,
+          actor.current.y + 2.0,
+          actor.current.z,
+        );
+      }
       const presentationMoving =
         moving || actor.walkGraceRemainingSeconds > 0;
       this.syncWalkPlaybackRate(actor);
@@ -339,6 +459,12 @@ export class ResidentWorldLayer {
         for (const material of materials) material.dispose();
         if (object.userData.residentOwnsGeometry) object.geometry.dispose();
       });
+    }
+    for (const actor of this.actors.values()) {
+      if (!actor.actionCue) continue;
+      this.group.remove(actor.actionCue.sprite);
+      actor.actionCue.texture.dispose();
+      actor.actionCue.sprite.material.dispose();
     }
     this.actors.clear();
     this.selectionRing.geometry.dispose();
@@ -492,6 +618,8 @@ export class ResidentWorldLayer {
       active: idle ? 'idle' : '',
       activityLabel: resident.activityLabel ?? 'Idle',
       activityTargetId: resident.activityTargetId ?? '',
+      presentation: resident.presentation ?? null,
+      actionCue: null,
       current: new THREE.Vector3(),
       target: new THREE.Vector3(),
       targetYaw: 0,
@@ -502,9 +630,90 @@ export class ResidentWorldLayer {
       initialized: false,
     };
 
+    const actionCue = createActionCueSprite();
+    actor.actionCue = actionCue;
+    if (actionCue) this.group.add(actionCue.sprite);
+
     this.actors.set(resident.id, actor);
     this.group.add(root);
     return actor;
+  }
+
+  private updateActionCue(
+    actor: ResidentActor,
+    resident: Resident,
+    residents: Resident[],
+  ): void {
+    const cue = residentActionCue(resident, residents);
+    if (!actor.actionCue || !cue) {
+      if (actor.actionCue) actor.actionCue.sprite.visible = false;
+      return;
+    }
+
+    paintActionCue(actor.actionCue, cue.text, cue.phase);
+    actor.actionCue.sprite.visible = true;
+  }
+
+  private interactionTargetYaw(actor: ResidentActor): number | null {
+    const presentation = actor.presentation;
+    if (
+      !presentation?.active
+      || presentation.phase !== 'Interacting'
+    ) {
+      return null;
+    }
+
+    let targetX: number | null = null;
+    let targetZ: number | null = null;
+    const targetResidentId = presentation.targetResidentId ?? '';
+    const targetActor = targetResidentId && targetResidentId !== '0'
+      ? this.actors.get(targetResidentId)
+      : undefined;
+
+    if (targetActor?.root.visible && targetActor.initialized) {
+      targetX = targetActor.current.x;
+      targetZ = targetActor.current.z;
+    } else if (
+      presentation.hasTargetGrid
+      && typeof presentation.targetGridX === 'number'
+      && typeof presentation.targetGridY === 'number'
+    ) {
+      const gridCellsPerChunk = WORLD_GRID_CONTRACT.gridCellsPerChunk;
+      const chunkWorldSize = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
+      const chunkX = Math.floor(
+        presentation.targetGridX / gridCellsPerChunk,
+      );
+      const chunkY = Math.floor(
+        presentation.targetGridY / gridCellsPerChunk,
+      );
+      const localX = (
+        presentation.targetGridX - (chunkX * gridCellsPerChunk)
+      ) / gridCellsPerChunk;
+      const localY = (
+        presentation.targetGridY - (chunkY * gridCellsPerChunk)
+      ) / gridCellsPerChunk;
+      targetX = (
+        chunkX - this.pendingCenterX + localX - 0.5
+      ) * chunkWorldSize;
+      targetZ = (
+        chunkY - this.pendingCenterY + localY - 0.5
+      ) * chunkWorldSize;
+    }
+
+    if (targetX === null || targetZ === null) return null;
+    const dx = targetX - actor.current.x;
+    const dz = targetZ - actor.current.z;
+    if (
+      (dx * dx) + (dz * dz)
+      <= RESIDENT_PRESENTATION_CONTRACT.movementEpsilonWorldUnits ** 2
+    ) {
+      return null;
+    }
+
+    return (
+      Math.atan2(dx, dz)
+      + RESIDENT_PRESENTATION_CONTRACT.modelForwardYawOffsetRadians
+    );
   }
 
   private syncWalkPlaybackRate(actor: ResidentActor): void {
@@ -538,25 +747,38 @@ export class ResidentWorldLayer {
   }
 
   private restMotion(actor: ResidentActor): MotionName {
-    // Do not invent a chair, bed, toilet, tool, work surface or interaction
-    // slot from an activity label alone. Until the authoritative action-motion
-    // DTO carries validated target/slot/alignment context, object-bound actions
-    // must remain neutral rather than playing a false interaction animation.
+    const presentation = actor.presentation;
     if (
-      actor.activityLabel === 'Talk'
-      && actor.activityTargetId
-      && actor.talk
+      !presentation?.active
+      || presentation.phase !== 'Interacting'
     ) {
-      const targetActor = this.actors.get(actor.activityTargetId);
-      if (
-        targetActor?.root.visible
-        && targetActor.initialized
-        && actor.current.distanceTo(targetActor.current) <= 3
-      ) {
-        return 'talk';
-      }
+      return 'idle';
     }
 
+    const targetResidentId = presentation.targetResidentId ?? '';
+    const targetActor = targetResidentId && targetResidentId !== '0'
+      ? this.actors.get(targetResidentId)
+      : undefined;
+    const nearbyResident = Boolean(
+      targetActor?.root.visible
+      && targetActor.initialized
+      && actor.current.distanceTo(targetActor.current) <= 3,
+    );
+
+    if (
+      nearbyResident
+      && actor.talk
+      && (
+        presentation.kind === 'KnowledgeTeaching'
+        || presentation.kind === 'Social'
+      )
+    ) {
+      return 'talk';
+    }
+
+    // Object-bound physical/civilization/parenting motions remain neutral in
+    // this tranche. The directive makes their intent visible, but we do not
+    // invent a chair, bed, toilet, tool alignment or hand interaction.
     return 'idle';
   }
 

@@ -166,6 +166,41 @@ export interface ResidentBelief {
   lastUpdatedMinute?: number;
 }
 
+export type ResidentPresentationKind =
+  | 'None'
+  | 'Physical'
+  | 'Social'
+  | 'Civilization'
+  | 'Parenting'
+  | 'KnowledgeTeaching';
+
+export type ResidentPresentationPhase =
+  | 'Idle'
+  | 'Moving'
+  | 'Interacting';
+
+export interface ResidentPresentationDirective {
+  active?: boolean;
+  kind?: ResidentPresentationKind;
+  phase?: ResidentPresentationPhase;
+  physicalGoal?: string;
+  socialIntent?: string;
+  civilizationIntent?: string;
+  parentingAction?: string;
+  targetResidentId?: string;
+  hasTargetGrid?: boolean;
+  targetGridX?: number;
+  targetGridY?: number;
+  hasObjectTarget?: boolean;
+  objectId?: string;
+  objectKind?: string;
+  emergencyFallback?: boolean;
+  designatedSanitationSite?: boolean;
+  sanitationSiteId?: string;
+  contextActionToken?: string;
+  durationTicks?: number;
+}
+
 export interface Resident {
   id: string;
   name: string;
@@ -179,6 +214,7 @@ export interface Resident {
   socialIntent?: string;
   activityTargetId?: string;
   activityTargetName?: string;
+  presentation?: ResidentPresentationDirective;
   emotion?: ResidentEmotion;
   needs?: ResidentNeeds;
   personality?: ResidentPersonality;

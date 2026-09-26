@@ -19,6 +19,7 @@
 #include "Parenting.h"
 #include "Planner.h"
 #include "PrimitiveSanitation.h"
+#include "PresentationDirective.h"
 #include "SimulationSnapshot.h"
 #include "SettlementProgression.h"
 #include "SocialCommunicationReadModel.h"
@@ -126,6 +127,7 @@ public:
         return recentSocialCommunicationTail(recentSocialEvents_,maxEvents);
     }
     ResidentObservation observeResident(CharacterId id) const;
+    ResidentPresentationObservation observeResidentPresentation(CharacterId id) const;
     std::vector<ResidentObservation> observeAllResidents() const;
     FamilyObservation observeFamily(CharacterId id) const;
     WorldOverviewObservation observeWorldOverview() const;
