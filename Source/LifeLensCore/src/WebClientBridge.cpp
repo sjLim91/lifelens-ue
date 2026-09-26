@@ -809,6 +809,8 @@ std::string WebClientBridge::dynamicEnvironmentJson(
             identity,
             ChunkCoord{centerChunkX, centerChunkY},
             simulation_->world().minute);
+    const SimulationCalendarObservation calendar =
+        deriveSimulationCalendar(simulation_->world().minute);
 
     std::ostringstream out;
     out << "{";
@@ -816,7 +818,11 @@ std::string WebClientBridge::dynamicEnvironmentJson(
     out << "\"centerChunkX\":" << centerChunkX << ",";
     out << "\"centerChunkY\":" << centerChunkY << ",";
     out << "\"simulationMinute\":" << environment.simulationMinute << ",";
+    out << "\"baselineTemperature01\":"; appendDouble(out, environment.baselineTemperature01); out << ",";
+    out << "\"baselineMoisture01\":"; appendDouble(out, environment.baselineMoisture01); out << ",";
     out << "\"airTemperatureC\":"; appendDouble(out, environment.airTemperatureC); out << ",";
+    out << "\"seasonalTemperatureModifierC\":"; appendDouble(out, environment.seasonalTemperatureModifierC); out << ",";
+    out << "\"dailyTemperatureModifierC\":"; appendDouble(out, environment.dailyTemperatureModifierC); out << ",";
     out << "\"precipitationIntensity01\":"; appendDouble(out, environment.precipitationIntensity01); out << ",";
     out << "\"cloudCover01\":"; appendDouble(out, environment.cloudCover01); out << ",";
     out << "\"windIntensity01\":"; appendDouble(out, environment.windIntensity01); out << ",";
@@ -824,7 +830,20 @@ std::string WebClientBridge::dynamicEnvironmentJson(
     out << "\"visibility01\":"; appendDouble(out, environment.visibility01); out << ",";
     out << "\"surfaceWetness01\":"; appendDouble(out, environment.surfaceWetness01); out << ",";
     out << "\"precipitationType\":\"" << precipitationTypeName(environment.precipitationType) << "\",";
-    out << "\"summary\":\"" << weatherSummaryName(environment.summary) << "\"";
+    out << "\"summary\":\"" << weatherSummaryName(environment.summary) << "\",";
+    out << "\"calendar\":{";
+    out << "\"minuteOfDay\":" << calendar.minuteOfDay << ",";
+    out << "\"hourOfDay\":" << calendar.hourOfDay << ",";
+    out << "\"minuteOfHour\":" << calendar.minuteOfHour << ",";
+    out << "\"dayIndex\":" << calendar.dayIndex << ",";
+    out << "\"dayOfYear\":" << calendar.dayOfYear << ",";
+    out << "\"yearIndex\":" << calendar.yearIndex << ",";
+    out << "\"annualPhase\":"; appendDouble(out, calendar.annualPhase); out << ",";
+    out << "\"season\":\"" << seasonSummaryName(calendar.season) << "\",";
+    out << "\"isDay\":" << (calendar.isDay ? "true" : "false") << ",";
+    out << "\"isNight\":" << (calendar.isNight ? "true" : "false") << ",";
+    out << "\"daylight01\":"; appendDouble(out, calendar.daylight01);
+    out << "}";
     out << "}";
     return out.str();
 }
