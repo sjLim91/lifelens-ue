@@ -152,6 +152,7 @@ function buildOpenWaterNodes(
 
   const nodes = new Map<string, OpenWaterNode>();
   for (const chunk of openChunks) {
+    if (!isOpenWaterSurfaceKind(chunk.waterKind)) continue;
     const componentIndex = componentByKey.get(key(chunk.x, chunk.y)) ?? 0;
     nodes.set(key(chunk.x, chunk.y), {
       chunk,
