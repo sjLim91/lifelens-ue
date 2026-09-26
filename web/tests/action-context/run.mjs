@@ -176,9 +176,6 @@ testCase('civilization and parenting cues remain factual and compact', () => {
   assert.equal(parenting?.text, '달래기 · 하린 · 진행 중');
 });
 
-console.log(passed + ' action-context regression checks passed');
-
-
 testCase('semantic motion maps only authoritative safe interactions', () => {
   assert.equal(resolveResidentSemanticMotion({
     active: true,
@@ -248,3 +245,5 @@ testCase('movement always keeps locomotion ownership', () => {
     designatedSanitationSite: true,
   }, { moving: true, nearbyResident: false }), 'walk');
 });
+
+console.log(passed + ' action-context regression checks passed');
