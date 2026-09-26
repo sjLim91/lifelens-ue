@@ -38,7 +38,25 @@ const { WaterLayer } = source('render/water-layer.ts');
 const { buildOpenWaterSurfaceGeometry, buildFlowWaterSurfaceGeometry } = source('render/water-geometry.ts');
 const { WORLD_GRID_CONTRACT: grid } = source('runtime/lifelens-contract.ts');
 const size = grid.worldUnitsPerChunk, scale = grid.elevationScale;
-const chunk = (x, y, waterKind = 'None', elevation01 = 0.5) => ({ x, y, waterKind, elevation01, waterAvailability: 1 });
+const chunk = (
+  x,
+  y,
+  waterKind = 'None',
+  elevation01 = 0.5,
+  extra = {},
+) => ({
+  x,
+  y,
+  waterKind,
+  elevation01,
+  waterAvailability: 1,
+  flowPotential: 0.8,
+  drainageAccumulationPotential: waterKind === 'River' ? 0.7 : 0.35,
+  hasDownstream: false,
+  downstreamChunkX: 0,
+  downstreamChunkY: 0,
+  ...extra,
+});
 const windowOf = (chunks, centerChunkX = 0, centerChunkY = 0, worldSeed = 'regression') => ({ available: true, centerChunkX, centerChunkY, worldSeed, chunks });
 function flatWindow(centerX = 0, centerY = 0, elevation = 0.5) {
   const chunks = [];
@@ -141,7 +159,16 @@ test('all 15 open-water shoreline masks face the sky', () => {
 });
 test('river ribbons and spring caps have upward front faces', () => {
   const cases = [[chunk(0, 0, 'Spring')]];
-  for (const [x, y] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) cases.push([chunk(0, 0, 'River', 0.5), chunk(x, y, 'River', 0.45)]);
+  for (const [x, y] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    cases.push([
+      chunk(0, 0, 'River', 0.5, {
+        hasDownstream: true,
+        downstreamChunkX: x,
+        downstreamChunkY: y,
+      }),
+      chunk(x, y, 'Coast', 0.2),
+    ]);
+  }
   for (const chunks of cases) {
     const geometry = buildFlowWaterSurfaceGeometry(windowOf(chunks));
     try { assertUpwardTriangles(geometry); } finally { geometry.dispose(); }
@@ -157,7 +184,15 @@ test('water can be hit from above using its front face', () => {
   } finally { geometry.dispose(); material.dispose(); }
 });
 test('river mouths meet the connected ocean/coast surface rather than the coastal bed height', () => {
-  const window = windowOf([chunk(0, 0, 'River', 0.5), chunk(1, 0, 'Coast', 0.2), chunk(2, 0, 'Ocean', 0.1)]);
+  const window = windowOf([
+    chunk(0, 0, 'River', 0.5, {
+      hasDownstream: true,
+      downstreamChunkX: 1,
+      downstreamChunkY: 0,
+    }),
+    chunk(1, 0, 'Coast', 0.2),
+    chunk(2, 0, 'Ocean', 0.1),
+  ]);
   const open = buildOpenWaterSurfaceGeometry(window), flow = buildFlowWaterSurfaceGeometry(window);
   try {
     const position = flow.attributes.position;
@@ -168,7 +203,14 @@ test('river mouths meet the connected ocean/coast surface rather than the coasta
 test('changing worlds with matching terrain still rebuilds seed-dependent water', () => {
   const layer = new WaterLayer();
   try {
-    const window = windowOf([chunk(0, 0, 'River'), chunk(1, 0, 'River', 0.4)]);
+    const window = windowOf([
+      chunk(0, 0, 'River', 0.5, {
+        hasDownstream: true,
+        downstreamChunkX: 1,
+        downstreamChunkY: 0,
+      }),
+      chunk(1, 0, 'Coast', 0.4),
+    ]);
     layer.setTerrain(window);
     const old = layer.group.children[1].geometry;
     let disposed = false; old.addEventListener('dispose', () => { disposed = true; });

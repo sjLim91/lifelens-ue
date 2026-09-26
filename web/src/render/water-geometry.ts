@@ -4,7 +4,10 @@ import type {
   TerrainWindow,
   WaterKind,
 } from '../runtime/core-types';
-import { WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
+import {
+  WORLD_GRID_CONTRACT,
+  WORLD_UNITS_PER_GRID_CELL,
+} from '../runtime/lifelens-contract';
 
 const OPEN_WATER_KINDS = new Set<WaterKind>([
   'Ocean',
@@ -137,15 +140,68 @@ function isFlowWaterKind(kind: WaterKind): kind is FlowWaterKind {
   return FLOW_WATER_KINDS.has(kind);
 }
 
-function flowWidth(
-  kind: FlowWaterKind,
-  chunkWorldSize: number,
-): number {
-  switch (kind) {
-    case 'River': return chunkWorldSize * 0.14;
-    case 'Stream': return chunkWorldSize * 0.065;
-    default: return chunkWorldSize * 0.038;
+function flowWidth(chunk: TerrainChunk): number {
+  const availability = Math.max(
+    0,
+    Math.min(1, Number(chunk.waterAvailability) || 0),
+  );
+  const flow = Math.max(
+    0,
+    Math.min(1, Number(chunk.flowPotential) || 0),
+  );
+
+  switch (chunk.waterKind) {
+    case 'River':
+      return (
+        1.85
+        + 2.75 * availability
+        + 1.10 * flow
+      ) * WORLD_UNITS_PER_GRID_CELL;
+    case 'Stream':
+      return (
+        0.95
+        + 1.35 * availability
+        + 0.45 * flow
+      ) * WORLD_UNITS_PER_GRID_CELL;
+    case 'Spring':
+      return (
+        0.65
+        + 0.85 * availability
+      ) * WORLD_UNITS_PER_GRID_CELL;
+    default:
+      return WORLD_UNITS_PER_GRID_CELL;
   }
+}
+
+function shouldRenderFlowChunk(chunk: TerrainChunk): boolean {
+  if (chunk.waterKind === 'River') {
+    return chunk.hasDownstream === true;
+  }
+
+  if (chunk.waterKind === 'Stream') {
+    const drainage = Math.max(
+      0,
+      Math.min(
+        1,
+        Number(chunk.drainageAccumulationPotential) || 0,
+      ),
+    );
+    const availability = Math.max(
+      0,
+      Math.min(1, Number(chunk.waterAvailability) || 0),
+    );
+    return (
+      chunk.hasDownstream === true
+      && drainage >= 0.24
+      && availability >= 0.5
+    );
+  }
+
+  if (chunk.waterKind === 'Spring') {
+    return (Number(chunk.waterAvailability) || 0) >= 0.72;
+  }
+
+  return false;
 }
 
 function buildOpenWaterNodes(
@@ -385,7 +441,12 @@ function buildFlowNodes(
   const nodes = new Map<string, FlowNode>();
 
   for (const chunk of window.chunks) {
-    if (!isFlowWaterKind(chunk.waterKind)) continue;
+    if (
+      !isFlowWaterKind(chunk.waterKind)
+      || !shouldRenderFlowChunk(chunk)
+    ) {
+      continue;
+    }
     const nodeKey = key(chunk.x, chunk.y);
     nodes.set(nodeKey, {
       key: nodeKey,
@@ -396,7 +457,7 @@ function buildFlowNodes(
         * WORLD_GRID_CONTRACT.elevationScale
       ) + 0.09,
       z: (chunk.y - window.centerChunkY) * chunkWorldSize,
-      width: flowWidth(chunk.waterKind, chunkWorldSize),
+      width: flowWidth(chunk),
       color: new THREE.Color(FLOW_COLORS[chunk.waterKind]),
     });
   }
@@ -404,73 +465,64 @@ function buildFlowNodes(
   return nodes;
 }
 
-function preferredFlowTarget(
+function authoritativeFlowTarget(
   node: FlowNode,
   chunks: Map<string, TerrainChunk>,
   nodes: Map<string, FlowNode>,
   openWaterNodes: Map<string, OpenWaterNode>,
-  window: TerrainWindow,
   chunkWorldSize: number,
 ): FlowTarget | null {
-  const currentElevation = Number(node.chunk.elevation01) || 0;
-  const candidates: FlowTarget[] = [];
-
-  for (const [dx, dy] of CARDINAL_DIRECTIONS) {
-    const neighbor = chunks.get(
-      key(node.chunk.x + dx, node.chunk.y + dy),
-    );
-    if (!neighbor) continue;
-
-    const neighborKey = key(neighbor.x, neighbor.y);
-    const flowNeighbor = nodes.get(neighborKey);
-    if (flowNeighbor) {
-      const neighborElevation = Number(neighbor.elevation01) || 0;
-      const drop = currentElevation - neighborElevation;
-      const downhillBias = drop >= -0.01 ? 34 : 8;
-      const kindBias = neighbor.waterKind === 'River'
-        ? 5
-        : neighbor.waterKind === 'Stream'
-          ? 2
-          : 0;
-      const tie = hash01(
-        `${window.worldSeed ?? '0'}:${node.key}:${neighborKey}`,
-      );
-      candidates.push({
-        key: neighborKey,
-        x: flowNeighbor.x,
-        y: flowNeighbor.y,
-        z: flowNeighbor.z,
-        width: flowNeighbor.width,
-        color: flowNeighbor.color,
-        score: downhillBias + drop * 80 + kindBias + tie,
-      });
-      continue;
-    }
-
-    if (isOpenWaterSurfaceKind(neighbor.waterKind)) {
-      const endX = node.x + dx * chunkWorldSize * 0.58;
-      const endZ = node.z + dy * chunkWorldSize * 0.58;
-      // Coast elevation describes the bed, not the connected water level.
-      // Match the exact surface used by the receiving ocean/lake mesh.
-      const targetY = openWaterNodes.get(neighborKey)!.levelWorldY;
-      const tie = hash01(
-        `${window.worldSeed ?? '0'}:${node.key}:open:${dx}:${dy}`,
-      );
-      candidates.push({
-        key: null,
-        x: endX,
-        y: targetY,
-        z: endZ,
-        width: Math.max(node.width, chunkWorldSize * 0.11),
-        color: new THREE.Color(WATER_COLORS[neighbor.waterKind]),
-        score: 120 + (currentElevation - Number(neighbor.elevation01)) * 80 + tie,
-      });
-    }
+  if (
+    node.chunk.waterKind === 'Spring'
+    || node.chunk.hasDownstream !== true
+    || !Number.isFinite(node.chunk.downstreamChunkX)
+    || !Number.isFinite(node.chunk.downstreamChunkY)
+  ) {
+    return null;
   }
 
-  if (candidates.length === 0) return null;
-  candidates.sort((a, b) => b.score - a.score);
-  return candidates[0];
+  const downstreamX = Number(node.chunk.downstreamChunkX);
+  const downstreamY = Number(node.chunk.downstreamChunkY);
+  const downstreamKey = key(downstreamX, downstreamY);
+  const flowNeighbor = nodes.get(downstreamKey);
+
+  if (flowNeighbor) {
+    return {
+      key: downstreamKey,
+      x: flowNeighbor.x,
+      y: flowNeighbor.y,
+      z: flowNeighbor.z,
+      width: flowNeighbor.width,
+      color: flowNeighbor.color,
+      score: 1,
+    };
+  }
+
+  const openWater = openWaterNodes.get(downstreamKey);
+  if (openWater) {
+    const dx = downstreamX - node.chunk.x;
+    const dy = downstreamY - node.chunk.y;
+    return {
+      key: null,
+      x: node.x + dx * chunkWorldSize * 0.58,
+      y: openWater.levelWorldY,
+      z: node.z + dy * chunkWorldSize * 0.58,
+      width: Math.max(node.width, chunkWorldSize * 0.09),
+      color: openWater.color,
+      score: 1,
+    };
+  }
+
+  const downstreamChunk = chunks.get(downstreamKey);
+  if (!downstreamChunk) {
+    return null;
+  }
+
+  // The Core can route a channel into a downstream land chunk that does not
+  // itself meet the visible Stream/River classification threshold. Do not
+  // invent a browser-side continuation across that land. Hiding the segment
+  // is safer than exposing a disconnected debug-like stroke.
+  return null;
 }
 
 function selectFlowEdges(
@@ -486,53 +538,22 @@ function selectFlowEdges(
   );
   const nodes = buildFlowNodes(window, chunkWorldSize);
   const openWaterNodes = buildOpenWaterNodes(window);
-  const proposals: FlowEdge[] = [];
+  const participatingKeys = new Set<string>();
+  const edges: FlowEdge[] = [];
 
   for (const node of nodes.values()) {
-    const target = preferredFlowTarget(
+    const target = authoritativeFlowTarget(
       node,
       chunks,
       nodes,
       openWaterNodes,
-      window,
       chunkWorldSize,
     );
-    if (target) proposals.push({ source: node, target });
-  }
+    if (!target) continue;
 
-  proposals.sort((a, b) => b.target.score - a.target.score);
-
-  const outgoing = new Set<string>();
-  const incoming = new Set<string>();
-  const undirectedEdges = new Set<string>();
-  const participatingKeys = new Set<string>();
-  const edges: FlowEdge[] = [];
-
-  for (const proposal of proposals) {
-    if (outgoing.has(proposal.source.key)) continue;
-
-    const targetKey = proposal.target.key;
-    if (targetKey) {
-      if (incoming.has(targetKey)) continue;
-
-      const undirectedKey = [
-        proposal.source.key,
-        targetKey,
-      ].sort().join('<>');
-      if (undirectedEdges.has(undirectedKey)) continue;
-
-      const targetOutgoing = outgoing.has(targetKey);
-      const sourceIncoming = incoming.has(proposal.source.key);
-      if (targetOutgoing && sourceIncoming) continue;
-
-      undirectedEdges.add(undirectedKey);
-      incoming.add(targetKey);
-      participatingKeys.add(targetKey);
-    }
-
-    outgoing.add(proposal.source.key);
-    participatingKeys.add(proposal.source.key);
-    edges.push(proposal);
+    participatingKeys.add(node.key);
+    if (target.key) participatingKeys.add(target.key);
+    edges.push({ source: node, target });
   }
 
   return { nodes, edges, participatingKeys };

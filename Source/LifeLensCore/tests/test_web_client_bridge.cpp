@@ -53,6 +53,12 @@ int main()
     assert(terrain.find("\"radiusChunks\":1") != std::string::npos);
     assert(terrain.find("\"elevation01\":") != std::string::npos);
     assert(terrain.find("\"waterKind\":") != std::string::npos);
+    assert(terrain.find("\"waterAvailability\":") != std::string::npos);
+    assert(terrain.find("\"flowPotential\":") != std::string::npos);
+    assert(terrain.find("\"drainageAccumulationPotential\":") != std::string::npos);
+    assert(terrain.find("\"hasDownstream\":") != std::string::npos);
+    assert(terrain.find("\"downstreamChunkX\":") != std::string::npos);
+    assert(terrain.find("\"downstreamChunkY\":") != std::string::npos);
     assert(terrain.find("\"worldSeed\":") != std::string::npos);
     assert(terrain.find("\"biome\":") != std::string::npos);
     assert(terrain.find("\"forestCoverage01\":") != std::string::npos);

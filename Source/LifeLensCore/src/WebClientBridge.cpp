@@ -518,6 +518,11 @@ std::string WebClientBridge::terrainWindowJson(
             out << "\"waterKind\":\"" << surfaceWaterKindName(water.surfaceKind) << "\",";
             out << "\"salinity\":\"" << waterSalinityName(water.salinity) << "\",";
             out << "\"waterAvailability\":"; appendDouble(out, water.surfaceAvailability); out << ",";
+            out << "\"flowPotential\":"; appendDouble(out, water.flowPotential); out << ",";
+            out << "\"drainageAccumulationPotential\":"; appendDouble(out, water.drainageAccumulationPotential); out << ",";
+            out << "\"hasDownstream\":" << (water.hasDownstream ? "true" : "false") << ",";
+            out << "\"downstreamChunkX\":" << water.downstream.x << ",";
+            out << "\"downstreamChunkY\":" << water.downstream.y << ",";
             out << "\"biome\":\"" << continuousEcologyBiomeName(ecology.biome) << "\",";
             out << "\"moisture01\":"; appendDouble(out, ecology.moisture01); out << ",";
             out << "\"temperature01\":"; appendDouble(out, ecology.temperature01); out << ",";
