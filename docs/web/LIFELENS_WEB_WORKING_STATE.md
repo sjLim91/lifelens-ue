@@ -1,5 +1,75 @@
 # LifeLens Web Observer — Working State
 
+## 2026-09-27 CANONICAL CURRENT — main `996c7bc0`
+
+This section supersedes older Web-current snapshots below while preserving them as historical context.
+
+### Product/runtime
+- Web Observer is a first-class LifeLensCore client, not a separate simulation.
+- GitHub `main` is source truth; GitHub Pages is the checkable Web preview.
+- Current preview: https://sjlim91.github.io/lifelens-ue/?v=996c7bc0
+- AppDeploy is not used for LifeLens Web.
+- Core / World remains the sole authority for terrain, hydrology, residents, goals, targets, life events, facilities and persistent human traces.
+- Presentation may interpolate, LOD, label and animate authoritative facts; it may not invent durable world state or action meaning.
+
+### Current renderer/presentation
+- Unified Three.js `WorldScene` is the active Web world path for terrain, water, vegetation, atmosphere and resident actors.
+- Resident actors are stable by GUID and retain presentation continuity through transient refresh gaps.
+- Camera/touch fixes through #458 remain part of the baseline.
+- Hydrology consumes Core downstream facts (#459); the browser does not rebuild a fake drainage graph.
+- Environment density, three deterministic CC0 tree variants, weather/snow recovery, resident appearance diversity and water repairs from #452–#459 remain integrated.
+
+### Observation-content chain
+- **Event Visibility (#460):** compact observation feed derives only from changes between authoritative Core snapshots.
+- **Action Context (#462):** Core emits presentation kind/phase, resident/object/grid targets and action metadata; in-world cues expose factual intent.
+- **Human Trace v1 (#463):** Web inspects authoritative resource depletion, environmental residue and started facility work with bounded world markers and focus.
+- **Semantic Motion (#464/#465):**
+  - UAL1 remains the proven locomotion/action baseline.
+  - UAL2 Standard is a pinned CC0 fail-soft secondary library.
+  - Eat/Drink -> `Consume`.
+  - PlantFood Gather -> `Farm_Harvest`.
+  - facility `DeliverMaterial` while moving -> `Walk_Carry_Loop`.
+  - Work/Repair and Craft/Experiment use reviewed kneeling work motion.
+  - social/teaching motion requires a real nearby resident target.
+  - unsupported or ambiguous action semantics fail closed to Idle/Walk.
+
+### Social Cue v1 (#466)
+- active authoritative `Interacting` Social / KnowledgeTeaching / Parenting pairs can render a subtle bounded world-space connector.
+- `Avoid`, missing targets and duplicate reciprocal pairs do not create extra connectors.
+- cue density is capped and connectors render only while the smoothed actors are visually near.
+- the browser does not infer a relationship from relationship scores, emotions or memories.
+
+### Deliberate gaps
+- Sleep has no accepted lie-down / sleep-loop / wake sequence yet.
+- TreeChopping_Loop is present in UAL2 but is not bound from `Wood` alone; Core must expose enough source/tool semantics first.
+- Ground gather, digging and more carry/build variants require reviewed clips plus authoritative action facts.
+- Human Trace v1 does not yet fabricate worn paths, settlements or activity centers from browser heuristics.
+- Social Cue and Observer Director remain open.
+- Actual Android/mobile visual acceptance remains open; automated tests/CPU geometry checks do not replace device review.
+
+### Current validated baseline
+For main `996c7bc0`:
+- Preflight — PASS.
+- Typecheck — PASS.
+- Web Runtime Release — PASS.
+- Web WASM — PASS.
+- Core Tests — PASS.
+- Unreal Linux Compile — PASS.
+- Web Preview / GitHub Pages — PASS.
+- External Preview Probe — known independent failure, not evidence that Pages publish failed.
+
+### Immediate next work
+1. review UAL2 / compatible zero-cost clips for Sleep, Dig, Chop, Ground Gather and carry variants.
+2. bind only actions for which Core exposes enough authoritative semantics.
+3. Social Cue v1 — DONE (#466).
+4. Observer Director — NEXT: surface important events without forcibly taking camera control.
+5. motion tranche 2 can continue only where clip semantics and Core authority are both sufficient.
+6. expand Human Trace only from persistent/accumulated Core facts.
+
+Canonical motion handoff: `tasks/WEB_MOTION_HANDOFF_2026-09-27.md`.
+
+---
+
 Last updated: 2026-09-22
 
 ## Authority
@@ -114,14 +184,16 @@ These are not approved deviations; they are outstanding implementation work.
 5. **Observer scale transitions**
    - Local/Regional/Planetary/Orbital/Interplanetary representation continuity is not complete.
 
-6. **Action/motion presentation DTO**
-   - Web currently lacks the authoritative interaction-slot/alignment payload needed for rich object-bound motion.
-   - Until that exists, neutral fallback is intentional and canonical.
+6. **Rich object-bound motion alignment**
+   - The authoritative Action Context DTO now exists and drives current semantic motion.
+   - Rich object-bound actions still need stronger slot/alignment/tool/source facts before clips such as chopping, digging, ground pickup and sleep transitions can be bound safely.
+   - Until those facts and reviewed clips exist, neutral fallback is intentional and canonical.
 
 7. **World v2 visual completeness**
-   - Near/mid/far ecology, coast/ocean material polish, structures/tools/traces and persistent human deltas remain incomplete.
+   - Near/mid/far ecology, coast/ocean material polish and richer structures/tools remain incomplete.
+   - Human Trace v1 is present, but lived paths/activity centers require deeper authoritative accumulation.
    - Runtime screenshots/device QA remain the acceptance source; source/CI success alone is not visual completion.
 
 ## Deployment rule
 
-Normal source work does not trigger AppDeploy. Deployment/public-preview changes occur only when explicitly requested. Source, tests and working-state documentation are updated first.
+GitHub is source truth and GitHub Pages is the canonical checkable Web preview. A merge may publish the Pages preview through the repository workflow. AppDeploy is not used for LifeLens Web.
