@@ -14,6 +14,11 @@ export interface TerrainChunk {
   elevation01: number;
   waterKind: WaterKind;
   waterAvailability: number;
+  flowPotential?: number;
+  drainageAccumulationPotential?: number;
+  hasDownstream?: boolean;
+  downstreamChunkX?: number;
+  downstreamChunkY?: number;
   biome?: string;
   moisture01?: number;
   temperature01?: number;
