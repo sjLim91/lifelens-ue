@@ -12,14 +12,14 @@ const OPEN_WATER_KINDS = new Set<WaterKind>([
   'Lake',
 ]);
 
-const CONNECTED_WATER_KINDS = new Set<WaterKind>([
+const FLOW_WATER_KINDS = new Set<WaterKind>([
   'Spring',
   'Stream',
   'River',
-  'Lake',
-  'Coast',
-  'Ocean',
 ]);
+
+type OpenWaterKind = 'Ocean' | 'Coast' | 'Lake';
+type FlowWaterKind = 'Spring' | 'Stream' | 'River';
 
 interface OpenWaterNode {
   chunk: TerrainChunk;
@@ -34,6 +34,31 @@ interface SurfacePoint {
   color: THREE.Color;
 }
 
+interface FlowNode {
+  key: string;
+  chunk: TerrainChunk;
+  x: number;
+  y: number;
+  z: number;
+  width: number;
+  color: THREE.Color;
+}
+
+interface FlowTarget {
+  key: string | null;
+  x: number;
+  y: number;
+  z: number;
+  width: number;
+  color: THREE.Color;
+  score: number;
+}
+
+interface FlowEdge {
+  source: FlowNode;
+  target: FlowTarget;
+}
+
 type PointToken =
   | 'a'
   | 'b'
@@ -44,11 +69,24 @@ type PointToken =
   | 'cd'
   | 'da';
 
-const WATER_COLORS: Record<'Ocean' | 'Coast' | 'Lake', number> = {
+const WATER_COLORS: Record<OpenWaterKind, number> = {
   Ocean: 0x174b67,
   Coast: 0x2f7487,
   Lake: 0x2e7188,
 };
+
+const FLOW_COLORS: Record<FlowWaterKind, number> = {
+  River: 0x3f8daa,
+  Stream: 0x55a0ba,
+  Spring: 0x63acc2,
+};
+
+const CARDINAL_DIRECTIONS = [
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+] as const;
 
 const MARCHING_POLYGONS: Record<number, PointToken[][]> = {
   0: [],
@@ -79,10 +117,35 @@ function key(x: number, y: number): string {
   return `${x}:${y}`;
 }
 
+function hash01(input: string): number {
+  let hash = 2166136261 >>> 0;
+  for (let index = 0; index < input.length; index += 1) {
+    hash ^= input.charCodeAt(index);
+    hash = Math.imul(hash, 16777619) >>> 0;
+  }
+  hash ^= hash >>> 16;
+  return (hash >>> 0) / 4294967295;
+}
+
 export function isOpenWaterSurfaceKind(
   kind: WaterKind,
-): kind is 'Ocean' | 'Coast' | 'Lake' {
+): kind is OpenWaterKind {
   return OPEN_WATER_KINDS.has(kind);
+}
+
+function isFlowWaterKind(kind: WaterKind): kind is FlowWaterKind {
+  return FLOW_WATER_KINDS.has(kind);
+}
+
+function flowWidth(
+  kind: FlowWaterKind,
+  chunkWorldSize: number,
+): number {
+  switch (kind) {
+    case 'River': return chunkWorldSize * 0.14;
+    case 'Stream': return chunkWorldSize * 0.065;
+    default: return chunkWorldSize * 0.038;
+  }
 }
 
 function buildOpenWaterNodes(
@@ -111,9 +174,7 @@ function buildOpenWaterNodes(
       if (!current) break;
       component.push(current);
 
-      for (const [dx, dy] of (
-        [[1, 0], [-1, 0], [0, 1], [0, -1]] as Array<[number, number]>
-      )) {
+      for (const [dx, dy] of CARDINAL_DIRECTIONS) {
         const neighbor = chunks.get(
           key(current.x + dx, current.y + dy),
         );
@@ -317,104 +378,368 @@ export function buildOpenWaterSurfaceGeometry(
   return geometry;
 }
 
+function buildFlowNodes(
+  window: TerrainWindow,
+  chunkWorldSize: number,
+): Map<string, FlowNode> {
+  const nodes = new Map<string, FlowNode>();
+
+  for (const chunk of window.chunks) {
+    if (!isFlowWaterKind(chunk.waterKind)) continue;
+    const nodeKey = key(chunk.x, chunk.y);
+    nodes.set(nodeKey, {
+      key: nodeKey,
+      chunk,
+      x: (chunk.x - window.centerChunkX) * chunkWorldSize,
+      y: (
+        (Number(chunk.elevation01) || 0)
+        * WORLD_GRID_CONTRACT.elevationScale
+      ) + 0.09,
+      z: (chunk.y - window.centerChunkY) * chunkWorldSize,
+      width: flowWidth(chunk.waterKind, chunkWorldSize),
+      color: new THREE.Color(FLOW_COLORS[chunk.waterKind]),
+    });
+  }
+
+  return nodes;
+}
+
+function preferredFlowTarget(
+  node: FlowNode,
+  chunks: Map<string, TerrainChunk>,
+  nodes: Map<string, FlowNode>,
+  window: TerrainWindow,
+  chunkWorldSize: number,
+): FlowTarget | null {
+  const currentElevation = Number(node.chunk.elevation01) || 0;
+  const candidates: FlowTarget[] = [];
+
+  for (const [dx, dy] of CARDINAL_DIRECTIONS) {
+    const neighbor = chunks.get(
+      key(node.chunk.x + dx, node.chunk.y + dy),
+    );
+    if (!neighbor) continue;
+
+    const neighborKey = key(neighbor.x, neighbor.y);
+    const flowNeighbor = nodes.get(neighborKey);
+    if (flowNeighbor) {
+      const neighborElevation = Number(neighbor.elevation01) || 0;
+      const drop = currentElevation - neighborElevation;
+      const downhillBias = drop >= -0.01 ? 34 : 8;
+      const kindBias = neighbor.waterKind === 'River'
+        ? 5
+        : neighbor.waterKind === 'Stream'
+          ? 2
+          : 0;
+      const tie = hash01(
+        `${window.worldSeed ?? '0'}:${node.key}:${neighborKey}`,
+      );
+      candidates.push({
+        key: neighborKey,
+        x: flowNeighbor.x,
+        y: flowNeighbor.y,
+        z: flowNeighbor.z,
+        width: flowNeighbor.width,
+        color: flowNeighbor.color,
+        score: downhillBias + drop * 80 + kindBias + tie,
+      });
+      continue;
+    }
+
+    if (isOpenWaterSurfaceKind(neighbor.waterKind)) {
+      const endX = node.x + dx * chunkWorldSize * 0.58;
+      const endZ = node.z + dy * chunkWorldSize * 0.58;
+      const targetY = (
+        (Number(neighbor.elevation01) || 0)
+        * WORLD_GRID_CONTRACT.elevationScale
+      ) + 0.09;
+      const tie = hash01(
+        `${window.worldSeed ?? '0'}:${node.key}:open:${dx}:${dy}`,
+      );
+      candidates.push({
+        key: null,
+        x: endX,
+        y: targetY,
+        z: endZ,
+        width: Math.max(node.width, chunkWorldSize * 0.11),
+        color: new THREE.Color(WATER_COLORS[neighbor.waterKind]),
+        score: 120 + (currentElevation - Number(neighbor.elevation01)) * 80 + tie,
+      });
+    }
+  }
+
+  if (candidates.length === 0) return null;
+  candidates.sort((a, b) => b.score - a.score);
+  return candidates[0];
+}
+
+function selectFlowEdges(
+  window: TerrainWindow,
+  chunkWorldSize: number,
+): {
+  nodes: Map<string, FlowNode>;
+  edges: FlowEdge[];
+  participatingKeys: Set<string>;
+} {
+  const chunks = new Map(
+    window.chunks.map((chunk) => [key(chunk.x, chunk.y), chunk]),
+  );
+  const nodes = buildFlowNodes(window, chunkWorldSize);
+  const proposals: FlowEdge[] = [];
+
+  for (const node of nodes.values()) {
+    const target = preferredFlowTarget(
+      node,
+      chunks,
+      nodes,
+      window,
+      chunkWorldSize,
+    );
+    if (target) proposals.push({ source: node, target });
+  }
+
+  proposals.sort((a, b) => b.target.score - a.target.score);
+
+  const outgoing = new Set<string>();
+  const incoming = new Set<string>();
+  const undirectedEdges = new Set<string>();
+  const participatingKeys = new Set<string>();
+  const edges: FlowEdge[] = [];
+
+  for (const proposal of proposals) {
+    if (outgoing.has(proposal.source.key)) continue;
+
+    const targetKey = proposal.target.key;
+    if (targetKey) {
+      if (incoming.has(targetKey)) continue;
+
+      const undirectedKey = [
+        proposal.source.key,
+        targetKey,
+      ].sort().join('<>');
+      if (undirectedEdges.has(undirectedKey)) continue;
+
+      const targetOutgoing = outgoing.has(targetKey);
+      const sourceIncoming = incoming.has(proposal.source.key);
+      if (targetOutgoing && sourceIncoming) continue;
+
+      undirectedEdges.add(undirectedKey);
+      incoming.add(targetKey);
+      participatingKeys.add(targetKey);
+    }
+
+    outgoing.add(proposal.source.key);
+    participatingKeys.add(proposal.source.key);
+    edges.push(proposal);
+  }
+
+  return { nodes, edges, participatingKeys };
+}
+
+function appendDisc(
+  positions: number[],
+  normals: number[],
+  colors: number[],
+  indices: number[],
+  node: FlowNode,
+  radius: number,
+): void {
+  const segments = 10;
+  const base = positions.length / 3;
+  positions.push(node.x, node.y + 0.004, node.z);
+  normals.push(0, 1, 0);
+  colors.push(node.color.r, node.color.g, node.color.b);
+
+  for (let index = 0; index <= segments; index += 1) {
+    const angle = (index / segments) * Math.PI * 2;
+    positions.push(
+      node.x + Math.cos(angle) * radius,
+      node.y + 0.004,
+      node.z + Math.sin(angle) * radius,
+    );
+    normals.push(0, 1, 0);
+    colors.push(node.color.r, node.color.g, node.color.b);
+  }
+
+  for (let index = 0; index < segments; index += 1) {
+    indices.push(base, base + index + 1, base + index + 2);
+  }
+}
+
+function appendCurvedRibbon(
+  positions: number[],
+  normals: number[],
+  colors: number[],
+  indices: number[],
+  edge: FlowEdge,
+  worldSeed: string,
+  chunkWorldSize: number,
+): void {
+  const { source, target } = edge;
+  const start = new THREE.Vector3(source.x, source.y, source.z);
+  const end = new THREE.Vector3(target.x, target.y, target.z);
+  const midpoint = start.clone().lerp(end, 0.5);
+  const direction = end.clone().sub(start);
+  const planarLength = Math.hypot(direction.x, direction.z);
+
+  const perpendicular = new THREE.Vector3(
+    -direction.z,
+    0,
+    direction.x,
+  );
+  if (perpendicular.lengthSq() > 0.00001) {
+    perpendicular.normalize();
+  }
+
+  const jitter = (
+    hash01(`${worldSeed}:${source.key}:${target.key ?? 'open'}:curve`)
+    - 0.5
+  ) * chunkWorldSize * 0.24;
+  const control = midpoint.add(perpendicular.multiplyScalar(jitter));
+
+  const segments = planarLength > chunkWorldSize * 0.8 ? 8 : 6;
+  const base = positions.length / 3;
+
+  for (let index = 0; index <= segments; index += 1) {
+    const t = index / segments;
+    const oneMinusT = 1 - t;
+
+    const point = new THREE.Vector3(
+      oneMinusT * oneMinusT * start.x
+        + 2 * oneMinusT * t * control.x
+        + t * t * end.x,
+      THREE.MathUtils.lerp(start.y, end.y, t) + 0.004,
+      oneMinusT * oneMinusT * start.z
+        + 2 * oneMinusT * t * control.z
+        + t * t * end.z,
+    );
+
+    const tangent = new THREE.Vector3(
+      2 * oneMinusT * (control.x - start.x)
+        + 2 * t * (end.x - control.x),
+      0,
+      2 * oneMinusT * (control.z - start.z)
+        + 2 * t * (end.z - control.z),
+    );
+    if (tangent.lengthSq() < 0.00001) {
+      tangent.set(direction.x, 0, direction.z);
+    }
+    tangent.normalize();
+
+    const side = new THREE.Vector3(-tangent.z, 0, tangent.x);
+    const width = THREE.MathUtils.lerp(
+      source.width,
+      target.width,
+      t,
+    );
+    const meanderWidth = width * (
+      0.92
+      + Math.sin(t * Math.PI) * 0.12
+    );
+    const halfWidth = meanderWidth * 0.5;
+
+    const color = source.color.clone().lerp(target.color, t);
+    for (const sign of [-1, 1]) {
+      positions.push(
+        point.x + side.x * halfWidth * sign,
+        point.y,
+        point.z + side.z * halfWidth * sign,
+      );
+      normals.push(0, 1, 0);
+      colors.push(color.r, color.g, color.b);
+    }
+  }
+
+  for (let index = 0; index < segments; index += 1) {
+    const left = base + index * 2;
+    const right = left + 1;
+    const nextLeft = left + 2;
+    const nextRight = left + 3;
+
+    indices.push(
+      left, nextLeft, right,
+      right, nextLeft, nextRight,
+    );
+  }
+}
+
+export function buildFlowWaterSurfaceGeometry(
+  window: TerrainWindow,
+  chunkWorldSize = WORLD_GRID_CONTRACT.worldUnitsPerChunk,
+): THREE.BufferGeometry {
+  const {
+    nodes,
+    edges,
+    participatingKeys,
+  } = selectFlowEdges(window, chunkWorldSize);
+
+  const positions: number[] = [];
+  const normals: number[] = [];
+  const colors: number[] = [];
+  const indices: number[] = [];
+  const worldSeed = window.worldSeed ?? '0';
+
+  for (const edge of edges) {
+    appendCurvedRibbon(
+      positions,
+      normals,
+      colors,
+      indices,
+      edge,
+      worldSeed,
+      chunkWorldSize,
+    );
+  }
+
+  for (const node of nodes.values()) {
+    const isSpring = node.chunk.waterKind === 'Spring';
+    if (!participatingKeys.has(node.key) && !isSpring) continue;
+    appendDisc(
+      positions,
+      normals,
+      colors,
+      indices,
+      node,
+      isSpring ? node.width * 1.35 : node.width * 0.68,
+    );
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute(
+    'position',
+    new THREE.Float32BufferAttribute(positions, 3),
+  );
+  geometry.setAttribute(
+    'normal',
+    new THREE.Float32BufferAttribute(normals, 3),
+  );
+  geometry.setAttribute(
+    'color',
+    new THREE.Float32BufferAttribute(colors, 3),
+  );
+  geometry.setIndex(indices);
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
 export function createWaterGeometryBuilder(
   window: TerrainWindow,
   chunkWorldSize = WORLD_GRID_CONTRACT.worldUnitsPerChunk,
 ): (chunk: TerrainChunk) => THREE.BufferGeometry {
-  const map = new Map(
-    window.chunks.map((entry) => [
-      key(entry.x, entry.y),
-      entry,
-    ]),
-  );
-
-  const connectedDirections = (
-    chunk: TerrainChunk,
-  ): Array<[number, number]> => (
-    ([
-      [1, 0],
-      [-1, 0],
-      [0, 1],
-      [0, -1],
-    ] as Array<[number, number]>).filter(([dx, dy]) => {
-      const neighbor = map.get(key(chunk.x + dx, chunk.y + dy));
-      return neighbor
-        ? CONNECTED_WATER_KINDS.has(neighbor.waterKind)
-        : false;
-    })
+  const flowGeometry = buildFlowWaterSurfaceGeometry(
+    window,
+    chunkWorldSize,
   );
 
   return (chunk: TerrainChunk): THREE.BufferGeometry => {
-    const connected = connectedDirections(chunk);
-    const directions = connected.length > 0
-      ? connected
-      : ([[1, 0], [-1, 0]] as Array<[number, number]>);
-
-    const width = chunk.waterKind === 'River'
-      ? chunkWorldSize * 0.22
-      : chunk.waterKind === 'Stream'
-        ? chunkWorldSize * 0.11
-        : chunkWorldSize * 0.08;
-    const halfWidth = width * 0.5;
-    const halfLength = chunkWorldSize * 0.52;
-
-    const positions: number[] = [];
-    const indices: number[] = [];
-
-    const addQuad = (
-      ax: number,
-      az: number,
-      bx: number,
-      bz: number,
-      cx: number,
-      cz: number,
-      dx: number,
-      dz: number,
-    ): void => {
-      const base = positions.length / 3;
-      positions.push(
-        ax, 0, az,
-        bx, 0, bz,
-        cx, 0, cz,
-        dx, 0, dz,
-      );
-      indices.push(
-        base, base + 2, base + 1,
-        base, base + 3, base + 2,
-      );
-    };
-
-    addQuad(
-      -halfWidth, -halfWidth,
-       halfWidth, -halfWidth,
-       halfWidth,  halfWidth,
-      -halfWidth,  halfWidth,
-    );
-
-    for (const [dx, dy] of directions) {
-      const endX = dx * halfLength;
-      const endZ = dy * halfLength;
-      const sideX = -dy * halfWidth;
-      const sideZ = dx * halfWidth;
-
-      addQuad(
-        -sideX, -sideZ,
-         sideX,  sideZ,
-         endX + sideX, endZ + sideZ,
-         endX - sideX, endZ - sideZ,
-      );
+    if (isOpenWaterSurfaceKind(chunk.waterKind)) {
+      return buildOpenWaterSurfaceGeometry(window, chunkWorldSize);
     }
-
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute(
-      'position',
-      new THREE.Float32BufferAttribute(positions, 3),
-    );
-    geometry.setIndex(indices);
-    geometry.computeVertexNormals();
-    geometry.computeBoundingBox();
-    geometry.computeBoundingSphere();
-    return geometry;
+    if (isFlowWaterKind(chunk.waterKind)) {
+      return flowGeometry.clone();
+    }
+    return new THREE.BufferGeometry();
   };
 }
 
@@ -426,5 +751,8 @@ export function buildWaterGeometry(
   if (isOpenWaterSurfaceKind(chunk.waterKind)) {
     return buildOpenWaterSurfaceGeometry(window, chunkWorldSize);
   }
-  return createWaterGeometryBuilder(window, chunkWorldSize)(chunk);
+  if (isFlowWaterKind(chunk.waterKind)) {
+    return buildFlowWaterSurfaceGeometry(window, chunkWorldSize);
+  }
+  return new THREE.BufferGeometry();
 }
