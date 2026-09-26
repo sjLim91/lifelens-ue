@@ -24,6 +24,9 @@ formatter = (
 resident_layer = (
     root / "web/src/render/resident-world-layer.ts"
 ).read_text(encoding="utf-8")
+semantic_motion = (
+    root / "web/src/render/resident-semantic-motion.ts"
+).read_text(encoding="utf-8")
 
 for token in (
     "PresentationActionKind",
@@ -78,15 +81,19 @@ for forbidden in (
         f"action cue must not invent intent from browser state: {forbidden}"
     )
 
-# Motion stays conservative: authoritative movement can preserve walk state,
-# and nearby resident conversation can talk. Object-bound physical motions are
-# deliberately not invented in this tranche.
+# Motion stays conservative: authoritative movement owns locomotion, and
+# stationary semantic motion is resolved from the DTO in one pure mapping file.
 assert "actor.presentation = resident.presentation ?? null" in resident_layer
 assert "actor.presentation.phase === 'Moving'" in resident_layer
-assert "presentation.phase !== 'Interacting'" in resident_layer
-assert "presentation.kind === 'KnowledgeTeaching'" in resident_layer
-assert "presentation.kind === 'Social'" in resident_layer
-assert "Object-bound physical/civilization/parenting motions remain neutral" in resident_layer
+assert "resolveResidentSemanticMotion" in resident_layer
+assert "presentation.phase !== 'Interacting'" in semantic_motion
+assert "case 'KnowledgeTeaching':" in semantic_motion
+assert "case 'Social':" in semantic_motion
+assert "context.nearbyResident ? 'talk' : 'idle'" in semantic_motion
+assert "designatedSanitationSite === true" in semantic_motion
+assert "objectKind === 'Toilet'" in semantic_motion
+assert "objectKind === 'Sink'" in semantic_motion
+assert "presentation.hasTargetGrid" in semantic_motion
 assert "actor.activityLabel === 'Talk'" not in resident_layer
 
 print("LifeLens web authoritative action context: PASS")
