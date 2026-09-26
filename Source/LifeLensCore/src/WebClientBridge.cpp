@@ -74,6 +74,60 @@ const char* activityKindName(ObservedActivityKind kind)
     return "Idle";
 }
 
+const char* presentationActionKindName(PresentationActionKind kind)
+{
+    switch(kind){
+        case PresentationActionKind::Physical: return "Physical";
+        case PresentationActionKind::Social: return "Social";
+        case PresentationActionKind::Civilization: return "Civilization";
+        case PresentationActionKind::Parenting: return "Parenting";
+        case PresentationActionKind::KnowledgeTeaching: return "KnowledgeTeaching";
+        case PresentationActionKind::None:
+        default: return "None";
+    }
+}
+
+const char* presentationActionPhaseName(PresentationActionPhase phase)
+{
+    switch(phase){
+        case PresentationActionPhase::Moving: return "Moving";
+        case PresentationActionPhase::Interacting: return "Interacting";
+        case PresentationActionPhase::Idle:
+        default: return "Idle";
+    }
+}
+
+const char* objectKindName(ObjectKind kind)
+{
+    switch(kind){
+        case ObjectKind::Bed: return "Bed";
+        case ObjectKind::Toilet: return "Toilet";
+        case ObjectKind::Sink: return "Sink";
+        case ObjectKind::Fridge: return "Fridge";
+        case ObjectKind::Chair: return "Chair";
+        case ObjectKind::Table: return "Table";
+        case ObjectKind::Sofa: return "Sofa";
+    }
+    return "Unknown";
+}
+
+const char* parentingActionName(ParentingAction action)
+{
+    switch(action){
+        case ParentingAction::Feed: return "Feed";
+        case ParentingAction::PutToSleep: return "PutToSleep";
+        case ParentingAction::Bathe: return "Bathe";
+        case ParentingAction::ToiletAssist: return "ToiletAssist";
+        case ParentingAction::Hold: return "Hold";
+        case ParentingAction::Play: return "Play";
+        case ParentingAction::Educate: return "Educate";
+        case ParentingAction::Discipline: return "Discipline";
+        case ParentingAction::Comfort: return "Comfort";
+        case ParentingAction::HealthCare: return "HealthCare";
+    }
+    return "Comfort";
+}
+
 const char* memorySourceName(MemorySource source)
 {
     switch (source) {
@@ -190,6 +244,8 @@ std::string WebClientBridge::residentsJson() const
             findObservedCharacter(world, resident.id);
         const FamilyObservation family =
             simulation_->observeFamily(resident.id);
+        const ResidentPresentationObservation presentation =
+            simulation_->observeResidentPresentation(resident.id);
 
         const TraitProfile traits = character
             ? deriveTraitProfile(character->personality, character->genetics)
@@ -266,6 +322,28 @@ std::string WebClientBridge::residentsJson() const
             << resident.activityTargetId << "\",";
         out << "\"activityTargetName\":\""
             << escapeJson(resident.activityTargetName) << "\",";
+
+        out << "\"presentation\":{";
+        out << "\"active\":" << (presentation.active ? "true" : "false") << ",";
+        out << "\"kind\":\"" << presentationActionKindName(presentation.kind) << "\",";
+        out << "\"phase\":\"" << presentationActionPhaseName(presentation.phase) << "\",";
+        out << "\"physicalGoal\":\"" << goalName(presentation.physicalGoal) << "\",";
+        out << "\"socialIntent\":\"" << socialIntentName(presentation.socialIntent) << "\",";
+        out << "\"civilizationIntent\":\"" << civilizationIntentName(presentation.civilizationIntent) << "\",";
+        out << "\"parentingAction\":\"" << parentingActionName(presentation.parentingAction) << "\",";
+        out << "\"targetResidentId\":\"" << presentation.targetResidentId << "\",";
+        out << "\"hasTargetGrid\":" << (presentation.hasTargetGrid ? "true" : "false") << ",";
+        out << "\"targetGridX\":" << presentation.targetGrid.x << ",";
+        out << "\"targetGridY\":" << presentation.targetGrid.y << ",";
+        out << "\"hasObjectTarget\":" << (presentation.hasObjectTarget ? "true" : "false") << ",";
+        out << "\"objectId\":\"" << presentation.objectId << "\",";
+        out << "\"objectKind\":\"" << objectKindName(presentation.objectKind) << "\",";
+        out << "\"emergencyFallback\":" << (presentation.emergencyFallback ? "true" : "false") << ",";
+        out << "\"designatedSanitationSite\":" << (presentation.designatedSanitationSite ? "true" : "false") << ",";
+        out << "\"sanitationSiteId\":\"" << presentation.sanitationSiteId << "\",";
+        out << "\"contextActionToken\":\"" << presentation.contextActionToken << "\",";
+        out << "\"durationTicks\":" << presentation.durationTicks;
+        out << "},";
 
         out << "\"emotion\":{";
         if (character) {
