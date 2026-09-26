@@ -4,7 +4,7 @@ import { WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
 import { createTerrainElevationSampler } from './terrain-geometry';
 import { InstancedTreeAsset } from './tree-asset-layer';
 import {
-  TREE_ASSET_CONTRACT,
+  TREE_ASSET_VARIANTS,
   TREE_BARK_PALETTE,
   TREE_CROWN_LOBE_LAYOUT,
   TREE_FOLIAGE_PALETTE,
@@ -34,7 +34,9 @@ export class VegetationLayer {
   readonly group = new THREE.Group();
 
   private readonly mobileProfile = useMobileVegetationProfile();
-  private readonly treeMatrices = new Float32Array(MAX_TREES * 16);
+  private readonly treeVariantMatrices = TREE_ASSET_VARIANTS.map(
+    () => new Float32Array(MAX_TREES * 16),
+  );
   private readonly crownGeometry = new THREE.IcosahedronGeometry(1, 0);
   private readonly trunkGeometry = new THREE.CylinderGeometry(
     0.72,
@@ -69,11 +71,7 @@ export class VegetationLayer {
     this.barkMaterial,
     MAX_BRANCHES,
   );
-  private readonly actualTrees = new InstancedTreeAsset({
-    maxInstances: MAX_TREES,
-    url: TREE_ASSET_CONTRACT.modelUrl,
-    onReady: () => this.setFallbackVisible(false),
-  });
+  private readonly actualTrees: InstancedTreeAsset[];
   private readonly matrix = new THREE.Matrix4();
   private readonly rotation = new THREE.Quaternion();
   private readonly branchRotation = new THREE.Quaternion();
@@ -83,6 +81,14 @@ export class VegetationLayer {
   private readonly treeColor = new THREE.Color();
 
   constructor() {
+    this.actualTrees = TREE_ASSET_VARIANTS.map((variant) => (
+      new InstancedTreeAsset({
+        maxInstances: MAX_TREES,
+        url: variant.modelUrl,
+        onReady: () => this.refreshFallbackVisibility(),
+      })
+    ));
+
     for (const mesh of [this.crowns, this.trunks, this.branches]) {
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       mesh.castShadow = false;
@@ -93,7 +99,9 @@ export class VegetationLayer {
     this.group.add(this.trunks);
     this.group.add(this.branches);
     this.group.add(this.crowns);
-    this.group.add(this.actualTrees.group);
+    for (const asset of this.actualTrees) {
+      this.group.add(asset.group);
+    }
   }
 
   setTerrain(window: TerrainWindow): void {
@@ -111,6 +119,7 @@ export class VegetationLayer {
     let treeIndex = 0;
     let branchIndex = 0;
     let crownIndex = 0;
+    const variantCounts = TREE_ASSET_VARIANTS.map(() => 0);
 
     for (const chunk of window.chunks) {
       if (treeIndex >= MAX_TREES) break;
@@ -172,7 +181,19 @@ export class VegetationLayer {
           fullTreeHeight * widthScale,
         );
         this.matrix.compose(this.position, this.rotation, this.scale);
-        this.matrix.toArray(this.treeMatrices, treeIndex * 16);
+        const variantIndex = Math.min(
+          TREE_ASSET_VARIANTS.length - 1,
+          Math.floor(
+            hash01(seed, chunk.x, chunk.y, localTreeIndex + 503)
+            * TREE_ASSET_VARIANTS.length,
+          ),
+        );
+        const variantInstanceIndex = variantCounts[variantIndex];
+        this.matrix.toArray(
+          this.treeVariantMatrices[variantIndex],
+          variantInstanceIndex * 16,
+        );
+        variantCounts[variantIndex] += 1;
 
         const trunkHeight = profile.trunkHeightWorldUnits * treeScale;
         const trunkRadius =
@@ -344,7 +365,13 @@ export class VegetationLayer {
       }
     }
 
-    this.actualTrees.setInstances(this.treeMatrices, treeIndex);
+    for (let index = 0; index < this.actualTrees.length; index += 1) {
+      this.actualTrees[index].setInstances(
+        this.treeVariantMatrices[index],
+        variantCounts[index],
+      );
+    }
+    this.refreshFallbackVisibility();
 
     this.trunks.count = treeIndex;
     this.branches.count = branchIndex;
@@ -370,12 +397,20 @@ export class VegetationLayer {
   }
 
   dispose(): void {
-    this.actualTrees.dispose();
+    for (const asset of this.actualTrees) {
+      asset.dispose();
+    }
     this.crownGeometry.dispose();
     this.trunkGeometry.dispose();
     this.branchGeometry.dispose();
     this.crownMaterial.dispose();
     this.barkMaterial.dispose();
+  }
+
+  private refreshFallbackVisibility(): void {
+    this.setFallbackVisible(
+      !this.actualTrees.every((asset) => asset.isReady),
+    );
   }
 
   private setFallbackVisible(visible: boolean): void {

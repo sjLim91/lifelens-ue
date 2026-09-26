@@ -62,6 +62,10 @@ export class InstancedTreeAsset {
     this.applyInstances();
   }
 
+  get isReady(): boolean {
+    return this.ready;
+  }
+
   dispose(): void {
     this.disposed = true;
     for (const mesh of this.meshes) {

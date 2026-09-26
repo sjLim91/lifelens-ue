@@ -145,6 +145,10 @@
       "no synthetic isolated-stream fallback segments",
       "zoom-aware hydrology level of detail",
       "clustered vegetation presentation",
+      "three deterministic CC0 tree silhouettes",
+      "Core-driven grass shrub and rock micro-detail",
+      "terrain albedo variation without presentation-only elevation",
+      "mobile ground-detail density budget",
       "observer chunk navigation"
     ],
     "description": "Verifies moving the observer asks Core for a different logical terrain/ecology window without creating fake terrain or resources.",
@@ -155,9 +159,12 @@
       "Observe the weather badge and verify temperature/weather summary are present",
       "When the badge reports rain, snow, or storm, verify precipitation is visibly rendered around the current camera as fine short streaks/flakes rather than giant vertical rods; the ground darkens/loses roughness from wetness, and overcast/fog response is visible",
       "Pan the camera while precipitation is active and verify rain/snow follows the observer instead of remaining behind at the original world origin",
+      "Inspect forested and open chunks and verify tree silhouettes vary between the three pinned CC0 tree models instead of repeating one identical canopy everywhere",
+      "Inspect grass/shrub/rock-rich chunks and verify deterministic ground micro-detail follows Core coverage and sits on the shared terrain surface without changing terrain height",
+      "On mobile, verify ground micro-detail remains present but sparser than desktop and does not overwhelm residents or tank interaction responsiveness",
       "Increase observer speed and verify weather changes remain driven by Core simulation state rather than random browser effects"
     ],
-    "expected": "Panning across chunk boundaries changes the observer-centered Core terrain/environment query window without changing simulation authority. The biome overlay reports Core biome/forest coverage, and deterministic terrain is rendered only from Core-provided elevation as one connected surface with authoritative slopes, non-rectangular river or stream paths where hydrology exists, with at most two flow exits per river/stream chunk, no synthetic cross-grid fallback channels, and minor streams/springs progressively hidden at wider zoom levels, and clustered vegetation rather than a debug-like tile grid. The world overlay exposes the authoritative Core weather summary and temperature; cloud, precipitation, visibility and wind alter Three World atmosphere and rain/snow presentation from the same Core state. If the summary says rain/snow/storm, precipitation may not be visually silent merely because the reported intensity is tiny: a presentation visibility floor keeps streaks/flakes readable without turning rain into giant world-space poles, the precipitation volume follows the observer focus while panning, wet weather darkens and smooths the terrain surface, and overcast/fog response is visible."
+    "expected": "Panning across chunk boundaries changes the observer-centered Core terrain/environment query window without changing simulation authority. The biome overlay reports Core biome/forest coverage, and deterministic terrain is rendered only from Core-provided elevation as one connected surface with authoritative slopes, non-rectangular river or stream paths where hydrology exists, with at most two flow exits per river/stream chunk, no synthetic cross-grid fallback channels, and minor streams/springs progressively hidden at wider zoom levels, and clustered vegetation rather than a debug-like tile grid. Forests distribute deterministic instances across three pinned CC0 tree silhouettes, while grass/shrub/rock micro-detail consumes authoritative Core ecology coverage and the shared elevation sampler only; it may enrich albedo and surface dressing but must not invent terrain height, resources, collision or simulation state. The world overlay exposes the authoritative Core weather summary and temperature; cloud, precipitation, visibility and wind alter Three World atmosphere and rain/snow presentation from the same Core state. If the summary says rain/snow/storm, precipitation may not be visually silent merely because the reported intensity is tiny: a presentation visibility floor keeps streaks/flakes readable without turning rain into giant world-space poles, the precipitation volume follows the observer focus while panning, wet weather darkens and smooths the terrain surface, and overcast/fog response is visible."
   },
   {
     "name": "Create a normal New Game without developer Seed input",
