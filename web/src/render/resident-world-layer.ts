@@ -527,13 +527,12 @@ export class ResidentWorldLayer {
     kind: ResidentSocialCueKind,
   ): ResidentSocialConnector {
     const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute(
-      'position',
-      new THREE.Float32BufferAttribute(
-        new Float32Array(9),
-        3,
-      ),
+    const positions = new THREE.Float32BufferAttribute(
+      new Float32Array(9),
+      3,
     );
+    positions.setUsage(THREE.DynamicDrawUsage);
+    geometry.setAttribute('position', positions);
 
     const material = new THREE.LineBasicMaterial({
       color: this.socialCueColor(kind),
@@ -649,7 +648,6 @@ export class ResidentWorldLayer {
         target.current.z,
       );
       positions.needsUpdate = true;
-      connector.line.geometry.computeBoundingSphere();
       connector.line.visible = true;
     }
   }
