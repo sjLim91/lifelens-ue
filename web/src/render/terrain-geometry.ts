@@ -13,6 +13,26 @@ function average(values: Array<number | null>, fallback: number): number {
   return valid.reduce((sum, value) => sum + value, 0) / valid.length;
 }
 
+function surfaceShade(
+  seed: string,
+  chunkX: number,
+  chunkY: number,
+  vertexX: number,
+  vertexY: number,
+): number {
+  const patchX = Math.floor((chunkX * 10 + vertexX) / 2);
+  const patchY = Math.floor((chunkY * 10 + vertexY) / 2);
+  const input = `${seed}:surface:${patchX}:${patchY}`;
+  let hash = 2166136261 >>> 0;
+  for (let index = 0; index < input.length; index += 1) {
+    hash ^= input.charCodeAt(index);
+    hash = Math.imul(hash, 16777619) >>> 0;
+  }
+  hash ^= hash >>> 16;
+  const noise01 = (hash >>> 0) / 4294967295;
+  return 0.88 + noise01 * 0.16;
+}
+
 export function createTerrainElevationSampler(
   window: TerrainWindow,
 ): (
@@ -73,11 +93,13 @@ export function createTerrainGeometryBuilder(
   const sampleElevation = createTerrainElevationSampler(window);
 
   return (chunk: TerrainChunk): THREE.BufferGeometry => {
-    const subdivisions = 6;
+    const subdivisions = 10;
     const verticesPerSide = subdivisions + 1;
     const positions: number[] = [];
     const uvs: number[] = [];
+    const colors: number[] = [];
     const indices: number[] = [];
+    const worldSeed = window.worldSeed ?? '0';
 
     for (let y = 0; y <= subdivisions; y += 1) {
       const ty = y / subdivisions;
@@ -95,6 +117,15 @@ export function createTerrainGeometryBuilder(
 
         positions.push(px, elevation, z);
         uvs.push(tx, ty);
+
+        const shade = surfaceShade(
+          worldSeed,
+          chunk.x,
+          chunk.y,
+          x,
+          y,
+        );
+        colors.push(shade, shade, shade);
       }
     }
 
@@ -117,6 +148,10 @@ export function createTerrainGeometryBuilder(
     geometry.setAttribute(
       'uv',
       new THREE.Float32BufferAttribute(uvs, 2),
+    );
+    geometry.setAttribute(
+      'color',
+      new THREE.Float32BufferAttribute(colors, 3),
     );
     geometry.setIndex(indices);
     geometry.computeVertexNormals();
