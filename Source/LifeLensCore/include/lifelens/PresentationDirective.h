@@ -32,6 +32,8 @@ struct ResidentPresentationObservation {
     Goal physicalGoal=Goal::Idle;
     SocialIntent socialIntent=SocialIntent::None;
     CivilizationIntent civilizationIntent=CivilizationIntent::None;
+    MaterialKind civilizationMaterial=MaterialKind::Unknown;
+    FacilityBuildAction facilityAction=FacilityBuildAction::None;
     ParentingAction parentingAction=ParentingAction::Comfort;
 
     CharacterId targetResidentId=0;

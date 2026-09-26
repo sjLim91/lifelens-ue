@@ -283,6 +283,8 @@ ResidentPresentationObservation Simulation::observeResidentPresentation(Characte
             case ContextActionKind::Civilization:
                 dto.kind=PresentationActionKind::Civilization;
                 dto.civilizationIntent=pending.civilization.intent;
+                dto.civilizationMaterial=pending.civilization.material;
+                dto.facilityAction=pending.civilization.facilityAction;
                 break;
             case ContextActionKind::Parenting:
                 dto.kind=PresentationActionKind::Parenting;

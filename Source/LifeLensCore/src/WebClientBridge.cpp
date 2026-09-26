@@ -410,6 +410,8 @@ std::string WebClientBridge::residentsJson() const
         out << "\"physicalGoal\":\"" << goalName(presentation.physicalGoal) << "\",";
         out << "\"socialIntent\":\"" << socialIntentName(presentation.socialIntent) << "\",";
         out << "\"civilizationIntent\":\"" << civilizationIntentName(presentation.civilizationIntent) << "\",";
+        out << "\"civilizationMaterial\":\"" << materialName(presentation.civilizationMaterial) << "\",";
+        out << "\"facilityAction\":\"" << facilityBuildActionName(presentation.facilityAction) << "\",";
         out << "\"parentingAction\":\"" << parentingActionName(presentation.parentingAction) << "\",";
         out << "\"targetResidentId\":\"" << presentation.targetResidentId << "\",";
         out << "\"hasTargetGrid\":" << (presentation.hasTargetGrid ? "true" : "false") << ",";

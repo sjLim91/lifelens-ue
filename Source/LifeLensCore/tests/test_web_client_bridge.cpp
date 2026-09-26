@@ -39,6 +39,8 @@ int main()
     assert(residents.find("\"activityTargetName\":") != std::string::npos);
     assert(residents.find("\"presentation\":{") != std::string::npos);
     assert(residents.find("\"phase\":") != std::string::npos);
+    assert(residents.find("\"civilizationMaterial\":") != std::string::npos);
+    assert(residents.find("\"facilityAction\":") != std::string::npos);
     assert(residents.find("\"hasTargetGrid\":") != std::string::npos);
     assert(residents.find("\"hasObjectTarget\":") != std::string::npos);
     assert(residents.find("\"emergencyFallback\":") != std::string::npos);

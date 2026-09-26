@@ -209,17 +209,56 @@ testCase('semantic motion maps only authoritative safe interactions', () => {
   }, { moving: false, nearbyResident: true }), 'talk');
 });
 
-testCase('unsupported daily-life actions fail closed instead of faking motion', () => {
-  for (const physicalGoal of ['Eat', 'Drink', 'Sleep']) {
+testCase('UAL2 consumption is used only for real eat and drink actions', () => {
+  for (const physicalGoal of ['Eat', 'Drink']) {
     assert.equal(resolveResidentSemanticMotion({
       active: true,
       kind: 'Physical',
       phase: 'Interacting',
       physicalGoal,
       hasTargetGrid: true,
-    }, { moving: false, nearbyResident: false }), 'idle');
+    }, { moving: false, nearbyResident: false }), 'consume');
   }
 
+  assert.equal(resolveResidentSemanticMotion({
+    active: true,
+    kind: 'Physical',
+    phase: 'Interacting',
+    physicalGoal: 'Sleep',
+    hasTargetGrid: true,
+  }, { moving: false, nearbyResident: false }), 'idle');
+});
+
+testCase('UAL2 harvest and carry require authoritative civilization facts', () => {
+  assert.equal(resolveResidentSemanticMotion({
+    active: true,
+    kind: 'Civilization',
+    phase: 'Interacting',
+    civilizationIntent: 'Gather',
+    civilizationMaterial: 'PlantFood',
+    hasTargetGrid: true,
+  }, { moving: false, nearbyResident: false }), 'harvest');
+
+  assert.equal(resolveResidentSemanticMotion({
+    active: true,
+    kind: 'Civilization',
+    phase: 'Moving',
+    civilizationIntent: 'Craft',
+    facilityAction: 'DeliverMaterial',
+    hasTargetGrid: true,
+  }, { moving: true, nearbyResident: false }), 'carry');
+
+  assert.equal(resolveResidentSemanticMotion({
+    active: true,
+    kind: 'Civilization',
+    phase: 'Moving',
+    civilizationIntent: 'Gather',
+    civilizationMaterial: 'Wood',
+    hasTargetGrid: true,
+  }, { moving: true, nearbyResident: false }), 'walk');
+});
+
+testCase('unsupported or unvalidated actions still fail closed', () => {
   assert.equal(resolveResidentSemanticMotion({
     active: true,
     kind: 'Physical',
@@ -234,6 +273,15 @@ testCase('unsupported daily-life actions fail closed instead of faking motion', 
     civilizationIntent: 'Craft',
     hasTargetGrid: false,
   }, { moving: false, nearbyResident: false }), 'idle');
+
+  assert.equal(resolveResidentSemanticMotion({
+    active: true,
+    kind: 'Civilization',
+    phase: 'Interacting',
+    civilizationIntent: 'Gather',
+    civilizationMaterial: 'Wood',
+    hasTargetGrid: true,
+  }, { moving: false, nearbyResident: false }), 'interact');
 });
 
 testCase('movement always keeps locomotion ownership', () => {

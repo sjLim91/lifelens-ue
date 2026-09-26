@@ -36,6 +36,8 @@ for token in (
     "targetResidentId",
     "hasObjectTarget",
     "contextActionToken",
+    "civilizationMaterial",
+    "facilityAction",
 ):
     assert token in header, f"missing Core presentation DTO token: {token}"
 
@@ -44,6 +46,8 @@ assert "observeResidentPresentation(CharacterId id) const" in simulation_h
 assert "Simulation::observeResidentPresentation" in simulation_cpp
 assert "PresentationActionPhase::Moving" in simulation_cpp
 assert "PresentationActionPhase::Interacting" in simulation_cpp
+assert "dto.civilizationMaterial=pending.civilization.material" in simulation_cpp
+assert "dto.facilityAction=pending.civilization.facilityAction" in simulation_cpp
 
 for token in (
     "presentationActionKindName",
@@ -53,11 +57,15 @@ for token in (
     "presentation.targetGrid.x",
     "presentation.targetGrid.y",
     "presentation.hasObjectTarget",
+    "presentation.civilizationMaterial",
+    "presentation.facilityAction",
 ):
     assert token in bridge, f"missing web presentation JSON token: {token}"
 
 assert "ResidentPresentationDirective" in types
 assert "presentation?: ResidentPresentationDirective" in types
+assert "civilizationMaterial?: string" in types
+assert "facilityAction?: string" in types
 
 # Web action wording may translate a Core enum or resolve an authoritative
 # resident/object target. It may not derive intent from needs, relationships,
@@ -94,6 +102,10 @@ assert "designatedSanitationSite === true" in semantic_motion
 assert "objectKind === 'Toilet'" in semantic_motion
 assert "objectKind === 'Sink'" in semantic_motion
 assert "presentation.hasTargetGrid" in semantic_motion
+assert "presentation.civilizationMaterial === 'PlantFood'" in semantic_motion
+assert "presentation.facilityAction === 'DeliverMaterial'" in semantic_motion
+assert "presentation.facilityAction === 'Work'" in semantic_motion
+assert "presentation.facilityAction === 'Repair'" in semantic_motion
 assert "actor.activityLabel === 'Talk'" not in resident_layer
 
 print("LifeLens web authoritative action context: PASS")

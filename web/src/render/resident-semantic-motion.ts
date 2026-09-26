@@ -6,7 +6,10 @@ export type ResidentSemanticMotion =
   | 'talk'
   | 'interact'
   | 'crouch'
-  | 'work';
+  | 'work'
+  | 'consume'
+  | 'harvest'
+  | 'carry';
 
 export interface ResidentSemanticMotionContext {
   moving: boolean;
@@ -17,7 +20,16 @@ export function resolveResidentSemanticMotion(
   presentation: ResidentPresentationDirective | null | undefined,
   context: ResidentSemanticMotionContext,
 ): ResidentSemanticMotion {
-  if (context.moving) return 'walk';
+  if (context.moving) {
+    if (
+      presentation?.active
+      && presentation.kind === 'Civilization'
+      && presentation.facilityAction === 'DeliverMaterial'
+    ) {
+      return 'carry';
+    }
+    return 'walk';
+  }
 
   if (
     !presentation?.active
@@ -45,6 +57,13 @@ export function resolveResidentSemanticMotion(
 
     case 'Physical':
       if (
+        presentation.physicalGoal === 'Eat'
+        || presentation.physicalGoal === 'Drink'
+      ) {
+        return 'consume';
+      }
+
+      if (
         presentation.physicalGoal === 'UseToilet'
         && (
           presentation.designatedSanitationSite === true
@@ -65,13 +84,38 @@ export function resolveResidentSemanticMotion(
         return 'interact';
       }
 
-      // Eat / Drink / Sleep intentionally stay neutral until a dedicated,
-      // semantically correct clip exists. A generic arm wave or sitting pose
-      // would be a visual lie even when the Core action itself is real.
+      // Sleep still stays neutral until an authored lie-down / sleep / wake
+      // sequence is available. Never turn "sleep" into sitting or standing
+      // hand interaction just to keep the body moving.
       return 'idle';
 
     case 'Civilization':
       if (!presentation.hasTargetGrid) return 'idle';
+
+      if (
+        presentation.facilityAction === 'Work'
+        || presentation.facilityAction === 'Repair'
+      ) {
+        return 'work';
+      }
+
+      if (
+        presentation.facilityAction === 'DeliverMaterial'
+        || presentation.facilityAction === 'Fuel'
+        || presentation.facilityAction === 'Ignite'
+        || presentation.facilityAction === 'CollectCharcoal'
+        || presentation.facilityAction === 'LoadSmeltCharge'
+        || presentation.facilityAction === 'CollectMetal'
+      ) {
+        return 'interact';
+      }
+
+      if (
+        presentation.civilizationIntent === 'Gather'
+        && presentation.civilizationMaterial === 'PlantFood'
+      ) {
+        return 'harvest';
+      }
 
       if (
         presentation.civilizationIntent === 'Craft'
