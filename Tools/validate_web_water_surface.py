@@ -33,7 +33,7 @@ assert "flowWaterMesh" in layer
 assert "flowWaterMaterial" in layer
 assert "transparent: false" in layer
 assert "depthWrite: true" in layer
-assert "Wetland" not in geometry[geometry.index("OPEN_WATER_KINDS"):geometry.index("CONNECTED_WATER_KINDS")]
+assert "Wetland" not in geometry[geometry.index("OPEN_WATER_KINDS"):geometry.index("FLOW_WATER_KINDS")]
 
 for forbidden in (
     "waterAvailability +=",
