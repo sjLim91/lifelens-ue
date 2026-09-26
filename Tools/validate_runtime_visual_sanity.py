@@ -44,16 +44,26 @@ for token in (
 ):
     assert token in cpp, f"missing runtime visual sanity token: {token}"
 
-# Settlement should remain readable without looking like a huge shaved clearing.
+# Spawn is not a settlement. Natural dressing remains intact around the start
+# location; readability thinning is allowed only around actual facilities.
+for forbidden in (
+    "CoreClearRadiusUU",
+    "ActivityRadiusUU",
+    "CachedSettlementReferenceUU",
+    "bClearInitialSightlineCanopy",
+):
+    assert forbidden not in header and forbidden not in cpp, (
+        f"spawn-centered nature clearing returned: {forbidden}"
+    )
+
 for token in (
-    "CoreClearRadiusUU = 360.0f",
-    "ActivityRadiusUU = 1350.0f",
     "CoreZoneCanopyKeep = 0.30f",
     "CoreZoneUndergrowthKeep = 0.48f",
     "CoreZoneResourceScale = 0.32f",
     "ActivityZoneResourceScale = 0.62f",
+    "bDynamicObserverCanopyVisibility = true",
 ):
-    assert token in header, f"missing dense settlement-edge recovery: {token}"
+    assert token in header, f"missing facility/dynamic readability recovery: {token}"
 
 for token in (
     "FacilityFlattenRadiusUU = 340.0f",

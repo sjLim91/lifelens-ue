@@ -751,7 +751,6 @@ void ALLWorldPresentationActor::ClearInstances()
     PlacedGrass = 0;
     PlacedRocks = 0;
     SuppressedDressing = 0;
-    SightlineCleared = 0;
     DynamicCanopySuppressed = 0;
     DynamicCanopyInstances.Reset();
 }
@@ -813,16 +812,6 @@ void ALLWorldPresentationActor::ApplyFacilityMaterialPalette()
     }
 }
 
-FVector2D ALLWorldPresentationActor::SettlementReferenceUU(const FLLCoreWorldGenerationObservation& World) const
-{
-    // Resource patches convert with `(GridX - InitialCenterGridX) * CellSize`,
-    // so the Core start-region centre maps to the presentation origin by
-    // construction. Deriving it keeps the envelope tied to `InitialCenterGrid`
-    // instead of a hard-coded world origin.
-    const FVector ChunkOffset = ChunkOriginUU(World, World.InitialChunkX, World.InitialChunkY);
-    return FVector2D(ChunkOffset.X, ChunkOffset.Y);
-}
-
 float ALLWorldPresentationActor::FacilityDressingKeepFactor(
     const FVector2D& LocationUU,
     ELLDressingLayer Layer) const
@@ -882,60 +871,13 @@ float ALLWorldPresentationActor::FacilityDressingKeepFactor(
         FMath::Pow(Progress, Exponent));
 }
 
-float ALLWorldPresentationActor::AmbientDressingKeepFactor(const FVector2D& LocationUU, ELLDressingLayer Layer) const
+float ALLWorldPresentationActor::AmbientDressingKeepFactor(
+    const FVector2D& LocationUU,
+    ELLDressingLayer Layer) const
 {
-    const float CoreRadius = FMath::Max(0.0f, CoreClearRadiusUU);
-    const float ActivityRadius = FMath::Max(CoreRadius, ActivityRadiusUU);
-    const float Distance = (LocationUU - CachedSettlementReferenceUU).Size();
-
-    const bool bCanopy = Layer == ELLDressingLayer::Canopy;
-    const bool bGroundDetail = Layer == ELLDressingLayer::GroundDetail;
-    const float CoreKeep = FMath::Clamp(
-        bGroundDetail ? 0.08f
-            : (bCanopy ? CoreZoneCanopyKeep : CoreZoneUndergrowthKeep),
-        0.0f,
-        1.0f);
-    float SettlementKeep = 1.0f;
-    if (ActivityRadius > KINDA_SMALL_NUMBER && Distance < ActivityRadius)
-    {
-        if (Distance <= CoreRadius)
-        {
-            SettlementKeep = CoreKeep;
-        }
-        else
-        {
-            // Activity zone: restore density with distance, canopy last.
-            const float Band = FMath::Max(ActivityRadius - CoreRadius, KINDA_SMALL_NUMBER);
-            const float Progress = FMath::Clamp((Distance - CoreRadius) / Band, 0.0f, 1.0f);
-            const float Exponent = FMath::Max(
-                1.0f,
-                bGroundDetail ? 1.35f
-                    : (bCanopy ? CanopyRecoveryExponent : UndergrowthRecoveryExponent));
-            SettlementKeep = FMath::Lerp(CoreKeep, 1.0f, FMath::Pow(Progress, Exponent));
-        }
-    }
-
-    return FMath::Min(
-        SettlementKeep,
-        FacilityDressingKeepFactor(LocationUU, Layer));
-}
-
-bool ALLWorldPresentationActor::CaptureInitialViewOrigin()
-{
-    if (bInitialViewCaptured) { return true; }
-    const UWorld* World = GetWorld();
-    const APlayerController* Controller = World ? World->GetFirstPlayerController() : nullptr;
-    const APlayerCameraManager* CameraManager = Controller ? Controller->PlayerCameraManager : nullptr;
-    if (!CameraManager) { return false; }   // game mode has not placed the camera yet
-
-    // Read only. The observer camera pose and its Config tuning belong to
-    // another lane; this never writes to either.
-    const FVector CameraLocation = CameraManager->GetCameraLocation();
-    if (CameraLocation.ContainsNaN()) { return false; }
-
-    InitialViewOriginUU = FVector2D(CameraLocation.X, CameraLocation.Y);
-    bInitialViewCaptured = true;
-    return true;
+    // World v2: spawn/start location is not a settlement. Ambient nature stays
+    // untouched unless an actual authoritative facility requests readability.
+    return FacilityDressingKeepFactor(LocationUU, Layer);
 }
 
 void ALLWorldPresentationActor::RegisterDynamicCanopyInstance(
@@ -1071,51 +1013,12 @@ void ALLWorldPresentationActor::UpdateDynamicObserverCanopyVisibility()
     DynamicCanopySuppressed = SuppressedNow;
 }
 
-float ALLWorldPresentationActor::InitialSightlineKeepFactor(const FVector2D& LocationUU) const
-{
-    if (!bClearInitialSightlineCanopy || !bInitialViewCaptured) { return 1.0f; }
-
-    const FVector2D Axis = CachedSettlementReferenceUU - InitialViewOriginUU;
-    const float AxisLength = Axis.Size();
-    if (AxisLength <= KINDA_SMALL_NUMBER) { return 1.0f; }
-    const FVector2D AxisDirection = Axis / AxisLength;
-
-    const FVector2D ToPoint = LocationUU - InitialViewOriginUU;
-    const float Along = FVector2D::DotProduct(ToPoint, AxisDirection);
-    // Only what stands between the camera and the settlement can occlude it.
-    if (Along <= 0.0f || Along >= AxisLength) { return 1.0f; }
-
-    const float Lateral = FMath::Abs(FVector2D::CrossProduct(ToPoint, AxisDirection));
-    const float InnerHalfAngle = FMath::DegreesToRadians(FMath::Max(0.0f, InitialSightlineHalfAngleDegrees));
-    const float OuterHalfAngle = InnerHalfAngle
-        + FMath::DegreesToRadians(FMath::Max(0.0f, InitialSightlineEdgeFalloffDegrees));
-
-    // The cone widens with distance so the cleared wedge stays a constant
-    // angular slice of the opening view.
-    const float InnerWidth = Along * FMath::Tan(InnerHalfAngle);
-    const float OuterWidth = Along * FMath::Tan(OuterHalfAngle);
-    const float CentreKeep = FMath::Clamp(InitialSightlineCanopyKeep, 0.0f, 1.0f);
-
-    if (Lateral <= InnerWidth) { return CentreKeep; }
-    if (Lateral >= OuterWidth || OuterWidth - InnerWidth <= KINDA_SMALL_NUMBER) { return 1.0f; }
-    const float EdgeProgress = (Lateral - InnerWidth) / (OuterWidth - InnerWidth);
-    return FMath::Lerp(CentreKeep, 1.0f, EdgeProgress);
-}
-
 float ALLWorldPresentationActor::ResourcePatchScaleFactor(const FVector2D& LocationUU) const
 {
-    // An authoritative resource is never removed for readability; inside the
-    // settlement or immediately beside a real facility it is only drawn smaller.
-    const float Distance = (LocationUU - CachedSettlementReferenceUU).Size();
+    // Core resource truth is never removed or scaled merely because it is near
+    // the initial spawn. Only an actual authoritative facility may request a
+    // presentation-only scale reduction for local readability.
     float Scale = 1.0f;
-    if (Distance <= FMath::Max(0.0f, CoreClearRadiusUU))
-    {
-        Scale = FMath::Clamp(CoreZoneResourceScale, 0.1f, 1.0f);
-    }
-    else if (Distance <= FMath::Max(CoreClearRadiusUU, ActivityRadiusUU))
-    {
-        Scale = FMath::Clamp(ActivityZoneResourceScale, 0.1f, 1.0f);
-    }
 
     if (CachedFacilityReadabilityCentersUU.Num() > 0)
     {
@@ -1133,7 +1036,9 @@ float ALLWorldPresentationActor::ResourcePatchScaleFactor(const FVector2D& Locat
                 Scale,
                 FMath::Clamp(CoreZoneResourceScale + 0.15f, 0.1f, 1.0f));
         }
-        else if (FacilityDistance <= FMath::Max(LLTerrainPresentationContract::FacilityFlattenRadiusUU, LLTerrainPresentationContract::FacilityBlendEndRadiusUU))
+        else if (FacilityDistance <= FMath::Max(
+            LLTerrainPresentationContract::FacilityFlattenRadiusUU,
+            LLTerrainPresentationContract::FacilityBlendEndRadiusUU))
         {
             Scale = FMath::Min(
                 Scale,
@@ -1814,18 +1719,7 @@ void ALLWorldPresentationActor::BuildChunkDressing(
                 Location2D.X,
                 Location2D.Y,
                 TerrainSurfaceZUU(World, Terrain, Location2D));
-            float KeepFactor = AmbientDressingKeepFactor(Location2D, Layer);
-            if (Layer == ELLDressingLayer::Canopy && !bDynamicObserverCanopyVisibility)
-            {
-                // Legacy opening-view fallback. The default dynamic path keeps
-                // the canopy instance so it can be restored when the camera moves.
-                const float SightlineKeep = InitialSightlineKeepFactor(Location2D);
-                if (SightlineKeep < KeepFactor)
-                {
-                    ++SightlineCleared;
-                    KeepFactor = SightlineKeep;
-                }
-            }
+            const float KeepFactor = AmbientDressingKeepFactor(Location2D, Layer);
             if (KeepRoll >= KeepFactor)
             {
                 ++SuppressedDressing;
@@ -2932,10 +2826,7 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         BuiltFacilityLayoutSignature = 0;
         BuiltResourceQuantitySignature = 0;
         bBuiltFacilityPresentation = false;
-        CachedSettlementReferenceUU = FVector2D::ZeroVector;
         CachedFacilityReadabilityCentersUU.Reset();
-        bInitialViewCaptured = false;
-        InitialViewOriginUU = FVector2D::ZeroVector;
     };
 
     if (!Bridge || !Bridge->IsCoreRunning())
@@ -2974,13 +2865,6 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
     const FLLCoreTimeObservation Time = Bridge->GetTimeObservation();
     const bool bNightPresentation = Time.bIsNight || Time.Daylight01 < 0.22f;
 
-    // The observer camera is spawned by the game mode, which can run after this
-    // actor's BeginPlay. The first build may therefore miss it; the next refresh
-    // picks it up and rebuilds the dressing once.
-    const bool bSightlinePending = !bDynamicObserverCanopyVisibility
-        && bClearInitialSightlineCanopy && !bInitialViewCaptured;
-    CaptureInitialViewOrigin();
-
     const uint32 CurrentFacilityLayoutSignature =
         FacilityLayoutSignature(Civilization);
     const bool bFacilityLayoutChanged =
@@ -3007,8 +2891,7 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         || CurrentTerrainPresentationSignature != BuiltTerrainPresentationSignature
         || CurrentRegionalTerrainSignature != BuiltRegionalTerrainSignature
         || bFacilityLayoutChanged
-        || bResourceQuantityChanged
-        || (bSightlinePending && bInitialViewCaptured);
+        || bResourceQuantityChanged;
 
     uint32 CurrentFacilitySignature = FacilitySignature(Civilization);
     // Rebuild facility accent instances only when the coarse day/night state
@@ -3021,8 +2904,6 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
 
     if (bNaturalChanged)
     {
-        // Measured from the Core start-region centre, not the world origin.
-        CachedSettlementReferenceUU = SettlementReferenceUU(World);
         BuiltWorldSeed = World.WorldSeed;
         BuiltGenerationVersion = World.GenerationVersion;
         BuiltObserverCenterChunkX = ObserverCenterChunk.X;
@@ -3105,13 +2986,12 @@ void ALLWorldPresentationActor::RefreshFromCore(bool bForce)
         + (PhotorealFurnaceStoneInstances ? PhotorealFurnaceStoneInstances->GetInstanceCount() : 0);
 
     UE_LOG(LogTemp, Log,
-        TEXT("LLWorldPresentation seed=%lld gen=%d chunks=%d groundTiles=%d local=%d regional=%d natural=%d/%d/%d/%d facilities=%d facilityInstances=%d thinned=%d sightline=%d/%d dynamicCanopy=%d core=%.0f activity=%.0f ground=%s farGround=%s"),
+        TEXT("LLWorldPresentation seed=%lld gen=%d chunks=%d groundTiles=%d local=%d regional=%d natural=%d/%d/%d/%d facilities=%d facilityInstances=%d facilityThinned=%d dynamicCanopy=%d ground=%s farGround=%s"),
         World.WorldSeed, World.GenerationVersion, World.MaterializedChunkCount,
         GroundTileCount, LocalGroundTileCount, RegionalGroundTileCount,
         TreeInstanceCount, ShrubInstanceCount, GrassInstanceCount, RockInstanceCount,
         Civilization.FacilityCount, FacilityInstanceCount,
-        SuppressedDressing, SightlineCleared, bInitialViewCaptured ? 1 : 0, DynamicCanopySuppressed,
-        CoreClearRadiusUU, ActivityRadiusUU,
+        SuppressedDressing, DynamicCanopySuppressed,
         (Ground && Ground->GetStaticMesh()) ? TEXT("yes") : TEXT("no"),
         (FarGround && FarGround->GetStaticMesh()) ? TEXT("yes") : TEXT("no"));
 }

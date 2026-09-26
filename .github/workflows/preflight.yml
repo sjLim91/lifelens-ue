@@ -144,7 +144,7 @@ jobs:
       - name: Validate photoreal canopy tiering
         run: python Tools/validate_photoreal_canopy_tiering.py
 
-      - name: Validate settlement nature envelope
+      - name: Validate spawn-independent nature envelope
         run: python Tools/validate_settlement_nature_envelope.py
 
       - name: Validate authoritative natural obstacle visibility
