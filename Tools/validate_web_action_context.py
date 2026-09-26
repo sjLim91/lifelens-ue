@@ -43,12 +43,13 @@ assert "PresentationActionPhase::Moving" in simulation_cpp
 assert "PresentationActionPhase::Interacting" in simulation_cpp
 
 for token in (
-    '"presentation"',
     "presentationActionKindName",
     "presentationActionPhaseName",
-    '"targetResidentId"',
-    '"targetGridX"',
-    '"targetGridY"',
+    "presentation.active",
+    "presentation.targetResidentId",
+    "presentation.targetGrid.x",
+    "presentation.targetGrid.y",
+    "presentation.hasObjectTarget",
 ):
     assert token in bridge, f"missing web presentation JSON token: {token}"
 
