@@ -9,6 +9,7 @@
 
 #include "lifelens/ContinuousEcology.h"
 #include "lifelens/ContinuousTerrain.h"
+#include "lifelens/ContextAction.h"
 #include "lifelens/Hydrology.h"
 #include "lifelens/SimulationClimate.h"
 #include "lifelens/TraitsPreferences.h"
@@ -72,6 +73,19 @@ const char* activityKindName(ObservedActivityKind kind)
         case ObservedActivityKind::Social: return "Social";
     }
     return "Idle";
+}
+
+const char* contextActionKindName(ContextActionKind kind)
+{
+    switch (kind) {
+        case ContextActionKind::Social: return "Social";
+        case ContextActionKind::Civilization: return "Civilization";
+        case ContextActionKind::Parenting: return "Parenting";
+        case ContextActionKind::KnowledgeTeaching: return "KnowledgeTeaching";
+        case ContextActionKind::None:
+        default:
+            return "None";
+    }
 }
 
 const char* memorySourceName(MemorySource source)
@@ -190,6 +204,8 @@ std::string WebClientBridge::residentsJson() const
             findObservedCharacter(world, resident.id);
         const FamilyObservation family =
             simulation_->observeFamily(resident.id);
+        const PendingContextActionObservation actionContext =
+            simulation_->observePendingContextAction(resident.id);
 
         const TraitProfile traits = character
             ? deriveTraitProfile(character->personality, character->genetics)
@@ -266,6 +282,20 @@ std::string WebClientBridge::residentsJson() const
             << resident.activityTargetId << "\",";
         out << "\"activityTargetName\":\""
             << escapeJson(resident.activityTargetName) << "\",";
+
+        out << "\"actionContext\":{";
+        out << "\"active\":" << (actionContext.active ? "true" : "false") << ",";
+        out << "\"kind\":\""
+            << contextActionKindName(actionContext.kind) << "\",";
+        out << "\"issuedMinute\":" << actionContext.issuedMinute << ",";
+        out << "\"durationTicks\":" << actionContext.durationTicks << ",";
+        out << "\"targetResidentId\":\""
+            << actionContext.targetResident << "\",";
+        out << "\"hasSpatialTarget\":"
+            << (actionContext.hasSpatialTarget ? "true" : "false") << ",";
+        out << "\"targetGridX\":" << actionContext.targetPos.x << ",";
+        out << "\"targetGridY\":" << actionContext.targetPos.y;
+        out << "},";
 
         out << "\"emotion\":{";
         if (character) {

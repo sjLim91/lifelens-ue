@@ -96,6 +96,30 @@ testCase('real activity transition with a target becomes an observation', () => 
   assert.match(events[0].summary, /민재.*대화.*하린/);
 });
 
+testCase('authoritative action context enriches an activity cue without inventing one', () => {
+  const events = deriveObservationEvents(
+    world(10),
+    [resident()],
+    world(11),
+    [resident({
+      activityKind: 'Physical',
+      activityLabel: 'Gather',
+      actionContext: {
+        active: true,
+        kind: 'Civilization',
+        hasSpatialTarget: true,
+        targetGridX: 24,
+        targetGridY: 31,
+      },
+    })],
+  );
+  const activity = events.find(event => event.kind === 'activity');
+  assert.ok(activity);
+  assert.match(activity.detail, /생활\/작업/);
+  assert.match(activity.detail, /24, 31/);
+  assert.equal(activity.importance, 'medium');
+});
+
 testCase('important newly reported memory becomes an observation', () => {
   const events = deriveObservationEvents(
     world(10),

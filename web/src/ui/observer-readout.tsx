@@ -182,6 +182,18 @@ export function SelectedResidentReadout({
   const activityTarget = resident.activityTargetName
     ? ` → ${resident.activityTargetName}`
     : '';
+  const actionContextLabels: Record<string, string> = {
+    Social: '사회 상호작용',
+    Civilization: '생활/작업',
+    Parenting: '돌봄',
+    KnowledgeTeaching: '가르침',
+  };
+  const actionContext = resident.actionContext?.active
+    ? resident.actionContext
+    : null;
+  const actionContextLabel = actionContext?.kind
+    ? actionContextLabels[actionContext.kind] ?? actionContext.kind
+    : null;
 
   return (
     <article className="focused-life">
@@ -202,6 +214,24 @@ export function SelectedResidentReadout({
       <p className="focused-life-activity">
         현재 <b>{formatActivity(resident.activityLabel)}</b>{activityTarget}
       </p>
+
+      {actionContext ? (
+        <div className="focused-life-inline">
+          <span>
+            실행 맥락 <b>{actionContextLabel ?? '확인됨'}</b>
+          </span>
+          {actionContext.hasSpatialTarget
+            ? (
+                <span>
+                  목표 위치 <b>{actionContext.targetGridX}, {actionContext.targetGridY}</b>
+                </span>
+              )
+            : null}
+          {actionContext.targetResidentId && actionContext.targetResidentId !== '0'
+            ? <span>대상 주민 <b>지정됨</b></span>
+            : null}
+        </div>
+      ) : null}
 
       <ResidentNeedsGrid resident={resident} />
 

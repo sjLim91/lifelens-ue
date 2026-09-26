@@ -166,6 +166,17 @@ export interface ResidentBelief {
   lastUpdatedMinute?: number;
 }
 
+export interface ResidentActionContext {
+  active?: boolean;
+  kind?: 'None' | 'Social' | 'Civilization' | 'Parenting' | 'KnowledgeTeaching';
+  issuedMinute?: number;
+  durationTicks?: number;
+  targetResidentId?: string;
+  hasSpatialTarget?: boolean;
+  targetGridX?: number;
+  targetGridY?: number;
+}
+
 export interface Resident {
   id: string;
   name: string;
@@ -179,6 +190,7 @@ export interface Resident {
   socialIntent?: string;
   activityTargetId?: string;
   activityTargetName?: string;
+  actionContext?: ResidentActionContext;
   emotion?: ResidentEmotion;
   needs?: ResidentNeeds;
   personality?: ResidentPersonality;
