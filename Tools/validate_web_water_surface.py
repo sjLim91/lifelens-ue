@@ -14,6 +14,13 @@ for token in (
     "buildOpenWaterNodes",
     "componentByKey",
     "OPEN_WATER_KINDS",
+    "buildFlowWaterSurfaceGeometry",
+    "preferredFlowTarget",
+    "selectFlowEdges",
+    "incoming",
+    "outgoing",
+    "undirectedEdges",
+    "appendCurvedRibbon",
     "vertexColors: true",
 ):
     assert token in geometry or token in layer, f"missing continuous-water token: {token}"
@@ -22,11 +29,19 @@ assert "chunkWorldSize * 0.96" not in geometry
 assert "chunkWorldSize * 1.02" not in geometry
 assert "openWaterMesh" in layer
 assert "openWaterMaterial" in layer
+assert "flowWaterMesh" in layer
+assert "flowWaterMaterial" in layer
 assert "transparent: false" in layer
 assert "depthWrite: true" in layer
 assert "Wetland" not in geometry[geometry.index("OPEN_WATER_KINDS"):geometry.index("CONNECTED_WATER_KINDS")]
 
-for forbidden in ("waterAvailability +=", "chunks.push(", "Math.random("):
+for forbidden in (
+    "waterAvailability +=",
+    "chunks.push(",
+    "Math.random(",
+    "const directions = connected.length > 0",
+):
+
     assert forbidden not in layer
     assert forbidden not in geometry
 
@@ -43,4 +58,12 @@ for token in (
 assert "chunk.waterKind === 'Coast'" in ground
 assert "case 'Coast': return 0x66705a" in scene
 
-print("LifeLens web continuous water and shoreline recovery: PASS")
+assert "flowWidth(chunk.waterKind, chunkWorldSize)" in geometry
+assert "chunkWorldSize * 0.14" in geometry
+assert "chunkWorldSize * 0.065" in geometry
+assert "chunkWorldSize * 0.038" in geometry
+assert "edges.push(proposal)" in geometry
+assert "if (incoming.has(targetKey)) continue" in geometry
+assert "if (outgoing.has(proposal.source.key)) continue" in geometry
+
+print("LifeLens web continuous water and natural flow network: PASS")
