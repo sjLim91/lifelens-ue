@@ -269,6 +269,7 @@ ResidentPresentationObservation Simulation::observeResidentPresentation(Characte
         const PendingContextAction& pending=r.pendingContext;
         dto.active=true;
         dto.contextActionToken=pending.token;
+        dto.issuedMinute=pending.issuedMinute;
         dto.durationTicks=contextActionDurationTicks(pending);
         dto.hasTargetGrid=pending.hasSpatialTarget;
         dto.targetGrid=pending.targetPos;
@@ -284,7 +285,14 @@ ResidentPresentationObservation Simulation::observeResidentPresentation(Characte
                 dto.kind=PresentationActionKind::Civilization;
                 dto.civilizationIntent=pending.civilization.intent;
                 dto.civilizationMaterial=pending.civilization.material;
+                dto.civilizationItem=pending.civilization.item;
+                dto.civilizationTechnique=pending.civilization.technique;
+                dto.civilizationQuantity=pending.civilization.quantity;
+                dto.civilizationResourceNode=pending.civilization.resourceNode;
+                dto.civilizationStorage=pending.civilization.storage;
                 dto.facilityAction=pending.civilization.facilityAction;
+                dto.facilityId=pending.civilization.facility;
+                dto.facilityKind=pending.civilization.facilityKind;
                 break;
             case ContextActionKind::Parenting:
                 dto.kind=PresentationActionKind::Parenting;
@@ -294,6 +302,7 @@ ResidentPresentationObservation Simulation::observeResidentPresentation(Characte
             case ContextActionKind::KnowledgeTeaching:
                 dto.kind=PresentationActionKind::KnowledgeTeaching;
                 dto.targetResidentId=pending.knowledgeTeachingTarget;
+                dto.knowledgeTeachingTechnique=pending.knowledgeTeachingTechnique;
                 break;
             case ContextActionKind::None:
             default:
@@ -404,8 +413,15 @@ ResidentPresentationObservation Simulation::observeResidentPresentation(Characte
         dto.active=true;
         dto.kind=PresentationActionKind::Civilization;
         dto.phase=PresentationActionPhase::Interacting;
+        dto.issuedMinute=r.civilizationActivityMinute;
         dto.hasTargetGrid=r.civilizationHasSpatialTarget;
         dto.targetGrid=r.civilizationTargetPos;
+        dto.civilizationMaterial=r.civilizationEvent.material;
+        dto.civilizationItem=r.civilizationEvent.item;
+        dto.civilizationTechnique=r.civilizationEvent.technique;
+        dto.civilizationQuantity=r.civilizationEvent.quantity;
+        dto.civilizationResourceNode=r.civilizationResourceNode;
+        dto.civilizationStorage=r.civilizationStorage;
         switch(r.civilizationEvent.type){
             case CivilizationEventType::Gathered:
                 dto.civilizationIntent=CivilizationIntent::Gather;
