@@ -10,6 +10,7 @@ import {
   WORLD_GRID_CONTRACT,
 } from '../runtime/lifelens-contract';
 import { AtmosphereLayer } from './atmosphere-layer';
+import { GroundDetailLayer } from './ground-detail-layer';
 import { ResidentWorldLayer } from './resident-world-layer';
 import { createTerrainGeometryBuilder } from './terrain-geometry';
 import { VegetationLayer } from './vegetation-layer';
@@ -39,6 +40,7 @@ export class WorldScene {
 
   private readonly terrainGroup = new THREE.Group();
   private readonly terrainMeshes = new Map<string, TerrainMeshEntry>();
+  private readonly groundDetailLayer = new GroundDetailLayer();
   private readonly waterLayer = new WaterLayer();
   private readonly vegetationLayer = new VegetationLayer();
   private readonly residentLayer = new ResidentWorldLayer();
@@ -63,6 +65,7 @@ export class WorldScene {
 
   constructor() {
     this.scene.add(this.terrainGroup);
+    this.scene.add(this.groundDetailLayer.group);
     this.scene.add(this.waterLayer.group);
     this.scene.add(this.vegetationLayer.group);
     this.scene.add(this.residentLayer.group);
@@ -124,6 +127,7 @@ export class WorldScene {
       Math.min(1, wetness),
     );
     this.updateTerrainWeather();
+    this.groundDetailLayer.setWetness(this.surfaceWetness01);
   }
 
   setSimulationSpeed(speed: number): void {
@@ -215,6 +219,7 @@ export class WorldScene {
     };
 
     this.waterLayer.setTerrain(window);
+    this.groundDetailLayer.setTerrain(window);
     this.vegetationLayer.setTerrain(window);
 
     for (const chunk of window.chunks) {
@@ -265,6 +270,7 @@ export class WorldScene {
       entry.mesh.material.dispose();
     }
     this.terrainMeshes.clear();
+    this.groundDetailLayer.dispose();
     this.waterLayer.dispose();
     this.vegetationLayer.dispose();
     this.residentLayer.dispose();
@@ -288,6 +294,7 @@ export class WorldScene {
       color: baseColor,
       roughness: 0.92,
       metalness: 0,
+      vertexColors: true,
     });
     this.applyTerrainWeather(material, baseColor);
 
@@ -337,11 +344,47 @@ export class WorldScene {
       case 'Coast': return 0x276878;
       case 'Wetland': return 0x496e58;
       default:
-        if (chunk.elevation01 < 0.34) return 0x294b31;
-        if (chunk.elevation01 < 0.48) return 0x3b6439;
-        if (chunk.elevation01 < 0.62) return 0x64794a;
-        if (chunk.elevation01 < 0.76) return 0x807d5c;
-        return 0xaaa78f;
+        break;
     }
+
+    const elevation = Math.max(
+      0,
+      Math.min(1, Number(chunk.elevation01) || 0),
+    );
+    const grass = Math.max(
+      0,
+      Math.min(1, Number(chunk.grassCoverage01) || 0),
+    );
+    const forest = Math.max(
+      0,
+      Math.min(1, Number(chunk.forestCoverage01) || 0),
+    );
+    const rock = Math.max(
+      0,
+      Math.min(1, Number(chunk.rockCoverage01) || 0),
+    );
+    const moisture = Math.max(
+      0,
+      Math.min(1, Number(chunk.moisture01) || 0),
+    );
+
+    const base = new THREE.Color(
+      elevation < 0.34
+        ? 0x425339
+        : elevation < 0.5
+          ? 0x566246
+          : elevation < 0.68
+            ? 0x6f6d52
+            : 0x898476,
+    );
+    const green = new THREE.Color(0x3f5f35);
+    const earth = new THREE.Color(0x6a5a45);
+    const stone = new THREE.Color(0x77766d);
+
+    base.lerp(green, Math.min(0.42, grass * 0.28 + forest * 0.16));
+    base.lerp(earth, Math.min(0.2, (1 - moisture) * 0.14));
+    base.lerp(stone, Math.min(0.38, rock * 0.36));
+    base.multiplyScalar(0.92 + moisture * 0.08);
+    return base.getHex();
   }
 }
