@@ -1028,3 +1028,12 @@
 - User screenshot exposed an incorrect spherical hair fit that bone-follow-only tests missed. Removed those proxies and applied color to actual upper Head-weighted scalp vertices; face/neck remain skin, eyes darkened.
 - Old structural validator required the deleted proxy function. Updated guard to assert scalp coverage, isolated geometry and no spherical hair; gait guards unchanged.
 - Actual GLB and CPU close-up inspected previously, but no real-device acceptance claimed. Follow-up remains licensed body variants and device visual review.
+
+## 2026-09-26 — Terrain camera and water regression repair (#458)
+
+- Product merge `369f813047a333289a4425d103b92f76304ab9aa` after four exact-head CI checks passed.
+- Reproduced 9 failing camera/water cases on latest main: zero-height camera framing, chunk-origin jumps, downward water winding, mismatched river mouth level and missing seed cache invalidation. Ground camera in the existing elevation sampler, rebase smoothed pan, fix front faces/mouth levels/cache identity.
+- 11 presentation + 49 existing regressions pass, with typecheck/build and structural validators. No Core/character-context changes.
+- Web Preview 36247613583 and Pages deployment 36247646656 succeeded. gh-pages `eeac7553c45019a1b1b6545d09164576616a1753` publishes the product SHA. URL: https://sjlim91.github.io/lifelens-ue/?v=369f813
+- Live page loads its UI; this cloud browser reports disabled WebGL capability / Error creating WebGL context. No device visual acceptance or complete hydrology-quality claim.
+- Recovery/limitations: `tasks/WEB_CAMERA_WATER_REPAIR_2026-09-26.md`.

@@ -1,5 +1,16 @@
 # LifeLens Canonical Work State
 
+## 2026-09-26 CURRENT — Web camera / water repair integrated (#458)
+
+- Current Web product baseline: `369f813047a333289a4425d103b92f76304ab9aa`; preserves #452–457 environment/outfit/water/snow changes.
+- Terrain-grounded camera focus/eye clearance, streamed-origin pan continuity, water front faces, river-mouth level and WorldSeed cache invalidation repaired.
+- 60 web regression checks, typecheck/build and all four exact-head GitHub checks passed.
+- Web Preview run 36247613583 and Pages deployment 36247646656 succeeded; published branch `eeac7553c45019a1b1b6545d09164576616a1753` references the product merge.
+- Published URL: https://sjlim91.github.io/lifelens-ue/?v=369f813
+- Real-device visual acceptance remains OPEN. The cloud browser loads the published app but cannot create a WebGL context; CPU geometry/projection tests do not replace device review.
+- Open #423 resident context and #425 runtime provenance lanes remain separate. Scope released; recovery: `tasks/WEB_CAMERA_WATER_REPAIR_2026-09-26.md`.
+- Older dated lane snapshots below are historical; actual GitHub remains authoritative.
+
 > Actual GitHub `main` / PR / Actions is the highest-priority truth.
 >
 > Whole-source audit / current P0 fixes: `docs/SOURCE_AUDIT_2026-09-18.md`.
@@ -20,7 +31,7 @@
 >
 > Historical audit: `docs/INTEGRATED_AUDIT_2026-09-17.md` (point-in-time only; do not treat as live status).
 
-Last reconciled: **2026-09-21 KST after #370/#372/#373 merge; environment/graphics source audit reached the mandatory pre-character notification boundary**.
+Last reconciled: **2026-09-26 UTC for the Web repair above; other lane snapshots retain their original dates.**
 
 
 ## 2026-09-21 CURRENT — World Architecture v2 IMPLEMENTATION ACTIVE / W2-2 + W2-3

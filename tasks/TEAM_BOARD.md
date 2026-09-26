@@ -490,3 +490,9 @@ When explicitly resumed, prefer cached/fast smoke paths before long engine build
 
 - Branch: `work/web-scalp-fix-20260925`; appearance renderer, removal of hair call, character tests, structural validator.
 - Merged `d8fcd616a344833a0da13707c80be18d8c8638c4`; no active lock remains. #423 motion context remains separate.
+
+## 2026-09-26 Work Mode — Terrain camera / water repair / released: #458 merged
+
+- Branch: `work/web-current-repair-20260926`; world-scene, water-geometry/layer, presentation regression suite and existing Web CI.
+- Merged `369f813047a333289a4425d103b92f76304ab9aa`; no active lock remains.
+- Existing #423/#425 lanes and recent #452–457 work preserved. Device visual QA remains open.
