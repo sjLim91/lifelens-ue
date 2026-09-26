@@ -1,13 +1,13 @@
 # LifeLens Web Observer — Working State
 
-## 2026-09-27 CANONICAL CURRENT — main `523dccd8`
+## 2026-09-27 CANONICAL CURRENT — main `996c7bc0`
 
 This section supersedes older Web-current snapshots below while preserving them as historical context.
 
 ### Product/runtime
 - Web Observer is a first-class LifeLensCore client, not a separate simulation.
 - GitHub `main` is source truth; GitHub Pages is the checkable Web preview.
-- Current preview: https://sjlim91.github.io/lifelens-ue/?v=523dccd8
+- Current preview: https://sjlim91.github.io/lifelens-ue/?v=996c7bc0
 - AppDeploy is not used for LifeLens Web.
 - Core / World remains the sole authority for terrain, hydrology, residents, goals, targets, life events, facilities and persistent human traces.
 - Presentation may interpolate, LOD, label and animate authoritative facts; it may not invent durable world state or action meaning.
@@ -33,6 +33,12 @@ This section supersedes older Web-current snapshots below while preserving them 
   - social/teaching motion requires a real nearby resident target.
   - unsupported or ambiguous action semantics fail closed to Idle/Walk.
 
+### Social Cue v1 (#466)
+- active authoritative `Interacting` Social / KnowledgeTeaching / Parenting pairs can render a subtle bounded world-space connector.
+- `Avoid`, missing targets and duplicate reciprocal pairs do not create extra connectors.
+- cue density is capped and connectors render only while the smoothed actors are visually near.
+- the browser does not infer a relationship from relationship scores, emotions or memories.
+
 ### Deliberate gaps
 - Sleep has no accepted lie-down / sleep-loop / wake sequence yet.
 - TreeChopping_Loop is present in UAL2 but is not bound from `Wood` alone; Core must expose enough source/tool semantics first.
@@ -42,7 +48,7 @@ This section supersedes older Web-current snapshots below while preserving them 
 - Actual Android/mobile visual acceptance remains open; automated tests/CPU geometry checks do not replace device review.
 
 ### Current validated baseline
-For main `523dccd8`:
+For main `996c7bc0`:
 - Preflight — PASS.
 - Typecheck — PASS.
 - Web Runtime Release — PASS.
@@ -55,9 +61,10 @@ For main `523dccd8`:
 ### Immediate next work
 1. review UAL2 / compatible zero-cost clips for Sleep, Dig, Chop, Ground Gather and carry variants.
 2. bind only actions for which Core exposes enough authoritative semantics.
-3. Social Cue: make relationship/social change visible through behavior first, details second.
-4. Observer Director: surface important events without forcibly taking camera control.
-5. expand Human Trace only from persistent/accumulated Core facts.
+3. Social Cue v1 — DONE (#466).
+4. Observer Director — NEXT: surface important events without forcibly taking camera control.
+5. motion tranche 2 can continue only where clip semantics and Core authority are both sufficient.
+6. expand Human Trace only from persistent/accumulated Core facts.
 
 Canonical motion handoff: `tasks/WEB_MOTION_HANDOFF_2026-09-27.md`.
 
