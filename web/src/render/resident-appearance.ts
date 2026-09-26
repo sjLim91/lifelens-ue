@@ -7,7 +7,10 @@ export interface ResidentAppearanceProfile {
   widthScale: number;
   depthScale: number;
   garmentColor: number;
+  lowerGarmentColor: number;
+  shoeColor: number;
   garmentMix: number;
+  waistHeight01: number;
   skinLightnessShift: number;
   skinColor: number;
   hairStyle: number;
@@ -24,6 +27,24 @@ const GARMENT_PALETTE = [
   0x8a5067,
   0x2f746a,
   0x6e6654,
+] as const;
+
+const LOWER_GARMENT_PALETTE = [
+  0x263544,
+  0x49392f,
+  0x39463b,
+  0x4d4837,
+  0x3e384f,
+  0x4c3740,
+  0x2e4744,
+  0x4c4942,
+] as const;
+
+const SHOE_PALETTE = [
+  0x211f1d,
+  0x302923,
+  0x25272a,
+  0x3a3129,
 ] as const;
 
 const HAIR_PALETTE = [
@@ -98,6 +119,15 @@ export function createResidentAppearanceProfile(
     GARMENT_PALETTE.length - 1,
     Math.floor(hash01(seed, 37) * GARMENT_PALETTE.length),
   );
+  const lowerGarmentIndex = (
+    garmentIndex
+    + 2
+    + Math.floor(hash01(seed, 39) * (GARMENT_PALETTE.length - 2))
+  ) % LOWER_GARMENT_PALETTE.length;
+  const shoeIndex = Math.min(
+    SHOE_PALETTE.length - 1,
+    Math.floor(hash01(seed, 40) * SHOE_PALETTE.length),
+  );
   const hairIndex = Math.min(
     HAIR_PALETTE.length - 1,
     Math.floor(hash01(seed, 41) * HAIR_PALETTE.length),
@@ -109,7 +139,10 @@ export function createResidentAppearanceProfile(
     widthScale: sexWidthBias * widthVariation,
     depthScale: depthVariation,
     garmentColor: GARMENT_PALETTE[garmentIndex],
-    garmentMix: 0.64 + hash01(seed, 43) * 0.18,
+    lowerGarmentColor: LOWER_GARMENT_PALETTE[lowerGarmentIndex],
+    shoeColor: SHOE_PALETTE[shoeIndex],
+    garmentMix: 0.7 + hash01(seed, 43) * 0.18,
+    waistHeight01: 0.46 + hash01(seed, 45) * 0.1,
     skinLightnessShift: (hash01(seed, 47) - 0.5) * 0.055,
     skinColor: [0xe0b394, 0xc99573, 0xb47e5e, 0x946344, 0x704b38][
       Math.floor(hash01(seed, 61) * 5)
@@ -223,6 +256,8 @@ function applyBodyColors(
   const point = new THREE.Vector3();
   let headBottom = Infinity;
   let headTop = -Infinity;
+  let bodyBottom = Infinity;
+  let bodyTop = -Infinity;
   for (let vertex = 0; vertex < joints.count; vertex++) {
     for (let component = 0; component < 4; component++) {
       if (joints.getComponent(vertex, component) === headIndex) {
@@ -231,18 +266,23 @@ function applyBodyColors(
     }
     point.fromBufferAttribute(positions, vertex).applyMatrix4(mesh.matrixWorld);
     heights[vertex] = point.y;
+    bodyBottom = Math.min(bodyBottom, point.y);
+    bodyTop = Math.max(bodyTop, point.y);
     if (headWeights[vertex] > 0.5) {
       headBottom = Math.min(headBottom, point.y);
       headTop = Math.max(headTop, point.y);
     }
   }
   const headHeight = headTop - headBottom;
+  const bodyHeight = Math.max(0.0001, bodyTop - bodyBottom);
   const hairColor = new THREE.Color(profile.hairColor);
   // Color the actual skinned scalp, not a fixed-height sphere that can become
   // a collar when the imported rig changes pose. Keep face and neck uncovered.
   const hairline = 0.64 + profile.hairStyle * 0.025;
   const colors = new Float32Array(joints.count * 3);
-  const garment = new THREE.Color(profile.garmentColor);
+  const upperGarment = new THREE.Color(profile.garmentColor);
+  const lowerGarment = new THREE.Color(profile.lowerGarmentColor);
+  const shoe = new THREE.Color(profile.shoeColor);
   const skin = new THREE.Color(profile.skinColor);
   const color = new THREE.Color();
   for (let vertex = 0; vertex < joints.count; vertex++) {
@@ -252,10 +292,44 @@ function applyBodyColors(
         skinWeight += weights.getComponent(vertex, component);
       }
     }
-    color.copy(garment).lerp(skin, THREE.MathUtils.smoothstep(skinWeight, 0.25, 0.75));
-    if (headWeights[vertex] > 0.5 && Number.isFinite(headHeight) && headHeight > 0.0001) {
+    const bodyHeight01 = THREE.MathUtils.clamp(
+      (heights[vertex] - bodyBottom) / bodyHeight,
+      0,
+      1,
+    );
+    const shoeBlend = 1 - THREE.MathUtils.smoothstep(
+      bodyHeight01,
+      0.08,
+      0.15,
+    );
+    const lowerBlend = 1 - THREE.MathUtils.smoothstep(
+      bodyHeight01,
+      profile.waistHeight01 - 0.025,
+      profile.waistHeight01 + 0.035,
+    );
+
+    color.copy(upperGarment);
+    color.lerp(lowerGarment, lowerBlend);
+    color.lerp(shoe, shoeBlend);
+    color.lerp(
+      skin,
+      THREE.MathUtils.smoothstep(skinWeight, 0.25, 0.75),
+    );
+
+    if (
+      headWeights[vertex] > 0.5
+      && Number.isFinite(headHeight)
+      && headHeight > 0.0001
+    ) {
       const scalpHeight = (heights[vertex] - headBottom) / headHeight;
-      color.lerp(hairColor, THREE.MathUtils.smoothstep(scalpHeight, hairline, hairline + 0.05));
+      color.lerp(
+        hairColor,
+        THREE.MathUtils.smoothstep(
+          scalpHeight,
+          hairline,
+          hairline + 0.05,
+        ),
+      );
     }
     color.toArray(colors, vertex * 3);
   }

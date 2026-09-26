@@ -17,9 +17,10 @@ try {
     const styles = new Set(), colors = new Set();
     for (let i = 0; i < 1000; i++) {
       const p = profile({ id: `resident-${i}`, ageYears: 25, sex: i % 2 ? 'Male' : 'Female' });
-      for (const color of [p.garmentColor, p.hairColor, p.skinColor]) assert.ok(Number.isInteger(color) && color >= 0 && color <= 0xffffff);
+      for (const color of [p.garmentColor, p.lowerGarmentColor, p.shoeColor, p.hairColor, p.skinColor]) assert.ok(Number.isInteger(color) && color >= 0 && color <= 0xffffff);
       assert.ok(p.hairStyle >= 0 && p.hairStyle < 4);
-      assert.ok(p.garmentMix >= 0.64 && p.garmentMix <= 0.82);
+      assert.ok(p.garmentMix >= 0.70 && p.garmentMix <= 0.88);
+      assert.ok(p.waistHeight01 >= 0.46 && p.waistHeight01 <= 0.56);
       assert.ok(p.widthScale >= 0.8 && p.widthScale <= 1.18);
       assert.ok(p.heightWorldUnits >= 1.46 && p.heightWorldUnits <= 1.86);
       styles.add(p.hairStyle); colors.add(p.garmentColor);
@@ -31,11 +32,26 @@ try {
     const before = profile(resident); profile({ id: 'another' });
     assert.deepEqual(profile(resident), before);
   });
-  test('shared jade body gets separate skin and garment colors without changing other residents', () => {
+  test('shared jade body gets separate skin upper lower and shoe colors without changing other residents', () => {
     const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute([0,1,0, 0,0,0],3));
-    geometry.setAttribute('skinIndex', new THREE.Uint16BufferAttribute([0,0,0,0, 1,0,0,0],4));
-    geometry.setAttribute('skinWeight', new THREE.Float32BufferAttribute([1,0,0,0, 1,0,0,0],4));
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute([
+      0,3,0,
+      0,2.0,0,
+      0,0.9,0,
+      0,0,0,
+    ],3));
+    geometry.setAttribute('skinIndex', new THREE.Uint16BufferAttribute([
+      0,0,0,0,
+      1,0,0,0,
+      1,0,0,0,
+      1,0,0,0,
+    ],4));
+    geometry.setAttribute('skinWeight', new THREE.Float32BufferAttribute([
+      1,0,0,0,
+      1,0,0,0,
+      1,0,0,0,
+      1,0,0,0,
+    ],4));
     const shared = new THREE.MeshStandardMaterial({ color: 0x77a88d });
     const mesh = new THREE.SkinnedMesh(geometry, shared); mesh.name = 'SuperHero_Male';
     const head = new THREE.Bone(), pelvis = new THREE.Bone(); head.name = 'Head'; pelvis.name = 'pelvis';
@@ -45,9 +61,14 @@ try {
     assert.notEqual(mesh.geometry, geometry); assert.equal(geometry.getAttribute('color'), undefined);
     assert.notEqual(mesh.material, shared); assert.equal(mesh.material.vertexColors, true);
     const colors = mesh.geometry.getAttribute('color');
-    const skin = new THREE.Color(p.skinColor), garment = new THREE.Color(p.garmentColor);
+    const skin = new THREE.Color(p.skinColor);
+    const upper = new THREE.Color(p.garmentColor);
+    const lower = new THREE.Color(p.lowerGarmentColor);
+    const shoe = new THREE.Color(p.shoeColor);
     assert.ok(Math.abs(colors.getX(0)-skin.r) < 1e-6);
-    assert.ok(Math.abs(colors.getX(1)-garment.r) < 1e-6);
+    assert.ok(Math.abs(colors.getX(1)-upper.r) < 1e-6);
+    assert.ok(Math.abs(colors.getX(2)-lower.r) < 1e-6);
+    assert.ok(Math.abs(colors.getX(3)-shoe.r) < 1e-6);
     assert.equal(mesh.userData.residentOwnsGeometry, true);
   });
   test('scalp follows actual head vertices, with no separate collar geometry', () => {

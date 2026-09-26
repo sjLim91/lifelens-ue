@@ -71,7 +71,14 @@ for token in (
     "widthScale",
     "depthScale",
     "GARMENT_PALETTE",
-    "HAIR_PALETTE",
+    "LOWER_GARMENT_PALETTE",
+    "SHOE_PALETTE",
+    "lowerGarmentColor",
+    "shoeColor",
+    "waistHeight01",
+    "bodyHeight01",
+    "upperGarment",
+    "lowerGarment",
     "hairStyle",
     "gaitRateBias",
     "applyResidentMaterialVariant",
@@ -79,7 +86,7 @@ for token in (
     "headBottom",
     "headTop",
     "hairline",
-    "color.lerp(hairColor",
+    "hairColor,",
 ):
     assert token in appearance or token in resident, (
         f"missing resident appearance diversity token: {token}"
@@ -91,7 +98,7 @@ assert "const hueShift = ((variantSeed % 17) - 8) * 0.006;" not in resident, (
 
 assert "defaultMobileZoom: 2.3" in contract
 assert "maxZoom: 3.6" in contract
-assert "garmentMix: 0.64 + hash01(seed, 43) * 0.18" in appearance
+assert "garmentMix: 0.7 + hash01(seed, 43) * 0.18" in appearance
 
 # The scalp belongs to the skinned body. Fixed-height spherical proxies caused
 # the exposed-scalp/collar regression reported on a real device.
