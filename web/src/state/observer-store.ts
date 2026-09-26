@@ -8,6 +8,11 @@ import type {
   TerrainWindow,
   WorldOverview,
 } from '../runtime/core-types';
+import {
+  deriveObservationEvents,
+  mergeObservationEvents,
+  type ObservationEvent,
+} from './observation-feed';
 
 export type RuntimeStatus = 'loading' | 'ready' | 'error';
 
@@ -34,6 +39,7 @@ export interface ObserverSnapshot {
   runtime: RuntimeState;
   simulationSpeed: number;
   selectedResidentId: string | null;
+  observations: ObservationEvent[];
   revision: number;
 }
 
@@ -58,6 +64,7 @@ const INITIAL_STATE: ObserverSnapshot = {
   },
   simulationSpeed: SIMULATION_TIME_CONTRACT.defaultSpeed,
   selectedResidentId: null,
+  observations: [],
   revision: 0,
 };
 
@@ -73,16 +80,37 @@ class ObserverStore {
   };
 
   update(patch: Partial<Omit<ObserverSnapshot, 'revision'>>): void {
+    const nextWorld = patch.world ?? this.snapshot.world;
     const nextResidents = patch.residents ?? this.snapshot.residents;
     const selectedResidentId = this.snapshot.selectedResidentId
       && nextResidents.some((resident) => resident.id === this.snapshot.selectedResidentId)
       ? this.snapshot.selectedResidentId
       : null;
 
+    const worldChanged = (
+      this.snapshot.world.worldSeed !== undefined
+      && nextWorld.worldSeed !== undefined
+      && String(this.snapshot.world.worldSeed)
+        !== String(nextWorld.worldSeed)
+    );
+
+    const observations = worldChanged
+      ? []
+      : mergeObservationEvents(
+          deriveObservationEvents(
+            this.snapshot.world,
+            this.snapshot.residents,
+            nextWorld,
+            nextResidents,
+          ),
+          patch.observations ?? this.snapshot.observations,
+        );
+
     this.snapshot = {
       ...this.snapshot,
       ...patch,
       selectedResidentId,
+      observations,
       revision: this.snapshot.revision + 1,
     };
     this.emit();
@@ -133,6 +161,7 @@ class ObserverStore {
       environment: null,
       simulationSpeed: SIMULATION_TIME_CONTRACT.defaultSpeed,
       selectedResidentId: null,
+      observations: [],
       camera: {
         ...INITIAL_STATE.camera,
       },
