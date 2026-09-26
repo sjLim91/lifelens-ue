@@ -12,7 +12,10 @@ import {
 import { AtmosphereLayer } from './atmosphere-layer';
 import { GroundDetailLayer } from './ground-detail-layer';
 import { ResidentWorldLayer } from './resident-world-layer';
-import { createTerrainGeometryBuilder } from './terrain-geometry';
+import {
+  createTerrainElevationSampler,
+  createTerrainGeometryBuilder,
+} from './terrain-geometry';
 import { VegetationLayer } from './vegetation-layer';
 import { WaterLayer } from './water-layer';
 import { WeatherLayer } from './weather-layer';
@@ -50,6 +53,8 @@ export class WorldScene {
   private readonly atmosphere: AtmosphereLayer;
   private surfaceWetness01 = 0;
   private cameraInitialized = false;
+  private terrainWorldSeed: string | undefined;
+  private sampleGroundHeight: (x: number, z: number) => number = () => 0;
   private currentCameraState: WorldSceneCameraState = {
     centerChunkX: 0,
     centerChunkY: 0,
@@ -82,6 +87,19 @@ export class WorldScene {
   }
 
   setCamera(state: WorldSceneCameraState): void {
+    const current = this.currentCameraState;
+    const originChanged = current.centerChunkX !== state.centerChunkX
+      || current.centerChunkY !== state.centerChunkY;
+    if (this.cameraInitialized && originChanged) {
+      // Terrain/residents have already moved into the new local origin. Rebase
+      // the in-flight camera by the same amount before smoothing its new goal.
+      current.panX = (current.panX ?? 0)
+        + (current.centerChunkX - state.centerChunkX) * WORLD_GRID_CONTRACT.worldUnitsPerChunk;
+      current.panZ = (current.panZ ?? 0)
+        + (current.centerChunkY - state.centerChunkY) * WORLD_GRID_CONTRACT.worldUnitsPerChunk;
+      current.centerChunkX = state.centerChunkX;
+      current.centerChunkY = state.centerChunkY;
+    }
     this.desiredCameraState = {
       ...state,
       panX: Number(state.panX) || 0,
@@ -92,6 +110,8 @@ export class WorldScene {
       this.currentCameraState = { ...this.desiredCameraState };
       this.cameraInitialized = true;
       this.applyCamera(this.currentCameraState);
+    } else if (originChanged) {
+      this.applyCamera(current);
     }
   }
 
@@ -185,17 +205,45 @@ export class WorldScene {
     const groundRadius = Math.cos(elevation) * distance;
     const panX = Number(state.panX) || 0;
     const panZ = Number(state.panZ) || 0;
+    const focusHeight = this.sampleGroundHeight(panX, panZ);
+    const cameraX = Math.cos(state.angle) * groundRadius + panX;
+    const cameraZ = Math.sin(state.angle) * groundRadius + panZ;
 
     this.camera.position.set(
-      Math.cos(state.angle) * groundRadius + panX,
-      Math.sin(elevation) * distance,
-      Math.sin(state.angle) * groundRadius + panZ,
+      cameraX,
+      Math.max(
+        focusHeight + Math.sin(elevation) * distance,
+        this.sampleGroundHeight(cameraX, cameraZ) + 1.6,
+      ),
+      cameraZ,
     );
-    this.camera.lookAt(panX, 0, panZ);
+    this.camera.lookAt(panX, focusHeight, panZ);
     this.weatherLayer.setFocus(panX, panZ);
   }
 
   setTerrain(window: TerrainWindow): void {
+    if (
+      this.terrainWorldSeed !== undefined
+      && window.worldSeed !== undefined
+      && this.terrainWorldSeed !== window.worldSeed
+    ) {
+      this.cameraInitialized = false;
+    }
+    this.terrainWorldSeed = window.worldSeed;
+    const sampleElevation = createTerrainElevationSampler(window);
+    const chunkSize = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
+    this.sampleGroundHeight = (x, z) => {
+      // Terrain meshes are centered on their chunk; grid-cell positions start
+      // at its negative edge. Use that same half-chunk offset for the camera.
+      const chunkOffsetX = Math.floor(x / chunkSize + 0.5);
+      const chunkOffsetY = Math.floor(z / chunkSize + 0.5);
+      return sampleElevation(
+        window.centerChunkX + chunkOffsetX,
+        window.centerChunkY + chunkOffsetY,
+        x / chunkSize - chunkOffsetX + 0.5,
+        z / chunkSize - chunkOffsetY + 0.5,
+      ) * WORLD_GRID_CONTRACT.elevationScale;
+    };
     const active = new Set<string>();
     const buildGeometry = createTerrainGeometryBuilder(window, {
       chunkWorldSize: WORLD_GRID_CONTRACT.worldUnitsPerChunk,

@@ -13,6 +13,10 @@ on:
       - 'web/src/render/weather-layer.ts'
       - 'web/src/render/resident-appearance.ts'
       - 'web/src/render/resident-world-layer.ts'
+      - 'web/src/render/world-scene.ts'
+      - 'web/src/render/terrain-geometry.ts'
+      - 'web/src/render/water-*.ts'
+      - 'web/tests/presentation/**'
       - 'web/tests/characters/**'
       - 'web/tests/weather/**'
       - 'web/tests/runtime-resilience/**'
@@ -49,6 +53,8 @@ jobs:
         run: node web/tests/characters/run.mjs
       - name: Exercise touch gesture direction and transitions
         run: node web/tests/input/run.mjs
+      - name: Exercise terrain camera and water presentation
+        run: node web/tests/presentation/run.mjs
       - name: Build browser client
         working-directory: web
         run: npm run build

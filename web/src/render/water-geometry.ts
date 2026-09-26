@@ -348,8 +348,8 @@ export function buildOpenWaterSurfaceGeometry(
         for (let index = 1; index < polygon.length - 1; index += 1) {
           const triangle = [
             points[polygon[0]],
-            points[polygon[index]],
             points[polygon[index + 1]],
+            points[polygon[index]],
           ];
           for (const point of triangle) {
             positions.push(point.x, point.y, point.z);
@@ -408,6 +408,7 @@ function preferredFlowTarget(
   node: FlowNode,
   chunks: Map<string, TerrainChunk>,
   nodes: Map<string, FlowNode>,
+  openWaterNodes: Map<string, OpenWaterNode>,
   window: TerrainWindow,
   chunkWorldSize: number,
 ): FlowTarget | null {
@@ -449,10 +450,9 @@ function preferredFlowTarget(
     if (isOpenWaterSurfaceKind(neighbor.waterKind)) {
       const endX = node.x + dx * chunkWorldSize * 0.58;
       const endZ = node.z + dy * chunkWorldSize * 0.58;
-      const targetY = (
-        (Number(neighbor.elevation01) || 0)
-        * WORLD_GRID_CONTRACT.elevationScale
-      ) + 0.09;
+      // Coast elevation describes the bed, not the connected water level.
+      // Match the exact surface used by the receiving ocean/lake mesh.
+      const targetY = openWaterNodes.get(neighborKey)!.levelWorldY;
       const tie = hash01(
         `${window.worldSeed ?? '0'}:${node.key}:open:${dx}:${dy}`,
       );
@@ -485,6 +485,7 @@ function selectFlowEdges(
     window.chunks.map((chunk) => [key(chunk.x, chunk.y), chunk]),
   );
   const nodes = buildFlowNodes(window, chunkWorldSize);
+  const openWaterNodes = buildOpenWaterNodes(window);
   const proposals: FlowEdge[] = [];
 
   for (const node of nodes.values()) {
@@ -492,6 +493,7 @@ function selectFlowEdges(
       node,
       chunks,
       nodes,
+      openWaterNodes,
       window,
       chunkWorldSize,
     );
@@ -562,7 +564,7 @@ function appendDisc(
   }
 
   for (let index = 0; index < segments; index += 1) {
-    indices.push(base, base + index + 1, base + index + 2);
+    indices.push(base, base + index + 2, base + index + 1);
   }
 }
 
@@ -657,8 +659,8 @@ function appendCurvedRibbon(
     const nextRight = left + 3;
 
     indices.push(
-      left, nextLeft, right,
-      right, nextLeft, nextRight,
+      left, right, nextLeft,
+      right, nextRight, nextLeft,
     );
   }
 }
