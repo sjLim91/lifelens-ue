@@ -1,11 +1,11 @@
 # LifeLens Canonical Work State
 
-## 2026-09-27 CANONICAL CURRENT — Web observation chain + semantic motion integrated (#459–#465)
+## 2026-09-27 CANONICAL CURRENT — Web observation chain + social cues integrated (#459–#466)
 
 > This section overrides older dated Web-current sections below. Actual GitHub `main`, PRs and Actions remain the highest-priority truth.
 
-- Current Web product baseline: `523dccd8d1f72d0607e70a94926d676a649fafba` (#465).
-- Published GitHub Pages preview: https://sjlim91.github.io/lifelens-ue/?v=523dccd8
+- Current Web product baseline: `996c7bc059ab839f15dc69d3ee803c3974deed4a` (#466).
+- Published GitHub Pages preview: https://sjlim91.github.io/lifelens-ue/?v=996c7bc0
 - AppDeploy is not part of the LifeLens Web workflow. GitHub source + GitHub Pages are the canonical Web path.
 - Recent authoritative Web chain:
   - #459 — Core downstream hydrology projected to Web; browser-side flow guessing removed.
@@ -14,7 +14,8 @@
   - #463 — authoritative Human Trace read model for resource use, residue and started facility work.
   - #464 — conservative semantic motion mapping using already-pinned Quaternius UAL1 clips.
   - #465 — pinned Quaternius UAL2 added as fail-soft secondary Web motion library; authoritative Eat/Drink, PlantFood harvest and facility material-carry mappings added.
-- #465 validation on main:
+  - #466 — bounded in-world Social / KnowledgeTeaching / Parenting connectors from authoritative active interaction targets.
+- #466 baseline validation:
   - LifeLens Preflight — PASS.
   - Web Typecheck — PASS.
   - LifeLens Web Runtime Release — PASS.
@@ -30,9 +31,10 @@
   3. Human Trace v1 — DONE (#463).
   4. Semantic Motion v1/v2 — DONE (#464/#465).
   5. Motion tranche 2 — NEXT: only reviewed Sleep/Dig/Chop/Ground-Gather/Carry variants for which Core exposes enough authority.
-  6. Social Cue — NEXT after motion tranche.
-  7. Observer Director — after Social Cue.
-  8. Deeper Human Trace / lived paths / activity centers — requires authoritative accumulated Core facts; never browser-fabricated.
+  6. Social Cue v1 — DONE (#466).
+  7. Observer Director — NEXT.
+  8. Motion tranche 2 — continue in parallel only for reviewed/authoritative clips; do not block Observer Director on speculative asset work.
+  9. Deeper Human Trace / lived paths / activity centers — requires authoritative accumulated Core facts; never browser-fabricated.
 - Motion safety:
   - exact behavior/target facts come from Core.
   - unsupported actions fail closed to Idle/Walk.
@@ -44,7 +46,7 @@
   - older World-v2 / spawn-lane PRs must be re-evaluated against current main before any reuse.
 - Motion handoff: `tasks/WEB_MOTION_HANDOFF_2026-09-27.md`.
 
-Last reconciled: **2026-09-27 KST / main 523dccd8.**
+Last reconciled: **2026-09-27 KST / main 996c7bc0.**
 
 
 ## 2026-09-26 CURRENT — Web camera / water repair integrated (#458)
