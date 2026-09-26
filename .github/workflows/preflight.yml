@@ -131,6 +131,9 @@ jobs:
       - name: Validate World v2 observer water presentation
         run: python Tools/validate_world_v2_water_presentation.py
 
+      - name: Validate Web animated water surface
+        run: python Tools/validate_web_water_surface.py
+
 
       - name: Validate photoreal facility completion
         run: python Tools/validate_photoreal_facility_completion.py

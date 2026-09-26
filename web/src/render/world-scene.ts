@@ -97,11 +97,13 @@ export class WorldScene {
 
   setSimulationMinute(minute: number): void {
     this.atmosphere.setSimulationMinute(minute);
+    this.waterLayer.setSimulationMinute(minute);
   }
 
   setEnvironment(environment: DynamicEnvironment | null): void {
     this.atmosphere.setEnvironment(environment);
     this.weatherLayer.setEnvironment(environment);
+    this.waterLayer.setEnvironment(environment);
 
     const precipitation = Math.max(
       0,
@@ -173,6 +175,7 @@ export class WorldScene {
     this.applyCamera(current);
 
     this.residentLayer.update(deltaSeconds);
+    this.waterLayer.update(deltaSeconds);
     this.weatherLayer.update(deltaSeconds);
   }
 
