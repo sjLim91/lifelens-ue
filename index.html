@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0c120e" />
+    <title>LifeLens Web Observer</title>
+    <style>
+      html, body, #root { margin: 0; min-height: 100%; background: #08100b; color: #edf4ed; }
+      #lifelens-bootstrap {
+        min-height: 100svh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      #lifelens-bootstrap > div {
+        width: min(92vw, 560px);
+        display: grid;
+        gap: 10px;
+        text-align: center;
+      }
+      #lifelens-bootstrap strong { font-size: clamp(28px, 8vw, 44px); }
+      #lifelens-bootstrap span { color: #9fb4a4; line-height: 1.5; }
+      #lifelens-bootstrap small { color: #d19a8a; line-height: 1.5; white-space: pre-wrap; }
+    </style>
+    <script>
+      (() => {
+        const showFailure = (message) => {
+          const status = document.getElementById('lifelens-bootstrap-status');
+          const detail = document.getElementById('lifelens-bootstrap-error');
+          if (status) status.textContent = '앱 시작에 실패했습니다.';
+          if (detail) detail.textContent = String(message || '알 수 없는 시작 오류');
+        };
+
+        window.addEventListener('error', (event) => {
+          const target = event.target;
+          if (target && target.tagName === 'SCRIPT') {
+            showFailure('LifeLens JavaScript 파일을 불러오지 못했습니다. 새로고침하거나 최신 링크로 다시 접속해 주세요.');
+            return;
+          }
+          if (event.message) showFailure(event.message);
+        }, true);
+
+        window.addEventListener('unhandledrejection', (event) => {
+          const reason = event.reason;
+          showFailure(reason && reason.message ? reason.message : reason);
+        });
+
+        window.setTimeout(() => {
+          if (document.getElementById('lifelens-bootstrap')) {
+            const status = document.getElementById('lifelens-bootstrap-status');
+            if (status) status.textContent = '앱 시작이 지연되고 있습니다…';
+          }
+        }, 7000);
+      })();
+    </script>
+    <script type="module" crossorigin src="./assets/index-CdBZOL6Y.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-BEYSCnQl.css">
+  </head>
+  <body>
+    <div id="root">
+      <div id="lifelens-bootstrap">
+        <div>
+          <strong>LifeLens</strong>
+          <span id="lifelens-bootstrap-status">웹 옵저버를 시작하는 중…</span>
+          <small id="lifelens-bootstrap-error"></small>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
