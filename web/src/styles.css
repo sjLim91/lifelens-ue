@@ -411,6 +411,38 @@ button:disabled { opacity: .33; cursor: default; }
 
 
 /* Live observation cues: derived only from authoritative snapshot changes. */
+.human-trace-overlay {
+  position: absolute;
+  z-index: 5;
+  left: 16px;
+  bottom: 20px;
+  width: min(310px, calc(100% - 100px));
+  padding: 14px;
+  border: 1px solid #677660;
+  border-radius: 14px;
+  background: rgba(13, 23, 17, .95);
+  box-shadow: 0 8px 28px #0004;
+}
+.human-trace-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.human-trace-heading strong { font-size: .92rem; color: #eff3e7; }
+.human-trace-heading .human-trace-close { width: 36px; min-height: 36px; padding: 0; font-size: 1.25rem; }
+.human-trace-status { display: inline-block; margin-top: 6px; color: #d9bf84; font-size: .76rem; }
+.human-trace-status.trace-Facility { color: #a8d7c9; }
+.human-trace-detail p { font-size: .8rem; margin: 9px 0; color: #d9e1d5; }
+.human-trace-detail > small { display: block; margin-top: 6px; line-height: 1.55; color: #a5b09f; }
+.human-trace-list { display: grid; gap: 7px; }
+.human-trace-list .hint { margin: 0 0 5px; }
+.human-trace-item { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 12px; min-height: 54px; text-align: left; }
+.human-trace-item.selected { border-color: #bcaa6d; background: #313b26; }
+.human-trace-item strong { display: block; font-size: .8rem; }
+.human-trace-item small { display: block; color: #b0baab; font-size: .72rem; margin-top: 3px; }
+.human-trace-item > span:last-child { white-space: nowrap; font-size: .73rem; color: #d5d8b5; }
+.human-trace-list summary { padding: 12px 0; cursor: pointer; color: #b6c3b0; font-size: .78rem; }
+.human-trace-list details .human-trace-item { margin-bottom: 7px; }
+@media (max-width: 800px) {
+  .human-trace-overlay { left: 12px; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+}
+
 .observation-feed-overlay {
   position: absolute;
   z-index: 6;

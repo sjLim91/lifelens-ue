@@ -11,6 +11,7 @@ import {
 } from '../runtime/lifelens-contract';
 import { AtmosphereLayer } from './atmosphere-layer';
 import { GroundDetailLayer } from './ground-detail-layer';
+import { HumanTraceLayer } from './human-trace-layer';
 import { ResidentWorldLayer } from './resident-world-layer';
 import {
   createTerrainElevationSampler,
@@ -44,6 +45,7 @@ export class WorldScene {
   private readonly terrainGroup = new THREE.Group();
   private readonly terrainMeshes = new Map<string, TerrainMeshEntry>();
   private readonly groundDetailLayer = new GroundDetailLayer();
+  private readonly humanTraceLayer = new HumanTraceLayer();
   private readonly waterLayer = new WaterLayer();
   private readonly vegetationLayer = new VegetationLayer();
   private readonly residentLayer = new ResidentWorldLayer();
@@ -71,6 +73,7 @@ export class WorldScene {
   constructor() {
     this.scene.add(this.terrainGroup);
     this.scene.add(this.groundDetailLayer.group);
+    this.scene.add(this.humanTraceLayer.group);
     this.scene.add(this.waterLayer.group);
     this.scene.add(this.vegetationLayer.group);
     this.scene.add(this.residentLayer.group);
@@ -164,6 +167,18 @@ export class WorldScene {
 
   setSelectedResident(residentId: string | null): void {
     this.residentLayer.setSelectedResident(residentId);
+  }
+
+  pickHumanTrace(normalizedX: number, normalizedY: number): string | null {
+    this.camera.updateMatrixWorld();
+    this.pointer.set(normalizedX, normalizedY);
+    this.raycaster.setFromCamera(this.pointer, this.camera);
+    this.humanTraceLayer.group.updateMatrixWorld(true);
+    return this.humanTraceLayer.pickTrace(this.raycaster);
+  }
+
+  setSelectedHumanTrace(id: string | null): void {
+    this.humanTraceLayer.setSelectedTrace(id);
   }
 
   setResidents(
@@ -271,6 +286,7 @@ export class WorldScene {
 
     this.waterLayer.setTerrain(window);
     this.groundDetailLayer.setTerrain(window);
+    this.humanTraceLayer.setTerrain(window);
     this.vegetationLayer.setTerrain(window);
 
     for (const chunk of window.chunks) {
@@ -322,6 +338,7 @@ export class WorldScene {
     }
     this.terrainMeshes.clear();
     this.groundDetailLayer.dispose();
+    this.humanTraceLayer.dispose();
     this.waterLayer.dispose();
     this.vegetationLayer.dispose();
     this.residentLayer.dispose();

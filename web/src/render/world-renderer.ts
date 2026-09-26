@@ -82,6 +82,19 @@ export class WorldRenderer {
     this.world.setSelectedResident(residentId);
   }
 
+  pickHumanTrace(clientX: number, clientY: number): string | null {
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return null;
+    return this.world.pickHumanTrace(
+      ((clientX - rect.left) / rect.width) * 2 - 1,
+      -(((clientY - rect.top) / rect.height) * 2 - 1),
+    );
+  }
+
+  setSelectedHumanTrace(id: string | null): void {
+    this.world.setSelectedHumanTrace(id);
+  }
+
   setResidents(
     residents: Resident[],
     terrain: TerrainWindow,

@@ -20,6 +20,8 @@ import {
   ObservationFeedPanel,
 } from './ui/observation-feed';
 import { RenderModeControl } from './ui/render-mode-control';
+import { HumanTraceDetail, HumanTracePanel } from './ui/human-traces';
+import { visibleHumanTraces } from './state/human-traces';
 
 function Topbar() {
   const snapshot = useObserverSnapshot();
@@ -43,6 +45,8 @@ function WorldViewport({
   onToggleObserver: () => void;
 }) {
   const snapshot = useObserverSnapshot();
+  const selectedTrace = visibleHumanTraces(snapshot.terrain)
+    .find(trace => trace.id === snapshot.selectedHumanTraceId);
 
   return (
     <section className="world">
@@ -50,10 +54,14 @@ function WorldViewport({
       <canvas id="threeWorldCanvas" aria-label="LifeLens 3D 월드" />
       <canvas id="characterCanvas" aria-label="LifeLens 주민" />
       <WorldOverlay snapshot={snapshot} />
-      <ObservationFeedOverlay
+      {!selectedTrace && <ObservationFeedOverlay
         observations={snapshot.observations}
         onSelect={(residentId) => observerActions.selectResident(residentId)}
-      />
+      />}
+      {selectedTrace && !observerOpen && <div className="human-trace-overlay">
+        <HumanTraceDetail trace={selectedTrace} residents={snapshot.residents}
+          onClose={() => observerActions.selectHumanTrace(null)} />
+      </div>}
       <button
         className="observer-fab"
         type="button"
@@ -80,9 +88,11 @@ function WorldViewport({
 function ObserverPanel({
   mobileOpen,
   onToggleMobile,
+  onViewPlace,
 }: {
   mobileOpen: boolean;
   onToggleMobile: () => void;
+  onViewPlace: () => void;
 }) {
   const snapshot = useObserverSnapshot();
   const panelRef = useRef<HTMLElement>(null);
@@ -97,6 +107,8 @@ function ObserverPanel({
       (resident) => resident.id === snapshot.selectedResidentId,
     ) ?? null
     : null;
+  const selectedTrace = visibleHumanTraces(snapshot.terrain)
+    .find(trace => trace.id === snapshot.selectedHumanTraceId);
 
   const createWorld = (): void => {
     setSeedError(false);
@@ -127,11 +139,23 @@ function ObserverPanel({
         {mobileOpen ? '세계 보기' : '관찰 정보'}
       </button>
       <section className="panel">
-        <h2>선택한 삶</h2>
-        <SelectedResidentReadout
+        <h2>{selectedTrace ? '선택한 장소' : '선택한 삶'}</h2>
+        {selectedTrace ? <HumanTraceDetail
+          trace={selectedTrace} residents={snapshot.residents}
+          onClose={() => observerActions.selectHumanTrace(null)}
+        /> : <SelectedResidentReadout
           resident={selectedResident}
           onClear={() => observerActions.selectResident(null)}
-        />
+        />}
+      </section>
+
+      <section className="panel">
+        <h2>생활 흔적</h2>
+        <HumanTracePanel terrain={snapshot.terrain} selectedId={snapshot.selectedHumanTraceId}
+          onFocus={(id) => {
+            observerActions.selectHumanTrace(id, true);
+            onViewPlace();
+          }} />
       </section>
 
       <section className="panel">
@@ -262,6 +286,7 @@ export default function App() {
         <ObserverPanel
           mobileOpen={mobileObserverOpen}
           onToggleMobile={() => setMobileObserverOpen((open) => !open)}
+          onViewPlace={() => setMobileObserverOpen(false)}
         />
       </main>
     </div>

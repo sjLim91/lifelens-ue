@@ -206,5 +206,27 @@
       "Verify primary user-facing labels are Korean and mobile controls have usable touch targets inside safe areas"
     ],
     "expected": "A new deterministic world is created from an automatically generated WorldSeed. Seed entry is secondary replay/developer UI, not a requirement for normal New Game. User-facing observer labels default to Korean and mobile touch chrome respects the 48px/safe-area contract."
+  },
+  {
+    "name": "Inspect authoritative human traces in the world",
+    "sanity": false,
+    "viewport": "mobile",
+    "covers": [
+      "Core-owned resource depletion, residue and started construction",
+      "bounded terrain-grounded trace batch",
+      "trace picking and exact place focus",
+      "trace disappearance and world reset"
+    ],
+    "description": "Device visual QA for the Human Trace milestone; CPU tests do not substitute for this check.",
+    "steps": [
+      "Create a fresh world and verify no fabricated resource-use marks or facilities appear.",
+      "Let residents gather and live; open 생활 흔적 and verify entries correspond to actual Core changes.",
+      "Choose 보기 for a trace; verify the sheet closes and the camera moves to that exact site while preserving view direction.",
+      "Tap a ground trace and verify the Korean detail card is readable, can be dismissed and does not overlap the event feed.",
+      "Observe resource recovery, residue decay or a new world; verify expired marks and selections disappear.",
+      "Inspect sloping ground and pan across chunk borders; marks must stay attached to their location without jumps.",
+      "If a facility has real delivered materials or construction work, verify its state is shown with an observer ring, without a fabricated building model."
+    ],
+    "expected": "Only persisted Core consequences appear; picking, site focus and cleanup work on a WebGL-capable mobile browser. Actual device visual acceptance is recorded separately."
   }
 ]

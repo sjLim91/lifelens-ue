@@ -4,6 +4,7 @@ export interface ObserverActionHandlers {
   moveObserver: (dx: number, dy: number) => void;
   recenterObserver: () => void;
   selectResident: (residentId: string | null) => void;
+  selectHumanTrace: (id: string | null, focus?: boolean) => void;
 }
 
 class ObserverActions {
@@ -35,6 +36,10 @@ class ObserverActions {
 
   selectResident(residentId: string | null): void {
     this.handlers?.selectResident(residentId);
+  }
+
+  selectHumanTrace(id: string | null, focus = false): void {
+    this.handlers?.selectHumanTrace(id, focus);
   }
 
   get ready(): boolean {
