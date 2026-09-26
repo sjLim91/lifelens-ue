@@ -53,13 +53,49 @@ function relationshipMap(
 }
 
 function activitySignature(resident: Resident): string {
+  const context = resident.actionContext;
   return [
     resident.activityKind ?? '',
     resident.activityLabel ?? '',
     resident.activityTargetId ?? '',
     resident.physicalGoal ?? '',
     resident.socialIntent ?? '',
+    context?.active ? 'active' : '',
+    context?.kind ?? '',
+    context?.targetResidentId ?? '',
+    context?.hasSpatialTarget ? 'spatial' : '',
+    context?.targetGridX ?? '',
+    context?.targetGridY ?? '',
   ].join('|');
+}
+
+function actionContextDetail(resident: Resident): string | undefined {
+  const context = resident.actionContext;
+  if (!context?.active) return undefined;
+
+  const labels: Record<string, string> = {
+    Social: '사회 상호작용',
+    Civilization: '생활/작업',
+    Parenting: '돌봄',
+    KnowledgeTeaching: '가르침',
+  };
+  const label = context.kind
+    ? labels[context.kind] ?? context.kind
+    : '실행 맥락';
+
+  if (
+    context.hasSpatialTarget
+    && Number.isFinite(context.targetGridX)
+    && Number.isFinite(context.targetGridY)
+  ) {
+    return `${label} · 목표 위치 ${context.targetGridX}, ${context.targetGridY}`;
+  }
+
+  if (context.targetResidentId && context.targetResidentId !== '0') {
+    return `${label} · 주민 대상 행동`;
+  }
+
+  return label;
 }
 
 function sameWorld(
@@ -279,6 +315,7 @@ function activityEvent(
   if (!label) return null;
 
   const target = resident.activityTargetName?.trim();
+  const contextDetail = actionContextDetail(resident);
   return {
     id: [
       'activity',
@@ -287,6 +324,9 @@ function activityEvent(
       resident.activityKind ?? '',
       label,
       resident.activityTargetId ?? '',
+      resident.actionContext?.kind ?? '',
+      resident.actionContext?.targetGridX ?? '',
+      resident.actionContext?.targetGridY ?? '',
     ].join(':'),
     kind: 'activity',
     minute,
@@ -295,7 +335,9 @@ function activityEvent(
     summary: target
       ? `${resident.name}: ${label} → ${target}`
       : `${resident.name}: ${label}`,
+    detail: contextDetail,
     importance: resident.activityKind === 'Social'
+      || resident.actionContext?.active
       ? 'medium'
       : 'low',
   };
