@@ -35,6 +35,10 @@ const { resolveResidentSemanticMotion } = load(resolve(
   import.meta.dirname,
   '../../src/render/resident-semantic-motion.ts',
 ));
+const { residentSocialCuePairs } = load(resolve(
+  import.meta.dirname,
+  '../../src/render/resident-social-cues.ts',
+));
 
 const resident = (extra = {}) => ({
   id: 'a',
@@ -292,6 +296,155 @@ testCase('movement always keeps locomotion ownership', () => {
     physicalGoal: 'UseToilet',
     designatedSanitationSite: true,
   }, { moving: true, nearbyResident: false }), 'walk');
+});
+
+
+
+testCase('social cues require an authoritative interacting resident target', () => {
+  const pairs = residentSocialCuePairs([
+    resident({
+      id: 'a',
+      presentation: {
+        active: true,
+        kind: 'Social',
+        phase: 'Interacting',
+        socialIntent: 'Comfort',
+        targetResidentId: 'b',
+      },
+    }),
+    { id: 'b', name: '하린' },
+  ]);
+
+  assert.equal(pairs.length, 1);
+  assert.deepEqual(pairs[0], {
+    key: 'a<>b',
+    sourceId: 'a',
+    targetId: 'b',
+    kind: 'Social',
+  });
+});
+
+testCase('moving, avoiding and missing-target residents do not draw social links', () => {
+  const baseTarget = { id: 'b', name: '하린' };
+
+  assert.equal(residentSocialCuePairs([
+    resident({
+      presentation: {
+        active: true,
+        kind: 'Social',
+        phase: 'Moving',
+        socialIntent: 'Approach',
+        targetResidentId: 'b',
+      },
+    }),
+    baseTarget,
+  ]).length, 0);
+
+  assert.equal(residentSocialCuePairs([
+    resident({
+      presentation: {
+        active: true,
+        kind: 'Social',
+        phase: 'Interacting',
+        socialIntent: 'Avoid',
+        targetResidentId: 'b',
+      },
+    }),
+    baseTarget,
+  ]).length, 0);
+
+  assert.equal(residentSocialCuePairs([
+    resident({
+      presentation: {
+        active: true,
+        kind: 'Social',
+        phase: 'Interacting',
+        socialIntent: 'Comfort',
+        targetResidentId: 'missing',
+      },
+    }),
+    baseTarget,
+  ]).length, 0);
+});
+
+testCase('teaching and parenting interactions are factual social cue sources', () => {
+  const pairs = residentSocialCuePairs([
+    resident({
+      id: 'a',
+      presentation: {
+        active: true,
+        kind: 'KnowledgeTeaching',
+        phase: 'Interacting',
+        targetResidentId: 'b',
+      },
+    }),
+    {
+      id: 'b',
+      name: '하린',
+      presentation: {
+        active: true,
+        kind: 'Parenting',
+        phase: 'Interacting',
+        parentingAction: 'Educate',
+        targetResidentId: 'c',
+      },
+    },
+    { id: 'c', name: '서윤' },
+  ]);
+
+  assert.deepEqual(
+    pairs.map((pair) => pair.kind),
+    ['KnowledgeTeaching', 'Parenting'],
+  );
+});
+
+testCase('reciprocal interactions render one bounded connector per pair', () => {
+  const pairs = residentSocialCuePairs([
+    resident({
+      id: 'a',
+      presentation: {
+        active: true,
+        kind: 'Social',
+        phase: 'Interacting',
+        socialIntent: 'Repair',
+        targetResidentId: 'b',
+      },
+    }),
+    resident({
+      id: 'b',
+      name: '하린',
+      presentation: {
+        active: true,
+        kind: 'Social',
+        phase: 'Interacting',
+        socialIntent: 'Comfort',
+        targetResidentId: 'a',
+      },
+    }),
+  ], 12);
+
+  assert.equal(pairs.length, 1);
+  assert.equal(pairs[0].key, 'a<>b');
+});
+
+testCase('social cue count is capped for future larger populations', () => {
+  const many = [];
+  for (let index = 0; index < 20; index += 1) {
+    many.push({
+      id: 's' + index,
+      name: 'S' + index,
+      presentation: {
+        active: true,
+        kind: 'Social',
+        phase: 'Interacting',
+        socialIntent: 'Approach',
+        targetResidentId: 't' + index,
+      },
+    });
+    many.push({ id: 't' + index, name: 'T' + index });
+  }
+
+  assert.equal(residentSocialCuePairs(many, 5).length, 5);
 });
 
 console.log(passed + ' action-context regression checks passed');

@@ -27,6 +27,9 @@ resident_layer = (
 semantic_motion = (
     root / "web/src/render/resident-semantic-motion.ts"
 ).read_text(encoding="utf-8")
+social_cues = (
+    root / "web/src/render/resident-social-cues.ts"
+).read_text(encoding="utf-8")
 
 for token in (
     "PresentationActionKind",
@@ -108,4 +111,41 @@ assert "presentation.facilityAction === 'Work'" in semantic_motion
 assert "presentation.facilityAction === 'Repair'" in semantic_motion
 assert "actor.activityLabel === 'Talk'" not in resident_layer
 
-print("LifeLens web authoritative action context: PASS")
+# Social/teaching/parenting world connectors are a pure projection of an
+# authoritative active Interacting directive plus a real target resident.
+# Relationships, emotions, memories or browser-side intent heuristics never
+# create a link.
+for token in (
+    "presentation.phase !== 'Interacting'",
+    "presentation.kind !== 'Social'",
+    "presentation.kind !== 'KnowledgeTeaching'",
+    "presentation.kind !== 'Parenting'",
+    "presentation.socialIntent === 'Avoid'",
+    "!residentIds.has(targetId)",
+    "seenPairs",
+    "maxPairs = 12",
+):
+    assert token in social_cues, f"missing factual social cue guard: {token}"
+
+for forbidden in (
+    ".relationships",
+    ".emotion",
+    ".memories",
+    "Math.random(",
+):
+    assert forbidden not in social_cues, (
+        f"social cue must not infer interaction from browser state: {forbidden}"
+    )
+
+for token in (
+    "socialConnectors",
+    "residentSocialCuePairs(residents)",
+    "horizontalDistance > 4.5",
+    "THREE.DynamicDrawUsage",
+    "depthWrite: false",
+):
+    assert token in resident_layer, (
+        f"missing bounded world social cue rendering token: {token}"
+    )
+
+print("LifeLens web authoritative action context and social cues: PASS")

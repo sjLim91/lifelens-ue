@@ -24,6 +24,10 @@ import {
   resolveResidentSemanticMotion,
   type ResidentSemanticMotion,
 } from './resident-semantic-motion';
+import {
+  residentSocialCuePairs,
+  type ResidentSocialCueKind,
+} from './resident-social-cues';
 import { residentToWorldPosition } from './resident-world-coordinates';
 
 const BASE_MODEL_COMMIT = 'ddd5fc34a445bcded3cf9836607aaeebc19a5c78';
@@ -49,6 +53,13 @@ interface ResidentActionCueSprite {
   texture: THREE.CanvasTexture;
   canvas: HTMLCanvasElement;
   text: string;
+}
+
+interface ResidentSocialConnector {
+  line: THREE.Line<THREE.BufferGeometry, THREE.LineBasicMaterial>;
+  sourceId: string;
+  targetId: string;
+  kind: ResidentSocialCueKind;
 }
 
 interface ResidentActor {
@@ -172,6 +183,8 @@ export class ResidentWorldLayer {
 
   private readonly loader = new GLTFLoader();
   private readonly actors = new Map<string, ResidentActor>();
+  private readonly socialConnectors =
+    new Map<string, ResidentSocialConnector>();
   private readonly selectionRing = new THREE.Mesh(
     new THREE.RingGeometry(0.62, 0.84, 36),
     new THREE.MeshBasicMaterial({
@@ -341,6 +354,8 @@ export class ResidentWorldLayer {
 
       actor.root.visible = true;
     }
+
+    this.syncSocialConnectors(residents);
   }
 
   setSimulationSpeed(speed: number): void {
@@ -463,10 +478,18 @@ export class ResidentWorldLayer {
       actor.mixer.update(dt);
     }
 
+    this.updateSocialConnectors();
     this.updateSelectionRing();
   }
 
   dispose(): void {
+    for (const connector of this.socialConnectors.values()) {
+      this.group.remove(connector.line);
+      connector.line.geometry.dispose();
+      connector.line.material.dispose();
+    }
+    this.socialConnectors.clear();
+
     for (const actor of this.actors.values()) {
       actor.root.traverse((object) => {
         if (!(object instanceof THREE.Mesh)) return;
@@ -487,6 +510,146 @@ export class ResidentWorldLayer {
     this.selectionRing.geometry.dispose();
     const selectionMaterial = this.selectionRing.material;
     if (!Array.isArray(selectionMaterial)) selectionMaterial.dispose();
+  }
+
+  private socialCueColor(kind: ResidentSocialCueKind): number {
+    switch (kind) {
+      case 'KnowledgeTeaching': return 0xc8dbe5;
+      case 'Parenting': return 0xe4d7bb;
+      case 'Social':
+      default: return 0xc9dbc8;
+    }
+  }
+
+  private createSocialConnector(
+    sourceId: string,
+    targetId: string,
+    kind: ResidentSocialCueKind,
+  ): ResidentSocialConnector {
+    const geometry = new THREE.BufferGeometry();
+    const positions = new THREE.Float32BufferAttribute(
+      new Float32Array(9),
+      3,
+    );
+    positions.setUsage(THREE.DynamicDrawUsage);
+    geometry.setAttribute('position', positions);
+
+    const material = new THREE.LineBasicMaterial({
+      color: this.socialCueColor(kind),
+      transparent: true,
+      opacity: 0.46,
+      depthWrite: false,
+      depthTest: true,
+      toneMapped: false,
+    });
+    const line = new THREE.Line(geometry, material);
+    line.renderOrder = 6;
+    line.frustumCulled = false;
+    line.visible = false;
+    this.group.add(line);
+
+    return {
+      line,
+      sourceId,
+      targetId,
+      kind,
+    };
+  }
+
+  private syncSocialConnectors(residents: Resident[]): void {
+    const pairs = residentSocialCuePairs(residents);
+    const activeKeys = new Set(pairs.map((pair) => pair.key));
+
+    for (const pair of pairs) {
+      const existing = this.socialConnectors.get(pair.key);
+      if (existing) {
+        existing.sourceId = pair.sourceId;
+        existing.targetId = pair.targetId;
+        if (existing.kind !== pair.kind) {
+          existing.kind = pair.kind;
+          existing.line.material.color.setHex(
+            this.socialCueColor(pair.kind),
+          );
+        }
+        continue;
+      }
+
+      this.socialConnectors.set(
+        pair.key,
+        this.createSocialConnector(
+          pair.sourceId,
+          pair.targetId,
+          pair.kind,
+        ),
+      );
+    }
+
+    for (const [key, connector] of this.socialConnectors) {
+      if (activeKeys.has(key)) continue;
+      this.group.remove(connector.line);
+      connector.line.geometry.dispose();
+      connector.line.material.dispose();
+      this.socialConnectors.delete(key);
+    }
+
+    this.updateSocialConnectors();
+  }
+
+  private updateSocialConnectors(): void {
+    for (const connector of this.socialConnectors.values()) {
+      const source = this.actors.get(connector.sourceId);
+      const target = this.actors.get(connector.targetId);
+
+      if (
+        !source?.root.visible
+        || !target?.root.visible
+        || !source.initialized
+        || !target.initialized
+      ) {
+        connector.line.visible = false;
+        continue;
+      }
+
+      const horizontalDistance = Math.hypot(
+        target.current.x - source.current.x,
+        target.current.z - source.current.z,
+      );
+      if (horizontalDistance > 4.5 || horizontalDistance < 0.08) {
+        connector.line.visible = false;
+        continue;
+      }
+
+      const sourceY = source.current.y + 1.18;
+      const targetY = target.current.y + 1.18;
+      const midpointLift = Math.min(
+        0.42,
+        0.18 + horizontalDistance * 0.08,
+      );
+
+      const positions = connector.line.geometry.getAttribute(
+        'position',
+      ) as THREE.BufferAttribute;
+      positions.setXYZ(
+        0,
+        source.current.x,
+        sourceY,
+        source.current.z,
+      );
+      positions.setXYZ(
+        1,
+        (source.current.x + target.current.x) * 0.5,
+        ((sourceY + targetY) * 0.5) + midpointLift,
+        (source.current.z + target.current.z) * 0.5,
+      );
+      positions.setXYZ(
+        2,
+        target.current.x,
+        targetY,
+        target.current.z,
+      );
+      positions.needsUpdate = true;
+      connector.line.visible = true;
+    }
   }
 
   private updateSelectionRing(): void {
