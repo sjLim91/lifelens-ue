@@ -26,7 +26,7 @@ export class WaterLayer {
     depthWrite: true,
     depthTest: true,
     dithering: true,
-    side: THREE.DoubleSide,
+    side: THREE.FrontSide,
   });
   private readonly openWaterMesh = new THREE.Mesh(
     new THREE.BufferGeometry(),
@@ -43,7 +43,7 @@ export class WaterLayer {
     depthWrite: true,
     depthTest: true,
     dithering: true,
-    side: THREE.DoubleSide,
+    side: THREE.FrontSide,
   });
   private readonly flowWaterMesh = new THREE.Mesh(
     new THREE.BufferGeometry(),
@@ -66,6 +66,7 @@ export class WaterLayer {
 
   setTerrain(window: TerrainWindow): void {
     const signature = [
+      window.worldSeed ?? '0',
       window.centerChunkX,
       window.centerChunkY,
       ...window.chunks.map((chunk) => (
