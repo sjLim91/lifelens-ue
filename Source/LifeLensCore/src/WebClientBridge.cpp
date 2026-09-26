@@ -445,6 +445,8 @@ std::string WebClientBridge::residentsJson() const
             simulation_->observeFamily(resident.id);
         const ResidentPresentationObservation presentation =
             simulation_->observeResidentPresentation(resident.id);
+        const ResidentCivilizationObservation civilization =
+            simulation_->observeResidentCivilization(resident.id);
 
         const TraitProfile traits = character
             ? deriveTraitProfile(character->personality, character->genetics)
@@ -530,8 +532,17 @@ std::string WebClientBridge::residentsJson() const
         out << "\"socialIntent\":\"" << socialIntentName(presentation.socialIntent) << "\",";
         out << "\"civilizationIntent\":\"" << civilizationIntentName(presentation.civilizationIntent) << "\",";
         out << "\"civilizationMaterial\":\"" << materialName(presentation.civilizationMaterial) << "\",";
+        out << "\"civilizationItem\":\"" << itemKindName(presentation.civilizationItem) << "\",";
+        out << "\"civilizationTechnique\":\"" << techniqueIdName(presentation.civilizationTechnique) << "\",";
+        out << "\"civilizationQuantity\":" << presentation.civilizationQuantity << ",";
+        out << "\"civilizationResourceNode\":\"" << presentation.civilizationResourceNode << "\",";
+        out << "\"civilizationStorage\":\"" << presentation.civilizationStorage << "\",";
         out << "\"facilityAction\":\"" << facilityBuildActionName(presentation.facilityAction) << "\",";
+        out << "\"facilityId\":\"" << presentation.facilityId << "\",";
+        out << "\"facilityKind\":\"" << traceFacilityName(presentation.facilityKind) << "\",";
         out << "\"parentingAction\":\"" << parentingActionName(presentation.parentingAction) << "\",";
+        out << "\"knowledgeTeachingTechnique\":\"" << techniqueIdName(presentation.knowledgeTeachingTechnique) << "\",";
+        out << "\"issuedMinute\":" << presentation.issuedMinute << ",";
         out << "\"targetResidentId\":\"" << presentation.targetResidentId << "\",";
         out << "\"hasTargetGrid\":" << (presentation.hasTargetGrid ? "true" : "false") << ",";
         out << "\"targetGridX\":" << presentation.targetGrid.x << ",";
@@ -614,6 +625,49 @@ std::string WebClientBridge::residentsJson() const
         out << "\"order\":"; appendDouble(out, preferences.order);
         out << "},";
 
+        out << "\"civilization\":{";
+        out << "\"totalInventoryUnits\":" << civilization.totalInventoryUnits << ",";
+        out << "\"gatheringSkill\":"; appendDouble(out, civilization.gatheringSkill); out << ",";
+        out << "\"craftingSkill\":"; appendDouble(out, civilization.craftingSkill); out << ",";
+        out << "\"learningSkill\":"; appendDouble(out, civilization.learningSkill); out << ",";
+        out << "\"knownTechniqueCount\":" << civilization.knownTechniqueCount << ",";
+        out << "\"reproducibleTechniqueCount\":" << civilization.reproducibleTechniqueCount << ",";
+        out << "\"latestKnowledgeMinute\":" << civilization.latestKnowledgeMinute << ",";
+        out << "\"latestTechnique\":\"" << techniqueIdName(civilization.latestTechnique) << "\",";
+        out << "\"inventory\":[";
+        for (std::size_t i = 0; i < civilization.inventory.size(); ++i) {
+            if (i != 0) out << ",";
+            const CivilizationItemObservation& item = civilization.inventory[i];
+            out << "{";
+            out << "\"item\":\"" << itemKindName(item.item) << "\",";
+            out << "\"material\":\"" << traceMaterialName(item.material) << "\",";
+            out << "\"quantity\":" << item.quantity << ",";
+            out << "\"quality\":"; appendDouble(out, item.quality); out << ",";
+            out << "\"durability\":"; appendDouble(out, item.durability);
+            out << "}";
+        }
+        out << "],";
+        out << "\"techniques\":[";
+        for (std::size_t i = 0; i < civilization.techniques.size(); ++i) {
+            if (i != 0) out << ",";
+            const CivilizationTechniqueObservation& technique = civilization.techniques[i];
+            out << "{";
+            out << "\"technique\":\"" << techniqueIdName(technique.technique) << "\",";
+            out << "\"level\":\"" << knowledgeLevelName(technique.level) << "\",";
+            out << "\"confidence\":"; appendDouble(out, technique.confidence); out << ",";
+            out << "\"successfulUses\":" << technique.successfulUses << ",";
+            out << "\"hasProvenance\":" << (technique.hasProvenance ? "true" : "false") << ",";
+            out << "\"factId\":\"" << technique.factId << "\",";
+            out << "\"originResidentId\":\"" << technique.originResidentId << "\",";
+            out << "\"immediateSourceId\":\"" << technique.immediateSourceId << "\",";
+            out << "\"source\":\"" << civilizationKnowledgeSourceName(technique.source) << "\",";
+            out << "\"learnedMinute\":" << technique.learnedMinute << ",";
+            out << "\"hopCount\":" << technique.hopCount;
+            out << "}";
+        }
+        out << "]";
+        out << "},";
+
         out << "\"relationships\":[";
         for (std::size_t i = 0; i < relationships.size(); ++i) {
             if (i != 0) out << ",";
@@ -669,6 +723,32 @@ std::string WebClientBridge::residentsJson() const
         out << "\"children\":"; appendFamilyMembers(family.children); out << ",";
         out << "\"siblings\":"; appendFamilyMembers(family.siblings);
         out << "},";
+
+        out << "\"lifeHistory\":[";
+        if (character) {
+            const std::size_t historyCount = character->lifeHistory.size();
+            const std::size_t firstHistory = historyCount > 16
+                ? historyCount - 16
+                : 0;
+            bool firstHistoryEntry = true;
+            for (std::size_t i = firstHistory; i < historyCount; ++i) {
+                if (!firstHistoryEntry) out << ",";
+                firstHistoryEntry = false;
+                const LifeHistoryEntry& event = character->lifeHistory[i];
+                out << "{";
+                out << "\"type\":\"" << lifeEventName(event.type) << "\",";
+                out << "\"minute\":" << event.minute << ",";
+                out << "\"relatedCharacterIds\":[";
+                for (std::size_t j = 0; j < event.relatedCharacters.size(); ++j) {
+                    if (j != 0) out << ",";
+                    out << "\"" << event.relatedCharacters[j] << "\"";
+                }
+                out << "],";
+                out << "\"value\":" << event.value;
+                out << "}";
+            }
+        }
+        out << "],";
 
         out << "\"memories\":[";
         for (std::size_t i = 0; i < memories.size(); ++i) {
