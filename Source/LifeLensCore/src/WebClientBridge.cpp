@@ -218,6 +218,111 @@ const char* memorySourceName(MemorySource source)
     return "Inferred";
 }
 
+const char* itemKindName(ItemKind kind)
+{
+    switch(kind){
+        case ItemKind::RawMaterial: return "RawMaterial";
+        case ItemKind::SharpFlake: return "SharpFlake";
+        case ItemKind::StoneCuttingTool: return "StoneCuttingTool";
+        case ItemKind::Cordage: return "Cordage";
+        case ItemKind::SimpleContainer: return "SimpleContainer";
+        case ItemKind::FuelBundle: return "FuelBundle";
+        case ItemKind::DiggingStick: return "DiggingStick";
+        case ItemKind::StoneHammer: return "StoneHammer";
+    }
+    return "RawMaterial";
+}
+
+const char* techniqueIdName(TechniqueId technique)
+{
+    switch(technique){
+        case TechniqueId::SharpFlake: return "SharpFlake";
+        case TechniqueId::ChippedStoneTool: return "ChippedStoneTool";
+        case TechniqueId::FireMaking: return "FireMaking";
+        case TechniqueId::FiberCordage: return "FiberCordage";
+        case TechniqueId::SimpleContainer: return "SimpleContainer";
+        case TechniqueId::DesignatedSanitationArea: return "DesignatedSanitationArea";
+        case TechniqueId::DugSanitationPit: return "DugSanitationPit";
+        case TechniqueId::PrimitiveStorage: return "PrimitiveStorage";
+        case TechniqueId::DiggingStick: return "DiggingStick";
+        case TechniqueId::StoneHammer: return "StoneHammer";
+        case TechniqueId::CopperSmelting: return "CopperSmelting";
+        case TechniqueId::None:
+        default: return "None";
+    }
+}
+
+const char* knowledgeLevelName(KnowledgeLevel level)
+{
+    switch(level){
+        case KnowledgeLevel::Observed: return "Observed";
+        case KnowledgeLevel::Hypothesized: return "Hypothesized";
+        case KnowledgeLevel::Understood: return "Understood";
+        case KnowledgeLevel::Reproducible: return "Reproducible";
+        case KnowledgeLevel::Practiced: return "Practiced";
+        case KnowledgeLevel::Mastered: return "Mastered";
+        case KnowledgeLevel::Unknown:
+        default: return "Unknown";
+    }
+}
+
+const char* civilizationKnowledgeSourceName(CivilizationKnowledgeSource source)
+{
+    switch(source){
+        case CivilizationKnowledgeSource::SelfDiscovery: return "SelfDiscovery";
+        case CivilizationKnowledgeSource::DirectWitness: return "DirectWitness";
+        case CivilizationKnowledgeSource::Teaching: return "Teaching";
+        case CivilizationKnowledgeSource::Unknown:
+        default: return "Unknown";
+    }
+}
+
+const char* socialEventTypeName(SocialEventType type)
+{
+    switch(type){
+        case SocialEventType::PositiveInteraction: return "PositiveInteraction";
+        case SocialEventType::Help: return "Help";
+        case SocialEventType::Comfort: return "Comfort";
+        case SocialEventType::Conflict: return "Conflict";
+        case SocialEventType::Betrayal: return "Betrayal";
+        case SocialEventType::Rejection: return "Rejection";
+        case SocialEventType::Apology: return "Apology";
+        case SocialEventType::Intimacy: return "Intimacy";
+        case SocialEventType::Commitment: return "Commitment";
+    }
+    return "PositiveInteraction";
+}
+
+const char* socialPresentationLevelName(SocialPresentationLevel level)
+{
+    switch(level){
+        case SocialPresentationLevel::Everyday: return "Everyday";
+        case SocialPresentationLevel::Meaningful: return "Meaningful";
+        case SocialPresentationLevel::Important: return "Important";
+    }
+    return "Everyday";
+}
+
+const char* sanitationSiteKindName(PrimitiveSanitationSiteKind kind)
+{
+    switch(kind){
+        case PrimitiveSanitationSiteKind::DesignatedArea: return "DesignatedArea";
+        case PrimitiveSanitationSiteKind::DugPit: return "DugPit";
+    }
+    return "DesignatedArea";
+}
+
+const char* seasonSummaryName(SeasonSummary season)
+{
+    switch(season){
+        case SeasonSummary::Spring: return "Spring";
+        case SeasonSummary::Summer: return "Summer";
+        case SeasonSummary::Autumn: return "Autumn";
+        case SeasonSummary::Winter: return "Winter";
+    }
+    return "Spring";
+}
+
 const char* precipitationTypeName(PrecipitationType type)
 {
     switch (type) {
