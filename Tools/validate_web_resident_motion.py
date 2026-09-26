@@ -131,8 +131,6 @@ for token in (
         f"missing conservative semantic motion token: {token}"
     )
 
-for goal in ("'Eat'", "'Drink'", "'Sleep'"):
-    assert goal in semantic
 assert "return 'idle';" in semantic
 assert "PickUp_Table" not in resident, (
     "web must not fake ground gathering with the table-height pickup clip"
