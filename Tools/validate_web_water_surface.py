@@ -4,66 +4,64 @@ from pathlib import Path
 root = Path(__file__).resolve().parents[1]
 layer = (root / "web/src/render/water-layer.ts").read_text(encoding="utf-8")
 geometry = (root / "web/src/render/water-geometry.ts").read_text(encoding="utf-8")
-scene = (root / "web/src/render/world-scene.ts").read_text(encoding="utf-8")
-vegetation = (root / "web/src/render/vegetation-layer.ts").read_text(encoding="utf-8")
-ground = (root / "web/src/render/ground-detail-layer.ts").read_text(encoding="utf-8")
+types = (root / "web/src/runtime/core-types.ts").read_text(encoding="utf-8")
+bridge = (
+    root / "Source/LifeLensCore/src/WebClientBridge.cpp"
+).read_text(encoding="utf-8")
 
 for token in (
-    "buildOpenWaterSurfaceGeometry",
-    "MARCHING_POLYGONS",
-    "buildOpenWaterNodes",
-    "componentByKey",
-    "OPEN_WATER_KINDS",
-    "buildFlowWaterSurfaceGeometry",
-    "preferredFlowTarget",
-    "selectFlowEdges",
-    "incoming",
-    "outgoing",
-    "undirectedEdges",
-    "appendCurvedRibbon",
-    "vertexColors: true",
+    "flowPotential",
+    "drainageAccumulationPotential",
+    "hasDownstream",
+    "downstreamChunkX",
+    "downstreamChunkY",
 ):
-    assert token in geometry or token in layer, f"missing continuous-water token: {token}"
+    assert token in types, f"web TerrainChunk missing authoritative hydrology field: {token}"
+    assert token in bridge, f"Core terrain JSON missing authoritative hydrology field: {token}"
 
-assert "chunkWorldSize * 0.96" not in geometry
-assert "chunkWorldSize * 1.02" not in geometry
-assert "openWaterMesh" in layer
-assert "openWaterMaterial" in layer
-assert "flowWaterMesh" in layer
-assert "flowWaterMaterial" in layer
-assert "transparent: false" in layer
-assert "depthWrite: true" in layer
-assert "Wetland" not in geometry[geometry.index("OPEN_WATER_KINDS"):geometry.index("FLOW_WATER_KINDS")]
+# The browser must not reconstruct a fake drainage graph from arbitrary adjacent
+# water chunks. It consumes the exact downstream relation emitted by Core.
+for token in (
+    "authoritativeFlowTarget",
+    "node.chunk.hasDownstream !== true",
+    "node.chunk.downstreamChunkX",
+    "node.chunk.downstreamChunkY",
+    "buildOpenWaterSurfaceGeometry",
+    "buildFlowWaterSurfaceGeometry",
+    "appendCurvedRibbon",
+):
+    assert token in geometry, f"missing authoritative water projection token: {token}"
 
 for forbidden in (
-    "waterAvailability +=",
-    "chunks.push(",
-    "Math.random(",
+    "preferredFlowTarget",
+    "incoming = new Set",
+    "outgoing = new Set",
+    "undirectedEdges",
     "const directions = connected.length > 0",
+    "Math.random(",
 ):
+    assert forbidden not in geometry, (
+        f"browser-side hydrology inference/regression returned: {forbidden}"
+    )
 
-    assert forbidden not in layer
-    assert forbidden not in geometry
+# Older runtimes may omit the new fields. In that case the browser hides
+# uncertain channel segments rather than guessing a direction.
+assert "chunk.hasDownstream === true" in geometry
+assert "Number(chunk.drainageAccumulationPotential) || 0" in geometry
+assert "drainage >= 0.24" in geometry
+assert "availability >= 0.5" in geometry
 
-for token in (
-    "chunk.waterKind === 'Ocean'",
-    "chunk.waterKind === 'Coast'",
-    "chunk.waterKind === 'Lake'",
-    "chunk.waterKind === 'River'",
-    "chunk.waterKind === 'Stream'",
-    "chunk.waterKind === 'Spring'",
-):
-    assert token in vegetation, f"trees may leak into water: {token}"
+# Width comes from the same Core hydrology presentation formula scale rather
+# than arbitrary percentages of the whole chunk.
+assert "WORLD_UNITS_PER_GRID_CELL" in geometry
+assert "2.75 * availability" in geometry
+assert "1.35 * availability" in geometry
+assert "0.85 * availability" in geometry
 
-assert "chunk.waterKind === 'Coast'" in ground
-assert "case 'Coast': return 0x66705a" in scene
+# Open water stays stable and opaque while the channel repair is isolated.
+assert "openWaterMesh" in layer
+assert "flowWaterMesh" in layer
+assert "transparent: false" in layer
+assert "depthWrite: true" in layer
 
-assert "flowWidth(chunk.waterKind, chunkWorldSize)" in geometry
-assert "chunkWorldSize * 0.14" in geometry
-assert "chunkWorldSize * 0.065" in geometry
-assert "chunkWorldSize * 0.038" in geometry
-assert "edges.push(proposal)" in geometry
-assert "if (incoming.has(targetKey)) continue" in geometry
-assert "if (outgoing.has(proposal.source.key)) continue" in geometry
-
-print("LifeLens web continuous water and natural flow network: PASS")
+print("LifeLens web authoritative hydrology projection: PASS")
