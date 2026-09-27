@@ -9,6 +9,7 @@ import {
   formatFacilityState,
   formatMaterial,
   formatPercent,
+  formatSanitationSiteKind,
   formatTechnique,
 } from './observer-format';
 
@@ -189,7 +190,7 @@ export function WorldActivityPanel({
             onClick={() => onFocusGrid(site.gridX, site.gridY)}
           >
             <strong>
-              {site.kind === 'DugPit' ? '위생 구덩이' : '지정 위생 구역'}
+              {formatSanitationSiteKind(site.kind)}
             </strong>
             <span className="observation-event-detail">
               이용 {site.useCount}회 · 위치 보기
