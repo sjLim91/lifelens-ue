@@ -180,6 +180,51 @@ export interface ResidentFamily {
   siblings?: ResidentFamilyMember[];
 }
 
+export interface ResidentHouseholdResponsibilities {
+  cooking?: number;
+  cleaning?: number;
+  shopping?: number;
+  maintenance?: number;
+  caregiving?: number;
+}
+
+export interface ResidentHouseholdMember {
+  id: string;
+  name?: string;
+  contributionWeight?: number;
+  responsibilities?: ResidentHouseholdResponsibilities;
+}
+
+export interface ResidentHousehold {
+  id: string;
+  homeObjectId?: string;
+  resources?: number;
+  sharedMoney?: number;
+  sharedObjectIds?: string[];
+  members?: ResidentHouseholdMember[];
+}
+
+export type ResidentPregnancyStage =
+  | 'FirstTrimester'
+  | 'SecondTrimester'
+  | 'ThirdTrimester'
+  | 'Due'
+  | 'Completed';
+
+export interface ResidentPregnancy {
+  role?: 'GestationalParent' | 'GeneticPartner';
+  gestationalParentId?: string;
+  geneticPartnerId?: string;
+  stage?: ResidentPregnancyStage | string;
+  conceptionMinute?: number;
+  dueMinute?: number;
+  lastUpdateMinute?: number;
+  health?: number;
+  fatigue?: number;
+  stress?: number;
+  nutrition?: number;
+}
+
 export interface ResidentMemory {
   who?: string;
   sourceCharacter?: string;
@@ -360,6 +405,8 @@ export interface Resident {
   civilization?: ResidentCivilization;
   relationships?: ResidentRelationship[];
   family?: ResidentFamily;
+  household?: ResidentHousehold | null;
+  pregnancy?: ResidentPregnancy | null;
   lifeHistory?: ResidentLifeEvent[];
   memories?: ResidentMemory[];
   beliefs?: ResidentBelief[];
