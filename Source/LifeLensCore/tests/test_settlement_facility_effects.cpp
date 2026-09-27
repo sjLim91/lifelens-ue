@@ -73,7 +73,8 @@ static GridPos findHarshUnblockedPosition(const World& world)
         }};
         for(const ChunkCoord coord:candidates){
             const GridPos pos=chunkOriginGrid(coord);
-            if(settlementFacilitySiteBlocked(world,pos)) continue;
+            if(settlementFacilitySiteBlocked(
+                world,pos,FacilityKind::Shelter)) continue;
             const EnvironmentalConsequenceProfile consequence=
                 deriveEnvironmentalConsequences(
                     deriveDynamicEnvironment(

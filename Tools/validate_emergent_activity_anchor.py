@@ -62,8 +62,8 @@ assert "executeCivilizationDecisionAtPosition(\n                    world_,actor
 for token in (
     "const GridPos emergentCenter{layoutCenter.x+12,layoutCenter.y};",
     "FacilityKind::Shelter,emergentCenter",
-    "CHECK(manhattan(clustered.pos,emergentCenter)<=10);",
-    "CHECK(manhattan(clustered.pos,layoutCenter)>=6);",
+    "CHECK(manhattan(clustered.pos,emergentCenter)<=16);",
+    "CHECK(!facilityFootprintsConflict(",
 ):
     assert token in regression, f"spawn-independence regression missing: {token}"
 

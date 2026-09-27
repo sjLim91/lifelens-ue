@@ -80,6 +80,56 @@ inline bool validFacilityState(FacilityState state)
         && static_cast<int>(state) <= static_cast<int>(FacilityState::Ruined);
 }
 
+inline int facilityFootprintRadiusGrid(FacilityKind kind)
+{
+    switch(kind){
+        case FacilityKind::PrimitiveStorage: return 5;
+        case FacilityKind::FirePit: return 4;
+        case FacilityKind::WorkSurface: return 4;
+        case FacilityKind::SleepingPlace: return 5;
+        case FacilityKind::Shelter: return 7;
+        case FacilityKind::Furnace: return 4;
+        default: return 4;
+    }
+}
+
+inline int facilityPairSafetyClearanceGrid(FacilityKind planned,FacilityKind existing)
+{
+    const bool plannedHeat=
+        planned==FacilityKind::FirePit || planned==FacilityKind::Furnace;
+    const bool existingHeat=
+        existing==FacilityKind::FirePit || existing==FacilityKind::Furnace;
+    const bool plannedSleep=
+        planned==FacilityKind::SleepingPlace || planned==FacilityKind::Shelter;
+    const bool existingSleep=
+        existing==FacilityKind::SleepingPlace || existing==FacilityKind::Shelter;
+
+    // Fire/heat infrastructure must remain outside the immediate sleeping and
+    // shelter footprint. Other pairs retain a one-cell circulation margin.
+    if((plannedHeat && existingSleep) || (existingHeat && plannedSleep)) return 4;
+    if(plannedHeat && existingHeat) return 2;
+    return 1;
+}
+
+inline int facilityMinimumCenterDistanceGrid(FacilityKind planned,FacilityKind existing)
+{
+    return facilityFootprintRadiusGrid(planned)
+        +facilityFootprintRadiusGrid(existing)
+        +facilityPairSafetyClearanceGrid(planned,existing);
+}
+
+inline bool facilityFootprintsConflict(
+    FacilityKind planned,
+    GridPos plannedPos,
+    FacilityKind existing,
+    GridPos existingPos)
+{
+    const long long dx=static_cast<long long>(plannedPos.x)-existingPos.x;
+    const long long dy=static_cast<long long>(plannedPos.y)-existingPos.y;
+    const long long minimum=facilityMinimumCenterDistanceGrid(planned,existing);
+    return dx*dx+dy*dy<minimum*minimum;
+}
+
 inline bool facilityProvidesStorage(FacilityKind kind)
 {
     return kind == FacilityKind::PrimitiveStorage;

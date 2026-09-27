@@ -32,6 +32,9 @@ jobs:
       - name: Validate emergent activity anchor
         run: python Tools/validate_emergent_activity_anchor.py
 
+      - name: Validate facility footprint spacing
+        run: python Tools/validate_facility_footprint_spacing.py
+
       - name: Validate observer projection needs
         run: python Tools/validate_observer_projection_needs.py
 

@@ -255,13 +255,14 @@ int main()
         chooseSettlementFacilitySite(
             layout,planner.id,FacilityKind::Shelter,emergentCenter);
     CHECK(clustered.available);
-    // Immediate overlap is forbidden (<=2). Terrain authority may now prefer a
-    // slightly farther site, but the new foundation must remain a local cluster
-    // and never occupy an authoritative surface-water footprint.
-    CHECK(manhattan(clustered.pos,anchorFacility.pos)>=3);
-    CHECK(manhattan(clustered.pos,anchorFacility.pos)<=8);
-    CHECK(manhattan(clustered.pos,emergentCenter)<=10);
-    CHECK(manhattan(clustered.pos,layoutCenter)>=6);
+    // Functional affinity may still cluster related facilities, but the
+    // physical footprint contract is a hard boundary: "near" must never mean
+    // interpenetrating structures.
+    CHECK(!facilityFootprintsConflict(
+        FacilityKind::Shelter,clustered.pos,
+        anchorFacility.kind,anchorFacility.pos));
+    CHECK(manhattan(clustered.pos,anchorFacility.pos)<=20);
+    CHECK(manhattan(clustered.pos,emergentCenter)<=16);
     const HydrologyFacts clusteredWater=deriveHydrologyFacts(
         layout.genesisIdentity(),
         chunkCoordForGrid(clustered.pos));
