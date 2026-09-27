@@ -140,6 +140,9 @@ jobs:
       - name: Validate Web resident truth details
         run: python Tools/validate_web_resident_truth_details.py
 
+      - name: Validate Web Korean-only UI contract
+        run: python Tools/validate_web_korean_ui.py
+
       - name: Validate World v2 observer streaming interest
         run: python Tools/validate_world_v2_streaming_interest.py
 
