@@ -233,6 +233,18 @@ export function SelectedResidentReadout({
   };
 
   const family = resident.family;
+  const household = resident.household;
+  const pregnancy = resident.pregnancy;
+  const pregnancyStageLabels: Record<string, string> = {
+    FirstTrimester: '임신 1기',
+    SecondTrimester: '임신 2기',
+    ThirdTrimester: '임신 3기',
+    Due: '출산 예정',
+    Completed: '종료',
+  };
+  const ownHouseholdMember = household?.members?.find(
+    (member) => member.id === resident.id,
+  );
   const partner = family?.hasActivePartner && family.partnerName
     ? `${family.partnerName} · ${formatPartnerStage(family.partnerStage)}`
     : '현재 파트너 없음';
@@ -375,6 +387,42 @@ export function SelectedResidentReadout({
                 <b>{kinshipLabels[member.kinship ?? ''] ?? member.kinship ?? '가족'}</b>
               </span>
             ))}
+          </div>
+        ) : null}
+        {household ? (
+          <div className="focused-life-chips">
+            <span>가구 <b>#{household.id}</b></span>
+            <span>구성원 <b>{household.members?.length ?? 0}</b></span>
+            <span>공동 자원 <b>{Math.round(Number(household.resources) || 0)}</b></span>
+            <span>공동 자금 <b>{Math.round(Number(household.sharedMoney) || 0)}</b></span>
+            {ownHouseholdMember
+              ? (
+                  <span>
+                    가구 기여 <b>{formatPercent(ownHouseholdMember.contributionWeight)}</b>
+                  </span>
+                )
+              : null}
+            {ownHouseholdMember?.responsibilities?.caregiving
+              ? (
+                  <span>
+                    돌봄 역할 <b>{formatPercent(ownHouseholdMember.responsibilities.caregiving)}</b>
+                  </span>
+                )
+              : null}
+          </div>
+        ) : null}
+        {pregnancy ? (
+          <div className="focused-life-chips">
+            <span>
+              임신 단계 <b>{pregnancyStageLabels[pregnancy.stage ?? ''] ?? pregnancy.stage ?? '확인 중'}</b>
+            </span>
+            {pregnancy.dueMinute !== undefined
+              ? <span>출산 예정 <b>{formatDay(pregnancy.dueMinute)}</b></span>
+              : null}
+            <span>임신 건강 <b>{formatPercent(pregnancy.health)}</b></span>
+            <span>영양 <b>{formatPercent(pregnancy.nutrition)}</b></span>
+            <span>피로 <b>{formatPercent(pregnancy.fatigue)}</b></span>
+            <span>스트레스 <b>{formatPercent(pregnancy.stress)}</b></span>
           </div>
         ) : null}
       </div>

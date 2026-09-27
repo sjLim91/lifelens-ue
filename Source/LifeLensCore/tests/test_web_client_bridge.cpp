@@ -46,6 +46,8 @@ int main()
     assert(residents.find("\"family\":{") != std::string::npos);
     assert(residents.find("\"hasRomanceHistory\":") != std::string::npos);
     assert(residents.find("\"isGestationalParent\":") != std::string::npos);
+    assert(residents.find("\"household\":") != std::string::npos);
+    assert(residents.find("\"pregnancy\":") != std::string::npos);
     assert(residents.find("\"memories\":[") != std::string::npos);
     assert(residents.find("\"beliefs\":[") != std::string::npos);
     assert(residents.find("\"lifeStage\":") != std::string::npos);
