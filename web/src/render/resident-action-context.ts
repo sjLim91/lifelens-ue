@@ -7,7 +7,7 @@ import {
   formatObjectKind,
   formatParentingAction,
   formatSocialIntent,
-} from '../ui/observer-format';
+} from '../localization/korean';
 
 export interface ResidentActionCue {
   text: string;
