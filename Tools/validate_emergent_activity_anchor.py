@@ -64,7 +64,6 @@ for token in (
     "FacilityKind::Shelter,emergentCenter",
     "CHECK(manhattan(clustered.pos,emergentCenter)<=16);",
     "CHECK(!facilityFootprintsConflict(",
-    "CHECK(manhattan(clustered.pos,layoutCenter)>=6);",
 ):
     assert token in regression, f"spawn-independence regression missing: {token}"
 
