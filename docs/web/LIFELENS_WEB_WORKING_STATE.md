@@ -1,13 +1,13 @@
 # LifeLens Web Observer — Working State
 
-## 2026-09-27 CANONICAL CURRENT — main `996c7bc0`
+## 2026-09-27 CANONICAL CURRENT — main `c2e7a766`
 
 This section supersedes older Web-current snapshots below while preserving them as historical context.
 
 ### Product/runtime
 - Web Observer is a first-class LifeLensCore client, not a separate simulation.
 - GitHub `main` is source truth; GitHub Pages is the checkable Web preview.
-- Current preview: https://sjlim91.github.io/lifelens-ue/?v=996c7bc0
+- Current preview: https://sjlim91.github.io/lifelens-ue/?v=c2e7a766
 - AppDeploy is not used for LifeLens Web.
 - Core / World remains the sole authority for terrain, hydrology, residents, goals, targets, life events, facilities and persistent human traces.
 - Presentation may interpolate, LOD, label and animate authoritative facts; it may not invent durable world state or action meaning.
@@ -39,16 +39,31 @@ This section supersedes older Web-current snapshots below while preserving them 
 - cue density is capped and connectors render only while the smoothed actors are visually near.
 - the browser does not infer a relationship from relationship scores, emotions or memories.
 
+### Observer Director / resident truth / world activity (#469–#471)
+- **Observer Director (#469):** important authoritative events may be surfaced for observation without forcibly stealing camera control.
+- **Focused resident truth (#470):** genetics, life condition, development, family/kinship, life history, memories, beliefs and civilization knowledge/inventory are exposed in focused inspection.
+- **World activity observation (#471):** civilization resources, storages, facilities, discoveries and sanitation sites are sampled on a bounded low-rate path and exposed as inspectable factual activity.
+- the first heavy world payload does not replay old history as new events.
+
+### Spawn-independent lived world (#474/#475)
+- **Core emergent activity anchor (#474):** storage, fire, furnace and settlement facility placement follows authoritative resident/activity positions rather than the NEW GAME spawn coordinate.
+- **Unreal natural presentation (#475):** spawn/camera readability no longer creates a permanent ecology clearing; vegetation/resource thinning is facility-local only.
+- #474 and #475 supersede the stale conflicting #472/#473 attempts. #472/#473 were closed without merge.
+
+### Household / pregnancy truth (#476)
+- focused resident inspection now carries authoritative household shared resources/assets, member contribution/responsibility facts, and active pregnancy role/stage/timing/health/fatigue/stress/nutrition.
+- residents may legitimately have `household: null` or `pregnancy: null`; presentation must not invent either state.
+
 ### Deliberate gaps
 - Sleep has no accepted lie-down / sleep-loop / wake sequence yet.
 - TreeChopping_Loop is present in UAL2 but is not bound from `Wood` alone; Core must expose enough source/tool semantics first.
 - Ground gather, digging and more carry/build variants require reviewed clips plus authoritative action facts.
 - Human Trace v1 does not yet fabricate worn paths, settlements or activity centers from browser heuristics.
-- Social Cue and Observer Director remain open.
+- Full romance history, extended genealogy/birth-record inspection and deeper lived-space accumulation remain follow-up observer expansions; they must come from Core facts rather than browser inference.
 - Actual Android/mobile visual acceptance remains open; automated tests/CPU geometry checks do not replace device review.
 
 ### Current validated baseline
-For main `996c7bc0`:
+For main `c2e7a766` after #476:
 - Preflight — PASS.
 - Typecheck — PASS.
 - Web Runtime Release — PASS.
@@ -62,7 +77,7 @@ For main `996c7bc0`:
 1. review UAL2 / compatible zero-cost clips for Sleep, Dig, Chop, Ground Gather and carry variants.
 2. bind only actions for which Core exposes enough authoritative semantics.
 3. Social Cue v1 — DONE (#466).
-4. Observer Director — NEXT: surface important events without forcibly taking camera control.
+4. Observer Director — DONE (#469); keep camera follow opt-in rather than forced.
 5. motion tranche 2 can continue only where clip semantics and Core authority are both sufficient.
 6. expand Human Trace only from persistent/accumulated Core facts.
 
@@ -91,7 +106,7 @@ This file records implementation status only. It must not override canonical des
 - LifeLensCore C++ WASM remains simulation authority.
 - Three World is the normal integrated terrain/water/vegetation/resident presentation path; Legacy Canvas remains an emergency presentation fallback only.
 - One Three.js world coordinate system is used for Three World terrain, water, vegetation and residents.
-- Core-backed focused resident detail exposes needs, emotion, personality/traits, directional relationships, family, memories and beliefs.
+- Core-backed focused resident detail exposes needs, emotion, personality/traits, genetics, life condition, development, directional relationships, family/kinship, household facts, pregnancy state, life history, memories, beliefs and civilization knowledge.
 - Dynamic weather presentation consumes Core weather state.
 - Resident continuity prevents transient payload gaps from destroying actors.
 - Normal NEW GAME generates a WorldSeed automatically. Explicit Seed entry is secondary deterministic replay UI.
@@ -138,7 +153,7 @@ Web presentation must not manufacture geography.
 - Vegetation placement may use deterministic presentation hashes from Core ecology coverage, but tree ground height uses the same authoritative elevation sampler as terrain/residents.
 - Hydrology topology comes from Core observations.
 - Observer movement requests different deterministic Core windows instead of revealing a decorated finite board.
-- The initial spawn coordinate is not a settlement or permanent living-area authority.
+- The initial spawn coordinate is not a settlement or permanent living-area authority. Core facility placement follows lived activity (#474), and Unreal ecology readability is facility-local rather than spawn-centered (#475).
 
 More detailed continuous surface sampling, regional/planetary representation and persistent human world deltas remain World v2 follow-up work.
 
