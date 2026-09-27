@@ -10,6 +10,15 @@ import type {
   WorldObjectsPayload,
   WorldOverview,
 } from '../runtime/core-types';
+import {
+  formatActivity,
+  formatFacilityKind,
+  formatFacilityState,
+  formatLocationText,
+  formatMaterial,
+  formatMemoryText,
+  formatTechnique,
+} from '../localization/korean';
 
 export type ObservationKind =
   | 'activity'
@@ -197,8 +206,8 @@ function newMemoryEvent(
     residentName: resident.name,
     summary: `${resident.name}에게 중요한 기억이 남음`,
     detail: [
-      candidate.what || '새로운 기억',
-      candidate.where || '',
+      formatMemoryText(candidate.what),
+      formatLocationText(candidate.where),
     ].filter(Boolean).join(' · '),
     importance: clamp01(candidate.importance) >= 0.75
       ? 'high'
@@ -346,7 +355,7 @@ function exactSocialEvents(
     const actorName = names.get(event.actorId) || event.actorId;
     const targetName = names.get(event.targetId) || event.targetId;
     const detail = [
-      event.where?.trim() || '',
+      formatLocationText(event.where),
       `강도 ${percent(event.intensity)}`,
     ].filter(Boolean).join(' · ');
 
@@ -517,7 +526,7 @@ function exactCivilizationEvents(
       minute: Number(discovery.minute) || minute,
       residentId: discovery.discovererId || undefined,
       residentName: discovererName,
-      summary: `${discovererName}가 ${discovery.technique || '새 기술'} 지식을 발견함`,
+      summary: `${discovererName}가 ${formatTechnique(discovery.technique)} 지식을 발견함`,
       detail: discovery.livingKnowerCount > 1
         ? `현재 ${discovery.livingKnowerCount}명이 알고 있음`
         : '아직 개인 지식에 가까움',
@@ -538,8 +547,8 @@ function exactCivilizationEvents(
         minute: Number(facility.startedMinute) || minute,
         residentId: workerId || undefined,
         residentName: workerId ? names.get(workerId) : undefined,
-        summary: `${facility.kind || '시설'} 작업이 시작됨`,
-        detail: facility.state || undefined,
+        summary: `${formatFacilityKind(facility.kind)} 작업이 시작됨`,
+        detail: formatFacilityState(facility.state),
         importance: facility.state === 'Operational' ? 'high' : 'medium',
       });
       continue;
@@ -555,10 +564,10 @@ function exactCivilizationEvents(
         residentId: workerId || undefined,
         residentName: workerId ? names.get(workerId) : undefined,
         summary: operational
-          ? `${facility.kind || '시설'}이 완성되어 가동을 시작함`
+          ? `${formatFacilityKind(facility.kind)}이 완성되어 가동을 시작함`
           : ruined
-            ? `${facility.kind || '시설'}이 파손됨`
-            : `${facility.kind || '시설'} 상태가 ${facility.state}(으)로 바뀜`,
+            ? `${formatFacilityKind(facility.kind)}이 파손됨`
+            : `${formatFacilityKind(facility.kind)} 상태가 ${formatFacilityState(facility.state)}(으)로 바뀜`,
         importance: operational || ruined ? 'high' : 'medium',
       });
     }
@@ -575,7 +584,7 @@ function exactCivilizationEvents(
         id: `civilization:depleted:${resource.id}:${minute}`,
         kind: 'civilization',
         minute,
-        summary: `${resource.material || '자원'} 노드가 고갈됨`,
+        summary: `${formatMaterial(resource.material)} 자원이 고갈됨`,
         detail: `좌표 ${resource.gridX}, ${resource.gridY}`,
         importance: 'medium',
       });
@@ -665,6 +674,7 @@ function activityEvent(
 
   const label = resident.activityLabel?.trim();
   if (!label) return null;
+  const localizedLabel = formatActivity(label);
 
   const target = resident.activityTargetName?.trim();
   return {
@@ -682,8 +692,8 @@ function activityEvent(
     residentName: resident.name,
     targetResidentId: resident.activityTargetId || undefined,
     summary: target
-      ? `${resident.name}: ${label} → ${target}`
-      : `${resident.name}: ${label}`,
+      ? `${resident.name}: ${localizedLabel} → ${target}`
+      : `${resident.name}: ${localizedLabel}`,
     importance: resident.activityKind === 'Social'
       ? 'medium'
       : 'low',
