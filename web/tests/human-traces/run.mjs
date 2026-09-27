@@ -163,7 +163,8 @@ test('Korean descriptions report actual quantities, sources and facility states'
   assert.match(panel, /이 장소 보기/);
   assert.match(panel, /나무 채집 지점/);
   const detail = renderToStaticMarkup(createElement(HumanTraceDetail, { trace: facility(), residents: [], onClose() {} }));
-  assert.match(detail, /관찰 표식/);
+  assert.match(detail, /실제 구조물/);
+  assert.match(detail, /선택한 시설만 바닥에 얇은 위치 강조선/);
   assert.ok(!detail.includes('UnderConstruction'));
 });
 
