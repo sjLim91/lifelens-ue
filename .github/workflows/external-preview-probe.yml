@@ -32,7 +32,7 @@ jobs:
           echo "LAUNCH_STATUS=$launch_code"
           echo "LAUNCH_CONTENT_TYPE=$launch_type"
           test "$launch_code" = "200"
-          grep -q "LifeLens Preview" /tmp/launch.html
+          grep -q "라이프렌즈 미리보기" /tmp/launch.html
 
           echo "== confirmation POST =="
           curl -sS -o /tmp/post-body -D /tmp/post-headers             -c /tmp/cookies             -X POST             -H "Referer: $LAUNCH"             "$LAUNCH" || true
@@ -57,7 +57,7 @@ jobs:
 
             echo "ATTEMPT=$attempt APP_STATUS=$app_code ASSET=$asset ASSET_STATUS=$asset_code"
             if [ "$app_code" = "200" ] \
-              && grep -q "LifeLens Web Observer" /tmp/index.html \
+              && grep -q "라이프렌즈 웹 관찰" /tmp/index.html \
               && grep -q "lifelens-bootstrap" /tmp/index.html \
               && [ "$asset_code" = "200" ]; then
               preview_ready=1
