@@ -81,7 +81,7 @@ jobs:
         run: |
           test -s dist/launch.html
           test -s dist/launch.svg
-          grep -q "LifeLens Preview" dist/launch.html
+          grep -q "라이프렌즈 미리보기" dist/launch.html
           grep -q "lifelens-bootstrap" dist/index.html
           test -s dist/runtime/lifelens_core.js
           test -s dist/runtime/lifelens_core.wasm
