@@ -211,6 +211,61 @@ export const KOREAN_BIOME_LABELS: Record<string, string> = {
   Ocean: '대양',
 };
 
+export const KOREAN_TRAIT_LABELS: Record<string, string> = {
+  resilience: '회복력',
+  creativity: '창의성',
+  discipline: '규율',
+  compassion: '공감·연민',
+  adaptability: '적응력',
+  boldness: '대담성',
+  perseverance: '끈기',
+  resourcefulness: '생활력',
+};
+
+export const KOREAN_LIFE_CONDITION_LABELS: Record<string, string> = {
+  physicalHealth: '신체 건강',
+  energyCapacity: '에너지',
+  movementCapacity: '이동 능력',
+  reproductivePotential: '생식 잠재',
+  workCapacity: '작업 능력',
+  appearanceAgeFactor: '외형 노화',
+  lifeGoalFamilyFocus: '가족 지향',
+  familyRoleSalience: '가족 역할',
+};
+
+export const KOREAN_GENETICS_LABELS: Record<string, string> = {
+  faceShape: '얼굴형',
+  eyePigment: '눈 색소',
+  hairPigment: '머리 색소',
+  skinTone: '피부 톤',
+  heightPotential: '키 잠재',
+  buildPotential: '체격 잠재',
+  healthPotential: '건강 잠재',
+  learningPotential: '학습 잠재',
+  temperamentSensitivity: '기질 민감도',
+};
+
+export const KOREAN_DEVELOPMENT_LABELS: Record<string, string> = {
+  attachment: '애착',
+  confidence: '자신감',
+  stress: '스트레스',
+  socialSkill: '사회성',
+  emotionalSecurity: '정서 안정',
+  disciplineInternalization: '규율 내면화',
+  learningSupport: '학습 지원',
+  health: '발달 건강',
+};
+
+export const KOREAN_KNOWLEDGE_LEVEL_LABELS: Record<string, string> = {
+  Unknown: '알려지지 않음',
+  Observed: '관찰됨',
+  Hypothesized: '가설 단계',
+  Understood: '이해함',
+  Reproducible: '재현 가능',
+  Practiced: '숙련 중',
+  Mastered: '숙달',
+};
+
 export const KOREAN_MEMORY_TOKEN_LABELS: Record<string, string> = {
   positive_interaction: '좋은 상호작용',
   help: '도움',
@@ -325,6 +380,42 @@ export function formatKinship(value: string | undefined): string {
 
 export function formatPregnancyStage(value: string | undefined): string {
   return translated('임신단계', value, KOREAN_PREGNANCY_STAGE_LABELS, '임신 단계 확인 중');
+}
+
+export function formatTrait(value: string | undefined): string {
+  return translated('성향', value, KOREAN_TRAIT_LABELS, '성향 항목 확인 중');
+}
+
+export function formatLifeCondition(value: string | undefined): string {
+  return translated('신체상태', value, KOREAN_LIFE_CONDITION_LABELS, '신체 상태 확인 중');
+}
+
+export function formatGenetics(value: string | undefined): string {
+  return translated('유전항목', value, KOREAN_GENETICS_LABELS, '유전 항목 확인 중');
+}
+
+export function formatDevelopment(value: string | undefined): string {
+  return translated('발달항목', value, KOREAN_DEVELOPMENT_LABELS, '발달 항목 확인 중');
+}
+
+export function formatKnowledgeLevel(value: string | undefined): string {
+  return translated('지식수준', value, KOREAN_KNOWLEDGE_LEVEL_LABELS, '지식 수준 확인 중');
+}
+
+export function formatLocationText(value: string | undefined): string {
+  const text = value?.trim();
+  if (!text) return '';
+  if (/[가-힣]/.test(text)) return text;
+  const grid = text.match(/^grid\s*[:(]?\s*(-?\d+)\s*[,/]\s*(-?\d+)\s*\)?$/i);
+  if (grid) return `좌표 ${grid[1]}, ${grid[2]}`;
+  const known: Record<string, string> = {
+    nearby: '주변',
+    home: '거주지',
+    shelter: '쉼터',
+    outdoors: '야외',
+    world: '월드',
+  };
+  return translated('장소', text, known, '장소 정보 확인 중');
 }
 
 export function formatMemoryText(value: string | undefined): string {
