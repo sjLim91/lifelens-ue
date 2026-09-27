@@ -210,6 +210,7 @@ export function startObserverEngine(): void {
       residents: residentSnapshot,
       terrain,
       environment: snapshot.environment,
+      socialEvents: snapshot.socialEvents,
     });
     observerStore.updateCamera({
       centerChunkX: centerX,
