@@ -73,15 +73,14 @@ inline bool primitiveFirePitPlanningDeferredBySanitation(const World& world)
 
 inline PrimitiveFirePitSiteOpportunity choosePrimitiveFirePitSite(
     const World& world,
-    CharacterId planner)
+    CharacterId planner,
+    GridPos activityAnchor)
 {
     PrimitiveFirePitSiteOpportunity result;
     if(planner==0 || primitiveFirePitProject(world)!=nullptr
        || primitiveFirePitPlanningDeferredBySanitation(world)) return result;
 
-    const GridPos center=world.hasInitialStartRegionSelection
-        ? world.initialStartRegionCenterGrid()
-        : GridPos{};
+    const GridPos center=activityAnchor;
     constexpr std::array<GridPos,12> offsets={
         GridPos{3,3},GridPos{-3,3},GridPos{-3,-3},GridPos{3,-3},
         GridPos{5,2},GridPos{-5,2},GridPos{-5,-2},GridPos{5,-2},
