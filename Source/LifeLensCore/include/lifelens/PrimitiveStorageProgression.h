@@ -78,7 +78,9 @@ inline PrimitiveStorageNeedObservation observePrimitiveStorageNeed(
 inline bool primitiveStorageSiteBlocked(const World& world,GridPos pos)
 {
     for(const auto& facility:world.facilities){
-        if(facility.state!=FacilityState::Ruined && manhattan(facility.pos,pos)<=2) return true;
+        if(facility.state!=FacilityState::Ruined
+           && facilityFootprintsConflict(
+               FacilityKind::PrimitiveStorage,pos,facility.kind,facility.pos)) return true;
     }
     for(const auto& sanitation:world.primitiveSanitationSites){
         if(sanitation.active && manhattan(sanitation.pos,pos)<=3) return true;
@@ -102,10 +104,13 @@ inline PrimitiveStorageSiteOpportunity choosePrimitiveStorageSite(
        || primitiveStorageProject(world)!=nullptr) return result;
 
     const GridPos center=activityAnchor;
-    constexpr std::array<GridPos,12> offsets={
+    constexpr std::array<GridPos,24> offsets={
         GridPos{4,0},GridPos{0,4},GridPos{-4,0},GridPos{0,-4},
         GridPos{4,3},GridPos{-4,3},GridPos{-4,-3},GridPos{4,-3},
-        GridPos{6,0},GridPos{0,6},GridPos{-6,0},GridPos{0,-6}
+        GridPos{6,0},GridPos{0,6},GridPos{-6,0},GridPos{0,-6},
+        GridPos{8,6},GridPos{-8,6},GridPos{-8,-6},GridPos{8,-6},
+        GridPos{11,0},GridPos{0,11},GridPos{-11,0},GridPos{0,-11},
+        GridPos{13,5},GridPos{-13,5},GridPos{-13,-5},GridPos{13,-5}
     };
 
     // Stable rotation prevents every possible planner from preferring the same
