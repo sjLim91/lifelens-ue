@@ -60,11 +60,14 @@ inline bool primitiveFurnaceSiteBlocked(const World& world,GridPos pos)
            && facilityFootprintsConflict(
                FacilityKind::Furnace,pos,facility.kind,facility.pos)) return true;
     }
+    const int footprintRadius=facilityFootprintRadiusGrid(FacilityKind::Furnace);
     for(const auto& sanitation:world.primitiveSanitationSites){
-        if(sanitation.active && manhattan(sanitation.pos,pos)<=5) return true;
+        if(sanitation.active
+           && manhattan(sanitation.pos,pos)<=5+footprintRadius) return true;
     }
     for(const auto& node:world.resourceNodes){
-        if(node.quantity>0 && manhattan(node.pos,pos)<=1) return true;
+        if(node.quantity>0
+           && manhattan(node.pos,pos)<=1+footprintRadius) return true;
     }
     return false;
 }
