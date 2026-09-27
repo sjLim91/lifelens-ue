@@ -192,4 +192,153 @@ testCase('merge de-duplicates repeated snapshots and bounds history', () => {
   assert.equal(merged[0].id, 'event-0');
 });
 
+testCase('exact Core social event outranks inferred relationship/activity noise', () => {
+  const previous = resident({
+    activityKind: 'Idle',
+    relationships: [{
+      targetId: 'b',
+      targetName: '하린',
+      trust: 0.4,
+      socialBond: 0.3,
+      conflict: 0.1,
+      romancePotential: 0.1,
+    }],
+  });
+  const next = resident({
+    activityKind: 'Social',
+    activityLabel: '갈등',
+    activityTargetId: 'b',
+    activityTargetName: '하린',
+    relationships: [{
+      targetId: 'b',
+      targetName: '하린',
+      trust: 0.2,
+      socialBond: 0.15,
+      conflict: 0.42,
+      romancePotential: 0.08,
+    }],
+  });
+  const events = deriveObservationEvents(
+    world(30),
+    [previous, { ...resident({ id: 'b', name: '하린' }) }],
+    world(31),
+    [next, { ...resident({ id: 'b', name: '하린' }) }],
+    {
+      available: true,
+      events: [{
+        sequence: '4',
+        actorId: 'a',
+        targetId: 'b',
+        type: 'PositiveInteraction',
+        intensity: 0.3,
+        importance: 0.2,
+        minute: 29,
+        where: '',
+        presentationLevel: 'Everyday',
+        successful: true,
+      }],
+    },
+    {
+      available: true,
+      events: [{
+        sequence: '4',
+        actorId: 'a',
+        targetId: 'b',
+        type: 'PositiveInteraction',
+        intensity: 0.3,
+        importance: 0.2,
+        minute: 29,
+        where: '',
+        presentationLevel: 'Everyday',
+        successful: true,
+      }, {
+        sequence: '5',
+        actorId: 'a',
+        targetId: 'b',
+        type: 'Conflict',
+        intensity: 0.8,
+        importance: 0.9,
+        minute: 31,
+        where: '강가',
+        presentationLevel: 'Important',
+        successful: true,
+      }],
+    },
+  );
+  assert.equal(events.filter(event => event.kind === 'social').length, 1);
+  assert.equal(events.filter(event => event.kind === 'relationship').length, 0);
+  assert.equal(events.filter(event => event.kind === 'activity').length, 0);
+  const social = events.find(event => event.kind === 'social');
+  assert.match(social.summary, /민재.*하린.*갈등/);
+  assert.match(social.detail, /강가/);
+  assert.equal(social.importance, 'high');
+});
+
+testCase('exact life history replaces generic major-life and family inference', () => {
+  const previous = resident({
+    lifeHistory: [{
+      type: 'Birth',
+      minute: 0,
+      relatedCharacterIds: [],
+      value: 0,
+    }],
+  });
+  const next = resident({
+    family: {
+      hasActivePartner: true,
+      partnerId: 'b',
+      partnerName: '하린',
+      expectingChild: false,
+      children: [],
+    },
+    lifeHistory: [{
+      type: 'Birth',
+      minute: 0,
+      relatedCharacterIds: [],
+      value: 0,
+    }, {
+      type: 'DatingStarted',
+      minute: 44,
+      relatedCharacterIds: ['b'],
+      value: 0,
+    }],
+  });
+  const events = deriveObservationEvents(
+    world(43, 1),
+    [previous, { ...resident({ id: 'b', name: '하린', lifeHistory: [] }) }],
+    world(44, 2),
+    [next, { ...resident({ id: 'b', name: '하린', lifeHistory: [] }) }],
+  );
+  assert.equal(events.filter(event => event.kind === 'life').length, 1);
+  assert.equal(events.filter(event => event.kind === 'family').length, 0);
+  assert.match(events[0].summary, /민재.*연애/);
+  assert.equal(events[0].targetResidentId, 'b');
+});
+
+testCase('first exact social payload does not replay old Core history', () => {
+  const events = deriveObservationEvents(
+    world(50),
+    [resident()],
+    world(51),
+    [resident()],
+    { available: false, events: [] },
+    {
+      available: true,
+      events: [{
+        sequence: '9',
+        actorId: 'a',
+        targetId: 'b',
+        type: 'Comfort',
+        intensity: 0.7,
+        importance: 0.6,
+        minute: 49,
+        where: '',
+        presentationLevel: 'Meaningful',
+        successful: true,
+      }],
+    },
+  );
+  assert.equal(events.filter(event => event.kind === 'social').length, 0);
+});
+
 console.log(passed + ' observation-feed regression checks passed');

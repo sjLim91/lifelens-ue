@@ -4,6 +4,7 @@ import {
 } from '../runtime/lifelens-contract';
 import type {
   DynamicEnvironment,
+  RecentSocialEventsPayload,
   Resident,
   TerrainWindow,
   WorldOverview,
@@ -36,6 +37,7 @@ export interface ObserverSnapshot {
   residents: Resident[];
   terrain: TerrainWindow | null;
   environment: DynamicEnvironment | null;
+  socialEvents: RecentSocialEventsPayload;
   camera: CameraState;
   runtime: RuntimeState;
   simulationSpeed: number;
@@ -52,6 +54,11 @@ const INITIAL_STATE: ObserverSnapshot = {
   residents: [],
   terrain: null,
   environment: null,
+  socialEvents: {
+    available: false,
+    count: 0,
+    events: [],
+  },
   camera: {
     centerChunkX: 0,
     centerChunkY: 0,
@@ -85,6 +92,7 @@ class ObserverStore {
   update(patch: Partial<Omit<ObserverSnapshot, 'revision'>>): void {
     const nextWorld = patch.world ?? this.snapshot.world;
     const nextResidents = patch.residents ?? this.snapshot.residents;
+    const nextSocialEvents = patch.socialEvents ?? this.snapshot.socialEvents;
     const selectedResidentId = this.snapshot.selectedResidentId
       && nextResidents.some((resident) => resident.id === this.snapshot.selectedResidentId)
       ? this.snapshot.selectedResidentId
@@ -105,6 +113,8 @@ class ObserverStore {
             this.snapshot.residents,
             nextWorld,
             nextResidents,
+            this.snapshot.socialEvents,
+            nextSocialEvents,
           ),
           patch.observations ?? this.snapshot.observations,
         );
@@ -178,6 +188,11 @@ class ObserverStore {
       residents: [],
       terrain: null,
       environment: null,
+      socialEvents: {
+        available: false,
+        count: 0,
+        events: [],
+      },
       simulationSpeed: SIMULATION_TIME_CONTRACT.defaultSpeed,
       selectedResidentId: null,
       selectedHumanTraceId: null,
