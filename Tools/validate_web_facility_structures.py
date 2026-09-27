@@ -21,6 +21,12 @@ world_scene = (
 trace_ui = (
     ROOT / "web/src/ui/human-traces.tsx"
 ).read_text(encoding="utf-8")
+ground_detail = (
+    ROOT / "web/src/render/ground-detail-layer.ts"
+).read_text(encoding="utf-8")
+vegetation = (
+    ROOT / "web/src/render/vegetation-layer.ts"
+).read_text(encoding="utf-8")
 
 enum_match = re.search(
     r"enum\s+class\s+FacilityKind(?:\s*:\s*[^\{]+)?\s*\{(.*?)\}\s*;",
@@ -81,5 +87,19 @@ for token in (
     assert token in world_scene, f"world scene missing facility layer wiring: {token}"
 
 assert "시설은 실제 구조물로 표시" in trace_ui
+
+for source_name, source in (
+    ("ground detail", ground_detail),
+    ("vegetation", vegetation),
+):
+    assert "facilityPresentationFootprints(window)" in source, (
+        f"{source_name} must derive clearing only from authoritative facilities"
+    )
+    assert "outsideFacilityFootprints(" in source, (
+        f"{source_name} must not clip through visible facilities"
+    )
+    assert "initialStartRegion" not in source, (
+        f"{source_name} must not treat NEW GAME spawn as a living zone"
+    )
 
 print("LifeLens Web visible facility structures: PASS")
