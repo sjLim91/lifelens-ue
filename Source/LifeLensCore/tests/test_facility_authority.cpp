@@ -76,8 +76,12 @@ int main()
     Character& sleeper=settlement.world().characters[0];
     sleeper.civilization.inventory.add({ItemKind::RawMaterial,MaterialKind::Wood,2,0.5,1.0});
     sleeper.civilization.inventory.add({ItemKind::RawMaterial,MaterialKind::Fiber,4,0.5,1.0});
+    GridPos sleeperActivityAnchor{};
+    CHECK(settlement.runtimePosition(sleeper.id,sleeperActivityAnchor));
     const SettlementFacilitySiteOpportunity sleepSite=
-        chooseSettlementFacilitySite(settlement.world(),sleeper.id,FacilityKind::SleepingPlace);
+        chooseSettlementFacilitySite(
+            settlement.world(),sleeper.id,FacilityKind::SleepingPlace,
+            sleeperActivityAnchor);
     CHECK(sleepSite.available);
     ConstructedFacility* sleepProject=establishSettlementFacilityProject(
         settlement.world(),sleeper.id,FacilityKind::SleepingPlace,sleepSite.pos);
