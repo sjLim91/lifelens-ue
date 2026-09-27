@@ -29,6 +29,9 @@ jobs:
       - name: Validate civilization observer read contract
         run: python Tools/validate_civilization_observer.py
 
+      - name: Validate emergent activity anchor
+        run: python Tools/validate_emergent_activity_anchor.py
+
       - name: Validate observer projection needs
         run: python Tools/validate_observer_projection_needs.py
 
