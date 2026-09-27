@@ -94,15 +94,14 @@ inline bool primitiveStorageSiteBlocked(const World& world,GridPos pos)
 
 inline PrimitiveStorageSiteOpportunity choosePrimitiveStorageSite(
     const World& world,
-    CharacterId planner)
+    CharacterId planner,
+    GridPos activityAnchor)
 {
     PrimitiveStorageSiteOpportunity result;
     if(planner==0 || hasOperationalPrimitiveStorage(world)
        || primitiveStorageProject(world)!=nullptr) return result;
 
-    const GridPos center=world.hasInitialStartRegionSelection
-        ? world.initialStartRegionCenterGrid()
-        : GridPos{};
+    const GridPos center=activityAnchor;
     constexpr std::array<GridPos,12> offsets={
         GridPos{4,0},GridPos{0,4},GridPos{-4,0},GridPos{0,-4},
         GridPos{4,3},GridPos{-4,3},GridPos{-4,-3},GridPos{4,-3},
