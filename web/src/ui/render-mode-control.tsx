@@ -27,13 +27,13 @@ export function RenderModeControl() {
           onClick={() => switchMode('legacy-canvas')}
           disabled={current === 'legacy-canvas'}
         >
-          Legacy
+          비상 캔버스
         </button>
         <button
           onClick={() => switchMode('three-world')}
           disabled={current === 'three-world'}
         >
-          Three World
+          통합 3차원
         </button>
       </div>
       <p className="hint">
