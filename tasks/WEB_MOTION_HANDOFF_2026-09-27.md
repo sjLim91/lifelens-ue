@@ -1,7 +1,7 @@
 # LifeLens Web Motion Handoff — 2026-09-27
 
 Canonical source baseline for motion mapping: `523dccd8d1f72d0607e70a94926d676a649fafba` (#465)  
-Current main at reconciliation: `996c7bc059ab839f15dc69d3ee803c3974deed4a` (#466 Social Cue)
+Current code baseline at reconciliation: `c2e7a7667a200ad94fa388afce7be2b4470c340f` (#476; #469–#476 observation/authority work integrated)
 
 ## Purpose
 
@@ -195,6 +195,8 @@ For each candidate, first determine whether current Core presentation DTO contai
 
 Observation roadmap status after this handoff:
 - Social Cue v1 — DONE (#466).
-- Observer Director — NEXT.
+- Observer Director — DONE (#469), with important-event surfacing kept separate from forced camera control.
 - motion tranche 2 remains a parallel/next asset lane and must stay isolated from Observer Director.
+- focused resident truth (#470/#476) and world-activity observation (#471) are DONE.
+- settlement emergence now follows lived activity rather than spawn (#474), and spawn no longer permanently clears Unreal ecology (#475).
 - deeper authoritative Human Trace / lived-space accumulation follows when Core carries the required durable facts.
