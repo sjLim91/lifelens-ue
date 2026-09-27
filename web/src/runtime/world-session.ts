@@ -1,10 +1,12 @@
 import { LifeLensCoreBridge } from './core-bridge';
 import { WORLD_GRID_CONTRACT } from './lifelens-contract';
 import type {
+  CivilizationWorldPayload,
   DynamicEnvironment,
   RecentSocialEventsPayload,
   Resident,
   TerrainWindow,
+  WorldObjectsPayload,
   WorldOverview,
 } from './core-types';
 import { ResidentContinuity } from './resident-continuity';
@@ -15,6 +17,8 @@ export interface WorldSessionSnapshot {
   terrain: TerrainWindow;
   environment: DynamicEnvironment;
   socialEvents: RecentSocialEventsPayload;
+  civilization: CivilizationWorldPayload;
+  worldObjects: WorldObjectsPayload;
   centerX: number;
   centerY: number;
   followResidents: boolean;
@@ -27,6 +31,19 @@ export class WorldSession {
   private stableTerrain: TerrainWindow | null = null;
   private stableTerrainCenterKey: string | null = null;
   private recenterRequested = false;
+  private worldActivityRefreshCountdown = 0;
+  private civilizationSnapshot: CivilizationWorldPayload = {
+    available: false,
+    resources: [],
+    storages: [],
+    facilities: [],
+    recentDiscoveries: [],
+  };
+  private worldObjectsSnapshot: WorldObjectsPayload = {
+    available: false,
+    smartObjects: [],
+    sanitationSites: [],
+  };
 
   constructor(
     private readonly core: LifeLensCoreBridge,
@@ -41,6 +58,19 @@ export class WorldSession {
     this.stableTerrain = null;
     this.stableTerrainCenterKey = null;
     this.recenterRequested = true;
+    this.worldActivityRefreshCountdown = 0;
+    this.civilizationSnapshot = {
+      available: false,
+      resources: [],
+      storages: [],
+      facilities: [],
+      recentDiscoveries: [],
+    };
+    this.worldObjectsSnapshot = {
+      available: false,
+      smartObjects: [],
+      sanitationSites: [],
+    };
     this.continuity.reset();
   }
 
@@ -139,12 +169,25 @@ export class WorldSession {
     );
     const socialEvents = this.core.recentSocialEvents(32);
 
+    // Civilization/object payloads are materially larger than the normal
+    // resident/environment snapshot. Keep them off the 500 ms hot path while
+    // still refreshing often enough for observation UI.
+    if (this.worldActivityRefreshCountdown <= 0) {
+      this.civilizationSnapshot = this.core.civilizationWorld(16);
+      this.worldObjectsSnapshot = this.core.worldObjects();
+      this.worldActivityRefreshCountdown = 3;
+    } else {
+      this.worldActivityRefreshCountdown -= 1;
+    }
+
     return {
       overview,
       residents,
       terrain,
       environment,
       socialEvents,
+      civilization: this.civilizationSnapshot,
+      worldObjects: this.worldObjectsSnapshot,
       centerX: this.centerX,
       centerY: this.centerY,
       followResidents: this.followResidents,
