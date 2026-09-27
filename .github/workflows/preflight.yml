@@ -128,6 +128,9 @@ jobs:
       - name: Validate Web authority DTO expansion
         run: python Tools/validate_web_authority_dto.py
 
+      - name: Validate Web Observer Director
+        run: python Tools/validate_web_observer_director.py
+
       - name: Validate World v2 observer streaming interest
         run: python Tools/validate_world_v2_streaming_interest.py
 
