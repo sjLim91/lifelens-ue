@@ -31,7 +31,7 @@ function Topbar() {
   return (
     <header className="topbar">
       <div className="brand">
-        <strong>LifeLens</strong>
+        <strong>라이프렌즈</strong>
         <span>실시간 관찰</span>
       </div>
       <RuntimeBadge runtime={snapshot.runtime} />
