@@ -225,6 +225,18 @@ const char* kinshipName(KinshipType type)
     }
 }
 
+const char* pregnancyStageName(PregnancyStage stage)
+{
+    switch(stage){
+        case PregnancyStage::FirstTrimester: return "FirstTrimester";
+        case PregnancyStage::SecondTrimester: return "SecondTrimester";
+        case PregnancyStage::ThirdTrimester: return "ThirdTrimester";
+        case PregnancyStage::Due: return "Due";
+        case PregnancyStage::Completed: return "Completed";
+    }
+    return "Completed";
+}
+
 const char* memorySourceName(MemorySource source)
 {
     switch (source) {
@@ -464,6 +476,20 @@ std::string WebClientBridge::residentsJson() const
             simulation_->observeResidentPresentation(resident.id);
         const ResidentCivilizationObservation civilization =
             simulation_->observeResidentCivilization(resident.id);
+        const Household* household =
+            simulation_->households().householdOf(resident.id);
+
+        const PregnancyState* pregnancy = simulation_->pregnancies().activeFor(resident.id);
+        bool pregnancyAsGestationalParent = pregnancy != nullptr;
+        if (pregnancy == nullptr) {
+            for (const PregnancyState& candidate : simulation_->pregnancies().all()) {
+                if (candidate.active() && candidate.geneticPartner == resident.id) {
+                    pregnancy = &candidate;
+                    pregnancyAsGestationalParent = false;
+                    break;
+                }
+            }
+        }
 
         const TraitProfile traits = character
             ? deriveTraitProfile(character->personality, character->genetics)
@@ -787,6 +813,66 @@ std::string WebClientBridge::residentsJson() const
         out << "\"children\":"; appendFamilyMembers(family.children); out << ",";
         out << "\"siblings\":"; appendFamilyMembers(family.siblings);
         out << "},";
+
+        out << "\"household\":";
+        if (household == nullptr) {
+            out << "null";
+        } else {
+            out << "{";
+            out << "\"id\":\"" << household->id << "\",";
+            out << "\"homeObjectId\":\"" << household->home << "\",";
+            out << "\"resources\":"; appendDouble(out, household->resources); out << ",";
+            out << "\"sharedMoney\":"; appendDouble(out, household->sharedMoney); out << ",";
+            out << "\"sharedObjectIds\":[";
+            for (std::size_t i = 0; i < household->sharedObjects.size(); ++i) {
+                if (i != 0) out << ",";
+                out << "\"" << household->sharedObjects[i] << "\"";
+            }
+            out << "],";
+            out << "\"members\":[";
+            for (std::size_t i = 0; i < household->members.size(); ++i) {
+                if (i != 0) out << ",";
+                const HouseholdMember& member = household->members[i];
+                const Character* memberCharacter =
+                    findObservedCharacter(world, member.characterId);
+                out << "{";
+                out << "\"id\":\"" << member.characterId << "\",";
+                out << "\"name\":\"" << escapeJson(
+                    memberCharacter ? memberCharacter->name : std::string{}) << "\",";
+                out << "\"contributionWeight\":"; appendDouble(out, member.contributionWeight); out << ",";
+                out << "\"responsibilities\":{";
+                out << "\"cooking\":"; appendDouble(out, member.responsibilities.cooking); out << ",";
+                out << "\"cleaning\":"; appendDouble(out, member.responsibilities.cleaning); out << ",";
+                out << "\"shopping\":"; appendDouble(out, member.responsibilities.shopping); out << ",";
+                out << "\"maintenance\":"; appendDouble(out, member.responsibilities.maintenance); out << ",";
+                out << "\"caregiving\":"; appendDouble(out, member.responsibilities.caregiving);
+                out << "}";
+                out << "}";
+            }
+            out << "]";
+            out << "}";
+        }
+        out << ",";
+
+        out << "\"pregnancy\":";
+        if (pregnancy == nullptr) {
+            out << "null";
+        } else {
+            out << "{";
+            out << "\"role\":\"" << (pregnancyAsGestationalParent ? "GestationalParent" : "GeneticPartner") << "\",";
+            out << "\"gestationalParentId\":\"" << pregnancy->gestationalParent << "\",";
+            out << "\"geneticPartnerId\":\"" << pregnancy->geneticPartner << "\",";
+            out << "\"stage\":\"" << pregnancyStageName(pregnancy->stage) << "\",";
+            out << "\"conceptionMinute\":" << pregnancy->conceptionMinute << ",";
+            out << "\"dueMinute\":" << pregnancy->dueMinute << ",";
+            out << "\"lastUpdateMinute\":" << pregnancy->lastUpdateMinute << ",";
+            out << "\"health\":"; appendDouble(out, pregnancy->health); out << ",";
+            out << "\"fatigue\":"; appendDouble(out, pregnancy->fatigue); out << ",";
+            out << "\"stress\":"; appendDouble(out, pregnancy->stress); out << ",";
+            out << "\"nutrition\":"; appendDouble(out, pregnancy->nutrition);
+            out << "}";
+        }
+        out << ",";
 
         out << "\"lifeHistory\":[";
         if (character) {
