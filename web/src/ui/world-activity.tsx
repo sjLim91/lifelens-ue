@@ -4,50 +4,13 @@ import type {
   Resident,
   WorldObjectsPayload,
 } from '../runtime/core-types';
-
-function formatPercent(value: unknown): string {
-  const normalized = Math.max(0, Math.min(1, Number(value) || 0));
-  return `${Math.round(normalized * 100)}%`;
-}
-
-function facilityLabel(kind: string): string {
-  switch (kind) {
-    case 'PrimitiveStorage': return '원시 저장소';
-    case 'FirePit': return '화덕';
-    case 'WorkSurface': return '작업대';
-    case 'SleepingPlace': return '수면 장소';
-    case 'Shelter': return '쉼터';
-    case 'Furnace': return '용광로';
-    default: return kind || '시설';
-  }
-}
-
-function facilityStateLabel(state: string): string {
-  switch (state) {
-    case 'Planned': return '계획';
-    case 'UnderConstruction': return '건설 중';
-    case 'Operational': return '가동';
-    case 'Ruined': return '파손';
-    default: return state || '상태 확인 중';
-  }
-}
-
-function techniqueLabel(technique: string): string {
-  switch (technique) {
-    case 'SharpFlake': return '날카로운 석편';
-    case 'ChippedStoneTool': return '뗀석기';
-    case 'FireMaking': return '불 피우기';
-    case 'FiberCordage': return '섬유 끈';
-    case 'SimpleContainer': return '단순 용기';
-    case 'DesignatedSanitationArea': return '위생 구역 지정';
-    case 'DugSanitationPit': return '위생 구덩이';
-    case 'PrimitiveStorage': return '원시 저장';
-    case 'DiggingStick': return '굴착 막대';
-    case 'StoneHammer': return '돌망치';
-    case 'CopperSmelting': return '구리 제련';
-    default: return technique || '새 지식';
-  }
-}
+import {
+  formatFacilityKind,
+  formatFacilityState,
+  formatMaterial,
+  formatPercent,
+  formatTechnique,
+} from './observer-format';
 
 function facilitySort(a: CivilizationWorldFacility, b: CivilizationWorldFacility): number {
   const priority = (facility: CivilizationWorldFacility): number => {
@@ -133,7 +96,7 @@ export function WorldActivityPanel({
                 onClick={() => onFocusGrid(facility.gridX, facility.gridY)}
               >
                 <strong>
-                  {facilityLabel(facility.kind)} · {facilityStateLabel(facility.state)}
+                  {formatFacilityKind(facility.kind)} · {formatFacilityState(facility.state)}
                 </strong>
                 <span className="observation-event-detail">
                   진행 {formatPercent(facility.workProgress)}
@@ -159,7 +122,7 @@ export function WorldActivityPanel({
               key={resource.id}
               onClick={() => onFocusGrid(resource.gridX, resource.gridY)}
             >
-              <strong>{resource.material || '자원'} · 잔량 {resource.quantity}/{resource.maxQuantity}</strong>
+              <strong>{formatMaterial(resource.material)} · 잔량 {resource.quantity}/{resource.maxQuantity}</strong>
               <span className="observation-event-detail">
                 {resource.renewable ? '재생 가능' : '비재생'} · 위치 보기
               </span>
@@ -178,7 +141,7 @@ export function WorldActivityPanel({
                 <strong>
                   {discovery.discovererName || names.get(discovery.discovererId) || '누군가'}
                   {' · '}
-                  {techniqueLabel(discovery.technique)}
+                  {formatTechnique(discovery.technique)}
                 </strong>
                 <span className="observation-event-detail">
                   {discovery.livingKnowerCount > 1
