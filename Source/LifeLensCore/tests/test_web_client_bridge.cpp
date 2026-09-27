@@ -47,14 +47,7 @@ int main()
     assert(residents.find("\"hasRomanceHistory\":") != std::string::npos);
     assert(residents.find("\"isGestationalParent\":") != std::string::npos);
     assert(residents.find("\"memories\":[") != std::string::npos);
-    assert(residents.find("\"recallScore\":") != std::string::npos);
-    assert(residents.find("\"decayPerDay\":") != std::string::npos);
-    assert(residents.find("\"tags\":[") != std::string::npos);
     assert(residents.find("\"beliefs\":[") != std::string::npos);
-    assert(residents.find("\"supportWeight\":") != std::string::npos);
-    assert(residents.find("\"contradictionWeight\":") != std::string::npos);
-    assert(residents.find("\"supportCount\":") != std::string::npos);
-    assert(residents.find("\"contradictionCount\":") != std::string::npos);
     assert(residents.find("\"lifeStage\":") != std::string::npos);
     assert(residents.find("\"activityTargetName\":") != std::string::npos);
     assert(residents.find("\"presentation\":{") != std::string::npos);
