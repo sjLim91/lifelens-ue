@@ -1,6 +1,10 @@
 import * as THREE from 'three';
 import type { TerrainWindow } from '../runtime/core-types';
 import { WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
+import {
+  facilityPresentationFootprints,
+  outsideFacilityFootprints,
+} from './facility-layer';
 import { createTerrainElevationSampler } from './terrain-geometry';
 import { InstancedTreeAsset } from './tree-asset-layer';
 import {
@@ -115,6 +119,7 @@ export class VegetationLayer {
     const halfChunk = chunkWorldSize * 0.5;
     const placementSpan =
       chunkWorldSize * profile.placementSpanChunkRatio;
+    const facilityFootprints = facilityPresentationFootprints(window);
 
     let treeIndex = 0;
     let branchIndex = 0;
@@ -167,6 +172,14 @@ export class VegetationLayer {
           (chunk.x - window.centerChunkX) * chunkWorldSize + offsetX;
         const worldZ =
           (chunk.y - window.centerChunkY) * chunkWorldSize + offsetZ;
+        if (!outsideFacilityFootprints(
+          worldX,
+          worldZ,
+          facilityFootprints,
+          0.55,
+        )) {
+          continue;
+        }
         const localX01 = Math.max(
           0,
           Math.min(1, (offsetX + halfChunk) / chunkWorldSize),

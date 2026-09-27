@@ -11,6 +11,7 @@ import {
 } from '../runtime/lifelens-contract';
 import { AtmosphereLayer } from './atmosphere-layer';
 import { GroundDetailLayer } from './ground-detail-layer';
+import { FacilityLayer } from './facility-layer';
 import { HumanTraceLayer } from './human-trace-layer';
 import { ResidentWorldLayer } from './resident-world-layer';
 import {
@@ -45,6 +46,7 @@ export class WorldScene {
   private readonly terrainGroup = new THREE.Group();
   private readonly terrainMeshes = new Map<string, TerrainMeshEntry>();
   private readonly groundDetailLayer = new GroundDetailLayer();
+  private readonly facilityLayer = new FacilityLayer();
   private readonly humanTraceLayer = new HumanTraceLayer();
   private readonly waterLayer = new WaterLayer();
   private readonly vegetationLayer = new VegetationLayer();
@@ -73,6 +75,7 @@ export class WorldScene {
   constructor() {
     this.scene.add(this.terrainGroup);
     this.scene.add(this.groundDetailLayer.group);
+    this.scene.add(this.facilityLayer.group);
     this.scene.add(this.humanTraceLayer.group);
     this.scene.add(this.waterLayer.group);
     this.scene.add(this.vegetationLayer.group);
@@ -173,6 +176,9 @@ export class WorldScene {
     this.camera.updateMatrixWorld();
     this.pointer.set(normalizedX, normalizedY);
     this.raycaster.setFromCamera(this.pointer, this.camera);
+    this.facilityLayer.group.updateMatrixWorld(true);
+    const facility = this.facilityLayer.pickTrace(this.raycaster);
+    if (facility) return facility;
     this.humanTraceLayer.group.updateMatrixWorld(true);
     return this.humanTraceLayer.pickTrace(this.raycaster);
   }
@@ -286,6 +292,7 @@ export class WorldScene {
 
     this.waterLayer.setTerrain(window);
     this.groundDetailLayer.setTerrain(window);
+    this.facilityLayer.setTerrain(window);
     this.humanTraceLayer.setTerrain(window);
     this.vegetationLayer.setTerrain(window);
 
@@ -338,6 +345,7 @@ export class WorldScene {
     }
     this.terrainMeshes.clear();
     this.groundDetailLayer.dispose();
+    this.facilityLayer.dispose();
     this.humanTraceLayer.dispose();
     this.waterLayer.dispose();
     this.vegetationLayer.dispose();

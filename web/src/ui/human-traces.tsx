@@ -14,7 +14,7 @@ export function HumanTraceDetail({ trace, residents, onClose }: {
       <span className={`human-trace-status trace-${trace.kind}`}>{description.status}</span>
       <p>{description.detail}</p>
       <small>{description.note}</small>
-      {trace.kind === 'Facility' && <small>지면의 고리는 시설 위치를 알려주는 관찰 표식입니다.</small>}
+      {trace.kind === 'Facility' && <small>시설은 실제 구조물로 표시되며, 선택한 시설만 바닥에 얇은 위치 강조선이 나타납니다.</small>}
     </div>
   );
 }

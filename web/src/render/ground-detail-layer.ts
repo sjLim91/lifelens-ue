@@ -1,6 +1,10 @@
 import * as THREE from 'three';
 import type { TerrainChunk, TerrainWindow } from '../runtime/core-types';
 import { WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
+import {
+  facilityPresentationFootprints,
+  outsideFacilityFootprints,
+} from './facility-layer';
 import { createTerrainElevationSampler } from './terrain-geometry';
 import { useMobileVegetationProfile } from './vegetation-profile';
 
@@ -148,6 +152,7 @@ export class GroundDetailLayer {
     const sampleElevation = createTerrainElevationSampler(window);
     const chunkWorldSize = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
     const halfChunk = chunkWorldSize * 0.5;
+    const facilityFootprints = facilityPresentationFootprints(window);
 
     const budgets = this.mobileProfile
       ? { grass: 14, shrubs: 4, rocks: 5 }
@@ -195,6 +200,17 @@ export class GroundDetailLayer {
           101,
           halfChunk,
         );
+        const worldX =
+          (chunk.x - window.centerChunkX) * chunkWorldSize + placement.x;
+        const worldZ =
+          (chunk.y - window.centerChunkY) * chunkWorldSize + placement.z;
+        if (!outsideFacilityFootprints(
+          worldX,
+          worldZ,
+          facilityFootprints,
+        )) {
+          continue;
+        }
         const groundY = sampleElevation(
           chunk.x,
           chunk.y,
@@ -214,9 +230,9 @@ export class GroundDetailLayer {
           hash01(seed, chunk.x, chunk.y, index, 113) * Math.PI * 2,
         );
         this.position.set(
-          (chunk.x - window.centerChunkX) * chunkWorldSize + placement.x,
+          worldX,
           groundY + 0.02,
-          (chunk.y - window.centerChunkY) * chunkWorldSize + placement.z,
+          worldZ,
         );
         this.scale.set(size, size, size);
         this.matrix.compose(
@@ -250,6 +266,17 @@ export class GroundDetailLayer {
           211,
           halfChunk,
         );
+        const worldX =
+          (chunk.x - window.centerChunkX) * chunkWorldSize + placement.x;
+        const worldZ =
+          (chunk.y - window.centerChunkY) * chunkWorldSize + placement.z;
+        if (!outsideFacilityFootprints(
+          worldX,
+          worldZ,
+          facilityFootprints,
+        )) {
+          continue;
+        }
         const groundY = sampleElevation(
           chunk.x,
           chunk.y,
@@ -276,9 +303,9 @@ export class GroundDetailLayer {
           hash01(seed, chunk.x, chunk.y, index, 229) * Math.PI * 2,
         );
         this.position.set(
-          (chunk.x - window.centerChunkX) * chunkWorldSize + placement.x,
+          worldX,
           groundY + height * 0.68,
-          (chunk.y - window.centerChunkY) * chunkWorldSize + placement.z,
+          worldZ,
         );
         this.scale.set(width, height, width * 0.92);
         this.matrix.compose(
@@ -312,6 +339,17 @@ export class GroundDetailLayer {
           307,
           halfChunk,
         );
+        const worldX =
+          (chunk.x - window.centerChunkX) * chunkWorldSize + placement.x;
+        const worldZ =
+          (chunk.y - window.centerChunkY) * chunkWorldSize + placement.z;
+        if (!outsideFacilityFootprints(
+          worldX,
+          worldZ,
+          facilityFootprints,
+        )) {
+          continue;
+        }
         const groundY = sampleElevation(
           chunk.x,
           chunk.y,
@@ -334,9 +372,9 @@ export class GroundDetailLayer {
           hash01(seed, chunk.x, chunk.y, index, 317) * Math.PI * 2,
         );
         this.position.set(
-          (chunk.x - window.centerChunkX) * chunkWorldSize + placement.x,
+          worldX,
           groundY + height * 0.52,
-          (chunk.y - window.centerChunkY) * chunkWorldSize + placement.z,
+          worldZ,
         );
         this.scale.set(
           width,

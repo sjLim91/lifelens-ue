@@ -4,8 +4,9 @@ import { WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
 import { visibleHumanTraces } from '../state/human-traces';
 import { createTerrainElevationSampler } from './terrain-geometry';
 
-// Surface marks and facility observation rings; never replacement building art.
-// All traces share one draw call, and every vertex follows the real terrain.
+// Surface marks plus a selected-facility halo. Facilities themselves are rendered
+// by FacilityLayer; unselected facilities must never fall back to placeholder rings.
+// All surface traces share one draw call, and every vertex follows the real terrain.
 export function buildHumanTraceGeometry(
   terrain: TerrainWindow, traces: HumanTrace[], selectedId: string | null = null,
 ) {
@@ -14,7 +15,10 @@ export function buildHumanTraceGeometry(
   const sample = createTerrainElevationSampler(terrain);
   const { gridCellsPerChunk: span, worldUnitsPerChunk: size, elevationScale } = WORLD_GRID_CONTRACT;
   const segments = 24;
-  for (const trace of traces) {
+  const displayTraces = traces.filter(
+    (trace) => trace.kind !== 'Facility' || trace.id === selectedId,
+  );
+  for (const trace of displayTraces) {
     const selected = trace.id === selectedId;
     const resourceUse = trace.kind === 'ResourceUse'
       ? 1 - trace.quantity / trace.baselineQuantity : 0;
@@ -101,11 +105,14 @@ export class HumanTraceLayer {
     ]);
     if (signature === this.signature) return;
     this.signature = signature;
-    const next = buildHumanTraceGeometry(terrain, traces, this.selectedId);
+    const displayTraces = traces.filter(
+      (trace) => trace.kind !== 'Facility' || trace.id === this.selectedId,
+    );
+    const next = buildHumanTraceGeometry(terrain, displayTraces, this.selectedId);
     this.mesh.geometry.dispose();
     this.mesh.geometry = next.geometry;
     this.triangleTraceIds = next.triangleTraceIds;
-    this.mesh.visible = traces.length > 0;
+    this.mesh.visible = displayTraces.length > 0;
   }
 
   setSelectedTrace(id: string | null): void {
