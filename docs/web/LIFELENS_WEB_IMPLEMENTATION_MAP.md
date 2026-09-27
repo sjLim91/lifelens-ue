@@ -1,7 +1,7 @@
 # LifeLens Web Observer — Implementation Map
 
 Last reconciled: 2026-09-27 KST  
-Canonical main baseline: `996c7bc059ab839f15dc69d3ee803c3974deed4a` (#466)
+Canonical code baseline: `c2e7a7667a200ad94fa388afce7be2b4470c340f` (#476, with #474/#475 integrated)
 
 This document maps the current Web Observer source to the live architecture. It is an implementation map, not a visual-acceptance claim.
 
@@ -19,7 +19,10 @@ Current resident contracts include:
 - action phase,
 - physical/social/civilization/parenting intent,
 - resident/object/grid targets,
-- civilization material/facility action facts.
+- civilization material/facility action facts,
+- genetics/life-condition/development/family-memory-belief detail,
+- authoritative household shared resources/assets/member responsibilities,
+- authoritative pregnancy role/stage/timing/health/fatigue/stress/nutrition.
 
 Terrain contracts include authoritative hydrology fields such as downstream coordinates, flow potential and drainage accumulation.
 
@@ -44,7 +47,8 @@ Owns one observer session:
 - observer center,
 - resident group follow,
 - terrain query window,
-- last-valid snapshot continuity.
+- last-valid snapshot continuity,
+- bounded low-rate caching for heavy `civilizationWorld` / `worldObjects` authority payloads so they do not run on every hot refresh.
 
 ### `src/runtime/resident-continuity.ts`
 
@@ -89,7 +93,7 @@ Consumes the authoritative Core Human Trace read model and prepares bounded obse
 
 ### `src/ui/observer-readout.tsx`
 
-Selected-resident/world information surface.
+Selected-resident/world information surface. After #470/#476 it includes genetics, life condition, development, kinship/family, memories/beliefs, civilization knowledge, household facts and active pregnancy detail when Core provides them.
 
 ### `src/ui/observation-feed.tsx`
 
@@ -98,6 +102,10 @@ Compact event feed with resident/event focus affordances.
 ### `src/ui/human-traces.tsx`
 
 Human Trace detail/readout surface.
+
+### `src/ui/world-activity.tsx`
+
+#471 authoritative world-activity surface for resource pressure, storages, facilities, discoveries, sanitation and smart-object activity. Spatial entries focus the relevant Core-backed grid location rather than fabricating a place.
 
 ### `src/App.tsx`
 
@@ -259,11 +267,17 @@ Completed:
 5. conservative semantic motion v1 (#464).
 6. UAL2 authoritative action mappings (#465).
 7. authoritative in-world Social Cue v1 (#466).
+8. Observer Director (#469) without forced camera theft.
+9. focused resident truth expansion (#470).
+10. authoritative world-activity observation (#471).
+11. Core facility placement follows lived activity rather than NEW GAME spawn (#474; supersedes closed #472).
+12. Unreal ecology/resource readability is facility-local rather than spawn-centered (#475; supersedes closed #473).
+13. household and pregnancy truth in focused Web inspection (#476).
 
 Next:
-1. Observer Director — next observation milestone.
-2. motion tranche 2 — Sleep/Dig/Chop/Ground Gather/Carry variants only where both clip semantics and Core facts are adequate.
-3. deeper Human Trace / lived-space accumulation.
+1. motion tranche 2 — Sleep/Dig/Chop/Ground Gather/Carry variants only where both clip semantics and Core facts are adequate.
+2. deeper Human Trace / lived-space accumulation from persistent Core facts.
+3. optional observer expansion for full romance history, extended genealogy and birth records, again only through explicit Core read models.
 
 ## 8. Asset policy
 
@@ -293,7 +307,7 @@ Key current gates include:
 - Unreal Linux Compile,
 - Web Preview.
 
-Current #466 baseline preserves the validated #465 motion/runtime gates; #466 adds isolated action-context/social-cue regression coverage and no Core authority changes.
+Current #476 code baseline has passed Preflight, Web Typecheck, Web Runtime Resilience, Web WASM, Core Tests and Unreal Linux Compile. #474/#475 separately passed their relevant Core/Unreal gates before merge.
 
 Automated success does **not** establish visual acceptance. Actual mobile/browser screenshots and interaction remain required.
 
