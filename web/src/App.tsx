@@ -52,9 +52,9 @@ function WorldViewport({
 
   return (
     <section className="world">
-      <canvas id="worldCanvas" aria-label="LifeLens 월드 관찰 화면" />
-      <canvas id="threeWorldCanvas" aria-label="LifeLens 3D 월드" />
-      <canvas id="characterCanvas" aria-label="LifeLens 주민" />
+      <canvas id="worldCanvas" aria-label="라이프렌즈 세계 관찰 화면" />
+      <canvas id="threeWorldCanvas" aria-label="라이프렌즈 3차원 세계" />
+      <canvas id="characterCanvas" aria-label="라이프렌즈 주민" />
       <WorldOverlay snapshot={snapshot} />
       {!selectedTrace && <ObservationFeedOverlay
         observations={snapshot.observations}
@@ -78,9 +78,9 @@ function WorldViewport({
         id="errorCard"
         className={`error-card ${snapshot.runtime.status === 'error' ? '' : 'hidden'}`}
       >
-        <strong>LifeLensCore 연결 실패</strong>
+        <strong>시뮬레이션 코어 연결 실패</strong>
         <span id="errorText">
-          {snapshot.runtime.errorMessage ?? '실제 Core WASM을 불러오지 못했습니다.'}
+          {'시뮬레이션 코어를 불러오지 못했습니다. 다시 실행해 주세요.'}
         </span>
       </div>
     </section>
@@ -169,14 +169,14 @@ function ObserverPanel({
         </div>
 
         <details className="seed-replay">
-          <summary>Seed로 동일한 월드 재현</summary>
+          <summary>시드로 동일한 세계 재현</summary>
           <label className="field">
             WorldSeed
             <input
               inputMode="numeric"
               value={seed}
               autoComplete="off"
-              placeholder="재현할 Seed 입력"
+              placeholder="재현할 시드 입력"
               onChange={(event) => {
                 setSeed(event.target.value);
                 if (seedError) setSeedError(false);
@@ -187,14 +187,14 @@ function ObserverPanel({
             />
           </label>
           <p className={`field-error ${seedError ? '' : 'hidden'}`}>
-            재현할 WorldSeed를 입력해 주세요.
+            재현할 월드 시드를 입력해 주세요.
           </p>
           <button
             type="button"
             onClick={createWorldFromSeed}
             disabled={controlsDisabled}
           >
-            이 Seed로 생성
+            이 시드로 생성
           </button>
         </details>
 
@@ -272,7 +272,7 @@ function ObserverPanel({
           현재 주민 위치로 돌아가기
         </button>
         <p className="hint">
-          모바일: 한 손가락 드래그 회전 · 두 손가락 이동 팬 · 핀치 줌 · PC: 우클릭 회전 · 중클릭 팬 · 휠 줌
+          모바일: 한 손가락 드래그 회전 · 두 손가락 이동 팬 · 핀치 줌 · 컴퓨터: 우클릭 회전 · 중클릭 팬 · 휠 줌
         </p>
       </section>
 
