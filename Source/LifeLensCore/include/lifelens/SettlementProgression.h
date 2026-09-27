@@ -489,16 +489,18 @@ inline double settlementTerrainHabitabilityScore(
 inline SettlementFacilitySiteOpportunity chooseSettlementFacilitySite(
     const World& world,
     CharacterId planner,
-    FacilityKind kind)
+    FacilityKind kind,
+    GridPos activityAnchor)
 {
     SettlementFacilitySiteOpportunity result;
     if(planner==0 || !isSettlementFoundationFacility(kind)
        || hasOperationalSettlementFacility(world,kind)
        || settlementFacilityProject(world,kind)!=nullptr) return result;
 
-    const GridPos center=world.hasInitialStartRegionSelection
-        ? world.initialStartRegionCenterGrid()
-        : GridPos{};
+    // NEW GAME spawn is only an entry coordinate. Settlement candidates emerge
+    // around where the resident is actually acting now, then existing facilities
+    // and terrain suitability decide which nearby site wins.
+    const GridPos center=activityAnchor;
 
     constexpr std::array<GridPos,16> offsets={
         GridPos{3,0},GridPos{0,3},GridPos{-3,0},GridPos{0,-3},

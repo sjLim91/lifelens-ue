@@ -42,6 +42,8 @@ int main()
     CHECK(hasLiveWaterNode(world));
 
     Character& resident=world.characters.front();
+    GridPos residentPosition{};
+    CHECK(simulation.runtimePosition(resident.id,residentPosition));
     resident.needs.hunger=0.10;
     resident.needs.thirst=0.91;
     CHECK(waterCount(resident.civilization.inventory)==0);
@@ -66,7 +68,7 @@ int main()
     SanitationSiteId sanitationSite=0;
     CHECK(civilizationContextRequiresSpatialTarget(urgent));
     CHECK(resolveCivilizationContextTarget(
-        world,resident,urgent,target,sanitationSite));
+        world,resident,urgent,residentPosition,target,sanitationSite));
     CHECK(target.x==7 && target.y==-3);
     CHECK(sanitationSite==0);
 
