@@ -142,20 +142,36 @@ export interface ResidentRelationship {
   romancePotential?: number;
 }
 
+export type ResidentKinship =
+  | 'Unrelated'
+  | 'Self'
+  | 'Parent'
+  | 'Child'
+  | 'Sibling'
+  | 'HalfSibling'
+  | 'Spouse'
+  | 'Grandparent'
+  | 'Grandchild'
+  | 'InLaw';
+
 export interface ResidentFamilyMember {
   id: string;
   name: string;
   alive?: boolean;
   lifeStage?: string;
+  kinship?: ResidentKinship | string;
 }
 
 export interface ResidentFamily {
+  subjectId?: string;
   householdId?: string;
+  hasRomanceHistory?: boolean;
   hasActivePartner?: boolean;
   partnerId?: string;
   partnerName?: string;
   partnerStage?: string;
   cohabitingWithPartner?: boolean;
+  isGestationalParent?: boolean;
   expectingChild?: boolean;
   pregnancyPartnerId?: string;
   pregnancyPartnerName?: string;
@@ -175,8 +191,11 @@ export interface ResidentMemory {
   importance?: number;
   confidence?: number;
   effectiveConfidence?: number;
+  recallScore?: number;
+  decayPerDay?: number;
   witnessed?: boolean;
   source?: 'DirectWitness' | 'ToldByOther' | 'Inferred';
+  tags?: string[];
 }
 
 export interface ResidentBelief {
@@ -184,7 +203,45 @@ export interface ResidentBelief {
   proposition?: string;
   stance?: number;
   confidence?: number;
+  supportWeight?: number;
+  contradictionWeight?: number;
+  supportCount?: number;
+  contradictionCount?: number;
   lastUpdatedMinute?: number;
+}
+
+export interface ResidentGenetics {
+  faceShape?: number;
+  eyePigment?: number;
+  hairPigment?: number;
+  skinTone?: number;
+  heightPotential?: number;
+  buildPotential?: number;
+  healthPotential?: number;
+  learningPotential?: number;
+  temperamentSensitivity?: number;
+}
+
+export interface ResidentLifeCondition {
+  physicalHealth?: number;
+  energyCapacity?: number;
+  movementCapacity?: number;
+  reproductivePotential?: number;
+  workCapacity?: number;
+  appearanceAgeFactor?: number;
+  lifeGoalFamilyFocus?: number;
+  familyRoleSalience?: number;
+}
+
+export interface ResidentDevelopment {
+  attachment?: number;
+  confidence?: number;
+  stress?: number;
+  socialSkill?: number;
+  emotionalSecurity?: number;
+  disciplineInternalization?: number;
+  learningSupport?: number;
+  health?: number;
 }
 
 export type ResidentPresentationKind =
@@ -282,6 +339,9 @@ export interface Resident {
   alive?: boolean;
   lifeStage?: string;
   ageYears?: number;
+  hasBirthMinute?: boolean;
+  birthMinute?: number;
+  deathMinute?: number;
   activityKind?: 'Idle' | 'Physical' | 'Social';
   activityLabel?: string;
   physicalGoal?: string;
@@ -292,6 +352,9 @@ export interface Resident {
   emotion?: ResidentEmotion;
   needs?: ResidentNeeds;
   personality?: ResidentPersonality;
+  genetics?: ResidentGenetics;
+  lifeCondition?: ResidentLifeCondition;
+  development?: ResidentDevelopment;
   traits?: ResidentTraits;
   preferences?: ResidentPreferences;
   civilization?: ResidentCivilization;
