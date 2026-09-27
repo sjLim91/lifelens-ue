@@ -7,6 +7,9 @@ function kindLabel(kind: ObservationEvent['kind']): string {
     case 'memory': return '기억';
     case 'relationship': return '관계';
     case 'social': return '사회';
+    case 'civilization': return '문명';
+    case 'facility': return '시설';
+    case 'sanitation': return '위생';
     case 'life': return '생애';
     default: return '행동';
   }

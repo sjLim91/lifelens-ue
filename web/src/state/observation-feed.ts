@@ -1,10 +1,13 @@
 import type {
+  CivilizationDiscovery,
+  CivilizationWorldPayload,
   RecentSocialEvent,
   RecentSocialEventsPayload,
   Resident,
   ResidentLifeEvent,
   ResidentMemory,
   ResidentRelationship,
+  WorldObjectsPayload,
   WorldOverview,
 } from '../runtime/core-types';
 
@@ -14,7 +17,10 @@ export type ObservationKind =
   | 'relationship'
   | 'family'
   | 'life'
-  | 'social';
+  | 'social'
+  | 'civilization'
+  | 'facility'
+  | 'sanitation';
 
 export interface ObservationEvent {
   id: string;
@@ -476,6 +482,163 @@ function exactLifeEvents(
   return result;
 }
 
+function discoveryKey(discovery: CivilizationDiscovery): string {
+  return discovery.factId || [
+    discovery.minute,
+    discovery.discovererId,
+    discovery.technique,
+  ].join('|');
+}
+
+function exactCivilizationEvents(
+  previous: CivilizationWorldPayload | undefined,
+  next: CivilizationWorldPayload | undefined,
+  residents: Resident[],
+): ObservationEvent[] {
+  if (previous?.available !== true || next?.available !== true) return [];
+
+  const minute = Number(next.minute) || 0;
+  const names = residentNames(residents);
+  const events: ObservationEvent[] = [];
+
+  const previousDiscoveries = new Set(
+    (previous.recentDiscoveries ?? []).map(discoveryKey),
+  );
+  for (const discovery of next.recentDiscoveries ?? []) {
+    const key = discoveryKey(discovery);
+    if (previousDiscoveries.has(key)) continue;
+    const discovererName = discovery.discovererName
+      || names.get(discovery.discovererId)
+      || discovery.discovererId
+      || '누군가';
+    events.push({
+      id: `civilization:discovery:${key}`,
+      kind: 'civilization',
+      minute: Number(discovery.minute) || minute,
+      residentId: discovery.discovererId || undefined,
+      residentName: discovererName,
+      summary: `${discovererName}가 ${discovery.technique || '새 기술'} 지식을 발견함`,
+      detail: discovery.livingKnowerCount > 1
+        ? `현재 ${discovery.livingKnowerCount}명이 알고 있음`
+        : '아직 개인 지식에 가까움',
+      importance: discovery.livingKnowerCount >= 3 ? 'high' : 'medium',
+    });
+  }
+
+  const previousFacilities = new Map(
+    (previous.facilities ?? []).map(facility => [facility.id, facility]),
+  );
+  for (const facility of next.facilities ?? []) {
+    const before = previousFacilities.get(facility.id);
+    if (!before) {
+      const workerId = facility.initiatedBy || facility.lastWorkedBy;
+      events.push({
+        id: `facility:new:${facility.id}:${facility.startedMinute}`,
+        kind: 'facility',
+        minute: Number(facility.startedMinute) || minute,
+        residentId: workerId || undefined,
+        residentName: workerId ? names.get(workerId) : undefined,
+        summary: `${facility.kind || '시설'} 작업이 시작됨`,
+        detail: facility.state || undefined,
+        importance: facility.state === 'Operational' ? 'high' : 'medium',
+      });
+      continue;
+    }
+    if (before.state !== facility.state) {
+      const workerId = facility.lastWorkedBy || facility.initiatedBy;
+      const operational = facility.state === 'Operational';
+      const ruined = facility.state === 'Ruined';
+      events.push({
+        id: `facility:state:${facility.id}:${facility.state}:${minute}`,
+        kind: 'facility',
+        minute,
+        residentId: workerId || undefined,
+        residentName: workerId ? names.get(workerId) : undefined,
+        summary: operational
+          ? `${facility.kind || '시설'}이 완성되어 가동을 시작함`
+          : ruined
+            ? `${facility.kind || '시설'}이 파손됨`
+            : `${facility.kind || '시설'} 상태가 ${facility.state}(으)로 바뀜`,
+        importance: operational || ruined ? 'high' : 'medium',
+      });
+    }
+  }
+
+  const previousResources = new Map(
+    (previous.resources ?? []).map(resource => [resource.id, resource]),
+  );
+  for (const resource of next.resources ?? []) {
+    const before = previousResources.get(resource.id);
+    if (!before) continue;
+    if (Number(before.quantity) > 0 && Number(resource.quantity) <= 0) {
+      events.push({
+        id: `civilization:depleted:${resource.id}:${minute}`,
+        kind: 'civilization',
+        minute,
+        summary: `${resource.material || '자원'} 노드가 고갈됨`,
+        detail: `좌표 ${resource.gridX}, ${resource.gridY}`,
+        importance: 'medium',
+      });
+    }
+  }
+
+  return events;
+}
+
+function exactWorldObjectEvents(
+  previous: WorldObjectsPayload | undefined,
+  next: WorldObjectsPayload | undefined,
+  minute: number,
+  residents: Resident[],
+): ObservationEvent[] {
+  if (previous?.available !== true || next?.available !== true) return [];
+
+  const names = residentNames(residents);
+  const beforeSites = new Map(
+    (previous.sanitationSites ?? []).map(site => [site.id, site]),
+  );
+  const events: ObservationEvent[] = [];
+
+  for (const site of next.sanitationSites ?? []) {
+    const before = beforeSites.get(site.id);
+    if (!before) {
+      const residentId = site.establishedBy || undefined;
+      events.push({
+        id: `sanitation:new:${site.id}:${site.establishedMinute}`,
+        kind: 'sanitation',
+        minute: Number(site.establishedMinute) || minute,
+        residentId,
+        residentName: residentId ? names.get(residentId) : undefined,
+        summary: site.kind === 'DugPit'
+          ? '새 위생 구덩이가 마련됨'
+          : '새 위생 구역이 지정됨',
+        detail: `좌표 ${site.gridX}, ${site.gridY}`,
+        importance: 'medium',
+      });
+      continue;
+    }
+
+    if (
+      Number(site.improvedMinute) > 0
+      && Number(site.improvedMinute) !== Number(before.improvedMinute)
+    ) {
+      const residentId = site.improvedBy || undefined;
+      events.push({
+        id: `sanitation:improved:${site.id}:${site.improvedMinute}`,
+        kind: 'sanitation',
+        minute: Number(site.improvedMinute) || minute,
+        residentId,
+        residentName: residentId ? names.get(residentId) : undefined,
+        summary: '위생 장소가 개선됨',
+        detail: `이용 누적 ${site.useCount}회`,
+        importance: 'medium',
+      });
+    }
+  }
+
+  return events;
+}
+
 function activityEvent(
   resident: Resident,
   previous: Resident,
@@ -544,6 +707,10 @@ export function deriveObservationEvents(
   nextResidents: Resident[],
   previousSocialEvents?: RecentSocialEventsPayload,
   nextSocialEvents?: RecentSocialEventsPayload,
+  previousCivilization?: CivilizationWorldPayload,
+  nextCivilization?: CivilizationWorldPayload,
+  previousWorldObjects?: WorldObjectsPayload,
+  nextWorldObjects?: WorldObjectsPayload,
 ): ObservationEvent[] {
   if (!sameWorld(previousWorld, nextWorld)) {
     return [];
@@ -561,6 +728,17 @@ export function deriveObservationEvents(
     nextResidents,
   );
   events.push(...exactSocial);
+  events.push(...exactCivilizationEvents(
+    previousCivilization,
+    nextCivilization,
+    nextResidents,
+  ));
+  events.push(...exactWorldObjectEvents(
+    previousWorldObjects,
+    nextWorldObjects,
+    minute,
+    nextResidents,
+  ));
 
   const socialParticipants = new Set<string>();
   for (const event of exactSocial) {

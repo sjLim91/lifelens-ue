@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { startObserverEngine } from './observer-engine';
 import {
   SIMULATION_SPEED_MODES,
+  WORLD_GRID_CONTRACT,
   simulationTimeHint,
 } from './runtime/lifelens-contract';
 import { observerActions } from './state/observer-actions';
@@ -21,6 +22,7 @@ import {
 } from './ui/observation-feed';
 import { RenderModeControl } from './ui/render-mode-control';
 import { HumanTraceDetail, HumanTracePanel } from './ui/human-traces';
+import { WorldActivityPanel } from './ui/world-activity';
 import { visibleHumanTraces } from './state/human-traces';
 
 function Topbar() {
@@ -220,6 +222,29 @@ function ObserverPanel({
       <section className="panel">
         <h2>관찰 정보</h2>
         <ObserverMetrics snapshot={snapshot} />
+      </section>
+
+      <section className="panel">
+        <h2>월드 활동</h2>
+        <WorldActivityPanel
+          civilization={snapshot.civilization}
+          worldObjects={snapshot.worldObjects}
+          residents={snapshot.residents}
+          onSelectResident={(residentId) => observerActions.selectResident(residentId)}
+          onFocusGrid={(gridX, gridY) => {
+            const targetChunkX = Math.floor(
+              gridX / WORLD_GRID_CONTRACT.gridCellsPerChunk,
+            );
+            const targetChunkY = Math.floor(
+              gridY / WORLD_GRID_CONTRACT.gridCellsPerChunk,
+            );
+            observerActions.moveObserver(
+              targetChunkX - snapshot.camera.centerChunkX,
+              targetChunkY - snapshot.camera.centerChunkY,
+            );
+            onViewPlace();
+          }}
+        />
       </section>
 
       <section className="panel">

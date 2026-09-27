@@ -341,4 +341,192 @@ testCase('first exact social payload does not replay old Core history', () => {
   assert.equal(events.filter(event => event.kind === 'social').length, 0);
 });
 
+testCase('exact civilization changes become observation events', () => {
+  const previousCivilization = {
+    available: true,
+    minute: 70,
+    recentDiscoveries: [{
+      factId: 'known',
+      technique: 'FireMaking',
+      discovererId: 'a',
+      discovererName: '민재',
+      minute: 65,
+      livingKnowerCount: 1,
+    }],
+    facilities: [{
+      id: 'shelter-1',
+      kind: 'Shelter',
+      state: 'UnderConstruction',
+      initiatedBy: 'a',
+      lastWorkedBy: 'a',
+      startedMinute: 60,
+    }],
+    resources: [{
+      id: 'wood-1',
+      material: 'Wood',
+      quantity: 3,
+      gridX: 4,
+      gridY: 8,
+    }],
+  };
+  const nextCivilization = {
+    available: true,
+    minute: 71,
+    recentDiscoveries: [
+      ...previousCivilization.recentDiscoveries,
+      {
+        factId: 'new-tech',
+        technique: 'SimpleContainer',
+        discovererId: 'a',
+        discovererName: '민재',
+        minute: 71,
+        livingKnowerCount: 2,
+      },
+    ],
+    facilities: [{
+      ...previousCivilization.facilities[0],
+      state: 'Operational',
+      completedMinute: 71,
+    }],
+    resources: [{
+      ...previousCivilization.resources[0],
+      quantity: 0,
+    }],
+  };
+
+  const events = deriveObservationEvents(
+    world(70),
+    [resident()],
+    world(71),
+    [resident()],
+    undefined,
+    undefined,
+    previousCivilization,
+    nextCivilization,
+  );
+
+  assert.equal(events.filter(event => event.kind === 'civilization').length, 2);
+  assert.equal(events.filter(event => event.kind === 'facility').length, 1);
+  assert.ok(events.some(event => /SimpleContainer/.test(event.summary)));
+  assert.ok(events.some(event => /완성/.test(event.summary)));
+  assert.ok(events.some(event => /고갈/.test(event.summary)));
+});
+
+testCase('exact sanitation changes become observation events', () => {
+  const previousObjects = {
+    available: true,
+    smartObjects: [],
+    sanitationSites: [{
+      id: 'san-1',
+      kind: 'DesignatedArea',
+      gridX: 2,
+      gridY: 3,
+      establishedBy: 'a',
+      establishedMinute: 50,
+      active: true,
+      useCount: 2,
+      improvementWork: 0,
+      improvedBy: '',
+      improvedMinute: 0,
+    }],
+  };
+  const nextObjects = {
+    available: true,
+    smartObjects: [],
+    sanitationSites: [{
+      ...previousObjects.sanitationSites[0],
+      useCount: 5,
+      improvementWork: 1,
+      improvedBy: 'a',
+      improvedMinute: 72,
+    }, {
+      id: 'san-2',
+      kind: 'DugPit',
+      gridX: 6,
+      gridY: 7,
+      establishedBy: 'a',
+      establishedMinute: 72,
+      active: true,
+      useCount: 0,
+      improvementWork: 0,
+      improvedBy: '',
+      improvedMinute: 0,
+    }],
+  };
+
+  const events = deriveObservationEvents(
+    world(71),
+    [resident()],
+    world(72),
+    [resident()],
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    previousObjects,
+    nextObjects,
+  );
+
+  assert.equal(events.filter(event => event.kind === 'sanitation').length, 2);
+  assert.ok(events.some(event => /개선/.test(event.summary)));
+  assert.ok(events.some(event => /구덩이/.test(event.summary)));
+});
+
+testCase('first heavy authority payload does not replay old world activity', () => {
+  const events = deriveObservationEvents(
+    world(80),
+    [resident()],
+    world(81),
+    [resident()],
+    undefined,
+    undefined,
+    { available: false, recentDiscoveries: [], facilities: [], resources: [] },
+    {
+      available: true,
+      minute: 81,
+      recentDiscoveries: [{
+        factId: 'old-tech',
+        technique: 'FireMaking',
+        discovererId: 'a',
+        discovererName: '민재',
+        minute: 40,
+        livingKnowerCount: 4,
+      }],
+      facilities: [{
+        id: 'old-shelter',
+        kind: 'Shelter',
+        state: 'Operational',
+        initiatedBy: 'a',
+        lastWorkedBy: 'a',
+        startedMinute: 20,
+      }],
+      resources: [],
+    },
+    { available: false, smartObjects: [], sanitationSites: [] },
+    {
+      available: true,
+      smartObjects: [],
+      sanitationSites: [{
+        id: 'old-san',
+        kind: 'DugPit',
+        gridX: 1,
+        gridY: 1,
+        establishedBy: 'a',
+        establishedMinute: 30,
+        active: true,
+        useCount: 3,
+        improvementWork: 1,
+        improvedBy: 'a',
+        improvedMinute: 35,
+      }],
+    },
+  );
+
+  assert.equal(events.filter(event => (
+    event.kind === 'civilization'
+    || event.kind === 'facility'
+    || event.kind === 'sanitation'
+  )).length, 0);
+});
+
 console.log(passed + ' observation-feed regression checks passed');

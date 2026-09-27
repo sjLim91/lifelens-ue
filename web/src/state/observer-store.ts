@@ -3,10 +3,12 @@ import {
   SIMULATION_TIME_CONTRACT,
 } from '../runtime/lifelens-contract';
 import type {
+  CivilizationWorldPayload,
   DynamicEnvironment,
   RecentSocialEventsPayload,
   Resident,
   TerrainWindow,
+  WorldObjectsPayload,
   WorldOverview,
 } from '../runtime/core-types';
 import {
@@ -38,6 +40,8 @@ export interface ObserverSnapshot {
   terrain: TerrainWindow | null;
   environment: DynamicEnvironment | null;
   socialEvents: RecentSocialEventsPayload;
+  civilization: CivilizationWorldPayload;
+  worldObjects: WorldObjectsPayload;
   camera: CameraState;
   runtime: RuntimeState;
   simulationSpeed: number;
@@ -58,6 +62,18 @@ const INITIAL_STATE: ObserverSnapshot = {
     available: false,
     count: 0,
     events: [],
+  },
+  civilization: {
+    available: false,
+    resources: [],
+    storages: [],
+    facilities: [],
+    recentDiscoveries: [],
+  },
+  worldObjects: {
+    available: false,
+    smartObjects: [],
+    sanitationSites: [],
   },
   camera: {
     centerChunkX: 0,
@@ -93,6 +109,8 @@ class ObserverStore {
     const nextWorld = patch.world ?? this.snapshot.world;
     const nextResidents = patch.residents ?? this.snapshot.residents;
     const nextSocialEvents = patch.socialEvents ?? this.snapshot.socialEvents;
+    const nextCivilization = patch.civilization ?? this.snapshot.civilization;
+    const nextWorldObjects = patch.worldObjects ?? this.snapshot.worldObjects;
     const selectedResidentId = this.snapshot.selectedResidentId
       && nextResidents.some((resident) => resident.id === this.snapshot.selectedResidentId)
       ? this.snapshot.selectedResidentId
@@ -115,6 +133,10 @@ class ObserverStore {
             nextResidents,
             this.snapshot.socialEvents,
             nextSocialEvents,
+            this.snapshot.civilization,
+            nextCivilization,
+            this.snapshot.worldObjects,
+            nextWorldObjects,
           ),
           patch.observations ?? this.snapshot.observations,
         );
@@ -192,6 +214,18 @@ class ObserverStore {
         available: false,
         count: 0,
         events: [],
+      },
+      civilization: {
+        available: false,
+        resources: [],
+        storages: [],
+        facilities: [],
+        recentDiscoveries: [],
+      },
+      worldObjects: {
+        available: false,
+        smartObjects: [],
+        sanitationSites: [],
       },
       simulationSpeed: SIMULATION_TIME_CONTRACT.defaultSpeed,
       selectedResidentId: null,

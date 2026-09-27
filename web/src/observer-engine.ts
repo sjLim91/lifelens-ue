@@ -211,6 +211,8 @@ export function startObserverEngine(): void {
       terrain,
       environment: snapshot.environment,
       socialEvents: snapshot.socialEvents,
+      civilization: snapshot.civilization,
+      worldObjects: snapshot.worldObjects,
     });
     observerStore.updateCamera({
       centerChunkX: centerX,

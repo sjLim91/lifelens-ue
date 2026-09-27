@@ -51,8 +51,11 @@ assert "socialEvents: snapshot.socialEvents" in engine
 assert "selectResident(snapshot.socialEvents" not in engine
 assert "moveObserver(snapshot.socialEvents" not in engine
 
-# Heavy authority payloads are intentionally not polled by the director.
-assert ".civilizationWorld(" not in session
-assert ".worldObjects(" not in session
+# Heavy authority payloads are not part of the event-director hot path.
+# A later observation layer may sample them only behind the low-rate cache gate.
+assert "worldActivityRefreshCountdown" in session
+gate = session.index("this.worldActivityRefreshCountdown <= 0")
+assert gate < session.index(".civilizationWorld(16)")
+assert gate < session.index(".worldObjects()")
 
 print("LifeLens Web Observer Director v1: PASS")

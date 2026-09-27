@@ -87,11 +87,16 @@ for token in (
 ):
     assert token in web_bridge, f"LifeLensCoreBridge missing {token}"
 
-# The Observer Director may poll the bounded recent-social tail because it
-# is small and event-oriented. Large civilization/object payloads remain out of
-# the high-frequency WorldSession refresh path.
+# The Observer Director may poll the bounded recent-social tail on the normal
+# refresh path because it is small and event-oriented. Larger civilization and
+# object payloads may be consumed only through an explicit low-rate cache gate.
 assert ".recentSocialEvents(32)" in session
-assert ".civilizationWorld(" not in session
-assert ".worldObjects(" not in session
+assert "worldActivityRefreshCountdown" in session
+assert "this.worldActivityRefreshCountdown <= 0" in session
+assert ".civilizationWorld(16)" in session
+assert ".worldObjects()" in session
+gate = session.index("this.worldActivityRefreshCountdown <= 0")
+assert gate < session.index(".civilizationWorld(16)")
+assert gate < session.index(".worldObjects()")
 
 print("LifeLens Web authority DTO expansion: PASS")
