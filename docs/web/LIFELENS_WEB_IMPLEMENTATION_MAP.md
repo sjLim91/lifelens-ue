@@ -64,6 +64,25 @@ Separates wall-clock simulation progression from render/UI cadence.
 
 Development diagnostics for Core/render timing and observed counts.
 
+## 1.5. Korean presentation boundary
+
+### `src/localization/korean.ts`
+
+Single shared user-facing Korean localization registry.
+
+Rules:
+- Core/WASM enum strings remain stable internal authority tokens.
+- React UI, world activity, observation feed, human traces and resident action cues translate those tokens only at the presentation boundary.
+- No UI component may fall back to displaying an unknown raw English enum/token.
+- Existing Korean presentation text may pass through unchanged.
+- Missing runtime translations log the exact domain/value for diagnosis.
+
+### `Tools/validate_web_korean_ui.py`
+
+Preflight contract that exhaustively compares Web-exposed Core enum definitions and structured resident-detail fields to the Korean registry.
+
+A new Core enum value without a Korean registration is a CI failure, so it cannot silently reach the Web UI after later feature work.
+
 ## 2. State and observer UI
 
 ### `src/state/observer-store.ts`

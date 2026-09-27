@@ -1,5 +1,6 @@
 import type { HumanTrace, Resident, TerrainWindow } from '../runtime/core-types';
 import { WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
+import { formatFacilityKind, formatMaterial } from '../localization/korean';
 
 export const MAX_VISIBLE_HUMAN_TRACES = 64;
 
@@ -30,20 +31,11 @@ export function visibleHumanTraces(terrain: TerrainWindow | null): HumanTrace[] 
   }).slice(0, MAX_VISIBLE_HUMAN_TRACES);
 }
 
-const materialLabels: Record<string, string> = {
-  Stone: '돌', Flint: '부싯돌', Wood: '나무', Fiber: '섬유', Clay: '점토',
-  PlantFood: '식물성 먹거리', Bone: '뼈', Hide: '가죽', CopperOre: '구리 광석',
-  TinOre: '주석 광석', IronOre: '철 광석', Charcoal: '숯', CopperMetal: '구리',
-};
-const facilityLabels: Record<string, string> = {
-  PrimitiveStorage: '보관소', FirePit: '화덕', WorkSurface: '작업대',
-  SleepingPlace: '잠자리', Shelter: '쉼터', Furnace: '제련로',
-};
 
 export function describeHumanTrace(trace: HumanTrace, residents: Resident[] = []) {
   if (trace.kind === 'ResourceUse') {
     return {
-      title: `${materialLabels[trace.material] ?? '자원'} 채집 지점`,
+      title: `${formatMaterial(trace.material)} 채집 지점`,
       status: trace.quantity === 0 ? '소진' : '자원 감소',
       detail: `남은 수량 ${trace.quantity} / 처음 ${trace.baselineQuantity}`,
       note: trace.renewable ? '시간이 지나면 자원이 다시 자랍니다.' : '이 자원은 자연적으로 회복되지 않습니다.',
@@ -62,7 +54,7 @@ export function describeHumanTrace(trace: HumanTrace, residents: Resident[] = []
     : trace.state === 'Operational' ? (trace.active ? (trace.lit ? '불이 켜짐' : '사용 가능') : '사용 중지')
       : trace.progress01 > 0 ? `건설 ${Math.round(trace.progress01 * 100)}%` : '자재 모으는 중';
   return {
-    title: facilityLabels[trace.facilityKind] ?? '시설', status,
+    title: formatFacilityKind(trace.facilityKind), status,
     detail: `모인 자재 ${trace.deliveredMaterialUnits} / 필요 ${trace.requiredMaterialUnits}`,
     note: source ? `최근 작업한 주민 · ${source}` : '주민이 실제로 자재와 작업을 투입한 장소입니다.',
   };

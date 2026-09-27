@@ -2,56 +2,16 @@ import type {
   Resident,
   ResidentPresentationDirective,
 } from '../runtime/core-types';
+import {
+  formatCivilizationIntent,
+  formatObjectKind,
+  formatParentingAction,
+  formatSocialIntent,
+} from '../localization/korean';
 
 export interface ResidentActionCue {
   text: string;
   phase: 'Moving' | 'Interacting' | 'Idle';
-}
-
-const PHYSICAL_LABELS: Record<string, string> = {
-  Eat: '식사',
-  Drink: '물 마시기',
-  Sleep: '잠자기',
-  UseToilet: '용변',
-  Wash: '씻기',
-};
-
-const SOCIAL_LABELS: Record<string, string> = {
-  Approach: '다가가기',
-  Avoid: '피하기',
-  Repair: '관계 회복',
-  Comfort: '위로하기',
-};
-
-const CIVILIZATION_LABELS: Record<string, string> = {
-  Gather: '채집',
-  Store: '저장',
-  Retrieve: '가져오기',
-  Experiment: '실험',
-  Craft: '제작',
-};
-
-const PARENTING_LABELS: Record<string, string> = {
-  Feed: '먹이기',
-  PutToSleep: '재우기',
-  Bathe: '씻기기',
-  ToiletAssist: '용변 돕기',
-  Hold: '안아주기',
-  Play: '함께 놀기',
-  Educate: '가르치기',
-  Discipline: '훈육',
-  Comfort: '달래기',
-  HealthCare: '돌보기',
-};
-
-function readable(
-  value: string | undefined,
-  labels: Record<string, string>,
-  fallback: string,
-): string {
-  const key = value?.trim();
-  if (!key || key === 'None' || key === 'Idle') return fallback;
-  return labels[key] ?? key;
 }
 
 function targetResidentName(
@@ -67,15 +27,22 @@ function targetObjectName(
   directive: ResidentPresentationDirective,
 ): string {
   if (!directive.hasObjectTarget) return '';
-  switch (directive.objectKind) {
-    case 'Bed': return '잠자리';
-    case 'Toilet': return '화장실';
-    case 'Sink': return '씻는 곳';
-    case 'Fridge': return '식량 보관소';
-    case 'Chair': return '의자';
-    case 'Table': return '작업대';
-    case 'Sofa': return '휴식 장소';
-    default: return '';
+  return formatObjectKind(directive.objectKind);
+}
+
+function physicalAction(goal: string | undefined): string {
+  switch (goal) {
+    case 'Eat': return '식사';
+    case 'Drink': return '물 마시기';
+    case 'Sleep': return '잠자기';
+    case 'UseToilet': return '용변';
+    case 'Wash': return '씻기';
+    case 'Idle':
+    case undefined:
+      return '생활 행동';
+    default:
+      console.error(`[LifeLens 한글 UI] 번역 등록 누락: 신체행동:${goal}`);
+      return '생활 행동 확인 중';
   }
 }
 
@@ -95,38 +62,28 @@ export function residentActionCue(
   let action = '';
   switch (directive.kind) {
     case 'Physical':
-      action = readable(
-        directive.physicalGoal,
-        PHYSICAL_LABELS,
-        '생활 행동',
-      );
+      action = physicalAction(directive.physicalGoal);
       break;
     case 'Social':
-      action = readable(
-        directive.socialIntent,
-        SOCIAL_LABELS,
-        '사회 행동',
-      );
+      action = formatSocialIntent(directive.socialIntent);
       break;
     case 'Civilization':
-      action = readable(
-        directive.civilizationIntent,
-        CIVILIZATION_LABELS,
-        '작업',
-      );
+      action = formatCivilizationIntent(directive.civilizationIntent);
       break;
     case 'Parenting':
-      action = readable(
-        directive.parentingAction,
-        PARENTING_LABELS,
-        '돌보기',
-      );
+      action = formatParentingAction(directive.parentingAction);
       break;
     case 'KnowledgeTeaching':
       action = '가르치기';
       break;
     default:
-      return null;
+      console.error(
+        `[LifeLens 한글 UI] 번역 등록 누락: 행동종류:${directive.kind ?? '없음'}`,
+      );
+      return {
+        text: phase === 'Moving' ? '행동 위치로 이동 중' : '행동 진행 중',
+        phase,
+      };
   }
 
   const target = residentTarget || objectTarget;

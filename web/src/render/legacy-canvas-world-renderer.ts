@@ -59,7 +59,7 @@ export class LegacyCanvasWorldRenderer {
         ctx.fillStyle = '#91a394';
         ctx.textAlign = 'center';
         ctx.font = `${Math.max(14, width / 55)}px system-ui`;
-        ctx.fillText('LifeLensCore world truth loading…', width / 2, height / 2);
+        ctx.fillText('시뮬레이션 세계 정보를 불러오는 중…', width / 2, height / 2);
         runtimeDiagnostics.recordRender(performance.now() - renderStartedAt);
         return;
       }

@@ -17,27 +17,27 @@ export function RenderModeControl() {
 
   return (
     <section className="panel runtime">
-      <h2>Development renderer</h2>
+      <h2>개발용 렌더러</h2>
       <div>
-        <span>Current</span>
-        <b>{current}</b>
+        <span>현재 방식</span>
+        <b>{current === 'three-world' ? '통합 3차원' : '비상 캔버스'}</b>
       </div>
       <div className="button-row">
         <button
           onClick={() => switchMode('legacy-canvas')}
           disabled={current === 'legacy-canvas'}
         >
-          Legacy
+          비상 캔버스
         </button>
         <button
           onClick={() => switchMode('three-world')}
           disabled={current === 'three-world'}
         >
-          Three World
+          통합 3차원
         </button>
       </div>
       <p className="hint">
-        Three World가 현재 기본 통합 렌더러입니다. Legacy는 WebGL/통합 렌더러 실패 시를 위한 비상 표현 경로입니다.
+        통합 3차원이 현재 기본 렌더러입니다. 비상 캔버스는 웹 그래픽 또는 통합 렌더러 실패 시에만 사용하는 대체 표현 경로입니다.
       </p>
     </section>
   );

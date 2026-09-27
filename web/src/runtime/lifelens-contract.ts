@@ -93,6 +93,6 @@ export const RESIDENT_PRESENTATION_CONTRACT = {
 export function simulationTimeHint(): string {
   return (
     `1× = 현실 ${SIMULATION_TIME_CONTRACT.realMinutesPerSimulationDayAt1x}분에 `
-    + 'LifeLens 1일 · 시간 점프 없이 관찰 배속만 조절'
+    + '라이프렌즈 1일 · 시간 점프 없이 관찰 배속만 조절'
   );
 }

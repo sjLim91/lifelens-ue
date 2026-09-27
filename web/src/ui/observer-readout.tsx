@@ -2,12 +2,22 @@ import type { Resident } from '../runtime/core-types';
 import type { ObserverSnapshot } from '../state/observer-store';
 import {
   formatActivity,
+  formatBelief,
   formatBiome,
   formatDay,
+  formatDevelopment,
+  formatGenetics,
+  formatKinship,
+  formatLifeCondition,
   formatLifeStage,
+  formatLocationText,
+  formatMemoryTag,
+  formatMemoryText,
   formatPartnerStage,
   formatPercent,
+  formatPregnancyStage,
   formatSex,
+  formatTrait,
   formatWeather,
 } from './observer-format';
 
@@ -17,10 +27,10 @@ export function RuntimeBadge({
   runtime: ObserverSnapshot['runtime'];
 }) {
   const text = runtime.status === 'ready'
-    ? 'Core 연결됨'
+    ? '시뮬레이션 코어 연결됨'
     : runtime.status === 'error'
-      ? 'Core 연결 실패'
-      : 'Core 불러오는 중…';
+      ? '시뮬레이션 코어 연결 실패'
+      : '시뮬레이션 코어 불러오는 중…';
 
   const className = runtime.status === 'loading' ? 'pending' : runtime.status;
   return <div id="status" className={`status ${className}`}>{text}</div>;
@@ -139,16 +149,6 @@ export function SelectedResidentReadout({
   const importantRelationships = relationships.slice(0, 4);
   const memories = (resident.memories ?? []).slice(0, 3);
   const beliefs = (resident.beliefs ?? []).slice(0, 3);
-  const traitLabels: Record<string, string> = {
-    resilience: '회복력',
-    creativity: '창의성',
-    discipline: '규율',
-    compassion: '공감/연민',
-    adaptability: '적응력',
-    boldness: '대담성',
-    perseverance: '끈기',
-    resourcefulness: '생활력',
-  };
   const topTraits = Object.entries(resident.traits ?? {})
     .filter((entry): entry is [string, number] => typeof entry[1] === 'number')
     .sort((a, b) => b[1] - a[1])
@@ -175,43 +175,12 @@ export function SelectedResidentReadout({
     )
     .sort((a, b) => b[1] - a[1])[0];
 
-  const conditionLabels: Record<string, string> = {
-    physicalHealth: '신체 건강',
-    energyCapacity: '에너지',
-    movementCapacity: '이동 능력',
-    reproductivePotential: '생식 잠재',
-    workCapacity: '작업 능력',
-    appearanceAgeFactor: '외형 노화',
-    lifeGoalFamilyFocus: '가족 지향',
-    familyRoleSalience: '가족 역할',
-  };
   const conditionEntries = Object.entries(resident.lifeCondition ?? {})
     .filter((entry): entry is [string, number] => typeof entry[1] === 'number');
 
-  const geneticsLabels: Record<string, string> = {
-    faceShape: '얼굴형',
-    eyePigment: '눈 색소',
-    hairPigment: '머리 색소',
-    skinTone: '피부 톤',
-    heightPotential: '키 잠재',
-    buildPotential: '체격 잠재',
-    healthPotential: '건강 잠재',
-    learningPotential: '학습 잠재',
-    temperamentSensitivity: '기질 민감도',
-  };
   const geneticsEntries = Object.entries(resident.genetics ?? {})
     .filter((entry): entry is [string, number] => typeof entry[1] === 'number');
 
-  const developmentLabels: Record<string, string> = {
-    attachment: '애착',
-    confidence: '자신감',
-    stress: '스트레스',
-    socialSkill: '사회성',
-    emotionalSecurity: '정서 안정',
-    disciplineInternalization: '규율 내면화',
-    learningSupport: '학습 지원',
-    health: '발달 건강',
-  };
   const developmentEntries = Object.entries(resident.development ?? {})
     .filter((entry): entry is [string, number] => typeof entry[1] === 'number');
   const developmentVisible = [
@@ -221,27 +190,10 @@ export function SelectedResidentReadout({
     'Teen',
   ].includes(resident.lifeStage ?? '');
 
-  const kinshipLabels: Record<string, string> = {
-    Parent: '부모',
-    Child: '자녀',
-    Sibling: '형제자매',
-    HalfSibling: '이복/반형제',
-    Spouse: '배우자',
-    Grandparent: '조부모',
-    Grandchild: '손자녀',
-    InLaw: '인척',
-  };
 
   const family = resident.family;
   const household = resident.household;
   const pregnancy = resident.pregnancy;
-  const pregnancyStageLabels: Record<string, string> = {
-    FirstTrimester: '임신 1기',
-    SecondTrimester: '임신 2기',
-    ThirdTrimester: '임신 3기',
-    Due: '출산 예정',
-    Completed: '종료',
-  };
   const ownHouseholdMember = household?.members?.find(
     (member) => member.id === resident.id,
   );
@@ -297,7 +249,7 @@ export function SelectedResidentReadout({
           {topTraits.length > 0
             ? topTraits.map(([key, value]) => (
                 <span key={key}>
-                  {traitLabels[key] ?? key} <b>{formatPercent(value)}</b>
+                  {formatTrait(key)} <b>{formatPercent(value)}</b>
                 </span>
               ))
             : <span>성향 데이터 확인 중</span>}
@@ -310,7 +262,7 @@ export function SelectedResidentReadout({
           <div className="focused-life-chips">
             {conditionEntries.map(([key, value]) => (
               <span key={key}>
-                {conditionLabels[key] ?? key} <b>{formatPercent(value)}</b>
+                {formatLifeCondition(key)} <b>{formatPercent(value)}</b>
               </span>
             ))}
           </div>
@@ -323,7 +275,7 @@ export function SelectedResidentReadout({
           <div className="focused-life-chips">
             {geneticsEntries.map(([key, value]) => (
               <span key={key}>
-                {geneticsLabels[key] ?? key} <b>{formatPercent(value)}</b>
+                {formatGenetics(key)} <b>{formatPercent(value)}</b>
               </span>
             ))}
           </div>
@@ -336,7 +288,7 @@ export function SelectedResidentReadout({
           <div className="focused-life-chips">
             {developmentEntries.map(([key, value]) => (
               <span key={key}>
-                {developmentLabels[key] ?? key} <b>{formatPercent(value)}</b>
+                {formatDevelopment(key)} <b>{formatPercent(value)}</b>
               </span>
             ))}
           </div>
@@ -384,7 +336,7 @@ export function SelectedResidentReadout({
               <span key={member.id}>
                 {member.name || member.id}
                 {' · '}
-                <b>{kinshipLabels[member.kinship ?? ''] ?? member.kinship ?? '가족'}</b>
+                <b>{formatKinship(member.kinship)}</b>
               </span>
             ))}
           </div>
@@ -414,7 +366,7 @@ export function SelectedResidentReadout({
         {pregnancy ? (
           <div className="focused-life-chips">
             <span>
-              임신 단계 <b>{pregnancyStageLabels[pregnancy.stage ?? ''] ?? pregnancy.stage ?? '확인 중'}</b>
+              임신 단계 <b>{formatPregnancyStage(pregnancy.stage)}</b>
             </span>
             {pregnancy.dueMinute !== undefined
               ? <span>출산 예정 <b>{formatDay(pregnancy.dueMinute)}</b></span>
@@ -432,15 +384,15 @@ export function SelectedResidentReadout({
         {memories.length > 0
           ? memories.map((memory, index) => (
               <div className="memory-row" key={`${memory.minute ?? 0}:${index}`}>
-                <span>{memory.what || '기억'}</span>
+                <span>{formatMemoryText(memory.what)}</span>
                 <small>
                   신뢰도 {formatPercent(memory.effectiveConfidence ?? memory.confidence)}
                   {memory.recallScore !== undefined
                     ? ` · 회상 ${formatPercent(memory.recallScore)}`
                     : ''}
-                  {memory.where ? ` · ${memory.where}` : ''}
+                  {memory.where ? ` · ${formatLocationText(memory.where)}` : ''}
                   {memory.tags?.length
-                    ? ` · ${memory.tags.map((tag) => `#${tag}`).join(' ')}`
+                    ? ` · ${memory.tags.map((tag) => `#${formatMemoryTag(tag)}`).join(' ')}`
                     : ''}
                 </small>
               </div>
@@ -453,7 +405,7 @@ export function SelectedResidentReadout({
           <h3>믿음</h3>
           {beliefs.map((belief, index) => (
             <div className="belief-row" key={`${belief.subject ?? '0'}:${index}`}>
-              <span>{belief.proposition || '형성 중인 믿음'}</span>
+              <span>{formatBelief(belief.proposition)}</span>
               <small>
                 확신 {formatPercent(belief.confidence)}
                 {belief.supportCount !== undefined
