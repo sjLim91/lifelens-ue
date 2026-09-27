@@ -312,11 +312,14 @@ inline bool settlementFacilitySiteBlocked(
            && facilityFootprintsConflict(
                plannedKind,pos,facility.kind,facility.pos)) return true;
     }
+    const int footprintRadius=facilityFootprintRadiusGrid(plannedKind);
     for(const auto& sanitation:world.primitiveSanitationSites){
-        if(sanitation.active && manhattan(sanitation.pos,pos)<=4) return true;
+        if(sanitation.active
+           && manhattan(sanitation.pos,pos)<=4+footprintRadius) return true;
     }
     for(const auto& node:world.resourceNodes){
-        if(node.quantity>0 && manhattan(node.pos,pos)<=1) return true;
+        if(node.quantity>0
+           && manhattan(node.pos,pos)<=1+footprintRadius) return true;
     }
     return false;
 }
@@ -361,9 +364,12 @@ inline double settlementActivityCenterScore(
     for(const auto& facility:world.facilities){
         if(!facilityOperationalAndActive(facility)) continue;
         const int distance=manhattan(candidate,facility.pos);
-        if(distance>12) continue;
+        const int safeDistance=
+            facilityMinimumCenterDistanceGrid(planned,facility.kind);
+        if(distance>safeDistance+10) continue;
         const double proximity=
-            1.0-static_cast<double>(std::max(0,distance-3))/10.0;
+            1.0-static_cast<double>(
+                std::max(0,distance-safeDistance))/10.0;
         score+=settlementFunctionalAffinity(planned,facility.kind)
             *std::max(0.0,proximity);
     }
