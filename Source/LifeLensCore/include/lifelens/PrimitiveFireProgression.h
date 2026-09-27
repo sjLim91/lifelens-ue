@@ -50,7 +50,9 @@ inline ConstructedFacility* primitiveFirePitProject(World& world)
 inline bool primitiveFirePitSiteBlocked(const World& world,GridPos pos)
 {
     for(const auto& facility:world.facilities){
-        if(facility.state!=FacilityState::Ruined && manhattan(facility.pos,pos)<=2) return true;
+        if(facility.state!=FacilityState::Ruined
+           && facilityFootprintsConflict(
+               FacilityKind::FirePit,pos,facility.kind,facility.pos)) return true;
     }
     for(const auto& sanitation:world.primitiveSanitationSites){
         if(sanitation.active && manhattan(sanitation.pos,pos)<=4) return true;
@@ -81,10 +83,13 @@ inline PrimitiveFirePitSiteOpportunity choosePrimitiveFirePitSite(
        || primitiveFirePitPlanningDeferredBySanitation(world)) return result;
 
     const GridPos center=activityAnchor;
-    constexpr std::array<GridPos,12> offsets={
+    constexpr std::array<GridPos,24> offsets={
         GridPos{3,3},GridPos{-3,3},GridPos{-3,-3},GridPos{3,-3},
         GridPos{5,2},GridPos{-5,2},GridPos{-5,-2},GridPos{5,-2},
-        GridPos{2,5},GridPos{-2,5},GridPos{-2,-5},GridPos{2,-5}
+        GridPos{2,5},GridPos{-2,5},GridPos{-2,-5},GridPos{2,-5},
+        GridPos{8,6},GridPos{-8,6},GridPos{-8,-6},GridPos{8,-6},
+        GridPos{12,5},GridPos{-12,5},GridPos{-12,-5},GridPos{12,-5},
+        GridPos{16,0},GridPos{0,16},GridPos{-16,0},GridPos{0,-16}
     };
     const std::uint64_t mixed=civilizationMix(
         (world.seed ? world.seed : 1)^planner^0x46495245504954ULL);
