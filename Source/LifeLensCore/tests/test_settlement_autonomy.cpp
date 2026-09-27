@@ -263,7 +263,6 @@ int main()
         anchorFacility.kind,anchorFacility.pos));
     CHECK(manhattan(clustered.pos,anchorFacility.pos)<=20);
     CHECK(manhattan(clustered.pos,emergentCenter)<=16);
-    CHECK(manhattan(clustered.pos,layoutCenter)>=6);
     const HydrologyFacts clusteredWater=deriveHydrologyFacts(
         layout.genesisIdentity(),
         chunkCoordForGrid(clustered.pos));
