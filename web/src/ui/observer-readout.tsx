@@ -175,10 +175,72 @@ export function SelectedResidentReadout({
     )
     .sort((a, b) => b[1] - a[1])[0];
 
+  const conditionLabels: Record<string, string> = {
+    physicalHealth: '신체 건강',
+    energyCapacity: '에너지',
+    movementCapacity: '이동 능력',
+    reproductivePotential: '생식 잠재',
+    workCapacity: '작업 능력',
+    appearanceAgeFactor: '외형 노화',
+    lifeGoalFamilyFocus: '가족 지향',
+    familyRoleSalience: '가족 역할',
+  };
+  const conditionEntries = Object.entries(resident.lifeCondition ?? {})
+    .filter((entry): entry is [string, number] => typeof entry[1] === 'number');
+
+  const geneticsLabels: Record<string, string> = {
+    faceShape: '얼굴형',
+    eyePigment: '눈 색소',
+    hairPigment: '머리 색소',
+    skinTone: '피부 톤',
+    heightPotential: '키 잠재',
+    buildPotential: '체격 잠재',
+    healthPotential: '건강 잠재',
+    learningPotential: '학습 잠재',
+    temperamentSensitivity: '기질 민감도',
+  };
+  const geneticsEntries = Object.entries(resident.genetics ?? {})
+    .filter((entry): entry is [string, number] => typeof entry[1] === 'number');
+
+  const developmentLabels: Record<string, string> = {
+    attachment: '애착',
+    confidence: '자신감',
+    stress: '스트레스',
+    socialSkill: '사회성',
+    emotionalSecurity: '정서 안정',
+    disciplineInternalization: '규율 내면화',
+    learningSupport: '학습 지원',
+    health: '발달 건강',
+  };
+  const developmentEntries = Object.entries(resident.development ?? {})
+    .filter((entry): entry is [string, number] => typeof entry[1] === 'number');
+  const developmentVisible = [
+    'Baby',
+    'Toddler',
+    'Child',
+    'Teen',
+  ].includes(resident.lifeStage ?? '');
+
+  const kinshipLabels: Record<string, string> = {
+    Parent: '부모',
+    Child: '자녀',
+    Sibling: '형제자매',
+    HalfSibling: '이복/반형제',
+    Spouse: '배우자',
+    Grandparent: '조부모',
+    Grandchild: '손자녀',
+    InLaw: '인척',
+  };
+
   const family = resident.family;
   const partner = family?.hasActivePartner && family.partnerName
     ? `${family.partnerName} · ${formatPartnerStage(family.partnerStage)}`
     : '현재 파트너 없음';
+  const closeFamily = [
+    ...(family?.parents ?? []),
+    ...(family?.children ?? []),
+    ...(family?.siblings ?? []),
+  ].slice(0, 6);
   const activityTarget = resident.activityTargetName
     ? ` → ${resident.activityTargetName}`
     : '';
@@ -230,6 +292,45 @@ export function SelectedResidentReadout({
         </div>
       </div>
 
+      {conditionEntries.length > 0 ? (
+        <div className="focused-life-section">
+          <h3>건강 / 신체</h3>
+          <div className="focused-life-chips">
+            {conditionEntries.map(([key, value]) => (
+              <span key={key}>
+                {conditionLabels[key] ?? key} <b>{formatPercent(value)}</b>
+              </span>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {geneticsEntries.length > 0 ? (
+        <div className="focused-life-section">
+          <h3>유전</h3>
+          <div className="focused-life-chips">
+            {geneticsEntries.map(([key, value]) => (
+              <span key={key}>
+                {geneticsLabels[key] ?? key} <b>{formatPercent(value)}</b>
+              </span>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {developmentVisible && developmentEntries.length > 0 ? (
+        <div className="focused-life-section">
+          <h3>발달</h3>
+          <div className="focused-life-chips">
+            {developmentEntries.map(([key, value]) => (
+              <span key={key}>
+                {developmentLabels[key] ?? key} <b>{formatPercent(value)}</b>
+              </span>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       <div className="focused-life-section">
         <h3>관계</h3>
         {importantRelationships.length > 0
@@ -254,8 +355,28 @@ export function SelectedResidentReadout({
         <div className="focused-life-inline">
           <span>파트너 <b>{partner}</b></span>
           <span>자녀 <b>{family?.children?.length ?? 0}</b></span>
-          {family?.expectingChild ? <span className="life-event-chip">임신 진행 중</span> : null}
+          {family?.cohabitingWithPartner
+            ? <span className="life-event-chip">동거 중</span>
+            : null}
+          {family?.expectingChild
+            ? (
+                <span className="life-event-chip">
+                  {family.isGestationalParent ? '본인 임신 진행 중' : '파트너 임신 진행 중'}
+                </span>
+              )
+            : null}
         </div>
+        {closeFamily.length > 0 ? (
+          <div className="focused-life-chips">
+            {closeFamily.map((member) => (
+              <span key={member.id}>
+                {member.name || member.id}
+                {' · '}
+                <b>{kinshipLabels[member.kinship ?? ''] ?? member.kinship ?? '가족'}</b>
+              </span>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       <div className="focused-life-section">
@@ -266,7 +387,13 @@ export function SelectedResidentReadout({
                 <span>{memory.what || '기억'}</span>
                 <small>
                   신뢰도 {formatPercent(memory.effectiveConfidence ?? memory.confidence)}
+                  {memory.recallScore !== undefined
+                    ? ` · 회상 ${formatPercent(memory.recallScore)}`
+                    : ''}
                   {memory.where ? ` · ${memory.where}` : ''}
+                  {memory.tags?.length
+                    ? ` · ${memory.tags.map((tag) => `#${tag}`).join(' ')}`
+                    : ''}
                 </small>
               </div>
             ))
@@ -279,7 +406,15 @@ export function SelectedResidentReadout({
           {beliefs.map((belief, index) => (
             <div className="belief-row" key={`${belief.subject ?? '0'}:${index}`}>
               <span>{belief.proposition || '형성 중인 믿음'}</span>
-              <small>확신 {formatPercent(belief.confidence)}</small>
+              <small>
+                확신 {formatPercent(belief.confidence)}
+                {belief.supportCount !== undefined
+                  ? ` · 지지 ${belief.supportCount}`
+                  : ''}
+                {belief.contradictionCount !== undefined
+                  ? ` · 반박 ${belief.contradictionCount}`
+                  : ''}
+              </small>
             </div>
           ))}
         </div>
