@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { startObserverEngine } from './observer-engine';
 import {
   SIMULATION_SPEED_MODES,
+  WORLD_GRID_CONTRACT,
   simulationTimeHint,
 } from './runtime/lifelens-contract';
 import { observerActions } from './state/observer-actions';
@@ -230,6 +231,19 @@ function ObserverPanel({
           worldObjects={snapshot.worldObjects}
           residents={snapshot.residents}
           onSelectResident={(residentId) => observerActions.selectResident(residentId)}
+          onFocusGrid={(gridX, gridY) => {
+            const targetChunkX = Math.floor(
+              gridX / WORLD_GRID_CONTRACT.gridCellsPerChunk,
+            );
+            const targetChunkY = Math.floor(
+              gridY / WORLD_GRID_CONTRACT.gridCellsPerChunk,
+            );
+            observerActions.moveObserver(
+              targetChunkX - snapshot.camera.centerChunkX,
+              targetChunkY - snapshot.camera.centerChunkY,
+            );
+            onViewPlace();
+          }}
         />
       </section>
 
