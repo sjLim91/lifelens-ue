@@ -82,14 +82,17 @@ inline bool primitiveStorageSiteBlocked(const World& world,GridPos pos)
            && facilityFootprintsConflict(
                FacilityKind::PrimitiveStorage,pos,facility.kind,facility.pos)) return true;
     }
+    const int footprintRadius=facilityFootprintRadiusGrid(FacilityKind::PrimitiveStorage);
     for(const auto& sanitation:world.primitiveSanitationSites){
-        if(sanitation.active && manhattan(sanitation.pos,pos)<=3) return true;
+        if(sanitation.active
+           && manhattan(sanitation.pos,pos)<=3+footprintRadius) return true;
     }
     // Do not place a construction footprint directly on an authoritative
     // resource node. A one-cell interaction buffer keeps future presentation
     // meshes from visually swallowing the resource target.
     for(const auto& node:world.resourceNodes){
-        if(node.quantity>0 && manhattan(node.pos,pos)<=1) return true;
+        if(node.quantity>0
+           && manhattan(node.pos,pos)<=1+footprintRadius) return true;
     }
     return false;
 }
