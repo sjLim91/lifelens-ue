@@ -87,10 +87,11 @@ for token in (
 ):
     assert token in web_bridge, f"LifeLensCoreBridge missing {token}"
 
-# This tranche opens authoritative APIs but deliberately does not add large
-# civilization/object payloads to the high-frequency WorldSession refresh.
+# The Observer Director may poll the bounded recent-social tail because it
+# is small and event-oriented. Large civilization/object payloads remain out of
+# the high-frequency WorldSession refresh path.
+assert ".recentSocialEvents(32)" in session
 assert ".civilizationWorld(" not in session
 assert ".worldObjects(" not in session
-assert ".recentSocialEvents(" not in session
 
 print("LifeLens Web authority DTO expansion: PASS")
