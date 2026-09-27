@@ -95,10 +95,14 @@ inline int facilityFootprintRadiusGrid(FacilityKind kind)
 
 inline int facilityPairSafetyClearanceGrid(FacilityKind planned,FacilityKind existing)
 {
-    const bool plannedHeat=facilityProducesHeat(planned);
-    const bool existingHeat=facilityProducesHeat(existing);
-    const bool plannedSleep=facilityProvidesSleep(planned);
-    const bool existingSleep=facilityProvidesSleep(existing);
+    const bool plannedHeat=
+        planned==FacilityKind::FirePit || planned==FacilityKind::Furnace;
+    const bool existingHeat=
+        existing==FacilityKind::FirePit || existing==FacilityKind::Furnace;
+    const bool plannedSleep=
+        planned==FacilityKind::SleepingPlace || planned==FacilityKind::Shelter;
+    const bool existingSleep=
+        existing==FacilityKind::SleepingPlace || existing==FacilityKind::Shelter;
 
     // Fire/heat infrastructure must remain outside the immediate sleeping and
     // shelter footprint. Other pairs retain a one-cell circulation margin.
