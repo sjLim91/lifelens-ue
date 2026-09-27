@@ -68,6 +68,34 @@ int main()
     CHECK(facilityProvidesSleep(FacilityKind::Shelter));
     CHECK(facilityProvidesWeatherProtection(FacilityKind::Shelter));
 
+    // Physical footprint authority: different logical GridPos values are not
+    // enough. Centers must be far enough apart that the real structures and
+    // their circulation/fire-safety margins cannot overlap.
+    CHECK(facilityFootprintRadiusGrid(FacilityKind::Shelter)
+        > facilityFootprintRadiusGrid(FacilityKind::FirePit));
+    CHECK(facilityMinimumCenterDistanceGrid(
+        FacilityKind::Shelter,FacilityKind::SleepingPlace)==13);
+    CHECK(facilityFootprintsConflict(
+        FacilityKind::Shelter,{0,0},
+        FacilityKind::SleepingPlace,{12,0}));
+    CHECK(!facilityFootprintsConflict(
+        FacilityKind::Shelter,{0,0},
+        FacilityKind::SleepingPlace,{13,0}));
+    CHECK(facilityMinimumCenterDistanceGrid(
+        FacilityKind::FirePit,FacilityKind::Shelter)==15);
+    CHECK(facilityFootprintsConflict(
+        FacilityKind::FirePit,{0,0},
+        FacilityKind::Shelter,{14,0}));
+    CHECK(!facilityFootprintsConflict(
+        FacilityKind::FirePit,{0,0},
+        FacilityKind::Shelter,{15,0}));
+    CHECK(facilityFootprintsConflict(
+        FacilityKind::WorkSurface,{0,0},
+        FacilityKind::PrimitiveStorage,{9,0}));
+    CHECK(!facilityFootprintsConflict(
+        FacilityKind::WorkSurface,{0,0},
+        FacilityKind::PrimitiveStorage,{10,0}));
+
     // C1 settlement facilities are built from nothing: deterministic Core site,
     // real material delivery, real work, then operational authority.
     Simulation settlement(991122);
