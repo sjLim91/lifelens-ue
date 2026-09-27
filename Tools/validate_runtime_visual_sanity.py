@@ -44,7 +44,9 @@ for token in (
 ):
     assert token in cpp, f"missing runtime visual sanity token: {token}"
 
-# Settlement should remain readable without looking like a huge shaved clearing.
+# Initial spawn has no permanent presentation authority. Legacy radius
+# properties may remain serialized, while facility-local readability and the
+# reversible observer-canopy path preserve resident visibility.
 for token in (
     "CoreClearRadiusUU = 360.0f",
     "ActivityRadiusUU = 1350.0f",
@@ -52,8 +54,24 @@ for token in (
     "CoreZoneUndergrowthKeep = 0.48f",
     "CoreZoneResourceScale = 0.32f",
     "ActivityZoneResourceScale = 0.62f",
+    "bClearInitialSightlineCanopy = false",
 ):
-    assert token in header, f"missing dense settlement-edge recovery: {token}"
+    assert token in header, f"missing authority-derived readability contract: {token}"
+
+ambient_start = cpp.index("float ALLWorldPresentationActor::AmbientDressingKeepFactor")
+ambient_end = cpp.index("bool ALLWorldPresentationActor::CaptureInitialViewOrigin", ambient_start)
+ambient_block = cpp[ambient_start:ambient_end]
+assert "return FacilityDressingKeepFactor(LocationUU, Layer);" in ambient_block
+for forbidden in ("CachedSettlementReferenceUU", "CoreClearRadiusUU", "ActivityRadiusUU"):
+    assert forbidden not in ambient_block, f"spawn-centred ambient clearing returned: {forbidden}"
+
+resource_start = cpp.index("float ALLWorldPresentationActor::ResourcePatchScaleFactor")
+resource_end = cpp.index("FVector ALLWorldPresentationActor::ChunkOriginUU", resource_start)
+resource_scale_block = cpp[resource_start:resource_end]
+for forbidden in ("CachedSettlementReferenceUU", "CoreClearRadiusUU", "ActivityRadiusUU"):
+    assert forbidden not in resource_scale_block, f"spawn-centred resource scaling returned: {forbidden}"
+assert "CachedFacilityReadabilityCentersUU" in resource_scale_block
+assert "spawnEnvelope=off" in cpp
 
 for token in (
     "FacilityFlattenRadiusUU = 340.0f",
