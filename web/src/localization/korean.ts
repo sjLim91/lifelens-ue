@@ -8,6 +8,7 @@ function translated(
 ): string {
   const key = value?.trim();
   if (!key) return fallback;
+  if (/[가-힣]/.test(key)) return key;
   const label = labels[key];
   if (label) return label;
 
