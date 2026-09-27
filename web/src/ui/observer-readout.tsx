@@ -27,10 +27,10 @@ export function RuntimeBadge({
   runtime: ObserverSnapshot['runtime'];
 }) {
   const text = runtime.status === 'ready'
-    ? 'Core 연결됨'
+    ? '시뮬레이션 코어 연결됨'
     : runtime.status === 'error'
-      ? 'Core 연결 실패'
-      : 'Core 불러오는 중…';
+      ? '시뮬레이션 코어 연결 실패'
+      : '시뮬레이션 코어 불러오는 중…';
 
   const className = runtime.status === 'loading' ? 'pending' : runtime.status;
   return <div id="status" className={`status ${className}`}>{text}</div>;
