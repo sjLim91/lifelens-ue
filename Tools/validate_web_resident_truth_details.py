@@ -75,7 +75,7 @@ for token in (
     "resident.household",
     "resident.pregnancy",
     "ownHouseholdMember",
-    "pregnancyStageLabels",
+    "formatPregnancyStage",
     "member.kinship",
     "memory.recallScore",
     "memory.tags",
