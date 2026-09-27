@@ -2,6 +2,7 @@ import { LifeLensCoreBridge } from './core-bridge';
 import { WORLD_GRID_CONTRACT } from './lifelens-contract';
 import type {
   DynamicEnvironment,
+  RecentSocialEventsPayload,
   Resident,
   TerrainWindow,
   WorldOverview,
@@ -13,6 +14,7 @@ export interface WorldSessionSnapshot {
   residents: Resident[];
   terrain: TerrainWindow;
   environment: DynamicEnvironment;
+  socialEvents: RecentSocialEventsPayload;
   centerX: number;
   centerY: number;
   followResidents: boolean;
@@ -135,12 +137,14 @@ export class WorldSession {
       this.centerX,
       this.centerY,
     );
+    const socialEvents = this.core.recentSocialEvents(32);
 
     return {
       overview,
       residents,
       terrain,
       environment,
+      socialEvents,
       centerX: this.centerX,
       centerY: this.centerY,
       followResidents: this.followResidents,
