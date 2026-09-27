@@ -208,6 +208,23 @@ const char* parentingActionName(ParentingAction action)
     return "Comfort";
 }
 
+const char* kinshipName(KinshipType type)
+{
+    switch(type){
+        case KinshipType::Self: return "Self";
+        case KinshipType::Parent: return "Parent";
+        case KinshipType::Child: return "Child";
+        case KinshipType::Sibling: return "Sibling";
+        case KinshipType::HalfSibling: return "HalfSibling";
+        case KinshipType::Spouse: return "Spouse";
+        case KinshipType::Grandparent: return "Grandparent";
+        case KinshipType::Grandchild: return "Grandchild";
+        case KinshipType::InLaw: return "InLaw";
+        case KinshipType::Unrelated:
+        default: return "Unrelated";
+    }
+}
+
 const char* memorySourceName(MemorySource source)
 {
     switch (source) {
@@ -510,6 +527,9 @@ std::string WebClientBridge::residentsJson() const
         out << "\"lifeStage\":\""
             << (character ? lifeStageName(character->lifeStage) : "Unknown") << "\",";
         out << "\"ageYears\":" << ageYears << ",";
+        out << "\"hasBirthMinute\":" << (character && character->hasBirthMinute ? "true" : "false") << ",";
+        out << "\"birthMinute\":" << (character ? character->birthMinute : 0) << ",";
+        out << "\"deathMinute\":" << (character ? character->deathMinute : -1) << ",";
 
         out << "\"activityKind\":\""
             << activityKindName(resident.activityKind) << "\",";
@@ -600,6 +620,46 @@ std::string WebClientBridge::residentsJson() const
             out << "\"curiosity\":"; appendDouble(out, character->personality.curiosity); out << ",";
             out << "\"orderliness\":"; appendDouble(out, character->personality.orderliness); out << ",";
             out << "\"adaptability\":"; appendDouble(out, character->personality.adaptability);
+        }
+        out << "},";
+
+        out << "\"genetics\":{";
+        if (character) {
+            out << "\"faceShape\":"; appendDouble(out, character->genetics.faceShape); out << ",";
+            out << "\"eyePigment\":"; appendDouble(out, character->genetics.eyePigment); out << ",";
+            out << "\"hairPigment\":"; appendDouble(out, character->genetics.hairPigment); out << ",";
+            out << "\"skinTone\":"; appendDouble(out, character->genetics.skinTone); out << ",";
+            out << "\"heightPotential\":"; appendDouble(out, character->genetics.heightPotential); out << ",";
+            out << "\"buildPotential\":"; appendDouble(out, character->genetics.buildPotential); out << ",";
+            out << "\"healthPotential\":"; appendDouble(out, character->genetics.healthPotential); out << ",";
+            out << "\"learningPotential\":"; appendDouble(out, character->genetics.learningPotential); out << ",";
+            out << "\"temperamentSensitivity\":"; appendDouble(out, character->genetics.temperamentSensitivity);
+        }
+        out << "},";
+
+        out << "\"lifeCondition\":{";
+        if (character) {
+            out << "\"physicalHealth\":"; appendDouble(out, character->lifeCondition.physicalHealth); out << ",";
+            out << "\"energyCapacity\":"; appendDouble(out, character->lifeCondition.energyCapacity); out << ",";
+            out << "\"movementCapacity\":"; appendDouble(out, character->lifeCondition.movementCapacity); out << ",";
+            out << "\"reproductivePotential\":"; appendDouble(out, character->lifeCondition.reproductivePotential); out << ",";
+            out << "\"workCapacity\":"; appendDouble(out, character->lifeCondition.workCapacity); out << ",";
+            out << "\"appearanceAgeFactor\":"; appendDouble(out, character->lifeCondition.appearanceAgeFactor); out << ",";
+            out << "\"lifeGoalFamilyFocus\":"; appendDouble(out, character->lifeCondition.lifeGoalFamilyFocus); out << ",";
+            out << "\"familyRoleSalience\":"; appendDouble(out, character->lifeCondition.familyRoleSalience);
+        }
+        out << "},";
+
+        out << "\"development\":{";
+        if (character) {
+            out << "\"attachment\":"; appendDouble(out, character->development.attachment); out << ",";
+            out << "\"confidence\":"; appendDouble(out, character->development.confidence); out << ",";
+            out << "\"stress\":"; appendDouble(out, character->development.stress); out << ",";
+            out << "\"socialSkill\":"; appendDouble(out, character->development.socialSkill); out << ",";
+            out << "\"emotionalSecurity\":"; appendDouble(out, character->development.emotionalSecurity); out << ",";
+            out << "\"disciplineInternalization\":"; appendDouble(out, character->development.disciplineInternalization); out << ",";
+            out << "\"learningSupport\":"; appendDouble(out, character->development.learningSupport); out << ",";
+            out << "\"health\":"; appendDouble(out, character->development.health);
         }
         out << "},";
 
@@ -703,19 +763,23 @@ std::string WebClientBridge::residentsJson() const
                 out << "\"id\":\"" << member.id << "\",";
                 out << "\"name\":\"" << escapeJson(member.name) << "\",";
                 out << "\"alive\":" << (member.alive ? "true" : "false") << ",";
-                out << "\"lifeStage\":\"" << lifeStageName(member.lifeStage) << "\"";
+                out << "\"lifeStage\":\"" << lifeStageName(member.lifeStage) << "\",";
+                out << "\"kinship\":\"" << kinshipName(member.kinship) << "\"";
                 out << "}";
             }
             out << "]";
         };
 
         out << "\"family\":{";
+        out << "\"subjectId\":\"" << family.subjectId << "\",";
         out << "\"householdId\":\"" << family.householdId << "\",";
+        out << "\"hasRomanceHistory\":" << (family.hasRomanceHistory ? "true" : "false") << ",";
         out << "\"hasActivePartner\":" << (family.hasActivePartner ? "true" : "false") << ",";
         out << "\"partnerId\":\"" << family.partnerId << "\",";
         out << "\"partnerName\":\"" << escapeJson(family.partnerName) << "\",";
         out << "\"partnerStage\":\"" << romanceStageName(family.partnerStage) << "\",";
         out << "\"cohabitingWithPartner\":" << (family.cohabitingWithPartner ? "true" : "false") << ",";
+        out << "\"isGestationalParent\":" << (family.isGestationalParent ? "true" : "false") << ",";
         out << "\"expectingChild\":" << (family.expectingChild ? "true" : "false") << ",";
         out << "\"pregnancyPartnerId\":\"" << family.pregnancyPartnerId << "\",";
         out << "\"pregnancyPartnerName\":\"" << escapeJson(family.pregnancyPartnerName) << "\",";
@@ -765,8 +829,16 @@ std::string WebClientBridge::residentsJson() const
             out << "\"importance\":"; appendDouble(out, memory.importance); out << ",";
             out << "\"confidence\":"; appendDouble(out, memory.confidence); out << ",";
             out << "\"effectiveConfidence\":"; appendDouble(out, memory.effectiveConfidence(world.minute)); out << ",";
+            out << "\"recallScore\":"; appendDouble(out, memory.recallScore(world.minute)); out << ",";
+            out << "\"decayPerDay\":"; appendDouble(out, memory.decayPerDay); out << ",";
             out << "\"witnessed\":" << (memory.witnessed ? "true" : "false") << ",";
-            out << "\"source\":\"" << memorySourceName(memory.source) << "\"";
+            out << "\"source\":\"" << memorySourceName(memory.source) << "\",";
+            out << "\"tags\":[";
+            for (std::size_t tagIndex = 0; tagIndex < memory.tags.size(); ++tagIndex) {
+                if (tagIndex != 0) out << ",";
+                out << "\"" << escapeJson(memory.tags[tagIndex]) << "\"";
+            }
+            out << "]";
             out << "}";
         }
         out << "],";
@@ -780,6 +852,10 @@ std::string WebClientBridge::residentsJson() const
             out << "\"proposition\":\"" << escapeJson(belief.proposition) << "\",";
             out << "\"stance\":"; appendDouble(out, belief.stance); out << ",";
             out << "\"confidence\":"; appendDouble(out, belief.confidence); out << ",";
+            out << "\"supportWeight\":"; appendDouble(out, belief.supportWeight); out << ",";
+            out << "\"contradictionWeight\":"; appendDouble(out, belief.contradictionWeight); out << ",";
+            out << "\"supportCount\":" << belief.supportCount << ",";
+            out << "\"contradictionCount\":" << belief.contradictionCount << ",";
             out << "\"lastUpdatedMinute\":" << belief.lastUpdatedMinute;
             out << "}";
         }
