@@ -407,7 +407,7 @@ testCase('exact civilization changes become observation events', () => {
 
   assert.equal(events.filter(event => event.kind === 'civilization').length, 2);
   assert.equal(events.filter(event => event.kind === 'facility').length, 1);
-  assert.ok(events.some(event => /SimpleContainer/.test(event.summary)));
+  assert.ok(events.some(event => /단순 용기 만들기/.test(event.summary)));
   assert.ok(events.some(event => /완성/.test(event.summary)));
   assert.ok(events.some(event => /고갈/.test(event.summary)));
 });
