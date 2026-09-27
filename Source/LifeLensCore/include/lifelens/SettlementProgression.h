@@ -302,10 +302,15 @@ inline int settlementConstructionMissingMaterial(
     return missing;
 }
 
-inline bool settlementFacilitySiteBlocked(const World& world,GridPos pos)
+inline bool settlementFacilitySiteBlocked(
+    const World& world,
+    GridPos pos,
+    FacilityKind plannedKind)
 {
     for(const auto& facility:world.facilities){
-        if(facility.state!=FacilityState::Ruined && manhattan(facility.pos,pos)<=2) return true;
+        if(facility.state!=FacilityState::Ruined
+           && facilityFootprintsConflict(
+               plannedKind,pos,facility.kind,facility.pos)) return true;
     }
     for(const auto& sanitation:world.primitiveSanitationSites){
         if(sanitation.active && manhattan(sanitation.pos,pos)<=4) return true;
@@ -502,11 +507,15 @@ inline SettlementFacilitySiteOpportunity chooseSettlementFacilitySite(
     // and terrain suitability decide which nearby site wins.
     const GridPos center=activityAnchor;
 
-    constexpr std::array<GridPos,16> offsets={
+    constexpr std::array<GridPos,32> offsets={
         GridPos{3,0},GridPos{0,3},GridPos{-3,0},GridPos{0,-3},
         GridPos{3,3},GridPos{-3,3},GridPos{-3,-3},GridPos{3,-3},
         GridPos{5,1},GridPos{1,5},GridPos{-5,1},GridPos{1,-5},
-        GridPos{5,-2},GridPos{-2,5},GridPos{-5,-2},GridPos{-2,-5}
+        GridPos{5,-2},GridPos{-2,5},GridPos{-5,-2},GridPos{-2,-5},
+        GridPos{10,0},GridPos{0,10},GridPos{-10,0},GridPos{0,-10},
+        GridPos{8,8},GridPos{-8,8},GridPos{-8,-8},GridPos{8,-8},
+        GridPos{12,4},GridPos{-12,4},GridPos{-12,-4},GridPos{12,-4},
+        GridPos{14,0},GridPos{0,14},GridPos{-14,0},GridPos{0,-14}
     };
 
     const std::uint64_t salt=
@@ -521,7 +530,7 @@ inline SettlementFacilitySiteOpportunity chooseSettlementFacilitySite(
     for(std::size_t i=0;i<offsets.size();++i){
         const GridPos offset=offsets[(start+i)%offsets.size()];
         const GridPos candidate{center.x+offset.x,center.y+offset.y};
-        if(settlementFacilitySiteBlocked(world,candidate)) continue;
+        if(settlementFacilitySiteBlocked(world,candidate,kind)) continue;
 
         const double score=
             settlementActivityCenterScore(world,candidate,kind)
@@ -548,7 +557,7 @@ inline ConstructedFacility* establishSettlementFacilityProject(
        || !facilityKindConstructible(kind)
        || hasOperationalSettlementFacility(world,kind)
        || settlementFacilityProject(world,kind)!=nullptr
-       || settlementFacilitySiteBlocked(world,pos)) return nullptr;
+       || settlementFacilitySiteBlocked(world,pos,kind)) return nullptr;
 
     ConstructedFacility facility=makeFacilityConstructionSite(
         nextFacilityId(world.facilities),kind,pos,planner,world.minute);
