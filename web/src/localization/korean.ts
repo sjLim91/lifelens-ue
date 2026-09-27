@@ -35,6 +35,27 @@ export const KOREAN_LIFE_STAGE_LABELS: Record<string, string> = {
   Elderly: '노년',
 };
 
+export const KOREAN_ACTIVITY_KIND_LABELS: Record<string, string> = {
+  Idle: '대기',
+  Physical: '생활 행동',
+  Social: '사회 행동',
+};
+
+export const KOREAN_PRESENTATION_KIND_LABELS: Record<string, string> = {
+  None: '행동 없음',
+  Physical: '생활 행동',
+  Social: '사회 행동',
+  Civilization: '문명 활동',
+  Parenting: '돌봄',
+  KnowledgeTeaching: '지식 전수',
+};
+
+export const KOREAN_PRESENTATION_PHASE_LABELS: Record<string, string> = {
+  Idle: '대기',
+  Moving: '이동 중',
+  Interacting: '행동 중',
+};
+
 export const KOREAN_GOAL_LABELS: Record<string, string> = {
   Idle: '대기',
   Eat: '식사',
@@ -207,6 +228,7 @@ export const KOREAN_BIOME_LABELS: Record<string, string> = {
   Wetland: '습지',
   DryScrub: '건조 관목지',
   ColdSteppe: '한랭 스텝',
+  RockyHighland: '바위 고지대',
   Coast: '해안',
   Ocean: '대양',
 };
@@ -254,6 +276,90 @@ export const KOREAN_DEVELOPMENT_LABELS: Record<string, string> = {
   disciplineInternalization: '규율 내면화',
   learningSupport: '학습 지원',
   health: '발달 건강',
+};
+
+export const KOREAN_KNOWLEDGE_SOURCE_LABELS: Record<string, string> = {
+  Unknown: '출처 미확인',
+  SelfDiscovery: '직접 발견',
+  DirectWitness: '직접 목격',
+  Teaching: '전수받음',
+};
+
+export const KOREAN_MEMORY_SOURCE_LABELS: Record<string, string> = {
+  DirectWitness: '직접 목격',
+  ToldByOther: '전해 들음',
+  Inferred: '추론',
+};
+
+export const KOREAN_SOCIAL_EVENT_LABELS: Record<string, string> = {
+  PositiveInteraction: '좋은 상호작용',
+  Help: '도움',
+  Comfort: '위로',
+  Conflict: '갈등',
+  Betrayal: '배신',
+  Rejection: '거절',
+  Apology: '사과',
+  Intimacy: '친밀한 교류',
+  Commitment: '관계 약속',
+};
+
+export const KOREAN_SOCIAL_PRESENTATION_LEVEL_LABELS: Record<string, string> = {
+  Everyday: '일상',
+  Meaningful: '의미 있음',
+  Important: '중요',
+};
+
+export const KOREAN_SANITATION_SITE_KIND_LABELS: Record<string, string> = {
+  DesignatedArea: '지정 위생 구역',
+  DugPit: '위생 구덩이',
+};
+
+export const KOREAN_SEASON_LABELS: Record<string, string> = {
+  Spring: '봄',
+  Summer: '여름',
+  Autumn: '가을',
+  Winter: '겨울',
+};
+
+export const KOREAN_PRECIPITATION_LABELS: Record<string, string> = {
+  None: '강수 없음',
+  Rain: '비',
+  Snow: '눈',
+};
+
+export const KOREAN_SURFACE_WATER_KIND_LABELS: Record<string, string> = {
+  None: '지표수 없음',
+  Spring: '샘',
+  Stream: '개울',
+  River: '강',
+  Lake: '호수',
+  Wetland: '습지',
+  Coast: '해안',
+  Ocean: '바다',
+};
+
+export const KOREAN_WATER_SALINITY_LABELS: Record<string, string> = {
+  Fresh: '민물',
+  Brackish: '기수',
+  Salt: '바닷물',
+};
+
+export const KOREAN_LIFE_EVENT_LABELS: Record<string, string> = {
+  Birth: '출생',
+  LifeStageChanged: '생애 단계 변화',
+  DatingStarted: '연애 시작',
+  Engaged: '약혼',
+  Married: '결혼',
+  CohabitationStarted: '동거 시작',
+  PregnancyStarted: '임신 시작',
+  ChildBorn: '자녀 출생',
+  ParentingMilestone: '육아 변화',
+  Separated: '별거',
+  Divorced: '이혼',
+  PartnerWidowed: '배우자 사별',
+  HouseholdChanged: '가구 변화',
+  Death: '사망',
+  Bereavement: '상실',
 };
 
 export const KOREAN_KNOWLEDGE_LEVEL_LABELS: Record<string, string> = {
@@ -320,6 +426,18 @@ export function formatActivity(value: string | undefined): string {
     ...KOREAN_CIVILIZATION_INTENT_LABELS,
   };
   return translated('행동', value, labels, '행동 확인 중');
+}
+
+export function formatActivityKind(value: string | undefined): string {
+  return translated('행동분류', value, KOREAN_ACTIVITY_KIND_LABELS, '행동 분류 확인 중');
+}
+
+export function formatPresentationKind(value: string | undefined): string {
+  return translated('표현행동종류', value, KOREAN_PRESENTATION_KIND_LABELS, '행동 종류 확인 중');
+}
+
+export function formatPresentationPhase(value: string | undefined): string {
+  return translated('표현행동단계', value, KOREAN_PRESENTATION_PHASE_LABELS, '행동 단계 확인 중');
 }
 
 export function formatSocialIntent(value: string | undefined): string {
@@ -396,6 +514,46 @@ export function formatGenetics(value: string | undefined): string {
 
 export function formatDevelopment(value: string | undefined): string {
   return translated('발달항목', value, KOREAN_DEVELOPMENT_LABELS, '발달 항목 확인 중');
+}
+
+export function formatKnowledgeSource(value: string | undefined): string {
+  return translated('지식출처', value, KOREAN_KNOWLEDGE_SOURCE_LABELS, '지식 출처 확인 중');
+}
+
+export function formatMemorySource(value: string | undefined): string {
+  return translated('기억출처', value, KOREAN_MEMORY_SOURCE_LABELS, '기억 출처 확인 중');
+}
+
+export function formatSocialEvent(value: string | undefined): string {
+  return translated('사회사건', value, KOREAN_SOCIAL_EVENT_LABELS, '사회 사건 확인 중');
+}
+
+export function formatSocialPresentationLevel(value: string | undefined): string {
+  return translated('사회사건등급', value, KOREAN_SOCIAL_PRESENTATION_LEVEL_LABELS, '사건 중요도 확인 중');
+}
+
+export function formatSanitationSiteKind(value: string | undefined): string {
+  return translated('위생시설종류', value, KOREAN_SANITATION_SITE_KIND_LABELS, '위생 장소 확인 중');
+}
+
+export function formatSeason(value: string | undefined): string {
+  return translated('계절', value, KOREAN_SEASON_LABELS, '계절 확인 중');
+}
+
+export function formatPrecipitation(value: string | undefined): string {
+  return translated('강수', value, KOREAN_PRECIPITATION_LABELS, '강수 상태 확인 중');
+}
+
+export function formatSurfaceWaterKind(value: string | undefined): string {
+  return translated('지표수종류', value, KOREAN_SURFACE_WATER_KIND_LABELS, '물 종류 확인 중');
+}
+
+export function formatWaterSalinity(value: string | undefined): string {
+  return translated('염도', value, KOREAN_WATER_SALINITY_LABELS, '염도 확인 중');
+}
+
+export function formatLifeEvent(value: string | undefined): string {
+  return translated('생애사건', value, KOREAN_LIFE_EVENT_LABELS, '생애 사건 확인 중');
 }
 
 export function formatKnowledgeLevel(value: string | undefined): string {
