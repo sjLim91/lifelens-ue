@@ -1,10 +1,13 @@
 import type {
+  CivilizationWorldPayload,
   CoreModule,
   DynamicEnvironment,
+  RecentSocialEventsPayload,
   Resident,
   ResidentsPayload,
   RuntimeClient,
   TerrainWindow,
+  WorldObjectsPayload,
   WorldOverview,
 } from './core-types';
 
@@ -172,6 +175,59 @@ export class LifeLensCoreBridge {
 
     return parseJson<DynamicEnvironment>(
       this.client.dynamicEnvironmentJson(x, y),
+      fallback,
+    );
+  }
+
+  recentSocialEvents(maxEvents = 32): RecentSocialEventsPayload {
+    const fallback: RecentSocialEventsPayload = {
+      available: false,
+      count: 0,
+      events: [],
+    };
+    if (typeof this.client.recentSocialEventsJson !== 'function') {
+      return fallback;
+    }
+    return parseJson<RecentSocialEventsPayload>(
+      this.client.recentSocialEventsJson(
+        Math.max(0, Math.min(64, Math.floor(maxEvents))),
+      ),
+      fallback,
+    );
+  }
+
+  civilizationWorld(
+    maxRecentDiscoveries = 32,
+  ): CivilizationWorldPayload {
+    const fallback: CivilizationWorldPayload = {
+      available: false,
+      resources: [],
+      storages: [],
+      facilities: [],
+      recentDiscoveries: [],
+    };
+    if (typeof this.client.civilizationWorldJson !== 'function') {
+      return fallback;
+    }
+    return parseJson<CivilizationWorldPayload>(
+      this.client.civilizationWorldJson(
+        Math.max(0, Math.min(64, Math.floor(maxRecentDiscoveries))),
+      ),
+      fallback,
+    );
+  }
+
+  worldObjects(): WorldObjectsPayload {
+    const fallback: WorldObjectsPayload = {
+      available: false,
+      smartObjects: [],
+      sanitationSites: [],
+    };
+    if (typeof this.client.worldObjectsJson !== 'function') {
+      return fallback;
+    }
+    return parseJson<WorldObjectsPayload>(
+      this.client.worldObjectsJson(),
       fallback,
     );
   }

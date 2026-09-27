@@ -60,6 +60,7 @@ struct ResidentCivilizationObservation {
 
 struct CivilizationResourceObservation {
     ResourceNodeId id=0;
+    GridPos pos{};
     MaterialKind material=MaterialKind::Unknown;
     int quantity=0;
     int maxQuantity=0;
@@ -69,6 +70,7 @@ struct CivilizationResourceObservation {
 
 struct CivilizationStorageObservation {
     StorageId id=0;
+    GridPos pos{};
     int totalUnits=0;
     std::vector<CivilizationItemObservation> inventory;
 };
@@ -278,6 +280,7 @@ inline CivilizationStorageObservation makeCivilizationStorageObservation(const S
 {
     CivilizationStorageObservation dto;
     dto.id=storage.id;
+    dto.pos=storage.pos;
     for(const ItemStack& stack:storage.inventory.stacks()){
         if(stack.quantity<=0) continue;
         dto.totalUnits+=stack.quantity;
@@ -351,6 +354,7 @@ inline CivilizationWorldObservation buildCivilizationWorldObservation(
     for(const ResourceNode& node:world.resourceNodes){
         CivilizationResourceObservation observed;
         observed.id=node.id;
+        observed.pos=node.pos;
         observed.material=node.material;
         observed.quantity=node.quantity;
         observed.maxQuantity=node.maxQuantity;

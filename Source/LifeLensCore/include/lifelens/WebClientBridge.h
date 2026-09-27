@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -33,6 +34,10 @@ public:
     std::string dynamicEnvironmentJson(
         int centerChunkX,
         int centerChunkY) const;
+    std::string recentSocialEventsJson(std::size_t maxEvents = 32) const;
+    std::string civilizationWorldJson(
+        std::size_t maxRecentDiscoveries = 32) const;
+    std::string worldObjectsJson() const;
     std::string terrainWindowJson(
         int centerChunkX,
         int centerChunkY,
