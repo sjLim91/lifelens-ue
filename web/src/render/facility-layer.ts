@@ -211,14 +211,9 @@ export class FacilityLayer {
       structure.name = `facility-${trace.id}`;
       structure.userData.traceId = trace.id;
       structure.position.set(worldX, groundY + 0.025, worldZ);
-      structure.rotation.setFromVector3(
-        new THREE.Vector3(
-          0,
-          hash01(`${window.worldSeed ?? '0'}:${trace.id}:yaw`)
-            * Math.PI * 2,
-          0,
-        ),
-      );
+      structure.rotation.y =
+        hash01(`${window.worldSeed ?? '0'}:${trace.id}:yaw`)
+        * Math.PI * 2;
 
       this.buildFacility(
         structure,
