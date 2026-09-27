@@ -1,13 +1,13 @@
 # LifeLens Web Observer — Working State
 
-## 2026-09-27 CANONICAL CURRENT — main `c2e7a766`
+## 2026-09-27 CANONICAL CURRENT — code baseline `c2e7a766` (#476)
 
 This section supersedes older Web-current snapshots below while preserving them as historical context.
 
 ### Product/runtime
 - Web Observer is a first-class LifeLensCore client, not a separate simulation.
 - GitHub `main` is source truth; GitHub Pages is the checkable Web preview.
-- Current preview: https://sjlim91.github.io/lifelens-ue/?v=c2e7a766
+- Current preview pattern: https://sjlim91.github.io/lifelens-ue/?v=<current-main-short-sha>
 - AppDeploy is not used for LifeLens Web.
 - Core / World remains the sole authority for terrain, hydrology, residents, goals, targets, life events, facilities and persistent human traces.
 - Presentation may interpolate, LOD, label and animate authoritative facts; it may not invent durable world state or action meaning.
@@ -63,7 +63,7 @@ This section supersedes older Web-current snapshots below while preserving them 
 - Actual Android/mobile visual acceptance remains open; automated tests/CPU geometry checks do not replace device review.
 
 ### Current validated baseline
-For main `c2e7a766` after #476:
+For code baseline `c2e7a766` after #476:
 - Preflight — PASS.
 - Typecheck — PASS.
 - Web Runtime Release — PASS.
