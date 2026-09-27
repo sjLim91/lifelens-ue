@@ -76,6 +76,9 @@ int main()
         choosePrimitiveFurnaceSite(
             simulation.world(),builder.id,activityAnchor);
     assert(site.available);
+    assert(!facilityFootprintsConflict(
+        FacilityKind::Furnace,site.pos,
+        fire->kind,fire->pos));
     ConstructedFacility* furnace=establishPrimitiveFurnaceProject(simulation.world(),builder,site.pos);
     assert(furnace!=nullptr);
     const FacilityId furnaceId=furnace->id;
