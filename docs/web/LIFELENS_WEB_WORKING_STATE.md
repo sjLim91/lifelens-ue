@@ -12,6 +12,14 @@ This section supersedes older Web-current snapshots below while preserving them 
 - Core / World remains the sole authority for terrain, hydrology, residents, goals, targets, life events, facilities and persistent human traces.
 - Presentation may interpolate, LOD, label and animate authoritative facts; it may not invent durable world state or action meaning.
 
+### Korean-only presentation contract (#477)
+- Every user-visible Web Observer string is Korean. Core enum names and internal authority tokens remain internal transport values only.
+- All Web-exposed Core enums and structured resident-detail keys must be registered in `web/src/localization/korean.ts` before merge.
+- `Tools/validate_web_korean_ui.py` compares the current Core enum definitions against the Korean registry. Adding a new enum value without its Korean label fails Preflight with the exact missing value.
+- Already-Korean simulation display text may pass through unchanged; an unregistered English authority value is never intentionally exposed as fallback text.
+- Runtime version-skew fallback remains Korean and logs the exact missing token to the developer console so the omission is visible rather than silently hidden.
+- New panels/features must consume the shared localization layer instead of defining ad-hoc raw enum fallbacks.
+
 ### Current renderer/presentation
 - Unified Three.js `WorldScene` is the active Web world path for terrain, water, vegetation, atmosphere and resident actors.
 - Resident actors are stable by GUID and retain presentation continuity through transient refresh gaps.
