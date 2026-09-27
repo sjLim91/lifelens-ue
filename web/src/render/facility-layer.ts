@@ -6,7 +6,58 @@ import { createTerrainElevationSampler } from './terrain-geometry';
 
 type FacilityTrace = Extract<HumanTrace, { kind: 'Facility' }>;
 
-const UP = new THREE.Vector3(0, 1, 0);
+export interface FacilityPresentationFootprint {
+  traceId: string;
+  x: number;
+  z: number;
+  radius: number;
+}
+
+const FACILITY_CLEAR_RADIUS: Record<string, number> = {
+  PrimitiveStorage: 1.65,
+  FirePit: 1.2,
+  WorkSurface: 1.55,
+  SleepingPlace: 1.55,
+  Shelter: 2.35,
+  Furnace: 1.5,
+};
+
+export function facilityPresentationFootprints(
+  window: TerrainWindow,
+): FacilityPresentationFootprint[] {
+  const { gridCellsPerChunk: span, worldUnitsPerChunk: size } =
+    WORLD_GRID_CONTRACT;
+  return visibleHumanTraces(window)
+    .filter((trace): trace is FacilityTrace => trace.kind === 'Facility')
+    .map((trace) => ({
+      traceId: trace.id,
+      x: (
+        trace.gridX / span
+        - window.centerChunkX
+        - 0.5
+      ) * size,
+      z: (
+        trace.gridY / span
+        - window.centerChunkY
+        - 0.5
+      ) * size,
+      radius: FACILITY_CLEAR_RADIUS[trace.facilityKind] ?? 1.6,
+    }));
+}
+
+export function outsideFacilityFootprints(
+  x: number,
+  z: number,
+  footprints: FacilityPresentationFootprint[],
+  padding = 0,
+): boolean {
+  return footprints.every((footprint) => {
+    const dx = x - footprint.x;
+    const dz = z - footprint.z;
+    const radius = footprint.radius + padding;
+    return dx * dx + dz * dz >= radius * radius;
+  });
+}
 
 function clamp01(value: unknown): number {
   return Math.max(0, Math.min(1, Number(value) || 0));
