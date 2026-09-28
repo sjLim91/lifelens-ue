@@ -135,6 +135,7 @@ inline int contextActionDurationTicks(const PendingContextAction& action)
                 }
             }
             switch(action.civilization.intent){
+                case CivilizationIntent::Search: return 4;
                 case CivilizationIntent::Gather: return 5;
                 case CivilizationIntent::Store: return 3;
                 case CivilizationIntent::Retrieve: return 3;
@@ -175,6 +176,12 @@ inline bool resolveCivilizationContextTarget(
     outSanitationSiteId=0;
 
     switch(decision.intent){
+        case CivilizationIntent::Search:
+            if(!decision.hasSearchTarget
+               || !validResourceSearchTarget(
+                    world,decision.searchTargetPos)) return false;
+            outTarget=decision.searchTargetPos;
+            return true;
         case CivilizationIntent::Gather:
             return resolveCivilizationResourceAccessGridPosition(
                 world,decision.resourceNode,outTarget);
@@ -413,7 +420,8 @@ inline bool resolveCivilizationContextTarget(
 
 inline bool civilizationContextRequiresSpatialTarget(const CivilizationUtilityDecision& decision)
 {
-    if(decision.intent==CivilizationIntent::Gather
+    if(decision.intent==CivilizationIntent::Search
+       || decision.intent==CivilizationIntent::Gather
        || decision.intent==CivilizationIntent::Store
        || decision.intent==CivilizationIntent::Retrieve) return true;
     if(decision.intent==CivilizationIntent::Experiment){
