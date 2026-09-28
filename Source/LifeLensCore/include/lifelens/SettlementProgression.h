@@ -391,6 +391,7 @@ inline double settlementFacilityLivedUseSignal(
 }
 
 inline double settlementResidentActivityScore(
+    const World& world,
     GridPos candidate,
     const SettlementPopulation* population)
 {
@@ -399,6 +400,15 @@ inline double settlementResidentActivityScore(
     constexpr int ResidentActivityRadiusGrid=18;
     double score=0.0;
     for(const auto& entry:*population){
+        const Character* resident=nullptr;
+        for(const auto& candidateResident:world.characters){
+            if(candidateResident.id==entry.first){
+                resident=&candidateResident;
+                break;
+            }
+        }
+        if(resident==nullptr || !resident->alive) continue;
+
         const int distance=manhattan(candidate,entry.second);
         if(distance>ResidentActivityRadiusGrid) continue;
         const double proximity=1.0-std::clamp(
@@ -611,7 +621,7 @@ inline SettlementFacilitySiteOpportunity chooseSettlementFacilitySite(
         if(habitability<=-1000.0) return;
         const double score=
             settlementActivityCenterScore(world,candidate,kind)
-            +settlementResidentActivityScore(candidate,population)
+            +settlementResidentActivityScore(world,candidate,population)
             +habitability;
         // Traversal order breaks score ties deterministically.
         if(!found || score>bestScore+1e-12){
