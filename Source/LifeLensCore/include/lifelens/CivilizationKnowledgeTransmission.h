@@ -110,6 +110,9 @@ inline bool techniquePrerequisiteContextSatisfied(const Character& learner,Techn
     if(technique==TechniqueId::DugSanitationPit &&
        !learner.civilization.knowledge.knowsAtLeast(
            TechniqueId::DesignatedSanitationArea,KnowledgeLevel::Reproducible)) return false;
+    if(technique==TechniqueId::Cultivation &&
+       !learner.civilization.knowledge.knowsAtLeast(
+           TechniqueId::DiggingStick,KnowledgeLevel::Reproducible)) return false;
     if(technique==TechniqueId::CopperSmelting &&
        (!learner.civilization.knowledge.knowsAtLeast(
             TechniqueId::FireMaking,KnowledgeLevel::Reproducible)
@@ -193,7 +196,7 @@ inline TechniqueTransmissionOutcome applyTechniqueWitness(
     // Sanitation remains a protected subset of the now-extended range. Legacy
     // structural contract marker: raw<=static_cast<int>(TechniqueId::DugSanitationPit)
     for(int raw=static_cast<int>(TechniqueId::SharpFlake);
-        raw<=static_cast<int>(TechniqueId::CopperSmelting);++raw){
+        raw<=static_cast<int>(TechniqueId::Cultivation);++raw){
         const TechniqueId candidate=static_cast<TechniqueId>(raw);
         if(factRepresentsTechnique(fact,candidate)){ technique=candidate; break; }
     }
