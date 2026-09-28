@@ -1,5 +1,6 @@
 #include "lifelens/Simulation.h"
 #include "lifelens/CoreNavigation.h"
+#include "lifelens/CultivationProgression.h"
 #include "lifelens/FamilyProgression.h"
 #include "lifelens/InitialPopulation.h"
 #include "lifelens/EmotionRuntime.h"
@@ -1657,6 +1658,7 @@ void Simulation::step(){
     world_.environmentalResidues.advanceToMinute(world_.minute);
     if(world_.minute%(24*60)==0){
         regenerateCivilizationEnvironment(world_);
+        advanceCultivationOneDay(world_);
         advanceFoodSpoilageOneDay(world_);
     }
     advanceCivilizationKnowledgeTeaching();
