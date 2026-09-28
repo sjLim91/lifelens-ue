@@ -164,9 +164,11 @@ int main()
     // accumulated resident Need burden from sustained exposure, rather than
     // reacting to one isolated weather sample. Search deterministic chunks for
     // a sufficiently harsh resident-local climate.
-    actor.needs.sleep=0.42;
+    // This isolated shelter scenario is far from the completed bed. Keep sleep
+    // low so legitimate demand for a local bed doesn't mask weather exposure.
+    actor.needs.sleep=0.10;
     actor.needs.thirst=0.36;
-    actor.needs.hygiene=0.34;
+    actor.needs.hygiene=0.42;
     GridPos harshPosition=center;
     double harshPressure=0.0;
     for(int radius=1;radius<=96 && harshPressure<0.30;++radius){

@@ -135,6 +135,7 @@ lifelens_add_test(test_civilization_observer_read_model)
 lifelens_add_test(test_facility_authority)
 
 lifelens_add_test(test_settlement_autonomy)
+lifelens_add_test(test_settlement_capacity)
 
 lifelens_add_test(test_settlement_facility_effects)
 

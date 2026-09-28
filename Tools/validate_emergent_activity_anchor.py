@@ -36,7 +36,7 @@ for token in (
     "bestPrimitiveStorageConstructionDecision(\n            world,self,authoritativePosition)",
     "bestPrimitiveFirePitDecision(\n            world,self,authoritativePosition)",
     "bestPrimitiveFurnaceDecision(\n            world,self,authoritativePosition)",
-    "chooseSettlementFacilitySite(\n                    world,self.id,kind,authoritativePosition)",
+    "chooseSettlementFacilitySite(\n                    world,self.id,kind,authoritativePosition,population)",
     "executeCivilizationDecisionAtPosition",
 ):
     assert token in decision, f"civilization activity-position chain missing: {token}"
@@ -55,7 +55,7 @@ for token in (
     assert token in resolve_block, f"context target still bypasses actor position: {token}"
 
 assert "world_,c,decision.civilization,r.pos,target,sanitationSiteId" in simulation
-assert "executeCivilizationDecisionAtPosition(\n                    world_,actor,decision,resolvedPosition)" in completion
+assert "executeCivilizationDecisionAtPosition(\n                    world_,actor,decision,resolvedPosition,&population)" in completion
 
 # Regression must explicitly prove the emergent center can diverge from NEW GAME
 # spawn and that settlement selection follows lived activity instead.

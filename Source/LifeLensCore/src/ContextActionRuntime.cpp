@@ -258,8 +258,9 @@ bool Simulation::completeContextAction(
                 result=establishPendingDesignatedSanitationArea(
                     world_,actor,pending.targetPos);
             }else{
+                const auto population=settlementPopulation();
                 result=executeCivilizationDecisionAtPosition(
-                    world_,actor,decision,resolvedPosition);
+                    world_,actor,decision,resolvedPosition,&population);
             }
             if(!result.executed){
                 pending.clear();

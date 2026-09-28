@@ -311,7 +311,8 @@ inline CivilizationUtilityDecision applyCivilizationDispositionBias(
 inline CivilizationUtilityDecision chooseDispositionAwareCivilizationDecisionAtPosition(
     const World& world,
     const Character& self,
-    GridPos authoritativePosition) {
+    GridPos authoritativePosition,
+    const SettlementPopulation* population=nullptr) {
 
     CivilizationUtilityDecision best;
     if (self.id == 0 || self.civilization.character != self.id) return best;
@@ -320,7 +321,7 @@ inline CivilizationUtilityDecision chooseDispositionAwareCivilizationDecisionAtP
     considerCivilizationDecision(
         best,
         applyCivilizationDispositionBias(
-            self,bestCraftDecisionAtPosition(world,self,authoritativePosition)));
+            self,bestCraftDecisionAtPosition(world,self,authoritativePosition,population)));
     considerCivilizationDecision(best, applyCivilizationDispositionBias(self, bestRetrieveDecision(world, self)));
     considerCivilizationDecision(best, applyCivilizationDispositionBias(self, bestStoreDecision(world, self)));
     considerCivilizationDecision(best, applyCivilizationDispositionBias(self, bestGatherDecision(world, self)));
@@ -444,13 +445,14 @@ inline UnifiedUtilityDecision chooseUnifiedUtilityDecisionAtPosition(
     const RelationshipBook& relationships,
     GridPos authoritativePosition,
     double minimumSocialUtility = 0.18,
-    double minimumCivilizationUtility = 0.14) {
+    double minimumCivilizationUtility = 0.14,
+    const SettlementPopulation* population=nullptr) {
 
     const auto physical = bestPhysicalUtility(world, self);
     const SocialUtilityDecision social = chooseSocialUtilityDecision(world, self, relationships);
     const CivilizationUtilityDecision civilization =
         chooseDispositionAwareCivilizationDecisionAtPosition(
-            world,self,authoritativePosition);
+            world,self,authoritativePosition,population);
     const CivilizationUtilityDecision survivalProvision = urgentSurvivalProvisionGatherDecision(world, self);
 
     UnifiedUtilityDecision decision;

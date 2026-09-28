@@ -164,7 +164,8 @@ inline bool resolveCivilizationContextTarget(
     const CivilizationUtilityDecision& decision,
     GridPos authoritativePosition,
     GridPos& outTarget,
-    SanitationSiteId& outSanitationSiteId)
+    SanitationSiteId& outSanitationSiteId,
+    const SettlementPopulation* population=nullptr)
 {
     outTarget={};
     outSanitationSiteId=0;
@@ -223,7 +224,7 @@ inline bool resolveCivilizationContextTarget(
                     const SettlementFacilitySiteOpportunity opportunity=
                         chooseSettlementFacilitySite(
                             world,actor.id,decision.facilityKind,
-                            authoritativePosition);
+                            authoritativePosition,population);
                     if(!opportunity.available
                        || opportunity.pos.x!=decision.facilityTargetPos.x
                        || opportunity.pos.y!=decision.facilityTargetPos.y) return false;

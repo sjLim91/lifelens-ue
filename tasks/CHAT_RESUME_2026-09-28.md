@@ -3,7 +3,7 @@
 ## 현재 작업
 
 - 사용자 요청: 최근 챗의 작업을 이어서 수정·병합·배포하고 링크 제공. 사용량 제한으로 중단되면 일반 챗이 이 파일과 PR을 기준으로 재개한다.
-- 상태: ACTIVE — 정착 시설 성장 정체 원인 확인, 수정 준비.
+- 상태: ACTIVE — 구현과 로컬 검증 완료, PR #482 전체 CI 및 배포 대기.
 - 작업 브랜치: `work/settlement-capacity-20260928`.
 - 출발 main: `48425293f452996050ca9c89681259e833d1020d` (#481).
 - 기존 배포: `https://sjlim91.github.io/lifelens-ue/?v=48425293`.
@@ -33,6 +33,18 @@
 4. 관련 Core 테스트, Preflight, WASM을 통과한 정확한 head를 리뷰 후 병합한다. UE 장시간 빌드는 AGENTS 지침에 따라 Run ID를 기록하고 반복 대기하지 않는다.
 5. Runtime Release → 후속 Web Preview → Pages 성공과 실제 런타임을 확인한 후 링크를 전달한다.
 6. 완료 시 WORK_STATE / TEAM_BOARD / HANDOFF_LOG를 한 번 정리하고 이 문서를 마지막 검증 결과와 다음 지점으로 갱신한다.
+
+## 구현 및 로컬 검증 체크포인트
+
+- `SettlementDemand.h`: 살아 있는 실제 근거리 주민과 진행 중 공사를 고려한다. 계획 수용 기준은 잠자리 1인, 쉼터 4인, 작업대 근로 가능 주민 2인; 거리 범위는 64 grid다. 동시 사용 예약/가구별 소유권을 구현했다는 의미는 아니다.
+- 위치 문맥은 utility 선택, 공간 대상 재검증, 실제 공사 생성 완료까지 모두 연결했다. 어느 단계도 전체 주민을 초기 스폰에 있다고 가정하지 않는다.
+- 기존 부지가 가득 차면 생활권 내 24–48 grid의 제한된 외곽 후보를 조사한다. 물/시설 footprint/자원/위생시설 차단은 유지한다.
+- 유지보수와 공사는 첫 시설이 아닌 실제 지역 대상의 ID를 사용한다. 시설 종류를 시간에 따라 자동 해금/지급하지 않는다.
+- 새 회귀: 4인 침상 수요, 인구 변화/사망/거리/불명 위치, 공사 중복 방지, 자재 소모와 노동, 복수 시설 저장 코덱, 두 번째 작업대 수리, Simulation→pending context 증설 연결 PASS.
+- 기존 settlement autonomy, facility effects/authority, context completion, determinism, snapshot codec, early survival, Web bridge 로컬 PASS. 최종 전체 회귀는 CI 결과로 판정한다.
+- emergent activity anchor 및 facility footprint validator PASS.
+- 실제 NEW GAME seed 42 / 원래 4인 / 자재·시설 지급 없이 14일 진행: 1일 잠자리 3개(+공사 1), 3일 잠자리 6개·작업대 1개·저장고 1개, 5일 작업대 3개, 10일 쉼터 1개 완공, 14일까지 같은 규모 유지. 생활 위치 변화에 따른 지역 증설이라 전역 시설 개수=주민 수 할당은 아니다.
+- 기술/문명 종류의 장기 확장은 여전히 후속 과제다. 이 검증은 고정 seed의 Core 동작 확인이며 모바일 3D 시각 승인이나 모든 seed의 장기 생존 보장이 아니다.
 
 ## 충돌 및 제한
 

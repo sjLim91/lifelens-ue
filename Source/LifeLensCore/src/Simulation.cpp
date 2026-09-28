@@ -752,12 +752,20 @@ void Simulation::clearRuntimeActivity(Runtime& r){
     r.civilizationSanitationSiteId=0;
 }
 
+SettlementPopulation Simulation::settlementPopulation() const {
+    SettlementPopulation population;
+    population.reserve(runtime_.size());
+    for(const auto& entry:runtime_) population.emplace(entry.first,entry.second.pos);
+    return population;
+}
+
 bool Simulation::tryCivilizationDecision(Character& c,Runtime& r){
     if(!c.alive || !lifeStageProfile(c.lifeStage).canWork || r.pendingContext.active()) return false;
     if(world_.minute%15!=0) return false;
 
+    const auto population=settlementPopulation();
     const UnifiedUtilityDecision decision=chooseUnifiedUtilityDecisionAtPosition(
-        world_,c,relationships_,r.pos);
+        world_,c,relationships_,r.pos,0.18,0.14,&population);
     if(decision.kind!=UnifiedDecisionKind::Civilization || decision.civilization.intent==CivilizationIntent::None) return false;
 
     PendingContextAction pending;
@@ -768,7 +776,7 @@ bool Simulation::tryCivilizationDecision(Character& c,Runtime& r){
     GridPos target{};
     SanitationSiteId sanitationSiteId=0;
     const bool resolved=resolveCivilizationContextTarget(
-        world_,c,decision.civilization,r.pos,target,sanitationSiteId);
+        world_,c,decision.civilization,r.pos,target,sanitationSiteId,&population);
     if(civilizationContextRequiresSpatialTarget(decision.civilization) && !resolved) return false;
     if(resolved){
         pending.hasSpatialTarget=true;
@@ -794,11 +802,12 @@ bool Simulation::trySocialDecision(Character& c,Runtime& r){
     if(!c.alive || lifeStageProfile(c.lifeStage).autonomy<0.35 || r.pendingContext.active()) return false;
     if(world_.minute<r.socialCooldownUntilMinute) return false;
 
+    const auto population=settlementPopulation();
     const UnifiedUtilityDecision decision=world_.minute%15==0
         ? chooseUnifiedUtilityDecisionAtPosition(
-            world_,c,relationships_,r.pos)
+            world_,c,relationships_,r.pos,0.18,0.14,&population)
         : chooseUnifiedUtilityDecisionAtPosition(
-            world_,c,relationships_,r.pos,0.18,2.0);
+            world_,c,relationships_,r.pos,0.18,2.0,&population);
     if(decision.kind!=UnifiedDecisionKind::Social || decision.social.intent==SocialIntent::None) return false;
 
     const Character* target=findCharacter(world_,decision.social.target);
