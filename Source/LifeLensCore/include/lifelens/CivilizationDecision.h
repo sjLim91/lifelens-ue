@@ -349,7 +349,8 @@ inline CivilizationUtilityDecision bestGatherDecision(const World& world,const C
 inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
     const World& world,
     const Character& self,
-    GridPos authoritativePosition)
+    GridPos authoritativePosition,
+    const SettlementPopulation* population=nullptr)
 {
     CivilizationUtilityDecision best;
     const GridPos sanitationReference=authoritativePosition;
@@ -361,12 +362,15 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
             self,world.environmentalResidues,world.primitiveSanitationSites);
     const PrimitiveStorageNeedObservation storageNeed=observePrimitiveStorageNeed(world,self);
     const bool smeltingOpportunity=copperSmeltingOpportunityAvailable(world,self);
-    const std::array<ExperimentKind,11> experiments={
+    const bool cultivationOpportunity=cultivationExperimentOpportunityAvailable(
+        world,self,authoritativePosition,population);
+    const std::array<ExperimentKind,12> experiments={
         ExperimentKind::StrikeStone,ExperimentKind::HaftSharpFlake,ExperimentKind::FrictionWood,
         ExperimentKind::TwistFiber,ExperimentKind::ShapeClay,
         ExperimentKind::ShapeDiggingStick,ExperimentKind::HaftStoneHammer,
         ExperimentKind::DesignateSanitationArea,ExperimentKind::DigSanitationPit,
-        ExperimentKind::OrganizeStockpile,ExperimentKind::SmeltCopperOre};
+        ExperimentKind::OrganizeStockpile,ExperimentKind::SmeltCopperOre,
+        ExperimentKind::CultivatePlantFood};
 
     for(const ExperimentKind kind:experiments){
         const TechniqueId technique=experimentTechnique(kind);
@@ -377,11 +381,13 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
         const bool pitExperiment=kind==ExperimentKind::DigSanitationPit;
         const bool storageExperiment=kind==ExperimentKind::OrganizeStockpile;
         const bool smeltingExperiment=kind==ExperimentKind::SmeltCopperOre;
+        const bool cultivationExperiment=kind==ExperimentKind::CultivatePlantFood;
         if(designatedExperiment &&
            (!sanitationOpportunity.problemRecognized || !sanitationOpportunity.siteAvailable)) continue;
         if(pitExperiment && !pitOpportunity.candidateAvailable) continue;
         if(storageExperiment && !storageNeed.recognized) continue;
         if(smeltingExperiment && !smeltingOpportunity) continue;
+        if(cultivationExperiment && !cultivationOpportunity) continue;
 
         ExperimentContext context;
         context.worldSeed=world.seed;
@@ -397,6 +403,7 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
         context.sanitationPitCandidateAvailable=pitOpportunity.candidateAvailable;
         context.storageProblemRecognized=storageNeed.recognized;
         context.smeltingOpportunityAvailable=smeltingOpportunity;
+        context.cultivationOpportunityAvailable=cultivationOpportunity;
 
         if(!experimentPrerequisitesMet(context,self.civilization.knowledge)) continue;
         const TechniqueRecipe recipe=experimentRecipe(context);
@@ -409,6 +416,7 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
         double sanitationBoost=0.0;
         double storageBoost=0.0;
         double smeltingBoost=0.0;
+        double cultivationBoost=0.0;
         if(designatedExperiment){
             sanitationBoost=0.18+0.16*sanitationOpportunity.problemConfidence+
                 0.10*clampCivilization01(self.needs.hygiene);
@@ -424,11 +432,18 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
         }else if(smeltingExperiment){
             smeltingBoost=0.24+0.12*self.personality.curiosity+
                 0.08*self.civilization.craftingSkill;
+        }else if(cultivationExperiment){
+            const CultivationDemandObservation demand=
+                observeCultivationDemand(world,authoritativePosition,population);
+            cultivationBoost=0.20+0.30*demand.pressure
+                +0.08*self.personality.patience
+                +0.06*self.personality.conscientiousness;
         }
         const double score=clampCivilization01(
             0.11+0.22*self.personality.curiosity+0.10*self.personality.openness+
             0.07*self.personality.patience+0.12*self.civilization.learningSkill+
-            0.08*preference+hypothesisBoost+sanitationBoost+storageBoost+smeltingBoost);
+            0.08*preference+hypothesisBoost+sanitationBoost+storageBoost
+            +smeltingBoost+cultivationBoost);
 
         CivilizationUtilityDecision candidate;
         candidate.intent=CivilizationIntent::Experiment;
@@ -446,7 +461,7 @@ inline CivilizationUtilityDecision bestExperimentDecision(
     const Character& self)
 {
     return bestExperimentDecisionAtPosition(
-        world,self,civilizationSanitationReferencePosition(world));
+        world,self,civilizationSanitationReferencePosition(world),nullptr);
 }
 
 inline int desiredTechniqueOutputStock(TechniqueId technique)
@@ -460,6 +475,7 @@ inline int desiredTechniqueOutputStock(TechniqueId technique)
         case TechniqueId::StoneHammer: return 1;
         case TechniqueId::FireMaking:
         case TechniqueId::CopperSmelting:
+        case TechniqueId::Cultivation:
         case TechniqueId::DesignatedSanitationArea:
         case TechniqueId::DugSanitationPit:
         case TechniqueId::PrimitiveStorage:
@@ -1179,7 +1195,7 @@ inline CivilizationUtilityDecision chooseCivilizationUtilityDecisionAtPosition(
     if(self.id==0 || self.civilization.character!=self.id) return best;
     considerCivilizationDecision(
         best,bestExperimentDecisionAtPosition(
-            world,self,authoritativePosition));
+            world,self,authoritativePosition,population));
     considerCivilizationDecision(
         best,bestCraftDecisionAtPosition(world,self,authoritativePosition,population));
     considerCivilizationDecision(best,bestRetrieveDecision(world,self));
@@ -1278,6 +1294,10 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
                 context.storageProblemRecognized=observePrimitiveStorageNeed(world,self).recognized;
             }else if(decision.experiment==ExperimentKind::SmeltCopperOre){
                 context.smeltingOpportunityAvailable=copperSmeltingOpportunityAvailable(world,self);
+            }else if(decision.experiment==ExperimentKind::CultivatePlantFood){
+                context.cultivationOpportunityAvailable=
+                    cultivationExperimentOpportunityAvailable(
+                        world,self,authoritativePosition,population);
             }
             result.experiment=attemptExperiment(context,self.civilization.inventory,self.civilization.knowledge);
             result.executed=result.experiment.attempted;
