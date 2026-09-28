@@ -176,6 +176,7 @@ namespace LLObserverKorean
             case ELLCoreTechniqueId::DiggingStick:              return TEXT("굴착봉 제작");
             case ELLCoreTechniqueId::StoneHammer:               return TEXT("돌망치 제작");
             case ELLCoreTechniqueId::CopperSmelting:            return TEXT("구리 제련");
+            case ELLCoreTechniqueId::Cultivation:               return TEXT("재배");
             case ELLCoreTechniqueId::None:
             default:                                             return TEXT("없음");
         }
