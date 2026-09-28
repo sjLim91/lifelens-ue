@@ -310,6 +310,9 @@ bool Simulation::completeContextAction(
                 case CivilizationEventType::Retrieved:
                     log<<" "<<materialName(result.event.material)<<" x"<<result.event.quantity;
                     break;
+                case CivilizationEventType::Explored:
+                    log<<" frontier for "<<materialName(result.event.material);
+                    break;
                 case CivilizationEventType::ExperimentFailed:
                     log<<" failed "<<techniqueName(result.event.technique);
                     break;
