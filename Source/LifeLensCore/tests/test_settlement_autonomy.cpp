@@ -253,6 +253,36 @@ int main()
     CHECK(activateConstructedFacility(anchorFacility,0,layout.minute));
     layout.facilities.push_back(anchorFacility);
 
+    // C-S4: an actually used place becomes a stronger activity center than an
+    // identical but merely existing facility. This is persisted Core evidence,
+    // not a client-side "town center" tag.
+    const int safeShelterDistance=facilityMinimumCenterDistanceGrid(
+        FacilityKind::Shelter,FacilityKind::SleepingPlace);
+    const GridPos activityScoreProbe{
+        anchorFacility.pos.x+safeShelterDistance,
+        anchorFacility.pos.y
+    };
+    const double unusedActivityScore=settlementActivityCenterScore(
+        layout,activityScoreProbe,FacilityKind::Shelter);
+    for(int use=0;use<8;++use){
+        CHECK(recordFacilityUse(
+            layout.facilities.front(),planner.id,layout.minute+use));
+    }
+    const double livedActivityScore=settlementActivityCenterScore(
+        layout,activityScoreProbe,FacilityKind::Shelter);
+    CHECK(livedActivityScore>unusedActivityScore);
+
+    SettlementPopulation livedPopulation;
+    for(std::size_t index=0;index<layout.characters.size();++index){
+        livedPopulation.emplace(
+            layout.characters[index].id,
+            GridPos{emergentCenter.x+static_cast<int>(index),emergentCenter.y});
+    }
+    CHECK(settlementResidentActivityScore(
+        emergentCenter,&livedPopulation)>0.0);
+    CHECK(settlementResidentActivityScore(
+        {emergentCenter.x+64,emergentCenter.y},&livedPopulation)==0.0);
+
     const SettlementFacilitySiteOpportunity clustered=
         chooseSettlementFacilitySite(
             layout,planner.id,FacilityKind::Shelter,emergentCenter);
@@ -299,6 +329,6 @@ int main()
         terrainSiteWater,
         terrainSite.pos));
 
-    std::cout << "Stage C-S1 autonomous settlement recognition + terrain-aware clustering passed\n";
+    std::cout << "Stage C-S4 lived-use settlement form + terrain-aware clustering passed\n";
     return 0;
 }
