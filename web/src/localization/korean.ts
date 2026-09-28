@@ -79,6 +79,7 @@ export const KOREAN_CIVILIZATION_INTENT_LABELS: Record<string, string> = {
   Gather: '채집',
   Store: '저장',
   Retrieve: '꺼내기',
+  Explore: '자원 탐색',
   Experiment: '실험',
   Craft: '제작',
 };

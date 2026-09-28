@@ -65,6 +65,9 @@ int main()
 
     // Seed an actively burning FirePit so the binary codec must preserve all
     // authoritative runtime fields, not merely the physical facility shell.
+    // This codec fixture must stay independent of whichever autonomous
+    // sanitation project happened to progress during the 5,000-minute lead-in.
+    source.world().primitiveSanitationSites.clear();
     auto& facilities=source.world().facilities;
     facilities.erase(
         std::remove_if(facilities.begin(),facilities.end(),[](const ConstructedFacility& facility){
@@ -77,9 +80,20 @@ int main()
     a.civilization.inventory.add({ItemKind::RawMaterial,MaterialKind::Wood,4,0.5,1.0});
     GridPos fireActivityAnchor{};
     CHECK(source.runtimePosition(a.id,fireActivityAnchor));
-    const PrimitiveFirePitSiteOpportunity fireSite=
+    PrimitiveFirePitSiteOpportunity fireSite=
         choosePrimitiveFirePitSite(
             source.world(),a.id,fireActivityAnchor);
+    // Autonomous progression may legitimately make the actor's immediate
+    // neighborhood dense. Move the codec fixture anchor outward in stable
+    // chunk-sized steps instead of depending on that incidental density.
+    for(int step=1;step<=12 && !fireSite.available;++step){
+        const GridPos alternateAnchor{
+            fireActivityAnchor.x+step*WorldChunkSpanGridCells,
+            fireActivityAnchor.y
+        };
+        fireSite=choosePrimitiveFirePitSite(
+            source.world(),a.id,alternateAnchor);
+    }
     CHECK(fireSite.available);
     ConstructedFacility* firePit=establishPrimitiveFirePitProject(source.world(),a,fireSite.pos);
     CHECK(firePit!=nullptr);

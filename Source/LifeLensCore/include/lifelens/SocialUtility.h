@@ -277,6 +277,13 @@ inline double civilizationDispositionAffinity(
                 0.30 * preferences.comfort +
                 0.25 * traits.resourcefulness +
                 0.15 * traits.discipline);
+        case CivilizationIntent::Explore:
+            return socialClamp01(
+                0.38 * preferences.exploration +
+                0.22 * preferences.novelty +
+                0.20 * traits.resourcefulness +
+                0.12 * traits.boldness +
+                0.08 * traits.perseverance);
         case CivilizationIntent::Experiment:
             return socialClamp01(
                 0.30 * preferences.exploration +
@@ -324,7 +331,16 @@ inline CivilizationUtilityDecision chooseDispositionAwareCivilizationDecisionAtP
             self,bestCraftDecisionAtPosition(world,self,authoritativePosition,population)));
     considerCivilizationDecision(best, applyCivilizationDispositionBias(self, bestRetrieveDecision(world, self)));
     considerCivilizationDecision(best, applyCivilizationDispositionBias(self, bestStoreDecision(world, self)));
-    considerCivilizationDecision(best, applyCivilizationDispositionBias(self, bestGatherDecision(world, self)));
+    considerCivilizationDecision(
+        best,
+        applyCivilizationDispositionBias(
+            self,bestResourceExplorationDecisionAtPosition(
+                world,self,authoritativePosition)));
+    considerCivilizationDecision(
+        best,
+        applyCivilizationDispositionBias(
+            self,bestGatherDecisionAtPosition(
+                world,self,authoritativePosition)));
     return best;
 }
 
@@ -380,9 +396,10 @@ inline double maximumResidentNeed(const Character& self)
 // Compatibility name retained because tests/callers already use it. The
 // decision now means "obtain an urgent provision": first from settlement
 // storage, then from a natural resource node. No food/water is synthesized.
-inline CivilizationUtilityDecision urgentSurvivalProvisionGatherDecision(
+inline CivilizationUtilityDecision urgentSurvivalProvisionDecisionAtPosition(
     const World& world,
-    const Character& self)
+    const Character& self,
+    GridPos authoritativePosition)
 {
     constexpr double SurvivalProvisionThreshold = 0.74;
 
@@ -421,6 +438,19 @@ inline CivilizationUtilityDecision urgentSurvivalProvisionGatherDecision(
                     2.0*clampCivilization01(self.civilization.gatheringSkill));
                 return result;
             }
+
+            // Known provision is exhausted. Survival may now authorize a real
+            // frontier search, but the destination still reveals no resource
+            // contents until physical arrival materializes that chunk.
+            const ResourceExplorationOpportunity opportunity=
+                chooseResourceExplorationOpportunity(
+                    world,self.id,material,authoritativePosition);
+            if(opportunity.available){
+                result.intent=CivilizationIntent::Explore;
+                result.utility=socialClamp01(0.82+0.18*need);
+                result.material=material;
+                result.item=ItemKind::RawMaterial;
+            }
             return result;
         };
 
@@ -439,6 +469,16 @@ inline CivilizationUtilityDecision urgentSurvivalProvisionGatherDecision(
     return hunger;
 }
 
+// Compatibility wrapper retained for callers/tests that do not own a runtime
+// position. Production scheduling uses the authoritative resident position.
+inline CivilizationUtilityDecision urgentSurvivalProvisionGatherDecision(
+    const World& world,
+    const Character& self)
+{
+    return urgentSurvivalProvisionDecisionAtPosition(
+        world,self,civilizationSanitationReferencePosition(world));
+}
+
 inline UnifiedUtilityDecision chooseUnifiedUtilityDecisionAtPosition(
     const World& world,
     const Character& self,
@@ -453,7 +493,9 @@ inline UnifiedUtilityDecision chooseUnifiedUtilityDecisionAtPosition(
     const CivilizationUtilityDecision civilization =
         chooseDispositionAwareCivilizationDecisionAtPosition(
             world,self,authoritativePosition,population);
-    const CivilizationUtilityDecision survivalProvision = urgentSurvivalProvisionGatherDecision(world, self);
+    const CivilizationUtilityDecision survivalProvision =
+        urgentSurvivalProvisionDecisionAtPosition(
+            world,self,authoritativePosition);
 
     UnifiedUtilityDecision decision;
     decision.physicalGoal = physical.first;
@@ -461,9 +503,9 @@ inline UnifiedUtilityDecision chooseUnifiedUtilityDecisionAtPosition(
     decision.civilization = civilization;
 
     // A missing critical provision is part of survival, not optional progress.
-    // Promote only the matching Gather action before applying the normal rule
-    // that urgent Needs suppress civilization. Trait/preference bias is
-    // intentionally not applied to this emergency path.
+    // Prefer Retrieve/Gather from known supply; if none exists, allow a real
+    // Explore context before the normal rule that urgent Needs suppresses
+    // civilization. Trait/preference bias is intentionally skipped here.
     if (survivalProvision.intent != CivilizationIntent::None) {
         decision.kind = UnifiedDecisionKind::Civilization;
         decision.civilization = survivalProvision;

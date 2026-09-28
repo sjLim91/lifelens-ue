@@ -13,6 +13,7 @@
 #include "PrimitiveSanitation.h"
 #include "PrimitiveSmeltingProgression.h"
 #include "PrimitiveStorageProgression.h"
+#include "ResourceExploration.h"
 #include "SettlementProgression.h"
 #include "World.h"
 
@@ -25,7 +26,9 @@ enum class CivilizationIntent {
     Experiment,
     Craft,
     // Appended so existing enum ordinals remain stable.
-    Retrieve
+    Retrieve,
+    // Core-authored frontier search. Keep appended for persisted enum stability.
+    Explore
 };
 
 enum class FacilityBuildAction {
@@ -53,6 +56,7 @@ inline const char* civilizationIntentName(CivilizationIntent intent)
         case CivilizationIntent::Experiment: return "Experiment";
         case CivilizationIntent::Craft: return "Craft";
         case CivilizationIntent::Retrieve: return "Retrieve";
+        case CivilizationIntent::Explore: return "Explore";
         default: return "None";
     }
 }
@@ -275,7 +279,195 @@ inline void considerCivilizationDecision(CivilizationUtilityDecision& best,const
     if(candidate.utility>best.utility+1e-12) best=candidate;
 }
 
-inline CivilizationUtilityDecision bestGatherDecision(const World& world,const Character& self)
+inline GridPos civilizationDecisionResourcePosition(
+    const World& world,
+    const ResourceNode& node)
+{
+    for(const auto& chunk:world.generatedNaturalChunks){
+        for(const auto& patch:chunk.resourcePatches){
+            if(patch.nodeId==node.id) return patch.pos;
+        }
+    }
+    return node.pos;
+}
+
+inline int knownNaturalResourceUnits(
+    const World& world,
+    MaterialKind material)
+{
+    int total=0;
+    for(const auto& node:world.resourceNodes){
+        if(node.material==material && node.quantity>0) total+=node.quantity;
+    }
+    return total;
+}
+
+inline int localNaturalResourceUnits(
+    const World& world,
+    MaterialKind material,
+    GridPos authoritativePosition)
+{
+    constexpr int LocalRadiusChunks=3;
+    const int radius=WorldChunkSpanGridCells*LocalRadiusChunks;
+    int total=0;
+    for(const auto& node:world.resourceNodes){
+        if(node.material!=material || node.quantity<=0) continue;
+        const GridPos nodePos=civilizationDecisionResourcePosition(world,node);
+        const int distance=std::max(
+            std::abs(nodePos.x-authoritativePosition.x),
+            std::abs(nodePos.y-authoritativePosition.y));
+        if(distance<=radius) total+=node.quantity;
+    }
+    return total;
+}
+
+inline double civilizationResourceExplorationPressure(
+    const World& world,
+    const Character& self,
+    MaterialKind material,
+    GridPos authoritativePosition)
+{
+    if(!validNaturalResourceMaterial(material)) return 0.0;
+
+    const int held=self.civilization.inventory.count(ItemKind::RawMaterial,material);
+    const int stored=storageCountForMaterial(world,material);
+    const int storageMissing=primitiveStorageMissingMaterial(world,material);
+    const int fireMissing=primitiveFirePitMissingMaterial(world,material);
+    const int furnaceMissing=primitiveFurnaceMissingMaterial(world,material);
+    const int cultivationMissing=cultivationConstructionMissingMaterial(world,material);
+    const int settlementMissing=settlementConstructionMissingMaterial(world,material);
+    const int repairMissing=std::max(
+        0,
+        settlementRepairMaterialDemand(world,material)-held);
+    const int constructionMissing=std::max({
+        settlementMissing,
+        storageMissing,
+        fireMissing,
+        furnaceMissing,
+        cultivationMissing
+    });
+
+    const bool provision=
+        material==MaterialKind::Water
+        || material==MaterialKind::PlantFood;
+    const double progressDemand=materialProgressDemand(self,material);
+
+    // For critical provisions, a known supply is always safer than a blind
+    // frontier search. Exploration becomes relevant only after all currently
+    // known Water/PlantFood nodes are exhausted.
+    if(provision && knownNaturalResourceUnits(world,material)>0) return 0.0;
+
+    // Do not roam for advanced ores merely because the map can contain them.
+    // Search needs either a current survival/provision role, a concrete build/
+    // repair demand, or enough learned/progressive relevance to justify it.
+    if(!provision
+       && constructionMissing<=0
+       && repairMissing<=0
+       && progressDemand<0.40){
+        return 0.0;
+    }
+
+    const int reserveTarget=provision ? 8 : 0;
+    const int reserveGap=std::max(0,reserveTarget-stored);
+    const int fireFuelReserve=
+        (hasOperationalFirePit(world) && material==MaterialKind::Wood) ? 3 : 0;
+    const int target=
+        (provision ? 4 : 5)
+        +std::min(4,constructionMissing+repairMissing)
+        +fireFuelReserve
+        +(provision && !world.storageSites.empty()
+            ? std::min(4,reserveGap)
+            : 0);
+    const int storedCredit=provision
+        ? std::min(stored,reserveTarget)
+        : std::min(stored,2);
+    const int stockGap=std::max(0,target-held-storedCredit);
+    if(stockGap<=0 && constructionMissing<=0 && repairMissing<=0) return 0.0;
+
+    const int localUnits=localNaturalResourceUnits(
+        world,material,authoritativePosition);
+    const int comfortableLocalUnits=provision ? 12 : 8;
+    const double localScarcity=1.0-clampCivilization01(
+        static_cast<double>(localUnits)
+        /static_cast<double>(comfortableLocalUnits));
+    if(localScarcity<0.35) return 0.0;
+
+    const double gap=clampCivilization01(
+        static_cast<double>(stockGap)
+        /static_cast<double>(std::max(1,target)));
+    const double constructionDemand=constructionMissing>0
+        ? clampCivilization01(0.45+0.12*static_cast<double>(constructionMissing))
+        : 0.0;
+    const double maintenanceDemand=repairMissing>0
+        ? clampCivilization01(0.42+0.18*static_cast<double>(repairMissing))
+        : 0.0;
+    const double survivalPressure=
+        material==MaterialKind::Water
+            ? clampCivilization01(self.needs.thirst)
+            : (material==MaterialKind::PlantFood
+                ? clampCivilization01(self.needs.hunger)
+                : 0.0);
+
+    return clampCivilization01(
+        0.22*progressDemand
+        +0.30*gap
+        +0.26*localScarcity
+        +0.18*constructionDemand
+        +0.14*maintenanceDemand
+        +0.12*survivalPressure);
+}
+
+inline CivilizationUtilityDecision bestResourceExplorationDecisionAtPosition(
+    const World& world,
+    const Character& self,
+    GridPos authoritativePosition)
+{
+    CivilizationUtilityDecision best;
+    const std::array<MaterialKind,9> naturalMaterials={
+        MaterialKind::Water,
+        MaterialKind::Wood,
+        MaterialKind::Stone,
+        MaterialKind::Flint,
+        MaterialKind::Fiber,
+        MaterialKind::Clay,
+        MaterialKind::PlantFood,
+        MaterialKind::CopperOre,
+        MaterialKind::TinOre
+    };
+
+    for(const MaterialKind material:naturalMaterials){
+        const double pressure=civilizationResourceExplorationPressure(
+            world,self,material,authoritativePosition);
+        if(pressure<=0.0) continue;
+
+        const ResourceExplorationOpportunity opportunity=
+            chooseResourceExplorationOpportunity(
+                world,self.id,material,authoritativePosition);
+        if(!opportunity.available) continue;
+
+        const double preference=civilizationPreference(
+            world.seed,self.id,
+            900ULL+static_cast<std::uint64_t>(material));
+        CivilizationUtilityDecision candidate;
+        candidate.intent=CivilizationIntent::Explore;
+        candidate.utility=clampCivilization01(
+            0.18
+            +0.62*pressure
+            +0.08*self.personality.curiosity
+            +0.05*self.personality.adaptability
+            +0.04*opportunity.suitability
+            +0.03*preference);
+        candidate.material=material;
+        candidate.item=ItemKind::RawMaterial;
+        considerCivilizationDecision(best,candidate);
+    }
+    return best;
+}
+
+inline CivilizationUtilityDecision bestGatherDecisionAtPosition(
+    const World& world,
+    const Character& self,
+    GridPos authoritativePosition)
 {
     CivilizationUtilityDecision best;
     for(const auto& node:world.resourceNodes){
@@ -330,10 +522,21 @@ inline CivilizationUtilityDecision bestGatherDecision(const World& world,const C
             ? clampCivilization01(0.42+0.18*static_cast<double>(repairMissing))
             : 0.0;
         const double preference=civilizationPreference(world.seed,self.id,100ULL+static_cast<std::uint64_t>(node.material));
+        const GridPos nodePos=civilizationDecisionResourcePosition(world,node);
+        const int distance=std::max(
+            std::abs(nodePos.x-authoritativePosition.x),
+            std::abs(nodePos.y-authoritativePosition.y));
+        const double distance01=clampCivilization01(
+            static_cast<double>(distance)
+            /static_cast<double>(WorldChunkSpanGridCells*6));
+        const double localBonus=
+            distance<=WorldChunkSpanGridCells*3 ? 0.04 : 0.0;
+        const double distancePenalty=provision ? 0.0 : 0.20*distance01;
         const double score=clampCivilization01(
             0.07+0.12*self.personality.curiosity+0.05*self.personality.adaptability+
             0.08*self.civilization.gatheringSkill+0.16*demand+0.13*gap+
             0.30*constructionDemand+0.24*maintenanceDemand+0.07*preference+
+            localBonus-distancePenalty+
             (provision && !world.storageSites.empty()
                 ? 0.12*clampCivilization01(
                     static_cast<double>(reserveGap)
@@ -349,6 +552,14 @@ inline CivilizationUtilityDecision bestGatherDecision(const World& world,const C
         considerCivilizationDecision(best,candidate);
     }
     return best;
+}
+
+inline CivilizationUtilityDecision bestGatherDecision(
+    const World& world,
+    const Character& self)
+{
+    return bestGatherDecisionAtPosition(
+        world,self,civilizationSanitationReferencePosition(world));
 }
 
 inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
@@ -1387,7 +1598,12 @@ inline CivilizationUtilityDecision chooseCivilizationUtilityDecisionAtPosition(
         best,bestRetrieveDecisionAtPosition(
             world,self,authoritativePosition));
     considerCivilizationDecision(best,bestStoreDecision(world,self));
-    considerCivilizationDecision(best,bestGatherDecision(world,self));
+    considerCivilizationDecision(
+        best,bestResourceExplorationDecisionAtPosition(
+            world,self,authoritativePosition));
+    considerCivilizationDecision(
+        best,bestGatherDecisionAtPosition(
+            world,self,authoritativePosition));
     return best;
 }
 
@@ -1427,6 +1643,28 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
     CivilizationExecutionResult result;
     const GridPos sanitationReference=authoritativePosition;
     switch(decision.intent){
+        case CivilizationIntent::Explore: {
+            if(!validNaturalResourceMaterial(decision.material)) return result;
+            const ChunkCoord targetChunk=chunkCoordForGrid(authoritativePosition);
+            if(world.findGeneratedNaturalChunk(targetChunk)!=nullptr) return result;
+            const MacroSurfaceFacts surface=
+                deriveMacroSurfaceFacts(world.genesisIdentity(),targetChunk);
+            if(surface.surfaceClass==MacroSurfaceClass::Ocean) return result;
+            const HydrologyFacts hydrology=
+                deriveHydrologyFacts(world.genesisIdentity(),targetChunk);
+            if(surfaceWaterGroundContainsGrid(hydrology,authoritativePosition))
+                return result;
+
+            world.materializeNaturalChunk(targetChunk);
+            result.event.actor=self.id;
+            result.event.type=CivilizationEventType::Explored;
+            result.event.material=decision.material;
+            result.event.item=ItemKind::RawMaterial;
+            result.event.quantity=0;
+            result.executed=true;
+            result.success=true;
+            return result;
+        }
         case CivilizationIntent::Gather: {
             ResourceNode* node=findCivilizationResource(world,decision.resourceNode);
             if(!node) return result;

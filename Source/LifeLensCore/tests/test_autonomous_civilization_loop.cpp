@@ -158,6 +158,66 @@ int main()
     const CivilizationExecutionResult crafted=executeCivilizationDecision(divergenceWorld,experimenter,craftDecision);
     CHECK(crafted.executed && crafted.success);
 
+    // Resource scarcity expands the known world through an explicit Core
+    // exploration context. Unmaterialized resource catalogues remain unknown
+    // until the resident physically reaches the frontier target.
+    SimulationRuleset explorationRules=DefaultSimulationRuleset;
+    explorationRules.needs.hungerPerMinute=0.0;
+    explorationRules.needs.thirstPerMinute=0.0;
+    explorationRules.needs.sleepPerMinute=0.0;
+    explorationRules.needs.bladderPerMinute=0.0;
+    explorationRules.needs.hygienePerMinute=0.0;
+    Simulation explorationProbe(
+        4242442,0,CurrentWorldGenerationVersion,explorationRules);
+    explorationProbe.setupNewGame();
+    CHECK(!explorationProbe.world().characters.empty());
+    explorationProbe.world().characters.resize(1);
+    const std::size_t initialKnownChunks=
+        explorationProbe.world().generatedNaturalChunks.size();
+    for(auto& node:explorationProbe.world().resourceNodes) node.quantity=0;
+    Character& explorationResident=explorationProbe.world().characters.front();
+    explorationResident.needs={0.02,0.02,0.02,0.02,0.02};
+    explorationResident.personality.curiosity=1.0;
+    explorationResident.personality.adaptability=1.0;
+
+    bool sawExplorationContext=false;
+    CharacterId explorerId=0;
+    GridPos explorationTarget{};
+    ChunkCoord explorationChunk{};
+    for(int minute=0;minute<180 && !sawExplorationContext;++minute){
+        explorationProbe.step();
+        const Character& resident=explorationProbe.world().characters.front();
+        const PendingContextActionObservation pending=
+            explorationProbe.observePendingContextAction(resident.id);
+        if(!pending.active
+           || pending.kind!=ContextActionKind::Civilization
+           || pending.civilizationIntent!=CivilizationIntent::Explore){
+            continue;
+        }
+
+        CHECK(pending.hasSpatialTarget);
+        explorerId=resident.id;
+        explorationTarget=pending.targetPos;
+        explorationChunk=chunkCoordForGrid(explorationTarget);
+        CHECK(explorationProbe.world().findGeneratedNaturalChunk(explorationChunk)==nullptr);
+        sawExplorationContext=true;
+    }
+    CHECK(sawExplorationContext);
+    CHECK(explorerId!=0);
+
+    bool frontierMaterialized=false;
+    for(int minute=0;minute<360 && !frontierMaterialized;++minute){
+        explorationProbe.step();
+        frontierMaterialized=
+            explorationProbe.world().findGeneratedNaturalChunk(explorationChunk)!=nullptr;
+    }
+    CHECK(frontierMaterialized);
+    CHECK(explorationProbe.world().generatedNaturalChunks.size()>initialKnownChunks);
+    GridPos explorerPosition{};
+    CHECK(explorationProbe.runtimePosition(explorerId,explorerPosition));
+    CHECK(contextActionNearTarget(explorerPosition,explorationTarget,1));
+    CHECK(containsLog(explorationProbe.logs(),"Civilization Explore"));
+
     // Presentation/read contract is driven only by a real executed civilization
     // decision. It is transient runtime state, not save-game state.
     Simulation activityProbe(4242001);
