@@ -1237,9 +1237,10 @@ inline CivilizationUtilityDecision bestCraftDecision(
         world,self,civilizationSanitationReferencePosition(world));
 }
 
-inline CivilizationUtilityDecision bestRetrieveDecision(
+inline CivilizationUtilityDecision bestRetrieveDecisionAtPosition(
     const World& world,
-    const Character& self)
+    const Character& self,
+    GridPos authoritativePosition)
 {
     CivilizationUtilityDecision best;
 
@@ -1256,7 +1257,12 @@ inline CivilizationUtilityDecision bestRetrieveDecision(
         for(const auto& provision:provisions){
             const MaterialKind material=provision.first;
             const double need=provision.second;
-            if(need<0.35) continue;
+            const bool cultivationNeed=
+                self.civilization.knowledge.knowsAtLeast(
+                    TechniqueId::Cultivation,KnowledgeLevel::Reproducible)
+                && cultivationInputNeededNear(
+                    world,authoritativePosition,material);
+            if(need<0.35 && !cultivationNeed) continue;
 
             const int held=self.civilization.inventory.count(
                 ItemKind::RawMaterial,material);
@@ -1280,7 +1286,8 @@ inline CivilizationUtilityDecision bestRetrieveDecision(
                 +0.55*need
                 +0.12*carryGap
                 +0.05*self.personality.orderliness
-                +0.03*preference);
+                +0.03*preference
+                +(cultivationNeed ? 0.34 : 0.0));
             candidate.storage=storage.id;
             candidate.item=ItemKind::RawMaterial;
             candidate.material=material;
@@ -1289,6 +1296,14 @@ inline CivilizationUtilityDecision bestRetrieveDecision(
         }
     }
     return best;
+}
+
+inline CivilizationUtilityDecision bestRetrieveDecision(
+    const World& world,
+    const Character& self)
+{
+    return bestRetrieveDecisionAtPosition(
+        world,self,civilizationSanitationReferencePosition(world));
 }
 
 inline CivilizationUtilityDecision bestStoreDecision(const World& world,const Character& self)
@@ -1363,7 +1378,9 @@ inline CivilizationUtilityDecision chooseCivilizationUtilityDecisionAtPosition(
             world,self,authoritativePosition,population));
     considerCivilizationDecision(
         best,bestCraftDecisionAtPosition(world,self,authoritativePosition,population));
-    considerCivilizationDecision(best,bestRetrieveDecision(world,self));
+    considerCivilizationDecision(
+        best,bestRetrieveDecisionAtPosition(
+            world,self,authoritativePosition));
     considerCivilizationDecision(best,bestStoreDecision(world,self));
     considerCivilizationDecision(best,bestGatherDecision(world,self));
     return best;
