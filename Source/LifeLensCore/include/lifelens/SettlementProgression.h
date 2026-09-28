@@ -237,6 +237,14 @@ inline bool settlementFacilityNeedsMaintenance(
         && facility.durability<0.72;
 }
 
+inline bool settlementFacilityCanRestore(
+    const ConstructedFacility& facility)
+{
+    return isSettlementFoundationFacility(facility.kind)
+        && facility.state==FacilityState::Ruined
+        && facilitySupportsMaintenance(facility.kind);
+}
+
 inline int settlementRepairMaterialDemand(
     const World& world,
     MaterialKind material)
@@ -244,8 +252,14 @@ inline int settlementRepairMaterialDemand(
     if(material==MaterialKind::Unknown) return 0;
     int demand=0;
     for(const auto& facility:world.facilities){
-        if(!settlementFacilityNeedsMaintenance(facility)) continue;
-        if(facilityRepairMaterial(facility.kind)==material) ++demand;
+        if(settlementFacilityNeedsMaintenance(facility)){
+            if(facilityRepairMaterial(facility.kind)==material) ++demand;
+            continue;
+        }
+        if(settlementFacilityCanRestore(facility)){
+            demand+=facilityRestorationMaterialRequirement(
+                facility.kind,material);
+        }
     }
     return demand;
 }
@@ -258,6 +272,14 @@ inline FacilityRepairResult repairSettlementFacility(
     for(auto& facility:world.facilities){
         if(facility.id!=facilityId
            || !isSettlementFoundationFacility(facility.kind)) continue;
+        if(settlementFacilityCanRestore(facility)){
+            return restoreRuinedConstructedFacility(
+                facility,
+                worker.id,
+                worker.civilization.inventory,
+                worker.civilization.craftingSkill,
+                world.minute);
+        }
         return repairConstructedFacility(
             facility,
             worker.id,

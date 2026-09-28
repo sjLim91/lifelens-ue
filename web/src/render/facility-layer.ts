@@ -281,6 +281,11 @@ export class FacilityLayer {
     trace: FacilityTrace,
     progress: number,
   ): void {
+    if (trace.state === 'Ruined') {
+      this.buildRuinedFacility(group, trace);
+      return;
+    }
+
     if (progress < 0.18) {
       this.addPlanStakes(group, trace);
     } else if (trace.state === 'UnderConstruction') {
@@ -312,6 +317,63 @@ export class FacilityLayer {
       default:
         this.buildUnknownFacility(group, trace, progress);
         break;
+    }
+  }
+
+  private buildRuinedFacility(
+    group: THREE.Group,
+    trace: FacilityTrace,
+  ): void {
+    // Ruins remain authoritative historical traces, but must never read as a
+    // second operational bed/work surface/shelter on the observer screen.
+    this.addBox(
+      group,
+      trace,
+      this.darkWoodMaterial,
+      [-0.52, 0.11, -0.08],
+      [1.45, 0.16, 0.18],
+      [0.06, 0.54, 0.18],
+      900,
+    );
+    this.addBox(
+      group,
+      trace,
+      this.woodMaterial,
+      [0.46, 0.09, 0.28],
+      [1.05, 0.13, 0.16],
+      [-0.04, -0.72, -0.12],
+      901,
+    );
+    this.addBox(
+      group,
+      trace,
+      this.stoneMaterial,
+      [0.04, 0.08, -0.38],
+      [0.42, 0.18, 0.34],
+      [0.18, 0.18, 0.11],
+      902,
+    );
+
+    if (trace.facilityKind === 'SleepingPlace') {
+      this.addBox(
+        group,
+        trace,
+        this.beddingMaterial,
+        [0.18, 0.12, 0.04],
+        [0.78, 0.08, 0.42],
+        [0.08, -0.34, 0.16],
+        903,
+      );
+    } else if (trace.facilityKind === 'Shelter') {
+      this.addBox(
+        group,
+        trace,
+        this.thatchMaterial,
+        [-0.1, 0.17, 0.06],
+        [1.12, 0.09, 0.62],
+        [0.12, 0.28, -0.24],
+        904,
+      );
     }
   }
 
