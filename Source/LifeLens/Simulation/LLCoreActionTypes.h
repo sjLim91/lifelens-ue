@@ -34,7 +34,8 @@ enum class ELLCoreCivilizationAction : uint8
     Store,
     Experiment,
     Craft,
-    Retrieve
+    Retrieve,
+    Explore
 };
 
 UENUM(BlueprintType)
