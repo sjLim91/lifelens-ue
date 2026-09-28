@@ -472,7 +472,9 @@ inline CivilizationUtilityDecision bestResourceSearchDecision(
             +0.04*self.personality.riskTolerance
             +0.03*preference
             -0.10*distancePenalty);
-        considerCivilizationDecision(best,candidate);
+        if(candidate.utility>best.utility+1e-12){
+            best=candidate;
+        }
     }
     return best;
 }
@@ -1665,8 +1667,8 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
         case CivilizationIntent::Search: {
             if(!decision.hasSearchTarget
                || decision.material==MaterialKind::Unknown
-               || !contextActionNearTarget(
-                    authoritativePosition,decision.searchTargetPos,1)){
+               || std::abs(authoritativePosition.x-decision.searchTargetPos.x)>1
+               || std::abs(authoritativePosition.y-decision.searchTargetPos.y)>1){
                 return result;
             }
             if(!materializeResourceSearchArrival(
