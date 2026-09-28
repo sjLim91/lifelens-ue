@@ -283,6 +283,19 @@ int main()
     CHECK(settlementResidentActivityScore(
         layout,{emergentCenter.x+64,emergentCenter.y},&livedPopulation)==0.0);
 
+    // Runtime coordinates alone must not leave a dead resident behind as a
+    // phantom activity center.
+    const CharacterId deadResidentId=layout.characters.back().id;
+    const bool deadResidentWasAlive=layout.characters.back().alive;
+    const GridPos deadResidentOriginalPos=livedPopulation.at(deadResidentId);
+    const GridPos ghostProbe{emergentCenter.x+80,emergentCenter.y};
+    layout.characters.back().alive=false;
+    livedPopulation[deadResidentId]=ghostProbe;
+    CHECK(settlementResidentActivityScore(
+        layout,ghostProbe,&livedPopulation)==0.0);
+    layout.characters.back().alive=deadResidentWasAlive;
+    livedPopulation[deadResidentId]=deadResidentOriginalPos;
+
     const SettlementFacilitySiteOpportunity clustered=
         chooseSettlementFacilitySite(
             layout,planner.id,FacilityKind::Shelter,emergentCenter);
