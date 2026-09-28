@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <limits>
 #include <vector>
 
 #include "Civilization.h"
@@ -80,6 +81,11 @@ struct ConstructedFacility {
     double cropCare01 = 0.0;
     int cropHarvestUnits = 0;
     int lastCultivationMinute = -1;
+
+    // Persistent lived-use evidence. Appended to preserve aggregate/source
+    // compatibility with older facility fixtures and persisted enum layouts.
+    int usageCount = 0;
+    int lastUsedMinute = -1;
 };
 
 inline bool validFacilityKind(FacilityKind kind)
@@ -186,6 +192,21 @@ inline double facilityEffectiveness01(const ConstructedFacility& facility)
 {
     if(!facilityOperationalAndActive(facility)) return 0.0;
     return std::clamp(facility.durability,0.0,1.0);
+}
+
+inline bool recordFacilityUse(
+    ConstructedFacility& facility,
+    CharacterId user,
+    int minute)
+{
+    if(user==0 || !facilityOperationalAndActive(facility)) return false;
+    if(facility.usageCount<std::numeric_limits<int>::max()){
+        ++facility.usageCount;
+    }
+    facility.lastUsedMinute=std::max(
+        facility.completedMinute,
+        std::max(0,minute));
+    return true;
 }
 
 inline MaterialKind facilityRepairMaterial(FacilityKind kind)
@@ -636,7 +657,16 @@ inline bool validConstructedFacility(const ConstructedFacility& facility)
        || facility.cropCare01 < 0.0 || facility.cropCare01 > 1.0
        || facility.cropHarvestUnits < 0
        || facility.cropPlantedMinute < -1
-       || facility.lastCultivationMinute < -1) return false;
+       || facility.lastCultivationMinute < -1
+       || facility.usageCount < 0
+       || facility.lastUsedMinute < -1) return false;
+
+    if((facility.usageCount==0 && facility.lastUsedMinute!=-1)
+       || (facility.usageCount>0
+           && (facility.completedMinute<0
+               || facility.lastUsedMinute<facility.completedMinute))){
+        return false;
+    }
 
     bool hasIncomplete = false;
     std::vector<int> seenMaterials;
@@ -663,6 +693,7 @@ inline bool validConstructedFacility(const ConstructedFacility& facility)
            || facility.burnMinutesRemaining!=0) return false;
     }else{
         if(facility.active || facility.completedMinute >= 0) return false;
+        if(facility.usageCount!=0 || facility.lastUsedMinute!=-1) return false;
         if(facility.linkedStorage != 0) return false;
         if(facility.fuelUnits != 0 || facility.charcoalUnits != 0
            || facility.oreUnits != 0 || facility.metalUnits != 0

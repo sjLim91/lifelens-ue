@@ -68,6 +68,16 @@ int main()
     assert(!chooseSettlementFacilitySite(world,owner,FacilityKind::SleepingPlace,anchor,&population).available);
     assert(settlementFacilityNeedPressure(world,actor,anchor,FacilityKind::SleepingPlace,&population)==0.0);
 
+    // Lived facility-use history is authoritative and must survive the same
+    // snapshot path used by the settlement itself.
+    assert(!world.facilities.empty());
+    for(int use=0;use<3;++use){
+        assert(recordFacilityUse(
+            world.facilities.front(),owner,world.minute+use));
+    }
+    const int savedUsageCount=world.facilities.front().usageCount;
+    const int savedLastUsedMinute=world.facilities.front().lastUsedMinute;
+
     // Multiple facilities remain authoritative through the real save codec.
     std::vector<std::uint8_t> bytes;
     std::string error;
@@ -83,6 +93,8 @@ int main()
         assert(decoded.world.facilities[index].state==world.facilities[index].state);
         assert(manhattan(decoded.world.facilities[index].pos,world.facilities[index].pos)==0);
     }
+    assert(decoded.world.facilities.front().usageCount==savedUsageCount);
+    assert(decoded.world.facilities.front().lastUsedMinute==savedLastUsedMinute);
 
     // Birth/population growth changes demand; death and leaving the area do not
     // leave phantom residents. Distant infrastructure does not serve this camp.

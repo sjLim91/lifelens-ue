@@ -936,6 +936,10 @@ void Simulation::advanceAction(Character& c,Runtime& r){
             }
             applyNeedResolutionEmotion(c,before,r.goal);
             if(a.remainingTicks==1 && settlementSleepFacility!=nullptr){
+                recordFacilityUse(
+                    *settlementSleepFacility,
+                    c.id,
+                    world_.minute);
                 applyFacilityWear(
                     *settlementSleepFacility,
                     facilityWearPerUse(settlementSleepFacility->kind));

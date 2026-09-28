@@ -1680,6 +1680,15 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
             result.event=storeItems(self.civilization,*storage,decision.item,decision.material,std::max(1,decision.quantity));
             result.executed=result.event.quantity>0;
             result.success=result.executed;
+            if(result.executed){
+                for(auto& facility:world.facilities){
+                    if(facility.linkedStorage==storage->id
+                       && facilityOperationalAndActive(facility)){
+                        recordFacilityUse(facility,self.id,world.minute);
+                        break;
+                    }
+                }
+            }
             return result;
         }
         case CivilizationIntent::Retrieve: {
@@ -1691,6 +1700,15 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
                 std::max(1,decision.quantity));
             result.executed=result.event.quantity>0;
             result.success=result.executed;
+            if(result.executed){
+                for(auto& facility:world.facilities){
+                    if(facility.linkedStorage==storage->id
+                       && facilityOperationalAndActive(facility)){
+                        recordFacilityUse(facility,self.id,world.minute);
+                        break;
+                    }
+                }
+            }
             return result;
         }
         case CivilizationIntent::Experiment: {
@@ -2293,6 +2311,7 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
                     result.facilityKind=workSurface->kind;
                     result.facilityPos=workSurface->pos;
                     result.facilityDurabilityBefore=workSurface->durability;
+                    recordFacilityUse(*workSurface,self.id,world.minute);
                     applyFacilityWear(
                         *workSurface,
                         facilityWearPerUse(workSurface->kind));

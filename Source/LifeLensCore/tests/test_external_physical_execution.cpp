@@ -97,6 +97,56 @@ int main()
     assert(facilityPosition.x==facilityResolvedPosition.x);
     assert(facilityPosition.y==facilityResolvedPosition.y);
 
+    // External presentation ACK must record the same authoritative lived-use
+    // history as headless Core. Otherwise settlement form would diverge by
+    // runtime platform even though the physical outcome is identical.
+    Simulation settlementSleep(9193);
+    settlementSleep.setupNewGame();
+    settlementSleep.setExternalPhysicalExecution(true);
+    Character& sleeper=settlementSleep.world().characters.front();
+    const CharacterId sleeperId=sleeper.id;
+    GridPos sleeperStart{};
+    assert(settlementSleep.runtimePosition(sleeperId,sleeperStart));
+    ConstructedFacility bed=makeFacilityConstructionSite(
+        99001,
+        FacilityKind::SleepingPlace,
+        sleeperStart,
+        sleeperId,
+        settlementSleep.world().minute);
+    for(auto& requirement:bed.requirements){
+        requirement.delivered=requirement.required;
+    }
+    bed.constructionWork=bed.requiredWork;
+    assert(activateConstructedFacility(
+        bed,0,settlementSleep.world().minute));
+    settlementSleep.world().facilities.push_back(bed);
+    for(auto& resident:settlementSleep.world().characters){
+        resident.needs={0.01,0.01,0.01,0.01,0.01};
+    }
+    sleeper.needs.sleep=0.99;
+
+    bool sleepPending=false;
+    for(int minute=0;minute<30 && !sleepPending;++minute){
+        settlementSleep.step();
+        const ResidentObservation observed=
+            settlementSleep.observeResident(sleeperId);
+        sleepPending=
+            observed.activityKind==ObservedActivityKind::Physical
+            && observed.physicalGoal==Goal::Sleep;
+    }
+    assert(sleepPending);
+
+    GridPos sleepTarget{};
+    FacilityId sleepFacilityId=0;
+    assert(settlementSleep.settlementSleepTarget(
+        sleeperId,sleepTarget,sleepFacilityId));
+    assert(sleepFacilityId==99001);
+    assert(settlementSleep.completeExternalPhysicalAction(
+        sleeperId,true,sleepTarget));
+    assert(settlementSleep.world().facilities.front().usageCount==1);
+    assert(settlementSleep.world().facilities.front().lastUsedMinute>=
+        settlementSleep.world().facilities.front().completedMinute);
+
     // Standalone Core remains autonomous by default.
     Simulation autonomous(9191);
     autonomous.setupNewGame();

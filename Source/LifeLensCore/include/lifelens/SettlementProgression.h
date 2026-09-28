@@ -356,6 +356,71 @@ inline double settlementFunctionalAffinity(
     return 0.0;
 }
 
+inline double settlementFacilityLivedUseSignal(
+    const World& world,
+    const ConstructedFacility& facility)
+{
+    if(!facilityOperationalAndActive(facility)) return 0.0;
+
+    const double repeatedUse=std::clamp(
+        static_cast<double>(facility.usageCount)/8.0,
+        0.0,
+        1.0);
+    const int lastActivityMinute=std::max({
+        facility.lastUsedMinute,
+        facility.lastFireMinute,
+        facility.lastCultivationMinute
+    });
+    double recency=0.0;
+    if(lastActivityMinute>=0){
+        constexpr int ActivityMemoryMinutes=14*24*60;
+        const int age=std::max(0,world.minute-lastActivityMinute);
+        recency=1.0-std::clamp(
+            static_cast<double>(age)
+                /static_cast<double>(ActivityMemoryMinutes),
+            0.0,
+            1.0);
+    }
+
+    // Repetition is the durable signal; recent fire/farm/use activity keeps a
+    // place temporarily attractive without inventing a permanent town center.
+    return std::clamp(
+        0.65*repeatedUse+0.35*recency,
+        0.0,
+        1.0);
+}
+
+inline double settlementResidentActivityScore(
+    const World& world,
+    GridPos candidate,
+    const SettlementPopulation* population)
+{
+    if(population==nullptr || population->empty()) return 0.0;
+
+    constexpr int ResidentActivityRadiusGrid=18;
+    double score=0.0;
+    for(const auto& entry:*population){
+        const Character* resident=nullptr;
+        for(const auto& candidateResident:world.characters){
+            if(candidateResident.id==entry.first){
+                resident=&candidateResident;
+                break;
+            }
+        }
+        if(resident==nullptr || !resident->alive) continue;
+
+        const int distance=manhattan(candidate,entry.second);
+        if(distance>ResidentActivityRadiusGrid) continue;
+        const double proximity=1.0-std::clamp(
+            static_cast<double>(distance)
+                /static_cast<double>(ResidentActivityRadiusGrid),
+            0.0,
+            1.0);
+        score+=0.10*proximity;
+    }
+    return std::min(0.40,score);
+}
+
 inline double settlementActivityCenterScore(
     const World& world,
     GridPos candidate,
@@ -371,11 +436,16 @@ inline double settlementActivityCenterScore(
         const double proximity=
             1.0-static_cast<double>(
                 std::max(0,distance-safeDistance))/10.0;
+        const double livedUse=settlementFacilityLivedUseSignal(
+            world,facility);
+        const double activityWeight=0.70+0.60*livedUse;
         score+=settlementFunctionalAffinity(planned,facility.kind)
+            *activityWeight
             *std::max(0.0,proximity);
     }
 
-    // Compatibility/early stockpiles may exist before a linked storage facility.
+    // Compatibility/early stockpiles may exist before a linked storage
+    // facility. Once linked, actual storage use strengthens the activity center.
     for(const auto& storage:world.storageSites){
         const int distance=manhattan(candidate,storage.pos);
         if(distance>12) continue;
@@ -383,7 +453,15 @@ inline double settlementActivityCenterScore(
             1.0-static_cast<double>(std::max(0,distance-3))/10.0;
         const double affinity=
             planned==FacilityKind::WorkSurface ? 0.72 : 0.24;
-        score+=affinity*std::max(0.0,proximity);
+        double activityWeight=0.80;
+        for(const auto& facility:world.facilities){
+            if(facility.linkedStorage!=storage.id
+               || !facilityOperationalAndActive(facility)) continue;
+            activityWeight=0.70+0.60*settlementFacilityLivedUseSignal(
+                world,facility);
+            break;
+        }
+        score+=affinity*activityWeight*std::max(0.0,proximity);
     }
 
     // The hard block already keeps sanitation out of the immediate living core.
@@ -541,7 +619,10 @@ inline SettlementFacilitySiteOpportunity chooseSettlementFacilitySite(
 
         const double habitability=settlementTerrainHabitabilityScore(world,candidate,kind);
         if(habitability<=-1000.0) return;
-        const double score=settlementActivityCenterScore(world,candidate,kind)+habitability;
+        const double score=
+            settlementActivityCenterScore(world,candidate,kind)
+            +settlementResidentActivityScore(world,candidate,population)
+            +habitability;
         // Traversal order breaks score ties deterministically.
         if(!found || score>bestScore+1e-12){
             found=true;
