@@ -50,7 +50,8 @@ enum class ELLCoreTechniqueId : uint8
     PrimitiveStorage,
     DiggingStick,
     StoneHammer,
-    CopperSmelting
+    CopperSmelting,
+    Cultivation
 };
 
 UENUM(BlueprintType)
@@ -82,7 +83,8 @@ enum class ELLCoreFacilityKind : uint8
     WorkSurface,
     SleepingPlace,
     Shelter,
-    Furnace
+    Furnace,
+    CultivatedPlot
 };
 
 UENUM(BlueprintType)
@@ -207,6 +209,13 @@ struct FLLCoreCivilizationFacilityObservation
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") bool bLit = false;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int32 BurnMinutesRemaining = 0;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int64 LastFireMinute = -1;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") bool bCropPlanted = false;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int64 CropPlantedMinute = -1;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") float CropGrowth = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") float CropMoisture = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") float CropCare = 0.0f;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int32 CropHarvestUnits = 0;
+    UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") int64 LastCultivationMinute = -1;
     UPROPERTY(BlueprintReadOnly, Category="LifeLens|Core|Civilization") TArray<FLLCoreCivilizationFacilityRequirementObservation> Requirements;
 };
 
