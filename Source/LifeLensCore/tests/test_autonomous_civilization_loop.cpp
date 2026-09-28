@@ -161,19 +161,24 @@ int main()
     // Resource scarcity expands the known world through an explicit Core
     // exploration context. Unmaterialized resource catalogues remain unknown
     // until the resident physically reaches the frontier target.
-    Simulation explorationProbe(4242442);
+    SimulationRuleset explorationRules=DefaultSimulationRuleset;
+    explorationRules.needs.hungerPerMinute=0.0;
+    explorationRules.needs.thirstPerMinute=0.0;
+    explorationRules.needs.sleepPerMinute=0.0;
+    explorationRules.needs.bladderPerMinute=0.0;
+    explorationRules.needs.hygienePerMinute=0.0;
+    Simulation explorationProbe(
+        4242442,0,CurrentWorldGenerationVersion,explorationRules);
     explorationProbe.setupNewGame();
     CHECK(!explorationProbe.world().characters.empty());
+    explorationProbe.world().characters.resize(1);
     const std::size_t initialKnownChunks=
         explorationProbe.world().generatedNaturalChunks.size();
     for(auto& node:explorationProbe.world().resourceNodes) node.quantity=0;
-    for(std::size_t i=0;i<explorationProbe.world().characters.size();++i){
-        auto& resident=explorationProbe.world().characters[i];
-        resident.needs={0.02,0.02,0.02,0.02,0.02};
-        resident.personality.curiosity=1.0;
-        resident.personality.adaptability=1.0;
-        if(i>0) resident.alive=false;
-    }
+    Character& explorationResident=explorationProbe.world().characters.front();
+    explorationResident.needs={0.02,0.02,0.02,0.02,0.02};
+    explorationResident.personality.curiosity=1.0;
+    explorationResident.personality.adaptability=1.0;
 
     bool sawExplorationContext=false;
     CharacterId explorerId=0;
