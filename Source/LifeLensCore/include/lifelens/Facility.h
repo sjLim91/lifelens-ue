@@ -342,6 +342,85 @@ inline FacilityConstructionSpec facilityConstructionSpec(FacilityKind kind)
     }
 }
 
+inline std::vector<FacilityMaterialRequirement> facilityRestorationRequirements(
+    FacilityKind kind)
+{
+    std::vector<FacilityMaterialRequirement> result;
+    const FacilityConstructionSpec construction=facilityConstructionSpec(kind);
+    result.reserve(construction.requirements.size());
+    for(const auto& requirement:construction.requirements){
+        if(requirement.required<=0 || requirement.material==MaterialKind::Unknown) continue;
+        result.push_back({
+            requirement.material,
+            std::max(1,(requirement.required+1)/2),
+            0
+        });
+    }
+    return result;
+}
+
+inline int facilityRestorationMaterialRequirement(
+    FacilityKind kind,
+    MaterialKind material)
+{
+    if(material==MaterialKind::Unknown) return 0;
+    for(const auto& requirement:facilityRestorationRequirements(kind)){
+        if(requirement.material==material) return requirement.required;
+    }
+    return 0;
+}
+
+inline FacilityRepairResult restoreRuinedConstructedFacility(
+    ConstructedFacility& facility,
+    CharacterId worker,
+    Inventory& inventory,
+    double craftingSkill,
+    int minute)
+{
+    FacilityRepairResult result;
+    result.facilityId=facility.id;
+    result.kind=facility.kind;
+    result.durabilityBefore=facility.durability;
+    result.durabilityAfter=facility.durability;
+
+    if(worker==0
+       || facility.state!=FacilityState::Ruined
+       || !facilitySupportsMaintenance(facility.kind)) return result;
+
+    const auto requirements=facilityRestorationRequirements(facility.kind);
+    if(requirements.empty()) return result;
+
+    // Reuse the surviving frame. A restoration consumes roughly half of the
+    // original construction materials, making recovery preferable to needless
+    // replacement while still requiring real gathered resources.
+    for(const auto& requirement:requirements){
+        if(inventory.count(
+            ItemKind::RawMaterial,requirement.material)<requirement.required){
+            return result;
+        }
+    }
+    for(const auto& requirement:requirements){
+        if(!inventory.remove(
+            ItemKind::RawMaterial,requirement.material,requirement.required)){
+            return result;
+        }
+    }
+
+    facility.state=FacilityState::Operational;
+    facility.active=true;
+    facility.durability=std::clamp(
+        0.52+0.18*std::clamp(craftingSkill,0.0,1.0),
+        0.52,
+        0.70);
+    facility.lastWorkedBy=worker;
+    facility.completedMinute=std::max(
+        facility.completedMinute,
+        std::max(0,minute));
+    result.durabilityAfter=facility.durability;
+    result.repaired=true;
+    return result;
+}
+
 inline bool facilityKindConstructible(FacilityKind kind)
 {
     const FacilityConstructionSpec spec = facilityConstructionSpec(kind);
