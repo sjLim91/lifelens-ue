@@ -13,6 +13,13 @@ import { ResidentContinuity } from './runtime/resident-continuity';
 import { WorldSession } from './runtime/world-session';
 import { observerActions } from './state/observer-actions';
 import { observerStore } from './state/observer-store';
+import {
+  buildFastForwardSummary,
+  captureFastForwardState,
+  FAST_FORWARD_CHUNK_MINUTES,
+  MAX_FAST_FORWARD_DAYS,
+  MINUTES_PER_DAY,
+} from './state/fast-forward';
 import { humanTraceFocus, visibleHumanTraces } from './state/human-traces';
 import { CameraInput, cameraPanDelta } from './input/camera-input';
 
@@ -81,6 +88,7 @@ export function startObserverEngine(): void {
     : null;
   let followResidents = false;
   let simulationClock: SimulationClock | null = null;
+  let fastForwardRunning = false;
   let angle: number = OBSERVER_CAMERA_CONTRACT.defaultAngleRadians;
   let elevation: number = OBSERVER_CAMERA_CONTRACT.defaultElevationRadians;
   const compactViewport = window.matchMedia(
@@ -306,11 +314,89 @@ export function startObserverEngine(): void {
   }
   
   function setSimulationSpeed(speed: number): void {
+    if (fastForwardRunning) return;
     const canonicalSpeed = normalizeSimulationSpeed(speed);
     simulationClock?.setSpeed(canonicalSpeed);
     threeWorldRenderer?.setSimulationSpeed(canonicalSpeed);
     observerStore.update({ simulationSpeed: canonicalSpeed });
     refreshSafely();
+  }
+
+  function yieldToBrowser(): Promise<void> {
+    return new Promise((resolve) => window.setTimeout(resolve, 0));
+  }
+
+  async function fastForwardDays(days: number): Promise<void> {
+    if (!worldSession || fastForwardRunning) return;
+
+    const requestedDays = Math.floor(Number(days));
+    if (
+      !Number.isFinite(requestedDays)
+      || requestedDays < 1
+      || requestedDays > MAX_FAST_FORWARD_DAYS
+    ) {
+      observerStore.failFastForward(
+        `건너뛸 일수는 1일부터 ${MAX_FAST_FORWARD_DAYS}일까지 입력해 주세요.`,
+      );
+      return;
+    }
+
+    const totalMinutes = requestedDays * MINUTES_PER_DAY;
+    fastForwardRunning = true;
+    simulationClock?.stop();
+
+    try {
+      worldSession.forceWorldActivityRefresh();
+      refresh();
+      const beforeSnapshot = observerStore.getSnapshot();
+      const before = captureFastForwardState({
+        world: beforeSnapshot.world,
+        residents: beforeSnapshot.residents,
+        civilization: beforeSnapshot.civilization,
+        worldObjects: beforeSnapshot.worldObjects,
+      });
+
+      observerStore.beginFastForward(requestedDays, totalMinutes);
+
+      let completedMinutes = 0;
+      while (completedMinutes < totalMinutes) {
+        const chunkMinutes = Math.min(
+          FAST_FORWARD_CHUNK_MINUTES,
+          totalMinutes - completedMinutes,
+        );
+        worldSession.runMinutes(chunkMinutes);
+        completedMinutes += chunkMinutes;
+        observerStore.updateFastForwardProgress(completedMinutes);
+        await yieldToBrowser();
+      }
+
+      worldSession.forceWorldActivityRefresh();
+      worldSession.recenterToResidents();
+      refresh();
+
+      const afterSnapshot = observerStore.getSnapshot();
+      const after = captureFastForwardState({
+        world: afterSnapshot.world,
+        residents: afterSnapshot.residents,
+        civilization: afterSnapshot.civilization,
+        worldObjects: afterSnapshot.worldObjects,
+      });
+
+      observerStore.completeFastForward(
+        buildFastForwardSummary(requestedDays, before, after),
+      );
+    } catch (error) {
+      const message = error instanceof Error
+        ? error.message
+        : '고속 진행 중 알 수 없는 오류가 발생했습니다.';
+      runtimeDiagnostics.recordCoreFailure();
+      observerStore.failFastForward(message);
+      console.error('LifeLens day fast-forward failed', error);
+    } finally {
+      fastForwardRunning = false;
+      simulationClock?.resetAccumulator();
+      simulationClock?.start();
+    }
   }
   
   function refreshSafely(): void {
@@ -343,6 +429,8 @@ export function startObserverEngine(): void {
   observerActions.bind({
     createWorld,
     setSimulationSpeed,
+    fastForwardDays,
+    clearFastForwardResult: () => observerStore.clearFastForwardResult(),
     moveObserver: move,
     recenterObserver,
     selectResident,
