@@ -476,19 +476,20 @@ inline double settlementFacilityNeedPressure(
     const World& world,
     const Character& self,
     GridPos authoritativePosition,
-    FacilityKind kind)
+    FacilityKind kind,
+    const SettlementPopulation* population=nullptr)
 {
     if(!isSettlementFoundationFacility(kind)) return 0.0;
+    const auto demand=observeSettlementFacilityDemand(
+        world,self.id,kind,authoritativePosition,population);
+    if(!demand.unmet()) return 0.0;
 
     if(kind==FacilityKind::SleepingPlace){
-        if(hasOperationalSettlementFacility(world,FacilityKind::SleepingPlace)
-           || hasOperationalSettlementFacility(world,FacilityKind::Shelter)) return 0.0;
         return clampCivilization01(
-            (clampCivilization01(self.needs.sleep)-0.22)/0.48);
+            (clampCivilization01(std::max(self.needs.sleep,demand.peakSleepNeed))-0.22)/0.48);
     }
 
     if(kind==FacilityKind::Shelter){
-        if(hasOperationalSettlementFacility(world,FacilityKind::Shelter)) return 0.0;
         const DynamicEnvironmentObservation environment=deriveDynamicEnvironment(
             world.genesisIdentity(),chunkCoordForGrid(authoritativePosition),world.minute);
         const EnvironmentalConsequenceProfile consequence=
@@ -510,14 +511,14 @@ inline double settlementFacilityNeedPressure(
         const double accumulatedBurden=std::max({
             clampCivilization01(self.needs.thirst),
             clampCivilization01(self.needs.sleep),
-            clampCivilization01(self.needs.hygiene)
+            clampCivilization01(self.needs.hygiene),
+            clampCivilization01(demand.peakExposureBurden)
         });
         return clampCivilization01(
             weatherPressure*(0.08+0.92*accumulatedBurden));
     }
 
     if(kind==FacilityKind::WorkSurface){
-        if(hasOperationalSettlementFacility(world,FacilityKind::WorkSurface)) return 0.0;
         return settlementCraftDemandPressure(self);
     }
 
@@ -527,7 +528,8 @@ inline double settlementFacilityNeedPressure(
 inline CivilizationUtilityDecision bestSettlementFoundationDecision(
     const World& world,
     const Character& self,
-    GridPos authoritativePosition)
+    GridPos authoritativePosition,
+    const SettlementPopulation* population=nullptr)
 {
     CivilizationUtilityDecision best;
     constexpr std::array<FacilityKind,3> kinds={
@@ -537,12 +539,14 @@ inline CivilizationUtilityDecision bestSettlementFoundationDecision(
     };
 
     for(const FacilityKind kind:kinds){
-        const ConstructedFacility* project=settlementFacilityProject(world,kind);
+        const ConstructedFacility* project=settlementConstructionProjectNear(
+            world,kind,authoritativePosition);
         const double preference=civilizationPreference(
             world.seed,self.id,610ULL+static_cast<std::uint64_t>(kind));
 
-        if(project!=nullptr && facilityOperationalAndActive(*project)){
-            if(!settlementFacilityNeedsMaintenance(*project)) continue;
+        for(const auto& facility:world.facilities){
+            if(facility.kind!=kind || !settlementFacilityNeedsMaintenance(facility)
+               || manhattan(facility.pos,authoritativePosition)>SettlementServiceRadiusGrid) continue;
 
             const MaterialKind repairMaterial=facilityRepairMaterial(kind);
             const int held=self.civilization.inventory.count(
@@ -553,14 +557,14 @@ inline CivilizationUtilityDecision bestSettlementFoundationDecision(
             repair.intent=CivilizationIntent::Craft;
             repair.facilityKind=kind;
             repair.facilityAction=FacilityBuildAction::Repair;
-            repair.facility=project->id;
+            repair.facility=facility.id;
             repair.hasFacilityTarget=true;
-            repair.facilityTargetPos=project->pos;
+            repair.facilityTargetPos=facility.pos;
             repair.material=repairMaterial;
             repair.item=ItemKind::RawMaterial;
             repair.quantity=1;
 
-            const double damage=clampCivilization01(1.0-project->durability);
+            const double damage=clampCivilization01(1.0-facility.durability);
             repair.utility=clampCivilization01(
                 0.46+0.34*damage
                 +0.09*self.personality.conscientiousness
@@ -568,13 +572,10 @@ inline CivilizationUtilityDecision bestSettlementFoundationDecision(
                 +0.07*self.civilization.craftingSkill
                 +0.04*preference);
             considerCivilizationDecision(best,repair);
-            continue;
         }
 
-        if(hasOperationalSettlementFacility(world,kind)) continue;
-
         double pressure=settlementFacilityNeedPressure(
-            world,self,authoritativePosition,kind);
+            world,self,authoritativePosition,kind,population);
         if(project==nullptr && pressure<0.24) continue;
         if(project!=nullptr) pressure=std::max(pressure,0.46);
 
@@ -587,7 +588,7 @@ inline CivilizationUtilityDecision bestSettlementFoundationDecision(
         if(project==nullptr){
             const SettlementFacilitySiteOpportunity site=
                 chooseSettlementFacilitySite(
-                    world,self.id,kind,authoritativePosition);
+                    world,self.id,kind,authoritativePosition,population);
             if(!site.available) continue;
             candidate.facilityAction=FacilityBuildAction::Plan;
             candidate.hasFacilityTarget=true;
@@ -919,13 +920,14 @@ inline CivilizationUtilityDecision bestPrimitiveFurnaceDecision(
 inline CivilizationUtilityDecision bestCraftDecisionAtPosition(
     const World& world,
     const Character& self,
-    GridPos authoritativePosition)
+    GridPos authoritativePosition,
+    const SettlementPopulation* population=nullptr)
 {
     CivilizationUtilityDecision best;
     const GridPos sanitationReference=authoritativePosition;
 
     considerCivilizationDecision(
-        best,bestSettlementFoundationDecision(world,self,authoritativePosition));
+        best,bestSettlementFoundationDecision(world,self,authoritativePosition,population));
     considerCivilizationDecision(
         best,bestPrimitiveStorageConstructionDecision(
             world,self,authoritativePosition));
@@ -1019,7 +1021,8 @@ inline CivilizationUtilityDecision bestCraftDecisionAtPosition(
         candidate.quantity=recipe.outputQuantity;
 
         const ConstructedFacility* workSurface=
-            operationalSettlementFacility(world,FacilityKind::WorkSurface);
+            operationalSettlementFacilityNear(
+                world,FacilityKind::WorkSurface,authoritativePosition,SettlementServiceRadiusGrid);
         if(workSurface!=nullptr){
             candidate.facilityKind=FacilityKind::WorkSurface;
             candidate.facility=workSurface->id;
@@ -1158,7 +1161,8 @@ inline CivilizationUtilityDecision bestStoreDecision(const World& world,const Ch
 inline CivilizationUtilityDecision chooseCivilizationUtilityDecisionAtPosition(
     const World& world,
     const Character& self,
-    GridPos authoritativePosition)
+    GridPos authoritativePosition,
+    const SettlementPopulation* population=nullptr)
 {
     CivilizationUtilityDecision best;
     if(self.id==0 || self.civilization.character!=self.id) return best;
@@ -1166,7 +1170,7 @@ inline CivilizationUtilityDecision chooseCivilizationUtilityDecisionAtPosition(
         best,bestExperimentDecisionAtPosition(
             world,self,authoritativePosition));
     considerCivilizationDecision(
-        best,bestCraftDecisionAtPosition(world,self,authoritativePosition));
+        best,bestCraftDecisionAtPosition(world,self,authoritativePosition,population));
     considerCivilizationDecision(best,bestRetrieveDecision(world,self));
     considerCivilizationDecision(best,bestStoreDecision(world,self));
     considerCivilizationDecision(best,bestGatherDecision(world,self));
@@ -1203,7 +1207,8 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
     World& world,
     Character& self,
     const CivilizationUtilityDecision& decision,
-    GridPos authoritativePosition)
+    GridPos authoritativePosition,
+    const SettlementPopulation* population=nullptr)
 {
     CivilizationExecutionResult result;
     const GridPos sanitationReference=authoritativePosition;
@@ -1282,7 +1287,7 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
                 if(decision.facilityAction==FacilityBuildAction::Plan){
                     if(!decision.hasFacilityTarget) return result;
                     ConstructedFacility* created=establishSettlementFacilityProject(
-                        world,self.id,decision.facilityKind,decision.facilityTargetPos);
+                        world,self.id,decision.facilityKind,decision.facilityTargetPos,population);
                     if(created==nullptr) return result;
                     result.executed=true;
                     result.success=true;

@@ -11,6 +11,7 @@
 #include "EnvironmentalConsequences.h"
 #include "Facility.h"
 #include "PrimitiveSanitation.h"
+#include "SettlementDemand.h"
 #include "World.h"
 
 namespace lifelens {
@@ -501,12 +502,13 @@ inline SettlementFacilitySiteOpportunity chooseSettlementFacilitySite(
     const World& world,
     CharacterId planner,
     FacilityKind kind,
-    GridPos activityAnchor)
+    GridPos activityAnchor,
+    const SettlementPopulation* population=nullptr)
 {
     SettlementFacilitySiteOpportunity result;
     if(planner==0 || !isSettlementFoundationFacility(kind)
-       || hasOperationalSettlementFacility(world,kind)
-       || settlementFacilityProject(world,kind)!=nullptr) return result;
+       || !observeSettlementFacilityDemand(
+           world,planner,kind,activityAnchor,population).canPlan()) return result;
 
     // NEW GAME spawn is only an entry coordinate. Settlement candidates emerge
     // around where the resident is actually acting now, then existing facilities
@@ -532,22 +534,38 @@ inline SettlementFacilitySiteOpportunity chooseSettlementFacilitySite(
 
     bool found=false;
     double bestScore=-1.0e9;
-    std::size_t bestOrder=offsets.size();
-    for(std::size_t i=0;i<offsets.size();++i){
-        const GridPos offset=offsets[(start+i)%offsets.size()];
-        const GridPos candidate{center.x+offset.x,center.y+offset.y};
-        if(settlementFacilitySiteBlocked(world,candidate,kind)) continue;
+    const auto considerSite=[&](GridPos candidate){
+        if(settlementFacilitySiteBlocked(world,candidate,kind)) return;
+        if(population && !observeSettlementFacilityDemand(
+            world,planner,kind,candidate,population).canPlan()) return;
 
-        const double score=
-            settlementActivityCenterScore(world,candidate,kind)
-            +settlementTerrainHabitabilityScore(world,candidate,kind);
-        if(!found || score>bestScore+1e-12
-           || (std::abs(score-bestScore)<=1e-12 && i<bestOrder)){
+        const double habitability=settlementTerrainHabitabilityScore(world,candidate,kind);
+        if(habitability<=-1000.0) return;
+        const double score=settlementActivityCenterScore(world,candidate,kind)+habitability;
+        // Traversal order breaks score ties deterministically.
+        if(!found || score>bestScore+1e-12){
             found=true;
             bestScore=score;
-            bestOrder=i;
             result.available=true;
             result.pos=candidate;
+        }
+    };
+    for(std::size_t i=0;i<offsets.size();++i){
+        const GridPos offset=offsets[(start+i)%offsets.size()];
+        considerSite({center.x+offset.x,center.y+offset.y});
+    }
+    // Real footprints/resources can fill the inner cluster before local demand
+    // is met. Search bounded outer rings rather than overlap existing buildings
+    // or treat the original 32 candidates as the entire buildable settlement.
+    for(int radius=24; !found && radius<=SettlementServiceRadiusGrid-16; radius+=8){
+        const int half=radius/2;
+        const std::array<GridPos,8> ring={
+            GridPos{radius,0},GridPos{half,half},GridPos{0,radius},GridPos{-half,half},
+            GridPos{-radius,0},GridPos{-half,-half},GridPos{0,-radius},GridPos{half,-half}
+        };
+        for(std::size_t i=0;i<ring.size();++i){
+            const GridPos offset=ring[(start+i)%ring.size()];
+            considerSite({center.x+offset.x,center.y+offset.y});
         }
     }
     return result;
@@ -557,12 +575,13 @@ inline ConstructedFacility* establishSettlementFacilityProject(
     World& world,
     CharacterId planner,
     FacilityKind kind,
-    GridPos pos)
+    GridPos pos,
+    const SettlementPopulation* population=nullptr)
 {
     if(planner==0 || !isSettlementFoundationFacility(kind)
        || !facilityKindConstructible(kind)
-       || hasOperationalSettlementFacility(world,kind)
-       || settlementFacilityProject(world,kind)!=nullptr
+       || !observeSettlementFacilityDemand(
+           world,planner,kind,pos,population).canPlan()
        || settlementFacilitySiteBlocked(world,pos,kind)) return nullptr;
 
     ConstructedFacility facility=makeFacilityConstructionSite(

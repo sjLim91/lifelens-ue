@@ -148,6 +148,7 @@ public:
         return buildCivilizationWorldObservation(world_,socialKnowledge_,maxRecentDiscoveries);
     }
 private:
+    SettlementPopulation settlementPopulation() const;
     struct Runtime {
         Goal goal=Goal::Idle;
         std::vector<Action> plan;
