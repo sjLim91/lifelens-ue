@@ -98,6 +98,26 @@ Single external store for:
 
 React adapter using `useSyncExternalStore`.
 
+### `src/state/fast-forward.ts`
+#481 authoritative day fast-forward state and before/after development summary.
+
+Rules:
+- day input becomes minutes only through `days * 1440`,
+- Core still executes its normal minute-step timeline,
+- Web never predicts the final state independently,
+- population/facility/knowledge/life-event/resource summary values are differences between authoritative pre/post snapshots.
+
+### `src/ui/fast-forward-control.tsx`
+Korean day input, progress and completion summary surface.
+
+### `src/observer-engine.ts` fast-forward orchestration
+- pauses the normal `SimulationClock`,
+- advances `WorldSession.runMinutes` in 360-minute chunks,
+- yields to the browser between chunks,
+- avoids intermediate terrain/resident rendering,
+- forces fresh authority snapshots and recenters after completion,
+- restarts the normal observation clock.
+
 ### `src/state/observation-feed.ts`
 
 #460 factual event visibility.
@@ -292,6 +312,7 @@ Completed:
 11. Core facility placement follows lived activity rather than NEW GAME spawn (#474; supersedes closed #472).
 12. Unreal ecology/resource readability is facility-local rather than spawn-centered (#475; supersedes closed #473).
 13. household and pregnancy truth in focused Web inspection (#476).
+14. user-entered authoritative day fast-forward with progress and development summary (#481).
 
 Next:
 1. motion tranche 2 — Sleep/Dig/Chop/Ground Gather/Carry variants only where both clip semantics and Core facts are adequate.

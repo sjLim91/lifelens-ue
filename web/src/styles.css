@@ -549,3 +549,217 @@ button:disabled { opacity: .33; cursor: default; }
     font-size: .62rem;
   }
 }
+
+
+/* Authoritative day fast-forward: Core advances without intermediate world rendering. */
+.fast-forward-control {
+  margin-top: .85rem;
+  padding-top: .78rem;
+  border-top: 1px solid #26372b;
+}
+.fast-forward-title {
+  display: grid;
+  gap: .18rem;
+  margin-bottom: .55rem;
+}
+.fast-forward-title strong {
+  color: #dfe9df;
+  font-size: .78rem;
+}
+.fast-forward-title small {
+  color: #7e9182;
+  font-size: .66rem;
+  line-height: 1.45;
+}
+.fast-forward-input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(110px, .9fr);
+  align-items: center;
+  gap: .4rem;
+}
+.fast-forward-input-row input {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid #354739;
+  border-radius: 8px;
+  background: #0a110d;
+  color: #edf4ed;
+  padding: .62rem .7rem;
+  outline: none;
+}
+.fast-forward-input-row input:focus {
+  border-color: #66866e;
+}
+.fast-forward-input-row > span {
+  color: #9aad9d;
+  font-size: .74rem;
+}
+.fast-forward-progress {
+  display: grid;
+  gap: .35rem;
+  margin-top: .65rem;
+  padding: .65rem;
+  border: 1px solid #33493a;
+  border-radius: 9px;
+  background: #0b160f;
+}
+.fast-forward-progress progress {
+  width: 100%;
+  height: 8px;
+  accent-color: #769a7d;
+}
+.fast-forward-progress > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .6rem;
+  color: #cbd8cc;
+  font-size: .69rem;
+}
+.fast-forward-progress > div b {
+  color: #eff6ef;
+}
+.fast-forward-progress small {
+  color: #7f9182;
+  font-size: .63rem;
+  line-height: 1.4;
+}
+.fast-forward-summary {
+  display: grid;
+  gap: .68rem;
+  margin-top: .7rem;
+  padding: .72rem;
+  border: 1px solid #405745;
+  border-radius: 10px;
+  background: #0b150e;
+}
+.fast-forward-summary-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: .6rem;
+}
+.fast-forward-summary-head > div {
+  display: grid;
+  gap: .15rem;
+}
+.fast-forward-summary-head strong {
+  color: #eef5ed;
+  font-size: .8rem;
+}
+.fast-forward-summary-head small {
+  color: #91a292;
+  font-size: .64rem;
+}
+.fast-forward-summary-head button {
+  min-height: 34px;
+  padding: .35rem .55rem;
+  font-size: .66rem;
+}
+.fast-forward-summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .35rem;
+}
+.fast-forward-summary-grid span {
+  display: grid;
+  gap: .12rem;
+  padding: .45rem;
+  border: 1px solid #26372c;
+  border-radius: 7px;
+  color: #7f9182;
+  font-size: .64rem;
+}
+.fast-forward-summary-grid b {
+  color: #dce7dc;
+  font-size: .7rem;
+  font-weight: 600;
+}
+.fast-forward-change-group {
+  display: grid;
+  gap: .32rem;
+}
+.fast-forward-change-group h4 {
+  margin: .1rem 0;
+  color: #aabcaa;
+  font-size: .68rem;
+  font-weight: 600;
+}
+.fast-forward-change-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .6rem;
+  padding: .36rem .42rem;
+  border-left: 2px solid #45604d;
+  background: rgba(18, 31, 22, .72);
+  color: #aebcaf;
+  font-size: .65rem;
+}
+.fast-forward-change-row b {
+  color: #e0e9df;
+  font-size: .65rem;
+  text-align: right;
+}
+.fast-forward-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .3rem;
+}
+.fast-forward-chips span {
+  padding: .28rem .4rem;
+  border: 1px solid #354a3b;
+  border-radius: 999px;
+  background: #152219;
+  color: #d9e4d9;
+  font-size: .64rem;
+}
+.fast-forward-world-status {
+  position: absolute;
+  z-index: 7;
+  top: 62px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  gap: .12rem;
+  min-width: 190px;
+  padding: .6rem .8rem;
+  border: 1px solid rgba(126, 157, 133, .5);
+  border-radius: 10px;
+  background: rgba(8, 17, 11, .9);
+  box-shadow: 0 7px 20px rgba(0, 0, 0, .28);
+  color: #eef5ee;
+  text-align: center;
+  pointer-events: none;
+}
+.fast-forward-world-status strong {
+  font-size: .72rem;
+}
+.fast-forward-world-status span {
+  color: #aabbaa;
+  font-size: .65rem;
+}
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+@media (max-width: 800px) {
+  .fast-forward-input-row {
+    grid-template-columns: minmax(0, 1fr) auto minmax(120px, 1fr);
+  }
+  .fast-forward-summary-grid {
+    grid-template-columns: 1fr;
+  }
+  .fast-forward-world-status {
+    top: 58px;
+    max-width: calc(100% - 32px);
+  }
+}

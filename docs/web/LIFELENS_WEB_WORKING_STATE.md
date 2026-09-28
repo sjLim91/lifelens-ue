@@ -62,6 +62,14 @@ This section supersedes older Web-current snapshots below while preserving them 
 - focused resident inspection now carries authoritative household shared resources/assets, member contribution/responsibility facts, and active pregnancy role/stage/timing/health/fatigue/stress/nutrition.
 - residents may legitimately have `household: null` or `pregnancy: null`; presentation must not invent either state.
 
+### Authoritative day fast-forward (#481)
+- Observer accepts a user-entered day count and advances the existing LifeLensCore simulation through the normal minute-by-minute `runMinutes` / `step()` path.
+- This is **not** a direct clock jump and does not synthesize future state. Needs, action decisions, facilities, resources, knowledge, family progression, pregnancy/birth, aging/mortality and every other currently implemented Core rule execute in causal order.
+- Web pauses the normal wall-clock simulation timer, runs Core in bounded 360-minute chunks, yields to the browser between chunks for mobile progress UI, and does not render intermediate world frames.
+- After completion Web forces fresh heavy authority payloads, recenters to current residents, renders the final world, and compares pre/post authoritative snapshots.
+- The completion summary may report only facts present in those snapshots: population, deaths/births, households, couples, pregnancies, facilities/state changes, knowledge/discoveries, life events, resources, storage and sanitation.
+- Current Web input guard is 1–3650 days. Larger-scale history acceleration would need a separate Core optimization contract; it must not be faked by directly changing `world.minute`.
+
 ### Deliberate gaps
 - Sleep has no accepted lie-down / sleep-loop / wake sequence yet.
 - TreeChopping_Loop is present in UAL2 but is not bound from `Wood` alone; Core must expose enough source/tool semantics first.
@@ -131,9 +139,10 @@ The web clock follows `docs/TIME_AND_DYNAMIC_ENVIRONMENT.md`.
 - Faster: 16x
 - Rapid: 64x
 - 1x target: 8 real minutes per LifeLens day
-- no +10 minute / +1 hour product time-jump controls
+- no +10 minute / +1 hour direct-clock-jump controls
+- user-entered day fast-forward is allowed only when it executes the authoritative Core timeline in causal order; it may skip rendering but never skip simulation rules
 - catch-up is bounded; render refresh failure must not stop Core time
-- History mode is not faked as a large multiplier and remains a separate future adaptive/coarse-step system
+- History mode is not faked as a large multiplier; future coarse/adaptive history stepping requires a separate authoritative Core contract
 
 ## Canonical camera contract
 

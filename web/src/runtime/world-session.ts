@@ -78,6 +78,10 @@ export class WorldSession {
     this.core.runMinutes(minutes);
   }
 
+  forceWorldActivityRefresh(): void {
+    this.worldActivityRefreshCountdown = 0;
+  }
+
   moveObserver(dx: number, dy: number): void {
     this.followResidents = false;
     this.centerX += dx;

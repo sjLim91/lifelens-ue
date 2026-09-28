@@ -150,6 +150,7 @@ VISIBLE_FILES = [
     "web/src/state/human-traces.ts",
     "web/src/state/observation-feed.ts",
     "web/src/ui/diagnostics-panel.tsx",
+    "web/src/ui/fast-forward-control.tsx",
     "web/src/ui/observer-readout.tsx",
     "web/src/ui/render-mode-control.tsx",
     "web/src/ui/world-activity.tsx",
