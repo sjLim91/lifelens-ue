@@ -7,6 +7,7 @@
 
 #include "Civilization.h"
 #include "Character.h"
+#include "CultivationProgression.h"
 #include "Facility.h"
 #include "PrimitiveFireProgression.h"
 #include "PrimitiveSanitation.h"
@@ -37,7 +38,11 @@ enum class FacilityBuildAction {
     Ignite,
     CollectCharcoal,
     LoadSmeltCharge,
-    CollectMetal
+    CollectMetal,
+    Plant,
+    Water,
+    Tend,
+    Harvest
 };
 
 inline const char* civilizationIntentName(CivilizationIntent intent)
@@ -64,6 +69,10 @@ inline const char* facilityBuildActionName(FacilityBuildAction action)
         case FacilityBuildAction::CollectCharcoal: return "CollectCharcoal";
         case FacilityBuildAction::LoadSmeltCharge: return "LoadSmeltCharge";
         case FacilityBuildAction::CollectMetal: return "CollectMetal";
+        case FacilityBuildAction::Plant: return "Plant";
+        case FacilityBuildAction::Water: return "Water";
+        case FacilityBuildAction::Tend: return "Tend";
+        case FacilityBuildAction::Harvest: return "Harvest";
         case FacilityBuildAction::None:
         default: return "None";
     }
@@ -104,6 +113,7 @@ inline const char* techniqueName(TechniqueId technique)
         case TechniqueId::DiggingStick: return "DiggingStick";
         case TechniqueId::StoneHammer: return "StoneHammer";
         case TechniqueId::CopperSmelting: return "CopperSmelting";
+        case TechniqueId::Cultivation: return "Cultivation";
         default: return "None";
     }
 }
@@ -213,6 +223,7 @@ inline MaterialKind experimentMaterial(ExperimentKind kind)
         case ExperimentKind::ShapeDiggingStick: return MaterialKind::Wood;
         case ExperimentKind::HaftStoneHammer: return MaterialKind::Stone;
         case ExperimentKind::SmeltCopperOre: return MaterialKind::CopperOre;
+        case ExperimentKind::CultivatePlantFood: return MaterialKind::PlantFood;
         case ExperimentKind::DesignateSanitationArea:
         case ExperimentKind::DigSanitationPit:
         case ExperimentKind::OrganizeStockpile:
