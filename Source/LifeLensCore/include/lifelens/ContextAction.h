@@ -126,6 +126,10 @@ inline int contextActionDurationTicks(const PendingContextAction& action)
                     case FacilityBuildAction::CollectCharcoal: return 4;
                     case FacilityBuildAction::LoadSmeltCharge: return 5;
                     case FacilityBuildAction::CollectMetal: return 4;
+                    case FacilityBuildAction::Plant: return 7;
+                    case FacilityBuildAction::Water: return 5;
+                    case FacilityBuildAction::Tend: return 8;
+                    case FacilityBuildAction::Harvest: return 7;
                     case FacilityBuildAction::None:
                     default: return 1;
                 }
@@ -248,6 +252,53 @@ inline bool resolveCivilizationContextTarget(
                        || facility.state==FacilityState::Ruined) return false;
                     if(decision.facilityAction!=FacilityBuildAction::DeliverMaterial
                        && decision.facilityAction!=FacilityBuildAction::Work) return false;
+                    outTarget=facility.pos;
+                    return true;
+                }
+                return false;
+            }
+            if(decision.technique==TechniqueId::Cultivation
+               && decision.facilityKind==FacilityKind::CultivatedPlot){
+                if(!decision.hasFacilityTarget) return false;
+                if(decision.facilityAction==FacilityBuildAction::Plan){
+                    const CultivatedPlotSiteOpportunity opportunity=
+                        chooseCultivatedPlotSite(
+                            world,actor.id,authoritativePosition);
+                    if(!opportunity.available
+                       || opportunity.pos.x!=decision.facilityTargetPos.x
+                       || opportunity.pos.y!=decision.facilityTargetPos.y) return false;
+                    outTarget=decision.facilityTargetPos;
+                    return true;
+                }
+
+                for(const auto& facility:world.facilities){
+                    if(facility.id!=decision.facility
+                       || facility.kind!=FacilityKind::CultivatedPlot
+                       || facility.state==FacilityState::Ruined) continue;
+                    if(facility.pos.x!=decision.facilityTargetPos.x
+                       || facility.pos.y!=decision.facilityTargetPos.y) return false;
+
+                    const bool operational=
+                        facilityOperationalAndActive(facility);
+                    if((decision.facilityAction==FacilityBuildAction::DeliverMaterial
+                        || decision.facilityAction==FacilityBuildAction::Work)
+                       && operational) return false;
+
+                    if(decision.facilityAction==FacilityBuildAction::Plant){
+                        if(!operational || facility.cropPlanted) return false;
+                    }else if(decision.facilityAction==FacilityBuildAction::Water
+                             || decision.facilityAction==FacilityBuildAction::Tend){
+                        if(!operational || !facility.cropPlanted
+                           || facility.cropHarvestUnits>0) return false;
+                    }else if(decision.facilityAction==FacilityBuildAction::Harvest){
+                        if(!operational || !facility.cropPlanted
+                           || facility.cropHarvestUnits<=0
+                           || facility.cropGrowth01<1.0) return false;
+                    }else if(decision.facilityAction!=FacilityBuildAction::DeliverMaterial
+                             && decision.facilityAction!=FacilityBuildAction::Work){
+                        return false;
+                    }
+
                     outTarget=facility.pos;
                     return true;
                 }
@@ -380,6 +431,9 @@ inline bool civilizationContextRequiresSpatialTarget(const CivilizationUtilityDe
             || decision.technique==TechniqueId::DesignatedSanitationArea
             || decision.technique==TechniqueId::DugSanitationPit
             || decision.technique==TechniqueId::PrimitiveStorage
+            || (decision.technique==TechniqueId::Cultivation
+                && decision.facilityKind==FacilityKind::CultivatedPlot
+                && decision.facilityAction!=FacilityBuildAction::None)
             || (decision.technique==TechniqueId::FireMaking
                 && decision.facilityKind==FacilityKind::FirePit
                 && decision.facilityAction!=FacilityBuildAction::None)
