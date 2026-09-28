@@ -210,7 +210,7 @@ export function FastForwardControl({
     <div className="fast-forward-control">
       <div className="fast-forward-title">
         <strong>일수 건너뛰기</strong>
-        <small>입력 기간을 실제 Core 규칙으로 고속 계산합니다.</small>
+        <small>입력 기간을 실제 시뮬레이션 규칙으로 고속 계산합니다.</small>
       </div>
 
       <div className="fast-forward-input-row">
