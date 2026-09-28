@@ -1575,6 +1575,126 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
                 return result;
             }
 
+            if(decision.technique==TechniqueId::Cultivation
+               && decision.facilityKind==FacilityKind::CultivatedPlot){
+                result.facilityKind=FacilityKind::CultivatedPlot;
+                result.facilityAction=decision.facilityAction;
+                result.craft.event.actor=self.id;
+                result.craft.event.type=CivilizationEventType::Crafted;
+                result.craft.event.technique=TechniqueId::Cultivation;
+
+                if(decision.facilityAction==FacilityBuildAction::Plan){
+                    if(!decision.hasFacilityTarget) return result;
+                    ConstructedFacility* created=establishCultivatedPlotProject(
+                        world,self.id,decision.facilityTargetPos);
+                    if(created==nullptr) return result;
+                    result.executed=true;
+                    result.success=true;
+                    result.facilityId=created->id;
+                    result.facilityPos=created->pos;
+                    result.craft.success=true;
+                    result.event=result.craft.event;
+                    return result;
+                }
+
+                ConstructedFacility* facility=
+                    findCivilizationFacility(world,decision.facility);
+                if(facility==nullptr
+                   || facility->kind!=FacilityKind::CultivatedPlot
+                   || !decision.hasFacilityTarget
+                   || facility->pos.x!=decision.facilityTargetPos.x
+                   || facility->pos.y!=decision.facilityTargetPos.y){
+                    return result;
+                }
+
+                result.facilityId=facility->id;
+                result.facilityPos=facility->pos;
+
+                if(decision.facilityAction==FacilityBuildAction::DeliverMaterial){
+                    if(facility->state==FacilityState::Operational) return result;
+                    const int delivered=deliverFacilityMaterial(
+                        *facility,self.civilization.inventory,
+                        decision.material,std::max(1,decision.quantity));
+                    if(delivered<=0) return result;
+                    result.executed=true;
+                    result.success=true;
+                    result.craft.success=true;
+                    result.craft.event.material=decision.material;
+                    result.craft.event.quantity=delivered;
+                    result.event=result.craft.event;
+                    return result;
+                }
+
+                if(decision.facilityAction==FacilityBuildAction::Work){
+                    if(facility->state==FacilityState::Operational) return result;
+                    const CultivatedPlotWorkResult work=workOnCultivatedPlot(
+                        world,self,facility->id,
+                        std::max(0.1,decision.facilityWork));
+                    if(!work.worked || work.facilityId!=facility->id) return result;
+                    result.executed=true;
+                    result.success=true;
+                    result.facilityCompleted=work.completed;
+                    result.facilityWorkBefore=work.workBefore;
+                    result.facilityWorkAfter=work.workAfter;
+                    result.craft.success=true;
+                    result.event=result.craft.event;
+                    self.civilization.craftingSkill=clampCivilization01(
+                        self.civilization.craftingSkill+0.003);
+                    return result;
+                }
+
+                if(!facilityOperationalAndActive(*facility)) return result;
+
+                if(decision.facilityAction==FacilityBuildAction::Plant){
+                    if(!plantCultivatedPlot(world,self,*facility)) return result;
+                    result.executed=true;
+                    result.success=true;
+                    result.craft.success=true;
+                    result.craft.event.material=MaterialKind::PlantFood;
+                    result.craft.event.quantity=1;
+                    result.event=result.craft.event;
+                    return result;
+                }
+
+                if(decision.facilityAction==FacilityBuildAction::Water){
+                    if(!waterCultivatedPlot(world,self,*facility)) return result;
+                    result.executed=true;
+                    result.success=true;
+                    result.craft.success=true;
+                    result.craft.event.material=MaterialKind::Water;
+                    result.craft.event.quantity=1;
+                    result.event=result.craft.event;
+                    return result;
+                }
+
+                if(decision.facilityAction==FacilityBuildAction::Tend){
+                    if(!tendCultivatedPlot(world,self,*facility)) return result;
+                    result.executed=true;
+                    result.success=true;
+                    result.craft.success=true;
+                    result.event=result.craft.event;
+                    return result;
+                }
+
+                if(decision.facilityAction==FacilityBuildAction::Harvest){
+                    const int harvested=harvestCultivatedPlot(
+                        world,self,*facility);
+                    if(harvested<=0) return result;
+                    result.executed=true;
+                    result.success=true;
+                    result.craft.success=true;
+                    result.craft.event.material=MaterialKind::PlantFood;
+                    result.craft.event.quantity=harvested;
+                    result.event=result.craft.event;
+                    self.civilization.knowledge.recordSuccessfulUse(
+                        TechniqueId::Cultivation);
+                    self.civilization.gatheringSkill=clampCivilization01(
+                        self.civilization.gatheringSkill+0.006);
+                    return result;
+                }
+                return result;
+            }
+
             if(decision.technique==TechniqueId::PrimitiveStorage){
                 result.facilityKind=FacilityKind::PrimitiveStorage;
                 result.facilityAction=decision.facilityAction;
