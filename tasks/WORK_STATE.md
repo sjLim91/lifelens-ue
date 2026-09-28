@@ -1,5 +1,27 @@
 # LifeLens Canonical Work State
 
+## 2026-09-28 CANONICAL CURRENT — local-demand settlement growth + cultivation foundation (#482/#483)
+
+> This section supersedes older "current" Web/Stage-C snapshots below. Actual GitHub main/Actions remain the highest-priority truth.
+
+- Current main: `77b4dceb39eade6111e153682f235025ad2cfb35` (#483).
+- Published GitHub Pages source: `preview: 77b4dceb...`.
+- #482 — settlement foundation capacity now scales from **local resident demand** instead of one facility satisfying the whole world forever. SleepingPlace/Shelter/WorkSurface projects remain physical, material-backed and activity-anchored.
+- #483 — authoritative cultivation foundation:
+  - discoverable `Cultivation` knowledge; no era timer or free unlock.
+  - `CultivatedPlot` is an authoritative Core facility with physical construction requirements.
+  - planting consumes PlantFood seed stock; watering consumes carried Water; tending requires resident labor/tool context.
+  - growth depends on authoritative local ecology/climate: fertility proxy, moisture/water influence, temperature and season.
+  - harvest creates PlantFood only after real growth reaches maturity.
+  - crop runtime persists in civilization snapshot v6 and is exposed through Core/Web/Unreal read models.
+  - Web 3D facility presentation shows prepared plot -> crop growth -> harvest-ready state from Core crop facts.
+  - Korean Web/Unreal labels are registered for cultivation and plot actions.
+- #483 exact-head gates: Preflight, Web Typecheck, Web Runtime Resilience, Web WASM, Core Tests and Unreal Linux Compile — PASS.
+- Main Web Runtime Release / Web Preview / Pages publish — PASS. External Preview Probe remains an independent known failure and is not the Pages publish authority.
+- **C-S3 remains ACTIVE, not complete.** Water handling/storage and food spoilage existed already; #483 completes the cultivation/season-moisture-fertility foundation. Remaining C-S3 implementation is local scarcity -> explicit exploration/search/movement pressure and its long-run validation.
+- Immediate implementation target: **C-S3 scarcity-driven resource search**, then strengthen fast-forward development observability from authoritative food/water/crop/reserve deltas.
+
+
 ## 2026-09-27 CANONICAL CURRENT — Web observation chain + social cues integrated (#459–#466)
 
 > This section overrides older dated Web-current sections below. Actual GitHub `main`, PRs and Actions remain the highest-priority truth.
@@ -313,12 +335,12 @@ Legacy mapping is preserved so no planned work is lost:
 - ruined/inactive facilities stop providing benefit.
 - repairs require actual material/labor.
 
-### C-S3 — Durable subsistence
-- water handling/storage.
-- food storage/spoilage.
-- cultivation/renewable production.
-- season/moisture/fertility dependency.
-- local scarcity -> exploration/search/movement pressure.
+### C-S3 — Durable subsistence — ACTIVE
+- water handling/storage — DONE foundation.
+- food storage/spoilage — DONE foundation.
+- cultivation/renewable production — DONE foundation (#483).
+- season/moisture/fertility dependency — DONE cultivation foundation (#483).
+- local scarcity -> exploration/search/movement pressure — **NEXT / remaining**.
 
 ### C-S4 — Emergent settlement geometry
 - activity centers emerge from real use.
@@ -406,15 +428,17 @@ Standing Jjun merge rule remains:
 
 ## 9. Immediate next implementation target
 
-> **Earth & Human Foundation / EH-0 -> EH-1.**
+> **C-S3 local scarcity -> exploration/search/movement pressure.**
 
-Immediate structural sequence:
-1. hierarchy-compatible Planet / Surface Region / Chunk identity contract.
-2. authoritative materialized region/chunk enumeration.
-3. deterministic hydrology foundation.
-4. explicit water bodies and freshwater/saltwater observations.
-5. real thirst source selection and collection.
-6. only then continue water-dependent settlement/agriculture expansion.
+The older Earth/hydrology foundation sequence below this file is historical: those provider/hydrology prerequisites are already integrated on current main.
+
+Immediate sequence:
+1. measure provision scarcity from authoritative resident-local inventory/storage/resource availability.
+2. distinguish nearby reachable supply from absent/depleted local supply.
+3. turn scarcity into explicit resource-search/exploration utility rather than global first-node selection.
+4. keep movement/pathfinding authoritative and physical; no teleport and no browser-generated search target.
+5. validate deterministic same-seed / snapshot continuation and long fast-forward behavior.
+6. expose only authoritative search/provision outcomes in Web fast-forward/world-activity summaries.
 
 
 ---
