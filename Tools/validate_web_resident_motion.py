@@ -97,8 +97,15 @@ assert "const hueShift = ((variantSeed % 17) - 8) * 0.006;" not in resident, (
 )
 
 assert "defaultMobileZoom: 2.3" in contract
-assert "maxZoom: 3.6" in contract
+assert "maxZoom: 6.4" in contract
 assert "garmentMix: 0.7 + hash01(seed, 43) * 0.18" in appearance
+for token in (
+    "canvas.width = 768",
+    "canvas.height = 144",
+    "sprite.scale.set(4.8, 0.9, 1)",
+    "let fontSize = 42",
+):
+    assert token in resident, f"resident world label readability regressed: {token}"
 
 # The scalp belongs to the skinned body. Fixed-height spherical proxies caused
 # the exposed-scalp/collar regression reported on a real device.

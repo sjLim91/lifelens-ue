@@ -34,6 +34,13 @@ test('downward orbit increases elevation and cannot select',({canvas,input,taps}
   canvas.fire('pointerdown',1,100,100);canvas.fire('pointermove',1,120,120);canvas.fire('pointerup',1,120,120);
   assert.ok(input.snapshot().angle>0);assert.ok(input.snapshot().elevation>0.6);assert.equal(taps.length,0);
 });
+test('pinch reaches close inspection zoom and clamps at the camera maximum',({canvas,input})=>{
+  canvas.fire('pointerdown',1,100,100);canvas.fire('pointerdown',2,200,100);
+  canvas.fire('pointermove',2,740,100);
+  assert.equal(input.snapshot().zoom,6.4);
+  canvas.fire('pointermove',2,1200,100);
+  assert.equal(input.snapshot().zoom,6.4);
+});
 test('two-finger gesture cannot turn into orbit when one finger lifts',({canvas,input,changes,taps,pans})=>{
   canvas.fire('pointerdown',1,100,100);canvas.fire('pointerdown',2,200,100);
   canvas.fire('pointermove',2,220,110);assert.ok(pans.length>0);assert.ok(input.snapshot().zoom>1);

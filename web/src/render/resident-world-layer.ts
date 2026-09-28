@@ -106,8 +106,8 @@ function createActionCueSprite(): ResidentActionCueSprite | null {
   if (typeof document === 'undefined') return null;
 
   const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 96;
+  canvas.width = 768;
+  canvas.height = 144;
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.minFilter = THREE.LinearFilter;
@@ -121,7 +121,7 @@ function createActionCueSprite(): ResidentActionCueSprite | null {
     opacity: 0.96,
   });
   const sprite = new THREE.Sprite(material);
-  sprite.scale.set(3.6, 0.68, 1);
+  sprite.scale.set(4.8, 0.9, 1);
   sprite.renderOrder = 8;
   sprite.visible = false;
 
@@ -157,10 +157,10 @@ function paintActionCue(
   const safeText = text.length > 28
     ? `${text.slice(0, 27)}…`
     : text;
-  let fontSize = 30;
+  let fontSize = 42;
   context.font = `600 ${fontSize}px system-ui, sans-serif`;
   while (
-    fontSize > 21
+    fontSize > 29
     && context.measureText(safeText).width > cue.canvas.width - 38
   ) {
     fontSize -= 1;

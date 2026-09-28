@@ -57,7 +57,7 @@ export const OBSERVER_CAMERA_CONTRACT = {
   defaultDesktopZoom: 1.25,
   defaultMobileZoom: 2.3,
   minZoom: 0.55,
-  maxZoom: 3.6,
+  maxZoom: 6.4,
   minElevationRadians: 0.28,
   maxElevationRadians: 1.18,
   rotateSensitivity: 0.006,
