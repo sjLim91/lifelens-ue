@@ -378,7 +378,10 @@ enum class CivilizationEventType {
     Crafted,
     // Appended to preserve the numeric values of existing persisted/debug
     // event kinds. Retrieval moves already-stored authority back to a resident.
-    Retrieved
+    Retrieved,
+    // Appended for Core-authored frontier search. The event is emitted only
+    // after a resident physically reaches an unexplored chunk and materializes it.
+    Explored
 };
 
 struct CivilizationEvent {
