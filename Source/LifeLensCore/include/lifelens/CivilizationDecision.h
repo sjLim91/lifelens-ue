@@ -786,10 +786,58 @@ inline CivilizationUtilityDecision bestSettlementFoundationDecision(
             world,kind,authoritativePosition);
         const double preference=civilizationPreference(
             world.seed,self.id,610ULL+static_cast<std::uint64_t>(kind));
+        const SettlementFacilityDemand demand=observeSettlementFacilityDemand(
+            world,self.id,kind,authoritativePosition,population);
+        const bool restoreNeeded=demand.unmet();
+        bool hasRestorableRuin=false;
 
         for(const auto& facility:world.facilities){
-            if(facility.kind!=kind || !settlementFacilityNeedsMaintenance(facility)
-               || manhattan(facility.pos,authoritativePosition)>SettlementServiceRadiusGrid) continue;
+            if(facility.kind!=kind
+               || manhattan(
+                   facility.pos,
+                   authoritativePosition)>SettlementServiceRadiusGrid){
+                continue;
+            }
+
+            if(settlementFacilityCanRestore(facility) && restoreNeeded){
+                hasRestorableRuin=true;
+                const auto restorationRequirements=
+                    facilityRestorationRequirements(kind);
+                bool canRestore=!restorationRequirements.empty();
+                int restorationUnits=0;
+                for(const auto& requirement:restorationRequirements){
+                    restorationUnits+=requirement.required;
+                    if(self.civilization.inventory.count(
+                        ItemKind::RawMaterial,
+                        requirement.material)<requirement.required){
+                        canRestore=false;
+                    }
+                }
+                if(!canRestore) continue;
+
+                CivilizationUtilityDecision restore;
+                restore.intent=CivilizationIntent::Craft;
+                restore.facilityKind=kind;
+                restore.facilityAction=FacilityBuildAction::Repair;
+                restore.facility=facility.id;
+                restore.hasFacilityTarget=true;
+                restore.facilityTargetPos=facility.pos;
+                restore.material=restorationRequirements.front().material;
+                restore.item=ItemKind::RawMaterial;
+                restore.quantity=restorationUnits;
+                // Reusing an existing frame is deliberately more attractive
+                // than consuming a full new construction package.
+                restore.utility=clampCivilization01(
+                    0.78
+                    +0.08*self.personality.conscientiousness
+                    +0.06*self.personality.orderliness
+                    +0.06*self.civilization.craftingSkill
+                    +0.04*preference);
+                considerCivilizationDecision(best,restore);
+                continue;
+            }
+
+            if(!settlementFacilityNeedsMaintenance(facility)) continue;
 
             const MaterialKind repairMaterial=facilityRepairMaterial(kind);
             const int held=self.civilization.inventory.count(
@@ -819,7 +867,7 @@ inline CivilizationUtilityDecision bestSettlementFoundationDecision(
 
         double pressure=settlementFacilityNeedPressure(
             world,self,authoritativePosition,kind,population);
-        if(project==nullptr && pressure<0.24) continue;
+        if(project==nullptr && pressure<0.24 && !hasRestorableRuin) continue;
         if(project!=nullptr) pressure=std::max(pressure,0.46);
 
         CivilizationUtilityDecision candidate;
@@ -829,6 +877,11 @@ inline CivilizationUtilityDecision bestSettlementFoundationDecision(
         candidate.technique=TechniqueId::None;
 
         if(project==nullptr){
+            // A recoverable local structure owns the demand until residents
+            // either restore it or discover/gather its cheaper repair package.
+            // Do not create a replacement beside reusable ruins.
+            if(hasRestorableRuin) continue;
+
             const SettlementFacilitySiteOpportunity site=
                 chooseSettlementFacilitySite(
                     world,self.id,kind,authoritativePosition,population);
@@ -1785,7 +1838,8 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
                 result.facilityPos=facility->pos;
 
                 if(decision.facilityAction==FacilityBuildAction::Repair){
-                    if(!facilityOperationalAndActive(*facility)) return result;
+                    if(!facilityOperationalAndActive(*facility)
+                       && !settlementFacilityCanRestore(*facility)) return result;
                     const FacilityRepairResult repair=
                         repairSettlementFacility(world,self,facility->id);
                     if(!repair.repaired) return result;
