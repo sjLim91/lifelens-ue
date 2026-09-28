@@ -4,6 +4,7 @@ import type {
 } from '../runtime/core-types';
 import {
   formatCivilizationIntent,
+  formatMaterial,
   formatObjectKind,
   formatParentingAction,
   formatSocialIntent,
@@ -67,9 +68,20 @@ export function residentActionCue(
     case 'Social':
       action = formatSocialIntent(directive.socialIntent);
       break;
-    case 'Civilization':
+    case 'Civilization': {
       action = formatCivilizationIntent(directive.civilizationIntent);
+      const material = directive.civilizationMaterial?.trim();
+      if (
+        material
+        && material !== 'Unknown'
+        && ['Explore', 'Gather', 'Store', 'Retrieve'].includes(
+          directive.civilizationIntent ?? '',
+        )
+      ) {
+        action = `${action} · ${formatMaterial(material)}`;
+      }
       break;
+    }
     case 'Parenting':
       action = formatParentingAction(directive.parentingAction);
       break;
