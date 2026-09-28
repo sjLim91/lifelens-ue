@@ -56,6 +56,10 @@ export interface FastForwardSummary {
   majorLifeEventsAfter: number;
   storedUnitsBefore: number;
   storedUnitsAfter: number;
+  facilitiesBefore: number;
+  facilitiesAfter: number;
+  techniqueFactsBefore: number;
+  techniqueFactsAfter: number;
   newResidents: Array<{ id: string; name: string }>;
   newlyDeceased: Array<{ id: string; name: string }>;
   facilityChanges: FastForwardFacilityChange[];
@@ -259,6 +263,10 @@ export function buildFastForwardSummary(
     majorLifeEventsAfter: numeric(after.world.majorLifeEvents),
     storedUnitsBefore: numeric(before.civilization.totalStoredUnits),
     storedUnitsAfter: numeric(after.civilization.totalStoredUnits),
+    facilitiesBefore: numeric(before.civilization.facilityCount),
+    facilitiesAfter: numeric(after.civilization.facilityCount),
+    techniqueFactsBefore: numeric(before.civilization.techniqueFactCount),
+    techniqueFactsAfter: numeric(after.civilization.techniqueFactCount),
     newResidents,
     newlyDeceased,
     facilityChanges,
