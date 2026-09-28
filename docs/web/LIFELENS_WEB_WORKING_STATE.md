@@ -1,5 +1,38 @@
 # LifeLens Web Observer — Working State
 
+## 2026-09-28 CANONICAL CURRENT — fast-forward + local growth + cultivation (#481–#483)
+
+This section supersedes older Web-current snapshots below while preserving them as historical context.
+
+### Baseline
+- Current main: `77b4dceb39eade6111e153682f235025ad2cfb35` (#483).
+- Canonical preview: https://sjlim91.github.io/lifelens-ue/?v=77b4dceb
+- GitHub Pages branch provenance: `preview: 77b4dceb...`.
+- Web remains a first-class presentation client for the same authoritative LifeLensCore; no browser-side future-state fabrication was introduced.
+
+### Long-run visible development
+- #481 authoritative day fast-forward executes the normal Core timeline in causal order and compares authoritative before/after snapshots.
+- #482 local resident demand allows settlement foundation capacity to grow instead of treating one global facility as permanent completion.
+- #483 adds authoritative cultivation:
+  - `Cultivation` is discovered through Core knowledge/experiment prerequisites.
+  - `CultivatedPlot` construction requires real materials/work.
+  - planting consumes PlantFood seed stock, watering consumes Water, tending is resident work.
+  - growth uses Core ecology/climate/season inputs and produces PlantFood only on harvest.
+  - crop state survives Save/Load via snapshot v6.
+  - Web receives cropPlanted/growth/moisture/care/harvest facts through Core DTO/HumanTrace contracts.
+  - Three.js facility rendering shows the plot and crop growth directly from those authority facts.
+  - Korean-only UI registry includes Cultivation/CultivatedPlot and Plant/Water/Tend/Harvest.
+
+### Validation
+- #483 exact-head: Preflight, Web Typecheck, Runtime Resilience, Web WASM, Core Tests, Unreal Linux Compile — PASS.
+- main Web Runtime Release / Web Preview / Pages publish — PASS.
+- External Preview Probe remains a separate known failure and is not evidence of failed Pages publication.
+
+### Remaining durable-subsistence gap
+- C-S3 is still ACTIVE: explicit **local scarcity -> resource search/exploration/movement pressure** is not yet complete.
+- The browser must not invent search targets, farms, settlement centers or projected yields. The next step belongs in Core decision/search authority first.
+
+
 ## 2026-09-27 CANONICAL CURRENT — code baseline `c2e7a766` (#476)
 
 This section supersedes older Web-current snapshots below while preserving them as historical context.

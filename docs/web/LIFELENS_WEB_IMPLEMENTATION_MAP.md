@@ -1,7 +1,7 @@
 # LifeLens Web Observer — Implementation Map
 
-Last reconciled: 2026-09-27 KST  
-Canonical code baseline: `c2e7a7667a200ad94fa388afce7be2b4470c340f` (#476, with #474/#475 integrated)
+Last reconciled: 2026-09-28 KST  
+Canonical code baseline: `77b4dceb39eade6111e153682f235025ad2cfb35` (#483, with #481/#482 integrated)
 
 This document maps the current Web Observer source to the live architecture. It is an implementation map, not a visual-acceptance claim.
 
@@ -25,6 +25,14 @@ Current resident contracts include:
 - authoritative pregnancy role/stage/timing/health/fatigue/stress/nutrition.
 
 Terrain contracts include authoritative hydrology fields such as downstream coordinates, flow potential and drainage accumulation.
+
+Civilization facility contracts now also include authoritative cultivation runtime from #483:
+- `CultivatedPlot` facility identity/state/position,
+- planted state and planting minute,
+- crop growth/moisture/care,
+- harvest-ready units and last cultivation minute.
+
+Those fields are read-model truth. Web may visualize them but may not estimate yield or invent crop progression.
 
 ### `src/runtime/core-bridge.ts`
 
@@ -174,6 +182,17 @@ Renderer lifecycle and animation-frame wrapper.
 
 Core-driven terrain mesh generation and deterministic presentation shading.
 
+### `src/render/facility-layer.ts`
+
+Authoritative facility visualization.
+
+After #483:
+- `CultivatedPlot` renders prepared soil and boundary stakes as the physical facility becomes real,
+- crop rows appear only when Core reports `cropPlanted`,
+- visible crop height follows Core `cropGrowth01`,
+- harvest-ready presentation follows Core `cropHarvestUnits`,
+- Web does not predict fertility, growth rate or harvest yield.
+
 ### `src/render/water-layer.ts`
 ### `src/render/water-geometry.ts`
 
@@ -313,11 +332,21 @@ Completed:
 12. Unreal ecology/resource readability is facility-local rather than spawn-centered (#475; supersedes closed #473).
 13. household and pregnancy truth in focused Web inspection (#476).
 14. user-entered authoritative day fast-forward with progress and development summary (#481).
+15. local-population settlement foundation capacity growth (#482).
+16. authoritative cultivation / visible food production (#483):
+    - discoverable cultivation knowledge,
+    - physical CultivatedPlot construction,
+    - real seed/water/labor inputs,
+    - ecology/climate/season-dependent growth,
+    - persistent crop state,
+    - Web/Unreal cultivation DTO and presentation.
 
 Next:
-1. motion tranche 2 — Sleep/Dig/Chop/Ground Gather/Carry variants only where both clip semantics and Core facts are adequate.
-2. deeper Human Trace / lived-space accumulation from persistent Core facts.
-3. optional observer expansion for full romance history, extended genealogy and birth records, again only through explicit Core read models.
+1. C-S3 local scarcity -> explicit resource search/exploration/movement pressure in Core.
+2. strengthen fast-forward/world-activity summaries with authoritative provision/crop deltas once Core search authority exists.
+3. motion tranche 2 — Sleep/Dig/Chop/Ground Gather/Carry variants only where both clip semantics and Core facts are adequate.
+4. deeper Human Trace / lived-space accumulation from persistent Core facts.
+5. optional observer expansion for full romance history, extended genealogy and birth records, again only through explicit Core read models.
 
 ## 8. Asset policy
 
@@ -347,7 +376,7 @@ Key current gates include:
 - Unreal Linux Compile,
 - Web Preview.
 
-Current #476 code baseline has passed Preflight, Web Typecheck, Web Runtime Resilience, Web WASM, Core Tests and Unreal Linux Compile. #474/#475 separately passed their relevant Core/Unreal gates before merge.
+#483 exact-head passed Preflight, Web Typecheck, Web Runtime Resilience, Web WASM, Core Tests and Unreal Linux Compile. Main Web Runtime Release, Web Preview and GitHub Pages publication for `77b4dceb` also passed. The External Preview Probe remains an independent known failure and is not the publication authority.
 
 Automated success does **not** establish visual acceptance. Actual mobile/browser screenshots and interaction remain required.
 

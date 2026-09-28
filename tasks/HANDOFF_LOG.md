@@ -1037,3 +1037,28 @@
 - Web Preview 36247613583 and Pages deployment 36247646656 succeeded. gh-pages `eeac7553c45019a1b1b6545d09164576616a1753` publishes the product SHA. URL: https://sjlim91.github.io/lifelens-ue/?v=369f813
 - Live page loads its UI; this cloud browser reports disabled WebGL capability / Error creating WebGL context. No device visual acceptance or complete hydrology-quality claim.
 - Recovery/limitations: `tasks/WEB_CAMERA_WATER_REPAIR_2026-09-26.md`.
+
+
+## 2026-09-28 — C-S3 local settlement growth + cultivation foundation integrated
+
+- 작성자: Jjun-side AI
+- 기준 main: `77b4dceb39eade6111e153682f235025ad2cfb35`
+- 상태: `#482/#483 MERGED / C-S3 ACTIVE`
+- #482:
+  - SleepingPlace / Shelter / WorkSurface 수요가 월드 전역 단일 보유 판정이 아니라 주민의 실제 지역 수요/수용량을 따른다.
+  - NEW GAME spawn은 생활권 권한이 아니며 실제 resident/activity anchor가 계속 시설 배치의 기준이다.
+- #483:
+  - `Cultivation` 지식과 `CultivatedPlot` 시설 추가.
+  - PlantFood 씨앗, Water, DiggingStick 기반 노동, 실제 건설 자재/작업이 필요하다.
+  - 작물 성장은 Core ecology/climate/calendar의 수분·물 영향·경사/토질 proxy·온도·계절을 소비한다.
+  - 성장/수분/돌봄/수확대기 상태는 snapshot v6에 저장되고 Web/Unreal read model로 전달된다.
+  - Web은 Core crop state를 바탕으로 빈 재배지 -> 성장 작물 -> 수확 가능 작물을 표시한다.
+  - 한글 UI 계약에 재배/재배지/심기/물주기/돌보기/수확을 등록했다.
+- 검증:
+  - #483 exact-head Preflight / Typecheck / Runtime Resilience / Web WASM / Core Tests / Unreal Linux Compile PASS.
+  - main Web Runtime Release / Web Preview / GitHub Pages publish PASS.
+- 수정 과정에서 테스트가 실제 Core 버그를 발견:
+  - 시설 공사 함수의 반환값(완공 여부)을 작업 발생 여부로 잘못 해석했던 재배지 작업 로직을 before/after work 비교 방식으로 수정했다.
+- 다음 작업:
+  - C-S3 남은 항목 **지역 자원 부족 -> 명시적 탐색/검색/이동 압력**.
+  - 브라우저가 목표를 만들지 않고 Core가 실제 materialized resource / resident-local scarcity / physical navigation 기준으로 선택해야 한다.
