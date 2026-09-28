@@ -291,6 +291,17 @@ inline GridPos civilizationDecisionResourcePosition(
     return node.pos;
 }
 
+inline int knownNaturalResourceUnits(
+    const World& world,
+    MaterialKind material)
+{
+    int total=0;
+    for(const auto& node:world.resourceNodes){
+        if(node.material==material && node.quantity>0) total+=node.quantity;
+    }
+    return total;
+}
+
 inline int localNaturalResourceUnits(
     const World& world,
     MaterialKind material,
@@ -340,6 +351,11 @@ inline double civilizationResourceExplorationPressure(
         material==MaterialKind::Water
         || material==MaterialKind::PlantFood;
     const double progressDemand=materialProgressDemand(self,material);
+
+    // For critical provisions, a known supply is always safer than a blind
+    // frontier search. Exploration becomes relevant only after all currently
+    // known Water/PlantFood nodes are exhausted.
+    if(provision && knownNaturalResourceUnits(world,material)>0) return 0.0;
 
     // Do not roam for advanced ores merely because the map can contain them.
     // Search needs either a current survival/provision role, a concrete build/
@@ -515,11 +531,12 @@ inline CivilizationUtilityDecision bestGatherDecisionAtPosition(
             /static_cast<double>(WorldChunkSpanGridCells*6));
         const double localBonus=
             distance<=WorldChunkSpanGridCells*3 ? 0.04 : 0.0;
+        const double distancePenalty=provision ? 0.0 : 0.20*distance01;
         const double score=clampCivilization01(
             0.07+0.12*self.personality.curiosity+0.05*self.personality.adaptability+
             0.08*self.civilization.gatheringSkill+0.16*demand+0.13*gap+
             0.30*constructionDemand+0.24*maintenanceDemand+0.07*preference+
-            localBonus-0.20*distance01+
+            localBonus-distancePenalty+
             (provision && !world.storageSites.empty()
                 ? 0.12*clampCivilization01(
                     static_cast<double>(reserveGap)
