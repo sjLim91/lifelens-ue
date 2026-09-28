@@ -96,6 +96,61 @@ testCase('real activity transition with a target becomes an observation', () => 
   assert.match(events[0].summary, /민재.*대화.*하린/);
 });
 
+testCase('authoritative resource exploration start becomes an observation', () => {
+  const events = deriveObservationEvents(
+    world(11),
+    [resident({
+      presentation: {
+        active: false,
+      },
+    })],
+    world(12),
+    [resident({
+      presentation: {
+        active: true,
+        kind: 'Civilization',
+        phase: 'Moving',
+        civilizationIntent: 'Explore',
+        civilizationMaterial: 'Water',
+        issuedMinute: 12,
+        contextActionToken: '91',
+        hasTargetGrid: true,
+        targetGridX: 32,
+        targetGridY: -16,
+      },
+    })],
+  );
+
+  const exploration = events.find(event => event.id === 'civilization:explore:a:91');
+  assert.ok(exploration);
+  assert.equal(exploration.kind, 'civilization');
+  assert.equal(exploration.summary, '민재: 물 자원 탐색 시작');
+  assert.equal(exploration.detail, '탐색 목표 좌표 32, -16');
+  assert.equal(exploration.importance, 'medium');
+});
+
+testCase('unchanged exploration context does not spam the observation feed', () => {
+  const presentation = {
+    active: true,
+    kind: 'Civilization',
+    phase: 'Moving',
+    civilizationIntent: 'Explore',
+    civilizationMaterial: 'Wood',
+    issuedMinute: 14,
+    contextActionToken: '92',
+    hasTargetGrid: true,
+    targetGridX: 64,
+    targetGridY: 0,
+  };
+  const events = deriveObservationEvents(
+    world(14),
+    [resident({ presentation })],
+    world(15),
+    [resident({ presentation: { ...presentation } })],
+  );
+  assert.equal(events.filter(event => event.id.startsWith('civilization:explore:')).length, 0);
+});
+
 testCase('important newly reported memory becomes an observation', () => {
   const events = deriveObservationEvents(
     world(10),
