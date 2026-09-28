@@ -1,6 +1,8 @@
 export interface ObserverActionHandlers {
   createWorld: (seed: string) => void;
   setSimulationSpeed: (speed: number) => void;
+  fastForwardDays: (days: number) => Promise<void>;
+  clearFastForwardResult: () => void;
   moveObserver: (dx: number, dy: number) => void;
   recenterObserver: () => void;
   selectResident: (residentId: string | null) => void;
@@ -24,6 +26,14 @@ class ObserverActions {
 
   setSimulationSpeed(speed: number): void {
     this.handlers?.setSimulationSpeed(speed);
+  }
+
+  async fastForwardDays(days: number): Promise<void> {
+    await this.handlers?.fastForwardDays(days);
+  }
+
+  clearFastForwardResult(): void {
+    this.handlers?.clearFastForwardResult();
   }
 
   moveObserver(dx: number, dy: number): void {
