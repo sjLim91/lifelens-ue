@@ -12,7 +12,8 @@ enum class CivilizationActivityKind {
     Store,
     Experiment,
     Craft,
-    Retrieve
+    Retrieve,
+    Explore
 };
 
 inline CivilizationActivityKind civilizationActivityKindFromEvent(CivilizationEventType type)
@@ -21,6 +22,7 @@ inline CivilizationActivityKind civilizationActivityKindFromEvent(CivilizationEv
         case CivilizationEventType::Gathered: return CivilizationActivityKind::Gather;
         case CivilizationEventType::Stored: return CivilizationActivityKind::Store;
         case CivilizationEventType::Retrieved: return CivilizationActivityKind::Retrieve;
+        case CivilizationEventType::Explored: return CivilizationActivityKind::Explore;
         case CivilizationEventType::ExperimentFailed:
         case CivilizationEventType::Discovered: return CivilizationActivityKind::Experiment;
         case CivilizationEventType::Crafted: return CivilizationActivityKind::Craft;
@@ -34,6 +36,7 @@ inline const char* civilizationActivityKindName(CivilizationActivityKind kind)
         case CivilizationActivityKind::Gather: return "Gather";
         case CivilizationActivityKind::Store: return "Store";
         case CivilizationActivityKind::Retrieve: return "Retrieve";
+        case CivilizationActivityKind::Explore: return "Explore";
         case CivilizationActivityKind::Experiment: return "Experiment";
         case CivilizationActivityKind::Craft: return "Craft";
         case CivilizationActivityKind::None:
