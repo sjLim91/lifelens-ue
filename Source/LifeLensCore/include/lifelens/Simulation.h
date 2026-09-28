@@ -313,6 +313,10 @@ inline bool Simulation::completeExternalPhysicalAction(
         character->needs.apply(effect);
     }
     if(settlementSleepFacility!=nullptr){
+        recordFacilityUse(
+            *settlementSleepFacility,
+            character->id,
+            world_.minute);
         applyFacilityWear(
             *settlementSleepFacility,
             facilityWearPerUse(settlementSleepFacility->kind));
