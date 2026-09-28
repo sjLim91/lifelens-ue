@@ -57,11 +57,6 @@ struct ConstructedFacility {
     StorageId linkedStorage = 0;
     std::vector<FacilityMaterialRequirement> requirements;
 
-    // Persistent lived-use evidence. Settlement layout may consume this
-    // history, but Presentation never authors it.
-    int usageCount = 0;
-    int lastUsedMinute = -1;
-
     // Heat-production authority. Presentation only reads these values.
     int fuelUnits = 0;
     int charcoalUnits = 0;
@@ -86,6 +81,11 @@ struct ConstructedFacility {
     double cropCare01 = 0.0;
     int cropHarvestUnits = 0;
     int lastCultivationMinute = -1;
+
+    // Persistent lived-use evidence. Appended to preserve aggregate/source
+    // compatibility with older facility fixtures and persisted enum layouts.
+    int usageCount = 0;
+    int lastUsedMinute = -1;
 };
 
 inline bool validFacilityKind(FacilityKind kind)
