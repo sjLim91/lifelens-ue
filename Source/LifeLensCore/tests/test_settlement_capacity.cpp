@@ -68,6 +68,66 @@ int main()
     assert(!chooseSettlementFacilitySite(world,owner,FacilityKind::SleepingPlace,anchor,&population).available);
     assert(settlementFacilityNeedPressure(world,actor,anchor,FacilityKind::SleepingPlace,&population)==0.0);
 
+    // A worn-out bed reuses its surviving frame before anyone clears land for
+    // a fifth replacement. Restoration costs are derived from the original
+    // construction package and are strictly cheaper (Fiber 2 + Wood 1 here,
+    // versus Fiber 4 + Wood 2 for a new SleepingPlace).
+    const std::size_t facilityCountBeforeRestoration=world.facilities.size();
+    const FacilityId ruinedBedId=world.facilities.front().id;
+    assert(ruinConstructedFacility(world.facilities.front()));
+    assert(demand(FacilityKind::SleepingPlace,anchor).unmet());
+    assert(facilityRestorationMaterialRequirement(
+        FacilityKind::SleepingPlace,MaterialKind::Fiber)==2);
+    assert(facilityRestorationMaterialRequirement(
+        FacilityKind::SleepingPlace,MaterialKind::Wood)==1);
+    assert(settlementRepairMaterialDemand(world,MaterialKind::Fiber)>=2);
+    assert(settlementRepairMaterialDemand(world,MaterialKind::Wood)>=1);
+
+    for(const MaterialKind material:{MaterialKind::Fiber,MaterialKind::Wood}){
+        const int held=actor.civilization.inventory.count(
+            ItemKind::RawMaterial,material);
+        if(held>0){
+            assert(actor.civilization.inventory.remove(
+                ItemKind::RawMaterial,material,held));
+        }
+    }
+
+    const auto withoutRepairMaterials=
+        bestSettlementFoundationDecision(
+            world,actor,anchor,&population);
+    assert(!(withoutRepairMaterials.facilityKind==FacilityKind::SleepingPlace
+        && withoutRepairMaterials.facilityAction==FacilityBuildAction::Plan));
+
+    actor.civilization.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::Fiber,2,0.5,1.0});
+    actor.civilization.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::Wood,1,0.5,1.0});
+    const int fiberBeforeRestore=actor.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::Fiber);
+    const int woodBeforeRestore=actor.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::Wood);
+
+    const auto restoreBed=bestSettlementFoundationDecision(
+        world,actor,anchor,&population);
+    assert(restoreBed.facilityAction==FacilityBuildAction::Repair);
+    assert(restoreBed.facilityKind==FacilityKind::SleepingPlace);
+    assert(restoreBed.facility==ruinedBedId);
+    const auto restored=executeCivilizationDecisionAtPosition(
+        world,actor,restoreBed,world.facilities.front().pos,&population);
+    assert(restored.executed && restored.success);
+    assert(world.facilities.size()==facilityCountBeforeRestoration);
+    assert(world.facilities.front().state==FacilityState::Operational);
+    assert(world.facilities.front().active);
+    assert(world.facilities.front().durability>=0.52);
+    assert(world.facilities.front().durability<=0.70);
+    assert(actor.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::Fiber)==fiberBeforeRestore-2);
+    assert(actor.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::Wood)==woodBeforeRestore-1);
+    assert(!demand(FacilityKind::SleepingPlace,anchor).unmet());
+    assert(!chooseSettlementFacilitySite(
+        world,owner,FacilityKind::SleepingPlace,anchor,&population).available);
+
     // Lived facility-use history is authoritative and must survive the same
     // snapshot path used by the settlement itself.
     assert(!world.facilities.empty());
