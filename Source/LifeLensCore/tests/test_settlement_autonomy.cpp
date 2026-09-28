@@ -279,9 +279,9 @@ int main()
             GridPos{emergentCenter.x+static_cast<int>(index),emergentCenter.y});
     }
     CHECK(settlementResidentActivityScore(
-        emergentCenter,&livedPopulation)>0.0);
+        layout,emergentCenter,&livedPopulation)>0.0);
     CHECK(settlementResidentActivityScore(
-        {emergentCenter.x+64,emergentCenter.y},&livedPopulation)==0.0);
+        layout,{emergentCenter.x+64,emergentCenter.y},&livedPopulation)==0.0);
 
     const SettlementFacilitySiteOpportunity clustered=
         chooseSettlementFacilitySite(
