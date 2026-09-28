@@ -133,10 +133,9 @@ int main()
     // treating one global plot as sufficient forever.
     SettlementPopulation population;
     for(std::size_t i=0;i<world.characters.size();++i){
-        population.push_back({
+        population.emplace(
             world.characters[i].id,
-            {activity.x+static_cast<int>(i),activity.y}
-        });
+            GridPos{activity.x+static_cast<int>(i),activity.y});
     }
     CultivationDemandObservation demand=
         observeCultivationDemand(world,activity,&population);
@@ -149,7 +148,9 @@ int main()
         extra.alive=true;
         extra.civilization.character=extra.id;
         world.characters.push_back(extra);
-        population.push_back({extra.id,{activity.x+i,activity.y+1}});
+        population.emplace(
+            extra.id,
+            GridPos{activity.x+i,activity.y+1});
     }
     demand=observeCultivationDemand(world,activity,&population);
     CHECK(demand.localResidents==9);
