@@ -13,7 +13,8 @@
 namespace lifelens {
 
 constexpr char CivilizationSnapshotExtensionMagic[]={'L','L','C','I','V','0','0','1'};
-constexpr std::uint32_t CivilizationSnapshotExtensionVersion=6;
+constexpr std::uint32_t CivilizationSnapshotExtensionVersion=7;
+constexpr std::uint32_t CivilizationSnapshotExtensionFacilityUsageVersion=7;
 constexpr std::uint32_t CivilizationSnapshotExtensionCultivationRuntimeVersion=6;
 constexpr std::uint32_t CivilizationSnapshotExtensionMetalRuntimeVersion=5;
 constexpr std::uint32_t CivilizationSnapshotExtensionFireRuntimeVersion=4;
@@ -349,6 +350,10 @@ void writeConstructedFacility(WriterT& w,const ConstructedFacility& facility)
     w.real(facility.cropCare01);
     w.i32(facility.cropHarvestUnits);
     w.i32(facility.lastCultivationMinute);
+
+    // v7 appends lived facility-use history after the v6 cultivation tail.
+    w.i32(facility.usageCount);
+    w.i32(facility.lastUsedMinute);
 }
 
 template<typename ReaderT>
@@ -422,6 +427,14 @@ bool readConstructedFacility(
         facility.cropHarvestUnits=0;
         facility.lastCultivationMinute=-1;
     }
+
+    if(version>=CivilizationSnapshotExtensionFacilityUsageVersion){
+        if(!r.i32(facility.usageCount)
+           || !r.i32(facility.lastUsedMinute)) return false;
+    }else{
+        facility.usageCount=0;
+        facility.lastUsedMinute=-1;
+    }
     return validConstructedFacility(facility);
 }
 
@@ -462,6 +475,7 @@ bool readCivilizationSnapshotExtension(
            && version!=CivilizationSnapshotExtensionFacilityVersion
            && version!=CivilizationSnapshotExtensionFireRuntimeVersion
            && version!=CivilizationSnapshotExtensionMetalRuntimeVersion
+           && version!=CivilizationSnapshotExtensionCultivationRuntimeVersion
            && version!=CivilizationSnapshotExtensionVersion)) return false;
     if(outVersion) *outVersion=version;
 
