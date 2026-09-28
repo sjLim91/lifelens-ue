@@ -154,7 +154,6 @@ export function buildFastForwardSummary(
   after: FastForwardCapture,
 ): FastForwardSummary {
   const beforeResidents = new Map(before.residents.map((resident) => [resident.id, resident]));
-  const afterResidents = new Map(after.residents.map((resident) => [resident.id, resident]));
 
   const newResidents = after.residents
     .filter((resident) => !beforeResidents.has(resident.id))
