@@ -65,6 +65,9 @@ int main()
 
     // Seed an actively burning FirePit so the binary codec must preserve all
     // authoritative runtime fields, not merely the physical facility shell.
+    // This codec fixture must stay independent of whichever autonomous
+    // sanitation project happened to progress during the 5,000-minute lead-in.
+    source.world().primitiveSanitationSites.clear();
     auto& facilities=source.world().facilities;
     facilities.erase(
         std::remove_if(facilities.begin(),facilities.end(),[](const ConstructedFacility& facility){
