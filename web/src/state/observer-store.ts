@@ -17,6 +17,11 @@ import {
   type ObservationEvent,
 } from './observation-feed';
 import { visibleHumanTraces } from './human-traces';
+import {
+  INITIAL_FAST_FORWARD_STATE,
+  type FastForwardState,
+  type FastForwardSummary,
+} from './fast-forward';
 
 export type RuntimeStatus = 'loading' | 'ready' | 'error';
 
@@ -48,6 +53,7 @@ export interface ObserverSnapshot {
   selectedResidentId: string | null;
   selectedHumanTraceId: string | null;
   observations: ObservationEvent[];
+  fastForward: FastForwardState;
   revision: number;
 }
 
@@ -91,6 +97,7 @@ const INITIAL_STATE: ObserverSnapshot = {
   selectedResidentId: null,
   selectedHumanTraceId: null,
   observations: [],
+  fastForward: INITIAL_FAST_FORWARD_STATE,
   revision: 0,
 };
 
@@ -194,6 +201,79 @@ class ObserverStore {
     this.emit();
   }
 
+  beginFastForward(requestedDays: number, totalMinutes: number): void {
+    this.snapshot = {
+      ...this.snapshot,
+      fastForward: {
+        status: 'running',
+        requestedDays,
+        completedMinutes: 0,
+        totalMinutes,
+        progress01: 0,
+        summary: null,
+        errorMessage: null,
+      },
+      revision: this.snapshot.revision + 1,
+    };
+    this.emit();
+  }
+
+  updateFastForwardProgress(completedMinutes: number): void {
+    if (this.snapshot.fastForward.status !== 'running') return;
+    const totalMinutes = Math.max(1, this.snapshot.fastForward.totalMinutes);
+    const bounded = Math.max(0, Math.min(totalMinutes, completedMinutes));
+    this.snapshot = {
+      ...this.snapshot,
+      fastForward: {
+        ...this.snapshot.fastForward,
+        completedMinutes: bounded,
+        progress01: bounded / totalMinutes,
+      },
+      revision: this.snapshot.revision + 1,
+    };
+    this.emit();
+  }
+
+  completeFastForward(summary: FastForwardSummary): void {
+    this.snapshot = {
+      ...this.snapshot,
+      fastForward: {
+        status: 'complete',
+        requestedDays: summary.requestedDays,
+        completedMinutes: Math.max(0, summary.endMinute - summary.startMinute),
+        totalMinutes: Math.max(0, summary.endMinute - summary.startMinute),
+        progress01: 1,
+        summary,
+        errorMessage: null,
+      },
+      revision: this.snapshot.revision + 1,
+    };
+    this.emit();
+  }
+
+  failFastForward(message: string): void {
+    this.snapshot = {
+      ...this.snapshot,
+      fastForward: {
+        ...this.snapshot.fastForward,
+        status: 'error',
+        errorMessage: message,
+      },
+      revision: this.snapshot.revision + 1,
+    };
+    this.emit();
+  }
+
+  clearFastForwardResult(): void {
+    if (this.snapshot.fastForward.status === 'running') return;
+    this.snapshot = {
+      ...this.snapshot,
+      fastForward: INITIAL_FAST_FORWARD_STATE,
+      revision: this.snapshot.revision + 1,
+    };
+    this.emit();
+  }
+
   setRuntime(status: RuntimeStatus, errorMessage: string | null = null): void {
     this.snapshot = {
       ...this.snapshot,
@@ -231,6 +311,7 @@ class ObserverStore {
       selectedResidentId: null,
       selectedHumanTraceId: null,
       observations: [],
+      fastForward: INITIAL_FAST_FORWARD_STATE,
       camera: {
         ...INITIAL_STATE.camera,
       },
