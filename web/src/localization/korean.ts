@@ -77,6 +77,7 @@ export const KOREAN_SOCIAL_INTENT_LABELS: Record<string, string> = {
 export const KOREAN_CIVILIZATION_INTENT_LABELS: Record<string, string> = {
   None: '작업 없음',
   Gather: '채집',
+  Search: '자원 탐색',
   Store: '저장',
   Retrieve: '꺼내기',
   Experiment: '실험',
