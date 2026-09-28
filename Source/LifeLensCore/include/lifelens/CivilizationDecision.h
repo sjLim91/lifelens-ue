@@ -944,6 +944,168 @@ inline CivilizationUtilityDecision bestPrimitiveFurnaceDecision(
     return CivilizationUtilityDecision{};
 }
 
+inline CivilizationUtilityDecision bestCultivationDecision(
+    const World& world,
+    const Character& self,
+    GridPos authoritativePosition,
+    const SettlementPopulation* population=nullptr)
+{
+    CivilizationUtilityDecision best;
+    if(!self.civilization.knowledge.knowsAtLeast(
+        TechniqueId::Cultivation,KnowledgeLevel::Reproducible)) return best;
+
+    const CultivationDemandObservation demand=
+        observeCultivationDemand(world,authoritativePosition,population);
+    const bool hasDiggingStick=
+        self.civilization.inventory.count(
+            ItemKind::DiggingStick,MaterialKind::Unknown,true)>0;
+    const int seedUnits=self.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::PlantFood);
+    const int waterUnits=self.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::Water);
+    const double preference=civilizationPreference(
+        world.seed,self.id,690ULL+static_cast<std::uint64_t>(TechniqueId::Cultivation));
+
+    for(const auto& facility:world.facilities){
+        if(facility.kind!=FacilityKind::CultivatedPlot
+           || !facilityOperationalAndActive(facility)
+           || manhattan(facility.pos,authoritativePosition)>CultivationServiceRadiusGrid){
+            continue;
+        }
+
+        CivilizationUtilityDecision candidate;
+        candidate.intent=CivilizationIntent::Craft;
+        candidate.technique=TechniqueId::Cultivation;
+        candidate.facilityKind=FacilityKind::CultivatedPlot;
+        candidate.facility=facility.id;
+        candidate.hasFacilityTarget=true;
+        candidate.facilityTargetPos=facility.pos;
+        candidate.item=ItemKind::RawMaterial;
+
+        if(facility.cropHarvestUnits>0){
+            candidate.facilityAction=FacilityBuildAction::Harvest;
+            candidate.material=MaterialKind::PlantFood;
+            candidate.quantity=facility.cropHarvestUnits;
+            candidate.utility=clampCivilization01(
+                0.76+0.16*demand.foodPressure
+                +0.05*self.personality.conscientiousness
+                +0.03*preference);
+            considerCivilizationDecision(best,candidate);
+            continue;
+        }
+
+        if(!facility.cropPlanted){
+            if(!hasDiggingStick || seedUnits<=0) continue;
+            candidate.facilityAction=FacilityBuildAction::Plant;
+            candidate.material=MaterialKind::PlantFood;
+            candidate.quantity=1;
+            candidate.utility=clampCivilization01(
+                0.56+0.25*demand.foodPressure
+                +0.07*self.personality.patience
+                +0.06*self.personality.conscientiousness
+                +0.04*preference);
+            considerCivilizationDecision(best,candidate);
+            continue;
+        }
+
+        if(facility.cropMoisture01<0.46 && waterUnits>0){
+            candidate.facilityAction=FacilityBuildAction::Water;
+            candidate.material=MaterialKind::Water;
+            candidate.quantity=1;
+            const double dryness=clampCivilization01(
+                (0.52-facility.cropMoisture01)/0.52);
+            candidate.utility=clampCivilization01(
+                0.50+0.28*dryness+0.10*demand.foodPressure
+                +0.05*self.personality.conscientiousness
+                +0.03*preference);
+            considerCivilizationDecision(best,candidate);
+        }
+
+        if(hasDiggingStick && facility.cropCare01<0.58){
+            candidate.facilityAction=FacilityBuildAction::Tend;
+            candidate.material=MaterialKind::Unknown;
+            candidate.quantity=0;
+            const double careGap=clampCivilization01(1.0-facility.cropCare01);
+            candidate.utility=clampCivilization01(
+                0.42+0.25*careGap+0.10*demand.foodPressure
+                +0.09*self.personality.patience
+                +0.05*self.personality.conscientiousness
+                +0.03*preference);
+            considerCivilizationDecision(best,candidate);
+        }
+    }
+
+    const ConstructedFacility* project=
+        cultivatedPlotProjectNear(world,authoritativePosition);
+    if(project!=nullptr){
+        CivilizationUtilityDecision candidate;
+        candidate.intent=CivilizationIntent::Craft;
+        candidate.technique=TechniqueId::Cultivation;
+        candidate.facilityKind=FacilityKind::CultivatedPlot;
+        candidate.facility=project->id;
+        candidate.hasFacilityTarget=true;
+        candidate.facilityTargetPos=project->pos;
+        candidate.item=ItemKind::RawMaterial;
+
+        for(const auto& requirement:project->requirements){
+            const int missing=std::max(
+                0,requirement.required-requirement.delivered);
+            const int held=self.civilization.inventory.count(
+                ItemKind::RawMaterial,requirement.material);
+            if(missing<=0 || held<=0) continue;
+            candidate.facilityAction=FacilityBuildAction::DeliverMaterial;
+            candidate.material=requirement.material;
+            candidate.quantity=std::min({missing,held,2});
+            candidate.utility=clampCivilization01(
+                0.50+0.24*demand.pressure
+                +0.08*self.personality.conscientiousness
+                +0.05*self.civilization.gatheringSkill
+                +0.03*preference);
+            considerCivilizationDecision(best,candidate);
+            return best;
+        }
+
+        if(facilityMaterialsComplete(*project)
+           && !facilityWorkComplete(*project)
+           && hasDiggingStick){
+            candidate.facilityAction=FacilityBuildAction::Work;
+            candidate.facilityWork=
+                1.15+1.45*clampCivilization01(self.civilization.craftingSkill);
+            candidate.utility=clampCivilization01(
+                0.51+0.23*demand.pressure
+                +0.08*self.personality.patience
+                +0.07*self.personality.conscientiousness
+                +0.04*self.civilization.craftingSkill
+                +0.03*preference);
+            considerCivilizationDecision(best,candidate);
+        }
+        return best;
+    }
+
+    if(!demand.unmet() || demand.committedPlots>=demand.desiredPlots
+       || !hasDiggingStick) return best;
+
+    const CultivatedPlotSiteOpportunity site=
+        chooseCultivatedPlotSite(world,self.id,authoritativePosition);
+    if(!site.available) return best;
+
+    CivilizationUtilityDecision plan;
+    plan.intent=CivilizationIntent::Craft;
+    plan.technique=TechniqueId::Cultivation;
+    plan.facilityKind=FacilityKind::CultivatedPlot;
+    plan.facilityAction=FacilityBuildAction::Plan;
+    plan.hasFacilityTarget=true;
+    plan.facilityTargetPos=site.pos;
+    plan.utility=clampCivilization01(
+        0.31+0.42*demand.pressure
+        +0.10*site.environment.fertility01
+        +0.06*site.environment.naturalMoisture01
+        +0.05*self.personality.conscientiousness
+        +0.03*preference);
+    considerCivilizationDecision(best,plan);
+    return best;
+}
+
 inline CivilizationUtilityDecision bestCraftDecisionAtPosition(
     const World& world,
     const Character& self,
@@ -964,6 +1126,9 @@ inline CivilizationUtilityDecision bestCraftDecisionAtPosition(
     considerCivilizationDecision(
         best,bestPrimitiveFurnaceDecision(
             world,self,authoritativePosition));
+    considerCivilizationDecision(
+        best,bestCultivationDecision(
+            world,self,authoritativePosition,population));
 
     if(self.civilization.knowledge.knowsAtLeast(
         TechniqueId::DesignatedSanitationArea,KnowledgeLevel::Reproducible)
