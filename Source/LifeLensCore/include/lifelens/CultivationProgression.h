@@ -378,11 +378,12 @@ inline CultivatedPlotWorkResult workOnCultivatedPlot(
         if(facility.id!=facilityId
            || facility.kind!=FacilityKind::CultivatedPlot) continue;
         result.workBefore=facility.constructionWork;
-        if(!applyFacilityConstructionWork(
-            facility,worker.id,std::max(0.0,work))) return result;
-        result.worked=facility.constructionWork>result.workBefore;
+        const bool completedByWork=applyFacilityConstructionWork(
+            facility,worker.id,std::max(0.0,work));
         result.workAfter=facility.constructionWork;
-        if(facilityWorkComplete(facility)){
+        result.worked=result.workAfter>result.workBefore+1e-12;
+        if(!result.worked) return result;
+        if(completedByWork || facilityWorkComplete(facility)){
             result.completed=activateConstructedFacility(
                 facility,0,world.minute);
         }
