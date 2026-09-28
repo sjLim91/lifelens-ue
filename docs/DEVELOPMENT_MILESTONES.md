@@ -490,7 +490,7 @@ Rules:
 - ruined/inactive facilities stop providing benefit.
 - maintenance requires real material/labor rather than passive auto-repair.
 
-### C1-D — Durable subsistence
+### C1-D — Durable subsistence — DONE (#483/#485)
 
 - water handling / carrying / storage.
 - food storage and spoilage pressure.
@@ -500,7 +500,7 @@ Rules:
 - local scarcity can trigger search/migration pressure.
 - farming never creates food without land/time/input constraints.
 
-### C1-E — Emergent settlement form
+### C1-E — Emergent settlement form — DONE (#487)
 
 - frequently used facilities form activity centers through actual use.
 - storage/fire/work/sleep functions may cluster naturally.
@@ -807,14 +807,12 @@ LifeLens should eventually surprise the observer **without abandoning causality*
 
 ## Stage C mainline — ACTIVE
 
-C1-A / C1-B / C1-C are complete. Current Jjun Core sequence:
+C1-A / C1-B / C1-C / C1-D / C1-E are complete. Current Jjun Core sequence:
 
-1. **C1-D Durable Subsistence** — water carrying/storage, food storage/spoilage, cultivation, renewable food.
-2. **C1-E Emergent Settlement Form**.
-3. **C1-F Early Material Progression**.
-4. **Stage D** — long-run reliability + open-ended civilization engine.
-5. **Stage E** — health + education/economy/institutions + migration/trade.
-6. **Stage F** — historical/industrial/modern/digital/AI/advanced/space/open-future expansion.
+1. **C1-F Early Material Progression** — furnace material identity generalization, Tin, Bronze and bronze tools from physical prerequisites.
+2. **Stage D** — long-run reliability + open-ended civilization engine.
+3. **Stage E** — health + education/economy/institutions + migration/trade.
+4. **Stage F** — historical/industrial/modern/digital/AI/advanced/space/open-future expansion.
 
 ## Audit follow-up
 
@@ -834,15 +832,14 @@ Do not launch a long Android build until the user explicitly resumes it.
 
 Current immediate Jjun implementation target:
 
-> **C1-D — Durable Subsistence**
+> **C1-F — Early Material Progression**
 
 First delivery order:
-- authoritative water carrying and storage.
-- food storage and spoilage pressure.
-- cultivation/agriculture foundation.
-- renewable food production under real time / land / input constraints.
-- season / moisture / fertility effects.
-- scarcity-driven search and future migration-pressure hooks.
+- generalize furnace charge/output material identity without breaking the existing copper path.
+- preserve physical ore + charcoal + furnace + learned-knowledge prerequisites.
+- expose Tin/Bronze consistently through Core snapshot/read models, Unreal bridge and Web contracts.
+- add Tin smelting/alloy experimentation only after real material availability.
+- add Bronze as a material/tool capability, never as an automatic era unlock.
 - deterministic Save/Load continuation and regression coverage.
 
 Presentation is not the active Jjun lane. It is frozen at the #282 main baseline and handed to Dagyeom per `docs/DAGYEOM_PRESENTATION_HANDOFF_2026-09-19.md`.
