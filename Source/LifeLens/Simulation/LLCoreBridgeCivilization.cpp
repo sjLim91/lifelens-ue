@@ -73,6 +73,7 @@ ELLCoreTechniqueId ToUnrealTechnique(lifelens::TechniqueId Technique)
         case lifelens::TechniqueId::DiggingStick: return ELLCoreTechniqueId::DiggingStick;
         case lifelens::TechniqueId::StoneHammer: return ELLCoreTechniqueId::StoneHammer;
         case lifelens::TechniqueId::CopperSmelting: return ELLCoreTechniqueId::CopperSmelting;
+        case lifelens::TechniqueId::Cultivation: return ELLCoreTechniqueId::Cultivation;
         case lifelens::TechniqueId::None:
         default:
             return ELLCoreTechniqueId::None;
@@ -118,6 +119,7 @@ ELLCoreFacilityKind ToUnrealFacilityKind(lifelens::FacilityKind Kind)
         case lifelens::FacilityKind::SleepingPlace: return ELLCoreFacilityKind::SleepingPlace;
         case lifelens::FacilityKind::Shelter: return ELLCoreFacilityKind::Shelter;
         case lifelens::FacilityKind::Furnace: return ELLCoreFacilityKind::Furnace;
+        case lifelens::FacilityKind::CultivatedPlot: return ELLCoreFacilityKind::CultivatedPlot;
         default: return ELLCoreFacilityKind::PrimitiveStorage;
     }
 }
@@ -317,6 +319,13 @@ FLLCoreCivilizationWorldObservation ULLCoreBridgeSubsystem::GetCivilizationWorld
         Read.bLit = Facility.lit;
         Read.BurnMinutesRemaining = Facility.burnMinutesRemaining;
         Read.LastFireMinute = static_cast<int64>(Facility.lastFireMinute);
+        Read.bCropPlanted = Facility.cropPlanted;
+        Read.CropPlantedMinute = static_cast<int64>(Facility.cropPlantedMinute);
+        Read.CropGrowth = static_cast<float>(Facility.cropGrowth01);
+        Read.CropMoisture = static_cast<float>(Facility.cropMoisture01);
+        Read.CropCare = static_cast<float>(Facility.cropCare01);
+        Read.CropHarvestUnits = Facility.cropHarvestUnits;
+        Read.LastCultivationMinute = static_cast<int64>(Facility.lastCultivationMinute);
         Read.Requirements.Reserve(SafeCivilizationCount(Facility.requirements.size()));
         for (const lifelens::CivilizationFacilityRequirementObservation& Requirement : Facility.requirements)
         {

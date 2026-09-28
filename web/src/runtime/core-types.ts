@@ -55,7 +55,9 @@ export type HumanTrace = HumanTracePosition & (
       intensity: number; radiusTiles: number }
   | { kind: 'Facility'; sourceResidentId: string; facilityKind: string;
       state: string; progress01: number; deliveredMaterialUnits: number;
-      requiredMaterialUnits: number; active: boolean; lit: boolean }
+      requiredMaterialUnits: number; active: boolean; lit: boolean;
+      cropPlanted: boolean; cropGrowth01: number; cropMoisture01: number;
+      cropCare01: number; cropHarvestUnits: number }
 );
 
 export interface ResidentNeeds {
@@ -578,6 +580,13 @@ export interface CivilizationWorldFacility {
   lit: boolean;
   burnMinutesRemaining: number;
   lastFireMinute: number;
+  cropPlanted: boolean;
+  cropPlantedMinute: number;
+  cropGrowth01: number;
+  cropMoisture01: number;
+  cropCare01: number;
+  cropHarvestUnits: number;
+  lastCultivationMinute: number;
   requirements: CivilizationFacilityRequirement[];
 }
 

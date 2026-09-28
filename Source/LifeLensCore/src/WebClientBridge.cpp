@@ -95,6 +95,7 @@ const char* traceFacilityName(FacilityKind kind)
         case FacilityKind::SleepingPlace: return "SleepingPlace";
         case FacilityKind::Shelter: return "Shelter";
         case FacilityKind::Furnace: return "Furnace";
+        case FacilityKind::CultivatedPlot: return "CultivatedPlot";
     }
     return "Unknown";
 }
@@ -137,7 +138,12 @@ void appendHumanTraces(std::ostringstream& out, const HumanTraceWindowObservatio
             out << ",\"deliveredMaterialUnits\":" << trace.deliveredMaterialUnits
                 << ",\"requiredMaterialUnits\":" << trace.requiredMaterialUnits
                 << ",\"active\":" << (trace.active ? "true" : "false")
-                << ",\"lit\":" << (trace.lit ? "true" : "false");
+                << ",\"lit\":" << (trace.lit ? "true" : "false")
+                << ",\"cropPlanted\":" << (trace.cropPlanted ? "true" : "false")
+                << ",\"cropGrowth01\":"; appendDouble(out, trace.cropGrowth01);
+            out << ",\"cropMoisture01\":"; appendDouble(out, trace.cropMoisture01);
+            out << ",\"cropCare01\":"; appendDouble(out, trace.cropCare01);
+            out << ",\"cropHarvestUnits\":" << trace.cropHarvestUnits;
         }
         out << "}";
     }
@@ -276,6 +282,7 @@ const char* techniqueIdName(TechniqueId technique)
         case TechniqueId::DiggingStick: return "DiggingStick";
         case TechniqueId::StoneHammer: return "StoneHammer";
         case TechniqueId::CopperSmelting: return "CopperSmelting";
+        case TechniqueId::Cultivation: return "Cultivation";
         case TechniqueId::None:
         default: return "None";
     }
@@ -1144,6 +1151,13 @@ std::string WebClientBridge::civilizationWorldJson(
         out << "\"lit\":" << (facility.lit ? "true" : "false") << ",";
         out << "\"burnMinutesRemaining\":" << facility.burnMinutesRemaining << ",";
         out << "\"lastFireMinute\":" << facility.lastFireMinute << ",";
+        out << "\"cropPlanted\":" << (facility.cropPlanted ? "true" : "false") << ",";
+        out << "\"cropPlantedMinute\":" << facility.cropPlantedMinute << ",";
+        out << "\"cropGrowth01\":"; appendDouble(out, facility.cropGrowth01); out << ",";
+        out << "\"cropMoisture01\":"; appendDouble(out, facility.cropMoisture01); out << ",";
+        out << "\"cropCare01\":"; appendDouble(out, facility.cropCare01); out << ",";
+        out << "\"cropHarvestUnits\":" << facility.cropHarvestUnits << ",";
+        out << "\"lastCultivationMinute\":" << facility.lastCultivationMinute << ",";
         out << "\"requirements\":[";
         for (std::size_t j = 0; j < facility.requirements.size(); ++j) {
             if (j != 0) out << ",";

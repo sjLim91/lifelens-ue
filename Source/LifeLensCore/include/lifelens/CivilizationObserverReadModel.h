@@ -106,6 +106,13 @@ struct CivilizationFacilityObservation {
     bool lit=false;
     int burnMinutesRemaining=0;
     int lastFireMinute=-1;
+    bool cropPlanted=false;
+    int cropPlantedMinute=-1;
+    double cropGrowth01=0.0;
+    double cropMoisture01=0.0;
+    double cropCare01=0.0;
+    int cropHarvestUnits=0;
+    int lastCultivationMinute=-1;
     std::vector<CivilizationFacilityRequirementObservation> requirements;
 };
 
@@ -151,7 +158,7 @@ inline TechniqueId techniqueFromCivilizationFact(const SocialFact& fact)
     // techniques extend the observer range. Structural compatibility marker:
     // raw<=static_cast<int>(TechniqueId::DugSanitationPit)
     for(int raw=static_cast<int>(TechniqueId::SharpFlake);
-        raw<=static_cast<int>(TechniqueId::CopperSmelting);++raw){
+        raw<=static_cast<int>(TechniqueId::Cultivation);++raw){
         const TechniqueId candidate=static_cast<TechniqueId>(raw);
         if(factRepresentsTechnique(fact,candidate)) return candidate;
     }
@@ -318,6 +325,13 @@ inline CivilizationFacilityObservation makeCivilizationFacilityObservation(
     dto.lit=facility.lit;
     dto.burnMinutesRemaining=facility.burnMinutesRemaining;
     dto.lastFireMinute=facility.lastFireMinute;
+    dto.cropPlanted=facility.cropPlanted;
+    dto.cropPlantedMinute=facility.cropPlantedMinute;
+    dto.cropGrowth01=facility.cropGrowth01;
+    dto.cropMoisture01=facility.cropMoisture01;
+    dto.cropCare01=facility.cropCare01;
+    dto.cropHarvestUnits=facility.cropHarvestUnits;
+    dto.lastCultivationMinute=facility.lastCultivationMinute;
     dto.requirements.reserve(facility.requirements.size());
     for(const auto& requirement:facility.requirements){
         CivilizationFacilityRequirementObservation observed;
@@ -389,7 +403,7 @@ inline CivilizationWorldObservation buildCivilizationWorldObservation(
 
     // Legacy sanitation slot subset is still contained in this expanded count:
     // static_cast<std::size_t>(TechniqueId::DugSanitationPit)+1
-    constexpr std::size_t TechniqueSlots=static_cast<std::size_t>(TechniqueId::CopperSmelting)+1;
+    constexpr std::size_t TechniqueSlots=static_cast<std::size_t>(TechniqueId::Cultivation)+1;
     std::array<bool,TechniqueSlots> knownTypes{};
     std::array<bool,TechniqueSlots> reproducibleTypes{};
     for(const Character& character:world.characters){

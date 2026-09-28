@@ -29,6 +29,11 @@ struct HumanTraceObservation {
     int requiredMaterialUnits = 0;
     bool active = false;
     bool lit = false;
+    bool cropPlanted = false;
+    double cropGrowth01 = 0.0;
+    double cropMoisture01 = 0.0;
+    double cropCare01 = 0.0;
+    int cropHarvestUnits = 0;
 };
 
 struct HumanTraceWindowObservation {
@@ -109,6 +114,11 @@ inline HumanTraceWindowObservation buildHumanTraceWindowObservation(
         trace.requiredMaterialUnits = required;
         trace.active = facilityOperationalAndActive(facility);
         trace.lit = trace.active && facility.lit;
+        trace.cropPlanted = facility.cropPlanted;
+        trace.cropGrowth01 = facility.cropGrowth01;
+        trace.cropMoisture01 = facility.cropMoisture01;
+        trace.cropCare01 = facility.cropCare01;
+        trace.cropHarvestUnits = facility.cropHarvestUnits;
         result.entries.push_back(trace);
     }
 

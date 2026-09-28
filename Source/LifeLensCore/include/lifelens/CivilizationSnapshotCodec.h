@@ -13,7 +13,8 @@
 namespace lifelens {
 
 constexpr char CivilizationSnapshotExtensionMagic[]={'L','L','C','I','V','0','0','1'};
-constexpr std::uint32_t CivilizationSnapshotExtensionVersion=5;
+constexpr std::uint32_t CivilizationSnapshotExtensionVersion=6;
+constexpr std::uint32_t CivilizationSnapshotExtensionCultivationRuntimeVersion=6;
 constexpr std::uint32_t CivilizationSnapshotExtensionMetalRuntimeVersion=5;
 constexpr std::uint32_t CivilizationSnapshotExtensionFireRuntimeVersion=4;
 constexpr std::uint32_t CivilizationSnapshotExtensionFacilityVersion=3;
@@ -44,7 +45,7 @@ inline bool validTechniqueId(TechniqueId value)
     // TechniqueId::DesignatedSanitationArea
     // TechniqueId::DugSanitationPit
     return static_cast<int>(value)>=static_cast<int>(TechniqueId::None)
-        && static_cast<int>(value)<=static_cast<int>(TechniqueId::CopperSmelting);
+        && static_cast<int>(value)<=static_cast<int>(TechniqueId::Cultivation);
 }
 
 inline bool validKnowledgeLevel(KnowledgeLevel value)
@@ -339,6 +340,15 @@ void writeConstructedFacility(WriterT& w,const ConstructedFacility& facility)
     // v5 appends furnace feed/output after v4, preserving older layouts.
     w.i32(facility.oreUnits);
     w.i32(facility.metalUnits);
+
+    // v6 appends cultivated-plot runtime after v5.
+    w.boolean(facility.cropPlanted);
+    w.i32(facility.cropPlantedMinute);
+    w.real(facility.cropGrowth01);
+    w.real(facility.cropMoisture01);
+    w.real(facility.cropCare01);
+    w.i32(facility.cropHarvestUnits);
+    w.i32(facility.lastCultivationMinute);
 }
 
 template<typename ReaderT>
@@ -394,6 +404,24 @@ bool readConstructedFacility(
         facility.oreUnits=0;
         facility.metalUnits=0;
     }
+
+    if(version>=CivilizationSnapshotExtensionCultivationRuntimeVersion){
+        if(!r.boolean(facility.cropPlanted)
+           || !r.i32(facility.cropPlantedMinute)
+           || !r.real(facility.cropGrowth01)
+           || !r.real(facility.cropMoisture01)
+           || !r.real(facility.cropCare01)
+           || !r.i32(facility.cropHarvestUnits)
+           || !r.i32(facility.lastCultivationMinute)) return false;
+    }else{
+        facility.cropPlanted=false;
+        facility.cropPlantedMinute=-1;
+        facility.cropGrowth01=0.0;
+        facility.cropMoisture01=0.0;
+        facility.cropCare01=0.0;
+        facility.cropHarvestUnits=0;
+        facility.lastCultivationMinute=-1;
+    }
     return validConstructedFacility(facility);
 }
 
@@ -433,6 +461,7 @@ bool readCivilizationSnapshotExtension(
            && version!=CivilizationSnapshotExtensionSpatialVersion
            && version!=CivilizationSnapshotExtensionFacilityVersion
            && version!=CivilizationSnapshotExtensionFireRuntimeVersion
+           && version!=CivilizationSnapshotExtensionMetalRuntimeVersion
            && version!=CivilizationSnapshotExtensionVersion)) return false;
     if(outVersion) *outVersion=version;
 

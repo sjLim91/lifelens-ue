@@ -16,7 +16,9 @@ enum class FacilityKind : std::uint8_t {
     WorkSurface,
     SleepingPlace,
     Shelter,
-    Furnace
+    Furnace,
+    // Prepared growing ground. Appended to preserve persisted facility ordinals.
+    CultivatedPlot
 };
 
 enum class FacilityState : std::uint8_t {
@@ -66,12 +68,24 @@ struct ConstructedFacility {
     // tin/iron remain ores until later alloy/high-temperature progression.
     int oreUnits = 0;
     int metalUnits = 0;
+
+    // CultivatedPlot authority. No crop is created by Presentation or by merely
+    // building the plot: planting consumes PlantFood seed, watering consumes
+    // carried Water, tending is resident labor, and daily growth reads the
+    // authoritative local ecology/climate.
+    bool cropPlanted = false;
+    int cropPlantedMinute = -1;
+    double cropGrowth01 = 0.0;
+    double cropMoisture01 = 0.0;
+    double cropCare01 = 0.0;
+    int cropHarvestUnits = 0;
+    int lastCultivationMinute = -1;
 };
 
 inline bool validFacilityKind(FacilityKind kind)
 {
     return static_cast<int>(kind) >= static_cast<int>(FacilityKind::PrimitiveStorage)
-        && static_cast<int>(kind) <= static_cast<int>(FacilityKind::Furnace);
+        && static_cast<int>(kind) <= static_cast<int>(FacilityKind::CultivatedPlot);
 }
 
 inline bool validFacilityState(FacilityState state)
@@ -89,6 +103,7 @@ inline int facilityFootprintRadiusGrid(FacilityKind kind)
         case FacilityKind::SleepingPlace: return 5;
         case FacilityKind::Shelter: return 7;
         case FacilityKind::Furnace: return 4;
+        case FacilityKind::CultivatedPlot: return 7;
         default: return 4;
     }
 }
@@ -153,6 +168,11 @@ inline bool facilityProvidesSleep(FacilityKind kind)
 inline bool facilityProvidesWeatherProtection(FacilityKind kind)
 {
     return kind == FacilityKind::Shelter;
+}
+
+inline bool facilitySupportsCultivation(FacilityKind kind)
+{
+    return kind == FacilityKind::CultivatedPlot;
 }
 
 inline bool facilityOperationalAndActive(const ConstructedFacility& facility)
@@ -288,6 +308,13 @@ inline FacilityConstructionSpec facilityConstructionSpec(FacilityKind kind)
             return {kind,12.0,{
                 {MaterialKind::Stone,8,0},
                 {MaterialKind::Clay,6,0}
+            }};
+        case FacilityKind::CultivatedPlot:
+            // Stakes/cord mark and protect a prepared plot. The productive
+            // inputs (seed, water, tending and time) are separate runtime costs.
+            return {kind,6.0,{
+                {MaterialKind::Wood,2,0},
+                {MaterialKind::Fiber,1,0}
             }};
         default:
             return {kind,0.0,{}};
@@ -603,7 +630,13 @@ inline bool validConstructedFacility(const ConstructedFacility& facility)
        || facility.fuelUnits < 0 || facility.charcoalUnits < 0
        || facility.oreUnits < 0 || facility.metalUnits < 0
        || facility.heatLevel < 0.0 || facility.heatLevel > 1.0
-       || facility.burnMinutesRemaining < 0) return false;
+       || facility.burnMinutesRemaining < 0
+       || facility.cropGrowth01 < 0.0 || facility.cropGrowth01 > 1.0
+       || facility.cropMoisture01 < 0.0 || facility.cropMoisture01 > 1.0
+       || facility.cropCare01 < 0.0 || facility.cropCare01 > 1.0
+       || facility.cropHarvestUnits < 0
+       || facility.cropPlantedMinute < -1
+       || facility.lastCultivationMinute < -1) return false;
 
     bool hasIncomplete = false;
     std::vector<int> seenMaterials;
@@ -634,7 +667,11 @@ inline bool validConstructedFacility(const ConstructedFacility& facility)
         if(facility.fuelUnits != 0 || facility.charcoalUnits != 0
            || facility.oreUnits != 0 || facility.metalUnits != 0
            || facility.heatLevel != 0.0 || facility.lit
-           || facility.burnMinutesRemaining != 0 || facility.lastFireMinute >= 0) return false;
+           || facility.burnMinutesRemaining != 0 || facility.lastFireMinute >= 0
+           || facility.cropPlanted || facility.cropPlantedMinute >= 0
+           || facility.cropGrowth01 != 0.0 || facility.cropMoisture01 != 0.0
+           || facility.cropCare01 != 0.0 || facility.cropHarvestUnits != 0
+           || facility.lastCultivationMinute >= 0) return false;
     }
 
     if(!facilityProducesHeat(facility.kind)){
@@ -645,6 +682,24 @@ inline bool validConstructedFacility(const ConstructedFacility& facility)
     }
     if(facility.kind==FacilityKind::FirePit && (facility.oreUnits!=0 || facility.metalUnits!=0)) return false;
     if(facility.kind==FacilityKind::Furnace && facility.charcoalUnits!=0) return false;
+
+    if(!facilitySupportsCultivation(facility.kind)){
+        if(facility.cropPlanted || facility.cropPlantedMinute>=0
+           || facility.cropGrowth01!=0.0 || facility.cropMoisture01!=0.0
+           || facility.cropCare01!=0.0 || facility.cropHarvestUnits!=0
+           || facility.lastCultivationMinute>=0) return false;
+    }else if(facility.state==FacilityState::Operational){
+        if(facility.cropPlanted){
+            if(facility.cropPlantedMinute<facility.completedMinute
+               || facility.lastCultivationMinute<facility.cropPlantedMinute) return false;
+            if(facility.cropHarvestUnits>0 && facility.cropGrowth01<1.0) return false;
+        }else{
+            if(facility.cropPlantedMinute!=-1 || facility.cropGrowth01!=0.0
+               || facility.cropMoisture01!=0.0 || facility.cropCare01!=0.0
+               || facility.cropHarvestUnits!=0) return false;
+        }
+    }
+
     if(facility.lit){
         if(!facilityProducesHeat(facility.kind) || facility.fuelUnits <= 0
            || facility.heatLevel <= 0.0 || facility.burnMinutesRemaining <= 0

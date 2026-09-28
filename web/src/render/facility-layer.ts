@@ -20,6 +20,7 @@ const FACILITY_CLEAR_RADIUS: Record<string, number> = {
   SleepingPlace: 1.55,
   Shelter: 2.35,
   Furnace: 1.5,
+  CultivatedPlot: 2.15,
 };
 
 export function facilityPresentationFootprints(
@@ -142,6 +143,16 @@ export class FacilityLayer {
     roughness: 0.4,
     metalness: 0,
   });
+  private readonly cropMaterial = new THREE.MeshStandardMaterial({
+    color: 0x5f7f3b,
+    roughness: 0.96,
+    metalness: 0,
+  });
+  private readonly ripeCropMaterial = new THREE.MeshStandardMaterial({
+    color: 0xa99145,
+    roughness: 0.94,
+    metalness: 0,
+  });
 
   private signature = '';
 
@@ -167,6 +178,11 @@ export class FacilityLayer {
         trace.requiredMaterialUnits,
         trace.active,
         trace.lit,
+        trace.cropPlanted,
+        Math.round(clamp01(trace.cropGrowth01) * 100),
+        Math.round(clamp01(trace.cropMoisture01) * 100),
+        Math.round(clamp01(trace.cropCare01) * 100),
+        trace.cropHarvestUnits,
       ]),
     ]);
     if (signature === this.signature) return;
@@ -256,6 +272,8 @@ export class FacilityLayer {
     this.beddingMaterial.dispose();
     this.charMaterial.dispose();
     this.flameMaterial.dispose();
+    this.cropMaterial.dispose();
+    this.ripeCropMaterial.dispose();
   }
 
   private buildFacility(
@@ -287,6 +305,9 @@ export class FacilityLayer {
         break;
       case 'Furnace':
         this.buildFurnace(group, trace, progress);
+        break;
+      case 'CultivatedPlot':
+        this.buildCultivatedPlot(group, trace, progress);
         break;
       default:
         this.buildUnknownFacility(group, trace, progress);
@@ -688,6 +709,86 @@ export class FacilityLayer {
       flame.rotation.x = Math.PI * 0.08;
       this.prepareMesh(flame, trace, 104);
       group.add(flame);
+    }
+  }
+
+  private buildCultivatedPlot(
+    group: THREE.Group,
+    trace: FacilityTrace,
+    progress: number,
+  ): void {
+    // Prepared soil is visible as construction advances. Crop geometry appears
+    // only from authoritative planted/growth state carried by HumanTrace.
+    this.addBoxAtProgress(
+      group,
+      trace,
+      progress,
+      0.22,
+      this.earthMaterial,
+      [0, 0.07, 0],
+      [3.5, 0.14, 2.45],
+      [0, 0, 0],
+      120,
+    );
+
+    const edgePosts = [
+      [-1.65, -1.08],
+      [1.65, -1.08],
+      [-1.65, 1.08],
+      [1.65, 1.08],
+    ] as const;
+    edgePosts.forEach(([x, z], index) => {
+      this.addCylinderAtProgress(
+        group,
+        trace,
+        progress,
+        0.42 + index * 0.035,
+        this.woodMaterial,
+        [x, 0.34, z],
+        [0.07, 0.68, 0.07],
+        [0, 0, 0],
+        121 + index,
+      );
+    });
+
+    if (trace.state !== 'Operational' || !trace.cropPlanted) return;
+
+    const growth = clamp01(trace.cropGrowth01);
+    const harvestReady = Number(trace.cropHarvestUnits) > 0;
+    const cropHeight = 0.18 + 0.92 * growth;
+    const cropWidth = 0.045 + 0.055 * growth;
+    const material = harvestReady
+      ? this.ripeCropMaterial
+      : this.cropMaterial;
+
+    const rows = [-0.72, 0, 0.72];
+    const columns = [-1.18, -0.4, 0.4, 1.18];
+    let slot = 130;
+    for (const z of rows) {
+      for (const x of columns) {
+        const wobble = (hash01(`${trace.id}:${slot}:crop`) - 0.5) * 0.12;
+        this.addCylinder(
+          group,
+          trace,
+          material,
+          [x + wobble, 0.12 + cropHeight * 0.5, z],
+          [cropWidth, cropHeight, cropWidth],
+          [0, wobble, 0],
+          slot,
+        );
+        if (growth >= 0.35) {
+          this.addBox(
+            group,
+            trace,
+            material,
+            [x + wobble + 0.08, 0.22 + cropHeight * 0.55, z],
+            [0.22 + 0.12 * growth, 0.045, 0.08 + 0.06 * growth],
+            [0, wobble, 0.32],
+            slot + 40,
+          );
+        }
+        slot += 1;
+      }
     }
   }
 

@@ -7,6 +7,7 @@
 
 #include "Civilization.h"
 #include "Character.h"
+#include "CultivationProgression.h"
 #include "Facility.h"
 #include "PrimitiveFireProgression.h"
 #include "PrimitiveSanitation.h"
@@ -37,7 +38,11 @@ enum class FacilityBuildAction {
     Ignite,
     CollectCharcoal,
     LoadSmeltCharge,
-    CollectMetal
+    CollectMetal,
+    Plant,
+    Water,
+    Tend,
+    Harvest
 };
 
 inline const char* civilizationIntentName(CivilizationIntent intent)
@@ -64,6 +69,10 @@ inline const char* facilityBuildActionName(FacilityBuildAction action)
         case FacilityBuildAction::CollectCharcoal: return "CollectCharcoal";
         case FacilityBuildAction::LoadSmeltCharge: return "LoadSmeltCharge";
         case FacilityBuildAction::CollectMetal: return "CollectMetal";
+        case FacilityBuildAction::Plant: return "Plant";
+        case FacilityBuildAction::Water: return "Water";
+        case FacilityBuildAction::Tend: return "Tend";
+        case FacilityBuildAction::Harvest: return "Harvest";
         case FacilityBuildAction::None:
         default: return "None";
     }
@@ -104,6 +113,7 @@ inline const char* techniqueName(TechniqueId technique)
         case TechniqueId::DiggingStick: return "DiggingStick";
         case TechniqueId::StoneHammer: return "StoneHammer";
         case TechniqueId::CopperSmelting: return "CopperSmelting";
+        case TechniqueId::Cultivation: return "Cultivation";
         default: return "None";
     }
 }
@@ -213,6 +223,7 @@ inline MaterialKind experimentMaterial(ExperimentKind kind)
         case ExperimentKind::ShapeDiggingStick: return MaterialKind::Wood;
         case ExperimentKind::HaftStoneHammer: return MaterialKind::Stone;
         case ExperimentKind::SmeltCopperOre: return MaterialKind::CopperOre;
+        case ExperimentKind::CultivatePlantFood: return MaterialKind::PlantFood;
         case ExperimentKind::DesignateSanitationArea:
         case ExperimentKind::DigSanitationPit:
         case ExperimentKind::OrganizeStockpile:
@@ -274,13 +285,18 @@ inline CivilizationUtilityDecision bestGatherDecision(const World& world,const C
         const int storageMissing=primitiveStorageMissingMaterial(world,node.material);
         const int fireMissing=primitiveFirePitMissingMaterial(world,node.material);
         const int furnaceMissing=primitiveFurnaceMissingMaterial(world,node.material);
+        const int cultivationMissing=cultivationConstructionMissingMaterial(world,node.material);
         const int settlementMissing=settlementConstructionMissingMaterial(world,node.material);
         const int repairMissing=std::max(
             0,
             settlementRepairMaterialDemand(world,node.material)-held);
-        const int constructionMissing=std::max(
+        const int constructionMissing=std::max({
             settlementMissing,
-            std::max(storageMissing,std::max(fireMissing,furnaceMissing)));
+            storageMissing,
+            fireMissing,
+            furnaceMissing,
+            cultivationMissing
+        });
         const int materialDemand=constructionMissing+repairMissing;
         const bool provision=
             node.material==MaterialKind::Water
@@ -338,7 +354,8 @@ inline CivilizationUtilityDecision bestGatherDecision(const World& world,const C
 inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
     const World& world,
     const Character& self,
-    GridPos authoritativePosition)
+    GridPos authoritativePosition,
+    const SettlementPopulation* population=nullptr)
 {
     CivilizationUtilityDecision best;
     const GridPos sanitationReference=authoritativePosition;
@@ -350,12 +367,15 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
             self,world.environmentalResidues,world.primitiveSanitationSites);
     const PrimitiveStorageNeedObservation storageNeed=observePrimitiveStorageNeed(world,self);
     const bool smeltingOpportunity=copperSmeltingOpportunityAvailable(world,self);
-    const std::array<ExperimentKind,11> experiments={
+    const bool cultivationOpportunity=cultivationExperimentOpportunityAvailable(
+        world,self,authoritativePosition,population);
+    const std::array<ExperimentKind,12> experiments={
         ExperimentKind::StrikeStone,ExperimentKind::HaftSharpFlake,ExperimentKind::FrictionWood,
         ExperimentKind::TwistFiber,ExperimentKind::ShapeClay,
         ExperimentKind::ShapeDiggingStick,ExperimentKind::HaftStoneHammer,
         ExperimentKind::DesignateSanitationArea,ExperimentKind::DigSanitationPit,
-        ExperimentKind::OrganizeStockpile,ExperimentKind::SmeltCopperOre};
+        ExperimentKind::OrganizeStockpile,ExperimentKind::SmeltCopperOre,
+        ExperimentKind::CultivatePlantFood};
 
     for(const ExperimentKind kind:experiments){
         const TechniqueId technique=experimentTechnique(kind);
@@ -366,11 +386,13 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
         const bool pitExperiment=kind==ExperimentKind::DigSanitationPit;
         const bool storageExperiment=kind==ExperimentKind::OrganizeStockpile;
         const bool smeltingExperiment=kind==ExperimentKind::SmeltCopperOre;
+        const bool cultivationExperiment=kind==ExperimentKind::CultivatePlantFood;
         if(designatedExperiment &&
            (!sanitationOpportunity.problemRecognized || !sanitationOpportunity.siteAvailable)) continue;
         if(pitExperiment && !pitOpportunity.candidateAvailable) continue;
         if(storageExperiment && !storageNeed.recognized) continue;
         if(smeltingExperiment && !smeltingOpportunity) continue;
+        if(cultivationExperiment && !cultivationOpportunity) continue;
 
         ExperimentContext context;
         context.worldSeed=world.seed;
@@ -386,6 +408,7 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
         context.sanitationPitCandidateAvailable=pitOpportunity.candidateAvailable;
         context.storageProblemRecognized=storageNeed.recognized;
         context.smeltingOpportunityAvailable=smeltingOpportunity;
+        context.cultivationOpportunityAvailable=cultivationOpportunity;
 
         if(!experimentPrerequisitesMet(context,self.civilization.knowledge)) continue;
         const TechniqueRecipe recipe=experimentRecipe(context);
@@ -398,6 +421,7 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
         double sanitationBoost=0.0;
         double storageBoost=0.0;
         double smeltingBoost=0.0;
+        double cultivationBoost=0.0;
         if(designatedExperiment){
             sanitationBoost=0.18+0.16*sanitationOpportunity.problemConfidence+
                 0.10*clampCivilization01(self.needs.hygiene);
@@ -413,11 +437,18 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
         }else if(smeltingExperiment){
             smeltingBoost=0.24+0.12*self.personality.curiosity+
                 0.08*self.civilization.craftingSkill;
+        }else if(cultivationExperiment){
+            const CultivationDemandObservation demand=
+                observeCultivationDemand(world,authoritativePosition,population);
+            cultivationBoost=0.20+0.30*demand.pressure
+                +0.08*self.personality.patience
+                +0.06*self.personality.conscientiousness;
         }
         const double score=clampCivilization01(
             0.11+0.22*self.personality.curiosity+0.10*self.personality.openness+
             0.07*self.personality.patience+0.12*self.civilization.learningSkill+
-            0.08*preference+hypothesisBoost+sanitationBoost+storageBoost+smeltingBoost);
+            0.08*preference+hypothesisBoost+sanitationBoost+storageBoost
+            +smeltingBoost+cultivationBoost);
 
         CivilizationUtilityDecision candidate;
         candidate.intent=CivilizationIntent::Experiment;
@@ -435,7 +466,7 @@ inline CivilizationUtilityDecision bestExperimentDecision(
     const Character& self)
 {
     return bestExperimentDecisionAtPosition(
-        world,self,civilizationSanitationReferencePosition(world));
+        world,self,civilizationSanitationReferencePosition(world),nullptr);
 }
 
 inline int desiredTechniqueOutputStock(TechniqueId technique)
@@ -449,6 +480,7 @@ inline int desiredTechniqueOutputStock(TechniqueId technique)
         case TechniqueId::StoneHammer: return 1;
         case TechniqueId::FireMaking:
         case TechniqueId::CopperSmelting:
+        case TechniqueId::Cultivation:
         case TechniqueId::DesignatedSanitationArea:
         case TechniqueId::DugSanitationPit:
         case TechniqueId::PrimitiveStorage:
@@ -917,6 +949,168 @@ inline CivilizationUtilityDecision bestPrimitiveFurnaceDecision(
     return CivilizationUtilityDecision{};
 }
 
+inline CivilizationUtilityDecision bestCultivationDecision(
+    const World& world,
+    const Character& self,
+    GridPos authoritativePosition,
+    const SettlementPopulation* population=nullptr)
+{
+    CivilizationUtilityDecision best;
+    if(!self.civilization.knowledge.knowsAtLeast(
+        TechniqueId::Cultivation,KnowledgeLevel::Reproducible)) return best;
+
+    const CultivationDemandObservation demand=
+        observeCultivationDemand(world,authoritativePosition,population);
+    const bool hasDiggingStick=
+        self.civilization.inventory.count(
+            ItemKind::DiggingStick,MaterialKind::Unknown,true)>0;
+    const int seedUnits=self.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::PlantFood);
+    const int waterUnits=self.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::Water);
+    const double preference=civilizationPreference(
+        world.seed,self.id,690ULL+static_cast<std::uint64_t>(TechniqueId::Cultivation));
+
+    for(const auto& facility:world.facilities){
+        if(facility.kind!=FacilityKind::CultivatedPlot
+           || !facilityOperationalAndActive(facility)
+           || manhattan(facility.pos,authoritativePosition)>CultivationServiceRadiusGrid){
+            continue;
+        }
+
+        CivilizationUtilityDecision candidate;
+        candidate.intent=CivilizationIntent::Craft;
+        candidate.technique=TechniqueId::Cultivation;
+        candidate.facilityKind=FacilityKind::CultivatedPlot;
+        candidate.facility=facility.id;
+        candidate.hasFacilityTarget=true;
+        candidate.facilityTargetPos=facility.pos;
+        candidate.item=ItemKind::RawMaterial;
+
+        if(facility.cropHarvestUnits>0){
+            candidate.facilityAction=FacilityBuildAction::Harvest;
+            candidate.material=MaterialKind::PlantFood;
+            candidate.quantity=facility.cropHarvestUnits;
+            candidate.utility=clampCivilization01(
+                0.76+0.16*demand.foodPressure
+                +0.05*self.personality.conscientiousness
+                +0.03*preference);
+            considerCivilizationDecision(best,candidate);
+            continue;
+        }
+
+        if(!facility.cropPlanted){
+            if(!hasDiggingStick || seedUnits<=0) continue;
+            candidate.facilityAction=FacilityBuildAction::Plant;
+            candidate.material=MaterialKind::PlantFood;
+            candidate.quantity=1;
+            candidate.utility=clampCivilization01(
+                0.56+0.25*demand.foodPressure
+                +0.07*self.personality.patience
+                +0.06*self.personality.conscientiousness
+                +0.04*preference);
+            considerCivilizationDecision(best,candidate);
+            continue;
+        }
+
+        if(facility.cropMoisture01<0.46 && waterUnits>0){
+            candidate.facilityAction=FacilityBuildAction::Water;
+            candidate.material=MaterialKind::Water;
+            candidate.quantity=1;
+            const double dryness=clampCivilization01(
+                (0.52-facility.cropMoisture01)/0.52);
+            candidate.utility=clampCivilization01(
+                0.50+0.28*dryness+0.10*demand.foodPressure
+                +0.05*self.personality.conscientiousness
+                +0.03*preference);
+            considerCivilizationDecision(best,candidate);
+        }
+
+        if(hasDiggingStick && facility.cropCare01<0.58){
+            candidate.facilityAction=FacilityBuildAction::Tend;
+            candidate.material=MaterialKind::Unknown;
+            candidate.quantity=0;
+            const double careGap=clampCivilization01(1.0-facility.cropCare01);
+            candidate.utility=clampCivilization01(
+                0.42+0.25*careGap+0.10*demand.foodPressure
+                +0.09*self.personality.patience
+                +0.05*self.personality.conscientiousness
+                +0.03*preference);
+            considerCivilizationDecision(best,candidate);
+        }
+    }
+
+    const ConstructedFacility* project=
+        cultivatedPlotProjectNear(world,authoritativePosition);
+    if(project!=nullptr){
+        CivilizationUtilityDecision candidate;
+        candidate.intent=CivilizationIntent::Craft;
+        candidate.technique=TechniqueId::Cultivation;
+        candidate.facilityKind=FacilityKind::CultivatedPlot;
+        candidate.facility=project->id;
+        candidate.hasFacilityTarget=true;
+        candidate.facilityTargetPos=project->pos;
+        candidate.item=ItemKind::RawMaterial;
+
+        for(const auto& requirement:project->requirements){
+            const int missing=std::max(
+                0,requirement.required-requirement.delivered);
+            const int held=self.civilization.inventory.count(
+                ItemKind::RawMaterial,requirement.material);
+            if(missing<=0 || held<=0) continue;
+            candidate.facilityAction=FacilityBuildAction::DeliverMaterial;
+            candidate.material=requirement.material;
+            candidate.quantity=std::min({missing,held,2});
+            candidate.utility=clampCivilization01(
+                0.50+0.24*demand.pressure
+                +0.08*self.personality.conscientiousness
+                +0.05*self.civilization.gatheringSkill
+                +0.03*preference);
+            considerCivilizationDecision(best,candidate);
+            return best;
+        }
+
+        if(facilityMaterialsComplete(*project)
+           && !facilityWorkComplete(*project)
+           && hasDiggingStick){
+            candidate.facilityAction=FacilityBuildAction::Work;
+            candidate.facilityWork=
+                1.15+1.45*clampCivilization01(self.civilization.craftingSkill);
+            candidate.utility=clampCivilization01(
+                0.51+0.23*demand.pressure
+                +0.08*self.personality.patience
+                +0.07*self.personality.conscientiousness
+                +0.04*self.civilization.craftingSkill
+                +0.03*preference);
+            considerCivilizationDecision(best,candidate);
+        }
+        return best;
+    }
+
+    if(!demand.unmet() || demand.committedPlots>=demand.desiredPlots
+       || !hasDiggingStick) return best;
+
+    const CultivatedPlotSiteOpportunity site=
+        chooseCultivatedPlotSite(world,self.id,authoritativePosition);
+    if(!site.available) return best;
+
+    CivilizationUtilityDecision plan;
+    plan.intent=CivilizationIntent::Craft;
+    plan.technique=TechniqueId::Cultivation;
+    plan.facilityKind=FacilityKind::CultivatedPlot;
+    plan.facilityAction=FacilityBuildAction::Plan;
+    plan.hasFacilityTarget=true;
+    plan.facilityTargetPos=site.pos;
+    plan.utility=clampCivilization01(
+        0.31+0.42*demand.pressure
+        +0.10*site.environment.fertility01
+        +0.06*site.environment.naturalMoisture01
+        +0.05*self.personality.conscientiousness
+        +0.03*preference);
+    considerCivilizationDecision(best,plan);
+    return best;
+}
+
 inline CivilizationUtilityDecision bestCraftDecisionAtPosition(
     const World& world,
     const Character& self,
@@ -937,6 +1131,9 @@ inline CivilizationUtilityDecision bestCraftDecisionAtPosition(
     considerCivilizationDecision(
         best,bestPrimitiveFurnaceDecision(
             world,self,authoritativePosition));
+    considerCivilizationDecision(
+        best,bestCultivationDecision(
+            world,self,authoritativePosition,population));
 
     if(self.civilization.knowledge.knowsAtLeast(
         TechniqueId::DesignatedSanitationArea,KnowledgeLevel::Reproducible)
@@ -1045,9 +1242,10 @@ inline CivilizationUtilityDecision bestCraftDecision(
         world,self,civilizationSanitationReferencePosition(world));
 }
 
-inline CivilizationUtilityDecision bestRetrieveDecision(
+inline CivilizationUtilityDecision bestRetrieveDecisionAtPosition(
     const World& world,
-    const Character& self)
+    const Character& self,
+    GridPos authoritativePosition)
 {
     CivilizationUtilityDecision best;
 
@@ -1064,7 +1262,12 @@ inline CivilizationUtilityDecision bestRetrieveDecision(
         for(const auto& provision:provisions){
             const MaterialKind material=provision.first;
             const double need=provision.second;
-            if(need<0.35) continue;
+            const bool cultivationNeed=
+                self.civilization.knowledge.knowsAtLeast(
+                    TechniqueId::Cultivation,KnowledgeLevel::Reproducible)
+                && cultivationInputNeededNear(
+                    world,authoritativePosition,material);
+            if(need<0.35 && !cultivationNeed) continue;
 
             const int held=self.civilization.inventory.count(
                 ItemKind::RawMaterial,material);
@@ -1088,7 +1291,8 @@ inline CivilizationUtilityDecision bestRetrieveDecision(
                 +0.55*need
                 +0.12*carryGap
                 +0.05*self.personality.orderliness
-                +0.03*preference);
+                +0.03*preference
+                +(cultivationNeed ? 0.34 : 0.0));
             candidate.storage=storage.id;
             candidate.item=ItemKind::RawMaterial;
             candidate.material=material;
@@ -1097,6 +1301,14 @@ inline CivilizationUtilityDecision bestRetrieveDecision(
         }
     }
     return best;
+}
+
+inline CivilizationUtilityDecision bestRetrieveDecision(
+    const World& world,
+    const Character& self)
+{
+    return bestRetrieveDecisionAtPosition(
+        world,self,civilizationSanitationReferencePosition(world));
 }
 
 inline CivilizationUtilityDecision bestStoreDecision(const World& world,const Character& self)
@@ -1168,10 +1380,12 @@ inline CivilizationUtilityDecision chooseCivilizationUtilityDecisionAtPosition(
     if(self.id==0 || self.civilization.character!=self.id) return best;
     considerCivilizationDecision(
         best,bestExperimentDecisionAtPosition(
-            world,self,authoritativePosition));
+            world,self,authoritativePosition,population));
     considerCivilizationDecision(
         best,bestCraftDecisionAtPosition(world,self,authoritativePosition,population));
-    considerCivilizationDecision(best,bestRetrieveDecision(world,self));
+    considerCivilizationDecision(
+        best,bestRetrieveDecisionAtPosition(
+            world,self,authoritativePosition));
     considerCivilizationDecision(best,bestStoreDecision(world,self));
     considerCivilizationDecision(best,bestGatherDecision(world,self));
     return best;
@@ -1267,6 +1481,10 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
                 context.storageProblemRecognized=observePrimitiveStorageNeed(world,self).recognized;
             }else if(decision.experiment==ExperimentKind::SmeltCopperOre){
                 context.smeltingOpportunityAvailable=copperSmeltingOpportunityAvailable(world,self);
+            }else if(decision.experiment==ExperimentKind::CultivatePlantFood){
+                context.cultivationOpportunityAvailable=
+                    cultivationExperimentOpportunityAvailable(
+                        world,self,authoritativePosition,population);
             }
             result.experiment=attemptExperiment(context,self.civilization.inventory,self.civilization.knowledge);
             result.executed=result.experiment.attempted;
@@ -1359,6 +1577,126 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
                     return result;
                 }
 
+                return result;
+            }
+
+            if(decision.technique==TechniqueId::Cultivation
+               && decision.facilityKind==FacilityKind::CultivatedPlot){
+                result.facilityKind=FacilityKind::CultivatedPlot;
+                result.facilityAction=decision.facilityAction;
+                result.craft.event.actor=self.id;
+                result.craft.event.type=CivilizationEventType::Crafted;
+                result.craft.event.technique=TechniqueId::Cultivation;
+
+                if(decision.facilityAction==FacilityBuildAction::Plan){
+                    if(!decision.hasFacilityTarget) return result;
+                    ConstructedFacility* created=establishCultivatedPlotProject(
+                        world,self.id,decision.facilityTargetPos);
+                    if(created==nullptr) return result;
+                    result.executed=true;
+                    result.success=true;
+                    result.facilityId=created->id;
+                    result.facilityPos=created->pos;
+                    result.craft.success=true;
+                    result.event=result.craft.event;
+                    return result;
+                }
+
+                ConstructedFacility* facility=
+                    findCivilizationFacility(world,decision.facility);
+                if(facility==nullptr
+                   || facility->kind!=FacilityKind::CultivatedPlot
+                   || !decision.hasFacilityTarget
+                   || facility->pos.x!=decision.facilityTargetPos.x
+                   || facility->pos.y!=decision.facilityTargetPos.y){
+                    return result;
+                }
+
+                result.facilityId=facility->id;
+                result.facilityPos=facility->pos;
+
+                if(decision.facilityAction==FacilityBuildAction::DeliverMaterial){
+                    if(facility->state==FacilityState::Operational) return result;
+                    const int delivered=deliverFacilityMaterial(
+                        *facility,self.civilization.inventory,
+                        decision.material,std::max(1,decision.quantity));
+                    if(delivered<=0) return result;
+                    result.executed=true;
+                    result.success=true;
+                    result.craft.success=true;
+                    result.craft.event.material=decision.material;
+                    result.craft.event.quantity=delivered;
+                    result.event=result.craft.event;
+                    return result;
+                }
+
+                if(decision.facilityAction==FacilityBuildAction::Work){
+                    if(facility->state==FacilityState::Operational) return result;
+                    const CultivatedPlotWorkResult work=workOnCultivatedPlot(
+                        world,self,facility->id,
+                        std::max(0.1,decision.facilityWork));
+                    if(!work.worked || work.facilityId!=facility->id) return result;
+                    result.executed=true;
+                    result.success=true;
+                    result.facilityCompleted=work.completed;
+                    result.facilityWorkBefore=work.workBefore;
+                    result.facilityWorkAfter=work.workAfter;
+                    result.craft.success=true;
+                    result.event=result.craft.event;
+                    self.civilization.craftingSkill=clampCivilization01(
+                        self.civilization.craftingSkill+0.003);
+                    return result;
+                }
+
+                if(!facilityOperationalAndActive(*facility)) return result;
+
+                if(decision.facilityAction==FacilityBuildAction::Plant){
+                    if(!plantCultivatedPlot(world,self,*facility)) return result;
+                    result.executed=true;
+                    result.success=true;
+                    result.craft.success=true;
+                    result.craft.event.material=MaterialKind::PlantFood;
+                    result.craft.event.quantity=1;
+                    result.event=result.craft.event;
+                    return result;
+                }
+
+                if(decision.facilityAction==FacilityBuildAction::Water){
+                    if(!waterCultivatedPlot(world,self,*facility)) return result;
+                    result.executed=true;
+                    result.success=true;
+                    result.craft.success=true;
+                    result.craft.event.material=MaterialKind::Water;
+                    result.craft.event.quantity=1;
+                    result.event=result.craft.event;
+                    return result;
+                }
+
+                if(decision.facilityAction==FacilityBuildAction::Tend){
+                    if(!tendCultivatedPlot(world,self,*facility)) return result;
+                    result.executed=true;
+                    result.success=true;
+                    result.craft.success=true;
+                    result.event=result.craft.event;
+                    return result;
+                }
+
+                if(decision.facilityAction==FacilityBuildAction::Harvest){
+                    const int harvested=harvestCultivatedPlot(
+                        world,self,*facility);
+                    if(harvested<=0) return result;
+                    result.executed=true;
+                    result.success=true;
+                    result.craft.success=true;
+                    result.craft.event.material=MaterialKind::PlantFood;
+                    result.craft.event.quantity=harvested;
+                    result.event=result.craft.event;
+                    self.civilization.knowledge.recordSuccessfulUse(
+                        TechniqueId::Cultivation);
+                    self.civilization.gatheringSkill=clampCivilization01(
+                        self.civilization.gatheringSkill+0.006);
+                    return result;
+                }
                 return result;
             }
 

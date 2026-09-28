@@ -107,6 +107,10 @@ export const KOREAN_FACILITY_ACTION_LABELS: Record<string, string> = {
   CollectCharcoal: '숯 회수',
   LoadSmeltCharge: '제련 재료 투입',
   CollectMetal: '금속 회수',
+  Plant: '씨앗 심기',
+  Water: '물주기',
+  Tend: '밭 돌보기',
+  Harvest: '수확',
 };
 
 export const KOREAN_MATERIAL_LABELS: Record<string, string> = {
@@ -151,6 +155,7 @@ export const KOREAN_TECHNIQUE_LABELS: Record<string, string> = {
   DiggingStick: '굴착 막대 제작',
   StoneHammer: '돌망치 제작',
   CopperSmelting: '구리 제련',
+  Cultivation: '재배',
 };
 
 export const KOREAN_FACILITY_KIND_LABELS: Record<string, string> = {
@@ -160,6 +165,7 @@ export const KOREAN_FACILITY_KIND_LABELS: Record<string, string> = {
   SleepingPlace: '잠자리',
   Shelter: '쉼터',
   Furnace: '제련로',
+  CultivatedPlot: '재배지',
 };
 
 export const KOREAN_FACILITY_STATE_LABELS: Record<string, string> = {

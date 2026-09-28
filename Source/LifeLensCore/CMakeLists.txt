@@ -190,6 +190,8 @@ lifelens_add_test(test_early_survival)
 
 lifelens_add_test(test_durable_water_storage)
 
+lifelens_add_test(test_cultivation_progression)
+
 
 # Browser client: compile the same LifeLensCore into WebAssembly. The generated
 # .js/.wasm files are build artifacts and are never committed as source truth.
