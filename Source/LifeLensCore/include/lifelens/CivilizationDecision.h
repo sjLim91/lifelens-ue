@@ -13,6 +13,7 @@
 #include "PrimitiveSanitation.h"
 #include "PrimitiveSmeltingProgression.h"
 #include "PrimitiveStorageProgression.h"
+#include "ResourceSearchProgression.h"
 #include "SettlementProgression.h"
 #include "World.h"
 
@@ -25,7 +26,9 @@ enum class CivilizationIntent {
     Experiment,
     Craft,
     // Appended so existing enum ordinals remain stable.
-    Retrieve
+    Retrieve,
+    // Physical exploration of an unmaterialized natural frontier.
+    Search
 };
 
 enum class FacilityBuildAction {
@@ -53,6 +56,7 @@ inline const char* civilizationIntentName(CivilizationIntent intent)
         case CivilizationIntent::Experiment: return "Experiment";
         case CivilizationIntent::Craft: return "Craft";
         case CivilizationIntent::Retrieve: return "Retrieve";
+        case CivilizationIntent::Search: return "Search";
         default: return "None";
     }
 }
@@ -128,6 +132,9 @@ struct CivilizationUtilityDecision {
     TechniqueId technique=TechniqueId::None;
     ItemKind item=ItemKind::RawMaterial;
     int quantity=0;
+
+    bool hasSearchTarget=false;
+    GridPos searchTargetPos{};
 
     FacilityBuildAction facilityAction=FacilityBuildAction::None;
     FacilityId facility=0;
@@ -269,19 +276,226 @@ inline double materialProgressDemand(const Character& self,MaterialKind material
     }
 }
 
+inline constexpr int CivilizationKnownSupplyRadiusGrid=
+    WorldChunkSpanGridCells*2;
+
+inline int localStorageCountForMaterial(
+    const World& world,
+    GridPos center,
+    MaterialKind material,
+    int radius=CivilizationKnownSupplyRadiusGrid)
+{
+    int total=0;
+    for(const auto& storage:world.storageSites){
+        if(manhattan(storage.pos,center)>std::max(0,radius)) continue;
+        total+=storage.inventory.count(ItemKind::RawMaterial,material);
+    }
+    return total;
+}
+
+inline int knownResourceUnitsNear(
+    const World& world,
+    GridPos center,
+    MaterialKind material,
+    int radius=CivilizationKnownSupplyRadiusGrid)
+{
+    int total=0;
+    for(const auto& node:world.resourceNodes){
+        if(node.material!=material || node.quantity<=0) continue;
+        if(manhattan(node.pos,center)>std::max(0,radius)) continue;
+        total+=node.quantity;
+    }
+    return total;
+}
+
+struct MaterialScarcityObservation {
+    MaterialKind material=MaterialKind::Unknown;
+    int held=0;
+    int localStored=0;
+    int localKnownResourceUnits=0;
+    int targetUnits=0;
+    int constructionMissing=0;
+    int repairMissing=0;
+    double personalNeed=0.0;
+    double progressionDemand=0.0;
+    double pressure=0.0;
+};
+
+inline MaterialScarcityObservation observeMaterialScarcity(
+    const World& world,
+    const Character& self,
+    GridPos authoritativePosition,
+    MaterialKind material)
+{
+    MaterialScarcityObservation result;
+    result.material=material;
+    result.held=self.civilization.inventory.count(
+        ItemKind::RawMaterial,material);
+    result.localStored=localStorageCountForMaterial(
+        world,authoritativePosition,material);
+    result.localKnownResourceUnits=knownResourceUnitsNear(
+        world,authoritativePosition,material);
+
+    const int storageMissing=primitiveStorageMissingMaterial(world,material);
+    const int fireMissing=primitiveFirePitMissingMaterial(world,material);
+    const int furnaceMissing=primitiveFurnaceMissingMaterial(world,material);
+    const int cultivationMissing=
+        cultivationConstructionMissingMaterial(world,material);
+    const int settlementMissing=
+        settlementConstructionMissingMaterial(world,material);
+    result.repairMissing=std::max(
+        0,settlementRepairMaterialDemand(world,material)-result.held);
+    result.constructionMissing=std::max({
+        storageMissing,
+        fireMissing,
+        furnaceMissing,
+        cultivationMissing,
+        settlementMissing
+    });
+
+    const bool provision=
+        material==MaterialKind::Water
+        || material==MaterialKind::PlantFood;
+    if(material==MaterialKind::Water){
+        result.personalNeed=clampCivilization01(self.needs.thirst);
+        if(cultivationInputNeededNear(
+            world,authoritativePosition,material)){
+            result.personalNeed=std::max(result.personalNeed,0.72);
+        }
+    }else if(material==MaterialKind::PlantFood){
+        result.personalNeed=clampCivilization01(self.needs.hunger);
+        if(cultivationInputNeededNear(
+            world,authoritativePosition,material)){
+            result.personalNeed=std::max(result.personalNeed,0.68);
+        }
+    }
+
+    result.progressionDemand=materialProgressDemand(self,material);
+    const int baseTarget=provision ? 4 : 5;
+    const int reserveTarget=
+        material==MaterialKind::Water ? 8
+        : (material==MaterialKind::PlantFood ? 8 : 0);
+    const int reserveGap=std::max(
+        0,reserveTarget-result.localStored);
+    const int fireFuelReserve=
+        hasOperationalFirePit(world) && material==MaterialKind::Wood
+            ? 3 : 0;
+    result.targetUnits=
+        baseTarget
+        +std::min(4,result.constructionMissing+result.repairMissing)
+        +fireFuelReserve
+        +(provision && !world.storageSites.empty()
+            ? std::min(4,reserveGap)
+            : 0);
+
+    const int carriedAndStored=
+        result.held
+        +std::min(result.localStored,std::max(0,result.targetUnits));
+    const double stockGap=clampCivilization01(
+        static_cast<double>(
+            std::max(0,result.targetUnits-carriedAndStored))
+        /static_cast<double>(std::max(1,result.targetUnits)));
+    const double constructionPressure=
+        result.constructionMissing>0
+            ? clampCivilization01(
+                0.52+0.10*static_cast<double>(result.constructionMissing))
+            : 0.0;
+    const double repairPressure=
+        result.repairMissing>0
+            ? clampCivilization01(
+                0.46+0.14*static_cast<double>(result.repairMissing))
+            : 0.0;
+
+    result.pressure=clampCivilization01(std::max({
+        0.48*stockGap
+            +0.24*result.progressionDemand
+            +0.28*result.personalNeed,
+        constructionPressure,
+        repairPressure,
+        provision ? 0.82*result.personalNeed : 0.0
+    }));
+    return result;
+}
+
+inline CivilizationUtilityDecision bestResourceSearchDecision(
+    const World& world,
+    const Character& self,
+    GridPos authoritativePosition)
+{
+    CivilizationUtilityDecision best;
+    constexpr std::array<MaterialKind,9> searchable={{
+        MaterialKind::Water,
+        MaterialKind::PlantFood,
+        MaterialKind::Wood,
+        MaterialKind::Fiber,
+        MaterialKind::Stone,
+        MaterialKind::Flint,
+        MaterialKind::Clay,
+        MaterialKind::CopperOre,
+        MaterialKind::TinOre
+    }};
+
+    for(const MaterialKind material:searchable){
+        const MaterialScarcityObservation scarcity=
+            observeMaterialScarcity(
+                world,self,authoritativePosition,material);
+        if(scarcity.pressure<0.42) continue;
+
+        // If a known supply exists within practical physical reach, use Gather.
+        // Search exists only to expand the known/materialized frontier.
+        if(scarcity.localKnownResourceUnits>0) continue;
+
+        const ResourceSearchOpportunity opportunity=
+            chooseResourceSearchOpportunity(
+                world,self.id,material,authoritativePosition);
+        if(!opportunity.available) continue;
+
+        const double distancePenalty=clampCivilization01(
+            static_cast<double>(opportunity.frontierDistanceChunks)
+            /static_cast<double>(
+                std::max(1,ResourceSearchMaximumFrontierDistanceChunks)));
+        const double preference=civilizationPreference(
+            world.seed,self.id,
+            730ULL+static_cast<std::uint64_t>(material));
+
+        CivilizationUtilityDecision candidate;
+        candidate.intent=CivilizationIntent::Search;
+        candidate.material=material;
+        candidate.item=ItemKind::RawMaterial;
+        candidate.hasSearchTarget=true;
+        candidate.searchTargetPos=opportunity.targetPos;
+        candidate.utility=clampCivilization01(
+            0.18
+            +0.58*scarcity.pressure
+            +0.09*self.personality.curiosity
+            +0.07*self.personality.adaptability
+            +0.04*self.personality.riskTolerance
+            +0.03*preference
+            -0.10*distancePenalty);
+        considerCivilizationDecision(best,candidate);
+    }
+    return best;
+}
+
 inline void considerCivilizationDecision(CivilizationUtilityDecision& best,const CivilizationUtilityDecision& candidate)
 {
     if(candidate.intent==CivilizationIntent::None || candidate.utility<=0.0) return;
     if(candidate.utility>best.utility+1e-12) best=candidate;
 }
 
-inline CivilizationUtilityDecision bestGatherDecision(const World& world,const Character& self)
+inline CivilizationUtilityDecision bestGatherDecisionAtPosition(
+    const World& world,
+    const Character& self,
+    GridPos authoritativePosition)
 {
     CivilizationUtilityDecision best;
     for(const auto& node:world.resourceNodes){
         if(node.id==0 || node.quantity<=0 || node.material==MaterialKind::Unknown) continue;
+        const int travelDistance=manhattan(node.pos,authoritativePosition);
+        if(travelDistance>CivilizationKnownSupplyRadiusGrid) continue;
         const int held=self.civilization.inventory.count(ItemKind::RawMaterial,node.material);
-        const int stored=storageCountForMaterial(world,node.material);
+        const int stored=localStorageCountForMaterial(
+            world,authoritativePosition,node.material);
         const int storageMissing=primitiveStorageMissingMaterial(world,node.material);
         const int fireMissing=primitiveFirePitMissingMaterial(world,node.material);
         const int furnaceMissing=primitiveFurnaceMissingMaterial(world,node.material);
@@ -329,11 +543,19 @@ inline CivilizationUtilityDecision bestGatherDecision(const World& world,const C
         const double maintenanceDemand=repairMissing>0
             ? clampCivilization01(0.42+0.18*static_cast<double>(repairMissing))
             : 0.0;
+        const MaterialScarcityObservation scarcity=
+            observeMaterialScarcity(
+                world,self,authoritativePosition,node.material);
+        const double travel01=clampCivilization01(
+            static_cast<double>(travelDistance)
+            /static_cast<double>(CivilizationKnownSupplyRadiusGrid));
         const double preference=civilizationPreference(world.seed,self.id,100ULL+static_cast<std::uint64_t>(node.material));
         const double score=clampCivilization01(
             0.07+0.12*self.personality.curiosity+0.05*self.personality.adaptability+
             0.08*self.civilization.gatheringSkill+0.16*demand+0.13*gap+
             0.30*constructionDemand+0.24*maintenanceDemand+0.07*preference+
+            0.16*scarcity.pressure
+            -0.16*travel01*(1.0-0.60*scarcity.pressure)+
             (provision && !world.storageSites.empty()
                 ? 0.12*clampCivilization01(
                     static_cast<double>(reserveGap)
@@ -349,6 +571,14 @@ inline CivilizationUtilityDecision bestGatherDecision(const World& world,const C
         considerCivilizationDecision(best,candidate);
     }
     return best;
+}
+
+inline CivilizationUtilityDecision bestGatherDecision(
+    const World& world,
+    const Character& self)
+{
+    return bestGatherDecisionAtPosition(
+        world,self,civilizationSanitationReferencePosition(world));
 }
 
 inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
@@ -1387,7 +1617,12 @@ inline CivilizationUtilityDecision chooseCivilizationUtilityDecisionAtPosition(
         best,bestRetrieveDecisionAtPosition(
             world,self,authoritativePosition));
     considerCivilizationDecision(best,bestStoreDecision(world,self));
-    considerCivilizationDecision(best,bestGatherDecision(world,self));
+    considerCivilizationDecision(
+        best,bestGatherDecisionAtPosition(
+            world,self,authoritativePosition));
+    considerCivilizationDecision(
+        best,bestResourceSearchDecision(
+            world,self,authoritativePosition));
     return best;
 }
 
@@ -1427,6 +1662,21 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
     CivilizationExecutionResult result;
     const GridPos sanitationReference=authoritativePosition;
     switch(decision.intent){
+        case CivilizationIntent::Search: {
+            if(!decision.hasSearchTarget
+               || decision.material==MaterialKind::Unknown
+               || !contextActionNearTarget(
+                    authoritativePosition,decision.searchTargetPos,1)){
+                return result;
+            }
+            if(!materializeResourceSearchArrival(
+                world,authoritativePosition)) return result;
+            result.executed=true;
+            result.success=true;
+            result.event.actor=self.id;
+            result.event.material=decision.material;
+            return result;
+        }
         case CivilizationIntent::Gather: {
             ResourceNode* node=findCivilizationResource(world,decision.resourceNode);
             if(!node) return result;
