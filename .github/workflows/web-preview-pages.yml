@@ -35,6 +35,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -55,6 +57,7 @@ jobs:
             --pattern 'lifelens_core.js' \
             --pattern 'lifelens_core.wasm' \
             --pattern 'SHA256SUMS.txt' \
+            --pattern 'RUNTIME_COMMIT.txt' \
             --dir public/runtime \
             --clobber
 
@@ -69,6 +72,17 @@ jobs:
             && ! grep -aq 'dynamicEnvironmentJson' public/runtime/lifelens_core.wasm; then
             echo "dynamicEnvironmentJson binding missing from downloaded runtime"
             exit 1
+          fi
+
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            test -s public/runtime/RUNTIME_COMMIT.txt
+            expected="${{ github.event.workflow_run.head_sha }}"
+            actual="$(tr -d '\r\n' < public/runtime/RUNTIME_COMMIT.txt)"
+            echo "Expected runtime commit: $expected"
+            echo "Actual runtime commit:   $actual"
+            test "$actual" = "$expected"
+          elif [ -s public/runtime/RUNTIME_COMMIT.txt ]; then
+            echo "Runtime source commit: $(tr -d '\r\n' < public/runtime/RUNTIME_COMMIT.txt)"
           fi
 
       - name: Typecheck
