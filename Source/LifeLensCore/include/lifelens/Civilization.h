@@ -275,7 +275,9 @@ enum class TechniqueId {
     PrimitiveStorage,
     DiggingStick,
     StoneHammer,
-    CopperSmelting
+    CopperSmelting,
+    // Appended to preserve every persisted primitive-technique ordinal.
+    Cultivation
 };
 
 enum class KnowledgeLevel : int {
@@ -364,7 +366,8 @@ enum class ExperimentKind {
     OrganizeStockpile,
     ShapeDiggingStick,
     HaftStoneHammer,
-    SmeltCopperOre
+    SmeltCopperOre,
+    CultivatePlantFood
 };
 
 enum class CivilizationEventType {
@@ -401,6 +404,7 @@ struct ExperimentContext {
     bool sanitationPitCandidateAvailable=false;
     bool storageProblemRecognized=false;
     bool smeltingOpportunityAvailable=false;
+    bool cultivationOpportunityAvailable=false;
 };
 
 struct ExperimentResult {
@@ -449,6 +453,10 @@ inline TechniqueRecipe techniqueRecipe(TechniqueId technique)
             return {technique,{{ItemKind::RawMaterial,MaterialKind::Stone,2,false},{ItemKind::RawMaterial,MaterialKind::Wood,1,false},{ItemKind::Cordage,MaterialKind::Fiber,1,false}},true,ItemKind::StoneHammer,MaterialKind::Stone,1};
         case TechniqueId::CopperSmelting:
             return {technique,{{ItemKind::RawMaterial,MaterialKind::CopperOre,1,false},{ItemKind::RawMaterial,MaterialKind::Charcoal,1,false}},true,ItemKind::RawMaterial,MaterialKind::CopperMetal,1};
+        case TechniqueId::Cultivation:
+            // Experimentation consumes one edible plant unit as seed stock.
+            // Production itself belongs to CultivatedPlot authority.
+            return {technique,{{ItemKind::RawMaterial,MaterialKind::PlantFood,1,false}},false,ItemKind::RawMaterial,MaterialKind::Unknown,0};
         case TechniqueId::DesignatedSanitationArea:
         case TechniqueId::DugSanitationPit:
         case TechniqueId::PrimitiveStorage:
@@ -492,6 +500,7 @@ inline TechniqueId experimentTechnique(ExperimentKind kind)
         case ExperimentKind::ShapeDiggingStick: return TechniqueId::DiggingStick;
         case ExperimentKind::HaftStoneHammer: return TechniqueId::StoneHammer;
         case ExperimentKind::SmeltCopperOre: return TechniqueId::CopperSmelting;
+        case ExperimentKind::CultivatePlantFood: return TechniqueId::Cultivation;
         default: return TechniqueId::None;
     }
 }
@@ -529,6 +538,7 @@ inline double experimentBaseChance(ExperimentKind kind,MaterialKind material)
         case ExperimentKind::ShapeDiggingStick: return material==MaterialKind::Wood ? 0.29 : 0.0;
         case ExperimentKind::HaftStoneHammer: return material==MaterialKind::Stone ? 0.24 : 0.0;
         case ExperimentKind::SmeltCopperOre: return material==MaterialKind::CopperOre ? 0.18 : 0.0;
+        case ExperimentKind::CultivatePlantFood: return material==MaterialKind::PlantFood ? 0.22 : 0.0;
         case ExperimentKind::DesignateSanitationArea: return material==MaterialKind::Unknown ? 0.32 : 0.0;
         case ExperimentKind::DigSanitationPit: return material==MaterialKind::Unknown ? 0.28 : 0.0;
         case ExperimentKind::OrganizeStockpile: return material==MaterialKind::Unknown ? 0.34 : 0.0;
@@ -571,6 +581,11 @@ inline bool experimentPrerequisitesMet(const ExperimentContext& context,const Kn
             && knowledge.knowsAtLeast(TechniqueId::FireMaking,KnowledgeLevel::Reproducible)
             && knowledge.knowsAtLeast(TechniqueId::StoneHammer,KnowledgeLevel::Reproducible)
             && knowledge.knowsAtLeast(TechniqueId::SimpleContainer,KnowledgeLevel::Reproducible);
+    }
+    if(context.kind==ExperimentKind::CultivatePlantFood){
+        return context.cultivationOpportunityAvailable
+            && knowledge.knowsAtLeast(
+                TechniqueId::DiggingStick,KnowledgeLevel::Reproducible);
     }
     if(context.kind==ExperimentKind::DesignateSanitationArea){
         return context.sanitationProblemRecognized && context.sanitationSiteAvailable;
