@@ -138,7 +138,12 @@ void appendHumanTraces(std::ostringstream& out, const HumanTraceWindowObservatio
             out << ",\"deliveredMaterialUnits\":" << trace.deliveredMaterialUnits
                 << ",\"requiredMaterialUnits\":" << trace.requiredMaterialUnits
                 << ",\"active\":" << (trace.active ? "true" : "false")
-                << ",\"lit\":" << (trace.lit ? "true" : "false");
+                << ",\"lit\":" << (trace.lit ? "true" : "false")
+                << ",\"cropPlanted\":" << (trace.cropPlanted ? "true" : "false")
+                << ",\"cropGrowth01\":"; appendDouble(out, trace.cropGrowth01);
+            out << ",\"cropMoisture01\":"; appendDouble(out, trace.cropMoisture01);
+            out << ",\"cropCare01\":"; appendDouble(out, trace.cropCare01);
+            out << ",\"cropHarvestUnits\":" << trace.cropHarvestUnits;
         }
         out << "}";
     }
