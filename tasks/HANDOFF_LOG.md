@@ -1062,3 +1062,29 @@
 - 다음 작업:
   - C-S3 남은 항목 **지역 자원 부족 -> 명시적 탐색/검색/이동 압력**.
   - 브라우저가 목표를 만들지 않고 Core가 실제 materialized resource / resident-local scarcity / physical navigation 기준으로 선택해야 한다.
+
+
+## 2026-09-28 — C-S3 scarcity exploration + C-S4 emergent settlement form integrated
+
+- 작성자: Jjun-side AI
+- 기준 main: `9fe86f499705876c1ded41ebf4f11b7066d69c5e`
+- 상태: `#485/#486/#487 MERGED / C1-D + C1-E DONE`
+- #485:
+  - resident-local material scarcity now creates authoritative `Explore` pressure in Core.
+  - residents physically travel to an unexplored frontier before a natural chunk is materialized.
+  - known Water/PlantFood supply is preferred before blind frontier search.
+- #486:
+  - Web observer exposes the authoritative exploration material in resident action cues.
+  - observation feed records a new resource-exploration start once per exploration context without client-authored motives.
+- #487:
+  - operational facilities persist `usageCount` / `lastUsedMinute` as Core authority.
+  - actual sleep/storage/work-surface use records lived activity in both headless and external physical completion paths.
+  - new settlement sites combine terrain/water, functional affinity, repeated/recent facility use and living resident activity.
+  - dead residents cannot leave phantom settlement activity centers.
+  - civilization snapshot extension advanced to v7 while retaining v1-v6 read compatibility.
+- 검증:
+  - #487 exact-head Preflight / Web WASM / Core Tests + deterministic harness / Unreal Linux Compile PASS.
+- 다음 작업:
+  - **C-S5 / C1-F Early Material Progression**.
+  - first normalize furnace charge/output material identity; current furnace runtime is copper-specific.
+  - then add Tin/Bronze and bronze tools through real ore, charcoal, furnace, knowledge and alloy prerequisites; no automatic Bronze Age gate.
