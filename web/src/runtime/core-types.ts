@@ -578,6 +578,13 @@ export interface CivilizationWorldFacility {
   lit: boolean;
   burnMinutesRemaining: number;
   lastFireMinute: number;
+  cropPlanted: boolean;
+  cropPlantedMinute: number;
+  cropGrowth01: number;
+  cropMoisture01: number;
+  cropCare01: number;
+  cropHarvestUnits: number;
+  lastCultivationMinute: number;
   requirements: CivilizationFacilityRequirement[];
 }
 
