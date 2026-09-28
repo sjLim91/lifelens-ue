@@ -568,6 +568,20 @@ inline void advanceCultivationOneDay(World& world)
     }
 }
 
+inline int cultivationConstructionMissingMaterial(
+    const World& world,
+    MaterialKind material)
+{
+    int missing=0;
+    for(const auto& facility:world.facilities){
+        if(facility.kind!=FacilityKind::CultivatedPlot
+           || facility.state==FacilityState::Operational
+           || facility.state==FacilityState::Ruined) continue;
+        missing+=facilityMissingMaterial(facility,material);
+    }
+    return missing;
+}
+
 inline bool cultivationInputNeededNear(
     const World& world,
     GridPos pos,
