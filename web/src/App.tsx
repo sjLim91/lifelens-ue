@@ -23,6 +23,7 @@ import {
 import { RenderModeControl } from './ui/render-mode-control';
 import { HumanTraceDetail, HumanTracePanel } from './ui/human-traces';
 import { WorldActivityPanel } from './ui/world-activity';
+import { FastForwardControl } from './ui/fast-forward-control';
 import { visibleHumanTraces } from './state/human-traces';
 
 function Topbar() {
@@ -56,6 +57,17 @@ function WorldViewport({
       <canvas id="threeWorldCanvas" aria-label="라이프렌즈 3차원 세계" />
       <canvas id="characterCanvas" aria-label="라이프렌즈 주민" />
       <WorldOverlay snapshot={snapshot} />
+      {snapshot.fastForward.status === 'running' && (
+        <div className="fast-forward-world-status" aria-live="polite">
+          <strong>세계 변화 계산 중</strong>
+          <span>
+            {Math.round(snapshot.fastForward.progress01 * 100)}%
+            {' · '}
+            {Math.floor(snapshot.fastForward.completedMinutes / 1440)}일 /
+            {' '}{snapshot.fastForward.requestedDays}일
+          </span>
+        </div>
+      )}
       {!selectedTrace && <ObservationFeedOverlay
         observations={snapshot.observations}
         onSelect={(residentId) => observerActions.selectResident(residentId)}
@@ -103,7 +115,8 @@ function ObserverPanel({
   }, [mobileOpen, snapshot.selectedResidentId]);
   const [seed, setSeed] = useState('');
   const [seedError, setSeedError] = useState(false);
-  const controlsDisabled = snapshot.runtime.status !== 'ready';
+  const controlsDisabled = snapshot.runtime.status !== 'ready'
+    || snapshot.fastForward.status === 'running';
   const selectedResident = snapshot.selectedResidentId
     ? snapshot.residents.find(
       (resident) => resident.id === snapshot.selectedResidentId,
@@ -216,6 +229,11 @@ function ObserverPanel({
         <p className="hint">
           {simulationTimeHint()}
         </p>
+
+        <FastForwardControl
+          state={snapshot.fastForward}
+          disabled={snapshot.runtime.status !== 'ready'}
+        />
       </section>
 
 
