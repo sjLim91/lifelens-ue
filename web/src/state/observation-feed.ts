@@ -648,6 +648,54 @@ function exactWorldObjectEvents(
   return events;
 }
 
+function explorationEvent(
+  resident: Resident,
+  previous: Resident,
+  minute: number,
+): ObservationEvent | null {
+  const next = resident.presentation;
+  if (
+    !next?.active
+    || next.kind !== 'Civilization'
+    || next.civilizationIntent !== 'Explore'
+    || next.phase === 'Idle'
+  ) {
+    return null;
+  }
+
+  const material = next.civilizationMaterial?.trim();
+  if (!material || material === 'Unknown') return null;
+
+  const before = previous.presentation;
+  const sameContext = Boolean(
+    before?.active
+    && before.kind === 'Civilization'
+    && before.civilizationIntent === 'Explore'
+    && before.civilizationMaterial === next.civilizationMaterial
+    && before.contextActionToken === next.contextActionToken
+    && before.targetGridX === next.targetGridX
+    && before.targetGridY === next.targetGridY
+  );
+  if (sameContext) return null;
+
+  const token = next.contextActionToken?.trim()
+    || String(next.issuedMinute ?? minute);
+  const detail = next.hasTargetGrid
+    ? `탐색 목표 좌표 ${next.targetGridX ?? 0}, ${next.targetGridY ?? 0}`
+    : undefined;
+
+  return {
+    id: `civilization:explore:${resident.id}:${token}`,
+    kind: 'civilization',
+    minute: Number(next.issuedMinute) || minute,
+    residentId: resident.id,
+    residentName: resident.name,
+    summary: `${resident.name}: ${formatMaterial(material)} 자원 탐색 시작`,
+    detail,
+    importance: 'medium',
+  };
+}
+
 function activityEvent(
   resident: Resident,
   previous: Resident,
@@ -788,6 +836,9 @@ export function deriveObservationEvents(
     if (!historySupported) {
       events.push(...familyEvents(resident, previous, minute));
     }
+
+    const exploration = explorationEvent(resident, previous, minute);
+    if (exploration) events.push(exploration);
 
     const memory = newMemoryEvent(resident, previous, minute);
     if (memory) events.push(memory);
