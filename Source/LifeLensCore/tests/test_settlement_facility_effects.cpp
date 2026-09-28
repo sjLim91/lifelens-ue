@@ -291,7 +291,8 @@ int main()
     CHECK(workSurface!=nullptr);
 
     // Durability reaching zero removes every benefit and turns the facility
-    // into a ruined historical object. C-S1 can then plan a replacement.
+    // into a reusable ruin. The settlement must demand cheaper restoration
+    // materials rather than immediately clearing land for a replacement.
     CHECK(applyFacilityWear(*workSurface,2.0));
     CHECK(workSurface->state==FacilityState::Ruined);
     CHECK(!workSurface->active);
@@ -300,6 +301,15 @@ int main()
     CHECK(!hasOperationalSettlementFacility(
         world,FacilityKind::WorkSurface));
     CHECK(validConstructedFacility(*workSurface));
+    CHECK(settlementFacilityCanRestore(*workSurface));
+    CHECK(facilityRestorationMaterialRequirement(
+        FacilityKind::WorkSurface,MaterialKind::Wood)==2);
+    CHECK(facilityRestorationMaterialRequirement(
+        FacilityKind::WorkSurface,MaterialKind::Stone)==1);
+    CHECK(settlementRepairMaterialDemand(
+        world,MaterialKind::Wood)>=2);
+    CHECK(settlementRepairMaterialDemand(
+        world,MaterialKind::Stone)>=1);
 
     for(int i=0;i<6;++i){
         actor.civilization.knowledge.recordSuccessfulUse(
@@ -308,9 +318,8 @@ int main()
     const CivilizationUtilityDecision replacement=
         bestSettlementFoundationDecision(
             world,actor,world.initialStartRegionCenterGrid());
-    CHECK(replacement.intent==CivilizationIntent::Craft);
-    CHECK(replacement.facilityKind==FacilityKind::WorkSurface);
-    CHECK(replacement.facilityAction==FacilityBuildAction::Plan);
+    CHECK(!(replacement.facilityKind==FacilityKind::WorkSurface
+        && replacement.facilityAction==FacilityBuildAction::Plan));
 
     // Durability/state remains authoritative through the existing snapshot
     // codec; no presentation-only maintenance state is introduced.
