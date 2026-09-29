@@ -231,7 +231,11 @@ export class ResidentWorldLayer {
     if (centerChanged) {
       const offsetX = (previousCenterX - centerX) * WORLD_GRID_CONTRACT.worldUnitsPerChunk;
       const offsetZ = (previousCenterY - centerY) * WORLD_GRID_CONTRACT.worldUnitsPerChunk;
-      for (const actor of this.actors.values()) {
+      const motionTimeScale =
+      residentPresentationMotionTimeScale(this.simulationSpeed);
+    const motionDt = dt * motionTimeScale;
+
+    for (const actor of this.actors.values()) {
         if (!actor.initialized) continue;
         actor.current.x += offsetX;
         actor.current.z += offsetZ;
@@ -402,7 +406,8 @@ export class ResidentWorldLayer {
         ? actor.targetTravelSpeedWorldUnitsPerSecond
         : 0;
       const speedBlend = 1 - Math.exp(
-        -RESIDENT_PRESENTATION_CONTRACT.speedResponsivenessPerSecond * dt,
+        -RESIDENT_PRESENTATION_CONTRACT.speedResponsivenessPerSecond
+          * motionDt,
       );
       actor.smoothedTravelSpeedWorldUnitsPerSecond += (
         desiredTravelSpeed
@@ -418,7 +423,8 @@ export class ResidentWorldLayer {
           Math.cos(actor.targetYaw - actor.root.rotation.y),
         );
         const turnBlend = 1 - Math.exp(
-          -RESIDENT_PRESENTATION_CONTRACT.turnResponsivenessPerSecond * dt,
+          -RESIDENT_PRESENTATION_CONTRACT.turnResponsivenessPerSecond
+            * motionDt,
         );
         actor.root.rotation.y += yawDelta * turnBlend;
 
@@ -436,7 +442,7 @@ export class ResidentWorldLayer {
         actor.targetTravelSpeedWorldUnitsPerSecond = 0;
         actor.walkGraceRemainingSeconds = Math.max(
           0,
-          actor.walkGraceRemainingSeconds - dt,
+          actor.walkGraceRemainingSeconds - motionDt,
         );
 
         const interactionYaw = this.interactionTargetYaw(actor);
@@ -473,9 +479,9 @@ export class ResidentWorldLayer {
       }
       const presentationMoving =
         moving || actor.walkGraceRemainingSeconds > 0;
-      this.syncWalkPlaybackRate(actor);
+      this.syncWalkPlaybackRate(actor, motionTimeScale);
       this.setAction(actor, presentationMoving);
-      actor.mixer.update(dt);
+      actor.mixer.update(motionDt);
     }
 
     this.updateSocialConnectors();
@@ -967,7 +973,10 @@ export class ResidentWorldLayer {
     );
   }
 
-  private syncWalkPlaybackRate(actor: ResidentActor): void {
+  private syncWalkPlaybackRate(
+    actor: ResidentActor,
+    motionTimeScale: number,
+  ): void {
     if (!actor.walk) return;
 
     const referenceSpeed = Math.max(
@@ -976,10 +985,20 @@ export class ResidentWorldLayer {
     );
     const normalizedSpeed =
       actor.smoothedTravelSpeedWorldUnitsPerSecond / referenceSpeed;
+    const maximumLocalTimeScale = motionTimeScale > 0
+      ? Math.min(
+        RESIDENT_PRESENTATION_CONTRACT.walkMaxTimeScale,
+        RESIDENT_PRESENTATION_CONTRACT.maxMotionTimeScale
+          / motionTimeScale,
+      )
+      : RESIDENT_PRESENTATION_CONTRACT.walkMaxTimeScale;
     const timeScale = THREE.MathUtils.clamp(
       normalizedSpeed * actor.gaitRateBias,
-      RESIDENT_PRESENTATION_CONTRACT.walkMinTimeScale,
-      RESIDENT_PRESENTATION_CONTRACT.walkMaxTimeScale,
+      Math.min(
+        RESIDENT_PRESENTATION_CONTRACT.walkMinTimeScale,
+        maximumLocalTimeScale,
+      ),
+      maximumLocalTimeScale,
     );
     actor.walk.setEffectiveTimeScale(timeScale);
     actor.carry?.setEffectiveTimeScale(timeScale);
