@@ -78,6 +78,9 @@ inline std::vector<Action> buildPlan(const World& w,Character& c,Goal g,GridPos 
     perceiveEnvironmentalContamination(c,w.environmentalResidues,from,w.minute);
 
     if(g==Goal::Idle) return {{ActionType::Idle,0,5}};
+    // Even legacy SmartObjects are only places to perform Eat/Drink. They do
+    // not create consumables. A physical plan cannot start without a provision.
+    if(!physicalProvisionAvailableFor(c,g)) return {};
 
     const auto kind=objectKindFor(g);
     bool hasObject=false;
@@ -112,13 +115,8 @@ inline std::vector<Action> buildPlan(const World& w,Character& c,Goal g,GridPos 
         }
     }
 
-    // Emergency Eat/Drink must consume a real provision; fallback must never
-    // synthesize food or water merely because the need exists.
-    if(g==Goal::Eat && !c.civilization.inventory.remove(
-        ItemKind::RawMaterial,MaterialKind::PlantFood,1)) return {};
-    if(g==Goal::Drink && !c.civilization.inventory.remove(
-        ItemKind::RawMaterial,MaterialKind::Water,1)) return {};
-
+    // Provision consumption happens when the action actually begins, not while
+    // merely planning. This keeps interrupted movement from deleting supplies.
     return {{ActionType::EmergencyUse,0,emergencyUseDurationTicks(g)}};
 }
 }
