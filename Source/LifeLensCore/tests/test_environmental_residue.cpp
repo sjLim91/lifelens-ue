@@ -56,7 +56,7 @@ int main()
     assert(production.world().environmentalResidues.all().empty());
 
     // Emergency Eat/Drink only exist when the resident really owns a
-    // consumable provision, and creating the plan consumes exactly one unit.
+    // consumable provision. Planning must not consume it; execution owns that.
     World provisionWorld(42);
     provisionWorld.objects.clear();
     Character provisionResident;
@@ -69,7 +69,7 @@ int main()
     auto eatPlan=buildPlan(provisionWorld,provisionResident,Goal::Eat,{});
     assert(eatPlan.size()==1 && eatPlan.front().type==ActionType::EmergencyUse);
     assert(provisionResident.civilization.inventory.count(
-        ItemKind::RawMaterial,MaterialKind::PlantFood)==0);
+        ItemKind::RawMaterial,MaterialKind::PlantFood)==1);
 
     assert(buildPlan(provisionWorld,provisionResident,Goal::Drink,{}).empty());
     provisionResident.civilization.inventory.add(
@@ -77,7 +77,7 @@ int main()
     auto drinkPlan=buildPlan(provisionWorld,provisionResident,Goal::Drink,{});
     assert(drinkPlan.size()==1 && drinkPlan.front().type==ActionType::EmergencyUse);
     assert(provisionResident.civilization.inventory.count(
-        ItemKind::RawMaterial,MaterialKind::Water)==0);
+        ItemKind::RawMaterial,MaterialKind::Water)==1);
 
     // With no toilet object, urgent bladder pressure must eventually execute
     // the emergency path and leave authoritative Core environmental state.
