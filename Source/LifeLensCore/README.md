@@ -1,22 +1,38 @@
 # LifeLensCore
 
-Unreal Engine에 의존하지 않는 LifeLens 순수 C++17 시뮬레이션 코어입니다.
+LifeLensCore is the renderer-independent C++17 simulation authority for LifeLens.
 
-## Termux 검증
+It owns deterministic world/resident state, needs and behavior, relationships/family/lifecycle, civilization/resources/facilities, environment, persistence, and the contracts exposed to presentation clients.
+
+The active product path is:
+
+```text
+LifeLensCore -> Emscripten/WASM -> Web Observer
+```
+
+## Local verification
 
 ```bash
-pkg install git clang cmake make
-git clone https://github.com/sjLim91/lifelens-ue.git && cd lifelens-ue
-git checkout task/02-core-sim
-cmake -S Source/LifeLensCore -B build && cmake --build build -j
+cmake -S Source/LifeLensCore -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j
 ctest --test-dir build --output-on-failure
 ./build/ll_harness --days 1 --seed 42
 ```
 
-옵션:
+Useful harness options:
 
-- `--days N`: 실행 일수
-- `--seed S`: 결정론 WorldSeed
-- `--tick-log`: 매 분 Needs 출력
+- `--days N`: simulated days
+- `--seed S`: deterministic WorldSeed
+- `--tick-log`: per-minute Needs logging
 
-같은 seed는 같은 이벤트 로그를 생성해야 합니다.
+The same seed and build must produce deterministic event output for deterministic test scenarios.
+
+## Web runtime
+
+The browser runtime is built from this same Core with Emscripten:
+
+```bash
+python Tools/build_web_client.py
+```
+
+Do not move simulation authority into React/TypeScript/Three.js. Browser code consumes explicit Core/WASM contracts.
