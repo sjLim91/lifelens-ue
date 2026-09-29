@@ -185,6 +185,8 @@ int main()
     hungry.id = 40;
     hungry.needs.hunger = 0.99;
     hungry.personality.sociability = 1.0;
+    hungry.civilization.inventory.add({
+        ItemKind::RawMaterial, MaterialKind::PlantFood, 1, 0.5, 1.0});
     Character closeFriend;
     closeFriend.id = 41;
     physicalWorld.characters = {hungry, closeFriend};
