@@ -59,7 +59,7 @@ for token in (
     "chunk.salinity !== 'Fresh'",
     "2.50 + 4.25 * availability",
     "3.00 + 4.00 * availability",
-    "isSpring ? node.width * 0.5",
+    "node.width * 0.5",
 ):
     assert token in geometry, f"missing Core-sized drinkable water footprint token: {token}"
 # Older runtimes may omit the new fields. In that case the browser hides
