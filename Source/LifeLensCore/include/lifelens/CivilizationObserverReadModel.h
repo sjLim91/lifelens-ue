@@ -129,6 +129,20 @@ struct CivilizationDiscoveryObservation {
     std::size_t livingKnowerCount=0;
 };
 
+struct CivilizationResourceObservationWindow {
+    ChunkCoord center{};
+    int radiusChunks=0;
+
+    bool contains(GridPos pos) const
+    {
+        const ChunkCoord chunk=chunkCoordForGrid(pos);
+        return chunk.x>=center.x-radiusChunks
+            && chunk.x<=center.x+radiusChunks
+            && chunk.y>=center.y-radiusChunks
+            && chunk.y<=center.y+radiusChunks;
+    }
+};
+
 struct CivilizationWorldObservation {
     int minute=0;
     std::size_t resourceNodeCount=0;
@@ -363,12 +377,25 @@ inline std::size_t livingTechniqueKnowerCount(
 inline CivilizationWorldObservation buildCivilizationWorldObservation(
     const World& world,
     const SocialKnowledgeBook& socialKnowledge,
-    std::size_t maxRecentDiscoveries=32)
+    std::size_t maxRecentDiscoveries=32,
+    const CivilizationResourceObservationWindow* resourceWindow=nullptr)
 {
     CivilizationWorldObservation dto;
     dto.minute=world.minute;
 
     for(const ResourceNode& node:world.resourceNodes){
+        // Aggregates always describe the whole authoritative world.
+        ++dto.resourceNodeCount;
+        dto.totalResourceUnits+=std::max(0,node.quantity);
+        if(node.quantity<=0) ++dto.depletedResourceNodeCount;
+
+        // Coordinate-heavy resource DTOs are optional/windowed. This keeps Web
+        // observation cost proportional to the visible area instead of the
+        // entire materialized world while preserving global aggregate truth.
+        if(resourceWindow!=nullptr && !resourceWindow->contains(node.pos)){
+            continue;
+        }
+
         CivilizationResourceObservation observed;
         observed.id=node.id;
         observed.pos=node.pos;
@@ -380,9 +407,6 @@ inline CivilizationWorldObservation buildCivilizationWorldObservation(
         observed.renewable=node.renewable;
         observed.regenerationPerDay=node.regenerationPerDay;
         dto.resources.push_back(observed);
-        ++dto.resourceNodeCount;
-        dto.totalResourceUnits+=std::max(0,node.quantity);
-        if(node.quantity<=0) ++dto.depletedResourceNodeCount;
     }
     std::sort(dto.resources.begin(),dto.resources.end(),[](const auto& a,const auto& b){return a.id<b.id;});
 
