@@ -20,7 +20,23 @@ using namespace lifelens;
 
 static int waterCount(const Inventory& inventory)
 {
-    return inventory.count(ItemKind::RawMaterial,MaterialKind::Water);
+    return portableWaterCount(inventory);
+}
+
+static void addFilledWaterContainers(Inventory& inventory,int quantity)
+{
+    inventory.add({
+        ItemKind::SimpleContainer,
+        MaterialKind::Clay,
+        quantity,
+        0.5,
+        1.0});
+    inventory.add({
+        ItemKind::RawMaterial,
+        MaterialKind::Water,
+        quantity,
+        0.5,
+        1.0});
 }
 
 static bool hasLiveWaterNode(const World& world)
@@ -51,8 +67,7 @@ int main()
     StorageSite storage;
     storage.id=7001;
     storage.pos={7,-3};
-    storage.inventory.add({
-        ItemKind::RawMaterial,MaterialKind::Water,6,0.5,1.0});
+    addFilledWaterContainers(storage.inventory,6);
     world.storageSites={storage};
 
     // Urgent thirst must consume settlement logistics before making another
@@ -88,15 +103,15 @@ int main()
         ==waterBefore);
 
     // Existing physical Drink authority becomes available only because Core now
-    // owns real carried water. Retrieval itself never relieves thirst.
+    // owns real carried water in real containers. Retrieval itself never
+    // relieves thirst.
     CHECK(emergencyAffordanceAvailableFor(resident,Goal::Drink));
     CHECK(resident.needs.thirst==0.91);
 
     // Ordinary stocking keeps a small carried reserve and banks the surplus.
     world.storageSites[0].inventory.remove(
         ItemKind::RawMaterial,MaterialKind::Water,4);
-    resident.civilization.inventory.add({
-        ItemKind::RawMaterial,MaterialKind::Water,4,0.5,1.0});
+    addFilledWaterContainers(resident.civilization.inventory,4);
     CHECK(waterCount(resident.civilization.inventory)==6);
     const CivilizationUtilityDecision store=
         bestStoreDecision(world,resident);
@@ -119,8 +134,9 @@ int main()
         +waterCount(world.storageSites[0].inventory)
         ==stockBefore);
 
-    // If the settlement reserve is empty, urgent survival falls back to the
-    // authoritative natural ResourceNode instead of synthesizing water.
+    // Loose Water is not portable. Natural Water can only be gathered into
+    // available empty containers, and urgent survival uses a known source
+    // directly instead of inventing carried stock.
     CHECK(resident.civilization.inventory.remove(
         ItemKind::RawMaterial,MaterialKind::Water,2));
     CHECK(world.storageSites[0].inventory.remove(
@@ -128,18 +144,50 @@ int main()
     CHECK(waterCount(resident.civilization.inventory)==0);
     CHECK(waterCount(world.storageSites[0].inventory)==0);
 
-    const CivilizationUtilityDecision fallback=
+    const CivilizationUtilityDecision directSourceSurvival=
         urgentSurvivalProvisionGatherDecision(world,resident);
-    CHECK(fallback.intent==CivilizationIntent::Gather);
-    CHECK(fallback.material==MaterialKind::Water);
-    CHECK(fallback.resourceNode!=0);
+    CHECK(directSourceSurvival.intent==CivilizationIntent::None);
+    CHECK(actionAvailableFor(world,resident,Goal::Drink));
+
+    ResourceNode* waterNode=nullptr;
+    for(ResourceNode& node:world.resourceNodes){
+        if(node.material==MaterialKind::Water && node.quantity>0){
+            waterNode=&node;
+            break;
+        }
+    }
+    CHECK(waterNode!=nullptr);
+
+    // Existing containers are currently empty because their Water was consumed/
+    // removed. Filling is limited by exactly that physical capacity.
+    const int emptyBefore=emptySimpleContainerCount(
+        resident.civilization.inventory);
+    CHECK(emptyBefore>=2);
+    const int nodeBefore=waterNode->quantity;
+    const CivilizationEvent filled=gatherResource(
+        resident.civilization,*waterNode,10);
+    CHECK(filled.quantity>0);
+    CHECK(filled.quantity<=emptyBefore);
+    CHECK(waterCount(resident.civilization.inventory)==filled.quantity);
+    CHECK(waterNode->quantity==nodeBefore-filled.quantity);
+
+    // Remove both Water and all containers: a bare-handed Gather cannot create
+    // portable Water.
+    while(resident.civilization.inventory.remove(
+        ItemKind::RawMaterial,MaterialKind::Water,1)) {}
+    while(resident.civilization.inventory.remove(
+        ItemKind::SimpleContainer,MaterialKind::Unknown,1,true)) {}
+    const int bareNodeBefore=waterNode->quantity;
+    const CivilizationEvent bareGather=gatherResource(
+        resident.civilization,*waterNode,3);
+    CHECK(bareGather.quantity==0);
+    CHECK(waterNode->quantity==bareNodeBefore);
+    CHECK(rawWaterUnitCount(resident.civilization.inventory)==0);
 
     // Generic inventory/storage authority already participates in snapshots;
     // verify the new water reserve path round-trips without a parallel state.
-    world.storageSites[0].inventory.add({
-        ItemKind::RawMaterial,MaterialKind::Water,5,0.5,1.0});
-    resident.civilization.inventory.add({
-        ItemKind::RawMaterial,MaterialKind::Water,1,0.5,1.0});
+    addFilledWaterContainers(world.storageSites[0].inventory,5);
+    addFilledWaterContainers(resident.civilization.inventory,1);
 
     const SimulationStateSnapshot snapshot=simulation.captureSnapshot();
     std::vector<std::uint8_t> bytes;
