@@ -1,5 +1,19 @@
 # LifeLens Canonical Work State
 
+## 2026-09-29 CANONICAL CURRENT — Unreal retired from active main
+
+> This section supersedes older platform/current snapshots below. Older sections are historical evidence only.
+
+- Active product path: **LifeLensCore -> WASM -> React/TypeScript/Three.js Web Observer**.
+- Final pre-removal Unreal state: `archive/unreal-final-20260929` at `0ee1e161be22ede0a9f7ef854a1ca34597b3c6a6`.
+- PR #497 closed without merge because it only repaired the retired Unreal external-sleep execution path.
+- Active `main` no longer carries `.uproject`, Unreal client source, Config/Content, UE compile/APK pipelines, or UE-only validation tooling.
+- Current P0 living-causality baseline through #496 remains intact.
+- Required development gates are Core Tests + deterministic harness + Web WASM + Web typecheck/build + Web/Core Preflight.
+- GitHub Pages is the canonical checkable preview.
+- Future Unreal/native reintroduction is allowed only as an optional client around then-current LifeLensCore contracts.
+
+
 ## 2026-09-28 CANONICAL CURRENT — local-demand settlement growth + cultivation foundation (#482/#483)
 
 > This section supersedes older "current" Web/Stage-C snapshots below. Actual GitHub main/Actions remain the highest-priority truth.

@@ -99,8 +99,8 @@ assert 'self.addEventListener("fetch"' in sw
 
 for token in (
     "LifeLensCore",
-    "Unreal Native",
-    "Web / PWA",
+    "Web Observer",
+    "Web Observer / PWA",
     "No fake fallback",
 ):
     assert token in architecture

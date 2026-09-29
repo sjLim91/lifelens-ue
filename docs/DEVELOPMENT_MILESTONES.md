@@ -2,12 +2,15 @@
 
 이 문서는 **LifeLens의 canonical execution roadmap**이다.
 
+## Runtime platform note — 2026-09-29
+
+현재 실행/검증 제품 경로는 **LifeLensCore -> WASM -> Web Observer**다. Unreal/Android-native/desktop-engine 관련 과거 milestone과 CI 언급은 역사 기록이며 현재 acceptance gate가 아니다. 새로운 기능 milestone은 Core authority와 Web 관찰 가능성을 기준으로 완료한다. 미래 native engine client는 별도 재도입 결정이 있을 때 현재 Core 계약 위에 다시 연결한다.
+
 - 장기 제품/문명 방향: `docs/OPEN_ENDED_CIVILIZATION_NORTH_STAR.md`
 - 지구/인간 확장 구조: `docs/EARTH_AND_HUMAN_FOUNDATION.md`
 - 시간/배속/환경 계약: `docs/TIME_AND_DYNAMIC_ENVIRONMENT.md`
 - 현재 실행 상태: `tasks/WORK_STATE.md`
 - ownership / locks / IR: `tasks/TEAM_BOARD.md`
-- current Presentation freeze / handoff: `docs/DAGYEOM_PRESENTATION_HANDOFF_2026-09-19.md`
 - 2026-09-17 통합감사: `docs/INTEGRATED_AUDIT_2026-09-17.md` — historical point-in-time evidence로 보존
 
 ---
@@ -101,7 +104,7 @@ Settlement foundation has started:
 
 Historical PR #100 remains superseded by #134.
 Stale PR #98 remains selective-salvage only and must not overwrite current HUD/controller wholesale.
-Android Gate B remains paused by user.
+Former Android/Unreal Gate B is retired from the active roadmap.
 
 # 4. Macro Execution Model — C / D / E / F
 

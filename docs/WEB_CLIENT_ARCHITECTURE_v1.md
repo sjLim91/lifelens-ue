@@ -2,105 +2,74 @@
 
 > Status: **CANONICAL / IMPLEMENTATION ACTIVE**
 >
-> Date: 2026-09-21 KST
+> Updated: 2026-09-29 KST
 >
-> Decision: LifeLens is no longer defined as "an Unreal project". It is a
-> platform-neutral simulation product with multiple presentation clients.
+> Decision: the active LifeLens product path is **LifeLensCore -> WASM -> Web Observer**. The former Unreal client is archived and is not part of active `main`.
 
 ## 1. Product shape
 
 ```text
-                         LifeLensCore
-                World + Human simulation truth
-                              |
-                 platform-neutral read contracts
-                              |
-             +----------------+----------------+
-             |                                 |
-        Unreal Native                     Web / PWA
-   Windows / macOS / Android            Browser client
-      high visual ceiling           fast access / observer
+                    LifeLensCore
+          World + Human simulation truth
+                         |
+              explicit read/action contracts
+                         |
+                  Emscripten / WASM
+                         |
+                         v
+                 Web Observer / PWA
+          React + TypeScript + Three.js
 ```
 
-The clients may have different visual quality and performance budgets, but they
-must not create different simulation truth for the same save/world identity.
+The renderer is replaceable. LifeLensCore is not.
 
 ## 2. Authority
 
 ### LifeLensCore owns
 
 - WorldSeed / PopulationSeed / WorldGenerationVersion.
-- world generation.
-- continuous terrain / hydrology / ecology truth.
+- world generation, terrain, hydrology and ecology truth.
 - resident identity/state.
 - needs/emotion/personality/memory/belief.
 - relationships/family/lifecycle.
-- civilization/history.
-- authoritative save state.
+- civilization/resources/facilities/history.
+- authoritative save state and deterministic progression.
 
-### Unreal client owns
-
-- Unreal rendering.
-- native terrain/water/vegetation presentation.
-- skeletal presentation / animation / IK.
-- native collision/navigation execution where delegated by Core contract.
-- native UI/camera/VFX/audio.
-- high-end desktop visual tier and native Android tier.
-
-### Web client owns
+### Web Observer owns
 
 - browser/PWA lifecycle.
-- WebGPU/WebGL presentation.
+- WebGL/Three.js presentation.
 - browser input/camera.
 - glTF/GLB character/prop presentation.
 - browser-local persistence transport.
-- HTML/CSS observer UI.
+- HTML/CSS/React observer UI.
+- visual interpolation, LOD and effects.
 
-The Web client never forks or reimplements needs, relationships, world
-generation, hydrology or other simulation rules.
+The Web client never forks or reimplements simulation rules.
 
-## 3. Shared identity
+## 3. Identity and transport
 
-For a given:
+64-bit IDs/seeds cross the JavaScript boundary as lossless strings unless a BigInt-specific contract is explicitly introduced. They must not be rounded through JavaScript Number.
 
-```text
-WorldSeed
-PopulationSeed
-WorldGenerationVersion
-save snapshot
-```
-
-Unreal and Web must observe the same logical world.
-
-64-bit IDs/seeds cross the JavaScript boundary as decimal strings unless a
-BigInt-specific contract is explicitly introduced. They must not be silently
-rounded through JavaScript Number.
+Browser-facing state is exported through explicit bridge/DTO contracts rather than direct C++ memory layout coupling.
 
 ## 4. Web runtime bridge
 
-The first bridge is `lifelens::WebClientBridge`.
+The bridge exposes authoritative Core operations and observation snapshots across the WASM ABI.
 
-It exposes JSON snapshots across the WASM ABI so that browser code does not
-depend on C++ memory layout.
+Current/future contract areas include:
 
-Initial contract:
-
-- new game.
-- run simulation minutes.
-- world overview.
-- residents.
-- terrain/hydrology observation window.
-
-Future additions:
-
-- ecology/biome window.
+- new game and deterministic replay.
+- simulation time progression and bounded fast-forward.
+- world/resident observation.
+- terrain/hydrology/ecology windows.
 - event/history feed.
-- selected resident detail.
-- genealogy.
+- selected resident detail and genealogy.
+- civilization resources/storage/facilities.
 - save snapshot import/export.
-- observer interest queries.
-- persistent world delta.
-- action/motion presentation DTO.
+- observer-interest queries.
+- persistent human/world traces.
+- action/motion presentation DTOs.
 
 ## 5. WASM build
 
@@ -112,131 +81,57 @@ Emscripten is an additional build target, not a separate Core fork.
 python Tools/build_web_client.py
 ```
 
-Generated `.js/.wasm` files are build artifacts and are excluded from Git.
+Generated JS/WASM binaries are release/build artifacts.
 
-## 6. Web rendering progression
+## 6. Presentation progression
 
-### WEB-0 — truth shell
-- PWA shell.
-- WASM load/fail-closed.
-- actual Core overview/residents.
-- actual terrain/hydrology diagnostic preview.
-
-### WEB-1 — WebGPU world surface
-- continuous terrain mesh.
-- observer-centered streaming.
-- water surface.
-- free pan/orbit/zoom.
-- same world address as native client.
-
-### WEB-2 — ecology
-- biome coverage.
-- instanced vegetation.
-- forest near/mid/far representation.
-- rock/ground-cover clustering.
-
-### WEB-3 — residents
-- glTF/GLB resident presentation.
-- semantic action -> animation mapping.
-- target alignment.
-- human realism read contracts.
-
-### WEB-4 — observer product
-- resident detail.
-- relationship/family/genealogy.
-- event tracking.
-- speed controls.
-- save/load.
-- installable PWA/offline cache.
+- truth shell: actual Core world/residents, fail-closed runtime loading.
+- world surface: continuous terrain, hydrology, water, free observer camera.
+- ecology: biome/vegetation/ground cover from authority facts.
+- residents: stable identity, semantic action/motion mapping and contextual targets.
+- observer product: detail, relationships, family/genealogy, events, time controls and persistence.
 
 ## 7. No fake fallback
 
 If Core WASM fails to load:
 
 - do not spawn fake residents.
-- do not generate a JavaScript-only terrain.
-- do not synthesize events.
-- show explicit Core-unavailable state.
+- do not generate a JavaScript-only authoritative terrain.
+- do not synthesize events/resources/facilities.
+- show an explicit Core-unavailable state.
 
-A visual placeholder may exist only as UI chrome and must never look like
-authoritative LifeLens world state.
+Presentation-only placeholders must never look like durable LifeLens truth.
 
 ## 8. Performance model
 
-Web is not required to match Unreal desktop rendering feature-for-feature.
-
-Shared:
-- simulation truth.
-- world identity.
-- logical geography.
-- resident/history state.
-
-Different:
-- visible radius.
-- mesh subdivision.
-- vegetation density.
-- shadow quality.
-- materials.
-- animation sophistication.
-- effects.
-
-The world is not made smaller to fit Web. Only presentation budgets change.
+The Web client may reduce mesh density, vegetation density, shadows, materials, animation complexity and effect budgets. It may not make the logical world smaller or alter simulation outcomes to fit rendering performance.
 
 ## 9. Persistence
 
-Long-term Web persistence:
-
-- snapshot bytes from the same Core save codec.
+Long-term Web persistence uses the same Core save codec:
 - OPFS preferred when supported.
 - IndexedDB fallback.
-- optional user-controlled file import/export.
+- user-controlled import/export where practical.
 
-Do not invent a separate incompatible Web save format for simulation state.
+No incompatible browser-only simulation save format.
 
 ## 10. Deployment
 
-The Web client must be static-hostable.
+The Web client is static-hostable and has no required paid backend.
 
-No paid API or required cloud backend is allowed for the baseline product.
+The zero-cost publication path builds LifeLensCore with Emscripten and publishes the stable browser runtime. GitHub Pages is the canonical checkable preview.
 
-Generated browser runtime binaries are not committed to source. The canonical
-zero-cost publication path builds `LifeLensCore` with Emscripten in GitHub
-Actions and replaces the stable `web-runtime-latest` GitHub Release assets:
+## 11. Future native clients
 
-- `lifelens_core.js`
-- `lifelens_core.wasm`
-- `SHA256SUMS.txt`
-
-A static browser host may load that stable runtime release. Hosting remains a
-replaceable presentation concern and never becomes simulation authority.
-
-GitHub Pages is not a required/canonical deployment dependency. If repository
-integration permissions cannot create a Pages site, that must not block Web
-runtime publication or the local single-player product.
-
-A backend may later provide optional synchronization/multiplayer/community
-features, but local single-player simulation must remain functional without it.
-
-## 11. Relationship to World v2
-
-World v2 work remains valid and becomes more important.
-
-Continuous terrain, hydrology, ecology and observer-interest APIs are
-platform-neutral truths that both Unreal and Web consume.
-
-Web work must not delay the current World v2 native critical path when the two
-can proceed independently.
+A future Unreal or other native client can be introduced as another presentation adapter around the then-current LifeLensCore contracts. Core must remain free of renderer dependencies so that reintroduction does not require rebuilding the simulation model.
 
 ## 12. Acceptance
 
-Web foundation is accepted when:
-
-1. native Core tests still pass.
-2. Web bridge creates the same deterministic new-game truth for the same seeds.
-3. 64-bit seeds survive round-trip without JavaScript precision loss.
-4. browser UI fails closed without WASM.
-5. after WASM staging, browser can show actual Core residents and world overview.
-6. terrain/hydrology preview comes from Core.
-7. PWA shell works without a paid backend.
-
-Visual WebGPU acceptance is a later milestone and is not implied by WEB-0.
+Web foundation is healthy when:
+1. Core tests and deterministic harness pass.
+2. WASM builds from the same LifeLensCore.
+3. browser UI fails closed without WASM.
+4. browser displays actual Core residents/world state.
+5. terrain/hydrology presentation derives from Core truth.
+6. TypeScript and production Web build pass.
+7. the product remains functional without a paid backend.

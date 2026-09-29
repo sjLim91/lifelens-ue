@@ -1,148 +1,108 @@
 # AGENTS.md — LifeLens Agent Entry Point
 
-이 저장소에서 작업하는 모든 AI 에이전트(Codex / ChatGPT / Claude Code 등)는 **이 파일을 가장 먼저 읽는다.**
+이 저장소에서 작업하는 모든 AI 에이전트는 **이 파일을 먼저 읽는다.**
 
 ## 0. Source of truth
 
-우선순위는 항상 다음과 같다.
+우선순위:
 
 `actual GitHub main / PR / Actions > canonical repository docs > 이전 채팅 / 기억 / 로컬 추정`
 
-작업 시작·재개 시 순서:
+작업 시작/재개 시:
 1. `AGENTS.md`
-2. `docs/LIFELENS_SPEC_v1.1.md`
-3. `docs/SOCIAL_COMMUNICATION_LOCALIZATION_v1.md`
+2. `docs/RUNTIME_ARCHITECTURE_WEB_CORE_v1.md`
+3. `docs/LIFELENS_SPEC_v1.1.md`
 4. `docs/DEVELOPMENT_MILESTONES.md`
-5. `docs/STATE_MANAGEMENT.md`
-6. `docs/DECISION_LOG.md`
-7. actual `main` HEAD / target branch / PR / Actions
-8. `tasks/WORK_STATE.md`
-9. `tasks/AUDIT_LEDGER_2026-09-21.md` — 전수검사 재개 시 중복 방지 체크포인트
-10. `tasks/TEAM_BOARD.md`
-11. `tasks/HANDOFF_LOG.md` 최신 의미 있는 항목
+5. `docs/WEB_CLIENT_ARCHITECTURE_v1.md`
+6. actual `main` / target PR / Actions
+7. `tasks/WORK_STATE.md`
+8. 필요 시 audit/team/handoff 문서
 
-`tasks/DAGYEOM_READY_QUEUE.md`는 과거 링크 호환용이다. **새 dispatch의 canonical source로 사용하지 않는다.**
+## 1. Active architecture
 
-`docs/DECISION_LOG.md`는 쭌과 AI가 대화 중 확정한 설계·정리·작업 판단 원칙의 canonical log다. 제품 요구사항 자체를 바꾸는 결정은 Decision Log에만 두지 않고 `docs/LIFELENS_SPEC_v1.1.md`에도 반영한다.
+LifeLens의 현재 제품 경로는:
 
-`docs/SOCIAL_COMMUNICATION_LOCALIZATION_v1.md`는 Master Spec의 대화/관계/Observer-first 요구사항을 구체화하는 canonical companion이다. 한국어 기본 UI, 언어 중립 Core 식별자, 사회행동 authority와 말풍선/Event Feed/animation 표현 경계를 이 문서 기준으로 맞춘다.
+```text
+LifeLensCore C++ -> Emscripten/WASM -> Web Observer
+                                   -> React/TypeScript/Three.js
+```
 
-## 1. Development unit — milestone-sized delivery
+- `LifeLensCore`가 유일한 simulation authority다.
+- Web은 presentation/observer client다.
+- Web이 자원, 시설, 행동 결과, 관계, 지형, 미래 상태를 따로 만들어서는 안 된다.
+- Core는 React/Three.js/DOM/브라우저 API에 의존하지 않는다.
+- Unreal은 active `main`에서 제거되었다.
+- 마지막 Unreal 상태는 `archive/unreal-final-20260929`에 보존되어 있다.
+- 미래에 Unreal/다른 엔진을 다시 붙일 수 있지만, 그때도 현재 Core 계약에 맞춘 선택적 client로 도입한다.
 
-LifeLens는 더 이상 같은 목적의 작은 계약을 PR 하나씩 쪼개지 않는다.
+## 2. Development unit
 
 > **Same purpose + same layer + same validation scope = one milestone-sized PR.**
 
 - 내부 커밋은 작게 나눠도 된다.
-- 서로 다른 authority/layer/owner는 억지로 한 PR에 섞지 않는다.
-- 상태 문서와 무거운 UE 검증은 의미 있는 milestone checkpoint에서 한다.
-- 작은 진행마다 `WORK_STATE`/`TEAM_BOARD`/`HANDOFF`를 반복 수정하지 않는다.
+- authority가 다른 변경은 억지로 섞지 않는다.
+- 기능보다 causality/authority/stability를 우선한다.
+- stale branch를 wholesale merge하지 않는다.
 
-Canonical milestone roadmap: `docs/DEVELOPMENT_MILESTONES.md`.
+## 3. Validation / CI
 
-## 2. Validation / CI discipline
+Core 변경:
+- CMake configure/build
+- CTest
+- deterministic harness
 
-1. Core / structural validator / Preflight 같은 싼 검증을 먼저 사용한다.
-2. Unreal Linux Compile은 milestone close 또는 실제 C++/UHT/UBT interface risk가 있을 때만 사용한다.
-3. **이미 검증된 product HEAD에 docs-only review closeout을 push해서 무거운 UE Compile을 다시 발생시키지 않는다.**
-4. review comment가 최신 코드에서 이미 해결되어 있으면 reply + resolve만 한다. 코드 변경이 실제 필요한 경우에만 HEAD를 움직인다.
-5. docs-only closeout/state sync는 가능하면 product merge 직후 `main`에서 한 번에 정리한다.
-6. 장시간 UE Compile/Package가 시작되면 Run ID와 HEAD를 기록하고 **AI가 계속 polling하며 기다리지 않는다.** 사용자가 완료/실패를 알려주면 그때 결과를 확인한다.
-7. Compile PASS는 DONE이 아니다. 필요한 merge + canonical state sync까지 완료되어야 DONE이다.
-8. 같은 실패를 원인 확인 없이 재실행하지 않는다.
-9. 실제 artifact가 없으면 APK/패키징 성공이라고 말하지 않는다.
+Web/Core 경계 변경:
+- Preflight
+- Web WASM
+- Web Typecheck/build
+- Web runtime resilience/contract checks
 
-## 3. Absolute product rules
+merge 후:
+- Web Runtime Release
+- GitHub Pages Preview
+- External Preview Probe
 
-- LifeLens는 **Core-first multi-client product**다. `LifeLensCore`가 simulation truth이며 Unreal Native와 Web/PWA는 별도 presentation client다.
-- Legacy LOCAL OBSERVER HTML/JS는 요구사항 참고자료일 뿐이며 새 Web client의 runtime/authority 기반으로 재사용하지 않는다.
-- Unreal은 Android + Windows + macOS native client의 고품질 runtime이다.
-- Web/PWA는 같은 `LifeLensCore`를 WASM으로 소비하는 정식 browser client다.
-- Android native는 계속 핵심 실제 제품 타깃이며, Web은 빠른 검증/접근성과 browser product를 위한 병렬 client track이다.
-- PC 제품 타깃은 Windows + macOS다. 기능/그래픽 로드맵에서 함께 진행하며 renderer capability 차이는 platform config/profile로 분리한다.
-- 플랫폼별 최종 패키지는 필요한 Presentation payload만 포함한다. 공통 저장소를 쓴다는 이유로 Desktop-only asset/source dependency를 APK에 싣지 않는다.
-- `LifeLensCore`는 표준 C++17이며 Unreal 타입에 의존하지 않는다.
-- 초기 NEW GAME은 남자 2 + 여자 2, 자연환경, **문명 인프라 0**에서 시작한다.
-- 이름/특성은 초기 시작 시 새로 부여할 수 있지만 자연 세계는 WorldSeed/GenerationVersion 계약을 따른다.
-- 집/화장실/농장/도로/도구 같은 현대/문명 시설을 편의상 마법처럼 생성하지 않는다.
-- 캐릭터/UI/그래픽은 presentation이며 Core/World authority를 복제하지 않는다.
-- Character animation/root motion이 이동/action authority가 되면 안 된다.
-- 실제 world consequence는 가능한 경우 presentation path를 가진다.
-- 무료 범위를 벗어나는 서비스/자산을 필수 의존성으로 만들지 않는다.
-- MetaHuman은 Android/mobile baseline 검증 뒤 upgrade path로만 둔다. 기본 캐릭터는 Quaternius CC0 Track B.
-- 일반 사용자용 UI의 기본 표시 언어는 한국어다. Core enum/action/event id는 언어 중립 식별자를 유지하고 Presentation/localization layer에서 번역한다.
-- 주민 간 사회행동은 숨은 수치 변화만으로 끝나면 안 된다. 실제 Core social event는 Observer가 적절한 animation/gaze/icon/bubble/history를 통해 이해할 수 있어야 한다.
-- 기본 사회대화 표현은 유료 LLM/API에 의존하지 않는다.
+Unreal UHT/UBT, Android Unreal APK, UE asset authoring은 현재 제품 gate가 아니다.
 
-## 4. Ownership
+## 4. Absolute product rules
 
-### Integrated implementation owner — Jjun
+- NEW GAME은 성인 4명(남2/여2)에서 시작하고 문명 인프라는 0이다.
+- 행동 결과는 실제 이동/자원/시설/경과시간과 인과적으로 연결되어야 한다.
+- 이동 없이 원격 채집/보관/건설하지 않는다.
+- 음식/물/세척 같은 소비는 실제 보유 자원을 요구한다.
+- 수면처럼 시간이 중요한 행동은 경과시간에 따라 상태가 변해야 한다.
+- 정착/건물은 경험과 필요에서 발생하며 spawn 좌표를 생활권으로 하드코딩하지 않는다.
+- 시대 이름은 관찰용 요약일 뿐 무료 unlock timer가 아니다.
+- 지형/수계/생태/날씨는 장식이 아니라 Core 생활 조건이다.
+- 일반 사용자 UI는 한국어를 기본으로 한다.
+- 유료 API/클라우드/런타임이 없어도 baseline simulation이 작동해야 한다.
+- Presentation은 Core에서 발생하지 않은 사건을 꾸며내지 않는다.
 
-LifeLens의 기본 구현 ownership은 Core/Presentation/Character로 강하게 나누지 않는다.
+## 5. Active ownership
 
-Jjun은 milestone 목표에 필요하면 다음 전 영역을 end-to-end로 수정할 수 있다.
+기본 구현 owner는 통합형이다. milestone에 필요하면 다음을 end-to-end로 수정할 수 있다.
 
 - `Source/LifeLensCore/**`
-- `Source/LifeLens/AI/**`
-- `Source/LifeLens/Simulation/**`
-- `Source/LifeLens/World/**`
-- `Source/LifeLens/WorldPresentation/**`
-- `Source/LifeLens/Characters/**`
-- `Source/LifeLens/UI/**`
 - `Clients/Web/**`
-- Web/WASM adapter, PWA, WebGPU/WebGL presentation
-- `Content/Environment/**`
-- `Content/Maps/**`
-- `Content/WorldPresentation/**`
-- `Content/Characters/**`
-- `Content/UI/**`
-- Save/Load / Bridge / build / CI / Android / Windows / macOS / Web platform integration
-- `Config/**`와 project startup/default map/plugin integration
+- `web/**`
+- Web/WASM adapter
+- Web rendering / camera / UI / motion presentation
+- Core tests / Web tests / CI
+- docs / tasks
 
-목표는 authority를 섞는 것이 아니라 **구현 handoff 병목을 없애는 것**이다. Core/World truth, Presentation consumer, Character motion truth의 책임 경계는 그대로 유지한다.
+시각 QA collaborator가 있더라도 파일 충돌을 피하려고 잘못된 중복 구조를 만들지 않는다.
 
-### Dagyeom collaboration
+## 6. State documents
 
-Dagyeom은 기본 구현 owner gate가 아니라 **runtime visual QA / screenshot review / targeted polish collaborator**다.
-
-- 실제 화면을 보고 시각적 이상/완성도 피드백.
-- 사용자가 명시적으로 넘긴 visual polish 작업.
-- camera / lighting / material / animation / UI polish 제안 또는 수정.
-- 같은 파일을 동시에 수정할 가능성이 있을 때는 TEAM_BOARD에서 충돌만 조정.
-
-Jjun은 Dagyeom의 active branch를 무시하고 덮어쓰지 않으며, `dagyeom/*`에 직접 push하지 않는다.
-
-## 5. Shared state documents
-
-- `docs/LIFELENS_SPEC_v1.1.md` — 제품 최상위 요구사항 / 불변조건.
-- `docs/SOCIAL_COMMUNICATION_LOCALIZATION_v1.md` — 한국어 UI + 주민 사회행동 관찰 표현 canonical companion.
-- `docs/DEVELOPMENT_MILESTONES.md` — 큰 개발 단위와 gate 순서.
-- `docs/PLATFORM_CONTENT_COOK_POLICY_v1.md` — Android/Desktop content root, cook exclusion, platform hard-reference 경계.
-- `docs/WEB_CLIENT_ARCHITECTURE_v1.md` — LifeLensCore WASM + Web/PWA client canonical architecture.
-- `docs/DECISION_LOG.md` — 대화 중 확정된 설계·정리·작업 판단 원칙.
-- `tasks/WORK_STATE.md` — **현재 active/ready/blocked state만** 기록.
-- `tasks/TEAM_BOARD.md` — ownership / active locks / Integration Requests만 기록.
-- `tasks/HANDOFF_LOG.md` — 의미 있는 merge/failure/design transition만 append-only 기록.
-- `docs/PROJECT_PROGRESS_2026-09-15.md` — 날짜 기준 전체 진행 snapshot.
-
-문서 역할을 섞지 않는다. 제품 요구사항 변경은 Master Spec에도 반영하고, 현재 상태 변경은 `WORK_STATE`, ownership/lock 변경은 `TEAM_BOARD`, 대화로 확정한 지속적 판단 원칙은 `DECISION_LOG`에 반영한다.
-
-과거 완료 이력을 `WORK_STATE`나 `TEAM_BOARD`에 길게 복제하지 않는다.
-
-## 6. Review / merge closeout
-
-PR closeout 시:
-1. actual PR head/base/mergeability 확인.
-2. comments / reviews / unresolved threads 확인.
-3. 필요한 validation 확인.
-4. 이미 해결된 review는 reply + resolve.
-5. product code 변경이 없으면 불필요한 heavy compile을 재유발하지 않는다.
-6. merge.
-7. milestone/state docs를 **한 번** 동기화.
-8. `HANDOFF_LOG`에는 의미 있는 완료/전환만 append.
+- `docs/RUNTIME_ARCHITECTURE_WEB_CORE_v1.md` — 현재 runtime architecture
+- `docs/LIFELENS_SPEC_v1.1.md` — 제품/domain 최상위 요구사항
+- `docs/WEB_CLIENT_ARCHITECTURE_v1.md` — Web/Core 계약
+- `docs/DEVELOPMENT_MILESTONES.md` — roadmap
+- `docs/DECISION_LOG.md` — 지속적 설계 판단
+- `tasks/WORK_STATE.md` — 현재 실행 상태
 
 ## 7. Interruption / recovery
 
-세션 중단이나 timeout 뒤에는 이전 행동이 성공했다고 추측하지 않는다. actual GitHub를 다시 조회하고 `WORK_STATE`/`TEAM_BOARD`를 reconcile한 뒤 마지막 검증된 checkpoint에서 이어간다.
+중단 뒤에는 성공을 추측하지 않는다. actual GitHub 상태를 다시 조회하고 마지막 검증 checkpoint부터 이어간다.
 
-전수검사 중에는 `tasks/AUDIT_LEDGER_2026-09-21.md`도 반드시 확인한다. ledger의 DONE 범위는 관련 파일이 이후 main 변경으로 실제 영향을 받지 않은 한 다시 처음부터 검사하지 않는다. 관련 변경이 있으면 전체 영역 재검사가 아니라 변경 diff와 직접 영향 범위만 재검증한다. 특히 이미 확인한 enum/계약의 존재 여부를 반복 탐색하지 말고, 후속 단계에서는 실제 runtime consumer/wiring만 검증한다.
+컴파일/CI를 단순 대기하는 동안 무한 polling하지 않는다. 결과가 필요할 때 해당 run 상태와 실패 step/log를 확인한다.
