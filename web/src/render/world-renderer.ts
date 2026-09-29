@@ -1,8 +1,10 @@
 import * as THREE from 'three';
 import type {
+  CivilizationWorldPayload,
   DynamicEnvironment,
   Resident,
   TerrainWindow,
+  WorldObjectsPayload,
 } from '../runtime/core-types';
 import { WorldScene, type WorldSceneCameraState } from './world-scene';
 
@@ -93,6 +95,18 @@ export class WorldRenderer {
 
   setSelectedHumanTrace(id: string | null): void {
     this.world.setSelectedHumanTrace(id);
+  }
+
+  setAuthoritativeSpatialTargets(
+    civilization: CivilizationWorldPayload,
+    worldObjects: WorldObjectsPayload,
+    terrain: TerrainWindow,
+  ): void {
+    this.world.setAuthoritativeSpatialTargets(
+      civilization,
+      worldObjects,
+      terrain,
+    );
   }
 
   setResidents(
