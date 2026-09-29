@@ -37,13 +37,16 @@ inline NeedsDelta emergencyUseEffectPerTick(Goal g)
 
 inline constexpr double RestedSleepNeedTarget = 0.12;
 inline constexpr int MinimumSleepSessionMinutes = 30;
-inline constexpr int MaximumSleepSessionMinutes = 12 * 60;
+inline constexpr int MaximumSleepSessionMinutes = 10 * 60;
 
 inline bool sleepInterruptedByUrgentNeed(const Character& character)
 {
-    return character.needs.thirst>=0.88
-        || character.needs.bladder>=0.88
-        || character.needs.hunger>=0.92;
+    // Strong thirst, bladder pressure, or hunger wakes a resident before the
+    // need reaches the hard clamp. This also prevents long outdoor sleep from
+    // suppressing the survival loop for an entire half-day.
+    return character.needs.thirst>=0.84
+        || character.needs.bladder>=0.82
+        || character.needs.hunger>=0.82;
 }
 
 inline int sleepDurationMinutesForNeed(
