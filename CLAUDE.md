@@ -5,21 +5,15 @@ Claude Code / Cowork follows the same repository rules as every other agent.
 **Read `AGENTS.md` first.**
 
 Then read:
-1. `docs/LIFELENS_SPEC_v1.1.md`
-2. `docs/DEVELOPMENT_MILESTONES.md`
-3. `docs/STATE_MANAGEMENT.md`
-4. actual GitHub main / target PR / Actions
-5. `tasks/WORK_STATE.md`
-6. `tasks/TEAM_BOARD.md`
-7. latest meaningful `tasks/HANDOFF_LOG.md` entry
+1. `docs/RUNTIME_ARCHITECTURE_WEB_CORE_v1.md`
+2. `docs/LIFELENS_SPEC_v1.1.md`
+3. `docs/DEVELOPMENT_MILESTONES.md`
+4. `docs/WEB_CLIENT_ARCHITECTURE_v1.md`
+5. actual GitHub main / target PR / Actions
+6. `tasks/WORK_STATE.md`
 
-`tasks/DAGYEOM_READY_QUEUE.md` is deprecated and is not a canonical dispatch source.
+Current active runtime is **LifeLensCore -> WASM -> Web Observer**.
 
-Dagyeom defaults:
-- UI / Observer presentation
-- Character appearance / animation / presentation
-- `Content/UI/**`, `Content/Characters/**`, `Content/Environment/**`, `Content/Maps/**`, `Content/WorldPresentation/**`
+Do not recreate an Unreal project, Unreal bridge, Android Unreal pipeline, or UE asset dependency in active `main` unless the user explicitly decides to reintroduce a native engine client. The last native Unreal state is preserved at `archive/unreal-final-20260929`.
 
-Do not directly modify Core/AI/Simulation/World authority, build/CI, `Config/**`, or `LifeLens.uproject` integration for visual convenience. Use `tasks/TEAM_BOARD.md` Integration Requests.
-
-Current gate after #84/#87: **Integrated Runtime Checkpoint A.** Do not start an additional Dagyeom product milestone until `WORK_STATE.md` promotes it.
+For Web presentation work, never duplicate simulation authority. Use Core DTO/read/action contracts and fail closed when authoritative context is missing.
