@@ -116,9 +116,11 @@ inline std::vector<Action> buildPlan(const World& w,Character& c,Goal g,GridPos 
     perceiveEnvironmentalContamination(c,w.environmentalResidues,from,w.minute);
 
     if(g==Goal::Idle) return {{ActionType::Idle,0,5}};
-    // Even legacy SmartObjects are only places to perform Eat/Drink. They do
-    // not create consumables. A physical plan cannot start without a provision.
-    if(!physicalProvisionAvailableFor(c,g)) return {};
+    // SmartObjects never synthesize provisions. Food requires carried stock;
+    // water goals may instead travel to an authoritative natural freshwater
+    // source and use it directly before portable containers exist.
+    const bool directNaturalWater=canUseNaturalWaterDirectly(w,c,g);
+    if(!physicalProvisionAvailableFor(c,g) && !directNaturalWater) return {};
 
     const auto kind=objectKindFor(g);
     bool hasObject=false;
@@ -138,7 +140,9 @@ inline std::vector<Action> buildPlan(const World& w,Character& c,Goal g,GridPos 
         }
     }
 
-    const bool hasEmergency=emergencyAffordanceAvailableFor(c,g);
+    const bool hasEmergency=
+        emergencyAffordanceAvailableFor(c,g)
+        || directNaturalWater;
     if(!hasObject && !hasEmergency) return {};
 
     if(w.externalPhysicalExecution){
