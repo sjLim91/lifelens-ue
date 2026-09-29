@@ -297,15 +297,22 @@ inline bool Simulation::completeExternalPhysicalAction(
             bestOperationalSleepFacility(world_,resolvedPosition,1);
     }
 
+    const double sleepRecoveryPerMinute=runtime.goal==Goal::Sleep
+        ? sleepRecoveryPerMinuteAt(
+            world_,resolvedPosition,settlementSleepFacility)
+        : 0.0;
     const int duration=primitiveSanitation
         ? primitiveSanitationUseDurationTicks(sanitationKind)
-        : (emergencyFallback
-            ? emergencyUseDurationTicks(runtime.goal)
-            : facilityUseDurationTicks(runtime.goal));
+        : (runtime.goal==Goal::Sleep
+            ? sleepDurationMinutesForNeed(
+                *character,sleepRecoveryPerMinute,ruleset_.needs)
+            : (emergencyFallback
+                ? emergencyUseDurationTicks(runtime.goal)
+                : facilityUseDurationTicks(runtime.goal)));
     const NeedsDelta effect=primitiveSanitation
         ? primitiveSanitationUseEffectPerTick(sanitationKind)
-        : (settlementSleepFacility!=nullptr
-            ? NeedsDelta{0,0,-settlementSleepRecoveryPerTick(*settlementSleepFacility),0,0}
+        : (runtime.goal==Goal::Sleep
+            ? NeedsDelta{0,0,-sleepRecoveryPerMinute,0,0}
             : (emergencyFallback
                 ? emergencyUseEffectPerTick(runtime.goal)
                 : facilityUseEffectPerTick(runtime.goal)));
