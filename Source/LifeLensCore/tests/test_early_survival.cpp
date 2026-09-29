@@ -100,6 +100,53 @@ int main()
     assert(spoilage.world().storageSites[0].inventory.count(
         ItemKind::RawMaterial,MaterialKind::PlantFood)==1);
 
+    // Legacy SmartObjects are interaction locations, never free provisions.
+    // This also locks future well/sink presentation against "walk there and
+    // magically drink" regressions.
+    SimulationRuleset provisionRules=DefaultSimulationRuleset;
+    provisionRules.needs.hungerPerMinute=0.0;
+    provisionRules.needs.thirstPerMinute=0.0;
+    provisionRules.needs.sleepPerMinute=0.0;
+    provisionRules.needs.bladderPerMinute=0.0;
+    provisionRules.needs.hygienePerMinute=0.0;
+    Simulation provisionProbe(
+        9123401,0,CurrentWorldGenerationVersion,provisionRules);
+    provisionProbe.setupDemo();
+    Character& provisionActor=provisionProbe.world().characters.front();
+    provisionActor.needs={0.01,0.90,0.01,0.01,0.01};
+    assert(provisionActor.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::Water)==0);
+    assert(!actionAvailableFor(
+        provisionProbe.world(),provisionActor,Goal::Drink));
+    assert(buildPlan(
+        provisionProbe.world(),provisionActor,Goal::Drink,{}).empty());
+    const double thirstWithoutWater=provisionActor.needs.thirst;
+    provisionProbe.step();
+    assert(provisionActor.needs.thirst==thirstWithoutWater);
+
+    provisionActor.civilization.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::Water,1,0.5,1.0});
+    assert(actionAvailableFor(
+        provisionProbe.world(),provisionActor,Goal::Drink));
+    const auto drinkPlan=buildPlan(
+        provisionProbe.world(),provisionActor,Goal::Drink,{});
+    assert(!drinkPlan.empty());
+    // Planning/movement does not consume or resolve thirst. Consumption begins
+    // only at the actual Use/EmergencyUse action.
+    assert(provisionActor.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::Water)==1);
+    const double thirstBeforeDrink=provisionActor.needs.thirst;
+    for(int minute=0;
+        minute<90
+        && provisionActor.civilization.inventory.count(
+            ItemKind::RawMaterial,MaterialKind::Water)>0;
+        ++minute){
+        provisionProbe.step();
+    }
+    assert(provisionActor.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::Water)==0);
+    assert(provisionActor.needs.thirst<thirstBeforeDrink);
+
     // Worst-case regression: a resident reaches urgent hunger/thirst without a
     // carried provision. This used to deadlock because urgent Needs suppressed
     // all civilization while Eat/Drink were unavailable with empty inventory.
