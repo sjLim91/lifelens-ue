@@ -138,6 +138,12 @@ int main()
     }
     assert(sleepPending);
 
+    // External movement/approach is not sleep time. Until the world executor
+    // confirms arrival, fatigue may accrue but must never improve.
+    const double fatigueBeforeArrival=sleeper.needs.sleep;
+    settlementSleep.step();
+    assert(sleeper.needs.sleep>=fatigueBeforeArrival);
+
     GridPos sleepTarget{};
     FacilityId sleepFacilityId=0;
     assert(settlementSleep.settlementSleepTarget(
