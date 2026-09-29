@@ -54,6 +54,7 @@ struct ResidentPresentationObservation {
     ObjectKind objectKind=ObjectKind::Chair;
 
     bool emergencyFallback=false;
+    bool directNaturalWaterSource=false;
     bool designatedSanitationSite=false;
     SanitationSiteId sanitationSiteId=0;
 
