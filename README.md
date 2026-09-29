@@ -1,33 +1,48 @@
 # LifeLens
 
-LifeLens is an autonomous life, society, and world observation simulation built around one deterministic simulation authority and multiple observer clients.
+LifeLens is an autonomous life, society, civilization, and world observation simulation built around one deterministic simulation authority.
 
-## Architecture
+## Current runtime
 
-**LifeLensCore (C++)** owns simulation truth: WorldSeed, simulation time, residents, identity, needs, relationships, life events, and environment data.
+The active product runtime is:
 
-**Unreal client** remains the high-end native path for Unreal-specific rendering, animation, and Android/Windows/macOS experiments.
+```text
+LifeLensCore (C++ simulation authority)
+        |
+        v
+Emscripten / WASM bridge
+        |
+        v
+Web Observer (React + TypeScript + Three.js)
+```
 
-**Web Observer** is a first-class fast-iteration and cross-device observer client using React/TypeScript, Three.js, and the same Core compiled to WASM. It must never maintain a separate fake simulation.
+`LifeLensCore` owns simulation truth: seed/time, residents, needs, relationships, family/lifecycle, civilization, resources, facilities, terrain, hydrology, ecology, environment, persistence, and deterministic progression.
+
+The Web Observer presents that truth. It must not create a second browser-only simulation or fabricate durable world state.
 
 ## Repository structure
 
-`web/` is the canonical development source for LifeLens Web Observer.
+- `Source/LifeLensCore/` — authoritative C++ simulation and tests.
+- `Clients/Web/` — WASM bridge/runtime staging support.
+- `web/` — canonical React/TypeScript/Three.js observer.
+- `Tools/build_web_client.py` — Emscripten build entry.
+- `docs/RUNTIME_ARCHITECTURE_WEB_CORE_v1.md` — current runtime architecture.
+- `docs/web/LIFELENS_WEB_WORKING_STATE.md` — current Web implementation state.
 
-`docs/web/LIFELENS_WEB_MASTER_SPEC.md` defines the browser architecture, rendering direction, reliability rules, asset policy, performance targets, and migration roadmap.
+## Unreal archive
 
-`docs/web/LIFELENS_WEB_WORKING_STATE.md` tracks current production state, un-deployed work, known debt, and next implementation order.
+The former Unreal client was retired from active `main` on 2026-09-29 because the product is now developed and visually verified through the Web Observer.
 
-## Simulation direction
+The final pre-removal Unreal state is preserved at:
 
-A new world begins from a deterministic seed contract with two male and two female adult founders. Stable identity and persistent life state are Core concerns rather than renderer concerns.
+`archive/unreal-final-20260929`
 
-The design expands through needs, emotion, personality, memory/belief, relationships, goals/actions, conversations/conflicts, dating/marriage/family, pregnancy/birth, aging/death, generations, settlements, society/factions, and an increasingly Earth-like physical environment.
+That archive contains the former `.uproject`, Unreal C++ bridge/client, Config, Content assets, native build workflows, and associated platform work. It can be used later as a reintroduction reference without keeping Unreal maintenance cost in the active product branch.
 
 ## Development policy
 
-GitHub is the source of truth.
+GitHub `main` is source truth. Core logic changes must pass native Core tests and deterministic harness checks. Browser-facing changes must pass WASM, TypeScript/build, and Web structural checks.
 
-Web code may be developed, refactored, tested, and documented without production deployment. AppDeploy deployment is a separate explicit action and is performed only when the user directly requests deployment.
+GitHub Pages is the canonical checkable Web preview. AppDeploy is not used for LifeLens Web.
 
-See [LifeLens Web Observer Master Spec](docs/web/LIFELENS_WEB_MASTER_SPEC.md).
+No paid runtime API/cloud dependency is required for the baseline product.
