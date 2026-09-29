@@ -738,7 +738,7 @@ bool Simulation::beginExternalSleepUse(
     auto runtimeIt=runtime_.find(id);
     if(runtimeIt==runtime_.end()) return false;
 
-    Character* character=findCharacter(world_,id);
+    const Character* character=findCharacter(world_,id);
     if(character==nullptr || !character->alive) return false;
 
     Runtime& runtime=runtimeIt->second;
