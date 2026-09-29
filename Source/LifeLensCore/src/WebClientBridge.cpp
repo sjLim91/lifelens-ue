@@ -384,6 +384,144 @@ const char* weatherSummaryName(WeatherSummary summary)
     return "Clear";
 }
 
+std::string civilizationWorldObservationJson(
+    const CivilizationWorldObservation& world)
+{
+    std::ostringstream out;
+    out << "{";
+    out << "\"available\":true,";
+    out << "\"minute\":" << world.minute << ",";
+    out << "\"resourceNodeCount\":" << world.resourceNodeCount << ",";
+    out << "\"depletedResourceNodeCount\":" << world.depletedResourceNodeCount << ",";
+    out << "\"totalResourceUnits\":" << world.totalResourceUnits << ",";
+    out << "\"storageSiteCount\":" << world.storageSiteCount << ",";
+    out << "\"totalStoredUnits\":" << world.totalStoredUnits << ",";
+    out << "\"facilityCount\":" << world.facilityCount << ",";
+    out << "\"plannedFacilityCount\":" << world.plannedFacilityCount << ",";
+    out << "\"underConstructionFacilityCount\":" << world.underConstructionFacilityCount << ",";
+    out << "\"operationalFacilityCount\":" << world.operationalFacilityCount << ",";
+    out << "\"techniqueFactCount\":" << world.techniqueFactCount << ",";
+    out << "\"transmissionReceiptCount\":" << world.transmissionReceiptCount << ",";
+    out << "\"uniqueKnownTechniqueTypes\":" << world.uniqueKnownTechniqueTypes << ",";
+    out << "\"uniqueReproducibleTechniqueTypes\":" << world.uniqueReproducibleTechniqueTypes << ",";
+    out << "\"knownTechniqueOwners\":" << world.knownTechniqueOwners << ",";
+    out << "\"reproducibleTechniqueOwners\":" << world.reproducibleTechniqueOwners << ",";
+
+    out << "\"resources\":[";
+    for (std::size_t i = 0; i < world.resources.size(); ++i) {
+        if (i != 0) out << ",";
+        const CivilizationResourceObservation& resource = world.resources[i];
+        out << "{";
+        out << "\"id\":\"" << resource.id << "\",";
+        out << "\"gridX\":" << resource.pos.x << ",";
+        out << "\"gridY\":" << resource.pos.y << ",";
+        out << "\"hasAccessGrid\":" << (resource.hasAccessPos ? "true" : "false") << ",";
+        out << "\"accessGridX\":" << resource.accessPos.x << ",";
+        out << "\"accessGridY\":" << resource.accessPos.y << ",";
+        out << "\"material\":\"" << traceMaterialName(resource.material) << "\",";
+        out << "\"quantity\":" << resource.quantity << ",";
+        out << "\"maxQuantity\":" << resource.maxQuantity << ",";
+        out << "\"renewable\":" << (resource.renewable ? "true" : "false") << ",";
+        out << "\"regenerationPerDay\":" << resource.regenerationPerDay;
+        out << "}";
+    }
+    out << "],";
+
+    out << "\"storages\":[";
+    for (std::size_t i = 0; i < world.storages.size(); ++i) {
+        if (i != 0) out << ",";
+        const CivilizationStorageObservation& storage = world.storages[i];
+        out << "{";
+        out << "\"id\":\"" << storage.id << "\",";
+        out << "\"gridX\":" << storage.pos.x << ",";
+        out << "\"gridY\":" << storage.pos.y << ",";
+        out << "\"totalUnits\":" << storage.totalUnits << ",";
+        out << "\"inventory\":[";
+        for (std::size_t j = 0; j < storage.inventory.size(); ++j) {
+            if (j != 0) out << ",";
+            const CivilizationItemObservation& item = storage.inventory[j];
+            out << "{";
+            out << "\"item\":\"" << itemKindName(item.item) << "\",";
+            out << "\"material\":\"" << traceMaterialName(item.material) << "\",";
+            out << "\"quantity\":" << item.quantity << ",";
+            out << "\"quality\":"; appendDouble(out, item.quality); out << ",";
+            out << "\"durability\":"; appendDouble(out, item.durability);
+            out << "}";
+        }
+        out << "]}";
+    }
+    out << "],";
+
+    out << "\"facilities\":[";
+    for (std::size_t i = 0; i < world.facilities.size(); ++i) {
+        if (i != 0) out << ",";
+        const CivilizationFacilityObservation& facility = world.facilities[i];
+        out << "{";
+        out << "\"id\":\"" << facility.id << "\",";
+        out << "\"kind\":\"" << traceFacilityName(facility.kind) << "\",";
+        out << "\"state\":\"" << traceFacilityStateName(facility.state) << "\",";
+        out << "\"gridX\":" << facility.pos.x << ",";
+        out << "\"gridY\":" << facility.pos.y << ",";
+        out << "\"initiatedBy\":\"" << facility.initiatedBy << "\",";
+        out << "\"lastWorkedBy\":\"" << facility.lastWorkedBy << "\",";
+        out << "\"startedMinute\":" << facility.startedMinute << ",";
+        out << "\"completedMinute\":" << facility.completedMinute << ",";
+        out << "\"constructionWork\":"; appendDouble(out, facility.constructionWork); out << ",";
+        out << "\"requiredWork\":"; appendDouble(out, facility.requiredWork); out << ",";
+        out << "\"workProgress\":"; appendDouble(out, facility.workProgress); out << ",";
+        out << "\"durability\":"; appendDouble(out, facility.durability); out << ",";
+        out << "\"active\":" << (facility.active ? "true" : "false") << ",";
+        out << "\"linkedStorage\":\"" << facility.linkedStorage << "\",";
+        out << "\"requiredMaterialUnits\":" << facility.requiredMaterialUnits << ",";
+        out << "\"deliveredMaterialUnits\":" << facility.deliveredMaterialUnits << ",";
+        out << "\"fuelUnits\":" << facility.fuelUnits << ",";
+        out << "\"charcoalUnits\":" << facility.charcoalUnits << ",";
+        out << "\"oreUnits\":" << facility.oreUnits << ",";
+        out << "\"metalUnits\":" << facility.metalUnits << ",";
+        out << "\"heatLevel\":"; appendDouble(out, facility.heatLevel); out << ",";
+        out << "\"lit\":" << (facility.lit ? "true" : "false") << ",";
+        out << "\"burnMinutesRemaining\":" << facility.burnMinutesRemaining << ",";
+        out << "\"lastFireMinute\":" << facility.lastFireMinute << ",";
+        out << "\"cropPlanted\":" << (facility.cropPlanted ? "true" : "false") << ",";
+        out << "\"cropPlantedMinute\":" << facility.cropPlantedMinute << ",";
+        out << "\"cropGrowth01\":"; appendDouble(out, facility.cropGrowth01); out << ",";
+        out << "\"cropMoisture01\":"; appendDouble(out, facility.cropMoisture01); out << ",";
+        out << "\"cropCare01\":"; appendDouble(out, facility.cropCare01); out << ",";
+        out << "\"cropHarvestUnits\":" << facility.cropHarvestUnits << ",";
+        out << "\"lastCultivationMinute\":" << facility.lastCultivationMinute << ",";
+        out << "\"requirements\":[";
+        for (std::size_t j = 0; j < facility.requirements.size(); ++j) {
+            if (j != 0) out << ",";
+            const CivilizationFacilityRequirementObservation& requirement = facility.requirements[j];
+            out << "{";
+            out << "\"material\":\"" << traceMaterialName(requirement.material) << "\",";
+            out << "\"required\":" << requirement.required << ",";
+            out << "\"delivered\":" << requirement.delivered;
+            out << "}";
+        }
+        out << "]}";
+    }
+    out << "],";
+
+    out << "\"recentDiscoveries\":[";
+    for (std::size_t i = 0; i < world.recentDiscoveries.size(); ++i) {
+        if (i != 0) out << ",";
+        const CivilizationDiscoveryObservation& discovery = world.recentDiscoveries[i];
+        out << "{";
+        out << "\"factId\":\"" << discovery.factId << "\",";
+        out << "\"technique\":\"" << techniqueIdName(discovery.technique) << "\",";
+        out << "\"discovererId\":\"" << discovery.discovererId << "\",";
+        out << "\"discovererName\":\"" << escapeJson(discovery.discovererName) << "\",";
+        out << "\"minute\":" << discovery.minute << ",";
+        out << "\"recipientCount\":" << discovery.recipientCount << ",";
+        out << "\"livingKnowerCount\":" << discovery.livingKnowerCount;
+        out << "}";
+    }
+    out << "]";
+    out << "}";
+    return out.str();
+}
+
 } // namespace
 
 WebClientBridge::WebClientBridge() = default;
@@ -896,167 +1034,36 @@ std::string WebClientBridge::residentsJson() const
                 out << "\"type\":\"" << lifeEventName(event.type) << "\",";
                 out << "\"minute\":" << event.minute << ",";
                 out << "\"relatedCharacterIds\":[";
-                for (std::size_t j = 0; j < event.relatedCharacters.size(); ++j) {
-                    if (j != 0) out << ",";
-                    out << "\"" << event.relatedCharacters[j] << "\"";
-                }
-                out << "],";
-                out << "\"value\":" << event.value;
-                out << "}";
-            }
-        }
-        out << "],";
-
-        out << "\"memories\":[";
-        for (std::size_t i = 0; i < memories.size(); ++i) {
-            if (i != 0) out << ",";
-            const MemoryRecord& memory = *memories[i];
-            out << "{";
-            out << "\"who\":\"" << memory.who << "\",";
-            out << "\"sourceCharacter\":\"" << memory.sourceCharacter << "\",";
-            out << "\"what\":\"" << escapeJson(memory.what) << "\",";
-            out << "\"where\":\"" << escapeJson(memory.where) << "\",";
-            out << "\"minute\":" << memory.minute << ",";
-            out << "\"emotionValence\":"; appendDouble(out, memory.emotionValence); out << ",";
-            out << "\"emotionIntensity\":"; appendDouble(out, memory.emotionIntensity); out << ",";
-            out << "\"importance\":"; appendDouble(out, memory.importance); out << ",";
-            out << "\"confidence\":"; appendDouble(out, memory.confidence); out << ",";
-            out << "\"effectiveConfidence\":"; appendDouble(out, memory.effectiveConfidence(world.minute)); out << ",";
-            out << "\"recallScore\":"; appendDouble(out, memory.recallScore(world.minute)); out << ",";
-            out << "\"decayPerDay\":"; appendDouble(out, memory.decayPerDay); out << ",";
-            out << "\"witnessed\":" << (memory.witnessed ? "true" : "false") << ",";
-            out << "\"source\":\"" << memorySourceName(memory.source) << "\",";
-            out << "\"tags\":[";
-            for (std::size_t tagIndex = 0; tagIndex < memory.tags.size(); ++tagIndex) {
-                if (tagIndex != 0) out << ",";
-                out << "\"" << escapeJson(memory.tags[tagIndex]) << "\"";
-            }
-            out << "]";
-            out << "}";
-        }
-        out << "],";
-
-        out << "\"beliefs\":[";
-        for (std::size_t i = 0; i < beliefs.size(); ++i) {
-            if (i != 0) out << ",";
-            const BeliefRecord& belief = *beliefs[i];
-            out << "{";
-            out << "\"subject\":\"" << belief.subject << "\",";
-            out << "\"proposition\":\"" << escapeJson(belief.proposition) << "\",";
-            out << "\"stance\":"; appendDouble(out, belief.stance); out << ",";
-            out << "\"confidence\":"; appendDouble(out, belief.confidence); out << ",";
-            out << "\"supportWeight\":"; appendDouble(out, belief.supportWeight); out << ",";
-            out << "\"contradictionWeight\":"; appendDouble(out, belief.contradictionWeight); out << ",";
-            out << "\"supportCount\":" << belief.supportCount << ",";
-            out << "\"contradictionCount\":" << belief.contradictionCount << ",";
-            out << "\"lastUpdatedMinute\":" << belief.lastUpdatedMinute;
-            out << "}";
-        }
-        out << "],";
-
-        out << "\"hasPosition\":" << (hasPosition ? "true" : "false");
-        if (hasPosition) {
-            out << ",\"gridX\":" << position.x;
-            out << ",\"gridY\":" << position.y;
-        }
-        out << "}";
-    }
-    out << "]}";
-    return out.str();
-}
-
-std::string WebClientBridge::dynamicEnvironmentJson(
-    int centerChunkX,
-    int centerChunkY) const
-{
-    if (!simulation_) return "{\"available\":false}";
-
-    const WorldGenesisIdentity identity =
-        simulation_->world().genesisIdentity();
-    const DynamicEnvironmentObservation environment =
-        deriveDynamicEnvironment(
-            identity,
-            ChunkCoord{centerChunkX, centerChunkY},
-            simulation_->world().minute);
-    const SimulationCalendarObservation calendar =
-        deriveSimulationCalendar(simulation_->world().minute);
-
-    std::ostringstream out;
-    out << "{";
-    out << "\"available\":true,";
-    out << "\"centerChunkX\":" << centerChunkX << ",";
-    out << "\"centerChunkY\":" << centerChunkY << ",";
-    out << "\"simulationMinute\":" << environment.simulationMinute << ",";
-    out << "\"baselineTemperature01\":"; appendDouble(out, environment.baselineTemperature01); out << ",";
-    out << "\"baselineMoisture01\":"; appendDouble(out, environment.baselineMoisture01); out << ",";
-    out << "\"airTemperatureC\":"; appendDouble(out, environment.airTemperatureC); out << ",";
-    out << "\"seasonalTemperatureModifierC\":"; appendDouble(out, environment.seasonalTemperatureModifierC); out << ",";
-    out << "\"dailyTemperatureModifierC\":"; appendDouble(out, environment.dailyTemperatureModifierC); out << ",";
-    out << "\"precipitationIntensity01\":"; appendDouble(out, environment.precipitationIntensity01); out << ",";
-    out << "\"cloudCover01\":"; appendDouble(out, environment.cloudCover01); out << ",";
-    out << "\"windIntensity01\":"; appendDouble(out, environment.windIntensity01); out << ",";
-    out << "\"humidity01\":"; appendDouble(out, environment.humidity01); out << ",";
-    out << "\"visibility01\":"; appendDouble(out, environment.visibility01); out << ",";
-    out << "\"surfaceWetness01\":"; appendDouble(out, environment.surfaceWetness01); out << ",";
-    out << "\"precipitationType\":\"" << precipitationTypeName(environment.precipitationType) << "\",";
-    out << "\"summary\":\"" << weatherSummaryName(environment.summary) << "\",";
-    out << "\"calendar\":{";
-    out << "\"minuteOfDay\":" << calendar.minuteOfDay << ",";
-    out << "\"hourOfDay\":" << calendar.hourOfDay << ",";
-    out << "\"minuteOfHour\":" << calendar.minuteOfHour << ",";
-    out << "\"dayIndex\":" << calendar.dayIndex << ",";
-    out << "\"dayOfYear\":" << calendar.dayOfYear << ",";
-    out << "\"yearIndex\":" << calendar.yearIndex << ",";
-    out << "\"annualPhase\":"; appendDouble(out, calendar.annualPhase); out << ",";
-    out << "\"season\":\"" << seasonSummaryName(calendar.season) << "\",";
-    out << "\"isDay\":" << (calendar.isDay ? "true" : "false") << ",";
-    out << "\"isNight\":" << (calendar.isNight ? "true" : "false") << ",";
-    out << "\"daylight01\":"; appendDouble(out, calendar.daylight01);
-    out << "}";
-    out << "}";
-    return out.str();
-}
-
-std::string WebClientBridge::recentSocialEventsJson(
-    std::size_t maxEvents) const
-{
-    if (!simulation_) return "{\"available\":false,\"events\":[]}";
-
-    const std::size_t bounded = std::min<std::size_t>(maxEvents, 64);
-    const std::vector<SocialCommunicationObservation> events =
-        simulation_->observeRecentSocialEvents(bounded);
-
-    std::ostringstream out;
-    out << "{\"available\":true,\"count\":" << events.size() << ",\"events\":[";
-    for (std::size_t i = 0; i < events.size(); ++i) {
-        if (i != 0) out << ",";
-        const SocialCommunicationObservation& event = events[i];
-        out << "{";
-        out << "\"sequence\":\"" << event.sequence << "\",";
-        out << "\"actorId\":\"" << event.actor << "\",";
-        out << "\"targetId\":\"" << event.target << "\",";
-        out << "\"type\":\"" << socialEventTypeName(event.type) << "\",";
-        out << "\"intensity\":"; appendDouble(out, event.intensity); out << ",";
-        out << "\"importance\":"; appendDouble(out, event.importance); out << ",";
-        out << "\"minute\":" << event.minute << ",";
-        out << "\"where\":\"" << escapeJson(event.where) << "\",";
-        out << "\"presentationLevel\":\"" << socialPresentationLevelName(event.presentationLevel) << "\",";
-        out << "\"successful\":" << (event.successful ? "true" : "false");
-        out << "}";
-    }
-    out << "]}";
-    return out.str();
-}
-
-std::string WebClientBridge::civilizationWorldJson(
+                for (std::size_t j = 0; j < event.relatedCharacters.size(std::string WebClientBridge::civilizationWorldJson(
     std::size_t maxRecentDiscoveries) const
 {
     if (!simulation_) {
         return "{\"available\":false,\"resources\":[],\"storages\":[],\"facilities\":[],\"recentDiscoveries\":[]}";
     }
 
-    const CivilizationWorldObservation world =
+    return civilizationWorldObservationJson(
         simulation_->observeCivilizationWorld(
+            std::min<std::size_t>(maxRecentDiscoveries, 64)));
+}
+
+std::string WebClientBridge::civilizationWorldWindowJson(
+    std::size_t maxRecentDiscoveries,
+    int centerChunkX,
+    int centerChunkY,
+    int radiusChunks) const
+{
+    if (!simulation_) {
+        return "{\"available\":false,\"resources\":[],\"storages\":[],\"facilities\":[],\"recentDiscoveries\":[]}";
+    }
+
+    const int radius=std::max(0,std::min(radiusChunks,16));
+    return civilizationWorldObservationJson(
+        simulation_->observeCivilizationWorldWindow(
+            {centerChunkX,centerChunkY},
+            radius,
+            std::min<std::size_t>(maxRecentDiscoveries,64)));
+}
+tion_->observeCivilizationWorld(
             std::min<std::size_t>(maxRecentDiscoveries, 64));
 
     std::ostringstream out;
