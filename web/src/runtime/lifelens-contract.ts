@@ -16,7 +16,9 @@ export type SimulationSpeed =
 
 export const SIMULATION_TIME_CONTRACT = {
   simulationMinutesPerDay: CORE_SIMULATION_MINUTES_PER_DAY,
-  realMinutesPerSimulationDayAt1x: 8,
+  // UX baseline: the former 4× pace is now canonical 1×.
+  // 1 simulation day therefore takes 2 real minutes at 1× instead of 8.
+  realMinutesPerSimulationDayAt1x: 2,
   defaultSpeed: SIMULATION_SPEED_MODES[1].speed,
   tickIntervalMs: 125,
   refreshIntervalMs: 500,
