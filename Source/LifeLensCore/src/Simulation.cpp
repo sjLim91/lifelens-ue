@@ -363,6 +363,13 @@ ResidentPresentationObservation Simulation::observeResidentPresentation(Characte
         }else if(current->type==ActionType::Use
               || current->type==ActionType::EmergencyUse){
             dto.phase=PresentationActionPhase::Interacting;
+            if(current->type==ActionType::EmergencyUse
+               && r.navigationHasTarget
+               && !r.navigationArrived){
+                dto.phase=PresentationActionPhase::Moving;
+                dto.hasTargetGrid=true;
+                dto.targetGrid=r.navigationTarget;
+            }
         }
 
         if(current->objectId!=0){
@@ -898,7 +905,7 @@ void Simulation::advanceAction(Character& c,Runtime& r){
             break;
         case ActionType::Use:
             if(!obj){ failPlan(c,r); return; }
-            if((r.goal==Goal::Eat || r.goal==Goal::Drink)
+            if((r.goal==Goal::Eat || r.goal==Goal::Drink || r.goal==Goal::Wash)
                && a.remainingTicks==std::max(1,obj->useDurationTicks)){
                 const MaterialKind provision=r.goal==Goal::Eat
                     ? MaterialKind::PlantFood
@@ -916,7 +923,7 @@ void Simulation::advanceAction(Character& c,Runtime& r){
             }
             if(--a.remainingTicks<=0){ ++r.actionIndex; r.announced=false; } break;
         case ActionType::EmergencyUse:
-            if((r.goal==Goal::Eat || r.goal==Goal::Drink)
+            if((r.goal==Goal::Eat || r.goal==Goal::Drink || r.goal==Goal::Wash)
                && a.remainingTicks==emergencyUseDurationTicks(r.goal)){
                 const MaterialKind provision=r.goal==Goal::Eat
                     ? MaterialKind::PlantFood
@@ -938,6 +945,25 @@ void Simulation::advanceAction(Character& c,Runtime& r){
                     reliefTarget=sanitationTarget.pos;
                 }
                 if(!advanceNavigation(r,reliefTarget,0)){
+                    if(r.navigationRouteFailed){
+                        failPlan(c,r);
+                    }
+                    return;
+                }
+            }
+            if(r.goal==Goal::Sleep){
+                GridPos sleepTarget=r.navigationTarget;
+                bool hasSleepTarget=r.navigationHasTarget;
+                if(!hasSleepTarget){
+                    ConstructedFacility* facility=
+                        nearestOperationalSleepFacility(world_,r.pos);
+                    if(facility!=nullptr
+                       && manhattan(facility->pos,r.pos)<=SettlementServiceRadiusGrid){
+                        sleepTarget=facility->pos;
+                        hasSleepTarget=true;
+                    }
+                }
+                if(hasSleepTarget && !advanceNavigation(r,sleepTarget,0)){
                     if(r.navigationRouteFailed){
                         failPlan(c,r);
                     }
