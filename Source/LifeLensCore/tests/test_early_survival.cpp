@@ -112,6 +112,8 @@ int main()
     Simulation provisionProbe(
         9123401,0,CurrentWorldGenerationVersion,provisionRules);
     provisionProbe.setupDemo();
+    provisionProbe.world().resourceNodes.clear();
+    provisionProbe.world().storageSites.clear();
     Character& provisionActor=provisionProbe.world().characters.front();
     provisionActor.needs={0.01,0.90,0.01,0.01,0.01};
     assert(provisionActor.civilization.inventory.count(
