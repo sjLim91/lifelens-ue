@@ -37,6 +37,11 @@ public:
     std::string recentSocialEventsJson(std::size_t maxEvents = 32) const;
     std::string civilizationWorldJson(
         std::size_t maxRecentDiscoveries = 32) const;
+    std::string civilizationWorldWindowJson(
+        std::size_t maxRecentDiscoveries,
+        int centerChunkX,
+        int centerChunkY,
+        int radiusChunks) const;
     std::string worldObjectsJson() const;
     std::string terrainWindowJson(
         int centerChunkX,
