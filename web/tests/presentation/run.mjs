@@ -42,6 +42,7 @@ const {
   visibleAuthoritativeSanitationSites,
 } = source('render/authoritative-spatial-target-layer.ts');
 const { residentToWorldPosition } = source('render/resident-world-coordinates.ts');
+const { terrainDressingSignature } = source('render/terrain-dressing-signature.ts');
 const {
   buildOpenWaterSurfaceGeometry,
   buildFlowWaterSurfaceGeometry,
@@ -148,6 +149,51 @@ test('new-world seed snaps to its new focus instead of retaining a distant old o
   const target = project(scene, new THREE.Vector3(0, 0.5 * scale, 0));
   near(target.x, 0, 'new world x'); near(target.y, 0, 'new world y');
 }));
+
+test('terrain dressing cache is stable until a real placement input changes', () => {
+  const base = flatWindow();
+  const same = structuredClone(base);
+  assert.equal(
+    terrainDressingSignature(base),
+    terrainDressingSignature(same),
+  );
+
+  const changedForest = structuredClone(base);
+  changedForest.chunks[0].forestCoverage01 =
+    Number(changedForest.chunks[0].forestCoverage01 ?? 0) + 0.1;
+  assert.notEqual(
+    terrainDressingSignature(base),
+    terrainDressingSignature(changedForest),
+  );
+
+  const changedFacility = structuredClone(base);
+  changedFacility.humanTraces = {
+    total: 1,
+    entries: [{
+      id: 'facility-cache-test',
+      kind: 'Facility',
+      gridX: 4,
+      gridY: 5,
+      sourceResidentId: '1',
+      facilityKind: 'SleepingPlace',
+      state: 'Operational',
+      progress01: 1,
+      deliveredMaterialUnits: 1,
+      requiredMaterialUnits: 1,
+      active: true,
+      lit: false,
+      cropPlanted: false,
+      cropGrowth01: 0,
+      cropMoisture01: 0,
+      cropCare01: 0,
+      cropHarvestUnits: 0,
+    }],
+  };
+  assert.notEqual(
+    terrainDressingSignature(base),
+    terrainDressingSignature(changedFacility),
+  );
+});
 
 test('all natural resource interaction targets project from Core access coordinates', () => {
   const terrain = flatWindow();
