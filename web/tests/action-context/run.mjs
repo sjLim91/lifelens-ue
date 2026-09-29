@@ -165,7 +165,22 @@ testCase('civilization and parenting cues remain factual and compact', () => {
     }),
     residents,
   );
-  assert.equal(gather?.text, '채집 · 물 · 이동 중');
+  assert.equal(gather?.text, '물 있는 곳으로 이동 중');
+
+  const gathering = residentActionCue(
+    resident({
+      presentation: {
+        active: true,
+        kind: 'Civilization',
+        phase: 'Interacting',
+        civilizationIntent: 'Gather',
+        civilizationMaterial: 'Water',
+        hasTargetGrid: true,
+      },
+    }),
+    residents,
+  );
+  assert.equal(gathering?.text, '물 채집 중');
 
   const drink = residentActionCue(
     resident({
