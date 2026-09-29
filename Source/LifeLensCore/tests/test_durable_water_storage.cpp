@@ -184,6 +184,53 @@ int main()
     CHECK(waterNode->quantity==bareNodeBefore);
     CHECK(rawWaterUnitCount(resident.civilization.inventory)==0);
 
+    // Hygiene demand also retrieves real stored Water even when thirst is low.
+    Simulation hygieneSimulation(640042,910022);
+    hygieneSimulation.setupNewGame();
+    Character& hygieneResident=hygieneSimulation.world().characters.front();
+    hygieneResident.needs.hunger=0.05;
+    hygieneResident.needs.thirst=0.05;
+    hygieneResident.needs.sleep=0.05;
+    hygieneResident.needs.bladder=0.05;
+    hygieneResident.needs.hygiene=0.95;
+    while(hygieneResident.civilization.inventory.remove(
+        ItemKind::RawMaterial,MaterialKind::Water,1)) {}
+    while(hygieneResident.civilization.inventory.remove(
+        ItemKind::SimpleContainer,MaterialKind::Unknown,1,true)) {}
+
+    GridPos hygienePosition{};
+    CHECK(hygieneSimulation.runtimePosition(
+        hygieneResident.id,hygienePosition));
+
+    StorageSite hygieneStorage;
+    hygieneStorage.id=7101;
+    hygieneStorage.pos={hygienePosition.x+1,hygienePosition.y};
+    addFilledWaterContainers(hygieneStorage.inventory,3);
+    hygieneSimulation.world().storageSites={hygieneStorage};
+
+    const CivilizationUtilityDecision hygieneRetrieve=
+        bestRetrieveDecisionAtPosition(
+            hygieneSimulation.world(),
+            hygieneResident,
+            hygienePosition);
+    CHECK(hygieneRetrieve.intent==CivilizationIntent::Retrieve);
+    CHECK(hygieneRetrieve.material==MaterialKind::Water);
+    CHECK(hygieneRetrieve.storage==7101);
+
+    const CivilizationExecutionResult hygieneRetrieved=
+        executeCivilizationDecisionAtPosition(
+            hygieneSimulation.world(),
+            hygieneResident,
+            hygieneRetrieve,
+            hygieneStorage.pos);
+    CHECK(hygieneRetrieved.executed && hygieneRetrieved.success);
+    CHECK(portableWaterCount(
+        hygieneResident.civilization.inventory)>0);
+    CHECK(actionAvailableFor(
+        hygieneSimulation.world(),
+        hygieneResident,
+        Goal::Wash));
+
     // Generic inventory/storage authority already participates in snapshots;
     // verify the new water reserve path round-trips without a parallel state.
     addFilledWaterContainers(world.storageSites[0].inventory,5);
