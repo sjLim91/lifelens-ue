@@ -1087,6 +1087,9 @@ std::string WebClientBridge::civilizationWorldJson(
         out << "\"id\":\"" << resource.id << "\",";
         out << "\"gridX\":" << resource.pos.x << ",";
         out << "\"gridY\":" << resource.pos.y << ",";
+        out << "\"hasAccessGrid\":" << (resource.hasAccessPos ? "true" : "false") << ",";
+        out << "\"accessGridX\":" << resource.accessPos.x << ",";
+        out << "\"accessGridY\":" << resource.accessPos.y << ",";
         out << "\"material\":\"" << traceMaterialName(resource.material) << "\",";
         out << "\"quantity\":" << resource.quantity << ",";
         out << "\"maxQuantity\":" << resource.maxQuantity << ",";
