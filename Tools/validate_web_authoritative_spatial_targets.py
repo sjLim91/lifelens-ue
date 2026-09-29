@@ -9,6 +9,9 @@ def read(path: str) -> str:
 
 natural = read("Source/LifeLensCore/include/lifelens/NaturalWorldChunk.h")
 spatial = read("Source/LifeLensCore/include/lifelens/CivilizationSpatial.h")
+context_action = read("Source/LifeLensCore/include/lifelens/ContextAction.h")
+context_runtime = read("Source/LifeLensCore/src/ContextActionRuntime.cpp")
+simulation_h = read("Source/LifeLensCore/include/lifelens/Simulation.h")
 observer = read("Source/LifeLensCore/include/lifelens/CivilizationObserverReadModel.h")
 bridge = read("Source/LifeLensCore/src/WebClientBridge.cpp")
 types = read("web/src/runtime/core-types.ts")
@@ -58,6 +61,38 @@ for token in (
     "chunkCoordForGrid(candidate)!=coord",
 ):
     assert token in spatial, f"missing generic resource access guard: {token}"
+
+for token in (
+    "civilizationOutdoorInteractionGridValid",
+    "resolveCivilizationOutdoorInteractionGridPosition",
+    "surfaceWaterGroundContainsGrid",
+    "facilityFootprintRadiusGrid",
+    "world.environmentalResidues.exposureAt(candidate)",
+):
+    assert token in spatial, f"shared outdoor interaction contract missing: {token}"
+
+for token in (
+    "ExperimentKind::DesignateSanitationArea",
+    "TechniqueId::DesignatedSanitationArea",
+    "resolveCivilizationOutdoorInteractionGridPosition",
+    "PrimitiveSanitationCleanSiteExposureLimit",
+):
+    assert token in context_action, f"sanitation target resolution missing: {token}"
+
+for token in (
+    "validatePendingDesignatedAreaTarget",
+    "civilizationOutdoorInteractionGridValid",
+    "pending.targetPos",
+):
+    assert token in context_runtime, f"pending sanitation revalidation missing: {token}"
+
+for token in (
+    "recommendedOutdoorReliefPosition",
+    "sanitationUseTarget",
+    "resolveCivilizationOutdoorInteractionGridPosition",
+    "SanitationUseTargetKind::EmergencyOutdoor",
+):
+    assert token in simulation_h, f"physical sanitation target safety missing: {token}"
 
 for token in (
     "hasAccessPos",
@@ -137,6 +172,9 @@ for token in (
     "blockedStone",
     "!surfaceWaterGroundContainsGrid",
     "checkedNonWaterAccess",
+    "blockedOutdoorPreferred",
+    "dryOutdoorTarget",
+    "civilizationOutdoorInteractionGridValid",
 ):
     assert token in spatial_test, f"Core resource access regression missing: {token}"
 
