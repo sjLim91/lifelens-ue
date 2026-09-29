@@ -120,16 +120,6 @@ function key(x: number, y: number): string {
   return `${x}:${y}`;
 }
 
-function hash01(input: string): number {
-  let hash = 2166136261 >>> 0;
-  for (let index = 0; index < input.length; index += 1) {
-    hash ^= input.charCodeAt(index);
-    hash = Math.imul(hash, 16777619) >>> 0;
-  }
-  hash ^= hash >>> 16;
-  return (hash >>> 0) / 4294967295;
-}
-
 export function isOpenWaterSurfaceKind(
   kind: WaterKind,
 ): kind is OpenWaterKind {
@@ -589,79 +579,50 @@ function appendDisc(
   }
 }
 
-function appendCurvedRibbon(
+function appendAuthoritativeRibbon(
   positions: number[],
   normals: number[],
   colors: number[],
   indices: number[],
   edge: FlowEdge,
-  worldSeed: string,
   chunkWorldSize: number,
 ): void {
   const { source, target } = edge;
   const start = new THREE.Vector3(source.x, source.y, source.z);
   const end = new THREE.Vector3(target.x, target.y, target.z);
-  const midpoint = start.clone().lerp(end, 0.5);
   const direction = end.clone().sub(start);
   const planarLength = Math.hypot(direction.x, direction.z);
 
-  const perpendicular = new THREE.Vector3(
-    -direction.z,
-    0,
+  const tangent = new THREE.Vector3(
     direction.x,
+    0,
+    direction.z,
   );
-  if (perpendicular.lengthSq() > 0.00001) {
-    perpendicular.normalize();
-  }
+  if (tangent.lengthSq() < 0.00001) return;
+  tangent.normalize();
 
-  const jitter = (
-    hash01(`${worldSeed}:${source.key}:${target.key ?? 'open'}:curve`)
-    - 0.5
-  ) * chunkWorldSize * 0.24;
-  const control = midpoint.add(perpendicular.multiplyScalar(jitter));
-
+  // Core ground traversal and Water resource access use the straight segment
+  // from a water chunk center to its authoritative downstream chunk center.
+  // Keep the rendered centerline on that exact segment. Presentation-only
+  // meanders made residents appear to gather water from dry ground because
+  // the visible river drifted away from the Core water footprint.
+  const side = new THREE.Vector3(-tangent.z, 0, tangent.x);
   const segments = planarLength > chunkWorldSize * 0.8 ? 8 : 6;
   const base = positions.length / 3;
 
   for (let index = 0; index <= segments; index += 1) {
     const t = index / segments;
-    const oneMinusT = 1 - t;
+    const point = start.clone().lerp(end, t);
+    point.y += 0.004;
 
-    const point = new THREE.Vector3(
-      oneMinusT * oneMinusT * start.x
-        + 2 * oneMinusT * t * control.x
-        + t * t * end.x,
-      THREE.MathUtils.lerp(start.y, end.y, t) + 0.004,
-      oneMinusT * oneMinusT * start.z
-        + 2 * oneMinusT * t * control.z
-        + t * t * end.z,
-    );
-
-    const tangent = new THREE.Vector3(
-      2 * oneMinusT * (control.x - start.x)
-        + 2 * t * (end.x - control.x),
-      0,
-      2 * oneMinusT * (control.z - start.z)
-        + 2 * t * (end.z - control.z),
-    );
-    if (tangent.lengthSq() < 0.00001) {
-      tangent.set(direction.x, 0, direction.z);
-    }
-    tangent.normalize();
-
-    const side = new THREE.Vector3(-tangent.z, 0, tangent.x);
     const width = THREE.MathUtils.lerp(
       source.width,
       target.width,
       t,
     );
-    const meanderWidth = width * (
-      0.92
-      + Math.sin(t * Math.PI) * 0.12
-    );
-    const halfWidth = meanderWidth * 0.5;
-
+    const halfWidth = width * 0.5;
     const color = source.color.clone().lerp(target.color, t);
+
     for (const sign of [-1, 1]) {
       positions.push(
         point.x + side.x * halfWidth * sign,
@@ -700,16 +661,14 @@ export function buildFlowWaterSurfaceGeometry(
   const normals: number[] = [];
   const colors: number[] = [];
   const indices: number[] = [];
-  const worldSeed = window.worldSeed ?? '0';
 
   for (const edge of edges) {
-    appendCurvedRibbon(
+    appendAuthoritativeRibbon(
       positions,
       normals,
       colors,
       indices,
       edge,
-      worldSeed,
       chunkWorldSize,
     );
   }
