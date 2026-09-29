@@ -174,6 +174,27 @@ test('river ribbons and spring caps have upward front faces', () => {
     try { assertUpwardTriangles(geometry); } finally { geometry.dispose(); }
   }
 });
+test('flow-water centerline stays on the authoritative downstream segment', () => {
+  const geometry = buildFlowWaterSurfaceGeometry(windowOf([
+    chunk(0, 0, 'River', 0.5, {
+      hasDownstream: true,
+      downstreamChunkX: 1,
+      downstreamChunkY: 0,
+    }),
+    chunk(1, 0, 'Coast', 0.2),
+  ]));
+  try {
+    const position = geometry.attributes.position;
+    assert.ok(position.count >= 14, 'missing river ribbon cross-sections');
+    for (let vertex = 0; vertex + 1 < position.count; vertex += 2) {
+      const centerZ = (position.getZ(vertex) + position.getZ(vertex + 1)) * 0.5;
+      near(centerZ, 0, 'river centerline drifted away from Core water footprint', 1e-6);
+    }
+  } finally {
+    geometry.dispose();
+  }
+});
+
 test('water can be hit from above using its front face', () => {
   const geometry = buildOpenWaterSurfaceGeometry(windowOf([chunk(0, 0, 'Lake')]));
   const material = new THREE.MeshBasicMaterial({ side: THREE.FrontSide });
