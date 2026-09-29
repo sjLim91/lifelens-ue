@@ -62,6 +62,8 @@ int main()
 
     // Urgent physical needs still override ordinary social desire.
     friendlyWorld.objects.push_back(makeFridge());
+    friendlyWorld.characters[0].civilization.inventory.add({
+        ItemKind::RawMaterial, MaterialKind::PlantFood, 1, 0.5, 1.0});
     friendlyWorld.characters[0].needs.hunger = 0.98;
     UnifiedUtilityDecision hungryDecision = chooseUnifiedUtilityDecision(
         friendlyWorld,
