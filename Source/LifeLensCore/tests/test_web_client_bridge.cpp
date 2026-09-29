@@ -129,6 +129,15 @@ int main()
     assert(civilization.find("\"facilities\":[") != std::string::npos);
     assert(civilization.find("\"recentDiscoveries\":[") != std::string::npos);
 
+    const std::string windowedCivilization =
+        bridge.civilizationWorldWindowJson(16,0,0,1);
+    assert(windowedCivilization.find("\"available\":true") != std::string::npos);
+    assert(windowedCivilization.find("\"resourceNodeCount\":") != std::string::npos);
+    assert(windowedCivilization.find("\"totalResourceUnits\":") != std::string::npos);
+    assert(windowedCivilization.find("\"resources\":[") != std::string::npos);
+    assert(windowedCivilization.find("\"storages\":[") != std::string::npos);
+    assert(windowedCivilization.find("\"facilities\":[") != std::string::npos);
+
     const std::string worldObjects = bridge.worldObjectsJson();
     assert(worldObjects.find("\"available\":true") != std::string::npos);
     assert(worldObjects.find("\"smartObjects\":[") != std::string::npos);

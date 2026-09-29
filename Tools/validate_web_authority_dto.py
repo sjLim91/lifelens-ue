@@ -16,6 +16,7 @@ session = (root / "web/src/runtime/world-session.ts").read_text(encoding="utf-8"
 for method in (
     "recentSocialEventsJson",
     "civilizationWorldJson",
+    "civilizationWorldWindowJson",
     "worldObjectsJson",
 ):
     assert method in header, f"WebClientBridge header missing {method}"
@@ -83,6 +84,7 @@ for token in (
 for token in (
     "recentSocialEvents(maxEvents = 32)",
     "civilizationWorld(",
+    "civilizationWorldWindow(",
     "worldObjects()",
 ):
     assert token in web_bridge, f"LifeLensCoreBridge missing {token}"
@@ -92,11 +94,12 @@ for token in (
 # object payloads may be consumed only through an explicit low-rate cache gate.
 assert ".recentSocialEvents(32)" in session
 assert "worldActivityRefreshCountdown" in session
+assert "worldActivityWindowKey" in session
 assert "this.worldActivityRefreshCountdown <= 0" in session
-assert ".civilizationWorld(16)" in session
+assert ".civilizationWorldWindow(" in session
 assert ".worldObjects()" in session
 gate = session.index("this.worldActivityRefreshCountdown <= 0")
-assert gate < session.index(".civilizationWorld(16)")
+assert gate < session.index(".civilizationWorldWindow(")
 assert gate < session.index(".worldObjects()")
 
 print("LifeLens Web authority DTO expansion: PASS")

@@ -147,6 +147,20 @@ public:
     CivilizationWorldObservation observeCivilizationWorld(std::size_t maxRecentDiscoveries=32) const {
         return buildCivilizationWorldObservation(world_,socialKnowledge_,maxRecentDiscoveries);
     }
+    CivilizationWorldObservation observeCivilizationWorldWindow(
+        ChunkCoord center,
+        int radiusChunks,
+        std::size_t maxRecentDiscoveries=32) const
+    {
+        CivilizationResourceObservationWindow window;
+        window.center=center;
+        window.radiusChunks=std::max(0,radiusChunks);
+        return buildCivilizationWorldObservation(
+            world_,
+            socialKnowledge_,
+            maxRecentDiscoveries,
+            &window);
+    }
 private:
     SettlementPopulation settlementPopulation() const;
     struct Runtime {

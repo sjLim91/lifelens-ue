@@ -55,7 +55,7 @@ assert "moveObserver(snapshot.socialEvents" not in engine
 # A later observation layer may sample them only behind the low-rate cache gate.
 assert "worldActivityRefreshCountdown" in session
 gate = session.index("this.worldActivityRefreshCountdown <= 0")
-assert gate < session.index(".civilizationWorld(16)")
+assert gate < session.index(".civilizationWorldWindow(")
 assert gate < session.index(".worldObjects()")
 
 print("LifeLens Web Observer Director v1: PASS")

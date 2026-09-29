@@ -665,6 +665,12 @@ export interface RuntimeClient {
   dynamicEnvironmentJson?: (x: number, y: number) => string;
   recentSocialEventsJson?: (maxEvents: number) => string;
   civilizationWorldJson?: (maxRecentDiscoveries: number) => string;
+  civilizationWorldWindowJson?: (
+    maxRecentDiscoveries: number,
+    centerChunkX: number,
+    centerChunkY: number,
+    radiusChunks: number,
+  ) => string;
   worldObjectsJson?: () => string;
   terrainWindowJson(x: number, y: number, radius: number): string;
   delete?: () => void;

@@ -15,6 +15,9 @@ simulation_h = read("Source/LifeLensCore/include/lifelens/Simulation.h")
 observer = read("Source/LifeLensCore/include/lifelens/CivilizationObserverReadModel.h")
 bridge = read("Source/LifeLensCore/src/WebClientBridge.cpp")
 types = read("web/src/runtime/core-types.ts")
+core_bridge = read("web/src/runtime/core-bridge.ts")
+world_session = read("web/src/runtime/world-session.ts")
+wasm_bindings = read("Source/LifeLensCore/wasm/LifeLensWebBindings.cpp")
 layer = read("web/src/render/authoritative-spatial-target-layer.ts")
 water_geometry = read("web/src/render/water-geometry.ts")
 vegetation = read("web/src/render/vegetation-layer.ts")
@@ -83,6 +86,38 @@ for token in (
     "accessGridY?: number",
 ):
     assert token in types, f"Web resource type access field missing: {token}"
+
+# Coordinate-heavy resource observation is viewport-windowed before access
+# resolution/JSON serialization. Global aggregate counts remain world-wide.
+for token in (
+    "CivilizationResourceObservationWindow",
+    "resourceWindow!=nullptr && !resourceWindow->contains(node.pos)",
+    "++dto.resourceNodeCount",
+    "dto.totalResourceUnits+=",
+):
+    assert token in observer, f"windowed resource observer contract missing: {token}"
+
+for token in (
+    "civilizationWorldWindowJson",
+    "observeCivilizationWorldWindow",
+):
+    assert token in bridge, f"windowed Web bridge contract missing: {token}"
+assert 'function("civilizationWorldWindowJson"' in wasm_bindings
+assert "civilizationWorldWindowJson?:" in types
+assert "civilizationWorldWindow(" in core_bridge
+assert "this.core.civilizationWorldWindow(" in world_session
+assert "worldActivityWindowKey" in world_session
+
+# Projection batches build one terrain lookup for the whole visible resource
+# set and skip repeated 500 ms work for unchanged snapshot references.
+for token in (
+    "createAuthoritativeGridProjector",
+    "const sampleElevation = createTerrainElevationSampler(terrain)",
+    "resourcesRef === this.lastResourcesRef",
+    "sanitationRef === this.lastSanitationRef",
+    "visibleTargetSignature",
+):
+    assert token in layer, f"spatial target projection optimization missing: {token}"
 
 # Presentation must project actual Core access coordinates, never random
 # scenery, and must hide depleted resources.

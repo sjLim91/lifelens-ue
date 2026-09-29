@@ -144,6 +144,23 @@ int main()
     CHECK(worldRead.recentDiscoveries[0].recipientCount==2);
     CHECK(worldRead.recentDiscoveries[0].livingKnowerCount>=2);
 
+    CHECK(!sim.world().resourceNodes.empty());
+    const ChunkCoord resourceWindowCenter=
+        chunkCoordForGrid(sim.world().resourceNodes.front().pos);
+    const CivilizationWorldObservation windowRead=
+        sim.observeCivilizationWorldWindow(resourceWindowCenter,0);
+    CHECK(windowRead.resourceNodeCount==worldRead.resourceNodeCount);
+    CHECK(windowRead.depletedResourceNodeCount==worldRead.depletedResourceNodeCount);
+    CHECK(windowRead.totalResourceUnits==worldRead.totalResourceUnits);
+    CHECK(windowRead.storageSiteCount==worldRead.storageSiteCount);
+    CHECK(windowRead.totalStoredUnits==worldRead.totalStoredUnits);
+    CHECK(windowRead.facilityCount==worldRead.facilityCount);
+    CHECK(windowRead.resources.size()<=worldRead.resources.size());
+    CHECK(!windowRead.resources.empty());
+    for(const CivilizationResourceObservation& resource:windowRead.resources){
+        CHECK(chunkCoordForGrid(resource.pos)==resourceWindowCenter);
+    }
+
     const SimulationStateSnapshot snapshot=sim.captureSnapshot();
     Simulation restored(1);
     std::string error;

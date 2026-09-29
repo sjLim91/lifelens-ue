@@ -217,6 +217,34 @@ export class LifeLensCoreBridge {
     );
   }
 
+  civilizationWorldWindow(
+    maxRecentDiscoveries: number,
+    centerChunkX: number,
+    centerChunkY: number,
+    radiusChunks: number,
+  ): CivilizationWorldPayload {
+    if (typeof this.client.civilizationWorldWindowJson !== 'function') {
+      return this.civilizationWorld(maxRecentDiscoveries);
+    }
+
+    const fallback: CivilizationWorldPayload = {
+      available: false,
+      resources: [],
+      storages: [],
+      facilities: [],
+      recentDiscoveries: [],
+    };
+    return parseJson<CivilizationWorldPayload>(
+      this.client.civilizationWorldWindowJson(
+        Math.max(0, Math.min(64, Math.floor(maxRecentDiscoveries))),
+        Math.trunc(centerChunkX),
+        Math.trunc(centerChunkY),
+        Math.max(0, Math.min(16, Math.floor(radiusChunks))),
+      ),
+      fallback,
+    );
+  }
+
   worldObjects(): WorldObjectsPayload {
     const fallback: WorldObjectsPayload = {
       available: false,
