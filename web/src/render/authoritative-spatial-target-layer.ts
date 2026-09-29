@@ -33,7 +33,7 @@ const Y_AXIS = new THREE.Vector3(0, 1, 0);
 const EMPTY_RESOURCES: CivilizationWorldResource[] = [];
 const EMPTY_SANITATION_SITES: WorldSanitationSite[] = [];
 
-interface TargetWorldPosition {
+export interface TargetWorldPosition {
   x: number;
   y: number;
   z: number;
