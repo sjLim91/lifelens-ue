@@ -263,15 +263,22 @@ int main()
         timedSleeperId,timedSleep.world().minute);
     timedSleep.world().facilities.push_back(timedBed);
 
+    const double outdoorRecovery=sleepRecoveryPerMinuteAt(
+        timedSleep.world(),timedStart,nullptr);
+    const double bedRecovery=sleepRecoveryPerMinuteAt(
+        timedSleep.world(),timedBedPos,&timedSleep.world().facilities.back());
+    assert(bedRecovery>outdoorRecovery);
+
+    // Compare planned duration below the hard session cap. Extreme fatigue can
+    // legitimately give both plans the same 10-hour cap, while bedding still
+    // reaches the rested threshold earlier through higher per-minute recovery.
+    Character durationProbe=timedSleeper;
+    durationProbe.needs.sleep=0.62;
+    durationProbe.sleepTendency=1.0;
     const int outdoorMinutes=sleepDurationMinutesForNeed(
-        timedSleeper,
-        sleepRecoveryPerMinuteAt(timedSleep.world(),timedStart,nullptr),
-        sleepRules.needs);
+        durationProbe,outdoorRecovery,sleepRules.needs);
     const int bedMinutes=sleepDurationMinutesForNeed(
-        timedSleeper,
-        sleepRecoveryPerMinuteAt(
-            timedSleep.world(),timedBedPos,&timedSleep.world().facilities.back()),
-        sleepRules.needs);
+        durationProbe,bedRecovery,sleepRules.needs);
     assert(bedMinutes<outdoorMinutes);
     assert(bedMinutes>=MinimumSleepSessionMinutes);
 
