@@ -199,7 +199,9 @@ inline int storageCountForMaterial(const World& world,MaterialKind material)
 {
     int total=0;
     for(const auto& storage:world.storageSites){
-        total+=storage.inventory.count(ItemKind::RawMaterial,material);
+        total+=material==MaterialKind::Water
+            ? portableWaterCount(storage.inventory)
+            : storage.inventory.count(ItemKind::RawMaterial,material);
     }
     return total;
 }
@@ -486,7 +488,13 @@ inline CivilizationUtilityDecision bestGatherDecisionAtPosition(
     CivilizationUtilityDecision best;
     for(const auto& node:world.resourceNodes){
         if(node.id==0 || node.quantity<=0 || node.material==MaterialKind::Unknown) continue;
-        const int held=self.civilization.inventory.count(ItemKind::RawMaterial,node.material);
+        const int held=node.material==MaterialKind::Water
+            ? portableWaterCount(self.civilization.inventory)
+            : self.civilization.inventory.count(ItemKind::RawMaterial,node.material);
+        if(node.material==MaterialKind::Water
+           && emptySimpleContainerCount(self.civilization.inventory)<=0){
+            continue;
+        }
         const int stored=storageCountForMaterial(world,node.material);
         const int storageMissing=primitiveStorageMissingMaterial(world,node.material);
         const int fireMissing=primitiveFirePitMissingMaterial(world,node.material);
@@ -1244,8 +1252,7 @@ inline CivilizationUtilityDecision bestCultivationDecision(
             ItemKind::DiggingStick,MaterialKind::Unknown,true)>0;
     const int seedUnits=self.civilization.inventory.count(
         ItemKind::RawMaterial,MaterialKind::PlantFood);
-    const int waterUnits=self.civilization.inventory.count(
-        ItemKind::RawMaterial,MaterialKind::Water);
+    const int waterUnits=portableWaterCount(self.civilization.inventory);
     const double preference=civilizationPreference(
         world.seed,self.id,690ULL+static_cast<std::uint64_t>(TechniqueId::Cultivation));
 
@@ -1549,12 +1556,16 @@ inline CivilizationUtilityDecision bestRetrieveDecisionAtPosition(
                     world,authoritativePosition,material);
             if(need<0.35 && !cultivationNeed) continue;
 
-            const int held=self.civilization.inventory.count(
-                ItemKind::RawMaterial,material);
+            const int held=material==MaterialKind::Water
+                ? portableWaterCount(self.civilization.inventory)
+                : self.civilization.inventory.count(
+                    ItemKind::RawMaterial,material);
             if(held>=2) continue;
 
-            const int stored=storage.inventory.count(
-                ItemKind::RawMaterial,material);
+            const int stored=material==MaterialKind::Water
+                ? portableWaterCount(storage.inventory)
+                : storage.inventory.count(
+                    ItemKind::RawMaterial,material);
             if(stored<=0) continue;
 
             const int requested=std::min(stored,std::max(1,2-held));
@@ -1606,8 +1617,13 @@ inline CivilizationUtilityDecision bestStoreDecision(const World& world,const Ch
         const bool provision=stack.kind==ItemKind::RawMaterial
             && (stack.material==MaterialKind::Water
                 || stack.material==MaterialKind::PlantFood);
+        const int effectiveQuantity=
+            stack.kind==ItemKind::RawMaterial
+            && stack.material==MaterialKind::Water
+                ? portableWaterCount(self.civilization.inventory)
+                : stack.quantity;
         const int keep=provision ? 2 : (stack.kind==ItemKind::RawMaterial ? 4 : 1);
-        const int surplus=stack.quantity-keep;
+        const int surplus=effectiveQuantity-keep;
         if(surplus<=0) continue;
 
         // Ordinary material stockpiling still waits for meaningful carrying
@@ -1615,7 +1631,11 @@ inline CivilizationUtilityDecision bestStoreDecision(const World& world,const Ch
         // may bank surplus Water/Food even with a light total inventory.
         if(total<7 && !provision) continue;
 
-        const int stored=targetStorage.inventory.count(stack.kind,stack.material);
+        const int stored=
+            stack.kind==ItemKind::RawMaterial
+            && stack.material==MaterialKind::Water
+                ? portableWaterCount(targetStorage.inventory)
+                : targetStorage.inventory.count(stack.kind,stack.material);
         const int reserveTarget=stack.material==MaterialKind::Water
             ? 8
             : (stack.material==MaterialKind::PlantFood ? 8 : 0);
