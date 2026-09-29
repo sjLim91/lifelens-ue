@@ -19,6 +19,7 @@ layer = read("web/src/render/authoritative-spatial-target-layer.ts")
 water_geometry = read("web/src/render/water-geometry.ts")
 vegetation = read("web/src/render/vegetation-layer.ts")
 ground_detail = read("web/src/render/ground-detail-layer.ts")
+terrain_signature = read("web/src/render/terrain-dressing-signature.ts")
 scene = read("web/src/render/world-scene.ts")
 renderer = read("web/src/render/world-renderer.ts")
 engine = read("web/src/observer-engine.ts")
@@ -110,6 +111,20 @@ for source, name in (
     )
     assert "isInsideVisibleWater(worldX, worldZ)" in source, (
         f"{name} is not filtering individual placements against water"
+    )
+
+# Repeated 500 ms observer refreshes must not rebuild every natural-dressing
+# instance when terrain/facility inputs are unchanged.
+assert "terrainDressingSignature" in terrain_signature
+for source, name in (
+    (vegetation, "vegetation"),
+    (ground_detail, "ground detail"),
+):
+    assert "terrainDressingSignature(window)" in source, (
+        f"{name} is missing terrain dressing cache"
+    )
+    assert "if (nextSignature === this.terrainSignature) return;" in source, (
+        f"{name} does not skip unchanged terrain rebuilds"
     )
 
 # Resource/sanitation authority has to reach the live Three.js scene.
