@@ -407,15 +407,19 @@ inline CivilizationUtilityDecision urgentSurvivalProvisionDecisionAtPosition(
         [&](Goal goal, MaterialKind material, double need) {
             CivilizationUtilityDecision result;
             if (need < SurvivalProvisionThreshold) return result;
-            if (objectAvailableFor(world, goal, self.id)) return result;
-            if (self.civilization.inventory.count(
-                    ItemKind::RawMaterial,material)>0) return result;
+            const int carried=material==MaterialKind::Water
+                ? portableWaterCount(self.civilization.inventory)
+                : self.civilization.inventory.count(
+                    ItemKind::RawMaterial,material);
+            if (carried>0) return result;
 
             // A settlement reserve is useful only if residents actually use it.
             // Prefer already-collected provision over another trip to nature.
             for (const StorageSite& storage:world.storageSites) {
-                const int stored=storage.inventory.count(
-                    ItemKind::RawMaterial,material);
+                const int stored=material==MaterialKind::Water
+                    ? portableWaterCount(storage.inventory)
+                    : storage.inventory.count(
+                        ItemKind::RawMaterial,material);
                 if(storage.id==0 || stored<=0) continue;
 
                 result.intent=CivilizationIntent::Retrieve;
@@ -429,6 +433,14 @@ inline CivilizationUtilityDecision urgentSurvivalProvisionDecisionAtPosition(
 
             for (const ResourceNode& node:world.resourceNodes) {
                 if(node.id==0 || node.quantity<=0 || node.material!=material) continue;
+
+                if(material==MaterialKind::Water){
+                    // A known freshwater source is already the fastest survival
+                    // affordance. Let the Physical Drink/Wash goal travel there
+                    // directly; filling containers is a non-urgent stocking job.
+                    return result;
+                }
+
                 result.intent=CivilizationIntent::Gather;
                 result.utility=socialClamp01(0.80+0.20*need);
                 result.resourceNode=node.id;
@@ -457,7 +469,9 @@ inline CivilizationUtilityDecision urgentSurvivalProvisionDecisionAtPosition(
     const CivilizationUtilityDecision hunger=provisionDecision(
         Goal::Eat,MaterialKind::PlantFood,self.needs.hunger);
     const CivilizationUtilityDecision thirst=provisionDecision(
-        Goal::Drink,MaterialKind::Water,self.needs.thirst);
+        Goal::Drink,
+        MaterialKind::Water,
+        provisionNeedForMaterial(self,MaterialKind::Water));
 
     // Thirst wins exact ties because the production thirst decay is steeper.
     if(thirst.intent!=CivilizationIntent::None
