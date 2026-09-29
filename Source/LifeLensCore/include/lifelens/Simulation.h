@@ -297,9 +297,35 @@ inline bool Simulation::completeExternalPhysicalAction(
     // Core must own the consumable before it can acknowledge the outcome.
     if(runtime.goal==Goal::Eat && !character->civilization.inventory.remove(
         ItemKind::RawMaterial,MaterialKind::PlantFood,1)) return false;
-    if((runtime.goal==Goal::Drink || runtime.goal==Goal::Wash)
-       && !character->civilization.inventory.remove(
-           ItemKind::RawMaterial,MaterialKind::Water,1)) return false;
+    if(runtime.goal==Goal::Drink || runtime.goal==Goal::Wash){
+        if(portableWaterCount(character->civilization.inventory)>0){
+            if(!consumePortableWater(
+                    character->civilization.inventory,1)){
+                return false;
+            }
+        }else{
+            ResourceNode* directWater=nullptr;
+            for(ResourceNode& node:world_.resourceNodes){
+                if(node.id==0
+                   || node.material!=MaterialKind::Water
+                   || node.quantity<=0){
+                    continue;
+                }
+                GridPos access{};
+                if(!resolveCivilizationResourceAccessGridPosition(
+                        world_,node.id,access)
+                   || access.x!=resolvedPosition.x
+                   || access.y!=resolvedPosition.y){
+                    continue;
+                }
+                if(directWater==nullptr || node.id<directWater->id){
+                    directWater=&node;
+                }
+            }
+            if(directWater==nullptr) return false;
+            --directWater->quantity;
+        }
+    }
 
     const Needs beforeNeeds=character->needs;
     const PrimitiveSanitationSiteKind sanitationKind=sanitationSite!=nullptr
