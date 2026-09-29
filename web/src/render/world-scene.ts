@@ -1,15 +1,18 @@
 import * as THREE from 'three';
 import type {
+  CivilizationWorldPayload,
   DynamicEnvironment,
   Resident,
   TerrainChunk,
   TerrainWindow,
+  WorldObjectsPayload,
 } from '../runtime/core-types';
 import {
   OBSERVER_CAMERA_CONTRACT,
   WORLD_GRID_CONTRACT,
 } from '../runtime/lifelens-contract';
 import { AtmosphereLayer } from './atmosphere-layer';
+import { AuthoritativeSpatialTargetLayer } from './authoritative-spatial-target-layer';
 import { GroundDetailLayer } from './ground-detail-layer';
 import { FacilityLayer } from './facility-layer';
 import { HumanTraceLayer } from './human-trace-layer';
@@ -46,6 +49,8 @@ export class WorldScene {
   private readonly terrainGroup = new THREE.Group();
   private readonly terrainMeshes = new Map<string, TerrainMeshEntry>();
   private readonly groundDetailLayer = new GroundDetailLayer();
+  private readonly authoritativeSpatialTargetLayer =
+    new AuthoritativeSpatialTargetLayer();
   private readonly facilityLayer = new FacilityLayer();
   private readonly humanTraceLayer = new HumanTraceLayer();
   private readonly waterLayer = new WaterLayer();
@@ -75,6 +80,7 @@ export class WorldScene {
   constructor() {
     this.scene.add(this.terrainGroup);
     this.scene.add(this.groundDetailLayer.group);
+    this.scene.add(this.authoritativeSpatialTargetLayer.group);
     this.scene.add(this.facilityLayer.group);
     this.scene.add(this.humanTraceLayer.group);
     this.scene.add(this.waterLayer.group);
@@ -185,6 +191,18 @@ export class WorldScene {
 
   setSelectedHumanTrace(id: string | null): void {
     this.humanTraceLayer.setSelectedTrace(id);
+  }
+
+  setAuthoritativeSpatialTargets(
+    civilization: CivilizationWorldPayload,
+    worldObjects: WorldObjectsPayload,
+    terrain: TerrainWindow,
+  ): void {
+    this.authoritativeSpatialTargetLayer.setTargets(
+      civilization,
+      worldObjects,
+      terrain,
+    );
   }
 
   setResidents(
@@ -345,6 +363,7 @@ export class WorldScene {
     }
     this.terrainMeshes.clear();
     this.groundDetailLayer.dispose();
+    this.authoritativeSpatialTargetLayer.dispose();
     this.facilityLayer.dispose();
     this.humanTraceLayer.dispose();
     this.waterLayer.dispose();
