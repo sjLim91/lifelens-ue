@@ -427,12 +427,21 @@ ResidentPresentationObservation Simulation::observeResidentPresentation(Characte
               || current->type==ActionType::EmergencyUse){
             dto.phase=PresentationActionPhase::Interacting;
             if(current->type==ActionType::EmergencyUse
-               && r.navigationHasTarget
-               && !r.navigationArrived){
-                dto.phase=PresentationActionPhase::Moving;
+               && r.navigationHasTarget){
                 dto.hasTargetGrid=true;
                 dto.targetGrid=r.navigationTarget;
+                if(!r.navigationArrived){
+                    dto.phase=PresentationActionPhase::Moving;
+                }
             }
+        }else if(current->type==ActionType::Idle
+              && dto.directNaturalWaterSource
+              && r.navigationHasTarget){
+            dto.hasTargetGrid=true;
+            dto.targetGrid=r.navigationTarget;
+            dto.phase=r.navigationArrived
+                ? PresentationActionPhase::Interacting
+                : PresentationActionPhase::Moving;
         }
 
         if(current->objectId!=0){
