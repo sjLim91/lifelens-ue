@@ -729,7 +729,98 @@ bool Simulation::advancePendingContext(
     return completed;
 }
 
+bool Simulation::beginExternalSleepUse(
+    CharacterId id,
+    GridPos resolvedPosition)
+{
+    if(!world_.externalPhysicalExecution) return false;
+
+    auto runtimeIt=runtime_.find(id);
+    if(runtimeIt==runtime_.end()) return false;
+
+    Character* character=findCharacter(world_,id);
+    if(character==nullptr || !character->alive) return false;
+
+    Runtime& runtime=runtimeIt->second;
+    if(runtime.goal!=Goal::Sleep
+       || runtime.plan.empty()
+       || runtime.pendingContext.active()
+       || runtime.socialActive) return false;
+
+    if(runtime.externalSleepActive){
+        return sameGridPos(runtime.externalSleepPosition,resolvedPosition);
+    }
+
+    const ConstructedFacility* facility=
+        bestOperationalSleepFacility(world_,resolvedPosition,1);
+    const double recoveryPerMinute=
+        sleepRecoveryPerMinuteAt(world_,resolvedPosition,facility);
+
+    runtime.externalSleepActive=true;
+    runtime.externalSleepPosition=resolvedPosition;
+    runtime.externalSleepElapsedMinutes=0;
+    runtime.externalSleepPlannedMinutes=sleepDurationMinutesForNeed(
+        *character,recoveryPerMinute,ruleset_.needs);
+
+    // The external executor has physically reached the sleep point. From this
+    // moment the Core runtime position follows that real location, so climate,
+    // exposure and sleep quality use the same place the observer sees.
+    runtime.pos=resolvedPosition;
+    clearNavigation(runtime);
+
+    std::ostringstream started;
+    started<<character->name<<" began Sleep at ("
+           <<resolvedPosition.x<<","<<resolvedPosition.y<<") planned="
+           <<runtime.externalSleepPlannedMinutes<<"m";
+    emit(started.str());
+    return true;
+}
+
+void Simulation::clearExternalSleepUse(Runtime& r)
+{
+    r.externalSleepActive=false;
+    r.externalSleepPosition={};
+    r.externalSleepElapsedMinutes=0;
+    r.externalSleepPlannedMinutes=0;
+}
+
+void Simulation::finishExternalSleepUse(
+    Character& character,
+    Runtime& r,
+    bool interrupted)
+{
+    const int elapsed=std::max(0,r.externalSleepElapsedMinutes);
+    if(elapsed>0){
+        if(ConstructedFacility* facility=
+                bestOperationalSleepFacility(
+                    world_,r.externalSleepPosition,1)){
+            recordFacilityUse(*facility,character.id,world_.minute);
+            applyFacilityWear(
+                *facility,
+                facilityWearPerUse(facility->kind));
+        }
+    }
+
+    if(interrupted){
+        emit(character.name+" woke from Sleep for urgent physical need");
+    }else{
+        std::ostringstream completed;
+        completed<<character.name<<" completed Sleep after "<<elapsed<<" minutes";
+        emit(completed.str());
+    }
+
+    r.pos=r.externalSleepPosition;
+    clearExternalSleepUse(r);
+    clearNavigation(r);
+    r.goal=Goal::Idle;
+    r.plan.clear();
+    r.actionIndex=0;
+    r.announced=false;
+    r.consecutiveFailures=0;
+}
+
 void Simulation::failPlan(Character& character,Runtime& r){
+    clearExternalSleepUse(r);
     clearNavigation(r);
     r.plan.clear(); r.actionIndex=0; r.announced=false; r.pendingContext.clear();
     r.socialActive=false; r.socialIntent=SocialIntent::None; r.socialTarget=0;
@@ -742,6 +833,7 @@ void Simulation::failPlan(Character& character,Runtime& r){
     }
 }
 void Simulation::clearRuntimeActivity(Runtime& r){
+    clearExternalSleepUse(r);
     clearNavigation(r);
     r.goal=Goal::Idle;
     r.plan.clear();
@@ -1727,6 +1819,42 @@ void Simulation::step(){
             clearRuntimeActivity(r);
             continue;
         }
+
+        // Native/external sleep is Core-clock-driven after the physical
+        // executor confirms arrival. Travel itself never counts as rest.
+        // Once use begins, each simulation minute earns exactly one minute of
+        // environment-sensitive recovery, so observers see fatigue fall while
+        // the resident is actually sleeping instead of an atomic reset on ACK.
+        if(world_.externalPhysicalExecution && r.externalSleepActive){
+            if(r.goal!=Goal::Sleep || r.plan.empty()){
+                clearExternalSleepUse(r);
+            }else if(sleepInterruptedByUrgentNeed(c)){
+                finishExternalSleepUse(c,r,true);
+                continue;
+            }else{
+                const Needs before=c.needs;
+                ConstructedFacility* sleepFacility=
+                    bestOperationalSleepFacility(
+                        world_,r.externalSleepPosition,1);
+                c.needs.apply({
+                    0,0,-sleepRecoveryPerMinuteAt(
+                        world_,r.externalSleepPosition,sleepFacility),0,0});
+                applyNeedResolutionEmotion(c,before,Goal::Sleep);
+                ++r.externalSleepElapsedMinutes;
+
+                const int planned=std::clamp(
+                    r.externalSleepPlannedMinutes,
+                    MinimumSleepSessionMinutes,
+                    MaximumSleepSessionMinutes);
+                if(c.needs.sleep<=RestedSleepNeedTarget
+                   || r.externalSleepElapsedMinutes>=planned
+                   || r.externalSleepElapsedMinutes>=MaximumSleepSessionMinutes){
+                    finishExternalSleepUse(c,r,false);
+                }
+                continue;
+            }
+        }
+
         if(r.pendingContext.active()){
             if(!world_.externalPhysicalExecution){
                 advancePendingContext(c,r);
