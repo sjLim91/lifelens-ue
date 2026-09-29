@@ -6,6 +6,7 @@ import {
   outsideFacilityFootprints,
 } from './facility-layer';
 import { createTerrainElevationSampler } from './terrain-geometry';
+import { terrainDressingSignature } from './terrain-dressing-signature';
 import { createVisibleWaterFootprintTester } from './water-geometry';
 import { useMobileVegetationProfile } from './vegetation-profile';
 
@@ -128,6 +129,7 @@ export class GroundDetailLayer {
   private readonly scale = new THREE.Vector3();
   private readonly position = new THREE.Vector3();
   private readonly color = new THREE.Color();
+  private terrainSignature = '';
 
   constructor() {
     for (const mesh of [this.grass, this.shrubs, this.rocks]) {
@@ -140,6 +142,10 @@ export class GroundDetailLayer {
   }
 
   setTerrain(window: TerrainWindow): void {
+    const nextSignature = terrainDressingSignature(window);
+    if (nextSignature === this.terrainSignature) return;
+    this.terrainSignature = nextSignature;
+
     const seed = window.worldSeed ?? '0';
     const sampleElevation = createTerrainElevationSampler(window);
     const chunkWorldSize = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
