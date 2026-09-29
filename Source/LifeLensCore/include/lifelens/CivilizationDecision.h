@@ -237,6 +237,25 @@ inline MaterialKind experimentMaterial(ExperimentKind kind)
     }
 }
 
+inline double provisionNeedForMaterial(
+    const Character& self,
+    MaterialKind material)
+{
+    switch(material){
+        case MaterialKind::Water:
+            // Water serves both thirst and washing. A resident who is very
+            // dirty but not thirsty should still seek/retrieve Water instead
+            // of waiting until thirst independently creates demand.
+            return clampCivilization01(std::max(
+                self.needs.thirst,
+                self.needs.hygiene));
+        case MaterialKind::PlantFood:
+            return clampCivilization01(self.needs.hunger);
+        default:
+            return 0.0;
+    }
+}
+
 inline double materialProgressDemand(const Character& self,MaterialKind material)
 {
     const KnowledgeState& knowledge=self.civilization.knowledge;
@@ -256,9 +275,8 @@ inline double materialProgressDemand(const Character& self,MaterialKind material
         case MaterialKind::Clay:
             return knowledge.knowsAtLeast(TechniqueId::SimpleContainer,KnowledgeLevel::Reproducible) ? 0.42 : 0.80;
         case MaterialKind::PlantFood:
-            return 0.25+0.55*clampCivilization01(self.needs.hunger);
         case MaterialKind::Water:
-            return 0.25+0.55*clampCivilization01(self.needs.thirst);
+            return 0.25+0.55*provisionNeedForMaterial(self,material);
         case MaterialKind::Stone:
             return knowledge.knowsAtLeast(TechniqueId::StoneHammer,KnowledgeLevel::Reproducible) ? 0.40 : 0.72;
         case MaterialKind::CopperOre:
@@ -402,12 +420,7 @@ inline double civilizationResourceExplorationPressure(
     const double maintenanceDemand=repairMissing>0
         ? clampCivilization01(0.42+0.18*static_cast<double>(repairMissing))
         : 0.0;
-    const double survivalPressure=
-        material==MaterialKind::Water
-            ? clampCivilization01(self.needs.thirst)
-            : (material==MaterialKind::PlantFood
-                ? clampCivilization01(self.needs.hunger)
-                : 0.0);
+    const double survivalPressure=provisionNeedForMaterial(self,material);
 
     return clampCivilization01(
         0.22*progressDemand
@@ -1518,8 +1531,10 @@ inline CivilizationUtilityDecision bestRetrieveDecisionAtPosition(
     // primitive itself is generic, but autonomous retrieval only pulls Water /
     // PlantFood until storage policy for tools/material projects is explicit.
     const std::array<std::pair<MaterialKind,double>,2> provisions={{
-        {MaterialKind::Water,clampCivilization01(self.needs.thirst)},
-        {MaterialKind::PlantFood,clampCivilization01(self.needs.hunger)}
+        {MaterialKind::Water,provisionNeedForMaterial(
+            self,MaterialKind::Water)},
+        {MaterialKind::PlantFood,provisionNeedForMaterial(
+            self,MaterialKind::PlantFood)}
     }};
 
     for(const StorageSite& storage:world.storageSites){
