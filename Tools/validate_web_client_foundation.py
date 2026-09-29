@@ -100,7 +100,7 @@ assert 'self.addEventListener("fetch"' in sw
 for token in (
     "LifeLensCore",
     "Web Observer",
-    "Web / PWA",
+    "Web Observer / PWA",
     "No fake fallback",
 ):
     assert token in architecture
