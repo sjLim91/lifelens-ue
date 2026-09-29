@@ -32,6 +32,7 @@ export class WorldSession {
   private stableTerrainCenterKey: string | null = null;
   private recenterRequested = false;
   private worldActivityRefreshCountdown = 0;
+  private worldActivityWindowKey: string | null = null;
   private civilizationSnapshot: CivilizationWorldPayload = {
     available: false,
     resources: [],
@@ -59,6 +60,7 @@ export class WorldSession {
     this.stableTerrainCenterKey = null;
     this.recenterRequested = true;
     this.worldActivityRefreshCountdown = 0;
+    this.worldActivityWindowKey = null;
     this.civilizationSnapshot = {
       available: false,
       resources: [],
@@ -175,8 +177,15 @@ export class WorldSession {
 
     // Civilization/object payloads are materially larger than the normal
     // resident/environment snapshot. Keep them off the 500 ms hot path while
-    // still refreshing often enough for observation UI.
-    if (this.worldActivityRefreshCountdown <= 0) {
+    // still refreshing often enough for observation UI. A viewport move must
+    // refresh immediately so a windowed resource payload never lags behind the
+    // terrain currently on screen.
+    const worldActivityWindowKey =
+      `${this.centerX}:${this.centerY}:${queryRadius}`;
+    if (
+      this.worldActivityRefreshCountdown <= 0
+      || this.worldActivityWindowKey !== worldActivityWindowKey
+    ) {
       this.civilizationSnapshot = this.core.civilizationWorldWindow(
         16,
         this.centerX,
@@ -184,6 +193,7 @@ export class WorldSession {
         queryRadius,
       );
       this.worldObjectsSnapshot = this.core.worldObjects();
+      this.worldActivityWindowKey = worldActivityWindowKey;
       this.worldActivityRefreshCountdown = 3;
     } else {
       this.worldActivityRefreshCountdown -= 1;
