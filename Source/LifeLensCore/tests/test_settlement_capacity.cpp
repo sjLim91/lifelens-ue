@@ -234,5 +234,94 @@ int main()
         }
     }
     assert(additionalPlan);
+
+    // Sleep is continuous time, not an atomic "rest completed" effect. A tired
+    // resident walks to real bedding first, gains no sleep recovery in transit,
+    // then recovers minute-by-minute until the rested threshold is reached.
+    SimulationRuleset sleepRules=DefaultSimulationRuleset;
+    sleepRules.needs.hungerPerMinute=0.0;
+    sleepRules.needs.thirstPerMinute=0.0;
+    sleepRules.needs.bladderPerMinute=0.0;
+    sleepRules.needs.hygienePerMinute=0.0;
+    Simulation timedSleep(
+        770032,0,CurrentWorldGenerationVersion,sleepRules);
+    timedSleep.setupNewGame();
+    timedSleep.world().minute=22*60;
+    Character& timedSleeper=timedSleep.world().characters.front();
+    const CharacterId timedSleeperId=timedSleeper.id;
+    for(std::size_t i=1;i<timedSleep.world().characters.size();++i){
+        timedSleep.world().characters[i].alive=false;
+        timedSleep.world().characters[i].deathMinute=timedSleep.world().minute;
+    }
+    timedSleeper.needs={0.01,0.01,0.95,0.01,0.01};
+
+    GridPos timedStart{};
+    assert(timedSleep.runtimePosition(timedSleeperId,timedStart));
+    const GridPos timedBedPos{timedStart.x+8,timedStart.y};
+    ConstructedFacility timedBed=completedFixture(
+        99101,FacilityKind::SleepingPlace,timedBedPos,
+        timedSleeperId,timedSleep.world().minute);
+    timedSleep.world().facilities.push_back(timedBed);
+
+    const int outdoorMinutes=sleepDurationMinutesForNeed(
+        timedSleeper,
+        sleepRecoveryPerMinuteAt(timedSleep.world(),timedStart,nullptr),
+        sleepRules.needs);
+    const int bedMinutes=sleepDurationMinutesForNeed(
+        timedSleeper,
+        sleepRecoveryPerMinuteAt(
+            timedSleep.world(),timedBedPos,&timedSleep.world().facilities.back()),
+        sleepRules.needs);
+    assert(bedMinutes<outdoorMinutes);
+    assert(bedMinutes>=MinimumSleepSessionMinutes);
+
+    const double fatigueBeforeTravel=timedSleeper.needs.sleep;
+    timedSleep.step();
+    const ResidentPresentationObservation movingSleep=
+        timedSleep.observeResidentPresentation(timedSleeperId);
+    assert(movingSleep.active);
+    assert(movingSleep.kind==PresentationActionKind::Physical);
+    assert(movingSleep.physicalGoal==Goal::Sleep);
+    assert(movingSleep.phase==PresentationActionPhase::Moving);
+    assert(movingSleep.hasTargetGrid);
+    assert(movingSleep.targetGrid.x==timedBedPos.x);
+    assert(movingSleep.targetGrid.y==timedBedPos.y);
+    assert(timedSleeper.needs.sleep>=fatigueBeforeTravel);
+
+    bool reachedBed=false;
+    for(int minute=0;minute<120 && !reachedBed;++minute){
+        timedSleep.step();
+        const auto presentation=
+            timedSleep.observeResidentPresentation(timedSleeperId);
+        reachedBed=
+            presentation.active
+            && presentation.kind==PresentationActionKind::Physical
+            && presentation.physicalGoal==Goal::Sleep
+            && presentation.phase==PresentationActionPhase::Interacting;
+    }
+    assert(reachedBed);
+    GridPos reachedPosition{};
+    assert(timedSleep.runtimePosition(timedSleeperId,reachedPosition));
+    assert(reachedPosition.x==timedBedPos.x);
+    assert(reachedPosition.y==timedBedPos.y);
+
+    const double fatigueAtSleepStart=timedSleeper.needs.sleep;
+    timedSleep.runMinutes(60);
+    assert(timedSleeper.needs.sleep<fatigueAtSleepStart);
+    assert(timedSleeper.needs.sleep>RestedSleepNeedTarget);
+
+    bool wokeRested=false;
+    for(int minute=0;minute<MaximumSleepSessionMinutes && !wokeRested;++minute){
+        timedSleep.step();
+        const ResidentObservation observed=
+            timedSleep.observeResident(timedSleeperId);
+        wokeRested=!(
+            observed.activityKind==ObservedActivityKind::Physical
+            && observed.physicalGoal==Goal::Sleep);
+    }
+    assert(wokeRested);
+    assert(timedSleeper.needs.sleep<0.20);
+    assert(timedSleep.world().facilities.back().usageCount==1);
+
     std::cout << "Settlement capacity, local demand, paid construction, maintenance, persistence and runtime wiring passed\n";
 }
