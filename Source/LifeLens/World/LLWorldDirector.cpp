@@ -1093,6 +1093,28 @@ void ALLWorldDirector::ApplyCoreDirective(
         const FRotator UseRotation = UseTransform.GetRotation().Rotator();
         Character.SetActorRotation(FRotator(0.0f, UseRotation.Yaw, 0.0f));
 
+        // Sleep is not a fixed presentation timer. Arrival begins a Core-owned
+        // sleep session, and each authoritative simulation minute then reduces
+        // fatigue. The director simply keeps the resident at the use point until
+        // Core ends the Sleep directive because the resident is rested, capped,
+        // or woken by an urgent survival need.
+        if (Intent == ELLActionIntent::Sleep)
+        {
+            const FIntPoint SleepGrid =
+                WorldLocationToCoreGrid(Character.GetActorLocation());
+            if (!CoreBridge->BeginResidentSleepUse(
+                    Character.GetResidentId(),
+                    SleepGrid.X,
+                    SleepGrid.Y))
+            {
+                ReleasePhysicalReservation(Character.GetResidentId(), Runtime);
+                Runtime.bPerformingAction = false;
+                Runtime.PhysicalUseElapsedSeconds = 0.0f;
+                Character.ClearMovementTarget();
+            }
+            return;
+        }
+
         Runtime.PhysicalUseElapsedSeconds += FMath::Max(0.0f, DeltaSeconds);
         const int32 DurationTicks = FMath::Max(
             1,
