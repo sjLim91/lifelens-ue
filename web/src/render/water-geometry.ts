@@ -12,7 +12,11 @@ import {
 const OPEN_WATER_KINDS = new Set<WaterKind>([
   'Ocean',
   'Coast',
+]);
+
+const STANDING_FRESH_WATER_KINDS = new Set<WaterKind>([
   'Lake',
+  'Wetland',
 ]);
 
 const FLOW_WATER_KINDS = new Set<WaterKind>([
@@ -21,7 +25,8 @@ const FLOW_WATER_KINDS = new Set<WaterKind>([
   'River',
 ]);
 
-type OpenWaterKind = 'Ocean' | 'Coast' | 'Lake';
+type OpenWaterKind = 'Ocean' | 'Coast';
+type StandingFreshWaterKind = 'Lake' | 'Wetland';
 type FlowWaterKind = 'Spring' | 'Stream' | 'River';
 
 interface OpenWaterNode {
@@ -75,7 +80,11 @@ type PointToken =
 const WATER_COLORS: Record<OpenWaterKind, number> = {
   Ocean: 0x174b67,
   Coast: 0x2f7487,
+};
+
+const STANDING_FRESH_WATER_COLORS: Record<StandingFreshWaterKind, number> = {
   Lake: 0x2e7188,
+  Wetland: 0x4f8790,
 };
 
 const FLOW_COLORS: Record<FlowWaterKind, number> = {
@@ -128,6 +137,23 @@ export function isOpenWaterSurfaceKind(
 
 function isFlowWaterKind(kind: WaterKind): kind is FlowWaterKind {
   return FLOW_WATER_KINDS.has(kind);
+}
+
+function isStandingFreshWaterKind(
+  kind: WaterKind,
+): kind is StandingFreshWaterKind {
+  return STANDING_FRESH_WATER_KINDS.has(kind);
+}
+
+function standingFreshWaterRadiusWorld(chunk: TerrainChunk): number {
+  const availability = Math.max(
+    0,
+    Math.min(1, Number(chunk.waterAvailability) || 0),
+  );
+  const radiusCells = chunk.waterKind === 'Lake'
+    ? 2.50 + 4.25 * availability
+    : 3.00 + 4.00 * availability;
+  return radiusCells * WORLD_UNITS_PER_GRID_CELL;
 }
 
 function flowWidth(chunk: TerrainChunk): number {
@@ -682,10 +708,42 @@ export function buildFlowWaterSurfaceGeometry(
       colors,
       indices,
       node,
-      isSpring ? node.width * 1.35 : node.width * 0.68,
+      isSpring ? node.width * 0.5 : node.width * 0.68,
     );
   }
 
+
+  for (const chunk of window.chunks) {
+    if (
+      !isStandingFreshWaterKind(chunk.waterKind)
+      || chunk.salinity !== 'Fresh'
+      || (Number(chunk.waterAvailability) || 0) <= 0
+    ) {
+      continue;
+    }
+
+    appendDisc(
+      positions,
+      normals,
+      colors,
+      indices,
+      {
+        key: key(chunk.x, chunk.y),
+        chunk,
+        x: (chunk.x - window.centerChunkX) * chunkWorldSize,
+        y: (
+          (Number(chunk.elevation01) || 0)
+          * WORLD_GRID_CONTRACT.elevationScale
+        ) + 0.09,
+        z: (chunk.y - window.centerChunkY) * chunkWorldSize,
+        width: standingFreshWaterRadiusWorld(chunk) * 2,
+        color: new THREE.Color(
+          STANDING_FRESH_WATER_COLORS[chunk.waterKind],
+        ),
+      },
+      standingFreshWaterRadiusWorld(chunk),
+    );
+  }
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute(
     'position',
@@ -718,7 +776,10 @@ export function createWaterGeometryBuilder(
     if (isOpenWaterSurfaceKind(chunk.waterKind)) {
       return buildOpenWaterSurfaceGeometry(window, chunkWorldSize);
     }
-    if (isFlowWaterKind(chunk.waterKind)) {
+    if (
+      isFlowWaterKind(chunk.waterKind)
+      || isStandingFreshWaterKind(chunk.waterKind)
+    ) {
       return flowGeometry.clone();
     }
     return new THREE.BufferGeometry();
@@ -733,7 +794,10 @@ export function buildWaterGeometry(
   if (isOpenWaterSurfaceKind(chunk.waterKind)) {
     return buildOpenWaterSurfaceGeometry(window, chunkWorldSize);
   }
-  if (isFlowWaterKind(chunk.waterKind)) {
+  if (
+    isFlowWaterKind(chunk.waterKind)
+    || isStandingFreshWaterKind(chunk.waterKind)
+  ) {
     return buildFlowWaterSurfaceGeometry(window, chunkWorldSize);
   }
   return new THREE.BufferGeometry();
