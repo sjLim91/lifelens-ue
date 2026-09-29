@@ -177,7 +177,12 @@ export class WorldSession {
     // resident/environment snapshot. Keep them off the 500 ms hot path while
     // still refreshing often enough for observation UI.
     if (this.worldActivityRefreshCountdown <= 0) {
-      this.civilizationSnapshot = this.core.civilizationWorld(16);
+      this.civilizationSnapshot = this.core.civilizationWorldWindow(
+        16,
+        this.centerX,
+        this.centerY,
+        queryRadius,
+      );
       this.worldObjectsSnapshot = this.core.worldObjects();
       this.worldActivityRefreshCountdown = 3;
     } else {
