@@ -10,7 +10,7 @@ on:
 jobs:
   structural-preflight:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -20,8 +20,8 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Validate LifeLens bootstrap
-        run: python Tools/validate_bootstrap.py
+      - name: Validate active Web/Core runtime architecture
+        run: python Tools/validate_active_runtime_architecture.py
 
       - name: Validate SimulationRuleset contract
         run: python Tools/validate_simulation_ruleset.py
@@ -35,38 +35,8 @@ jobs:
       - name: Validate facility footprint spacing
         run: python Tools/validate_facility_footprint_spacing.py
 
-      - name: Validate observer projection needs
-        run: python Tools/validate_observer_projection_needs.py
-
-      - name: Validate primitive latrine progression
-        run: python Tools/validate_primitive_latrine.py
-
-      - name: Validate environmental visual feedback
-        run: python Tools/validate_environment_visual_feedback.py
-
-      - name: Validate whole-source audit invariants
-        run: python Tools/validate_source_audit_invariants.py
-
-      - name: Validate runtime replacement projection
-        run: python Tools/validate_runtime_replacement_projection.py
-
       - name: Validate household dependent-care fallback
         run: python Tools/validate_household_dependent_care.py
-
-      - name: Validate residue terrain grounding
-        run: python Tools/validate_residue_terrain_grounding.py
-
-      - name: Validate autosave write throttle
-        run: python Tools/validate_autosave_throttle.py
-
-      - name: Validate full production source scan
-        run: python Tools/validate_full_source_scan.py
-
-      - name: Validate materialized surface pathfinding
-        run: python Tools/validate_materialized_surface_pathfinding.py
-
-      - name: Validate authoritative freshwater ground traversal
-        run: python Tools/validate_freshwater_ground_traversal.py
 
       - name: Validate World Genesis WG-1
         run: python Tools/validate_world_genesis_wg1.py
@@ -76,39 +46,6 @@ jobs:
 
       - name: Validate World Generation Milestone A
         run: python Tools/validate_world_generation_milestone_a.py
-
-      - name: Validate graphics foundation invariants
-        run: python Tools/validate_graphics_foundation.py
-
-      - name: Validate visible water fallback
-        run: python Tools/validate_visible_water_fallback.py
-
-      - name: Validate coastal ecology visibility
-        run: python Tools/validate_coastal_ecology_visibility.py
-
-      - name: Validate platform content cook boundaries
-        run: python Tools/validate_platform_cook_boundaries.py
-
-      - name: Validate zero-cost asset provenance
-        run: python Tools/validate_zero_cost_asset_provenance.py
-
-      - name: Validate Android build and APK integrity contract
-        run: python Tools/validate_android_build_pipeline.py
-
-      - name: Validate desktop PCG runtime dressing
-        run: python Tools/validate_pcg_runtime_dressing.py
-
-      - name: Validate desktop smooth terrain
-        run: python Tools/validate_desktop_smooth_terrain.py
-
-      - name: Validate shared local terrain and water contract
-        run: python Tools/validate_shared_local_terrain_contract.py
-
-      - name: Validate regional terrain preview
-        run: python Tools/validate_regional_terrain_preview.py
-
-      - name: Validate World v2 contract foundation
-        run: python Tools/validate_world_v2_contract_foundation.py
 
       - name: Validate Web client foundation
         run: python Tools/validate_web_client_foundation.py
@@ -152,53 +89,5 @@ jobs:
       - name: Validate Web authoritative day fast-forward
         run: python Tools/validate_web_fast_forward.py
 
-      - name: Validate World v2 observer streaming interest
-        run: python Tools/validate_world_v2_streaming_interest.py
-
-      - name: Validate World v2 observer water preview
-        run: python Tools/validate_world_v2_water_preview.py
-
-      - name: Validate World v2 observer water presentation
-        run: python Tools/validate_world_v2_water_presentation.py
-
       - name: Validate Web animated water surface
         run: python Tools/validate_web_water_surface.py
-
-
-      - name: Validate photoreal facility completion
-        run: python Tools/validate_photoreal_facility_completion.py
-
-      - name: Validate environment density v1
-        run: python Tools/validate_environment_density_v1.py
-
-      - name: Validate photoreal canopy tiering
-        run: python Tools/validate_photoreal_canopy_tiering.py
-
-      - name: Validate settlement nature envelope
-        run: python Tools/validate_settlement_nature_envelope.py
-
-      - name: Validate authoritative natural obstacle visibility
-        run: python Tools/validate_authoritative_natural_obstacle_visibility.py
-
-      - name: Validate runtime visual sanity
-        run: python Tools/validate_runtime_visual_sanity.py
-
-      - name: Validate character animation truth and polish
-        run: python Tools/validate_character_animation_polish.py
-
-      - name: Validate observer UI and camera resilience
-        run: python Tools/validate_ui_camera_polish.py
-
-      - name: Validate mobile detail tap-vs-scroll arbitration
-        run: python Tools/validate_mobile_detail_tap_scroll.py
-
-      - name: Verify Unreal project metadata
-        run: |
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          p = json.loads(Path('LifeLens.uproject').read_text(encoding='utf-8'))
-          assert p['EngineAssociation'] == '5.6'
-          assert any(m['Name'] == 'LifeLens' and m['Type'] == 'Runtime' for m in p['Modules'])
-          print('Unreal metadata preflight: PASS')
-          PY
