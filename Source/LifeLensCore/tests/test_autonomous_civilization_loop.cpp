@@ -77,7 +77,15 @@ int main()
     CHECK(calm.civilization.intent==CivilizationIntent::Gather);
 
     utilityWorld.characters[0].needs.hunger=0.96;
-    const UnifiedUtilityDecision hungry=chooseUnifiedUtilityDecision(utilityWorld,utilityWorld.characters[0],noRelationships);
+    // A Fridge is only an interaction location. It must not synthesize food.
+    CHECK(scoreGoal(
+        utilityWorld,utilityWorld.characters[0],Goal::Eat)==0.0);
+    utilityWorld.characters[0].civilization.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::PlantFood,1,0.5,1.0});
+    CHECK(scoreGoal(
+        utilityWorld,utilityWorld.characters[0],Goal::Eat)>0.0);
+    const UnifiedUtilityDecision hungry=chooseUnifiedUtilityDecision(
+        utilityWorld,utilityWorld.characters[0],noRelationships);
     CHECK(hungry.kind==UnifiedDecisionKind::Physical);
     CHECK(hungry.physicalGoal==Goal::Eat);
 
