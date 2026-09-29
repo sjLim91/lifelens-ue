@@ -279,13 +279,13 @@ inline bool Simulation::completeExternalPhysicalAction(
            || sanitationSite->pos.y!=resolvedPosition.y) return false;
     }
 
-    // Food and water are never synthesized by presentation. Even when a real
-    // table/campfire/well presentation affordance is used, Core must possess the
-    // consumable provision before it can acknowledge the outcome.
+    // Food/water/hygiene provisions are never synthesized by presentation.
+    // Core must own the consumable before it can acknowledge the outcome.
     if(runtime.goal==Goal::Eat && !character->civilization.inventory.remove(
         ItemKind::RawMaterial,MaterialKind::PlantFood,1)) return false;
-    if(runtime.goal==Goal::Drink && !character->civilization.inventory.remove(
-        ItemKind::RawMaterial,MaterialKind::Water,1)) return false;
+    if((runtime.goal==Goal::Drink || runtime.goal==Goal::Wash)
+       && !character->civilization.inventory.remove(
+           ItemKind::RawMaterial,MaterialKind::Water,1)) return false;
 
     const Needs beforeNeeds=character->needs;
     const PrimitiveSanitationSiteKind sanitationKind=sanitationSite!=nullptr
