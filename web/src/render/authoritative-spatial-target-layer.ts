@@ -184,7 +184,9 @@ function resourceSignature(
   return resources
     .map((resource) => (
       `${resource.id}:${resource.material}:${resource.gridX}:`
-      + `${resource.gridY}:${resource.quantity}:${resource.maxQuantity}`
+      + `${resource.gridY}:${resource.hasAccessGrid ? 1 : 0}:`
+      + `${resource.accessGridX ?? ''}:${resource.accessGridY ?? ''}:`
+      + `${resource.quantity}:${resource.maxQuantity}`
     ))
     .sort()
     .join('|');
