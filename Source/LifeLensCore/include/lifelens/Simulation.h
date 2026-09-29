@@ -92,6 +92,9 @@ public:
         outFacilityId=facility->id;
         return true;
     }
+    bool beginExternalSleepUse(
+        CharacterId id,
+        GridPos resolvedPosition);
     bool completeExternalPhysicalAction(
         CharacterId id,
         bool emergencyFallback,
@@ -176,6 +179,15 @@ private:
         bool navigationArrived=false;
         bool navigationRouteFailed=false;
 
+        // External/native sleep begins only after the physical executor reaches
+        // the actual use point. These fields are intentionally transient: needs
+        // already contain elapsed recovery in snapshots, and a restored runtime
+        // can safely resume from the remaining fatigue without replaying it.
+        bool externalSleepActive=false;
+        GridPos externalSleepPosition{};
+        int externalSleepElapsedMinutes=0;
+        int externalSleepPlannedMinutes=0;
+
         // Presentation provenance for the civilization action that actually
         // executed. Intentionally omitted from SimulationRuntimeSnapshot so
         // save/restore never replays stale work animations.
@@ -229,6 +241,8 @@ private:
     void advanceAction(Character& c,Runtime& r);
     void failPlan(Character& character,Runtime& r);
     void clearRuntimeActivity(Runtime& r);
+    void clearExternalSleepUse(Runtime& r);
+    void finishExternalSleepUse(Character& character,Runtime& r,bool interrupted);
     void clearNavigation(Runtime& r);
     bool advanceNavigation(Runtime& r,GridPos target,int arrivalRadius);
     bool advancePendingContext(Character& actor,Runtime& runtime);
