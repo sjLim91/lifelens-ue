@@ -160,6 +160,8 @@ int main()
     const CharacterId washerId=washer.id;
     washer.needs.hygiene=0.99;
     washer.civilization.inventory.add({
+        ItemKind::SimpleContainer,MaterialKind::Clay,1,0.5,1.0});
+    washer.civilization.inventory.add({
         ItemKind::RawMaterial,MaterialKind::Water,1,0.5,1.0});
 
     bool washPending=false;
@@ -175,8 +177,10 @@ int main()
     const double hygieneBeforeRejectedWash=washer.needs.hygiene;
     assert(washer.civilization.inventory.remove(
         ItemKind::RawMaterial,MaterialKind::Water,1));
-    assert(washer.civilization.inventory.count(
-        ItemKind::RawMaterial,MaterialKind::Water)==0);
+    assert(portableWaterCount(
+        washer.civilization.inventory)==0);
+    assert(simpleContainerCount(
+        washer.civilization.inventory)==1);
 
     GridPos washPosition{};
     assert(wash.runtimePosition(washerId,washPosition));
@@ -189,8 +193,10 @@ int main()
         ItemKind::RawMaterial,MaterialKind::Water,1,0.5,1.0});
     assert(wash.completeExternalPhysicalAction(
         washerId,true,washPosition));
-    assert(washer.civilization.inventory.count(
-        ItemKind::RawMaterial,MaterialKind::Water)==0);
+    assert(portableWaterCount(
+        washer.civilization.inventory)==0);
+    assert(simpleContainerCount(
+        washer.civilization.inventory)==1);
     assert(washer.needs.hygiene<hygieneBeforeRejectedWash);
 
     // Standalone Core remains autonomous by default.
