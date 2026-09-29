@@ -124,7 +124,8 @@ int main()
         provisionProbe.world(),provisionActor,Goal::Drink,{}).empty());
     const double thirstWithoutWater=provisionActor.needs.thirst;
     provisionProbe.step();
-    assert(provisionActor.needs.thirst==thirstWithoutWater);
+    // Environment may increase thirst, but without Water it must never fall.
+    assert(provisionActor.needs.thirst>=thirstWithoutWater);
 
     provisionActor.civilization.inventory.add({
         ItemKind::RawMaterial,MaterialKind::Water,1,0.5,1.0});
