@@ -44,8 +44,10 @@ for token in (
 # pace is the new 1x, while higher visual animation playback is capped so
 # fast-forward remains observable instead of becoming an unreadable strobe.
 for token in (
-    "motionTimeScaleAt1x: 4",
-    "maxMotionTimeScale: 8",
+    "SIMULATION_BASELINE_SPEED_MULTIPLIER = 4 as const",
+    "/ SIMULATION_BASELINE_SPEED_MULTIPLIER",
+    "motionTimeScaleAt1x: SIMULATION_BASELINE_SPEED_MULTIPLIER",
+    "maxMotionTimeScale: SIMULATION_BASELINE_SPEED_MULTIPLIER * 2",
     "residentPresentationMotionTimeScale",
 ):
     assert token in contract, f"missing rebased resident motion contract: {token}"
