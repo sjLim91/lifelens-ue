@@ -6,6 +6,7 @@ import {
   outsideFacilityFootprints,
 } from './facility-layer';
 import { createTerrainElevationSampler } from './terrain-geometry';
+import { terrainDressingSignature } from './terrain-dressing-signature';
 import { createVisibleWaterFootprintTester } from './water-geometry';
 import { InstancedTreeAsset } from './tree-asset-layer';
 import {
@@ -84,6 +85,7 @@ export class VegetationLayer {
   private readonly position = new THREE.Vector3();
   private readonly branchDirection = new THREE.Vector3();
   private readonly treeColor = new THREE.Color();
+  private terrainSignature = '';
 
   constructor() {
     this.actualTrees = TREE_ASSET_VARIANTS.map((variant) => (
@@ -110,6 +112,10 @@ export class VegetationLayer {
   }
 
   setTerrain(window: TerrainWindow): void {
+    const nextSignature = terrainDressingSignature(window);
+    if (nextSignature === this.terrainSignature) return;
+    this.terrainSignature = nextSignature;
+
     const seed = window.worldSeed ?? '0';
     const sampleElevation = createTerrainElevationSampler(window);
     const profile = VEGETATION_PRESENTATION_CONTRACT;
