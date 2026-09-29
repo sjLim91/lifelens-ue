@@ -122,6 +122,9 @@ int main()
     assert(civilization.find("\"available\":true") != std::string::npos);
     assert(civilization.find("\"resources\":[") != std::string::npos);
     assert(civilization.find("\"gridX\":") != std::string::npos);
+    assert(civilization.find("\"hasAccessGrid\":") != std::string::npos);
+    assert(civilization.find("\"accessGridX\":") != std::string::npos);
+    assert(civilization.find("\"accessGridY\":") != std::string::npos);
     assert(civilization.find("\"storages\":[") != std::string::npos);
     assert(civilization.find("\"facilities\":[") != std::string::npos);
     assert(civilization.find("\"recentDiscoveries\":[") != std::string::npos);
