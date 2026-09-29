@@ -50,10 +50,6 @@ export interface AuthoritativeSanitationSite {
   position: TargetWorldPosition;
 }
 
-function chunkKey(x: number, y: number): string {
-  return `${x}:${y}`;
-}
-
 function stableUnit(value: string): number {
   let hash = 2166136261 >>> 0;
   for (let index = 0; index < value.length; index += 1) {
