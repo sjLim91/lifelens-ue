@@ -1,5 +1,8 @@
 # PROJECT LIFELENS — MASTER DESIGN SPEC v1.1
 
+> **Runtime architecture update — 2026-09-29:** the active product path is now `LifeLensCore -> WASM -> Web Observer`. Unreal-specific implementation/build/platform sections in this historical master spec are superseded by `docs/RUNTIME_ARCHITECTURE_WEB_CORE_v1.md`. Product/domain requirements (autonomous life, society, civilization, Earth-like world, observer experience, lifecycle, causality, zero-cost baseline) remain authoritative unless a newer domain companion supersedes them. The final Unreal implementation state is preserved at `archive/unreal-final-20260929`.
+
+
 **Unreal Native Autonomous Life & Society Simulation**
 
 > 문서 정보
