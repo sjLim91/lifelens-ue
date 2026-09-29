@@ -6,6 +6,7 @@ import {
   outsideFacilityFootprints,
 } from './facility-layer';
 import { createTerrainElevationSampler } from './terrain-geometry';
+import { createVisibleWaterFootprintTester } from './water-geometry';
 import { InstancedTreeAsset } from './tree-asset-layer';
 import {
   TREE_ASSET_VARIANTS,
@@ -120,6 +121,8 @@ export class VegetationLayer {
     const placementSpan =
       chunkWorldSize * profile.placementSpanChunkRatio;
     const facilityFootprints = facilityPresentationFootprints(window);
+    const isInsideVisibleWater =
+      createVisibleWaterFootprintTester(window);
 
     let treeIndex = 0;
     let branchIndex = 0;
@@ -131,10 +134,6 @@ export class VegetationLayer {
       if (
         chunk.waterKind === 'Ocean'
         || chunk.waterKind === 'Coast'
-        || chunk.waterKind === 'Lake'
-        || chunk.waterKind === 'River'
-        || chunk.waterKind === 'Stream'
-        || chunk.waterKind === 'Spring'
       ) {
         continue;
       }
@@ -172,6 +171,9 @@ export class VegetationLayer {
           (chunk.x - window.centerChunkX) * chunkWorldSize + offsetX;
         const worldZ =
           (chunk.y - window.centerChunkY) * chunkWorldSize + offsetZ;
+        if (isInsideVisibleWater(worldX, worldZ)) {
+          continue;
+        }
         if (!outsideFacilityFootprints(
           worldX,
           worldZ,
