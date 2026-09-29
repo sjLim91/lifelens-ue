@@ -9,9 +9,17 @@ int main(){
     w.objects.push_back({2,lifelens::ObjectKind::Sink,{0,1},std::nullopt,{0,-0.1,0,0,-0.1},5});
     w.objects.push_back({3,lifelens::ObjectKind::Bed,{2,0},std::nullopt,{0,0,-0.1,0,0},5});
     w.objects.push_back({4,lifelens::ObjectKind::Toilet,{0,2},std::nullopt,{0,0,0,-0.1,0},5});
+    w.characters.front().civilization.inventory.add({
+        lifelens::ItemKind::RawMaterial,
+        lifelens::MaterialKind::PlantFood,
+        1,0.5,1.0});
     if(lifelens::chooseGoal(w,w.characters.front())!=lifelens::Goal::Eat){
         std::cerr<<"expected Eat for hunger 0.9\n"; return 1;
     }
+    if(!w.characters.front().civilization.inventory.remove(
+        lifelens::ItemKind::RawMaterial,
+        lifelens::MaterialKind::PlantFood,
+        1)) return 4;
     for(auto& o:w.objects) o.reservedBy=999;
     if(lifelens::chooseGoal(w,w.characters.front())!=lifelens::Goal::Idle){
         std::cerr<<"expected Idle when every usable object is reserved\n"; return 2;
