@@ -708,7 +708,7 @@ export function buildFlowWaterSurfaceGeometry(
       colors,
       indices,
       node,
-      isSpring ? node.width * 0.5 : node.width * 0.68,
+      node.width * 0.5,
     );
   }
 
