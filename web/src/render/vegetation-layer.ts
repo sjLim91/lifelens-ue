@@ -6,6 +6,8 @@ import {
   outsideFacilityFootprints,
 } from './facility-layer';
 import { createTerrainElevationSampler } from './terrain-geometry';
+import { terrainDressingSignature } from './terrain-dressing-signature';
+import { createVisibleWaterFootprintTester } from './water-geometry';
 import { InstancedTreeAsset } from './tree-asset-layer';
 import {
   TREE_ASSET_VARIANTS,
@@ -83,6 +85,7 @@ export class VegetationLayer {
   private readonly position = new THREE.Vector3();
   private readonly branchDirection = new THREE.Vector3();
   private readonly treeColor = new THREE.Color();
+  private terrainSignature = '';
 
   constructor() {
     this.actualTrees = TREE_ASSET_VARIANTS.map((variant) => (
@@ -109,6 +112,10 @@ export class VegetationLayer {
   }
 
   setTerrain(window: TerrainWindow): void {
+    const nextSignature = terrainDressingSignature(window);
+    if (nextSignature === this.terrainSignature) return;
+    this.terrainSignature = nextSignature;
+
     const seed = window.worldSeed ?? '0';
     const sampleElevation = createTerrainElevationSampler(window);
     const profile = VEGETATION_PRESENTATION_CONTRACT;
@@ -120,6 +127,8 @@ export class VegetationLayer {
     const placementSpan =
       chunkWorldSize * profile.placementSpanChunkRatio;
     const facilityFootprints = facilityPresentationFootprints(window);
+    const isInsideVisibleWater =
+      createVisibleWaterFootprintTester(window);
 
     let treeIndex = 0;
     let branchIndex = 0;
@@ -131,10 +140,6 @@ export class VegetationLayer {
       if (
         chunk.waterKind === 'Ocean'
         || chunk.waterKind === 'Coast'
-        || chunk.waterKind === 'Lake'
-        || chunk.waterKind === 'River'
-        || chunk.waterKind === 'Stream'
-        || chunk.waterKind === 'Spring'
       ) {
         continue;
       }
@@ -172,6 +177,9 @@ export class VegetationLayer {
           (chunk.x - window.centerChunkX) * chunkWorldSize + offsetX;
         const worldZ =
           (chunk.y - window.centerChunkY) * chunkWorldSize + offsetZ;
+        if (isInsideVisibleWater(worldX, worldZ)) {
+          continue;
+        }
         if (!outsideFacilityFootprints(
           worldX,
           worldZ,

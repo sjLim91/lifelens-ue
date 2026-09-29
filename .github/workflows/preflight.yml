@@ -68,6 +68,9 @@ jobs:
       - name: Validate Web authoritative action context
         run: python Tools/validate_web_action_context.py
 
+      - name: Validate authoritative spatial target visibility
+        run: python Tools/validate_web_authoritative_spatial_targets.py
+
       - name: Validate Web authority DTO expansion
         run: python Tools/validate_web_authority_dto.py
 

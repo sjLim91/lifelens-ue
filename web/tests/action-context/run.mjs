@@ -208,7 +208,7 @@ testCase('civilization and parenting cues remain factual and compact', () => {
     }),
     residents,
   );
-  assert.equal(exploration?.text, '자원 탐색 · 물 · 이동 중');
+  assert.equal(exploration?.text, '물 탐색 지역으로 이동 중');
 
   const parenting = residentActionCue(
     resident({
@@ -223,6 +223,52 @@ testCase('civilization and parenting cues remain factual and compact', () => {
     residents,
   );
   assert.equal(parenting?.text, '달래기 · 하린 · 진행 중');
+});
+
+testCase('sanitation wording distinguishes real sites from outdoor fallback', () => {
+  const designated = residentActionCue(
+    resident({
+      presentation: {
+        active: true,
+        kind: 'Physical',
+        phase: 'Moving',
+        physicalGoal: 'UseToilet',
+        designatedSanitationSite: true,
+        sanitationSiteId: '7',
+      },
+    }),
+    residents,
+  );
+  assert.equal(designated?.text, '위생 장소로 이동 중');
+
+  const designatedUse = residentActionCue(
+    resident({
+      presentation: {
+        active: true,
+        kind: 'Physical',
+        phase: 'Interacting',
+        physicalGoal: 'UseToilet',
+        designatedSanitationSite: true,
+        sanitationSiteId: '7',
+      },
+    }),
+    residents,
+  );
+  assert.equal(designatedUse?.text, '위생 장소 이용 중');
+
+  const outdoors = residentActionCue(
+    resident({
+      presentation: {
+        active: true,
+        kind: 'Physical',
+        phase: 'Moving',
+        physicalGoal: 'UseToilet',
+        emergencyFallback: true,
+      },
+    }),
+    residents,
+  );
+  assert.equal(outdoors?.text, '야외 용변 장소로 이동 중');
 });
 
 testCase('semantic motion maps only authoritative safe interactions', () => {

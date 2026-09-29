@@ -63,6 +63,24 @@ export function residentActionCue(
   let action = '';
   switch (directive.kind) {
     case 'Physical':
+      if (directive.physicalGoal === 'UseToilet') {
+        if (directive.designatedSanitationSite) {
+          return {
+            text: phase === 'Moving'
+              ? '위생 장소로 이동 중'
+              : '위생 장소 이용 중',
+            phase,
+          };
+        }
+        if (directive.emergencyFallback) {
+          return {
+            text: phase === 'Moving'
+              ? '야외 용변 장소로 이동 중'
+              : '야외 용변 중',
+            phase,
+          };
+        }
+      }
       action = physicalAction(directive.physicalGoal);
       break;
     case 'Social':
@@ -71,6 +89,19 @@ export function residentActionCue(
     case 'Civilization': {
       action = formatCivilizationIntent(directive.civilizationIntent);
       const material = directive.civilizationMaterial?.trim();
+      if (
+        material
+        && material !== 'Unknown'
+        && directive.civilizationIntent === 'Explore'
+      ) {
+        const materialLabel = formatMaterial(material);
+        return {
+          text: phase === 'Moving'
+            ? `${materialLabel} 탐색 지역으로 이동 중`
+            : `${materialLabel} 탐색 중`,
+          phase,
+        };
+      }
       if (
         material
         && material !== 'Unknown'
@@ -87,7 +118,7 @@ export function residentActionCue(
       if (
         material
         && material !== 'Unknown'
-        && ['Explore', 'Store', 'Retrieve'].includes(
+        && ['Store', 'Retrieve'].includes(
           directive.civilizationIntent ?? '',
         )
       ) {

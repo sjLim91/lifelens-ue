@@ -114,9 +114,26 @@ int main()
                     checkedWaterChunk = chunk.coord;
                 }
                 checkedAnyWaterAccess = true;
-            }else if(!checkedNonWaterAccess){
-                CHECK(access.x == exact.x);
-                CHECK(access.y == exact.y);
+            }else{
+                const HydrologyFacts facts =
+                    deriveHydrologyFacts(first.world().genesisIdentity(), chunk.coord);
+                CHECK(!surfaceWaterGroundContainsGrid(facts, access));
+                CHECK(chunkCoordForGrid(access) == chunk.coord);
+
+                const std::vector<NaturalPhysicalObstacle> obstacles =
+                    deriveNaturalPhysicalObstacles(chunk);
+                for(const NaturalPhysicalObstacle& obstacle : obstacles){
+                    CHECK(obstacle.grid.x != access.x || obstacle.grid.y != access.y);
+                }
+                for(const ConstructedFacility& facility : first.world().facilities){
+                    CHECK(facility.pos.x != access.x || facility.pos.y != access.y);
+                }
+
+                GridPos replayAccess{};
+                CHECK(resolveCivilizationResourceAccessGridPosition(
+                    second.world(), patch.nodeId, replayAccess));
+                CHECK(replayAccess.x == access.x);
+                CHECK(replayAccess.y == access.y);
                 checkedNonWaterAccess = true;
             }
         }
@@ -164,6 +181,33 @@ int main()
     // Do not leak an intentionally incomplete fixture into the unrelated
     // snapshot-persistence assertions below.
     CHECK(!first.world().facilities.empty());
+    // A non-Water resource that lands inside the water footprint must also
+    // resolve to a deterministic dry interaction point instead of becoming an
+    // unreachable/invisible gathering target.
+    ResourceNode blockedStone;
+    blockedStone.id = 990002;
+    blockedStone.material = MaterialKind::Stone;
+    blockedStone.quantity = 10;
+    blockedStone.maxQuantity = 10;
+    blockedStone.pos = surfaceWaterCenterGrid(reroutedWaterFacts);
+    first.world().resourceNodes.push_back(blockedStone);
+
+    GridPos blockedStoneAccess{};
+    CHECK(resolveCivilizationResourceAccessGridPosition(
+        first.world(), blockedStone.id, blockedStoneAccess));
+    CHECK(
+        blockedStoneAccess.x != blockedStone.pos.x
+        || blockedStoneAccess.y != blockedStone.pos.y);
+    CHECK(chunkCoordForGrid(blockedStoneAccess) == checkedWaterChunk);
+    CHECK(!surfaceWaterGroundContainsGrid(
+        reroutedWaterFacts, blockedStoneAccess));
+    for(const ConstructedFacility& facility : first.world().facilities){
+        CHECK(
+            facility.pos.x != blockedStoneAccess.x
+            || facility.pos.y != blockedStoneAccess.y);
+    }
+    first.world().resourceNodes.pop_back();
+
     CHECK(first.world().facilities.back().id == waterBankBlocker.id);
     first.world().facilities.pop_back();
 

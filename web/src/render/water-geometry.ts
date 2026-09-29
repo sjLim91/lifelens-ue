@@ -220,6 +220,159 @@ function shouldRenderFlowChunk(chunk: TerrainChunk): boolean {
   return false;
 }
 
+export function createVisibleWaterFootprintTester(
+  window: TerrainWindow,
+  chunkWorldSize = WORLD_GRID_CONTRACT.worldUnitsPerChunk,
+): (worldX: number, worldZ: number) => boolean {
+  const chunks = new Map(
+    window.chunks.map((chunk) => [key(chunk.x, chunk.y), chunk]),
+  );
+  const halfChunk = chunkWorldSize * 0.5;
+
+  const segmentDistance = (
+    px: number,
+    pz: number,
+    ax: number,
+    az: number,
+    bx: number,
+    bz: number,
+  ): { distanceSquared: number; t: number } => {
+    const abx = bx - ax;
+    const abz = bz - az;
+    const ab2 = abx * abx + abz * abz;
+    const t = ab2 > 0
+      ? THREE.MathUtils.clamp(
+        ((px - ax) * abx + (pz - az) * abz) / ab2,
+        0,
+        1,
+      )
+      : 0;
+    const dx = px - (ax + abx * t);
+    const dz = pz - (az + abz * t);
+    return {
+      distanceSquared: dx * dx + dz * dz,
+      t,
+    };
+  };
+
+  return (worldX: number, worldZ: number): boolean => {
+    const nearestChunkX =
+      Math.round(worldX / chunkWorldSize) + window.centerChunkX;
+    const nearestChunkY =
+      Math.round(worldZ / chunkWorldSize) + window.centerChunkY;
+
+    for (let dy = -1; dy <= 1; dy += 1) {
+      for (let dx = -1; dx <= 1; dx += 1) {
+        const chunk = chunks.get(
+          key(nearestChunkX + dx, nearestChunkY + dy),
+        );
+        if (!chunk) continue;
+
+        const centerX =
+          (chunk.x - window.centerChunkX) * chunkWorldSize;
+        const centerZ =
+          (chunk.y - window.centerChunkY) * chunkWorldSize;
+
+        if (isOpenWaterSurfaceKind(chunk.waterKind)) {
+          if (
+            Math.abs(worldX - centerX) <= halfChunk
+            && Math.abs(worldZ - centerZ) <= halfChunk
+          ) {
+            return true;
+          }
+          continue;
+        }
+
+        if (
+          isStandingFreshWaterKind(chunk.waterKind)
+          && chunk.salinity === 'Fresh'
+          && (Number(chunk.waterAvailability) || 0) > 0
+        ) {
+          const radius = standingFreshWaterRadiusWorld(chunk);
+          const ddx = worldX - centerX;
+          const ddz = worldZ - centerZ;
+          if (ddx * ddx + ddz * ddz <= radius * radius) {
+            return true;
+          }
+          continue;
+        }
+
+        if (
+          !isFlowWaterKind(chunk.waterKind)
+          || !shouldRenderFlowChunk(chunk)
+        ) {
+          continue;
+        }
+
+        const sourceWidth = flowWidth(chunk);
+        if (chunk.waterKind === 'Spring') {
+          const radius = sourceWidth * 0.5;
+          const ddx = worldX - centerX;
+          const ddz = worldZ - centerZ;
+          if (ddx * ddx + ddz * ddz <= radius * radius) {
+            return true;
+          }
+          continue;
+        }
+
+        if (
+          chunk.hasDownstream !== true
+          || !Number.isFinite(chunk.downstreamChunkX)
+          || !Number.isFinite(chunk.downstreamChunkY)
+        ) {
+          continue;
+        }
+
+        const downstreamX = Number(chunk.downstreamChunkX);
+        const downstreamY = Number(chunk.downstreamChunkY);
+        const targetX =
+          (downstreamX - window.centerChunkX) * chunkWorldSize;
+        const targetZ =
+          (downstreamY - window.centerChunkY) * chunkWorldSize;
+        const targetChunk = chunks.get(key(downstreamX, downstreamY));
+
+        let targetWidth = sourceWidth;
+        if (
+          targetChunk
+          && isFlowWaterKind(targetChunk.waterKind)
+          && shouldRenderFlowChunk(targetChunk)
+        ) {
+          targetWidth = flowWidth(targetChunk);
+        } else if (
+          targetChunk
+          && isOpenWaterSurfaceKind(targetChunk.waterKind)
+        ) {
+          targetWidth = Math.max(
+            sourceWidth,
+            chunkWorldSize * 0.09,
+          );
+        }
+
+        const distance = segmentDistance(
+          worldX,
+          worldZ,
+          centerX,
+          centerZ,
+          targetX,
+          targetZ,
+        );
+        const halfWidth = THREE.MathUtils.lerp(
+          sourceWidth,
+          targetWidth,
+          distance.t,
+        ) * 0.5;
+        if (
+          distance.distanceSquared
+          <= halfWidth * halfWidth
+        ) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+}
+
 function buildOpenWaterNodes(
   window: TerrainWindow,
 ): Map<string, OpenWaterNode> {

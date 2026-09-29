@@ -67,19 +67,14 @@ inline bool resolveCivilizationResourceAccessGridPosition(
     GridPos exact{};
     if(!resolveCivilizationResourceGridPosition(world,id,exact)) return false;
 
-    // Generation v1 resource locations predate authoritative hydrology.
-    // Preserve their exact spatial behavior for save compatibility.
-    if(world.generationVersion < 2 || node->material != MaterialKind::Water){
+    // Generation v1 predates authoritative hydrology/access separation.
+    if(world.generationVersion < 2){
         outPosition=exact;
         return true;
     }
 
     const ChunkCoord coord=chunkCoordForGrid(exact);
     const HydrologyFacts facts=deriveHydrologyFacts(world.genesisIdentity(),coord);
-    if(!isFreshSurfaceWater(facts)){
-        outPosition=exact;
-        return true;
-    }
 
     std::vector<NaturalPhysicalObstacle> naturalObstacles;
     if(const GeneratedNaturalChunk* chunk=world.findGeneratedNaturalChunk(coord)){
@@ -106,6 +101,53 @@ inline bool resolveCivilizationResourceAccessGridPosition(
             && !isEnvironmentBlocked(candidate);
     };
 
+    constexpr std::array<GridPos,8> directions={
+        GridPos{1,0},GridPos{1,1},GridPos{0,1},GridPos{-1,1},
+        GridPos{-1,0},GridPos{-1,-1},GridPos{0,-1},GridPos{1,-1}
+    };
+
+    // Non-water resources normally use their generated patch center. If an
+    // older/current generated patch happens to overlap water or another
+    // physical blocker, keep the immutable ResourceNode where it is but expose
+    // a deterministic nearby dry interaction point. This preserves seed/save
+    // identity while preventing residents from gathering from unreachable
+    // ground.
+    if(node->material != MaterialKind::Water){
+        if(validAccess(exact)){
+            outPosition=exact;
+            return true;
+        }
+
+        const std::size_t startDirection=static_cast<std::size_t>(
+            node->id % directions.size());
+        for(int distance=1;distance<=10;++distance){
+            for(std::size_t ordinal=0;ordinal<directions.size();++ordinal){
+                const GridPos direction=
+                    directions[(startDirection+ordinal)%directions.size()];
+                const GridPos candidate{
+                    exact.x+direction.x*distance,
+                    exact.y+direction.y*distance
+                };
+                if(validAccess(candidate)){
+                    outPosition=candidate;
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // Generated v2+ Water stays logically at the hydrology center. Residents
+    // interact from a deterministic dry bank cell that also avoids natural
+    // obstacles and constructed facilities.
+    if(!isFreshSurfaceWater(facts)){
+        if(validAccess(exact)){
+            outPosition=exact;
+            return true;
+        }
+        return false;
+    }
+
     const GridPos preferred=surfaceWaterGroundAccessGrid(facts);
     if(validAccess(preferred)){
         outPosition=preferred;
@@ -122,16 +164,9 @@ inline bool resolveCivilizationResourceAccessGridPosition(
         1,
         static_cast<int>(std::ceil(footprintRadius))+1);
 
-    constexpr std::array<GridPos,8> directions={
-        GridPos{1,0},GridPos{1,1},GridPos{0,1},GridPos{-1,1},
-        GridPos{-1,0},GridPos{-1,-1},GridPos{0,-1},GridPos{1,-1}
-    };
     const std::size_t startDirection=static_cast<std::size_t>(
         facts.surfaceWaterId % directions.size());
 
-    // Search a few deterministic dry-bank rings. The water footprint is small
-    // relative to the 32-cell materialized chunk, so this remains local and
-    // cannot silently move gathering into an unmaterialized neighbour.
     for(int extra=0;extra<=4;++extra){
         const int distance=baseDistance+extra;
         for(std::size_t ordinal=0;ordinal<directions.size();++ordinal){

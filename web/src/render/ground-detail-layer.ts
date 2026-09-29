@@ -6,6 +6,8 @@ import {
   outsideFacilityFootprints,
 } from './facility-layer';
 import { createTerrainElevationSampler } from './terrain-geometry';
+import { terrainDressingSignature } from './terrain-dressing-signature';
+import { createVisibleWaterFootprintTester } from './water-geometry';
 import { useMobileVegetationProfile } from './vegetation-profile';
 
 const MAX_GRASS_TUFTS = 9000;
@@ -85,15 +87,6 @@ function createGrassGeometry(): THREE.BufferGeometry {
   return geometry;
 }
 
-function isOpenWater(chunk: TerrainChunk): boolean {
-  return chunk.waterKind === 'Ocean'
-    || chunk.waterKind === 'Coast'
-    || chunk.waterKind === 'Lake'
-    || chunk.waterKind === 'River'
-    || chunk.waterKind === 'Stream'
-    || chunk.waterKind === 'Spring';
-}
-
 export class GroundDetailLayer {
   readonly group = new THREE.Group();
 
@@ -136,6 +129,7 @@ export class GroundDetailLayer {
   private readonly scale = new THREE.Vector3();
   private readonly position = new THREE.Vector3();
   private readonly color = new THREE.Color();
+  private terrainSignature = '';
 
   constructor() {
     for (const mesh of [this.grass, this.shrubs, this.rocks]) {
@@ -148,11 +142,17 @@ export class GroundDetailLayer {
   }
 
   setTerrain(window: TerrainWindow): void {
+    const nextSignature = terrainDressingSignature(window);
+    if (nextSignature === this.terrainSignature) return;
+    this.terrainSignature = nextSignature;
+
     const seed = window.worldSeed ?? '0';
     const sampleElevation = createTerrainElevationSampler(window);
     const chunkWorldSize = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
     const halfChunk = chunkWorldSize * 0.5;
     const facilityFootprints = facilityPresentationFootprints(window);
+    const isInsideVisibleWater =
+      createVisibleWaterFootprintTester(window);
 
     const budgets = this.mobileProfile
       ? { grass: 14, shrubs: 4, rocks: 5 }
@@ -163,30 +163,31 @@ export class GroundDetailLayer {
     let rockIndex = 0;
 
     for (const chunk of window.chunks) {
+      if (
+        chunk.waterKind === 'Ocean'
+        || chunk.waterKind === 'Coast'
+      ) {
+        continue;
+      }
+
       const grassCoverage = clamp01(chunk.grassCoverage01);
       const shrubCoverage = clamp01(chunk.shrubCoverage01);
       const rockCoverage = clamp01(chunk.rockCoverage01);
       const wetlandCoverage = clamp01(chunk.wetlandCoverage01);
       const forestCoverage = clamp01(chunk.forestCoverage01);
 
-      const grassCount = isOpenWater(chunk)
-        ? 0
-        : Math.round(
-          budgets.grass
-          * Math.max(grassCoverage, wetlandCoverage * 0.55)
-          * (1 - rockCoverage * 0.35),
-        );
-      const shrubCount = isOpenWater(chunk)
-        ? 0
-        : Math.round(
-          budgets.shrubs
-          * Math.max(shrubCoverage, forestCoverage * 0.24),
-        );
-      const rockCount = isOpenWater(chunk)
-        ? 0
-        : Math.round(
-          budgets.rocks * rockCoverage,
-        );
+      const grassCount = Math.round(
+        budgets.grass
+        * Math.max(grassCoverage, wetlandCoverage * 0.55)
+        * (1 - rockCoverage * 0.35),
+      );
+      const shrubCount = Math.round(
+        budgets.shrubs
+        * Math.max(shrubCoverage, forestCoverage * 0.24),
+      );
+      const rockCount = Math.round(
+        budgets.rocks * rockCoverage,
+      );
 
       for (
         let index = 0;
@@ -204,6 +205,9 @@ export class GroundDetailLayer {
           (chunk.x - window.centerChunkX) * chunkWorldSize + placement.x;
         const worldZ =
           (chunk.y - window.centerChunkY) * chunkWorldSize + placement.z;
+        if (isInsideVisibleWater(worldX, worldZ)) {
+          continue;
+        }
         if (!outsideFacilityFootprints(
           worldX,
           worldZ,
@@ -270,6 +274,9 @@ export class GroundDetailLayer {
           (chunk.x - window.centerChunkX) * chunkWorldSize + placement.x;
         const worldZ =
           (chunk.y - window.centerChunkY) * chunkWorldSize + placement.z;
+        if (isInsideVisibleWater(worldX, worldZ)) {
+          continue;
+        }
         if (!outsideFacilityFootprints(
           worldX,
           worldZ,
@@ -343,6 +350,9 @@ export class GroundDetailLayer {
           (chunk.x - window.centerChunkX) * chunkWorldSize + placement.x;
         const worldZ =
           (chunk.y - window.centerChunkY) * chunkWorldSize + placement.z;
+        if (isInsideVisibleWater(worldX, worldZ)) {
+          continue;
+        }
         if (!outsideFacilityFootprints(
           worldX,
           worldZ,
