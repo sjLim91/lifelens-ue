@@ -1,5 +1,17 @@
 # LifeLens Web Observer — Working State
 
+## 2026-09-29 CANONICAL CURRENT — Web/Core-only runtime
+
+This section supersedes platform assumptions in older snapshots below.
+
+- Active product path: `LifeLensCore -> WASM -> React/TypeScript/Three.js Web Observer`.
+- Unreal is retired from active `main`; final native state is preserved at `archive/unreal-final-20260929`.
+- Unreal compile/APK/presentation gates are no longer product acceptance gates.
+- Core remains renderer-independent so a future native client can be reintroduced against current Core contracts.
+- GitHub Pages remains the canonical checkable observer preview.
+- Current P0 living-causality baseline through #496 remains authoritative.
+
+
 ## 2026-09-28 CANONICAL CURRENT — fast-forward + local growth + cultivation (#481–#483)
 
 This section supersedes older Web-current snapshots below while preserving them as historical context.
