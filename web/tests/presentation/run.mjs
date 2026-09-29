@@ -35,6 +35,13 @@ function load(path) {
 const source = file => load(resolve(import.meta.dirname, '../../src', file));
 const { WorldScene } = source('render/world-scene.ts');
 const { WaterLayer } = source('render/water-layer.ts');
+const {
+  AUTHORITATIVE_NATURAL_RESOURCE_MATERIALS,
+  authoritativeGridWorldPosition,
+  visibleAuthoritativeResourceSites,
+  visibleAuthoritativeSanitationSites,
+} = source('render/authoritative-spatial-target-layer.ts');
+const { residentToWorldPosition } = source('render/resident-world-coordinates.ts');
 const { buildOpenWaterSurfaceGeometry, buildFlowWaterSurfaceGeometry } = source('render/water-geometry.ts');
 const { WORLD_GRID_CONTRACT: grid } = source('runtime/lifelens-contract.ts');
 const size = grid.worldUnitsPerChunk, scale = grid.elevationScale;
@@ -137,6 +144,154 @@ test('new-world seed snaps to its new focus instead of retaining a distant old o
   const target = project(scene, new THREE.Vector3(0, 0.5 * scale, 0));
   near(target.x, 0, 'new world x'); near(target.y, 0, 'new world y');
 }));
+
+test('all natural resource interaction targets project from Core access coordinates', () => {
+  const terrain = flatWindow();
+  const baseGridX = 5;
+  const baseGridY = 7;
+  const resources = AUTHORITATIVE_NATURAL_RESOURCE_MATERIALS.map(
+    (material, index) => ({
+      id: `r-${index}`,
+      gridX: baseGridX,
+      gridY: baseGridY,
+      hasAccessGrid: true,
+      accessGridX: baseGridX + index,
+      accessGridY: baseGridY + 1,
+      material,
+      quantity: 10,
+      maxQuantity: 10,
+      renewable: false,
+      regenerationPerDay: 0,
+    }),
+  );
+  resources.push({
+    id: 'water',
+    gridX: baseGridX,
+    gridY: baseGridY,
+    hasAccessGrid: true,
+    accessGridX: baseGridX,
+    accessGridY: baseGridY,
+    material: 'Water',
+    quantity: 10,
+    maxQuantity: 10,
+    renewable: true,
+    regenerationPerDay: 1,
+  });
+  resources.push({
+    id: 'depleted',
+    gridX: baseGridX,
+    gridY: baseGridY,
+    material: 'Stone',
+    quantity: 0,
+    maxQuantity: 10,
+    renewable: false,
+    regenerationPerDay: 0,
+  });
+
+  const sites = visibleAuthoritativeResourceSites(
+    { available: true, resources },
+    terrain,
+  );
+  assert.deepEqual(
+    sites.map((site) => site.material).sort(),
+    [...AUTHORITATIVE_NATURAL_RESOURCE_MATERIALS].sort(),
+  );
+
+  const wood = sites.find((site) => site.material === 'Wood');
+  assert.ok(wood);
+  const expected = authoritativeGridWorldPosition(
+    baseGridX,
+    baseGridY + 1,
+    terrain,
+  );
+  assert.ok(expected);
+  near(wood.position.x, expected.x, 'wood access x');
+  near(wood.position.y, expected.y, 'wood access y');
+  near(wood.position.z, expected.z, 'wood access z');
+});
+
+test('resource and resident grid projection share the exact world coordinate contract', () => {
+  const terrain = flatWindow();
+  const gridX = -5;
+  const gridY = 6;
+  const target = authoritativeGridWorldPosition(gridX, gridY, terrain);
+  assert.ok(target);
+  const resident = residentToWorldPosition(
+    {
+      id: 'projection-resident',
+      name: 'projection-resident',
+      hasPosition: true,
+      gridX,
+      gridY,
+    },
+    terrain.centerChunkX,
+    terrain.centerChunkY,
+    0.5,
+  );
+  assert.ok(resident);
+  near(target.x, resident.x, 'shared grid x');
+  near(target.y, resident.y, 'shared grid y');
+  near(target.z, resident.z, 'shared grid z');
+});
+
+test('active sanitation sites render at their exact Core target while inactive sites stay hidden', () => {
+  const terrain = flatWindow();
+  const worldObjects = {
+    available: true,
+    sanitationSites: [
+      {
+        id: 'designated',
+        kind: 'DesignatedArea',
+        gridX: 3,
+        gridY: 4,
+        establishedBy: '1',
+        establishedMinute: 1,
+        active: true,
+        useCount: 0,
+        improvementWork: 1,
+        improvedBy: '0',
+        improvedMinute: -1,
+      },
+      {
+        id: 'pit',
+        kind: 'DugPit',
+        gridX: 8,
+        gridY: 9,
+        establishedBy: '1',
+        establishedMinute: 1,
+        active: true,
+        useCount: 2,
+        improvementWork: 4.5,
+        improvedBy: '1',
+        improvedMinute: 20,
+      },
+      {
+        id: 'inactive',
+        kind: 'DesignatedArea',
+        gridX: 10,
+        gridY: 10,
+        establishedBy: '1',
+        establishedMinute: 1,
+        active: false,
+        useCount: 0,
+        improvementWork: 0,
+        improvedBy: '0',
+        improvedMinute: -1,
+      },
+    ],
+  };
+  const sites = visibleAuthoritativeSanitationSites(
+    worldObjects,
+    terrain,
+  );
+  assert.equal(sites.length, 2);
+  const pit = sites.find((site) => site.id === 'pit');
+  assert.ok(pit);
+  const expected = authoritativeGridWorldPosition(8, 9, terrain);
+  assert.ok(expected);
+  near(pit.position.x, expected.x, 'sanitation x');
+  near(pit.position.z, expected.z, 'sanitation z');
+});
 
 function assertUpwardTriangles(geometry) {
   const position = geometry.attributes.position, index = geometry.index;
