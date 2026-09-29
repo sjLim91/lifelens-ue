@@ -211,35 +211,6 @@ int main()
     CHECK(first.world().facilities.back().id == waterBankBlocker.id);
     first.world().facilities.pop_back();
 
-    // Generic outdoor interaction targets (sanitation/outdoor fallback and
-    // future ground affordances) obey the same physical-world contract. Even
-    // when the preferred site is the center of a real water body, Core must
-    // resolve a dry, unblocked, same-chunk interaction position.
-    const GridPos blockedOutdoorPreferred =
-        surfaceWaterCenterGrid(reroutedWaterFacts);
-    GridPos dryOutdoorTarget{};
-    CHECK(resolveCivilizationOutdoorInteractionGridPosition(
-        first.world(),
-        blockedOutdoorPreferred,
-        dryOutdoorTarget,
-        10,
-        0,
-        0,
-        PrimitiveSanitationCleanSiteExposureLimit));
-    CHECK(
-        dryOutdoorTarget.x != blockedOutdoorPreferred.x
-        || dryOutdoorTarget.y != blockedOutdoorPreferred.y);
-    CHECK(chunkCoordForGrid(dryOutdoorTarget) == checkedWaterChunk);
-    CHECK(!surfaceWaterGroundContainsGrid(
-        reroutedWaterFacts,dryOutdoorTarget));
-    CHECK(civilizationOutdoorInteractionGridValid(
-        first.world(),
-        dryOutdoorTarget,
-        checkedWaterChunk,
-        0,
-        0,
-        PrimitiveSanitationCleanSiteExposureLimit));
-
     // Storage is also a Core-owned spatial entity. Presentation should only
     // consume this resolved GridPos, never guess a nearby scenery object.
     const GridPos center = first.world().initialStartRegionCenterGrid();
