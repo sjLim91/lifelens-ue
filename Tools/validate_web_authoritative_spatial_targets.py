@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import re
 
 root = Path(__file__).resolve().parents[1]
 
@@ -12,6 +13,9 @@ observer = read("Source/LifeLensCore/include/lifelens/CivilizationObserverReadMo
 bridge = read("Source/LifeLensCore/src/WebClientBridge.cpp")
 types = read("web/src/runtime/core-types.ts")
 layer = read("web/src/render/authoritative-spatial-target-layer.ts")
+water_geometry = read("web/src/render/water-geometry.ts")
+vegetation = read("web/src/render/vegetation-layer.ts")
+ground_detail = read("web/src/render/ground-detail-layer.ts")
 scene = read("web/src/render/world-scene.ts")
 renderer = read("web/src/render/world-renderer.ts")
 engine = read("web/src/observer-engine.ts")
@@ -20,30 +24,26 @@ spatial_test = read("Source/LifeLensCore/tests/test_civilization_spatial_targets
 presentation_test = read("web/tests/presentation/run.mjs")
 action_test = read("web/tests/action-context/run.mjs")
 
-natural_materials = (
-    "Wood",
-    "Stone",
-    "Flint",
-    "Fiber",
-    "Clay",
-    "PlantFood",
-    "CopperOre",
-    "TinOre",
-)
-for material in natural_materials:
-    assert f"MaterialKind::{material}" in natural, (
-        f"Core natural material missing from generation catalogue: {material}"
-    )
-    assert f"'{material}'" in layer, (
-        f"Web authoritative target layer missing natural material: {material}"
-    )
+materials_block = natural.split(
+    "const std::array<MaterialKind, 9> materials = {",
+    1,
+)[1].split("};", 1)[0]
+core_natural_materials = set(re.findall(r"MaterialKind::([A-Za-z0-9_]+)", materials_block))
+assert "Water" in core_natural_materials
+core_non_water_materials = core_natural_materials - {"Water"}
 
-# Water uses the separately validated hydrology footprint. Do not duplicate it
-# as a generic resource prop.
 resource_list = layer.split(
     "export const AUTHORITATIVE_NATURAL_RESOURCE_MATERIALS = [",
     1,
 )[1].split("] as const;", 1)[0]
+web_natural_materials = set(re.findall(r"'([A-Za-z0-9_]+)'", resource_list))
+assert web_natural_materials == core_non_water_materials, (
+    f"Core/Web natural resource visual coverage differs: "
+    f"Core={sorted(core_non_water_materials)} Web={sorted(web_natural_materials)}"
+)
+
+# Water uses the separately validated hydrology footprint. Do not duplicate it
+# as a generic resource prop.
 assert "'Water'" not in resource_list
 assert "WaterLayer" in scene
 
@@ -67,9 +67,9 @@ for token in (
     assert token in observer, f"observer resource access contract missing: {token}"
 
 for token in (
-    '"hasAccessGrid":',
-    '"accessGridX":',
-    '"accessGridY":',
+    "hasAccessGrid",
+    "accessGridX",
+    "accessGridY",
 ):
     assert token in bridge, f"Web bridge resource access JSON missing: {token}"
 
@@ -94,6 +94,20 @@ for token in (
 ):
     assert token in layer, f"authoritative target projection missing: {token}"
 assert "Math.random(" not in layer
+
+# Ground dressing uses the same exact visible-water footprint instead of
+# blanking whole River/Lake/Stream/Spring chunks.
+assert "createVisibleWaterFootprintTester" in water_geometry
+for source, name in (
+    (vegetation, "vegetation"),
+    (ground_detail, "ground detail"),
+):
+    assert "createVisibleWaterFootprintTester" in source, (
+        f"{name} does not consume the shared water footprint"
+    )
+    assert "isInsideVisibleWater(worldX, worldZ)" in source, (
+        f"{name} is not filtering individual placements against water"
+    )
 
 # Resource/sanitation authority has to reach the live Three.js scene.
 for token in (
@@ -130,6 +144,8 @@ for token in (
     "all natural resource interaction targets project from Core access coordinates",
     "resource and resident grid projection share the exact world coordinate contract",
     "active sanitation sites render at their exact Core target",
+    "river chunks suppress dressing only on the visible channel footprint",
+    "fresh lake and wetland leave dry room outside their localized water radius",
 ):
     assert token in presentation_test, f"Web target regression missing: {token}"
 
