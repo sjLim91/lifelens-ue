@@ -181,6 +181,142 @@ int main()
     CHECK(storageResolved.x == storage.pos.x);
     CHECK(storageResolved.y == storage.pos.y);
 
+    // P0 living-causality guard: resource and stock changes are only legal at
+    // the authoritative physical target. A caller cannot mutate the world from
+    // an unrelated position even when it knows the correct entity id.
+    Character& actor = first.world().characters.front();
+    actor.civilization.character = actor.id;
+
+    GridPos gatherTarget{};
+    CHECK(resolveCivilizationResourceAccessGridPosition(
+        first.world(), checkedWaterNodeId, gatherTarget));
+    ResourceNode* gatherNode = nullptr;
+    for(auto& node : first.world().resourceNodes){
+        if(node.id == checkedWaterNodeId){
+            gatherNode = &node;
+            break;
+        }
+    }
+    CHECK(gatherNode != nullptr);
+    CHECK(gatherNode->quantity > 0);
+
+    CivilizationUtilityDecision gatherDecision;
+    gatherDecision.intent = CivilizationIntent::Gather;
+    gatherDecision.resourceNode = checkedWaterNodeId;
+    gatherDecision.item = ItemKind::RawMaterial;
+    gatherDecision.material = MaterialKind::Water;
+    gatherDecision.quantity = 1;
+
+    const int waterBeforeGather = actor.civilization.inventory.count(
+        ItemKind::RawMaterial, MaterialKind::Water);
+    const int nodeBeforeGather = gatherNode->quantity;
+    const GridPos remoteGatherPos{gatherTarget.x + 20, gatherTarget.y + 20};
+    const CivilizationExecutionResult remoteGather =
+        executeCivilizationDecisionAtPosition(
+            first.world(), actor, gatherDecision, remoteGatherPos);
+    CHECK(!remoteGather.executed);
+    CHECK(gatherNode->quantity == nodeBeforeGather);
+    CHECK(actor.civilization.inventory.count(
+        ItemKind::RawMaterial, MaterialKind::Water) == waterBeforeGather);
+
+    const CivilizationExecutionResult localGather =
+        executeCivilizationDecisionAtPosition(
+            first.world(), actor, gatherDecision, gatherTarget);
+    CHECK(localGather.executed && localGather.success);
+    CHECK(gatherNode->quantity < nodeBeforeGather);
+    CHECK(actor.civilization.inventory.count(
+        ItemKind::RawMaterial, MaterialKind::Water) > waterBeforeGather);
+
+    CivilizationUtilityDecision storeDecision;
+    storeDecision.intent = CivilizationIntent::Store;
+    storeDecision.storage = storage.id;
+    storeDecision.item = ItemKind::RawMaterial;
+    storeDecision.material = MaterialKind::Water;
+    storeDecision.quantity = 1;
+
+    const int carriedBeforeStore = actor.civilization.inventory.count(
+        ItemKind::RawMaterial, MaterialKind::Water);
+    const int storedBeforeStore = first.world().storageSites.back().inventory.count(
+        ItemKind::RawMaterial, MaterialKind::Water);
+    const GridPos remoteStoragePos{storageResolved.x + 20, storageResolved.y + 20};
+    const CivilizationExecutionResult remoteStore =
+        executeCivilizationDecisionAtPosition(
+            first.world(), actor, storeDecision, remoteStoragePos);
+    CHECK(!remoteStore.executed);
+    CHECK(actor.civilization.inventory.count(
+        ItemKind::RawMaterial, MaterialKind::Water) == carriedBeforeStore);
+    CHECK(first.world().storageSites.back().inventory.count(
+        ItemKind::RawMaterial, MaterialKind::Water) == storedBeforeStore);
+
+    const CivilizationExecutionResult localStore =
+        executeCivilizationDecisionAtPosition(
+            first.world(), actor, storeDecision, storageResolved);
+    CHECK(localStore.executed && localStore.success);
+    CHECK(actor.civilization.inventory.count(
+        ItemKind::RawMaterial, MaterialKind::Water) == carriedBeforeStore - 1);
+    CHECK(first.world().storageSites.back().inventory.count(
+        ItemKind::RawMaterial, MaterialKind::Water) == storedBeforeStore + 1);
+
+    CivilizationUtilityDecision retrieveDecision;
+    retrieveDecision.intent = CivilizationIntent::Retrieve;
+    retrieveDecision.storage = storage.id;
+    retrieveDecision.item = ItemKind::RawMaterial;
+    retrieveDecision.material = MaterialKind::Water;
+    retrieveDecision.quantity = 1;
+
+    const int carriedBeforeRetrieve = actor.civilization.inventory.count(
+        ItemKind::RawMaterial, MaterialKind::Water);
+    const int storedBeforeRetrieve = first.world().storageSites.back().inventory.count(
+        ItemKind::RawMaterial, MaterialKind::Water);
+    const CivilizationExecutionResult remoteRetrieve =
+        executeCivilizationDecisionAtPosition(
+            first.world(), actor, retrieveDecision, remoteStoragePos);
+    CHECK(!remoteRetrieve.executed);
+    CHECK(actor.civilization.inventory.count(
+        ItemKind::RawMaterial, MaterialKind::Water) == carriedBeforeRetrieve);
+    CHECK(first.world().storageSites.back().inventory.count(
+        ItemKind::RawMaterial, MaterialKind::Water) == storedBeforeRetrieve);
+
+    const CivilizationExecutionResult localRetrieve =
+        executeCivilizationDecisionAtPosition(
+            first.world(), actor, retrieveDecision, storageResolved);
+    CHECK(localRetrieve.executed && localRetrieve.success);
+    CHECK(actor.civilization.inventory.count(
+        ItemKind::RawMaterial, MaterialKind::Water) == carriedBeforeRetrieve + 1);
+    CHECK(first.world().storageSites.back().inventory.count(
+        ItemKind::RawMaterial, MaterialKind::Water) == storedBeforeRetrieve - 1);
+
+    GridPos actorPosition{};
+    CHECK(first.runtimePosition(actor.id, actorPosition));
+    const SettlementFacilitySiteOpportunity sleepSite =
+        chooseSettlementFacilitySite(
+            first.world(), actor.id, FacilityKind::SleepingPlace, actorPosition);
+    CHECK(sleepSite.available);
+
+    CivilizationUtilityDecision planSleep;
+    planSleep.intent = CivilizationIntent::Craft;
+    planSleep.facilityKind = FacilityKind::SleepingPlace;
+    planSleep.facilityAction = FacilityBuildAction::Plan;
+    planSleep.hasFacilityTarget = true;
+    planSleep.facilityTargetPos = sleepSite.pos;
+
+    const std::size_t facilitiesBeforeRemotePlan = first.world().facilities.size();
+    const GridPos remoteFacilityPos{
+        sleepSite.pos.x + 20,
+        sleepSite.pos.y + 20
+    };
+    const CivilizationExecutionResult remotePlan =
+        executeCivilizationDecisionAtPosition(
+            first.world(), actor, planSleep, remoteFacilityPos);
+    CHECK(!remotePlan.executed);
+    CHECK(first.world().facilities.size() == facilitiesBeforeRemotePlan);
+
+    const CivilizationExecutionResult localPlan =
+        executeCivilizationDecisionAtPosition(
+            first.world(), actor, planSleep, sleepSite.pos);
+    CHECK(localPlan.executed && localPlan.success);
+    CHECK(first.world().facilities.size() == facilitiesBeforeRemotePlan + 1);
+
     // Unknown ids must never fabricate a spatial target.
     GridPos missing{};
     CHECK(!resolveCivilizationResourceGridPosition(first.world(), 0, missing));

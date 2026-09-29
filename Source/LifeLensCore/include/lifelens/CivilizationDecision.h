@@ -7,6 +7,7 @@
 
 #include "Civilization.h"
 #include "Character.h"
+#include "CivilizationSpatial.h"
 #include "CultivationProgression.h"
 #include "Facility.h"
 #include "PrimitiveFireProgression.h"
@@ -1686,6 +1687,18 @@ inline ConstructedFacility* findCivilizationFacility(World& world,FacilityId id)
     return nullptr;
 }
 
+inline bool civilizationExecutionNearTarget(
+    GridPos authoritativePosition,
+    GridPos target,
+    int maxGridDelta=1)
+{
+    const int radius=std::max(0,maxGridDelta);
+    return authoritativePosition.x>=target.x-radius
+        && authoritativePosition.x<=target.x+radius
+        && authoritativePosition.y>=target.y-radius
+        && authoritativePosition.y<=target.y+radius;
+}
+
 inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
     World& world,
     Character& self,
@@ -1695,6 +1708,19 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
 {
     CivilizationExecutionResult result;
     const GridPos sanitationReference=authoritativePosition;
+
+    // Spatial civilization work must be paid for with actual travel. The
+    // autonomous runtime already walks to these targets before completion, but
+    // this execution boundary is also public to external clients and tests.
+    // Guard it here as well so a caller can never gather, move stock, or work
+    // on a facility remotely by supplying an unrelated authoritative position.
+    if(decision.intent==CivilizationIntent::Craft
+       && decision.hasFacilityTarget
+       && !civilizationExecutionNearTarget(
+           authoritativePosition,decision.facilityTargetPos)){
+        return result;
+    }
+
     switch(decision.intent){
         case CivilizationIntent::Explore: {
             if(!validNaturalResourceMaterial(decision.material)) return result;
@@ -1720,7 +1746,12 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
         }
         case CivilizationIntent::Gather: {
             ResourceNode* node=findCivilizationResource(world,decision.resourceNode);
-            if(!node) return result;
+            GridPos gatherTarget{};
+            if(!node
+               || !resolveCivilizationResourceAccessGridPosition(
+                   world,decision.resourceNode,gatherTarget)
+               || !civilizationExecutionNearTarget(
+                   authoritativePosition,gatherTarget)) return result;
             result.event=gatherResource(self.civilization,*node,std::max(1,decision.quantity));
             result.executed=result.event.quantity>0;
             result.success=result.executed;
@@ -1729,7 +1760,12 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
         }
         case CivilizationIntent::Store: {
             StorageSite* storage=findCivilizationStorage(world,decision.storage);
-            if(!storage) return result;
+            GridPos storageTarget{};
+            if(!storage
+               || !resolveCivilizationStorageGridPosition(
+                   world,decision.storage,storageTarget)
+               || !civilizationExecutionNearTarget(
+                   authoritativePosition,storageTarget)) return result;
             result.event=storeItems(self.civilization,*storage,decision.item,decision.material,std::max(1,decision.quantity));
             result.executed=result.event.quantity>0;
             result.success=result.executed;
@@ -1746,7 +1782,12 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
         }
         case CivilizationIntent::Retrieve: {
             StorageSite* storage=findCivilizationStorage(world,decision.storage);
-            if(!storage) return result;
+            GridPos storageTarget{};
+            if(!storage
+               || !resolveCivilizationStorageGridPosition(
+                   world,decision.storage,storageTarget)
+               || !civilizationExecutionNearTarget(
+                   authoritativePosition,storageTarget)) return result;
             result.event=retrieveItems(
                 self.civilization,*storage,
                 decision.item,decision.material,
@@ -2387,8 +2428,30 @@ inline CivilizationExecutionResult executeCivilizationDecision(
     Character& self,
     const CivilizationUtilityDecision& decision)
 {
+    // Preserve the non-spatial convenience helper for focused unit tests, but
+    // resolve the same authoritative target that the autonomous context runtime
+    // would walk to before invoking the position-aware execution boundary.
+    GridPos resolvedPosition=civilizationSanitationReferencePosition(world);
+    if(decision.intent==CivilizationIntent::Gather){
+        GridPos target{};
+        if(resolveCivilizationResourceAccessGridPosition(
+                world,decision.resourceNode,target)){
+            resolvedPosition=target;
+        }
+    }else if(decision.intent==CivilizationIntent::Store
+             || decision.intent==CivilizationIntent::Retrieve){
+        GridPos target{};
+        if(resolveCivilizationStorageGridPosition(
+                world,decision.storage,target)){
+            resolvedPosition=target;
+        }
+    }else if(decision.intent==CivilizationIntent::Craft
+             && decision.hasFacilityTarget){
+        resolvedPosition=decision.facilityTargetPos;
+    }
+
     return executeCivilizationDecisionAtPosition(
-        world,self,decision,civilizationSanitationReferencePosition(world));
+        world,self,decision,resolvedPosition);
 }
 
 inline void regenerateCivilizationEnvironment(World& world)
