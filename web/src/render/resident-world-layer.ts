@@ -231,11 +231,8 @@ export class ResidentWorldLayer {
     if (centerChanged) {
       const offsetX = (previousCenterX - centerX) * WORLD_GRID_CONTRACT.worldUnitsPerChunk;
       const offsetZ = (previousCenterY - centerY) * WORLD_GRID_CONTRACT.worldUnitsPerChunk;
-      const motionTimeScale =
-      residentPresentationMotionTimeScale(this.simulationSpeed);
-    const motionDt = dt * motionTimeScale;
 
-    for (const actor of this.actors.values()) {
+      for (const actor of this.actors.values()) {
         if (!actor.initialized) continue;
         actor.current.x += offsetX;
         actor.current.z += offsetZ;
@@ -394,6 +391,10 @@ export class ResidentWorldLayer {
       RESIDENT_PRESENTATION_CONTRACT.maxAnimationDeltaSeconds,
       Math.max(0, deltaSeconds),
     );
+    const motionTimeScale =
+      residentPresentationMotionTimeScale(this.simulationSpeed);
+    const motionDt = dt * motionTimeScale;
+
     for (const actor of this.actors.values()) {
       if (!actor.root.visible) continue;
 
@@ -452,7 +453,8 @@ export class ResidentWorldLayer {
             Math.cos(interactionYaw - actor.root.rotation.y),
           );
           const turnBlend = 1 - Math.exp(
-            -RESIDENT_PRESENTATION_CONTRACT.turnResponsivenessPerSecond * dt,
+            -RESIDENT_PRESENTATION_CONTRACT.turnResponsivenessPerSecond
+              * motionDt,
           );
           actor.root.rotation.y += yawDelta * turnBlend;
         }
