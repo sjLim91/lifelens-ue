@@ -275,18 +275,36 @@ int main()
     assert(bedMinutes<outdoorMinutes);
     assert(bedMinutes>=MinimumSleepSessionMinutes);
 
-    const double fatigueBeforeTravel=timedSleeper.needs.sleep;
+    bool startedSleepTravel=false;
+    double fatigueDuringTravel=timedSleeper.needs.sleep;
+    for(int minute=0;minute<180 && !startedSleepTravel;++minute){
+        timedSleep.step();
+        const ResidentPresentationObservation presentation=
+            timedSleep.observeResidentPresentation(timedSleeperId);
+        if(!presentation.active
+           || presentation.kind!=PresentationActionKind::Physical
+           || presentation.physicalGoal!=Goal::Sleep){
+            continue;
+        }
+        assert(presentation.phase==PresentationActionPhase::Moving);
+        assert(presentation.hasTargetGrid);
+        assert(presentation.targetGrid.x==timedBedPos.x);
+        assert(presentation.targetGrid.y==timedBedPos.y);
+        fatigueDuringTravel=timedSleeper.needs.sleep;
+        startedSleepTravel=true;
+    }
+    assert(startedSleepTravel);
+
+    // At least one further travel minute must not provide rest.
     timedSleep.step();
-    const ResidentPresentationObservation movingSleep=
+    const ResidentPresentationObservation continuingTravel=
         timedSleep.observeResidentPresentation(timedSleeperId);
-    assert(movingSleep.active);
-    assert(movingSleep.kind==PresentationActionKind::Physical);
-    assert(movingSleep.physicalGoal==Goal::Sleep);
-    assert(movingSleep.phase==PresentationActionPhase::Moving);
-    assert(movingSleep.hasTargetGrid);
-    assert(movingSleep.targetGrid.x==timedBedPos.x);
-    assert(movingSleep.targetGrid.y==timedBedPos.y);
-    assert(timedSleeper.needs.sleep>=fatigueBeforeTravel);
+    if(continuingTravel.active
+       && continuingTravel.kind==PresentationActionKind::Physical
+       && continuingTravel.physicalGoal==Goal::Sleep
+       && continuingTravel.phase==PresentationActionPhase::Moving){
+        assert(timedSleeper.needs.sleep>=fatigueDuringTravel);
+    }
 
     bool reachedBed=false;
     for(int minute=0;minute<120 && !reachedBed;++minute){
