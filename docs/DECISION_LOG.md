@@ -462,3 +462,22 @@ Decision:
 
 Canonical companion:
 - `docs/WEB_CLIENT_ARCHITECTURE_v1.md`
+
+---
+
+# 2026-09-29
+
+## D-022 — Unreal active client를 퇴역하고 Web/Core 경로로 단순화한다
+
+**결정**
+- 현재 제품 실행/시각 검증 경로를 `LifeLensCore -> WASM -> Web Observer`로 단일화한다.
+- Unreal 프로젝트, Unreal bridge/client, UE Config/Content, UHT/UBT CI, Unreal Android APK pipeline은 active `main`에서 제거한다.
+- 제거 직전 상태는 `archive/unreal-final-20260929`에 보존한다.
+- LifeLensCore는 renderer-independent C++ authority로 유지하고 Web에 종속시키지 않는다.
+- 미래에 Unreal 또는 다른 native engine을 다시 도입할 수 있다. 그 경우 archive를 참고하되 당시 최신 Core API/DTO에 맞는 선택적 presentation client로 다시 연결한다.
+- 과거 Unreal 전용 수정 PR #497은 병합하지 않는다. Web/headless의 시간 기반 수면 causality는 #494 baseline을 유지한다.
+
+**목적**
+- 사용하지 않는 UE compile/asset/platform maintenance 비용 제거.
+- 실제 확인하는 Web 화면과 Core causality에 개발 자원 집중.
+- renderer를 바꿔도 LifeLens simulation/history/save truth가 유지되는 구조 보장.
