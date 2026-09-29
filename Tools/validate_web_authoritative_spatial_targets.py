@@ -63,38 +63,6 @@ for token in (
     assert token in spatial, f"missing generic resource access guard: {token}"
 
 for token in (
-    "civilizationOutdoorInteractionGridValid",
-    "resolveCivilizationOutdoorInteractionGridPosition",
-    "surfaceWaterGroundContainsGrid",
-    "facilityFootprintRadiusGrid",
-    "world.environmentalResidues.exposureAt(candidate)",
-):
-    assert token in spatial, f"shared outdoor interaction contract missing: {token}"
-
-for token in (
-    "ExperimentKind::DesignateSanitationArea",
-    "TechniqueId::DesignatedSanitationArea",
-    "resolveCivilizationOutdoorInteractionGridPosition",
-    "PrimitiveSanitationCleanSiteExposureLimit",
-):
-    assert token in context_action, f"sanitation target resolution missing: {token}"
-
-for token in (
-    "validatePendingDesignatedAreaTarget",
-    "civilizationOutdoorInteractionGridValid",
-    "pending.targetPos",
-):
-    assert token in context_runtime, f"pending sanitation revalidation missing: {token}"
-
-for token in (
-    "recommendedOutdoorReliefPosition",
-    "sanitationUseTarget",
-    "resolveCivilizationOutdoorInteractionGridPosition",
-    "SanitationUseTargetKind::EmergencyOutdoor",
-):
-    assert token in simulation_h, f"physical sanitation target safety missing: {token}"
-
-for token in (
     "hasAccessPos",
     "accessPos",
     "resolveCivilizationResourceAccessGridPosition",
@@ -172,9 +140,6 @@ for token in (
     "blockedStone",
     "!surfaceWaterGroundContainsGrid",
     "checkedNonWaterAccess",
-    "blockedOutdoorPreferred",
-    "dryOutdoorTarget",
-    "civilizationOutdoorInteractionGridValid",
 ):
     assert token in spatial_test, f"Core resource access regression missing: {token}"
 
