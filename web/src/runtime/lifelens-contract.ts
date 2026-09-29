@@ -88,8 +88,24 @@ export const RESIDENT_PRESENTATION_CONTRACT = {
     RESIDENT_VISUAL_SPEED_WORLD_UNITS_PER_SECOND_AT_1X,
   walkMinTimeScale: 0.72,
   walkMaxTimeScale: 1.55,
+  // The canonical 1× simulation pace was rebased from the former 4× pace.
+  // Presentation motion follows that same clock instead of remaining on wall time.
+  motionTimeScaleAt1x: 4,
+  maxMotionTimeScale: 8,
   modelForwardYawOffsetRadians: 0,
 } as const;
+
+export function residentPresentationMotionTimeScale(
+  speed: number,
+): number {
+  const canonicalSpeed = normalizeSimulationSpeed(speed);
+  if (canonicalSpeed <= 0) return 0;
+  return Math.min(
+    RESIDENT_PRESENTATION_CONTRACT.maxMotionTimeScale,
+    RESIDENT_PRESENTATION_CONTRACT.motionTimeScaleAt1x
+      * canonicalSpeed,
+  );
+}
 
 export function simulationTimeHint(): string {
   return (
