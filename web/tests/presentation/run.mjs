@@ -49,6 +49,7 @@ const chunk = (
   y,
   waterKind,
   elevation01,
+  salinity: ['Ocean', 'Coast'].includes(waterKind) ? 'Salt' : 'Fresh',
   waterAvailability: 1,
   flowPotential: 0.8,
   drainageAccumulationPotential: waterKind === 'River' ? 0.7 : 0.35,
@@ -153,7 +154,7 @@ function assertUpwardTriangles(geometry) {
 test('all 15 open-water shoreline masks face the sky', () => {
   const coords = [[0, 0], [1, 0], [1, 1], [0, 1]];
   for (let mask = 1; mask < 16; mask++) {
-    const geometry = buildOpenWaterSurfaceGeometry(windowOf(coords.filter((_, i) => mask & (1 << i)).map(([x, y]) => chunk(x, y, 'Lake'))));
+    const geometry = buildOpenWaterSurfaceGeometry(windowOf(coords.filter((_, i) => mask & (1 << i)).map(([x, y]) => chunk(x, y, 'Ocean'))));
     try { assertUpwardTriangles(geometry); } finally { geometry.dispose(); }
   }
 });
@@ -195,8 +196,45 @@ test('flow-water centerline stays on the authoritative downstream segment', () =
   }
 });
 
+test('fresh lake and wetland render localized Core-sized water footprints', () => {
+  for (const waterKind of ['Lake', 'Wetland']) {
+    const geometry = buildFlowWaterSurfaceGeometry(windowOf([
+      chunk(0, 0, waterKind, 0.5, {
+        salinity: 'Fresh',
+        waterAvailability: 1,
+      }),
+    ]));
+    try {
+      assert.ok(geometry.attributes.position.count > 0, `${waterKind} water footprint missing`);
+      const position = geometry.attributes.position;
+      let maxRadius = 0;
+      for (let index = 0; index < position.count; index += 1) {
+        maxRadius = Math.max(maxRadius, Math.hypot(position.getX(index), position.getZ(index)));
+      }
+      const radiusCells = waterKind === 'Lake' ? 6.75 : 7;
+      near(maxRadius, radiusCells * (size / grid.gridCellsPerChunk), `${waterKind} footprint radius`, 1e-5);
+    } finally {
+      geometry.dispose();
+    }
+  }
+});
+
+test('non-fresh wetland does not masquerade as drinkable standing water', () => {
+  const geometry = buildFlowWaterSurfaceGeometry(windowOf([
+    chunk(0, 0, 'Wetland', 0.5, {
+      salinity: 'Brackish',
+      waterAvailability: 1,
+    }),
+  ]));
+  try {
+    assert.equal(geometry.attributes.position.count, 0);
+  } finally {
+    geometry.dispose();
+  }
+});
+
 test('water can be hit from above using its front face', () => {
-  const geometry = buildOpenWaterSurfaceGeometry(windowOf([chunk(0, 0, 'Lake')]));
+  const geometry = buildOpenWaterSurfaceGeometry(windowOf([chunk(0, 0, 'Ocean')]));
   const material = new THREE.MeshBasicMaterial({ side: THREE.FrontSide });
   try {
     const mesh = new THREE.Mesh(geometry, material);
@@ -243,7 +281,7 @@ test('changing worlds with matching terrain still rebuilds seed-dependent water'
 test('unchanged terrain refreshes retain water geometry', () => {
   const layer = new WaterLayer();
   try {
-    const window = windowOf([chunk(0, 0, 'Lake'), chunk(1, 0, 'Coast')]);
+    const window = windowOf([chunk(0, 0, 'Ocean'), chunk(1, 0, 'Coast')]);
     layer.setTerrain(window);
     const old = layer.group.children[0].geometry;
     layer.setTerrain({ ...window, chunks: [...window.chunks].reverse() });
