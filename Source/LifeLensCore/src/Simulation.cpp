@@ -933,6 +933,15 @@ void Simulation::advanceAction(Character& c,Runtime& r){
             break;
         case ActionType::Use:
             if(!obj){ failPlan(c,r); return; }
+            if(r.goal==Goal::Sleep && sleepInterruptedByUrgentNeed(c)){
+                emit(c.name+" woke from Sleep for urgent physical need");
+                clearNavigation(r);
+                a.remainingTicks=0;
+                ++r.actionIndex;
+                r.announced=false;
+                r.consecutiveFailures=0;
+                break;
+            }
             if((r.goal==Goal::Eat || r.goal==Goal::Drink || r.goal==Goal::Wash)
                && a.remainingTicks==std::max(1,obj->useDurationTicks)){
                 const MaterialKind provision=r.goal==Goal::Eat
@@ -946,11 +955,24 @@ void Simulation::advanceAction(Character& c,Runtime& r){
             }
             {
             const Needs before=c.needs;
-            c.needs.apply(obj->effectPerTick);
+            if(r.goal==Goal::Sleep){
+                c.needs.apply(facilityUseEffectPerTick(Goal::Sleep));
+            }else{
+                c.needs.apply(obj->effectPerTick);
+            }
             applyNeedResolutionEmotion(c,before,r.goal);
             }
             if(--a.remainingTicks<=0){ ++r.actionIndex; r.announced=false; } break;
         case ActionType::EmergencyUse:
+            if(r.goal==Goal::Sleep && sleepInterruptedByUrgentNeed(c)){
+                emit(c.name+" woke from Sleep for urgent physical need");
+                clearNavigation(r);
+                a.remainingTicks=0;
+                ++r.actionIndex;
+                r.announced=false;
+                r.consecutiveFailures=0;
+                break;
+            }
             if((r.goal==Goal::Eat || r.goal==Goal::Drink || r.goal==Goal::Wash)
                && a.remainingTicks==emergencyUseDurationTicks(r.goal)){
                 const MaterialKind provision=r.goal==Goal::Eat
