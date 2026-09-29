@@ -1300,8 +1300,8 @@ void Simulation::advanceDependentCare()
                     caregiver->civilization.inventory.count(
                         ItemKind::RawMaterial,MaterialKind::PlantFood)>0;
                 context.waterAvailable=
-                    caregiver->civilization.inventory.count(
-                        ItemKind::RawMaterial,MaterialKind::Water)>0;
+                    portableWaterCount(
+                        caregiver->civilization.inventory)>0;
 
                 ParentingDecision decision=chooseParentingAction(
                     *caregiver,child,caregiverToChild,context);
