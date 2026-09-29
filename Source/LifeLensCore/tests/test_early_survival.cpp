@@ -116,62 +116,118 @@ int main()
     provisionProbe.world().storageSites.clear();
     Character& provisionActor=provisionProbe.world().characters.front();
     provisionActor.needs={0.01,0.90,0.01,0.01,0.01};
-    assert(provisionActor.civilization.inventory.count(
-        ItemKind::RawMaterial,MaterialKind::Water)==0);
+    while(provisionActor.civilization.inventory.remove(
+        ItemKind::RawMaterial,MaterialKind::Water,1)) {}
+    while(provisionActor.civilization.inventory.remove(
+        ItemKind::SimpleContainer,MaterialKind::Unknown,1,true)) {}
+
+    assert(portableWaterCount(provisionActor.civilization.inventory)==0);
     assert(!actionAvailableFor(
         provisionProbe.world(),provisionActor,Goal::Drink));
     assert(buildPlan(
         provisionProbe.world(),provisionActor,Goal::Drink,{}).empty());
-    const double thirstWithoutWater=provisionActor.needs.thirst;
-    provisionProbe.step();
-    // Environment may increase thirst, but without Water it must never fall.
-    assert(provisionActor.needs.thirst>=thirstWithoutWater);
 
-    // Washing is also a physical water use. With no Water, hygiene cannot
-    // improve merely because a Sink/presentation affordance exists.
-    provisionActor.needs.hygiene=0.90;
-    assert(!actionAvailableFor(
-        provisionProbe.world(),provisionActor,Goal::Wash));
-    assert(buildPlan(
-        provisionProbe.world(),provisionActor,Goal::Wash,{}).empty());
-
+    // A loose Water stack without a physical container is not a portable
+    // provision and must not enable Drink/Wash.
     provisionActor.civilization.inventory.add({
         ItemKind::RawMaterial,MaterialKind::Water,1,0.5,1.0});
+    assert(rawWaterUnitCount(provisionActor.civilization.inventory)==1);
+    assert(portableWaterCount(provisionActor.civilization.inventory)==0);
+    assert(!actionAvailableFor(
+        provisionProbe.world(),provisionActor,Goal::Drink));
+    assert(!actionAvailableFor(
+        provisionProbe.world(),provisionActor,Goal::Wash));
+
+    // Once a real container exists, the same Water becomes portable. Drinking
+    // consumes Water while leaving the now-empty container behind.
+    provisionActor.civilization.inventory.add({
+        ItemKind::SimpleContainer,MaterialKind::Clay,1,0.5,1.0});
+    assert(portableWaterCount(provisionActor.civilization.inventory)==1);
     assert(actionAvailableFor(
         provisionProbe.world(),provisionActor,Goal::Drink));
-    const auto drinkPlan=buildPlan(
-        provisionProbe.world(),provisionActor,Goal::Drink,{});
-    assert(!drinkPlan.empty());
-    // Planning/movement does not consume or resolve thirst. Consumption begins
-    // only at the actual Use/EmergencyUse action.
-    assert(provisionActor.civilization.inventory.count(
-        ItemKind::RawMaterial,MaterialKind::Water)==1);
+
     const double thirstBeforeDrink=provisionActor.needs.thirst;
     for(int minute=0;
         minute<90
-        && provisionActor.civilization.inventory.count(
-            ItemKind::RawMaterial,MaterialKind::Water)>0;
+        && portableWaterCount(provisionActor.civilization.inventory)>0;
         ++minute){
         provisionProbe.step();
     }
-    assert(provisionActor.civilization.inventory.count(
-        ItemKind::RawMaterial,MaterialKind::Water)==0);
+    assert(portableWaterCount(provisionActor.civilization.inventory)==0);
+    assert(simpleContainerCount(provisionActor.civilization.inventory)==1);
     assert(provisionActor.needs.thirst<thirstBeforeDrink);
 
+    // Refill the existing empty container and verify portable washing consumes
+    // only the Water, not the container.
     provisionActor.civilization.inventory.add({
         ItemKind::RawMaterial,MaterialKind::Water,1,0.5,1.0});
     provisionActor.needs={0.01,0.01,0.01,0.01,0.90};
     const double hygieneBeforeWash=provisionActor.needs.hygiene;
     for(int minute=0;
         minute<90
-        && provisionActor.civilization.inventory.count(
-            ItemKind::RawMaterial,MaterialKind::Water)>0;
+        && portableWaterCount(provisionActor.civilization.inventory)>0;
         ++minute){
         provisionProbe.step();
     }
-    assert(provisionActor.civilization.inventory.count(
-        ItemKind::RawMaterial,MaterialKind::Water)==0);
+    assert(portableWaterCount(provisionActor.civilization.inventory)==0);
+    assert(simpleContainerCount(provisionActor.civilization.inventory)==1);
     assert(provisionActor.needs.hygiene<hygieneBeforeWash);
+
+    // Pre-container survival uses the source directly. No Water or container is
+    // fabricated into inventory merely because the resident drinks or washes.
+    Simulation directWater(9123402);
+    directWater.setupNewGame();
+    directWater.world().characters.resize(1);
+    Character& directActor=directWater.world().characters.front();
+    const CharacterId directActorId=directActor.id;
+    while(directActor.civilization.inventory.remove(
+        ItemKind::RawMaterial,MaterialKind::Water,1)) {}
+    while(directActor.civilization.inventory.remove(
+        ItemKind::SimpleContainer,MaterialKind::Unknown,1,true)) {}
+
+    GridPos directStart{};
+    assert(directWater.runtimePosition(directActorId,directStart));
+    assert(hasResource(directWater.world(),MaterialKind::Water));
+
+    directActor.needs={0.01,0.93,0.01,0.01,0.01};
+    const double directThirstBefore=directActor.needs.thirst;
+    bool sawDirectDrink=false;
+    for(int minute=0;minute<SimulationMinutesPerDay
+        && directActor.needs.thirst>=directThirstBefore;++minute){
+        directWater.step();
+        const ResidentPresentationObservation observed=
+            directWater.observeResidentPresentation(directActorId);
+        if(observed.active
+           && observed.kind==PresentationActionKind::Physical
+           && observed.physicalGoal==Goal::Drink
+           && observed.directNaturalWaterSource){
+            sawDirectDrink=true;
+        }
+    }
+    assert(sawDirectDrink);
+    assert(directActor.needs.thirst<directThirstBefore);
+    assert(rawWaterUnitCount(directActor.civilization.inventory)==0);
+    assert(simpleContainerCount(directActor.civilization.inventory)==0);
+
+    directActor.needs={0.01,0.01,0.01,0.01,0.93};
+    const double directHygieneBefore=directActor.needs.hygiene;
+    bool sawDirectWash=false;
+    for(int minute=0;minute<SimulationMinutesPerDay
+        && directActor.needs.hygiene>=directHygieneBefore;++minute){
+        directWater.step();
+        const ResidentPresentationObservation observed=
+            directWater.observeResidentPresentation(directActorId);
+        if(observed.active
+           && observed.kind==PresentationActionKind::Physical
+           && observed.physicalGoal==Goal::Wash
+           && observed.directNaturalWaterSource){
+            sawDirectWash=true;
+        }
+    }
+    assert(sawDirectWash);
+    assert(directActor.needs.hygiene<directHygieneBefore);
+    assert(rawWaterUnitCount(directActor.civilization.inventory)==0);
+    assert(simpleContainerCount(directActor.civilization.inventory)==0);
 
     // Worst-case regression: a resident reaches urgent hunger/thirst without a
     // carried provision. This used to deadlock because urgent Needs suppressed
@@ -205,7 +261,7 @@ int main()
         urgent.step();
     }
 
-    assert(containsLog(urgent.logs(),actorName+" -> Civilization Gather Water"));
+    assert(!containsLog(urgent.logs(),actorName+" -> Civilization Gather Water"));
     assert(containsLog(urgent.logs(),actorName+" completed Drink via emergency fallback"));
     assert(containsLog(urgent.logs(),actorName+" -> Civilization Gather PlantFood"));
     assert(containsLog(urgent.logs(),actorName+" completed Eat via emergency fallback"));
@@ -236,7 +292,6 @@ int main()
         assert(resident->alive);
 
         const std::string prefix=founder.second+" ";
-        assert(containsLog(natural.logs(),prefix+"-> Civilization Gather Water"));
         assert(containsLog(natural.logs(),prefix+"completed Drink via emergency fallback"));
         assert(containsLog(natural.logs(),prefix+"-> Civilization Gather PlantFood"));
         assert(containsLog(natural.logs(),prefix+"completed Eat via emergency fallback"));
