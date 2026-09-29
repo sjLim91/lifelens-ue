@@ -433,11 +433,11 @@ inline bool waterCultivatedPlot(
        || !facilityOperationalAndActive(facility)
        || !facility.cropPlanted
        || facility.cropHarvestUnits>0
-       || worker.civilization.inventory.count(
-           ItemKind::RawMaterial,MaterialKind::Water)<=0) return false;
+       || portableWaterCount(
+           worker.civilization.inventory)<=0) return false;
 
-    if(!worker.civilization.inventory.remove(
-        ItemKind::RawMaterial,MaterialKind::Water,1)) return false;
+    if(!consumePortableWater(
+        worker.civilization.inventory,1)) return false;
     facility.cropMoisture01=cultivationClamp01(
         facility.cropMoisture01+0.48);
     facility.lastCultivationMinute=world.minute;
