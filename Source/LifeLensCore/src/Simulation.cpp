@@ -876,7 +876,7 @@ void Simulation::beginPlan(Character& c,Runtime& r){
     if(chosen==Goal::Sleep
        && r.plan.size()==1
        && r.plan.front().type==ActionType::EmergencyUse){
-        ConstructedFacility* sleepFacility=
+        const ConstructedFacility* sleepFacility=
             nearestOperationalSleepFacility(world_,r.pos);
         if(sleepFacility!=nullptr
            && manhattan(sleepFacility->pos,r.pos)<=SettlementServiceRadiusGrid){
@@ -983,7 +983,7 @@ void Simulation::advanceAction(Character& c,Runtime& r){
                 GridPos sleepTarget=r.navigationTarget;
                 bool hasSleepTarget=r.navigationHasTarget;
                 if(!hasSleepTarget){
-                    ConstructedFacility* facility=
+                    const ConstructedFacility* facility=
                         nearestOperationalSleepFacility(world_,r.pos);
                     if(facility!=nullptr
                        && manhattan(facility->pos,r.pos)<=SettlementServiceRadiusGrid){
