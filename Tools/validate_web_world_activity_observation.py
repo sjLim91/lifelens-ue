@@ -14,8 +14,9 @@ world_scene = (root / "web/src/render/world-scene.ts").read_text(encoding="utf-8
 # Large authority payloads are cached and sampled away from the 500 ms hot path.
 for token in (
     "worldActivityRefreshCountdown",
+    "worldActivityWindowKey",
     "this.worldActivityRefreshCountdown <= 0",
-    "this.core.civilizationWorld(16)",
+    "this.core.civilizationWorldWindow(",
     "this.core.worldObjects()",
     "this.civilizationSnapshot",
     "this.worldObjectsSnapshot",
@@ -23,7 +24,7 @@ for token in (
     assert token in session, f"low-rate world activity sampling missing: {token}"
 
 assert session.index("this.worldActivityRefreshCountdown <= 0") < session.index(
-    "this.core.civilizationWorld(16)"
+    "this.core.civilizationWorldWindow("
 )
 assert session.index("this.worldActivityRefreshCountdown <= 0") < session.index(
     "this.core.worldObjects()"
