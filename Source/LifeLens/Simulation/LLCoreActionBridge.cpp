@@ -146,6 +146,36 @@ int32 ULLCoreBridgeSubsystem::GetPhysicalActionDurationTicks(
         : static_cast<int32>(lifelens::facilityUseDurationTicks(Goal));
 }
 
+bool ULLCoreBridgeSubsystem::BeginResidentSleepUse(
+    FGuid ResidentId,
+    int32 ResolvedGridX,
+    int32 ResolvedGridY)
+{
+    if (!CoreSimulation || !ResidentId.IsValid())
+    {
+        return false;
+    }
+
+    const uint64* CoreCharacterId = GuidToCore.Find(ResidentId);
+    if (!CoreCharacterId)
+    {
+        return false;
+    }
+
+    const lifelens::GridPos ResolvedPosition{
+        static_cast<int>(ResolvedGridX),
+        static_cast<int>(ResolvedGridY)};
+
+    const bool bStarted = CoreSimulation->beginExternalSleepUse(
+        static_cast<lifelens::CharacterId>(*CoreCharacterId),
+        ResolvedPosition);
+    if (bStarted)
+    {
+        OnCoreRuntimeStateChanged.Broadcast();
+    }
+    return bStarted;
+}
+
 bool ULLCoreBridgeSubsystem::CompleteResidentPhysicalAction(
     FGuid ResidentId,
     bool bEmergencyFallback,
