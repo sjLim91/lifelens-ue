@@ -43,6 +43,8 @@ int main()
 
     Character biased;
     biased.needs.hunger=0.70;
+    biased.civilization.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::PlantFood,1,0.5,1.0});
     World world(7);
     world.objects.push_back({1,ObjectKind::Fridge,{0,0},std::nullopt,{-0.1,0,0,0,0},5});
     const double baseline=scoreGoal(world,biased,Goal::Eat);
