@@ -64,10 +64,29 @@ export function residentActionCue(
   switch (directive.kind) {
     case 'Physical':
       if (directive.physicalGoal === 'Wash') {
+        if (directive.directNaturalWaterSource) {
+          return {
+            text: phase === 'Moving'
+              ? '물가로 씻으러 이동 중'
+              : '물가에서 씻는 중',
+            phase,
+          };
+        }
         return {
           text: phase === 'Moving'
             ? '소지한 물로 씻으러 이동 중'
             : '소지한 물로 씻는 중',
+          phase,
+        };
+      }
+      if (
+        directive.physicalGoal === 'Drink'
+        && directive.directNaturalWaterSource
+      ) {
+        return {
+          text: phase === 'Moving'
+            ? '물가로 마시러 이동 중'
+            : '물가에서 마시는 중',
           phase,
         };
       }
