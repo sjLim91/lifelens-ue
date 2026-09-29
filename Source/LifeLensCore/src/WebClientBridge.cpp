@@ -1034,7 +1034,159 @@ std::string WebClientBridge::residentsJson() const
                 out << "\"type\":\"" << lifeEventName(event.type) << "\",";
                 out << "\"minute\":" << event.minute << ",";
                 out << "\"relatedCharacterIds\":[";
-                for (std::size_t j = 0; j < event.relatedCharacters.size(std::string WebClientBridge::civilizationWorldJson(
+                for (std::size_t j = 0; j < event.relatedCharacters.size(); ++j) {
+                    if (j != 0) out << ",";
+                    out << "\"" << event.relatedCharacters[j] << "\"";
+                }
+                out << "],";
+                out << "\"value\":" << event.value;
+                out << "}";
+            }
+        }
+        out << "],";
+
+        out << "\"memories\":[";
+        for (std::size_t i = 0; i < memories.size(); ++i) {
+            if (i != 0) out << ",";
+            const MemoryRecord& memory = *memories[i];
+            out << "{";
+            out << "\"who\":\"" << memory.who << "\",";
+            out << "\"sourceCharacter\":\"" << memory.sourceCharacter << "\",";
+            out << "\"what\":\"" << escapeJson(memory.what) << "\",";
+            out << "\"where\":\"" << escapeJson(memory.where) << "\",";
+            out << "\"minute\":" << memory.minute << ",";
+            out << "\"emotionValence\":"; appendDouble(out, memory.emotionValence); out << ",";
+            out << "\"emotionIntensity\":"; appendDouble(out, memory.emotionIntensity); out << ",";
+            out << "\"importance\":"; appendDouble(out, memory.importance); out << ",";
+            out << "\"confidence\":"; appendDouble(out, memory.confidence); out << ",";
+            out << "\"effectiveConfidence\":"; appendDouble(out, memory.effectiveConfidence(world.minute)); out << ",";
+            out << "\"recallScore\":"; appendDouble(out, memory.recallScore(world.minute)); out << ",";
+            out << "\"decayPerDay\":"; appendDouble(out, memory.decayPerDay); out << ",";
+            out << "\"witnessed\":" << (memory.witnessed ? "true" : "false") << ",";
+            out << "\"source\":\"" << memorySourceName(memory.source) << "\",";
+            out << "\"tags\":[";
+            for (std::size_t tagIndex = 0; tagIndex < memory.tags.size(); ++tagIndex) {
+                if (tagIndex != 0) out << ",";
+                out << "\"" << escapeJson(memory.tags[tagIndex]) << "\"";
+            }
+            out << "]";
+            out << "}";
+        }
+        out << "],";
+
+        out << "\"beliefs\":[";
+        for (std::size_t i = 0; i < beliefs.size(); ++i) {
+            if (i != 0) out << ",";
+            const BeliefRecord& belief = *beliefs[i];
+            out << "{";
+            out << "\"subject\":\"" << belief.subject << "\",";
+            out << "\"proposition\":\"" << escapeJson(belief.proposition) << "\",";
+            out << "\"stance\":"; appendDouble(out, belief.stance); out << ",";
+            out << "\"confidence\":"; appendDouble(out, belief.confidence); out << ",";
+            out << "\"supportWeight\":"; appendDouble(out, belief.supportWeight); out << ",";
+            out << "\"contradictionWeight\":"; appendDouble(out, belief.contradictionWeight); out << ",";
+            out << "\"supportCount\":" << belief.supportCount << ",";
+            out << "\"contradictionCount\":" << belief.contradictionCount << ",";
+            out << "\"lastUpdatedMinute\":" << belief.lastUpdatedMinute;
+            out << "}";
+        }
+        out << "],";
+
+        out << "\"hasPosition\":" << (hasPosition ? "true" : "false");
+        if (hasPosition) {
+            out << ",\"gridX\":" << position.x;
+            out << ",\"gridY\":" << position.y;
+        }
+        out << "}";
+    }
+    out << "]}";
+    return out.str();
+}
+
+std::string WebClientBridge::dynamicEnvironmentJson(
+    int centerChunkX,
+    int centerChunkY) const
+{
+    if (!simulation_) return "{\"available\":false}";
+
+    const WorldGenesisIdentity identity =
+        simulation_->world().genesisIdentity();
+    const DynamicEnvironmentObservation environment =
+        deriveDynamicEnvironment(
+            identity,
+            ChunkCoord{centerChunkX, centerChunkY},
+            simulation_->world().minute);
+    const SimulationCalendarObservation calendar =
+        deriveSimulationCalendar(simulation_->world().minute);
+
+    std::ostringstream out;
+    out << "{";
+    out << "\"available\":true,";
+    out << "\"centerChunkX\":" << centerChunkX << ",";
+    out << "\"centerChunkY\":" << centerChunkY << ",";
+    out << "\"simulationMinute\":" << environment.simulationMinute << ",";
+    out << "\"baselineTemperature01\":"; appendDouble(out, environment.baselineTemperature01); out << ",";
+    out << "\"baselineMoisture01\":"; appendDouble(out, environment.baselineMoisture01); out << ",";
+    out << "\"airTemperatureC\":"; appendDouble(out, environment.airTemperatureC); out << ",";
+    out << "\"seasonalTemperatureModifierC\":"; appendDouble(out, environment.seasonalTemperatureModifierC); out << ",";
+    out << "\"dailyTemperatureModifierC\":"; appendDouble(out, environment.dailyTemperatureModifierC); out << ",";
+    out << "\"precipitationIntensity01\":"; appendDouble(out, environment.precipitationIntensity01); out << ",";
+    out << "\"cloudCover01\":"; appendDouble(out, environment.cloudCover01); out << ",";
+    out << "\"windIntensity01\":"; appendDouble(out, environment.windIntensity01); out << ",";
+    out << "\"humidity01\":"; appendDouble(out, environment.humidity01); out << ",";
+    out << "\"visibility01\":"; appendDouble(out, environment.visibility01); out << ",";
+    out << "\"surfaceWetness01\":"; appendDouble(out, environment.surfaceWetness01); out << ",";
+    out << "\"precipitationType\":\"" << precipitationTypeName(environment.precipitationType) << "\",";
+    out << "\"summary\":\"" << weatherSummaryName(environment.summary) << "\",";
+    out << "\"calendar\":{";
+    out << "\"minuteOfDay\":" << calendar.minuteOfDay << ",";
+    out << "\"hourOfDay\":" << calendar.hourOfDay << ",";
+    out << "\"minuteOfHour\":" << calendar.minuteOfHour << ",";
+    out << "\"dayIndex\":" << calendar.dayIndex << ",";
+    out << "\"dayOfYear\":" << calendar.dayOfYear << ",";
+    out << "\"yearIndex\":" << calendar.yearIndex << ",";
+    out << "\"annualPhase\":"; appendDouble(out, calendar.annualPhase); out << ",";
+    out << "\"season\":\"" << seasonSummaryName(calendar.season) << "\",";
+    out << "\"isDay\":" << (calendar.isDay ? "true" : "false") << ",";
+    out << "\"isNight\":" << (calendar.isNight ? "true" : "false") << ",";
+    out << "\"daylight01\":"; appendDouble(out, calendar.daylight01);
+    out << "}";
+    out << "}";
+    return out.str();
+}
+
+std::string WebClientBridge::recentSocialEventsJson(
+    std::size_t maxEvents) const
+{
+    if (!simulation_) return "{\"available\":false,\"events\":[]}";
+
+    const std::size_t bounded = std::min<std::size_t>(maxEvents, 64);
+    const std::vector<SocialCommunicationObservation> events =
+        simulation_->observeRecentSocialEvents(bounded);
+
+    std::ostringstream out;
+    out << "{\"available\":true,\"count\":" << events.size() << ",\"events\":[";
+    for (std::size_t i = 0; i < events.size(); ++i) {
+        if (i != 0) out << ",";
+        const SocialCommunicationObservation& event = events[i];
+        out << "{";
+        out << "\"sequence\":\"" << event.sequence << "\",";
+        out << "\"actorId\":\"" << event.actor << "\",";
+        out << "\"targetId\":\"" << event.target << "\",";
+        out << "\"type\":\"" << socialEventTypeName(event.type) << "\",";
+        out << "\"intensity\":"; appendDouble(out, event.intensity); out << ",";
+        out << "\"importance\":"; appendDouble(out, event.importance); out << ",";
+        out << "\"minute\":" << event.minute << ",";
+        out << "\"where\":\"" << escapeJson(event.where) << "\",";
+        out << "\"presentationLevel\":\"" << socialPresentationLevelName(event.presentationLevel) << "\",";
+        out << "\"successful\":" << (event.successful ? "true" : "false");
+        out << "}";
+    }
+    out << "]}";
+    return out.str();
+}
+
+std::string WebClientBridge::civilizationWorldJson(
     std::size_t maxRecentDiscoveries) const
 {
     if (!simulation_) {
@@ -1042,7 +1194,29 @@ std::string WebClientBridge::residentsJson() const
     }
 
     return civilizationWorldObservationJson(
-        simulastd::string WebClientBridge::worldObjectsJson() const
+        simulation_->observeCivilizationWorld(
+            std::min<std::size_t>(maxRecentDiscoveries, 64)));
+}
+
+std::string WebClientBridge::civilizationWorldWindowJson(
+    std::size_t maxRecentDiscoveries,
+    int centerChunkX,
+    int centerChunkY,
+    int radiusChunks) const
+{
+    if (!simulation_) {
+        return "{\"available\":false,\"resources\":[],\"storages\":[],\"facilities\":[],\"recentDiscoveries\":[]}";
+    }
+
+    const int radius=std::max(0,std::min(radiusChunks,16));
+    return civilizationWorldObservationJson(
+        simulation_->observeCivilizationWorldWindow(
+            {centerChunkX,centerChunkY},
+            radius,
+            std::min<std::size_t>(maxRecentDiscoveries,64)));
+}
+
+std::string WebClientBridge::worldObjectsJson() const
 {
     if (!simulation_) {
         return "{\"available\":false,\"smartObjects\":[],\"sanitationSites\":[]}";
