@@ -28,7 +28,7 @@ for token in (
     "node.chunk.downstreamChunkY",
     "buildOpenWaterSurfaceGeometry",
     "buildFlowWaterSurfaceGeometry",
-    "appendCurvedRibbon",
+    "appendAuthoritativeRibbon",
 ):
     assert token in geometry, f"missing authoritative water projection token: {token}"
 
@@ -44,6 +44,15 @@ for forbidden in (
         f"browser-side hydrology inference/regression returned: {forbidden}"
     )
 
+# Visible flow water must stay on the same center-to-downstream segment used by
+# Core ground traversal and Water gathering access. Decorative browser-only
+# meanders can make an authoritative bank position look like dry ground.
+for forbidden in (
+    "const jitter =",
+    "const control = midpoint.add",
+    ":curve",
+):
+    assert forbidden not in geometry, f"presentation-only water meander returned: {forbidden}"
 # Older runtimes may omit the new fields. In that case the browser hides
 # uncertain channel segments rather than guessing a direction.
 assert "chunk.hasDownstream === true" in geometry
