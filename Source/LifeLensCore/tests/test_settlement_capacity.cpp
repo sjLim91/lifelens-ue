@@ -234,5 +234,120 @@ int main()
         }
     }
     assert(additionalPlan);
+
+    // Sleep is continuous time, not an atomic "rest completed" effect. A tired
+    // resident walks to real bedding first, gains no sleep recovery in transit,
+    // then recovers minute-by-minute until the rested threshold is reached.
+    SimulationRuleset sleepRules=DefaultSimulationRuleset;
+    sleepRules.needs.hungerPerMinute=0.0;
+    sleepRules.needs.thirstPerMinute=0.0;
+    sleepRules.needs.bladderPerMinute=0.0;
+    sleepRules.needs.hygienePerMinute=0.0;
+    Simulation timedSleep(
+        770032,0,CurrentWorldGenerationVersion,sleepRules);
+    timedSleep.setupNewGame();
+    timedSleep.world().minute=22*60;
+    Character& timedSleeper=timedSleep.world().characters.front();
+    const CharacterId timedSleeperId=timedSleeper.id;
+    for(std::size_t i=1;i<timedSleep.world().characters.size();++i){
+        timedSleep.world().characters[i].alive=false;
+        timedSleep.world().characters[i].deathMinute=timedSleep.world().minute;
+    }
+    timedSleeper.needs={0.01,0.01,0.95,0.01,0.01};
+    timedSleeper.sleepTendency=1.0;
+
+    GridPos timedStart{};
+    assert(timedSleep.runtimePosition(timedSleeperId,timedStart));
+    const GridPos timedBedPos{timedStart.x+8,timedStart.y};
+    ConstructedFacility timedBed=completedFixture(
+        99101,FacilityKind::SleepingPlace,timedBedPos,
+        timedSleeperId,timedSleep.world().minute);
+    timedSleep.world().facilities.push_back(timedBed);
+
+    const double outdoorRecovery=sleepRecoveryPerMinuteAt(
+        timedSleep.world(),timedStart,nullptr);
+    const double bedRecovery=sleepRecoveryPerMinuteAt(
+        timedSleep.world(),timedBedPos,&timedSleep.world().facilities.back());
+    assert(bedRecovery>outdoorRecovery);
+
+    // Compare planned duration below the hard session cap. Extreme fatigue can
+    // legitimately give both plans the same 10-hour cap, while bedding still
+    // reaches the rested threshold earlier through higher per-minute recovery.
+    Character durationProbe=timedSleeper;
+    durationProbe.needs.sleep=0.62;
+    durationProbe.sleepTendency=1.0;
+    const int outdoorMinutes=sleepDurationMinutesForNeed(
+        durationProbe,outdoorRecovery,sleepRules.needs);
+    const int bedMinutes=sleepDurationMinutesForNeed(
+        durationProbe,bedRecovery,sleepRules.needs);
+    assert(bedMinutes<outdoorMinutes);
+    assert(bedMinutes>=MinimumSleepSessionMinutes);
+
+    bool startedSleepTravel=false;
+    double fatigueDuringTravel=timedSleeper.needs.sleep;
+    for(int minute=0;minute<180 && !startedSleepTravel;++minute){
+        timedSleep.step();
+        const ResidentPresentationObservation presentation=
+            timedSleep.observeResidentPresentation(timedSleeperId);
+        if(!presentation.active
+           || presentation.kind!=PresentationActionKind::Physical
+           || presentation.physicalGoal!=Goal::Sleep){
+            continue;
+        }
+        assert(presentation.phase==PresentationActionPhase::Moving);
+        assert(presentation.hasTargetGrid);
+        assert(presentation.targetGrid.x==timedBedPos.x);
+        assert(presentation.targetGrid.y==timedBedPos.y);
+        fatigueDuringTravel=timedSleeper.needs.sleep;
+        startedSleepTravel=true;
+    }
+    assert(startedSleepTravel);
+
+    // At least one further travel minute must not provide rest.
+    timedSleep.step();
+    const ResidentPresentationObservation continuingTravel=
+        timedSleep.observeResidentPresentation(timedSleeperId);
+    if(continuingTravel.active
+       && continuingTravel.kind==PresentationActionKind::Physical
+       && continuingTravel.physicalGoal==Goal::Sleep
+       && continuingTravel.phase==PresentationActionPhase::Moving){
+        assert(timedSleeper.needs.sleep>=fatigueDuringTravel);
+    }
+
+    bool reachedBed=false;
+    for(int minute=0;minute<120 && !reachedBed;++minute){
+        timedSleep.step();
+        const auto presentation=
+            timedSleep.observeResidentPresentation(timedSleeperId);
+        reachedBed=
+            presentation.active
+            && presentation.kind==PresentationActionKind::Physical
+            && presentation.physicalGoal==Goal::Sleep
+            && presentation.phase==PresentationActionPhase::Interacting;
+    }
+    assert(reachedBed);
+    GridPos reachedPosition{};
+    assert(timedSleep.runtimePosition(timedSleeperId,reachedPosition));
+    assert(reachedPosition.x==timedBedPos.x);
+    assert(reachedPosition.y==timedBedPos.y);
+
+    const double fatigueAtSleepStart=timedSleeper.needs.sleep;
+    timedSleep.runMinutes(60);
+    assert(timedSleeper.needs.sleep<fatigueAtSleepStart);
+    assert(timedSleeper.needs.sleep>RestedSleepNeedTarget);
+
+    bool wokeRested=false;
+    for(int minute=0;minute<MaximumSleepSessionMinutes && !wokeRested;++minute){
+        timedSleep.step();
+        const ResidentObservation observed=
+            timedSleep.observeResident(timedSleeperId);
+        wokeRested=!(
+            observed.activityKind==ObservedActivityKind::Physical
+            && observed.physicalGoal==Goal::Sleep);
+    }
+    assert(wokeRested);
+    assert(timedSleeper.needs.sleep<0.20);
+    assert(timedSleep.world().facilities.back().usageCount==1);
+
     std::cout << "Settlement capacity, local demand, paid construction, maintenance, persistence and runtime wiring passed\n";
 }

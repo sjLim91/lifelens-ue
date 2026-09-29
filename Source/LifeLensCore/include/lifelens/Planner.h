@@ -27,12 +27,50 @@ inline NeedsDelta emergencyUseEffectPerTick(Goal g)
     switch(g){
         case Goal::Eat: return {-0.28,0,0,0,0};
         case Goal::Drink: return {0,-0.32,0,0,0};
-        case Goal::Sleep: return {0,0,-0.035,0,0};
+        case Goal::Sleep: return {0,0,-0.00150,0,0};
         case Goal::UseToilet: return {0,0,0,-0.13,0.012};
         case Goal::Wash: return {0,0,0,0,-0.018};
         case Goal::Idle:
         default: return {};
     }
+}
+
+inline constexpr double RestedSleepNeedTarget = 0.12;
+inline constexpr int MinimumSleepSessionMinutes = 30;
+inline constexpr int MaximumSleepSessionMinutes = 10 * 60;
+
+inline bool sleepInterruptedByUrgentNeed(const Character& character)
+{
+    // Strong thirst, bladder pressure, or hunger wakes a resident before the
+    // need reaches the hard clamp. This also prevents long outdoor sleep from
+    // suppressing the survival loop for an entire half-day.
+    return character.needs.thirst>=0.84
+        || character.needs.bladder>=0.82
+        || character.needs.hunger>=0.82;
+}
+
+inline int sleepDurationMinutesForNeed(
+    const Character& character,
+    double recoveryPerMinute,
+    const NeedsRuleset& rules=DefaultSimulationRuleset.needs)
+{
+    const double fatigueToRecover=std::max(
+        0.0,
+        character.needs.sleep-RestedSleepNeedTarget);
+    if(fatigueToRecover<=1e-9) return MinimumSleepSessionMinutes;
+
+    // Need decay continues while asleep, so only recovery above the resident's
+    // own fatigue accrual counts as net rest. Duration is therefore a real
+    // consequence of both current fatigue and sleep quality.
+    const double fatigueAccrual=
+        rules.sleepPerMinute*std::max(0.0,character.sleepTendency);
+    const double netRecovery=std::max(
+        0.00010,
+        recoveryPerMinute-fatigueAccrual);
+    return std::clamp(
+        static_cast<int>(std::ceil(fatigueToRecover/netRecovery)),
+        MinimumSleepSessionMinutes,
+        MaximumSleepSessionMinutes);
 }
 
 inline int facilityUseDurationTicks(Goal g)
@@ -53,7 +91,7 @@ inline NeedsDelta facilityUseEffectPerTick(Goal g)
     switch(g){
         case Goal::Eat: return {-0.075,0,0,0,0};
         case Goal::Drink: return {0,-0.085,0,0,0};
-        case Goal::Sleep: return {0,0,-0.055,0,0};
+        case Goal::Sleep: return {0,0,-0.00220,0,0};
         case Goal::UseToilet: return {0,0,0,-0.12,0};
         case Goal::Wash: return {0,0,0,0,-0.055};
         case Goal::Idle:
@@ -89,7 +127,12 @@ inline std::vector<Action> buildPlan(const World& w,Character& c,Goal g,GridPos 
             hasObject=true;
             if(!w.externalPhysicalExecution){
                 const int travel=environmentAdjustedTravelTicks(w,from,o.pos);
-                return {{ActionType::FindObject,o.id,0},{ActionType::Reserve,o.id,0},{ActionType::MoveTo,o.id,travel},{ActionType::Use,o.id,std::max(1,o.useDurationTicks)},{ActionType::Release,o.id,0}};
+                const int useDuration=g==Goal::Sleep
+                    ? sleepDurationMinutesForNeed(
+                        c,
+                        -facilityUseEffectPerTick(Goal::Sleep).sleep)
+                    : std::max(1,o.useDurationTicks);
+                return {{ActionType::FindObject,o.id,0},{ActionType::Reserve,o.id,0},{ActionType::MoveTo,o.id,travel},{ActionType::Use,o.id,useDuration},{ActionType::Release,o.id,0}};
             }
             break;
         }
@@ -110,13 +153,23 @@ inline std::vector<Action> buildPlan(const World& w,Character& c,Goal g,GridPos 
         for(const auto& o:w.objects){
             if(o.kind==kind && (!o.reservedBy || *o.reservedBy==c.id)){
                 const int travel=environmentAdjustedTravelTicks(w,from,o.pos);
-                return {{ActionType::FindObject,o.id,0},{ActionType::Reserve,o.id,0},{ActionType::MoveTo,o.id,travel},{ActionType::Use,o.id,std::max(1,o.useDurationTicks)},{ActionType::Release,o.id,0}};
+                const int useDuration=g==Goal::Sleep
+                    ? sleepDurationMinutesForNeed(
+                        c,
+                        -facilityUseEffectPerTick(Goal::Sleep).sleep)
+                    : std::max(1,o.useDurationTicks);
+                return {{ActionType::FindObject,o.id,0},{ActionType::Reserve,o.id,0},{ActionType::MoveTo,o.id,travel},{ActionType::Use,o.id,useDuration},{ActionType::Release,o.id,0}};
             }
         }
     }
 
     // Provision consumption happens when the action actually begins, not while
     // merely planning. This keeps interrupted movement from deleting supplies.
-    return {{ActionType::EmergencyUse,0,emergencyUseDurationTicks(g)}};
+    const int emergencyDuration=g==Goal::Sleep
+        ? sleepDurationMinutesForNeed(
+            c,
+            -emergencyUseEffectPerTick(Goal::Sleep).sleep)
+        : emergencyUseDurationTicks(g);
+    return {{ActionType::EmergencyUse,0,emergencyDuration}};
 }
 }

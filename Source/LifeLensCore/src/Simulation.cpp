@@ -363,6 +363,13 @@ ResidentPresentationObservation Simulation::observeResidentPresentation(Characte
         }else if(current->type==ActionType::Use
               || current->type==ActionType::EmergencyUse){
             dto.phase=PresentationActionPhase::Interacting;
+            if(current->type==ActionType::EmergencyUse
+               && r.navigationHasTarget
+               && !r.navigationArrived){
+                dto.phase=PresentationActionPhase::Moving;
+                dto.hasTargetGrid=true;
+                dto.targetGrid=r.navigationTarget;
+            }
         }
 
         if(current->objectId!=0){
@@ -861,6 +868,34 @@ void Simulation::beginPlan(Character& c,Runtime& r){
     clearNavigation(r);
     r.goal=chosen; r.plan=buildPlan(world_,c,chosen,r.pos); r.actionIndex=0; r.announced=false;
     if(r.plan.empty()){ failPlan(c,r); return; }
+
+    // Settlement bedding is a real destination in the autonomous/headless
+    // runtime too. Walking to it is not sleep time; only minutes after arrival
+    // reduce fatigue. If no viable bedding exists, outdoor sleep remains a
+    // slower fallback at the resident's current physical position.
+    if(chosen==Goal::Sleep
+       && r.plan.size()==1
+       && r.plan.front().type==ActionType::EmergencyUse){
+        const ConstructedFacility* sleepFacility=
+            nearestOperationalSleepFacility(world_,r.pos);
+        if(sleepFacility!=nullptr
+           && manhattan(sleepFacility->pos,r.pos)<=SettlementServiceRadiusGrid){
+            r.navigationTarget=sleepFacility->pos;
+            r.navigationArrivalRadius=0;
+            r.navigationHasTarget=true;
+            r.navigationArrived=sameGridPos(r.pos,sleepFacility->pos);
+            r.plan.front().remainingTicks=sleepDurationMinutesForNeed(
+                c,
+                sleepRecoveryPerMinuteAt(
+                    world_,sleepFacility->pos,sleepFacility),
+                ruleset_.needs);
+        }else{
+            r.plan.front().remainingTicks=sleepDurationMinutesForNeed(
+                c,
+                sleepRecoveryPerMinuteAt(world_,r.pos,nullptr),
+                ruleset_.needs);
+        }
+    }
     std::ostringstream s; s<<c.name<<" -> "<<goalName(chosen)<<" (need "<<std::fixed<<std::setprecision(2)<<needForGoal(c,chosen)<<")"; emit(s.str());
 }
 
@@ -898,7 +933,16 @@ void Simulation::advanceAction(Character& c,Runtime& r){
             break;
         case ActionType::Use:
             if(!obj){ failPlan(c,r); return; }
-            if((r.goal==Goal::Eat || r.goal==Goal::Drink)
+            if(r.goal==Goal::Sleep && sleepInterruptedByUrgentNeed(c)){
+                emit(c.name+" woke from Sleep for urgent physical need");
+                clearNavigation(r);
+                a.remainingTicks=0;
+                ++r.actionIndex;
+                r.announced=false;
+                r.consecutiveFailures=0;
+                break;
+            }
+            if((r.goal==Goal::Eat || r.goal==Goal::Drink || r.goal==Goal::Wash)
                && a.remainingTicks==std::max(1,obj->useDurationTicks)){
                 const MaterialKind provision=r.goal==Goal::Eat
                     ? MaterialKind::PlantFood
@@ -911,12 +955,25 @@ void Simulation::advanceAction(Character& c,Runtime& r){
             }
             {
             const Needs before=c.needs;
-            c.needs.apply(obj->effectPerTick);
+            if(r.goal==Goal::Sleep){
+                c.needs.apply(facilityUseEffectPerTick(Goal::Sleep));
+            }else{
+                c.needs.apply(obj->effectPerTick);
+            }
             applyNeedResolutionEmotion(c,before,r.goal);
             }
             if(--a.remainingTicks<=0){ ++r.actionIndex; r.announced=false; } break;
         case ActionType::EmergencyUse:
-            if((r.goal==Goal::Eat || r.goal==Goal::Drink)
+            if(r.goal==Goal::Sleep && sleepInterruptedByUrgentNeed(c)){
+                emit(c.name+" woke from Sleep for urgent physical need");
+                clearNavigation(r);
+                a.remainingTicks=0;
+                ++r.actionIndex;
+                r.announced=false;
+                r.consecutiveFailures=0;
+                break;
+            }
+            if((r.goal==Goal::Eat || r.goal==Goal::Drink || r.goal==Goal::Wash)
                && a.remainingTicks==emergencyUseDurationTicks(r.goal)){
                 const MaterialKind provision=r.goal==Goal::Eat
                     ? MaterialKind::PlantFood
@@ -944,19 +1001,48 @@ void Simulation::advanceAction(Character& c,Runtime& r){
                     return;
                 }
             }
+            if(r.goal==Goal::Sleep){
+                GridPos sleepTarget=r.navigationTarget;
+                bool hasSleepTarget=r.navigationHasTarget;
+                if(!hasSleepTarget){
+                    const ConstructedFacility* facility=
+                        nearestOperationalSleepFacility(world_,r.pos);
+                    if(facility!=nullptr
+                       && manhattan(facility->pos,r.pos)<=SettlementServiceRadiusGrid){
+                        sleepTarget=facility->pos;
+                        hasSleepTarget=true;
+                    }
+                }
+                if(hasSleepTarget && !advanceNavigation(r,sleepTarget,0)){
+                    if(r.navigationRouteFailed){
+                        failPlan(c,r);
+                    }
+                    return;
+                }
+            }
             {
             ConstructedFacility* settlementSleepFacility=
                 r.goal==Goal::Sleep
                     ? bestOperationalSleepFacility(world_,r.pos,1)
                     : nullptr;
             const Needs before=c.needs;
-            if(settlementSleepFacility!=nullptr){
+            if(r.goal==Goal::Sleep){
                 c.needs.apply({
-                    0,0,-settlementSleepRecoveryPerTick(*settlementSleepFacility),0,0});
+                    0,0,-sleepRecoveryPerMinuteAt(
+                        world_,r.pos,settlementSleepFacility),0,0});
             }else{
                 c.needs.apply(emergencyUseEffectPerTick(r.goal));
             }
             applyNeedResolutionEmotion(c,before,r.goal);
+
+            // Waking is an outcome of accumulated rest. A resident who reaches
+            // the rested threshold ends the session early; interrupted sessions
+            // retain only the recovery from minutes actually slept.
+            if(r.goal==Goal::Sleep
+               && c.needs.sleep<=RestedSleepNeedTarget){
+                a.remainingTicks=1;
+            }
+
             if(a.remainingTicks==1 && settlementSleepFacility!=nullptr){
                 recordFacilityUse(
                     *settlementSleepFacility,

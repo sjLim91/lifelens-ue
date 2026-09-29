@@ -27,6 +27,7 @@ inline bool physicalProvisionAvailableFor(const Character& c,Goal g) {
             return c.civilization.inventory.count(
                 ItemKind::RawMaterial,MaterialKind::PlantFood)>0;
         case Goal::Drink:
+        case Goal::Wash:
             return c.civilization.inventory.count(
                 ItemKind::RawMaterial,MaterialKind::Water)>0;
         default:
@@ -37,10 +38,10 @@ inline bool emergencyAffordanceAvailableFor(const Character& c,Goal g) {
     switch(g){
         case Goal::Sleep:
         case Goal::UseToilet:
-        case Goal::Wash:
             return true;
         case Goal::Eat:
         case Goal::Drink:
+        case Goal::Wash:
             return physicalProvisionAvailableFor(c,g);
         case Goal::Idle:
         default:
@@ -48,8 +49,8 @@ inline bool emergencyAffordanceAvailableFor(const Character& c,Goal g) {
     }
 }
 inline bool actionAvailableFor(const World& w,const Character& c,Goal g) {
-    // A Fridge/Sink/other presentation affordance is not a food/water source.
-    // Eat/Drink require a real carried provision regardless of object presence.
+    // Presentation affordances are not resource generators. Eat/Drink require
+    // a real carried provision, and primitive washing requires carried Water.
     if(!physicalProvisionAvailableFor(c,g)) return false;
     return objectAvailableFor(w,g,c.id) || emergencyAffordanceAvailableFor(c,g);
 }
