@@ -1,27 +1,71 @@
-# LifeLens runtime architecture
+# LifeLens Runtime Architecture
 
-## Stable data core
+Status: **CANONICAL**  
+Effective: **2026-09-29**
 
-`FLLResidentData` is the persistent identity/state record. World actors are views of this record, not the source of truth. That keeps population/family history stable when actors stream out, maps change, or Android memory pressure destroys visuals.
+## 1. Authority
 
-## Game-instance subsystems
+`LifeLensCore` is the single simulation authority. Rendering technology is replaceable; simulation truth is not.
 
-- `ULLSimulationSubsystem`: WorldSeed, time, residents, relationships, save/load and first social progression.
-- `ULLObservationSubsystem`: selected resident only. UI can stay minimal until the user taps a person.
+Core owns:
 
-## Actor layer
+- deterministic seeds and simulation time
+- resident identity and state
+- needs, emotion, personality, memory and belief
+- relationships, family, pregnancy, lifecycle and generations
+- goals, decisions, navigation intent and action causality
+- civilization, knowledge, resources, inventory and facilities
+- terrain, hydrology, ecology, weather and environmental consequences
+- persistence and deterministic replay contracts
 
-- `ALLResidentCharacter`: visual embodiment of a resident GUID. It intentionally owns very little persistent state.
-- `ULLDecisionComponent`: first Utility-AI scoring layer. Today it chooses an intent from needs/personality; future StateTree tasks can execute the intent.
+## 2. Active product path
 
-## Generation invariant
+```text
+LifeLensCore C++17
+      |
+      | Emscripten / explicit bridge contracts
+      v
+WASM runtime
+      |
+      v
+React + TypeScript + Three.js Web Observer
+```
 
-`NewGame(seed)` always constructs exactly two male and two female adults in deterministic order. A save reload never regenerates them. Starting another New Game with another seed produces another cast.
+The browser owns presentation, input, camera, UI, interpolation, LOD and visual effects. It may never resolve simulation outcomes independently of Core.
 
-## Social/family path
+## 3. Boundary rule
 
-The persistent schema and relationship pair records are designed for this progression:
+The dependency direction is one-way:
 
-`Stranger -> Acquaintance -> Friend -> Dating -> Partner -> Engaged -> Married`
+```text
+Web -> WASM adapter -> LifeLensCore
+```
 
-Parent/child GUID arrays plus pregnancy state are already part of resident persistence. Family behavior will be implemented as simulation rules, not hard-coded cinematics.
+LifeLensCore must not depend on React, Three.js, DOM APIs, browser persistence APIs, or a specific renderer. This keeps a future native client or another engine possible without rewriting the simulation.
+
+## 4. Verification
+
+Core changes:
+- CMake configure/build
+- CTest suite
+- deterministic harness smoke
+
+Web runtime changes:
+- Emscripten/WASM build
+- runtime contract checks
+- TypeScript typecheck
+- Vite production build
+- Web structural regressions
+- GitHub Pages preview/probe
+
+## 5. Retired Unreal client
+
+Unreal is not an active `main` runtime or CI target.
+
+The final pre-removal state is preserved at `archive/unreal-final-20260929` from commit `0ee1e161be22ede0a9f7ef854a1ca34597b3c6a6`.
+
+If Unreal is reintroduced later, treat it as a new optional presentation client around the then-current LifeLensCore contracts. Restore useful native presentation code/assets from the archive and adapt the bridge to current Core APIs rather than restoring old engine coupling into Core.
+
+## 6. Product invariant
+
+A renderer may disappear without deleting LifeLens. The simulation model, world history, resident lives and save semantics remain owned by LifeLensCore.
