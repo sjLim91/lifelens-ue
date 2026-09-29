@@ -72,6 +72,7 @@ int main()
     assert(residents.find("\"hasTargetGrid\":") != std::string::npos);
     assert(residents.find("\"hasObjectTarget\":") != std::string::npos);
     assert(residents.find("\"emergencyFallback\":") != std::string::npos);
+    assert(residents.find("\"directNaturalWaterSource\":") != std::string::npos);
     assert(residents.find("\"contextActionToken\":") != std::string::npos);
     assert(residents.find("\"hasPosition\":true") != std::string::npos);
 
