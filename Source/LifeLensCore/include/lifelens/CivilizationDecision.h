@@ -350,7 +350,9 @@ inline double civilizationResourceExplorationPressure(
 {
     if(!validNaturalResourceMaterial(material)) return 0.0;
 
-    const int held=self.civilization.inventory.count(ItemKind::RawMaterial,material);
+    const int held=material==MaterialKind::Water
+        ? portableWaterCount(self.civilization.inventory)
+        : self.civilization.inventory.count(ItemKind::RawMaterial,material);
     const int stored=storageCountForMaterial(world,material);
     const int storageMissing=primitiveStorageMissingMaterial(world,material);
     const int fireMissing=primitiveFirePitMissingMaterial(world,material);
