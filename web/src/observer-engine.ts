@@ -233,6 +233,11 @@ export function startObserverEngine(): void {
     const selectedResidentId = observerStore.getSnapshot().selectedResidentId;
     threeWorldRenderer?.setSelectedResident(selectedResidentId);
     threeWorldRenderer?.setTerrain(terrain);
+    threeWorldRenderer?.setAuthoritativeSpatialTargets(
+      snapshot.civilization,
+      snapshot.worldObjects,
+      terrain,
+    );
     threeWorldRenderer?.setSelectedHumanTrace(observerStore.getSnapshot().selectedHumanTraceId);
     threeWorldRenderer?.setResidents(
       residentSnapshot,
