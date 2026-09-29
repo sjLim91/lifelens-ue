@@ -119,12 +119,13 @@ inline std::vector<Action> buildPlan(const World& w,Character& c,Goal g,GridPos 
     // SmartObjects never synthesize provisions. Food requires carried stock;
     // water goals may instead travel to an authoritative natural freshwater
     // source and use it directly before portable containers exist.
+    const bool carriedProvision=physicalProvisionAvailableFor(c,g);
     const bool directNaturalWater=canUseNaturalWaterDirectly(w,c,g);
-    if(!physicalProvisionAvailableFor(c,g) && !directNaturalWater) return {};
+    if(!carriedProvision && !directNaturalWater) return {};
 
     const auto kind=objectKindFor(g);
     bool hasObject=false;
-    for(const auto& o:w.objects){
+    if(carriedProvision) for(const auto& o:w.objects){
         if(o.kind==kind && (!o.reservedBy || *o.reservedBy==c.id)){
             hasObject=true;
             if(!w.externalPhysicalExecution){
@@ -153,7 +154,7 @@ inline std::vector<Action> buildPlan(const World& w,Character& c,Goal g,GridPos 
         return {{ActionType::Idle,0,std::numeric_limits<int>::max()}};
     }
 
-    if(hasObject){
+    if(hasObject && carriedProvision){
         for(const auto& o:w.objects){
             if(o.kind==kind && (!o.reservedBy || *o.reservedBy==c.id)){
                 const int travel=environmentAdjustedTravelTicks(w,from,o.pos);
