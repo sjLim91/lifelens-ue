@@ -9,6 +9,7 @@
 
 #include "Civilization.h"
 #include "CivilizationKnowledgeTransmission.h"
+#include "CivilizationSpatial.h"
 #include "ObserverReadModel.h"
 #include "World.h"
 
@@ -61,6 +62,8 @@ struct ResidentCivilizationObservation {
 struct CivilizationResourceObservation {
     ResourceNodeId id=0;
     GridPos pos{};
+    bool hasAccessPos=false;
+    GridPos accessPos{};
     MaterialKind material=MaterialKind::Unknown;
     int quantity=0;
     int maxQuantity=0;
@@ -369,6 +372,8 @@ inline CivilizationWorldObservation buildCivilizationWorldObservation(
         CivilizationResourceObservation observed;
         observed.id=node.id;
         observed.pos=node.pos;
+        observed.hasAccessPos=resolveCivilizationResourceAccessGridPosition(
+            world,node.id,observed.accessPos);
         observed.material=node.material;
         observed.quantity=node.quantity;
         observed.maxQuantity=node.maxQuantity;
