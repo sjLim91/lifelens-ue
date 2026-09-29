@@ -51,6 +51,12 @@ public:
         bool bDesignatedSanitationSite = false) const;
 
     UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Action")
+    bool BeginResidentSleepUse(
+        FGuid ResidentId,
+        int32 ResolvedGridX,
+        int32 ResolvedGridY);
+
+    UFUNCTION(BlueprintCallable, Category="LifeLens|Core|Action")
     bool CompleteResidentPhysicalAction(
         FGuid ResidentId,
         bool bEmergencyFallback,
