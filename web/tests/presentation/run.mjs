@@ -48,7 +48,10 @@ const {
   buildFlowWaterSurfaceGeometry,
   createVisibleWaterFootprintTester,
 } = source('render/water-geometry.ts');
-const { WORLD_GRID_CONTRACT: grid } = source('runtime/lifelens-contract.ts');
+const {
+  WORLD_GRID_CONTRACT: grid,
+  residentPresentationMotionTimeScale,
+} = source('runtime/lifelens-contract.ts');
 const size = grid.worldUnitsPerChunk, scale = grid.elevationScale;
 const chunk = (
   x,
@@ -91,6 +94,13 @@ function project(scene, point) {
   scene.camera.updateMatrixWorld(true);
   return point.clone().project(scene.camera);
 }
+
+test('resident motion clock follows the rebased simulation-speed contract', () => {
+  assert.equal(residentPresentationMotionTimeScale(0), 0);
+  assert.equal(residentPresentationMotionTimeScale(1), 4);
+  assert.equal(residentPresentationMotionTimeScale(4), 8);
+  assert.equal(residentPresentationMotionTimeScale(16), 8);
+});
 
 test('close/low camera stays above elevated ground and frames its actual height', () => withScene(scene => {
   for (const elevation of [0.2, 0.5, 0.9]) {
