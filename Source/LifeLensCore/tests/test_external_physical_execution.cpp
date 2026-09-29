@@ -147,6 +147,52 @@ int main()
     assert(settlementSleep.world().facilities.front().lastUsedMinute>=
         settlementSleep.world().facilities.front().completedMinute);
 
+    // Washing may be planned while Water exists, but execution must re-check
+    // the authoritative inventory. If Water disappears before presentation ACK,
+    // Core must reject the wash and apply zero hygiene recovery.
+    Simulation wash(9194);
+    wash.setupNewGame();
+    wash.setExternalPhysicalExecution(true);
+    for(auto& resident:wash.world().characters){
+        resident.needs={0.01,0.01,0.01,0.01,0.01};
+    }
+    Character& washer=wash.world().characters.front();
+    const CharacterId washerId=washer.id;
+    washer.needs.hygiene=0.99;
+    washer.civilization.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::Water,1,0.5,1.0});
+
+    bool washPending=false;
+    for(int minute=0;minute<30 && !washPending;++minute){
+        wash.step();
+        const ResidentObservation observed=wash.observeResident(washerId);
+        washPending=
+            observed.activityKind==ObservedActivityKind::Physical
+            && observed.physicalGoal==Goal::Wash;
+    }
+    assert(washPending);
+
+    const double hygieneBeforeRejectedWash=washer.needs.hygiene;
+    assert(washer.civilization.inventory.remove(
+        ItemKind::RawMaterial,MaterialKind::Water,1));
+    assert(washer.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::Water)==0);
+
+    GridPos washPosition{};
+    assert(wash.runtimePosition(washerId,washPosition));
+    assert(!wash.completeExternalPhysicalAction(
+        washerId,true,washPosition));
+    assert(washer.needs.hygiene==hygieneBeforeRejectedWash);
+    assert(wash.observeResident(washerId).physicalGoal==Goal::Wash);
+
+    washer.civilization.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::Water,1,0.5,1.0});
+    assert(wash.completeExternalPhysicalAction(
+        washerId,true,washPosition));
+    assert(washer.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::Water)==0);
+    assert(washer.needs.hygiene<hygieneBeforeRejectedWash);
+
     // Standalone Core remains autonomous by default.
     Simulation autonomous(9191);
     autonomous.setupNewGame();
