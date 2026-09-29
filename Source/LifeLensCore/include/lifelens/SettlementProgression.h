@@ -199,12 +199,15 @@ inline double settlementSleepRecoveryPerTick(
     if(!facilityOperationalAndActive(facility)
        || !facilityProvidesSleep(facility.kind)) return 0.0;
 
+    // Simulation::step is one simulation minute. Recovery is intentionally
+    // minute-scale so fatigue falls with actual time asleep rather than because
+    // a one-shot "Sleep" action completed.
     const double effectiveness=facilityEffectiveness01(facility);
     if(facility.kind==FacilityKind::SleepingPlace){
-        return 0.044+0.018*effectiveness;
+        return 0.00225+0.00015*effectiveness;
     }
     if(facility.kind==FacilityKind::Shelter){
-        return 0.040+0.012*effectiveness;
+        return 0.00185+0.00015*effectiveness;
     }
     return 0.0;
 }
@@ -218,6 +221,47 @@ inline double settlementShelterProtection01(
             world,FacilityKind::Shelter,pos,1);
     if(shelter==nullptr) return 0.0;
     return std::clamp(0.68*facilityEffectiveness01(*shelter),0.0,0.68);
+}
+
+inline double sleepRecoveryPerMinuteAt(
+    const World& world,
+    GridPos pos,
+    const ConstructedFacility* facility=nullptr)
+{
+    const EnvironmentalConsequenceProfile consequence=
+        deriveEnvironmentalConsequences(
+            deriveDynamicEnvironment(
+                world.genesisIdentity(),
+                chunkCoordForGrid(pos),
+                world.minute));
+
+    const double environmentalStress=std::clamp(
+        0.40*consequence.wetStress01
+        +0.30*consequence.coldStress01
+        +0.20*consequence.heatStress01
+        +0.10*consequence.travelFriction01,
+        0.0,
+        1.0);
+
+    double baseRecovery=0.00150;
+    double protection=settlementShelterProtection01(world,pos);
+    if(facility!=nullptr && facilityOperationalAndActive(*facility)
+       && facilityProvidesSleep(facility->kind)){
+        baseRecovery=settlementSleepRecoveryPerTick(*facility);
+        if(facility->kind==FacilityKind::Shelter){
+            protection=std::max(
+                protection,
+                0.68*facilityEffectiveness01(*facility));
+        }
+    }
+
+    // Sleeping in rain/cold/heat still helps, but much less. A nearby shelter
+    // absorbs most of that penalty without turning it into a free full reset.
+    const double exposedStress=
+        environmentalStress*(1.0-std::clamp(protection,0.0,0.85));
+    return std::max(
+        0.00095,
+        baseRecovery*(1.0-0.42*exposedStress));
 }
 
 inline double settlementWorkSurfaceSkillBonus(
