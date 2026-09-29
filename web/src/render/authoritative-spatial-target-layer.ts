@@ -121,9 +121,17 @@ export function visibleAuthoritativeResourceSites(
       continue;
     }
 
+    const targetGridX = resource.hasAccessGrid === true
+      && Number.isFinite(resource.accessGridX)
+      ? Number(resource.accessGridX)
+      : resource.gridX;
+    const targetGridY = resource.hasAccessGrid === true
+      && Number.isFinite(resource.accessGridY)
+      ? Number(resource.accessGridY)
+      : resource.gridY;
     const position = authoritativeGridWorldPosition(
-      resource.gridX,
-      resource.gridY,
+      targetGridX,
+      targetGridY,
       terrain,
     );
     if (!position) continue;
