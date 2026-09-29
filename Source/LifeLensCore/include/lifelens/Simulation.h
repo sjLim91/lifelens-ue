@@ -54,11 +54,10 @@ public:
             if(candidate.id==id){ character=&candidate; break; }
         }
         if(character==nullptr || !character->alive) return false;
-        const GridPos preferred=chooseLowExposureOutdoorReliefPosition(
+        outPosition=chooseLowExposureOutdoorReliefPosition(
             world_.seed,*character,world_.environmentalResidues,world_.minute,
             runtimeIt->second.pos);
-        return resolveCivilizationOutdoorInteractionGridPosition(
-            world_,preferred,outPosition);
+        return true;
     }
     bool sanitationUseTarget(CharacterId id,SanitationUseTarget& outTarget) const {
         const auto runtimeIt=runtime_.find(id);
@@ -71,30 +70,6 @@ public:
         outTarget=resolveSanitationUseTarget(
             world_.seed,*character,world_.environmentalResidues,
             world_.primitiveSanitationSites,world_.minute,runtimeIt->second.pos);
-
-        if(outTarget.kind==SanitationUseTargetKind::DesignatedArea){
-            const ChunkCoord siteChunk=chunkCoordForGrid(outTarget.pos);
-            if(civilizationOutdoorInteractionGridValid(
-                    world_,outTarget.pos,siteChunk,0,outTarget.siteId)){
-                return true;
-            }
-
-            // A legacy/corrupt site may predate physical-world validation. Do
-            // not walk into water or a blocked cell merely because the site
-            // record exists; fall back to a real dry outdoor position.
-            outTarget.kind=SanitationUseTargetKind::EmergencyOutdoor;
-            outTarget.siteId=0;
-            outTarget.pos=chooseLowExposureOutdoorReliefPosition(
-                world_.seed,*character,world_.environmentalResidues,world_.minute,
-                runtimeIt->second.pos);
-        }
-
-        GridPos dryTarget{};
-        if(!resolveCivilizationOutdoorInteractionGridPosition(
-                world_,outTarget.pos,dryTarget)){
-            return false;
-        }
-        outTarget.pos=dryTarget;
         return true;
     }
     bool settlementSleepTarget(
