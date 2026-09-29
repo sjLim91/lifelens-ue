@@ -74,7 +74,20 @@ export function residentActionCue(
       if (
         material
         && material !== 'Unknown'
-        && ['Explore', 'Gather', 'Store', 'Retrieve'].includes(
+        && directive.civilizationIntent === 'Gather'
+      ) {
+        const materialLabel = formatMaterial(material);
+        return {
+          text: phase === 'Moving'
+            ? `${materialLabel} 있는 곳으로 이동 중`
+            : `${materialLabel} 채집 중`,
+          phase,
+        };
+      }
+      if (
+        material
+        && material !== 'Unknown'
+        && ['Explore', 'Store', 'Retrieve'].includes(
           directive.civilizationIntent ?? '',
         )
       ) {
