@@ -39,6 +39,13 @@ inline constexpr double RestedSleepNeedTarget = 0.12;
 inline constexpr int MinimumSleepSessionMinutes = 30;
 inline constexpr int MaximumSleepSessionMinutes = 12 * 60;
 
+inline bool sleepInterruptedByUrgentNeed(const Character& character)
+{
+    return character.needs.thirst>=0.88
+        || character.needs.bladder>=0.88
+        || character.needs.hunger>=0.92;
+}
+
 inline int sleepDurationMinutesForNeed(
     const Character& character,
     double recoveryPerMinute,
