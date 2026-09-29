@@ -204,12 +204,12 @@ export class AuthoritativeSpatialTargetLayer {
       roughness: 0.96,
       metalness: 0,
     }),
-    MAX_VISIBLE_RESOURCE_SITES,
+    MAX_VISIBLE_RESOURCE_SITES * 2,
   );
   private readonly woodCrowns = new THREE.InstancedMesh(
     new THREE.IcosahedronGeometry(1, 1),
     new THREE.MeshLambertMaterial({ color: 0x365f32 }),
-    MAX_VISIBLE_RESOURCE_SITES,
+    MAX_VISIBLE_RESOURCE_SITES * 2,
   );
   private readonly stoneSites = new THREE.InstancedMesh(
     new THREE.DodecahedronGeometry(1, 0),
@@ -352,6 +352,7 @@ export class AuthoritativeSpatialTargetLayer {
       TinOre: 0,
     };
 
+    let woodInstanceCount = 0;
     for (const resource of resources) {
       const count = counts[resource.material];
       const ratio = resource.maxQuantity > 0
@@ -367,37 +368,55 @@ export class AuthoritativeSpatialTargetLayer {
 
       switch (resource.material) {
         case 'Wood': {
-          const height = 3.2 * fullness;
-          const radius = 0.24 * fullness;
-          this.position.set(
-            resource.position.x,
-            resource.position.y + height * 0.5,
-            resource.position.z,
-          );
-          this.scale.set(radius, height, radius);
-          this.matrix.compose(
-            this.position,
-            this.rotation,
-            this.scale,
-          );
-          this.woodTrunks.setMatrixAt(count, this.matrix);
+          // ResourceNode is the interaction center of a wood patch. Keep that
+          // center clear for the resident and place visible trees around it so
+          // gathering reads as happening beside real trees, not inside a trunk.
+          for (let treeOrdinal = 0; treeOrdinal < 2; treeOrdinal += 1) {
+            const angle = yaw + treeOrdinal * Math.PI;
+            const offset = 0.58 + treeOrdinal * 0.08;
+            const treeX = resource.position.x + Math.cos(angle) * offset;
+            const treeZ = resource.position.z + Math.sin(angle) * offset;
+            const treeFullness = fullness * (treeOrdinal === 0 ? 1 : 0.88);
+            const height = 3.0 * treeFullness;
+            const radius = 0.22 * treeFullness;
 
-          this.position.set(
-            resource.position.x,
-            resource.position.y + height * 0.9,
-            resource.position.z,
-          );
-          this.scale.set(
-            1.15 * fullness,
-            1.45 * fullness,
-            1.15 * fullness,
-          );
-          this.matrix.compose(
-            this.position,
-            this.rotation,
-            this.scale,
-          );
-          this.woodCrowns.setMatrixAt(count, this.matrix);
+            this.position.set(
+              treeX,
+              resource.position.y + height * 0.5,
+              treeZ,
+            );
+            this.scale.set(radius, height, radius);
+            this.matrix.compose(
+              this.position,
+              this.rotation,
+              this.scale,
+            );
+            this.woodTrunks.setMatrixAt(
+              woodInstanceCount,
+              this.matrix,
+            );
+
+            this.position.set(
+              treeX,
+              resource.position.y + height * 0.9,
+              treeZ,
+            );
+            this.scale.set(
+              1.08 * treeFullness,
+              1.34 * treeFullness,
+              1.08 * treeFullness,
+            );
+            this.matrix.compose(
+              this.position,
+              this.rotation,
+              this.scale,
+            );
+            this.woodCrowns.setMatrixAt(
+              woodInstanceCount,
+              this.matrix,
+            );
+            woodInstanceCount += 1;
+          }
           break;
         }
         case 'Stone':
@@ -467,8 +486,8 @@ export class AuthoritativeSpatialTargetLayer {
       counts[resource.material] += 1;
     }
 
-    this.woodTrunks.count = counts.Wood;
-    this.woodCrowns.count = counts.Wood;
+    this.woodTrunks.count = woodInstanceCount;
+    this.woodCrowns.count = woodInstanceCount;
     this.stoneSites.count = counts.Stone;
     this.flintSites.count = counts.Flint;
     this.fiberSites.count = counts.Fiber;
