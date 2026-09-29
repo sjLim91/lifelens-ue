@@ -417,6 +417,10 @@ ResidentPresentationObservation Simulation::observeResidentPresentation(Characte
         if(current==nullptr) return dto;
 
         dto.durationTicks=std::max(0,current->remainingTicks);
+        dto.directNaturalWaterSource=
+            (r.goal==Goal::Drink || r.goal==Goal::Wash)
+            && r.navigationHasTarget
+            && portableWaterCount(character->civilization.inventory)<=0;
         if(current->type==ActionType::MoveTo){
             dto.phase=PresentationActionPhase::Moving;
         }else if(current->type==ActionType::Use
