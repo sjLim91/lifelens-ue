@@ -42,7 +42,11 @@ const {
   visibleAuthoritativeSanitationSites,
 } = source('render/authoritative-spatial-target-layer.ts');
 const { residentToWorldPosition } = source('render/resident-world-coordinates.ts');
-const { buildOpenWaterSurfaceGeometry, buildFlowWaterSurfaceGeometry } = source('render/water-geometry.ts');
+const {
+  buildOpenWaterSurfaceGeometry,
+  buildFlowWaterSurfaceGeometry,
+  createVisibleWaterFootprintTester,
+} = source('render/water-geometry.ts');
 const { WORLD_GRID_CONTRACT: grid } = source('runtime/lifelens-contract.ts');
 const size = grid.worldUnitsPerChunk, scale = grid.elevationScale;
 const chunk = (
@@ -306,6 +310,42 @@ function assertUpwardTriangles(geometry) {
     assert.ok(face.y > 0, `triangle ${n / 3} faces down (${face.y})`);
   }
 }
+test('river chunks suppress dressing only on the visible channel footprint', () => {
+  const terrain = windowOf([
+    chunk(0, 0, 'River', 0.5, {
+      hasDownstream: true,
+      downstreamChunkX: 1,
+      downstreamChunkY: 0,
+    }),
+    chunk(1, 0, 'Coast', 0.2),
+  ]);
+  const inside = createVisibleWaterFootprintTester(terrain);
+  assert.equal(inside(0, 0), true, 'river centerline must be water');
+  assert.equal(
+    inside(0, size * 0.42),
+    false,
+    'dry side of a river chunk must remain available for vegetation',
+  );
+});
+
+test('fresh lake and wetland leave dry room outside their localized water radius', () => {
+  for (const waterKind of ['Lake', 'Wetland']) {
+    const terrain = windowOf([
+      chunk(0, 0, waterKind, 0.5, {
+        salinity: 'Fresh',
+        waterAvailability: 0.5,
+      }),
+    ]);
+    const inside = createVisibleWaterFootprintTester(terrain);
+    assert.equal(inside(0, 0), true, `${waterKind} center must be water`);
+    assert.equal(
+      inside(size * 0.46, size * 0.46),
+      false,
+      `${waterKind} dry corner must not be blanked as water`,
+    );
+  }
+});
+
 test('all 15 open-water shoreline masks face the sky', () => {
   const coords = [[0, 0], [1, 0], [1, 1], [0, 1]];
   for (let mask = 1; mask < 16; mask++) {
