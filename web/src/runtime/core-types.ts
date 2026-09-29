@@ -533,6 +533,9 @@ export interface CivilizationWorldResource {
   id: string;
   gridX: number;
   gridY: number;
+  hasAccessGrid?: boolean;
+  accessGridX?: number;
+  accessGridY?: number;
   material: string;
   quantity: number;
   maxQuantity: number;
