@@ -898,6 +898,17 @@ void Simulation::advanceAction(Character& c,Runtime& r){
             break;
         case ActionType::Use:
             if(!obj){ failPlan(c,r); return; }
+            if((r.goal==Goal::Eat || r.goal==Goal::Drink)
+               && a.remainingTicks==std::max(1,obj->useDurationTicks)){
+                const MaterialKind provision=r.goal==Goal::Eat
+                    ? MaterialKind::PlantFood
+                    : MaterialKind::Water;
+                if(!c.civilization.inventory.remove(
+                    ItemKind::RawMaterial,provision,1)){
+                    failPlan(c,r);
+                    return;
+                }
+            }
             {
             const Needs before=c.needs;
             c.needs.apply(obj->effectPerTick);
@@ -905,6 +916,17 @@ void Simulation::advanceAction(Character& c,Runtime& r){
             }
             if(--a.remainingTicks<=0){ ++r.actionIndex; r.announced=false; } break;
         case ActionType::EmergencyUse:
+            if((r.goal==Goal::Eat || r.goal==Goal::Drink)
+               && a.remainingTicks==emergencyUseDurationTicks(r.goal)){
+                const MaterialKind provision=r.goal==Goal::Eat
+                    ? MaterialKind::PlantFood
+                    : MaterialKind::Water;
+                if(!c.civilization.inventory.remove(
+                    ItemKind::RawMaterial,provision,1)){
+                    failPlan(c,r);
+                    return;
+                }
+            }
             if(r.goal==Goal::UseToilet){
                 GridPos reliefTarget=r.navigationTarget;
                 if(!r.navigationHasTarget){
