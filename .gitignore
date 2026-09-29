@@ -1,19 +1,24 @@
-Binaries/
-DerivedDataCache/
-Intermediate/
-Saved/
-.vs/
-.idea/
-*.sln
-*.suo
-*.opensdf
-*.sdf
-*.VC.db
+# C/C++ / CMake build output
+build/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+
+# Python
 __pycache__/
 *.pyc
 
+# Editor / OS
+.vs/
+.idea/
+.DS_Store
+
 # Downloaded third-party source assets stay outside version control.
 assets_staging/
+
+# Web
+web/node_modules/
+web/dist/
 
 # Web/WASM generated artifacts
 build-web/
