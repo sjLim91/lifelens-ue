@@ -254,6 +254,7 @@ int main()
         timedSleep.world().characters[i].deathMinute=timedSleep.world().minute;
     }
     timedSleeper.needs={0.01,0.01,0.95,0.01,0.01};
+    timedSleeper.sleepTendency=1.0;
 
     GridPos timedStart{};
     assert(timedSleep.runtimePosition(timedSleeperId,timedStart));
