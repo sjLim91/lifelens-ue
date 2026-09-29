@@ -83,13 +83,8 @@ bool validatePendingDesignatedAreaTarget(const World& world,const PendingContext
 {
     return pending.hasSpatialTarget
         && activePrimitiveSanitationSite(world.primitiveSanitationSites)==nullptr
-        && civilizationOutdoorInteractionGridValid(
-            world,
-            pending.targetPos,
-            chunkCoordForGrid(pending.targetPos),
-            0,
-            0,
-            PrimitiveSanitationCleanSiteExposureLimit);
+        && world.environmentalResidues.exposureAt(pending.targetPos)
+            < PrimitiveSanitationCleanSiteExposureLimit;
 }
 
 CivilizationExecutionResult establishPendingDesignatedSanitationArea(
