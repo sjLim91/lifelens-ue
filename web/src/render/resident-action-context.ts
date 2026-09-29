@@ -63,6 +63,14 @@ export function residentActionCue(
   let action = '';
   switch (directive.kind) {
     case 'Physical':
+      if (directive.physicalGoal === 'Wash') {
+        return {
+          text: phase === 'Moving'
+            ? '소지한 물로 씻으러 이동 중'
+            : '소지한 물로 씻는 중',
+          phase,
+        };
+      }
       if (directive.physicalGoal === 'UseToilet') {
         if (directive.designatedSanitationSite) {
           return {
