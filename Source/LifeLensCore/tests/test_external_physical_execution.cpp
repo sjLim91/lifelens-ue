@@ -97,9 +97,10 @@ int main()
     assert(facilityPosition.x==facilityResolvedPosition.x);
     assert(facilityPosition.y==facilityResolvedPosition.y);
 
-    // External presentation ACK must record the same authoritative lived-use
-    // history as headless Core. Otherwise settlement form would diverge by
-    // runtime platform even though the physical outcome is identical.
+    // External/native sleep is not an atomic presentation ACK. The physical
+    // executor first reaches a real use point, then Core simulation minutes
+    // reduce fatigue one minute at a time until the resident actually wakes.
+    // This keeps native observation consistent with headless/Web sleep.
     Simulation settlementSleep(9193);
     settlementSleep.setupNewGame();
     settlementSleep.setExternalPhysicalExecution(true);
@@ -107,10 +108,11 @@ int main()
     const CharacterId sleeperId=sleeper.id;
     GridPos sleeperStart{};
     assert(settlementSleep.runtimePosition(sleeperId,sleeperStart));
+    const GridPos bedPosition{sleeperStart.x+5,sleeperStart.y+2};
     ConstructedFacility bed=makeFacilityConstructionSite(
         99001,
         FacilityKind::SleepingPlace,
-        sleeperStart,
+        bedPosition,
         sleeperId,
         settlementSleep.world().minute);
     for(auto& requirement:bed.requirements){
@@ -141,8 +143,45 @@ int main()
     assert(settlementSleep.settlementSleepTarget(
         sleeperId,sleepTarget,sleepFacilityId));
     assert(sleepFacilityId==99001);
-    assert(settlementSleep.completeExternalPhysicalAction(
+    assert(sleepTarget.x==bedPosition.x);
+    assert(sleepTarget.y==bedPosition.y);
+
+    const double fatigueAtArrival=sleeper.needs.sleep;
+    assert(settlementSleep.beginExternalSleepUse(
+        sleeperId,sleepTarget));
+
+    GridPos arrivedPosition{};
+    assert(settlementSleep.runtimePosition(sleeperId,arrivedPosition));
+    assert(arrivedPosition.x==sleepTarget.x);
+    assert(arrivedPosition.y==sleepTarget.y);
+
+    // A legacy completion ACK cannot double-apply a whole sleep session once
+    // progressive external sleep has begun.
+    assert(!settlementSleep.completeExternalPhysicalAction(
         sleeperId,true,sleepTarget));
+
+    settlementSleep.runMinutes(60);
+    assert(sleeper.needs.sleep<fatigueAtArrival);
+    assert(sleeper.needs.sleep>RestedSleepNeedTarget);
+    ResidentObservation sleepingAfterHour=
+        settlementSleep.observeResident(sleeperId);
+    assert(sleepingAfterHour.activityKind==ObservedActivityKind::Physical);
+    assert(sleepingAfterHour.physicalGoal==Goal::Sleep);
+    assert(settlementSleep.world().facilities.front().usageCount==0);
+
+    bool wokeAfterElapsedRest=false;
+    for(int minute=0;
+        minute<MaximumSleepSessionMinutes && !wokeAfterElapsedRest;
+        ++minute){
+        settlementSleep.step();
+        const ResidentObservation observed=
+            settlementSleep.observeResident(sleeperId);
+        wokeAfterElapsedRest=!(
+            observed.activityKind==ObservedActivityKind::Physical
+            && observed.physicalGoal==Goal::Sleep);
+    }
+    assert(wokeAfterElapsedRest);
+    assert(sleeper.needs.sleep<0.20);
     assert(settlementSleep.world().facilities.front().usageCount==1);
     assert(settlementSleep.world().facilities.front().lastUsedMinute>=
         settlementSleep.world().facilities.front().completedMinute);
