@@ -71,11 +71,30 @@ assert "WorldActivityPanel" in app
 for label in ("문명", "시설", "위생"):
     assert label in feed_ui, f"world activity feed label missing: {label}"
 
-# This tranche is observer-only. World presentation must not infer geometry/state
-# from these aggregate inspection payloads.
-for forbidden in ("civilizationWorld", "worldObjects"):
+# Aggregate world-activity inspection stays observer-only, but exact Core
+# spatial entities may now be projected into 3D through one dedicated factual
+# target layer. WorldScene must not derive presentation from aggregate counts
+# or reinterpret civilization state itself.
+for forbidden in (
+    "resourceNodeCount",
+    "totalResourceUnits",
+    "totalStoredUnits",
+    "facilityCount",
+    "recentDiscoveries",
+    "sanitationSites.filter",
+    "smartObjects.filter",
+):
     assert forbidden not in world_scene, (
-        f"world activity inspection leaked into presentation authority: {forbidden}"
+        f"aggregate world activity leaked into presentation inference: {forbidden}"
+    )
+
+for token in (
+    "AuthoritativeSpatialTargetLayer",
+    "setAuthoritativeSpatialTargets",
+    "authoritativeSpatialTargetLayer.setTargets",
+):
+    assert token in world_scene, (
+        f"exact spatial authority is not isolated in the dedicated target layer: {token}"
     )
 
 assert "Math.random(" not in activity_ui
