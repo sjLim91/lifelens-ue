@@ -200,14 +200,8 @@ inline bool resolveCivilizationContextTarget(
                     world.seed,actor,world.environmentalResidues,world.minute,
                     authoritativePosition);
                 if(!opportunity.siteAvailable) return false;
-                return resolveCivilizationOutdoorInteractionGridPosition(
-                    world,
-                    opportunity.suggestedSite,
-                    outTarget,
-                    10,
-                    0,
-                    0,
-                    PrimitiveSanitationCleanSiteExposureLimit);
+                outTarget=opportunity.suggestedSite;
+                return true;
             }
             if(decision.experiment==ExperimentKind::DigSanitationPit){
                 const DugSanitationPitOpportunity opportunity=evaluateDugSanitationPitOpportunity(
@@ -413,14 +407,8 @@ inline bool resolveCivilizationContextTarget(
                     world.seed,actor,world.environmentalResidues,world.minute,
                     authoritativePosition);
                 if(!opportunity.siteAvailable) return false;
-                return resolveCivilizationOutdoorInteractionGridPosition(
-                    world,
-                    opportunity.suggestedSite,
-                    outTarget,
-                    10,
-                    0,
-                    0,
-                    PrimitiveSanitationCleanSiteExposureLimit);
+                outTarget=opportunity.suggestedSite;
+                return true;
             }
             if(decision.technique==TechniqueId::DugSanitationPit){
                 const PrimitiveSanitationSite* site=activePrimitiveSanitationSite(world.primitiveSanitationSites);
