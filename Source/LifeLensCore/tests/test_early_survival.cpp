@@ -127,6 +127,14 @@ int main()
     // Environment may increase thirst, but without Water it must never fall.
     assert(provisionActor.needs.thirst>=thirstWithoutWater);
 
+    // Washing is also a physical water use. With no Water, hygiene cannot
+    // improve merely because a Sink/presentation affordance exists.
+    provisionActor.needs.hygiene=0.90;
+    assert(!actionAvailableFor(
+        provisionProbe.world(),provisionActor,Goal::Wash));
+    assert(buildPlan(
+        provisionProbe.world(),provisionActor,Goal::Wash,{}).empty());
+
     provisionActor.civilization.inventory.add({
         ItemKind::RawMaterial,MaterialKind::Water,1,0.5,1.0});
     assert(actionAvailableFor(
@@ -149,6 +157,21 @@ int main()
     assert(provisionActor.civilization.inventory.count(
         ItemKind::RawMaterial,MaterialKind::Water)==0);
     assert(provisionActor.needs.thirst<thirstBeforeDrink);
+
+    provisionActor.civilization.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::Water,1,0.5,1.0});
+    provisionActor.needs={0.01,0.01,0.01,0.01,0.90};
+    const double hygieneBeforeWash=provisionActor.needs.hygiene;
+    for(int minute=0;
+        minute<90
+        && provisionActor.civilization.inventory.count(
+            ItemKind::RawMaterial,MaterialKind::Water)>0;
+        ++minute){
+        provisionProbe.step();
+    }
+    assert(provisionActor.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::Water)==0);
+    assert(provisionActor.needs.hygiene<hygieneBeforeWash);
 
     // Worst-case regression: a resident reaches urgent hunger/thirst without a
     // carried provision. This used to deadlock because urgent Needs suppressed
