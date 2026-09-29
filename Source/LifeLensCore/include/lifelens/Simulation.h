@@ -281,6 +281,11 @@ inline bool Simulation::completeExternalPhysicalAction(
     Runtime& runtime=runtimeIt->second;
     if(runtime.socialActive || runtime.goal==Goal::Idle || runtime.plan.empty()) return false;
 
+    // Progressive external sleep is completed by Core simulation minutes after
+    // beginExternalSleepUse(). A presentation ACK must never apply a second
+    // full-session recovery on top of that elapsed recovery.
+    if(runtime.goal==Goal::Sleep && runtime.externalSleepActive) return false;
+
     const bool primitiveSanitation=sanitationSiteId!=0;
     const PrimitiveSanitationSite* sanitationSite=nullptr;
     if(primitiveSanitation){
