@@ -187,7 +187,9 @@ test('flow-water centerline stays on the authoritative downstream segment', () =
   try {
     const position = geometry.attributes.position;
     assert.ok(position.count >= 14, 'missing river ribbon cross-sections');
-    for (let vertex = 0; vertex + 1 < position.count; vertex += 2) {
+    // First ribbon has six segments => seven cross-sections => 14 vertices.
+    // Later vertices are the endpoint cap and are tested separately by face/radius checks.
+    for (let vertex = 0; vertex < 14; vertex += 2) {
       const centerZ = (position.getZ(vertex) + position.getZ(vertex + 1)) * 0.5;
       near(centerZ, 0, 'river centerline drifted away from Core water footprint', 1e-6);
     }
