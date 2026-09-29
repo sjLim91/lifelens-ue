@@ -18,48 +18,23 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
-      - name: Verify one-click RawGitHack launcher
+      - name: Verify canonical GitHub Pages preview
         shell: bash
         run: |
           set -euo pipefail
-          BASE="https://raw.githack.com/sjLim91/lifelens-ue/gh-pages"
+          BASE="https://sjlim91.github.io/lifelens-ue"
           LAUNCH="$BASE/launch.html"
           INDEX="$BASE/index.html"
 
           echo "== launcher GET =="
-          launch_code=$(curl -L -sS -o /tmp/launch.html -w "%{http_code}"             -H "Sec-Fetch-Dest: document" "$LAUNCH")
-          launch_type=$(curl -L -sSI "$LAUNCH" | tr -d '\r' | awk 'BEGIN{IGNORECASE=1}/^content-type:/{print $0}' | tail -1)
-          echo "LAUNCH_STATUS=$launch_code"
-          echo "LAUNCH_CONTENT_TYPE=$launch_type"
-          test "$launch_code" = "200"
-          grep -q "라이프렌즈 미리보기" /tmp/launch.html
-
-          echo "== confirmation POST =="
-          curl -sS -o /tmp/post-body -D /tmp/post-headers             -c /tmp/cookies             -X POST             -H "Referer: $LAUNCH"             "$LAUNCH" || true
-          cat /tmp/post-headers
-          grep -qi "set-cookie: __Http-phish=1" /tmp/post-headers
-
-          echo "== app HTML + hashed asset consistency =="
           preview_ready=0
-          for attempt in 1 2 3 4 5 6; do
+          for attempt in 1 2 3 4 5 6 7 8; do
             cache_bust="$(date +%s)-$attempt"
-            app_code=$(curl -L -sS -o /tmp/index.html -w "%{http_code}" \
-              -b /tmp/cookies \
-              -H "Sec-Fetch-Dest: document" \
-              "$INDEX?v=$cache_bust")
+            launch_code=$(curl -L -sS -o /tmp/launch.html -w "%{http_code}"               -H "Cache-Control: no-cache"               "$LAUNCH?v=$cache_bust" || true)
+            launch_type=$(curl -L -sSI               -H "Cache-Control: no-cache"               "$LAUNCH?v=$cache_bust"               | tr -d '\r'               | awk 'BEGIN{IGNORECASE=1}/^content-type:/{print $0}'               | tail -1 || true)
 
-            asset=$(grep -oE 'src="\./assets/[^"]+\.js"' /tmp/index.html | head -1 | sed 's/src="\.\///;s/"//g' || true)
-            asset_code=000
-            if [ "$app_code" = "200" ] && [ -n "$asset" ]; then
-              asset_code=$(curl -L -sS -o /tmp/app.js -w "%{http_code}" \
-                "$BASE/$asset?v=$cache_bust")
-            fi
-
-            echo "ATTEMPT=$attempt APP_STATUS=$app_code ASSET=$asset ASSET_STATUS=$asset_code"
-            if [ "$app_code" = "200" ] \
-              && grep -q "라이프렌즈 웹 관찰" /tmp/index.html \
-              && grep -q "lifelens-bootstrap" /tmp/index.html \
-              && [ "$asset_code" = "200" ]; then
+            echo "ATTEMPT=$attempt LAUNCH_STATUS=$launch_code LAUNCH_CONTENT_TYPE=$launch_type"
+            if [ "$launch_code" = "200" ]               && grep -q "라이프렌즈 미리보기" /tmp/launch.html; then
               preview_ready=1
               break
             fi
@@ -68,8 +43,29 @@ jobs:
           done
           test "$preview_ready" = "1"
 
-          wasm_code=$(curl -L -sS -o /tmp/core.wasm -w "%{http_code}" \
-            "$BASE/runtime/lifelens_core.wasm?v=$(date +%s)")
+          echo "== app HTML + hashed asset consistency =="
+          preview_ready=0
+          for attempt in 1 2 3 4 5 6 7 8; do
+            cache_bust="$(date +%s)-$attempt"
+            app_code=$(curl -L -sS -o /tmp/index.html -w "%{http_code}"               -H "Cache-Control: no-cache"               "$INDEX?v=$cache_bust" || true)
+
+            asset=$(grep -oE 'src="\./assets/[^"]+\.js"' /tmp/index.html               | head -1               | sed 's/src="\.\///;s/"//g' || true)
+            asset_code=000
+            if [ "$app_code" = "200" ] && [ -n "$asset" ]; then
+              asset_code=$(curl -L -sS -o /tmp/app.js -w "%{http_code}"                 -H "Cache-Control: no-cache"                 "$BASE/$asset?v=$cache_bust" || true)
+            fi
+
+            echo "ATTEMPT=$attempt APP_STATUS=$app_code ASSET=$asset ASSET_STATUS=$asset_code"
+            if [ "$app_code" = "200" ]               && grep -q "라이프렌즈 웹 관찰" /tmp/index.html               && grep -q "lifelens-bootstrap" /tmp/index.html               && [ "$asset_code" = "200" ]; then
+              preview_ready=1
+              break
+            fi
+
+            sleep $((attempt * 2))
+          done
+          test "$preview_ready" = "1"
+
+          wasm_code=$(curl -L -sS -o /tmp/core.wasm -w "%{http_code}"             -H "Cache-Control: no-cache"             "$BASE/runtime/lifelens_core.wasm?v=$(date +%s)" || true)
           echo "WASM_STATUS=$wasm_code"
           echo "WASM_BYTES=$(wc -c < /tmp/core.wasm)"
           test "$wasm_code" = "200"
