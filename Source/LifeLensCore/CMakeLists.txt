@@ -190,6 +190,7 @@ lifelens_add_test(test_web_client_bridge)
 lifelens_add_test(test_human_trace_read_model)
 
 lifelens_add_test(test_early_survival)
+lifelens_add_test(test_action_commitment)
 lifelens_add_test(test_survival_reachability)
 
 lifelens_add_test(test_durable_water_storage)
