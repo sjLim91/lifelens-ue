@@ -444,7 +444,8 @@ int main()
         CHECK(delivery.intent==CivilizationIntent::Craft);
         CHECK(delivery.facility==logisticsBed->id);
         CHECK(delivery.facilityAction==FacilityBuildAction::DeliverMaterial);
-        CHECK(delivery.material==retrieve.material);
+        CHECK(logisticsWorker.civilization.inventory.count(
+            ItemKind::RawMaterial,delivery.material)>0);
 
         const CivilizationExecutionResult delivered=
             executeCivilizationDecisionAtPosition(
