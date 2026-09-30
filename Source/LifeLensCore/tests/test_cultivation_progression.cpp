@@ -269,6 +269,7 @@ int main()
 
     grower.personality.patience=1.0;
     grower.personality.conscientiousness=1.0;
+    grower.personality.impulsiveness=0.05;
     grower.personality.orderliness=0.9;
     grower.personality.adaptability=0.55;
     grower.personality.curiosity=0.08;
@@ -279,6 +280,7 @@ int main()
 
     forager.personality.patience=0.05;
     forager.personality.conscientiousness=0.05;
+    forager.personality.impulsiveness=1.0;
     forager.personality.orderliness=0.05;
     forager.personality.adaptability=1.0;
     forager.personality.curiosity=1.0;
@@ -350,6 +352,52 @@ int main()
     CHECK(foragerAgain.intent==foragerChoice.intent);
     CHECK(foragerAgain.resourceNode==foragerChoice.resourceNode);
     CHECK(foragerAgain.material==foragerChoice.material);
+
+    // Shared-provision allocation: both residents now have the same moderate
+    // Hunger, the same single fresh PlantFood unit, the same cultivation
+    // knowledge/tool and the same empty plot. The future-oriented grower may
+    // commit that final local provision as seed, while the impulsive forager
+    // retains it for immediate eating. This is a resident Utility trade-off,
+    // not a global "never plant the last food" rule.
+    grower.needs.hunger=0.45;
+    forager.needs.hunger=0.45;
+
+    const CivilizationUtilityDecision growerSeedChoice=
+        bestCultivationDecision(
+            diversityWorld,grower,diversityAnchor,&diversityPopulation);
+    const CivilizationUtilityDecision foragerSeedChoice=
+        bestCultivationDecision(
+            diversityWorld,forager,diversityAnchor,&diversityPopulation);
+
+    CHECK(growerSeedChoice.intent==CivilizationIntent::Craft);
+    CHECK(growerSeedChoice.technique==TechniqueId::Cultivation);
+    CHECK(growerSeedChoice.facilityAction==FacilityBuildAction::Plant);
+    CHECK(!(
+        foragerSeedChoice.intent==CivilizationIntent::Craft
+        && foragerSeedChoice.technique==TechniqueId::Cultivation
+        && foragerSeedChoice.facilityAction==FacilityBuildAction::Plant));
+
+    UtilityAIRuleset allocationRules=DefaultSimulationRuleset.utilityAI;
+    allocationRules.secondChoiceProbability=0.0;
+    CHECK(chooseGoal(diversityWorld,forager,allocationRules)==Goal::Eat);
+    CHECK(chooseGoal(diversityWorld,grower,allocationRules)!=Goal::Eat);
+
+    // A real nearby reserve removes the "final locally accessible food" cost.
+    // The same impulsive resident can then consider planting again; the stock
+    // is not fabricated, and it remains physically present in Storage.
+    StorageSite allocationReserve;
+    allocationReserve.id=990401;
+    allocationReserve.pos={diversityAnchor.x+1,diversityAnchor.y+1};
+    allocationReserve.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::PlantFood,2,0.9,1.0});
+    diversityWorld.storageSites.push_back(allocationReserve);
+
+    const CivilizationUtilityDecision foragerWithReserve=
+        bestCultivationDecision(
+            diversityWorld,forager,diversityAnchor,&diversityPopulation);
+    CHECK(foragerWithReserve.intent==CivilizationIntent::Craft);
+    CHECK(foragerWithReserve.technique==TechniqueId::Cultivation);
+    CHECK(foragerWithReserve.facilityAction==FacilityBuildAction::Plant);
 
     // Performing the chosen cultivation action becomes lived experience and
     // strengthens future role specialization without creating a permanent job.
