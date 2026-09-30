@@ -667,7 +667,7 @@ function exactCivilizationEvents(
       || names.get(discovery.discovererId)
       || discovery.discovererId
       || '누군가';
-    const discoverer = nextResidents.find(
+    const discoverer = residents.find(
       (resident) => resident.id === discovery.discovererId,
     );
     events.push({
@@ -851,10 +851,10 @@ function explorationEvent(
     minute: Number(next.issuedMinute) || minute,
     residentId: resident.id,
     residentName: resident.name,
-    ...(presentation.hasTargetGrid
+    ...(next.hasTargetGrid
       ? {
-          focusGridX: presentation.targetGridX,
-          focusGridY: presentation.targetGridY,
+          focusGridX: next.targetGridX,
+          focusGridY: next.targetGridY,
         }
       : residentFocus(resident)),
     summary: `${resident.name}: ${formatMaterial(material)} 자원 탐색 시작`,
