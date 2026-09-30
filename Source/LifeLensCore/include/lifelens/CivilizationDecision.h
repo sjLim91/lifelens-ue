@@ -1995,8 +1995,12 @@ inline CivilizationUtilityDecision bestStoreDecision(
     const World& world,
     const Character& self)
 {
+    if(world.storageSites.empty()) return CivilizationUtilityDecision{};
+    // Compatibility wrapper: legacy callers had no authoritative runtime
+    // position and historically targeted the first stockpile. Production
+    // autonomous decisions use bestStoreDecisionAtPosition() instead.
     return bestStoreDecisionAtPosition(
-        world,self,civilizationSanitationReferencePosition(world));
+        world,self,world.storageSites.front().pos);
 }
 
 inline CivilizationUtilityDecision chooseCivilizationUtilityDecisionAtPosition(
