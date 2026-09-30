@@ -268,6 +268,9 @@ jobs:
         if: steps.reuse.outputs.reuse != 'true'
         uses: actions/checkout@v4
 
+      # ccache는 컴파일 비용만 줄인다. Core 테스트 자체를 생략할 수 있는
+      # 유일한 조건은 위 재사용 판정이 동일 Core 입력의 선행 성공 run을
+      # 확인한 경우뿐이다.
       - name: C++ 컴파일 캐시 복원
         if: steps.reuse.outputs.reuse != 'true'
         uses: actions/cache@v4
