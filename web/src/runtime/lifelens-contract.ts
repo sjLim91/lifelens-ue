@@ -82,6 +82,10 @@ export const OBSERVER_RUNTIME_CONTRACT = {
   residentContinuityGraceMs: 10_000,
 } as const;
 
+export const MAX_SIMULATION_SPEED_MULTIPLIER = Math.max(
+  ...SIMULATION_SPEED_MODES.map((mode) => mode.speed),
+);
+
 export const RESIDENT_PRESENTATION_CONTRACT = {
   movementEpsilonWorldUnits: 0.008,
   maxAnimationDeltaSeconds: 0.05,
@@ -96,9 +100,13 @@ export const RESIDENT_PRESENTATION_CONTRACT = {
     RESIDENT_VISUAL_SPEED_WORLD_UNITS_PER_SECOND_AT_1X,
   walkMinTimeScale: 0.72,
   walkMaxTimeScale: 1.55,
-  // Presentation motion derives from the exact same global baseline as time.
+  // Presentation motion derives from the same global baseline and the exact
+  // selected observer speed. Do not cap 4×/16× back to a slower visual pace:
+  // simulation time, movement and visible action playback must stay aligned.
   motionTimeScaleAt1x: SIMULATION_BASELINE_SPEED_MULTIPLIER,
-  maxMotionTimeScale: SIMULATION_BASELINE_SPEED_MULTIPLIER * 2,
+  maxMotionTimeScale:
+    SIMULATION_BASELINE_SPEED_MULTIPLIER
+    * MAX_SIMULATION_SPEED_MULTIPLIER,
   modelForwardYawOffsetRadians: 0,
 } as const;
 
@@ -107,10 +115,9 @@ export function residentPresentationMotionTimeScale(
 ): number {
   const canonicalSpeed = normalizeSimulationSpeed(speed);
   if (canonicalSpeed <= 0) return 0;
-  return Math.min(
-    RESIDENT_PRESENTATION_CONTRACT.maxMotionTimeScale,
+  return (
     RESIDENT_PRESENTATION_CONTRACT.motionTimeScaleAt1x
-      * canonicalSpeed,
+    * canonicalSpeed
   );
 }
 
