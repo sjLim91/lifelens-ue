@@ -158,9 +158,10 @@ jobs:
                   )
 
           elif event == "push" and ref_name == "main":
-              # squash merge SHA는 PR head SHA와 달라질 수 있다. 단순 SHA
-              # 재사용이 아니라 두 커밋의 전체 tree가 동일한 경우에만
-              # 이미 통과한 PR head의 push Core 결과를 안전하게 재사용한다.
+              # squash merge 사이에 docs/Web 등 Core와 무관한 main 변경이
+              # 끼어들 수 있다. 전체 repository tree가 달라도 실제 Core
+              # 검증 입력(Source/LifeLensCore + 이 workflow)이 PR head와
+              # 동일하면 이미 통과한 Core 결과를 안전하게 재사용한다.
               pulls = api(
                   f"/repos/{repo}/commits/{source_sha}/pulls"
               )
@@ -173,29 +174,75 @@ jobs:
                   ),
                   None,
               )
+
+              tree_cache = {}
+
+              def root_tree_sha(commit_sha):
+                  payload = api(
+                      f"/repos/{repo}/git/commits/{commit_sha}"
+                  )
+                  return (payload.get("tree") or {}).get("sha")
+
+              def tree_payload(tree_sha):
+                  if tree_sha not in tree_cache:
+                      tree_cache[tree_sha] = api(
+                          f"/repos/{repo}/git/trees/{tree_sha}"
+                      )
+                  return tree_cache[tree_sha]
+
+              def path_entry_sha(commit_sha, path):
+                  tree_sha = root_tree_sha(commit_sha)
+                  if not tree_sha:
+                      return None
+                  parts = path.split("/")
+                  for index, part in enumerate(parts):
+                      entry = next(
+                          (
+                              item for item in tree_payload(tree_sha).get("tree", [])
+                              if item.get("path") == part
+                          ),
+                          None,
+                      )
+                      if not entry:
+                          return None
+                      if index < len(parts) - 1 and entry.get("type") != "tree":
+                          return None
+                      tree_sha = entry.get("sha")
+                      if not tree_sha:
+                          return None
+                  return tree_sha
+
               if merged:
                   head_sha = merged["head"]["sha"]
-                  merged_commit = api(
-                      f"/repos/{repo}/git/commits/{source_sha}"
+                  merged_core = path_entry_sha(
+                      source_sha, "Source/LifeLensCore"
                   )
-                  head_commit = api(
-                      f"/repos/{repo}/git/commits/{head_sha}"
+                  head_core = path_entry_sha(
+                      head_sha, "Source/LifeLensCore"
                   )
-                  merged_tree = (
-                      merged_commit.get("tree") or {}
-                  ).get("sha")
-                  head_tree = (
-                      head_commit.get("tree") or {}
-                  ).get("sha")
+                  merged_workflow = path_entry_sha(
+                      source_sha, ".github/workflows/core-tests.yml"
+                  )
+                  head_workflow = path_entry_sha(
+                      head_sha, ".github/workflows/core-tests.yml"
+                  )
 
-                  if merged_tree and merged_tree == head_tree:
+                  same_core_inputs = (
+                      merged_core
+                      and head_core
+                      and merged_workflow
+                      and head_workflow
+                      and merged_core == head_core
+                      and merged_workflow == head_workflow
+                  )
+                  if same_core_inputs:
                       run = successful_push(head_sha)
                       if run:
                           reuse = True
                           reused_sha = head_sha
                           reason = (
-                              "main squash merge의 tree가 검증된 PR head와 동일해 "
-                              "Core 결과를 재사용합니다 "
+                              "main squash merge의 Core subtree와 workflow가 "
+                              "검증된 PR head와 동일해 Core 결과를 재사용합니다 "
                               f"(PR #{merged.get('number')}, run {run.get('id')})."
                           )
 
@@ -221,13 +268,41 @@ jobs:
         if: steps.reuse.outputs.reuse != 'true'
         uses: actions/checkout@v4
 
+      - name: C++ 컴파일 캐시 복원
+        if: steps.reuse.outputs.reuse != 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: lifelens-core-ccache-v1-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            lifelens-core-ccache-v1-${{ runner.os }}-
+
+      - name: C++ 컴파일 캐시 준비
+        if: steps.reuse.outputs.reuse != 'true'
+        run: |
+          if ! command -v ccache >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y ccache
+          fi
+          mkdir -p "$HOME/.cache/ccache"
+          ccache --set-config=cache_dir="$HOME/.cache/ccache"
+          ccache --set-config=max_size=256M
+          ccache --zero-stats
+
       - name: Core 구성
         if: steps.reuse.outputs.reuse != 'true'
-        run: cmake -S Source/LifeLensCore -B build -DCMAKE_BUILD_TYPE=Release
+        run: >
+          cmake -S Source/LifeLensCore -B build
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       - name: Core 빌드
         if: steps.reuse.outputs.reuse != 'true'
         run: cmake --build build -j2
+
+      - name: Core 빌드 캐시 통계
+        if: steps.reuse.outputs.reuse != 'true'
+        run: ccache --show-stats
 
       - name: Core 테스트
         if: steps.reuse.outputs.reuse != 'true'
