@@ -1,3 +1,18 @@
+## 2026-09-30 LATE CANONICAL CURRENT — RESIDENT AUTONOMY FOLLOW-THROUGH ACTIVE
+
+> This section supersedes the earlier 2026-09-30 DU-01 checkpoint below. Actual GitHub main/PR/Actions remain the highest-priority truth.
+
+- Validated baseline main: `746a488a776fec77f10e1b97bb3b9b0fbee726e8`.
+- Working branch: `feature/autonomous-food-choice-20260930`.
+- Previous validated change: D-026 development actions (cultivation/construction/crafting) now diverge by resident disposition and lived experience; all Core/Preflight/WASM/Runtime Release/Preview/External Probe workflows passed on `746a488`.
+- Current objective: complete D-023 food-use autonomy below the survival boundary.
+- Non-critical Eat must be Utility-driven from Hunger + competing Needs + emotion/personality + real carried provision, not `food exists => Eat now`.
+- A scarce final PlantFood unit may be preserved by a patient/conscientious/orderly resident, while an impulsive resident can choose to eat earlier under the same physical affordance.
+- Urgent/critical Hunger keeps existing self-preservation priority and must override reserve discipline.
+- Real Eat execution still consumes authoritative carried PlantFood; no browser/SmartObject provision fabrication.
+- Validation: targeted `test_utility` regression first, then exact-head Core Tests. Full boundary workflows are required before merge if this unit expands beyond Core-only scoring.
+- GitHub commit/PR text for this project remains Korean.
+
 ## 2026-09-30 CANONICAL CURRENT — DU-01 Living Settlement ACTIVE
 
 > This section supersedes older execution snapshots below. Actual GitHub main/PR/Actions remain the highest-priority truth.
