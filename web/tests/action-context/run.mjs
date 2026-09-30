@@ -38,6 +38,10 @@ const {
   import.meta.dirname,
   '../../src/render/resident-semantic-motion.ts',
 ));
+const { residentStatusText } = load(resolve(
+  import.meta.dirname,
+  '../../src/ui/resident-status.ts',
+));
 const { residentSocialCuePairs } = load(resolve(
   import.meta.dirname,
   '../../src/render/resident-social-cues.ts',
@@ -69,6 +73,48 @@ function testCase(name, run) {
   passed += 1;
   console.log('PASS ' + name);
 }
+
+
+testCase('resident list status trusts presentation over legacy activityLabel', () => {
+  const directWater = resident({
+    activityLabel: 'Drink',
+    presentation: {
+      active: true,
+      kind: 'Physical',
+      phase: 'Moving',
+      physicalGoal: 'Drink',
+      directNaturalWaterSource: true,
+    },
+  });
+  assert.equal(
+    residentStatusText(directWater, [directWater]),
+    '물가로 마시러 이동 중',
+  );
+
+  const resourceSearch = resident({
+    activityLabel: 'Idle',
+    presentation: {
+      active: true,
+      kind: 'Civilization',
+      phase: 'Moving',
+      civilizationIntent: 'Explore',
+      civilizationMaterial: 'PlantFood',
+      hasTargetGrid: true,
+    },
+  });
+  assert.equal(
+    residentStatusText(resourceSearch, [resourceSearch]),
+    '식물성 먹거리 탐색 지역으로 이동 중',
+  );
+});
+
+testCase('resident list status falls back to legacy activity only when presentation is inactive', () => {
+  const waiting = resident({
+    activityLabel: 'Idle',
+    presentation: { active: false },
+  });
+  assert.equal(residentStatusText(waiting, [waiting]), '대기');
+});
 
 testCase('inactive or idle presentation stays visually silent', () => {
   assert.equal(

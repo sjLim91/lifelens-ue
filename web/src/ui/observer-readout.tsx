@@ -20,6 +20,7 @@ import {
   formatTrait,
   formatWeather,
 } from './observer-format';
+import { residentStatusText } from './resident-status';
 
 export function RuntimeBadge({
   runtime,
@@ -102,13 +103,16 @@ function ResidentNeedsGrid({ resident }: { resident: Resident }) {
 
 function ResidentCard({
   resident,
+  residents,
   selected,
   onSelect,
 }: {
   resident: Resident;
+  residents: Resident[];
   selected: boolean;
   onSelect: (residentId: string) => void;
 }) {
+  const statusText = residentStatusText(resident, residents);
   return (
     <button
       type="button"
@@ -118,7 +122,7 @@ function ResidentCard({
     >
       <div className="resident-title">
         <strong>{resident.name}</strong>
-        <span>{formatSex(resident.sex)} · {formatActivity(resident.activityLabel)}</span>
+        <span>{formatSex(resident.sex)} · {statusText}</span>
       </div>
       <ResidentNeedsGrid resident={resident} />
       <small>
@@ -132,9 +136,11 @@ function ResidentCard({
 
 export function SelectedResidentReadout({
   resident,
+  residents,
   onClear,
 }: {
   resident: Resident | null;
+  residents: Resident[];
   onClear: () => void;
 }) {
   if (!resident) {
@@ -205,7 +211,8 @@ export function SelectedResidentReadout({
     ...(family?.children ?? []),
     ...(family?.siblings ?? []),
   ].slice(0, 6);
-  const activityTarget = resident.activityTargetName
+  const statusText = residentStatusText(resident, residents);
+  const activityTarget = !resident.presentation?.active && resident.activityTargetName
     ? ` → ${resident.activityTargetName}`
     : '';
 
@@ -226,7 +233,7 @@ export function SelectedResidentReadout({
       </div>
 
       <p className="focused-life-activity">
-        현재 <b>{formatActivity(resident.activityLabel)}</b>{activityTarget}
+        현재 <b>{statusText}</b>{activityTarget}
       </p>
 
       <ResidentNeedsGrid resident={resident} />
@@ -450,6 +457,7 @@ export function ResidentReadout({
               <ResidentCard
                 key={resident.id}
                 resident={resident}
+                residents={residents}
                 selected={resident.id === selectedResidentId}
                 onSelect={onSelect}
               />

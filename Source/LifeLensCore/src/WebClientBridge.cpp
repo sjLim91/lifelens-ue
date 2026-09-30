@@ -653,27 +653,51 @@ std::string WebClientBridge::residentRuntimeJson() const
         const bool hasPosition =
             simulation_->runtimePosition(character.id, position);
 
-        ObservedActivityKind activityKind = ObservedActivityKind::Idle;
+        std::string activityKind = "Idle";
         Goal physicalGoal = Goal::Idle;
         SocialIntent socialIntent = SocialIntent::None;
         CharacterId activityTargetId = 0;
         std::string activityLabel = "Idle";
         std::string activityTargetName;
 
-        if (presentation.active
-            && presentation.kind == PresentationActionKind::Physical) {
-            activityKind = ObservedActivityKind::Physical;
-            physicalGoal = presentation.physicalGoal;
-            activityLabel = goalName(physicalGoal);
-        } else if (presentation.active
-            && presentation.kind == PresentationActionKind::Social) {
-            activityKind = ObservedActivityKind::Social;
-            socialIntent = presentation.socialIntent;
+        const auto applyPresentationTarget = [&]() {
             activityTargetId = presentation.targetResidentId;
-            activityLabel = socialIntentName(socialIntent);
             if (const Character* target =
                     findObservedCharacter(world, activityTargetId)) {
                 activityTargetName = target->name;
+            }
+        };
+
+        if (presentation.active) {
+            activityKind = presentationActionKindName(presentation.kind);
+            switch (presentation.kind) {
+                case PresentationActionKind::Physical:
+                    physicalGoal = presentation.physicalGoal;
+                    activityLabel = goalName(physicalGoal);
+                    break;
+                case PresentationActionKind::Social:
+                    socialIntent = presentation.socialIntent;
+                    activityLabel = socialIntentName(socialIntent);
+                    applyPresentationTarget();
+                    break;
+                case PresentationActionKind::Civilization:
+                    activityLabel =
+                        civilizationIntentName(presentation.civilizationIntent);
+                    break;
+                case PresentationActionKind::Parenting:
+                    activityLabel =
+                        parentingActionName(presentation.parentingAction);
+                    applyPresentationTarget();
+                    break;
+                case PresentationActionKind::KnowledgeTeaching:
+                    activityLabel = "KnowledgeTeaching";
+                    applyPresentationTarget();
+                    break;
+                case PresentationActionKind::None:
+                default:
+                    activityKind = "Idle";
+                    activityLabel = "Idle";
+                    break;
             }
         }
 
@@ -691,7 +715,7 @@ std::string WebClientBridge::residentRuntimeJson() const
         out << "\"hasBirthMinute\":" << (character.hasBirthMinute ? "true" : "false") << ",";
         out << "\"birthMinute\":" << character.birthMinute << ",";
         out << "\"deathMinute\":" << character.deathMinute << ",";
-        out << "\"activityKind\":\"" << activityKindName(activityKind) << "\",";
+        out << "\"activityKind\":\"" << escapeJson(activityKind) << "\",";
         out << "\"activityLabel\":\"" << escapeJson(activityLabel) << "\",";
         out << "\"physicalGoal\":\"" << goalName(physicalGoal) << "\",";
         out << "\"socialIntent\":\"" << socialIntentName(socialIntent) << "\",";

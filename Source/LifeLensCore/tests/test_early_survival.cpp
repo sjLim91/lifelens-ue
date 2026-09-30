@@ -210,8 +210,10 @@ int main()
     directActor.needs={0.01,0.93,0.01,0.01,0.01};
     const double directThirstBefore=directActor.needs.thirst;
     bool sawDirectDrink=false;
+    bool sawDirectDrinkInteraction=false;
     for(int minute=0;minute<SimulationMinutesPerDay
         && directActor.needs.thirst>=directThirstBefore;++minute){
+        const double thirstBeforeStep=directActor.needs.thirst;
         directWater.step();
         const ResidentPresentationObservation observed=
             directWater.observeResidentPresentation(directActorId);
@@ -220,9 +222,19 @@ int main()
            && observed.physicalGoal==Goal::Drink
            && observed.directNaturalWaterSource){
             sawDirectDrink=true;
+            assert(observed.phase!=PresentationActionPhase::Idle);
+            if(observed.phase==PresentationActionPhase::Moving){
+                // Walking toward the real source is not drinking. Normal need
+                // pressure may increase thirst, but movement must not reduce it.
+                assert(directActor.needs.thirst+1e-12>=thirstBeforeStep);
+            }
+            if(observed.phase==PresentationActionPhase::Interacting){
+                sawDirectDrinkInteraction=true;
+            }
         }
     }
     assert(sawDirectDrink);
+    assert(sawDirectDrinkInteraction);
     assert(directActor.needs.thirst<directThirstBefore);
     assert(rawWaterUnitCount(directActor.civilization.inventory)==0);
     assert(simpleContainerCount(directActor.civilization.inventory)==0);
@@ -269,6 +281,9 @@ int main()
     assert(actor.civilization.inventory.count(
         ItemKind::RawMaterial,MaterialKind::PlantFood)==0);
 
+    int criticalInactiveStreak=0;
+    int maxCriticalInactiveStreak=0;
+    bool sawCriticalProvisionPresentation=false;
     for(int minute=0;
         minute<SimulationMinutesPerDay
         && (
@@ -281,8 +296,35 @@ int main()
         );
         ++minute){
         urgent.step();
+        const ResidentPresentationObservation observed=
+            urgent.observeResidentPresentation(actorId);
+        const bool criticalNow=
+            actor.needs.hunger>=CriticalSurvivalPreemptThreshold
+            || actor.needs.thirst>=CriticalSurvivalPreemptThreshold;
+        if(criticalNow && !observed.active){
+            ++criticalInactiveStreak;
+            maxCriticalInactiveStreak=std::max(
+                maxCriticalInactiveStreak,criticalInactiveStreak);
+        }else{
+            criticalInactiveStreak=0;
+        }
+        if(criticalNow
+           && observed.active
+           && observed.kind==PresentationActionKind::Civilization
+           && (
+               observed.civilizationMaterial==MaterialKind::PlantFood
+               || observed.civilizationMaterial==MaterialKind::Water
+           )){
+            sawCriticalProvisionPresentation=true;
+            assert(observed.phase!=PresentationActionPhase::Idle);
+        }
     }
 
+    // The normal planner cadence is five simulated minutes. Critical survival
+    // may wait only within that bounded cadence; it must never disappear into
+    // a long inactive/Idle state while acquisition is actually in progress.
+    assert(maxCriticalInactiveStreak<=5);
+    assert(sawCriticalProvisionPresentation);
     assert(!containsLog(urgent.logs(),actorName+" -> Civilization Gather Water"));
     assert(containsLog(urgent.logs(),actorName+" completed Drink via emergency fallback"));
     assert(containsLog(urgent.logs(),actorName+" -> Civilization Gather PlantFood"));

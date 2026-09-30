@@ -398,7 +398,13 @@ export interface Resident {
   hasBirthMinute?: boolean;
   birthMinute?: number;
   deathMinute?: number;
-  activityKind?: 'Idle' | 'Physical' | 'Social';
+  activityKind?:
+    | 'Idle'
+    | 'Physical'
+    | 'Social'
+    | 'Civilization'
+    | 'Parenting'
+    | 'KnowledgeTeaching';
   activityLabel?: string;
   physicalGoal?: string;
   socialIntent?: string;
