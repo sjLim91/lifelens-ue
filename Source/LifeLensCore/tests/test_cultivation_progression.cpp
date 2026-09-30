@@ -399,6 +399,30 @@ int main()
     CHECK(foragerWithReserve.technique==TechniqueId::Cultivation);
     CHECK(foragerWithReserve.facilityAction==FacilityBuildAction::Plant);
 
+    // Organized storage remains the reversible third allocation path. It only
+    // banks real surplus and therefore does not consume the final carried meal.
+    Character storer=forager;
+    storer.id=990501;
+    storer.civilization.character=storer.id;
+    storer.civilization.inventory=Inventory{};
+    storer.civilization.knowledge=KnowledgeState{};
+    storer.personality.orderliness=1.0;
+    storer.personality.conscientiousness=1.0;
+    storer.personality.patience=0.85;
+    storer.personality.impulsiveness=0.10;
+    storer.needs.hunger=0.30;
+    storer.civilization.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::PlantFood,5,0.9,1.0});
+
+    const CivilizationUtilityDecision storeChoice=
+        bestStoreDecisionAtPosition(
+            diversityWorld,storer,diversityAnchor);
+    CHECK(storeChoice.intent==CivilizationIntent::Store);
+    CHECK(storeChoice.material==MaterialKind::PlantFood);
+    CHECK(storeChoice.storage==allocationReserve.id);
+    CHECK(storeChoice.quantity>0);
+    CHECK(storeChoice.quantity<5);
+
     // Performing the chosen cultivation action becomes lived experience and
     // strengthens future role specialization without creating a permanent job.
     const double experienceBefore=
