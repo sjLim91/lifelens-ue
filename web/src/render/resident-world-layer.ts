@@ -341,7 +341,20 @@ export class ResidentWorldLayer {
       actor.activityLabel = resident.activityLabel ?? 'Idle';
       actor.activityTargetId = resident.activityTargetId ?? '';
       actor.presentation = resident.presentation ?? null;
-      this.updateActionCue(actor, resident, residents);
+      const visualDx = next.x - actor.current.x;
+      const visualDz = next.z - actor.current.z;
+      const visuallyMovingToAuthoritativePosition =
+        actor.initialized
+        && (
+          (visualDx * visualDx) + (visualDz * visualDz)
+          > RESIDENT_PRESENTATION_CONTRACT.movementEpsilonWorldUnits ** 2
+        );
+      this.updateActionCue(
+        actor,
+        resident,
+        residents,
+        visuallyMovingToAuthoritativePosition,
+      );
       actor.target.copy(next);
 
       if (!actor.initialized) {
@@ -903,8 +916,13 @@ export class ResidentWorldLayer {
     actor: ResidentActor,
     resident: Resident,
     residents: Resident[],
+    visuallyMoving: boolean,
   ): void {
-    const cue = residentActionCue(resident, residents);
+    const cue = residentActionCue(
+      resident,
+      residents,
+      visuallyMoving,
+    );
     if (!actor.actionCue || !cue) {
       if (actor.actionCue) actor.actionCue.sprite.visible = false;
       return;
