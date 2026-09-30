@@ -332,10 +332,82 @@ function socialSummary(
   }
 }
 
+const SOCIAL_RELATIONSHIP_RESULT_DIMENSIONS = [
+  ['socialBond', '유대'],
+  ['trust', '신뢰'],
+  ['affection', '애정'],
+  ['comfort', '편안함'],
+  ['respect', '존중'],
+  ['familiarity', '친숙도'],
+  ['conflict', '갈등'],
+  ['grudge', '원한'],
+  ['fear', '두려움'],
+  ['jealousy', '질투'],
+  ['romancePotential', '연애 감정'],
+  ['commitment', '헌신'],
+  ['attraction', '끌림'],
+  ['romanticInterest', '연애 관심'],
+  ['sexualAttraction', '성적 끌림'],
+] as const satisfies ReadonlyArray<
+  readonly [keyof ResidentRelationship, string]
+>;
+
+function signedPercentagePoint(delta: number): string {
+  const points = delta * 100;
+  const rounded = Math.round(points * 10) / 10;
+  return `${rounded > 0 ? '+' : ''}${rounded.toFixed(1)}%p`;
+}
+
+function directionalRelationshipResult(
+  event: RecentSocialEvent,
+  previousResidents: Resident[],
+  nextResidents: Resident[],
+): string | null {
+  // Core relationship state is directional. A social event changes how the
+  // recipient currently feels about the actor, not an invented symmetric pair.
+  const previousRecipient = previousResidents.find(
+    (resident) => resident.id === event.targetId,
+  );
+  const nextRecipient = nextResidents.find(
+    (resident) => resident.id === event.targetId,
+  );
+  if (!previousRecipient || !nextRecipient) return null;
+
+  const before = relationshipMap(previousRecipient).get(event.actorId);
+  const after = relationshipMap(nextRecipient).get(event.actorId);
+  if (!before || !after) return null;
+
+  const changes = SOCIAL_RELATIONSHIP_RESULT_DIMENSIONS
+    .map(([key, label]) => ({
+      label,
+      delta: clamp01(after[key]) - clamp01(before[key]),
+    }))
+    .filter((change) => Math.abs(change.delta) >= 0.005)
+    .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
+    .slice(0, 3);
+
+  if (changes.length === 0) return null;
+
+  const recipientName = nextRecipient.name || event.targetId;
+  const actorName = nextResidents.find(
+    (resident) => resident.id === event.actorId,
+  )?.name || event.actorId;
+
+  return [
+    `${recipientName}→${actorName}`,
+    changes
+      .map((change) => (
+        `${change.label} ${signedPercentagePoint(change.delta)}`
+      ))
+      .join(' · '),
+  ].join(': ');
+}
+
 function exactSocialEvents(
   previous: RecentSocialEventsPayload | undefined,
   next: RecentSocialEventsPayload | undefined,
-  residents: Resident[],
+  previousResidents: Resident[],
+  nextResidents: Resident[],
 ): ObservationEvent[] {
   if (
     previous?.available !== true
@@ -344,21 +416,43 @@ function exactSocialEvents(
     return [];
   }
 
-  const names = residentNames(residents);
+  const names = residentNames(nextResidents);
   const before = new Set(
     (previous.events ?? []).map(socialEventKey),
   );
+  const newEvents = (next.events ?? []).filter(
+    (event) => !before.has(socialEventKey(event)),
+  );
+
+  // Heavy relationship detail and social event history share the same observer
+  // refresh cadence. Attribution is safe only when one new event exists for
+  // the exact recipient->actor directional pair in this refresh window.
+  const directionalPairCounts = new Map<string, number>();
+  for (const event of newEvents) {
+    const pair = `${event.targetId}->${event.actorId}`;
+    directionalPairCounts.set(
+      pair,
+      (directionalPairCounts.get(pair) ?? 0) + 1,
+    );
+  }
+
   const result: ObservationEvent[] = [];
-
-  for (const event of next.events ?? []) {
+  for (const event of newEvents) {
     const key = socialEventKey(event);
-    if (before.has(key)) continue;
-
     const actorName = names.get(event.actorId) || event.actorId;
     const targetName = names.get(event.targetId) || event.targetId;
+    const pair = `${event.targetId}->${event.actorId}`;
+    const relationshipResult = directionalPairCounts.get(pair) === 1
+      ? directionalRelationshipResult(
+          event,
+          previousResidents,
+          nextResidents,
+        )
+      : null;
     const detail = [
       formatLocationText(event.where),
       `강도 ${percent(event.intensity)}`,
+      relationshipResult,
     ].filter(Boolean).join(' · ');
 
     result.push({
@@ -1104,6 +1198,7 @@ export function deriveObservationEvents(
   const exactSocial = exactSocialEvents(
     previousSocialEvents,
     nextSocialEvents,
+    previousResidents,
     nextResidents,
   );
   events.push(...exactSocial);

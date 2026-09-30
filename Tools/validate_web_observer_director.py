@@ -31,6 +31,10 @@ for token in (
     "physicalPresentationSignature",
     "socialInteractionMilestoneEvent",
     "socialPresentationSignature",
+    "directionalRelationshipResult",
+    "SOCIAL_RELATIONSHIP_RESULT_DIMENSIONS",
+    "directionalPairCounts",
+    "signedPercentagePoint",
     "KnowledgeTeaching",
     "Parenting",
     "presentation.phase !== 'Moving'",
@@ -69,3 +73,13 @@ assert gate < session.index(".civilizationWorldWindow(")
 assert gate < session.index(".worldObjects()")
 
 print("LifeLens Web Observer Director v1: PASS")
+
+# Exact social outcomes may expose relationship changes only from the actual
+# recipient -> actor Core relationship snapshot. Multiple events for the same
+# directional pair in one heavy refresh window must not receive invented
+# per-event attribution.
+assert "event.targetId" in feed
+assert "event.actorId" in feed
+assert "previousResidents" in feed
+assert "nextResidents" in feed
+assert "directionalPairCounts.get(pair) === 1" in feed
