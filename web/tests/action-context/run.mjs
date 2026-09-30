@@ -244,12 +244,12 @@ testCase('unknown resident id is not shown as a fabricated target label', () => 
 testCase('live social cues distinguish approach comfort repair and avoid', () => {
   const cases = [
     ['Approach', 'Moving', '하린에게 다가가는 중'],
-    ['Approach', 'Interacting', '하린와 교류를 시작함'],
+    ['Approach', 'Interacting', '하린과 교류를 시작함'],
     ['Comfort', 'Moving', '하린을 위로하러 이동 중'],
     ['Comfort', 'Interacting', '하린을 위로하는 중'],
-    ['Repair', 'Moving', '하린와 관계를 회복하러 이동 중'],
-    ['Repair', 'Interacting', '하린와 관계 회복을 시도하는 중'],
-    ['Avoid', 'Moving', '하린와 거리를 두는 중'],
+    ['Repair', 'Moving', '하린과 관계를 회복하러 이동 중'],
+    ['Repair', 'Interacting', '하린과 관계 회복을 시도하는 중'],
+    ['Avoid', 'Moving', '하린과 거리를 두는 중'],
   ];
 
   for (const [socialIntent, phase, expected] of cases) {
@@ -282,7 +282,7 @@ testCase('knowledge teaching names the real technique and target', () => {
     }),
     residents,
   );
-  assert.equal(moving?.text, '하린에게 불 피우기을 가르치러 이동 중');
+  assert.equal(moving?.text, '하린에게 불 피우기 지식을 가르치러 이동 중');
 
   const teaching = residentActionCue(
     resident({
@@ -296,21 +296,21 @@ testCase('knowledge teaching names the real technique and target', () => {
     }),
     residents,
   );
-  assert.equal(teaching?.text, '하린에게 불 피우기을 가르치는 중');
+  assert.equal(teaching?.text, '하린에게 불 피우기 지식을 가르치는 중');
 });
 
 testCase('parenting cue states the concrete authoritative care action', () => {
   const actions = [
-    ['Feed', '하린 먹이는 중'],
-    ['PutToSleep', '하린 재우는 중'],
-    ['Bathe', '하린 씻겨주는 중'],
-    ['ToiletAssist', '하린 용변을 돕는 중'],
-    ['Hold', '하린 안아주는 중'],
-    ['Play', '하린 함께 노는 중'],
-    ['Educate', '하린 가르치는 중'],
-    ['Discipline', '하린 훈육하는 중'],
-    ['Comfort', '하린 달래는 중'],
-    ['HealthCare', '하린 돌보는 중'],
+    ['Feed', '하린에게 먹이를 주는 중'],
+    ['PutToSleep', '하린을 재우는 중'],
+    ['Bathe', '하린을 씻겨주는 중'],
+    ['ToiletAssist', '하린의 용변을 돕는 중'],
+    ['Hold', '하린을 안아주는 중'],
+    ['Play', '하린과 함께 노는 중'],
+    ['Educate', '하린을 가르치는 중'],
+    ['Discipline', '하린을 훈육하는 중'],
+    ['Comfort', '하린을 달래는 중'],
+    ['HealthCare', '하린을 돌보는 중'],
   ];
 
   for (const [parentingAction, expected] of actions) {
@@ -419,7 +419,7 @@ testCase('civilization and parenting cues remain factual and compact', () => {
     }),
     residents,
   );
-  assert.equal(parenting?.text, '하린 달래는 중');
+  assert.equal(parenting?.text, '하린을 달래는 중');
 });
 
 testCase('sanitation wording distinguishes real sites from outdoor fallback', () => {
