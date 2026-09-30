@@ -27,6 +27,17 @@ import { WorldActivityPanel } from './ui/world-activity';
 import { FastForwardControl } from './ui/fast-forward-control';
 import { visibleHumanTraces } from './state/human-traces';
 
+type MobileModalView =
+  | 'menu'
+  | 'residents'
+  | 'resident'
+  | 'seed'
+  | 'events'
+  | 'traces'
+  | 'activity'
+  | 'world'
+  | null;
+
 function Topbar() {
   const snapshot = useObserverSnapshot();
 
@@ -42,11 +53,13 @@ function Topbar() {
 }
 
 function WorldViewport({
-  onToggleObserver,
-  observerOpen,
+  onOpenMenu,
+  onOpenResidents,
+  onOpenSeed,
 }: {
-  observerOpen: boolean;
-  onToggleObserver: () => void;
+  onOpenMenu: () => void;
+  onOpenResidents: () => void;
+  onOpenSeed: () => void;
 }) {
   const snapshot = useObserverSnapshot();
   const selectedTrace = visibleHumanTraces(snapshot.terrain)
@@ -56,6 +69,7 @@ function WorldViewport({
         (event) => event.id === snapshot.focusedObservationId,
       ) ?? null
     : null;
+  const worldSeed = snapshot.world.worldSeed;
 
   return (
     <section className="world">
@@ -63,12 +77,23 @@ function WorldViewport({
       <canvas id="threeWorldCanvas" aria-label="라이프렌즈 3차원 세계" />
       <canvas id="characterCanvas" aria-label="라이프렌즈 주민" />
       <WorldOverlay snapshot={snapshot} />
+
+      <button
+        className="mobile-seed-chip"
+        type="button"
+        onClick={onOpenSeed}
+        aria-label="현재 월드 시드 보기"
+      >
+        Seed #{worldSeed ?? '—'}
+      </button>
+
       {focusedObservation ? (
         <ObservationFocusBanner
           event={focusedObservation}
           onClear={() => observerActions.clearObservationFocus()}
         />
       ) : null}
+
       {snapshot.fastForward.status === 'running' && (
         <div className="fast-forward-world-status" aria-live="polite">
           <strong>세계 변화 계산 중</strong>
@@ -80,24 +105,29 @@ function WorldViewport({
           </span>
         </div>
       )}
-      {!selectedTrace && <ObservationFeedOverlay
-        observations={snapshot.observations}
-        onFocus={(event) => observerActions.focusObservation(event)}
-      />}
-      {selectedTrace && !observerOpen && <div className="human-trace-overlay">
-        <HumanTraceDetail trace={selectedTrace} residents={snapshot.residents}
-          onClose={() => observerActions.selectHumanTrace(null)} />
-      </div>}
-      <button
-        className="observer-fab"
-        type="button"
-        onClick={onToggleObserver}
-        aria-label={observerOpen ? '관찰 패널 닫기' : '관찰 패널 열기'}
-        aria-expanded={observerOpen}
-        aria-controls="observer-panel"
-      >
-        관찰
-      </button>
+
+      {!selectedTrace && (
+        <ObservationFeedOverlay
+          observations={snapshot.observations}
+          onFocus={(event) => observerActions.focusObservation(event)}
+        />
+      )}
+
+      {selectedTrace && (
+        <div className="human-trace-overlay desktop-trace-overlay">
+          <HumanTraceDetail
+            trace={selectedTrace}
+            residents={snapshot.residents}
+            onClose={() => observerActions.selectHumanTrace(null)}
+          />
+        </div>
+      )}
+
+      <div className="mobile-quick-actions" aria-label="모바일 관찰 메뉴">
+        <button type="button" onClick={onOpenResidents}>주민</button>
+        <button type="button" onClick={onOpenMenu}>메뉴</button>
+      </div>
+
       <div
         id="errorCard"
         className={`error-card ${snapshot.runtime.status === 'error' ? '' : 'hidden'}`}
@@ -112,19 +142,12 @@ function WorldViewport({
 }
 
 function ObserverPanel({
-  mobileOpen,
-  onToggleMobile,
   onViewPlace,
 }: {
-  mobileOpen: boolean;
-  onToggleMobile: () => void;
   onViewPlace: () => void;
 }) {
   const snapshot = useObserverSnapshot();
   const panelRef = useRef<HTMLElement>(null);
-  useEffect(() => {
-    if (mobileOpen && panelRef.current) panelRef.current.scrollTop = 0;
-  }, [mobileOpen, snapshot.selectedResidentId]);
   const [seed, setSeed] = useState('');
   const [seedError, setSeedError] = useState(false);
   const controlsDisabled = snapshot.runtime.status !== 'ready'
@@ -136,6 +159,10 @@ function ObserverPanel({
     : null;
   const selectedTrace = visibleHumanTraces(snapshot.terrain)
     .find(trace => trace.id === snapshot.selectedHumanTraceId);
+
+  useEffect(() => {
+    if (panelRef.current) panelRef.current.scrollTop = 0;
+  }, [snapshot.selectedResidentId]);
 
   const createWorld = (): void => {
     setSeedError(false);
@@ -154,35 +181,33 @@ function ObserverPanel({
   };
 
   return (
-    <aside id="observer-panel" ref={panelRef}
-      className={`observer ${mobileOpen ? 'mobile-open' : 'mobile-closed'} ${selectedResident ? 'has-selection' : ''}`}>
-      <button
-        className="observer-sheet-handle"
-        type="button"
-        onClick={onToggleMobile}
-        aria-expanded={mobileOpen}
-      >
-        <span />
-        {mobileOpen ? '세계 보기' : '관찰 정보'}
-      </button>
+    <aside id="observer-panel" ref={panelRef} className="observer desktop-observer">
       <section className="panel">
         <h2>{selectedTrace ? '선택한 장소' : '선택한 삶'}</h2>
-        {selectedTrace ? <HumanTraceDetail
-          trace={selectedTrace} residents={snapshot.residents}
-          onClose={() => observerActions.selectHumanTrace(null)}
-        /> : <SelectedResidentReadout
-          resident={selectedResident}
-          onClear={() => observerActions.selectResident(null)}
-        />}
+        {selectedTrace ? (
+          <HumanTraceDetail
+            trace={selectedTrace}
+            residents={snapshot.residents}
+            onClose={() => observerActions.selectHumanTrace(null)}
+          />
+        ) : (
+          <SelectedResidentReadout
+            resident={selectedResident}
+            onClear={() => observerActions.selectResident(null)}
+          />
+        )}
       </section>
 
       <section className="panel">
         <h2>생활 흔적</h2>
-        <HumanTracePanel terrain={snapshot.terrain} selectedId={snapshot.selectedHumanTraceId}
+        <HumanTracePanel
+          terrain={snapshot.terrain}
+          selectedId={snapshot.selectedHumanTraceId}
           onFocus={(id) => {
             observerActions.selectHumanTrace(id, true);
             onViewPlace();
-          }} />
+          }}
+        />
       </section>
 
       <section className="panel">
@@ -238,16 +263,13 @@ function ObserverPanel({
             </button>
           ))}
         </div>
-        <p className="hint">
-          {simulationTimeHint()}
-        </p>
+        <p className="hint">{simulationTimeHint()}</p>
 
         <FastForwardControl
           state={snapshot.fastForward}
           disabled={snapshot.runtime.status !== 'ready'}
         />
       </section>
-
 
       <section className="panel">
         <h2>관찰 정보</h2>
@@ -315,21 +337,395 @@ function ObserverPanel({
   );
 }
 
+function MobileObserverModal({
+  view,
+  onView,
+  onClose,
+}: {
+  view: MobileModalView;
+  onView: (view: MobileModalView) => void;
+  onClose: () => void;
+}) {
+  const snapshot = useObserverSnapshot();
+  const [seed, setSeed] = useState('');
+  const [seedError, setSeedError] = useState(false);
+  const [seedCopied, setSeedCopied] = useState(false);
+  const controlsDisabled = snapshot.runtime.status !== 'ready'
+    || snapshot.fastForward.status === 'running';
+  const selectedResident = snapshot.selectedResidentId
+    ? snapshot.residents.find(
+        (resident) => resident.id === snapshot.selectedResidentId,
+      ) ?? null
+    : null;
+  const selectedTrace = visibleHumanTraces(snapshot.terrain)
+    .find(trace => trace.id === snapshot.selectedHumanTraceId);
+  const currentSeed = snapshot.world.worldSeed;
+
+  useEffect(() => {
+    setSeedCopied(false);
+  }, [view, currentSeed]);
+
+  if (!view) return null;
+
+  const createWorld = (): void => {
+    if (!window.confirm('현재 세계를 종료하고 새 월드를 생성할까요?')) return;
+    setSeedError(false);
+    observerActions.createWorld('');
+    onClose();
+  };
+
+  const createWorldFromSeed = (): void => {
+    const trimmed = seed.trim();
+    if (!trimmed) {
+      setSeedError(true);
+      return;
+    }
+    if (!window.confirm(`현재 세계를 종료하고 Seed #${trimmed}로 다시 시작할까요?`)) {
+      return;
+    }
+
+    setSeedError(false);
+    observerActions.createWorld(trimmed);
+    onClose();
+  };
+
+  const replayCurrentSeed = (): void => {
+    if (currentSeed === undefined || currentSeed === null) return;
+    const value = String(currentSeed);
+    if (!window.confirm(`현재 세계를 종료하고 Seed #${value}로 처음부터 재현할까요?`)) {
+      return;
+    }
+    observerActions.createWorld(value);
+    onClose();
+  };
+
+  const copyCurrentSeed = async (): Promise<void> => {
+    if (currentSeed === undefined || currentSeed === null) return;
+    try {
+      await navigator.clipboard.writeText(String(currentSeed));
+      setSeedCopied(true);
+    } catch {
+      setSeedCopied(false);
+    }
+  };
+
+  const title = {
+    menu: '관찰 메뉴',
+    residents: '주민',
+    resident: selectedResident?.name ?? '주민 상세',
+    seed: '현재 월드 시드',
+    events: '최근 관찰',
+    traces: '생활 흔적',
+    activity: '월드 활동',
+    world: '월드 설정',
+  }[view];
+
+  const focusGrid = (gridX: number, gridY: number): void => {
+    const targetChunkX = Math.floor(
+      gridX / WORLD_GRID_CONTRACT.gridCellsPerChunk,
+    );
+    const targetChunkY = Math.floor(
+      gridY / WORLD_GRID_CONTRACT.gridCellsPerChunk,
+    );
+    observerActions.moveObserver(
+      targetChunkX - snapshot.camera.centerChunkX,
+      targetChunkY - snapshot.camera.centerChunkY,
+    );
+    onClose();
+  };
+
+  return (
+    <div
+      className="mobile-modal-backdrop"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <section
+        className={`mobile-modal mobile-modal-${view}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+      >
+        <header className="mobile-modal-header">
+          {view !== 'menu' ? (
+            <button
+              type="button"
+              className="mobile-modal-back"
+              onClick={() => onView('menu')}
+              aria-label="관찰 메뉴로 돌아가기"
+            >
+              ‹
+            </button>
+          ) : <span className="mobile-modal-header-spacer" />}
+          <strong>{title}</strong>
+          <button
+            type="button"
+            className="mobile-modal-close"
+            onClick={onClose}
+            aria-label="팝업 닫기"
+          >
+            ×
+          </button>
+        </header>
+
+        <div className="mobile-modal-body">
+          {view === 'menu' && (
+            <>
+              <div className="mobile-world-summary">
+                <button type="button" onClick={() => onView('seed')}>
+                  <span>현재 Seed</span>
+                  <b>#{currentSeed ?? '—'}</b>
+                </button>
+                <div>
+                  <span>주민</span>
+                  <b>{snapshot.residents.length}명</b>
+                </div>
+              </div>
+
+              <div className="mobile-menu-grid">
+                <button type="button" onClick={() => onView('residents')}>
+                  <strong>주민</strong>
+                  <span>삶과 욕구 확인</span>
+                </button>
+                <button type="button" onClick={() => onView('events')}>
+                  <strong>최근 관찰</strong>
+                  <span>주요 사건 보기</span>
+                </button>
+                <button type="button" onClick={() => onView('traces')}>
+                  <strong>생활 흔적</strong>
+                  <span>시설과 흔적 보기</span>
+                </button>
+                <button type="button" onClick={() => onView('activity')}>
+                  <strong>월드 활동</strong>
+                  <span>자원과 문명 활동</span>
+                </button>
+                <button type="button" onClick={() => onView('world')}>
+                  <strong>월드 설정</strong>
+                  <span>시간 · 카메라 · 재현</span>
+                </button>
+              </div>
+
+              <details className="mobile-advanced">
+                <summary>고급 표시 설정</summary>
+                <RenderModeControl />
+                <DiagnosticsPanel />
+              </details>
+            </>
+          )}
+
+          {view === 'residents' && (
+            <ResidentReadout
+              residents={snapshot.residents}
+              selectedResidentId={snapshot.selectedResidentId}
+              onSelect={(residentId) => {
+                observerActions.selectResident(residentId);
+                onView('resident');
+              }}
+            />
+          )}
+
+          {view === 'resident' && (
+            <SelectedResidentReadout
+              resident={selectedResident}
+              onClear={() => {
+                observerActions.selectResident(null);
+                onView('residents');
+              }}
+            />
+          )}
+
+          {view === 'seed' && (
+            <div className="mobile-seed-detail">
+              <span>현재 실행 중인 WorldSeed</span>
+              <strong>#{currentSeed ?? '—'}</strong>
+              <p>
+                이 값으로 같은 월드를 처음부터 다시 생성할 수 있습니다.
+              </p>
+              <div className="mobile-action-row">
+                <button
+                  type="button"
+                  onClick={() => void copyCurrentSeed()}
+                  disabled={currentSeed === undefined || currentSeed === null}
+                >
+                  {seedCopied ? '복사됨' : 'Seed 복사'}
+                </button>
+                <button
+                  type="button"
+                  onClick={replayCurrentSeed}
+                  disabled={
+                    controlsDisabled
+                    || currentSeed === undefined
+                    || currentSeed === null
+                  }
+                >
+                  이 Seed로 재현
+                </button>
+              </div>
+            </div>
+          )}
+
+          {view === 'events' && (
+            <ObservationFeedPanel
+              observations={snapshot.observations}
+              onFocus={(event) => {
+                observerActions.focusObservation(event);
+                onClose();
+              }}
+            />
+          )}
+
+          {view === 'traces' && (
+            <>
+              {selectedTrace ? (
+                <HumanTraceDetail
+                  trace={selectedTrace}
+                  residents={snapshot.residents}
+                  onClose={() => observerActions.selectHumanTrace(null)}
+                />
+              ) : null}
+              <HumanTracePanel
+                terrain={snapshot.terrain}
+                selectedId={snapshot.selectedHumanTraceId}
+                onFocus={(id) => {
+                  observerActions.selectHumanTrace(id, true);
+                }}
+              />
+            </>
+          )}
+
+          {view === 'activity' && (
+            <WorldActivityPanel
+              civilization={snapshot.civilization}
+              worldObjects={snapshot.worldObjects}
+              residents={snapshot.residents}
+              onSelectResident={(residentId) => {
+                observerActions.selectResident(residentId);
+                onView('resident');
+              }}
+              onFocusGrid={focusGrid}
+            />
+          )}
+
+          {view === 'world' && (
+            <div className="mobile-world-controls">
+              <section>
+                <h3>관찰 속도</h3>
+                <div className="time-speed-control" aria-label="시뮬레이션 관찰 속도">
+                  {SIMULATION_SPEED_MODES.map((preset) => (
+                    <button
+                      key={preset.speed}
+                      type="button"
+                      title={preset.title}
+                      className={snapshot.simulationSpeed === preset.speed ? 'active' : ''}
+                      onClick={() => observerActions.setSimulationSpeed(preset.speed)}
+                      disabled={controlsDisabled}
+                      aria-pressed={snapshot.simulationSpeed === preset.speed}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="hint">{simulationTimeHint()}</p>
+                <FastForwardControl
+                  state={snapshot.fastForward}
+                  disabled={snapshot.runtime.status !== 'ready'}
+                />
+              </section>
+
+              <section>
+                <h3>카메라</h3>
+                <button
+                  type="button"
+                  className="mobile-full-button"
+                  onClick={() => {
+                    observerActions.recenterObserver();
+                    onClose();
+                  }}
+                  disabled={controlsDisabled}
+                >
+                  현재 주민 위치로 돌아가기
+                </button>
+              </section>
+
+              <section>
+                <h3>월드</h3>
+                <div className="mobile-current-seed">
+                  <span>현재 Seed</span>
+                  <b>#{currentSeed ?? '—'}</b>
+                </div>
+                <button
+                  type="button"
+                  className="mobile-full-button"
+                  onClick={createWorld}
+                  disabled={controlsDisabled}
+                >
+                  새 월드
+                </button>
+
+                <label className="field mobile-seed-input">
+                  시드로 동일한 세계 재현
+                  <input
+                    inputMode="numeric"
+                    value={seed}
+                    autoComplete="off"
+                    placeholder="재현할 시드 입력"
+                    onChange={(event) => {
+                      setSeed(event.target.value);
+                      if (seedError) setSeedError(false);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') createWorldFromSeed();
+                    }}
+                  />
+                </label>
+                <p className={`field-error ${seedError ? '' : 'hidden'}`}>
+                  재현할 월드 시드를 입력해 주세요.
+                </p>
+                <button
+                  type="button"
+                  className="mobile-full-button"
+                  onClick={createWorldFromSeed}
+                  disabled={controlsDisabled}
+                >
+                  입력한 Seed로 생성
+                </button>
+              </section>
+
+              <section>
+                <h3>관찰 정보</h3>
+                <ObserverMetrics snapshot={snapshot} />
+              </section>
+            </div>
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
 export default function App() {
-  const [mobileObserverOpen, setMobileObserverOpen] = useState(false);
+  const [mobileModal, setMobileModal] = useState<MobileModalView>(null);
   const snapshot = useObserverSnapshot();
 
   useEffect(() => {
     if (
       snapshot.selectedResidentId
-      && !snapshot.focusedObservationId
+      && window.matchMedia('(max-width: 800px)').matches
     ) {
-      setMobileObserverOpen(true);
+      setMobileModal('resident');
     }
-  }, [
-    snapshot.selectedResidentId,
-    snapshot.focusedObservationId,
-  ]);
+  }, [snapshot.selectedResidentId]);
+
+  useEffect(() => {
+    if (
+      snapshot.selectedHumanTraceId
+      && window.matchMedia('(max-width: 800px)').matches
+    ) {
+      setMobileModal('traces');
+    }
+  }, [snapshot.selectedHumanTraceId]);
 
   useEffect(() => {
     try {
@@ -346,15 +742,18 @@ export default function App() {
       <Topbar />
       <main className="layout">
         <WorldViewport
-          observerOpen={mobileObserverOpen}
-          onToggleObserver={() => setMobileObserverOpen((open) => !open)}
+          onOpenMenu={() => setMobileModal('menu')}
+          onOpenResidents={() => setMobileModal('residents')}
+          onOpenSeed={() => setMobileModal('seed')}
         />
-        <ObserverPanel
-          mobileOpen={mobileObserverOpen}
-          onToggleMobile={() => setMobileObserverOpen((open) => !open)}
-          onViewPlace={() => setMobileObserverOpen(false)}
-        />
+        <ObserverPanel onViewPlace={() => undefined} />
       </main>
+
+      <MobileObserverModal
+        view={mobileModal}
+        onView={setMobileModal}
+        onClose={() => setMobileModal(null)}
+      />
     </div>
   );
 }
