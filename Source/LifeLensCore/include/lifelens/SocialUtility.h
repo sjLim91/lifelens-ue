@@ -6,6 +6,7 @@
 #include <string>
 
 #include "CivilizationDecision.h"
+#include "CoreNavigation.h"
 #include "Relationship.h"
 #include "TraitsPreferences.h"
 #include "UtilityAI.h"
@@ -518,6 +519,11 @@ inline CivilizationUtilityDecision urgentSurvivalProvisionDecisionAtPosition(
                    || distance<nearestStorageDistance
                    || (distance==nearestStorageDistance
                        && storage.id<nearestStorage->id)){
+                    // Distance alone does not establish a usable provision:
+                    // water can separate nearby cells into disconnected banks.
+                    std::vector<GridPos> route;
+                    if(!buildCoreGroundRoute(
+                            world,authoritativePosition,storage.pos,1,route)) continue;
                     nearestStorage=&storage;
                     nearestStorageDistance=distance;
                     nearestStorageUnits=stored;
@@ -542,8 +548,9 @@ inline CivilizationUtilityDecision urgentSurvivalProvisionDecisionAtPosition(
                 return result;
             }
 
-            // Known natural food stays local. Pick the nearest real node,
-            // not whichever node happened to be stored first globally.
+            // Known natural food stays local. Pick the nearest reachable
+            // interaction point. Re-selecting an inaccessible nearby node
+            // otherwise starves every other action after each route failure.
             if(material!=MaterialKind::Water){
                 const ResourceNode* nearestNode=nullptr;
                 int nearestNodeDistance=
@@ -563,6 +570,12 @@ inline CivilizationUtilityDecision urgentSurvivalProvisionDecisionAtPosition(
                        || distance<nearestNodeDistance
                        || (distance==nearestNodeDistance
                            && node.id<nearestNode->id)){
+                        GridPos access{};
+                        std::vector<GridPos> route;
+                        if(!resolveCivilizationResourceAccessGridPosition(
+                                world,node.id,access)
+                           || !buildCoreGroundRoute(
+                                world,authoritativePosition,access,1,route)) continue;
                         nearestNode=&node;
                         nearestNodeDistance=distance;
                     }
@@ -709,3 +722,4 @@ inline UnifiedUtilityDecision chooseUnifiedUtilityDecision(
 }
 
 } // namespace lifelens
+
