@@ -2,15 +2,17 @@
 
 Date: 2026-09-30  
 Active architecture: **LifeLensCore -> WASM -> Web Observer**  
-Current validated main: `9aef4a15d6f63bc3cad7320050e3f8279d814bcd` (#534)
+Current validated main: `df839012177bc8f4a0bfd59e30cbf8e5d29d4129` (#536)
 
 ## Current autonomy follow-through — resident strategy differentiation
 
 - `746a488` / D-026 completed the first development-choice split: cultivation/construction/crafting utility reacts to resident disposition and lived technique experience instead of collapsing identical affordances into identical choices.
-- `9aef4a1` / #534 / D-027 completed non-critical Eat autonomy. The same moderate Hunger and same carried PlantFood can now produce different Eat timing from impulsiveness/patience/conscientiousness/orderliness, while actual food freshness raises consumption value as spoilage approaches.
-- Urgent/critical Hunger keeps authoritative survival priority. Eat still requires and consumes real carried PlantFood; SmartObjects/Web never fabricate provisions.
-- #534 post-merge Core Tests, deterministic harness, Preflight, Web WASM, Runtime Release, Pages Preview and External Preview Probe all passed.
-- Next autonomy target is shared-provision allocation: when one authoritative PlantFood stock can satisfy immediate eating, cultivation seed use or storage, those claims must compete without scripted role assignment or browser-authored outcomes.
+- `9aef4a1` / #534 / D-027 completed non-critical Eat autonomy. The same moderate Hunger and same carried PlantFood can produce different Eat timing from resident disposition, while actual freshness raises consumption value as spoilage approaches.
+- `df83901` / #536 / D-028 completed shared-provision allocation: the final locally accessible PlantFood now has an explicit retention-vs-cultivation opportunity cost, nearby real Storage removes that false last-unit scarcity, and Store remains a real-surplus reversible path.
+- Identical Hunger/food/tool/knowledge/plot affordances can therefore deterministically split into Eat-oriented retention versus Plant investment without fixed jobs or random role assignment.
+- Urgent/critical Hunger keeps authoritative survival priority. Eat/Plant/Store all operate only on real Core inventory/storage authority; SmartObjects/Web never fabricate provisions.
+- #536 post-merge Core Tests, deterministic harness, Preflight, Web WASM, Runtime Release, Pages Preview and External Preview Probe all passed.
+- Next autonomy target: authoritative decision rationale observation. Core should expose the factual inputs/reason for the selected resident action so Web can explain differences without inferring motives or fabricating a rationale.
 
 ## Active development unit — DU-01 Living Settlement
 
