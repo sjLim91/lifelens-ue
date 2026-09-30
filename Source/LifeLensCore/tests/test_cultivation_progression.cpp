@@ -199,7 +199,7 @@ int main()
     livedPlot.cropGrowth01=0.30;
     livedPlot.cropMoisture01=0.10;
     livedPlot.cropCare01=0.90;
-    livedWorld.facilities.push_back(livedPlot);
+    movedWorld.facilities.push_back(livedPlot);
 
     StorageSite livedStorage;
     livedStorage.id=1;
