@@ -382,3 +382,94 @@ Parenting은 30분 cadence지만 caregiver가 `pendingContext.active()==false`�
 - route failure / timeout
 
 다음 장기 실행부터는 "행동 시간"과 "행동 횟수"를 같이 사용한다.
+
+
+## 16. 행동 시작/완료 실측 — P0 scheduler thrash 확인
+
+이벤트 카운터를 추가한 동일 baseline에서 단순 Need 평균보다 더 직접적인 문제가 확인됐다.
+
+### seed 874213954 / 100일
+
+| 행동 | 계획 시작 | 완료 | 완료율 |
+|---|---:|---:|---:|
+| Eat | 2,081 | 2,081 | 100% |
+| Drink | 2,634 | 2,297 | 87.2% |
+| Sleep | 1,959 | **0** | **0%** |
+| UseToilet | 65,786 | 1,428 | **2.17%** |
+| Wash | 1,034 | 1,000 | 96.7% |
+
+추가:
+- critical preemption: **43,985회**
+- explicit sleep interruption: **1,244회**
+- Social event: **4회 / 100일**
+- Civilization event: 630회
+
+### seed 4242001 / 100일
+
+| 행동 | 계획 시작 | 완료 | 완료율 |
+|---|---:|---:|---:|
+| Eat | 1,992 | 1,992 | 100% |
+| Drink | 2,844 | 2,268 | 79.7% |
+| Sleep | 3,795 | **0** | **0%** |
+| UseToilet | 20,905 | 2,216 | **10.6%** |
+| Wash | 1,144 | 1,099 | 96.1% |
+
+추가:
+- critical preemption: **20,391회**
+- sleep interruption: **3,152회**
+- Social event: **0회 / 100일**
+
+### 결론
+
+현재 문제는 "수면 회복량이 약간 부족함" 수준이 아니다.
+
+**Sleep은 두 seed 모두 100일 동안 완료 0회다.**  
+**Toilet은 계획을 수만 번 다시 만들고 실제 완료는 극히 일부다.**
+
+즉 Core가:
+1. Sleep/Toilet 계획 생성
+2. Hunger/Thirst 등의 preemption
+3. 계획 취소
+4. 5분 경계에서 같은 자기관리 재계획
+5. 다시 preemption
+
+을 반복하는 **planner thrash** 상태다.
+
+사용자가 장기 실행에서 본 `똥싸기 → 물 마시기 → 대기 → 반복`은 화면 표현 문제가 아니라 이 Core scheduling churn의 관찰 결과로 볼 수 있다.
+
+### 수정 우선순위 변경
+
+P0 순서를 아래로 확정한다.
+
+1. **Action commitment / preemption contract**
+   - 시작한 Sleep/Toilet/Wash를 언제 끝까지 보장할지
+   - 어떤 Critical Need가 어느 단계에서만 끊을 수 있을지
+   - 현재 Need 상대심각도와 남은 행동시간을 함께 비교
+2. **Need/action recovery budget**
+3. **Social starvation 제거**
+4. **KnowledgeTeaching out-of-band 선점 제거**
+5. **Resource/Cultivation economy**
+
+임계치 숫자만 먼저 바꾸지 않는다. 현재 증거상 threshold 조절만으로는 계획 취소 루프가 다른 숫자에서 재발할 가능성이 높다.
+
+## 17. Social baseline
+
+실제 완료 이벤트:
+- seed 874213954: **4회 / 100일 / 4명**
+- seed 4242001: **0회 / 100일 / 4명**
+
+이는 성격 차이로 설명할 수 있는 범위를 넘어선다. Social utility의 값 자체보다 **호출 기회가 제거되는 구조**를 먼저 수정해야 한다.
+
+## 18. Cultivation baseline
+
+두 baseline 모두 100일 시점:
+- cultivated plot: **0개**
+
+즉 현재 농업 수확량을 튜닝하기 전에:
+- Cultivation 발견 가능성
+- DiggingStick/Cultivation 지식 전제
+- plot 계획 utility
+- 생존 pressure 때문에 Experiment/Craft가 후보에 오를 시간
+을 함께 검사해야 한다.
+
+현재 생존/자기관리 thrash가 문명 진입 시간을 압박하므로 **농업 0개가 독립적인 cultivation 수치 문제인지, 상위 scheduler starvation의 결과인지 분리해서 측정**해야 한다.
