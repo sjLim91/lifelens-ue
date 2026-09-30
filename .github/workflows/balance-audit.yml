@@ -22,6 +22,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: lifelens-balance-audit-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   balance-audit:
     runs-on: ubuntu-latest
