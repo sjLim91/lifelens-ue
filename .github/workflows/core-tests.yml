@@ -14,83 +14,226 @@ on:
 permissions:
   contents: read
   actions: read
+  pull-requests: read
 
 jobs:
   core-tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 7
     steps:
-      - name: Reuse successful same-SHA push validation
+      - name: 기존 Core 검증 재사용 판정
         id: reuse
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPOSITORY: ${{ github.repository }}
           EVENT_NAME: ${{ github.event_name }}
           SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          REF_NAME: ${{ github.ref_name }}
         run: |
           python - <<'PY'
           import json
           import os
+          import time
           import urllib.parse
           import urllib.request
 
-          reuse = False
-          if os.environ["EVENT_NAME"] == "pull_request":
-              repo = os.environ["GH_REPOSITORY"]
-              sha = os.environ["SOURCE_SHA"]
-              query = urllib.parse.urlencode({
-                  "event": "push",
-                  "status": "success",
-                  "head_sha": sha,
-                  "per_page": 10,
-              })
+          repo = os.environ["GH_REPOSITORY"]
+          token = os.environ["GH_TOKEN"]
+          event = os.environ["EVENT_NAME"]
+          source_sha = os.environ["SOURCE_SHA"]
+          ref_name = os.environ["REF_NAME"]
+
+          headers = {
+              "Authorization": f"Bearer {token}",
+              "Accept": "application/vnd.github+json",
+              "X-GitHub-Api-Version": "2022-11-28",
+              "User-Agent": "lifelens-core-ci-reuse",
+          }
+
+          def api(path):
               req = urllib.request.Request(
-                  f"https://api.github.com/repos/{repo}/actions/workflows/core-tests.yml/runs?{query}",
-                  headers={
-                      "Authorization": f"Bearer {os.environ['GH_TOKEN']}",
-                      "Accept": "application/vnd.github+json",
-                      "X-GitHub-Api-Version": "2022-11-28",
-                      "User-Agent": "lifelens-core-ci-reuse",
-                  },
+                  f"https://api.github.com{path}",
+                  headers=headers,
               )
               with urllib.request.urlopen(req, timeout=30) as response:
-                  payload = json.load(response)
-              reuse = any(
-                  run.get("head_sha") == sha
-                  and run.get("event") == "push"
-                  and run.get("conclusion") == "success"
-                  for run in payload.get("workflow_runs", [])
+                  return json.load(response)
+
+          def push_runs_for(sha):
+              query = urllib.parse.urlencode({
+                  "event": "push",
+                  "head_sha": sha,
+                  "per_page": 20,
+              })
+              payload = api(
+                  f"/repos/{repo}/actions/workflows/core-tests.yml/runs?{query}"
+              )
+              return [
+                  run for run in payload.get("workflow_runs", [])
+                  if run.get("event") == "push"
+                  and run.get("head_sha") == sha
+              ]
+
+          def successful_push(sha):
+              return next(
+                  (
+                      run for run in push_runs_for(sha)
+                      if run.get("conclusion") == "success"
+                  ),
+                  None,
               )
 
-          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
-              out.write(f"reuse={'true' if reuse else 'false'}\n")
+          def wait_for_same_sha_push(sha):
+              # PR 생성/동기화 이벤트가 push run 등록보다 몇 초 먼저 보이는
+              # GitHub Actions 레이스를 흡수한다.
+              discovered = []
+              for _ in range(4):
+                  discovered = push_runs_for(sha)
+                  if discovered:
+                      break
+                  time.sleep(5)
+
+              success = next(
+                  (
+                      run for run in discovered
+                      if run.get("conclusion") == "success"
+                  ),
+                  None,
+              )
+              if success:
+                  return success
+
+              active = next(
+                  (
+                      run for run in discovered
+                      if run.get("status") in {"queued", "in_progress"}
+                  ),
+                  None,
+              )
+              if not active:
+                  failed = next(
+                      (
+                          run for run in discovered
+                          if run.get("status") == "completed"
+                          and run.get("conclusion") != "success"
+                      ),
+                      None,
+                  )
+                  if failed:
+                      raise SystemExit(
+                          "동일 SHA의 push Core 검증이 이미 실패했습니다: "
+                          f"run {failed.get('id')} / {failed.get('conclusion')}"
+                      )
+                  return None
+
+              run_id = active["id"]
+              for _ in range(52):
+                  run = api(
+                      f"/repos/{repo}/actions/runs/{run_id}"
+                  )
+                  if run.get("status") == "completed":
+                      if run.get("conclusion") == "success":
+                          return run
+                      raise SystemExit(
+                          "대기하던 동일 SHA push Core 검증이 실패했습니다: "
+                          f"run {run_id} / {run.get('conclusion')}"
+                      )
+                  time.sleep(5)
+
+              raise SystemExit(
+                  f"동일 SHA push Core 검증 대기 시간 초과: run {run_id}"
+              )
+
+          reuse = False
+          reused_sha = ""
+          reason = ""
+
+          if event == "pull_request":
+              run = wait_for_same_sha_push(source_sha)
+              if run:
+                  reuse = True
+                  reused_sha = source_sha
+                  reason = (
+                      "동일 SHA의 push Core 검증 성공 결과를 재사용합니다 "
+                      f"(run {run.get('id')})."
+                  )
+
+          elif event == "push" and ref_name == "main":
+              # squash merge SHA는 PR head SHA와 달라질 수 있다. 단순 SHA
+              # 재사용이 아니라 두 커밋의 전체 tree가 동일한 경우에만
+              # 이미 통과한 PR head의 push Core 결과를 안전하게 재사용한다.
+              pulls = api(
+                  f"/repos/{repo}/commits/{source_sha}/pulls"
+              )
+              merged = next(
+                  (
+                      pr for pr in pulls
+                      if pr.get("merged_at")
+                      and pr.get("merge_commit_sha") == source_sha
+                      and (pr.get("head") or {}).get("sha")
+                  ),
+                  None,
+              )
+              if merged:
+                  head_sha = merged["head"]["sha"]
+                  merged_commit = api(
+                      f"/repos/{repo}/git/commits/{source_sha}"
+                  )
+                  head_commit = api(
+                      f"/repos/{repo}/git/commits/{head_sha}"
+                  )
+                  merged_tree = (
+                      merged_commit.get("tree") or {}
+                  ).get("sha")
+                  head_tree = (
+                      head_commit.get("tree") or {}
+                  ).get("sha")
+
+                  if merged_tree and merged_tree == head_tree:
+                      run = successful_push(head_sha)
+                      if run:
+                          reuse = True
+                          reused_sha = head_sha
+                          reason = (
+                              "main squash merge의 tree가 검증된 PR head와 동일해 "
+                              "Core 결과를 재사용합니다 "
+                              f"(PR #{merged.get('number')}, run {run.get('id')})."
+                          )
+
+          with open(
+              os.environ["GITHUB_OUTPUT"],
+              "a",
+              encoding="utf-8",
+          ) as out:
+              out.write(
+                  f"reuse={'true' if reuse else 'false'}\n"
+              )
+              out.write(f"reused_sha={reused_sha}\n")
 
           if reuse:
-              print(
-                  "Same head SHA already passed the push Core Tests run; "
-                  "skipping duplicate PR build/test/harness."
-              )
+              print(reason)
           else:
-              print("No reusable successful push validation; running full Core gate.")
+              print(
+                  "재사용 가능한 선행 검증이 없어 전체 Core 게이트를 실행합니다."
+              )
           PY
 
-      - name: Checkout
+      - name: 소스 체크아웃
         if: steps.reuse.outputs.reuse != 'true'
         uses: actions/checkout@v4
 
-      - name: Configure
+      - name: Core 구성
         if: steps.reuse.outputs.reuse != 'true'
         run: cmake -S Source/LifeLensCore -B build -DCMAKE_BUILD_TYPE=Release
 
-      - name: Build
+      - name: Core 빌드
         if: steps.reuse.outputs.reuse != 'true'
         run: cmake --build build -j2
 
-      - name: Test
+      - name: Core 테스트
         if: steps.reuse.outputs.reuse != 'true'
         run: ctest --test-dir build --output-on-failure
 
-      - name: Deterministic harness smoke
+      - name: 결정론 하네스 스모크
         if: steps.reuse.outputs.reuse != 'true'
         run: |
           ./build/ll_harness --days 1 --seed 42 > /tmp/run-a.log
@@ -98,6 +241,6 @@ jobs:
           diff -u /tmp/run-a.log /tmp/run-b.log
           tail -20 /tmp/run-a.log
 
-      - name: Reused validation summary
+      - name: 재사용 검증 요약
         if: steps.reuse.outputs.reuse == 'true'
-        run: echo "Reused successful same-SHA push Core Tests validation."
+        run: echo "선행 Core 검증 성공 결과를 재사용해 중복 빌드/테스트를 생략했습니다."
