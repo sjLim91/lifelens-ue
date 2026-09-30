@@ -56,7 +56,7 @@ for token in (
 for token in (
     "residentPresentationMotionTimeScale(this.simulationSpeed)",
     "const motionDt = dt * motionTimeScale",
-    "actor.mixer.update(motionDt)",
+    "actor.mixer.update(sleeping ? 0 : motionDt)",
     "speedResponsivenessPerSecond",
     "turnResponsivenessPerSecond",
 ):
