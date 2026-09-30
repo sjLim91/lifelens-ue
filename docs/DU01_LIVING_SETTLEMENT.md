@@ -100,6 +100,15 @@ After merge verify:
 3. External Preview Probe;
 4. `gh-pages/runtime/RUNTIME_COMMIT.txt` equals the merged `main` SHA.
 
+## 2026-09-30 checkpoint — P0 survival causality recovery
+
+- #527 (`d1e73894efbceb54cf4f6031e6061f1316ebdcea`) is merged to `main`.
+- Known live freshwater remains a direct Physical Drink/Wash affordance; Civilization Explore is used for Water only when no known live natural source exists.
+- Critical hunger/thirst can continue beyond an exhausted ordinary six-chunk exploration envelope without synthesizing provisions.
+- Active provision acquisition is kept stable instead of re-running the expensive frontier search every simulated minute.
+- The regression that inflated `test_snapshot_codec` from ~2 s to 40.40 s and `test_autonomous_civilization_loop` from 4.42 s to 84.66 s was removed; main #1615 completed all 80 tests in 29.93 s.
+- Web Runtime Release, Web Preview, GitHub Pages and External Preview Probe all passed for the merged runtime; `gh-pages/runtime/RUNTIME_COMMIT.txt` matches #527.
+- This checkpoint does **not** close DU-01. Long accelerated observation must still demonstrate autonomous provision choice, real acquisition/use travel, rational facility reuse/repair/build and truthful Observer causality before status may become COMPLETE.
 ## Done means
 
 DU-01 is complete only when a long accelerated observation demonstrates all of the following without fabricated state:
