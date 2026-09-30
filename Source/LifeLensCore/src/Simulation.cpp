@@ -931,7 +931,10 @@ bool Simulation::preemptForCriticalSurvival(
             );
 
         if(interactionPhase){
-            if(r.goal==Goal::UseToilet || r.goal==Goal::Wash){
+            if(r.goal==Goal::Eat
+               || r.goal==Goal::Drink
+               || r.goal==Goal::UseToilet
+               || r.goal==Goal::Wash){
                 return false;
             }
 
