@@ -1,3 +1,5 @@
+import type { ObservationEvent } from './observation-feed';
+
 export interface ObserverActionHandlers {
   createWorld: (seed: string) => void;
   setSimulationSpeed: (speed: number) => void;
@@ -7,6 +9,8 @@ export interface ObserverActionHandlers {
   recenterObserver: () => void;
   selectResident: (residentId: string | null) => void;
   selectHumanTrace: (id: string | null, focus?: boolean) => void;
+  focusObservation: (event: ObservationEvent) => void;
+  clearObservationFocus: () => void;
 }
 
 class ObserverActions {
@@ -50,6 +54,14 @@ class ObserverActions {
 
   selectHumanTrace(id: string | null, focus = false): void {
     this.handlers?.selectHumanTrace(id, focus);
+  }
+
+  focusObservation(event: ObservationEvent): void {
+    this.handlers?.focusObservation(event);
+  }
+
+  clearObservationFocus(): void {
+    this.handlers?.clearObservationFocus();
   }
 
   get ready(): boolean {
