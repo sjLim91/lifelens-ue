@@ -128,7 +128,14 @@ inline PrimitiveStorageNeedObservation observePrimitiveStorageNeed(
                     -PrimitiveStorageRecognitionInventoryUnits))))
         : 0.0;
 
-    result.pressure=std::max(personalPressure,sharedPressure);
+    // Shared evidence helps residents recognize storage before any one
+    // backpack hits the personal threshold. Once the resident is already
+    // personally overloaded, do not multiply that pressure by everyone else's
+    // load as well; doing so can crowd out more urgent settlement foundations.
+    result.pressure=
+        result.carriedUnits>=PrimitiveStorageRecognitionInventoryUnits
+            ? personalPressure
+            : std::max(personalPressure,sharedPressure);
     result.recognized=!hasOperationalPrimitiveStorage(world)
         && primitiveStorageProject(world)==nullptr
         && (
