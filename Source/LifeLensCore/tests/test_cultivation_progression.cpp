@@ -78,6 +78,8 @@ int main()
 
     // Cultivation state is authoritative and survives the binary snapshot.
     actor.civilization.inventory.add({
+        ItemKind::SimpleContainer,MaterialKind::Clay,2,0.7,1.0});
+    actor.civilization.inventory.add({
         ItemKind::RawMaterial,MaterialKind::Water,2,0.8,1.0});
     CHECK(waterCultivatedPlot(world,actor,*plot));
     CHECK(tendCultivatedPlot(world,actor,*plot));
