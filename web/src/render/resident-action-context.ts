@@ -32,6 +32,23 @@ function targetObjectName(
   return formatObjectKind(directive.objectKind);
 }
 
+function koreanParticle(
+  text: string,
+  withFinalConsonant: string,
+  withoutFinalConsonant: string,
+): string {
+  if (!text) return '';
+  const lastCode = text.charCodeAt(text.length - 1);
+  const hasFinalConsonant = (
+    lastCode >= 0xac00
+    && lastCode <= 0xd7a3
+    && (lastCode - 0xac00) % 28 !== 0
+  );
+  return `${text}${hasFinalConsonant
+    ? withFinalConsonant
+    : withoutFinalConsonant}`;
+}
+
 function socialActionCue(
   directive: ResidentPresentationDirective,
   target: string,
@@ -46,17 +63,17 @@ function socialActionCue(
     case 'Approach':
       return moving
         ? named('다가가는 중', `${target}에게 다가가는 중`)
-        : named('교류를 시작함', `${target}와 교류를 시작함`);
+        : named('교류를 시작함', `${koreanParticle(target, '과', '와')} 교류를 시작함`);
     case 'Comfort':
       return moving
-        ? named('위로하러 이동 중', `${target}을 위로하러 이동 중`)
-        : named('위로하는 중', `${target}을 위로하는 중`);
+        ? named('위로하러 이동 중', `${koreanParticle(target, '을', '를')} 위로하러 이동 중`)
+        : named('위로하는 중', `${koreanParticle(target, '을', '를')} 위로하는 중`);
     case 'Repair':
       return moving
-        ? named('관계를 회복하러 이동 중', `${target}와 관계를 회복하러 이동 중`)
-        : named('관계 회복을 시도하는 중', `${target}와 관계 회복을 시도하는 중`);
+        ? named('관계를 회복하러 이동 중', `${koreanParticle(target, '과', '와')} 관계를 회복하러 이동 중`)
+        : named('관계 회복을 시도하는 중', `${koreanParticle(target, '과', '와')} 관계 회복을 시도하는 중`);
     case 'Avoid':
-      return named('거리를 두는 중', `${target}와 거리를 두는 중`);
+      return named('거리를 두는 중', `${koreanParticle(target, '과', '와')} 거리를 두는 중`);
     default: {
       const action = formatSocialIntent(directive.socialIntent);
       return target
@@ -72,32 +89,44 @@ function parentingActionCue(
   phase: 'Moving' | 'Interacting',
 ): string {
   const moving = phase === 'Moving';
-  const prefix = target ? `${target} ` : '';
+  const objectTarget = target
+    ? koreanParticle(target, '을', '를')
+    : '';
+  const withTarget = target
+    ? koreanParticle(target, '과', '와')
+    : '';
+  const toTarget = target ? `${target}에게` : '';
 
   switch (directive.parentingAction) {
     case 'Feed':
-      return `${prefix}${moving ? '먹이러 이동 중' : '먹이는 중'}`;
+      return target
+        ? `${toTarget} 먹이를 ${moving ? '주러 이동 중' : '주는 중'}`
+        : `먹이를 ${moving ? '주러 이동 중' : '주는 중'}`;
     case 'PutToSleep':
-      return `${prefix}${moving ? '재우러 이동 중' : '재우는 중'}`;
+      return `${objectTarget ? `${objectTarget} ` : ''}${moving ? '재우러 이동 중' : '재우는 중'}`;
     case 'Bathe':
-      return `${prefix}${moving ? '씻겨주러 이동 중' : '씻겨주는 중'}`;
+      return `${objectTarget ? `${objectTarget} ` : ''}${moving ? '씻겨주러 이동 중' : '씻겨주는 중'}`;
     case 'ToiletAssist':
-      return `${prefix}${moving ? '용변을 도우러 이동 중' : '용변을 돕는 중'}`;
+      return target
+        ? `${target}의 용변을 ${moving ? '도우러 이동 중' : '돕는 중'}`
+        : `용변을 ${moving ? '도우러 이동 중' : '돕는 중'}`;
     case 'Hold':
-      return `${prefix}${moving ? '안아주러 이동 중' : '안아주는 중'}`;
+      return `${objectTarget ? `${objectTarget} ` : ''}${moving ? '안아주러 이동 중' : '안아주는 중'}`;
     case 'Play':
-      return `${prefix}${moving ? '함께 놀러 이동 중' : '함께 노는 중'}`;
+      return `${withTarget ? `${withTarget} ` : ''}${moving ? '함께 놀러 이동 중' : '함께 노는 중'}`;
     case 'Educate':
-      return `${prefix}${moving ? '가르치러 이동 중' : '가르치는 중'}`;
+      return `${objectTarget ? `${objectTarget} ` : ''}${moving ? '가르치러 이동 중' : '가르치는 중'}`;
     case 'Discipline':
-      return `${prefix}${moving ? '훈육하러 이동 중' : '훈육하는 중'}`;
+      return `${objectTarget ? `${objectTarget} ` : ''}${moving ? '훈육하러 이동 중' : '훈육하는 중'}`;
     case 'Comfort':
-      return `${prefix}${moving ? '달래러 이동 중' : '달래는 중'}`;
+      return `${objectTarget ? `${objectTarget} ` : ''}${moving ? '달래러 이동 중' : '달래는 중'}`;
     case 'HealthCare':
-      return `${prefix}${moving ? '돌보러 이동 중' : '돌보는 중'}`;
+      return `${objectTarget ? `${objectTarget} ` : ''}${moving ? '돌보러 이동 중' : '돌보는 중'}`;
     default: {
       const action = formatParentingAction(directive.parentingAction);
-      return `${prefix}${action} · ${moving ? '이동 중' : '진행 중'}`;
+      return target
+        ? `${target} 돌봄 · ${action} · ${moving ? '이동 중' : '진행 중'}`
+        : `${action} · ${moving ? '이동 중' : '진행 중'}`;
     }
   }
 }
@@ -113,8 +142,8 @@ function teachingActionCue(
     : '지식';
   const targetPrefix = target ? `${target}에게 ` : '';
   return phase === 'Moving'
-    ? `${targetPrefix}${techniqueLabel}을 가르치러 이동 중`
-    : `${targetPrefix}${techniqueLabel}을 가르치는 중`;
+    ? `${targetPrefix}${techniqueLabel} 지식을 가르치러 이동 중`
+    : `${targetPrefix}${techniqueLabel} 지식을 가르치는 중`;
 }
 
 function physicalAction(goal: string | undefined): string {
