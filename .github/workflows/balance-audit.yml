@@ -44,9 +44,11 @@ jobs:
               ./build/ll_balance_audit --seed "$seed" --days "$days"
             done
           done
-          for days in 365 500 1000; do
-            echo "===== seed=874213954 days=$days ====="
-            ./build/ll_balance_audit --seed 874213954 --days "$days"
+          for seed in 874213954 4242001; do
+            for days in 365 500 1000; do
+              echo "===== seed=$seed days=$days ====="
+              ./build/ll_balance_audit --seed "$seed" --days "$days"
+            done
           done
 
       - name: 수동 장기 계측
