@@ -302,6 +302,57 @@ inline double civilizationDispositionAffinity(
     }
 }
 
+inline double civilizationCandidateDispositionAffinity(
+    const Character& self,
+    const CivilizationUtilityDecision& candidate,
+    const TraitProfile& traits,
+    const PreferenceProfile& preferences)
+{
+    if(candidate.intent!=CivilizationIntent::Craft){
+        return civilizationDispositionAffinity(
+            candidate.intent,traits,preferences);
+    }
+
+    // "Craft" covers very different kinds of work. A farmer, a maintainer and
+    // an experimental toolmaker should not receive the same personality bias.
+    if(candidate.technique==TechniqueId::Cultivation){
+        const double experience=civilizationTechniqueExperience01(
+            self,TechniqueId::Cultivation);
+        return socialClamp01(
+            0.26*preferences.gathering
+            +0.22*traits.perseverance
+            +0.18*traits.discipline
+            +0.14*traits.adaptability
+            +0.10*preferences.crafting
+            +0.10*experience);
+    }
+
+    if(candidate.facilityAction==FacilityBuildAction::Repair
+       || candidate.facilityAction==FacilityBuildAction::DeliverMaterial
+       || candidate.facilityAction==FacilityBuildAction::Work
+       || candidate.facilityAction==FacilityBuildAction::Plan){
+        return socialClamp01(
+            0.32*preferences.order
+            +0.24*preferences.crafting
+            +0.22*traits.discipline
+            +0.14*traits.perseverance
+            +0.08*traits.resourcefulness);
+    }
+
+    if(candidate.technique==TechniqueId::FireMaking
+       || candidate.technique==TechniqueId::CopperSmelting){
+        return socialClamp01(
+            0.30*preferences.crafting
+            +0.22*preferences.novelty
+            +0.20*traits.creativity
+            +0.16*traits.boldness
+            +0.12*traits.discipline);
+    }
+
+    return civilizationDispositionAffinity(
+        candidate.intent,traits,preferences);
+}
+
 inline CivilizationUtilityDecision applyCivilizationDispositionBias(
     const Character& self,
     CivilizationUtilityDecision candidate) {
@@ -309,8 +360,22 @@ inline CivilizationUtilityDecision applyCivilizationDispositionBias(
     if (candidate.intent == CivilizationIntent::None || candidate.utility <= 0.0) return candidate;
     const TraitProfile traits = deriveTraitProfile(self.personality, self.genetics);
     const PreferenceProfile preferences = derivePreferenceProfile(self.personality, self.genetics);
-    const double affinity = civilizationDispositionAffinity(candidate.intent, traits, preferences);
-    const double multiplier = 0.90 + 0.20 * affinity;
+    const double affinity=civilizationCandidateDispositionAffinity(
+        self,candidate,traits,preferences);
+    const bool specializedCraft=
+        candidate.intent==CivilizationIntent::Craft
+        && (
+            candidate.technique==TechniqueId::Cultivation
+            || candidate.technique==TechniqueId::FireMaking
+            || candidate.technique==TechniqueId::CopperSmelting
+            || candidate.facilityAction==FacilityBuildAction::Repair
+            || candidate.facilityAction==FacilityBuildAction::DeliverMaterial
+            || candidate.facilityAction==FacilityBuildAction::Work
+            || candidate.facilityAction==FacilityBuildAction::Plan
+        );
+    const double multiplier=specializedCraft
+        ? 0.84+0.32*affinity
+        : 0.90+0.20*affinity;
     candidate.utility = socialClamp01(candidate.utility * multiplier);
     return candidate;
 }

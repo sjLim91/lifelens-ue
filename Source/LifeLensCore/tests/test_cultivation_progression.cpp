@@ -233,6 +233,139 @@ int main()
     CHECK(dispositionAware.material==MaterialKind::Water);
     CHECK(dispositionAware.storage==movedWorld.storageSites.front().id);
 
-    std::cout << "cultivation progression + lived-position economy passed\n";
+    // Same physical affordances must not collapse every resident into the same
+    // development role. A patient, conscientious grower and an exploratory
+    // forager both know cultivation and can use the same empty plot, but their
+    // deterministic Utility competition should produce different choices.
+    Simulation diversitySimulation(26092843,0,3);
+    diversitySimulation.setupNewGame();
+    World& diversityWorld=diversitySimulation.world();
+    diversityWorld.facilities.clear();
+    diversityWorld.storageSites.clear();
+    diversityWorld.resourceNodes.clear();
+    diversityWorld.characters.resize(2);
+
+    GridPos diversityAnchor{};
+    CHECK(diversitySimulation.runtimePosition(
+        diversityWorld.characters.front().id,diversityAnchor));
+
+    Character& grower=diversityWorld.characters[0];
+    Character& forager=diversityWorld.characters[1];
+    grower.needs={0.34,0.08,0.08,0.08,0.08};
+    forager.needs=grower.needs;
+
+    for(Character* resident:{&grower,&forager}){
+        resident->civilization.character=resident->id;
+        resident->civilization.inventory=Inventory{};
+        resident->civilization.knowledge.learn(
+            TechniqueId::DiggingStick,KnowledgeLevel::Reproducible,0.98);
+        resident->civilization.knowledge.learn(
+            TechniqueId::Cultivation,KnowledgeLevel::Reproducible,0.98);
+        resident->civilization.inventory.add({
+            ItemKind::DiggingStick,MaterialKind::Wood,1,0.9,1.0});
+        resident->civilization.inventory.add({
+            ItemKind::RawMaterial,MaterialKind::PlantFood,1,0.8,1.0});
+    }
+
+    grower.personality.patience=1.0;
+    grower.personality.conscientiousness=1.0;
+    grower.personality.orderliness=0.9;
+    grower.personality.adaptability=0.55;
+    grower.personality.curiosity=0.08;
+    grower.personality.openness=0.18;
+    grower.personality.riskTolerance=0.08;
+    grower.civilization.gatheringSkill=0.10;
+    grower.civilization.craftingSkill=0.55;
+
+    forager.personality.patience=0.05;
+    forager.personality.conscientiousness=0.05;
+    forager.personality.orderliness=0.05;
+    forager.personality.adaptability=1.0;
+    forager.personality.curiosity=1.0;
+    forager.personality.openness=0.90;
+    forager.personality.riskTolerance=0.85;
+    forager.civilization.gatheringSkill=1.0;
+    forager.civilization.craftingSkill=0.20;
+
+    ConstructedFacility diversityPlot=makeFacilityConstructionSite(
+        990201,
+        FacilityKind::CultivatedPlot,
+        {diversityAnchor.x+1,diversityAnchor.y},
+        grower.id,
+        diversityWorld.minute);
+    CHECK(diversityPlot.id!=0);
+    for(auto& requirement:diversityPlot.requirements){
+        requirement.delivered=requirement.required;
+    }
+    diversityPlot.constructionWork=diversityPlot.requiredWork;
+    CHECK(activateConstructedFacility(
+        diversityPlot,0,diversityWorld.minute));
+    diversityWorld.facilities.push_back(diversityPlot);
+
+    ResourceNode wildFood;
+    wildFood.id=990301;
+    wildFood.material=MaterialKind::PlantFood;
+    wildFood.quantity=12;
+    wildFood.maxQuantity=12;
+    wildFood.pos={diversityAnchor.x+3,diversityAnchor.y};
+    diversityWorld.resourceNodes.push_back(wildFood);
+
+    SettlementPopulation diversityPopulation;
+    diversityPopulation.emplace(grower.id,diversityAnchor);
+    diversityPopulation.emplace(forager.id,diversityAnchor);
+
+    const CivilizationUtilityDecision growerChoice=
+        chooseDispositionAwareCivilizationDecisionAtPosition(
+            diversityWorld,grower,diversityAnchor,&diversityPopulation);
+    const CivilizationUtilityDecision foragerChoice=
+        chooseDispositionAwareCivilizationDecisionAtPosition(
+            diversityWorld,forager,diversityAnchor,&diversityPopulation);
+
+    CHECK(growerChoice.intent==CivilizationIntent::Craft);
+    CHECK(growerChoice.technique==TechniqueId::Cultivation);
+    CHECK(growerChoice.facilityAction==FacilityBuildAction::Plant);
+    CHECK(
+        foragerChoice.intent==CivilizationIntent::Gather
+        || foragerChoice.intent==CivilizationIntent::Explore);
+    CHECK(!(
+        foragerChoice.intent==CivilizationIntent::Craft
+        && foragerChoice.technique==TechniqueId::Cultivation
+        && foragerChoice.facilityAction==FacilityBuildAction::Plant));
+    if(foragerChoice.intent==CivilizationIntent::Gather){
+        CHECK(foragerChoice.resourceNode!=0);
+        CHECK(foragerChoice.material!=MaterialKind::Unknown);
+    }else{
+        CHECK(validNaturalResourceMaterial(foragerChoice.material));
+    }
+
+    // The split is deterministic, not random refusal.
+    const CivilizationUtilityDecision growerAgain=
+        chooseDispositionAwareCivilizationDecisionAtPosition(
+            diversityWorld,grower,diversityAnchor,&diversityPopulation);
+    const CivilizationUtilityDecision foragerAgain=
+        chooseDispositionAwareCivilizationDecisionAtPosition(
+            diversityWorld,forager,diversityAnchor,&diversityPopulation);
+    CHECK(growerAgain.intent==growerChoice.intent);
+    CHECK(growerAgain.facilityAction==growerChoice.facilityAction);
+    CHECK(foragerAgain.intent==foragerChoice.intent);
+    CHECK(foragerAgain.resourceNode==foragerChoice.resourceNode);
+    CHECK(foragerAgain.material==foragerChoice.material);
+
+    // Performing the chosen cultivation action becomes lived experience and
+    // strengthens future role specialization without creating a permanent job.
+    const double experienceBefore=
+        civilizationTechniqueExperience01(grower,TechniqueId::Cultivation);
+    const CivilizationExecutionResult planted=
+        executeCivilizationDecisionAtPosition(
+            diversityWorld,
+            grower,
+            growerChoice,
+            diversityWorld.facilities.front().pos,
+            &diversityPopulation);
+    CHECK(planted.executed && planted.success);
+    CHECK(civilizationTechniqueExperience01(
+        grower,TechniqueId::Cultivation)>experienceBefore);
+
+    std::cout << "cultivation progression + lived-position economy + autonomous role diversity passed\n";
     return 0;
 }

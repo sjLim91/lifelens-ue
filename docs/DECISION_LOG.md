@@ -533,3 +533,21 @@ Canonical companion:
 - Sleep/Hygiene 등 urgent 생활 욕구 상태에서는 일반 사회행동이 먼저 끼어들지 않는다.
 - Ruined SleepingPlace 위치에는 다른 종류 시설도 겹쳐 계획할 수 없다.
 - 기존 수면 시간 기반 회복, 잠자리 capacity, 수리/복구 우선, 위생/용변 오염 authority는 유지한다.
+
+
+## D-026 — 발전행동은 주민별 역할 성향과 실제 경험으로 갈라져야 한다
+
+**결정**
+- 재배/건설/수리/제작/탐색/채집을 조건 충족만으로 모든 주민이 같은 시점에 수행하게 만들지 않는다.
+- 선택은 공통 world affordance 위에서 개인 Personality, derived Trait/Preference, skill, Technique 경험, 현재 Needs, 지역 수요와 결정론적 개인 선호가 Utility 경쟁한 결과여야 한다.
+- Cultivation의 Plant/Water/Tend/Plan은 높은 고정 기본점수로 사실상 자동 실행되지 않게 하고, 식량 압박과 함께 patience/conscientiousness/orderliness/adaptability, 개인 선호, 실제 cultivation 성공 경험을 반영한다.
+- 이미 착수된 건설/수리 프로젝트는 개인차 때문에 방치되지 않도록 완료/물류 utility를 상대적으로 강하게 유지한다.
+- Craft 전체에 하나의 성향 보정을 쓰지 않고 Cultivation, 시설 건설·수리, Fire/Smelting처럼 성격이 다른 발전행동은 candidate 단위의 disposition affinity를 사용한다.
+- Plant/Water/Tend/Harvest의 성공은 Cultivation의 lived successful-use evidence로 누적된다. 이 경험은 미래 선택 확률을 높이지만 직업 고정이나 강제 역할을 만들지 않는다.
+- 무작위 거부/강제 역할 분배는 사용하지 않는다. 동일 seed와 동일 상태에서는 선택이 결정론적으로 재현되어야 한다.
+
+**검증 기준**
+- 동일한 world/plot/seed/tool/knowledge 조건에서도 성향과 숙련이 다른 두 주민이 결정론적으로 서로 다른 발전행동을 선택할 수 있어야 한다.
+- 회귀 시나리오에서 재배 친화 주민은 Plant를 선택하고, 탐색·채집 친화 주민은 같은 조건에서 Plant를 따라 하지 않고 실제 Gather/Explore 계열 자원 확보를 선택한다. 특정 자원/행동을 테스트가 강제로 지정하지 않는다.
+- 같은 상태를 다시 평가하면 같은 주민은 같은 선택을 재현한다.
+- 실제 Plant 성공 후 Cultivation 경험이 증가하며 이후 Utility 입력으로 사용된다.

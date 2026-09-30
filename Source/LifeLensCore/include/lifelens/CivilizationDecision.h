@@ -466,6 +466,17 @@ inline const TechniqueKnowledge* civilizationKnowledgeRecord(const KnowledgeStat
     return nullptr;
 }
 
+inline double civilizationTechniqueExperience01(
+    const Character& self,
+    TechniqueId technique)
+{
+    const TechniqueKnowledge* record=
+        civilizationKnowledgeRecord(self.civilization.knowledge,technique);
+    if(record==nullptr) return 0.0;
+    return clampCivilization01(
+        static_cast<double>(std::max(0,record->successfulUses))/8.0);
+}
+
 inline MaterialKind experimentMaterial(ExperimentKind kind)
 {
     switch(kind){
@@ -1496,6 +1507,14 @@ inline CivilizationUtilityDecision bestCultivationDecision(
     const int waterUnits=portableWaterCount(self.civilization.inventory);
     const double preference=civilizationPreference(
         world.seed,self.id,690ULL+static_cast<std::uint64_t>(TechniqueId::Cultivation));
+    const double experience=civilizationTechniqueExperience01(
+        self,TechniqueId::Cultivation);
+    const double stewardship=clampCivilization01(
+        0.30*self.personality.patience
+        +0.26*self.personality.conscientiousness
+        +0.16*self.personality.orderliness
+        +0.14*self.personality.adaptability
+        +0.14*experience);
 
     for(const auto& facility:world.facilities){
         if(facility.kind!=FacilityKind::CultivatedPlot
@@ -1513,28 +1532,35 @@ inline CivilizationUtilityDecision bestCultivationDecision(
         candidate.facilityTargetPos=facility.pos;
         candidate.item=ItemKind::RawMaterial;
 
+        // Harvesting ready food is broadly valuable, but repeated growers still
+        // react a little faster because lived experience is part of the choice.
         if(facility.cropHarvestUnits>0){
             candidate.facilityAction=FacilityBuildAction::Harvest;
             candidate.material=MaterialKind::PlantFood;
             candidate.quantity=facility.cropHarvestUnits;
             candidate.utility=clampCivilization01(
-                0.76+0.16*demand.foodPressure
-                +0.05*self.personality.conscientiousness
-                +0.03*preference);
+                0.58+0.22*demand.foodPressure
+                +0.08*self.personality.conscientiousness
+                +0.06*experience
+                +0.06*preference);
             considerCivilizationDecision(best,candidate);
             continue;
         }
 
+        // Planting is an optional development choice, not an automatic reaction
+        // to "seed + tool + plot". Food pressure matters, but personal patience,
+        // stewardship, experience and deterministic preference must be able to
+        // make two residents choose differently under identical affordances.
         if(!facility.cropPlanted){
             if(!hasDiggingStick || seedUnits<=0) continue;
             candidate.facilityAction=FacilityBuildAction::Plant;
             candidate.material=MaterialKind::PlantFood;
             candidate.quantity=1;
             candidate.utility=clampCivilization01(
-                0.56+0.25*demand.foodPressure
-                +0.07*self.personality.patience
-                +0.06*self.personality.conscientiousness
-                +0.04*preference);
+                0.20+0.18*demand.foodPressure
+                +0.40*stewardship
+                +0.12*experience
+                +0.10*preference);
             considerCivilizationDecision(best,candidate);
             continue;
         }
@@ -1546,9 +1572,10 @@ inline CivilizationUtilityDecision bestCultivationDecision(
             const double dryness=clampCivilization01(
                 (0.52-facility.cropMoisture01)/0.52);
             candidate.utility=clampCivilization01(
-                0.50+0.28*dryness+0.10*demand.foodPressure
-                +0.05*self.personality.conscientiousness
-                +0.03*preference);
+                0.34+0.32*dryness+0.08*demand.foodPressure
+                +0.12*stewardship
+                +0.08*experience
+                +0.06*preference);
             considerCivilizationDecision(best,candidate);
         }
 
@@ -1558,10 +1585,10 @@ inline CivilizationUtilityDecision bestCultivationDecision(
             candidate.quantity=0;
             const double careGap=clampCivilization01(1.0-facility.cropCare01);
             candidate.utility=clampCivilization01(
-                0.42+0.25*careGap+0.10*demand.foodPressure
-                +0.09*self.personality.patience
-                +0.05*self.personality.conscientiousness
-                +0.03*preference);
+                0.18+0.18*careGap+0.08*demand.foodPressure
+                +0.34*stewardship
+                +0.12*experience
+                +0.10*preference);
             considerCivilizationDecision(best,candidate);
         }
     }
@@ -1578,6 +1605,8 @@ inline CivilizationUtilityDecision bestCultivationDecision(
         candidate.facilityTargetPos=project->pos;
         candidate.item=ItemKind::RawMaterial;
 
+        // Once a project is physically committed, logistics/work remain fairly
+        // strong so personality diversity cannot strand half-built facilities.
         for(const auto& requirement:project->requirements){
             const int missing=std::max(
                 0,requirement.required-requirement.delivered);
@@ -1588,10 +1617,11 @@ inline CivilizationUtilityDecision bestCultivationDecision(
             candidate.material=requirement.material;
             candidate.quantity=std::min({missing,held,2});
             candidate.utility=clampCivilization01(
-                0.50+0.24*demand.pressure
-                +0.08*self.personality.conscientiousness
-                +0.05*self.civilization.gatheringSkill
-                +0.03*preference);
+                0.46+0.24*demand.pressure
+                +0.10*self.personality.conscientiousness
+                +0.06*self.civilization.gatheringSkill
+                +0.06*stewardship
+                +0.04*preference);
             considerCivilizationDecision(best,candidate);
             return best;
         }
@@ -1603,11 +1633,12 @@ inline CivilizationUtilityDecision bestCultivationDecision(
             candidate.facilityWork=
                 1.15+1.45*clampCivilization01(self.civilization.craftingSkill);
             candidate.utility=clampCivilization01(
-                0.51+0.23*demand.pressure
+                0.45+0.22*demand.pressure
+                +0.10*stewardship
                 +0.08*self.personality.patience
-                +0.07*self.personality.conscientiousness
-                +0.04*self.civilization.craftingSkill
-                +0.03*preference);
+                +0.06*self.personality.conscientiousness
+                +0.05*self.civilization.craftingSkill
+                +0.04*experience);
             considerCivilizationDecision(best,candidate);
         }
         return best;
@@ -1628,11 +1659,12 @@ inline CivilizationUtilityDecision bestCultivationDecision(
     plan.hasFacilityTarget=true;
     plan.facilityTargetPos=site.pos;
     plan.utility=clampCivilization01(
-        0.31+0.42*demand.pressure
+        0.14+0.26*demand.pressure
         +0.10*site.environment.fertility01
         +0.06*site.environment.naturalMoisture01
-        +0.05*self.personality.conscientiousness
-        +0.03*preference);
+        +0.28*stewardship
+        +0.10*preference
+        +0.06*experience);
     considerCivilizationDecision(best,plan);
     return best;
 }
@@ -2383,6 +2415,8 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
                     result.craft.event.material=MaterialKind::PlantFood;
                     result.craft.event.quantity=1;
                     result.event=result.craft.event;
+                    self.civilization.knowledge.recordSuccessfulUse(
+                        TechniqueId::Cultivation);
                     return result;
                 }
 
@@ -2394,6 +2428,8 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
                     result.craft.event.material=MaterialKind::Water;
                     result.craft.event.quantity=1;
                     result.event=result.craft.event;
+                    self.civilization.knowledge.recordSuccessfulUse(
+                        TechniqueId::Cultivation);
                     return result;
                 }
 
@@ -2403,6 +2439,8 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
                     result.success=true;
                     result.craft.success=true;
                     result.event=result.craft.event;
+                    self.civilization.knowledge.recordSuccessfulUse(
+                        TechniqueId::Cultivation);
                     return result;
                 }
 
