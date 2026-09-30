@@ -1243,9 +1243,7 @@ void Simulation::beginPlan(Character& c,Runtime& r){
         for(const Goal candidate:{
             Goal::Eat,
             Goal::Drink,
-            Goal::UseToilet,
-            Goal::Sleep,
-            Goal::Wash
+            Goal::UseToilet
         }){
             const double need=needForGoal(c,candidate);
             if(need<urgentThreshold
@@ -1274,14 +1272,40 @@ void Simulation::beginPlan(Character& c,Runtime& r){
             : urgentProvision.material==MaterialKind::Water
                 ? provisionNeedForMaterial(c,MaterialKind::Water)
                 : -1.0;
-    const bool urgentSelfCareDominatesProvision=
-        urgentPhysicalGoal!=Goal::Idle
-        && urgentPhysicalNeed+1e-12>=urgentProvisionNeed;
 
-    // Missing food/water remains survival work, but it may not monopolize the
-    // resident forever. If an immediately usable self-care action is materially
-    // more urgent (or the bladder is already demanding relief), resolve that
-    // first and return to acquisition on the next planning boundary.
+    // Preserve the established carried-provision priority: if food/water is
+    // already available, Eat/Drink/Toilet keep their normal urgent ordering.
+    // Only while a missing provision requires acquisition do we compare that
+    // trip against immediately actionable self-care. This prevents long-run
+    // scarcity from pinning Sleep/Wash/Toilet forever without suppressing
+    // ordinary civilization whenever fatigue or hygiene merely crosses 0.70.
+    Goal urgentSelfCareGoal=Goal::Idle;
+    double urgentSelfCareNeed=-1.0;
+    if(planningAllowed && urgentProvisionRequired){
+        for(const Goal candidate:{
+            Goal::UseToilet,
+            Goal::Sleep,
+            Goal::Wash
+        }){
+            const double need=needForGoal(c,candidate);
+            if(need<urgentThreshold
+               || !actionAvailableFor(world_,c,candidate)){
+                continue;
+            }
+            if(urgentSelfCareGoal==Goal::Idle || need>urgentSelfCareNeed){
+                urgentSelfCareGoal=candidate;
+                urgentSelfCareNeed=need;
+            }
+        }
+    }
+    const bool urgentSelfCareDominatesProvision=
+        urgentSelfCareGoal!=Goal::Idle
+        && urgentSelfCareNeed+1e-12>=urgentProvisionNeed;
+    if(urgentSelfCareDominatesProvision){
+        urgentPhysicalGoal=urgentSelfCareGoal;
+        urgentPhysicalNeed=urgentSelfCareNeed;
+    }
+
     if(planningAllowed && urgentProvisionRequired
        && !urgentSelfCareDominatesProvision
        && tryCivilizationDecision(c,r)) return;
