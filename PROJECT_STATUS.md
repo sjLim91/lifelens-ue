@@ -1,8 +1,8 @@
 # LifeLens Project Status
 
-Date: 2026-09-29  
+Date: 2026-09-30  
 Active architecture: **LifeLensCore -> WASM -> Web Observer**  
-Current pre-removal main checkpoint: `0ee1e161be22ede0a9f7ef854a1ca34597b3c6a6` (#496)
+Current main checkpoint: `cec5c8fa5db176bec2f24e15b8ffe8c2b18b4271` (#507)
 
 ## Runtime decision
 
@@ -24,7 +24,7 @@ PR #497, which only repaired the Unreal external physical sleep path, was closed
 - React/TypeScript/Three.js is the primary observer/presentation client.
 - Browser presentation must not fabricate resources, actions, facilities, geography, relationships, or future state.
 
-## Recent P0 baseline
+## Recent P0/P1 baseline
 
 - #491 closer mobile zoom / readable resident labels.
 - #492 ruined facility restoration before wasteful rebuilding.
@@ -32,6 +32,18 @@ PR #497, which only repaired the Unreal external physical sleep path, was closed
 - #494 real bedding travel, timed sleep, paid washing.
 - #495 canonical GitHub Pages preview probe.
 - #496 spatial causality guard for gather/store/retrieve/facility work.
+- #503 canonical observation speed rebased to the former 4x pace, with real
+  portable/natural-water authority for washing.
+- #504 Web hydrology visibility aligned with Core direct-water authority;
+  drinking/washing interaction waits for visible arrival and carried-water
+  actions are labeled separately from natural-water use.
+- #505 resident locomotion/action animation now follows the full global
+  1x/4x/16x simulation speed contract instead of an independent visual cap.
+- #506 timed Core sleep is presented as a truthful lying/resting posture only
+  after authoritative arrival; movement, collision and Need authority stay in
+  Core.
+- #507 Observer feed now exposes factual Need -> travel -> interaction
+  milestones for Eat/Drink/Sleep/UseToilet/Wash without replay/spam.
 
 ## Validation target after Unreal removal
 
