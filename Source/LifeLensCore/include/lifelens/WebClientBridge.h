@@ -30,6 +30,7 @@ public:
     void runMinutes(int minutes);
 
     std::string worldOverviewJson() const;
+    std::string residentRuntimeJson() const;
     std::string residentsJson() const;
     std::string dynamicEnvironmentJson(
         int centerChunkX,
@@ -43,6 +44,10 @@ public:
         int centerChunkY,
         int radiusChunks) const;
     std::string worldObjectsJson() const;
+    std::string humanTracesWindowJson(
+        int centerChunkX,
+        int centerChunkY,
+        int radiusChunks) const;
     std::string terrainWindowJson(
         int centerChunkX,
         int centerChunkY,
