@@ -98,10 +98,21 @@ for token in (
     "AuthoritativeSpatialTargetLayer",
     "setAuthoritativeSpatialTargets",
     "authoritativeSpatialTargetLayer.setTargets",
+    "setHumanTraces",
+    "humanTraceLayer.setDynamicTraces",
+    "facilityTraceSignature",
+    "facilityDressingSignature",
 ):
     assert token in world_scene, (
         f"exact spatial authority is not isolated in the dedicated target layer: {token}"
     )
+
+# Dynamic trace updates must not rebuild terrain dressing every 500 ms.
+# Trees/grass/rocks are refreshed only when the authoritative facility
+# footprint set changes.
+assert "facilitySignature !== this.facilityDressingSignature" in world_scene
+assert "this.groundDetailLayer.setTerrain(window)" in world_scene
+assert "this.vegetationLayer.setTerrain(window)" in world_scene
 
 assert "Math.random(" not in activity_ui
 assert "Math.random(" not in feed

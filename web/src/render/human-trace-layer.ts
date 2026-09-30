@@ -83,7 +83,8 @@ export class HumanTraceLayer {
   });
   private readonly mesh = new THREE.Mesh(new THREE.BufferGeometry(), this.material);
   private triangleTraceIds: string[] = [];
-  private signature = '';
+  private staticTerrainSignature = '';
+  private dynamicTraceSignature = '';
   private terrain: TerrainWindow | null = null;
   private selectedId: string | null = null;
 
@@ -95,30 +96,74 @@ export class HumanTraceLayer {
 
   setTerrain(terrain: TerrainWindow): void {
     this.terrain = terrain;
-    const traces = visibleHumanTraces(terrain);
-    const signature = JSON.stringify([
-      terrain.worldSeed, terrain.centerChunkX, terrain.centerChunkY, this.selectedId,
-      terrain.chunks.map(chunk => [chunk.x, chunk.y, chunk.elevation01]),
-      traces.map(trace => trace.kind === 'Residue'
-        ? { ...trace, amount: Math.round(trace.amount * 10), intensity: Math.round(trace.intensity * 100) }
-        : trace),
+    const nextStaticSignature = JSON.stringify([
+      terrain.worldSeed,
+      terrain.centerChunkX,
+      terrain.centerChunkY,
+      terrain.chunks.map((chunk) => [
+        chunk.x,
+        chunk.y,
+        chunk.elevation01,
+      ]),
     ]);
-    if (signature === this.signature) return;
-    this.signature = signature;
-    const displayTraces = traces.filter(
-      (trace) => trace.kind !== 'Facility' || trace.id === this.selectedId,
-    );
-    const next = buildHumanTraceGeometry(terrain, displayTraces, this.selectedId);
-    this.mesh.geometry.dispose();
-    this.mesh.geometry = next.geometry;
-    this.triangleTraceIds = next.triangleTraceIds;
-    this.mesh.visible = displayTraces.length > 0;
+    const previousStaticSignature = this.staticTerrainSignature;
+    this.staticTerrainSignature = nextStaticSignature;
+    const nextDynamicSignature = this.traceSignature(terrain);
+    if (
+      nextStaticSignature === previousStaticSignature
+      && nextDynamicSignature === this.dynamicTraceSignature
+    ) {
+      return;
+    }
+    this.dynamicTraceSignature = nextDynamicSignature;
+    this.rebuildGeometry(terrain);
+  }
+
+  setDynamicTraces(terrain: TerrainWindow): void {
+    this.terrain = terrain;
+    const nextSignature = this.traceSignature(terrain);
+    if (nextSignature === this.dynamicTraceSignature) return;
+    this.dynamicTraceSignature = nextSignature;
+    this.rebuildGeometry(terrain);
   }
 
   setSelectedTrace(id: string | null): void {
     if (this.selectedId === id) return;
     this.selectedId = id;
-    if (this.terrain) this.setTerrain(this.terrain);
+    if (!this.terrain) return;
+    this.dynamicTraceSignature = this.traceSignature(this.terrain);
+    this.rebuildGeometry(this.terrain);
+  }
+
+  private traceSignature(terrain: TerrainWindow): string {
+    const traces = visibleHumanTraces(terrain);
+    return JSON.stringify([
+      this.staticTerrainSignature,
+      this.selectedId,
+      traces.map((trace) => trace.kind === 'Residue'
+        ? {
+            ...trace,
+            amount: Math.round(trace.amount * 10),
+            intensity: Math.round(trace.intensity * 100),
+          }
+        : trace),
+    ]);
+  }
+
+  private rebuildGeometry(terrain: TerrainWindow): void {
+    const traces = visibleHumanTraces(terrain);
+    const displayTraces = traces.filter(
+      (trace) => trace.kind !== 'Facility' || trace.id === this.selectedId,
+    );
+    const next = buildHumanTraceGeometry(
+      terrain,
+      displayTraces,
+      this.selectedId,
+    );
+    this.mesh.geometry.dispose();
+    this.mesh.geometry = next.geometry;
+    this.triangleTraceIds = next.triangleTraceIds;
+    this.mesh.visible = displayTraces.length > 0;
   }
 
   pickTrace(raycaster: THREE.Raycaster): string | null {

@@ -63,6 +63,7 @@ export class WorldScene {
   private surfaceWetness01 = 0;
   private cameraInitialized = false;
   private terrainWorldSeed: string | undefined;
+  private facilityDressingSignature = '';
   private sampleGroundHeight: (x: number, z: number) => number = () => 0;
   private currentCameraState: WorldSceneCameraState = {
     centerChunkX: 0,
@@ -238,6 +239,19 @@ export class WorldScene {
     this.weatherLayer.update(deltaSeconds);
   }
 
+  private facilityTraceSignature(window: TerrainWindow): string {
+    return (window.humanTraces?.entries ?? [])
+      .filter((trace) => trace.kind === 'Facility')
+      .map((trace) => [
+        trace.id,
+        trace.gridX,
+        trace.gridY,
+        trace.facilityKind,
+      ].join(':'))
+      .sort()
+      .join('|');
+  }
+
   private applyCamera(state: WorldSceneCameraState): void {
     const distance = 180 / Math.max(0.35, state.zoom);
     const elevation = Math.max(0.12, Math.min(1.35, state.elevation));
@@ -261,8 +275,18 @@ export class WorldScene {
   }
 
   setHumanTraces(window: TerrainWindow): void {
+    const facilitySignature = this.facilityTraceSignature(window);
     this.facilityLayer.setTerrain(window);
-    this.humanTraceLayer.setTerrain(window);
+    this.humanTraceLayer.setDynamicTraces(window);
+
+    // Trees/grass/rocks only need an expensive placement rebuild when the
+    // actual facility footprint set changes. Ordinary residue/resource-use
+    // trace refreshes stay on the lightweight path.
+    if (facilitySignature !== this.facilityDressingSignature) {
+      this.facilityDressingSignature = facilitySignature;
+      this.groundDetailLayer.setTerrain(window);
+      this.vegetationLayer.setTerrain(window);
+    }
   }
 
   setTerrain(window: TerrainWindow): void {
@@ -314,6 +338,7 @@ export class WorldScene {
     };
 
     this.waterLayer.setTerrain(window);
+    this.facilityDressingSignature = this.facilityTraceSignature(window);
     this.groundDetailLayer.setTerrain(window);
     this.facilityLayer.setTerrain(window);
     this.humanTraceLayer.setTerrain(window);

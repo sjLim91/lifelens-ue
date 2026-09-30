@@ -120,6 +120,24 @@ test('unchanged snapshots retain geometry; replacement and teardown dispose it',
   layer.dispose();
   assert.ok(finalDisposed);
 });
+test('dynamic trace refresh skips static terrain work until trace data changes', () => {
+  const layer = new HumanTraceLayer();
+  const terrain = windowOf([residue({ amount: 1, intensity: 0.4 })]);
+  layer.setTerrain(terrain);
+  const mesh = layer.group.children[0];
+  const first = mesh.geometry;
+
+  layer.setDynamicTraces(structuredClone(terrain));
+  assert.equal(mesh.geometry, first);
+
+  const changed = structuredClone(terrain);
+  changed.humanTraces.entries[0].amount = 2.4;
+  changed.humanTraces.entries[0].intensity = 0.7;
+  layer.setDynamicTraces(changed);
+  assert.notEqual(mesh.geometry, first);
+  layer.dispose();
+});
+
 test('origin shifts rebase marks by exactly one chunk without leaving ghosts', () => {
   const entries = [resource()];
   const before = buildHumanTraceGeometry(windowOf(entries), entries).geometry;
