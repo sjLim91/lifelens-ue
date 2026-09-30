@@ -813,7 +813,6 @@ export function buildFlowWaterSurfaceGeometry(
   const {
     nodes,
     edges,
-    participatingKeys,
   } = selectFlowEdges(window, chunkWorldSize);
 
   const positions: number[] = [];
