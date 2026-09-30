@@ -1002,15 +1002,53 @@ void Simulation::beginPlan(Character& c,Runtime& r){
         return;
     }
     if(r.pendingContext.active()) return;
-    if(world_.minute>=r.penaltyUntilMinute && tryCivilizationDecision(c,r)) return;
-    if(world_.minute>=r.penaltyUntilMinute && trySocialDecision(c,r)) return;
+
+    Goal urgentPhysicalGoal=Goal::Idle;
+    double urgentPhysicalNeed=-1.0;
+    const bool planningAllowed=world_.minute>=r.penaltyUntilMinute;
+    const double urgentThreshold=ruleset_.utilityAI.urgentThreshold;
+    const bool hasUrgentSurvivalNeed=
+        c.needs.hunger>=urgentThreshold
+        || c.needs.thirst>=urgentThreshold
+        || c.needs.bladder>=urgentThreshold;
+
+    if(planningAllowed){
+        for(const Goal candidate:{
+            Goal::Eat,
+            Goal::Drink,
+            Goal::UseToilet
+        }){
+            const double need=needForGoal(c,candidate);
+            if(need<urgentThreshold
+               || !actionAvailableFor(world_,c,candidate)){
+                continue;
+            }
+            if(urgentPhysicalGoal==Goal::Idle || need>urgentPhysicalNeed){
+                urgentPhysicalGoal=candidate;
+                urgentPhysicalNeed=need;
+            }
+        }
+    }
+
+    // Survival needs that can be satisfied immediately pre-empt settlement
+    // projects and social activity. If an urgent need cannot yet be satisfied
+    // (for example hunger with no carried food), civilization decisions remain
+    // available so the resident can gather/retrieve the missing provision.
+    if(planningAllowed && urgentPhysicalGoal==Goal::Idle
+       && tryCivilizationDecision(c,r)) return;
+    if(planningAllowed && !hasUrgentSurvivalNeed
+       && trySocialDecision(c,r)) return;
 
     r.civilizationActive=false;
     r.socialActive=false;
     r.socialIntent=SocialIntent::None;
     r.socialTarget=0;
 
-    Goal chosen=(world_.minute<r.penaltyUntilMinute)?Goal::Idle:chooseGoal(world_,c,ruleset_.utilityAI);
+    Goal chosen=world_.minute<r.penaltyUntilMinute
+        ? Goal::Idle
+        : urgentPhysicalGoal!=Goal::Idle
+            ? urgentPhysicalGoal
+            : chooseGoal(world_,c,ruleset_.utilityAI);
     if(chosen==r.lastGoal){ ++r.repeatCount; } else { r.lastGoal=chosen; r.repeatCount=1; }
     if(r.repeatCount>=5){ chosen=Goal::Idle; r.repeatCount=0; }
     clearNavigation(r);
