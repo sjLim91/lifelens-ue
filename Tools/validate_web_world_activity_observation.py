@@ -13,6 +13,11 @@ world_scene = (root / "web/src/render/world-scene.ts").read_text(encoding="utf-8
 
 # Large authority payloads are cached and sampled away from the 500 ms hot path.
 for token in (
+    "residentDetailRefreshCountdown",
+    "residentDetailSnapshot",
+    "this.core.residentRuntime()",
+    "terrainStaticChanged",
+    "this.core.humanTracesWindow(",
     "worldActivityRefreshCountdown",
     "worldActivityWindowKey",
     "this.worldActivityRefreshCountdown <= 0",
