@@ -31,7 +31,10 @@ const { residentActionCue } = load(resolve(
   import.meta.dirname,
   '../../src/render/resident-action-context.ts',
 ));
-const { resolveResidentSemanticMotion } = load(resolve(
+const {
+  residentSleepPostureActive,
+  resolveResidentSemanticMotion,
+} = load(resolve(
   import.meta.dirname,
   '../../src/render/resident-semantic-motion.ts',
 ));
@@ -407,6 +410,31 @@ testCase('semantic motion maps only authoritative safe interactions', () => {
     kind: 'Social',
     phase: 'Interacting',
   }, { moving: false, nearbyResident: true }), 'talk');
+});
+
+testCase('sleep posture activates only after authoritative visible arrival', () => {
+  const sleeping = {
+    active: true,
+    kind: 'Physical',
+    phase: 'Interacting',
+    physicalGoal: 'Sleep',
+    hasTargetGrid: true,
+  };
+
+  assert.equal(residentSleepPostureActive(sleeping, false), true);
+  assert.equal(residentSleepPostureActive(sleeping, true), false);
+  assert.equal(residentSleepPostureActive({
+    ...sleeping,
+    phase: 'Moving',
+  }, false), false);
+  assert.equal(residentSleepPostureActive({
+    ...sleeping,
+    physicalGoal: 'Drink',
+  }, false), false);
+  assert.equal(residentSleepPostureActive({
+    ...sleeping,
+    active: false,
+  }, false), false);
 });
 
 testCase('UAL2 consumption is used only for real eat and drink actions', () => {
