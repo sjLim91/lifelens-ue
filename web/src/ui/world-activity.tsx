@@ -1,4 +1,5 @@
 import type {
+  CivilizationDiscovery,
   CivilizationWorldFacility,
   CivilizationWorldPayload,
   Resident,
@@ -12,6 +13,58 @@ import {
   formatSanitationSiteKind,
   formatTechnique,
 } from './observer-format';
+
+interface TechnologySummary {
+  technique: string;
+  firstFactId: string;
+  firstDiscovererId: string;
+  firstDiscovererName: string;
+  firstMinute: number;
+  latestMinute: number;
+  livingKnowerCount: number;
+}
+
+function groupTechnologyDiscoveries(
+  discoveries: CivilizationDiscovery[],
+): TechnologySummary[] {
+  const grouped = new Map<string, TechnologySummary>();
+
+  for (const discovery of discoveries) {
+    const technique = discovery.technique || discovery.factId;
+    const minute = Number(discovery.minute) || 0;
+    const knowerCount = Math.max(0, Number(discovery.livingKnowerCount) || 0);
+    const existing = grouped.get(technique);
+
+    if (!existing) {
+      grouped.set(technique, {
+        technique,
+        firstFactId: discovery.factId,
+        firstDiscovererId: discovery.discovererId,
+        firstDiscovererName: discovery.discovererName,
+        firstMinute: minute,
+        latestMinute: minute,
+        livingKnowerCount: knowerCount,
+      });
+      continue;
+    }
+
+    if (minute < existing.firstMinute) {
+      existing.firstFactId = discovery.factId;
+      existing.firstDiscovererId = discovery.discovererId;
+      existing.firstDiscovererName = discovery.discovererName;
+      existing.firstMinute = minute;
+    }
+
+    existing.latestMinute = Math.max(existing.latestMinute, minute);
+    existing.livingKnowerCount = Math.max(
+      existing.livingKnowerCount,
+      knowerCount,
+    );
+  }
+
+  return [...grouped.values()]
+    .sort((a, b) => b.firstMinute - a.firstMinute);
+}
 
 function facilitySort(a: CivilizationWorldFacility, b: CivilizationWorldFacility): number {
   const priority = (facility: CivilizationWorldFacility): number => {
@@ -29,22 +82,23 @@ export function WorldActivityPanel({
   civilization,
   worldObjects,
   residents,
-  onSelectResident,
   onFocusGrid,
 }: {
   civilization: CivilizationWorldPayload;
   worldObjects: WorldObjectsPayload;
   residents: Resident[];
-  onSelectResident: (residentId: string) => void;
   onFocusGrid: (gridX: number, gridY: number) => void;
 }) {
   const names = new Map(residents.map(resident => [resident.id, resident.name]));
   const facilities = [...(civilization.facilities ?? [])]
     .sort(facilitySort)
     .slice(0, 4);
-  const discoveries = [...(civilization.recentDiscoveries ?? [])]
-    .sort((a, b) => (Number(b.minute) || 0) - (Number(a.minute) || 0))
-    .slice(0, 4);
+  const technologySummaries = groupTechnologyDiscoveries(
+    civilization.recentDiscoveries ?? [],
+  ).slice(0, 6);
+  const livingResidentCount = residents.filter(
+    resident => resident.alive !== false,
+  ).length;
   const pressuredResources = [...(civilization.resources ?? [])]
     .filter(resource => (
       Number(resource.maxQuantity) > 0
@@ -132,37 +186,38 @@ export function WorldActivityPanel({
         </div>
       ) : null}
 
-      {discoveries.length > 0 ? (
+      {technologySummaries.length > 0 ? (
         <div className="focused-life-section">
-          <h3>최근 발견</h3>
-          {discoveries.map(discovery => {
-            const canSelect = residents.some(resident => resident.id === discovery.discovererId);
-            const content = (
-              <>
-                <strong>
-                  {discovery.discovererName || names.get(discovery.discovererId) || '누군가'}
-                  {' · '}
-                  {formatTechnique(discovery.technique)}
-                </strong>
-                <span className="observation-event-detail">
-                  {discovery.livingKnowerCount > 1
-                    ? `현재 ${discovery.livingKnowerCount}명이 알고 있음`
-                    : '아직 개인 지식에 가까움'}
-                </span>
-              </>
+          <h3>기술 발전</h3>
+          {technologySummaries.map(technology => {
+            const discovererName = technology.firstDiscovererName
+              || names.get(technology.firstDiscovererId)
+              || '알 수 없음';
+            const knownCount = Math.min(
+              Math.max(0, technology.livingKnowerCount),
+              Math.max(livingResidentCount, technology.livingKnowerCount),
             );
-            return canSelect ? (
-              <button
-                type="button"
-                className="observation-event observation-event-button"
-                key={discovery.factId}
-                onClick={() => onSelectResident(discovery.discovererId)}
+            const diffusionState = livingResidentCount > 0
+              && knownCount >= livingResidentCount
+              ? '전체 전파 완료'
+              : knownCount > 1
+                ? '전파 중'
+                : '개인 지식';
+
+            return (
+              <div
+                className="observation-event"
+                key={technology.technique}
               >
-                {content}
-              </button>
-            ) : (
-              <div className="observation-event" key={discovery.factId}>
-                {content}
+                <strong>{formatTechnique(technology.technique)}</strong>
+                <span className="observation-event-detail">
+                  최초 발견 {discovererName}
+                  {' · '}
+                  현재 보유 {knownCount}
+                  {livingResidentCount > 0 ? `/${livingResidentCount}명` : '명'}
+                  {' · '}
+                  {diffusionState}
+                </span>
               </div>
             );
           })}

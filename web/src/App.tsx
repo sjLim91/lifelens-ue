@@ -272,7 +272,6 @@ function ObserverPanel({
           civilization={snapshot.civilization}
           worldObjects={snapshot.worldObjects}
           residents={snapshot.residents}
-          onSelectResident={(residentId) => observerActions.selectResident(residentId)}
           onFocusGrid={(gridX, gridY) => {
             const targetChunkX = Math.floor(
               gridX / WORLD_GRID_CONTRACT.gridCellsPerChunk,
@@ -590,10 +589,6 @@ function MobileObserverModal({
               civilization={snapshot.civilization}
               worldObjects={snapshot.worldObjects}
               residents={snapshot.residents}
-              onSelectResident={(residentId) => {
-                observerActions.selectResident(residentId);
-                onView('resident');
-              }}
               onFocusGrid={focusGrid}
             />
           )}
