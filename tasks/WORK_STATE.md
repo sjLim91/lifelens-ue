@@ -1,15 +1,27 @@
-## 2026-09-30 CANONICAL CURRENT — DU-01 Living Settlement ACTIVE
+## 2026-09-30 CANONICAL CURRENT — DU-01 Living Settlement ACTIVE / P0 survival loop stabilized
 
 > This section supersedes older execution snapshots below. Actual GitHub main/PR/Actions remain the highest-priority truth.
 
-- Baseline main: `3135e7bb8a45dc4d3ecc785d89273e74b68f4015` (#521).
-- Active branch: `feature/du01-living-settlement-20260930`.
-- Active development unit: `docs/DU01_LIVING_SETTLEMENT.md`.
-- #521 already connects shared local storage stock to real construction/restoration logistics.
-- Current objective: make the entire lived settlement loop observable and non-wasteful — reuse usable facilities, restore rational candidates, build only for unmet local demand, and expose pressure -> logistics -> work -> result in the Web Observer.
-- Work lanes: A Core/Simulation, B Web/Observation, C QA/contracts. Non-overlapping files may progress in parallel; one integrated PR owns the unit.
-- Validation policy: targeted regressions during development; one full Core + deterministic harness + WASM + Web typecheck/build + Preflight gate before merge; then Runtime Release + Pages + External Preview Probe.
-- Link handoff occurs only after merged main is proven on GitHub Pages and `RUNTIME_COMMIT.txt` matches the merge SHA.
+- Product main baseline: `d1e73894efbceb54cf4f6031e6061f1316ebdcea` (#527).
+- Active product feature branch: **none** — the current P0 survival fix is integrated into `main`.
+- Active CI hygiene branch: `ci/core-subtree-cache-20260930` (validation reuse/cache only; no product behavior change).
+- Active development unit: `docs/DU01_LIVING_SETTLEMENT.md` — still **ACTIVE**, not declared complete yet.
+- #522 connected lived settlement logistics/use visibility; #524 removed the urgent-survival deadlock; #527 repaired long-run critical survival frontier behavior and restored the real-water priority contract.
+- #527 survival contract:
+  - known live freshwater -> Physical Drink/Wash at the real source;
+  - no known live freshwater under critical thirst -> authoritative frontier Explore;
+  - exhausted ordinary six-chunk frontier under critical hunger/thirst -> bounded extended frontier search;
+  - ongoing provision acquisition is not re-searched every simulated minute;
+  - no fabricated Water/PlantFood is introduced to satisfy survival.
+- #527 validation:
+  - feature push Core #1613: **80/80 PASS**, deterministic harness PASS, total CTest **29.97 s**;
+  - `test_snapshot_codec` **1.35 s**, `test_autonomous_civilization_loop` **4.92 s**, early-survival and durable-water regressions PASS;
+  - PR Preflight / Web WASM PASS; PR Core #1614 reused the successful same-head push validation instead of rebuilding;
+  - main Core #1615: **80/80 PASS**, total CTest **29.93 s**; main Preflight / Web WASM / Runtime Release / Web Preview / GitHub Pages / External Preview Probe PASS;
+  - `gh-pages/runtime/RUNTIME_COMMIT.txt` = `d1e73894efbceb54cf4f6031e6061f1316ebdcea`.
+- DU-01 completion is still gated on long accelerated observation proving the lived loop end-to-end: autonomous provision choice, real travel/acquisition/use, rational reuse/repair/build, and truthful Observer cause -> action -> result.
+- Next product checkpoint after CI hygiene: add explicit resident-divergence regression for autonomous cultivation/food choice and perform the DU-01 long-run Observer acceptance pass.
+- CI hygiene now targets two non-semantic improvements: Core-input subtree reuse across unrelated main changes, and C++ compile caching. These must never weaken the 80-test + deterministic harness gate when Core inputs actually differ.
 
 # LifeLens Canonical Work State
 
@@ -27,7 +39,7 @@
 - Future Unreal/native reintroduction is allowed only as an optional client around then-current LifeLensCore contracts.
 
 
-## 2026-09-28 CANONICAL CURRENT — local-demand settlement growth + cultivation foundation (#482/#483)
+## 2026-09-28 HISTORICAL SNAPSHOT — local-demand settlement growth + cultivation foundation (#482/#483)
 
 > This section supersedes older "current" Web/Stage-C snapshots below. Actual GitHub main/Actions remain the highest-priority truth.
 
@@ -453,7 +465,7 @@ Standing Jjun merge rule remains:
 
 ---
 
-## 9. Immediate next implementation target
+## 9. Historical immediate target (superseded by canonical current)
 
 > **C-S3 local scarcity -> exploration/search/movement pressure.**
 
