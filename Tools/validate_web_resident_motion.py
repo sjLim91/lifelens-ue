@@ -41,8 +41,8 @@ for token in (
     )
 
 # Simulation-time rebasing must affect visible motion at every selectable
-# speed. The former 4x pace is the new 1x, and 4x/16x must not fall back to a
-# separate visual cap that makes actions appear slower than simulation time.
+# speed. The former 4x pace is the new 1x. 16x is intentionally retired because
+# it can monopolize the browser main thread; 4x is the supported ceiling.
 for token in (
     "SIMULATION_BASELINE_SPEED_MULTIPLIER = 4 as const",
     "/ SIMULATION_BASELINE_SPEED_MULTIPLIER",
@@ -56,7 +56,7 @@ for token in (
 for token in (
     "residentPresentationMotionTimeScale(this.simulationSpeed)",
     "const motionDt = dt * motionTimeScale",
-    "actor.mixer.update(motionDt)",
+    "actor.mixer.update(sleeping ? 0 : motionDt)",
     "speedResponsivenessPerSecond",
     "turnResponsivenessPerSecond",
 ):
@@ -65,6 +65,9 @@ for token in (
 assert "actor.mixer.update(dt);" not in resident, (
     "resident animation mixer must not remain pinned to wall-clock time"
 )
+assert "{ speed: 16" not in contract
+assert "label: '16×'" not in contract
+assert "speed > MAX_SIMULATION_SPEED_MULTIPLIER" in contract
 
 # Heading and animation transitions preserve continuity and gait rate follows
 # the presentation velocity instead of playing a fixed-speed walk on every hop.
@@ -206,8 +209,19 @@ for token in (
     "sleepPosePitchRadians",
     "sleepPoseRollRadians",
     "sleepPoseResponsivenessPerSecond",
+    "sleepPoseCenterOffsetHeightRatio",
+    "sleepPoseBodyClearanceHeightRatio",
+    "sleepPoseGroundClearanceWorldUnits",
+    "sleepPoseBodyHalfLengthHeightRatio",
+    "sleepPoseSleepingPlaceSurfaceHeightWorldUnits",
+    "sleepSupportHeightWorldUnits",
+    "setSleepAnimationFrozen",
+    "idle.paused = true",
+    "actor.mixer.update(sleeping ? 0 : motionDt)",
     "actor.visual.rotation.x",
     "actor.visual.rotation.z",
+    "actor.visual.position.x",
+    "actor.visual.position.y",
 ):
     assert token in resident + semantic + contract, (
         f"missing truthful Web sleep posture token: {token}"

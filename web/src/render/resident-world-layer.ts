@@ -90,6 +90,8 @@ interface ResidentActor {
   smoothedTravelSpeedWorldUnitsPerSecond: number;
   walkGraceRemainingSeconds: number;
   gaitRateBias: number;
+  sleepAnimationFrozen: boolean;
+  sleepSupportHeightWorldUnits: number;
   initialized: boolean;
 }
 
@@ -343,6 +345,16 @@ export class ResidentWorldLayer {
       actor.activityLabel = resident.activityLabel ?? 'Idle';
       actor.activityTargetId = resident.activityTargetId ?? '';
       actor.presentation = resident.presentation ?? null;
+      actor.sleepSupportHeightWorldUnits =
+        this.sleepSupportHeightWorldUnits(
+          actor,
+          resident,
+          terrain,
+          sampleElevation,
+          next,
+          centerX,
+          centerY,
+        );
       const visualDx = next.x - actor.current.x;
       const visualDz = next.z - actor.current.z;
       const visuallyMovingToAuthoritativePosition =
@@ -497,14 +509,30 @@ export class ResidentWorldLayer {
       }
       const presentationMoving =
         moving || actor.walkGraceRemainingSeconds > 0;
+      const sleeping = residentSleepPostureActive(
+        actor.presentation,
+        presentationMoving,
+      );
+
+      // Wake the mixer before choosing the next semantic motion. Entering sleep
+      // does the inverse below: resolve the stable Idle pose once, then freeze
+      // skeletal animation while only the visual hierarchy settles into place.
+      if (!sleeping) {
+        this.setSleepAnimationFrozen(actor, false);
+      }
+
       this.updateSleepPosture(
         actor,
-        presentationMoving,
+        sleeping,
         motionDt,
       );
       this.syncWalkPlaybackRate(actor, motionTimeScale);
       this.setAction(actor, presentationMoving);
-      actor.mixer.update(motionDt);
+
+      if (sleeping) {
+        this.setSleepAnimationFrozen(actor, true);
+      }
+      actor.mixer.update(sleeping ? 0 : motionDt);
     }
 
     this.updateSocialConnectors();
@@ -908,6 +936,8 @@ export class ResidentWorldLayer {
       smoothedTravelSpeedWorldUnitsPerSecond: 0,
       walkGraceRemainingSeconds: 0,
       gaitRateBias: appearance.gaitRateBias,
+      sleepAnimationFrozen: false,
+      sleepSupportHeightWorldUnits: 0,
       initialized: false,
     };
 
@@ -1004,19 +1034,28 @@ export class ResidentWorldLayer {
 
   private updateSleepPosture(
     actor: ResidentActor,
-    moving: boolean,
+    sleeping: boolean,
     motionDt: number,
   ): void {
-    const sleeping = residentSleepPostureActive(
-      actor.presentation,
-      moving,
-    );
     const targetPitch = sleeping
       ? RESIDENT_PRESENTATION_CONTRACT.sleepPosePitchRadians
       : 0;
     const targetRoll = sleeping
       ? RESIDENT_PRESENTATION_CONTRACT.sleepPoseRollRadians
       : 0;
+    const heightWorldUnits = Math.max(0.001, actor.root.scale.y);
+    const targetLocalX = sleeping
+      ? RESIDENT_PRESENTATION_CONTRACT.sleepPoseCenterOffsetHeightRatio
+      : 0;
+    const targetLiftWorldUnits = sleeping
+      ? (
+          heightWorldUnits
+            * RESIDENT_PRESENTATION_CONTRACT.sleepPoseBodyClearanceHeightRatio
+          + RESIDENT_PRESENTATION_CONTRACT.sleepPoseGroundClearanceWorldUnits
+          + actor.sleepSupportHeightWorldUnits
+        )
+      : 0;
+    const targetLocalY = targetLiftWorldUnits / heightWorldUnits;
     const blend = 1 - Math.exp(
       -RESIDENT_PRESENTATION_CONTRACT.sleepPoseResponsivenessPerSecond
         * Math.max(0, motionDt),
@@ -1028,6 +1067,146 @@ export class ResidentWorldLayer {
     actor.visual.rotation.z += (
       targetRoll - actor.visual.rotation.z
     ) * blend;
+    actor.visual.position.x += (
+      targetLocalX - actor.visual.position.x
+    ) * blend;
+    actor.visual.position.y += (
+      targetLocalY - actor.visual.position.y
+    ) * blend;
+  }
+
+  private setSleepAnimationFrozen(
+    actor: ResidentActor,
+    frozen: boolean,
+  ): void {
+    if (actor.sleepAnimationFrozen === frozen) return;
+    actor.sleepAnimationFrozen = frozen;
+
+    if (!frozen) {
+      if (actor.idle) actor.idle.paused = false;
+      return;
+    }
+
+    const idle = actor.idle;
+    for (const action of [
+      actor.walk,
+      actor.talk,
+      actor.sit,
+      actor.interact,
+      actor.crouch,
+      actor.work,
+      actor.consume,
+      actor.harvest,
+      actor.carry,
+    ]) {
+      action?.stop();
+    }
+
+    if (!idle) {
+      actor.active = '';
+      return;
+    }
+
+    // A looping Idle clip was the source of the repeated body bobbing while
+    // lying down. Apply one neutral frame, then freeze it for the full
+    // authoritative Sleep interaction.
+    idle.reset();
+    idle.enabled = true;
+    idle.setEffectiveWeight(1);
+    idle.setEffectiveTimeScale(1);
+    idle.play();
+    idle.time = 0;
+    idle.paused = true;
+    actor.active = 'idle';
+    actor.mixer.update(0);
+  }
+
+  private sleepSupportHeightWorldUnits(
+    actor: ResidentActor,
+    resident: Resident,
+    terrain: TerrainWindow,
+    sampleElevation: ReturnType<typeof createTerrainElevationSampler>,
+    position: THREE.Vector3,
+    centerX: number,
+    centerY: number,
+  ): number {
+    if (
+      !residentSleepPostureActive(actor.presentation, false)
+      || resident.gridX === undefined
+      || resident.gridY === undefined
+    ) {
+      return 0;
+    }
+
+    const sleepingPlace = (terrain.humanTraces?.entries ?? []).find(
+      (trace) => (
+        trace.kind === 'Facility'
+        && trace.facilityKind === 'SleepingPlace'
+        && trace.state === 'Operational'
+        && trace.gridX === resident.gridX
+        && trace.gridY === resident.gridY
+      ),
+    );
+    if (sleepingPlace) {
+      return RESIDENT_PRESENTATION_CONTRACT
+        .sleepPoseSleepingPlaceSurfaceHeightWorldUnits;
+    }
+
+    // Outdoor/shelter sleep needs slope-aware support. The authoritative root
+    // remains on Core's exact grid cell; only the visual body is lifted enough
+    // to clear the highest terrain point beneath its horizontal footprint.
+    const span = WORLD_GRID_CONTRACT.gridCellsPerChunk;
+    const chunkWorldSize = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
+    const elevationScale = WORLD_GRID_CONTRACT.elevationScale;
+    const halfLength = Math.max(
+      0.1,
+      actor.root.scale.y
+        * RESIDENT_PRESENTATION_CONTRACT.sleepPoseBodyHalfLengthHeightRatio,
+    );
+    const yaw = actor.root.rotation.y;
+    const axisX = Math.cos(yaw);
+    const axisZ = -Math.sin(yaw);
+
+    const sampleWorldHeight = (
+      localWorldX: number,
+      localWorldZ: number,
+    ): number => {
+      const gridX = (
+        localWorldX / chunkWorldSize
+        + centerX
+        + 0.5
+      ) * span;
+      const gridY = (
+        localWorldZ / chunkWorldSize
+        + centerY
+        + 0.5
+      ) * span;
+      const chunkX = Math.floor(gridX / span);
+      const chunkY = Math.floor(gridY / span);
+      const localX01 = gridX / span - chunkX;
+      const localY01 = gridY / span - chunkY;
+      return sampleElevation(
+        chunkX,
+        chunkY,
+        localX01,
+        localY01,
+      ) * elevationScale;
+    };
+
+    const baseHeight = position.y;
+    const headHeight = sampleWorldHeight(
+      position.x - axisX * halfLength,
+      position.z - axisZ * halfLength,
+    );
+    const footHeight = sampleWorldHeight(
+      position.x + axisX * halfLength,
+      position.z + axisZ * halfLength,
+    );
+    return Math.max(
+      0,
+      headHeight - baseHeight,
+      footHeight - baseHeight,
+    );
   }
 
   private syncWalkPlaybackRate(
