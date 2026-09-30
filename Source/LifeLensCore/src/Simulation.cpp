@@ -854,6 +854,66 @@ bool Simulation::preemptForCriticalSurvival(
         character.needs.thirst>=CriticalSurvivalPreemptThreshold;
     if(!hungerCritical && !thirstCritical) return false;
 
+    // Preemption exists to interrupt an active lower-priority action. If the
+    // resident is already idle with no pending context, there is nothing to
+    // cancel here; the normal planning cadence will evaluate survival next.
+    // This avoids performing the same expensive frontier search once in
+    // preemption and again immediately in beginPlan().
+    if(!r.pendingContext.active() && r.plan.empty()) return false;
+
+    // If this resident is already physically committed to obtaining the
+    // provision that currently threatens survival, keep that intent stable
+    // instead of recomputing the whole frontier every simulated minute.
+    // Re-evaluate only when the competing critical need becomes materially
+    // stronger, so thirst can still overtake a long food search (and vice
+    // versa) without causing per-minute search churn.
+    if(r.pendingContext.active()
+       && r.pendingContext.kind==ContextActionKind::Civilization){
+        const CivilizationUtilityDecision& active=
+            r.pendingContext.civilization;
+        const bool activeProvisionIntent=
+            active.intent==CivilizationIntent::Explore
+            || active.intent==CivilizationIntent::Gather
+            || active.intent==CivilizationIntent::Retrieve;
+        const bool activeFood=
+            activeProvisionIntent
+            && active.material==MaterialKind::PlantFood
+            && hungerCritical;
+        const bool activeWater=
+            activeProvisionIntent
+            && active.material==MaterialKind::Water
+            && thirstCritical;
+        if(activeFood || activeWater){
+            const double activeNeed=activeFood
+                ? character.needs.hunger
+                : character.needs.thirst;
+            const double competingNeed=activeFood
+                ? (thirstCritical ? character.needs.thirst : -1.0)
+                : (hungerCritical ? character.needs.hunger : -1.0);
+            if(competingNeed<=activeNeed+0.05){
+                return false;
+            }
+        }
+    }
+
+    if(!r.pendingContext.active() && !r.plan.empty()){
+        const bool activeEat=
+            r.goal==Goal::Eat && hungerCritical;
+        const bool activeDrink=
+            r.goal==Goal::Drink && thirstCritical;
+        if(activeEat || activeDrink){
+            const double activeNeed=activeEat
+                ? character.needs.hunger
+                : character.needs.thirst;
+            const double competingNeed=activeEat
+                ? (thirstCritical ? character.needs.thirst : -1.0)
+                : (hungerCritical ? character.needs.hunger : -1.0);
+            if(competingNeed<=activeNeed+0.05){
+                return false;
+            }
+        }
+    }
+
     Goal directGoal=Goal::Idle;
     double directNeed=-1.0;
     for(const Goal candidate:{Goal::Eat,Goal::Drink}){
@@ -2167,12 +2227,9 @@ void Simulation::step(){
             }
             continue;
         }
-        const bool criticalSurvivalPressure=
-            c.needs.hunger>=CriticalSurvivalPreemptThreshold
-            || c.needs.thirst>=CriticalSurvivalPreemptThreshold;
         if(r.plan.empty()
            && !r.pendingContext.active()
-           && (world_.minute%5==0 || criticalSurvivalPressure)){
+           && world_.minute%5==0){
             beginPlan(c,r);
         }
         if(!r.plan.empty()) advanceAction(c,r);

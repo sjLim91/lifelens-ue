@@ -403,7 +403,7 @@ inline double maximumResidentNeed(const Character& self)
 inline constexpr double UrgentSurvivalProvisionThreshold = 0.74;
 inline constexpr double CriticalSurvivalPreemptThreshold = 0.90;
 inline constexpr int UrgentSurvivalKnownResourceRadiusGrid =
-    WorldChunkSpanGridCells * 3;
+    WorldChunkSpanGridCells * 6;
 
 
 // Ordinary civilization yields to urgent survival pressure. The one exception
@@ -468,52 +468,62 @@ inline CivilizationUtilityDecision urgentSurvivalProvisionDecisionAtPosition(
                 return result;
             }
 
-            if(material==MaterialKind::Water){
-                // A known freshwater source is already a physical Drink
-                // affordance. Filling containers remains a stocking job.
+            // A known live freshwater source is already a Physical
+            // Drink/Wash affordance. Do not replace that real direct use with
+            // a Civilization Explore. Explore for Water only when no known
+            // live natural source exists.
+            if(material==MaterialKind::Water
+               && liveNaturalWaterSourceAvailable(world)){
                 return result;
             }
 
-            // Known natural provision also stays local. Pick the nearest real
-            // node, not whichever node happened to be stored first globally.
-            const ResourceNode* nearestNode=nullptr;
-            int nearestNodeDistance=UrgentSurvivalKnownResourceRadiusGrid+1;
-            for (const ResourceNode& node:world.resourceNodes) {
-                if(node.id==0 || node.quantity<=0
-                   || node.material!=material){
-                    continue;
+            // Known natural food stays local. Pick the nearest real node,
+            // not whichever node happened to be stored first globally.
+            if(material!=MaterialKind::Water){
+                const ResourceNode* nearestNode=nullptr;
+                int nearestNodeDistance=
+                    UrgentSurvivalKnownResourceRadiusGrid+1;
+                for (const ResourceNode& node:world.resourceNodes) {
+                    if(node.id==0 || node.quantity<=0
+                       || node.material!=material){
+                        continue;
+                    }
+                    const GridPos nodePos=
+                        civilizationDecisionResourcePosition(world,node);
+                    const int distance=std::max(
+                        std::abs(nodePos.x-authoritativePosition.x),
+                        std::abs(nodePos.y-authoritativePosition.y));
+                    if(distance>UrgentSurvivalKnownResourceRadiusGrid) continue;
+                    if(nearestNode==nullptr
+                       || distance<nearestNodeDistance
+                       || (distance==nearestNodeDistance
+                           && node.id<nearestNode->id)){
+                        nearestNode=&node;
+                        nearestNodeDistance=distance;
+                    }
                 }
-                const GridPos nodePos=
-                    civilizationDecisionResourcePosition(world,node);
-                const int distance=std::max(
-                    std::abs(nodePos.x-authoritativePosition.x),
-                    std::abs(nodePos.y-authoritativePosition.y));
-                if(distance>UrgentSurvivalKnownResourceRadiusGrid) continue;
-                if(nearestNode==nullptr
-                   || distance<nearestNodeDistance
-                   || (distance==nearestNodeDistance
-                       && node.id<nearestNode->id)){
-                    nearestNode=&node;
-                    nearestNodeDistance=distance;
+                if(nearestNode!=nullptr){
+                    result.intent=CivilizationIntent::Gather;
+                    result.utility=socialClamp01(0.80+0.20*need);
+                    result.resourceNode=nearestNode->id;
+                    result.material=material;
+                    result.item=ItemKind::RawMaterial;
+                    result.quantity=2+static_cast<int>(
+                        2.0*clampCivilization01(
+                            self.civilization.gatheringSkill));
+                    return result;
                 }
-            }
-            if(nearestNode!=nullptr){
-                result.intent=CivilizationIntent::Gather;
-                result.utility=socialClamp01(0.80+0.20*need);
-                result.resourceNode=nearestNode->id;
-                result.material=material;
-                result.item=ItemKind::RawMaterial;
-                result.quantity=2+static_cast<int>(
-                    2.0*clampCivilization01(self.civilization.gatheringSkill));
-                return result;
             }
 
-            // Known provision is exhausted. Survival may now authorize a real
-            // frontier search, but the destination still reveals no resource
-            // contents until physical arrival materializes that chunk.
+            // Known provision is exhausted. Ordinary need-driven exploration
+            // stays local, but critical hunger/thirst expands beyond a dense
+            // already-explored envelope instead of yielding to toilet/Idle.
             const ResourceExplorationOpportunity opportunity=
-                chooseResourceExplorationOpportunity(
-                    world,self.id,material,authoritativePosition);
+                need>=CriticalSurvivalPreemptThreshold
+                    ? chooseCriticalResourceExplorationOpportunity(
+                        world,self.id,material,authoritativePosition)
+                    : chooseResourceExplorationOpportunity(
+                        world,self.id,material,authoritativePosition);
             if(opportunity.available){
                 result.intent=CivilizationIntent::Explore;
                 result.utility=socialClamp01(0.82+0.18*need);

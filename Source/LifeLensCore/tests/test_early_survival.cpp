@@ -381,6 +381,77 @@ int main()
     assert(sawLocalFoodGather);
     assert(!sawIdleWhileCritical);
 
+    // Long-run frontier exhaustion: if every chunk in the ordinary
+    // six-chunk search envelope is already known/depleted, critical hunger
+    // must still pre-empt an active toilet plan and move into an expanded
+    // PlantFood Explore instead of returning to toilet/Idle.
+    SimulationRuleset frontierRules=DefaultSimulationRuleset;
+    frontierRules.needs.hungerPerMinute=0.0;
+    frontierRules.needs.thirstPerMinute=0.0;
+    frontierRules.needs.sleepPerMinute=0.0;
+    frontierRules.needs.bladderPerMinute=0.0;
+    frontierRules.needs.hygienePerMinute=0.0;
+    Simulation frontierProbe(
+        874213957,0,CurrentWorldGenerationVersion,frontierRules);
+    frontierProbe.setupNewGame();
+    frontierProbe.world().characters.resize(1);
+    frontierProbe.world().resourceNodes.clear();
+    frontierProbe.world().storageSites.clear();
+    frontierProbe.world().generatedNaturalChunks.clear();
+
+    Character& frontierActor=frontierProbe.world().characters.front();
+    const CharacterId frontierId=frontierActor.id;
+    frontierActor.needs={0.10,0.10,0.10,0.95,0.10};
+
+    GridPos frontierPos{};
+    assert(frontierProbe.runtimePosition(frontierId,frontierPos));
+    const ChunkCoord frontierCenter=chunkCoordForGrid(frontierPos);
+    for(int dx=-ResourceExplorationMaxRadiusChunks;
+        dx<=ResourceExplorationMaxRadiusChunks;++dx){
+        for(int dy=-ResourceExplorationMaxRadiusChunks;
+            dy<=ResourceExplorationMaxRadiusChunks;++dy){
+            GeneratedNaturalChunk generated;
+            generated.coord={frontierCenter.x+dx,frontierCenter.y+dy};
+            frontierProbe.world().generatedNaturalChunks.push_back(generated);
+        }
+    }
+    std::sort(
+        frontierProbe.world().generatedNaturalChunks.begin(),
+        frontierProbe.world().generatedNaturalChunks.end(),
+        [](const GeneratedNaturalChunk& a,const GeneratedNaturalChunk& b){
+            return a.coord<b.coord;
+        });
+
+    frontierProbe.step();
+    ResidentPresentationObservation frontierToilet=
+        frontierProbe.observeResidentPresentation(frontierId);
+    assert(frontierToilet.active);
+    assert(frontierToilet.kind==PresentationActionKind::Physical);
+    assert(frontierToilet.physicalGoal==Goal::UseToilet);
+
+    frontierActor.needs.hunger=1.0;
+    bool sawExpandedExplore=false;
+    bool returnedToToiletWhileCritical=false;
+    for(int minute=0;minute<8 && !sawExpandedExplore;++minute){
+        frontierProbe.step();
+        const ResidentPresentationObservation observed=
+            frontierProbe.observeResidentPresentation(frontierId);
+        if(observed.active
+           && observed.kind==PresentationActionKind::Civilization
+           && observed.civilizationIntent==CivilizationIntent::Explore
+           && observed.civilizationMaterial==MaterialKind::PlantFood){
+            sawExpandedExplore=true;
+        }
+        if(observed.active
+           && observed.kind==PresentationActionKind::Physical
+           && observed.physicalGoal==Goal::UseToilet
+           && frontierActor.needs.hunger>=CriticalSurvivalPreemptThreshold){
+            returnedToToiletWhileCritical=true;
+        }
+    }
+    assert(sawExpandedExplore);
+    assert(!returnedToToiletWhileCritical);
+
     // Production-like natural New Game: over the first four simulation days,
     // every founder must prove actual food/water acquisition and consumption.
     // Toilet remains an outdoor fallback until a real sanitation affordance is

@@ -181,9 +181,17 @@ inline bool resolveCivilizationContextTarget(
 
     switch(decision.intent){
         case CivilizationIntent::Explore: {
+            const bool criticalExplore=
+                (decision.material==MaterialKind::PlantFood
+                 && actor.needs.hunger>=CriticalSurvivalPreemptThreshold)
+                || (decision.material==MaterialKind::Water
+                    && actor.needs.thirst>=CriticalSurvivalPreemptThreshold);
             const ResourceExplorationOpportunity opportunity=
-                chooseResourceExplorationOpportunity(
-                    world,actor.id,decision.material,authoritativePosition);
+                criticalExplore
+                    ? chooseCriticalResourceExplorationOpportunity(
+                        world,actor.id,decision.material,authoritativePosition)
+                    : chooseResourceExplorationOpportunity(
+                        world,actor.id,decision.material,authoritativePosition);
             if(!opportunity.available) return false;
             outTarget=opportunity.target;
             return true;

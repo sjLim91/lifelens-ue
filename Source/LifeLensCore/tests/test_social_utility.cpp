@@ -1,6 +1,7 @@
 #include <cassert>
 #include <optional>
 
+#include "lifelens/ContextAction.h"
 #include "lifelens/SocialCognition.h"
 #include "lifelens/SocialUtility.h"
 
@@ -129,6 +130,76 @@ int main()
             survivalWorld, survivalSelf, survivalPos);
     assert(localRetrieve.intent == CivilizationIntent::Retrieve);
     assert(localRetrieve.storage == localFood.id);
+
+    // Long-run depletion: the ordinary six-chunk frontier may already be
+    // fully explored. Critical hunger must keep a survival frontier beyond
+    // that envelope, and target resolution must agree with the decision.
+    World exhaustedFrontierWorld(991123);
+    exhaustedFrontierWorld.resourceNodes.clear();
+    exhaustedFrontierWorld.storageSites.clear();
+    exhaustedFrontierWorld.generatedNaturalChunks.clear();
+
+    Character exhaustedSelf;
+    exhaustedSelf.id=12;
+    exhaustedSelf.civilization.character=exhaustedSelf.id;
+    exhaustedSelf.needs={1.0,0.10,0.10,1.0,0.10};
+    const GridPos exhaustedPos{0,0};
+    const ChunkCoord exhaustedCenter=chunkCoordForGrid(exhaustedPos);
+
+    for(int dx=-ResourceExplorationMaxRadiusChunks;
+        dx<=ResourceExplorationMaxRadiusChunks;++dx){
+        for(int dy=-ResourceExplorationMaxRadiusChunks;
+            dy<=ResourceExplorationMaxRadiusChunks;++dy){
+            GeneratedNaturalChunk generated;
+            generated.coord={exhaustedCenter.x+dx,exhaustedCenter.y+dy};
+            exhaustedFrontierWorld.generatedNaturalChunks.push_back(generated);
+        }
+    }
+    std::sort(
+        exhaustedFrontierWorld.generatedNaturalChunks.begin(),
+        exhaustedFrontierWorld.generatedNaturalChunks.end(),
+        [](const GeneratedNaturalChunk& a,const GeneratedNaturalChunk& b){
+            return a.coord<b.coord;
+        });
+
+    const ResourceExplorationOpportunity ordinaryExhausted=
+        chooseResourceExplorationOpportunity(
+            exhaustedFrontierWorld,
+            exhaustedSelf.id,
+            MaterialKind::PlantFood,
+            exhaustedPos);
+    assert(!ordinaryExhausted.available);
+
+    const CivilizationUtilityDecision criticalFrontier=
+        urgentSurvivalProvisionDecisionAtPosition(
+            exhaustedFrontierWorld,exhaustedSelf,exhaustedPos);
+    assert(criticalFrontier.intent==CivilizationIntent::Explore);
+    assert(criticalFrontier.material==MaterialKind::PlantFood);
+
+    GridPos criticalTarget{};
+    SanitationSiteId criticalSanitation=0;
+    assert(resolveCivilizationContextTarget(
+        exhaustedFrontierWorld,
+        exhaustedSelf,
+        criticalFrontier,
+        exhaustedPos,
+        criticalTarget,
+        criticalSanitation));
+    const ChunkCoord criticalChunk=chunkCoordForGrid(criticalTarget);
+    assert(std::max(
+        std::abs(criticalChunk.x-exhaustedCenter.x),
+        std::abs(criticalChunk.y-exhaustedCenter.y))
+        >ResourceExplorationMaxRadiusChunks);
+
+    // The same escape path applies to thirst when the world has no known
+    // freshwater node: explore for new water instead of falling through to a
+    // lower-order physical action.
+    exhaustedSelf.needs={0.10,1.0,0.10,1.0,0.10};
+    const CivilizationUtilityDecision criticalWaterFrontier=
+        urgentSurvivalProvisionDecisionAtPosition(
+            exhaustedFrontierWorld,exhaustedSelf,exhaustedPos);
+    assert(criticalWaterFrontier.intent==CivilizationIntent::Explore);
+    assert(criticalWaterFrontier.material==MaterialKind::Water);
 
     // Repeated betrayal should shift the same resident toward avoiding that person.
     friendlyWorld.characters[0].personality.agreeableness = 0.10;
