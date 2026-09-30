@@ -26,33 +26,33 @@ LifeLens의 시간과 환경은 단순한 화면 효과가 아니다.
 
 ## 2. 공식 관찰 속도 기준
 
-### 2.1 기본 1x
+### 2.1 제품 표시 1x
 
-**목표 기본값: 현실 8분 = LifeLens 1일(24시간).**
+2026-09-30 결정에 따라 **기존 4x 수준을 새로운 제품 표시 `1x` 기준으로 사용한다.**
 
-계산상:
+이 문서의 이전 목표값은 현실 8분 = LifeLens 1일이었으므로, 동일 기준에서 새 1x 목표는:
 - 1 simulation day = 1,440 simulation minutes
-- 480 real seconds / 1,440 simulation minutes
-- target `RealSecondsPerSimulationMinute = 0.333333...`
+- 현실 약 2분 = LifeLens 1일
+- target `RealSecondsPerSimulationMinute ≈ 0.083333...`
 
-현재 main의 기존 기본값 `0.6 sec / simulation minute`는 약 **14분 24초 / simulation day**이므로,
-시간 시스템 milestone에서 새 canonical target으로 전환한다.
+중요:
+- 단순히 시계/날짜만 4배 빨리 넘기지 않는다.
+- 이동, 행동 진행, action completion과 Observer 표현도 같은 simulation 진행을 일관되게 따라야 한다.
+- Core causality와 deterministic 결과를 생략하지 않는다.
 
-### 2.2 Observer speed presets
+### 2.2 실시간 관찰 preset
 
-| Mode | 배율 | 현실 시간 기준 LifeLens 1일 | 용도 |
-|---|---:|---:|---|
-| Pause | 0x | 정지 | 관찰/검토 |
-| Observe | 1x | 8분 | 일상 생활 관찰 |
-| Fast | 4x | 2분 | 짧은 진행 |
-| Faster | 16x | 30초 | 며칠~몇 주 관찰 |
-| Rapid | 64x | 7.5초 | 계절/단기 세대 진행 |
-| History | adaptive | 렌더 프레임과 분리 | 수년~수백년 이상 장기 진행 |
+| Mode | 제품 표시 | 의미 |
+|---|---:|---|
+| Pause | 0x | 정지 / 관찰 / 검토 |
+| Observe | 1x | 기존 4x 수준을 새 기본 관찰 속도로 사용 |
+| History | adaptive | 렌더 프레임과 분리된 장기 진행 |
 
-정확한 UI 명칭은 Presentation 단계에서 바꿀 수 있으나 의미와 Core 계약은 유지한다.
+- 기존 `16x` 실시간 관찰 preset은 성능 회귀 때문에 제거한다.
+- 추가 실시간 배속은 실제 Web/Core 성능과 행동 표현 일관성을 검증한 뒤에만 도입한다.
+- 수년~세대 단위 진행은 실시간 고배속을 억지로 늘리지 않고 History / fast-forward를 사용한다.
 
 ---
-
 ## 3. History / Long-run Fast-Forward
 
 미래문명까지 가기 위해 단순히 Unreal 전체를 수백/수천 배 재생해서는 안 된다.
@@ -238,8 +238,8 @@ PC high-quality path는 같은 authoritative state를 더 높은 시각 품질�
 ## 10. Implementation order
 
 1. **Time Authority & Speed Control**
-   - 8분/일 target
-   - pause / 1x / 4x / 16x / 64x
+   - 새 제품 1x = 기존 4x 수준(약 2분/일 target)
+   - pause / 1x / History adaptive
    - Core/Presentation clock separation
    - Save/Load speed-safe contract
 2. **Calendar + Day/Night Core contract**
