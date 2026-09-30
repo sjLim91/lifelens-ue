@@ -854,6 +854,13 @@ bool Simulation::preemptForCriticalSurvival(
         character.needs.thirst>=CriticalSurvivalPreemptThreshold;
     if(!hungerCritical && !thirstCritical) return false;
 
+    // Preemption exists to interrupt an active lower-priority action. If the
+    // resident is already idle with no pending context, there is nothing to
+    // cancel here; the normal planning cadence will evaluate survival next.
+    // This avoids performing the same expensive frontier search once in
+    // preemption and again immediately in beginPlan().
+    if(!r.pendingContext.active() && r.plan.empty()) return false;
+
     // If this resident is already physically committed to obtaining the
     // provision that currently threatens survival, keep that intent stable
     // instead of recomputing the whole frontier every simulated minute.
@@ -2220,12 +2227,9 @@ void Simulation::step(){
             }
             continue;
         }
-        const bool criticalSurvivalPressure=
-            c.needs.hunger>=CriticalSurvivalPreemptThreshold
-            || c.needs.thirst>=CriticalSurvivalPreemptThreshold;
         if(r.plan.empty()
            && !r.pendingContext.active()
-           && (world_.minute%5==0 || criticalSurvivalPressure)){
+           && world_.minute%5==0){
             beginPlan(c,r);
         }
         if(!r.plan.empty()) advanceAction(c,r);
