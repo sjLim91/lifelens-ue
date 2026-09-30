@@ -82,13 +82,11 @@ export function WorldActivityPanel({
   civilization,
   worldObjects,
   residents,
-  onSelectResident,
   onFocusGrid,
 }: {
   civilization: CivilizationWorldPayload;
   worldObjects: WorldObjectsPayload;
   residents: Resident[];
-  onSelectResident: (residentId: string) => void;
   onFocusGrid: (gridX: number, gridY: number) => void;
 }) {
   const names = new Map(residents.map(resident => [resident.id, resident.name]));
