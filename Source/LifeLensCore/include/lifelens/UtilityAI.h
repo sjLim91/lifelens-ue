@@ -96,10 +96,60 @@ inline double utilityCurve(double n,const UtilityAIRuleset& rules) {
 inline double utilityCurve(double n) {
     return utilityCurve(n,DefaultSimulationRuleset.utilityAI);
 }
+inline double foodReserveDiscipline01(const Character& c)
+{
+    return std::clamp(
+        0.45*c.personality.conscientiousness
+        +0.30*c.personality.orderliness
+        +0.25*c.personality.patience,
+        0.0,1.0);
+}
+
+inline double immediateEatingDrive01(const Character& c)
+{
+    return std::clamp(
+        0.50*c.personality.impulsiveness
+        +0.25*(1.0-c.personality.patience)
+        +0.25*(1.0-c.personality.conscientiousness),
+        0.0,1.0);
+}
+
+inline double autonomousEatDispositionMultiplier(
+    const Character& c,
+    const UtilityAIRuleset& rules)
+{
+    const double hunger=std::clamp(c.needs.hunger,0.0,1.0);
+    const double discipline=foodReserveDiscipline01(c);
+    const double immediateDrive=immediateEatingDrive01(c);
+
+    // Below the emergency threshold, eating is a resident choice rather than
+    // "food exists => consume now". Impulsive residents respond earlier while
+    // disciplined residents can preserve a scarce last provision until hunger
+    // is stronger. Critical survival still pre-empts this nuance in Simulation.
+    double multiplier=
+        0.84
+        +0.24*immediateDrive
+        -0.10*discipline*(1.0-hunger);
+
+    const int carriedFood=c.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::PlantFood);
+    if(carriedFood<=1 && hunger<rules.urgentThreshold){
+        const double threshold=std::max(0.01,rules.urgentThreshold);
+        const double reserveGap=std::clamp(
+            (rules.urgentThreshold-hunger)/threshold,0.0,1.0);
+        multiplier*=1.0-0.28*discipline*reserveGap;
+    }
+
+    return std::clamp(multiplier,0.60,1.20);
+}
+
 inline double scoreGoal(const World& w,const Character& c,Goal g,const UtilityAIRuleset& rules) {
     if(g==Goal::Idle) return rules.idleScore;
     if(!actionAvailableFor(w,c,g)) return 0.0;
     double s=utilityCurve(needForGoal(c,g),rules);
+    if(g==Goal::Eat){
+        s*=autonomousEatDispositionMultiplier(c,rules);
+    }
     if(g==Goal::Sleep){
         const int hour=(w.minute/60)%24;
         if(hourInWindow(hour,rules.sleepNightStartHour,rules.sleepNightEndHour)) s*=rules.sleepNightMultiplier;
