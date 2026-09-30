@@ -113,16 +113,6 @@ function WorldViewport({
         />
       )}
 
-      {selectedTrace && (
-        <div className="human-trace-overlay desktop-trace-overlay">
-          <HumanTraceDetail
-            trace={selectedTrace}
-            residents={snapshot.residents}
-            onClose={() => observerActions.selectHumanTrace(null)}
-          />
-        </div>
-      )}
-
       <div className="mobile-quick-actions" aria-label="모바일 관찰 메뉴">
         <button type="button" onClick={onOpenResidents}>주민</button>
         <button type="button" onClick={onOpenMenu}>메뉴</button>
