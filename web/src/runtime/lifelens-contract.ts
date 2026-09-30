@@ -14,11 +14,14 @@ export const SIMULATION_SPEED_MODES = [
   { speed: 0, label: '⏸', title: '일시정지' },
   { speed: 1, label: '1×', title: '관찰' },
   { speed: 4, label: '4×', title: '빠르게' },
-  { speed: 16, label: '16×', title: '고속 관찰' },
 ] as const;
 
 export type SimulationSpeed =
   (typeof SIMULATION_SPEED_MODES)[number]['speed'];
+
+export const MAX_SIMULATION_SPEED_MULTIPLIER = Math.max(
+  ...SIMULATION_SPEED_MODES.map((mode) => mode.speed),
+);
 
 export const SIMULATION_TIME_CONTRACT = {
   simulationMinutesPerDay: CORE_SIMULATION_MINUTES_PER_DAY,
@@ -43,7 +46,19 @@ export function normalizeSimulationSpeed(speed: number): SimulationSpeed {
   const mode = SIMULATION_SPEED_MODES.find(
     (candidate) => candidate.speed === speed,
   );
-  return mode?.speed ?? SIMULATION_TIME_CONTRACT.defaultSpeed;
+  if (mode) return mode.speed;
+
+  // 16× was retired because it can monopolize the browser main thread.
+  // Stale callers/sessions requesting anything above the supported ceiling
+  // degrade to the real maximum instead of silently jumping back to 1×.
+  if (
+    Number.isFinite(speed)
+    && speed > MAX_SIMULATION_SPEED_MULTIPLIER
+  ) {
+    return MAX_SIMULATION_SPEED_MULTIPLIER as SimulationSpeed;
+  }
+
+  return SIMULATION_TIME_CONTRACT.defaultSpeed;
 }
 
 export const WORLD_GRID_CONTRACT = {
@@ -87,10 +102,6 @@ export const OBSERVER_RUNTIME_CONTRACT = {
   worldActivityRefreshEverySnapshots: 4,
 } as const;
 
-export const MAX_SIMULATION_SPEED_MULTIPLIER = Math.max(
-  ...SIMULATION_SPEED_MODES.map((mode) => mode.speed),
-);
-
 export const RESIDENT_PRESENTATION_CONTRACT = {
   movementEpsilonWorldUnits: 0.008,
   maxAnimationDeltaSeconds: 0.05,
@@ -111,8 +122,17 @@ export const RESIDENT_PRESENTATION_CONTRACT = {
   sleepPosePitchRadians: -4 * Math.PI / 180,
   sleepPoseRollRadians: 86 * Math.PI / 180,
   sleepPoseResponsivenessPerSecond: 5,
+  // The imported character pivots at the feet. When rolled onto its side,
+  // center the body around the authoritative sleep position and lift it by
+  // body thickness so the mesh cannot cut through the terrain.
+  sleepPoseCenterOffsetHeightRatio: 0.48,
+  sleepPoseBodyClearanceHeightRatio: 0.14,
+  sleepPoseGroundClearanceWorldUnits: 0.035,
+  sleepPoseBodyHalfLengthHeightRatio: 0.48,
+  // Visible bedding top in FacilityLayer. Shelter sleep remains ground-based.
+  sleepPoseSleepingPlaceSurfaceHeightWorldUnits: 0.41,
   // Presentation motion derives from the same global baseline and the exact
-  // selected observer speed. Do not cap 4×/16× back to a slower visual pace:
+  // selected observer speed. Do not cap 4× back to a slower visual pace:
   // simulation time, movement and visible action playback must stay aligned.
   motionTimeScaleAt1x: SIMULATION_BASELINE_SPEED_MULTIPLIER,
   maxMotionTimeScale:
