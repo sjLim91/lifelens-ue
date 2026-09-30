@@ -512,14 +512,12 @@ inline CivilizationUtilityDecision urgentSurvivalProvisionDecisionAtPosition(
             // Known provision is exhausted. Ordinary need-driven exploration
             // stays local, but critical hunger/thirst expands beyond a dense
             // already-explored envelope instead of yielding to toilet/Idle.
-            const int explorationRadius=
-                need>=CriticalSurvivalPreemptThreshold
-                    ? criticalResourceExplorationRadiusChunks(world)
-                    : ResourceExplorationMaxRadiusChunks;
             const ResourceExplorationOpportunity opportunity=
-                chooseResourceExplorationOpportunity(
-                    world,self.id,material,authoritativePosition,
-                    explorationRadius);
+                need>=CriticalSurvivalPreemptThreshold
+                    ? chooseCriticalResourceExplorationOpportunity(
+                        world,self.id,material,authoritativePosition)
+                    : chooseResourceExplorationOpportunity(
+                        world,self.id,material,authoritativePosition);
             if(opportunity.available){
                 result.intent=CivilizationIntent::Explore;
                 result.utility=socialClamp01(0.82+0.18*need);

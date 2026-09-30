@@ -186,13 +186,12 @@ inline bool resolveCivilizationContextTarget(
                  && actor.needs.hunger>=CriticalSurvivalPreemptThreshold)
                 || (decision.material==MaterialKind::Water
                     && actor.needs.thirst>=CriticalSurvivalPreemptThreshold);
-            const int explorationRadius=criticalExplore
-                ? criticalResourceExplorationRadiusChunks(world)
-                : ResourceExplorationMaxRadiusChunks;
             const ResourceExplorationOpportunity opportunity=
-                chooseResourceExplorationOpportunity(
-                    world,actor.id,decision.material,authoritativePosition,
-                    explorationRadius);
+                criticalExplore
+                    ? chooseCriticalResourceExplorationOpportunity(
+                        world,actor.id,decision.material,authoritativePosition)
+                    : chooseResourceExplorationOpportunity(
+                        world,actor.id,decision.material,authoritativePosition);
             if(!opportunity.available) return false;
             outTarget=opportunity.target;
             return true;

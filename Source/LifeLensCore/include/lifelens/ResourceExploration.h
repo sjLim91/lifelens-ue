@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <cmath>
 #include <limits>
@@ -16,24 +17,12 @@ namespace lifelens {
 inline constexpr int ResourceExplorationMaxRadiusChunks = 6;
 inline constexpr int ResourceExplorationDrySearchRadiusCells = 8;
 
-// Ordinary exploration remains deliberately local. Critical survival may need
-// to escape a fully explored/depleted settlement envelope after many simulated
-// months, so derive a wider radius from the amount of world already materialized.
-inline constexpr int ResourceExplorationCriticalMinimumRadiusChunks = 12;
-
-inline int criticalResourceExplorationRadiusChunks(const World& world)
-{
-    const double generated=static_cast<double>(
-        std::max<std::size_t>(1,world.generatedNaturalChunks.size()));
-    // If a dense square around the resident were fully materialized, roughly
-    // (2r+1)^2 chunks would exist. Search a few rings beyond that theoretical
-    // dense radius so a finite explored world keeps an escape frontier.
-    const int denseRadius=static_cast<int>(std::ceil(
-        (std::sqrt(generated+1.0)-1.0)*0.5));
-    return std::max(
-        ResourceExplorationCriticalMinimumRadiusChunks,
-        denseRadius+6);
-}
+// 긴급 생존 탐색은 일반 탐색보다 멀리 갈 수 있지만, 월드 크기에
+// 비례해 모든 링을 전수 검사하지 않는다. 아래의 희소 프런티어 탐색은
+// 일정한 수의 후보만 검사해 장기 시뮬레이션 비용을 제한한다.
+inline constexpr std::array<int,11> ResourceExplorationCriticalRadiiChunks{
+    7,8,10,12,16,24,32,48,64,96,128
+};
 
 struct ResourceExplorationOpportunity {
     bool available = false;
@@ -131,8 +120,7 @@ inline ResourceExplorationOpportunity chooseResourceExplorationOpportunity(
     const World& world,
     CharacterId actor,
     MaterialKind material,
-    GridPos authoritativePosition,
-    int maxRadiusChunks=ResourceExplorationMaxRadiusChunks)
+    GridPos authoritativePosition)
 {
     ResourceExplorationOpportunity best;
     if(actor == 0 || !validNaturalResourceMaterial(material)) return best;
@@ -143,8 +131,7 @@ inline ResourceExplorationOpportunity chooseResourceExplorationOpportunity(
     // observable terrain quality plus a stable actor/material preference. Do
     // not call deriveGeneratedNaturalChunk here: resources stay unknown until
     // arrival materializes the chunk.
-    const int radiusLimit=std::max(1,maxRadiusChunks);
-    for(int radius = 1; radius <= radiusLimit; ++radius){
+    for(int radius = 1; radius <= ResourceExplorationMaxRadiusChunks; ++radius){
         bool foundAtRadius = false;
         double bestScore = -std::numeric_limits<double>::infinity();
 
@@ -187,6 +174,84 @@ inline ResourceExplorationOpportunity chooseResourceExplorationOpportunity(
         }
 
         if(foundAtRadius) return best;
+    }
+
+    return ResourceExplorationOpportunity{};
+}
+
+
+inline ResourceExplorationOpportunity chooseCriticalResourceExplorationOpportunity(
+    const World& world,
+    CharacterId actor,
+    MaterialKind material,
+    GridPos authoritativePosition)
+{
+    // 가까운 일반 프런티어가 남아 있으면 기존 규칙을 그대로 사용한다.
+    ResourceExplorationOpportunity local=
+        chooseResourceExplorationOpportunity(
+            world,actor,material,authoritativePosition);
+    if(local.available) return local;
+    if(actor==0 || !validNaturalResourceMaterial(material)){
+        return ResourceExplorationOpportunity{};
+    }
+
+    const ChunkCoord center=chunkCoordForGrid(authoritativePosition);
+
+    // 각 거리에서 16개 방향만 확인한다. 따라서 이미 생성된 월드가
+    // 수천 청크여도 긴급 의사결정 비용은 상수에 가깝게 유지된다.
+    for(const int radius:ResourceExplorationCriticalRadiiChunks){
+        const int half=std::max(1,radius/2);
+        const std::array<ChunkCoord,16> offsets{{
+            { radius,0},{-radius,0},{0, radius},{0,-radius},
+            { radius, radius},{ radius,-radius},
+            {-radius, radius},{-radius,-radius},
+            { radius, half},{ radius,-half},
+            {-radius, half},{-radius,-half},
+            { half, radius},{-half, radius},
+            { half,-radius},{-half,-radius}
+        }};
+
+        ResourceExplorationOpportunity best;
+        double bestScore=-std::numeric_limits<double>::infinity();
+
+        for(const ChunkCoord offset:offsets){
+            const ChunkCoord candidate{
+                center.x+offset.x,
+                center.y+offset.y
+            };
+            if(world.findGeneratedNaturalChunk(candidate)!=nullptr) continue;
+
+            const MacroSurfaceFacts surface=
+                deriveMacroSurfaceFacts(world.genesisIdentity(),candidate);
+            if(surface.surfaceClass==MacroSurfaceClass::Ocean) continue;
+
+            GridPos target{};
+            if(!chooseDryExplorationEntryPoint(
+                    world,candidate,authoritativePosition,target)){
+                continue;
+            }
+
+            const MacroRegionFacts region=
+                deriveMacroRegionFacts(world.genesisIdentity(),candidate);
+            const double preference=
+                resourceExplorationPreference(
+                    world,actor,material,candidate);
+            const double score=
+                0.60*clampMacro01(region.traversalEase)
+                +0.25*(1.0-clampMacro01(region.hazardPotential))
+                +0.15*preference;
+
+            if(!best.available || score>bestScore+1e-12){
+                best.available=true;
+                best.material=material;
+                best.chunk=candidate;
+                best.target=target;
+                best.suitability=score;
+                bestScore=score;
+            }
+        }
+
+        if(best.available) return best;
     }
 
     return ResourceExplorationOpportunity{};
