@@ -1,0 +1,54 @@
+name: LifeLens Balance Audit
+
+on:
+  push:
+    branches:
+      - audit/simulation-balance-20260930
+    paths:
+      - 'Source/LifeLensCore/**'
+      - 'docs/SIMULATION_BALANCE_AUDIT.md'
+      - '.github/workflows/balance-audit.yml'
+  workflow_dispatch:
+    inputs:
+      days:
+        description: '시뮬레이션 일수'
+        required: false
+        default: '100'
+      seed:
+        description: 'World seed'
+        required: false
+        default: '874213954'
+
+permissions:
+  contents: read
+
+jobs:
+  balance-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 밸런스 계측기 구성
+        run: cmake -S Source/LifeLensCore -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: 밸런스 계측기 빌드
+        run: cmake --build build --target ll_balance_audit --parallel 2
+
+      - name: 기준 구간 전수 계측
+        if: github.event_name == 'push'
+        run: |
+          for seed in 874213954 4242001; do
+            for days in 1 7 30 100; do
+              echo "===== seed=$seed days=$days ====="
+              ./build/ll_balance_audit --seed "$seed" --days "$days"
+            done
+          done
+
+      - name: 수동 장기 계측
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          ./build/ll_balance_audit \
+            --seed '${{ inputs.seed }}' \
+            --days '${{ inputs.days }}'
