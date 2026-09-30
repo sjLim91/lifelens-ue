@@ -131,6 +131,12 @@ export const RESIDENT_PRESENTATION_CONTRACT = {
   sleepPoseBodyHalfLengthHeightRatio: 0.48,
   // Visible bedding top in FacilityLayer. Shelter sleep remains ground-based.
   sleepPoseSleepingPlaceSurfaceHeightWorldUnits: 0.41,
+  socialConnectorApproachColorHex: 0xb9d8be,
+  socialConnectorComfortColorHex: 0x9fcfe0,
+  socialConnectorRepairColorHex: 0xe0c98f,
+  socialConnectorDefaultColorHex: 0xc9dbc8,
+  socialConnectorTeachingColorHex: 0xc8dbe5,
+  socialConnectorParentingColorHex: 0xe4d7bb,
   // Presentation motion derives from the same global baseline and the exact
   // selected observer speed. Do not cap 4× back to a slower visual pace:
   // simulation time, movement and visible action playback must stay aligned.

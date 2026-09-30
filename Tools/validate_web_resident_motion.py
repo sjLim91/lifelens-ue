@@ -229,3 +229,44 @@ for token in (
 assert "SleepRest" not in resident
 
 print("LifeLens web resident gait, readability, appearance and UAL2 semantic motion: PASS")
+
+# Live social behavior is visually differentiated using only authoritative
+# presentation intent: human-readable action cues plus bounded connector kinds.
+action_context = (
+    root / "web/src/render/resident-action-context.ts"
+).read_text(encoding="utf-8")
+social_cues = (
+    root / "web/src/render/resident-social-cues.ts"
+).read_text(encoding="utf-8")
+for token in (
+    "socialActionCue",
+    "parentingActionCue",
+    "teachingActionCue",
+    "knowledgeTeachingTechnique",
+    "formatTechnique",
+    "위로하러 이동 중",
+    "관계 회복을 시도하는 중",
+    "거리를 두는 중",
+):
+    assert token in action_context, f"missing live social cue token: {token}"
+for token in (
+    "| 'Approach'",
+    "| 'Comfort'",
+    "| 'Repair'",
+    "presentation.socialIntent === 'Approach'",
+    "presentation.socialIntent === 'Comfort'",
+    "presentation.socialIntent === 'Repair'",
+):
+    assert token in social_cues, f"missing social connector intent token: {token}"
+for token in (
+    "socialConnectorApproachColorHex",
+    "socialConnectorComfortColorHex",
+    "socialConnectorRepairColorHex",
+    "socialConnectorTeachingColorHex",
+    "socialConnectorParentingColorHex",
+    "socialConnectorDefaultColorHex",
+):
+    assert token in contract, f"missing centralized social connector color: {token}"
+    assert token in resident or token == "socialConnectorDefaultColorHex", (
+        f"resident social connector did not consume centralized color: {token}"
+    )

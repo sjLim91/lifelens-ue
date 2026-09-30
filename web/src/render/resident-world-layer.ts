@@ -571,10 +571,19 @@ export class ResidentWorldLayer {
 
   private socialCueColor(kind: ResidentSocialCueKind): number {
     switch (kind) {
-      case 'KnowledgeTeaching': return 0xc8dbe5;
-      case 'Parenting': return 0xe4d7bb;
+      case 'Approach':
+        return RESIDENT_PRESENTATION_CONTRACT.socialConnectorApproachColorHex;
+      case 'Comfort':
+        return RESIDENT_PRESENTATION_CONTRACT.socialConnectorComfortColorHex;
+      case 'Repair':
+        return RESIDENT_PRESENTATION_CONTRACT.socialConnectorRepairColorHex;
+      case 'KnowledgeTeaching':
+        return RESIDENT_PRESENTATION_CONTRACT.socialConnectorTeachingColorHex;
+      case 'Parenting':
+        return RESIDENT_PRESENTATION_CONTRACT.socialConnectorParentingColorHex;
       case 'Social':
-      default: return 0xc9dbc8;
+      default:
+        return RESIDENT_PRESENTATION_CONTRACT.socialConnectorDefaultColorHex;
     }
   }
 
