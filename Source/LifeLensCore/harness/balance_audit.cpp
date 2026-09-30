@@ -222,6 +222,12 @@ int main(int argc,char** argv)
              <<" storedFood="<<storedUnits(world,MaterialKind::PlantFood)
              <<" chunks="<<world.generatedNaturalChunks.size()
              <<" facilities="<<world.facilities.size()
+             <<" primitiveStorageFacilities="<<facilityCount(world,FacilityKind::PrimitiveStorage)
+             <<" firePits="<<facilityCount(world,FacilityKind::FirePit)
+             <<" workSurfaces="<<facilityCount(world,FacilityKind::WorkSurface)
+             <<" sleepingPlaces="<<facilityCount(world,FacilityKind::SleepingPlace)
+             <<" shelters="<<facilityCount(world,FacilityKind::Shelter)
+             <<" furnaces="<<facilityCount(world,FacilityKind::Furnace)
              <<" plots="<<facilityCount(world,FacilityKind::CultivatedPlot)
              <<" storages="<<world.storageSites.size()
              <<" routeFailures="<<routeFailures
@@ -250,7 +256,30 @@ int main(int argc,char** argv)
     };
 
     for(const auto& m:metrics){
-        std::cout<<"RESIDENT id="<<m.id<<" name="<<m.name;
+        const Character* resident=findResident(world,m.id);
+        int reproducibleTechniques=0;
+        bool knowsDiggingStick=false;
+        bool knowsCultivation=false;
+        int diggingStickTools=0;
+        if(resident!=nullptr){
+            for(const auto& record:resident->civilization.knowledge.all()){
+                if(static_cast<int>(record.level)>=
+                   static_cast<int>(KnowledgeLevel::Reproducible)){
+                    ++reproducibleTechniques;
+                }
+            }
+            knowsDiggingStick=resident->civilization.knowledge.knowsAtLeast(
+                TechniqueId::DiggingStick,KnowledgeLevel::Reproducible);
+            knowsCultivation=resident->civilization.knowledge.knowsAtLeast(
+                TechniqueId::Cultivation,KnowledgeLevel::Reproducible);
+            diggingStickTools=resident->civilization.inventory.count(
+                ItemKind::DiggingStick,MaterialKind::Unknown,true);
+        }
+        std::cout<<"RESIDENT id="<<m.id<<" name="<<m.name
+                 <<" reproducibleTechniques="<<reproducibleTechniques
+                 <<" knowsDiggingStick="<<(knowsDiggingStick?1:0)
+                 <<" knowsCultivation="<<(knowsCultivation?1:0)
+                 <<" diggingStickTools="<<diggingStickTools;
         const double denom=static_cast<double>(std::max(1,totalMinutes));
         for(std::size_t i=0;i<needNames.size();++i){
             std::cout<<" "<<needNames[i]<<"Avg="<<std::fixed<<std::setprecision(4)
