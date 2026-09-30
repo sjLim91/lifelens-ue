@@ -2,7 +2,7 @@
 
 Date: 2026-09-30  
 Active architecture: **LifeLensCore -> WASM -> Web Observer**  
-Current main checkpoint: `cec5c8fa5db176bec2f24e15b8ffe8c2b18b4271` (#507)
+Current main checkpoint: `257c225eff48f26cbde80e3f901c0ded69f40f3a` (#511)
 
 ## Runtime decision
 
@@ -44,6 +44,16 @@ PR #497, which only repaired the Unreal external physical sleep path, was closed
   Core.
 - #507 Observer feed now exposes factual Need -> travel -> interaction
   milestones for Eat/Drink/Sleep/UseToilet/Wash without replay/spam.
+- #509 16x observer hot path split from heavyweight snapshots: resident
+  movement/Needs/presentation use a compact runtime DTO while relationships,
+  memories, beliefs, family and civilization detail refresh at a lower cadence;
+  deterministic terrain is cached until the observer window changes.
+- #510 dynamic human-trace refresh avoids rescanning static terrain while still
+  rebuilding grass/rocks/trees once when authoritative facility footprints
+  actually change.
+- #511 social observation now exposes factual approach -> interaction phases for
+  Approach/Comfort/Repair/Avoid plus KnowledgeTeaching and Parenting, with exact
+  Core social outcomes taking priority over duplicate inferred activity rows.
 
 ## Validation target after Unreal removal
 
