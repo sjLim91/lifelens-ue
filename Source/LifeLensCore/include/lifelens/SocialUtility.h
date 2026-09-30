@@ -468,11 +468,17 @@ inline CivilizationUtilityDecision urgentSurvivalProvisionDecisionAtPosition(
                 return result;
             }
 
+            // A known live freshwater source is already a Physical
+            // Drink/Wash affordance. Do not replace that real direct use with
+            // a Civilization Explore. Explore for Water only when no known
+            // live natural source exists.
+            if(material==MaterialKind::Water
+               && liveNaturalWaterSourceAvailable(world)){
+                return result;
+            }
+
             // Known natural food stays local. Pick the nearest real node,
             // not whichever node happened to be stored first globally.
-            // Water is different: a known live water node is consumed directly
-            // by the Physical Drink path, so Civilization only explores for
-            // water when no known source exists.
             if(material!=MaterialKind::Water){
                 const ResourceNode* nearestNode=nullptr;
                 int nearestNodeDistance=
