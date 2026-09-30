@@ -54,6 +54,60 @@ int main(){
         std::cerr<<"custom utility ruleset did not override goal scoring\n"; return 3;
     }
 
+    // D-023: food availability alone must not script an immediate Eat.
+    // With the same moderate Hunger and the same single carried provision,
+    // resident disposition can make one person eat now while another preserves
+    // the last unit. The emergency boundary still wins for survival.
+    lifelens::UtilityAIRuleset autonomous=lifelens::DefaultSimulationRuleset.utilityAI;
+    autonomous.secondChoiceProbability=0.0;
+
+    lifelens::World foodChoiceWorld(424242);
+    lifelens::Character eager;
+    eager.id=31;
+    eager.needs={0.45,0.05,0.05,0.05,0.05};
+    eager.personality.impulsiveness=1.0;
+    eager.personality.patience=0.0;
+    eager.personality.conscientiousness=0.0;
+    eager.personality.orderliness=0.0;
+    eager.civilization.inventory.add({
+        lifelens::ItemKind::RawMaterial,
+        lifelens::MaterialKind::PlantFood,
+        1,0.8,1.0});
+
+    lifelens::Character saver=eager;
+    saver.id=32;
+    saver.personality.impulsiveness=0.0;
+    saver.personality.patience=1.0;
+    saver.personality.conscientiousness=1.0;
+    saver.personality.orderliness=1.0;
+
+    const double eagerEatScore=lifelens::scoreGoal(
+        foodChoiceWorld,eager,lifelens::Goal::Eat,autonomous);
+    const double saverEatScore=lifelens::scoreGoal(
+        foodChoiceWorld,saver,lifelens::Goal::Eat,autonomous);
+    if(!(eagerEatScore>autonomous.idleScore
+         && saverEatScore<autonomous.idleScore)){
+        std::cerr<<"moderate hunger must allow personality-driven eat timing\n";
+        return 6;
+    }
+    if(lifelens::chooseGoal(foodChoiceWorld,eager,autonomous)
+       !=lifelens::Goal::Eat){
+        std::cerr<<"impulsive resident should choose Eat at moderate hunger\n";
+        return 7;
+    }
+    if(lifelens::chooseGoal(foodChoiceWorld,saver,autonomous)
+       !=lifelens::Goal::Idle){
+        std::cerr<<"disciplined resident should be able to preserve last food\n";
+        return 8;
+    }
+
+    saver.needs.hunger=0.92;
+    if(lifelens::chooseGoal(foodChoiceWorld,saver,autonomous)
+       !=lifelens::Goal::Eat){
+        std::cerr<<"critical hunger must override food-reserve discipline\n";
+        return 9;
+    }
+
     std::cout<<"test_utility PASS\n";
     return 0;
 }
