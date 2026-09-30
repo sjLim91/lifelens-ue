@@ -62,12 +62,15 @@ for token in (
     "node.width * 0.5",
 ):
     assert token in geometry, f"missing Core-sized drinkable water footprint token: {token}"
-# Older runtimes may omit the new fields. In that case the browser hides
-# uncertain channel segments rather than guessing a direction.
-assert "chunk.hasDownstream === true" in geometry
-assert "Number(chunk.drainageAccumulationPotential) || 0" in geometry
-assert "drainage >= 0.24" in geometry
-assert "availability >= 0.5" in geometry
+# Core direct-use authority is broader than the old decorative stream
+# threshold: every fresh flow source with real availability can be consumed.
+# Web must therefore render that source even when no downstream ribbon can be
+# drawn. Missing/isolated downstream data becomes a localized center footprint,
+# never invisible drinkable water and never a guessed browser drainage graph.
+assert "chunk.salinity === 'Fresh'" in geometry
+assert "(Number(chunk.waterAvailability) || 0) > 0" in geometry
+assert "chunk.hasDownstream !== true" in geometry
+assert "const radius = sourceWidth * 0.5" in geometry
 
 # Width comes from the same Core hydrology presentation formula scale rather
 # than arbitrary percentages of the whole chunk.

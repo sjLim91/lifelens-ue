@@ -95,7 +95,26 @@ testCase('physical movement uses only authoritative goal and phase', () => {
   const cue = residentActionCue(resident(), residents);
   assert.ok(cue);
   assert.equal(cue.phase, 'Moving');
-  assert.equal(cue.text, '물 마시기 · 이동 중');
+  assert.equal(cue.text, '소지한 물을 마시러 이동 중');
+});
+
+testCase('visual interpolation cannot claim water interaction before visible arrival', () => {
+  const cue = residentActionCue(
+    resident({
+      presentation: {
+        active: true,
+        kind: 'Physical',
+        phase: 'Interacting',
+        physicalGoal: 'Drink',
+        directNaturalWaterSource: true,
+      },
+    }),
+    residents,
+    true,
+  );
+  assert.ok(cue);
+  assert.equal(cue.phase, 'Moving');
+  assert.equal(cue.text, '물가로 마시러 이동 중');
 });
 
 testCase('washing visibly states that carried water is being used', () => {
@@ -279,7 +298,7 @@ testCase('civilization and parenting cues remain factual and compact', () => {
     }),
     residents,
   );
-  assert.equal(drink?.text, '물 마시기 · 진행 중');
+  assert.equal(drink?.text, '소지한 물을 마시는 중');
 
   const exploration = residentActionCue(
     resident({

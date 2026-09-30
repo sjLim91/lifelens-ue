@@ -50,11 +50,18 @@ function physicalAction(goal: string | undefined): string {
 export function residentActionCue(
   resident: Resident,
   residents: Resident[],
+  visuallyMoving = false,
 ): ResidentActionCue | null {
   const directive = resident.presentation;
   if (!directive?.active) return null;
 
-  const phase = directive.phase ?? 'Idle';
+  const corePhase = directive.phase ?? 'Idle';
+  // Core may reach the authoritative target between observer snapshots while
+  // the Three.js actor is still visually interpolating there. Never announce
+  // or animate an interaction before the visible body has arrived.
+  const phase = visuallyMoving && corePhase === 'Interacting'
+    ? 'Moving'
+    : corePhase;
   if (phase === 'Idle') return null;
 
   const residentTarget = targetResidentName(directive, residents);
@@ -79,14 +86,19 @@ export function residentActionCue(
           phase,
         };
       }
-      if (
-        directive.physicalGoal === 'Drink'
-        && directive.directNaturalWaterSource
-      ) {
+      if (directive.physicalGoal === 'Drink') {
+        if (directive.directNaturalWaterSource) {
+          return {
+            text: phase === 'Moving'
+              ? '물가로 마시러 이동 중'
+              : '물가에서 마시는 중',
+            phase,
+          };
+        }
         return {
           text: phase === 'Moving'
-            ? '물가로 마시러 이동 중'
-            : '물가에서 마시는 중',
+            ? '소지한 물을 마시러 이동 중'
+            : '소지한 물을 마시는 중',
           phase,
         };
       }

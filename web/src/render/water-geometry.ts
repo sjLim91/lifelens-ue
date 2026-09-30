@@ -190,34 +190,15 @@ function flowWidth(chunk: TerrainChunk): number {
 }
 
 function shouldRenderFlowChunk(chunk: TerrainChunk): boolean {
-  if (chunk.waterKind === 'River') {
-    return chunk.hasDownstream === true;
-  }
+  if (!isFlowWaterKind(chunk.waterKind)) return false;
 
-  if (chunk.waterKind === 'Stream') {
-    const drainage = Math.max(
-      0,
-      Math.min(
-        1,
-        Number(chunk.drainageAccumulationPotential) || 0,
-      ),
-    );
-    const availability = Math.max(
-      0,
-      Math.min(1, Number(chunk.waterAvailability) || 0),
-    );
-    return (
-      chunk.hasDownstream === true
-      && drainage >= 0.24
-      && availability >= 0.5
-    );
-  }
-
-  if (chunk.waterKind === 'Spring') {
-    return (Number(chunk.waterAvailability) || 0) >= 0.72;
-  }
-
-  return false;
+  // Match Core's direct-use authority: any fresh surface flow with real
+  // availability is a usable water source and therefore must be visible.
+  // Presentation must never hide water that Core allows residents to drink.
+  return (
+    chunk.salinity === 'Fresh'
+    && (Number(chunk.waterAvailability) || 0) > 0
+  );
 }
 
 export function createVisibleWaterFootprintTester(
@@ -305,21 +286,20 @@ export function createVisibleWaterFootprintTester(
         }
 
         const sourceWidth = flowWidth(chunk);
-        if (chunk.waterKind === 'Spring') {
+        if (
+          chunk.waterKind === 'Spring'
+          || chunk.hasDownstream !== true
+          || !Number.isFinite(chunk.downstreamChunkX)
+          || !Number.isFinite(chunk.downstreamChunkY)
+        ) {
+          // Core treats a flow source without a usable downstream segment as
+          // a localized circular footprint around the hydrology center.
           const radius = sourceWidth * 0.5;
           const ddx = worldX - centerX;
           const ddz = worldZ - centerZ;
           if (ddx * ddx + ddz * ddz <= radius * radius) {
             return true;
           }
-          continue;
-        }
-
-        if (
-          chunk.hasDownstream !== true
-          || !Number.isFinite(chunk.downstreamChunkX)
-          || !Number.isFinite(chunk.downstreamChunkY)
-        ) {
           continue;
         }
 
@@ -833,7 +813,6 @@ export function buildFlowWaterSurfaceGeometry(
   const {
     nodes,
     edges,
-    participatingKeys,
   } = selectFlowEdges(window, chunkWorldSize);
 
   const positions: number[] = [];
@@ -853,8 +832,9 @@ export function buildFlowWaterSurfaceGeometry(
   }
 
   for (const node of nodes.values()) {
-    const isSpring = node.chunk.waterKind === 'Spring';
-    if (!participatingKeys.has(node.key) && !isSpring) continue;
+    // Every Core-usable fresh flow source gets a visible local footprint.
+    // Connected sources also receive their ribbon; isolated/weak sources keep
+    // this cap so residents can never drink from visually dry ground.
     appendDisc(
       positions,
       normals,
