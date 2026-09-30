@@ -351,6 +351,7 @@ export class ResidentWorldLayer {
           resident,
           terrain,
           sampleElevation,
+          next,
           centerX,
           centerY,
         );
@@ -1125,6 +1126,7 @@ export class ResidentWorldLayer {
     resident: Resident,
     terrain: TerrainWindow,
     sampleElevation: ReturnType<typeof createTerrainElevationSampler>,
+    position: THREE.Vector3,
     centerX: number,
     centerY: number,
   ): number {
@@ -1191,14 +1193,14 @@ export class ResidentWorldLayer {
       ) * elevationScale;
     };
 
-    const baseHeight = actor.target.y;
+    const baseHeight = position.y;
     const headHeight = sampleWorldHeight(
-      actor.target.x - axisX * halfLength,
-      actor.target.z - axisZ * halfLength,
+      position.x - axisX * halfLength,
+      position.z - axisZ * halfLength,
     );
     const footHeight = sampleWorldHeight(
-      actor.target.x + axisX * halfLength,
-      actor.target.z + axisZ * halfLength,
+      position.x + axisX * halfLength,
+      position.z + axisZ * halfLength,
     );
     return Math.max(
       0,
