@@ -133,11 +133,23 @@ inline double autonomousEatDispositionMultiplier(
 
     const int carriedFood=c.civilization.inventory.count(
         ItemKind::RawMaterial,MaterialKind::PlantFood);
+    const double freshness=carriedFood>0
+        ? c.civilization.inventory.averagePlantFoodFreshness()
+        : 0.0;
+    const double spoilagePressure=carriedFood>0
+        ? std::clamp(1.0-freshness,0.0,1.0)
+        : 0.0;
+
+    // Perishable food changes the trade-off. A resident can rationally preserve
+    // a fresh final unit, but food close to spoilage should become more
+    // attractive to consume instead of being "disciplined" into waste.
+    multiplier+=0.12*spoilagePressure;
+
     if(carriedFood<=1 && hunger<rules.urgentThreshold){
         const double threshold=std::max(0.01,rules.urgentThreshold);
         const double reserveGap=std::clamp(
             (rules.urgentThreshold-hunger)/threshold,0.0,1.0);
-        multiplier*=1.0-0.28*discipline*reserveGap;
+        multiplier*=1.0-0.28*discipline*reserveGap*freshness;
     }
 
     return std::clamp(multiplier,0.60,1.20);
