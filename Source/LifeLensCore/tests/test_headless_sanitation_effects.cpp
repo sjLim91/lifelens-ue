@@ -69,34 +69,31 @@ int main()
 
     Character& actor=simulation.world().characters.front();
     const CharacterId actorId=actor.id;
-    learnSanitationTechniques(actor);
 
-    const PrimitiveSanitationSiteCreationResult created=
-        establishDesignatedSanitationArea(
-            simulation.world().seed,
-            actor,
-            simulation.world().environmentalResidues,
-            simulation.world().primitiveSanitationSites,
-            simulation.world().minute);
-    assert(created.established);
-
-    bool pitCompleted=false;
-    for(int i=0;i<12 && !pitCompleted;++i){
-        const DugSanitationPitWorkResult work=workOnDugSanitationPit(
-            actor,
-            simulation.world().environmentalResidues,
-            simulation.world().primitiveSanitationSites,
-            simulation.world().minute);
-        assert(work.worked);
-        pitCompleted=work.completed;
-    }
-    assert(pitCompleted);
+    // Progression/discovery is covered by test_primitive_latrine_progression.
+    // This regression isolates the autonomous physical-runtime contract by
+    // placing one already-authoritative operational DugPit at the resident's
+    // current Core position.
+    GridPos initialPos{};
+    assert(simulation.runtimePosition(actorId,initialPos));
+    PrimitiveSanitationSite builtPit;
+    builtPit.id=930201;
+    builtPit.kind=PrimitiveSanitationSiteKind::DugPit;
+    builtPit.pos=initialPos;
+    builtPit.establishedBy=actorId;
+    builtPit.establishedMinute=simulation.world().minute;
+    builtPit.active=true;
+    builtPit.useCount=0;
+    builtPit.improvementWork=DugSanitationPitWorkRequired;
+    builtPit.improvedBy=actorId;
+    builtPit.improvedMinute=simulation.world().minute;
+    assert(validPrimitiveSanitationSite(builtPit));
+    simulation.world().primitiveSanitationSites.push_back(builtPit);
 
     PrimitiveSanitationSite* pit=findPrimitiveSanitationSite(
         simulation.world().primitiveSanitationSites,
-        created.siteId);
+        builtPit.id);
     assert(pit!=nullptr);
-    assert(pit->kind==PrimitiveSanitationSiteKind::DugPit);
     const int usesBefore=pit->useCount;
 
     actor.needs={0.01,0.01,0.01,0.99,0.10};
@@ -113,7 +110,7 @@ int main()
 
     pit=findPrimitiveSanitationSite(
         simulation.world().primitiveSanitationSites,
-        created.siteId);
+        builtPit.id);
     assert(pit!=nullptr);
     assert(pit->useCount==usesBefore+1);
 
