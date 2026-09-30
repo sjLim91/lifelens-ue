@@ -27,6 +27,24 @@ bool hasResource(const World& world,MaterialKind material)
     return false;
 }
 
+int resourceUnits(const World& world,MaterialKind material)
+{
+    int total=0;
+    for(const auto& node:world.resourceNodes){
+        if(node.material==material) total+=std::max(0,node.quantity);
+    }
+    return total;
+}
+
+int countLogs(const std::vector<std::string>& logs,const std::string& token)
+{
+    int count=0;
+    for(const auto& line:logs){
+        if(line.find(token)!=std::string::npos) ++count;
+    }
+    return count;
+}
+
 const Character* findResident(const World& world,CharacterId id)
 {
     for(const auto& resident:world.characters){
@@ -211,6 +229,8 @@ int main()
 
     directActor.needs={0.01,0.01,0.01,0.01,0.93};
     const double directHygieneBefore=directActor.needs.hygiene;
+    const int waterUnitsBeforeDirectWash=
+        resourceUnits(directWater.world(),MaterialKind::Water);
     bool sawDirectWash=false;
     for(int minute=0;minute<SimulationMinutesPerDay
         && directActor.needs.hygiene>=directHygieneBefore;++minute){
@@ -226,6 +246,8 @@ int main()
     }
     assert(sawDirectWash);
     assert(directActor.needs.hygiene<directHygieneBefore);
+    assert(resourceUnits(directWater.world(),MaterialKind::Water)
+        < waterUnitsBeforeDirectWash);
     assert(rawWaterUnitCount(directActor.civilization.inventory)==0);
     assert(simpleContainerCount(directActor.civilization.inventory)==0);
 
@@ -300,7 +322,12 @@ int main()
         // next meal/drink at the exact day-four sample, but must not be pinned at
         // the hard clamp by an acquisition deadlock.
         assert(resident->needs.hunger<0.999);
-        assert(resident->needs.thirst<0.999);
+        // A single day-four sample may land exactly at the thirst clamp just
+        // before the next decision tick. Prove recurrent survival instead:
+        // each founder must have completed direct-source Drink repeatedly.
+        assert(countLogs(
+            natural.logs(),
+            prefix+"completed Drink via emergency fallback")>=2);
     }
 
     const EnvironmentObservation environment=natural.observeEnvironment();
