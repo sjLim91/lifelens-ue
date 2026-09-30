@@ -190,7 +190,13 @@ class ObserverStore {
       && this.snapshot.residents.some((resident) => resident.id === residentId)
       ? residentId
       : null;
-    if (next === this.snapshot.selectedResidentId && !this.snapshot.selectedHumanTraceId) return;
+    if (
+      next === this.snapshot.selectedResidentId
+      && !this.snapshot.selectedHumanTraceId
+      && !this.snapshot.focusedObservationId
+    ) {
+      return;
+    }
 
     this.snapshot = {
       ...this.snapshot,
