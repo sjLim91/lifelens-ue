@@ -1222,7 +1222,9 @@ void Simulation::beginPlan(Character& c,Runtime& r){
         for(const Goal candidate:{
             Goal::Eat,
             Goal::Drink,
-            Goal::UseToilet
+            Goal::UseToilet,
+            Goal::Sleep,
+            Goal::Wash
         }){
             const double need=needForGoal(c,candidate);
             if(need<urgentThreshold
@@ -1245,7 +1247,25 @@ void Simulation::beginPlan(Character& c,Runtime& r){
         urgentSurvivalProvisionDecisionAtPosition(world_,c,r.pos);
     const bool urgentProvisionRequired=
         urgentProvision.intent!=CivilizationIntent::None;
+    const double urgentProvisionNeed=
+        urgentProvision.material==MaterialKind::PlantFood
+            ? c.needs.hunger
+            : urgentProvision.material==MaterialKind::Water
+                ? provisionNeedForMaterial(c,MaterialKind::Water)
+                : -1.0;
+    const bool urgentSelfCareDominatesProvision=
+        urgentPhysicalGoal!=Goal::Idle
+        && (
+            urgentPhysicalGoal==Goal::UseToilet
+            || urgentPhysicalNeed>urgentProvisionNeed+0.05
+        );
+
+    // Missing food/water remains survival work, but it may not monopolize the
+    // resident forever. If an immediately usable self-care action is materially
+    // more urgent (or the bladder is already demanding relief), resolve that
+    // first and return to acquisition on the next planning boundary.
     if(planningAllowed && urgentProvisionRequired
+       && !urgentSelfCareDominatesProvision
        && tryCivilizationDecision(c,r)) return;
 
     // Survival needs that can be satisfied immediately pre-empt settlement
