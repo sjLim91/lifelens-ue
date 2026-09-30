@@ -1,3 +1,17 @@
+## 2026-09-30 BALANCE AUDIT ACTIVE — 장기 고착 원인 전수검사
+
+> 현재 기능 수정 기준은 main `0e409b53089739f737856ad508bfbdd99c80e8cb`. #539는 Core 회귀가 남은 실험 PR이므로 감사 기준선에서 제외한다.
+
+- Active branch: `audit/simulation-balance-20260930`
+- Draft PR: #540
+- 런타임 밸런스 값은 아직 변경하지 않는다. 현재값 목록화와 장기 계측이 먼저다.
+- `docs/SIMULATION_BALANCE_AUDIT.md`에 Need/행동효과/threshold/cadence/resource/cultivation/social/family 수치와 상호작용을 기록했다.
+- `ll_balance_audit` 계측기를 추가해 production NEW GAME를 동일 seed로 1/7/30/100/365/500/1000일 측정한다.
+- 100일 baseline에서 두 seed 모두 Sleep 완료 이벤트 0회, Toilet 계획 thrash, Social event 0~4회, Hygiene 장기 포화가 확인됐다.
+- KnowledgeTeaching은 매시간 별도 scheduler에서 현재 Physical plan을 clear할 수 있어 일부 주민 시간의 약 37~38%까지 점유하는 별도 starvation 위험이 확인됐다.
+- P0 수정 순서: action commitment/preemption → Need/action recovery budget → Social starvation → teaching scheduler → resource/cultivation economy.
+- 감사/계측 완료 전에 #540을 main에 병합하지 않는다.
+
 ## 2026-09-30 LATE CANONICAL CURRENT — RESIDENT AUTONOMY #536 INTEGRATED
 
 > This section supersedes the earlier 2026-09-30 DU-01 checkpoint below. Actual GitHub main/PR/Actions remain the highest-priority truth.
