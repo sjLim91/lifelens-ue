@@ -400,6 +400,12 @@ inline double maximumResidentNeed(const Character& self)
     });
 }
 
+inline constexpr double UrgentSurvivalProvisionThreshold = 0.74;
+inline constexpr double CriticalSurvivalPreemptThreshold = 0.90;
+inline constexpr int UrgentSurvivalKnownResourceRadiusGrid =
+    WorldChunkSpanGridCells * 3;
+
+
 // Ordinary civilization yields to urgent survival pressure. The one exception
 // is acquiring a missing provision required to satisfy that survival pressure:
 // if hunger/thirst is already critical and there is no carried PlantFood/Water,
@@ -414,49 +420,87 @@ inline CivilizationUtilityDecision urgentSurvivalProvisionDecisionAtPosition(
     const Character& self,
     GridPos authoritativePosition)
 {
-    constexpr double SurvivalProvisionThreshold = 0.74;
-
     const auto provisionDecision =
         [&](Goal goal, MaterialKind material, double need) {
             CivilizationUtilityDecision result;
-            if (need < SurvivalProvisionThreshold) return result;
+            if (need < UrgentSurvivalProvisionThreshold) return result;
             const int carried=material==MaterialKind::Water
                 ? portableWaterCount(self.civilization.inventory)
                 : self.civilization.inventory.count(
                     ItemKind::RawMaterial,material);
             if (carried>0) return result;
 
-            // A settlement reserve is useful only if residents actually use it.
-            // Prefer already-collected provision over another trip to nature.
+            // A settlement reserve is useful only if the resident can reach
+            // that settlement-local stock. Remote stock must never suppress
+            // local survival acquisition or create repeated impossible trips.
+            const StorageSite* nearestStorage=nullptr;
+            int nearestStorageDistance=SettlementServiceRadiusGrid+1;
+            int nearestStorageUnits=0;
             for (const StorageSite& storage:world.storageSites) {
+                if(!settlementStorageServesPosition(
+                        storage,authoritativePosition)){
+                    continue;
+                }
                 const int stored=material==MaterialKind::Water
                     ? portableWaterCount(storage.inventory)
                     : storage.inventory.count(
                         ItemKind::RawMaterial,material);
-                if(storage.id==0 || stored<=0) continue;
+                if(stored<=0) continue;
 
+                const int distance=manhattan(
+                    storage.pos,authoritativePosition);
+                if(nearestStorage==nullptr
+                   || distance<nearestStorageDistance
+                   || (distance==nearestStorageDistance
+                       && storage.id<nearestStorage->id)){
+                    nearestStorage=&storage;
+                    nearestStorageDistance=distance;
+                    nearestStorageUnits=stored;
+                }
+            }
+            if(nearestStorage!=nullptr){
                 result.intent=CivilizationIntent::Retrieve;
                 result.utility=socialClamp01(0.84+0.16*need);
-                result.storage=storage.id;
+                result.storage=nearestStorage->id;
                 result.material=material;
                 result.item=ItemKind::RawMaterial;
-                result.quantity=std::min(stored,2);
+                result.quantity=std::min(nearestStorageUnits,2);
                 return result;
             }
 
+            if(material==MaterialKind::Water){
+                // A known freshwater source is already a physical Drink
+                // affordance. Filling containers remains a stocking job.
+                return result;
+            }
+
+            // Known natural provision also stays local. Pick the nearest real
+            // node, not whichever node happened to be stored first globally.
+            const ResourceNode* nearestNode=nullptr;
+            int nearestNodeDistance=UrgentSurvivalKnownResourceRadiusGrid+1;
             for (const ResourceNode& node:world.resourceNodes) {
-                if(node.id==0 || node.quantity<=0 || node.material!=material) continue;
-
-                if(material==MaterialKind::Water){
-                    // A known freshwater source is already the fastest survival
-                    // affordance. Let the Physical Drink/Wash goal travel there
-                    // directly; filling containers is a non-urgent stocking job.
-                    return result;
+                if(node.id==0 || node.quantity<=0
+                   || node.material!=material){
+                    continue;
                 }
-
+                const GridPos nodePos=
+                    civilizationDecisionResourcePosition(world,node);
+                const int distance=std::max(
+                    std::abs(nodePos.x-authoritativePosition.x),
+                    std::abs(nodePos.y-authoritativePosition.y));
+                if(distance>UrgentSurvivalKnownResourceRadiusGrid) continue;
+                if(nearestNode==nullptr
+                   || distance<nearestNodeDistance
+                   || (distance==nearestNodeDistance
+                       && node.id<nearestNode->id)){
+                    nearestNode=&node;
+                    nearestNodeDistance=distance;
+                }
+            }
+            if(nearestNode!=nullptr){
                 result.intent=CivilizationIntent::Gather;
                 result.utility=socialClamp01(0.80+0.20*need);
-                result.resourceNode=node.id;
+                result.resourceNode=nearestNode->id;
                 result.material=material;
                 result.item=ItemKind::RawMaterial;
                 result.quantity=2+static_cast<int>(
