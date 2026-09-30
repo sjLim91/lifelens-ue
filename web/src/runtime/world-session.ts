@@ -1,5 +1,8 @@
 import { LifeLensCoreBridge } from './core-bridge';
-import { WORLD_GRID_CONTRACT } from './lifelens-contract';
+import {
+  OBSERVER_RUNTIME_CONTRACT,
+  WORLD_GRID_CONTRACT,
+} from './lifelens-contract';
 import type {
   CivilizationWorldPayload,
   DynamicEnvironment,
@@ -15,6 +18,7 @@ export interface WorldSessionSnapshot {
   overview: WorldOverview;
   residents: Resident[];
   terrain: TerrainWindow;
+  terrainStaticChanged: boolean;
   environment: DynamicEnvironment;
   socialEvents: RecentSocialEventsPayload;
   civilization: CivilizationWorldPayload;
@@ -31,6 +35,8 @@ export class WorldSession {
   private stableTerrain: TerrainWindow | null = null;
   private stableTerrainCenterKey: string | null = null;
   private recenterRequested = false;
+  private residentDetailRefreshCountdown = 0;
+  private residentDetailSnapshot: Resident[] = [];
   private worldActivityRefreshCountdown = 0;
   private worldActivityWindowKey: string | null = null;
   private civilizationSnapshot: CivilizationWorldPayload = {
@@ -59,6 +65,8 @@ export class WorldSession {
     this.stableTerrain = null;
     this.stableTerrainCenterKey = null;
     this.recenterRequested = true;
+    this.residentDetailRefreshCountdown = 0;
+    this.residentDetailSnapshot = [];
     this.worldActivityRefreshCountdown = 0;
     this.worldActivityWindowKey = null;
     this.civilizationSnapshot = {
@@ -97,7 +105,75 @@ export class WorldSession {
 
   refresh(): WorldSessionSnapshot {
     const overview = this.core.worldOverview();
-    const residentPayload = this.core.residents();
+    let residentRuntimePayload = this.core.residentRuntime();
+    if (residentRuntimePayload.available === false) {
+      residentRuntimePayload = this.core.residents();
+    }
+
+    const runtimeResidents = residentRuntimePayload.residents ?? [];
+    const detailIds = new Set(
+      this.residentDetailSnapshot.map((resident) => resident.id),
+    );
+    const runtimeIds = new Set(
+      runtimeResidents.map((resident) => resident.id),
+    );
+    const identityChanged = runtimeResidents.some(
+      (resident) => !detailIds.has(resident.id),
+    ) || this.residentDetailSnapshot.some(
+      (resident) => !runtimeIds.has(resident.id),
+    );
+
+    if (
+      residentRuntimePayload.available !== false
+      && (
+        this.residentDetailSnapshot.length === 0
+        || this.residentDetailRefreshCountdown <= 0
+        || identityChanged
+      )
+    ) {
+      const detailPayload = this.core.residents();
+      if (
+        detailPayload.available !== false
+        && Array.isArray(detailPayload.residents)
+      ) {
+        this.residentDetailSnapshot = detailPayload.residents;
+        this.residentDetailRefreshCountdown = Math.max(
+          0,
+          OBSERVER_RUNTIME_CONTRACT.residentDetailRefreshEverySnapshots - 1,
+        );
+      }
+    } else if (this.residentDetailRefreshCountdown > 0) {
+      this.residentDetailRefreshCountdown -= 1;
+    }
+
+    const detailsById = new Map(
+      this.residentDetailSnapshot.map(
+        (resident) => [resident.id, resident] as const,
+      ),
+    );
+    const mergedResidents = runtimeResidents.map((runtimeResident) => {
+      const detail = detailsById.get(runtimeResident.id);
+      if (!detail) return runtimeResident;
+      return {
+        ...detail,
+        ...runtimeResident,
+        emotion: {
+          ...detail.emotion,
+          ...runtimeResident.emotion,
+        },
+        needs: {
+          ...detail.needs,
+          ...runtimeResident.needs,
+        },
+        presentation:
+          runtimeResident.presentation ?? detail.presentation,
+      };
+    });
+    const residentPayload = {
+      available: residentRuntimePayload.available,
+      residents: mergedResidents,
+    };
+
     const expectedLiving = Math.max(
       0,
       Number(overview.livingResidents) || 0,
@@ -141,32 +217,65 @@ export class WorldSession {
     }, 8);
 
     const queryRadius = Math.max(8, Math.min(16, residentRadius + 2));
-    const candidate = this.core.terrainWindow(
-      this.centerX,
-      this.centerY,
-      queryRadius,
-    );
-    const centerKey = `${this.centerX}:${this.centerY}`;
-    const candidateValid = candidate.available === true
-      && Array.isArray(candidate.chunks)
-      && candidate.chunks.length > 0;
-
+    const centerKey =
+      `${this.centerX}:${this.centerY}:${queryRadius}`;
+    let terrainStaticChanged = false;
     let terrain: TerrainWindow;
-    if (candidateValid) {
-      terrain = candidate;
-      this.stableTerrain = candidate;
-      this.stableTerrainCenterKey = centerKey;
-    } else if (
-      this.stableTerrain
-      && this.stableTerrainCenterKey === centerKey
+
+    if (
+      this.stableTerrain === null
+      || this.stableTerrainCenterKey !== centerKey
     ) {
-      terrain = this.stableTerrain;
+      const candidate = this.core.terrainWindow(
+        this.centerX,
+        this.centerY,
+        queryRadius,
+      );
+      const candidateValid = candidate.available === true
+        && Array.isArray(candidate.chunks)
+        && candidate.chunks.length > 0;
+
+      if (candidateValid) {
+        this.stableTerrain = candidate;
+        this.stableTerrainCenterKey = centerKey;
+        terrainStaticChanged = true;
+        terrain = candidate;
+      } else if (
+        this.stableTerrain
+        && this.stableTerrainCenterKey === centerKey
+      ) {
+        terrain = this.stableTerrain;
+      } else {
+        terrain = {
+          ...candidate,
+          available: false,
+          chunks: Array.isArray(candidate.chunks)
+            ? candidate.chunks
+            : [],
+        };
+      }
     } else {
-      terrain = {
-        ...candidate,
-        available: false,
-        chunks: Array.isArray(candidate.chunks) ? candidate.chunks : [],
-      };
+      terrain = this.stableTerrain;
+    }
+
+    // Terrain/elevation/ecology is deterministic for a fixed window. Only the
+    // small human-trace tail is dynamic, so never regenerate hundreds of
+    // procedural chunks on every 500 ms observer refresh.
+    if (!terrainStaticChanged && terrain.available === true) {
+      const traces = this.core.humanTracesWindow(
+        this.centerX,
+        this.centerY,
+        queryRadius,
+      );
+      if (
+        traces.available !== false
+        && traces.humanTraces
+      ) {
+        terrain = {
+          ...terrain,
+          humanTraces: traces.humanTraces,
+        };
+      }
     }
 
     const environment = this.core.dynamicEnvironment(
@@ -194,7 +303,10 @@ export class WorldSession {
       );
       this.worldObjectsSnapshot = this.core.worldObjects();
       this.worldActivityWindowKey = worldActivityWindowKey;
-      this.worldActivityRefreshCountdown = 3;
+      this.worldActivityRefreshCountdown = Math.max(
+        0,
+        OBSERVER_RUNTIME_CONTRACT.worldActivityRefreshEverySnapshots - 1,
+      );
     } else {
       this.worldActivityRefreshCountdown -= 1;
     }
@@ -203,6 +315,7 @@ export class WorldSession {
       overview,
       residents,
       terrain,
+      terrainStaticChanged,
       environment,
       socialEvents,
       civilization: this.civilizationSnapshot,
