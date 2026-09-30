@@ -40,14 +40,15 @@ for token in (
         f"missing web resident smoothing contract: {token}"
     )
 
-# Simulation-time rebasing must affect visible motion too. The former 4x
-# pace is the new 1x, while higher visual animation playback is capped so
-# fast-forward remains observable instead of becoming an unreadable strobe.
+# Simulation-time rebasing must affect visible motion at every selectable
+# speed. The former 4x pace is the new 1x, and 4x/16x must not fall back to a
+# separate visual cap that makes actions appear slower than simulation time.
 for token in (
     "SIMULATION_BASELINE_SPEED_MULTIPLIER = 4 as const",
     "/ SIMULATION_BASELINE_SPEED_MULTIPLIER",
+    "MAX_SIMULATION_SPEED_MULTIPLIER = Math.max(",
     "motionTimeScaleAt1x: SIMULATION_BASELINE_SPEED_MULTIPLIER",
-    "maxMotionTimeScale: SIMULATION_BASELINE_SPEED_MULTIPLIER * 2",
+    "* MAX_SIMULATION_SPEED_MULTIPLIER",
     "residentPresentationMotionTimeScale",
 ):
     assert token in contract, f"missing rebased resident motion contract: {token}"
