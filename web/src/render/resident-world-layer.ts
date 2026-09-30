@@ -22,6 +22,7 @@ import {
 } from './resident-appearance';
 import { residentActionCue } from './resident-action-context';
 import {
+  residentSleepPostureActive,
   resolveResidentSemanticMotion,
   type ResidentSemanticMotion,
 } from './resident-semantic-motion';
@@ -65,6 +66,7 @@ interface ResidentSocialConnector {
 
 interface ResidentActor {
   root: THREE.Group;
+  visual: THREE.Group;
   mixer: THREE.AnimationMixer;
   idle?: THREE.AnimationAction;
   walk?: THREE.AnimationAction;
@@ -495,6 +497,11 @@ export class ResidentWorldLayer {
       }
       const presentationMoving =
         moving || actor.walkGraceRemainingSeconds > 0;
+      this.updateSleepPosture(
+        actor,
+        presentationMoving,
+        motionDt,
+      );
       this.syncWalkPlaybackRate(actor, motionTimeScale);
       this.setAction(actor, presentationMoving);
       actor.mixer.update(motionDt);
@@ -877,6 +884,7 @@ export class ResidentWorldLayer {
 
     const actor: ResidentActor = {
       root,
+      visual,
       mixer,
       idle,
       walk,
@@ -992,6 +1000,34 @@ export class ResidentWorldLayer {
       Math.atan2(dx, dz)
       + RESIDENT_PRESENTATION_CONTRACT.modelForwardYawOffsetRadians
     );
+  }
+
+  private updateSleepPosture(
+    actor: ResidentActor,
+    moving: boolean,
+    motionDt: number,
+  ): void {
+    const sleeping = residentSleepPostureActive(
+      actor.presentation,
+      moving,
+    );
+    const targetPitch = sleeping
+      ? RESIDENT_PRESENTATION_CONTRACT.sleepPosePitchRadians
+      : 0;
+    const targetRoll = sleeping
+      ? RESIDENT_PRESENTATION_CONTRACT.sleepPoseRollRadians
+      : 0;
+    const blend = 1 - Math.exp(
+      -RESIDENT_PRESENTATION_CONTRACT.sleepPoseResponsivenessPerSecond
+        * Math.max(0, motionDt),
+    );
+
+    actor.visual.rotation.x += (
+      targetPitch - actor.visual.rotation.x
+    ) * blend;
+    actor.visual.rotation.z += (
+      targetRoll - actor.visual.rotation.z
+    ) * blend;
   }
 
   private syncWalkPlaybackRate(
