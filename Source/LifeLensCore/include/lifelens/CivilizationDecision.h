@@ -14,6 +14,7 @@
 #include "PrimitiveSanitation.h"
 #include "PrimitiveSmeltingProgression.h"
 #include "PrimitiveStorageProgression.h"
+#include "ProvisionPreference.h"
 #include "ResourceExploration.h"
 #include "SettlementProgression.h"
 #include "World.h"
@@ -1487,6 +1488,22 @@ inline CivilizationUtilityDecision bestPrimitiveFurnaceDecision(
     return CivilizationUtilityDecision{};
 }
 
+inline double cultivationSeedCommitmentClaim01(
+    const Character& self,
+    const CultivationDemandObservation& demand,
+    double stewardship,
+    double experience,
+    double preference)
+{
+    const double hunger=clampCivilization01(self.needs.hunger);
+    return clampCivilization01(
+        0.38*stewardship
+        +0.24*demand.foodPressure
+        +0.16*experience
+        +0.12*preference
+        +0.10*(1.0-hunger));
+}
+
 inline CivilizationUtilityDecision bestCultivationDecision(
     const World& world,
     const Character& self,
@@ -1553,6 +1570,23 @@ inline CivilizationUtilityDecision bestCultivationDecision(
         // make two residents choose differently under identical affordances.
         if(!facility.cropPlanted){
             if(!hasDiggingStick || seedUnits<=0) continue;
+
+            // PlantFood is both edible provision and current seed authority.
+            // Spending the final locally accessible unit is therefore an
+            // allocation decision, not an automatic "plot + seed => Plant".
+            // Compare the resident's near-term retention claim with their
+            // future cultivation commitment. A tie keeps the reversible option
+            // (food) rather than irreversibly consuming it as seed.
+            const int accessibleFoodReserve=
+                seedUnits+storageCountForMaterialNear(
+                    world,MaterialKind::PlantFood,authoritativePosition);
+            if(accessibleFoodReserve<=1){
+                const double retentionClaim=plantFoodRetentionClaim01(self);
+                const double seedCommitment=cultivationSeedCommitmentClaim01(
+                    self,demand,stewardship,experience,preference);
+                if(retentionClaim>=seedCommitment) continue;
+            }
+
             candidate.facilityAction=FacilityBuildAction::Plant;
             candidate.material=MaterialKind::PlantFood;
             candidate.quantity=1;
