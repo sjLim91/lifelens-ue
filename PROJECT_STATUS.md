@@ -2,7 +2,7 @@
 
 Date: 2026-09-30  
 Active architecture: **LifeLensCore -> WASM -> Web Observer**  
-Current main checkpoint: `b323ff60479210409558aa16923eb6e74532440a` (#517)
+Current main checkpoint: `ec8242068af9aa8be4ca328ad4838e1e9f090f9a` (#519)
 
 ## Runtime decision
 
@@ -70,6 +70,11 @@ PR #497, which only repaired the Unreal external physical sleep path, was closed
   without auto-moving the camera when events merely arrive. Facility/resource/
   sanitation events use their authoritative grid positions; physical actions
   use the Core presentation target grid where available.
+- #519 live social behavior is differentiated directly in the world using only
+  authoritative presentation state. Approach/Comfort/Repair/Avoid, teaching and
+  parenting now use natural Korean action cues with real target/action context;
+  Approach/Comfort/Repair, teaching and parenting connectors have distinct
+  presentation-contract styling. No new social outcome or animation is inferred.
 
 ## Validation target after Unreal removal
 
