@@ -287,6 +287,22 @@ inline int residentCommittedMaterialDemand(
     return demand;
 }
 
+inline int residentUncoveredCommittedMaterialDemand(
+    const World& world,
+    const Character& resident,
+    MaterialKind material)
+{
+    const int held=material==MaterialKind::Water
+        ? portableWaterCount(resident.civilization.inventory)
+        : resident.civilization.inventory.count(
+            ItemKind::RawMaterial,material);
+    return std::max(
+        0,
+        residentCommittedMaterialDemand(world,resident,material)
+            -held
+            -storageCountForMaterial(world,material));
+}
+
 inline const TechniqueKnowledge* civilizationKnowledgeRecord(const KnowledgeState& knowledge,TechniqueId technique)
 {
     for(const auto& record:knowledge.all()) if(record.technique==technique) return &record;
@@ -433,7 +449,8 @@ inline double civilizationResourceExplorationPressure(
     const int repairMissing=
         settlementRepairMaterialDemand(world,material);
     const int uncoveredCommitted=
-        settlementUncoveredMaterialDemand(world,material);
+        residentUncoveredCommittedMaterialDemand(
+            world,self,material);
 
     const bool provision=
         material==MaterialKind::Water
@@ -569,7 +586,8 @@ inline CivilizationUtilityDecision bestGatherDecisionAtPosition(
         const int repairMissing=
             settlementRepairMaterialDemand(world,node.material);
         const int materialDemand=
-            settlementUncoveredMaterialDemand(world,node.material);
+            residentUncoveredCommittedMaterialDemand(
+                world,self,node.material);
         const bool provision=
             node.material==MaterialKind::Water
             || node.material==MaterialKind::PlantFood;
@@ -1670,14 +1688,15 @@ inline CivilizationUtilityDecision bestRetrieveDecisionAtPosition(
                 residentCommittedMaterialDemand(world,self,material);
             if(residentDemand<=0) continue;
 
-            const int carried=
-                settlementCarriedMaterialCount(world,material);
-            const int neededFromStorage=std::max(
-                0,residentDemand-carried);
-            if(neededFromStorage<=0) continue;
-
             const int held=self.civilization.inventory.count(
                 ItemKind::RawMaterial,material);
+            // Another resident's inventory is not shared authority. Until that
+            // resident physically delivers or stores the material, only this
+            // worker's carried stock and the real storage inventory are usable.
+            const int neededFromStorage=std::max(
+                0,residentDemand-held);
+            if(neededFromStorage<=0) continue;
+
             const int requested=std::min({
                 stack.quantity,
                 neededFromStorage,
