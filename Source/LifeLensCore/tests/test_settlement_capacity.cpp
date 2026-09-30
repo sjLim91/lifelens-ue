@@ -297,13 +297,15 @@ int main()
         }
     }
     assert(sawConcurrentSleepTargets);
-    assert(!sameGridPos(firstTarget,secondTarget));
+    assert(
+        firstTarget.x!=secondTarget.x
+        || firstTarget.y!=secondTarget.y);
     const bool firstKnownBed=
-        sameGridPos(firstTarget,firstBedPos)
-        || sameGridPos(firstTarget,secondBedPos);
+        (firstTarget.x==firstBedPos.x && firstTarget.y==firstBedPos.y)
+        || (firstTarget.x==secondBedPos.x && firstTarget.y==secondBedPos.y);
     const bool secondKnownBed=
-        sameGridPos(secondTarget,firstBedPos)
-        || sameGridPos(secondTarget,secondBedPos);
+        (secondTarget.x==firstBedPos.x && secondTarget.y==firstBedPos.y)
+        || (secondTarget.x==secondBedPos.x && secondTarget.y==secondBedPos.y);
     assert(firstKnownBed && secondKnownBed);
 
     // Sleep is continuous time, not an atomic "rest completed" effect. A tired
