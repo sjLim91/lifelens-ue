@@ -96,7 +96,7 @@ export class HumanTraceLayer {
 
   setTerrain(terrain: TerrainWindow): void {
     this.terrain = terrain;
-    this.staticTerrainSignature = JSON.stringify([
+    const nextStaticSignature = JSON.stringify([
       terrain.worldSeed,
       terrain.centerChunkX,
       terrain.centerChunkY,
@@ -106,7 +106,16 @@ export class HumanTraceLayer {
         chunk.elevation01,
       ]),
     ]);
-    this.dynamicTraceSignature = this.traceSignature(terrain);
+    const previousStaticSignature = this.staticTerrainSignature;
+    this.staticTerrainSignature = nextStaticSignature;
+    const nextDynamicSignature = this.traceSignature(terrain);
+    if (
+      nextStaticSignature === previousStaticSignature
+      && nextDynamicSignature === this.dynamicTraceSignature
+    ) {
+      return;
+    }
+    this.dynamicTraceSignature = nextDynamicSignature;
     this.rebuildGeometry(terrain);
   }
 
