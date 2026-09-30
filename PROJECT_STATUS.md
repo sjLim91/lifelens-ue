@@ -2,15 +2,15 @@
 
 Date: 2026-09-30  
 Active architecture: **LifeLensCore -> WASM -> Web Observer**  
-Validated main entering the current autonomy unit: `746a488a776fec77f10e1b97bb3b9b0fbee726e8`
+Current validated main: `9aef4a15d6f63bc3cad7320050e3f8279d814bcd` (#534)
 
-## Current autonomy follow-through — food use + resident differentiation
+## Current autonomy follow-through — resident strategy differentiation
 
-- `746a488` completed the first D-026 development-choice split: cultivation/construction/crafting utility now reacts to resident disposition and lived technique experience instead of collapsing identical affordances into identical choices.
-- Current work continues D-023 into physical self-care: non-critical Eat timing must differ by resident disposition and scarce carried-food reserve, while urgent/critical survival preemption remains authoritative.
-- Food is never created by a SmartObject or Web presentation. Eat still requires and consumes real carried PlantFood.
-- Validation target: same moderate Hunger + same final food unit can produce different choices for different residents; the same reserve-oriented resident must still Eat when Hunger becomes survival-critical.
-- No open PRs existed when this unit started; branch was cut directly from validated `746a488`.
+- `746a488` / D-026 completed the first development-choice split: cultivation/construction/crafting utility reacts to resident disposition and lived technique experience instead of collapsing identical affordances into identical choices.
+- `9aef4a1` / #534 / D-027 completed non-critical Eat autonomy. The same moderate Hunger and same carried PlantFood can now produce different Eat timing from impulsiveness/patience/conscientiousness/orderliness, while actual food freshness raises consumption value as spoilage approaches.
+- Urgent/critical Hunger keeps authoritative survival priority. Eat still requires and consumes real carried PlantFood; SmartObjects/Web never fabricate provisions.
+- #534 post-merge Core Tests, deterministic harness, Preflight, Web WASM, Runtime Release, Pages Preview and External Preview Probe all passed.
+- Next autonomy target is shared-provision allocation: when one authoritative PlantFood stock can satisfy immediate eating, cultivation seed use or storage, those claims must compete without scripted role assignment or browser-authored outcomes.
 
 ## Active development unit — DU-01 Living Settlement
 
