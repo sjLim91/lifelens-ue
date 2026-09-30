@@ -678,7 +678,9 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
     const DugSanitationPitOpportunity pitOpportunity=
         evaluateDugSanitationPitOpportunity(
             self,world.environmentalResidues,world.primitiveSanitationSites);
-    const PrimitiveStorageNeedObservation storageNeed=observePrimitiveStorageNeed(world,self);
+    const PrimitiveStorageNeedObservation storageNeed=
+        observePrimitiveStorageNeed(
+            world,self,authoritativePosition,population);
     const bool smeltingOpportunity=copperSmeltingOpportunityAvailable(world,self);
     const bool cultivationOpportunity=cultivationExperimentOpportunityAvailable(
         world,self,authoritativePosition,population);
@@ -2015,7 +2017,9 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
                         self,world.environmentalResidues,world.primitiveSanitationSites);
                 context.sanitationPitCandidateAvailable=opportunity.candidateAvailable;
             }else if(decision.experiment==ExperimentKind::OrganizeStockpile){
-                context.storageProblemRecognized=observePrimitiveStorageNeed(world,self).recognized;
+                context.storageProblemRecognized=
+                    observePrimitiveStorageNeed(
+                        world,self,authoritativePosition,population).recognized;
             }else if(decision.experiment==ExperimentKind::SmeltCopperOre){
                 context.smeltingOpportunityAvailable=copperSmeltingOpportunityAvailable(world,self);
             }else if(decision.experiment==ExperimentKind::CultivatePlantFood){
