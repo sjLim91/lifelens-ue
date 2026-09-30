@@ -558,3 +558,37 @@ Hygiene를 현행 -0.072 Wash 효과로 실제 유지하려 하면:
 4. freshwater regeneration / storage / infrastructure efficiency
 
 "행동을 완료하게 만들기"와 "그 행동을 감당할 수 있는 자원경제"를 분리해서 출시하면 안 된다.
+
+
+## 21. Headless sanitation 효과 단절 — 발전시설이 실제 생활비용을 줄이지 못함
+
+`PrimitiveSanitation.h`에는 이미 시설 단계별 효과가 정의돼 있다.
+
+- DesignatedArea: bladder -0.13/tick, hygiene +0.012/tick, residue intensity 0.42, radius 3, hygiene burden 0.025
+- DugPit: bladder -0.14/tick, hygiene +0.004/tick, residue intensity 0.16, radius 1, hygiene burden 0.008
+
+그러나 autonomous/headless `Simulation::advanceAction()`의 `Goal::UseToilet + EmergencyUse` 경로는 현재:
+
+- 항상 `emergencyUseEffectPerTick(UseToilet)` = bladder -0.13 / hygiene +0.012 사용
+- 완료 후 항상 waste intensity 0.42 / radius 3
+- 완료 후 항상 hygiene +0.025
+
+를 적용한다.
+
+즉 `sanitationUseTarget()`으로 DesignatedArea/DugPit 위치를 찾아 실제 그 시설로 이동하더라도 **물리 효과는 시설 종류를 무시하고 야외 fallback과 동일**하다.
+
+이 때문에:
+1. sanitation 기술 발전이 장기 Hygiene budget을 줄이지 못하고
+2. 주민이 pit를 만들어도 화면/데이터상 생활수준 개선이 체감되지 않으며
+3. Hygiene가 계속 1.0 근처에 붙어 Wash/Water pressure를 영구적으로 발생시키는 데 기여한다.
+
+P0 Hygiene/Sanitation 수정에서는 headless runtime도 authoritative `PrimitiveSanitationSite.kind`를 읽어:
+- `primitiveSanitationUseEffectPerTick(kind)`
+- `primitiveSanitationResidueIntensity(kind)`
+- `primitiveSanitationResidueRadiusTiles(kind)`
+- `primitiveSanitationHygieneBurden(kind)`
+- `recordPrimitiveSanitationSiteUse(...)`
+
+를 동일하게 적용해야 한다.
+
+외부 physical execution과 headless execution의 결과 계약도 동일해야 한다.
