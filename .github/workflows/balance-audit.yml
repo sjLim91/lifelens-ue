@@ -45,6 +45,10 @@ jobs:
               ./build/ll_balance_audit --seed "$seed" --days "$days"
             done
           done
+          for days in 365 500 1000; do
+            echo "===== seed=874213954 days=$days ====="
+            ./build/ll_balance_audit --seed 874213954 --days "$days"
+          done
 
       - name: 수동 장기 계측
         if: github.event_name == 'workflow_dispatch'
