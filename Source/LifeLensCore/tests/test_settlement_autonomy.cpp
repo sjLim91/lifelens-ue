@@ -342,6 +342,216 @@ int main()
         terrainSiteWater,
         terrainSite.pos));
 
-    std::cout << "Stage C-S4 lived-use settlement form + terrain-aware clustering passed\n";
+    // Settlement-economy logistics: a shared stockpile must be able to feed
+    // construction and restoration. Stored material is not "gone" from the
+    // economy, and it must not trigger redundant gathering while a capable
+    // resident can retrieve and deliver it.
+    Simulation logisticsSimulation(220931);
+    logisticsSimulation.setupNewGame();
+    World& logisticsWorld=logisticsSimulation.world();
+    logisticsWorld.facilities.clear();
+    logisticsWorld.storageSites.clear();
+    Character& logisticsWorker=logisticsWorld.characters.front();
+    logisticsWorker.needs={0.10,0.10,0.58,0.10,0.10};
+    logisticsWorker.civilization.inventory=Inventory{};
+
+    const GridPos logisticsAnchor=
+        logisticsWorld.initialStartRegionCenterGrid();
+    StorageSite sharedStorage;
+    sharedStorage.id=1;
+    sharedStorage.pos={logisticsAnchor.x+2,logisticsAnchor.y};
+    logisticsWorld.storageSites.push_back(sharedStorage);
+
+    ConstructedFacility storageFacility=makeFacilityConstructionSite(
+        1,
+        FacilityKind::PrimitiveStorage,
+        logisticsWorld.storageSites.front().pos,
+        logisticsWorker.id,
+        logisticsWorld.minute);
+    CHECK(storageFacility.id!=0);
+    for(auto& requirement:storageFacility.requirements){
+        requirement.delivered=requirement.required;
+    }
+    storageFacility.constructionWork=storageFacility.requiredWork;
+    CHECK(activateConstructedFacility(
+        storageFacility,
+        logisticsWorld.storageSites.front().id,
+        logisticsWorld.minute));
+    logisticsWorld.facilities.push_back(storageFacility);
+
+    const SettlementFacilitySiteOpportunity logisticsBedSite=
+        chooseSettlementFacilitySite(
+            logisticsWorld,
+            logisticsWorker.id,
+            FacilityKind::SleepingPlace,
+            logisticsAnchor);
+    CHECK(logisticsBedSite.available);
+    ConstructedFacility* logisticsBed=
+        establishSettlementFacilityProject(
+            logisticsWorld,
+            logisticsWorker.id,
+            FacilityKind::SleepingPlace,
+            logisticsBedSite.pos);
+    CHECK(logisticsBed!=nullptr);
+
+    // Put the exact committed construction package into the shared store.
+    // Uncovered demand must become zero even though the worker carries none.
+    for(const auto& requirement:logisticsBed->requirements){
+        const int missing=facilityMissingMaterial(
+            *logisticsBed,requirement.material);
+        CHECK(missing>0);
+        logisticsWorld.storageSites.front().inventory.add({
+            ItemKind::RawMaterial,
+            requirement.material,
+            missing,
+            0.6,
+            1.0});
+        CHECK(settlementUncoveredMaterialDemand(
+            logisticsWorld,requirement.material)==0);
+    }
+
+    // Repeatedly withdraw only what the live project still needs, then deliver
+    // it at the actual construction site.
+    int logisticsTransfers=0;
+    while(!facilityMaterialsComplete(*logisticsBed)
+          && logisticsTransfers<16){
+        const CivilizationUtilityDecision retrieve=
+            bestRetrieveDecisionAtPosition(
+                logisticsWorld,
+                logisticsWorker,
+                logisticsWorld.storageSites.front().pos);
+        CHECK(retrieve.intent==CivilizationIntent::Retrieve);
+        CHECK(retrieve.storage==logisticsWorld.storageSites.front().id);
+        CHECK(retrieve.material!=MaterialKind::Unknown);
+        CHECK(residentCommittedMaterialDemand(
+            logisticsWorld,
+            logisticsWorker,
+            retrieve.material)>0);
+
+        const CivilizationExecutionResult retrieved=
+            executeCivilizationDecisionAtPosition(
+                logisticsWorld,
+                logisticsWorker,
+                retrieve,
+                logisticsWorld.storageSites.front().pos);
+        CHECK(retrieved.executed && retrieved.success);
+
+        const CivilizationUtilityDecision delivery=
+            bestSettlementFoundationDecision(
+                logisticsWorld,
+                logisticsWorker,
+                logisticsBed->pos);
+        CHECK(delivery.intent==CivilizationIntent::Craft);
+        CHECK(delivery.facility==logisticsBed->id);
+        CHECK(delivery.facilityAction==FacilityBuildAction::DeliverMaterial);
+        CHECK(delivery.material==retrieve.material);
+
+        const CivilizationExecutionResult delivered=
+            executeCivilizationDecisionAtPosition(
+                logisticsWorld,
+                logisticsWorker,
+                delivery,
+                logisticsBed->pos);
+        CHECK(delivered.executed && delivered.success);
+        ++logisticsTransfers;
+        logisticsBed=findCivilizationFacility(
+            logisticsWorld,logisticsBed->id);
+        CHECK(logisticsBed!=nullptr);
+    }
+    CHECK(logisticsTransfers>0);
+    CHECK(facilityMaterialsComplete(*logisticsBed));
+
+    int logisticsWorkActions=0;
+    while(logisticsBed->state!=FacilityState::Operational
+          && logisticsWorkActions<16){
+        const CivilizationUtilityDecision work=
+            bestSettlementFoundationDecision(
+                logisticsWorld,
+                logisticsWorker,
+                logisticsBed->pos);
+        CHECK(work.facility==logisticsBed->id);
+        CHECK(work.facilityAction==FacilityBuildAction::Work);
+        const CivilizationExecutionResult worked=
+            executeCivilizationDecisionAtPosition(
+                logisticsWorld,
+                logisticsWorker,
+                work,
+                logisticsBed->pos);
+        CHECK(worked.executed && worked.success);
+        ++logisticsWorkActions;
+        logisticsBed=findCivilizationFacility(
+            logisticsWorld,logisticsBed->id);
+        CHECK(logisticsBed!=nullptr);
+    }
+    CHECK(logisticsBed->state==FacilityState::Operational);
+
+    // Restoration uses the same shared logistics path. A ruined bed should
+    // consume its cheaper restoration package from storage before any new bed
+    // can be planned.
+    CHECK(ruinConstructedFacility(*logisticsBed));
+    logisticsWorker.civilization.inventory=Inventory{};
+    const auto restoreRequirements=
+        facilityRestorationRequirements(FacilityKind::SleepingPlace);
+    CHECK(!restoreRequirements.empty());
+    for(const auto& requirement:restoreRequirements){
+        logisticsWorld.storageSites.front().inventory.add({
+            ItemKind::RawMaterial,
+            requirement.material,
+            requirement.required,
+            0.6,
+            1.0});
+        CHECK(settlementUncoveredMaterialDemand(
+            logisticsWorld,requirement.material)==0);
+    }
+
+    int restorationTransfers=0;
+    while(restorationTransfers<16){
+        bool hasAll=true;
+        for(const auto& requirement:restoreRequirements){
+            if(logisticsWorker.civilization.inventory.count(
+                ItemKind::RawMaterial,
+                requirement.material)<requirement.required){
+                hasAll=false;
+                break;
+            }
+        }
+        if(hasAll) break;
+
+        const CivilizationUtilityDecision retrieve=
+            bestRetrieveDecisionAtPosition(
+                logisticsWorld,
+                logisticsWorker,
+                logisticsWorld.storageSites.front().pos);
+        CHECK(retrieve.intent==CivilizationIntent::Retrieve);
+        CHECK(retrieve.storage==logisticsWorld.storageSites.front().id);
+        const CivilizationExecutionResult retrieved=
+            executeCivilizationDecisionAtPosition(
+                logisticsWorld,
+                logisticsWorker,
+                retrieve,
+                logisticsWorld.storageSites.front().pos);
+        CHECK(retrieved.executed && retrieved.success);
+        ++restorationTransfers;
+    }
+    CHECK(restorationTransfers>0);
+
+    const CivilizationUtilityDecision restore=
+        bestSettlementFoundationDecision(
+            logisticsWorld,
+            logisticsWorker,
+            logisticsBed->pos);
+    CHECK(restore.intent==CivilizationIntent::Craft);
+    CHECK(restore.facility==logisticsBed->id);
+    CHECK(restore.facilityAction==FacilityBuildAction::Repair);
+    const CivilizationExecutionResult restoredBed=
+        executeCivilizationDecisionAtPosition(
+            logisticsWorld,
+            logisticsWorker,
+            restore,
+            logisticsBed->pos);
+    CHECK(restoredBed.executed && restoredBed.success);
+    CHECK(logisticsBed->state==FacilityState::Operational);
+
+    std::cout << "Stage C-S5 shared settlement logistics + lived-use settlement form passed\n";
     return 0;
 }
