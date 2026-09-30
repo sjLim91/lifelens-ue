@@ -106,8 +106,8 @@ test('resident motion clock follows the single global simulation-speed baseline'
   );
   assert.equal(residentPresentationMotionTimeScale(0), 0);
   assert.equal(residentPresentationMotionTimeScale(1), baseline);
-  assert.equal(residentPresentationMotionTimeScale(4), baseline * 2);
-  assert.equal(residentPresentationMotionTimeScale(16), baseline * 2);
+  assert.equal(residentPresentationMotionTimeScale(4), baseline * 4);
+  assert.equal(residentPresentationMotionTimeScale(16), baseline * 16);
 });
 
 test('close/low camera stays above elevated ground and frames its actual height', () => withScene(scene => {
