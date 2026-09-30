@@ -251,6 +251,10 @@ int main()
     gatherDecision.material = MaterialKind::Water;
     gatherDecision.quantity = 1;
 
+    actor.civilization.inventory.add({
+        ItemKind::SimpleContainer, MaterialKind::Clay, 1, 0.5, 1.0});
+    CHECK(emptySimpleContainerCount(actor.civilization.inventory) >= 1);
+
     const int waterBeforeGather = actor.civilization.inventory.count(
         ItemKind::RawMaterial, MaterialKind::Water);
     const int nodeBeforeGather = gatherNode->quantity;
