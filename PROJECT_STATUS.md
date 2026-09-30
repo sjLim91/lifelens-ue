@@ -2,7 +2,7 @@
 
 Date: 2026-09-30  
 Active architecture: **LifeLensCore -> WASM -> Web Observer**  
-Current main checkpoint: `28585856302918b1a062b5f6d6d0229d846b430c` (#513)
+Current main checkpoint: `57234f611cd369d43cb575a72fb8ba88b4e6f45d` (#515)
 
 ## Runtime decision
 
@@ -60,6 +60,10 @@ PR #497, which only repaired the Unreal external physical sleep path, was closed
   arrival, center the feet-pivoted model around the sleep point, clear the
   terrain/sleeping-place surface, and sample sloped outdoor ground to prevent
   repeated bobbing or burial.
+- #515 exact social outcomes can show the actual directional relationship
+  change produced by Core (recipient -> actor), such as trust/bond/conflict
+  percentage-point deltas. If multiple same-direction events are batched in one
+  heavy refresh window, per-event deltas are omitted instead of fabricated.
 
 ## Validation target after Unreal removal
 
