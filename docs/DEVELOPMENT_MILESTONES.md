@@ -51,6 +51,16 @@
 
 ---
 
+# 2A. Active milestone packaging — DU-01 Living Settlement
+
+Canonical unit: `docs/DU01_LIVING_SETTLEMENT.md`.
+
+DU-01 deliberately packages the next settlement-quality pass across Core authority, Web observability and regressions rather than creating many micro-PRs. The product target is not merely more facility code; it is an observable causal loop where lived pressure selects reuse/repair/new construction, real local materials move through storage and residents, spatial work completes the change, and the resulting facility is actually used.
+
+Development uses targeted tests per changed contract and one full integration gate before merge. Documentation updates are part of the same unit.
+
+---
+
 # 3. Current Baseline / Completed Foundations
 
 Completed major authority/correctness chain:

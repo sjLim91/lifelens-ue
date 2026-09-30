@@ -54,6 +54,17 @@ function clamp01(value: unknown): number {
 function percent(value: unknown): string {
   return `${Math.round(clamp01(value) * 100)}%`;
 }
+function koreanObjectParticle(text: string): string {
+  if (!text) return '';
+  const lastCode = text.charCodeAt(text.length - 1);
+  const hasFinalConsonant = (
+    lastCode >= 0xac00
+    && lastCode <= 0xd7a3
+    && (lastCode - 0xac00) % 28 !== 0
+  );
+  return `${text}${hasFinalConsonant ? '을' : '를'}`;
+}
+
 
 function memoryKey(memory: ResidentMemory): string {
   return [
@@ -710,6 +721,7 @@ function exactCivilizationEvents(
       const workerId = facility.lastWorkedBy || facility.initiatedBy;
       const operational = facility.state === 'Operational';
       const ruined = facility.state === 'Ruined';
+      const restored = before.state === 'Ruined' && operational;
       events.push({
         id: `facility:state:${facility.id}:${facility.state}:${minute}`,
         kind: 'facility',
@@ -718,13 +730,39 @@ function exactCivilizationEvents(
         residentName: workerId ? names.get(workerId) : undefined,
         focusGridX: facility.gridX,
         focusGridY: facility.gridY,
-        summary: operational
-          ? `${formatFacilityKind(facility.kind)}이 완성되어 가동을 시작함`
-          : ruined
-            ? `${formatFacilityKind(facility.kind)}이 파손됨`
-            : `${formatFacilityKind(facility.kind)} 상태가 ${formatFacilityState(facility.state)}(으)로 바뀜`,
+        summary: restored
+          ? `${formatFacilityKind(facility.kind)}이 복구되어 다시 사용 가능해짐`
+          : operational
+            ? `${formatFacilityKind(facility.kind)}이 완성되어 가동을 시작함`
+            : ruined
+              ? `${formatFacilityKind(facility.kind)}이 파손됨`
+              : `${formatFacilityKind(facility.kind)} 상태가 ${formatFacilityState(facility.state)}(으)로 바뀜`,
+        detail: restored
+          ? `내구도 ${percent(before.durability)} → ${percent(facility.durability)}`
+          : undefined,
         importance: operational || ruined ? 'high' : 'medium',
       });
+    } else {
+      const durabilityBefore = clamp01(before.durability);
+      const durabilityAfter = clamp01(facility.durability);
+      if (
+        facility.state === 'Operational'
+        && durabilityAfter - durabilityBefore >= 0.05
+      ) {
+        const workerId = facility.lastWorkedBy || facility.initiatedBy;
+        events.push({
+          id: `facility:repair:${facility.id}:${minute}:${durabilityAfter.toFixed(3)}`,
+          kind: 'facility',
+          minute,
+          residentId: workerId || undefined,
+          residentName: workerId ? names.get(workerId) : undefined,
+          focusGridX: facility.gridX,
+          focusGridY: facility.gridY,
+          summary: `${formatFacilityKind(facility.kind)} 내구도가 회복됨`,
+          detail: `${percent(durabilityBefore)} → ${percent(durabilityAfter)}`,
+          importance: 'medium',
+        });
+      }
     }
   }
 
@@ -860,6 +898,150 @@ function explorationEvent(
     summary: `${resident.name}: ${formatMaterial(material)} 자원 탐색 시작`,
     detail,
     importance: 'medium',
+  };
+}
+
+function civilizationPresentationSignature(
+  resident: Resident,
+): string {
+  const presentation = resident.presentation;
+  if (
+    !presentation?.active
+    || presentation.kind !== 'Civilization'
+    || (
+      presentation.phase !== 'Moving'
+      && presentation.phase !== 'Interacting'
+    )
+  ) {
+    return '';
+  }
+
+  return [
+    presentation.civilizationIntent ?? '',
+    presentation.phase ?? '',
+    presentation.civilizationMaterial ?? '',
+    presentation.civilizationQuantity ?? '',
+    presentation.civilizationStorage ?? '',
+    presentation.facilityAction ?? '',
+    presentation.facilityId ?? '',
+    presentation.facilityKind ?? '',
+    presentation.contextActionToken ?? '',
+    presentation.targetGridX ?? '',
+    presentation.targetGridY ?? '',
+  ].join('|');
+}
+
+function civilizationLogisticsMilestoneEvent(
+  resident: Resident,
+  previous: Resident,
+  minute: number,
+): ObservationEvent | null {
+  const presentation = resident.presentation;
+  if (
+    !presentation?.active
+    || presentation.kind !== 'Civilization'
+    || (
+      presentation.phase !== 'Moving'
+      && presentation.phase !== 'Interacting'
+    )
+  ) {
+    return null;
+  }
+
+  const signature = civilizationPresentationSignature(resident);
+  if (
+    !signature
+    || signature === civilizationPresentationSignature(previous)
+  ) {
+    return null;
+  }
+
+  const intent = presentation.civilizationIntent?.trim() ?? '';
+  if (intent === 'Explore') return null;
+
+  const moving = presentation.phase === 'Moving';
+  const material = presentation.civilizationMaterial?.trim();
+  const materialLabel = material && material !== 'Unknown'
+    ? formatMaterial(material)
+    : '';
+  const quantity = Math.max(
+    0,
+    Number(presentation.civilizationQuantity) || 0,
+  );
+  const facilityKind = presentation.facilityKind?.trim();
+  const facilityLabel = facilityKind && facilityKind !== 'Unknown'
+    ? formatFacilityKind(facilityKind)
+    : '시설';
+  const detailParts: string[] = [];
+  if (quantity > 0) detailParts.push(`수량 ${quantity}`);
+  if (materialLabel) detailParts.push(`자재 ${materialLabel}`);
+
+  let summary = '';
+  let importance: ObservationEvent['importance'] = 'low';
+
+  if (intent === 'Retrieve' && materialLabel) {
+    summary = moving
+      ? `${resident.name}: 공동 저장소에서 ${koreanObjectParticle(materialLabel)} 가져오러 이동 중`
+      : `${resident.name}: 공동 저장소에서 ${koreanObjectParticle(materialLabel)} 꺼내는 중`;
+    importance = 'medium';
+  } else if (intent === 'Store' && materialLabel) {
+    summary = moving
+      ? `${resident.name}: 공동 저장소에 ${koreanObjectParticle(materialLabel)} 보관하러 이동 중`
+      : `${resident.name}: 공동 저장소에 ${koreanObjectParticle(materialLabel)} 보관하는 중`;
+  } else if (intent === 'Craft') {
+    switch (presentation.facilityAction) {
+      case 'Plan':
+        summary = moving
+          ? `${resident.name}: ${facilityLabel} 부지를 정하러 이동 중`
+          : `${resident.name}: ${facilityLabel} 건설을 계획하는 중`;
+        importance = 'medium';
+        break;
+      case 'DeliverMaterial':
+        if (!materialLabel) return null;
+        summary = moving
+          ? `${resident.name}: ${materialLabel} 자재를 ${facilityLabel} 작업지로 운반 중`
+          : `${resident.name}: ${facilityLabel}에 ${materialLabel} 자재를 전달하는 중`;
+        importance = 'medium';
+        break;
+      case 'Work':
+        summary = moving
+          ? `${resident.name}: ${facilityLabel} 작업지로 이동 중`
+          : `${resident.name}: ${facilityLabel} 건설 작업 중`;
+        importance = 'medium';
+        break;
+      case 'Repair':
+        summary = moving
+          ? `${resident.name}: ${koreanObjectParticle(facilityLabel)} 수리·복구하러 이동 중`
+          : `${resident.name}: ${facilityLabel} 수리·복구 작업 중`;
+        importance = 'medium';
+        break;
+      default:
+        return null;
+    }
+  } else {
+    return null;
+  }
+
+  return {
+    id: [
+      'civilization-logistics',
+      minute,
+      resident.id,
+      intent,
+      presentation.facilityAction ?? '',
+      presentation.contextActionToken ?? '',
+      presentation.phase,
+    ].join(':'),
+    kind: 'civilization',
+    minute,
+    residentId: resident.id,
+    residentName: resident.name,
+    ...presentationFocus(resident),
+    summary,
+    detail: detailParts.length > 0
+      ? detailParts.join(' · ')
+      : undefined,
+    importance,
   };
 }
 
@@ -1334,6 +1516,13 @@ export function deriveObservationEvents(
     const exploration = explorationEvent(resident, previous, minute);
     if (exploration) events.push(exploration);
 
+    const civilizationMilestone = civilizationLogisticsMilestoneEvent(
+      resident,
+      previous,
+      minute,
+    );
+    if (civilizationMilestone) events.push(civilizationMilestone);
+
     const physicalMilestone = physicalNeedMilestoneEvent(
       resident,
       previous,
@@ -1370,6 +1559,7 @@ export function deriveObservationEvents(
       const activity = activityEvent(resident, previous, minute);
       if (
         activity
+        && !civilizationMilestone
         && !physicalMilestone
         && !socialMilestone
       ) {

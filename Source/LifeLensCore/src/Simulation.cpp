@@ -842,6 +842,82 @@ SettlementPopulation Simulation::settlementPopulation() const {
     return population;
 }
 
+
+bool Simulation::sleepFacilityHasCapacityFor(
+    CharacterId requester,
+    const ConstructedFacility& facility) const
+{
+    if(!facilityProvidesSleep(facility.kind)
+       || !facilityOperationalAndActive(facility)){
+        return false;
+    }
+
+    const int capacity=std::max(
+        1,settlementPlanningCapacity(facility.kind));
+    int reservations=0;
+
+    for(const auto& entry:runtime_){
+        if(entry.first==requester) continue;
+        const Runtime& other=entry.second;
+        if(other.goal!=Goal::Sleep || other.plan.empty()
+           || other.actionIndex>=other.plan.size()){
+            continue;
+        }
+
+        bool targetsFacility=false;
+        if(other.navigationHasTarget
+           && sameGridPos(other.navigationTarget,facility.pos)){
+            targetsFacility=true;
+        }else if(
+            sameGridPos(other.pos,facility.pos)
+            && other.plan[other.actionIndex].type==ActionType::EmergencyUse){
+            targetsFacility=true;
+        }
+
+        if(targetsFacility && ++reservations>=capacity){
+            return false;
+        }
+    }
+    return true;
+}
+
+const ConstructedFacility*
+Simulation::nearestAvailableOperationalSleepFacility(
+    CharacterId requester,
+    GridPos from) const
+{
+    const ConstructedFacility* best=nullptr;
+    int bestDistance=SettlementServiceRadiusGrid+1;
+
+    for(const auto& facility:world_.facilities){
+        if(!facilityProvidesSleep(facility.kind)
+           || !facilityOperationalAndActive(facility)
+           || !sleepFacilityHasCapacityFor(requester,facility)){
+            continue;
+        }
+
+        const int distance=manhattan(facility.pos,from);
+        if(distance>SettlementServiceRadiusGrid) continue;
+
+        if(best==nullptr
+           || distance<bestDistance
+           || (
+               distance==bestDistance
+               && facility.kind==FacilityKind::SleepingPlace
+               && best->kind!=FacilityKind::SleepingPlace
+           )
+           || (
+               distance==bestDistance
+               && facility.kind==best->kind
+               && facility.id<best->id
+           )){
+            best=&facility;
+            bestDistance=distance;
+        }
+    }
+    return best;
+}
+
 bool Simulation::tryCivilizationDecision(Character& c,Runtime& r){
     if(!c.alive || !lifeStageProfile(c.lifeStage).canWork || r.pendingContext.active()) return false;
     if(world_.minute%15!=0) return false;
@@ -926,15 +1002,53 @@ void Simulation::beginPlan(Character& c,Runtime& r){
         return;
     }
     if(r.pendingContext.active()) return;
-    if(world_.minute>=r.penaltyUntilMinute && tryCivilizationDecision(c,r)) return;
-    if(world_.minute>=r.penaltyUntilMinute && trySocialDecision(c,r)) return;
+
+    Goal urgentPhysicalGoal=Goal::Idle;
+    double urgentPhysicalNeed=-1.0;
+    const bool planningAllowed=world_.minute>=r.penaltyUntilMinute;
+    const double urgentThreshold=ruleset_.utilityAI.urgentThreshold;
+    const bool hasUrgentSurvivalNeed=
+        c.needs.hunger>=urgentThreshold
+        || c.needs.thirst>=urgentThreshold
+        || c.needs.bladder>=urgentThreshold;
+
+    if(planningAllowed){
+        for(const Goal candidate:{
+            Goal::Eat,
+            Goal::Drink,
+            Goal::UseToilet
+        }){
+            const double need=needForGoal(c,candidate);
+            if(need<urgentThreshold
+               || !actionAvailableFor(world_,c,candidate)){
+                continue;
+            }
+            if(urgentPhysicalGoal==Goal::Idle || need>urgentPhysicalNeed){
+                urgentPhysicalGoal=candidate;
+                urgentPhysicalNeed=need;
+            }
+        }
+    }
+
+    // Survival needs that can be satisfied immediately pre-empt settlement
+    // projects and social activity. If an urgent need cannot yet be satisfied
+    // (for example hunger with no carried food), civilization decisions remain
+    // available so the resident can gather/retrieve the missing provision.
+    if(planningAllowed && urgentPhysicalGoal==Goal::Idle
+       && tryCivilizationDecision(c,r)) return;
+    if(planningAllowed && !hasUrgentSurvivalNeed
+       && trySocialDecision(c,r)) return;
 
     r.civilizationActive=false;
     r.socialActive=false;
     r.socialIntent=SocialIntent::None;
     r.socialTarget=0;
 
-    Goal chosen=(world_.minute<r.penaltyUntilMinute)?Goal::Idle:chooseGoal(world_,c,ruleset_.utilityAI);
+    Goal chosen=world_.minute<r.penaltyUntilMinute
+        ? Goal::Idle
+        : urgentPhysicalGoal!=Goal::Idle
+            ? urgentPhysicalGoal
+            : chooseGoal(world_,c,ruleset_.utilityAI);
     if(chosen==r.lastGoal){ ++r.repeatCount; } else { r.lastGoal=chosen; r.repeatCount=1; }
     if(r.repeatCount>=5){ chosen=Goal::Idle; r.repeatCount=0; }
     clearNavigation(r);
@@ -962,7 +1076,7 @@ void Simulation::beginPlan(Character& c,Runtime& r){
        && r.plan.size()==1
        && r.plan.front().type==ActionType::EmergencyUse){
         const ConstructedFacility* sleepFacility=
-            nearestOperationalSleepFacility(world_,r.pos);
+            nearestAvailableOperationalSleepFacility(c.id,r.pos);
         if(sleepFacility!=nullptr
            && manhattan(sleepFacility->pos,r.pos)<=SettlementServiceRadiusGrid){
             r.navigationTarget=sleepFacility->pos;
@@ -1126,7 +1240,7 @@ void Simulation::advanceAction(Character& c,Runtime& r){
                 bool hasSleepTarget=r.navigationHasTarget;
                 if(!hasSleepTarget){
                     const ConstructedFacility* facility=
-                        nearestOperationalSleepFacility(world_,r.pos);
+                        nearestAvailableOperationalSleepFacility(c.id,r.pos);
                     if(facility!=nullptr
                        && manhattan(facility->pos,r.pos)<=SettlementServiceRadiusGrid){
                         sleepTarget=facility->pos;

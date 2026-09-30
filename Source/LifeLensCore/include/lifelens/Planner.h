@@ -39,14 +39,16 @@ inline constexpr double RestedSleepNeedTarget = 0.12;
 inline constexpr int MinimumSleepSessionMinutes = 30;
 inline constexpr int MaximumSleepSessionMinutes = 10 * 60;
 
+inline constexpr double SleepUrgentNeedWakeThreshold = 0.72;
+
 inline bool sleepInterruptedByUrgentNeed(const Character& character)
 {
-    // Strong thirst, bladder pressure, or hunger wakes a resident before the
-    // need reaches the hard clamp. This also prevents long outdoor sleep from
-    // suppressing the survival loop for an entire half-day.
-    return character.needs.thirst>=0.84
-        || character.needs.bladder>=0.82
-        || character.needs.hunger>=0.82;
+    // Sleep yields as soon as a survival need enters the urgent utility band.
+    // A much higher wake threshold lets long, low-quality outdoor sleep pin
+    // hunger/thirst near the hard clamp before the resident can re-plan.
+    return character.needs.thirst>=SleepUrgentNeedWakeThreshold
+        || character.needs.bladder>=SleepUrgentNeedWakeThreshold
+        || character.needs.hunger>=SleepUrgentNeedWakeThreshold;
 }
 
 inline int sleepDurationMinutesForNeed(

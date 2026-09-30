@@ -1,7 +1,28 @@
 #include <iostream>
 #include "lifelens/UtilityAI.h"
+#include "lifelens/Planner.h"
+
+static bool checkSleepUrgentWakeThreshold(){
+    lifelens::Character character;
+    character.needs={0.71,0.71,0.95,0.71,0.10};
+    if(lifelens::sleepInterruptedByUrgentNeed(character)) return false;
+
+    character.needs.hunger=lifelens::SleepUrgentNeedWakeThreshold;
+    if(!lifelens::sleepInterruptedByUrgentNeed(character)) return false;
+    character.needs.hunger=0.10;
+
+    character.needs.thirst=lifelens::SleepUrgentNeedWakeThreshold;
+    if(!lifelens::sleepInterruptedByUrgentNeed(character)) return false;
+    character.needs.thirst=0.10;
+
+    character.needs.bladder=lifelens::SleepUrgentNeedWakeThreshold;
+    return lifelens::sleepInterruptedByUrgentNeed(character);
+}
 
 int main(){
+    if(!checkSleepUrgentWakeThreshold()){
+        std::cerr<<"urgent survival needs must interrupt sleep\n"; return 5;
+    }
     lifelens::World w(42);
     lifelens::Character c; c.id=7; c.name="test"; c.needs={0.90,0.20,0.20,0.20,0.20};
     w.characters.push_back(c);

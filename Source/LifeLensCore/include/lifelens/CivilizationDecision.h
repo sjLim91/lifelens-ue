@@ -206,6 +206,163 @@ inline int storageCountForMaterial(const World& world,MaterialKind material)
     return total;
 }
 
+
+inline bool settlementStorageServesPosition(
+    const StorageSite& storage,
+    GridPos authoritativePosition,
+    int maxDistance=SettlementServiceRadiusGrid)
+{
+    return storage.id!=0
+        && manhattan(storage.pos,authoritativePosition)<=std::max(0,maxDistance);
+}
+
+inline int storageCountForMaterialNear(
+    const World& world,
+    MaterialKind material,
+    GridPos authoritativePosition,
+    int maxDistance=SettlementServiceRadiusGrid)
+{
+    int total=0;
+    for(const auto& storage:world.storageSites){
+        if(!settlementStorageServesPosition(
+            storage,authoritativePosition,maxDistance)) continue;
+        total+=material==MaterialKind::Water
+            ? portableWaterCount(storage.inventory)
+            : storage.inventory.count(ItemKind::RawMaterial,material);
+    }
+    return total;
+}
+
+inline const StorageSite* nearestSettlementStorage(
+    const World& world,
+    GridPos authoritativePosition,
+    int maxDistance=SettlementServiceRadiusGrid)
+{
+    const StorageSite* best=nullptr;
+    int bestDistance=std::max(0,maxDistance)+1;
+    for(const auto& storage:world.storageSites){
+        if(!settlementStorageServesPosition(
+            storage,authoritativePosition,maxDistance)) continue;
+        const int distance=manhattan(storage.pos,authoritativePosition);
+        if(best==nullptr || distance<bestDistance
+           || (distance==bestDistance && storage.id<best->id)){
+            best=&storage;
+            bestDistance=distance;
+        }
+    }
+    return best;
+}
+
+inline int constructionMaterialDemandForKindNear(
+    const World& world,
+    FacilityKind kind,
+    MaterialKind material,
+    GridPos authoritativePosition,
+    int maxDistance=SettlementServiceRadiusGrid)
+{
+    if(material==MaterialKind::Unknown) return 0;
+    int demand=0;
+    for(const auto& facility:world.facilities){
+        if(facility.kind!=kind
+           || facility.state==FacilityState::Operational
+           || facility.state==FacilityState::Ruined
+           || manhattan(
+               facility.pos,authoritativePosition)>std::max(0,maxDistance)){
+            continue;
+        }
+        demand+=std::max(0,facilityMissingMaterial(facility,material));
+    }
+    return demand;
+}
+
+inline int settlementRepairMaterialDemandNear(
+    const World& world,
+    MaterialKind material,
+    GridPos authoritativePosition,
+    int maxDistance=SettlementServiceRadiusGrid)
+{
+    if(material==MaterialKind::Unknown) return 0;
+    int demand=0;
+    for(const auto& facility:world.facilities){
+        if(manhattan(
+            facility.pos,authoritativePosition)>std::max(0,maxDistance)){
+            continue;
+        }
+        if(settlementFacilityNeedsMaintenance(facility)){
+            if(facilityRepairMaterial(facility.kind)==material) ++demand;
+            continue;
+        }
+        if(settlementFacilityCanRestore(facility)){
+            demand+=facilityRestorationMaterialRequirement(
+                facility.kind,material);
+        }
+    }
+    return demand;
+}
+
+inline int residentCommittedMaterialDemandAtPosition(
+    const World& world,
+    const Character& resident,
+    MaterialKind material,
+    GridPos authoritativePosition)
+{
+    int demand=0;
+    for(const FacilityKind kind:{
+        FacilityKind::WorkSurface,
+        FacilityKind::SleepingPlace,
+        FacilityKind::Shelter
+    }){
+        demand+=constructionMaterialDemandForKindNear(
+            world,kind,material,authoritativePosition);
+    }
+    demand+=settlementRepairMaterialDemandNear(
+        world,material,authoritativePosition);
+
+    if(resident.civilization.knowledge.knowsAtLeast(
+        TechniqueId::PrimitiveStorage,KnowledgeLevel::Reproducible)){
+        demand+=constructionMaterialDemandForKindNear(
+            world,FacilityKind::PrimitiveStorage,
+            material,authoritativePosition);
+    }
+    if(resident.civilization.knowledge.knowsAtLeast(
+        TechniqueId::FireMaking,KnowledgeLevel::Reproducible)){
+        demand+=constructionMaterialDemandForKindNear(
+            world,FacilityKind::FirePit,
+            material,authoritativePosition);
+    }
+    if(primitiveFurnaceKnowledgeReady(resident)){
+        demand+=constructionMaterialDemandForKindNear(
+            world,FacilityKind::Furnace,
+            material,authoritativePosition);
+    }
+    if(resident.civilization.knowledge.knowsAtLeast(
+        TechniqueId::Cultivation,KnowledgeLevel::Reproducible)){
+        demand+=constructionMaterialDemandForKindNear(
+            world,FacilityKind::CultivatedPlot,
+            material,authoritativePosition);
+    }
+    return demand;
+}
+
+inline int residentUncoveredCommittedMaterialDemandAtPosition(
+    const World& world,
+    const Character& resident,
+    MaterialKind material,
+    GridPos authoritativePosition)
+{
+    const int held=material==MaterialKind::Water
+        ? portableWaterCount(resident.civilization.inventory)
+        : resident.civilization.inventory.count(
+            ItemKind::RawMaterial,material);
+    return std::max(
+        0,
+        residentCommittedMaterialDemandAtPosition(
+            world,resident,material,authoritativePosition)
+            -held
+            -storageCountForMaterialNear(
+                world,material,authoritativePosition));
+}
+
 inline int worldItemCount(const World& world,const Character& self,ItemKind kind,MaterialKind material,bool anyMaterial=false)
 {
     int total=self.civilization.inventory.count(kind,material,anyMaterial);
@@ -443,14 +600,14 @@ inline double civilizationResourceExplorationPressure(
     const int held=material==MaterialKind::Water
         ? portableWaterCount(self.civilization.inventory)
         : self.civilization.inventory.count(ItemKind::RawMaterial,material);
-    const int stored=storageCountForMaterial(world,material);
-    const int constructionMissing=
-        settlementConstructionMaterialDemand(world,material);
+    const int stored=storageCountForMaterialNear(
+        world,material,authoritativePosition);
     const int repairMissing=
-        settlementRepairMaterialDemand(world,material);
+        settlementRepairMaterialDemandNear(
+            world,material,authoritativePosition);
     const int uncoveredCommitted=
-        residentUncoveredCommittedMaterialDemand(
-            world,self,material);
+        residentUncoveredCommittedMaterialDemandAtPosition(
+            world,self,material,authoritativePosition);
 
     const bool provision=
         material==MaterialKind::Water
@@ -582,12 +739,14 @@ inline CivilizationUtilityDecision bestGatherDecisionAtPosition(
            && emptySimpleContainerCount(self.civilization.inventory)<=0){
             continue;
         }
-        const int stored=storageCountForMaterial(world,node.material);
+        const int stored=storageCountForMaterialNear(
+            world,node.material,authoritativePosition);
         const int repairMissing=
-            settlementRepairMaterialDemand(world,node.material);
+            settlementRepairMaterialDemandNear(
+                world,node.material,authoritativePosition);
         const int materialDemand=
-            residentUncoveredCommittedMaterialDemand(
-                world,self,node.material);
+            residentUncoveredCommittedMaterialDemandAtPosition(
+                world,self,node.material,authoritativePosition);
         const bool provision=
             node.material==MaterialKind::Water
             || node.material==MaterialKind::PlantFood;
@@ -1625,7 +1784,8 @@ inline CivilizationUtilityDecision bestRetrieveDecisionAtPosition(
     }};
 
     for(const StorageSite& storage:world.storageSites){
-        if(storage.id==0) continue;
+        if(!settlementStorageServesPosition(
+            storage,authoritativePosition)) continue;
 
         for(const auto& provision:provisions){
             const MaterialKind material=provision.first;
@@ -1687,7 +1847,8 @@ inline CivilizationUtilityDecision bestRetrieveDecisionAtPosition(
 
             const MaterialKind material=stack.material;
             const int residentDemand=
-                residentCommittedMaterialDemand(world,self,material);
+                residentCommittedMaterialDemandAtPosition(
+                    world,self,material,authoritativePosition);
             if(residentDemand<=0) continue;
 
             const int held=self.civilization.inventory.count(
@@ -1707,9 +1868,11 @@ inline CivilizationUtilityDecision bestRetrieveDecisionAtPosition(
             if(requested<=0) continue;
 
             const int constructionDemand=
-                settlementConstructionMaterialDemand(world,material);
+                residentCommittedMaterialDemandAtPosition(
+                    world,self,material,authoritativePosition);
             const int repairDemand=
-                settlementRepairMaterialDemand(world,material);
+                settlementRepairMaterialDemandNear(
+                    world,material,authoritativePosition);
             const double demandPressure=clampCivilization01(
                 0.35
                 +0.10*static_cast<double>(
@@ -1747,14 +1910,20 @@ inline CivilizationUtilityDecision bestRetrieveDecision(
         world,self,civilizationSanitationReferencePosition(world));
 }
 
-inline CivilizationUtilityDecision bestStoreDecision(const World& world,const Character& self)
+inline CivilizationUtilityDecision bestStoreDecisionAtPosition(
+    const World& world,
+    const Character& self,
+    GridPos authoritativePosition)
 {
     CivilizationUtilityDecision best;
-    if(world.storageSites.empty()) return best;
+    const StorageSite* targetStoragePtr=
+        nearestSettlementStorage(world,authoritativePosition);
+    if(targetStoragePtr==nullptr) return best;
 
-    // The first primitive store remains the settlement stockpile authority.
-    // Multiple-storage selection becomes a later settlement-logistics policy.
-    const StorageSite& targetStorage=world.storageSites.front();
+    // Storage is settlement-local infrastructure. Residents choose the nearest
+    // stockpile in their lived area instead of teleporting economy policy back
+    // to whichever storage happened to be created first.
+    const StorageSite& targetStorage=*targetStoragePtr;
     const StorageId storage=targetStorage.id;
     const int total=inventoryUnitCount(self.civilization.inventory);
 
@@ -1824,6 +1993,18 @@ inline CivilizationUtilityDecision bestStoreDecision(const World& world,const Ch
     return best;
 }
 
+inline CivilizationUtilityDecision bestStoreDecision(
+    const World& world,
+    const Character& self)
+{
+    if(world.storageSites.empty()) return CivilizationUtilityDecision{};
+    // Compatibility wrapper: legacy callers had no authoritative runtime
+    // position and historically targeted the first stockpile. Production
+    // autonomous decisions use bestStoreDecisionAtPosition() instead.
+    return bestStoreDecisionAtPosition(
+        world,self,world.storageSites.front().pos);
+}
+
 inline CivilizationUtilityDecision chooseCivilizationUtilityDecisionAtPosition(
     const World& world,
     const Character& self,
@@ -1840,7 +2021,9 @@ inline CivilizationUtilityDecision chooseCivilizationUtilityDecisionAtPosition(
     considerCivilizationDecision(
         best,bestRetrieveDecisionAtPosition(
             world,self,authoritativePosition));
-    considerCivilizationDecision(best,bestStoreDecision(world,self));
+    considerCivilizationDecision(
+        best,bestStoreDecisionAtPosition(
+            world,self,authoritativePosition));
     considerCivilizationDecision(
         best,bestResourceExplorationDecisionAtPosition(
             world,self,authoritativePosition));

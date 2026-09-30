@@ -31,3 +31,6 @@ jobs:
 
       - name: Typecheck
         run: npm run typecheck
+
+      - name: Observation feed regression
+        run: node tests/observation-feed/run.mjs

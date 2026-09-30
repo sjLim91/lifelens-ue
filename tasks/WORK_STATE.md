@@ -1,3 +1,16 @@
+## 2026-09-30 CANONICAL CURRENT — DU-01 Living Settlement ACTIVE
+
+> This section supersedes older execution snapshots below. Actual GitHub main/PR/Actions remain the highest-priority truth.
+
+- Baseline main: `3135e7bb8a45dc4d3ecc785d89273e74b68f4015` (#521).
+- Active branch: `feature/du01-living-settlement-20260930`.
+- Active development unit: `docs/DU01_LIVING_SETTLEMENT.md`.
+- #521 already connects shared local storage stock to real construction/restoration logistics.
+- Current objective: make the entire lived settlement loop observable and non-wasteful — reuse usable facilities, restore rational candidates, build only for unmet local demand, and expose pressure -> logistics -> work -> result in the Web Observer.
+- Work lanes: A Core/Simulation, B Web/Observation, C QA/contracts. Non-overlapping files may progress in parallel; one integrated PR owns the unit.
+- Validation policy: targeted regressions during development; one full Core + deterministic harness + WASM + Web typecheck/build + Preflight gate before merge; then Runtime Release + Pages + External Preview Probe.
+- Link handoff occurs only after merged main is proven on GitHub Pages and `RUNTIME_COMMIT.txt` matches the merge SHA.
+
 # LifeLens Canonical Work State
 
 ## 2026-09-29 CANONICAL CURRENT — Unreal retired from active main

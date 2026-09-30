@@ -293,6 +293,21 @@ int main()
     assert(recovered->needs.hunger<0.92);
     assert(recovered->needs.thirst<0.96);
 
+    // Urgent carried provisions must beat sleep/social/civilization work.
+    // This protects survival when settlement bedding changes alter timing.
+    Simulation urgentPriority(874213955);
+    urgentPriority.setupNewGame();
+    urgentPriority.world().characters.resize(1);
+    Character& priorityActor=urgentPriority.world().characters.front();
+    const std::string priorityName=priorityActor.name;
+    priorityActor.needs={0.75,0.10,0.95,0.10,0.10};
+    priorityActor.civilization.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::PlantFood,1,0.5,1.0});
+    urgentPriority.step();
+    assert(containsLog(
+        urgentPriority.logs(),
+        priorityName+" -> Eat"));
+
     // Production-like natural New Game: over the first four simulation days,
     // every founder must prove actual food/water acquisition and consumption.
     // Toilet remains an outdoor fallback until a real sanitation affordance is
