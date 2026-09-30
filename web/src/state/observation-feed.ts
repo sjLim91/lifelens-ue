@@ -54,6 +54,17 @@ function clamp01(value: unknown): number {
 function percent(value: unknown): string {
   return `${Math.round(clamp01(value) * 100)}%`;
 }
+function koreanObjectParticle(text: string): string {
+  if (!text) return '';
+  const lastCode = text.charCodeAt(text.length - 1);
+  const hasFinalConsonant = (
+    lastCode >= 0xac00
+    && lastCode <= 0xd7a3
+    && (lastCode - 0xac00) % 28 !== 0
+  );
+  return `${text}${hasFinalConsonant ? '을' : '를'}`;
+}
+
 
 function memoryKey(memory: ResidentMemory): string {
   return [
@@ -970,13 +981,13 @@ function civilizationLogisticsMilestoneEvent(
 
   if (intent === 'Retrieve' && materialLabel) {
     summary = moving
-      ? `${resident.name}: 공동 저장소에서 ${materialLabel}을 가져오러 이동 중`
-      : `${resident.name}: 공동 저장소에서 ${materialLabel}을 꺼내는 중`;
+      ? `${resident.name}: 공동 저장소에서 ${koreanObjectParticle(materialLabel)} 가져오러 이동 중`
+      : `${resident.name}: 공동 저장소에서 ${koreanObjectParticle(materialLabel)} 꺼내는 중`;
     importance = 'medium';
   } else if (intent === 'Store' && materialLabel) {
     summary = moving
-      ? `${resident.name}: 공동 저장소에 ${materialLabel}을 보관하러 이동 중`
-      : `${resident.name}: 공동 저장소에 ${materialLabel}을 보관하는 중`;
+      ? `${resident.name}: 공동 저장소에 ${koreanObjectParticle(materialLabel)} 보관하러 이동 중`
+      : `${resident.name}: 공동 저장소에 ${koreanObjectParticle(materialLabel)} 보관하는 중`;
   } else if (intent === 'Craft') {
     switch (presentation.facilityAction) {
       case 'Plan':
@@ -1000,7 +1011,7 @@ function civilizationLogisticsMilestoneEvent(
         break;
       case 'Repair':
         summary = moving
-          ? `${resident.name}: ${facilityLabel}을 수리·복구하러 이동 중`
+          ? `${resident.name}: ${koreanObjectParticle(facilityLabel)} 수리·복구하러 이동 중`
           : `${resident.name}: ${facilityLabel} 수리·복구 작업 중`;
         importance = 'medium';
         break;

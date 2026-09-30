@@ -498,7 +498,7 @@ testCase('settlement logistics milestones expose retrieve and material delivery'
     event => event.id.startsWith('civilization-logistics:'),
   );
   assert.ok(retrieveEvent);
-  assert.match(retrieveEvent.summary, /공동 저장소.*목재.*가져오러/);
+  assert.match(retrieveEvent.summary, /공동 저장소.*나무를.*가져오러/);
   assert.match(retrieveEvent.detail, /수량 2/);
   assert.equal(retrieveEvent.focusGridX, 4);
   assert.equal(retrieveEvent.focusGridY, 2);
@@ -529,7 +529,7 @@ testCase('settlement logistics milestones expose retrieve and material delivery'
     event => event.id.startsWith('civilization-logistics:'),
   );
   assert.ok(deliveryEvent);
-  assert.match(deliveryEvent.summary, /목재 자재.*잠자리.*운반 중/);
+  assert.match(deliveryEvent.summary, /나무 자재.*잠자리.*운반 중/);
   assert.equal(deliveryEvent.importance, 'medium');
 });
 
