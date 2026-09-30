@@ -571,6 +571,9 @@ export class ResidentWorldLayer {
 
   private socialCueColor(kind: ResidentSocialCueKind): number {
     switch (kind) {
+      case 'Approach': return 0xb9d8be;
+      case 'Comfort': return 0x9fcfe0;
+      case 'Repair': return 0xe0c98f;
       case 'KnowledgeTeaching': return 0xc8dbe5;
       case 'Parenting': return 0xe4d7bb;
       case 'Social':
