@@ -270,3 +270,115 @@ fallback Eat 1회: -0.28 + PlantFood 1개 소비.
    - cadence/backoff
 7. 1/7/30/100/365/500/1000일 회귀 후 main 병합
 
+
+
+## 13. Baseline 실측 — main 0e409b53
+
+계측기: `ll_balance_audit`  
+seed: `874213954`, `4242001`  
+구간: 1 / 7 / 30 / 100일
+
+### 13.1 100일 결과 요약
+
+#### seed 874213954
+
+4명 합산 576,000 person-minute 기준:
+
+- Physical: 265,704분 (**46.1%**)
+- Social: 41분 (**0.007%**)
+- Civilization: 25,083분 (**4.35%**)
+- KnowledgeTeaching: 62,764분 (**10.9%**)
+- Idle/inactive: 222,408분 (**38.6%**)
+
+Need가 0.999 이상으로 포화된 시간:
+
+- Hygiene: **86.2%**
+- Sleep: **75.4%**
+- Bladder: **40.0%**
+
+개별 주민 중 한 명은 100일 동안 Hygiene가 137,034분 포화되어 전체 기간의 약 95%를 사실상 최대치에서 보냈다.
+
+#### seed 4242001
+
+- Social presentation minute: **0분**
+- Hygiene 0.999+ 포화: **84.0%**
+- Sleep 0.999+ 포화: **54.9%**
+- Bladder 0.999+ 포화: **6.1%**
+
+seed가 달라도 **Hygiene와 Sleep이 장기간 상한에 붙고 Social이 사실상 사라지는 현상은 재현**된다.
+
+### 13.2 이미 7일에 붕괴 조짐
+
+seed 874213954의 7일 시점:
+- 주민별 Hygiene 평균: 약 0.86~0.96
+- 주민별 Sleep 평균: 약 0.77~0.92
+- Social: 두 주민 0분, 나머지도 각각 9~10분 수준
+
+seed 4242001의 7일 시점:
+- 주민별 Hygiene 평균: 약 0.92~0.95
+- 주민별 Sleep 평균: 약 0.90~0.96
+- Social: 전원 0분
+
+즉 사용자가 400일에서 관찰한 고착은 400일에 처음 생기는 문제가 아니다. **1주 이내부터 누적되며 장기 진행에서 눈에 띄게 굳는 구조적 불균형**이다.
+
+### 13.3 자원량만으로 설명되지 않음
+
+100일 시점에도 자연 Water/PlantFood 총량은 새 chunk 탐색과 재생 때문에 완전히 0이 아니었다.
+
+예: seed 874213954
+- generated chunks: 5
+- natural Water: 523
+- natural PlantFood: 1457
+
+그런데도 Sleep/Hygiene 포화와 Social starvation이 지속됐다.
+
+따라서 장기 고착의 1차 원인은 단순한 "물이 다 떨어짐/음식이 다 떨어짐"이 아니라:
+- 행동 회복량
+- preemption
+- 결정 cadence
+- Social hard gate
+- 별도 scheduler
+의 결합이다.
+
+## 14. Out-of-band scheduler 전수검사
+
+### KnowledgeTeaching — P0/P1 경계 위험
+
+`advanceCivilizationKnowledgeTeaching()`은 매 정각(`minute % 60 == 0`) 실행된다.
+
+현재 특징:
+- teacher의 `pendingContext`만 확인하고 **진행 중 Physical plan은 확인하지 않는다.**
+- 후보가 선정되면 teacher의 기존 `goal=Idle`, `plan.clear()`, navigation clear를 수행한다.
+- 즉 Hunger/Thirst가 Critical까지 가지 않은 상태에서는 Sleep/Toilet/Wash 등 현재 행동을 **Utility 경쟁 없이 시간당 한 번 끊을 수 있다.**
+- KnowledgeTeaching context timeout은 45분이다.
+- 별도 social cooldown과 같은 teaching cooldown은 없다.
+
+100일 baseline에서 특정 주민은 KnowledgeTeaching presentation이:
+- 53,171분 / 144,000분 = **36.9%**
+- 다른 seed에서도 54,884분 = **38.1%**
+까지 올라갔다.
+
+이는 "지식 전파"가 생활의 일부가 아니라 일부 주민의 시간예산을 독점할 수 있다는 강한 신호다.
+
+**조정 원칙 후보**
+- KnowledgeTeaching도 Unified Utility 또는 최소한 동일한 Pressure/Urgent gate에 참여
+- 현재 Physical plan을 임의로 clear하지 않음
+- teacher/learner별 cooldown 도입 검토
+- 반복 teaching의 marginal utility 감소
+- Need와 Social/Civilization 시간예산을 계측한 뒤 빈도 확정
+
+Parenting은 30분 cadence지만 caregiver가 `pendingContext.active()==false`이고 `plan.empty()`일 때만 후보가 되므로 KnowledgeTeaching과 같은 즉시 plan-clear 문제는 현재 확인되지 않았다.
+
+## 15. 계측기 보강
+
+첫 baseline의 `PresentationAction` 분 단위 샘플은 1분짜리 Eat 같은 짧은 행동을 완료 직후 놓칠 수 있다.  
+따라서 계측기에 아래 이벤트 카운터를 추가했다.
+
+- Physical start / completion: Eat, Drink, Sleep, Toilet, Wash
+- Social event
+- Civilization event
+- Sleep interruption
+- Critical preemption
+- route failure / timeout
+
+다음 장기 실행부터는 "행동 시간"과 "행동 횟수"를 같이 사용한다.
