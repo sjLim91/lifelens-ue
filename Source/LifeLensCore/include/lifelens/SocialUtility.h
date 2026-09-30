@@ -324,12 +324,21 @@ inline CivilizationUtilityDecision chooseDispositionAwareCivilizationDecisionAtP
     CivilizationUtilityDecision best;
     if (self.id == 0 || self.civilization.character != self.id) return best;
 
-    considerCivilizationDecision(best, applyCivilizationDispositionBias(self, bestExperimentDecision(world, self)));
     considerCivilizationDecision(
         best,
         applyCivilizationDispositionBias(
-            self,bestCraftDecisionAtPosition(world,self,authoritativePosition,population)));
-    considerCivilizationDecision(best, applyCivilizationDispositionBias(self, bestRetrieveDecision(world, self)));
+            self,bestExperimentDecisionAtPosition(
+                world,self,authoritativePosition,population)));
+    considerCivilizationDecision(
+        best,
+        applyCivilizationDispositionBias(
+            self,bestCraftDecisionAtPosition(
+                world,self,authoritativePosition,population)));
+    considerCivilizationDecision(
+        best,
+        applyCivilizationDispositionBias(
+            self,bestRetrieveDecisionAtPosition(
+                world,self,authoritativePosition)));
     considerCivilizationDecision(best, applyCivilizationDispositionBias(self, bestStoreDecision(world, self)));
     considerCivilizationDecision(
         best,
