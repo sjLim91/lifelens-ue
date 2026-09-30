@@ -20,7 +20,9 @@ web_contract = (root / "web/src/runtime/lifelens-contract.ts").read_text(encodin
 for token in (
     "class WebClientBridge",
     "worldOverviewJson",
+    "residentRuntimeJson",
     "residentsJson",
+    "humanTracesWindowJson",
     "terrainWindowJson",
     "std::unique_ptr<Simulation>",
 ):
@@ -29,7 +31,9 @@ for token in (
 for token in (
     "simulation_->observeWorldOverview()",
     "simulation_->observeAllResidents()",
+    "simulation_->observeResidentPresentation",
     "simulation_->runtimePosition",
+    "buildHumanTraceWindowObservation",
     "deriveContinuousTerrainSample",
     "deriveHydrologyFacts",
 ):
