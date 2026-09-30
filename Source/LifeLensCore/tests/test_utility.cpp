@@ -7,17 +7,23 @@ static bool checkSleepUrgentWakeThreshold(){
     character.needs={0.71,0.71,0.95,0.71,0.10};
     if(lifelens::sleepInterruptedByUrgentNeed(character)) return false;
 
+    // A critical competing need does not instantly wake somebody who is even
+    // more exhausted. As sleep recovers, the same pressure can become dominant
+    // and correctly trigger a re-plan.
     character.needs.hunger=lifelens::SleepUrgentNeedWakeThreshold;
+    if(lifelens::sleepInterruptedByUrgentNeed(character)) return false;
+    character.needs.hunger=1.0;
+    character.needs.sleep=0.80;
     if(!lifelens::sleepInterruptedByUrgentNeed(character)) return false;
+
     character.needs.hunger=0.10;
-
-    character.needs.thirst=lifelens::SleepUrgentNeedWakeThreshold;
+    character.needs.thirst=1.0;
     if(!lifelens::sleepInterruptedByUrgentNeed(character)) return false;
-    character.needs.thirst=0.10;
 
-    character.needs.bladder=lifelens::SleepUrgentNeedWakeThreshold;
+    character.needs.thirst=0.10;
+    character.needs.bladder=1.0;
     return lifelens::sleepInterruptedByUrgentNeed(character);
-}
+
 
 int main(){
     if(!checkSleepUrgentWakeThreshold()){
