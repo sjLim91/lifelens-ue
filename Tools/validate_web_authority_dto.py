@@ -14,6 +14,8 @@ web_bridge = (root / "web/src/runtime/core-bridge.ts").read_text(encoding="utf-8
 session = (root / "web/src/runtime/world-session.ts").read_text(encoding="utf-8")
 
 for method in (
+    "residentRuntimeJson",
+    "humanTracesWindowJson",
     "recentSocialEventsJson",
     "civilizationWorldJson",
     "civilizationWorldWindowJson",
@@ -82,6 +84,8 @@ for token in (
     assert token in types, f"core-types missing {token}"
 
 for token in (
+    "residentRuntime()",
+    "humanTracesWindow(",
     "recentSocialEvents(maxEvents = 32)",
     "civilizationWorld(",
     "civilizationWorldWindow(",
@@ -103,3 +107,17 @@ assert gate < session.index(".civilizationWorldWindow(")
 assert gate < session.index(".worldObjects()")
 
 print("LifeLens Web authority DTO expansion: PASS")
+
+# High-frequency observer state uses compact runtime DTOs. Full resident detail
+# and large world payloads are sampled away from the 500 ms movement cadence.
+for token in (
+    "residentDetailRefreshCountdown",
+    "residentDetailSnapshot",
+    "this.core.residentRuntime()",
+    "this.core.humanTracesWindow(",
+    "terrainStaticChanged",
+    "residentDetailRefreshEverySnapshots",
+):
+    assert token in session or token in types, (
+        f"observer hot-path decoupling missing: {token}"
+    )

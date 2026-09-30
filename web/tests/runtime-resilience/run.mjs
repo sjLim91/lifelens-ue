@@ -112,8 +112,41 @@ try {
   await test('bridge preserves valid data through the actual ABI methods', () => {
     const overview={minute:500,livingResidents:4};
     const residents={available:true,residents:[{id:'1',name:'주민'}]};
-    const bridge=new LifeLensCoreBridge({worldOverviewJson:()=>text(overview),residentsJson:()=>text(residents)});
-    assert.deepEqual(bridge.worldOverview(),overview);assert.deepEqual(bridge.residents(),residents);
+    const runtime={available:true,residents:[{id:'1',name:'주민',needs:{thirst:0.7}}]};
+    const traces={available:true,centerChunkX:0,centerChunkY:0,radiusChunks:8,humanTraces:{total:0,entries:[]}};
+    const bridge=new LifeLensCoreBridge({
+      worldOverviewJson:()=>text(overview),
+      residentsJson:()=>text(residents),
+      residentRuntimeJson:()=>text(runtime),
+      humanTracesWindowJson:()=>text(traces),
+    });
+    assert.deepEqual(bridge.worldOverview(),overview);
+    assert.deepEqual(bridge.residents(),residents);
+    assert.deepEqual(bridge.residentRuntime(),runtime);
+    assert.deepEqual(bridge.humanTracesWindow(0,0,8),traces);
+  });
+  await test('lightweight observer endpoints fail back to legacy snapshots', () => {
+    const residents={available:true,residents:[{id:'1',name:'주민'}]};
+    const terrain={
+      available:true,
+      centerChunkX:0,
+      centerChunkY:0,
+      radiusChunks:1,
+      chunks:[],
+      humanTraces:{total:1,entries:[]},
+    };
+    const bridge=new LifeLensCoreBridge({
+      residentsJson:()=>text(residents),
+      terrainWindowJson:()=>text(terrain),
+    });
+    assert.deepEqual(bridge.residentRuntime(),residents);
+    assert.deepEqual(bridge.humanTracesWindow(0,0,1),{
+      available:true,
+      centerChunkX:0,
+      centerChunkY:0,
+      radiusChunks:1,
+      humanTraces:terrain.humanTraces,
+    });
   });
   console.log(`${passed} runtime resilience checks passed`);
 } finally { rmSync(temporary,{recursive:true,force:true}); }

@@ -76,6 +76,17 @@ int main()
     assert(residents.find("\"contextActionToken\":") != std::string::npos);
     assert(residents.find("\"hasPosition\":true") != std::string::npos);
 
+    const std::string runtimeResidents = bridge.residentRuntimeJson();
+    assert(runtimeResidents.find("\"available\":true") != std::string::npos);
+    assert(runtimeResidents.find("\"needs\":{") != std::string::npos);
+    assert(runtimeResidents.find("\"emotion\":{") != std::string::npos);
+    assert(runtimeResidents.find("\"presentation\":{") != std::string::npos);
+    assert(runtimeResidents.find("\"hasPosition\":true") != std::string::npos);
+    assert(runtimeResidents.find("\"relationships\":[") == std::string::npos);
+    assert(runtimeResidents.find("\"memories\":[") == std::string::npos);
+    assert(runtimeResidents.find("\"beliefs\":[") == std::string::npos);
+    assert(runtimeResidents.size() < residents.size());
+
     const std::string environment = bridge.dynamicEnvironmentJson(0, 0);
     assert(environment.find("\"available\":true") != std::string::npos);
     assert(environment.find("\"baselineTemperature01\":") != std::string::npos);
@@ -114,6 +125,11 @@ int main()
     assert(terrain.find("\"rockCoverage01\":") != std::string::npos);
     assert(terrain.find("\"wetlandCoverage01\":") != std::string::npos);
     assert(terrain.find("\"humanTraces\":{\"total\":0,\"entries\":[]}") != std::string::npos);
+
+    const std::string humanTraces = bridge.humanTracesWindowJson(0, 0, 1);
+    assert(humanTraces.find("\"available\":true") != std::string::npos);
+    assert(humanTraces.find("\"humanTraces\":{") != std::string::npos);
+    assert(humanTraces.find("\"chunks\":[") == std::string::npos);
 
     const std::string social = bridge.recentSocialEventsJson(16);
     assert(social.find("\"available\":true") != std::string::npos);

@@ -42,6 +42,14 @@ export interface TerrainWindow {
   humanTraces?: { total: number; entries: HumanTrace[] };
 }
 
+export interface HumanTracesWindowPayload {
+  available?: boolean;
+  centerChunkX?: number;
+  centerChunkY?: number;
+  radiusChunks?: number;
+  humanTraces?: { total: number; entries: HumanTrace[] };
+}
+
 interface HumanTracePosition {
   id: string;
   gridX: number;
@@ -662,6 +670,7 @@ export interface RuntimeClient {
   newGame(worldSeed: string, populationSeed: string, generationVersion: number): boolean;
   runMinutes(minutes: number): void;
   worldOverviewJson(): string;
+  residentRuntimeJson?: () => string;
   residentsJson(): string;
   dynamicEnvironmentJson?: (x: number, y: number) => string;
   recentSocialEventsJson?: (maxEvents: number) => string;
@@ -673,6 +682,7 @@ export interface RuntimeClient {
     radiusChunks: number,
   ) => string;
   worldObjectsJson?: () => string;
+  humanTracesWindowJson?: (x: number, y: number, radius: number) => string;
   terrainWindowJson(x: number, y: number, radius: number): string;
   delete?: () => void;
 }

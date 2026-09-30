@@ -80,6 +80,11 @@ export const OBSERVER_CAMERA_CONTRACT = {
 
 export const OBSERVER_RUNTIME_CONTRACT = {
   residentContinuityGraceMs: 10_000,
+  // Hot-path resident movement/Needs stay at the normal observer cadence.
+  // Expensive relationships/memory/belief/family/civilization detail refreshes
+  // are deliberately slower and merged into the runtime snapshot.
+  residentDetailRefreshEverySnapshots: 4,
+  worldActivityRefreshEverySnapshots: 4,
 } as const;
 
 export const MAX_SIMULATION_SPEED_MULTIPLIER = Math.max(

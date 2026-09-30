@@ -127,6 +127,10 @@ export class WorldRenderer {
     this.world.setTerrain(window);
   }
 
+  setHumanTraces(window: TerrainWindow): void {
+    this.world.setHumanTraces(window);
+  }
+
   dispose(): void {
     this.stop();
     this.world.dispose();
