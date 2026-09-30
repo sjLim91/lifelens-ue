@@ -6,7 +6,6 @@ on:
       - audit/simulation-balance-20260930
     paths:
       - 'Source/LifeLensCore/**'
-      - 'docs/SIMULATION_BALANCE_AUDIT.md'
       - '.github/workflows/balance-audit.yml'
   workflow_dispatch:
     inputs:
