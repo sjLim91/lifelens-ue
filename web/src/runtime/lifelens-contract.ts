@@ -100,6 +100,12 @@ export const RESIDENT_PRESENTATION_CONTRACT = {
     RESIDENT_VISUAL_SPEED_WORLD_UNITS_PER_SECOND_AT_1X,
   walkMinTimeScale: 0.72,
   walkMaxTimeScale: 1.55,
+  // No verified lie-down clip exists in the loaded CC0 libraries yet. Keep the
+  // authoritative idle animation but smoothly rotate only the visual hierarchy
+  // after Sleep has actually reached its interaction point.
+  sleepPosePitchRadians: -4 * Math.PI / 180,
+  sleepPoseRollRadians: 86 * Math.PI / 180,
+  sleepPoseResponsivenessPerSecond: 5,
   // Presentation motion derives from the same global baseline and the exact
   // selected observer speed. Do not cap 4×/16× back to a slower visual pace:
   // simulation time, movement and visible action playback must stay aligned.
