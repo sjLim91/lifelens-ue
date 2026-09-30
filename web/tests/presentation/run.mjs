@@ -392,6 +392,52 @@ test('river chunks suppress dressing only on the visible channel footprint', () 
   );
 });
 
+test('fresh low-availability flow sources stay visible when Core can use them', () => {
+  for (const waterKind of ['Stream', 'River']) {
+    const terrain = windowOf([
+      chunk(0, 0, waterKind, 0.5, {
+        salinity: 'Fresh',
+        waterAvailability: 0.08,
+        drainageAccumulationPotential: 0.01,
+        hasDownstream: false,
+      }),
+    ]);
+    const inside = createVisibleWaterFootprintTester(terrain);
+    assert.equal(
+      inside(0, 0),
+      true,
+      `${waterKind} Core-usable source must be visibly wet`,
+    );
+    const geometry = buildFlowWaterSurfaceGeometry(terrain);
+    try {
+      assert.ok(
+        geometry.attributes.position.count > 0,
+        `${waterKind} Core-usable source must render water`,
+      );
+    } finally {
+      geometry.dispose();
+    }
+  }
+});
+
+test('non-fresh flow sources never masquerade as drinkable water', () => {
+  const terrain = windowOf([
+    chunk(0, 0, 'Stream', 0.5, {
+      salinity: 'Brackish',
+      waterAvailability: 1,
+      hasDownstream: false,
+    }),
+  ]);
+  const inside = createVisibleWaterFootprintTester(terrain);
+  assert.equal(inside(0, 0), false);
+  const geometry = buildFlowWaterSurfaceGeometry(terrain);
+  try {
+    assert.equal(geometry.attributes.position.count, 0);
+  } finally {
+    geometry.dispose();
+  }
+});
+
 test('fresh lake and wetland leave dry room outside their localized water radius', () => {
   for (const waterKind of ['Lake', 'Wetland']) {
     const terrain = windowOf([
