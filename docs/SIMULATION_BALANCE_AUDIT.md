@@ -646,3 +646,109 @@ P0 Hygiene/Sanitation 수정에서는 headless runtime도 authoritative `Primiti
 순으로 진행한다.
 
 이 실험은 Core 전체 회귀에서 기존 `test_autonomous_civilization_loop`, `test_early_survival`을 유지하면서 별도 action-commitment 회귀를 통과하는 방향으로 좁혀졌다.
+
+
+## 23. P0 Physical Budget 1차 A/B — 생활수지 정상화 효과 확인
+
+실험 브랜치: `experiment/p0-physical-budget-20261001`  
+비교 기준: 직전 action-commitment 실험, seed `4242001`, 1000일
+
+추가 변경:
+- Eat -0.28 -> -0.42 / food unit
+- Drink -0.32 -> -0.45 / water unit
+- outdoor Sleep recovery 0.00150 -> 0.00185 / min
+- Wash -0.018 -> -0.18 / tick (4분 총 -0.72)
+- headless UseToilet이 실제 DesignatedArea/DugPit 효과를 사용하도록 연결
+
+### 1000일 비교
+
+| 지표 | action commitment | + physical budget | 변화 |
+|---|---:|---:|---:|
+| Critical preemption | 134,665 | 25,718 | **-80.9%** |
+| Eat 완료 | 20,030 | 13,365 | -33.3% |
+| Drink 완료 | 22,948 | 16,441 | -28.4% |
+| Sleep 계획 시작 | 18,392 | 25,066 | +36.3% |
+| Sleep planned-duration 완료 | 0 | 590 | **0 -> 590** |
+| Toilet 계획 시작 | 145,178 | 48,265 | **-66.8%** |
+| Toilet 완료 | 23,074 | 21,893 | -5.1% |
+| Wash 계획 시작 | 18,540 | 6,661 | **-64.1%** |
+| Wash 완료 | 17,936 | 6,104 | **-66.0%** |
+| Social event | 15 | 3,914 | **대폭 증가** |
+| Civilization event | 4,411 | 4,281 | 유사 |
+| natural Water 잔량 | 214 | 397 | 개선 |
+| cultivated plot | 0 | 0 | 변화 없음 |
+
+핵심은 Toilet 완료 횟수가 거의 유지되면서 **쓸데없는 Toilet 재계획이 2/3 이상 사라졌고**, Wash/Drink 횟수도 실제 생활수지에 맞게 크게 줄었다는 점이다.
+
+### 주민 상태
+
+physical budget 적용 후 seed 4242001 1000일:
+
+- Minjun
+  - Hunger avg 0.526
+  - Thirst avg 0.531
+  - Sleep avg 0.653
+  - Bladder avg 0.613
+  - Hygiene avg 0.445
+  - Hygiene saturation 12,855분 / 약 1.44M분
+- Eunji
+  - Hunger avg 0.469
+  - Thirst avg 0.467
+  - Sleep avg 0.498
+  - Bladder avg 0.548
+  - Hygiene avg 0.375
+  - Hygiene saturation 36,011분
+- Soyeon
+  - Hygiene avg 0.538
+  - Sleep avg 0.727
+
+반면 Jaeho는:
+- Sleep avg 0.969
+- Hygiene avg 0.823
+- KnowledgeTeaching time 560,196분
+
+으로 여전히 비정상이다. 이는 physical budget만의 문제가 아니라 **out-of-band teaching scheduler가 특정 주민의 생활시간을 독점**하는 앞선 진단과 일치한다.
+
+### Social의 간접 회복
+
+Social 코드는 아직 바꾸지 않았는데 Social event가 15 -> 3,914로 증가했다.
+
+이는 Social starvation의 큰 부분이:
+- Physical Need 상시 포화
+- preemption churn
+- 생활시간 소모
+
+에서 발생했음을 뜻한다.
+
+그러나 주민별 편차가 매우 크고 Soyeon은 1000일에도 Social presentation이 0분인 사례가 있으므로 **stranger bootstrap/min utility 문제는 별도로 남아 있다.**
+
+### Cultivation
+
+모든 주민:
+- `knowsDiggingStick=0`
+- `knowsCultivation=0`
+- plot=0
+
+생활수지가 크게 정상화되어도 1000일 동안 그대로다.
+
+따라서 농업 0은 단순히 "먹고 자느라 바빠서"만 생긴 문제가 아니다.  
+**기술 발견 prerequisite / experiment utility / knowledge progression 경로 자체를 별도 P0/P1로 추적해야 한다.**
+
+### 1차 판정
+
+physical budget 조정은 강한 긍정 신호다.
+
+- 생존/자기관리 churn 급감
+- 물 자원 붕괴 없음
+- 실제 평균 Needs 대폭 개선
+- Sleep planned completion 발생
+- 생활시간 확보로 Social 자연 회복
+
+다만 아직 최종값 확정 전이다.
+
+필수 후속:
+1. 두 번째 seed(874213954) 동일 1000일 비교
+2. headless DugPit 전용 회귀 녹색
+3. Social bootstrap
+4. KnowledgeTeaching plan-steal 제거
+5. Cultivation 기술 bootstrap
