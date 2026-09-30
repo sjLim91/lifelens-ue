@@ -198,7 +198,20 @@ assert "physicalGoal === 'Eat'" in semantic
 assert "presentation.physicalGoal === 'Drink'" in semantic
 
 # Sleep has no verified lie-down/sleep/wake sequence in the loaded libraries.
-# Behavioral regression tests keep it neutral until one is actually reviewed.
+# Keep the verified Idle clip, but a separate visual-only posture may lie the
+# body down after authoritative Sleep reaches Interacting. Movement, Core
+# position and collision authority stay untouched.
+for token in (
+    "residentSleepPostureActive",
+    "sleepPosePitchRadians",
+    "sleepPoseRollRadians",
+    "sleepPoseResponsivenessPerSecond",
+    "actor.visual.rotation.x",
+    "actor.visual.rotation.z",
+):
+    assert token in resident + semantic + contract, (
+        f"missing truthful Web sleep posture token: {token}"
+    )
 assert "SleepRest" not in resident
 
 print("LifeLens web resident gait, readability, appearance and UAL2 semantic motion: PASS")
