@@ -26,7 +26,7 @@ static bool checkSleepUrgentWakeThreshold(){
     character.needs.sleep=0.78;
     character.needs.bladder=0.90;
     return lifelens::sleepInterruptedByUrgentNeed(character);
-
+}
 
 int main(){
     if(!checkSleepUrgentWakeThreshold()){
