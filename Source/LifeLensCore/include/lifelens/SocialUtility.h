@@ -546,8 +546,16 @@ inline CivilizationUtilityDecision urgentSurvivalProvisionGatherDecision(
     const World& world,
     const Character& self)
 {
+    // Compatibility-only wrapper for callers/tests that do not own an
+    // authoritative runtime position. Preserve the historical "first
+    // settlement stockpile" reference when available; production scheduling
+    // always calls urgentSurvivalProvisionDecisionAtPosition() with the actual
+    // resident position.
+    const GridPos reference=!world.storageSites.empty()
+        ? world.storageSites.front().pos
+        : civilizationSanitationReferencePosition(world);
     return urgentSurvivalProvisionDecisionAtPosition(
-        world,self,civilizationSanitationReferencePosition(world));
+        world,self,reference);
 }
 
 inline UnifiedUtilityDecision chooseUnifiedUtilityDecisionAtPosition(
