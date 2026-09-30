@@ -8,6 +8,7 @@ import {
   formatObjectKind,
   formatParentingAction,
   formatSocialIntent,
+  formatTechnique,
 } from '../localization/korean';
 
 export interface ResidentActionCue {
@@ -29,6 +30,91 @@ function targetObjectName(
 ): string {
   if (!directive.hasObjectTarget) return '';
   return formatObjectKind(directive.objectKind);
+}
+
+function socialActionCue(
+  directive: ResidentPresentationDirective,
+  target: string,
+  phase: 'Moving' | 'Interacting',
+): string {
+  const moving = phase === 'Moving';
+  const named = (withoutTarget: string, withTarget: string): string => (
+    target ? withTarget : withoutTarget
+  );
+
+  switch (directive.socialIntent) {
+    case 'Approach':
+      return moving
+        ? named('다가가는 중', `${target}에게 다가가는 중`)
+        : named('교류를 시작함', `${target}와 교류를 시작함`);
+    case 'Comfort':
+      return moving
+        ? named('위로하러 이동 중', `${target}을 위로하러 이동 중`)
+        : named('위로하는 중', `${target}을 위로하는 중`);
+    case 'Repair':
+      return moving
+        ? named('관계를 회복하러 이동 중', `${target}와 관계를 회복하러 이동 중`)
+        : named('관계 회복을 시도하는 중', `${target}와 관계 회복을 시도하는 중`);
+    case 'Avoid':
+      return named('거리를 두는 중', `${target}와 거리를 두는 중`);
+    default: {
+      const action = formatSocialIntent(directive.socialIntent);
+      return target
+        ? `${target}와 ${action} · ${moving ? '이동 중' : '진행 중'}`
+        : `${action} · ${moving ? '이동 중' : '진행 중'}`;
+    }
+  }
+}
+
+function parentingActionCue(
+  directive: ResidentPresentationDirective,
+  target: string,
+  phase: 'Moving' | 'Interacting',
+): string {
+  const moving = phase === 'Moving';
+  const prefix = target ? `${target} ` : '';
+
+  switch (directive.parentingAction) {
+    case 'Feed':
+      return `${prefix}${moving ? '먹이러 이동 중' : '먹이는 중'}`;
+    case 'PutToSleep':
+      return `${prefix}${moving ? '재우러 이동 중' : '재우는 중'}`;
+    case 'Bathe':
+      return `${prefix}${moving ? '씻겨주러 이동 중' : '씻겨주는 중'}`;
+    case 'ToiletAssist':
+      return `${prefix}${moving ? '용변을 도우러 이동 중' : '용변을 돕는 중'}`;
+    case 'Hold':
+      return `${prefix}${moving ? '안아주러 이동 중' : '안아주는 중'}`;
+    case 'Play':
+      return `${prefix}${moving ? '함께 놀러 이동 중' : '함께 노는 중'}`;
+    case 'Educate':
+      return `${prefix}${moving ? '가르치러 이동 중' : '가르치는 중'}`;
+    case 'Discipline':
+      return `${prefix}${moving ? '훈육하러 이동 중' : '훈육하는 중'}`;
+    case 'Comfort':
+      return `${prefix}${moving ? '달래러 이동 중' : '달래는 중'}`;
+    case 'HealthCare':
+      return `${prefix}${moving ? '돌보러 이동 중' : '돌보는 중'}`;
+    default: {
+      const action = formatParentingAction(directive.parentingAction);
+      return `${prefix}${action} · ${moving ? '이동 중' : '진행 중'}`;
+    }
+  }
+}
+
+function teachingActionCue(
+  directive: ResidentPresentationDirective,
+  target: string,
+  phase: 'Moving' | 'Interacting',
+): string {
+  const technique = directive.knowledgeTeachingTechnique?.trim();
+  const techniqueLabel = technique && technique !== 'None'
+    ? formatTechnique(technique)
+    : '지식';
+  const targetPrefix = target ? `${target}에게 ` : '';
+  return phase === 'Moving'
+    ? `${targetPrefix}${techniqueLabel}을 가르치러 이동 중`
+    : `${targetPrefix}${techniqueLabel}을 가르치는 중`;
 }
 
 function physicalAction(goal: string | undefined): string {
@@ -123,8 +209,10 @@ export function residentActionCue(
       action = physicalAction(directive.physicalGoal);
       break;
     case 'Social':
-      action = formatSocialIntent(directive.socialIntent);
-      break;
+      return {
+        text: socialActionCue(directive, residentTarget, phase),
+        phase,
+      };
     case 'Civilization': {
       action = formatCivilizationIntent(directive.civilizationIntent);
       const material = directive.civilizationMaterial?.trim();
@@ -166,11 +254,15 @@ export function residentActionCue(
       break;
     }
     case 'Parenting':
-      action = formatParentingAction(directive.parentingAction);
-      break;
+      return {
+        text: parentingActionCue(directive, residentTarget, phase),
+        phase,
+      };
     case 'KnowledgeTeaching':
-      action = '가르치기';
-      break;
+      return {
+        text: teachingActionCue(directive, residentTarget, phase),
+        phase,
+      };
     default:
       console.error(
         `[LifeLens 한글 UI] 번역 등록 누락: 행동종류:${directive.kind ?? '없음'}`,
