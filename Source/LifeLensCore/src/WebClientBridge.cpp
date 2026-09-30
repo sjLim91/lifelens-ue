@@ -384,6 +384,45 @@ const char* weatherSummaryName(WeatherSummary summary)
     return "Clear";
 }
 
+void appendResidentPresentationJson(
+    std::ostringstream& out,
+    const ResidentPresentationObservation& presentation)
+{
+    out << "{";
+    out << "\"active\":" << (presentation.active ? "true" : "false") << ",";
+    out << "\"kind\":\"" << presentationActionKindName(presentation.kind) << "\",";
+    out << "\"phase\":\"" << presentationActionPhaseName(presentation.phase) << "\",";
+    out << "\"physicalGoal\":\"" << goalName(presentation.physicalGoal) << "\",";
+    out << "\"socialIntent\":\"" << socialIntentName(presentation.socialIntent) << "\",";
+    out << "\"civilizationIntent\":\"" << civilizationIntentName(presentation.civilizationIntent) << "\",";
+    out << "\"civilizationMaterial\":\"" << materialName(presentation.civilizationMaterial) << "\",";
+    out << "\"civilizationItem\":\"" << itemKindName(presentation.civilizationItem) << "\",";
+    out << "\"civilizationTechnique\":\"" << techniqueIdName(presentation.civilizationTechnique) << "\",";
+    out << "\"civilizationQuantity\":" << presentation.civilizationQuantity << ",";
+    out << "\"civilizationResourceNode\":\"" << presentation.civilizationResourceNode << "\",";
+    out << "\"civilizationStorage\":\"" << presentation.civilizationStorage << "\",";
+    out << "\"facilityAction\":\"" << facilityBuildActionName(presentation.facilityAction) << "\",";
+    out << "\"facilityId\":\"" << presentation.facilityId << "\",";
+    out << "\"facilityKind\":\"" << traceFacilityName(presentation.facilityKind) << "\",";
+    out << "\"parentingAction\":\"" << parentingActionName(presentation.parentingAction) << "\",";
+    out << "\"knowledgeTeachingTechnique\":\"" << techniqueIdName(presentation.knowledgeTeachingTechnique) << "\",";
+    out << "\"issuedMinute\":" << presentation.issuedMinute << ",";
+    out << "\"targetResidentId\":\"" << presentation.targetResidentId << "\",";
+    out << "\"hasTargetGrid\":" << (presentation.hasTargetGrid ? "true" : "false") << ",";
+    out << "\"targetGridX\":" << presentation.targetGrid.x << ",";
+    out << "\"targetGridY\":" << presentation.targetGrid.y << ",";
+    out << "\"hasObjectTarget\":" << (presentation.hasObjectTarget ? "true" : "false") << ",";
+    out << "\"objectId\":\"" << presentation.objectId << "\",";
+    out << "\"objectKind\":\"" << objectKindName(presentation.objectKind) << "\",";
+    out << "\"emergencyFallback\":" << (presentation.emergencyFallback ? "true" : "false") << ",";
+    out << "\"directNaturalWaterSource\":" << (presentation.directNaturalWaterSource ? "true" : "false") << ",";
+    out << "\"designatedSanitationSite\":" << (presentation.designatedSanitationSite ? "true" : "false") << ",";
+    out << "\"sanitationSiteId\":\"" << presentation.sanitationSiteId << "\",";
+    out << "\"contextActionToken\":\"" << presentation.contextActionToken << "\",";
+    out << "\"durationTicks\":" << presentation.durationTicks;
+    out << "}";
+}
+
 std::string civilizationWorldObservationJson(
     const CivilizationWorldObservation& world)
 {
@@ -595,6 +634,110 @@ std::string WebClientBridge::worldOverviewJson() const
     return out.str();
 }
 
+std::string WebClientBridge::residentRuntimeJson() const
+{
+    if (!simulation_) return "{\"available\":false,\"residents\":[]}";
+
+    const World& world = simulation_->world();
+    std::ostringstream out;
+    out << "{\"available\":true,\"residents\":[";
+
+    bool first = true;
+    for (const Character& character : world.characters) {
+        if (!first) out << ",";
+        first = false;
+
+        const ResidentPresentationObservation presentation =
+            simulation_->observeResidentPresentation(character.id);
+        GridPos position{};
+        const bool hasPosition =
+            simulation_->runtimePosition(character.id, position);
+
+        ObservedActivityKind activityKind = ObservedActivityKind::Idle;
+        Goal physicalGoal = Goal::Idle;
+        SocialIntent socialIntent = SocialIntent::None;
+        CharacterId activityTargetId = 0;
+        std::string activityLabel = "Idle";
+        std::string activityTargetName;
+
+        if (presentation.active
+            && presentation.kind == PresentationActionKind::Physical) {
+            activityKind = ObservedActivityKind::Physical;
+            physicalGoal = presentation.physicalGoal;
+            activityLabel = goalName(physicalGoal);
+        } else if (presentation.active
+            && presentation.kind == PresentationActionKind::Social) {
+            activityKind = ObservedActivityKind::Social;
+            socialIntent = presentation.socialIntent;
+            activityTargetId = presentation.targetResidentId;
+            activityLabel = socialIntentName(socialIntent);
+            if (const Character* target =
+                    findObservedCharacter(world, activityTargetId)) {
+                activityTargetName = target->name;
+            }
+        }
+
+        const int ageYears = character.hasBirthMinute
+            ? ageYearsFromMinutes(character.birthMinute, world.minute)
+            : 0;
+
+        out << "{";
+        out << "\"id\":\"" << character.id << "\",";
+        out << "\"name\":\"" << escapeJson(character.name) << "\",";
+        out << "\"sex\":\"" << sexName(character.sex) << "\",";
+        out << "\"alive\":" << (character.alive ? "true" : "false") << ",";
+        out << "\"lifeStage\":\"" << lifeStageName(character.lifeStage) << "\",";
+        out << "\"ageYears\":" << ageYears << ",";
+        out << "\"hasBirthMinute\":" << (character.hasBirthMinute ? "true" : "false") << ",";
+        out << "\"birthMinute\":" << character.birthMinute << ",";
+        out << "\"deathMinute\":" << character.deathMinute << ",";
+        out << "\"activityKind\":\"" << activityKindName(activityKind) << "\",";
+        out << "\"activityLabel\":\"" << escapeJson(activityLabel) << "\",";
+        out << "\"physicalGoal\":\"" << goalName(physicalGoal) << "\",";
+        out << "\"socialIntent\":\"" << socialIntentName(socialIntent) << "\",";
+        out << "\"activityTargetId\":\"" << activityTargetId << "\",";
+        out << "\"activityTargetName\":\"" << escapeJson(activityTargetName) << "\",";
+        out << "\"presentation\":";
+        appendResidentPresentationJson(out, presentation);
+        out << ",";
+
+        out << "\"emotion\":{";
+        out << "\"joy\":"; appendDouble(out, character.emotion.joy); out << ",";
+        out << "\"sadness\":"; appendDouble(out, character.emotion.sadness); out << ",";
+        out << "\"anger\":"; appendDouble(out, character.emotion.anger); out << ",";
+        out << "\"fear\":"; appendDouble(out, character.emotion.fear); out << ",";
+        out << "\"embarrassment\":"; appendDouble(out, character.emotion.embarrassment); out << ",";
+        out << "\"pride\":"; appendDouble(out, character.emotion.pride); out << ",";
+        out << "\"jealousy\":"; appendDouble(out, character.emotion.jealousy); out << ",";
+        out << "\"affection\":"; appendDouble(out, character.emotion.affection); out << ",";
+        out << "\"anxiety\":"; appendDouble(out, character.emotion.anxiety); out << ",";
+        out << "\"relief\":"; appendDouble(out, character.emotion.relief); out << ",";
+        out << "\"grief\":"; appendDouble(out, character.emotion.grief); out << ",";
+        out << "\"valence\":"; appendDouble(out, character.emotion.valence); out << ",";
+        out << "\"arousal\":"; appendDouble(out, character.emotion.arousal); out << ",";
+        out << "\"intensity\":"; appendDouble(out, character.emotion.intensity());
+        out << "},";
+
+        out << "\"needs\":{";
+        out << "\"hunger\":"; appendDouble(out, character.needs.hunger); out << ",";
+        out << "\"thirst\":"; appendDouble(out, character.needs.thirst); out << ",";
+        out << "\"sleep\":"; appendDouble(out, character.needs.sleep); out << ",";
+        out << "\"bladder\":"; appendDouble(out, character.needs.bladder); out << ",";
+        out << "\"hygiene\":"; appendDouble(out, character.needs.hygiene);
+        out << "},";
+
+        out << "\"hasPosition\":" << (hasPosition ? "true" : "false");
+        if (hasPosition) {
+            out << ",\"gridX\":" << position.x;
+            out << ",\"gridY\":" << position.y;
+        }
+        out << "}";
+    }
+
+    out << "]}";
+    return out.str();
+}
+
 std::string WebClientBridge::residentsJson() const
 {
     if (!simulation_) return "{\"available\":false,\"residents\":[]}";
@@ -715,39 +858,9 @@ std::string WebClientBridge::residentsJson() const
         out << "\"activityTargetName\":\""
             << escapeJson(resident.activityTargetName) << "\",";
 
-        out << "\"presentation\":{";
-        out << "\"active\":" << (presentation.active ? "true" : "false") << ",";
-        out << "\"kind\":\"" << presentationActionKindName(presentation.kind) << "\",";
-        out << "\"phase\":\"" << presentationActionPhaseName(presentation.phase) << "\",";
-        out << "\"physicalGoal\":\"" << goalName(presentation.physicalGoal) << "\",";
-        out << "\"socialIntent\":\"" << socialIntentName(presentation.socialIntent) << "\",";
-        out << "\"civilizationIntent\":\"" << civilizationIntentName(presentation.civilizationIntent) << "\",";
-        out << "\"civilizationMaterial\":\"" << materialName(presentation.civilizationMaterial) << "\",";
-        out << "\"civilizationItem\":\"" << itemKindName(presentation.civilizationItem) << "\",";
-        out << "\"civilizationTechnique\":\"" << techniqueIdName(presentation.civilizationTechnique) << "\",";
-        out << "\"civilizationQuantity\":" << presentation.civilizationQuantity << ",";
-        out << "\"civilizationResourceNode\":\"" << presentation.civilizationResourceNode << "\",";
-        out << "\"civilizationStorage\":\"" << presentation.civilizationStorage << "\",";
-        out << "\"facilityAction\":\"" << facilityBuildActionName(presentation.facilityAction) << "\",";
-        out << "\"facilityId\":\"" << presentation.facilityId << "\",";
-        out << "\"facilityKind\":\"" << traceFacilityName(presentation.facilityKind) << "\",";
-        out << "\"parentingAction\":\"" << parentingActionName(presentation.parentingAction) << "\",";
-        out << "\"knowledgeTeachingTechnique\":\"" << techniqueIdName(presentation.knowledgeTeachingTechnique) << "\",";
-        out << "\"issuedMinute\":" << presentation.issuedMinute << ",";
-        out << "\"targetResidentId\":\"" << presentation.targetResidentId << "\",";
-        out << "\"hasTargetGrid\":" << (presentation.hasTargetGrid ? "true" : "false") << ",";
-        out << "\"targetGridX\":" << presentation.targetGrid.x << ",";
-        out << "\"targetGridY\":" << presentation.targetGrid.y << ",";
-        out << "\"hasObjectTarget\":" << (presentation.hasObjectTarget ? "true" : "false") << ",";
-        out << "\"objectId\":\"" << presentation.objectId << "\",";
-        out << "\"objectKind\":\"" << objectKindName(presentation.objectKind) << "\",";
-        out << "\"emergencyFallback\":" << (presentation.emergencyFallback ? "true" : "false") << ",";
-        out << "\"directNaturalWaterSource\":" << (presentation.directNaturalWaterSource ? "true" : "false") << ",";
-        out << "\"designatedSanitationSite\":" << (presentation.designatedSanitationSite ? "true" : "false") << ",";
-        out << "\"sanitationSiteId\":\"" << presentation.sanitationSiteId << "\",";
-        out << "\"contextActionToken\":\"" << presentation.contextActionToken << "\",";
-        out << "\"durationTicks\":" << presentation.durationTicks;
-        out << "},";
+        out << "\"presentation\":";
+        appendResidentPresentationJson(out, presentation);
+        out << ",";
 
         out << "\"emotion\":{";
         if (character) {
@@ -1269,6 +1382,28 @@ std::string WebClientBridge::worldObjectsJson() const
         out << "}";
     }
     out << "]";
+    out << "}";
+    return out.str();
+}
+
+std::string WebClientBridge::humanTracesWindowJson(
+    int centerChunkX,
+    int centerChunkY,
+    int radiusChunks) const
+{
+    if (!simulation_) {
+        return "{\"available\":false,\"humanTraces\":{\"total\":0,\"entries\":[]}}";
+    }
+
+    const int radius = std::max(0, std::min(radiusChunks, 16));
+    std::ostringstream out;
+    out << "{\"available\":true,";
+    out << "\"centerChunkX\":" << centerChunkX << ",";
+    out << "\"centerChunkY\":" << centerChunkY << ",";
+    out << "\"radiusChunks\":" << radius << ",";
+    out << "\"humanTraces\":";
+    appendHumanTraces(out, buildHumanTraceWindowObservation(
+        simulation_->world(), {centerChunkX, centerChunkY}, radius));
     out << "}";
     return out.str();
 }
