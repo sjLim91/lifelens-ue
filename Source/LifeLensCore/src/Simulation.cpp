@@ -1058,30 +1058,30 @@ bool Simulation::tryCivilizationDecision(Character& c,Runtime& r){
     if(!criticalProvisionRequired && world_.minute%15!=0) return false;
 
     const auto population=settlementPopulation();
-    CivilizationUtilityDecision selected;
+    UnifiedUtilityDecision decision;
     if(criticalProvisionRequired){
-        selected=criticalProvision;
+        decision.kind=UnifiedDecisionKind::Civilization;
+        decision.civilization=criticalProvision;
+        decision.utility=criticalProvision.utility;
     }else{
-        const UnifiedUtilityDecision decision=
-            chooseUnifiedUtilityDecisionAtPosition(
-                world_,c,relationships_,r.pos,0.18,0.14,&population);
+        decision=chooseUnifiedUtilityDecisionAtPosition(
+            world_,c,relationships_,r.pos,0.18,0.14,&population);
         if(decision.kind!=UnifiedDecisionKind::Civilization){
             return false;
         }
-        selected=decision.civilization;
     }
-    if(selected.intent==CivilizationIntent::None) return false;
+    if(decision.civilization.intent==CivilizationIntent::None) return false;
 
     PendingContextAction pending;
     pending.token=issueContextActionToken();
     pending.kind=ContextActionKind::Civilization;
     pending.issuedMinute=world_.minute;
-    pending.civilization=selected;
+    pending.civilization=decision.civilization;
     GridPos target{};
     SanitationSiteId sanitationSiteId=0;
     const bool resolved=resolveCivilizationContextTarget(
-        world_,c,selected,r.pos,target,sanitationSiteId,&population);
-    if(civilizationContextRequiresSpatialTarget(selected) && !resolved) return false;
+        world_,c,decision.civilization,r.pos,target,sanitationSiteId,&population);
+    if(civilizationContextRequiresSpatialTarget(decision.civilization) && !resolved) return false;
     if(resolved){
         pending.hasSpatialTarget=true;
         pending.targetPos=target;
