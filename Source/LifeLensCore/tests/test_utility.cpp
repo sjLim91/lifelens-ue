@@ -15,6 +15,7 @@ static bool checkSleepUrgentWakeThreshold(){
     // Once rest has reduced fatigue and the competing pressure is clearly
     // stronger, the same urgent need must wake the resident.
     character.needs.sleep=0.70;
+    character.needs.hunger=0.80;
     if(!lifelens::sleepInterruptedByUrgentNeed(character)) return false;
     character.needs.hunger=0.10;
 
