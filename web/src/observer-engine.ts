@@ -12,6 +12,7 @@ import type { Resident, TerrainWindow } from './runtime/core-types';
 import { ResidentContinuity } from './runtime/resident-continuity';
 import { WorldSession } from './runtime/world-session';
 import { observerActions } from './state/observer-actions';
+import type { ObservationEvent } from './state/observation-feed';
 import { observerStore } from './state/observer-store';
 import {
   buildFastForwardSummary,
@@ -306,6 +307,51 @@ export function startObserverEngine(): void {
     worldSession.moveObserver(target.centerChunkX - centerX, target.centerChunkY - centerY);
     refresh();
   }
+
+  function focusObservation(event: ObservationEvent): void {
+    if (!worldSession) return;
+
+    const preferredResidentId = event.residentId
+      && residentSnapshot.some((resident) => resident.id === event.residentId)
+      ? event.residentId
+      : event.targetResidentId
+        && residentSnapshot.some(
+          (resident) => resident.id === event.targetResidentId,
+        )
+        ? event.targetResidentId
+        : null;
+
+    const fallbackResident = preferredResidentId
+      ? residentSnapshot.find(
+          (resident) => resident.id === preferredResidentId,
+        )
+      : undefined;
+    const gridX = Number.isFinite(event.focusGridX)
+      ? event.focusGridX
+      : fallbackResident?.hasPosition
+        ? fallbackResident.gridX
+        : undefined;
+    const gridY = Number.isFinite(event.focusGridY)
+      ? event.focusGridY
+      : fallbackResident?.hasPosition
+        ? fallbackResident.gridY
+        : undefined;
+
+    observerStore.focusObservation(event.id, preferredResidentId);
+    threeWorldRenderer?.setSelectedHumanTrace(null);
+    threeWorldRenderer?.setSelectedResident(preferredResidentId);
+
+    if (gridX === undefined || gridY === undefined) return;
+    const target = humanTraceFocus({ gridX, gridY });
+    followResidents = false;
+    localPanX = target.panX;
+    localPanZ = target.panZ;
+    worldSession.moveObserver(
+      target.centerChunkX - centerX,
+      target.centerChunkY - centerY,
+    );
+    refresh();
+  }
   
   function move(dx: number, dy: number): void {
     localPanX = 0;
@@ -444,6 +490,8 @@ export function startObserverEngine(): void {
     recenterObserver,
     selectResident,
     selectHumanTrace,
+    focusObservation,
+    clearObservationFocus: () => observerStore.clearObservationFocus(),
   });
   
   new ResizeObserver(resizeCanvas).observe(canvas);
