@@ -7,6 +7,7 @@
 
 #include "Facility.h"
 #include "PrimitiveSanitation.h"
+#include "SettlementDemand.h"
 #include "World.h"
 
 namespace lifelens {
@@ -21,6 +22,8 @@ constexpr double PrimitiveStorageRecognitionBaseChance = 0.34;
 struct PrimitiveStorageNeedObservation {
     bool recognized=false;
     int carriedUnits=0;
+    int localResidents=1;
+    int localCarriedUnits=0;
     int threshold=PrimitiveStorageRecognitionInventoryUnits;
     double pressure=0.0;
 };
@@ -59,20 +62,86 @@ inline ConstructedFacility* primitiveStorageProject(World& world)
     return nullptr;
 }
 
+inline int primitiveStorageCarriedUnits(const Character& resident)
+{
+    int total=0;
+    for(const auto& stack:resident.civilization.inventory.stacks()){
+        total+=std::max(0,stack.quantity);
+    }
+    return total;
+}
+
+inline PrimitiveStorageNeedObservation observePrimitiveStorageNeed(
+    const World& world,
+    const Character& resident,
+    GridPos activityAnchor,
+    const SettlementPopulation* population)
+{
+    PrimitiveStorageNeedObservation result;
+    result.carriedUnits=primitiveStorageCarriedUnits(resident);
+    result.localCarriedUnits=result.carriedUnits;
+    result.localResidents=1;
+
+    if(population!=nullptr){
+        result.localCarriedUnits=0;
+        result.localResidents=0;
+        for(const auto& entry:*population){
+            if(manhattan(entry.second,activityAnchor)>SettlementServiceRadiusGrid)
+                continue;
+            for(const auto& candidate:world.characters){
+                if(candidate.id!=entry.first || !candidate.alive) continue;
+                ++result.localResidents;
+                result.localCarriedUnits+=primitiveStorageCarriedUnits(candidate);
+                break;
+            }
+        }
+        if(result.localResidents<=0){
+            result.localResidents=1;
+            result.localCarriedUnits=result.carriedUnits;
+        }
+    }
+
+    const double personalPressure=std::max(0.0,std::min(1.0,
+        static_cast<double>(
+            result.carriedUnits-PrimitiveStorageRecognitionInventoryUnits+1)
+            /6.0));
+    const double averageLocalLoad=
+        static_cast<double>(result.localCarriedUnits)
+        /static_cast<double>(std::max(1,result.localResidents));
+    const bool sharedLoadRecognized=
+        result.localResidents>=2
+        && result.localCarriedUnits>=PrimitiveStorageRecognitionInventoryUnits
+        && averageLocalLoad>=2.0;
+    const double sharedPressure=sharedLoadRecognized
+        ? std::max(0.0,std::min(
+            1.0,
+            (averageLocalLoad-1.5)/3.0
+            +0.08*static_cast<double>(
+                std::max(0,result.localCarriedUnits
+                    -PrimitiveStorageRecognitionInventoryUnits))))
+        : 0.0;
+
+    result.pressure=std::max(personalPressure,sharedPressure);
+    result.recognized=!hasOperationalPrimitiveStorage(world)
+        && primitiveStorageProject(world)==nullptr
+        && (
+            result.carriedUnits>=PrimitiveStorageRecognitionInventoryUnits
+            || sharedLoadRecognized
+        );
+    return result;
+}
+
 inline PrimitiveStorageNeedObservation observePrimitiveStorageNeed(
     const World& world,
     const Character& resident)
 {
-    PrimitiveStorageNeedObservation result;
-    for(const auto& stack:resident.civilization.inventory.stacks()){
-        result.carriedUnits+=std::max(0,stack.quantity);
-    }
-    result.pressure=std::max(0.0,std::min(1.0,
-        static_cast<double>(result.carriedUnits-PrimitiveStorageRecognitionInventoryUnits+1)/6.0));
-    result.recognized=!hasOperationalPrimitiveStorage(world)
-        && primitiveStorageProject(world)==nullptr
-        && result.carriedUnits>=PrimitiveStorageRecognitionInventoryUnits;
-    return result;
+    return observePrimitiveStorageNeed(
+        world,
+        resident,
+        world.hasInitialStartRegionSelection
+            ? world.initialStartRegionCenterGrid()
+            : GridPos{},
+        nullptr);
 }
 
 inline bool primitiveStorageSiteBlocked(const World& world,GridPos pos)
