@@ -473,3 +473,44 @@ P0 순서를 아래로 확정한다.
 을 함께 검사해야 한다.
 
 현재 생존/자기관리 thrash가 문명 진입 시간을 압박하므로 **농업 0개가 독립적인 cultivation 수치 문제인지, 상위 scheduler starvation의 결과인지 분리해서 측정**해야 한다.
+
+
+## 19. Social bootstrap 수학 — stranger Approach 진입장벽
+
+초기 4명은 directional familiarity가 0.00~0.04 정도이고 affection/trust/comfort 등은 거의 0에서 시작한다.  
+초기 Social의 실질적인 진입 경로는 대부분 `Approach`다.
+
+관계/기억/믿음이 없는 낯선 주민에 대한 Approach 기본식:
+
+```
+0.02
++ 0.12 * socializing
++ 0.04 * exploration
++ 0.02 * (1 - solitude)
++ 0.01 * compassion
+```
+
+모든 preference/trait가 0~1이라고 보면 이 부분의 이론 최대는 **0.20**이다.  
+초기 familiarity 0.04가 `socialBond()`에 주는 추가점수도 약 0.0018 수준이라 매우 작다.
+
+그런데 현재 `minimumSocialUtility = 0.18`이다.
+
+즉 **낯선 사람에게 먼저 말을 걸 수 있는 점수가 이론 최대 0.20인데 입장 커트가 0.18**이다.  
+평균적인 0.5 성향값을 단순 대입하면 Approach는 약 **0.115**로 커트에 크게 못 미친다.
+
+이 구조에서는:
+1. 극단적으로 사교적인 소수만 초기 Approach 가능
+2. Approach가 없으면 familiarity/bond/positive memory가 자라지 않음
+3. 관계가 자라지 않으니 Social utility도 계속 낮음
+4. 시간이 지나 Physical Need가 높아지면 호출부 hard gate까지 닫힘
+
+이라는 **사회관계 bootstrap deadlock**이 생긴다.
+
+따라서 Social 개선은 단순 "사회행동 확률 증가"가 아니라:
+- stranger approach baseline
+- minimum social utility
+- physical-vs-social 상대 Utility
+- chronic Need hard gate
+를 한 묶음으로 계측해야 한다.
+
+후보 탐색 범위로 `minimumSocialUtility 0.10~0.14`를 측정할 가치는 있으나, 최종값은 장기 A/B 계측 후 확정한다.
