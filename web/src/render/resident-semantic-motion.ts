@@ -16,6 +16,19 @@ export interface ResidentSemanticMotionContext {
   nearbyResident: boolean;
 }
 
+export function residentSleepPostureActive(
+  presentation: ResidentPresentationDirective | null | undefined,
+  moving: boolean,
+): boolean {
+  return (
+    !moving
+    && presentation?.active === true
+    && presentation.kind === 'Physical'
+    && presentation.phase === 'Interacting'
+    && presentation.physicalGoal === 'Sleep'
+  );
+}
+
 export function resolveResidentSemanticMotion(
   presentation: ResidentPresentationDirective | null | undefined,
   context: ResidentSemanticMotionContext,
