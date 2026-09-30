@@ -59,6 +59,7 @@ int main()
     // consumable provision. Planning must not consume it; execution owns that.
     World provisionWorld(42);
     provisionWorld.objects.clear();
+    provisionWorld.resourceNodes.clear();
     Character provisionResident;
     provisionResident.id=1;
     provisionResident.civilization.character=1;
@@ -72,6 +73,8 @@ int main()
         ItemKind::RawMaterial,MaterialKind::PlantFood)==1);
 
     assert(buildPlan(provisionWorld,provisionResident,Goal::Drink,{}).empty());
+    provisionResident.civilization.inventory.add(
+        {ItemKind::SimpleContainer,MaterialKind::Clay,1,0.5,1.0});
     provisionResident.civilization.inventory.add(
         {ItemKind::RawMaterial,MaterialKind::Water,1,0.5,1.0});
     auto drinkPlan=buildPlan(provisionWorld,provisionResident,Goal::Drink,{});
