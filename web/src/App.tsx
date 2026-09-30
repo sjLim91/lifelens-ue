@@ -19,6 +19,7 @@ import { DiagnosticsPanel } from './ui/diagnostics-panel';
 import {
   ObservationFeedOverlay,
   ObservationFeedPanel,
+  ObservationFocusBanner,
 } from './ui/observation-feed';
 import { RenderModeControl } from './ui/render-mode-control';
 import { HumanTraceDetail, HumanTracePanel } from './ui/human-traces';
@@ -50,6 +51,11 @@ function WorldViewport({
   const snapshot = useObserverSnapshot();
   const selectedTrace = visibleHumanTraces(snapshot.terrain)
     .find(trace => trace.id === snapshot.selectedHumanTraceId);
+  const focusedObservation = snapshot.focusedObservationId
+    ? snapshot.observations.find(
+        (event) => event.id === snapshot.focusedObservationId,
+      ) ?? null
+    : null;
 
   return (
     <section className="world">
@@ -57,6 +63,12 @@ function WorldViewport({
       <canvas id="threeWorldCanvas" aria-label="라이프렌즈 3차원 세계" />
       <canvas id="characterCanvas" aria-label="라이프렌즈 주민" />
       <WorldOverlay snapshot={snapshot} />
+      {focusedObservation ? (
+        <ObservationFocusBanner
+          event={focusedObservation}
+          onClear={() => observerActions.clearObservationFocus()}
+        />
+      ) : null}
       {snapshot.fastForward.status === 'running' && (
         <div className="fast-forward-world-status" aria-live="polite">
           <strong>세계 변화 계산 중</strong>
@@ -70,7 +82,7 @@ function WorldViewport({
       )}
       {!selectedTrace && <ObservationFeedOverlay
         observations={snapshot.observations}
-        onSelect={(residentId) => observerActions.selectResident(residentId)}
+        onFocus={(event) => observerActions.focusObservation(event)}
       />}
       {selectedTrace && !observerOpen && <div className="human-trace-overlay">
         <HumanTraceDetail trace={selectedTrace} residents={snapshot.residents}
@@ -269,7 +281,10 @@ function ObserverPanel({
         <h2>최근 관찰 포착</h2>
         <ObservationFeedPanel
           observations={snapshot.observations}
-          onSelect={(residentId) => observerActions.selectResident(residentId)}
+          onFocus={(event) => {
+            observerActions.focusObservation(event);
+            onViewPlace();
+          }}
         />
       </section>
 
@@ -305,8 +320,16 @@ export default function App() {
   const snapshot = useObserverSnapshot();
 
   useEffect(() => {
-    if (snapshot.selectedResidentId) setMobileObserverOpen(true);
-  }, [snapshot.selectedResidentId]);
+    if (
+      snapshot.selectedResidentId
+      && !snapshot.focusedObservationId
+    ) {
+      setMobileObserverOpen(true);
+    }
+  }, [
+    snapshot.selectedResidentId,
+    snapshot.focusedObservationId,
+  ]);
 
   useEffect(() => {
     try {
