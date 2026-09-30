@@ -19,6 +19,10 @@ struct ResidentMetrics {
     std::array<double,5> needSum{};
     std::array<double,5> needMax{};
     std::array<std::uint64_t,5> saturatedMinutes{};
+    std::array<std::uint64_t,5> saturatedStreak{};
+    std::array<std::uint64_t,5> longestSaturatedStreak{};
+    std::uint64_t currentIdleStreak=0;
+    std::uint64_t longestIdleStreak=0;
     std::uint64_t physicalMinutes=0;
     std::uint64_t socialMinutes=0;
     std::uint64_t civilizationMinutes=0;
@@ -162,15 +166,26 @@ int main(int argc,char** argv)
             for(std::size_t i=0;i<values.size();++i){
                 m.needSum[i]+=values[i];
                 m.needMax[i]=std::max(m.needMax[i],values[i]);
-                if(values[i]>=0.999) ++m.saturatedMinutes[i];
+                if(values[i]>=0.999){
+                    ++m.saturatedMinutes[i];
+                    ++m.saturatedStreak[i];
+                    m.longestSaturatedStreak[i]=std::max(
+                        m.longestSaturatedStreak[i],m.saturatedStreak[i]);
+                }else{
+                    m.saturatedStreak[i]=0;
+                }
             }
 
             const ResidentPresentationObservation p=
                 sim.observeResidentPresentation(m.id);
             if(!p.active || p.phase==PresentationActionPhase::Idle){
                 ++m.idleMinutes;
+                ++m.currentIdleStreak;
+                m.longestIdleStreak=std::max(
+                    m.longestIdleStreak,m.currentIdleStreak);
                 continue;
             }
+            m.currentIdleStreak=0;
             switch(p.kind){
                 case PresentationActionKind::Physical:
                     ++m.physicalMinutes;
@@ -241,9 +256,11 @@ int main(int argc,char** argv)
             std::cout<<" "<<needNames[i]<<"Avg="<<std::fixed<<std::setprecision(4)
                      <<(m.needSum[i]/denom)
                      <<" "<<needNames[i]<<"Max="<<m.needMax[i]
-                     <<" "<<needNames[i]<<"SatMin="<<m.saturatedMinutes[i];
+                     <<" "<<needNames[i]<<"SatMin="<<m.saturatedMinutes[i]
+                     <<" "<<needNames[i]<<"LongestSat="<<m.longestSaturatedStreak[i];
         }
-        std::cout<<" physicalMin="<<m.physicalMinutes
+        std::cout<<" longestIdle="<<m.longestIdleStreak
+                 <<" physicalMin="<<m.physicalMinutes
                  <<" socialMin="<<m.socialMinutes
                  <<" civilizationMin="<<m.civilizationMinutes
                  <<" parentingMin="<<m.parentingMinutes
