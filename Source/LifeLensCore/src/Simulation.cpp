@@ -1443,6 +1443,26 @@ void Simulation::advanceAction(Character& c,Runtime& r){
                 r.consecutiveFailures=0;
                 break;
             }
+            SanitationUseTarget sanitationTarget;
+            PrimitiveSanitationSite* sanitationSite=nullptr;
+            if(r.goal==Goal::UseToilet){
+                if(!sanitationUseTarget(c.id,sanitationTarget)){
+                    failPlan(c,r);
+                    return;
+                }
+                if(sanitationTarget.kind==SanitationUseTargetKind::DesignatedArea){
+                    sanitationSite=findPrimitiveSanitationSite(
+                        world_.primitiveSanitationSites,
+                        sanitationTarget.siteId);
+                    if(sanitationSite==nullptr
+                       || !sanitationSite->active
+                       || !sameGridPos(sanitationSite->pos,sanitationTarget.pos)){
+                        failPlan(c,r);
+                        return;
+                    }
+                }
+            }
+
             const bool directNaturalWater=
                 (r.goal==Goal::Drink || r.goal==Goal::Wash)
                 && portableWaterCount(c.civilization.inventory)<=0;
@@ -1485,15 +1505,9 @@ void Simulation::advanceAction(Character& c,Runtime& r){
                 }
             }
             if(r.goal==Goal::UseToilet){
-                GridPos reliefTarget=r.navigationTarget;
-                if(!r.navigationHasTarget){
-                    SanitationUseTarget sanitationTarget;
-                    if(!sanitationUseTarget(c.id,sanitationTarget)){
-                        failPlan(c,r);
-                        return;
-                    }
-                    reliefTarget=sanitationTarget.pos;
-                }
+                const GridPos reliefTarget=r.navigationHasTarget
+                    ? r.navigationTarget
+                    : sanitationTarget.pos;
                 if(!advanceNavigation(r,reliefTarget,0)){
                     if(r.navigationRouteFailed){
                         failPlan(c,r);
@@ -1530,6 +1544,9 @@ void Simulation::advanceAction(Character& c,Runtime& r){
                 c.needs.apply({
                     0,0,-sleepRecoveryPerMinuteAt(
                         world_,r.pos,settlementSleepFacility),0,0});
+            }else if(r.goal==Goal::UseToilet && sanitationSite!=nullptr){
+                c.needs.apply(
+                    primitiveSanitationUseEffectPerTick(sanitationSite->kind));
             }else{
                 c.needs.apply(emergencyUseEffectPerTick(r.goal));
             }
@@ -1555,16 +1572,55 @@ void Simulation::advanceAction(Character& c,Runtime& r){
             }
             if(--a.remainingTicks<=0){
                 if(r.goal==Goal::UseToilet){
+                    const PrimitiveSanitationSiteKind sanitationKind=
+                        sanitationSite!=nullptr
+                            ? sanitationSite->kind
+                            : PrimitiveSanitationSiteKind::DesignatedArea;
+                    const double residueIntensity=
+                        sanitationSite!=nullptr
+                            ? primitiveSanitationResidueIntensity(sanitationKind)
+                            : 0.42;
+                    const int residueRadius=
+                        sanitationSite!=nullptr
+                            ? primitiveSanitationResidueRadiusTiles(sanitationKind)
+                            : 3;
+                    const double hygieneBurden=
+                        sanitationSite!=nullptr
+                            ? primitiveSanitationHygieneBurden(sanitationKind)
+                            : 0.025;
+
+                    if(sanitationSite!=nullptr
+                       && !recordPrimitiveSanitationSiteUse(
+                           world_.primitiveSanitationSites,
+                           sanitationSite->id,
+                           r.pos)){
+                        failPlan(c,r);
+                        return;
+                    }
+
                     const auto& residue=world_.environmentalResidues.deposit(
-                        EnvironmentalResidueKind::HumanWaste,r.pos,c.id,world_.minute,1.0,0.42,3);
-                    c.needs.hygiene=Needs::clamp01(c.needs.hygiene+0.025);
+                        EnvironmentalResidueKind::HumanWaste,
+                        r.pos,
+                        c.id,
+                        world_.minute,
+                        1.0,
+                        residueIntensity,
+                        residueRadius);
+                    c.needs.hygiene=Needs::clamp01(
+                        c.needs.hygiene+hygieneBurden);
                     std::ostringstream consequence;
                     consequence<<c.name<<" left sanitation residue id="<<residue.id
                                <<" at ("<<r.pos.x<<","<<r.pos.y<<") amount="
                                <<std::fixed<<std::setprecision(2)<<residue.amount;
                     emit(consequence.str());
                 }
-                emit(c.name+" completed "+std::string(goalName(r.goal))+" via emergency fallback");
+                emit(
+                    c.name+" completed "+std::string(goalName(r.goal))
+                    +(
+                        r.goal==Goal::UseToilet && sanitationSite!=nullptr
+                            ? " via sanitation site"
+                            : " via emergency fallback"
+                    ));
                 clearNavigation(r);
                 ++r.actionIndex; r.announced=false; r.consecutiveFailures=0;
             }
