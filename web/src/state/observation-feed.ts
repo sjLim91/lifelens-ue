@@ -17,6 +17,8 @@ import {
   formatLocationText,
   formatMaterial,
   formatMemoryText,
+  formatParentingAction,
+  formatSocialIntent,
   formatTechnique,
 } from '../localization/korean';
 
@@ -876,6 +878,145 @@ function physicalNeedMilestoneEvent(
   };
 }
 
+function socialPresentationSignature(resident: Resident): string {
+  const presentation = resident.presentation;
+  if (
+    !presentation?.active
+    || (
+      presentation.kind !== 'Social'
+      && presentation.kind !== 'KnowledgeTeaching'
+      && presentation.kind !== 'Parenting'
+    )
+    || presentation.phase === 'Idle'
+  ) {
+    return '';
+  }
+
+  return [
+    presentation.kind ?? '',
+    presentation.phase ?? '',
+    presentation.socialIntent ?? '',
+    presentation.parentingAction ?? '',
+    presentation.knowledgeTeachingTechnique ?? '',
+    presentation.targetResidentId ?? '',
+    presentation.contextActionToken ?? '',
+    presentation.targetGridX ?? '',
+    presentation.targetGridY ?? '',
+  ].join('|');
+}
+
+function socialMilestoneSummary(
+  resident: Resident,
+  targetName: string,
+): string {
+  const presentation = resident.presentation!;
+  const moving = presentation.phase === 'Moving';
+
+  if (presentation.kind === 'Social') {
+    switch (presentation.socialIntent) {
+      case 'Comfort':
+        return moving
+          ? `${resident.name}: ${targetName}을 위로하러 이동 중`
+          : `${resident.name}: ${targetName}을 위로하는 중`;
+      case 'Repair':
+        return moving
+          ? `${resident.name}: ${targetName}와 관계를 회복하려 이동 중`
+          : `${resident.name}: ${targetName}와 관계 회복을 시도하는 중`;
+      case 'Avoid':
+        return `${resident.name}: ${targetName}와 거리를 두는 중`;
+      case 'Approach':
+        return moving
+          ? `${resident.name}: ${targetName}에게 다가가는 중`
+          : `${resident.name}: ${targetName}와 교류를 시작함`;
+      default:
+        return `${resident.name}: ${targetName}와 ${formatSocialIntent(
+          presentation.socialIntent,
+        )} ${moving ? '위치로 이동 중' : '진행 중'}`;
+    }
+  }
+
+  if (presentation.kind === 'KnowledgeTeaching') {
+    const technique = presentation.knowledgeTeachingTechnique?.trim();
+    const techniqueLabel = technique && technique !== 'None'
+      ? formatTechnique(technique)
+      : '알고 있는 지식';
+    return moving
+      ? `${resident.name}: ${targetName}에게 ${techniqueLabel}을 가르치러 이동 중`
+      : `${resident.name}: ${targetName}에게 ${techniqueLabel}을 가르치는 중`;
+  }
+
+  const parenting = formatParentingAction(
+    presentation.parentingAction,
+  );
+  return moving
+    ? `${resident.name}: ${targetName}를 돌보러 이동 중 · ${parenting}`
+    : `${resident.name}: ${targetName}에게 ${parenting} 진행 중`;
+}
+
+function socialInteractionMilestoneEvent(
+  resident: Resident,
+  previous: Resident,
+  residents: Resident[],
+  minute: number,
+): ObservationEvent | null {
+  const presentation = resident.presentation;
+  if (
+    !presentation?.active
+    || (
+      presentation.kind !== 'Social'
+      && presentation.kind !== 'KnowledgeTeaching'
+      && presentation.kind !== 'Parenting'
+    )
+    || (
+      presentation.phase !== 'Moving'
+      && presentation.phase !== 'Interacting'
+    )
+  ) {
+    return null;
+  }
+
+  const signature = socialPresentationSignature(resident);
+  if (
+    !signature
+    || signature === socialPresentationSignature(previous)
+  ) {
+    return null;
+  }
+
+  const targetId = presentation.targetResidentId?.trim() ?? '';
+  if (!targetId || targetId === '0' || targetId === resident.id) {
+    return null;
+  }
+  const target = residents.find((candidate) => candidate.id === targetId);
+  if (!target) return null;
+
+  return {
+    id: [
+      'social-action',
+      minute,
+      resident.id,
+      targetId,
+      presentation.kind,
+      presentation.phase,
+      presentation.socialIntent ?? '',
+      presentation.parentingAction ?? '',
+      presentation.knowledgeTeachingTechnique ?? '',
+      presentation.contextActionToken ?? '',
+    ].join(':'),
+    kind: 'activity',
+    minute,
+    residentId: resident.id,
+    residentName: resident.name,
+    targetResidentId: targetId,
+    summary: socialMilestoneSummary(resident, target.name),
+    importance:
+      presentation.kind === 'Social'
+      && presentation.socialIntent === 'Approach'
+        ? 'low'
+        : 'medium',
+  };
+}
+
 function activityEvent(
   resident: Resident,
   previous: Resident,
@@ -1027,6 +1168,16 @@ export function deriveObservationEvents(
     );
     if (physicalMilestone) events.push(physicalMilestone);
 
+    const socialMilestone = socialParticipants.has(resident.id)
+      ? null
+      : socialInteractionMilestoneEvent(
+          resident,
+          previous,
+          nextResidents,
+          minute,
+        );
+    if (socialMilestone) events.push(socialMilestone);
+
     const memory = newMemoryEvent(resident, previous, minute);
     if (memory) events.push(memory);
 
@@ -1044,7 +1195,13 @@ export function deriveObservationEvents(
       || resident.activityKind !== 'Social'
     ) {
       const activity = activityEvent(resident, previous, minute);
-      if (activity && !physicalMilestone) events.push(activity);
+      if (
+        activity
+        && !physicalMilestone
+        && !socialMilestone
+      ) {
+        events.push(activity);
+      }
     }
   }
 

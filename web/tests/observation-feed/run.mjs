@@ -250,6 +250,172 @@ testCase('unchanged physical phase does not spam the observation feed', () => {
   assert.equal(events.length, 0);
 });
 
+testCase('social action milestones expose approach and interaction phases', () => {
+  const target = resident({ id: 'b', name: '하린' });
+  const moving = deriveObservationEvents(
+    world(20),
+    [resident({ presentation: { active: false } }), target],
+    world(21),
+    [resident({
+      activityKind: 'Social',
+      activityLabel: 'Comfort',
+      socialIntent: 'Comfort',
+      activityTargetId: 'b',
+      activityTargetName: '하린',
+      presentation: {
+        active: true,
+        kind: 'Social',
+        phase: 'Moving',
+        socialIntent: 'Comfort',
+        targetResidentId: 'b',
+        contextActionToken: '501',
+      },
+    }), target],
+  );
+
+  assert.equal(moving.length, 1);
+  assert.match(moving[0].summary, /민재.*하린.*위로하러 이동/);
+  assert.equal(moving[0].targetResidentId, 'b');
+
+  const interacting = deriveObservationEvents(
+    world(21),
+    [resident({
+      activityKind: 'Social',
+      activityLabel: 'Comfort',
+      socialIntent: 'Comfort',
+      activityTargetId: 'b',
+      activityTargetName: '하린',
+      presentation: {
+        active: true,
+        kind: 'Social',
+        phase: 'Moving',
+        socialIntent: 'Comfort',
+        targetResidentId: 'b',
+        contextActionToken: '501',
+      },
+    }), target],
+    world(22),
+    [resident({
+      activityKind: 'Social',
+      activityLabel: 'Comfort',
+      socialIntent: 'Comfort',
+      activityTargetId: 'b',
+      activityTargetName: '하린',
+      presentation: {
+        active: true,
+        kind: 'Social',
+        phase: 'Interacting',
+        socialIntent: 'Comfort',
+        targetResidentId: 'b',
+        contextActionToken: '501',
+      },
+    }), target],
+  );
+
+  assert.equal(interacting.length, 1);
+  assert.match(interacting[0].summary, /민재.*하린.*위로하는 중/);
+});
+
+testCase('teaching and parenting milestones name the real target and action', () => {
+  const target = resident({ id: 'b', name: '하린' });
+  const teaching = deriveObservationEvents(
+    world(30),
+    [resident({ presentation: { active: false } }), target],
+    world(31),
+    [resident({
+      presentation: {
+        active: true,
+        kind: 'KnowledgeTeaching',
+        phase: 'Interacting',
+        targetResidentId: 'b',
+        knowledgeTeachingTechnique: 'FireMaking',
+        contextActionToken: '601',
+      },
+    }), target],
+  );
+  assert.ok(teaching.some(event => /하린.*불 피우기.*가르치는 중/.test(event.summary)));
+
+  const parenting = deriveObservationEvents(
+    world(40),
+    [resident({ presentation: { active: false } }), target],
+    world(41),
+    [resident({
+      presentation: {
+        active: true,
+        kind: 'Parenting',
+        phase: 'Interacting',
+        targetResidentId: 'b',
+        parentingAction: 'Comfort',
+        contextActionToken: '602',
+      },
+    }), target],
+  );
+  assert.ok(parenting.some(event => /하린.*달래기.*진행 중/.test(event.summary)));
+});
+
+testCase('unchanged social phase does not spam and exact social outcome wins', () => {
+  const target = resident({ id: 'b', name: '하린' });
+  const presentation = {
+    active: true,
+    kind: 'Social',
+    phase: 'Interacting',
+    socialIntent: 'Repair',
+    targetResidentId: 'b',
+    contextActionToken: '701',
+  };
+  const unchanged = deriveObservationEvents(
+    world(50),
+    [resident({
+      activityKind: 'Social',
+      activityLabel: 'Repair',
+      presentation,
+    }), target],
+    world(51),
+    [resident({
+      activityKind: 'Social',
+      activityLabel: 'Repair',
+      presentation: { ...presentation },
+    }), target],
+  );
+  assert.equal(unchanged.length, 0);
+
+  const exact = deriveObservationEvents(
+    world(51),
+    [resident({ presentation: { active: false } }), target],
+    world(52),
+    [resident({
+      activityKind: 'Social',
+      activityLabel: 'Comfort',
+      presentation: {
+        active: true,
+        kind: 'Social',
+        phase: 'Interacting',
+        socialIntent: 'Comfort',
+        targetResidentId: 'b',
+        contextActionToken: '702',
+      },
+    }), target],
+    { available: true, events: [] },
+    {
+      available: true,
+      events: [{
+        sequence: '100',
+        actorId: 'a',
+        targetId: 'b',
+        type: 'Comfort',
+        intensity: 0.8,
+        importance: 0.7,
+        minute: 52,
+        where: '',
+        presentationLevel: 'Meaningful',
+        successful: true,
+      }],
+    },
+  );
+  assert.equal(exact.filter(event => event.kind === 'social').length, 1);
+  assert.equal(exact.filter(event => event.id.startsWith('social-action:')).length, 0);
+});
+
 testCase('authoritative resource exploration start becomes an observation', () => {
   const events = deriveObservationEvents(
     world(11),
