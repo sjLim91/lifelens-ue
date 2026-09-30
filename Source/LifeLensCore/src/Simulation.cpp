@@ -1053,7 +1053,7 @@ void Simulation::advanceAction(Character& c,Runtime& r){
             applyNeedResolutionEmotion(c,before,r.goal);
             }
             if(--a.remainingTicks<=0){ ++r.actionIndex; r.announced=false; } break;
-        case ActionType::EmergencyUse:
+        case ActionType::EmergencyUse: {
             if(r.goal==Goal::Sleep && sleepInterruptedByUrgentNeed(c)){
                 emit(c.name+" woke from Sleep for urgent physical need");
                 clearNavigation(r);
@@ -1189,6 +1189,7 @@ void Simulation::advanceAction(Character& c,Runtime& r){
                 ++r.actionIndex; r.announced=false; r.consecutiveFailures=0;
             }
             break;
+        }
         case ActionType::Release:
             if(obj && obj->reservedBy && *obj->reservedBy==c.id) obj->reservedBy.reset();
             emit(c.name+" completed "+std::string(goalName(r.goal)));
