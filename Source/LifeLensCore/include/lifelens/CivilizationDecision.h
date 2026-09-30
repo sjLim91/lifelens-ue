@@ -2356,8 +2356,6 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
                     result.facilityPos=created->pos;
                     result.craft.success=true;
                     result.event=result.craft.event;
-                    self.civilization.knowledge.recordSuccessfulUse(
-                        TechniqueId::Cultivation);
                     return result;
                 }
 
@@ -2441,6 +2439,8 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
                     result.success=true;
                     result.craft.success=true;
                     result.event=result.craft.event;
+                    self.civilization.knowledge.recordSuccessfulUse(
+                        TechniqueId::Cultivation);
                     return result;
                 }
 
