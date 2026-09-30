@@ -90,7 +90,7 @@ Before merge run the full DU gate once:
 1. Core configure/build + CTest;
 2. deterministic harness;
 3. LifeLens Web WASM;
-4. Web typecheck/build;
+4. Web typecheck/build, including `node tests/observation-feed/run.mjs` as the Observer-feed regression gate;
 5. Web/Core structural Preflight.
 
 After merge verify:
