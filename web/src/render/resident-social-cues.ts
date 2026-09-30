@@ -1,6 +1,9 @@
 import type { Resident } from '../runtime/core-types';
 
 export type ResidentSocialCueKind =
+  | 'Approach'
+  | 'Comfort'
+  | 'Repair'
   | 'Social'
   | 'KnowledgeTeaching'
   | 'Parenting';
@@ -61,11 +64,21 @@ export function residentSocialCuePairs(
     if (seenPairs.has(key)) continue;
     seenPairs.add(key);
 
+    const kind: ResidentSocialCueKind = presentation.kind === 'Social'
+      ? (
+          presentation.socialIntent === 'Approach'
+          || presentation.socialIntent === 'Comfort'
+          || presentation.socialIntent === 'Repair'
+            ? presentation.socialIntent
+            : 'Social'
+        )
+      : presentation.kind;
+
     pairs.push({
       key,
       sourceId: resident.id,
       targetId,
-      kind: presentation.kind,
+      kind,
     });
   }
 
