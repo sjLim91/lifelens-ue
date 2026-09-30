@@ -21,8 +21,17 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: lifelens-balance-audit-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  balance-audit:
+  baseline-audit:
+    if: github.event_name == 'push'
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [874213954, 4242001]
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
@@ -35,24 +44,28 @@ jobs:
       - name: 밸런스 계측기 빌드
         run: cmake --build build --target ll_balance_audit --parallel 2
 
-      - name: 기준 구간 전수 계측
-        if: github.event_name == 'push'
+      - name: 기준 전 구간 계측
         run: |
-          for seed in 874213954 4242001; do
-            for days in 1 7 30 100; do
-              echo "===== seed=$seed days=$days ====="
-              ./build/ll_balance_audit --seed "$seed" --days "$days"
-            done
-          done
-          for seed in 874213954 4242001; do
-            for days in 365 500 1000; do
-              echo "===== seed=$seed days=$days ====="
-              ./build/ll_balance_audit --seed "$seed" --days "$days"
-            done
+          for days in 1 7 30 100 365 500 1000; do
+            echo "===== seed=${{ matrix.seed }} days=$days ====="
+            ./build/ll_balance_audit --seed '${{ matrix.seed }}' --days "$days"
           done
 
+  manual-audit:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 밸런스 계측기 구성
+        run: cmake -S Source/LifeLensCore -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: 밸런스 계측기 빌드
+        run: cmake --build build --target ll_balance_audit --parallel 2
+
       - name: 수동 장기 계측
-        if: github.event_name == 'workflow_dispatch'
         run: |
           ./build/ll_balance_audit \
             --seed '${{ inputs.seed }}' \
