@@ -548,6 +548,6 @@ Canonical companion:
 
 **검증 기준**
 - 동일한 world/plot/seed/tool/knowledge 조건에서도 성향과 숙련이 다른 두 주민이 결정론적으로 서로 다른 발전행동을 선택할 수 있어야 한다.
-- 회귀 시나리오에서 재배 친화 주민은 Plant를, 탐색·채집 친화 주민은 같은 조건에서 실제 야생 PlantFood Gather를 선택한다.
+- 회귀 시나리오에서 재배 친화 주민은 Plant를 선택하고, 탐색·채집 친화 주민은 같은 조건에서 Plant를 따라 하지 않고 실제 Gather/Explore 계열 자원 확보를 선택한다. 특정 자원/행동을 테스트가 강제로 지정하지 않는다.
 - 같은 상태를 다시 평가하면 같은 주민은 같은 선택을 재현한다.
 - 실제 Plant 성공 후 Cultivation 경험이 증가하며 이후 Utility 입력으로 사용된다.
