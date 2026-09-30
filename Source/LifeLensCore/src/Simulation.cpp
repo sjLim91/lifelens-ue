@@ -914,6 +914,43 @@ bool Simulation::preemptForCriticalSurvival(
         }
     }
 
+    // Once a short physical interaction has actually started, finish the
+    // interaction instead of tearing it down and rebuilding it every minute.
+    // Movement toward the affordance remains interruptible. Toilet and wash
+    // interactions are bounded to only a few minutes, so completing them does
+    // not meaningfully endanger an already-critical food/water response.
+    if(!r.pendingContext.active()
+       && !r.plan.empty()
+       && r.actionIndex<r.plan.size()){
+        const Action& activeAction=r.plan[r.actionIndex];
+        const bool interactionPhase=
+            activeAction.type==ActionType::Use
+            || (
+                activeAction.type==ActionType::EmergencyUse
+                && (!r.navigationHasTarget || r.navigationArrived)
+            );
+
+        if(interactionPhase){
+            if(r.goal==Goal::UseToilet || r.goal==Goal::Wash){
+                return false;
+            }
+
+            // Sleep is not an atomic short action, so it remains interruptible.
+            // However, a resident whose fatigue is still at least as serious as
+            // the strongest critical provision pressure gets to keep resting
+            // until that balance actually reverses.
+            if(r.goal==Goal::Sleep){
+                const double strongestCriticalProvisionNeed=std::max(
+                    hungerCritical ? character.needs.hunger : -1.0,
+                    thirstCritical ? character.needs.thirst : -1.0);
+                if(strongestCriticalProvisionNeed
+                   <=character.needs.sleep+SleepWakeDominanceMargin){
+                    return false;
+                }
+            }
+        }
+    }
+
     Goal directGoal=Goal::Idle;
     double directNeed=-1.0;
     for(const Goal candidate:{Goal::Eat,Goal::Drink}){
