@@ -590,6 +590,63 @@ int main()
     assert(sawExpandedExplore);
     assert(!returnedToToiletWhileCritical);
 
+    // Long-run scarcity self-care: a resident can have critical hunger while
+    // sleep/bladder/hygiene are even more saturated. Missing food acquisition
+    // must not monopolize every planning boundary and pin all other Needs at 1.0.
+    SimulationRuleset selfCareRules=DefaultSimulationRuleset;
+    selfCareRules.needs.hungerPerMinute=0.0;
+    selfCareRules.needs.thirstPerMinute=0.0;
+    selfCareRules.needs.sleepPerMinute=0.0;
+    selfCareRules.needs.bladderPerMinute=0.0;
+    selfCareRules.needs.hygienePerMinute=0.0;
+    Simulation selfCareProbe(
+        874213958,0,CurrentWorldGenerationVersion,selfCareRules);
+    selfCareProbe.setupNewGame();
+    selfCareProbe.world().characters.resize(1);
+    selfCareProbe.world().storageSites.clear();
+
+    Character& selfCareActor=selfCareProbe.world().characters.front();
+    const CharacterId selfCareId=selfCareActor.id;
+    while(selfCareActor.civilization.inventory.remove(
+        ItemKind::RawMaterial,MaterialKind::PlantFood,1)) {}
+    for(auto& node:selfCareProbe.world().resourceNodes){
+        if(node.material==MaterialKind::PlantFood) node.quantity=0;
+    }
+    selfCareActor.needs={0.91,0.80,1.0,1.0,1.0};
+
+    GridPos previousSelfCarePos{};
+    assert(selfCareProbe.runtimePosition(selfCareId,previousSelfCarePos));
+    double minimumSleep=selfCareActor.needs.sleep;
+    double minimumBladder=selfCareActor.needs.bladder;
+    bool sawToilet=false;
+    bool sawSleep=false;
+    for(int minute=0;minute<60;++minute){
+        selfCareProbe.step();
+        GridPos current{};
+        assert(selfCareProbe.runtimePosition(selfCareId,current));
+        assert(manhattan(previousSelfCarePos,current)<=1);
+        previousSelfCarePos=current;
+
+        minimumSleep=std::min(minimumSleep,selfCareActor.needs.sleep);
+        minimumBladder=std::min(minimumBladder,selfCareActor.needs.bladder);
+        const ResidentPresentationObservation observed=
+            selfCareProbe.observeResidentPresentation(selfCareId);
+        if(observed.active
+           && observed.kind==PresentationActionKind::Physical
+           && observed.physicalGoal==Goal::UseToilet){
+            sawToilet=true;
+        }
+        if(observed.active
+           && observed.kind==PresentationActionKind::Physical
+           && observed.physicalGoal==Goal::Sleep){
+            sawSleep=true;
+        }
+    }
+    assert(sawToilet);
+    assert(sawSleep);
+    assert(minimumBladder<0.70);
+    assert(minimumSleep<0.99);
+
     // Production-like natural New Game: over the first four simulation days,
     // every founder must prove actual food/water acquisition and consumption.
     // Toilet remains an outdoor fallback until a real sanitation affordance is
