@@ -101,11 +101,24 @@ int main(){
         return 8;
     }
 
+    lifelens::Character perishable=saver;
+    perishable.id=33;
+    perishable.civilization.inventory.agePlantFoodOneDay(0.70,0.01);
+    if(perishable.civilization.inventory.averagePlantFoodFreshness()>=0.20){
+        std::cerr<<"perishable-food setup did not create spoilage pressure\n";
+        return 9;
+    }
+    if(lifelens::chooseGoal(foodChoiceWorld,perishable,autonomous)
+       !=lifelens::Goal::Eat){
+        std::cerr<<"near-spoilage food should weaken reserve discipline\n";
+        return 10;
+    }
+
     saver.needs.hunger=0.92;
     if(lifelens::chooseGoal(foodChoiceWorld,saver,autonomous)
        !=lifelens::Goal::Eat){
         std::cerr<<"critical hunger must override food-reserve discipline\n";
-        return 9;
+        return 11;
     }
 
     std::cout<<"test_utility PASS\n";
