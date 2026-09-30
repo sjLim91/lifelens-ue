@@ -180,6 +180,7 @@ function ObserverPanel({
         ) : (
           <SelectedResidentReadout
             resident={selectedResident}
+            residents={snapshot.residents}
             onClear={() => observerActions.selectResident(null)}
           />
         )}
@@ -510,6 +511,7 @@ function MobileObserverModal({
           {view === 'resident' && (
             <SelectedResidentReadout
               resident={selectedResident}
+              residents={snapshot.residents}
               onClear={() => {
                 observerActions.selectResident(null);
                 onView('residents');

@@ -40,6 +40,9 @@ export const KOREAN_ACTIVITY_KIND_LABELS: Record<string, string> = {
   Idle: '대기',
   Physical: '생활 행동',
   Social: '사회 행동',
+  Civilization: '문명 활동',
+  Parenting: '돌봄',
+  KnowledgeTeaching: '지식 전수',
 };
 
 export const KOREAN_PRESENTATION_KIND_LABELS: Record<string, string> = {
@@ -432,6 +435,8 @@ export function formatActivity(value: string | undefined): string {
     ...KOREAN_GOAL_LABELS,
     ...KOREAN_SOCIAL_INTENT_LABELS,
     ...KOREAN_CIVILIZATION_INTENT_LABELS,
+    ...KOREAN_PARENTING_ACTION_LABELS,
+    ...KOREAN_PRESENTATION_KIND_LABELS,
   };
   return translated('행동', value, labels, '행동 확인 중');
 }

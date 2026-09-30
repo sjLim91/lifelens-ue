@@ -53,6 +53,24 @@ const Character* findResident(const World& world,CharacterId id)
     return nullptr;
 }
 
+bool isLiveResourceAccess(
+    const World& world,
+    MaterialKind material,
+    GridPos position)
+{
+    for(const ResourceNode& node:world.resourceNodes){
+        if(node.id==0 || node.material!=material || node.quantity<0) continue;
+        GridPos access{};
+        if(resolveCivilizationResourceAccessGridPosition(
+                world,node.id,access)
+           && access.x==position.x
+           && access.y==position.y){
+            return true;
+        }
+    }
+    return false;
+}
+
 } // namespace
 
 int main()
@@ -212,6 +230,7 @@ int main()
     bool sawDirectDrink=false;
     for(int minute=0;minute<SimulationMinutesPerDay
         && directActor.needs.thirst>=directThirstBefore;++minute){
+        const double thirstBeforeStep=directActor.needs.thirst;
         directWater.step();
         const ResidentPresentationObservation observed=
             directWater.observeResidentPresentation(directActorId);
@@ -220,10 +239,20 @@ int main()
            && observed.physicalGoal==Goal::Drink
            && observed.directNaturalWaterSource){
             sawDirectDrink=true;
+            assert(observed.phase!=PresentationActionPhase::Idle);
+            if(observed.phase==PresentationActionPhase::Moving){
+                // Walking toward the real source is not drinking. Normal need
+                // pressure may increase thirst, but movement must not reduce it.
+                assert(directActor.needs.thirst+1e-12>=thirstBeforeStep);
+            }
         }
     }
     assert(sawDirectDrink);
     assert(directActor.needs.thirst<directThirstBefore);
+    GridPos directDrinkPosition{};
+    assert(directWater.runtimePosition(directActorId,directDrinkPosition));
+    assert(isLiveResourceAccess(
+        directWater.world(),MaterialKind::Water,directDrinkPosition));
     assert(rawWaterUnitCount(directActor.civilization.inventory)==0);
     assert(simpleContainerCount(directActor.civilization.inventory)==0);
 
@@ -269,6 +298,9 @@ int main()
     assert(actor.civilization.inventory.count(
         ItemKind::RawMaterial,MaterialKind::PlantFood)==0);
 
+    int criticalInactiveStreak=0;
+    int maxCriticalInactiveStreak=0;
+    bool sawCriticalProvisionPresentation=false;
     for(int minute=0;
         minute<SimulationMinutesPerDay
         && (
@@ -281,8 +313,35 @@ int main()
         );
         ++minute){
         urgent.step();
+        const ResidentPresentationObservation observed=
+            urgent.observeResidentPresentation(actorId);
+        const bool criticalNow=
+            actor.needs.hunger>=CriticalSurvivalPreemptThreshold
+            || actor.needs.thirst>=CriticalSurvivalPreemptThreshold;
+        if(criticalNow && !observed.active){
+            ++criticalInactiveStreak;
+            maxCriticalInactiveStreak=std::max(
+                maxCriticalInactiveStreak,criticalInactiveStreak);
+        }else{
+            criticalInactiveStreak=0;
+        }
+        if(criticalNow
+           && observed.active
+           && observed.kind==PresentationActionKind::Civilization
+           && (
+               observed.civilizationMaterial==MaterialKind::PlantFood
+               || observed.civilizationMaterial==MaterialKind::Water
+           )){
+            sawCriticalProvisionPresentation=true;
+            assert(observed.phase!=PresentationActionPhase::Idle);
+        }
     }
 
+    // The normal planner cadence is five simulated minutes. Critical survival
+    // may wait only within that bounded cadence; it must never disappear into
+    // a long inactive/Idle state while acquisition is actually in progress.
+    assert(maxCriticalInactiveStreak<=5);
+    assert(sawCriticalProvisionPresentation);
     assert(!containsLog(urgent.logs(),actorName+" -> Civilization Gather Water"));
     assert(containsLog(urgent.logs(),actorName+" completed Drink via emergency fallback"));
     assert(containsLog(urgent.logs(),actorName+" -> Civilization Gather PlantFood"));
