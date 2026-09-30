@@ -25,11 +25,20 @@ inline int emergencyUseDurationTicks(Goal g)
 inline NeedsDelta emergencyUseEffectPerTick(Goal g)
 {
     switch(g){
-        case Goal::Eat: return {-0.28,0,0,0,0};
-        case Goal::Drink: return {0,-0.32,0,0,0};
-        case Goal::Sleep: return {0,0,-0.00150,0,0};
+        // One real food/water unit must represent a meaningful body-use event.
+        // The previous raw fallback values required ~5 meals, ~6 drinks and
+        // ~18 washes per resident/day before environmental pressure, which
+        // structurally consumed all available time and water.
+        case Goal::Eat: return {-0.42,0,0,0,0};
+        case Goal::Drink: return {0,-0.45,0,0,0};
+        // Outdoor sleep remains worse than developed bedding but must be able
+        // to recover an ordinary urgent fatigue load within roughly one night.
+        case Goal::Sleep: return {0,0,-0.00185,0,0};
         case Goal::UseToilet: return {0,0,0,-0.13,0.012};
-        case Goal::Wash: return {0,0,0,0,-0.018};
+        // Four minutes at a real water source now gives -0.72 Hygiene total.
+        // With the existing base + outdoor-sanitation burden this targets
+        // roughly 1-2 primitive washes/person/day instead of ~18.
+        case Goal::Wash: return {0,0,0,0,-0.18};
         case Goal::Idle:
         default: return {};
     }
