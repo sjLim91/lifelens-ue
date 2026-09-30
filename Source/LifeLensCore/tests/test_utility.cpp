@@ -7,17 +7,26 @@ static bool checkSleepUrgentWakeThreshold(){
     character.needs={0.71,0.71,0.95,0.71,0.10};
     if(lifelens::sleepInterruptedByUrgentNeed(character)) return false;
 
+    // Entering the ordinary urgent band is not enough to wake somebody whose
+    // fatigue is still materially worse.
     character.needs.hunger=lifelens::SleepUrgentNeedWakeThreshold;
+    if(lifelens::sleepInterruptedByUrgentNeed(character)) return false;
+
+    // Once rest has reduced fatigue and the competing pressure is clearly
+    // stronger, the same urgent need must wake the resident.
+    character.needs.sleep=0.70;
     if(!lifelens::sleepInterruptedByUrgentNeed(character)) return false;
     character.needs.hunger=0.10;
 
-    character.needs.thirst=lifelens::SleepUrgentNeedWakeThreshold;
+    character.needs.sleep=0.80;
+    character.needs.thirst=0.90;
     if(!lifelens::sleepInterruptedByUrgentNeed(character)) return false;
     character.needs.thirst=0.10;
 
-    character.needs.bladder=lifelens::SleepUrgentNeedWakeThreshold;
+    character.needs.sleep=0.78;
+    character.needs.bladder=0.90;
     return lifelens::sleepInterruptedByUrgentNeed(character);
-}
+
 
 int main(){
     if(!checkSleepUrgentWakeThreshold()){
