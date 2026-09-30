@@ -413,53 +413,59 @@ int main()
     // Repeatedly withdraw only what the live project still needs, then deliver
     // it at the actual construction site.
     int logisticsTransfers=0;
-    while(!facilityMaterialsComplete(*logisticsBed)
-          && logisticsTransfers<16){
-        const CivilizationUtilityDecision retrieve=
-            bestRetrieveDecisionAtPosition(
-                logisticsWorld,
-                logisticsWorker,
-                logisticsWorld.storageSites.front().pos);
-        CHECK(retrieve.intent==CivilizationIntent::Retrieve);
-        CHECK(retrieve.storage==logisticsWorld.storageSites.front().id);
-        CHECK(retrieve.material!=MaterialKind::Unknown);
-        CHECK(residentCommittedMaterialDemand(
-            logisticsWorld,
-            logisticsWorker,
-            retrieve.material)>0);
-
-        const CivilizationExecutionResult retrieved=
-            executeCivilizationDecisionAtPosition(
-                logisticsWorld,
-                logisticsWorker,
-                retrieve,
-                logisticsWorld.storageSites.front().pos);
-        CHECK(retrieved.executed && retrieved.success);
-
+    int logisticsDeliveries=0;
+    for(int step=0;step<24 && !facilityMaterialsComplete(*logisticsBed);++step){
+        // If the worker already carries something the live project needs, use
+        // it first. Returning to storage while useful material is still in the
+        // worker's hands would create pointless logistics churn.
         const CivilizationUtilityDecision delivery=
             bestSettlementFoundationDecision(
                 logisticsWorld,
                 logisticsWorker,
                 logisticsBed->pos);
-        CHECK(delivery.intent==CivilizationIntent::Craft);
-        CHECK(delivery.facility==logisticsBed->id);
-        CHECK(delivery.facilityAction==FacilityBuildAction::DeliverMaterial);
-        CHECK(logisticsWorker.civilization.inventory.count(
-            ItemKind::RawMaterial,delivery.material)>0);
-
-        const CivilizationExecutionResult delivered=
-            executeCivilizationDecisionAtPosition(
+        if(delivery.intent==CivilizationIntent::Craft
+           && delivery.facility==logisticsBed->id
+           && delivery.facilityAction==FacilityBuildAction::DeliverMaterial){
+            CHECK(logisticsWorker.civilization.inventory.count(
+                ItemKind::RawMaterial,delivery.material)>0);
+            const CivilizationExecutionResult delivered=
+                executeCivilizationDecisionAtPosition(
+                    logisticsWorld,
+                    logisticsWorker,
+                    delivery,
+                    logisticsBed->pos);
+            CHECK(delivered.executed && delivered.success);
+            ++logisticsDeliveries;
+        }else{
+            const CivilizationUtilityDecision retrieve=
+                bestRetrieveDecisionAtPosition(
+                    logisticsWorld,
+                    logisticsWorker,
+                    logisticsWorld.storageSites.front().pos);
+            CHECK(retrieve.intent==CivilizationIntent::Retrieve);
+            CHECK(retrieve.storage==logisticsWorld.storageSites.front().id);
+            CHECK(retrieve.material!=MaterialKind::Unknown);
+            CHECK(residentCommittedMaterialDemand(
                 logisticsWorld,
                 logisticsWorker,
-                delivery,
-                logisticsBed->pos);
-        CHECK(delivered.executed && delivered.success);
-        ++logisticsTransfers;
+                retrieve.material)>0);
+
+            const CivilizationExecutionResult retrieved=
+                executeCivilizationDecisionAtPosition(
+                    logisticsWorld,
+                    logisticsWorker,
+                    retrieve,
+                    logisticsWorld.storageSites.front().pos);
+            CHECK(retrieved.executed && retrieved.success);
+            ++logisticsTransfers;
+        }
+
         logisticsBed=findCivilizationFacility(
             logisticsWorld,logisticsBed->id);
         CHECK(logisticsBed!=nullptr);
     }
     CHECK(logisticsTransfers>0);
+    CHECK(logisticsDeliveries>0);
     CHECK(facilityMaterialsComplete(*logisticsBed));
 
     int logisticsWorkActions=0;
