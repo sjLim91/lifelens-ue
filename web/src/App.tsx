@@ -54,11 +54,9 @@ function Topbar() {
 
 function WorldViewport({
   onOpenMenu,
-  onOpenResidents,
   onOpenSeed,
 }: {
   onOpenMenu: () => void;
-  onOpenResidents: () => void;
   onOpenSeed: () => void;
 }) {
   const snapshot = useObserverSnapshot();
@@ -114,7 +112,6 @@ function WorldViewport({
       )}
 
       <div className="mobile-quick-actions" aria-label="모바일 관찰 메뉴">
-        <button type="button" onClick={onOpenResidents}>주민</button>
         <button type="button" onClick={onOpenMenu}>메뉴</button>
       </div>
 
@@ -496,11 +493,6 @@ function MobileObserverModal({
                 </button>
               </div>
 
-              <details className="mobile-advanced">
-                <summary>고급 표시 설정</summary>
-                <RenderModeControl />
-                <DiagnosticsPanel />
-              </details>
             </>
           )}
 
@@ -728,7 +720,6 @@ export default function App() {
       <main className="layout">
         <WorldViewport
           onOpenMenu={() => setMobileModal('menu')}
-          onOpenResidents={() => setMobileModal('residents')}
           onOpenSeed={() => setMobileModal('seed')}
         />
         <ObserverPanel onViewPlace={() => undefined} />
