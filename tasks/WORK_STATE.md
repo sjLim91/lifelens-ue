@@ -1,16 +1,14 @@
-## 2026-09-30 LATE CANONICAL CURRENT — RESIDENT AUTONOMY FOLLOW-THROUGH ACTIVE
+## 2026-09-30 LATE CANONICAL CURRENT — RESIDENT AUTONOMY #534 INTEGRATED
 
 > This section supersedes the earlier 2026-09-30 DU-01 checkpoint below. Actual GitHub main/PR/Actions remain the highest-priority truth.
 
-- Validated baseline main: `746a488a776fec77f10e1b97bb3b9b0fbee726e8`.
-- Working branch: `feature/autonomous-food-choice-20260930`.
-- Previous validated change: D-026 development actions (cultivation/construction/crafting) now diverge by resident disposition and lived experience; all Core/Preflight/WASM/Runtime Release/Preview/External Probe workflows passed on `746a488`.
-- Current objective: complete D-023 food-use autonomy below the survival boundary.
-- Non-critical Eat must be Utility-driven from Hunger + competing Needs + emotion/personality + real carried provision, not `food exists => Eat now`.
-- A scarce final PlantFood unit may be preserved by a patient/conscientious/orderly resident, while an impulsive resident can choose to eat earlier under the same physical affordance.
-- Urgent/critical Hunger keeps existing self-preservation priority and must override reserve discipline.
-- Real Eat execution still consumes authoritative carried PlantFood; no browser/SmartObject provision fabrication.
-- Validation: targeted `test_utility` regression first, then exact-head Core Tests. Full boundary workflows are required before merge if this unit expands beyond Core-only scoring.
+- Current validated main: `9aef4a15d6f63bc3cad7320050e3f8279d814bcd` (#534).
+- D-026 development-choice differentiation remains intact: cultivation/construction/crafting decisions use resident disposition and lived technique experience.
+- D-027 / #534 extends autonomy into food use below the survival boundary: non-critical Eat reacts to Hunger, competing Utility, resident disposition, scarce final-food reserve and actual PlantFood freshness.
+- A patient/conscientious/orderly resident can preserve a fresh final food unit at moderate Hunger; an impulsive resident can eat earlier; near-spoilage food raises Eat value so reserve discipline does not blindly create waste.
+- Urgent/critical Hunger still overrides reserve strategy, and Eat still consumes authoritative carried PlantFood.
+- #534 exact-head and merged-main gates all passed: Core Tests + deterministic harness, Preflight, Web WASM, Runtime Release, Pages Preview and External Preview Probe.
+- Next development unit: shared-provision allocation. Eat / cultivation seed use / Store must compete for the same real PlantFood stock through Utility/opportunity cost, without random role assignment, fixed jobs or presentation-side invention.
 - GitHub commit/PR text for this project remains Korean.
 
 ## 2026-09-30 CANONICAL CURRENT — DU-01 Living Settlement ACTIVE
