@@ -213,6 +213,96 @@ inline int worldItemCount(const World& world,const Character& self,ItemKind kind
     return total;
 }
 
+// Settlement logistics is shared infrastructure: committed projects and
+// restoration work may be supplied by a common stockpile rather than requiring
+// the same resident who gathered a material to remain its permanent carrier.
+inline int settlementCarriedMaterialCount(
+    const World& world,
+    MaterialKind material)
+{
+    int total=0;
+    for(const auto& resident:world.characters){
+        if(!resident.alive) continue;
+        total+=material==MaterialKind::Water
+            ? portableWaterCount(resident.civilization.inventory)
+            : resident.civilization.inventory.count(
+                ItemKind::RawMaterial,material);
+    }
+    return total;
+}
+
+inline int settlementConstructionMaterialDemand(
+    const World& world,
+    MaterialKind material)
+{
+    return settlementConstructionMissingMaterial(world,material)
+        +primitiveStorageMissingMaterial(world,material)
+        +primitiveFirePitMissingMaterial(world,material)
+        +primitiveFurnaceMissingMaterial(world,material)
+        +cultivationConstructionMissingMaterial(world,material);
+}
+
+inline int settlementCommittedMaterialDemand(
+    const World& world,
+    MaterialKind material)
+{
+    return settlementConstructionMaterialDemand(world,material)
+        +settlementRepairMaterialDemand(world,material);
+}
+
+inline int settlementUncoveredMaterialDemand(
+    const World& world,
+    MaterialKind material)
+{
+    return std::max(
+        0,
+        settlementCommittedMaterialDemand(world,material)
+            -settlementCarriedMaterialCount(world,material)
+            -storageCountForMaterial(world,material));
+}
+
+inline int residentCommittedMaterialDemand(
+    const World& world,
+    const Character& resident,
+    MaterialKind material)
+{
+    int demand=settlementConstructionMissingMaterial(world,material)
+        +settlementRepairMaterialDemand(world,material);
+
+    if(resident.civilization.knowledge.knowsAtLeast(
+        TechniqueId::PrimitiveStorage,KnowledgeLevel::Reproducible)){
+        demand+=primitiveStorageMissingMaterial(world,material);
+    }
+    if(resident.civilization.knowledge.knowsAtLeast(
+        TechniqueId::FireMaking,KnowledgeLevel::Reproducible)){
+        demand+=primitiveFirePitMissingMaterial(world,material);
+    }
+    if(primitiveFurnaceKnowledgeReady(resident)){
+        demand+=primitiveFurnaceMissingMaterial(world,material);
+    }
+    if(resident.civilization.knowledge.knowsAtLeast(
+        TechniqueId::Cultivation,KnowledgeLevel::Reproducible)){
+        demand+=cultivationConstructionMissingMaterial(world,material);
+    }
+    return demand;
+}
+
+inline int residentUncoveredCommittedMaterialDemand(
+    const World& world,
+    const Character& resident,
+    MaterialKind material)
+{
+    const int held=material==MaterialKind::Water
+        ? portableWaterCount(resident.civilization.inventory)
+        : resident.civilization.inventory.count(
+            ItemKind::RawMaterial,material);
+    return std::max(
+        0,
+        residentCommittedMaterialDemand(world,resident,material)
+            -held
+            -storageCountForMaterial(world,material));
+}
+
 inline const TechniqueKnowledge* civilizationKnowledgeRecord(const KnowledgeState& knowledge,TechniqueId technique)
 {
     for(const auto& record:knowledge.all()) if(record.technique==technique) return &record;
@@ -354,21 +444,13 @@ inline double civilizationResourceExplorationPressure(
         ? portableWaterCount(self.civilization.inventory)
         : self.civilization.inventory.count(ItemKind::RawMaterial,material);
     const int stored=storageCountForMaterial(world,material);
-    const int storageMissing=primitiveStorageMissingMaterial(world,material);
-    const int fireMissing=primitiveFirePitMissingMaterial(world,material);
-    const int furnaceMissing=primitiveFurnaceMissingMaterial(world,material);
-    const int cultivationMissing=cultivationConstructionMissingMaterial(world,material);
-    const int settlementMissing=settlementConstructionMissingMaterial(world,material);
-    const int repairMissing=std::max(
-        0,
-        settlementRepairMaterialDemand(world,material)-held);
-    const int constructionMissing=std::max({
-        settlementMissing,
-        storageMissing,
-        fireMissing,
-        furnaceMissing,
-        cultivationMissing
-    });
+    const int constructionMissing=
+        settlementConstructionMaterialDemand(world,material);
+    const int repairMissing=
+        settlementRepairMaterialDemand(world,material);
+    const int uncoveredCommitted=
+        residentUncoveredCommittedMaterialDemand(
+            world,self,material);
 
     const bool provision=
         material==MaterialKind::Water
@@ -384,8 +466,7 @@ inline double civilizationResourceExplorationPressure(
     // Search needs either a current survival/provision role, a concrete build/
     // repair demand, or enough learned/progressive relevance to justify it.
     if(!provision
-       && constructionMissing<=0
-       && repairMissing<=0
+       && uncoveredCommitted<=0
        && progressDemand<0.40){
         return 0.0;
     }
@@ -396,16 +477,16 @@ inline double civilizationResourceExplorationPressure(
         (hasOperationalFirePit(world) && material==MaterialKind::Wood) ? 3 : 0;
     const int target=
         (provision ? 4 : 5)
-        +std::min(4,constructionMissing+repairMissing)
+        +std::min(4,uncoveredCommitted)
         +fireFuelReserve
         +(provision && !world.storageSites.empty()
             ? std::min(4,reserveGap)
             : 0);
     const int storedCredit=provision
         ? std::min(stored,reserveTarget)
-        : std::min(stored,2);
+        : std::min(stored,target);
     const int stockGap=std::max(0,target-held-storedCredit);
-    if(stockGap<=0 && constructionMissing<=0 && repairMissing<=0) return 0.0;
+    if(stockGap<=0 && uncoveredCommitted<=0) return 0.0;
 
     const int localUnits=localNaturalResourceUnits(
         world,material,authoritativePosition);
@@ -418,12 +499,16 @@ inline double civilizationResourceExplorationPressure(
     const double gap=clampCivilization01(
         static_cast<double>(stockGap)
         /static_cast<double>(std::max(1,target)));
-    const double constructionDemand=constructionMissing>0
-        ? clampCivilization01(0.45+0.12*static_cast<double>(constructionMissing))
+    const double constructionDemand=uncoveredCommitted>0
+        ? clampCivilization01(
+            0.45+0.12*static_cast<double>(uncoveredCommitted))
         : 0.0;
-    const double maintenanceDemand=repairMissing>0
-        ? clampCivilization01(0.42+0.18*static_cast<double>(repairMissing))
-        : 0.0;
+    const double maintenanceDemand=
+        repairMissing>0 && uncoveredCommitted>0
+            ? clampCivilization01(
+                0.42+0.18*static_cast<double>(
+                    std::min(repairMissing,uncoveredCommitted)))
+            : 0.0;
     const double survivalPressure=provisionNeedForMaterial(self,material);
 
     return clampCivilization01(
@@ -498,22 +583,11 @@ inline CivilizationUtilityDecision bestGatherDecisionAtPosition(
             continue;
         }
         const int stored=storageCountForMaterial(world,node.material);
-        const int storageMissing=primitiveStorageMissingMaterial(world,node.material);
-        const int fireMissing=primitiveFirePitMissingMaterial(world,node.material);
-        const int furnaceMissing=primitiveFurnaceMissingMaterial(world,node.material);
-        const int cultivationMissing=cultivationConstructionMissingMaterial(world,node.material);
-        const int settlementMissing=settlementConstructionMissingMaterial(world,node.material);
-        const int repairMissing=std::max(
-            0,
-            settlementRepairMaterialDemand(world,node.material)-held);
-        const int constructionMissing=std::max({
-            settlementMissing,
-            storageMissing,
-            fireMissing,
-            furnaceMissing,
-            cultivationMissing
-        });
-        const int materialDemand=constructionMissing+repairMissing;
+        const int repairMissing=
+            settlementRepairMaterialDemand(world,node.material);
+        const int materialDemand=
+            residentUncoveredCommittedMaterialDemand(
+                world,self,node.material);
         const bool provision=
             node.material==MaterialKind::Water
             || node.material==MaterialKind::PlantFood;
@@ -534,17 +608,21 @@ inline CivilizationUtilityDecision bestGatherDecisionAtPosition(
                 : 0);
         const int storedCredit=provision
             ? std::min(stored,settlementReserveTarget)
-            : std::min(stored,2);
+            : std::min(stored,target);
         const double gap=clampCivilization01(
             static_cast<double>(std::max(0,target-held-storedCredit))
             /static_cast<double>(std::max(1,target)));
         const double demand=materialProgressDemand(self,node.material);
-        const double constructionDemand=constructionMissing>0
-            ? clampCivilization01(0.45+0.12*static_cast<double>(constructionMissing))
+        const double constructionDemand=materialDemand>0
+            ? clampCivilization01(
+                0.45+0.12*static_cast<double>(materialDemand))
             : 0.0;
-        const double maintenanceDemand=repairMissing>0
-            ? clampCivilization01(0.42+0.18*static_cast<double>(repairMissing))
-            : 0.0;
+        const double maintenanceDemand=
+            repairMissing>0 && materialDemand>0
+                ? clampCivilization01(
+                    0.42+0.18*static_cast<double>(
+                        std::min(repairMissing,materialDemand)))
+                : 0.0;
         const double preference=civilizationPreference(world.seed,self.id,100ULL+static_cast<std::uint64_t>(node.material));
         const GridPos nodePos=civilizationDecisionResourcePosition(world,node);
         const int distance=std::max(
@@ -600,7 +678,9 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
     const DugSanitationPitOpportunity pitOpportunity=
         evaluateDugSanitationPitOpportunity(
             self,world.environmentalResidues,world.primitiveSanitationSites);
-    const PrimitiveStorageNeedObservation storageNeed=observePrimitiveStorageNeed(world,self);
+    const PrimitiveStorageNeedObservation storageNeed=
+        observePrimitiveStorageNeed(
+            world,self,authoritativePosition,population);
     const bool smeltingOpportunity=copperSmeltingOpportunityAvailable(world,self);
     const bool cultivationOpportunity=cultivationExperimentOpportunityAvailable(
         world,self,authoritativePosition,population);
@@ -1536,9 +1616,7 @@ inline CivilizationUtilityDecision bestRetrieveDecisionAtPosition(
 {
     CivilizationUtilityDecision best;
 
-    // Durable subsistence v1 deliberately starts with provisions. The transfer
-    // primitive itself is generic, but autonomous retrieval only pulls Water /
-    // PlantFood until storage policy for tools/material projects is explicit.
+    // Provisions remain direct Need-driven logistics.
     const std::array<std::pair<MaterialKind,double>,2> provisions={{
         {MaterialKind::Water,provisionNeedForMaterial(
             self,MaterialKind::Water)},
@@ -1548,6 +1626,7 @@ inline CivilizationUtilityDecision bestRetrieveDecisionAtPosition(
 
     for(const StorageSite& storage:world.storageSites){
         if(storage.id==0) continue;
+
         for(const auto& provision:provisions){
             const MaterialKind material=provision.first;
             const double need=provision.second;
@@ -1592,6 +1671,70 @@ inline CivilizationUtilityDecision bestRetrieveDecisionAtPosition(
             candidate.quantity=requested;
             considerCivilizationDecision(best,candidate);
         }
+
+        // Shared construction stock is useful only when this resident can act
+        // on the committed project/repair. Count material already carried by
+        // the settlement so several workers do not all withdraw the same job's
+        // full requirement before anyone reaches the site.
+        for(const auto& stack:storage.inventory.stacks()){
+            if(stack.kind!=ItemKind::RawMaterial
+               || stack.material==MaterialKind::Unknown
+               || stack.material==MaterialKind::Water
+               || stack.material==MaterialKind::PlantFood
+               || stack.quantity<=0){
+                continue;
+            }
+
+            const MaterialKind material=stack.material;
+            const int residentDemand=
+                residentCommittedMaterialDemand(world,self,material);
+            if(residentDemand<=0) continue;
+
+            const int held=self.civilization.inventory.count(
+                ItemKind::RawMaterial,material);
+            // Another resident's inventory is not shared authority. Until that
+            // resident physically delivers or stores the material, only this
+            // worker's carried stock and the real storage inventory are usable.
+            const int neededFromStorage=std::max(
+                0,residentDemand-held);
+            if(neededFromStorage<=0) continue;
+
+            const int requested=std::min({
+                stack.quantity,
+                neededFromStorage,
+                std::max(1,3-held)
+            });
+            if(requested<=0) continue;
+
+            const int constructionDemand=
+                settlementConstructionMaterialDemand(world,material);
+            const int repairDemand=
+                settlementRepairMaterialDemand(world,material);
+            const double demandPressure=clampCivilization01(
+                0.35
+                +0.10*static_cast<double>(
+                    std::min(5,neededFromStorage)));
+            const double preference=civilizationPreference(
+                world.seed,self.id,
+                760ULL+static_cast<std::uint64_t>(material));
+
+            CivilizationUtilityDecision candidate;
+            candidate.intent=CivilizationIntent::Retrieve;
+            candidate.utility=clampCivilization01(
+                0.48
+                +0.30*demandPressure
+                +0.08*self.personality.orderliness
+                +0.07*self.personality.conscientiousness
+                +0.04*self.civilization.gatheringSkill
+                +0.03*preference
+                +(repairDemand>0 ? 0.08 : 0.0)
+                +(constructionDemand>0 ? 0.06 : 0.0));
+            candidate.storage=storage.id;
+            candidate.item=ItemKind::RawMaterial;
+            candidate.material=material;
+            candidate.quantity=requested;
+            considerCivilizationDecision(best,candidate);
+        }
     }
     return best;
 }
@@ -1624,7 +1767,16 @@ inline CivilizationUtilityDecision bestStoreDecision(const World& world,const Ch
             && stack.material==MaterialKind::Water
                 ? portableWaterCount(self.civilization.inventory)
                 : stack.quantity;
-        const int keep=provision ? 2 : (stack.kind==ItemKind::RawMaterial ? 4 : 1);
+        const int committedCarryNeed=
+            stack.kind==ItemKind::RawMaterial
+                ? residentCommittedMaterialDemand(
+                    world,self,stack.material)
+                : 0;
+        const int keep=provision
+            ? 2
+            : (stack.kind==ItemKind::RawMaterial
+                ? std::max(4,std::min(effectiveQuantity,committedCarryNeed))
+                : 1);
         const int surplus=effectiveQuantity-keep;
         if(surplus<=0) continue;
 
@@ -1865,7 +2017,9 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
                         self,world.environmentalResidues,world.primitiveSanitationSites);
                 context.sanitationPitCandidateAvailable=opportunity.candidateAvailable;
             }else if(decision.experiment==ExperimentKind::OrganizeStockpile){
-                context.storageProblemRecognized=observePrimitiveStorageNeed(world,self).recognized;
+                context.storageProblemRecognized=
+                    observePrimitiveStorageNeed(
+                        world,self,authoritativePosition,population).recognized;
             }else if(decision.experiment==ExperimentKind::SmeltCopperOre){
                 context.smeltingOpportunityAvailable=copperSmeltingOpportunityAvailable(world,self);
             }else if(decision.experiment==ExperimentKind::CultivatePlantFood){

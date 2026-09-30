@@ -46,6 +46,76 @@ int main()
     Character& resident=world.characters.front();
     markOtherTechniquesKnown(resident);
 
+    // Storage is a settlement response, not only an individual backpack
+    // threshold. Distributed load in the resident's actual living area may
+    // create the same evidence even when nobody individually carries six units.
+    {
+        Simulation sharedPressureSimulation(808081,404041);
+        sharedPressureSimulation.setupNewGame();
+        World& sharedWorld=sharedPressureSimulation.world();
+        Character& sharedPlanner=sharedWorld.characters.front();
+        markOtherTechniquesKnown(sharedPlanner);
+        const GridPos sharedAnchor=sharedWorld.initialStartRegionCenterGrid();
+
+        SettlementPopulation sharedPopulation;
+        for(std::size_t index=0;index<sharedWorld.characters.size();++index){
+            Character& member=sharedWorld.characters[index];
+            sharedPopulation.emplace(
+                member.id,
+                GridPos{sharedAnchor.x+static_cast<int>(index),sharedAnchor.y});
+            member.civilization.inventory.add({
+                ItemKind::RawMaterial,
+                index%2==0 ? MaterialKind::Wood : MaterialKind::Fiber,
+                2,
+                0.5,
+                1.0});
+            CHECK(primitiveStorageCarriedUnits(member)==2);
+        }
+
+        CHECK(!observePrimitiveStorageNeed(
+            sharedWorld,sharedPlanner).recognized);
+        const PrimitiveStorageNeedObservation sharedNeed=
+            observePrimitiveStorageNeed(
+                sharedWorld,
+                sharedPlanner,
+                sharedAnchor,
+                &sharedPopulation);
+        CHECK(sharedNeed.recognized);
+        CHECK(sharedNeed.carriedUnits==2);
+        CHECK(sharedNeed.localResidents==4);
+        CHECK(sharedNeed.localCarriedUnits==8);
+        CHECK(sharedNeed.pressure>0.0);
+
+        const CivilizationUtilityDecision sharedDiscovery=
+            bestExperimentDecisionAtPosition(
+                sharedWorld,
+                sharedPlanner,
+                sharedAnchor,
+                &sharedPopulation);
+        CHECK(sharedDiscovery.intent==CivilizationIntent::Experiment);
+        CHECK(sharedDiscovery.experiment==ExperimentKind::OrganizeStockpile);
+
+        // The same carried load far outside the lived settlement does not
+        // become invisible remote evidence.
+        SettlementPopulation separatedPopulation=sharedPopulation;
+        for(std::size_t index=1;index<sharedWorld.characters.size();++index){
+            separatedPopulation[sharedWorld.characters[index].id]={
+                sharedAnchor.x+SettlementServiceRadiusGrid+20
+                    +static_cast<int>(index),
+                sharedAnchor.y
+            };
+        }
+        const PrimitiveStorageNeedObservation separatedNeed=
+            observePrimitiveStorageNeed(
+                sharedWorld,
+                sharedPlanner,
+                sharedAnchor,
+                &separatedPopulation);
+        CHECK(!separatedNeed.recognized);
+        CHECK(separatedNeed.localResidents==1);
+        CHECK(separatedNeed.localCarriedUnits==2);
+    }
+
     // The idea must not appear before the resident has actually experienced
     // carrying pressure.
     CHECK(!observePrimitiveStorageNeed(world,resident).recognized);

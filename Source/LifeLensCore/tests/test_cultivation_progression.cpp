@@ -8,6 +8,7 @@
 #include "lifelens/CivilizationSnapshotCodec.h"
 #include "lifelens/CultivationProgression.h"
 #include "lifelens/Simulation.h"
+#include "lifelens/SocialUtility.h"
 #include "lifelens/SimulationSnapshotCodec.h"
 
 using namespace lifelens;
@@ -159,6 +160,79 @@ int main()
     CHECK(demand.desiredPlots==3);
     CHECK(demand.unmet());
 
-    std::cout << "cultivation progression + persistence passed\n";
+    // Production civilization decisions must follow the resident's lived
+    // position, not the NEW GAME entry coordinate. Put a thirsty crop and a
+    // water stockpile well outside the original settlement service radius.
+    Simulation movedSimulation(26092842,0,3);
+    movedSimulation.setupNewGame();
+    World& movedWorld=movedSimulation.world();
+    Character& movedActor=movedWorld.characters.front();
+    movedActor.needs={0.08,0.08,0.08,0.08,0.08};
+    movedActor.civilization.inventory=Inventory{};
+    movedActor.civilization.knowledge.learn(
+        TechniqueId::DiggingStick,KnowledgeLevel::Reproducible,0.95);
+    movedActor.civilization.knowledge.learn(
+        TechniqueId::Cultivation,KnowledgeLevel::Reproducible,0.95);
+    movedActor.civilization.inventory.add({
+        ItemKind::DiggingStick,MaterialKind::Wood,1,0.8,1.0});
+
+    const GridPos movedStart=movedWorld.initialStartRegionCenterGrid();
+    const GridPos livedFarm{
+        movedStart.x+CultivationServiceRadiusGrid+24,
+        movedStart.y
+    };
+
+    ConstructedFacility livedPlot=makeFacilityConstructionSite(
+        nextFacilityId(movedWorld.facilities),
+        FacilityKind::CultivatedPlot,
+        livedFarm,
+        movedActor.id,
+        movedWorld.minute);
+    CHECK(livedPlot.id!=0);
+    for(auto& requirement:livedPlot.requirements){
+        requirement.delivered=requirement.required;
+    }
+    livedPlot.constructionWork=livedPlot.requiredWork;
+    CHECK(activateConstructedFacility(livedPlot,0,movedWorld.minute));
+    livedPlot.cropPlanted=true;
+    livedPlot.cropPlantedMinute=movedWorld.minute;
+    livedPlot.cropGrowth01=0.30;
+    livedPlot.cropMoisture01=0.10;
+    livedPlot.cropCare01=0.90;
+    movedWorld.facilities.push_back(livedPlot);
+
+    StorageSite livedStorage;
+    livedStorage.id=1;
+    livedStorage.pos={livedFarm.x+1,livedFarm.y};
+    livedStorage.inventory.add({
+        ItemKind::SimpleContainer,MaterialKind::Clay,1,0.8,1.0});
+    livedStorage.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::Water,1,0.8,1.0});
+    movedWorld.storageSites.push_back(livedStorage);
+
+    CHECK(cultivationInputNeededNear(
+        movedWorld,livedFarm,MaterialKind::Water));
+    CHECK(!cultivationInputNeededNear(
+        movedWorld,movedStart,MaterialKind::Water));
+
+    const CivilizationUtilityDecision legacyOriginRetrieve=
+        bestRetrieveDecision(movedWorld,movedActor);
+    CHECK(legacyOriginRetrieve.intent==CivilizationIntent::None);
+
+    const CivilizationUtilityDecision livedRetrieve=
+        bestRetrieveDecisionAtPosition(
+            movedWorld,movedActor,livedFarm);
+    CHECK(livedRetrieve.intent==CivilizationIntent::Retrieve);
+    CHECK(livedRetrieve.material==MaterialKind::Water);
+    CHECK(livedRetrieve.storage==movedWorld.storageSites.front().id);
+
+    const CivilizationUtilityDecision dispositionAware=
+        chooseDispositionAwareCivilizationDecisionAtPosition(
+            movedWorld,movedActor,livedFarm);
+    CHECK(dispositionAware.intent==CivilizationIntent::Retrieve);
+    CHECK(dispositionAware.material==MaterialKind::Water);
+    CHECK(dispositionAware.storage==movedWorld.storageSites.front().id);
+
+    std::cout << "cultivation progression + lived-position economy passed\n";
     return 0;
 }
