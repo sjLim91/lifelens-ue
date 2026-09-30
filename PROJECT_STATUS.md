@@ -2,7 +2,15 @@
 
 Date: 2026-09-30  
 Active architecture: **LifeLensCore -> WASM -> Web Observer**  
-Current main checkpoint: `ec8242068af9aa8be4ca328ad4838e1e9f090f9a` (#519)
+Current main checkpoint: `3135e7bb8a45dc4d3ecc785d89273e74b68f4015` (#521)
+
+## Active development unit — DU-01 Living Settlement
+
+- Canonical unit: `docs/DU01_LIVING_SETTLEMENT.md`.
+- Baseline #521 connects shared settlement storage to physical construction/restoration logistics.
+- DU-01 now integrates facility reuse/repair/build choice, settlement-local material causality, truthful Web observation, and regression protection as one milestone-sized PR.
+- Development uses targeted tests while iterating; full Core/WASM/Web/Preflight runs once at the merge gate unless a boundary-changing failure requires earlier full validation.
+- Completion is runtime/causality based: accelerated observation must show real pressure -> logistics -> work -> use without duplicate facilities, fake water, teleport work, or browser-authored outcomes.
 
 ## Runtime decision
 
