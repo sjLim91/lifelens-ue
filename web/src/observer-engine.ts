@@ -232,7 +232,11 @@ export function startObserverEngine(): void {
     });
     const selectedResidentId = observerStore.getSnapshot().selectedResidentId;
     threeWorldRenderer?.setSelectedResident(selectedResidentId);
-    threeWorldRenderer?.setTerrain(terrain);
+    if (snapshot.terrainStaticChanged) {
+      threeWorldRenderer?.setTerrain(terrain);
+    } else {
+      threeWorldRenderer?.setHumanTraces(terrain);
+    }
     threeWorldRenderer?.setAuthoritativeSpatialTargets(
       snapshot.civilization,
       snapshot.worldObjects,
