@@ -110,10 +110,35 @@ int main(int argc,char** argv)
     std::uint64_t routeFailures=0;
     std::uint64_t timeouts=0;
     std::uint64_t preemptions=0;
+    std::uint64_t sleepInterruptions=0;
+    std::uint64_t socialEvents=0;
+    std::uint64_t civilizationEvents=0;
+    std::array<std::uint64_t,5> physicalStarts{};
+    std::array<std::uint64_t,5> physicalCompletions{};
     sim.onEvent([&](const std::string& line){
         if(line.find("route failed")!=std::string::npos) ++routeFailures;
         if(line.find("timed out")!=std::string::npos) ++timeouts;
         if(line.find("preempted current activity")!=std::string::npos) ++preemptions;
+        if(line.find("woke from Sleep")!=std::string::npos) ++sleepInterruptions;
+        if(line.find(" -> Civilization ")!=std::string::npos) ++civilizationEvents;
+        if(line.find(" -> Approach ")!=std::string::npos
+           || line.find(" -> Avoid ")!=std::string::npos
+           || line.find(" -> Repair ")!=std::string::npos
+           || line.find(" -> Comfort ")!=std::string::npos){
+            ++socialEvents;
+        }
+
+        const std::array<const char*,5> physicalNames={
+            "Eat","Drink","Sleep","UseToilet","Wash"
+        };
+        for(std::size_t i=0;i<physicalNames.size();++i){
+            const std::string startToken=
+                std::string(" -> ")+physicalNames[i]+" (need ";
+            const std::string completeToken=
+                std::string(" completed ")+physicalNames[i];
+            if(line.find(startToken)!=std::string::npos) ++physicalStarts[i];
+            if(line.find(completeToken)!=std::string::npos) ++physicalCompletions[i];
+        }
     });
 
     std::vector<ResidentMetrics> metrics;
@@ -187,6 +212,19 @@ int main(int argc,char** argv)
              <<" routeFailures="<<routeFailures
              <<" timeouts="<<timeouts
              <<" preemptions="<<preemptions
+             <<" sleepInterruptions="<<sleepInterruptions
+             <<" socialEvents="<<socialEvents
+             <<" civilizationEvents="<<civilizationEvents
+             <<" physicalStartsEat="<<physicalStarts[0]
+             <<" physicalStartsDrink="<<physicalStarts[1]
+             <<" physicalStartsSleep="<<physicalStarts[2]
+             <<" physicalStartsToilet="<<physicalStarts[3]
+             <<" physicalStartsWash="<<physicalStarts[4]
+             <<" physicalDoneEat="<<physicalCompletions[0]
+             <<" physicalDoneDrink="<<physicalCompletions[1]
+             <<" physicalDoneSleep="<<physicalCompletions[2]
+             <<" physicalDoneToilet="<<physicalCompletions[3]
+             <<" physicalDoneWash="<<physicalCompletions[4]
              <<"\n";
 
     const std::array<const char*,5> needNames={
