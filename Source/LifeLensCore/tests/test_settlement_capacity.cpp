@@ -74,8 +74,19 @@ int main()
     // versus Fiber 4 + Wood 2 for a new SleepingPlace).
     const std::size_t facilityCountBeforeRestoration=world.facilities.size();
     const FacilityId ruinedBedId=world.facilities.front().id;
+    const GridPos ruinedBedPos=world.facilities.front().pos;
     assert(ruinConstructedFacility(world.facilities.front()));
     assert(demand(FacilityKind::SleepingPlace,anchor).unmet());
+
+    // Ruins lose service capacity but not physical volume. A new bed, workshop,
+    // shelter, or other structure must not overlap the surviving frame while
+    // the cheaper restoration path remains available.
+    assert(settlementFacilitySiteBlocked(
+        world,ruinedBedPos,FacilityKind::SleepingPlace));
+    assert(settlementFacilitySiteBlocked(
+        world,ruinedBedPos,FacilityKind::WorkSurface));
+    assert(settlementFacilitySiteBlocked(
+        world,{ruinedBedPos.x+1,ruinedBedPos.y},FacilityKind::Shelter));
     assert(facilityRestorationMaterialRequirement(
         FacilityKind::SleepingPlace,MaterialKind::Fiber)==2);
     assert(facilityRestorationMaterialRequirement(
