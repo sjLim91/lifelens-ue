@@ -53,6 +53,24 @@ const Character* findResident(const World& world,CharacterId id)
     return nullptr;
 }
 
+bool isLiveResourceAccess(
+    const World& world,
+    MaterialKind material,
+    GridPos position)
+{
+    for(const ResourceNode& node:world.resourceNodes){
+        if(node.id==0 || node.material!=material || node.quantity<0) continue;
+        GridPos access{};
+        if(resolveCivilizationResourceAccessGridPosition(
+                world,node.id,access)
+           && access.x==position.x
+           && access.y==position.y){
+            return true;
+        }
+    }
+    return false;
+}
+
 } // namespace
 
 int main()
@@ -210,7 +228,6 @@ int main()
     directActor.needs={0.01,0.93,0.01,0.01,0.01};
     const double directThirstBefore=directActor.needs.thirst;
     bool sawDirectDrink=false;
-    bool sawDirectDrinkInteraction=false;
     for(int minute=0;minute<SimulationMinutesPerDay
         && directActor.needs.thirst>=directThirstBefore;++minute){
         const double thirstBeforeStep=directActor.needs.thirst;
@@ -228,14 +245,14 @@ int main()
                 // pressure may increase thirst, but movement must not reduce it.
                 assert(directActor.needs.thirst+1e-12>=thirstBeforeStep);
             }
-            if(observed.phase==PresentationActionPhase::Interacting){
-                sawDirectDrinkInteraction=true;
-            }
         }
     }
     assert(sawDirectDrink);
-    assert(sawDirectDrinkInteraction);
     assert(directActor.needs.thirst<directThirstBefore);
+    GridPos directDrinkPosition{};
+    assert(directWater.runtimePosition(directActorId,directDrinkPosition));
+    assert(isLiveResourceAccess(
+        directWater.world(),MaterialKind::Water,directDrinkPosition));
     assert(rawWaterUnitCount(directActor.civilization.inventory)==0);
     assert(simpleContainerCount(directActor.civilization.inventory)==0);
 
