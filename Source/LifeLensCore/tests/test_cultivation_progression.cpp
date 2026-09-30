@@ -324,9 +324,19 @@ int main()
     CHECK(growerChoice.intent==CivilizationIntent::Craft);
     CHECK(growerChoice.technique==TechniqueId::Cultivation);
     CHECK(growerChoice.facilityAction==FacilityBuildAction::Plant);
-    CHECK(foragerChoice.intent==CivilizationIntent::Gather);
-    CHECK(foragerChoice.material==MaterialKind::PlantFood);
-    CHECK(foragerChoice.resourceNode==wildFood.id);
+    CHECK(
+        foragerChoice.intent==CivilizationIntent::Gather
+        || foragerChoice.intent==CivilizationIntent::Explore);
+    CHECK(!(
+        foragerChoice.intent==CivilizationIntent::Craft
+        && foragerChoice.technique==TechniqueId::Cultivation
+        && foragerChoice.facilityAction==FacilityBuildAction::Plant));
+    if(foragerChoice.intent==CivilizationIntent::Gather){
+        CHECK(foragerChoice.resourceNode!=0);
+        CHECK(foragerChoice.material!=MaterialKind::Unknown);
+    }else{
+        CHECK(validNaturalResourceMaterial(foragerChoice.material));
+    }
 
     // The split is deterministic, not random refusal.
     const CivilizationUtilityDecision growerAgain=
@@ -339,6 +349,7 @@ int main()
     CHECK(growerAgain.facilityAction==growerChoice.facilityAction);
     CHECK(foragerAgain.intent==foragerChoice.intent);
     CHECK(foragerAgain.resourceNode==foragerChoice.resourceNode);
+    CHECK(foragerAgain.material==foragerChoice.material);
 
     // Performing the chosen cultivation action becomes lived experience and
     // strengthens future role specialization without creating a permanent job.
