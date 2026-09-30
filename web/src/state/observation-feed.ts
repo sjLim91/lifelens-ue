@@ -626,6 +626,7 @@ function exactLifeEvents(
         residentId: resident.id,
         residentName: resident.name,
         targetResidentId: event.relatedCharacterIds?.[0],
+        ...residentFocus(resident),
         summary: lifeSummary(resident, event),
         detail: relatedNames.length > 0
           ? `관련: ${relatedNames.join(', ')}`
@@ -666,12 +667,16 @@ function exactCivilizationEvents(
       || names.get(discovery.discovererId)
       || discovery.discovererId
       || '누군가';
+    const discoverer = nextResidents.find(
+      (resident) => resident.id === discovery.discovererId,
+    );
     events.push({
       id: `civilization:discovery:${key}`,
       kind: 'civilization',
       minute: Number(discovery.minute) || minute,
       residentId: discovery.discovererId || undefined,
       residentName: discovererName,
+      ...residentFocus(discoverer),
       summary: `${discovererName}가 ${formatTechnique(discovery.technique)} 지식을 발견함`,
       detail: discovery.livingKnowerCount > 1
         ? `현재 ${discovery.livingKnowerCount}명이 알고 있음`
@@ -792,6 +797,8 @@ function exactWorldObjectEvents(
         minute: Number(site.improvedMinute) || minute,
         residentId,
         residentName: residentId ? names.get(residentId) : undefined,
+        focusGridX: site.gridX,
+        focusGridY: site.gridY,
         summary: '위생 장소가 개선됨',
         detail: `이용 누적 ${site.useCount}회`,
         importance: 'medium',
