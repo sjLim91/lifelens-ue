@@ -2,7 +2,7 @@
 
 Date: 2026-09-30  
 Active architecture: **LifeLensCore -> WASM -> Web Observer**  
-Current main checkpoint: `57234f611cd369d43cb575a72fb8ba88b4e6f45d` (#515)
+Current main checkpoint: `b323ff60479210409558aa16923eb6e74532440a` (#517)
 
 ## Runtime decision
 
@@ -64,6 +64,12 @@ PR #497, which only repaired the Unreal external physical sleep path, was closed
   change produced by Core (recipient -> actor), such as trust/bond/conflict
   percentage-point deltas. If multiple same-direction events are batched in one
   heavy refresh window, per-event deltas are omitted instead of fabricated.
+- #517 observation events can carry factual world focus coordinates. Clicking a
+  feed event explicitly moves the camera to the event/target location, selects
+  the relevant resident when one exists, and keeps a visible "현장 관찰" banner
+  without auto-moving the camera when events merely arrive. Facility/resource/
+  sanitation events use their authoritative grid positions; physical actions
+  use the Core presentation target grid where available.
 
 ## Validation target after Unreal removal
 
