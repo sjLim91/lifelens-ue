@@ -514,3 +514,47 @@ P0 순서를 아래로 확정한다.
 를 한 묶음으로 계측해야 한다.
 
 후보 탐색 범위로 `minimumSocialUtility 0.10~0.14`를 측정할 가치는 있으나, 최종값은 장기 A/B 계측 후 확정한다.
+
+
+## 20. 이론 수지와 실측의 교차검증
+
+100일 행동 완료 이벤트를 일평균으로 환산하면 앞서 계산한 수지와 실제 런타임이 연결된다.
+
+### seed 874213954
+
+- Eat 완료: 2,081 / 100일 = **20.81회/day/4명**
+  - 이론 fallback 필요량: 약 20.57/day
+  - 거의 정확히 일치한다.
+- Drink 완료: 2,297 / 100일 = **22.97회/day/4명**
+  - 이론 약 23.4/day와 거의 일치한다.
+- Toilet 완료: 1,428 / 100일 = **14.28회/day/4명**
+  - 기본 bladder 수지만 보면 약 24.37회/day가 필요하다.
+  - 완료량 부족이 Bladder 장기 포화와 일치한다.
+- Wash 완료: 1,000 / 100일 = **10회/day/4명**
+  - 야외 용변 오염까지 상쇄하려면 단순 이론상 약 72.6회/day/4명이 필요하다.
+  - 현재는 필요한 세정량의 일부만 수행해 Hygiene가 84~86%의 시간 동안 최대치에 붙는다.
+
+### 중요한 결합 위험
+
+현재 scheduler를 고쳐 Toilet/Wash가 "정상적으로 다 완료"되게만 만들면 Water 소비가 급격히 증가한다.
+
+현재 seed 874 기준 실제:
+- Drink 약 23 water/day
+- Wash 약 10 water/day
+- 합계 약 33 water/day
+
+Hygiene를 현행 -0.072 Wash 효과로 실제 유지하려 하면:
+- Drink 약 23/day
+- Wash 약 73/day
+- 합계 약 **96 water/day**
+
+즉 **scheduler fix만 먼저 적용하면 다음 병목이 Water resource collapse로 이동할 가능성이 높다.**
+
+따라서 P0는 반드시 아래를 같은 밸런스 묶음으로 본다.
+
+1. action commitment/preemption
+2. Toilet/Wash 효과량과 sanitation hygiene burden
+3. Water action 1회당 자원 소비량
+4. freshwater regeneration / storage / infrastructure efficiency
+
+"행동을 완료하게 만들기"와 "그 행동을 감당할 수 있는 자원경제"를 분리해서 출시하면 안 된다.
