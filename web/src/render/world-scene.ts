@@ -260,6 +260,11 @@ export class WorldScene {
     this.weatherLayer.setFocus(panX, panZ);
   }
 
+  setHumanTraces(window: TerrainWindow): void {
+    this.facilityLayer.setTerrain(window);
+    this.humanTraceLayer.setTerrain(window);
+  }
+
   setTerrain(window: TerrainWindow): void {
     if (
       this.terrainWorldSeed !== undefined
