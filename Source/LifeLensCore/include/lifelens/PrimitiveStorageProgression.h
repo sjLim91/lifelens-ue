@@ -17,6 +17,11 @@ namespace lifelens {
 // pressure, discover the idea, plan a Core-authored site, deliver real material,
 // and then perform construction work.
 constexpr int PrimitiveStorageRecognitionInventoryUnits = 6;
+constexpr int PrimitiveStorageSharedRecognitionMinResidents = 2;
+constexpr double PrimitiveStorageSharedRecognitionAverageUnits = 2.0;
+constexpr double PrimitiveStorageSharedPressureBaselineUnits = 1.5;
+constexpr double PrimitiveStorageSharedPressureScaleUnits = 3.0;
+constexpr double PrimitiveStorageSharedSurplusPressurePerUnit = 0.08;
 constexpr double PrimitiveStorageRecognitionBaseChance = 0.34;
 
 struct PrimitiveStorageNeedObservation {
@@ -109,14 +114,16 @@ inline PrimitiveStorageNeedObservation observePrimitiveStorageNeed(
         static_cast<double>(result.localCarriedUnits)
         /static_cast<double>(std::max(1,result.localResidents));
     const bool sharedLoadRecognized=
-        result.localResidents>=2
+        result.localResidents>=PrimitiveStorageSharedRecognitionMinResidents
         && result.localCarriedUnits>=PrimitiveStorageRecognitionInventoryUnits
-        && averageLocalLoad>=2.0;
+        && averageLocalLoad>=PrimitiveStorageSharedRecognitionAverageUnits;
     const double sharedPressure=sharedLoadRecognized
         ? std::max(0.0,std::min(
             1.0,
-            (averageLocalLoad-1.5)/3.0
-            +0.08*static_cast<double>(
+            (averageLocalLoad-PrimitiveStorageSharedPressureBaselineUnits)
+                /PrimitiveStorageSharedPressureScaleUnits
+            +PrimitiveStorageSharedSurplusPressurePerUnit
+                *static_cast<double>(
                 std::max(0,result.localCarriedUnits
                     -PrimitiveStorageRecognitionInventoryUnits))))
         : 0.0;
