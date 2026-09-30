@@ -5,6 +5,7 @@
 #include <random>
 #include <utility>
 #include "Character.h"
+#include "ProvisionPreference.h"
 #include "SimulationRuleset.h"
 #include "World.h"
 namespace lifelens {
@@ -96,24 +97,6 @@ inline double utilityCurve(double n,const UtilityAIRuleset& rules) {
 inline double utilityCurve(double n) {
     return utilityCurve(n,DefaultSimulationRuleset.utilityAI);
 }
-inline double foodReserveDiscipline01(const Character& c)
-{
-    return std::clamp(
-        0.45*c.personality.conscientiousness
-        +0.30*c.personality.orderliness
-        +0.25*c.personality.patience,
-        0.0,1.0);
-}
-
-inline double immediateEatingDrive01(const Character& c)
-{
-    return std::clamp(
-        0.50*c.personality.impulsiveness
-        +0.25*(1.0-c.personality.patience)
-        +0.25*(1.0-c.personality.conscientiousness),
-        0.0,1.0);
-}
-
 inline double autonomousEatDispositionMultiplier(
     const Character& c,
     const UtilityAIRuleset& rules)
@@ -133,9 +116,7 @@ inline double autonomousEatDispositionMultiplier(
 
     const int carriedFood=c.civilization.inventory.count(
         ItemKind::RawMaterial,MaterialKind::PlantFood);
-    const double freshness=carriedFood>0
-        ? c.civilization.inventory.averagePlantFoodFreshness()
-        : 0.0;
+    const double freshness=carriedPlantFoodFreshness01(c);
     const double spoilagePressure=carriedFood>0
         ? std::clamp(1.0-freshness,0.0,1.0)
         : 0.0;

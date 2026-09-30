@@ -570,3 +570,23 @@ Canonical companion:
 - 같은 비축 성향 주민도 식량 freshness가 매우 낮아 폐기 위험이 커지면 중간 Hunger에서 Eat 쪽으로 기울 수 있어야 한다.
 - 같은 비축 성향 주민도 Hunger가 생존 구간으로 올라가면 Eat를 선택해야 한다.
 - 실제 음식이 없으면 Eat는 계속 선택/실행할 수 없다.
+
+
+## D-028 — 동일 식량의 섭취·재배·저장은 실제 자원을 두고 경쟁한다
+
+**결정**
+- `PlantFood`는 현재 Core에서 식용 자원과 재배 씨앗 권한을 함께 나타내므로, 같은 단위를 Eat와 Plant가 동시에 무료로 주장할 수 없다.
+- 마지막으로 지역에서 접근 가능한 `PlantFood` 1단위를 씨앗으로 소비하려는 경우, 주민의 **개인 식량 보존 claim**과 **재배 투자 claim**을 비교한다.
+- 식량 보존 claim은 현재 Hunger, impulsiveness, patience, conscientiousness, orderliness, 실제 carried-food freshness를 사용한다. 상하기 직전 식량은 보존 가치가 낮아진다.
+- 재배 투자 claim은 cultivation stewardship, 지역 식량 부족 압력, 실제 Cultivation 성공 경험, 결정론적 개인 선호, 현재 Hunger를 사용한다.
+- 개인 식량 보존 claim이 재배 투자 claim 이상이면 마지막 지역 식량은 씨앗으로 소비하지 않는다. 동률에서는 되돌릴 수 있는 식량 보존 쪽을 유지한다.
+- 반대로 미래 지향적 재배 성향/경험이 충분히 높으면 같은 Hunger와 같은 마지막 식량 조건에서도 다른 주민은 Plant를 선택할 수 있다.
+- 가까운 실제 Storage에 추가 `PlantFood`가 있으면 그 재고가 실제 지역 reserve로 계산되어 “마지막 식량” 기회비용이 해소된다. UI나 가상 reserve는 사용할 수 없다.
+- Store는 실제 Storage에 실제 surplus만 이동하는 가역적 자원배분 경로로 유지한다. 마지막 휴대 식량을 없애기 위해 Store를 사용하지 않는다.
+- 이 규칙은 고정 직업/역할 배정이나 무작위 거부가 아니다. 동일 seed와 동일 상태에서는 같은 주민의 판단이 결정론적으로 재현되어야 한다.
+
+**검증 기준**
+- 동일한 중간 Hunger, 동일한 PlantFood 1단위, 동일한 Cultivation 지식/도구/빈 재배지에서도 미래 지향적 grower는 Plant를 선택할 수 있고, 충동적 resident는 해당 마지막 식량을 Plant에 쓰지 않고 Eat를 선택할 수 있어야 한다.
+- 실제 가까운 Storage에 추가 식량을 넣으면 같은 충동적 resident도 마지막 식량 위험이 해소되어 Plant를 다시 후보로 고려할 수 있어야 한다.
+- Storage 경로는 실제 surplus PlantFood만 보관하고 원본 수량보다 적은 양을 이동해야 한다.
+- Eat/Plant/Store 어느 경로도 Core에 존재하지 않는 PlantFood를 생성해서 결정을 성립시키면 안 된다.
