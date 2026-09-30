@@ -125,10 +125,14 @@ int main()
     assert(residue->radiusTiles==
         primitiveSanitationResidueRadiusTiles(
             PrimitiveSanitationSiteKind::DugPit));
-    assert(std::abs(
-        residue->intensity
-        -primitiveSanitationResidueIntensity(
-            PrimitiveSanitationSiteKind::DugPit))<1e-9);
+    const double pitIntensity=
+        primitiveSanitationResidueIntensity(
+            PrimitiveSanitationSiteKind::DugPit);
+    // The simulation advances the environmental field after the action minute,
+    // so the freshly deposited authoritative intensity may already have one
+    // minute of deterministic decay applied.
+    assert(residue->intensity<=pitIntensity+1e-9);
+    assert(residue->intensity>=pitIntensity-0.001);
 
     // Two use ticks add 0.008 hygiene burden and the contained completion adds
     // another 0.008. Allow a small margin for environmental exposure applied
