@@ -1557,8 +1557,8 @@ inline CivilizationUtilityDecision bestCultivationDecision(
             candidate.material=MaterialKind::PlantFood;
             candidate.quantity=1;
             candidate.utility=clampCivilization01(
-                0.24+0.24*demand.foodPressure
-                +0.20*stewardship
+                0.20+0.18*demand.foodPressure
+                +0.40*stewardship
                 +0.12*experience
                 +0.10*preference);
             considerCivilizationDecision(best,candidate);
@@ -1585,9 +1585,9 @@ inline CivilizationUtilityDecision bestCultivationDecision(
             candidate.quantity=0;
             const double careGap=clampCivilization01(1.0-facility.cropCare01);
             candidate.utility=clampCivilization01(
-                0.24+0.24*careGap+0.08*demand.foodPressure
-                +0.20*stewardship
-                +0.14*experience
+                0.18+0.18*careGap+0.08*demand.foodPressure
+                +0.34*stewardship
+                +0.12*experience
                 +0.10*preference);
             considerCivilizationDecision(best,candidate);
         }
@@ -1659,12 +1659,12 @@ inline CivilizationUtilityDecision bestCultivationDecision(
     plan.hasFacilityTarget=true;
     plan.facilityTargetPos=site.pos;
     plan.utility=clampCivilization01(
-        0.18+0.34*demand.pressure
+        0.14+0.26*demand.pressure
         +0.10*site.environment.fertility01
         +0.06*site.environment.naturalMoisture01
-        +0.14*stewardship
+        +0.28*stewardship
         +0.10*preference
-        +0.08*experience);
+        +0.06*experience);
     considerCivilizationDecision(best,plan);
     return best;
 }
