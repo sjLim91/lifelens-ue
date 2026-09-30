@@ -86,7 +86,8 @@ public:
         }
         if(character==nullptr || !character->alive) return false;
         const ConstructedFacility* facility=
-            nearestOperationalSleepFacility(world_,runtimeIt->second.pos);
+            nearestAvailableOperationalSleepFacility(
+                id,runtimeIt->second.pos);
         if(facility==nullptr) return false;
         outPosition=facility->pos;
         outFacilityId=facility->id;
@@ -163,6 +164,12 @@ public:
     }
 private:
     SettlementPopulation settlementPopulation() const;
+    bool sleepFacilityHasCapacityFor(
+        CharacterId requester,
+        const ConstructedFacility& facility) const;
+    const ConstructedFacility* nearestAvailableOperationalSleepFacility(
+        CharacterId requester,
+        GridPos from) const;
     struct Runtime {
         Goal goal=Goal::Idle;
         std::vector<Action> plan;
@@ -335,6 +342,11 @@ inline bool Simulation::completeExternalPhysicalAction(
     if(runtime.goal==Goal::Sleep && emergencyFallback){
         settlementSleepFacility=
             bestOperationalSleepFacility(world_,resolvedPosition,1);
+        if(settlementSleepFacility!=nullptr
+           && !sleepFacilityHasCapacityFor(
+               id,*settlementSleepFacility)){
+            return false;
+        }
     }
 
     const double sleepRecoveryPerMinute=runtime.goal==Goal::Sleep

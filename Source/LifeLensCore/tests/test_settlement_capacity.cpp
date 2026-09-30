@@ -235,6 +235,77 @@ int main()
     }
     assert(additionalPlan);
 
+    // DU-01: sleep facilities are capacity-aware at actual use time.
+    // Two one-person beds must not attract two simultaneous sleepers to the
+    // same nearest bed while the other bed remains empty.
+    SimulationRuleset reservationRules=DefaultSimulationRuleset;
+    reservationRules.needs.hungerPerMinute=0.0;
+    reservationRules.needs.thirstPerMinute=0.0;
+    reservationRules.needs.bladderPerMinute=0.0;
+    reservationRules.needs.hygienePerMinute=0.0;
+    Simulation reservedSleep(
+        770033,0,CurrentWorldGenerationVersion,reservationRules);
+    reservedSleep.setupNewGame();
+    reservedSleep.world().minute=22*60;
+
+    auto& reservedWorld=reservedSleep.world();
+    const CharacterId firstSleeperId=reservedWorld.characters[0].id;
+    const CharacterId secondSleeperId=reservedWorld.characters[1].id;
+    for(std::size_t i=2;i<reservedWorld.characters.size();++i){
+        reservedWorld.characters[i].alive=false;
+        reservedWorld.characters[i].deathMinute=reservedWorld.minute;
+    }
+    for(std::size_t i=0;i<2;++i){
+        reservedWorld.characters[i].needs={0.01,0.01,0.95,0.01,0.01};
+        reservedWorld.characters[i].sleepTendency=1.0;
+    }
+
+    GridPos reservationAnchor{};
+    assert(reservedSleep.runtimePosition(
+        firstSleeperId,reservationAnchor));
+    const GridPos firstBedPos{
+        reservationAnchor.x+6,reservationAnchor.y};
+    const GridPos secondBedPos{
+        reservationAnchor.x-6,reservationAnchor.y};
+    reservedWorld.facilities.push_back(completedFixture(
+        99201,FacilityKind::SleepingPlace,firstBedPos,
+        firstSleeperId,reservedWorld.minute));
+    reservedWorld.facilities.push_back(completedFixture(
+        99202,FacilityKind::SleepingPlace,secondBedPos,
+        secondSleeperId,reservedWorld.minute));
+
+    bool sawConcurrentSleepTargets=false;
+    GridPos firstTarget{};
+    GridPos secondTarget{};
+    for(int minute=0;minute<240 && !sawConcurrentSleepTargets;++minute){
+        reservedSleep.step();
+        const auto firstPresentation=
+            reservedSleep.observeResidentPresentation(firstSleeperId);
+        const auto secondPresentation=
+            reservedSleep.observeResidentPresentation(secondSleeperId);
+        if(firstPresentation.active
+           && secondPresentation.active
+           && firstPresentation.kind==PresentationActionKind::Physical
+           && secondPresentation.kind==PresentationActionKind::Physical
+           && firstPresentation.physicalGoal==Goal::Sleep
+           && secondPresentation.physicalGoal==Goal::Sleep
+           && firstPresentation.hasTargetGrid
+           && secondPresentation.hasTargetGrid){
+            firstTarget=firstPresentation.targetGrid;
+            secondTarget=secondPresentation.targetGrid;
+            sawConcurrentSleepTargets=true;
+        }
+    }
+    assert(sawConcurrentSleepTargets);
+    assert(!sameGridPos(firstTarget,secondTarget));
+    const bool firstKnownBed=
+        sameGridPos(firstTarget,firstBedPos)
+        || sameGridPos(firstTarget,secondBedPos);
+    const bool secondKnownBed=
+        sameGridPos(secondTarget,firstBedPos)
+        || sameGridPos(secondTarget,secondBedPos);
+    assert(firstKnownBed && secondKnownBed);
+
     // Sleep is continuous time, not an atomic "rest completed" effect. A tired
     // resident walks to real bedding first, gains no sleep recovery in transit,
     // then recovers minute-by-minute until the rested threshold is reached.

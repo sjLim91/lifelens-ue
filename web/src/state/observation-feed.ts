@@ -710,6 +710,7 @@ function exactCivilizationEvents(
       const workerId = facility.lastWorkedBy || facility.initiatedBy;
       const operational = facility.state === 'Operational';
       const ruined = facility.state === 'Ruined';
+      const restored = before.state === 'Ruined' && operational;
       events.push({
         id: `facility:state:${facility.id}:${facility.state}:${minute}`,
         kind: 'facility',
@@ -718,13 +719,39 @@ function exactCivilizationEvents(
         residentName: workerId ? names.get(workerId) : undefined,
         focusGridX: facility.gridX,
         focusGridY: facility.gridY,
-        summary: operational
-          ? `${formatFacilityKind(facility.kind)}이 완성되어 가동을 시작함`
-          : ruined
-            ? `${formatFacilityKind(facility.kind)}이 파손됨`
-            : `${formatFacilityKind(facility.kind)} 상태가 ${formatFacilityState(facility.state)}(으)로 바뀜`,
+        summary: restored
+          ? `${formatFacilityKind(facility.kind)}이 복구되어 다시 사용 가능해짐`
+          : operational
+            ? `${formatFacilityKind(facility.kind)}이 완성되어 가동을 시작함`
+            : ruined
+              ? `${formatFacilityKind(facility.kind)}이 파손됨`
+              : `${formatFacilityKind(facility.kind)} 상태가 ${formatFacilityState(facility.state)}(으)로 바뀜`,
+        detail: restored
+          ? `내구도 ${percent(before.durability)} → ${percent(facility.durability)}`
+          : undefined,
         importance: operational || ruined ? 'high' : 'medium',
       });
+    } else {
+      const durabilityBefore = clamp01(before.durability);
+      const durabilityAfter = clamp01(facility.durability);
+      if (
+        facility.state === 'Operational'
+        && durabilityAfter - durabilityBefore >= 0.05
+      ) {
+        const workerId = facility.lastWorkedBy || facility.initiatedBy;
+        events.push({
+          id: `facility:repair:${facility.id}:${minute}:${durabilityAfter.toFixed(3)}`,
+          kind: 'facility',
+          minute,
+          residentId: workerId || undefined,
+          residentName: workerId ? names.get(workerId) : undefined,
+          focusGridX: facility.gridX,
+          focusGridY: facility.gridY,
+          summary: `${formatFacilityKind(facility.kind)} 내구도가 회복됨`,
+          detail: `${percent(durabilityBefore)} → ${percent(durabilityAfter)}`,
+          importance: 'medium',
+        });
+      }
     }
   }
 

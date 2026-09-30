@@ -1067,6 +1067,118 @@ testCase('exact civilization changes become observation events', () => {
   assert.equal(depleted.focusGridY, 8);
 });
 
+testCase('facility restoration and maintenance are distinct factual results', () => {
+  const base = {
+    id: 'bed-restore',
+    kind: 'SleepingPlace',
+    gridX: 12,
+    gridY: 4,
+    initiatedBy: 'a',
+    lastWorkedBy: 'a',
+    startedMinute: 20,
+    completedMinute: 30,
+    constructionWork: 10,
+    requiredWork: 10,
+    workProgress: 1,
+    active: false,
+    linkedStorage: '0',
+    requiredMaterialUnits: 3,
+    deliveredMaterialUnits: 3,
+    fuelUnits: 0,
+    charcoalUnits: 0,
+    oreUnits: 0,
+    metalUnits: 0,
+    heatLevel: 0,
+    lit: false,
+    burnMinutesRemaining: 0,
+    lastFireMinute: -1,
+    cropPlanted: false,
+    cropPlantedMinute: -1,
+    cropGrowth01: 0,
+    cropMoisture01: 0,
+    cropCare01: 0,
+    cropHarvestUnits: 0,
+    lastCultivationMinute: -1,
+    requirements: [],
+  };
+
+  const restored = deriveObservationEvents(
+    world(90),
+    [resident()],
+    world(91),
+    [resident()],
+    undefined,
+    undefined,
+    {
+      available: true,
+      minute: 90,
+      recentDiscoveries: [],
+      resources: [],
+      facilities: [{
+        ...base,
+        state: 'Ruined',
+        durability: 0,
+      }],
+    },
+    {
+      available: true,
+      minute: 91,
+      recentDiscoveries: [],
+      resources: [],
+      facilities: [{
+        ...base,
+        state: 'Operational',
+        active: true,
+        durability: 0.62,
+      }],
+    },
+  );
+
+  const restoration = restored.find(event => event.kind === 'facility');
+  assert.ok(restoration);
+  assert.match(restoration.summary, /잠자리.*복구.*다시 사용/);
+  assert.equal(restoration.detail, '내구도 0% → 62%');
+
+  const repaired = deriveObservationEvents(
+    world(91),
+    [resident()],
+    world(92),
+    [resident()],
+    undefined,
+    undefined,
+    {
+      available: true,
+      minute: 91,
+      recentDiscoveries: [],
+      resources: [],
+      facilities: [{
+        ...base,
+        state: 'Operational',
+        active: true,
+        durability: 0.48,
+      }],
+    },
+    {
+      available: true,
+      minute: 92,
+      recentDiscoveries: [],
+      resources: [],
+      facilities: [{
+        ...base,
+        state: 'Operational',
+        active: true,
+        durability: 0.71,
+      }],
+    },
+  );
+
+  const maintenance = repaired.find(event => event.kind === 'facility');
+  assert.ok(maintenance);
+  assert.match(maintenance.summary, /잠자리 내구도가 회복됨/);
+  assert.equal(maintenance.detail, '48% → 71%');
+  assert.equal(maintenance.importance, 'medium');
+});
+
 testCase('exact sanitation changes become observation events', () => {
   const previousObjects = {
     available: true,
