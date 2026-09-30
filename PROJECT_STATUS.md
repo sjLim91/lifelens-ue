@@ -2,7 +2,7 @@
 
 Date: 2026-09-30  
 Active architecture: **LifeLensCore -> WASM -> Web Observer**  
-Current main checkpoint: `257c225eff48f26cbde80e3f901c0ded69f40f3a` (#511)
+Current main checkpoint: `28585856302918b1a062b5f6d6d0229d846b430c` (#513)
 
 ## Runtime decision
 
@@ -37,14 +37,14 @@ PR #497, which only repaired the Unreal external physical sleep path, was closed
 - #504 Web hydrology visibility aligned with Core direct-water authority;
   drinking/washing interaction waits for visible arrival and carried-water
   actions are labeled separately from natural-water use.
-- #505 resident locomotion/action animation now follows the full global
-  1x/4x/16x simulation speed contract instead of an independent visual cap.
+- #505 resident locomotion/action animation was unified with the global
+  observer speed authority instead of an independent visual cap.
 - #506 timed Core sleep is presented as a truthful lying/resting posture only
   after authoritative arrival; movement, collision and Need authority stay in
   Core.
 - #507 Observer feed now exposes factual Need -> travel -> interaction
   milestones for Eat/Drink/Sleep/UseToilet/Wash without replay/spam.
-- #509 16x observer hot path split from heavyweight snapshots: resident
+- #509 high-speed observer hot path split from heavyweight snapshots: resident
   movement/Needs/presentation use a compact runtime DTO while relationships,
   memories, beliefs, family and civilization detail refresh at a lower cadence;
   deterministic terrain is cached until the observer window changes.
@@ -54,6 +54,12 @@ PR #497, which only repaired the Unreal external physical sleep path, was closed
 - #511 social observation now exposes factual approach -> interaction phases for
   Approach/Comfort/Repair/Avoid plus KnowledgeTeaching and Parenting, with exact
   Core social outcomes taking priority over duplicate inferred activity rows.
+- #513 retires 16x observation because it can monopolize the browser main
+  thread; selectable speeds are pause/1x/4x, with stale higher requests capped
+  at 4x. Sleeping residents now freeze skeletal animation after authoritative
+  arrival, center the feet-pivoted model around the sleep point, clear the
+  terrain/sleeping-place surface, and sample sloped outdoor ground to prevent
+  repeated bobbing or burial.
 
 ## Validation target after Unreal removal
 
