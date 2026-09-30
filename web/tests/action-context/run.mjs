@@ -220,7 +220,7 @@ testCase('known resident target is named without inventing a relationship', () =
     residents,
   );
   assert.ok(cue);
-  assert.equal(cue.text, '다가가기 · 하린 · 이동 중');
+  assert.equal(cue.text, '하린에게 다가가는 중');
 });
 
 testCase('unknown resident id is not shown as a fabricated target label', () => {
@@ -237,8 +237,97 @@ testCase('unknown resident id is not shown as a fabricated target label', () => 
     residents,
   );
   assert.ok(cue);
-  assert.equal(cue.text, '위로하기 · 진행 중');
+  assert.equal(cue.text, '위로하는 중');
   assert.ok(!cue.text.includes('missing'));
+});
+
+testCase('live social cues distinguish approach comfort repair and avoid', () => {
+  const cases = [
+    ['Approach', 'Moving', '하린에게 다가가는 중'],
+    ['Approach', 'Interacting', '하린와 교류를 시작함'],
+    ['Comfort', 'Moving', '하린을 위로하러 이동 중'],
+    ['Comfort', 'Interacting', '하린을 위로하는 중'],
+    ['Repair', 'Moving', '하린와 관계를 회복하러 이동 중'],
+    ['Repair', 'Interacting', '하린와 관계 회복을 시도하는 중'],
+    ['Avoid', 'Moving', '하린와 거리를 두는 중'],
+  ];
+
+  for (const [socialIntent, phase, expected] of cases) {
+    const cue = residentActionCue(
+      resident({
+        presentation: {
+          active: true,
+          kind: 'Social',
+          phase,
+          socialIntent,
+          targetResidentId: 'b',
+        },
+      }),
+      residents,
+    );
+    assert.equal(cue?.text, expected);
+  }
+});
+
+testCase('knowledge teaching names the real technique and target', () => {
+  const moving = residentActionCue(
+    resident({
+      presentation: {
+        active: true,
+        kind: 'KnowledgeTeaching',
+        phase: 'Moving',
+        targetResidentId: 'b',
+        knowledgeTeachingTechnique: 'FireMaking',
+      },
+    }),
+    residents,
+  );
+  assert.equal(moving?.text, '하린에게 불 피우기을 가르치러 이동 중');
+
+  const teaching = residentActionCue(
+    resident({
+      presentation: {
+        active: true,
+        kind: 'KnowledgeTeaching',
+        phase: 'Interacting',
+        targetResidentId: 'b',
+        knowledgeTeachingTechnique: 'FireMaking',
+      },
+    }),
+    residents,
+  );
+  assert.equal(teaching?.text, '하린에게 불 피우기을 가르치는 중');
+});
+
+testCase('parenting cue states the concrete authoritative care action', () => {
+  const actions = [
+    ['Feed', '하린 먹이는 중'],
+    ['PutToSleep', '하린 재우는 중'],
+    ['Bathe', '하린 씻겨주는 중'],
+    ['ToiletAssist', '하린 용변을 돕는 중'],
+    ['Hold', '하린 안아주는 중'],
+    ['Play', '하린 함께 노는 중'],
+    ['Educate', '하린 가르치는 중'],
+    ['Discipline', '하린 훈육하는 중'],
+    ['Comfort', '하린 달래는 중'],
+    ['HealthCare', '하린 돌보는 중'],
+  ];
+
+  for (const [parentingAction, expected] of actions) {
+    const cue = residentActionCue(
+      resident({
+        presentation: {
+          active: true,
+          kind: 'Parenting',
+          phase: 'Interacting',
+          parentingAction,
+          targetResidentId: 'b',
+        },
+      }),
+      residents,
+    );
+    assert.equal(cue?.text, expected);
+  }
 });
 
 testCase('validated object target can describe the object context', () => {
@@ -330,7 +419,7 @@ testCase('civilization and parenting cues remain factual and compact', () => {
     }),
     residents,
   );
-  assert.equal(parenting?.text, '달래기 · 하린 · 진행 중');
+  assert.equal(parenting?.text, '하린 달래는 중');
 });
 
 testCase('sanitation wording distinguishes real sites from outdoor fallback', () => {
@@ -544,8 +633,29 @@ testCase('social cues require an authoritative interacting resident target', () 
     key: 'a<>b',
     sourceId: 'a',
     targetId: 'b',
-    kind: 'Social',
+    kind: 'Comfort',
   });
+});
+
+testCase('social connector kind exposes live interaction intent', () => {
+  const intents = ['Approach', 'Comfort', 'Repair'];
+  for (const socialIntent of intents) {
+    const pairs = residentSocialCuePairs([
+      resident({
+        id: 'a',
+        presentation: {
+          active: true,
+          kind: 'Social',
+          phase: 'Interacting',
+          socialIntent,
+          targetResidentId: 'b',
+        },
+      }),
+      { id: 'b', name: '하린' },
+    ]);
+    assert.equal(pairs.length, 1);
+    assert.equal(pairs[0].kind, socialIntent);
+  }
 });
 
 testCase('moving, avoiding and missing-target residents do not draw social links', () => {
