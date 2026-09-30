@@ -567,6 +567,145 @@ testCase('merge de-duplicates repeated snapshots and bounds history', () => {
   assert.equal(merged[0].id, 'event-0');
 });
 
+testCase('exact social outcome shows the Core directional relationship delta', () => {
+  const actorBefore = resident({
+    id: 'a',
+    name: '민재',
+    relationships: [{
+      targetId: 'b',
+      targetName: '하린',
+      trust: 0.2,
+      affection: 0.25,
+      comfort: 0.2,
+      socialBond: 0.18,
+    }],
+  });
+  const recipientBefore = resident({
+    id: 'b',
+    name: '하린',
+    relationships: [{
+      targetId: 'a',
+      targetName: '민재',
+      trust: 0.4,
+      affection: 0.3,
+      comfort: 0.25,
+      socialBond: 0.31,
+      conflict: 0.05,
+    }],
+  });
+  const actorAfter = structuredClone(actorBefore);
+  const recipientAfter = resident({
+    id: 'b',
+    name: '하린',
+    relationships: [{
+      targetId: 'a',
+      targetName: '민재',
+      trust: 0.45,
+      affection: 0.36,
+      comfort: 0.32,
+      socialBond: 0.38,
+      conflict: 0.05,
+    }],
+  });
+
+  const events = deriveObservationEvents(
+    world(60),
+    [actorBefore, recipientBefore],
+    world(61),
+    [actorAfter, recipientAfter],
+    { available: true, events: [] },
+    {
+      available: true,
+      events: [{
+        sequence: '200',
+        actorId: 'a',
+        targetId: 'b',
+        type: 'Comfort',
+        intensity: 0.8,
+        importance: 0.7,
+        minute: 61,
+        where: '잠자리 옆',
+        presentationLevel: 'Meaningful',
+        successful: true,
+      }],
+    },
+  );
+
+  const social = events.find(event => event.id === 'social:sequence:200');
+  assert.ok(social);
+  assert.match(social.detail, /잠자리 옆/);
+  assert.match(social.detail, /하린→민재/);
+  assert.match(social.detail, /유대 \+7\.0%p/);
+  assert.match(social.detail, /편안함 \+7\.0%p/);
+  assert.match(social.detail, /애정 \+6\.0%p/);
+  assert.doesNotMatch(social.detail, /민재→하린/);
+});
+
+testCase('multiple events for one directional pair do not invent per-event deltas', () => {
+  const actor = resident({ id: 'a', name: '민재' });
+  const beforeTarget = resident({
+    id: 'b',
+    name: '하린',
+    relationships: [{
+      targetId: 'a',
+      targetName: '민재',
+      trust: 0.4,
+      affection: 0.3,
+      comfort: 0.3,
+      socialBond: 0.3,
+    }],
+  });
+  const afterTarget = resident({
+    id: 'b',
+    name: '하린',
+    relationships: [{
+      targetId: 'a',
+      targetName: '민재',
+      trust: 0.5,
+      affection: 0.4,
+      comfort: 0.4,
+      socialBond: 0.42,
+    }],
+  });
+  const events = deriveObservationEvents(
+    world(70),
+    [actor, beforeTarget],
+    world(72),
+    [structuredClone(actor), afterTarget],
+    { available: true, events: [] },
+    {
+      available: true,
+      events: [{
+        sequence: '201',
+        actorId: 'a',
+        targetId: 'b',
+        type: 'Help',
+        intensity: 0.7,
+        importance: 0.6,
+        minute: 71,
+        where: '',
+        presentationLevel: 'Meaningful',
+        successful: true,
+      }, {
+        sequence: '202',
+        actorId: 'a',
+        targetId: 'b',
+        type: 'Comfort',
+        intensity: 0.7,
+        importance: 0.6,
+        minute: 72,
+        where: '',
+        presentationLevel: 'Meaningful',
+        successful: true,
+      }],
+    },
+  );
+
+  const social = events.filter(event => event.kind === 'social');
+  assert.equal(social.length, 2);
+  assert.ok(social.every(event => !/하린→민재/.test(event.detail ?? '')));
+});
+
 testCase('exact Core social event outranks inferred relationship/activity noise', () => {
   const previous = resident({
     activityKind: 'Idle',
@@ -595,9 +734,31 @@ testCase('exact Core social event outranks inferred relationship/activity noise'
   });
   const events = deriveObservationEvents(
     world(30),
-    [previous, { ...resident({ id: 'b', name: '하린' }) }],
+    [previous, resident({
+      id: 'b',
+      name: '하린',
+      relationships: [{
+        targetId: 'a',
+        targetName: '민재',
+        trust: 0.4,
+        socialBond: 0.3,
+        conflict: 0.1,
+        romancePotential: 0.1,
+      }],
+    })],
     world(31),
-    [next, { ...resident({ id: 'b', name: '하린' }) }],
+    [next, resident({
+      id: 'b',
+      name: '하린',
+      relationships: [{
+        targetId: 'a',
+        targetName: '민재',
+        trust: 0.37,
+        socialBond: 0.24,
+        conflict: 0.18,
+        romancePotential: 0.08,
+      }],
+    })],
     {
       available: true,
       events: [{
@@ -646,6 +807,8 @@ testCase('exact Core social event outranks inferred relationship/activity noise'
   const social = events.find(event => event.kind === 'social');
   assert.match(social.summary, /민재.*하린.*갈등/);
   assert.match(social.detail, /강가/);
+  assert.match(social.detail, /하린→민재/);
+  assert.match(social.detail, /갈등 \+8\.0%p/);
   assert.equal(social.importance, 'high');
 });
 
