@@ -326,12 +326,14 @@ export function startObserverEngine(): void {
           (resident) => resident.id === preferredResidentId,
         )
       : undefined;
-    const gridX = Number.isFinite(event.focusGridX)
+    const gridX = event.focusGridX !== undefined
+      && Number.isFinite(event.focusGridX)
       ? event.focusGridX
       : fallbackResident?.hasPosition
         ? fallbackResident.gridX
         : undefined;
-    const gridY = Number.isFinite(event.focusGridY)
+    const gridY = event.focusGridY !== undefined
+      && Number.isFinite(event.focusGridY)
       ? event.focusGridY
       : fallbackResident?.hasPosition
         ? fallbackResident.gridY
