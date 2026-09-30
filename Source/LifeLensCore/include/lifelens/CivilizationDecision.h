@@ -432,7 +432,6 @@ inline double civilizationResourceExplorationPressure(
         settlementConstructionMaterialDemand(world,material);
     const int repairMissing=
         settlementRepairMaterialDemand(world,material);
-    const int committedMissing=constructionMissing+repairMissing;
     const int uncoveredCommitted=
         settlementUncoveredMaterialDemand(world,material);
 
@@ -567,8 +566,6 @@ inline CivilizationUtilityDecision bestGatherDecisionAtPosition(
             continue;
         }
         const int stored=storageCountForMaterial(world,node.material);
-        const int constructionMissing=
-            settlementConstructionMaterialDemand(world,node.material);
         const int repairMissing=
             settlementRepairMaterialDemand(world,node.material);
         const int materialDemand=
