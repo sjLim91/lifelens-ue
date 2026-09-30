@@ -12,6 +12,7 @@ import {
   SIMULATION_TIME_CONTRACT,
   WORLD_GRID_CONTRACT,
   normalizeSimulationSpeed,
+  residentPresentationMotionTimeScale,
 } from '../runtime/lifelens-contract';
 import type { SimulationSpeed } from '../runtime/lifelens-contract';
 import { createTerrainElevationSampler } from './terrain-geometry';
