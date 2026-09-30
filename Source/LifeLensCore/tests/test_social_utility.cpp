@@ -73,6 +73,63 @@ int main()
     assert(hungryDecision.physicalGoal == Goal::Eat);
     friendlyWorld.characters[0].needs.hunger = 0.0;
 
+    // Critical hunger is settlement-local: remote storage must not create
+    // an impossible retrieve trip, and known natural food chooses the nearest
+    // real node rather than global insertion order.
+    World survivalWorld(991122);
+    survivalWorld.resourceNodes.clear();
+    survivalWorld.storageSites.clear();
+    survivalWorld.generatedNaturalChunks.clear();
+
+    Character survivalSelf;
+    survivalSelf.id = 11;
+    survivalSelf.civilization.character = survivalSelf.id;
+    survivalSelf.needs = {1.0, 0.10, 0.10, 0.10, 0.10};
+    const GridPos survivalPos{0, 0};
+
+    StorageSite remoteFood;
+    remoteFood.id = 701;
+    remoteFood.pos = {SettlementServiceRadiusGrid + 20, 0};
+    remoteFood.inventory.add({
+        ItemKind::RawMaterial, MaterialKind::PlantFood, 2, 0.5, 1.0});
+    survivalWorld.storageSites.push_back(remoteFood);
+
+    ResourceNode fartherFood;
+    fartherFood.id = 801;
+    fartherFood.material = MaterialKind::PlantFood;
+    fartherFood.quantity = 4;
+    fartherFood.maxQuantity = 4;
+    fartherFood.pos = {WorldChunkSpanGridCells * 2, 0};
+    survivalWorld.resourceNodes.push_back(fartherFood);
+
+    ResourceNode nearerFood;
+    nearerFood.id = 802;
+    nearerFood.material = MaterialKind::PlantFood;
+    nearerFood.quantity = 4;
+    nearerFood.maxQuantity = 4;
+    nearerFood.pos = {2, 0};
+    survivalWorld.resourceNodes.push_back(nearerFood);
+
+    CivilizationUtilityDecision localGather =
+        urgentSurvivalProvisionDecisionAtPosition(
+            survivalWorld, survivalSelf, survivalPos);
+    assert(localGather.intent == CivilizationIntent::Gather);
+    assert(localGather.resourceNode == nearerFood.id);
+    assert(localGather.storage == 0);
+
+    StorageSite localFood;
+    localFood.id = 702;
+    localFood.pos = {1, 0};
+    localFood.inventory.add({
+        ItemKind::RawMaterial, MaterialKind::PlantFood, 2, 0.5, 1.0});
+    survivalWorld.storageSites.push_back(localFood);
+
+    CivilizationUtilityDecision localRetrieve =
+        urgentSurvivalProvisionDecisionAtPosition(
+            survivalWorld, survivalSelf, survivalPos);
+    assert(localRetrieve.intent == CivilizationIntent::Retrieve);
+    assert(localRetrieve.storage == localFood.id);
+
     // Repeated betrayal should shift the same resident toward avoiding that person.
     friendlyWorld.characters[0].personality.agreeableness = 0.10;
     friendlyWorld.characters[0].personality.empathy = 0.10;

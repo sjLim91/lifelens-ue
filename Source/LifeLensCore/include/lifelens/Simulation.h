@@ -249,6 +249,9 @@ private:
     void beginPlan(Character& c,Runtime& r);
     void advanceAction(Character& c,Runtime& r);
     void failPlan(Character& character,Runtime& r);
+    void cancelRuntimeActivityForCriticalReplan(
+        Character& character,Runtime& r);
+    bool preemptForCriticalSurvival(Character& character,Runtime& r);
     void clearRuntimeActivity(Runtime& r);
     void clearNavigation(Runtime& r);
     bool advanceNavigation(Runtime& r,GridPos target,int arrivalRadius);

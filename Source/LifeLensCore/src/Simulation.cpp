@@ -809,9 +809,133 @@ void Simulation::failPlan(Character& character,Runtime& r){
     ++r.consecutiveFailures;
     applyActionFailureEmotion(character,r.consecutiveFailures);
     if(r.consecutiveFailures>=3){
-        r.penaltyUntilMinute=world_.minute+30;
+        const bool criticalProvisionPressure=
+            character.needs.hunger>=CriticalSurvivalPreemptThreshold
+            || character.needs.thirst>=CriticalSurvivalPreemptThreshold;
+        r.penaltyUntilMinute=world_.minute+(criticalProvisionPressure ? 5 : 30);
         r.consecutiveFailures=0;
     }
+}
+
+void Simulation::cancelRuntimeActivityForCriticalReplan(
+    Character& character,
+    Runtime& r)
+{
+    // Intentional survival preemption is not a failure. Release any physical
+    // reservation and clear stale social/civilization/navigation authority
+    // without adding failure emotion or the ordinary 30-minute backoff.
+    for(auto& object:world_.objects){
+        if(object.reservedBy && *object.reservedBy==character.id){
+            object.reservedBy.reset();
+        }
+    }
+    clearNavigation(r);
+    r.goal=Goal::Idle;
+    r.plan.clear();
+    r.actionIndex=0;
+    r.announced=false;
+    r.repeatCount=0;
+    r.consecutiveFailures=0;
+    r.penaltyUntilMinute=std::min(r.penaltyUntilMinute,world_.minute);
+    r.pendingContext.clear();
+    r.socialActive=false;
+    r.socialIntent=SocialIntent::None;
+    r.socialTarget=0;
+    r.civilizationActive=false;
+}
+
+bool Simulation::preemptForCriticalSurvival(
+    Character& character,
+    Runtime& r)
+{
+    const bool hungerCritical=
+        character.needs.hunger>=CriticalSurvivalPreemptThreshold;
+    const bool thirstCritical=
+        character.needs.thirst>=CriticalSurvivalPreemptThreshold;
+    if(!hungerCritical && !thirstCritical) return false;
+
+    Goal directGoal=Goal::Idle;
+    double directNeed=-1.0;
+    for(const Goal candidate:{Goal::Eat,Goal::Drink}){
+        const double need=needForGoal(character,candidate);
+        if(need<CriticalSurvivalPreemptThreshold
+           || !actionAvailableFor(world_,character,candidate)){
+            continue;
+        }
+        if(directGoal==Goal::Idle
+           || need>directNeed+1e-12
+           || (std::abs(need-directNeed)<=1e-12
+               && candidate==Goal::Drink)){
+            directGoal=candidate;
+            directNeed=need;
+        }
+    }
+
+    const CivilizationUtilityDecision provision=
+        urgentSurvivalProvisionDecisionAtPosition(
+            world_,character,r.pos);
+    const bool provisionCritical=
+        provision.intent!=CivilizationIntent::None
+        && (
+            (provision.material==MaterialKind::PlantFood
+             && hungerCritical)
+            || (provision.material==MaterialKind::Water
+                && thirstCritical)
+        );
+    const double provisionNeed=
+        provision.material==MaterialKind::PlantFood
+            ? character.needs.hunger
+            : provision.material==MaterialKind::Water
+                ? character.needs.thirst
+                : -1.0;
+    const bool preferProvision=
+        provisionCritical
+        && (
+            directGoal==Goal::Idle
+            || provisionNeed>directNeed+1e-12
+            || (
+                std::abs(provisionNeed-directNeed)<=1e-12
+                && provision.material==MaterialKind::Water
+            )
+        );
+
+    if(!preferProvision && directGoal==Goal::Idle) return false;
+
+    if(preferProvision){
+        if(r.pendingContext.active()
+           && r.pendingContext.kind==ContextActionKind::Civilization
+           && r.pendingContext.civilization.intent==provision.intent
+           && r.pendingContext.civilization.material==provision.material
+           && r.pendingContext.civilization.resourceNode==provision.resourceNode
+           && r.pendingContext.civilization.storage==provision.storage){
+            return false;
+        }
+    }else if(
+        !r.pendingContext.active()
+        && !r.plan.empty()
+        && r.goal==directGoal){
+        return false;
+    }
+
+    // Finishing the final minute of an already-started toilet interaction is
+    // cheaper and more human than aborting at the last instant. Movement or an
+    // earlier interaction phase remains interruptible.
+    if(r.goal==Goal::UseToilet
+       && !r.plan.empty()
+       && r.actionIndex<r.plan.size()){
+        const Action& action=r.plan[r.actionIndex];
+        if((action.type==ActionType::Use
+            || action.type==ActionType::EmergencyUse)
+           && action.remainingTicks<=1){
+            return false;
+        }
+    }
+
+    emit(
+        character.name
+        +" preempted current activity for critical survival need");
+    cancelRuntimeActivityForCriticalReplan(character,r);
+    return true;
 }
 void Simulation::clearRuntimeActivity(Runtime& r){
     clearNavigation(r);
@@ -920,12 +1044,33 @@ Simulation::nearestAvailableOperationalSleepFacility(
 
 bool Simulation::tryCivilizationDecision(Character& c,Runtime& r){
     if(!c.alive || !lifeStageProfile(c.lifeStage).canWork || r.pendingContext.active()) return false;
-    if(world_.minute%15!=0) return false;
+
+    const CivilizationUtilityDecision criticalProvision=
+        urgentSurvivalProvisionDecisionAtPosition(world_,c,r.pos);
+    const bool criticalProvisionRequired=
+        criticalProvision.intent!=CivilizationIntent::None
+        && (
+            (criticalProvision.material==MaterialKind::PlantFood
+             && c.needs.hunger>=CriticalSurvivalPreemptThreshold)
+            || (criticalProvision.material==MaterialKind::Water
+                && c.needs.thirst>=CriticalSurvivalPreemptThreshold)
+        );
+    if(!criticalProvisionRequired && world_.minute%15!=0) return false;
 
     const auto population=settlementPopulation();
-    const UnifiedUtilityDecision decision=chooseUnifiedUtilityDecisionAtPosition(
-        world_,c,relationships_,r.pos,0.18,0.14,&population);
-    if(decision.kind!=UnifiedDecisionKind::Civilization || decision.civilization.intent==CivilizationIntent::None) return false;
+    UnifiedUtilityDecision decision;
+    if(criticalProvisionRequired){
+        decision.kind=UnifiedDecisionKind::Civilization;
+        decision.civilization=criticalProvision;
+        decision.utility=criticalProvision.utility;
+    }else{
+        decision=chooseUnifiedUtilityDecisionAtPosition(
+            world_,c,relationships_,r.pos,0.18,0.14,&population);
+        if(decision.kind!=UnifiedDecisionKind::Civilization){
+            return false;
+        }
+    }
+    if(decision.civilization.intent==CivilizationIntent::None) return false;
 
     PendingContextAction pending;
     pending.token=issueContextActionToken();
@@ -1005,7 +1150,12 @@ void Simulation::beginPlan(Character& c,Runtime& r){
 
     Goal urgentPhysicalGoal=Goal::Idle;
     double urgentPhysicalNeed=-1.0;
-    const bool planningAllowed=world_.minute>=r.penaltyUntilMinute;
+    const bool criticalSurvivalPressure=
+        c.needs.hunger>=CriticalSurvivalPreemptThreshold
+        || c.needs.thirst>=CriticalSurvivalPreemptThreshold;
+    const bool planningAllowed=
+        world_.minute>=r.penaltyUntilMinute
+        || criticalSurvivalPressure;
     const double urgentThreshold=ruleset_.utilityAI.urgentThreshold;
     const bool hasUrgentSurvivalNeed=
         c.needs.hunger>=urgentThreshold
@@ -1030,10 +1180,25 @@ void Simulation::beginPlan(Character& c,Runtime& r){
         }
     }
 
+    // Hard hunger/thirst with a missing provision is itself a survival
+    // action. It outranks a lower-order available action such as sanitation,
+    // and bypasses the ordinary 15-minute civilization cadence.
+    const CivilizationUtilityDecision criticalProvision=
+        urgentSurvivalProvisionDecisionAtPosition(world_,c,r.pos);
+    const bool criticalProvisionRequired=
+        criticalProvision.intent!=CivilizationIntent::None
+        && (
+            (criticalProvision.material==MaterialKind::PlantFood
+             && c.needs.hunger>=CriticalSurvivalPreemptThreshold)
+            || (criticalProvision.material==MaterialKind::Water
+                && c.needs.thirst>=CriticalSurvivalPreemptThreshold)
+        );
+    if(planningAllowed && criticalProvisionRequired
+       && tryCivilizationDecision(c,r)) return;
+
     // Survival needs that can be satisfied immediately pre-empt settlement
-    // projects and social activity. If an urgent need cannot yet be satisfied
-    // (for example hunger with no carried food), civilization decisions remain
-    // available so the resident can gather/retrieve the missing provision.
+    // projects and social activity. If an urgent need cannot yet be satisfied,
+    // ordinary civilization remains available for acquisition/progression.
     if(planningAllowed && urgentPhysicalGoal==Goal::Idle
        && tryCivilizationDecision(c,r)) return;
     if(planningAllowed && !hasUrgentSurvivalNeed
@@ -1050,7 +1215,16 @@ void Simulation::beginPlan(Character& c,Runtime& r){
             ? urgentPhysicalGoal
             : chooseGoal(world_,c,ruleset_.utilityAI);
     if(chosen==r.lastGoal){ ++r.repeatCount; } else { r.lastGoal=chosen; r.repeatCount=1; }
-    if(r.repeatCount>=5){ chosen=Goal::Idle; r.repeatCount=0; }
+    const bool urgentChosen=
+        chosen!=Goal::Idle
+        && needForGoal(c,chosen)>=ruleset_.utilityAI.urgentThreshold;
+    if(r.repeatCount>=5 && !urgentChosen){
+        chosen=Goal::Idle;
+        r.repeatCount=0;
+    }else if(r.repeatCount>=5){
+        // Never inject artificial Idle while a survival Need is still urgent.
+        r.repeatCount=1;
+    }
     clearNavigation(r);
     r.goal=chosen; r.plan=buildPlan(world_,c,chosen,r.pos); r.actionIndex=0; r.announced=false;
     if(r.plan.empty()){ failPlan(c,r); return; }
@@ -1962,6 +2136,13 @@ void Simulation::step(){
             clearRuntimeActivity(r);
             continue;
         }
+
+        const bool criticalPreempted=
+            preemptForCriticalSurvival(c,r);
+        if(criticalPreempted){
+            beginPlan(c,r);
+        }
+
         if(r.pendingContext.active()){
             if(!world_.externalPhysicalExecution){
                 advancePendingContext(c,r);
@@ -1986,7 +2167,14 @@ void Simulation::step(){
             }
             continue;
         }
-        if(r.plan.empty() && world_.minute%5==0) beginPlan(c,r);
+        const bool criticalSurvivalPressure=
+            c.needs.hunger>=CriticalSurvivalPreemptThreshold
+            || c.needs.thirst>=CriticalSurvivalPreemptThreshold;
+        if(r.plan.empty()
+           && !r.pendingContext.active()
+           && (world_.minute%5==0 || criticalSurvivalPressure)){
+            beginPlan(c,r);
+        }
         if(!r.plan.empty()) advanceAction(c,r);
     }
     ++world_.minute;

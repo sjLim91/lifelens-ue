@@ -308,6 +308,79 @@ int main()
         urgentPriority.logs(),
         priorityName+" -> Eat"));
 
+    // Critical survival preempts an already-active sanitation loop. Recreate
+    // the long-run failure shape: hunger reaches 100%, remote storage contains
+    // food, a real nearby food node exists, and the resident is already using
+    // the outdoor toilet fallback. The next few ticks must transition into the
+    // nearby authoritative Gather rather than Idle/toilet repetition.
+    SimulationRuleset preemptRules=DefaultSimulationRuleset;
+    preemptRules.needs.hungerPerMinute=0.0;
+    preemptRules.needs.thirstPerMinute=0.0;
+    preemptRules.needs.sleepPerMinute=0.0;
+    preemptRules.needs.bladderPerMinute=0.0;
+    preemptRules.needs.hygienePerMinute=0.0;
+    Simulation preemptProbe(
+        874213956,0,CurrentWorldGenerationVersion,preemptRules);
+    preemptProbe.setupNewGame();
+    preemptProbe.world().characters.resize(1);
+    preemptProbe.world().resourceNodes.clear();
+    preemptProbe.world().storageSites.clear();
+
+    Character& preemptActor=preemptProbe.world().characters.front();
+    const CharacterId preemptId=preemptActor.id;
+    preemptActor.needs={0.10,0.10,0.10,0.95,0.10};
+
+    GridPos preemptPos{};
+    assert(preemptProbe.runtimePosition(preemptId,preemptPos));
+
+    ResourceNode nearbyFood;
+    nearbyFood.id=990801;
+    nearbyFood.material=MaterialKind::PlantFood;
+    nearbyFood.quantity=6;
+    nearbyFood.maxQuantity=6;
+    nearbyFood.pos={preemptPos.x+2,preemptPos.y};
+    preemptProbe.world().resourceNodes.push_back(nearbyFood);
+
+    StorageSite impossibleRemoteFood;
+    impossibleRemoteFood.id=990701;
+    impossibleRemoteFood.pos={
+        preemptPos.x+SettlementServiceRadiusGrid+20,
+        preemptPos.y};
+    impossibleRemoteFood.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::PlantFood,3,0.5,1.0});
+    preemptProbe.world().storageSites.push_back(impossibleRemoteFood);
+
+    preemptProbe.step();
+    ResidentPresentationObservation toiletPresentation=
+        preemptProbe.observeResidentPresentation(preemptId);
+    assert(toiletPresentation.active);
+    assert(toiletPresentation.kind==PresentationActionKind::Physical);
+    assert(toiletPresentation.physicalGoal==Goal::UseToilet);
+
+    preemptActor.needs.hunger=1.0;
+    bool sawLocalFoodGather=false;
+    bool sawIdleWhileCritical=false;
+    for(int minute=0;minute<6 && !sawLocalFoodGather;++minute){
+        preemptProbe.step();
+        const ResidentPresentationObservation observed=
+            preemptProbe.observeResidentPresentation(preemptId);
+        if(observed.active
+           && observed.kind==PresentationActionKind::Civilization
+           && observed.civilizationIntent==CivilizationIntent::Gather
+           && observed.civilizationMaterial==MaterialKind::PlantFood
+           && observed.civilizationResourceNode==nearbyFood.id){
+            sawLocalFoodGather=true;
+        }
+        if(observed.active
+           && observed.kind==PresentationActionKind::Physical
+           && observed.physicalGoal==Goal::Idle
+           && preemptActor.needs.hunger>=CriticalSurvivalPreemptThreshold){
+            sawIdleWhileCritical=true;
+        }
+    }
+    assert(sawLocalFoodGather);
+    assert(!sawIdleWhileCritical);
+
     // Production-like natural New Game: over the first four simulation days,
     // every founder must prove actual food/water acquisition and consumption.
     // Toilet remains an outdoor fallback until a real sanitation affordance is

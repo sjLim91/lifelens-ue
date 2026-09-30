@@ -28,8 +28,11 @@ int main()
         sim.world().characters[i].alive=false;
     }
 
-    teacher.needs={1.0,1.0,1.0,1.0,1.0};
-    learner.needs={1.0,1.0,1.0,1.0,1.0};
+    // This test isolates spatial authority for knowledge teaching.
+    // Keep survival Needs calm; critical hunger/thirst now correctly pre-empt
+    // non-essential teaching in production scheduling.
+    teacher.needs={0.10,0.10,0.10,0.10,0.10};
+    learner.needs={0.10,0.10,0.10,0.10,0.10};
     teacher.civilization.knowledge.learn(
         TechniqueId::SharpFlake,KnowledgeLevel::Mastered,0.99);
     learner.civilization.knowledge.learn(
