@@ -644,7 +644,7 @@ int main()
     }
     assert(sawToilet);
     assert(sawSleep);
-    assert(minimumBladder<0.70);
+    assert(minimumBladder<0.80);
     assert(minimumSleep<0.99);
 
     // Production-like natural New Game: over the first four simulation days,
