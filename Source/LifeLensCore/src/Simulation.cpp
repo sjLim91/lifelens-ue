@@ -1255,10 +1255,7 @@ void Simulation::beginPlan(Character& c,Runtime& r){
                 : -1.0;
     const bool urgentSelfCareDominatesProvision=
         urgentPhysicalGoal!=Goal::Idle
-        && (
-            urgentPhysicalGoal==Goal::UseToilet
-            || urgentPhysicalNeed>urgentProvisionNeed+0.05
-        );
+        && urgentPhysicalNeed+1e-12>=urgentProvisionNeed;
 
     // Missing food/water remains survival work, but it may not monopolize the
     // resident forever. If an immediately usable self-care action is materially
