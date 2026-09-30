@@ -23,6 +23,14 @@ struct ResidentMetrics {
     std::array<std::uint64_t,5> longestSaturatedStreak{};
     std::uint64_t currentIdleStreak=0;
     std::uint64_t longestIdleStreak=0;
+    bool sleepInteracting=false;
+    double sleepSessionStartNeed=0.0;
+    std::uint64_t currentSleepSessionMinutes=0;
+    std::uint64_t sleepSessions=0;
+    std::uint64_t sleepThirtyMinuteSessions=0;
+    std::uint64_t meaningfulSleepSessions=0;
+    std::uint64_t longestSleepSessionMinutes=0;
+    double accumulatedSleepRecovery=0.0;
     std::uint64_t physicalMinutes=0;
     std::uint64_t socialMinutes=0;
     std::uint64_t civilizationMinutes=0;
@@ -178,6 +186,37 @@ int main(int argc,char** argv)
 
             const ResidentPresentationObservation p=
                 sim.observeResidentPresentation(m.id);
+            const bool sleepingInteraction=
+                p.active
+                && p.kind==PresentationActionKind::Physical
+                && p.physicalGoal==Goal::Sleep
+                && p.phase==PresentationActionPhase::Interacting;
+            if(sleepingInteraction){
+                if(!m.sleepInteracting){
+                    m.sleepInteracting=true;
+                    m.sleepSessionStartNeed=resident->needs.sleep;
+                    m.currentSleepSessionMinutes=0;
+                }
+                ++m.currentSleepSessionMinutes;
+                m.longestSleepSessionMinutes=std::max(
+                    m.longestSleepSessionMinutes,
+                    m.currentSleepSessionMinutes);
+            }else if(m.sleepInteracting){
+                const double recovery=std::max(
+                    0.0,
+                    m.sleepSessionStartNeed-resident->needs.sleep);
+                ++m.sleepSessions;
+                if(m.currentSleepSessionMinutes>=30){
+                    ++m.sleepThirtyMinuteSessions;
+                }
+                if(recovery>=0.10){
+                    ++m.meaningfulSleepSessions;
+                }
+                m.accumulatedSleepRecovery+=recovery;
+                m.sleepInteracting=false;
+                m.currentSleepSessionMinutes=0;
+            }
+
             if(!p.active || p.phase==PresentationActionPhase::Idle){
                 ++m.idleMinutes;
                 ++m.currentIdleStreak;
@@ -209,6 +248,25 @@ int main(int argc,char** argv)
                     break;
             }
         }
+    }
+
+    for(auto& m:metrics){
+        if(!m.sleepInteracting) continue;
+        const Character* resident=findResident(sim.world(),m.id);
+        if(resident==nullptr) continue;
+        const double recovery=std::max(
+            0.0,
+            m.sleepSessionStartNeed-resident->needs.sleep);
+        ++m.sleepSessions;
+        if(m.currentSleepSessionMinutes>=30){
+            ++m.sleepThirtyMinuteSessions;
+        }
+        if(recovery>=0.10){
+            ++m.meaningfulSleepSessions;
+        }
+        m.accumulatedSleepRecovery+=recovery;
+        m.sleepInteracting=false;
+        m.currentSleepSessionMinutes=0;
     }
 
     const World& world=sim.world();
@@ -289,6 +347,12 @@ int main(int argc,char** argv)
                      <<" "<<needNames[i]<<"LongestSat="<<m.longestSaturatedStreak[i];
         }
         std::cout<<" longestIdle="<<m.longestIdleStreak
+                 <<" sleepSessions="<<m.sleepSessions
+                 <<" sleep30Sessions="<<m.sleepThirtyMinuteSessions
+                 <<" meaningfulSleepSessions="<<m.meaningfulSleepSessions
+                 <<" longestSleepSession="<<m.longestSleepSessionMinutes
+                 <<" sleepRecoverySum="<<std::fixed<<std::setprecision(4)
+                 <<m.accumulatedSleepRecovery
                  <<" physicalMin="<<m.physicalMinutes
                  <<" socialMin="<<m.socialMinutes
                  <<" civilizationMin="<<m.civilizationMinutes
