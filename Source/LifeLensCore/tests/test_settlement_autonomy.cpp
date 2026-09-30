@@ -559,6 +559,87 @@ int main()
     CHECK(restoredBed.executed && restoredBed.success);
     CHECK(logisticsBed->state==FacilityState::Operational);
 
+    // DU-01: storage is settlement-local infrastructure. A far stockpile
+    // registered first must not satisfy or attract logistics for this lived area.
+    Simulation localitySimulation(220932);
+    localitySimulation.setupNewGame();
+    World& localityWorld=localitySimulation.world();
+    localityWorld.facilities.clear();
+    localityWorld.storageSites.clear();
+    Character& localityWorker=localityWorld.characters.front();
+    localityWorker.civilization.inventory=Inventory{};
+    localityWorker.needs={0.10,0.10,0.62,0.10,0.10};
+
+    GridPos localityAnchor{};
+    CHECK(localitySimulation.runtimePosition(
+        localityWorker.id,localityAnchor));
+
+    const SettlementFacilitySiteOpportunity localityBedSite=
+        chooseSettlementFacilitySite(
+            localityWorld,
+            localityWorker.id,
+            FacilityKind::SleepingPlace,
+            localityAnchor);
+    CHECK(localityBedSite.available);
+    ConstructedFacility* localityBed=
+        establishSettlementFacilityProject(
+            localityWorld,
+            localityWorker.id,
+            FacilityKind::SleepingPlace,
+            localityBedSite.pos);
+    CHECK(localityBed!=nullptr);
+    CHECK(!localityBed->requirements.empty());
+    const MaterialKind localityMaterial=
+        localityBed->requirements.front().material;
+    CHECK(localityMaterial!=MaterialKind::Unknown);
+
+    StorageSite farStorage;
+    farStorage.id=801;
+    farStorage.pos={
+        localityAnchor.x+SettlementServiceRadiusGrid+12,
+        localityAnchor.y
+    };
+    farStorage.inventory.add({
+        ItemKind::RawMaterial,localityMaterial,3,0.6,1.0});
+    localityWorld.storageSites.push_back(farStorage);
+
+    const CivilizationUtilityDecision remoteRetrieve=
+        bestRetrieveDecisionAtPosition(
+            localityWorld,localityWorker,localityAnchor);
+    CHECK(remoteRetrieve.intent==CivilizationIntent::None);
+    CHECK(storageCountForMaterial(
+        localityWorld,localityMaterial)==3);
+    CHECK(storageCountForMaterialNear(
+        localityWorld,localityMaterial,localityAnchor)==0);
+    CHECK(residentUncoveredCommittedMaterialDemandAtPosition(
+        localityWorld,
+        localityWorker,
+        localityMaterial,
+        localityAnchor)>0);
+
+    StorageSite nearStorage;
+    nearStorage.id=802;
+    nearStorage.pos={localityAnchor.x+2,localityAnchor.y};
+    nearStorage.inventory.add({
+        ItemKind::RawMaterial,localityMaterial,3,0.6,1.0});
+    localityWorld.storageSites.push_back(nearStorage);
+
+    const CivilizationUtilityDecision localRetrieve=
+        bestRetrieveDecisionAtPosition(
+            localityWorld,localityWorker,localityAnchor);
+    CHECK(localRetrieve.intent==CivilizationIntent::Retrieve);
+    CHECK(localRetrieve.storage==nearStorage.id);
+    CHECK(localRetrieve.material==localityMaterial);
+
+    localityWorker.civilization.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::Stone,9,0.6,1.0});
+    const CivilizationUtilityDecision localStore=
+        bestStoreDecisionAtPosition(
+            localityWorld,localityWorker,localityAnchor);
+    CHECK(localStore.intent==CivilizationIntent::Store);
+    CHECK(localStore.storage==nearStorage.id);
+    CHECK(localStore.material==MaterialKind::Stone);
+
     std::cout << "Stage C-S5 shared settlement logistics + lived-use settlement form passed\n";
     return 0;
 }

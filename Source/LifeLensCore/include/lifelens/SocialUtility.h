@@ -339,7 +339,11 @@ inline CivilizationUtilityDecision chooseDispositionAwareCivilizationDecisionAtP
         applyCivilizationDispositionBias(
             self,bestRetrieveDecisionAtPosition(
                 world,self,authoritativePosition)));
-    considerCivilizationDecision(best, applyCivilizationDispositionBias(self, bestStoreDecision(world, self)));
+    considerCivilizationDecision(
+        best,
+        applyCivilizationDispositionBias(
+            self,bestStoreDecisionAtPosition(
+                world,self,authoritativePosition)));
     considerCivilizationDecision(
         best,
         applyCivilizationDispositionBias(

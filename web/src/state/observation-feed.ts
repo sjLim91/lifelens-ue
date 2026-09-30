@@ -863,6 +863,150 @@ function explorationEvent(
   };
 }
 
+function civilizationPresentationSignature(
+  resident: Resident,
+): string {
+  const presentation = resident.presentation;
+  if (
+    !presentation?.active
+    || presentation.kind !== 'Civilization'
+    || (
+      presentation.phase !== 'Moving'
+      && presentation.phase !== 'Interacting'
+    )
+  ) {
+    return '';
+  }
+
+  return [
+    presentation.civilizationIntent ?? '',
+    presentation.phase ?? '',
+    presentation.civilizationMaterial ?? '',
+    presentation.civilizationQuantity ?? '',
+    presentation.civilizationStorage ?? '',
+    presentation.facilityAction ?? '',
+    presentation.facilityId ?? '',
+    presentation.facilityKind ?? '',
+    presentation.contextActionToken ?? '',
+    presentation.targetGridX ?? '',
+    presentation.targetGridY ?? '',
+  ].join('|');
+}
+
+function civilizationLogisticsMilestoneEvent(
+  resident: Resident,
+  previous: Resident,
+  minute: number,
+): ObservationEvent | null {
+  const presentation = resident.presentation;
+  if (
+    !presentation?.active
+    || presentation.kind !== 'Civilization'
+    || (
+      presentation.phase !== 'Moving'
+      && presentation.phase !== 'Interacting'
+    )
+  ) {
+    return null;
+  }
+
+  const signature = civilizationPresentationSignature(resident);
+  if (
+    !signature
+    || signature === civilizationPresentationSignature(previous)
+  ) {
+    return null;
+  }
+
+  const intent = presentation.civilizationIntent?.trim() ?? '';
+  if (intent === 'Explore') return null;
+
+  const moving = presentation.phase === 'Moving';
+  const material = presentation.civilizationMaterial?.trim();
+  const materialLabel = material && material !== 'Unknown'
+    ? formatMaterial(material)
+    : '';
+  const quantity = Math.max(
+    0,
+    Number(presentation.civilizationQuantity) || 0,
+  );
+  const facilityKind = presentation.facilityKind?.trim();
+  const facilityLabel = facilityKind && facilityKind !== 'Unknown'
+    ? formatFacilityKind(facilityKind)
+    : '시설';
+  const detailParts: string[] = [];
+  if (quantity > 0) detailParts.push(`수량 ${quantity}`);
+  if (materialLabel) detailParts.push(`자재 ${materialLabel}`);
+
+  let summary = '';
+  let importance: ObservationEvent['importance'] = 'low';
+
+  if (intent === 'Retrieve' && materialLabel) {
+    summary = moving
+      ? `${resident.name}: 공동 저장소에서 ${materialLabel}을 가져오러 이동 중`
+      : `${resident.name}: 공동 저장소에서 ${materialLabel}을 꺼내는 중`;
+    importance = 'medium';
+  } else if (intent === 'Store' && materialLabel) {
+    summary = moving
+      ? `${resident.name}: 공동 저장소에 ${materialLabel}을 보관하러 이동 중`
+      : `${resident.name}: 공동 저장소에 ${materialLabel}을 보관하는 중`;
+  } else if (intent === 'Craft') {
+    switch (presentation.facilityAction) {
+      case 'Plan':
+        summary = moving
+          ? `${resident.name}: ${facilityLabel} 부지를 정하러 이동 중`
+          : `${resident.name}: ${facilityLabel} 건설을 계획하는 중`;
+        importance = 'medium';
+        break;
+      case 'DeliverMaterial':
+        if (!materialLabel) return null;
+        summary = moving
+          ? `${resident.name}: ${materialLabel} 자재를 ${facilityLabel} 작업지로 운반 중`
+          : `${resident.name}: ${facilityLabel}에 ${materialLabel} 자재를 전달하는 중`;
+        importance = 'medium';
+        break;
+      case 'Work':
+        summary = moving
+          ? `${resident.name}: ${facilityLabel} 작업지로 이동 중`
+          : `${resident.name}: ${facilityLabel} 건설 작업 중`;
+        importance = 'medium';
+        break;
+      case 'Repair':
+        summary = moving
+          ? `${resident.name}: ${facilityLabel}을 수리·복구하러 이동 중`
+          : `${resident.name}: ${facilityLabel} 수리·복구 작업 중`;
+        importance = 'medium';
+        break;
+      default:
+        return null;
+    }
+  } else {
+    return null;
+  }
+
+  return {
+    id: [
+      'civilization-logistics',
+      minute,
+      resident.id,
+      intent,
+      presentation.facilityAction ?? '',
+      presentation.contextActionToken ?? '',
+      presentation.phase,
+    ].join(':'),
+    kind: 'civilization',
+    minute,
+    residentId: resident.id,
+    residentName: resident.name,
+    ...presentationFocus(resident),
+    summary,
+    detail: detailParts.length > 0
+      ? detailParts.join(' · ')
+      : undefined,
+    importance,
+  };
+}
+
 function physicalPresentationSignature(resident: Resident): string {
   const presentation = resident.presentation;
   if (
@@ -1334,6 +1478,13 @@ export function deriveObservationEvents(
     const exploration = explorationEvent(resident, previous, minute);
     if (exploration) events.push(exploration);
 
+    const civilizationMilestone = civilizationLogisticsMilestoneEvent(
+      resident,
+      previous,
+      minute,
+    );
+    if (civilizationMilestone) events.push(civilizationMilestone);
+
     const physicalMilestone = physicalNeedMilestoneEvent(
       resident,
       previous,
@@ -1370,6 +1521,7 @@ export function deriveObservationEvents(
       const activity = activityEvent(resident, previous, minute);
       if (
         activity
+        && !civilizationMilestone
         && !physicalMilestone
         && !socialMilestone
       ) {

@@ -4,6 +4,7 @@ import type {
 } from '../runtime/core-types';
 import {
   formatCivilizationIntent,
+  formatFacilityKind,
   formatMaterial,
   formatObjectKind,
   formatParentingAction,
@@ -245,12 +246,15 @@ export function residentActionCue(
     case 'Civilization': {
       action = formatCivilizationIntent(directive.civilizationIntent);
       const material = directive.civilizationMaterial?.trim();
-      if (
-        material
-        && material !== 'Unknown'
-        && directive.civilizationIntent === 'Explore'
-      ) {
-        const materialLabel = formatMaterial(material);
+      const materialLabel = material && material !== 'Unknown'
+        ? formatMaterial(material)
+        : '';
+      const facilityKind = directive.facilityKind?.trim();
+      const facilityLabel = facilityKind && facilityKind !== 'Unknown'
+        ? formatFacilityKind(facilityKind)
+        : '시설';
+
+      if (directive.civilizationIntent === 'Explore' && materialLabel) {
         return {
           text: phase === 'Moving'
             ? `${materialLabel} 탐색 지역으로 이동 중`
@@ -258,12 +262,7 @@ export function residentActionCue(
           phase,
         };
       }
-      if (
-        material
-        && material !== 'Unknown'
-        && directive.civilizationIntent === 'Gather'
-      ) {
-        const materialLabel = formatMaterial(material);
+      if (directive.civilizationIntent === 'Gather' && materialLabel) {
         return {
           text: phase === 'Moving'
             ? `${materialLabel} 있는 곳으로 이동 중`
@@ -271,14 +270,60 @@ export function residentActionCue(
           phase,
         };
       }
-      if (
-        material
-        && material !== 'Unknown'
-        && ['Store', 'Retrieve'].includes(
-          directive.civilizationIntent ?? '',
-        )
-      ) {
-        action = `${action} · ${formatMaterial(material)}`;
+      if (directive.civilizationIntent === 'Retrieve' && materialLabel) {
+        return {
+          text: phase === 'Moving'
+            ? `공동 저장소에서 ${materialLabel} 가져오러 이동 중`
+            : `공동 저장소에서 ${materialLabel} 꺼내는 중`,
+          phase,
+        };
+      }
+      if (directive.civilizationIntent === 'Store' && materialLabel) {
+        return {
+          text: phase === 'Moving'
+            ? `공동 저장소에 ${materialLabel} 보관하러 이동 중`
+            : `공동 저장소에 ${materialLabel} 보관하는 중`,
+          phase,
+        };
+      }
+      if (directive.civilizationIntent === 'Craft') {
+        switch (directive.facilityAction) {
+          case 'Plan':
+            return {
+              text: phase === 'Moving'
+                ? `${facilityLabel} 부지를 정하러 이동 중`
+                : `${facilityLabel} 건설 계획 중`,
+              phase,
+            };
+          case 'DeliverMaterial':
+            return {
+              text: materialLabel
+                ? (phase === 'Moving'
+                  ? `${materialLabel} 자재를 ${facilityLabel} 작업지로 운반 중`
+                  : `${facilityLabel}에 ${materialLabel} 자재 전달 중`)
+                : `${facilityLabel} 자재 ${phase === 'Moving' ? '운반 중' : '전달 중'}`,
+              phase,
+            };
+          case 'Work':
+            return {
+              text: phase === 'Moving'
+                ? `${facilityLabel} 작업지로 이동 중`
+                : `${facilityLabel} 건설 작업 중`,
+              phase,
+            };
+          case 'Repair':
+            return {
+              text: phase === 'Moving'
+                ? `${facilityLabel} 수리·복구하러 이동 중`
+                : `${facilityLabel} 수리·복구 작업 중`,
+              phase,
+            };
+          default:
+            break;
+        }
+      }
+      if (materialLabel) {
+        action = `${action} · ${materialLabel}`;
       }
       break;
     }

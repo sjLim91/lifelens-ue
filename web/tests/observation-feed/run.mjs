@@ -473,6 +473,108 @@ testCase('unchanged exploration context does not spam the observation feed', () 
   assert.equal(events.filter(event => event.id.startsWith('civilization:explore:')).length, 0);
 });
 
+testCase('settlement logistics milestones expose retrieve and material delivery', () => {
+  const retrieve = deriveObservationEvents(
+    world(20),
+    [resident({ presentation: { active: false } })],
+    world(21),
+    [resident({
+      presentation: {
+        active: true,
+        kind: 'Civilization',
+        phase: 'Moving',
+        civilizationIntent: 'Retrieve',
+        civilizationMaterial: 'Wood',
+        civilizationQuantity: 2,
+        civilizationStorage: '11',
+        contextActionToken: '801',
+        hasTargetGrid: true,
+        targetGridX: 4,
+        targetGridY: 2,
+      },
+    })],
+  );
+  const retrieveEvent = retrieve.find(
+    event => event.id.startsWith('civilization-logistics:'),
+  );
+  assert.ok(retrieveEvent);
+  assert.match(retrieveEvent.summary, /공동 저장소.*목재.*가져오러/);
+  assert.match(retrieveEvent.detail, /수량 2/);
+  assert.equal(retrieveEvent.focusGridX, 4);
+  assert.equal(retrieveEvent.focusGridY, 2);
+
+  const delivery = deriveObservationEvents(
+    world(21),
+    [resident({ presentation: { active: false } })],
+    world(22),
+    [resident({
+      presentation: {
+        active: true,
+        kind: 'Civilization',
+        phase: 'Moving',
+        civilizationIntent: 'Craft',
+        civilizationMaterial: 'Wood',
+        civilizationQuantity: 1,
+        facilityAction: 'DeliverMaterial',
+        facilityId: '91',
+        facilityKind: 'SleepingPlace',
+        contextActionToken: '802',
+        hasTargetGrid: true,
+        targetGridX: 8,
+        targetGridY: 3,
+      },
+    })],
+  );
+  const deliveryEvent = delivery.find(
+    event => event.id.startsWith('civilization-logistics:'),
+  );
+  assert.ok(deliveryEvent);
+  assert.match(deliveryEvent.summary, /목재 자재.*잠자리.*운반 중/);
+  assert.equal(deliveryEvent.importance, 'medium');
+});
+
+testCase('settlement repair milestone is factual and unchanged phase does not spam', () => {
+  const presentation = {
+    active: true,
+    kind: 'Civilization',
+    phase: 'Interacting',
+    civilizationIntent: 'Craft',
+    civilizationMaterial: 'Wood',
+    civilizationQuantity: 1,
+    facilityAction: 'Repair',
+    facilityId: '92',
+    facilityKind: 'WorkSurface',
+    contextActionToken: '803',
+    hasTargetGrid: true,
+    targetGridX: 10,
+    targetGridY: 7,
+  };
+  const first = deriveObservationEvents(
+    world(30),
+    [resident({ presentation: { active: false } })],
+    world(31),
+    [resident({ presentation })],
+  );
+  const repair = first.find(
+    event => event.id.startsWith('civilization-logistics:'),
+  );
+  assert.ok(repair);
+  assert.match(repair.summary, /작업대.*수리·복구 작업 중/);
+
+  const unchanged = deriveObservationEvents(
+    world(31),
+    [resident({ presentation })],
+    world(32),
+    [resident({ presentation: { ...presentation } })],
+  );
+  assert.equal(
+    unchanged.filter(
+      event => event.id.startsWith('civilization-logistics:'),
+    ).length,
+    0,
+  );
+});
+
 testCase('important newly reported memory becomes an observation', () => {
   const events = deriveObservationEvents(
     world(10),

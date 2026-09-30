@@ -1868,9 +1868,11 @@ inline CivilizationUtilityDecision bestRetrieveDecisionAtPosition(
             if(requested<=0) continue;
 
             const int constructionDemand=
-                settlementConstructionMaterialDemand(world,material);
+                residentCommittedMaterialDemandAtPosition(
+                    world,self,material,authoritativePosition);
             const int repairDemand=
-                settlementRepairMaterialDemand(world,material);
+                settlementRepairMaterialDemandNear(
+                    world,material,authoritativePosition);
             const double demandPressure=clampCivilization01(
                 0.35
                 +0.10*static_cast<double>(
