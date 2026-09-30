@@ -2,7 +2,15 @@
 
 Date: 2026-09-30  
 Active architecture: **LifeLensCore -> WASM -> Web Observer**  
-Current main checkpoint: `3135e7bb8a45dc4d3ecc785d89273e74b68f4015` (#521)
+Validated main entering the current autonomy unit: `746a488a776fec77f10e1b97bb3b9b0fbee726e8`
+
+## Current autonomy follow-through — food use + resident differentiation
+
+- `746a488` completed the first D-026 development-choice split: cultivation/construction/crafting utility now reacts to resident disposition and lived technique experience instead of collapsing identical affordances into identical choices.
+- Current work continues D-023 into physical self-care: non-critical Eat timing must differ by resident disposition and scarce carried-food reserve, while urgent/critical survival preemption remains authoritative.
+- Food is never created by a SmartObject or Web presentation. Eat still requires and consumes real carried PlantFood.
+- Validation target: same moderate Hunger + same final food unit can produce different choices for different residents; the same reserve-oriented resident must still Eat when Hunger becomes survival-critical.
+- No open PRs existed when this unit started; branch was cut directly from validated `746a488`.
 
 ## Active development unit — DU-01 Living Settlement
 

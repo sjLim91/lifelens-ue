@@ -551,3 +551,22 @@ Canonical companion:
 - 회귀 시나리오에서 재배 친화 주민은 Plant를 선택하고, 탐색·채집 친화 주민은 같은 조건에서 Plant를 따라 하지 않고 실제 Gather/Explore 계열 자원 확보를 선택한다. 특정 자원/행동을 테스트가 강제로 지정하지 않는다.
 - 같은 상태를 다시 평가하면 같은 주민은 같은 선택을 재현한다.
 - 실제 Plant 성공 후 Cultivation 경험이 증가하며 이후 Utility 입력으로 사용된다.
+
+
+## D-027 — 비긴급 식사 타이밍은 개인 성향과 식량 여유에 따라 달라진다
+
+**결정**
+- PlantFood를 들고 있다는 사실만으로 즉시 Eat를 강제하지 않는다.
+- Hunger가 생존 임계치 아래일 때 Eat Utility는 Hunger 자체에 더해 impulsiveness, patience, conscientiousness, orderliness에서 파생되는 즉시 섭취 성향과 비축 성향을 반영한다.
+- 특히 마지막 1단위 식량은 성실하고 인내심이 높은 주민이 낮은 Hunger에서 보존할 수 있다. 반대로 충동성이 높고 인내심이 낮은 주민은 같은 Hunger/식량 조건에서도 더 일찍 먹을 수 있다.
+- 식량의 실제 freshness도 기회비용이다. 신선한 마지막 식량은 보존 가치가 있지만, 상하기 직전 식량은 폐기 손실을 피하기 위해 Eat Utility가 올라가고 비축 보정은 약해진다.
+- 다른 Needs는 기존 Physical Goal Utility 경쟁을 통해 계속 기회비용으로 작용한다.
+- 실제 Eat 실행은 계속 authoritative inventory의 PlantFood 1단위를 소비해야 한다. UI나 SmartObject는 음식을 생성하지 않는다.
+- Hunger가 urgent/critical 생존 구간에 도달하면 개인 비축 성향보다 자기 생존이 우선한다. 기존 critical survival preemption은 유지한다.
+- 이 보정은 직업/고정 역할이나 무작위 거부가 아니라 영구 Personality 상태에서 계산되는 결정론적 Utility 입력이다.
+
+**검증 기준**
+- 동일한 중간 Hunger와 동일한 마지막 PlantFood 1단위 조건에서, 충동적인 주민은 Eat를 선택하고 비축 성향이 강한 주민은 Idle/다른 더 높은 Utility 행동을 선택할 수 있어야 한다.
+- 같은 비축 성향 주민도 식량 freshness가 매우 낮아 폐기 위험이 커지면 중간 Hunger에서 Eat 쪽으로 기울 수 있어야 한다.
+- 같은 비축 성향 주민도 Hunger가 생존 구간으로 올라가면 Eat를 선택해야 한다.
+- 실제 음식이 없으면 Eat는 계속 선택/실행할 수 없다.
