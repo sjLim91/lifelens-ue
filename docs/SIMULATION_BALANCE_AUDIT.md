@@ -592,3 +592,57 @@ P0 Hygiene/Sanitation 수정에서는 headless runtime도 authoritative `Primiti
 를 동일하게 적용해야 한다.
 
 외부 physical execution과 headless execution의 결과 계약도 동일해야 한다.
+
+
+## 22. P0 Action Commitment 1차 A/B — 유효하지만 단독 해결 불가
+
+실험 브랜치: `experiment/p0-action-commitment-20261001`
+
+1차 실험은 다음만 변경했다.
+
+- 실제 상호작용 단계에 진입한 짧은 자기관리 행동을 critical preemption이 즉시 취소하지 않음
+- Sleep wake는 0.72 절대컷만 보지 않고 현재 Sleep Need보다 경쟁 Need가 0.05 초과 우세할 때만 허용
+- beginPlan의 Social/Civilization/자원경제 수치는 변경하지 않음
+
+### seed 874213954 / 1000일 비교
+
+| 지표 | main baseline | action commitment 실험 | 변화 |
+|---|---:|---:|---:|
+| critical preemption | 560,168 | 365,436 | -34.8% |
+| Toilet 계획 시작 | 973,094 | 544,240 | -44.1% |
+| Toilet 완료 | 7,121 | 16,599 | +133.1% |
+| Toilet 완료율 | 0.73% | 3.05% | 약 4.2배 |
+| Sleep 계획 시작 | 6,164 | 7,239 | +17.4% |
+| Sleep 완료 | 0 | 0 | 변화 없음 |
+| Social event | 106 | 49 | 감소 |
+
+주민별 Sleep 평균/포화도는 여러 주민에서 유의하게 개선됐다.
+
+예:
+- Taeyun Sleep avg: 약 0.983 → 0.957
+- Yerin Sleep avg: 약 0.959 → 0.935
+- Yerin Sleep 0.999+ 체류: 1,152,876분 → 731,045분
+
+### 판정
+
+**Action commitment 방향은 맞지만 이것만으로는 P0 해결이 아니다.**
+
+확인된 효과:
+- critical cancellation churn 감소
+- Toilet 실제 완료 증가
+- 일부 주민 Sleep pressure 완화
+
+남은 문제:
+- Toilet 완료율 3% 수준은 여전히 비정상
+- Sleep "완료"는 여전히 0회
+- Hygiene 포화는 거의 그대로
+- Social starvation은 해결되지 않음
+- DiggingStick/Cultivation 지식이 1000일까지도 생기지 않는 seed 존재
+
+따라서 다음 A/B는:
+1. 수면 세션의 실제 연속시간/회복량 계측
+2. Hygiene/Sanitation/Water budget 정상화
+3. Social bootstrap/hard gate
+순으로 진행한다.
+
+이 실험은 Core 전체 회귀에서 기존 `test_autonomous_civilization_loop`, `test_early_survival`을 유지하면서 별도 action-commitment 회귀를 통과하는 방향으로 좁혀졌다.
