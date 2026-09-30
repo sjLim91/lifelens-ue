@@ -17,11 +17,11 @@ function kindLabel(kind: ObservationEvent['kind']): string {
 
 function ObservationEventButton({
   event,
-  onSelect,
+  onFocus,
   compact = false,
 }: {
   event: ObservationEvent;
-  onSelect: (residentId: string) => void;
+  onFocus: (event: ObservationEvent) => void;
   compact?: boolean;
 }) {
   const content = (
@@ -39,7 +39,12 @@ function ObservationEventButton({
     </>
   );
 
-  if (!event.residentId) {
+  const focusable = Boolean(event.residentId)
+    || (
+      event.focusGridX !== undefined
+      && event.focusGridY !== undefined
+    );
+  if (!focusable) {
     return (
       <div className={`observation-event ${compact ? 'compact' : ''}`}>
         {content}
@@ -51,8 +56,8 @@ function ObservationEventButton({
     <button
       type="button"
       className={`observation-event observation-event-button ${compact ? 'compact' : ''}`}
-      onClick={() => onSelect(event.residentId!)}
-      aria-label={`${event.summary} 주민 집중 관찰`}
+      onClick={() => onFocus(event)}
+      aria-label={`${event.summary} 사건 현장 보기`}
     >
       {content}
     </button>
@@ -61,10 +66,10 @@ function ObservationEventButton({
 
 export function ObservationFeedOverlay({
   observations,
-  onSelect,
+  onFocus,
 }: {
   observations: ObservationEvent[];
-  onSelect: (residentId: string) => void;
+  onFocus: (event: ObservationEvent) => void;
 }) {
   const latest = observations.slice(0, 3);
   if (latest.length === 0) return null;
@@ -80,7 +85,7 @@ export function ObservationFeedOverlay({
           <ObservationEventButton
             key={event.id}
             event={event}
-            onSelect={onSelect}
+            onFocus={onFocus}
             compact
           />
         ))}
@@ -91,10 +96,10 @@ export function ObservationFeedOverlay({
 
 export function ObservationFeedPanel({
   observations,
-  onSelect,
+  onFocus,
 }: {
   observations: ObservationEvent[];
-  onSelect: (residentId: string) => void;
+  onFocus: (event: ObservationEvent) => void;
 }) {
   const recent = observations.slice(0, 8);
 
@@ -105,7 +110,7 @@ export function ObservationFeedPanel({
             <ObservationEventButton
               key={event.id}
               event={event}
-              onSelect={onSelect}
+              onFocus={onFocus}
             />
           ))
         : (
@@ -114,5 +119,25 @@ export function ObservationFeedPanel({
           </div>
         )}
     </div>
+  );
+}
+
+
+export function ObservationFocusBanner({
+  event,
+  onClear,
+}: {
+  event: ObservationEvent;
+  onClear: () => void;
+}) {
+  return (
+    <aside className={`observation-focus-banner ${event.importance}`} aria-live="polite">
+      <div>
+        <small>현장 관찰</small>
+        <strong>{event.summary}</strong>
+        {event.detail ? <span>{event.detail}</span> : null}
+      </div>
+      <button type="button" onClick={onClear} aria-label="현장 관찰 닫기">×</button>
+    </aside>
   );
 }

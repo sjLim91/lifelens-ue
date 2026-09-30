@@ -8,6 +8,9 @@ store = (root / "web/src/state/observer-store.ts").read_text(encoding="utf-8")
 feed = (root / "web/src/state/observation-feed.ts").read_text(encoding="utf-8")
 ui = (root / "web/src/ui/observation-feed.tsx").read_text(encoding="utf-8")
 engine = (root / "web/src/observer-engine.ts").read_text(encoding="utf-8")
+actions = (root / "web/src/state/observer-actions.ts").read_text(encoding="utf-8")
+app = (root / "web/src/App.tsx").read_text(encoding="utf-8")
+styles = (root / "web/src/styles.css").read_text(encoding="utf-8")
 
 for token in (
     "RecentSocialEventsPayload",
@@ -45,6 +48,10 @@ for token in (
     "resident.lifeHistory",
     "socialParticipants",
     "if (!historySupported)",
+    "focusGridX",
+    "focusGridY",
+    "residentFocus",
+    "presentationFocus",
 ):
     assert token in feed, f"observer director missing factual event logic: {token}"
 
@@ -57,12 +64,23 @@ assert "resident.activityKind !== 'Social'" in feed
 assert "previous?.available !== true" in feed
 assert "next?.available !== true" in feed
 
-# UI remains opt-in: events are rendered as buttons; the engine only forwards
-# event snapshots to state and does not force-select/focus from event arrival.
+# UI remains opt-in: event arrival never moves the camera automatically.
+# Only a user click invokes the explicit world-focus action.
 assert "case 'social': return '사회'" in ui
-assert "onClick={() => onSelect(event.residentId!)}" in ui
+assert "onClick={() => onFocus(event)}" in ui
+assert "사건 현장 보기" in ui
+assert "ObservationFocusBanner" in ui
+assert "focusObservation: (event: ObservationEvent) => void" in actions
+assert "focusObservation(event: ObservationEvent)" in actions
+assert "focusedObservationId" in store
+assert "focusObservation(event: ObservationEvent)" in engine
+assert "humanTraceFocus({ gridX, gridY })" in engine
+assert "observerStore.focusObservation(event.id, preferredResidentId)" in engine
+assert "ObservationFocusBanner" in app
+assert "observerActions.focusObservation(event)" in app
+assert "observation-focus-banner" in styles
 assert "socialEvents: snapshot.socialEvents" in engine
-assert "selectResident(snapshot.socialEvents" not in engine
+assert "focusObservation(snapshot.socialEvents" not in engine
 assert "moveObserver(snapshot.socialEvents" not in engine
 
 # Heavy authority payloads are not part of the event-director hot path.

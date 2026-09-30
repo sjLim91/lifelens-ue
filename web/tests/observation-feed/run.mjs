@@ -131,6 +131,8 @@ testCase('need-driven physical milestones expose cause, travel and interaction',
   assert.match(moving[0].summary, /민재.*갈증.*물가.*이동/);
   assert.match(moving[0].detail, /갈증 89%/);
   assert.match(moving[0].detail, /자연수 직접 사용/);
+  assert.equal(moving[0].focusGridX, 12);
+  assert.equal(moving[0].focusGridY, 8);
   assert.equal(moving[0].importance, 'high');
 
   const interacting = deriveObservationEvents(
@@ -597,6 +599,9 @@ testCase('exact social outcome shows the Core directional relationship delta', (
   const recipientAfter = resident({
     id: 'b',
     name: '하린',
+    hasPosition: true,
+    gridX: 33,
+    gridY: -2,
     relationships: [{
       targetId: 'a',
       targetName: '민재',
@@ -638,6 +643,8 @@ testCase('exact social outcome shows the Core directional relationship delta', (
   assert.match(social.detail, /유대 \+7\.0%p/);
   assert.match(social.detail, /편안함 \+7\.0%p/);
   assert.match(social.detail, /애정 \+6\.0%p/);
+  assert.equal(social.focusGridX, 33);
+  assert.equal(social.focusGridY, -2);
   assert.doesNotMatch(social.detail, /민재→하린/);
 });
 
@@ -898,6 +905,8 @@ testCase('exact civilization changes become observation events', () => {
       initiatedBy: 'a',
       lastWorkedBy: 'a',
       startedMinute: 60,
+      gridX: 9,
+      gridY: 10,
     }],
     resources: [{
       id: 'wood-1',
@@ -946,8 +955,14 @@ testCase('exact civilization changes become observation events', () => {
   assert.equal(events.filter(event => event.kind === 'civilization').length, 2);
   assert.equal(events.filter(event => event.kind === 'facility').length, 1);
   assert.ok(events.some(event => /단순 용기 만들기/.test(event.summary)));
+  const facility = events.find(event => event.kind === 'facility');
+  const depleted = events.find(event => /고갈/.test(event.summary));
   assert.ok(events.some(event => /완성/.test(event.summary)));
-  assert.ok(events.some(event => /고갈/.test(event.summary)));
+  assert.ok(depleted);
+  assert.equal(facility.focusGridX, 9);
+  assert.equal(facility.focusGridY, 10);
+  assert.equal(depleted.focusGridX, 4);
+  assert.equal(depleted.focusGridY, 8);
 });
 
 testCase('exact sanitation changes become observation events', () => {
@@ -1006,8 +1021,14 @@ testCase('exact sanitation changes become observation events', () => {
   );
 
   assert.equal(events.filter(event => event.kind === 'sanitation').length, 2);
-  assert.ok(events.some(event => /개선/.test(event.summary)));
-  assert.ok(events.some(event => /구덩이/.test(event.summary)));
+  const improved = events.find(event => /개선/.test(event.summary));
+  const pit = events.find(event => /구덩이/.test(event.summary));
+  assert.ok(improved);
+  assert.ok(pit);
+  assert.equal(improved.focusGridX, 2);
+  assert.equal(improved.focusGridY, 3);
+  assert.equal(pit.focusGridX, 6);
+  assert.equal(pit.focusGridY, 7);
 });
 
 testCase('first heavy authority payload does not replay old world activity', () => {

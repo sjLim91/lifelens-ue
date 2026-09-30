@@ -52,6 +52,7 @@ export interface ObserverSnapshot {
   simulationSpeed: number;
   selectedResidentId: string | null;
   selectedHumanTraceId: string | null;
+  focusedObservationId: string | null;
   observations: ObservationEvent[];
   fastForward: FastForwardState;
   revision: number;
@@ -96,6 +97,7 @@ const INITIAL_STATE: ObserverSnapshot = {
   simulationSpeed: SIMULATION_TIME_CONTRACT.defaultSpeed,
   selectedResidentId: null,
   selectedHumanTraceId: null,
+  focusedObservationId: null,
   observations: [],
   fastForward: INITIAL_FAST_FORWARD_STATE,
   revision: 0,
@@ -148,6 +150,14 @@ class ObserverStore {
           patch.observations ?? this.snapshot.observations,
         );
 
+    const focusedObservationId = !worldChanged
+      && this.snapshot.focusedObservationId
+      && observations.some(
+        (event) => event.id === this.snapshot.focusedObservationId,
+      )
+      ? this.snapshot.focusedObservationId
+      : null;
+
     this.snapshot = {
       ...this.snapshot,
       ...patch,
@@ -156,6 +166,7 @@ class ObserverStore {
         patch.terrain !== undefined ? patch.terrain : this.snapshot.terrain,
       ).some(trace => trace.id === this.snapshot.selectedHumanTraceId)
         ? this.snapshot.selectedHumanTraceId : null,
+      focusedObservationId,
       observations,
       revision: this.snapshot.revision + 1,
     };
@@ -179,12 +190,19 @@ class ObserverStore {
       && this.snapshot.residents.some((resident) => resident.id === residentId)
       ? residentId
       : null;
-    if (next === this.snapshot.selectedResidentId && !this.snapshot.selectedHumanTraceId) return;
+    if (
+      next === this.snapshot.selectedResidentId
+      && !this.snapshot.selectedHumanTraceId
+      && !this.snapshot.focusedObservationId
+    ) {
+      return;
+    }
 
     this.snapshot = {
       ...this.snapshot,
       selectedResidentId: next,
       selectedHumanTraceId: null,
+      focusedObservationId: null,
       revision: this.snapshot.revision + 1,
     };
     this.emit();
@@ -196,6 +214,38 @@ class ObserverStore {
       ...this.snapshot,
       selectedHumanTraceId: next,
       selectedResidentId: null,
+      focusedObservationId: null,
+      revision: this.snapshot.revision + 1,
+    };
+    this.emit();
+  }
+
+  focusObservation(eventId: string, residentId: string | null): void {
+    const eventExists = this.snapshot.observations.some(
+      (event) => event.id === eventId,
+    );
+    if (!eventExists) return;
+
+    const selectedResidentId = residentId
+      && this.snapshot.residents.some((resident) => resident.id === residentId)
+      ? residentId
+      : null;
+
+    this.snapshot = {
+      ...this.snapshot,
+      focusedObservationId: eventId,
+      selectedResidentId,
+      selectedHumanTraceId: null,
+      revision: this.snapshot.revision + 1,
+    };
+    this.emit();
+  }
+
+  clearObservationFocus(): void {
+    if (!this.snapshot.focusedObservationId) return;
+    this.snapshot = {
+      ...this.snapshot,
+      focusedObservationId: null,
       revision: this.snapshot.revision + 1,
     };
     this.emit();
@@ -310,6 +360,7 @@ class ObserverStore {
       simulationSpeed: SIMULATION_TIME_CONTRACT.defaultSpeed,
       selectedResidentId: null,
       selectedHumanTraceId: null,
+      focusedObservationId: null,
       observations: [],
       fastForward: INITIAL_FAST_FORWARD_STATE,
       camera: {

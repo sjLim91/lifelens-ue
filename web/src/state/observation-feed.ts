@@ -40,6 +40,8 @@ export interface ObservationEvent {
   residentId?: string;
   residentName?: string;
   targetResidentId?: string;
+  focusGridX?: number;
+  focusGridY?: number;
   summary: string;
   detail?: string;
   importance: 'high' | 'medium' | 'low';
@@ -101,6 +103,39 @@ function residentNames(residents: Resident[]): Map<string, string> {
   return new Map(
     residents.map((resident) => [resident.id, resident.name]),
   );
+}
+
+function residentFocus(
+  resident: Resident | undefined,
+): Pick<ObservationEvent, 'focusGridX' | 'focusGridY'> {
+  if (
+    !resident?.hasPosition
+    || resident.gridX === undefined
+    || resident.gridY === undefined
+  ) {
+    return {};
+  }
+  return {
+    focusGridX: resident.gridX,
+    focusGridY: resident.gridY,
+  };
+}
+
+function presentationFocus(
+  resident: Resident,
+): Pick<ObservationEvent, 'focusGridX' | 'focusGridY'> {
+  const presentation = resident.presentation;
+  if (
+    presentation?.hasTargetGrid
+    && presentation.targetGridX !== undefined
+    && presentation.targetGridY !== undefined
+  ) {
+    return {
+      focusGridX: presentation.targetGridX,
+      focusGridY: presentation.targetGridY,
+    };
+  }
+  return residentFocus(resident);
 }
 
 function relationshipChange(
@@ -167,6 +202,7 @@ function relationshipChange(
     residentId: resident.id,
     residentName: resident.name,
     targetResidentId: strongest.target.targetId,
+    ...residentFocus(resident),
     summary: `${resident.name} ↔ ${targetName}: ${strongest.label}가 ${direction}`,
     detail: `${percent(strongest.before)} → ${percent(strongest.after)}`,
     importance: strongest.label === '갈등'
@@ -206,6 +242,7 @@ function newMemoryEvent(
     minute: Number(candidate.minute) || minute,
     residentId: resident.id,
     residentName: resident.name,
+    ...residentFocus(resident),
     summary: `${resident.name}에게 중요한 기억이 남음`,
     detail: [
       formatMemoryText(candidate.what),
@@ -240,6 +277,7 @@ function familyEvents(
       residentId: resident.id,
       residentName: resident.name,
       targetResidentId: after.partnerId,
+      ...residentFocus(resident),
       summary: `${resident.name}의 관계가 새로운 단계로 들어감`,
       detail: after.partnerName
         ? `파트너: ${after.partnerName}`
@@ -255,6 +293,7 @@ function familyEvents(
       minute,
       residentId: resident.id,
       residentName: resident.name,
+      ...residentFocus(resident),
       summary: `${resident.name}의 가족에 임신 변화가 생김`,
       detail: after.pregnancyPartnerName
         ? `함께하는 사람: ${after.pregnancyPartnerName}`
@@ -272,6 +311,7 @@ function familyEvents(
       minute,
       residentId: resident.id,
       residentName: resident.name,
+      ...residentFocus(resident),
       summary: `${resident.name}의 가족에 새 아이가 생김`,
       detail: `자녀 ${beforeChildren} → ${afterChildren}`,
       importance: 'high',
@@ -441,6 +481,15 @@ function exactSocialEvents(
     const key = socialEventKey(event);
     const actorName = names.get(event.actorId) || event.actorId;
     const targetName = names.get(event.targetId) || event.targetId;
+    const actorResident = nextResidents.find(
+      (resident) => resident.id === event.actorId,
+    );
+    const targetResident = nextResidents.find(
+      (resident) => resident.id === event.targetId,
+    );
+    const focus = Object.keys(residentFocus(targetResident)).length > 0
+      ? residentFocus(targetResident)
+      : residentFocus(actorResident);
     const pair = `${event.targetId}->${event.actorId}`;
     const relationshipResult = directionalPairCounts.get(pair) === 1
       ? directionalRelationshipResult(
@@ -462,6 +511,7 @@ function exactSocialEvents(
       residentId: event.actorId || undefined,
       residentName: actorName,
       targetResidentId: event.targetId || undefined,
+      ...focus,
       summary: socialSummary(event, actorName, targetName),
       detail,
       importance: socialImportance(event),
@@ -576,6 +626,7 @@ function exactLifeEvents(
         residentId: resident.id,
         residentName: resident.name,
         targetResidentId: event.relatedCharacterIds?.[0],
+        ...residentFocus(resident),
         summary: lifeSummary(resident, event),
         detail: relatedNames.length > 0
           ? `관련: ${relatedNames.join(', ')}`
@@ -616,12 +667,16 @@ function exactCivilizationEvents(
       || names.get(discovery.discovererId)
       || discovery.discovererId
       || '누군가';
+    const discoverer = residents.find(
+      (resident) => resident.id === discovery.discovererId,
+    );
     events.push({
       id: `civilization:discovery:${key}`,
       kind: 'civilization',
       minute: Number(discovery.minute) || minute,
       residentId: discovery.discovererId || undefined,
       residentName: discovererName,
+      ...residentFocus(discoverer),
       summary: `${discovererName}가 ${formatTechnique(discovery.technique)} 지식을 발견함`,
       detail: discovery.livingKnowerCount > 1
         ? `현재 ${discovery.livingKnowerCount}명이 알고 있음`
@@ -643,6 +698,8 @@ function exactCivilizationEvents(
         minute: Number(facility.startedMinute) || minute,
         residentId: workerId || undefined,
         residentName: workerId ? names.get(workerId) : undefined,
+        focusGridX: facility.gridX,
+        focusGridY: facility.gridY,
         summary: `${formatFacilityKind(facility.kind)} 작업이 시작됨`,
         detail: formatFacilityState(facility.state),
         importance: facility.state === 'Operational' ? 'high' : 'medium',
@@ -659,6 +716,8 @@ function exactCivilizationEvents(
         minute,
         residentId: workerId || undefined,
         residentName: workerId ? names.get(workerId) : undefined,
+        focusGridX: facility.gridX,
+        focusGridY: facility.gridY,
         summary: operational
           ? `${formatFacilityKind(facility.kind)}이 완성되어 가동을 시작함`
           : ruined
@@ -680,6 +739,8 @@ function exactCivilizationEvents(
         id: `civilization:depleted:${resource.id}:${minute}`,
         kind: 'civilization',
         minute,
+        focusGridX: resource.gridX,
+        focusGridY: resource.gridY,
         summary: `${formatMaterial(resource.material)} 자원이 고갈됨`,
         detail: `좌표 ${resource.gridX}, ${resource.gridY}`,
         importance: 'medium',
@@ -714,6 +775,8 @@ function exactWorldObjectEvents(
         minute: Number(site.establishedMinute) || minute,
         residentId,
         residentName: residentId ? names.get(residentId) : undefined,
+        focusGridX: site.gridX,
+        focusGridY: site.gridY,
         summary: site.kind === 'DugPit'
           ? '새 위생 구덩이가 마련됨'
           : '새 위생 구역이 지정됨',
@@ -734,6 +797,8 @@ function exactWorldObjectEvents(
         minute: Number(site.improvedMinute) || minute,
         residentId,
         residentName: residentId ? names.get(residentId) : undefined,
+        focusGridX: site.gridX,
+        focusGridY: site.gridY,
         summary: '위생 장소가 개선됨',
         detail: `이용 누적 ${site.useCount}회`,
         importance: 'medium',
@@ -786,6 +851,12 @@ function explorationEvent(
     minute: Number(next.issuedMinute) || minute,
     residentId: resident.id,
     residentName: resident.name,
+    ...(next.hasTargetGrid
+      ? {
+          focusGridX: next.targetGridX,
+          focusGridY: next.targetGridY,
+        }
+      : residentFocus(resident)),
     summary: `${resident.name}: ${formatMaterial(material)} 자원 탐색 시작`,
     detail,
     importance: 'medium',
@@ -960,6 +1031,7 @@ function physicalNeedMilestoneEvent(
     minute,
     residentId: resident.id,
     residentName: resident.name,
+    ...presentationFocus(resident),
     summary: physicalMilestoneSummary(
       resident,
       goal,
@@ -1083,6 +1155,10 @@ function socialInteractionMilestoneEvent(
   }
   const target = residents.find((candidate) => candidate.id === targetId);
   if (!target) return null;
+  const presentationTarget = presentationFocus(resident);
+  const focus = Object.keys(presentationTarget).length > 0
+    ? presentationTarget
+    : residentFocus(target);
 
   return {
     id: [
@@ -1102,6 +1178,7 @@ function socialInteractionMilestoneEvent(
     residentId: resident.id,
     residentName: resident.name,
     targetResidentId: targetId,
+    ...focus,
     summary: socialMilestoneSummary(resident, target.name),
     importance:
       presentation.kind === 'Social'
@@ -1154,6 +1231,7 @@ function activityEvent(
     residentId: resident.id,
     residentName: resident.name,
     targetResidentId: resident.activityTargetId || undefined,
+    ...residentFocus(resident),
     summary: target
       ? `${resident.name}: ${localizedLabel} → ${target}`
       : `${resident.name}: ${localizedLabel}`,
