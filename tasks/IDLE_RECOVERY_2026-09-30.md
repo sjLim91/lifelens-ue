@@ -34,11 +34,18 @@ change is introduced. The same authoritative path rules still execute movement.
 - Original seed-42 production simulation: stuck through day 123.
 - Corrected seed-42 production simulation: actions and need resolution continue
   through day 123, including completed drinking, eating and toilet use.
+- Loading an original-code day-122 stranded snapshot in the corrected Core:
+  all four residents move again and eat/drink within one simulated day, without
+  resetting the world or its needs.
 - New regression: inaccessible dry food access, inaccessible closer storage,
   reachable storage alternative, physical recovery/food consumption, movement
   bounded to one cell per minute, encoded snapshot deterministic continuation.
 - Native targeted tests passed: survival reachability, early survival, headless
   locomotion, social utility, civilization spatial targets, Core save/load.
+- Regression sensitivity: the new test fails against the original Core at the
+  inaccessible provision assertion. The disposition-only test's arbitrary food
+  coordinate is replaced with real traversable ground, preserving its assertion
+  that emergency provisioning bypasses personality bias.
 - Full CMake/CTest, deterministic harness and WASM gates run in GitHub Actions;
   this workspace lacks CMake/Emscripten, so local checks use GCC directly.
 

@@ -168,11 +168,16 @@ int main()
     // Emergency provision gathering remains survival authority and deliberately
     // bypasses the personality disposition multiplier.
     World emergencyWorld(WorldSeedValue,PopulationSeedValue);
-    emergencyWorld.resourceNodes.push_back({777,MaterialKind::PlantFood,20,20,true,1,{3,4}});
+    // Use real traversable ground. The old arbitrary (3,4) food fixture could
+    // be disconnected from the generated start, independently of disposition.
+    GridPos provisionPosition{};
+    CHECK(first.runtimePosition(first.world().characters.front().id,provisionPosition));
+    CHECK(coreGroundTraversable(emergencyWorld,provisionPosition));
+    emergencyWorld.resourceNodes.push_back({777,MaterialKind::PlantFood,20,20,true,1,provisionPosition});
     high.needs.hunger=0.90;
     low.needs.hunger=0.90;
-    const CivilizationUtilityDecision highEmergency=urgentSurvivalProvisionGatherDecision(emergencyWorld,high);
-    const CivilizationUtilityDecision lowEmergency=urgentSurvivalProvisionGatherDecision(emergencyWorld,low);
+    const CivilizationUtilityDecision highEmergency=urgentSurvivalProvisionDecisionAtPosition(emergencyWorld,high,provisionPosition);
+    const CivilizationUtilityDecision lowEmergency=urgentSurvivalProvisionDecisionAtPosition(emergencyWorld,low,provisionPosition);
     CHECK(highEmergency.intent==CivilizationIntent::Gather);
     CHECK(lowEmergency.intent==CivilizationIntent::Gather);
     CHECK(highEmergency.material==MaterialKind::PlantFood);
