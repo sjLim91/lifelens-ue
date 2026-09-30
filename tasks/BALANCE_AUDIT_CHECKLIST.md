@@ -30,11 +30,12 @@
 - [x] Parenting action 효과
 - [x] Environment 추가 Need pressure
 - [x] 장기 계측 harness 추가
-- [ ] 1/7/30/100일 baseline 실측
-- [ ] 365일 baseline 실측
-- [ ] 500일 baseline 실측
-- [ ] 1000일 baseline 실측
-- [ ] 다중 seed 편차 확인
+- [x] 1/7/30/100일 baseline 실측
+- [x] 365일 baseline 실측
+- [x] 500일 baseline 실측
+- [x] 1000일 baseline 실측
+- [x] 1/7/30/100일 다중 seed 편차 확인
+- [ ] 365/500/1000일 추가 seed 편차 확인
 - [ ] 정책 숫자 중앙화 후보 확정
 - [ ] Balance Contract v1 확정
 - [ ] P0 생존경제 튜닝
