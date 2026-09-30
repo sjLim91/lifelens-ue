@@ -27,6 +27,12 @@ for token in (
 for token in (
     "exactSocialEvents",
     "exactLifeEvents",
+    "physicalNeedMilestoneEvent",
+    "physicalPresentationSignature",
+    "presentation.phase !== 'Moving'",
+    "presentation.phase !== 'Interacting'",
+    "directNaturalWaterSource",
+    "designatedSanitationSite",
     "event.presentationLevel === 'Important'",
     "resident.lifeHistory",
     "socialParticipants",

@@ -96,6 +96,160 @@ testCase('real activity transition with a target becomes an observation', () => 
   assert.match(events[0].summary, /민재.*대화.*하린/);
 });
 
+testCase('need-driven physical milestones expose cause, travel and interaction', () => {
+  const moving = deriveObservationEvents(
+    world(20),
+    [resident({
+      activityKind: 'Physical',
+      activityLabel: 'Drink',
+      physicalGoal: 'Drink',
+      needs: { thirst: 0.88 },
+      presentation: {
+        active: false,
+      },
+    })],
+    world(21),
+    [resident({
+      activityKind: 'Physical',
+      activityLabel: 'Drink',
+      physicalGoal: 'Drink',
+      needs: { thirst: 0.89 },
+      presentation: {
+        active: true,
+        kind: 'Physical',
+        phase: 'Moving',
+        physicalGoal: 'Drink',
+        directNaturalWaterSource: true,
+        hasTargetGrid: true,
+        targetGridX: 12,
+        targetGridY: 8,
+      },
+    })],
+  );
+
+  assert.equal(moving.length, 1);
+  assert.match(moving[0].summary, /민재.*갈증.*물가.*이동/);
+  assert.match(moving[0].detail, /갈증 89%/);
+  assert.match(moving[0].detail, /자연수 직접 사용/);
+  assert.equal(moving[0].importance, 'high');
+
+  const interacting = deriveObservationEvents(
+    world(21),
+    [resident({
+      activityKind: 'Physical',
+      activityLabel: 'Drink',
+      physicalGoal: 'Drink',
+      needs: { thirst: 0.89 },
+      presentation: {
+        active: true,
+        kind: 'Physical',
+        phase: 'Moving',
+        physicalGoal: 'Drink',
+        directNaturalWaterSource: true,
+        hasTargetGrid: true,
+        targetGridX: 12,
+        targetGridY: 8,
+      },
+    })],
+    world(22),
+    [resident({
+      activityKind: 'Physical',
+      activityLabel: 'Drink',
+      physicalGoal: 'Drink',
+      needs: { thirst: 0.89 },
+      presentation: {
+        active: true,
+        kind: 'Physical',
+        phase: 'Interacting',
+        physicalGoal: 'Drink',
+        directNaturalWaterSource: true,
+        hasTargetGrid: true,
+        targetGridX: 12,
+        targetGridY: 8,
+      },
+    })],
+  );
+
+  assert.equal(interacting.length, 1);
+  assert.match(interacting[0].summary, /물가에 도착.*마시기 시작/);
+});
+
+testCase('sleep and sanitation milestones stay factual to authoritative target context', () => {
+  const sleep = deriveObservationEvents(
+    world(30),
+    [resident({ presentation: { active: false } })],
+    world(31),
+    [resident({
+      activityKind: 'Physical',
+      activityLabel: 'Sleep',
+      physicalGoal: 'Sleep',
+      needs: { sleep: 0.78 },
+      presentation: {
+        active: true,
+        kind: 'Physical',
+        phase: 'Moving',
+        physicalGoal: 'Sleep',
+        hasTargetGrid: true,
+        targetGridX: 4,
+        targetGridY: 5,
+      },
+    })],
+  );
+  assert.ok(sleep.some(event => /잠자리로 이동/.test(event.summary)));
+  assert.ok(sleep.some(event => /피로 78%/.test(event.detail ?? '')));
+
+  const toilet = deriveObservationEvents(
+    world(40),
+    [resident({ presentation: { active: false } })],
+    world(41),
+    [resident({
+      activityKind: 'Physical',
+      activityLabel: 'UseToilet',
+      physicalGoal: 'UseToilet',
+      needs: { bladder: 0.71 },
+      presentation: {
+        active: true,
+        kind: 'Physical',
+        phase: 'Interacting',
+        physicalGoal: 'UseToilet',
+        designatedSanitationSite: true,
+        sanitationSiteId: '7',
+      },
+    })],
+  );
+  assert.ok(toilet.some(event => /위생 장소 이용/.test(event.summary)));
+  assert.ok(toilet.some(event => /배뇨 욕구 71%/.test(event.detail ?? '')));
+});
+
+testCase('unchanged physical phase does not spam the observation feed', () => {
+  const presentation = {
+    active: true,
+    kind: 'Physical',
+    phase: 'Interacting',
+    physicalGoal: 'Wash',
+    directNaturalWaterSource: false,
+  };
+  const events = deriveObservationEvents(
+    world(50),
+    [resident({
+      activityKind: 'Physical',
+      activityLabel: 'Wash',
+      physicalGoal: 'Wash',
+      needs: { hygiene: 0.7 },
+      presentation,
+    })],
+    world(51),
+    [resident({
+      activityKind: 'Physical',
+      activityLabel: 'Wash',
+      physicalGoal: 'Wash',
+      needs: { hygiene: 0.68 },
+      presentation: { ...presentation },
+    })],
+  );
+  assert.equal(events.length, 0);
+});
+
 testCase('authoritative resource exploration start becomes an observation', () => {
   const events = deriveObservationEvents(
     world(11),

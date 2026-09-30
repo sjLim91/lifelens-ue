@@ -696,6 +696,186 @@ function explorationEvent(
   };
 }
 
+function physicalPresentationSignature(resident: Resident): string {
+  const presentation = resident.presentation;
+  if (
+    !presentation?.active
+    || presentation.kind !== 'Physical'
+    || presentation.phase === 'Idle'
+  ) {
+    return '';
+  }
+
+  return [
+    presentation.physicalGoal ?? '',
+    presentation.phase ?? '',
+    presentation.directNaturalWaterSource ? 'natural-water' : '',
+    presentation.designatedSanitationSite ? 'designated-sanitation' : '',
+    presentation.emergencyFallback ? 'fallback' : '',
+    presentation.hasTargetGrid ? presentation.targetGridX ?? '' : '',
+    presentation.hasTargetGrid ? presentation.targetGridY ?? '' : '',
+    presentation.objectId ?? '',
+    presentation.sanitationSiteId ?? '',
+  ].join('|');
+}
+
+function physicalNeedContext(
+  resident: Resident,
+  goal: string,
+): { label: string; value: number } | null {
+  const needs = resident.needs;
+  if (!needs) return null;
+
+  switch (goal) {
+    case 'Eat':
+      return { label: '허기', value: clamp01(needs.hunger) };
+    case 'Drink':
+      return { label: '갈증', value: clamp01(needs.thirst) };
+    case 'Sleep':
+      return { label: '피로', value: clamp01(needs.sleep) };
+    case 'UseToilet':
+      return { label: '배뇨 욕구', value: clamp01(needs.bladder) };
+    case 'Wash':
+      return { label: '위생 필요', value: clamp01(needs.hygiene) };
+    default:
+      return null;
+  }
+}
+
+function physicalMilestoneSummary(
+  resident: Resident,
+  goal: string,
+  phase: 'Moving' | 'Interacting',
+): string {
+  const presentation = resident.presentation;
+  const moving = phase === 'Moving';
+
+  switch (goal) {
+    case 'Eat':
+      return moving
+        ? `${resident.name}: 음식을 먹으러 이동 중`
+        : `${resident.name}: 식사를 시작함`;
+    case 'Drink':
+      if (presentation?.directNaturalWaterSource) {
+        return moving
+          ? `${resident.name}: 갈증을 해결하려 물가로 이동 중`
+          : `${resident.name}: 물가에 도착해 물을 마시기 시작함`;
+      }
+      return moving
+        ? `${resident.name}: 물을 마실 장소로 이동 중`
+        : `${resident.name}: 소지한 물을 마시기 시작함`;
+    case 'Sleep':
+      if (moving) {
+        return `${resident.name}: 피로를 풀기 위해 잠자리로 이동 중`;
+      }
+      return presentation?.hasTargetGrid
+        ? `${resident.name}: 잠자리에 도착해 수면을 시작함`
+        : `${resident.name}: 피로를 풀기 위해 야외 수면을 시작함`;
+    case 'UseToilet':
+      if (presentation?.designatedSanitationSite) {
+        return moving
+          ? `${resident.name}: 위생 장소로 이동 중`
+          : `${resident.name}: 위생 장소 이용을 시작함`;
+      }
+      return moving
+        ? `${resident.name}: 야외 용변 장소로 이동 중`
+        : `${resident.name}: 야외에서 용변을 시작함`;
+    case 'Wash':
+      if (presentation?.directNaturalWaterSource) {
+        return moving
+          ? `${resident.name}: 씻기 위해 물가로 이동 중`
+          : `${resident.name}: 물가에 도착해 씻기 시작함`;
+      }
+      return moving
+        ? `${resident.name}: 씻을 장소로 이동 중`
+        : `${resident.name}: 소지한 물로 씻기 시작함`;
+    default:
+      return `${resident.name}: 생활 행동 ${moving ? '이동' : '진행'} 중`;
+  }
+}
+
+function physicalNeedMilestoneEvent(
+  resident: Resident,
+  previous: Resident,
+  minute: number,
+): ObservationEvent | null {
+  const presentation = resident.presentation;
+  if (
+    !presentation?.active
+    || presentation.kind !== 'Physical'
+    || (
+      presentation.phase !== 'Moving'
+      && presentation.phase !== 'Interacting'
+    )
+  ) {
+    return null;
+  }
+
+  const signature = physicalPresentationSignature(resident);
+  if (
+    signature.length === 0
+    || signature === physicalPresentationSignature(previous)
+  ) {
+    return null;
+  }
+
+  const goal = presentation.physicalGoal?.trim();
+  if (!goal || goal === 'Idle') return null;
+
+  const need = physicalNeedContext(resident, goal);
+  const detailParts: string[] = [];
+  if (need) {
+    detailParts.push(`${need.label} ${percent(need.value)}`);
+  }
+  if (
+    (goal === 'Drink' || goal === 'Wash')
+    && presentation.directNaturalWaterSource
+  ) {
+    detailParts.push('자연수 직접 사용');
+  } else if (goal === 'Drink' || goal === 'Wash') {
+    detailParts.push('소지한 물 사용');
+  }
+  if (goal === 'UseToilet' && presentation.designatedSanitationSite) {
+    detailParts.push('지정 위생 장소');
+  }
+
+  const importance: ObservationEvent['importance'] = !need
+    ? 'low'
+    : need.value >= 0.84
+      ? 'high'
+      : need.value >= 0.60
+        ? 'medium'
+        : 'low';
+
+  return {
+    id: [
+      'physical',
+      minute,
+      resident.id,
+      goal,
+      presentation.phase,
+      presentation.contextActionToken ?? '',
+      presentation.objectId ?? '',
+      presentation.sanitationSiteId ?? '',
+      presentation.targetGridX ?? '',
+      presentation.targetGridY ?? '',
+    ].join(':'),
+    kind: 'activity',
+    minute,
+    residentId: resident.id,
+    residentName: resident.name,
+    summary: physicalMilestoneSummary(
+      resident,
+      goal,
+      presentation.phase,
+    ),
+    detail: detailParts.length > 0
+      ? detailParts.join(' · ')
+      : undefined,
+    importance,
+  };
+}
+
 function activityEvent(
   resident: Resident,
   previous: Resident,
@@ -840,6 +1020,13 @@ export function deriveObservationEvents(
     const exploration = explorationEvent(resident, previous, minute);
     if (exploration) events.push(exploration);
 
+    const physicalMilestone = physicalNeedMilestoneEvent(
+      resident,
+      previous,
+      minute,
+    );
+    if (physicalMilestone) events.push(physicalMilestone);
+
     const memory = newMemoryEvent(resident, previous, minute);
     if (memory) events.push(memory);
 
@@ -857,7 +1044,7 @@ export function deriveObservationEvents(
       || resident.activityKind !== 'Social'
     ) {
       const activity = activityEvent(resident, previous, minute);
-      if (activity) events.push(activity);
+      if (activity && !physicalMilestone) events.push(activity);
     }
   }
 
