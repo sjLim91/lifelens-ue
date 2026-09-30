@@ -259,8 +259,14 @@ for token in (
 ):
     assert token in social_cues, f"missing social connector intent token: {token}"
 for token in (
-    "case 'Approach': return 0xb9d8be",
-    "case 'Comfort': return 0x9fcfe0",
-    "case 'Repair': return 0xe0c98f",
+    "socialConnectorApproachColorHex",
+    "socialConnectorComfortColorHex",
+    "socialConnectorRepairColorHex",
+    "socialConnectorTeachingColorHex",
+    "socialConnectorParentingColorHex",
+    "socialConnectorDefaultColorHex",
 ):
-    assert token in resident, f"missing live social connector color: {token}"
+    assert token in contract, f"missing centralized social connector color: {token}"
+    assert token in resident or token == "socialConnectorDefaultColorHex", (
+        f"resident social connector did not consume centralized color: {token}"
+    )
