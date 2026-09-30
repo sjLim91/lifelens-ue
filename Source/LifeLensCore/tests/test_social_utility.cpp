@@ -1,6 +1,7 @@
 #include <cassert>
 #include <optional>
 
+#include "lifelens/ContextAction.h"
 #include "lifelens/SocialCognition.h"
 #include "lifelens/SocialUtility.h"
 
