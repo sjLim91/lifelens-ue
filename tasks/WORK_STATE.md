@@ -1,14 +1,15 @@
-## 2026-09-30 LATE CANONICAL CURRENT — RESIDENT AUTONOMY #534 INTEGRATED
+## 2026-09-30 LATE CANONICAL CURRENT — RESIDENT AUTONOMY #536 INTEGRATED
 
 > This section supersedes the earlier 2026-09-30 DU-01 checkpoint below. Actual GitHub main/PR/Actions remain the highest-priority truth.
 
-- Current validated main: `9aef4a15d6f63bc3cad7320050e3f8279d814bcd` (#534).
-- D-026 development-choice differentiation remains intact: cultivation/construction/crafting decisions use resident disposition and lived technique experience.
-- D-027 / #534 extends autonomy into food use below the survival boundary: non-critical Eat reacts to Hunger, competing Utility, resident disposition, scarce final-food reserve and actual PlantFood freshness.
-- A patient/conscientious/orderly resident can preserve a fresh final food unit at moderate Hunger; an impulsive resident can eat earlier; near-spoilage food raises Eat value so reserve discipline does not blindly create waste.
-- Urgent/critical Hunger still overrides reserve strategy, and Eat still consumes authoritative carried PlantFood.
-- #534 exact-head and merged-main gates all passed: Core Tests + deterministic harness, Preflight, Web WASM, Runtime Release, Pages Preview and External Preview Probe.
-- Next development unit: shared-provision allocation. Eat / cultivation seed use / Store must compete for the same real PlantFood stock through Utility/opportunity cost, without random role assignment, fixed jobs or presentation-side invention.
+- Current validated main: `df839012177bc8f4a0bfd59e30cbf8e5d29d4129` (#536).
+- D-026 keeps development choices resident-specific through disposition and lived technique experience.
+- D-027 / #534 makes non-critical Eat timing resident-specific and freshness-aware while urgent/critical Hunger retains survival priority.
+- D-028 / #536 connects the same real PlantFood to shared allocation opportunity cost: a fresh final local unit can be retained for eating or committed as cultivation seed depending on resident state/disposition/experience; a nearby real Storage reserve removes false last-unit scarcity.
+- Store remains the reversible third path and only moves real surplus. No Eat/Plant/Store path fabricates inventory or relies on presentation-side authority.
+- Regression now proves identical Hunger + PlantFood + cultivation knowledge/tool/plot can split into grower Plant versus impulsive resident Eat-oriented retention, and that real stored reserve changes the same resident's feasible choice.
+- #536 exact-head and merged-main gates all passed: Core Tests + deterministic harness, Preflight, Web WASM, Runtime Release, Pages Preview and External Preview Probe.
+- Next development unit: authoritative decision rationale observation. Persist/expose factual selected-decision inputs so Web can show why resident choices differ without browser-side motive inference.
 - GitHub commit/PR text for this project remains Korean.
 
 ## 2026-09-30 CANONICAL CURRENT — DU-01 Living Settlement ACTIVE
