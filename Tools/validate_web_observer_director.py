@@ -78,8 +78,8 @@ print("LifeLens Web Observer Director v1: PASS")
 # recipient -> actor Core relationship snapshot. Multiple events for the same
 # directional pair in one heavy refresh window must not receive invented
 # per-event attribution.
-assert "event.targetId" in observation_feed
-assert "event.actorId" in observation_feed
-assert "previousResidents" in observation_feed
-assert "nextResidents" in observation_feed
-assert "directionalPairCounts.get(pair) === 1" in observation_feed
+assert "event.targetId" in feed
+assert "event.actorId" in feed
+assert "previousResidents" in feed
+assert "nextResidents" in feed
+assert "directionalPairCounts.get(pair) === 1" in feed
