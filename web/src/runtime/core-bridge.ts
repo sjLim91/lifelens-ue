@@ -2,6 +2,7 @@ import type {
   CivilizationWorldPayload,
   CoreModule,
   DynamicEnvironment,
+  HumanTracesWindowPayload,
   RecentSocialEventsPayload,
   Resident,
   ResidentsPayload,
@@ -157,6 +158,13 @@ export class LifeLensCoreBridge {
     return readResidents(this.client.residentsJson());
   }
 
+  residentRuntime(): ResidentsPayload {
+    if (typeof this.client.residentRuntimeJson !== 'function') {
+      return this.residents();
+    }
+    return readResidents(this.client.residentRuntimeJson());
+  }
+
   dynamicEnvironment(x: number, y: number): DynamicEnvironment {
     const fallback: DynamicEnvironment = {
       available: false,
@@ -257,6 +265,34 @@ export class LifeLensCoreBridge {
     return parseJson<WorldObjectsPayload>(
       this.client.worldObjectsJson(),
       fallback,
+    );
+  }
+
+  humanTracesWindow(
+    x: number,
+    y: number,
+    radius: number,
+  ): HumanTracesWindowPayload {
+    if (typeof this.client.humanTracesWindowJson !== 'function') {
+      const terrain = this.terrainWindow(x, y, radius);
+      return {
+        available: terrain.available,
+        centerChunkX: terrain.centerChunkX,
+        centerChunkY: terrain.centerChunkY,
+        radiusChunks: terrain.radiusChunks,
+        humanTraces: terrain.humanTraces,
+      };
+    }
+
+    return parseJson<HumanTracesWindowPayload>(
+      this.client.humanTracesWindowJson(x, y, radius),
+      {
+        available: false,
+        centerChunkX: x,
+        centerChunkY: y,
+        radiusChunks: radius,
+        humanTraces: { total: 0, entries: [] },
+      },
     );
   }
 
