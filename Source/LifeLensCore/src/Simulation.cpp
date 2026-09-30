@@ -1105,24 +1105,18 @@ Simulation::nearestAvailableOperationalSleepFacility(
 bool Simulation::tryCivilizationDecision(Character& c,Runtime& r){
     if(!c.alive || !lifeStageProfile(c.lifeStage).canWork || r.pendingContext.active()) return false;
 
-    const CivilizationUtilityDecision criticalProvision=
+    const CivilizationUtilityDecision urgentProvision=
         urgentSurvivalProvisionDecisionAtPosition(world_,c,r.pos);
-    const bool criticalProvisionRequired=
-        criticalProvision.intent!=CivilizationIntent::None
-        && (
-            (criticalProvision.material==MaterialKind::PlantFood
-             && c.needs.hunger>=CriticalSurvivalPreemptThreshold)
-            || (criticalProvision.material==MaterialKind::Water
-                && c.needs.thirst>=CriticalSurvivalPreemptThreshold)
-        );
-    if(!criticalProvisionRequired && world_.minute%15!=0) return false;
+    const bool urgentProvisionRequired=
+        urgentProvision.intent!=CivilizationIntent::None;
+    if(!urgentProvisionRequired && world_.minute%15!=0) return false;
 
     const auto population=settlementPopulation();
     UnifiedUtilityDecision decision;
-    if(criticalProvisionRequired){
+    if(urgentProvisionRequired){
         decision.kind=UnifiedDecisionKind::Civilization;
-        decision.civilization=criticalProvision;
-        decision.utility=criticalProvision.utility;
+        decision.civilization=urgentProvision;
+        decision.utility=urgentProvision.utility;
     }else{
         decision=chooseUnifiedUtilityDecisionAtPosition(
             world_,c,relationships_,r.pos,0.18,0.14,&population);
@@ -1217,10 +1211,12 @@ void Simulation::beginPlan(Character& c,Runtime& r){
         world_.minute>=r.penaltyUntilMinute
         || criticalSurvivalPressure;
     const double urgentThreshold=ruleset_.utilityAI.urgentThreshold;
-    const bool hasUrgentSurvivalNeed=
+    const bool hasUrgentPhysicalNeed=
         c.needs.hunger>=urgentThreshold
         || c.needs.thirst>=urgentThreshold
-        || c.needs.bladder>=urgentThreshold;
+        || c.needs.sleep>=urgentThreshold
+        || c.needs.bladder>=urgentThreshold
+        || c.needs.hygiene>=urgentThreshold;
 
     if(planningAllowed){
         for(const Goal candidate:{
@@ -1240,20 +1236,16 @@ void Simulation::beginPlan(Character& c,Runtime& r){
         }
     }
 
-    // Hard hunger/thirst with a missing provision is itself a survival
-    // action. It outranks a lower-order available action such as sanitation,
-    // and bypasses the ordinary 15-minute civilization cadence.
-    const CivilizationUtilityDecision criticalProvision=
+    // Missing food/water that is required by an already-urgent body need is
+    // life maintenance, not optional civilization progress. Water also serves
+    // hygiene, so a very dirty resident with no usable water should start a
+    // real Retrieve/Explore action at the normal five-minute planning boundary
+    // instead of waiting for the 15-minute civilization cadence.
+    const CivilizationUtilityDecision urgentProvision=
         urgentSurvivalProvisionDecisionAtPosition(world_,c,r.pos);
-    const bool criticalProvisionRequired=
-        criticalProvision.intent!=CivilizationIntent::None
-        && (
-            (criticalProvision.material==MaterialKind::PlantFood
-             && c.needs.hunger>=CriticalSurvivalPreemptThreshold)
-            || (criticalProvision.material==MaterialKind::Water
-                && c.needs.thirst>=CriticalSurvivalPreemptThreshold)
-        );
-    if(planningAllowed && criticalProvisionRequired
+    const bool urgentProvisionRequired=
+        urgentProvision.intent!=CivilizationIntent::None;
+    if(planningAllowed && urgentProvisionRequired
        && tryCivilizationDecision(c,r)) return;
 
     // Survival needs that can be satisfied immediately pre-empt settlement
@@ -1261,7 +1253,7 @@ void Simulation::beginPlan(Character& c,Runtime& r){
     // ordinary civilization remains available for acquisition/progression.
     if(planningAllowed && urgentPhysicalGoal==Goal::Idle
        && tryCivilizationDecision(c,r)) return;
-    if(planningAllowed && !hasUrgentSurvivalNeed
+    if(planningAllowed && !hasUrgentPhysicalNeed
        && trySocialDecision(c,r)) return;
 
     r.civilizationActive=false;

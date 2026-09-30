@@ -516,3 +516,20 @@ Canonical companion:
 **목적**
 - 기본 관찰이 답답하지 않게 하면서도 고배속으로 인한 렉과 행동/시간 불일치를 피한다.
 - 장기 발전 계산과 실시간 관찰 가속을 같은 문제로 취급하지 않는다.
+
+
+## D-025 — 긴급 생활 욕구는 자기관리로 이어지고 폐허도 실제 공간을 차지한다
+
+**결정**
+- Hunger/Thirst의 critical preemption은 기존처럼 가장 강한 생존 우선순위로 유지한다.
+- 그보다 아래 단계에서도 Sleep/Hygiene를 포함한 모든 생활 욕구가 urgent threshold를 넘으면 일반 사회행동보다 자기관리 해결을 우선한다.
+- 씻기가 필요한데 휴대 가능한 물이 없으면 실제 수원 직접 사용이 가능할 때는 그 수원으로 이동하고, 그렇지 않으면 실제 저장소 회수/수원 탐색으로 물을 확보한다.
+- urgent 생활 욕구를 해결하기 위한 Water/PlantFood 확보는 일반 15분 Civilization cadence를 기다리지 않고 5분 planning boundary에서 시작할 수 있다.
+- 물/식량은 계속 authoritative inventory/storage/resource에서만 이동·소모하며 생성하지 않는다.
+- Ruined 시설은 기능 용량은 제공하지 않지만 물리적 footprint는 남아 있다. 새 시설 배치가 폐허와 겹칠 수 없으며, 동일 시설의 복구는 기존 frame을 직접 재사용한다.
+
+**검증 기준**
+- 높은 Hygiene + 사용 가능한 물 없음 + 가까운 실제 저장 물 조건에서 주민은 다음 planning boundary에 Water Retrieve를 시작하고 이후 실제 Water를 소비해 Wash한다.
+- Sleep/Hygiene 등 urgent 생활 욕구 상태에서는 일반 사회행동이 먼저 끼어들지 않는다.
+- Ruined SleepingPlace 위치에는 다른 종류 시설도 겹쳐 계획할 수 없다.
+- 기존 수면 시간 기반 회복, 잠자리 capacity, 수리/복구 우선, 위생/용변 오염 authority는 유지한다.

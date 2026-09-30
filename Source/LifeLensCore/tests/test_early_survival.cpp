@@ -280,6 +280,85 @@ int main()
     assert(rawWaterUnitCount(directActor.civilization.inventory)==0);
     assert(simpleContainerCount(directActor.civilization.inventory)==0);
 
+    // An urgent hygiene need with no usable water is an acquisition problem,
+    // not a reason to idle or socialize. Start between the 15-minute
+    // civilization ticks: the resident must request real stored Water at the
+    // next ordinary five-minute planning boundary, then actually consume that
+    // Water while washing.
+    SimulationRuleset hygieneRules=DefaultSimulationRuleset;
+    hygieneRules.needs.hungerPerMinute=0.0;
+    hygieneRules.needs.thirstPerMinute=0.0;
+    hygieneRules.needs.sleepPerMinute=0.0;
+    hygieneRules.needs.bladderPerMinute=0.0;
+    hygieneRules.needs.hygienePerMinute=0.0;
+    Simulation hygieneProvision(
+        9123403,0,CurrentWorldGenerationVersion,hygieneRules);
+    hygieneProvision.setupNewGame();
+    hygieneProvision.world().minute=1;
+    hygieneProvision.world().characters.resize(1);
+    hygieneProvision.world().resourceNodes.clear();
+    hygieneProvision.world().storageSites.clear();
+
+    Character& hygieneActor=hygieneProvision.world().characters.front();
+    const CharacterId hygieneActorId=hygieneActor.id;
+    while(hygieneActor.civilization.inventory.remove(
+        ItemKind::RawMaterial,MaterialKind::Water,1)) {}
+    while(hygieneActor.civilization.inventory.remove(
+        ItemKind::SimpleContainer,MaterialKind::Unknown,1,true)) {}
+    hygieneActor.needs={0.01,0.01,0.01,0.01,0.95};
+
+    GridPos hygieneStart{};
+    assert(hygieneProvision.runtimePosition(hygieneActorId,hygieneStart));
+    StorageSite hygieneWaterStorage;
+    hygieneWaterStorage.id=991201;
+    hygieneWaterStorage.pos={hygieneStart.x+2,hygieneStart.y};
+    hygieneWaterStorage.inventory.add({
+        ItemKind::SimpleContainer,MaterialKind::Clay,1,0.5,1.0});
+    hygieneWaterStorage.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::Water,1,0.5,1.0});
+    hygieneProvision.world().storageSites.push_back(hygieneWaterStorage);
+
+    bool sawUrgentHygieneWaterRetrieve=false;
+    for(int minute=0;minute<6 && !sawUrgentHygieneWaterRetrieve;++minute){
+        hygieneProvision.step();
+        const ResidentPresentationObservation observed=
+            hygieneProvision.observeResidentPresentation(hygieneActorId);
+        if(observed.active
+           && observed.kind==PresentationActionKind::Civilization
+           && observed.civilizationIntent==CivilizationIntent::Retrieve
+           && observed.civilizationMaterial==MaterialKind::Water){
+            sawUrgentHygieneWaterRetrieve=true;
+        }
+    }
+    assert(sawUrgentHygieneWaterRetrieve);
+
+    for(int minute=0;minute<60
+        && portableWaterCount(hygieneActor.civilization.inventory)==0;
+        ++minute){
+        hygieneProvision.step();
+    }
+    assert(portableWaterCount(hygieneActor.civilization.inventory)==1);
+
+    const double hygieneBeforeStoredWash=hygieneActor.needs.hygiene;
+    bool sawStoredWaterWash=false;
+    for(int minute=0;minute<60
+        && hygieneActor.needs.hygiene>=hygieneBeforeStoredWash;
+        ++minute){
+        hygieneProvision.step();
+        const ResidentPresentationObservation observed=
+            hygieneProvision.observeResidentPresentation(hygieneActorId);
+        if(observed.active
+           && observed.kind==PresentationActionKind::Physical
+           && observed.physicalGoal==Goal::Wash){
+            sawStoredWaterWash=true;
+            assert(!observed.directNaturalWaterSource);
+        }
+    }
+    assert(sawStoredWaterWash);
+    assert(hygieneActor.needs.hygiene<hygieneBeforeStoredWash);
+    assert(portableWaterCount(hygieneActor.civilization.inventory)==0);
+    assert(simpleContainerCount(hygieneActor.civilization.inventory)==1);
+
     // Worst-case regression: a resident reaches urgent hunger/thirst without a
     // carried provision. This used to deadlock because urgent Needs suppressed
     // all civilization while Eat/Drink were unavailable with empty inventory.

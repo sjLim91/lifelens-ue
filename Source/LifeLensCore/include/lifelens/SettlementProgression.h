@@ -375,8 +375,11 @@ inline bool settlementFacilitySiteBlocked(
     FacilityKind plannedKind)
 {
     for(const auto& facility:world.facilities){
-        if(facility.state!=FacilityState::Ruined
-           && facilityFootprintsConflict(
+        // A ruin is still physical matter occupying the site. Restoration uses
+        // the existing facility directly and never needs the site planner, so
+        // excluding ruins here only allows a different new structure to be
+        // built through the surviving frame.
+        if(facilityFootprintsConflict(
                plannedKind,pos,facility.kind,facility.pos)) return true;
     }
     const int footprintRadius=facilityFootprintRadiusGrid(plannedKind);
