@@ -16,6 +16,25 @@ namespace lifelens {
 inline constexpr int ResourceExplorationMaxRadiusChunks = 6;
 inline constexpr int ResourceExplorationDrySearchRadiusCells = 8;
 
+// Ordinary exploration remains deliberately local. Critical survival may need
+// to escape a fully explored/depleted settlement envelope after many simulated
+// months, so derive a wider radius from the amount of world already materialized.
+inline constexpr int ResourceExplorationCriticalMinimumRadiusChunks = 12;
+
+inline int criticalResourceExplorationRadiusChunks(const World& world)
+{
+    const double generated=static_cast<double>(
+        std::max<std::size_t>(1,world.generatedNaturalChunks.size()));
+    // If a dense square around the resident were fully materialized, roughly
+    // (2r+1)^2 chunks would exist. Search a few rings beyond that theoretical
+    // dense radius so a finite explored world keeps an escape frontier.
+    const int denseRadius=static_cast<int>(std::ceil(
+        (std::sqrt(generated+1.0)-1.0)*0.5));
+    return std::max(
+        ResourceExplorationCriticalMinimumRadiusChunks,
+        denseRadius+6);
+}
+
 struct ResourceExplorationOpportunity {
     bool available = false;
     MaterialKind material = MaterialKind::Unknown;
@@ -112,7 +131,8 @@ inline ResourceExplorationOpportunity chooseResourceExplorationOpportunity(
     const World& world,
     CharacterId actor,
     MaterialKind material,
-    GridPos authoritativePosition)
+    GridPos authoritativePosition,
+    int maxRadiusChunks=ResourceExplorationMaxRadiusChunks)
 {
     ResourceExplorationOpportunity best;
     if(actor == 0 || !validNaturalResourceMaterial(material)) return best;
@@ -123,7 +143,8 @@ inline ResourceExplorationOpportunity chooseResourceExplorationOpportunity(
     // observable terrain quality plus a stable actor/material preference. Do
     // not call deriveGeneratedNaturalChunk here: resources stay unknown until
     // arrival materializes the chunk.
-    for(int radius = 1; radius <= ResourceExplorationMaxRadiusChunks; ++radius){
+    const int radiusLimit=std::max(1,maxRadiusChunks);
+    for(int radius = 1; radius <= radiusLimit; ++radius){
         bool foundAtRadius = false;
         double bestScore = -std::numeric_limits<double>::infinity();
 
