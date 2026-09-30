@@ -231,6 +231,88 @@ private:
     std::vector<ItemStack> stacks_;
 };
 
+inline int simpleContainerCount(const Inventory& inventory)
+{
+    return inventory.count(
+        ItemKind::SimpleContainer,
+        MaterialKind::Unknown,
+        true);
+}
+
+inline int rawWaterUnitCount(const Inventory& inventory)
+{
+    return inventory.count(
+        ItemKind::RawMaterial,
+        MaterialKind::Water);
+}
+
+inline int portableWaterCount(const Inventory& inventory)
+{
+    // Each Water unit represents one filled SimpleContainer. Pairing is
+    // inferred from counts so existing snapshot/item enums remain stable.
+    return std::min(
+        rawWaterUnitCount(inventory),
+        simpleContainerCount(inventory));
+}
+
+inline int emptySimpleContainerCount(const Inventory& inventory)
+{
+    return std::max(
+        0,
+        simpleContainerCount(inventory)-rawWaterUnitCount(inventory));
+}
+
+inline bool consumePortableWater(Inventory& inventory,int quantity=1)
+{
+    if(quantity<=0) return true;
+    if(portableWaterCount(inventory)<quantity) return false;
+    // The container remains in inventory and becomes empty.
+    return inventory.remove(
+        ItemKind::RawMaterial,
+        MaterialKind::Water,
+        quantity);
+}
+
+inline bool transferPortableWater(
+    Inventory& source,
+    Inventory& target,
+    int quantity)
+{
+    if(quantity<=0) return true;
+    if(portableWaterCount(source)<quantity) return false;
+    if(source.count(
+            ItemKind::SimpleContainer,
+            MaterialKind::Unknown,
+            true)<quantity) return false;
+
+    // Preflight both stacks before mutating either inventory. Water and its
+    // physical container always move together.
+    if(!source.transferTo(
+            target,
+            ItemKind::SimpleContainer,
+            MaterialKind::Unknown,
+            quantity,
+            true)){
+        return false;
+    }
+    if(!source.transferTo(
+            target,
+            ItemKind::RawMaterial,
+            MaterialKind::Water,
+            quantity)){
+        // This should be unreachable after the preflight above. Roll the
+        // container back defensively to preserve atomic water authority.
+        target.transferTo(
+            source,
+            ItemKind::SimpleContainer,
+            MaterialKind::Unknown,
+            quantity,
+            true);
+        return false;
+    }
+    return true;
+}
+
 struct ResourceNode {
     ResourceNodeId id=0;
     MaterialKind material=MaterialKind::Unknown;
@@ -710,7 +792,38 @@ inline CivilizationEvent gatherResource(
     event.material=node.material;
     event.item=ItemKind::RawMaterial;
     const double efficiency=0.75+0.5*clampCivilization01(individual.gatheringSkill);
-    event.quantity=node.harvest(requested,individual.inventory,efficiency);
+
+    if(node.material==MaterialKind::Water){
+        const int emptyContainers=emptySimpleContainerCount(individual.inventory);
+        if(requested<=0 || node.quantity<=0 || emptyContainers<=0) return event;
+
+        const int skillCapacity=std::max(
+            1,
+            static_cast<int>(
+                static_cast<double>(requested)*std::max(0.1,efficiency)));
+        const int taken=std::min({
+            node.quantity,
+            skillCapacity,
+            emptyContainers
+        });
+        if(taken<=0) return event;
+
+        node.quantity-=taken;
+        individual.inventory.add({
+            ItemKind::RawMaterial,
+            MaterialKind::Water,
+            taken,
+            0.5,
+            1.0
+        });
+        event.quantity=taken;
+        return event;
+    }
+
+    event.quantity=node.harvest(
+        requested,
+        individual.inventory,
+        efficiency);
     return event;
 }
 
@@ -727,7 +840,19 @@ inline CivilizationEvent storeItems(
     event.actor=individual.character;
     event.item=kind;
     event.material=material;
-    if(individual.inventory.transferTo(storage.inventory,kind,material,quantity,anyMaterial)) event.quantity=quantity;
+    const bool moved=
+        kind==ItemKind::RawMaterial && material==MaterialKind::Water
+            ? transferPortableWater(
+                individual.inventory,
+                storage.inventory,
+                quantity)
+            : individual.inventory.transferTo(
+                storage.inventory,
+                kind,
+                material,
+                quantity,
+                anyMaterial);
+    if(moved) event.quantity=quantity;
     return event;
 }
 
@@ -744,8 +869,19 @@ inline CivilizationEvent retrieveItems(
     event.actor=individual.character;
     event.item=kind;
     event.material=material;
-    if(storage.inventory.transferTo(
-        individual.inventory,kind,material,quantity,anyMaterial)){
+    const bool moved=
+        kind==ItemKind::RawMaterial && material==MaterialKind::Water
+            ? transferPortableWater(
+                storage.inventory,
+                individual.inventory,
+                quantity)
+            : storage.inventory.transferTo(
+                individual.inventory,
+                kind,
+                material,
+                quantity,
+                anyMaterial);
+    if(moved){
         event.quantity=quantity;
     }
     return event;

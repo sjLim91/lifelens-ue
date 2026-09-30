@@ -331,6 +331,7 @@ export interface ResidentPresentationDirective {
   objectId?: string;
   objectKind?: string;
   emergencyFallback?: boolean;
+  directNaturalWaterSource?: boolean;
   designatedSanitationSite?: boolean;
   sanitationSiteId?: string;
   contextActionToken?: string;

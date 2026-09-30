@@ -28,12 +28,30 @@ inline bool physicalProvisionAvailableFor(const Character& c,Goal g) {
                 ItemKind::RawMaterial,MaterialKind::PlantFood)>0;
         case Goal::Drink:
         case Goal::Wash:
-            return c.civilization.inventory.count(
-                ItemKind::RawMaterial,MaterialKind::Water)>0;
+            return portableWaterCount(c.civilization.inventory)>0;
         default:
             return true;
     }
 }
+inline bool liveNaturalWaterSourceAvailable(const World& world)
+{
+    for(const ResourceNode& node:world.resourceNodes){
+        if(node.id!=0
+           && node.material==MaterialKind::Water
+           && node.quantity>0){
+            return true;
+        }
+    }
+    return false;
+}
+
+inline bool canUseNaturalWaterDirectly(const World& world,const Character& c,Goal g)
+{
+    if(g!=Goal::Drink && g!=Goal::Wash) return false;
+    if(portableWaterCount(c.civilization.inventory)>0) return false;
+    return liveNaturalWaterSourceAvailable(world);
+}
+
 inline bool emergencyAffordanceAvailableFor(const Character& c,Goal g) {
     switch(g){
         case Goal::Sleep:
@@ -49,10 +67,16 @@ inline bool emergencyAffordanceAvailableFor(const Character& c,Goal g) {
     }
 }
 inline bool actionAvailableFor(const World& w,const Character& c,Goal g) {
-    // Presentation affordances are not resource generators. Eat/Drink require
-    // a real carried provision, and primitive washing requires carried Water.
-    if(!physicalProvisionAvailableFor(c,g)) return false;
-    return objectAvailableFor(w,g,c.id) || emergencyAffordanceAvailableFor(c,g);
+    // Food still requires a carried provision. Water goals can either consume
+    // a real filled SimpleContainer or travel to a real natural freshwater
+    // source and use it directly.
+    if(!physicalProvisionAvailableFor(c,g)
+       && !canUseNaturalWaterDirectly(w,c,g)){
+        return false;
+    }
+    return objectAvailableFor(w,g,c.id)
+        || emergencyAffordanceAvailableFor(c,g)
+        || canUseNaturalWaterDirectly(w,c,g);
 }
 inline double needForGoal(const Character& c, Goal g) {
     switch(g){case Goal::Eat:return c.needs.hunger;case Goal::Drink:return c.needs.thirst;case Goal::Sleep:return c.needs.sleep;case Goal::UseToilet:return c.needs.bladder;case Goal::Wash:return c.needs.hygiene;default:return 0.0;}

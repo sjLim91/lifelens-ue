@@ -742,6 +742,7 @@ std::string WebClientBridge::residentsJson() const
         out << "\"objectId\":\"" << presentation.objectId << "\",";
         out << "\"objectKind\":\"" << objectKindName(presentation.objectKind) << "\",";
         out << "\"emergencyFallback\":" << (presentation.emergencyFallback ? "true" : "false") << ",";
+        out << "\"directNaturalWaterSource\":" << (presentation.directNaturalWaterSource ? "true" : "false") << ",";
         out << "\"designatedSanitationSite\":" << (presentation.designatedSanitationSite ? "true" : "false") << ",";
         out << "\"sanitationSiteId\":\"" << presentation.sanitationSiteId << "\",";
         out << "\"contextActionToken\":\"" << presentation.contextActionToken << "\",";

@@ -19,6 +19,65 @@ Character* findFamilyCharacter(World& world,CharacterId id)
     return nullptr;
 }
 
+bool nearestNaturalWaterAccess(
+    const World& world,
+    GridPos from,
+    GridPos& outAccess)
+{
+    bool found=false;
+    int bestDistance=std::numeric_limits<int>::max();
+    ResourceNodeId bestId=0;
+
+    for(const ResourceNode& node:world.resourceNodes){
+        if(node.id==0
+           || node.material!=MaterialKind::Water
+           || node.quantity<=0){
+            continue;
+        }
+
+        GridPos access{};
+        if(!resolveCivilizationResourceAccessGridPosition(
+                world,node.id,access)){
+            continue;
+        }
+
+        const int distance=manhattan(from,access);
+        if(!found
+           || distance<bestDistance
+           || (distance==bestDistance && node.id<bestId)){
+            found=true;
+            bestDistance=distance;
+            bestId=node.id;
+            outAccess=access;
+        }
+    }
+    return found;
+}
+
+ResourceNode* naturalWaterNodeAtAccess(
+    World& world,
+    GridPos access)
+{
+    ResourceNode* best=nullptr;
+    for(ResourceNode& node:world.resourceNodes){
+        if(node.id==0
+           || node.material!=MaterialKind::Water
+           || node.quantity<=0){
+            continue;
+        }
+
+        GridPos candidate{};
+        if(!resolveCivilizationResourceAccessGridPosition(
+                world,node.id,candidate)
+           || !sameGridPos(candidate,access)){
+            continue;
+        }
+
+        if(best==nullptr || node.id<best->id) best=&node;
+    }
+    return best;
+}
+
 double pastRelationshipPenalty(const RomanceBook& romances,CharacterId id)
 {
     int ended=0;
@@ -358,18 +417,31 @@ ResidentPresentationObservation Simulation::observeResidentPresentation(Characte
         if(current==nullptr) return dto;
 
         dto.durationTicks=std::max(0,current->remainingTicks);
+        dto.directNaturalWaterSource=
+            (r.goal==Goal::Drink || r.goal==Goal::Wash)
+            && r.navigationHasTarget
+            && portableWaterCount(character->civilization.inventory)<=0;
         if(current->type==ActionType::MoveTo){
             dto.phase=PresentationActionPhase::Moving;
         }else if(current->type==ActionType::Use
               || current->type==ActionType::EmergencyUse){
             dto.phase=PresentationActionPhase::Interacting;
             if(current->type==ActionType::EmergencyUse
-               && r.navigationHasTarget
-               && !r.navigationArrived){
-                dto.phase=PresentationActionPhase::Moving;
+               && r.navigationHasTarget){
                 dto.hasTargetGrid=true;
                 dto.targetGrid=r.navigationTarget;
+                if(!r.navigationArrived){
+                    dto.phase=PresentationActionPhase::Moving;
+                }
             }
+        }else if(current->type==ActionType::Idle
+              && dto.directNaturalWaterSource
+              && r.navigationHasTarget){
+            dto.hasTargetGrid=true;
+            dto.targetGrid=r.navigationTarget;
+            dto.phase=r.navigationArrived
+                ? PresentationActionPhase::Interacting
+                : PresentationActionPhase::Moving;
         }
 
         if(current->objectId!=0){
@@ -869,6 +941,19 @@ void Simulation::beginPlan(Character& c,Runtime& r){
     r.goal=chosen; r.plan=buildPlan(world_,c,chosen,r.pos); r.actionIndex=0; r.announced=false;
     if(r.plan.empty()){ failPlan(c,r); return; }
 
+    if((chosen==Goal::Drink || chosen==Goal::Wash)
+       && portableWaterCount(c.civilization.inventory)<=0){
+        GridPos waterAccess{};
+        if(!nearestNaturalWaterAccess(world_,r.pos,waterAccess)){
+            failPlan(c,r);
+            return;
+        }
+        r.navigationTarget=waterAccess;
+        r.navigationArrivalRadius=0;
+        r.navigationHasTarget=true;
+        r.navigationArrived=sameGridPos(r.pos,waterAccess);
+    }
+
     // Settlement bedding is a real destination in the autonomous/headless
     // runtime too. Walking to it is not sleep time; only minutes after arrival
     // reduce fatigue. If no viable bedding exists, outdoor sleep remains a
@@ -944,11 +1029,16 @@ void Simulation::advanceAction(Character& c,Runtime& r){
             }
             if((r.goal==Goal::Eat || r.goal==Goal::Drink || r.goal==Goal::Wash)
                && a.remainingTicks==std::max(1,obj->useDurationTicks)){
-                const MaterialKind provision=r.goal==Goal::Eat
-                    ? MaterialKind::PlantFood
-                    : MaterialKind::Water;
-                if(!c.civilization.inventory.remove(
-                    ItemKind::RawMaterial,provision,1)){
+                if(r.goal==Goal::Eat){
+                    if(!c.civilization.inventory.remove(
+                            ItemKind::RawMaterial,
+                            MaterialKind::PlantFood,
+                            1)){
+                        failPlan(c,r);
+                        return;
+                    }
+                }else if(!consumePortableWater(
+                    c.civilization.inventory,1)){
                     failPlan(c,r);
                     return;
                 }
@@ -963,7 +1053,7 @@ void Simulation::advanceAction(Character& c,Runtime& r){
             applyNeedResolutionEmotion(c,before,r.goal);
             }
             if(--a.remainingTicks<=0){ ++r.actionIndex; r.announced=false; } break;
-        case ActionType::EmergencyUse:
+        case ActionType::EmergencyUse: {
             if(r.goal==Goal::Sleep && sleepInterruptedByUrgentNeed(c)){
                 emit(c.name+" woke from Sleep for urgent physical need");
                 clearNavigation(r);
@@ -973,13 +1063,43 @@ void Simulation::advanceAction(Character& c,Runtime& r){
                 r.consecutiveFailures=0;
                 break;
             }
+            const bool directNaturalWater=
+                (r.goal==Goal::Drink || r.goal==Goal::Wash)
+                && portableWaterCount(c.civilization.inventory)<=0;
+
+            if(directNaturalWater){
+                if(!r.navigationHasTarget){
+                    failPlan(c,r);
+                    return;
+                }
+                if(!advanceNavigation(r,r.navigationTarget,0)){
+                    if(r.navigationRouteFailed){
+                        failPlan(c,r);
+                    }
+                    return;
+                }
+            }
+
             if((r.goal==Goal::Eat || r.goal==Goal::Drink || r.goal==Goal::Wash)
                && a.remainingTicks==emergencyUseDurationTicks(r.goal)){
-                const MaterialKind provision=r.goal==Goal::Eat
-                    ? MaterialKind::PlantFood
-                    : MaterialKind::Water;
-                if(!c.civilization.inventory.remove(
-                    ItemKind::RawMaterial,provision,1)){
+                if(r.goal==Goal::Eat){
+                    if(!c.civilization.inventory.remove(
+                            ItemKind::RawMaterial,
+                            MaterialKind::PlantFood,
+                            1)){
+                        failPlan(c,r);
+                        return;
+                    }
+                }else if(directNaturalWater){
+                    ResourceNode* water=naturalWaterNodeAtAccess(
+                        world_,r.navigationTarget);
+                    if(water==nullptr || water->quantity<=0){
+                        failPlan(c,r);
+                        return;
+                    }
+                    --water->quantity;
+                }else if(!consumePortableWater(
+                    c.civilization.inventory,1)){
                     failPlan(c,r);
                     return;
                 }
@@ -1069,6 +1189,7 @@ void Simulation::advanceAction(Character& c,Runtime& r){
                 ++r.actionIndex; r.announced=false; r.consecutiveFailures=0;
             }
             break;
+        }
         case ActionType::Release:
             if(obj && obj->reservedBy && *obj->reservedBy==c.id) obj->reservedBy.reset();
             emit(c.name+" completed "+std::string(goalName(r.goal)));
@@ -1189,8 +1310,8 @@ void Simulation::advanceDependentCare()
                     caregiver->civilization.inventory.count(
                         ItemKind::RawMaterial,MaterialKind::PlantFood)>0;
                 context.waterAvailable=
-                    caregiver->civilization.inventory.count(
-                        ItemKind::RawMaterial,MaterialKind::Water)>0;
+                    portableWaterCount(
+                        caregiver->civilization.inventory)>0;
 
                 ParentingDecision decision=chooseParentingAction(
                     *caregiver,child,caregiverToChild,context);

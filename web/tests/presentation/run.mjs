@@ -48,7 +48,12 @@ const {
   buildFlowWaterSurfaceGeometry,
   createVisibleWaterFootprintTester,
 } = source('render/water-geometry.ts');
-const { WORLD_GRID_CONTRACT: grid } = source('runtime/lifelens-contract.ts');
+const {
+  WORLD_GRID_CONTRACT: grid,
+  SIMULATION_BASELINE_SPEED_MULTIPLIER,
+  SIMULATION_TIME_CONTRACT,
+  residentPresentationMotionTimeScale,
+} = source('runtime/lifelens-contract.ts');
 const size = grid.worldUnitsPerChunk, scale = grid.elevationScale;
 const chunk = (
   x,
@@ -91,6 +96,19 @@ function project(scene, point) {
   scene.camera.updateMatrixWorld(true);
   return point.clone().project(scene.camera);
 }
+
+test('resident motion clock follows the single global simulation-speed baseline', () => {
+  const baseline = SIMULATION_BASELINE_SPEED_MULTIPLIER;
+  assert.equal(baseline, 4);
+  assert.equal(
+    SIMULATION_TIME_CONTRACT.realMinutesPerSimulationDayAt1x,
+    8 / baseline,
+  );
+  assert.equal(residentPresentationMotionTimeScale(0), 0);
+  assert.equal(residentPresentationMotionTimeScale(1), baseline);
+  assert.equal(residentPresentationMotionTimeScale(4), baseline * 2);
+  assert.equal(residentPresentationMotionTimeScale(16), baseline * 2);
+});
 
 test('close/low camera stays above elevated ground and frames its actual height', () => withScene(scene => {
   for (const elevation of [0.2, 0.5, 0.9]) {

@@ -3,6 +3,13 @@ import {
   CORE_WORLD_CHUNK_SPAN_GRID_CELLS,
 } from './generated-core-contract';
 
+// Single global baseline for observation-time rebasing. Change this one value
+// to move the canonical 1× pace; clock timing and resident motion both derive
+// from it.
+export const SIMULATION_BASELINE_SPEED_MULTIPLIER = 4 as const;
+
+const REFERENCE_REAL_MINUTES_PER_SIMULATION_DAY_AT_1X = 8;
+
 export const SIMULATION_SPEED_MODES = [
   { speed: 0, label: '⏸', title: '일시정지' },
   { speed: 1, label: '1×', title: '관찰' },
@@ -16,8 +23,9 @@ export type SimulationSpeed =
 export const SIMULATION_TIME_CONTRACT = {
   simulationMinutesPerDay: CORE_SIMULATION_MINUTES_PER_DAY,
   // UX baseline: the former 4× pace is now canonical 1×.
-  // 1 simulation day therefore takes 2 real minutes at 1× instead of 8.
-  realMinutesPerSimulationDayAt1x: 2,
+  realMinutesPerSimulationDayAt1x:
+    REFERENCE_REAL_MINUTES_PER_SIMULATION_DAY_AT_1X
+    / SIMULATION_BASELINE_SPEED_MULTIPLIER,
   defaultSpeed: SIMULATION_SPEED_MODES[1].speed,
   tickIntervalMs: 125,
   refreshIntervalMs: 500,
@@ -88,8 +96,23 @@ export const RESIDENT_PRESENTATION_CONTRACT = {
     RESIDENT_VISUAL_SPEED_WORLD_UNITS_PER_SECOND_AT_1X,
   walkMinTimeScale: 0.72,
   walkMaxTimeScale: 1.55,
+  // Presentation motion derives from the exact same global baseline as time.
+  motionTimeScaleAt1x: SIMULATION_BASELINE_SPEED_MULTIPLIER,
+  maxMotionTimeScale: SIMULATION_BASELINE_SPEED_MULTIPLIER * 2,
   modelForwardYawOffsetRadians: 0,
 } as const;
+
+export function residentPresentationMotionTimeScale(
+  speed: number,
+): number {
+  const canonicalSpeed = normalizeSimulationSpeed(speed);
+  if (canonicalSpeed <= 0) return 0;
+  return Math.min(
+    RESIDENT_PRESENTATION_CONTRACT.maxMotionTimeScale,
+    RESIDENT_PRESENTATION_CONTRACT.motionTimeScaleAt1x
+      * canonicalSpeed,
+  );
+}
 
 export function simulationTimeHint(): string {
   return (

@@ -98,6 +98,92 @@ testCase('physical movement uses only authoritative goal and phase', () => {
   assert.equal(cue.text, '물 마시기 · 이동 중');
 });
 
+testCase('washing visibly states that carried water is being used', () => {
+  const moving = residentActionCue(
+    resident({
+      presentation: {
+        active: true,
+        kind: 'Physical',
+        phase: 'Moving',
+        physicalGoal: 'Wash',
+      },
+    }),
+    residents,
+  );
+  assert.equal(moving?.text, '소지한 물로 씻으러 이동 중');
+
+  const washing = residentActionCue(
+    resident({
+      presentation: {
+        active: true,
+        kind: 'Physical',
+        phase: 'Interacting',
+        physicalGoal: 'Wash',
+      },
+    }),
+    residents,
+  );
+  assert.equal(washing?.text, '소지한 물로 씻는 중');
+});
+
+testCase('direct natural-water use names the water source in motion and interaction', () => {
+  const washMoving = residentActionCue(
+    resident({
+      presentation: {
+        active: true,
+        kind: 'Physical',
+        phase: 'Moving',
+        physicalGoal: 'Wash',
+        directNaturalWaterSource: true,
+      },
+    }),
+    residents,
+  );
+  assert.equal(washMoving?.text, '물가로 씻으러 이동 중');
+
+  const washUsing = residentActionCue(
+    resident({
+      presentation: {
+        active: true,
+        kind: 'Physical',
+        phase: 'Interacting',
+        physicalGoal: 'Wash',
+        directNaturalWaterSource: true,
+      },
+    }),
+    residents,
+  );
+  assert.equal(washUsing?.text, '물가에서 씻는 중');
+
+  const drinkMoving = residentActionCue(
+    resident({
+      presentation: {
+        active: true,
+        kind: 'Physical',
+        phase: 'Moving',
+        physicalGoal: 'Drink',
+        directNaturalWaterSource: true,
+      },
+    }),
+    residents,
+  );
+  assert.equal(drinkMoving?.text, '물가로 마시러 이동 중');
+
+  const drinkUsing = residentActionCue(
+    resident({
+      presentation: {
+        active: true,
+        kind: 'Physical',
+        phase: 'Interacting',
+        physicalGoal: 'Drink',
+        directNaturalWaterSource: true,
+      },
+    }),
+    residents,
+  );
+  assert.equal(drinkUsing?.text, '물가에서 마시는 중');
+});
+
 testCase('known resident target is named without inventing a relationship', () => {
   const cue = residentActionCue(
     resident({

@@ -199,7 +199,9 @@ inline int storageCountForMaterial(const World& world,MaterialKind material)
 {
     int total=0;
     for(const auto& storage:world.storageSites){
-        total+=storage.inventory.count(ItemKind::RawMaterial,material);
+        total+=material==MaterialKind::Water
+            ? portableWaterCount(storage.inventory)
+            : storage.inventory.count(ItemKind::RawMaterial,material);
     }
     return total;
 }
@@ -237,6 +239,25 @@ inline MaterialKind experimentMaterial(ExperimentKind kind)
     }
 }
 
+inline double provisionNeedForMaterial(
+    const Character& self,
+    MaterialKind material)
+{
+    switch(material){
+        case MaterialKind::Water:
+            // Water serves both thirst and washing. A resident who is very
+            // dirty but not thirsty should still seek/retrieve Water instead
+            // of waiting until thirst independently creates demand.
+            return clampCivilization01(std::max(
+                self.needs.thirst,
+                self.needs.hygiene));
+        case MaterialKind::PlantFood:
+            return clampCivilization01(self.needs.hunger);
+        default:
+            return 0.0;
+    }
+}
+
 inline double materialProgressDemand(const Character& self,MaterialKind material)
 {
     const KnowledgeState& knowledge=self.civilization.knowledge;
@@ -256,9 +277,8 @@ inline double materialProgressDemand(const Character& self,MaterialKind material
         case MaterialKind::Clay:
             return knowledge.knowsAtLeast(TechniqueId::SimpleContainer,KnowledgeLevel::Reproducible) ? 0.42 : 0.80;
         case MaterialKind::PlantFood:
-            return 0.25+0.55*clampCivilization01(self.needs.hunger);
         case MaterialKind::Water:
-            return 0.25+0.55*clampCivilization01(self.needs.thirst);
+            return 0.25+0.55*provisionNeedForMaterial(self,material);
         case MaterialKind::Stone:
             return knowledge.knowsAtLeast(TechniqueId::StoneHammer,KnowledgeLevel::Reproducible) ? 0.40 : 0.72;
         case MaterialKind::CopperOre:
@@ -330,7 +350,9 @@ inline double civilizationResourceExplorationPressure(
 {
     if(!validNaturalResourceMaterial(material)) return 0.0;
 
-    const int held=self.civilization.inventory.count(ItemKind::RawMaterial,material);
+    const int held=material==MaterialKind::Water
+        ? portableWaterCount(self.civilization.inventory)
+        : self.civilization.inventory.count(ItemKind::RawMaterial,material);
     const int stored=storageCountForMaterial(world,material);
     const int storageMissing=primitiveStorageMissingMaterial(world,material);
     const int fireMissing=primitiveFirePitMissingMaterial(world,material);
@@ -402,12 +424,7 @@ inline double civilizationResourceExplorationPressure(
     const double maintenanceDemand=repairMissing>0
         ? clampCivilization01(0.42+0.18*static_cast<double>(repairMissing))
         : 0.0;
-    const double survivalPressure=
-        material==MaterialKind::Water
-            ? clampCivilization01(self.needs.thirst)
-            : (material==MaterialKind::PlantFood
-                ? clampCivilization01(self.needs.hunger)
-                : 0.0);
+    const double survivalPressure=provisionNeedForMaterial(self,material);
 
     return clampCivilization01(
         0.22*progressDemand
@@ -473,7 +490,13 @@ inline CivilizationUtilityDecision bestGatherDecisionAtPosition(
     CivilizationUtilityDecision best;
     for(const auto& node:world.resourceNodes){
         if(node.id==0 || node.quantity<=0 || node.material==MaterialKind::Unknown) continue;
-        const int held=self.civilization.inventory.count(ItemKind::RawMaterial,node.material);
+        const int held=node.material==MaterialKind::Water
+            ? portableWaterCount(self.civilization.inventory)
+            : self.civilization.inventory.count(ItemKind::RawMaterial,node.material);
+        if(node.material==MaterialKind::Water
+           && emptySimpleContainerCount(self.civilization.inventory)<=0){
+            continue;
+        }
         const int stored=storageCountForMaterial(world,node.material);
         const int storageMissing=primitiveStorageMissingMaterial(world,node.material);
         const int fireMissing=primitiveFirePitMissingMaterial(world,node.material);
@@ -1231,8 +1254,7 @@ inline CivilizationUtilityDecision bestCultivationDecision(
             ItemKind::DiggingStick,MaterialKind::Unknown,true)>0;
     const int seedUnits=self.civilization.inventory.count(
         ItemKind::RawMaterial,MaterialKind::PlantFood);
-    const int waterUnits=self.civilization.inventory.count(
-        ItemKind::RawMaterial,MaterialKind::Water);
+    const int waterUnits=portableWaterCount(self.civilization.inventory);
     const double preference=civilizationPreference(
         world.seed,self.id,690ULL+static_cast<std::uint64_t>(TechniqueId::Cultivation));
 
@@ -1518,8 +1540,10 @@ inline CivilizationUtilityDecision bestRetrieveDecisionAtPosition(
     // primitive itself is generic, but autonomous retrieval only pulls Water /
     // PlantFood until storage policy for tools/material projects is explicit.
     const std::array<std::pair<MaterialKind,double>,2> provisions={{
-        {MaterialKind::Water,clampCivilization01(self.needs.thirst)},
-        {MaterialKind::PlantFood,clampCivilization01(self.needs.hunger)}
+        {MaterialKind::Water,provisionNeedForMaterial(
+            self,MaterialKind::Water)},
+        {MaterialKind::PlantFood,provisionNeedForMaterial(
+            self,MaterialKind::PlantFood)}
     }};
 
     for(const StorageSite& storage:world.storageSites){
@@ -1534,12 +1558,16 @@ inline CivilizationUtilityDecision bestRetrieveDecisionAtPosition(
                     world,authoritativePosition,material);
             if(need<0.35 && !cultivationNeed) continue;
 
-            const int held=self.civilization.inventory.count(
-                ItemKind::RawMaterial,material);
+            const int held=material==MaterialKind::Water
+                ? portableWaterCount(self.civilization.inventory)
+                : self.civilization.inventory.count(
+                    ItemKind::RawMaterial,material);
             if(held>=2) continue;
 
-            const int stored=storage.inventory.count(
-                ItemKind::RawMaterial,material);
+            const int stored=material==MaterialKind::Water
+                ? portableWaterCount(storage.inventory)
+                : storage.inventory.count(
+                    ItemKind::RawMaterial,material);
             if(stored<=0) continue;
 
             const int requested=std::min(stored,std::max(1,2-held));
@@ -1591,8 +1619,13 @@ inline CivilizationUtilityDecision bestStoreDecision(const World& world,const Ch
         const bool provision=stack.kind==ItemKind::RawMaterial
             && (stack.material==MaterialKind::Water
                 || stack.material==MaterialKind::PlantFood);
+        const int effectiveQuantity=
+            stack.kind==ItemKind::RawMaterial
+            && stack.material==MaterialKind::Water
+                ? portableWaterCount(self.civilization.inventory)
+                : stack.quantity;
         const int keep=provision ? 2 : (stack.kind==ItemKind::RawMaterial ? 4 : 1);
-        const int surplus=stack.quantity-keep;
+        const int surplus=effectiveQuantity-keep;
         if(surplus<=0) continue;
 
         // Ordinary material stockpiling still waits for meaningful carrying
@@ -1600,7 +1633,11 @@ inline CivilizationUtilityDecision bestStoreDecision(const World& world,const Ch
         // may bank surplus Water/Food even with a light total inventory.
         if(total<7 && !provision) continue;
 
-        const int stored=targetStorage.inventory.count(stack.kind,stack.material);
+        const int stored=
+            stack.kind==ItemKind::RawMaterial
+            && stack.material==MaterialKind::Water
+                ? portableWaterCount(targetStorage.inventory)
+                : targetStorage.inventory.count(stack.kind,stack.material);
         const int reserveTarget=stack.material==MaterialKind::Water
             ? 8
             : (stack.material==MaterialKind::PlantFood ? 8 : 0);

@@ -40,6 +40,31 @@ for token in (
         f"missing web resident smoothing contract: {token}"
     )
 
+# Simulation-time rebasing must affect visible motion too. The former 4x
+# pace is the new 1x, while higher visual animation playback is capped so
+# fast-forward remains observable instead of becoming an unreadable strobe.
+for token in (
+    "SIMULATION_BASELINE_SPEED_MULTIPLIER = 4 as const",
+    "/ SIMULATION_BASELINE_SPEED_MULTIPLIER",
+    "motionTimeScaleAt1x: SIMULATION_BASELINE_SPEED_MULTIPLIER",
+    "maxMotionTimeScale: SIMULATION_BASELINE_SPEED_MULTIPLIER * 2",
+    "residentPresentationMotionTimeScale",
+):
+    assert token in contract, f"missing rebased resident motion contract: {token}"
+
+for token in (
+    "residentPresentationMotionTimeScale(this.simulationSpeed)",
+    "const motionDt = dt * motionTimeScale",
+    "actor.mixer.update(motionDt)",
+    "speedResponsivenessPerSecond",
+    "turnResponsivenessPerSecond",
+):
+    assert token in resident, f"resident motion did not adopt simulation pace: {token}"
+
+assert "actor.mixer.update(dt);" not in resident, (
+    "resident animation mixer must not remain pinned to wall-clock time"
+)
+
 # Heading and animation transitions preserve continuity and gait rate follows
 # the presentation velocity instead of playing a fixed-speed walk on every hop.
 for token in (

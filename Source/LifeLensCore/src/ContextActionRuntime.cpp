@@ -436,8 +436,8 @@ bool Simulation::completeContextAction(
             ParentingContext context=pending.parentingContext;
             context.foodAvailable=actor.civilization.inventory.count(
                 ItemKind::RawMaterial,MaterialKind::PlantFood)>0;
-            context.waterAvailable=actor.civilization.inventory.count(
-                ItemKind::RawMaterial,MaterialKind::Water)>0;
+            context.waterAvailable=
+                portableWaterCount(actor.civilization.inventory)>0;
             const bool consumeFood=pending.parentingAction==ParentingAction::Feed
                 && context.foodAvailable && child->needs.hunger>0.05;
             const bool consumeWater=pending.parentingAction==ParentingAction::Feed
@@ -468,8 +468,8 @@ bool Simulation::completeContextAction(
                     ItemKind::RawMaterial,MaterialKind::PlantFood,1);
             }
             if(consumeWater){
-                actor.civilization.inventory.remove(
-                    ItemKind::RawMaterial,MaterialKind::Water,1);
+                consumePortableWater(
+                    actor.civilization.inventory,1);
             }
 
             runtime.pos=resolvedPosition;
