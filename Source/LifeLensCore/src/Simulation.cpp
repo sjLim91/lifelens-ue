@@ -861,6 +861,27 @@ bool Simulation::preemptForCriticalSurvival(
     // preemption and again immediately in beginPlan().
     if(!r.pendingContext.active() && r.plan.empty()) return false;
 
+    // A currently executing self-care action can itself be the strongest
+    // survival pressure. Do not cancel exhausted sleep, urgent toilet use or
+    // washing merely because hunger/thirst also crossed the critical band.
+    // Once the active Need falls below the strongest critical provision Need,
+    // the normal preemption below takes over on the next minute.
+    if(!r.pendingContext.active()
+       && !r.plan.empty()
+       && (
+           r.goal==Goal::Sleep
+           || r.goal==Goal::UseToilet
+           || r.goal==Goal::Wash
+       )){
+        const double activeSelfCareNeed=needForGoal(character,r.goal);
+        const double strongestCriticalProvisionNeed=std::max(
+            hungerCritical ? character.needs.hunger : -1.0,
+            thirstCritical ? character.needs.thirst : -1.0);
+        if(activeSelfCareNeed+1e-12>=strongestCriticalProvisionNeed){
+            return false;
+        }
+    }
+
     // If this resident is already physically committed to obtaining the
     // provision that currently threatens survival, keep that intent stable
     // instead of recomputing the whole frontier every simulated minute.
