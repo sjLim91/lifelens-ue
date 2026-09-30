@@ -39,16 +39,24 @@ inline constexpr double RestedSleepNeedTarget = 0.12;
 inline constexpr int MinimumSleepSessionMinutes = 30;
 inline constexpr int MaximumSleepSessionMinutes = 10 * 60;
 
-inline constexpr double SleepUrgentNeedWakeThreshold = 0.72;
+inline constexpr double SleepUrgentNeedWakeThreshold = 0.90;
+inline constexpr double SleepNeedDominanceMargin = 0.05;
 
 inline bool sleepInterruptedByUrgentNeed(const Character& character)
 {
-    // Sleep yields as soon as a survival need enters the urgent utility band.
-    // A much higher wake threshold lets long, low-quality outdoor sleep pin
-    // hunger/thirst near the hard clamp before the resident can re-plan.
-    return character.needs.thirst>=SleepUrgentNeedWakeThreshold
-        || character.needs.bladder>=SleepUrgentNeedWakeThreshold
-        || character.needs.hunger>=SleepUrgentNeedWakeThreshold;
+    // Long-run scarcity must not make sleep impossible forever. A competing
+    // survival need wakes the resident only after it is genuinely critical and
+    // materially stronger than the fatigue that is currently being recovered.
+    // This still wakes a rested-enough resident for severe hunger/thirst/bladder
+    // pressure, while allowing an exhausted resident to get real recovery first.
+    const double sleepNeed=character.needs.sleep;
+    const auto dominatesSleep=[&](double competingNeed){
+        return competingNeed>=SleepUrgentNeedWakeThreshold
+            && competingNeed>sleepNeed+SleepNeedDominanceMargin;
+    };
+    return dominatesSleep(character.needs.thirst)
+        || dominatesSleep(character.needs.bladder)
+        || dominatesSleep(character.needs.hunger);
 }
 
 inline int sleepDurationMinutesForNeed(
