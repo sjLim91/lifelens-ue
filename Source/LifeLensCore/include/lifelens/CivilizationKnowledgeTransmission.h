@@ -77,10 +77,13 @@ inline SocialFact makeCivilizationTechniqueFact(
     fact.where="civilization-worksite";
     fact.eventMinute=minute;
     fact.supports=true;
-    fact.importance=eventType==CivilizationEventType::Discovered ? 0.92 : 0.72;
-    fact.confidence=eventType==CivilizationEventType::Discovered ? 0.98 : 0.94;
+    const bool discoveryEvent=
+        eventType==CivilizationEventType::Discovered
+        || eventType==CivilizationEventType::Rediscovered;
+    fact.importance=discoveryEvent ? 0.92 : 0.72;
+    fact.confidence=discoveryEvent ? 0.98 : 0.94;
     fact.emotionValence=0.32;
-    fact.emotionIntensity=eventType==CivilizationEventType::Discovered ? 0.74 : 0.46;
+    fact.emotionIntensity=discoveryEvent ? 0.74 : 0.46;
     return fact;
 }
 
