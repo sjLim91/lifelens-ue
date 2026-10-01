@@ -165,6 +165,25 @@ export const KOREAN_CAPABILITY_LABELS: Record<string, string> = {
   AlloyMetal: '금속 합금',
 };
 
+export const KOREAN_TECHNOLOGY_POPULATION_STATE_LABELS: Record<string, string> = {
+  Unknown: '미발견',
+  Observed: '관찰됨',
+  Reproducible: '재현 가능',
+  Operational: '운용 가능',
+  Diffusing: '확산 중',
+  Common: '보편화',
+  Declining: '쇠퇴 중',
+  Lost: '소실',
+};
+
+export const KOREAN_CIVILIZATION_TRANSFORMATION_LABELS: Record<string, string> = {
+  ResourceBuffering: '자원 비축 체계',
+  ManagedFoodProduction: '관리형 식량 생산',
+  MetallurgicalProduction: '금속 생산 체계',
+  AdvancedTooling: '고급 도구 사용',
+  KnowledgeDiffusion: '지식 확산',
+};
+
 export const KOREAN_TECHNIQUE_LABELS: Record<string, string> = {
   None: '기술 없음',
   SharpFlake: '날카로운 석편 제작',
