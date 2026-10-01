@@ -114,6 +114,11 @@ struct ResidentMetrics {
     std::uint64_t clayGatherBestSamples=0;
     std::uint64_t simpleContainerExperimentBestSamples=0;
     std::uint64_t simpleContainerCraftBestSamples=0;
+    std::uint64_t simpleContainerCivilizationBestSamples=0;
+    std::uint64_t simpleContainerCivilizationBlockedNeedGate=0;
+    std::uint64_t simpleContainerCivilizationUnifiedLoss=0;
+    double simpleContainerCivilizationUtilitySum=0.0;
+    double simpleContainerCompetingUtilitySum=0.0;
     std::uint64_t simpleContainerUnifiedWinnerSamples=0;
 };
 
@@ -565,10 +570,44 @@ void auditContainerProgression(
         ++metric.simpleContainerCraftBestSamples;
     }
 
+    const CivilizationUtilityDecision civilization=
+        chooseDispositionAwareCivilizationDecisionAtPosition(
+            sim.world(),projected,planning.position,&population);
+    const bool containerCivilizationBest=
+        civilization.intent==CivilizationIntent::Experiment
+        && civilization.technique==TechniqueId::SimpleContainer;
+    if(containerCivilizationBest){
+        ++metric.simpleContainerCivilizationBestSamples;
+        metric.simpleContainerCivilizationUtilitySum+=civilization.utility;
+
+        const auto physical=bestPhysicalUtility(sim.world(),projected);
+        const SocialUtilityDecision social=
+            chooseSocialUtilityDecision(
+                sim.world(),projected,sim.relationships());
+        double competing=physical.second;
+        if(social.intent!=SocialIntent::None
+           && social.utility>=0.18
+           && social.utility>physical.second*1.05){
+            competing=social.utility;
+        }
+        metric.simpleContainerCompetingUtilitySum+=competing;
+
+        if(maximumResidentNeed(projected)>=UrgentSurvivalProvisionThreshold){
+            ++metric.simpleContainerCivilizationBlockedNeedGate;
+        }
+    }
+
     const UnifiedUtilityDecision unified=
         chooseUnifiedUtilityDecisionAtPosition(
             sim.world(),projected,sim.relationships(),
             planning.position,0.18,0.14,&population);
+    const bool containerUnified=
+        unified.kind==UnifiedDecisionKind::Civilization
+        && unified.civilization.intent==CivilizationIntent::Experiment
+        && unified.civilization.technique==TechniqueId::SimpleContainer;
+    if(containerCivilizationBest && !containerUnified){
+        ++metric.simpleContainerCivilizationUnifiedLoss;
+    }
     if(unified.kind==UnifiedDecisionKind::Civilization
        && (
             (unified.civilization.intent==CivilizationIntent::Experiment
@@ -1101,6 +1140,19 @@ int main(int argc,char** argv)
                  <<" clayGatherBestSamples="<<m.clayGatherBestSamples
                  <<" simpleContainerExperimentBestSamples="<<m.simpleContainerExperimentBestSamples
                  <<" simpleContainerCraftBestSamples="<<m.simpleContainerCraftBestSamples
+                 <<" simpleContainerCivilizationBestSamples="<<m.simpleContainerCivilizationBestSamples
+                 <<" simpleContainerCivilizationBlockedNeedGate="<<m.simpleContainerCivilizationBlockedNeedGate
+                 <<" simpleContainerCivilizationUnifiedLoss="<<m.simpleContainerCivilizationUnifiedLoss
+                 <<" simpleContainerCivilizationUtilityAvg="
+                 <<(m.simpleContainerCivilizationBestSamples>0
+                    ? m.simpleContainerCivilizationUtilitySum/static_cast<double>(
+                        m.simpleContainerCivilizationBestSamples)
+                    : 0.0)
+                 <<" simpleContainerCompetingUtilityAvg="
+                 <<(m.simpleContainerCivilizationBestSamples>0
+                    ? m.simpleContainerCompetingUtilitySum/static_cast<double>(
+                        m.simpleContainerCivilizationBestSamples)
+                    : 0.0)
                  <<" simpleContainerUnifiedWinnerSamples="<<m.simpleContainerUnifiedWinnerSamples;
         for(std::size_t i=0;i<goalNames.size();++i){
             std::cout<<" "<<goalNames[i]<<"Min="<<m.physicalGoalMinutes[i];
