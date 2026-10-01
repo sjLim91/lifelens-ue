@@ -280,6 +280,7 @@ bool Simulation::completeContextAction(
                 }
             }
 
+            processCivilizationKnowledgeEvent(actor,result.event);
             runtime.civilizationActive=true;
             runtime.civilizationEvent=result.event;
             runtime.civilizationActivityMinute=world_.minute;
@@ -293,10 +294,10 @@ bool Simulation::completeContextAction(
                 ? static_cast<std::uint64_t>(result.sanitationSiteId)
                 : static_cast<std::uint64_t>(targetSite);
             runtime.pos=resolvedPosition;
-            processCivilizationKnowledgeEvent(actor,result.event);
             applyCivilizationOutcomeEmotion(
                 actor,result.success,
-                result.event.type==CivilizationEventType::Discovered);
+                result.event.type==CivilizationEventType::Discovered
+                    || result.event.type==CivilizationEventType::Rediscovered);
 
             std::ostringstream log;
             log<<actor.name<<" -> Civilization "<<civilizationIntentName(decision.intent);
@@ -318,6 +319,9 @@ bool Simulation::completeContextAction(
                     break;
                 case CivilizationEventType::Discovered:
                     log<<" discovered "<<techniqueName(result.event.technique);
+                    break;
+                case CivilizationEventType::Rediscovered:
+                    log<<" rediscovered "<<techniqueName(result.event.technique);
                     break;
                 case CivilizationEventType::Crafted:
                     log<<" crafted "<<techniqueName(result.event.technique);

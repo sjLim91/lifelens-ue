@@ -176,6 +176,29 @@ export const KOREAN_TECHNOLOGY_POPULATION_STATE_LABELS: Record<string, string> =
   Lost: '소실',
 };
 
+export const KOREAN_TECHNOLOGY_ADOPTION_DISPOSITION_LABELS: Record<string, string> = {
+  Unaware: '미인지',
+  Learning: '학습 중',
+  Blocked: '운용 조건 부족',
+  Evaluating: '평가 중',
+  Adopting: '채택 중',
+  Established: '개인 정착',
+  Resistant: '수용 저항',
+};
+
+export const KOREAN_TECHNOLOGY_SOCIAL_ADOPTION_LABELS: Record<string, string> = {
+  Unavailable: '사회 미도달',
+  Learning: '사회 학습 중',
+  Blocked: '운용 기반 부족',
+  Available: '채택 가능',
+  Emerging: '채택 확산 중',
+  Contested: '수용·저항 공존',
+  Established: '사회 정착',
+  Resisted: '사회적 저항',
+  Declining: '채택 쇠퇴',
+  Lost: '기술 소실',
+};
+
 export const KOREAN_CIVILIZATION_TRANSFORMATION_LABELS: Record<string, string> = {
   ResourceBuffering: '자원 비축 체계',
   ManagedFoodProduction: '관리형 식량 생산',

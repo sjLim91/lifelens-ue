@@ -24,7 +24,9 @@ inline CivilizationActivityKind civilizationActivityKindFromEvent(CivilizationEv
         case CivilizationEventType::Retrieved: return CivilizationActivityKind::Retrieve;
         case CivilizationEventType::Explored: return CivilizationActivityKind::Explore;
         case CivilizationEventType::ExperimentFailed:
-        case CivilizationEventType::Discovered: return CivilizationActivityKind::Experiment;
+        case CivilizationEventType::Discovered:
+        case CivilizationEventType::Rediscovered:
+            return CivilizationActivityKind::Experiment;
         case CivilizationEventType::Crafted: return CivilizationActivityKind::Craft;
         default: return CivilizationActivityKind::None;
     }

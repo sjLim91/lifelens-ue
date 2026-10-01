@@ -13,11 +13,15 @@ constexpr int CivilizationKnowledgeWitnessRadiusTiles=2;
 
 void Simulation::processCivilizationKnowledgeEvent(
     Character& actor,
-    const CivilizationEvent& event)
+    CivilizationEvent& event)
 {
     if((event.type!=CivilizationEventType::Discovered &&
+        event.type!=CivilizationEventType::Rediscovered &&
         event.type!=CivilizationEventType::Crafted) ||
        event.technique==TechniqueId::None || actor.id==0) return;
+
+    event.type=classifyCivilizationDiscoveryEvent(
+        socialKnowledge_,world_,actor.id,event.technique,event.type);
 
     const KnowledgeReceipt* origin=registerTechniqueOrigin(
         socialKnowledge_,actor,event.technique,world_.minute,event.type,world_.seed);
@@ -51,7 +55,9 @@ void Simulation::processCivilizationKnowledgeEvent(
             +0.12*observer.personality.sociability
             +0.12*familiarity
             +0.06*trust
-            +(event.type==CivilizationEventType::Discovered ? 0.10 : 0.04)));
+            +((event.type==CivilizationEventType::Discovered
+               || event.type==CivilizationEventType::Rediscovered)
+                ? 0.10 : 0.04)));
         const double witnessRoll=deterministicKnowledgeUnit(
             world_.seed+7919ULL,
             fact->id,actor.id,observer.id,

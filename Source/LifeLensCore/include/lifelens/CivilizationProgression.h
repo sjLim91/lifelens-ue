@@ -70,6 +70,29 @@ enum class TechnologyPopulationState : std::uint8_t {
     Lost
 };
 
+enum class TechnologyAdoptionDisposition : std::uint8_t {
+    Unaware=0,
+    Learning,
+    Blocked,
+    Evaluating,
+    Adopting,
+    Established,
+    Resistant
+};
+
+enum class TechnologySocialAdoptionState : std::uint8_t {
+    Unavailable=0,
+    Learning,
+    Blocked,
+    Available,
+    Emerging,
+    Contested,
+    Established,
+    Resisted,
+    Declining,
+    Lost
+};
+
 enum class CivilizationTransformationId : std::uint16_t {
     None=0,
     ResourceBuffering=1,
@@ -203,6 +226,39 @@ inline const char* innovationPressureDriverName(InnovationPressureDriver driver)
         case InnovationPressureDriver::ResourceScarcity: return "ResourceScarcity";
         case InnovationPressureDriver::None:
         default: return "None";
+    }
+}
+
+inline const char* technologyAdoptionDispositionName(
+    TechnologyAdoptionDisposition disposition)
+{
+    switch(disposition){
+        case TechnologyAdoptionDisposition::Learning: return "Learning";
+        case TechnologyAdoptionDisposition::Blocked: return "Blocked";
+        case TechnologyAdoptionDisposition::Evaluating: return "Evaluating";
+        case TechnologyAdoptionDisposition::Adopting: return "Adopting";
+        case TechnologyAdoptionDisposition::Established: return "Established";
+        case TechnologyAdoptionDisposition::Resistant: return "Resistant";
+        case TechnologyAdoptionDisposition::Unaware:
+        default: return "Unaware";
+    }
+}
+
+inline const char* technologySocialAdoptionStateName(
+    TechnologySocialAdoptionState state)
+{
+    switch(state){
+        case TechnologySocialAdoptionState::Learning: return "Learning";
+        case TechnologySocialAdoptionState::Blocked: return "Blocked";
+        case TechnologySocialAdoptionState::Available: return "Available";
+        case TechnologySocialAdoptionState::Emerging: return "Emerging";
+        case TechnologySocialAdoptionState::Contested: return "Contested";
+        case TechnologySocialAdoptionState::Established: return "Established";
+        case TechnologySocialAdoptionState::Resisted: return "Resisted";
+        case TechnologySocialAdoptionState::Declining: return "Declining";
+        case TechnologySocialAdoptionState::Lost: return "Lost";
+        case TechnologySocialAdoptionState::Unavailable:
+        default: return "Unavailable";
     }
 }
 
@@ -521,6 +577,9 @@ struct CivilizationTechnologyStatus {
     bool reproducible=false;
     bool operational=false;
     bool adopted=false;
+    TechnologyAdoptionDisposition adoptionDisposition=
+        TechnologyAdoptionDisposition::Unaware;
+    double adoptionAcceptance01=0.0;
     int successfulUses=0;
     int prerequisiteCount=0;
     int satisfiedPrerequisiteCount=0;
@@ -559,6 +618,76 @@ inline CivilizationCapabilityStatus observeCapabilityStatus(
     return status;
 }
 
+inline double technologyAdoptionAcceptance01(
+    const Character& resident,
+    TechnologyId technology)
+{
+    const TechniqueId technique=techniqueForTechnology(technology);
+    if(technique==TechniqueId::None) return 0.0;
+    const KnowledgeLevel level=resident.civilization.knowledge.level(technique);
+    if(static_cast<int>(level)<static_cast<int>(KnowledgeLevel::Reproducible)){
+        return 0.0;
+    }
+
+    const TechniqueKnowledge* record=nullptr;
+    for(const TechniqueKnowledge& knowledge:resident.civilization.knowledge.all()){
+        if(knowledge.technique==technique){
+            record=&knowledge;
+            break;
+        }
+    }
+    const int uses=record ? std::max(0,record->successfulUses) : 0;
+    const double useEvidence=std::max(0.0,std::min(1.0,
+        static_cast<double>(uses)/3.0));
+    return std::max(0.0,std::min(1.0,
+        0.18
+        +0.20*resident.personality.openness
+        +0.18*resident.personality.curiosity
+        +0.16*resident.personality.adaptability
+        +0.12*resident.personality.conscientiousness
+        +0.16*useEvidence));
+}
+
+inline TechnologyAdoptionDisposition technologyAdoptionDisposition(
+    const World& world,
+    const Character& resident,
+    TechnologyId technology)
+{
+    const TechniqueId technique=techniqueForTechnology(technology);
+    if(technique==TechniqueId::None){
+        return TechnologyAdoptionDisposition::Unaware;
+    }
+    const KnowledgeLevel level=resident.civilization.knowledge.level(technique);
+    if(level==KnowledgeLevel::Unknown){
+        return TechnologyAdoptionDisposition::Unaware;
+    }
+    if(static_cast<int>(level)<static_cast<int>(KnowledgeLevel::Reproducible)){
+        return TechnologyAdoptionDisposition::Learning;
+    }
+    if(technologyAdopted(resident,technology)){
+        return TechnologyAdoptionDisposition::Established;
+    }
+    if(!technologyOperational(world,resident,technology)){
+        return TechnologyAdoptionDisposition::Blocked;
+    }
+
+    const TechniqueKnowledge* record=nullptr;
+    for(const TechniqueKnowledge& knowledge:resident.civilization.knowledge.all()){
+        if(knowledge.technique==technique){
+            record=&knowledge;
+            break;
+        }
+    }
+    const int uses=record ? std::max(0,record->successfulUses) : 0;
+    if(uses>0) return TechnologyAdoptionDisposition::Adopting;
+
+    constexpr double ResistanceAcceptanceThreshold=0.42;
+    return technologyAdoptionAcceptance01(resident,technology)
+        <ResistanceAcceptanceThreshold
+            ? TechnologyAdoptionDisposition::Resistant
+            : TechnologyAdoptionDisposition::Evaluating;
+}
+
 inline CivilizationTechnologyStatus observeTechnologyStatus(
     const World& world,
     const Character& resident,
@@ -595,6 +724,10 @@ inline CivilizationTechnologyStatus observeTechnologyStatus(
     status.successfulUses=record->successfulUses;
     status.operational=technologyOperational(world,resident,technology);
     status.adopted=technologyAdopted(resident,technology);
+    status.adoptionAcceptance01=
+        technologyAdoptionAcceptance01(resident,technology);
+    status.adoptionDisposition=
+        technologyAdoptionDisposition(world,resident,technology);
     return status;
 }
 
@@ -605,8 +738,15 @@ struct CivilizationTechnologyPopulationStatus {
     int reproducibleKnowerCount=0;
     int operationalResidentCount=0;
     int adoptedResidentCount=0;
+    int evaluatingResidentCount=0;
+    int adoptingResidentCount=0;
+    int resistantResidentCount=0;
     int successfulUseCount=0;
     double diffusion01=0.0;
+    double adoptionRatio01=0.0;
+    double meanAcceptance01=0.0;
+    TechnologySocialAdoptionState adoptionState=
+        TechnologySocialAdoptionState::Unavailable;
     bool historicallyKnown=false;
     int historicalFactCount=0;
     int firstEvidenceMinute=-1;
@@ -640,8 +780,33 @@ inline CivilizationTechnologyPopulationStatus observeTechnologyPopulationStatus(
         if(residentStatus.reproducible) ++status.reproducibleKnowerCount;
         if(residentStatus.operational) ++status.operationalResidentCount;
         if(residentStatus.adopted) ++status.adoptedResidentCount;
+        switch(residentStatus.adoptionDisposition){
+            case TechnologyAdoptionDisposition::Evaluating:
+                ++status.evaluatingResidentCount;
+                break;
+            case TechnologyAdoptionDisposition::Adopting:
+                ++status.adoptingResidentCount;
+                break;
+            case TechnologyAdoptionDisposition::Resistant:
+                ++status.resistantResidentCount;
+                break;
+            default:
+                break;
+        }
+        if(residentStatus.reproducible){
+            status.meanAcceptance01+=residentStatus.adoptionAcceptance01;
+        }
         status.successfulUseCount+=std::max(0,residentStatus.successfulUses);
     }
+
+    if(status.reproducibleKnowerCount>0){
+        status.meanAcceptance01=std::max(0.0,std::min(1.0,
+            status.meanAcceptance01
+            /static_cast<double>(status.reproducibleKnowerCount)));
+    }
+    status.adoptionRatio01=std::max(0.0,std::min(1.0,
+        static_cast<double>(status.adoptedResidentCount)
+        /static_cast<double>(living)));
 
     status.diffusion01=std::max(
         0.0,
@@ -667,6 +832,32 @@ inline CivilizationTechnologyPopulationStatus observeTechnologyPopulationStatus(
         status.state=TechnologyPopulationState::Common;
     }else{
         status.state=TechnologyPopulationState::Diffusing;
+    }
+
+    if(status.state==TechnologyPopulationState::Lost){
+        status.adoptionState=TechnologySocialAdoptionState::Lost;
+    }else if(status.livingKnowerCount==0){
+        status.adoptionState=TechnologySocialAdoptionState::Unavailable;
+    }else if(status.reproducibleKnowerCount==0){
+        status.adoptionState=TechnologySocialAdoptionState::Learning;
+    }else if(status.operationalResidentCount==0){
+        status.adoptionState=
+            status.adoptedResidentCount>0
+                ? TechnologySocialAdoptionState::Declining
+                : TechnologySocialAdoptionState::Blocked;
+    }else if(status.adoptedResidentCount*2>=living){
+        status.adoptionState=TechnologySocialAdoptionState::Established;
+    }else if(status.adoptedResidentCount>0
+             && status.resistantResidentCount>0){
+        status.adoptionState=TechnologySocialAdoptionState::Contested;
+    }else if(status.adoptedResidentCount>0
+             || status.adoptingResidentCount>0){
+        status.adoptionState=TechnologySocialAdoptionState::Emerging;
+    }else if(status.resistantResidentCount*2
+             >=std::max(1,status.operationalResidentCount)){
+        status.adoptionState=TechnologySocialAdoptionState::Resisted;
+    }else{
+        status.adoptionState=TechnologySocialAdoptionState::Available;
     }
     return status;
 }

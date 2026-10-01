@@ -2559,6 +2559,52 @@ inline CivilizationUtilityDecision bestStoreDecision(
         world,self,world.storageSites.front().pos);
 }
 
+inline double technologyAdoptionUtilityAdjustment(
+    const World& world,
+    const Character& self,
+    TechniqueId technique)
+{
+    const TechnologyId technology=technologyIdForTechnique(technique);
+    if(technology==TechnologyId::None) return 0.0;
+    const TechnologyAdoptionDisposition disposition=
+        technologyAdoptionDisposition(world,self,technology);
+    const double acceptance=
+        technologyAdoptionAcceptance01(self,technology);
+
+    constexpr double ResistantPenalty=-0.10;
+    constexpr double EvaluatingScale=0.04;
+    constexpr double AdoptingBoost=0.07;
+    constexpr double EstablishedBoost=0.05;
+    switch(disposition){
+        case TechnologyAdoptionDisposition::Resistant:
+            return ResistantPenalty;
+        case TechnologyAdoptionDisposition::Evaluating:
+            return EvaluatingScale*acceptance;
+        case TechnologyAdoptionDisposition::Adopting:
+            return AdoptingBoost;
+        case TechnologyAdoptionDisposition::Established:
+            return EstablishedBoost;
+        default:
+            return 0.0;
+    }
+}
+
+inline CivilizationUtilityDecision applyTechnologyAdoptionUtility(
+    const World& world,
+    const Character& self,
+    CivilizationUtilityDecision decision)
+{
+    if(decision.intent!=CivilizationIntent::Craft
+       || decision.technique==TechniqueId::None){
+        return decision;
+    }
+    decision.utility=clampCivilization01(
+        decision.utility
+        +technologyAdoptionUtilityAdjustment(
+            world,self,decision.technique));
+    return decision;
+}
+
 inline CivilizationUtilityDecision chooseCivilizationUtilityDecisionAtPosition(
     const World& world,
     const Character& self,
@@ -2571,7 +2617,10 @@ inline CivilizationUtilityDecision chooseCivilizationUtilityDecisionAtPosition(
         best,bestExperimentDecisionAtPosition(
             world,self,authoritativePosition,population));
     considerCivilizationDecision(
-        best,bestCraftDecisionAtPosition(world,self,authoritativePosition,population));
+        best,applyTechnologyAdoptionUtility(
+            world,self,
+            bestCraftDecisionAtPosition(
+                world,self,authoritativePosition,population)));
     considerCivilizationDecision(
         best,bestRetrieveDecisionAtPosition(
             world,self,authoritativePosition));

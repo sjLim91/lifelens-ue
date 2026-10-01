@@ -566,6 +566,7 @@ Acceptance:
 ## Milestone C3 — Open-Ended Civilization Framework v1
 
 Owner: Jjun Core/Simulation/Save/Bridge.
+Status: ✅ Complete — C3-A~F foundation closed. Future technologies extend the same registries/contracts instead of reopening C3.
 Canonical architecture: `docs/OPEN_ENDED_CIVILIZATION_NORTH_STAR.md`.
 
 Core model:
@@ -577,16 +578,16 @@ Core model:
 
 Scope:
 
-- stable Capability/Technology identity/versioning.
-- existing primitive Technique compatibility mapping.
-- prerequisite/effect graph.
-- survival/environment/resource pressure -> research/experiment motivation.
-- experiment -> discovery -> reproducibility.
-- physical knowledge diffusion.
-- adoption separate from discovery.
-- loss/rediscovery.
-- Observer read model.
-- deterministic snapshot roundtrip.
+- ✅ stable Capability/Technology identity/versioning.
+- ✅ existing primitive Technique compatibility mapping.
+- ✅ prerequisite/effect graph.
+- ✅ survival/environment/resource pressure -> research/experiment motivation.
+- ✅ experiment -> discovery -> reproducibility.
+- ✅ physical knowledge diffusion.
+- ✅ adoption separate from discovery, including acceptance/resistance/social establishment.
+- ✅ loss/rediscovery with historical provenance.
+- ✅ Observer/Web read model.
+- ✅ deterministic snapshot roundtrip; C3 state remains derived from authoritative world/knowledge history.
 
 Environment is now a first-class innovation driver:
 

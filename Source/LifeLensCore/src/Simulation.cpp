@@ -519,6 +519,7 @@ ResidentPresentationObservation Simulation::observeResidentPresentation(Characte
                 dto.civilizationIntent=CivilizationIntent::Craft;
                 break;
             case CivilizationEventType::Discovered:
+            case CivilizationEventType::Rediscovered:
             case CivilizationEventType::ExperimentFailed:
                 dto.civilizationIntent=CivilizationIntent::Experiment;
                 break;

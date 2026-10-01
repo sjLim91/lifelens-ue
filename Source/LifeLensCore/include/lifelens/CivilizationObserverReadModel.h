@@ -135,6 +135,8 @@ struct CivilizationDiscoveryObservation {
     CharacterId discovererId=0;
     std::string discovererName;
     int minute=0;
+    bool rediscovery=false;
+    int discoveryOrdinal=1;
     std::size_t recipientCount=0;
     std::size_t livingKnowerCount=0;
 };
@@ -176,6 +178,9 @@ struct CivilizationWorldObservation {
     std::size_t commonTechnologyCount=0;
     std::size_t decliningTechnologyCount=0;
     std::size_t lostTechnologyCount=0;
+    std::size_t establishedTechnologyCount=0;
+    std::size_t contestedTechnologyCount=0;
+    std::size_t resistedTechnologyCount=0;
     std::size_t activeTransformationCount=0;
     std::vector<CivilizationTechnologyPopulationStatus> technologyPopulation;
     std::vector<CivilizationTransformationStatus> transformations;
@@ -525,6 +530,19 @@ inline CivilizationWorldObservation buildCivilizationWorldObservation(
             default:
                 break;
         }
+        switch(populationStatus.adoptionState){
+            case TechnologySocialAdoptionState::Established:
+                ++dto.establishedTechnologyCount;
+                break;
+            case TechnologySocialAdoptionState::Contested:
+                ++dto.contestedTechnologyCount;
+                break;
+            case TechnologySocialAdoptionState::Resisted:
+                ++dto.resistedTechnologyCount;
+                break;
+            default:
+                break;
+        }
         dto.technologyPopulation.push_back(populationStatus);
     }
 
@@ -534,6 +552,10 @@ inline CivilizationWorldObservation buildCivilizationWorldObservation(
         if(transformation.active) ++dto.activeTransformationCount;
     }
 
+    constexpr std::size_t DiscoveryTechniqueSlots=
+        static_cast<std::size_t>(TechniqueId::BronzePick)+1;
+    std::array<int,DiscoveryTechniqueSlots> discoveryOrdinals{};
+
     for(const SocialFact& fact:socialKnowledge.facts()){
         const TechniqueId technique=techniqueFromCivilizationFact(fact);
         if(technique==TechniqueId::None) continue;
@@ -541,11 +563,20 @@ inline CivilizationWorldObservation buildCivilizationWorldObservation(
 
         if(fact.importance<0.90) continue;
 
+        const std::size_t techniqueIndex=
+            static_cast<std::size_t>(technique);
+        int discoveryOrdinal=1;
+        if(techniqueIndex<discoveryOrdinals.size()){
+            discoveryOrdinal=++discoveryOrdinals[techniqueIndex];
+        }
+
         CivilizationDiscoveryObservation discovery;
         discovery.factId=fact.id;
         discovery.technique=technique;
         discovery.discovererId=fact.subject;
         discovery.minute=fact.eventMinute;
+        discovery.discoveryOrdinal=discoveryOrdinal;
+        discovery.rediscovery=discoveryOrdinal>1;
         if(const Character* character=findObservedCharacter(world,fact.subject)){
             discovery.discovererName=character->name;
         }
