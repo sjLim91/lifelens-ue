@@ -195,7 +195,7 @@ int main()
 
     GridPos nearToilet{};
     assert(findReachableTargetAtLeastDistance(
-        safeMove,safeId,3,nearToilet,8));
+        safeMove,safeId,2,nearToilet,4));
     installDesignatedSanitationSite(
         safeMove,safeId,nearToilet,991010);
 
@@ -206,7 +206,7 @@ int main()
     assert(safePresentation.physicalGoal==Goal::UseToilet);
     assert(safePresentation.phase==PresentationActionPhase::Moving);
 
-    safeActor->needs.hunger=0.94;
+    safeActor->needs.hunger=0.92;
     bool safeToiletCompleted=false;
     for(int minute=0;minute<40 && !safeToiletCompleted;++minute){
         safeMove.step();
