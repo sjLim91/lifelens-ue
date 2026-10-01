@@ -1,0 +1,36 @@
+name: LifeLens Teaching v2 100d Audit
+
+on:
+  pull_request:
+    paths:
+      - 'Source/LifeLensCore/**'
+      - '.github/workflows/teaching-v2-audit.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lifelens-teaching-v2-100d-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+jobs:
+  teaching-v2-audit:
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [874213954, 4242001]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 후보 계측기 구성
+        run: cmake -S Source/LifeLensCore -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: 후보 계측기 빌드
+        run: cmake --build build --target ll_teaching_v2_audit --parallel 2
+
+      - name: 지식전파 v2 100일 계측
+        run: |
+          ./build/ll_teaching_v2_audit --seed '${{ matrix.seed }}' --days 100
