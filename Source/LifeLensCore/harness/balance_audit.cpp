@@ -87,6 +87,22 @@ struct ResidentMetrics {
     double dugPitImprovementWorkGain=0.0;
     double dugPitImprovementWorkMax=0.0;
     double lastObservedSanitationWork=0.0;
+
+    // Social scheduler diagnostics at the exact five-minute beginPlan boundary.
+    std::uint64_t socialPlanningSamples=0;
+    std::uint64_t socialPlanningBlockedPenalty=0;
+    std::uint64_t socialBlockedUrgentSamples=0;
+    std::uint64_t socialBlockedUrgentHunger=0;
+    std::uint64_t socialBlockedUrgentThirst=0;
+    std::uint64_t socialBlockedUrgentSleep=0;
+    std::uint64_t socialBlockedUrgentBladder=0;
+    std::uint64_t socialBlockedUrgentHygiene=0;
+    std::uint64_t socialBlockedUrgentNonImmediate=0;
+    std::uint64_t socialViableSamples=0;
+    std::uint64_t socialViableBlockedUrgent=0;
+    std::uint64_t socialViableBlockedUrgentNonImmediate=0;
+    double socialViableUtilitySum=0.0;
+    double socialViablePhysicalUtilitySum=0.0;
 };
 
 std::array<double,5> needsArray(const Needs& n)
@@ -402,6 +418,81 @@ void auditActualDugPitPlanningPath(
 
 }
 
+void auditSocialSchedulerGate(
+    const Simulation& sim,
+    ResidentMetrics& metric)
+{
+    const ResidentPlanningStateObservation planning=
+        sim.observeResidentPlanningState(metric.id);
+    const Character* resident=findResident(sim.world(),metric.id);
+    if(!planning.valid || resident==nullptr || !resident->alive) return;
+    if(sim.world().minute%5!=0
+       || planning.hasPhysicalPlan
+       || planning.hasPendingContext){
+        return;
+    }
+
+    Character projected=*resident;
+    projected.needs.decay(
+        sim.ruleset().needs,
+        projected.metabolism,
+        projected.sleepTendency);
+
+    const bool criticalSurvivalPressure=
+        projected.needs.hunger>=CriticalSurvivalPreemptThreshold
+        || projected.needs.thirst>=CriticalSurvivalPreemptThreshold;
+    const bool planningAllowed=
+        sim.world().minute>=planning.penaltyUntilMinute
+        || criticalSurvivalPressure;
+    if(!planningAllowed){
+        ++metric.socialPlanningBlockedPenalty;
+        return;
+    }
+
+    ++metric.socialPlanningSamples;
+    const double urgent=sim.ruleset().utilityAI.urgentThreshold;
+    const bool urgentHunger=projected.needs.hunger>=urgent;
+    const bool urgentThirst=projected.needs.thirst>=urgent;
+    const bool urgentSleep=projected.needs.sleep>=urgent;
+    const bool urgentBladder=projected.needs.bladder>=urgent;
+    const bool urgentHygiene=projected.needs.hygiene>=urgent;
+    const bool hasUrgentPhysical=
+        urgentHunger || urgentThirst || urgentSleep
+        || urgentBladder || urgentHygiene;
+    const bool immediateUrgent=
+        urgentHunger || urgentThirst || urgentBladder;
+
+    if(hasUrgentPhysical){
+        ++metric.socialBlockedUrgentSamples;
+        if(urgentHunger) ++metric.socialBlockedUrgentHunger;
+        if(urgentThirst) ++metric.socialBlockedUrgentThirst;
+        if(urgentSleep) ++metric.socialBlockedUrgentSleep;
+        if(urgentBladder) ++metric.socialBlockedUrgentBladder;
+        if(urgentHygiene) ++metric.socialBlockedUrgentHygiene;
+        if(!immediateUrgent) ++metric.socialBlockedUrgentNonImmediate;
+    }
+
+    const SocialUtilityDecision social=
+        chooseSocialUtilityDecision(
+            sim.world(),projected,sim.relationships());
+    const auto physical=bestPhysicalUtility(sim.world(),projected);
+    const bool viable=
+        social.intent!=SocialIntent::None
+        && social.utility>=0.18
+        && social.utility>physical.second*1.05;
+    if(!viable) return;
+
+    ++metric.socialViableSamples;
+    metric.socialViableUtilitySum+=social.utility;
+    metric.socialViablePhysicalUtilitySum+=physical.second;
+    if(hasUrgentPhysical){
+        ++metric.socialViableBlockedUrgent;
+        if(!immediateUrgent){
+            ++metric.socialViableBlockedUrgentNonImmediate;
+        }
+    }
+}
+
 int main(int argc,char** argv)
 {
     int days=30;
@@ -492,6 +583,7 @@ int main(int argc,char** argv)
         // step() may issue and complete a short context in the same minute.
         for(auto& m:metrics){
             auditActualDugPitPlanningPath(sim,m);
+            auditSocialSchedulerGate(sim,m);
         }
 
         sim.step();
@@ -875,7 +967,27 @@ int main(int argc,char** argv)
                     ? m.dugPitCompetingPressureSum/static_cast<double>(m.dugPitStructuralPressureSamples)
                     : 0.0)
                  <<" dugPitImprovementWorkGain="<<m.dugPitImprovementWorkGain
-                 <<" dugPitImprovementWorkMax="<<m.dugPitImprovementWorkMax;
+                 <<" dugPitImprovementWorkMax="<<m.dugPitImprovementWorkMax
+                 <<" socialPlanningSamples="<<m.socialPlanningSamples
+                 <<" socialPlanningBlockedPenalty="<<m.socialPlanningBlockedPenalty
+                 <<" socialBlockedUrgentSamples="<<m.socialBlockedUrgentSamples
+                 <<" socialBlockedUrgentHunger="<<m.socialBlockedUrgentHunger
+                 <<" socialBlockedUrgentThirst="<<m.socialBlockedUrgentThirst
+                 <<" socialBlockedUrgentSleep="<<m.socialBlockedUrgentSleep
+                 <<" socialBlockedUrgentBladder="<<m.socialBlockedUrgentBladder
+                 <<" socialBlockedUrgentHygiene="<<m.socialBlockedUrgentHygiene
+                 <<" socialBlockedUrgentNonImmediate="<<m.socialBlockedUrgentNonImmediate
+                 <<" socialViableSamples="<<m.socialViableSamples
+                 <<" socialViableBlockedUrgent="<<m.socialViableBlockedUrgent
+                 <<" socialViableBlockedUrgentNonImmediate="<<m.socialViableBlockedUrgentNonImmediate
+                 <<" socialViableUtilityAvg="
+                 <<(m.socialViableSamples>0
+                    ? m.socialViableUtilitySum/static_cast<double>(m.socialViableSamples)
+                    : 0.0)
+                 <<" socialViablePhysicalUtilityAvg="
+                 <<(m.socialViableSamples>0
+                    ? m.socialViablePhysicalUtilitySum/static_cast<double>(m.socialViableSamples)
+                    : 0.0);
         for(std::size_t i=0;i<goalNames.size();++i){
             std::cout<<" "<<goalNames[i]<<"Min="<<m.physicalGoalMinutes[i];
         }
