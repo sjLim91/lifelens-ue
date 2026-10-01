@@ -120,6 +120,13 @@ struct ResidentMetrics {
     std::uint64_t simpleContainerLostToStore=0;
     std::uint64_t simpleContainerLostToExplore=0;
     std::uint64_t simpleContainerLostToGather=0;
+    std::uint64_t simpleContainerLostGatherFood=0;
+    std::uint64_t simpleContainerLostGatherClay=0;
+    std::uint64_t simpleContainerLostGatherWood=0;
+    std::uint64_t simpleContainerLostGatherStone=0;
+    std::uint64_t simpleContainerLostGatherFlint=0;
+    std::uint64_t simpleContainerLostGatherFiber=0;
+    std::uint64_t simpleContainerLostGatherOther=0;
     std::uint64_t simpleContainerLostToOtherExperiment=0;
     double simpleContainerBiasedExperimentUtilitySum=0.0;
     double simpleContainerCivilizationWinnerUtilitySum=0.0;
@@ -605,7 +612,17 @@ void auditContainerProgression(
                 case CivilizationIntent::Explore:
                     ++metric.simpleContainerLostToExplore; break;
                 case CivilizationIntent::Gather:
-                    ++metric.simpleContainerLostToGather; break;
+                    ++metric.simpleContainerLostToGather;
+                    switch(civilization.material){
+                        case MaterialKind::PlantFood: ++metric.simpleContainerLostGatherFood; break;
+                        case MaterialKind::Clay: ++metric.simpleContainerLostGatherClay; break;
+                        case MaterialKind::Wood: ++metric.simpleContainerLostGatherWood; break;
+                        case MaterialKind::Stone: ++metric.simpleContainerLostGatherStone; break;
+                        case MaterialKind::Flint: ++metric.simpleContainerLostGatherFlint; break;
+                        case MaterialKind::Fiber: ++metric.simpleContainerLostGatherFiber; break;
+                        default: ++metric.simpleContainerLostGatherOther; break;
+                    }
+                    break;
                 case CivilizationIntent::Experiment:
                     ++metric.simpleContainerLostToOtherExperiment; break;
                 case CivilizationIntent::None:
@@ -1189,6 +1206,13 @@ int main(int argc,char** argv)
                  <<" simpleContainerLostToStore="<<m.simpleContainerLostToStore
                  <<" simpleContainerLostToExplore="<<m.simpleContainerLostToExplore
                  <<" simpleContainerLostToGather="<<m.simpleContainerLostToGather
+                 <<" simpleContainerLostGatherFood="<<m.simpleContainerLostGatherFood
+                 <<" simpleContainerLostGatherClay="<<m.simpleContainerLostGatherClay
+                 <<" simpleContainerLostGatherWood="<<m.simpleContainerLostGatherWood
+                 <<" simpleContainerLostGatherStone="<<m.simpleContainerLostGatherStone
+                 <<" simpleContainerLostGatherFlint="<<m.simpleContainerLostGatherFlint
+                 <<" simpleContainerLostGatherFiber="<<m.simpleContainerLostGatherFiber
+                 <<" simpleContainerLostGatherOther="<<m.simpleContainerLostGatherOther
                  <<" simpleContainerLostToOtherExperiment="<<m.simpleContainerLostToOtherExperiment
                  <<" simpleContainerBiasedExperimentUtilityAvg="
                  <<(m.simpleContainerFamilyCompetitionSamples>0
