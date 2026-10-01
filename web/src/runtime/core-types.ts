@@ -384,6 +384,16 @@ export interface ResidentCivilizationTechnology {
   reproducible?: boolean;
   operational?: boolean;
   adopted?: boolean;
+  adoptionDisposition?:
+    | 'Unaware'
+    | 'Learning'
+    | 'Blocked'
+    | 'Evaluating'
+    | 'Adopting'
+    | 'Established'
+    | 'Resistant'
+    | string;
+  adoptionAcceptance01?: number;
   successfulUses?: number;
   prerequisiteCount?: number;
   satisfiedPrerequisiteCount?: number;
@@ -646,6 +656,8 @@ export interface CivilizationDiscovery {
   discovererId: string;
   discovererName: string;
   minute: number;
+  rediscovery: boolean;
+  discoveryOrdinal: number;
   recipientCount: number;
   livingKnowerCount: number;
 }
@@ -666,8 +678,25 @@ export interface CivilizationTechnologyPopulation {
   reproducibleKnowerCount: number;
   operationalResidentCount: number;
   adoptedResidentCount: number;
+  evaluatingResidentCount: number;
+  adoptingResidentCount: number;
+  resistantResidentCount: number;
   successfulUseCount: number;
   diffusion01: number;
+  adoptionRatio01: number;
+  meanAcceptance01: number;
+  adoptionState:
+    | 'Unavailable'
+    | 'Learning'
+    | 'Blocked'
+    | 'Available'
+    | 'Emerging'
+    | 'Contested'
+    | 'Established'
+    | 'Resisted'
+    | 'Declining'
+    | 'Lost'
+    | string;
   historicallyKnown: boolean;
   historicalFactCount: number;
   firstEvidenceMinute: number;
@@ -709,6 +738,9 @@ export interface CivilizationWorldPayload {
   commonTechnologyCount?: number;
   decliningTechnologyCount?: number;
   lostTechnologyCount?: number;
+  establishedTechnologyCount?: number;
+  contestedTechnologyCount?: number;
+  resistedTechnologyCount?: number;
   activeTransformationCount?: number;
   technologyPopulation?: CivilizationTechnologyPopulation[];
   transformations?: CivilizationTransformation[];
