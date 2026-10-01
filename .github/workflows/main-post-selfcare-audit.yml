@@ -1,0 +1,36 @@
+name: LifeLens Main 100d Baseline
+
+on:
+  pull_request:
+    paths:
+      - 'Source/LifeLensCore/**'
+      - '.github/workflows/main-post-selfcare-audit.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lifelens-main-post-selfcare-100d-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+jobs:
+  main-baseline:
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [874213954, 4242001]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 기준선 계측기 구성
+        run: cmake -S Source/LifeLensCore -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: 기준선 계측기 빌드
+        run: cmake --build build --target ll_main_post_selfcare_audit --parallel 2
+
+      - name: 현재 main 100일 기준선 계측
+        run: |
+          ./build/ll_main_post_selfcare_audit --seed '${{ matrix.seed }}' --days 100
