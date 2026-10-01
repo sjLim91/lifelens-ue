@@ -24,6 +24,17 @@
 #include "SettlementProgression.h"
 #include "SocialCommunicationReadModel.h"
 namespace lifelens {
+
+struct ResidentPlanningStateObservation {
+    CharacterId residentId=0;
+    bool valid=false;
+    GridPos position{};
+    Goal goal=Goal::Idle;
+    bool hasPhysicalPlan=false;
+    bool hasPendingContext=false;
+    int penaltyUntilMinute=0;
+};
+
 class Simulation {
 public:
     using EventCallback=std::function<void(const std::string&)>;
@@ -45,6 +56,24 @@ public:
         if(it==runtime_.end()) return false;
         outPosition=it->second.pos;
         return true;
+    }
+    ResidentPlanningStateObservation observeResidentPlanningState(CharacterId id) const {
+        ResidentPlanningStateObservation observation;
+        observation.residentId=id;
+        const auto it=runtime_.find(id);
+        if(it==runtime_.end()) return observation;
+        const Character* character=nullptr;
+        for(const auto& candidate:world_.characters){
+            if(candidate.id==id){ character=&candidate; break; }
+        }
+        if(character==nullptr || !character->alive) return observation;
+        observation.valid=true;
+        observation.position=it->second.pos;
+        observation.goal=it->second.goal;
+        observation.hasPhysicalPlan=!it->second.plan.empty();
+        observation.hasPendingContext=it->second.pendingContext.active();
+        observation.penaltyUntilMinute=it->second.penaltyUntilMinute;
+        return observation;
     }
     bool recommendedOutdoorReliefPosition(CharacterId id,GridPos& outPosition) const {
         const auto runtimeIt=runtime_.find(id);
