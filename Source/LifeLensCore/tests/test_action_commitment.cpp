@@ -209,7 +209,7 @@ int main()
         safeMove.step();
         safeToiletCompleted=containsLog(
             safeMove,
-            safeName+" completed UseToilet via designated sanitation area");
+            safeName+" completed UseToilet via sanitation site");
         if(!safeToiletCompleted){
             assert(!containsLog(
                 safeMove,
