@@ -22,6 +22,11 @@ struct ResidentMetrics {
     std::array<std::uint64_t,5> saturatedMinutes{};
     std::uint64_t physicalMinutes=0;
     std::array<std::uint64_t,5> physicalGoalMinutes{};
+    std::array<std::uint64_t,5> physicalTripStarts{};
+    std::array<std::uint64_t,5> physicalTripDistanceSum{};
+    std::array<int,5> physicalTripDistanceMax{};
+    Goal lastPhysicalGoal=Goal::Idle;
+    bool lastPhysicalActive=false;
     std::uint64_t socialMinutes=0;
     std::uint64_t civilizationMinutes=0;
     std::uint64_t parentingMinutes=0;
@@ -186,8 +191,31 @@ int main(int argc,char** argv)
                         ++metric.physicalMinutes;
                         const int index=physicalGoalIndex(presentation.physicalGoal);
                         if(index>=0){
-                            ++metric.physicalGoalMinutes[
-                                static_cast<std::size_t>(index)];
+                            const std::size_t goalIndex=
+                                static_cast<std::size_t>(index);
+                            ++metric.physicalGoalMinutes[goalIndex];
+
+                            const bool newTrip=
+                                !metric.lastPhysicalActive
+                                || metric.lastPhysicalGoal!=presentation.physicalGoal;
+                            if(newTrip){
+                                ++metric.physicalTripStarts[goalIndex];
+                                GridPos residentPos{};
+                                if(presentation.hasTargetGrid
+                                   && sim.runtimePosition(metric.id,residentPos)){
+                                    const int distance=manhattan(
+                                        residentPos,presentation.targetGrid);
+                                    metric.physicalTripDistanceSum[goalIndex]+=
+                                        static_cast<std::uint64_t>(
+                                            std::max(0,distance));
+                                    metric.physicalTripDistanceMax[goalIndex]=
+                                        std::max(
+                                            metric.physicalTripDistanceMax[goalIndex],
+                                            distance);
+                                }
+                            }
+                            metric.lastPhysicalGoal=presentation.physicalGoal;
+                            metric.lastPhysicalActive=true;
                         }
                         break;
                     }
@@ -202,6 +230,10 @@ int main(int argc,char** argv)
                     case PresentationActionKind::None:
                     default:
                         ++metric.idleMinutes; break;
+                }
+                if(presentation.kind!=PresentationActionKind::Physical){
+                    metric.lastPhysicalActive=false;
+                    metric.lastPhysicalGoal=Goal::Idle;
                 }
             }
 
@@ -260,6 +292,15 @@ int main(int argc,char** argv)
         <<" facilities="<<sim.world().facilities.size()
         <<" sanitationSites="<<sim.world().primitiveSanitationSites.size()
         <<" storageSites="<<sim.world().storageSites.size();
+    int storedContainers=0;
+    int storedPortableWater=0;
+    for(const auto& storage:sim.world().storageSites){
+        storedContainers+=simpleContainerCount(storage.inventory);
+        storedPortableWater+=portableWaterCount(storage.inventory);
+    }
+    std::cout
+        <<" storedContainers="<<storedContainers
+        <<" storedPortableWater="<<storedPortableWater;
 
     for(std::size_t i=0;i<physicalNames.size();++i){
         std::cout
@@ -310,6 +351,31 @@ int main(int argc,char** argv)
             <<" physicalMinSleep="<<metric.physicalGoalMinutes[2]
             <<" physicalMinUseToilet="<<metric.physicalGoalMinutes[3]
             <<" physicalMinWash="<<metric.physicalGoalMinutes[4]
+            <<" tripStartsDrink="<<metric.physicalTripStarts[1]
+            <<" tripAvgDistDrink="
+            <<(metric.physicalTripStarts[1]>0
+                ? static_cast<double>(metric.physicalTripDistanceSum[1])
+                    /static_cast<double>(metric.physicalTripStarts[1])
+                : 0.0)
+            <<" tripMaxDistDrink="<<metric.physicalTripDistanceMax[1]
+            <<" tripStartsSleep="<<metric.physicalTripStarts[2]
+            <<" tripAvgDistSleep="
+            <<(metric.physicalTripStarts[2]>0
+                ? static_cast<double>(metric.physicalTripDistanceSum[2])
+                    /static_cast<double>(metric.physicalTripStarts[2])
+                : 0.0)
+            <<" tripMaxDistSleep="<<metric.physicalTripDistanceMax[2]
+            <<" tripStartsToilet="<<metric.physicalTripStarts[3]
+            <<" tripAvgDistToilet="
+            <<(metric.physicalTripStarts[3]>0
+                ? static_cast<double>(metric.physicalTripDistanceSum[3])
+                    /static_cast<double>(metric.physicalTripStarts[3])
+                : 0.0)
+            <<" tripMaxDistToilet="<<metric.physicalTripDistanceMax[3]
+            <<" containers="<<(resident
+                ? simpleContainerCount(resident->civilization.inventory) : 0)
+            <<" portableWater="<<(resident
+                ? portableWaterCount(resident->civilization.inventory) : 0)
             <<" socialMin="<<metric.socialMinutes
             <<" civilizationMin="<<metric.civilizationMinutes
             <<" parentingMin="<<metric.parentingMinutes
