@@ -26,6 +26,7 @@ import { HumanTraceDetail, HumanTracePanel } from './ui/human-traces';
 import { WorldActivityPanel } from './ui/world-activity';
 import { FastForwardControl } from './ui/fast-forward-control';
 import { visibleHumanTraces } from './state/human-traces';
+import { formatResidentName } from './ui/observer-format';
 
 type MobileModalView =
   | 'menu'
@@ -399,7 +400,7 @@ function MobileObserverModal({
   const title = {
     menu: '관찰 메뉴',
     residents: '주민',
-    resident: selectedResident?.name ?? '주민 상세',
+    resident: selectedResident ? formatResidentName(selectedResident.name) : '주민 상세',
     seed: '현재 월드 시드',
     events: '최근 관찰',
     traces: '생활 흔적',
