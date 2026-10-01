@@ -835,11 +835,12 @@ inline CivilizationUtilityDecision bestGatherDecision(
         world,self,civilizationSanitationReferencePosition(world));
 }
 
-inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
+inline CivilizationUtilityDecision bestExperimentDecisionAtPositionScoped(
     const World& world,
     const Character& self,
     GridPos authoritativePosition,
-    const SettlementPopulation* population=nullptr)
+    const SettlementPopulation* population,
+    bool sanitationOnly)
 {
     CivilizationUtilityDecision best;
     const GridPos sanitationReference=authoritativePosition;
@@ -870,6 +871,8 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
 
         const bool designatedExperiment=kind==ExperimentKind::DesignateSanitationArea;
         const bool pitExperiment=kind==ExperimentKind::DigSanitationPit;
+        const bool sanitationExperiment=designatedExperiment || pitExperiment;
+        if(sanitationOnly && !sanitationExperiment) continue;
         const bool storageExperiment=kind==ExperimentKind::OrganizeStockpile;
         const bool smeltingExperiment=kind==ExperimentKind::SmeltCopperOre;
         const bool cultivationExperiment=kind==ExperimentKind::CultivatePlantFood;
@@ -945,6 +948,27 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
         considerCivilizationDecision(best,candidate);
     }
     return best;
+}
+
+
+inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
+    const World& world,
+    const Character& self,
+    GridPos authoritativePosition,
+    const SettlementPopulation* population=nullptr)
+{
+    return bestExperimentDecisionAtPositionScoped(
+        world,self,authoritativePosition,population,false);
+}
+
+inline CivilizationUtilityDecision bestSanitationExperimentDecisionAtPosition(
+    const World& world,
+    const Character& self,
+    GridPos authoritativePosition,
+    const SettlementPopulation* population=nullptr)
+{
+    return bestExperimentDecisionAtPositionScoped(
+        world,self,authoritativePosition,population,true);
 }
 
 inline CivilizationUtilityDecision bestExperimentDecision(
@@ -1703,29 +1727,13 @@ inline CivilizationUtilityDecision bestCultivationDecision(
     return best;
 }
 
-inline CivilizationUtilityDecision bestCraftDecisionAtPosition(
+inline CivilizationUtilityDecision bestSanitationCraftDecisionAtPosition(
     const World& world,
     const Character& self,
-    GridPos authoritativePosition,
-    const SettlementPopulation* population=nullptr)
+    GridPos authoritativePosition)
 {
     CivilizationUtilityDecision best;
     const GridPos sanitationReference=authoritativePosition;
-
-    considerCivilizationDecision(
-        best,bestSettlementFoundationDecision(world,self,authoritativePosition,population));
-    considerCivilizationDecision(
-        best,bestPrimitiveStorageConstructionDecision(
-            world,self,authoritativePosition));
-    considerCivilizationDecision(
-        best,bestPrimitiveFirePitDecision(
-            world,self,authoritativePosition));
-    considerCivilizationDecision(
-        best,bestPrimitiveFurnaceDecision(
-            world,self,authoritativePosition));
-    considerCivilizationDecision(
-        best,bestCultivationDecision(
-            world,self,authoritativePosition,population));
 
     if(self.civilization.knowledge.knowsAtLeast(
         TechniqueId::DesignatedSanitationArea,KnowledgeLevel::Reproducible)
@@ -1770,6 +1778,37 @@ inline CivilizationUtilityDecision bestCraftDecisionAtPosition(
             considerCivilizationDecision(best,pit);
         }
     }
+
+    return best;
+}
+
+inline CivilizationUtilityDecision bestCraftDecisionAtPosition(
+    const World& world,
+    const Character& self,
+    GridPos authoritativePosition,
+    const SettlementPopulation* population=nullptr)
+{
+    CivilizationUtilityDecision best;
+    const GridPos sanitationReference=authoritativePosition;
+
+    considerCivilizationDecision(
+        best,bestSettlementFoundationDecision(world,self,authoritativePosition,population));
+    considerCivilizationDecision(
+        best,bestPrimitiveStorageConstructionDecision(
+            world,self,authoritativePosition));
+    considerCivilizationDecision(
+        best,bestPrimitiveFirePitDecision(
+            world,self,authoritativePosition));
+    considerCivilizationDecision(
+        best,bestPrimitiveFurnaceDecision(
+            world,self,authoritativePosition));
+    considerCivilizationDecision(
+        best,bestCultivationDecision(
+            world,self,authoritativePosition,population));
+
+    considerCivilizationDecision(
+        best,bestSanitationCraftDecisionAtPosition(
+            world,self,authoritativePosition));
 
     // FireMaking and CopperSmelting are facility-driven once reproducible. They
     // are intentionally omitted here so residents cannot bypass world heat.
