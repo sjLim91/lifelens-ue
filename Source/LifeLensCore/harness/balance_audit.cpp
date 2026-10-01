@@ -81,6 +81,9 @@ struct ResidentMetrics {
     double dugPitCandidateUtilitySum=0.0;
     double dugPitCompetingUtilitySum=0.0;
     std::uint64_t dugPitUtilitySamples=0;
+    double dugPitStructuralPressureSum=0.0;
+    double dugPitCompetingPressureSum=0.0;
+    std::uint64_t dugPitStructuralPressureSamples=0;
     double dugPitImprovementWorkGain=0.0;
     double dugPitImprovementWorkMax=0.0;
     double lastObservedSanitationWork=0.0;
@@ -329,10 +332,12 @@ void auditActualDugPitPlanningPath(
     const SocialUtilityDecision social=
         chooseSocialUtilityDecision(sim.world(),projected,sim.relationships());
     double competingUtility=physical.second;
+    bool socialWinsBaseline=false;
     if(social.intent!=SocialIntent::None
        && social.utility>=0.18
        && social.utility>physical.second*1.05){
         competingUtility=social.utility;
+        socialWinsBaseline=true;
     }
 
     ++metric.dugPitUtilitySamples;
@@ -343,7 +348,30 @@ void auditActualDugPitPlanningPath(
         ++metric.dugPitBlockedMinimumUtility;
         return;
     }
-    if(!(effective.utility>competingUtility*1.08)){
+
+    bool winsCompetition=false;
+    if(ordinaryCivilizationAllowed){
+        winsCompetition=effective.utility>competingUtility*1.08;
+    }else{
+        UnifiedUtilityDecision baseline;
+        baseline.kind=socialWinsBaseline
+            ? UnifiedDecisionKind::Social
+            : UnifiedDecisionKind::Physical;
+        baseline.physicalGoal=physical.first;
+        baseline.social=social;
+        baseline.utility=competingUtility;
+        const double structuralPressure=std::max(
+            effective.utility,
+            sanitationStructuralPressureAfterImmediateRelief01(projected));
+        const double competingPressure=
+            unifiedCompetingPressure01(projected,baseline);
+        metric.dugPitStructuralPressureSum+=structuralPressure;
+        metric.dugPitCompetingPressureSum+=competingPressure;
+        ++metric.dugPitStructuralPressureSamples;
+        winsCompetition=structuralPressure>competingPressure;
+    }
+
+    if(!winsCompetition){
         ++metric.dugPitBlockedWinnerMargin;
         return;
     }
@@ -837,6 +865,14 @@ int main(int argc,char** argv)
                  <<" dugPitCompetingUtilityAvg="
                  <<(m.dugPitUtilitySamples>0
                     ? m.dugPitCompetingUtilitySum/static_cast<double>(m.dugPitUtilitySamples)
+                    : 0.0)
+                 <<" dugPitStructuralPressureAvg="
+                 <<(m.dugPitStructuralPressureSamples>0
+                    ? m.dugPitStructuralPressureSum/static_cast<double>(m.dugPitStructuralPressureSamples)
+                    : 0.0)
+                 <<" dugPitCompetingPressureAvg="
+                 <<(m.dugPitStructuralPressureSamples>0
+                    ? m.dugPitCompetingPressureSum/static_cast<double>(m.dugPitStructuralPressureSamples)
                     : 0.0)
                  <<" dugPitImprovementWorkGain="<<m.dugPitImprovementWorkGain
                  <<" dugPitImprovementWorkMax="<<m.dugPitImprovementWorkMax;
