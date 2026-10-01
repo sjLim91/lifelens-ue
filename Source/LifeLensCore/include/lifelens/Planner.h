@@ -25,11 +25,11 @@ inline int emergencyUseDurationTicks(Goal g)
 inline NeedsDelta emergencyUseEffectPerTick(Goal g)
 {
     switch(g){
-        case Goal::Eat: return {-0.28,0,0,0,0};
-        case Goal::Drink: return {0,-0.32,0,0,0};
-        case Goal::Sleep: return {0,0,-0.00150,0,0};
-        case Goal::UseToilet: return {0,0,0,-0.13,0.012};
-        case Goal::Wash: return {0,0,0,0,-0.018};
+        case Goal::Eat: return {-0.42,0,0,0,0};
+        case Goal::Drink: return {0,-0.46,0,0,0};
+        case Goal::Sleep: return {0,0,-0.00230,0,0};
+        case Goal::UseToilet: return {0,0,0,-0.20,0.012};
+        case Goal::Wash: return {0,0,0,0,-0.16};
         case Goal::Idle:
         default: return {};
     }
@@ -101,7 +101,7 @@ inline NeedsDelta facilityUseEffectPerTick(Goal g)
     switch(g){
         case Goal::Eat: return {-0.075,0,0,0,0};
         case Goal::Drink: return {0,-0.085,0,0,0};
-        case Goal::Sleep: return {0,0,-0.00220,0,0};
+        case Goal::Sleep: return {0,0,-0.00300,0,0};
         case Goal::UseToilet: return {0,0,0,-0.12,0};
         case Goal::Wash: return {0,0,0,0,-0.055};
         case Goal::Idle:
