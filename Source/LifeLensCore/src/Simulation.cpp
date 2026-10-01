@@ -2396,6 +2396,20 @@ void Simulation::step(){
         }
 
         if(r.pendingContext.active()){
+            // Context timeout is a Core runtime contract, not an external-client
+            // concern. Headless execution must expire stale Social/Civilization/
+            // Parenting/Teaching actions before attempting another movement
+            // step, otherwise a moving target can be chased indefinitely.
+            if(contextActionExpired(r.pendingContext,world_.minute)){
+                emit(c.name+" context action timed out");
+                r.pendingContext.clear();
+                clearNavigation(r);
+                r.penaltyUntilMinute=std::max(
+                    r.penaltyUntilMinute,
+                    world_.minute+5);
+                continue;
+            }
+
             if(!world_.externalPhysicalExecution){
                 advancePendingContext(c,r);
                 if(r.pendingContext.active() && r.navigationRouteFailed){
@@ -2406,16 +2420,6 @@ void Simulation::step(){
                         r.penaltyUntilMinute,
                         world_.minute+5);
                 }
-                continue;
-            }
-
-            if(contextActionExpired(r.pendingContext,world_.minute)){
-                emit(c.name+" context action timed out");
-                r.pendingContext.clear();
-                clearNavigation(r);
-                r.penaltyUntilMinute=std::max(
-                    r.penaltyUntilMinute,
-                    world_.minute+5);
             }
             continue;
         }
