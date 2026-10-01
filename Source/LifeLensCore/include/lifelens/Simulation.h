@@ -33,6 +33,7 @@ struct ResidentPlanningStateObservation {
     bool hasPhysicalPlan=false;
     bool hasPendingContext=false;
     int penaltyUntilMinute=0;
+    int socialCooldownUntilMinute=0;
 };
 
 class Simulation {
@@ -73,6 +74,8 @@ public:
         observation.hasPhysicalPlan=!it->second.plan.empty();
         observation.hasPendingContext=it->second.pendingContext.active();
         observation.penaltyUntilMinute=it->second.penaltyUntilMinute;
+        observation.socialCooldownUntilMinute=
+            it->second.socialCooldownUntilMinute;
         return observation;
     }
     bool recommendedOutdoorReliefPosition(CharacterId id,GridPos& outPosition) const {
