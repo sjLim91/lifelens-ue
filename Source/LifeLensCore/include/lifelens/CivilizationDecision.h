@@ -626,27 +626,78 @@ inline double waterTransportInnovationPressure(
         +0.28*needPressure);
 }
 
+inline int settlementContainerCapitalAtPosition(
+    const World& world,
+    const Character& self,
+    GridPos authoritativePosition,
+    const SettlementPopulation* population=nullptr)
+{
+    int total=0;
+    if(population!=nullptr){
+        for(const auto& entry:*population){
+            if(manhattan(entry.second,authoritativePosition)
+               >SettlementServiceRadiusGrid) continue;
+            for(const Character& resident:world.characters){
+                if(resident.id!=entry.first || !resident.alive) continue;
+                total+=simpleContainerCount(
+                    resident.civilization.inventory);
+                break;
+            }
+        }
+    }else{
+        total+=simpleContainerCount(self.civilization.inventory);
+    }
+
+    for(const StorageSite& storage:world.storageSites){
+        if(!settlementStorageServesPosition(
+            storage,authoritativePosition)) continue;
+        total+=simpleContainerCount(storage.inventory);
+    }
+    return total;
+}
+
+inline int settlementResidentCountAtPosition(
+    const World& world,
+    const Character& self,
+    GridPos authoritativePosition,
+    const SettlementPopulation* population=nullptr)
+{
+    if(population==nullptr) return self.alive ? 1 : 0;
+
+    int count=0;
+    for(const auto& entry:*population){
+        if(manhattan(entry.second,authoritativePosition)
+           >SettlementServiceRadiusGrid) continue;
+        for(const Character& resident:world.characters){
+            if(resident.id==entry.first && resident.alive){
+                ++count;
+                break;
+            }
+        }
+    }
+    return std::max(1,count);
+}
+
 inline double simpleContainerLogisticsStockPressure(
     const World& world,
     const Character& self,
-    GridPos authoritativePosition)
+    GridPos authoritativePosition,
+    const SettlementPopulation* population=nullptr)
 {
     if(!self.civilization.knowledge.knowsAtLeast(
         TechniqueId::SimpleContainer,KnowledgeLevel::Reproducible)){
         return 0.0;
     }
 
+    const int residents=settlementResidentCountAtPosition(
+        world,self,authoritativePosition,population);
     const bool sharedStorageAvailable=
         nearestSettlementStorage(world,authoritativePosition)!=nullptr;
     const int desired=
-        SimpleContainerPersonalStockTarget
+        residents*SimpleContainerPersonalStockTarget
         +(sharedStorageAvailable ? SettlementWaterReserveTarget : 0);
-    const int available=
-        simpleContainerCount(self.civilization.inventory)
-        +(sharedStorageAvailable
-            ? storageCountForMaterialNear(
-                world,MaterialKind::Water,authoritativePosition)
-            : 0);
+    const int available=settlementContainerCapitalAtPosition(
+        world,self,authoritativePosition,population);
     return desired>0
         ? clampCivilization01(
             static_cast<double>(std::max(0,desired-available))
@@ -822,7 +873,8 @@ inline CivilizationUtilityDecision bestResourceExplorationDecisionAtPosition(
 inline CivilizationUtilityDecision bestGatherDecisionAtPosition(
     const World& world,
     const Character& self,
-    GridPos authoritativePosition)
+    GridPos authoritativePosition,
+    const SettlementPopulation* population=nullptr)
 {
     CivilizationUtilityDecision best;
     for(const auto& node:world.resourceNodes){
@@ -899,7 +951,7 @@ inline CivilizationUtilityDecision bestGatherDecisionAtPosition(
                     waterTransportInnovationPressure(
                         world,self,authoritativePosition),
                     simpleContainerLogisticsStockPressure(
-                        world,self,authoritativePosition))
+                        world,self,authoritativePosition,population))
                 : 0.0;
         const double score=clampCivilization01(
             0.07+0.12*self.personality.curiosity+0.05*self.personality.adaptability+
@@ -1890,7 +1942,7 @@ inline CivilizationUtilityDecision bestCraftDecisionAtPosition(
         double stockNeed=0.0;
         if(technique==TechniqueId::SimpleContainer){
             stockNeed=simpleContainerLogisticsStockPressure(
-                world,self,authoritativePosition);
+                world,self,authoritativePosition,population);
         }else if(recipe.producesItem && recipe.outputQuantity>0){
             const int desired=desiredTechniqueOutputStock(technique);
             const int available=worldItemCount(world,self,recipe.outputKind,recipe.outputMaterial,recipe.outputMaterial==MaterialKind::Unknown);
@@ -2213,7 +2265,7 @@ inline CivilizationUtilityDecision chooseCivilizationUtilityDecisionAtPosition(
             world,self,authoritativePosition));
     considerCivilizationDecision(
         best,bestGatherDecisionAtPosition(
-            world,self,authoritativePosition));
+            world,self,authoritativePosition,population));
     return best;
 }
 
