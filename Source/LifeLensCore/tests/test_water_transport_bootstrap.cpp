@@ -93,8 +93,24 @@ int main()
         1,
         0.5,
         1.0});
+    resident.civilization.knowledge.learn(
+        TechniqueId::SimpleContainer,
+        KnowledgeLevel::Reproducible,
+        0.8);
     assert(waterTransportInnovationPressure(
         world,resident,home)==0.0);
+    assert(simpleContainerLogisticsStockPressure(world,resident)>0.60);
+
+    // Innovation and scaling are separate. One vessel solves the discovery
+    // problem, but a real stock gap keeps Clay acquisition relevant until the
+    // resident can carry a reserve and contribute surplus to shared storage.
+    while(resident.civilization.inventory.remove(
+        ItemKind::RawMaterial,MaterialKind::Clay,1)) {}
+    resident.needs.thirst=0.20;
+    const CivilizationUtilityDecision logisticsGather=
+        bestGatherDecisionAtPosition(world,resident,home);
+    assert(logisticsGather.intent==CivilizationIntent::Gather);
+    assert(logisticsGather.material==MaterialKind::Clay);
 
     // Shared filled Water in a nearby real storage also solves the immediate
     // transport problem without forcing every resident to reinvent a vessel.

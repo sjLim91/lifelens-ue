@@ -574,6 +574,9 @@ inline GridPos civilizationDecisionResourcePosition(
 
 inline constexpr int WaterTransportComfortDistanceGrid=8;
 inline constexpr int WaterTransportSevereDistanceGrid=WorldChunkSpanGridCells;
+inline constexpr int PortableProvisionCarryTarget=2;
+inline constexpr int SimpleContainerLogisticsStockTarget=
+    PortableProvisionCarryTarget+1;
 
 inline double waterTransportInnovationPressure(
     const World& world,
@@ -620,6 +623,23 @@ inline double waterTransportInnovationPressure(
     return clampCivilization01(
         0.72*distancePressure
         +0.28*needPressure);
+}
+
+inline double simpleContainerLogisticsStockPressure(
+    const World& world,
+    const Character& self)
+{
+    if(!self.civilization.knowledge.knowsAtLeast(
+        TechniqueId::SimpleContainer,KnowledgeLevel::Reproducible)){
+        return 0.0;
+    }
+
+    const int available=worldItemCount(
+        world,self,ItemKind::SimpleContainer,MaterialKind::Unknown,true);
+    return clampCivilization01(
+        static_cast<double>(
+            std::max(0,SimpleContainerLogisticsStockTarget-available))
+        /static_cast<double>(SimpleContainerLogisticsStockTarget));
 }
 
 inline int knownNaturalResourceUnits(
@@ -858,8 +878,10 @@ inline CivilizationUtilityDecision bestGatherDecisionAtPosition(
         const double distancePenalty=provision ? 0.0 : 0.20*distance01;
         const double waterTransportBoost=
             node.material==MaterialKind::Clay
-                ? 0.22*waterTransportInnovationPressure(
-                    world,self,authoritativePosition)
+                ? 0.22*std::max(
+                    waterTransportInnovationPressure(
+                        world,self,authoritativePosition),
+                    simpleContainerLogisticsStockPressure(world,self))
                 : 0.0;
         const double score=clampCivilization01(
             0.07+0.12*self.personality.curiosity+0.05*self.personality.adaptability+
@@ -1015,10 +1037,6 @@ inline CivilizationUtilityDecision bestExperimentDecision(
     return bestExperimentDecisionAtPosition(
         world,self,civilizationSanitationReferencePosition(world),nullptr);
 }
-
-inline constexpr int PortableProvisionCarryTarget=2;
-inline constexpr int SimpleContainerLogisticsStockTarget=
-    PortableProvisionCarryTarget+1;
 
 inline int desiredTechniqueOutputStock(TechniqueId technique)
 {
