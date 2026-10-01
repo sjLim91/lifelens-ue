@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
 import * as THREE from 'three';
 import ts from 'typescript';
+import { terrainSeamChecks } from './terrain-seam-checks.mjs';
 import { mapSurfaceChecks } from './map-surface-checks.mjs';
 
 const require = createRequire(import.meta.url);
@@ -602,6 +603,8 @@ test('unchanged terrain refreshes retain water geometry', () => {
 });
 
 mapSurfaceChecks({ test, source, THREE });
+
+terrainSeamChecks({ test, source, chunk, windowOf, withScene, near });
 
 console.log(`${passed} presentation regression checks passed; ${failed} failed`);
 if (failed) process.exitCode = 1;
