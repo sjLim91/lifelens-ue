@@ -234,6 +234,53 @@ int main()
     }
     assert(safeFoodStarted);
 
+    // Even a short/safe toilet trip must yield when the currently-critical
+    // provision Need is already more severe than bladder pressure.
+    Simulation dominantHunger(
+        874219012,0,CurrentWorldGenerationVersion,movingRules);
+    dominantHunger.setupNewGame();
+    dominantHunger.world().characters.resize(1);
+    dominantHunger.world().resourceNodes.clear();
+    dominantHunger.world().storageSites.clear();
+
+    Character* dominantActor=onlyResident(dominantHunger);
+    assert(dominantActor!=nullptr);
+    const CharacterId dominantId=dominantActor->id;
+    const std::string dominantName=dominantActor->name;
+    dominantActor->needs={0.10,0.10,0.10,0.95,0.10};
+    addReachableFood(dominantHunger,dominantId,991012);
+
+    GridPos dominantNearToilet{};
+    assert(findReachableTargetAtLeastDistance(
+        dominantHunger,dominantId,2,dominantNearToilet,4));
+    installDesignatedSanitationSite(
+        dominantHunger,dominantId,dominantNearToilet,991012);
+
+    dominantHunger.step();
+    auto dominantPresentation=
+        dominantHunger.observeResidentPresentation(dominantId);
+    assert(dominantPresentation.active);
+    assert(dominantPresentation.kind==PresentationActionKind::Physical);
+    assert(dominantPresentation.physicalGoal==Goal::UseToilet);
+    assert(dominantPresentation.phase==PresentationActionPhase::Moving);
+
+    dominantActor->needs.hunger=0.96;
+    bool dominantFoodStarted=false;
+    for(int minute=0;minute<8 && !dominantFoodStarted;++minute){
+        dominantHunger.step();
+        const auto observed=
+            dominantHunger.observeResidentPresentation(dominantId);
+        dominantFoodStarted=
+            observed.active
+            && observed.kind==PresentationActionKind::Civilization
+            && observed.civilizationIntent==CivilizationIntent::Gather
+            && observed.civilizationMaterial==MaterialKind::PlantFood;
+    }
+    assert(containsLog(
+        dominantHunger,
+        dominantName+" preempted current activity for critical survival need"));
+    assert(dominantFoodStarted);
+
     // The same commitment must not protect a distant sanitation trip when
     // critical hunger would saturate before the authoritative route can finish.
     Simulation unsafeMove(
