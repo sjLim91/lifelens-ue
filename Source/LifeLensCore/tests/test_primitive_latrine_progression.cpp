@@ -53,7 +53,8 @@ Simulation makeDugPitSchedulerProbe(
     double thirst,
     double bladder,
     double hygiene,
-    bool knowsDugPit=true)
+    bool knowsDugPit=true,
+    double sleep=0.10)
 {
     Simulation simulation(seed);
     simulation.setupNewGame();
@@ -62,7 +63,7 @@ Simulation makeDugPitSchedulerProbe(
     simulation.world().minute=480;
 
     Character& actor=simulation.world().characters.front();
-    actor.needs={hunger,thirst,0.10,bladder,hygiene};
+    actor.needs={hunger,thirst,sleep,bladder,hygiene};
     actor.civilization.craftingSkill=1.0;
     actor.personality.conscientiousness=1.0;
     actor.personality.patience=1.0;
@@ -249,9 +250,39 @@ int main()
     assert(!hungrySchedulerPending.active
         || hungrySchedulerPending.technique!=TechniqueId::DugSanitationPit);
 
+    // Long-run regression shaped like the failing 4242001 resident: fatigue is
+    // nearly saturated, hygiene is saturated, bladder remains high, but food and
+    // water are below the provision gate. Raw Physical utility exceeds 1.0 in
+    // this state; the durable pit must still be able to compete on residual
+    // sanitation pressure after one immediate toilet relief.
+    Simulation chronicPressureProbe=makeDugPitSchedulerProbe(
+        9205,0.66,0.73,0.79,0.97,true,0.96);
+    Character& chronicPressureActor=
+        chronicPressureProbe.world().characters.front();
+    const double chronicStructuralPressure=
+        sanitationStructuralPressureAfterImmediateRelief01(
+            chronicPressureActor);
+    const auto chronicPhysical=
+        bestPhysicalUtility(
+            chronicPressureProbe.world(),chronicPressureActor);
+    assert(chronicStructuralPressure
+        > needForGoal(chronicPressureActor,chronicPhysical.first));
+    const CharacterId chronicPressureActorId=chronicPressureActor.id;
+    chronicPressureProbe.step();
+    const PendingContextActionObservation chronicPressurePending=
+        chronicPressureProbe.observePendingContextAction(
+            chronicPressureActorId);
+    assert(chronicPressurePending.active);
+    assert(chronicPressurePending.kind==ContextActionKind::Civilization);
+    assert(chronicPressurePending.civilizationIntent
+        ==CivilizationIntent::Craft);
+    assert(chronicPressurePending.technique
+        ==TechniqueId::DugSanitationPit);
+
     // Nor does the new opening force construction when immediate bladder relief
-    // is overwhelmingly stronger. Unified Utility keeps its existing 1.08
-    // margin, so the Physical action still wins this state.
+    // is overwhelmingly stronger. After one real toilet-use effect is projected,
+    // the residual sanitation burden falls below the immediate bladder Need, so
+    // the Physical action still wins this state.
     Simulation severeBladderProbe=makeDugPitSchedulerProbe(
         9204,0.10,0.10,0.99,0.75);
     const CharacterId severeBladderActorId=
