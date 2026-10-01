@@ -195,6 +195,8 @@ lifelens_add_test(test_survival_reachability)
 
 lifelens_add_test(test_durable_water_storage)
 
+lifelens_add_test(test_water_transport_bootstrap)
+
 lifelens_add_test(test_cultivation_progression)
 
 
