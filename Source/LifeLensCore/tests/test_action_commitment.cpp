@@ -262,6 +262,14 @@ int main()
         }
     }
 
+    std::cerr
+        <<"sleep commitment diagnostics:"
+        <<" before="<<sleepBeforeCritical
+        <<" after="<<sleeper->needs.sleep
+        <<" hunger="<<sleeper->needs.hunger
+        <<" minutes="<<criticalSleepMinutes
+        <<" gathered="<<(gatheredAfterRest?1:0)
+        <<"\n";
     assert(criticalSleepMinutes>=20);
     assert(sleeper->needs.sleep<sleepBeforeCritical-0.02);
     assert(gatheredAfterRest);
