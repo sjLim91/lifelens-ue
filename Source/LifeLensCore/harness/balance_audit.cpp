@@ -43,8 +43,12 @@ struct ResidentMetrics {
     double criticalPreemptionBladderSum=0.0;
     std::uint64_t toiletCriticalPreemptions=0;
     std::uint64_t toiletPreemptionsSafeBeforeSaturation=0;
+    std::uint64_t toiletPreemptionsSafeConservative=0;
     std::uint64_t toiletPreemptionsAlreadyArrived=0;
+    double toiletPreemptionDistanceSum=0.0;
+    int toiletPreemptionDistanceMax=0;
     double toiletPreemptionRemainingMinutesSum=0.0;
+    double toiletPreemptionConservativeMinutesSum=0.0;
     double toiletPreemptionCriticalSaturationMinutesSum=0.0;
     std::uint64_t socialMinutes=0;
     std::uint64_t civilizationMinutes=0;
@@ -504,19 +508,60 @@ int main(int argc,char** argv)
                         if(planning.navigationArrived){
                             ++metric.toiletPreemptionsAlreadyArrived;
                         }
+                        const int targetDistance=
+                            planning.navigationHasTarget
+                                ? planning.navigationManhattanDistance
+                                : 0;
+                        metric.toiletPreemptionDistanceSum+=
+                            static_cast<double>(targetDistance);
+                        metric.toiletPreemptionDistanceMax=std::max(
+                            metric.toiletPreemptionDistanceMax,
+                            targetDistance);
+
                         const double remainingMinutes=
-                            static_cast<double>(
-                                planning.navigationRemainingSteps)
+                            static_cast<double>(targetDistance)
+                            *static_cast<double>(
+                                std::max(
+                                    1,
+                                    planning.navigationStepIntervalMinutes))
                             +static_cast<double>(
                                 std::max(0,planning.activeActionRemainingTicks));
-                        metric.toiletPreemptionRemainingMinutesSum+=remainingMinutes;
+                        metric.toiletPreemptionRemainingMinutesSum+=
+                            remainingMinutes;
+
+                        // Weather friction is bounded by the Core navigation
+                        // contract: ceil(1 + 1.50 * travelFriction[0..1]) <= 3.
+                        // Use that upper bound rather than today's weather so
+                        // the "safe" count is conservative even if conditions
+                        // worsen during the short remaining trip.
+                        constexpr int ConservativeGroundStepMinutes=
+                            static_cast<int>(std::ceil(
+                                1.0+
+                                CoreNavigationContract::WeatherFrictionWeight));
+                        const double conservativeMinutes=
+                            static_cast<double>(targetDistance)
+                            *static_cast<double>(ConservativeGroundStepMinutes)
+                            +static_cast<double>(
+                                std::max(0,planning.activeActionRemainingTicks));
+                        metric.toiletPreemptionConservativeMinutesSum+=
+                            conservativeMinutes;
+
+                        const EnvironmentalConsequenceProfile environment=
+                            deriveEnvironmentalConsequences(
+                                deriveDynamicEnvironment(
+                                    sim.world().genesisIdentity(),
+                                    chunkCoordForGrid(planning.position),
+                                    sim.world().minute));
 
                         double saturationMinutes=
                             std::numeric_limits<double>::infinity();
                         if(hungerCritical){
                             const double rate=
                                 sim.ruleset().needs.hungerPerMinute
-                                *std::max(0.0,eventResident->metabolism);
+                                *std::max(0.0,eventResident->metabolism)
+                                +std::max(
+                                    0.0,
+                                    environment.perMinuteNeedsDelta.hunger);
                             if(rate>1e-12){
                                 saturationMinutes=std::min(
                                     saturationMinutes,
@@ -528,7 +573,10 @@ int main(int argc,char** argv)
                         if(thirstCritical){
                             const double rate=
                                 sim.ruleset().needs.thirstPerMinute
-                                *std::max(0.0,eventResident->metabolism);
+                                *std::max(0.0,eventResident->metabolism)
+                                +std::max(
+                                    0.0,
+                                    environment.perMinuteNeedsDelta.thirst);
                             if(rate>1e-12){
                                 saturationMinutes=std::min(
                                     saturationMinutes,
@@ -542,6 +590,9 @@ int main(int argc,char** argv)
                                 saturationMinutes;
                             if(remainingMinutes<=saturationMinutes){
                                 ++metric.toiletPreemptionsSafeBeforeSaturation;
+                            }
+                            if(conservativeMinutes<=saturationMinutes){
+                                ++metric.toiletPreemptionsSafeConservative;
                             }
                         }
                     }
@@ -964,11 +1015,25 @@ int main(int argc,char** argv)
                  <<" toiletCriticalPreemptions="<<m.toiletCriticalPreemptions
                  <<" toiletPreemptionsSafeBeforeSaturation="
                  <<m.toiletPreemptionsSafeBeforeSaturation
+                 <<" toiletPreemptionsSafeConservative="
+                 <<m.toiletPreemptionsSafeConservative
                  <<" toiletPreemptionsAlreadyArrived="
                  <<m.toiletPreemptionsAlreadyArrived
+                 <<" toiletPreemptionDistanceAvg="
+                 <<(m.toiletCriticalPreemptions>0
+                    ? m.toiletPreemptionDistanceSum/
+                        static_cast<double>(m.toiletCriticalPreemptions)
+                    : 0.0)
+                 <<" toiletPreemptionDistanceMax="
+                 <<m.toiletPreemptionDistanceMax
                  <<" toiletPreemptionRemainingMinutesAvg="
                  <<(m.toiletCriticalPreemptions>0
                     ? m.toiletPreemptionRemainingMinutesSum/
+                        static_cast<double>(m.toiletCriticalPreemptions)
+                    : 0.0)
+                 <<" toiletPreemptionConservativeMinutesAvg="
+                 <<(m.toiletCriticalPreemptions>0
+                    ? m.toiletPreemptionConservativeMinutesSum/
                         static_cast<double>(m.toiletCriticalPreemptions)
                     : 0.0)
                  <<" toiletPreemptionCriticalSaturationMinutesAvg="
