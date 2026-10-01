@@ -326,6 +326,63 @@ int main()
         unsafeName+" preempted current activity for critical survival need"));
     assert(unsafeFoodStarted);
 
+    // Survival-band food remains strict priority even when fatigue is much
+    // higher. This preserves the established carried-provision contract.
+    Simulation survivalTier(
+        874219020,0,CurrentWorldGenerationVersion,rules);
+    survivalTier.setupNewGame();
+    survivalTier.world().characters.resize(1);
+    Character* survivalActor=onlyResident(survivalTier);
+    assert(survivalActor!=nullptr);
+    const CharacterId survivalId=survivalActor->id;
+    survivalActor->needs={0.75,0.10,0.95,0.10,0.10};
+    survivalActor->civilization.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::PlantFood,1,0.5,1.0});
+    survivalTier.step();
+    const auto survivalPresentation=
+        survivalTier.observeResidentPresentation(survivalId);
+    assert(survivalPresentation.active);
+    assert(survivalPresentation.kind==PresentationActionKind::Physical);
+    assert(survivalPresentation.physicalGoal==Goal::Eat);
+
+    // Below the 0.74 survival band, a more severe fatigue Need must no longer
+    // be hidden behind merely-urgent hunger.
+    Simulation sleepPriority(
+        874219021,0,CurrentWorldGenerationVersion,rules);
+    sleepPriority.setupNewGame();
+    sleepPriority.world().characters.resize(1);
+    Character* sleepPriorityActor=onlyResident(sleepPriority);
+    assert(sleepPriorityActor!=nullptr);
+    const CharacterId sleepPriorityId=sleepPriorityActor->id;
+    sleepPriorityActor->needs={0.72,0.10,0.95,0.10,0.10};
+    sleepPriorityActor->civilization.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::PlantFood,1,0.5,1.0});
+    sleepPriority.step();
+    const auto sleepPriorityPresentation=
+        sleepPriority.observeResidentPresentation(sleepPriorityId);
+    assert(sleepPriorityPresentation.active);
+    assert(sleepPriorityPresentation.kind==PresentationActionKind::Physical);
+    assert(sleepPriorityPresentation.physicalGoal==Goal::Sleep);
+
+    // Hygiene gets the same self-care opportunity below the survival band.
+    // New Game has authoritative natural freshwater; Wash must be a real
+    // Physical intent toward that source rather than an invented local reset.
+    Simulation washPriority(
+        874219022,0,CurrentWorldGenerationVersion,rules);
+    washPriority.setupNewGame();
+    washPriority.world().characters.resize(1);
+    Character* washPriorityActor=onlyResident(washPriority);
+    assert(washPriorityActor!=nullptr);
+    const CharacterId washPriorityId=washPriorityActor->id;
+    washPriorityActor->needs={0.10,0.72,0.10,0.10,0.95};
+    washPriority.step();
+    const auto washPriorityPresentation=
+        washPriority.observeResidentPresentation(washPriorityId);
+    assert(washPriorityPresentation.active);
+    assert(washPriorityPresentation.kind==PresentationActionKind::Physical);
+    assert(washPriorityPresentation.physicalGoal==Goal::Wash);
+    assert(washPriorityPresentation.directNaturalWaterSource);
+
     // Sleep is a long action and therefore remains interruptible, but equal
     // severity must not create one-minute sleep/replan churn. The resident gets
     // real fatigue recovery first; once hunger clearly dominates, survival
