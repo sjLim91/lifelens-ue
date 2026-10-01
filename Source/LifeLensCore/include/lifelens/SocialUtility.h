@@ -692,10 +692,28 @@ inline UnifiedUtilityDecision chooseUnifiedUtilityDecisionAtPosition(
         decision.utility = physical.second;
     }
 
-    // Survival is still dominant. Civilization competes only while all Needs
-    // are below the urgent threshold, and must beat the existing winner by a
-    // margin rather than constantly interrupting life/social behavior.
-    if (maximumResidentNeed(self) < 0.74 &&
+    // Survival is still dominant. Ordinary civilization competes only while
+    // all Needs are below the urgent provision band. Sanitation progression is
+    // the narrow exception: when bladder/hygiene pressure itself is urgent, the
+    // resident may consider a real DesignatedArea/DugPit solution instead of
+    // being permanently barred from developing the affordance that would solve
+    // the chronic problem. Hunger/thirst urgency closes this exception, and the
+    // candidate still has to beat the current Physical/Social winner by the
+    // normal margin, so immediate self-care is never scripted away.
+    const bool sanitationProgressionCandidate =
+        civilization.technique==TechniqueId::DesignatedSanitationArea
+        || civilization.technique==TechniqueId::DugSanitationPit;
+    const bool sanitationPressureException =
+        sanitationProgressionCandidate
+        && std::max(self.needs.bladder,self.needs.hygiene)
+            >= UrgentSurvivalProvisionThreshold
+        && self.needs.hunger<UrgentSurvivalProvisionThreshold
+        && self.needs.thirst<UrgentSurvivalProvisionThreshold;
+    const bool civilizationPressureAllowsCompetition =
+        maximumResidentNeed(self)<UrgentSurvivalProvisionThreshold
+        || sanitationPressureException;
+
+    if (civilizationPressureAllowsCompetition &&
         civilization.intent != CivilizationIntent::None &&
         civilization.utility >= minimumCivilizationUtility &&
         civilization.utility > decision.utility * 1.08) {
