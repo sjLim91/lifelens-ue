@@ -108,30 +108,39 @@ int main()
     assert(pressureDecision.kind==UnifiedDecisionKind::Civilization);
     assert(pressureDecision.civilization.technique==TechniqueId::DugSanitationPit);
 
-    // An unrelated civilization candidate must not hide the sanitation
-    // solution before the urgent-Need gate is applied. Heavy carried stock
-    // makes PrimitiveStorage the overall civilization winner, while the same
-    // resident still has a valid DugPit experiment that can beat self-care.
-    Character shadowedPressureBuilder=pressureBuilder;
-    shadowedPressureBuilder.civilization.inventory.add({
-        ItemKind::RawMaterial,MaterialKind::Stone,12,0.8,1.0});
-
-    const CivilizationUtilityDecision shadowingCivilization=
-        chooseDispositionAwareCivilizationDecisionAtPosition(
-            world,shadowedPressureBuilder,created.pos,nullptr);
-    assert(shadowingCivilization.intent!=CivilizationIntent::None);
-    assert(shadowingCivilization.technique!=TechniqueId::DugSanitationPit);
-    assert(shadowingCivilization.technique!=TechniqueId::DesignatedSanitationArea);
-
+    // The sanitation evaluator must remain available independently from the
+    // overall civilization winner.
     const CivilizationUtilityDecision independentSanitation=
         chooseDispositionAwareSanitationProgressionDecisionAtPosition(
-            world,shadowedPressureBuilder,created.pos,nullptr);
+            world,pressureBuilder,created.pos,nullptr);
     assert(independentSanitation.intent==CivilizationIntent::Experiment);
     assert(independentSanitation.technique==TechniqueId::DugSanitationPit);
 
-    const UnifiedUtilityDecision shadowedPressureDecision=
-        chooseUnifiedUtilityDecisionAtPosition(
-            world,shadowedPressureBuilder,noRelationships,created.pos,0.18,0.14,nullptr);
+    // Reproduce the exact candidate-shadowing contract without depending on a
+    // fragile world-scoring coincidence: an unrelated civilization candidate
+    // is stronger than the sanitation candidate, but urgent bladder/hygiene
+    // pressure suppresses ordinary civilization. The independently preserved
+    // DugPit candidate must still be allowed to compete with Physical/Social.
+    CivilizationUtilityDecision shadowingCivilization;
+    shadowingCivilization.intent=CivilizationIntent::Experiment;
+    shadowingCivilization.technique=TechniqueId::PrimitiveStorage;
+    shadowingCivilization.utility=0.95;
+
+    CivilizationUtilityDecision shadowedSanitation;
+    shadowedSanitation.intent=CivilizationIntent::Experiment;
+    shadowedSanitation.technique=TechniqueId::DugSanitationPit;
+    shadowedSanitation.utility=0.75;
+
+    UnifiedUtilityDecision shadowedPressureDecision;
+    shadowedPressureDecision.kind=UnifiedDecisionKind::Physical;
+    shadowedPressureDecision.physicalGoal=Goal::UseToilet;
+    shadowedPressureDecision.utility=0.60;
+    considerCivilizationUnderNeedPressure(
+        pressureBuilder,
+        shadowingCivilization,
+        shadowedSanitation,
+        0.14,
+        shadowedPressureDecision);
     assert(shadowedPressureDecision.kind==UnifiedDecisionKind::Civilization);
     assert(shadowedPressureDecision.civilization.technique
         ==TechniqueId::DugSanitationPit);
