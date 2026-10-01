@@ -718,12 +718,6 @@ inline UnifiedUtilityDecision chooseUnifiedUtilityDecisionAtPosition(
 
     const auto physical = bestPhysicalUtility(world, self);
     const SocialUtilityDecision social = chooseSocialUtilityDecision(world, self, relationships);
-    const CivilizationUtilityDecision civilization =
-        chooseDispositionAwareCivilizationDecisionAtPosition(
-            world,self,authoritativePosition,population);
-    const CivilizationUtilityDecision sanitationProgression =
-        chooseDispositionAwareSanitationProgressionDecisionAtPosition(
-            world,self,authoritativePosition,population);
     const CivilizationUtilityDecision survivalProvision =
         urgentSurvivalProvisionDecisionAtPosition(
             world,self,authoritativePosition);
@@ -731,7 +725,6 @@ inline UnifiedUtilityDecision chooseUnifiedUtilityDecisionAtPosition(
     UnifiedUtilityDecision decision;
     decision.physicalGoal = physical.first;
     decision.social = social;
-    decision.civilization = civilization;
 
     // A missing critical provision is part of survival, not optional progress.
     // Prefer Retrieve/Gather from known supply; if none exists, allow a real
@@ -756,10 +749,32 @@ inline UnifiedUtilityDecision chooseUnifiedUtilityDecisionAtPosition(
         decision.utility = physical.second;
     }
 
-    // Survival is still dominant. Ordinary civilization is suppressed while
-    // urgent Needs are present. Sanitation progression is the narrow,
-    // independently evaluated exception so unrelated civilization candidates
-    // cannot hide the problem-solving candidate before this gate is applied.
+    // Avoid evaluating the full civilization tree when the urgent-Need gate
+    // would suppress it anyway. In that state, evaluate only the narrow
+    // sanitation problem-solving family when bladder/hygiene pressure actually
+    // qualifies. This both preserves the candidate and avoids turning the fix
+    // into a permanent second civilization search on every decision tick.
+    const bool ordinaryCivilizationAllowed =
+        maximumResidentNeed(self)<UrgentSurvivalProvisionThreshold;
+    const bool sanitationPressureCouldCompete =
+        !ordinaryCivilizationAllowed
+        && std::max(self.needs.bladder,self.needs.hygiene)
+            >= UrgentSurvivalProvisionThreshold
+        && self.needs.hunger<UrgentSurvivalProvisionThreshold
+        && self.needs.thirst<UrgentSurvivalProvisionThreshold;
+
+    CivilizationUtilityDecision civilization;
+    CivilizationUtilityDecision sanitationProgression;
+    if(ordinaryCivilizationAllowed){
+        civilization=chooseDispositionAwareCivilizationDecisionAtPosition(
+            world,self,authoritativePosition,population);
+        decision.civilization=civilization;
+    }else if(sanitationPressureCouldCompete){
+        sanitationProgression=
+            chooseDispositionAwareSanitationProgressionDecisionAtPosition(
+                world,self,authoritativePosition,population);
+    }
+
     considerCivilizationUnderNeedPressure(
         self,
         civilization,
