@@ -385,6 +385,10 @@ export interface ResidentCivilizationTechnology {
   operational?: boolean;
   adopted?: boolean;
   successfulUses?: number;
+  prerequisiteCount?: number;
+  satisfiedPrerequisiteCount?: number;
+  prerequisitesSatisfied?: boolean;
+  transformationEffectCount?: number;
 }
 
 export interface ResidentCivilization {

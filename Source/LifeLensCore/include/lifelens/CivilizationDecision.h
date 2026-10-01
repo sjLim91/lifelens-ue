@@ -1258,7 +1258,11 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
     for(const ExperimentKind kind:experiments){
         const TechniqueId technique=experimentTechnique(kind);
         if(technique==TechniqueId::None) continue;
+        const TechnologyId technology=technologyIdForTechnique(technique);
+        if(technology==TechnologyId::None) continue;
         if(self.civilization.knowledge.knowsAtLeast(technique,KnowledgeLevel::Reproducible)) continue;
+        if(!technologyKnowledgePrerequisitesSatisfied(
+            self.civilization.knowledge,technology)) continue;
 
         const bool designatedExperiment=kind==ExperimentKind::DesignateSanitationArea;
         const bool pitExperiment=kind==ExperimentKind::DigSanitationPit;
@@ -1308,7 +1312,6 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
         const double preference=civilizationPreference(
             world.seed,self.id,
             200ULL+static_cast<std::uint64_t>(kind));
-        const TechnologyId technology=technologyIdForTechnique(technique);
         const InnovationPressureObservation innovationPressure=
             observeTechnologyInnovationPressure(
                 world,self,technology,
