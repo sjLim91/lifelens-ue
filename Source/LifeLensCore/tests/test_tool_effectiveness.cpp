@@ -102,6 +102,7 @@ int main()
     CHECK(bronzeChop.available);
     CHECK(bronzeChop.tool.kind==ItemKind::BronzeAxe);
     CHECK(bronzeChop.quantityMultiplier>fresh.quantityMultiplier);
+    CHECK(bronzeChop.wear<fresh.wear);
 
     inventory.add({ItemKind::BronzePick,MaterialKind::Bronze,1,0.76,1.0});
     const GatherToolUseProfile bronzeStrike=
@@ -109,6 +110,7 @@ int main()
     CHECK(bronzeStrike.available);
     CHECK(bronzeStrike.tool.kind==ItemKind::BronzePick);
     CHECK(bronzeStrike.quantityMultiplier>strike.quantityMultiplier);
+    CHECK(bronzeStrike.wear<strike.wear);
 
     // A dead sibling stack must not absorb wear meant for the selected usable tool.
     Inventory exactInventory;
