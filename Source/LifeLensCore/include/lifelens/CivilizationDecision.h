@@ -8,6 +8,7 @@
 
 #include "Civilization.h"
 #include "Character.h"
+#include "CivilizationProgression.h"
 #include "CivilizationSpatial.h"
 #include "CultivationProgression.h"
 #include "Facility.h"
@@ -141,6 +142,8 @@ struct CivilizationUtilityDecision {
     TechniqueId technique=TechniqueId::None;
     ItemKind item=ItemKind::RawMaterial;
     int quantity=0;
+    bool hasInnovationPressure=false;
+    InnovationPressureObservation innovationPressure{};
 
     FacilityBuildAction facilityAction=FacilityBuildAction::None;
     FacilityId facility=0;
@@ -841,6 +844,186 @@ inline double civilizationResourceExplorationPressure(
         +0.12*survivalPressure);
 }
 
+struct TechnologyInnovationWeights {
+    TechnologyId technology=TechnologyId::None;
+    MaterialKind bottleneckMaterial=MaterialKind::Unknown;
+    double survival=0.0;
+    double exposure=0.0;
+    double logistics=0.0;
+    double foodSecurity=0.0;
+    double sanitation=0.0;
+    double production=0.0;
+    double resourceScarcity=0.0;
+};
+
+inline TechnologyInnovationWeights technologyInnovationWeights(
+    TechnologyId technology)
+{
+    switch(technology){
+        case TechnologyId::SharpFlake:
+            return {technology,MaterialKind::Flint,0.10,0.0,0.0,0.0,0.0,0.45,0.35};
+        case TechnologyId::ChippedStoneTool:
+            return {technology,MaterialKind::Wood,0.05,0.0,0.05,0.0,0.0,0.60,0.30};
+        case TechnologyId::FireMaking:
+            return {technology,MaterialKind::Wood,0.20,0.60,0.0,0.0,0.0,0.15,0.05};
+        case TechnologyId::FiberCordage:
+            return {technology,MaterialKind::Fiber,0.0,0.0,0.30,0.0,0.0,0.50,0.20};
+        case TechnologyId::SimpleContainer:
+            return {technology,MaterialKind::Water,0.20,0.0,0.65,0.0,0.0,0.05,0.10};
+        case TechnologyId::DesignatedSanitationArea:
+            return {technology,MaterialKind::Unknown,0.10,0.0,0.0,0.0,0.85,0.05,0.0};
+        case TechnologyId::DugSanitationPit:
+            return {technology,MaterialKind::Stone,0.05,0.0,0.0,0.0,0.80,0.10,0.05};
+        case TechnologyId::PrimitiveStorage:
+            return {technology,MaterialKind::PlantFood,0.05,0.0,0.55,0.25,0.0,0.10,0.05};
+        case TechnologyId::DiggingStick:
+            return {technology,MaterialKind::Wood,0.05,0.0,0.05,0.40,0.10,0.35,0.05};
+        case TechnologyId::StoneHammer:
+            return {technology,MaterialKind::Stone,0.0,0.0,0.0,0.0,0.0,0.55,0.45};
+        case TechnologyId::CopperSmelting:
+            return {technology,MaterialKind::CopperOre,0.0,0.0,0.0,0.0,0.0,0.55,0.45};
+        case TechnologyId::Cultivation:
+            return {technology,MaterialKind::PlantFood,0.20,0.0,0.05,0.70,0.0,0.05,0.05};
+        case TechnologyId::TinSmelting:
+            return {technology,MaterialKind::TinOre,0.0,0.0,0.0,0.0,0.0,0.55,0.45};
+        case TechnologyId::BronzeAlloying:
+            return {technology,MaterialKind::TinOre,0.0,0.0,0.0,0.0,0.0,0.75,0.25};
+        case TechnologyId::BronzeAxe:
+            return {technology,MaterialKind::Wood,0.0,0.0,0.05,0.0,0.0,0.70,0.25};
+        case TechnologyId::BronzePick:
+            return {technology,MaterialKind::TinOre,0.0,0.0,0.0,0.0,0.0,0.60,0.40};
+        case TechnologyId::None:
+        default:
+            return {};
+    }
+}
+
+inline InnovationPressureObservation observeTechnologyInnovationPressure(
+    const World& world,
+    const Character& self,
+    TechnologyId technology,
+    GridPos authoritativePosition,
+    const SettlementPopulation* population=nullptr)
+{
+    InnovationPressureObservation observation;
+    observation.technology=technology;
+    const TechnologyInnovationWeights weights=
+        technologyInnovationWeights(technology);
+    if(weights.technology==TechnologyId::None) return observation;
+
+    observation.survival01=clampCivilization01(std::max({
+        self.needs.hunger,
+        self.needs.thirst,
+        self.needs.sleep,
+        self.needs.hygiene
+    }));
+
+    const DynamicEnvironmentObservation environment=deriveDynamicEnvironment(
+        world.genesisIdentity(),
+        chunkCoordForGrid(authoritativePosition),
+        world.minute);
+    const EnvironmentalConsequenceProfile consequence=
+        deriveEnvironmentalConsequences(environment);
+    observation.exposure01=clampCivilization01(std::max({
+        consequence.heatStress01,
+        consequence.coldStress01,
+        environment.precipitationIntensity01,
+        environment.surfaceWetness01,
+        0.70*environment.windIntensity01,
+        consequence.outdoorWorkFriction01
+    }));
+
+    const PrimitiveStorageNeedObservation storageNeed=
+        observePrimitiveStorageNeed(
+            world,self,authoritativePosition,population);
+    observation.logistics01=clampCivilization01(std::max({
+        waterTransportInnovationPressure(
+            world,self,authoritativePosition),
+        simpleContainerLogisticsStockPressure(
+            world,self,authoritativePosition,population),
+        storageNeed.pressure
+    }));
+
+    const CultivationDemandObservation cultivationDemand=
+        observeCultivationDemand(
+            world,authoritativePosition,population);
+    observation.foodSecurity01=clampCivilization01(
+        cultivationDemand.pressure);
+
+    const PrimitiveSanitationOpportunity sanitationOpportunity=
+        evaluatePrimitiveSanitationOpportunity(
+            world.seed,self,world.environmentalResidues,
+            world.minute,authoritativePosition);
+    const DugSanitationPitOpportunity pitOpportunity=
+        evaluateDugSanitationPitOpportunity(
+            self,world.environmentalResidues,
+            world.primitiveSanitationSites);
+    observation.sanitation01=clampCivilization01(std::max(
+        sanitationOpportunity.problemRecognized
+            ? sanitationOpportunity.problemConfidence
+            : 0.0,
+        pitOpportunity.candidateAvailable
+            ? pitOpportunity.problemConfidence
+            : 0.0));
+
+    int successfulUses=0;
+    for(const TechniqueKnowledge& record:self.civilization.knowledge.all()){
+        successfulUses+=std::max(0,record.successfulUses);
+    }
+    const double repeatedWorkPressure=clampCivilization01(
+        static_cast<double>(std::min(successfulUses,12))/12.0);
+    const double materialPressure=
+        weights.bottleneckMaterial!=MaterialKind::Unknown
+            ? materialProgressDemand(self,weights.bottleneckMaterial)
+            : 0.0;
+    observation.production01=clampCivilization01(std::max(
+        materialPressure,
+        0.65*repeatedWorkPressure));
+
+    observation.resourceScarcity01=
+        weights.bottleneckMaterial!=MaterialKind::Unknown
+        && validNaturalResourceMaterial(weights.bottleneckMaterial)
+            ? civilizationResourceExplorationPressure(
+                world,self,weights.bottleneckMaterial,
+                authoritativePosition)
+            : 0.0;
+
+    const std::array<std::pair<InnovationPressureDriver,double>,7> contributions={{
+        {InnovationPressureDriver::Survival,
+            weights.survival*observation.survival01},
+        {InnovationPressureDriver::Exposure,
+            weights.exposure*observation.exposure01},
+        {InnovationPressureDriver::Logistics,
+            weights.logistics*observation.logistics01},
+        {InnovationPressureDriver::FoodSecurity,
+            weights.foodSecurity*observation.foodSecurity01},
+        {InnovationPressureDriver::Sanitation,
+            weights.sanitation*observation.sanitation01},
+        {InnovationPressureDriver::Production,
+            weights.production*observation.production01},
+        {InnovationPressureDriver::ResourceScarcity,
+            weights.resourceScarcity*observation.resourceScarcity01}
+    }};
+
+    const double totalWeight=
+        weights.survival+weights.exposure+weights.logistics+
+        weights.foodSecurity+weights.sanitation+
+        weights.production+weights.resourceScarcity;
+    double weightedPressure=0.0;
+    double dominantContribution=0.0;
+    for(const auto& contribution:contributions){
+        weightedPressure+=contribution.second;
+        if(contribution.second>dominantContribution+1e-12){
+            dominantContribution=contribution.second;
+            observation.dominantDriver=contribution.first;
+        }
+    }
+    observation.pressure01=totalWeight>0.0
+        ? clampCivilization01(weightedPressure/totalWeight)
+        : 0.0;
+    return observation;
+}
+
 inline CivilizationUtilityDecision bestResourceExplorationDecisionAtPosition(
     const World& world,
     const Character& self,
@@ -1076,44 +1259,28 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
         if(experimentBaseChance(kind,context.material)<=0.0) continue;
 
         const KnowledgeLevel level=self.civilization.knowledge.level(technique);
-        const double hypothesisBoost=level==KnowledgeLevel::Hypothesized ? 0.08 : (level==KnowledgeLevel::Understood ? 0.05 : 0.0);
-        const double preference=civilizationPreference(world.seed,self.id,200ULL+static_cast<std::uint64_t>(kind));
-        double sanitationBoost=0.0;
-        double storageBoost=0.0;
-        double smeltingBoost=0.0;
-        double cultivationBoost=0.0;
-        double waterTransportBoost=0.0;
-        if(designatedExperiment){
-            sanitationBoost=0.18+0.16*sanitationOpportunity.problemConfidence+
-                0.10*clampCivilization01(self.needs.hygiene);
-        }else if(pitExperiment){
-            sanitationBoost=0.18
-                +0.10*pitOpportunity.problemConfidence
-                +0.05*clampCivilization01(static_cast<double>(pitOpportunity.useCount)/4.0)
-                +0.08*clampCivilization01(pitOpportunity.siteExposure);
-        }else if(storageExperiment){
-            storageBoost=0.20+0.22*storageNeed.pressure+
-                0.08*self.personality.orderliness+
-                0.06*self.personality.conscientiousness;
-        }else if(smeltingExperiment){
-            smeltingBoost=0.24+0.12*self.personality.curiosity+
-                0.08*self.civilization.craftingSkill;
-        }else if(cultivationExperiment){
-            const CultivationDemandObservation demand=
-                observeCultivationDemand(world,authoritativePosition,population);
-            cultivationBoost=0.20+0.30*demand.pressure
-                +0.08*self.personality.patience
-                +0.06*self.personality.conscientiousness;
-        }else if(kind==ExperimentKind::ShapeClay){
-            waterTransportBoost=
-                0.28*waterTransportInnovationPressure(
-                    world,self,authoritativePosition);
-        }
+        const double hypothesisBoost=
+            level==KnowledgeLevel::Hypothesized
+                ? 0.08
+                : (level==KnowledgeLevel::Understood ? 0.05 : 0.0);
+        const double preference=civilizationPreference(
+            world.seed,self.id,
+            200ULL+static_cast<std::uint64_t>(kind));
+        const TechnologyId technology=technologyIdForTechnique(technique);
+        const InnovationPressureObservation innovationPressure=
+            observeTechnologyInnovationPressure(
+                world,self,technology,
+                authoritativePosition,population);
+        const double innovationBoost=0.42*innovationPressure.pressure01;
         const double score=clampCivilization01(
-            0.11+0.22*self.personality.curiosity+0.10*self.personality.openness+
-            0.07*self.personality.patience+0.12*self.civilization.learningSkill+
-            0.08*preference+hypothesisBoost+sanitationBoost+storageBoost
-            +smeltingBoost+cultivationBoost+waterTransportBoost);
+            0.11
+            +0.22*self.personality.curiosity
+            +0.10*self.personality.openness
+            +0.07*self.personality.patience
+            +0.12*self.civilization.learningSkill
+            +0.08*preference
+            +hypothesisBoost
+            +innovationBoost);
 
         CivilizationUtilityDecision candidate;
         candidate.intent=CivilizationIntent::Experiment;
@@ -1121,6 +1288,9 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
         candidate.experiment=kind;
         candidate.material=context.material;
         candidate.technique=technique;
+        candidate.hasInnovationPressure=
+            technology!=TechnologyId::None;
+        candidate.innovationPressure=innovationPressure;
         considerCivilizationDecision(best,candidate);
     }
     return best;
