@@ -55,6 +55,34 @@ inline double socialClamp01(double value) {
     return std::max(0.0, std::min(1.0, value));
 }
 
+inline constexpr double SocialFirstContactFamiliarityHorizon=0.12;
+inline constexpr double SocialFirstContactBondHorizon=0.10;
+
+inline double firstContactInitiative(
+    const Relationship* relation,
+    const TraitProfile& traits,
+    const PreferenceProfile& preferences)
+{
+    const double familiarity=relation ? relation->familiarity : 0.0;
+    const double bond=relation ? relation->socialBond() : 0.0;
+    const double familiarityProgress=std::max(
+        familiarity/SocialFirstContactFamiliarityHorizon,
+        bond/SocialFirstContactBondHorizon);
+    const double unfamiliarity=socialClamp01(1.0-familiarityProgress);
+
+    // First contact is personality-driven, not a global social bonus. Curious,
+    // sociable and bold residents can initiate with unfamiliar people; a
+    // solitude-preferring resident gets little or no boost. As a relationship
+    // forms, ordinary bond/trust/memory terms replace this bootstrap signal.
+    const double initiative=std::max(
+        0.0,
+        0.06*preferences.socializing
+        +0.04*preferences.novelty
+        +0.03*traits.boldness
+        -0.04*preferences.solitude);
+    return unfamiliarity*initiative;
+}
+
 inline double beliefSignal(
     const Character& character,
     CharacterId target,
@@ -114,6 +142,7 @@ inline double scoreApproachIntent(
         0.04 * preferences.exploration +
         0.02 * (1.0 - preferences.solitude) +
         0.01 * traits.compassion +
+        firstContactInitiative(relation, traits, preferences) +
         0.22 * bond +
         0.10 * trust +
         0.08 * affection +
