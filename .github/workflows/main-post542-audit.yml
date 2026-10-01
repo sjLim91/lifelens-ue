@@ -1,0 +1,37 @@
+name: LifeLens Main Post542 Audit
+
+on:
+  push:
+    branches:
+      - audit/main-post542-100d-20261001
+    paths:
+      - 'Source/LifeLensCore/**'
+      - '.github/workflows/main-post542-audit.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lifelens-main-post542-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [874213954, 4242001]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 계측기 구성
+        run: cmake -S Source/LifeLensCore -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: 계측기 빌드
+        run: cmake --build build --target ll_main_post542_audit --parallel 2
+
+      - name: main 100일 기준선
+        run: ./build/ll_main_post542_audit --seed '${{ matrix.seed }}' --days 100
