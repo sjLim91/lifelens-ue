@@ -149,6 +149,114 @@ void advanceFoodSpoilageOneDay(World& world)
     }
 }
 
+int projectedGroundStepIntervalMinutes(
+    const World& world,
+    GridPos position,
+    int minute)
+{
+    const DynamicEnvironmentObservation environment=
+        deriveDynamicEnvironment(
+            world.genesisIdentity(),
+            chunkCoordForGrid(position),
+            minute);
+    const EnvironmentalConsequenceProfile consequence=
+        deriveEnvironmentalConsequences(environment);
+    return std::max(
+        1,
+        static_cast<int>(std::ceil(
+            1.0
+            +CoreNavigationContract::WeatherFrictionWeight
+                *consequence.travelFriction01)));
+}
+
+void projectOneMinuteOfUnresolvedNeeds(
+    const World& world,
+    const SimulationRuleset& ruleset,
+    Character& character,
+    GridPos position,
+    int nextMinute)
+{
+    const DynamicEnvironmentObservation environment=
+        deriveDynamicEnvironment(
+            world.genesisIdentity(),
+            chunkCoordForGrid(position),
+            nextMinute);
+    const EnvironmentalConsequenceProfile consequence=
+        deriveEnvironmentalConsequences(environment);
+
+    // Simulation::step() has already applied this minute's ordinary Need decay
+    // before preemption is evaluated. Project only the end-of-minute
+    // environmental pressure now, then the next minute's ordinary decay.
+    character.needs.apply(consequence.perMinuteNeedsDelta);
+    character.needs.decay(
+        ruleset.needs,
+        character.metabolism,
+        character.sleepTendency);
+}
+
+bool provisionNeedHardSaturated(const Character& character)
+{
+    constexpr double SaturationEpsilon=1e-12;
+    return character.needs.hunger>=1.0-SaturationEpsilon
+        || character.needs.thirst>=1.0-SaturationEpsilon;
+}
+
+bool canFinishToiletBeforeProvisionHardSaturation(
+    const World& world,
+    const SimulationRuleset& ruleset,
+    const Character& character,
+    GridPos from,
+    GridPos target,
+    int interactionTicks)
+{
+    if(provisionNeedHardSaturated(character)) return false;
+
+    std::vector<GridPos> route;
+    if(!gridWithinRadius(from,target,0)
+       && !buildCoreGroundRoute(world,from,target,0,route)){
+        return false;
+    }
+
+    Character projected=character;
+    GridPos projectedPosition=from;
+    std::size_t routeIndex=0;
+    int interactionRemaining=std::max(1,interactionTicks);
+    int projectedMinute=world.minute;
+
+    constexpr int MaximumGroundStepIntervalMinutes=
+        static_cast<int>(std::ceil(
+            1.0+CoreNavigationContract::WeatherFrictionWeight));
+    const int maximumProjectionMinutes=
+        static_cast<int>(route.size())
+            *MaximumGroundStepIntervalMinutes
+        +interactionRemaining
+        +MaximumGroundStepIntervalMinutes;
+
+    for(int elapsed=0;elapsed<maximumProjectionMinutes;++elapsed){
+        if(routeIndex<route.size()){
+            const int stepInterval=projectedGroundStepIntervalMinutes(
+                world,projectedPosition,projectedMinute);
+            if(projectedMinute%stepInterval==0){
+                projectedPosition=route[routeIndex++];
+            }
+        }else{
+            --interactionRemaining;
+            if(interactionRemaining<=0) return true;
+        }
+
+        ++projectedMinute;
+        projectOneMinuteOfUnresolvedNeeds(
+            world,
+            ruleset,
+            projected,
+            projectedPosition,
+            projectedMinute);
+        if(provisionNeedHardSaturated(projected)) return false;
+    }
+
+    return false;
+}
+
 } // namespace
 
 Simulation::Simulation(
@@ -948,6 +1056,38 @@ bool Simulation::preemptForCriticalSurvival(
                     thirstCritical ? character.needs.thirst : -1.0);
                 if(strongestCriticalProvisionNeed
                    <=character.needs.sleep+SleepWakeDominanceMargin){
+                    return false;
+                }
+            }
+        }
+    }
+
+    // Primitive sanitation can be tens of grid cells away. Replanning it every
+    // time Hunger/Thirst merely enters the critical band creates a deterministic
+    // Toilet -> provision -> Toilet ping-pong. Keep a moving toilet intent only
+    // when authoritative path + weather projection proves the resident can
+    // finish before either provision Need reaches the hard 1.0 clamp.
+    if(!r.pendingContext.active()
+       && r.goal==Goal::UseToilet
+       && !r.plan.empty()
+       && r.actionIndex<r.plan.size()){
+        const Action& activeAction=r.plan[r.actionIndex];
+        const bool movingEmergencyToilet=
+            activeAction.type==ActionType::EmergencyUse
+            && (!r.navigationHasTarget || !r.navigationArrived);
+        if(movingEmergencyToilet){
+            SanitationUseTarget sanitationTarget;
+            if(sanitationUseTarget(character.id,sanitationTarget)){
+                const GridPos reliefTarget=r.navigationHasTarget
+                    ? r.navigationTarget
+                    : sanitationTarget.pos;
+                if(canFinishToiletBeforeProvisionHardSaturation(
+                    world_,
+                    ruleset_,
+                    character,
+                    r.pos,
+                    reliefTarget,
+                    activeAction.remainingTicks)){
                     return false;
                 }
             }
