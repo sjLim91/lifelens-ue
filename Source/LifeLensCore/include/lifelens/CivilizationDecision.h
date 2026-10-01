@@ -780,8 +780,17 @@ inline CivilizationUtilityDecision bestGatherDecisionAtPosition(
         const int storedCredit=provision
             ? std::min(stored,settlementReserveTarget)
             : std::min(stored,target);
+        const int stockGap=std::max(
+            0,target-held-storedCredit);
+
+        // Gathering is a means to satisfy an actual stock/material need, not
+        // an endlessly repeatable "progress" action. Once the current target
+        // is already covered, let Experiment/Craft/other civilization work
+        // compete instead of repeatedly harvesting the same material.
+        if(stockGap<=0) continue;
+
         const double gap=clampCivilization01(
-            static_cast<double>(std::max(0,target-held-storedCredit))
+            static_cast<double>(stockGap)
             /static_cast<double>(std::max(1,target)));
         const double demand=materialProgressDemand(self,node.material);
         const double constructionDemand=materialDemand>0
