@@ -13,11 +13,11 @@
 - C4 validation uses targeted health regressions plus Core/determinism/WASM/Web/Preflight gates; the separate 100-day long-run audit is not part of this closeout.
 - After #577 is integrated, the next roadmap milestone is C5 — Education / Recording / Specialization / Economy / Institutions.
 
-Date: 2026-09-30  
-Active architecture: **LifeLensCore -> WASM -> Web Observer**  
-Current validated main: `df839012177bc8f4a0bfd59e30cbf8e5d29d4129` (#536)
+## Historical checkpoint — 2026-09-30 resident autonomy (#536)
 
-## Current autonomy follow-through — resident strategy differentiation
+Validated main at that checkpoint: `df839012177bc8f4a0bfd59e30cbf8e5d29d4129`.
+
+### Resident strategy differentiation
 
 - `746a488` / D-026 completed the first development-choice split: cultivation/construction/crafting utility reacts to resident disposition and lived technique experience instead of collapsing identical affordances into identical choices.
 - `9aef4a1` / #534 / D-027 completed non-critical Eat autonomy. The same moderate Hunger and same carried PlantFood can produce different Eat timing from resident disposition, while actual freshness raises consumption value as spoilage approaches.
