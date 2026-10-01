@@ -481,7 +481,11 @@ enum class CivilizationEventType {
     Retrieved,
     // Appended for Core-authored frontier search. The event is emitted only
     // after a resident physically reaches an unexplored chunk and materializes it.
-    Explored
+    Explored,
+    // Appended for C3-E. A successful experiment becomes Rediscovered only
+    // when the technique has older historical evidence and no other living
+    // resident currently retains that knowledge.
+    Rediscovered
 };
 
 struct CivilizationEvent {

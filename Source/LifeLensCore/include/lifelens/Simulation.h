@@ -259,7 +259,7 @@ private:
     bool completeContextAction(Character& actor,Runtime& runtime,std::uint64_t token,GridPos resolvedPosition);
     bool tryCivilizationDecision(Character& c,Runtime& r);
     bool trySocialDecision(Character& c,Runtime& r);
-    void processCivilizationKnowledgeEvent(Character& actor,const CivilizationEvent& event);
+    void processCivilizationKnowledgeEvent(Character& actor,CivilizationEvent& event);
     void advanceCivilizationKnowledgeTeaching();
     void advanceDependentCare();
     void advanceAutonomousFamilyProgression();

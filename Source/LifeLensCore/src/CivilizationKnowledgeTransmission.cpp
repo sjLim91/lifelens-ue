@@ -13,11 +13,37 @@ constexpr int CivilizationKnowledgeWitnessRadiusTiles=2;
 
 void Simulation::processCivilizationKnowledgeEvent(
     Character& actor,
-    const CivilizationEvent& event)
+    CivilizationEvent& event)
 {
     if((event.type!=CivilizationEventType::Discovered &&
+        event.type!=CivilizationEventType::Rediscovered &&
         event.type!=CivilizationEventType::Crafted) ||
        event.technique==TechniqueId::None || actor.id==0) return;
+
+    if(event.type==CivilizationEventType::Discovered){
+        bool historicalEvidence=false;
+        for(const SocialFact& fact:socialKnowledge_.facts()){
+            if(factRepresentsTechnique(fact,event.technique)
+               && fact.importance>=0.90){
+                historicalEvidence=true;
+                break;
+            }
+        }
+
+        bool otherLivingKnower=false;
+        for(const Character& resident:world_.characters){
+            if(!resident.alive || resident.id==actor.id) continue;
+            if(resident.civilization.knowledge.knowsAtLeast(
+                    event.technique,KnowledgeLevel::Observed)){
+                otherLivingKnower=true;
+                break;
+            }
+        }
+
+        if(historicalEvidence && !otherLivingKnower){
+            event.type=CivilizationEventType::Rediscovered;
+        }
+    }
 
     const KnowledgeReceipt* origin=registerTechniqueOrigin(
         socialKnowledge_,actor,event.technique,world_.minute,event.type,world_.seed);
@@ -51,7 +77,9 @@ void Simulation::processCivilizationKnowledgeEvent(
             +0.12*observer.personality.sociability
             +0.12*familiarity
             +0.06*trust
-            +(event.type==CivilizationEventType::Discovered ? 0.10 : 0.04)));
+            +((event.type==CivilizationEventType::Discovered
+               || event.type==CivilizationEventType::Rediscovered)
+                ? 0.10 : 0.04)));
         const double witnessRoll=deterministicKnowledgeUnit(
             world_.seed+7919ULL,
             fact->id,actor.id,observer.id,
