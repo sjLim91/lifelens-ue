@@ -65,6 +65,26 @@ inline double gatheringToolWearScale(ToolCapability capability)
     }
 }
 
+inline double gatheringToolFormBonus(
+    const ItemStack& tool,
+    ToolCapability capability)
+{
+    // Material properties model what an edge can physically do. A specialized
+    // cast head also gains from its geometry: the bronze axe concentrates force
+    // for chopping and the bronze pick for striking hard deposits.
+    if(tool.kind==ItemKind::BronzeAxe
+       && tool.material==MaterialKind::Bronze
+       && capability==ToolCapability::Chop){
+        return 0.10;
+    }
+    if(tool.kind==ItemKind::BronzePick
+       && tool.material==MaterialKind::Bronze
+       && capability==ToolCapability::Strike){
+        return 0.08;
+    }
+    return 0.0;
+}
+
 inline GatherToolUseProfile inspectGatherTool(
     const Inventory& inventory,
     MaterialKind material)
@@ -95,7 +115,8 @@ inline GatherToolUseProfile inspectGatherTool(
                     +0.45*properties.sharpnessPotential));
         candidate.quantityMultiplier=
             1.10+0.18*quality+0.14*candidate.durabilityBefore
-            +0.18*materialPerformance;
+            +0.18*materialPerformance
+            +gatheringToolFormBonus(stack,candidate.capability);
         const double materialWearFactor=std::max(
             0.45,
             1.10-0.45*properties.hardness+0.20*properties.brittleness);
