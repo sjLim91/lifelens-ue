@@ -15,6 +15,7 @@ import {
   formatPartnerStage,
   formatPercent,
   formatPregnancyStage,
+  formatResidentName,
   formatSex,
   formatTrait,
   formatWeather,
@@ -89,6 +90,17 @@ export function ObserverMetrics({
   );
 }
 
+function residentDisplayName(
+  residents: Resident[],
+  id: string | undefined,
+  fallbackName?: string,
+): string {
+  if (fallbackName?.trim()) return formatResidentName(fallbackName);
+  if (!id) return '대상 미확인';
+  const resident = residents.find((candidate) => candidate.id === String(id));
+  return resident ? formatResidentName(resident.name) : `주민 #${id}`;
+}
+
 function ResidentCard({
   resident,
   residents,
@@ -109,7 +121,7 @@ function ResidentCard({
       aria-pressed={selected}
     >
       <div className="resident-title">
-        <strong>{resident.name}</strong>
+        <strong>{formatResidentName(resident.name)}</strong>
         <span>{formatSex(resident.sex)} · {statusText}</span>
       </div>
       <ResidentNeeds needs={resident.needs} />
@@ -144,6 +156,15 @@ export function SelectedResidentReadout({
   const importantRelationships = relationships.slice(0, 4);
   const memories = (resident.memories ?? []).slice(0, 3);
   const beliefs = (resident.beliefs ?? []).slice(0, 3);
+  const visibleMemories = memories.map((memory) => ({
+    memory,
+    subjectName: residentDisplayName(residents, memory.who),
+    tags: Array.from(new Set((memory.tags ?? []).map(formatMemoryTag))),
+  }));
+  const visibleBeliefs = beliefs.map((belief) => ({
+    belief,
+    subjectName: residentDisplayName(residents, belief.subject),
+  }));
   const topTraits = Object.entries(resident.traits ?? {})
     .filter((entry): entry is [string, number] => typeof entry[1] === 'number')
     .sort((a, b) => b[1] - a[1])
@@ -193,7 +214,7 @@ export function SelectedResidentReadout({
     (member) => member.id === resident.id,
   );
   const partner = family?.hasActivePartner && family.partnerName
-    ? `${family.partnerName} · ${formatPartnerStage(family.partnerStage)}`
+    ? `${formatResidentName(family.partnerName)} · ${formatPartnerStage(family.partnerStage)}`
     : '현재 파트너 없음';
   const closeFamily = [
     ...(family?.parents ?? []),
@@ -210,7 +231,7 @@ export function SelectedResidentReadout({
       <div className="focused-life-heading">
         <div>
           <span>집중 관찰</span>
-          <strong>{resident.name}</strong>
+          <strong>{formatResidentName(resident.name)}</strong>
         </div>
         <button type="button" onClick={onClear} aria-label="선택 해제">×</button>
       </div>
@@ -296,7 +317,11 @@ export function SelectedResidentReadout({
         {importantRelationships.length > 0
           ? importantRelationships.map((relationship) => (
               <div className="relationship-row" key={relationship.targetId}>
-                <strong>{relationship.targetName || relationship.targetId}</strong>
+                <strong>{residentDisplayName(
+                  residents,
+                  relationship.targetId,
+                  relationship.targetName,
+                )}</strong>
                 <span>유대 {formatPercent(relationship.socialBond)}</span>
                 <span>신뢰 {formatPercent(relationship.trust)}</span>
                 {Number(relationship.conflict) > 0.05
@@ -330,7 +355,7 @@ export function SelectedResidentReadout({
           <div className="focused-life-chips">
             {closeFamily.map((member) => (
               <span key={member.id}>
-                {member.name || member.id}
+                {residentDisplayName(residents, member.id, member.name)}
                 {' · '}
                 <b>{formatKinship(member.kinship)}</b>
               </span>
@@ -377,31 +402,36 @@ export function SelectedResidentReadout({
 
       <div className="focused-life-section">
         <h3>기억</h3>
-        {memories.length > 0
-          ? memories.map((memory, index) => (
+        {visibleMemories.length > 0
+          ? visibleMemories.map(({ memory, subjectName, tags }, index) => (
               <div className="memory-row" key={`${memory.minute ?? 0}:${index}`}>
-                <span>{formatMemoryText(memory.what)}</span>
+                <span><b>{subjectName}</b> · {formatMemoryText(memory.what)}</span>
                 <small>
                   신뢰도 {formatPercent(memory.effectiveConfidence ?? memory.confidence)}
                   {memory.recallScore !== undefined
                     ? ` · 회상 ${formatPercent(memory.recallScore)}`
                     : ''}
                   {memory.where ? ` · ${formatLocationText(memory.where)}` : ''}
-                  {memory.tags?.length
-                    ? ` · ${memory.tags.map((tag) => `#${formatMemoryTag(tag)}`).join(' ')}`
-                    : ''}
+                  {tags.length ? (
+                    <>
+                      {' · '}
+                      {tags.map((tag) => (
+                        <span className="memory-tag" key={tag}>#{tag}</span>
+                      ))}
+                    </>
+                  ) : null}
                 </small>
               </div>
             ))
           : <div className="focused-life-muted">아직 강하게 남은 기억이 없습니다.</div>}
       </div>
 
-      {beliefs.length > 0 ? (
+      {visibleBeliefs.length > 0 ? (
         <div className="focused-life-section">
           <h3>믿음</h3>
-          {beliefs.map((belief, index) => (
+          {visibleBeliefs.map(({ belief, subjectName }, index) => (
             <div className="belief-row" key={`${belief.subject ?? '0'}:${index}`}>
-              <span>{formatBelief(belief.proposition)}</span>
+              <span><b>{subjectName}</b> · {formatBelief(belief.proposition)}</span>
               <small>
                 확신 {formatPercent(belief.confidence)}
                 {belief.supportCount !== undefined

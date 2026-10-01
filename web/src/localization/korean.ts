@@ -422,6 +422,90 @@ export const KOREAN_BELIEF_LABELS: Record<string, string> = {
   is_committed: '관계를 지킬 의지가 있다',
 };
 
+export const KOREAN_PERSON_NAME_LABELS: Record<string, string> = {
+  Minjun: '민준',
+  Doyun: '도윤',
+  Seojun: '서준',
+  Jiho: '지호',
+  Hyunwoo: '현우',
+  Taeyun: '태윤',
+  Junho: '준호',
+  Siwoo: '시우',
+  Gunwoo: '건우',
+  Joon: '준',
+  Minseok: '민석',
+  Jaeho: '재호',
+  Seoyun: '서윤',
+  Hayun: '하윤',
+  Jia: '지아',
+  Sua: '수아',
+  Minseo: '민서',
+  Yerin: '예린',
+  Chaewon: '채원',
+  Naeun: '나은',
+  Jiwon: '지원',
+  Yuna: '유나',
+  Soyeon: '소연',
+  Eunji: '은지',
+  Yejun: '예준',
+  Eunwoo: '은우',
+  Juwon: '주원',
+  Hajun: '하준',
+  Sunwoo: '선우',
+  Yunho: '윤호',
+  Jinwoo: '진우',
+  Minho: '민호',
+  Woojin: '우진',
+  Seungmin: '승민',
+  Jisung: '지성',
+  Jaeyun: '재윤',
+  Seoa: '서아',
+  Arin: '아린',
+  Dayeon: '다연',
+  Jiyu: '지유',
+  Eunseo: '은서',
+  Sena: '세나',
+  Yeji: '예지',
+  Nari: '나리',
+  Haeun: '하은',
+  Bomin: '보민',
+  Somin: '소민',
+  Chaeyeon: '채연',
+  Harin: '하린',
+  Minjae: '민재',
+  Taehun: '태훈',
+};
+
+function normalizeObserverToken(value: string | undefined): string {
+  return (value ?? '')
+    .trim()
+    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+    .replace(/[\s-]+/g, '_')
+    .toLowerCase();
+}
+
+export function formatResidentName(value: string | undefined): string {
+  const text = value?.trim();
+  if (!text) return '이름 미확인';
+  if (/[가-힣]/.test(text)) return text;
+
+  const exact = KOREAN_PERSON_NAME_LABELS[text];
+  if (exact) return exact;
+
+  const suffixed = text.match(/^([A-Za-z]+)(\d+)$/);
+  if (suffixed) {
+    const base = KOREAN_PERSON_NAME_LABELS[suffixed[1]];
+    if (base) return `${base}${suffixed[2]}`;
+  }
+
+  const token = `주민이름:${text}`;
+  if (!missingTranslations.has(token)) {
+    missingTranslations.add(token);
+    console.error(`[LifeLens 한글 UI] 번역 등록 누락: ${token}`);
+  }
+  return `미등록 이름(${text})`;
+}
+
 export function formatSex(value: string | undefined): string {
   return translated('성별', value, KOREAN_SEX_LABELS, '성별 미확인');
 }
@@ -590,13 +674,40 @@ export function formatLocationText(value: string | undefined): string {
 }
 
 export function formatMemoryText(value: string | undefined): string {
-  return translated('기억내용', value, KOREAN_MEMORY_TOKEN_LABELS, '기억 내용 확인 중');
+  const text = value?.trim();
+  if (!text) return '기억 내용 미확인';
+  if (/[가-힣]/.test(text)) return text;
+  const normalized = normalizeObserverToken(text);
+  return translated(
+    '기억내용',
+    normalized,
+    KOREAN_MEMORY_TOKEN_LABELS,
+    `미등록 기억(${text})`,
+  );
 }
 
 export function formatMemoryTag(value: string | undefined): string {
-  return translated('기억태그', value, KOREAN_MEMORY_TAG_LABELS, '기타');
+  const text = value?.trim();
+  if (!text) return '미등록 태그';
+  if (/[가-힣]/.test(text)) return text;
+  const normalized = normalizeObserverToken(text);
+  return translated(
+    '기억태그',
+    normalized,
+    KOREAN_MEMORY_TAG_LABELS,
+    `미등록 태그(${text})`,
+  );
 }
 
 export function formatBelief(value: string | undefined): string {
-  return translated('믿음', value, KOREAN_BELIEF_LABELS, '형성 중인 믿음');
+  const text = value?.trim();
+  if (!text) return '믿음 내용 미확인';
+  if (/[가-힣]/.test(text)) return text;
+  const normalized = normalizeObserverToken(text);
+  return translated(
+    '믿음',
+    normalized,
+    KOREAN_BELIEF_LABELS,
+    `미등록 믿음(${text})`,
+  );
 }
