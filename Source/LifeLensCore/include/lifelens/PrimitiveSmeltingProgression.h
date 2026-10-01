@@ -173,15 +173,69 @@ inline PrimitiveFurnaceWorkResult workOnPrimitiveFurnace(
     return result;
 }
 
+inline bool smeltingOpportunityAvailable(
+    const World& world,
+    const Character& resident,
+    TechniqueId technique)
+{
+    if(!hasOperationalFurnace(world)) return false;
+    const Inventory& inventory=resident.civilization.inventory;
+    const int charcoal=inventory.count(
+        ItemKind::RawMaterial,MaterialKind::Charcoal);
+    switch(technique){
+        case TechniqueId::CopperSmelting:
+            return charcoal>0
+                && inventory.count(
+                    ItemKind::RawMaterial,MaterialKind::CopperOre)>0;
+        case TechniqueId::TinSmelting:
+            return charcoal>0
+                && inventory.count(
+                    ItemKind::RawMaterial,MaterialKind::TinOre)>0;
+        case TechniqueId::BronzeAlloying:
+            return charcoal>0
+                && inventory.count(
+                    ItemKind::RawMaterial,MaterialKind::CopperMetal)>=2
+                && inventory.count(
+                    ItemKind::RawMaterial,MaterialKind::TinMetal)>=1;
+        default:
+            return false;
+    }
+}
+
 inline bool copperSmeltingOpportunityAvailable(
     const World& world,
     const Character& resident)
 {
-    return hasOperationalFurnace(world)
-        && resident.civilization.inventory.count(
-            ItemKind::RawMaterial,MaterialKind::CopperOre)>0
-        && resident.civilization.inventory.count(
-            ItemKind::RawMaterial,MaterialKind::Charcoal)>0;
+    return smeltingOpportunityAvailable(
+        world,resident,TechniqueId::CopperSmelting);
+}
+
+inline int loadPrimitiveFurnaceCharge(
+    World& world,
+    Character& worker,
+    FacilityId facilityId,
+    TechniqueId technique,
+    int requested)
+{
+    if(!worker.civilization.knowledge.knowsAtLeast(
+        technique,KnowledgeLevel::Reproducible)) return 0;
+    for(auto& facility:world.facilities){
+        if(facility.id!=facilityId || facility.kind!=FacilityKind::Furnace) continue;
+        switch(technique){
+            case TechniqueId::CopperSmelting:
+                return loadFurnaceCopperCharge(
+                    facility,worker.civilization.inventory,requested);
+            case TechniqueId::TinSmelting:
+                return loadFurnaceTinCharge(
+                    facility,worker.civilization.inventory,requested);
+            case TechniqueId::BronzeAlloying:
+                return loadFurnaceBronzeAlloyCharge(
+                    facility,worker.civilization.inventory,requested);
+            default:
+                return 0;
+        }
+    }
+    return 0;
 }
 
 inline int loadPrimitiveFurnaceCopperCharge(
@@ -190,14 +244,38 @@ inline int loadPrimitiveFurnaceCopperCharge(
     FacilityId facilityId,
     int requested)
 {
-    if(!worker.civilization.knowledge.knowsAtLeast(
-        TechniqueId::CopperSmelting,KnowledgeLevel::Reproducible)) return 0;
-    for(auto& facility:world.facilities){
-        if(facility.id!=facilityId || facility.kind!=FacilityKind::Furnace) continue;
-        return loadFurnaceCopperCharge(
-            facility,worker.civilization.inventory,requested);
+    return loadPrimitiveFurnaceCharge(
+        world,worker,facilityId,TechniqueId::CopperSmelting,requested);
+}
+
+inline int loadPrimitiveFurnaceTinCharge(
+    World& world,
+    Character& worker,
+    FacilityId facilityId,
+    int requested)
+{
+    return loadPrimitiveFurnaceCharge(
+        world,worker,facilityId,TechniqueId::TinSmelting,requested);
+}
+
+inline int loadPrimitiveFurnaceBronzeAlloyCharge(
+    World& world,
+    Character& worker,
+    FacilityId facilityId,
+    int requested)
+{
+    return loadPrimitiveFurnaceCharge(
+        world,worker,facilityId,TechniqueId::BronzeAlloying,requested);
+}
+
+inline TechniqueId furnaceTechniqueForOutput(MaterialKind output)
+{
+    switch(output){
+        case MaterialKind::CopperMetal: return TechniqueId::CopperSmelting;
+        case MaterialKind::TinMetal: return TechniqueId::TinSmelting;
+        case MaterialKind::Bronze: return TechniqueId::BronzeAlloying;
+        default: return TechniqueId::None;
     }
-    return 0;
 }
 
 inline bool ignitePrimitiveFurnace(
@@ -205,13 +283,30 @@ inline bool ignitePrimitiveFurnace(
     const Character& worker,
     FacilityId facilityId)
 {
-    if(!worker.civilization.knowledge.knowsAtLeast(
-        TechniqueId::CopperSmelting,KnowledgeLevel::Reproducible)) return false;
     for(auto& facility:world.facilities){
         if(facility.id!=facilityId || facility.kind!=FacilityKind::Furnace) continue;
+        const TechniqueId technique=
+            furnaceTechniqueForOutput(facility.furnaceOutputMaterial);
+        if(technique==TechniqueId::None
+           || !worker.civilization.knowledge.knowsAtLeast(
+                technique,KnowledgeLevel::Reproducible)) return false;
         return igniteFurnace(facility,world.minute);
     }
     return false;
+}
+
+inline int collectPrimitiveFurnaceMetal(
+    World& world,
+    Character& worker,
+    FacilityId facilityId,
+    int requested)
+{
+    for(auto& facility:world.facilities){
+        if(facility.id!=facilityId || facility.kind!=FacilityKind::Furnace) continue;
+        return collectFurnaceMetal(
+            facility,worker.civilization.inventory,requested);
+    }
+    return 0;
 }
 
 inline int collectPrimitiveFurnaceCopper(
@@ -223,6 +318,34 @@ inline int collectPrimitiveFurnaceCopper(
     for(auto& facility:world.facilities){
         if(facility.id!=facilityId || facility.kind!=FacilityKind::Furnace) continue;
         return collectFurnaceCopper(
+            facility,worker.civilization.inventory,requested);
+    }
+    return 0;
+}
+
+inline int collectPrimitiveFurnaceTin(
+    World& world,
+    Character& worker,
+    FacilityId facilityId,
+    int requested)
+{
+    for(auto& facility:world.facilities){
+        if(facility.id!=facilityId || facility.kind!=FacilityKind::Furnace) continue;
+        return collectFurnaceTin(
+            facility,worker.civilization.inventory,requested);
+    }
+    return 0;
+}
+
+inline int collectPrimitiveFurnaceBronze(
+    World& world,
+    Character& worker,
+    FacilityId facilityId,
+    int requested)
+{
+    for(auto& facility:world.facilities){
+        if(facility.id!=facilityId || facility.kind!=FacilityKind::Furnace) continue;
+        return collectFurnaceBronze(
             facility,worker.civilization.inventory,requested);
     }
     return 0;

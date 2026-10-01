@@ -82,6 +82,8 @@ const char* traceMaterialName(MaterialKind kind)
         case MaterialKind::IronOre: return "IronOre";
         case MaterialKind::Charcoal: return "Charcoal";
         case MaterialKind::CopperMetal: return "CopperMetal";
+        case MaterialKind::TinMetal: return "TinMetal";
+        case MaterialKind::Bronze: return "Bronze";
         default: return "Unknown";
     }
 }
@@ -264,6 +266,8 @@ const char* itemKindName(ItemKind kind)
         case ItemKind::FuelBundle: return "FuelBundle";
         case ItemKind::DiggingStick: return "DiggingStick";
         case ItemKind::StoneHammer: return "StoneHammer";
+        case ItemKind::BronzeAxe: return "BronzeAxe";
+        case ItemKind::BronzePick: return "BronzePick";
     }
     return "RawMaterial";
 }
@@ -283,6 +287,10 @@ const char* techniqueIdName(TechniqueId technique)
         case TechniqueId::StoneHammer: return "StoneHammer";
         case TechniqueId::CopperSmelting: return "CopperSmelting";
         case TechniqueId::Cultivation: return "Cultivation";
+        case TechniqueId::TinSmelting: return "TinSmelting";
+        case TechniqueId::BronzeAlloying: return "BronzeAlloying";
+        case TechniqueId::BronzeAxe: return "BronzeAxe";
+        case TechniqueId::BronzePick: return "BronzePick";
         case TechniqueId::None:
         default: return "None";
     }
@@ -517,6 +525,9 @@ std::string civilizationWorldObservationJson(
         out << "\"charcoalUnits\":" << facility.charcoalUnits << ",";
         out << "\"oreUnits\":" << facility.oreUnits << ",";
         out << "\"metalUnits\":" << facility.metalUnits << ",";
+        out << "\"furnaceChargeMaterial\":\"" << traceMaterialName(facility.furnaceChargeMaterial) << "\",";
+        out << "\"furnaceOutputMaterial\":\"" << traceMaterialName(facility.furnaceOutputMaterial) << "\",";
+        out << "\"furnaceOutputPerCharge\":" << facility.furnaceOutputPerCharge << ",";
         out << "\"heatLevel\":"; appendDouble(out, facility.heatLevel); out << ",";
         out << "\"lit\":" << (facility.lit ? "true" : "false") << ",";
         out << "\"burnMinutesRemaining\":" << facility.burnMinutesRemaining << ",";

@@ -133,6 +133,9 @@ int main()
     CHECK(worldRead.facilities[0].deliveredMaterialUnits==6);
     CHECK(worldRead.facilities[0].workProgress>0.37 && worldRead.facilities[0].workProgress<0.38);
     CHECK(worldRead.facilities[0].requirements.size()==2);
+    CHECK(worldRead.facilities[0].furnaceChargeMaterial==MaterialKind::Unknown);
+    CHECK(worldRead.facilities[0].furnaceOutputMaterial==MaterialKind::Unknown);
+    CHECK(worldRead.facilities[0].furnaceOutputPerCharge==1);
     CHECK(worldRead.techniqueFactCount==2);
     CHECK(worldRead.transmissionReceiptCount==3);
     CHECK(worldRead.uniqueKnownTechniqueTypes>=1);

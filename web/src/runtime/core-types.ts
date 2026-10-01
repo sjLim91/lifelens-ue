@@ -594,6 +594,9 @@ export interface CivilizationWorldFacility {
   charcoalUnits: number;
   oreUnits: number;
   metalUnits: number;
+  furnaceChargeMaterial: string;
+  furnaceOutputMaterial: string;
+  furnaceOutputPerCharge: number;
   heatLevel: number;
   lit: boolean;
   burnMinutesRemaining: number;

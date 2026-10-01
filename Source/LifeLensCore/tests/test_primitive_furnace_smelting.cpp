@@ -132,6 +132,9 @@ int main()
     assert(loadPrimitiveFurnaceCopperCharge(simulation.world(),builder,furnaceId,2)==2);
     furnace=primitiveFurnaceProject(simulation.world());
     assert(furnace->oreUnits==2 && furnace->fuelUnits==2);
+    assert(furnace->furnaceChargeMaterial==MaterialKind::CopperOre);
+    assert(furnace->furnaceOutputMaterial==MaterialKind::CopperMetal);
+    assert(furnace->furnaceOutputPerCharge==1);
     assert(ignitePrimitiveFurnace(simulation.world(),builder,furnaceId));
     assert(furnace->lit && furnace->heatLevel==1.0);
 
@@ -191,6 +194,9 @@ int main()
     assert(decodedFurnace->burnMinutesRemaining==savedBurn);
     assert(decodedFurnace->heatLevel==savedHeat);
     assert(decodedFurnace->lit);
+    assert(decodedFurnace->furnaceChargeMaterial==MaterialKind::CopperOre);
+    assert(decodedFurnace->furnaceOutputMaterial==MaterialKind::CopperMetal);
+    assert(decodedFurnace->furnaceOutputPerCharge==1);
     assert(validConstructedFacility(*decodedFurnace));
 
     Simulation restored(
@@ -208,6 +214,76 @@ int main()
     assert(sourceAfter->metalUnits==restoredAfter->metalUnits);
     assert(sourceAfter->burnMinutesRemaining==restoredAfter->burnMinutesRemaining);
     assert(std::abs(sourceAfter->heatLevel-restoredAfter->heatLevel)<1e-12);
+    assert(sourceAfter->furnaceChargeMaterial==restoredAfter->furnaceChargeMaterial);
+    assert(sourceAfter->furnaceOutputMaterial==restoredAfter->furnaceOutputMaterial);
+    assert(sourceAfter->furnaceOutputPerCharge==restoredAfter->furnaceOutputPerCharge);
+
+    // C1-F: the same physical furnace can switch to Tin once the prior Copper
+    // process is fully collected, then alloy real Copper+Tin into Bronze.
+    ConstructedFacility* metalFurnace=primitiveFurnaceProject(restored.world());
+    assert(metalFurnace!=nullptr);
+    while(metalFurnace->lit){
+        ++restored.world().minute;
+        advancePrimitiveFurnaceOneMinute(restored.world());
+    }
+    Character& metalworker=restored.world().characters.front();
+    if(metalFurnace->metalUnits>0){
+        assert(collectPrimitiveFurnaceMetal(
+            restored.world(),metalworker,furnaceId,metalFurnace->metalUnits)>0);
+    }
+
+    metalworker.civilization.knowledge.learn(
+        TechniqueId::TinSmelting,KnowledgeLevel::Reproducible,0.90);
+    metalworker.civilization.knowledge.learn(
+        TechniqueId::BronzeAlloying,KnowledgeLevel::Reproducible,0.90);
+    metalworker.civilization.inventory.add(
+        {ItemKind::RawMaterial,MaterialKind::TinOre,2,0.5,1.0});
+    metalworker.civilization.inventory.add(
+        {ItemKind::RawMaterial,MaterialKind::Charcoal,4,0.55,1.0});
+
+    assert(loadPrimitiveFurnaceTinCharge(
+        restored.world(),metalworker,furnaceId,2)==2);
+    metalFurnace=primitiveFurnaceProject(restored.world());
+    assert(metalFurnace->furnaceChargeMaterial==MaterialKind::TinOre);
+    assert(metalFurnace->furnaceOutputMaterial==MaterialKind::TinMetal);
+    assert(ignitePrimitiveFurnace(restored.world(),metalworker,furnaceId));
+    for(int batch=0;batch<2;++batch){
+        for(int i=0;i<PrimitiveFurnaceSmeltMinutesPerCopperUnit;++i){
+            ++restored.world().minute;
+            advancePrimitiveFurnaceOneMinute(restored.world());
+        }
+    }
+    metalFurnace=primitiveFurnaceProject(restored.world());
+    assert(metalFurnace->metalUnits==2);
+    assert(collectPrimitiveFurnaceTin(
+        restored.world(),metalworker,furnaceId,2)==2);
+    assert(metalworker.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::TinMetal)==2);
+
+    if(metalworker.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::CopperMetal)<4){
+        metalworker.civilization.inventory.add(
+            {ItemKind::RawMaterial,MaterialKind::CopperMetal,4,0.60,1.0});
+    }
+    assert(loadPrimitiveFurnaceBronzeAlloyCharge(
+        restored.world(),metalworker,furnaceId,1)==1);
+    metalFurnace=primitiveFurnaceProject(restored.world());
+    assert(metalFurnace->furnaceChargeMaterial==MaterialKind::Bronze);
+    assert(metalFurnace->furnaceOutputMaterial==MaterialKind::Bronze);
+    assert(metalFurnace->furnaceOutputPerCharge==3);
+    assert(ignitePrimitiveFurnace(restored.world(),metalworker,furnaceId));
+    for(int i=0;i<PrimitiveFurnaceSmeltMinutesPerCopperUnit;++i){
+        ++restored.world().minute;
+        advancePrimitiveFurnaceOneMinute(restored.world());
+    }
+    metalFurnace=primitiveFurnaceProject(restored.world());
+    assert(metalFurnace->metalUnits==3);
+    assert(collectPrimitiveFurnaceBronze(
+        restored.world(),metalworker,furnaceId,3)==3);
+    assert(metalworker.civilization.inventory.count(
+        ItemKind::RawMaterial,MaterialKind::Bronze)==3);
+    assert(metalFurnace->furnaceChargeMaterial==MaterialKind::Unknown);
+    assert(metalFurnace->furnaceOutputMaterial==MaterialKind::Unknown);
 
     return 0;
 }

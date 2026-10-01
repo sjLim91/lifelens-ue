@@ -27,7 +27,10 @@ enum class MaterialKind {
     TinOre,
     IronOre,
     Charcoal,
-    CopperMetal
+    CopperMetal,
+    // Appended for C1-F; persisted ordinals above remain stable.
+    TinMetal,
+    Bronze
 };
 
 struct MaterialProperties {
@@ -57,6 +60,8 @@ inline MaterialProperties materialProperties(MaterialKind kind)
         case MaterialKind::IronOre: return {0.86,0.08,0.20,0.01,0.00,0.94,0.00};
         case MaterialKind::Charcoal: return {0.18,0.02,0.64,0.02,0.98,0.52,0.00};
         case MaterialKind::CopperMetal: return {0.56,0.18,0.08,0.42,0.00,0.70,0.00};
+        case MaterialKind::TinMetal: return {0.42,0.12,0.06,0.55,0.00,0.58,0.00};
+        case MaterialKind::Bronze: return {0.78,0.62,0.12,0.28,0.00,0.82,0.00};
         case MaterialKind::Unknown:
         default: return {};
     }
@@ -70,7 +75,10 @@ enum class ItemKind {
     SimpleContainer,
     FuelBundle,
     DiggingStick,
-    StoneHammer
+    StoneHammer,
+    // C1-F metal tools. Appended to preserve persisted item ordinals.
+    BronzeAxe,
+    BronzePick
 };
 
 enum class ToolCapability {
@@ -90,6 +98,8 @@ inline ToolCapability itemCapability(ItemKind kind)
         case ItemKind::StoneCuttingTool: return ToolCapability::Chop;
         case ItemKind::DiggingStick: return ToolCapability::Dig;
         case ItemKind::StoneHammer: return ToolCapability::Strike;
+        case ItemKind::BronzeAxe: return ToolCapability::Chop;
+        case ItemKind::BronzePick: return ToolCapability::Strike;
         case ItemKind::SimpleContainer: return ToolCapability::Carry;
         case ItemKind::FuelBundle: return ToolCapability::Heat;
         default: return ToolCapability::None;
@@ -359,7 +369,11 @@ enum class TechniqueId {
     StoneHammer,
     CopperSmelting,
     // Appended to preserve every persisted primitive-technique ordinal.
-    Cultivation
+    Cultivation,
+    TinSmelting,
+    BronzeAlloying,
+    BronzeAxe,
+    BronzePick
 };
 
 enum class KnowledgeLevel : int {
@@ -449,7 +463,11 @@ enum class ExperimentKind {
     ShapeDiggingStick,
     HaftStoneHammer,
     SmeltCopperOre,
-    CultivatePlantFood
+    CultivatePlantFood,
+    SmeltTinOre,
+    AlloyBronze,
+    CastBronzeAxe,
+    CastBronzePick
 };
 
 enum class CivilizationEventType {
@@ -538,6 +556,14 @@ inline TechniqueRecipe techniqueRecipe(TechniqueId technique)
             return {technique,{{ItemKind::RawMaterial,MaterialKind::Stone,2,false},{ItemKind::RawMaterial,MaterialKind::Wood,1,false},{ItemKind::Cordage,MaterialKind::Fiber,1,false}},true,ItemKind::StoneHammer,MaterialKind::Stone,1};
         case TechniqueId::CopperSmelting:
             return {technique,{{ItemKind::RawMaterial,MaterialKind::CopperOre,1,false},{ItemKind::RawMaterial,MaterialKind::Charcoal,1,false}},true,ItemKind::RawMaterial,MaterialKind::CopperMetal,1};
+        case TechniqueId::TinSmelting:
+            return {technique,{{ItemKind::RawMaterial,MaterialKind::TinOre,1,false},{ItemKind::RawMaterial,MaterialKind::Charcoal,1,false}},true,ItemKind::RawMaterial,MaterialKind::TinMetal,1};
+        case TechniqueId::BronzeAlloying:
+            return {technique,{{ItemKind::RawMaterial,MaterialKind::CopperMetal,2,false},{ItemKind::RawMaterial,MaterialKind::TinMetal,1,false},{ItemKind::RawMaterial,MaterialKind::Charcoal,1,false}},true,ItemKind::RawMaterial,MaterialKind::Bronze,3};
+        case TechniqueId::BronzeAxe:
+            return {technique,{{ItemKind::RawMaterial,MaterialKind::Bronze,2,false},{ItemKind::RawMaterial,MaterialKind::Wood,1,false},{ItemKind::Cordage,MaterialKind::Fiber,1,false}},true,ItemKind::BronzeAxe,MaterialKind::Bronze,1};
+        case TechniqueId::BronzePick:
+            return {technique,{{ItemKind::RawMaterial,MaterialKind::Bronze,2,false},{ItemKind::RawMaterial,MaterialKind::Wood,1,false},{ItemKind::Cordage,MaterialKind::Fiber,1,false}},true,ItemKind::BronzePick,MaterialKind::Bronze,1};
         case TechniqueId::Cultivation:
             // Experimentation consumes one edible plant unit as seed stock.
             // Production itself belongs to CultivatedPlot authority.
@@ -586,6 +612,10 @@ inline TechniqueId experimentTechnique(ExperimentKind kind)
         case ExperimentKind::HaftStoneHammer: return TechniqueId::StoneHammer;
         case ExperimentKind::SmeltCopperOre: return TechniqueId::CopperSmelting;
         case ExperimentKind::CultivatePlantFood: return TechniqueId::Cultivation;
+        case ExperimentKind::SmeltTinOre: return TechniqueId::TinSmelting;
+        case ExperimentKind::AlloyBronze: return TechniqueId::BronzeAlloying;
+        case ExperimentKind::CastBronzeAxe: return TechniqueId::BronzeAxe;
+        case ExperimentKind::CastBronzePick: return TechniqueId::BronzePick;
         default: return TechniqueId::None;
     }
 }
@@ -623,6 +653,10 @@ inline double experimentBaseChance(ExperimentKind kind,MaterialKind material)
         case ExperimentKind::ShapeDiggingStick: return material==MaterialKind::Wood ? 0.29 : 0.0;
         case ExperimentKind::HaftStoneHammer: return material==MaterialKind::Stone ? 0.24 : 0.0;
         case ExperimentKind::SmeltCopperOre: return material==MaterialKind::CopperOre ? 0.18 : 0.0;
+        case ExperimentKind::SmeltTinOre: return material==MaterialKind::TinOre ? 0.20 : 0.0;
+        case ExperimentKind::AlloyBronze: return material==MaterialKind::Bronze ? 0.16 : 0.0;
+        case ExperimentKind::CastBronzeAxe: return material==MaterialKind::Bronze ? 0.26 : 0.0;
+        case ExperimentKind::CastBronzePick: return material==MaterialKind::Bronze ? 0.24 : 0.0;
         case ExperimentKind::CultivatePlantFood: return material==MaterialKind::PlantFood ? 0.22 : 0.0;
         case ExperimentKind::DesignateSanitationArea: return material==MaterialKind::Unknown ? 0.32 : 0.0;
         case ExperimentKind::DigSanitationPit: return material==MaterialKind::Unknown ? 0.28 : 0.0;
@@ -666,6 +700,25 @@ inline bool experimentPrerequisitesMet(const ExperimentContext& context,const Kn
             && knowledge.knowsAtLeast(TechniqueId::FireMaking,KnowledgeLevel::Reproducible)
             && knowledge.knowsAtLeast(TechniqueId::StoneHammer,KnowledgeLevel::Reproducible)
             && knowledge.knowsAtLeast(TechniqueId::SimpleContainer,KnowledgeLevel::Reproducible);
+    }
+    if(context.kind==ExperimentKind::SmeltTinOre){
+        return context.smeltingOpportunityAvailable
+            && knowledge.knowsAtLeast(TechniqueId::CopperSmelting,KnowledgeLevel::Reproducible);
+    }
+    if(context.kind==ExperimentKind::AlloyBronze){
+        return context.smeltingOpportunityAvailable
+            && knowledge.knowsAtLeast(TechniqueId::CopperSmelting,KnowledgeLevel::Reproducible)
+            && knowledge.knowsAtLeast(TechniqueId::TinSmelting,KnowledgeLevel::Reproducible);
+    }
+    if(context.kind==ExperimentKind::CastBronzeAxe){
+        return knowledge.knowsAtLeast(TechniqueId::BronzeAlloying,KnowledgeLevel::Reproducible)
+            && knowledge.knowsAtLeast(TechniqueId::ChippedStoneTool,KnowledgeLevel::Reproducible)
+            && knowledge.knowsAtLeast(TechniqueId::FiberCordage,KnowledgeLevel::Reproducible);
+    }
+    if(context.kind==ExperimentKind::CastBronzePick){
+        return knowledge.knowsAtLeast(TechniqueId::BronzeAlloying,KnowledgeLevel::Reproducible)
+            && knowledge.knowsAtLeast(TechniqueId::StoneHammer,KnowledgeLevel::Reproducible)
+            && knowledge.knowsAtLeast(TechniqueId::FiberCordage,KnowledgeLevel::Reproducible);
     }
     if(context.kind==ExperimentKind::CultivatePlantFood){
         return context.cultivationOpportunityAvailable

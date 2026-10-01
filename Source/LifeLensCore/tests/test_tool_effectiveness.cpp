@@ -96,6 +96,20 @@ int main()
     CHECK(gatheringQuantityWithTool(inventory,MaterialKind::Stone,2)>=3);
     CHECK(inspectGatherTool(inventory,MaterialKind::IronOre).available);
 
+    inventory.add({ItemKind::BronzeAxe,MaterialKind::Bronze,1,0.76,1.0});
+    const GatherToolUseProfile bronzeChop=
+        inspectGatherTool(inventory,MaterialKind::Wood);
+    CHECK(bronzeChop.available);
+    CHECK(bronzeChop.tool.kind==ItemKind::BronzeAxe);
+    CHECK(bronzeChop.quantityMultiplier>fresh.quantityMultiplier);
+
+    inventory.add({ItemKind::BronzePick,MaterialKind::Bronze,1,0.76,1.0});
+    const GatherToolUseProfile bronzeStrike=
+        inspectGatherTool(inventory,MaterialKind::TinOre);
+    CHECK(bronzeStrike.available);
+    CHECK(bronzeStrike.tool.kind==ItemKind::BronzePick);
+    CHECK(bronzeStrike.quantityMultiplier>strike.quantityMultiplier);
+
     // A dead sibling stack must not absorb wear meant for the selected usable tool.
     Inventory exactInventory;
     exactInventory.add({ItemKind::DiggingStick,MaterialKind::Wood,1,0.10,0.0});
@@ -137,6 +151,29 @@ int main()
     CHECK(digRecipe.producesItem);
     CHECK(digRecipe.outputKind==ItemKind::DiggingStick);
     CHECK(digRecipe.outputMaterial==MaterialKind::Wood);
+
+    const TechniqueRecipe bronzeRecipe=techniqueRecipe(TechniqueId::BronzeAlloying);
+    CHECK(bronzeRecipe.producesItem);
+    CHECK(bronzeRecipe.outputMaterial==MaterialKind::Bronze);
+    CHECK(bronzeRecipe.outputQuantity==3);
+
+    ExperimentContext tinContext;
+    tinContext.actor=1;
+    tinContext.kind=ExperimentKind::SmeltTinOre;
+    tinContext.material=MaterialKind::TinOre;
+    tinContext.smeltingOpportunityAvailable=true;
+    CHECK(!experimentPrerequisitesMet(tinContext,knowledge));
+    knowledge.learn(TechniqueId::CopperSmelting,KnowledgeLevel::Reproducible,0.8);
+    CHECK(experimentPrerequisitesMet(tinContext,knowledge));
+
+    ExperimentContext alloyContext;
+    alloyContext.actor=1;
+    alloyContext.kind=ExperimentKind::AlloyBronze;
+    alloyContext.material=MaterialKind::Bronze;
+    alloyContext.smeltingOpportunityAvailable=true;
+    CHECK(!experimentPrerequisitesMet(alloyContext,knowledge));
+    knowledge.learn(TechniqueId::TinSmelting,KnowledgeLevel::Reproducible,0.8);
+    CHECK(experimentPrerequisitesMet(alloyContext,knowledge));
 
     const TechniqueRecipe hammerRecipe=techniqueRecipe(TechniqueId::StoneHammer);
     CHECK(hammerRecipe.producesItem);
