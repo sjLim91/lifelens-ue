@@ -227,8 +227,7 @@ int main(int argc,char** argv)
         <<" civilizationEvents="<<civilizationEvents
         <<" facilities="<<sim.world().facilities.size()
         <<" sanitationSites="<<sim.world().primitiveSanitationSites.size()
-        <<" storageSites="<<sim.world().storageSites.size()
-        <<" cultivatedPlots="<<sim.world().cultivatedPlots.size();
+        <<" storageSites="<<sim.world().storageSites.size();
 
     for(std::size_t i=0;i<physicalNames.size();++i){
         std::cout
