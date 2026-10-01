@@ -666,6 +666,15 @@ inline CivilizationUtilityDecision urgentSurvivalProvisionGatherDecision(
         world,self,reference);
 }
 
+inline bool sanitationProgressionPressureCouldCompete(
+    const Character& self)
+{
+    return std::max(self.needs.bladder,self.needs.hygiene)
+            >= UrgentSurvivalProvisionThreshold
+        && self.needs.hunger<UrgentSurvivalProvisionThreshold
+        && self.needs.thirst<UrgentSurvivalProvisionThreshold;
+}
+
 inline void considerCivilizationUnderNeedPressure(
     const Character& self,
     const CivilizationUtilityDecision& civilization,
@@ -692,10 +701,7 @@ inline void considerCivilizationUnderNeedPressure(
         );
     const bool sanitationPressureException =
         sanitationProgressionCandidate
-        && std::max(self.needs.bladder,self.needs.hygiene)
-            >= UrgentSurvivalProvisionThreshold
-        && self.needs.hunger<UrgentSurvivalProvisionThreshold
-        && self.needs.thirst<UrgentSurvivalProvisionThreshold;
+        && sanitationProgressionPressureCouldCompete(self);
 
     if (!ordinaryCivilizationAllowed &&
         sanitationPressureException &&
@@ -758,10 +764,7 @@ inline UnifiedUtilityDecision chooseUnifiedUtilityDecisionAtPosition(
         maximumResidentNeed(self)<UrgentSurvivalProvisionThreshold;
     const bool sanitationPressureCouldCompete =
         !ordinaryCivilizationAllowed
-        && std::max(self.needs.bladder,self.needs.hygiene)
-            >= UrgentSurvivalProvisionThreshold
-        && self.needs.hunger<UrgentSurvivalProvisionThreshold
-        && self.needs.thirst<UrgentSurvivalProvisionThreshold;
+        && sanitationProgressionPressureCouldCompete(self);
 
     CivilizationUtilityDecision civilization;
     CivilizationUtilityDecision sanitationProgression;
