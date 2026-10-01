@@ -52,7 +52,8 @@ Simulation makeDugPitSchedulerProbe(
     double hunger,
     double thirst,
     double bladder,
-    double hygiene)
+    double hygiene,
+    bool knowsDugPit=true)
 {
     Simulation simulation(seed);
     simulation.setupNewGame();
@@ -67,10 +68,12 @@ Simulation makeDugPitSchedulerProbe(
     actor.personality.patience=1.0;
     actor.personality.orderliness=1.0;
     learnBaselineTechniques(actor);
-    actor.civilization.knowledge.learn(
-        TechniqueId::DugSanitationPit,
-        KnowledgeLevel::Reproducible,
-        0.95);
+    if(knowsDugPit){
+        actor.civilization.knowledge.learn(
+            TechniqueId::DugSanitationPit,
+            KnowledgeLevel::Reproducible,
+            0.95);
+    }
 
     // Keep hygiene from creating a missing-Water acquisition task. The probe is
     // specifically about the scheduler gate between an immediately available
@@ -205,6 +208,17 @@ int main()
     assert(hungryPressureDecision.kind!=UnifiedDecisionKind::Civilization
         || hungryPressureDecision.civilization.technique
             !=TechniqueId::DugSanitationPit);
+
+    // The scheduler exception must not perturb the discovery/experiment phase.
+    // Pressure alone is insufficient; the resident must already know DugPit
+    // reproducibly and have a DesignatedArea that can be improved.
+    Simulation preDiscoverySchedulerProbe=makeDugPitSchedulerProbe(
+        9201,0.10,0.10,0.75,0.75,false);
+    Character& preDiscoveryActor=
+        preDiscoverySchedulerProbe.world().characters.front();
+    assert(sanitationProgressionPressureCouldCompete(preDiscoveryActor));
+    assert(!dugSanitationPitCraftPressureCouldCompete(
+        preDiscoverySchedulerProbe.world(),preDiscoveryActor));
 
     // Production scheduler regression: once the pit technique is reproducible,
     // urgent-but-noncritical sanitation pressure must reach the same Unified
