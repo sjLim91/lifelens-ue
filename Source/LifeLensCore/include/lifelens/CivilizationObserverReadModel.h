@@ -105,6 +105,9 @@ struct CivilizationFacilityObservation {
     int charcoalUnits=0;
     int oreUnits=0;
     int metalUnits=0;
+    MaterialKind furnaceChargeMaterial=MaterialKind::Unknown;
+    MaterialKind furnaceOutputMaterial=MaterialKind::Unknown;
+    int furnaceOutputPerCharge=1;
     double heatLevel=0.0;
     bool lit=false;
     int burnMinutesRemaining=0;
@@ -338,6 +341,9 @@ inline CivilizationFacilityObservation makeCivilizationFacilityObservation(
     dto.charcoalUnits=facility.charcoalUnits;
     dto.oreUnits=facility.oreUnits;
     dto.metalUnits=facility.metalUnits;
+    dto.furnaceChargeMaterial=facility.furnaceChargeMaterial;
+    dto.furnaceOutputMaterial=facility.furnaceOutputMaterial;
+    dto.furnaceOutputPerCharge=facility.furnaceOutputPerCharge;
     dto.heatLevel=facility.heatLevel;
     dto.lit=facility.lit;
     dto.burnMinutesRemaining=facility.burnMinutesRemaining;
@@ -432,7 +438,7 @@ inline CivilizationWorldObservation buildCivilizationWorldObservation(
 
     // Legacy sanitation slot subset is still contained in this expanded count:
     // static_cast<std::size_t>(TechniqueId::DugSanitationPit)+1
-    constexpr std::size_t TechniqueSlots=static_cast<std::size_t>(TechniqueId::Cultivation)+1;
+    constexpr std::size_t TechniqueSlots=static_cast<std::size_t>(TechniqueId::BronzePick)+1;
     std::array<bool,TechniqueSlots> knownTypes{};
     std::array<bool,TechniqueSlots> reproducibleTypes{};
     for(const Character& character:world.characters){

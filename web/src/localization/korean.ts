@@ -133,6 +133,8 @@ export const KOREAN_MATERIAL_LABELS: Record<string, string> = {
   IronOre: '철 광석',
   Charcoal: '숯',
   CopperMetal: '구리',
+  TinMetal: '주석',
+  Bronze: '청동',
 };
 
 export const KOREAN_ITEM_LABELS: Record<string, string> = {
@@ -144,6 +146,8 @@ export const KOREAN_ITEM_LABELS: Record<string, string> = {
   FuelBundle: '연료 묶음',
   DiggingStick: '굴착 막대',
   StoneHammer: '돌망치',
+  BronzeAxe: '청동 도끼',
+  BronzePick: '청동 곡괭이',
 };
 
 export const KOREAN_TECHNIQUE_LABELS: Record<string, string> = {
@@ -160,6 +164,10 @@ export const KOREAN_TECHNIQUE_LABELS: Record<string, string> = {
   StoneHammer: '돌망치 제작',
   CopperSmelting: '구리 제련',
   Cultivation: '재배',
+  TinSmelting: '주석 제련',
+  BronzeAlloying: '청동 합금',
+  BronzeAxe: '청동 도끼 제작',
+  BronzePick: '청동 곡괭이 제작',
 };
 
 export const KOREAN_FACILITY_KIND_LABELS: Record<string, string> = {

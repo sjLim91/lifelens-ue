@@ -226,12 +226,12 @@ int main()
         ++restored.world().minute;
         advancePrimitiveFurnaceOneMinute(restored.world());
     }
+    Character& metalworker=restored.world().characters.front();
     if(metalFurnace->metalUnits>0){
         assert(collectPrimitiveFurnaceMetal(
-            restored,builder,furnaceId,metalFurnace->metalUnits)>=0);
+            restored.world(),metalworker,furnaceId,metalFurnace->metalUnits)>0);
     }
 
-    Character& metalworker=restored.world().characters.front();
     metalworker.civilization.knowledge.learn(
         TechniqueId::TinSmelting,KnowledgeLevel::Reproducible,0.90);
     metalworker.civilization.knowledge.learn(

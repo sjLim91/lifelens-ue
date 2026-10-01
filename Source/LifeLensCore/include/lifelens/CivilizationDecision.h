@@ -102,6 +102,8 @@ inline const char* materialName(MaterialKind material)
         case MaterialKind::IronOre: return "IronOre";
         case MaterialKind::Charcoal: return "Charcoal";
         case MaterialKind::CopperMetal: return "CopperMetal";
+        case MaterialKind::TinMetal: return "TinMetal";
+        case MaterialKind::Bronze: return "Bronze";
         default: return "Unknown";
     }
 }
@@ -121,6 +123,10 @@ inline const char* techniqueName(TechniqueId technique)
         case TechniqueId::StoneHammer: return "StoneHammer";
         case TechniqueId::CopperSmelting: return "CopperSmelting";
         case TechniqueId::Cultivation: return "Cultivation";
+        case TechniqueId::TinSmelting: return "TinSmelting";
+        case TechniqueId::BronzeAlloying: return "BronzeAlloying";
+        case TechniqueId::BronzeAxe: return "BronzeAxe";
+        case TechniqueId::BronzePick: return "BronzePick";
         default: return "None";
     }
 }
@@ -491,6 +497,11 @@ inline MaterialKind experimentMaterial(ExperimentKind kind)
         case ExperimentKind::HaftStoneHammer: return MaterialKind::Stone;
         case ExperimentKind::SmeltCopperOre: return MaterialKind::CopperOre;
         case ExperimentKind::CultivatePlantFood: return MaterialKind::PlantFood;
+        case ExperimentKind::SmeltTinOre: return MaterialKind::TinOre;
+        case ExperimentKind::AlloyBronze: return MaterialKind::Bronze;
+        case ExperimentKind::CastBronzeAxe:
+        case ExperimentKind::CastBronzePick:
+            return MaterialKind::Bronze;
         case ExperimentKind::DesignateSanitationArea:
         case ExperimentKind::DigSanitationPit:
         case ExperimentKind::OrganizeStockpile:
@@ -545,10 +556,17 @@ inline double materialProgressDemand(const Character& self,MaterialKind material
             if(!knowledge.knowsAtLeast(TechniqueId::StoneHammer,KnowledgeLevel::Reproducible)) return 0.18;
             return knowledge.knowsAtLeast(TechniqueId::CopperSmelting,KnowledgeLevel::Reproducible) ? 0.62 : 0.52;
         case MaterialKind::TinOre:
+            if(!knowledge.knowsAtLeast(TechniqueId::StoneHammer,KnowledgeLevel::Reproducible)) return 0.18;
+            if(!knowledge.knowsAtLeast(TechniqueId::CopperSmelting,KnowledgeLevel::Reproducible)) return 0.26;
+            if(!knowledge.knowsAtLeast(TechniqueId::TinSmelting,KnowledgeLevel::Reproducible)) return 0.78;
+            if(!knowledge.knowsAtLeast(TechniqueId::BronzeAlloying,KnowledgeLevel::Reproducible)) return 0.66;
+            return 0.48;
         case MaterialKind::IronOre:
             return knowledge.knowsAtLeast(TechniqueId::StoneHammer,KnowledgeLevel::Reproducible) ? 0.34 : 0.18;
         case MaterialKind::Charcoal:
-            return knowledge.knowsAtLeast(TechniqueId::CopperSmelting,KnowledgeLevel::Reproducible) ? 0.62 : 0.28;
+            if(knowledge.knowsAtLeast(TechniqueId::BronzeAlloying,KnowledgeLevel::Reproducible)) return 0.68;
+            if(knowledge.knowsAtLeast(TechniqueId::CopperSmelting,KnowledgeLevel::Reproducible)) return 0.72;
+            return 0.28;
         default:
             return 0.12;
     }
@@ -1000,16 +1018,17 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
     const PrimitiveStorageNeedObservation storageNeed=
         observePrimitiveStorageNeed(
             world,self,authoritativePosition,population);
-    const bool smeltingOpportunity=copperSmeltingOpportunityAvailable(world,self);
     const bool cultivationOpportunity=cultivationExperimentOpportunityAvailable(
         world,self,authoritativePosition,population);
-    const std::array<ExperimentKind,12> experiments={
+    const std::array<ExperimentKind,16> experiments={
         ExperimentKind::StrikeStone,ExperimentKind::HaftSharpFlake,ExperimentKind::FrictionWood,
         ExperimentKind::TwistFiber,ExperimentKind::ShapeClay,
         ExperimentKind::ShapeDiggingStick,ExperimentKind::HaftStoneHammer,
         ExperimentKind::DesignateSanitationArea,ExperimentKind::DigSanitationPit,
         ExperimentKind::OrganizeStockpile,ExperimentKind::SmeltCopperOre,
-        ExperimentKind::CultivatePlantFood};
+        ExperimentKind::CultivatePlantFood,ExperimentKind::SmeltTinOre,
+        ExperimentKind::AlloyBronze,ExperimentKind::CastBronzeAxe,
+        ExperimentKind::CastBronzePick};
 
     for(const ExperimentKind kind:experiments){
         const TechniqueId technique=experimentTechnique(kind);
@@ -1019,8 +1038,15 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
         const bool designatedExperiment=kind==ExperimentKind::DesignateSanitationArea;
         const bool pitExperiment=kind==ExperimentKind::DigSanitationPit;
         const bool storageExperiment=kind==ExperimentKind::OrganizeStockpile;
-        const bool smeltingExperiment=kind==ExperimentKind::SmeltCopperOre;
+        const bool smeltingExperiment=
+            kind==ExperimentKind::SmeltCopperOre
+            || kind==ExperimentKind::SmeltTinOre
+            || kind==ExperimentKind::AlloyBronze;
         const bool cultivationExperiment=kind==ExperimentKind::CultivatePlantFood;
+        const bool smeltingOpportunity=
+            smeltingExperiment
+                ? smeltingOpportunityAvailable(world,self,technique)
+                : false;
         if(designatedExperiment &&
            (!sanitationOpportunity.problemRecognized || !sanitationOpportunity.siteAvailable)) continue;
         if(pitExperiment && !pitOpportunity.candidateAvailable) continue;
@@ -1118,8 +1144,12 @@ inline int desiredTechniqueOutputStock(TechniqueId technique)
             return SimpleContainerPersonalStockTarget;
         case TechniqueId::DiggingStick: return 1;
         case TechniqueId::StoneHammer: return 1;
+        case TechniqueId::BronzeAxe: return 1;
+        case TechniqueId::BronzePick: return 1;
         case TechniqueId::FireMaking:
         case TechniqueId::CopperSmelting:
+        case TechniqueId::TinSmelting:
+        case TechniqueId::BronzeAlloying:
         case TechniqueId::Cultivation:
         case TechniqueId::DesignatedSanitationArea:
         case TechniqueId::DugSanitationPit:
@@ -1605,40 +1635,100 @@ inline CivilizationUtilityDecision bestPrimitiveFurnaceDecision(
         return CivilizationUtilityDecision{};
     }
 
-    if(!self.civilization.knowledge.knowsAtLeast(
-        TechniqueId::CopperSmelting,KnowledgeLevel::Reproducible)) return CivilizationUtilityDecision{};
-
     if(!project->lit && project->metalUnits>0){
+        const TechniqueId processTechnique=
+            furnaceTechniqueForOutput(project->furnaceOutputMaterial);
+        if(processTechnique==TechniqueId::None
+           || !self.civilization.knowledge.knowsAtLeast(
+                processTechnique,KnowledgeLevel::Reproducible)){
+            return CivilizationUtilityDecision{};
+        }
+        candidate.technique=processTechnique;
         candidate.facilityAction=FacilityBuildAction::CollectMetal;
-        candidate.material=MaterialKind::CopperMetal;
-        candidate.quantity=std::min(2,project->metalUnits);
+        candidate.material=project->furnaceOutputMaterial;
+        candidate.quantity=std::min(3,project->metalUnits);
         candidate.utility=clampCivilization01(
             0.56+0.10*self.personality.conscientiousness+
             0.07*self.civilization.craftingSkill+0.04*preference);
         return candidate;
     }
 
-    const int heldOre=self.civilization.inventory.count(
-        ItemKind::RawMaterial,MaterialKind::CopperOre);
-    const int heldCharcoal=self.civilization.inventory.count(
-        ItemKind::RawMaterial,MaterialKind::Charcoal);
-    if(!project->lit && project->oreUnits<2 && heldOre>0 && heldCharcoal>0){
-        candidate.facilityAction=FacilityBuildAction::LoadSmeltCharge;
-        candidate.material=MaterialKind::CopperOre;
-        candidate.quantity=std::min({2-project->oreUnits,heldOre,heldCharcoal,2});
-        candidate.utility=clampCivilization01(
-            0.51+0.11*self.personality.conscientiousness+
-            0.10*self.civilization.craftingSkill+0.05*preference);
-        return candidate;
-    }
-
     if(!project->lit && project->oreUnits>0 && project->fuelUnits>0){
+        const TechniqueId processTechnique=
+            furnaceTechniqueForOutput(project->furnaceOutputMaterial);
+        if(processTechnique==TechniqueId::None
+           || !self.civilization.knowledge.knowsAtLeast(
+                processTechnique,KnowledgeLevel::Reproducible)){
+            return CivilizationUtilityDecision{};
+        }
+        candidate.technique=processTechnique;
         candidate.facilityAction=FacilityBuildAction::Ignite;
+        candidate.material=project->furnaceChargeMaterial;
         candidate.utility=clampCivilization01(
             0.58+0.10*self.personality.curiosity+
             0.10*self.civilization.craftingSkill+0.05*preference);
         return candidate;
     }
+
+    if(project->lit || project->oreUnits>0) return CivilizationUtilityDecision{};
+
+    const Inventory& inventory=self.civilization.inventory;
+    const int heldCharcoal=inventory.count(
+        ItemKind::RawMaterial,MaterialKind::Charcoal);
+
+    if(self.civilization.knowledge.knowsAtLeast(
+            TechniqueId::BronzeAlloying,KnowledgeLevel::Reproducible)){
+        const int copper=inventory.count(
+            ItemKind::RawMaterial,MaterialKind::CopperMetal);
+        const int tin=inventory.count(
+            ItemKind::RawMaterial,MaterialKind::TinMetal);
+        const int batches=std::min({2,copper/2,tin,heldCharcoal});
+        if(batches>0){
+            candidate.technique=TechniqueId::BronzeAlloying;
+            candidate.facilityAction=FacilityBuildAction::LoadSmeltCharge;
+            candidate.material=MaterialKind::Bronze;
+            candidate.quantity=batches;
+            candidate.utility=clampCivilization01(
+                0.61+0.11*self.personality.conscientiousness+
+                0.10*self.civilization.craftingSkill+0.05*preference);
+            return candidate;
+        }
+    }
+
+    if(self.civilization.knowledge.knowsAtLeast(
+            TechniqueId::TinSmelting,KnowledgeLevel::Reproducible)){
+        const int tinOre=inventory.count(
+            ItemKind::RawMaterial,MaterialKind::TinOre);
+        const int load=std::min({2,tinOre,heldCharcoal});
+        if(load>0){
+            candidate.technique=TechniqueId::TinSmelting;
+            candidate.facilityAction=FacilityBuildAction::LoadSmeltCharge;
+            candidate.material=MaterialKind::TinOre;
+            candidate.quantity=load;
+            candidate.utility=clampCivilization01(
+                0.55+0.11*self.personality.conscientiousness+
+                0.10*self.civilization.craftingSkill+0.05*preference);
+            return candidate;
+        }
+    }
+
+    if(self.civilization.knowledge.knowsAtLeast(
+            TechniqueId::CopperSmelting,KnowledgeLevel::Reproducible)){
+        const int copperOre=inventory.count(
+            ItemKind::RawMaterial,MaterialKind::CopperOre);
+        const int load=std::min({2,copperOre,heldCharcoal});
+        if(load>0){
+            candidate.technique=TechniqueId::CopperSmelting;
+            candidate.facilityAction=FacilityBuildAction::LoadSmeltCharge;
+            candidate.material=MaterialKind::CopperOre;
+            candidate.quantity=load;
+            candidate.utility=clampCivilization01(
+                0.51+0.11*self.personality.conscientiousness+
+                0.10*self.civilization.craftingSkill+0.05*preference);
+            return candidate;
+        }
+    }
+
     return CivilizationUtilityDecision{};
 }
 
@@ -1925,12 +2015,13 @@ inline CivilizationUtilityDecision bestCraftDecisionAtPosition(
         }
     }
 
-    // FireMaking and CopperSmelting are facility-driven once reproducible. They
-    // are intentionally omitted here so residents cannot bypass world heat.
-    const std::array<TechniqueId,6> techniques={
+    // Smelting/alloying remain facility-driven. Finished bronze tools use the
+    // ordinary recipe path only after residents possess real Bronze stock.
+    const std::array<TechniqueId,8> techniques={
         TechniqueId::SharpFlake,TechniqueId::ChippedStoneTool,
         TechniqueId::FiberCordage,TechniqueId::SimpleContainer,
-        TechniqueId::DiggingStick,TechniqueId::StoneHammer};
+        TechniqueId::DiggingStick,TechniqueId::StoneHammer,
+        TechniqueId::BronzeAxe,TechniqueId::BronzePick};
 
     for(const TechniqueId technique:techniques){
         if(!self.civilization.knowledge.knowsAtLeast(technique,KnowledgeLevel::Reproducible)) continue;
@@ -1953,8 +2044,12 @@ inline CivilizationUtilityDecision bestCraftDecisionAtPosition(
         // Durable logistics infrastructure is demand-driven. Once enough
         // reusable containers exist, do not manufacture extras merely to train
         // crafting skill; that turns practice into unbounded settlement clutter.
-        const double practiceNeed=
+        const bool durableDemandDriven=
             technique==TechniqueId::SimpleContainer
+            || technique==TechniqueId::BronzeAxe
+            || technique==TechniqueId::BronzePick;
+        const double practiceNeed=
+            durableDemandDriven
                 ? (stockNeed>0.0
                     ? (successfulUses<3 ? 1.0 : (successfulUses<12 ? 0.35 : 0.0))
                     : 0.0)
@@ -2447,8 +2542,12 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
                 context.storageProblemRecognized=
                     observePrimitiveStorageNeed(
                         world,self,authoritativePosition,population).recognized;
-            }else if(decision.experiment==ExperimentKind::SmeltCopperOre){
-                context.smeltingOpportunityAvailable=copperSmeltingOpportunityAvailable(world,self);
+            }else if(decision.experiment==ExperimentKind::SmeltCopperOre
+                     || decision.experiment==ExperimentKind::SmeltTinOre
+                     || decision.experiment==ExperimentKind::AlloyBronze){
+                context.smeltingOpportunityAvailable=
+                    smeltingOpportunityAvailable(
+                        world,self,experimentTechnique(decision.experiment));
             }else if(decision.experiment==ExperimentKind::CultivatePlantFood){
                 context.cultivationOpportunityAvailable=
                     cultivationExperimentOpportunityAvailable(
@@ -2852,7 +2951,9 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
 
             if(decision.facilityKind==FacilityKind::Furnace
                && (decision.technique==TechniqueId::FireMaking
-                   || decision.technique==TechniqueId::CopperSmelting)){
+                   || decision.technique==TechniqueId::CopperSmelting
+                   || decision.technique==TechniqueId::TinSmelting
+                   || decision.technique==TechniqueId::BronzeAlloying)){
                 result.facilityKind=FacilityKind::Furnace;
                 result.facilityAction=decision.facilityAction;
                 result.craft.event.actor=self.id;
@@ -2914,17 +3015,19 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
                 }
 
                 if(facility->state!=FacilityState::Operational || !facility->active
+                   || decision.technique==TechniqueId::FireMaking
                    || !self.civilization.knowledge.knowsAtLeast(
-                       TechniqueId::CopperSmelting,KnowledgeLevel::Reproducible)) return result;
+                       decision.technique,KnowledgeLevel::Reproducible)) return result;
 
                 if(decision.facilityAction==FacilityBuildAction::LoadSmeltCharge){
-                    const int loaded=loadPrimitiveFurnaceCopperCharge(
-                        world,self,facility->id,std::max(1,decision.quantity));
+                    const int loaded=loadPrimitiveFurnaceCharge(
+                        world,self,facility->id,decision.technique,
+                        std::max(1,decision.quantity));
                     if(loaded<=0) return result;
                     result.executed=true;
                     result.success=true;
                     result.craft.success=true;
-                    result.craft.event.material=MaterialKind::CopperOre;
+                    result.craft.event.material=decision.material;
                     result.craft.event.quantity=loaded;
                     result.event=result.craft.event;
                 }else if(decision.facilityAction==FacilityBuildAction::Ignite){
@@ -2933,15 +3036,17 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
                     result.success=true;
                     result.craft.success=true;
                     result.event=result.craft.event;
-                    self.civilization.knowledge.recordSuccessfulUse(TechniqueId::CopperSmelting);
+                    self.civilization.knowledge.recordSuccessfulUse(decision.technique);
                 }else if(decision.facilityAction==FacilityBuildAction::CollectMetal){
-                    const int collected=collectPrimitiveFurnaceCopper(
+                    const MaterialKind outputMaterial=
+                        facility->furnaceOutputMaterial;
+                    const int collected=collectPrimitiveFurnaceMetal(
                         world,self,facility->id,std::max(1,decision.quantity));
                     if(collected<=0) return result;
                     result.executed=true;
                     result.success=true;
                     result.craft.success=true;
-                    result.craft.event.material=MaterialKind::CopperMetal;
+                    result.craft.event.material=outputMaterial;
                     result.craft.event.item=ItemKind::RawMaterial;
                     result.craft.event.quantity=collected;
                     result.event=result.craft.event;
