@@ -368,6 +368,25 @@ export interface ResidentCivilizationTechnique {
   hopCount?: number;
 }
 
+export interface ResidentCivilizationCapability {
+  capability?: string;
+  available?: boolean;
+  knownSupportingTechnologies?: number;
+  operationalSupportingTechnologies?: number;
+}
+
+export interface ResidentCivilizationTechnology {
+  technology?: string;
+  legacyTechnique?: string;
+  primaryCapability?: string;
+  knowledgeLevel?: string;
+  discovered?: boolean;
+  reproducible?: boolean;
+  operational?: boolean;
+  adopted?: boolean;
+  successfulUses?: number;
+}
+
 export interface ResidentCivilization {
   totalInventoryUnits?: number;
   gatheringSkill?: number;
@@ -375,10 +394,16 @@ export interface ResidentCivilization {
   learningSkill?: number;
   knownTechniqueCount?: number;
   reproducibleTechniqueCount?: number;
+  availableCapabilityCount?: number;
+  knownTechnologyCount?: number;
+  operationalTechnologyCount?: number;
+  adoptedTechnologyCount?: number;
   latestKnowledgeMinute?: number;
   latestTechnique?: string;
   inventory?: ResidentCivilizationItem[];
   techniques?: ResidentCivilizationTechnique[];
+  capabilities?: ResidentCivilizationCapability[];
+  technologies?: ResidentCivilizationTechnology[];
 }
 
 export interface ResidentLifeEvent {

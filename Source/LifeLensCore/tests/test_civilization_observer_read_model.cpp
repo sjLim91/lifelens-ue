@@ -19,6 +19,26 @@ static ResourceNode* findResource(World& world,MaterialKind material)
     return nullptr;
 }
 
+static const CivilizationCapabilityStatus* findCapability(
+    const ResidentCivilizationObservation& observation,
+    CapabilityId capability)
+{
+    for(const auto& item:observation.capabilities){
+        if(item.capability==capability) return &item;
+    }
+    return nullptr;
+}
+
+static const CivilizationTechnologyStatus* findTechnology(
+    const ResidentCivilizationObservation& observation,
+    TechnologyId technology)
+{
+    for(const auto& item:observation.technologies){
+        if(item.technology==technology) return &item;
+    }
+    return nullptr;
+}
+
 static const CivilizationTechniqueObservation* findTechnique(
     const ResidentCivilizationObservation& observation,
     TechniqueId technique)
@@ -47,6 +67,14 @@ int main()
 
     discoverer.civilization.knowledge.learn(
         TechniqueId::SharpFlake,KnowledgeLevel::Mastered,0.98);
+    CHECK(reproduceTechnique(
+        discoverer.id,TechniqueId::SharpFlake,
+        discoverer.civilization.inventory,
+        discoverer.civilization.knowledge,0.8).success);
+    CHECK(reproduceTechnique(
+        discoverer.id,TechniqueId::SharpFlake,
+        discoverer.civilization.inventory,
+        discoverer.civilization.knowledge,0.8).success);
     const KnowledgeReceipt* origin=registerTechniqueOrigin(
         sim.socialKnowledge(),discoverer,TechniqueId::SharpFlake,
         eventMinute,CivilizationEventType::Discovered,seed);
@@ -98,6 +126,22 @@ int main()
     CHECK(discovererTechnique->source==CivilizationKnowledgeSource::SelfDiscovery);
     CHECK(discovererTechnique->originResidentId==discoverer.id);
     CHECK(discovererTechnique->immediateSourceId==discoverer.id);
+    const CivilizationCapabilityStatus* cutCapability=
+        findCapability(discovererRead,CapabilityId::Cut);
+    CHECK(cutCapability!=nullptr);
+    CHECK(cutCapability->available);
+    CHECK(cutCapability->operationalSupportingTechnologies>=1);
+    const CivilizationTechnologyStatus* sharpTechnology=
+        findTechnology(discovererRead,TechnologyId::SharpFlake);
+    CHECK(sharpTechnology!=nullptr);
+    CHECK(sharpTechnology->discovered);
+    CHECK(sharpTechnology->reproducible);
+    CHECK(sharpTechnology->operational);
+    CHECK(sharpTechnology->adopted);
+    CHECK(discovererRead.availableCapabilityCount>=1);
+    CHECK(discovererRead.knownTechnologyCount>=1);
+    CHECK(discovererRead.operationalTechnologyCount>=1);
+    CHECK(discovererRead.adoptedTechnologyCount>=1);
 
     const ResidentCivilizationObservation witnessRead=
         sim.observeResidentCivilization(witness.id);
@@ -109,11 +153,24 @@ int main()
     CHECK(witnessTechnique->originResidentId==discoverer.id);
     CHECK(witnessTechnique->immediateSourceId==witness.id);
     CHECK(witnessTechnique->level>=KnowledgeLevel::Observed);
+    const CivilizationTechnologyStatus* witnessSharp=
+        findTechnology(witnessRead,TechnologyId::SharpFlake);
+    CHECK(witnessSharp!=nullptr);
+    CHECK(witnessSharp->discovered);
+    CHECK(!witnessSharp->reproducible);
+    CHECK(!witnessSharp->operational);
+    CHECK(!witnessSharp->adopted);
+    const CivilizationCapabilityStatus* witnessCut=
+        findCapability(witnessRead,CapabilityId::Cut);
+    CHECK(witnessCut!=nullptr);
+    CHECK(!witnessCut->available);
 
     const ResidentCivilizationObservation missing=sim.observeResidentCivilization(999999);
     CHECK(missing.residentId==0);
     CHECK(missing.inventory.empty());
     CHECK(missing.techniques.empty());
+    CHECK(missing.capabilities.empty());
+    CHECK(missing.technologies.empty());
 
     const CivilizationWorldObservation worldRead=sim.observeCivilizationWorld();
     CHECK(worldRead.resourceNodeCount==static_cast<int>(sim.world().resourceNodes.size()));
@@ -177,6 +234,15 @@ int main()
     CHECK(restoredTechnique->source==CivilizationKnowledgeSource::SelfDiscovery);
     CHECK(restoredTechnique->factId==discovererTechnique->factId);
     CHECK(restoredResident.totalInventoryUnits==discovererRead.totalInventoryUnits);
+    CHECK(restoredResident.availableCapabilityCount==discovererRead.availableCapabilityCount);
+    CHECK(restoredResident.knownTechnologyCount==discovererRead.knownTechnologyCount);
+    CHECK(restoredResident.operationalTechnologyCount==discovererRead.operationalTechnologyCount);
+    CHECK(restoredResident.adoptedTechnologyCount==discovererRead.adoptedTechnologyCount);
+    const auto* restoredSharpTechnology=
+        findTechnology(restoredResident,TechnologyId::SharpFlake);
+    CHECK(restoredSharpTechnology!=nullptr);
+    CHECK(restoredSharpTechnology->operational==sharpTechnology->operational);
+    CHECK(restoredSharpTechnology->adopted==sharpTechnology->adopted);
     CHECK(restoredWorld.totalResourceUnits==worldRead.totalResourceUnits);
     CHECK(restoredWorld.totalStoredUnits==worldRead.totalStoredUnits);
     CHECK(restoredWorld.facilityCount==1);

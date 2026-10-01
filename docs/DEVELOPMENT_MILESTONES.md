@@ -820,10 +820,10 @@ LifeLens should eventually surprise the observer **without abandoning causality*
 
 ## Stage C mainline — ACTIVE
 
-C1-A / C1-B / C1-C / C1-D / C1-E are complete. Current Jjun Core sequence:
+C1-A / C1-B / C1-C / C1-D / C1-E / C1-F are complete. Current Jjun Core sequence:
 
-1. **C1-F Early Material Progression** — furnace material identity generalization, Tin, Bronze and bronze tools from physical prerequisites.
-2. **Stage D** — long-run reliability + open-ended civilization engine.
+1. **Stage D C3-A Capability / Technology Framework** — stable identities, actual capability state, technology operation/adoption separation and observer contract.
+2. **Stage D** — long-run reliability + remaining open-ended civilization engine.
 3. **Stage E** — health + education/economy/institutions + migration/trade.
 4. **Stage F** — historical/industrial/modern/digital/AI/advanced/space/open-future expansion.
 
@@ -845,15 +845,15 @@ Do not launch a long Android build until the user explicitly resumes it.
 
 Current immediate Jjun implementation target:
 
-> **C1-F — Early Material Progression**
+> **Stage D C3-A — Capability / Technology Framework**
 
 First delivery order:
-- generalize furnace charge/output material identity without breaking the existing copper path.
-- preserve physical ore + charcoal + furnace + learned-knowledge prerequisites.
-- expose Tin/Bronze consistently through Core snapshot/read models, Unreal bridge and Web contracts.
-- add Tin smelting/alloy experimentation only after real material availability.
-- add Bronze as a material/tool capability, never as an automatic era unlock.
-- deterministic Save/Load continuation and regression coverage.
+- stable Capability / Technology identities independent of era labels.
+- map existing Technique knowledge into Technology without discarding compatibility.
+- derive actual Capability from real tools, facilities, materials and reproducible knowledge.
+- separate discovery/reproducibility, current operational ability and repeated-use adoption.
+- expose the resulting state through the Observer/Web contract.
+- preserve deterministic Save/Load by deriving the framework from authoritative persisted state.
 
 Presentation is not the active Jjun lane. It is frozen at the #282 main baseline and handed to Dagyeom per `docs/DAGYEOM_PRESENTATION_HANDOFF_2026-09-19.md`.
 
