@@ -96,8 +96,10 @@ int main()
         *static_cast<double>(facilityUseDurationTicks(Goal::Wash));
     assert(smartWashRelief>primitiveWashRelief);
 
-    // The production NEW GAME path must prove the same sleep contract, not only
-    // the arithmetic helper above.
+    // The production NEW GAME path must prove that actual sleep infrastructure
+    // plus weather protection can reach the rested target inside the 10-hour
+    // cap. Exposed outdoor sleep intentionally remains weather-sensitive; the
+    // neutral outdoor budget is enforced by the arithmetic contract above.
     SimulationRuleset sleepRules=DefaultSimulationRuleset;
     sleepRules.needs.hungerPerMinute=0.0;
     sleepRules.needs.thirstPerMinute=0.0;
@@ -110,6 +112,24 @@ int main()
     sleepSimulation.world().characters.resize(1);
     Character& sleeper=sleepSimulation.world().characters.front();
     sleeper.needs={0.05,0.05,1.0,0.05,0.05};
+
+    GridPos sleepPosition{};
+    assert(sleepSimulation.runtimePosition(sleeper.id,sleepPosition));
+    ConstructedFacility shelter;
+    shelter.id=99002;
+    shelter.kind=FacilityKind::Shelter;
+    shelter.state=FacilityState::Operational;
+    shelter.pos=sleepPosition;
+    shelter.initiatedBy=sleeper.id;
+    shelter.lastWorkedBy=sleeper.id;
+    shelter.startedMinute=sleepSimulation.world().minute;
+    shelter.completedMinute=sleepSimulation.world().minute;
+    shelter.constructionWork=1.0;
+    shelter.requiredWork=1.0;
+    shelter.durability=1.0;
+    shelter.active=true;
+    sleepSimulation.world().facilities.push_back(shelter);
+
     const std::string sleepCompletion=
         sleeper.name+" completed Sleep via emergency fallback";
 
