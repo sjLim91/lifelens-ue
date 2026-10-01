@@ -675,6 +675,19 @@ inline bool sanitationProgressionPressureCouldCompete(
         && self.needs.thirst<UrgentSurvivalProvisionThreshold;
 }
 
+inline bool dugSanitationPitCraftPressureCouldCompete(
+    const World& world,
+    const Character& self)
+{
+    // Scheduler exception is deliberately narrower than the Unified Utility
+    // sanitation exception. Discovery/experimentation must keep its existing
+    // cadence and ordering; only an already-known pit improvement that can be
+    // worked right now may bypass the urgent-Physical entry gate.
+    return sanitationProgressionPressureCouldCompete(self)
+        && canWorkOnDugSanitationPit(
+            self,world.primitiveSanitationSites);
+}
+
 inline void considerCivilizationUnderNeedPressure(
     const Character& self,
     const CivilizationUtilityDecision& civilization,
