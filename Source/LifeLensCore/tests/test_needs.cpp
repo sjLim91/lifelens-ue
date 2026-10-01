@@ -7,8 +7,15 @@ int main(){
 
     lifelens::Needs n{};
     for(int i=0;i<24*60;++i) n.decay();
-    if(!(near(n.hunger,1.0)&&near(n.thirst,1.0)&&near(n.sleep,1.0)&&near(n.bladder,1.0)&&near(n.hygiene,1.0))){
-        std::cerr<<"needs did not saturate after 24h\n"; return 1;
+    const double expectedDailyHygiene=
+        lifelens::DefaultSimulationRuleset.needs.hygienePerMinute
+        *static_cast<double>(24*60);
+    if(!(near(n.hunger,1.0)
+         && near(n.thirst,1.0)
+         && near(n.sleep,1.0)
+         && near(n.bladder,1.0)
+         && near(n.hygiene,expectedDailyHygiene))){
+        std::cerr<<"default 24h need budget was not applied\n"; return 1;
     }
     n.apply({-0.5,-0.4,-0.3,-0.7,-0.2});
     if(!(n.hunger<1.0&&n.thirst<1.0&&n.sleep<1.0&&n.bladder<1.0&&n.hygiene<1.0)){
