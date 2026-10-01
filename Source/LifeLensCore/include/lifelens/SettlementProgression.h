@@ -9,6 +9,7 @@
 #include "ContinuousEcology.h"
 
 #include "EnvironmentalConsequences.h"
+#include "PhysiologyBalance.h"
 #include "Facility.h"
 #include "PrimitiveSanitation.h"
 #include "SettlementDemand.h"
@@ -204,10 +205,14 @@ inline double settlementSleepRecoveryPerTick(
     // a one-shot "Sleep" action completed.
     const double effectiveness=facilityEffectiveness01(facility);
     if(facility.kind==FacilityKind::SleepingPlace){
-        return 0.00225+0.00015*effectiveness;
+        return DefaultPhysiologyBalance.sleepingPlaceRecoveryBasePerMinute
+            +DefaultPhysiologyBalance.sleepingPlaceRecoveryEffectivenessBonus
+                *effectiveness;
     }
     if(facility.kind==FacilityKind::Shelter){
-        return 0.00185+0.00015*effectiveness;
+        return DefaultPhysiologyBalance.shelterSleepRecoveryBasePerMinute
+            +DefaultPhysiologyBalance.shelterSleepRecoveryEffectivenessBonus
+                *effectiveness;
     }
     return 0.0;
 }
@@ -243,7 +248,7 @@ inline double sleepRecoveryPerMinuteAt(
         0.0,
         1.0);
 
-    double baseRecovery=0.00150;
+    double baseRecovery=DefaultPhysiologyBalance.outdoorSleepRecoveryPerMinute;
     double protection=settlementShelterProtection01(world,pos);
     if(facility!=nullptr && facilityOperationalAndActive(*facility)
        && facilityProvidesSleep(facility->kind)){
