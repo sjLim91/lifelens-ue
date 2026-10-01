@@ -60,8 +60,26 @@ int main()
     CHECK(gatheringQuantityWithTool(inventory,MaterialKind::Fiber,2)>=3);
 
     inventory.add({ItemKind::SimpleContainer,MaterialKind::Clay,1,0.75,1.0});
-    CHECK(inspectGatherTool(inventory,MaterialKind::Water).available);
+    const GatherToolUseProfile carrier=
+        inspectGatherTool(inventory,MaterialKind::Water);
+    CHECK(carrier.available);
+    CHECK(carrier.capability==ToolCapability::Carry);
+    CHECK(carrier.tool.kind==ItemKind::SimpleContainer);
+    CHECK(carrier.wear==0.0);
+    CHECK(carrier.durabilityAfter==carrier.durabilityBefore);
     CHECK(gatheringQuantityWithTool(inventory,MaterialKind::Water,2)>=3);
+
+    // Reusable carrying capacity must not disappear through generic tool wear.
+    for(int i=0;i<80;++i){
+        GatherToolUseProfile carryUse;
+        CHECK(consumeGatherToolUse(inventory,MaterialKind::Water,&carryUse));
+        CHECK(carryUse.used);
+        CHECK(!carryUse.broken);
+        CHECK(carryUse.durabilityAfter==carryUse.durabilityBefore);
+    }
+    CHECK(inventory.count(
+        ItemKind::SimpleContainer,MaterialKind::Unknown,true)==1);
+    CHECK(inspectGatherTool(inventory,MaterialKind::PlantFood).available);
 
     inventory.add({ItemKind::DiggingStick,MaterialKind::Wood,1,0.72,1.0});
     const GatherToolUseProfile dig=inspectGatherTool(inventory,MaterialKind::Clay);

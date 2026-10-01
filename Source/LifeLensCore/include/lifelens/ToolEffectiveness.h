@@ -53,7 +53,12 @@ inline double gatheringToolWearScale(ToolCapability capability)
         case ToolCapability::Dig: return 1.20;
         case ToolCapability::Strike: return 1.15;
         case ToolCapability::Cut: return 1.00;
-        case ToolCapability::Carry: return 0.60;
+        // Carry-capable vessels are reusable transport capacity, not a cutting/
+        // striking edge. Water filling already pays for capacity through
+        // emptySimpleContainerCount(), so generic gather-tool wear would
+        // double-charge the same vessel and eventually delete it.
+        // Vessel-specific damage/repair can own durability separately later.
+        case ToolCapability::Carry: return 0.0;
         case ToolCapability::Heat: return 0.80;
         case ToolCapability::None:
         default: return 0.0;

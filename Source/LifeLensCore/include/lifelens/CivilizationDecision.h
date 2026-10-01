@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <limits>
 #include <utility>
 
 #include "Civilization.h"
@@ -571,6 +572,76 @@ inline GridPos civilizationDecisionResourcePosition(
     return node.pos;
 }
 
+inline constexpr int WaterTransportComfortDistanceGrid=8;
+inline constexpr int WaterTransportSevereDistanceGrid=WorldChunkSpanGridCells;
+inline constexpr int PortableProvisionCarryTarget=2;
+inline constexpr int SimpleContainerLogisticsStockTarget=
+    PortableProvisionCarryTarget+1;
+
+inline double waterTransportInnovationPressure(
+    const World& world,
+    const Character& self,
+    GridPos authoritativePosition)
+{
+    // Once the resident owns a reusable vessel, ordinary Gather/Drink owns the
+    // refill loop. Likewise, a real nearby stored portable-water reserve already
+    // solves the transport problem without inventing another technology.
+    if(simpleContainerCount(self.civilization.inventory)>0
+       || storageCountForMaterialNear(
+            world,MaterialKind::Water,authoritativePosition)>0){
+        return 0.0;
+    }
+
+    int nearestWaterDistance=std::numeric_limits<int>::max();
+    for(const ResourceNode& node:world.resourceNodes){
+        if(node.id==0
+           || node.material!=MaterialKind::Water
+           || node.quantity<=0){
+            continue;
+        }
+        const GridPos waterPos=civilizationDecisionResourcePosition(world,node);
+        nearestWaterDistance=std::min(
+            nearestWaterDistance,
+            manhattan(authoritativePosition,waterPos));
+    }
+    if(nearestWaterDistance==std::numeric_limits<int>::max()) return 0.0;
+
+    const double distancePressure=clampCivilization01(
+        static_cast<double>(
+            std::max(0,nearestWaterDistance-WaterTransportComfortDistanceGrid))
+        /static_cast<double>(
+            std::max(
+                1,
+                WaterTransportSevereDistanceGrid
+                    -WaterTransportComfortDistanceGrid)));
+    const double needPressure=provisionNeedForMaterial(
+        self,MaterialKind::Water);
+
+    // Repeated long water walks become evidence for a transport problem.
+    // This does not grant the solution: residents must still gather Clay,
+    // choose ShapeClay over competing work, and pass the normal experiment roll.
+    return clampCivilization01(
+        0.72*distancePressure
+        +0.28*needPressure);
+}
+
+inline double simpleContainerLogisticsStockPressure(
+    const World& world,
+    const Character& self)
+{
+    if(!self.civilization.knowledge.knowsAtLeast(
+        TechniqueId::SimpleContainer,KnowledgeLevel::Reproducible)){
+        return 0.0;
+    }
+
+    const int available=worldItemCount(
+        world,self,ItemKind::SimpleContainer,MaterialKind::Unknown,true);
+    return clampCivilization01(
+        static_cast<double>(
+            std::max(0,SimpleContainerLogisticsStockTarget-available))
+        /static_cast<double>(SimpleContainerLogisticsStockTarget));
+}
+
 inline int knownNaturalResourceUnits(
     const World& world,
     MaterialKind material)
@@ -805,11 +876,23 @@ inline CivilizationUtilityDecision bestGatherDecisionAtPosition(
         const double localBonus=
             distance<=WorldChunkSpanGridCells*3 ? 0.04 : 0.0;
         const double distancePenalty=provision ? 0.0 : 0.20*distance01;
+        const bool containerInputsReady=
+            node.material==MaterialKind::Clay
+            && hasIngredients(
+                self.civilization.inventory,
+                techniqueRecipe(TechniqueId::SimpleContainer).inputs);
+        const double waterTransportBoost=
+            node.material==MaterialKind::Clay && !containerInputsReady
+                ? 0.22*std::max(
+                    waterTransportInnovationPressure(
+                        world,self,authoritativePosition),
+                    simpleContainerLogisticsStockPressure(world,self))
+                : 0.0;
         const double score=clampCivilization01(
             0.07+0.12*self.personality.curiosity+0.05*self.personality.adaptability+
             0.08*self.civilization.gatheringSkill+0.16*demand+0.13*gap+
             0.30*constructionDemand+0.24*maintenanceDemand+0.07*preference+
-            localBonus-distancePenalty+
+            localBonus+waterTransportBoost-distancePenalty+
             (provision && !world.storageSites.empty()
                 ? 0.12*clampCivilization01(
                     static_cast<double>(reserveGap)
@@ -908,6 +991,7 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
         double storageBoost=0.0;
         double smeltingBoost=0.0;
         double cultivationBoost=0.0;
+        double waterTransportBoost=0.0;
         if(designatedExperiment){
             sanitationBoost=0.18+0.16*sanitationOpportunity.problemConfidence+
                 0.10*clampCivilization01(self.needs.hygiene);
@@ -929,12 +1013,16 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
             cultivationBoost=0.20+0.30*demand.pressure
                 +0.08*self.personality.patience
                 +0.06*self.personality.conscientiousness;
+        }else if(kind==ExperimentKind::ShapeClay){
+            waterTransportBoost=
+                0.28*waterTransportInnovationPressure(
+                    world,self,authoritativePosition);
         }
         const double score=clampCivilization01(
             0.11+0.22*self.personality.curiosity+0.10*self.personality.openness+
             0.07*self.personality.patience+0.12*self.civilization.learningSkill+
             0.08*preference+hypothesisBoost+sanitationBoost+storageBoost
-            +smeltingBoost+cultivationBoost);
+            +smeltingBoost+cultivationBoost+waterTransportBoost);
 
         CivilizationUtilityDecision candidate;
         candidate.intent=CivilizationIntent::Experiment;
@@ -961,7 +1049,11 @@ inline int desiredTechniqueOutputStock(TechniqueId technique)
         case TechniqueId::SharpFlake: return 2;
         case TechniqueId::ChippedStoneTool: return 1;
         case TechniqueId::FiberCordage: return 2;
-        case TechniqueId::SimpleContainer: return 1;
+        case TechniqueId::SimpleContainer:
+            // Two vessels support a resident's normal carried reserve. A third
+            // creates the first real surplus that autonomous storage can bank,
+            // allowing the settlement to grow a shared water reserve.
+            return SimpleContainerLogisticsStockTarget;
         case TechniqueId::DiggingStick: return 1;
         case TechniqueId::StoneHammer: return 1;
         case TechniqueId::FireMaking:
@@ -1867,7 +1959,7 @@ inline CivilizationUtilityDecision bestRetrieveDecisionAtPosition(
                 ? portableWaterCount(self.civilization.inventory)
                 : self.civilization.inventory.count(
                     ItemKind::RawMaterial,material);
-            if(held>=2) continue;
+            if(held>=PortableProvisionCarryTarget) continue;
 
             const int stored=material==MaterialKind::Water
                 ? portableWaterCount(storage.inventory)
@@ -1875,9 +1967,12 @@ inline CivilizationUtilityDecision bestRetrieveDecisionAtPosition(
                     ItemKind::RawMaterial,material);
             if(stored<=0) continue;
 
-            const int requested=std::min(stored,std::max(1,2-held));
+            const int requested=std::min(
+                stored,
+                std::max(1,PortableProvisionCarryTarget-held));
             const double carryGap=clampCivilization01(
-                static_cast<double>(2-held)/2.0);
+                static_cast<double>(PortableProvisionCarryTarget-held)
+                /static_cast<double>(PortableProvisionCarryTarget));
             const double preference=civilizationPreference(
                 world.seed,self.id,
                 450ULL+static_cast<std::uint64_t>(material));
@@ -2008,7 +2103,7 @@ inline CivilizationUtilityDecision bestStoreDecisionAtPosition(
                     world,self,stack.material)
                 : 0;
         const int keep=provision
-            ? 2
+            ? PortableProvisionCarryTarget
             : (stack.kind==ItemKind::RawMaterial
                 ? std::max(4,std::min(effectiveQuantity,committedCarryNeed))
                 : 1);
