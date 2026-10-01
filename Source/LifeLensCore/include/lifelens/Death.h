@@ -17,7 +17,9 @@ enum class DeathCause {
     AgeRelated,
     Illness,
     Accident,
-    Other
+    Other,
+    // Appended by C4 so persisted historical ordinals above remain stable.
+    EnvironmentalExposure
 };
 
 inline double clampMortality(double value)
