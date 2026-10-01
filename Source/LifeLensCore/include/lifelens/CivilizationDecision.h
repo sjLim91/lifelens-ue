@@ -575,8 +575,9 @@ inline GridPos civilizationDecisionResourcePosition(
 inline constexpr int WaterTransportComfortDistanceGrid=8;
 inline constexpr int WaterTransportSevereDistanceGrid=WorldChunkSpanGridCells;
 inline constexpr int PortableProvisionCarryTarget=2;
-inline constexpr int SimpleContainerLogisticsStockTarget=
-    PortableProvisionCarryTarget+1;
+inline constexpr int SettlementWaterReserveTarget=8;
+inline constexpr int SimpleContainerPersonalStockTarget=
+    PortableProvisionCarryTarget;
 
 inline double waterTransportInnovationPressure(
     const World& world,
@@ -627,19 +628,30 @@ inline double waterTransportInnovationPressure(
 
 inline double simpleContainerLogisticsStockPressure(
     const World& world,
-    const Character& self)
+    const Character& self,
+    GridPos authoritativePosition)
 {
     if(!self.civilization.knowledge.knowsAtLeast(
         TechniqueId::SimpleContainer,KnowledgeLevel::Reproducible)){
         return 0.0;
     }
 
-    const int available=worldItemCount(
-        world,self,ItemKind::SimpleContainer,MaterialKind::Unknown,true);
-    return clampCivilization01(
-        static_cast<double>(
-            std::max(0,SimpleContainerLogisticsStockTarget-available))
-        /static_cast<double>(SimpleContainerLogisticsStockTarget));
+    const bool sharedStorageAvailable=
+        nearestSettlementStorage(world,authoritativePosition)!=nullptr;
+    const int desired=
+        SimpleContainerPersonalStockTarget
+        +(sharedStorageAvailable ? SettlementWaterReserveTarget : 0);
+    const int available=
+        simpleContainerCount(self.civilization.inventory)
+        +(sharedStorageAvailable
+            ? storageCountForMaterialNear(
+                world,MaterialKind::Water,authoritativePosition)
+            : 0);
+    return desired>0
+        ? clampCivilization01(
+            static_cast<double>(std::max(0,desired-available))
+            /static_cast<double>(desired))
+        : 0.0;
 }
 
 inline int knownNaturalResourceUnits(
@@ -886,7 +898,8 @@ inline CivilizationUtilityDecision bestGatherDecisionAtPosition(
                 ? 0.22*std::max(
                     waterTransportInnovationPressure(
                         world,self,authoritativePosition),
-                    simpleContainerLogisticsStockPressure(world,self))
+                    simpleContainerLogisticsStockPressure(
+                        world,self,authoritativePosition))
                 : 0.0;
         const double score=clampCivilization01(
             0.07+0.12*self.personality.curiosity+0.05*self.personality.adaptability+
@@ -1050,10 +1063,7 @@ inline int desiredTechniqueOutputStock(TechniqueId technique)
         case TechniqueId::ChippedStoneTool: return 1;
         case TechniqueId::FiberCordage: return 2;
         case TechniqueId::SimpleContainer:
-            // Two vessels support a resident's normal carried reserve. A third
-            // creates the first real surplus that autonomous storage can bank,
-            // allowing the settlement to grow a shared water reserve.
-            return SimpleContainerLogisticsStockTarget;
+            return SimpleContainerPersonalStockTarget;
         case TechniqueId::DiggingStick: return 1;
         case TechniqueId::StoneHammer: return 1;
         case TechniqueId::FireMaking:
@@ -1878,7 +1888,10 @@ inline CivilizationUtilityDecision bestCraftDecisionAtPosition(
         const TechniqueKnowledge* record=civilizationKnowledgeRecord(self.civilization.knowledge,technique);
         const int successfulUses=record ? record->successfulUses : 0;
         double stockNeed=0.0;
-        if(recipe.producesItem && recipe.outputQuantity>0){
+        if(technique==TechniqueId::SimpleContainer){
+            stockNeed=simpleContainerLogisticsStockPressure(
+                world,self,authoritativePosition);
+        }else if(recipe.producesItem && recipe.outputQuantity>0){
             const int desired=desiredTechniqueOutputStock(technique);
             const int available=worldItemCount(world,self,recipe.outputKind,recipe.outputMaterial,recipe.outputMaterial==MaterialKind::Unknown);
             stockNeed=desired>0 ? clampCivilization01(static_cast<double>(std::max(0,desired-available))/static_cast<double>(desired)) : 0.0;
@@ -1889,9 +1902,14 @@ inline CivilizationUtilityDecision bestCraftDecisionAtPosition(
         if(stockNeed<=0.0 && practiceNeed<=0.0) continue;
 
         const double preference=civilizationPreference(world.seed,self.id,300ULL+static_cast<std::uint64_t>(technique));
+        const double logisticsBoost=
+            technique==TechniqueId::SimpleContainer
+                ? 0.30*stockNeed
+                : 0.0;
         const double score=clampCivilization01(
             0.08+0.11*self.civilization.craftingSkill+0.08*self.personality.conscientiousness+
-            0.05*self.personality.curiosity+0.05*preference+0.15*stockNeed+0.07*practiceNeed);
+            0.05*self.personality.curiosity+0.05*preference+0.15*stockNeed+
+            0.07*practiceNeed+logisticsBoost);
 
         CivilizationUtilityDecision candidate;
         candidate.intent=CivilizationIntent::Craft;
@@ -2089,6 +2107,11 @@ inline CivilizationUtilityDecision bestStoreDecisionAtPosition(
     const int total=inventoryUnitCount(self.civilization.inventory);
 
     for(const auto& stack:self.civilization.inventory.stacks()){
+        // Empty vessels are transport capacity, not stockpile cargo. Filled
+        // vessels enter storage only through the Water transfer path, which
+        // moves the matching container and Water together.
+        if(stack.kind==ItemKind::SimpleContainer) continue;
+
         const bool provision=stack.kind==ItemKind::RawMaterial
             && (stack.material==MaterialKind::Water
                 || stack.material==MaterialKind::PlantFood);
@@ -2121,7 +2144,7 @@ inline CivilizationUtilityDecision bestStoreDecisionAtPosition(
                 ? portableWaterCount(targetStorage.inventory)
                 : targetStorage.inventory.count(stack.kind,stack.material);
         const int reserveTarget=stack.material==MaterialKind::Water
-            ? 8
+            ? SettlementWaterReserveTarget
             : (stack.material==MaterialKind::PlantFood ? 8 : 0);
         const double reserveNeed=reserveTarget>0
             ? clampCivilization01(

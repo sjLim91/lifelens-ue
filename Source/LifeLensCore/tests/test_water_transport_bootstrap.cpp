@@ -48,10 +48,11 @@ int main()
     const GridPos home{0,0};
 
     assert(PortableProvisionCarryTarget==2);
-    assert(SimpleContainerLogisticsStockTarget==
-        PortableProvisionCarryTarget+1);
+    assert(SimpleContainerPersonalStockTarget==
+        PortableProvisionCarryTarget);
+    assert(SettlementWaterReserveTarget==8);
     assert(desiredTechniqueOutputStock(TechniqueId::SimpleContainer)==
-        SimpleContainerLogisticsStockTarget);
+        SimpleContainerPersonalStockTarget);
 
     // A resident repeatedly walking more than a chunk for water has a real
     // transport problem, but the pressure only changes priorities. It does not
@@ -99,7 +100,8 @@ int main()
         0.8);
     assert(waterTransportInnovationPressure(
         world,resident,home)==0.0);
-    assert(simpleContainerLogisticsStockPressure(world,resident)>0.60);
+    assert(simpleContainerLogisticsStockPressure(
+        world,resident,home)>0.45);
 
     // Innovation and scaling are separate. One vessel solves the discovery
     // problem, but a real stock gap keeps Clay acquisition relevant until the
@@ -122,6 +124,79 @@ int main()
         bestCraftDecisionAtPosition(world,resident,home,nullptr);
     assert(logisticsCraft.intent==CivilizationIntent::Craft);
     assert(logisticsCraft.technique==TechniqueId::SimpleContainer);
+
+    // Once a real storage exists, the logistics target expands from personal
+    // carry capacity to a shared reserve. Empty containers are never banked on
+    // their own; a resident fills surplus capacity first, then stores only the
+    // filled Water+container pair while retaining the personal carry target.
+    StorageSite reserveStorage;
+    reserveStorage.id=500;
+    reserveStorage.pos={2,0};
+    world.storageSites.push_back(reserveStorage);
+    assert(simpleContainerLogisticsStockPressure(
+        world,resident,home)>0.80);
+
+    while(resident.civilization.inventory.remove(
+        ItemKind::RawMaterial,MaterialKind::Clay,1)) {}
+    resident.civilization.inventory.add({
+        ItemKind::SimpleContainer,
+        MaterialKind::Clay,
+        2,
+        0.5,
+        1.0});
+    assert(simpleContainerCount(resident.civilization.inventory)==3);
+
+    const CivilizationUtilityDecision noEmptyContainerStore=
+        bestStoreDecisionAtPosition(world,resident,home);
+    assert(noEmptyContainerStore.intent==CivilizationIntent::None);
+
+    ResourceNode* waterNode=nullptr;
+    for(ResourceNode& resource:world.resourceNodes){
+        if(resource.material==MaterialKind::Water){
+            waterNode=&resource;
+            break;
+        }
+    }
+    assert(waterNode!=nullptr);
+    const CivilizationEvent filled=
+        gatherResource(resident.civilization,*waterNode,3);
+    assert(filled.quantity==3);
+    assert(portableWaterCount(resident.civilization.inventory)==3);
+
+    const CivilizationUtilityDecision bankWater=
+        bestStoreDecisionAtPosition(world,resident,home);
+    assert(bankWater.intent==CivilizationIntent::Store);
+    assert(bankWater.material==MaterialKind::Water);
+    assert(bankWater.quantity==1);
+
+    const CivilizationExecutionResult banked=
+        executeCivilizationDecisionAtPosition(
+            world,resident,bankWater,reserveStorage.pos);
+    assert(banked.executed && banked.success);
+    assert(portableWaterCount(resident.civilization.inventory)==
+        PortableProvisionCarryTarget);
+    assert(portableWaterCount(world.storageSites.front().inventory)==1);
+    assert(simpleContainerLogisticsStockPressure(
+        world,resident,home)>0.60);
+
+    world.storageSites.front().inventory.add({
+        ItemKind::SimpleContainer,
+        MaterialKind::Clay,
+        SettlementWaterReserveTarget-1,
+        0.5,
+        1.0});
+    world.storageSites.front().inventory.add({
+        ItemKind::RawMaterial,
+        MaterialKind::Water,
+        SettlementWaterReserveTarget-1,
+        0.5,
+        1.0});
+    assert(portableWaterCount(world.storageSites.front().inventory)==
+        SettlementWaterReserveTarget);
+    assert(simpleContainerLogisticsStockPressure(
+        world,resident,home)==0.0);
+
+    world.storageSites.clear();
 
     // Shared filled Water in a nearby real storage also solves the immediate
     // transport problem without forcing every resident to reinvent a vessel.
