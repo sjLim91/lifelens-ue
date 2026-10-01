@@ -9,6 +9,17 @@
 namespace lifelens {
 namespace {
 constexpr int CivilizationKnowledgeWitnessRadiusTiles=2;
+
+double maximumTeachingPhysicalNeed(const Character& character)
+{
+    return std::max({
+        character.needs.hunger,
+        character.needs.thirst,
+        character.needs.sleep,
+        character.needs.bladder,
+        character.needs.hygiene
+    });
+}
 }
 
 void Simulation::processCivilizationKnowledgeEvent(
@@ -88,14 +99,28 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
     for(const Character& teacher:world_.characters){
         if(!teacher.alive) continue;
         const auto teacherRuntime=runtime_.find(teacher.id);
-        if(teacherRuntime==runtime_.end() || teacherRuntime->second.pendingContext.active()) continue;
+        if(teacherRuntime==runtime_.end()
+           || teacherRuntime->second.pendingContext.active()
+           || maximumTeachingPhysicalNeed(teacher)
+                >=ruleset_.utilityAI.urgentThreshold){
+            continue;
+        }
 
         for(const TechniqueKnowledge& record:teacher.civilization.knowledge.all()){
             if(static_cast<int>(record.level)<static_cast<int>(KnowledgeLevel::Reproducible)) continue;
             for(const Character& learner:world_.characters){
                 if(!learner.alive || learner.id==teacher.id) continue;
                 const auto learnerRuntime=runtime_.find(learner.id);
-                if(learnerRuntime==runtime_.end() || learnerRuntime->second.pendingContext.active()) continue;
+                if(learnerRuntime==runtime_.end()
+                   || learnerRuntime->second.pendingContext.active()
+                   || maximumTeachingPhysicalNeed(learner)
+                        >=ruleset_.utilityAI.urgentThreshold
+                   || !contextActionNearTarget(
+                        teacherRuntime->second.pos,
+                        learnerRuntime->second.pos,
+                        KnowledgeTeachingOpportunityRadiusTiles)){
+                    continue;
+                }
 
                 const KnowledgeLevel learnerLevel=learner.civilization.knowledge.level(record.technique);
                 if(static_cast<int>(learnerLevel)>=static_cast<int>(KnowledgeLevel::Reproducible)) continue;
@@ -144,7 +169,15 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
     const auto learnerRuntime=runtime_.find(best.learner);
     if(teacherRuntime==runtime_.end() || learnerRuntime==runtime_.end()
        || teacherRuntime->second.pendingContext.active()
-       || learnerRuntime->second.pendingContext.active()) return;
+       || learnerRuntime->second.pendingContext.active()
+       || maximumTeachingPhysicalNeed(*teacher)
+            >=ruleset_.utilityAI.urgentThreshold
+       || maximumTeachingPhysicalNeed(*learner)
+            >=ruleset_.utilityAI.urgentThreshold
+       || !contextActionNearTarget(
+            teacherRuntime->second.pos,
+            learnerRuntime->second.pos,
+            KnowledgeTeachingOpportunityRadiusTiles)) return;
 
     PendingContextAction pending;
     pending.token=issueContextActionToken();
