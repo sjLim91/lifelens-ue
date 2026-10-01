@@ -259,7 +259,8 @@ void auditActualDugPitPlanningPath(
     }
 
     const bool sanitationPressureMayCompete=
-        sanitationProgressionPressureCouldCompete(projected);
+        dugSanitationPitCraftPressureCouldCompete(
+            sim.world(),projected);
     if(urgentPhysicalGoal!=Goal::Idle && !sanitationPressureMayCompete){
         ++metric.dugPitBlockedUrgentPhysical;
         if(urgentPhysicalGoal==Goal::UseToilet)
