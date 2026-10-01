@@ -9,6 +9,7 @@
 
 #include "lifelens/ContinuousEcology.h"
 #include "lifelens/ContinuousTerrain.h"
+#include "lifelens/CivilizationProgression.h"
 #include "lifelens/Hydrology.h"
 #include "lifelens/HumanTraceReadModel.h"
 #include "lifelens/SimulationClimate.h"
@@ -1012,6 +1013,10 @@ std::string WebClientBridge::residentsJson() const
         out << "\"learningSkill\":"; appendDouble(out, civilization.learningSkill); out << ",";
         out << "\"knownTechniqueCount\":" << civilization.knownTechniqueCount << ",";
         out << "\"reproducibleTechniqueCount\":" << civilization.reproducibleTechniqueCount << ",";
+        out << "\"availableCapabilityCount\":" << civilization.availableCapabilityCount << ",";
+        out << "\"knownTechnologyCount\":" << civilization.knownTechnologyCount << ",";
+        out << "\"operationalTechnologyCount\":" << civilization.operationalTechnologyCount << ",";
+        out << "\"adoptedTechnologyCount\":" << civilization.adoptedTechnologyCount << ",";
         out << "\"latestKnowledgeMinute\":" << civilization.latestKnowledgeMinute << ",";
         out << "\"latestTechnique\":\"" << techniqueIdName(civilization.latestTechnique) << "\",";
         out << "\"inventory\":[";
@@ -1043,6 +1048,37 @@ std::string WebClientBridge::residentsJson() const
             out << "\"source\":\"" << civilizationKnowledgeSourceName(technique.source) << "\",";
             out << "\"learnedMinute\":" << technique.learnedMinute << ",";
             out << "\"hopCount\":" << technique.hopCount;
+            out << "}";
+        }
+        out << "],";
+        out << "\"capabilities\":[";
+        for (std::size_t i = 0; i < civilization.capabilities.size(); ++i) {
+            if (i != 0) out << ",";
+            const CivilizationCapabilityStatus& capability =
+                civilization.capabilities[i];
+            out << "{";
+            out << "\"capability\":\"" << capabilityIdName(capability.capability) << "\",";
+            out << "\"available\":" << (capability.available ? "true" : "false") << ",";
+            out << "\"knownSupportingTechnologies\":" << capability.knownSupportingTechnologies << ",";
+            out << "\"operationalSupportingTechnologies\":" << capability.operationalSupportingTechnologies;
+            out << "}";
+        }
+        out << "],";
+        out << "\"technologies\":[";
+        for (std::size_t i = 0; i < civilization.technologies.size(); ++i) {
+            if (i != 0) out << ",";
+            const CivilizationTechnologyStatus& technology =
+                civilization.technologies[i];
+            out << "{";
+            out << "\"technology\":\"" << technologyIdName(technology.technology) << "\",";
+            out << "\"legacyTechnique\":\"" << techniqueIdName(technology.legacyTechnique) << "\",";
+            out << "\"primaryCapability\":\"" << capabilityIdName(technology.primaryCapability) << "\",";
+            out << "\"knowledgeLevel\":\"" << knowledgeLevelName(technology.knowledgeLevel) << "\",";
+            out << "\"discovered\":" << (technology.discovered ? "true" : "false") << ",";
+            out << "\"reproducible\":" << (technology.reproducible ? "true" : "false") << ",";
+            out << "\"operational\":" << (technology.operational ? "true" : "false") << ",";
+            out << "\"adopted\":" << (technology.adopted ? "true" : "false") << ",";
+            out << "\"successfulUses\":" << technology.successfulUses;
             out << "}";
         }
         out << "]";

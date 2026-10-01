@@ -150,6 +150,21 @@ export const KOREAN_ITEM_LABELS: Record<string, string> = {
   BronzePick: '청동 곡괭이',
 };
 
+export const KOREAN_CAPABILITY_LABELS: Record<string, string> = {
+  Cut: '절단',
+  Chop: '벌목',
+  ControlFire: '불 다루기',
+  Bind: '결속',
+  CarryLiquid: '액체 운반',
+  Sanitation: '위생 관리',
+  StoreGoods: '물자 저장',
+  Dig: '굴착',
+  Strike: '타격·채광',
+  SmeltMetal: '금속 제련',
+  CultivateFood: '식량 재배',
+  AlloyMetal: '금속 합금',
+};
+
 export const KOREAN_TECHNIQUE_LABELS: Record<string, string> = {
   None: '기술 없음',
   SharpFlake: '날카로운 석편 제작',
