@@ -265,7 +265,14 @@ inline DailyHealthOutcome advanceHealthOneDay(
         ++state.infectionEpisodes;
         state.lastIllnessMinute=currentMinute;
         outcome.becameIll=true;
-    }else if(wasIll && state.illnessSeverity<0.08){
+    }
+
+    // Recovery is an episode-level transition, not a one-day threshold jump.
+    // Severity commonly leaves the Ill band several days before reaching the
+    // recovered band; keep the episode open until it actually resolves.
+    const bool unresolvedIllnessEpisode=
+        state.infectionEpisodes>state.recoveryEpisodes;
+    if(unresolvedIllnessEpisode && state.illnessSeverity<0.08){
         ++state.recoveryEpisodes;
         state.lastRecoveryMinute=currentMinute;
         outcome.recovered=true;
