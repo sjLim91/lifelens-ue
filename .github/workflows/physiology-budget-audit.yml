@@ -1,0 +1,36 @@
+name: LifeLens Physiology Budget 100d Audit
+
+on:
+  pull_request:
+    paths:
+      - 'Source/LifeLensCore/**'
+      - '.github/workflows/physiology-budget-audit.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lifelens-physiology-budget-100d-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+jobs:
+  physiology-budget-audit:
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [874213954, 4242001]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 후보 계측기 구성
+        run: cmake -S Source/LifeLensCore -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: 후보 계측기 빌드
+        run: cmake --build build --target ll_physiology_budget_audit --parallel 2
+
+      - name: 생리 수지 후보 100일 계측
+        run: |
+          ./build/ll_physiology_budget_audit --seed '${{ matrix.seed }}' --days 100
