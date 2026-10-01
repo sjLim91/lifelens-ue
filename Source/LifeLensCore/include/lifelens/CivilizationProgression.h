@@ -79,6 +79,30 @@ enum class CivilizationTransformationId : std::uint16_t {
     KnowledgeDiffusion=5
 };
 
+enum class InnovationPressureDriver : std::uint8_t {
+    None=0,
+    Survival,
+    Exposure,
+    Logistics,
+    FoodSecurity,
+    Sanitation,
+    Production,
+    ResourceScarcity
+};
+
+struct InnovationPressureObservation {
+    TechnologyId technology=TechnologyId::None;
+    InnovationPressureDriver dominantDriver=InnovationPressureDriver::None;
+    double pressure01=0.0;
+    double survival01=0.0;
+    double exposure01=0.0;
+    double logistics01=0.0;
+    double foodSecurity01=0.0;
+    double sanitation01=0.0;
+    double production01=0.0;
+    double resourceScarcity01=0.0;
+};
+
 inline constexpr std::array<TechnologyDefinition,16> TechnologyRegistry={{
     {TechnologyId::SharpFlake,TechniqueId::SharpFlake,CapabilityId::Cut},
     {TechnologyId::ChippedStoneTool,TechniqueId::ChippedStoneTool,CapabilityId::Chop},
@@ -114,6 +138,21 @@ inline const char* capabilityIdName(CapabilityId id)
         case CapabilityId::CultivateFood: return "CultivateFood";
         case CapabilityId::AlloyMetal: return "AlloyMetal";
         case CapabilityId::None:
+        default: return "None";
+    }
+}
+
+inline const char* innovationPressureDriverName(InnovationPressureDriver driver)
+{
+    switch(driver){
+        case InnovationPressureDriver::Survival: return "Survival";
+        case InnovationPressureDriver::Exposure: return "Exposure";
+        case InnovationPressureDriver::Logistics: return "Logistics";
+        case InnovationPressureDriver::FoodSecurity: return "FoodSecurity";
+        case InnovationPressureDriver::Sanitation: return "Sanitation";
+        case InnovationPressureDriver::Production: return "Production";
+        case InnovationPressureDriver::ResourceScarcity: return "ResourceScarcity";
+        case InnovationPressureDriver::None:
         default: return "None";
     }
 }
