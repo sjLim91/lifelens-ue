@@ -92,6 +92,52 @@ inline bool factRepresentsTechnique(const SocialFact& fact,TechniqueId technique
     return technique!=TechniqueId::None && fact.proposition==techniqueFactProposition(technique);
 }
 
+inline bool techniqueHasHistoricalDiscovery(
+    const SocialKnowledgeBook& book,
+    TechniqueId technique)
+{
+    for(const SocialFact& fact:book.facts()){
+        if(factRepresentsTechnique(fact,technique)
+           && fact.importance>=0.90){
+            return true;
+        }
+    }
+    return false;
+}
+
+inline bool otherLivingResidentKnowsTechnique(
+    const World& world,
+    CharacterId actor,
+    TechniqueId technique)
+{
+    for(const Character& resident:world.characters){
+        if(!resident.alive || resident.id==actor) continue;
+        if(resident.civilization.knowledge.knowsAtLeast(
+                technique,KnowledgeLevel::Observed)){
+            return true;
+        }
+    }
+    return false;
+}
+
+inline CivilizationEventType classifyCivilizationDiscoveryEvent(
+    const SocialKnowledgeBook& book,
+    const World& world,
+    CharacterId actor,
+    TechniqueId technique,
+    CivilizationEventType requested)
+{
+    if(requested!=CivilizationEventType::Discovered
+       || actor==0
+       || technique==TechniqueId::None){
+        return requested;
+    }
+    return techniqueHasHistoricalDiscovery(book,technique)
+        && !otherLivingResidentKnowsTechnique(world,actor,technique)
+            ? CivilizationEventType::Rediscovered
+            : CivilizationEventType::Discovered;
+}
+
 inline double techniqueMasteryFactor(KnowledgeLevel level)
 {
     switch(level){
