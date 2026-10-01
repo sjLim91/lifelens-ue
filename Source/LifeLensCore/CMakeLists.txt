@@ -52,6 +52,8 @@ lifelens_add_test(test_action_commitment)
 
 lifelens_add_test(test_headless_context_timeout)
 
+lifelens_add_test(test_knowledge_teaching_locality)
+
 lifelens_add_test(test_determinism)
 
 lifelens_add_test(test_simulation_calendar)
