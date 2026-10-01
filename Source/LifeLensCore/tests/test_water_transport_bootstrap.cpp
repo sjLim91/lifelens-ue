@@ -47,6 +47,12 @@ int main()
 
     const GridPos home{0,0};
 
+    assert(PortableProvisionCarryTarget==2);
+    assert(SimpleContainerLogisticsStockTarget==
+        PortableProvisionCarryTarget+1);
+    assert(desiredTechniqueOutputStock(TechniqueId::SimpleContainer)==
+        SimpleContainerLogisticsStockTarget);
+
     // A resident repeatedly walking more than a chunk for water has a real
     // transport problem, but the pressure only changes priorities. It does not
     // grant knowledge, a container, or a successful experiment.
