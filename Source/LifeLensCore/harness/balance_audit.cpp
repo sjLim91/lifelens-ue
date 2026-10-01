@@ -55,6 +55,8 @@ struct ResidentMetrics {
     std::uint64_t dugPitBlockedProvisionWater=0;
     std::uint64_t dugPitBlockedUrgentPhysical=0;
     std::uint64_t dugPitBlockedUrgentToilet=0;
+    std::uint64_t dugPitUrgentPhysicalCompetitionOpened=0;
+    std::uint64_t dugPitUrgentToiletCompetitionOpened=0;
     std::uint64_t dugPitBlockedCadence=0;
     std::uint64_t dugPitCivilizationEvaluationSamples=0;
     std::uint64_t dugPitCandidateMissing=0;
@@ -256,11 +258,18 @@ void auditActualDugPitPlanningPath(
         return;
     }
 
-    if(urgentPhysicalGoal!=Goal::Idle){
+    const bool sanitationPressureMayCompete=
+        sanitationProgressionPressureCouldCompete(projected);
+    if(urgentPhysicalGoal!=Goal::Idle && !sanitationPressureMayCompete){
         ++metric.dugPitBlockedUrgentPhysical;
         if(urgentPhysicalGoal==Goal::UseToilet)
             ++metric.dugPitBlockedUrgentToilet;
         return;
+    }
+    if(urgentPhysicalGoal!=Goal::Idle){
+        ++metric.dugPitUrgentPhysicalCompetitionOpened;
+        if(urgentPhysicalGoal==Goal::UseToilet)
+            ++metric.dugPitUrgentToiletCompetitionOpened;
     }
 
     // tryCivilizationDecision defers non-provision civilization to minute%15.
@@ -798,6 +807,8 @@ int main(int argc,char** argv)
                  <<" dugPitBlockedProvisionWater="<<m.dugPitBlockedProvisionWater
                  <<" dugPitBlockedUrgentPhysical="<<m.dugPitBlockedUrgentPhysical
                  <<" dugPitBlockedUrgentToilet="<<m.dugPitBlockedUrgentToilet
+                 <<" dugPitUrgentPhysicalCompetitionOpened="<<m.dugPitUrgentPhysicalCompetitionOpened
+                 <<" dugPitUrgentToiletCompetitionOpened="<<m.dugPitUrgentToiletCompetitionOpened
                  <<" dugPitBlockedCadence="<<m.dugPitBlockedCadence
                  <<" dugPitCivilizationEvaluationSamples="<<m.dugPitCivilizationEvaluationSamples
                  <<" dugPitCandidateMissing="<<m.dugPitCandidateMissing
