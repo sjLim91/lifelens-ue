@@ -92,6 +92,11 @@ int main()
         eventMinute,CivilizationEventType::Crafted,seed);
     CHECK(crafted!=nullptr);
 
+    const SocialFact bronzeFact=makeCivilizationTechniqueFact(
+        seed,discoverer.id,TechniqueId::BronzePick,eventMinute,
+        CivilizationEventType::Discovered);
+    CHECK(techniqueFromCivilizationFact(bronzeFact)==TechniqueId::BronzePick);
+
     StorageSite observedStorage;
     observedStorage.id=7002;
     sim.world().storageSites.push_back(observedStorage);

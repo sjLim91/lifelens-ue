@@ -120,6 +120,28 @@ inline bool techniquePrerequisiteContextSatisfied(const Character& learner,Techn
             TechniqueId::StoneHammer,KnowledgeLevel::Reproducible)
         || !learner.civilization.knowledge.knowsAtLeast(
             TechniqueId::SimpleContainer,KnowledgeLevel::Reproducible))) return false;
+    if(technique==TechniqueId::TinSmelting &&
+       !learner.civilization.knowledge.knowsAtLeast(
+            TechniqueId::CopperSmelting,KnowledgeLevel::Reproducible)) return false;
+    if(technique==TechniqueId::BronzeAlloying &&
+       (!learner.civilization.knowledge.knowsAtLeast(
+            TechniqueId::CopperSmelting,KnowledgeLevel::Reproducible)
+        || !learner.civilization.knowledge.knowsAtLeast(
+            TechniqueId::TinSmelting,KnowledgeLevel::Reproducible))) return false;
+    if(technique==TechniqueId::BronzeAxe &&
+       (!learner.civilization.knowledge.knowsAtLeast(
+            TechniqueId::BronzeAlloying,KnowledgeLevel::Reproducible)
+        || !learner.civilization.knowledge.knowsAtLeast(
+            TechniqueId::ChippedStoneTool,KnowledgeLevel::Reproducible)
+        || !learner.civilization.knowledge.knowsAtLeast(
+            TechniqueId::FiberCordage,KnowledgeLevel::Reproducible))) return false;
+    if(technique==TechniqueId::BronzePick &&
+       (!learner.civilization.knowledge.knowsAtLeast(
+            TechniqueId::BronzeAlloying,KnowledgeLevel::Reproducible)
+        || !learner.civilization.knowledge.knowsAtLeast(
+            TechniqueId::StoneHammer,KnowledgeLevel::Reproducible)
+        || !learner.civilization.knowledge.knowsAtLeast(
+            TechniqueId::FiberCordage,KnowledgeLevel::Reproducible))) return false;
     return true;
 }
 
@@ -196,7 +218,7 @@ inline TechniqueTransmissionOutcome applyTechniqueWitness(
     // Sanitation remains a protected subset of the now-extended range. Legacy
     // structural contract marker: raw<=static_cast<int>(TechniqueId::DugSanitationPit)
     for(int raw=static_cast<int>(TechniqueId::SharpFlake);
-        raw<=static_cast<int>(TechniqueId::Cultivation);++raw){
+        raw<=static_cast<int>(TechniqueId::BronzePick);++raw){
         const TechniqueId candidate=static_cast<TechniqueId>(raw);
         if(factRepresentsTechnique(fact,candidate)){ technique=candidate; break; }
     }
