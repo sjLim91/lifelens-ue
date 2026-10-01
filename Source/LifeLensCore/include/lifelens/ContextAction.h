@@ -130,6 +130,7 @@ inline int contextActionDurationTicks(const PendingContextAction& action)
                     case FacilityBuildAction::Water: return 5;
                     case FacilityBuildAction::Tend: return 8;
                     case FacilityBuildAction::Harvest: return 7;
+                    case FacilityBuildAction::AlloyBronze: return 8;
                     case FacilityBuildAction::None:
                     default: return 1;
                 }
@@ -219,10 +220,20 @@ inline bool resolveCivilizationContextTarget(
                 outSanitationSiteId=opportunity.siteId;
                 return true;
             }
-            if(decision.experiment==ExperimentKind::SmeltCopperOre){
+            if(decision.experiment==ExperimentKind::SmeltCopperOre
+               || decision.experiment==ExperimentKind::AlloyBronze){
                 const ConstructedFacility* furnace=primitiveFurnaceProject(world);
                 if(furnace==nullptr || furnace->state!=FacilityState::Operational || !furnace->active) return false;
                 outTarget=furnace->pos;
+                return true;
+            }
+            if(decision.experiment==ExperimentKind::ForgeBronzeEdge){
+                const ConstructedFacility* workSurface=
+                    operationalSettlementFacilityNear(
+                        world,FacilityKind::WorkSurface,
+                        authoritativePosition,SettlementServiceRadiusGrid);
+                if(workSurface==nullptr) return false;
+                outTarget=workSurface->pos;
                 return true;
             }
             return false;
@@ -381,7 +392,8 @@ inline bool resolveCivilizationContextTarget(
             }
             if(decision.facilityKind==FacilityKind::Furnace
                && (decision.technique==TechniqueId::FireMaking
-                   || decision.technique==TechniqueId::CopperSmelting)){
+                   || decision.technique==TechniqueId::CopperSmelting
+                   || decision.technique==TechniqueId::BronzeAlloying)){
                 if(!decision.hasFacilityTarget) return false;
                 if(decision.facilityAction==FacilityBuildAction::Plan){
                     const PrimitiveFurnaceSiteOpportunity opportunity=
@@ -404,7 +416,8 @@ inline bool resolveCivilizationContextTarget(
                         || decision.facilityAction==FacilityBuildAction::Work) && operational) return false;
                     if((decision.facilityAction==FacilityBuildAction::LoadSmeltCharge
                         || decision.facilityAction==FacilityBuildAction::Ignite
-                        || decision.facilityAction==FacilityBuildAction::CollectMetal) && !operational) return false;
+                        || decision.facilityAction==FacilityBuildAction::CollectMetal
+                        || decision.facilityAction==FacilityBuildAction::AlloyBronze) && !operational) return false;
                     outTarget=facility.pos;
                     return true;
                 }
@@ -441,7 +454,9 @@ inline bool civilizationContextRequiresSpatialTarget(const CivilizationUtilityDe
     if(decision.intent==CivilizationIntent::Experiment){
         return decision.experiment==ExperimentKind::DesignateSanitationArea
             || decision.experiment==ExperimentKind::DigSanitationPit
-            || decision.experiment==ExperimentKind::SmeltCopperOre;
+            || decision.experiment==ExperimentKind::SmeltCopperOre
+            || decision.experiment==ExperimentKind::AlloyBronze
+            || decision.experiment==ExperimentKind::ForgeBronzeEdge;
     }
     if(decision.intent==CivilizationIntent::Craft){
         return (decision.facilityKind==FacilityKind::WorkSurface
@@ -461,7 +476,8 @@ inline bool civilizationContextRequiresSpatialTarget(const CivilizationUtilityDe
                 && decision.facilityAction!=FacilityBuildAction::None)
             || (decision.facilityKind==FacilityKind::Furnace
                 && (decision.technique==TechniqueId::FireMaking
-                    || decision.technique==TechniqueId::CopperSmelting)
+                    || decision.technique==TechniqueId::CopperSmelting
+                    || decision.technique==TechniqueId::BronzeAlloying)
                 && decision.facilityAction!=FacilityBuildAction::None);
     }
     return false;

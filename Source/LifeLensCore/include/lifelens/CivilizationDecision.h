@@ -48,7 +48,9 @@ enum class FacilityBuildAction {
     Plant,
     Water,
     Tend,
-    Harvest
+    Harvest,
+    // Appended so persisted/debug action ordinals remain stable.
+    AlloyBronze
 };
 
 inline const char* civilizationIntentName(CivilizationIntent intent)
@@ -80,6 +82,7 @@ inline const char* facilityBuildActionName(FacilityBuildAction action)
         case FacilityBuildAction::Water: return "Water";
         case FacilityBuildAction::Tend: return "Tend";
         case FacilityBuildAction::Harvest: return "Harvest";
+        case FacilityBuildAction::AlloyBronze: return "AlloyBronze";
         case FacilityBuildAction::None:
         default: return "None";
     }
@@ -102,6 +105,7 @@ inline const char* materialName(MaterialKind material)
         case MaterialKind::IronOre: return "IronOre";
         case MaterialKind::Charcoal: return "Charcoal";
         case MaterialKind::CopperMetal: return "CopperMetal";
+        case MaterialKind::BronzeMetal: return "BronzeMetal";
         default: return "Unknown";
     }
 }
@@ -121,6 +125,8 @@ inline const char* techniqueName(TechniqueId technique)
         case TechniqueId::StoneHammer: return "StoneHammer";
         case TechniqueId::CopperSmelting: return "CopperSmelting";
         case TechniqueId::Cultivation: return "Cultivation";
+        case TechniqueId::BronzeAlloying: return "BronzeAlloying";
+        case TechniqueId::BronzeEdgeToolmaking: return "BronzeEdgeToolmaking";
         default: return "None";
     }
 }
@@ -491,6 +497,8 @@ inline MaterialKind experimentMaterial(ExperimentKind kind)
         case ExperimentKind::HaftStoneHammer: return MaterialKind::Stone;
         case ExperimentKind::SmeltCopperOre: return MaterialKind::CopperOre;
         case ExperimentKind::CultivatePlantFood: return MaterialKind::PlantFood;
+        case ExperimentKind::AlloyBronze: return MaterialKind::TinOre;
+        case ExperimentKind::ForgeBronzeEdge: return MaterialKind::BronzeMetal;
         case ExperimentKind::DesignateSanitationArea:
         case ExperimentKind::DigSanitationPit:
         case ExperimentKind::OrganizeStockpile:
@@ -545,10 +553,27 @@ inline double materialProgressDemand(const Character& self,MaterialKind material
             if(!knowledge.knowsAtLeast(TechniqueId::StoneHammer,KnowledgeLevel::Reproducible)) return 0.18;
             return knowledge.knowsAtLeast(TechniqueId::CopperSmelting,KnowledgeLevel::Reproducible) ? 0.62 : 0.52;
         case MaterialKind::TinOre:
+            if(!knowledge.knowsAtLeast(
+                TechniqueId::StoneHammer,KnowledgeLevel::Reproducible)) return 0.18;
+            if(!knowledge.knowsAtLeast(
+                TechniqueId::CopperSmelting,KnowledgeLevel::Reproducible)) return 0.24;
+            return knowledge.knowsAtLeast(
+                TechniqueId::BronzeAlloying,KnowledgeLevel::Reproducible)
+                ? 0.38
+                : (self.civilization.inventory.count(
+                    ItemKind::RawMaterial,MaterialKind::CopperMetal)>0 ? 0.86 : 0.58);
         case MaterialKind::IronOre:
             return knowledge.knowsAtLeast(TechniqueId::StoneHammer,KnowledgeLevel::Reproducible) ? 0.34 : 0.18;
         case MaterialKind::Charcoal:
+            if(knowledge.knowsAtLeast(
+                TechniqueId::CopperSmelting,KnowledgeLevel::Reproducible)
+               && !knowledge.knowsAtLeast(
+                    TechniqueId::BronzeAlloying,KnowledgeLevel::Reproducible)) return 0.72;
             return knowledge.knowsAtLeast(TechniqueId::CopperSmelting,KnowledgeLevel::Reproducible) ? 0.62 : 0.28;
+        case MaterialKind::BronzeMetal:
+            return knowledge.knowsAtLeast(
+                TechniqueId::BronzeEdgeToolmaking,KnowledgeLevel::Reproducible)
+                ? 0.34 : 0.76;
         default:
             return 0.12;
     }
@@ -1003,13 +1028,21 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
     const bool smeltingOpportunity=copperSmeltingOpportunityAvailable(world,self);
     const bool cultivationOpportunity=cultivationExperimentOpportunityAvailable(
         world,self,authoritativePosition,population);
-    const std::array<ExperimentKind,12> experiments={
+    const bool bronzeAlloyingOpportunity=
+        bronzeAlloyingOpportunityAvailable(world,self);
+    const ConstructedFacility* bronzeWorkSurface=
+        operationalSettlementFacilityNear(
+            world,FacilityKind::WorkSurface,
+            authoritativePosition,SettlementServiceRadiusGrid);
+    const bool bronzeToolmakingOpportunity=bronzeWorkSurface!=nullptr;
+    const std::array<ExperimentKind,14> experiments={
         ExperimentKind::StrikeStone,ExperimentKind::HaftSharpFlake,ExperimentKind::FrictionWood,
         ExperimentKind::TwistFiber,ExperimentKind::ShapeClay,
         ExperimentKind::ShapeDiggingStick,ExperimentKind::HaftStoneHammer,
         ExperimentKind::DesignateSanitationArea,ExperimentKind::DigSanitationPit,
         ExperimentKind::OrganizeStockpile,ExperimentKind::SmeltCopperOre,
-        ExperimentKind::CultivatePlantFood};
+        ExperimentKind::CultivatePlantFood,ExperimentKind::AlloyBronze,
+        ExperimentKind::ForgeBronzeEdge};
 
     for(const ExperimentKind kind:experiments){
         const TechniqueId technique=experimentTechnique(kind);
@@ -1021,12 +1054,16 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
         const bool storageExperiment=kind==ExperimentKind::OrganizeStockpile;
         const bool smeltingExperiment=kind==ExperimentKind::SmeltCopperOre;
         const bool cultivationExperiment=kind==ExperimentKind::CultivatePlantFood;
+        const bool bronzeAlloyingExperiment=kind==ExperimentKind::AlloyBronze;
+        const bool bronzeToolExperiment=kind==ExperimentKind::ForgeBronzeEdge;
         if(designatedExperiment &&
            (!sanitationOpportunity.problemRecognized || !sanitationOpportunity.siteAvailable)) continue;
         if(pitExperiment && !pitOpportunity.candidateAvailable) continue;
         if(storageExperiment && !storageNeed.recognized) continue;
         if(smeltingExperiment && !smeltingOpportunity) continue;
         if(cultivationExperiment && !cultivationOpportunity) continue;
+        if(bronzeAlloyingExperiment && !bronzeAlloyingOpportunity) continue;
+        if(bronzeToolExperiment && !bronzeToolmakingOpportunity) continue;
 
         ExperimentContext context;
         context.worldSeed=world.seed;
@@ -1043,6 +1080,8 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
         context.storageProblemRecognized=storageNeed.recognized;
         context.smeltingOpportunityAvailable=smeltingOpportunity;
         context.cultivationOpportunityAvailable=cultivationOpportunity;
+        context.bronzeAlloyingOpportunityAvailable=bronzeAlloyingOpportunity;
+        context.bronzeToolmakingOpportunityAvailable=bronzeToolmakingOpportunity;
 
         if(!experimentPrerequisitesMet(context,self.civilization.knowledge)) continue;
         const TechniqueRecipe recipe=experimentRecipe(context);
@@ -1056,6 +1095,7 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
         double storageBoost=0.0;
         double smeltingBoost=0.0;
         double cultivationBoost=0.0;
+        double bronzeBoost=0.0;
         double waterTransportBoost=0.0;
         if(designatedExperiment){
             sanitationBoost=0.18+0.16*sanitationOpportunity.problemConfidence+
@@ -1078,6 +1118,14 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
             cultivationBoost=0.20+0.30*demand.pressure
                 +0.08*self.personality.patience
                 +0.06*self.personality.conscientiousness;
+        }else if(bronzeAlloyingExperiment){
+            bronzeBoost=0.28
+                +0.12*self.personality.curiosity
+                +0.10*self.civilization.craftingSkill;
+        }else if(bronzeToolExperiment){
+            bronzeBoost=0.24
+                +0.12*self.civilization.craftingSkill
+                +0.08*self.personality.conscientiousness;
         }else if(kind==ExperimentKind::ShapeClay){
             waterTransportBoost=
                 0.28*waterTransportInnovationPressure(
@@ -1087,7 +1135,7 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
             0.11+0.22*self.personality.curiosity+0.10*self.personality.openness+
             0.07*self.personality.patience+0.12*self.civilization.learningSkill+
             0.08*preference+hypothesisBoost+sanitationBoost+storageBoost
-            +smeltingBoost+cultivationBoost+waterTransportBoost);
+            +smeltingBoost+cultivationBoost+bronzeBoost+waterTransportBoost);
 
         CivilizationUtilityDecision candidate;
         candidate.intent=CivilizationIntent::Experiment;
@@ -1118,6 +1166,7 @@ inline int desiredTechniqueOutputStock(TechniqueId technique)
             return SimpleContainerPersonalStockTarget;
         case TechniqueId::DiggingStick: return 1;
         case TechniqueId::StoneHammer: return 1;
+        case TechniqueId::BronzeEdgeToolmaking: return 1;
         case TechniqueId::FireMaking:
         case TechniqueId::CopperSmelting:
         case TechniqueId::Cultivation:
@@ -1618,6 +1667,23 @@ inline CivilizationUtilityDecision bestPrimitiveFurnaceDecision(
         return candidate;
     }
 
+    if(!project->lit
+       && project->oreUnits==0
+       && project->metalUnits==0
+       && self.civilization.knowledge.knowsAtLeast(
+            TechniqueId::BronzeAlloying,KnowledgeLevel::Reproducible)
+       && bronzeAlloyingOpportunityAvailable(world,self)){
+        candidate.technique=TechniqueId::BronzeAlloying;
+        candidate.facilityAction=FacilityBuildAction::AlloyBronze;
+        candidate.material=MaterialKind::BronzeMetal;
+        candidate.quantity=2;
+        candidate.utility=clampCivilization01(
+            0.62+0.11*self.personality.curiosity+
+            0.11*self.personality.conscientiousness+
+            0.10*self.civilization.craftingSkill+0.05*preference);
+        return candidate;
+    }
+
     const int heldOre=self.civilization.inventory.count(
         ItemKind::RawMaterial,MaterialKind::CopperOre);
     const int heldCharcoal=self.civilization.inventory.count(
@@ -1927,10 +1993,11 @@ inline CivilizationUtilityDecision bestCraftDecisionAtPosition(
 
     // FireMaking and CopperSmelting are facility-driven once reproducible. They
     // are intentionally omitted here so residents cannot bypass world heat.
-    const std::array<TechniqueId,6> techniques={
+    const std::array<TechniqueId,7> techniques={
         TechniqueId::SharpFlake,TechniqueId::ChippedStoneTool,
         TechniqueId::FiberCordage,TechniqueId::SimpleContainer,
-        TechniqueId::DiggingStick,TechniqueId::StoneHammer};
+        TechniqueId::DiggingStick,TechniqueId::StoneHammer,
+        TechniqueId::BronzeEdgeToolmaking};
 
     for(const TechniqueId technique:techniques){
         if(!self.civilization.knowledge.knowsAtLeast(technique,KnowledgeLevel::Reproducible)) continue;
@@ -1982,6 +2049,8 @@ inline CivilizationUtilityDecision bestCraftDecisionAtPosition(
         const ConstructedFacility* workSurface=
             operationalSettlementFacilityNear(
                 world,FacilityKind::WorkSurface,authoritativePosition,SettlementServiceRadiusGrid);
+        if(technique==TechniqueId::BronzeEdgeToolmaking
+           && workSurface==nullptr) continue;
         if(workSurface!=nullptr){
             candidate.facilityKind=FacilityKind::WorkSurface;
             candidate.facility=workSurface->id;
@@ -2336,6 +2405,28 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
            authoritativePosition,decision.facilityTargetPos)){
         return result;
     }
+    if(decision.intent==CivilizationIntent::Experiment
+       && (decision.experiment==ExperimentKind::SmeltCopperOre
+           || decision.experiment==ExperimentKind::AlloyBronze)){
+        const ConstructedFacility* furnace=primitiveFurnaceProject(world);
+        if(furnace==nullptr || !facilityOperationalAndActive(*furnace)
+           || !civilizationExecutionNearTarget(
+                authoritativePosition,furnace->pos)){
+            return result;
+        }
+    }
+    if(decision.intent==CivilizationIntent::Experiment
+       && decision.experiment==ExperimentKind::ForgeBronzeEdge){
+        const ConstructedFacility* workSurface=
+            operationalSettlementFacilityNear(
+                world,FacilityKind::WorkSurface,
+                authoritativePosition,SettlementServiceRadiusGrid);
+        if(workSurface==nullptr
+           || !civilizationExecutionNearTarget(
+                authoritativePosition,workSurface->pos)){
+            return result;
+        }
+    }
 
     switch(decision.intent){
         case CivilizationIntent::Explore: {
@@ -2453,12 +2544,37 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
                 context.cultivationOpportunityAvailable=
                     cultivationExperimentOpportunityAvailable(
                         world,self,authoritativePosition,population);
+            }else if(decision.experiment==ExperimentKind::AlloyBronze){
+                context.bronzeAlloyingOpportunityAvailable=
+                    bronzeAlloyingOpportunityAvailable(world,self);
+            }else if(decision.experiment==ExperimentKind::ForgeBronzeEdge){
+                context.bronzeToolmakingOpportunityAvailable=
+                    operationalSettlementFacilityNear(
+                        world,FacilityKind::WorkSurface,
+                        authoritativePosition,SettlementServiceRadiusGrid)!=nullptr;
             }
             result.experiment=attemptExperiment(context,self.civilization.inventory,self.civilization.knowledge);
             result.executed=result.experiment.attempted;
             result.success=result.experiment.success;
             result.event=result.experiment.event;
-            if(result.executed) self.civilization.learningSkill=clampCivilization01(self.civilization.learningSkill+(result.success ? 0.006 : 0.0025));
+            if(result.executed){
+                self.civilization.learningSkill=clampCivilization01(
+                    self.civilization.learningSkill+(result.success ? 0.006 : 0.0025));
+                if(decision.experiment==ExperimentKind::AlloyBronze){
+                    ConstructedFacility* furnace=primitiveFurnaceProject(world);
+                    if(furnace!=nullptr && facilityOperationalAndActive(*furnace)){
+                        recordFacilityUse(*furnace,self.id,world.minute);
+                    }
+                }else if(decision.experiment==ExperimentKind::ForgeBronzeEdge){
+                    ConstructedFacility* workSurface=
+                        operationalSettlementFacilityNear(
+                            world,FacilityKind::WorkSurface,
+                            authoritativePosition,SettlementServiceRadiusGrid);
+                    if(workSurface!=nullptr){
+                        recordFacilityUse(*workSurface,self.id,world.minute);
+                    }
+                }
+            }
             return result;
         }
         case CivilizationIntent::Craft: {
@@ -2852,7 +2968,8 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
 
             if(decision.facilityKind==FacilityKind::Furnace
                && (decision.technique==TechniqueId::FireMaking
-                   || decision.technique==TechniqueId::CopperSmelting)){
+                   || decision.technique==TechniqueId::CopperSmelting
+                   || decision.technique==TechniqueId::BronzeAlloying)){
                 result.facilityKind=FacilityKind::Furnace;
                 result.facilityAction=decision.facilityAction;
                 result.craft.event.actor=self.id;
@@ -2917,7 +3034,24 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
                    || !self.civilization.knowledge.knowsAtLeast(
                        TechniqueId::CopperSmelting,KnowledgeLevel::Reproducible)) return result;
 
-                if(decision.facilityAction==FacilityBuildAction::LoadSmeltCharge){
+                if(decision.facilityAction==FacilityBuildAction::AlloyBronze){
+                    if(decision.technique!=TechniqueId::BronzeAlloying
+                       || !self.civilization.knowledge.knowsAtLeast(
+                            TechniqueId::BronzeAlloying,KnowledgeLevel::Reproducible)
+                       || !bronzeAlloyingOpportunityAvailable(world,self)){
+                        return result;
+                    }
+                    result.craft=reproduceTechnique(
+                        self.id,TechniqueId::BronzeAlloying,
+                        self.civilization.inventory,
+                        self.civilization.knowledge,
+                        self.civilization.craftingSkill);
+                    if(!result.craft.success) return result;
+                    result.executed=true;
+                    result.success=true;
+                    result.event=result.craft.event;
+                    recordFacilityUse(*facility,self.id,world.minute);
+                }else if(decision.facilityAction==FacilityBuildAction::LoadSmeltCharge){
                     const int loaded=loadPrimitiveFurnaceCopperCharge(
                         world,self,facility->id,std::max(1,decision.quantity));
                     if(loaded<=0) return result;

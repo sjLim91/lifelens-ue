@@ -115,6 +115,7 @@ export const KOREAN_FACILITY_ACTION_LABELS: Record<string, string> = {
   Water: '물주기',
   Tend: '밭 돌보기',
   Harvest: '수확',
+  AlloyBronze: '청동 합금 작업',
 };
 
 export const KOREAN_MATERIAL_LABELS: Record<string, string> = {
