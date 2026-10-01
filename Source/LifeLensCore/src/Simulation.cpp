@@ -1288,10 +1288,20 @@ void Simulation::beginPlan(Character& c,Runtime& r){
     if(planningAllowed && urgentProvisionRequired
        && tryCivilizationDecision(c,r)) return;
 
-    // Survival needs that can be satisfied immediately pre-empt settlement
-    // projects and social activity. If an urgent need cannot yet be satisfied,
-    // ordinary civilization remains available for acquisition/progression.
-    if(planningAllowed && urgentPhysicalGoal==Goal::Idle
+    // Survival needs that can be satisfied immediately normally pre-empt
+    // settlement projects. Primitive sanitation progression is the narrow
+    // exception already modeled by Unified Utility: chronic bladder/hygiene
+    // pressure may compete, but only while hunger/thirst stay below the
+    // survival-provision band. The Unified decision still has to beat the
+    // actual Physical/Social winner by its existing margin, so this does not
+    // force construction over stronger self-care.
+    const bool sanitationPressureMayCompete=
+        sanitationProgressionPressureCouldCompete(c);
+    if(planningAllowed
+       && (
+           urgentPhysicalGoal==Goal::Idle
+           || sanitationPressureMayCompete
+       )
        && tryCivilizationDecision(c,r)) return;
     if(planningAllowed && !hasUrgentPhysicalNeed
        && trySocialDecision(c,r)) return;
