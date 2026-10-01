@@ -146,7 +146,7 @@ int main()
         movingToilet.step();
         if(containsLog(
             movingToilet,
-            movingName+" completed UseToilet at primitive sanitation site=")){
+            movingName+" completed UseToilet via sanitation site")){
             movingToiletCompleted=true;
         }
 
