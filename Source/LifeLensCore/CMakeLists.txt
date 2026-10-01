@@ -130,6 +130,7 @@ lifelens_add_test(test_traits_preferences)
 lifelens_add_test(test_autonomous_civilization_loop)
 
 lifelens_add_test(test_civilization_knowledge_transmission)
+lifelens_add_test(test_knowledge_teaching_time_budget)
 
 lifelens_add_test(test_civilization_knowledge_spatial_authority)
 
