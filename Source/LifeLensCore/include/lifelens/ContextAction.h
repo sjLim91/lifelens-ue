@@ -71,6 +71,7 @@ struct PendingContextActionObservation {
 };
 
 inline constexpr std::uint64_t InitialContextActionToken=1;
+inline constexpr int KnowledgeTeachingOpportunityRadiusTiles=2;
 
 inline std::uint64_t consumeContextActionToken(std::uint64_t& nextToken)
 {
