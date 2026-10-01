@@ -21,6 +21,12 @@ target_include_directories(lifelens_core PUBLIC include)
 add_executable(ll_harness harness/main.cpp)
 target_link_libraries(ll_harness PRIVATE lifelens_core)
 
+add_executable(
+    ll_main_post_selfcare_audit
+    harness/main_post_selfcare_audit.cpp
+)
+target_link_libraries(ll_main_post_selfcare_audit PRIVATE lifelens_core)
+
 # Keep assertions active for test executables in every configuration. Release
 # normally defines NDEBUG and would remove both checks and setup side effects.
 function(lifelens_add_test name)
