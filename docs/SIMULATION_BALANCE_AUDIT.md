@@ -558,3 +558,61 @@ Hygiene를 현행 -0.072 Wash 효과로 실제 유지하려 하면:
 4. freshwater regeneration / storage / infrastructure efficiency
 
 "행동을 완료하게 만들기"와 "그 행동을 감당할 수 있는 자원경제"를 분리해서 출시하면 안 된다.
+
+
+## 21. P0 위생 발전 catch-22 — 후보 경쟁 단계 병목 확인
+
+실험 계측: `experiment/p0-sanitation-progression-20261001@cdfc17ad`  
+seed: `874213954`  
+장기 런은 계측 비용 증가로 500일 이후 취소되었지만, 365/500일 표본만으로 후보 소실 위치는 충분히 분리됐다.
+
+### 21.1 500일 계측
+
+DugSanitationPit 기회가 존재하는 15분 표본에서:
+
+| 주민 | 위생 기회 | Experiment 내 DugPit 1등 | 전체 Civilization 내 DugPit 1등 | Unified 최종 DugPit |
+|---|---:|---:|---:|---:|
+| Taeyun | 47,044 | 47,044 | 6,463 | 122 |
+| Siwoo | 47,044 | 47,044 | 5,253 | 0 |
+| Yerin | 47,044 | 47,044 | 6,626 | 142 |
+| Hayun | 47,044 | 47,044 | 6,440 | 38 |
+
+핵심 해석:
+
+1. **DugPit 기회가 없는 문제가 아니다.**
+   - 네 주민 모두 47,044개의 위생 발전 기회 표본을 가졌다.
+2. **위생 실험 자체의 점수가 약해서 탈락하는 것도 아니다.**
+   - 기회가 존재한 모든 표본에서 DugPit이 Experiment 그룹 내 1등이었다.
+3. **주된 소실 지점은 Experiment 이후 전체 Civilization 후보 통합 단계다.**
+   - Craft / Retrieve / Store / Explore / Gather 등 다른 문명 후보가 더 높은 순간 DugPit 후보 객체 자체가 사라진다.
+4. 이후 `maximumResidentNeed < 0.74` gate가 닫히면,
+   - 이미 DugPit을 잃은 “전체 Civilization 1등”만 검사하므로
+   - 실제 문제를 해결할 DugPit 후보는 Unified 경쟁에 다시 들어올 수 없다.
+
+즉 기존 sanitation pressure 예외는 **“전체 Civilization 1등이 이미 위생 후보인 경우”에만 작동**한다.  
+만성 위생 문제를 해결하는 후보가 존재해도 다른 문명 후보가 근소하게 앞서면 예외가 닫히는 구조적 candidate-starvation이다.
+
+### 21.2 수정 계약
+
+수정 브랜치: `experiment/p0-sanitation-candidate-20261001`
+
+원칙:
+
+- 일반 Civilization 선택은 기존과 동일하게 유지한다.
+- 위생 압박 예외에서만 DesignatedSanitationArea / DugSanitationPit 후보를 **독립적으로 계산**한다.
+- 독립 후보는 기존 Experiment/Craft 점수식을 그대로 재사용한다.
+- Hunger/Thirst가 urgent이면 예외를 닫는다.
+- 위생 후보도 `minimumCivilizationUtility`와 기존 `1.08x` winner margin을 통과해야 한다.
+- 따라서 “위생시설을 강제로 짓기”가 아니라 **가려졌던 문제해결 후보를 정상 Utility 경쟁에 복귀**시키는 수정이다.
+
+회귀는 일부러 PrimitiveStorage 등 더 강한 비위생 Civilization 후보를 만들어 DugPit을 가린 뒤,
+독립 위생 후보가 Unified 단계까지 살아남는지를 검증한다.
+
+### 21.3 다음 검증
+
+1. Core 회귀 통과
+2. 동일 두 seed 장기 A/B
+3. DugPit 발견/실제 pit 완공 시점 확인
+4. Toilet completion / Hygiene saturation / preemption 감소 확인
+5. Social/Civilization 시간예산이 함께 회복되는지 확인
+6. 이후에도 DiggingStick/Cultivation=0이면 위생 병목과 분리해 다음 발전 병목을 추적
