@@ -33,6 +33,14 @@ struct ResidentMetrics {
     std::uint64_t longestSleepSessionMinutes=0;
     double accumulatedSleepRecovery=0.0;
     std::uint64_t physicalMinutes=0;
+    std::array<std::uint64_t,6> criticalPreemptionsByGoal{};
+    std::uint64_t criticalPreemptionsHungerOnly=0;
+    std::uint64_t criticalPreemptionsThirstOnly=0;
+    std::uint64_t criticalPreemptionsBoth=0;
+    double criticalPreemptionHungerSum=0.0;
+    double criticalPreemptionThirstSum=0.0;
+    double criticalPreemptionSleepSum=0.0;
+    double criticalPreemptionBladderSum=0.0;
     std::uint64_t socialMinutes=0;
     std::uint64_t civilizationMinutes=0;
     std::uint64_t parentingMinutes=0;
@@ -455,6 +463,39 @@ int main(int argc,char** argv)
             const std::string prefix=metric.name+" ";
             if(line.find(prefix)==std::string::npos) continue;
 
+            if(line.find("preempted current activity for critical survival need")
+               !=std::string::npos){
+                const ResidentPlanningStateObservation planning=
+                    sim.observeResidentPlanningState(metric.id);
+                const Character* eventResident=
+                    findResident(sim.world(),metric.id);
+                if(planning.valid && eventResident!=nullptr){
+                    ++metric.criticalPreemptionsByGoal[
+                        goalIndex(planning.goal)];
+                    const bool hungerCritical=
+                        eventResident->needs.hunger
+                            >=CriticalSurvivalPreemptThreshold;
+                    const bool thirstCritical=
+                        eventResident->needs.thirst
+                            >=CriticalSurvivalPreemptThreshold;
+                    if(hungerCritical && thirstCritical){
+                        ++metric.criticalPreemptionsBoth;
+                    }else if(hungerCritical){
+                        ++metric.criticalPreemptionsHungerOnly;
+                    }else if(thirstCritical){
+                        ++metric.criticalPreemptionsThirstOnly;
+                    }
+                    metric.criticalPreemptionHungerSum+=
+                        eventResident->needs.hunger;
+                    metric.criticalPreemptionThirstSum+=
+                        eventResident->needs.thirst;
+                    metric.criticalPreemptionSleepSum+=
+                        eventResident->needs.sleep;
+                    metric.criticalPreemptionBladderSum+=
+                        eventResident->needs.bladder;
+                }
+            }
+
             if(line.find(
                 metric.name+" -> Civilization Craft crafted DugSanitationPit")
                !=std::string::npos){
@@ -819,6 +860,55 @@ int main(int argc,char** argv)
                  <<" sleepRecoverySum="<<std::fixed<<std::setprecision(4)
                  <<m.accumulatedSleepRecovery
                  <<" physicalMin="<<m.physicalMinutes
+                 <<" criticalPreemptEat="<<m.criticalPreemptionsByGoal[0]
+                 <<" criticalPreemptDrink="<<m.criticalPreemptionsByGoal[1]
+                 <<" criticalPreemptSleep="<<m.criticalPreemptionsByGoal[2]
+                 <<" criticalPreemptToilet="<<m.criticalPreemptionsByGoal[3]
+                 <<" criticalPreemptWash="<<m.criticalPreemptionsByGoal[4]
+                 <<" criticalPreemptIdle="<<m.criticalPreemptionsByGoal[5]
+                 <<" criticalPreemptHungerOnly="<<m.criticalPreemptionsHungerOnly
+                 <<" criticalPreemptThirstOnly="<<m.criticalPreemptionsThirstOnly
+                 <<" criticalPreemptBoth="<<m.criticalPreemptionsBoth
+                 <<" criticalPreemptHungerAvg="
+                 <<([&](){
+                     const std::uint64_t total=
+                         m.criticalPreemptionsHungerOnly+
+                         m.criticalPreemptionsThirstOnly+
+                         m.criticalPreemptionsBoth;
+                     return total>0
+                         ? m.criticalPreemptionHungerSum/static_cast<double>(total)
+                         : 0.0;
+                 })()
+                 <<" criticalPreemptThirstAvg="
+                 <<([&](){
+                     const std::uint64_t total=
+                         m.criticalPreemptionsHungerOnly+
+                         m.criticalPreemptionsThirstOnly+
+                         m.criticalPreemptionsBoth;
+                     return total>0
+                         ? m.criticalPreemptionThirstSum/static_cast<double>(total)
+                         : 0.0;
+                 })()
+                 <<" criticalPreemptSleepAvg="
+                 <<([&](){
+                     const std::uint64_t total=
+                         m.criticalPreemptionsHungerOnly+
+                         m.criticalPreemptionsThirstOnly+
+                         m.criticalPreemptionsBoth;
+                     return total>0
+                         ? m.criticalPreemptionSleepSum/static_cast<double>(total)
+                         : 0.0;
+                 })()
+                 <<" criticalPreemptBladderAvg="
+                 <<([&](){
+                     const std::uint64_t total=
+                         m.criticalPreemptionsHungerOnly+
+                         m.criticalPreemptionsThirstOnly+
+                         m.criticalPreemptionsBoth;
+                     return total>0
+                         ? m.criticalPreemptionBladderSum/static_cast<double>(total)
+                         : 0.0;
+                 })()
                  <<" socialMin="<<m.socialMinutes
                  <<" civilizationMin="<<m.civilizationMinutes
                  <<" parentingMin="<<m.parentingMinutes
