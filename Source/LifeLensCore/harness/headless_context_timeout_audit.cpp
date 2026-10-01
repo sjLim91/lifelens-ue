@@ -98,6 +98,7 @@ int main(int argc,char** argv)
     std::uint64_t socialEvents=0;
     std::uint64_t civilizationEvents=0;
     std::uint64_t contextTimeouts=0;
+    std::uint64_t teachingOutcomes=0;
     std::array<std::uint64_t,5> physicalStarts{};
     std::array<std::uint64_t,5> physicalCompletions{};
     const std::array<const char*,5> physicalNames={
@@ -119,6 +120,10 @@ int main(int argc,char** argv)
         }
         if(line.find(" context action timed out")!=std::string::npos){
             ++contextTimeouts;
+        }
+        if(line.find(" taught ")!=std::string::npos
+           || line.find(" tried teaching ")!=std::string::npos){
+            ++teachingOutcomes;
         }
         if(containsAny(line,socialTokens)){
             ++socialEvents;
@@ -229,6 +234,8 @@ int main(int argc,char** argv)
         <<" sleepInterruptions="<<sleepInterruptions
         <<" socialEvents="<<socialEvents
         <<" civilizationEvents="<<civilizationEvents
+        <<" contextTimeouts="<<contextTimeouts
+        <<" teachingOutcomes="<<teachingOutcomes
         <<" facilities="<<sim.world().facilities.size()
         <<" sanitationSites="<<sim.world().primitiveSanitationSites.size()
         <<" storageSites="<<sim.world().storageSites.size();
