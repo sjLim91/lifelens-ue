@@ -32,6 +32,18 @@ struct ResidentMetrics {
     std::uint64_t meaningfulSleepSessions=0;
     std::uint64_t longestSleepSessionMinutes=0;
     double accumulatedSleepRecovery=0.0;
+    std::uint64_t sleepPlanStartsObserved=0;
+    std::uint64_t sleepStartAlreadyInterruptible=0;
+    double sleepStartHungerSum=0.0;
+    double sleepStartThirstSum=0.0;
+    double sleepStartSleepSum=0.0;
+    double sleepStartBladderSum=0.0;
+    std::uint64_t sleepWakeObserved=0;
+    std::uint64_t sleepWakePrimaryHunger=0;
+    std::uint64_t sleepWakePrimaryThirst=0;
+    std::uint64_t sleepWakePrimaryBladder=0;
+    double sleepWakeSleepNeedSum=0.0;
+    double sleepWakeCompetingNeedSum=0.0;
     std::uint64_t physicalMinutes=0;
     std::uint64_t socialMinutes=0;
     std::uint64_t civilizationMinutes=0;
@@ -455,6 +467,46 @@ int main(int argc,char** argv)
             const std::string prefix=metric.name+" ";
             if(line.find(prefix)==std::string::npos) continue;
 
+            const Character* eventResident=findResident(sim.world(),metric.id);
+            if(eventResident!=nullptr){
+                if(line.find(metric.name+" -> Sleep (need ")
+                   !=std::string::npos){
+                    ++metric.sleepPlanStartsObserved;
+                    metric.sleepStartHungerSum+=eventResident->needs.hunger;
+                    metric.sleepStartThirstSum+=eventResident->needs.thirst;
+                    metric.sleepStartSleepSum+=eventResident->needs.sleep;
+                    metric.sleepStartBladderSum+=eventResident->needs.bladder;
+                    if(sleepInterruptedByUrgentNeed(*eventResident)){
+                        ++metric.sleepStartAlreadyInterruptible;
+                    }
+                }
+
+                if(line.find(metric.name+" woke from Sleep")
+                   !=std::string::npos){
+                    ++metric.sleepWakeObserved;
+                    metric.sleepWakeSleepNeedSum+=eventResident->needs.sleep;
+                    const double hungerMargin=
+                        eventResident->needs.hunger-eventResident->needs.sleep;
+                    const double thirstMargin=
+                        eventResident->needs.thirst-eventResident->needs.sleep;
+                    const double bladderMargin=
+                        eventResident->needs.bladder-eventResident->needs.sleep;
+                    const double strongest=std::max({
+                        hungerMargin,thirstMargin,bladderMargin});
+                    metric.sleepWakeCompetingNeedSum+=std::max({
+                        eventResident->needs.hunger,
+                        eventResident->needs.thirst,
+                        eventResident->needs.bladder});
+                    if(strongest==hungerMargin){
+                        ++metric.sleepWakePrimaryHunger;
+                    }else if(strongest==thirstMargin){
+                        ++metric.sleepWakePrimaryThirst;
+                    }else{
+                        ++metric.sleepWakePrimaryBladder;
+                    }
+                }
+            }
+
             if(line.find(
                 metric.name+" -> Civilization Craft crafted DugSanitationPit")
                !=std::string::npos){
@@ -818,6 +870,36 @@ int main(int argc,char** argv)
                  <<" longestSleepSession="<<m.longestSleepSessionMinutes
                  <<" sleepRecoverySum="<<std::fixed<<std::setprecision(4)
                  <<m.accumulatedSleepRecovery
+                 <<" sleepPlanStartsObserved="<<m.sleepPlanStartsObserved
+                 <<" sleepStartAlreadyInterruptible="<<m.sleepStartAlreadyInterruptible
+                 <<" sleepStartHungerAvg="
+                 <<(m.sleepPlanStartsObserved>0
+                    ? m.sleepStartHungerSum/static_cast<double>(m.sleepPlanStartsObserved)
+                    : 0.0)
+                 <<" sleepStartThirstAvg="
+                 <<(m.sleepPlanStartsObserved>0
+                    ? m.sleepStartThirstSum/static_cast<double>(m.sleepPlanStartsObserved)
+                    : 0.0)
+                 <<" sleepStartSleepAvg="
+                 <<(m.sleepPlanStartsObserved>0
+                    ? m.sleepStartSleepSum/static_cast<double>(m.sleepPlanStartsObserved)
+                    : 0.0)
+                 <<" sleepStartBladderAvg="
+                 <<(m.sleepPlanStartsObserved>0
+                    ? m.sleepStartBladderSum/static_cast<double>(m.sleepPlanStartsObserved)
+                    : 0.0)
+                 <<" sleepWakeObserved="<<m.sleepWakeObserved
+                 <<" sleepWakePrimaryHunger="<<m.sleepWakePrimaryHunger
+                 <<" sleepWakePrimaryThirst="<<m.sleepWakePrimaryThirst
+                 <<" sleepWakePrimaryBladder="<<m.sleepWakePrimaryBladder
+                 <<" sleepWakeSleepNeedAvg="
+                 <<(m.sleepWakeObserved>0
+                    ? m.sleepWakeSleepNeedSum/static_cast<double>(m.sleepWakeObserved)
+                    : 0.0)
+                 <<" sleepWakeCompetingNeedAvg="
+                 <<(m.sleepWakeObserved>0
+                    ? m.sleepWakeCompetingNeedSum/static_cast<double>(m.sleepWakeObserved)
+                    : 0.0)
                  <<" physicalMin="<<m.physicalMinutes
                  <<" socialMin="<<m.socialMinutes
                  <<" civilizationMin="<<m.civilizationMinutes
