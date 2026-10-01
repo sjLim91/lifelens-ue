@@ -1,3 +1,20 @@
+## 2026-10-01 CANONICAL CURRENT — C4 HEALTH / DISEASE / POPULATION RESILIENCE
+
+> Actual GitHub `main` / PR / Actions remain the highest-priority truth.
+
+- Completion unit: #577.
+- C3 open-ended civilization framework is already closed; this unit closes C4 without starting C5.
+- Resident health authority now persists pathogen load, illness, immunity, injury, environmental stress, care knowledge, and infection/recovery/accident history.
+- Real environmental residue and direct natural-water contamination drive exposure; sanitation knowledge reduces that pressure.
+- Daily Core health progression handles illness, recovery, resilience, climate stress, regional accidents and cause-specific mortality deterministically.
+- Health consequences feed Needs and movement; death still uses the existing authoritative lifecycle/relationship/household cleanup.
+- Web receives only Core-authored health facts through runtime/full resident DTOs and world-health summary.
+- Snapshot health is an optional appended extension so pre-C4 snapshots remain readable with default health state.
+- Targeted C4 regressions cover clean baseline, contamination, sanitation mitigation, recovery/resilience, environmental stress, deterministic accidents and snapshot roundtrip.
+- Closeout gate: exact-head Core Tests + deterministic harness + Preflight + Web WASM + Web Typecheck + Runtime Resilience, followed by merged-main runtime/pages verification.
+- 100-day long-run audit is intentionally excluded from this C4 closeout.
+- Next development milestone after C4 closeout: C5 — Education / Recording / Specialization / Economy / Institutions.
+
 ## 2026-09-30 LATE CANONICAL CURRENT — RESIDENT AUTONOMY #536 INTEGRATED
 
 > This section supersedes the earlier 2026-09-30 DU-01 checkpoint below. Actual GitHub main/PR/Actions remain the highest-priority truth.
