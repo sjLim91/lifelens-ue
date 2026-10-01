@@ -1,3 +1,14 @@
+## 2026-10-01 위생 후보 분리 장기 검증 — 회귀 확인, 병합 보류
+
+- 실제 main `0e409b53` 유지. 감사 브랜치 / Draft PR #540 유지. 다른 기능으로 전환하지 않는다.
+- 실험 `experiment/p0-sanitation-candidate-20261001` HEAD `14d64f7c`, run `36797505302` 두 seed 1/7/30/100/365/500/1000일 모두 성공 완료.
+- 직접 비교군 `a76ded17` / run `36795291309`와 365/500/1000일 A/B 추출 완료. 상세/근거는 `docs/SIMULATION_BALANCE_AUDIT.md` §26 및 `docs/audits/sanitation-candidate-20261001.json`.
+- 874213954는 DugPit 시설 생성·위생·사회활동 개선. 4242001은 DugPit 지식 이후 시설 0, 위생 포화 86.31%, Social 0, preemption 증가로 회귀. 실험을 main에 병합하지 않는다.
+- 다음 같은 원인축: DugPit Craft의 자격→예외 gate→Utility 경쟁→실제 계획/작업량 계측. 기존 표본은 실제 실행 trace가 아니므로 제작 미완료 원인은 아직 확정하지 않는다.
+- SharpFlake는 874213954의 두 주민만 재현 가능, 4242001 모두 0. DiggingStick/Cultivation은 전원 0. 위생 회귀 처리와 별도 원인축으로 추적하고 Cultivation 수치를 조정하지 않는다.
+- Need band 중앙화 / 새 기능·화면 작업 / stale branch 일괄 병합은 진행하지 않는다.
+- 이번 기록은 문서/증거 변경만 포함한다.
+
 ## 2026-09-30 BALANCE AUDIT ACTIVE — 장기 고착 원인 전수검사
 
 > 현재 기능 수정 기준은 main `0e409b53089739f737856ad508bfbdd99c80e8cb`. #539는 Core 회귀가 남은 실험 PR이므로 감사 기준선에서 제외한다.
@@ -689,3 +700,4 @@ This lane is parallel to active World v2 work and must not fork simulation truth
 - Merged `d8fcd616a344833a0da13707c80be18d8c8638c4`: removed collar-like spherical hair proxies; actual skinned scalp coverage and darker eyes.
 - All three final-head checks pass, including 49 regression cases. Device visual acceptance remains pending; CPU model close-up is diagnostic only.
 - Checkpoint: `tasks/WEB_SCALP_HANDOFF_2026-09-25.md`.
+
