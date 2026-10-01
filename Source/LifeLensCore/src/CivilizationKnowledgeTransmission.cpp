@@ -183,11 +183,12 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
 
     Runtime& runtime=teacherRuntime->second;
     // Teaching is opportunistic social/civilization work. Urgent body
-    // maintenance is protected above. At lower pressure, teaching may briefly
-    // pause an existing physical plan, but the plan is retained and resumes
-    // after the context action instead of being discarded.
+    // maintenance is protected above and cannot be interrupted. Below the
+    // urgent band, ordinary physical plans may be deferred so teaching can
+    // create a genuine social replanning window after the context action.
     runtime.pendingContext=pending;
     runtime.goal=Goal::Idle;
+    runtime.plan.clear();
     runtime.actionIndex=0;
     runtime.announced=false;
     runtime.civilizationActive=false;
