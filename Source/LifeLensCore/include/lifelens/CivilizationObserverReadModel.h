@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "Civilization.h"
+#include "CivilizationCapability.h"
 #include "CivilizationKnowledgeTransmission.h"
 #include "CivilizationSpatial.h"
 #include "ObserverReadModel.h"
@@ -166,6 +167,15 @@ struct CivilizationWorldObservation {
     std::size_t knownTechniqueOwners=0;
     std::size_t reproducibleTechniqueOwners=0;
 
+    std::uint32_t capabilitySchemaVersion=CivilizationCapabilitySchemaVersion;
+    std::uint32_t technologySchemaVersion=CivilizationTechnologySchemaVersion;
+    std::size_t operationalCapabilityCount=0;
+    std::size_t knownTechnologyCount=0;
+    std::size_t reproducibleTechnologyCount=0;
+    std::size_t operationalTechnologyCount=0;
+    std::vector<CivilizationCapabilityObservation> capabilities;
+    std::vector<CivilizationTechnologyObservation> technologies;
+
     std::vector<CivilizationResourceObservation> resources;
     std::vector<CivilizationStorageObservation> storages;
     std::vector<CivilizationFacilityObservation> facilities;
@@ -178,7 +188,7 @@ inline TechniqueId techniqueFromCivilizationFact(const SocialFact& fact)
     // techniques extend the observer range. Structural compatibility marker:
     // raw<=static_cast<int>(TechniqueId::DugSanitationPit)
     for(int raw=static_cast<int>(TechniqueId::SharpFlake);
-        raw<=static_cast<int>(TechniqueId::Cultivation);++raw){
+        raw<=static_cast<int>(TechniqueId::BronzePick);++raw){
         const TechniqueId candidate=static_cast<TechniqueId>(raw);
         if(factRepresentsTechnique(fact,candidate)) return candidate;
     }
@@ -457,6 +467,21 @@ inline CivilizationWorldObservation buildCivilizationWorldObservation(
     for(std::size_t i=1;i<TechniqueSlots;++i){
         if(knownTypes[i]) ++dto.uniqueKnownTechniqueTypes;
         if(reproducibleTypes[i]) ++dto.uniqueReproducibleTechniqueTypes;
+    }
+
+    // Capability/Technology are derived from authoritative world state rather
+    // than persisted era flags. Knowledge can survive while an operational
+    // capability disappears when its tools, facilities or inputs are lost.
+    dto.capabilities=buildCivilizationCapabilityObservations(world);
+    for(const CivilizationCapabilityObservation& capability:dto.capabilities){
+        if(capability.operational) ++dto.operationalCapabilityCount;
+    }
+    dto.technologies=buildCivilizationTechnologyObservations(
+        world,dto.capabilities);
+    for(const CivilizationTechnologyObservation& technology:dto.technologies){
+        if(technology.known) ++dto.knownTechnologyCount;
+        if(technology.reproducible) ++dto.reproducibleTechnologyCount;
+        if(technology.operational) ++dto.operationalTechnologyCount;
     }
 
     for(const SocialFact& fact:socialKnowledge.facts()){

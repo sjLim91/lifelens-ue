@@ -198,6 +198,7 @@ lifelens_add_test(test_durable_water_storage)
 lifelens_add_test(test_water_transport_bootstrap)
 
 lifelens_add_test(test_cultivation_progression)
+lifelens_add_test(test_civilization_capability)
 
 
 # Browser client: compile the same LifeLensCore into WebAssembly. The generated

@@ -170,6 +170,25 @@ export const KOREAN_TECHNIQUE_LABELS: Record<string, string> = {
   BronzePick: '청동 곡괭이 제작',
 };
 
+export const KOREAN_CAPABILITY_LABELS: Record<string, string> = {
+  Cutting: '절삭',
+  WoodChopping: '목재 벌채',
+  CordageProduction: '끈 제작',
+  WaterTransport: '물 운반',
+  DesignatedSanitation: '위생 구역 운영',
+  PitSanitation: '구덩이 위생',
+  SharedStorage: '공동 저장',
+  Digging: '굴착',
+  HardMaterialStriking: '경질 자원 채굴',
+  ControlledFire: '불 관리',
+  CopperSmelting: '구리 제련 능력',
+  Cultivation: '재배 능력',
+  TinSmelting: '주석 제련 능력',
+  BronzeAlloying: '청동 합금 능력',
+  BronzeWoodworking: '청동 목공',
+  BronzeMining: '청동 채굴',
+};
+
 export const KOREAN_FACILITY_KIND_LABELS: Record<string, string> = {
   PrimitiveStorage: '원시 저장소',
   FirePit: '화덕',

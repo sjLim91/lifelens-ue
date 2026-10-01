@@ -453,6 +453,47 @@ std::string civilizationWorldObservationJson(
     out << "\"uniqueReproducibleTechniqueTypes\":" << world.uniqueReproducibleTechniqueTypes << ",";
     out << "\"knownTechniqueOwners\":" << world.knownTechniqueOwners << ",";
     out << "\"reproducibleTechniqueOwners\":" << world.reproducibleTechniqueOwners << ",";
+    out << "\"capabilitySchemaVersion\":" << world.capabilitySchemaVersion << ",";
+    out << "\"technologySchemaVersion\":" << world.technologySchemaVersion << ",";
+    out << "\"operationalCapabilityCount\":" << world.operationalCapabilityCount << ",";
+    out << "\"knownTechnologyCount\":" << world.knownTechnologyCount << ",";
+    out << "\"reproducibleTechnologyCount\":" << world.reproducibleTechnologyCount << ",";
+    out << "\"operationalTechnologyCount\":" << world.operationalTechnologyCount << ",";
+
+    out << "\"capabilities\":[";
+    for(std::size_t i=0;i<world.capabilities.size();++i){
+        if(i!=0) out << ",";
+        const CivilizationCapabilityObservation& capability=world.capabilities[i];
+        out << "{";
+        out << "\"id\":" << static_cast<unsigned int>(capability.capability) << ",";
+        out << "\"name\":\"" << civilizationCapabilityName(capability.capability) << "\",";
+        out << "\"operational\":" << (capability.operational ? "true" : "false") << ",";
+        out << "\"knowledgeableResidents\":" << capability.knowledgeableResidents << ",";
+        out << "\"supportingFacilityCount\":" << capability.supportingFacilityCount << ",";
+        out << "\"supportingToolUnits\":" << capability.supportingToolUnits << ",";
+        out << "\"availableInputUnits\":" << capability.availableInputUnits;
+        out << "}";
+    }
+    out << "],";
+
+    out << "\"technologies\":[";
+    for(std::size_t i=0;i<world.technologies.size();++i){
+        if(i!=0) out << ",";
+        const CivilizationTechnologyObservation& technology=world.technologies[i];
+        out << "{";
+        out << "\"id\":" << static_cast<unsigned int>(technology.technology) << ",";
+        out << "\"name\":\"" << civilizationTechnologyName(technology.technology) << "\",";
+        out << "\"legacyTechnique\":\"" << techniqueIdName(technology.legacyTechnique) << "\",";
+        out << "\"primaryCapability\":\"" << civilizationCapabilityName(technology.primaryCapability) << "\",";
+        out << "\"livingKnowerCount\":" << technology.livingKnowerCount << ",";
+        out << "\"reproducibleKnowerCount\":" << technology.reproducibleKnowerCount << ",";
+        out << "\"known\":" << (technology.known ? "true" : "false") << ",";
+        out << "\"reproducible\":" << (technology.reproducible ? "true" : "false") << ",";
+        out << "\"operational\":" << (technology.operational ? "true" : "false") << ",";
+        out << "\"diffusion01\":"; appendDouble(out,technology.diffusion01);
+        out << "}";
+    }
+    out << "],";
 
     out << "\"resources\":[";
     for (std::size_t i = 0; i < world.resources.size(); ++i) {
@@ -1339,7 +1380,7 @@ std::string WebClientBridge::civilizationWorldJson(
     std::size_t maxRecentDiscoveries) const
 {
     if (!simulation_) {
-        return "{\"available\":false,\"resources\":[],\"storages\":[],\"facilities\":[],\"recentDiscoveries\":[]}";
+        return "{\"available\":false,\"capabilities\":[],\"technologies\":[],\"resources\":[],\"storages\":[],\"facilities\":[],\"recentDiscoveries\":[]}";
     }
 
     return civilizationWorldObservationJson(
@@ -1354,7 +1395,7 @@ std::string WebClientBridge::civilizationWorldWindowJson(
     int radiusChunks) const
 {
     if (!simulation_) {
-        return "{\"available\":false,\"resources\":[],\"storages\":[],\"facilities\":[],\"recentDiscoveries\":[]}";
+        return "{\"available\":false,\"capabilities\":[],\"technologies\":[],\"resources\":[],\"storages\":[],\"facilities\":[],\"recentDiscoveries\":[]}";
     }
 
     const int radius=std::max(0,std::min(radiusChunks,16));

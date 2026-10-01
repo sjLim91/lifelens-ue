@@ -621,6 +621,29 @@ export interface CivilizationDiscovery {
   livingKnowerCount: number;
 }
 
+export interface CivilizationCapability {
+  id: number;
+  name: string;
+  operational: boolean;
+  knowledgeableResidents: number;
+  supportingFacilityCount: number;
+  supportingToolUnits: number;
+  availableInputUnits: number;
+}
+
+export interface CivilizationTechnology {
+  id: number;
+  name: string;
+  legacyTechnique: string;
+  primaryCapability: string;
+  livingKnowerCount: number;
+  reproducibleKnowerCount: number;
+  known: boolean;
+  reproducible: boolean;
+  operational: boolean;
+  diffusion01: number;
+}
+
 export interface CivilizationWorldPayload {
   available?: boolean;
   minute?: number;
@@ -639,6 +662,14 @@ export interface CivilizationWorldPayload {
   uniqueReproducibleTechniqueTypes?: number;
   knownTechniqueOwners?: number;
   reproducibleTechniqueOwners?: number;
+  capabilitySchemaVersion?: number;
+  technologySchemaVersion?: number;
+  operationalCapabilityCount?: number;
+  knownTechnologyCount?: number;
+  reproducibleTechnologyCount?: number;
+  operationalTechnologyCount?: number;
+  capabilities?: CivilizationCapability[];
+  technologies?: CivilizationTechnology[];
   resources?: CivilizationWorldResource[];
   storages?: CivilizationWorldStorage[];
   facilities?: CivilizationWorldFacility[];
