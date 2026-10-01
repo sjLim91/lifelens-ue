@@ -44,6 +44,8 @@ lifelens_add_test(test_utility)
 
 lifelens_add_test(test_action_commitment)
 
+lifelens_add_test(test_headless_context_timeout)
+
 lifelens_add_test(test_determinism)
 
 lifelens_add_test(test_simulation_calendar)
