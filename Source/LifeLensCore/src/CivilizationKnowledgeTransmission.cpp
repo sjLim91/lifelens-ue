@@ -9,6 +9,17 @@
 namespace lifelens {
 namespace {
 constexpr int CivilizationKnowledgeWitnessRadiusTiles=2;
+
+double maximumTeachingPhysicalNeed(const Character& character)
+{
+    return std::max({
+        character.needs.hunger,
+        character.needs.thirst,
+        character.needs.sleep,
+        character.needs.bladder,
+        character.needs.hygiene
+    });
+}
 }
 
 void Simulation::processCivilizationKnowledgeEvent(
@@ -90,7 +101,8 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
         const auto teacherRuntime=runtime_.find(teacher.id);
         if(teacherRuntime==runtime_.end()
            || teacherRuntime->second.pendingContext.active()
-           || !teacherRuntime->second.plan.empty()){
+           || maximumTeachingPhysicalNeed(teacher)
+                >=ruleset_.utilityAI.urgentThreshold){
             continue;
         }
 
@@ -101,7 +113,8 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
                 const auto learnerRuntime=runtime_.find(learner.id);
                 if(learnerRuntime==runtime_.end()
                    || learnerRuntime->second.pendingContext.active()
-                   || !learnerRuntime->second.plan.empty()){
+                   || maximumTeachingPhysicalNeed(learner)
+                        >=ruleset_.utilityAI.urgentThreshold){
                     continue;
                 }
 
@@ -153,8 +166,10 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
     if(teacherRuntime==runtime_.end() || learnerRuntime==runtime_.end()
        || teacherRuntime->second.pendingContext.active()
        || learnerRuntime->second.pendingContext.active()
-       || !teacherRuntime->second.plan.empty()
-       || !learnerRuntime->second.plan.empty()) return;
+       || maximumTeachingPhysicalNeed(*teacher)
+            >=ruleset_.utilityAI.urgentThreshold
+       || maximumTeachingPhysicalNeed(*learner)
+            >=ruleset_.utilityAI.urgentThreshold) return;
 
     PendingContextAction pending;
     pending.token=issueContextActionToken();
@@ -167,10 +182,12 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
     pending.targetPos=learnerRuntime->second.pos;
 
     Runtime& runtime=teacherRuntime->second;
-    // Teaching is opportunistic work: it can use free time but must never
-    // erase an already-authorized physical life plan.
+    // Urgent body maintenance is protected above. Below the urgent band,
+    // ordinary plans may be deferred for a real teaching encounter and then
+    // re-evaluated from current Needs after the context action.
     runtime.pendingContext=pending;
     runtime.goal=Goal::Idle;
+    runtime.plan.clear();
     runtime.actionIndex=0;
     runtime.announced=false;
     runtime.civilizationActive=false;
