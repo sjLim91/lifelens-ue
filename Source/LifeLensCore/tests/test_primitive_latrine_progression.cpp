@@ -47,6 +47,55 @@ Simulation makeUrgentToiletSimulation(std::uint64_t seed)
     return simulation;
 }
 
+Simulation makeDugPitSchedulerProbe(
+    std::uint64_t seed,
+    double hunger,
+    double thirst,
+    double bladder,
+    double hygiene)
+{
+    Simulation simulation(seed);
+    simulation.setupNewGame();
+    simulation.setExternalPhysicalExecution(true);
+    simulation.world().characters.resize(1);
+    simulation.world().minute=480;
+
+    Character& actor=simulation.world().characters.front();
+    actor.needs={hunger,thirst,0.10,bladder,hygiene};
+    actor.civilization.craftingSkill=1.0;
+    actor.personality.conscientiousness=1.0;
+    actor.personality.patience=1.0;
+    actor.personality.orderliness=1.0;
+    learnBaselineTechniques(actor);
+    actor.civilization.knowledge.learn(
+        TechniqueId::DugSanitationPit,
+        KnowledgeLevel::Reproducible,
+        0.95);
+
+    // Keep hygiene from creating a missing-Water acquisition task. The probe is
+    // specifically about the scheduler gate between an immediately available
+    // UseToilet action and the already-known DugPit improvement.
+    actor.civilization.inventory.add({
+        ItemKind::SimpleContainer,MaterialKind::Clay,1,0.5,1.0});
+    actor.civilization.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::Water,1,0.5,1.0});
+
+    GridPos actorPos{};
+    assert(simulation.runtimePosition(actor.id,actorPos));
+    simulation.world().primitiveSanitationSites.clear();
+
+    PrimitiveSanitationSite site;
+    site.id=1;
+    site.kind=PrimitiveSanitationSiteKind::DesignatedArea;
+    site.pos=actorPos;
+    site.establishedBy=actor.id;
+    site.establishedMinute=0;
+    site.active=true;
+    site.useCount=2;
+    simulation.world().primitiveSanitationSites.push_back(site);
+    return simulation;
+}
+
 } // namespace
 
 int main()
@@ -156,6 +205,54 @@ int main()
     assert(hungryPressureDecision.kind!=UnifiedDecisionKind::Civilization
         || hungryPressureDecision.civilization.technique
             !=TechniqueId::DugSanitationPit);
+
+    // Production scheduler regression: once the pit technique is reproducible,
+    // urgent-but-noncritical sanitation pressure must reach the same Unified
+    // Utility competition tested above. Previously beginPlan saw UseToilet at
+    // the 0.70 urgent band and skipped civilization entirely, making the
+    // sanitation-pressure exception unreachable from the real runtime.
+    Simulation schedulerProbe=makeDugPitSchedulerProbe(
+        9202,0.10,0.10,0.75,0.75);
+    const CharacterId schedulerActorId=
+        schedulerProbe.world().characters.front().id;
+    schedulerProbe.step();
+    const PendingContextActionObservation schedulerPending=
+        schedulerProbe.observePendingContextAction(schedulerActorId);
+    assert(schedulerPending.active);
+    assert(schedulerPending.kind==ContextActionKind::Civilization);
+    assert(schedulerPending.civilizationIntent==CivilizationIntent::Craft);
+    assert(schedulerPending.technique==TechniqueId::DugSanitationPit);
+
+    // The narrow scheduler opening must not bypass food survival pressure.
+    Simulation hungrySchedulerProbe=makeDugPitSchedulerProbe(
+        9203,0.80,0.10,0.75,0.75);
+    const CharacterId hungrySchedulerActorId=
+        hungrySchedulerProbe.world().characters.front().id;
+    hungrySchedulerProbe.step();
+    const PendingContextActionObservation hungrySchedulerPending=
+        hungrySchedulerProbe.observePendingContextAction(
+            hungrySchedulerActorId);
+    assert(!hungrySchedulerPending.active
+        || hungrySchedulerPending.technique!=TechniqueId::DugSanitationPit);
+
+    // Nor does the new opening force construction when immediate bladder relief
+    // is overwhelmingly stronger. Unified Utility keeps its existing 1.08
+    // margin, so the Physical action still wins this state.
+    Simulation severeBladderProbe=makeDugPitSchedulerProbe(
+        9204,0.10,0.10,0.99,0.75);
+    const CharacterId severeBladderActorId=
+        severeBladderProbe.world().characters.front().id;
+    severeBladderProbe.step();
+    const PendingContextActionObservation severeBladderPending=
+        severeBladderProbe.observePendingContextAction(
+            severeBladderActorId);
+    assert(!severeBladderPending.active
+        || severeBladderPending.technique!=TechniqueId::DugSanitationPit);
+    const ResidentPresentationObservation severeBladderPresentation=
+        severeBladderProbe.observeResidentPresentation(severeBladderActorId);
+    assert(severeBladderPresentation.active);
+    assert(severeBladderPresentation.kind==PresentationActionKind::Physical);
+    assert(severeBladderPresentation.physicalGoal==Goal::UseToilet);
 
     // Before discovery, Craft must not silently improve the facility.
     const CivilizationUtilityDecision beforeDiscovery=bestCraftDecision(world,builder);
