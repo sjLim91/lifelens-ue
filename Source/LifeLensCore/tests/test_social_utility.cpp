@@ -308,6 +308,64 @@ int main()
     assert(comfortDecision.intent == SocialIntent::Comfort);
     assert(comfortDecision.target == 21);
 
+    // Social bootstrap: an outgoing, curious resident must be able to
+    // initiate first contact even before bond/trust/memory exists. New Game
+    // founders begin with only trace familiarity, so Social cannot depend on
+    // Teaching or another system accidentally creating the first relationship.
+    World outgoingStrangerWorld(22);
+    Character outgoing;
+    outgoing.id = 28;
+    outgoing.needs = {0.0, 0.0, 0.0, 0.0, 0.0};
+    outgoing.personality.sociability = 0.90;
+    outgoing.personality.curiosity = 0.90;
+    outgoing.personality.introversion = 0.10;
+    outgoing.personality.agreeableness = 0.75;
+    outgoing.personality.empathy = 0.70;
+    outgoing.personality.openness = 0.85;
+    outgoing.personality.riskTolerance = 0.70;
+    outgoing.personality.adaptability = 0.70;
+    outgoing.personality.ambition = 0.50;
+    outgoing.personality.patience = 0.50;
+    outgoing.personality.emotionalStability = 0.60;
+    outgoing.personality.impulsiveness = 0.50;
+
+    Character unfamiliar;
+    unfamiliar.id = 29;
+    unfamiliar.needs = {0.0, 0.0, 0.0, 0.0, 0.0};
+    outgoingStrangerWorld.characters = {outgoing, unfamiliar};
+
+    RelationshipBook outgoingRelationships;
+    Relationship& traceRelation =
+        outgoingRelationships.getOrCreate(outgoing.id, unfamiliar.id);
+    traceRelation.familiarity = 0.02;
+
+    const SocialUtilityDecision firstContact =
+        chooseSocialUtilityDecision(
+            outgoingStrangerWorld,
+            outgoingStrangerWorld.characters[0],
+            outgoingRelationships);
+    assert(firstContact.intent == SocialIntent::Approach);
+    assert(firstContact.target == unfamiliar.id);
+    assert(firstContact.utility >= 0.18);
+
+    const UnifiedUtilityDecision outgoingDecision =
+        chooseUnifiedUtilityDecision(
+            outgoingStrangerWorld,
+            outgoingStrangerWorld.characters[0],
+            outgoingRelationships);
+    assert(outgoingDecision.kind == UnifiedDecisionKind::Social);
+    assert(outgoingDecision.social.intent == SocialIntent::Approach);
+
+    // Once familiarity has crossed the bootstrap horizon, first-contact drive
+    // disappears; ordinary relationship evidence owns the future decision.
+    traceRelation.familiarity = SocialFirstContactFamiliarityHorizon + 0.01;
+    const TraitProfile outgoingTraits =
+        deriveTraitProfile(outgoing.personality, outgoing.genetics);
+    const PreferenceProfile outgoingPreferences =
+        derivePreferenceProfile(outgoing.personality, outgoing.genetics);
+    assert(firstContactInitiative(
+        &traceRelation, outgoingTraits, outgoingPreferences) == 0.0);
+
     // A neutral stranger should not automatically force social interaction.
     World strangerWorld(23);
     Character quiet;
