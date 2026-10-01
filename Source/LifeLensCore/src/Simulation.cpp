@@ -1405,20 +1405,49 @@ void Simulation::beginPlan(Character& c,Runtime& r){
         || c.needs.bladder>=urgentThreshold
         || c.needs.hygiene>=urgentThreshold;
 
+    // Two-tier urgent physical contract:
+    // 1) hunger/thirst at the existing survival-provision band (0.74) retain
+    //    strict priority, preserving carried-provision and acquisition safety;
+    // 2) below that survival band, every immediately actionable urgent body
+    //    Need competes by authoritative Need severity. This prevents Sleep/Wash
+    //    from being permanently hidden behind 0.70-0.74 Eat/Drink/Toilet churn
+    //    without weakening the established survival threshold.
     if(planningAllowed){
-        for(const Goal candidate:{
-            Goal::Eat,
-            Goal::Drink,
-            Goal::UseToilet
-        }){
+        for(const Goal candidate:{Goal::Eat,Goal::Drink}){
             const double need=needForGoal(c,candidate);
-            if(need<urgentThreshold
+            if(need<UrgentSurvivalProvisionThreshold
                || !actionAvailableFor(world_,c,candidate)){
                 continue;
             }
-            if(urgentPhysicalGoal==Goal::Idle || need>urgentPhysicalNeed){
+            if(urgentPhysicalGoal==Goal::Idle
+               || need>urgentPhysicalNeed+1e-12
+               || (
+                   std::abs(need-urgentPhysicalNeed)<=1e-12
+                   && candidate==Goal::Drink
+               )){
                 urgentPhysicalGoal=candidate;
                 urgentPhysicalNeed=need;
+            }
+        }
+
+        if(urgentPhysicalGoal==Goal::Idle){
+            for(const Goal candidate:{
+                Goal::Eat,
+                Goal::Drink,
+                Goal::Sleep,
+                Goal::UseToilet,
+                Goal::Wash
+            }){
+                const double need=needForGoal(c,candidate);
+                if(need<urgentThreshold
+                   || !actionAvailableFor(world_,c,candidate)){
+                    continue;
+                }
+                if(urgentPhysicalGoal==Goal::Idle
+                   || need>urgentPhysicalNeed+1e-12){
+                    urgentPhysicalGoal=candidate;
+                    urgentPhysicalNeed=need;
+                }
             }
         }
     }
