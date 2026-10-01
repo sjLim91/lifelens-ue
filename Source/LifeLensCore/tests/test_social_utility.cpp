@@ -366,6 +366,56 @@ int main()
     assert(firstContactInitiative(
         &traceRelation, outgoingTraits, outgoingPreferences) == 0.0);
 
+    // A moderately social founder may sit just below the ordinary 0.18
+    // threshold. Trace NEW GAME familiarity should lower only the unfamiliar
+    // Approach entry floor enough to allow a first greeting.
+    World moderateStrangerWorld(24);
+    Character moderate;
+    moderate.id = 32;
+    moderate.needs = {0.0, 0.0, 0.0, 0.0, 0.0};
+    moderate.personality.sociability = 0.40;
+    moderate.personality.curiosity = 0.60;
+    moderate.personality.introversion = 0.40;
+    moderate.personality.agreeableness = 0.55;
+    moderate.personality.empathy = 0.50;
+    moderate.personality.openness = 0.60;
+    moderate.personality.riskTolerance = 0.50;
+    moderate.personality.adaptability = 0.55;
+    moderate.personality.ambition = 0.50;
+    moderate.personality.patience = 0.50;
+    moderate.personality.emotionalStability = 0.50;
+    moderate.personality.impulsiveness = 0.50;
+
+    Character moderateTarget;
+    moderateTarget.id = 33;
+    moderateTarget.needs = {0.0, 0.0, 0.0, 0.0, 0.0};
+    moderateStrangerWorld.characters = {moderate, moderateTarget};
+
+    RelationshipBook moderateRelationships;
+    Relationship& moderateTrace =
+        moderateRelationships.getOrCreate(moderate.id, moderateTarget.id);
+    moderateTrace.familiarity = 0.02;
+
+    const SocialUtilityDecision moderateContact =
+        chooseSocialUtilityDecision(
+            moderateStrangerWorld,
+            moderateStrangerWorld.characters[0],
+            moderateRelationships);
+    assert(moderateContact.intent == SocialIntent::Approach);
+    assert(moderateContact.utility < 0.18);
+    assert(moderateContact.utility >= socialUtilityFloor(
+        moderateContact,
+        moderateStrangerWorld.characters[0],
+        moderateRelationships,
+        0.18));
+
+    const UnifiedUtilityDecision moderateDecision =
+        chooseUnifiedUtilityDecision(
+            moderateStrangerWorld,
+            moderateStrangerWorld.characters[0],
+            moderateRelationships);
+    assert(moderateDecision.kind == UnifiedDecisionKind::Social);
+
     // A neutral stranger should not automatically force social interaction.
     World strangerWorld(23);
     Character quiet;
