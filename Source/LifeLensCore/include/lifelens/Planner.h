@@ -40,6 +40,7 @@ inline constexpr int MinimumSleepSessionMinutes = 30;
 inline constexpr int MaximumSleepSessionMinutes = 10 * 60;
 
 inline constexpr double SleepUrgentNeedWakeThreshold = 0.72;
+inline constexpr double CriticalSurvivalDominanceMargin = 0.05;
 
 inline bool sleepInterruptedByUrgentNeed(const Character& character)
 {
