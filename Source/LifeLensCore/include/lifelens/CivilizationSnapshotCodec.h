@@ -30,13 +30,13 @@ inline bool validCivilizationUnit(double value)
 inline bool validMaterialKind(MaterialKind value)
 {
     return static_cast<int>(value)>=static_cast<int>(MaterialKind::Unknown)
-        && static_cast<int>(value)<=static_cast<int>(MaterialKind::CopperMetal);
+        && static_cast<int>(value)<=static_cast<int>(MaterialKind::BronzeMetal);
 }
 
 inline bool validItemKind(ItemKind value)
 {
     return static_cast<int>(value)>=static_cast<int>(ItemKind::RawMaterial)
-        && static_cast<int>(value)<=static_cast<int>(ItemKind::StoneHammer);
+        && static_cast<int>(value)<=static_cast<int>(ItemKind::BronzeEdgeTool);
 }
 
 inline bool validTechniqueId(TechniqueId value)
@@ -46,7 +46,7 @@ inline bool validTechniqueId(TechniqueId value)
     // TechniqueId::DesignatedSanitationArea
     // TechniqueId::DugSanitationPit
     return static_cast<int>(value)>=static_cast<int>(TechniqueId::None)
-        && static_cast<int>(value)<=static_cast<int>(TechniqueId::Cultivation);
+        && static_cast<int>(value)<=static_cast<int>(TechniqueId::BronzeEdgeToolmaking);
 }
 
 inline bool validKnowledgeLevel(KnowledgeLevel value)

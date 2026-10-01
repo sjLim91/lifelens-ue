@@ -432,7 +432,8 @@ inline CivilizationWorldObservation buildCivilizationWorldObservation(
 
     // Legacy sanitation slot subset is still contained in this expanded count:
     // static_cast<std::size_t>(TechniqueId::DugSanitationPit)+1
-    constexpr std::size_t TechniqueSlots=static_cast<std::size_t>(TechniqueId::Cultivation)+1;
+    constexpr std::size_t TechniqueSlots=
+        static_cast<std::size_t>(TechniqueId::BronzeEdgeToolmaking)+1;
     std::array<bool,TechniqueSlots> knownTypes{};
     std::array<bool,TechniqueSlots> reproducibleTypes{};
     for(const Character& character:world.characters){

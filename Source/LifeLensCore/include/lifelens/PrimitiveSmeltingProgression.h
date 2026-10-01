@@ -184,6 +184,24 @@ inline bool copperSmeltingOpportunityAvailable(
             ItemKind::RawMaterial,MaterialKind::Charcoal)>0;
 }
 
+inline bool bronzeAlloyingOpportunityAvailable(
+    const World& world,
+    const Character& resident)
+{
+    const ConstructedFacility* furnace=primitiveFurnaceProject(world);
+    return furnace!=nullptr
+        && facilityOperationalAndActive(*furnace)
+        && !furnace->lit
+        && furnace->oreUnits==0
+        && furnace->metalUnits==0
+        && resident.civilization.inventory.count(
+            ItemKind::RawMaterial,MaterialKind::CopperMetal)>=2
+        && resident.civilization.inventory.count(
+            ItemKind::RawMaterial,MaterialKind::TinOre)>=1
+        && resident.civilization.inventory.count(
+            ItemKind::RawMaterial,MaterialKind::Charcoal)>=1;
+}
+
 inline int loadPrimitiveFurnaceCopperCharge(
     World& world,
     Character& worker,
