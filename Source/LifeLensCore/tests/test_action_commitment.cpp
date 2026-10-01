@@ -56,6 +56,8 @@ bool waitForInteractingPhysical(
         }
     }
     return false;
+}
+
 bool findReachableTargetAtLeastDistance(
     const Simulation& sim,
     CharacterId id,
@@ -105,9 +107,7 @@ void installDesignatedSanitationSite(
     sim.world().primitiveSanitationSites.push_back(site);
 }
 
-}
-
-}
+} // namespace
 
 int main()
 {
