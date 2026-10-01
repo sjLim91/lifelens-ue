@@ -62,7 +62,8 @@ bool findReachableTargetAtLeastDistance(
     const Simulation& sim,
     CharacterId id,
     int minimumDistance,
-    GridPos& outTarget)
+    GridPos& outTarget,
+    int maximumRouteSteps=-1)
 {
     GridPos origin{};
     if(!sim.runtimePosition(id,origin)) return false;
@@ -80,7 +81,9 @@ bool findReachableTargetAtLeastDistance(
             if(!coreGroundTraversable(sim.world(),candidate)) continue;
             std::vector<GridPos> route;
             if(buildCoreGroundRoute(
-                sim.world(),origin,candidate,0,route)){
+                sim.world(),origin,candidate,0,route)
+               && (maximumRouteSteps<0
+                   || static_cast<int>(route.size())<=maximumRouteSteps)){
                 outTarget=candidate;
                 return true;
             }
@@ -192,7 +195,7 @@ int main()
 
     GridPos nearToilet{};
     assert(findReachableTargetAtLeastDistance(
-        safeMove,safeId,3,nearToilet));
+        safeMove,safeId,3,nearToilet,8));
     installDesignatedSanitationSite(
         safeMove,safeId,nearToilet,991010);
 
@@ -249,7 +252,7 @@ int main()
 
     GridPos farToilet{};
     assert(findReachableTargetAtLeastDistance(
-        unsafeMove,unsafeId,24,farToilet));
+        unsafeMove,unsafeId,48,farToilet));
     installDesignatedSanitationSite(
         unsafeMove,unsafeId,farToilet,991011);
 
