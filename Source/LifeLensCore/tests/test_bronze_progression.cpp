@@ -5,6 +5,7 @@
 #include "lifelens/CivilizationDecision.h"
 #include "lifelens/ContextAction.h"
 #include "lifelens/ToolEffectiveness.h"
+#include "lifelens/CivilizationSnapshotCodec.h"
 
 using namespace lifelens;
 
@@ -66,6 +67,9 @@ int main()
 
     const GridPos furnacePos{8,0};
     const GridPos workPos{0,8};
+    const GridPos firePos{-8,0};
+    world.facilities.push_back(
+        operationalFixture(99,FacilityKind::FirePit,firePos,resident.id,0));
     world.facilities.push_back(
         operationalFixture(100,FacilityKind::Furnace,furnacePos,resident.id,0));
     world.facilities.push_back(
