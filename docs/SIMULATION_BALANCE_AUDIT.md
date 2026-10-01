@@ -752,3 +752,82 @@ physical budget 조정은 강한 긍정 신호다.
 3. Social bootstrap
 4. KnowledgeTeaching plan-steal 제거
 5. Cultivation 기술 bootstrap
+
+
+## 24. KnowledgeTeaching plan-steal A/B
+
+실험 브랜치: `experiment/p0-teaching-scheduler-20261001`
+
+변경 계약:
+- teacher가 active Physical plan 중이면 teaching 후보에서 제외
+- learner가 active Physical plan 중이어도 teaching 후보에서 제외
+- 최종 pending assignment 직전에도 양쪽 plan empty 재검증
+- teaching 시작 시 기존 Physical plan을 `clear()`하지 않음
+
+### seed 4242001 / 1000일
+
+physical-budget 단독 대비:
+
+- Jaeho Teaching: **560,196분 -> 13,805분**
+- Jaeho Sleep avg: **0.9691 -> 0.7865**
+- Jaeho Hygiene avg: **0.8232 -> 0.5643**
+- Jaeho Social: 2,345분 -> **70,699분**
+
+Teaching이 생활행동을 강제로 지우던 시간독점은 실제 장기 A/B에서 해소됐다.
+
+### seed 874213954 / 1000일
+
+- Taeyun Teaching: 0분
+- Siwoo Teaching: 136분
+- Yerin Teaching: 0분
+- Hayun Teaching: 0분
+
+그런데도:
+- Sleep avg 약 **0.914~0.947**
+- Hygiene avg 약 **0.792~0.966**
+- Toilet starts **180,952**, completed **23,742**
+- Social events **18 / 1000일**
+
+즉 seed 874의 장기 고착은 Teaching 독점으로 설명되지 않는다.  
+Teaching scheduler는 독립적으로 수정 가치가 있지만, 이 seed의 상위 병목은 sanitation / chronic-Need progression이다.
+
+## 25. Sanitation progression catch-22
+
+seed 874 / 1000일 기술 상태:
+
+- 4명 모두 DesignatedSanitationArea = Reproducible
+- 4명 모두 DugSanitationPit = Unknown
+- 4명 모두 SharpFlake = Unknown
+- DiggingStick / Cultivation = Unknown
+- CultivatedPlot = 0
+
+현재 Unified Utility는 일반 Civilization 경쟁을 `maximumResidentNeed < 0.74`일 때만 허용한다.
+
+하지만 DugPit은 바로 그 만성 Bladder/Hygiene 문제를 해결하기 위한 발전이다.  
+따라서 다음 루프가 가능하다.
+
+```
+Bladder/Hygiene 장기 압박
+-> max Need >= 0.74
+-> Civilization 경쟁 차단
+-> DugPit 실험/개선 불가
+-> 위생/배설 효율 개선 불가
+-> max Need가 계속 높음
+```
+
+이는 "문제가 심할수록 그 문제를 해결할 발전을 시도할 수 없다"는 progression catch-22다.
+
+현재 격리 실험은:
+- DesignatedSanitationArea / DugSanitationPit 후보만 예외
+- Hunger/Thirst가 0.74 이상이면 예외 닫힘
+- 예외는 후보 진입만 허용
+- 기존 Physical/Social winner보다 Civilization utility가 1.08배 이상 높아야 하는 계약 유지
+
+즉 위생시설 건설을 강제하지 않고, **실제 문제해결 Utility가 더 높을 때만** 발전을 허용한다.
+
+장기 A/B에서 확인할 항목:
+1. seed 874에서 DugPit 발견/완성 여부
+2. Toilet start/completion churn 감소
+3. Hygiene/Bladder saturation 감소
+4. 일반 문명시간이 과도하게 늘지 않는지
+5. Needs 안정 후 SharpFlake/기초기술 bootstrap이 자연 회복하는지
