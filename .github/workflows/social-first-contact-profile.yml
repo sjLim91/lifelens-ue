@@ -1,0 +1,28 @@
+name: LifeLens Social First Contact Profile
+
+on:
+  pull_request:
+    paths:
+      - 'Source/LifeLensCore/**'
+      - '.github/workflows/social-first-contact-profile.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  profile:
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [874213954, 4242001]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+      - name: 계측기 구성
+        run: cmake -S Source/LifeLensCore -B build -DCMAKE_BUILD_TYPE=Release
+      - name: 계측기 빌드
+        run: cmake --build build --target ll_social_first_contact_profile --parallel 2
+      - name: 초기 사회접촉 성향 출력
+        run: ./build/ll_social_first_contact_profile --seed '${{ matrix.seed }}'
