@@ -153,6 +153,19 @@ struct CivilizationResourceObservationWindow {
     }
 };
 
+struct CivilizationTechnologyHistoryObservation {
+    TechnologyId technology=TechnologyId::None;
+    TechniqueId technique=TechniqueId::None;
+    int discoveryOriginCount=0;
+    int rediscoveryAfterLossCount=0;
+    int firstDiscoveryMinute=-1;
+    int latestDiscoveryMinute=-1;
+    int latestRediscoveryMinute=-1;
+    bool everLostAndRediscovered=false;
+    bool currentlyLost=false;
+    int currentLossMinute=-1;
+};
+
 struct CivilizationWorldObservation {
     int minute=0;
     std::size_t resourceNodeCount=0;
@@ -177,7 +190,10 @@ struct CivilizationWorldObservation {
     std::size_t decliningTechnologyCount=0;
     std::size_t lostTechnologyCount=0;
     std::size_t activeTransformationCount=0;
+    std::size_t rediscoveredTechnologyCount=0;
+    std::size_t rediscoveryEpisodeCount=0;
     std::vector<CivilizationTechnologyPopulationStatus> technologyPopulation;
+    std::vector<CivilizationTechnologyHistoryObservation> technologyHistory;
     std::vector<CivilizationTransformationStatus> transformations;
 
     std::vector<CivilizationResourceObservation> resources;
@@ -411,6 +427,131 @@ inline std::size_t livingTechniqueKnowerCount(
     return count;
 }
 
+inline bool civilizationCharacterAliveAtMinute(
+    const World& world,
+    CharacterId characterId,
+    int minute)
+{
+    const Character* character=findObservedCharacter(world,characterId);
+    if(character==nullptr) return false;
+    if(character->hasBirthMinute && character->birthMinute>minute) return false;
+    if(character->deathMinute>=0) return minute<character->deathMinute;
+    return character->alive;
+}
+
+inline bool priorTechniqueLineageAliveAtFact(
+    const World& world,
+    const SocialKnowledgeBook& socialKnowledge,
+    TechniqueId technique,
+    const std::vector<const SocialFact*>& orderedTechniqueFacts,
+    std::size_t factIndex)
+{
+    if(factIndex==0 || factIndex>=orderedTechniqueFacts.size()) return false;
+    const int minute=orderedTechniqueFacts[factIndex]->eventMinute;
+
+    for(const KnowledgeReceipt& receipt:socialKnowledge.receipts()){
+        if(receipt.learnedMinute>minute) continue;
+
+        bool priorFact=false;
+        for(std::size_t i=0;i<factIndex;++i){
+            const SocialFact* fact=orderedTechniqueFacts[i];
+            if(fact!=nullptr && fact->id==receipt.factId){
+                priorFact=true;
+                break;
+            }
+        }
+        if(!priorFact) continue;
+
+        const SocialFact* receiptFact=socialKnowledge.findFact(receipt.factId);
+        if(receiptFact==nullptr
+           || !factRepresentsTechnique(*receiptFact,technique)) continue;
+
+        if(civilizationCharacterAliveAtMinute(
+            world,receipt.holder,minute)){
+            return true;
+        }
+    }
+    return false;
+}
+
+inline CivilizationTechnologyHistoryObservation
+buildCivilizationTechnologyHistoryObservation(
+    const World& world,
+    const SocialKnowledgeBook& socialKnowledge,
+    const TechnologyDefinition& definition)
+{
+    CivilizationTechnologyHistoryObservation history;
+    history.technology=definition.id;
+    history.technique=definition.legacyTechnique;
+
+    std::vector<const SocialFact*> techniqueFacts;
+    for(const SocialFact& fact:socialKnowledge.facts()){
+        if(factRepresentsTechnique(fact,definition.legacyTechnique)){
+            techniqueFacts.push_back(&fact);
+        }
+    }
+    std::sort(
+        techniqueFacts.begin(),techniqueFacts.end(),
+        [](const SocialFact* a,const SocialFact* b){
+            if(a->eventMinute!=b->eventMinute){
+                return a->eventMinute<b->eventMinute;
+            }
+            return a->id<b->id;
+        });
+
+    bool seenDiscovery=false;
+    for(std::size_t index=0;index<techniqueFacts.size();++index){
+        const SocialFact& fact=*techniqueFacts[index];
+        if(!factRepresentsTechniqueDiscovery(
+            fact,definition.legacyTechnique)){
+            continue;
+        }
+
+        ++history.discoveryOriginCount;
+        if(history.firstDiscoveryMinute<0){
+            history.firstDiscoveryMinute=fact.eventMinute;
+        }
+        history.latestDiscoveryMinute=std::max(
+            history.latestDiscoveryMinute,fact.eventMinute);
+
+        if(seenDiscovery
+           && !priorTechniqueLineageAliveAtFact(
+                world,socialKnowledge,definition.legacyTechnique,
+                techniqueFacts,index)){
+            ++history.rediscoveryAfterLossCount;
+            history.latestRediscoveryMinute=fact.eventMinute;
+        }
+        seenDiscovery=true;
+    }
+
+    history.everLostAndRediscovered=
+        history.rediscoveryAfterLossCount>0;
+    history.currentlyLost=
+        history.discoveryOriginCount>0
+        && livingTechniqueKnowerCount(
+            world,definition.legacyTechnique)==0;
+
+    if(history.currentlyLost){
+        int latestDeath=-1;
+        for(const KnowledgeReceipt& receipt:socialKnowledge.receipts()){
+            const SocialFact* fact=socialKnowledge.findFact(receipt.factId);
+            if(fact==nullptr
+               || !factRepresentsTechnique(
+                    *fact,definition.legacyTechnique)) continue;
+            const Character* holder=findObservedCharacter(
+                world,receipt.holder);
+            if(holder==nullptr || holder->deathMinute<0) continue;
+            if(receipt.learnedMinute<=holder->deathMinute){
+                latestDeath=std::max(
+                    latestDeath,holder->deathMinute);
+            }
+        }
+        history.currentLossMinute=latestDeath;
+    }
+
+    return history;
+}
+
 inline CivilizationWorldObservation buildCivilizationWorldObservation(
     const World& world,
     const SocialKnowledgeBook& socialKnowledge,
@@ -526,6 +667,20 @@ inline CivilizationWorldObservation buildCivilizationWorldObservation(
                 break;
         }
         dto.technologyPopulation.push_back(populationStatus);
+    }
+
+    dto.technologyHistory.reserve(TechnologyRegistry.size());
+    for(const TechnologyDefinition& definition:TechnologyRegistry){
+        CivilizationTechnologyHistoryObservation history=
+            buildCivilizationTechnologyHistoryObservation(
+                world,socialKnowledge,definition);
+        if(history.everLostAndRediscovered){
+            ++dto.rediscoveredTechnologyCount;
+        }
+        dto.rediscoveryEpisodeCount+=
+            static_cast<std::size_t>(
+                std::max(0,history.rediscoveryAfterLossCount));
+        dto.technologyHistory.push_back(history);
     }
 
     dto.transformations=buildCivilizationTransformationStatuses(
