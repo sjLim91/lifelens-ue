@@ -890,7 +890,7 @@ bool Simulation::preemptForCriticalSurvival(
             const double competingNeed=activeFood
                 ? (thirstCritical ? character.needs.thirst : -1.0)
                 : (hungerCritical ? character.needs.hunger : -1.0);
-            if(competingNeed<=activeNeed+0.05){
+            if(competingNeed<=activeNeed+CriticalSurvivalDominanceMargin){
                 return false;
             }
         }
@@ -908,8 +908,151 @@ bool Simulation::preemptForCriticalSurvival(
             const double competingNeed=activeEat
                 ? (thirstCritical ? character.needs.thirst : -1.0)
                 : (hungerCritical ? character.needs.hunger : -1.0);
-            if(competingNeed<=activeNeed+0.05){
+            if(competingNeed<=activeNeed+CriticalSurvivalDominanceMargin){
                 return false;
+            }
+        }
+    }
+
+    // A resident already travelling to relieve a severe bladder need should
+    // not automatically throw that trip away the instant Hunger/Thirst crosses
+    // the Critical band. Keep the toilet commitment only when the remaining
+    // physical trip + interaction can conservatively finish before the
+    // competing critical provision reaches hard saturation (1.0). If survival
+    // is already saturated, or the toilet cannot finish in time, the existing
+    // critical preemption path remains authoritative.
+    if(!r.pendingContext.active()
+       && !r.plan.empty()
+       && r.goal==Goal::UseToilet
+       && r.actionIndex<r.plan.size()){
+        const Action& activeAction=r.plan[r.actionIndex];
+
+        GridPos toiletTarget{};
+        int arrivalRadius=0;
+        bool hasTarget=false;
+        if(r.navigationHasTarget){
+            toiletTarget=r.navigationTarget;
+            arrivalRadius=r.navigationArrivalRadius;
+            hasTarget=true;
+        }else{
+            SanitationUseTarget sanitationTarget;
+            if(sanitationUseTarget(character.id,sanitationTarget)){
+                toiletTarget=sanitationTarget.pos;
+                arrivalRadius=0;
+                hasTarget=true;
+            }else if(activeAction.objectId!=0){
+                const SmartObject* object=objectById(activeAction.objectId);
+                if(object!=nullptr){
+                    toiletTarget=object->pos;
+                    arrivalRadius=0;
+                    hasTarget=true;
+                }
+            }
+        }
+
+        if(hasTarget){
+            const int directRemainingCells=std::max(
+                0,
+                manhattan(r.pos,toiletTarget)-arrivalRadius);
+            // CoreNavigation may advance unobstructed travel incrementally
+            // without storing the whole remaining route. Runtime position to
+            // the authoritative target is therefore the remaining-distance
+            // contract; navigationRoute length is not a distance oracle.
+            const int remainingTravelCells=directRemainingCells;
+            const int maximumGroundStepIntervalMinutes=std::max(
+                1,
+                static_cast<int>(std::ceil(
+                    1.0+
+                    CoreNavigationContract::WeatherFrictionWeight)));
+            const int remainingInteractionMinutes=std::max(
+                0,
+                activeAction.remainingTicks);
+            const double conservativeCompletionMinutes=
+                static_cast<double>(
+                    remainingTravelCells
+                    *maximumGroundStepIntervalMinutes
+                    +remainingInteractionMinutes);
+
+            const EnvironmentalConsequenceProfile environment=
+                deriveEnvironmentalConsequences(
+                    deriveDynamicEnvironment(
+                        world_.genesisIdentity(),
+                        chunkCoordForGrid(r.pos),
+                        world_.minute));
+
+            double minutesUntilCriticalSaturation=
+                std::numeric_limits<double>::infinity();
+            const auto considerCriticalSaturation=
+                [&](bool critical,double currentNeed,double baseRate,double environmentalRate)
+                {
+                    if(!critical) return;
+                    if(currentNeed>=1.0-1e-12){
+                        minutesUntilCriticalSaturation=0.0;
+                        return;
+                    }
+                    const double rate=
+                        baseRate*std::max(0.0,character.metabolism)
+                        +std::max(0.0,environmentalRate);
+                    if(rate<=1e-12) return;
+                    minutesUntilCriticalSaturation=std::min(
+                        minutesUntilCriticalSaturation,
+                        std::max(0.0,(1.0-currentNeed)/rate));
+                };
+
+            considerCriticalSaturation(
+                hungerCritical,
+                character.needs.hunger,
+                ruleset_.needs.hungerPerMinute,
+                environment.perMinuteNeedsDelta.hunger);
+            considerCriticalSaturation(
+                thirstCritical,
+                character.needs.thirst,
+                ruleset_.needs.thirstPerMinute,
+                environment.perMinuteNeedsDelta.thirst);
+
+            if(conservativeCompletionMinutes
+               <=minutesUntilCriticalSaturation){
+                return false;
+            }
+        }
+    }
+
+    // Once a short physical interaction has actually started, finish the
+    // interaction instead of tearing it down and rebuilding it every minute.
+    // Movement toward the affordance remains interruptible. Toilet and wash
+    // interactions are bounded to only a few minutes, so completing them does
+    // not meaningfully endanger an already-critical food/water response.
+    if(!r.pendingContext.active()
+       && !r.plan.empty()
+       && r.actionIndex<r.plan.size()){
+        const Action& activeAction=r.plan[r.actionIndex];
+        const bool interactionPhase=
+            activeAction.type==ActionType::Use
+            || (
+                activeAction.type==ActionType::EmergencyUse
+                && (!r.navigationHasTarget || r.navigationArrived)
+            );
+
+        if(interactionPhase){
+            if(r.goal==Goal::Eat
+               || r.goal==Goal::Drink
+               || r.goal==Goal::UseToilet
+               || r.goal==Goal::Wash){
+                return false;
+            }
+
+            // Sleep is not an atomic short action, so it remains interruptible.
+            // However, a resident whose fatigue is still at least as serious as
+            // the strongest critical provision pressure gets to keep resting
+            // until that balance actually reverses.
+            if(r.goal==Goal::Sleep){
+                const double strongestCriticalProvisionNeed=std::max(
+                    hungerCritical ? character.needs.hunger : -1.0,
+                    thirstCritical ? character.needs.thirst : -1.0);
+                if(strongestCriticalProvisionNeed
+                   <=character.needs.sleep+CriticalSurvivalDominanceMargin){
+                    return false;
+                }
             }
         }
     }

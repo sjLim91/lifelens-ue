@@ -4,24 +4,40 @@
 
 static bool checkSleepUrgentWakeThreshold(){
     lifelens::Character character;
-    character.needs={0.71,0.71,0.95,0.71,0.10};
+
+    // Merely entering the ordinary urgent band must not wake someone whose
+    // fatigue is materially worse. This is the anti-thrash side of the
+    // relative-dominance contract.
+    character.needs={0.72,0.72,0.95,0.72,0.10};
     if(lifelens::sleepInterruptedByUrgentNeed(character)) return false;
 
-    character.needs.hunger=lifelens::SleepUrgentNeedWakeThreshold;
-    if(!lifelens::sleepInterruptedByUrgentNeed(character)) return false;
-    character.needs.hunger=0.10;
+    // Below the wake threshold never interrupts, even when fatigue is already
+    // relatively low.
+    character.needs={0.71,0.10,0.60,0.10,0.10};
+    if(lifelens::sleepInterruptedByUrgentNeed(character)) return false;
 
-    character.needs.thirst=lifelens::SleepUrgentNeedWakeThreshold;
+    // At/above the wake threshold, the competing need interrupts only when it
+    // also exceeds current fatigue by the shared dominance margin.
+    character.needs={0.72,0.10,0.60,0.10,0.10};
     if(!lifelens::sleepInterruptedByUrgentNeed(character)) return false;
-    character.needs.thirst=0.10;
 
-    character.needs.bladder=lifelens::SleepUrgentNeedWakeThreshold;
+    character.needs={0.10,0.72,0.60,0.10,0.10};
+    if(!lifelens::sleepInterruptedByUrgentNeed(character)) return false;
+
+    character.needs={0.10,0.10,0.60,0.72,0.10};
+    if(!lifelens::sleepInterruptedByUrgentNeed(character)) return false;
+
+    // Exactly equal to fatigue + margin is intentionally stable; a genuine
+    // dominance, not a tie, is required to tear down the sleep session.
+    character.needs={0.72,0.10,0.67,0.10,0.10};
+    if(lifelens::sleepInterruptedByUrgentNeed(character)) return false;
+    character.needs.hunger=0.721;
     return lifelens::sleepInterruptedByUrgentNeed(character);
 }
 
 int main(){
     if(!checkSleepUrgentWakeThreshold()){
-        std::cerr<<"urgent survival needs must interrupt sleep\n"; return 5;
+        std::cerr<<"sleep wake relative-dominance contract failed\n"; return 5;
     }
     lifelens::World w(42);
     lifelens::Character c; c.id=7; c.name="test"; c.needs={0.90,0.20,0.20,0.20,0.20};

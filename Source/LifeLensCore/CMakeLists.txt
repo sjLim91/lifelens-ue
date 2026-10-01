@@ -40,6 +40,8 @@ lifelens_add_test(test_needs)
 
 lifelens_add_test(test_utility)
 
+lifelens_add_test(test_action_commitment)
+
 lifelens_add_test(test_determinism)
 
 lifelens_add_test(test_simulation_calendar)
