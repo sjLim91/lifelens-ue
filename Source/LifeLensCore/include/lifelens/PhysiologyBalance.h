@@ -15,22 +15,30 @@ struct PhysiologyBalance {
     int primitiveWashMinutes=4;
 
     double primitiveEatHungerRelief=0.42;
-    double primitiveDrinkThirstRelief=0.45;
-    double primitiveToiletBladderReliefPerMinute=0.13;
+    double primitiveDrinkThirstRelief=0.46;
+    double primitiveToiletBladderReliefPerMinute=0.20;
     double primitiveToiletHygieneBurdenPerMinute=0.012;
-    double primitiveWashHygieneReliefPerMinute=0.18;
+    double primitiveWashHygieneReliefPerMinute=0.16;
 
     double outdoorToiletCompletionHygieneBurden=0.025;
     double outdoorToiletResidueIntensity=0.42;
     int outdoorToiletResidueRadiusTiles=3;
 
+    // A dug pit must remain an actual progression improvement after primitive
+    // toilet relief is recalibrated.
+    double dugPitBladderReliefPerMinute=0.22;
+    double dugPitHygieneBurdenPerMinute=0.004;
+    double dugPitCompletionHygieneBurden=0.008;
+    double dugPitResidueIntensity=0.16;
+    int dugPitResidueRadiusTiles=1;
+
     // Gross recovery. Normal Need decay still runs while asleep.
-    double outdoorSleepRecoveryPerMinute=0.00215;
-    double shelterSleepRecoveryBasePerMinute=0.00220;
-    double shelterSleepRecoveryEffectivenessBonus=0.00010;
-    double sleepingPlaceRecoveryBasePerMinute=0.00240;
-    double sleepingPlaceRecoveryEffectivenessBonus=0.00015;
-    double smartObjectSleepRecoveryPerMinute=0.00245;
+    double outdoorSleepRecoveryPerMinute=0.00230;
+    double shelterSleepRecoveryBasePerMinute=0.00255;
+    double shelterSleepRecoveryEffectivenessBonus=0.00020;
+    double sleepingPlaceRecoveryBasePerMinute=0.00300;
+    double sleepingPlaceRecoveryEffectivenessBonus=0.00020;
+    double smartObjectSleepRecoveryPerMinute=0.00300;
 
     // Legacy SmartObject facilities consume one carried provision at action
     // start, so their full action remains more efficient than primitive use.
