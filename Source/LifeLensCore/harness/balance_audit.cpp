@@ -98,6 +98,12 @@ struct ResidentMetrics {
     std::uint64_t socialBlockedUrgentBladder=0;
     std::uint64_t socialBlockedUrgentHygiene=0;
     std::uint64_t socialBlockedUrgentNonImmediate=0;
+    std::uint64_t socialCandidateSamples=0;
+    std::uint64_t socialAboveMinimumSamples=0;
+    std::uint64_t socialAboveMinimumPhysicalDominated=0;
+    double socialCandidateUtilitySum=0.0;
+    double socialCandidatePhysicalUtilitySum=0.0;
+    double socialCandidateUtilityMax=0.0;
     std::uint64_t socialViableSamples=0;
     std::uint64_t socialViableBlockedUrgent=0;
     std::uint64_t socialViableBlockedUrgentNonImmediate=0;
@@ -476,6 +482,19 @@ void auditSocialSchedulerGate(
         chooseSocialUtilityDecision(
             sim.world(),projected,sim.relationships());
     const auto physical=bestPhysicalUtility(sim.world(),projected);
+    if(social.intent!=SocialIntent::None){
+        ++metric.socialCandidateSamples;
+        metric.socialCandidateUtilitySum+=social.utility;
+        metric.socialCandidatePhysicalUtilitySum+=physical.second;
+        metric.socialCandidateUtilityMax=std::max(
+            metric.socialCandidateUtilityMax,social.utility);
+        if(social.utility>=0.18){
+            ++metric.socialAboveMinimumSamples;
+            if(social.utility<=physical.second*1.05){
+                ++metric.socialAboveMinimumPhysicalDominated;
+            }
+        }
+    }
     const bool viable=
         social.intent!=SocialIntent::None
         && social.utility>=0.18
@@ -977,6 +996,18 @@ int main(int argc,char** argv)
                  <<" socialBlockedUrgentBladder="<<m.socialBlockedUrgentBladder
                  <<" socialBlockedUrgentHygiene="<<m.socialBlockedUrgentHygiene
                  <<" socialBlockedUrgentNonImmediate="<<m.socialBlockedUrgentNonImmediate
+                 <<" socialCandidateSamples="<<m.socialCandidateSamples
+                 <<" socialAboveMinimumSamples="<<m.socialAboveMinimumSamples
+                 <<" socialAboveMinimumPhysicalDominated="<<m.socialAboveMinimumPhysicalDominated
+                 <<" socialCandidateUtilityAvg="
+                 <<(m.socialCandidateSamples>0
+                    ? m.socialCandidateUtilitySum/static_cast<double>(m.socialCandidateSamples)
+                    : 0.0)
+                 <<" socialCandidatePhysicalUtilityAvg="
+                 <<(m.socialCandidateSamples>0
+                    ? m.socialCandidatePhysicalUtilitySum/static_cast<double>(m.socialCandidateSamples)
+                    : 0.0)
+                 <<" socialCandidateUtilityMax="<<m.socialCandidateUtilityMax
                  <<" socialViableSamples="<<m.socialViableSamples
                  <<" socialViableBlockedUrgent="<<m.socialViableBlockedUrgent
                  <<" socialViableBlockedUrgentNonImmediate="<<m.socialViableBlockedUrgentNonImmediate
