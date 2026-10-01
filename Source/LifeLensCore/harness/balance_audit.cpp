@@ -44,6 +44,44 @@ struct ResidentMetrics {
     std::uint64_t dugPitCivilizationBestSamples=0;
     std::uint64_t dugPitUnifiedWinnerSamples=0;
     std::uint64_t designatedCivilizationBestSamples=0;
+
+    // Actual planner-path diagnostics after DugSanitationPit becomes reproducible.
+    // These counters are sampled only when the resident is truly idle at a
+    // five-minute beginPlan boundary with an active DesignatedArea.
+    std::uint64_t dugPitCraftReadyPlanningSamples=0;
+    std::uint64_t dugPitBlockedPenalty=0;
+    std::uint64_t dugPitBlockedProvision=0;
+    std::uint64_t dugPitBlockedProvisionFood=0;
+    std::uint64_t dugPitBlockedProvisionWater=0;
+    std::uint64_t dugPitBlockedUrgentPhysical=0;
+    std::uint64_t dugPitBlockedUrgentToilet=0;
+    std::uint64_t dugPitBlockedCadence=0;
+    std::uint64_t dugPitCivilizationEvaluationSamples=0;
+    std::uint64_t dugPitCandidateMissing=0;
+    std::uint64_t dugPitBlockedPressureGate=0;
+    std::uint64_t dugPitBlockedPressureHunger=0;
+    std::uint64_t dugPitBlockedPressureThirst=0;
+    std::uint64_t dugPitBlockedNoSanitationPressure=0;
+    std::uint64_t dugPitBlockedCivilizationFamily=0;
+    std::uint64_t dugPitBlockedMinimumUtility=0;
+    std::uint64_t dugPitBlockedWinnerMargin=0;
+    std::uint64_t dugPitUnexpectedUnifiedLoss=0;
+    std::uint64_t dugPitSelectedSamples=0;
+    std::uint64_t dugPitTargetResolveFailures=0;
+    std::uint64_t dugPitContextIssued=0;
+    std::uint64_t dugPitCraftExecutions=0;
+    std::uint64_t dugPitContextPreemptions=0;
+    std::uint64_t dugPitContextRouteFailures=0;
+    std::uint64_t dugPitContextTimeouts=0;
+    std::uint64_t dugPitPendingObservedMinutes=0;
+    std::uint64_t dugPitPendingObservedStarts=0;
+    bool dugPitPendingObserved=false;
+    double dugPitCandidateUtilitySum=0.0;
+    double dugPitCompetingUtilitySum=0.0;
+    std::uint64_t dugPitUtilitySamples=0;
+    double dugPitImprovementWorkGain=0.0;
+    double dugPitImprovementWorkMax=0.0;
+    double lastObservedSanitationWork=0.0;
 };
 
 std::array<double,5> needsArray(const Needs& n)
@@ -107,6 +145,223 @@ const Character* findResident(const World& world,CharacterId id)
     return nullptr;
 }
 
+ResidentMetrics* findMetrics(
+    std::vector<ResidentMetrics>& metrics,
+    CharacterId id)
+{
+    for(auto& metric:metrics) if(metric.id==id) return &metric;
+    return nullptr;
+}
+
+SettlementPopulation observedSettlementPopulation(const Simulation& sim)
+{
+    SettlementPopulation population;
+    for(const auto& resident:sim.world().characters){
+        GridPos position{};
+        if(sim.runtimePosition(resident.id,position)){
+            population.emplace(resident.id,position);
+        }
+    }
+    return population;
+}
+
+bool pendingDugPitCraft(const PendingContextActionObservation& pending)
+{
+    return pending.active
+        && pending.kind==ContextActionKind::Civilization
+        && pending.civilizationIntent==CivilizationIntent::Craft
+        && pending.technique==TechniqueId::DugSanitationPit;
+}
+
+double activeSanitationImprovementWork(const World& world)
+{
+    const PrimitiveSanitationSite* site=
+        activePrimitiveSanitationSite(world.primitiveSanitationSites);
+    if(site==nullptr) return 0.0;
+    if(site->kind==PrimitiveSanitationSiteKind::DugPit){
+        return DugSanitationPitWorkRequired;
+    }
+    return std::max(0.0,site->improvementWork);
+}
+
+void auditActualDugPitPlanningPath(
+    const Simulation& sim,
+    ResidentMetrics& metric)
+{
+    const ResidentPlanningStateObservation planning=
+        sim.observeResidentPlanningState(metric.id);
+    const Character* resident=findResident(sim.world(),metric.id);
+    if(!planning.valid || resident==nullptr || !resident->alive) return;
+    if(!resident->civilization.knowledge.knowsAtLeast(
+        TechniqueId::DugSanitationPit,KnowledgeLevel::Reproducible)) return;
+
+    const PrimitiveSanitationSite* site=
+        activePrimitiveSanitationSite(sim.world().primitiveSanitationSites);
+    if(site==nullptr || site->kind!=PrimitiveSanitationSiteKind::DesignatedArea)
+        return;
+
+    // Simulation::step() enters beginPlan only from this exact idle boundary.
+    if(sim.world().minute%5!=0
+       || planning.hasPhysicalPlan
+       || planning.hasPendingContext){
+        return;
+    }
+
+    ++metric.dugPitCraftReadyPlanningSamples;
+
+    // beginPlan decays Needs before planning. Reproduce that one deterministic
+    // minute on a copy so this audit reads the same gate state without changing
+    // simulation authority.
+    Character projected=*resident;
+    projected.needs.decay(
+        sim.ruleset().needs,
+        projected.metabolism,
+        projected.sleepTendency);
+
+    const bool criticalSurvivalPressure=
+        projected.needs.hunger>=CriticalSurvivalPreemptThreshold
+        || projected.needs.thirst>=CriticalSurvivalPreemptThreshold;
+    const bool planningAllowed=
+        sim.world().minute>=planning.penaltyUntilMinute
+        || criticalSurvivalPressure;
+    if(!planningAllowed){
+        ++metric.dugPitBlockedPenalty;
+        return;
+    }
+
+    Goal urgentPhysicalGoal=Goal::Idle;
+    double urgentPhysicalNeed=-1.0;
+    const double urgentThreshold=sim.ruleset().utilityAI.urgentThreshold;
+    for(const Goal candidate:{Goal::Eat,Goal::Drink,Goal::UseToilet}){
+        const double need=needForGoal(projected,candidate);
+        if(need<urgentThreshold
+           || !actionAvailableFor(sim.world(),projected,candidate)){
+            continue;
+        }
+        if(urgentPhysicalGoal==Goal::Idle || need>urgentPhysicalNeed){
+            urgentPhysicalGoal=candidate;
+            urgentPhysicalNeed=need;
+        }
+    }
+
+    const CivilizationUtilityDecision urgentProvision=
+        urgentSurvivalProvisionDecisionAtPosition(
+            sim.world(),projected,planning.position);
+    if(urgentProvision.intent!=CivilizationIntent::None){
+        ++metric.dugPitBlockedProvision;
+        if(urgentProvision.material==MaterialKind::PlantFood)
+            ++metric.dugPitBlockedProvisionFood;
+        if(urgentProvision.material==MaterialKind::Water)
+            ++metric.dugPitBlockedProvisionWater;
+        return;
+    }
+
+    if(urgentPhysicalGoal!=Goal::Idle){
+        ++metric.dugPitBlockedUrgentPhysical;
+        if(urgentPhysicalGoal==Goal::UseToilet)
+            ++metric.dugPitBlockedUrgentToilet;
+        return;
+    }
+
+    // tryCivilizationDecision defers non-provision civilization to minute%15.
+    if(sim.world().minute%15!=0){
+        ++metric.dugPitBlockedCadence;
+        return;
+    }
+
+    ++metric.dugPitCivilizationEvaluationSamples;
+    const SettlementPopulation population=observedSettlementPopulation(sim);
+    const CivilizationUtilityDecision sanitation=
+        chooseDispositionAwareSanitationProgressionDecisionAtPosition(
+            sim.world(),projected,planning.position,&population);
+    if(sanitation.intent!=CivilizationIntent::Craft
+       || sanitation.technique!=TechniqueId::DugSanitationPit){
+        ++metric.dugPitCandidateMissing;
+        return;
+    }
+
+    const bool ordinaryCivilizationAllowed=
+        maximumResidentNeed(projected)<UrgentSurvivalProvisionThreshold;
+    const bool sanitationPressureCouldCompete=
+        !ordinaryCivilizationAllowed
+        && std::max(projected.needs.bladder,projected.needs.hygiene)
+            >=UrgentSurvivalProvisionThreshold
+        && projected.needs.hunger<UrgentSurvivalProvisionThreshold
+        && projected.needs.thirst<UrgentSurvivalProvisionThreshold;
+
+    if(!ordinaryCivilizationAllowed && !sanitationPressureCouldCompete){
+        ++metric.dugPitBlockedPressureGate;
+        if(projected.needs.hunger>=UrgentSurvivalProvisionThreshold)
+            ++metric.dugPitBlockedPressureHunger;
+        if(projected.needs.thirst>=UrgentSurvivalProvisionThreshold)
+            ++metric.dugPitBlockedPressureThirst;
+        if(std::max(projected.needs.bladder,projected.needs.hygiene)
+           <UrgentSurvivalProvisionThreshold){
+            ++metric.dugPitBlockedNoSanitationPressure;
+        }
+        return;
+    }
+
+    CivilizationUtilityDecision effective=sanitation;
+    if(ordinaryCivilizationAllowed){
+        const CivilizationUtilityDecision civilization=
+            chooseDispositionAwareCivilizationDecisionAtPosition(
+                sim.world(),projected,planning.position,&population);
+        if(civilization.intent!=CivilizationIntent::Craft
+           || civilization.technique!=TechniqueId::DugSanitationPit){
+            ++metric.dugPitBlockedCivilizationFamily;
+            return;
+        }
+        effective=civilization;
+    }
+
+    const auto physical=bestPhysicalUtility(sim.world(),projected);
+    const SocialUtilityDecision social=
+        chooseSocialUtilityDecision(sim.world(),projected,sim.relationships());
+    double competingUtility=physical.second;
+    if(social.intent!=SocialIntent::None
+       && social.utility>=0.18
+       && social.utility>physical.second*1.05){
+        competingUtility=social.utility;
+    }
+
+    ++metric.dugPitUtilitySamples;
+    metric.dugPitCandidateUtilitySum+=effective.utility;
+    metric.dugPitCompetingUtilitySum+=competingUtility;
+
+    if(effective.utility<0.14){
+        ++metric.dugPitBlockedMinimumUtility;
+        return;
+    }
+    if(!(effective.utility>competingUtility*1.08)){
+        ++metric.dugPitBlockedWinnerMargin;
+        return;
+    }
+
+    const UnifiedUtilityDecision unified=
+        chooseUnifiedUtilityDecisionAtPosition(
+            sim.world(),projected,sim.relationships(),
+            planning.position,0.18,0.14,&population);
+    if(unified.kind!=UnifiedDecisionKind::Civilization
+       || unified.civilization.intent!=CivilizationIntent::Craft
+       || unified.civilization.technique!=TechniqueId::DugSanitationPit){
+        ++metric.dugPitUnexpectedUnifiedLoss;
+        return;
+    }
+
+    ++metric.dugPitSelectedSamples;
+    GridPos target{};
+    SanitationSiteId sanitationSiteId=0;
+    const bool resolved=resolveCivilizationContextTarget(
+        sim.world(),projected,unified.civilization,
+        planning.position,target,sanitationSiteId,&population);
+    if(!resolved){
+        ++metric.dugPitTargetResolveFailures;
+        return;
+    }
+    ++metric.dugPitContextIssued;
+}
+
 }
 
 int main(int argc,char** argv)
@@ -133,6 +388,18 @@ int main(int argc,char** argv)
     std::uint64_t civilizationEvents=0;
     std::array<std::uint64_t,5> physicalStarts{};
     std::array<std::uint64_t,5> physicalCompletions{};
+
+    std::vector<ResidentMetrics> metrics;
+    metrics.reserve(sim.world().characters.size());
+    for(const auto& resident:sim.world().characters){
+        ResidentMetrics m;
+        m.id=resident.id;
+        m.name=resident.name;
+        m.lastObservedSanitationWork=
+            activeSanitationImprovementWork(sim.world());
+        metrics.push_back(m);
+    }
+
     sim.onEvent([&](const std::string& line){
         if(line.find("route failed")!=std::string::npos) ++routeFailures;
         if(line.find("timed out")!=std::string::npos) ++timeouts;
@@ -144,6 +411,27 @@ int main(int argc,char** argv)
            || line.find(" -> Repair ")!=std::string::npos
            || line.find(" -> Comfort ")!=std::string::npos){
             ++socialEvents;
+        }
+
+        for(auto& metric:metrics){
+            const std::string prefix=metric.name+" ";
+            if(line.find(prefix)==std::string::npos) continue;
+
+            if(line.find(
+                metric.name+" -> Civilization Craft crafted DugSanitationPit")
+               !=std::string::npos){
+                ++metric.dugPitCraftExecutions;
+            }
+
+            const PendingContextActionObservation pending=
+                sim.observePendingContextAction(metric.id);
+            if(!pendingDugPitCraft(pending)) continue;
+            if(line.find("preempted current activity")!=std::string::npos)
+                ++metric.dugPitContextPreemptions;
+            if(line.find("context action route failed")!=std::string::npos)
+                ++metric.dugPitContextRouteFailures;
+            if(line.find("context action timed out")!=std::string::npos)
+                ++metric.dugPitContextTimeouts;
         }
 
         const std::array<const char*,5> physicalNames={
@@ -159,18 +447,38 @@ int main(int argc,char** argv)
         }
     });
 
-    std::vector<ResidentMetrics> metrics;
-    metrics.reserve(sim.world().characters.size());
-    for(const auto& resident:sim.world().characters){
-        ResidentMetrics m;
-        m.id=resident.id;
-        m.name=resident.name;
-        metrics.push_back(m);
-    }
-
     const int totalMinutes=days*24*60;
     for(int minute=0;minute<totalMinutes;++minute){
+        // Observe the same idle five-minute planning boundary that Simulation
+        // is about to evaluate. This is deliberately before step(), because
+        // step() may issue and complete a short context in the same minute.
+        for(auto& m:metrics){
+            auditActualDugPitPlanningPath(sim,m);
+        }
+
         sim.step();
+
+        const double sanitationWorkNow=
+            activeSanitationImprovementWork(sim.world());
+        for(auto& m:metrics){
+            if(sanitationWorkNow>m.lastObservedSanitationWork){
+                m.dugPitImprovementWorkGain+=
+                    sanitationWorkNow-m.lastObservedSanitationWork;
+            }
+            m.dugPitImprovementWorkMax=std::max(
+                m.dugPitImprovementWorkMax,sanitationWorkNow);
+            m.lastObservedSanitationWork=sanitationWorkNow;
+
+            const PendingContextActionObservation pending=
+                sim.observePendingContextAction(m.id);
+            const bool dugPitPending=pendingDugPitCraft(pending);
+            if(dugPitPending){
+                ++m.dugPitPendingObservedMinutes;
+                if(!m.dugPitPendingObserved)
+                    ++m.dugPitPendingObservedStarts;
+            }
+            m.dugPitPendingObserved=dugPitPending;
+        }
 
         for(auto& m:metrics){
             const Character* resident=findResident(sim.world(),m.id);
@@ -482,7 +790,44 @@ int main(int argc,char** argv)
                  <<" dugPitExperimentBestSamples="<<m.dugPitExperimentBestSamples
                  <<" dugPitCivilizationBestSamples="<<m.dugPitCivilizationBestSamples
                  <<" dugPitUnifiedWinnerSamples="<<m.dugPitUnifiedWinnerSamples
-                 <<" designatedCivilizationBestSamples="<<m.designatedCivilizationBestSamples;
+                 <<" designatedCivilizationBestSamples="<<m.designatedCivilizationBestSamples
+                 <<" dugPitCraftReadyPlanningSamples="<<m.dugPitCraftReadyPlanningSamples
+                 <<" dugPitBlockedPenalty="<<m.dugPitBlockedPenalty
+                 <<" dugPitBlockedProvision="<<m.dugPitBlockedProvision
+                 <<" dugPitBlockedProvisionFood="<<m.dugPitBlockedProvisionFood
+                 <<" dugPitBlockedProvisionWater="<<m.dugPitBlockedProvisionWater
+                 <<" dugPitBlockedUrgentPhysical="<<m.dugPitBlockedUrgentPhysical
+                 <<" dugPitBlockedUrgentToilet="<<m.dugPitBlockedUrgentToilet
+                 <<" dugPitBlockedCadence="<<m.dugPitBlockedCadence
+                 <<" dugPitCivilizationEvaluationSamples="<<m.dugPitCivilizationEvaluationSamples
+                 <<" dugPitCandidateMissing="<<m.dugPitCandidateMissing
+                 <<" dugPitBlockedPressureGate="<<m.dugPitBlockedPressureGate
+                 <<" dugPitBlockedPressureHunger="<<m.dugPitBlockedPressureHunger
+                 <<" dugPitBlockedPressureThirst="<<m.dugPitBlockedPressureThirst
+                 <<" dugPitBlockedNoSanitationPressure="<<m.dugPitBlockedNoSanitationPressure
+                 <<" dugPitBlockedCivilizationFamily="<<m.dugPitBlockedCivilizationFamily
+                 <<" dugPitBlockedMinimumUtility="<<m.dugPitBlockedMinimumUtility
+                 <<" dugPitBlockedWinnerMargin="<<m.dugPitBlockedWinnerMargin
+                 <<" dugPitUnexpectedUnifiedLoss="<<m.dugPitUnexpectedUnifiedLoss
+                 <<" dugPitSelectedSamples="<<m.dugPitSelectedSamples
+                 <<" dugPitTargetResolveFailures="<<m.dugPitTargetResolveFailures
+                 <<" dugPitContextIssued="<<m.dugPitContextIssued
+                 <<" dugPitCraftExecutions="<<m.dugPitCraftExecutions
+                 <<" dugPitContextPreemptions="<<m.dugPitContextPreemptions
+                 <<" dugPitContextRouteFailures="<<m.dugPitContextRouteFailures
+                 <<" dugPitContextTimeouts="<<m.dugPitContextTimeouts
+                 <<" dugPitPendingObservedMinutes="<<m.dugPitPendingObservedMinutes
+                 <<" dugPitPendingObservedStarts="<<m.dugPitPendingObservedStarts
+                 <<" dugPitCandidateUtilityAvg="
+                 <<(m.dugPitUtilitySamples>0
+                    ? m.dugPitCandidateUtilitySum/static_cast<double>(m.dugPitUtilitySamples)
+                    : 0.0)
+                 <<" dugPitCompetingUtilityAvg="
+                 <<(m.dugPitUtilitySamples>0
+                    ? m.dugPitCompetingUtilitySum/static_cast<double>(m.dugPitUtilitySamples)
+                    : 0.0)
+                 <<" dugPitImprovementWorkGain="<<m.dugPitImprovementWorkGain
+                 <<" dugPitImprovementWorkMax="<<m.dugPitImprovementWorkMax;
         for(std::size_t i=0;i<goalNames.size();++i){
             std::cout<<" "<<goalNames[i]<<"Min="<<m.physicalGoalMinutes[i];
         }
