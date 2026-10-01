@@ -10,7 +10,9 @@
 - main에 병합·배포하지 않는다. 신규 Draft PR로 검토한다.
 
 ## 상태
-- 작업 범위 확정. 구현 및 검증 예정.
+- 구현 완료, CI 검증 전 checkpoint. 지형의 기존 5개 색을 고도 중간값 사이 smoothstep으로 연결한다. Ocean/Coast/Wetland 특수색과 식생/암석 혼합은 보존한다.
+- 수면 ShaderMaterial에 독립 fog uniforms, Three.js fog/tonemapping/colorspace chunks 연결. 기존 Core daylight 입력으로 물 본체·반사 밝기도 낮춘다. 야간 가독성 하한은 표현값 0.12이며 simulation threshold가 아니다.
+- 신규 `web/tests/presentation/map-surface-checks.mjs`는 지형색 연속성/관측 불변/물 종류/안개 uniforms 독립성/셰이더 연결/수계 값 보존을 검사하며 기존 runner가 실행한다.
 - 중단 후 actual GitHub main/branch/PR/Actions부터 확인. 이 문서의 상태를 성공 추정에 사용하지 않는다.
 - 로컬 환경 `/workspace/lifelens-map`은 부분 소스이며 full checkout이 아니다.
 - 이전 작업에서 shell npm 네트워크 및 Chromium 소켓 제한이 확인됐다. 같은 장기 권한 요청을 반복하지 않고 GitHub CI로 타입/빌드/회귀를 검증한다.

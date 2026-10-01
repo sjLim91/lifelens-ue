@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
 import * as THREE from 'three';
 import ts from 'typescript';
+import { mapSurfaceChecks } from './map-surface-checks.mjs';
 
 const require = createRequire(import.meta.url);
 const modules = new Map();
@@ -599,6 +600,8 @@ test('unchanged terrain refreshes retain water geometry', () => {
     assert.equal(layer.group.children[0].geometry, old);
   } finally { layer.dispose(); }
 });
+
+mapSurfaceChecks({ test, source, THREE });
 
 console.log(`${passed} presentation regression checks passed; ${failed} failed`);
 if (failed) process.exitCode = 1;

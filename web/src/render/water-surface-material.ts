@@ -81,7 +81,7 @@ export function createWaterSurfaceMaterial(
   const profile = WATER_PROFILES[kind];
 
   return new THREE.ShaderMaterial({
-    uniforms: {
+    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, {
       uTime: { value: 0 },
       uDeepColor: { value: new THREE.Color(profile.deep) },
       uShallowColor: { value: new THREE.Color(profile.shallow) },
@@ -93,17 +93,21 @@ export function createWaterSurfaceMaterial(
       uWind: { value: 0 },
       uRain: { value: 0 },
       uDaylight: { value: 1 },
-    },
+    }]),
     vertexShader: `
+      #include <fog_pars_vertex>
       varying vec3 vWorldPosition;
 
       void main() {
         vec4 world = modelMatrix * vec4(position, 1.0);
         vWorldPosition = world.xyz;
-        gl_Position = projectionMatrix * viewMatrix * world;
+        vec4 mvPosition = viewMatrix * world;
+        gl_Position = projectionMatrix * mvPosition;
+        #include <fog_vertex>
       }
     `,
     fragmentShader: `
+      #include <fog_pars_fragment>
       uniform float uTime;
       uniform vec3 uDeepColor;
       uniform vec3 uShallowColor;
@@ -197,15 +201,23 @@ export function createWaterSurfaceMaterial(
         float crest = smoothstep(0.58, 0.96, wave) * 0.055;
         water += vec3(specular + crest);
 
+        // The same authoritative daylight used by the scene also dims the
+        // water body and highlights. Keep a small night floor for readability.
+        water *= mix(0.12, 1.0, clamp(uDaylight, 0.0, 1.0));
+
         float alpha = clamp(
           uOpacity + fresnel * 0.08 + uRain * 0.025,
           0.55,
           0.96
         );
         gl_FragColor = vec4(water, alpha);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+        #include <fog_fragment>
       }
     `,
     transparent: true,
+    fog: true,
     depthWrite: false,
     depthTest: true,
     side: THREE.DoubleSide,
