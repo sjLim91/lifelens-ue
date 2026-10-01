@@ -57,18 +57,24 @@ inline double socialClamp01(double value) {
 
 inline constexpr double SocialFirstContactFamiliarityHorizon=0.12;
 inline constexpr double SocialFirstContactBondHorizon=0.10;
+inline constexpr double SocialFirstContactUtilityDiscount=0.03;
 
-inline double firstContactInitiative(
-    const Relationship* relation,
-    const TraitProfile& traits,
-    const PreferenceProfile& preferences)
+inline double firstContactUnfamiliarity(const Relationship* relation)
 {
     const double familiarity=relation ? relation->familiarity : 0.0;
     const double bond=relation ? relation->socialBond() : 0.0;
     const double familiarityProgress=std::max(
         familiarity/SocialFirstContactFamiliarityHorizon,
         bond/SocialFirstContactBondHorizon);
-    const double unfamiliarity=socialClamp01(1.0-familiarityProgress);
+    return socialClamp01(1.0-familiarityProgress);
+}
+
+inline double firstContactInitiative(
+    const Relationship* relation,
+    const TraitProfile& traits,
+    const PreferenceProfile& preferences)
+{
+    const double unfamiliarity=firstContactUnfamiliarity(relation);
 
     // First contact is personality-driven, not a global social bonus. Curious,
     // sociable and bold residents can initiate with unfamiliar people; a
@@ -81,6 +87,23 @@ inline double firstContactInitiative(
         +0.03*traits.boldness
         -0.04*preferences.solitude);
     return unfamiliarity*initiative;
+}
+
+inline double socialUtilityFloor(
+    const SocialUtilityDecision& social,
+    const Character& self,
+    const RelationshipBook& relationships,
+    double ordinaryMinimum)
+{
+    if(social.intent!=SocialIntent::Approach || social.target==0){
+        return ordinaryMinimum;
+    }
+    const Relationship* relation=relationships.find(self.id,social.target);
+    return std::max(
+        0.0,
+        ordinaryMinimum
+            -SocialFirstContactUtilityDiscount
+                *firstContactUnfamiliarity(relation));
 }
 
 inline double beliefSignal(
@@ -711,8 +734,14 @@ inline UnifiedUtilityDecision chooseUnifiedUtilityDecisionAtPosition(
 
     // Preserve the pre-civilization Physical/Social winner first so existing
     // behavior remains stable unless civilization is clearly more valuable.
+    // A genuinely unfamiliar Approach gets a small temporary entry discount;
+    // the floor smoothly returns to the ordinary minimum as familiarity/bond
+    // forms, so established social behavior is not globally made cheaper.
+    const double requiredSocialUtility=
+        socialUtilityFloor(
+            social,self,relationships,minimumSocialUtility);
     if (social.intent != SocialIntent::None &&
-        social.utility >= minimumSocialUtility &&
+        social.utility >= requiredSocialUtility &&
         social.utility > physical.second * 1.05) {
         decision.kind = UnifiedDecisionKind::Social;
         decision.utility = social.utility;
