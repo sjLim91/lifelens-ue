@@ -135,6 +135,8 @@ int main()
     world.storageSites.push_back(reserveStorage);
     assert(simpleContainerLogisticsStockPressure(
         world,resident,home)>0.80);
+    assert(settlementContainerCapitalAtPosition(
+        world,resident,home)==1);
 
     while(resident.civilization.inventory.remove(
         ItemKind::RawMaterial,MaterialKind::Clay,1)) {}
@@ -193,6 +195,29 @@ int main()
         1.0});
     assert(portableWaterCount(world.storageSites.front().inventory)==
         SettlementWaterReserveTarget);
+    assert(settlementContainerCapitalAtPosition(
+        world,resident,home)==
+        SimpleContainerPersonalStockTarget+SettlementWaterReserveTarget);
+    assert(simpleContainerLogisticsStockPressure(
+        world,resident,home)==0.0);
+
+    // Using the shared Water reserve must not be interpreted as destruction of
+    // the reusable vessel capital. Moving a filled vessel back to the resident
+    // keeps total container capital unchanged.
+    const int capitalBeforeRetrieve=settlementContainerCapitalAtPosition(
+        world,resident,home);
+    CivilizationUtilityDecision retrieve;
+    retrieve.intent=CivilizationIntent::Retrieve;
+    retrieve.storage=world.storageSites.front().id;
+    retrieve.item=ItemKind::RawMaterial;
+    retrieve.material=MaterialKind::Water;
+    retrieve.quantity=1;
+    const CivilizationExecutionResult retrieved=
+        executeCivilizationDecisionAtPosition(
+            world,resident,retrieve,reserveStorage.pos);
+    assert(retrieved.executed && retrieved.success);
+    assert(settlementContainerCapitalAtPosition(
+        world,resident,home)==capitalBeforeRetrieve);
     assert(simpleContainerLogisticsStockPressure(
         world,resident,home)==0.0);
 
