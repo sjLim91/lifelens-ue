@@ -688,6 +688,44 @@ inline bool dugSanitationPitCraftPressureCouldCompete(
             self,world.primitiveSanitationSites);
 }
 
+inline double sanitationStructuralPressureAfterImmediateRelief01(
+    const Character& self)
+{
+    // Compare a durable sanitation improvement against the burden that would
+    // remain after taking the obvious immediate relief action once. This keeps
+    // an extreme bladder spike focused on UseToilet, while allowing persistent
+    // bladder+hygiene pressure to express the long-term value of improving the
+    // already-designated site. All effect magnitudes and durations come from
+    // the authoritative sanitation action model; no duplicate balance numbers
+    // are introduced here.
+    const NeedsDelta relief=
+        primitiveSanitationUseEffectPerTick(
+            PrimitiveSanitationSiteKind::DesignatedArea);
+    const double duration=static_cast<double>(
+        primitiveSanitationUseDurationTicks(
+            PrimitiveSanitationSiteKind::DesignatedArea));
+    const double bladder=Needs::clamp01(
+        self.needs.bladder+relief.bladder*duration);
+    const double hygiene=Needs::clamp01(
+        self.needs.hygiene+relief.hygiene*duration);
+
+    // Union of two independent 0..1 pressures. Unlike max(), this preserves the
+    // fact that simultaneous moderate bladder and hygiene burdens are a larger
+    // structural problem than either one alone, without adding a tuning weight.
+    return 1.0-(1.0-bladder)*(1.0-hygiene);
+}
+
+inline double unifiedCompetingPressure01(
+    const Character& self,
+    const UnifiedUtilityDecision& decision)
+{
+    if(decision.kind==UnifiedDecisionKind::Physical){
+        return Needs::clamp01(
+            needForGoal(self,decision.physicalGoal));
+    }
+    return Needs::clamp01(decision.utility);
+}
+
 inline void considerCivilizationUnderNeedPressure(
     const Character& self,
     const CivilizationUtilityDecision& civilization,
@@ -718,11 +756,34 @@ inline void considerCivilizationUnderNeedPressure(
 
     if (!ordinaryCivilizationAllowed &&
         sanitationPressureException &&
-        sanitationProgression.utility >= minimumCivilizationUtility &&
-        sanitationProgression.utility > decision.utility * 1.08) {
-        decision.kind = UnifiedDecisionKind::Civilization;
-        decision.civilization = sanitationProgression;
-        decision.utility = sanitationProgression.utility;
+        sanitationProgression.utility >= minimumCivilizationUtility) {
+        const bool dugPitImprovement=
+            sanitationProgression.technique==TechniqueId::DugSanitationPit;
+
+        // Ordinary civilization candidates still compare on the established
+        // utility scale above. DugPit is different only in the urgent sanitation
+        // exception: physical utilities can exceed 1.0 through urgent/sleep
+        // multipliers while civilization utilities are capped to 0..1, making
+        // the old comparison mathematically unwinnable in severe long-run
+        // states. Compare the durable improvement's residual structural pressure
+        // against the winning action's underlying 0..1 pressure instead.
+        const double effectiveSanitationUtility=dugPitImprovement
+            ? std::max(
+                sanitationProgression.utility,
+                sanitationStructuralPressureAfterImmediateRelief01(self))
+            : sanitationProgression.utility;
+        const double competingUtility=dugPitImprovement
+            ? unifiedCompetingPressure01(self,decision)
+            : decision.utility;
+        const bool winsCompetition=dugPitImprovement
+            ? effectiveSanitationUtility>competingUtility
+            : sanitationProgression.utility>decision.utility*1.08;
+
+        if(winsCompetition){
+            decision.kind = UnifiedDecisionKind::Civilization;
+            decision.civilization = sanitationProgression;
+            decision.utility = effectiveSanitationUtility;
+        }
     }
 }
 
