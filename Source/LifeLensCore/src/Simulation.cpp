@@ -1296,7 +1296,7 @@ void Simulation::beginPlan(Character& c,Runtime& r){
     // actual Physical/Social winner by its existing margin, so this does not
     // force construction over stronger self-care.
     const bool sanitationPressureMayCompete=
-        sanitationProgressionPressureCouldCompete(c);
+        dugSanitationPitCraftPressureCouldCompete(world_,c);
     if(planningAllowed
        && (
            urgentPhysicalGoal==Goal::Idle
