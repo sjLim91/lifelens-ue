@@ -21,6 +21,7 @@ struct ResidentMetrics {
     std::array<double,5> needMax{};
     std::array<std::uint64_t,5> saturatedMinutes{};
     std::uint64_t physicalMinutes=0;
+    std::array<std::uint64_t,5> physicalGoalMinutes{};
     std::uint64_t socialMinutes=0;
     std::uint64_t civilizationMinutes=0;
     std::uint64_t parentingMinutes=0;
@@ -48,6 +49,19 @@ std::array<double,5> needsArray(const Needs& needs)
         needs.bladder,
         needs.hygiene
     };
+}
+
+int physicalGoalIndex(Goal goal)
+{
+    switch(goal){
+        case Goal::Eat: return 0;
+        case Goal::Drink: return 1;
+        case Goal::Sleep: return 2;
+        case Goal::UseToilet: return 3;
+        case Goal::Wash: return 4;
+        case Goal::Idle:
+        default: return -1;
+    }
 }
 
 const Character* findResident(const World& world, CharacterId id)
@@ -168,8 +182,15 @@ int main(int argc,char** argv)
                 ++metric.idleMinutes;
             }else{
                 switch(presentation.kind){
-                    case PresentationActionKind::Physical:
-                        ++metric.physicalMinutes; break;
+                    case PresentationActionKind::Physical: {
+                        ++metric.physicalMinutes;
+                        const int index=physicalGoalIndex(presentation.physicalGoal);
+                        if(index>=0){
+                            ++metric.physicalGoalMinutes[
+                                static_cast<std::size_t>(index)];
+                        }
+                        break;
+                    }
                     case PresentationActionKind::Social:
                         ++metric.socialMinutes; break;
                     case PresentationActionKind::Civilization:
@@ -284,6 +305,11 @@ int main(int argc,char** argv)
 
         std::cout
             <<" physicalMin="<<metric.physicalMinutes
+            <<" physicalMinEat="<<metric.physicalGoalMinutes[0]
+            <<" physicalMinDrink="<<metric.physicalGoalMinutes[1]
+            <<" physicalMinSleep="<<metric.physicalGoalMinutes[2]
+            <<" physicalMinUseToilet="<<metric.physicalGoalMinutes[3]
+            <<" physicalMinWash="<<metric.physicalGoalMinutes[4]
             <<" socialMin="<<metric.socialMinutes
             <<" civilizationMin="<<metric.civilizationMinutes
             <<" parentingMin="<<metric.parentingMinutes
