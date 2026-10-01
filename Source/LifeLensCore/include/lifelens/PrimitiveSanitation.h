@@ -396,28 +396,34 @@ inline NeedsDelta designatedSanitationUseEffectPerTick()
 
 inline NeedsDelta primitiveSanitationUseEffectPerTick(PrimitiveSanitationSiteKind kind)
 {
-    if(kind==PrimitiveSanitationSiteKind::DugPit) return {0,0,0,-0.14,0.004};
+    if(kind==PrimitiveSanitationSiteKind::DugPit){
+        return {
+            0,0,0,
+            -DefaultPhysiologyBalance.dugPitBladderReliefPerMinute,
+            DefaultPhysiologyBalance.dugPitHygieneBurdenPerMinute
+        };
+    }
     return designatedSanitationUseEffectPerTick();
 }
 
 inline double primitiveSanitationResidueIntensity(PrimitiveSanitationSiteKind kind)
 {
     return kind==PrimitiveSanitationSiteKind::DugPit
-        ? 0.16
+        ? DefaultPhysiologyBalance.dugPitResidueIntensity
         : DefaultPhysiologyBalance.outdoorToiletResidueIntensity;
 }
 
 inline int primitiveSanitationResidueRadiusTiles(PrimitiveSanitationSiteKind kind)
 {
     return kind==PrimitiveSanitationSiteKind::DugPit
-        ? 1
+        ? DefaultPhysiologyBalance.dugPitResidueRadiusTiles
         : DefaultPhysiologyBalance.outdoorToiletResidueRadiusTiles;
 }
 
 inline double primitiveSanitationHygieneBurden(PrimitiveSanitationSiteKind kind)
 {
     return kind==PrimitiveSanitationSiteKind::DugPit
-        ? 0.008
+        ? DefaultPhysiologyBalance.dugPitCompletionHygieneBurden
         : DefaultPhysiologyBalance.outdoorToiletCompletionHygieneBurden;
 }
 
