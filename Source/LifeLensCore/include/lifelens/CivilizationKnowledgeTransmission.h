@@ -19,6 +19,12 @@ enum class TechniqueTransmissionMode {
     Teaching
 };
 
+inline constexpr double CivilizationTechniqueDiscoveryFactImportance=0.92;
+inline constexpr double CivilizationTechniqueDemonstrationFactImportance=0.72;
+inline constexpr double CivilizationTechniqueDiscoveryFactThreshold=
+    (CivilizationTechniqueDiscoveryFactImportance
+     +CivilizationTechniqueDemonstrationFactImportance)*0.5;
+
 enum class TechniqueTeachingResult {
     Invalid,
     NoFact,
@@ -77,7 +83,10 @@ inline SocialFact makeCivilizationTechniqueFact(
     fact.where="civilization-worksite";
     fact.eventMinute=minute;
     fact.supports=true;
-    fact.importance=eventType==CivilizationEventType::Discovered ? 0.92 : 0.72;
+    fact.importance=
+        eventType==CivilizationEventType::Discovered
+            ? CivilizationTechniqueDiscoveryFactImportance
+            : CivilizationTechniqueDemonstrationFactImportance;
     fact.confidence=eventType==CivilizationEventType::Discovered ? 0.98 : 0.94;
     fact.emotionValence=0.32;
     fact.emotionIntensity=eventType==CivilizationEventType::Discovered ? 0.74 : 0.46;
@@ -87,6 +96,14 @@ inline SocialFact makeCivilizationTechniqueFact(
 inline bool factRepresentsTechnique(const SocialFact& fact,TechniqueId technique)
 {
     return technique!=TechniqueId::None && fact.proposition==techniqueFactProposition(technique);
+}
+
+inline bool factRepresentsTechniqueDiscovery(
+    const SocialFact& fact,
+    TechniqueId technique)
+{
+    return factRepresentsTechnique(fact,technique)
+        && fact.importance>=CivilizationTechniqueDiscoveryFactThreshold;
 }
 
 inline double techniqueMasteryFactor(KnowledgeLevel level)
