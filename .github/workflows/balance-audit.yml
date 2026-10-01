@@ -6,6 +6,7 @@ on:
       - experiment/p0-sanitation-progression-20261001
       - experiment/p0-sanitation-candidate-20261001
       - audit/sanitation-craft-trace-20261001
+      - experiment/p0-sanitation-scheduler-20261001
     paths:
       - 'Source/LifeLensCore/**'
       - '.github/workflows/balance-audit.yml'
