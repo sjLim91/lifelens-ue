@@ -1,0 +1,49 @@
+.resident-needs {
+  margin: .8rem 0;
+  padding: .8rem;
+  border: 1px solid #34483a;
+  border-radius: 12px;
+  background: #101c15;
+  text-align: left;
+}
+
+.resident-needs-caption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .25rem .7rem;
+  margin-bottom: .7rem;
+  line-height: 1.5;
+}
+
+.resident-needs-caption strong { color: #e3ede5; font-size: .78rem; }
+.resident-needs-caption > span { color: #b3c4b8; font-size: .7rem; }
+.resident-needs-rows { display: grid; gap: .6rem; }
+.resident-need-row {
+  display: grid;
+  grid-template-columns: 4.5em minmax(24px, 1fr) 3.4em;
+  align-items: center;
+  gap: .65rem;
+  min-width: 0;
+  font-size: .8rem;
+  line-height: 1.5;
+}
+.resident-need-label { color: #c1d0c5; }
+.resident-need-value { color: #f1f4ec; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+.resident-need-track { display: block; height: 7px; overflow: hidden; border-radius: 4px; background: #35483c; }
+.resident-need-fill { display: block; height: 100%; border-radius: inherit; background: #d7b778; }
+.resident-need-track.is-unknown { height: 0; border-top: 1px dashed #829b89; border-radius: 0; }
+
+/* Scoped to resident readouts; no shared modal, world, or simulation styles. */
+.resident-card-button .resident-title { flex-wrap: wrap; align-items: baseline; }
+.resident-card-button .resident-title strong { overflow-wrap: anywhere; text-align: left; }
+.resident-card-button .resident-title > span { font-size: .78rem; line-height: 1.5; text-align: left; overflow-wrap: anywhere; }
+.resident-card-button:focus-visible { outline: 2px solid #d7b778; outline-offset: 3px; }
+.resident-card-button .resident-card-footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .35rem .75rem; color: #afc2b4; font-size: .75rem; line-height: 1.5; }
+.resident-card-footer > span:last-child { color: #dce9df; }
+
+@media (forced-colors: active) {
+  .resident-need-track { border: 1px solid CanvasText; }
+  .resident-need-fill { background: Highlight; forced-color-adjust: none; }
+}

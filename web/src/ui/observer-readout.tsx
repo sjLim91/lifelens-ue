@@ -20,6 +20,7 @@ import {
   formatWeather,
 } from './observer-format';
 import { residentStatusText } from './resident-status';
+import { ResidentNeeds } from './resident-needs';
 
 export function RuntimeBadge({
   runtime,
@@ -88,18 +89,6 @@ export function ObserverMetrics({
   );
 }
 
-function ResidentNeedsGrid({ resident }: { resident: Resident }) {
-  return (
-    <div className="need-grid">
-      <span>배고픔 <b>{formatPercent(resident.needs?.hunger)}</b></span>
-      <span>갈증 <b>{formatPercent(resident.needs?.thirst)}</b></span>
-      <span>수면 <b>{formatPercent(resident.needs?.sleep)}</b></span>
-      <span>방광 <b>{formatPercent(resident.needs?.bladder)}</b></span>
-      <span>위생 <b>{formatPercent(resident.needs?.hygiene)}</b></span>
-    </div>
-  );
-}
-
 function ResidentCard({
   resident,
   residents,
@@ -123,11 +112,12 @@ function ResidentCard({
         <strong>{resident.name}</strong>
         <span>{formatSex(resident.sex)} · {statusText}</span>
       </div>
-      <ResidentNeedsGrid resident={resident} />
-      <small>
-        {resident.hasPosition
+      <ResidentNeeds needs={resident.needs} />
+      <small className="resident-card-footer">
+        <span>{resident.hasPosition
           ? `좌표 ${resident.gridX}, ${resident.gridY}`
-          : '위치 확인 불가'}
+          : '위치 확인 불가'}</span>
+        <span>자세히 보기 →</span>
       </small>
     </button>
   );
@@ -235,7 +225,7 @@ export function SelectedResidentReadout({
         현재 <b>{statusText}</b>{activityTarget}
       </p>
 
-      <ResidentNeedsGrid resident={resident} />
+      <ResidentNeeds needs={resident.needs} />
 
       <div className="focused-life-section">
         <h3>감정</h3>
