@@ -36,7 +36,12 @@ export function mapSurfaceChecks({ test, source, THREE }) {
     try {
       assert.equal(first.fog, true);
       assert.notEqual(first.uniforms.fogColor.value, second.uniforms.fogColor.value);
-      assert.ok(first.uniforms.fogColor.value instanceof THREE.Color);
+      // The harness loads production TS through CJS and Three through ESM;
+      // use Three's cross-module marker rather than constructor identity.
+      assert.equal(first.uniforms.fogColor.value.isColor, true);
+      const original = second.uniforms.fogColor.value.getHex();
+      first.uniforms.fogColor.value.setHex(0x123456);
+      assert.equal(second.uniforms.fogColor.value.getHex(), original);
       for (const name of ['fogDensity', 'fogNear', 'fogFar']) assert.ok(name in first.uniforms);
       assert.match(first.vertexShader, /vec4 mvPosition = viewMatrix \* world/);
       assert.match(first.vertexShader, /#include <fog_vertex>/);
