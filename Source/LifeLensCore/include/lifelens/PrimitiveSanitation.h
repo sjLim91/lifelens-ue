@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "EnvironmentalExposure.h"
+#include "PhysiologyBalance.h"
 #include "SanitationProblemRecognition.h"
 
 namespace lifelens {
@@ -376,38 +377,54 @@ inline bool recordDesignatedSanitationSiteUse(
 
 inline int designatedSanitationUseDurationTicks()
 {
-    return 2;
+    return DefaultPhysiologyBalance.primitiveToiletMinutes;
 }
 
 inline int primitiveSanitationUseDurationTicks(PrimitiveSanitationSiteKind /*kind*/)
 {
-    return 2;
+    return DefaultPhysiologyBalance.primitiveToiletMinutes;
 }
 
 inline NeedsDelta designatedSanitationUseEffectPerTick()
 {
-    return {0,0,0,-0.13,0.012};
+    return {
+        0,0,0,
+        -DefaultPhysiologyBalance.primitiveToiletBladderReliefPerMinute,
+        DefaultPhysiologyBalance.primitiveToiletHygieneBurdenPerMinute
+    };
 }
 
 inline NeedsDelta primitiveSanitationUseEffectPerTick(PrimitiveSanitationSiteKind kind)
 {
-    if(kind==PrimitiveSanitationSiteKind::DugPit) return {0,0,0,-0.14,0.004};
+    if(kind==PrimitiveSanitationSiteKind::DugPit){
+        return {
+            0,0,0,
+            -DefaultPhysiologyBalance.dugPitBladderReliefPerMinute,
+            DefaultPhysiologyBalance.dugPitHygieneBurdenPerMinute
+        };
+    }
     return designatedSanitationUseEffectPerTick();
 }
 
 inline double primitiveSanitationResidueIntensity(PrimitiveSanitationSiteKind kind)
 {
-    return kind==PrimitiveSanitationSiteKind::DugPit ? 0.16 : 0.42;
+    return kind==PrimitiveSanitationSiteKind::DugPit
+        ? DefaultPhysiologyBalance.dugPitResidueIntensity
+        : DefaultPhysiologyBalance.outdoorToiletResidueIntensity;
 }
 
 inline int primitiveSanitationResidueRadiusTiles(PrimitiveSanitationSiteKind kind)
 {
-    return kind==PrimitiveSanitationSiteKind::DugPit ? 1 : 3;
+    return kind==PrimitiveSanitationSiteKind::DugPit
+        ? DefaultPhysiologyBalance.dugPitResidueRadiusTiles
+        : DefaultPhysiologyBalance.outdoorToiletResidueRadiusTiles;
 }
 
 inline double primitiveSanitationHygieneBurden(PrimitiveSanitationSiteKind kind)
 {
-    return kind==PrimitiveSanitationSiteKind::DugPit ? 0.008 : 0.025;
+    return kind==PrimitiveSanitationSiteKind::DugPit
+        ? DefaultPhysiologyBalance.dugPitCompletionHygieneBurden
+        : DefaultPhysiologyBalance.outdoorToiletCompletionHygieneBurden;
 }
 
 } // namespace lifelens

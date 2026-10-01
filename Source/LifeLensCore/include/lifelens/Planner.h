@@ -4,6 +4,7 @@
 #include <vector>
 #include "EnvironmentalConsequences.h"
 #include "EnvironmentalExposure.h"
+#include "PhysiologyBalance.h"
 #include "UtilityAI.h"
 namespace lifelens {
 enum class ActionType { FindObject, Reserve, MoveTo, Use, Release, Idle, EmergencyUse };
@@ -12,26 +13,42 @@ struct Action { ActionType type=ActionType::Idle; ObjectId objectId=0; int remai
 inline int emergencyUseDurationTicks(Goal g)
 {
     switch(g){
-        case Goal::Eat: return 1;
-        case Goal::Drink: return 1;
-        case Goal::Sleep: return 8;
-        case Goal::UseToilet: return 2;
-        case Goal::Wash: return 4;
+        case Goal::Eat:
+            return DefaultPhysiologyBalance.primitiveEatMinutes;
+        case Goal::Drink:
+            return DefaultPhysiologyBalance.primitiveDrinkMinutes;
+        case Goal::Sleep:
+            return 8;
+        case Goal::UseToilet:
+            return DefaultPhysiologyBalance.primitiveToiletMinutes;
+        case Goal::Wash:
+            return DefaultPhysiologyBalance.primitiveWashMinutes;
         case Goal::Idle:
-        default: return 1;
+        default:
+            return 1;
     }
 }
 
 inline NeedsDelta emergencyUseEffectPerTick(Goal g)
 {
     switch(g){
-        case Goal::Eat: return {-0.28,0,0,0,0};
-        case Goal::Drink: return {0,-0.32,0,0,0};
-        case Goal::Sleep: return {0,0,-0.00150,0,0};
-        case Goal::UseToilet: return {0,0,0,-0.13,0.012};
-        case Goal::Wash: return {0,0,0,0,-0.018};
+        case Goal::Eat:
+            return {-DefaultPhysiologyBalance.primitiveEatHungerRelief,0,0,0,0};
+        case Goal::Drink:
+            return {0,-DefaultPhysiologyBalance.primitiveDrinkThirstRelief,0,0,0};
+        case Goal::Sleep:
+            return {0,0,-DefaultPhysiologyBalance.outdoorSleepRecoveryPerMinute,0,0};
+        case Goal::UseToilet:
+            return {
+                0,0,0,
+                -DefaultPhysiologyBalance.primitiveToiletBladderReliefPerMinute,
+                DefaultPhysiologyBalance.primitiveToiletHygieneBurdenPerMinute
+            };
+        case Goal::Wash:
+            return {0,0,0,0,-DefaultPhysiologyBalance.primitiveWashHygieneReliefPerMinute};
         case Goal::Idle:
-        default: return {};
+        default:
+            return {};
     }
 }
 
@@ -99,13 +116,19 @@ inline int facilityUseDurationTicks(Goal g)
 inline NeedsDelta facilityUseEffectPerTick(Goal g)
 {
     switch(g){
-        case Goal::Eat: return {-0.075,0,0,0,0};
-        case Goal::Drink: return {0,-0.085,0,0,0};
-        case Goal::Sleep: return {0,0,-0.00220,0,0};
-        case Goal::UseToilet: return {0,0,0,-0.12,0};
-        case Goal::Wash: return {0,0,0,0,-0.055};
+        case Goal::Eat:
+            return {-DefaultPhysiologyBalance.smartObjectEatReliefPerMinute,0,0,0,0};
+        case Goal::Drink:
+            return {0,-DefaultPhysiologyBalance.smartObjectDrinkReliefPerMinute,0,0,0};
+        case Goal::Sleep:
+            return {0,0,-DefaultPhysiologyBalance.smartObjectSleepRecoveryPerMinute,0,0};
+        case Goal::UseToilet:
+            return {0,0,0,-DefaultPhysiologyBalance.smartObjectToiletReliefPerMinute,0};
+        case Goal::Wash:
+            return {0,0,0,0,-DefaultPhysiologyBalance.smartObjectWashReliefPerMinute};
         case Goal::Idle:
-        default: return {};
+        default:
+            return {};
     }
 }
 

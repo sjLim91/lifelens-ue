@@ -38,6 +38,8 @@ lifelens_add_test(test_assertions_enabled)
 
 lifelens_add_test(test_needs)
 
+lifelens_add_test(test_daily_physiology_budget)
+
 lifelens_add_test(test_utility)
 
 lifelens_add_test(test_action_commitment)
