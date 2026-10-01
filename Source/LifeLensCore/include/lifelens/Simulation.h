@@ -33,6 +33,10 @@ struct ResidentPlanningStateObservation {
     bool hasPhysicalPlan=false;
     bool hasPendingContext=false;
     int penaltyUntilMinute=0;
+    bool navigationHasTarget=false;
+    bool navigationArrived=false;
+    std::size_t navigationRemainingSteps=0;
+    int activeActionRemainingTicks=0;
 };
 
 class Simulation {
@@ -73,6 +77,16 @@ public:
         observation.hasPhysicalPlan=!it->second.plan.empty();
         observation.hasPendingContext=it->second.pendingContext.active();
         observation.penaltyUntilMinute=it->second.penaltyUntilMinute;
+        observation.navigationHasTarget=it->second.navigationHasTarget;
+        observation.navigationArrived=it->second.navigationArrived;
+        if(it->second.navigationRouteIndex<it->second.navigationRoute.size()){
+            observation.navigationRemainingSteps=
+                it->second.navigationRoute.size()-it->second.navigationRouteIndex;
+        }
+        if(it->second.actionIndex<it->second.plan.size()){
+            observation.activeActionRemainingTicks=
+                std::max(0,it->second.plan[it->second.actionIndex].remainingTicks);
+        }
         return observation;
     }
     bool recommendedOutdoorReliefPosition(CharacterId id,GridPos& outPosition) const {
