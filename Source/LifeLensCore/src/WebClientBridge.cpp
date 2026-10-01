@@ -457,6 +457,9 @@ std::string civilizationWorldObservationJson(
     out << "\"commonTechnologyCount\":" << world.commonTechnologyCount << ",";
     out << "\"decliningTechnologyCount\":" << world.decliningTechnologyCount << ",";
     out << "\"lostTechnologyCount\":" << world.lostTechnologyCount << ",";
+    out << "\"establishedTechnologyCount\":" << world.establishedTechnologyCount << ",";
+    out << "\"contestedTechnologyCount\":" << world.contestedTechnologyCount << ",";
+    out << "\"resistedTechnologyCount\":" << world.resistedTechnologyCount << ",";
     out << "\"activeTransformationCount\":" << world.activeTransformationCount << ",";
 
     out << "\"technologyPopulation\":[";
@@ -471,8 +474,14 @@ std::string civilizationWorldObservationJson(
         out << "\"reproducibleKnowerCount\":" << technology.reproducibleKnowerCount << ",";
         out << "\"operationalResidentCount\":" << technology.operationalResidentCount << ",";
         out << "\"adoptedResidentCount\":" << technology.adoptedResidentCount << ",";
+        out << "\"evaluatingResidentCount\":" << technology.evaluatingResidentCount << ",";
+        out << "\"adoptingResidentCount\":" << technology.adoptingResidentCount << ",";
+        out << "\"resistantResidentCount\":" << technology.resistantResidentCount << ",";
         out << "\"successfulUseCount\":" << technology.successfulUseCount << ",";
         out << "\"diffusion01\":"; appendDouble(out,technology.diffusion01); out << ",";
+        out << "\"adoptionRatio01\":"; appendDouble(out,technology.adoptionRatio01); out << ",";
+        out << "\"meanAcceptance01\":"; appendDouble(out,technology.meanAcceptance01); out << ",";
+        out << "\"adoptionState\":\"" << technologySocialAdoptionStateName(technology.adoptionState) << "\",";
         out << "\"historicallyKnown\":" << (technology.historicallyKnown ? "true" : "false") << ",";
         out << "\"historicalFactCount\":" << technology.historicalFactCount << ",";
         out << "\"firstEvidenceMinute\":" << technology.firstEvidenceMinute << ",";
@@ -605,6 +614,8 @@ std::string civilizationWorldObservationJson(
         out << "\"discovererId\":\"" << discovery.discovererId << "\",";
         out << "\"discovererName\":\"" << escapeJson(discovery.discovererName) << "\",";
         out << "\"minute\":" << discovery.minute << ",";
+        out << "\"rediscovery\":" << (discovery.rediscovery ? "true" : "false") << ",";
+        out << "\"discoveryOrdinal\":" << discovery.discoveryOrdinal << ",";
         out << "\"recipientCount\":" << discovery.recipientCount << ",";
         out << "\"livingKnowerCount\":" << discovery.livingKnowerCount;
         out << "}";
@@ -1119,6 +1130,8 @@ std::string WebClientBridge::residentsJson() const
             out << "\"reproducible\":" << (technology.reproducible ? "true" : "false") << ",";
             out << "\"operational\":" << (technology.operational ? "true" : "false") << ",";
             out << "\"adopted\":" << (technology.adopted ? "true" : "false") << ",";
+            out << "\"adoptionDisposition\":\"" << technologyAdoptionDispositionName(technology.adoptionDisposition) << "\",";
+            out << "\"adoptionAcceptance01\":"; appendDouble(out,technology.adoptionAcceptance01); out << ",";
             out << "\"successfulUses\":" << technology.successfulUses << ",";
             out << "\"prerequisiteCount\":" << technology.prerequisiteCount << ",";
             out << "\"satisfiedPrerequisiteCount\":" << technology.satisfiedPrerequisiteCount << ",";
