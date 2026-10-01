@@ -3,7 +3,7 @@ name: LifeLens Balance Audit
 on:
   push:
     branches:
-      - experiment/p0-teaching-scheduler-20261001
+      - experiment/p0-sanitation-progression-20261001
     paths:
       - 'Source/LifeLensCore/**'
       - '.github/workflows/balance-audit.yml'
