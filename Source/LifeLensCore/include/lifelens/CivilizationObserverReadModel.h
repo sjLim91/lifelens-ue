@@ -9,6 +9,7 @@
 
 #include "Civilization.h"
 #include "CivilizationKnowledgeTransmission.h"
+#include "CivilizationProgression.h"
 #include "CivilizationSpatial.h"
 #include "ObserverReadModel.h"
 #include "World.h"
@@ -53,10 +54,16 @@ struct ResidentCivilizationObservation {
     double learningSkill=0.0;
     std::size_t knownTechniqueCount=0;
     std::size_t reproducibleTechniqueCount=0;
+    std::size_t availableCapabilityCount=0;
+    std::size_t knownTechnologyCount=0;
+    std::size_t operationalTechnologyCount=0;
+    std::size_t adoptedTechnologyCount=0;
     int latestKnowledgeMinute=-1;
     TechniqueId latestTechnique=TechniqueId::None;
     std::vector<CivilizationItemObservation> inventory;
     std::vector<CivilizationTechniqueObservation> techniques;
+    std::vector<CivilizationCapabilityStatus> capabilities;
+    std::vector<CivilizationTechnologyStatus> technologies;
 };
 
 struct CivilizationResourceObservation {
@@ -285,6 +292,23 @@ inline ResidentCivilizationObservation buildResidentCivilizationObservation(
     std::sort(dto.techniques.begin(),dto.techniques.end(),[](const auto& a,const auto& b){
         return static_cast<int>(a.technique)<static_cast<int>(b.technique);
     });
+
+    for(const CapabilityId capability:allCapabilityIds()){
+        CivilizationCapabilityStatus status=
+            observeCapabilityStatus(world,character,capability);
+        if(status.available) ++dto.availableCapabilityCount;
+        dto.capabilities.push_back(status);
+    }
+
+    for(const TechnologyDefinition& definition:TechnologyRegistry){
+        CivilizationTechnologyStatus status=
+            observeTechnologyStatus(world,character,definition.id);
+        if(!status.discovered) continue;
+        ++dto.knownTechnologyCount;
+        if(status.operational) ++dto.operationalTechnologyCount;
+        if(status.adopted) ++dto.adoptedTechnologyCount;
+        dto.technologies.push_back(status);
+    }
 
     for(const KnowledgeReceipt& receipt:socialKnowledge.receipts()){
         if(receipt.holder!=character.id) continue;
