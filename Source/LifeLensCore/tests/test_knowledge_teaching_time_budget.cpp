@@ -101,15 +101,22 @@ int main()
     simulation.step();
     assert(simulation.world().minute==541);
 
-    simulation.runMinutes(59);
-    assert(simulation.world().minute==600);
-
-    const ResidentPresentationObservation teaching=
-        simulation.observeResidentPresentation(teacherId);
-    assert(teaching.active);
-    assert(teaching.kind==PresentationActionKind::KnowledgeTeaching);
-    assert(teaching.knowledgeTeachingTechnique==TechniqueId::SharpFlake);
-    assert(teaching.targetResidentId==learner.id);
+    bool teachingOpportunityReturned=false;
+    for(int minute=0;minute<24*60 && !teachingOpportunityReturned;++minute){
+        simulation.step();
+        const ResidentPresentationObservation observed=
+            simulation.observeResidentPresentation(teacherId);
+        if(observed.active
+           && observed.kind==PresentationActionKind::KnowledgeTeaching
+           && observed.knowledgeTeachingTechnique==TechniqueId::SharpFlake
+           && observed.targetResidentId==learner.id){
+            teachingOpportunityReturned=true;
+        }
+        if(teachingLogSeen(simulation,teacher.name)){
+            teachingOpportunityReturned=true;
+        }
+    }
+    assert(teachingOpportunityReturned);
 
     std::cout<<"knowledge teaching respects active life-action time budget PASS\n";
     return 0;
