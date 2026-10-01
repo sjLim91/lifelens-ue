@@ -850,12 +850,16 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPositionScoped(
     const DugSanitationPitOpportunity pitOpportunity=
         evaluateDugSanitationPitOpportunity(
             self,world.environmentalResidues,world.primitiveSanitationSites);
-    const PrimitiveStorageNeedObservation storageNeed=
-        observePrimitiveStorageNeed(
+    PrimitiveStorageNeedObservation storageNeed;
+    bool smeltingOpportunity=false;
+    bool cultivationOpportunity=false;
+    if(!sanitationOnly){
+        storageNeed=observePrimitiveStorageNeed(
             world,self,authoritativePosition,population);
-    const bool smeltingOpportunity=copperSmeltingOpportunityAvailable(world,self);
-    const bool cultivationOpportunity=cultivationExperimentOpportunityAvailable(
-        world,self,authoritativePosition,population);
+        smeltingOpportunity=copperSmeltingOpportunityAvailable(world,self);
+        cultivationOpportunity=cultivationExperimentOpportunityAvailable(
+            world,self,authoritativePosition,population);
+    }
     const std::array<ExperimentKind,12> experiments={
         ExperimentKind::StrikeStone,ExperimentKind::HaftSharpFlake,ExperimentKind::FrictionWood,
         ExperimentKind::TwistFiber,ExperimentKind::ShapeClay,
