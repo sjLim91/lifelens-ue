@@ -20,30 +20,8 @@ void Simulation::processCivilizationKnowledgeEvent(
         event.type!=CivilizationEventType::Crafted) ||
        event.technique==TechniqueId::None || actor.id==0) return;
 
-    if(event.type==CivilizationEventType::Discovered){
-        bool historicalEvidence=false;
-        for(const SocialFact& fact:socialKnowledge_.facts()){
-            if(factRepresentsTechnique(fact,event.technique)
-               && fact.importance>=0.90){
-                historicalEvidence=true;
-                break;
-            }
-        }
-
-        bool otherLivingKnower=false;
-        for(const Character& resident:world_.characters){
-            if(!resident.alive || resident.id==actor.id) continue;
-            if(resident.civilization.knowledge.knowsAtLeast(
-                    event.technique,KnowledgeLevel::Observed)){
-                otherLivingKnower=true;
-                break;
-            }
-        }
-
-        if(historicalEvidence && !otherLivingKnower){
-            event.type=CivilizationEventType::Rediscovered;
-        }
-    }
+    event.type=classifyCivilizationDiscoveryEvent(
+        socialKnowledge_,world_,actor.id,event.technique,event.type);
 
     const KnowledgeReceipt* origin=registerTechniqueOrigin(
         socialKnowledge_,actor,event.technique,world_.minute,event.type,world_.seed);
