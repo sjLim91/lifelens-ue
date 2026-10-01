@@ -890,7 +890,7 @@ bool Simulation::preemptForCriticalSurvival(
             const double competingNeed=activeFood
                 ? (thirstCritical ? character.needs.thirst : -1.0)
                 : (hungerCritical ? character.needs.hunger : -1.0);
-            if(competingNeed<=activeNeed+0.05){
+            if(competingNeed<=activeNeed+CriticalSurvivalDominanceMargin){
                 return false;
             }
         }
@@ -908,7 +908,7 @@ bool Simulation::preemptForCriticalSurvival(
             const double competingNeed=activeEat
                 ? (thirstCritical ? character.needs.thirst : -1.0)
                 : (hungerCritical ? character.needs.hunger : -1.0);
-            if(competingNeed<=activeNeed+0.05){
+            if(competingNeed<=activeNeed+CriticalSurvivalDominanceMargin){
                 return false;
             }
         }
@@ -1053,7 +1053,7 @@ bool Simulation::preemptForCriticalSurvival(
                     hungerCritical ? character.needs.hunger : -1.0,
                     thirstCritical ? character.needs.thirst : -1.0);
                 if(strongestCriticalProvisionNeed
-                   <=character.needs.sleep+SleepWakeDominanceMargin){
+                   <=character.needs.sleep+CriticalSurvivalDominanceMargin){
                     return false;
                 }
             }
