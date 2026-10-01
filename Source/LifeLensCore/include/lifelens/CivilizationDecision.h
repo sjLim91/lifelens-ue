@@ -1016,13 +1016,21 @@ inline CivilizationUtilityDecision bestExperimentDecision(
         world,self,civilizationSanitationReferencePosition(world),nullptr);
 }
 
+inline constexpr int PortableProvisionCarryTarget=2;
+inline constexpr int SimpleContainerLogisticsStockTarget=
+    PortableProvisionCarryTarget+1;
+
 inline int desiredTechniqueOutputStock(TechniqueId technique)
 {
     switch(technique){
         case TechniqueId::SharpFlake: return 2;
         case TechniqueId::ChippedStoneTool: return 1;
         case TechniqueId::FiberCordage: return 2;
-        case TechniqueId::SimpleContainer: return 1;
+        case TechniqueId::SimpleContainer:
+            // Two vessels support a resident's normal carried reserve. A third
+            // creates the first real surplus that autonomous storage can bank,
+            // allowing the settlement to grow a shared water reserve.
+            return SimpleContainerLogisticsStockTarget;
         case TechniqueId::DiggingStick: return 1;
         case TechniqueId::StoneHammer: return 1;
         case TechniqueId::FireMaking:
@@ -1928,7 +1936,7 @@ inline CivilizationUtilityDecision bestRetrieveDecisionAtPosition(
                 ? portableWaterCount(self.civilization.inventory)
                 : self.civilization.inventory.count(
                     ItemKind::RawMaterial,material);
-            if(held>=2) continue;
+            if(held>=PortableProvisionCarryTarget) continue;
 
             const int stored=material==MaterialKind::Water
                 ? portableWaterCount(storage.inventory)
@@ -1936,9 +1944,12 @@ inline CivilizationUtilityDecision bestRetrieveDecisionAtPosition(
                     ItemKind::RawMaterial,material);
             if(stored<=0) continue;
 
-            const int requested=std::min(stored,std::max(1,2-held));
+            const int requested=std::min(
+                stored,
+                std::max(1,PortableProvisionCarryTarget-held));
             const double carryGap=clampCivilization01(
-                static_cast<double>(2-held)/2.0);
+                static_cast<double>(PortableProvisionCarryTarget-held)
+                /static_cast<double>(PortableProvisionCarryTarget));
             const double preference=civilizationPreference(
                 world.seed,self.id,
                 450ULL+static_cast<std::uint64_t>(material));
@@ -2069,7 +2080,7 @@ inline CivilizationUtilityDecision bestStoreDecisionAtPosition(
                     world,self,stack.material)
                 : 0;
         const int keep=provision
-            ? 2
+            ? PortableProvisionCarryTarget
             : (stack.kind==ItemKind::RawMaterial
                 ? std::max(4,std::min(effectiveQuantity,committedCarryNeed))
                 : 1);
