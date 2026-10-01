@@ -914,3 +914,61 @@ Bladder/Hygiene 장기 압박
 - 122일 모바일 저장 상태 자체는 확보하지 않았다. 이 seed 재현 실험 결과를 그 저장본의 개별 원인 확정으로 확대하지 않는다.
 
 기계 판독 근거: `docs/audits/sanitation-candidate-20261001.json` (A/B의 두 seed × 세 기간 × 두 군, 총 12 checkpoint). 원본 전체 로그는 위 run/job 링크에서 추적한다.
+
+
+## 27. 2026-10-01 — 위생 structural 이후 자기관리 preemption 병목
+
+### 27.1 위생 발전은 seed 4242001에서도 DugPit 완공까지 도달
+
+후속 structural 실험은 sanitation candidate의 경쟁 기회를 넓혀 seed 4242001에서도 실제 DugPit 완공까지 도달시켰다. 그러나 365일 시점에도 Social은 0이었고, Sleep/Toilet 완료율과 chronic Need pressure가 계속 비정상적이었다. 따라서 다음 병목은 sanitation knowledge/craft 자체가 아니라 자기관리 planner churn이다.
+
+### 27.2 Sleep interruption 원인
+
+seed 4242001 / 100일 별도 계측에서:
+
+- 총 explicit sleep wake: 684회
+- Bladder 우세: 371회
+- Thirst 우세: 241회
+- Hunger 우세: 72회
+- Sleep 계획 시작 당시 이미 sleepInterruptedByUrgentNeed() 조건을 만족한 표본: 0회
+
+즉 주민은 잘못된 상태에서 잠드는 것이 아니라, 잠든 뒤 Sleep need가 내려가는 동안 Bladder/Thirst/Hunger가 더 빠르게 우세해져 깨어난다. Sleep wake threshold 단독 조정으로는 해결되지 않는다.
+
+### 27.3 Critical preemption의 91%가 UseToilet 중단
+
+동일 seed 4242001 / 100일:
+
+- 전체 critical preemption: 17,342회
+- UseToilet 진행 중 preemption: 15,850회 (91.4%)
+- Sleep 중 critical preemption: 138회
+- Toilet 시작: 18,018회
+- Toilet 완료: 2,165회
+
+현재 preemptForCriticalSurvival()은 Eat/Drink가 이미 해당 critical Need를 해결 중이면 상대 Need와 비교해 intent를 유지한다. 반면 UseToilet 이동은 interaction phase에 들어가기 전까지 보호가 없어 Hunger/Thirst가 critical이 되는 순간 거의 항상 취소된다. 이 차이가 Toilet -> Hunger/Thirst -> Toilet 재계획 churn을 증폭시킨다.
+
+### 27.4 실제 남은 거리와 안전 여유
+
+첫 안전성 계측은 navigationRoute 길이를 남은 거리로 사용했으나, CoreNavigation은 unobstructed 이동에서 전체 route를 저장하지 않고 targetward step을 증분 수행하므로 잘못된 측정이었다. 재계측에서는 runtime position -> navigationTarget Manhattan distance를 사용했다.
+
+seed 4242001 / 100일 UseToilet preemption 15,850회 기준:
+
+- 주민별 평균 남은 거리: 약 17.2 ~ 21.0 grid
+- 최대 남은 거리: 59 grid
+- 현재 날씨 이동 간격 + 실제 남은 interaction time 기준, Hunger/Thirst가 1.0에 도달하기 전에 Toilet 완료 가능한 표본: 11,835회 (74.7%)
+- 이동마찰 상한 3분/grid + 현재 위치 환경 Hunger/Thirst 추가 압박까지 적용한 보수적 조건에서도 완료 가능한 표본: 8,824회 (55.7%)
+
+마지막 계측 run 36804344538은 success다.
+
+### 27.5 다음 수정 계약
+
+다음 실험은 threshold 숫자를 바꾸지 않는다.
+
+1. preemptForCriticalSurvival()에서 UseToilet 이동의 남은 완료시간을 계산한다.
+2. 현재 critical Hunger/Thirst가 hard saturation(1.0)에 도달하기까지의 안전 여유시간을 계산한다.
+3. Toilet 완료가 안전 여유 안에 들어오면 짧은 commitment를 유지한다.
+4. Hunger/Thirst가 이미 1.0이거나 완료시간이 여유보다 길면 기존처럼 즉시 preempt한다.
+5. 기존 test_action_commitment.cpp의 critical survival preemption 계약을 유지하면서, 안전 여유가 충분한 짧은 Toilet 이동은 완료되는 회귀를 추가한다.
+6. 동일 두 seed 100일 A/B에서 Toilet start/done, preemption, Sleep, Hygiene, Social, Civilization 시간을 먼저 비교한다.
+7. Social이 여전히 0이면 그 다음 축은 Social hard gate/bootstrap과 KnowledgeTeaching scheduler starvation이다.
+
+이 시점까지 자기관리 관련 새 브랜치의 변경은 계측 중심이며 main 병합 대상이 아니다.
