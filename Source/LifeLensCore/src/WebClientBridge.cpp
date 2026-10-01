@@ -1119,7 +1119,11 @@ std::string WebClientBridge::residentsJson() const
             out << "\"reproducible\":" << (technology.reproducible ? "true" : "false") << ",";
             out << "\"operational\":" << (technology.operational ? "true" : "false") << ",";
             out << "\"adopted\":" << (technology.adopted ? "true" : "false") << ",";
-            out << "\"successfulUses\":" << technology.successfulUses;
+            out << "\"successfulUses\":" << technology.successfulUses << ",";
+            out << "\"prerequisiteCount\":" << technology.prerequisiteCount << ",";
+            out << "\"satisfiedPrerequisiteCount\":" << technology.satisfiedPrerequisiteCount << ",";
+            out << "\"prerequisitesSatisfied\":" << (technology.prerequisitesSatisfied ? "true" : "false") << ",";
+            out << "\"transformationEffectCount\":" << technology.transformationEffectCount;
             out << "}";
         }
         out << "]";
