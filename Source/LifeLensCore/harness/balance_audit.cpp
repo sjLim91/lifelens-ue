@@ -41,6 +41,11 @@ struct ResidentMetrics {
     double criticalPreemptionThirstSum=0.0;
     double criticalPreemptionSleepSum=0.0;
     double criticalPreemptionBladderSum=0.0;
+    std::uint64_t toiletCriticalPreemptions=0;
+    std::uint64_t toiletPreemptionsSafeBeforeSaturation=0;
+    std::uint64_t toiletPreemptionsAlreadyArrived=0;
+    double toiletPreemptionRemainingMinutesSum=0.0;
+    double toiletPreemptionCriticalSaturationMinutesSum=0.0;
     std::uint64_t socialMinutes=0;
     std::uint64_t civilizationMinutes=0;
     std::uint64_t parentingMinutes=0;
@@ -493,6 +498,53 @@ int main(int argc,char** argv)
                         eventResident->needs.sleep;
                     metric.criticalPreemptionBladderSum+=
                         eventResident->needs.bladder;
+
+                    if(planning.goal==Goal::UseToilet){
+                        ++metric.toiletCriticalPreemptions;
+                        if(planning.navigationArrived){
+                            ++metric.toiletPreemptionsAlreadyArrived;
+                        }
+                        const double remainingMinutes=
+                            static_cast<double>(
+                                planning.navigationRemainingSteps)
+                            +static_cast<double>(
+                                std::max(0,planning.activeActionRemainingTicks));
+                        metric.toiletPreemptionRemainingMinutesSum+=remainingMinutes;
+
+                        double saturationMinutes=
+                            std::numeric_limits<double>::infinity();
+                        if(hungerCritical){
+                            const double rate=
+                                sim.ruleset().needs.hungerPerMinute
+                                *std::max(0.0,eventResident->metabolism);
+                            if(rate>1e-12){
+                                saturationMinutes=std::min(
+                                    saturationMinutes,
+                                    std::max(
+                                        0.0,
+                                        (1.0-eventResident->needs.hunger)/rate));
+                            }
+                        }
+                        if(thirstCritical){
+                            const double rate=
+                                sim.ruleset().needs.thirstPerMinute
+                                *std::max(0.0,eventResident->metabolism);
+                            if(rate>1e-12){
+                                saturationMinutes=std::min(
+                                    saturationMinutes,
+                                    std::max(
+                                        0.0,
+                                        (1.0-eventResident->needs.thirst)/rate));
+                            }
+                        }
+                        if(std::isfinite(saturationMinutes)){
+                            metric.toiletPreemptionCriticalSaturationMinutesSum+=
+                                saturationMinutes;
+                            if(remainingMinutes<=saturationMinutes){
+                                ++metric.toiletPreemptionsSafeBeforeSaturation;
+                            }
+                        }
+                    }
                 }
             }
 
@@ -909,6 +961,21 @@ int main(int argc,char** argv)
                          ? m.criticalPreemptionBladderSum/static_cast<double>(total)
                          : 0.0;
                  })()
+                 <<" toiletCriticalPreemptions="<<m.toiletCriticalPreemptions
+                 <<" toiletPreemptionsSafeBeforeSaturation="
+                 <<m.toiletPreemptionsSafeBeforeSaturation
+                 <<" toiletPreemptionsAlreadyArrived="
+                 <<m.toiletPreemptionsAlreadyArrived
+                 <<" toiletPreemptionRemainingMinutesAvg="
+                 <<(m.toiletCriticalPreemptions>0
+                    ? m.toiletPreemptionRemainingMinutesSum/
+                        static_cast<double>(m.toiletCriticalPreemptions)
+                    : 0.0)
+                 <<" toiletPreemptionCriticalSaturationMinutesAvg="
+                 <<(m.toiletCriticalPreemptions>0
+                    ? m.toiletPreemptionCriticalSaturationMinutesSum/
+                        static_cast<double>(m.toiletCriticalPreemptions)
+                    : 0.0)
                  <<" socialMin="<<m.socialMinutes
                  <<" civilizationMin="<<m.civilizationMinutes
                  <<" parentingMin="<<m.parentingMinutes
