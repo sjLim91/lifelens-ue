@@ -115,6 +115,15 @@ struct ResidentMetrics {
     std::uint64_t simpleContainerExperimentBestSamples=0;
     std::uint64_t simpleContainerCraftBestSamples=0;
     std::uint64_t simpleContainerCivilizationBestSamples=0;
+    std::uint64_t simpleContainerLostToCraft=0;
+    std::uint64_t simpleContainerLostToRetrieve=0;
+    std::uint64_t simpleContainerLostToStore=0;
+    std::uint64_t simpleContainerLostToExplore=0;
+    std::uint64_t simpleContainerLostToGather=0;
+    std::uint64_t simpleContainerLostToOtherExperiment=0;
+    double simpleContainerBiasedExperimentUtilitySum=0.0;
+    double simpleContainerCivilizationWinnerUtilitySum=0.0;
+    std::uint64_t simpleContainerFamilyCompetitionSamples=0;
     std::uint64_t simpleContainerCivilizationBlockedNeedGate=0;
     std::uint64_t simpleContainerCivilizationUnifiedLoss=0;
     double simpleContainerCivilizationUtilitySum=0.0;
@@ -573,6 +582,39 @@ void auditContainerProgression(
     const CivilizationUtilityDecision civilization=
         chooseDispositionAwareCivilizationDecisionAtPosition(
             sim.world(),projected,planning.position,&population);
+
+    if(experiment.intent==CivilizationIntent::Experiment
+       && experiment.technique==TechniqueId::SimpleContainer){
+        const CivilizationUtilityDecision biasedContainer=
+            applyCivilizationDispositionBias(projected,experiment);
+        ++metric.simpleContainerFamilyCompetitionSamples;
+        metric.simpleContainerBiasedExperimentUtilitySum+=
+            biasedContainer.utility;
+        metric.simpleContainerCivilizationWinnerUtilitySum+=
+            civilization.utility;
+
+        if(!(civilization.intent==CivilizationIntent::Experiment
+             && civilization.technique==TechniqueId::SimpleContainer)){
+            switch(civilization.intent){
+                case CivilizationIntent::Craft:
+                    ++metric.simpleContainerLostToCraft; break;
+                case CivilizationIntent::Retrieve:
+                    ++metric.simpleContainerLostToRetrieve; break;
+                case CivilizationIntent::Store:
+                    ++metric.simpleContainerLostToStore; break;
+                case CivilizationIntent::Explore:
+                    ++metric.simpleContainerLostToExplore; break;
+                case CivilizationIntent::Gather:
+                    ++metric.simpleContainerLostToGather; break;
+                case CivilizationIntent::Experiment:
+                    ++metric.simpleContainerLostToOtherExperiment; break;
+                case CivilizationIntent::None:
+                default:
+                    break;
+            }
+        }
+    }
+
     const bool containerCivilizationBest=
         civilization.intent==CivilizationIntent::Experiment
         && civilization.technique==TechniqueId::SimpleContainer;
@@ -1141,6 +1183,23 @@ int main(int argc,char** argv)
                  <<" simpleContainerExperimentBestSamples="<<m.simpleContainerExperimentBestSamples
                  <<" simpleContainerCraftBestSamples="<<m.simpleContainerCraftBestSamples
                  <<" simpleContainerCivilizationBestSamples="<<m.simpleContainerCivilizationBestSamples
+                 <<" simpleContainerFamilyCompetitionSamples="<<m.simpleContainerFamilyCompetitionSamples
+                 <<" simpleContainerLostToCraft="<<m.simpleContainerLostToCraft
+                 <<" simpleContainerLostToRetrieve="<<m.simpleContainerLostToRetrieve
+                 <<" simpleContainerLostToStore="<<m.simpleContainerLostToStore
+                 <<" simpleContainerLostToExplore="<<m.simpleContainerLostToExplore
+                 <<" simpleContainerLostToGather="<<m.simpleContainerLostToGather
+                 <<" simpleContainerLostToOtherExperiment="<<m.simpleContainerLostToOtherExperiment
+                 <<" simpleContainerBiasedExperimentUtilityAvg="
+                 <<(m.simpleContainerFamilyCompetitionSamples>0
+                    ? m.simpleContainerBiasedExperimentUtilitySum/static_cast<double>(
+                        m.simpleContainerFamilyCompetitionSamples)
+                    : 0.0)
+                 <<" simpleContainerCivilizationWinnerUtilityAvg="
+                 <<(m.simpleContainerFamilyCompetitionSamples>0
+                    ? m.simpleContainerCivilizationWinnerUtilitySum/static_cast<double>(
+                        m.simpleContainerFamilyCompetitionSamples)
+                    : 0.0)
                  <<" simpleContainerCivilizationBlockedNeedGate="<<m.simpleContainerCivilizationBlockedNeedGate
                  <<" simpleContainerCivilizationUnifiedLoss="<<m.simpleContainerCivilizationUnifiedLoss
                  <<" simpleContainerCivilizationUtilityAvg="
