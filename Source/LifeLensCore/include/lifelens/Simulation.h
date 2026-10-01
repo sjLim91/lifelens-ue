@@ -257,7 +257,7 @@ private:
     bool preemptForCriticalSurvival(Character& character,Runtime& r);
     void clearRuntimeActivity(Runtime& r);
     void clearNavigation(Runtime& r);
-    bool advanceNavigation(Runtime& r,GridPos target,int arrivalRadius);
+    bool advanceNavigation(CharacterId moverId,Runtime& r,GridPos target,int arrivalRadius);
     bool advancePendingContext(Character& actor,Runtime& runtime);
     bool completeContextAction(Character& actor,Runtime& runtime,std::uint64_t token,GridPos resolvedPosition);
     bool tryCivilizationDecision(Character& c,Runtime& r);
