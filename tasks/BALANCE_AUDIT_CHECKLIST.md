@@ -38,6 +38,10 @@
 - [ ] 365/500/1000일 추가 seed 편차 확인
 - [ ] 정책 숫자 중앙화 후보 확정
 - [ ] Balance Contract v1 확정
+- [x] P0 행동 commitment 장기 A/B
+- [x] P0 생활수지(Eat/Drink/Sleep/Wash + headless sanitation) 1차 A/B
+- [x] P0 KnowledgeTeaching plan-steal 장기 A/B
+- [ ] P0 위생 발전 catch-22 장기 A/B (진행 중)
 - [ ] P0 생존경제 튜닝
 - [ ] P0 Social starvation 튜닝
 - [ ] P1 Sleep 튜닝
