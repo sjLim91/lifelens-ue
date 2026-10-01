@@ -954,14 +954,11 @@ bool Simulation::preemptForCriticalSurvival(
             const int directRemainingCells=std::max(
                 0,
                 manhattan(r.pos,toiletTarget)-arrivalRadius);
-            const int routedRemainingCells=
-                r.navigationRouteIndex<r.navigationRoute.size()
-                    ? static_cast<int>(
-                        r.navigationRoute.size()-r.navigationRouteIndex)
-                    : 0;
-            const int remainingTravelCells=std::max(
-                directRemainingCells,
-                routedRemainingCells);
+            // CoreNavigation may advance unobstructed travel incrementally
+            // without storing the whole remaining route. Runtime position to
+            // the authoritative target is therefore the remaining-distance
+            // contract; navigationRoute length is not a distance oracle.
+            const int remainingTravelCells=directRemainingCells;
             const int maximumGroundStepIntervalMinutes=std::max(
                 1,
                 static_cast<int>(std::ceil(
