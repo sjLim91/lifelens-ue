@@ -571,6 +571,56 @@ inline GridPos civilizationDecisionResourcePosition(
     return node.pos;
 }
 
+inline constexpr int WaterTransportComfortDistanceGrid=8;
+inline constexpr int WaterTransportSevereDistanceGrid=WorldChunkSpanGridCells;
+
+inline double waterTransportInnovationPressure(
+    const World& world,
+    const Character& self,
+    GridPos authoritativePosition)
+{
+    // Once the resident owns a reusable vessel, ordinary Gather/Drink owns the
+    // refill loop. Likewise, a real nearby stored portable-water reserve already
+    // solves the transport problem without inventing another technology.
+    if(simpleContainerCount(self.civilization.inventory)>0
+       || storageCountForMaterialNear(
+            world,MaterialKind::Water,authoritativePosition)>0){
+        return 0.0;
+    }
+
+    int nearestWaterDistance=std::numeric_limits<int>::max();
+    for(const ResourceNode& node:world.resourceNodes){
+        if(node.id==0
+           || node.material!=MaterialKind::Water
+           || node.quantity<=0){
+            continue;
+        }
+        const GridPos waterPos=civilizationDecisionResourcePosition(world,node);
+        nearestWaterDistance=std::min(
+            nearestWaterDistance,
+            manhattan(authoritativePosition,waterPos));
+    }
+    if(nearestWaterDistance==std::numeric_limits<int>::max()) return 0.0;
+
+    const double distancePressure=clampCivilization01(
+        static_cast<double>(
+            std::max(0,nearestWaterDistance-WaterTransportComfortDistanceGrid))
+        /static_cast<double>(
+            std::max(
+                1,
+                WaterTransportSevereDistanceGrid
+                    -WaterTransportComfortDistanceGrid)));
+    const double needPressure=provisionNeedForMaterial(
+        self,MaterialKind::Water);
+
+    // Repeated long water walks become evidence for a transport problem.
+    // This does not grant the solution: residents must still gather Clay,
+    // choose ShapeClay over competing work, and pass the normal experiment roll.
+    return clampCivilization01(
+        0.72*distancePressure
+        +0.28*needPressure);
+}
+
 inline int knownNaturalResourceUnits(
     const World& world,
     MaterialKind material)
@@ -805,11 +855,16 @@ inline CivilizationUtilityDecision bestGatherDecisionAtPosition(
         const double localBonus=
             distance<=WorldChunkSpanGridCells*3 ? 0.04 : 0.0;
         const double distancePenalty=provision ? 0.0 : 0.20*distance01;
+        const double waterTransportBoost=
+            node.material==MaterialKind::Clay
+                ? 0.22*waterTransportInnovationPressure(
+                    world,self,authoritativePosition)
+                : 0.0;
         const double score=clampCivilization01(
             0.07+0.12*self.personality.curiosity+0.05*self.personality.adaptability+
             0.08*self.civilization.gatheringSkill+0.16*demand+0.13*gap+
             0.30*constructionDemand+0.24*maintenanceDemand+0.07*preference+
-            localBonus-distancePenalty+
+            localBonus+waterTransportBoost-distancePenalty+
             (provision && !world.storageSites.empty()
                 ? 0.12*clampCivilization01(
                     static_cast<double>(reserveGap)
@@ -908,6 +963,7 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
         double storageBoost=0.0;
         double smeltingBoost=0.0;
         double cultivationBoost=0.0;
+        double waterTransportBoost=0.0;
         if(designatedExperiment){
             sanitationBoost=0.18+0.16*sanitationOpportunity.problemConfidence+
                 0.10*clampCivilization01(self.needs.hygiene);
@@ -929,12 +985,16 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
             cultivationBoost=0.20+0.30*demand.pressure
                 +0.08*self.personality.patience
                 +0.06*self.personality.conscientiousness;
+        }else if(kind==ExperimentKind::ShapeClay){
+            waterTransportBoost=
+                0.28*waterTransportInnovationPressure(
+                    world,self,authoritativePosition);
         }
         const double score=clampCivilization01(
             0.11+0.22*self.personality.curiosity+0.10*self.personality.openness+
             0.07*self.personality.patience+0.12*self.civilization.learningSkill+
             0.08*preference+hypothesisBoost+sanitationBoost+storageBoost
-            +smeltingBoost+cultivationBoost);
+            +smeltingBoost+cultivationBoost+waterTransportBoost);
 
         CivilizationUtilityDecision candidate;
         candidate.intent=CivilizationIntent::Experiment;
