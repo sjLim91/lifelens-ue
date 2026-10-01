@@ -35,6 +35,10 @@ struct ResidentPlanningStateObservation {
     int penaltyUntilMinute=0;
     bool navigationHasTarget=false;
     bool navigationArrived=false;
+    GridPos navigationTarget{};
+    int navigationArrivalRadius=0;
+    int navigationManhattanDistance=0;
+    int navigationStepIntervalMinutes=1;
     std::size_t navigationRemainingSteps=0;
     int activeActionRemainingTicks=0;
 };
@@ -79,6 +83,18 @@ public:
         observation.penaltyUntilMinute=it->second.penaltyUntilMinute;
         observation.navigationHasTarget=it->second.navigationHasTarget;
         observation.navigationArrived=it->second.navigationArrived;
+        observation.navigationTarget=it->second.navigationTarget;
+        observation.navigationArrivalRadius=it->second.navigationArrivalRadius;
+        if(it->second.navigationHasTarget){
+            observation.navigationManhattanDistance=std::max(
+                0,
+                manhattan(
+                    it->second.pos,
+                    it->second.navigationTarget)
+                    -it->second.navigationArrivalRadius);
+            observation.navigationStepIntervalMinutes=
+                coreGroundStepIntervalMinutes(world_,it->second.pos);
+        }
         if(it->second.navigationRouteIndex<it->second.navigationRoute.size()){
             observation.navigationRemainingSteps=
                 it->second.navigationRoute.size()-it->second.navigationRouteIndex;
