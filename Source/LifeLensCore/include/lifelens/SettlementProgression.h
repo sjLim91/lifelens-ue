@@ -243,7 +243,7 @@ inline double sleepRecoveryPerMinuteAt(
         0.0,
         1.0);
 
-    double baseRecovery=0.00150;
+    double baseRecovery=0.00192;
     double protection=settlementShelterProtection01(world,pos);
     if(facility!=nullptr && facilityOperationalAndActive(*facility)
        && facilityProvidesSleep(facility->kind)){
