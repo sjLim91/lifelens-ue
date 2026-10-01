@@ -15,6 +15,30 @@ function mixHex(base: string, target: string, amount: number): string {
   return `#${channel(16).toString(16).padStart(2, '0')}${channel(8).toString(16).padStart(2, '0')}${channel(0).toString(16).padStart(2, '0')}`;
 }
 
+// Preserve the existing lowland/highland palette, but interpolate around the
+// former band midpoints instead of abruptly changing at an elevation cutoff.
+// This is color only: it must not change geometry, biome, or water identity.
+const ELEVATION_COLORS = [
+  [0.27, '#294b31'],
+  [0.41, '#3b6439'],
+  [0.55, '#64794a'],
+  [0.69, '#807d5c'],
+  [0.83, '#aaa78f'],
+] as const;
+
+function elevationColor(elevation: number): string {
+  if (elevation <= ELEVATION_COLORS[0][0]) return ELEVATION_COLORS[0][1];
+  for (let index = 1; index < ELEVATION_COLORS.length; index += 1) {
+    const [upper, target] = ELEVATION_COLORS[index];
+    if (elevation <= upper) {
+      const [lower, base] = ELEVATION_COLORS[index - 1];
+      const t = (elevation - lower) / (upper - lower);
+      return mixHex(base, target, t * t * (3 - 2 * t));
+    }
+  }
+  return ELEVATION_COLORS[ELEVATION_COLORS.length - 1][1];
+}
+
 export function terrainColor(chunk: TerrainChunk): string {
   switch (chunk.waterKind) {
     case 'Ocean': return '#1b4b63';
@@ -24,11 +48,7 @@ export function terrainColor(chunk: TerrainChunk): string {
   }
 
   const elevation = clamp01(chunk.elevation01);
-  let base = elevation < 0.34 ? '#294b31'
-    : elevation < 0.48 ? '#3b6439'
-      : elevation < 0.62 ? '#64794a'
-        : elevation < 0.76 ? '#807d5c'
-          : '#aaa78f';
+  let base = elevationColor(elevation);
 
   base = mixHex(base, '#1e5a2b', clamp01(chunk.forestCoverage01) * 0.5);
   base = mixHex(base, '#6f8f38', clamp01(chunk.grassCoverage01) * 0.24);
