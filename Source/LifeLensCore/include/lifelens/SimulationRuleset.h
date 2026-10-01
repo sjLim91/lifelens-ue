@@ -13,7 +13,7 @@ struct NeedsRuleset {
     double thirstPerMinute = 0.0013;
     double sleepPerMinute = 0.0008;
     double bladderPerMinute = 0.0011;
-    double hygienePerMinute = 0.0007;
+    double hygienePerMinute = 0.0004;
 };
 
 struct UtilityAIRuleset {
