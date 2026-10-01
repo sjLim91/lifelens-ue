@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "lifelens/Simulation.h"
+#include "lifelens/SocialUtility.h"
 
 namespace {
 
@@ -38,6 +39,11 @@ struct ResidentMetrics {
     std::uint64_t teachingMinutes=0;
     std::uint64_t idleMinutes=0;
     std::array<std::uint64_t,6> physicalGoalMinutes{};
+    std::uint64_t sanitationOpportunitySamples=0;
+    std::uint64_t dugPitExperimentBestSamples=0;
+    std::uint64_t dugPitCivilizationBestSamples=0;
+    std::uint64_t dugPitUnifiedWinnerSamples=0;
+    std::uint64_t designatedCivilizationBestSamples=0;
 };
 
 std::array<double,5> needsArray(const Needs& n)
@@ -184,6 +190,48 @@ int main(int argc,char** argv)
                 }
             }
 
+            if(days>=365 && sim.world().minute%15==0){
+                GridPos authoritativePosition{};
+                if(sim.runtimePosition(m.id,authoritativePosition)){
+                    const DugSanitationPitOpportunity pitOpportunity=
+                        evaluateDugSanitationPitOpportunity(
+                            *resident,
+                            sim.world().environmentalResidues,
+                            sim.world().primitiveSanitationSites);
+                    if(pitOpportunity.candidateAvailable){
+                        ++m.sanitationOpportunitySamples;
+                    }
+
+                    const CivilizationUtilityDecision experiment=
+                        bestExperimentDecisionAtPosition(
+                            sim.world(),*resident,authoritativePosition,nullptr);
+                    if(experiment.technique==TechniqueId::DugSanitationPit){
+                        ++m.dugPitExperimentBestSamples;
+                    }
+
+                    const CivilizationUtilityDecision civilization=
+                        chooseDispositionAwareCivilizationDecisionAtPosition(
+                            sim.world(),*resident,authoritativePosition,nullptr);
+                    if(civilization.technique==TechniqueId::DugSanitationPit){
+                        ++m.dugPitCivilizationBestSamples;
+                    }
+                    if(civilization.technique==
+                       TechniqueId::DesignatedSanitationArea){
+                        ++m.designatedCivilizationBestSamples;
+                    }
+
+                    const UnifiedUtilityDecision unified=
+                        chooseUnifiedUtilityDecisionAtPosition(
+                            sim.world(),*resident,sim.relationships(),
+                            authoritativePosition,0.18,0.14,nullptr);
+                    if(unified.kind==UnifiedDecisionKind::Civilization
+                       && unified.civilization.technique==
+                            TechniqueId::DugSanitationPit){
+                        ++m.dugPitUnifiedWinnerSamples;
+                    }
+                }
+            }
+
             const ResidentPresentationObservation p=
                 sim.observeResidentPresentation(m.id);
             const bool sleepingInteraction=
@@ -288,6 +336,31 @@ int main(int argc,char** argv)
              <<" furnaces="<<facilityCount(world,FacilityKind::Furnace)
              <<" plots="<<facilityCount(world,FacilityKind::CultivatedPlot)
              <<" storages="<<world.storageSites.size()
+             <<" sanitationSites="<<world.primitiveSanitationSites.size()
+             <<" designatedSanitationSites="
+             <<std::count_if(
+                 world.primitiveSanitationSites.begin(),
+                 world.primitiveSanitationSites.end(),
+                 [](const PrimitiveSanitationSite& site){
+                     return site.active
+                         && site.kind==PrimitiveSanitationSiteKind::DesignatedArea;
+                 })
+             <<" dugPitSites="
+             <<std::count_if(
+                 world.primitiveSanitationSites.begin(),
+                 world.primitiveSanitationSites.end(),
+                 [](const PrimitiveSanitationSite& site){
+                     return site.active
+                         && site.kind==PrimitiveSanitationSiteKind::DugPit;
+                 })
+             <<" sanitationUseCount="
+             <<([&](){
+                 int uses=0;
+                 for(const auto& site:world.primitiveSanitationSites){
+                     if(site.active) uses+=std::max(0,site.useCount);
+                 }
+                 return uses;
+             })()
              <<" routeFailures="<<routeFailures
              <<" timeouts="<<timeouts
              <<" preemptions="<<preemptions
@@ -404,7 +477,12 @@ int main(int argc,char** argv)
                  <<" civilizationMin="<<m.civilizationMinutes
                  <<" parentingMin="<<m.parentingMinutes
                  <<" teachingMin="<<m.teachingMinutes
-                 <<" idleMin="<<m.idleMinutes;
+                 <<" idleMin="<<m.idleMinutes
+                 <<" sanitationOpportunitySamples="<<m.sanitationOpportunitySamples
+                 <<" dugPitExperimentBestSamples="<<m.dugPitExperimentBestSamples
+                 <<" dugPitCivilizationBestSamples="<<m.dugPitCivilizationBestSamples
+                 <<" dugPitUnifiedWinnerSamples="<<m.dugPitUnifiedWinnerSamples
+                 <<" designatedCivilizationBestSamples="<<m.designatedCivilizationBestSamples;
         for(std::size_t i=0;i<goalNames.size();++i){
             std::cout<<" "<<goalNames[i]<<"Min="<<m.physicalGoalMinutes[i];
         }
