@@ -122,6 +122,55 @@ inline constexpr std::array<TechnologyDefinition,16> TechnologyRegistry={{
     {TechnologyId::BronzePick,TechniqueId::BronzePick,CapabilityId::Strike}
 }};
 
+struct TechnologyPrerequisiteEdge {
+    TechnologyId technology=TechnologyId::None;
+    TechnologyId prerequisite=TechnologyId::None;
+    KnowledgeLevel minimumKnowledge=KnowledgeLevel::Reproducible;
+};
+
+struct TechnologyTransformationEffectEdge {
+    TechnologyId technology=TechnologyId::None;
+    CivilizationTransformationId transformation=CivilizationTransformationId::None;
+    double contributionWeight=1.0;
+};
+
+// C3-D graph authority. New technologies append identity to TechnologyRegistry
+// and declare knowledge prerequisites/effects here rather than adding another
+// era switch. Legacy Technique guards remain as compatibility assertions while
+// the Technology graph is the extensible progression contract.
+inline constexpr std::array<TechnologyPrerequisiteEdge,18>
+TechnologyPrerequisiteRegistry={{
+    {TechnologyId::ChippedStoneTool,TechnologyId::SharpFlake,KnowledgeLevel::Reproducible},
+    {TechnologyId::DugSanitationPit,TechnologyId::DesignatedSanitationArea,KnowledgeLevel::Reproducible},
+    {TechnologyId::DiggingStick,TechnologyId::SharpFlake,KnowledgeLevel::Reproducible},
+    {TechnologyId::StoneHammer,TechnologyId::ChippedStoneTool,KnowledgeLevel::Reproducible},
+    {TechnologyId::StoneHammer,TechnologyId::FiberCordage,KnowledgeLevel::Reproducible},
+    {TechnologyId::CopperSmelting,TechnologyId::FireMaking,KnowledgeLevel::Reproducible},
+    {TechnologyId::CopperSmelting,TechnologyId::StoneHammer,KnowledgeLevel::Reproducible},
+    {TechnologyId::CopperSmelting,TechnologyId::SimpleContainer,KnowledgeLevel::Reproducible},
+    {TechnologyId::Cultivation,TechnologyId::DiggingStick,KnowledgeLevel::Reproducible},
+    {TechnologyId::TinSmelting,TechnologyId::CopperSmelting,KnowledgeLevel::Reproducible},
+    {TechnologyId::BronzeAlloying,TechnologyId::CopperSmelting,KnowledgeLevel::Reproducible},
+    {TechnologyId::BronzeAlloying,TechnologyId::TinSmelting,KnowledgeLevel::Reproducible},
+    {TechnologyId::BronzeAxe,TechnologyId::BronzeAlloying,KnowledgeLevel::Reproducible},
+    {TechnologyId::BronzeAxe,TechnologyId::ChippedStoneTool,KnowledgeLevel::Reproducible},
+    {TechnologyId::BronzeAxe,TechnologyId::FiberCordage,KnowledgeLevel::Reproducible},
+    {TechnologyId::BronzePick,TechnologyId::BronzeAlloying,KnowledgeLevel::Reproducible},
+    {TechnologyId::BronzePick,TechnologyId::StoneHammer,KnowledgeLevel::Reproducible},
+    {TechnologyId::BronzePick,TechnologyId::FiberCordage,KnowledgeLevel::Reproducible}
+}};
+
+inline constexpr std::array<TechnologyTransformationEffectEdge,7>
+TechnologyTransformationEffectRegistry={{
+    {TechnologyId::PrimitiveStorage,CivilizationTransformationId::ResourceBuffering,1.0},
+    {TechnologyId::Cultivation,CivilizationTransformationId::ManagedFoodProduction,1.0},
+    {TechnologyId::CopperSmelting,CivilizationTransformationId::MetallurgicalProduction,0.30},
+    {TechnologyId::TinSmelting,CivilizationTransformationId::MetallurgicalProduction,0.30},
+    {TechnologyId::BronzeAlloying,CivilizationTransformationId::MetallurgicalProduction,0.40},
+    {TechnologyId::BronzeAxe,CivilizationTransformationId::AdvancedTooling,0.50},
+    {TechnologyId::BronzePick,CivilizationTransformationId::AdvancedTooling,0.50}
+}};
+
 inline const char* capabilityIdName(CapabilityId id)
 {
     switch(id){
@@ -231,6 +280,77 @@ inline const TechnologyDefinition* technologyDefinition(TechnologyId technology)
         if(definition.id==technology) return &definition;
     }
     return nullptr;
+}
+
+inline int technologyPrerequisiteCount(TechnologyId technology)
+{
+    int count=0;
+    for(const auto& edge:TechnologyPrerequisiteRegistry){
+        if(edge.technology==technology) ++count;
+    }
+    return count;
+}
+
+inline int technologySatisfiedPrerequisiteCount(
+    const KnowledgeState& knowledge,
+    TechnologyId technology)
+{
+    int count=0;
+    for(const auto& edge:TechnologyPrerequisiteRegistry){
+        if(edge.technology!=technology) continue;
+        const TechniqueId prerequisiteTechnique=
+            techniqueForTechnology(edge.prerequisite);
+        if(prerequisiteTechnique!=TechniqueId::None
+           && knowledge.knowsAtLeast(
+                prerequisiteTechnique,edge.minimumKnowledge)){
+            ++count;
+        }
+    }
+    return count;
+}
+
+inline bool technologyKnowledgePrerequisitesSatisfied(
+    const KnowledgeState& knowledge,
+    TechnologyId technology)
+{
+    const int required=technologyPrerequisiteCount(technology);
+    return technology!=TechnologyId::None
+        && technologySatisfiedPrerequisiteCount(knowledge,technology)==required;
+}
+
+inline bool technologyHasPrerequisite(
+    TechnologyId technology,
+    TechnologyId prerequisite)
+{
+    for(const auto& edge:TechnologyPrerequisiteRegistry){
+        if(edge.technology==technology
+           && edge.prerequisite==prerequisite) return true;
+    }
+    return false;
+}
+
+inline int technologyTransformationEffectCount(
+    TechnologyId technology)
+{
+    int count=0;
+    for(const auto& edge:TechnologyTransformationEffectRegistry){
+        if(edge.technology==technology) ++count;
+    }
+    return count;
+}
+
+inline double technologyTransformationEffectWeight(
+    TechnologyId technology,
+    CivilizationTransformationId transformation)
+{
+    double weight=0.0;
+    for(const auto& edge:TechnologyTransformationEffectRegistry){
+        if(edge.technology==technology
+           && edge.transformation==transformation){
+            weight+=std::max(0.0,edge.contributionWeight);
+        }
+    }
+    return weight;
 }
 
 inline bool inventoryHasToolCapability(
@@ -402,6 +522,10 @@ struct CivilizationTechnologyStatus {
     bool operational=false;
     bool adopted=false;
     int successfulUses=0;
+    int prerequisiteCount=0;
+    int satisfiedPrerequisiteCount=0;
+    bool prerequisitesSatisfied=true;
+    int transformationEffectCount=0;
 };
 
 inline std::array<CapabilityId,12> allCapabilityIds()
@@ -447,6 +571,14 @@ inline CivilizationTechnologyStatus observeTechnologyStatus(
     status.technology=technology;
     status.legacyTechnique=definition->legacyTechnique;
     status.primaryCapability=definition->primaryCapability;
+    status.prerequisiteCount=technologyPrerequisiteCount(technology);
+    status.satisfiedPrerequisiteCount=
+        technologySatisfiedPrerequisiteCount(
+            resident.civilization.knowledge,technology);
+    status.prerequisitesSatisfied=
+        status.satisfiedPrerequisiteCount==status.prerequisiteCount;
+    status.transformationEffectCount=
+        technologyTransformationEffectCount(technology);
     const TechniqueKnowledge* record=nullptr;
     for(const TechniqueKnowledge& knowledge:resident.civilization.knowledge.all()){
         if(knowledge.technique==definition->legacyTechnique){
@@ -590,13 +722,15 @@ struct CivilizationTransformationStatus {
     int supportingTechnologyCount=0;
 };
 
-inline int civilizationSupportingTechnologyCount(
+inline int civilizationSupportingTechnologyCountForTransformation(
     const std::vector<CivilizationTechnologyPopulationStatus>& technologies,
-    std::initializer_list<TechnologyId> ids)
+    CivilizationTransformationId transformation)
 {
     int count=0;
-    for(const TechnologyId id:ids){
-        const auto* status=findTechnologyPopulationStatus(technologies,id);
+    for(const auto& edge:TechnologyTransformationEffectRegistry){
+        if(edge.transformation!=transformation) continue;
+        const auto* status=findTechnologyPopulationStatus(
+            technologies,edge.technology);
         if(status==nullptr) continue;
         if(status->state!=TechnologyPopulationState::Unknown
            && status->state!=TechnologyPopulationState::Lost){
@@ -624,8 +758,9 @@ buildCivilizationTransformationStatuses(
     CivilizationTransformationStatus buffering;
     buffering.transformation=CivilizationTransformationId::ResourceBuffering;
     buffering.evidenceCount=storedUnits;
-    buffering.supportingTechnologyCount=civilizationSupportingTechnologyCount(
-        technologies,{TechnologyId::PrimitiveStorage});
+    buffering.supportingTechnologyCount=
+        civilizationSupportingTechnologyCountForTransformation(
+            technologies,CivilizationTransformationId::ResourceBuffering);
     buffering.magnitude01=civilizationProgressionClamp01(
         static_cast<double>(storedUnits)
             /static_cast<double>(living*8));
@@ -648,8 +783,9 @@ buildCivilizationTransformationStatuses(
     CivilizationTransformationStatus food;
     food.transformation=CivilizationTransformationId::ManagedFoodProduction;
     food.evidenceCount=plantedPlots+harvestUnits;
-    food.supportingTechnologyCount=civilizationSupportingTechnologyCount(
-        technologies,{TechnologyId::Cultivation});
+    food.supportingTechnologyCount=
+        civilizationSupportingTechnologyCountForTransformation(
+            technologies,CivilizationTransformationId::ManagedFoodProduction);
     food.magnitude01=civilizationProgressionClamp01(
         0.45*static_cast<double>(operationalPlots)
             /static_cast<double>(living)
@@ -679,11 +815,9 @@ buildCivilizationTransformationStatuses(
     metallurgy.transformation=
         CivilizationTransformationId::MetallurgicalProduction;
     metallurgy.evidenceCount=metalUnits;
-    metallurgy.supportingTechnologyCount=civilizationSupportingTechnologyCount(
-        technologies,{
-            TechnologyId::CopperSmelting,
-            TechnologyId::TinSmelting,
-            TechnologyId::BronzeAlloying});
+    metallurgy.supportingTechnologyCount=
+        civilizationSupportingTechnologyCountForTransformation(
+            technologies,CivilizationTransformationId::MetallurgicalProduction);
     metallurgy.magnitude01=civilizationProgressionClamp01(
         (furnaces>0 ? 0.30 : 0.0)
         +0.70*static_cast<double>(metalUnits)
@@ -699,8 +833,9 @@ buildCivilizationTransformationStatuses(
     CivilizationTransformationStatus tooling;
     tooling.transformation=CivilizationTransformationId::AdvancedTooling;
     tooling.evidenceCount=advancedTools;
-    tooling.supportingTechnologyCount=civilizationSupportingTechnologyCount(
-        technologies,{TechnologyId::BronzeAxe,TechnologyId::BronzePick});
+    tooling.supportingTechnologyCount=
+        civilizationSupportingTechnologyCountForTransformation(
+            technologies,CivilizationTransformationId::AdvancedTooling);
     tooling.magnitude01=civilizationProgressionClamp01(
         static_cast<double>(advancedTools)/static_cast<double>(living));
     tooling.active=advancedTools>0;
