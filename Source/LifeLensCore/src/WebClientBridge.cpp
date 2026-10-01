@@ -66,6 +66,27 @@ void appendDouble(std::ostringstream& out, double value)
     out << std::fixed << std::setprecision(6) << value;
 }
 
+void appendHealthJson(std::ostringstream& out,const HealthState& health)
+{
+    out << "{";
+    out << "\"stage\":\"" << healthStageName(healthStage(health)) << "\",";
+    out << "\"functionalCapacity\":"; appendDouble(out,healthFunctionalCapacity01(health)); out << ",";
+    out << "\"pathogenLoad\":"; appendDouble(out,health.pathogenLoad); out << ",";
+    out << "\"illnessSeverity\":"; appendDouble(out,health.illnessSeverity); out << ",";
+    out << "\"immunity\":"; appendDouble(out,health.immunity01); out << ",";
+    out << "\"injurySeverity\":"; appendDouble(out,health.injurySeverity); out << ",";
+    out << "\"environmentalStress\":"; appendDouble(out,health.environmentalStress01); out << ",";
+    out << "\"careKnowledge\":"; appendDouble(out,health.careKnowledge01); out << ",";
+    out << "\"infectionEpisodes\":" << health.infectionEpisodes << ",";
+    out << "\"recoveryEpisodes\":" << health.recoveryEpisodes << ",";
+    out << "\"accidentEpisodes\":" << health.accidentEpisodes << ",";
+    out << "\"lastExposureMinute\":" << health.lastExposureMinute << ",";
+    out << "\"lastIllnessMinute\":" << health.lastIllnessMinute << ",";
+    out << "\"lastRecoveryMinute\":" << health.lastRecoveryMinute << ",";
+    out << "\"lastAccidentMinute\":" << health.lastAccidentMinute;
+    out << "}";
+}
+
 const char* traceMaterialName(MaterialKind kind)
 {
     switch (kind) {
@@ -666,6 +687,26 @@ std::string WebClientBridge::worldOverviewJson() const
     const WorldGenesisIdentity identity =
         simulation_->world().genesisIdentity();
 
+    std::size_t exposedResidents=0;
+    std::size_t illResidents=0;
+    std::size_t injuredResidents=0;
+    std::size_t criticalResidents=0;
+    double immunityTotal=0.0;
+    std::size_t healthPopulation=0;
+    for(const Character& character:simulation_->world().characters){
+        if(!character.alive) continue;
+        ++healthPopulation;
+        immunityTotal+=character.health.immunity01;
+        switch(healthStage(character.health)){
+            case HealthStage::Exposed: ++exposedResidents; break;
+            case HealthStage::Ill:
+            case HealthStage::Recovering: ++illResidents; break;
+            case HealthStage::Injured: ++injuredResidents; break;
+            case HealthStage::Critical: ++criticalResidents; break;
+            case HealthStage::Well: break;
+        }
+    }
+
     std::ostringstream out;
     out << "{";
     out << "\"available\":true,";
@@ -693,7 +734,19 @@ std::string WebClientBridge::worldOverviewJson() const
     out << "\"marriedCouples\":" << overview.marriedCouples << ",";
     out << "\"separatedCouples\":" << overview.separatedCouples << ",";
     out << "\"activePregnancies\":" << overview.activePregnancies << ",";
-    out << "\"majorLifeEvents\":" << overview.majorLifeEvents;
+    out << "\"majorLifeEvents\":" << overview.majorLifeEvents << ",";
+    out << "\"health\":{";
+    out << "\"exposedResidents\":" << exposedResidents << ",";
+    out << "\"illResidents\":" << illResidents << ",";
+    out << "\"injuredResidents\":" << injuredResidents << ",";
+    out << "\"criticalResidents\":" << criticalResidents << ",";
+    out << "\"meanImmunity\":";
+    appendDouble(
+        out,
+        healthPopulation>0
+            ? immunityTotal/static_cast<double>(healthPopulation)
+            : 0.0);
+    out << "}";
     out << "}";
     return out.str();
 }
@@ -813,6 +866,10 @@ std::string WebClientBridge::residentRuntimeJson() const
         out << "\"bladder\":"; appendDouble(out, character.needs.bladder); out << ",";
         out << "\"hygiene\":"; appendDouble(out, character.needs.hygiene);
         out << "},";
+
+        out << "\"health\":";
+        appendHealthJson(out,character.health);
+        out << ",";
 
         out << "\"hasPosition\":" << (hasPosition ? "true" : "false");
         if (hasPosition) {
@@ -976,6 +1033,11 @@ std::string WebClientBridge::residentsJson() const
         out << "\"bladder\":"; appendDouble(out, resident.needs.bladder); out << ",";
         out << "\"hygiene\":"; appendDouble(out, resident.needs.hygiene);
         out << "},";
+
+        out << "\"health\":";
+        if(character) appendHealthJson(out,character->health);
+        else appendHealthJson(out,HealthState{});
+        out << ",";
 
         out << "\"personality\":{";
         if (character) {

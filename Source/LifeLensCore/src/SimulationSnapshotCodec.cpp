@@ -5,6 +5,7 @@
 #include "lifelens/SimulationRulesetSnapshotCodec.h"
 #include "lifelens/SocialKnowledgeSnapshotCodec.h"
 #include "lifelens/WorldGenerationSnapshotCodec.h"
+#include "lifelens/HealthSnapshotCodec.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -85,6 +86,17 @@ bool validateEnvironmentalResiduesForCodec(const World& world,std::string* error
     return true;
 }
 
+bool validatePopulationHealthForCodec(const World& world,std::string* error)
+{
+    for(const Character& character:world.characters){
+        if(!validHealthState(character.health)){
+            setError(error,"invalid population health state");
+            return false;
+        }
+    }
+    return true;
+}
+
 bool validatePrimitiveSanitationSitesForCodec(const World& world,std::string* error)
 {
     std::unordered_set<CharacterId> characterIds;
@@ -157,6 +169,7 @@ bool encodeSimulationSnapshot(
     if(!validateSocialKnowledgeForCodec(snapshot.socialKnowledge,snapshot.world,error)) return false;
     if(!validateEnvironmentalResiduesForCodec(snapshot.world,error)) return false;
     if(!validatePrimitiveSanitationSitesForCodec(snapshot.world,error)) return false;
+    if(!validatePopulationHealthForCodec(snapshot.world,error)) return false;
     if(!validateWorldGenerationSnapshotState(snapshot.world)){
         setError(error,"invalid world generation state");
         return false;
@@ -189,6 +202,13 @@ bool encodeSimulationSnapshot(
     Writer rulesetExtension;
     writeSimulationRulesetSnapshotExtension(rulesetExtension,snapshot.ruleset);
     body.insert(body.end(),rulesetExtension.bytes.begin(),rulesetExtension.bytes.end());
+
+    // Appended after the existing extension chain so pre-C4 snapshots remain
+    // readable: decode treats this extension as optional and defaults health
+    // state only when the marker is absent.
+    Writer healthExtension;
+    writeHealthSnapshotExtension(healthExtension,snapshot.world);
+    body.insert(body.end(),healthExtension.bytes.begin(),healthExtension.bytes.end());
 
     outBytes=std::move(body);
     if(error) error->clear();
@@ -265,7 +285,20 @@ bool decodeSimulationSnapshot(
     std::vector<std::uint8_t> environmentBytes(environmentMarker,sanitationMarker);
     std::vector<std::uint8_t> sanitationBytes(sanitationMarker,worldGenerationMarker);
     std::vector<std::uint8_t> worldGenerationBytes(worldGenerationMarker,rulesetMarker);
-    std::vector<std::uint8_t> rulesetBytes(rulesetMarker,bytes.end());
+    const auto healthMarker=std::find_end(
+        rulesetMarker,bytes.end(),
+        HealthSnapshotExtensionMagic,
+        HealthSnapshotExtensionMagic+sizeof(HealthSnapshotExtensionMagic));
+    const bool hasHealthExtension=
+        healthMarker!=bytes.end() && healthMarker>rulesetMarker;
+
+    std::vector<std::uint8_t> rulesetBytes(
+        rulesetMarker,
+        hasHealthExtension ? healthMarker : bytes.end());
+    std::vector<std::uint8_t> healthBytes;
+    if(hasHealthExtension){
+        healthBytes.assign(healthMarker,bytes.end());
+    }
 
     SimulationStateSnapshot decoded;
     if(!decodeSimulationSnapshotBaseBody(baseBody,decoded,error)) return false;
@@ -313,6 +346,16 @@ bool decodeSimulationSnapshot(
        || !rulesetReader.done()){
         setError(error,"invalid simulation ruleset snapshot extension");
         return false;
+    }
+
+    if(hasHealthExtension){
+        Reader healthReader(healthBytes);
+        if(!readHealthSnapshotExtension(healthReader,decoded.world)
+           || !healthReader.done()){
+            setError(error,"invalid health snapshot extension");
+            return false;
+        }
+        if(!validatePopulationHealthForCodec(decoded.world,error)) return false;
     }
 
     outSnapshot=std::move(decoded);

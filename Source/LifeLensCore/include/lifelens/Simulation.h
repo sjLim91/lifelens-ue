@@ -219,6 +219,9 @@ private:
     BirthBook births_;
     SocialKnowledgeBook socialKnowledge_;
     std::unordered_map<CharacterId,Runtime> runtime_;
+    // Health fatalities are computed and consumed inside the same daily Core
+    // transition. They are runtime transition state, never a second save truth.
+    std::unordered_map<CharacterId,HealthFatalCause> pendingHealthFatality_;
     std::vector<EventCallback> callbacks_;
     std::vector<std::string> logs_;
     std::vector<SocialCommunicationObservation> recentSocialEvents_;
@@ -254,7 +257,7 @@ private:
     bool preemptForCriticalSurvival(Character& character,Runtime& r);
     void clearRuntimeActivity(Runtime& r);
     void clearNavigation(Runtime& r);
-    bool advanceNavigation(Runtime& r,GridPos target,int arrivalRadius);
+    bool advanceNavigation(CharacterId moverId,Runtime& r,GridPos target,int arrivalRadius);
     bool advancePendingContext(Character& actor,Runtime& runtime);
     bool completeContextAction(Character& actor,Runtime& runtime,std::uint64_t token,GridPos resolvedPosition);
     bool tryCivilizationDecision(Character& c,Runtime& r);
@@ -264,6 +267,7 @@ private:
     void advanceDependentCare();
     void advanceAutonomousFamilyProgression();
     void updatePregnanciesAndBirths();
+    void advanceDailyPopulationHealth();
     void evaluateDailyMortality();
     void evaluateDailyFamilyTransitions();
     CharacterId nextCharacterId() const;
@@ -334,6 +338,12 @@ inline bool Simulation::completeExternalPhysicalAction(
             }
             if(directWater==nullptr) return false;
             --directWater->quantity;
+            if(runtime.goal==Goal::Drink){
+                recordContaminatedWaterExposure(
+                    character->health,
+                    world_.environmentalResidues.exposureAt(resolvedPosition),
+                    world_.minute);
+            }
         }
     }
 

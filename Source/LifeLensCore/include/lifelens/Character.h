@@ -12,6 +12,7 @@
 #include "LifeStage.h"
 #include "Development.h"
 #include "LifeCondition.h"
+#include "Health.h"
 #include "Civilization.h"
 namespace lifelens {
 
@@ -37,6 +38,7 @@ struct Character {
     GeneticsProfile genetics;
     ChildDevelopment development;
     LifeCondition lifeCondition;
+    HealthState health;
     IndividualCivilizationState civilization;
     std::vector<CharacterId> parentIds;
     std::vector<CharacterId> childrenIds;

@@ -1,10 +1,23 @@
 # LifeLens Project Status
 
-Date: 2026-09-30  
-Active architecture: **LifeLensCore -> WASM -> Web Observer**  
-Current validated main: `df839012177bc8f4a0bfd59e30cbf8e5d29d4129` (#536)
+## 2026-10-01 — C4 Health / Disease / Population Resilience
 
-## Current autonomy follow-through — resident strategy differentiation
+- C4 completion unit: PR #577.
+- Active product path remains **LifeLensCore -> WASM -> React/TypeScript/Three.js Web Observer**.
+- Health is now authoritative resident state: pathogen load, illness severity, immunity, injury, environmental stress, care knowledge and lived episode history.
+- Infection pressure comes from actual environmental/soil contamination and direct natural-water exposure, with sanitation knowledge reducing risk.
+- Recovery builds resilience and practical care knowledge; illness/injury/exposure create real Need/movement consequences.
+- Regional hazard and climate exposure can produce deterministic injury or cause-specific mortality through the existing centralized death/lifecycle cleanup.
+- Health state persists through snapshots and is exposed to the Web Observer per resident plus population summary.
+- No browser-authored diagnosis, random scripted plague event, free health technology unlock, or second simulation truth was introduced.
+- C4 validation uses targeted health regressions plus Core/determinism/WASM/Web/Preflight gates; the separate 100-day long-run audit is not part of this closeout.
+- After #577 is integrated, the next roadmap milestone is C5 — Education / Recording / Specialization / Economy / Institutions.
+
+## Historical checkpoint — 2026-09-30 resident autonomy (#536)
+
+Validated main at that checkpoint: `df839012177bc8f4a0bfd59e30cbf8e5d29d4129`.
+
+### Resident strategy differentiation
 
 - `746a488` / D-026 completed the first development-choice split: cultivation/construction/crafting utility reacts to resident disposition and lived technique experience instead of collapsing identical affordances into identical choices.
 - `9aef4a1` / #534 / D-027 completed non-critical Eat autonomy. The same moderate Hunger and same carried PlantFood can produce different Eat timing from resident disposition, while actual freshness raises consumption value as spoilage approaches.

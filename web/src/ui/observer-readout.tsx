@@ -222,6 +222,15 @@ export function SelectedResidentReadout({
     ...(family?.siblings ?? []),
   ].slice(0, 6);
   const statusText = residentStatusText(resident, residents);
+  const healthStageLabels: Record<string, string> = {
+    Well: '양호',
+    Exposed: '노출',
+    Ill: '질병',
+    Recovering: '회복 중',
+    Injured: '부상',
+    Critical: '위중',
+  };
+  const health=resident.health;
   const activityTarget = !resident.presentation?.active && resident.activityTargetName
     ? ` → ${resident.activityTargetName}`
     : '';
@@ -273,9 +282,34 @@ export function SelectedResidentReadout({
         </div>
       </div>
 
+      {health ? (
+        <div className="focused-life-section">
+          <h3>건강 상태</h3>
+          <div className="focused-life-chips">
+            <span>상태 <b>{healthStageLabels[health.stage ?? 'Well'] ?? health.stage ?? '양호'}</b></span>
+            <span>활동 능력 <b>{formatPercent(health.functionalCapacity)}</b></span>
+            <span>병원체 부담 <b>{formatPercent(health.pathogenLoad)}</b></span>
+            <span>질병 심각도 <b>{formatPercent(health.illnessSeverity)}</b></span>
+            <span>면역 <b>{formatPercent(health.immunity)}</b></span>
+            <span>부상 <b>{formatPercent(health.injurySeverity)}</b></span>
+            <span>환경 스트레스 <b>{formatPercent(health.environmentalStress)}</b></span>
+            <span>돌봄 지식 <b>{formatPercent(health.careKnowledge)}</b></span>
+            {(health.infectionEpisodes ?? 0) > 0
+              ? <span>감염 경험 <b>{health.infectionEpisodes}</b></span>
+              : null}
+            {(health.recoveryEpisodes ?? 0) > 0
+              ? <span>회복 경험 <b>{health.recoveryEpisodes}</b></span>
+              : null}
+            {(health.accidentEpisodes ?? 0) > 0
+              ? <span>사고 경험 <b>{health.accidentEpisodes}</b></span>
+              : null}
+          </div>
+        </div>
+      ) : null}
+
       {conditionEntries.length > 0 ? (
         <div className="focused-life-section">
-          <h3>건강 / 신체</h3>
+          <h3>신체 / 생애 조건</h3>
           <div className="focused-life-chips">
             {conditionEntries.map(([key, value]) => (
               <span key={key}>
