@@ -86,6 +86,12 @@ struct ConstructedFacility {
     // compatibility with older facility fixtures and persisted enum layouts.
     int usageCount = 0;
     int lastUsedMinute = -1;
+
+    // v8 furnace process identity. Legacy oreUnits/metalUnits remain the
+    // persisted quantity counters, while these fields state what they mean.
+    MaterialKind furnaceChargeMaterial = MaterialKind::Unknown;
+    MaterialKind furnaceOutputMaterial = MaterialKind::Unknown;
+    int furnaceOutputPerCharge = 1;
 };
 
 inline bool validFacilityKind(FacilityKind kind)
@@ -636,25 +642,144 @@ inline int collectFirePitCharcoal(
     return collected;
 }
 
+inline bool validFurnaceProcess(
+    MaterialKind charge,
+    MaterialKind output,
+    int outputPerCharge)
+{
+    return (charge==MaterialKind::CopperOre
+            && output==MaterialKind::CopperMetal
+            && outputPerCharge==1)
+        || (charge==MaterialKind::TinOre
+            && output==MaterialKind::TinMetal
+            && outputPerCharge==1)
+        || (charge==MaterialKind::Bronze
+            && output==MaterialKind::Bronze
+            && outputPerCharge==3);
+}
+
+inline bool furnaceCanAcceptProcess(
+    const ConstructedFacility& facility,
+    MaterialKind charge,
+    MaterialKind output,
+    int outputPerCharge)
+{
+    if(!validFurnaceProcess(charge,output,outputPerCharge)
+       || facility.id==0
+       || facility.kind!=FacilityKind::Furnace
+       || facility.state!=FacilityState::Operational
+       || !facility.active
+       || facility.lit) return false;
+    const bool empty=
+        facility.oreUnits==0
+        && facility.metalUnits==0
+        && facility.fuelUnits==0;
+    return empty
+        || (facility.furnaceChargeMaterial==charge
+            && facility.furnaceOutputMaterial==output
+            && facility.furnaceOutputPerCharge==outputPerCharge);
+}
+
+inline void assignFurnaceProcess(
+    ConstructedFacility& facility,
+    MaterialKind charge,
+    MaterialKind output,
+    int outputPerCharge)
+{
+    facility.furnaceChargeMaterial=charge;
+    facility.furnaceOutputMaterial=output;
+    facility.furnaceOutputPerCharge=outputPerCharge;
+}
+
+inline int loadFurnaceSmeltCharge(
+    ConstructedFacility& facility,
+    Inventory& source,
+    MaterialKind ore,
+    MaterialKind metal,
+    int requested)
+{
+    if(!furnaceCanAcceptProcess(facility,ore,metal,1)
+       || requested<=0) return 0;
+    const int availableOre=source.count(ItemKind::RawMaterial,ore);
+    const int availableCharcoal=source.count(
+        ItemKind::RawMaterial,MaterialKind::Charcoal);
+    const int capacity=std::max(0,2-facility.oreUnits);
+    const int loaded=std::min({requested,availableOre,availableCharcoal,capacity});
+    if(loaded<=0) return 0;
+    if(!source.remove(ItemKind::RawMaterial,ore,loaded)) return 0;
+    if(!source.remove(ItemKind::RawMaterial,MaterialKind::Charcoal,loaded)){
+        source.add({ItemKind::RawMaterial,ore,loaded,0.5,1.0});
+        return 0;
+    }
+    assignFurnaceProcess(facility,ore,metal,1);
+    facility.oreUnits+=loaded;
+    facility.fuelUnits+=loaded;
+    return loaded;
+}
+
 inline int loadFurnaceCopperCharge(
     ConstructedFacility& facility,
     Inventory& source,
     int requested)
 {
-    if(facility.id == 0 || facility.kind != FacilityKind::Furnace
-       || facility.state != FacilityState::Operational || !facility.active
-       || facility.lit || requested <= 0) return 0;
-    const int availableOre = source.count(ItemKind::RawMaterial,MaterialKind::CopperOre);
-    const int availableCharcoal = source.count(ItemKind::RawMaterial,MaterialKind::Charcoal);
-    const int loaded = std::min({requested,availableOre,availableCharcoal,2});
-    if(loaded <= 0) return 0;
-    if(!source.remove(ItemKind::RawMaterial,MaterialKind::CopperOre,loaded)) return 0;
-    if(!source.remove(ItemKind::RawMaterial,MaterialKind::Charcoal,loaded)){
-        source.add({ItemKind::RawMaterial,MaterialKind::CopperOre,loaded,0.5,1.0});
+    return loadFurnaceSmeltCharge(
+        facility,source,
+        MaterialKind::CopperOre,MaterialKind::CopperMetal,requested);
+}
+
+inline int loadFurnaceTinCharge(
+    ConstructedFacility& facility,
+    Inventory& source,
+    int requested)
+{
+    return loadFurnaceSmeltCharge(
+        facility,source,
+        MaterialKind::TinOre,MaterialKind::TinMetal,requested);
+}
+
+inline int loadFurnaceBronzeAlloyCharge(
+    ConstructedFacility& facility,
+    Inventory& source,
+    int requested)
+{
+    if(!furnaceCanAcceptProcess(
+        facility,MaterialKind::Bronze,MaterialKind::Bronze,3)
+       || requested<=0) return 0;
+    const int availableCopper=source.count(
+        ItemKind::RawMaterial,MaterialKind::CopperMetal);
+    const int availableTin=source.count(
+        ItemKind::RawMaterial,MaterialKind::TinMetal);
+    const int availableCharcoal=source.count(
+        ItemKind::RawMaterial,MaterialKind::Charcoal);
+    const int capacity=std::max(0,2-facility.oreUnits);
+    const int loaded=std::min({
+        requested,
+        availableCopper/2,
+        availableTin,
+        availableCharcoal,
+        capacity
+    });
+    if(loaded<=0) return 0;
+    if(!source.remove(
+        ItemKind::RawMaterial,MaterialKind::CopperMetal,loaded*2)) return 0;
+    if(!source.remove(
+        ItemKind::RawMaterial,MaterialKind::TinMetal,loaded)){
+        source.add({
+            ItemKind::RawMaterial,MaterialKind::CopperMetal,loaded*2,0.60,1.0});
         return 0;
     }
-    facility.oreUnits += loaded;
-    facility.fuelUnits += loaded;
+    if(!source.remove(
+        ItemKind::RawMaterial,MaterialKind::Charcoal,loaded)){
+        source.add({
+            ItemKind::RawMaterial,MaterialKind::CopperMetal,loaded*2,0.60,1.0});
+        source.add({
+            ItemKind::RawMaterial,MaterialKind::TinMetal,loaded,0.60,1.0});
+        return 0;
+    }
+    assignFurnaceProcess(
+        facility,MaterialKind::Bronze,MaterialKind::Bronze,3);
+    facility.oreUnits+=loaded;
+    facility.fuelUnits+=loaded;
     return loaded;
 }
 
@@ -662,7 +787,11 @@ inline bool igniteFurnace(ConstructedFacility& facility,int minute)
 {
     if(facility.id == 0 || facility.kind != FacilityKind::Furnace
        || facility.state != FacilityState::Operational || !facility.active
-       || facility.oreUnits <= 0 || facility.fuelUnits <= 0 || facility.lit) return false;
+       || facility.oreUnits <= 0 || facility.fuelUnits <= 0 || facility.lit
+       || !validFurnaceProcess(
+            facility.furnaceChargeMaterial,
+            facility.furnaceOutputMaterial,
+            facility.furnaceOutputPerCharge)) return false;
     facility.lit = true;
     facility.heatLevel = 1.0;
     facility.burnMinutesRemaining = PrimitiveFurnaceSmeltMinutesPerCopperUnit;
@@ -693,7 +822,7 @@ inline void advanceFurnaceOneMinute(ConstructedFacility& facility,int minute)
     if(facility.oreUnits > 0 && facility.fuelUnits > 0){
         --facility.oreUnits;
         --facility.fuelUnits;
-        ++facility.metalUnits;
+        facility.metalUnits+=std::max(1,facility.furnaceOutputPerCharge);
     }
     if(facility.oreUnits > 0 && facility.fuelUnits > 0){
         facility.burnMinutesRemaining = PrimitiveFurnaceSmeltMinutesPerCopperUnit;
@@ -705,18 +834,58 @@ inline void advanceFurnaceOneMinute(ConstructedFacility& facility,int minute)
     }
 }
 
-inline int collectFurnaceCopper(
+inline int collectFurnaceMetal(
     ConstructedFacility& facility,
     Inventory& destination,
     int requested)
 {
     if(facility.id == 0 || facility.kind != FacilityKind::Furnace
        || facility.state != FacilityState::Operational || !facility.active
-       || facility.lit || requested <= 0 || facility.metalUnits <= 0) return 0;
-    const int collected = std::min(requested,facility.metalUnits);
-    facility.metalUnits -= collected;
-    destination.add({ItemKind::RawMaterial,MaterialKind::CopperMetal,collected,0.60,1.0});
+       || facility.lit || requested <= 0 || facility.metalUnits <= 0
+       || facility.furnaceOutputMaterial==MaterialKind::Unknown) return 0;
+    const int collected=std::min(requested,facility.metalUnits);
+    facility.metalUnits-=collected;
+    destination.add({
+        ItemKind::RawMaterial,
+        facility.furnaceOutputMaterial,
+        collected,
+        facility.furnaceOutputMaterial==MaterialKind::Bronze ? 0.66 : 0.60,
+        1.0});
+    if(facility.metalUnits==0
+       && facility.oreUnits==0
+       && facility.fuelUnits==0){
+        facility.furnaceChargeMaterial=MaterialKind::Unknown;
+        facility.furnaceOutputMaterial=MaterialKind::Unknown;
+        facility.furnaceOutputPerCharge=1;
+    }
     return collected;
+}
+
+inline int collectFurnaceCopper(
+    ConstructedFacility& facility,
+    Inventory& destination,
+    int requested)
+{
+    if(facility.furnaceOutputMaterial!=MaterialKind::CopperMetal) return 0;
+    return collectFurnaceMetal(facility,destination,requested);
+}
+
+inline int collectFurnaceTin(
+    ConstructedFacility& facility,
+    Inventory& destination,
+    int requested)
+{
+    if(facility.furnaceOutputMaterial!=MaterialKind::TinMetal) return 0;
+    return collectFurnaceMetal(facility,destination,requested);
+}
+
+inline int collectFurnaceBronze(
+    ConstructedFacility& facility,
+    Inventory& destination,
+    int requested)
+{
+    if(facility.furnaceOutputMaterial!=MaterialKind::Bronze) return 0;
+    return collectFurnaceMetal(facility,destination,requested);
 }
 
 inline bool validConstructedFacility(const ConstructedFacility& facility)
@@ -729,6 +898,7 @@ inline bool validConstructedFacility(const ConstructedFacility& facility)
        || facility.requirements.empty()
        || facility.fuelUnits < 0 || facility.charcoalUnits < 0
        || facility.oreUnits < 0 || facility.metalUnits < 0
+       || facility.furnaceOutputPerCharge<=0
        || facility.heatLevel < 0.0 || facility.heatLevel > 1.0
        || facility.burnMinutesRemaining < 0
        || facility.cropGrowth01 < 0.0 || facility.cropGrowth01 > 1.0
@@ -791,7 +961,26 @@ inline bool validConstructedFacility(const ConstructedFacility& facility)
            || facility.burnMinutesRemaining != 0 || facility.lastFireMinute >= 0) return false;
     }
     if(facility.kind==FacilityKind::FirePit && (facility.oreUnits!=0 || facility.metalUnits!=0)) return false;
-    if(facility.kind==FacilityKind::Furnace && facility.charcoalUnits!=0) return false;
+    if(facility.kind==FacilityKind::Furnace){
+        if(facility.charcoalUnits!=0) return false;
+        const bool hasProcessState=
+            facility.oreUnits>0 || facility.metalUnits>0
+            || facility.fuelUnits>0 || facility.lit;
+        if(hasProcessState){
+            if(!validFurnaceProcess(
+                facility.furnaceChargeMaterial,
+                facility.furnaceOutputMaterial,
+                facility.furnaceOutputPerCharge)) return false;
+        }else if(facility.furnaceChargeMaterial!=MaterialKind::Unknown
+                 || facility.furnaceOutputMaterial!=MaterialKind::Unknown
+                 || facility.furnaceOutputPerCharge!=1){
+            return false;
+        }
+    }else if(facility.furnaceChargeMaterial!=MaterialKind::Unknown
+             || facility.furnaceOutputMaterial!=MaterialKind::Unknown
+             || facility.furnaceOutputPerCharge!=1){
+        return false;
+    }
 
     if(!facilitySupportsCultivation(facility.kind)){
         if(facility.cropPlanted || facility.cropPlantedMinute>=0

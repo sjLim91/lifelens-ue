@@ -73,22 +73,47 @@ inline GatherToolUseProfile inspectGatherTool(
     result.capability=gatheringToolCapability(material);
     if(result.capability==ToolCapability::None) return result;
 
+    GatherToolUseProfile best;
+    best.capability=result.capability;
     for(const auto& stack:inventory.stacks()){
         if(stack.quantity<=0 || itemCapability(stack.kind)!=result.capability) continue;
         if(stack.durability<=0.001) continue;
 
-        result.available=true;
-        result.tool=stack;
-        result.tool.quantity=1;
-        result.durabilityBefore=std::max(0.0,std::min(1.0,stack.durability));
+        GatherToolUseProfile candidate;
+        candidate.available=true;
+        candidate.capability=result.capability;
+        candidate.tool=stack;
+        candidate.tool.quantity=1;
+        candidate.durabilityBefore=std::max(
+            0.0,std::min(1.0,stack.durability));
         const double quality=std::max(0.0,std::min(1.0,stack.quality));
-        result.quantityMultiplier=
-            1.10+0.18*quality+0.14*result.durabilityBefore;
-        result.wear=(0.04+0.04*(1.0-quality))*gatheringToolWearScale(result.capability);
-        result.durabilityAfter=std::max(0.0,result.durabilityBefore-result.wear);
-        return result;
+        const MaterialProperties properties=materialProperties(stack.material);
+        const double materialPerformance=std::max(
+            0.0,std::min(
+                1.0,
+                0.55*properties.hardness
+                    +0.45*properties.sharpnessPotential));
+        candidate.quantityMultiplier=
+            1.10+0.18*quality+0.14*candidate.durabilityBefore
+            +0.18*materialPerformance;
+        const double materialWearFactor=std::max(
+            0.45,
+            1.10-0.45*properties.hardness+0.20*properties.brittleness);
+        candidate.wear=
+            (0.04+0.04*(1.0-quality))
+            *gatheringToolWearScale(candidate.capability)
+            *materialWearFactor;
+        candidate.durabilityAfter=std::max(
+            0.0,candidate.durabilityBefore-candidate.wear);
+        if(!best.available
+           || candidate.quantityMultiplier>best.quantityMultiplier+1e-12
+           || (std::abs(
+                candidate.quantityMultiplier-best.quantityMultiplier)<=1e-12
+               && candidate.durabilityBefore>best.durabilityBefore)){
+            best=candidate;
+        }
     }
-    return result;
+    return best;
 }
 
 inline int gatheringQuantityWithTool(
@@ -142,6 +167,8 @@ inline const char* toolItemName(ItemKind item)
         case ItemKind::StoneCuttingTool: return "StoneCuttingTool";
         case ItemKind::DiggingStick: return "DiggingStick";
         case ItemKind::StoneHammer: return "StoneHammer";
+        case ItemKind::BronzeAxe: return "BronzeAxe";
+        case ItemKind::BronzePick: return "BronzePick";
         case ItemKind::SimpleContainer: return "SimpleContainer";
         case ItemKind::Cordage: return "Cordage";
         case ItemKind::FuelBundle: return "FuelBundle";

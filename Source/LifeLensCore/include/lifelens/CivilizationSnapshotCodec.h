@@ -13,7 +13,8 @@
 namespace lifelens {
 
 constexpr char CivilizationSnapshotExtensionMagic[]={'L','L','C','I','V','0','0','1'};
-constexpr std::uint32_t CivilizationSnapshotExtensionVersion=7;
+constexpr std::uint32_t CivilizationSnapshotExtensionVersion=8;
+constexpr std::uint32_t CivilizationSnapshotExtensionFurnaceIdentityVersion=8;
 constexpr std::uint32_t CivilizationSnapshotExtensionFacilityUsageVersion=7;
 constexpr std::uint32_t CivilizationSnapshotExtensionCultivationRuntimeVersion=6;
 constexpr std::uint32_t CivilizationSnapshotExtensionMetalRuntimeVersion=5;
@@ -30,13 +31,13 @@ inline bool validCivilizationUnit(double value)
 inline bool validMaterialKind(MaterialKind value)
 {
     return static_cast<int>(value)>=static_cast<int>(MaterialKind::Unknown)
-        && static_cast<int>(value)<=static_cast<int>(MaterialKind::CopperMetal);
+        && static_cast<int>(value)<=static_cast<int>(MaterialKind::Bronze);
 }
 
 inline bool validItemKind(ItemKind value)
 {
     return static_cast<int>(value)>=static_cast<int>(ItemKind::RawMaterial)
-        && static_cast<int>(value)<=static_cast<int>(ItemKind::StoneHammer);
+        && static_cast<int>(value)<=static_cast<int>(ItemKind::BronzePick);
 }
 
 inline bool validTechniqueId(TechniqueId value)
@@ -46,7 +47,7 @@ inline bool validTechniqueId(TechniqueId value)
     // TechniqueId::DesignatedSanitationArea
     // TechniqueId::DugSanitationPit
     return static_cast<int>(value)>=static_cast<int>(TechniqueId::None)
-        && static_cast<int>(value)<=static_cast<int>(TechniqueId::Cultivation);
+        && static_cast<int>(value)<=static_cast<int>(TechniqueId::BronzePick);
 }
 
 inline bool validKnowledgeLevel(KnowledgeLevel value)
@@ -354,6 +355,11 @@ void writeConstructedFacility(WriterT& w,const ConstructedFacility& facility)
     // v7 appends lived facility-use history after the v6 cultivation tail.
     w.i32(facility.usageCount);
     w.i32(facility.lastUsedMinute);
+
+    // v8 appends generic furnace process identity after every v7 field.
+    w.enumeration(facility.furnaceChargeMaterial);
+    w.enumeration(facility.furnaceOutputMaterial);
+    w.i32(facility.furnaceOutputPerCharge);
 }
 
 template<typename ReaderT>
@@ -435,6 +441,28 @@ bool readConstructedFacility(
         facility.usageCount=0;
         facility.lastUsedMinute=-1;
     }
+
+    if(version>=CivilizationSnapshotExtensionFurnaceIdentityVersion){
+        if(!r.enumeration(facility.furnaceChargeMaterial)
+           || !r.enumeration(facility.furnaceOutputMaterial)
+           || !r.i32(facility.furnaceOutputPerCharge)
+           || !validMaterialKind(facility.furnaceChargeMaterial)
+           || !validMaterialKind(facility.furnaceOutputMaterial)
+           || facility.furnaceOutputPerCharge<=0) return false;
+    }else if(facility.kind==FacilityKind::Furnace
+              && (facility.oreUnits>0
+                  || facility.metalUnits>0
+                  || facility.fuelUnits>0
+                  || facility.lit)){
+        // v5-v7 furnace runtime was copper-only.
+        facility.furnaceChargeMaterial=MaterialKind::CopperOre;
+        facility.furnaceOutputMaterial=MaterialKind::CopperMetal;
+        facility.furnaceOutputPerCharge=1;
+    }else{
+        facility.furnaceChargeMaterial=MaterialKind::Unknown;
+        facility.furnaceOutputMaterial=MaterialKind::Unknown;
+        facility.furnaceOutputPerCharge=1;
+    }
     return validConstructedFacility(facility);
 }
 
@@ -476,6 +504,7 @@ bool readCivilizationSnapshotExtension(
            && version!=CivilizationSnapshotExtensionFireRuntimeVersion
            && version!=CivilizationSnapshotExtensionMetalRuntimeVersion
            && version!=CivilizationSnapshotExtensionCultivationRuntimeVersion
+           && version!=CivilizationSnapshotExtensionFacilityUsageVersion
            && version!=CivilizationSnapshotExtensionVersion)) return false;
     if(outVersion) *outVersion=version;
 
