@@ -87,6 +87,19 @@ struct ResidentMetrics {
     double dugPitImprovementWorkGain=0.0;
     double dugPitImprovementWorkMax=0.0;
     double lastObservedSanitationWork=0.0;
+
+    // Global 15-minute Civilization cadence resonance diagnostics.
+    std::uint64_t civPlanningBoundarySamples=0;
+    std::uint64_t civOtherwiseEligibleSamples=0;
+    std::uint64_t civCadenceOpenSamples=0;
+    std::uint64_t civOffCadenceSamples=0;
+    std::uint64_t civWouldWinOnCadence=0;
+    std::uint64_t civWouldWinOffCadence=0;
+    std::uint64_t socialWouldWinWhenCivSuppressed=0;
+    std::uint64_t civMissedThenSocialWouldWin=0;
+    std::uint64_t civMissedThenPhysicalWouldWin=0;
+    double civOffCadenceUtilitySum=0.0;
+    std::uint64_t civOffCadenceUtilitySamples=0;
 };
 
 std::array<double,5> needsArray(const Needs& n)
@@ -400,6 +413,110 @@ void auditActualDugPitPlanningPath(
     ++metric.dugPitContextIssued;
 }
 
+void auditCivilizationCadenceResonance(
+    const Simulation& sim,
+    ResidentMetrics& metric)
+{
+    const ResidentPlanningStateObservation planning=
+        sim.observeResidentPlanningState(metric.id);
+    const Character* resident=findResident(sim.world(),metric.id);
+    if(!planning.valid || resident==nullptr || !resident->alive) return;
+
+    if(sim.world().minute%5!=0
+       || planning.hasPhysicalPlan
+       || planning.hasPendingContext){
+        return;
+    }
+
+    ++metric.civPlanningBoundarySamples;
+
+    Character projected=*resident;
+    projected.needs.decay(
+        sim.ruleset().needs,
+        projected.metabolism,
+        projected.sleepTendency);
+
+    const bool criticalSurvivalPressure=
+        projected.needs.hunger>=CriticalSurvivalPreemptThreshold
+        || projected.needs.thirst>=CriticalSurvivalPreemptThreshold;
+    const bool planningAllowed=
+        sim.world().minute>=planning.penaltyUntilMinute
+        || criticalSurvivalPressure;
+    if(!planningAllowed) return;
+
+    const CivilizationUtilityDecision urgentProvision=
+        urgentSurvivalProvisionDecisionAtPosition(
+            sim.world(),projected,planning.position);
+    if(urgentProvision.intent!=CivilizationIntent::None){
+        // Provision acquisition deliberately bypasses the 15-minute cadence and
+        // is not part of this ordinary-Civilization resonance audit.
+        return;
+    }
+
+    Goal urgentPhysicalGoal=Goal::Idle;
+    double urgentPhysicalNeed=-1.0;
+    const double urgentThreshold=sim.ruleset().utilityAI.urgentThreshold;
+    for(const Goal candidate:{Goal::Eat,Goal::Drink,Goal::UseToilet}){
+        const double need=needForGoal(projected,candidate);
+        if(need<urgentThreshold
+           || !actionAvailableFor(sim.world(),projected,candidate)){
+            continue;
+        }
+        if(urgentPhysicalGoal==Goal::Idle || need>urgentPhysicalNeed){
+            urgentPhysicalGoal=candidate;
+            urgentPhysicalNeed=need;
+        }
+    }
+
+    const bool sanitationPressureMayCompete=
+        dugSanitationPitCraftPressureCouldCompete(
+            sim.world(),projected);
+    if(urgentPhysicalGoal!=Goal::Idle && !sanitationPressureMayCompete){
+        return;
+    }
+
+    ++metric.civOtherwiseEligibleSamples;
+    const bool cadenceOpen=sim.world().minute%15==0;
+    if(cadenceOpen){
+        ++metric.civCadenceOpenSamples;
+    }else{
+        ++metric.civOffCadenceSamples;
+    }
+
+    const SettlementPopulation population=observedSettlementPopulation(sim);
+    const UnifiedUtilityDecision withCivilization=
+        chooseUnifiedUtilityDecisionAtPosition(
+            sim.world(),projected,sim.relationships(),
+            planning.position,0.18,0.14,&population);
+    const UnifiedUtilityDecision withoutCivilization=
+        chooseUnifiedUtilityDecisionAtPosition(
+            sim.world(),projected,sim.relationships(),
+            planning.position,0.18,2.0,&population);
+
+    if(withCivilization.kind==UnifiedDecisionKind::Civilization
+       && withCivilization.civilization.intent!=CivilizationIntent::None){
+        if(cadenceOpen){
+            ++metric.civWouldWinOnCadence;
+        }else{
+            ++metric.civWouldWinOffCadence;
+            metric.civOffCadenceUtilitySum+=withCivilization.civilization.utility;
+            ++metric.civOffCadenceUtilitySamples;
+            if(withoutCivilization.kind==UnifiedDecisionKind::Social
+               && withoutCivilization.social.intent!=SocialIntent::None){
+                ++metric.civMissedThenSocialWouldWin;
+            }else{
+                ++metric.civMissedThenPhysicalWouldWin;
+            }
+        }
+    }
+
+    if(!cadenceOpen
+       && withoutCivilization.kind==UnifiedDecisionKind::Social
+       && withoutCivilization.social.intent!=SocialIntent::None){
+        ++metric.socialWouldWinWhenCivSuppressed;
+    }
+}
+
 }
 
 int main(int argc,char** argv)
@@ -492,6 +609,7 @@ int main(int argc,char** argv)
         // step() may issue and complete a short context in the same minute.
         for(auto& m:metrics){
             auditActualDugPitPlanningPath(sim,m);
+            auditCivilizationCadenceResonance(sim,m);
         }
 
         sim.step();
@@ -819,6 +937,23 @@ int main(int argc,char** argv)
                  <<" sleepRecoverySum="<<std::fixed<<std::setprecision(4)
                  <<m.accumulatedSleepRecovery
                  <<" physicalMin="<<m.physicalMinutes
+                 <<" civPlanningBoundarySamples="<<m.civPlanningBoundarySamples
+                 <<" civOtherwiseEligibleSamples="<<m.civOtherwiseEligibleSamples
+                 <<" civCadenceOpenSamples="<<m.civCadenceOpenSamples
+                 <<" civOffCadenceSamples="<<m.civOffCadenceSamples
+                 <<" civWouldWinOnCadence="<<m.civWouldWinOnCadence
+                 <<" civWouldWinOffCadence="<<m.civWouldWinOffCadence
+                 <<" socialWouldWinWhenCivSuppressed="
+                 <<m.socialWouldWinWhenCivSuppressed
+                 <<" civMissedThenSocialWouldWin="
+                 <<m.civMissedThenSocialWouldWin
+                 <<" civMissedThenPhysicalWouldWin="
+                 <<m.civMissedThenPhysicalWouldWin
+                 <<" civOffCadenceUtilityAvg="
+                 <<(m.civOffCadenceUtilitySamples>0
+                    ? m.civOffCadenceUtilitySum/
+                        static_cast<double>(m.civOffCadenceUtilitySamples)
+                    : 0.0)
                  <<" socialMin="<<m.socialMinutes
                  <<" civilizationMin="<<m.civilizationMinutes
                  <<" parentingMin="<<m.parentingMinutes
