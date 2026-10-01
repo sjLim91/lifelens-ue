@@ -1,3 +1,26 @@
+## 2026-10-01 CHECKPOINT — 위생 structural 실험 후 자기관리 preemption 병목 추적
+
+> 여기서 작업을 끊는다. main에는 아직 병합하지 않는다. 다음 세션은 아래 결과부터 이어간다.
+
+- 감사 PR: #540 (draft), head 기준 `c4ea78b5ba158fd234ca5482a5680b5770ca252d`에서 아래 실험/계측 브랜치를 추가로 진행했다.
+- 위생 structural 실험: `experiment/p0-sanitation-structural-pressure-20261001@5e6dddcd1f2a335dbe17d046fd9850b9705321a6`.
+  - seed 4242001에서도 DugPit 완공까지 성공했지만 365일 Social은 0으로 남아 위생 발전만으로 전체 starvation은 해결되지 않았다.
+- 수면 원인 계측: `audit/sleep-interruption-trace-20261001@5dacce40f276b333985a3eb384137663a09e79c9`.
+  - seed 4242001 / 100일에서 수면 시작 직후 이미 깨질 상태는 0회였다.
+  - 684회 기상 중 주원인은 Bladder 371회, Thirst 241회, Hunger 72회였다.
+  - 즉 sleep wake threshold 하나가 아니라 자기관리 Need들이 서로 순환하며 끊는 구조가 핵심이다.
+- 자기관리 preemption 계측: `audit/selfcare-preemption-trace-20261001@2cda5338af761def8172114556144d5c3ba17cdc`.
+  - seed 4242001 / 100일 critical preemption 17,342회 중 UseToilet 중단이 15,850회(약 91.4%).
+  - Toilet 시작 18,018회 / 완료 2,165회로 planner thrash가 계속된다.
+  - 실제 목표 거리 기반 평균 남은 이동거리는 주민별 약 17.2~21.0 grid, 최대 59 grid였다.
+  - 현재 날씨 기준으로 critical Hunger/Thirst가 1.0에 닿기 전에 Toilet을 끝낼 수 있었던 표본은 11,835 / 15,850(약 74.7%).
+  - 최대 이동마찰(1 grid 최대 3분) + 현재 위치 환경 Hunger/Thirst 압박을 적용한 보수적 조건에서도 8,824 / 15,850(약 55.7%)가 완료 가능했다.
+- 마지막 검증 run: `36804344538` — success. 실험 브랜치 `audit/selfcare-preemption-safety2-fast-20261001@37ef52616296f27f7a2aa78dd2938731092b687a`.
+- 현재 해석: Eat/Drink는 상대 Need 우세 시 active intent 보호가 있지만, Toilet 이동은 critical Hunger/Thirst가 생기면 거의 무조건 취소된다. 실제 장기 루프의 가장 큰 churn 원인이다.
+- **아직 하지 않은 것:** runtime preemption 정책 수정, threshold/utility 변경, main 병합. 현재까지 자기관리 관련 새 브랜치는 계측 중심이다.
+- **다음 시작점:** `preemptForCriticalSurvival()`에서 UseToilet 이동도 남은 완료시간 vs critical Hunger/Thirst 포화까지 남은시간을 비교하는 commitment 규칙을 설계한다. 단 Hunger/Thirst=1.0 또는 안전 여유 부족 시 기존처럼 즉시 preempt해야 한다. 기존 `test_action_commitment.cpp`의 "critical survival이 sanitation 이동을 끊는다" 계약을 유지하면서, 안전 여유가 충분한 짧은 Toilet 이동은 완료시키는 새 회귀를 추가한 뒤 동일 두 seed 100일 A/B를 먼저 돌린다.
+- 이 수정 후에도 Social=0이면 그 다음은 Social hard gate / bootstrap과 KnowledgeTeaching scheduler starvation을 분리 계측한다.
+
 ## 2026-10-01 위생 후보 분리 장기 검증 — 회귀 확인, 병합 보류
 
 - 실제 main `0e409b53` 유지. 감사 브랜치 / Draft PR #540 유지. 다른 기능으로 전환하지 않는다.
