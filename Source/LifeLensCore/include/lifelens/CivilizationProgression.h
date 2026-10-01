@@ -1,8 +1,10 @@
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <vector>
 
 #include "Civilization.h"
 #include "PrimitiveFireProgression.h"
@@ -57,6 +59,26 @@ struct TechnologyDefinition {
     CapabilityId primaryCapability=CapabilityId::None;
 };
 
+enum class TechnologyPopulationState : std::uint8_t {
+    Unknown=0,
+    Observed,
+    Reproducible,
+    Operational,
+    Diffusing,
+    Common,
+    Declining,
+    Lost
+};
+
+enum class CivilizationTransformationId : std::uint16_t {
+    None=0,
+    ResourceBuffering=1,
+    ManagedFoodProduction=2,
+    MetallurgicalProduction=3,
+    AdvancedTooling=4,
+    KnowledgeDiffusion=5
+};
+
 inline constexpr std::array<TechnologyDefinition,16> TechnologyRegistry={{
     {TechnologyId::SharpFlake,TechniqueId::SharpFlake,CapabilityId::Cut},
     {TechnologyId::ChippedStoneTool,TechniqueId::ChippedStoneTool,CapabilityId::Chop},
@@ -92,6 +114,34 @@ inline const char* capabilityIdName(CapabilityId id)
         case CapabilityId::CultivateFood: return "CultivateFood";
         case CapabilityId::AlloyMetal: return "AlloyMetal";
         case CapabilityId::None:
+        default: return "None";
+    }
+}
+
+inline const char* technologyPopulationStateName(TechnologyPopulationState state)
+{
+    switch(state){
+        case TechnologyPopulationState::Observed: return "Observed";
+        case TechnologyPopulationState::Reproducible: return "Reproducible";
+        case TechnologyPopulationState::Operational: return "Operational";
+        case TechnologyPopulationState::Diffusing: return "Diffusing";
+        case TechnologyPopulationState::Common: return "Common";
+        case TechnologyPopulationState::Declining: return "Declining";
+        case TechnologyPopulationState::Lost: return "Lost";
+        case TechnologyPopulationState::Unknown:
+        default: return "Unknown";
+    }
+}
+
+inline const char* civilizationTransformationName(CivilizationTransformationId id)
+{
+    switch(id){
+        case CivilizationTransformationId::ResourceBuffering: return "ResourceBuffering";
+        case CivilizationTransformationId::ManagedFoodProduction: return "ManagedFoodProduction";
+        case CivilizationTransformationId::MetallurgicalProduction: return "MetallurgicalProduction";
+        case CivilizationTransformationId::AdvancedTooling: return "AdvancedTooling";
+        case CivilizationTransformationId::KnowledgeDiffusion: return "KnowledgeDiffusion";
+        case CivilizationTransformationId::None:
         default: return "None";
     }
 }
@@ -375,6 +425,273 @@ inline CivilizationTechnologyStatus observeTechnologyStatus(
     status.operational=technologyOperational(world,resident,technology);
     status.adopted=technologyAdopted(resident,technology);
     return status;
+}
+
+struct CivilizationTechnologyPopulationStatus {
+    TechnologyId technology=TechnologyId::None;
+    TechnologyPopulationState state=TechnologyPopulationState::Unknown;
+    int livingKnowerCount=0;
+    int reproducibleKnowerCount=0;
+    int operationalResidentCount=0;
+    int adoptedResidentCount=0;
+    int successfulUseCount=0;
+    double diffusion01=0.0;
+    bool historicallyKnown=false;
+    int historicalFactCount=0;
+    int firstEvidenceMinute=-1;
+    int latestEvidenceMinute=-1;
+};
+
+inline int civilizationLivingResidentCount(const World& world)
+{
+    int count=0;
+    for(const Character& resident:world.characters){
+        if(resident.alive) ++count;
+    }
+    return count;
+}
+
+inline CivilizationTechnologyPopulationStatus observeTechnologyPopulationStatus(
+    const World& world,
+    TechnologyId technology,
+    bool historicallyKnown=false)
+{
+    CivilizationTechnologyPopulationStatus status;
+    status.technology=technology;
+    status.historicallyKnown=historicallyKnown;
+
+    const int living=std::max(1,civilizationLivingResidentCount(world));
+    for(const Character& resident:world.characters){
+        if(!resident.alive) continue;
+        const CivilizationTechnologyStatus residentStatus=
+            observeTechnologyStatus(world,resident,technology);
+        if(residentStatus.discovered) ++status.livingKnowerCount;
+        if(residentStatus.reproducible) ++status.reproducibleKnowerCount;
+        if(residentStatus.operational) ++status.operationalResidentCount;
+        if(residentStatus.adopted) ++status.adoptedResidentCount;
+        status.successfulUseCount+=std::max(0,residentStatus.successfulUses);
+    }
+
+    status.diffusion01=std::max(
+        0.0,
+        std::min(
+            1.0,
+            static_cast<double>(status.adoptedResidentCount)
+                /static_cast<double>(living)));
+
+    if(status.livingKnowerCount==0){
+        status.state=historicallyKnown
+            ? TechnologyPopulationState::Lost
+            : TechnologyPopulationState::Unknown;
+    }else if(status.reproducibleKnowerCount==0){
+        status.state=TechnologyPopulationState::Observed;
+    }else if(status.operationalResidentCount==0){
+        status.state=
+            status.adoptedResidentCount>0 || status.successfulUseCount>=2
+                ? TechnologyPopulationState::Declining
+                : TechnologyPopulationState::Reproducible;
+    }else if(status.adoptedResidentCount==0){
+        status.state=TechnologyPopulationState::Operational;
+    }else if(status.adoptedResidentCount*2>=living){
+        status.state=TechnologyPopulationState::Common;
+    }else{
+        status.state=TechnologyPopulationState::Diffusing;
+    }
+    return status;
+}
+
+inline const CivilizationTechnologyPopulationStatus* findTechnologyPopulationStatus(
+    const std::vector<CivilizationTechnologyPopulationStatus>& statuses,
+    TechnologyId technology)
+{
+    for(const auto& status:statuses){
+        if(status.technology==technology) return &status;
+    }
+    return nullptr;
+}
+
+inline int civilizationWorldItemUnits(
+    const World& world,
+    ItemKind item,
+    MaterialKind material=MaterialKind::Unknown,
+    bool anyMaterial=false)
+{
+    int total=0;
+    for(const Character& resident:world.characters){
+        if(!resident.alive) continue;
+        total+=resident.civilization.inventory.count(item,material,anyMaterial);
+    }
+    for(const StorageSite& storage:world.storageSites){
+        total+=storage.inventory.count(item,material,anyMaterial);
+    }
+    return total;
+}
+
+inline int civilizationOperationalFacilityCount(
+    const World& world,
+    FacilityKind kind)
+{
+    int count=0;
+    for(const ConstructedFacility& facility:world.facilities){
+        if(facility.kind==kind && facilityOperationalAndActive(facility)) ++count;
+    }
+    return count;
+}
+
+inline double civilizationProgressionClamp01(double value)
+{
+    return std::max(0.0,std::min(1.0,value));
+}
+
+struct CivilizationTransformationStatus {
+    CivilizationTransformationId transformation=CivilizationTransformationId::None;
+    bool active=false;
+    double magnitude01=0.0;
+    int evidenceCount=0;
+    int supportingTechnologyCount=0;
+};
+
+inline int civilizationSupportingTechnologyCount(
+    const std::vector<CivilizationTechnologyPopulationStatus>& technologies,
+    std::initializer_list<TechnologyId> ids)
+{
+    int count=0;
+    for(const TechnologyId id:ids){
+        const auto* status=findTechnologyPopulationStatus(technologies,id);
+        if(status==nullptr) continue;
+        if(status->state!=TechnologyPopulationState::Unknown
+           && status->state!=TechnologyPopulationState::Lost){
+            ++count;
+        }
+    }
+    return count;
+}
+
+inline std::vector<CivilizationTransformationStatus>
+buildCivilizationTransformationStatuses(
+    const World& world,
+    const std::vector<CivilizationTechnologyPopulationStatus>& technologies)
+{
+    std::vector<CivilizationTransformationStatus> result;
+    result.reserve(5);
+    const int living=std::max(1,civilizationLivingResidentCount(world));
+
+    int storedUnits=0;
+    for(const StorageSite& storage:world.storageSites){
+        for(const ItemStack& stack:storage.inventory.stacks()){
+            storedUnits+=std::max(0,stack.quantity);
+        }
+    }
+    CivilizationTransformationStatus buffering;
+    buffering.transformation=CivilizationTransformationId::ResourceBuffering;
+    buffering.evidenceCount=storedUnits;
+    buffering.supportingTechnologyCount=civilizationSupportingTechnologyCount(
+        technologies,{TechnologyId::PrimitiveStorage});
+    buffering.magnitude01=civilizationProgressionClamp01(
+        static_cast<double>(storedUnits)
+            /static_cast<double>(living*8));
+    buffering.active=
+        civilizationOperationalFacilityCount(
+            world,FacilityKind::PrimitiveStorage)>0
+        && storedUnits>0;
+    result.push_back(buffering);
+
+    int operationalPlots=0;
+    int plantedPlots=0;
+    int harvestUnits=0;
+    for(const ConstructedFacility& facility:world.facilities){
+        if(facility.kind!=FacilityKind::CultivatedPlot
+           || !facilityOperationalAndActive(facility)) continue;
+        ++operationalPlots;
+        if(facility.cropPlanted) ++plantedPlots;
+        harvestUnits+=std::max(0,facility.cropHarvestUnits);
+    }
+    CivilizationTransformationStatus food;
+    food.transformation=CivilizationTransformationId::ManagedFoodProduction;
+    food.evidenceCount=plantedPlots+harvestUnits;
+    food.supportingTechnologyCount=civilizationSupportingTechnologyCount(
+        technologies,{TechnologyId::Cultivation});
+    food.magnitude01=civilizationProgressionClamp01(
+        0.45*static_cast<double>(operationalPlots)
+            /static_cast<double>(living)
+        +0.35*static_cast<double>(plantedPlots)
+            /static_cast<double>(living)
+        +0.20*static_cast<double>(harvestUnits)
+            /static_cast<double>(living*2));
+    food.active=operationalPlots>0 && (plantedPlots>0 || harvestUnits>0);
+    result.push_back(food);
+
+    int metalUnits=
+        civilizationWorldItemUnits(
+            world,ItemKind::RawMaterial,MaterialKind::CopperMetal)
+        +civilizationWorldItemUnits(
+            world,ItemKind::RawMaterial,MaterialKind::TinMetal)
+        +civilizationWorldItemUnits(
+            world,ItemKind::RawMaterial,MaterialKind::Bronze);
+    for(const ConstructedFacility& facility:world.facilities){
+        if(facility.kind==FacilityKind::Furnace
+           && facilityOperationalAndActive(facility)){
+            metalUnits+=std::max(0,facility.metalUnits);
+        }
+    }
+    const int furnaces=civilizationOperationalFacilityCount(
+        world,FacilityKind::Furnace);
+    CivilizationTransformationStatus metallurgy;
+    metallurgy.transformation=
+        CivilizationTransformationId::MetallurgicalProduction;
+    metallurgy.evidenceCount=metalUnits;
+    metallurgy.supportingTechnologyCount=civilizationSupportingTechnologyCount(
+        technologies,{
+            TechnologyId::CopperSmelting,
+            TechnologyId::TinSmelting,
+            TechnologyId::BronzeAlloying});
+    metallurgy.magnitude01=civilizationProgressionClamp01(
+        (furnaces>0 ? 0.30 : 0.0)
+        +0.70*static_cast<double>(metalUnits)
+            /static_cast<double>(living*3));
+    metallurgy.active=furnaces>0 && metalUnits>0;
+    result.push_back(metallurgy);
+
+    const int advancedTools=
+        civilizationWorldItemUnits(
+            world,ItemKind::BronzeAxe,MaterialKind::Bronze)
+        +civilizationWorldItemUnits(
+            world,ItemKind::BronzePick,MaterialKind::Bronze);
+    CivilizationTransformationStatus tooling;
+    tooling.transformation=CivilizationTransformationId::AdvancedTooling;
+    tooling.evidenceCount=advancedTools;
+    tooling.supportingTechnologyCount=civilizationSupportingTechnologyCount(
+        technologies,{TechnologyId::BronzeAxe,TechnologyId::BronzePick});
+    tooling.magnitude01=civilizationProgressionClamp01(
+        static_cast<double>(advancedTools)/static_cast<double>(living));
+    tooling.active=advancedTools>0;
+    result.push_back(tooling);
+
+    double knowledgeCoverageSum=0.0;
+    int knowledgeTechnologyCount=0;
+    int multiResidentKnowledgeCount=0;
+    for(const auto& technology:technologies){
+        if(!technology.historicallyKnown && technology.livingKnowerCount<=0) continue;
+        knowledgeCoverageSum+=civilizationProgressionClamp01(
+            static_cast<double>(technology.livingKnowerCount)
+                /static_cast<double>(living));
+        ++knowledgeTechnologyCount;
+        if(technology.livingKnowerCount>1) ++multiResidentKnowledgeCount;
+    }
+    CivilizationTransformationStatus diffusion;
+    diffusion.transformation=CivilizationTransformationId::KnowledgeDiffusion;
+    diffusion.evidenceCount=multiResidentKnowledgeCount;
+    diffusion.supportingTechnologyCount=knowledgeTechnologyCount;
+    diffusion.magnitude01=
+        knowledgeTechnologyCount>0
+            ? civilizationProgressionClamp01(
+                knowledgeCoverageSum
+                /static_cast<double>(knowledgeTechnologyCount))
+            : 0.0;
+    diffusion.active=multiResidentKnowledgeCount>0;
+    result.push_back(diffusion);
+
+    return result;
 }
 
 } // namespace lifelens

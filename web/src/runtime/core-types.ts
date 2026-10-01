@@ -646,6 +646,44 @@ export interface CivilizationDiscovery {
   livingKnowerCount: number;
 }
 
+export interface CivilizationTechnologyPopulation {
+  technology: string;
+  state:
+    | 'Unknown'
+    | 'Observed'
+    | 'Reproducible'
+    | 'Operational'
+    | 'Diffusing'
+    | 'Common'
+    | 'Declining'
+    | 'Lost'
+    | string;
+  livingKnowerCount: number;
+  reproducibleKnowerCount: number;
+  operationalResidentCount: number;
+  adoptedResidentCount: number;
+  successfulUseCount: number;
+  diffusion01: number;
+  historicallyKnown: boolean;
+  historicalFactCount: number;
+  firstEvidenceMinute: number;
+  latestEvidenceMinute: number;
+}
+
+export interface CivilizationTransformation {
+  transformation:
+    | 'ResourceBuffering'
+    | 'ManagedFoodProduction'
+    | 'MetallurgicalProduction'
+    | 'AdvancedTooling'
+    | 'KnowledgeDiffusion'
+    | string;
+  active: boolean;
+  magnitude01: number;
+  evidenceCount: number;
+  supportingTechnologyCount: number;
+}
+
 export interface CivilizationWorldPayload {
   available?: boolean;
   minute?: number;
@@ -664,6 +702,12 @@ export interface CivilizationWorldPayload {
   uniqueReproducibleTechniqueTypes?: number;
   knownTechniqueOwners?: number;
   reproducibleTechniqueOwners?: number;
+  commonTechnologyCount?: number;
+  decliningTechnologyCount?: number;
+  lostTechnologyCount?: number;
+  activeTransformationCount?: number;
+  technologyPopulation?: CivilizationTechnologyPopulation[];
+  transformations?: CivilizationTransformation[];
   resources?: CivilizationWorldResource[];
   storages?: CivilizationWorldStorage[];
   facilities?: CivilizationWorldFacility[];

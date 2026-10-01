@@ -173,6 +173,13 @@ struct CivilizationWorldObservation {
     std::size_t knownTechniqueOwners=0;
     std::size_t reproducibleTechniqueOwners=0;
 
+    std::size_t commonTechnologyCount=0;
+    std::size_t decliningTechnologyCount=0;
+    std::size_t lostTechnologyCount=0;
+    std::size_t activeTransformationCount=0;
+    std::vector<CivilizationTechnologyPopulationStatus> technologyPopulation;
+    std::vector<CivilizationTransformationStatus> transformations;
+
     std::vector<CivilizationResourceObservation> resources;
     std::vector<CivilizationStorageObservation> storages;
     std::vector<CivilizationFacilityObservation> facilities;
@@ -481,6 +488,50 @@ inline CivilizationWorldObservation buildCivilizationWorldObservation(
     for(std::size_t i=1;i<TechniqueSlots;++i){
         if(knownTypes[i]) ++dto.uniqueKnownTechniqueTypes;
         if(reproducibleTypes[i]) ++dto.uniqueReproducibleTechniqueTypes;
+    }
+
+    dto.technologyPopulation.reserve(TechnologyRegistry.size());
+    for(const TechnologyDefinition& definition:TechnologyRegistry){
+        bool historicallyKnown=false;
+        int factCount=0;
+        int firstEvidenceMinute=-1;
+        int latestEvidenceMinute=-1;
+        for(const SocialFact& fact:socialKnowledge.facts()){
+            if(!factRepresentsTechnique(fact,definition.legacyTechnique)) continue;
+            historicallyKnown=true;
+            ++factCount;
+            if(firstEvidenceMinute<0 || fact.eventMinute<firstEvidenceMinute){
+                firstEvidenceMinute=fact.eventMinute;
+            }
+            latestEvidenceMinute=std::max(latestEvidenceMinute,fact.eventMinute);
+        }
+
+        CivilizationTechnologyPopulationStatus populationStatus=
+            observeTechnologyPopulationStatus(
+                world,definition.id,historicallyKnown);
+        populationStatus.historicalFactCount=factCount;
+        populationStatus.firstEvidenceMinute=firstEvidenceMinute;
+        populationStatus.latestEvidenceMinute=latestEvidenceMinute;
+        switch(populationStatus.state){
+            case TechnologyPopulationState::Common:
+                ++dto.commonTechnologyCount;
+                break;
+            case TechnologyPopulationState::Declining:
+                ++dto.decliningTechnologyCount;
+                break;
+            case TechnologyPopulationState::Lost:
+                ++dto.lostTechnologyCount;
+                break;
+            default:
+                break;
+        }
+        dto.technologyPopulation.push_back(populationStatus);
+    }
+
+    dto.transformations=buildCivilizationTransformationStatuses(
+        world,dto.technologyPopulation);
+    for(const CivilizationTransformationStatus& transformation:dto.transformations){
+        if(transformation.active) ++dto.activeTransformationCount;
     }
 
     for(const SocialFact& fact:socialKnowledge.facts()){
