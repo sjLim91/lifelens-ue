@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - experiment/p0-sanitation-progression-20261001
+      - experiment/p0-sanitation-candidate-20261001
     paths:
       - 'Source/LifeLensCore/**'
       - '.github/workflows/balance-audit.yml'
@@ -33,7 +34,7 @@ jobs:
       matrix:
         seed: [874213954, 4242001]
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 25
     steps:
       - name: 소스 체크아웃
         uses: actions/checkout@v4
@@ -54,7 +55,7 @@ jobs:
   manual-audit:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 25
     steps:
       - name: 소스 체크아웃
         uses: actions/checkout@v4
