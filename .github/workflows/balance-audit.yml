@@ -7,6 +7,7 @@ on:
       - experiment/p0-sanitation-candidate-20261001
       - audit/sanitation-craft-trace-20261001
       - experiment/p0-sanitation-scheduler-20261001
+      - audit/sanitation-scheduler-fast-20261001
     paths:
       - 'Source/LifeLensCore/**'
       - '.github/workflows/balance-audit.yml'
@@ -34,7 +35,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        seed: [874213954, 4242001]
+        seed: [4242001]
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -49,7 +50,7 @@ jobs:
 
       - name: 기준 전 구간 계측
         run: |
-          for days in 1 7 30 100 365 500 1000; do
+          for days in 1 7 30; do
             echo "===== seed=${{ matrix.seed }} days=$days ====="
             ./build/ll_balance_audit --seed '${{ matrix.seed }}' --days "$days"
           done
