@@ -9,6 +9,7 @@
 namespace lifelens {
 namespace {
 constexpr int CivilizationKnowledgeWitnessRadiusTiles=2;
+constexpr int CivilizationKnowledgeTeachingStartRadiusTiles=2;
 }
 
 void Simulation::processCivilizationKnowledgeEvent(
@@ -95,7 +96,14 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
             for(const Character& learner:world_.characters){
                 if(!learner.alive || learner.id==teacher.id) continue;
                 const auto learnerRuntime=runtime_.find(learner.id);
-                if(learnerRuntime==runtime_.end() || learnerRuntime->second.pendingContext.active()) continue;
+                if(learnerRuntime==runtime_.end()
+                   || learnerRuntime->second.pendingContext.active()
+                   || !contextActionNearTarget(
+                        teacherRuntime->second.pos,
+                        learnerRuntime->second.pos,
+                        CivilizationKnowledgeTeachingStartRadiusTiles)){
+                    continue;
+                }
 
                 const KnowledgeLevel learnerLevel=learner.civilization.knowledge.level(record.technique);
                 if(static_cast<int>(learnerLevel)>=static_cast<int>(KnowledgeLevel::Reproducible)) continue;
@@ -144,7 +152,11 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
     const auto learnerRuntime=runtime_.find(best.learner);
     if(teacherRuntime==runtime_.end() || learnerRuntime==runtime_.end()
        || teacherRuntime->second.pendingContext.active()
-       || learnerRuntime->second.pendingContext.active()) return;
+       || learnerRuntime->second.pendingContext.active()
+       || !contextActionNearTarget(
+            teacherRuntime->second.pos,
+            learnerRuntime->second.pos,
+            CivilizationKnowledgeTeachingStartRadiusTiles)) return;
 
     PendingContextAction pending;
     pending.token=issueContextActionToken();
