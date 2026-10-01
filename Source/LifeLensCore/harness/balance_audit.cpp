@@ -109,6 +109,12 @@ struct ResidentMetrics {
     std::uint64_t socialViableBlockedUrgentNonImmediate=0;
     double socialViableUtilitySum=0.0;
     double socialViablePhysicalUtilitySum=0.0;
+
+    // Water/container progression diagnostics.
+    std::uint64_t clayGatherBestSamples=0;
+    std::uint64_t simpleContainerExperimentBestSamples=0;
+    std::uint64_t simpleContainerCraftBestSamples=0;
+    std::uint64_t simpleContainerUnifiedWinnerSamples=0;
 };
 
 std::array<double,5> needsArray(const Needs& n)
@@ -512,6 +518,68 @@ void auditSocialSchedulerGate(
     }
 }
 
+void auditContainerProgression(
+    const Simulation& sim,
+    ResidentMetrics& metric)
+{
+    const ResidentPlanningStateObservation planning=
+        sim.observeResidentPlanningState(metric.id);
+    const Character* resident=findResident(sim.world(),metric.id);
+    if(!planning.valid || resident==nullptr || !resident->alive) return;
+    if(sim.world().minute%5!=0
+       || planning.hasPhysicalPlan
+       || planning.hasPendingContext){
+        return;
+    }
+
+    Character projected=*resident;
+    projected.needs.decay(
+        sim.ruleset().needs,
+        projected.metabolism,
+        projected.sleepTendency);
+
+    const SettlementPopulation population=
+        observedSettlementPopulation(sim);
+
+    const CivilizationUtilityDecision gather=
+        bestGatherDecisionAtPosition(
+            sim.world(),projected,planning.position);
+    if(gather.intent==CivilizationIntent::Gather
+       && gather.material==MaterialKind::Clay){
+        ++metric.clayGatherBestSamples;
+    }
+
+    const CivilizationUtilityDecision experiment=
+        bestExperimentDecisionAtPosition(
+            sim.world(),projected,planning.position,&population);
+    if(experiment.intent==CivilizationIntent::Experiment
+       && experiment.technique==TechniqueId::SimpleContainer){
+        ++metric.simpleContainerExperimentBestSamples;
+    }
+
+    const CivilizationUtilityDecision craft=
+        bestCraftDecisionAtPosition(
+            sim.world(),projected,planning.position,&population);
+    if(craft.intent==CivilizationIntent::Craft
+       && craft.technique==TechniqueId::SimpleContainer){
+        ++metric.simpleContainerCraftBestSamples;
+    }
+
+    const UnifiedUtilityDecision unified=
+        chooseUnifiedUtilityDecisionAtPosition(
+            sim.world(),projected,sim.relationships(),
+            planning.position,0.18,0.14,&population);
+    if(unified.kind==UnifiedDecisionKind::Civilization
+       && (
+            (unified.civilization.intent==CivilizationIntent::Experiment
+             && unified.civilization.technique==TechniqueId::SimpleContainer)
+            || (unified.civilization.intent==CivilizationIntent::Craft
+                && unified.civilization.technique==TechniqueId::SimpleContainer)
+       )){
+        ++metric.simpleContainerUnifiedWinnerSamples;
+    }
+}
+
 int main(int argc,char** argv)
 {
     int days=30;
@@ -603,6 +671,7 @@ int main(int argc,char** argv)
         for(auto& m:metrics){
             auditActualDugPitPlanningPath(sim,m);
             auditSocialSchedulerGate(sim,m);
+            auditContainerProgression(sim,m);
         }
 
         sim.step();
@@ -779,6 +848,7 @@ int main(int argc,char** argv)
              <<" minute="<<world.minute<<"\n";
     std::cout<<"WORLD naturalWater="<<naturalUnits(world,MaterialKind::Water)
              <<" naturalFood="<<naturalUnits(world,MaterialKind::PlantFood)
+             <<" naturalClay="<<naturalUnits(world,MaterialKind::Clay)
              <<" carriedWater="<<carriedUnits(world,MaterialKind::Water)
              <<" carriedFood="<<carriedUnits(world,MaterialKind::PlantFood)
              <<" storedWater="<<storedUnits(world,MaterialKind::Water)
@@ -913,7 +983,16 @@ int main(int argc,char** argv)
                  <<" techPrimitiveStorage="<<primitiveStorageLevel
                  <<" techDiggingStick="<<diggingStickLevel
                  <<" techStoneHammer="<<stoneHammerLevel
-                 <<" techCultivation="<<cultivationLevel;
+                 <<" techCultivation="<<cultivationLevel
+                 <<" carriedClay="
+                 <<(resident!=nullptr
+                    ? resident->civilization.inventory.count(
+                        ItemKind::RawMaterial,MaterialKind::Clay)
+                    : 0)
+                 <<" simpleContainers="
+                 <<(resident!=nullptr
+                    ? simpleContainerCount(resident->civilization.inventory)
+                    : 0);
         const double denom=static_cast<double>(std::max(1,totalMinutes));
         for(std::size_t i=0;i<needNames.size();++i){
             std::cout<<" "<<needNames[i]<<"Avg="<<std::fixed<<std::setprecision(4)
@@ -1018,7 +1097,11 @@ int main(int argc,char** argv)
                  <<" socialViablePhysicalUtilityAvg="
                  <<(m.socialViableSamples>0
                     ? m.socialViablePhysicalUtilitySum/static_cast<double>(m.socialViableSamples)
-                    : 0.0);
+                    : 0.0)
+                 <<" clayGatherBestSamples="<<m.clayGatherBestSamples
+                 <<" simpleContainerExperimentBestSamples="<<m.simpleContainerExperimentBestSamples
+                 <<" simpleContainerCraftBestSamples="<<m.simpleContainerCraftBestSamples
+                 <<" simpleContainerUnifiedWinnerSamples="<<m.simpleContainerUnifiedWinnerSamples;
         for(std::size_t i=0;i<goalNames.size();++i){
             std::cout<<" "<<goalNames[i]<<"Min="<<m.physicalGoalMinutes[i];
         }
