@@ -23,6 +23,7 @@ import {
 } from './terrain-geometry';
 import { VegetationLayer } from './vegetation-layer';
 import { WaterLayer } from './water-layer';
+import { createTerrainSurfaceSignature } from './terrain-surface';
 import { WeatherLayer } from './weather-layer';
 
 export interface WorldSceneCameraState {
@@ -39,7 +40,6 @@ interface TerrainMeshEntry {
   mesh: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
   key: string;
   signature: string;
-  baseColor: number;
 }
 
 export class WorldScene {
@@ -317,25 +317,7 @@ export class WorldScene {
       chunkWorldSize: WORLD_GRID_CONTRACT.worldUnitsPerChunk,
       elevationScale: WORLD_GRID_CONTRACT.elevationScale,
     });
-    const chunkMap = new Map(
-      window.chunks.map((chunk) => [`${chunk.x}:${chunk.y}`, chunk]),
-    );
-    const terrainSignature = (chunk: TerrainChunk): string => {
-      const neighborhood: string[] = [];
-      for (let dy = -1; dy <= 1; dy += 1) {
-        for (let dx = -1; dx <= 1; dx += 1) {
-          const neighbor = chunkMap.get(
-            `${chunk.x + dx}:${chunk.y + dy}`,
-          );
-          neighborhood.push(
-            neighbor
-              ? (Number(neighbor.elevation01) || 0).toFixed(5)
-              : 'x',
-          );
-        }
-      }
-      return `${window.worldSeed ?? '0'}|${chunk.waterKind}|${neighborhood.join(",")}`;
-    };
+    const terrainSignature = createTerrainSurfaceSignature(window);
 
     this.waterLayer.setTerrain(window);
     this.facilityDressingSignature = this.facilityTraceSignature(window);
@@ -355,24 +337,20 @@ export class WorldScene {
           const previousGeometry = existing.mesh.geometry;
           existing.mesh.geometry = buildGeometry(chunk);
           previousGeometry.dispose();
-          const baseColor = this.terrainColor(chunk);
-          existing.baseColor = baseColor;
-          this.applyTerrainWeather(existing.mesh.material, baseColor);
+          this.applyTerrainWeather(existing.mesh.material);
           existing.signature = signature;
         }
         continue;
       }
 
-      const baseColor = this.terrainColor(chunk);
       const mesh = this.createTerrainMesh(
         chunk,
         window,
         buildGeometry,
-        baseColor,
       );
       this.terrainMeshes.set(
         key,
-        { mesh, key, signature, baseColor },
+        { mesh, key, signature },
       );
       this.terrainGroup.add(mesh);
     }
@@ -411,17 +389,16 @@ export class WorldScene {
     chunk: TerrainChunk,
     window: TerrainWindow,
     buildGeometry: (chunk: TerrainChunk) => THREE.BufferGeometry,
-    baseColor: number,
   ): THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial> {
     const geometry = buildGeometry(chunk);
 
     const material = new THREE.MeshStandardMaterial({
-      color: baseColor,
+      color: 0xffffff,
       roughness: 0.92,
       metalness: 0,
       vertexColors: true,
     });
-    this.applyTerrainWeather(material, baseColor);
+    this.applyTerrainWeather(material);
 
     const mesh = new THREE.Mesh(geometry, material);
     mesh.receiveShadow = true;
@@ -445,17 +422,16 @@ export class WorldScene {
 
   private updateTerrainWeather(): void {
     for (const entry of this.terrainMeshes.values()) {
-      this.applyTerrainWeather(entry.mesh.material, entry.baseColor);
+      this.applyTerrainWeather(entry.mesh.material);
     }
   }
 
   private applyTerrainWeather(
     material: THREE.MeshStandardMaterial,
-    baseColor: number,
   ): void {
     const wetness = this.surfaceWetness01;
     material.color
-      .set(baseColor)
+      .setHex(0xffffff)
       .multiplyScalar(1 - wetness * 0.3);
     material.roughness = Math.max(
       0.42,
@@ -463,53 +439,4 @@ export class WorldScene {
     );
   }
 
-  private terrainColor(chunk: TerrainChunk): number {
-    switch (chunk.waterKind) {
-      case 'Ocean': return 0x1b4b63;
-      case 'Coast': return 0x66705a;
-      case 'Wetland': return 0x496e58;
-      default:
-        break;
-    }
-
-    const elevation = Math.max(
-      0,
-      Math.min(1, Number(chunk.elevation01) || 0),
-    );
-    const grass = Math.max(
-      0,
-      Math.min(1, Number(chunk.grassCoverage01) || 0),
-    );
-    const forest = Math.max(
-      0,
-      Math.min(1, Number(chunk.forestCoverage01) || 0),
-    );
-    const rock = Math.max(
-      0,
-      Math.min(1, Number(chunk.rockCoverage01) || 0),
-    );
-    const moisture = Math.max(
-      0,
-      Math.min(1, Number(chunk.moisture01) || 0),
-    );
-
-    const base = new THREE.Color(
-      elevation < 0.34
-        ? 0x425339
-        : elevation < 0.5
-          ? 0x566246
-          : elevation < 0.68
-            ? 0x6f6d52
-            : 0x898476,
-    );
-    const green = new THREE.Color(0x3f5f35);
-    const earth = new THREE.Color(0x6a5a45);
-    const stone = new THREE.Color(0x77766d);
-
-    base.lerp(green, Math.min(0.42, grass * 0.28 + forest * 0.16));
-    base.lerp(earth, Math.min(0.2, (1 - moisture) * 0.14));
-    base.lerp(stone, Math.min(0.38, rock * 0.36));
-    base.multiplyScalar(0.92 + moisture * 0.08);
-    return base.getHex();
-  }
 }

@@ -201,6 +201,15 @@ int main()
     assert(simpleContainerLogisticsStockPressure(
         world,resident,home)==0.0);
 
+    // Satisfied durable container capital must suppress practice-only crafting.
+    // Knowledge experience alone must never create extra vessels once the
+    // settlement's reusable logistics capital target is already met.
+    const CivilizationUtilityDecision noPracticeOverbuild=
+        bestCraftDecisionAtPosition(world,resident,home,nullptr);
+    assert(
+        noPracticeOverbuild.technique!=TechniqueId::SimpleContainer
+        || noPracticeOverbuild.intent!=CivilizationIntent::Craft);
+
     // Using the shared Water reserve must not be interpreted as destruction of
     // the reusable vessel capital. Moving a filled vessel back to the resident
     // keeps total container capital unchanged.

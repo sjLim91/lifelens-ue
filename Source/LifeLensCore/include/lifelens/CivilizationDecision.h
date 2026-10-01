@@ -1950,7 +1950,15 @@ inline CivilizationUtilityDecision bestCraftDecisionAtPosition(
         }else{
             stockNeed=successfulUses<3 ? 1.0 : 0.0;
         }
-        const double practiceNeed=successfulUses<3 ? 1.0 : (successfulUses<12 ? 0.35 : 0.0);
+        // Durable logistics infrastructure is demand-driven. Once enough
+        // reusable containers exist, do not manufacture extras merely to train
+        // crafting skill; that turns practice into unbounded settlement clutter.
+        const double practiceNeed=
+            technique==TechniqueId::SimpleContainer
+                ? (stockNeed>0.0
+                    ? (successfulUses<3 ? 1.0 : (successfulUses<12 ? 0.35 : 0.0))
+                    : 0.0)
+                : (successfulUses<3 ? 1.0 : (successfulUses<12 ? 0.35 : 0.0));
         if(stockNeed<=0.0 && practiceNeed<=0.0) continue;
 
         const double preference=civilizationPreference(world.seed,self.id,300ULL+static_cast<std::uint64_t>(technique));
