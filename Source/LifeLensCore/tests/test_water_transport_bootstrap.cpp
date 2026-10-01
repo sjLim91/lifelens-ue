@@ -112,6 +112,17 @@ int main()
     assert(logisticsGather.intent==CivilizationIntent::Gather);
     assert(logisticsGather.material==MaterialKind::Clay);
 
+    resident.civilization.inventory.add({
+        ItemKind::RawMaterial,
+        MaterialKind::Clay,
+        3,
+        0.5,
+        1.0});
+    const CivilizationUtilityDecision logisticsCraft=
+        bestCraftDecisionAtPosition(world,resident,home,nullptr);
+    assert(logisticsCraft.intent==CivilizationIntent::Craft);
+    assert(logisticsCraft.technique==TechniqueId::SimpleContainer);
+
     // Shared filled Water in a nearby real storage also solves the immediate
     // transport problem without forcing every resident to reinvent a vessel.
     resident.civilization.inventory.remove(

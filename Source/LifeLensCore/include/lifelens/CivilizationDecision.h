@@ -876,8 +876,13 @@ inline CivilizationUtilityDecision bestGatherDecisionAtPosition(
         const double localBonus=
             distance<=WorldChunkSpanGridCells*3 ? 0.04 : 0.0;
         const double distancePenalty=provision ? 0.0 : 0.20*distance01;
-        const double waterTransportBoost=
+        const bool containerInputsReady=
             node.material==MaterialKind::Clay
+            && hasIngredients(
+                self.civilization.inventory,
+                techniqueRecipe(TechniqueId::SimpleContainer).inputs);
+        const double waterTransportBoost=
+            node.material==MaterialKind::Clay && !containerInputsReady
                 ? 0.22*std::max(
                     waterTransportInnovationPressure(
                         world,self,authoritativePosition),
