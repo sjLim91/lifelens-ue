@@ -856,6 +856,15 @@ struct TechnologyInnovationWeights {
     double resourceScarcity=0.0;
 };
 
+struct InnovationPressureContextSnapshot {
+    double survival01=0.0;
+    double exposure01=0.0;
+    double logistics01=0.0;
+    double foodSecurity01=0.0;
+    double sanitation01=0.0;
+    double repeatedWork01=0.0;
+};
+
 inline TechnologyInnovationWeights technologyInnovationWeights(
     TechnologyId technology)
 {
@@ -898,20 +907,14 @@ inline TechnologyInnovationWeights technologyInnovationWeights(
     }
 }
 
-inline InnovationPressureObservation observeTechnologyInnovationPressure(
+inline InnovationPressureContextSnapshot observeInnovationPressureContext(
     const World& world,
     const Character& self,
-    TechnologyId technology,
     GridPos authoritativePosition,
     const SettlementPopulation* population=nullptr)
 {
-    InnovationPressureObservation observation;
-    observation.technology=technology;
-    const TechnologyInnovationWeights weights=
-        technologyInnovationWeights(technology);
-    if(weights.technology==TechnologyId::None) return observation;
-
-    observation.survival01=clampCivilization01(std::max({
+    InnovationPressureContextSnapshot context;
+    context.survival01=clampCivilization01(std::max({
         self.needs.hunger,
         self.needs.thirst,
         self.needs.sleep,
@@ -924,7 +927,7 @@ inline InnovationPressureObservation observeTechnologyInnovationPressure(
         world.minute);
     const EnvironmentalConsequenceProfile consequence=
         deriveEnvironmentalConsequences(environment);
-    observation.exposure01=clampCivilization01(std::max({
+    context.exposure01=clampCivilization01(std::max({
         consequence.heatStress01,
         consequence.coldStress01,
         environment.precipitationIntensity01,
@@ -936,18 +939,18 @@ inline InnovationPressureObservation observeTechnologyInnovationPressure(
     const PrimitiveStorageNeedObservation storageNeed=
         observePrimitiveStorageNeed(
             world,self,authoritativePosition,population);
-    observation.logistics01=clampCivilization01(std::max({
+    context.logistics01=clampCivilization01(std::max({
         waterTransportInnovationPressure(
             world,self,authoritativePosition),
         simpleContainerLogisticsStockPressure(
             world,self,authoritativePosition,population),
-        storageNeed.pressure
+        storageNeed.recognized ? storageNeed.pressure : 0.0
     }));
 
     const CultivationDemandObservation cultivationDemand=
         observeCultivationDemand(
             world,authoritativePosition,population);
-    observation.foodSecurity01=clampCivilization01(
+    context.foodSecurity01=clampCivilization01(
         cultivationDemand.pressure);
 
     const PrimitiveSanitationOpportunity sanitationOpportunity=
@@ -958,7 +961,7 @@ inline InnovationPressureObservation observeTechnologyInnovationPressure(
         evaluateDugSanitationPitOpportunity(
             self,world.environmentalResidues,
             world.primitiveSanitationSites);
-    observation.sanitation01=clampCivilization01(std::max(
+    context.sanitation01=clampCivilization01(std::max(
         sanitationOpportunity.problemRecognized
             ? sanitationOpportunity.problemConfidence
             : 0.0,
@@ -970,15 +973,37 @@ inline InnovationPressureObservation observeTechnologyInnovationPressure(
     for(const TechniqueKnowledge& record:self.civilization.knowledge.all()){
         successfulUses+=std::max(0,record.successfulUses);
     }
-    const double repeatedWorkPressure=clampCivilization01(
+    context.repeatedWork01=clampCivilization01(
         static_cast<double>(std::min(successfulUses,12))/12.0);
+    return context;
+}
+
+inline InnovationPressureObservation observeTechnologyInnovationPressure(
+    const World& world,
+    const Character& self,
+    TechnologyId technology,
+    GridPos authoritativePosition,
+    const InnovationPressureContextSnapshot& context)
+{
+    InnovationPressureObservation observation;
+    observation.technology=technology;
+    const TechnologyInnovationWeights weights=
+        technologyInnovationWeights(technology);
+    if(weights.technology==TechnologyId::None) return observation;
+
+    observation.survival01=context.survival01;
+    observation.exposure01=context.exposure01;
+    observation.logistics01=context.logistics01;
+    observation.foodSecurity01=context.foodSecurity01;
+    observation.sanitation01=context.sanitation01;
+
     const double materialPressure=
         weights.bottleneckMaterial!=MaterialKind::Unknown
             ? materialProgressDemand(self,weights.bottleneckMaterial)
             : 0.0;
     observation.production01=clampCivilization01(std::max(
         materialPressure,
-        0.65*repeatedWorkPressure));
+        0.65*context.repeatedWork01));
 
     observation.resourceScarcity01=
         weights.bottleneckMaterial!=MaterialKind::Unknown
@@ -1022,6 +1047,20 @@ inline InnovationPressureObservation observeTechnologyInnovationPressure(
         ? clampCivilization01(weightedPressure/totalWeight)
         : 0.0;
     return observation;
+}
+
+inline InnovationPressureObservation observeTechnologyInnovationPressure(
+    const World& world,
+    const Character& self,
+    TechnologyId technology,
+    GridPos authoritativePosition,
+    const SettlementPopulation* population=nullptr)
+{
+    const InnovationPressureContextSnapshot context=
+        observeInnovationPressureContext(
+            world,self,authoritativePosition,population);
+    return observeTechnologyInnovationPressure(
+        world,self,technology,authoritativePosition,context);
 }
 
 inline CivilizationUtilityDecision bestResourceExplorationDecisionAtPosition(
@@ -1203,6 +1242,9 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
             world,self,authoritativePosition,population);
     const bool cultivationOpportunity=cultivationExperimentOpportunityAvailable(
         world,self,authoritativePosition,population);
+    const InnovationPressureContextSnapshot innovationContext=
+        observeInnovationPressureContext(
+            world,self,authoritativePosition,population);
     const std::array<ExperimentKind,16> experiments={
         ExperimentKind::StrikeStone,ExperimentKind::HaftSharpFlake,ExperimentKind::FrictionWood,
         ExperimentKind::TwistFiber,ExperimentKind::ShapeClay,
@@ -1270,7 +1312,7 @@ inline CivilizationUtilityDecision bestExperimentDecisionAtPosition(
         const InnovationPressureObservation innovationPressure=
             observeTechnologyInnovationPressure(
                 world,self,technology,
-                authoritativePosition,population);
+                authoritativePosition,innovationContext);
         const double innovationBoost=0.42*innovationPressure.pressure01;
         const double score=clampCivilization01(
             0.11
