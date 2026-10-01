@@ -38,6 +38,9 @@ int main()
         rules);
     simulation.setupNewGame();
     assert(simulation.world().characters.size()>=2);
+    // Isolate one teacher/learner pair so the deterministic scheduler cannot
+    // legitimately choose a different founder with an equivalent opportunity.
+    simulation.world().characters.resize(2);
 
     Character& teacher=simulation.world().characters[0];
     Character& learner=simulation.world().characters[1];
