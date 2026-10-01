@@ -319,6 +319,17 @@ int main(int argc,char** argv)
         bool knowsDiggingStick=false;
         bool knowsCultivation=false;
         int diggingStickTools=0;
+        int sharpFlakeLevel=0;
+        int chippedStoneToolLevel=0;
+        int fireMakingLevel=0;
+        int fiberCordageLevel=0;
+        int simpleContainerLevel=0;
+        int designatedSanitationLevel=0;
+        int dugSanitationPitLevel=0;
+        int primitiveStorageLevel=0;
+        int diggingStickLevel=0;
+        int stoneHammerLevel=0;
+        int cultivationLevel=0;
         if(resident!=nullptr){
             for(const auto& record:resident->civilization.knowledge.all()){
                 if(static_cast<int>(record.level)>=
@@ -332,12 +343,47 @@ int main(int argc,char** argv)
                 TechniqueId::Cultivation,KnowledgeLevel::Reproducible);
             diggingStickTools=resident->civilization.inventory.count(
                 ItemKind::DiggingStick,MaterialKind::Unknown,true);
+            sharpFlakeLevel=static_cast<int>(
+                resident->civilization.knowledge.level(TechniqueId::SharpFlake));
+            chippedStoneToolLevel=static_cast<int>(
+                resident->civilization.knowledge.level(TechniqueId::ChippedStoneTool));
+            fireMakingLevel=static_cast<int>(
+                resident->civilization.knowledge.level(TechniqueId::FireMaking));
+            fiberCordageLevel=static_cast<int>(
+                resident->civilization.knowledge.level(TechniqueId::FiberCordage));
+            simpleContainerLevel=static_cast<int>(
+                resident->civilization.knowledge.level(TechniqueId::SimpleContainer));
+            designatedSanitationLevel=static_cast<int>(
+                resident->civilization.knowledge.level(
+                    TechniqueId::DesignatedSanitationArea));
+            dugSanitationPitLevel=static_cast<int>(
+                resident->civilization.knowledge.level(
+                    TechniqueId::DugSanitationPit));
+            primitiveStorageLevel=static_cast<int>(
+                resident->civilization.knowledge.level(TechniqueId::PrimitiveStorage));
+            diggingStickLevel=static_cast<int>(
+                resident->civilization.knowledge.level(TechniqueId::DiggingStick));
+            stoneHammerLevel=static_cast<int>(
+                resident->civilization.knowledge.level(TechniqueId::StoneHammer));
+            cultivationLevel=static_cast<int>(
+                resident->civilization.knowledge.level(TechniqueId::Cultivation));
         }
         std::cout<<"RESIDENT id="<<m.id<<" name="<<m.name
                  <<" reproducibleTechniques="<<reproducibleTechniques
                  <<" knowsDiggingStick="<<(knowsDiggingStick?1:0)
                  <<" knowsCultivation="<<(knowsCultivation?1:0)
-                 <<" diggingStickTools="<<diggingStickTools;
+                 <<" diggingStickTools="<<diggingStickTools
+                 <<" techSharpFlake="<<sharpFlakeLevel
+                 <<" techChippedStone="<<chippedStoneToolLevel
+                 <<" techFireMaking="<<fireMakingLevel
+                 <<" techFiberCordage="<<fiberCordageLevel
+                 <<" techSimpleContainer="<<simpleContainerLevel
+                 <<" techDesignatedSanitation="<<designatedSanitationLevel
+                 <<" techDugPit="<<dugSanitationPitLevel
+                 <<" techPrimitiveStorage="<<primitiveStorageLevel
+                 <<" techDiggingStick="<<diggingStickLevel
+                 <<" techStoneHammer="<<stoneHammerLevel
+                 <<" techCultivation="<<cultivationLevel;
         const double denom=static_cast<double>(std::max(1,totalMinutes));
         for(std::size_t i=0;i<needNames.size();++i){
             std::cout<<" "<<needNames[i]<<"Avg="<<std::fixed<<std::setprecision(4)
