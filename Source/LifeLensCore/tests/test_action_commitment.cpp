@@ -38,6 +38,43 @@ void addReachableFood(Simulation& sim,CharacterId id,ResourceNodeId nodeId)
     sim.world().resourceNodes.push_back(food);
 }
 
+void addDesignatedSanitationSite(
+    Simulation& sim,
+    CharacterId actor,
+    GridPos pos,
+    SanitationSiteId siteId)
+{
+    PrimitiveSanitationSite site;
+    site.id=siteId;
+    site.kind=PrimitiveSanitationSiteKind::DesignatedArea;
+    site.pos=pos;
+    site.establishedBy=actor;
+    site.establishedMinute=sim.world().minute;
+    site.active=true;
+    site.useCount=1;
+    sim.world().primitiveSanitationSites.clear();
+    sim.world().primitiveSanitationSites.push_back(site);
+}
+
+bool waitForMovingPhysical(
+    Simulation& sim,
+    CharacterId id,
+    Goal goal,
+    int maxMinutes)
+{
+    for(int i=0;i<maxMinutes;++i){
+        sim.step();
+        const auto observed=sim.observeResidentPresentation(id);
+        if(observed.active
+           && observed.kind==PresentationActionKind::Physical
+           && observed.physicalGoal==goal
+           && observed.phase==PresentationActionPhase::Moving){
+            return true;
+        }
+    }
+    return false;
+}
+
 bool waitForInteractingPhysical(
     Simulation& sim,
     CharacterId id,
@@ -67,6 +104,65 @@ int main()
     rules.needs.sleepPerMinute=0.0;
     rules.needs.bladderPerMinute=0.0;
     rules.needs.hygienePerMinute=0.0;
+
+    // Movement commitment: crossing the Critical Hunger band must not cause
+    // toilet -> food -> toilet ping-pong when the resident is already travelling
+    // to a nearby sanitation site and can finish well before Hunger saturates.
+    // The production estimator uses worst-case weather travel cadence, so this
+    // scenario deliberately leaves a wide real time budget rather than relying
+    // on an arbitrary distance exception.
+    SimulationRuleset movingRules=rules;
+    movingRules.needs.hungerPerMinute=0.0010;
+    Simulation movingToilet(
+        874219000,0,CurrentWorldGenerationVersion,movingRules);
+    movingToilet.setupNewGame();
+    movingToilet.world().characters.resize(1);
+    movingToilet.world().resourceNodes.clear();
+    movingToilet.world().storageSites.clear();
+
+    Character* movingActor=onlyResident(movingToilet);
+    assert(movingActor!=nullptr);
+    const CharacterId movingId=movingActor->id;
+    movingActor->needs={0.10,0.10,0.10,0.95,0.10};
+
+    GridPos movingStart{};
+    assert(movingToilet.runtimePosition(movingId,movingStart));
+    addDesignatedSanitationSite(
+        movingToilet,
+        movingId,
+        {movingStart.x+4,movingStart.y},
+        990900);
+    addReachableFood(movingToilet,movingId,991000);
+
+    assert(waitForMovingPhysical(
+        movingToilet,movingId,Goal::UseToilet,40));
+
+    const std::string movingName=movingActor->name;
+    movingActor->needs.hunger=CriticalSurvivalPreemptThreshold;
+
+    bool movingToiletCompleted=false;
+    bool foodGatherAfterToilet=false;
+    for(int i=0;i<120;++i){
+        movingToilet.step();
+        if(containsLog(
+            movingToilet,
+            movingName+" completed UseToilet at primitive sanitation site=")){
+            movingToiletCompleted=true;
+        }
+
+        const auto observed=
+            movingToilet.observeResidentPresentation(movingId);
+        if(observed.active
+           && observed.kind==PresentationActionKind::Civilization
+           && observed.civilizationIntent==CivilizationIntent::Gather
+           && observed.civilizationMaterial==MaterialKind::PlantFood){
+            foodGatherAfterToilet=true;
+            assert(movingToiletCompleted);
+            break;
+        }
+    }
+    assert(movingToiletCompleted);
+    assert(foodGatherAfterToilet);
 
     // Once actual toilet use has started, a newly-critical food need may wait a
     // couple of minutes for the atomic interaction to finish. Movement toward
