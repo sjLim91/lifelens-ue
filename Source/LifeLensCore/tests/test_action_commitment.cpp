@@ -141,13 +141,21 @@ int main()
     movingActor->needs.hunger=CriticalSurvivalPreemptThreshold;
 
     bool movingToiletCompleted=false;
+    bool movingToiletCompletedAtDesignatedSite=false;
     bool foodGatherAfterToilet=false;
     for(int i=0;i<120;++i){
         movingToilet.step();
-        if(containsLog(
-            movingToilet,
-            movingName+" completed UseToilet via sanitation site")){
+        if(!movingToiletCompleted
+           && containsLog(
+               movingToilet,
+               movingName+" completed UseToilet")){
             movingToiletCompleted=true;
+            GridPos completedPosition{};
+            assert(movingToilet.runtimePosition(
+                movingId,completedPosition));
+            movingToiletCompletedAtDesignatedSite=
+                completedPosition.x==movingStart.x+4
+                && completedPosition.y==movingStart.y;
         }
 
         const auto observed=
@@ -162,6 +170,7 @@ int main()
         }
     }
     assert(movingToiletCompleted);
+    assert(movingToiletCompletedAtDesignatedSite);
     assert(foodGatherAfterToilet);
 
     // Once actual toilet use has started, a newly-critical food need may wait a
