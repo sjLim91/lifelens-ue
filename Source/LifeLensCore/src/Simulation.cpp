@@ -600,6 +600,7 @@ void Simulation::clearNavigation(Runtime& r){
 }
 
 bool Simulation::advanceNavigation(
+    CharacterId moverId,
     Runtime& r,
     GridPos target,
     int arrivalRadius)
@@ -625,14 +626,9 @@ bool Simulation::advanceNavigation(
 
     if(r.navigationRouteFailed) return false;
 
-    const HealthState* movingHealth=nullptr;
-    for(const auto& character:world_.characters){
-        const auto runtimeIt=runtime_.find(character.id);
-        if(runtimeIt!=runtime_.end() && &runtimeIt->second==&r){
-            movingHealth=&character.health;
-            break;
-        }
-    }
+    const Character* movingCharacter=findFamilyCharacter(world_,moverId);
+    const HealthState* movingHealth=
+        movingCharacter!=nullptr ? &movingCharacter->health : nullptr;
     const int healthMovementPenalty=movingHealth!=nullptr
         ? static_cast<int>(std::lround(
             2.0*(1.0-healthFunctionalCapacity01(*movingHealth))))
@@ -776,7 +772,7 @@ bool Simulation::advancePendingContext(
     }
 
     if(requiresMovement){
-        if(!advanceNavigation(runtime,target,arrivalRadius)){
+        if(!advanceNavigation(actor.id,runtime,target,arrivalRadius)){
             return false;
         }
     }
@@ -1499,7 +1495,7 @@ void Simulation::advanceAction(Character& c,Runtime& r){
             obj->reservedBy=c.id; ++r.actionIndex; r.announced=false; break;
         case ActionType::MoveTo:
             if(!obj){ failPlan(c,r); return; }
-            if(advanceNavigation(r,obj->pos,0)){
+            if(advanceNavigation(c.id,r,obj->pos,0)){
                 clearNavigation(r);
                 a.remainingTicks=0;
                 ++r.actionIndex;
@@ -1591,7 +1587,7 @@ void Simulation::advanceAction(Character& c,Runtime& r){
                     failPlan(c,r);
                     return;
                 }
-                if(!advanceNavigation(r,r.navigationTarget,0)){
+                if(!advanceNavigation(c.id,r,r.navigationTarget,0)){
                     if(r.navigationRouteFailed){
                         failPlan(c,r);
                     }
@@ -1634,7 +1630,7 @@ void Simulation::advanceAction(Character& c,Runtime& r){
                 const GridPos reliefTarget=r.navigationHasTarget
                     ? r.navigationTarget
                     : sanitationTarget.pos;
-                if(!advanceNavigation(r,reliefTarget,0)){
+                if(!advanceNavigation(c.id,r,reliefTarget,0)){
                     if(r.navigationRouteFailed){
                         failPlan(c,r);
                     }
@@ -1653,7 +1649,7 @@ void Simulation::advanceAction(Character& c,Runtime& r){
                         hasSleepTarget=true;
                     }
                 }
-                if(hasSleepTarget && !advanceNavigation(r,sleepTarget,0)){
+                if(hasSleepTarget && !advanceNavigation(c.id,r,sleepTarget,0)){
                     if(r.navigationRouteFailed){
                         failPlan(c,r);
                     }
