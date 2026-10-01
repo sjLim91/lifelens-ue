@@ -87,6 +87,34 @@ struct ResidentMetrics {
     double dugPitImprovementWorkGain=0.0;
     double dugPitImprovementWorkMax=0.0;
     double lastObservedSanitationWork=0.0;
+
+    // Actual beginPlan-boundary Social starvation diagnostics.
+    std::uint64_t socialPlanningBoundarySamples=0;
+    std::uint64_t socialBlockedPenalty=0;
+    std::uint64_t socialBlockedUrgentNeed=0;
+    std::uint64_t socialBlockedUrgentHunger=0;
+    std::uint64_t socialBlockedUrgentThirst=0;
+    std::uint64_t socialBlockedUrgentSleep=0;
+    std::uint64_t socialBlockedUrgentBladder=0;
+    std::uint64_t socialBlockedUrgentHygiene=0;
+    std::uint64_t socialBlockedProvision=0;
+    std::uint64_t socialBlockedCivilizationFirst=0;
+    std::uint64_t socialCivilizationResolveFailures=0;
+    std::uint64_t socialBlockedCooldown=0;
+    std::uint64_t socialCandidateNone=0;
+    std::uint64_t socialCandidateAboveMinimum=0;
+    std::uint64_t socialCandidateBeatsPhysical=0;
+    std::uint64_t socialViableButUrgentGated=0;
+    std::uint64_t socialBelowMinimum=0;
+    std::uint64_t socialBlockedPhysicalMargin=0;
+    std::uint64_t socialSelectedSamples=0;
+    std::uint64_t socialApproachBestSamples=0;
+    std::uint64_t socialAvoidBestSamples=0;
+    std::uint64_t socialRepairBestSamples=0;
+    std::uint64_t socialComfortBestSamples=0;
+    double socialCandidateUtilitySum=0.0;
+    double socialPhysicalUtilitySum=0.0;
+    std::uint64_t socialUtilitySamples=0;
 };
 
 std::array<double,5> needsArray(const Needs& n)
@@ -400,6 +428,192 @@ void auditActualDugPitPlanningPath(
     ++metric.dugPitContextIssued;
 }
 
+void auditActualSocialPlanningPath(
+    const Simulation& sim,
+    ResidentMetrics& metric)
+{
+    const ResidentPlanningStateObservation planning=
+        sim.observeResidentPlanningState(metric.id);
+    const Character* resident=findResident(sim.world(),metric.id);
+    if(!planning.valid || resident==nullptr || !resident->alive) return;
+
+    // Simulation::step() can enter beginPlan only from this actual idle
+    // five-minute boundary. Sample before step(), then project the one ordinary
+    // Need decay that step() performs before planning.
+    if(sim.world().minute%5!=0
+       || planning.hasPhysicalPlan
+       || planning.hasPendingContext){
+        return;
+    }
+
+    ++metric.socialPlanningBoundarySamples;
+
+    Character projected=*resident;
+    projected.needs.decay(
+        sim.ruleset().needs,
+        projected.metabolism,
+        projected.sleepTendency);
+
+    const auto physical=bestPhysicalUtility(sim.world(),projected);
+    const SocialUtilityDecision social=
+        chooseSocialUtilityDecision(
+            sim.world(),projected,sim.relationships());
+
+    if(social.intent==SocialIntent::None || social.target==0){
+        ++metric.socialCandidateNone;
+    }else{
+        ++metric.socialUtilitySamples;
+        metric.socialCandidateUtilitySum+=social.utility;
+        metric.socialPhysicalUtilitySum+=physical.second;
+        if(social.utility>=0.18){
+            ++metric.socialCandidateAboveMinimum;
+        }
+        if(social.utility>=0.18
+           && social.utility>physical.second*1.05){
+            ++metric.socialCandidateBeatsPhysical;
+        }
+        switch(social.intent){
+            case SocialIntent::Approach:
+                ++metric.socialApproachBestSamples;
+                break;
+            case SocialIntent::Avoid:
+                ++metric.socialAvoidBestSamples;
+                break;
+            case SocialIntent::Repair:
+                ++metric.socialRepairBestSamples;
+                break;
+            case SocialIntent::Comfort:
+                ++metric.socialComfortBestSamples;
+                break;
+            case SocialIntent::None:
+            default:
+                break;
+        }
+    }
+
+    const bool criticalSurvivalPressure=
+        projected.needs.hunger>=CriticalSurvivalPreemptThreshold
+        || projected.needs.thirst>=CriticalSurvivalPreemptThreshold;
+    const bool planningAllowed=
+        sim.world().minute>=planning.penaltyUntilMinute
+        || criticalSurvivalPressure;
+    if(!planningAllowed){
+        ++metric.socialBlockedPenalty;
+        return;
+    }
+
+    const double urgentThreshold=sim.ruleset().utilityAI.urgentThreshold;
+    const bool urgentHunger=projected.needs.hunger>=urgentThreshold;
+    const bool urgentThirst=projected.needs.thirst>=urgentThreshold;
+    const bool urgentSleep=projected.needs.sleep>=urgentThreshold;
+    const bool urgentBladder=projected.needs.bladder>=urgentThreshold;
+    const bool urgentHygiene=projected.needs.hygiene>=urgentThreshold;
+    const bool hasUrgentPhysicalNeed=
+        urgentHunger || urgentThirst || urgentSleep
+        || urgentBladder || urgentHygiene;
+
+    if(hasUrgentPhysicalNeed){
+        ++metric.socialBlockedUrgentNeed;
+        if(urgentHunger) ++metric.socialBlockedUrgentHunger;
+        if(urgentThirst) ++metric.socialBlockedUrgentThirst;
+        if(urgentSleep) ++metric.socialBlockedUrgentSleep;
+        if(urgentBladder) ++metric.socialBlockedUrgentBladder;
+        if(urgentHygiene) ++metric.socialBlockedUrgentHygiene;
+        if(social.intent!=SocialIntent::None
+           && social.utility>=0.18
+           && social.utility>physical.second*1.05){
+            ++metric.socialViableButUrgentGated;
+        }
+    }
+
+    const CivilizationUtilityDecision urgentProvision=
+        urgentSurvivalProvisionDecisionAtPosition(
+            sim.world(),projected,planning.position);
+    if(urgentProvision.intent!=CivilizationIntent::None){
+        ++metric.socialBlockedProvision;
+        return;
+    }
+
+    Goal urgentPhysicalGoal=Goal::Idle;
+    double urgentPhysicalNeed=-1.0;
+    for(const Goal candidate:{Goal::Eat,Goal::Drink,Goal::UseToilet}){
+        const double need=needForGoal(projected,candidate);
+        if(need<urgentThreshold
+           || !actionAvailableFor(sim.world(),projected,candidate)){
+            continue;
+        }
+        if(urgentPhysicalGoal==Goal::Idle || need>urgentPhysicalNeed){
+            urgentPhysicalGoal=candidate;
+            urgentPhysicalNeed=need;
+        }
+    }
+
+    // beginPlan invokes civilization before Social. On the 15-minute cadence,
+    // prove whether a real Civilization context would take the slot first.
+    const bool sanitationPressureMayCompete=
+        dugSanitationPitCraftPressureCouldCompete(sim.world(),projected);
+    if((urgentPhysicalGoal==Goal::Idle || sanitationPressureMayCompete)
+       && sim.world().minute%15==0){
+        const SettlementPopulation population=observedSettlementPopulation(sim);
+        const UnifiedUtilityDecision unified=
+            chooseUnifiedUtilityDecisionAtPosition(
+                sim.world(),projected,sim.relationships(),
+                planning.position,0.18,0.14,&population);
+        if(unified.kind==UnifiedDecisionKind::Civilization
+           && unified.civilization.intent!=CivilizationIntent::None){
+            GridPos target{};
+            SanitationSiteId sanitationSiteId=0;
+            const bool resolved=resolveCivilizationContextTarget(
+                sim.world(),projected,unified.civilization,
+                planning.position,target,sanitationSiteId,&population);
+            if(!civilizationContextRequiresSpatialTarget(unified.civilization)
+               || resolved){
+                ++metric.socialBlockedCivilizationFirst;
+                return;
+            }
+            ++metric.socialCivilizationResolveFailures;
+        }
+    }
+
+    // This is the explicit beginPlan hard gate under investigation.
+    if(hasUrgentPhysicalNeed){
+        return;
+    }
+
+    if(sim.world().minute<planning.socialCooldownUntilMinute){
+        ++metric.socialBlockedCooldown;
+        return;
+    }
+
+    if(social.intent==SocialIntent::None || social.target==0){
+        return;
+    }
+    if(social.utility<0.18){
+        ++metric.socialBelowMinimum;
+        return;
+    }
+    if(!(social.utility>physical.second*1.05)){
+        ++metric.socialBlockedPhysicalMargin;
+        return;
+    }
+
+    // At non-civilization minutes trySocialDecision disables civilization with
+    // minimumCivilizationUtility=2.0; on 15-minute boundaries a surviving
+    // candidate should still match the Unified winner.
+    const SettlementPopulation population=observedSettlementPopulation(sim);
+    const UnifiedUtilityDecision unified=sim.world().minute%15==0
+        ? chooseUnifiedUtilityDecisionAtPosition(
+            sim.world(),projected,sim.relationships(),
+            planning.position,0.18,0.14,&population)
+        : chooseUnifiedUtilityDecisionAtPosition(
+            sim.world(),projected,sim.relationships(),
+            planning.position,0.18,2.0,&population);
+    if(unified.kind==UnifiedDecisionKind::Social
+       && unified.social.intent!=SocialIntent::None){
+        ++metric.socialSelectedSamples;
+    }
+}
+
 }
 
 int main(int argc,char** argv)
@@ -492,6 +706,7 @@ int main(int argc,char** argv)
         // step() may issue and complete a short context in the same minute.
         for(auto& m:metrics){
             auditActualDugPitPlanningPath(sim,m);
+            auditActualSocialPlanningPath(sim,m);
         }
 
         sim.step();
@@ -819,6 +1034,37 @@ int main(int argc,char** argv)
                  <<" sleepRecoverySum="<<std::fixed<<std::setprecision(4)
                  <<m.accumulatedSleepRecovery
                  <<" physicalMin="<<m.physicalMinutes
+                 <<" socialPlanningBoundarySamples="<<m.socialPlanningBoundarySamples
+                 <<" socialBlockedPenalty="<<m.socialBlockedPenalty
+                 <<" socialBlockedUrgentNeed="<<m.socialBlockedUrgentNeed
+                 <<" socialBlockedUrgentHunger="<<m.socialBlockedUrgentHunger
+                 <<" socialBlockedUrgentThirst="<<m.socialBlockedUrgentThirst
+                 <<" socialBlockedUrgentSleep="<<m.socialBlockedUrgentSleep
+                 <<" socialBlockedUrgentBladder="<<m.socialBlockedUrgentBladder
+                 <<" socialBlockedUrgentHygiene="<<m.socialBlockedUrgentHygiene
+                 <<" socialBlockedProvision="<<m.socialBlockedProvision
+                 <<" socialBlockedCivilizationFirst="<<m.socialBlockedCivilizationFirst
+                 <<" socialCivilizationResolveFailures="<<m.socialCivilizationResolveFailures
+                 <<" socialBlockedCooldown="<<m.socialBlockedCooldown
+                 <<" socialCandidateNone="<<m.socialCandidateNone
+                 <<" socialCandidateAboveMinimum="<<m.socialCandidateAboveMinimum
+                 <<" socialCandidateBeatsPhysical="<<m.socialCandidateBeatsPhysical
+                 <<" socialViableButUrgentGated="<<m.socialViableButUrgentGated
+                 <<" socialBelowMinimum="<<m.socialBelowMinimum
+                 <<" socialBlockedPhysicalMargin="<<m.socialBlockedPhysicalMargin
+                 <<" socialSelectedSamples="<<m.socialSelectedSamples
+                 <<" socialApproachBestSamples="<<m.socialApproachBestSamples
+                 <<" socialAvoidBestSamples="<<m.socialAvoidBestSamples
+                 <<" socialRepairBestSamples="<<m.socialRepairBestSamples
+                 <<" socialComfortBestSamples="<<m.socialComfortBestSamples
+                 <<" socialCandidateUtilityAvg="
+                 <<(m.socialUtilitySamples>0
+                    ? m.socialCandidateUtilitySum/static_cast<double>(m.socialUtilitySamples)
+                    : 0.0)
+                 <<" socialPhysicalUtilityAvg="
+                 <<(m.socialUtilitySamples>0
+                    ? m.socialPhysicalUtilitySum/static_cast<double>(m.socialUtilitySamples)
+                    : 0.0)
                  <<" socialMin="<<m.socialMinutes
                  <<" civilizationMin="<<m.civilizationMinutes
                  <<" parentingMin="<<m.parentingMinutes
