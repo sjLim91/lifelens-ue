@@ -6,6 +6,7 @@
 #include <string>
 
 #include "Character.h"
+#include "CivilizationProgression.h"
 #include "Relationship.h"
 #include "WitnessRumor.h"
 
@@ -101,48 +102,15 @@ inline double techniqueMasteryFactor(KnowledgeLevel level)
     }
 }
 
-inline bool techniquePrerequisiteContextSatisfied(const Character& learner,TechniqueId technique)
+inline bool techniquePrerequisiteContextSatisfied(
+    const Character& learner,
+    TechniqueId technique)
 {
     if(technique==TechniqueId::None) return false;
-    if(technique==TechniqueId::ChippedStoneTool &&
-       !learner.civilization.knowledge.knowsAtLeast(
-           TechniqueId::SharpFlake,KnowledgeLevel::Reproducible)) return false;
-    if(technique==TechniqueId::DugSanitationPit &&
-       !learner.civilization.knowledge.knowsAtLeast(
-           TechniqueId::DesignatedSanitationArea,KnowledgeLevel::Reproducible)) return false;
-    if(technique==TechniqueId::Cultivation &&
-       !learner.civilization.knowledge.knowsAtLeast(
-           TechniqueId::DiggingStick,KnowledgeLevel::Reproducible)) return false;
-    if(technique==TechniqueId::CopperSmelting &&
-       (!learner.civilization.knowledge.knowsAtLeast(
-            TechniqueId::FireMaking,KnowledgeLevel::Reproducible)
-        || !learner.civilization.knowledge.knowsAtLeast(
-            TechniqueId::StoneHammer,KnowledgeLevel::Reproducible)
-        || !learner.civilization.knowledge.knowsAtLeast(
-            TechniqueId::SimpleContainer,KnowledgeLevel::Reproducible))) return false;
-    if(technique==TechniqueId::TinSmelting &&
-       !learner.civilization.knowledge.knowsAtLeast(
-            TechniqueId::CopperSmelting,KnowledgeLevel::Reproducible)) return false;
-    if(technique==TechniqueId::BronzeAlloying &&
-       (!learner.civilization.knowledge.knowsAtLeast(
-            TechniqueId::CopperSmelting,KnowledgeLevel::Reproducible)
-        || !learner.civilization.knowledge.knowsAtLeast(
-            TechniqueId::TinSmelting,KnowledgeLevel::Reproducible))) return false;
-    if(technique==TechniqueId::BronzeAxe &&
-       (!learner.civilization.knowledge.knowsAtLeast(
-            TechniqueId::BronzeAlloying,KnowledgeLevel::Reproducible)
-        || !learner.civilization.knowledge.knowsAtLeast(
-            TechniqueId::ChippedStoneTool,KnowledgeLevel::Reproducible)
-        || !learner.civilization.knowledge.knowsAtLeast(
-            TechniqueId::FiberCordage,KnowledgeLevel::Reproducible))) return false;
-    if(technique==TechniqueId::BronzePick &&
-       (!learner.civilization.knowledge.knowsAtLeast(
-            TechniqueId::BronzeAlloying,KnowledgeLevel::Reproducible)
-        || !learner.civilization.knowledge.knowsAtLeast(
-            TechniqueId::StoneHammer,KnowledgeLevel::Reproducible)
-        || !learner.civilization.knowledge.knowsAtLeast(
-            TechniqueId::FiberCordage,KnowledgeLevel::Reproducible))) return false;
-    return true;
+    const TechnologyId technology=technologyIdForTechnique(technique);
+    return technology!=TechnologyId::None
+        && technologyKnowledgePrerequisitesSatisfied(
+            learner.civilization.knowledge,technology);
 }
 
 inline bool techniqueMaterialContextSatisfied(const Character& learner,TechniqueId technique)
