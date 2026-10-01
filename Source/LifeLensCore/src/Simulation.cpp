@@ -625,8 +625,22 @@ bool Simulation::advanceNavigation(
 
     if(r.navigationRouteFailed) return false;
 
-    const int stepInterval=
-        coreGroundStepIntervalMinutes(world_,r.pos);
+    const HealthState* movingHealth=nullptr;
+    for(const auto& character:world_.characters){
+        const auto runtimeIt=runtime_.find(character.id);
+        if(runtimeIt!=runtime_.end() && &runtimeIt->second==&r){
+            movingHealth=&character.health;
+            break;
+        }
+    }
+    const int healthMovementPenalty=movingHealth!=nullptr
+        ? static_cast<int>(std::lround(
+            2.0*(1.0-healthFunctionalCapacity01(*movingHealth))))
+        : 0;
+    const int stepInterval=std::max(
+        1,
+        coreGroundStepIntervalMinutes(world_,r.pos)
+        +healthMovementPenalty);
     if(stepInterval>1 && world_.minute%stepInterval!=0){
         return false;
     }
@@ -1603,6 +1617,13 @@ void Simulation::advanceAction(Character& c,Runtime& r){
                         return;
                     }
                     --water->quantity;
+                    if(r.goal==Goal::Drink){
+                        recordContaminatedWaterExposure(
+                            c.health,
+                            world_.environmentalResidues.exposureAt(
+                                r.navigationTarget),
+                            world_.minute);
+                    }
                 }else if(!consumePortableWater(
                     c.civilization.inventory,1)){
                     failPlan(c,r);
@@ -2039,17 +2060,108 @@ void Simulation::updatePregnanciesAndBirths()
     }
 }
 
+void Simulation::advanceDailyPopulationHealth()
+{
+    pendingHealthFatality_.clear();
+
+    for(auto& character:world_.characters){
+        if(!character.alive) continue;
+
+        const auto runtimeIt=runtime_.find(character.id);
+        const GridPos position=runtimeIt!=runtime_.end()
+            ? runtimeIt->second.pos
+            : world_.initialStartRegionCenterGrid();
+        const ChunkCoord chunk=chunkCoordForGrid(position);
+        const DynamicEnvironmentObservation dynamicEnvironment=
+            deriveDynamicEnvironment(
+                world_.genesisIdentity(),
+                chunk,
+                world_.minute);
+        const EnvironmentalConsequenceProfile environment=
+            deriveEnvironmentalConsequences(dynamicEnvironment);
+        const MacroRegionFacts region=world_.macroRegionFacts(chunk);
+
+        DailyHealthInputs input;
+        input.localContamination01=
+            world_.environmentalResidues.exposureAt(position);
+        input.heatStress01=environment.heatStress01;
+        input.coldStress01=environment.coldStress01;
+        input.wetStress01=environment.wetStress01;
+        input.hazardPotential01=region.hazardPotential;
+        input.hunger01=character.needs.hunger;
+        input.thirst01=character.needs.thirst;
+        input.sleep01=character.needs.sleep;
+        input.hygiene01=character.needs.hygiene;
+        input.geneticHealthPotential01=character.genetics.healthPotential;
+        input.baselinePhysicalHealth01=character.lifeCondition.physicalHealth;
+        input.sanitationKnowledge=
+            character.civilization.knowledge.knowsAtLeast(
+                TechniqueId::DesignatedSanitationArea,
+                KnowledgeLevel::Understood);
+
+        const DailyHealthOutcome outcome=advanceHealthOneDay(
+            character.health,
+            input,
+            world_.seed,
+            character.id,
+            world_.minute);
+
+        if(outcome.becameIll){
+            emit(character.name+" became ill after accumulated pathogen exposure");
+        }
+        if(outcome.recovered){
+            emit(character.name+" recovered from illness and gained resilience");
+        }
+        if(outcome.accidentOccurred){
+            emit(character.name+" was injured by an environmental accident");
+        }
+        if(outcome.fatalCause!=HealthFatalCause::None){
+            pendingHealthFatality_[character.id]=outcome.fatalCause;
+        }
+    }
+}
+
 void Simulation::evaluateDailyMortality()
 {
-    std::vector<CharacterId> dueDeaths;
+    struct DueDeath {
+        CharacterId id=0;
+        DeathCause cause=DeathCause::Other;
+    };
+    std::vector<DueDeath> dueDeaths;
+
     for(const auto& character:world_.characters){
-        if(character.alive && shouldDieToday(character,world_.seed,world_.minute)){
-            dueDeaths.push_back(character.id);
+        if(!character.alive) continue;
+
+        const auto healthFatal=pendingHealthFatality_.find(character.id);
+        if(healthFatal!=pendingHealthFatality_.end()){
+            DeathCause cause=DeathCause::Other;
+            switch(healthFatal->second){
+                case HealthFatalCause::Illness:
+                    cause=DeathCause::Illness;
+                    break;
+                case HealthFatalCause::Accident:
+                    cause=DeathCause::Accident;
+                    break;
+                case HealthFatalCause::EnvironmentalExposure:
+                    cause=DeathCause::EnvironmentalExposure;
+                    break;
+                case HealthFatalCause::None:
+                default:
+                    break;
+            }
+            dueDeaths.push_back({character.id,cause});
+            continue;
+        }
+
+        if(shouldDieToday(character,world_.seed,world_.minute)){
+            dueDeaths.push_back({
+                character.id,
+                inferNaturalDeathCause(character,world_.minute)});
         }
     }
 
-    for(CharacterId id:dueDeaths){
-        Character* deceased=findFamilyCharacter(world_,id);
+    for(const DueDeath& due:dueDeaths){
+        Character* deceased=findFamilyCharacter(world_,due.id);
         if(deceased==nullptr || !deceased->alive) continue;
 
         std::vector<Character*> residents;
@@ -2057,45 +2169,61 @@ void Simulation::evaluateDailyMortality()
         for(auto& character:world_.characters) residents.push_back(&character);
 
         std::vector<CharacterId> formerHouseholdMembers;
-        if(const Household* household=households_.householdOf(id)){
+        if(const Household* household=households_.householdOf(due.id)){
             for(const auto& member:household->members){
-                if(member.characterId!=id) formerHouseholdMembers.push_back(member.characterId);
+                if(member.characterId!=due.id) formerHouseholdMembers.push_back(member.characterId);
             }
         }
-        const bool pregnancyEnded=pregnancies_.activeFor(id)!=nullptr;
-        const DeathCause cause=inferNaturalDeathCause(*deceased,world_.minute);
+        const bool pregnancyEnded=pregnancies_.activeFor(due.id)!=nullptr;
         const std::string deceasedName=deceased->name;
         const DeathOutcome outcome=applyDeath(
-            *deceased,world_.minute,cause,residents,relationships_,romances_);
+            *deceased,world_.minute,due.cause,residents,relationships_,romances_);
         if(!outcome.died) continue;
 
-        if(pregnancyEnded) pregnancies_.terminate(id,world_.minute);
-        households_.removeMember(id);
+        if(pregnancyEnded) pregnancies_.terminate(due.id,world_.minute);
+        households_.removeMember(due.id);
         households_.pruneEmpty();
         for(CharacterId survivorId:formerHouseholdMembers){
             Character* survivor=findFamilyCharacter(world_,survivorId);
             if(survivor!=nullptr && survivor->alive){
-                recordLifeEvent(survivor->lifeHistory,LifeEventType::HouseholdChanged,world_.minute,{id});
+                recordLifeEvent(survivor->lifeHistory,LifeEventType::HouseholdChanged,world_.minute,{due.id});
             }
         }
         if(outcome.survivingPartner!=0){
             Character* survivor=findFamilyCharacter(world_,outcome.survivingPartner);
             if(survivor!=nullptr && survivor->alive){
-                recordLifeEvent(survivor->lifeHistory,LifeEventType::PartnerWidowed,world_.minute,{id});
+                recordLifeEvent(survivor->lifeHistory,LifeEventType::PartnerWidowed,world_.minute,{due.id});
             }
         }
 
-        auto runtimeIt=runtime_.find(id);
+        auto runtimeIt=runtime_.find(due.id);
         if(runtimeIt!=runtime_.end()) clearRuntimeActivity(runtimeIt->second);
         for(auto& object:world_.objects){
-            if(object.reservedBy && *object.reservedBy==id) object.reservedBy.reset();
+            if(object.reservedBy && *object.reservedBy==due.id) object.reservedBy.reset();
         }
 
-        emit(deceasedName+" died");
+        switch(due.cause){
+            case DeathCause::Illness:
+                emit(deceasedName+" died from illness");
+                break;
+            case DeathCause::Accident:
+                emit(deceasedName+" died from an accident");
+                break;
+            case DeathCause::EnvironmentalExposure:
+                emit(deceasedName+" died from environmental exposure");
+                break;
+            case DeathCause::AgeRelated:
+            case DeathCause::Other:
+            default:
+                emit(deceasedName+" died");
+                break;
+        }
         if(pregnancyEnded){
             emit("pregnancy ended because gestational parent "+deceasedName+" died");
         }
     }
+
+    pendingHealthFatality_.clear();
 }
 
 void Simulation::evaluateDailyFamilyTransitions()
@@ -2103,6 +2231,7 @@ void Simulation::evaluateDailyFamilyTransitions()
     for(auto& character:world_.characters){
         if(character.alive) advanceAging(character,world_.minute);
     }
+    advanceDailyPopulationHealth();
     evaluateDailyMortality();
 
     for(std::size_t i=0;i<world_.characters.size();++i){
@@ -2384,6 +2513,7 @@ void Simulation::step(){
         }
 
         c.needs.decay(ruleset_.needs,c.metabolism,c.sleepTendency);
+        c.needs.apply(healthNeedsPressurePerMinute(c.health));
         advanceEmotionOneMinute(c);
         if(requiresDirectCare(c.lifeStage)){
             clearRuntimeActivity(r);
