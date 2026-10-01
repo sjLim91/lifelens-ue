@@ -89,6 +89,43 @@ int main()
     CHECK(book.findReceipt(observer.id,factId)!=nullptr);
     CHECK(observer.memory.entries.back().source==MemorySource::DirectWitness);
 
+    // C1-F techniques must use the same physical witness path. Before this
+    // regression fix, the scan stopped at Cultivation and silently discarded
+    // Tin/Bronze facts for observers.
+    Character bronzeTeacher=makeLearner(20);
+    bronzeTeacher.name="BronzeTeacher";
+    bronzeTeacher.civilization.knowledge.learn(
+        TechniqueId::BronzeAxe,KnowledgeLevel::Mastered,0.99);
+    Character bronzeObserver=makeLearner(21);
+    SocialKnowledgeBook bronzeBook;
+    const KnowledgeReceipt* bronzeOrigin=registerTechniqueOrigin(
+        bronzeBook,bronzeTeacher,TechniqueId::BronzeAxe,605,
+        CivilizationEventType::Crafted,seed);
+    CHECK(bronzeOrigin!=nullptr);
+    const SocialFact* bronzeFact=bronzeBook.findFact(bronzeOrigin->factId);
+    CHECK(bronzeFact!=nullptr);
+    const TechniqueTransmissionOutcome bronzeWitness=applyTechniqueWitness(
+        bronzeBook,*bronzeFact,bronzeTeacher,bronzeObserver,seed,606);
+    CHECK(bronzeWitness.receiptAccepted);
+    CHECK(bronzeWitness.technique==TechniqueId::BronzeAxe);
+    CHECK(bronzeObserver.civilization.knowledge.knowsAtLeast(
+        TechniqueId::BronzeAxe,KnowledgeLevel::Observed));
+
+    // Teaching/imitation prerequisites follow the actual metallurgy chain.
+    Character bronzeLearner=makeLearner(22);
+    CHECK(!techniquePrerequisiteContextSatisfied(
+        bronzeLearner,TechniqueId::TinSmelting));
+    bronzeLearner.civilization.knowledge.learn(
+        TechniqueId::CopperSmelting,KnowledgeLevel::Reproducible,0.9);
+    CHECK(techniquePrerequisiteContextSatisfied(
+        bronzeLearner,TechniqueId::TinSmelting));
+    CHECK(!techniquePrerequisiteContextSatisfied(
+        bronzeLearner,TechniqueId::BronzeAlloying));
+    bronzeLearner.civilization.knowledge.learn(
+        TechniqueId::TinSmelting,KnowledgeLevel::Reproducible,0.9);
+    CHECK(techniquePrerequisiteContextSatisfied(
+        bronzeLearner,TechniqueId::BronzeAlloying));
+
     Character taught=makeLearner(3);
     taught.civilization.knowledge.learn(
         TechniqueId::SharpFlake,KnowledgeLevel::Understood,0.60);
