@@ -59,8 +59,8 @@ int main()
     // learning and civilization instead of spending all waking time on Needs.
     assert(mealsPerDay>=3.0 && mealsPerDay<=4.5);
     assert(drinksPerDay>=3.5 && drinksPerDay<=5.0);
-    assert(toiletsPerDay>=5.0 && toiletsPerDay<=7.0);
-    assert(washesPerDay>=1.0 && washesPerDay<=2.5);
+    assert(toiletsPerDay>=3.5 && toiletsPerDay<=5.0);
+    assert(washesPerDay>=1.5 && washesPerDay<=2.5);
     assert(waterUsesPerDay<=7.0);
 
     // An average adult can maintain neutral-weather fatigue with roughly one
@@ -72,17 +72,17 @@ int main()
     const double highTendencySleepingPlaceHours=
         needs.sleepPerMinute*1.20*MinutesPerDay
         /balance.sleepingPlaceRecoveryBasePerMinute/60.0;
-    assert(outdoorHoursPerDay>=8.0 && outdoorHoursPerDay<=9.5);
-    assert(highTendencySleepingPlaceHours<=10.0);
+    assert(outdoorHoursPerDay>=8.0 && outdoorHoursPerDay<=9.0);
+    assert(highTendencySleepingPlaceHours<=8.5);
 
-    // Severe fatigue is no longer mathematically stuck near the urgent band
-    // after the maximum primitive sleep session.
-    const double severeFatigueAfterMaxOutdoorSleep=
-        1.0
-        +MaximumSleepSessionMinutes*needs.sleepPerMinute
-        -MaximumSleepSessionMinutes*balance.outdoorSleepRecoveryPerMinute;
-    assert(severeFatigueAfterMaxOutdoorSleep>RestedSleepNeedTarget);
-    assert(severeFatigueAfterMaxOutdoorSleep<=0.25);
+    // Severe fatigue must be able to reach the rested target inside the
+    // configured 10-hour primitive sleep cap under neutral conditions.
+    const double netOutdoorRecovery=
+        balance.outdoorSleepRecoveryPerMinute-needs.sleepPerMinute;
+    assert(netOutdoorRecovery>0.0);
+    const double severeRecoveryMinutes=
+        (1.0-RestedSleepNeedTarget)/netOutdoorRecovery;
+    assert(severeRecoveryMinutes<=MaximumSleepSessionMinutes);
 
     assert(balance.shelterSleepRecoveryBasePerMinute
         >=balance.outdoorSleepRecoveryPerMinute);
@@ -95,6 +95,32 @@ int main()
         -facilityUseEffectPerTick(Goal::Wash).hygiene
         *static_cast<double>(facilityUseDurationTicks(Goal::Wash));
     assert(smartWashRelief>primitiveWashRelief);
+
+    // The production NEW GAME path must prove the same sleep contract, not only
+    // the arithmetic helper above.
+    SimulationRuleset sleepRules=DefaultSimulationRuleset;
+    sleepRules.needs.hungerPerMinute=0.0;
+    sleepRules.needs.thirstPerMinute=0.0;
+    sleepRules.needs.bladderPerMinute=0.0;
+    sleepRules.needs.hygienePerMinute=0.0;
+
+    Simulation sleepSimulation(
+        4242001,0,CurrentWorldGenerationVersion,sleepRules);
+    sleepSimulation.setupNewGame();
+    sleepSimulation.world().characters.resize(1);
+    Character& sleeper=sleepSimulation.world().characters.front();
+    sleeper.needs={0.05,0.05,1.0,0.05,0.05};
+    const std::string sleepCompletion=
+        sleeper.name+" completed Sleep via emergency fallback";
+
+    for(int minute=0;
+        minute<=MaximumSleepSessionMinutes+30
+        && !containsLog(sleepSimulation.logs(),sleepCompletion);
+        ++minute){
+        sleepSimulation.step();
+    }
+    assert(containsLog(sleepSimulation.logs(),sleepCompletion));
+    assert(sleeper.needs.sleep<=RestedSleepNeedTarget+0.01);
 
     // Headless execution must honor an actual DugPit instead of moving to the
     // site and then applying the dirtier emergency-outdoor result anyway.
