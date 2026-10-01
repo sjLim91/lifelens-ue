@@ -76,6 +76,24 @@ export interface ResidentNeeds {
   hygiene?: number;
 }
 
+export interface ResidentHealth {
+  stage?: 'Well' | 'Exposed' | 'Ill' | 'Recovering' | 'Injured' | 'Critical' | string;
+  functionalCapacity?: number;
+  pathogenLoad?: number;
+  illnessSeverity?: number;
+  immunity?: number;
+  injurySeverity?: number;
+  environmentalStress?: number;
+  careKnowledge?: number;
+  infectionEpisodes?: number;
+  recoveryEpisodes?: number;
+  accidentEpisodes?: number;
+  lastExposureMinute?: number;
+  lastIllnessMinute?: number;
+  lastRecoveryMinute?: number;
+  lastAccidentMinute?: number;
+}
+
 export interface ResidentEmotion {
   joy?: number;
   sadness?: number;
@@ -452,6 +470,7 @@ export interface Resident {
   presentation?: ResidentPresentationDirective;
   emotion?: ResidentEmotion;
   needs?: ResidentNeeds;
+  health?: ResidentHealth;
   personality?: ResidentPersonality;
   genetics?: ResidentGenetics;
   lifeCondition?: ResidentLifeCondition;
@@ -505,6 +524,13 @@ export interface WorldOverview {
   separatedCouples?: number;
   activePregnancies?: number;
   majorLifeEvents?: number;
+  health?: {
+    exposedResidents?: number;
+    illResidents?: number;
+    injuredResidents?: number;
+    criticalResidents?: number;
+    meanImmunity?: number;
+  };
   [key: string]: unknown;
 }
 
