@@ -124,6 +124,8 @@ lifelens_add_test(test_civilization_foundation)
 
 lifelens_add_test(test_civilization_persistence)
 
+lifelens_add_test(test_knowledge_teaching_time_budget)
+
 lifelens_add_test(test_civilization_spatial_targets)
 
 lifelens_add_test(test_traits_preferences)
