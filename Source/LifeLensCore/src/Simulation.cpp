@@ -1076,8 +1076,15 @@ bool Simulation::preemptForCriticalSurvival(
             activeAction.type==ActionType::EmergencyUse
             && (!r.navigationHasTarget || !r.navigationArrived);
         if(movingEmergencyToilet){
+            const double strongestCriticalProvisionNeed=std::max(
+                hungerCritical ? character.needs.hunger : -1.0,
+                thirstCritical ? character.needs.thirst : -1.0);
+            const bool toiletNeedDominates=
+                character.needs.bladder>=strongestCriticalProvisionNeed;
+
             SanitationUseTarget sanitationTarget;
-            if(sanitationUseTarget(character.id,sanitationTarget)){
+            if(toiletNeedDominates
+               && sanitationUseTarget(character.id,sanitationTarget)){
                 const GridPos reliefTarget=r.navigationHasTarget
                     ? r.navigationTarget
                     : sanitationTarget.pos;
