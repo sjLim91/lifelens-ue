@@ -185,7 +185,7 @@ inline TechniqueId techniqueFromCivilizationFact(const SocialFact& fact)
     // techniques extend the observer range. Structural compatibility marker:
     // raw<=static_cast<int>(TechniqueId::DugSanitationPit)
     for(int raw=static_cast<int>(TechniqueId::SharpFlake);
-        raw<=static_cast<int>(TechniqueId::Cultivation);++raw){
+        raw<=static_cast<int>(TechniqueId::BronzePick);++raw){
         const TechniqueId candidate=static_cast<TechniqueId>(raw);
         if(factRepresentsTechnique(fact,candidate)) return candidate;
     }
