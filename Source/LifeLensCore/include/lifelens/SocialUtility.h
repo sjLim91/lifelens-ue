@@ -430,6 +430,26 @@ inline CivilizationUtilityDecision chooseDispositionAwareCivilizationDecision(
         world,self,civilizationSanitationReferencePosition(world));
 }
 
+inline CivilizationUtilityDecision chooseDispositionAwareSanitationProgressionDecisionAtPosition(
+    const World& world,
+    const Character& self,
+    GridPos authoritativePosition,
+    const SettlementPopulation* population=nullptr)
+{
+    CivilizationUtilityDecision best;
+    considerCivilizationDecision(
+        best,
+        applyCivilizationDispositionBias(
+            self,bestSanitationExperimentDecisionAtPosition(
+                world,self,authoritativePosition,population)));
+    considerCivilizationDecision(
+        best,
+        applyCivilizationDispositionBias(
+            self,bestSanitationCraftDecisionAtPosition(
+                world,self,authoritativePosition)));
+    return best;
+}
+
 inline std::pair<Goal, double> bestPhysicalUtility(
     const World& world,
     const Character& self) {
@@ -660,6 +680,9 @@ inline UnifiedUtilityDecision chooseUnifiedUtilityDecisionAtPosition(
     const CivilizationUtilityDecision civilization =
         chooseDispositionAwareCivilizationDecisionAtPosition(
             world,self,authoritativePosition,population);
+    const CivilizationUtilityDecision sanitationProgression =
+        chooseDispositionAwareSanitationProgressionDecisionAtPosition(
+            world,self,authoritativePosition,population);
     const CivilizationUtilityDecision survivalProvision =
         urgentSurvivalProvisionDecisionAtPosition(
             world,self,authoritativePosition);
@@ -693,32 +716,46 @@ inline UnifiedUtilityDecision chooseUnifiedUtilityDecisionAtPosition(
     }
 
     // Survival is still dominant. Ordinary civilization competes only while
-    // all Needs are below the urgent provision band. Sanitation progression is
-    // the narrow exception: when bladder/hygiene pressure itself is urgent, the
-    // resident may consider a real DesignatedArea/DugPit solution instead of
-    // being permanently barred from developing the affordance that would solve
-    // the chronic problem. Hunger/thirst urgency closes this exception, and the
-    // candidate still has to beat the current Physical/Social winner by the
-    // normal margin, so immediate self-care is never scripted away.
+    // all Needs are below the urgent provision band.
+    const bool ordinaryCivilizationAllowed =
+        maximumResidentNeed(self)<UrgentSurvivalProvisionThreshold;
+    if (ordinaryCivilizationAllowed &&
+        civilization.intent != CivilizationIntent::None &&
+        civilization.utility >= minimumCivilizationUtility &&
+        civilization.utility > decision.utility * 1.08) {
+        decision.kind = UnifiedDecisionKind::Civilization;
+        decision.utility = civilization.utility;
+    }
+
+    // Sanitation progression is evaluated independently from the single
+    // overall-best civilization candidate. Without this, a slightly stronger
+    // unrelated Experiment/Craft/Gather candidate can hide the very sanitation
+    // improvement needed to escape chronic bladder/hygiene pressure, while the
+    // ordinary urgent-Need gate then suppresses that unrelated candidate too.
+    //
+    // This is still competition, not scripting: hunger/thirst urgency closes
+    // the exception and the sanitation candidate must pass the same minimum and
+    // beat the current Physical/Social winner by the normal margin.
     const bool sanitationProgressionCandidate =
-        civilization.technique==TechniqueId::DesignatedSanitationArea
-        || civilization.technique==TechniqueId::DugSanitationPit;
+        sanitationProgression.intent!=CivilizationIntent::None
+        && (
+            sanitationProgression.technique==TechniqueId::DesignatedSanitationArea
+            || sanitationProgression.technique==TechniqueId::DugSanitationPit
+        );
     const bool sanitationPressureException =
         sanitationProgressionCandidate
         && std::max(self.needs.bladder,self.needs.hygiene)
             >= UrgentSurvivalProvisionThreshold
         && self.needs.hunger<UrgentSurvivalProvisionThreshold
         && self.needs.thirst<UrgentSurvivalProvisionThreshold;
-    const bool civilizationPressureAllowsCompetition =
-        maximumResidentNeed(self)<UrgentSurvivalProvisionThreshold
-        || sanitationPressureException;
 
-    if (civilizationPressureAllowsCompetition &&
-        civilization.intent != CivilizationIntent::None &&
-        civilization.utility >= minimumCivilizationUtility &&
-        civilization.utility > decision.utility * 1.08) {
+    if (!ordinaryCivilizationAllowed &&
+        sanitationPressureException &&
+        sanitationProgression.utility >= minimumCivilizationUtility &&
+        sanitationProgression.utility > decision.utility * 1.08) {
         decision.kind = UnifiedDecisionKind::Civilization;
-        decision.utility = civilization.utility;
+        decision.civilization = sanitationProgression;
+        decision.utility = sanitationProgression.utility;
     }
 
     return decision;
