@@ -6,6 +6,7 @@
 #include "lifelens/CivilizationDecision.h"
 #include "lifelens/Simulation.h"
 #include "lifelens/SimulationSnapshotCodec.h"
+#include "lifelens/SocialUtility.h"
 
 using namespace lifelens;
 
@@ -87,6 +88,37 @@ int main()
         world.primitiveSanitationSites,created.siteId,created.pos));
     assert(evaluateDugSanitationPitOpportunity(
         builder,world.environmentalResidues,world.primitiveSanitationSites).candidateAvailable);
+
+    // Chronic sanitation pressure must not close the civilization gate that is
+    // required to discover the sanitation improvement itself. This is only a
+    // competition exception: the DugPit experiment still has to beat the
+    // currently available Physical action on utility.
+    Character pressureBuilder=builder;
+    pressureBuilder.needs={0.10,0.10,0.20,0.75,0.75};
+    RelationshipBook noRelationships;
+    const CivilizationUtilityDecision pressureExperiment=
+        chooseDispositionAwareCivilizationDecisionAtPosition(
+            world,pressureBuilder,created.pos,nullptr);
+    assert(pressureExperiment.intent==CivilizationIntent::Experiment);
+    assert(pressureExperiment.technique==TechniqueId::DugSanitationPit);
+
+    const UnifiedUtilityDecision pressureDecision=
+        chooseUnifiedUtilityDecisionAtPosition(
+            world,pressureBuilder,noRelationships,created.pos,0.18,0.14,nullptr);
+    assert(pressureDecision.kind==UnifiedDecisionKind::Civilization);
+    assert(pressureDecision.civilization.technique==TechniqueId::DugSanitationPit);
+
+    // The exception closes as soon as food survival is also urgent. Carried
+    // food keeps this focused on the gate rather than missing-provision search.
+    pressureBuilder.civilization.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::PlantFood,1,0.8,1.0});
+    pressureBuilder.needs.hunger=0.80;
+    const UnifiedUtilityDecision hungryPressureDecision=
+        chooseUnifiedUtilityDecisionAtPosition(
+            world,pressureBuilder,noRelationships,created.pos,0.18,0.14,nullptr);
+    assert(hungryPressureDecision.kind!=UnifiedDecisionKind::Civilization
+        || hungryPressureDecision.civilization.technique
+            !=TechniqueId::DugSanitationPit);
 
     // Before discovery, Craft must not silently improve the facility.
     const CivilizationUtilityDecision beforeDiscovery=bestCraftDecision(world,builder);
