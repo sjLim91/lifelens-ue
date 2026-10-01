@@ -108,6 +108,34 @@ int main()
     assert(pressureDecision.kind==UnifiedDecisionKind::Civilization);
     assert(pressureDecision.civilization.technique==TechniqueId::DugSanitationPit);
 
+    // An unrelated civilization candidate must not hide the sanitation
+    // solution before the urgent-Need gate is applied. Heavy carried stock
+    // makes PrimitiveStorage the overall civilization winner, while the same
+    // resident still has a valid DugPit experiment that can beat self-care.
+    Character shadowedPressureBuilder=pressureBuilder;
+    shadowedPressureBuilder.civilization.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::Stone,12,0.8,1.0});
+
+    const CivilizationUtilityDecision shadowingCivilization=
+        chooseDispositionAwareCivilizationDecisionAtPosition(
+            world,shadowedPressureBuilder,created.pos,nullptr);
+    assert(shadowingCivilization.intent!=CivilizationIntent::None);
+    assert(shadowingCivilization.technique!=TechniqueId::DugSanitationPit);
+    assert(shadowingCivilization.technique!=TechniqueId::DesignatedSanitationArea);
+
+    const CivilizationUtilityDecision independentSanitation=
+        chooseDispositionAwareSanitationProgressionDecisionAtPosition(
+            world,shadowedPressureBuilder,created.pos,nullptr);
+    assert(independentSanitation.intent==CivilizationIntent::Experiment);
+    assert(independentSanitation.technique==TechniqueId::DugSanitationPit);
+
+    const UnifiedUtilityDecision shadowedPressureDecision=
+        chooseUnifiedUtilityDecisionAtPosition(
+            world,shadowedPressureBuilder,noRelationships,created.pos,0.18,0.14,nullptr);
+    assert(shadowedPressureDecision.kind==UnifiedDecisionKind::Civilization);
+    assert(shadowedPressureDecision.civilization.technique
+        ==TechniqueId::DugSanitationPit);
+
     // The exception closes as soon as food survival is also urgent. Carried
     // food keeps this focused on the gate rather than missing-provision search.
     pressureBuilder.civilization.inventory.add({
