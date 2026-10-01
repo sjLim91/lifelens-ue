@@ -412,7 +412,14 @@ export function SelectedResidentReadout({
                     ? ` · 회상 ${formatPercent(memory.recallScore)}`
                     : ''}
                   {memory.where ? ` · ${formatLocationText(memory.where)}` : ''}
-                  {tags.length ? ` · ${tags.map((tag) => `#${tag}`).join(' ')}` : ''}
+                  {tags.length ? (
+                    <>
+                      {' · '}
+                      {tags.map((tag) => (
+                        <span className="memory-tag" key={tag}>#{tag}</span>
+                      ))}
+                    </>
+                  ) : null}
                 </small>
               </div>
             ))
