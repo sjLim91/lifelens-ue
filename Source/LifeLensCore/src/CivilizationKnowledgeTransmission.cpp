@@ -88,14 +88,22 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
     for(const Character& teacher:world_.characters){
         if(!teacher.alive) continue;
         const auto teacherRuntime=runtime_.find(teacher.id);
-        if(teacherRuntime==runtime_.end() || teacherRuntime->second.pendingContext.active()) continue;
+        if(teacherRuntime==runtime_.end()
+           || teacherRuntime->second.pendingContext.active()
+           || !teacherRuntime->second.plan.empty()){
+            continue;
+        }
 
         for(const TechniqueKnowledge& record:teacher.civilization.knowledge.all()){
             if(static_cast<int>(record.level)<static_cast<int>(KnowledgeLevel::Reproducible)) continue;
             for(const Character& learner:world_.characters){
                 if(!learner.alive || learner.id==teacher.id) continue;
                 const auto learnerRuntime=runtime_.find(learner.id);
-                if(learnerRuntime==runtime_.end() || learnerRuntime->second.pendingContext.active()) continue;
+                if(learnerRuntime==runtime_.end()
+                   || learnerRuntime->second.pendingContext.active()
+                   || !learnerRuntime->second.plan.empty()){
+                    continue;
+                }
 
                 const KnowledgeLevel learnerLevel=learner.civilization.knowledge.level(record.technique);
                 if(static_cast<int>(learnerLevel)>=static_cast<int>(KnowledgeLevel::Reproducible)) continue;
@@ -144,7 +152,9 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
     const auto learnerRuntime=runtime_.find(best.learner);
     if(teacherRuntime==runtime_.end() || learnerRuntime==runtime_.end()
        || teacherRuntime->second.pendingContext.active()
-       || learnerRuntime->second.pendingContext.active()) return;
+       || learnerRuntime->second.pendingContext.active()
+       || !teacherRuntime->second.plan.empty()
+       || !learnerRuntime->second.plan.empty()) return;
 
     PendingContextAction pending;
     pending.token=issueContextActionToken();
@@ -157,9 +167,10 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
     pending.targetPos=learnerRuntime->second.pos;
 
     Runtime& runtime=teacherRuntime->second;
+    // Teaching is opportunistic work: it can use free time but must never
+    // erase an already-authorized physical life plan.
     runtime.pendingContext=pending;
     runtime.goal=Goal::Idle;
-    runtime.plan.clear();
     runtime.actionIndex=0;
     runtime.announced=false;
     runtime.civilizationActive=false;
