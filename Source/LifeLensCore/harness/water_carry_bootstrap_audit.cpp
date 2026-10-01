@@ -118,6 +118,18 @@ int main(int argc,char** argv)
     std::uint64_t civilizationEvents=0;
     std::uint64_t contextTimeouts=0;
     std::uint64_t teachingOutcomes=0;
+    std::uint64_t clayGatherEvents=0;
+    std::uint64_t containerExperimentFailures=0;
+    std::uint64_t containerDiscoveries=0;
+    std::uint64_t containerCrafts=0;
+    std::uint64_t waterGatherEvents=0;
+    std::uint64_t waterStoreEvents=0;
+    int peakResidentContainers=0;
+    int peakResidentPortableWater=0;
+    int peakStoredContainers=0;
+    int peakStoredPortableWater=0;
+    int firstContainerMinute=-1;
+    int firstPortableWaterMinute=-1;
     std::array<std::uint64_t,5> physicalStarts{};
     std::array<std::uint64_t,5> physicalCompletions{};
     const std::array<const char*,5> physicalNames={
@@ -147,6 +159,24 @@ int main(int argc,char** argv)
         if(containsAny(line,socialTokens)){
             ++socialEvents;
         }
+        if(line.find(" -> Civilization Gather Clay x")!=std::string::npos){
+            ++clayGatherEvents;
+        }
+        if(line.find(" -> Civilization Experiment failed SimpleContainer")!=std::string::npos){
+            ++containerExperimentFailures;
+        }
+        if(line.find(" -> Civilization Experiment discovered SimpleContainer")!=std::string::npos){
+            ++containerDiscoveries;
+        }
+        if(line.find(" -> Civilization Craft crafted SimpleContainer")!=std::string::npos){
+            ++containerCrafts;
+        }
+        if(line.find(" -> Civilization Gather Water x")!=std::string::npos){
+            ++waterGatherEvents;
+        }
+        if(line.find(" -> Civilization Store Water x")!=std::string::npos){
+            ++waterStoreEvents;
+        }
 
         for(std::size_t i=0;i<physicalNames.size();++i){
             const std::string startToken=
@@ -167,6 +197,30 @@ int main(int argc,char** argv)
 
     for(int minute=0;minute<totalMinutes;++minute){
         sim.step();
+
+        int residentContainers=0;
+        int residentPortableWater=0;
+        for(const auto& resident:sim.world().characters){
+            if(!resident.alive) continue;
+            residentContainers+=simpleContainerCount(resident.civilization.inventory);
+            residentPortableWater+=portableWaterCount(resident.civilization.inventory);
+        }
+        int storedContainersNow=0;
+        int storedPortableWaterNow=0;
+        for(const auto& storage:sim.world().storageSites){
+            storedContainersNow+=simpleContainerCount(storage.inventory);
+            storedPortableWaterNow+=portableWaterCount(storage.inventory);
+        }
+        peakResidentContainers=std::max(peakResidentContainers,residentContainers);
+        peakResidentPortableWater=std::max(peakResidentPortableWater,residentPortableWater);
+        peakStoredContainers=std::max(peakStoredContainers,storedContainersNow);
+        peakStoredPortableWater=std::max(peakStoredPortableWater,storedPortableWaterNow);
+        if(firstContainerMinute<0 && residentContainers+storedContainersNow>0){
+            firstContainerMinute=sim.world().minute;
+        }
+        if(firstPortableWaterMinute<0 && residentPortableWater+storedPortableWaterNow>0){
+            firstPortableWaterMinute=sim.world().minute;
+        }
 
         for(auto& metric:metrics){
             const Character* resident=findResident(sim.world(),metric.id);
@@ -289,6 +343,18 @@ int main(int argc,char** argv)
         <<" civilizationEvents="<<civilizationEvents
         <<" contextTimeouts="<<contextTimeouts
         <<" teachingOutcomes="<<teachingOutcomes
+        <<" clayGatherEvents="<<clayGatherEvents
+        <<" containerExperimentFailures="<<containerExperimentFailures
+        <<" containerDiscoveries="<<containerDiscoveries
+        <<" containerCrafts="<<containerCrafts
+        <<" waterGatherEvents="<<waterGatherEvents
+        <<" waterStoreEvents="<<waterStoreEvents
+        <<" peakResidentContainers="<<peakResidentContainers
+        <<" peakResidentPortableWater="<<peakResidentPortableWater
+        <<" peakStoredContainers="<<peakStoredContainers
+        <<" peakStoredPortableWater="<<peakStoredPortableWater
+        <<" firstContainerMinute="<<firstContainerMinute
+        <<" firstPortableWaterMinute="<<firstPortableWaterMinute
         <<" facilities="<<sim.world().facilities.size()
         <<" sanitationSites="<<sim.world().primitiveSanitationSites.size()
         <<" storageSites="<<sim.world().storageSites.size();
