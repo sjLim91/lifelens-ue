@@ -602,16 +602,32 @@ Environment is now a first-class innovation driver:
 
 ## Milestone C4 — Health / Disease / Population Resilience
 
-Scope candidates:
+Owner: Jjun Core/Simulation/Save/Bridge/Web.
+Status: ✅ Complete — C4 health authority foundation closed in #577.
 
-- pathogens/infection.
-- contaminated water/soil.
-- sanitation-linked health.
-- illness/recovery.
-- temperature/weather exposure health effects.
-- accident/environment mortality.
-- immunity/resilience.
-- health knowledge/care progression.
+Implemented scope:
+
+- ✅ deterministic pathogen burden and infection episodes driven by real exposure rather than scripted disease events.
+- ✅ human-waste soil/environment contamination contributes to pathogen exposure at the resident's authoritative position.
+- ✅ direct natural-water drinking records contamination dose from the actual access position.
+- ✅ sanitation knowledge mitigates contamination pressure and contributes to practical care knowledge.
+- ✅ illness severity, recovery episodes, immunity/resilience and care-knowledge progression.
+- ✅ temperature/wetness exposure becomes persistent health stress instead of remaining a visual-only condition.
+- ✅ authoritative regional hazard potential can produce deterministic accidents and injuries.
+- ✅ severe illness, injury and environmental exposure feed cause-specific mortality through the existing centralized death cleanup path.
+- ✅ illness/injury/environment stress increase physiological Need pressure and reduce movement capacity.
+- ✅ HealthState snapshot persistence with backwards-compatible optional extension.
+- ✅ Web Observer resident health details and aggregate population-health summary.
+- ✅ focused regression coverage for clean baseline, contaminated exposure, sanitation mitigation, recovery/resilience, environmental stress, accidents and snapshot roundtrip.
+
+C4 authority rule:
+
+`Environment / contamination / needs / genetics / lived health history`
+→ `pathogen load / injury / exposure stress`
+→ `illness / recovery / resilience`
+→ `physical consequence / mortality`.
+
+The browser only observes these Core-authored facts. It does not diagnose residents, invent infections, or fabricate recovery.
 
 ---
 
