@@ -5,6 +5,7 @@ on:
     branches:
       - audit/main-post542-100d-20261001
       - audit/main-post542-balanced-needs-100d-20261001
+      - audit/main-post542-balanced-teaching-100d-20261001
     paths:
       - 'Source/LifeLensCore/**'
       - '.github/workflows/main-post542-audit.yml'
