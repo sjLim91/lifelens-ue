@@ -19,6 +19,7 @@
 #include "ProvisionPreference.h"
 #include "ResourceExploration.h"
 #include "SettlementProgression.h"
+#include "SocietyEconomy.h"
 #include "World.h"
 
 namespace lifelens {
@@ -2605,6 +2606,66 @@ inline CivilizationUtilityDecision applyTechnologyAdoptionUtility(
     return decision;
 }
 
+inline double societyRoleDecisionAdjustment(
+    const Character& self,
+    const CivilizationUtilityDecision& decision)
+{
+    const SocietyRole role=observeResidentSocietyStatus(self).role;
+    switch(role){
+        case SocietyRole::Forager:
+            if(decision.intent==CivilizationIntent::Gather) return 0.09;
+            if(decision.intent==CivilizationIntent::Explore) return 0.04;
+            break;
+        case SocietyRole::Craftsperson:
+            if(decision.intent==CivilizationIntent::Craft) return 0.09;
+            if(decision.intent==CivilizationIntent::Experiment) return 0.04;
+            break;
+        case SocietyRole::Farmer:
+            if(decision.technique==TechniqueId::Cultivation) return 0.11;
+            if(decision.intent==CivilizationIntent::Gather
+               && decision.material==MaterialKind::PlantFood) return 0.07;
+            break;
+        case SocietyRole::Metallurgist:
+            if(decision.technique==TechniqueId::CopperSmelting
+               || decision.technique==TechniqueId::TinSmelting
+               || decision.technique==TechniqueId::BronzeAlloying
+               || decision.technique==TechniqueId::BronzeAxe
+               || decision.technique==TechniqueId::BronzePick) return 0.11;
+            if(decision.intent==CivilizationIntent::Gather
+               && (decision.material==MaterialKind::CopperOre
+                   || decision.material==MaterialKind::TinOre
+                   || decision.material==MaterialKind::Charcoal)) return 0.07;
+            break;
+        case SocietyRole::Storekeeper:
+            if(decision.intent==CivilizationIntent::Store
+               || decision.intent==CivilizationIntent::Retrieve) return 0.09;
+            break;
+        case SocietyRole::Educator:
+            if(decision.intent==CivilizationIntent::Experiment) return 0.03;
+            break;
+        default:
+            break;
+    }
+    return 0.0;
+}
+
+inline CivilizationUtilityDecision applySocietyRoleAndDemandUtility(
+    const World& world,
+    const Character& self,
+    CivilizationUtilityDecision decision)
+{
+    if(decision.intent==CivilizationIntent::None) return decision;
+    double adjustment=societyRoleDecisionAdjustment(self,decision);
+    if(decision.material!=MaterialKind::Unknown
+       && (decision.intent==CivilizationIntent::Gather
+           || decision.intent==CivilizationIntent::Explore
+           || decision.intent==CivilizationIntent::Retrieve)){
+        adjustment+=0.10*societyMaterialDemand01(world,decision.material);
+    }
+    decision.utility=clampCivilization01(decision.utility+adjustment);
+    return decision;
+}
+
 inline CivilizationUtilityDecision chooseCivilizationUtilityDecisionAtPosition(
     const World& world,
     const Character& self,
@@ -2614,25 +2675,31 @@ inline CivilizationUtilityDecision chooseCivilizationUtilityDecisionAtPosition(
     CivilizationUtilityDecision best;
     if(self.id==0 || self.civilization.character!=self.id) return best;
     considerCivilizationDecision(
-        best,bestExperimentDecisionAtPosition(
-            world,self,authoritativePosition,population));
-    considerCivilizationDecision(
-        best,applyTechnologyAdoptionUtility(
-            world,self,
-            bestCraftDecisionAtPosition(
+        best,applySocietyRoleAndDemandUtility(
+            world,self,bestExperimentDecisionAtPosition(
                 world,self,authoritativePosition,population)));
     considerCivilizationDecision(
-        best,bestRetrieveDecisionAtPosition(
-            world,self,authoritativePosition));
+        best,applySocietyRoleAndDemandUtility(
+            world,self,applyTechnologyAdoptionUtility(
+                world,self,
+                bestCraftDecisionAtPosition(
+                    world,self,authoritativePosition,population))));
     considerCivilizationDecision(
-        best,bestStoreDecisionAtPosition(
-            world,self,authoritativePosition));
+        best,applySocietyRoleAndDemandUtility(
+            world,self,bestRetrieveDecisionAtPosition(
+                world,self,authoritativePosition)));
     considerCivilizationDecision(
-        best,bestResourceExplorationDecisionAtPosition(
-            world,self,authoritativePosition));
+        best,applySocietyRoleAndDemandUtility(
+            world,self,bestStoreDecisionAtPosition(
+                world,self,authoritativePosition)));
     considerCivilizationDecision(
-        best,bestGatherDecisionAtPosition(
-            world,self,authoritativePosition,population));
+        best,applySocietyRoleAndDemandUtility(
+            world,self,bestResourceExplorationDecisionAtPosition(
+                world,self,authoritativePosition)));
+    considerCivilizationDecision(
+        best,applySocietyRoleAndDemandUtility(
+            world,self,bestGatherDecisionAtPosition(
+                world,self,authoritativePosition,population)));
     return best;
 }
 
