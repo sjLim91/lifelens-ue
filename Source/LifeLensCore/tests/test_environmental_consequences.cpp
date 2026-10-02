@@ -51,6 +51,18 @@ int main()
     assert(coldWetProfile.perMinuteNeedsDelta.hunger > 0.0);
     assert(coldWetProfile.perMinuteNeedsDelta.sleep > 0.0);
 
+    const SleepEnvironmentEvaluation exposedSleep=
+        evaluateSleepEnvironment(coldWetProfile,false);
+    const SleepEnvironmentEvaluation protectedSleep=
+        evaluateSleepEnvironment(coldWetProfile,true);
+    assert(exposedSleep.weatherProtectionPreferred);
+    assert(exposedSleep.exposedEmergencyOnly);
+    assert(!protectedSleep.exposedEmergencyOnly);
+    assert(protectedSleep.effectiveExposure01
+        < exposedSleep.effectiveExposure01);
+    assert(protectedSleep.recoveryMultiplier01
+        > exposedSleep.recoveryMultiplier01);
+
     DynamicEnvironmentObservation rainy = mild;
     rainy.precipitationIntensity01 = 0.85;
     rainy.surfaceWetness01 = 0.90;
