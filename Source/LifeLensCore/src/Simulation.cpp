@@ -549,6 +549,31 @@ ResidentPresentationObservation Simulation::observeResidentPresentation(Characte
 
         if(current->type==ActionType::EmergencyUse){
             dto.emergencyFallback=true;
+            if(r.goal==Goal::Sleep){
+                const GridPos sleepContextPos=r.navigationHasTarget
+                    ? r.navigationTarget
+                    : r.pos;
+                const ConstructedFacility* sleepFacility=
+                    operationalSleepFacilityAt(world_,sleepContextPos);
+                if(sleepFacility!=nullptr){
+                    dto.emergencyFallback=false;
+                    if(facilityProvidesWeatherProtection(
+                           sleepFacility->kind)){
+                        dto.sleepContext=
+                            SleepPresentationContext::ProtectedFacility;
+                    }else{
+                        const SleepEnvironmentEvaluation environment=
+                            sleepEnvironmentAt(
+                                world_,sleepContextPos,false);
+                        dto.sleepContext=environment.exposedEmergencyOnly
+                            ? SleepPresentationContext::ExposedEmergency
+                            : SleepPresentationContext::ExposedFacility;
+                    }
+                }else{
+                    dto.sleepContext=
+                        SleepPresentationContext::EmergencyOutdoor;
+                }
+            }
             if(r.goal==Goal::UseToilet){
                 SanitationUseTarget target;
                 if(sanitationUseTarget(id,target)){
@@ -1976,6 +2001,44 @@ void Simulation::advanceAction(Character& c,Runtime& r){
                         hasSleepTarget=true;
                     }
                 }
+
+                // Re-evaluate worsening weather while recovery is actually in
+                // progress. Only an exposed -> protected upgrade is eligible,
+                // and only with a meaningful utility margin, so weather noise
+                // cannot wake/replan the resident every minute.
+                const bool alreadyAtSleepTarget=
+                    !hasSleepTarget || sameGridPos(r.pos,sleepTarget);
+                if(alreadyAtSleepTarget){
+                    const ConstructedFacility* currentFacility=
+                        operationalSleepFacilityAt(world_,r.pos);
+                    const SleepFacilityTargetEvaluation currentEvaluation=
+                        currentFacility!=nullptr
+                            ? evaluateSleepFacilityTarget(
+                                world_,r.pos,*currentFacility,c.needs.sleep)
+                            : evaluateOutdoorSleepTarget(
+                                world_,r.pos,c.needs.sleep);
+                    const ConstructedFacility* candidate=
+                        nearestAvailableOperationalSleepFacility(c.id,r.pos);
+                    if(candidate!=nullptr
+                       && facilityProvidesWeatherProtection(candidate->kind)
+                       && !sameGridPos(candidate->pos,r.pos)){
+                        const SleepFacilityTargetEvaluation candidateEvaluation=
+                            evaluateSleepFacilityTarget(
+                                world_,r.pos,*candidate,c.needs.sleep);
+                        if(shouldReplanExposedSleepToProtectedTarget(
+                               currentEvaluation,candidateEvaluation)){
+                            sleepTarget=candidate->pos;
+                            hasSleepTarget=true;
+                            a.remainingTicks=sleepDurationMinutesForNeed(
+                                c,
+                                candidateEvaluation.recoveryPerMinute,
+                                ruleset_.needs);
+                            emit(c.name+
+                                " woke from exposed Sleep to seek weather protection");
+                        }
+                    }
+                }
+
                 if(hasSleepTarget && !advanceNavigation(c.id,r,sleepTarget,0)){
                     if(r.navigationRouteFailed){
                         failPlan(c,r);
@@ -1986,7 +2049,8 @@ void Simulation::advanceAction(Character& c,Runtime& r){
             {
             ConstructedFacility* settlementSleepFacility=
                 r.goal==Goal::Sleep
-                    ? bestOperationalSleepFacility(world_,r.pos,1)
+                    ? const_cast<ConstructedFacility*>(
+                        operationalSleepFacilityAt(world_,r.pos))
                     : nullptr;
             const Needs before=c.needs;
             if(r.goal==Goal::Sleep){
@@ -2605,12 +2669,42 @@ void Simulation::advanceDailyPopulationHealth()
             deriveEnvironmentalConsequences(dynamicEnvironment);
         const MacroRegionFacts region=world_.macroRegionFacts(chunk);
 
+        double activeShelterProtection01=0.0;
+        if(runtimeIt!=runtime_.end()){
+            const Runtime& runtime=runtimeIt->second;
+            const bool activeSleepInteraction=
+                runtime.goal==Goal::Sleep
+                && !runtime.plan.empty()
+                && runtime.actionIndex<runtime.plan.size()
+                && runtime.plan[runtime.actionIndex].type
+                    ==ActionType::EmergencyUse
+                && (!runtime.navigationHasTarget
+                    || runtime.navigationArrived);
+            if(activeSleepInteraction){
+                const ConstructedFacility* sleepFacility=
+                    operationalSleepFacilityAt(world_,position);
+                if(sleepFacility!=nullptr
+                   && facilityProvidesWeatherProtection(
+                       sleepFacility->kind)){
+                    activeShelterProtection01=std::clamp(
+                        DefaultSleepEnvironmentContract
+                            .weatherProtectionExposureReduction01
+                        *facilityEffectiveness01(*sleepFacility),
+                        0.0,
+                        0.90);
+                }
+            }
+        }
+
         DailyHealthInputs input;
         input.localContamination01=
             world_.environmentalResidues.exposureAt(position);
-        input.heatStress01=environment.heatStress01;
-        input.coldStress01=environment.coldStress01;
-        input.wetStress01=environment.wetStress01;
+        input.heatStress01=environment.heatStress01
+            *(1.0-activeShelterProtection01);
+        input.coldStress01=environment.coldStress01
+            *(1.0-activeShelterProtection01);
+        input.wetStress01=environment.wetStress01
+            *(1.0-activeShelterProtection01);
         input.hazardPotential01=region.hazardPotential;
         input.hunger01=character.needs.hunger;
         input.thirst01=character.needs.thirst;
