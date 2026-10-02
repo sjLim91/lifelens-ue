@@ -40,9 +40,15 @@ inline bool resolveCivilizationResourceGridPosition(
     const ResourceNode* node=findCivilizationResourceNodeSpatial(world,id);
     if(node==nullptr) return false;
 
-    // Generated natural-patch position is the immutable world-generation
-    // authority. Prefer it when present so legacy v1 saves (which did not
-    // serialize ResourceNode::pos) still resolve to the exact generated site.
+    // Spatial snapshot v2+ persists the immutable generated position on the
+    // ResourceNode itself. Use that O(1) authority in current worlds. Legacy
+    // civilization snapshot v1 restored ResourceNode::pos as {0,0}; only that
+    // compatibility case needs the generated-patch lookup below.
+    if(node->pos.x!=0 || node->pos.y!=0){
+        outPosition=node->pos;
+        return true;
+    }
+
     for(const auto& chunk:world.generatedNaturalChunks){
         for(const auto& patch:chunk.resourcePatches){
             if(patch.nodeId==id){
