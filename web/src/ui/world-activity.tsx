@@ -164,7 +164,10 @@ export function WorldActivityPanel({
           <div className="focused-life-chips">
             <span>전문화 <b>{society.specializedResidentCount}/{society.livingResidentCount}명</b></span>
             <span>최근 교육 전수 <b>{society.recentTeachingReceipts}</b></span>
+            <span>도제 관계 <b>{society.apprenticeshipCount}</b></span>
             <span>교환 기록 <b>{society.exchangeFactCount}</b></span>
+            <span>거래 파트너 <b>{society.tradePartnershipCount}</b></span>
+            <span>조직 멤버십 <b>{society.institutionMembershipCount}</b></span>
             <span>활성 조직 <b>{society.activeInstitutionCount}</b></span>
             <span>
               전승 단계 <b>{KOREAN_COLLECTIVE_RECORD_STAGE_LABELS[society.recordStage] ?? society.recordStage}</b>

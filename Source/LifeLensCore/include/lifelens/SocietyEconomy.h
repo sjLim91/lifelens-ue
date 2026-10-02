@@ -469,6 +469,278 @@ inline int societyExchangeFactCount(const SocialKnowledgeBook& book)
     return count;
 }
 
+inline bool societyCanTeachTechnique(const Character& resident)
+{
+    if(!resident.alive) return false;
+    const LifeStageProfile stage=lifeStageProfile(resident.lifeStage);
+    return stage.autonomy>=0.65
+        || resident.lifeStage==LifeStage::Elderly;
+}
+
+inline bool societyCanLearnTechnique(const Character& resident)
+{
+    if(!resident.alive) return false;
+    const LifeStageProfile stage=lifeStageProfile(resident.lifeStage);
+    return stage.canAttendSchool
+        || stage.autonomy>=0.45;
+}
+
+inline double societyLearningRateMultiplier(const Character& resident)
+{
+    return std::max(
+        0.55,
+        std::min(
+            1.50,
+            lifeStageProfile(resident.lifeStage).skillLearningRate));
+}
+
+inline int societyTeachingReceiptCountBetween(
+    const SocialKnowledgeBook& book,
+    CharacterId teacher,
+    CharacterId learner)
+{
+    int count=0;
+    for(const KnowledgeReceipt& receipt:book.receipts()){
+        if(receipt.holder!=learner
+           || receipt.immediateSource!=teacher
+           || receipt.source!=MemorySource::ToldByOther) continue;
+        const SocialFact* fact=book.findFact(receipt.factId);
+        if(fact!=nullptr && isSocietyTechniqueFact(*fact)) ++count;
+    }
+    return count;
+}
+
+inline std::string societyApprenticeshipProposition(
+    CharacterId teacher,
+    CharacterId learner)
+{
+    return std::string("apprenticeship:")
+        +std::to_string(teacher)
+        +":"
+        +std::to_string(learner);
+}
+
+inline bool hasSocietyApprenticeship(
+    const SocialKnowledgeBook& book,
+    CharacterId teacher,
+    CharacterId learner)
+{
+    const std::string proposition=
+        societyApprenticeshipProposition(teacher,learner);
+    for(const SocialFact& fact:book.facts()){
+        if(fact.proposition==proposition) return true;
+    }
+    return false;
+}
+
+inline SocialFactId societyAssociationFactId(
+    std::uint64_t seed,
+    std::uint64_t domain,
+    CharacterId subject,
+    CharacterId other,
+    int discriminator)
+{
+    std::uint64_t value=mixKnowledge64(seed^domain);
+    value=mixKnowledge64(value^subject);
+    value=mixKnowledge64(value^(other<<1));
+    value=mixKnowledge64(
+        value^static_cast<std::uint64_t>(std::max(0,discriminator)));
+    return value==0 ? 1 : value;
+}
+
+inline const SocialFact* registerSocietyApprenticeshipIfQualified(
+    SocialKnowledgeBook& book,
+    Character& teacher,
+    Character& learner,
+    int minute,
+    std::uint64_t seed)
+{
+    if(teacher.id==0
+       || learner.id==0
+       || teacher.id==learner.id
+       || !societyCanTeachTechnique(teacher)
+       || !societyCanLearnTechnique(learner)) return nullptr;
+    if(hasSocietyApprenticeship(book,teacher.id,learner.id)){
+        const std::string proposition=
+            societyApprenticeshipProposition(teacher.id,learner.id);
+        for(const SocialFact& fact:book.facts()){
+            if(fact.proposition==proposition) return &fact;
+        }
+    }
+    if(societyTeachingReceiptCountBetween(
+        book,teacher.id,learner.id)<2) return nullptr;
+
+    SocialFact fact;
+    fact.id=societyAssociationFactId(
+        seed,0x41505052454E5449ull,
+        teacher.id,learner.id,1);
+    fact.subject=teacher.id;
+    fact.proposition=
+        societyApprenticeshipProposition(teacher.id,learner.id);
+    fact.where="learning-network";
+    fact.eventMinute=minute;
+    fact.supports=true;
+    fact.importance=0.76;
+    fact.confidence=0.96;
+    fact.emotionValence=0.24;
+    fact.emotionIntensity=0.34;
+    if(!book.registerFact(fact)) return nullptr;
+    book.recordDirectWitness(
+        fact.id,teacher.id,teacher.memory,teacher.beliefs,minute);
+    book.recordDirectWitness(
+        fact.id,learner.id,learner.memory,learner.beliefs,minute);
+    return book.findFact(fact.id);
+}
+
+inline int societyExchangePairCount(
+    const SocialKnowledgeBook& book,
+    CharacterId first,
+    CharacterId second)
+{
+    int count=0;
+    for(const SocialFact& fact:book.facts()){
+        if(!isSocietyExchangeFact(fact)) continue;
+        if(book.hasReceipt(first,fact.id)
+           && book.hasReceipt(second,fact.id)){
+            ++count;
+        }
+    }
+    return count;
+}
+
+inline std::string societyTradePartnershipProposition(
+    CharacterId first,
+    CharacterId second)
+{
+    const CharacterId low=std::min(first,second);
+    const CharacterId high=std::max(first,second);
+    return std::string("trade-partnership:")
+        +std::to_string(low)
+        +":"
+        +std::to_string(high);
+}
+
+inline bool hasSocietyTradePartnership(
+    const SocialKnowledgeBook& book,
+    CharacterId first,
+    CharacterId second)
+{
+    const std::string proposition=
+        societyTradePartnershipProposition(first,second);
+    for(const SocialFact& fact:book.facts()){
+        if(fact.proposition==proposition) return true;
+    }
+    return false;
+}
+
+inline const SocialFact* registerSocietyTradePartnershipIfQualified(
+    SocialKnowledgeBook& book,
+    Character& first,
+    Character& second,
+    int minute,
+    std::uint64_t seed)
+{
+    if(first.id==0 || second.id==0 || first.id==second.id) return nullptr;
+    const std::string proposition=
+        societyTradePartnershipProposition(first.id,second.id);
+    for(const SocialFact& fact:book.facts()){
+        if(fact.proposition==proposition) return &fact;
+    }
+    if(societyExchangePairCount(book,first.id,second.id)<2) return nullptr;
+
+    const CharacterId low=std::min(first.id,second.id);
+    const CharacterId high=std::max(first.id,second.id);
+    SocialFact fact;
+    fact.id=societyAssociationFactId(
+        seed,0x5452414445504152ull,low,high,1);
+    fact.subject=low;
+    fact.proposition=proposition;
+    fact.where="exchange-network";
+    fact.eventMinute=minute;
+    fact.supports=true;
+    fact.importance=0.70;
+    fact.confidence=0.97;
+    fact.emotionValence=0.20;
+    fact.emotionIntensity=0.28;
+    if(!book.registerFact(fact)) return nullptr;
+
+    Character& lowResident=first.id==low ? first : second;
+    Character& highResident=first.id==high ? first : second;
+    book.recordDirectWitness(
+        fact.id,lowResident.id,
+        lowResident.memory,lowResident.beliefs,minute);
+    book.recordDirectWitness(
+        fact.id,highResident.id,
+        highResident.memory,highResident.beliefs,minute);
+    return book.findFact(fact.id);
+}
+
+inline std::string societyInstitutionMembershipProposition(
+    SocietyInstitutionKind kind)
+{
+    return std::string("institution:")
+        +std::to_string(static_cast<int>(kind));
+}
+
+inline bool residentInstitutionMember(
+    const SocialKnowledgeBook& book,
+    CharacterId resident,
+    SocietyInstitutionKind kind)
+{
+    const std::string proposition=
+        societyInstitutionMembershipProposition(kind);
+    for(const SocialFact& fact:book.facts()){
+        if(fact.subject==resident
+           && fact.proposition==proposition) return true;
+    }
+    return false;
+}
+
+inline const SocialFact* registerSocietyInstitutionMembership(
+    SocialKnowledgeBook& book,
+    Character& resident,
+    SocietyInstitutionKind kind,
+    int minute,
+    std::uint64_t seed)
+{
+    const std::string proposition=
+        societyInstitutionMembershipProposition(kind);
+    for(const SocialFact& fact:book.facts()){
+        if(fact.subject==resident.id
+           && fact.proposition==proposition) return &fact;
+    }
+
+    SocialFact fact;
+    fact.id=societyAssociationFactId(
+        seed,0x494E535449545554ull,
+        resident.id,0,static_cast<int>(kind)+1);
+    fact.subject=resident.id;
+    fact.proposition=proposition;
+    fact.where="society-organization";
+    fact.eventMinute=minute;
+    fact.supports=true;
+    fact.importance=0.62;
+    fact.confidence=0.98;
+    fact.emotionValence=0.12;
+    fact.emotionIntensity=0.18;
+    if(!book.registerFact(fact)) return nullptr;
+    book.recordDirectWitness(
+        fact.id,resident.id,
+        resident.memory,resident.beliefs,minute);
+    return book.findFact(fact.id);
+}
+
+inline int societyFactCountWithPrefix(
+    const SocialKnowledgeBook& book,
+    const std::string& prefix)
+{
+    int count=0;
+    for(const SocialFact& fact:book.facts()){
+        if(fact.proposition.rfind(prefix,0)==0) ++count;
+    }
+    return count;
+}
+
 inline CollectiveRecordStage observeCollectiveRecordStage(
     const World& world,const SocialKnowledgeBook& book)
 {
@@ -510,6 +782,9 @@ struct SocietyWorldObservation {
     int storekeeperCount=0;
     int recentTeachingReceipts=0;
     int exchangeFactCount=0;
+    int apprenticeshipCount=0;
+    int tradePartnershipCount=0;
+    int institutionMembershipCount=0;
     int activeInstitutionCount=0;
     CollectiveRecordStage recordStage=CollectiveRecordStage::Ephemeral;
     std::vector<ResidentSocietyStatus> residents;
@@ -537,6 +812,12 @@ inline SocietyWorldObservation buildSocietyWorldObservation(
     }
     out.recentTeachingReceipts=recentTeachingReceiptCount(book,world.minute);
     out.exchangeFactCount=societyExchangeFactCount(book);
+    out.apprenticeshipCount=
+        societyFactCountWithPrefix(book,"apprenticeship:");
+    out.tradePartnershipCount=
+        societyFactCountWithPrefix(book,"trade-partnership:");
+    out.institutionMembershipCount=
+        societyFactCountWithPrefix(book,"institution:");
     out.recordStage=observeCollectiveRecordStage(world,book);
 
     constexpr std::array<MaterialKind,9> materials={{

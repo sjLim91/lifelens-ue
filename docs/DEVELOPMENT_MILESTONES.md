@@ -634,7 +634,7 @@ The browser only observes these Core-authored facts. It does not diagnose reside
 ## Milestone C5 — Education / Recording / Specialization / Economy / Institutions
 
 Owner: Jjun Core/Simulation/Observer/Web.
-Status: 🟡 In progress — C5-A society/economy foundation implemented.
+Status: 🟡 In progress — C5-A/B society/economy and persistent association foundations implemented.
 
 C5-A implemented foundation:
 
@@ -652,13 +652,14 @@ C5-A implemented foundation:
 
 Remaining C5 work:
 
-- ⬜ deeper apprenticeship continuity and education throughput across childhood/life stages.
+- ✅ child/teen education participation follows LifeStage learning capacity; toddler technical education is excluded.
+- ✅ repeated technique teaching creates persistent apprenticeship relationships and feeds future autonomous teaching selection.
 - ⬜ explicit production task specialization and role handoff/coordination.
 - ⬜ richer ownership/household/shared-resource negotiation beyond current physical inventory/storage authority.
-- ⬜ more expressive exchange valuation and repeated trade relationships.
+- ✅ repeated reciprocal exchange creates persistent trade partnerships and feeds future exchange selection.
 - ⬜ durable proto-record media / writing Technology only when prerequisites emerge causally.
-- ⬜ institution membership, persistence and coordination behaviors beyond derived institution readiness.
-- ⬜ research/education organization behavior beyond current inquiry/learning network signals.
+- ✅ active derived institutions create persistent qualifying membership facts and membership feeds learning/exchange behavior.
+- ⬜ deeper institution-led production/research coordination beyond current membership feedback.
 - ✅ technology adoption/acceptance remains authoritative from C3-F and feeds this stage.
 
 No one real-world political/economic system is a mandatory endpoint.

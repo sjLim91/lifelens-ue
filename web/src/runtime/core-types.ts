@@ -791,6 +791,9 @@ export interface SocietyWorldPayload {
   storekeeperCount: number;
   recentTeachingReceipts: number;
   exchangeFactCount: number;
+  apprenticeshipCount: number;
+  tradePartnershipCount: number;
+  institutionMembershipCount: number;
   activeInstitutionCount: number;
   recordStage:
     | 'Ephemeral'
