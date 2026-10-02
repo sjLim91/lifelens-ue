@@ -184,8 +184,17 @@ inline ReproductiveProfile autonomousReproductiveProfile(const Character& charac
     profile.fertility=clampFamilyProgression(
         0.45*character.genetics.healthPotential+
         0.55*character.lifeCondition.reproductivePotential);
-    profile.canGestate=character.sex==Sex::Female;
-    profile.canContributeGenetics=character.alive && profile.ageYears>=18;
+    // Natural reproduction eligibility is sex-specific. Relationship and
+    // marriage eligibility remain independent from sex; only conception uses
+    // these biological roles.
+    profile.canGestate=
+        character.alive
+        && character.sex==Sex::Female
+        && profile.ageYears>=18;
+    profile.canContributeGenetics=
+        character.alive
+        && character.sex==Sex::Male
+        && profile.ageYears>=18;
     return profile;
 }
 
