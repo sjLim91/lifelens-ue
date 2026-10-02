@@ -9,5 +9,16 @@
 - Implemented native LayToIdle reverse/hold/forward sleep + skinned-mesh shared calibration, CC0 endpoint fallback; differentiated gathers/facility/social/care; speed/pause/heading/facing; prop and connector arrival guards; 32 inactive skeleton cap; cached actions.
 - Actual GLBs: character 0 clips, UAL1 43, UAL2 43. Full inventory, mapping, licenses, performance and limitations: docs/RESIDENT_MOTION_PASS.md.
 - Current local checks: typecheck/build; 15 new motion, 10 character, 29 action-context, 64 presentation; resident/action/spatial/world/facility structural checks PASS. Re-run affected checks after any further changes. New tests write motion review poses.json; Blender rendering script available. Mobile GPU QA not claimed.
-- Next: inspect exact-head CI and finish PR report; no main merge. Initial commit Preflight 37028374059 and Web Typecheck 37028373927 PASS. Character Asset Verification 37028374129 passed asset hashes, typecheck, regression and build but failed in the existing export-review.mjs because it omitted world-presentation-config from its emitted ESM dependency closure. That exporter is now fixed locally, tested, and will be pushed with this checkpoint. Refresh head and all checks; never treat old checks as final-head evidence.
+- Implementation and PR complete. No main merge. Next session should review the existing PR, not recreate implementation. Initial commit Preflight 37028374059 and Web Typecheck 37028373927 PASS. Character Asset Verification 37028374129 passed asset hashes, typecheck, regression and build but failed in the existing export-review.mjs because it omitted world-presentation-config from its emitted ESM dependency closure. That exporter is now fixed locally, tested, and will be pushed with this checkpoint. Refresh head and all checks; never treat old checks as final-head evidence.
 - Before resuming, read AGENTS.md, canonical docs, actual main/branch/PR/Actions. Do not assume old CI succeeded. Do not overwrite shared WORK_STATE or parallel Core changes.
+
+## Verified completion checkpoint
+
+Implementation HEAD 1a6a282fa3158a02079fd785d2a2ff9efbfd8454 has all checks green:
+- Preflight 37028713813.
+- Web Typecheck PR 37028713169 / push 37028708126.
+- Runtime Resilience 37028714338.
+- Character Asset Verification PR 37028713730 / push 37028708579.
+- Character verification logs confirm 15 motion regression tests, hash/endpoint derivative checks, typecheck/build, character/action tests, actual rig/clip skinning for 16 poses. CI CPU update median 0.567 ms/p95 0.894 ms for 32 active residents.
+- PR #611 actual GitHub state: open, merged=false, 20 changed files; no Core files and no temporary recovery workflow. Base 558eabd3.
+- A documentation-only closeout follows this verified implementation checkpoint. Its CI must be checked independently if continuing work.

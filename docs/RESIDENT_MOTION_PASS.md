@@ -116,3 +116,15 @@ update의 Vector3 clone을 제거했다. 32명에 동일 snapshot/update를 반�
 ### ual2.glb — 43 clips
 
 `A_TPose`, `Chest_Open`, `ClimbUp_1m_RM`, `Consume`, `Farm_Harvest`, `Farm_PlantSeed`, `Farm_Watering`, `Hit_Knockback`, `Hit_Knockback_RM`, `Idle_FoldArms_Loop`, `Idle_Lantern_Loop`, `Idle_No_Loop`, `Idle_Rail_Call`, `Idle_Rail_Loop`, `Idle_Shield_Break`, `Idle_Shield_Loop`, `Idle_TalkingPhone_Loop`, `LayToIdle`, `Melee_Hook`, `Melee_Hook_Rec`, `NinjaJump_Idle_Loop`, `NinjaJump_Land`, `NinjaJump_Start`, `OverhandThrow`, `Shield_Dash_RM`, `Shield_OneShot`, `Slide_Exit`, `Slide_Loop`, `Slide_Start`, `Sword_Block`, `Sword_Dash_RM`, `Sword_Regular_A`, `Sword_Regular_A_Rec`, `Sword_Regular_B`, `Sword_Regular_B_Rec`, `Sword_Regular_C`, `Sword_Regular_Combo`, `TreeChopping_Loop`, `Walk_Carry_Loop`, `Yes`, `Zombie_Idle_Loop`, `Zombie_Scratch`, `Zombie_Walk_Fwd_Loop`
+
+## GitHub 검증 checkpoint
+
+PR: https://github.com/sjLim91/lifelens-ue/pull/611 (open, merge하지 않음).
+구현 HEAD `1a6a282fa3158a02079fd785d2a2ff9efbfd8454`에서 다음 모두 PASS:
+
+- [Preflight](https://github.com/sjLim91/lifelens-ue/actions/runs/37028713813)
+- [Web Typecheck](https://github.com/sjLim91/lifelens-ue/actions/runs/37028713169)
+- [Runtime Resilience](https://github.com/sjLim91/lifelens-ue/actions/runs/37028714338)
+- [Character Asset Verification](https://github.com/sjLim91/lifelens-ue/actions/runs/37028713730)
+
+자산 검증 로그는 15개 새 모션 회귀, 고정 GLB 및 endpoint derivative, 타입/기존 회귀/build, 실제 리그 16포즈 export를 확인한다. 기존 exporter의 공유 설정 의존성 누락은 이 HEAD에서 해결되었다. 이 기록을 추가하는 closeout은 문서만 변경하며 구현 checkpoint와 구분한다.
