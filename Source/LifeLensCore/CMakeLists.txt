@@ -11,6 +11,7 @@ add_library(lifelens_core STATIC
     src/Simulation.cpp
     src/ContextActionRuntime.cpp
     src/CivilizationKnowledgeTransmission.cpp
+    src/SocietyEconomy.cpp
     src/SimulationSnapshot.cpp
     src/SimulationSnapshotCodec.cpp
     src/WebClientBridge.cpp
