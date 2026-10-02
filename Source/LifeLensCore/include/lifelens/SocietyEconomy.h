@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "CivilizationKnowledgeTransmission.h"
+#include "Household.h"
 #include "Relationship.h"
 #include "World.h"
 
@@ -25,6 +26,57 @@ enum class SocietyInstitutionKind : std::uint8_t {
 enum class CollectiveRecordStage : std::uint8_t {
     Ephemeral=0, OralTradition, RepeatedTradition, ProtoRecordkeeping
 };
+
+enum class SocietyCoordinationTask : std::uint8_t {
+    None=0,
+    ProvisionFood,
+    ProvisionWater,
+    MaterialSupply,
+    ToolProduction,
+    Cultivation,
+    Metallurgy,
+    SharedStorage,
+    Education,
+    Care,
+    Inquiry
+};
+
+enum class SocietyResourceDisposition : std::uint8_t {
+    PersonalReserve=0,
+    HouseholdReserve,
+    TradableSurplus,
+    SharedSurplus
+};
+
+inline const char* societyCoordinationTaskName(SocietyCoordinationTask task)
+{
+    switch(task){
+        case SocietyCoordinationTask::ProvisionFood: return "ProvisionFood";
+        case SocietyCoordinationTask::ProvisionWater: return "ProvisionWater";
+        case SocietyCoordinationTask::MaterialSupply: return "MaterialSupply";
+        case SocietyCoordinationTask::ToolProduction: return "ToolProduction";
+        case SocietyCoordinationTask::Cultivation: return "Cultivation";
+        case SocietyCoordinationTask::Metallurgy: return "Metallurgy";
+        case SocietyCoordinationTask::SharedStorage: return "SharedStorage";
+        case SocietyCoordinationTask::Education: return "Education";
+        case SocietyCoordinationTask::Care: return "Care";
+        case SocietyCoordinationTask::Inquiry: return "Inquiry";
+        case SocietyCoordinationTask::None:
+        default: return "None";
+    }
+}
+
+inline const char* societyResourceDispositionName(
+    SocietyResourceDisposition disposition)
+{
+    switch(disposition){
+        case SocietyResourceDisposition::HouseholdReserve: return "HouseholdReserve";
+        case SocietyResourceDisposition::TradableSurplus: return "TradableSurplus";
+        case SocietyResourceDisposition::SharedSurplus: return "SharedSurplus";
+        case SocietyResourceDisposition::PersonalReserve:
+        default: return "PersonalReserve";
+    }
+}
 
 inline const char* societyRoleName(SocietyRole role)
 {
