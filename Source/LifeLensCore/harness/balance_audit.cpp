@@ -68,6 +68,15 @@ struct EventMetrics {
     std::uint64_t tradeDepartures=0;
     std::uint64_t tradeExchanges=0;
     std::uint64_t tradeReturns=0;
+
+    std::uint64_t deathsIllness=0;
+    std::uint64_t deathsAccident=0;
+    std::uint64_t deathsExposure=0;
+    std::uint64_t deathsOther=0;
+    std::uint64_t becameIll=0;
+    std::uint64_t recoveredIllness=0;
+
+    std::array<std::uint64_t,10> parentingActions{};
     std::array<std::uint64_t,5> physicalStarts{};
     std::array<std::uint64_t,5> physicalCompletions{};
 };
@@ -449,6 +458,22 @@ void emitCheckpoint(
         <<" tradeDepartures="<<events.tradeDepartures
         <<" tradeExchanges="<<events.tradeExchanges
         <<" tradeReturns="<<events.tradeReturns
+        <<" deathsIllness="<<events.deathsIllness
+        <<" deathsAccident="<<events.deathsAccident
+        <<" deathsExposure="<<events.deathsExposure
+        <<" deathsOther="<<events.deathsOther
+        <<" becameIll="<<events.becameIll
+        <<" recoveredIllness="<<events.recoveredIllness
+        <<" parentingFeed="<<events.parentingActions[0]
+        <<" parentingPutToSleep="<<events.parentingActions[1]
+        <<" parentingBathe="<<events.parentingActions[2]
+        <<" parentingToiletAssist="<<events.parentingActions[3]
+        <<" parentingHold="<<events.parentingActions[4]
+        <<" parentingPlay="<<events.parentingActions[5]
+        <<" parentingEducate="<<events.parentingActions[6]
+        <<" parentingDiscipline="<<events.parentingActions[7]
+        <<" parentingComfort="<<events.parentingActions[8]
+        <<" parentingHealthCare="<<events.parentingActions[9]
         <<" startsEat="<<events.physicalStarts[0]
         <<" startsDrink="<<events.physicalStarts[1]
         <<" startsSleep="<<events.physicalStarts[2]
@@ -572,6 +597,37 @@ int main(int argc,char** argv)
         }
         if(line.find("returned from inter-settlement trade")!=std::string::npos){
             ++events.tradeReturns;
+        }
+
+        if(line.find("died from illness")!=std::string::npos){
+            ++events.deathsIllness;
+        }else if(line.find("died from an accident")!=std::string::npos){
+            ++events.deathsAccident;
+        }else if(line.find("died from environmental exposure")!=std::string::npos){
+            ++events.deathsExposure;
+        }else if(line.find(" died")!=std::string::npos){
+            ++events.deathsOther;
+        }
+        if(line.find("became ill after accumulated pathogen exposure")!=std::string::npos){
+            ++events.becameIll;
+        }
+        if(line.find("recovered from illness and gained resilience")!=std::string::npos){
+            ++events.recoveredIllness;
+        }
+
+        const std::array<const char*,10> parentingNames={
+            "Feed","PutToSleep","Bathe","ToiletAssist","Hold",
+            "Play","Educate","Discipline","Comfort","HealthCare"
+        };
+        if(line.find(" cared for ")!=std::string::npos){
+            for(std::size_t i=0;i<parentingNames.size();++i){
+                const std::string token=
+                    std::string(" -> ")+parentingNames[i];
+                if(line.find(token)!=std::string::npos){
+                    ++events.parentingActions[i];
+                    break;
+                }
+            }
         }
 
         const std::array<const char*,5> physicalNames={
