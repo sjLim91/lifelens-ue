@@ -500,6 +500,7 @@ export const KOREAN_KNOWLEDGE_LEVEL_LABELS: Record<string, string> = {
 };
 
 export const KOREAN_MEMORY_TOKEN_LABELS: Record<string, string> = {
+  experienced_unsanitary_surroundings: '비위생적인 주변 환경을 경험함',
   positive_interaction: '좋은 상호작용',
   help: '도움',
   comfort: '위로',
@@ -513,6 +514,11 @@ export const KOREAN_MEMORY_TOKEN_LABELS: Record<string, string> = {
 };
 
 export const KOREAN_MEMORY_TAG_LABELS: Record<string, string> = {
+  environment: '환경',
+  contamination: '오염',
+  human_waste: '배설물',
+  avoidance: '회피',
+  sanitation: '위생',
   direct_witness: '직접 목격',
   rumor: '전해 들음',
   social: '사회',
