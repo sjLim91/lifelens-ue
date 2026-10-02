@@ -148,6 +148,7 @@ export const KOREAN_ITEM_LABELS: Record<string, string> = {
   StoneHammer: '돌망치',
   BronzeAxe: '청동 도끼',
   BronzePick: '청동 곡괭이',
+  RecordTablet: '기록판',
 };
 
 export const KOREAN_CAPABILITY_LABELS: Record<string, string> = {
