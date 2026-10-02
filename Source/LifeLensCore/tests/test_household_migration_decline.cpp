@@ -49,6 +49,26 @@ static void makeLocalRegionScarce(World& world,GridPos anchor)
     }
 }
 
+static void depleteLiveRegion(World& world,GridPos anchor)
+{
+    const ChunkCoord center=chunkCoordForGrid(anchor);
+    for(int dx=-ResourceExplorationMaxRadiusChunks;
+        dx<=ResourceExplorationMaxRadiusChunks;++dx){
+        for(int dy=-ResourceExplorationMaxRadiusChunks;
+            dy<=ResourceExplorationMaxRadiusChunks;++dy){
+            const ChunkCoord chunk{center.x+dx,center.y+dy};
+            if(world.findGeneratedNaturalChunk(chunk)==nullptr){
+                world.materializeNaturalChunk(chunk);
+            }
+        }
+    }
+    for(ResourceNode& node:world.resourceNodes){
+        node.quantity=0;
+    }
+    world.storageSites.clear();
+    world.facilities.clear();
+}
+
 static ConstructedFacility operationalFacility(
     FacilityId id,
     FacilityKind kind,
@@ -162,8 +182,9 @@ int main()
         declineWorld,declinePopulation);
     CHECK(lifecycle.abandonedCount==1);
 
-    // Runtime integration: the same household decision must become two
-    // authoritative Core navigation actions toward the exact same frontier.
+    // Runtime integration: use the real Simulation world and its public
+    // authority. Do not hand-edit world-generation snapshot internals merely
+    // to manufacture scarcity.
     SimulationRuleset rules=DefaultSimulationRuleset;
     rules.needs.hungerPerMinute=0.0;
     rules.needs.thirstPerMinute=0.0;
@@ -177,59 +198,44 @@ int main()
         CurrentWorldGenerationVersion,
         rules);
     simulation.setupNewGame();
-    SimulationStateSnapshot snapshot=
-        simulation.captureSnapshot();
-    CHECK(snapshot.world.characters.size()>=2);
+    CHECK(simulation.world().characters.size()>=2);
 
-    const CharacterId firstId=snapshot.world.characters[0].id;
-    const CharacterId secondId=snapshot.world.characters[1].id;
+    Character& first=simulation.world().characters[0];
+    Character& second=simulation.world().characters[1];
+    const CharacterId firstId=first.id;
+    const CharacterId secondId=second.id;
 
-    // Preserve the rest of NEW GAME state. Snapshot validation intentionally
-    // rejects dangling genealogy/social/environmental provenance, so a focused
-    // migration test must not manufacture an impossible world by deleting the
-    // other residents out from under those authoritative records.
-    snapshot.households=HouseholdBook{};
-    CHECK(snapshot.households.create(
+    GridPos firstOrigin{};
+    GridPos secondOrigin{};
+    CHECK(simulation.runtimePosition(firstId,firstOrigin));
+    CHECK(simulation.runtimePosition(secondId,secondOrigin));
+    CHECK(manhattan(firstOrigin,secondOrigin)<=SettlementServiceRadiusGrid);
+
+    simulation.households()=HouseholdBook{};
+    CHECK(simulation.households().create(
         1,{firstId,secondId}));
-    snapshot.world.minute=
+
+    for(Character* resident:{&first,&second}){
+        resident->lifeStage=LifeStage::Adult;
+        resident->personality.curiosity=0.90;
+        resident->personality.adaptability=0.88;
+        resident->needs.hunger=0.20;
+        resident->needs.thirst=0.24;
+        resident->needs.sleep=0.18;
+        resident->needs.bladder=0.16;
+        resident->needs.hygiene=0.18;
+        resident->civilization.character=resident->id;
+    }
+
+    depleteLiveRegion(simulation.world(),firstOrigin);
+    simulation.world().minute=
         HouseholdMigrationDecisionIntervalMinutes*2;
-    snapshot.world.facilities.clear();
-    snapshot.world.storageSites.clear();
-    makeLocalRegionScarce(snapshot.world,origin);
 
-    for(Character& resident:snapshot.world.characters){
-        resident.civilization.character=resident.id;
-        if(resident.id!=firstId && resident.id!=secondId) continue;
-
-        resident.lifeStage=LifeStage::Adult;
-        resident.personality.curiosity=0.90;
-        resident.personality.adaptability=0.88;
-        resident.needs.hunger=0.20;
-        resident.needs.thirst=0.24;
-        resident.needs.sleep=0.18;
-        resident.needs.bladder=0.16;
-        resident.needs.hygiene=0.18;
-
-        auto runtime=snapshot.runtime.find(resident.id);
-        CHECK(runtime!=snapshot.runtime.end());
-        runtime->second.pos=origin;
-        runtime->second.goal=Goal::Idle;
-        runtime->second.plan.clear();
-        runtime->second.pendingContext.clear();
-        runtime->second.penaltyUntilMinute=0;
-        runtime->second.navigationRoute.clear();
-        runtime->second.navigationRouteIndex=0;
-        runtime->second.navigationHasTarget=false;
-        runtime->second.navigationArrived=false;
-        runtime->second.navigationRouteFailed=false;
-    }
-
-    std::string error;
-    if(!simulation.restoreSnapshot(snapshot,&error)){
-        std::cerr<<"restoreSnapshot failed: "<<error<<'\n';
-        return 1;
-    }
-    CHECK(error.empty());
+    const HouseholdMigrationPlan runtimePlan=
+        simulation.observeHouseholdMigrationPlan();
+    CHECK(runtimePlan.available);
+    CHECK(runtimePlan.householdId==1);
+    CHECK(runtimePlan.members.size()==2);
 
     simulation.step();
 
@@ -254,9 +260,9 @@ int main()
         CHECK(simulation.runtimePosition(firstId,firstPos));
         CHECK(simulation.runtimePosition(secondId,secondPos));
         firstMoved=firstMoved
-            || firstPos.x!=origin.x || firstPos.y!=origin.y;
+            || firstPos.x!=firstOrigin.x || firstPos.y!=firstOrigin.y;
         secondMoved=secondMoved
-            || secondPos.x!=origin.x || secondPos.y!=origin.y;
+            || secondPos.x!=secondOrigin.x || secondPos.y!=secondOrigin.y;
         if(!firstMoved || !secondMoved) simulation.step();
     }
     CHECK(firstMoved);
