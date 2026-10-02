@@ -720,39 +720,96 @@ export class FacilityLayer {
     trace: FacilityTrace,
     progress: number,
   ): void {
+    // Fiber 4 + Wood 2 is a ground bedding, not a framed modern bed.
+    // Keep the support plane deliberately low and flat so #611 LayToIdle can
+    // calibrate against one authoritative presentation height.
     this.addBoxAtProgress(
       group,
       trace,
       progress,
       0.18,
-      this.darkWoodMaterial,
-      [0, 0.16, 0],
-      [2.5, 0.2, 1.15],
-      [0, 0, 0],
+      this.thatchMaterial,
+      [0.02, 0.09, -0.01],
+      [2.18, 0.10, 0.92],
+      [0, 0.035, 0],
       70,
     );
-    this.addBoxAtProgress(
-      group,
-      trace,
-      progress,
-      0.44,
-      this.beddingMaterial,
-      [0, 0.32, 0],
-      [2.25, 0.18, 0.98],
-      [0, 0, 0],
-      71,
-    );
-    this.addBoxAtProgress(
-      group,
-      trace,
-      progress,
-      0.68,
-      this.thatchMaterial,
-      [-0.82, 0.48, 0],
-      [0.42, 0.2, 0.78],
-      [0, 0, 0],
-      72,
-    );
+
+    const wovenBands = [
+      [-0.48, -0.14, -0.035],
+      [0.02, 0.10, 0.02],
+      [0.52, -0.08, 0.045],
+    ] as const;
+    wovenBands.forEach(([x, z, yaw], index) => {
+      this.addBoxAtProgress(
+        group,
+        trace,
+        progress,
+        0.32 + index * 0.06,
+        this.beddingMaterial,
+        [x, 0.115, z],
+        [0.58, 0.05, 0.72],
+        [0, yaw, 0],
+        71 + index,
+      );
+    });
+
+    const sideBranches = [
+      [-0.02, 0.07, -0.49, -0.025],
+      [0.05, 0.068, 0.49, 0.035],
+    ] as const;
+    sideBranches.forEach(([x, y, z, yaw], index) => {
+      this.addCylinderAtProgress(
+        group,
+        trace,
+        progress,
+        0.48 + index * 0.04,
+        this.woodMaterial,
+        [x, y, z],
+        [0.055, 2.15, 0.055],
+        [0, yaw, Math.PI * 0.5],
+        75 + index,
+      );
+    });
+
+    const endBranches = [
+      [-1.09, 0.065, 0.01, -0.06],
+      [1.10, 0.066, -0.03, 0.05],
+    ] as const;
+    endBranches.forEach(([x, y, z, yaw], index) => {
+      this.addCylinderAtProgress(
+        group,
+        trace,
+        progress,
+        0.56 + index * 0.04,
+        this.woodMaterial,
+        [x, y, z],
+        [0.05, 0.92, 0.05],
+        [Math.PI * 0.5, yaw, 0],
+        77 + index,
+      );
+    });
+
+    // Loose grass/fiber at the head end. Several small irregular bundles avoid
+    // a single cuboid reading as a pillow or headboard.
+    const headBundles = [
+      [-0.82, -0.24, 0.13],
+      [-0.88, 0.02, -0.10],
+      [-0.76, 0.23, 0.07],
+    ] as const;
+    headBundles.forEach(([x, z, yaw], index) => {
+      this.addBoxAtProgress(
+        group,
+        trace,
+        progress,
+        0.68 + index * 0.04,
+        this.thatchMaterial,
+        [x, 0.115, z],
+        [0.52, 0.05, 0.22],
+        [0, yaw, 0],
+        80 + index,
+      );
+    });
   }
 
   private buildShelter(
