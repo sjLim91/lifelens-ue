@@ -257,11 +257,15 @@ inline bool civilizationEraTechnologyOperationalOrAdopted(
 }
 
 inline bool civilizationEraCapabilityAvailable(
-    const World& world,
+    const std::vector<CivilizationTechnologyPopulationStatus>& technologies,
     CapabilityId capability)
 {
-    for(const Character& resident:world.characters){
-        if(resident.alive && capabilityAvailable(world,resident,capability)){
+    // Reuse the population technology aggregation already built for the
+    // Observer read model; do not rescan every resident per era requirement.
+    for(const TechnologyDefinition& definition:TechnologyRegistry){
+        if(definition.primaryCapability!=capability) continue;
+        if(civilizationEraTechnologyOperational(
+               technologies,definition.id)){
             return true;
         }
     }
@@ -309,18 +313,18 @@ inline CivilizationEraEvidenceTable buildCivilizationEraEvidence(
     set(CivilizationEraEvidenceId::OperationalShelter,
         civilizationEraOperationalFacility(world,FacilityKind::Shelter));
     set(CivilizationEraEvidenceId::StoreGoodsCapability,
-        civilizationEraCapabilityAvailable(world,CapabilityId::StoreGoods));
+        civilizationEraCapabilityAvailable(technologies,CapabilityId::StoreGoods));
     set(CivilizationEraEvidenceId::ControlFireCapability,
-        civilizationEraCapabilityAvailable(world,CapabilityId::ControlFire));
+        civilizationEraCapabilityAvailable(technologies,CapabilityId::ControlFire));
     set(CivilizationEraEvidenceId::CarryLiquidCapability,
-        civilizationEraCapabilityAvailable(world,CapabilityId::CarryLiquid));
+        civilizationEraCapabilityAvailable(technologies,CapabilityId::CarryLiquid));
     set(CivilizationEraEvidenceId::ResourceBuffering,
         civilizationEraTransformationActive(
             transformations,
             CivilizationTransformationId::ResourceBuffering));
 
     set(CivilizationEraEvidenceId::CultivateFoodCapability,
-        civilizationEraCapabilityAvailable(world,CapabilityId::CultivateFood));
+        civilizationEraCapabilityAvailable(technologies,CapabilityId::CultivateFood));
     set(CivilizationEraEvidenceId::OperationalCultivatedPlot,
         civilizationEraOperationalFacility(
             world,FacilityKind::CultivatedPlot));
@@ -333,7 +337,7 @@ inline CivilizationEraEvidenceTable buildCivilizationEraEvidence(
         civilizationEraTechnologyOperational(
             technologies,TechnologyId::CopperSmelting));
     set(CivilizationEraEvidenceId::SmeltMetalCapability,
-        civilizationEraCapabilityAvailable(world,CapabilityId::SmeltMetal));
+        civilizationEraCapabilityAvailable(technologies,CapabilityId::SmeltMetal));
     set(CivilizationEraEvidenceId::OperationalFurnace,
         civilizationEraOperationalFacility(world,FacilityKind::Furnace));
     set(CivilizationEraEvidenceId::MetallurgicalProduction,
@@ -348,7 +352,7 @@ inline CivilizationEraEvidenceTable buildCivilizationEraEvidence(
         civilizationEraTechnologyOperational(
             technologies,TechnologyId::BronzeAlloying));
     set(CivilizationEraEvidenceId::AlloyMetalCapability,
-        civilizationEraCapabilityAvailable(world,CapabilityId::AlloyMetal));
+        civilizationEraCapabilityAvailable(technologies,CapabilityId::AlloyMetal));
     set(CivilizationEraEvidenceId::BronzeToolOperational,
         civilizationEraTechnologyOperationalOrAdopted(
             technologies,TechnologyId::BronzeAxe)
