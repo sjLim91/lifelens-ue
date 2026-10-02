@@ -331,6 +331,13 @@ export type ResidentPresentationPhase =
   | 'Moving'
   | 'Interacting';
 
+export type ResidentSleepPresentationContext =
+  | 'None'
+  | 'ProtectedFacility'
+  | 'ExposedFacility'
+  | 'ExposedEmergency'
+  | 'EmergencyOutdoor';
+
 export interface ResidentPresentationDirective {
   active?: boolean;
   kind?: ResidentPresentationKind;
@@ -358,6 +365,7 @@ export interface ResidentPresentationDirective {
   objectId?: string;
   objectKind?: string;
   emergencyFallback?: boolean;
+  sleepContext?: ResidentSleepPresentationContext;
   directNaturalWaterSource?: boolean;
   designatedSanitationSite?: boolean;
   sanitationSiteId?: string;
@@ -888,6 +896,19 @@ export interface CivilizationSettlement {
   established: boolean;
 }
 
+export type CivilizationEraId =
+  | 'NaturalSurvival'
+  | 'EarlySettlement'
+  | 'AgrarianSettlement'
+  | 'CopperMetallurgy'
+  | 'BronzeTechnology'
+  | 'None';
+
+export interface CivilizationEraRequirement {
+  id: string;
+  satisfied: boolean;
+}
+
 export interface CivilizationWorldPayload {
   available?: boolean;
   minute?: number;
@@ -923,6 +944,12 @@ export interface CivilizationWorldPayload {
   contestedTechnologyCount?: number;
   resistedTechnologyCount?: number;
   activeTransformationCount?: number;
+  currentEra?: CivilizationEraId;
+  eraOrdinal?: number;
+  eraEvidence?: CivilizationEraRequirement[];
+  nextEra?: CivilizationEraId;
+  nextEraOrdinal?: number;
+  nextEraRequirements?: CivilizationEraRequirement[];
   technologyPopulation?: CivilizationTechnologyPopulation[];
   transformations?: CivilizationTransformation[];
   resources?: CivilizationWorldResource[];
