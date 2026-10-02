@@ -99,7 +99,7 @@ int main()
 
     // A dependent household is intentionally deferred until a real carry /
     // accompany action exists; C6-D must never fake infant locomotion.
-    planningWorld.characters[1].lifeStage=LifeStage::Infant;
+    planningWorld.characters[1].lifeStage=LifeStage::Baby;
     const HouseholdMigrationPlan dependentPlan=
         chooseHouseholdMigrationPlan(
             planningWorld,households,population);
