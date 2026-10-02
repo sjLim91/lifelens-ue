@@ -43,6 +43,7 @@ export const KOREAN_ACTIVITY_KIND_LABELS: Record<string, string> = {
   Civilization: '문명 활동',
   Parenting: '돌봄',
   KnowledgeTeaching: '지식 전수',
+  Trade: '정착지 교역',
 };
 
 export const KOREAN_PRESENTATION_KIND_LABELS: Record<string, string> = {
@@ -52,6 +53,7 @@ export const KOREAN_PRESENTATION_KIND_LABELS: Record<string, string> = {
   Civilization: '문명 활동',
   Parenting: '돌봄',
   KnowledgeTeaching: '지식 전수',
+  Trade: '정착지 교역',
 };
 
 export const KOREAN_PRESENTATION_PHASE_LABELS: Record<string, string> = {
