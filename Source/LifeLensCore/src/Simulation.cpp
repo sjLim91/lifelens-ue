@@ -1426,8 +1426,14 @@ Simulation::nearestAvailableOperationalSleepFacility(
     CharacterId requester,
     GridPos from) const
 {
+    const Character* resident=findObservedCharacter(world_,requester);
+    const double sleepNeed=resident!=nullptr
+        ? std::clamp(resident->needs.sleep,0.0,1.0)
+        : 0.5;
+
     const ConstructedFacility* best=nullptr;
-    int bestDistance=SettlementServiceRadiusGrid+1;
+    SleepFacilityTargetEvaluation bestEvaluation;
+    constexpr double UtilityTieEpsilon=1e-12;
 
     for(const auto& facility:world_.facilities){
         if(!facilityProvidesSleep(facility.kind)
@@ -1439,20 +1445,26 @@ Simulation::nearestAvailableOperationalSleepFacility(
         const int distance=manhattan(facility.pos,from);
         if(distance>SettlementServiceRadiusGrid) continue;
 
+        const SleepFacilityTargetEvaluation evaluation=
+            evaluateSleepFacilityTarget(
+                world_,from,facility,sleepNeed);
+        if(!evaluation.usable) continue;
+
         if(best==nullptr
-           || distance<bestDistance
+           || evaluation.utility>bestEvaluation.utility+UtilityTieEpsilon
            || (
-               distance==bestDistance
-               && facility.kind==FacilityKind::SleepingPlace
-               && best->kind!=FacilityKind::SleepingPlace
+               std::abs(evaluation.utility-bestEvaluation.utility)
+                    <=UtilityTieEpsilon
+               && evaluation.distanceGrid<bestEvaluation.distanceGrid
            )
            || (
-               distance==bestDistance
-               && facility.kind==best->kind
+               std::abs(evaluation.utility-bestEvaluation.utility)
+                    <=UtilityTieEpsilon
+               && evaluation.distanceGrid==bestEvaluation.distanceGrid
                && facility.id<best->id
            )){
             best=&facility;
-            bestDistance=distance;
+            bestEvaluation=evaluation;
         }
     }
     return best;
