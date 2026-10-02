@@ -18,6 +18,7 @@
 #include "MigrationPressure.h"
 #include "SettlementNetwork.h"
 #include "SettlementMigration.h"
+#include "SettlementKnowledge.h"
 #include "SettlementTrade.h"
 #include "ObserverReadModelV2.h"
 #include "Parenting.h"
@@ -186,6 +187,11 @@ public:
         const SettlementPopulation population=settlementPopulation();
         return lifelens::chooseHouseholdMigrationPlan(
             world_,households_,population);
+    }
+    SettlementKnowledgeNetworkObservation observeSettlementKnowledgeNetwork() const {
+        const SettlementPopulation population=settlementPopulation();
+        return lifelens::observeSettlementKnowledgeNetwork(
+            world_,population);
     }
     SettlementTradeNetworkObservation observeSettlementTradeNetwork() const {
         const SettlementPopulation population=settlementPopulation();
