@@ -1642,7 +1642,8 @@ std::string WebClientBridge::civilizationWorldWindowJson(
             {centerChunkX,centerChunkY},
             radius,
             std::min<std::size_t>(maxRecentDiscoveries,64)),
-        simulation_->observeSocietyWorld());
+        simulation_->observeSocietyWorld(),
+        simulation_->observeSettlementNetwork());
 }
 
 std::string WebClientBridge::worldObjectsJson() const
