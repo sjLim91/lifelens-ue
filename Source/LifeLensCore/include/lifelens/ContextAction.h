@@ -47,6 +47,52 @@ struct PendingContextAction {
     void clear() { *this=PendingContextAction{}; }
 };
 
+struct TradeContextPayload {
+    CharacterId partner=0;
+    double utility=0.0;
+    std::uint64_t originSettlement=0;
+    std::uint64_t destinationSettlement=0;
+    GridPos originPos{};
+    bool returning=false;
+};
+
+// PendingContextAction predates inter-settlement trade and its binary layout is
+// already part of the save contract. Trade therefore uses the otherwise-idle
+// Social/Civilization payload slots as a tagged union instead of silently
+// breaking every existing snapshot. These helpers are the only place that
+// knows the compatibility packing.
+inline TradeContextPayload tradeContextPayload(
+    const PendingContextAction& action)
+{
+    TradeContextPayload payload;
+    if(action.kind!=ContextActionKind::Trade) return payload;
+    payload.partner=action.social.target;
+    payload.utility=action.social.utility;
+    payload.originSettlement=
+        static_cast<std::uint64_t>(action.civilization.facility);
+    payload.destinationSettlement=
+        static_cast<std::uint64_t>(action.civilization.storage);
+    payload.originPos=action.civilization.facilityTargetPos;
+    payload.returning=action.civilization.quantity==1;
+    return payload;
+}
+
+inline void setTradeContextPayload(
+    PendingContextAction& action,
+    const TradeContextPayload& payload)
+{
+    action.kind=ContextActionKind::Trade;
+    action.social.target=payload.partner;
+    action.social.utility=payload.utility;
+    action.civilization.facility=
+        static_cast<FacilityId>(payload.originSettlement);
+    action.civilization.storage=
+        static_cast<StorageId>(payload.destinationSettlement);
+    action.civilization.hasFacilityTarget=true;
+    action.civilization.facilityTargetPos=payload.originPos;
+    action.civilization.quantity=payload.returning ? 1 : 0;
+}
+
 struct PendingContextActionObservation {
     CharacterId actor=0;
     bool active=false;
