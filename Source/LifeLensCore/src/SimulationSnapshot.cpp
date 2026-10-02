@@ -121,6 +121,12 @@ bool validateSnapshot(const SimulationStateSnapshot& snapshot,std::string* error
                        || characterIds.count(pending.knowledgeTeachingTarget)==0)
                         return fail("runtime pending teaching target is invalid");
                     break;
+                case ContextActionKind::Trade:
+                    if(pending.social.target==0
+                       || pending.social.target==item.first
+                       || characterIds.count(pending.social.target)==0)
+                        return fail("runtime pending inter-settlement trade target is invalid");
+                    break;
                 case ContextActionKind::Civilization:
                 case ContextActionKind::None:
                 default:
