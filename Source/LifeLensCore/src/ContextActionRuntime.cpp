@@ -407,7 +407,7 @@ bool Simulation::completeContextAction(
                     SocietyInstitutionKind::ExchangeNetwork)){
                 exchange.score=societyClamp01(exchange.score+0.05);
             }
-            if(exchange.score<InterSettlementTradeMissionThreshold
+            if(trade.utility<InterSettlementTradeMissionThreshold
                || !executeMutualExchange(actor,*partner,exchange)){
                 pending.clear();
                 return false;
