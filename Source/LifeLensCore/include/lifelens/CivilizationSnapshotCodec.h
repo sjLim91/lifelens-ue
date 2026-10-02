@@ -37,7 +37,7 @@ inline bool validMaterialKind(MaterialKind value)
 inline bool validItemKind(ItemKind value)
 {
     return static_cast<int>(value)>=static_cast<int>(ItemKind::RawMaterial)
-        && static_cast<int>(value)<=static_cast<int>(ItemKind::BronzePick);
+        && static_cast<int>(value)<=static_cast<int>(ItemKind::RecordTablet);
 }
 
 inline bool validTechniqueId(TechniqueId value)
