@@ -72,16 +72,19 @@ int main()
     const KnowledgeReceipt* sharpOrigin=registerTechniqueOrigin(
         knowledge,teacher,TechniqueId::SharpFlake,100,
         CivilizationEventType::Discovered,seed);
+    assert(sharpOrigin!=nullptr);
+    const SocialFactId sharpFactId=sharpOrigin->factId;
+
     const KnowledgeReceipt* cordageOrigin=registerTechniqueOrigin(
         knowledge,teacher,TechniqueId::FiberCordage,120,
         CivilizationEventType::Discovered,seed);
-    assert(sharpOrigin!=nullptr);
     assert(cordageOrigin!=nullptr);
+    const SocialFactId cordageFactId=cordageOrigin->factId;
 
     transmitFact(
-        knowledge,teacher,child,sharpOrigin->factId,200,seed);
+        knowledge,teacher,child,sharpFactId,200,seed);
     transmitFact(
-        knowledge,teacher,child,cordageOrigin->factId,220,seed);
+        knowledge,teacher,child,cordageFactId,220,seed);
     assert(societyTeachingReceiptCountBetween(
         knowledge,teacher.id,child.id)==2);
 
