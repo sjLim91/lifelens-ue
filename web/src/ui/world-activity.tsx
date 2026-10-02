@@ -6,6 +6,11 @@ import type {
   WorldObjectsPayload,
 } from '../runtime/core-types';
 import {
+  KOREAN_COLLECTIVE_RECORD_STAGE_LABELS,
+  KOREAN_SOCIETY_INSTITUTION_LABELS,
+  KOREAN_SOCIETY_ROLE_LABELS,
+} from '../localization/korean';
+import {
   formatFacilityKind,
   formatFacilityState,
   formatMaterial,
@@ -116,6 +121,22 @@ export function WorldActivityPanel({
     object.reservedById
     && object.reservedById !== '0'
   )).length;
+  const society = civilization.society;
+  const activeInstitutions = (society?.institutions ?? [])
+    .filter(institution => institution.active)
+    .sort((a, b) => Number(b.strength01) - Number(a.strength01));
+  const pressuredDemands = (society?.demands ?? [])
+    .filter(demand => Number(demand.demand01) >= 0.25)
+    .sort((a, b) => Number(b.demand01) - Number(a.demand01))
+    .slice(0, 4);
+  const roleCounts = new Map<string, number>();
+  for (const resident of society?.residents ?? []) {
+    roleCounts.set(resident.role, (roleCounts.get(resident.role) ?? 0) + 1);
+  }
+  const roleSummary = [...roleCounts.entries()]
+    .filter(([role]) => role !== 'Generalist')
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4);
 
   if (
     civilization.available !== true
@@ -136,6 +157,54 @@ export function WorldActivityPanel({
         <span>시설 <b>{civilization.facilityCount ?? 0}</b></span>
         <span>재현 가능 기술 <b>{civilization.uniqueReproducibleTechniqueTypes ?? 0}</b></span>
       </div>
+
+      {society ? (
+        <div className="focused-life-section">
+          <h3>사회·경제</h3>
+          <div className="focused-life-chips">
+            <span>전문화 <b>{society.specializedResidentCount}/{society.livingResidentCount}명</b></span>
+            <span>최근 교육 전수 <b>{society.recentTeachingReceipts}</b></span>
+            <span>교환 기록 <b>{society.exchangeFactCount}</b></span>
+            <span>활성 조직 <b>{society.activeInstitutionCount}</b></span>
+            <span>
+              전승 단계 <b>{KOREAN_COLLECTIVE_RECORD_STAGE_LABELS[society.recordStage] ?? society.recordStage}</b>
+            </span>
+          </div>
+          {roleSummary.length > 0 ? (
+            <div className="focused-life-inline">
+              {roleSummary.map(([role, count]) => (
+                <span key={role}>
+                  {KOREAN_SOCIETY_ROLE_LABELS[role] ?? role} <b>{count}명</b>
+                </span>
+              ))}
+            </div>
+          ) : null}
+          {activeInstitutions.length > 0 ? (
+            <div className="focused-life-chips">
+              {activeInstitutions.map(institution => (
+                <span key={institution.kind}>
+                  {KOREAN_SOCIETY_INSTITUTION_LABELS[institution.kind] ?? institution.kind}
+                  {' '}
+                  <b>{formatPercent(institution.strength01)}</b>
+                </span>
+              ))}
+            </div>
+          ) : null}
+          {pressuredDemands.length > 0 ? (
+            <div className="focused-life-inline">
+              {pressuredDemands.map(demand => (
+                <span key={demand.material}>
+                  {formatMaterial(demand.material)} 부족
+                  {' '}
+                  <b>{demand.deficitUnits}</b>
+                  {' · '}
+                  수요 {formatPercent(demand.demand01)}
+                </span>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       {facilities.length > 0 ? (
         <div className="focused-life-section">
