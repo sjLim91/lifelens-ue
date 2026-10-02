@@ -92,6 +92,14 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
         double score=0.0;
     } best;
 
+    const SettlementPopulation population=settlementPopulation();
+    const SettlementNetworkObservation settlementNetwork=
+        lifelens::observeSettlementNetwork(
+            world_,&population);
+    const SettlementKnowledgeNetworkObservation knowledgeNetwork=
+        lifelens::observeSettlementKnowledgeNetwork(
+            world_,population);
+
     for(const Character& teacher:world_.characters){
         if(!societyCanTeachTechnique(teacher)) continue;
         const auto teacherRuntime=runtime_.find(teacher.id);
@@ -104,6 +112,15 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
                    || learner.id==teacher.id) continue;
                 const auto learnerRuntime=runtime_.find(learner.id);
                 if(learnerRuntime==runtime_.end() || learnerRuntime->second.pendingContext.active()) continue;
+
+                const SettlementTeachingConnection teachingConnection=
+                    observeSettlementTeachingConnection(
+                        settlementNetwork,
+                        population,
+                        socialKnowledge_,
+                        teacher.id,
+                        learner.id);
+                if(!teachingConnection.allowed) continue;
 
                 const KnowledgeLevel learnerLevel=learner.civilization.knowledge.level(record.technique);
                 if(static_cast<int>(learnerLevel)>=static_cast<int>(KnowledgeLevel::Reproducible)) continue;
@@ -152,6 +169,14 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
                     +(closeFamily ? 0.04 : 0.0)
                     +(establishedApprenticeship ? 0.10 : 0.0)
                     +(learningCircleLink ? 0.05 : 0.0);
+                const double regionalConnectionBoost=
+                    settlementTeachingConnectionBonus(
+                        teachingConnection);
+                const double regionalSpecializationBoost=
+                    settlementTechniqueTeachingBoost(
+                        knowledgeNetwork,
+                        teachingConnection.teacherSettlement,
+                        record.technique);
                 const double score=
                     0.08
                     +0.22*trust
@@ -161,7 +186,9 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
                     +0.07*learner.personality.openness
                     +0.10*gap
                     +educatorBoost
-                    +apprenticeshipBoost;
+                    +apprenticeshipBoost
+                    +regionalConnectionBoost
+                    +regionalSpecializationBoost;
                 if(score<0.36) continue;
 
                 const bool better=score>best.score+1e-12;
