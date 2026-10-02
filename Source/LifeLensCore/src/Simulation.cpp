@@ -1423,9 +1423,7 @@ void Simulation::beginPlan(Character& c,Runtime& r){
         for(const Goal candidate:{
             Goal::Eat,
             Goal::Drink,
-            Goal::UseToilet,
-            Goal::Sleep,
-            Goal::Wash
+            Goal::UseToilet
         }){
             const double need=needForGoal(c,candidate);
             if(need<urgentThreshold
