@@ -426,7 +426,7 @@ inline bool Simulation::completeExternalPhysicalAction(
     ConstructedFacility* settlementSleepFacility=nullptr;
     if(runtime.goal==Goal::Sleep && emergencyFallback){
         settlementSleepFacility=
-            bestOperationalSleepFacility(world_,resolvedPosition,1);
+            operationalSleepFacilityAt(world_,resolvedPosition);
         if(settlementSleepFacility!=nullptr
            && !sleepFacilityHasCapacityFor(
                id,*settlementSleepFacility)){
@@ -448,13 +448,17 @@ inline bool Simulation::completeExternalPhysicalAction(
                 : facilityUseDurationTicks(runtime.goal)));
     const NeedsDelta effect=primitiveSanitation
         ? primitiveSanitationUseEffectPerTick(sanitationKind)
-        : (runtime.goal==Goal::Sleep
-            ? NeedsDelta{0,0,-sleepRecoveryPerMinute,0,0}
-            : (emergencyFallback
-                ? emergencyUseEffectPerTick(runtime.goal)
-                : facilityUseEffectPerTick(runtime.goal)));
+        : (emergencyFallback
+            ? emergencyUseEffectPerTick(runtime.goal)
+            : facilityUseEffectPerTick(runtime.goal));
     for(int tick=0;tick<std::max(1,duration);++tick){
-        character->needs.apply(effect);
+        if(runtime.goal==Goal::Sleep){
+            character->needs.apply({
+                0,0,-sleepRecoveryPerMinuteAt(
+                    world_,resolvedPosition,settlementSleepFacility),0,0});
+        }else{
+            character->needs.apply(effect);
+        }
     }
     if(settlementSleepFacility!=nullptr){
         recordFacilityUse(
