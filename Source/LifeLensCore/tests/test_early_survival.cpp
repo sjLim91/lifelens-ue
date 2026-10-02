@@ -645,6 +645,72 @@ int main()
     assert(sawExpandedExplore);
     assert(!returnedToToiletWhileCritical);
 
+    // Long-run scarcity self-care: missing food must not monopolize every
+    // planning boundary when immediately actionable Sleep/Bladder/Hygiene is
+    // even more severe. Provision acquisition still wins exact ties and takes
+    // over once those bounded self-care pressures fall.
+    SimulationRuleset selfCareRules=DefaultSimulationRuleset;
+    selfCareRules.needs.hungerPerMinute=0.0;
+    selfCareRules.needs.thirstPerMinute=0.0;
+    selfCareRules.needs.sleepPerMinute=0.0;
+    selfCareRules.needs.bladderPerMinute=0.0;
+    selfCareRules.needs.hygienePerMinute=0.0;
+    Simulation selfCareProbe(
+        874213958,0,CurrentWorldGenerationVersion,selfCareRules);
+    selfCareProbe.setupNewGame();
+    selfCareProbe.world().characters.resize(1);
+    selfCareProbe.world().storageSites.clear();
+
+    Character& selfCareActor=selfCareProbe.world().characters.front();
+    const CharacterId selfCareId=selfCareActor.id;
+    const std::string selfCareName=selfCareActor.name;
+    while(selfCareActor.civilization.inventory.remove(
+        ItemKind::RawMaterial,MaterialKind::PlantFood,1)) {}
+    for(auto& node:selfCareProbe.world().resourceNodes){
+        if(node.material==MaterialKind::PlantFood) node.quantity=0;
+    }
+
+    // One real carried water unit makes Wash immediately actionable without
+    // turning hygiene into a second missing-water acquisition problem.
+    selfCareActor.civilization.inventory.add({
+        ItemKind::SimpleContainer,MaterialKind::Unknown,1,0.7,1.0});
+    selfCareActor.civilization.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::Water,1,0.5,1.0});
+    selfCareActor.needs={0.91,0.10,1.0,1.0,1.0};
+
+    GridPos selfCarePos{};
+    assert(selfCareProbe.runtimePosition(selfCareId,selfCarePos));
+    const CivilizationUtilityDecision missingFood=
+        urgentSurvivalProvisionDecisionAtPosition(
+            selfCareProbe.world(),selfCareActor,selfCarePos);
+    assert(missingFood.intent==CivilizationIntent::Explore);
+    assert(missingFood.material==MaterialKind::PlantFood);
+
+    double minimumSleep=selfCareActor.needs.sleep;
+    double minimumBladder=selfCareActor.needs.bladder;
+    double minimumHygiene=selfCareActor.needs.hygiene;
+    for(int minute=0;minute<180;++minute){
+        selfCareProbe.step();
+        minimumSleep=std::min(minimumSleep,selfCareActor.needs.sleep);
+        minimumBladder=std::min(minimumBladder,selfCareActor.needs.bladder);
+        minimumHygiene=std::min(minimumHygiene,selfCareActor.needs.hygiene);
+        if(minimumSleep<0.99
+           && minimumBladder<0.80
+           && minimumHygiene<0.90){
+            break;
+        }
+    }
+
+    assert(containsLog(
+        selfCareProbe.logs(),selfCareName+" -> UseToilet"));
+    assert(containsLog(
+        selfCareProbe.logs(),selfCareName+" -> Sleep"));
+    assert(containsLog(
+        selfCareProbe.logs(),selfCareName+" -> Wash"));
+    assert(minimumBladder<0.80);
+    assert(minimumSleep<0.99);
+    assert(minimumHygiene<0.90);
+
     // Production-like natural New Game: over the first four simulation days,
     // every founder must prove actual food/water acquisition and consumption.
     // Toilet remains an outdoor fallback until a real sanitation affordance is
