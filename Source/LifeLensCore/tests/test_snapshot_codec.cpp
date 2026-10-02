@@ -170,9 +170,16 @@ int main()
         CHECK(pendingBytes==pendingReencoded);
     }
 
+    const auto liveLogs=source.logs();
     const SimulationStateSnapshot snapshot=source.captureSnapshot();
     CHECK(snapshot.version==SimulationSnapshotVersion);
     CHECK(sameSimulationRuleset(snapshot.ruleset,rules));
+    CHECK(snapshot.logs.size()==std::min(
+        liveLogs.size(),MaxPersistedSnapshotLogs));
+    CHECK(std::equal(
+        snapshot.logs.begin(),
+        snapshot.logs.end(),
+        liveLogs.end()-static_cast<std::ptrdiff_t>(snapshot.logs.size())));
     std::vector<std::uint8_t> bytes;
     std::string error;
     CHECK(encodeSimulationSnapshot(snapshot,bytes,&error));
