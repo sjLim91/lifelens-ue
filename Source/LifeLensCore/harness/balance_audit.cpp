@@ -335,7 +335,7 @@ PersistentStateGrowthMetrics persistentStateGrowthMetrics(
     for(const GeneratedNaturalChunk& chunk:world.generatedNaturalChunks){
         result.resourcePatches+=chunk.resourcePatches.size();
     }
-    result.environmentalResidues=world.environmentalResidues.size();
+    result.environmentalResidues=world.environmentalResidues.all().size();
     return result;
 }
 
