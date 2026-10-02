@@ -782,6 +782,337 @@ inline const SocialFact* registerSocietyInstitutionMembership(
     return book.findFact(fact.id);
 }
 
+struct SocietyCoordinationDirective {
+    CharacterId residentId=0;
+    SocietyCoordinationTask task=SocietyCoordinationTask::None;
+    MaterialKind material=MaterialKind::Unknown;
+    TechniqueId technique=TechniqueId::None;
+    double priority01=0.0;
+    bool institutionBacked=false;
+    SocietyResourceDisposition resourceDisposition=
+        SocietyResourceDisposition::PersonalReserve;
+};
+
+inline int societyHouseholdMemberCount(
+    const HouseholdBook* households,
+    CharacterId resident)
+{
+    if(households==nullptr) return 1;
+    const Household* household=households->householdOf(resident);
+    return household==nullptr
+        ? 1
+        : std::max(1,static_cast<int>(household->members.size()));
+}
+
+inline SocietyResourceDisposition observeSocietyResourceDisposition(
+    const Character& resident,
+    MaterialKind material,
+    const SocialKnowledgeBook& book,
+    const HouseholdBook* households=nullptr)
+{
+    if(material==MaterialKind::Unknown || material==MaterialKind::Water){
+        return SocietyResourceDisposition::PersonalReserve;
+    }
+    const int owned=resident.civilization.inventory.count(
+        ItemKind::RawMaterial,material);
+    const int personalReserve=residentExchangeReserve(resident,material);
+    if(owned<=personalReserve){
+        return SocietyResourceDisposition::PersonalReserve;
+    }
+
+    const int householdMembers=
+        societyHouseholdMemberCount(households,resident.id);
+    int householdReserve=personalReserve;
+    if(householdMembers>1){
+        if(material==MaterialKind::PlantFood){
+            householdReserve+=householdMembers-1;
+        }else if(material==MaterialKind::Wood
+                 || material==MaterialKind::Fiber
+                 || material==MaterialKind::Clay){
+            householdReserve+=std::min(2,householdMembers-1);
+        }
+    }
+    if(owned<=householdReserve){
+        return SocietyResourceDisposition::HouseholdReserve;
+    }
+
+    if(residentInstitutionMember(
+        book,resident.id,SocietyInstitutionKind::StorageCommons)
+       && owned>=householdReserve+2){
+        return SocietyResourceDisposition::SharedSurplus;
+    }
+    return SocietyResourceDisposition::TradableSurplus;
+}
+
+inline SocietyCoordinationDirective observeSocietyCoordinationDirective(
+    const World& world,
+    const SocialKnowledgeBook& book,
+    const Character& resident,
+    const HouseholdBook* households=nullptr)
+{
+    SocietyCoordinationDirective out;
+    out.residentId=resident.id;
+    if(!resident.alive || !lifeStageProfile(resident.lifeStage).canWork){
+        return out;
+    }
+
+    const ResidentSocietyStatus status=
+        observeResidentSocietyStatus(resident);
+    const double foodDemand=
+        societyMaterialDemand01(world,MaterialKind::PlantFood);
+    const double waterDemand=
+        societyMaterialDemand01(world,MaterialKind::Water);
+
+    const auto bestSupplyMaterial=[&](){
+        constexpr std::array<MaterialKind,8> materials={{
+            MaterialKind::Wood,MaterialKind::Fiber,MaterialKind::Clay,
+            MaterialKind::Stone,MaterialKind::Flint,
+            MaterialKind::CopperOre,MaterialKind::TinOre,
+            MaterialKind::Charcoal
+        }};
+        MaterialKind best=MaterialKind::Wood;
+        double bestDemand=-1.0;
+        for(const MaterialKind material:materials){
+            const double demand=societyMaterialDemand01(world,material);
+            if(demand>bestDemand+1e-12){
+                bestDemand=demand;
+                best=material;
+            }
+        }
+        return std::pair<MaterialKind,double>{best,std::max(0.0,bestDemand)};
+    };
+    const auto supply=bestSupplyMaterial();
+
+    auto set=[&](
+        SocietyCoordinationTask task,
+        double priority,
+        MaterialKind material=MaterialKind::Unknown,
+        TechniqueId technique=TechniqueId::None,
+        SocietyInstitutionKind institution=SocietyInstitutionKind::ProductionNetwork){
+        out.task=task;
+        out.priority01=societyClamp01(priority);
+        out.material=material;
+        out.technique=technique;
+        out.institutionBacked=
+            residentInstitutionMember(book,resident.id,institution);
+    };
+
+    switch(status.role){
+        case SocietyRole::Forager:
+            if(foodDemand>=waterDemand && foodDemand>=supply.second){
+                set(SocietyCoordinationTask::ProvisionFood,
+                    0.52+0.42*foodDemand,MaterialKind::PlantFood);
+            }else if(waterDemand>=supply.second){
+                set(SocietyCoordinationTask::ProvisionWater,
+                    0.52+0.42*waterDemand,MaterialKind::Water);
+            }else{
+                set(SocietyCoordinationTask::MaterialSupply,
+                    0.48+0.44*supply.second,supply.first);
+            }
+            break;
+        case SocietyRole::Craftsperson:
+            set(SocietyCoordinationTask::ToolProduction,
+                0.56+0.20*status.roleStrength01);
+            break;
+        case SocietyRole::Farmer:
+            set(SocietyCoordinationTask::Cultivation,
+                0.58+0.34*foodDemand,
+                MaterialKind::PlantFood,TechniqueId::Cultivation);
+            break;
+        case SocietyRole::Metallurgist:
+            set(SocietyCoordinationTask::Metallurgy,
+                0.58+0.28*std::max({
+                    societyMaterialDemand01(world,MaterialKind::CopperOre),
+                    societyMaterialDemand01(world,MaterialKind::TinOre),
+                    societyMaterialDemand01(world,MaterialKind::Charcoal)}));
+            break;
+        case SocietyRole::Storekeeper:
+            set(SocietyCoordinationTask::SharedStorage,
+                0.58+0.22*status.roleStrength01,
+                supply.first,TechniqueId::None,
+                SocietyInstitutionKind::StorageCommons);
+            break;
+        case SocietyRole::Educator:
+            set(SocietyCoordinationTask::Education,
+                0.58+0.22*status.roleStrength01,
+                MaterialKind::Unknown,TechniqueId::None,
+                SocietyInstitutionKind::LearningCircle);
+            break;
+        case SocietyRole::Caregiver: {
+            int living=0;
+            int vulnerable=0;
+            for(const Character& candidate:world.characters){
+                if(!candidate.alive) continue;
+                ++living;
+                if(candidate.health.illnessSeverity>=0.18
+                   || candidate.health.injurySeverity>=0.18) ++vulnerable;
+            }
+            set(SocietyCoordinationTask::Care,
+                0.48+0.46*static_cast<double>(vulnerable)
+                    /static_cast<double>(std::max(1,living)),
+                MaterialKind::Unknown,TechniqueId::None,
+                SocietyInstitutionKind::CareNetwork);
+            break;
+        }
+        case SocietyRole::Generalist:
+        default:
+            if(foodDemand>=waterDemand && foodDemand>=supply.second){
+                set(SocietyCoordinationTask::ProvisionFood,
+                    0.40+0.36*foodDemand,MaterialKind::PlantFood);
+            }else if(waterDemand>=supply.second){
+                set(SocietyCoordinationTask::ProvisionWater,
+                    0.40+0.36*waterDemand,MaterialKind::Water);
+            }else{
+                set(SocietyCoordinationTask::MaterialSupply,
+                    0.38+0.38*supply.second,supply.first);
+            }
+            break;
+    }
+
+    if(residentInstitutionMember(
+            book,resident.id,SocietyInstitutionKind::InquiryCircle)
+       && resident.personality.curiosity>=0.62
+       && out.priority01<0.70){
+        set(SocietyCoordinationTask::Inquiry,
+            0.62+0.18*resident.personality.curiosity,
+            MaterialKind::Unknown,TechniqueId::None,
+            SocietyInstitutionKind::InquiryCircle);
+    }
+
+    if(out.material!=MaterialKind::Unknown){
+        out.resourceDisposition=observeSocietyResourceDisposition(
+            resident,out.material,book,households);
+    }
+    return out;
+}
+
+inline bool isSocietySharedContributionFact(const SocialFact& fact)
+{
+    return fact.proposition.rfind("shared-contribution:",0)==0;
+}
+
+inline const SocialFact* registerSocietySharedContributionFact(
+    SocialKnowledgeBook& book,
+    Character& resident,
+    MaterialKind material,
+    int quantity,
+    int minute,
+    std::uint64_t seed)
+{
+    if(resident.id==0
+       || material==MaterialKind::Unknown
+       || quantity<=0) return nullptr;
+    SocialFact fact;
+    fact.id=societyAssociationFactId(
+        seed,0x534841524544434Full,
+        resident.id,
+        static_cast<CharacterId>(static_cast<int>(material)+1),
+        std::max(1,minute));
+    fact.subject=resident.id;
+    fact.proposition=std::string("shared-contribution:")
+        +std::to_string(static_cast<int>(material))
+        +":"+std::to_string(quantity);
+    fact.where="storage-commons";
+    fact.eventMinute=minute;
+    fact.supports=true;
+    fact.importance=0.55;
+    fact.confidence=0.98;
+    fact.emotionValence=0.16;
+    fact.emotionIntensity=0.20;
+    if(!book.registerFact(fact)) return nullptr;
+    book.recordDirectWitness(
+        fact.id,resident.id,resident.memory,resident.beliefs,minute);
+    return book.findFact(fact.id);
+}
+
+inline int societyRecordTabletUnits(const World& world)
+{
+    int total=0;
+    for(const Character& resident:world.characters){
+        if(!resident.alive) continue;
+        total+=resident.civilization.inventory.count(
+            ItemKind::RecordTablet,MaterialKind::Unknown,true);
+    }
+    for(const StorageSite& storage:world.storageSites){
+        total+=storage.inventory.count(
+            ItemKind::RecordTablet,MaterialKind::Unknown,true);
+    }
+    return total;
+}
+
+inline bool isSocietyDurableRecordFact(const SocialFact& fact)
+{
+    return fact.proposition.rfind("durable-record:",0)==0;
+}
+
+inline bool societyFactAlreadyDurablyRecorded(
+    const SocialKnowledgeBook& book,
+    SocialFactId targetFact)
+{
+    const std::string proposition=
+        std::string("durable-record:")+std::to_string(targetFact);
+    for(const SocialFact& fact:book.facts()){
+        if(fact.proposition==proposition) return true;
+    }
+    return false;
+}
+
+inline const SocialFact* bestSocietyDurableRecordCandidate(
+    const SocialKnowledgeBook& book)
+{
+    const SocialFact* best=nullptr;
+    for(const SocialFact& fact:book.facts()){
+        if(isSocietyDurableRecordFact(fact)
+           || fact.importance<0.58
+           || societyFactAlreadyDurablyRecorded(book,fact.id)) continue;
+        if(best==nullptr
+           || fact.importance>best->importance+1e-12
+           || (std::abs(fact.importance-best->importance)<=1e-12
+               && fact.eventMinute<best->eventMinute)
+           || (std::abs(fact.importance-best->importance)<=1e-12
+               && fact.eventMinute==best->eventMinute
+               && fact.id<best->id)){
+            best=&fact;
+        }
+    }
+    return best;
+}
+
+inline const SocialFact* registerSocietyDurableRecordFact(
+    SocialKnowledgeBook& book,
+    Character& recorder,
+    const SocialFact& target,
+    MaterialKind medium,
+    int minute,
+    std::uint64_t seed)
+{
+    if(recorder.id==0 || societyFactAlreadyDurablyRecorded(book,target.id)){
+        return nullptr;
+    }
+    std::uint64_t value=mixKnowledge64(
+        seed^0x44555241424C4552ull);
+    value=mixKnowledge64(value^recorder.id);
+    value=mixKnowledge64(value^target.id);
+    value=mixKnowledge64(
+        value^static_cast<std::uint64_t>(static_cast<int>(medium)+1));
+    SocialFact fact;
+    fact.id=value==0 ? 1 : value;
+    fact.subject=recorder.id;
+    fact.proposition=std::string("durable-record:")
+        +std::to_string(target.id);
+    fact.where="record-media";
+    fact.eventMinute=minute;
+    fact.supports=true;
+    fact.importance=0.86;
+    fact.confidence=0.99;
+    fact.emotionValence=0.10;
+    fact.emotionIntensity=0.18;
+    if(!book.registerFact(fact)) return nullptr;
+    book.recordDirectWitness(
+        fact.id,recorder.id,recorder.memory,recorder.beliefs,minute);
+    return book.findFact(fact.id);
+}
+
 inline int societyFactCountWithPrefix(
     const SocialKnowledgeBook& book,
     const std::string& prefix)
@@ -838,8 +1169,13 @@ struct SocietyWorldObservation {
     int tradePartnershipCount=0;
     int institutionMembershipCount=0;
     int activeInstitutionCount=0;
+    int sharedContributionFactCount=0;
+    int durableRecordFactCount=0;
+    int recordMediaUnits=0;
+    int coordinatedResidentCount=0;
     CollectiveRecordStage recordStage=CollectiveRecordStage::Ephemeral;
     std::vector<ResidentSocietyStatus> residents;
+    std::vector<SocietyCoordinationDirective> coordination;
     std::vector<SocietyDemandSignal> demands;
     std::vector<SocietyInstitutionStatus> institutions;
 };
@@ -870,7 +1206,21 @@ inline SocietyWorldObservation buildSocietyWorldObservation(
         societyFactCountWithPrefix(book,"trade-partnership:");
     out.institutionMembershipCount=
         societyFactCountWithPrefix(book,"institution:");
+    out.sharedContributionFactCount=
+        societyFactCountWithPrefix(book,"shared-contribution:");
+    out.durableRecordFactCount=
+        societyFactCountWithPrefix(book,"durable-record:");
+    out.recordMediaUnits=societyRecordTabletUnits(world);
     out.recordStage=observeCollectiveRecordStage(world,book);
+    for(const Character& resident:world.characters){
+        if(!resident.alive) continue;
+        SocietyCoordinationDirective directive=
+            observeSocietyCoordinationDirective(world,book,resident,nullptr);
+        if(directive.task!=SocietyCoordinationTask::None){
+            ++out.coordinatedResidentCount;
+        }
+        out.coordination.push_back(directive);
+    }
 
     constexpr std::array<MaterialKind,9> materials={{
         MaterialKind::PlantFood,MaterialKind::Water,MaterialKind::Wood,
