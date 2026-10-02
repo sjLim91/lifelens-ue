@@ -9,6 +9,9 @@ on:
       - '.github/workflows/current-main-longrun-audit.yml'
       - 'docs/SIMULATION_BALANCE_CONTRACT_V2.md'
       - 'tasks/CURRENT_MAIN_LONGRUN_AUDIT.md'
+      - 'PROJECT_STATUS.md'
+      - 'tasks/WORK_STATE.md'
+      - 'docs/DEVELOPMENT_MILESTONES.md'
   workflow_dispatch:
     inputs:
       days:
