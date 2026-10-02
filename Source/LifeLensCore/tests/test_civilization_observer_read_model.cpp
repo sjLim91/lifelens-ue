@@ -178,6 +178,10 @@ int main()
     CHECK(missing.technologies.empty());
 
     const CivilizationWorldObservation worldRead=sim.observeCivilizationWorld();
+    CHECK(worldRead.era.currentEra==CivilizationEraId::NaturalSurvival);
+    CHECK(worldRead.era.ordinal==0);
+    CHECK(worldRead.era.hasNextEra);
+    CHECK(worldRead.era.nextEra==CivilizationEraId::EarlySettlement);
     CHECK(worldRead.resourceNodeCount==static_cast<int>(sim.world().resourceNodes.size()));
     CHECK(worldRead.storageSiteCount==1);
     CHECK(worldRead.totalStoredUnits==3);
@@ -250,6 +254,11 @@ int main()
     CHECK(restoredSharpTechnology->adopted==sharpTechnology->adopted);
     CHECK(restoredWorld.totalResourceUnits==worldRead.totalResourceUnits);
     CHECK(restoredWorld.totalStoredUnits==worldRead.totalStoredUnits);
+    CHECK(restoredWorld.era.currentEra==worldRead.era.currentEra);
+    CHECK(restoredWorld.era.ordinal==worldRead.era.ordinal);
+    CHECK(restoredWorld.era.nextEra==worldRead.era.nextEra);
+    CHECK(restoredWorld.era.nextRequirements.size()
+        ==worldRead.era.nextRequirements.size());
     CHECK(restoredWorld.facilityCount==1);
     CHECK(restoredWorld.facilities.size()==1);
     CHECK(restoredWorld.facilities[0].id==8100);
