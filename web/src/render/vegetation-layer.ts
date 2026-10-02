@@ -43,6 +43,9 @@ export class VegetationLayer {
   private readonly treeVariantMatrices = TREE_ASSET_VARIANTS.map(
     () => new Float32Array(MAX_TREES * 16),
   );
+  private readonly treeVariantFoliageTints = TREE_ASSET_VARIANTS.map(
+    () => new Float32Array(MAX_TREES * 3),
+  );
   private readonly crownGeometry = new THREE.IcosahedronGeometry(1, 0);
   private readonly trunkGeometry = new THREE.CylinderGeometry(
     0.72,
@@ -212,6 +215,32 @@ export class VegetationLayer {
           fullTreeHeight * widthScale,
         );
         this.matrix.compose(this.position, this.rotation, this.scale);
+
+        const foliageColorIndex = Math.min(
+          TREE_FOLIAGE_PALETTE.length - 1,
+          Math.floor(
+            hash01(seed, chunk.x, chunk.y, localTreeIndex + 281)
+            * TREE_FOLIAGE_PALETTE.length,
+          ),
+        );
+        this.treeColor.setHex(
+          TREE_FOLIAGE_PALETTE[foliageColorIndex],
+        );
+        this.treeColor.offsetHSL(
+          (
+            hash01(seed, chunk.x, chunk.y, localTreeIndex + 313)
+            - 0.5
+          ) * 0.025,
+          (
+            hash01(seed, chunk.x, chunk.y, localTreeIndex + 347)
+            - 0.5
+          ) * 0.08,
+          (
+            hash01(seed, chunk.x, chunk.y, localTreeIndex + 379)
+            - 0.5
+          ) * 0.06,
+        );
+
         const variantIndex = Math.min(
           TREE_ASSET_VARIANTS.length - 1,
           Math.floor(
@@ -224,6 +253,13 @@ export class VegetationLayer {
           this.treeVariantMatrices[variantIndex],
           variantInstanceIndex * 16,
         );
+        const tintOffset = variantInstanceIndex * 3;
+        this.treeVariantFoliageTints[variantIndex][tintOffset] =
+          this.treeColor.r;
+        this.treeVariantFoliageTints[variantIndex][tintOffset + 1] =
+          this.treeColor.g;
+        this.treeVariantFoliageTints[variantIndex][tintOffset + 2] =
+          this.treeColor.b;
         variantCounts[variantIndex] += 1;
 
         const trunkHeight = profile.trunkHeightWorldUnits * treeScale;
@@ -327,13 +363,6 @@ export class VegetationLayer {
           branchIndex += 1;
         }
 
-        const foliageColorIndex = Math.min(
-          TREE_FOLIAGE_PALETTE.length - 1,
-          Math.floor(
-            hash01(seed, chunk.x, chunk.y, localTreeIndex + 281)
-            * TREE_FOLIAGE_PALETTE.length,
-          ),
-        );
         const cosYaw = Math.cos(yaw);
         const sinYaw = Math.sin(yaw);
         const crownRadius =
@@ -400,6 +429,7 @@ export class VegetationLayer {
       this.actualTrees[index].setInstances(
         this.treeVariantMatrices[index],
         variantCounts[index],
+        this.treeVariantFoliageTints[index],
       );
     }
     this.refreshFallbackVisibility();
