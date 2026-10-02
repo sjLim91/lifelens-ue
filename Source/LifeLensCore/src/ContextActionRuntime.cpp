@@ -593,7 +593,7 @@ bool Simulation::completeContextAction(
             ParentingContext context=pending.parentingContext;
             const bool nursing=
                 pending.parentingAction==ParentingAction::Feed
-                && nursingCareAvailable(births_,actor,*child);
+                && nursingCareAvailable(actor,*child);
             const bool carriedFood=
                 actor.civilization.inventory.count(
                     ItemKind::RawMaterial,MaterialKind::PlantFood)>0;
