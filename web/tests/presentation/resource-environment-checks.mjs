@@ -89,6 +89,15 @@ export function resourceProjectionChecks({ test, projection, grid, profile }) {
     assert.equal(candidates(build([node(10, 'Bronze')])).length, 0);
     assert.equal(candidates(new Projection({ available: false, resources: [node()] }, terrain)).length, 0);
   });
+  test('stock-only updates invalidate only the relevant forest or ground mesh signature', () => {
+    const before = build([node(10), node(10, 'Stone', { id: 'stone' })]);
+    const stone = build([node(10), node(0, 'Stone', { id: 'stone' })]);
+    assert.equal(before.treeSignature, stone.treeSignature);
+    assert.notEqual(before.groundSignature, stone.groundSignature);
+    const wood = build([node(0), node(10, 'Stone', { id: 'stone' })]);
+    assert.equal(before.groundSignature, wood.groundSignature);
+    assert.notEqual(before.treeSignature, wood.treeSignature);
+  });
   test('500ms refresh reuses projection; seed, stock, viewport and availability changes invalidate it', () => {
     const cache = new Cache(), civ = { available: true, resources: [node()] };
     const initial = cache.get(civ, terrain);

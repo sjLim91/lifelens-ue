@@ -41,6 +41,8 @@ function relevant(material: string, kind: DressingKind): boolean {
  * area; no history, regrowth clock, or invented resource state is retained. */
 export class NaturalResourceProjection {
   readonly signature: string;
+  readonly treeSignature: string;
+  readonly groundSignature: string;
   private readonly visible: Set<string>;
   private readonly patches = new Map<string, CivilizationWorldResource[]>();
   private readonly access = new Map<string, { x: number; z: number }[]>();
@@ -58,6 +60,15 @@ export class NaturalResourceProjection {
     this.signature = JSON.stringify(resources.map(r => [r.id, r.gridX, r.gridY,
       r.hasAccessGrid, r.accessGridX, r.accessGridY, r.material, r.quantity,
       r.maxQuantity, r.renewable, r.regenerationPerDay]));
+    const accessSignature = resources.map(r => [r.id, r.gridX, r.gridY,
+      r.hasAccessGrid, r.accessGridX, r.accessGridY]);
+    const stockSignature = (r: CivilizationWorldResource) => [r.id, r.material,
+      r.gridX, r.gridY, r.quantity, r.maxQuantity];
+    // A mineral harvest must not upload the entire forest instance buffer.
+    this.treeSignature = JSON.stringify([accessSignature,
+      resources.filter(r => r.material === 'Wood').map(stockSignature)]);
+    this.groundSignature = JSON.stringify([accessSignature,
+      resources.filter(r => r.material !== 'Wood').map(stockSignature)]);
     for (const r of resources) {
       const cx = Math.floor(r.gridX / span), cy = Math.floor(r.gridY / span);
       // Index neighboring chunks too: baseline masking crosses chunk seams.

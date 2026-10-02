@@ -117,7 +117,7 @@ export class VegetationLayer {
   }
 
   setTerrain(window: TerrainWindow, resources = new NaturalResourceProjection({ available: false }, window)): void {
-    const nextSignature = terrainDressingSignature(window) + resources.signature;
+    const nextSignature = terrainDressingSignature(window) + resources.treeSignature;
     if (nextSignature === this.terrainSignature) return;
     this.terrainSignature = nextSignature;
 

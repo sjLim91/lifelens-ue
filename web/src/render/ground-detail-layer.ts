@@ -145,7 +145,7 @@ export class GroundDetailLayer {
   }
 
   setTerrain(window: TerrainWindow, resources = new NaturalResourceProjection({ available: false }, window)): void {
-    const nextSignature = terrainDressingSignature(window) + resources.signature;
+    const nextSignature = terrainDressingSignature(window) + resources.groundSignature;
     if (nextSignature === this.terrainSignature) return;
     this.terrainSignature = nextSignature;
 
