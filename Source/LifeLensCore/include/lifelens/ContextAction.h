@@ -186,8 +186,14 @@ inline bool resolveCivilizationContextTarget(
                  && actor.needs.hunger>=CriticalSurvivalPreemptThreshold)
                 || (decision.material==MaterialKind::Water
                     && actor.needs.thirst>=CriticalSurvivalPreemptThreshold);
+            const MigrationPressureObservation migration=
+                observeMigrationPressure(
+                    world,actor,authoritativePosition,population);
+            const bool migrationExplore=
+                migrationPressureWarrantsLongRangeExploration(
+                    migration,decision.material);
             const ResourceExplorationOpportunity opportunity=
-                criticalExplore
+                (criticalExplore || migrationExplore)
                     ? chooseCriticalResourceExplorationOpportunity(
                         world,actor.id,decision.material,authoritativePosition)
                     : chooseResourceExplorationOpportunity(
