@@ -768,6 +768,33 @@ export interface SocietyDemand {
   demand01: number;
 }
 
+export interface SocietyCoordinationDirective {
+  residentId: string;
+  task:
+    | 'None'
+    | 'ProvisionFood'
+    | 'ProvisionWater'
+    | 'MaterialSupply'
+    | 'ToolProduction'
+    | 'Cultivation'
+    | 'Metallurgy'
+    | 'SharedStorage'
+    | 'Education'
+    | 'Care'
+    | 'Inquiry'
+    | string;
+  material: string;
+  technique: string;
+  priority01: number;
+  institutionBacked: boolean;
+  resourceDisposition:
+    | 'PersonalReserve'
+    | 'HouseholdReserve'
+    | 'TradableSurplus'
+    | 'SharedSurplus'
+    | string;
+}
+
 export interface SocietyInstitution {
   kind:
     | 'LearningCircle'
@@ -795,6 +822,10 @@ export interface SocietyWorldPayload {
   tradePartnershipCount: number;
   institutionMembershipCount: number;
   activeInstitutionCount: number;
+  sharedContributionFactCount: number;
+  durableRecordFactCount: number;
+  recordMediaUnits: number;
+  coordinatedResidentCount: number;
   recordStage:
     | 'Ephemeral'
     | 'OralTradition'
@@ -803,6 +834,7 @@ export interface SocietyWorldPayload {
     | string;
   residents: SocietyResidentStatus[];
   demands: SocietyDemand[];
+  coordination: SocietyCoordinationDirective[];
   institutions: SocietyInstitution[];
 }
 
