@@ -1376,7 +1376,8 @@ export class ResidentWorldLayer {
       RESIDENT_PRESENTATION_CONTRACT.animationCrossFadeSeconds;
     previous?.fadeOut(blendSeconds);
     next.enabled = true;
-    next.reset();
+    // Keep locomotion phase across brief stops; restart discrete interactions.
+    if (desired !== 'walk' && desired !== 'carry' && desired !== 'idle') next.reset();
     next.play().fadeIn(blendSeconds);
     actor.active = desired;
   }

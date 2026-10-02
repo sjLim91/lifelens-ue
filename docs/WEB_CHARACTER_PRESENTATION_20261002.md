@@ -8,7 +8,7 @@
 - 실제 용변 emergencyFallback + target이 있으면 crouch, 자연 수원 직접 행동이 아닌 실제 Wash 목적지에서는 interact를 사용한다. 사실이 없는 행동은 idle 유지.
 - 기존 운반은 DeliverMaterial 문자열만으로 빈손 carry를 선택했다. 이제 실제 인벤토리의 해당 자재와 손 attachment가 확인되어야 carry를 선택한다. Store 이동도 같은 조건을 적용한다. Gather/Retrieve를 아직 획득하지 않은 자재의 운반으로 꾸미지 않는다.
 - 물주기는 CultivatedPlot/Water/Interacting과 실제 물 및 SimpleContainer를 모두 확인해야 Farm_Watering과 손의 용기를 함께 표시한다. 정보가 없으면 neutral hand interaction으로 내려간다.
-- 이전 모션 재진입은 중간 재생 시간을 이어 받아 전환이 어색했다. 새 행동 선택 시 reset 뒤 fade-in한다. 수면의 기존 안정된 누운 자세/frozen mixer는 보존한다.
+- 이전 모션 재진입은 중간 재생 시간을 이어 받아 전환이 어색했다. 새 상호작용 선택 시 reset 뒤 fade-in한다. walk/carry/idle은 기존 위상 연속성을 유지한다. 수면의 기존 안정된 누운 자세/frozen mixer는 보존한다.
 
 | Core 사실 | 표시 |
 |---|---|
