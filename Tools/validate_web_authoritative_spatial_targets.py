@@ -204,4 +204,20 @@ for token in (
 
 assert "sanitation wording distinguishes real sites from outdoor fallback" in action_test
 
+projection = read("web/src/render/natural-resource-projection.ts")
+config = read("web/src/render/world-presentation-config.ts")
+for source, signature in ((vegetation, "treeSignature"), (ground_detail, "groundSignature")):
+    assert "resources." + signature in source
+    assert "resources.candidates(" in source
+assert "NaturalResourceProjectionCache" in scene
+assert "resourceDressingSignature" in scene
+assert "this.woodCrowns" not in layer
+assert "this.stoneSites" not in layer
+for token in ("resourceQuantityRatio", "r.quantity", "r.maxQuantity", "safeAccess", "reserved", "renewable", "regenerationPerDay"):
+    assert token in projection, f"resource environment authority missing: {token}"
+assert "Math.random(" not in projection
+assert "naturalResources:" in config
+assert "resourceEnvironmentChecks" in presentation_test
+
 print("LifeLens authoritative spatial target visibility: PASS")
+

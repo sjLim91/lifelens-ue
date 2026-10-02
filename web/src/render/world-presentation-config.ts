@@ -12,7 +12,13 @@ export const WORLD_PRESENTATION = {
   damageTilt: 0.12,
   storage: { maxPiles: 4, unitsPerPile: 4, maxInventoryRows: 12, width: 0.32, height: 0.26, depth: 0.4 },
   fire: { glowSize: 2.8, opacity: 0.22, textureSize: 32, color: 0xff983a },
-  resource: { fullScale: 1.04 },
+  naturalResources: {
+    patchRadiusWorldUnits: 3.2, slotsPerNode: 3,
+    innerRadiusRatio: 0.3, radiusSpreadRatio: 0.45, youngScale: 0.3,
+    treeAccessClearanceWorldUnits: 0.9, groundAccessClearanceWorldUnits: 0.28,
+    clayHeightRatio: 0.08, clayWidthMultiplier: 2.4,
+    colors: { Clay: 0x8d5f48, CopperOre: 0x8e684b, TinOre: 0x858a8c, Flint: 0x4d514f },
+  },
   load: { maxPieces: 3, spacing: 0.055 },
   paths: {
     maxMarks: 512, maxSamples: 256,
@@ -20,3 +26,4 @@ export const WORLD_PRESENTATION = {
     opacityPerVisit: 0.07, maxOpacity: 0.38, color: 0x796346,
   },
 } as const;
+

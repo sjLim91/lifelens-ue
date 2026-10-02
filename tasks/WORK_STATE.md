@@ -1,3 +1,11 @@
+## 2026-10-02 — Web 자연 자원 / 환경 통합 (PR #605 / HOLD)
+
+- PR: https://github.com/sjLim91/lifelens-ue/pull/605. 사용자 요청대로 PR만 생성하며 main merge 금지.
+- 최종 동기화 main: `705d917ba4ebce9585d9748cfe4e102a17ee81b2` (#606). Core-only 진전과 Web 수정 overlap 없음.
+- Web 코드 검증 HEAD `d1dbdb0b7cf426b5eaf825ed8b252237d7ac6631`: Preflight / Web Typecheck / Runtime Resilience 모두 PASS, presentation 64/64, production build PASS.
+- 이후 closeout/main 동기화에서 Web 제품 코드는 동일. 최신 branch CI는 PR 본문과 Actions에서 확인.
+- 재개/원인/설계/파일/성능/실패 근거: `tasks/RESOURCE_ENVIRONMENT_HANDOFF.md`.
+
 ## 2026-10-02 CANONICAL CURRENT — CURRENT-MAIN LONG-RUN INTEGRATION GATE
 
 > Actual GitHub `main` / PR / exact-head Actions remain the highest-priority truth.
