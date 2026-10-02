@@ -11,6 +11,7 @@ add_library(lifelens_core STATIC
     src/Simulation.cpp
     src/ContextActionRuntime.cpp
     src/CivilizationKnowledgeTransmission.cpp
+    src/SocietyEconomy.cpp
     src/SimulationSnapshot.cpp
     src/SimulationSnapshotCodec.cpp
     src/WebClientBridge.cpp
@@ -204,6 +205,7 @@ lifelens_add_test(test_civilization_transformation)
 lifelens_add_test(test_civilization_innovation_pressure)
 lifelens_add_test(test_civilization_technology_graph)
 lifelens_add_test(test_civilization_rediscovery_adoption)
+lifelens_add_test(test_society_economy)
 
 
 # Browser client: compile the same LifeLensCore into WebAssembly. The generated

@@ -1,4 +1,5 @@
 #include "lifelens/Simulation.h"
+#include "lifelens/SocietyEconomy.h"
 
 #include <algorithm>
 #include <cmath>
@@ -113,14 +114,41 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
                 const double gap=std::max(0.0,std::min(1.0,
                     static_cast<double>(
                         static_cast<int>(record.level)-static_cast<int>(learnerLevel))/6.0));
+                const Household* teacherHome=households_.householdOf(teacher.id);
+                const Household* learnerHome=households_.householdOf(learner.id);
+                const bool sameHousehold=
+                    teacherHome!=nullptr
+                    && learnerHome!=nullptr
+                    && teacherHome->id==learnerHome->id;
+                const KinshipType kinship=
+                    genealogy_.relationBetween(teacher.id,learner.id);
+                const bool closeFamily=
+                    kinship==KinshipType::Parent
+                    || kinship==KinshipType::Child
+                    || kinship==KinshipType::Sibling
+                    || kinship==KinshipType::HalfSibling
+                    || kinship==KinshipType::Grandparent
+                    || kinship==KinshipType::Grandchild
+                    || kinship==KinshipType::Spouse;
+                const ResidentSocietyStatus teacherSociety=
+                    observeResidentSocietyStatus(teacher);
+                const double educatorBoost=
+                    teacherSociety.role==SocietyRole::Educator
+                        ? 0.10*teacherSociety.roleStrength01
+                        : 0.0;
+                const double apprenticeshipBoost=
+                    (sameHousehold ? 0.05 : 0.0)
+                    +(closeFamily ? 0.04 : 0.0);
                 const double score=
                     0.08
-                    +0.24*trust
+                    +0.22*trust
                     +0.18*techniqueMasteryFactor(record.level)
-                    +0.18*learner.civilization.learningSkill
-                    +0.12*learner.personality.curiosity
-                    +0.08*learner.personality.openness
-                    +0.12*gap;
+                    +0.16*learner.civilization.learningSkill
+                    +0.10*learner.personality.curiosity
+                    +0.07*learner.personality.openness
+                    +0.10*gap
+                    +educatorBoost
+                    +apprenticeshipBoost;
                 if(score<0.36) continue;
 
                 const bool better=score>best.score+1e-12;

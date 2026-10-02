@@ -743,9 +743,70 @@ export interface CivilizationTransformation {
   supportingTechnologyCount: number;
 }
 
+export interface SocietyResidentStatus {
+  residentId: string;
+  role:
+    | 'Generalist'
+    | 'Forager'
+    | 'Craftsperson'
+    | 'Farmer'
+    | 'Metallurgist'
+    | 'Educator'
+    | 'Caregiver'
+    | 'Storekeeper'
+    | string;
+  roleStrength01: number;
+  practicedTechnologyCount: number;
+  successfulTechniqueUses: number;
+}
+
+export interface SocietyDemand {
+  material: string;
+  desiredUnits: number;
+  availableUnits: number;
+  deficitUnits: number;
+  demand01: number;
+}
+
+export interface SocietyInstitution {
+  kind:
+    | 'LearningCircle'
+    | 'ProductionNetwork'
+    | 'StorageCommons'
+    | 'CareNetwork'
+    | 'ExchangeNetwork'
+    | 'InquiryCircle'
+    | string;
+  active: boolean;
+  strength01: number;
+  evidenceCount: number;
+}
+
+export interface SocietyWorldPayload {
+  livingResidentCount: number;
+  specializedResidentCount: number;
+  educatorCount: number;
+  producerCount: number;
+  caregiverCount: number;
+  storekeeperCount: number;
+  recentTeachingReceipts: number;
+  exchangeFactCount: number;
+  activeInstitutionCount: number;
+  recordStage:
+    | 'Ephemeral'
+    | 'OralTradition'
+    | 'RepeatedTradition'
+    | 'ProtoRecordkeeping'
+    | string;
+  residents: SocietyResidentStatus[];
+  demands: SocietyDemand[];
+  institutions: SocietyInstitution[];
+}
+
 export interface CivilizationWorldPayload {
   available?: boolean;
   minute?: number;
+  society?: SocietyWorldPayload;
   resourceNodeCount?: number;
   depletedResourceNodeCount?: number;
   totalResourceUnits?: number;

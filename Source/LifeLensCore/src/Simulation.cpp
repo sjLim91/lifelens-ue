@@ -2576,6 +2576,7 @@ void Simulation::step(){
         advanceFoodSpoilageOneDay(world_);
     }
     advanceCivilizationKnowledgeTeaching();
+    advanceSocietyExchange();
     advanceAutonomousFamilyProgression();
 }
 void Simulation::runMinutes(int minutes){ for(int i=0;i<minutes;++i) step(); }

@@ -199,6 +199,33 @@ export const KOREAN_TECHNOLOGY_SOCIAL_ADOPTION_LABELS: Record<string, string> = 
   Lost: '기술 소실',
 };
 
+export const KOREAN_SOCIETY_ROLE_LABELS: Record<string, string> = {
+  Generalist: '일반 생활인',
+  Forager: '채집 전문',
+  Craftsperson: '제작 전문',
+  Farmer: '농경 전문',
+  Metallurgist: '금속 전문',
+  Educator: '교육 전문',
+  Caregiver: '돌봄 전문',
+  Storekeeper: '저장·분배 전문',
+};
+
+export const KOREAN_SOCIETY_INSTITUTION_LABELS: Record<string, string> = {
+  LearningCircle: '학습망',
+  ProductionNetwork: '생산 협업망',
+  StorageCommons: '공동 저장 체계',
+  CareNetwork: '돌봄망',
+  ExchangeNetwork: '교환망',
+  InquiryCircle: '탐구 공동체',
+};
+
+export const KOREAN_COLLECTIVE_RECORD_STAGE_LABELS: Record<string, string> = {
+  Ephemeral: '개별 기억 단계',
+  OralTradition: '구전 전승',
+  RepeatedTradition: '반복 전승',
+  ProtoRecordkeeping: '기록 전단계',
+};
+
 export const KOREAN_CIVILIZATION_TRANSFORMATION_LABELS: Record<string, string> = {
   ResourceBuffering: '자원 비축 체계',
   ManagedFoodProduction: '관리형 식량 생산',
