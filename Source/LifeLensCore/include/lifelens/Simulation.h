@@ -435,8 +435,12 @@ inline bool Simulation::completeExternalPhysicalAction(
     }
 
     const double sleepRecoveryPerMinute=runtime.goal==Goal::Sleep
-        ? sleepRecoveryPerMinuteAt(
-            world_,resolvedPosition,settlementSleepFacility)
+        ? (emergencyFallback
+            ? sleepRecoveryPerMinuteAt(
+                world_,resolvedPosition,settlementSleepFacility)
+            : std::max(
+                0.0,
+                -facilityUseEffectPerTick(Goal::Sleep).sleep))
         : 0.0;
     const int duration=primitiveSanitation
         ? primitiveSanitationUseDurationTicks(sanitationKind)
@@ -452,7 +456,7 @@ inline bool Simulation::completeExternalPhysicalAction(
             ? emergencyUseEffectPerTick(runtime.goal)
             : facilityUseEffectPerTick(runtime.goal));
     for(int tick=0;tick<std::max(1,duration);++tick){
-        if(runtime.goal==Goal::Sleep){
+        if(runtime.goal==Goal::Sleep && emergencyFallback){
             character->needs.apply({
                 0,0,-sleepRecoveryPerMinuteAt(
                     world_,resolvedPosition,settlementSleepFacility),0,0});
