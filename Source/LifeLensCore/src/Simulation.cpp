@@ -2049,8 +2049,7 @@ void Simulation::advanceAction(Character& c,Runtime& r){
             {
             ConstructedFacility* settlementSleepFacility=
                 r.goal==Goal::Sleep
-                    ? const_cast<ConstructedFacility*>(
-                        operationalSleepFacilityAt(world_,r.pos))
+                    ? operationalSleepFacilityAt(world_,r.pos)
                     : nullptr;
             const Needs before=c.needs;
             if(r.goal==Goal::Sleep){
