@@ -108,13 +108,16 @@ for token in (
     )
 
 # Dynamic trace updates must not rebuild terrain dressing every 500 ms.
-# Trees/grass/rocks are refreshed only when the authoritative facility
-# footprint set changes.
+# Trees/grass/rocks refresh for authoritative facility footprints or actual
+# resource-stock signatures; aggregate activity still cannot create scenery.
 assert "facilitySignature !== this.facilityDressingSignature" in world_scene
-assert "this.groundDetailLayer.setTerrain(window)" in world_scene
-assert "this.vegetationLayer.setTerrain(window)" in world_scene
+assert "this.groundDetailLayer.setTerrain(window," in world_scene
+assert "this.vegetationLayer.setTerrain(window," in world_scene
+assert "resources.signature !== this.resourceDressingSignature" in world_scene
+assert "this.resourceProjectionCache.get(this.civilization, window)" in world_scene
 
 assert "Math.random(" not in activity_ui
 assert "Math.random(" not in feed
 
 print("LifeLens Web world activity observation: PASS")
+
