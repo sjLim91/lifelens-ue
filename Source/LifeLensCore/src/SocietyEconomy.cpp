@@ -176,7 +176,8 @@ void Simulation::advanceSocietyRecordkeeping()
 {
     if(world_.minute<=0 || world_.minute%360!=0) return;
     const SocietyWorldObservation society=
-        buildSocietyWorldObservation(world_,socialKnowledge_);
+        buildSocietyWorldObservation(
+            world_,socialKnowledge_,&households_);
     if(static_cast<int>(society.recordStage)
        <static_cast<int>(CollectiveRecordStage::ProtoRecordkeeping)){
         return;
@@ -269,7 +270,8 @@ void Simulation::advanceSocietyInstitutions()
     if(world_.minute<=0 || world_.minute%360!=0) return;
 
     const SocietyWorldObservation observation=
-        buildSocietyWorldObservation(world_,socialKnowledge_);
+        buildSocietyWorldObservation(
+            world_,socialKnowledge_,&households_);
     constexpr std::array<SocietyInstitutionKind,6> kinds={{
         SocietyInstitutionKind::LearningCircle,
         SocietyInstitutionKind::ProductionNetwork,
