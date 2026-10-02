@@ -12,6 +12,9 @@ types = (
 readout = (
     root / "web/src/ui/observer-readout.tsx"
 ).read_text(encoding="utf-8")
+resident_memory = (
+    root / "web/src/ui/resident-memory.ts"
+).read_text(encoding="utf-8")
 world_scene = (
     root / "web/src/render/world-scene.ts"
 ).read_text(encoding="utf-8")
@@ -78,7 +81,7 @@ for token in (
     "formatPregnancyStage",
     "member.kinship",
     "memory.recallScore",
-    "memory.tags",
+    "summarizeResidentMemories",
     "belief.supportCount",
     "belief.contradictionCount",
 ):
@@ -86,6 +89,15 @@ for token in (
 
 # P1 truth detail stays in the inspection panel. It must not change world
 # simulation/presentation geometry or infer traits from browser-side hashes.
+for token in (
+    "memory.tags",
+    "formatMemoryTag",
+    "repeatCount",
+):
+    assert token in resident_memory, (
+        f"resident memory presentation helper missing factual detail: {token}"
+    )
+
 for forbidden in (
     "resident.genetics",
     "resident.lifeCondition",
