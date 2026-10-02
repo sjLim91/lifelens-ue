@@ -18,6 +18,7 @@
 #include "PrimitiveStorageProgression.h"
 #include "ProvisionPreference.h"
 #include "ResourceExploration.h"
+#include "MigrationPressure.h"
 #include "SettlementProgression.h"
 #include "SocietyEconomy.h"
 #include "World.h"
@@ -782,10 +783,14 @@ inline double civilizationResourceExplorationPressure(
         || material==MaterialKind::PlantFood;
     const double progressDemand=materialProgressDemand(self,material);
 
-    // For critical provisions, a known supply is always safer than a blind
-    // frontier search. Exploration becomes relevant only after all currently
-    // known Water/PlantFood nodes are exhausted.
-    if(provision && knownNaturalResourceUnits(world,material)>0) return 0.0;
+    // C6-A: a remote known provision must not make a depleted lived area look
+    // locally secure. Nearby supply suppresses exploration; remote supply
+    // contributes travel burden and can instead become migration pressure.
+    if(provision
+       && localNaturalResourceUnits(
+            world,material,authoritativePosition)>0){
+        return 0.0;
+    }
 
     // Do not roam for advanced ores merely because the map can contain them.
     // Search needs either a current survival/provision role, a concrete build/
@@ -1067,9 +1072,13 @@ inline InnovationPressureObservation observeTechnologyInnovationPressure(
 inline CivilizationUtilityDecision bestResourceExplorationDecisionAtPosition(
     const World& world,
     const Character& self,
-    GridPos authoritativePosition)
+    GridPos authoritativePosition,
+    const SettlementPopulation* population=nullptr)
 {
     CivilizationUtilityDecision best;
+    const MigrationPressureObservation migration=
+        observeMigrationPressure(
+            world,self,authoritativePosition,population);
     const std::array<MaterialKind,9> naturalMaterials={
         MaterialKind::Water,
         MaterialKind::Wood,
@@ -1087,9 +1096,15 @@ inline CivilizationUtilityDecision bestResourceExplorationDecisionAtPosition(
             world,self,material,authoritativePosition);
         if(pressure<=0.0) continue;
 
+        const bool longRange=
+            migrationPressureWarrantsLongRangeExploration(
+                migration,material);
         const ResourceExplorationOpportunity opportunity=
-            chooseResourceExplorationOpportunity(
-                world,self.id,material,authoritativePosition);
+            longRange
+                ? chooseCriticalResourceExplorationOpportunity(
+                    world,self.id,material,authoritativePosition)
+                : chooseResourceExplorationOpportunity(
+                    world,self.id,material,authoritativePosition);
         if(!opportunity.available) continue;
 
         const double preference=civilizationPreference(
@@ -1099,11 +1114,12 @@ inline CivilizationUtilityDecision bestResourceExplorationDecisionAtPosition(
         candidate.intent=CivilizationIntent::Explore;
         candidate.utility=clampCivilization01(
             0.18
-            +0.62*pressure
+            +0.55*pressure
             +0.08*self.personality.curiosity
             +0.05*self.personality.adaptability
             +0.04*opportunity.suitability
-            +0.03*preference);
+            +0.03*preference
+            +(longRange ? 0.18*migration.pressure01 : 0.0));
         candidate.material=material;
         candidate.item=ItemKind::RawMaterial;
         considerCivilizationDecision(best,candidate);
@@ -2700,7 +2716,7 @@ inline CivilizationUtilityDecision chooseCivilizationUtilityDecisionAtPosition(
     considerCivilizationDecision(
         best,applySocietyRoleAndDemandUtility(
             world,self,bestResourceExplorationDecisionAtPosition(
-                world,self,authoritativePosition)));
+                world,self,authoritativePosition,population)));
     considerCivilizationDecision(
         best,applySocietyRoleAndDemandUtility(
             world,self,bestGatherDecisionAtPosition(
