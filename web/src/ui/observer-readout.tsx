@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import type { Resident } from '../runtime/core-types';
 import type { ObserverSnapshot } from '../state/observer-store';
 import {
   formatBelief,
   formatBiome,
+  formatCivilizationEra,
+  formatCivilizationEraEvidence,
   formatDay,
   formatDevelopment,
   formatGenetics,
@@ -43,6 +46,7 @@ export function WorldOverlay({
 }: {
   snapshot: ObserverSnapshot;
 }) {
+  const [eraOpen, setEraOpen] = useState(false);
   const center = snapshot.terrain?.chunks.find(
     (chunk) => chunk.x === snapshot.camera.centerChunkX
       && chunk.y === snapshot.camera.centerChunkY,
@@ -51,27 +55,133 @@ export function WorldOverlay({
     Math.max(0, Math.min(1, Number(center?.forestCoverage01) || 0)) * 100,
   );
 
+  const currentEra = snapshot.civilization.currentEra;
+  const currentEvidence = (snapshot.civilization.eraEvidence ?? [])
+    .filter((entry) => entry.satisfied);
+  const nextEra = snapshot.civilization.nextEra;
+  const nextRequirements = snapshot.civilization.nextEraRequirements ?? [];
+  const nextMinimum = Math.max(
+    0,
+    Number(snapshot.civilization.nextEraMinimumSatisfied) || 0,
+  );
+
   return (
-    <div className="world-overlay">
-      <span id="timeLabel" className="world-overlay-primary">
-        {formatDay(snapshot.world.minute)}
-      </span>
-      <span id="biomeLabel">
-        {center
-          ? `${formatBiome(center.biome)} · 숲 ${forest}%`
-          : '환경 분석 중'}
-      </span>
-      <span id="weatherLabel">
-        {snapshot.environment?.available
-          ? `${formatWeather(snapshot.environment.summary)} · ${Math.round(Number(snapshot.environment.airTemperatureC) || 0)}°C`
-          : '날씨 분석 중'}
-      </span>
-      <span id="livingOverlay">
-        {snapshot.world.livingResidents !== undefined
-          ? `인구 ${snapshot.world.livingResidents}`
-          : '인구 —'}
-      </span>
-    </div>
+    <>
+      <div className="world-overlay">
+        <span id="timeLabel" className="world-overlay-primary">
+          {formatDay(snapshot.world.minute)}
+        </span>
+        <span id="biomeLabel">
+          {center
+            ? `${formatBiome(center.biome)} · 숲 ${forest}%`
+            : '환경 분석 중'}
+        </span>
+        <span id="weatherLabel">
+          {snapshot.environment?.available
+            ? `${formatWeather(snapshot.environment.summary)} · ${Math.round(Number(snapshot.environment.airTemperatureC) || 0)}°C`
+            : '날씨 분석 중'}
+        </span>
+        <span id="livingOverlay">
+          {snapshot.world.livingResidents !== undefined
+            ? `인구 ${snapshot.world.livingResidents}`
+            : '인구 —'}
+        </span>
+        <button
+          id="civilizationEraBadge"
+          type="button"
+          className="world-era-badge"
+          aria-expanded={eraOpen}
+          aria-controls="civilizationEraPopover"
+          onClick={() => setEraOpen((open) => !open)}
+        >
+          시대 · {currentEra
+            ? formatCivilizationEra(currentEra)
+            : '분석 중'}
+        </button>
+      </div>
+
+      {eraOpen ? (
+        <section
+          id="civilizationEraPopover"
+          className="civilization-era-popover"
+          role="dialog"
+          aria-label="현재 문명 단계"
+        >
+          <div className="civilization-era-heading">
+            <div>
+              <small>현재 문명 단계</small>
+              <strong>{currentEra
+                ? formatCivilizationEra(currentEra)
+                : '문명 단계 분석 중'}</strong>
+            </div>
+            <button
+              type="button"
+              className="civilization-era-close"
+              onClick={() => setEraOpen(false)}
+              aria-label="문명 단계 닫기"
+            >
+              ×
+            </button>
+          </div>
+
+          <p className="civilization-era-note">
+            실제 운용 가능한 지식·능력·시설·생산 상태를 Core가 요약한 결과입니다.
+            경과 일수는 단계 판정에 사용하지 않습니다.
+          </p>
+
+          <div className="civilization-era-section">
+            <h3>판정 근거</h3>
+            {currentEvidence.length > 0 ? (
+              <ul>
+                {currentEvidence.map((entry) => (
+                  <li key={entry.id}>
+                    <span aria-hidden="true">✓</span>
+                    <span>
+                      {formatCivilizationEraEvidence(entry.id)}
+                      {entry.mandatory ? <small> 필수</small> : null}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="civilization-era-muted">
+                아직 다음 정착 단계의 실제 운용 근거가 충분하지 않습니다.
+              </p>
+            )}
+          </div>
+
+          {nextEra && nextEra !== 'None' ? (
+            <div className="civilization-era-section">
+              <h3>다음 단계 · {formatCivilizationEra(nextEra)}</h3>
+              {nextMinimum > 0 ? (
+                <p className="civilization-era-rule">
+                  필수 조건을 모두 충족하고 아래 근거 중 총 {nextMinimum}개 이상이
+                  실제 운용 상태여야 합니다.
+                </p>
+              ) : null}
+              <ul>
+                {nextRequirements.map((entry) => (
+                  <li
+                    key={entry.id}
+                    className={entry.satisfied ? 'satisfied' : 'missing'}
+                  >
+                    <span aria-hidden="true">{entry.satisfied ? '✓' : '✕'}</span>
+                    <span>
+                      {formatCivilizationEraEvidence(entry.id)}
+                      {entry.mandatory ? <small> 필수</small> : null}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p className="civilization-era-muted">
+              현재 구현 범위에서 더 높은 문명 단계가 정의되어 있지 않습니다.
+            </p>
+          )}
+        </section>
+      ) : null}
+    </>
   );
 }
 
