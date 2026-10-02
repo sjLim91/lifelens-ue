@@ -984,6 +984,8 @@ std::string WebClientBridge::residentsJson() const
             simulation_->observeResidentPresentation(resident.id);
         const ResidentCivilizationObservation civilization =
             simulation_->observeResidentCivilization(resident.id);
+        const MigrationPressureObservation migration =
+            simulation_->observeResidentMigrationPressure(resident.id);
         const Household* household =
             simulation_->households().householdOf(resident.id);
 
@@ -1277,6 +1279,26 @@ std::string WebClientBridge::residentsJson() const
             out << "}";
         }
         out << "]";
+        out << "},";
+
+        out << "\"migration\":{";
+        out << "\"candidate\":" << (migration.candidate ? "true" : "false") << ",";
+        out << "\"bottleneckMaterial\":\"" << traceMaterialName(migration.bottleneckMaterial) << "\",";
+        out << "\"resourceScarcity01\":"; appendDouble(out,migration.resourceScarcity01); out << ",";
+        out << "\"travelBurden01\":"; appendDouble(out,migration.travelBurden01); out << ",";
+        out << "\"populationPressure01\":"; appendDouble(out,migration.populationPressure01); out << ",";
+        out << "\"settlementAttachment01\":"; appendDouble(out,migration.settlementAttachment01); out << ",";
+        out << "\"explorationDisposition01\":"; appendDouble(out,migration.explorationDisposition01); out << ",";
+        out << "\"pressure01\":"; appendDouble(out,migration.pressure01); out << ",";
+        out << "\"localResourceUnits\":" << migration.localResourceUnits << ",";
+        out << "\"localReserveUnits\":" << migration.localReserveUnits << ",";
+        out << "\"nearestKnownResourceDistanceGrid\":" << migration.nearestKnownResourceDistanceGrid << ",";
+        out << "\"hasFrontierTarget\":" << (migration.hasFrontierTarget ? "true" : "false") << ",";
+        out << "\"frontierChunkX\":" << migration.frontierChunk.x << ",";
+        out << "\"frontierChunkY\":" << migration.frontierChunk.y << ",";
+        out << "\"frontierGridX\":" << migration.frontierTarget.x << ",";
+        out << "\"frontierGridY\":" << migration.frontierTarget.y << ",";
+        out << "\"frontierDistanceChunks\":" << migration.frontierDistanceChunks;
         out << "},";
 
         out << "\"relationships\":[";
