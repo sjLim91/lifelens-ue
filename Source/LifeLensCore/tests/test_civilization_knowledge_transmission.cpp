@@ -137,7 +137,7 @@ int main()
     CHECK(!techniqueTeachingCanAdvance(
         blockedTeacher,blockedLearner,TechniqueId::SharpFlake));
     blockedTeacher.civilization.inventory.add(
-        {ItemKind::RawMaterial,MaterialKind::Flint,1,0.5,1.0});
+        {ItemKind::RawMaterial,MaterialKind::Flint,2,0.5,1.0});
     CHECK(techniqueTeachingCanAdvance(
         blockedTeacher,blockedLearner,TechniqueId::SharpFlake));
 
