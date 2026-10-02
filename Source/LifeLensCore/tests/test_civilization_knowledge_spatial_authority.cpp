@@ -50,7 +50,7 @@ int main()
     learnerToTeacher.familiarity=1.0;
     learnerToTeacher.comfort=1.0;
 
-    sim.world().minute=539;
+    sim.world().minute=KnowledgeTeachingDecisionIntervalMinutes-1;
     const KnowledgeReceipt* origin=registerTechniqueOrigin(
         sim.socialKnowledge(),teacher,TechniqueId::SharpFlake,
         sim.world().minute,CivilizationEventType::Crafted,seed);
@@ -59,7 +59,7 @@ int main()
     CHECK(sim.socialKnowledge().findReceipt(learner.id,factId)==nullptr);
 
     sim.runMinutes(1);
-    CHECK(sim.world().minute==540);
+    CHECK(sim.world().minute==KnowledgeTeachingDecisionIntervalMinutes);
 
     const PendingContextActionObservation pending=
         sim.observePendingContextAction(teacher.id);
