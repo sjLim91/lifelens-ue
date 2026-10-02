@@ -184,17 +184,7 @@ int main()
     const CharacterId firstId=snapshot.world.characters[0].id;
     const CharacterId secondId=snapshot.world.characters[1].id;
     snapshot.world.characters.resize(2);
-    snapshot.runtime.erase(
-        std::remove_if(
-            snapshot.runtime.begin(),
-            snapshot.runtime.end(),
-            [&](const auto& entry){
-                return entry.first!=firstId
-                    && entry.first!=secondId;
-            }),
-        snapshot.runtime.end());
-
-    // unordered_map has no erase-remove; keep only the two runtime entries.
+    // Keep only the two runtime entries.
     for(auto it=snapshot.runtime.begin();it!=snapshot.runtime.end();){
         if(it->first!=firstId && it->first!=secondId){
             it=snapshot.runtime.erase(it);
