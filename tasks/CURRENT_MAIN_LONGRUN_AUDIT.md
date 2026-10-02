@@ -40,3 +40,10 @@
 - #540 위생 후보 실험 wholesale merge
 - 결과가 마음에 안 든다는 이유로 seed별 예외 하드코딩
 - 브라우저에서 Core 결과를 보정
+
+
+## R3 실행 메모 — 2026-10-02
+
+- 기준 main: `e315fc4a08ae539c99cb54babcd932a9dad60cfd`
+- R2(#607/#608) 대비 #609 Gather 재질별 cache 성능 영향 재계측.
+- branch-only workflow trigger이며 main merge 대상이 아니다.
