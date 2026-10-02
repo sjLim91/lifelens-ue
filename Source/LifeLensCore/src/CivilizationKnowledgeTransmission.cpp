@@ -111,7 +111,11 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
     for(const Character& teacher:world_.characters){
         if(!societyCanTeachTechnique(teacher)) continue;
         const auto teacherRuntime=runtime_.find(teacher.id);
-        if(teacherRuntime==runtime_.end() || teacherRuntime->second.pendingContext.active()) continue;
+        if(teacherRuntime==runtime_.end()
+           || teacherRuntime->second.pendingContext.active()
+           || !teacherRuntime->second.plan.empty()){
+            continue;
+        }
 
         for(const TechniqueKnowledge& record:teacher.civilization.knowledge.all()){
             if(static_cast<int>(record.level)<static_cast<int>(KnowledgeLevel::Reproducible)) continue;
@@ -120,7 +124,8 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
                    || learner.id==teacher.id) continue;
                 const auto learnerRuntime=runtime_.find(learner.id);
                 if(learnerRuntime==runtime_.end()
-                   || learnerRuntime->second.pendingContext.active()){
+                   || learnerRuntime->second.pendingContext.active()
+                   || !learnerRuntime->second.plan.empty()){
                     continue;
                 }
 
