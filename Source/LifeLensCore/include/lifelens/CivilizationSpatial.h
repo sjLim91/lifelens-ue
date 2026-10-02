@@ -21,6 +21,37 @@ inline const ResourceNode* findCivilizationResourceNodeSpatial(
     return nullptr;
 }
 
+inline const NaturalResourcePatch* findGeneratedNaturalResourcePatch(
+    const World& world,
+    const ResourceNode& node)
+{
+    if(node.id==0) return nullptr;
+
+    // Current generated worlds persist ResourceNode::pos from the owning
+    // NaturalResourcePatch. Use that coordinate to jump directly to the one
+    // possible owner chunk instead of rescanning every materialized chunk for
+    // every resource candidate. If an old save has no serialized node position,
+    // or a compatibility fixture deliberately diverges, retain the full scan
+    // fallback so world-generation authority still wins.
+    if(const GeneratedNaturalChunk* owner=
+        world.findGeneratedNaturalChunk(chunkCoordForGrid(node.pos))){
+        for(const auto& patch:owner->resourcePatches){
+            if(patch.nodeId==node.id
+               && patch.pos.x==node.pos.x
+               && patch.pos.y==node.pos.y){
+                return &patch;
+            }
+        }
+    }
+
+    for(const auto& chunk:world.generatedNaturalChunks){
+        for(const auto& patch:chunk.resourcePatches){
+            if(patch.nodeId==node.id) return &patch;
+        }
+    }
+    return nullptr;
+}
+
 inline const StorageSite* findCivilizationStorageSpatial(
     const World& world,
     StorageId id)
@@ -41,15 +72,13 @@ inline bool resolveCivilizationResourceGridPosition(
     if(node==nullptr) return false;
 
     // Generated natural-patch position is the immutable world-generation
-    // authority. Prefer it when present so legacy v1 saves (which did not
-    // serialize ResourceNode::pos) still resolve to the exact generated site.
-    for(const auto& chunk:world.generatedNaturalChunks){
-        for(const auto& patch:chunk.resourcePatches){
-            if(patch.nodeId==id){
-                outPosition=patch.pos;
-                return true;
-            }
-        }
+    // authority. Current worlds hit the owner-chunk fast path; legacy v1 saves
+    // that did not serialize ResourceNode::pos still use the compatibility
+    // fallback inside findGeneratedNaturalResourcePatch().
+    if(const NaturalResourcePatch* patch=
+        findGeneratedNaturalResourcePatch(world,*node)){
+        outPosition=patch->pos;
+        return true;
     }
 
     outPosition=node->pos;
