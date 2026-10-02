@@ -74,6 +74,15 @@ export function resourceProjectionChecks({ test, projection, grid, profile }) {
       assert.ok(candidates(build(Array.from({ length: 100 }, (_, i) => node(10, material, { id: String(i) }))), kind, [], budget).length <= budget);
     }
   });
+  test('mobile rock budget shares visible slots with Stone/Flint/Clay/CopperOre/TinOre', () => {
+    const materials = ['Stone', 'Flint', 'Clay', 'CopperOre', 'TinOre'];
+    const resources = materials.map(material => node(10, material, { id: material }));
+    const full = candidates(build(resources), 'rocks', [], 5);
+    assert.deepEqual(full.map(p => p.material).sort(), [...materials].sort());
+    const clayDepleted = candidates(build(resources.map(r => r.material === 'Clay' ? { ...r, quantity: 0 } : r)), 'rocks', [], 5);
+    assert.equal(clayDepleted.some(p => p.material === 'Clay'), false);
+    assert.equal(clayDepleted.length, 4);
+  });
   test('invalid resource capacity fails closed and non-natural inventory cannot create scenery', () => {
     assert.equal(resourceQuantityRatio(node(10, 'Wood', { maxQuantity: 0 })), 0);
     assert.equal(resourceQuantityRatio(node(NaN)), 0);

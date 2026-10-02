@@ -59,7 +59,8 @@ for forbidden in (
         f"presentation must not mutate Core truth: {forbidden}"
     )
 
-assert "this.groundDetailLayer.setTerrain(window)" in world_scene
+assert "this.groundDetailLayer.setTerrain(window," in world_scene
+assert "this.resourceProjectionCache.get(this.civilization, window)" in world_scene
 assert "this.groundDetailLayer.setWetness" in world_scene
 assert "this.groundDetailLayer.dispose()" in world_scene
 
@@ -102,3 +103,4 @@ for warm_color in ("0xc19a46", "0xb84f58", "0xc96b78"):
     )
 
 print("LifeLens web presentation v2 environment foundation: PASS")
+

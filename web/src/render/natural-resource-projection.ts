@@ -96,7 +96,10 @@ export class NaturalResourceProjection {
     // extra baseline instances or shift the remaining patch positions.
     const reserved = Math.min(budget, owners.length * profile.slotsPerNode);
     owners.forEach((r, ownerIndex) => {
-      const slots = Math.max(0, Math.min(profile.slotsPerNode, reserved - ownerIndex * profile.slotsPerNode));
+      // Share scarce mobile slots across nodes before allocating a second or
+      // third instance. A Stone patch must not consume all ore/clay slots.
+      const slots = Math.floor(reserved / owners.length)
+        + (ownerIndex < reserved % owners.length ? 1 : 0);
       const ratio = resourceQuantityRatio(r), c = center(r);
       for (let i = 0; i < slots; i++) {
         const progress = Math.max(0, Math.min(1, ratio * slots - i));
@@ -107,10 +110,18 @@ export class NaturalResourceProjection {
         const p = { x: c.x - (chunkX + 0.5) * size + Math.cos(angle) * distance,
           z: c.z - (chunkY + 0.5) * size + Math.sin(angle) * distance,
           scale: profile.youngScale + (1 - profile.youngScale) * progress, material: r.material };
-        // First sorted owner wins overlap, even if it is depleted.
+        // Nearest same-material node owns overlapping patches, including zero
+        // stock. Other real materials may coexist; they are not duplicate props.
         const a = absolute(p);
-        const owner = nearby.find(other => relevant(other.material, kind)
-          && Math.hypot(a.x - center(other).x, a.z - center(other).z) <= radius);
+        let owner = r, nearest = Math.hypot(a.x - c.x, a.z - c.z);
+        for (const other of nearby) {
+          if (other.material !== r.material) continue;
+          const otherCenter = center(other);
+          const distance = Math.hypot(a.x - otherCenter.x, a.z - otherCenter.z);
+          if (distance < nearest || (distance === nearest && other.id.localeCompare(owner.id) < 0)) {
+            owner = other; nearest = distance;
+          }
+        }
         if (owner === r && safeAccess(p)) output.push(p);
       }
     });

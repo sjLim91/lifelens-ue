@@ -18,3 +18,11 @@
 - 모바일 나무 6/풀14/관목4/돌5 per chunk 및 기존 global capacity 유지. draw call 추가 없음.
 - 로컬: projection 회귀 10/10, spatial validator PASS, ecology validator PASS.
 - 다음: PR exact-head Runtime Resilience (전체 presentation/typecheck/build 포함), Preflight 결과 확인/오류 수정. main merge 금지.
+
+## PR #605 / 첫 CI checkpoint
+
+- PR: https://github.com/sjLim91/lifelens-ue/pull/605 (OPEN, merge 금지).
+- 첫 product HEAD 1b357687f966c1b2c4428d94146699aa57c3b569: Runtime Resilience run 37016668018 PASS (presentation 62/62, typecheck/build 포함), Web Typecheck 37016668263 PASS.
+- Preflight 37016668240 실패 원인: v2 environment validator가 이전 setTerrain(window) 호출 문자열을 강제. 실제 mesh/API 검증은 통과. 새 projection 인자를 검증하도록 수정.
+- 후속 보강: rock budget을 노드별 균등 분배해 광석/Clay 표현 starvation 방지. 같은 material 겹침은 가장 가까운 node가 영역을 소유. 로컬 회귀 11/11 + spatial/ecology/v2 validator PASS.
+- 다음: 최종 product HEAD의 PR CI 3개 확인. 코드 변경 없이 검증 완료 상태 기록 시 product HEAD와 docs HEAD 구분.

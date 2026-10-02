@@ -1,10 +1,10 @@
-## 2026-10-02 — Web 자연 자원 / 환경 통합 (PR 준비 중)
+## 2026-10-02 — Web 자연 자원 / 환경 통합 (PR #605 / WAITING_CI)
 
 - 사용자 범위: 최신 main에서 Presentation만 통합. Core 규칙 수정/merge 금지.
 - 기준 main: `c6a357686266b6a8cc35d433e8af978d8614793c`.
 - 재개 checkpoint: `tasks/RESOURCE_ENVIRONMENT_HANDOFF.md`.
-- 로컬 순수 projection 회귀 10개와 authoritative spatial/ecology validator PASS.
-- 전체 presentation/typecheck/build는 PR exact-head CI로 검증할 예정.
+- 로컬 순수 projection 회귀 11개와 authoritative spatial/ecology validator PASS.
+- PR: https://github.com/sjLim91/lifelens-ue/pull/605. 첫 HEAD presentation 62/62 + typecheck/build PASS. validator 계약/광물 예산 보강 후 최종 CI 대기. merge 금지.
 
 ## 2026-10-02 CANONICAL CURRENT — CURRENT-MAIN LONG-RUN INTEGRATION GATE
 
