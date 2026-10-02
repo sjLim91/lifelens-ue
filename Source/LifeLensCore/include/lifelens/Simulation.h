@@ -71,9 +71,14 @@ public:
             if(candidate.id==id){ character=&candidate; break; }
         }
         if(character==nullptr || !character->alive) return false;
+        // A sanitation site only serves the resident's current lived
+        // area. A distant site must not become a world-global toilet target;
+        // outside the local service radius the resident uses a nearby
+        // low-exposure emergency position instead.
         outTarget=resolveSanitationUseTarget(
             world_.seed,*character,world_.environmentalResidues,
-            world_.primitiveSanitationSites,world_.minute,runtimeIt->second.pos);
+            world_.primitiveSanitationSites,world_.minute,
+            runtimeIt->second.pos,SettlementServiceRadiusGrid);
         return true;
     }
     bool settlementSleepTarget(
