@@ -217,15 +217,25 @@ inline double settlementSleepRecoveryPerTick(
     return 0.0;
 }
 
-inline double settlementShelterProtection01(
+inline const ConstructedFacility* operationalSleepFacilityAt(
     const World& world,
     GridPos pos)
 {
-    const ConstructedFacility* shelter=
-        operationalSettlementFacilityNear(
-            world,FacilityKind::Shelter,pos,1);
-    if(shelter==nullptr) return 0.0;
-    return std::clamp(0.68*facilityEffectiveness01(*shelter),0.0,0.68);
+    return bestOperationalSleepFacility(world,pos,0);
+}
+
+inline SleepEnvironmentEvaluation sleepEnvironmentAt(
+    const World& world,
+    GridPos pos,
+    bool weatherProtected)
+{
+    return evaluateSleepEnvironment(
+        deriveEnvironmentalConsequences(
+            deriveDynamicEnvironment(
+                world.genesisIdentity(),
+                chunkCoordForGrid(pos),
+                world.minute)),
+        weatherProtected);
 }
 
 inline double sleepRecoveryPerMinuteAt(
@@ -233,40 +243,93 @@ inline double sleepRecoveryPerMinuteAt(
     GridPos pos,
     const ConstructedFacility* facility=nullptr)
 {
-    const EnvironmentalConsequenceProfile consequence=
-        deriveEnvironmentalConsequences(
-            deriveDynamicEnvironment(
-                world.genesisIdentity(),
-                chunkCoordForGrid(pos),
-                world.minute));
-
-    const double environmentalStress=std::clamp(
-        0.40*consequence.wetStress01
-        +0.30*consequence.coldStress01
-        +0.20*consequence.heatStress01
-        +0.10*consequence.travelFriction01,
-        0.0,
-        1.0);
-
     double baseRecovery=DefaultPhysiologyBalance.outdoorSleepRecoveryPerMinute;
-    double protection=settlementShelterProtection01(world,pos);
+    bool weatherProtected=false;
     if(facility!=nullptr && facilityOperationalAndActive(*facility)
-       && facilityProvidesSleep(facility->kind)){
+       && facilityProvidesSleep(facility->kind)
+       && facility->pos.x==pos.x && facility->pos.y==pos.y){
         baseRecovery=settlementSleepRecoveryPerTick(*facility);
-        if(facility->kind==FacilityKind::Shelter){
-            protection=std::max(
-                protection,
-                0.68*facilityEffectiveness01(*facility));
-        }
+        weatherProtected=facilityProvidesWeatherProtection(facility->kind);
     }
 
-    // Sleeping in rain/cold/heat still helps, but much less. A nearby shelter
-    // absorbs most of that penalty without turning it into a free full reset.
-    const double exposedStress=
-        environmentalStress*(1.0-std::clamp(protection,0.0,0.85));
+    // Weather protection is granted only by the sleep facility actually being
+    // used at this position. Merely standing beside a Shelter is not immunity.
+    const SleepEnvironmentEvaluation environment=
+        sleepEnvironmentAt(world,pos,weatherProtected);
     return std::max(
         0.00095,
-        baseRecovery*(1.0-0.42*exposedStress));
+        baseRecovery*environment.recoveryMultiplier01);
+}
+
+struct SleepFacilityTargetEvaluation {
+    bool usable=false;
+    bool weatherProtected=false;
+    int distanceGrid=0;
+    double recoveryPerMinute=0.0;
+    double utility=0.0;
+    SleepEnvironmentEvaluation environment{};
+};
+
+inline SleepFacilityTargetEvaluation evaluateSleepFacilityTarget(
+    const World& world,
+    GridPos from,
+    const ConstructedFacility& facility,
+    double sleepNeed01)
+{
+    SleepFacilityTargetEvaluation result;
+    if(!facilityOperationalAndActive(facility)
+       || !facilityProvidesSleep(facility.kind)) return result;
+
+    result.usable=true;
+    result.weatherProtected=
+        facilityProvidesWeatherProtection(facility.kind);
+    result.distanceGrid=manhattan(from,facility.pos);
+    result.environment=sleepEnvironmentAt(
+        world,facility.pos,result.weatherProtected);
+    result.recoveryPerMinute=sleepRecoveryPerMinuteAt(
+        world,facility.pos,&facility);
+
+    const auto& contract=DefaultSleepEnvironmentContract;
+    const double recoveryReference=std::max(
+        0.0001,
+        DefaultPhysiologyBalance.shelterSleepRecoveryBasePerMinute
+            +DefaultPhysiologyBalance.shelterSleepRecoveryEffectivenessBonus);
+    const double quality=result.recoveryPerMinute/recoveryReference;
+    const double exposure=result.environment.exposure01;
+    const double protectionPreference=
+        result.environment.weatherProtectionPreferred
+        && result.weatherProtected
+            ? contract.protectedTargetBonusWeight*exposure
+            : 0.0;
+    const double exposurePenalty=
+        result.weatherProtected
+            ? 0.0
+            : contract.exposedTargetPenaltyWeight*exposure;
+    const double travelWeight=
+        contract.travelCostBaseWeight
+        +contract.travelCostFatigueWeight*std::clamp(sleepNeed01,0.0,1.0);
+    const double travelPenalty=
+        static_cast<double>(result.distanceGrid)
+        /std::max(1.0,contract.travelCostReferenceGrid)
+        *travelWeight;
+
+    result.utility=quality+protectionPreference
+        -exposurePenalty-travelPenalty;
+    return result;
+}
+
+inline bool shouldReplanExposedSleepToProtectedTarget(
+    const SleepFacilityTargetEvaluation& current,
+    const SleepFacilityTargetEvaluation& candidate)
+{
+    return current.usable
+        && !current.weatherProtected
+        && candidate.usable
+        && candidate.weatherProtected
+        && candidate.environment.weatherProtectionPreferred
+        && candidate.utility>
+            current.utility
+            +DefaultSleepEnvironmentContract.protectedReplanUtilityMargin;
 }
 
 inline double settlementWorkSurfaceSkillBonus(
