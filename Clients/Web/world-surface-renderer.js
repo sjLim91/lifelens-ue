@@ -103,6 +103,223 @@ function appendRockMarker(vertices, x, y, z, size, color) {
   }
 }
 
+
+const TREE_VARIANTS = [
+  {
+    id: "common",
+    weight: 0.34,
+    trunk: [0.24, 0.14, 0.07],
+    low: [0.13, 0.34, 0.12],
+    high: [0.30, 0.56, 0.18],
+  },
+  {
+    id: "pine",
+    weight: 0.25,
+    trunk: [0.20, 0.12, 0.07],
+    low: [0.055, 0.20, 0.10],
+    high: [0.12, 0.34, 0.16],
+  },
+  {
+    id: "twisted",
+    weight: 0.16,
+    trunk: [0.23, 0.11, 0.075],
+    low: [0.34, 0.075, 0.11],
+    high: [0.67, 0.18, 0.27],
+  },
+  {
+    id: "golden",
+    weight: 0.11,
+    trunk: [0.25, 0.15, 0.07],
+    low: [0.31, 0.34, 0.09],
+    high: [0.60, 0.56, 0.17],
+  },
+  {
+    id: "spring",
+    weight: 0.14,
+    trunk: [0.22, 0.14, 0.07],
+    low: [0.20, 0.43, 0.18],
+    high: [0.43, 0.66, 0.28],
+  },
+];
+
+function treeVariantForChunk(chunk, worldSeed, index) {
+  const elevation = clamp01(chunk?.elevation01);
+  const moisture = clamp01(chunk?.wetlandCoverage01);
+  const roll = presentationHash01(
+    worldSeed,
+    chunk.x,
+    chunk.y,
+    index,
+    "tree-variant",
+  );
+
+  // Preserve the old UE feeling of mixed authored tree types while still
+  // responding gently to the local environment. This remains presentation-only.
+  const weights = TREE_VARIANTS.map((variant) => variant.weight);
+  weights[1] += elevation * 0.13;
+  weights[4] += moisture * 0.10;
+  weights[2] += (1 - moisture) * 0.045;
+
+  const total = weights.reduce((sum, value) => sum + value, 0);
+  let cursor = roll * total;
+  for (let i = 0; i < TREE_VARIANTS.length; ++i) {
+    cursor -= weights[i];
+    if (cursor <= 0) return TREE_VARIANTS[i];
+  }
+  return TREE_VARIANTS[0];
+}
+
+function treeLeafColor(variant, chunk, worldSeed, index, salt = "leaf") {
+  const forest = clamp01(chunk?.forestCoverage01);
+  const tone = presentationHash01(
+    worldSeed,
+    chunk.x,
+    chunk.y,
+    index,
+    `tree-${variant.id}-${salt}`,
+  );
+  const richness = clamp01(0.30 + forest * 0.42 + tone * 0.28);
+  return mixColor(variant.low, variant.high, richness);
+}
+
+function appendTreePresentation(
+  vertices,
+  x,
+  y,
+  z,
+  width,
+  height,
+  variant,
+  chunk,
+  worldSeed,
+  index,
+) {
+  const trunkWidth = width * (variant.id === "twisted" ? 0.22 : 0.16);
+  const trunkHeight = height * (variant.id === "pine" ? 0.60 : 0.50);
+  appendCrossedBillboard(
+    vertices,
+    x,
+    y,
+    z,
+    trunkWidth,
+    trunkHeight,
+    variant.trunk,
+  );
+
+  const leafA = treeLeafColor(variant, chunk, worldSeed, index, "a");
+  const leafB = treeLeafColor(variant, chunk, worldSeed, index, "b");
+
+  if (variant.id === "pine") {
+    appendCrossedBillboard(
+      vertices,
+      x,
+      y,
+      z + height * 0.25,
+      width * 0.92,
+      height * 0.44,
+      leafA,
+    );
+    appendCrossedBillboard(
+      vertices,
+      x,
+      y,
+      z + height * 0.54,
+      width * 0.66,
+      height * 0.38,
+      leafB,
+    );
+    return;
+  }
+
+  if (variant.id === "twisted") {
+    const bend =
+      (presentationHash01(worldSeed, chunk.x, chunk.y, index, "tree-bend") - 0.5)
+      * width * 0.50;
+    appendCrossedBillboard(
+      vertices,
+      x - bend * 0.35,
+      y + bend * 0.18,
+      z + height * 0.42,
+      width * 0.92,
+      height * 0.48,
+      leafA,
+    );
+    appendCrossedBillboard(
+      vertices,
+      x + bend,
+      y - bend * 0.35,
+      z + height * 0.57,
+      width * 0.72,
+      height * 0.36,
+      leafB,
+    );
+    return;
+  }
+
+  if (variant.id === "golden") {
+    appendCrossedBillboard(
+      vertices,
+      x,
+      y,
+      z + height * 0.40,
+      width * 1.10,
+      height * 0.44,
+      leafA,
+    );
+    appendCrossedBillboard(
+      vertices,
+      x + width * 0.12,
+      y - width * 0.08,
+      z + height * 0.60,
+      width * 0.76,
+      height * 0.30,
+      leafB,
+    );
+    return;
+  }
+
+  if (variant.id === "spring") {
+    appendCrossedBillboard(
+      vertices,
+      x,
+      y,
+      z + height * 0.38,
+      width * 1.08,
+      height * 0.46,
+      leafA,
+    );
+    appendCrossedBillboard(
+      vertices,
+      x - width * 0.10,
+      y + width * 0.08,
+      z + height * 0.60,
+      width * 0.80,
+      height * 0.33,
+      leafB,
+    );
+    return;
+  }
+
+  appendCrossedBillboard(
+    vertices,
+    x,
+    y,
+    z + height * 0.38,
+    width * 1.12,
+    height * 0.46,
+    leafA,
+  );
+  appendCrossedBillboard(
+    vertices,
+    x,
+    y,
+    z + height * 0.59,
+    width * 0.78,
+    height * 0.34,
+    leafB,
+  );
+}
+
 function appendEcologyPresentation(vertices, chunks, centerX, centerY, heightScale, worldSeed) {
   for (const chunk of chunks) {
     if (chunk.waterKind === "Ocean") continue;
@@ -121,14 +338,21 @@ function appendEcologyPresentation(vertices, chunks, centerX, centerY, heightSca
       const ox = (presentationHash01(worldSeed, chunk.x, chunk.y, i, "tree-x") - 0.5) * 0.72;
       const oy = (presentationHash01(worldSeed, chunk.x, chunk.y, i, "tree-y") - 0.5) * 0.72;
       const sizeJitter = 0.80 + presentationHash01(worldSeed, chunk.x, chunk.y, i, "tree-s") * 0.42;
-      appendCrossedBillboard(
+      const widthJitter =
+        0.88 + presentationHash01(worldSeed, chunk.x, chunk.y, i, "tree-w") * 0.24;
+      const variant = treeVariantForChunk(chunk, worldSeed, i);
+
+      appendTreePresentation(
         vertices,
         baseX + ox,
         baseY + oy,
         baseZ,
-        (0.16 + forest * 0.15) * sizeJitter,
+        (0.16 + forest * 0.15) * sizeJitter * widthJitter,
         (0.58 + forest * 0.85) * sizeJitter,
-        mixColor([0.08, 0.24, 0.10], [0.17, 0.39, 0.14], forest),
+        variant,
+        chunk,
+        worldSeed,
+        i,
       );
     }
 
@@ -143,7 +367,11 @@ function appendEcologyPresentation(vertices, chunks, centerX, centerY, heightSca
         baseZ,
         0.16 + shrubs * 0.12,
         0.13 + shrubs * 0.22,
-        [0.24, 0.39, 0.16],
+        mixColor(
+          [0.18, 0.34, 0.12],
+          [0.36, 0.52, 0.20],
+          presentationHash01(worldSeed, chunk.x, chunk.y, i, "shrub-tone"),
+        ),
       );
     }
 
