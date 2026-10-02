@@ -122,8 +122,16 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
                         learner.id);
                 if(!teachingConnection.allowed) continue;
 
-                const KnowledgeLevel learnerLevel=learner.civilization.knowledge.level(record.technique);
-                if(static_cast<int>(learnerLevel)>=static_cast<int>(KnowledgeLevel::Reproducible)) continue;
+                const KnowledgeLevel learnerLevel=
+                    learner.civilization.knowledge.level(record.technique);
+                if(static_cast<int>(learnerLevel)
+                   >=static_cast<int>(KnowledgeLevel::Reproducible)){
+                    continue;
+                }
+                if(!techniqueTeachingCanAdvance(
+                    teacher,learner,record.technique)){
+                    continue;
+                }
                 if(bestTechniqueFactForTeaching(
                     socialKnowledge_,teacher.id,learner.id,record.technique)==nullptr) continue;
 
