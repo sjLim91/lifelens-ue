@@ -2093,9 +2093,15 @@ std::string Simulation::makeChildName(Sex sex,CharacterId childId) const
 
 void Simulation::advanceDependentCare()
 {
-    if(world_.minute%30!=0) return;
     const bool dailyDevelopmentWindow=
-        world_.minute%FamilyProgressionDayMinutes==FamilyProgressionDecisionMinuteOfDay;
+        world_.minute%FamilyProgressionDayMinutes
+            ==FamilyProgressionDecisionMinuteOfDay;
+    const bool regularCareWindow=world_.minute%30==0;
+    if(!regularCareWindow
+       && !dailyDevelopmentWindow
+       && world_.minute%5!=0){
+        return;
+    }
 
     for(auto& child:world_.characters){
         if(!child.alive || !isDependentStage(child.lifeStage)) continue;
@@ -2106,14 +2112,105 @@ void Simulation::advanceDependentCare()
         const double distress=std::max({
             child.development.stress,child.emotion.sadness,
             child.emotion.anxiety,child.emotion.fear});
-        const bool urgentPhysical=maxPhysicalNeed>=0.35 || child.development.health<0.65;
+        const bool urgentPhysical=
+            maxPhysicalNeed>=0.35 || child.development.health<0.65;
         const bool urgentDistress=distress>=0.40;
-        if(!urgentPhysical && !urgentDistress && !dailyDevelopmentWindow) continue;
+        const bool criticalDirectCare=
+            requiresDirectCare(child.lifeStage)
+            && (
+                maxPhysicalNeed>=ruleset_.utilityAI.urgentThreshold
+                || child.development.health<0.50
+            );
+
+        // Ordinary care remains on the 30-minute cadence. A Baby/Toddler with
+        // an urgent physical Need is checked every five minutes so a caregiver
+        // who just fetched a provision does not wait another half hour before
+        // returning to the child.
+        if(!regularCareWindow
+           && !dailyDevelopmentWindow
+           && !criticalDirectCare){
+            continue;
+        }
+        if(!urgentPhysical && !urgentDistress && !dailyDevelopmentWindow){
+            continue;
+        }
+
+        const double otherPhysicalNeed=std::max({
+            child.needs.sleep,child.needs.bladder,child.needs.hygiene});
+        const bool thirstDominant=
+            child.needs.thirst>=ruleset_.utilityAI.urgentThreshold
+            && child.needs.thirst>=child.needs.hunger
+            && child.needs.thirst>=otherPhysicalNeed;
+        const bool hungerDominant=
+            child.needs.hunger>=ruleset_.utilityAI.urgentThreshold
+            && child.needs.hunger>child.needs.thirst
+            && child.needs.hunger>=otherPhysicalNeed;
 
         Character* chosenCaregiver=nullptr;
         ParentingDecision chosenDecision;
         ParentingContext chosenContext;
         chosenDecision.utility=-1.0;
+
+        Character* provisionCaregiver=nullptr;
+        MaterialKind provisionMaterial=MaterialKind::Unknown;
+        double provisionScore=-1.0;
+
+        const auto caregiverCanInterruptCurrentWork=
+            [&](Character& caregiver,Runtime& runtime)
+            {
+                const bool busy=
+                    runtime.pendingContext.active()
+                    || !runtime.plan.empty();
+                if(!busy) return true;
+                if(!criticalDirectCare) return false;
+
+                // Do not replace one dependent emergency with another by
+                // blindly clearing an already-authorized parenting action.
+                if(runtime.pendingContext.active()
+                   && runtime.pendingContext.kind
+                        ==ContextActionKind::Parenting){
+                    return false;
+                }
+
+                // A caregiver who is personally at a hard physiological limit
+                // must first remain functional. Lower-priority social,
+                // teaching, work and ordinary sleep activity may be preempted.
+                const bool caregiverSelfCritical=
+                    caregiver.needs.hunger>=0.90
+                    || caregiver.needs.thirst>=0.90
+                    || caregiver.needs.sleep>=0.97
+                    || caregiver.needs.bladder>=0.97;
+                return !caregiverSelfCritical;
+            };
+
+        const auto provisionAcquisitionDistance=
+            [&](const Character& caregiver,MaterialKind material)->int
+            {
+                const auto runtimeIt=runtime_.find(caregiver.id);
+                if(runtimeIt==runtime_.end()) return -1;
+                const GridPos from=runtimeIt->second.pos;
+
+                StorageId storage=0;
+                GridPos storagePos{};
+                if(nearestStoredProvision(
+                    world_,material,from,storage,storagePos)){
+                    return manhattan(from,storagePos);
+                }
+
+                if(material==MaterialKind::Water
+                   && emptySimpleContainerCount(
+                        caregiver.civilization.inventory)<=0){
+                    return -1;
+                }
+
+                ResourceNodeId node=0;
+                GridPos access{};
+                if(!nearestNaturalProvisionResource(
+                    world_,material,from,node,access)){
+                    return -1;
+                }
+                return manhattan(from,access);
+            };
 
         const auto considerCaregiver=
             [&](Character* caregiver)
@@ -2127,8 +2224,8 @@ void Simulation::advanceDependentCare()
 
                 auto caregiverRuntime=runtime_.find(caregiver->id);
                 if(caregiverRuntime==runtime_.end()
-                   || caregiverRuntime->second.pendingContext.active()
-                   || !caregiverRuntime->second.plan.empty()){
+                   || !caregiverCanInterruptCurrentWork(
+                        *caregiver,caregiverRuntime->second)){
                     return;
                 }
 
@@ -2152,12 +2249,48 @@ void Simulation::advanceDependentCare()
                 context.harshness=clampDevelopment(
                     0.08+0.28*caregiver->personality.impulsiveness-
                     0.18*caregiver->personality.patience);
+
+                const bool nursing=
+                    nursingCareAvailable(births_,*caregiver,child);
                 context.foodAvailable=
-                    caregiver->civilization.inventory.count(
-                        ItemKind::RawMaterial,MaterialKind::PlantFood)>0;
+                    nursing
+                    || caregiver->civilization.inventory.count(
+                        ItemKind::RawMaterial,
+                        MaterialKind::PlantFood)>0;
                 context.waterAvailable=
-                    portableWaterCount(
+                    nursing
+                    || portableWaterCount(
                         caregiver->civilization.inventory)>0;
+
+                const MaterialKind missingDominantProvision=
+                    thirstDominant && !context.waterAvailable
+                        ? MaterialKind::Water
+                        : (
+                            hungerDominant && !context.foodAvailable
+                                ? MaterialKind::PlantFood
+                                : MaterialKind::Unknown
+                        );
+                if(missingDominantProvision!=MaterialKind::Unknown){
+                    const int acquisitionDistance=
+                        provisionAcquisitionDistance(
+                            *caregiver,missingDominantProvision);
+                    if(acquisitionDistance>=0){
+                        const double score=
+                            1.0
+                            -0.002*static_cast<double>(
+                                std::min(acquisitionDistance,150))
+                            +0.08*caregiver->personality.empathy
+                            +0.05*caregiver->personality.conscientiousness;
+                        if(score>provisionScore){
+                            provisionCaregiver=caregiver;
+                            provisionMaterial=missingDominantProvision;
+                            provisionScore=score;
+                        }
+                        // Do not substitute comfort/sleep/toilet care for an
+                        // addressable dehydration/starvation emergency.
+                        return;
+                    }
+                }
 
                 ParentingDecision decision=chooseParentingAction(
                     *caregiver,child,caregiverToChild,context);
@@ -2189,10 +2322,10 @@ void Simulation::advanceDependentCare()
             considerCaregiver(parent);
         }
 
-        // If no biological parent is currently able to care, another living
-        // adult in the same household may act as a temporary caregiver. This
-        // does not rewrite genealogy or parentIds.
-        if(chosenCaregiver==nullptr){
+        // During a direct-care emergency, another co-resident adult may compete
+        // with a busy/far parent instead of waiting for the next ordinary care
+        // window. Genealogy remains unchanged.
+        if(chosenCaregiver==nullptr || criticalDirectCare){
             const Household* childHome=households_.householdOf(child.id);
             if(childHome!=nullptr){
                 for(const HouseholdMember& member:childHome->members){
@@ -2209,10 +2342,7 @@ void Simulation::advanceDependentCare()
             }
         }
 
-        // Close living relatives can visit and provide care even when they are
-        // in another household. This avoids forcing genealogy or inheritance
-        // changes merely to keep a dependent alive.
-        if(chosenCaregiver==nullptr){
+        if(chosenCaregiver==nullptr || criticalDirectCare){
             for(auto& candidate:world_.characters){
                 const KinshipType kinship=
                     genealogy_.relationBetween(candidate.id,child.id);
@@ -2225,20 +2355,91 @@ void Simulation::advanceDependentCare()
             }
         }
 
-        // A truly orphaned dependent with no available household/kin caregiver
-        // may receive community care from another eligible adult. This stage is
-        // deliberately disabled while any biological parent is still alive.
-        if(chosenCaregiver==nullptr && !hasLivingBiologicalParent){
+        if((chosenCaregiver==nullptr || criticalDirectCare)
+           && !hasLivingBiologicalParent){
             for(auto& candidate:world_.characters){
                 considerCaregiver(&candidate);
             }
         }
 
+        // If the dominant emergency is food/water and no caregiver currently
+        // carries it, fetch the real provision first. Water gathering requires
+        // a real empty SimpleContainer; no invisible "cup of water" is created.
+        if(provisionCaregiver!=nullptr
+           && (
+               chosenCaregiver==nullptr
+               || chosenDecision.action!=ParentingAction::Feed
+           )){
+            auto caregiverRuntime=runtime_.find(provisionCaregiver->id);
+            if(caregiverRuntime==runtime_.end()) continue;
+            Runtime& runtime=caregiverRuntime->second;
+
+            StorageId storage=0;
+            GridPos target{};
+            ResourceNodeId resource=0;
+            CivilizationUtilityDecision decision;
+            decision.utility=1.0;
+            decision.item=ItemKind::RawMaterial;
+            decision.material=provisionMaterial;
+            decision.quantity=1;
+
+            if(nearestStoredProvision(
+                world_,provisionMaterial,runtime.pos,storage,target)){
+                decision.intent=CivilizationIntent::Retrieve;
+                decision.storage=storage;
+            }else{
+                if(provisionMaterial==MaterialKind::Water
+                   && emptySimpleContainerCount(
+                        provisionCaregiver->civilization.inventory)<=0){
+                    continue;
+                }
+                if(!nearestNaturalProvisionResource(
+                    world_,provisionMaterial,runtime.pos,resource,target)){
+                    continue;
+                }
+                decision.intent=CivilizationIntent::Gather;
+                decision.resourceNode=resource;
+            }
+
+            if(runtime.pendingContext.active() || !runtime.plan.empty()){
+                cancelRuntimeActivityForCriticalReplan(
+                    *provisionCaregiver,runtime);
+                emit(
+                    provisionCaregiver->name
+                    +" preempted lower-priority activity to secure "
+                    +materialName(provisionMaterial)
+                    +" for "+child.name);
+            }
+
+            PendingContextAction pending;
+            pending.token=issueContextActionToken();
+            pending.kind=ContextActionKind::Civilization;
+            pending.issuedMinute=world_.minute;
+            pending.civilization=decision;
+            pending.hasSpatialTarget=true;
+            pending.targetPos=target;
+            runtime.pendingContext=pending;
+            runtime.civilizationActive=false;
+            runtime.socialActive=false;
+            runtime.socialIntent=SocialIntent::None;
+            runtime.socialTarget=0;
+            clearNavigation(runtime);
+            continue;
+        }
+
         if(chosenCaregiver==nullptr || !chosenDecision.valid) continue;
         auto caregiverRuntime=runtime_.find(chosenCaregiver->id);
-        if(caregiverRuntime==runtime_.end()
-           || caregiverRuntime->second.pendingContext.active()){
-            continue;
+        if(caregiverRuntime==runtime_.end()) continue;
+
+        Runtime& runtime=caregiverRuntime->second;
+        if(runtime.pendingContext.active() || !runtime.plan.empty()){
+            if(!criticalDirectCare) continue;
+            cancelRuntimeActivityForCriticalReplan(
+                *chosenCaregiver,runtime);
+            emit(
+                chosenCaregiver->name
+                +" preempted lower-priority activity for urgent dependent care of "
+                +child.name);
         }
 
         PendingContextAction pending;
@@ -2253,13 +2454,13 @@ void Simulation::advanceDependentCare()
             pending.hasSpatialTarget=true;
             pending.targetPos=childRuntime->second.pos;
         }
-        caregiverRuntime->second.pendingContext=pending;
-        caregiverRuntime->second.civilizationActive=false;
-        caregiverRuntime->second.socialActive=false;
-        caregiverRuntime->second.socialIntent=SocialIntent::None;
-        caregiverRuntime->second.socialTarget=0;
+        runtime.pendingContext=pending;
+        runtime.civilizationActive=false;
+        runtime.socialActive=false;
+        runtime.socialIntent=SocialIntent::None;
+        runtime.socialTarget=0;
 
-        clearNavigation(caregiverRuntime->second);
+        clearNavigation(runtime);
     }
 }
 
