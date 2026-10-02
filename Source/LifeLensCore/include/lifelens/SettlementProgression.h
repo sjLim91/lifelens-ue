@@ -318,6 +318,31 @@ inline SleepFacilityTargetEvaluation evaluateSleepFacilityTarget(
     return result;
 }
 
+inline SleepFacilityTargetEvaluation evaluateOutdoorSleepTarget(
+    const World& world,
+    GridPos pos,
+    double sleepNeed01)
+{
+    SleepFacilityTargetEvaluation result;
+    result.usable=true;
+    result.weatherProtected=false;
+    result.distanceGrid=0;
+    result.environment=sleepEnvironmentAt(world,pos,false);
+    result.recoveryPerMinute=sleepRecoveryPerMinuteAt(world,pos,nullptr);
+
+    const auto& contract=DefaultSleepEnvironmentContract;
+    const double recoveryReference=std::max(
+        0.0001,
+        DefaultPhysiologyBalance.shelterSleepRecoveryBasePerMinute
+            +DefaultPhysiologyBalance.shelterSleepRecoveryEffectivenessBonus);
+    const double quality=result.recoveryPerMinute/recoveryReference;
+    result.utility=quality
+        -contract.exposedTargetPenaltyWeight
+            *result.environment.exposure01;
+    (void)sleepNeed01;
+    return result;
+}
+
 inline bool shouldReplanExposedSleepToProtectedTarget(
     const SleepFacilityTargetEvaluation& current,
     const SleepFacilityTargetEvaluation& candidate)
