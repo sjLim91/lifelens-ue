@@ -229,5 +229,60 @@ int main() {
     assert(near(twinHop.beliefStance, firstHop.beliefStance));
     assert(near(twinHop.beliefConfidence, firstHop.beliefConfidence));
 
+    // Runtime indexes must remain behaviorally invisible across vector growth,
+    // copy, snapshot-style restore and clear/reuse.
+    SocialKnowledgeBook indexed;
+    MemoryState indexedMemory;
+    BeliefState indexedBeliefs;
+    for(std::uint64_t ordinal=0;ordinal<512;++ordinal){
+        SocialFact fact;
+        fact.id=10000+ordinal;
+        fact.subject=42;
+        fact.proposition=std::string("indexed-fact-")
+            +std::to_string(ordinal);
+        fact.where="index-regression";
+        fact.eventMinute=static_cast<int>(ordinal);
+        fact.supports=true;
+        fact.importance=0.5;
+        fact.confidence=0.9;
+        assert(indexed.registerFact(fact));
+        assert(indexed.recordDirectWitness(
+            fact.id,99,indexedMemory,indexedBeliefs,
+            static_cast<int>(ordinal))!=nullptr);
+    }
+    assert(indexed.facts().size()==512);
+    assert(indexed.receipts().size()==512);
+    for(std::uint64_t ordinal=0;ordinal<512;++ordinal){
+        const SocialFactId id=10000+ordinal;
+        assert(indexed.findFact(id)!=nullptr);
+        assert(indexed.findReceipt(99,id)!=nullptr);
+        assert(indexed.hasReceipt(99,id));
+    }
+
+    SocialKnowledgeBook restored;
+    assert(restored.restoreState(
+        indexed.facts(),indexed.receipts()));
+    assert(restored.facts().size()==indexed.facts().size());
+    assert(restored.receipts().size()==indexed.receipts().size());
+    assert(restored.findFact(10000)!=nullptr);
+    assert(restored.findFact(10511)!=nullptr);
+    assert(restored.findReceipt(99,10000)!=nullptr);
+    assert(restored.findReceipt(99,10511)!=nullptr);
+
+    SocialKnowledgeBook copied=restored;
+    assert(copied.findFact(10256)!=nullptr);
+    assert(copied.findReceipt(99,10256)!=nullptr);
+
+    copied.clear();
+    assert(copied.findFact(10256)==nullptr);
+    assert(copied.findReceipt(99,10256)==nullptr);
+    SocialFact reused;
+    reused.id=77;
+    reused.subject=1;
+    reused.proposition="after-clear";
+    reused.where="index-regression";
+    assert(copied.registerFact(reused));
+    assert(copied.findFact(77)!=nullptr);
+
     return 0;
 }
