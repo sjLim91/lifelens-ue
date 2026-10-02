@@ -323,7 +323,8 @@ export type ResidentPresentationKind =
   | 'Social'
   | 'Civilization'
   | 'Parenting'
-  | 'KnowledgeTeaching';
+  | 'KnowledgeTeaching'
+  | 'Trade';
 
 export type ResidentPresentationPhase =
   | 'Idle'
@@ -481,7 +482,8 @@ export interface Resident {
     | 'Social'
     | 'Civilization'
     | 'Parenting'
-    | 'KnowledgeTeaching';
+    | 'KnowledgeTeaching'
+    | 'Trade';
   activityLabel?: string;
   physicalGoal?: string;
   socialIntent?: string;
