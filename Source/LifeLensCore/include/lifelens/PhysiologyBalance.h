@@ -33,11 +33,11 @@ struct PhysiologyBalance {
     int dugPitResidueRadiusTiles=1;
 
     // Gross recovery. Normal Need decay still runs while asleep.
-    double outdoorSleepRecoveryPerMinute=0.00230;
-    double shelterSleepRecoveryBasePerMinute=0.00255;
+    double outdoorSleepRecoveryPerMinute=0.00225;
+    double shelterSleepRecoveryBasePerMinute=0.00310;
     double shelterSleepRecoveryEffectivenessBonus=0.00020;
-    double sleepingPlaceRecoveryBasePerMinute=0.00300;
-    double sleepingPlaceRecoveryEffectivenessBonus=0.00020;
+    double sleepingPlaceRecoveryBasePerMinute=0.00295;
+    double sleepingPlaceRecoveryEffectivenessBonus=0.00015;
     double smartObjectSleepRecoveryPerMinute=0.00300;
 
     // Legacy SmartObject facilities consume one carried provision at action
