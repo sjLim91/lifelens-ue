@@ -9,6 +9,7 @@
 
 #include "Civilization.h"
 #include "CivilizationKnowledgeTransmission.h"
+#include "CivilizationEra.h"
 #include "CivilizationProgression.h"
 #include "CivilizationSpatial.h"
 #include "ObserverReadModel.h"
@@ -182,6 +183,7 @@ struct CivilizationWorldObservation {
     std::size_t contestedTechnologyCount=0;
     std::size_t resistedTechnologyCount=0;
     std::size_t activeTransformationCount=0;
+    CivilizationEraObservation era;
     std::vector<CivilizationTechnologyPopulationStatus> technologyPopulation;
     std::vector<CivilizationTransformationStatus> transformations;
 
@@ -551,6 +553,8 @@ inline CivilizationWorldObservation buildCivilizationWorldObservation(
     for(const CivilizationTransformationStatus& transformation:dto.transformations){
         if(transformation.active) ++dto.activeTransformationCount;
     }
+    dto.era=buildCivilizationEraObservation(
+        world,dto.technologyPopulation,dto.transformations);
 
     constexpr std::size_t DiscoveryTechniqueSlots=
         static_cast<std::size_t>(TechniqueId::BronzePick)+1;
