@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstdlib>
+#include <limits>
 #include <vector>
 
 #include "EnvironmentalExposure.h"
@@ -336,15 +338,44 @@ struct SanitationUseTarget {
     SanitationSiteId siteId=0;
 };
 
+inline const PrimitiveSanitationSite* nearestActivePrimitiveSanitationSite(
+    const std::vector<PrimitiveSanitationSite>& sites,
+    GridPos referencePosition,
+    int maxDistance=std::numeric_limits<int>::max())
+{
+    const PrimitiveSanitationSite* best=nullptr;
+    int bestDistance=std::numeric_limits<int>::max();
+    const int boundedMax=std::max(0,maxDistance);
+    for(const auto& site:sites){
+        if(!site.active || !validPrimitiveSanitationSiteKind(site.kind)){
+            continue;
+        }
+        const int distance=
+            std::abs(site.pos.x-referencePosition.x)
+            +std::abs(site.pos.y-referencePosition.y);
+        if(distance>boundedMax) continue;
+        if(best==nullptr
+           || distance<bestDistance
+           || (distance==bestDistance && site.id<best->id)){
+            best=&site;
+            bestDistance=distance;
+        }
+    }
+    return best;
+}
+
 inline SanitationUseTarget resolveSanitationUseTarget(
     std::uint64_t worldSeed,
     const Character& character,
     const EnvironmentalResidueField& field,
     const std::vector<PrimitiveSanitationSite>& sites,
     int currentMinute,
-    GridPos referencePosition={})
+    GridPos referencePosition={},
+    int maxPreferredSiteDistance=std::numeric_limits<int>::max())
 {
-    if(const PrimitiveSanitationSite* site=activePrimitiveSanitationSite(sites)){
+    if(const PrimitiveSanitationSite* site=
+           nearestActivePrimitiveSanitationSite(
+               sites,referencePosition,maxPreferredSiteDistance)){
         return {SanitationUseTargetKind::DesignatedArea,site->pos,site->id};
     }
     return {
