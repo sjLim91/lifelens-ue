@@ -17,6 +17,7 @@
 #include "EnvironmentalResidue.h"
 #include "MigrationPressure.h"
 #include "SettlementNetwork.h"
+#include "SettlementTrade.h"
 #include "ObserverReadModelV2.h"
 #include "Parenting.h"
 #include "Planner.h"
@@ -170,6 +171,13 @@ public:
     SettlementNetworkObservation observeSettlementNetwork() const {
         const SettlementPopulation population=settlementPopulation();
         return lifelens::observeSettlementNetwork(world_,&population);
+    }
+    SettlementTradeNetworkObservation observeSettlementTradeNetwork() const {
+        const SettlementPopulation population=settlementPopulation();
+        const SettlementNetworkObservation network=
+            lifelens::observeSettlementNetwork(world_,&population);
+        return lifelens::observeSettlementTradeNetwork(
+            world_,socialKnowledge_,network,population);
     }
     CivilizationWorldObservation observeCivilizationWorldWindow(
         ChunkCoord center,
