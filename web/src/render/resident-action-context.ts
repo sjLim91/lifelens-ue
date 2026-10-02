@@ -236,6 +236,42 @@ export function residentActionCue(
           };
         }
       }
+      if (directive.physicalGoal === 'Sleep') {
+        switch (directive.sleepContext) {
+          case 'ProtectedFacility':
+            return {
+              text: phase === 'Moving'
+                ? '쉼터로 잠자러 이동 중'
+                : '수면 중',
+              phase,
+            };
+          case 'ExposedEmergency':
+            return {
+              text: phase === 'Moving'
+                ? '노출된 잠자리로 이동 중'
+                : '악천후 속 임시 취침 중',
+              phase,
+            };
+          case 'EmergencyOutdoor':
+            return {
+              text: phase === 'Moving'
+                ? '야외 취침 장소로 이동 중'
+                : '야외 취침 중',
+              phase,
+            };
+          case 'ExposedFacility':
+            return {
+              text: phase === 'Moving'
+                ? '원시 잠자리로 이동 중'
+                : '잠자리에서 수면 중',
+              phase,
+            };
+          case 'None':
+          case undefined:
+          default:
+            break;
+        }
+      }
       action = physicalAction(directive.physicalGoal);
       break;
     case 'Social':
