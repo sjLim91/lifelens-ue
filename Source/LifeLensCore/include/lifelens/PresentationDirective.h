@@ -24,6 +24,14 @@ enum class PresentationActionPhase {
     Interacting
 };
 
+enum class SleepPresentationContext {
+    None,
+    ProtectedFacility,
+    ExposedFacility,
+    ExposedEmergency,
+    EmergencyOutdoor
+};
+
 struct ResidentPresentationObservation {
     CharacterId residentId=0;
     bool active=false;
@@ -55,6 +63,7 @@ struct ResidentPresentationObservation {
     ObjectKind objectKind=ObjectKind::Chair;
 
     bool emergencyFallback=false;
+    SleepPresentationContext sleepContext=SleepPresentationContext::None;
     bool directNaturalWaterSource=false;
     bool designatedSanitationSite=false;
     SanitationSiteId sanitationSiteId=0;
