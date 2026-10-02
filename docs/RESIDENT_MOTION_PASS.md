@@ -97,7 +97,7 @@ update의 Vector3 clone을 제거했다. 32명에 동일 snapshot/update를 반�
 
 ## 8. 변경 파일·충돌 가능성
 
-핵심: resident-world-layer.ts, resident-semantic-motion.ts, resident-motion-library.ts, resident-sleep-motion.ts, resident-sleep-pose.ts, resident-props.ts. 최소 연결: world-scene.ts, lifelens-contract.ts의 obsolete sleep constants. 검증: resident-motion tests/renderer, 기존 action-context/presentation fixtures, resident/action structural validators, character-assets-check workflow, endpoint extractor. 문서: 이 문서와 전용 recovery 파일.
+핵심: resident-world-layer.ts, resident-semantic-motion.ts, resident-motion-library.ts, resident-sleep-motion.ts, resident-sleep-pose.ts, resident-props.ts. 최소 연결: world-scene.ts, lifelens-contract.ts의 obsolete sleep constants. 검증: resident-motion tests/renderer, 기존 action-context/presentation fixtures, resident/action structural validators, character-assets-check workflow, endpoint extractor 및 기존 character pose exporter의 world-presentation-config ESM dependency 처리. 문서: 이 문서와 전용 recovery 파일.
 
 기존 main/다른 Web presentation 작업과 충돌 가능성이 큰 파일은 resident-world-layer.ts, resident-semantic-motion.ts, resident-props.ts이고 shared 연결은 world-scene.ts, lifelens-contract.ts, character-assets-check.yml이다. Source/LifeLensCore/** 및 공통 tasks/WORK_STATE.md는 변경하지 않는다.
 

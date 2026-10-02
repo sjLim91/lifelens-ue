@@ -1,7 +1,7 @@
 # Resident motion pass recovery — active implementation
 
 - User scope: Web presentation only. Never edit Source/LifeLensCore/** or AI/Needs/resource/social/movement authority. PR only; no merge.
-- Repository: sjLim91/lifelens-ue. Working branch work/resident-motion-pass-20261002.
+- Repository: sjLim91/lifelens-ue. PR https://github.com/sjLim91/lifelens-ue/pull/611 is OPEN, not merged. Branch work/resident-motion-pass-20261002. Implementation commit 2820ef58fe8530957ac2c25e0f624c08f1c0f256.
 - Start base 70969179766369cccc912b3cdc66d2b8d5fdf0d1. Publication main rechecked 558eabd3eafee1adc8120504dc49a44c2eadded6 (#610). Three intervening files are Core-only and do not overlap.
 - Local workspace /workspace/lifelens-ue is a reconstructed git snapshot, not a network clone. /workspace shell proxy:8080 is unreachable. Do not repeat clone/permission prompts.
 - Working binary transfer: dedicated GitHub download_workflow_artifact + download_file. Verified assets artifact 11213770981 from run 36976210291; GLBs staged under web/public/vendor/characters. Each pinned Git blob independently checked.
@@ -9,5 +9,5 @@
 - Implemented native LayToIdle reverse/hold/forward sleep + skinned-mesh shared calibration, CC0 endpoint fallback; differentiated gathers/facility/social/care; speed/pause/heading/facing; prop and connector arrival guards; 32 inactive skeleton cap; cached actions.
 - Actual GLBs: character 0 clips, UAL1 43, UAL2 43. Full inventory, mapping, licenses, performance and limitations: docs/RESIDENT_MOTION_PASS.md.
 - Current local checks: typecheck/build; 15 new motion, 10 character, 29 action-context, 64 presentation; resident/action/spatial/world/facility structural checks PASS. Re-run affected checks after any further changes. New tests write motion review poses.json; Blender rendering script available. Mobile GPU QA not claimed.
-- Next: finalize regression/visual review; create tree+commit with only listed files on current latest main using GitHub connector; update own branch, create PR; inspect exact-head CI (especially Preflight, Character Asset Verification, Web Typecheck, Runtime Resilience); fix failures and update documentation. No main merge.
+- Next: inspect exact-head CI and finish PR report; no main merge. Initial commit Preflight 37028374059 and Web Typecheck 37028373927 PASS. Character Asset Verification 37028374129 passed asset hashes, typecheck, regression and build but failed in the existing export-review.mjs because it omitted world-presentation-config from its emitted ESM dependency closure. That exporter is now fixed locally, tested, and will be pushed with this checkpoint. Refresh head and all checks; never treat old checks as final-head evidence.
 - Before resuming, read AGENTS.md, canonical docs, actual main/branch/PR/Actions. Do not assume old CI succeeded. Do not overwrite shared WORK_STATE or parallel Core changes.

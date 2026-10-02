@@ -1,13 +1,28 @@
 // Offline inspection of the real pinned rig and clips; no simulation fixtures are shipped.
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import ts from 'typescript';
+import { dirname, relative, resolve } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone } from 'three/addons/utils/SkeletonUtils.js';
 const out=new URL('./review/',import.meta.url);mkdirSync(out,{recursive:true});
-for(const name of ['resident-appearance','resident-props'])writeFileSync(new URL(name+'.mjs',out),ts.transpileModule(readFileSync(new URL('../../src/render/'+name+'.ts',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.ES2022,target:ts.ScriptTarget.ES2022}}).outputText);
-const {createResidentAppearanceProfile,applyResidentMaterialVariant}=await import(new URL('resident-appearance.mjs',out));
-const {ResidentInventoryProps}=await import(new URL('resident-props.mjs',out));
+// Emit the actual transitive source dependency tree. Props now share the world
+// presentation config, which also imports generated Core constants.
+const sourceRoot=fileURLToPath(new URL('../../src/',import.meta.url));
+const emitRoot=fileURLToPath(new URL('compiled/',out)), emitted=new Map();
+function emit(path){
+ if(emitted.has(path))return emitted.get(path);
+ const target=resolve(emitRoot,relative(sourceRoot,path).replace(/\.ts$/,'.mjs'));
+ emitted.set(path,target);
+ let code=ts.transpileModule(readFileSync(path,'utf8'),{compilerOptions:{module:ts.ModuleKind.ES2022,target:ts.ScriptTarget.ES2022}}).outputText;
+ code=code.replace(/(from\s+['"])(\.[^'"]+)(['"])/g,(_,prefix,id,suffix)=>{
+  emit(resolve(dirname(path),id+'.ts'));return prefix+id+'.mjs'+suffix;
+ });
+ mkdirSync(dirname(target),{recursive:true});writeFileSync(target,code);return target;
+}
+const {createResidentAppearanceProfile,applyResidentMaterialVariant}=await import(pathToFileURL(emit(resolve(sourceRoot,'render/resident-appearance.ts'))));
+const {ResidentInventoryProps}=await import(pathToFileURL(emit(resolve(sourceRoot,'render/resident-props.ts'))));
 const loader=new GLTFLoader();
 async function load(file){const b=readFileSync(new URL('../../public/vendor/characters/'+file,import.meta.url));return loader.parseAsync(b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength),'');}
 const base=await load('character.glb'),ual1=await load('ual1.glb'),ual2=await load('ual2.glb');
