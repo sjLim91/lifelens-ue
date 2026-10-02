@@ -628,13 +628,15 @@ std::string civilizationWorldObservationJson(
 
     out << "\"currentEra\":\"" << civilizationEraIdName(world.era.currentEra) << "\",";
     out << "\"eraOrdinal\":" << world.era.ordinal << ",";
+    out << "\"eraMinimumSatisfied\":" << world.era.minimumSatisfied << ",";
     out << "\"eraEvidence\":[";
     for(std::size_t i=0;i<world.era.evidence.size();++i){
         if(i!=0) out << ",";
         const auto& evidence=world.era.evidence[i];
         out << "{";
         out << "\"id\":\"" << civilizationEraEvidenceIdName(evidence.id) << "\",";
-        out << "\"satisfied\":" << (evidence.satisfied ? "true" : "false");
+        out << "\"satisfied\":" << (evidence.satisfied ? "true" : "false") << ",";
+        out << "\"mandatory\":" << (evidence.mandatory ? "true" : "false");
         out << "}";
     }
     out << "],";
@@ -644,13 +646,18 @@ std::string civilizationWorldObservationJson(
             : "None") << "\",";
     out << "\"nextEraOrdinal\":" << (
         world.era.hasNextEra ? world.era.nextOrdinal : -1) << ",";
+    out << "\"nextEraMinimumSatisfied\":" << (
+        world.era.hasNextEra
+            ? world.era.nextMinimumSatisfied
+            : 0) << ",";
     out << "\"nextEraRequirements\":[";
     for(std::size_t i=0;i<world.era.nextRequirements.size();++i){
         if(i!=0) out << ",";
         const auto& requirement=world.era.nextRequirements[i];
         out << "{";
         out << "\"id\":\"" << civilizationEraEvidenceIdName(requirement.id) << "\",";
-        out << "\"satisfied\":" << (requirement.satisfied ? "true" : "false");
+        out << "\"satisfied\":" << (requirement.satisfied ? "true" : "false") << ",";
+        out << "\"mandatory\":" << (requirement.mandatory ? "true" : "false");
         out << "}";
     }
     out << "],";
