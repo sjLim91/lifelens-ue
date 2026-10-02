@@ -364,6 +364,10 @@ ResidentPresentationObservation Simulation::observeResidentPresentation(Characte
                 dto.targetResidentId=pending.knowledgeTeachingTarget;
                 dto.knowledgeTeachingTechnique=pending.knowledgeTeachingTechnique;
                 break;
+            case ContextActionKind::Trade:
+                dto.kind=PresentationActionKind::Trade;
+                dto.targetResidentId=pending.social.target;
+                break;
             case ContextActionKind::None:
             default:
                 dto.active=false;
@@ -753,6 +757,18 @@ bool Simulation::advancePendingContext(
             break;
         }
 
+        case ContextActionKind::Trade: {
+            const auto partnerRuntime=
+                runtime_.find(pending.social.target);
+            if(partnerRuntime==runtime_.end()) return false;
+            pending.hasSpatialTarget=true;
+            pending.targetPos=partnerRuntime->second.pos;
+            target=pending.targetPos;
+            arrivalRadius=1;
+            requiresMovement=true;
+            break;
+        }
+
         case ContextActionKind::Parenting: {
             const auto childRuntime=runtime_.find(pending.parentingTarget);
             if(childRuntime==runtime_.end()) return false;
@@ -798,6 +814,10 @@ bool Simulation::advancePendingContext(
     }
     if(pending.kind==ContextActionKind::KnowledgeTeaching
        && retargetMovingResident(pending.knowledgeTeachingTarget)){
+        return false;
+    }
+    if(pending.kind==ContextActionKind::Trade
+       && retargetMovingResident(pending.social.target)){
         return false;
     }
     if(pending.kind==ContextActionKind::Parenting
