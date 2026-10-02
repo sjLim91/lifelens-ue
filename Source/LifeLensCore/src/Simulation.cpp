@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <array>
 #include <iomanip>
+#include <limits>
 #include <sstream>
 #include <utility>
 namespace lifelens {
@@ -76,23 +77,6 @@ ResourceNode* naturalWaterNodeAtAccess(
         if(best==nullptr || node.id<best->id) best=&node;
     }
     return best;
-}
-
-bool nursingCareAvailable(
-    const BirthBook& births,
-    const Character& caregiver,
-    const Character& child)
-{
-    if(!caregiver.alive
-       || !child.alive
-       || child.lifeStage!=LifeStage::Baby){
-        return false;
-    }
-    const BirthRecord* birth=births.find(child.id);
-    // BirthRecord::parentA is authored by performBirth from the gestational
-    // parent. Nursing is therefore a real postpartum care path, not a generic
-    // resource-free Feed shortcut for every caregiver.
-    return birth!=nullptr && birth->parentA==caregiver.id;
 }
 
 bool nearestNaturalProvisionResource(
@@ -2251,7 +2235,7 @@ void Simulation::advanceDependentCare()
                     0.18*caregiver->personality.patience);
 
                 const bool nursing=
-                    nursingCareAvailable(births_,*caregiver,child);
+                    nursingCareAvailable(*caregiver,child);
                 context.foodAvailable=
                     nursing
                     || caregiver->civilization.inventory.count(
