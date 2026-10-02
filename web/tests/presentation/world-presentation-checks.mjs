@@ -3,6 +3,45 @@ import assert from 'node:assert/strict';
 export function worldPresentationChecks({ test, source, flatWindow }) {
   const { ObservedFootTraffic } = source('render/observed-foot-traffic.ts');
   const { WORLD_PRESENTATION: config } = source('render/world-presentation-config.ts');
+  const { formatMemoryTag, formatMemoryText } = source('localization/korean.ts');
+  const { summarizeResidentMemories } = source('ui/resident-memory.ts');
+
+  test('위생 기억 문구와 태그는 미등록 fallback 없이 한글로 표시한다', () => {
+    assert.equal(
+      formatMemoryText('experienced unsanitary surroundings'),
+      '비위생적인 주변 환경을 경험함',
+    );
+    assert.deepEqual(
+      ['environment', 'contamination', 'human_waste', 'avoidance', 'sanitation']
+        .map(formatMemoryTag),
+      ['환경', '오염', '배설물', '회피', '위생'],
+    );
+    assert.equal(formatMemoryTag('fact:123'), null);
+    assert.equal(formatMemoryTag('hop:2'), null);
+  });
+
+  test('동일 의미 기억은 정보 손실 없이 반복 횟수로 묶는다', () => {
+    const base = {
+      who: '0',
+      what: 'experienced unsanitary surroundings',
+      where: 'grid:114,1041',
+      tags: ['environment', 'contamination', 'human_waste', 'avoidance', 'sanitation'],
+    };
+    const summarized = summarizeResidentMemories([
+      { ...base, minute: 10, confidence: 0.99, recallScore: 0.74 },
+      { ...base, minute: 20, confidence: 1.0, recallScore: 0.75 },
+      { ...base, minute: 30, where: 'grid:120,1045', confidence: 0.98, recallScore: 0.80 },
+    ], 3);
+    assert.equal(summarized.length, 2);
+    assert.equal(summarized[0].repeatCount, 2);
+    assert.equal(summarized[0].memory.minute, 20, '가장 신뢰도 높은 기억을 대표로 유지');
+    assert.deepEqual(
+      summarized[0].tags,
+      ['배설물', '오염', '위생', '환경', '회피'].sort((a, b) => a.localeCompare(b, 'ko')),
+    );
+    assert.equal(summarized[1].repeatCount, 1);
+  });
+
   const { SimulationClock } = source('runtime/simulation-clock.ts');
   const { SIMULATION_TIME_CONTRACT: time, REAL_MS_PER_SIMULATION_MINUTE_AT_1X: msPerMinute } = source('runtime/lifelens-contract.ts');
   const resident = (x, y = 0) => ({ id: 'walker', alive: true, hasPosition: true, gridX: x, gridY: y });
