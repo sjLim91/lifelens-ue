@@ -2563,6 +2563,8 @@ void Simulation::advanceDailyPopulationHealth()
         input.hygiene01=character.needs.hygiene;
         input.geneticHealthPotential01=character.genetics.healthPotential;
         input.baselinePhysicalHealth01=character.lifeCondition.physicalHealth;
+        input.directCareDependency01=
+            requiresDirectCare(character.lifeStage) ? 1.0 : 0.0;
         input.sanitationKnowledge=
             character.civilization.knowledge.knowsAtLeast(
                 TechniqueId::DesignatedSanitationArea,
@@ -2613,6 +2615,9 @@ void Simulation::evaluateDailyMortality()
                     break;
                 case HealthFatalCause::EnvironmentalExposure:
                     cause=DeathCause::EnvironmentalExposure;
+                    break;
+                case HealthFatalCause::Deprivation:
+                    cause=DeathCause::Deprivation;
                     break;
                 case HealthFatalCause::None:
                 default:
@@ -2680,6 +2685,9 @@ void Simulation::evaluateDailyMortality()
                 break;
             case DeathCause::EnvironmentalExposure:
                 emit(deceasedName+" died from environmental exposure");
+                break;
+            case DeathCause::Deprivation:
+                emit(deceasedName+" died from severe deprivation");
                 break;
             case DeathCause::AgeRelated:
             case DeathCause::Other:

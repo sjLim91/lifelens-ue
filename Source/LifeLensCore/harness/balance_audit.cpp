@@ -72,6 +72,7 @@ struct EventMetrics {
     std::uint64_t deathsIllness=0;
     std::uint64_t deathsAccident=0;
     std::uint64_t deathsExposure=0;
+    std::uint64_t deathsDeprivation=0;
     std::uint64_t deathsOther=0;
     std::uint64_t becameIll=0;
     std::uint64_t recoveredIllness=0;
@@ -461,6 +462,7 @@ void emitCheckpoint(
         <<" deathsIllness="<<events.deathsIllness
         <<" deathsAccident="<<events.deathsAccident
         <<" deathsExposure="<<events.deathsExposure
+        <<" deathsDeprivation="<<events.deathsDeprivation
         <<" deathsOther="<<events.deathsOther
         <<" becameIll="<<events.becameIll
         <<" recoveredIllness="<<events.recoveredIllness
@@ -605,6 +607,8 @@ int main(int argc,char** argv)
             ++events.deathsAccident;
         }else if(line.find("died from environmental exposure")!=std::string::npos){
             ++events.deathsExposure;
+        }else if(line.find("died from severe deprivation")!=std::string::npos){
+            ++events.deathsDeprivation;
         }else if(line.find(" died")!=std::string::npos){
             ++events.deathsOther;
         }
