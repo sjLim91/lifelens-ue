@@ -18,6 +18,8 @@ import {
   useMobileVegetationProfile,
 } from './vegetation-profile';
 
+import { NaturalResourceProjection } from './natural-resource-projection';
+
 const MAX_TREES = VEGETATION_PRESENTATION_CONTRACT.maxTrees;
 const MAX_BRANCHES =
   MAX_TREES * VEGETATION_PRESENTATION_CONTRACT.branchCountPerTree;
@@ -114,8 +116,8 @@ export class VegetationLayer {
     }
   }
 
-  setTerrain(window: TerrainWindow): void {
-    const nextSignature = terrainDressingSignature(window);
+  setTerrain(window: TerrainWindow, resources = new NaturalResourceProjection({ available: false }, window)): void {
+    const nextSignature = terrainDressingSignature(window) + resources.signature;
     if (nextSignature === this.terrainSignature) return;
     this.terrainSignature = nextSignature;
 
@@ -126,7 +128,6 @@ export class VegetationLayer {
       ? profile.mobileMaxTreesPerChunk
       : profile.desktopMaxTreesPerChunk;
     const chunkWorldSize = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
-    const halfChunk = chunkWorldSize * 0.5;
     const placementSpan =
       chunkWorldSize * profile.placementSpanChunkRatio;
     const facilityFootprints = facilityPresentationFootprints(window);
@@ -158,19 +159,17 @@ export class VegetationLayer {
           1 + Math.floor(forest * maxTreesPerChunk),
         );
 
-      for (
-        let localTreeIndex = 0;
-        localTreeIndex < treesInChunk && treeIndex < MAX_TREES;
-        localTreeIndex += 1
-      ) {
-        const offsetX =
-          (hash01(seed, chunk.x, chunk.y, localTreeIndex * 2) - 0.5)
-          * placementSpan;
-        const offsetZ =
-          (hash01(seed, chunk.x, chunk.y, localTreeIndex * 2 + 1) - 0.5)
-          * placementSpan;
-        const treeScale =
-          0.9 + hash01(seed, chunk.x, chunk.y, localTreeIndex + 19) * 0.55;
+      const baseline = Array.from({ length: treesInChunk }, (_, index) => ({
+        x: (hash01(seed, chunk.x, chunk.y, index * 2) - 0.5) * placementSpan,
+        z: (hash01(seed, chunk.x, chunk.y, index * 2 + 1) - 0.5) * placementSpan,
+        scale: 1,
+      }));
+      const candidates = resources.candidates('trees', chunk.x, chunk.y, seed, baseline, maxTreesPerChunk);
+      for (let localTreeIndex = 0; localTreeIndex < candidates.length && treeIndex < MAX_TREES; localTreeIndex++) {
+        const candidate = candidates[localTreeIndex];
+        const offsetX = candidate.x, offsetZ = candidate.z;
+        const treeScale = candidate.scale * (
+          0.9 + hash01(seed, chunk.x, chunk.y, localTreeIndex + 19) * 0.55);
         const widthScale =
           0.88 + hash01(seed, chunk.x, chunk.y, localTreeIndex + 31) * 0.26;
         const yaw =
@@ -191,19 +190,11 @@ export class VegetationLayer {
         )) {
           continue;
         }
-        const localX01 = Math.max(
-          0,
-          Math.min(1, (offsetX + halfChunk) / chunkWorldSize),
-        );
-        const localY01 = Math.max(
-          0,
-          Math.min(1, (offsetZ + halfChunk) / chunkWorldSize),
-        );
-        const groundY = sampleElevation(
-          chunk.x,
-          chunk.y,
-          localX01,
-          localY01,
+        const sampleChunkX = window.centerChunkX + Math.floor(worldX / chunkWorldSize + 0.5);
+        const sampleChunkY = window.centerChunkY + Math.floor(worldZ / chunkWorldSize + 0.5);
+        const groundY = sampleElevation(sampleChunkX, sampleChunkY,
+          worldX / chunkWorldSize + window.centerChunkX - sampleChunkX + 0.5,
+          worldZ / chunkWorldSize + window.centerChunkY - sampleChunkY + 0.5,
         ) * WORLD_GRID_CONTRACT.elevationScale;
 
         const fullTreeHeight = profile.treeHeightWorldUnits * treeScale;
@@ -480,3 +471,4 @@ export class VegetationLayer {
     this.crowns.visible = visible;
   }
 }
+

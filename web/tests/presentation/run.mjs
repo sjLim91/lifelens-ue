@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import ts from 'typescript';
 import { terrainSeamChecks } from './terrain-seam-checks.mjs';
 import { mapSurfaceChecks } from './map-surface-checks.mjs';
+import { resourceEnvironmentChecks } from './resource-environment-checks.mjs';
 import { worldPresentationChecks } from './world-presentation-checks.mjs';
 
 const require = createRequire(import.meta.url);
@@ -25,6 +26,11 @@ function load(path) {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
   }).outputText;
   new Function('require', 'module', 'exports', code)(id => {
+    if (id === './tree-asset-layer') return { InstancedTreeAsset: class {
+      group = new THREE.Group(); isReady = false; count = 0; matrices = [];
+      setInstances(matrices, count) { this.count = count; this.matrices = Array.from(matrices.subarray(0, count * 16)); }
+      dispose() {}
+    } };
     const asset = {
       './resident-world-layer': 'ResidentWorldLayer',
       './vegetation-layer': 'VegetationLayer',
@@ -603,6 +609,8 @@ test('unchanged terrain refreshes retain water geometry', () => {
   } finally { layer.dispose(); }
 });
 
+resourceEnvironmentChecks({ test, source, THREE, flatWindow });
+
 mapSurfaceChecks({ test, source, THREE });
 worldPresentationChecks({ test, source, THREE, flatWindow });
 
@@ -610,3 +618,4 @@ terrainSeamChecks({ test, source, chunk, windowOf, withScene, near });
 
 console.log(`${passed} presentation regression checks passed; ${failed} failed`);
 if (failed) process.exitCode = 1;
+

@@ -6,6 +6,8 @@ import { createTerrainElevationSampler } from './terrain-geometry';
 
 // Surface marks plus a selected-facility halo. Facilities themselves are rendered
 // by FacilityLayer; unselected facilities must never fall back to placeholder rings.
+// ResourceUse marks remain observed history; live stock/density comes only from
+// civilization.resources via NaturalResourceProjection, never trace baselines.
 // All surface traces share one draw call, and every vertex follows the real terrain.
 export function buildHumanTraceGeometry(
   terrain: TerrainWindow, traces: HumanTrace[], selectedId: string | null = null,
@@ -180,3 +182,4 @@ export class HumanTraceLayer {
     this.triangleTraceIds = [];
   }
 }
+

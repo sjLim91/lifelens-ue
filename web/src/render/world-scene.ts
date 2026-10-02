@@ -28,6 +28,8 @@ import { WaterLayer } from './water-layer';
 import { createTerrainSurfaceSignature } from './terrain-surface';
 import { WeatherLayer } from './weather-layer';
 
+import { NaturalResourceProjectionCache } from './natural-resource-projection';
+
 export interface WorldSceneCameraState {
   centerChunkX: number;
   centerChunkY: number;
@@ -50,6 +52,9 @@ export class WorldScene {
 
   private readonly terrainGroup = new THREE.Group();
   private readonly terrainMeshes = new Map<string, TerrainMeshEntry>();
+  private readonly resourceProjectionCache = new NaturalResourceProjectionCache();
+  private resourceDressingSignature = '';
+  private civilization: CivilizationWorldPayload = { available: false };
   private readonly groundDetailLayer = new GroundDetailLayer();
   private readonly authoritativeSpatialTargetLayer =
     new AuthoritativeSpatialTargetLayer();
@@ -220,6 +225,13 @@ export class WorldScene {
     worldObjects: WorldObjectsPayload,
     terrain: TerrainWindow,
   ): void {
+    this.civilization = civilization;
+    const resources = this.resourceProjectionCache.get(civilization, terrain);
+    if (resources.signature !== this.resourceDressingSignature) {
+      this.resourceDressingSignature = resources.signature;
+      this.groundDetailLayer.setTerrain(terrain, resources);
+      this.vegetationLayer.setTerrain(terrain, resources);
+    }
     this.facilityLayer.setCivilization(civilization, terrain);
     this.settlementFocusLayer.setTargets(civilization, terrain);
     this.authoritativeSpatialTargetLayer.setTargets(
@@ -309,8 +321,8 @@ export class WorldScene {
     // trace refreshes stay on the lightweight path.
     if (facilitySignature !== this.facilityDressingSignature) {
       this.facilityDressingSignature = facilitySignature;
-      this.groundDetailLayer.setTerrain(window);
-      this.vegetationLayer.setTerrain(window);
+      this.groundDetailLayer.setTerrain(window, this.resourceProjectionCache.get(this.civilization, window));
+      this.vegetationLayer.setTerrain(window, this.resourceProjectionCache.get(this.civilization, window));
     }
   }
 
@@ -346,10 +358,10 @@ export class WorldScene {
 
     this.waterLayer.setTerrain(window);
     this.facilityDressingSignature = this.facilityTraceSignature(window);
-    this.groundDetailLayer.setTerrain(window);
+    this.groundDetailLayer.setTerrain(window, this.resourceProjectionCache.get(this.civilization, window));
     this.facilityLayer.setTerrain(window);
     this.humanTraceLayer.setTerrain(window);
-    this.vegetationLayer.setTerrain(window);
+    this.vegetationLayer.setTerrain(window, this.resourceProjectionCache.get(this.civilization, window));
 
     for (const chunk of window.chunks) {
       const key = this.chunkKey(chunk);
@@ -467,3 +479,4 @@ export class WorldScene {
   }
 
 }
+

@@ -10,6 +10,9 @@ import { terrainDressingSignature } from './terrain-dressing-signature';
 import { createVisibleWaterFootprintTester } from './water-geometry';
 import { useMobileVegetationProfile } from './vegetation-profile';
 
+import { NaturalResourceProjection } from './natural-resource-projection';
+import { WORLD_PRESENTATION } from './world-presentation-config';
+
 const MAX_GRASS_TUFTS = 9000;
 const MAX_SHRUBS = 2600;
 const MAX_ROCKS = 3200;
@@ -141,8 +144,8 @@ export class GroundDetailLayer {
     }
   }
 
-  setTerrain(window: TerrainWindow): void {
-    const nextSignature = terrainDressingSignature(window);
+  setTerrain(window: TerrainWindow, resources = new NaturalResourceProjection({ available: false }, window)): void {
+    const nextSignature = terrainDressingSignature(window) + resources.signature;
     if (nextSignature === this.terrainSignature) return;
     this.terrainSignature = nextSignature;
 
@@ -189,18 +192,16 @@ export class GroundDetailLayer {
         budgets.rocks * rockCoverage,
       );
 
-      for (
-        let index = 0;
-        index < grassCount && grassIndex < MAX_GRASS_TUFTS;
-        index += 1
-      ) {
-        const placement = this.clusteredPlacement(
-          seed,
-          chunk,
-          index,
-          101,
-          halfChunk,
-        );
+      const grassCandidates = resources.candidates('grass', chunk.x, chunk.y, seed,
+        Array.from({ length: grassCount }, (_, index) => ({
+          ...this.clusteredPlacement(seed, chunk, index, 101, halfChunk), scale: 1,
+        })), budgets.grass);
+      for (let index = 0; index < grassCandidates.length && grassIndex < MAX_GRASS_TUFTS; index++) {
+        const candidate = grassCandidates[index];
+        const placement = { ...candidate,
+          localX01: Math.max(0, Math.min(1, (candidate.x + halfChunk) / chunkWorldSize)),
+          localY01: Math.max(0, Math.min(1, (candidate.z + halfChunk) / chunkWorldSize)),
+        };
         const worldX =
           (chunk.x - window.centerChunkX) * chunkWorldSize + placement.x;
         const worldZ =
@@ -215,11 +216,11 @@ export class GroundDetailLayer {
         )) {
           continue;
         }
-        const groundY = sampleElevation(
-          chunk.x,
-          chunk.y,
-          placement.localX01,
-          placement.localY01,
+        const sampleChunkX = window.centerChunkX + Math.floor(worldX / chunkWorldSize + 0.5);
+        const sampleChunkY = window.centerChunkY + Math.floor(worldZ / chunkWorldSize + 0.5);
+        const groundY = sampleElevation(sampleChunkX, sampleChunkY,
+          worldX / chunkWorldSize + window.centerChunkX - sampleChunkX + 0.5,
+          worldZ / chunkWorldSize + window.centerChunkY - sampleChunkY + 0.5,
         ) * WORLD_GRID_CONTRACT.elevationScale;
         const size = 0.52 + hash01(
           seed,
@@ -238,7 +239,7 @@ export class GroundDetailLayer {
           groundY + 0.02,
           worldZ,
         );
-        this.scale.set(size, size, size);
+        this.scale.set(size * candidate.scale, size * candidate.scale, size * candidate.scale);
         this.matrix.compose(
           this.position,
           this.rotation,
@@ -258,18 +259,16 @@ export class GroundDetailLayer {
         grassIndex += 1;
       }
 
-      for (
-        let index = 0;
-        index < shrubCount && shrubIndex < MAX_SHRUBS;
-        index += 1
-      ) {
-        const placement = this.clusteredPlacement(
-          seed,
-          chunk,
-          index,
-          211,
-          halfChunk,
-        );
+      const shrubsCandidates = resources.candidates('shrubs', chunk.x, chunk.y, seed,
+        Array.from({ length: shrubCount }, (_, index) => ({
+          ...this.clusteredPlacement(seed, chunk, index, 211, halfChunk), scale: 1,
+        })), budgets.shrubs);
+      for (let index = 0; index < shrubsCandidates.length && shrubIndex < MAX_SHRUBS; index++) {
+        const candidate = shrubsCandidates[index];
+        const placement = { ...candidate,
+          localX01: Math.max(0, Math.min(1, (candidate.x + halfChunk) / chunkWorldSize)),
+          localY01: Math.max(0, Math.min(1, (candidate.z + halfChunk) / chunkWorldSize)),
+        };
         const worldX =
           (chunk.x - window.centerChunkX) * chunkWorldSize + placement.x;
         const worldZ =
@@ -284,26 +283,26 @@ export class GroundDetailLayer {
         )) {
           continue;
         }
-        const groundY = sampleElevation(
-          chunk.x,
-          chunk.y,
-          placement.localX01,
-          placement.localY01,
+        const sampleChunkX = window.centerChunkX + Math.floor(worldX / chunkWorldSize + 0.5);
+        const sampleChunkY = window.centerChunkY + Math.floor(worldZ / chunkWorldSize + 0.5);
+        const groundY = sampleElevation(sampleChunkX, sampleChunkY,
+          worldX / chunkWorldSize + window.centerChunkX - sampleChunkX + 0.5,
+          worldZ / chunkWorldSize + window.centerChunkY - sampleChunkY + 0.5,
         ) * WORLD_GRID_CONTRACT.elevationScale;
-        const width = 0.34 + hash01(
+        const width = candidate.scale * (0.34 + hash01(
           seed,
           chunk.x,
           chunk.y,
           index,
           223,
-        ) * 0.44;
-        const height = 0.28 + hash01(
+        ) * 0.44);
+        const height = candidate.scale * (0.28 + hash01(
           seed,
           chunk.x,
           chunk.y,
           index,
           227,
-        ) * 0.52;
+        ) * 0.52);
 
         this.rotation.setFromAxisAngle(
           UP,
@@ -334,18 +333,16 @@ export class GroundDetailLayer {
         shrubIndex += 1;
       }
 
-      for (
-        let index = 0;
-        index < rockCount && rockIndex < MAX_ROCKS;
-        index += 1
-      ) {
-        const placement = this.clusteredPlacement(
-          seed,
-          chunk,
-          index,
-          307,
-          halfChunk,
-        );
+      const rocksCandidates = resources.candidates('rocks', chunk.x, chunk.y, seed,
+        Array.from({ length: rockCount }, (_, index) => ({
+          ...this.clusteredPlacement(seed, chunk, index, 307, halfChunk), scale: 1,
+        })), budgets.rocks);
+      for (let index = 0; index < rocksCandidates.length && rockIndex < MAX_ROCKS; index++) {
+        const candidate = rocksCandidates[index];
+        const placement = { ...candidate,
+          localX01: Math.max(0, Math.min(1, (candidate.x + halfChunk) / chunkWorldSize)),
+          localY01: Math.max(0, Math.min(1, (candidate.z + halfChunk) / chunkWorldSize)),
+        };
         const worldX =
           (chunk.x - window.centerChunkX) * chunkWorldSize + placement.x;
         const worldZ =
@@ -360,20 +357,21 @@ export class GroundDetailLayer {
         )) {
           continue;
         }
-        const groundY = sampleElevation(
-          chunk.x,
-          chunk.y,
-          placement.localX01,
-          placement.localY01,
+        const sampleChunkX = window.centerChunkX + Math.floor(worldX / chunkWorldSize + 0.5);
+        const sampleChunkY = window.centerChunkY + Math.floor(worldZ / chunkWorldSize + 0.5);
+        const groundY = sampleElevation(sampleChunkX, sampleChunkY,
+          worldX / chunkWorldSize + window.centerChunkX - sampleChunkX + 0.5,
+          worldZ / chunkWorldSize + window.centerChunkY - sampleChunkY + 0.5,
         ) * WORLD_GRID_CONTRACT.elevationScale;
-        const width = 0.16 + hash01(
+        const width = candidate.scale * (0.16 + hash01(
           seed,
           chunk.x,
           chunk.y,
           index,
           311,
-        ) * 0.42;
-        const height = width * (
+        ) * 0.42) * (candidate.material === 'Clay' ? WORLD_PRESENTATION.naturalResources.clayWidthMultiplier : 1);
+        const height = candidate.material === 'Clay'
+          ? width * WORLD_PRESENTATION.naturalResources.clayHeightRatio : width * (
           0.48 + hash01(seed, chunk.x, chunk.y, index, 313) * 0.54
         );
 
@@ -407,7 +405,8 @@ export class GroundDetailLayer {
             * ROCK_PALETTE.length,
           ),
         );
-        this.color.setHex(ROCK_PALETTE[paletteIndex]);
+        const mineralColors: Record<string, number> = WORLD_PRESENTATION.naturalResources.colors;
+        this.color.setHex(mineralColors[candidate.material ?? ''] ?? ROCK_PALETTE[paletteIndex]);
         this.rocks.setColorAt(rockIndex, this.color);
         rockIndex += 1;
       }
@@ -498,3 +497,4 @@ export class GroundDetailLayer {
     mesh.computeBoundingSphere();
   }
 }
+
