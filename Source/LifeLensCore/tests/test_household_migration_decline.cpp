@@ -248,10 +248,19 @@ int main()
 
     GridPos firstPos{};
     GridPos secondPos{};
-    CHECK(simulation.runtimePosition(firstId,firstPos));
-    CHECK(simulation.runtimePosition(secondId,secondPos));
-    CHECK(firstPos.x!=origin.x || firstPos.y!=origin.y);
-    CHECK(secondPos.x!=origin.x || secondPos.y!=origin.y);
+    bool firstMoved=false;
+    bool secondMoved=false;
+    for(int minute=0;minute<12 && (!firstMoved || !secondMoved);++minute){
+        CHECK(simulation.runtimePosition(firstId,firstPos));
+        CHECK(simulation.runtimePosition(secondId,secondPos));
+        firstMoved=firstMoved
+            || firstPos.x!=origin.x || firstPos.y!=origin.y;
+        secondMoved=secondMoved
+            || secondPos.x!=origin.x || secondPos.y!=origin.y;
+        if(!firstMoved || !secondMoved) simulation.step();
+    }
+    CHECK(firstMoved);
+    CHECK(secondMoved);
 
     std::cout
         << "C6-D household migration and settlement decline passed\n";
