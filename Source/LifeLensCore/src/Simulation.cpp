@@ -364,10 +364,19 @@ ResidentPresentationObservation Simulation::observeResidentPresentation(Characte
                 dto.targetResidentId=pending.knowledgeTeachingTarget;
                 dto.knowledgeTeachingTechnique=pending.knowledgeTeachingTechnique;
                 break;
-            case ContextActionKind::Trade:
+            case ContextActionKind::Trade: {
                 dto.kind=PresentationActionKind::Trade;
-                dto.targetResidentId=pending.social.target;
+                const TradeContextPayload trade=
+                    tradeContextPayload(pending);
+                if(trade.returning){
+                    dto.targetResidentId=0;
+                    dto.hasTargetGrid=true;
+                    dto.targetGrid=trade.originPos;
+                }else{
+                    dto.targetResidentId=trade.partner;
+                }
                 break;
+            }
             case ContextActionKind::None:
             default:
                 dto.active=false;
