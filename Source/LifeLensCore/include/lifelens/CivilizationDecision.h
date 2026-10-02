@@ -2754,7 +2754,8 @@ inline CivilizationUtilityDecision chooseCivilizationUtilityDecisionAtPosition(
 
     SettlementProductionNetworkObservation productionNetwork;
     const SettlementProductionProfile* production=nullptr;
-    if(population!=nullptr){
+    if(population!=nullptr
+       && settlementProductionDecisionWindow(world.minute)){
         productionNetwork=observeSettlementProductionNetwork(
             world,*population);
         production=settlementProductionAtPosition(
