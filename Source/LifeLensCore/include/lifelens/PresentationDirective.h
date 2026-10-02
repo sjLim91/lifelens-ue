@@ -14,7 +14,8 @@ enum class PresentationActionKind {
     Social,
     Civilization,
     Parenting,
-    KnowledgeTeaching
+    KnowledgeTeaching,
+    Trade
 };
 
 enum class PresentationActionPhase {
