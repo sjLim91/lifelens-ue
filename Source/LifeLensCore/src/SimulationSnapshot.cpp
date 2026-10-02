@@ -121,6 +121,20 @@ bool validateSnapshot(const SimulationStateSnapshot& snapshot,std::string* error
                        || characterIds.count(pending.knowledgeTeachingTarget)==0)
                         return fail("runtime pending teaching target is invalid");
                     break;
+                case ContextActionKind::Trade: {
+                    const TradeContextPayload trade=
+                        tradeContextPayload(pending);
+                    if(trade.partner==0
+                       || trade.partner==item.first
+                       || characterIds.count(trade.partner)==0
+                       || trade.originSettlement==0
+                       || trade.destinationSettlement==0
+                       || trade.originSettlement==trade.destinationSettlement
+                       || !pending.civilization.hasFacilityTarget){
+                        return fail("runtime pending inter-settlement trade payload is invalid");
+                    }
+                    break;
+                }
                 case ContextActionKind::Civilization:
                 case ContextActionKind::None:
                 default:

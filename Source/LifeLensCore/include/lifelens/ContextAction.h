@@ -15,7 +15,10 @@ enum class ContextActionKind {
     Social,
     Civilization,
     Parenting,
-    KnowledgeTeaching
+    KnowledgeTeaching,
+    // C6-C: long-range resident-to-resident trade. Appended to preserve
+    // persisted enum ordinals used by the current snapshot codec.
+    Trade
 };
 
 struct PendingContextAction {
@@ -33,6 +36,9 @@ struct PendingContextAction {
     TechniqueId knowledgeTeachingTechnique=TechniqueId::None;
     double knowledgeTeachingScore=0.0;
 
+    // Trade intentionally reuses social.target as the resident counterpart.
+    // This keeps the pending-context binary layout unchanged while making the
+    // target relationship explicit in runtime semantics.
     bool hasSpatialTarget=false;
     GridPos targetPos{};
     SanitationSiteId sanitationSiteId=0;
@@ -40,6 +46,52 @@ struct PendingContextAction {
     bool active() const { return token!=0 && kind!=ContextActionKind::None; }
     void clear() { *this=PendingContextAction{}; }
 };
+
+struct TradeContextPayload {
+    CharacterId partner=0;
+    double utility=0.0;
+    std::uint64_t originSettlement=0;
+    std::uint64_t destinationSettlement=0;
+    GridPos originPos{};
+    bool returning=false;
+};
+
+// PendingContextAction predates inter-settlement trade and its binary layout is
+// already part of the save contract. Trade therefore uses the otherwise-idle
+// Social/Civilization payload slots as a tagged union instead of silently
+// breaking every existing snapshot. These helpers are the only place that
+// knows the compatibility packing.
+inline TradeContextPayload tradeContextPayload(
+    const PendingContextAction& action)
+{
+    TradeContextPayload payload;
+    if(action.kind!=ContextActionKind::Trade) return payload;
+    payload.partner=action.social.target;
+    payload.utility=action.social.utility;
+    payload.originSettlement=
+        static_cast<std::uint64_t>(action.civilization.facility);
+    payload.destinationSettlement=
+        static_cast<std::uint64_t>(action.civilization.storage);
+    payload.originPos=action.civilization.facilityTargetPos;
+    payload.returning=action.civilization.quantity==1;
+    return payload;
+}
+
+inline void setTradeContextPayload(
+    PendingContextAction& action,
+    const TradeContextPayload& payload)
+{
+    action.kind=ContextActionKind::Trade;
+    action.social.target=payload.partner;
+    action.social.utility=payload.utility;
+    action.civilization.facility=
+        static_cast<FacilityId>(payload.originSettlement);
+    action.civilization.storage=
+        static_cast<StorageId>(payload.destinationSettlement);
+    action.civilization.hasFacilityTarget=true;
+    action.civilization.facilityTargetPos=payload.originPos;
+    action.civilization.quantity=payload.returning ? 1 : 0;
+}
 
 struct PendingContextActionObservation {
     CharacterId actor=0;
@@ -86,6 +138,7 @@ inline int contextActionTimeoutMinutes(ContextActionKind kind)
         case ContextActionKind::Social: return 45;
         case ContextActionKind::Parenting: return 45;
         case ContextActionKind::KnowledgeTeaching: return 45;
+        case ContextActionKind::Trade: return 3*24*60;
         case ContextActionKind::Civilization: return 120;
         case ContextActionKind::None:
         default: return 0;
@@ -99,6 +152,8 @@ inline int contextActionDurationTicks(const PendingContextAction& action)
             return action.social.intent==SocialIntent::Avoid ? 1 : 3;
         case ContextActionKind::KnowledgeTeaching:
             return 6;
+        case ContextActionKind::Trade:
+            return 5;
         case ContextActionKind::Parenting:
             switch(action.parentingAction){
                 case ParentingAction::Feed: return 3;
@@ -515,6 +570,13 @@ inline PendingContextActionObservation observePendingContextAction(
             result.targetResident=pending.knowledgeTeachingTarget;
             result.technique=pending.knowledgeTeachingTechnique;
             break;
+        case ContextActionKind::Trade: {
+            const TradeContextPayload trade=
+                tradeContextPayload(pending);
+            result.targetResident=
+                trade.returning ? 0 : trade.partner;
+            break;
+        }
         case ContextActionKind::None:
         default:
             break;

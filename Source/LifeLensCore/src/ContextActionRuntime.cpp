@@ -353,6 +353,124 @@ bool Simulation::completeContextAction(
             break;
         }
 
+        case ContextActionKind::Trade: {
+            TradeContextPayload trade=
+                tradeContextPayload(pending);
+
+            if(trade.returning){
+                if(!contextActionNearTarget(
+                        resolvedPosition,trade.originPos,1)){
+                    return false;
+                }
+                runtime.pos=resolvedPosition;
+                std::ostringstream log;
+                log<<actor.name
+                   <<" returned from inter-settlement trade to settlement "
+                   <<trade.originSettlement;
+                emit(log.str());
+                completed=true;
+                break;
+            }
+
+            Character* partner=findContextCharacter(
+                world_,trade.partner);
+            if(partner==nullptr || !partner->alive || partner->id==actor.id){
+                pending.clear();
+                return false;
+            }
+            const auto partnerRuntime=runtime_.find(partner->id);
+            if(partnerRuntime==runtime_.end()
+               || !contextActionNearTarget(
+                    resolvedPosition,partnerRuntime->second.pos,1)){
+                return false;
+            }
+
+            SocietyExchangePlan exchange=
+                bestMutualExchangePlan(actor,*partner,relationships_);
+            if(!exchange.valid()){
+                pending.clear();
+                return false;
+            }
+            if(exchange.first!=actor.id){
+                exchange=reversedSocietyExchangePlan(exchange);
+            }
+
+            if(hasSocietyTradePartnership(
+                    socialKnowledge_,actor.id,partner->id)){
+                exchange.score=societyClamp01(exchange.score+0.08);
+            }
+            if(residentInstitutionMember(
+                    socialKnowledge_,actor.id,
+                    SocietyInstitutionKind::ExchangeNetwork)
+               && residentInstitutionMember(
+                    socialKnowledge_,partner->id,
+                    SocietyInstitutionKind::ExchangeNetwork)){
+                exchange.score=societyClamp01(exchange.score+0.05);
+            }
+            if(trade.utility<InterSettlementTradeMissionThreshold
+               || !executeMutualExchange(actor,*partner,exchange)){
+                pending.clear();
+                return false;
+            }
+
+            registerSocietyExchangeFact(
+                socialKnowledge_,actor,*partner,exchange,
+                world_.minute,world_.seed);
+            registerInterSettlementTradeFact(
+                socialKnowledge_,
+                actor,
+                *partner,
+                trade.originSettlement,
+                trade.destinationSettlement,
+                exchange,
+                world_.minute,
+                world_.seed);
+
+            const bool hadPartnership=
+                hasSocietyTradePartnership(
+                    socialKnowledge_,actor.id,partner->id);
+            const SocialFact* partnership=
+                registerSocietyTradePartnershipIfQualified(
+                    socialKnowledge_,actor,*partner,
+                    world_.minute,world_.seed);
+
+            relationships_.getOrCreate(actor.id,partner->id).apply(
+                relationshipDeltaFor(
+                    RelationshipEvent::SharedPositiveExperience,0.35));
+            relationships_.getOrCreate(partner->id,actor.id).apply(
+                relationshipDeltaFor(
+                    RelationshipEvent::SharedPositiveExperience,0.35));
+
+            runtime.pos=resolvedPosition;
+            runtime.socialCooldownUntilMinute=world_.minute+30;
+            partnerRuntime->second.socialCooldownUntilMinute=
+                std::max(
+                    partnerRuntime->second.socialCooldownUntilMinute,
+                    world_.minute+20);
+
+            std::ostringstream log;
+            log<<actor.name<<" traveled from settlement "
+               <<trade.originSettlement<<" to settlement "
+               <<trade.destinationSettlement<<" and exchanged "
+               <<materialName(exchange.firstGives)
+               <<" with "<<partner->name<<" for "
+               <<materialName(exchange.secondGives);
+            if(partnership!=nullptr && !hadPartnership){
+                log<<" -> trade partnership";
+            }
+            emit(log.str());
+
+            // The trade is not complete until the carrier returns. This keeps
+            // a trading journey from accidentally becoming migration and makes
+            // the route physically observable in both directions.
+            trade.returning=true;
+            setTradeContextPayload(pending,trade);
+            pending.hasSpatialTarget=true;
+            pending.targetPos=trade.originPos;
+            clearNavigation(runtime);
+            return false;
+        }
+
         case ContextActionKind::KnowledgeTeaching: {
             Character* learner=findContextCharacter(world_,pending.knowledgeTeachingTarget);
             if(learner==nullptr || !learner->alive || learner->id==actor.id){

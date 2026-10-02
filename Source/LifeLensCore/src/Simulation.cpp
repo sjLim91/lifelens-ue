@@ -364,6 +364,19 @@ ResidentPresentationObservation Simulation::observeResidentPresentation(Characte
                 dto.targetResidentId=pending.knowledgeTeachingTarget;
                 dto.knowledgeTeachingTechnique=pending.knowledgeTeachingTechnique;
                 break;
+            case ContextActionKind::Trade: {
+                dto.kind=PresentationActionKind::Trade;
+                const TradeContextPayload trade=
+                    tradeContextPayload(pending);
+                if(trade.returning){
+                    dto.targetResidentId=0;
+                    dto.hasTargetGrid=true;
+                    dto.targetGrid=trade.originPos;
+                }else{
+                    dto.targetResidentId=trade.partner;
+                }
+                break;
+            }
             case ContextActionKind::None:
             default:
                 dto.active=false;
@@ -753,6 +766,29 @@ bool Simulation::advancePendingContext(
             break;
         }
 
+        case ContextActionKind::Trade: {
+            const TradeContextPayload trade=
+                tradeContextPayload(pending);
+            if(trade.returning){
+                pending.hasSpatialTarget=true;
+                pending.targetPos=trade.originPos;
+                target=trade.originPos;
+                arrivalRadius=1;
+                requiresMovement=true;
+                break;
+            }
+
+            const auto partnerRuntime=
+                runtime_.find(trade.partner);
+            if(partnerRuntime==runtime_.end()) return false;
+            pending.hasSpatialTarget=true;
+            pending.targetPos=partnerRuntime->second.pos;
+            target=pending.targetPos;
+            arrivalRadius=1;
+            requiresMovement=true;
+            break;
+        }
+
         case ContextActionKind::Parenting: {
             const auto childRuntime=runtime_.find(pending.parentingTarget);
             if(childRuntime==runtime_.end()) return false;
@@ -799,6 +835,14 @@ bool Simulation::advancePendingContext(
     if(pending.kind==ContextActionKind::KnowledgeTeaching
        && retargetMovingResident(pending.knowledgeTeachingTarget)){
         return false;
+    }
+    if(pending.kind==ContextActionKind::Trade){
+        const TradeContextPayload trade=
+            tradeContextPayload(pending);
+        if(!trade.returning
+           && retargetMovingResident(trade.partner)){
+            return false;
+        }
     }
     if(pending.kind==ContextActionKind::Parenting
        && retargetMovingResident(pending.parentingTarget)){

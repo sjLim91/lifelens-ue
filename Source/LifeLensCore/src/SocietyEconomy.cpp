@@ -3,6 +3,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iomanip>
+#include <set>
 #include <sstream>
 
 namespace lifelens {
@@ -92,7 +94,66 @@ void Simulation::advanceSocietyExchange()
 {
     if(world_.minute<=0 || world_.minute%60!=0) return;
 
-    SocietyExchangePlan best;
+    const auto commitExchange=
+        [&](Character& first,
+            Character& second,
+            SocietyExchangePlan exchange,
+            const char* prefix)->bool
+        {
+            if(!exchange.valid()) return false;
+            if(hasSocietyTradePartnership(
+                    socialKnowledge_,first.id,second.id)){
+                exchange.score=societyClamp01(exchange.score+0.08);
+            }
+            if(residentInstitutionMember(
+                   socialKnowledge_,first.id,
+                   SocietyInstitutionKind::ExchangeNetwork)
+               && residentInstitutionMember(
+                   socialKnowledge_,second.id,
+                   SocietyInstitutionKind::ExchangeNetwork)){
+                exchange.score=societyClamp01(exchange.score+0.05);
+            }
+
+            constexpr double ExchangeThreshold=0.66;
+            if(exchange.score<ExchangeThreshold
+               || !executeMutualExchange(first,second,exchange)){
+                return false;
+            }
+
+            registerSocietyExchangeFact(
+                socialKnowledge_,first,second,exchange,
+                world_.minute,world_.seed);
+            const bool hadPartnership=
+                hasSocietyTradePartnership(
+                    socialKnowledge_,first.id,second.id);
+            const SocialFact* partnership=
+                registerSocietyTradePartnershipIfQualified(
+                    socialKnowledge_,first,second,
+                    world_.minute,world_.seed);
+
+            relationships_.getOrCreate(first.id,second.id).apply(
+                relationshipDeltaFor(
+                    RelationshipEvent::SharedPositiveExperience,0.35));
+            relationships_.getOrCreate(second.id,first.id).apply(
+                relationshipDeltaFor(
+                    RelationshipEvent::SharedPositiveExperience,0.35));
+
+            std::ostringstream log;
+            log<<prefix<<first.name<<" exchanged "
+               <<materialName(exchange.firstGives)
+               <<" with "<<second.name<<" for "
+               <<materialName(exchange.secondGives);
+            if(partnership!=nullptr && !hadPartnership){
+                log<<" -> trade partnership";
+            }
+            emit(log.str());
+            return true;
+        };
+
+    // Keep C5's immediate exchange path for residents who are already
+    // physically together. C6-C adds travel only when no useful local exchange
+    // was completed; it never turns inventories into remote RPC endpoints.
+    SocietyExchangePlan bestLocal;
     for(std::size_t i=0;i<world_.characters.size();++i){
         Character& first=world_.characters[i];
         if(!first.alive || requiresDirectCare(first.lifeStage)) continue;
@@ -109,9 +170,9 @@ void Simulation::advanceSocietyExchange()
                || secondRuntime->second.pendingContext.active()
                || secondRuntime->second.socialActive) continue;
 
-            const int distance=
-                std::abs(firstRuntime->second.pos.x-secondRuntime->second.pos.x)
-                +std::abs(firstRuntime->second.pos.y-secondRuntime->second.pos.y);
+            const int distance=manhattan(
+                firstRuntime->second.pos,
+                secondRuntime->second.pos);
             if(distance>1) continue;
 
             SocietyExchangePlan candidate=
@@ -130,45 +191,122 @@ void Simulation::advanceSocietyExchange()
                     candidate.score=societyClamp01(candidate.score+0.05);
                 }
             }
-            if(candidate.score>best.score+1e-12){
-                best=candidate;
+            if(candidate.score>bestLocal.score+1e-12){
+                bestLocal=candidate;
             }
         }
     }
 
-    constexpr double ExchangeThreshold=0.66;
-    if(!best.valid() || best.score<ExchangeThreshold) return;
-
-    Character* first=nullptr;
-    Character* second=nullptr;
-    for(auto& resident:world_.characters){
-        if(resident.id==best.first) first=&resident;
-        if(resident.id==best.second) second=&resident;
+    if(bestLocal.valid()){
+        Character* first=nullptr;
+        Character* second=nullptr;
+        for(auto& resident:world_.characters){
+            if(resident.id==bestLocal.first) first=&resident;
+            if(resident.id==bestLocal.second) second=&resident;
+        }
+        if(first!=nullptr && second!=nullptr
+           && commitExchange(*first,*second,bestLocal,"")){
+            return;
+        }
     }
-    if(first==nullptr || second==nullptr) return;
-    if(!executeMutualExchange(*first,*second,best)) return;
 
-    registerSocietyExchangeFact(
-        socialKnowledge_,*first,*second,best,world_.minute,world_.seed);
-    const bool hadPartnership=
-        hasSocietyTradePartnership(
-            socialKnowledge_,first->id,second->id);
-    const SocialFact* partnership=
-        registerSocietyTradePartnershipIfQualified(
-            socialKnowledge_,*first,*second,
-            world_.minute,world_.seed);
+    // Only one long-range trade journey is scheduled at a time for now. This
+    // prevents a tiny founding population from all abandoning routine survival
+    // simultaneously while still allowing a durable route to emerge through
+    // repeated real trips.
+    for(const auto& entry:runtime_){
+        if(entry.second.pendingContext.active()
+           && entry.second.pendingContext.kind==ContextActionKind::Trade){
+            return;
+        }
+    }
 
-    relationships_.getOrCreate(first->id,second->id).apply(
-        relationshipDeltaFor(RelationshipEvent::SharedPositiveExperience,0.35));
-    relationships_.getOrCreate(second->id,first->id).apply(
-        relationshipDeltaFor(RelationshipEvent::SharedPositiveExperience,0.35));
+    const SettlementPopulation population=settlementPopulation();
+    const SettlementNetworkObservation network=
+        lifelens::observeSettlementNetwork(world_,&population);
+    if(network.activeSettlementCount<2) return;
+
+    std::set<CharacterId> eligible;
+    for(const Character& resident:world_.characters){
+        if(!resident.alive || requiresDirectCare(resident.lifeStage)) continue;
+        const auto runtimeIt=runtime_.find(resident.id);
+        if(runtimeIt==runtime_.end()) continue;
+        const Runtime& runtime=runtimeIt->second;
+        if(runtime.pendingContext.active()
+           || runtime.socialActive
+           || !runtime.plan.empty()){
+            continue;
+        }
+        const double urgentNeed=std::max({
+            resident.needs.hunger,
+            resident.needs.thirst,
+            resident.needs.sleep,
+            resident.needs.bladder,
+            resident.needs.hygiene
+        });
+        if(urgentNeed>=0.80) continue;
+        eligible.insert(resident.id);
+    }
+    if(eligible.size()<2) return;
+
+    const InterSettlementTradeMission mission=
+        bestInterSettlementTradeMission(
+            world_,network,population,
+            relationships_,socialKnowledge_,&eligible);
+    if(!mission.available
+       || mission.score<InterSettlementTradeMissionThreshold){
+        return;
+    }
+
+    auto travelerRuntime=runtime_.find(mission.traveler);
+    auto partnerRuntime=runtime_.find(mission.partner);
+    if(travelerRuntime==runtime_.end()
+       || partnerRuntime==runtime_.end()){
+        return;
+    }
+    Character* traveler=nullptr;
+    Character* partner=nullptr;
+    for(auto& resident:world_.characters){
+        if(resident.id==mission.traveler) traveler=&resident;
+        if(resident.id==mission.partner) partner=&resident;
+    }
+    if(traveler==nullptr || partner==nullptr) return;
+
+    Runtime& runtime=travelerRuntime->second;
+    clearNavigation(runtime);
+    runtime.plan.clear();
+    runtime.actionIndex=0;
+    runtime.announced=false;
+    runtime.socialActive=false;
+    runtime.socialIntent=SocialIntent::None;
+    runtime.socialTarget=0;
+    runtime.civilizationActive=false;
+
+    PendingContextAction trade;
+    trade.token=issueContextActionToken();
+    trade.issuedMinute=world_.minute;
+    setTradeContextPayload(
+        trade,
+        TradeContextPayload{
+            mission.partner,
+            mission.score,
+            mission.originSettlement,
+            mission.destinationSettlement,
+            travelerRuntime->second.pos,
+            false
+        });
+    trade.hasSpatialTarget=true;
+    trade.targetPos=partnerRuntime->second.pos;
+    runtime.pendingContext=trade;
 
     std::ostringstream log;
-    log<<first->name<<" exchanged "<<materialName(best.firstGives)
-       <<" with "<<second->name<<" for "<<materialName(best.secondGives);
-    if(partnership!=nullptr && !hadPartnership){
-        log<<" -> trade partnership";
-    }
+    log<<traveler->name<<" departed settlement "
+       <<mission.originSettlement<<" to trade with "
+       <<partner->name<<" at settlement "
+       <<mission.destinationSettlement
+       <<" (distance "<<mission.distanceGrid
+       <<", trade "<<std::fixed<<std::setprecision(2)
+       <<mission.score<<")";
     emit(log.str());
 }
 

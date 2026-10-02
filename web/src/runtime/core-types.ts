@@ -323,7 +323,8 @@ export type ResidentPresentationKind =
   | 'Social'
   | 'Civilization'
   | 'Parenting'
-  | 'KnowledgeTeaching';
+  | 'KnowledgeTeaching'
+  | 'Trade';
 
 export type ResidentPresentationPhase =
   | 'Idle'
@@ -481,7 +482,8 @@ export interface Resident {
     | 'Social'
     | 'Civilization'
     | 'Parenting'
-    | 'KnowledgeTeaching';
+    | 'KnowledgeTeaching'
+    | 'Trade';
   activityLabel?: string;
   physicalGoal?: string;
   socialIntent?: string;
@@ -859,6 +861,20 @@ export interface SocietyWorldPayload {
   institutions: SocietyInstitution[];
 }
 
+export interface CivilizationTradeRoute {
+  id: string;
+  firstSettlement: string;
+  secondSettlement: string;
+  firstGridX: number;
+  firstGridY: number;
+  secondGridX: number;
+  secondGridY: number;
+  partnerCount: number;
+  exchangeCount: number;
+  distanceGrid: number;
+  active: boolean;
+}
+
 export interface CivilizationSettlement {
   id: string;
   gridX: number;
@@ -880,6 +896,11 @@ export interface CivilizationWorldPayload {
   activeSettlementCount?: number;
   residentAssignedSettlementCount?: number;
   settlements?: CivilizationSettlement[];
+  tradeRouteCount?: number;
+  activeTradeRouteCount?: number;
+  interSettlementPartnershipCount?: number;
+  interSettlementExchangeEvidenceCount?: number;
+  tradeRoutes?: CivilizationTradeRoute[];
   resourceNodeCount?: number;
   depletedResourceNodeCount?: number;
   totalResourceUnits?: number;
