@@ -587,6 +587,16 @@ inline GridPos civilizationDecisionResourcePosition(
     const World& world,
     const ResourceNode& node)
 {
+    // Spatial snapshot v2+ persists the immutable generated resource position
+    // directly on ResourceNode. Long-run worlds can contain hundreds of chunks
+    // and thousands of patches, so rescanning every generated patch for every
+    // utility evaluation turns ordinary planning into O(nodes*patches) work.
+    //
+    // Legacy civilization snapshot v1 did not serialize ResourceNode::pos and
+    // therefore restores the default {0,0}. Preserve that compatibility path by
+    // consulting generated patches only when the persisted position is absent.
+    if(node.pos.x!=0 || node.pos.y!=0) return node.pos;
+
     for(const auto& chunk:world.generatedNaturalChunks){
         for(const auto& patch:chunk.resourcePatches){
             if(patch.nodeId==node.id) return patch.pos;
