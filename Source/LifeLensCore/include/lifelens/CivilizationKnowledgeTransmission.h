@@ -42,10 +42,33 @@ struct TechniqueTransmissionOutcome {
     bool knowledgeAdvanced=false;
 };
 
+inline const char* techniqueFactToken(TechniqueId technique)
+{
+    switch(technique){
+        case TechniqueId::SharpFlake: return "SharpFlake";
+        case TechniqueId::ChippedStoneTool: return "ChippedStoneTool";
+        case TechniqueId::FireMaking: return "FireMaking";
+        case TechniqueId::FiberCordage: return "FiberCordage";
+        case TechniqueId::SimpleContainer: return "SimpleContainer";
+        case TechniqueId::DesignatedSanitationArea: return "DesignatedSanitationArea";
+        case TechniqueId::DugSanitationPit: return "DugSanitationPit";
+        case TechniqueId::PrimitiveStorage: return "PrimitiveStorage";
+        case TechniqueId::DiggingStick: return "DiggingStick";
+        case TechniqueId::StoneHammer: return "StoneHammer";
+        case TechniqueId::CopperSmelting: return "CopperSmelting";
+        case TechniqueId::Cultivation: return "Cultivation";
+        case TechniqueId::TinSmelting: return "TinSmelting";
+        case TechniqueId::BronzeAlloying: return "BronzeAlloying";
+        case TechniqueId::BronzeAxe: return "BronzeAxe";
+        case TechniqueId::BronzePick: return "BronzePick";
+        case TechniqueId::None:
+        default: return "None";
+    }
+}
+
 inline std::string techniqueFactProposition(TechniqueId technique)
 {
-    return std::string("demonstrated civilization technique:")+
-        std::to_string(static_cast<int>(technique));
+    return std::string("demonstrated civilization technique:")+techniqueFactToken(technique);
 }
 
 inline SocialFactId civilizationTechniqueFactId(
