@@ -209,6 +209,7 @@ lifelens_add_test(test_society_economy)
 lifelens_add_test(test_society_associations)
 lifelens_add_test(test_society_coordination_records)
 lifelens_add_test(test_migration_pressure)
+lifelens_add_test(test_multiple_settlements)
 
 
 # Browser client: compile the same LifeLensCore into WebAssembly. The generated
