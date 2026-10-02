@@ -475,20 +475,31 @@ int main()
 
     carriedActor.civilization.inventory.add({
         ItemKind::RawMaterial,MaterialKind::PlantFood,1,0.5,1.0});
+    const std::size_t toiletStartsBeforeCritical=countLogs(
+        carriedPreempt.logs(),
+        carriedName+" -> UseToilet");
     carriedActor.needs.hunger=1.0;
     carriedPreempt.step();
 
-    const ResidentPresentationObservation carriedAfterPreempt=
-        carriedPreempt.observeResidentPresentation(carriedId);
-    assert(carriedAfterPreempt.active);
-    assert(carriedAfterPreempt.kind==PresentationActionKind::Physical);
-    assert(carriedAfterPreempt.physicalGoal==Goal::Eat);
+    // Eat is a one-minute physical action and can fully complete inside this
+    // same simulation step, so post-step presentation may already be idle.
+    // Verify the causal contract instead: survival preempted the toilet,
+    // planner did not restart the toilet, and the carried food was actually
+    // consumed to reduce Hunger.
     assert(containsLog(
         carriedPreempt.logs(),
         carriedName+" preempted current activity for critical survival need"));
     assert(containsLog(
         carriedPreempt.logs(),
         carriedName+" -> Eat"));
+    assert(countLogs(
+        carriedPreempt.logs(),
+        carriedName+" -> UseToilet")==toiletStartsBeforeCritical);
+    assert(carriedActor.needs.hunger<1.0);
+    assert(
+        carriedActor.civilization.inventory.count(
+            ItemKind::RawMaterial,
+            MaterialKind::PlantFood)==0);
 
     // Critical survival preempts an already-active sanitation loop. Recreate
     // the long-run failure shape: hunger reaches 100%, remote storage contains
