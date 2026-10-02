@@ -192,6 +192,7 @@ const char* presentationActionKindName(PresentationActionKind kind)
         case PresentationActionKind::Civilization: return "Civilization";
         case PresentationActionKind::Parenting: return "Parenting";
         case PresentationActionKind::KnowledgeTeaching: return "KnowledgeTeaching";
+        case PresentationActionKind::Trade: return "Trade";
         case PresentationActionKind::None:
         default: return "None";
     }
@@ -457,7 +458,8 @@ void appendResidentPresentationJson(
 std::string civilizationWorldObservationJson(
     const CivilizationWorldObservation& world,
     const SocietyWorldObservation& society,
-    const SettlementNetworkObservation& settlementNetwork)
+    const SettlementNetworkObservation& settlementNetwork,
+    const SettlementTradeNetworkObservation& tradeNetwork)
 {
     std::ostringstream out;
     out << "{";
@@ -555,6 +557,30 @@ std::string civilizationWorldObservationJson(
         out << "\"storageSiteCount\":" << settlement.storageSiteCount << ",";
         out << "\"active\":" << (settlement.active ? "true" : "false") << ",";
         out << "\"established\":" << (settlement.established ? "true" : "false");
+        out << "}";
+    }
+    out << "],";
+
+    out << "\"tradeRouteCount\":" << tradeNetwork.routeCount << ",";
+    out << "\"activeTradeRouteCount\":" << tradeNetwork.activeRouteCount << ",";
+    out << "\"interSettlementPartnershipCount\":" << tradeNetwork.interSettlementPartnershipCount << ",";
+    out << "\"interSettlementExchangeEvidenceCount\":" << tradeNetwork.exchangeEvidenceCount << ",";
+    out << "\"tradeRoutes\":[";
+    for(std::size_t i=0;i<tradeNetwork.routes.size();++i){
+        if(i!=0) out << ",";
+        const SettlementTradeRouteObservation& route=tradeNetwork.routes[i];
+        out << "{";
+        out << "\"id\":\"" << route.id << "\",";
+        out << "\"firstSettlement\":\"" << route.firstSettlement << "\",";
+        out << "\"secondSettlement\":\"" << route.secondSettlement << "\",";
+        out << "\"firstGridX\":" << route.firstAnchor.x << ",";
+        out << "\"firstGridY\":" << route.firstAnchor.y << ",";
+        out << "\"secondGridX\":" << route.secondAnchor.x << ",";
+        out << "\"secondGridY\":" << route.secondAnchor.y << ",";
+        out << "\"partnerCount\":" << route.partnerCount << ",";
+        out << "\"exchangeCount\":" << route.exchangeCount << ",";
+        out << "\"distanceGrid\":" << route.distanceGrid << ",";
+        out << "\"active\":" << (route.active ? "true" : "false");
         out << "}";
     }
     out << "],";
@@ -907,6 +933,10 @@ std::string WebClientBridge::residentRuntimeJson() const
                     break;
                 case PresentationActionKind::KnowledgeTeaching:
                     activityLabel = "KnowledgeTeaching";
+                    applyPresentationTarget();
+                    break;
+                case PresentationActionKind::Trade:
+                    activityLabel = "Trade";
                     applyPresentationTarget();
                     break;
                 case PresentationActionKind::None:
@@ -1623,7 +1653,8 @@ std::string WebClientBridge::civilizationWorldJson(
         simulation_->observeCivilizationWorld(
             std::min<std::size_t>(maxRecentDiscoveries, 64)),
         simulation_->observeSocietyWorld(),
-        simulation_->observeSettlementNetwork());
+        simulation_->observeSettlementNetwork(),
+        simulation_->observeSettlementTradeNetwork());
 }
 
 std::string WebClientBridge::civilizationWorldWindowJson(
