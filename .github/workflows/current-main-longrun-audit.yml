@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - audit/current-main-longrun-20261002
+      - 'fix/p0-*'
     paths:
       - 'Source/LifeLensCore/**'
       - '.github/workflows/current-main-longrun-audit.yml'
