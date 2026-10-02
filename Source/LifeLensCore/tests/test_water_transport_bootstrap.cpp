@@ -73,6 +73,26 @@ int main()
     assert(gather.material==MaterialKind::Clay);
     assert(gather.resourceNode==102);
 
+    // Repeated resource patches of the same material must not change the
+    // decision. This is also the long-run shape that exercises the per-material
+    // evaluation cache: exploration adds the same material catalogue in every
+    // newly materialized chunk.
+    World repeatedPatchWorld=world;
+    for(int i=0;i<24;++i){
+        repeatedPatchWorld.resourceNodes.push_back(node(
+            1000+static_cast<ResourceNodeId>(i),
+            i%2==0 ? MaterialKind::Clay : MaterialKind::Water,
+            80,
+            {80+i*4,32+i}));
+    }
+    const CivilizationUtilityDecision repeatedPatchGather=
+        bestGatherDecisionAtPosition(
+            repeatedPatchWorld,resident,home);
+    assert(repeatedPatchGather.intent==gather.intent);
+    assert(repeatedPatchGather.material==gather.material);
+    assert(repeatedPatchGather.resourceNode==gather.resourceNode);
+    assert(repeatedPatchGather.utility==gather.utility);
+
     resident.civilization.inventory.add({
         ItemKind::RawMaterial,
         MaterialKind::Clay,
