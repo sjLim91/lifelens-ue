@@ -15,6 +15,9 @@ ground = (
 vegetation = (
     root / "web/src/render/vegetation-layer.ts"
 ).read_text(encoding="utf-8")
+tree_asset = (
+    root / "web/src/render/tree-asset-layer.ts"
+).read_text(encoding="utf-8")
 profile = (
     root / "web/src/render/vegetation-profile.ts"
 ).read_text(encoding="utf-8")
@@ -77,5 +80,24 @@ assert "TREE_ASSET_VARIANTS.map" in vegetation
 assert "variantCounts" in vegetation
 assert "refreshFallbackVisibility" in vegetation
 assert "asset.isReady" in vegetation
+
+# Real GLB trees must preserve visual diversity after the procedural fallback is
+# hidden. Per-instance foliage tinting is applied to identified leaf materials,
+# while trunk/bark materials stay untouched.
+for token in (
+    "isFoliageMaterial",
+    "lifeLensFoliageTint",
+    "InstancedBufferAttribute",
+    "vLifeLensFoliageTint",
+    "diffuseColor.rgb = vLifeLensFoliageTint",
+):
+    assert token in tree_asset, f"missing real-tree foliage tint token: {token}"
+
+assert "treeVariantFoliageTints" in vegetation
+assert "this.treeVariantFoliageTints[index]" in vegetation
+for warm_color in ("0xc19a46", "0xb84f58", "0xc96b78"):
+    assert warm_color in profile, (
+        f"missing visible warm foliage palette color: {warm_color}"
+    )
 
 print("LifeLens web presentation v2 environment foundation: PASS")
