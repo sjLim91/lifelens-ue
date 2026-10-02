@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 
-export function worldPresentationChecks({ test, source, THREE, flatWindow }) {
+export function worldPresentationChecks({ test, source, flatWindow }) {
   const { ObservedFootTraffic } = source('render/observed-foot-traffic.ts');
   const { WORLD_PRESENTATION: config } = source('render/world-presentation-config.ts');
   const resident = (x, y = 0) => ({ id: 'walker', alive: true, hasPosition: true, gridX: x, gridY: y });
@@ -69,11 +69,11 @@ export function worldPresentationChecks({ test, source, THREE, flatWindow }) {
       window.humanTraces.entries = [{ ...trace, facilityKind: 'FirePit', lit: true }];
       layer.setTerrain(window);
       let lights = 0, sprites = 0;
-      layer.group.traverse(object => { if (object instanceof THREE.Light) lights++; if (object instanceof THREE.Sprite) sprites++; });
+      layer.group.traverse(object => { if (object.isLight) lights++; if (object.isSprite) sprites++; });
       assert.equal(lights, 0); assert.equal(sprites, 1);
       window.humanTraces.entries = [{ ...trace, facilityKind: 'FirePit', lit: false }];
       layer.setTerrain(window);
-      assert.equal(layer.group.children[0].children.some(child => child instanceof THREE.Sprite), false);
+      assert.equal(layer.group.children[0].children.some(child => child.isSprite), false);
     } finally { layer.dispose(); }
   });
 }
