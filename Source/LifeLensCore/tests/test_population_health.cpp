@@ -133,6 +133,46 @@ void testEnvironmentalStressAndHazardProducePhysicalConsequences()
     assert(injured.injurySeverity>0.0);
 }
 
+
+void testSevereDeprivationCanBeFatalAndDependencyAmplifiesRisk()
+{
+    DailyHealthInputs autonomous=healthyInputs();
+    autonomous.hunger01=1.0;
+    autonomous.thirst01=1.0;
+    autonomous.directCareDependency01=0.0;
+
+    DailyHealthInputs dependent=autonomous;
+    dependent.directCareDependency01=1.0;
+
+    const double autonomousChance=deprivationFatalChance(autonomous);
+    const double dependentChance=deprivationFatalChance(dependent);
+    assert(autonomousChance>0.0);
+    assert(dependentChance>autonomousChance);
+
+    DailyHealthInputs ordinary=healthyInputs();
+    ordinary.hunger01=0.90;
+    ordinary.thirst01=0.90;
+    ordinary.directCareDependency01=1.0;
+    assert(deprivationFatalChance(ordinary)==0.0);
+
+    const int minute=20*24*60;
+    const int dayIndex=minute/(24*60);
+    std::uint64_t chosenId=0;
+    for(std::uint64_t id=1;id<100000;++id){
+        if(deterministicHealthRoll(
+               37,id,dayIndex,0x4845414c54484450ULL)<dependentChance){
+            chosenId=id;
+            break;
+        }
+    }
+    assert(chosenId!=0);
+
+    HealthState state;
+    const auto outcome=advanceHealthOneDay(
+        state,dependent,37,chosenId,minute);
+    assert(outcome.fatalCause==HealthFatalCause::Deprivation);
+}
+
 void testHealthSnapshotRoundTrip()
 {
     Simulation simulation(41,73);
@@ -186,6 +226,7 @@ int main()
     testContaminatedWaterAndSoilCanCauseIllnessAndRecovery();
     testSanitationKnowledgeReducesContaminationPressure();
     testEnvironmentalStressAndHazardProducePhysicalConsequences();
+    testSevereDeprivationCanBeFatalAndDependencyAmplifiesRisk();
     testHealthSnapshotRoundTrip();
     return 0;
 }

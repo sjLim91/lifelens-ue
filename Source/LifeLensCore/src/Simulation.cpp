@@ -1619,7 +1619,50 @@ void Simulation::beginPlan(Character& c,Runtime& r){
         urgentSurvivalProvisionDecisionAtPosition(world_,c,r.pos);
     const bool urgentProvisionRequired=
         urgentProvision.intent!=CivilizationIntent::None;
+    const double urgentProvisionNeed=
+        urgentProvision.material==MaterialKind::PlantFood
+            ? c.needs.hunger
+            : urgentProvision.material==MaterialKind::Water
+                ? provisionNeedForMaterial(c,MaterialKind::Water)
+                : -1.0;
+
+    // A missing provision is survival work, but it must not monopolize every
+    // planning boundary while an immediately actionable self-care Need is even
+    // more severe. This is the long-run case where a resident repeatedly
+    // searches for food/water while Sleep/Bladder/Hygiene stays pinned near 1.
+    // Exact ties still favor provision acquisition; once that pressure falls,
+    // the stronger self-care Need gets a bounded opportunity and remains
+    // interruptible by the existing critical-survival preemption rules.
+    Goal urgentSelfCareGoal=Goal::Idle;
+    double urgentSelfCareNeed=-1.0;
+    if(planningAllowed && urgentProvisionRequired){
+        for(const Goal candidate:{
+            Goal::UseToilet,
+            Goal::Sleep,
+            Goal::Wash
+        }){
+            const double need=needForGoal(c,candidate);
+            if(need<urgentThreshold
+               || !actionAvailableFor(world_,c,candidate)){
+                continue;
+            }
+            if(urgentSelfCareGoal==Goal::Idle
+               || need>urgentSelfCareNeed+1e-12){
+                urgentSelfCareGoal=candidate;
+                urgentSelfCareNeed=need;
+            }
+        }
+    }
+    const bool urgentSelfCareDominatesProvision=
+        urgentSelfCareGoal!=Goal::Idle
+        && urgentSelfCareNeed>urgentProvisionNeed+1e-12;
+    if(urgentSelfCareDominatesProvision){
+        urgentPhysicalGoal=urgentSelfCareGoal;
+        urgentPhysicalNeed=urgentSelfCareNeed;
+    }
+
     if(planningAllowed && urgentProvisionRequired
+       && !urgentSelfCareDominatesProvision
        && tryCivilizationDecision(c,r)) return;
 
     // Survival needs that can be satisfied immediately pre-empt settlement
@@ -2563,6 +2606,8 @@ void Simulation::advanceDailyPopulationHealth()
         input.hygiene01=character.needs.hygiene;
         input.geneticHealthPotential01=character.genetics.healthPotential;
         input.baselinePhysicalHealth01=character.lifeCondition.physicalHealth;
+        input.directCareDependency01=
+            requiresDirectCare(character.lifeStage) ? 1.0 : 0.0;
         input.sanitationKnowledge=
             character.civilization.knowledge.knowsAtLeast(
                 TechniqueId::DesignatedSanitationArea,
@@ -2613,6 +2658,9 @@ void Simulation::evaluateDailyMortality()
                     break;
                 case HealthFatalCause::EnvironmentalExposure:
                     cause=DeathCause::EnvironmentalExposure;
+                    break;
+                case HealthFatalCause::Deprivation:
+                    cause=DeathCause::Deprivation;
                     break;
                 case HealthFatalCause::None:
                 default:
@@ -2680,6 +2728,9 @@ void Simulation::evaluateDailyMortality()
                 break;
             case DeathCause::EnvironmentalExposure:
                 emit(deceasedName+" died from environmental exposure");
+                break;
+            case DeathCause::Deprivation:
+                emit(deceasedName+" died from severe deprivation");
                 break;
             case DeathCause::AgeRelated:
             case DeathCause::Other:

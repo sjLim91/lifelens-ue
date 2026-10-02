@@ -21,7 +21,10 @@ enum class HealthFatalCause : std::uint8_t {
     None = 0,
     Illness,
     Accident,
-    EnvironmentalExposure
+    EnvironmentalExposure,
+    // Appended so earlier ordinals stay stable. Severe unmet physiological
+    // needs are a distinct causal path from pathogens, accidents and climate.
+    Deprivation
 };
 
 struct HealthState {
@@ -77,6 +80,10 @@ struct DailyHealthInputs {
 
     double geneticHealthPotential01=0.5;
     double baselinePhysicalHealth01=1.0;
+    // 1.0 for residents who cannot independently satisfy basic Needs
+    // (currently Baby/Toddler), lower/zero for autonomous residents.
+    // This is an input to daily health evaluation, not persisted health state.
+    double directCareDependency01=0.0;
     bool sanitationKnowledge=false;
 };
 
@@ -170,6 +177,25 @@ inline std::uint64_t healthMix64(std::uint64_t value)
     return value^(value>>31);
 }
 
+inline double deprivationFatalChance(const DailyHealthInputs& input)
+{
+    // Needs are sampled once per day. Only the extreme end of Hunger/Thirst
+    // contributes so a transient ordinary urgent Need is not lethal.
+    // Thirst is intentionally the dominant acute pressure. Direct-care
+    // dependents are more vulnerable because they cannot self-resolve it.
+    const double severeThirst=healthClamp01(
+        (healthClamp01(input.thirst01)-0.97)/0.03);
+    const double severeHunger=healthClamp01(
+        (healthClamp01(input.hunger01)-0.985)/0.015);
+    const double dependency=healthClamp01(input.directCareDependency01);
+
+    const double autonomousChance=
+        0.035*severeThirst
+        +0.010*severeHunger;
+    return healthClamp01(
+        autonomousChance*(1.0+1.5*dependency));
+}
+
 inline double deterministicHealthRoll(
     std::uint64_t worldSeed,
     std::uint64_t characterId,
@@ -206,6 +232,7 @@ inline DailyHealthOutcome advanceHealthOneDay(
     input.hygiene01=healthClamp01(input.hygiene01);
     input.geneticHealthPotential01=healthClamp01(input.geneticHealthPotential01);
     input.baselinePhysicalHealth01=healthClamp01(input.baselinePhysicalHealth01);
+    input.directCareDependency01=healthClamp01(input.directCareDependency01);
 
     DailyHealthOutcome outcome;
     outcome.before=healthStage(beforeState);
@@ -356,8 +383,18 @@ inline DailyHealthOutcome advanceHealthOneDay(
                 *0.20
                 *(1.20-0.50*input.baselinePhysicalHealth01)
             : 0.0;
+    const double deprivationChance=deprivationFatalChance(input);
 
+    // Acute deprivation is evaluated before slower disease/accident paths.
+    // This closes the previous immortal-dependent hole without fabricating a
+    // caregiver or provision: survival still depends on actual Need relief.
     if(
+        deprivationChance>0.0
+        && deterministicHealthRoll(
+            worldSeed,characterId,dayIndex,0x4845414c54484450ULL)
+            <deprivationChance){
+        outcome.fatalCause=HealthFatalCause::Deprivation;
+    }else if(
         illnessFatalChance>0.0
         && deterministicHealthRoll(
             worldSeed,characterId,dayIndex,0x4845414c5448494cULL)
