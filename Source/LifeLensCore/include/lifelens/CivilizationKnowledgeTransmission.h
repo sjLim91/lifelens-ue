@@ -358,13 +358,19 @@ inline TechniqueTransmissionOutcome teachTechnique(
 
     const KnowledgeLevel teacherLevel=teacher.civilization.knowledge.level(technique);
     const double mastery=techniqueMasteryFactor(teacherLevel);
+    const double lifeStageLearningRate=std::max(
+        0.55,
+        std::min(
+            1.50,
+            lifeStageProfile(learner.lifeStage).skillLearningRate));
     outcome.chance=std::max(0.0,std::min(0.97,
         0.08
         +0.24*trust
         +0.24*mastery
-        +0.24*learner.civilization.learningSkill
-        +0.12*learner.personality.curiosity
-        +0.08*learner.personality.openness));
+        +0.22*learner.civilization.learningSkill
+        +0.11*learner.personality.curiosity
+        +0.07*learner.personality.openness
+        +0.08*(lifeStageLearningRate-1.0)));
     outcome.roll=deterministicKnowledgeUnit(
         worldSeed ^ 0x54454143484C4C31ull,
         fact->id,teacher.id,learner.id,epoch);
@@ -388,7 +394,9 @@ inline TechniqueTransmissionOutcome teachTechnique(
         target=KnowledgeLevel::Understood;
     }else if(outcome.before==KnowledgeLevel::Understood &&
              static_cast<int>(teacherLevel)>=static_cast<int>(KnowledgeLevel::Practiced) &&
-             techniqueImitationContextSatisfied(learner,technique)){
+             techniquePrerequisiteContextSatisfied(learner,technique) &&
+             (techniqueMaterialContextSatisfied(learner,technique)
+              || techniqueMaterialContextSatisfied(teacher,technique))){
         target=KnowledgeLevel::Reproducible;
     }
 
