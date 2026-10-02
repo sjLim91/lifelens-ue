@@ -270,6 +270,7 @@ private:
     void advanceCivilizationKnowledgeTeaching();
     void advanceSocietyExchange();
     void advanceSocietyInstitutions();
+    void advanceSocietyRecordkeeping();
     void advanceDependentCare();
     void advanceAutonomousFamilyProgression();
     void updatePregnanciesAndBirths();
