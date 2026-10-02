@@ -1133,61 +1133,144 @@ inline CivilizationUtilityDecision bestGatherDecisionAtPosition(
     GridPos authoritativePosition,
     const SettlementPopulation* population=nullptr)
 {
-    CivilizationUtilityDecision best;
-    for(const auto& node:world.resourceNodes){
-        if(node.id==0 || node.quantity<=0 || node.material==MaterialKind::Unknown) continue;
-        const int held=node.material==MaterialKind::Water
+    struct GatherMaterialEvaluation {
+        bool initialized=false;
+        int held=0;
+        int stored=0;
+        int repairMissing=0;
+        int materialDemand=0;
+        bool provision=false;
+        int settlementReserveTarget=0;
+        int reserveGap=0;
+        double gap=0.0;
+        double demand=0.0;
+        double constructionDemand=0.0;
+        double maintenanceDemand=0.0;
+        double preference=0.0;
+        double waterTransportBoost=0.0;
+    };
+
+    // Generated resource nodes repeat the same small material set across every
+    // materialized chunk. All values below depend on material/resident/settlement,
+    // not on the individual node. Compute them once per material per planning
+    // pass instead of repeating storage/facility scans for every node. In
+    // particular, Clay used to rescan all Water ResourceNodes once per Clay
+    // node through waterTransportInnovationPressure(), producing an accidental
+    // O(resourceNodes^2) path as exploration materialized more chunks.
+    constexpr std::size_t GatherMaterialCacheSize=
+        static_cast<std::size_t>(MaterialKind::Bronze)+1;
+    std::array<GatherMaterialEvaluation,GatherMaterialCacheSize> materialCache{};
+
+    const auto evaluateMaterial=[&](MaterialKind material){
+        GatherMaterialEvaluation evaluation;
+        evaluation.initialized=true;
+        evaluation.held=material==MaterialKind::Water
             ? portableWaterCount(self.civilization.inventory)
-            : self.civilization.inventory.count(ItemKind::RawMaterial,node.material);
-        if(node.material==MaterialKind::Water
-           && emptySimpleContainerCount(self.civilization.inventory)<=0){
-            continue;
-        }
-        const int stored=storageCountForMaterialNear(
-            world,node.material,authoritativePosition);
-        const int repairMissing=
-            settlementRepairMaterialDemandNear(
-                world,node.material,authoritativePosition);
-        const int materialDemand=
+            : self.civilization.inventory.count(
+                ItemKind::RawMaterial,material);
+        evaluation.stored=storageCountForMaterialNear(
+            world,material,authoritativePosition);
+        evaluation.repairMissing=settlementRepairMaterialDemandNear(
+            world,material,authoritativePosition);
+        evaluation.materialDemand=
             residentUncoveredCommittedMaterialDemandAtPosition(
-                world,self,node.material,authoritativePosition);
-        const bool provision=
-            node.material==MaterialKind::Water
-            || node.material==MaterialKind::PlantFood;
-        const int baseTarget=provision ? 4 : 5;
-        const int settlementReserveTarget=
-            node.material==MaterialKind::Water ? 8
-            : (node.material==MaterialKind::PlantFood ? 8 : 0);
-        const int reserveGap=std::max(0,settlementReserveTarget-stored);
+                world,self,material,authoritativePosition);
+        evaluation.provision=
+            material==MaterialKind::Water
+            || material==MaterialKind::PlantFood;
+        const int baseTarget=evaluation.provision ? 4 : 5;
+        evaluation.settlementReserveTarget=
+            material==MaterialKind::Water ? 8
+            : (material==MaterialKind::PlantFood ? 8 : 0);
+        evaluation.reserveGap=std::max(
+            0,evaluation.settlementReserveTarget-evaluation.stored);
         const int fireFuelReserve=
-            (hasOperationalFirePit(world) && node.material==MaterialKind::Wood)
+            (material==MaterialKind::Wood && hasOperationalFirePit(world))
                 ? 3 : 0;
         const int target=
             baseTarget
-            +std::min(4,materialDemand)
+            +std::min(4,evaluation.materialDemand)
             +fireFuelReserve
-            +(provision && !world.storageSites.empty()
-                ? std::min(4,reserveGap)
+            +(evaluation.provision && !world.storageSites.empty()
+                ? std::min(4,evaluation.reserveGap)
                 : 0);
-        const int storedCredit=provision
-            ? std::min(stored,settlementReserveTarget)
-            : std::min(stored,target);
-        const double gap=clampCivilization01(
-            static_cast<double>(std::max(0,target-held-storedCredit))
+        const int storedCredit=evaluation.provision
+            ? std::min(
+                evaluation.stored,evaluation.settlementReserveTarget)
+            : std::min(evaluation.stored,target);
+        evaluation.gap=clampCivilization01(
+            static_cast<double>(
+                std::max(0,target-evaluation.held-storedCredit))
             /static_cast<double>(std::max(1,target)));
-        const double demand=materialProgressDemand(self,node.material);
-        const double constructionDemand=materialDemand>0
+        evaluation.demand=materialProgressDemand(self,material);
+        evaluation.constructionDemand=evaluation.materialDemand>0
             ? clampCivilization01(
-                0.45+0.12*static_cast<double>(materialDemand))
+                0.45+0.12*static_cast<double>(
+                    evaluation.materialDemand))
             : 0.0;
-        const double maintenanceDemand=
-            repairMissing>0 && materialDemand>0
+        evaluation.maintenanceDemand=
+            evaluation.repairMissing>0
+            && evaluation.materialDemand>0
                 ? clampCivilization01(
                     0.42+0.18*static_cast<double>(
-                        std::min(repairMissing,materialDemand)))
+                        std::min(
+                            evaluation.repairMissing,
+                            evaluation.materialDemand)))
                 : 0.0;
-        const double preference=civilizationPreference(world.seed,self.id,100ULL+static_cast<std::uint64_t>(node.material));
-        const GridPos nodePos=civilizationDecisionResourcePosition(world,node);
+        evaluation.preference=civilizationPreference(
+            world.seed,self.id,
+            100ULL+static_cast<std::uint64_t>(material));
+
+        const bool containerInputsReady=
+            material==MaterialKind::Clay
+            && hasIngredients(
+                self.civilization.inventory,
+                techniqueRecipe(
+                    TechniqueId::SimpleContainer).inputs);
+        evaluation.waterTransportBoost=
+            material==MaterialKind::Clay && !containerInputsReady
+                ? 0.22*std::max(
+                    waterTransportInnovationPressure(
+                        world,self,authoritativePosition),
+                    simpleContainerLogisticsStockPressure(
+                        world,self,authoritativePosition,population))
+                : 0.0;
+        return evaluation;
+    };
+
+    CivilizationUtilityDecision best;
+    for(const auto& node:world.resourceNodes){
+        if(node.id==0
+           || node.quantity<=0
+           || node.material==MaterialKind::Unknown){
+            continue;
+        }
+        if(node.material==MaterialKind::Water
+           && emptySimpleContainerCount(
+               self.civilization.inventory)<=0){
+            continue;
+        }
+
+        const std::size_t materialIndex=
+            static_cast<std::size_t>(node.material);
+        GatherMaterialEvaluation uncached;
+        const GatherMaterialEvaluation* evaluation=nullptr;
+        if(materialIndex<materialCache.size()){
+            GatherMaterialEvaluation& cached=materialCache[materialIndex];
+            if(!cached.initialized){
+                cached=evaluateMaterial(node.material);
+            }
+            evaluation=&cached;
+        }else{
+            // Future appended MaterialKind values remain correct even before
+            // this cache bound is extended; they simply take the old per-node
+            // evaluation path.
+            uncached=evaluateMaterial(node.material);
+            evaluation=&uncached;
+        }
+
+        const GridPos nodePos=
+            civilizationDecisionResourcePosition(world,node);
         const int distance=std::max(
             std::abs(nodePos.x-authoritativePosition.x),
             std::abs(nodePos.y-authoritativePosition.y));
@@ -1196,37 +1279,39 @@ inline CivilizationUtilityDecision bestGatherDecisionAtPosition(
             /static_cast<double>(WorldChunkSpanGridCells*6));
         const double localBonus=
             distance<=WorldChunkSpanGridCells*3 ? 0.04 : 0.0;
-        const double distancePenalty=provision ? 0.0 : 0.20*distance01;
-        const bool containerInputsReady=
-            node.material==MaterialKind::Clay
-            && hasIngredients(
-                self.civilization.inventory,
-                techniqueRecipe(TechniqueId::SimpleContainer).inputs);
-        const double waterTransportBoost=
-            node.material==MaterialKind::Clay && !containerInputsReady
-                ? 0.22*std::max(
-                    waterTransportInnovationPressure(
-                        world,self,authoritativePosition),
-                    simpleContainerLogisticsStockPressure(
-                        world,self,authoritativePosition,population))
-                : 0.0;
+        const double distancePenalty=evaluation->provision
+            ? 0.0
+            : 0.20*distance01;
         const double score=clampCivilization01(
-            0.07+0.12*self.personality.curiosity+0.05*self.personality.adaptability+
-            0.08*self.civilization.gatheringSkill+0.16*demand+0.13*gap+
-            0.30*constructionDemand+0.24*maintenanceDemand+0.07*preference+
-            localBonus+waterTransportBoost-distancePenalty+
-            (provision && !world.storageSites.empty()
+            0.07
+            +0.12*self.personality.curiosity
+            +0.05*self.personality.adaptability
+            +0.08*self.civilization.gatheringSkill
+            +0.16*evaluation->demand
+            +0.13*evaluation->gap
+            +0.30*evaluation->constructionDemand
+            +0.24*evaluation->maintenanceDemand
+            +0.07*evaluation->preference
+            +localBonus
+            +evaluation->waterTransportBoost
+            -distancePenalty
+            +(evaluation->provision && !world.storageSites.empty()
                 ? 0.12*clampCivilization01(
-                    static_cast<double>(reserveGap)
-                    /static_cast<double>(std::max(1,settlementReserveTarget)))
+                    static_cast<double>(evaluation->reserveGap)
+                    /static_cast<double>(std::max(
+                        1,evaluation->settlementReserveTarget)))
                 : 0.0));
+
         CivilizationUtilityDecision candidate;
         candidate.intent=CivilizationIntent::Gather;
         candidate.utility=score;
         candidate.resourceNode=node.id;
         candidate.material=node.material;
         candidate.item=ItemKind::RawMaterial;
-        candidate.quantity=2+static_cast<int>(2.0*clampCivilization01(self.civilization.gatheringSkill));
+        candidate.quantity=
+            2+static_cast<int>(
+                2.0*clampCivilization01(
+                    self.civilization.gatheringSkill));
         considerCivilizationDecision(best,candidate);
     }
     return best;
