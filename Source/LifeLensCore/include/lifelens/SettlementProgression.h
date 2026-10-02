@@ -217,6 +217,24 @@ inline double settlementSleepRecoveryPerTick(
     return 0.0;
 }
 
+inline double settlementShelterProtection01(
+    const World& world,
+    GridPos pos)
+{
+    // Exact footprint only. A shelter elsewhere in the settlement must never
+    // grant weather immunity to an exposed resident.
+    const ConstructedFacility* shelter=
+        operationalSettlementFacilityNear(
+            world,FacilityKind::Shelter,pos,0);
+    if(shelter==nullptr) return 0.0;
+    return std::clamp(
+        DefaultSleepEnvironmentContract
+            .weatherProtectionExposureReduction01
+        *facilityEffectiveness01(*shelter),
+        0.0,
+        0.90);
+}
+
 inline const ConstructedFacility* operationalSleepFacilityAt(
     const World& world,
     GridPos pos)
