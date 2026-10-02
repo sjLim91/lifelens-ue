@@ -167,12 +167,14 @@ int main()
         TechniqueId::DesignatedSanitationArea,
         KnowledgeLevel::Reproducible,
         0.90);
+    GridPos runtimeStart{};
+    assert(simulation.runtimePosition(actorId,runtimeStart));
     const PrimitiveSanitationSiteCreationResult runtimeSite=
         establishDesignatedSanitationArea(
             simulation.world().seed,actor,
             simulation.world().environmentalResidues,
             simulation.world().primitiveSanitationSites,
-            simulation.world().minute);
+            simulation.world().minute,runtimeStart);
     assert(runtimeSite.established);
 
     SanitationUseTarget runtimeTarget;
