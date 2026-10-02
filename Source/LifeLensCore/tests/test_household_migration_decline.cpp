@@ -183,16 +183,11 @@ int main()
 
     const CharacterId firstId=snapshot.world.characters[0].id;
     const CharacterId secondId=snapshot.world.characters[1].id;
-    snapshot.world.characters.resize(2);
-    // Keep only the two runtime entries.
-    for(auto it=snapshot.runtime.begin();it!=snapshot.runtime.end();){
-        if(it->first!=firstId && it->first!=secondId){
-            it=snapshot.runtime.erase(it);
-        }else{
-            ++it;
-        }
-    }
 
+    // Preserve the rest of NEW GAME state. Snapshot validation intentionally
+    // rejects dangling genealogy/social/environmental provenance, so a focused
+    // migration test must not manufacture an impossible world by deleting the
+    // other residents out from under those authoritative records.
     snapshot.households=HouseholdBook{};
     CHECK(snapshot.households.create(
         1,{firstId,secondId}));
@@ -203,6 +198,9 @@ int main()
     makeLocalRegionScarce(snapshot.world,origin);
 
     for(Character& resident:snapshot.world.characters){
+        resident.civilization.character=resident.id;
+        if(resident.id!=firstId && resident.id!=secondId) continue;
+
         resident.lifeStage=LifeStage::Adult;
         resident.personality.curiosity=0.90;
         resident.personality.adaptability=0.88;
@@ -211,7 +209,6 @@ int main()
         resident.needs.sleep=0.18;
         resident.needs.bladder=0.16;
         resident.needs.hygiene=0.18;
-        resident.civilization.character=resident.id;
 
         auto runtime=snapshot.runtime.find(resident.id);
         CHECK(runtime!=snapshot.runtime.end());
@@ -228,7 +225,10 @@ int main()
     }
 
     std::string error;
-    CHECK(simulation.restoreSnapshot(snapshot,&error));
+    if(!simulation.restoreSnapshot(snapshot,&error)){
+        std::cerr<<"restoreSnapshot failed: "<<error<<'\n';
+        return 1;
+    }
     CHECK(error.empty());
 
     simulation.step();
