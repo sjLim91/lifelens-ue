@@ -104,7 +104,7 @@ static bool runTeachingWindowScenario(bool nearEnough,bool boundaryMinute)
     return true;
 }
 
-int main()
+static bool runAll()
 {
     CHECK(contextActionTimeoutMinutes(
         ContextActionKind::KnowledgeTeaching)==3*60);
@@ -153,5 +153,10 @@ int main()
 
     std::cout
         <<"P0 teaching budget/local opportunity regression passed\n";
-    return 0;
+    return true;
+}
+
+int main()
+{
+    return runAll() ? 0 : 1;
 }
