@@ -1182,7 +1182,9 @@ struct SocietyWorldObservation {
 };
 
 inline SocietyWorldObservation buildSocietyWorldObservation(
-    const World& world,const SocialKnowledgeBook& book)
+    const World& world,
+    const SocialKnowledgeBook& book,
+    const HouseholdBook* households=nullptr)
 {
     SocietyWorldObservation out;
     for(const auto& resident:world.characters){
@@ -1216,7 +1218,7 @@ inline SocietyWorldObservation buildSocietyWorldObservation(
     for(const Character& resident:world.characters){
         if(!resident.alive) continue;
         SocietyCoordinationDirective directive=
-            observeSocietyCoordinationDirective(world,book,resident,nullptr);
+            observeSocietyCoordinationDirective(world,book,resident,households);
         if(directive.task!=SocietyCoordinationTask::None){
             ++out.coordinatedResidentCount;
         }
