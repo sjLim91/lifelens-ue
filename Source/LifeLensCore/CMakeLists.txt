@@ -142,6 +142,7 @@ lifelens_add_test(test_knowledge_teaching_budget)
 lifelens_add_test(test_civilization_knowledge_spatial_authority)
 
 lifelens_add_test(test_civilization_observer_read_model)
+lifelens_add_test(test_civilization_era)
 
 lifelens_add_test(test_facility_authority)
 
