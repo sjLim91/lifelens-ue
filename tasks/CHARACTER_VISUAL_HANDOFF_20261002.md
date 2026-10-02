@@ -27,7 +27,21 @@
 
 ## 최종 검증
 
-후속 HEAD CI 확인 중. 끊겼으면 먼저 이 브랜치 최신 HEAD의 Preflight / Web Typecheck / Web Runtime Resilience / Character Asset Verification 실제 결론을 조회한다. 실패하면 그 로그부터 수정한다.
+2026-10-02 재개 후 GitHub에서 구현 HEAD `d5f959279f1d5ceb1b44d1b47294b78201ca1b63`의 모든 check run 성공을 확인했다.
+
+| 검증 | 결과 / 근거 |
+|---|---|
+| Preflight | [36976216380](https://github.com/sjLim91/lifelens-ue/actions/runs/36976216380) 성공 |
+| Web Typecheck (PR) | [36976216395](https://github.com/sjLim91/lifelens-ue/actions/runs/36976216395) 성공 |
+| Web Typecheck (push) | [36976210341](https://github.com/sjLim91/lifelens-ue/actions/runs/36976210341) 성공 |
+| Web Runtime Resilience | [36976216383](https://github.com/sjLim91/lifelens-ue/actions/runs/36976216383) 성공 |
+| Character Asset Verification | [36976210291](https://github.com/sjLim91/lifelens-ue/actions/runs/36976210291) 성공 |
+
+Character Asset Verification의 실제 step에서 CC0 자산 다운로드/고정 해시, 타입·행동·외형 회귀, production build, 실제 GLB 리그·모션 16개 포즈 검증, 검증 artifact 업로드가 모두 성공했다. 이전 Preflight 실패는 후속 구현 HEAD에서 해소되었다.
+
+이번 재개 작업은 위 결과를 확인하여 인계 문서와 PR 설명을 마무리한다. 구현 이후 문서만 추가한 커밋의 검증과 위 구현 SHA의 검증을 구분한다. 이전 세션의 Blender 육안 검토는 위 구현 상태에 기록된 인계 근거이며, 이번 세션에서 새 브라우저/모바일 시각 QA를 수행한 것은 아니다. 브라우저 조명·기기 성능, 여성 전용 모델, 정교한 손가락 IK는 완료로 주장하지 않는다.
+
+PR #590은 Draft 상태를 유지한다. main 병합·배포 없이 현재 구현과 검증 기록 정리를 완료했다.
 
 ## 재개 시 주의
 
