@@ -859,10 +859,27 @@ export interface SocietyWorldPayload {
   institutions: SocietyInstitution[];
 }
 
+export interface CivilizationSettlement {
+  id: string;
+  gridX: number;
+  gridY: number;
+  residentCount: number;
+  facilityCount: number;
+  operationalFacilityCount: number;
+  plannedFacilityCount: number;
+  storageSiteCount: number;
+  active: boolean;
+  established: boolean;
+}
+
 export interface CivilizationWorldPayload {
   available?: boolean;
   minute?: number;
   society?: SocietyWorldPayload;
+  settlementCount?: number;
+  activeSettlementCount?: number;
+  residentAssignedSettlementCount?: number;
+  settlements?: CivilizationSettlement[];
   resourceNodeCount?: number;
   depletedResourceNodeCount?: number;
   totalResourceUnits?: number;

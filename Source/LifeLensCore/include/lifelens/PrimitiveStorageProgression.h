@@ -67,6 +67,54 @@ inline ConstructedFacility* primitiveStorageProject(World& world)
     return nullptr;
 }
 
+inline bool hasOperationalPrimitiveStorageNear(
+    const World& world,
+    GridPos anchor,
+    int maxDistance=SettlementServiceRadiusGrid)
+{
+    const int radius=std::max(0,maxDistance);
+    for(const auto& storage:world.storageSites){
+        if(storage.id!=0 && manhattan(storage.pos,anchor)<=radius) return true;
+    }
+    for(const auto& facility:world.facilities){
+        if(facility.kind==FacilityKind::PrimitiveStorage
+           && facilityOperationalAndActive(facility)
+           && manhattan(facility.pos,anchor)<=radius) return true;
+    }
+    return false;
+}
+
+inline const ConstructedFacility* primitiveStorageProjectNear(
+    const World& world,
+    GridPos anchor,
+    int maxDistance=SettlementServiceRadiusGrid)
+{
+    const ConstructedFacility* best=nullptr;
+    int bestDistance=std::max(0,maxDistance)+1;
+    for(const auto& facility:world.facilities){
+        if(facility.kind!=FacilityKind::PrimitiveStorage
+           || facility.state==FacilityState::Ruined) continue;
+        const int distance=manhattan(facility.pos,anchor);
+        if(distance>std::max(0,maxDistance)) continue;
+        if(best==nullptr || distance<bestDistance
+           || (distance==bestDistance && facility.id<best->id)){
+            best=&facility;
+            bestDistance=distance;
+        }
+    }
+    return best;
+}
+
+inline ConstructedFacility* primitiveStorageProjectNear(
+    World& world,
+    GridPos anchor,
+    int maxDistance=SettlementServiceRadiusGrid)
+{
+    return const_cast<ConstructedFacility*>(
+        primitiveStorageProjectNear(
+            static_cast<const World&>(world),anchor,maxDistance));
+}
+
 inline int primitiveStorageCarriedUnits(const Character& resident)
 {
     int total=0;
@@ -136,8 +184,9 @@ inline PrimitiveStorageNeedObservation observePrimitiveStorageNeed(
         result.carriedUnits>=PrimitiveStorageRecognitionInventoryUnits
             ? personalPressure
             : std::max(personalPressure,sharedPressure);
-    result.recognized=!hasOperationalPrimitiveStorage(world)
-        && primitiveStorageProject(world)==nullptr
+    result.recognized=!hasOperationalPrimitiveStorageNear(
+            world,activityAnchor)
+        && primitiveStorageProjectNear(world,activityAnchor)==nullptr
         && (
             result.carriedUnits>=PrimitiveStorageRecognitionInventoryUnits
             || sharedLoadRecognized
@@ -186,8 +235,9 @@ inline PrimitiveStorageSiteOpportunity choosePrimitiveStorageSite(
     GridPos activityAnchor)
 {
     PrimitiveStorageSiteOpportunity result;
-    if(planner==0 || hasOperationalPrimitiveStorage(world)
-       || primitiveStorageProject(world)!=nullptr) return result;
+    if(planner==0 || hasOperationalPrimitiveStorageNear(
+            world,activityAnchor)
+       || primitiveStorageProjectNear(world,activityAnchor)!=nullptr) return result;
 
     const GridPos center=activityAnchor;
     constexpr std::array<GridPos,24> offsets={
@@ -235,8 +285,8 @@ inline ConstructedFacility* establishPrimitiveStorageProject(
     CharacterId planner,
     GridPos pos)
 {
-    if(planner==0 || hasOperationalPrimitiveStorage(world)
-       || primitiveStorageProject(world)!=nullptr
+    if(planner==0 || hasOperationalPrimitiveStorageNear(world,pos)
+       || primitiveStorageProjectNear(world,pos)!=nullptr
        || primitiveStorageSiteBlocked(world,pos)) return nullptr;
 
     ConstructedFacility facility=makeFacilityConstructionSite(
@@ -260,11 +310,20 @@ struct PrimitiveStorageWorkResult {
 inline PrimitiveStorageWorkResult workOnPrimitiveStorage(
     World& world,
     Character& worker,
+    FacilityId facilityId,
     double workAmount)
 {
     PrimitiveStorageWorkResult result;
-    ConstructedFacility* project=primitiveStorageProject(world);
+    ConstructedFacility* project=nullptr;
+    for(auto& facility:world.facilities){
+        if(facility.id==facilityId
+           && facility.kind==FacilityKind::PrimitiveStorage){
+            project=&facility;
+            break;
+        }
+    }
     if(project==nullptr || project->state==FacilityState::Operational
+       || project->state==FacilityState::Ruined
        || !facilityMaterialsComplete(*project) || workAmount<=0.0) return result;
 
     result.facilityId=project->id;
@@ -290,6 +349,18 @@ inline PrimitiveStorageWorkResult workOnPrimitiveStorage(
         result.storageId=storageId;
     }
     return result;
+}
+
+inline PrimitiveStorageWorkResult workOnPrimitiveStorage(
+    World& world,
+    Character& worker,
+    double workAmount)
+{
+    ConstructedFacility* project=primitiveStorageProject(world);
+    return project==nullptr
+        ? PrimitiveStorageWorkResult{}
+        : workOnPrimitiveStorage(
+            world,worker,project->id,workAmount);
 }
 
 } // namespace lifelens

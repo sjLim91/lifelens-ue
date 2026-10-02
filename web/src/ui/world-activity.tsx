@@ -97,6 +97,13 @@ export function WorldActivityPanel({
   onFocusGrid: (gridX: number, gridY: number) => void;
 }) {
   const names = new Map(residents.map(resident => [resident.id, resident.name]));
+  const settlements = [...(civilization.settlements ?? [])]
+    .filter(settlement => settlement.active)
+    .sort((a, b) => (
+      Number(b.residentCount) - Number(a.residentCount)
+      || Number(b.operationalFacilityCount) - Number(a.operationalFacilityCount)
+      || String(a.id).localeCompare(String(b.id))
+    ));
   const facilities = [...(civilization.facilities ?? [])]
     .sort(facilitySort)
     .slice(0, 4);
@@ -161,6 +168,9 @@ export function WorldActivityPanel({
         <span>자원 노드 <b>{civilization.resourceNodeCount ?? 0}</b></span>
         <span>저장량 <b>{civilization.totalStoredUnits ?? 0}</b></span>
         <span>시설 <b>{civilization.facilityCount ?? 0}</b></span>
+        <span>
+          정착지 <b>{civilization.activeSettlementCount ?? settlements.length}</b>
+        </span>
         <span>재현 가능 기술 <b>{civilization.uniqueReproducibleTechniqueTypes ?? 0}</b></span>
       </div>
 
@@ -230,6 +240,33 @@ export function WorldActivityPanel({
               ))}
             </div>
           ) : null}
+        </div>
+      ) : null}
+
+      {settlements.length > 0 ? (
+        <div className="focused-life-section">
+          <h3>정착지</h3>
+          {settlements.slice(0, 6).map((settlement, index) => (
+            <button
+              type="button"
+              className="observation-event observation-event-button"
+              key={settlement.id}
+              onClick={() => onFocusGrid(settlement.gridX, settlement.gridY)}
+            >
+              <strong>
+                정착지 {index + 1}
+                {settlement.established ? ' · 정착 기반 형성' : ' · 형성 중'}
+              </strong>
+              <span className="observation-event-detail">
+                주민 {settlement.residentCount}명
+                {' · '}
+                시설 {settlement.operationalFacilityCount}/{settlement.facilityCount}
+                {' · '}
+                저장소 {settlement.storageSiteCount}
+                {' · 위치 보기'}
+              </span>
+            </button>
+          ))}
         </div>
       ) : null}
 

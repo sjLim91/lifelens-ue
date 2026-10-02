@@ -6,6 +6,7 @@
 
 #include "Character.h"
 #include "Facility.h"
+#include "SettlementDemand.h"
 #include "World.h"
 
 namespace lifelens {
@@ -53,6 +54,67 @@ inline ConstructedFacility* primitiveFurnaceProject(World& world)
     return nullptr;
 }
 
+inline bool hasOperationalFurnaceNear(
+    const World& world,
+    GridPos anchor,
+    int maxDistance=SettlementServiceRadiusGrid)
+{
+    for(const auto& facility:world.facilities){
+        if(facility.kind==FacilityKind::Furnace
+           && facilityOperationalAndActive(facility)
+           && manhattan(facility.pos,anchor)<=std::max(0,maxDistance)){
+            return true;
+        }
+    }
+    return false;
+}
+
+inline bool hasOperationalFirePitForSmeltingNear(
+    const World& world,
+    GridPos anchor,
+    int maxDistance=SettlementServiceRadiusGrid)
+{
+    for(const auto& facility:world.facilities){
+        if(facility.kind==FacilityKind::FirePit
+           && facilityOperationalAndActive(facility)
+           && manhattan(facility.pos,anchor)<=std::max(0,maxDistance)){
+            return true;
+        }
+    }
+    return false;
+}
+
+inline const ConstructedFacility* primitiveFurnaceProjectNear(
+    const World& world,
+    GridPos anchor,
+    int maxDistance=SettlementServiceRadiusGrid)
+{
+    const ConstructedFacility* best=nullptr;
+    int bestDistance=std::max(0,maxDistance)+1;
+    for(const auto& facility:world.facilities){
+        if(facility.kind!=FacilityKind::Furnace
+           || facility.state==FacilityState::Ruined) continue;
+        const int distance=manhattan(facility.pos,anchor);
+        if(distance>std::max(0,maxDistance)) continue;
+        if(best==nullptr || distance<bestDistance
+           || (distance==bestDistance && facility.id<best->id)){
+            best=&facility;
+            bestDistance=distance;
+        }
+    }
+    return best;
+}
+
+inline ConstructedFacility* primitiveFurnaceProjectNear(
+    World& world,
+    GridPos anchor,
+    int maxDistance=SettlementServiceRadiusGrid)
+{
+    return const_cast<ConstructedFacility*>(
+        primitiveFurnaceProjectNear(
+            static_cast<const World&>(world),anchor,maxDistance));
+}
+
 inline bool primitiveFurnaceSiteBlocked(const World& world,GridPos pos)
 {
     for(const auto& facility:world.facilities){
@@ -78,8 +140,10 @@ inline PrimitiveFurnaceSiteOpportunity choosePrimitiveFurnaceSite(
     GridPos activityAnchor)
 {
     PrimitiveFurnaceSiteOpportunity result;
-    if(planner==0 || primitiveFurnaceProject(world)!=nullptr
-       || !hasOperationalFirePitForSmelting(world)) return result;
+    if(planner==0 || primitiveFurnaceProjectNear(
+            world,activityAnchor)!=nullptr
+       || !hasOperationalFirePitForSmeltingNear(
+            world,activityAnchor)) return result;
 
     const GridPos center=activityAnchor;
     constexpr std::array<GridPos,24> offsets={
@@ -127,8 +191,8 @@ inline ConstructedFacility* establishPrimitiveFurnaceProject(
     GridPos pos)
 {
     if(planner.id==0 || !primitiveFurnaceKnowledgeReady(planner)
-       || !hasOperationalFirePitForSmelting(world)
-       || primitiveFurnaceProject(world)!=nullptr
+       || !hasOperationalFirePitForSmeltingNear(world,pos)
+       || primitiveFurnaceProjectNear(world,pos)!=nullptr
        || primitiveFurnaceSiteBlocked(world,pos)) return nullptr;
 
     ConstructedFacility facility=makeFacilityConstructionSite(
@@ -151,11 +215,19 @@ struct PrimitiveFurnaceWorkResult {
 inline PrimitiveFurnaceWorkResult workOnPrimitiveFurnace(
     World& world,
     Character& worker,
+    FacilityId facilityId,
     double workAmount)
 {
     PrimitiveFurnaceWorkResult result;
-    ConstructedFacility* project=primitiveFurnaceProject(world);
+    ConstructedFacility* project=nullptr;
+    for(auto& facility:world.facilities){
+        if(facility.id==facilityId && facility.kind==FacilityKind::Furnace){
+            project=&facility;
+            break;
+        }
+    }
     if(project==nullptr || project->state==FacilityState::Operational
+       || project->state==FacilityState::Ruined
        || !primitiveFurnaceKnowledgeReady(worker)
        || !facilityMaterialsComplete(*project) || workAmount<=0.0) return result;
 
@@ -171,6 +243,18 @@ inline PrimitiveFurnaceWorkResult workOnPrimitiveFurnace(
         result.completed=true;
     }
     return result;
+}
+
+inline PrimitiveFurnaceWorkResult workOnPrimitiveFurnace(
+    World& world,
+    Character& worker,
+    double workAmount)
+{
+    ConstructedFacility* project=primitiveFurnaceProject(world);
+    return project==nullptr
+        ? PrimitiveFurnaceWorkResult{}
+        : workOnPrimitiveFurnace(
+            world,worker,project->id,workAmount);
 }
 
 inline bool smeltingOpportunityAvailable(

@@ -456,7 +456,8 @@ void appendResidentPresentationJson(
 
 std::string civilizationWorldObservationJson(
     const CivilizationWorldObservation& world,
-    const SocietyWorldObservation& society)
+    const SocietyWorldObservation& society,
+    const SettlementNetworkObservation& settlementNetwork)
 {
     std::ostringstream out;
     out << "{";
@@ -534,6 +535,29 @@ std::string civilizationWorldObservationJson(
         out << "}";
     }
     out << "]},";
+
+    out << "\"settlementCount\":" << settlementNetwork.settlementCount << ",";
+    out << "\"activeSettlementCount\":" << settlementNetwork.activeSettlementCount << ",";
+    out << "\"residentAssignedSettlementCount\":" << settlementNetwork.residentAssignedCount << ",";
+    out << "\"settlements\":[";
+    for(std::size_t i=0;i<settlementNetwork.settlements.size();++i){
+        if(i!=0) out << ",";
+        const SettlementClusterObservation& settlement=
+            settlementNetwork.settlements[i];
+        out << "{";
+        out << "\"id\":\"" << settlement.id << "\",";
+        out << "\"gridX\":" << settlement.anchor.x << ",";
+        out << "\"gridY\":" << settlement.anchor.y << ",";
+        out << "\"residentCount\":" << settlement.residentCount << ",";
+        out << "\"facilityCount\":" << settlement.facilityCount << ",";
+        out << "\"operationalFacilityCount\":" << settlement.operationalFacilityCount << ",";
+        out << "\"plannedFacilityCount\":" << settlement.plannedFacilityCount << ",";
+        out << "\"storageSiteCount\":" << settlement.storageSiteCount << ",";
+        out << "\"active\":" << (settlement.active ? "true" : "false") << ",";
+        out << "\"established\":" << (settlement.established ? "true" : "false");
+        out << "}";
+    }
+    out << "],";
 
     out << "\"resourceNodeCount\":" << world.resourceNodeCount << ",";
     out << "\"depletedResourceNodeCount\":" << world.depletedResourceNodeCount << ",";
@@ -1598,7 +1622,8 @@ std::string WebClientBridge::civilizationWorldJson(
     return civilizationWorldObservationJson(
         simulation_->observeCivilizationWorld(
             std::min<std::size_t>(maxRecentDiscoveries, 64)),
-        simulation_->observeSocietyWorld());
+        simulation_->observeSocietyWorld(),
+        simulation_->observeSettlementNetwork());
 }
 
 std::string WebClientBridge::civilizationWorldWindowJson(
@@ -1617,7 +1642,8 @@ std::string WebClientBridge::civilizationWorldWindowJson(
             {centerChunkX,centerChunkY},
             radius,
             std::min<std::size_t>(maxRecentDiscoveries,64)),
-        simulation_->observeSocietyWorld());
+        simulation_->observeSocietyWorld(),
+        simulation_->observeSettlementNetwork());
 }
 
 std::string WebClientBridge::worldObjectsJson() const

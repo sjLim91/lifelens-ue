@@ -47,6 +47,52 @@ inline ConstructedFacility* primitiveFirePitProject(World& world)
     return nullptr;
 }
 
+inline bool hasOperationalFirePitNear(
+    const World& world,
+    GridPos anchor,
+    int maxDistance=SettlementServiceRadiusGrid)
+{
+    for(const auto& facility:world.facilities){
+        if(facility.kind==FacilityKind::FirePit
+           && facilityOperationalAndActive(facility)
+           && manhattan(facility.pos,anchor)<=std::max(0,maxDistance)){
+            return true;
+        }
+    }
+    return false;
+}
+
+inline const ConstructedFacility* primitiveFirePitProjectNear(
+    const World& world,
+    GridPos anchor,
+    int maxDistance=SettlementServiceRadiusGrid)
+{
+    const ConstructedFacility* best=nullptr;
+    int bestDistance=std::max(0,maxDistance)+1;
+    for(const auto& facility:world.facilities){
+        if(facility.kind!=FacilityKind::FirePit
+           || facility.state==FacilityState::Ruined) continue;
+        const int distance=manhattan(facility.pos,anchor);
+        if(distance>std::max(0,maxDistance)) continue;
+        if(best==nullptr || distance<bestDistance
+           || (distance==bestDistance && facility.id<best->id)){
+            best=&facility;
+            bestDistance=distance;
+        }
+    }
+    return best;
+}
+
+inline ConstructedFacility* primitiveFirePitProjectNear(
+    World& world,
+    GridPos anchor,
+    int maxDistance=SettlementServiceRadiusGrid)
+{
+    return const_cast<ConstructedFacility*>(
+        primitiveFirePitProjectNear(
+            static_cast<const World&>(world),anchor,maxDistance));
+}
+
 inline bool primitiveFirePitSiteBlocked(const World& world,GridPos pos)
 {
     for(const auto& facility:world.facilities){
@@ -66,14 +112,29 @@ inline bool primitiveFirePitSiteBlocked(const World& world,GridPos pos)
     return false;
 }
 
-inline bool primitiveFirePitPlanningDeferredBySanitation(const World& world)
+inline bool primitiveFirePitPlanningDeferredBySanitation(
+    const World& world,
+    GridPos anchor,
+    int maxDistance=SettlementServiceRadiusGrid)
 {
     for(const auto& sanitation:world.primitiveSanitationSites){
         if(sanitation.active
            && sanitation.kind==PrimitiveSanitationSiteKind::DesignatedArea
-           && sanitation.useCount>=2) return true;
+           && sanitation.useCount>=2
+           && manhattan(sanitation.pos,anchor)<=std::max(0,maxDistance)){
+            return true;
+        }
     }
     return false;
+}
+
+inline bool primitiveFirePitPlanningDeferredBySanitation(const World& world)
+{
+    return primitiveFirePitPlanningDeferredBySanitation(
+        world,
+        world.hasInitialStartRegionSelection
+            ? world.initialStartRegionCenterGrid()
+            : GridPos{});
 }
 
 inline PrimitiveFirePitSiteOpportunity choosePrimitiveFirePitSite(
@@ -82,8 +143,10 @@ inline PrimitiveFirePitSiteOpportunity choosePrimitiveFirePitSite(
     GridPos activityAnchor)
 {
     PrimitiveFirePitSiteOpportunity result;
-    if(planner==0 || primitiveFirePitProject(world)!=nullptr
-       || primitiveFirePitPlanningDeferredBySanitation(world)) return result;
+    if(planner==0 || primitiveFirePitProjectNear(
+            world,activityAnchor)!=nullptr
+       || primitiveFirePitPlanningDeferredBySanitation(
+            world,activityAnchor)) return result;
 
     const GridPos center=activityAnchor;
     constexpr std::array<GridPos,24> offsets={
@@ -123,7 +186,7 @@ inline ConstructedFacility* establishPrimitiveFirePitProject(
     if(planner.id==0
        || !planner.civilization.knowledge.knowsAtLeast(
            TechniqueId::FireMaking,KnowledgeLevel::Reproducible)
-       || primitiveFirePitProject(world)!=nullptr
+       || primitiveFirePitProjectNear(world,pos)!=nullptr
        || primitiveFirePitSiteBlocked(world,pos)) return nullptr;
 
     ConstructedFacility facility=makeFacilityConstructionSite(
@@ -146,11 +209,19 @@ struct PrimitiveFirePitWorkResult {
 inline PrimitiveFirePitWorkResult workOnPrimitiveFirePit(
     World& world,
     Character& worker,
+    FacilityId facilityId,
     double workAmount)
 {
     PrimitiveFirePitWorkResult result;
-    ConstructedFacility* project=primitiveFirePitProject(world);
+    ConstructedFacility* project=nullptr;
+    for(auto& facility:world.facilities){
+        if(facility.id==facilityId && facility.kind==FacilityKind::FirePit){
+            project=&facility;
+            break;
+        }
+    }
     if(project==nullptr || project->state==FacilityState::Operational
+       || project->state==FacilityState::Ruined
        || !worker.civilization.knowledge.knowsAtLeast(
            TechniqueId::FireMaking,KnowledgeLevel::Reproducible)
        || !facilityMaterialsComplete(*project) || workAmount<=0.0) return result;
@@ -173,6 +244,18 @@ inline PrimitiveFirePitWorkResult workOnPrimitiveFirePit(
         result.completed=true;
     }
     return result;
+}
+
+inline PrimitiveFirePitWorkResult workOnPrimitiveFirePit(
+    World& world,
+    Character& worker,
+    double workAmount)
+{
+    ConstructedFacility* project=primitiveFirePitProject(world);
+    return project==nullptr
+        ? PrimitiveFirePitWorkResult{}
+        : workOnPrimitiveFirePit(
+            world,worker,project->id,workAmount);
 }
 
 inline int fuelPrimitiveFirePit(

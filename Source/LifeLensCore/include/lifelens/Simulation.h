@@ -16,6 +16,7 @@
 #include "EnvironmentalExposure.h"
 #include "EnvironmentalResidue.h"
 #include "MigrationPressure.h"
+#include "SettlementNetwork.h"
 #include "ObserverReadModelV2.h"
 #include "Parenting.h"
 #include "Planner.h"
@@ -165,6 +166,10 @@ public:
     SocietyWorldObservation observeSocietyWorld() const {
         return buildSocietyWorldObservation(
             world_,socialKnowledge_,&households_);
+    }
+    SettlementNetworkObservation observeSettlementNetwork() const {
+        const SettlementPopulation population=settlementPopulation();
+        return lifelens::observeSettlementNetwork(world_,&population);
     }
     CivilizationWorldObservation observeCivilizationWorldWindow(
         ChunkCoord center,
