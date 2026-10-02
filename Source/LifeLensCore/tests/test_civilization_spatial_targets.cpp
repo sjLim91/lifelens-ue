@@ -23,6 +23,15 @@ static const ResourceNode* findResourceById(const World& world, ResourceNodeId i
     return nullptr;
 }
 
+static ResourceNode* findResourceById(World& world, ResourceNodeId id)
+{
+    for(auto& node : world.resourceNodes){
+        if(node.id == id) return &node;
+    }
+    return nullptr;
+}
+
+
 static const StorageSite* findStorageById(const World& world, StorageId id)
 {
     for(const auto& storage : world.storageSites){
@@ -50,6 +59,41 @@ int main()
     // position, and same seeds must generate the same authoritative targets.
     const GeneratedNaturalChunk& firstChunk = first.world().generatedNaturalChunks.front();
     CHECK(!firstChunk.resourcePatches.empty());
+    // Current worlds should resolve the owning generated patch through the
+    // ResourceNode position's chunk instead of scanning every materialized
+    // chunk. A legacy/mismatched node position must still fall back to the
+    // immutable generated patch identity.
+    const NaturalResourcePatch& positionProbePatch=
+        firstChunk.resourcePatches.front();
+    ResourceNode* positionProbeNode=
+        findResourceById(first.world(), positionProbePatch.nodeId);
+    CHECK(positionProbeNode != nullptr);
+    const NaturalResourcePatch* directPatch=
+        findGeneratedNaturalResourcePatch(first.world(), *positionProbeNode);
+    CHECK(directPatch != nullptr);
+    CHECK(directPatch->nodeId == positionProbePatch.nodeId);
+    CHECK(directPatch->pos.x == positionProbePatch.pos.x);
+    CHECK(directPatch->pos.y == positionProbePatch.pos.y);
+
+    const GridPos savedProbePosition=positionProbeNode->pos;
+    positionProbeNode->pos={
+        savedProbePosition.x + WorldChunkSpanGridCells * 32,
+        savedProbePosition.y + WorldChunkSpanGridCells * 32
+    };
+    const NaturalResourcePatch* legacyFallbackPatch=
+        findGeneratedNaturalResourcePatch(first.world(), *positionProbeNode);
+    CHECK(legacyFallbackPatch != nullptr);
+    CHECK(legacyFallbackPatch->nodeId == positionProbePatch.nodeId);
+    CHECK(legacyFallbackPatch->pos.x == positionProbePatch.pos.x);
+    CHECK(legacyFallbackPatch->pos.y == positionProbePatch.pos.y);
+
+    GridPos fallbackResolved{};
+    CHECK(resolveCivilizationResourceGridPosition(
+        first.world(), positionProbePatch.nodeId, fallbackResolved));
+    CHECK(fallbackResolved.x == positionProbePatch.pos.x);
+    CHECK(fallbackResolved.y == positionProbePatch.pos.y);
+    positionProbeNode->pos=savedProbePosition;
+
     for(const auto& patch : firstChunk.resourcePatches){
         const ResourceNode* firstNode = findResourceById(first.world(), patch.nodeId);
         const ResourceNode* secondNode = findResourceById(second.world(), patch.nodeId);
