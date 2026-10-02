@@ -174,7 +174,13 @@ export function SelectedResidentReadout({
   const visibleMemories = memories.map((memory) => ({
     memory,
     subjectName: residentDisplayName(residents, memory.who),
-    tags: Array.from(new Set((memory.tags ?? []).map(formatMemoryTag))),
+    tags: Array.from(
+      new Set(
+        (memory.tags ?? [])
+          .map(formatMemoryTag)
+          .filter((tag): tag is string => Boolean(tag)),
+      ),
+    ),
   }));
   const visibleBeliefs = beliefs.map((belief) => ({
     belief,
