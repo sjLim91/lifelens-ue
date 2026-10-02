@@ -119,6 +119,44 @@ int main()
     assert(fallbackTarget.kind==SanitationUseTargetKind::EmergencyOutdoor);
     assert(fallbackTarget.siteId==0);
 
+    // A designated sanitation site is a local service, not a world-global
+    // teleport magnet. Local resolution prefers the nearest active site inside
+    // the caller-provided service radius and falls back outdoors when every
+    // site is too far away.
+    mutableSite->active=true;
+    const GridPos localReference=establishedSite->pos;
+    const SanitationSiteId localSiteId=establishedSite->id;
+    PrimitiveSanitationSite secondSite=*establishedSite;
+    secondSite.id=localSiteId+100;
+    secondSite.pos={
+        localReference.x+SettlementServiceRadiusGrid+20,
+        localReference.y};
+    world.primitiveSanitationSites.push_back(secondSite);
+
+    const SanitationUseTarget localDesignated=
+        resolveSanitationUseTarget(
+            world.seed,builder,world.environmentalResidues,
+            world.primitiveSanitationSites,world.minute,
+            localReference,SettlementServiceRadiusGrid);
+    assert(localDesignated.kind==SanitationUseTargetKind::DesignatedArea);
+    assert(localDesignated.siteId==localSiteId);
+
+    const GridPos remoteReference{
+        secondSite.pos.x+SettlementServiceRadiusGrid+20,
+        secondSite.pos.y};
+    const SanitationUseTarget remoteFallback=
+        resolveSanitationUseTarget(
+            world.seed,builder,world.environmentalResidues,
+            world.primitiveSanitationSites,world.minute,
+            remoteReference,SettlementServiceRadiusGrid);
+    assert(remoteFallback.kind==SanitationUseTargetKind::EmergencyOutdoor);
+    assert(remoteFallback.siteId==0);
+    assert(
+        manhattan(remoteFallback.pos,remoteReference)
+        <manhattan(localReference,remoteReference));
+
+    world.primitiveSanitationSites.resize(1);
+
     // External execution must carry the same site identity and GridPos all the
     // way to Core ACK. A stale ID or wrong position fails closed with no needs,
     // use-count or environmental mutation.
@@ -129,12 +167,14 @@ int main()
         TechniqueId::DesignatedSanitationArea,
         KnowledgeLevel::Reproducible,
         0.90);
+    GridPos runtimeStart{};
+    assert(simulation.runtimePosition(actorId,runtimeStart));
     const PrimitiveSanitationSiteCreationResult runtimeSite=
         establishDesignatedSanitationArea(
             simulation.world().seed,actor,
             simulation.world().environmentalResidues,
             simulation.world().primitiveSanitationSites,
-            simulation.world().minute);
+            simulation.world().minute,runtimeStart);
     assert(runtimeSite.established);
 
     SanitationUseTarget runtimeTarget;

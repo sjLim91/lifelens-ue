@@ -175,12 +175,14 @@ int main()
     actor.civilization.knowledge.learn(
         TechniqueId::DugSanitationPit,KnowledgeLevel::Reproducible,0.94);
 
+    GridPos runtimeStart{};
+    assert(simulation.runtimePosition(actorId,runtimeStart));
     const PrimitiveSanitationSiteCreationResult runtimeCreated=
         establishDesignatedSanitationArea(
             simulation.world().seed,actor,
             simulation.world().environmentalResidues,
             simulation.world().primitiveSanitationSites,
-            simulation.world().minute);
+            simulation.world().minute,runtimeStart);
     assert(runtimeCreated.established);
 
     bool runtimeCompleted=false;
