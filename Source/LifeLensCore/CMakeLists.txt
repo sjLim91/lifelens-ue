@@ -117,6 +117,7 @@ lifelens_add_test(test_lifecycle_runtime_correctness)
 lifelens_add_test(test_context_action_completion)
 
 lifelens_add_test(test_context_action_competing_parenting)
+lifelens_add_test(test_dependent_care_priority)
 
 lifelens_add_test(test_core_save_load)
 

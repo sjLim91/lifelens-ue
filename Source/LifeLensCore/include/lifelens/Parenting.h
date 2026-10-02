@@ -54,6 +54,17 @@ inline bool isDependentStage(LifeStage stage)
            stage==LifeStage::Child || stage==LifeStage::Teen;
 }
 
+inline bool nursingCareAvailable(
+    const Character& caregiver,
+    const Character& child)
+{
+    return caregiver.alive
+        && child.alive
+        && child.lifeStage==LifeStage::Baby
+        && !child.parentIds.empty()
+        && child.parentIds.front()==caregiver.id;
+}
+
 inline bool requiresDirectCare(LifeStage stage)
 {
     return stage==LifeStage::Baby || stage==LifeStage::Toddler;

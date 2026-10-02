@@ -72,6 +72,20 @@ bool hasLivingBiologicalParent(
     return false;
 }
 
+bool nursingCareAvailable(
+    const BirthBook& births,
+    const Character& caregiver,
+    const Character& child)
+{
+    if(!caregiver.alive
+       || !child.alive
+       || child.lifeStage!=LifeStage::Baby){
+        return false;
+    }
+    const BirthRecord* birth=births.find(child.id);
+    return birth!=nullptr && birth->parentA==caregiver.id;
+}
+
 bool validatePendingSanitationSite(const World& world,const PendingContextAction& pending)
 {
     if(pending.sanitationSiteId==0) return false;
@@ -577,14 +591,20 @@ bool Simulation::completeContextAction(
             }
 
             ParentingContext context=pending.parentingContext;
-            context.foodAvailable=actor.civilization.inventory.count(
-                ItemKind::RawMaterial,MaterialKind::PlantFood)>0;
-            context.waterAvailable=
+            const bool nursing=
+                pending.parentingAction==ParentingAction::Feed
+                && nursingCareAvailable(actor,*child);
+            const bool carriedFood=
+                actor.civilization.inventory.count(
+                    ItemKind::RawMaterial,MaterialKind::PlantFood)>0;
+            const bool carriedWater=
                 portableWaterCount(actor.civilization.inventory)>0;
+            context.foodAvailable=nursing || carriedFood;
+            context.waterAvailable=nursing || carriedWater;
             const bool consumeFood=pending.parentingAction==ParentingAction::Feed
-                && context.foodAvailable && child->needs.hunger>0.05;
+                && !nursing && carriedFood && child->needs.hunger>0.05;
             const bool consumeWater=pending.parentingAction==ParentingAction::Feed
-                && context.waterAvailable && child->needs.thirst>0.05;
+                && !nursing && carriedWater && child->needs.thirst>0.05;
 
             Relationship& parentToChild=relationships_.getOrCreate(actor.id,child->id);
             Relationship& childToParent=relationships_.getOrCreate(child->id,actor.id);
@@ -614,6 +634,12 @@ bool Simulation::completeContextAction(
                 consumePortableWater(
                     actor.civilization.inventory,1);
             }
+            if(nursing){
+                // Nursing resolves the infant's feed without inventing a food
+                // or water inventory stack, but it is not physiologically free
+                // for the gestational parent.
+                actor.needs.apply({0.018,0.024,0.0,0.0,0.0});
+            }
 
             runtime.pos=resolvedPosition;
             if(pending.parentingAction==ParentingAction::ToiletAssist){
@@ -625,7 +651,8 @@ bool Simulation::completeContextAction(
                      " during assisted toilet care");
             }
             emit(actor.name+" cared for "+child->name+" -> "+
-                 std::string(contextParentingActionName(pending.parentingAction)));
+                 std::string(contextParentingActionName(pending.parentingAction))
+                 +(nursing ? " nursing" : ""));
             completed=true;
             break;
         }

@@ -18,27 +18,27 @@ care = simulation[care_start:care_end]
 for token in (
     "for(CharacterId parentId:child.parentIds)",
     "bool hasLivingBiologicalParent=false",
-    "if(chosenCaregiver==nullptr)",
+    "if(chosenCaregiver==nullptr || criticalDirectCare)",
     "households_.householdOf(child.id)",
     "for(const HouseholdMember& member:childHome->members)",
     "genealogy_.relationBetween(candidate.id,child.id)",
     "KinshipType::Grandparent",
     "KinshipType::Sibling",
     "KinshipType::HalfSibling",
-    "if(chosenCaregiver==nullptr && !hasLivingBiologicalParent)",
+    "&& !hasLivingBiologicalParent)",
     "for(auto& candidate:world_.characters)",
     "lifeStageProfile(caregiver->lifeStage).canParent",
 ):
     assert token in care, f"dependent-care fallback missing: {token}"
 
 assert care.index("for(CharacterId parentId:child.parentIds)") < care.index(
-    "if(chosenCaregiver==nullptr)"
-), "biological parents must remain first-choice caregivers"
+    "if(chosenCaregiver==nullptr || criticalDirectCare)"
+), "biological parents must be evaluated before emergency fallback caregivers"
 assert care.index("households_.householdOf(child.id)") < care.index(
     "genealogy_.relationBetween(candidate.id,child.id)"
 ), "co-resident caregivers must precede out-of-household kin"
 assert care.index("genealogy_.relationBetween(candidate.id,child.id)") < care.index(
-    "if(chosenCaregiver==nullptr && !hasLivingBiologicalParent)"
+    "&& !hasLivingBiologicalParent)"
 ), "close kin must precede unrelated orphan community care"
 assert "child.parentIds.empty()" not in care, (
     "dependent care must not disappear merely because biological parent ids are absent"
