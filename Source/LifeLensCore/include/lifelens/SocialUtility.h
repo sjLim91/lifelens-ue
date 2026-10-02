@@ -526,68 +526,56 @@ inline CivilizationUtilityDecision chooseDispositionAwareCivilizationDecisionAtP
     CivilizationUtilityDecision best;
     if (self.id == 0 || self.civilization.character != self.id) return best;
 
+    // Settlement planning/repair/delivery/work owns its own capacity and Need
+    // authority. When that lane is active, preserve the pre-C5 competition
+    // contract so specialization cannot make unrelated gather/explore work
+    // leapfrog a required bed/shelter/work-surface action.
+    CivilizationUtilityDecision craft=
+        applyTechnologyAdoptionUtility(
+            world,self,
+            bestCraftDecisionAtPosition(
+                world,self,authoritativePosition,population));
+    const bool settlementAuthorityActive=
+        craft.intent==CivilizationIntent::Craft
+        && craft.facilityAction!=FacilityBuildAction::None;
+
+    const auto applyOptionalSocietyBias=
+        [&](CivilizationUtilityDecision candidate){
+            candidate=applyCivilizationDispositionBias(self,candidate);
+            if(settlementAuthorityActive) return candidate;
+            candidate=applySocietyRoleAndDemandUtility(
+                world,self,candidate);
+            return applySocietyCoordinationBias(
+                world,self,candidate,socialKnowledge,households);
+        };
+
     considerCivilizationDecision(
         best,
-        applySocietyCoordinationBias(
-            world,self,
-            applySocietyRoleAndDemandUtility(
-                world,self,
-                applyCivilizationDispositionBias(
-                    self,bestExperimentDecisionAtPosition(
-                        world,self,authoritativePosition,population))),
-            socialKnowledge,households));
+        applyOptionalSocietyBias(
+            bestExperimentDecisionAtPosition(
+                world,self,authoritativePosition,population)));
+    considerCivilizationDecision(
+        best,applyOptionalSocietyBias(craft));
     considerCivilizationDecision(
         best,
-        applySocietyCoordinationBias(
-            world,self,
-            applySocietyRoleAndDemandUtility(
-                world,self,
-                applyCivilizationDispositionBias(
-                    self,applyTechnologyAdoptionUtility(
-                        world,self,
-                        bestCraftDecisionAtPosition(
-                            world,self,authoritativePosition,population)))),
-            socialKnowledge,households));
+        applyOptionalSocietyBias(
+            bestRetrieveDecisionAtPosition(
+                world,self,authoritativePosition)));
     considerCivilizationDecision(
         best,
-        applySocietyCoordinationBias(
-            world,self,
-            applySocietyRoleAndDemandUtility(
-                world,self,
-                applyCivilizationDispositionBias(
-                    self,bestRetrieveDecisionAtPosition(
-                        world,self,authoritativePosition))),
-            socialKnowledge,households));
+        applyOptionalSocietyBias(
+            bestStoreDecisionAtPosition(
+                world,self,authoritativePosition)));
     considerCivilizationDecision(
         best,
-        applySocietyCoordinationBias(
-            world,self,
-            applySocietyRoleAndDemandUtility(
-                world,self,
-                applyCivilizationDispositionBias(
-                    self,bestStoreDecisionAtPosition(
-                        world,self,authoritativePosition))),
-            socialKnowledge,households));
+        applyOptionalSocietyBias(
+            bestResourceExplorationDecisionAtPosition(
+                world,self,authoritativePosition)));
     considerCivilizationDecision(
         best,
-        applySocietyCoordinationBias(
-            world,self,
-            applySocietyRoleAndDemandUtility(
-                world,self,
-                applyCivilizationDispositionBias(
-                    self,bestResourceExplorationDecisionAtPosition(
-                        world,self,authoritativePosition))),
-            socialKnowledge,households));
-    considerCivilizationDecision(
-        best,
-        applySocietyCoordinationBias(
-            world,self,
-            applySocietyRoleAndDemandUtility(
-                world,self,
-                applyCivilizationDispositionBias(
-                    self,bestGatherDecisionAtPosition(
-                        world,self,authoritativePosition,population))),
-            socialKnowledge,households));
+        applyOptionalSocietyBias(
+            bestGatherDecisionAtPosition(
+                world,self,authoritativePosition,population)));
     return best;
 }
 
