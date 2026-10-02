@@ -633,18 +633,33 @@ The browser only observes these Core-authored facts. It does not diagnose reside
 
 ## Milestone C5 — Education / Recording / Specialization / Economy / Institutions
 
-Scope:
+Owner: Jjun Core/Simulation/Observer/Web.
+Status: 🟡 In progress — C5-A society/economy foundation implemented.
 
-- family/apprenticeship teaching expansion.
-- records/writing precursor.
-- education throughput.
-- jobs/roles/specialization.
-- production/storage demand signals.
-- exchange/trade foundation.
-- generic ownership/shared-resource policies.
-- institutions/group coordination.
-- technology adoption/acceptance.
-- research/education organizations.
+C5-A implemented foundation:
+
+- ✅ family/household/apprenticeship context now affects autonomous technique teaching selection.
+- ✅ educator specialization emerges from real teaching aptitude, practiced technologies and personality rather than an assigned job flag.
+- ✅ forager/craftsperson/farmer/metallurgist/caregiver/storekeeper roles emerge from actual skills, knowledge, successful use and health-care experience.
+- ✅ specialization changes real civilization utility, while shared material demand raises gather/explore/retrieve pressure.
+- ✅ settlement production/storage demand signals are derived from living population, inventories, shared storage and unfinished facility requirements.
+- ✅ reciprocal barter transfers real inventory only between physically nearby residents with mutual need and surplus.
+- ✅ barter produces persistent SocialKnowledge facts and relationship effects instead of UI-only economy events.
+- ✅ shared settlement resources remain physically stored while personal tools/use reserves remain individual; no currency is invented.
+- ✅ learning/production/storage/care/exchange/inquiry institutions are derived from repeated real behavior and evidence.
+- ✅ SocialKnowledge facts/receipts form an oral-tradition → repeated-tradition → proto-recordkeeping precursor without granting fictional writing.
+- ✅ Web Observer exposes roles, demand pressure, exchange history, institutions and record stage.
+
+Remaining C5 work:
+
+- ⬜ deeper apprenticeship continuity and education throughput across childhood/life stages.
+- ⬜ explicit production task specialization and role handoff/coordination.
+- ⬜ richer ownership/household/shared-resource negotiation beyond current physical inventory/storage authority.
+- ⬜ more expressive exchange valuation and repeated trade relationships.
+- ⬜ durable proto-record media / writing Technology only when prerequisites emerge causally.
+- ⬜ institution membership, persistence and coordination behaviors beyond derived institution readiness.
+- ⬜ research/education organization behavior beyond current inquiry/learning network signals.
+- ✅ technology adoption/acceptance remains authoritative from C3-F and feeds this stage.
 
 No one real-world political/economic system is a mandatory endpoint.
 
