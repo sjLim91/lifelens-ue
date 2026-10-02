@@ -63,10 +63,15 @@ export const TREE_CROWN_LOBE_LAYOUT = [
 ] as const;
 
 export const TREE_FOLIAGE_PALETTE = [
-  0x2f6638,
-  0x396f3d,
-  0x285b34,
-  0x487843,
+  // Old UE/Quaternius-inspired spread: several greens plus clear warm accents.
+  // These are presentation-only and are deterministically assigned per tree.
+  0x2f6638, // deep green
+  0x4d8045, // forest green
+  0x6f9f45, // fresh green
+  0x9db54e, // yellow-green
+  0xc19a46, // golden
+  0xb84f58, // autumn red
+  0xc96b78, // rose-red
 ] as const;
 
 export const TREE_BARK_PALETTE = [
