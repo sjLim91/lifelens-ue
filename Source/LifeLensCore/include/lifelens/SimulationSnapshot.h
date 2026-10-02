@@ -16,6 +16,8 @@
 
 namespace lifelens {
 
+inline constexpr std::size_t MaxPersistedSnapshotLogs=2048;
+
 
 struct SimulationRuntimeSnapshot {
     Goal goal=Goal::Idle;

@@ -2,6 +2,7 @@
 #include "lifelens/CivilizationSnapshotCodec.h"
 #include "lifelens/WorldGenerationSnapshotCodec.h"
 
+#include <algorithm>
 #include <unordered_set>
 
 namespace lifelens {
@@ -226,7 +227,17 @@ SimulationStateSnapshot Simulation::captureSnapshot() const
     snapshot.births=births_;
     snapshot.socialKnowledge=socialKnowledge_;
     snapshot.nextContextActionToken=nextContextActionToken_;
-    snapshot.logs=logs_;
+
+    // Runtime logs are diagnostic/event-stream history, not simulation
+    // authority. Persist only a bounded recent tail so long-lived worlds do not
+    // make save size grow linearly forever. The live Simulation keeps its full
+    // in-memory log for deterministic harness/audit callbacks; only the
+    // snapshot payload is bounded.
+    const std::size_t persistedLogCount=std::min(
+        logs_.size(),MaxPersistedSnapshotLogs);
+    snapshot.logs.assign(
+        logs_.end()-static_cast<std::ptrdiff_t>(persistedLogCount),
+        logs_.end());
 
     snapshot.runtime.reserve(runtime_.size());
     for(const auto& item:runtime_){
