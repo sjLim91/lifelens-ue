@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { observerActions } from '../state/observer-actions';
 import type { ObserverSnapshot } from '../state/observer-store';
 import { representativeStorage, settlementLabel } from '../state/settlement-observation';
@@ -8,21 +8,23 @@ import { formatMaterial } from './observer-format';
 /** Exactly one dialog, with native keyboard focus and Escape handling. */
 export function SettlementDetail({ snapshot }: { snapshot: ObserverSnapshot }) {
   const ref = useRef<HTMLDialogElement>(null);
-  const settlement = snapshot.civilization.available === true
-    ? snapshot.civilization.settlements?.find(entry => entry.id === snapshot.selectedSettlementId) : undefined;
+  const settlement = useMemo(() => snapshot.selectedSettlementId && snapshot.civilization.available === true
+    ? snapshot.civilization.settlements?.find(entry => entry.id === snapshot.selectedSettlementId) : undefined,
+  [snapshot.civilization, snapshot.selectedSettlementId]);
   useEffect(() => {
     const dialog = ref.current;
     if (settlement && dialog && !dialog.open) dialog.showModal();
     if (!settlement && dialog?.open) dialog.close();
   }, [settlement?.id]);
   const close = () => observerActions.selectSettlement(null);
-  const storage = settlement && representativeStorage(settlement.id, snapshot.civilization);
-  const routes = settlement ? (snapshot.civilization.tradeRoutes ?? []).filter(route =>
+  const storage = useMemo(() => settlement && representativeStorage(settlement.id, snapshot.civilization),
+    [settlement, snapshot.civilization]);
+  const routes = useMemo(() => settlement ? (snapshot.civilization.tradeRoutes ?? []).filter(route =>
     route.firstSettlement === settlement.id || route.secondSettlement === settlement.id)
-    .slice(0, WORLD_PRESENTATION.settlement.maxRelationsInPopup) : [];
-  const events = settlement ? snapshot.observations.filter(event =>
+    .slice(0, WORLD_PRESENTATION.settlement.maxRelationsInPopup) : [], [settlement, snapshot.civilization]);
+  const events = useMemo(() => settlement ? snapshot.observations.filter(event =>
     event.settlementId === settlement.id || event.relatedSettlementId === settlement.id)
-    .slice(0, WORLD_PRESENTATION.settlement.maxRecentEvents) : [];
+    .slice(0, WORLD_PRESENTATION.settlement.maxRecentEvents) : [], [settlement, snapshot.observations]);
   return (
     <dialog ref={ref} className="settlement-dialog" aria-labelledby="settlement-title" onCancel={close}>
       {settlement && <>
