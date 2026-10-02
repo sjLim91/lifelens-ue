@@ -1423,7 +1423,9 @@ void Simulation::beginPlan(Character& c,Runtime& r){
         for(const Goal candidate:{
             Goal::Eat,
             Goal::Drink,
-            Goal::UseToilet
+            Goal::UseToilet,
+            Goal::Sleep,
+            Goal::Wash
         }){
             const double need=needForGoal(c,candidate);
             if(need<urgentThreshold
@@ -1493,6 +1495,23 @@ void Simulation::beginPlan(Character& c,Runtime& r){
         r.navigationArrivalRadius=0;
         r.navigationHasTarget=true;
         r.navigationArrived=sameGridPos(r.pos,waterAccess);
+    }
+
+    // Freeze the toilet destination when the plan begins. Emergency outdoor
+    // relief is selected from the resident's current local position once; it
+    // must not move every simulated minute while the resident walks toward it.
+    if(chosen==Goal::UseToilet
+       && r.plan.size()==1
+       && r.plan.front().type==ActionType::EmergencyUse){
+        SanitationUseTarget sanitationTarget;
+        if(!sanitationUseTarget(c.id,sanitationTarget)){
+            failPlan(c,r);
+            return;
+        }
+        r.navigationTarget=sanitationTarget.pos;
+        r.navigationArrivalRadius=0;
+        r.navigationHasTarget=true;
+        r.navigationArrived=sameGridPos(r.pos,sanitationTarget.pos);
     }
 
     // Settlement bedding is a real destination in the autonomous/headless
@@ -1608,17 +1627,50 @@ void Simulation::advanceAction(Character& c,Runtime& r){
             SanitationUseTarget sanitationTarget;
             PrimitiveSanitationSite* sanitationSite=nullptr;
             if(r.goal==Goal::UseToilet){
-                if(!sanitationUseTarget(c.id,sanitationTarget)){
-                    failPlan(c,r);
-                    return;
+                if(!r.navigationHasTarget){
+                    if(!sanitationUseTarget(c.id,sanitationTarget)){
+                        failPlan(c,r);
+                        return;
+                    }
+                    r.navigationTarget=sanitationTarget.pos;
+                    r.navigationArrivalRadius=0;
+                    r.navigationHasTarget=true;
+                    r.navigationArrived=
+                        sameGridPos(r.pos,sanitationTarget.pos);
+                }else{
+                    sanitationTarget.kind=
+                        SanitationUseTargetKind::EmergencyOutdoor;
+                    sanitationTarget.pos=r.navigationTarget;
+                    sanitationTarget.siteId=0;
+
+                    // A designated site is identified only when the frozen
+                    // destination still exactly matches an active Core site.
+                    // If it was retired while the resident was travelling, the
+                    // same physical position safely degrades to outdoor relief
+                    // instead of changing destinations mid-plan.
+                    for(auto& site:world_.primitiveSanitationSites){
+                        if(!site.active
+                           || !validPrimitiveSanitationSiteKind(site.kind)
+                           || !sameGridPos(site.pos,r.navigationTarget)){
+                            continue;
+                        }
+                        sanitationTarget.kind=
+                            SanitationUseTargetKind::DesignatedArea;
+                        sanitationTarget.siteId=site.id;
+                        sanitationSite=&site;
+                        break;
+                    }
                 }
-                if(sanitationTarget.kind==SanitationUseTargetKind::DesignatedArea){
+
+                if(sanitationTarget.kind==SanitationUseTargetKind::DesignatedArea
+                   && sanitationSite==nullptr){
                     sanitationSite=findPrimitiveSanitationSite(
                         world_.primitiveSanitationSites,
                         sanitationTarget.siteId);
                     if(sanitationSite==nullptr
                        || !sanitationSite->active
-                       || !sameGridPos(sanitationSite->pos,sanitationTarget.pos)){
+                       || !sameGridPos(
+                           sanitationSite->pos,sanitationTarget.pos)){
                         failPlan(c,r);
                         return;
                     }
