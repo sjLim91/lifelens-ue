@@ -12,7 +12,10 @@ using namespace lifelens;
     } \
 } while(false)
 
-static bool runTeachingWindowScenario(bool nearEnough,bool boundaryMinute)
+static bool runTeachingWindowScenario(
+    bool nearEnough,
+    bool boundaryMinute,
+    bool busyTeacher=false)
 {
     Simulation sim(818181);
     sim.setupNewGame();
@@ -50,6 +53,10 @@ static bool runTeachingWindowScenario(bool nearEnough,bool boundaryMinute)
     }
 
     snapshot.runtime[teacherId].pos={0,0};
+    if(busyTeacher){
+        snapshot.runtime[teacherId].plan.push_back(
+            {ActionType::Idle,0,120});
+    }
     snapshot.runtime[learnerId].pos=
         nearEnough
             ? GridPos{1,0}
@@ -91,7 +98,7 @@ static bool runTeachingWindowScenario(bool nearEnough,bool boundaryMinute)
 
     const PendingContextActionObservation pending=
         sim.observePendingContextAction(teacherId);
-    if(boundaryMinute && nearEnough){
+    if(boundaryMinute && nearEnough && !busyTeacher){
         CHECK(pending.active);
         CHECK(pending.kind==ContextActionKind::KnowledgeTeaching);
         CHECK(pending.targetResident==learnerId);
@@ -150,6 +157,9 @@ static bool runAll()
 
     // Nearby residents still wait for the fixed six-hour decision boundary.
     CHECK(runTeachingWindowScenario(true,false));
+
+    // Teaching must not erase an already active self-care/work plan.
+    CHECK(runTeachingWindowScenario(true,true,true));
 
     std::cout
         <<"P0 teaching budget/local opportunity regression passed\n";
