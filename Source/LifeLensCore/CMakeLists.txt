@@ -215,6 +215,7 @@ lifelens_add_test(test_migration_pressure)
 lifelens_add_test(test_multiple_settlements)
 lifelens_add_test(test_intersettlement_trade)
 lifelens_add_test(test_household_migration_decline)
+lifelens_add_test(test_settlement_knowledge_specialization)
 
 
 # Browser client: compile the same LifeLensCore into WebAssembly. The generated
