@@ -22,12 +22,6 @@ inline constexpr double HouseholdMigrationLeaderThreshold =
     MigrationCandidatePressureThreshold;
 inline constexpr int HouseholdMigrationDecisionIntervalMinutes = 6*60;
 
-// Reuse Civilization/Explore travel without changing the persisted pending
-// context layout. Quantity is otherwise unused by Explore; this positive marker
-// only means "arrival is the migration outcome even if another group member
-// materialized the destination chunk first".
-inline constexpr int HouseholdMigrationExploreMarker = 1;
-
 // Empty infrastructure should not remain permanently pristine. This extra wear
 // is deliberately slow (about one season to major degradation) and stacks with
 // ordinary weather/use wear already owned by facility progression.
