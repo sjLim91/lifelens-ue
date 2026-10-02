@@ -634,7 +634,7 @@ The browser only observes these Core-authored facts. It does not diagnose reside
 ## Milestone C5 — Education / Recording / Specialization / Economy / Institutions
 
 Owner: Jjun Core/Simulation/Observer/Web.
-Status: 🟡 In progress — C5-A/B society/economy and persistent association foundations implemented.
+Status: ✅ Complete — C5-A~D education, specialization, exchange, resource policy, record-media and institution coordination foundation closed.
 
 C5-A implemented foundation:
 
@@ -650,16 +650,16 @@ C5-A implemented foundation:
 - ✅ SocialKnowledge facts/receipts form an oral-tradition → repeated-tradition → proto-recordkeeping precursor without granting fictional writing.
 - ✅ Web Observer exposes roles, demand pressure, exchange history, institutions and record stage.
 
-Remaining C5 work:
+C5-B/C/D closeout:
 
 - ✅ child/teen education participation follows LifeStage learning capacity; toddler technical education is excluded.
 - ✅ repeated technique teaching creates persistent apprenticeship relationships and feeds future autonomous teaching selection.
-- ⬜ explicit production task specialization and role handoff/coordination.
-- ⬜ richer ownership/household/shared-resource negotiation beyond current physical inventory/storage authority.
+- ✅ production task coordination is derived from emergent role + settlement demand, with generalists providing fallback coverage; matching directives feed real Civilization utility rather than assigning fixed jobs.
+- ✅ resource policy now protects personal reserve first and household reserve second, then distinguishes tradable surplus from StorageCommons-backed shared surplus; only real Store completion records a shared contribution.
 - ✅ repeated reciprocal exchange creates persistent trade partnerships and feeds future exchange selection.
-- ⬜ durable proto-record media / writing Technology only when prerequisites emerge causally.
-- ✅ active derived institutions create persistent qualifying membership facts and membership feeds learning/exchange behavior.
-- ⬜ deeper institution-led production/research coordination beyond current membership feedback.
+- ✅ proto-recordkeeping can create physical clay/wood RecordTablet media by consuming real material and preserving a selected SocialKnowledge fact. This is a durable-record precursor, not a free Writing Technology unlock; future writing remains gated by the Technology graph and causal prerequisites.
+- ✅ active derived institutions create persistent qualifying membership facts; Learning/Exchange membership feeds those behaviors and Production/Storage/Inquiry membership now feeds actual production, resource and experiment coordination.
+- ✅ institution-backed coordination is observable through resident task directives, contribution history and durable record counts.
 - ✅ technology adoption/acceptance remains authoritative from C3-F and feeds this stage.
 
 No one real-world political/economic system is a mandatory endpoint.
