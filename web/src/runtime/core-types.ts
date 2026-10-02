@@ -907,6 +907,7 @@ export type CivilizationEraId =
 export interface CivilizationEraRequirement {
   id: string;
   satisfied: boolean;
+  mandatory?: boolean;
 }
 
 export interface CivilizationWorldPayload {
@@ -946,9 +947,11 @@ export interface CivilizationWorldPayload {
   activeTransformationCount?: number;
   currentEra?: CivilizationEraId;
   eraOrdinal?: number;
+  eraMinimumSatisfied?: number;
   eraEvidence?: CivilizationEraRequirement[];
   nextEra?: CivilizationEraId;
   nextEraOrdinal?: number;
+  nextEraMinimumSatisfied?: number;
   nextEraRequirements?: CivilizationEraRequirement[];
   technologyPopulation?: CivilizationTechnologyPopulation[];
   transformations?: CivilizationTransformation[];
