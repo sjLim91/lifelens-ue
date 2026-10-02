@@ -13,7 +13,6 @@ constexpr int CivilizationKnowledgeWitnessRadiusTiles=2;
 // Teaching is a slow social/learning opportunity, not a full-time occupation.
 // Long-range knowledge diffusion should happen when trade/migration brings
 // residents together, rather than launching a two-day teaching expedition.
-constexpr int KnowledgeTeachingDecisionIntervalMinutes=6*60;
 constexpr int KnowledgeTeachingMaxTravelDistanceGrid=
     SettlementServiceRadiusGrid*2;
 }
