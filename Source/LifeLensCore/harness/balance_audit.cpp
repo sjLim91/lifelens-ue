@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include "lifelens/FamilyProgression.h"
 #include "lifelens/Health.h"
 #include "lifelens/Simulation.h"
 #include "lifelens/SimulationSnapshotCodec.h"
@@ -303,6 +304,128 @@ void observeMigrationHour(
     }
 }
 
+struct PersistentStateGrowthMetrics {
+    std::size_t memoryEntries=0;
+    std::size_t beliefEntries=0;
+    std::size_t lifeHistoryEntries=0;
+    std::size_t socialFacts=0;
+    std::size_t knowledgeReceipts=0;
+    std::size_t relationships=0;
+    std::size_t romances=0;
+    std::size_t resourceNodes=0;
+    std::size_t resourcePatches=0;
+    std::size_t environmentalResidues=0;
+};
+
+PersistentStateGrowthMetrics persistentStateGrowthMetrics(
+    const Simulation& sim)
+{
+    PersistentStateGrowthMetrics result;
+    const World& world=sim.world();
+    for(const Character& resident:world.characters){
+        result.memoryEntries+=resident.memory.entries.size();
+        result.beliefEntries+=resident.beliefs.beliefs.size();
+        result.lifeHistoryEntries+=resident.lifeHistory.size();
+    }
+    result.socialFacts=sim.socialKnowledge().facts().size();
+    result.knowledgeReceipts=sim.socialKnowledge().receipts().size();
+    result.relationships=sim.relationships().size();
+    result.romances=sim.romances().all().size();
+    result.resourceNodes=world.resourceNodes.size();
+    for(const GeneratedNaturalChunk& chunk:world.generatedNaturalChunks){
+        result.resourcePatches+=chunk.resourcePatches.size();
+    }
+    result.environmentalResidues=world.environmentalResidues.all().size();
+    return result;
+}
+
+void emitFamilyDiagnostics(
+    const Simulation& sim,
+    std::uint64_t seed,
+    int day)
+{
+    const World& world=sim.world();
+    for(const RomancePair& pair:sim.romances().all()){
+        if(pair.stage!=RomanceStage::Married) continue;
+        const Character* first=findResident(world,pair.first);
+        const Character* second=findResident(world,pair.second);
+        if(first==nullptr || second==nullptr) continue;
+
+        const Character* gestationalParent=nullptr;
+        const Character* partner=nullptr;
+        if(first->sex==Sex::Female && second->sex==Sex::Male){
+            gestationalParent=first;
+            partner=second;
+        }else if(second->sex==Sex::Female && first->sex==Sex::Male){
+            gestationalParent=second;
+            partner=first;
+        }
+
+        std::cout
+            <<"FAMILY_DIAG"
+            <<" seed="<<seed
+            <<" day="<<day
+            <<" first="<<pair.first
+            <<" second="<<pair.second
+            <<" marriedMinute="<<pair.marriedMinute;
+
+        if(gestationalParent==nullptr || partner==nullptr){
+            std::cout<<" conceptionPair=0\n";
+            continue;
+        }
+
+        const Relationship* gestationalToPartner=
+            sim.relationships().find(
+                gestationalParent->id,partner->id);
+        const Relationship* partnerToGestational=
+            sim.relationships().find(
+                partner->id,gestationalParent->id);
+        if(gestationalToPartner==nullptr
+           || partnerToGestational==nullptr){
+            std::cout<<" conceptionPair=1 relationshipData=0\n";
+            continue;
+        }
+
+        const ReproductiveProfile gestationalProfile=
+            autonomousReproductiveProfile(
+                *gestationalParent,world.minute);
+        const ReproductiveProfile partnerProfile=
+            autonomousReproductiveProfile(
+                *partner,world.minute);
+        const PregnancyContext context=autonomousPregnancyContext(
+            *gestationalParent,*partner,
+            *gestationalToPartner,*partnerToGestational);
+        const PregnancyEvaluation evaluation=
+            evaluatePregnancyAttempt(
+                *gestationalParent,*partner,
+                gestationalProfile,partnerProfile,
+                *gestationalToPartner,*partnerToGestational,
+                context);
+        const bool activePregnancy=
+            sim.pregnancies().activeFor(
+                gestationalParent->id)!=nullptr;
+
+        std::cout
+            <<" conceptionPair=1"
+            <<" gestational="<<gestationalParent->id
+            <<" partner="<<partner->id
+            <<" gestationalAge="<<gestationalProfile.ageYears
+            <<" partnerAge="<<partnerProfile.ageYears
+            <<" eligible="<<(evaluation.biologicallyEligible ? 1 : 0)
+            <<" ready="<<(evaluation.ready ? 1 : 0)
+            <<" readiness="<<std::fixed<<std::setprecision(4)
+            <<evaluation.attemptReadiness
+            <<" conceptionProbability="
+            <<evaluation.conceptionProbability
+            <<" activePregnancy="<<(activePregnancy ? 1 : 0)
+            <<" gestationalHealth="<<gestationalProfile.health
+            <<" gestationalFertility="<<gestationalProfile.fertility
+            <<" partnerFertility="<<partnerProfile.fertility
+            <<" externalStress="<<context.externalStress
+            <<"\n";
+    }
+}
+
 std::size_t encodedSnapshotBytes(Simulation& sim)
 {
     std::vector<std::uint8_t> bytes;
@@ -395,6 +518,27 @@ void emitCheckpoint(
         <<" snapshotBytes="<<snapshotBytes
         <<" elapsedMs="<<elapsedMs
         <<"\n";
+
+    const PersistentStateGrowthMetrics growth=
+        persistentStateGrowthMetrics(sim);
+    std::cout
+        <<"STATE_GROWTH"
+        <<" seed="<<seed
+        <<" day="<<day
+        <<" memoryEntries="<<growth.memoryEntries
+        <<" beliefEntries="<<growth.beliefEntries
+        <<" lifeHistoryEntries="<<growth.lifeHistoryEntries
+        <<" socialFacts="<<growth.socialFacts
+        <<" knowledgeReceipts="<<growth.knowledgeReceipts
+        <<" relationships="<<growth.relationships
+        <<" romances="<<growth.romances
+        <<" resourceNodes="<<growth.resourceNodes
+        <<" resourcePatches="<<growth.resourcePatches
+        <<" environmentalResidues="<<growth.environmentalResidues
+        <<" persistedLogTail="<<std::min(
+            sim.logs().size(),MaxPersistedSnapshotLogs)
+        <<"\n";
+    emitFamilyDiagnostics(sim,seed,day);
 
     std::cout
         <<"SETTLEMENT"
