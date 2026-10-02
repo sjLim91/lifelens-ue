@@ -1,6 +1,7 @@
 import { WORLD_PRESENTATION } from './world-presentation-config';
 import * as THREE from 'three';
-import type { CivilizationWorldPayload, CivilizationWorldFacility, HumanTrace, TerrainWindow } from '../runtime/core-types';
+import type { CivilizationWorldPayload, CivilizationWorldFacility, CivilizationWorldStorage, HumanTrace, TerrainWindow } from '../runtime/core-types';
+import { storedGoodsPiles } from './stored-goods-presentation';
 import { WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
 import { visibleHumanTraces } from '../state/human-traces';
 import { createTerrainElevationSampler } from './terrain-geometry';
@@ -159,6 +160,8 @@ export class FacilityLayer {
   private civilizationWorldSeed: string | undefined;
   private readonly structures = new Map<string, { signature: string; group: THREE.Group }>();
   private civilization: CivilizationWorldPayload = {};
+  private readonly facilitiesById = new Map<string, CivilizationWorldFacility>();
+  private readonly storagesById = new Map<string, CivilizationWorldStorage>();
   private readonly wornMaterials = new Map<string, THREE.MeshStandardMaterial>();
   private readonly glowTexture = (() => {
     const size = WORLD_PRESENTATION.fire.textureSize;
@@ -181,13 +184,17 @@ export class FacilityLayer {
   setCivilization(civilization: CivilizationWorldPayload, terrain: TerrainWindow): void {
     this.civilizationWorldSeed = terrain.worldSeed;
     this.civilization = civilization.available === true ? civilization : {};
+    this.facilitiesById.clear();
+    this.storagesById.clear();
+    for (const entry of this.civilization.facilities ?? []) this.facilitiesById.set(`facility:${entry.id}`, entry);
+    for (const entry of this.civilization.storages ?? []) this.storagesById.set(entry.id, entry);
     this.setTerrain(terrain);
   }
 
   private facility(trace: FacilityTrace): CivilizationWorldFacility | undefined {
-    return this.civilization.facilities?.find(facility =>
-      trace.id === `facility:${facility.id}` && trace.gridX === facility.gridX
-      && trace.gridY === facility.gridY && trace.facilityKind === facility.kind);
+    const facility = this.facilitiesById.get(trace.id);
+    return facility && trace.gridX === facility.gridX && trace.gridY === facility.gridY
+      && trace.facilityKind === facility.kind ? facility : undefined;
   }
 
 
@@ -196,7 +203,9 @@ export class FacilityLayer {
   }
 
   setTerrain(window: TerrainWindow): void {
-    if (window.worldSeed !== this.civilizationWorldSeed) this.civilization = {};
+    if (window.worldSeed !== this.civilizationWorldSeed) {
+      this.civilization = {}; this.facilitiesById.clear(); this.storagesById.clear();
+    }
     const facilities = visibleHumanTraces(window)
       .filter((trace): trace is FacilityTrace => trace.kind === 'Facility');
     const signature = JSON.stringify([
@@ -206,7 +215,7 @@ export class FacilityLayer {
       window.chunks.map(chunk => [chunk.x, chunk.y, chunk.elevation01]),
       facilities.map((trace) => [
         this.facility(trace)?.durability,
-        this.civilization.storages?.find(storage => storage.id === this.facility(trace)?.linkedStorage)?.totalUnits,
+        this.storagesById.get(this.facility(trace)?.linkedStorage ?? ''),
         trace.id,
         trace.gridX,
         trace.gridY,
@@ -265,8 +274,8 @@ export class FacilityLayer {
       ) * elevationScale;
 
       const facility = this.facility(trace);
-      const storage = this.civilization.storages?.find(entry => entry.id === facility?.linkedStorage);
-      const structureSignature = JSON.stringify([window.worldSeed, trace, facility?.durability, storage?.totalUnits]);
+      const storage = this.storagesById.get(facility?.linkedStorage ?? '');
+      const structureSignature = JSON.stringify([window.worldSeed, trace, facility?.durability, storage]);
       const cached = this.structures.get(trace.id);
       if (cached?.signature === structureSignature) {
         cached.group.position.set(worldX, groundY + 0.025, worldZ);
@@ -318,6 +327,7 @@ export class FacilityLayer {
     for (const material of this.wornMaterials.values()) material.dispose();
     this.wornMaterials.clear();
     this.structures.clear();
+    this.facilitiesById.clear(); this.storagesById.clear();
     this.glowMaterial.dispose();
     this.glowTexture.dispose();
     this.boxGeometry.dispose();
@@ -341,15 +351,21 @@ export class FacilityLayer {
     const facility = this.facility(trace);
     if (trace.facilityKind !== 'PrimitiveStorage' || trace.state !== 'Operational'
       || !facility?.linkedStorage) return;
-    const storage = this.civilization.storages?.find(entry => entry.id === facility.linkedStorage);
-    if (!storage || !Number.isFinite(storage.totalUnits) || storage.totalUnits <= 0) return;
+    const storage = this.storagesById.get(facility.linkedStorage);
+    const piles = storedGoodsPiles(storage);
     const config = WORLD_PRESENTATION.storage;
-    const count = Math.min(config.maxPiles, Math.ceil(storage.totalUnits / config.unitsPerPile));
-    for (let i = 0; i < count; i++) {
+    const materials: Record<string, THREE.Material> = {
+      Wood: this.woodMaterial, Stone: this.stoneMaterial, Fiber: this.thatchMaterial,
+      Clay: this.earthMaterial, PlantFood: this.cropMaterial, Charcoal: this.charMaterial,
+      CopperOre: this.stoneMaterial, TinOre: this.stoneMaterial, IronOre: this.stoneMaterial,
+    };
+    for (const [i, pile] of piles.entries()) {
       // Inside the existing store footprint: no extra buildings or free stock.
-      this.addBox(group, trace, this.beddingMaterial,
-        [(i - (count - 1) / 2) * config.width, 0.95, 0],
-        [config.width * 0.85, config.height, config.depth], [0, 0, 0], 950 + i);
+      const height = config.height * pile.fill;
+      this.addBox(group, trace, materials[pile.material ?? ''] ?? this.beddingMaterial,
+        [(i - (piles.length - 1) / 2) * config.width, 0.95 + height / 2, 0],
+        [config.width * 0.85, height, config.depth], [0, 0, 0], 950 + i);
+      group.children[group.children.length - 1].userData.storedGoods = pile;
     }
   }
 
@@ -363,7 +379,7 @@ export class FacilityLayer {
     group.traverse(object => {
       if (!(object instanceof THREE.Mesh) || !(object.material instanceof THREE.MeshStandardMaterial)
         || object.material === this.flameMaterial || object.material === this.cropMaterial
-        || object.material === this.ripeCropMaterial) return;
+        || object.material === this.ripeCropMaterial || object.userData.storedGoods) return;
       const original = object.material;
       const key = `${original.uuid}:${wear}`;
       let material = this.wornMaterials.get(key);

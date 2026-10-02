@@ -24,6 +24,7 @@ import {
 import { RenderModeControl } from './ui/render-mode-control';
 import { HumanTraceDetail, HumanTracePanel } from './ui/human-traces';
 import { WorldActivityPanel } from './ui/world-activity';
+import { SettlementDetail } from './ui/settlement-detail';
 import { FastForwardControl } from './ui/fast-forward-control';
 import { visibleHumanTraces } from './state/human-traces';
 import { formatResidentName } from './ui/observer-format';
@@ -83,7 +84,7 @@ function WorldViewport({
         onClick={onOpenSeed}
         aria-label="현재 월드 시드 보기"
       >
-        Seed #{worldSeed ?? '—'}
+        시드 #{worldSeed ?? '—'}
       </button>
 
       {focusedObservation ? (
@@ -210,7 +211,7 @@ function ObserverPanel({
         <details className="seed-replay">
           <summary>시드로 동일한 세계 재현</summary>
           <label className="field">
-            WorldSeed
+            월드 시드
             <input
               inputMode="numeric"
               value={seed}
@@ -368,7 +369,7 @@ function MobileObserverModal({
       setSeedError(true);
       return;
     }
-    if (!window.confirm(`현재 세계를 종료하고 Seed #${trimmed}로 다시 시작할까요?`)) {
+    if (!window.confirm(`현재 세계를 종료하고 시드 #${trimmed}로 다시 시작할까요?`)) {
       return;
     }
 
@@ -380,7 +381,7 @@ function MobileObserverModal({
   const replayCurrentSeed = (): void => {
     if (currentSeed === undefined || currentSeed === null) return;
     const value = String(currentSeed);
-    if (!window.confirm(`현재 세계를 종료하고 Seed #${value}로 처음부터 재현할까요?`)) {
+    if (!window.confirm(`현재 세계를 종료하고 시드 #${value}로 처음부터 재현할까요?`)) {
       return;
     }
     observerActions.createWorld(value);
@@ -463,7 +464,7 @@ function MobileObserverModal({
             <>
               <div className="mobile-world-summary">
                 <button type="button" onClick={() => onView('seed')}>
-                  <span>현재 Seed</span>
+                  <span>현재 시드</span>
                   <b>#{currentSeed ?? '—'}</b>
                 </button>
                 <div>
@@ -522,7 +523,7 @@ function MobileObserverModal({
 
           {view === 'seed' && (
             <div className="mobile-seed-detail">
-              <span>현재 실행 중인 WorldSeed</span>
+              <span>현재 실행 중인 월드 시드</span>
               <strong>#{currentSeed ?? '—'}</strong>
               <p>
                 이 값으로 같은 월드를 처음부터 다시 생성할 수 있습니다.
@@ -533,7 +534,7 @@ function MobileObserverModal({
                   onClick={() => void copyCurrentSeed()}
                   disabled={currentSeed === undefined || currentSeed === null}
                 >
-                  {seedCopied ? '복사됨' : 'Seed 복사'}
+                  {seedCopied ? '복사됨' : '시드 복사'}
                 </button>
                 <button
                   type="button"
@@ -544,7 +545,7 @@ function MobileObserverModal({
                     || currentSeed === null
                   }
                 >
-                  이 Seed로 재현
+                  이 시드로 재현
                 </button>
               </div>
             </div>
@@ -632,7 +633,7 @@ function MobileObserverModal({
               <section>
                 <h3>월드</h3>
                 <div className="mobile-current-seed">
-                  <span>현재 Seed</span>
+                  <span>현재 시드</span>
                   <b>#{currentSeed ?? '—'}</b>
                 </div>
                 <button
@@ -669,7 +670,7 @@ function MobileObserverModal({
                   onClick={createWorldFromSeed}
                   disabled={controlsDisabled}
                 >
-                  입력한 Seed로 생성
+                  입력한 시드로 생성
                 </button>
               </section>
 
@@ -733,6 +734,7 @@ export default function App() {
         onView={setMobileModal}
         onClose={() => setMobileModal(null)}
       />
+      <SettlementDetail snapshot={snapshot} />
     </div>
   );
 }

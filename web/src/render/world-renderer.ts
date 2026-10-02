@@ -71,6 +71,8 @@ export class WorldRenderer {
     this.world.setSimulationSpeed(speed);
   }
 
+  breakFootTrafficContinuity(): void { this.world.breakFootTrafficContinuity(); }
+
   pickResident(clientX: number, clientY: number): string | null {
     const rect = this.renderer.domElement.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) return null;
@@ -95,6 +97,15 @@ export class WorldRenderer {
 
   setSelectedHumanTrace(id: string | null): void {
     this.world.setSelectedHumanTrace(id);
+  }
+
+  setSelectedSettlement(id: string | null): void { this.world.setSelectedSettlement(id); }
+
+  pickSettlement(clientX: number, clientY: number): string | null {
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return null;
+    return this.world.pickSettlement(((clientX - rect.left) / rect.width) * 2 - 1,
+      -(((clientY - rect.top) / rect.height) * 2 - 1));
   }
 
   setAuthoritativeSpatialTargets(

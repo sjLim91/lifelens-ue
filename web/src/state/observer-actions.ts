@@ -9,6 +9,7 @@ export interface ObserverActionHandlers {
   recenterObserver: () => void;
   selectResident: (residentId: string | null) => void;
   selectHumanTrace: (id: string | null, focus?: boolean) => void;
+  selectSettlement: (id: string | null, focus?: boolean) => void;
   focusObservation: (event: ObservationEvent) => void;
   clearObservationFocus: () => void;
 }
@@ -54,6 +55,10 @@ class ObserverActions {
 
   selectHumanTrace(id: string | null, focus = false): void {
     this.handlers?.selectHumanTrace(id, focus);
+  }
+
+  selectSettlement(id: string | null, focus = false): void {
+    this.handlers?.selectSettlement(id, focus);
   }
 
   focusObservation(event: ObservationEvent): void {

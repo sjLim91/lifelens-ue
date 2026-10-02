@@ -170,7 +170,11 @@ export function startObserverEngine(): void {
       if (!threeWorldRenderer) return;
       const residentId = threeWorldRenderer.pickResident(clientX, clientY);
       if (residentId) selectResident(residentId);
-      else selectHumanTrace(threeWorldRenderer.pickHumanTrace(clientX, clientY));
+      else {
+        const traceId = threeWorldRenderer.pickHumanTrace(clientX, clientY);
+        if (traceId) selectHumanTrace(traceId);
+        else selectSettlement(threeWorldRenderer.pickSettlement(clientX, clientY));
+      }
     },
   });
   
@@ -244,6 +248,7 @@ export function startObserverEngine(): void {
       terrain,
     );
     threeWorldRenderer?.setSelectedHumanTrace(observerStore.getSnapshot().selectedHumanTraceId);
+    threeWorldRenderer?.setSelectedSettlement(observerStore.getSnapshot().selectedSettlementId);
     threeWorldRenderer?.setResidents(
       residentSnapshot,
       terrain,
@@ -289,6 +294,7 @@ export function startObserverEngine(): void {
   function selectResident(residentId: string | null): void {
     observerStore.selectResident(residentId);
     threeWorldRenderer?.setSelectedHumanTrace(null);
+    threeWorldRenderer?.setSelectedSettlement(null);
     threeWorldRenderer?.setSelectedResident(
       observerStore.getSnapshot().selectedResidentId,
     );
@@ -299,9 +305,25 @@ export function startObserverEngine(): void {
     const selectedId = observerStore.getSnapshot().selectedHumanTraceId;
     threeWorldRenderer?.setSelectedResident(null);
     threeWorldRenderer?.setSelectedHumanTrace(selectedId);
+    threeWorldRenderer?.setSelectedSettlement(observerStore.getSnapshot().selectedSettlementId);
     const trace = visibleHumanTraces(terrain).find(candidate => candidate.id === selectedId);
     if (!focus || !trace || !worldSession) return;
     const target = humanTraceFocus(trace);
+    localPanX = target.panX;
+    localPanZ = target.panZ;
+    worldSession.moveObserver(target.centerChunkX - centerX, target.centerChunkY - centerY);
+    refresh();
+  }
+
+  function selectSettlement(id: string | null, focus = false): void {
+    observerStore.selectSettlement(id);
+    const selectedId = observerStore.getSnapshot().selectedSettlementId;
+    threeWorldRenderer?.setSelectedResident(null);
+    threeWorldRenderer?.setSelectedHumanTrace(null);
+    threeWorldRenderer?.setSelectedSettlement(selectedId);
+    const settlement = observerStore.getSnapshot().civilization.settlements?.find(entry => entry.id === selectedId);
+    if (!focus || !settlement || !worldSession) return;
+    const target = humanTraceFocus(settlement);
     localPanX = target.panX;
     localPanZ = target.panZ;
     worldSession.moveObserver(target.centerChunkX - centerX, target.centerChunkY - centerY);
@@ -342,6 +364,7 @@ export function startObserverEngine(): void {
     observerStore.focusObservation(event.id, preferredResidentId);
     threeWorldRenderer?.setSelectedHumanTrace(null);
     threeWorldRenderer?.setSelectedResident(preferredResidentId);
+    threeWorldRenderer?.setSelectedSettlement(null);
 
     if (gridX === undefined || gridY === undefined) return;
     const target = humanTraceFocus({ gridX, gridY });
@@ -401,6 +424,7 @@ export function startObserverEngine(): void {
     const totalMinutes = requestedDays * MINUTES_PER_DAY;
     fastForwardRunning = true;
     simulationClock?.stop();
+    threeWorldRenderer?.breakFootTrafficContinuity();
 
     try {
       worldSession.forceWorldActivityRefresh();
@@ -429,6 +453,7 @@ export function startObserverEngine(): void {
 
       worldSession.forceWorldActivityRefresh();
       worldSession.recenterToResidents();
+      threeWorldRenderer?.breakFootTrafficContinuity();
       refresh();
 
       const afterSnapshot = observerStore.getSnapshot();
@@ -451,6 +476,7 @@ export function startObserverEngine(): void {
       console.error('LifeLens day fast-forward failed', error);
     } finally {
       fastForwardRunning = false;
+      threeWorldRenderer?.breakFootTrafficContinuity();
       simulationClock?.resetAccumulator();
       simulationClock?.start();
     }
@@ -492,6 +518,7 @@ export function startObserverEngine(): void {
     recenterObserver,
     selectResident,
     selectHumanTrace,
+    selectSettlement,
     focusObservation,
     clearObservationFocus: () => observerStore.clearObservationFocus(),
   });

@@ -21,6 +21,7 @@ import {
   formatSocialIntent,
   formatTechnique,
 } from '../localization/korean';
+import { settlementLabel } from './settlement-observation';
 
 export type ObservationKind =
   | 'activity'
@@ -40,6 +41,8 @@ export interface ObservationEvent {
   residentId?: string;
   residentName?: string;
   targetResidentId?: string;
+  settlementId?: string;
+  relatedSettlementId?: string;
   focusGridX?: number;
   focusGridY?: number;
   summary: string;
@@ -657,6 +660,46 @@ function discoveryKey(discovery: CivilizationDiscovery): string {
   ].join('|');
 }
 
+export function observedSettlementEvents(
+  previous: CivilizationWorldPayload | undefined,
+  next: CivilizationWorldPayload | undefined,
+): ObservationEvent[] {
+  if (previous?.available !== true || next?.available !== true || previous === next
+    || !Number.isFinite(next.minute) || Number(next.minute) <= Number(previous.minute)) return [];
+  const minute = Number(next.minute);
+  const events: ObservationEvent[] = [];
+  // Payload arrays can be unavailable; that is not an empty authoritative list.
+  if (Array.isArray(previous.settlements) && Array.isArray(next.settlements)) {
+    const before = new Map(previous.settlements.map(entry => [entry.id, entry]));
+    for (const entry of next.settlements) {
+      const old = before.get(entry.id);
+      if (!old || (!old.established && entry.established)) events.push({
+        id: `settlement:formation:${entry.id}:${minute}`, kind: 'civilization', minute,
+        settlementId: entry.id, focusGridX: entry.gridX, focusGridY: entry.gridY,
+        summary: old ? `${settlementLabel(entry.id)}의 정착 기반이 형성되었습니다.`
+          : `새로운 생활권 ${settlementLabel(entry.id)}이 관측되었습니다.`,
+        detail: `주민 ${entry.residentCount}명 · 시설 ${entry.facilityCount}곳 · 저장소 ${entry.storageSiteCount}곳`,
+        importance: 'high',
+      });
+    }
+  }
+  if (Array.isArray(previous.tradeRoutes) && Array.isArray(next.tradeRoutes)) {
+    const before = new Map(previous.tradeRoutes.map(entry => [entry.id, entry]));
+    for (const route of next.tradeRoutes) {
+      if (!route.active || before.get(route.id)?.active) continue;
+      events.push({
+        id: `settlement:trade-active:${route.id}:${minute}`, kind: 'civilization', minute,
+        settlementId: route.firstSettlement, relatedSettlementId: route.secondSettlement,
+        focusGridX: route.firstGridX, focusGridY: route.firstGridY,
+        summary: `${settlementLabel(route.firstSettlement)}과 ${settlementLabel(route.secondSettlement)} 사이의 교역이 활성화되었습니다.`,
+        detail: `실제 교환 ${route.exchangeCount}회 · 거래 파트너 ${route.partnerCount}쌍`,
+        importance: 'high',
+      });
+    }
+  }
+  return events;
+}
+
 function exactCivilizationEvents(
   previous: CivilizationWorldPayload | undefined,
   next: CivilizationWorldPayload | undefined,
@@ -668,6 +711,7 @@ function exactCivilizationEvents(
   const names = residentNames(residents);
   const events: ObservationEvent[] = [];
 
+  events.push(...observedSettlementEvents(previous, next));
   const previousDiscoveries = new Set(
     (previous.recentDiscoveries ?? []).map(discoveryKey),
   );

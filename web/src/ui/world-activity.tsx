@@ -5,6 +5,8 @@ import type {
   Resident,
   WorldObjectsPayload,
 } from '../runtime/core-types';
+import { observerActions } from '../state/observer-actions';
+import { settlementLabel } from '../state/settlement-observation';
 import {
   KOREAN_COLLECTIVE_RECORD_STAGE_LABELS,
   KOREAN_SOCIETY_COORDINATION_TASK_LABELS,
@@ -255,15 +257,15 @@ export function WorldActivityPanel({
       {settlements.length > 0 ? (
         <div className="focused-life-section">
           <h3>정착지</h3>
-          {settlements.slice(0, 6).map((settlement, index) => (
+          {settlements.slice(0, 6).map((settlement) => (
             <button
               type="button"
               className="observation-event observation-event-button"
               key={settlement.id}
-              onClick={() => onFocusGrid(settlement.gridX, settlement.gridY)}
+              onClick={() => observerActions.selectSettlement(settlement.id, true)}
             >
               <strong>
-                정착지 {index + 1}
+                {settlementLabel(settlement.id)}
                 {settlement.established ? ' · 정착 기반 형성' : ' · 형성 중'}
               </strong>
               <span className="observation-event-detail">
@@ -272,7 +274,7 @@ export function WorldActivityPanel({
                 시설 {settlement.operationalFacilityCount}/{settlement.facilityCount}
                 {' · '}
                 저장소 {settlement.storageSiteCount}
-                {' · 위치 보기'}
+                {' · 생활권 살펴보기'}
               </span>
             </button>
           ))}
