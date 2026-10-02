@@ -1420,13 +1420,28 @@ void Simulation::beginPlan(Character& c,Runtime& r){
         || c.needs.hygiene>=urgentThreshold;
 
     if(planningAllowed){
+        // Critical Hunger/Thirst preemption and replanning must agree on the
+        // next action. If a directly satisfiable life-maintenance need is in
+        // the critical band, do not immediately re-select a numerically larger
+        // bladder need and restart the exact toilet plan we just preempted.
+        // Once Hunger/Thirst leaves the critical band, ordinary urgent utility
+        // can select UseToilet again.
         for(const Goal candidate:{
             Goal::Eat,
             Goal::Drink,
             Goal::UseToilet
         }){
+            if(criticalSurvivalPressure
+               && candidate==Goal::UseToilet){
+                continue;
+            }
+
             const double need=needForGoal(c,candidate);
-            if(need<urgentThreshold
+            const double requiredThreshold=
+                criticalSurvivalPressure
+                    ? CriticalSurvivalPreemptThreshold
+                    : urgentThreshold;
+            if(need<requiredThreshold
                || !actionAvailableFor(world_,c,candidate)){
                 continue;
             }
@@ -1452,7 +1467,9 @@ void Simulation::beginPlan(Character& c,Runtime& r){
     // Survival needs that can be satisfied immediately pre-empt settlement
     // projects and social activity. If an urgent need cannot yet be satisfied,
     // ordinary civilization remains available for acquisition/progression.
-    if(planningAllowed && urgentPhysicalGoal==Goal::Idle
+    if(planningAllowed
+       && !criticalSurvivalPressure
+       && urgentPhysicalGoal==Goal::Idle
        && tryCivilizationDecision(c,r)) return;
     if(planningAllowed && !hasUrgentPhysicalNeed
        && trySocialDecision(c,r)) return;
