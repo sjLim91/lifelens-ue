@@ -12,6 +12,8 @@
 
 namespace lifelens {
 
+inline constexpr int KnowledgeTeachingDecisionIntervalMinutes=6*60;
+
 enum class TechniqueTransmissionMode {
     SelfDiscovery,
     DirectWitness,
