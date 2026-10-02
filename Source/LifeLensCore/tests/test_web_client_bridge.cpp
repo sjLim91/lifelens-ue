@@ -72,6 +72,7 @@ int main()
     assert(residents.find("\"hasTargetGrid\":") != std::string::npos);
     assert(residents.find("\"hasObjectTarget\":") != std::string::npos);
     assert(residents.find("\"emergencyFallback\":") != std::string::npos);
+    assert(residents.find("\"sleepContext\":") != std::string::npos);
     assert(residents.find("\"directNaturalWaterSource\":") != std::string::npos);
     assert(residents.find("\"contextActionToken\":") != std::string::npos);
     assert(residents.find("\"hasPosition\":true") != std::string::npos);
@@ -145,6 +146,10 @@ int main()
     assert(civilization.find("\"storages\":[") != std::string::npos);
     assert(civilization.find("\"facilities\":[") != std::string::npos);
     assert(civilization.find("\"recentDiscoveries\":[") != std::string::npos);
+    assert(civilization.find("\"currentEra\":\"NaturalSurvival\"") != std::string::npos);
+    assert(civilization.find("\"eraEvidence\":[") != std::string::npos);
+    assert(civilization.find("\"nextEra\":\"EarlySettlement\"") != std::string::npos);
+    assert(civilization.find("\"nextEraRequirements\":[") != std::string::npos);
 
     const std::string windowedCivilization =
         bridge.civilizationWorldWindowJson(16,0,0,1);
