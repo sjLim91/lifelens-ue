@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { ResidentCivilizationItem } from '../runtime/core-types';
+import type { ResidentCivilizationItem, ResidentPresentationDirective } from '../runtime/core-types';
 
 const DISPLAY_ITEMS = [
   'DiggingStick', 'StoneCuttingTool', 'StoneHammer', 'BronzeAxe', 'BronzePick',
@@ -13,6 +13,21 @@ export function residentVisibleItems(inventory: ResidentCivilizationItem[] | und
     .map(stack => stack.item));
   // Bound draw calls and avoid a fan of every historic possession. Order is stable.
   return DISPLAY_ITEMS.filter(item => held.has(item)).slice(0, 3);
+}
+
+export function residentCarriedMaterial(inventory: ResidentCivilizationItem[] | undefined, p: ResidentPresentationDirective | null | undefined): string | null {
+  if (!p?.active || p.kind !== 'Civilization' || p.phase !== 'Moving'
+    || !(p.facilityAction === 'DeliverMaterial' || p.civilizationIntent === 'Store')) return null;
+  if (!['Wood','Stone','Flint','Clay','PlantFood','Water'].includes(p.civilizationMaterial ?? '')) return null;
+  return inventory?.some(stack => stack.item === 'RawMaterial' && stack.material === p.civilizationMaterial
+    && Number.isFinite(stack.quantity) && (stack.quantity ?? 0) > 0) ? p.civilizationMaterial ?? null : null;
+}
+
+export function residentPouringWater(inventory: ResidentCivilizationItem[] | undefined, p: ResidentPresentationDirective | null | undefined): boolean {
+  return Boolean(p?.active && p.kind === 'Civilization' && p.phase === 'Interacting'
+    && p.facilityKind === 'CultivatedPlot' && p.facilityAction === 'Water'
+    && inventory?.some(s => s.item === 'SimpleContainer' && Number.isFinite(s.quantity) && (s.quantity ?? 0) > 0)
+    && inventory?.some(s => s.item === 'RawMaterial' && s.material === 'Water' && Number.isFinite(s.quantity) && (s.quantity ?? 0) > 0));
 }
 
 /** Original low-poly props, sized in normalized resident-height units. */
@@ -65,16 +80,30 @@ export function createResidentProp(item: string): THREE.Group {
 export class ResidentInventoryProps {
   readonly root = new THREE.Group();
   private signature = '';
+  private readonly loadRoot = new THREE.Group();
+  private readonly rightHand: THREE.Object3D | undefined;
+  private readonly leftHand: THREE.Object3D | undefined;
+  private readonly otherHand = new THREE.Vector3();
+  hasCarriedLoad = false;
+  hasWaterContainer = false;
   private readonly pelvis: THREE.Object3D | undefined;
   private readonly point = new THREE.Vector3();
   constructor(private readonly visual: THREE.Group, model: THREE.Object3D) {
     this.pelvis = model.getObjectByName('pelvis');
+    this.rightHand = model.getObjectByName('hand_r');
+    this.leftHand = model.getObjectByName('hand_l');
+    this.loadRoot.name = 'LifeLensObservedLoad';
+    visual.add(this.loadRoot);
     this.root.name = 'LifeLensInventoryProps';
     visual.add(this.root);
   }
-  setInventory(inventory: ResidentCivilizationItem[] | undefined): void {
-    const items = residentVisibleItems(inventory);
-    const signature = items.join('|');
+  setInventory(inventory: ResidentCivilizationItem[] | undefined, presentation?: ResidentPresentationDirective | null): void {
+    const material = residentCarriedMaterial(inventory, presentation);
+    this.hasWaterContainer = Boolean(this.rightHand) && residentPouringWater(inventory, presentation);
+    const carriedWater = material === 'Water' && inventory?.some(s => s.item === 'SimpleContainer' && Number.isFinite(s.quantity) && (s.quantity ?? 0) > 0);
+    this.hasCarriedLoad = Boolean(material && this.rightHand && this.leftHand && (material !== 'Water' || carriedWater));
+    const items = residentVisibleItems(inventory).filter(item => !(item === 'SimpleContainer' && (this.hasWaterContainer || carriedWater)));
+    const signature = [items.join('|'), this.hasCarriedLoad ? material : '', this.hasWaterContainer].join(':');
     if (signature === this.signature) return;
     this.clear(); this.signature = signature;
     items.forEach((item, index) => {
@@ -84,19 +113,50 @@ export class ResidentInventoryProps {
       this.root.add(prop);
     });
     this.root.visible = Boolean(this.pelvis) && items.length > 0;
+    this.loadRoot.visible = this.hasCarriedLoad || this.hasWaterContainer;
+    if (this.hasWaterContainer || (this.hasCarriedLoad && material === 'Water')) {
+      const jug = createResidentProp('SimpleContainer');
+      jug.position.y = -.055;
+      if (this.hasWaterContainer) jug.rotation.x = .65;
+      this.loadRoot.add(jug);
+    } else if (this.hasCarriedLoad) {
+      // A compact sample of the actual carried resource, not an invented tool.
+      const resource = new THREE.Group();
+      const color = material === 'Wood' ? 0x715038 : material === 'PlantFood' ? 0x648448 : material === 'Clay' ? 0xa16e4d : 0x858a89;
+      const geometry = material === 'Wood' ? new THREE.CylinderGeometry(.03,.033,.30,7) : new THREE.DodecahedronGeometry(.065,0);
+      const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({color,roughness:.85}));
+      mesh.userData.residentOwnsGeometry = true;
+      mesh.rotation.z = material === 'Wood' ? Math.PI / 2 : 0;
+      mesh.position.set(0,-.025,0);
+      resource.add(mesh);
+      this.loadRoot.add(resource);
+    }
   }
   update(): void {
-    if (!this.root.visible || !this.pelvis) return;
+    if (!this.root.visible && !this.loadRoot.visible) return;
     this.visual.updateWorldMatrix(true, true);
-    this.pelvis.getWorldPosition(this.point);
-    this.root.position.copy(this.visual.worldToLocal(this.point));
+    if (this.pelvis) {
+      this.pelvis.getWorldPosition(this.point);
+      this.root.position.copy(this.visual.worldToLocal(this.point));
+    }
+    if (this.loadRoot.visible && this.rightHand) {
+      this.rightHand.getWorldPosition(this.point);
+      if (!this.hasWaterContainer && this.leftHand) {
+        this.leftHand.getWorldPosition(this.otherHand);
+        this.point.add(this.otherHand).multiplyScalar(.5);
+      }
+      this.loadRoot.position.copy(this.visual.worldToLocal(this.point));
+    }
   }
+
   private clear(): void {
-    this.root.traverse(object => {
-      if (!(object instanceof THREE.Mesh)) return;
-      object.geometry.dispose();
-      for (const material of Array.isArray(object.material) ? object.material : [object.material]) material.dispose();
-    });
-    this.root.clear();
+    for (const root of [this.root, this.loadRoot]) {
+      root.traverse(object => {
+        if (!(object instanceof THREE.Mesh)) return;
+        object.geometry.dispose();
+        for (const material of Array.isArray(object.material) ? object.material : [object.material]) material.dispose();
+      });
+      root.clear();
+    }
   }
 }

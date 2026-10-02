@@ -16,6 +16,8 @@ export type ResidentSemanticMotion =
 export interface ResidentSemanticMotionContext {
   moving: boolean;
   nearbyResident: boolean;
+  hasCarriedLoad?: boolean;
+  hasWaterContainer?: boolean;
 }
 
 export function residentSleepPostureActive(
@@ -39,7 +41,8 @@ export function resolveResidentSemanticMotion(
     if (
       presentation?.active
       && presentation.kind === 'Civilization'
-      && presentation.facilityAction === 'DeliverMaterial'
+      && (presentation.facilityAction === 'DeliverMaterial' || presentation.civilizationIntent === 'Store')
+      && context.hasCarriedLoad === true
     ) {
       return 'carry';
     }
@@ -113,7 +116,7 @@ export function resolveResidentSemanticMotion(
 
       if (presentation.facilityKind === 'CultivatedPlot') {
         if (presentation.facilityAction === 'Plant') return 'plant';
-        if (presentation.facilityAction === 'Water') return 'water';
+        if (presentation.facilityAction === 'Water') return context.hasWaterContainer ? 'water' : 'interact';
         if (presentation.facilityAction === 'Harvest') return 'harvest';
         if (presentation.facilityAction === 'Tend') return 'work';
       }

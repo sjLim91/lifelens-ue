@@ -839,7 +839,7 @@ export class ResidentWorldLayer {
       }
       existing.appearanceFacts = facts;
       // Missing inventory is unknown: do not leave an already-consumed tool visible.
-      existing.inventoryProps.setInventory(resident.civilization?.inventory);
+      existing.inventoryProps.setInventory(resident.civilization?.inventory, resident.presentation);
       return existing;
     }
     if (!this.template) {
@@ -963,7 +963,7 @@ export class ResidentWorldLayer {
     }
 
     const inventoryProps = new ResidentInventoryProps(visual, model);
-    inventoryProps.setInventory(resident.civilization?.inventory);
+    inventoryProps.setInventory(resident.civilization?.inventory, resident.presentation);
     const actor: ResidentActor = {
       root,
       visual,
@@ -1337,6 +1337,7 @@ export class ResidentWorldLayer {
       {
         moving: false,
         nearbyResident,
+        hasWaterContainer: actor.inventoryProps.hasWaterContainer,
       },
     );
 
@@ -1355,6 +1356,7 @@ export class ResidentWorldLayer {
         {
           moving: true,
           nearbyResident: false,
+          hasCarriedLoad: actor.inventoryProps.hasCarriedLoad,
         },
       )
       : this.restMotion(actor);
@@ -1374,7 +1376,8 @@ export class ResidentWorldLayer {
       RESIDENT_PRESENTATION_CONTRACT.animationCrossFadeSeconds;
     previous?.fadeOut(blendSeconds);
     next.enabled = true;
-    next.reset().play().fadeIn(blendSeconds);
+    next.reset();
+    next.play().fadeIn(blendSeconds);
     actor.active = desired;
   }
 }

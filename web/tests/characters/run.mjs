@@ -126,7 +126,7 @@ try {
   writeFileSync(propPath,ts.transpileModule(readFileSync(new URL('../../src/render/resident-props.ts',import.meta.url),'utf8'),{
     compilerOptions:{module:ts.ModuleKind.ES2022,target:ts.ScriptTarget.ES2022},
   }).outputText);
-  const {residentVisibleItems,createResidentProp,ResidentInventoryProps}=await import(pathToFileURL(propPath));
+  const {residentVisibleItems,createResidentProp,ResidentInventoryProps,residentCarriedMaterial,residentPouringWater}=await import(pathToFileURL(propPath));
   test('tools require actual positive inventory and have bounded stable selection',()=>{
     assert.deepEqual(residentVisibleItems(undefined),[]);
     assert.deepEqual(residentVisibleItems([{item:'DiggingStick',quantity:0},{item:'BronzeAxe',quantity:NaN}]),[]);
@@ -146,6 +146,19 @@ try {
     let disposed=0;props.root.traverse(o=>{if(o.isMesh)o.geometry.addEventListener('dispose',()=>disposed++);});
     pelvis.position.y=.5;props.update();assert.equal(props.root.position.y,.5);
     props.setInventory([]);assert.equal(props.root.children.length,0);assert.ok(disposed>0);
+  });
+  test('carry and pouring visuals require existing resources, never the future gather result',()=>{
+    const inventory=[{item:'SimpleContainer',quantity:1},{item:'RawMaterial',material:'Water',quantity:1},{item:'RawMaterial',material:'Wood',quantity:2}];
+    const moving={active:true,kind:'Civilization',phase:'Moving',facilityAction:'DeliverMaterial',civilizationMaterial:'Wood'};
+    assert.equal(residentCarriedMaterial(inventory,moving),'Wood');
+    assert.equal(residentCarriedMaterial([],moving),null);
+    assert.equal(residentCarriedMaterial(inventory,{...moving,facilityAction:'None',civilizationIntent:'Gather'}),null);
+    assert.equal(residentCarriedMaterial(inventory,{...moving,phase:'Interacting'}),null);
+    const watering={active:true,kind:'Civilization',phase:'Interacting',facilityKind:'CultivatedPlot',facilityAction:'Water'};
+    assert.equal(residentPouringWater(inventory,watering),true);
+    assert.equal(residentPouringWater(inventory.slice(1),watering),false);
+    assert.equal(residentPouringWater([inventory[0]],watering),false);
+    assert.equal(residentPouringWater(inventory,{...watering,phase:'Moving'}),false);
   });
   console.log(`${passed} character regression checks passed`);
 } finally { rmSync(directory,{recursive:true,force:true}); }

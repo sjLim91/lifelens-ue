@@ -41,10 +41,10 @@ jobs:
           node tests/characters/run.mjs
           node tests/action-context/run.mjs
           npm run build
-      - name: 로컬 오프라인 검증용 의존성 보존
-        run: tar -czf character-test-deps.tar.gz -C web/node_modules three typescript
+      - name: 실제 GLB 리그·모션 16개 포즈 검증
+        run: node web/tests/characters/export-review.mjs
       - uses: actions/upload-artifact@v4
         with:
-          name: character-test-deps
-          path: character-test-deps.tar.gz
-          retention-days: 3
+          name: character-pose-review
+          path: web/tests/characters/review/poses.json
+          retention-days: 7
