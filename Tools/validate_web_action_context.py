@@ -100,12 +100,13 @@ assert "resolveResidentSemanticMotion" in resident_layer
 assert "presentation.phase !== 'Interacting'" in semantic_motion
 assert "case 'KnowledgeTeaching':" in semantic_motion
 assert "case 'Social':" in semantic_motion
-assert "context.nearbyResident ? 'talk' : 'idle'" in semantic_motion
+assert "!context.nearbyResident" in semantic_motion
+assert "context.nearbyResident ? 'teach' : 'idle'" in semantic_motion
 assert "designatedSanitationSite === true" in semantic_motion
 assert "objectKind === 'Toilet'" in semantic_motion
 assert "objectKind === 'Sink'" in semantic_motion
 assert "presentation.hasTargetGrid" in semantic_motion
-assert "presentation.civilizationMaterial === 'PlantFood'" in semantic_motion
+assert "case 'PlantFood': return 'harvest'" in semantic_motion
 assert "presentation.facilityAction === 'DeliverMaterial'" in semantic_motion
 assert "presentation.facilityAction === 'Work'" in semantic_motion
 assert "presentation.facilityAction === 'Repair'" in semantic_motion

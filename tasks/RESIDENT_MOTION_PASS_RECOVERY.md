@@ -1,0 +1,13 @@
+# Resident motion pass recovery — active implementation
+
+- User scope: Web presentation only. Never edit Source/LifeLensCore/** or AI/Needs/resource/social/movement authority. PR only; no merge.
+- Repository: sjLim91/lifelens-ue. Working branch work/resident-motion-pass-20261002.
+- Start base 70969179766369cccc912b3cdc66d2b8d5fdf0d1. Publication main rechecked 558eabd3eafee1adc8120504dc49a44c2eadded6 (#610). Three intervening files are Core-only and do not overlap.
+- Local workspace /workspace/lifelens-ue is a reconstructed git snapshot, not a network clone. /workspace shell proxy:8080 is unreachable. Do not repeat clone/permission prompts.
+- Working binary transfer: dedicated GitHub download_workflow_artifact + download_file. Verified assets artifact 11213770981 from run 36976210291; GLBs staged under web/public/vendor/characters. Each pinned Git blob independently checked.
+- Source/dependency recovery artifact 11235180664/run 37024444928 contains pinned source + installed node_modules. ZIP at /workspace/attachments/9979c61d-6b63-4007-9a4a-6ce53c7ab07f/resident-motion-workspace.zip. It bootstrapped the isolated branch with a temporary workflow. REMOVE that temporary workflow from final PR tree; publish only enumerated Web/tests/docs/tools changes on latest main parent.
+- Implemented native LayToIdle reverse/hold/forward sleep + skinned-mesh shared calibration, CC0 endpoint fallback; differentiated gathers/facility/social/care; speed/pause/heading/facing; prop and connector arrival guards; 32 inactive skeleton cap; cached actions.
+- Actual GLBs: character 0 clips, UAL1 43, UAL2 43. Full inventory, mapping, licenses, performance and limitations: docs/RESIDENT_MOTION_PASS.md.
+- Current local checks: typecheck/build; 15 new motion, 10 character, 29 action-context, 64 presentation; resident/action/spatial/world/facility structural checks PASS. Re-run affected checks after any further changes. New tests write motion review poses.json; Blender rendering script available. Mobile GPU QA not claimed.
+- Next: finalize regression/visual review; create tree+commit with only listed files on current latest main using GitHub connector; update own branch, create PR; inspect exact-head CI (especially Preflight, Character Asset Verification, Web Typecheck, Runtime Resilience); fix failures and update documentation. No main merge.
+- Before resuming, read AGENTS.md, canonical docs, actual main/branch/PR/Actions. Do not assume old CI succeeded. Do not overwrite shared WORK_STATE or parallel Core changes.

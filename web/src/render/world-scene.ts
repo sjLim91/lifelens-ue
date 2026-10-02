@@ -226,6 +226,7 @@ export class WorldScene {
     terrain: TerrainWindow,
   ): void {
     this.civilization = civilization;
+    this.residentLayer.setCivilization(civilization);
     const resources = this.resourceProjectionCache.get(civilization, terrain);
     if (resources.signature !== this.resourceDressingSignature) {
       this.resourceDressingSignature = resources.signature;

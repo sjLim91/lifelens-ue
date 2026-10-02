@@ -2,14 +2,21 @@ name: LifeLens Character Asset Verification
 
 on:
   push:
-    branches: ['visual/resident-motion-tools-phenotype-20261002']
+    branches: ['visual/resident-motion-tools-phenotype-20261002', 'work/resident-motion-pass-20261002']
     paths:
       - 'Tools/prepare_web_character_assets.py'
+      - 'Tools/extract_web_sleep_pose.mjs'
       - '.github/workflows/character-assets-check.yml'
       - 'web/src/render/resident-*.ts'
       - 'web/tests/characters/**'
       - 'web/tests/action-context/**'
+      - 'web/tests/resident-motion/**'
       - 'web/package.json'
+  pull_request:
+    paths:
+      - 'web/src/render/resident-*.ts'
+      - 'web/tests/resident-motion/**'
+      - '.github/workflows/character-assets-check.yml'
   workflow_dispatch:
 
 permissions:
@@ -40,11 +47,15 @@ jobs:
           npm run typecheck
           node tests/characters/run.mjs
           node tests/action-context/run.mjs
+          node ../Tools/extract_web_sleep_pose.mjs --check
+          node tests/resident-motion/run.mjs
           npm run build
       - name: 실제 GLB 리그·모션 16개 포즈 검증
         run: node web/tests/characters/export-review.mjs
       - uses: actions/upload-artifact@v4
         with:
           name: character-pose-review
-          path: web/tests/characters/review/poses.json
+          path: |
+            web/tests/characters/review/poses.json
+            web/tests/resident-motion/review/poses.json
           retention-days: 7
