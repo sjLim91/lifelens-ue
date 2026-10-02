@@ -1,3 +1,4 @@
+import { WORLD_PRESENTATION } from './world-presentation-config';
 import * as THREE from 'three';
 import type {
   CivilizationWorldPayload,
@@ -481,7 +482,8 @@ export class AuthoritativeSpatialTargetLayer {
       const ratio = resource.maxQuantity > 0
         ? Math.max(0, Math.min(1, resource.quantity / resource.maxQuantity))
         : 1;
-      const fullness = 0.84 + Math.sqrt(ratio) * 0.2;
+      // Scale volume with actual stock; depleted sites approach zero continuously.
+      const fullness = Math.cbrt(ratio) * WORLD_PRESENTATION.resource.fullScale;
       const yaw = stableUnit(`${resource.id}:${resource.material}`)
         * Math.PI * 2;
       this.rotation.setFromAxisAngle(Y_AXIS, yaw);
@@ -710,3 +712,4 @@ export class AuthoritativeSpatialTargetLayer {
     ];
   }
 }
+

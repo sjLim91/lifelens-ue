@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import ts from 'typescript';
 import { terrainSeamChecks } from './terrain-seam-checks.mjs';
 import { mapSurfaceChecks } from './map-surface-checks.mjs';
+import { worldPresentationChecks } from './world-presentation-checks.mjs';
 
 const require = createRequire(import.meta.url);
 const modules = new Map();
@@ -603,6 +604,7 @@ test('unchanged terrain refreshes retain water geometry', () => {
 });
 
 mapSurfaceChecks({ test, source, THREE });
+worldPresentationChecks({ test, source, THREE, flatWindow });
 
 terrainSeamChecks({ test, source, chunk, windowOf, withScene, near });
 

@@ -123,9 +123,19 @@ try {
     assert.notEqual(mesh.geometry,geometry);
   });
   const propPath=join(directory,'props.mjs');
+  for (const [input, output] of [
+    ['runtime/generated-core-contract.ts', 'generated-core-contract.mjs'],
+    ['render/world-presentation-config.ts', 'world-presentation-config.mjs'],
+  ]) {
+    const code = ts.transpileModule(readFileSync(new URL(`../../src/${input}`, import.meta.url), 'utf8'), {
+      compilerOptions: { module: ts.ModuleKind.ES2022, target: ts.ScriptTarget.ES2022 },
+    }).outputText.replace('../runtime/generated-core-contract', './generated-core-contract.mjs');
+    writeFileSync(join(directory, output), code);
+  }
   writeFileSync(propPath,ts.transpileModule(readFileSync(new URL('../../src/render/resident-props.ts',import.meta.url),'utf8'),{
     compilerOptions:{module:ts.ModuleKind.ES2022,target:ts.ScriptTarget.ES2022},
   }).outputText);
+  writeFileSync(propPath, readFileSync(propPath, 'utf8').replace('./world-presentation-config', './world-presentation-config.mjs'));
   const {residentVisibleItems,createResidentProp,ResidentInventoryProps,residentCarriedMaterial,residentPouringWater}=await import(pathToFileURL(propPath));
   test('tools require actual positive inventory and have bounded stable selection',()=>{
     assert.deepEqual(residentVisibleItems(undefined),[]);
@@ -154,6 +164,8 @@ try {
     assert.equal(residentCarriedMaterial([],moving),null);
     assert.equal(residentCarriedMaterial(inventory,{...moving,facilityAction:'None',civilizationIntent:'Gather'}),null);
     assert.equal(residentCarriedMaterial(inventory,{...moving,phase:'Interacting'}),null);
+    assert.equal(residentCarriedMaterial([{item:'RawMaterial',material:'Wood',quantity:3}],{active:true,kind:'Trade',phase:'Moving'}),'Wood');
+    assert.equal(residentCarriedMaterial([],{active:true,kind:'Trade',phase:'Moving'}),null);
     const watering={active:true,kind:'Civilization',phase:'Interacting',facilityKind:'CultivatedPlot',facilityAction:'Water'};
     assert.equal(residentPouringWater(inventory,watering),true);
     assert.equal(residentPouringWater(inventory.slice(1),watering),false);
@@ -162,4 +174,3 @@ try {
   });
   console.log(`${passed} character regression checks passed`);
 } finally { rmSync(directory,{recursive:true,force:true}); }
-
