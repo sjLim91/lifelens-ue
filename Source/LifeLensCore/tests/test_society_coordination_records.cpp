@@ -55,8 +55,17 @@ int main()
     StorageSite storage;
     storage.id=1;
     storage.pos={0,0};
-    storage.inventory.add(
-        {ItemKind::RawMaterial,MaterialKind::Wood,2,0.5,1.0});
+    // Keep non-food settlement inputs sufficiently stocked so the test's
+    // coordination pressure is specifically food, not water/material supply.
+    constexpr std::array<MaterialKind,9> buffered={{
+        MaterialKind::Water,MaterialKind::Wood,MaterialKind::Fiber,
+        MaterialKind::Clay,MaterialKind::Stone,MaterialKind::Flint,
+        MaterialKind::CopperOre,MaterialKind::TinOre,MaterialKind::Charcoal
+    }};
+    for(const MaterialKind material:buffered){
+        storage.inventory.add(
+            {ItemKind::RawMaterial,material,16,0.5,1.0});
+    }
     world.storageSites.push_back(storage);
 
     SocialKnowledgeBook book;
