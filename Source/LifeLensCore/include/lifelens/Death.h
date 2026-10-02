@@ -19,7 +19,10 @@ enum class DeathCause {
     Accident,
     Other,
     // Appended by C4 so persisted historical ordinals above remain stable.
-    EnvironmentalExposure
+    EnvironmentalExposure,
+    // Appended after C4. Severe starvation/dehydration is causal mortality,
+    // not an unexplained young natural death.
+    Deprivation
 };
 
 inline double clampMortality(double value)
@@ -33,9 +36,9 @@ inline double dailyMortalityProbability(const Character& character,int currentMi
     const int age=ageYearsFromMinutes(character.birthMinute,currentMinute);
     if(age>=110) return 1.0;
 
-    // v1 models natural age-related mortality only. Premature illness,
-    // accident, starvation and pathogen mortality belong to the later health
-    // system and must not be fabricated as unexplained random young deaths.
+    // Natural mortality remains age-related only. Premature illness,
+    // accident, deprivation and exposure are handled by the Health path and
+    // must not be fabricated here as unexplained random young deaths.
     if(age<50) return 0.0;
 
     double ageBase=0.000010;
