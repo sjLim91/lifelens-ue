@@ -470,6 +470,9 @@ std::string civilizationWorldObservationJson(
     out << "\"storekeeperCount\":" << society.storekeeperCount << ",";
     out << "\"recentTeachingReceipts\":" << society.recentTeachingReceipts << ",";
     out << "\"exchangeFactCount\":" << society.exchangeFactCount << ",";
+    out << "\"apprenticeshipCount\":" << society.apprenticeshipCount << ",";
+    out << "\"tradePartnershipCount\":" << society.tradePartnershipCount << ",";
+    out << "\"institutionMembershipCount\":" << society.institutionMembershipCount << ",";
     out << "\"activeInstitutionCount\":" << society.activeInstitutionCount << ",";
     out << "\"recordStage\":\"" << collectiveRecordStageName(society.recordStage) << "\",";
     out << "\"residents\":[";
