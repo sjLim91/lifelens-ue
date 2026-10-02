@@ -668,17 +668,59 @@ No one real-world political/economic system is a mandatory endpoint.
 
 ## Milestone C6 — Migration / Multiple Settlements / Trade Networks
 
+Status: 🟡 **Foundation integrated (#584~#586), canonical closeout pending long-run validation and remaining group-level scope.**
+
+Integrated foundation:
+
+- ✅ local resource scarcity + reserve state + travel burden -> resident migration pressure.
+- ✅ high pressure can widen exploration to bounded long-range frontier targets.
+- ✅ actual Core movement remains required; no migration teleport.
+- ✅ distant infrastructure can form independent settlement-local storage/fire/furnace authority.
+- ✅ facilities + storage + actual resident positions derive multiple settlement clusters.
+- ✅ reciprocal inter-settlement trade is based on complementary real surplus/deficit.
+- ✅ long-range trade uses actual resident travel, destination exchange, and physical return.
+- ✅ repeated inter-settlement exchange facts derive persistent trade-route observation.
+- ✅ Web Observer exposes migration pressure, settlements and trade routes.
+
+Remaining canonical C6 closeout:
+
+- ⬜ household/group migration instead of only resident-level pressure/exploration.
+- ⬜ settlement abandonment / decline / reoccupation.
+- ⬜ stronger settlement-local knowledge/capability divergence.
+- ⬜ settlement resource/production specialization beyond exchange opportunity.
+- ⬜ cooperation/conflict foundations between settlement groups.
+- ⬜ weather/resource pressure validation across multiple long-run seeds.
+- ⬜ prove that early founders do not fragment into multiple weak settlements before the first community is viable.
+
+Current gate:
+- `docs/SIMULATION_BALANCE_CONTRACT_V2.md`
+- `tasks/CURRENT_MAIN_LONGRUN_AUDIT.md`
+- 100 / 365 / 1000-day two-seed current-main audit before C7 feature expansion.
+
+---
+
+## Milestone C7 — Population / Settlement Maturation
+
+Status: ⏸ **Next after current-main long-run gate and C6 closeout classification.**
+
+Goal:
+turn the initial four-person survival camp into a visibly lived, multi-generation settlement before large historical content expansion.
+
+Target causal chain:
+
+`4 founders -> relationships/families -> households -> children -> larger labor/demand base -> denser local infrastructure -> mature first settlement -> carrying pressure -> household/group migration -> second settlement`
+
 Scope:
 
-- carrying-capacity pressure.
-- exploration.
-- household/group migration.
-- settlement founding/abandonment.
-- multiple settlements.
-- local knowledge/capability differences.
-- trade routes/resource specialization.
-- conflict/cooperation foundations.
-- weather/resource pressure as migration drivers.
+- population/family growth must create real housing, food, water, sanitation, care and production demand.
+- settlement capacity should react to actual household/population pressure, not a scripted village level.
+- first-settlement maturity should resist premature founder fragmentation.
+- household/group relocation should preserve kinship, household and local-knowledge continuity.
+- children/teens/adults contribute according to LifeStage capability rather than instant adult labor.
+- settlement visual/observer summary should expose maturation from camp -> durable village without creating a Core era gate.
+- population CPU/memory/snapshot growth must remain compatible with C2 long-run requirements.
+
+C7 does **not** mean artificially increasing birth rate. Family outcomes remain autonomous and causal.
 
 ---
 
@@ -851,48 +893,60 @@ LifeLens should eventually surprise the observer **without abandoning causality*
 
 # 14. Current Parallel Dispatch
 
-## Stage C mainline — ACTIVE
+## Current mainline — LONG-RUN INTEGRATION GATE ACTIVE
 
-C1-A / C1-B / C1-C / C1-D / C1-E / C1-F are complete. Current Jjun Core sequence:
+Validated feature baseline entering this gate:
 
-1. **Stage D C3-A Capability / Technology Framework** — stable identities, actual capability state, technology operation/adoption separation and observer contract.
-2. **Stage D** — long-run reliability + remaining open-ended civilization engine.
-3. **Stage E** — health + education/economy/institutions + migration/trade.
-4. **Stage F** — historical/industrial/modern/digital/AI/advanced/space/open-future expansion.
+- C1 settlement/subsistence foundation — integrated.
+- C3 open-ended civilization framework — complete foundation.
+- C4 health/disease/resilience — complete foundation.
+- C5 education/specialization/economy/institutions — complete foundation.
+- C6-A/B/C migration/multiple-settlement/physical-trade foundation — integrated.
+- #587 natural-reproduction biological eligibility correction — integrated.
+
+The current mainline intentionally pauses new C7 feature expansion while the C2-style long-run reliability debt is measured on current main.
+
+Immediate order:
+
+1. rebuild the old balance-audit idea on latest main without stale runtime tuning.
+2. run 100 / 365 / 1000-day checkpoints on baseline seeds.
+3. classify survival/social/family/civilization starvation.
+4. inspect settlement fragmentation, migration pressure and trade completion.
+5. record runtime memory/time and snapshot growth.
+6. fix only causal clusters that fail.
+7. close/classify remaining C6 scope.
+8. enter C7 Population / Settlement Maturation.
 
 ## Audit follow-up
 
-- AUDIT-0A / 0B / 0C — DONE.
-- AUDIT-1A explicit materialized chunk enumeration — must land before migration/multi-settlement.
+- `audit/current-main-longrun-20261002` owns the current integration gate.
+- #539 and #540 are stale/diverged evidence branches; do not wholesale merge them.
+- `docs/SIMULATION_BALANCE_CONTRACT_V2.md` is the current behavioral contract.
+- `tasks/CURRENT_MAIN_LONGRUN_AUDIT.md` is the execution checklist.
+- AUDIT-1A materialized-chunk enumeration remains technical debt if any client still guesses materialized coordinates; it no longer blocks the already-integrated Core C6 contracts but must be removed before larger-scale observer/LOD work.
 
 ## Presentation quality lane
 
-Presentation catch-up remains integrated; runtime visual/device QA continues incrementally.
+Presentation/Web quality may continue only when it does not interfere with the long-run Core gate. Highest-value remaining work is truthful action embodiment and visible accumulated world change, not presentation-authored simulation state.
 
-## Android / Device lane
+## Platform / Web architecture lane
 
-Gate B remains PAUSED BY USER.
-Do not launch a long Android build until the user explicitly resumes it.
+After the behavioral gate, scale-enabling infrastructure priorities are:
+
+- Core simulation Web Worker.
+- Web snapshot persistence through OPFS/IndexedDB.
+- long-run population/entity LOD or coarse simulation.
+- permanent GUID migration before population scale becomes large.
+- device/mobile performance QA.
 
 # 15. Immediate Next Feature
 
-Current immediate Jjun implementation target:
+> **Do not start a new civilization-content band yet.**
 
-> **Stage D C3-A — Capability / Technology Framework**
+Immediate task:
+**current-main long-run audit -> C6 closeout classification -> C7 Population / Settlement Maturation.**
 
-First delivery order:
-- stable Capability / Technology identities independent of era labels.
-- map existing Technique knowledge into Technology without discarding compatibility.
-- derive actual Capability from real tools, facilities, materials and reproducible knowledge.
-- separate discovery/reproducibility, current operational ability and repeated-use adoption.
-- expose the resulting state through the Observer/Web contract.
-- preserve deterministic Save/Load by deriving the framework from authoritative persisted state.
-
-Presentation is not the active Jjun lane. It is frozen at the #282 main baseline and handed to Dagyeom per `docs/DAGYEOM_PRESENTATION_HANDOFF_2026-09-19.md`.
-
-
-
----
+Stage F historical-to-future content remains the long-range sequence after population/settlement maturity and long-run scale are trustworthy.
 
 ## Late 2026-09-18 Presentation sprint reconciliation
 

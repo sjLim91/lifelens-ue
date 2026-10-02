@@ -1,5 +1,24 @@
 # LifeLens Project Status
 
+## 2026-10-02 — C6 FOUNDATION INTEGRATED / CURRENT-MAIN LONG-RUN GATE ACTIVE
+
+- Validated product baseline entering this audit: `main@b277e091bc39d071ea30ba0d57281251da811dba`.
+- C6 implementation chain is integrated:
+  - #584 C6-A — local scarcity / travel burden / migration pressure / long-range frontier exploration.
+  - #585 C6-B — local infrastructure authority and multiple settlement clustering.
+  - #586 C6-C — physical inter-settlement travel trade, return trip and persistent trade-route evidence.
+- #587 separates relationship eligibility from natural reproduction biology: same-sex dating/marriage remains possible; natural conception requires a gestational female and male genetic contributor.
+- C6 is **foundation-integrated, not yet canonical-closeout**. Remaining roadmap scope includes household/group migration, settlement abandonment/decline, stronger local knowledge/capability divergence, resource specialization and cooperation/conflict foundations.
+- The main risk is now long-run integration, not missing architecture. C3~C6 advanced faster than the canonical C2 multi-century reliability gate.
+- Active unit: `audit/current-main-longrun-20261002`.
+- The audit reuses no stale runtime tuning from #539/#540. Only the measurement approach is selectively rebuilt on current main.
+- New audit checkpoints: 100 / 365 / 1000 days across two baseline seeds.
+- Metrics cover Needs/action completion, sleep recovery, Social/Civilization/Teaching/Trade time budgets, family/population, health, facilities/cultivation, settlement/migration/trade, snapshot size and runner memory/time.
+- Contract: `docs/SIMULATION_BALANCE_CONTRACT_V2.md`.
+- Checklist: `tasks/CURRENT_MAIN_LONGRUN_AUDIT.md`.
+- C7 — Population / Settlement Maturation does not start until this gate classifies any long-run starvation or C6 fragmentation risk.
+
+
 ## 2026-10-02 — C5 Education / Specialization / Economy / Institutions
 
 - C5 completion chain: #578 C5-A, #579 C5-B, #580 C5-C/D closeout.
