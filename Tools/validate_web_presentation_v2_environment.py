@@ -90,7 +90,7 @@ for token in (
     "InstancedBufferAttribute",
     "vLifeLensFoliageTint",
     "#include <map_fragment>",
-    "lifeLens-foliage-tint-v2",
+    "lifelens-foliage-tint-v2",
 ):
     assert token in tree_asset, f"missing real-tree foliage tint token: {token}"
 
