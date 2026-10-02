@@ -1225,6 +1225,86 @@ SettlementPopulation Simulation::settlementPopulation() const {
 }
 
 
+void Simulation::advanceHouseholdMigration()
+{
+    if(world_.minute%HouseholdMigrationDecisionIntervalMinutes!=0) return;
+
+    const SettlementPopulation population=settlementPopulation();
+    const HouseholdMigrationPlan migration=
+        chooseHouseholdMigrationPlan(world_,households_,population);
+    if(!migration.available) return;
+
+    // Coordination must not trample survival or an already committed context
+    // action. Ordinary post-action Idle can be replaced; real work waits for
+    // the next six-hour coordination boundary.
+    for(const CharacterId memberId:migration.members){
+        Character* member=nullptr;
+        for(Character& candidate:world_.characters){
+            if(candidate.id==memberId){
+                member=&candidate;
+                break;
+            }
+        }
+        const auto runtimeIt=runtime_.find(memberId);
+        if(member==nullptr || !member->alive || runtimeIt==runtime_.end()){
+            return;
+        }
+        Runtime& runtime=runtimeIt->second;
+        const double urgentNeed=std::max({
+            member->needs.hunger,
+            member->needs.thirst,
+            member->needs.sleep,
+            member->needs.bladder,
+            member->needs.hygiene
+        });
+        if(urgentNeed>=ruleset_.utilityAI.urgentThreshold
+           || runtime.pendingContext.active()
+           || (!runtime.plan.empty() && runtime.goal!=Goal::Idle)){
+            return;
+        }
+    }
+
+    for(const CharacterId memberId:migration.members){
+        Character* member=nullptr;
+        for(Character& candidate:world_.characters){
+            if(candidate.id==memberId){
+                member=&candidate;
+                break;
+            }
+        }
+        auto runtimeIt=runtime_.find(memberId);
+        if(member==nullptr || runtimeIt==runtime_.end()) continue;
+
+        Runtime& runtime=runtimeIt->second;
+        clearRuntimeActivity(runtime);
+
+        PendingContextAction pending;
+        pending.token=issueContextActionToken();
+        pending.kind=ContextActionKind::Civilization;
+        pending.issuedMinute=world_.minute;
+        pending.civilization.intent=CivilizationIntent::Explore;
+        pending.civilization.utility=
+            migration.consensusPressure01;
+        pending.civilization.material=
+            migration.bottleneckMaterial;
+        pending.civilization.item=ItemKind::RawMaterial;
+        pending.hasSpatialTarget=true;
+        pending.targetPos=migration.target;
+        runtime.pendingContext=pending;
+        clearNavigation(runtime);
+    }
+
+    std::ostringstream log;
+    log<<"household "<<migration.householdId
+       <<" began group migration with "<<migration.members.size()
+       <<" residents toward frontier ("
+       <<materialName(migration.bottleneckMaterial)
+       <<", consensus "<<std::fixed<<std::setprecision(2)
+       <<migration.consensusPressure01<<")";
+    emit(log.str());
+}
+
+
 bool Simulation::sleepFacilityHasCapacityFor(
     CharacterId requester,
     const ConstructedFacility& facility) const
@@ -2614,6 +2694,7 @@ void Simulation::advanceAutonomousFamilyProgression()
 }
 
 void Simulation::step(){
+    advanceHouseholdMigration();
     advanceDependentCare();
     for(auto& c:world_.characters){
         Runtime& r=runtime_[c.id];
@@ -2682,6 +2763,10 @@ void Simulation::step(){
     }
 
     advanceSettlementFacilityWearOneMinute(world_);
+    const SettlementPopulation settlementPopulationAfterMovement=
+        settlementPopulation();
+    advanceAbandonedSettlementDecayOneHour(
+        world_,settlementPopulationAfterMovement);
     advancePrimitiveFireOneMinute(world_);
     world_.environmentalResidues.advanceToMinute(world_.minute);
     if(world_.minute%(24*60)==0){

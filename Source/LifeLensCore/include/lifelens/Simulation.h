@@ -17,6 +17,7 @@
 #include "EnvironmentalResidue.h"
 #include "MigrationPressure.h"
 #include "SettlementNetwork.h"
+#include "SettlementMigration.h"
 #include "SettlementTrade.h"
 #include "ObserverReadModelV2.h"
 #include "Parenting.h"
@@ -177,6 +178,15 @@ public:
         const SettlementPopulation population=settlementPopulation();
         return lifelens::observeSettlementNetwork(world_,&population);
     }
+    SettlementLifecycleObservation observeSettlementLifecycle() const {
+        const SettlementPopulation population=settlementPopulation();
+        return lifelens::observeSettlementLifecycle(world_,population);
+    }
+    HouseholdMigrationPlan observeHouseholdMigrationPlan() const {
+        const SettlementPopulation population=settlementPopulation();
+        return lifelens::chooseHouseholdMigrationPlan(
+            world_,households_,population);
+    }
     SettlementTradeNetworkObservation observeSettlementTradeNetwork() const {
         const SettlementPopulation population=settlementPopulation();
         const SettlementNetworkObservation network=
@@ -303,6 +313,7 @@ private:
     void advanceSocietyExchange();
     void advanceSocietyInstitutions();
     void advanceSocietyRecordkeeping();
+    void advanceHouseholdMigration();
     void advanceDependentCare();
     void advanceAutonomousFamilyProgression();
     void updatePregnanciesAndBirths();
