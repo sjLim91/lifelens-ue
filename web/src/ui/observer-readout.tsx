@@ -10,7 +10,6 @@ import {
   formatLifeCondition,
   formatLifeStage,
   formatLocationText,
-  formatMemoryTag,
   formatMemoryText,
   formatPartnerStage,
   formatPercent,
@@ -21,6 +20,7 @@ import {
   formatWeather,
 } from './observer-format';
 import { residentStatusText } from './resident-status';
+import { summarizeResidentMemories } from './resident-memory';
 import { ResidentNeeds } from './resident-needs';
 
 export function RuntimeBadge({
@@ -169,18 +169,15 @@ export function SelectedResidentReadout({
 
   const relationships = resident.relationships ?? [];
   const importantRelationships = relationships.slice(0, 4);
-  const memories = (resident.memories ?? []).slice(0, 3);
   const beliefs = (resident.beliefs ?? []).slice(0, 3);
-  const visibleMemories = memories.map((memory) => ({
+  const visibleMemories = summarizeResidentMemories(
+    resident.memories,
+    3,
+  ).map(({ memory, tags, repeatCount }) => ({
     memory,
     subjectName: residentDisplayName(residents, memory.who),
-    tags: Array.from(
-      new Set(
-        (memory.tags ?? [])
-          .map(formatMemoryTag)
-          .filter((tag): tag is string => Boolean(tag)),
-      ),
-    ),
+    tags,
+    repeatCount,
   }));
   const visibleBeliefs = beliefs.map((belief) => ({
     belief,
@@ -495,7 +492,7 @@ export function SelectedResidentReadout({
       <div className="focused-life-section">
         <h3>기억</h3>
         {visibleMemories.length > 0
-          ? visibleMemories.map(({ memory, subjectName, tags }, index) => (
+          ? visibleMemories.map(({ memory, subjectName, tags, repeatCount }, index) => (
               <div className="memory-row" key={`${memory.minute ?? 0}:${index}`}>
                 <span><b>{subjectName}</b> · {formatMemoryText(memory.what)}</span>
                 <small>
@@ -503,6 +500,7 @@ export function SelectedResidentReadout({
                   {memory.recallScore !== undefined
                     ? ` · 회상 ${formatPercent(memory.recallScore)}`
                     : ''}
+                  {repeatCount > 1 ? ` · 반복 ${repeatCount}회` : ''}
                   {memory.where ? ` · ${formatLocationText(memory.where)}` : ''}
                   {tags.length ? (
                     <>
