@@ -1,3 +1,21 @@
+## 2026-10-02 CANONICAL CURRENT — CURRENT-MAIN LONG-RUN INTEGRATION GATE
+
+> Actual GitHub `main` / PR / exact-head Actions remain the highest-priority truth.
+
+- Baseline entering the gate: `b277e091bc39d071ea30ba0d57281251da811dba`.
+- C3 technology framework, C4 health, C5 society/economy/institutions and the C6-A/B/C foundation are integrated.
+- C6-A: local scarcity and travel burden can create migration pressure and bounded long-range frontier exploration.
+- C6-B: distant settlements can own independent storage/fire/furnace infrastructure and are observed as separate spatial clusters.
+- C6-C: inter-settlement barter requires a resident to physically travel, exchange only after arrival, then physically return; repeated evidence forms an observed trade route.
+- #587 preserves sex-independent dating/marriage while natural conception uses female gestation + male genetic contribution.
+- C6 remains foundation-integrated rather than fully closed; canonical remaining scope is group migration, abandonment/decline, local knowledge divergence, specialization and cooperation/conflict foundations.
+- Immediate work is **not C7 feature expansion**. It is current-main 100/365/1000-day integration measurement.
+- Active branch: `audit/current-main-longrun-20261002`.
+- Do not merge stale #539/#540 runtime changes. Salvage measurement concepts only.
+- Audit contract: `docs/SIMULATION_BALANCE_CONTRACT_V2.md`.
+- Audit checklist: `tasks/CURRENT_MAIN_LONGRUN_AUDIT.md`.
+- Next feature after a green/classified gate: C7 Population / Settlement Maturation.
+
 ## 2026-10-02 CANONICAL CURRENT — C5 SOCIETY / ECONOMY / INSTITUTIONS CLOSEOUT
 
 > Actual GitHub `main` / PR / Actions remain the highest-priority truth.
