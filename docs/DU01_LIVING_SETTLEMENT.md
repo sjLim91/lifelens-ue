@@ -114,3 +114,21 @@ DU-01 is complete only when a long accelerated observation demonstrates all of t
 - no regression in movement, sleep, resource or facility spatial causality.
 
 Graphics-wide polish is intentionally outside DU-01 unless a visual defect prevents truthful observation of the above loop.
+
+
+## C6 extension — settlement network
+
+DU-01의 `settlement-local authority`는 2026-10-02 C6에서 다중 생활권으로 확장되었다.
+
+- 자원 희소성과 실제 이동 비용이 주민별 migration pressure를 만든다.
+- 먼 곳의 생활권은 기존 마을의 저장고·화덕·화로 존재 여부에 종속되지 않고 자체 인프라를 구축할 수 있다.
+- 시설과 저장소는 서비스 반경 기반의 공간 군집으로 관찰되며, 실제 runtime 주민 위치가 정착지 소속을 결정한다.
+- 정착지 간 물류는 remote transfer를 허용하지 않는다.
+- 원거리 교역은 주민이 상대 정착지로 실제 이동한 뒤에만 Inventory 교환을 수행하고, 이후 출발 생활권으로 실제 귀환한다.
+- 반복된 원거리 교역 사실은 영속적인 교역로 관찰 근거가 된다.
+
+따라서 DU-01의 인과 사슬은 다중 정착지에서도 동일하다.
+
+`local pressure -> local decision -> real movement/logistics -> spatial interaction -> authoritative result -> observer consequence`
+
+한 정착지의 존재나 시설이 월드 전체의 singleton 권위가 되어 다른 생활권의 자율 발전을 막아서는 안 된다.
