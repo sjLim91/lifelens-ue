@@ -11,7 +11,7 @@
     "generate:core-contract": "node scripts/generate-core-contract.mjs",
     "predev": "npm run generate:core-contract",
     "pretypecheck": "npm run generate:core-contract",
-    "prebuild": "npm run generate:core-contract"
+    "prebuild": "npm run generate:core-contract && python3 ../Tools/prepare_web_character_assets.py"
   },
   "dependencies": {
     "react": "^19.0.0",

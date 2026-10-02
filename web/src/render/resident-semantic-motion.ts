@@ -9,7 +9,9 @@ export type ResidentSemanticMotion =
   | 'work'
   | 'consume'
   | 'harvest'
-  | 'carry';
+  | 'carry'
+  | 'plant'
+  | 'water';
 
 export interface ResidentSemanticMotionContext {
   moving: boolean;
@@ -52,6 +54,9 @@ export function resolveResidentSemanticMotion(
   }
 
   switch (presentation.kind) {
+    case 'Trade':
+      return context.nearbyResident ? 'interact' : 'idle';
+
     case 'Social':
     case 'KnowledgeTeaching':
       return context.nearbyResident ? 'talk' : 'idle';
@@ -80,6 +85,7 @@ export function resolveResidentSemanticMotion(
         presentation.physicalGoal === 'UseToilet'
         && (
           presentation.designatedSanitationSite === true
+          || (presentation.emergencyFallback === true && presentation.hasTargetGrid === true)
           || (
             presentation.hasObjectTarget === true
             && presentation.objectKind === 'Toilet'
@@ -91,8 +97,8 @@ export function resolveResidentSemanticMotion(
 
       if (
         presentation.physicalGoal === 'Wash'
-        && presentation.hasObjectTarget === true
-        && presentation.objectKind === 'Sink'
+        && ((presentation.hasObjectTarget === true && presentation.objectKind === 'Sink')
+          || (presentation.hasTargetGrid === true && presentation.directNaturalWaterSource === false))
       ) {
         return 'interact';
       }
@@ -104,6 +110,13 @@ export function resolveResidentSemanticMotion(
 
     case 'Civilization':
       if (!presentation.hasTargetGrid) return 'idle';
+
+      if (presentation.facilityKind === 'CultivatedPlot') {
+        if (presentation.facilityAction === 'Plant') return 'plant';
+        if (presentation.facilityAction === 'Water') return 'water';
+        if (presentation.facilityAction === 'Harvest') return 'harvest';
+        if (presentation.facilityAction === 'Tend') return 'work';
+      }
 
       if (
         presentation.facilityAction === 'Work'
@@ -151,3 +164,4 @@ export function resolveResidentSemanticMotion(
       return 'idle';
   }
 }
+

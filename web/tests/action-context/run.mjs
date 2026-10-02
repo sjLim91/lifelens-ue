@@ -828,3 +828,15 @@ testCase('social cue count is capped for future larger populations', () => {
 });
 
 console.log(passed + ' action-context regression checks passed');
+
+
+
+testCase('cultivation and trade use explicit action and target facts', () => {
+  const directive={active:true,kind:'Civilization',phase:'Interacting',hasTargetGrid:true,facilityKind:'CultivatedPlot'};
+  for (const [facilityAction,motion] of [['Plant','plant'],['Water','water'],['Tend','work'],['Harvest','harvest']]) {
+    assert.equal(resolveResidentSemanticMotion({...directive,facilityAction},{moving:false,nearbyResident:false}),motion);
+    assert.equal(resolveResidentSemanticMotion({...directive,facilityAction,hasTargetGrid:false},{moving:false,nearbyResident:false}),'idle');
+  }
+  for(const nearbyResident of [true,false]) assert.equal(resolveResidentSemanticMotion({active:true,kind:'Trade',phase:'Interacting'},{moving:false,nearbyResident}),nearbyResident?'interact':'idle');
+  assert.equal(resolveResidentSemanticMotion({active:true,kind:'Physical',phase:'Interacting',physicalGoal:'UseToilet',emergencyFallback:true,hasTargetGrid:true},{moving:false,nearbyResident:false}),'crouch');
+});

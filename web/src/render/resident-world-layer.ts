@@ -20,6 +20,7 @@ import {
   applyResidentMaterialVariant,
   createResidentAppearanceProfile,
 } from './resident-appearance';
+import { ResidentInventoryProps } from './resident-props';
 import { residentActionCue } from './resident-action-context';
 import {
   residentSleepPostureActive,
@@ -67,6 +68,10 @@ interface ResidentSocialConnector {
 interface ResidentActor {
   root: THREE.Group;
   visual: THREE.Group;
+  model: THREE.Group;
+  appearanceFacts: Resident;
+  appearanceSignature: string;
+  inventoryProps: ResidentInventoryProps;
   mixer: THREE.AnimationMixer;
   idle?: THREE.AnimationAction;
   walk?: THREE.AnimationAction;
@@ -78,6 +83,8 @@ interface ResidentActor {
   consume?: THREE.AnimationAction;
   harvest?: THREE.AnimationAction;
   carry?: THREE.AnimationAction;
+  plant?: THREE.AnimationAction;
+  water?: THREE.AnimationAction;
   active: MotionName | '';
   activityLabel: string;
   activityTargetId: string;
@@ -533,6 +540,7 @@ export class ResidentWorldLayer {
         this.setSleepAnimationFrozen(actor, true);
       }
       actor.mixer.update(sleeping ? 0 : motionDt);
+      actor.inventoryProps.update();
     }
 
     this.updateSocialConnectors();
@@ -736,13 +744,21 @@ export class ResidentWorldLayer {
     this.selectionRing.visible = true;
   }
 
+  private async loadCharacterAsset(file: string, fallback: string) {
+    try {
+      return await this.loader.loadAsync(`${import.meta.env.BASE_URL}vendor/characters/${file}`);
+    } catch {
+      return this.loader.loadAsync(fallback);
+    }
+  }
+
   private async loadAssets(): Promise<void> {
     try {
-      const base = await this.loader.loadAsync(BASE_MODEL_URL);
+      const base = await this.loadCharacterAsset('character.glb', BASE_MODEL_URL);
 
       let animationClips: THREE.AnimationClip[] = [];
       try {
-        const animationAsset = await this.loader.loadAsync(ANIMATION_URL);
+        const animationAsset = await this.loadCharacterAsset('ual1.glb', ANIMATION_URL);
         animationClips = animationAsset.animations;
       } catch (error) {
         console.warn(
@@ -752,7 +768,7 @@ export class ResidentWorldLayer {
       }
 
       try {
-        const animation2Asset = await this.loader.loadAsync(ANIMATION2_URL);
+        const animation2Asset = await this.loadCharacterAsset('ual2.glb', ANIMATION2_URL);
         animationClips = [
           ...animationClips,
           ...animation2Asset.animations,
@@ -805,7 +821,27 @@ export class ResidentWorldLayer {
 
   private ensureActor(resident: Resident): ResidentActor {
     const existing = this.actors.get(resident.id);
-    if (existing) return existing;
+    if (existing) {
+      // Full observations can arrive after the lightweight runtime summary.
+      // Preserve known phenotype fields when a partial summary omits them.
+      const facts = { ...existing.appearanceFacts };
+      if (resident.sex !== undefined) facts.sex = resident.sex;
+      if (resident.ageYears !== undefined) facts.ageYears = resident.ageYears;
+      if (resident.genetics !== undefined) facts.genetics = { ...facts.genetics, ...resident.genetics };
+      const appearance = createResidentAppearanceProfile(facts);
+      const signature = JSON.stringify(appearance);
+      if (signature !== existing.appearanceSignature) {
+        applyResidentMaterialVariant(existing.model, appearance);
+        existing.root.scale.set(appearance.heightWorldUnits * appearance.widthScale,
+          appearance.heightWorldUnits, appearance.heightWorldUnits * appearance.depthScale);
+        existing.gaitRateBias = appearance.gaitRateBias;
+        existing.appearanceSignature = signature;
+      }
+      existing.appearanceFacts = facts;
+      // Missing inventory is unknown: do not leave an already-consumed tool visible.
+      existing.inventoryProps.setInventory(resident.civilization?.inventory);
+      return existing;
+    }
     if (!this.template) {
       throw new Error('Three World resident template is not loaded');
     }
@@ -868,6 +904,11 @@ export class ResidentWorldLayer {
       'walk_carry',
     );
 
+    const plantClip = this.clips.find(clip => clip.name === 'Farm_PlantSeed');
+    const waterClip = this.clips.find(clip => clip.name === 'Farm_Watering');
+    const plant = plantClip ? mixer.clipAction(plantClip, root) : undefined;
+    const water = waterClip ? mixer.clipAction(waterClip, root) : undefined;
+
     const idle = idleClip ? mixer.clipAction(idleClip, root) : undefined;
     const walk = walkClip ? mixer.clipAction(walkClip, root) : undefined;
     const talk = talkClip ? mixer.clipAction(talkClip, root) : undefined;
@@ -902,6 +943,8 @@ export class ResidentWorldLayer {
       consume,
       harvest,
       carry,
+      plant,
+      water,
     ].forEach((action) => {
       action?.setLoop(THREE.LoopRepeat, Infinity);
     });
@@ -919,9 +962,15 @@ export class ResidentWorldLayer {
         * Math.max(0.001, walk.getClip().duration);
     }
 
+    const inventoryProps = new ResidentInventoryProps(visual, model);
+    inventoryProps.setInventory(resident.civilization?.inventory);
     const actor: ResidentActor = {
       root,
       visual,
+      model,
+      appearanceFacts: resident,
+      appearanceSignature: JSON.stringify(appearance),
+      inventoryProps,
       mixer,
       idle,
       walk,
@@ -933,6 +982,8 @@ export class ResidentWorldLayer {
       consume,
       harvest,
       carry,
+      plant,
+      water,
       active: idle ? 'idle' : '',
       activityLabel: resident.activityLabel ?? 'Idle',
       activityTargetId: resident.activityTargetId ?? '',
@@ -1263,6 +1314,8 @@ export class ResidentWorldLayer {
       case 'consume': return actor.consume;
       case 'harvest': return actor.harvest;
       case 'carry': return actor.carry;
+      case 'plant': return actor.plant;
+      case 'water': return actor.water;
       default: return actor.idle;
     }
   }
@@ -1321,7 +1374,8 @@ export class ResidentWorldLayer {
       RESIDENT_PRESENTATION_CONTRACT.animationCrossFadeSeconds;
     previous?.fadeOut(blendSeconds);
     next.enabled = true;
-    next.play().fadeIn(blendSeconds);
+    next.reset().play().fadeIn(blendSeconds);
     actor.active = desired;
   }
 }
+

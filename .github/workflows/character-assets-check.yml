@@ -6,6 +6,10 @@ on:
     paths:
       - 'Tools/prepare_web_character_assets.py'
       - '.github/workflows/character-assets-check.yml'
+      - 'web/src/render/resident-*.ts'
+      - 'web/tests/characters/**'
+      - 'web/tests/action-context/**'
+      - 'web/package.json'
   workflow_dispatch:
 
 permissions:
@@ -14,7 +18,7 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - name: 무료 CC0 자산 다운로드 및 고정 해시 검증
@@ -24,3 +28,23 @@ jobs:
           name: verified-character-assets
           path: web/public/vendor/characters/
           retention-days: 7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: 웹 의존성 설치
+        working-directory: web
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: 타입·행동·외형 회귀 및 빌드 검증
+        run: |
+          cd web
+          npm run typecheck
+          node tests/characters/run.mjs
+          node tests/action-context/run.mjs
+          npm run build
+      - name: 로컬 오프라인 검증용 의존성 보존
+        run: tar -czf character-test-deps.tar.gz -C web/node_modules three typescript
+      - uses: actions/upload-artifact@v4
+        with:
+          name: character-test-deps
+          path: character-test-deps.tar.gz
+          retention-days: 3
