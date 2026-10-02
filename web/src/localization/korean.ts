@@ -499,6 +499,38 @@ export const KOREAN_KNOWLEDGE_LEVEL_LABELS: Record<string, string> = {
   Mastered: '숙달',
 };
 
+export const KOREAN_CIVILIZATION_ERA_LABELS: Record<string, string> = {
+  NaturalSurvival: '자연 생존기',
+  EarlySettlement: '초기 정착기',
+  AgrarianSettlement: '농경 정착기',
+  CopperMetallurgy: '초기 금속기',
+  BronzeTechnology: '청동 기술기',
+  None: '다음 단계 없음',
+};
+
+export const KOREAN_CIVILIZATION_ERA_EVIDENCE_LABELS: Record<string, string> = {
+  OperationalSleepInfrastructure: '수면 시설 운영',
+  OperationalPrimitiveStorage: '원시 저장시설 운영',
+  OperationalFirePit: '화덕 운영',
+  OperationalShelter: '쉼터 운영',
+  StoreGoodsCapability: '물자 저장 능력',
+  ControlFireCapability: '불 사용 능력',
+  CarryLiquidCapability: '액체 운반 능력',
+  ResourceBuffering: '자원 비축 체계',
+  CultivateFoodCapability: '재배 능력',
+  OperationalCultivatedPlot: '운영 중인 경작지',
+  ManagedFoodProduction: '안정적인 관리 식량 생산',
+  CopperSmeltingOperational: '구리 제련 실제 운용',
+  SmeltMetalCapability: '금속 제련 능력',
+  OperationalFurnace: '운영 중인 용광로',
+  MetallurgicalProduction: '실제 금속 생산',
+  TinSmeltingOperational: '주석 제련 실제 운용',
+  BronzeAlloyingOperational: '청동 합금 실제 운용',
+  AlloyMetalCapability: '금속 합금 능력',
+  BronzeToolOperational: '청동 도구 운용·채택',
+  AdvancedTooling: '발전된 도구 생산',
+};
+
 export const KOREAN_MEMORY_TOKEN_LABELS: Record<string, string> = {
   experienced_unsanitary_surroundings: '비위생적인 주변 환경을 경험함',
   positive_interaction: '좋은 상호작용',
@@ -780,6 +812,19 @@ export function formatLifeEvent(value: string | undefined): string {
 
 export function formatKnowledgeLevel(value: string | undefined): string {
   return translated('지식수준', value, KOREAN_KNOWLEDGE_LEVEL_LABELS, '지식 수준 확인 중');
+}
+
+export function formatCivilizationEra(value: string | undefined): string {
+  return translated('문명시대', value, KOREAN_CIVILIZATION_ERA_LABELS, '문명 단계 확인 중');
+}
+
+export function formatCivilizationEraEvidence(value: string | undefined): string {
+  return translated(
+    '문명시대근거',
+    value,
+    KOREAN_CIVILIZATION_ERA_EVIDENCE_LABELS,
+    '판정 근거 확인 중',
+  );
 }
 
 export function formatLocationText(value: string | undefined): string {
