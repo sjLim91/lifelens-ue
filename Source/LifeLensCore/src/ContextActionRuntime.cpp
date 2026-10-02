@@ -354,8 +354,26 @@ bool Simulation::completeContextAction(
         }
 
         case ContextActionKind::Trade: {
+            TradeContextPayload trade=
+                tradeContextPayload(pending);
+
+            if(trade.returning){
+                if(!contextActionNearTarget(
+                        resolvedPosition,trade.originPos,1)){
+                    return false;
+                }
+                runtime.pos=resolvedPosition;
+                std::ostringstream log;
+                log<<actor.name
+                   <<" returned from inter-settlement trade to settlement "
+                   <<trade.originSettlement;
+                emit(log.str());
+                completed=true;
+                break;
+            }
+
             Character* partner=findContextCharacter(
-                world_,pending.social.target);
+                world_,trade.partner);
             if(partner==nullptr || !partner->alive || partner->id==actor.id){
                 pending.clear();
                 return false;
@@ -398,6 +416,16 @@ bool Simulation::completeContextAction(
             registerSocietyExchangeFact(
                 socialKnowledge_,actor,*partner,exchange,
                 world_.minute,world_.seed);
+            registerInterSettlementTradeFact(
+                socialKnowledge_,
+                actor,
+                *partner,
+                trade.originSettlement,
+                trade.destinationSettlement,
+                exchange,
+                world_.minute,
+                world_.seed);
+
             const bool hadPartnership=
                 hasSocietyTradePartnership(
                     socialKnowledge_,actor.id,partner->id);
@@ -421,15 +449,26 @@ bool Simulation::completeContextAction(
                     world_.minute+20);
 
             std::ostringstream log;
-            log<<actor.name<<" traveled for trade with "<<partner->name
-               <<" and exchanged "<<materialName(exchange.firstGives)
-               <<" for "<<materialName(exchange.secondGives);
+            log<<actor.name<<" traveled from settlement "
+               <<trade.originSettlement<<" to settlement "
+               <<trade.destinationSettlement<<" and exchanged "
+               <<materialName(exchange.firstGives)
+               <<" with "<<partner->name<<" for "
+               <<materialName(exchange.secondGives);
             if(partnership!=nullptr && !hadPartnership){
                 log<<" -> trade partnership";
             }
             emit(log.str());
-            completed=true;
-            break;
+
+            // The trade is not complete until the carrier returns. This keeps
+            // a trading journey from accidentally becoming migration and makes
+            // the route physically observable in both directions.
+            trade.returning=true;
+            setTradeContextPayload(pending,trade);
+            pending.hasSpatialTarget=true;
+            pending.targetPos=trade.originPos;
+            clearNavigation(runtime);
+            return false;
         }
 
         case ContextActionKind::KnowledgeTeaching: {
