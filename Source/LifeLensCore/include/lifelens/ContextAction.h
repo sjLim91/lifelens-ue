@@ -15,7 +15,10 @@ enum class ContextActionKind {
     Social,
     Civilization,
     Parenting,
-    KnowledgeTeaching
+    KnowledgeTeaching,
+    // C6-C: long-range resident-to-resident trade. Appended to preserve
+    // persisted enum ordinals used by the current snapshot codec.
+    Trade
 };
 
 struct PendingContextAction {
@@ -33,6 +36,9 @@ struct PendingContextAction {
     TechniqueId knowledgeTeachingTechnique=TechniqueId::None;
     double knowledgeTeachingScore=0.0;
 
+    // Trade intentionally reuses social.target as the resident counterpart.
+    // This keeps the pending-context binary layout unchanged while making the
+    // target relationship explicit in runtime semantics.
     bool hasSpatialTarget=false;
     GridPos targetPos{};
     SanitationSiteId sanitationSiteId=0;
@@ -86,6 +92,7 @@ inline int contextActionTimeoutMinutes(ContextActionKind kind)
         case ContextActionKind::Social: return 45;
         case ContextActionKind::Parenting: return 45;
         case ContextActionKind::KnowledgeTeaching: return 45;
+        case ContextActionKind::Trade: return 24*60;
         case ContextActionKind::Civilization: return 120;
         case ContextActionKind::None:
         default: return 0;
@@ -99,6 +106,8 @@ inline int contextActionDurationTicks(const PendingContextAction& action)
             return action.social.intent==SocialIntent::Avoid ? 1 : 3;
         case ContextActionKind::KnowledgeTeaching:
             return 6;
+        case ContextActionKind::Trade:
+            return 5;
         case ContextActionKind::Parenting:
             switch(action.parentingAction){
                 case ParentingAction::Feed: return 3;
@@ -514,6 +523,9 @@ inline PendingContextActionObservation observePendingContextAction(
         case ContextActionKind::KnowledgeTeaching:
             result.targetResident=pending.knowledgeTeachingTarget;
             result.technique=pending.knowledgeTeachingTechnique;
+            break;
+        case ContextActionKind::Trade:
+            result.targetResident=pending.social.target;
             break;
         case ContextActionKind::None:
         default:
