@@ -2577,6 +2577,7 @@ void Simulation::step(){
     }
     advanceCivilizationKnowledgeTeaching();
     advanceSocietyExchange();
+    advanceSocietyInstitutions();
     advanceAutonomousFamilyProgression();
 }
 void Simulation::runMinutes(int minutes){ for(int i=0;i<minutes;++i) step(); }
