@@ -211,6 +211,27 @@ export const KOREAN_SOCIETY_ROLE_LABELS: Record<string, string> = {
   Storekeeper: '저장·분배 전문',
 };
 
+export const KOREAN_SOCIETY_COORDINATION_TASK_LABELS: Record<string, string> = {
+  None: '조정 없음',
+  ProvisionFood: '식량 확보',
+  ProvisionWater: '물 확보',
+  MaterialSupply: '생산 재료 확보',
+  ToolProduction: '도구 생산',
+  Cultivation: '재배 담당',
+  Metallurgy: '금속 생산 담당',
+  SharedStorage: '공동 저장 관리',
+  Education: '교육 담당',
+  Care: '돌봄 담당',
+  Inquiry: '탐구·연구',
+};
+
+export const KOREAN_SOCIETY_RESOURCE_DISPOSITION_LABELS: Record<string, string> = {
+  PersonalReserve: '개인 비축 우선',
+  HouseholdReserve: '가구 비축 우선',
+  TradableSurplus: '교환 가능 여유분',
+  SharedSurplus: '공동 기여 여유분',
+};
+
 export const KOREAN_SOCIETY_INSTITUTION_LABELS: Record<string, string> = {
   LearningCircle: '학습망',
   ProductionNetwork: '생산 협업망',
