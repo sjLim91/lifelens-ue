@@ -283,10 +283,17 @@ void Simulation::advanceSocietyExchange()
 
     PendingContextAction trade;
     trade.token=issueContextActionToken();
-    trade.kind=ContextActionKind::Trade;
     trade.issuedMinute=world_.minute;
-    trade.social.target=mission.partner;
-    trade.social.utility=mission.score;
+    setTradeContextPayload(
+        trade,
+        TradeContextPayload{
+            mission.partner,
+            mission.score,
+            mission.originSettlement,
+            mission.destinationSettlement,
+            travelerRuntime->second.pos,
+            false
+        });
     trade.hasSpatialTarget=true;
     trade.targetPos=partnerRuntime->second.pos;
     runtime.pendingContext=trade;
