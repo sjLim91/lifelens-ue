@@ -112,16 +112,19 @@ struct CivilizationEraRequirementObservation {
     CivilizationEraEvidenceId id=
         CivilizationEraEvidenceId::OperationalSleepInfrastructure;
     bool satisfied=false;
+    bool mandatory=false;
 };
 
 struct CivilizationEraObservation {
     CivilizationEraId currentEra=CivilizationEraId::NaturalSurvival;
     int ordinal=0;
+    std::size_t minimumSatisfied=0;
     std::vector<CivilizationEraRequirementObservation> evidence;
 
     bool hasNextEra=false;
     CivilizationEraId nextEra=CivilizationEraId::NaturalSurvival;
     int nextOrdinal=0;
+    std::size_t nextMinimumSatisfied=0;
     std::vector<CivilizationEraRequirementObservation> nextRequirements;
 };
 
@@ -391,7 +394,11 @@ civilizationEraRequirementObservations(
     for(const auto id:definition.requirements){
         result.push_back({
             id,
-            civilizationEraEvidenceSatisfied(evidence,id)
+            civilizationEraEvidenceSatisfied(evidence,id),
+            std::find(
+                definition.mandatory.begin(),
+                definition.mandatory.end(),
+                id)!=definition.mandatory.end()
         });
     }
     return result;
@@ -421,6 +428,7 @@ inline CivilizationEraObservation buildCivilizationEraObservation(
     }
 
     if(currentDefinition!=nullptr){
+        result.minimumSatisfied=currentDefinition->minimumSatisfied;
         result.evidence=civilizationEraRequirementObservations(
             *currentDefinition,evidence);
     }
@@ -430,6 +438,7 @@ inline CivilizationEraObservation buildCivilizationEraObservation(
         result.hasNextEra=true;
         result.nextEra=definition.id;
         result.nextOrdinal=definition.ordinal;
+        result.nextMinimumSatisfied=definition.minimumSatisfied;
         result.nextRequirements=civilizationEraRequirementObservations(
             definition,evidence);
         break;
