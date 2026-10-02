@@ -1,5 +1,21 @@
 # LifeLens Project Status
 
+## 2026-10-02 — C5 Education / Specialization / Economy / Institutions
+
+- C5 completion chain: #578 C5-A, #579 C5-B, #580 C5-C/D closeout.
+- Education is causal: child/teen learning capacity, supervised practice, repeated teaching and persistent apprenticeship relationships feed future teaching selection.
+- Society roles remain emergent from actual skill, knowledge, successful technique use, care experience and personality; no fixed job flag is authoritative.
+- Settlement demand and role specialization feed actual Civilization utility, and C5-D closes the previous wiring gap by passing SocialKnowledge/Household context through the production UnifiedUtility path.
+- Resident coordination derives food/water/material supply, tool production, cultivation, metallurgy, storage, education, care and inquiry tasks from live demand + role + institution membership, with generalist fallback rather than mandatory assignments.
+- Resource policy protects personal reserve then household reserve before classifying tradable or StorageCommons-backed shared surplus. Shared-contribution history is emitted only after a real Core Store outcome.
+- Reciprocal barter moves real inventory, repeated exchange can form persistent trade partnerships, and exchange institutions feed later selection.
+- Proto-recordkeeping can consume real Clay/Wood to create a physical RecordTablet and a durable-record SocialKnowledge fact. This is a precursor only; Writing Technology is not fabricated or time-unlocked.
+- Learning / Production / Storage / Care / Exchange / Inquiry institutions remain evidence-derived and now participate in runtime coordination where appropriate.
+- Web Observer exposes roles, demand, apprenticeships, partnerships, memberships, coordination directives, resource disposition, shared contribution and durable record/media facts.
+- C5 validation uses targeted regressions plus Core/determinism/WASM/Web/Preflight gates; the separate 100-day audit is intentionally excluded.
+- Next roadmap milestone after C5 closeout is C6 — Migration / Multiple Settlements / Trade Networks. C6 has not been started by this unit.
+
+
 ## 2026-10-01 — C4 Health / Disease / Population Resilience
 
 - C4 completion unit: PR #577.
