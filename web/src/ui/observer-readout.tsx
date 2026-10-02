@@ -90,6 +90,21 @@ export function ObserverMetrics({
   );
 }
 
+const migrationMaterialLabels: Record<string, string> = {
+  Water: '물',
+  PlantFood: '식량',
+  Wood: '목재',
+  Stone: '석재',
+  Fiber: '섬유',
+  Clay: '점토',
+  Unknown: '미확인 자원',
+};
+
+function formatMigrationMaterial(material: string | undefined): string {
+  if (!material) return '미확인 자원';
+  return migrationMaterialLabels[material] ?? material;
+}
+
 function residentDisplayName(
   residents: Resident[],
   id: string | undefined,
@@ -231,6 +246,10 @@ export function SelectedResidentReadout({
     Critical: '위중',
   };
   const health=resident.health;
+  const migration=resident.migration;
+  const showMigrationPressure=
+    Number(migration?.pressure01) >= 0.12
+    || migration?.candidate === true;
   const activityTarget = !resident.presentation?.active && resident.activityTargetName
     ? ` → ${resident.activityTargetName}`
     : '';
@@ -256,6 +275,39 @@ export function SelectedResidentReadout({
       </p>
 
       <ResidentNeeds needs={resident.needs} />
+
+      {showMigrationPressure ? (
+        <div className="focused-life-section">
+          <h3>이동 / 이주 압력</h3>
+          <div className="focused-life-chips">
+            <span>
+              현재 압력 <b>{formatPercent(migration?.pressure01)}</b>
+            </span>
+            <span>
+              부족 자원 <b>{formatMigrationMaterial(migration?.bottleneckMaterial)}</b>
+            </span>
+            <span>
+              지역 희소성 <b>{formatPercent(migration?.resourceScarcity01)}</b>
+            </span>
+            <span>
+              이동 부담 <b>{formatPercent(migration?.travelBurden01)}</b>
+            </span>
+            <span>
+              정착 애착 <b>{formatPercent(migration?.settlementAttachment01)}</b>
+            </span>
+            {migration?.candidate
+              ? <span className="life-event-chip">이주 후보</span>
+              : null}
+            {migration?.hasFrontierTarget
+              ? (
+                  <span>
+                    탐색 거리 <b>{migration.frontierDistanceChunks ?? 0}청크</b>
+                  </span>
+                )
+              : null}
+          </div>
+        </div>
+      ) : null}
 
       <div className="focused-life-section">
         <h3>감정</h3>
