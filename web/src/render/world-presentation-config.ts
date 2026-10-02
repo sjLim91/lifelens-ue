@@ -10,7 +10,7 @@ export const WORLD_PRESENTATION = {
   weatheredColor: 0x898574,
   wearTint: 0.65,
   damageTilt: 0.12,
-  storage: { maxPiles: 4, unitsPerPile: 4, width: 0.32, height: 0.26, depth: 0.4 },
+  storage: { maxPiles: 4, unitsPerPile: 4, maxInventoryRows: 12, width: 0.32, height: 0.26, depth: 0.4 },
   fire: { glowSize: 2.8, opacity: 0.22, textureSize: 32, color: 0xff983a },
   resource: { fullScale: 1.04 },
   load: { maxPieces: 3, spacing: 0.055 },

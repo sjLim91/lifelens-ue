@@ -34,14 +34,14 @@ export function SettlementDetail({ snapshot }: { snapshot: ObserverSnapshot }) {
         <dl className="settlement-facts">
           <dt>인구</dt><dd>{settlement.residentCount}명</dd>
           <dt>정착 기반</dt><dd>{settlement.established ? '기반 형성' : '형성 중'}</dd>
-          <dt>활동</dt><dd>{settlement.active ? '주민 또는 시설 활동 확인' : '현재 활동 없음'}</dd>
+          <dt>활동</dt><dd>{settlement.active ? '주민·가동 시설·저장소 확인' : '현재 활동 없음'}</dd>
           <dt>시설</dt><dd>{settlement.facilityCount}곳 · 가동 {settlement.operationalFacilityCount}곳 · 계획 {settlement.plannedFacilityCount}곳</dd>
           <dt>저장소</dt><dd>{settlement.storageSiteCount}곳</dd>
         </dl>
         {storage && <section className="focused-life-section">
           <h3>대표 저장소 보관량</h3>
           <p>총 {storage.totalUnits}개</p>
-          <div className="focused-life-chips">{(storage.inventory ?? []).filter(item => item.quantity > 0).map(item =>
+          <div className="focused-life-chips">{(storage.inventory ?? []).filter(item => Number(item.quantity) > 0).slice(0, WORLD_PRESENTATION.storage.maxInventoryRows).map(item =>
             <span key={item.material}>{formatMaterial(item.material)} <b>{item.quantity}개</b></span>)}</div>
         </section>}
         <section className="focused-life-section">
