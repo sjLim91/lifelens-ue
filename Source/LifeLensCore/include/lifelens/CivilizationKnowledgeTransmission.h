@@ -198,6 +198,40 @@ inline bool techniqueImitationContextSatisfied(const Character& learner,Techniqu
         techniqueMaterialContextSatisfied(learner,technique);
 }
 
+inline bool techniqueTeachingCanAdvance(
+    const Character& teacher,
+    const Character& learner,
+    TechniqueId technique)
+{
+    if(teacher.id==0
+       || learner.id==0
+       || teacher.id==learner.id
+       || technique==TechniqueId::None){
+        return false;
+    }
+
+    const KnowledgeLevel learnerLevel=
+        learner.civilization.knowledge.level(technique);
+    if(static_cast<int>(learnerLevel)
+       >=static_cast<int>(KnowledgeLevel::Reproducible)){
+        return false;
+    }
+
+    if(learnerLevel!=KnowledgeLevel::Understood){
+        return true;
+    }
+
+    const KnowledgeLevel teacherLevel=
+        teacher.civilization.knowledge.level(technique);
+    return static_cast<int>(teacherLevel)
+            >=static_cast<int>(KnowledgeLevel::Practiced)
+        && techniquePrerequisiteContextSatisfied(learner,technique)
+        && (
+            techniqueMaterialContextSatisfied(learner,technique)
+            || techniqueMaterialContextSatisfied(teacher,technique)
+        );
+}
+
 inline const SocialFact* bestTechniqueFactForTeaching(
     const SocialKnowledgeBook& book,
     CharacterId teacher,
