@@ -78,7 +78,9 @@ enum class ItemKind {
     StoneHammer,
     // C1-F metal tools. Appended to preserve persisted item ordinals.
     BronzeAxe,
-    BronzePick
+    BronzePick,
+    // C5 durable proto-record medium. Appended to preserve persisted ordinals.
+    RecordTablet
 };
 
 enum class ToolCapability {
