@@ -1,6 +1,7 @@
 #include "lifelens/Simulation.h"
 #include "lifelens/EmotionRuntime.h"
 #include "lifelens/ToolEffectiveness.h"
+#include "lifelens/SocietyEconomy.h"
 
 #include <algorithm>
 #include <iomanip>
@@ -382,6 +383,13 @@ bool Simulation::completeContextAction(
             runtime.pos=resolvedPosition;
             runtime.socialCooldownUntilMinute=world_.minute+20;
 
+            const SocialFact* apprenticeship=nullptr;
+            if(outcome.receiptAccepted){
+                apprenticeship=registerSocietyApprenticeshipIfQualified(
+                    socialKnowledge_,actor,*learner,
+                    world_.minute,world_.seed);
+            }
+
             std::ostringstream log;
             if(outcome.result==TechniqueTeachingResult::Advanced){
                 log<<actor.name<<" taught "<<learner->name<<" "
@@ -396,6 +404,9 @@ bool Simulation::completeContextAction(
             }
             log<<" (teaching "<<std::fixed<<std::setprecision(2)
                <<pending.knowledgeTeachingScore<<")";
+            if(apprenticeship!=nullptr){
+                log<<" apprenticeship";
+            }
             emit(log.str());
             completed=true;
             break;
