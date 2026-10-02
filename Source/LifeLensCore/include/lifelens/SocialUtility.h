@@ -432,6 +432,8 @@ inline bool societyCoordinationMatchesCivilizationDecision(
                     || candidate.intent==CivilizationIntent::Explore);
         case SocietyCoordinationTask::ToolProduction:
             return candidate.intent==CivilizationIntent::Craft
+                && candidate.technique!=TechniqueId::None
+                && candidate.facilityAction==FacilityBuildAction::None
                 && candidate.technique!=TechniqueId::Cultivation
                 && candidate.technique!=TechniqueId::CopperSmelting
                 && candidate.technique!=TechniqueId::TinSmelting
@@ -473,12 +475,8 @@ inline CivilizationUtilityDecision applySocietyCoordinationBias(
         observeSocietyCoordinationDirective(
             world,*socialKnowledge,self,households);
     double adjustment=0.0;
-    if(societyCoordinationMatchesCivilizationDecision(
-            directive,candidate)){
-        adjustment+=0.05+0.08*directive.priority01;
-        if(directive.institutionBacked) adjustment+=0.035;
-    }
 
+    bool protectedStoreReserve=false;
     if(candidate.material!=MaterialKind::Unknown
        && (candidate.intent==CivilizationIntent::Store
            || candidate.intent==CivilizationIntent::Retrieve)){
@@ -489,9 +487,12 @@ inline CivilizationUtilityDecision applySocietyCoordinationBias(
             if(disposition==SocietyResourceDisposition::SharedSurplus){
                 adjustment+=0.11;
             }else if(disposition==SocietyResourceDisposition::HouseholdReserve){
-                adjustment-=0.10;
+                // Household continuity outranks commons participation.
+                adjustment-=0.18;
+                protectedStoreReserve=true;
             }else if(disposition==SocietyResourceDisposition::PersonalReserve){
-                adjustment-=0.08;
+                adjustment-=0.20;
+                protectedStoreReserve=true;
             }
         }else if(candidate.intent==CivilizationIntent::Retrieve){
             if(disposition==SocietyResourceDisposition::PersonalReserve
@@ -499,6 +500,15 @@ inline CivilizationUtilityDecision applySocietyCoordinationBias(
                 adjustment+=0.05;
             }
         }
+    }
+
+    // Do not let a StorageCommons membership override personal/household
+    // reserves. Institution coordination applies only after protected stock.
+    if(!protectedStoreReserve
+       && societyCoordinationMatchesCivilizationDecision(
+            directive,candidate)){
+        adjustment+=0.05+0.08*directive.priority01;
+        if(directive.institutionBacked) adjustment+=0.035;
     }
 
     candidate.utility=socialClamp01(candidate.utility+adjustment);
