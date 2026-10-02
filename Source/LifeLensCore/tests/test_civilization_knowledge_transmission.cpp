@@ -78,6 +78,7 @@ int main()
 
     const SocialFact* fact=book.findFact(origin->factId);
     CHECK(fact!=nullptr);
+    CHECK(fact->proposition=="demonstrated civilization technique:SharpFlake");
     const SocialFactId factId=fact->id;
     const TechniqueTransmissionOutcome witnessed=applyTechniqueWitness(
         book,*fact,teacher,observer,seed,601);
@@ -104,6 +105,7 @@ int main()
     CHECK(bronzeOrigin!=nullptr);
     const SocialFact* bronzeFact=bronzeBook.findFact(bronzeOrigin->factId);
     CHECK(bronzeFact!=nullptr);
+    CHECK(bronzeFact->proposition=="demonstrated civilization technique:BronzeAxe");
     const TechniqueTransmissionOutcome bronzeWitness=applyTechniqueWitness(
         bronzeBook,*bronzeFact,bronzeTeacher,bronzeObserver,seed,606);
     CHECK(bronzeWitness.receiptAccepted);
