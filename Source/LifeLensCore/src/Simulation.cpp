@@ -1273,7 +1273,8 @@ bool Simulation::tryCivilizationDecision(Character& c,Runtime& r){
         decision.utility=urgentProvision.utility;
     }else{
         decision=chooseUnifiedUtilityDecisionAtPosition(
-            world_,c,relationships_,r.pos,0.18,0.14,&population);
+            world_,c,relationships_,r.pos,0.18,0.14,&population,
+            &socialKnowledge_,&households_);
         if(decision.kind!=UnifiedDecisionKind::Civilization){
             return false;
         }
@@ -1317,9 +1318,11 @@ bool Simulation::trySocialDecision(Character& c,Runtime& r){
     const auto population=settlementPopulation();
     const UnifiedUtilityDecision decision=world_.minute%15==0
         ? chooseUnifiedUtilityDecisionAtPosition(
-            world_,c,relationships_,r.pos,0.18,0.14,&population)
+            world_,c,relationships_,r.pos,0.18,0.14,&population,
+            &socialKnowledge_,&households_)
         : chooseUnifiedUtilityDecisionAtPosition(
-            world_,c,relationships_,r.pos,0.18,2.0,&population);
+            world_,c,relationships_,r.pos,0.18,2.0,&population,
+            &socialKnowledge_,&households_);
     if(decision.kind!=UnifiedDecisionKind::Social || decision.social.intent==SocialIntent::None) return false;
 
     const Character* target=findCharacter(world_,decision.social.target);
@@ -2578,6 +2581,7 @@ void Simulation::step(){
     advanceCivilizationKnowledgeTeaching();
     advanceSocietyExchange();
     advanceSocietyInstitutions();
+    advanceSocietyRecordkeeping();
     advanceAutonomousFamilyProgression();
 }
 void Simulation::runMinutes(int minutes){ for(int i=0;i<minutes;++i) step(); }

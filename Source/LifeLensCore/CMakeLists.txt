@@ -207,6 +207,7 @@ lifelens_add_test(test_civilization_technology_graph)
 lifelens_add_test(test_civilization_rediscovery_adoption)
 lifelens_add_test(test_society_economy)
 lifelens_add_test(test_society_associations)
+lifelens_add_test(test_society_coordination_records)
 
 
 # Browser client: compile the same LifeLensCore into WebAssembly. The generated

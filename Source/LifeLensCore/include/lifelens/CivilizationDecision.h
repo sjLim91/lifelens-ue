@@ -2617,7 +2617,12 @@ inline double societyRoleDecisionAdjustment(
             if(decision.intent==CivilizationIntent::Explore) return 0.04;
             break;
         case SocietyRole::Craftsperson:
-            if(decision.intent==CivilizationIntent::Craft) return 0.09;
+            // Specialization supports actual technique production, not generic
+            // settlement construction. Facility demand/capacity keeps its own
+            // authority and must not be reordered by a craft role label.
+            if(decision.intent==CivilizationIntent::Craft
+               && decision.technique!=TechniqueId::None
+               && decision.facilityAction==FacilityBuildAction::None) return 0.09;
             if(decision.intent==CivilizationIntent::Experiment) return 0.04;
             break;
         case SocietyRole::Farmer:

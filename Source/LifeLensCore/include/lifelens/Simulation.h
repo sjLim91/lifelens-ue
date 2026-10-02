@@ -150,7 +150,8 @@ public:
         return buildCivilizationWorldObservation(world_,socialKnowledge_,maxRecentDiscoveries);
     }
     SocietyWorldObservation observeSocietyWorld() const {
-        return buildSocietyWorldObservation(world_,socialKnowledge_);
+        return buildSocietyWorldObservation(
+            world_,socialKnowledge_,&households_);
     }
     CivilizationWorldObservation observeCivilizationWorldWindow(
         ChunkCoord center,
@@ -270,6 +271,7 @@ private:
     void advanceCivilizationKnowledgeTeaching();
     void advanceSocietyExchange();
     void advanceSocietyInstitutions();
+    void advanceSocietyRecordkeeping();
     void advanceDependentCare();
     void advanceAutonomousFamilyProgression();
     void updatePregnanciesAndBirths();

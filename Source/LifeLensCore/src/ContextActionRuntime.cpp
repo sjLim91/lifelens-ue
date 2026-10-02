@@ -282,6 +282,16 @@ bool Simulation::completeContextAction(
             }
 
             processCivilizationKnowledgeEvent(actor,result.event);
+            if(result.event.type==CivilizationEventType::Stored
+               && result.event.material!=MaterialKind::Unknown
+               && result.event.quantity>0
+               && residentInstitutionMember(
+                    socialKnowledge_,actor.id,
+                    SocietyInstitutionKind::StorageCommons)){
+                registerSocietySharedContributionFact(
+                    socialKnowledge_,actor,result.event.material,
+                    result.event.quantity,world_.minute,world_.seed);
+            }
             runtime.civilizationActive=true;
             runtime.civilizationEvent=result.event;
             runtime.civilizationActivityMinute=world_.minute;

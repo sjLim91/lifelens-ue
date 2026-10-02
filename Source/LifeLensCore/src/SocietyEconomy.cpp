@@ -172,12 +172,106 @@ void Simulation::advanceSocietyExchange()
     emit(log.str());
 }
 
+void Simulation::advanceSocietyRecordkeeping()
+{
+    if(world_.minute<=0 || world_.minute%360!=0) return;
+    const SocietyWorldObservation society=
+        buildSocietyWorldObservation(
+            world_,socialKnowledge_,&households_);
+    if(static_cast<int>(society.recordStage)
+       <static_cast<int>(CollectiveRecordStage::ProtoRecordkeeping)){
+        return;
+    }
+
+    const SocialFact* target=
+        bestSocietyDurableRecordCandidate(socialKnowledge_);
+    if(target==nullptr) return;
+
+    Character* recorder=nullptr;
+    double bestScore=-1.0;
+    MaterialKind medium=MaterialKind::Unknown;
+    for(Character& resident:world_.characters){
+        if(!resident.alive || !lifeStageProfile(resident.lifeStage).canWork){
+            continue;
+        }
+        const bool organizationMember=
+            residentInstitutionMember(
+                socialKnowledge_,resident.id,
+                SocietyInstitutionKind::LearningCircle)
+            || residentInstitutionMember(
+                socialKnowledge_,resident.id,
+                SocietyInstitutionKind::InquiryCircle)
+            || residentInstitutionMember(
+                socialKnowledge_,resident.id,
+                SocietyInstitutionKind::StorageCommons);
+        if(!organizationMember) continue;
+
+        MaterialKind candidateMedium=MaterialKind::Unknown;
+        if(resident.civilization.inventory.count(
+                ItemKind::RawMaterial,MaterialKind::Clay)
+           >residentExchangeReserve(resident,MaterialKind::Clay)){
+            candidateMedium=MaterialKind::Clay;
+        }else if(resident.civilization.inventory.count(
+                ItemKind::RawMaterial,MaterialKind::Wood)
+           >residentExchangeReserve(resident,MaterialKind::Wood)){
+            candidateMedium=MaterialKind::Wood;
+        }
+        if(candidateMedium==MaterialKind::Unknown) continue;
+
+        const ResidentSocietyStatus status=
+            observeResidentSocietyStatus(resident);
+        const double roleBonus=
+            status.role==SocietyRole::Educator ? 0.24
+            : status.role==SocietyRole::Storekeeper ? 0.18
+            : status.role==SocietyRole::Craftsperson ? 0.14
+            : 0.0;
+        const double score=
+            roleBonus
+            +0.34*resident.civilization.learningSkill
+            +0.22*resident.personality.conscientiousness
+            +0.20*resident.personality.orderliness;
+        if(score>bestScore+1e-12
+           || (std::abs(score-bestScore)<=1e-12
+               && (recorder==nullptr || resident.id<recorder->id))){
+            recorder=&resident;
+            bestScore=score;
+            medium=candidateMedium;
+        }
+    }
+    if(recorder==nullptr || medium==MaterialKind::Unknown) return;
+
+    if(!recorder->civilization.inventory.remove(
+            ItemKind::RawMaterial,medium,1)){
+        return;
+    }
+    recorder->civilization.inventory.add(
+        {ItemKind::RecordTablet,medium,1,0.72,0.92});
+
+    const SocialFact* record=registerSocietyDurableRecordFact(
+        socialKnowledge_,*recorder,*target,medium,
+        world_.minute,world_.seed);
+    if(record==nullptr){
+        recorder->civilization.inventory.remove(
+            ItemKind::RecordTablet,medium,1);
+        recorder->civilization.inventory.add(
+            {ItemKind::RawMaterial,medium,1,0.5,1.0});
+        return;
+    }
+
+    std::ostringstream log;
+    log<<recorder->name<<" preserved social knowledge on "
+       <<(medium==MaterialKind::Clay ? "clay" : "wood")
+       <<" record media";
+    emit(log.str());
+}
+
 void Simulation::advanceSocietyInstitutions()
 {
     if(world_.minute<=0 || world_.minute%360!=0) return;
 
     const SocietyWorldObservation observation=
-        buildSocietyWorldObservation(world_,socialKnowledge_);
+        buildSocietyWorldObservation(
+            world_,socialKnowledge_,&households_);
     constexpr std::array<SocietyInstitutionKind,6> kinds={{
         SocietyInstitutionKind::LearningCircle,
         SocietyInstitutionKind::ProductionNetwork,
