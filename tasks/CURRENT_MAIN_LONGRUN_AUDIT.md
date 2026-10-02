@@ -40,3 +40,9 @@
 - #540 위생 후보 실험 wholesale merge
 - 결과가 마음에 안 든다는 이유로 seed별 예외 하드코딩
 - 브라우저에서 Core 결과를 보정
+
+## C6 closeout revalidation
+
+- target main: `b365d788c32f8b4b4f1874641b98b4492dfeb507`
+- scope: C6-D/E/F/G 이후 100 / 365 / 1000일, seeds 874213954 + 4242001 재검증
+- 목적: 조기 정착지 분열, 생존/사회/가족/문명 starvation, 이주/교역/집단관계 회귀 확인
