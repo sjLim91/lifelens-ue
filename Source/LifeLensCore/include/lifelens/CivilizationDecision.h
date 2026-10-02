@@ -20,6 +20,7 @@
 #include "ResourceExploration.h"
 #include "MigrationPressure.h"
 #include "SettlementProgression.h"
+#include "SettlementProduction.h"
 #include "SocietyEconomy.h"
 #include "World.h"
 
@@ -2693,6 +2694,55 @@ inline CivilizationUtilityDecision applySocietyRoleAndDemandUtility(
     return decision;
 }
 
+inline CivilizationUtilityDecision applySettlementProductionSpecializationUtility(
+    const SettlementProductionProfile* production,
+    CivilizationUtilityDecision decision)
+{
+    if(production==nullptr
+       || !production->specialized
+       || decision.intent==CivilizationIntent::None){
+        return decision;
+    }
+
+    double affinity=0.0;
+    switch(decision.intent){
+        case CivilizationIntent::Gather:
+            if(decision.material!=MaterialKind::Unknown){
+                affinity=settlementProductionMaterialAffinity(
+                    *production,decision.material);
+            }
+            break;
+        case CivilizationIntent::Craft:
+            if(decision.technique!=TechniqueId::None){
+                affinity=settlementProductionTechniqueAffinity(
+                    *production,decision.technique);
+            }
+            break;
+        case CivilizationIntent::Store:
+            affinity=production->logistics01;
+            break;
+        case CivilizationIntent::Retrieve:
+            affinity=0.50*production->logistics01;
+            break;
+        case CivilizationIntent::Explore:
+        case CivilizationIntent::Experiment:
+        case CivilizationIntent::None:
+        default:
+            return decision;
+    }
+
+    // Local specialization is a preference, not a feasibility gate. The
+    // reinforcement remains weaker than resident-role and demand adjustments,
+    // so survival/current scarcity can still redirect work.
+    const double bonus=
+        0.06
+        *production->specialization01
+        *clampSettlementProduction01(affinity);
+    decision.utility=clampCivilization01(
+        decision.utility+bonus);
+    return decision;
+}
+
 inline CivilizationUtilityDecision chooseCivilizationUtilityDecisionAtPosition(
     const World& world,
     const Character& self,
@@ -2701,31 +2751,50 @@ inline CivilizationUtilityDecision chooseCivilizationUtilityDecisionAtPosition(
 {
     CivilizationUtilityDecision best;
     if(self.id==0 || self.civilization.character!=self.id) return best;
+
+    SettlementProductionNetworkObservation productionNetwork;
+    const SettlementProductionProfile* production=nullptr;
+    if(population!=nullptr){
+        productionNetwork=observeSettlementProductionNetwork(
+            world,*population);
+        production=settlementProductionAtPosition(
+            productionNetwork,authoritativePosition);
+    }
+
+    const auto regionalize=[&](
+        CivilizationUtilityDecision decision)
+    {
+        return applySettlementProductionSpecializationUtility(
+            production,
+            applySocietyRoleAndDemandUtility(
+                world,self,decision));
+    };
+
     considerCivilizationDecision(
-        best,applySocietyRoleAndDemandUtility(
-            world,self,bestExperimentDecisionAtPosition(
+        best,regionalize(
+            bestExperimentDecisionAtPosition(
                 world,self,authoritativePosition,population)));
     considerCivilizationDecision(
-        best,applySocietyRoleAndDemandUtility(
-            world,self,applyTechnologyAdoptionUtility(
+        best,regionalize(
+            applyTechnologyAdoptionUtility(
                 world,self,
                 bestCraftDecisionAtPosition(
                     world,self,authoritativePosition,population))));
     considerCivilizationDecision(
-        best,applySocietyRoleAndDemandUtility(
-            world,self,bestRetrieveDecisionAtPosition(
+        best,regionalize(
+            bestRetrieveDecisionAtPosition(
                 world,self,authoritativePosition)));
     considerCivilizationDecision(
-        best,applySocietyRoleAndDemandUtility(
-            world,self,bestStoreDecisionAtPosition(
+        best,regionalize(
+            bestStoreDecisionAtPosition(
                 world,self,authoritativePosition)));
     considerCivilizationDecision(
-        best,applySocietyRoleAndDemandUtility(
-            world,self,bestResourceExplorationDecisionAtPosition(
+        best,regionalize(
+            bestResourceExplorationDecisionAtPosition(
                 world,self,authoritativePosition,population)));
     considerCivilizationDecision(
-        best,applySocietyRoleAndDemandUtility(
-            world,self,bestGatherDecisionAtPosition(
+        best,regionalize(
+            bestGatherDecisionAtPosition(
                 world,self,authoritativePosition,population)));
     return best;
 }
