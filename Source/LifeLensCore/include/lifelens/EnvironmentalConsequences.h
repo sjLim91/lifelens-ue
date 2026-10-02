@@ -21,6 +21,33 @@ struct EnvironmentalConsequenceProfile {
     NeedsDelta perMinuteNeedsDelta{};
 };
 
+struct SleepEnvironmentEvaluation {
+    double exposure01=0.0;
+    double effectiveExposure01=0.0;
+    double recoveryMultiplier01=1.0;
+    bool weatherProtectionPreferred=false;
+    bool exposedEmergencyOnly=false;
+};
+
+// One centralized sleep/weather policy. Simulation and settlement selection
+// consume this pure result instead of scattering rain/wind/temperature
+// thresholds through action code.
+struct SleepEnvironmentContract {
+    double weatherProtectionPreferredExposure01=0.22;
+    double exposedEmergencyExposure01=0.50;
+    double weatherProtectionExposureReduction01=0.82;
+    double exposedRecoveryPenaltyWeight=0.50;
+    double minimumRecoveryMultiplier01=0.45;
+    double protectedTargetBonusWeight=0.75;
+    double exposedTargetPenaltyWeight=0.45;
+    double protectedReplanUtilityMargin=0.12;
+    double travelCostReferenceGrid=24.0;
+    double travelCostBaseWeight=0.18;
+    double travelCostFatigueWeight=0.30;
+};
+
+inline constexpr SleepEnvironmentContract DefaultSleepEnvironmentContract{};
+
 inline double clampEnvironmentalConsequence01(double value)
 {
     return std::max(0.0,std::min(1.0,value));
@@ -87,6 +114,38 @@ inline EnvironmentalConsequenceProfile deriveEnvironmentalConsequences(
     result.perMinuteNeedsDelta.hygiene=
         0.00012*result.wetStress01;
 
+    return result;
+}
+
+inline SleepEnvironmentEvaluation evaluateSleepEnvironment(
+    const EnvironmentalConsequenceProfile& consequence,
+    bool weatherProtected,
+    const SleepEnvironmentContract& contract=
+        DefaultSleepEnvironmentContract)
+{
+    SleepEnvironmentEvaluation result;
+    result.exposure01=clampEnvironmentalConsequence01(
+        0.44*consequence.wetStress01
+        +0.24*consequence.coldStress01
+        +0.18*consequence.heatStress01
+        +0.14*consequence.outdoorWorkFriction01);
+
+    const double protection=weatherProtected
+        ? contract.weatherProtectionExposureReduction01
+        : 0.0;
+    result.effectiveExposure01=clampEnvironmentalConsequence01(
+        result.exposure01*(1.0-protection));
+    result.recoveryMultiplier01=std::clamp(
+        1.0-contract.exposedRecoveryPenaltyWeight
+            *result.effectiveExposure01,
+        contract.minimumRecoveryMultiplier01,
+        1.0);
+    result.weatherProtectionPreferred=
+        result.exposure01>=
+            contract.weatherProtectionPreferredExposure01;
+    result.exposedEmergencyOnly=
+        !weatherProtected
+        && result.exposure01>=contract.exposedEmergencyExposure01;
     return result;
 }
 
