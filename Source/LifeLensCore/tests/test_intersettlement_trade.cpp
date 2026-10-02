@@ -283,7 +283,6 @@ int main()
         runtime->second.navigationArrived=false;
         runtime->second.navigationRouteFailed=false;
         runtime->second.socialActive=false;
-        runtime->second.civilizationActive=false;
         runtime->second.penaltyUntilMinute=10000;
         runtime->second.pos=runtimeOrigin;
     }
