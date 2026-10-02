@@ -34,8 +34,8 @@ struct PhysiologyBalance {
 
     // Gross recovery. Normal Need decay still runs while asleep.
     double outdoorSleepRecoveryPerMinute=0.00225;
-    double shelterSleepRecoveryBasePerMinute=0.00310;
-    double shelterSleepRecoveryEffectivenessBonus=0.00020;
+    double shelterSleepRecoveryBasePerMinute=0.00305;
+    double shelterSleepRecoveryEffectivenessBonus=0.00015;
     double sleepingPlaceRecoveryBasePerMinute=0.00295;
     double sleepingPlaceRecoveryEffectivenessBonus=0.00015;
     double smartObjectSleepRecoveryPerMinute=0.00300;
