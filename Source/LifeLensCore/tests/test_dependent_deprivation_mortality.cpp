@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <string>
 
+#include "lifelens/FamilyProgression.h"
 #include "lifelens/Simulation.h"
 
 using namespace lifelens;
@@ -87,7 +88,7 @@ int main()
     assert(!liveChild->lifeHistory.empty());
     const LifeHistoryEntry& death=liveChild->lifeHistory.back();
     assert(death.type==LifeEventType::Death);
-    assert(death.detail==static_cast<int>(DeathCause::Deprivation));
+    assert(death.value==static_cast<int>(DeathCause::Deprivation));
 
     return 0;
 }
