@@ -142,8 +142,8 @@ assert_covered(
 )
 assert "demonstrated civilization technique:" in LOCALIZATION
 assert "civilizationTechniqueFromStatement" in LOCALIZATION
-assert r"/^fact:\\d+$/i" in LOCALIZATION
-assert r"/^hop:\\d+$/i" in LOCALIZATION
+assert r"/^fact:\d+$/i" in LOCALIZATION
+assert r"/^hop:\d+$/i" in LOCALIZATION
 
 belief_tokens = set(re.findall(r'effect\.proposition\s*=\s*"([^"]+)"', social))
 assert belief_tokens, "belief proposition tokens missing"
