@@ -21,6 +21,7 @@
 #include "SettlementKnowledge.h"
 #include "SettlementProduction.h"
 #include "SettlementTrade.h"
+#include "SettlementRelations.h"
 #include "ObserverReadModelV2.h"
 #include "Parenting.h"
 #include "Planner.h"
@@ -198,6 +199,15 @@ public:
         const SettlementPopulation population=settlementPopulation();
         return lifelens::observeSettlementProductionNetwork(
             world_,population);
+    }
+    SettlementGroupRelationsObservation observeSettlementGroupRelations() const {
+        const SettlementPopulation population=settlementPopulation();
+        const SettlementNetworkObservation network=
+            lifelens::observeSettlementNetwork(
+                world_,&population);
+        return lifelens::observeSettlementGroupRelations(
+            world_,relationships_,socialKnowledge_,
+            network,population);
     }
     SettlementTradeNetworkObservation observeSettlementTradeNetwork() const {
         const SettlementPopulation population=settlementPopulation();

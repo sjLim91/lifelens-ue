@@ -249,12 +249,27 @@ void Simulation::advanceSocietyExchange()
     }
     if(eligible.size()<2) return;
 
-    const InterSettlementTradeMission mission=
+    InterSettlementTradeMission mission=
         bestInterSettlementTradeMission(
             world_,network,population,
             relationships_,socialKnowledge_,&eligible);
-    if(!mission.available
-       || mission.score<InterSettlementTradeMissionThreshold){
+    if(!mission.available) return;
+
+    const SettlementGroupRelationsObservation groupRelations=
+        lifelens::observeSettlementGroupRelations(
+            world_,relationships_,socialKnowledge_,
+            network,population);
+    const SettlementGroupRelationObservation* groupRelation=
+        settlementGroupRelationBetween(
+            groupRelations,
+            mission.originSettlement,
+            mission.destinationSettlement);
+    mission.score=societyClamp01(
+        mission.score
+        +settlementGroupTradeUtilityAdjustment(
+            groupRelation));
+
+    if(mission.score<InterSettlementTradeMissionThreshold){
         return;
     }
 
