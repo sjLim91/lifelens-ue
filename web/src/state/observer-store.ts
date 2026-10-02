@@ -17,6 +17,7 @@ import {
   type ObservationEvent,
 } from './observation-feed';
 import { visibleHumanTraces } from './human-traces';
+import { representativeSettlementForTrace } from './settlement-observation';
 import {
   INITIAL_FAST_FORWARD_STATE,
   type FastForwardState,
@@ -52,6 +53,7 @@ export interface ObserverSnapshot {
   simulationSpeed: number;
   selectedResidentId: string | null;
   selectedHumanTraceId: string | null;
+  selectedSettlementId: string | null;
   focusedObservationId: string | null;
   observations: ObservationEvent[];
   fastForward: FastForwardState;
@@ -97,6 +99,7 @@ const INITIAL_STATE: ObserverSnapshot = {
   simulationSpeed: SIMULATION_TIME_CONTRACT.defaultSpeed,
   selectedResidentId: null,
   selectedHumanTraceId: null,
+  selectedSettlementId: null,
   focusedObservationId: null,
   observations: [],
   fastForward: INITIAL_FAST_FORWARD_STATE,
@@ -162,6 +165,9 @@ class ObserverStore {
       ...this.snapshot,
       ...patch,
       selectedResidentId,
+      selectedSettlementId: !worldChanged && nextCivilization.available === true
+        && nextCivilization.settlements?.some(entry => entry.id === this.snapshot.selectedSettlementId)
+        ? this.snapshot.selectedSettlementId : null,
       selectedHumanTraceId: !worldChanged && visibleHumanTraces(
         patch.terrain !== undefined ? patch.terrain : this.snapshot.terrain,
       ).some(trace => trace.id === this.snapshot.selectedHumanTraceId)
@@ -193,6 +199,7 @@ class ObserverStore {
     if (
       next === this.snapshot.selectedResidentId
       && !this.snapshot.selectedHumanTraceId
+      && !this.snapshot.selectedSettlementId
       && !this.snapshot.focusedObservationId
     ) {
       return;
@@ -202,6 +209,7 @@ class ObserverStore {
       ...this.snapshot,
       selectedResidentId: next,
       selectedHumanTraceId: null,
+      selectedSettlementId: null,
       focusedObservationId: null,
       revision: this.snapshot.revision + 1,
     };
@@ -214,7 +222,21 @@ class ObserverStore {
       ...this.snapshot,
       selectedHumanTraceId: next,
       selectedResidentId: null,
+      selectedSettlementId: representativeSettlementForTrace(
+        visibleHumanTraces(this.snapshot.terrain).find(trace => trace.id === next), this.snapshot.civilization,
+      )?.id ?? null,
       focusedObservationId: null,
+      revision: this.snapshot.revision + 1,
+    };
+    this.emit();
+  }
+
+  selectSettlement(id: string | null): void {
+    const next = this.snapshot.civilization.available === true
+      && this.snapshot.civilization.settlements?.some(entry => entry.id === id) ? id : null;
+    this.snapshot = {
+      ...this.snapshot, selectedSettlementId: next, selectedResidentId: null,
+      selectedHumanTraceId: null, focusedObservationId: null,
       revision: this.snapshot.revision + 1,
     };
     this.emit();
@@ -236,6 +258,7 @@ class ObserverStore {
       focusedObservationId: eventId,
       selectedResidentId,
       selectedHumanTraceId: null,
+      selectedSettlementId: null,
       revision: this.snapshot.revision + 1,
     };
     this.emit();

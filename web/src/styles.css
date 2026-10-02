@@ -1286,3 +1286,21 @@ button:disabled { opacity: .33; cursor: default; }
     animation: none;
   }
 }
+/* One bounded settlement popup shared by desktop and touch screens. */
+.settlement-dialog {
+  width: min(440px, calc(100vw - 24px));
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 18px;
+  color: var(--text, #e8e8dc);
+  background: #17201eeF;
+  border: 1px solid #8b967a;
+  border-radius: 14px;
+  box-shadow: 0 10px 40px #0006;
+}
+.settlement-dialog::backdrop { background: #0003; }
+.settlement-dialog h2 { margin: 0; font-size: 1.1rem; }
+.settlement-facts { display: grid; grid-template-columns: 5rem 1fr; gap: 10px; }
+.settlement-facts dt { color: #b6c0b0; }
+.settlement-facts dd { margin: 0; }

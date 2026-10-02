@@ -24,6 +24,7 @@ import {
 import { RenderModeControl } from './ui/render-mode-control';
 import { HumanTraceDetail, HumanTracePanel } from './ui/human-traces';
 import { WorldActivityPanel } from './ui/world-activity';
+import { SettlementDetail } from './ui/settlement-detail';
 import { FastForwardControl } from './ui/fast-forward-control';
 import { visibleHumanTraces } from './state/human-traces';
 import { formatResidentName } from './ui/observer-format';
@@ -733,6 +734,7 @@ export default function App() {
         onView={setMobileModal}
         onClose={() => setMobileModal(null)}
       />
+      <SettlementDetail snapshot={snapshot} />
     </div>
   );
 }

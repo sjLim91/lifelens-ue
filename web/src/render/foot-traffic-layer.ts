@@ -62,6 +62,10 @@ export class FootTrafficLayer {
     this.geometry.attributes.color.needsUpdate = true;
   }
 
+  setSpeed(speed: number): void { this.history.setSpeed(speed); }
+
+  breakContinuity(): void { this.history.breakContinuity(); }
+
   dispose(): void {
     this.geometry.dispose(); this.material.dispose(); this.group.clear();
   }

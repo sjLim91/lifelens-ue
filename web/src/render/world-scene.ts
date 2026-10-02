@@ -1,4 +1,5 @@
 import { FootTrafficLayer } from './foot-traffic-layer';
+import { SettlementFocusLayer } from './settlement-focus-layer';
 import * as THREE from 'three';
 import type {
   CivilizationWorldPayload,
@@ -53,6 +54,7 @@ export class WorldScene {
   private readonly authoritativeSpatialTargetLayer =
     new AuthoritativeSpatialTargetLayer();
   private readonly footTrafficLayer = new FootTrafficLayer();
+  private readonly settlementFocusLayer = new SettlementFocusLayer();
   private footTrafficResidents: Resident[] = [];
   private footTrafficTerrain: TerrainWindow | null = null;
   private readonly facilityLayer = new FacilityLayer();
@@ -88,6 +90,7 @@ export class WorldScene {
     this.scene.add(this.authoritativeSpatialTargetLayer.group);
     this.scene.add(this.facilityLayer.group);
     this.scene.add(this.footTrafficLayer.group);
+    this.scene.add(this.settlementFocusLayer.group);
     this.scene.add(this.humanTraceLayer.group);
     this.scene.add(this.waterLayer.group);
     this.scene.add(this.vegetationLayer.group);
@@ -173,7 +176,10 @@ export class WorldScene {
 
   setSimulationSpeed(speed: number): void {
     this.residentLayer.setSimulationSpeed(speed);
+    this.footTrafficLayer.setSpeed(speed);
   }
+
+  breakFootTrafficContinuity(): void { this.footTrafficLayer.breakContinuity(); }
 
   pickResident(normalizedX: number, normalizedY: number): string | null {
     this.pointer.set(normalizedX, normalizedY);
@@ -200,12 +206,22 @@ export class WorldScene {
     this.humanTraceLayer.setSelectedTrace(id);
   }
 
+  setSelectedSettlement(id: string | null): void { this.settlementFocusLayer.select(id); }
+
+  pickSettlement(normalizedX: number, normalizedY: number): string | null {
+    this.camera.updateMatrixWorld();
+    this.pointer.set(normalizedX, normalizedY);
+    this.raycaster.setFromCamera(this.pointer, this.camera);
+    return this.settlementFocusLayer.pick(this.raycaster);
+  }
+
   setAuthoritativeSpatialTargets(
     civilization: CivilizationWorldPayload,
     worldObjects: WorldObjectsPayload,
     terrain: TerrainWindow,
   ): void {
     this.facilityLayer.setCivilization(civilization, terrain);
+    this.settlementFocusLayer.setTargets(civilization, terrain);
     this.authoritativeSpatialTargetLayer.setTargets(
       civilization,
       worldObjects,
@@ -383,6 +399,7 @@ export class WorldScene {
     this.authoritativeSpatialTargetLayer.dispose();
     this.facilityLayer.dispose();
     this.footTrafficLayer.dispose();
+    this.settlementFocusLayer.dispose();
     this.humanTraceLayer.dispose();
     this.waterLayer.dispose();
     this.vegetationLayer.dispose();
@@ -450,4 +467,3 @@ export class WorldScene {
   }
 
 }
-
