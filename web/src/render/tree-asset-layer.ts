@@ -52,16 +52,17 @@ vLifeLensFoliageTint = lifeLensFoliageTint;`,
 varying vec3 vLifeLensFoliageTint;`,
     );
     shader.fragmentShader = shader.fragmentShader.replace(
-      '#include <color_fragment>',
-      `#include <color_fragment>
+      '#include <map_fragment>',
+      `#include <map_fragment>
 float lifeLensFoliageLuma = max(
   dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722)),
-  0.22
+  0.28
 );
-diffuseColor.rgb = vLifeLensFoliageTint * lifeLensFoliageLuma;`,
+diffuseColor.rgb = vLifeLensFoliageTint
+  * mix(0.82, 1.18, clamp(lifeLensFoliageLuma, 0.0, 1.0));`,
     );
   };
-  material.customProgramCacheKey = () => 'lifelens-foliage-tint-v1';
+  material.customProgramCacheKey = () => 'lifelens-foliage-tint-v2';
 }
 
 function toMobileMaterial(
