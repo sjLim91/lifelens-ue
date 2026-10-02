@@ -513,6 +513,8 @@ export const KOREAN_MEMORY_TOKEN_LABELS: Record<string, string> = {
 };
 
 export const KOREAN_MEMORY_TAG_LABELS: Record<string, string> = {
+  direct_witness: '직접 목격',
+  rumor: '전해 들음',
   social: '사회',
   positive: '긍정',
   negative: '부정',
@@ -528,6 +530,7 @@ export const KOREAN_MEMORY_TAG_LABELS: Record<string, string> = {
 };
 
 export const KOREAN_BELIEF_LABELS: Record<string, string> = {
+  human_waste_contamination_is_a_recurring_sanitation_problem: '인간 배설물 오염이 반복되는 위생 문제다',
   is_friendly: '친근한 사람이다',
   is_reliable: '믿고 맡길 수 있다',
   is_caring: '나를 돌봐준다',
@@ -785,14 +788,24 @@ export function formatLocationText(value: string | undefined): string {
     shelter: '쉼터',
     outdoors: '야외',
     world: '월드',
+    'civilization-worksite': '문명 작업 현장',
   };
   return translated('장소', text, known, '장소 정보 확인 중');
+}
+
+function civilizationTechniqueFromStatement(text: string): string | null {
+  const match = text.match(/^demonstrated civilization technique:([A-Za-z][A-Za-z0-9_]*)$/);
+  return match?.[1] ?? null;
 }
 
 export function formatMemoryText(value: string | undefined): string {
   const text = value?.trim();
   if (!text) return '기억 내용 미확인';
   if (/[가-힣]/.test(text)) return text;
+
+  const technique = civilizationTechniqueFromStatement(text);
+  if (technique) return `${formatTechnique(technique)} 시연을 목격함`;
+
   const normalized = normalizeObserverToken(text);
   return translated(
     '기억내용',
@@ -802,9 +815,10 @@ export function formatMemoryText(value: string | undefined): string {
   );
 }
 
-export function formatMemoryTag(value: string | undefined): string {
+export function formatMemoryTag(value: string | undefined): string | null {
   const text = value?.trim();
-  if (!text) return '미등록 태그';
+  if (!text) return null;
+  if (/^fact:\d+$/i.test(text) || /^hop:\d+$/i.test(text)) return null;
   if (/[가-힣]/.test(text)) return text;
   const normalized = normalizeObserverToken(text);
   return translated(
@@ -819,6 +833,10 @@ export function formatBelief(value: string | undefined): string {
   const text = value?.trim();
   if (!text) return '믿음 내용 미확인';
   if (/[가-힣]/.test(text)) return text;
+
+  const technique = civilizationTechniqueFromStatement(text);
+  if (technique) return `‘${formatTechnique(technique)}’ 기술을 시연했다`;
+
   const normalized = normalizeObserverToken(text);
   return translated(
     '믿음',
