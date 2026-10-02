@@ -588,10 +588,9 @@ inline GridPos civilizationDecisionResourcePosition(
     const World& world,
     const ResourceNode& node)
 {
-    for(const auto& chunk:world.generatedNaturalChunks){
-        for(const auto& patch:chunk.resourcePatches){
-            if(patch.nodeId==node.id) return patch.pos;
-        }
+    if(const NaturalResourcePatch* patch=
+        findGeneratedNaturalResourcePatch(world,node)){
+        return patch->pos;
     }
     return node.pos;
 }
