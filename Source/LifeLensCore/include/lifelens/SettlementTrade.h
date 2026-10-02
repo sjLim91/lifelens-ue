@@ -10,6 +10,7 @@
 #include <utility>
 #include <vector>
 
+#include "Parenting.h"
 #include "SettlementNetwork.h"
 #include "SocietyEconomy.h"
 
