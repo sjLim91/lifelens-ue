@@ -6,6 +6,7 @@
 #include <optional>
 #include <string>
 #include <utility>
+#include <unordered_map>
 #include <vector>
 
 #include "Belief.h"
@@ -121,26 +122,32 @@ public:
         fact.normalize();
         if (!fact.valid()) return false;
 
-        for (const auto& existing : facts_) {
-            if (existing.id != fact.id) continue;
-            return sameFact(existing, fact);
+        const auto existing=factIndex_.find(fact.id);
+        if(existing!=factIndex_.end()){
+            return sameFact(facts_[existing->second],fact);
         }
+
+        const std::size_t index=facts_.size();
+        const SocialFactId id=fact.id;
         facts_.push_back(std::move(fact));
+        factIndex_[id]=index;
         return true;
     }
 
     const SocialFact* findFact(SocialFactId factId) const {
-        for (const auto& fact : facts_) {
-            if (fact.id == factId) return &fact;
-        }
-        return nullptr;
+        const auto it=factIndex_.find(factId);
+        return it==factIndex_.end()
+            ? nullptr
+            : &facts_[it->second];
     }
 
     const KnowledgeReceipt* findReceipt(CharacterId holder, SocialFactId factId) const {
-        for (const auto& receipt : receipts_) {
-            if (receipt.holder == holder && receipt.factId == factId) return &receipt;
-        }
-        return nullptr;
+        const auto holderIt=receiptIndex_.find(holder);
+        if(holderIt==receiptIndex_.end()) return nullptr;
+        const auto factIt=holderIt->second.find(factId);
+        return factIt==holderIt->second.end()
+            ? nullptr
+            : &receipts_[factIt->second];
     }
 
     bool hasReceipt(CharacterId holder, SocialFactId factId) const {
@@ -153,6 +160,8 @@ public:
     void clear() {
         facts_.clear();
         receipts_.clear();
+        factIndex_.clear();
+        receiptIndex_.clear();
     }
 
     bool restoreState(
@@ -176,8 +185,8 @@ public:
                 return false;
             }
 
-            for (const auto& existing : rebuilt.receipts_) {
-                if (existing.holder == receipt.holder && existing.factId == receipt.factId) return false;
+            if(rebuilt.findReceipt(receipt.holder,receipt.factId)!=nullptr){
+                return false;
             }
             for (std::size_t i = 0; i < receipt.transmissionPath.size(); ++i) {
                 if (receipt.transmissionPath[i] == 0) return false;
@@ -197,7 +206,11 @@ public:
                 return false;
             }
 
+            const std::size_t receiptIndex=rebuilt.receipts_.size();
+            const CharacterId holder=receipt.holder;
+            const SocialFactId factId=receipt.factId;
             rebuilt.receipts_.push_back(std::move(receipt));
+            rebuilt.receiptIndex_[holder][factId]=receiptIndex;
         }
 
         *this = std::move(rebuilt);
@@ -245,7 +258,11 @@ public:
         receipt.learnedMinute = currentMinute;
         receipt.source = MemorySource::DirectWitness;
         receipt.transmissionPath = {witness};
+        const std::size_t receiptIndex=receipts_.size();
+        const CharacterId holder=receipt.holder;
+        const SocialFactId receiptFactId=receipt.factId;
         receipts_.push_back(std::move(receipt));
+        receiptIndex_[holder][receiptFactId]=receiptIndex;
         return &receipts_.back();
     }
 
@@ -384,7 +401,11 @@ public:
         receipt.source = MemorySource::ToldByOther;
         receipt.transmissionPath = statement.transmissionPath;
         receipt.transmissionPath.push_back(receiver);
+        const std::size_t receiptIndex=receipts_.size();
+        const CharacterId holder=receipt.holder;
+        const SocialFactId receiptFactId=receipt.factId;
         receipts_.push_back(std::move(receipt));
+        receiptIndex_[holder][receiptFactId]=receiptIndex;
 
         outcome.result = StatementReceptionResult::Accepted;
         outcome.acceptedConfidence = acceptedConfidence;
@@ -403,8 +424,15 @@ private:
                a.supports == b.supports;
     }
 
+    // Derived runtime indexes only. Authoritative/persisted order stays in
+    // facts_/receipts_; snapshot format therefore remains unchanged.
     std::vector<SocialFact> facts_;
     std::vector<KnowledgeReceipt> receipts_;
+    std::unordered_map<SocialFactId,std::size_t> factIndex_;
+    std::unordered_map<
+        CharacterId,
+        std::unordered_map<SocialFactId,std::size_t>
+    > receiptIndex_;
 };
 
 } // namespace lifelens
