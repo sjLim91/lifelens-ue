@@ -290,6 +290,7 @@ const char* itemKindName(ItemKind kind)
         case ItemKind::StoneHammer: return "StoneHammer";
         case ItemKind::BronzeAxe: return "BronzeAxe";
         case ItemKind::BronzePick: return "BronzePick";
+        case ItemKind::RecordTablet: return "RecordTablet";
     }
     return "RawMaterial";
 }
@@ -474,6 +475,10 @@ std::string civilizationWorldObservationJson(
     out << "\"tradePartnershipCount\":" << society.tradePartnershipCount << ",";
     out << "\"institutionMembershipCount\":" << society.institutionMembershipCount << ",";
     out << "\"activeInstitutionCount\":" << society.activeInstitutionCount << ",";
+    out << "\"sharedContributionFactCount\":" << society.sharedContributionFactCount << ",";
+    out << "\"durableRecordFactCount\":" << society.durableRecordFactCount << ",";
+    out << "\"recordMediaUnits\":" << society.recordMediaUnits << ",";
+    out << "\"coordinatedResidentCount\":" << society.coordinatedResidentCount << ",";
     out << "\"recordStage\":\"" << collectiveRecordStageName(society.recordStage) << "\",";
     out << "\"residents\":[";
     for(std::size_t i=0;i<society.residents.size();++i){
@@ -498,6 +503,22 @@ std::string civilizationWorldObservationJson(
         out << "\"availableUnits\":" << demand.availableUnits << ",";
         out << "\"deficitUnits\":" << demand.deficitUnits << ",";
         out << "\"demand01\":"; appendDouble(out,demand.demand01);
+        out << "}";
+    }
+    out << "],";
+    out << "\"coordination\":[";
+    for(std::size_t i=0;i<society.coordination.size();++i){
+        if(i!=0) out << ",";
+        const SocietyCoordinationDirective& directive=
+            society.coordination[i];
+        out << "{";
+        out << "\"residentId\":\"" << directive.residentId << "\",";
+        out << "\"task\":\"" << societyCoordinationTaskName(directive.task) << "\",";
+        out << "\"material\":\"" << traceMaterialName(directive.material) << "\",";
+        out << "\"technique\":\"" << techniqueIdName(directive.technique) << "\",";
+        out << "\"priority01\":"; appendDouble(out,directive.priority01); out << ",";
+        out << "\"institutionBacked\":" << (directive.institutionBacked ? "true" : "false") << ",";
+        out << "\"resourceDisposition\":\"" << societyResourceDispositionName(directive.resourceDisposition) << "\"";
         out << "}";
     }
     out << "],";
