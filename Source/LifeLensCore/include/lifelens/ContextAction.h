@@ -138,7 +138,7 @@ inline int contextActionTimeoutMinutes(ContextActionKind kind)
         case ContextActionKind::Social: return 45;
         case ContextActionKind::Parenting: return 45;
         case ContextActionKind::KnowledgeTeaching: return 45;
-        case ContextActionKind::Trade: return 24*60;
+        case ContextActionKind::Trade: return 3*24*60;
         case ContextActionKind::Civilization: return 120;
         case ContextActionKind::None:
         default: return 0;
