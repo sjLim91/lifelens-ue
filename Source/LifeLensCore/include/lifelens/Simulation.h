@@ -15,6 +15,7 @@
 #include "EmotionRuntime.h"
 #include "EnvironmentalExposure.h"
 #include "EnvironmentalResidue.h"
+#include "MigrationPressure.h"
 #include "ObserverReadModelV2.h"
 #include "Parenting.h"
 #include "Planner.h"
@@ -134,6 +135,18 @@ public:
     FamilyObservation observeFamily(CharacterId id) const;
     WorldOverviewObservation observeWorldOverview() const;
     ResidentCivilizationActivityObservation observeResidentCivilizationActivity(CharacterId id) const;
+    MigrationPressureObservation observeResidentMigrationPressure(
+        CharacterId id) const {
+        const auto runtimeIt=runtime_.find(id);
+        if(runtimeIt==runtime_.end()) return MigrationPressureObservation{};
+        const Character* character=findObservedCharacter(world_,id);
+        if(character==nullptr || !character->alive){
+            return MigrationPressureObservation{};
+        }
+        const SettlementPopulation population=settlementPopulation();
+        return lifelens::observeMigrationPressure(
+            world_,*character,runtimeIt->second.pos,&population);
+    }
     EnvironmentObservation observeEnvironment(std::size_t maxResidues=64) const {
         return buildEnvironmentObservation(world_.minute,world_.environmentalResidues,maxResidues);
     }
