@@ -410,45 +410,174 @@ inline CivilizationUtilityDecision applyCivilizationDispositionBias(
     return candidate;
 }
 
+inline bool societyCoordinationMatchesCivilizationDecision(
+    const SocietyCoordinationDirective& directive,
+    const CivilizationUtilityDecision& candidate)
+{
+    switch(directive.task){
+        case SocietyCoordinationTask::ProvisionFood:
+            return candidate.material==MaterialKind::PlantFood
+                && (candidate.intent==CivilizationIntent::Gather
+                    || candidate.intent==CivilizationIntent::Retrieve
+                    || candidate.intent==CivilizationIntent::Explore);
+        case SocietyCoordinationTask::ProvisionWater:
+            return candidate.material==MaterialKind::Water
+                && (candidate.intent==CivilizationIntent::Gather
+                    || candidate.intent==CivilizationIntent::Retrieve
+                    || candidate.intent==CivilizationIntent::Explore);
+        case SocietyCoordinationTask::MaterialSupply:
+            return candidate.material==directive.material
+                && (candidate.intent==CivilizationIntent::Gather
+                    || candidate.intent==CivilizationIntent::Retrieve
+                    || candidate.intent==CivilizationIntent::Explore);
+        case SocietyCoordinationTask::ToolProduction:
+            return candidate.intent==CivilizationIntent::Craft
+                && candidate.technique!=TechniqueId::Cultivation
+                && candidate.technique!=TechniqueId::CopperSmelting
+                && candidate.technique!=TechniqueId::TinSmelting
+                && candidate.technique!=TechniqueId::BronzeAlloying;
+        case SocietyCoordinationTask::Cultivation:
+            return candidate.technique==TechniqueId::Cultivation;
+        case SocietyCoordinationTask::Metallurgy:
+            return candidate.technique==TechniqueId::CopperSmelting
+                || candidate.technique==TechniqueId::TinSmelting
+                || candidate.technique==TechniqueId::BronzeAlloying
+                || candidate.technique==TechniqueId::BronzeAxe
+                || candidate.technique==TechniqueId::BronzePick;
+        case SocietyCoordinationTask::SharedStorage:
+            return candidate.intent==CivilizationIntent::Store;
+        case SocietyCoordinationTask::Inquiry:
+            return candidate.intent==CivilizationIntent::Experiment;
+        case SocietyCoordinationTask::Education:
+        case SocietyCoordinationTask::Care:
+        case SocietyCoordinationTask::None:
+        default:
+            return false;
+    }
+}
+
+inline CivilizationUtilityDecision applySocietyCoordinationBias(
+    const World& world,
+    const Character& self,
+    CivilizationUtilityDecision candidate,
+    const SocialKnowledgeBook* socialKnowledge,
+    const HouseholdBook* households)
+{
+    if(candidate.intent==CivilizationIntent::None
+       || candidate.utility<=0.0
+       || socialKnowledge==nullptr){
+        return candidate;
+    }
+
+    const SocietyCoordinationDirective directive=
+        observeSocietyCoordinationDirective(
+            world,*socialKnowledge,self,households);
+    double adjustment=0.0;
+    if(societyCoordinationMatchesCivilizationDecision(
+            directive,candidate)){
+        adjustment+=0.05+0.08*directive.priority01;
+        if(directive.institutionBacked) adjustment+=0.035;
+    }
+
+    if(candidate.material!=MaterialKind::Unknown
+       && (candidate.intent==CivilizationIntent::Store
+           || candidate.intent==CivilizationIntent::Retrieve)){
+        const SocietyResourceDisposition disposition=
+            observeSocietyResourceDisposition(
+                self,candidate.material,*socialKnowledge,households);
+        if(candidate.intent==CivilizationIntent::Store){
+            if(disposition==SocietyResourceDisposition::SharedSurplus){
+                adjustment+=0.11;
+            }else if(disposition==SocietyResourceDisposition::HouseholdReserve){
+                adjustment-=0.10;
+            }else if(disposition==SocietyResourceDisposition::PersonalReserve){
+                adjustment-=0.08;
+            }
+        }else if(candidate.intent==CivilizationIntent::Retrieve){
+            if(disposition==SocietyResourceDisposition::PersonalReserve
+               || disposition==SocietyResourceDisposition::HouseholdReserve){
+                adjustment+=0.05;
+            }
+        }
+    }
+
+    candidate.utility=socialClamp01(candidate.utility+adjustment);
+    return candidate;
+}
+
 inline CivilizationUtilityDecision chooseDispositionAwareCivilizationDecisionAtPosition(
     const World& world,
     const Character& self,
     GridPos authoritativePosition,
-    const SettlementPopulation* population=nullptr) {
+    const SettlementPopulation* population=nullptr,
+    const SocialKnowledgeBook* socialKnowledge=nullptr,
+    const HouseholdBook* households=nullptr) {
 
     CivilizationUtilityDecision best;
     if (self.id == 0 || self.civilization.character != self.id) return best;
 
     considerCivilizationDecision(
         best,
-        applyCivilizationDispositionBias(
-            self,bestExperimentDecisionAtPosition(
-                world,self,authoritativePosition,population)));
+        applySocietyCoordinationBias(
+            world,self,
+            applySocietyRoleAndDemandUtility(
+                world,self,
+                applyCivilizationDispositionBias(
+                    self,bestExperimentDecisionAtPosition(
+                        world,self,authoritativePosition,population))),
+            socialKnowledge,households));
     considerCivilizationDecision(
         best,
-        applyCivilizationDispositionBias(
-            self,bestCraftDecisionAtPosition(
-                world,self,authoritativePosition,population)));
+        applySocietyCoordinationBias(
+            world,self,
+            applySocietyRoleAndDemandUtility(
+                world,self,
+                applyCivilizationDispositionBias(
+                    self,applyTechnologyAdoptionUtility(
+                        world,self,
+                        bestCraftDecisionAtPosition(
+                            world,self,authoritativePosition,population)))),
+            socialKnowledge,households));
     considerCivilizationDecision(
         best,
-        applyCivilizationDispositionBias(
-            self,bestRetrieveDecisionAtPosition(
-                world,self,authoritativePosition)));
+        applySocietyCoordinationBias(
+            world,self,
+            applySocietyRoleAndDemandUtility(
+                world,self,
+                applyCivilizationDispositionBias(
+                    self,bestRetrieveDecisionAtPosition(
+                        world,self,authoritativePosition))),
+            socialKnowledge,households));
     considerCivilizationDecision(
         best,
-        applyCivilizationDispositionBias(
-            self,bestStoreDecisionAtPosition(
-                world,self,authoritativePosition)));
+        applySocietyCoordinationBias(
+            world,self,
+            applySocietyRoleAndDemandUtility(
+                world,self,
+                applyCivilizationDispositionBias(
+                    self,bestStoreDecisionAtPosition(
+                        world,self,authoritativePosition))),
+            socialKnowledge,households));
     considerCivilizationDecision(
         best,
-        applyCivilizationDispositionBias(
-            self,bestResourceExplorationDecisionAtPosition(
-                world,self,authoritativePosition)));
+        applySocietyCoordinationBias(
+            world,self,
+            applySocietyRoleAndDemandUtility(
+                world,self,
+                applyCivilizationDispositionBias(
+                    self,bestResourceExplorationDecisionAtPosition(
+                        world,self,authoritativePosition))),
+            socialKnowledge,households));
     considerCivilizationDecision(
         best,
-        applyCivilizationDispositionBias(
-            self,bestGatherDecisionAtPosition(
-                world,self,authoritativePosition)));
+        applySocietyCoordinationBias(
+            world,self,
+            applySocietyRoleAndDemandUtility(
+                world,self,
+                applyCivilizationDispositionBias(
+                    self,bestGatherDecisionAtPosition(
+                        world,self,authoritativePosition,population))),
+            socialKnowledge,households));
     return best;
 }
 
@@ -682,13 +811,16 @@ inline UnifiedUtilityDecision chooseUnifiedUtilityDecisionAtPosition(
     GridPos authoritativePosition,
     double minimumSocialUtility = 0.18,
     double minimumCivilizationUtility = 0.14,
-    const SettlementPopulation* population=nullptr) {
+    const SettlementPopulation* population=nullptr,
+    const SocialKnowledgeBook* socialKnowledge=nullptr,
+    const HouseholdBook* households=nullptr) {
 
     const auto physical = bestPhysicalUtility(world, self);
     const SocialUtilityDecision social = chooseSocialUtilityDecision(world, self, relationships);
     const CivilizationUtilityDecision civilization =
         chooseDispositionAwareCivilizationDecisionAtPosition(
-            world,self,authoritativePosition,population);
+            world,self,authoritativePosition,population,
+            socialKnowledge,households);
     const CivilizationUtilityDecision survivalProvision =
         urgentSurvivalProvisionDecisionAtPosition(
             world,self,authoritativePosition);
