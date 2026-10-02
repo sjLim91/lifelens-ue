@@ -446,6 +446,53 @@ int main()
         urgentPriority.logs(),
         priorityName+" -> Eat"));
 
+    // Urgent self-care must be direct Physical work rather than being
+    // displaced by optional civilization simply because Sleep/Wash were
+    // omitted from the urgent candidate list.
+    Simulation urgentSleep(874213958);
+    urgentSleep.setupNewGame();
+    urgentSleep.world().characters.resize(1);
+    Character& urgentSleepActor=urgentSleep.world().characters.front();
+    const std::string urgentSleepName=urgentSleepActor.name;
+    urgentSleepActor.needs={0.10,0.10,0.96,0.10,0.10};
+    urgentSleep.step();
+    assert(containsLog(
+        urgentSleep.logs(),
+        urgentSleepName+" -> Sleep"));
+
+    Simulation urgentWash(874213959);
+    urgentWash.setupNewGame();
+    urgentWash.world().characters.resize(1);
+    Character& urgentWashActor=urgentWash.world().characters.front();
+    const std::string urgentWashName=urgentWashActor.name;
+    urgentWashActor.civilization.inventory.add({
+        ItemKind::SimpleContainer,MaterialKind::Clay,1,0.5,1.0});
+    urgentWashActor.civilization.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::Water,1,0.5,1.0});
+    urgentWashActor.needs={0.10,0.10,0.10,0.10,0.96};
+    urgentWash.step();
+    assert(containsLog(
+        urgentWash.logs(),
+        urgentWashName+" -> Wash"));
+
+    // Critical Hunger/Thirst still retain survival authority. Adding
+    // Sleep/Wash to urgent self-care must not make a more severe directly
+    // satisfiable food emergency wait behind fatigue.
+    Simulation criticalVsSleep(874213960);
+    criticalVsSleep.setupNewGame();
+    criticalVsSleep.world().characters.resize(1);
+    Character& criticalVsSleepActor=
+        criticalVsSleep.world().characters.front();
+    const std::string criticalVsSleepName=
+        criticalVsSleepActor.name;
+    criticalVsSleepActor.civilization.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::PlantFood,1,0.5,1.0});
+    criticalVsSleepActor.needs={0.97,0.10,0.95,0.10,0.10};
+    criticalVsSleep.step();
+    assert(containsLog(
+        criticalVsSleep.logs(),
+        criticalVsSleepName+" -> Eat"));
+
     // Critical survival preempts an already-active sanitation loop. Recreate
     // the long-run failure shape: hunger reaches 100%, remote storage contains
     // food, a real nearby food node exists, and the resident is already using
