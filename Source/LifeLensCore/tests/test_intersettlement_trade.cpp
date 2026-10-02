@@ -104,7 +104,9 @@ static bool findReachableTradeDestination(
                 continue;
             }
             if(static_cast<int>(route.size())
-               <=SettlementServiceRadiusGrid*2){
+               <=SettlementServiceRadiusGrid*2
+               || static_cast<int>(route.size())
+                    >SettlementServiceRadiusGrid*5){
                 continue;
             }
             outDestination=candidate;
@@ -231,7 +233,17 @@ int main()
 
     // End-to-end runtime: schedule at the hourly economy boundary, walk to the
     // other settlement, exchange only after arrival, then physically return.
-    Simulation simulation(606202);
+    SimulationRuleset tradeRules=DefaultSimulationRuleset;
+    tradeRules.needs.hungerPerMinute=0.0;
+    tradeRules.needs.thirstPerMinute=0.0;
+    tradeRules.needs.sleepPerMinute=0.0;
+    tradeRules.needs.bladderPerMinute=0.0;
+    tradeRules.needs.hygienePerMinute=0.0;
+    Simulation simulation(
+        606202,
+        0,
+        CurrentWorldGenerationVersion,
+        tradeRules);
     simulation.setupNewGame();
     SimulationStateSnapshot snapshot=
         simulation.captureSnapshot();
