@@ -150,6 +150,7 @@ lifelens_add_test(test_settlement_autonomy)
 lifelens_add_test(test_settlement_capacity)
 
 lifelens_add_test(test_settlement_facility_effects)
+lifelens_add_test(test_weather_sleep)
 
 lifelens_add_test(test_primitive_storage_progression)
 
