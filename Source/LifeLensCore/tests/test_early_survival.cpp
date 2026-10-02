@@ -446,6 +446,50 @@ int main()
         urgentPriority.logs(),
         priorityName+" -> Eat"));
 
+    // Regression for the long-run toilet restart loop: if bladder is already
+    // saturated while Hunger becomes critical and food is carried, survival
+    // preemption must transition into Eat. It must not cancel UseToilet and
+    // immediately choose UseToilet again just because bladder has the larger
+    // raw need value.
+    SimulationRuleset carriedPreemptRules=DefaultSimulationRuleset;
+    carriedPreemptRules.needs.hungerPerMinute=0.0;
+    carriedPreemptRules.needs.thirstPerMinute=0.0;
+    carriedPreemptRules.needs.sleepPerMinute=0.0;
+    carriedPreemptRules.needs.bladderPerMinute=0.0;
+    carriedPreemptRules.needs.hygienePerMinute=0.0;
+    Simulation carriedPreempt(
+        8742139551,0,CurrentWorldGenerationVersion,carriedPreemptRules);
+    carriedPreempt.setupNewGame();
+    carriedPreempt.world().characters.resize(1);
+    Character& carriedActor=carriedPreempt.world().characters.front();
+    const CharacterId carriedId=carriedActor.id;
+    const std::string carriedName=carriedActor.name;
+    carriedActor.needs={0.10,0.10,0.10,1.0,0.10};
+
+    carriedPreempt.step();
+    ResidentPresentationObservation carriedToilet=
+        carriedPreempt.observeResidentPresentation(carriedId);
+    assert(carriedToilet.active);
+    assert(carriedToilet.kind==PresentationActionKind::Physical);
+    assert(carriedToilet.physicalGoal==Goal::UseToilet);
+
+    carriedActor.civilization.inventory.add({
+        ItemKind::RawMaterial,MaterialKind::PlantFood,1,0.5,1.0});
+    carriedActor.needs.hunger=1.0;
+    carriedPreempt.step();
+
+    const ResidentPresentationObservation carriedAfterPreempt=
+        carriedPreempt.observeResidentPresentation(carriedId);
+    assert(carriedAfterPreempt.active);
+    assert(carriedAfterPreempt.kind==PresentationActionKind::Physical);
+    assert(carriedAfterPreempt.physicalGoal==Goal::Eat);
+    assert(containsLog(
+        carriedPreempt.logs(),
+        carriedName+" preempted current activity for critical survival need"));
+    assert(containsLog(
+        carriedPreempt.logs(),
+        carriedName+" -> Eat"));
+
     // Critical survival preempts an already-active sanitation loop. Recreate
     // the long-run failure shape: hunger reaches 100%, remote storage contains
     // food, a real nearby food node exists, and the resident is already using
