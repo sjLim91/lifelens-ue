@@ -758,8 +758,19 @@ bool Simulation::advancePendingContext(
         }
 
         case ContextActionKind::Trade: {
+            const TradeContextPayload trade=
+                tradeContextPayload(pending);
+            if(trade.returning){
+                pending.hasSpatialTarget=true;
+                pending.targetPos=trade.originPos;
+                target=trade.originPos;
+                arrivalRadius=1;
+                requiresMovement=true;
+                break;
+            }
+
             const auto partnerRuntime=
-                runtime_.find(pending.social.target);
+                runtime_.find(trade.partner);
             if(partnerRuntime==runtime_.end()) return false;
             pending.hasSpatialTarget=true;
             pending.targetPos=partnerRuntime->second.pos;
@@ -816,9 +827,13 @@ bool Simulation::advancePendingContext(
        && retargetMovingResident(pending.knowledgeTeachingTarget)){
         return false;
     }
-    if(pending.kind==ContextActionKind::Trade
-       && retargetMovingResident(pending.social.target)){
-        return false;
+    if(pending.kind==ContextActionKind::Trade){
+        const TradeContextPayload trade=
+            tradeContextPayload(pending);
+        if(!trade.returning
+           && retargetMovingResident(trade.partner)){
+            return false;
+        }
     }
     if(pending.kind==ContextActionKind::Parenting
        && retargetMovingResident(pending.parentingTarget)){
