@@ -211,7 +211,7 @@ inline bool contextActionExpired(const PendingContextAction& action,int currentM
     const int timeout=
         action.kind==ContextActionKind::Civilization
             && action.civilization.intent==CivilizationIntent::Explore
-            ? 360
+            ? 3*24*60
             : contextActionTimeoutMinutes(action.kind);
     return timeout>0 && currentMinute-action.issuedMinute>=timeout;
 }
