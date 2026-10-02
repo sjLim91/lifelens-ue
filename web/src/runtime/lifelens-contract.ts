@@ -116,17 +116,8 @@ export const RESIDENT_PRESENTATION_CONTRACT = {
     RESIDENT_VISUAL_SPEED_WORLD_UNITS_PER_SECOND_AT_1X,
   walkMinTimeScale: 0.72,
   walkMaxTimeScale: 1.55,
-  // No verified lie-down clip exists in the loaded CC0 libraries yet. Keep the
-  // authoritative idle animation but smoothly rotate only the visual hierarchy
-  // after Sleep has actually reached its interaction point.
-  sleepPosePitchRadians: -4 * Math.PI / 180,
-  sleepPoseRollRadians: 86 * Math.PI / 180,
-  sleepPoseResponsivenessPerSecond: 5,
-  // The imported character pivots at the feet. When rolled onto its side,
-  // center the body around the authoritative sleep position and lift it by
-  // body thickness so the mesh cannot cut through the terrain.
-  sleepPoseCenterOffsetHeightRatio: 0.48,
-  sleepPoseBodyClearanceHeightRatio: 0.14,
+  // Sleep uses the verified CC0 LayToIdle skeletal sequence. Support geometry
+  // remains centralized here; obsolete hierarchy rotation constants are removed.
   sleepPoseGroundClearanceWorldUnits: 0.035,
   sleepPoseBodyHalfLengthHeightRatio: 0.48,
   // Visible bedding top in FacilityLayer. Shelter sleep remains ground-based.

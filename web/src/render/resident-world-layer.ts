@@ -3,6 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import type {
   Resident,
+  CivilizationWorldPayload,
   ResidentPresentationDirective,
   TerrainWindow,
 } from '../runtime/core-types';
@@ -31,6 +32,8 @@ import {
   residentSocialCuePairs,
   type ResidentSocialCueKind,
 } from './resident-social-cues';
+import { createResidentMotionLibrary, residentGestureRate } from './resident-motion-library';
+import { calibrateResidentSleep, residentSleepFallbackClip, residentStandingFallbackClip, ResidentSleepMotion, type ResidentSleepCalibration } from './resident-sleep-motion';
 import { residentToWorldPosition } from './resident-world-coordinates';
 
 const BASE_MODEL_COMMIT = 'ddd5fc34a445bcded3cf9836607aaeebc19a5c78';
@@ -49,7 +52,7 @@ const ANIMATION2_COMMIT = '84fd636910bf713099010efbab7f3c84550f4bcb';
 const ANIMATION2_URL =
   `https://raw.githubusercontent.com/richardanaya/metaverse-avatar/${ANIMATION2_COMMIT}/anims/UAL2_Standard.glb`;
 
-type MotionName = ResidentSemanticMotion | 'sit';
+type MotionName = ResidentSemanticMotion;
 
 interface ResidentActionCueSprite {
   sprite: THREE.Sprite;
@@ -73,18 +76,9 @@ interface ResidentActor {
   appearanceSignature: string;
   inventoryProps: ResidentInventoryProps;
   mixer: THREE.AnimationMixer;
-  idle?: THREE.AnimationAction;
-  walk?: THREE.AnimationAction;
-  talk?: THREE.AnimationAction;
-  sit?: THREE.AnimationAction;
-  interact?: THREE.AnimationAction;
-  crouch?: THREE.AnimationAction;
-  work?: THREE.AnimationAction;
-  consume?: THREE.AnimationAction;
-  harvest?: THREE.AnimationAction;
-  carry?: THREE.AnimationAction;
-  plant?: THREE.AnimationAction;
-  water?: THREE.AnimationAction;
+  actions: Map<MotionName, THREE.AnimationAction>;
+  uniqueActions: THREE.AnimationAction[];
+  sleepMotion: ResidentSleepMotion;
   active: MotionName | '';
   activityLabel: string;
   activityTargetId: string;
@@ -95,23 +89,11 @@ interface ResidentActor {
   targetYaw: number;
   targetTravelSpeedWorldUnitsPerSecond: number;
   smoothedTravelSpeedWorldUnitsPerSecond: number;
+  displayedTravelSpeedWorldUnitsPerSecond: number;
   walkGraceRemainingSeconds: number;
   gaitRateBias: number;
-  sleepAnimationFrozen: boolean;
   sleepSupportHeightWorldUnits: number;
   initialized: boolean;
-}
-
-function findClip(
-  clips: THREE.AnimationClip[],
-  exact: string,
-  contains: string,
-): THREE.AnimationClip | undefined {
-  const exactLower = exact.toLowerCase();
-  return clips.find((clip) => clip.name.toLowerCase() === exactLower)
-    ?? clips.find((clip) => (
-      clip.name.toLowerCase().includes(contains.toLowerCase())
-    ));
 }
 
 function createActionCueSprite(): ResidentActionCueSprite | null {
@@ -209,7 +191,12 @@ export class ResidentWorldLayer {
   );
   private selectedResidentId: string | null = null;
   private template: THREE.Group | null = null;
-  private clips: THREE.AnimationClip[] = [];
+  private motionClips = new Map<MotionName, THREE.AnimationClip>();
+  private sleepClip: THREE.AnimationClip | null = null;
+  private sleepCalibration: ResidentSleepCalibration | null = null;
+  private readonly movementDelta = new THREE.Vector3();
+  private disposed = false;
+  private readonly interactionSites = new Map<string, { gridX: number; gridY: number }>();
   private ready = false;
   private pendingResidents: Resident[] = [];
   private pendingTerrain: TerrainWindow | null = null;
@@ -262,10 +249,8 @@ export class ResidentWorldLayer {
     if (!this.ready || !this.template) return;
 
     const sampleElevation = createTerrainElevationSampler(terrain);
-    const activeIds = new Set(residents.map((resident) => resident.id));
-
-    for (const [id, actor] of this.actors) {
-      actor.root.visible = activeIds.has(id);
+    for (const actor of this.actors.values()) {
+      actor.root.visible = false;
       if (actor.actionCue) actor.actionCue.sprite.visible = false;
     }
 
@@ -341,8 +326,9 @@ export class ResidentWorldLayer {
 
             actor.targetTravelSpeedWorldUnitsPerSecond = Math.min(
               locomotionBudget,
-              travelDistance / Math.max(0.001, presentationSeconds),
+              travelDistance / Math.max(0.001, presentationSeconds) * effectiveSpeed,
             );
+            actor.targetTravelSpeedWorldUnitsPerSecond /= effectiveSpeed;
             actor.walkGraceRemainingSeconds =
               RESIDENT_PRESENTATION_CONTRACT.walkStopGraceSeconds;
           }
@@ -391,7 +377,19 @@ export class ResidentWorldLayer {
       actor.root.visible = true;
     }
 
+    // Keep a small re-entry cache, not an unbounded skeleton for every resident
+    // ever seen while panning or across generations.
+    const inactive = [...this.actors.entries()].filter(([, actor]) => !actor.root.visible);
+    for (const [id, actor] of inactive.slice(0, Math.max(0, inactive.length - 32))) this.releaseActor(id, actor);
     this.syncSocialConnectors(residents);
+  }
+
+  setCivilization(civilization: CivilizationWorldPayload): void {
+    this.interactionSites.clear();
+    if (!civilization.available) return;
+    for (const resource of civilization.resources ?? []) this.interactionSites.set(`resource:${resource.id}`, resource);
+    for (const facility of civilization.facilities ?? []) this.interactionSites.set(`facility:${facility.id}`, facility);
+    for (const storage of civilization.storages ?? []) this.interactionSites.set(`storage:${storage.id}`, storage);
   }
 
   setSimulationSpeed(speed: number): void {
@@ -433,13 +431,14 @@ export class ResidentWorldLayer {
     for (const actor of this.actors.values()) {
       if (!actor.root.visible) continue;
 
-      const delta = actor.target.clone().sub(actor.current);
+      const delta = this.movementDelta.subVectors(actor.target, actor.current);
       const distance = delta.length();
       const moving =
         distance > RESIDENT_PRESENTATION_CONTRACT.movementEpsilonWorldUnits;
 
+      actor.displayedTravelSpeedWorldUnitsPerSecond = 0;
       const desiredTravelSpeed = moving
-        ? actor.targetTravelSpeedWorldUnitsPerSecond
+        ? actor.targetTravelSpeedWorldUnitsPerSecond * this.simulationSpeed
         : 0;
       const speedBlend = 1 - Math.exp(
         -RESIDENT_PRESENTATION_CONTRACT.speedResponsivenessPerSecond
@@ -462,10 +461,16 @@ export class ResidentWorldLayer {
           -RESIDENT_PRESENTATION_CONTRACT.turnResponsivenessPerSecond
             * motionDt,
         );
-        actor.root.rotation.y += yawDelta * turnBlend;
+        if (!actor.sleepMotion.active) actor.root.rotation.y += yawDelta * turnBlend;
 
+        // Do not translate backward while smoothing a large heading reversal.
+        // This is interpolation only; the Core target and access cell are intact.
+        const headingError = actor.targetYaw - actor.root.rotation.y;
+        const forwardFraction = actor.sleepMotion.active ? 1 : Math.max(0, Math.cos(headingError));
         const maxDistance =
-          actor.smoothedTravelSpeedWorldUnitsPerSecond * dt;
+          actor.smoothedTravelSpeedWorldUnitsPerSecond * dt
+          * (this.simulationSpeed > 0 ? forwardFraction : 0);
+        actor.displayedTravelSpeedWorldUnitsPerSecond = Math.min(distance, maxDistance) / Math.max(.001, dt);
         if (distance <= maxDistance) {
           actor.current.copy(actor.target);
         } else if (maxDistance > 0) {
@@ -491,7 +496,7 @@ export class ResidentWorldLayer {
             -RESIDENT_PRESENTATION_CONTRACT.turnResponsivenessPerSecond
               * motionDt,
           );
-          actor.root.rotation.y += yawDelta * turnBlend;
+          if (!actor.sleepMotion.active) actor.root.rotation.y += yawDelta * turnBlend;
         }
       }
 
@@ -516,30 +521,24 @@ export class ResidentWorldLayer {
       }
       const presentationMoving =
         moving || actor.walkGraceRemainingSeconds > 0;
+      actor.inventoryProps.setVisuallyMoving(presentationMoving);
       const sleeping = residentSleepPostureActive(
         actor.presentation,
         presentationMoving,
       );
 
-      // Wake the mixer before choosing the next semantic motion. Entering sleep
-      // does the inverse below: resolve the stable Idle pose once, then freeze
-      // skeletal animation while only the visual hierarchy settles into place.
-      if (!sleeping) {
-        this.setSleepAnimationFrozen(actor, false);
+      const sleepWasActive = actor.sleepMotion.active;
+      const sleepHandled = actor.sleepMotion.update(sleeping, motionDt,
+        actor.sleepSupportHeightWorldUnits, actor.root.scale.y,
+        actor.mixer, actor.uniqueActions);
+      if (sleepHandled) {
+        actor.active = 'sleep';
+      } else {
+        if (sleepWasActive || actor.active === 'sleep') actor.active = '';
+        this.syncWalkPlaybackRate(actor, motionTimeScale);
+        this.setAction(actor, presentationMoving);
+        actor.mixer.update(motionDt);
       }
-
-      this.updateSleepPosture(
-        actor,
-        sleeping,
-        motionDt,
-      );
-      this.syncWalkPlaybackRate(actor, motionTimeScale);
-      this.setAction(actor, presentationMoving);
-
-      if (sleeping) {
-        this.setSleepAnimationFrozen(actor, true);
-      }
-      actor.mixer.update(sleeping ? 0 : motionDt);
       actor.inventoryProps.update();
     }
 
@@ -548,6 +547,7 @@ export class ResidentWorldLayer {
   }
 
   dispose(): void {
+    this.disposed = true;
     for (const connector of this.socialConnectors.values()) {
       this.group.remove(connector.line);
       connector.line.geometry.dispose();
@@ -555,26 +555,25 @@ export class ResidentWorldLayer {
     }
     this.socialConnectors.clear();
 
-    for (const actor of this.actors.values()) {
-      actor.root.traverse((object) => {
-        if (!(object instanceof THREE.Mesh)) return;
-        const materials = Array.isArray(object.material)
-          ? object.material
-          : [object.material];
-        for (const material of materials) material.dispose();
-        if (object.userData.residentOwnsGeometry) object.geometry.dispose();
-      });
-    }
-    for (const actor of this.actors.values()) {
-      if (!actor.actionCue) continue;
-      this.group.remove(actor.actionCue.sprite);
-      actor.actionCue.texture.dispose();
-      actor.actionCue.sprite.material.dispose();
-    }
+    for (const [id, actor] of this.actors) this.releaseActor(id, actor);
     this.actors.clear();
     this.selectionRing.geometry.dispose();
     const selectionMaterial = this.selectionRing.material;
     if (!Array.isArray(selectionMaterial)) selectionMaterial.dispose();
+  }
+
+  private releaseActor(id: string, actor: ResidentActor): void {
+    actor.mixer.stopAllAction(); actor.mixer.uncacheRoot(actor.root);
+    actor.inventoryProps.dispose();
+    actor.root.traverse(object => {
+      if (!(object instanceof THREE.Mesh)) return;
+      for (const material of Array.isArray(object.material) ? object.material : [object.material]) material.dispose();
+      if (object.userData.residentOwnsGeometry) object.geometry.dispose();
+    });
+    if (actor.actionCue) {
+      this.group.remove(actor.actionCue.sprite); actor.actionCue.texture.dispose(); actor.actionCue.sprite.material.dispose();
+    }
+    this.group.remove(actor.root); this.actors.delete(id);
   }
 
   private socialCueColor(kind: ResidentSocialCueKind): number {
@@ -684,6 +683,11 @@ export class ResidentWorldLayer {
         continue;
       }
 
+      if (source.current.distanceToSquared(source.target) > RESIDENT_PRESENTATION_CONTRACT.movementEpsilonWorldUnits ** 2
+        || source.sleepMotion.active) {
+        connector.line.visible = false;
+        continue;
+      }
       const horizontalDistance = Math.hypot(
         target.current.x - source.current.x,
         target.current.z - source.current.z,
@@ -782,6 +786,7 @@ export class ResidentWorldLayer {
         );
       }
 
+      if (this.disposed) return;
       const source = base.scene;
       source.updateMatrixWorld(true);
       const box = new THREE.Box3().setFromObject(source);
@@ -798,9 +803,12 @@ export class ResidentWorldLayer {
       normalized.scale.setScalar(1 / modelHeight);
 
       this.template = normalized;
-      this.clips = animationClips.length > 0
-        ? animationClips
-        : base.animations;
+      this.motionClips = createResidentMotionLibrary([...base.animations, ...animationClips]);
+      if (!this.motionClips.has('idle')) this.motionClips.set('idle', residentStandingFallbackClip());
+      this.sleepClip = animationClips.find(clip => clip.name === 'LayToIdle') ?? residentSleepFallbackClip();
+      // A single shared calibration. The temporary skeleton is not retained per resident.
+      const calibrationModel = cloneSkeleton(normalized) as THREE.Group;
+      this.sleepCalibration = calibrateResidentSleep(calibrationModel, this.sleepClip);
       this.ready = true;
 
       if (this.pendingTerrain) {
@@ -822,6 +830,7 @@ export class ResidentWorldLayer {
   private ensureActor(resident: Resident): ResidentActor {
     const existing = this.actors.get(resident.id);
     if (existing) {
+      this.actors.delete(resident.id); this.actors.set(resident.id, existing);
       // Full observations can arrive after the lightweight runtime summary.
       // Preserve known phenotype fields when a partial summary omits them.
       const facts = { ...existing.appearanceFacts };
@@ -865,102 +874,19 @@ export class ResidentWorldLayer {
     );
 
     const mixer = new THREE.AnimationMixer(root);
-    const idleClip = findClip(this.clips, 'Idle_Loop', 'idle');
-    const walkClip = findClip(this.clips, 'Walk_Loop', 'walk');
-    const talkClip = findClip(
-      this.clips,
-      'Idle_Talking_Loop',
-      'talking',
-    );
-    const sitClip = findClip(
-      this.clips,
-      'Sitting_Idle_Loop',
-      'sitting_idle',
-    );
-    const interactClip = findClip(this.clips, 'Interact', 'interact');
-    const crouchClip = findClip(
-      this.clips,
-      'Crouch_Idle_Loop',
-      'crouch_idle',
-    );
-    const workClip = findClip(
-      this.clips,
-      'Fixing_Kneeling',
-      'fixing_kneeling',
-    );
-    const consumeClip = findClip(
-      this.clips,
-      'Consume',
-      'consume',
-    );
-    const harvestClip = findClip(
-      this.clips,
-      'Farm_Harvest',
-      'farm_harvest',
-    );
-    const carryClip = findClip(
-      this.clips,
-      'Walk_Carry_Loop',
-      'walk_carry',
-    );
-
-    const plantClip = this.clips.find(clip => clip.name === 'Farm_PlantSeed');
-    const waterClip = this.clips.find(clip => clip.name === 'Farm_Watering');
-    const plant = plantClip ? mixer.clipAction(plantClip, root) : undefined;
-    const water = waterClip ? mixer.clipAction(waterClip, root) : undefined;
-
-    const idle = idleClip ? mixer.clipAction(idleClip, root) : undefined;
-    const walk = walkClip ? mixer.clipAction(walkClip, root) : undefined;
-    const talk = talkClip ? mixer.clipAction(talkClip, root) : undefined;
-    const sit = sitClip ? mixer.clipAction(sitClip, root) : undefined;
-    const interact = interactClip
-      ? mixer.clipAction(interactClip, root)
-      : undefined;
-    const crouch = crouchClip
-      ? mixer.clipAction(crouchClip, root)
-      : undefined;
-    const work = workClip
-      ? mixer.clipAction(workClip, root)
-      : undefined;
-    const consume = consumeClip
-      ? mixer.clipAction(consumeClip, root)
-      : undefined;
-    const harvest = harvestClip
-      ? mixer.clipAction(harvestClip, root)
-      : undefined;
-    const carry = carryClip
-      ? mixer.clipAction(carryClip, root)
-      : undefined;
-
-    [
-      idle,
-      walk,
-      talk,
-      sit,
-      interact,
-      crouch,
-      work,
-      consume,
-      harvest,
-      carry,
-      plant,
-      water,
-    ].forEach((action) => {
-      action?.setLoop(THREE.LoopRepeat, Infinity);
-    });
-
-    const idlePhase01 = (appearance.seed % 997) / 997;
-    const walkPhase01 = ((appearance.seed >>> 8) % 991) / 991;
-
+    const actions = new Map<MotionName, THREE.AnimationAction>();
+    for (const [motion, clip] of this.motionClips) {
+      actions.set(motion, mixer.clipAction(clip, root).setLoop(THREE.LoopRepeat, Infinity));
+    }
+    if (!this.sleepClip || !this.sleepCalibration) throw new Error('Resident sleep calibration unavailable');
+    const sleepAction = mixer.clipAction(this.sleepClip, root);
+    actions.set('sleep', sleepAction);
+    const uniqueActions = [...new Set(actions.values())];
+    const sleepMotion = new ResidentSleepMotion(sleepAction, this.sleepCalibration, visual);
+    const idle = actions.get('idle'), walk = actions.get('walk');
     idle?.play();
-    if (idle) {
-      idle.time = idlePhase01
-        * Math.max(0.001, idle.getClip().duration);
-    }
-    if (walk) {
-      walk.time = walkPhase01
-        * Math.max(0.001, walk.getClip().duration);
-    }
+    if (idle) idle.time = (appearance.seed % 997) / 997 * Math.max(.001, idle.getClip().duration);
+    if (walk) walk.time = ((appearance.seed >>> 8) % 991) / 991 * Math.max(.001, walk.getClip().duration);
 
     const inventoryProps = new ResidentInventoryProps(visual, model);
     inventoryProps.setInventory(resident.civilization?.inventory, resident.presentation);
@@ -972,18 +898,9 @@ export class ResidentWorldLayer {
       appearanceSignature: JSON.stringify(appearance),
       inventoryProps,
       mixer,
-      idle,
-      walk,
-      talk,
-      sit,
-      interact,
-      crouch,
-      work,
-      consume,
-      harvest,
-      carry,
-      plant,
-      water,
+      actions,
+      uniqueActions,
+      sleepMotion,
       active: idle ? 'idle' : '',
       activityLabel: resident.activityLabel ?? 'Idle',
       activityTargetId: resident.activityTargetId ?? '',
@@ -994,9 +911,9 @@ export class ResidentWorldLayer {
       targetYaw: 0,
       targetTravelSpeedWorldUnitsPerSecond: 0,
       smoothedTravelSpeedWorldUnitsPerSecond: 0,
+      displayedTravelSpeedWorldUnitsPerSecond: 0,
       walkGraceRemainingSeconds: 0,
       gaitRateBias: appearance.gaitRateBias,
-      sleepAnimationFrozen: false,
       sleepSupportHeightWorldUnits: 0,
       initialized: false,
     };
@@ -1054,19 +971,28 @@ export class ResidentWorldLayer {
       && typeof presentation.targetGridX === 'number'
       && typeof presentation.targetGridY === 'number'
     ) {
+      // A Gather destination can be an access cell outside the visible patch.
+      // Face the exact Core node center, keeping the resident on its accessGrid.
+      const site = presentation.kind === 'Civilization' ? (
+        this.interactionSites.get(`resource:${presentation.civilizationResourceNode}`)
+        ?? this.interactionSites.get(`facility:${presentation.facilityId}`)
+        ?? this.interactionSites.get(`storage:${presentation.civilizationStorage}`)
+      ) : undefined;
+      const facingX = site?.gridX ?? presentation.targetGridX;
+      const facingY = site?.gridY ?? presentation.targetGridY;
       const gridCellsPerChunk = WORLD_GRID_CONTRACT.gridCellsPerChunk;
       const chunkWorldSize = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
       const chunkX = Math.floor(
-        presentation.targetGridX / gridCellsPerChunk,
+        facingX / gridCellsPerChunk,
       );
       const chunkY = Math.floor(
-        presentation.targetGridY / gridCellsPerChunk,
+        facingY / gridCellsPerChunk,
       );
       const localX = (
-        presentation.targetGridX - (chunkX * gridCellsPerChunk)
+        facingX - (chunkX * gridCellsPerChunk)
       ) / gridCellsPerChunk;
       const localY = (
-        presentation.targetGridY - (chunkY * gridCellsPerChunk)
+        facingY - (chunkY * gridCellsPerChunk)
       ) / gridCellsPerChunk;
       targetX = (
         chunkX - this.pendingCenterX + localX - 0.5
@@ -1090,95 +1016,6 @@ export class ResidentWorldLayer {
       Math.atan2(dx, dz)
       + RESIDENT_PRESENTATION_CONTRACT.modelForwardYawOffsetRadians
     );
-  }
-
-  private updateSleepPosture(
-    actor: ResidentActor,
-    sleeping: boolean,
-    motionDt: number,
-  ): void {
-    const targetPitch = sleeping
-      ? RESIDENT_PRESENTATION_CONTRACT.sleepPosePitchRadians
-      : 0;
-    const targetRoll = sleeping
-      ? RESIDENT_PRESENTATION_CONTRACT.sleepPoseRollRadians
-      : 0;
-    const heightWorldUnits = Math.max(0.001, actor.root.scale.y);
-    const targetLocalX = sleeping
-      ? RESIDENT_PRESENTATION_CONTRACT.sleepPoseCenterOffsetHeightRatio
-      : 0;
-    const targetLiftWorldUnits = sleeping
-      ? (
-          heightWorldUnits
-            * RESIDENT_PRESENTATION_CONTRACT.sleepPoseBodyClearanceHeightRatio
-          + RESIDENT_PRESENTATION_CONTRACT.sleepPoseGroundClearanceWorldUnits
-          + actor.sleepSupportHeightWorldUnits
-        )
-      : 0;
-    const targetLocalY = targetLiftWorldUnits / heightWorldUnits;
-    const blend = 1 - Math.exp(
-      -RESIDENT_PRESENTATION_CONTRACT.sleepPoseResponsivenessPerSecond
-        * Math.max(0, motionDt),
-    );
-
-    actor.visual.rotation.x += (
-      targetPitch - actor.visual.rotation.x
-    ) * blend;
-    actor.visual.rotation.z += (
-      targetRoll - actor.visual.rotation.z
-    ) * blend;
-    actor.visual.position.x += (
-      targetLocalX - actor.visual.position.x
-    ) * blend;
-    actor.visual.position.y += (
-      targetLocalY - actor.visual.position.y
-    ) * blend;
-  }
-
-  private setSleepAnimationFrozen(
-    actor: ResidentActor,
-    frozen: boolean,
-  ): void {
-    if (actor.sleepAnimationFrozen === frozen) return;
-    actor.sleepAnimationFrozen = frozen;
-
-    if (!frozen) {
-      if (actor.idle) actor.idle.paused = false;
-      return;
-    }
-
-    const idle = actor.idle;
-    for (const action of [
-      actor.walk,
-      actor.talk,
-      actor.sit,
-      actor.interact,
-      actor.crouch,
-      actor.work,
-      actor.consume,
-      actor.harvest,
-      actor.carry,
-    ]) {
-      action?.stop();
-    }
-
-    if (!idle) {
-      actor.active = '';
-      return;
-    }
-
-    // A looping Idle clip was the source of the repeated body bobbing while
-    // lying down. Apply one neutral frame, then freeze it for the full
-    // authoritative Sleep interaction.
-    idle.reset();
-    idle.enabled = true;
-    idle.setEffectiveWeight(1);
-    idle.setEffectiveTimeScale(1);
-    idle.play();
-    idle.time = 0;
-    idle.paused = true;
-    actor.active = 'idle';
-    actor.mixer.update(0);
   }
 
   private sleepSupportHeightWorldUnits(
@@ -1223,10 +1060,6 @@ export class ResidentWorldLayer {
       actor.root.scale.y
         * RESIDENT_PRESENTATION_CONTRACT.sleepPoseBodyHalfLengthHeightRatio,
     );
-    const yaw = actor.root.rotation.y;
-    const axisX = Math.cos(yaw);
-    const axisZ = -Math.sin(yaw);
-
     const sampleWorldHeight = (
       localWorldX: number,
       localWorldZ: number,
@@ -1254,33 +1087,31 @@ export class ResidentWorldLayer {
     };
 
     const baseHeight = position.y;
-    const headHeight = sampleWorldHeight(
-      position.x - axisX * halfLength,
-      position.z - axisZ * halfLength,
-    );
-    const footHeight = sampleWorldHeight(
-      position.x + axisX * halfLength,
-      position.z + axisZ * halfLength,
-    );
-    return Math.max(
-      0,
-      headHeight - baseHeight,
-      footHeight - baseHeight,
-    );
+    // Cover the whole lying footprint, independent of heading changes during
+    // arrival. Snapshot-time terrain sampling only, not per-frame mesh queries.
+    let highest = baseHeight;
+    for (const x of [-halfLength, 0, halfLength]) {
+      for (const z of [-halfLength, 0, halfLength]) {
+        highest = Math.max(highest, sampleWorldHeight(position.x + x, position.z + z));
+      }
+    }
+    return Math.max(0, highest - baseHeight);
   }
 
   private syncWalkPlaybackRate(
     actor: ResidentActor,
     motionTimeScale: number,
   ): void {
-    if (!actor.walk) return;
+    const walk = actor.actions.get('walk'), carry = actor.actions.get('carry');
+    if (!walk && !carry) return;
 
     const referenceSpeed = Math.max(
       0.001,
       RESIDENT_PRESENTATION_CONTRACT.walkReferenceSpeedWorldUnitsPerSecond,
     );
     const normalizedSpeed =
-      actor.smoothedTravelSpeedWorldUnitsPerSecond / referenceSpeed;
+      actor.displayedTravelSpeedWorldUnitsPerSecond / referenceSpeed
+      / Math.max(1, this.simulationSpeed);
     const maximumLocalTimeScale = motionTimeScale > 0
       ? Math.min(
         RESIDENT_PRESENTATION_CONTRACT.walkMaxTimeScale,
@@ -1296,28 +1127,15 @@ export class ResidentWorldLayer {
       ),
       maximumLocalTimeScale,
     );
-    actor.walk.setEffectiveTimeScale(timeScale);
-    actor.carry?.setEffectiveTimeScale(timeScale);
+    walk?.setEffectiveTimeScale(timeScale);
+    carry?.setEffectiveTimeScale(timeScale);
   }
 
   private actionFor(
     actor: ResidentActor,
     motion: MotionName,
   ): THREE.AnimationAction | undefined {
-    switch (motion) {
-      case 'walk': return actor.walk;
-      case 'talk': return actor.talk;
-      case 'sit': return actor.sit;
-      case 'interact': return actor.interact;
-      case 'crouch': return actor.crouch;
-      case 'work': return actor.work;
-      case 'consume': return actor.consume;
-      case 'harvest': return actor.harvest;
-      case 'carry': return actor.carry;
-      case 'plant': return actor.plant;
-      case 'water': return actor.water;
-      default: return actor.idle;
-    }
+    return actor.actions.get(motion);
   }
 
   private restMotion(actor: ResidentActor): MotionName {
@@ -1350,7 +1168,7 @@ export class ResidentWorldLayer {
   }
 
   private setAction(actor: ResidentActor, moving: boolean): void {
-    let desired: MotionName = moving && actor.walk
+    let desired: MotionName = (moving || actor.presentation?.phase === 'Moving') && actor.actions.has('walk')
       ? resolveResidentSemanticMotion(
         actor.presentation,
         {
@@ -1362,23 +1180,25 @@ export class ResidentWorldLayer {
       : this.restMotion(actor);
 
     if (!this.actionFor(actor, desired)) {
-      desired = moving && actor.walk ? 'walk' : 'idle';
+      desired = moving && actor.actions.has('walk') ? 'walk' : 'idle';
     }
     if (actor.active === desired) return;
 
     const previous = actor.active
       ? this.actionFor(actor, actor.active)
       : undefined;
-    const next = this.actionFor(actor, desired) ?? actor.idle;
+    const next = this.actionFor(actor, desired) ?? actor.actions.get('idle');
     if (!next) return;
 
     const blendSeconds =
       RESIDENT_PRESENTATION_CONTRACT.animationCrossFadeSeconds;
-    previous?.fadeOut(blendSeconds);
+    if (previous !== next) previous?.fadeOut(blendSeconds);
     next.enabled = true;
+    if (desired !== 'walk' && desired !== 'carry') next.setEffectiveTimeScale(residentGestureRate(desired));
     // Keep locomotion phase across brief stops; restart discrete interactions.
     if (desired !== 'walk' && desired !== 'carry' && desired !== 'idle') next.reset();
-    next.play().fadeIn(blendSeconds);
+    if (previous === next) next.play();
+    else next.play().fadeIn(blendSeconds);
     actor.active = desired;
   }
 }

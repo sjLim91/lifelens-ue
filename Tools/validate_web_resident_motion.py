@@ -12,6 +12,9 @@ appearance = (
     root / "web/src/render/resident-appearance.ts"
 ).read_text(encoding="utf-8")
 
+
+library = (root / "web/src/render/resident-motion-library.ts").read_text(encoding="utf-8")
+sleep = (root / "web/src/render/resident-sleep-motion.ts").read_text(encoding="utf-8")
 # The imported web character must share the same forward convention as the
 # presentation root. A second PI rotation makes an otherwise forward-moving
 # actor visibly walk backward.
@@ -56,7 +59,7 @@ for token in (
 for token in (
     "residentPresentationMotionTimeScale(this.simulationSpeed)",
     "const motionDt = dt * motionTimeScale",
-    "actor.mixer.update(sleeping ? 0 : motionDt)",
+    "actor.mixer.update(motionDt)",
     "speedResponsivenessPerSecond",
     "turnResponsivenessPerSecond",
 ):
@@ -163,7 +166,7 @@ for token in (
     "civilizationIntent === 'Experiment'",
     "presentation.hasTargetGrid",
 ):
-    assert token in resident + semantic, (
+    assert token in resident + semantic + library, (
         f"missing conservative semantic motion token: {token}"
     )
 
@@ -186,47 +189,32 @@ for token in (
     "Walk_Carry_Loop",
     "UAL2 animation asset unavailable",
     "...animation2Asset.animations",
-    "actor.carry?.setEffectiveTimeScale(timeScale)",
+    "carry?.setEffectiveTimeScale(timeScale)",
 ):
-    assert token in resident, f"missing pinned UAL2 motion token: {token}"
+    assert token in resident + library, f"missing pinned UAL2 motion token: {token}"
 
 # TreeChopping_Loop exists in the free UAL2 pack, but the current Web
 # presentation DTO does not yet carry authoritative tool/source semantics.
 # Never infer chopping merely because the gathered material is Wood.
 assert "TreeChopping_Loop" not in resident + semantic
-assert "civilizationMaterial === 'Wood'" not in semantic
-assert "civilizationMaterial === 'PlantFood'" in semantic
+assert "case 'Wood': return 'gatherWood'" in semantic
+assert "case 'PlantFood': return 'harvest'" in semantic
 assert "facilityAction === 'DeliverMaterial'" in semantic
 assert "physicalGoal === 'Eat'" in semantic
 assert "presentation.physicalGoal === 'Drink'" in semantic
 
-# Sleep has no verified lie-down/sleep/wake sequence in the loaded libraries.
-# Keep the verified Idle clip, but a separate visual-only posture may lie the
-# body down after authoritative Sleep reaches Interacting. Movement, Core
-# position and collision authority stay untouched.
+# Verified LayToIdle replaces hierarchy rotation with calibrated skeleton poses.
 for token in (
-    "residentSleepPostureActive",
-    "sleepPosePitchRadians",
-    "sleepPoseRollRadians",
-    "sleepPoseResponsivenessPerSecond",
-    "sleepPoseCenterOffsetHeightRatio",
-    "sleepPoseBodyClearanceHeightRatio",
-    "sleepPoseGroundClearanceWorldUnits",
-    "sleepPoseBodyHalfLengthHeightRatio",
-    "sleepPoseSleepingPlaceSurfaceHeightWorldUnits",
-    "sleepSupportHeightWorldUnits",
-    "setSleepAnimationFrozen",
-    "idle.paused = true",
-    "actor.mixer.update(sleeping ? 0 : motionDt)",
-    "actor.visual.rotation.x",
-    "actor.visual.rotation.z",
-    "actor.visual.position.x",
-    "actor.visual.position.y",
+    "residentSleepPostureActive", "LayToIdle", "ResidentSleepMotion",
+    "calibrateResidentSleep", "sleepSupportHeightWorldUnits",
+    "sleepPoseSleepingPlaceSurfaceHeightWorldUnits", "residentSleepFallbackClip",
 ):
-    assert token in resident + semantic + contract, (
-        f"missing truthful Web sleep posture token: {token}"
-    )
-assert "SleepRest" not in resident
+    assert token in resident + semantic + sleep + contract, f"missing authored sleep contract: {token}"
+assert "setSleepAnimationFrozen" not in resident
+assert "sleepPoseRollRadians" not in resident
+assert "actor.target.clone().sub(actor.current)" not in resident
+assert "mesh.applyBoneTransform" in sleep
+assert "action.paused = true" in sleep
 
 print("LifeLens web resident gait, readability, appearance and UAL2 semantic motion: PASS")
 

@@ -521,7 +521,7 @@ testCase('semantic motion maps only authoritative safe interactions', () => {
     phase: 'Interacting',
     civilizationIntent: 'Craft',
     hasTargetGrid: true,
-  }, { moving: false, nearbyResident: false }), 'work');
+  }, { moving: false, nearbyResident: false }), 'craft');
 
   assert.equal(resolveResidentSemanticMotion({
     active: true,
@@ -589,7 +589,7 @@ testCase('UAL2 consumption is used only for real eat and drink actions', () => {
     phase: 'Interacting',
     physicalGoal: 'Sleep',
     hasTargetGrid: true,
-  }, { moving: false, nearbyResident: false }), 'idle');
+  }, { moving: false, nearbyResident: false }), 'sleep');
 });
 
 testCase('UAL2 harvest and carry require authoritative civilization facts', () => {
@@ -644,7 +644,7 @@ testCase('unsupported or unvalidated actions still fail closed', () => {
     civilizationIntent: 'Gather',
     civilizationMaterial: 'Wood',
     hasTargetGrid: true,
-  }, { moving: false, nearbyResident: false }), 'interact');
+  }, { moving: false, nearbyResident: false }), 'gatherWood');
 });
 
 testCase('movement always keeps locomotion ownership', () => {
@@ -833,7 +833,7 @@ console.log(passed + ' action-context regression checks passed');
 
 testCase('cultivation and trade use explicit action and target facts', () => {
   const directive={active:true,kind:'Civilization',phase:'Interacting',hasTargetGrid:true,facilityKind:'CultivatedPlot'};
-  for (const [facilityAction,motion] of [['Plant','plant'],['Water','water'],['Tend','work'],['Harvest','harvest']]) {
+  for (const [facilityAction,motion] of [['Plant','plant'],['Water','water'],['Tend','tend'],['Harvest','harvest']]) {
     assert.equal(resolveResidentSemanticMotion({...directive,facilityAction},{moving:false,nearbyResident:false,hasWaterContainer:true}),motion);
     assert.equal(resolveResidentSemanticMotion({...directive,facilityAction,hasTargetGrid:false},{moving:false,nearbyResident:false}),'idle');
   }

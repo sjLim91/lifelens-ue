@@ -89,6 +89,9 @@ export function createResidentProp(item: string): THREE.Group {
 export class ResidentInventoryProps {
   readonly root = new THREE.Group();
   private signature = '';
+  private inventory: ResidentCivilizationItem[] | undefined;
+  private presentation: ResidentPresentationDirective | null | undefined;
+  private visuallyMoving = false;
   private readonly loadRoot = new THREE.Group();
   private readonly rightHand: THREE.Object3D | undefined;
   private readonly leftHand: THREE.Object3D | undefined;
@@ -107,6 +110,17 @@ export class ResidentInventoryProps {
     visual.add(this.root);
   }
   setInventory(inventory: ResidentCivilizationItem[] | undefined, presentation?: ResidentPresentationDirective | null): void {
+    this.inventory = inventory; this.presentation = presentation;
+    this.applyInventory();
+  }
+  setVisuallyMoving(moving: boolean): void {
+    if (this.visuallyMoving === moving) return;
+    this.visuallyMoving = moving; this.applyInventory();
+  }
+  private applyInventory(): void {
+    const inventory = this.inventory;
+    const presentation = this.visuallyMoving && this.presentation?.phase === 'Interacting'
+      ? { ...this.presentation, phase: 'Moving' as const } : this.presentation;
     const material = residentCarriedMaterial(inventory, presentation);
     this.hasWaterContainer = Boolean(this.rightHand) && residentPouringWater(inventory, presentation);
     const carriedWater = material === 'Water' && inventory?.some(s => s.item === 'SimpleContainer' && Number.isFinite(s.quantity) && (s.quantity ?? 0) > 0);
@@ -163,6 +177,8 @@ export class ResidentInventoryProps {
       this.loadRoot.position.copy(this.visual.worldToLocal(this.point));
     }
   }
+
+  dispose(): void { this.clear(); }
 
   private clear(): void {
     for (const root of [this.root, this.loadRoot]) {
