@@ -104,6 +104,12 @@ export function WorldActivityPanel({
       || Number(b.operationalFacilityCount) - Number(a.operationalFacilityCount)
       || String(a.id).localeCompare(String(b.id))
     ));
+  const tradeRoutes = [...(civilization.tradeRoutes ?? [])]
+    .sort((a, b) => (
+      Number(b.active) - Number(a.active)
+      || Number(b.exchangeCount) - Number(a.exchangeCount)
+      || String(a.id).localeCompare(String(b.id))
+    ));
   const facilities = [...(civilization.facilities ?? [])]
     .sort(facilitySort)
     .slice(0, 4);
@@ -170,6 +176,9 @@ export function WorldActivityPanel({
         <span>시설 <b>{civilization.facilityCount ?? 0}</b></span>
         <span>
           정착지 <b>{civilization.activeSettlementCount ?? settlements.length}</b>
+        </span>
+        <span>
+          교역로 <b>{civilization.activeTradeRouteCount ?? tradeRoutes.filter(route => route.active).length}</b>
         </span>
         <span>재현 가능 기술 <b>{civilization.uniqueReproducibleTechniqueTypes ?? 0}</b></span>
       </div>
@@ -266,6 +275,45 @@ export function WorldActivityPanel({
                 {' · 위치 보기'}
               </span>
             </button>
+          ))}
+        </div>
+      ) : null}
+
+      {tradeRoutes.length > 0 ? (
+        <div className="focused-life-section">
+          <h3>정착지 교역망</h3>
+          {tradeRoutes.slice(0, 6).map(route => (
+            <div
+              className="observation-event"
+              key={route.id}
+            >
+              <strong>
+                {route.active ? '활성 교역로' : '교역 관계 형성 중'}
+              </strong>
+              <span className="observation-event-detail">
+                거래 증거 {route.exchangeCount}회
+                {' · '}
+                거래 파트너 {route.partnerCount}쌍
+                {' · '}
+                거리 {route.distanceGrid}칸
+              </span>
+              <div className="focused-life-inline">
+                <button
+                  type="button"
+                  className="observation-event-button"
+                  onClick={() => onFocusGrid(route.firstGridX, route.firstGridY)}
+                >
+                  출발 정착지 보기
+                </button>
+                <button
+                  type="button"
+                  className="observation-event-button"
+                  onClick={() => onFocusGrid(route.secondGridX, route.secondGridY)}
+                >
+                  도착 정착지 보기
+                </button>
+              </div>
+            </div>
           ))}
         </div>
       ) : null}
