@@ -7,9 +7,69 @@ export interface InstancedTreeAssetOptions {
   onReady?: () => void;
 }
 
-function toMobileMaterial(material: THREE.Material): THREE.Material {
+const FOLIAGE_NAME_PATTERN =
+  /(leaf|leaves|foliage|crown|canopy|needle|needles)/i;
+
+function isFoliageMaterial(
+  material: THREE.Material,
+  objectName: string,
+): boolean {
+  const label = `${objectName} ${material.name || ''}`;
+  if (FOLIAGE_NAME_PATTERN.test(label)) return true;
+
+  if (
+    material instanceof THREE.MeshStandardMaterial
+    || material instanceof THREE.MeshLambertMaterial
+  ) {
+    const { r, g, b } = material.color;
+    return g > 0.22 && g > r * 1.08 && g > b * 1.08;
+  }
+
+  return false;
+}
+
+function enableFoliageTint(material: THREE.MeshLambertMaterial): void {
+  // The source Quaternius textures already carry a green albedo. A normal
+  // material/instance color would multiply that green texture, making red or
+  // gold variants collapse toward black. Preserve the texture's luminance and
+  // alpha, then replace only its hue with the deterministic per-instance tint.
+  material.color.setHex(0xffffff);
+  material.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader.replace(
+      '#include <common>',
+      `#include <common>
+attribute vec3 lifeLensFoliageTint;
+varying vec3 vLifeLensFoliageTint;`,
+    );
+    shader.vertexShader = shader.vertexShader.replace(
+      '#include <begin_vertex>',
+      `#include <begin_vertex>
+vLifeLensFoliageTint = lifeLensFoliageTint;`,
+    );
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <common>',
+      `#include <common>
+varying vec3 vLifeLensFoliageTint;`,
+    );
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <color_fragment>',
+      `#include <color_fragment>
+float lifeLensFoliageLuma = max(
+  dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722)),
+  0.22
+);
+diffuseColor.rgb = vLifeLensFoliageTint * lifeLensFoliageLuma;`,
+    );
+  };
+  material.customProgramCacheKey = () => 'lifelens-foliage-tint-v1';
+}
+
+function toMobileMaterial(
+  material: THREE.Material,
+  foliage: boolean,
+): THREE.Material {
   if (material instanceof THREE.MeshStandardMaterial) {
-    return new THREE.MeshLambertMaterial({
+    const mobile = new THREE.MeshLambertMaterial({
       name: `${material.name || 'Tree'}_Mobile`,
       color: material.color.clone(),
       map: material.map,
@@ -22,9 +82,15 @@ function toMobileMaterial(material: THREE.Material): THREE.Material {
       side: material.side,
       vertexColors: material.vertexColors,
     });
+    if (foliage) enableFoliageTint(mobile);
+    return mobile;
   }
 
-  return material.clone();
+  const clone = material.clone();
+  if (foliage && clone instanceof THREE.MeshLambertMaterial) {
+    enableFoliageTint(clone);
+  }
+  return clone;
 }
 
 export class InstancedTreeAsset {
@@ -35,6 +101,7 @@ export class InstancedTreeAsset {
   private readonly url: string;
   private readonly onReady?: () => void;
   private readonly packedMatrices: Float32Array;
+  private readonly packedFoliageTints: Float32Array;
   private readonly scratchMatrix = new THREE.Matrix4();
   private readonly meshes: THREE.InstancedMesh[] = [];
   private instanceCount = 0;
@@ -46,18 +113,35 @@ export class InstancedTreeAsset {
     this.url = options.url;
     this.onReady = options.onReady;
     this.packedMatrices = new Float32Array(this.maxInstances * 16);
+    this.packedFoliageTints = new Float32Array(this.maxInstances * 3);
+    this.packedFoliageTints.fill(1);
     this.group.visible = false;
     void this.load();
   }
 
-  setInstances(matrices: Float32Array, count: number): void {
+  setInstances(
+    matrices: Float32Array,
+    count: number,
+    foliageTints?: Float32Array,
+  ): void {
     const safeCount = Math.max(
       0,
       Math.min(this.maxInstances, Math.floor(count)),
     );
-    const floatCount = safeCount * 16;
+    const matrixFloatCount = safeCount * 16;
+    const tintFloatCount = safeCount * 3;
     this.packedMatrices.fill(0);
-    this.packedMatrices.set(matrices.subarray(0, floatCount), 0);
+    this.packedMatrices.set(
+      matrices.subarray(0, matrixFloatCount),
+      0,
+    );
+    this.packedFoliageTints.fill(1);
+    if (foliageTints) {
+      this.packedFoliageTints.set(
+        foliageTints.subarray(0, tintFloatCount),
+        0,
+      );
+    }
     this.instanceCount = safeCount;
     this.applyInstances();
   }
@@ -106,16 +190,39 @@ export class InstancedTreeAsset {
         if (!(object instanceof THREE.Mesh)) return;
         if (!(object.geometry instanceof THREE.BufferGeometry)) return;
 
+        const sourceMaterials = Array.isArray(object.material)
+          ? object.material
+          : [object.material];
+        const foliageFlags = sourceMaterials.map((material) => (
+          isFoliageMaterial(material, object.name)
+        ));
+        const hasFoliage = foliageFlags.some(Boolean);
+
         const geometry = object.geometry.clone();
         geometry.applyMatrix4(object.matrixWorld);
         geometry.applyMatrix4(translateToOrigin);
         geometry.applyMatrix4(normalizeHeight);
         geometry.computeVertexNormals();
         geometry.computeBoundingSphere();
+        if (hasFoliage) {
+          geometry.setAttribute(
+            'lifeLensFoliageTint',
+            new THREE.InstancedBufferAttribute(
+              new Float32Array(this.maxInstances * 3),
+              3,
+            ),
+          );
+        }
 
+        const mobileMaterials = sourceMaterials.map(
+          (material, index) => toMobileMaterial(
+            material,
+            foliageFlags[index],
+          ),
+        );
         const material = Array.isArray(object.material)
-          ? object.material.map(toMobileMaterial)
-          : toMobileMaterial(object.material);
+          ? mobileMaterials
+          : mobileMaterials[0];
         const instanced = new THREE.InstancedMesh(
           geometry,
           material,
@@ -157,6 +264,13 @@ export class InstancedTreeAsset {
           index * 16,
         );
         mesh.setMatrixAt(index, this.scratchMatrix);
+      }
+
+      const tintAttribute =
+        mesh.geometry.getAttribute('lifeLensFoliageTint');
+      if (tintAttribute instanceof THREE.InstancedBufferAttribute) {
+        tintAttribute.array.set(this.packedFoliageTints);
+        tintAttribute.needsUpdate = true;
       }
 
       mesh.count = this.instanceCount;
