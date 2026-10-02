@@ -7,7 +7,9 @@ import type {
 } from '../runtime/core-types';
 import {
   KOREAN_COLLECTIVE_RECORD_STAGE_LABELS,
+  KOREAN_SOCIETY_COORDINATION_TASK_LABELS,
   KOREAN_SOCIETY_INSTITUTION_LABELS,
+  KOREAN_SOCIETY_RESOURCE_DISPOSITION_LABELS,
   KOREAN_SOCIETY_ROLE_LABELS,
 } from '../localization/korean';
 import {
@@ -137,6 +139,10 @@ export function WorldActivityPanel({
     .filter(([role]) => role !== 'Generalist')
     .sort((a, b) => b[1] - a[1])
     .slice(0, 4);
+  const coordinationSummary = (society?.coordination ?? [])
+    .filter(directive => directive.task !== 'None')
+    .sort((a, b) => Number(b.priority01) - Number(a.priority01))
+    .slice(0, 4);
 
   if (
     civilization.available !== true
@@ -169,6 +175,10 @@ export function WorldActivityPanel({
             <span>거래 파트너 <b>{society.tradePartnershipCount}</b></span>
             <span>조직 멤버십 <b>{society.institutionMembershipCount}</b></span>
             <span>활성 조직 <b>{society.activeInstitutionCount}</b></span>
+            <span>생산 조정 <b>{society.coordinatedResidentCount}명</b></span>
+            <span>공동 기여 <b>{society.sharedContributionFactCount}</b></span>
+            <span>기록 매체 <b>{society.recordMediaUnits}</b></span>
+            <span>영구 기록 <b>{society.durableRecordFactCount}</b></span>
             <span>
               전승 단계 <b>{KOREAN_COLLECTIVE_RECORD_STAGE_LABELS[society.recordStage] ?? society.recordStage}</b>
             </span>
@@ -178,6 +188,20 @@ export function WorldActivityPanel({
               {roleSummary.map(([role, count]) => (
                 <span key={role}>
                   {KOREAN_SOCIETY_ROLE_LABELS[role] ?? role} <b>{count}명</b>
+                </span>
+              ))}
+            </div>
+          ) : null}
+          {coordinationSummary.length > 0 ? (
+            <div className="focused-life-inline">
+              {coordinationSummary.map(directive => (
+                <span key={`${directive.residentId}:${directive.task}`}>
+                  {names.get(directive.residentId) || directive.residentId}
+                  {' · '}
+                  {KOREAN_SOCIETY_COORDINATION_TASK_LABELS[directive.task] ?? directive.task}
+                  {' · '}
+                  {KOREAN_SOCIETY_RESOURCE_DISPOSITION_LABELS[directive.resourceDisposition]
+                    ?? directive.resourceDisposition}
                 </span>
               ))}
             </div>
