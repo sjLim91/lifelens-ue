@@ -1642,9 +1642,11 @@ inline CivilizationUtilityDecision bestPrimitiveStorageConstructionDecision(
     CivilizationUtilityDecision candidate;
     if(!self.civilization.knowledge.knowsAtLeast(
         TechniqueId::PrimitiveStorage,KnowledgeLevel::Reproducible)) return candidate;
-    if(hasOperationalPrimitiveStorage(world)) return candidate;
+    if(hasOperationalPrimitiveStorageNear(
+        world,authoritativePosition)) return candidate;
 
-    const ConstructedFacility* project=primitiveStorageProject(world);
+    const ConstructedFacility* project=primitiveStorageProjectNear(
+        world,authoritativePosition);
     const double preference=civilizationPreference(
         world.seed,self.id,470ULL+static_cast<std::uint64_t>(TechniqueId::PrimitiveStorage));
 
@@ -1712,7 +1714,8 @@ inline CivilizationUtilityDecision bestPrimitiveFirePitDecision(
     if(!self.civilization.knowledge.knowsAtLeast(
         TechniqueId::FireMaking,KnowledgeLevel::Reproducible)) return candidate;
 
-    const ConstructedFacility* project=primitiveFirePitProject(world);
+    const ConstructedFacility* project=primitiveFirePitProjectNear(
+        world,authoritativePosition);
     const double preference=civilizationPreference(
         world.seed,self.id,490ULL+static_cast<std::uint64_t>(TechniqueId::FireMaking));
 
@@ -1810,9 +1813,12 @@ inline CivilizationUtilityDecision bestPrimitiveFurnaceDecision(
     GridPos authoritativePosition)
 {
     CivilizationUtilityDecision candidate;
-    if(!primitiveFurnaceKnowledgeReady(self) || !hasOperationalFirePitForSmelting(world)) return candidate;
+    if(!primitiveFurnaceKnowledgeReady(self)
+       || !hasOperationalFirePitForSmeltingNear(
+            world,authoritativePosition)) return candidate;
 
-    const ConstructedFacility* project=primitiveFurnaceProject(world);
+    const ConstructedFacility* project=primitiveFurnaceProjectNear(
+        world,authoritativePosition);
     const double preference=civilizationPreference(world.seed,self.id,530ULL);
     candidate.intent=CivilizationIntent::Craft;
     candidate.technique=self.civilization.knowledge.knowsAtLeast(
@@ -3172,7 +3178,8 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
 
                 if(decision.facilityAction==FacilityBuildAction::Work){
                     const PrimitiveStorageWorkResult work=workOnPrimitiveStorage(
-                        world,self,std::max(0.1,decision.facilityWork));
+                        world,self,facility->id,
+                        std::max(0.1,decision.facilityWork));
                     if(!work.worked || work.facilityId!=facility->id) return result;
                     result.executed=true;
                     result.success=true;
@@ -3240,7 +3247,8 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
                 if(decision.facilityAction==FacilityBuildAction::Work){
                     if(facility->state==FacilityState::Operational) return result;
                     const PrimitiveFirePitWorkResult work=workOnPrimitiveFirePit(
-                        world,self,std::max(0.1,decision.facilityWork));
+                        world,self,facility->id,
+                        std::max(0.1,decision.facilityWork));
                     if(!work.worked || work.facilityId!=facility->id) return result;
                     result.executed=true;
                     result.success=true;
@@ -3352,7 +3360,8 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
                 if(decision.facilityAction==FacilityBuildAction::Work){
                     if(facility->state==FacilityState::Operational) return result;
                     const PrimitiveFurnaceWorkResult work=workOnPrimitiveFurnace(
-                        world,self,std::max(0.1,decision.facilityWork));
+                        world,self,facility->id,
+                        std::max(0.1,decision.facilityWork));
                     if(!work.worked || work.facilityId!=facility->id) return result;
                     result.executed=true;
                     result.success=true;
