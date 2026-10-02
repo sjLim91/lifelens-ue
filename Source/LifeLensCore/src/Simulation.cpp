@@ -78,6 +78,100 @@ ResourceNode* naturalWaterNodeAtAccess(
     return best;
 }
 
+bool nursingCareAvailable(
+    const BirthBook& births,
+    const Character& caregiver,
+    const Character& child)
+{
+    if(!caregiver.alive
+       || !child.alive
+       || child.lifeStage!=LifeStage::Baby){
+        return false;
+    }
+    const BirthRecord* birth=births.find(child.id);
+    // BirthRecord::parentA is authored by performBirth from the gestational
+    // parent. Nursing is therefore a real postpartum care path, not a generic
+    // resource-free Feed shortcut for every caregiver.
+    return birth!=nullptr && birth->parentA==caregiver.id;
+}
+
+bool nearestNaturalProvisionResource(
+    const World& world,
+    MaterialKind material,
+    GridPos from,
+    ResourceNodeId& outNode,
+    GridPos& outAccess)
+{
+    bool found=false;
+    int bestDistance=std::numeric_limits<int>::max();
+    ResourceNodeId bestId=0;
+
+    for(const ResourceNode& node:world.resourceNodes){
+        if(node.id==0
+           || node.material!=material
+           || node.quantity<=0){
+            continue;
+        }
+
+        GridPos access{};
+        if(!resolveCivilizationResourceAccessGridPosition(
+                world,node.id,access)){
+            continue;
+        }
+
+        const int distance=manhattan(from,access);
+        if(!found
+           || distance<bestDistance
+           || (distance==bestDistance && node.id<bestId)){
+            found=true;
+            bestDistance=distance;
+            bestId=node.id;
+            outNode=node.id;
+            outAccess=access;
+        }
+    }
+    return found;
+}
+
+bool nearestStoredProvision(
+    const World& world,
+    MaterialKind material,
+    GridPos from,
+    StorageId& outStorage,
+    GridPos& outPosition)
+{
+    bool found=false;
+    int bestDistance=std::numeric_limits<int>::max();
+    StorageId bestId=0;
+
+    for(const StorageSite& storage:world.storageSites){
+        const int available=
+            material==MaterialKind::Water
+                ? portableWaterCount(storage.inventory)
+                : storage.inventory.count(
+                    ItemKind::RawMaterial,material);
+        if(storage.id==0 || available<=0) continue;
+
+        GridPos position{};
+        if(!resolveCivilizationStorageGridPosition(
+                world,storage.id,position)){
+            continue;
+        }
+
+        const int distance=manhattan(from,position);
+        if(!found
+           || distance<bestDistance
+           || (distance==bestDistance && storage.id<bestId)){
+            found=true;
+            bestDistance=distance;
+            bestId=storage.id;
+            outStorage=storage.id;
+            outPosition=position;
+        }
+    }
+    return found;
+}
+
 double pastRelationshipPenalty(const RomanceBook& romances,CharacterId id)
 {
     int ended=0;
