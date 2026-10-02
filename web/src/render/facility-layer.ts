@@ -1,5 +1,6 @@
+import { WORLD_PRESENTATION } from './world-presentation-config';
 import * as THREE from 'three';
-import type { HumanTrace, TerrainWindow } from '../runtime/core-types';
+import type { CivilizationWorldPayload, CivilizationWorldFacility, HumanTrace, TerrainWindow } from '../runtime/core-types';
 import { WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
 import { visibleHumanTraces } from '../state/human-traces';
 import { createTerrainElevationSampler } from './terrain-geometry';
@@ -155,19 +156,57 @@ export class FacilityLayer {
   });
 
   private signature = '';
+  private civilizationWorldSeed: string | undefined;
+  private readonly structures = new Map<string, { signature: string; group: THREE.Group }>();
+  private civilization: CivilizationWorldPayload = {};
+  private readonly wornMaterials = new Map<string, THREE.MeshStandardMaterial>();
+  private readonly glowTexture = (() => {
+    const size = WORLD_PRESENTATION.fire.textureSize;
+    const pixels = new Uint8Array(size * size * 4);
+    for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+      const offset = (y * size + x) * 4;
+      const radius = Math.hypot((x + 0.5) / size * 2 - 1, (y + 0.5) / size * 2 - 1);
+      pixels.set([255, 255, 255, Math.round(Math.max(0, 1 - radius) ** 2 * 255)], offset);
+    }
+    const texture = new THREE.DataTexture(pixels, size, size);
+    texture.needsUpdate = true;
+    return texture;
+  })();
+  private readonly glowMaterial = new THREE.SpriteMaterial({
+    map: this.glowTexture, color: WORLD_PRESENTATION.fire.color, transparent: true,
+    opacity: WORLD_PRESENTATION.fire.opacity, depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+
+  setCivilization(civilization: CivilizationWorldPayload, terrain: TerrainWindow): void {
+    this.civilizationWorldSeed = terrain.worldSeed;
+    this.civilization = civilization.available === true ? civilization : {};
+    this.setTerrain(terrain);
+  }
+
+  private facility(trace: FacilityTrace): CivilizationWorldFacility | undefined {
+    return this.civilization.facilities?.find(facility =>
+      trace.id === `facility:${facility.id}` && trace.gridX === facility.gridX
+      && trace.gridY === facility.gridY && trace.facilityKind === facility.kind);
+  }
+
 
   constructor() {
     this.group.name = 'facilities';
   }
 
   setTerrain(window: TerrainWindow): void {
+    if (window.worldSeed !== this.civilizationWorldSeed) this.civilization = {};
     const facilities = visibleHumanTraces(window)
       .filter((trace): trace is FacilityTrace => trace.kind === 'Facility');
     const signature = JSON.stringify([
       window.worldSeed,
       window.centerChunkX,
       window.centerChunkY,
+      window.chunks.map(chunk => [chunk.x, chunk.y, chunk.elevation01]),
       facilities.map((trace) => [
+        this.facility(trace)?.durability,
+        this.civilization.storages?.find(storage => storage.id === this.facility(trace)?.linkedStorage)?.totalUnits,
         trace.id,
         trace.gridX,
         trace.gridY,
@@ -191,6 +230,7 @@ export class FacilityLayer {
     this.group.clear();
     if (facilities.length === 0) {
       this.group.visible = false;
+      this.structures.clear();
       return;
     }
 
@@ -201,6 +241,7 @@ export class FacilityLayer {
       elevationScale,
     } = WORLD_GRID_CONTRACT;
 
+    const nextStructures = new Map<string, { signature: string; group: THREE.Group }>();
     for (const trace of facilities) {
       const chunkX = Math.floor(trace.gridX / span);
       const chunkY = Math.floor(trace.gridY / span);
@@ -223,6 +264,16 @@ export class FacilityLayer {
         localY01,
       ) * elevationScale;
 
+      const facility = this.facility(trace);
+      const storage = this.civilization.storages?.find(entry => entry.id === facility?.linkedStorage);
+      const structureSignature = JSON.stringify([window.worldSeed, trace, facility?.durability, storage?.totalUnits]);
+      const cached = this.structures.get(trace.id);
+      if (cached?.signature === structureSignature) {
+        cached.group.position.set(worldX, groundY + 0.025, worldZ);
+        this.group.add(cached.group);
+        nextStructures.set(trace.id, cached);
+        continue;
+      }
       const structure = new THREE.Group();
       structure.name = `facility-${trace.id}`;
       structure.userData.traceId = trace.id;
@@ -236,9 +287,14 @@ export class FacilityLayer {
         trace,
         constructionProgress(trace),
       );
+      this.addStoredGoods(structure, trace);
+      this.applyCondition(structure, trace);
       this.group.add(structure);
+      nextStructures.set(trace.id, { signature: structureSignature, group: structure });
     }
 
+    this.structures.clear();
+    for (const [id, entry] of nextStructures) this.structures.set(id, entry);
     this.group.visible = true;
   }
 
@@ -259,6 +315,11 @@ export class FacilityLayer {
 
   dispose(): void {
     this.group.clear();
+    for (const material of this.wornMaterials.values()) material.dispose();
+    this.wornMaterials.clear();
+    this.structures.clear();
+    this.glowMaterial.dispose();
+    this.glowTexture.dispose();
     this.boxGeometry.dispose();
     this.cylinderGeometry.dispose();
     this.taperedCylinderGeometry.dispose();
@@ -274,6 +335,56 @@ export class FacilityLayer {
     this.flameMaterial.dispose();
     this.cropMaterial.dispose();
     this.ripeCropMaterial.dispose();
+  }
+
+  private addStoredGoods(group: THREE.Group, trace: FacilityTrace): void {
+    const facility = this.facility(trace);
+    if (trace.facilityKind !== 'PrimitiveStorage' || trace.state !== 'Operational'
+      || !facility?.linkedStorage) return;
+    const storage = this.civilization.storages?.find(entry => entry.id === facility.linkedStorage);
+    if (!storage || !Number.isFinite(storage.totalUnits) || storage.totalUnits <= 0) return;
+    const config = WORLD_PRESENTATION.storage;
+    const count = Math.min(config.maxPiles, Math.ceil(storage.totalUnits / config.unitsPerPile));
+    for (let i = 0; i < count; i++) {
+      // Inside the existing store footprint: no extra buildings or free stock.
+      this.addBox(group, trace, this.beddingMaterial,
+        [(i - (count - 1) / 2) * config.width, 0.95, 0],
+        [config.width * 0.85, config.height, config.depth], [0, 0, 0], 950 + i);
+    }
+  }
+
+  private applyCondition(group: THREE.Group, trace: FacilityTrace): void {
+    const durability = this.facility(trace)?.durability;
+    // Missing detail and mere inactivity are not evidence of decay.
+    if (trace.state !== 'Operational' || !Number.isFinite(durability)) return;
+    const bands = WORLD_PRESENTATION.conditionBands;
+    const wear = Math.round((1 - clamp01(durability)) * bands) / bands;
+    if (wear === 0) return;
+    group.traverse(object => {
+      if (!(object instanceof THREE.Mesh) || !(object.material instanceof THREE.MeshStandardMaterial)
+        || object.material === this.flameMaterial || object.material === this.cropMaterial
+        || object.material === this.ripeCropMaterial) return;
+      const original = object.material;
+      const key = `${original.uuid}:${wear}`;
+      let material = this.wornMaterials.get(key);
+      if (!material) {
+        material = original.clone();
+        material.color.lerp(new THREE.Color(WORLD_PRESENTATION.weatheredColor), wear * WORLD_PRESENTATION.wearTint);
+        this.wornMaterials.set(key, material);
+      }
+      object.material = material;
+      // Bounded weathering inside the current footprint; never move the facility.
+      object.rotation.z += wear * wear * WORLD_PRESENTATION.damageTilt
+        * (hash01(object.name) - 0.5);
+    });
+  }
+
+  private addFireGlow(group: THREE.Group, y: number, z = 0): void {
+    // Vertex-free soft silhouette, no real-time lights or shadow maps.
+    const glow = new THREE.Sprite(this.glowMaterial);
+    glow.position.set(0, y, z);
+    glow.scale.setScalar(WORLD_PRESENTATION.fire.glowSize);
+    group.add(glow);
   }
 
   private buildFacility(
@@ -537,6 +648,7 @@ export class FacilityLayer {
       flame.scale.set(0.65, 1.0, 0.65);
       this.prepareMesh(flame, trace, 54);
       group.add(flame);
+      this.addFireGlow(group, flame.position.y, flame.position.z);
     }
   }
 
@@ -707,6 +819,14 @@ export class FacilityLayer {
       [0, 0, 0],
       89,
     );
+    // Finish the existing shelter envelope as construction reaches completion.
+    // Side panels remain inside its original clearance; no new site is invented.
+    const wall = WORLD_PRESENTATION.shelter;
+    for (const direction of [-1, 1]) {
+      this.addBoxAtProgress(group, trace, progress, wall.wallProgress,
+        this.thatchMaterial, [direction * wall.sideX, wall.wallY, 0],
+        [wall.wallThickness, wall.wallHeight, wall.wallDepth], [0, 0, 0], 910 + direction);
+    }
   }
 
   private buildFurnace(
@@ -771,6 +891,7 @@ export class FacilityLayer {
       flame.rotation.x = Math.PI * 0.08;
       this.prepareMesh(flame, trace, 104);
       group.add(flame);
+      this.addFireGlow(group, flame.position.y, flame.position.z);
     }
   }
 
@@ -813,6 +934,12 @@ export class FacilityLayer {
       );
     });
 
+    const cultivation = WORLD_PRESENTATION.cultivation;
+    for (const [index, row] of cultivation.rows.entries()) {
+      this.addBoxAtProgress(group, trace, progress, 0.42, this.darkWoodMaterial,
+        [0, 0.16, row], [cultivation.length, cultivation.ridgeHeight, cultivation.ridgeWidth],
+        [0, 0, 0], 920 + index);
+    }
     if (trace.state !== 'Operational' || !trace.cropPlanted) return;
 
     const growth = clamp01(trace.cropGrowth01);
@@ -1031,3 +1158,4 @@ export class FacilityLayer {
     mesh.receiveShadow = true;
   }
 }
+

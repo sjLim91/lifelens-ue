@@ -1,3 +1,4 @@
+import { FootTrafficLayer } from './foot-traffic-layer';
 import * as THREE from 'three';
 import type {
   CivilizationWorldPayload,
@@ -51,6 +52,9 @@ export class WorldScene {
   private readonly groundDetailLayer = new GroundDetailLayer();
   private readonly authoritativeSpatialTargetLayer =
     new AuthoritativeSpatialTargetLayer();
+  private readonly footTrafficLayer = new FootTrafficLayer();
+  private footTrafficResidents: Resident[] = [];
+  private footTrafficTerrain: TerrainWindow | null = null;
   private readonly facilityLayer = new FacilityLayer();
   private readonly humanTraceLayer = new HumanTraceLayer();
   private readonly waterLayer = new WaterLayer();
@@ -83,6 +87,7 @@ export class WorldScene {
     this.scene.add(this.groundDetailLayer.group);
     this.scene.add(this.authoritativeSpatialTargetLayer.group);
     this.scene.add(this.facilityLayer.group);
+    this.scene.add(this.footTrafficLayer.group);
     this.scene.add(this.humanTraceLayer.group);
     this.scene.add(this.waterLayer.group);
     this.scene.add(this.vegetationLayer.group);
@@ -129,6 +134,7 @@ export class WorldScene {
   }
 
   setSimulationMinute(minute: number): void {
+    if (this.footTrafficTerrain) this.footTrafficLayer.observe(this.footTrafficResidents, this.footTrafficTerrain, minute);
     this.atmosphere.setSimulationMinute(minute);
     this.waterLayer.setSimulationMinute(minute);
   }
@@ -199,6 +205,7 @@ export class WorldScene {
     worldObjects: WorldObjectsPayload,
     terrain: TerrainWindow,
   ): void {
+    this.facilityLayer.setCivilization(civilization, terrain);
     this.authoritativeSpatialTargetLayer.setTargets(
       civilization,
       worldObjects,
@@ -212,6 +219,8 @@ export class WorldScene {
     centerX: number,
     centerY: number,
   ): void {
+    this.footTrafficResidents = residents;
+    this.footTrafficTerrain = terrain;
     this.residentLayer.setResidents(
       residents,
       terrain,
@@ -373,6 +382,7 @@ export class WorldScene {
     this.groundDetailLayer.dispose();
     this.authoritativeSpatialTargetLayer.dispose();
     this.facilityLayer.dispose();
+    this.footTrafficLayer.dispose();
     this.humanTraceLayer.dispose();
     this.waterLayer.dispose();
     this.vegetationLayer.dispose();
@@ -440,3 +450,4 @@ export class WorldScene {
   }
 
 }
+

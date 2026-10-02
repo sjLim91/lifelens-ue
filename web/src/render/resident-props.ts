@@ -1,3 +1,4 @@
+import { WORLD_PRESENTATION } from './world-presentation-config';
 import * as THREE from 'three';
 import type { ResidentCivilizationItem, ResidentPresentationDirective } from '../runtime/core-types';
 
@@ -16,7 +17,15 @@ export function residentVisibleItems(inventory: ResidentCivilizationItem[] | und
 }
 
 export function residentCarriedMaterial(inventory: ResidentCivilizationItem[] | undefined, p: ResidentPresentationDirective | null | undefined): string | null {
-  if (!p?.active || p.kind !== 'Civilization' || p.phase !== 'Moving'
+  if (!p?.active || p.phase !== 'Moving') return null;
+  if (p.kind === 'Trade') {
+    // Trade DTO does not identify cargo. Show an actual owned raw stack only;
+    // this is possession evidence, never an inferred offer or exchange result.
+    return inventory?.find(stack => stack.item === 'RawMaterial'
+      && ['Wood','Stone','Flint','Clay','PlantFood','Water'].includes(stack.material ?? '')
+      && Number.isFinite(stack.quantity) && (stack.quantity ?? 0) > 0)?.material ?? null;
+  }
+  if (p.kind !== 'Civilization'
     || !(p.facilityAction === 'DeliverMaterial' || p.civilizationIntent === 'Store')) return null;
   if (!['Wood','Stone','Flint','Clay','PlantFood','Water'].includes(p.civilizationMaterial ?? '')) return null;
   return inventory?.some(stack => stack.item === 'RawMaterial' && stack.material === p.civilizationMaterial
@@ -103,7 +112,9 @@ export class ResidentInventoryProps {
     const carriedWater = material === 'Water' && inventory?.some(s => s.item === 'SimpleContainer' && Number.isFinite(s.quantity) && (s.quantity ?? 0) > 0);
     this.hasCarriedLoad = Boolean(material && this.rightHand && this.leftHand && (material !== 'Water' || carriedWater));
     const items = residentVisibleItems(inventory).filter(item => !(item === 'SimpleContainer' && (this.hasWaterContainer || carriedWater)));
-    const signature = [items.join('|'), this.hasCarriedLoad ? material : '', this.hasWaterContainer].join(':');
+    const quantity = inventory?.find(stack => stack.item === 'RawMaterial' && stack.material === material)?.quantity ?? 0;
+    const pieces = Math.min(WORLD_PRESENTATION.load.maxPieces, Math.max(0, Math.ceil(quantity)));
+    const signature = [items.join('|'), this.hasCarriedLoad ? material : '', pieces, this.hasWaterContainer].join(':');
     if (signature === this.signature) return;
     this.clear(); this.signature = signature;
     items.forEach((item, index) => {
@@ -128,7 +139,11 @@ export class ResidentInventoryProps {
       mesh.userData.residentOwnsGeometry = true;
       mesh.rotation.z = material === 'Wood' ? Math.PI / 2 : 0;
       mesh.position.set(0,-.025,0);
-      resource.add(mesh);
+      for (let index = 0; index < pieces; index++) {
+        const piece = index === 0 ? mesh : mesh.clone();
+        piece.position.z = (index - (pieces - 1) / 2) * WORLD_PRESENTATION.load.spacing;
+        resource.add(piece);
+      }
       this.loadRoot.add(resource);
     }
   }
@@ -160,3 +175,4 @@ export class ResidentInventoryProps {
     }
   }
 }
+
