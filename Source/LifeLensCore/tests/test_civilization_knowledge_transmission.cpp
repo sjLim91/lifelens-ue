@@ -128,10 +128,34 @@ int main()
     CHECK(techniquePrerequisiteContextSatisfied(
         bronzeLearner,TechniqueId::BronzeAlloying));
 
+    Character blockedTeacher=teacher;
+    CHECK(blockedTeacher.civilization.inventory.remove(
+        ItemKind::RawMaterial,MaterialKind::Flint,20));
+    Character blockedLearner=makeLearner(30);
+    blockedLearner.civilization.knowledge.learn(
+        TechniqueId::SharpFlake,KnowledgeLevel::Understood,0.60);
+    CHECK(!techniqueTeachingCanAdvance(
+        blockedTeacher,blockedLearner,TechniqueId::SharpFlake));
+    blockedTeacher.civilization.inventory.add(
+        {ItemKind::RawMaterial,MaterialKind::Flint,1,0.5,1.0});
+    CHECK(techniqueTeachingCanAdvance(
+        blockedTeacher,blockedLearner,TechniqueId::SharpFlake));
+
+    Character earlyLearner=makeLearner(31);
+    earlyLearner.civilization.knowledge.learn(
+        TechniqueId::SharpFlake,KnowledgeLevel::Hypothesized,0.45);
+    Character explanationTeacher=blockedTeacher;
+    CHECK(explanationTeacher.civilization.inventory.remove(
+        ItemKind::RawMaterial,MaterialKind::Flint,1));
+    CHECK(techniqueTeachingCanAdvance(
+        explanationTeacher,earlyLearner,TechniqueId::SharpFlake));
+
     Character taught=makeLearner(3);
     taught.civilization.knowledge.learn(
         TechniqueId::SharpFlake,KnowledgeLevel::Understood,0.60);
     taught.civilization.inventory.add({ItemKind::RawMaterial,MaterialKind::Flint,4,0.5,1.0});
+    CHECK(techniqueTeachingCanAdvance(
+        teacher,taught,TechniqueId::SharpFlake));
 
     RelationshipBook relationships;
     Relationship& taughtToTeacher=relationships.getOrCreate(taught.id,teacher.id);
