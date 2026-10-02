@@ -137,10 +137,10 @@ inline int contextActionTimeoutMinutes(ContextActionKind kind)
     switch(kind){
         case ContextActionKind::Social: return 45;
         case ContextActionKind::Parenting: return 45;
-        // Cross-settlement teaching is permitted only through a real
-        // apprenticeship/trade link. Give that physical journey enough time;
-        // critical survival preemption still interrupts it immediately.
-        case ContextActionKind::KnowledgeTeaching: return 2*24*60;
+        // Teaching is scheduled only when residents are already within a
+        // bounded local opportunity. A three-hour ceiling covers local pathing
+        // without allowing education travel to monopolize multi-day budgets.
+        case ContextActionKind::KnowledgeTeaching: return 3*60;
         case ContextActionKind::Trade: return 3*24*60;
         case ContextActionKind::Civilization: return 120;
         case ContextActionKind::None:

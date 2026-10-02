@@ -10,6 +10,11 @@
 namespace lifelens {
 namespace {
 constexpr int CivilizationKnowledgeWitnessRadiusTiles=2;
+// Teaching is a slow social/learning opportunity, not a full-time occupation.
+// Long-range knowledge diffusion should happen when trade/migration brings
+// residents together, rather than launching a two-day teaching expedition.
+constexpr int KnowledgeTeachingMaxTravelDistanceGrid=
+    SettlementServiceRadiusGrid*2;
 }
 
 void Simulation::processCivilizationKnowledgeEvent(
@@ -83,7 +88,10 @@ void Simulation::processCivilizationKnowledgeEvent(
 
 void Simulation::advanceCivilizationKnowledgeTeaching()
 {
-    if(world_.minute<=0 || world_.minute%60!=0) return;
+    if(world_.minute<=0
+       || world_.minute%KnowledgeTeachingDecisionIntervalMinutes!=0){
+        return;
+    }
 
     struct Candidate {
         CharacterId teacher=0;
@@ -103,7 +111,11 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
     for(const Character& teacher:world_.characters){
         if(!societyCanTeachTechnique(teacher)) continue;
         const auto teacherRuntime=runtime_.find(teacher.id);
-        if(teacherRuntime==runtime_.end() || teacherRuntime->second.pendingContext.active()) continue;
+        if(teacherRuntime==runtime_.end()
+           || teacherRuntime->second.pendingContext.active()
+           || !teacherRuntime->second.plan.empty()){
+            continue;
+        }
 
         for(const TechniqueKnowledge& record:teacher.civilization.knowledge.all()){
             if(static_cast<int>(record.level)<static_cast<int>(KnowledgeLevel::Reproducible)) continue;
@@ -111,7 +123,18 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
                 if(!societyCanLearnTechnique(learner)
                    || learner.id==teacher.id) continue;
                 const auto learnerRuntime=runtime_.find(learner.id);
-                if(learnerRuntime==runtime_.end() || learnerRuntime->second.pendingContext.active()) continue;
+                if(learnerRuntime==runtime_.end()
+                   || learnerRuntime->second.pendingContext.active()
+                   || !learnerRuntime->second.plan.empty()){
+                    continue;
+                }
+
+                const int teachingDistance=manhattan(
+                    teacherRuntime->second.pos,
+                    learnerRuntime->second.pos);
+                if(teachingDistance>KnowledgeTeachingMaxTravelDistanceGrid){
+                    continue;
+                }
 
                 const SettlementTeachingConnection teachingConnection=
                     observeSettlementTeachingConnection(
@@ -122,8 +145,16 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
                         learner.id);
                 if(!teachingConnection.allowed) continue;
 
-                const KnowledgeLevel learnerLevel=learner.civilization.knowledge.level(record.technique);
-                if(static_cast<int>(learnerLevel)>=static_cast<int>(KnowledgeLevel::Reproducible)) continue;
+                const KnowledgeLevel learnerLevel=
+                    learner.civilization.knowledge.level(record.technique);
+                if(static_cast<int>(learnerLevel)
+                   >=static_cast<int>(KnowledgeLevel::Reproducible)){
+                    continue;
+                }
+                if(!techniqueTeachingCanAdvance(
+                    teacher,learner,record.technique)){
+                    continue;
+                }
                 if(bestTechniqueFactForTeaching(
                     socialKnowledge_,teacher.id,learner.id,record.technique)==nullptr) continue;
 
