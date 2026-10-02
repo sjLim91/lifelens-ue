@@ -218,6 +218,177 @@ int main()
     advanceToDailyDecision(untouched,FamilyProgressionDecisionMinuteOfDay);
     CHECK(untouched.romances().all().empty());
 
+    // Relationship eligibility remains independent from sex. Same-sex adults
+    // can date, become engaged, and marry when the same relationship/context
+    // requirements are satisfied.
+    Simulation sameSexRelationship(8812);
+    sameSexRelationship.setupNewGame();
+    CharacterId sameSexA=0;
+    CharacterId sameSexB=0;
+    for(const Character& character:sameSexRelationship.world().characters){
+        if(character.sex!=Sex::Male) continue;
+        if(sameSexA==0) sameSexA=character.id;
+        else if(sameSexB==0){
+            sameSexB=character.id;
+            break;
+        }
+    }
+    CHECK(sameSexA!=0);
+    CHECK(sameSexB!=0);
+    makePairReady(sameSexRelationship,sameSexA,sameSexB);
+    Character* sameFirst=characterById(sameSexRelationship,sameSexA);
+    Character* sameSecond=characterById(sameSexRelationship,sameSexB);
+    CHECK(sameFirst!=nullptr);
+    CHECK(sameSecond!=nullptr);
+    Relationship& sameFirstToSecond=
+        sameSexRelationship.relationships().getOrCreate(
+            sameSexA,sameSexB);
+    Relationship& sameSecondToFirst=
+        sameSexRelationship.relationships().getOrCreate(
+            sameSexB,sameSexA);
+    const RomanceContext sameFirstRomance=
+        autonomousRomanceContext(
+            *sameFirst,*sameSecond,sameFirstToSecond);
+    const RomanceContext sameSecondRomance=
+        autonomousRomanceContext(
+            *sameSecond,*sameFirst,sameSecondToFirst);
+    CHECK(sameFirstRomance.available);
+    CHECK(sameSecondRomance.available);
+    const DatingProposalOutcome sameDating=
+        applyDatingProposal(
+            *sameFirst,
+            *sameSecond,
+            sameFirstToSecond,
+            sameSecondToFirst,
+            sameFirstRomance,
+            sameSecondRomance,
+            sameSexRelationship.romances(),
+            100);
+    CHECK(sameDating.result==DatingProposalResult::Accepted);
+
+    const MarriageContext sameFirstMarriage=
+        autonomousMarriageContext(
+            *sameFirst,*sameSecond,sameFirstToSecond,1.0);
+    const MarriageContext sameSecondMarriage=
+        autonomousMarriageContext(
+            *sameSecond,*sameFirst,sameSecondToFirst,1.0);
+    CHECK(sameFirstMarriage.available);
+    CHECK(sameSecondMarriage.available);
+    const EngagementProposalOutcome sameEngagement=
+        applyEngagementProposal(
+            *sameFirst,
+            *sameSecond,
+            sameFirstToSecond,
+            sameSecondToFirst,
+            sameFirstMarriage,
+            sameSecondMarriage,
+            sameSexRelationship.romances(),
+            200);
+    CHECK(sameEngagement.result==EngagementProposalResult::Accepted);
+    const MarriageDecisionOutcome sameMarriage=
+        applyMarriageDecision(
+            *sameFirst,
+            *sameSecond,
+            sameFirstToSecond,
+            sameSecondToFirst,
+            sameFirstMarriage,
+            sameSecondMarriage,
+            sameSexRelationship.romances(),
+            sameSexRelationship.households(),
+            300,
+            9900);
+    CHECK(sameMarriage.result==MarriageDecisionResult::Married);
+
+    // Natural conception is a separate biological contract. Females may
+    // gestate but are not the opposite-sex genetic contributor; males may
+    // contribute genetics but may not gestate.
+    Simulation reproductiveEligibility(8813);
+    reproductiveEligibility.setupNewGame();
+    CharacterId maleId=0;
+    CharacterId femaleA=0;
+    CharacterId femaleB=0;
+    for(const Character& character:reproductiveEligibility.world().characters){
+        if(character.sex==Sex::Male && maleId==0){
+            maleId=character.id;
+        }else if(character.sex==Sex::Female){
+            if(femaleA==0) femaleA=character.id;
+            else if(femaleB==0) femaleB=character.id;
+        }
+    }
+    CHECK(maleId!=0);
+    CHECK(femaleA!=0);
+    CHECK(femaleB!=0);
+    makePairReady(reproductiveEligibility,femaleA,femaleB);
+    makePairReady(reproductiveEligibility,femaleA,maleId);
+
+    Character* male=characterById(reproductiveEligibility,maleId);
+    Character* firstFemale=characterById(
+        reproductiveEligibility,femaleA);
+    Character* secondFemale=characterById(
+        reproductiveEligibility,femaleB);
+    CHECK(male!=nullptr);
+    CHECK(firstFemale!=nullptr);
+    CHECK(secondFemale!=nullptr);
+
+    const ReproductiveProfile maleProfile=
+        autonomousReproductiveProfile(
+            *male,reproductiveEligibility.world().minute);
+    const ReproductiveProfile femaleProfile=
+        autonomousReproductiveProfile(
+            *firstFemale,reproductiveEligibility.world().minute);
+    const ReproductiveProfile secondFemaleProfile=
+        autonomousReproductiveProfile(
+            *secondFemale,reproductiveEligibility.world().minute);
+    CHECK(!maleProfile.canGestate);
+    CHECK(maleProfile.canContributeGenetics);
+    CHECK(femaleProfile.canGestate);
+    CHECK(!femaleProfile.canContributeGenetics);
+    CHECK(secondFemaleProfile.canGestate);
+    CHECK(!secondFemaleProfile.canContributeGenetics);
+
+    const Relationship& femaleToFemale=
+        reproductiveEligibility.relationships().getOrCreate(
+            femaleA,femaleB);
+    const Relationship& secondFemaleToFirst=
+        reproductiveEligibility.relationships().getOrCreate(
+            femaleB,femaleA);
+    const PregnancyContext femalePairContext=
+        autonomousPregnancyContext(
+            *firstFemale,
+            *secondFemale,
+            femaleToFemale,
+            secondFemaleToFirst);
+    const PregnancyEvaluation femalePairPregnancy=
+        evaluatePregnancyAttempt(
+            *firstFemale,
+            *secondFemale,
+            femaleProfile,
+            secondFemaleProfile,
+            femaleToFemale,
+            secondFemaleToFirst,
+            femalePairContext);
+    CHECK(!femalePairPregnancy.biologicallyEligible);
+
+    const Relationship& femaleToMale=
+        reproductiveEligibility.relationships().getOrCreate(
+            femaleA,maleId);
+    const Relationship& maleToFemale=
+        reproductiveEligibility.relationships().getOrCreate(
+            maleId,femaleA);
+    const PregnancyContext oppositeSexContext=
+        autonomousPregnancyContext(
+            *firstFemale,*male,femaleToMale,maleToFemale);
+    const PregnancyEvaluation oppositeSexPregnancy=
+        evaluatePregnancyAttempt(
+            *firstFemale,
+            *male,
+            femaleProfile,
+            maleProfile,
+            femaleToMale,
+            maleToFemale,
+            oppositeSexContext);
+    CHECK(oppositeSexPregnancy.biologicallyEligible);
+
     // Familiarity + social bond can create chemistry without directly forcing a couple.
     Simulation chemistry(9922);
     chemistry.setupNewGame();
