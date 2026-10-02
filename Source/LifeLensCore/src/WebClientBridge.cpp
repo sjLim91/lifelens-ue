@@ -454,12 +454,63 @@ void appendResidentPresentationJson(
 }
 
 std::string civilizationWorldObservationJson(
-    const CivilizationWorldObservation& world)
+    const CivilizationWorldObservation& world,
+    const SocietyWorldObservation& society)
 {
     std::ostringstream out;
     out << "{";
     out << "\"available\":true,";
     out << "\"minute\":" << world.minute << ",";
+    out << "\"society\":{";
+    out << "\"livingResidentCount\":" << society.livingResidentCount << ",";
+    out << "\"specializedResidentCount\":" << society.specializedResidentCount << ",";
+    out << "\"educatorCount\":" << society.educatorCount << ",";
+    out << "\"producerCount\":" << society.producerCount << ",";
+    out << "\"caregiverCount\":" << society.caregiverCount << ",";
+    out << "\"storekeeperCount\":" << society.storekeeperCount << ",";
+    out << "\"recentTeachingReceipts\":" << society.recentTeachingReceipts << ",";
+    out << "\"exchangeFactCount\":" << society.exchangeFactCount << ",";
+    out << "\"activeInstitutionCount\":" << society.activeInstitutionCount << ",";
+    out << "\"recordStage\":\"" << collectiveRecordStageName(society.recordStage) << "\",";
+    out << "\"residents\":[";
+    for(std::size_t i=0;i<society.residents.size();++i){
+        if(i!=0) out << ",";
+        const ResidentSocietyStatus& resident=society.residents[i];
+        out << "{";
+        out << "\"residentId\":\"" << resident.residentId << "\",";
+        out << "\"role\":\"" << societyRoleName(resident.role) << "\",";
+        out << "\"roleStrength01\":"; appendDouble(out,resident.roleStrength01); out << ",";
+        out << "\"practicedTechnologyCount\":" << resident.practicedTechnologyCount << ",";
+        out << "\"successfulTechniqueUses\":" << resident.successfulTechniqueUses;
+        out << "}";
+    }
+    out << "],";
+    out << "\"demands\":[";
+    for(std::size_t i=0;i<society.demands.size();++i){
+        if(i!=0) out << ",";
+        const SocietyDemandSignal& demand=society.demands[i];
+        out << "{";
+        out << "\"material\":\"" << traceMaterialName(demand.material) << "\",";
+        out << "\"desiredUnits\":" << demand.desiredUnits << ",";
+        out << "\"availableUnits\":" << demand.availableUnits << ",";
+        out << "\"deficitUnits\":" << demand.deficitUnits << ",";
+        out << "\"demand01\":"; appendDouble(out,demand.demand01);
+        out << "}";
+    }
+    out << "],";
+    out << "\"institutions\":[";
+    for(std::size_t i=0;i<society.institutions.size();++i){
+        if(i!=0) out << ",";
+        const SocietyInstitutionStatus& institution=society.institutions[i];
+        out << "{";
+        out << "\"kind\":\"" << societyInstitutionKindName(institution.kind) << "\",";
+        out << "\"active\":" << (institution.active ? "true" : "false") << ",";
+        out << "\"strength01\":"; appendDouble(out,institution.strength01); out << ",";
+        out << "\"evidenceCount\":" << institution.evidenceCount;
+        out << "}";
+    }
+    out << "]},";
+
     out << "\"resourceNodeCount\":" << world.resourceNodeCount << ",";
     out << "\"depletedResourceNodeCount\":" << world.depletedResourceNodeCount << ",";
     out << "\"totalResourceUnits\":" << world.totalResourceUnits << ",";
@@ -1500,7 +1551,8 @@ std::string WebClientBridge::civilizationWorldJson(
 
     return civilizationWorldObservationJson(
         simulation_->observeCivilizationWorld(
-            std::min<std::size_t>(maxRecentDiscoveries, 64)));
+            std::min<std::size_t>(maxRecentDiscoveries, 64)),
+        simulation_->observeSocietyWorld());
 }
 
 std::string WebClientBridge::civilizationWorldWindowJson(
@@ -1518,7 +1570,8 @@ std::string WebClientBridge::civilizationWorldWindowJson(
         simulation_->observeCivilizationWorldWindow(
             {centerChunkX,centerChunkY},
             radius,
-            std::min<std::size_t>(maxRecentDiscoveries,64)));
+            std::min<std::size_t>(maxRecentDiscoveries,64)),
+        simulation_->observeSocietyWorld());
 }
 
 std::string WebClientBridge::worldObjectsJson() const
