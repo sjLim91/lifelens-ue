@@ -1,3 +1,20 @@
+## 2026-10-02 CANONICAL CURRENT — C5 SOCIETY / ECONOMY / INSTITUTIONS CLOSEOUT
+
+> Actual GitHub `main` / PR / Actions remain the highest-priority truth.
+
+- Completion chain: #578 C5-A + #579 C5-B + #580 C5-C/D closeout.
+- C3 open-ended technology framework and C4 health foundation remain closed; this unit closes C5 and does not start C6.
+- Roles are derived from lived skill/knowledge/use/care evidence. They are not fixed occupations.
+- Runtime Civilization selection now consumes role + settlement demand + institution membership + household resource policy through the actual UnifiedUtility path.
+- Resident coordination covers provision/material supply, tool production, cultivation, metallurgy, shared storage, education, care and inquiry with generalist fallback.
+- Personal reserve and household reserve are protected before tradable/shared surplus; only actual Store completion can create shared-contribution history.
+- Reciprocal barter, trade partnerships, apprenticeships and institution memberships remain persistent SocialKnowledge evidence.
+- Proto-recordkeeping can consume real Clay/Wood to create RecordTablet media and durable-record facts; no free Writing Technology or era unlock is introduced.
+- Web observes coordination/resource-disposition/record-media facts from Core; it does not assign jobs or invent economic outcomes.
+- Closeout gate: targeted C5 regressions + exact-head Core Tests/determinism + Preflight + Web WASM + Web Typecheck + Runtime Resilience.
+- The 100-day long-run audit remains intentionally excluded.
+- Next roadmap milestone after merge: C6 — Migration / Multiple Settlements / Trade Networks. Do not begin without a new user start signal.
+
 ## 2026-10-01 CANONICAL CURRENT — C4 HEALTH / DISEASE / POPULATION RESILIENCE
 
 > Actual GitHub `main` / PR / Actions remain the highest-priority truth.
