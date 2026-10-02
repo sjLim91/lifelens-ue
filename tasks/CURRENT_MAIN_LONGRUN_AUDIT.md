@@ -40,3 +40,9 @@
 - #540 위생 후보 실험 wholesale merge
 - 결과가 마음에 안 든다는 이유로 seed별 예외 하드코딩
 - 브라우저에서 Core 결과를 보정
+
+
+## P0-B post-merge revalidation
+- target main: `467e5e881f6c67e44652ce57db9cb1e4da911339`
+- scope: seeds 4242001 + 874213954, 100 / 365 / 1000일
+- focus: Baby hunger/thirst saturation, parenting time, caregiver preemption, long-run runtime
