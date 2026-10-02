@@ -269,6 +269,7 @@ private:
     void processCivilizationKnowledgeEvent(Character& actor,CivilizationEvent& event);
     void advanceCivilizationKnowledgeTeaching();
     void advanceSocietyExchange();
+    void advanceSocietyInstitutions();
     void advanceDependentCare();
     void advanceAutonomousFamilyProgression();
     void updatePregnanciesAndBirths();
