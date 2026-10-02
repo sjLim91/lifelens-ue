@@ -353,6 +353,85 @@ bool Simulation::completeContextAction(
             break;
         }
 
+        case ContextActionKind::Trade: {
+            Character* partner=findContextCharacter(
+                world_,pending.social.target);
+            if(partner==nullptr || !partner->alive || partner->id==actor.id){
+                pending.clear();
+                return false;
+            }
+            const auto partnerRuntime=runtime_.find(partner->id);
+            if(partnerRuntime==runtime_.end()
+               || !contextActionNearTarget(
+                    resolvedPosition,partnerRuntime->second.pos,1)){
+                return false;
+            }
+
+            SocietyExchangePlan exchange=
+                bestMutualExchangePlan(actor,*partner,relationships_);
+            if(!exchange.valid()){
+                pending.clear();
+                return false;
+            }
+            if(exchange.first!=actor.id){
+                exchange=reversedSocietyExchangePlan(exchange);
+            }
+
+            if(hasSocietyTradePartnership(
+                    socialKnowledge_,actor.id,partner->id)){
+                exchange.score=societyClamp01(exchange.score+0.08);
+            }
+            if(residentInstitutionMember(
+                    socialKnowledge_,actor.id,
+                    SocietyInstitutionKind::ExchangeNetwork)
+               && residentInstitutionMember(
+                    socialKnowledge_,partner->id,
+                    SocietyInstitutionKind::ExchangeNetwork)){
+                exchange.score=societyClamp01(exchange.score+0.05);
+            }
+            if(exchange.score<InterSettlementTradeMissionThreshold
+               || !executeMutualExchange(actor,*partner,exchange)){
+                pending.clear();
+                return false;
+            }
+
+            registerSocietyExchangeFact(
+                socialKnowledge_,actor,*partner,exchange,
+                world_.minute,world_.seed);
+            const bool hadPartnership=
+                hasSocietyTradePartnership(
+                    socialKnowledge_,actor.id,partner->id);
+            const SocialFact* partnership=
+                registerSocietyTradePartnershipIfQualified(
+                    socialKnowledge_,actor,*partner,
+                    world_.minute,world_.seed);
+
+            relationships_.getOrCreate(actor.id,partner->id).apply(
+                relationshipDeltaFor(
+                    RelationshipEvent::SharedPositiveExperience,0.35));
+            relationships_.getOrCreate(partner->id,actor.id).apply(
+                relationshipDeltaFor(
+                    RelationshipEvent::SharedPositiveExperience,0.35));
+
+            runtime.pos=resolvedPosition;
+            runtime.socialCooldownUntilMinute=world_.minute+30;
+            partnerRuntime->second.socialCooldownUntilMinute=
+                std::max(
+                    partnerRuntime->second.socialCooldownUntilMinute,
+                    world_.minute+20);
+
+            std::ostringstream log;
+            log<<actor.name<<" traveled for trade with "<<partner->name
+               <<" and exchanged "<<materialName(exchange.firstGives)
+               <<" for "<<materialName(exchange.secondGives);
+            if(partnership!=nullptr && !hadPartnership){
+                log<<" -> trade partnership";
+            }
+            emit(log.str());
+            completed=true;
+            break;
+        }
+
         case ContextActionKind::KnowledgeTeaching: {
             Character* learner=findContextCharacter(world_,pending.knowledgeTeachingTarget);
             if(learner==nullptr || !learner->alive || learner->id==actor.id){
