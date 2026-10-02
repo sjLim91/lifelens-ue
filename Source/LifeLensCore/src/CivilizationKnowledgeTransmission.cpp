@@ -93,14 +93,15 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
     } best;
 
     for(const Character& teacher:world_.characters){
-        if(!teacher.alive) continue;
+        if(!societyCanTeachTechnique(teacher)) continue;
         const auto teacherRuntime=runtime_.find(teacher.id);
         if(teacherRuntime==runtime_.end() || teacherRuntime->second.pendingContext.active()) continue;
 
         for(const TechniqueKnowledge& record:teacher.civilization.knowledge.all()){
             if(static_cast<int>(record.level)<static_cast<int>(KnowledgeLevel::Reproducible)) continue;
             for(const Character& learner:world_.characters){
-                if(!learner.alive || learner.id==teacher.id) continue;
+                if(!societyCanLearnTechnique(learner)
+                   || learner.id==teacher.id) continue;
                 const auto learnerRuntime=runtime_.find(learner.id);
                 if(learnerRuntime==runtime_.end() || learnerRuntime->second.pendingContext.active()) continue;
 
@@ -136,9 +137,21 @@ void Simulation::advanceCivilizationKnowledgeTeaching()
                     teacherSociety.role==SocietyRole::Educator
                         ? 0.10*teacherSociety.roleStrength01
                         : 0.0;
+                const bool establishedApprenticeship=
+                    hasSocietyApprenticeship(
+                        socialKnowledge_,teacher.id,learner.id);
+                const bool learningCircleLink=
+                    residentInstitutionMember(
+                        socialKnowledge_,teacher.id,
+                        SocietyInstitutionKind::LearningCircle)
+                    && residentInstitutionMember(
+                        socialKnowledge_,learner.id,
+                        SocietyInstitutionKind::LearningCircle);
                 const double apprenticeshipBoost=
                     (sameHousehold ? 0.05 : 0.0)
-                    +(closeFamily ? 0.04 : 0.0);
+                    +(closeFamily ? 0.04 : 0.0)
+                    +(establishedApprenticeship ? 0.10 : 0.0)
+                    +(learningCircleLink ? 0.05 : 0.0);
                 const double score=
                     0.08
                     +0.22*trust
