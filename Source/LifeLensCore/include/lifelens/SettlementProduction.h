@@ -12,6 +12,18 @@
 
 namespace lifelens {
 
+// Production specialization is a slow settlement-level coordination signal.
+// Utility consumes it only at fixed six-hour boundaries; the read model itself
+// remains available at any minute for observation. A fixed boundary avoids a
+// mutable decision cache and therefore preserves save/restore determinism.
+inline constexpr int SettlementProductionDecisionIntervalMinutes = 6*60;
+
+inline bool settlementProductionDecisionWindow(int minute)
+{
+    return minute>=0
+        && minute%SettlementProductionDecisionIntervalMinutes==0;
+}
+
 enum class SettlementProductionKind : std::uint8_t {
     General=0,
     Food,

@@ -73,6 +73,13 @@ static void resource(
 
 int main()
 {
+    CHECK(settlementProductionDecisionWindow(0));
+    CHECK(settlementProductionDecisionWindow(
+        SettlementProductionDecisionIntervalMinutes));
+    CHECK(!settlementProductionDecisionWindow(1));
+    CHECK(!settlementProductionDecisionWindow(
+        SettlementProductionDecisionIntervalMinutes-1));
+
     World world(606501);
     world.characters.clear();
     world.facilities.clear();
