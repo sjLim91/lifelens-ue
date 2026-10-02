@@ -414,85 +414,259 @@ inline std::uint64_t settlementTradeRouteId(
     return value==0 ? 1 : value;
 }
 
+inline std::string interSettlementTradeFactPrefix(
+    SettlementClusterId first,
+    SettlementClusterId second)
+{
+    const SettlementClusterId low=std::min(first,second);
+    const SettlementClusterId high=std::max(first,second);
+    return std::string("intersettlement-exchange:")
+        +std::to_string(low)+":"
+        +std::to_string(high)+":";
+}
+
+inline std::string interSettlementTradePairPrefix(
+    SettlementClusterId firstSettlement,
+    SettlementClusterId secondSettlement,
+    CharacterId firstResident,
+    CharacterId secondResident)
+{
+    const CharacterId lowResident=
+        std::min(firstResident,secondResident);
+    const CharacterId highResident=
+        std::max(firstResident,secondResident);
+    return interSettlementTradeFactPrefix(
+        firstSettlement,secondSettlement)
+        +std::to_string(lowResident)+":"
+        +std::to_string(highResident)+":";
+}
+
+inline bool isInterSettlementTradeFact(
+    const SocialFact& fact,
+    SettlementClusterId firstSettlement,
+    SettlementClusterId secondSettlement)
+{
+    const std::string prefix=
+        interSettlementTradeFactPrefix(
+            firstSettlement,secondSettlement);
+    return fact.proposition.rfind(prefix,0)==0;
+}
+
+inline SocialFactId interSettlementTradeFactId(
+    std::uint64_t seed,
+    SettlementClusterId firstSettlement,
+    SettlementClusterId secondSettlement,
+    CharacterId firstResident,
+    CharacterId secondResident,
+    MaterialKind firstGives,
+    MaterialKind secondGives,
+    int minute)
+{
+    const SettlementClusterId lowSettlement=
+        std::min(firstSettlement,secondSettlement);
+    const SettlementClusterId highSettlement=
+        std::max(firstSettlement,secondSettlement);
+    const CharacterId lowResident=
+        std::min(firstResident,secondResident);
+    const CharacterId highResident=
+        std::max(firstResident,secondResident);
+
+    std::uint64_t value=mixKnowledge64(
+        seed^0x4953545241444558ull);
+    value=mixKnowledge64(value^lowSettlement);
+    value=mixKnowledge64(value^(highSettlement<<1));
+    value=mixKnowledge64(value^lowResident);
+    value=mixKnowledge64(value^(highResident<<1));
+    value=mixKnowledge64(
+        value^static_cast<std::uint64_t>(
+            static_cast<int>(firstGives)+1));
+    value=mixKnowledge64(
+        value^(static_cast<std::uint64_t>(
+            static_cast<int>(secondGives)+1)<<8));
+    value=mixKnowledge64(
+        value^static_cast<std::uint64_t>(
+            std::max(0,minute)));
+    return value==0 ? 1 : value;
+}
+
+inline const SocialFact* registerInterSettlementTradeFact(
+    SocialKnowledgeBook& book,
+    Character& traveler,
+    Character& partner,
+    SettlementClusterId originSettlement,
+    SettlementClusterId destinationSettlement,
+    const SocietyExchangePlan& exchange,
+    int minute,
+    std::uint64_t seed)
+{
+    if(!exchange.valid()
+       || traveler.id==0
+       || partner.id==0
+       || traveler.id==partner.id
+       || originSettlement==0
+       || destinationSettlement==0
+       || originSettlement==destinationSettlement){
+        return nullptr;
+    }
+
+    SocialFact fact;
+    fact.id=interSettlementTradeFactId(
+        seed,
+        originSettlement,
+        destinationSettlement,
+        traveler.id,
+        partner.id,
+        exchange.firstGives,
+        exchange.secondGives,
+        minute);
+    fact.subject=traveler.id;
+    fact.proposition=interSettlementTradePairPrefix(
+        originSettlement,
+        destinationSettlement,
+        traveler.id,
+        partner.id)
+        +std::to_string(
+            static_cast<int>(exchange.firstGives))
+        +":"
+        +std::to_string(
+            static_cast<int>(exchange.secondGives));
+    fact.where="inter-settlement-trade";
+    fact.eventMinute=minute;
+    fact.supports=true;
+    fact.importance=0.74;
+    fact.confidence=0.98;
+    fact.emotionValence=0.20;
+    fact.emotionIntensity=0.30;
+    if(!book.registerFact(fact)) return nullptr;
+
+    book.recordDirectWitness(
+        fact.id,
+        traveler.id,
+        traveler.memory,
+        traveler.beliefs,
+        minute);
+    book.recordDirectWitness(
+        fact.id,
+        partner.id,
+        partner.memory,
+        partner.beliefs,
+        minute);
+    return book.findFact(fact.id);
+}
+
+inline int interSettlementTradeFactCount(
+    const SocialKnowledgeBook& book,
+    SettlementClusterId firstSettlement,
+    SettlementClusterId secondSettlement)
+{
+    int count=0;
+    for(const SocialFact& fact:book.facts()){
+        if(isInterSettlementTradeFact(
+                fact,firstSettlement,secondSettlement)){
+            ++count;
+        }
+    }
+    return count;
+}
+
+inline int interSettlementTradePairFactCount(
+    const SocialKnowledgeBook& book,
+    SettlementClusterId firstSettlement,
+    SettlementClusterId secondSettlement,
+    CharacterId firstResident,
+    CharacterId secondResident)
+{
+    const std::string prefix=
+        interSettlementTradePairPrefix(
+            firstSettlement,
+            secondSettlement,
+            firstResident,
+            secondResident);
+    int count=0;
+    for(const SocialFact& fact:book.facts()){
+        if(fact.proposition.rfind(prefix,0)==0) ++count;
+    }
+    return count;
+}
+
 inline SettlementTradeNetworkObservation observeSettlementTradeNetwork(
     const World& world,
     const SocialKnowledgeBook& knowledge,
     const SettlementNetworkObservation& network,
     const SettlementPopulation& population)
 {
+    (void)population;
     SettlementTradeNetworkObservation result;
-    const auto assignments=
-        settlementResidentAssignments(network,population);
 
-    struct RouteAccumulator {
-        SettlementClusterId first=0;
-        SettlementClusterId second=0;
-        int partners=0;
-        int exchanges=0;
-    };
-    std::map<std::pair<SettlementClusterId,SettlementClusterId>,
-             RouteAccumulator> routes;
+    for(std::size_t i=0;i<network.settlements.size();++i){
+        const SettlementClusterObservation& first=
+            network.settlements[i];
+        if(!first.established) continue;
 
-    for(std::size_t i=0;i<world.characters.size();++i){
-        const Character& first=world.characters[i];
-        if(!first.alive) continue;
-        const auto firstAssignment=assignments.find(first.id);
-        if(firstAssignment==assignments.end()) continue;
+        for(std::size_t j=i+1;j<network.settlements.size();++j){
+            const SettlementClusterObservation& second=
+                network.settlements[j];
+            if(!second.established) continue;
 
-        for(std::size_t j=i+1;j<world.characters.size();++j){
-            const Character& second=world.characters[j];
-            if(!second.alive) continue;
-            const auto secondAssignment=assignments.find(second.id);
-            if(secondAssignment==assignments.end()
-               || firstAssignment->second==secondAssignment->second){
-                continue;
+            const int exchanges=
+                interSettlementTradeFactCount(
+                    knowledge,first.id,second.id);
+            if(exchanges<=0) continue;
+
+            int partnerPairs=0;
+            for(std::size_t a=0;a<world.characters.size();++a){
+                const Character& firstResident=
+                    world.characters[a];
+                if(firstResident.id==0) continue;
+                for(std::size_t b=a+1;b<world.characters.size();++b){
+                    const Character& secondResident=
+                        world.characters[b];
+                    if(secondResident.id==0) continue;
+                    if(interSettlementTradePairFactCount(
+                            knowledge,
+                            first.id,
+                            second.id,
+                            firstResident.id,
+                            secondResident.id)<=0){
+                        continue;
+                    }
+                    ++partnerPairs;
+                    if(hasSocietyTradePartnership(
+                            knowledge,
+                            firstResident.id,
+                            secondResident.id)){
+                        ++result.interSettlementPartnershipCount;
+                    }
+                }
             }
-            if(!hasSocietyTradePartnership(
-                    knowledge,first.id,second.id)){
-                continue;
-            }
 
-            const SettlementClusterId low=std::min(
-                firstAssignment->second,secondAssignment->second);
-            const SettlementClusterId high=std::max(
-                firstAssignment->second,secondAssignment->second);
-            auto& route=routes[{low,high}];
-            route.first=low;
-            route.second=high;
-            ++route.partners;
-            const int exchanges=societyExchangePairCount(
-                knowledge,first.id,second.id);
-            route.exchanges+=exchanges;
+            SettlementTradeRouteObservation route;
+            route.id=settlementTradeRouteId(
+                first.id,second.id);
+            route.firstSettlement=first.id;
+            route.secondSettlement=second.id;
+            route.firstAnchor=first.anchor;
+            route.secondAnchor=second.anchor;
+            route.partnerCount=partnerPairs;
+            route.exchangeCount=exchanges;
+            route.distanceGrid=manhattan(
+                first.anchor,second.anchor);
+            route.active=
+                first.active
+                && second.active
+                && exchanges>=2;
+
             result.exchangeEvidenceCount+=exchanges;
-            ++result.interSettlementPartnershipCount;
+            if(route.active) ++result.activeRouteCount;
+            result.routes.push_back(route);
         }
     }
 
-    for(const auto& entry:routes){
-        const RouteAccumulator& source=entry.second;
-        const SettlementClusterObservation* first=
-            settlementById(network,source.first);
-        const SettlementClusterObservation* second=
-            settlementById(network,source.second);
-        if(first==nullptr || second==nullptr) continue;
-
-        SettlementTradeRouteObservation route;
-        route.id=settlementTradeRouteId(source.first,source.second);
-        route.firstSettlement=source.first;
-        route.secondSettlement=source.second;
-        route.firstAnchor=first->anchor;
-        route.secondAnchor=second->anchor;
-        route.partnerCount=source.partners;
-        route.exchangeCount=source.exchanges;
-        route.distanceGrid=manhattan(first->anchor,second->anchor);
-        route.active=
-            first->active && second->active && source.exchanges>=2;
-        if(route.active) ++result.activeRouteCount;
-        result.routes.push_back(route);
-    }
-    result.routeCount=static_cast<int>(result.routes.size());
+    result.routeCount=
+        static_cast<int>(result.routes.size());
     std::sort(
-        result.routes.begin(),result.routes.end(),
+        result.routes.begin(),
+        result.routes.end(),
         [](const SettlementTradeRouteObservation& a,
            const SettlementTradeRouteObservation& b){
             return a.id<b.id;
