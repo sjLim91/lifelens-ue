@@ -336,7 +336,9 @@ inline InterSettlementTradeMission bestInterSettlementTradeMission(
             const double complement=societyClamp01(
                 static_cast<double>(
                     std::min(firstSurplus,secondDeficit)
-                    +std::min(secondSurplus,firstDeficit))/4.0);
+                    +std::min(secondSurplus,firstDeficit))
+                /static_cast<double>(
+                    std::max(1,2*plan.quantityEach)));
             const bool partnership=hasSocietyTradePartnership(
                 knowledge,first.id,second.id);
             const bool bothNetworkMembers=
