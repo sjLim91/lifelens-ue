@@ -208,6 +208,23 @@ const char* presentationActionPhaseName(PresentationActionPhase phase)
     }
 }
 
+const char* sleepPresentationContextName(SleepPresentationContext context)
+{
+    switch(context){
+        case SleepPresentationContext::ProtectedFacility:
+            return "ProtectedFacility";
+        case SleepPresentationContext::ExposedFacility:
+            return "ExposedFacility";
+        case SleepPresentationContext::ExposedEmergency:
+            return "ExposedEmergency";
+        case SleepPresentationContext::EmergencyOutdoor:
+            return "EmergencyOutdoor";
+        case SleepPresentationContext::None:
+        default:
+            return "None";
+    }
+}
+
 const char* objectKindName(ObjectKind kind)
 {
     switch(kind){
@@ -447,6 +464,7 @@ void appendResidentPresentationJson(
     out << "\"objectId\":\"" << presentation.objectId << "\",";
     out << "\"objectKind\":\"" << objectKindName(presentation.objectKind) << "\",";
     out << "\"emergencyFallback\":" << (presentation.emergencyFallback ? "true" : "false") << ",";
+    out << "\"sleepContext\":\"" << sleepPresentationContextName(presentation.sleepContext) << "\",";
     out << "\"directNaturalWaterSource\":" << (presentation.directNaturalWaterSource ? "true" : "false") << ",";
     out << "\"designatedSanitationSite\":" << (presentation.designatedSanitationSite ? "true" : "false") << ",";
     out << "\"sanitationSiteId\":\"" << presentation.sanitationSiteId << "\",";
@@ -607,6 +625,35 @@ std::string civilizationWorldObservationJson(
     out << "\"contestedTechnologyCount\":" << world.contestedTechnologyCount << ",";
     out << "\"resistedTechnologyCount\":" << world.resistedTechnologyCount << ",";
     out << "\"activeTransformationCount\":" << world.activeTransformationCount << ",";
+
+    out << "\"currentEra\":\"" << civilizationEraIdName(world.era.currentEra) << "\",";
+    out << "\"eraOrdinal\":" << world.era.ordinal << ",";
+    out << "\"eraEvidence\":[";
+    for(std::size_t i=0;i<world.era.evidence.size();++i){
+        if(i!=0) out << ",";
+        const auto& evidence=world.era.evidence[i];
+        out << "{";
+        out << "\"id\":\"" << civilizationEraEvidenceIdName(evidence.id) << "\",";
+        out << "\"satisfied\":" << (evidence.satisfied ? "true" : "false");
+        out << "}";
+    }
+    out << "],";
+    out << "\"nextEra\":\"" << (
+        world.era.hasNextEra
+            ? civilizationEraIdName(world.era.nextEra)
+            : "None") << "\",";
+    out << "\"nextEraOrdinal\":" << (
+        world.era.hasNextEra ? world.era.nextOrdinal : -1) << ",";
+    out << "\"nextEraRequirements\":[";
+    for(std::size_t i=0;i<world.era.nextRequirements.size();++i){
+        if(i!=0) out << ",";
+        const auto& requirement=world.era.nextRequirements[i];
+        out << "{";
+        out << "\"id\":\"" << civilizationEraEvidenceIdName(requirement.id) << "\",";
+        out << "\"satisfied\":" << (requirement.satisfied ? "true" : "false");
+        out << "}";
+    }
+    out << "],";
 
     out << "\"technologyPopulation\":[";
     for(std::size_t i=0;i<world.technologyPopulation.size();++i){
