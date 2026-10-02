@@ -23,6 +23,7 @@
 #include "SimulationSnapshot.h"
 #include "SettlementProgression.h"
 #include "SocialCommunicationReadModel.h"
+#include "SocietyEconomy.h"
 namespace lifelens {
 class Simulation {
 public:
@@ -148,6 +149,9 @@ public:
     CivilizationWorldObservation observeCivilizationWorld(std::size_t maxRecentDiscoveries=32) const {
         return buildCivilizationWorldObservation(world_,socialKnowledge_,maxRecentDiscoveries);
     }
+    SocietyWorldObservation observeSocietyWorld() const {
+        return buildSocietyWorldObservation(world_,socialKnowledge_);
+    }
     CivilizationWorldObservation observeCivilizationWorldWindow(
         ChunkCoord center,
         int radiusChunks,
@@ -264,6 +268,7 @@ private:
     bool trySocialDecision(Character& c,Runtime& r);
     void processCivilizationKnowledgeEvent(Character& actor,CivilizationEvent& event);
     void advanceCivilizationKnowledgeTeaching();
+    void advanceSocietyExchange();
     void advanceDependentCare();
     void advanceAutonomousFamilyProgression();
     void updatePregnanciesAndBirths();
