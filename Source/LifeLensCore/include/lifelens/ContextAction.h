@@ -570,9 +570,13 @@ inline PendingContextActionObservation observePendingContextAction(
             result.targetResident=pending.knowledgeTeachingTarget;
             result.technique=pending.knowledgeTeachingTechnique;
             break;
-        case ContextActionKind::Trade:
-            result.targetResident=pending.social.target;
+        case ContextActionKind::Trade: {
+            const TradeContextPayload trade=
+                tradeContextPayload(pending);
+            result.targetResident=
+                trade.returning ? 0 : trade.partner;
             break;
+        }
         case ContextActionKind::None:
         default:
             break;
