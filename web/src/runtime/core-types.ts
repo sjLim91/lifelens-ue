@@ -445,6 +445,26 @@ export interface ResidentLifeEvent {
   value?: number;
 }
 
+export interface ResidentMigrationPressure {
+  candidate?: boolean;
+  bottleneckMaterial?: string;
+  resourceScarcity01?: number;
+  travelBurden01?: number;
+  populationPressure01?: number;
+  settlementAttachment01?: number;
+  explorationDisposition01?: number;
+  pressure01?: number;
+  localResourceUnits?: number;
+  localReserveUnits?: number;
+  nearestKnownResourceDistanceGrid?: number;
+  hasFrontierTarget?: boolean;
+  frontierChunkX?: number;
+  frontierChunkY?: number;
+  frontierGridX?: number;
+  frontierGridY?: number;
+  frontierDistanceChunks?: number;
+}
+
 export interface Resident {
   id: string;
   name: string;
@@ -478,6 +498,7 @@ export interface Resident {
   traits?: ResidentTraits;
   preferences?: ResidentPreferences;
   civilization?: ResidentCivilization;
+  migration?: ResidentMigrationPressure;
   relationships?: ResidentRelationship[];
   family?: ResidentFamily;
   household?: ResidentHousehold | null;
