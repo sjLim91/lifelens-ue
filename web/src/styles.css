@@ -39,6 +39,113 @@ button, input { font: inherit; }
 .world-overlay { position: absolute; z-index: 4; top: 14px; left: 14px; display: flex; gap: .45rem; flex-wrap: wrap; pointer-events: none; }
 .world-overlay span { padding: .34rem .55rem; border: 1px solid rgba(125, 151, 129, .25); border-radius: 6px; background: rgba(8, 13, 10, .78); color: #d9e5da; font-size: .7rem; }
 
+.world-era-badge {
+  min-height: 0;
+  padding: .34rem .55rem;
+  border: 1px solid rgba(180, 159, 92, .42);
+  border-radius: 999px;
+  background: rgba(29, 25, 13, .82);
+  color: #eee2ae;
+  font-size: .7rem;
+  line-height: 1.25;
+  white-space: nowrap;
+  pointer-events: auto;
+}
+.world-era-badge:hover {
+  background: rgba(43, 36, 18, .92);
+}
+.civilization-era-popover {
+  position: absolute;
+  z-index: 8;
+  top: 70px;
+  left: 14px;
+  width: min(370px, calc(100% - 28px));
+  max-height: min(62vh, 560px);
+  overflow-y: auto;
+  padding: 14px;
+  border: 1px solid rgba(133, 153, 118, .38);
+  border-radius: 14px;
+  background: rgba(8, 14, 10, .96);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 16px 44px rgba(0, 0, 0, .38);
+  color: #dce7dc;
+}
+.civilization-era-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: .8rem;
+}
+.civilization-era-heading > div {
+  display: grid;
+  gap: .18rem;
+}
+.civilization-era-heading small {
+  color: #839486;
+  font-size: .62rem;
+}
+.civilization-era-heading strong {
+  color: #f0e6b9;
+  font-size: 1.05rem;
+}
+.civilization-era-close {
+  min-width: 34px;
+  min-height: 34px;
+  padding: .12rem .42rem;
+  border-radius: 999px;
+  background: transparent;
+}
+.civilization-era-note,
+.civilization-era-rule,
+.civilization-era-muted {
+  margin: .7rem 0 0;
+  color: #91a294;
+  font-size: .68rem;
+  line-height: 1.55;
+}
+.civilization-era-section {
+  margin-top: .85rem;
+  padding-top: .75rem;
+  border-top: 1px solid rgba(89, 111, 94, .28);
+}
+.civilization-era-section h3 {
+  margin: 0;
+  color: #bdcabc;
+  font-size: .7rem;
+  letter-spacing: .02em;
+}
+.civilization-era-section ul {
+  display: grid;
+  gap: .34rem;
+  margin: .55rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.civilization-era-section li {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: .32rem;
+  align-items: start;
+  color: #d7e1d6;
+  font-size: .69rem;
+  line-height: 1.4;
+}
+.civilization-era-section li.missing {
+  color: #b8a0a0;
+}
+.civilization-era-section li > span:first-child {
+  color: #9bc49f;
+  font-weight: 700;
+}
+.civilization-era-section li.missing > span:first-child {
+  color: #c79595;
+}
+.civilization-era-section li small {
+  margin-left: .25rem;
+  color: #d1bd78;
+  font-size: .58rem;
+}
+
 .observer { overflow-y: auto; border-left: 1px solid #243329; background: #0f1711; padding: 12px; }
 .panel { padding: 14px; border-bottom: 1px solid #27362b; }
 .panel h2 { margin: 0 0 .8rem; font-size: .76rem; text-transform: uppercase; letter-spacing: .09em; color: #a7b9a8; }
@@ -109,6 +216,18 @@ button:disabled { opacity: .33; cursor: default; }
     padding: .28rem .44rem;
     font-size: .6rem;
     background: rgba(8, 13, 10, .68);
+  }
+  .world-era-badge {
+    min-height: 0;
+    padding: .28rem .44rem;
+    font-size: .6rem;
+  }
+  .civilization-era-popover {
+    top: 78px;
+    left: 8px;
+    width: calc(100% - 16px);
+    max-height: min(56svh, 520px);
+    padding: 12px;
   }
 }
 
