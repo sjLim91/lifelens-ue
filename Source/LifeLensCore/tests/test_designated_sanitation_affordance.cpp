@@ -125,8 +125,9 @@ int main()
     // site is too far away.
     mutableSite->active=true;
     const GridPos localReference=establishedSite->pos;
+    const SanitationSiteId localSiteId=establishedSite->id;
     PrimitiveSanitationSite secondSite=*establishedSite;
-    secondSite.id=establishedSite->id+100;
+    secondSite.id=localSiteId+100;
     secondSite.pos={
         localReference.x+SettlementServiceRadiusGrid+20,
         localReference.y};
@@ -138,7 +139,7 @@ int main()
             world.primitiveSanitationSites,world.minute,
             localReference,SettlementServiceRadiusGrid);
     assert(localDesignated.kind==SanitationUseTargetKind::DesignatedArea);
-    assert(localDesignated.siteId==establishedSite->id);
+    assert(localDesignated.siteId==localSiteId);
 
     const GridPos remoteReference{
         secondSite.pos.x+SettlementServiceRadiusGrid+20,
@@ -152,7 +153,7 @@ int main()
     assert(remoteFallback.siteId==0);
     assert(
         manhattan(remoteFallback.pos,remoteReference)
-        <manhattan(establishedSite->pos,remoteReference));
+        <manhattan(localReference,remoteReference));
 
     world.primitiveSanitationSites.resize(1);
 
