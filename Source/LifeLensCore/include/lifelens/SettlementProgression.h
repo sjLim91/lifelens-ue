@@ -224,6 +224,13 @@ inline const ConstructedFacility* operationalSleepFacilityAt(
     return bestOperationalSleepFacility(world,pos,0);
 }
 
+inline ConstructedFacility* operationalSleepFacilityAt(
+    World& world,
+    GridPos pos)
+{
+    return bestOperationalSleepFacility(world,pos,0);
+}
+
 inline SleepEnvironmentEvaluation sleepEnvironmentAt(
     const World& world,
     GridPos pos,
