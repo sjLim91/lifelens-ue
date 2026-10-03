@@ -69,6 +69,21 @@ int main()
     addResource(supplied,5,MaterialKind::Fiber,20,{6,0});
     addResource(supplied,6,MaterialKind::Clay,16,{7,0});
 
+    const MigrationResourceScan suppliedScan=
+        scanMigrationResources(supplied,anchor);
+    for(std::size_t index=0;
+        index<MigrationFoundationalMaterials.size();
+        ++index){
+        const MaterialKind material=MigrationFoundationalMaterials[index];
+        CHECK(
+            suppliedScan.localUnits[index]
+            ==migrationLocalResourceUnits(supplied,material,anchor));
+        CHECK(
+            suppliedScan.nearestKnownDistance[index]
+            ==migrationNearestKnownResourceDistanceGrid(
+                supplied,material,anchor));
+    }
+
     SettlementPopulation suppliedPopulation{{1,anchor}};
     const MigrationPressureObservation stable=
         observeMigrationPressure(
@@ -101,6 +116,46 @@ int main()
     for(ResourceNode& node:scarce.resourceNodes){
         node.quantity=0;
     }
+
+    const MigrationResourceScan scarceScan=
+        scanMigrationResources(scarce,anchor);
+    for(std::size_t index=0;
+        index<MigrationFoundationalMaterials.size();
+        ++index){
+        const MaterialKind material=MigrationFoundationalMaterials[index];
+        CHECK(
+            scarceScan.localUnits[index]
+            ==migrationLocalResourceUnits(scarce,material,anchor));
+        CHECK(
+            scarceScan.nearestKnownDistance[index]
+            ==migrationNearestKnownResourceDistanceGrid(
+                scarce,material,anchor));
+    }
+
+    // Compatibility fallback: local supply historically counts node.pos when
+    // the generated access position cannot be resolved, while nearest-known
+    // distance deliberately ignores that unresolved node. The one-pass scan
+    // must preserve that asymmetry exactly.
+    World unresolved=scarce;
+    unresolved.resourceNodes.clear();
+    unresolved.generatedNaturalChunks.clear();
+    addResource(
+        unresolved,9001,MaterialKind::Water,7,{anchor.x+2,anchor.y});
+    const MigrationResourceScan unresolvedScan=
+        scanMigrationResources(unresolved,anchor);
+    const int waterIndex=
+        migrationFoundationalMaterialIndex(MaterialKind::Water);
+    CHECK(waterIndex>=0);
+    CHECK(
+        unresolvedScan.localUnits[
+            static_cast<std::size_t>(waterIndex)]
+        ==migrationLocalResourceUnits(
+            unresolved,MaterialKind::Water,anchor));
+    CHECK(
+        unresolvedScan.nearestKnownDistance[
+            static_cast<std::size_t>(waterIndex)]
+        ==migrationNearestKnownResourceDistanceGrid(
+            unresolved,MaterialKind::Water,anchor));
 
     SettlementPopulation scarcePopulation{{1,anchor}};
     const MigrationPressureObservation pressure=
