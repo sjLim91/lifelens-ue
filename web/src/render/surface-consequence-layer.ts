@@ -33,6 +33,7 @@ export function puddleCandidates(terrain: TerrainWindow): PuddleCandidate[] {
   const result: PuddleCandidate[] = [];
   for (const chunk of terrain.chunks) {
     if (!Number.isFinite(chunk.elevation01) || chunk.waterKind === 'Ocean' || chunk.waterKind === 'Coast') continue;
+    if ([-1, 0, 1].some(dx => [-1, 0, 1].some(dy => !Number.isFinite(chunks.get(`${chunk.x + dx}:${chunk.y + dy}`)?.elevation01)))) continue;
     for (let ix = 0; ix < config.puddleSamplesPerAxis; ix++) {
       for (let iz = 0; iz < config.puddleSamplesPerAxis; iz++) {
         const token = `${terrain.worldSeed ?? '0'}:puddle:${chunk.x}:${chunk.y}:${ix}:${iz}`;

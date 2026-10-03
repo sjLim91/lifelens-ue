@@ -155,8 +155,8 @@ test('facility wet/snow preserves durability wear and restores dry; refresh/remo
   const oldDocument = globalThis.document;
   globalThis.document = { createElement: () => ({ getContext: () => null }) };
   try {
-    const layer = new FacilityLayer(), t = terrain([fire()]);
-    const civ = { available: true, facilities: [{ id: '1', kind: 'FirePit', gridX: 16, gridY: 16, durability: .4, state: 'Operational' }] };
+    const layer = new FacilityLayer(), t = terrain([fire({ facilityKind: 'SleepingPlace', lit: false })]);
+    const civ = { available: true, facilities: [{ id: '1', kind: 'SleepingPlace', gridX: 16, gridY: 16, durability: .4, state: 'Operational' }] };
     layer.setCivilization(civ, t);
     const structure = layer.group.children[0], worn = [...layer.wornMaterials.values()];
     assert(worn.length > 0); const dry = worn.map(m => m.color.clone());
