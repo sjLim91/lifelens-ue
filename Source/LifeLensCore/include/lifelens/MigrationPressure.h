@@ -63,6 +63,74 @@ inline int migrationComfortResourceUnits(MaterialKind material)
     }
 }
 
+inline constexpr std::array<MaterialKind,6> MigrationFoundationalMaterials{{
+    MaterialKind::Water,
+    MaterialKind::PlantFood,
+    MaterialKind::Wood,
+    MaterialKind::Stone,
+    MaterialKind::Fiber,
+    MaterialKind::Clay
+}};
+
+inline int migrationFoundationalMaterialIndex(MaterialKind material)
+{
+    for(std::size_t index=0;index<MigrationFoundationalMaterials.size();++index){
+        if(MigrationFoundationalMaterials[index]==material){
+            return static_cast<int>(index);
+        }
+    }
+    return -1;
+}
+
+struct MigrationResourceScan {
+    std::array<int,MigrationFoundationalMaterials.size()> localUnits{};
+    std::array<int,MigrationFoundationalMaterials.size()> nearestKnownDistance{{
+        -1,-1,-1,-1,-1,-1
+    }};
+};
+
+inline MigrationResourceScan scanMigrationResources(
+    const World& world,
+    GridPos anchor)
+{
+    MigrationResourceScan result;
+    const int radius=
+        WorldChunkSpanGridCells*MigrationLocalResourceRadiusChunks;
+
+    // Migration pressure needs the same six foundational materials twice:
+    // local quantity and nearest known distance. Scan the materialized resource
+    // inventory once, preserving the historical fallback semantics for local
+    // stock when an old/compatibility node cannot resolve its generated access
+    // position. Nearest-known distance still requires a resolvable access site.
+    for(const ResourceNode& node:world.resourceNodes){
+        if(node.id==0 || node.quantity<=0) continue;
+        const int materialIndex=
+            migrationFoundationalMaterialIndex(node.material);
+        if(materialIndex<0) continue;
+
+        GridPos access=node.pos;
+        const bool resolved=
+            resolveCivilizationResourceAccessGridPosition(
+                world,node.id,access);
+        const int localDistance=std::max(
+            std::abs(access.x-anchor.x),
+            std::abs(access.y-anchor.y));
+        if(localDistance<=radius){
+            result.localUnits[static_cast<std::size_t>(materialIndex)]
+                +=node.quantity;
+        }
+
+        if(!resolved) continue;
+        int& nearest=
+            result.nearestKnownDistance[
+                static_cast<std::size_t>(materialIndex)];
+        if(nearest<0 || localDistance<nearest){
+            nearest=localDistance;
+        }
+    }
+    return result;
+}
+
 inline int migrationLocalResourceUnits(
     const World& world,
     MaterialKind material,
@@ -215,34 +283,31 @@ inline MigrationPressureObservation observeMigrationPressure(
     result.residentId = resident.id;
     if(resident.id == 0 || !resident.alive) return result;
 
-    const std::array<MaterialKind, 6> foundationalMaterials{{
-        MaterialKind::Water,
-        MaterialKind::PlantFood,
-        MaterialKind::Wood,
-        MaterialKind::Stone,
-        MaterialKind::Fiber,
-        MaterialKind::Clay
-    }};
+    const MigrationResourceScan resources=
+        scanMigrationResources(world,authoritativePosition);
 
     double strongestMaterialPressure = 0.0;
-    for(const MaterialKind material : foundationalMaterials){
+    for(std::size_t materialIndex=0;
+        materialIndex<MigrationFoundationalMaterials.size();
+        ++materialIndex){
+        const MaterialKind material=
+            MigrationFoundationalMaterials[materialIndex];
         const int comfort = migrationComfortResourceUnits(material);
         if(comfort <= 0) continue;
 
-        const int localResources =
-            migrationLocalResourceUnits(world, material, authoritativePosition);
-        const int localReserve =
+        const int localResources=
+            resources.localUnits[materialIndex];
+        const int localReserve=
             migrationLocalReserveUnits(
-                world, resident, material, authoritativePosition);
-        const int usableLocal = localResources + localReserve;
+                world,resident,material,authoritativePosition);
+        const int usableLocal=localResources+localReserve;
 
-        const double scarcity = 1.0 - clampMigration01(
+        const double scarcity=1.0-clampMigration01(
             static_cast<double>(usableLocal)
-            / static_cast<double>(comfort));
+            /static_cast<double>(comfort));
 
-        const int nearestDistance =
-            migrationNearestKnownResourceDistanceGrid(
-                world, material, authoritativePosition);
+        const int nearestDistance=
+            resources.nearestKnownDistance[materialIndex];
         const double nearGrid =
             WorldChunkSpanGridCells * MigrationComfortTravelRadiusChunks;
         const double farGrid =
