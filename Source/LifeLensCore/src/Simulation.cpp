@@ -551,7 +551,23 @@ ResidentPresentationObservation Simulation::observeResidentPresentation(Characte
             dto.emergencyFallback=true;
             if(r.goal==Goal::UseToilet){
                 SanitationUseTarget target;
-                if(sanitationUseTarget(id,target)){
+                bool hasTarget=r.navigationHasTarget;
+                if(hasTarget){
+                    target.pos=r.navigationTarget;
+                    for(const auto& site:world_.primitiveSanitationSites){
+                        if(site.active && validPrimitiveSanitationSiteKind(site.kind)
+                           && sameGridPos(site.pos,target.pos)){
+                            target.kind=SanitationUseTargetKind::DesignatedArea;
+                            target.siteId=site.id;
+                            break;
+                        }
+                    }
+                }else{
+                    hasTarget=sanitationUseTarget(id,target);
+                }
+                // The read model describes the frozen plan target; it must not
+                // repeat destination selection/pathfinding on each observation.
+                if(hasTarget){
                     dto.hasTargetGrid=true;
                     dto.targetGrid=r.navigationHasTarget
                         ? r.navigationTarget
@@ -562,6 +578,23 @@ ResidentPresentationObservation Simulation::observeResidentPresentation(Characte
                     dto.emergencyFallback=!dto.designatedSanitationSite;
                 }
             }
+        }
+        if(r.goal==Goal::Sleep && dto.phase==PresentationActionPhase::Interacting){
+            const auto* occupied=bestOperationalSleepFacility(world_,r.pos,0);
+            const bool protectedSleep=occupied!=nullptr
+                && facilityProvidesWeatherProtection(occupied->kind);
+            const auto weather=deriveDynamicEnvironment(
+                world_.genesisIdentity(),chunkCoordForGrid(r.pos),world_.minute);
+            const auto environment=evaluateSleepEnvironment(
+                weather,deriveEnvironmentalConsequences(weather),protectedSleep);
+            dto.sleepContext=protectedSleep ? SleepContext::Protected
+                : (environment.exposedEmergencyOnly
+                    ? SleepContext::ExposedEmergency : SleepContext::Exposed);
+            if(occupied!=nullptr){
+                dto.facilityId=occupied->id;
+                dto.facilityKind=occupied->kind;
+            }
+            dto.emergencyFallback=occupied==nullptr || environment.exposedEmergencyOnly;
         }
         return dto;
     }
@@ -934,7 +967,93 @@ bool Simulation::advancePendingContext(
     return completed;
 }
 
+
+bool Simulation::recommendedOutdoorReliefPosition(CharacterId id,GridPos& outPosition) const
+{
+    const auto runtimeIt=runtime_.find(id);
+    const Character* character=findObservedCharacter(world_,id);
+    if(runtimeIt==runtime_.end() || character==nullptr || !character->alive) return false;
+    const GridPos from=runtimeIt->second.pos;
+    std::vector<GridPos> route;
+    outPosition=chooseLowExposureOutdoorReliefPosition(
+        world_.seed,*character,world_.environmentalResidues,world_.minute,from,
+        [&](GridPos target){
+            return (sameGridPos(from,target) || coreGroundTraversable(world_,target))
+                && buildCoreGroundRoute(world_,from,target,0,route);
+        });
+    return true;
+}
+
+bool Simulation::sanitationUseTarget(CharacterId id,SanitationUseTarget& outTarget) const
+{
+    const auto runtimeIt=runtime_.find(id);
+    const Character* character=findObservedCharacter(world_,id);
+    if(runtimeIt==runtime_.end() || character==nullptr || !character->alive) return false;
+    const GridPos from=runtimeIt->second.pos;
+    std::vector<GridPos> route;
+    // A nearby low-contamination point/site is not necessarily connected to
+    // the resident's dry ground. Resolve only destinations Core can reach;
+    // retain the existing local radius, deterministic ordering and sanitation
+    // effects. No failed-route retry loop is needed to discover this fact.
+    outTarget=resolveSanitationUseTarget(
+        world_.seed,*character,world_.environmentalResidues,
+        world_.primitiveSanitationSites,world_.minute,from,SettlementServiceRadiusGrid,
+        [&](GridPos target){
+            return (sameGridPos(from,target) || coreGroundTraversable(world_,target))
+                && buildCoreGroundRoute(world_,from,target,0,route);
+        });
+    return true;
+}
+
+SleepRuntimeDiagnostic Simulation::observeSleepRuntimeDiagnostic(CharacterId id) const
+{
+    SleepRuntimeDiagnostic out;
+    const auto found=runtime_.find(id);
+    if(found==runtime_.end()) return out;
+    const auto& r=found->second;
+    out.goal=r.goal; out.position=r.pos; out.target=r.navigationTarget;
+    out.hasTarget=r.navigationHasTarget; out.arrived=r.navigationArrived;
+    out.penaltyUntilMinute=r.penaltyUntilMinute; out.consecutiveFailures=r.consecutiveFailures;
+    if(r.actionIndex<r.plan.size()){
+        out.hasAction=true; out.action=r.plan[r.actionIndex].type;
+        out.remainingTicks=r.plan[r.actionIndex].remainingTicks;
+    }
+    const auto stats=sleepDiagnostics_.find(id);
+    if(stats!=sleepDiagnostics_.end()) out.counters=stats->second;
+    return out;
+}
+
+void Simulation::closeDiagnosticSleepSession(CharacterId id,double need,SleepDiagnosticEnd reason)
+{
+    if(!sleepDiagnosticsEnabled_) return;
+    auto& stats=sleepDiagnostics_[id];
+    if(!stats.sessionActive) return;
+    ++stats.sessionClosed; stats.endNeedSum+=need;
+    ++stats.sessionEnds[static_cast<std::size_t>(reason)];
+    stats.lastSessionEnd=static_cast<int>(reason); stats.lastSessionEndMinute=world_.minute;
+    stats.sessionActive=false;
+}
+
+void Simulation::recordDiagnosticSleepMinute(const Character& c,double recovery,
+    const SleepEnvironmentEvaluation& environment,bool protectedSleep)
+{
+    if(!sleepDiagnosticsEnabled_) return;
+    auto& stats=sleepDiagnostics_[c.id];
+    if(!stats.sessionActive){
+        stats.sessionActive=true; ++stats.sessionStarts; stats.startNeedSum+=c.needs.sleep;
+    }
+    ++stats.recoveryMinutes[protectedSleep ? 0 : environment.exposedEmergencyOnly ? 2 : 1];
+    stats.grossRecoverySum+=recovery; stats.lastGrossRecovery=recovery;
+}
+
 void Simulation::failPlan(Character& character,Runtime& r){
+    if(sleepDiagnosticsEnabled_){
+        auto& stats=sleepDiagnostics_[character.id];
+        ++stats.failedPlansByGoal[static_cast<std::size_t>(r.goal)];
+        stats.lastFailureMinute=world_.minute; stats.lastFailedGoal=r.goal;
+        stats.lastFailureWasRoute=r.navigationRouteFailed;
+        if(r.goal==Goal::Sleep) closeDiagnosticSleepSession(character.id,character.needs.sleep,SleepDiagnosticEnd::Failure);
+    }
     clearNavigation(r);
     r.plan.clear(); r.actionIndex=0; r.announced=false; r.pendingContext.clear();
     r.socialActive=false; r.socialIntent=SocialIntent::None; r.socialTarget=0;
@@ -954,6 +1073,7 @@ void Simulation::cancelRuntimeActivityForCriticalReplan(
     Character& character,
     Runtime& r)
 {
+    if(r.goal==Goal::Sleep) closeDiagnosticSleepSession(character.id,character.needs.sleep,SleepDiagnosticEnd::UrgentNeed);
     // Intentional survival preemption is not a failure. Release any physical
     // reservation and clear stale social/civilization/navigation authority
     // without adding failure emotion or the ordinary 30-minute backoff.
@@ -1424,38 +1544,64 @@ bool Simulation::sleepFacilityHasCapacityFor(
 const ConstructedFacility*
 Simulation::nearestAvailableOperationalSleepFacility(
     CharacterId requester,
-    GridPos from) const
+    GridPos from,
+    SleepDiagnosticCounters* diagnostics) const
 {
-    const ConstructedFacility* best=nullptr;
-    int bestDistance=SettlementServiceRadiusGrid+1;
-
+    if(diagnostics!=nullptr) ++diagnostics->sleepSelections;
+    const Character* resident=findObservedCharacter(world_,requester);
+    const double fatigue=resident!=nullptr ? resident->needs.sleep : 1.0;
+    const auto weather=deriveDynamicEnvironment(
+        world_.genesisIdentity(),chunkCoordForGrid(from),world_.minute);
+    const auto environment=evaluateSleepEnvironment(
+        weather,deriveEnvironmentalConsequences(weather),false);
+    const int budget=std::min(SettlementServiceRadiusGrid,sleepTravelBudgetCells(fatigue));
+    struct Candidate { const ConstructedFacility* facility; double cost; int travelLimit; };
+    std::vector<Candidate> candidates;
     for(const auto& facility:world_.facilities){
-        if(!facilityProvidesSleep(facility.kind)
-           || !facilityOperationalAndActive(facility)
-           || !sleepFacilityHasCapacityFor(requester,facility)){
+        if(!facilityProvidesSleep(facility.kind) || !facilityOperationalAndActive(facility)) continue;
+        if(!sleepFacilityHasCapacityFor(requester,facility)){
+            if(diagnostics!=nullptr && facilityProvidesWeatherProtection(facility.kind)) ++diagnostics->shelterRejectedCapacity;
             continue;
         }
-
         const int distance=manhattan(facility.pos,from);
-        if(distance>SettlementServiceRadiusGrid) continue;
-
-        if(best==nullptr
-           || distance<bestDistance
-           || (
-               distance==bestDistance
-               && facility.kind==FacilityKind::SleepingPlace
-               && best->kind!=FacilityKind::SleepingPlace
-           )
-           || (
-               distance==bestDistance
-               && facility.kind==best->kind
-               && facility.id<best->id
-           )){
-            best=&facility;
-            bestDistance=distance;
+        // Preserve the established calm-weather service radius. Bound travel
+        // for emergency exposure and protected destinations in harsh weather.
+        const int travelLimit=environment.exposedEmergencyOnly
+            || (environment.weatherProtectionPreferred && facilityProvidesWeatherProtection(facility.kind))
+            ? budget : SettlementServiceRadiusGrid;
+        if(distance>travelLimit){
+            if(diagnostics!=nullptr && facilityProvidesWeatherProtection(facility.kind)) ++diagnostics->shelterRejectedDistance;
+            continue;
         }
+        candidates.push_back({&facility,sleepCandidateCost(environment,
+            facilityProvidesWeatherProtection(facility.kind),distance,fatigue,
+            facilityEffectiveness01(facility)),travelLimit});
     }
-    return best;
+    std::sort(candidates.begin(),candidates.end(),[](const Candidate& a,const Candidate& b){
+        if(a.cost!=b.cost) return a.cost<b.cost;
+        if(a.facility->kind!=b.facility->kind){
+            return a.facility->kind==FacilityKind::SleepingPlace;
+        }
+        return a.facility->id<b.facility->id;
+    });
+    // Navigation remains authoritative. Reject inaccessible or excessive
+    // detours before reserving a destination; no remote sleep or teleport.
+    std::vector<GridPos> route;
+    for(const Candidate& candidate:candidates){
+        if(buildCoreGroundRoute(world_,from,candidate.facility->pos,0,route)
+           && route.size()<=static_cast<std::size_t>(candidate.travelLimit)){
+            if(diagnostics!=nullptr){
+                diagnostics->selectedFacility=candidate.facility->id;
+                diagnostics->selectedKind=candidate.facility->kind;
+                diagnostics->selectedPosition=candidate.facility->pos;
+                diagnostics->selectedDistance=manhattan(candidate.facility->pos,from);
+            }
+            return candidate.facility;
+        }
+        if(diagnostics!=nullptr && facilityProvidesWeatherProtection(candidate.facility->kind)) ++diagnostics->shelterRejectedRoute;
+    }
+    if(diagnostics!=nullptr) diagnostics->selectedFacility=0;
+    return nullptr;
 }
 
 bool Simulation::tryCivilizationDecision(Character& c,Runtime& r){
@@ -1680,7 +1826,14 @@ void Simulation::beginPlan(Character& c,Runtime& r){
     r.socialIntent=SocialIntent::None;
     r.socialTarget=0;
 
-    Goal chosen=world_.minute<r.penaltyUntilMinute
+    // A failed affordance's retry cooldown must not forbid physical rest.
+    // Exhausted residents may sleep at their actual position during backoff;
+    // this neither retries that destination nor changes urgent provision order.
+    const bool emergencyRestDuringBackoff=!planningAllowed
+        && c.needs.sleep>=SleepEnvironmentContract::ExhaustedBackoffRestNeed;
+    Goal chosen=emergencyRestDuringBackoff
+        ? Goal::Sleep
+        : world_.minute<r.penaltyUntilMinute
         ? Goal::Idle
         : urgentPhysicalGoal!=Goal::Idle
             ? urgentPhysicalGoal
@@ -1697,7 +1850,11 @@ void Simulation::beginPlan(Character& c,Runtime& r){
         r.repeatCount=1;
     }
     clearNavigation(r);
-    r.goal=chosen; r.plan=buildPlan(world_,c,chosen,r.pos); r.actionIndex=0; r.announced=false;
+    r.goal=chosen;
+    r.plan=emergencyRestDuringBackoff
+        ? std::vector<Action>{{ActionType::EmergencyUse,0,emergencyUseDurationTicks(Goal::Sleep)}}
+        : buildPlan(world_,c,chosen,r.pos);
+    r.actionIndex=0; r.announced=false;
     if(r.plan.empty()){ failPlan(c,r); return; }
 
     if((chosen==Goal::Drink || chosen==Goal::Wash)
@@ -1737,8 +1894,12 @@ void Simulation::beginPlan(Character& c,Runtime& r){
     if(chosen==Goal::Sleep
        && r.plan.size()==1
        && r.plan.front().type==ActionType::EmergencyUse){
-        const ConstructedFacility* sleepFacility=
-            nearestAvailableOperationalSleepFacility(c.id,r.pos);
+        auto* diagnostic=sleepDiagnosticsEnabled_ ? &sleepDiagnostics_[c.id] : nullptr;
+        if(diagnostic!=nullptr && emergencyRestDuringBackoff){
+            ++diagnostic->backoffRestStarts; diagnostic->selectedFacility=0;
+        }
+        const ConstructedFacility* sleepFacility=emergencyRestDuringBackoff
+            ? nullptr : nearestAvailableOperationalSleepFacility(c.id,r.pos,diagnostic);
         if(sleepFacility!=nullptr
            && manhattan(sleepFacility->pos,r.pos)<=SettlementServiceRadiusGrid){
             r.navigationTarget=sleepFacility->pos;
@@ -1751,6 +1912,10 @@ void Simulation::beginPlan(Character& c,Runtime& r){
                     world_,sleepFacility->pos,sleepFacility),
                 ruleset_.needs);
         }else{
+            r.navigationTarget=r.pos;
+            r.navigationArrivalRadius=0;
+            r.navigationHasTarget=true;
+            r.navigationArrived=true;
             r.plan.front().remainingTicks=sleepDurationMinutesForNeed(
                 c,
                 sleepRecoveryPerMinuteAt(world_,r.pos,nullptr),
@@ -1795,6 +1960,7 @@ void Simulation::advanceAction(Character& c,Runtime& r){
         case ActionType::Use:
             if(!obj){ failPlan(c,r); return; }
             if(r.goal==Goal::Sleep && sleepInterruptedByUrgentNeed(c)){
+                closeDiagnosticSleepSession(c.id,c.needs.sleep,SleepDiagnosticEnd::UrgentNeed);
                 emit(c.name+" woke from Sleep for urgent physical need");
                 clearNavigation(r);
                 a.remainingTicks=0;
@@ -1822,15 +1988,24 @@ void Simulation::advanceAction(Character& c,Runtime& r){
             {
             const Needs before=c.needs;
             if(r.goal==Goal::Sleep){
-                c.needs.apply(facilityUseEffectPerTick(Goal::Sleep));
+                SleepEnvironmentEvaluation evaluation;
+                const double recovery=sleepRecoveryPerMinuteAt(world_,r.pos,nullptr,
+                    sleepDiagnosticsEnabled_ ? &evaluation : nullptr);
+                recordDiagnosticSleepMinute(c,recovery,evaluation,false);
+                c.needs.apply({0,0,-recovery,0,0});
             }else{
                 c.needs.apply(obj->effectPerTick);
             }
             applyNeedResolutionEmotion(c,before,r.goal);
             }
-            if(--a.remainingTicks<=0){ ++r.actionIndex; r.announced=false; } break;
+            if(--a.remainingTicks<=0){
+                if(r.goal==Goal::Sleep) closeDiagnosticSleepSession(c.id,c.needs.sleep,
+                    c.needs.sleep<=RestedSleepNeedTarget ? SleepDiagnosticEnd::Rested : SleepDiagnosticEnd::Budget);
+                ++r.actionIndex; r.announced=false;
+            } break;
         case ActionType::EmergencyUse: {
             if(r.goal==Goal::Sleep && sleepInterruptedByUrgentNeed(c)){
+                closeDiagnosticSleepSession(c.id,c.needs.sleep,SleepDiagnosticEnd::UrgentNeed);
                 emit(c.name+" woke from Sleep for urgent physical need");
                 clearNavigation(r);
                 a.remainingTicks=0;
@@ -1953,6 +2128,39 @@ void Simulation::advanceAction(Character& c,Runtime& r){
                 }
             }
             if(r.goal==Goal::Sleep){
+                if(r.navigationArrived
+                   && world_.minute%SleepEnvironmentContract::ReplanIntervalMinutes==0){
+                    const auto weather=deriveDynamicEnvironment(
+                        world_.genesisIdentity(),chunkCoordForGrid(r.pos),world_.minute);
+                    const auto* occupied=bestOperationalSleepFacility(world_,r.pos,0);
+                    const bool protectedSleep=occupied!=nullptr
+                        && facilityProvidesWeatherProtection(occupied->kind);
+                    const auto environment=evaluateSleepEnvironment(
+                        weather,deriveEnvironmentalConsequences(weather),protectedSleep);
+                    if(environment.exposedEmergencyOnly){
+                        const auto* safer=nearestAvailableOperationalSleepFacility(c.id,r.pos,
+                            sleepDiagnosticsEnabled_ ? &sleepDiagnostics_[c.id] : nullptr);
+                        if(safer!=nullptr && facilityProvidesWeatherProtection(safer->kind)
+                           && sleepCandidateCost(environment,true,manhattan(r.pos,safer->pos),
+                               c.needs.sleep,facilityEffectiveness01(*safer))
+                              +SleepEnvironmentContract::ReplanCostImprovement
+                              <sleepCandidateCost(environment,false,0,c.needs.sleep,1.0)){
+                            closeDiagnosticSleepSession(c.id,c.needs.sleep,SleepDiagnosticEnd::Replan);
+                            if(sleepDiagnosticsEnabled_){
+                                ++sleepDiagnostics_[c.id].replans;
+                                sleepDiagnostics_[c.id].lastReplanMinute=world_.minute;
+                            }
+                            clearNavigation(r);
+                            r.navigationTarget=safer->pos;
+                            r.navigationArrivalRadius=0;
+                            r.navigationHasTarget=true;
+                            r.navigationArrived=sameGridPos(r.pos,safer->pos);
+                            a.remainingTicks=sleepDurationMinutesForNeed(c,
+                                sleepRecoveryPerMinuteAt(world_,safer->pos,safer),ruleset_.needs);
+                            emit(c.name+" left exposed sleep for Shelter");
+                        }
+                    }
+                }
                 GridPos sleepTarget=r.navigationTarget;
                 bool hasSleepTarget=r.navigationHasTarget;
                 if(!hasSleepTarget){
@@ -1974,13 +2182,21 @@ void Simulation::advanceAction(Character& c,Runtime& r){
             {
             ConstructedFacility* settlementSleepFacility=
                 r.goal==Goal::Sleep
-                    ? bestOperationalSleepFacility(world_,r.pos,1)
+                    ? bestOperationalSleepFacility(world_,r.pos,0)
                     : nullptr;
+            if(settlementSleepFacility!=nullptr
+               && !sleepFacilityHasCapacityFor(c.id,*settlementSleepFacility)){
+                failPlan(c,r);
+                return;
+            }
             const Needs before=c.needs;
             if(r.goal==Goal::Sleep){
-                c.needs.apply({
-                    0,0,-sleepRecoveryPerMinuteAt(
-                        world_,r.pos,settlementSleepFacility),0,0});
+                SleepEnvironmentEvaluation evaluation;
+                const double recovery=sleepRecoveryPerMinuteAt(world_,r.pos,settlementSleepFacility,
+                    sleepDiagnosticsEnabled_ ? &evaluation : nullptr);
+                recordDiagnosticSleepMinute(c,recovery,evaluation,settlementSleepFacility!=nullptr
+                    && facilityProvidesWeatherProtection(settlementSleepFacility->kind));
+                c.needs.apply({0,0,-recovery,0,0});
             }else if(r.goal==Goal::UseToilet && sanitationSite!=nullptr){
                 c.needs.apply(
                     primitiveSanitationUseEffectPerTick(sanitationSite->kind));
@@ -2008,6 +2224,8 @@ void Simulation::advanceAction(Character& c,Runtime& r){
             }
             }
             if(--a.remainingTicks<=0){
+                if(r.goal==Goal::Sleep) closeDiagnosticSleepSession(c.id,c.needs.sleep,
+                    c.needs.sleep<=RestedSleepNeedTarget ? SleepDiagnosticEnd::Rested : SleepDiagnosticEnd::Budget);
                 if(r.goal==Goal::UseToilet){
                     const PrimitiveSanitationSiteKind sanitationKind=
                         sanitationSite!=nullptr
@@ -2068,7 +2286,11 @@ void Simulation::advanceAction(Character& c,Runtime& r){
             emit(c.name+" completed "+std::string(goalName(r.goal)));
             ++r.actionIndex; r.announced=false; r.consecutiveFailures=0; break;
         case ActionType::Idle:
-            if(--a.remainingTicks<=0){ ++r.actionIndex; r.announced=false; } break;
+            if(--a.remainingTicks<=0){
+                if(r.goal==Goal::Sleep) closeDiagnosticSleepSession(c.id,c.needs.sleep,
+                    c.needs.sleep<=RestedSleepNeedTarget ? SleepDiagnosticEnd::Rested : SleepDiagnosticEnd::Budget);
+                ++r.actionIndex; r.announced=false;
+            } break;
     }
     if(r.actionIndex>=r.plan.size()){
         r.plan.clear(); r.actionIndex=0;
@@ -2599,6 +2821,12 @@ void Simulation::advanceDailyPopulationHealth()
         input.heatStress01=environment.heatStress01;
         input.coldStress01=environment.coldStress01;
         input.wetStress01=environment.wetStress01;
+        // Daily health samples actual activity/location, never shelter ownership.
+        if(observeResidentPresentation(character.id).sleepContext==SleepContext::Protected){
+            input.heatStress01*=SleepEnvironmentContract::ProtectedResidualExposure;
+            input.coldStress01*=SleepEnvironmentContract::ProtectedResidualExposure;
+            input.wetStress01*=SleepEnvironmentContract::ProtectedResidualExposure;
+        }
         input.hazardPotential01=region.hazardPotential;
         input.hunger01=character.needs.hunger;
         input.thirst01=character.needs.thirst;
@@ -3112,3 +3340,4 @@ void Simulation::step(){
 }
 void Simulation::runMinutes(int minutes){ for(int i=0;i<minutes;++i) step(); }
 }
+

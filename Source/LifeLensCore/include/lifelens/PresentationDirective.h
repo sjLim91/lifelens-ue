@@ -5,6 +5,7 @@
 #include "ContextAction.h"
 #include "Planner.h"
 #include "SmartObject.h"
+#include "SleepEnvironment.h"
 
 namespace lifelens {
 
@@ -54,6 +55,7 @@ struct ResidentPresentationObservation {
     ObjectId objectId=0;
     ObjectKind objectKind=ObjectKind::Chair;
 
+    SleepContext sleepContext=SleepContext::None;
     bool emergencyFallback=false;
     bool directNaturalWaterSource=false;
     bool designatedSanitationSite=false;
@@ -64,3 +66,4 @@ struct ResidentPresentationObservation {
 };
 
 } // namespace lifelens
+

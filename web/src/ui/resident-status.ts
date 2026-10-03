@@ -9,3 +9,4 @@ export function residentStatusText(
   const cue = residentActionCue(resident, residents);
   return cue?.text ?? formatActivity(resident.activityLabel);
 }
+

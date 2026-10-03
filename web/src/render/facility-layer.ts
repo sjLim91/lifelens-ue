@@ -2,7 +2,7 @@ import { WORLD_PRESENTATION } from './world-presentation-config';
 import * as THREE from 'three';
 import type { CivilizationWorldPayload, CivilizationWorldFacility, CivilizationWorldStorage, HumanTrace, TerrainWindow } from '../runtime/core-types';
 import { storedGoodsPiles } from './stored-goods-presentation';
-import { WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
+import { RESIDENT_PRESENTATION_CONTRACT, WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
 import { visibleHumanTraces } from '../state/human-traces';
 import { createTerrainElevationSampler } from './terrain-geometry';
 
@@ -302,6 +302,9 @@ export class FacilityLayer {
       nextStructures.set(trace.id, { signature: structureSignature, group: structure });
     }
 
+    for (const [id, old] of this.structures) {
+      if (nextStructures.get(id)?.group !== old.group) this.disposeStructureInstances(old.group);
+    }
     this.structures.clear();
     for (const [id, entry] of nextStructures) this.structures.set(id, entry);
     this.group.visible = true;
@@ -324,6 +327,7 @@ export class FacilityLayer {
 
   dispose(): void {
     this.group.clear();
+    for (const entry of this.structures.values()) this.disposeStructureInstances(entry.group);
     for (const material of this.wornMaterials.values()) material.dispose();
     this.wornMaterials.clear();
     this.structures.clear();
@@ -720,39 +724,48 @@ export class FacilityLayer {
     trace: FacilityTrace,
     progress: number,
   ): void {
-    this.addBoxAtProgress(
-      group,
-      trace,
-      progress,
-      0.18,
-      this.darkWoodMaterial,
-      [0, 0.16, 0],
-      [2.5, 0.2, 1.15],
-      [0, 0, 0],
-      70,
-    );
-    this.addBoxAtProgress(
-      group,
-      trace,
-      progress,
-      0.44,
-      this.beddingMaterial,
-      [0, 0.32, 0],
-      [2.25, 0.18, 0.98],
-      [0, 0, 0],
-      71,
-    );
-    this.addBoxAtProgress(
-      group,
-      trace,
-      progress,
-      0.68,
-      this.thatchMaterial,
-      [-0.82, 0.48, 0],
-      [0.42, 0.2, 0.78],
-      [0, 0, 0],
-      72,
-    );
+    const firstPart = group.children.length;
+    // Ground-level woven grass/fiber, with ragged edges and three branches.
+    // Facility groups sit 0.025 above terrain; the occupied center therefore
+    // meets the same support plane as the native LayToIdle calibration.
+    const surface = RESIDENT_PRESENTATION_CONTRACT.sleepPoseSleepingPlaceSurfaceHeightWorldUnits;
+    this.addBoxAtProgress(group, trace, progress, 0.36, this.beddingMaterial,
+      [0, surface - 0.025 - 0.045, 0], [2.24, 0.09, 0.66], [0, 0, 0], 70);
+    this.addBoxAtProgress(group, trace, progress, 0.52, this.thatchMaterial,
+      [-0.09, 0.06, -0.39], [2.08, 0.06, 0.24], [0, 0.025, 0], 71);
+    this.addBoxAtProgress(group, trace, progress, 0.58, this.beddingMaterial,
+      [0.07, 0.06, 0.40], [2.32, 0.06, 0.23], [0, -0.035, 0], 72);
+    // A loose fiber bundle merges with the mat edge; no raised pillow.
+    this.addBoxAtProgress(group, trace, progress, 0.70, this.thatchMaterial,
+      [-0.77, 0.075, -0.31], [0.65, 0.075, 0.23], [0, 0.16, 0], 73);
+    for (const [i, [x, z, length, yaw]] of [
+      [0, -0.51, 2.37, 0.03], [0.11, 0.52, 2.12, -0.06], [-1.12, 0.04, 0.82, Math.PI / 2],
+    ].entries()) {
+      this.addCylinderAtProgress(group, trace, progress, 0.18 + i * 0.05,
+        this.woodMaterial, [x, 0.05, z], [0.055, length, 0.055],
+        [0, yaw, Math.PI / 2], 74 + i);
+    }
+    // Seven primitive parts, three material/geometry batches: preserve the
+    // original bed's draw-call budget. Allocate only when this cache rebuilds.
+    const parts = group.children.slice(firstPart) as THREE.Mesh[];
+    for (const material of [this.beddingMaterial, this.thatchMaterial, this.woodMaterial]) {
+      const matching = parts.filter(part => part.material === material);
+      if (!matching.length) continue;
+      const batch = new THREE.InstancedMesh(matching[0].geometry, material, matching.length);
+      this.prepareMesh(batch, trace, 70 + group.children.length);
+      matching.forEach((part, index) => {
+        part.updateMatrix(); batch.setMatrixAt(index, part.matrix); group.remove(part);
+      });
+      batch.instanceMatrix.needsUpdate = true;
+      batch.computeBoundingBox(); batch.computeBoundingSphere();
+      group.add(batch);
+    }
+  }
+
+  private disposeStructureInstances(group: THREE.Group): void {
+    group.traverse(object => {
+      if (object instanceof THREE.InstancedMesh) object.dispose();
+    });
   }
 
   private buildShelter(
@@ -1174,4 +1187,5 @@ export class FacilityLayer {
     mesh.receiveShadow = true;
   }
 }
+
 

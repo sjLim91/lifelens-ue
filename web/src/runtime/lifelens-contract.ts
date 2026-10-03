@@ -121,7 +121,7 @@ export const RESIDENT_PRESENTATION_CONTRACT = {
   sleepPoseGroundClearanceWorldUnits: 0.035,
   sleepPoseBodyHalfLengthHeightRatio: 0.48,
   // Visible bedding top in FacilityLayer. Shelter sleep remains ground-based.
-  sleepPoseSleepingPlaceSurfaceHeightWorldUnits: 0.41,
+  sleepPoseSleepingPlaceSurfaceHeightWorldUnits: 0.14,
   socialConnectorApproachColorHex: 0xb9d8be,
   socialConnectorComfortColorHex: 0x9fcfe0,
   socialConnectorRepairColorHex: 0xe0c98f,
@@ -155,3 +155,4 @@ export function simulationTimeHint(): string {
     + '라이프렌즈 1일 · 시간 점프 없이 관찰 배속만 조절'
   );
 }
+

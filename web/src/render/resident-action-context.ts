@@ -1,3 +1,4 @@
+import { sleepContextActionText } from '../localization/sleep-context';
 import type {
   Resident,
   ResidentPresentationDirective,
@@ -186,6 +187,10 @@ export function residentActionCue(
   let action = '';
   switch (directive.kind) {
     case 'Physical':
+      {
+        const sleepLabel = sleepContextActionText(directive);
+        if (sleepLabel) return { text: sleepLabel, phase };
+      }
       if (directive.physicalGoal === 'Wash') {
         if (directive.directNaturalWaterSource) {
           return {
@@ -357,3 +362,4 @@ export function residentActionCue(
     phase,
   };
 }
+

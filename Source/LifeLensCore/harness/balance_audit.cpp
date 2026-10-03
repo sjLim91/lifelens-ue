@@ -4,6 +4,9 @@
 #include <cstdint>
 #include <cstdlib>
 #include <iomanip>
+#include <fstream>
+#include <filesystem>
+#include <iterator>
 #include <iostream>
 #include <map>
 #include <sstream>
@@ -57,6 +60,21 @@ struct ResidentMetrics {
     double maxIllness=0.0;
     double maxInjury=0.0;
     double maxEnvironmentalStress=0.0;
+};
+
+struct SleepAuditMetrics {
+    std::uint64_t travelMinutes=0, precipitationMinutes=0, severeExposureMinutes=0;
+    std::uint64_t saturatedSleepMinutes=0, saturatedTravelMinutes=0, saturatedCooldownMinutes=0;
+    std::array<std::uint64_t,6> saturationByGoal{};
+    double exposureSum=0, precipitationSum=0, wetnessSum=0, windSum=0;
+    std::uint64_t observations=0;
+};
+struct SleepWorldAudit {
+    std::uint64_t observations=0, precipitationMinutes=0, severeExposureMinutes=0;
+    std::uint64_t sleepingPlaceMinutes=0, shelterMinutes=0;
+    double shelterEffectivenessSum=0, shelterDurabilitySum=0;
+    std::uint64_t shelterSamples=0;
+    GridPos origin{};
 };
 
 struct EventMetrics {
@@ -287,6 +305,107 @@ void observeResidentMinute(
             ++metrics.idleMinutes;
             break;
     }
+}
+
+void observeSleepAuditMinute(Simulation& sim,const Character& resident,
+    SleepAuditMetrics& audit,std::ofstream& trace,int traceStart,int traceEnd,CharacterId traceResident)
+{
+    const auto plan=sim.observeSleepRuntimeDiagnostic(resident.id);
+    const auto presentation=sim.observeResidentPresentation(resident.id);
+    const auto weather=deriveDynamicEnvironment(sim.world().genesisIdentity(),chunkCoordForGrid(plan.position),sim.world().minute);
+    const auto exposure=evaluateSleepEnvironment(weather,deriveEnvironmentalConsequences(weather),false);
+    ++audit.observations;
+    audit.exposureSum+=exposure.exposure01; audit.precipitationSum+=weather.precipitationIntensity01;
+    audit.wetnessSum+=weather.surfaceWetness01; audit.windSum+=weather.windIntensity01;
+    if(weather.precipitationIntensity01>=0.05) ++audit.precipitationMinutes;
+    if(exposure.exposedEmergencyOnly) ++audit.severeExposureMinutes;
+    const bool sleepMoving=presentation.active && presentation.kind==PresentationActionKind::Physical
+        && presentation.physicalGoal==Goal::Sleep && presentation.phase==PresentationActionPhase::Moving;
+    if(sleepMoving) ++audit.travelMinutes;
+    if(resident.needs.sleep>=0.999){
+        ++audit.saturationByGoal[static_cast<std::size_t>(plan.goal)];
+        if(presentation.sleepContext!=SleepContext::None) ++audit.saturatedSleepMinutes;
+        if(sleepMoving) ++audit.saturatedTravelMinutes;
+        if(sim.world().minute<plan.penaltyUntilMinute) ++audit.saturatedCooldownMinutes;
+    }
+    if(trace && sim.world().minute>=traceStart && sim.world().minute<=traceEnd
+       && (traceResident==0 || traceResident==resident.id)){
+        const auto* facility=bestOperationalSleepFacility(sim.world(),plan.position,0);
+        const auto& stats=plan.counters;
+        trace<<sim.world().minute<<','<<resident.id<<','<<resident.needs.sleep<<','<<resident.needs.bladder
+            <<','<<resident.needs.hygiene<<','<<resident.needs.hunger<<','<<resident.needs.thirst
+            <<','<<goalName(plan.goal)<<','<<(plan.hasAction?static_cast<int>(plan.action):-1)
+            <<','<<plan.penaltyUntilMinute<<','<<sleepContextName(presentation.sleepContext)
+            <<','<<stats.selectedFacility<<','<<(stats.selectedFacility?(stats.selectedKind==FacilityKind::Shelter?"Shelter":"SleepingPlace"):"Ground")
+            <<','<<(stats.selectedFacility?manhattan(plan.position,stats.selectedPosition):0)
+            <<','<<exposure.exposure01<<','<<sleepRecoveryPerMinuteAt(sim.world(),plan.position,facility)
+            <<','<<plan.remainingTicks<<','<<stats.lastReplanMinute<<','<<stats.lastSessionEnd
+            <<','<<stats.lastSessionEndMinute<<','<<stats.lastFailureMinute<<','<<goalName(stats.lastFailedGoal)
+            <<','<<stats.lastFailureWasRoute<<','<<plan.position.x<<','<<plan.position.y
+            <<','<<plan.target.x<<','<<plan.target.y<<','<<plan.hasTarget<<','<<plan.arrived
+            <<','<<resident.health.illnessSeverity<<'\n';
+    }
+}
+
+void observeSleepWorldMinute(Simulation& sim,SleepWorldAudit& audit)
+{
+    ++audit.observations;
+    const auto weather=deriveDynamicEnvironment(sim.world().genesisIdentity(),chunkCoordForGrid(audit.origin),sim.world().minute);
+    const auto exposure=evaluateSleepEnvironment(weather,deriveEnvironmentalConsequences(weather),false);
+    if(weather.precipitationIntensity01>=0.05) ++audit.precipitationMinutes;
+    if(exposure.exposedEmergencyOnly) ++audit.severeExposureMinutes;
+    for(const auto& facility:sim.world().facilities){
+        if(!facilityOperationalAndActive(facility)) continue;
+        if(facility.kind==FacilityKind::SleepingPlace) ++audit.sleepingPlaceMinutes;
+        if(facility.kind==FacilityKind::Shelter){
+            ++audit.shelterMinutes; ++audit.shelterSamples;
+            audit.shelterEffectivenessSum+=facilityEffectiveness01(facility);
+            audit.shelterDurabilitySum+=facility.durability;
+        }
+    }
+}
+
+void emitSleepAudit(Simulation& sim,std::uint64_t seed,const std::map<CharacterId,SleepAuditMetrics>& audits,
+    const std::map<CharacterId,ResidentMetrics>& metrics,const SleepWorldAudit& worldAudit)
+{
+    for(const auto& entry:audits){
+        const auto& a=entry.second; const auto stats=sim.observeSleepRuntimeDiagnostic(entry.first).counters;
+        const auto& m=metrics.at(entry.first);
+        const auto total=stats.recoveryMinutes[0]+stats.recoveryMinutes[1]+stats.recoveryMinutes[2];
+        std::cout<<"SLEEP_DIAGNOSTIC seed="<<seed<<" id="<<entry.first
+            <<" totalSleepMinutes="<<total<<" protectedSleepMinutes="<<stats.recoveryMinutes[0]
+            <<" exposedSleepMinutes="<<stats.recoveryMinutes[1]<<" exposedEmergencySleepMinutes="<<stats.recoveryMinutes[2]
+            <<" sleepTravelMinutes="<<a.travelMinutes<<" sleepReplanCount="<<stats.replans
+            <<" failedSleepPlanCount="<<stats.failedPlansByGoal[2]<<" failedToiletPlanCount="<<stats.failedPlansByGoal[3]
+            <<" shelterRejectedByDistanceCount="<<stats.shelterRejectedDistance
+            <<" shelterRejectedByCapacityCount="<<stats.shelterRejectedCapacity<<" shelterRejectedByRouteCount="<<stats.shelterRejectedRoute
+            <<" sleepSessions="<<stats.sessionStarts<<" sleepSessionsEndedBeforeRestedTarget="<<(stats.sessionClosed-stats.sessionEnds[0])
+            <<" incompleteClosedSessions="<<(stats.sessionClosed-stats.sessionEnds[0])
+            <<" endedRested="<<stats.sessionEnds[0]<<" endedUrgent="<<stats.sessionEnds[1]<<" endedBudget="<<stats.sessionEnds[2]
+            <<" endedReplan="<<stats.sessionEnds[3]<<" endedFailure="<<stats.sessionEnds[4]
+            <<" backoffRestStarts="<<stats.backoffRestStarts
+            <<" meanSleepNeedAtStart="<<(stats.sessionStarts?stats.startNeedSum/stats.sessionStarts:0)
+            <<" meanSleepNeedAtEnd="<<(stats.sessionClosed?stats.endNeedSum/stats.sessionClosed:0)
+            <<" totalSleepSaturationMinutes="<<m.saturatedMinutes[2]<<" maximumContinuousSleepSaturationMinutes="<<m.longestSaturatedStreak[2]
+            <<" saturatedWhileSleeping="<<a.saturatedSleepMinutes<<" saturatedWhileTravelling="<<a.saturatedTravelMinutes
+            <<" saturatedDuringCooldown="<<a.saturatedCooldownMinutes
+            <<" saturatedGoalSleep="<<a.saturationByGoal[2]<<" saturatedGoalToilet="<<a.saturationByGoal[3]<<" saturatedGoalIdle="<<a.saturationByGoal[5]
+            <<" precipitationMinutes="<<a.precipitationMinutes<<" severeExposureMinutes="<<a.severeExposureMinutes
+            <<" meanExposure="<<(a.observations?a.exposureSum/a.observations:0)
+            <<" meanPrecipitation="<<(a.observations?a.precipitationSum/a.observations:0)
+            <<" meanWetness="<<(a.observations?a.wetnessSum/a.observations:0)
+            <<" meanWind="<<(a.observations?a.windSum/a.observations:0)<<"\n";
+    }
+    int beds=0,roofs=0;
+    for(const auto& facility:sim.world().facilities) if(facilityOperationalAndActive(facility)){
+        beds+=facility.kind==FacilityKind::SleepingPlace; roofs+=facility.kind==FacilityKind::Shelter;
+    }
+    std::cout<<"SLEEP_WORLD seed="<<seed<<" operationalSleepingPlaceCount="<<beds<<" operationalShelterCount="<<roofs
+        <<" meanOperationalSleepingPlaces="<<(worldAudit.observations?double(worldAudit.sleepingPlaceMinutes)/worldAudit.observations:0)
+        <<" meanOperationalShelters="<<(worldAudit.observations?double(worldAudit.shelterMinutes)/worldAudit.observations:0)
+        <<" meanShelterDurability="<<(worldAudit.shelterSamples?worldAudit.shelterDurabilitySum/worldAudit.shelterSamples:0)
+        <<" meanShelterEffectiveness="<<(worldAudit.shelterSamples?worldAudit.shelterEffectivenessSum/worldAudit.shelterSamples:0)
+        <<" precipitationMinutes="<<worldAudit.precipitationMinutes<<" severeExposureMinutes="<<worldAudit.severeExposureMinutes<<"\n";
 }
 
 void observeMigrationHour(
@@ -691,6 +810,10 @@ int main(int argc,char** argv)
     int days=1000;
     std::uint64_t seed=874213954;
     std::string checkpointArg="100,365,1000";
+    bool sleepDiagnostics=false;
+    std::string sleepTracePath,loadSnapshot,snapshotDirectory;
+    int traceStart=0,traceEnd=std::numeric_limits<int>::max();
+    CharacterId traceResident=0;
 
     for(int i=1;i<argc;++i){
         const std::string arg=argv[i];
@@ -700,6 +823,15 @@ int main(int argc,char** argv)
             seed=std::strtoull(argv[++i],nullptr,10);
         }else if(arg=="--checkpoints" && i+1<argc){
             checkpointArg=argv[++i];
+        }else if(arg=="--sleep-diagnostics"){
+            sleepDiagnostics=true;
+        }else if(arg=="--sleep-trace" && i+1<argc){
+            sleepTracePath=argv[++i]; sleepDiagnostics=true;
+        }else if(arg=="--sleep-trace-start" && i+1<argc){traceStart=std::atoi(argv[++i]);
+        }else if(arg=="--sleep-trace-end" && i+1<argc){traceEnd=std::atoi(argv[++i]);
+        }else if(arg=="--sleep-trace-resident" && i+1<argc){traceResident=std::strtoull(argv[++i],nullptr,10);
+        }else if(arg=="--load-snapshot" && i+1<argc){loadSnapshot=argv[++i];
+        }else if(arg=="--snapshot-directory" && i+1<argc){snapshotDirectory=argv[++i];
         }
     }
 
@@ -707,6 +839,22 @@ int main(int argc,char** argv)
         parseCheckpoints(checkpointArg,days);
     Simulation sim(seed);
     sim.setupNewGame();
+    if(!loadSnapshot.empty()){
+        std::ifstream input(loadSnapshot,std::ios::binary);
+        const std::vector<std::uint8_t> bytes{std::istreambuf_iterator<char>(input),std::istreambuf_iterator<char>()};
+        SimulationStateSnapshot snapshot; std::string error;
+        if(!decodeSimulationSnapshot(bytes,snapshot,&error) || !sim.restoreSnapshot(snapshot,&error)){
+            std::cerr<<"snapshot load failed: "<<error<<"\n"; return 1;
+        }
+    }
+    sim.enableSleepDiagnostics(sleepDiagnostics);
+    std::ofstream sleepTrace;
+    if(!sleepTracePath.empty()){
+        sleepTrace.open(sleepTracePath);
+        if(!sleepTrace){std::cerr<<"cannot write sleep trace\n";return 1;}
+        sleepTrace<<"minute,id,sleep,bladder,hygiene,hunger,thirst,goal,action,penaltyUntilMinute,sleepContext,facilityId,facilityType,distance,exposure,recoveryPerMinute,remainingTicks,lastReplanMinute,lastEndReason,lastEndMinute,lastFailureMinute,lastFailedGoal,routeFailure,x,y,targetX,targetY,hasTarget,arrived,illness\n";
+    }
+    if(!snapshotDirectory.empty()) std::filesystem::create_directories(snapshotDirectory);
     const std::size_t initialPopulation=
         sim.world().characters.size();
 
@@ -800,6 +948,9 @@ int main(int argc,char** argv)
         ensureResidentMetrics(metrics,resident);
     }
 
+    std::map<CharacterId,SleepAuditMetrics> sleepAudits;
+    SleepWorldAudit sleepWorld;
+    if(!sim.world().characters.empty()) sim.runtimePosition(sim.world().characters.front().id,sleepWorld.origin);
     std::size_t checkpointIndex=0;
     const int totalMinutes=days*MinutesPerDay;
     const auto start=std::chrono::steady_clock::now();
@@ -815,8 +966,10 @@ int main(int argc,char** argv)
                 continue;
             }
             observeResidentMinute(sim,resident,item);
+            if(sleepDiagnostics) observeSleepAuditMinute(sim,resident,sleepAudits[resident.id],sleepTrace,traceStart,traceEnd,traceResident);
         }
 
+        if(sleepDiagnostics) observeSleepWorldMinute(sim,sleepWorld);
         if(minute%60==0){
             observeMigrationHour(sim,metrics);
         }
@@ -831,6 +984,14 @@ int main(int argc,char** argv)
                 metrics,
                 events,
                 start);
+            if(!snapshotDirectory.empty()){
+                std::vector<std::uint8_t> bytes; std::string error;
+                if(!encodeSimulationSnapshot(sim.captureSnapshot(),bytes,&error)){std::cerr<<error<<"\n";return 1;}
+                std::ofstream output(snapshotDirectory+"/day-"+std::to_string(checkpoints[checkpointIndex])+".llsave",std::ios::binary);
+                output.write(reinterpret_cast<const char*>(bytes.data()),static_cast<std::streamsize>(bytes.size()));
+                if(!output){std::cerr<<"snapshot write failed\n";return 1;}
+            }
+            std::cout.flush();
             ++checkpointIndex;
         }
     }
@@ -841,6 +1002,7 @@ int main(int argc,char** argv)
             findResident(sim.world(),pair.first));
     }
 
+    if(sleepDiagnostics) emitSleepAudit(sim,seed,sleepAudits,metrics,sleepWorld);
     std::cout
         <<"AUDIT_COMPLETE"
         <<" seed="<<seed
@@ -849,3 +1011,4 @@ int main(int argc,char** argv)
         <<"\n";
     return 0;
 }
+

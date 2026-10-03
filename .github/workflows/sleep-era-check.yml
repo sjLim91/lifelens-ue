@@ -1,0 +1,59 @@
+name: LifeLens Weather Sleep and Era Verification
+on:
+  pull_request:
+    paths:
+      - 'Source/LifeLensCore/**'
+      - 'web/**'
+      - 'Tools/verify_sleep_longrun.py'
+      - 'Tools/test_verify_sleep_longrun.py'
+      - 'tasks/WEATHER_SLEEP_ERA_LONGRUN.json'
+      - '.github/workflows/sleep-era-check.yml'
+  workflow_dispatch:
+jobs:
+  web-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --ignore-scripts --no-audit --no-fund
+        working-directory: web
+      - run: python Tools/prepare_web_character_assets.py
+      - run: npm run typecheck
+        working-directory: web
+      - run: node tests/sleep-era/run.mjs
+        working-directory: web
+      - run: node tests/resident-motion/run.mjs
+        working-directory: web
+      - run: npm run build
+        working-directory: web
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: weather-sleep-era-review
+          path: |
+            web/tests/sleep-era/review/metrics.json
+            web/tests/resident-motion/review/poses.json
+  long-run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: cmake -S Source/LifeLensCore -B build -DCMAKE_BUILD_TYPE=Release
+      - run: cmake --build build -j2
+      - run: ctest --test-dir build --output-on-failure
+      - run: python Tools/test_verify_sleep_longrun.py
+      - run: |
+          for seed in 874213954 874213955 2; do
+            ./build/ll_balance_audit --days 365 --seed "$seed" --checkpoints 100,365 --sleep-diagnostics > "candidate-$seed.log"
+          done
+          python Tools/verify_sleep_longrun.py candidate-*.log > sleep-longrun-metrics.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: weather-sleep-longrun
+          path: |
+            candidate-*.log
+            sleep-longrun-metrics.json

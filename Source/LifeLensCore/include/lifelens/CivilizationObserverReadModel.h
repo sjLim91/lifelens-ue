@@ -10,6 +10,7 @@
 #include "Civilization.h"
 #include "CivilizationKnowledgeTransmission.h"
 #include "CivilizationProgression.h"
+#include "CivilizationEraObservation.h"
 #include "CivilizationSpatial.h"
 #include "ObserverReadModel.h"
 #include "World.h"
@@ -156,6 +157,7 @@ struct CivilizationResourceObservationWindow {
 };
 
 struct CivilizationWorldObservation {
+    CivilizationEraObservation era;
     int minute=0;
     std::size_t resourceNodeCount=0;
     std::size_t depletedResourceNodeCount=0;
@@ -548,6 +550,7 @@ inline CivilizationWorldObservation buildCivilizationWorldObservation(
 
     dto.transformations=buildCivilizationTransformationStatuses(
         world,dto.technologyPopulation);
+    dto.era=buildCivilizationEraObservation(world,dto.technologyPopulation,dto.transformations);
     for(const CivilizationTransformationStatus& transformation:dto.transformations){
         if(transformation.active) ++dto.activeTransformationCount;
     }
@@ -606,3 +609,4 @@ inline CivilizationWorldObservation buildCivilizationWorldObservation(
 }
 
 } // namespace lifelens
+

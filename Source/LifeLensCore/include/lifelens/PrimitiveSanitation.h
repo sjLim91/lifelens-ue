@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
+#include <functional>
 #include <limits>
 #include <vector>
 
@@ -341,7 +342,8 @@ struct SanitationUseTarget {
 inline const PrimitiveSanitationSite* nearestActivePrimitiveSanitationSite(
     const std::vector<PrimitiveSanitationSite>& sites,
     GridPos referencePosition,
-    int maxDistance=std::numeric_limits<int>::max())
+    int maxDistance=std::numeric_limits<int>::max(),
+    const std::function<bool(GridPos)>& reachable={})
 {
     const PrimitiveSanitationSite* best=nullptr;
     int bestDistance=std::numeric_limits<int>::max();
@@ -357,6 +359,7 @@ inline const PrimitiveSanitationSite* nearestActivePrimitiveSanitationSite(
         if(best==nullptr
            || distance<bestDistance
            || (distance==bestDistance && site.id<best->id)){
+            if(reachable && !reachable(site.pos)) continue;
             best=&site;
             bestDistance=distance;
         }
@@ -371,17 +374,18 @@ inline SanitationUseTarget resolveSanitationUseTarget(
     const std::vector<PrimitiveSanitationSite>& sites,
     int currentMinute,
     GridPos referencePosition={},
-    int maxPreferredSiteDistance=std::numeric_limits<int>::max())
+    int maxPreferredSiteDistance=std::numeric_limits<int>::max(),
+    const std::function<bool(GridPos)>& reachable={})
 {
     if(const PrimitiveSanitationSite* site=
            nearestActivePrimitiveSanitationSite(
-               sites,referencePosition,maxPreferredSiteDistance)){
+               sites,referencePosition,maxPreferredSiteDistance,reachable)){
         return {SanitationUseTargetKind::DesignatedArea,site->pos,site->id};
     }
     return {
         SanitationUseTargetKind::EmergencyOutdoor,
         chooseLowExposureOutdoorReliefPosition(
-            worldSeed,character,field,currentMinute,referencePosition),
+            worldSeed,character,field,currentMinute,referencePosition,reachable),
         0};
 }
 
@@ -459,3 +463,4 @@ inline double primitiveSanitationHygieneBurden(PrimitiveSanitationSiteKind kind)
 }
 
 } // namespace lifelens
+

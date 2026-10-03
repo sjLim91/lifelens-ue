@@ -86,8 +86,8 @@ int main()
 
     assert(balance.shelterSleepRecoveryBasePerMinute
         >=balance.outdoorSleepRecoveryPerMinute);
-    assert(balance.sleepingPlaceRecoveryBasePerMinute
-        >balance.shelterSleepRecoveryBasePerMinute);
+    assert(balance.shelterSleepRecoveryBasePerMinute
+        >=balance.sleepingPlaceRecoveryBasePerMinute);
     assert(balance.smartObjectSleepRecoveryPerMinute
         >=balance.sleepingPlaceRecoveryBasePerMinute);
 
@@ -214,3 +214,4 @@ int main()
         <<"\n";
     return 0;
 }
+

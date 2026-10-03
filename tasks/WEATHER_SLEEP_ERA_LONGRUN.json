@@ -1,0 +1,49 @@
+{
+  "baseCommit": "66f623db9413ff626ec03dee433cec482c4e8efc",
+  "coreImplementationCommit": "707ebde1f1da0ca70161e6d39d0a38c200fa7963",
+  "initialCoreState": "setupNewGame",
+  "results": [
+    {
+      "seed": 874213954,
+      "days": 365,
+      "main": {
+        "longestSleepSaturationMinutes": 432,
+        "totalSleepSaturationResidentMinutes": 30268,
+        "livingResidents": 3
+      },
+      "candidate": {
+        "longestSleepSaturationMinutes": 671,
+        "totalSleepSaturationResidentMinutes": 142910,
+        "livingResidents": 3
+      }
+    },
+    {
+      "seed": 874213955,
+      "days": 365,
+      "main": {
+        "longestSleepSaturationMinutes": 293,
+        "totalSleepSaturationResidentMinutes": 4905,
+        "livingResidents": 4
+      },
+      "candidate": {
+        "longestSleepSaturationMinutes": 501,
+        "totalSleepSaturationResidentMinutes": 18999,
+        "livingResidents": 4
+      }
+    },
+    {
+      "seed": 2,
+      "days": 365,
+      "main": {
+        "longestSleepSaturationMinutes": 246,
+        "totalSleepSaturationResidentMinutes": 9339,
+        "livingResidents": 4
+      },
+      "candidate": {
+        "longestSleepSaturationMinutes": 278,
+        "totalSleepSaturationResidentMinutes": 1360,
+        "livingResidents": 4
+      }
+    }
+  ]
+}

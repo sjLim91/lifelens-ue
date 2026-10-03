@@ -149,6 +149,9 @@ lifelens_add_test(test_settlement_autonomy)
 lifelens_add_test(test_settlement_capacity)
 
 lifelens_add_test(test_settlement_facility_effects)
+lifelens_add_test(test_sleep_environment)
+lifelens_add_test(test_sleep_saturation_recovery)
+lifelens_add_test(test_civilization_era)
 
 lifelens_add_test(test_primitive_storage_progression)
 
@@ -243,3 +246,4 @@ if(EMSCRIPTEN)
         "-sFILESYSTEM=0"
     )
 endif()
+

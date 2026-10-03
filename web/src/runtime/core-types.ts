@@ -357,6 +357,7 @@ export interface ResidentPresentationDirective {
   hasObjectTarget?: boolean;
   objectId?: string;
   objectKind?: string;
+  sleepContext?: 'None' | 'Protected' | 'Exposed' | 'ExposedEmergency';
   emergencyFallback?: boolean;
   directNaturalWaterSource?: boolean;
   designatedSanitationSite?: boolean;
@@ -888,7 +889,20 @@ export interface CivilizationSettlement {
   established: boolean;
 }
 
+export interface CivilizationEraEvidence {
+  id: string;
+  satisfied: boolean;
+}
+
+export interface CivilizationEraObservation {
+  currentEra: { id: string; ordinal: number };
+  evidence: CivilizationEraEvidence[];
+  nextEra: string | null;
+  nextEraRequirements: CivilizationEraEvidence[];
+}
+
 export interface CivilizationWorldPayload {
+  era?: CivilizationEraObservation;
   available?: boolean;
   minute?: number;
   society?: SocietyWorldPayload;
@@ -985,3 +999,4 @@ export interface RuntimeClient {
 export interface CoreModule {
   LifeLensWebClient: new () => RuntimeClient;
 }
+

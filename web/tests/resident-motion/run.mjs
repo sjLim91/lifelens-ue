@@ -58,7 +58,7 @@ function bake(actor,label){
  });review.push({label,meshes});
 }
 const l=await layer();
-for(const [name,support,window] of [['ground',0,terrain],['bedding',.41,{...terrain,humanTraces:{entries:[{id:'bed',kind:'Facility',facilityKind:'SleepingPlace',state:'Operational',gridX:64,gridY:64}]}}]]){
+for(const [name,support,window] of [['ground',0,terrain],['bedding',.14,{...terrain,humanTraces:{entries:[{id:'bed',kind:'Facility',facilityKind:'SleepingPlace',state:'Operational',gridX:64,gridY:64}]}}]]){
  test('native sleep enter/rest/wake stays above '+name,()=>{
   const r=resident(name);l.setResidents([r],window,0,0);const a=l.actors.get(name),initial=a.current.clone();
   for(let i=0;i<100;i++){l.update(1/60);assert(bodyBounds(a).min.y>=support-.005);assert.equal(a.active,'sleep');assert.equal(a.visual.rotation.z,0);if(i===5||i===99)bake(a,name+' sleep '+i);}
@@ -69,13 +69,16 @@ for(const [name,support,window] of [['ground',0,terrain],['bedding',.41,{...terr
   assert(!a.sleepMotion.active);assert.equal(a.active,'consume');assert.equal(a.visual.position.length(),0);
  });
 }
-test('sleep clearance survives phenotype/age extremes and sloping shelter support',()=>{
+test('sleep clearance survives phenotype/age extremes and sloping ground/bedding support',()=>{
  const slope={...terrain,chunks:[{x:0,y:0,elevation01:.01},{x:1,y:0,elevation01:.02},{x:0,y:1,elevation01:.015}],humanTraces:{entries:[]}};
  for(const [sex,ageYears,axis] of [['Male',30,1],['Female',30,0],['Female',4,1],['Male',85,0]]){
-  const r=resident('slope-'+sex+ageYears,undefined,{sex,ageYears,genetics:{heightPotential:axis,buildPotential:axis,faceShape:axis}});
-  l.setResidents([r],slope,0,0);const a=l.actors.get(r.id);for(let i=0;i<70;i++)l.update(1/60);
+  for (const bedding of [false,true]) {
+  const window={...slope,humanTraces:{entries:bedding ? [{id:'slope-mat',kind:'Facility',facilityKind:'SleepingPlace',state:'Operational',gridX:64,gridY:64}] : []}};
+ const r=resident('slope-'+sex+ageYears+bedding,undefined,{sex,ageYears,genetics:{heightPotential:axis,buildPotential:axis,faceShape:axis}});
+  l.setResidents([r],window,0,0);const a=l.actors.get(r.id);for(let i=0;i<70;i++)l.update(1/60);
   assert(a.sleepMotion.resting);assert(bodyBounds(a).min.y>=a.current.y+a.sleepSupportHeightWorldUnits-.005);
-  const before=bodyBounds(a).clone();l.setResidents([r],slope,0,0);l.update(1/60);assert(bodyBounds(a).equals(before));
+  const before=bodyBounds(a).clone();l.setResidents([r],window,0,0);l.update(1/60);assert(bodyBounds(a).equals(before));
+ }
  }
 });
 test('resource facing uses Core node center without moving from access cell',()=>{
@@ -149,3 +152,4 @@ for(const both of [false,true]){
  });fallback.dispose();
 }
 console.log('Resident motion checks:',passed,'PASS');
+
