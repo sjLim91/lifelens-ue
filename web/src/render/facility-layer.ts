@@ -2,7 +2,7 @@ import { WORLD_PRESENTATION } from './world-presentation-config';
 import * as THREE from 'three';
 import type { CivilizationWorldPayload, CivilizationWorldFacility, CivilizationWorldStorage, HumanTrace, TerrainWindow } from '../runtime/core-types';
 import { storedGoodsPiles } from './stored-goods-presentation';
-import { WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
+import { RESIDENT_PRESENTATION_CONTRACT, WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
 import { visibleHumanTraces } from '../state/human-traces';
 import { createTerrainElevationSampler } from './terrain-geometry';
 
@@ -720,39 +720,26 @@ export class FacilityLayer {
     trace: FacilityTrace,
     progress: number,
   ): void {
-    this.addBoxAtProgress(
-      group,
-      trace,
-      progress,
-      0.18,
-      this.darkWoodMaterial,
-      [0, 0.16, 0],
-      [2.5, 0.2, 1.15],
-      [0, 0, 0],
-      70,
-    );
-    this.addBoxAtProgress(
-      group,
-      trace,
-      progress,
-      0.44,
-      this.beddingMaterial,
-      [0, 0.32, 0],
-      [2.25, 0.18, 0.98],
-      [0, 0, 0],
-      71,
-    );
-    this.addBoxAtProgress(
-      group,
-      trace,
-      progress,
-      0.68,
-      this.thatchMaterial,
-      [-0.82, 0.48, 0],
-      [0.42, 0.2, 0.78],
-      [0, 0, 0],
-      72,
-    );
+    // Ground-level woven grass/fiber, with ragged edges and three branches.
+    // Facility groups sit 0.025 above terrain; the occupied center therefore
+    // meets the same support plane as the native LayToIdle calibration.
+    const surface = RESIDENT_PRESENTATION_CONTRACT.sleepPoseSleepingPlaceSurfaceHeightWorldUnits;
+    this.addBoxAtProgress(group, trace, progress, 0.36, this.beddingMaterial,
+      [0, surface - 0.025 - 0.045, 0], [2.24, 0.09, 0.66], [0, 0, 0], 70);
+    this.addBoxAtProgress(group, trace, progress, 0.52, this.thatchMaterial,
+      [-0.09, 0.06, -0.39], [2.08, 0.06, 0.24], [0, 0.025, 0], 71);
+    this.addBoxAtProgress(group, trace, progress, 0.58, this.beddingMaterial,
+      [0.07, 0.06, 0.40], [2.32, 0.06, 0.23], [0, -0.035, 0], 72);
+    // A loose fiber bundle merges with the mat edge; no raised pillow.
+    this.addBoxAtProgress(group, trace, progress, 0.70, this.thatchMaterial,
+      [-0.77, 0.075, -0.31], [0.65, 0.075, 0.23], [0, 0.16, 0], 73);
+    for (const [i, [x, z, length, yaw]] of [
+      [0, -0.51, 2.37, 0.03], [0.11, 0.52, 2.12, -0.06], [-1.12, 0.04, 0.82, Math.PI / 2],
+    ].entries()) {
+      this.addCylinderAtProgress(group, trace, progress, 0.18 + i * 0.05,
+        this.woodMaterial, [x, 0.05, z], [0.055, length, 0.055],
+        [0, yaw, Math.PI / 2], 74 + i);
+    }
   }
 
   private buildShelter(
@@ -1174,4 +1161,5 @@ export class FacilityLayer {
     mesh.receiveShadow = true;
   }
 }
+
 

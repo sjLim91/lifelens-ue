@@ -426,7 +426,7 @@ inline bool Simulation::completeExternalPhysicalAction(
     ConstructedFacility* settlementSleepFacility=nullptr;
     if(runtime.goal==Goal::Sleep && emergencyFallback){
         settlementSleepFacility=
-            bestOperationalSleepFacility(world_,resolvedPosition,1);
+            bestOperationalSleepFacility(world_,resolvedPosition,0);
         if(settlementSleepFacility!=nullptr
            && !sleepFacilityHasCapacityFor(
                id,*settlementSleepFacility)){
@@ -523,3 +523,4 @@ inline bool Simulation::completeExternalPhysicalAction(
 }
 
 }
+

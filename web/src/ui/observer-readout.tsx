@@ -22,6 +22,7 @@ import {
 import { residentStatusText } from './resident-status';
 import { summarizeResidentMemories } from './resident-memory';
 import { ResidentNeeds } from './resident-needs';
+import { CivilizationEraBadge } from './civilization-era';
 
 export function RuntimeBadge({
   runtime,
@@ -66,6 +67,7 @@ export function WorldOverlay({
           ? `${formatWeather(snapshot.environment.summary)} · ${Math.round(Number(snapshot.environment.airTemperatureC) || 0)}°C`
           : '날씨 분석 중'}
       </span>
+      <CivilizationEraBadge era={snapshot.civilization.available ? snapshot.civilization.era : undefined} />
       <span id="livingOverlay">
         {snapshot.world.livingResidents !== undefined
           ? `인구 ${snapshot.world.livingResidents}`
@@ -576,3 +578,4 @@ export function ResidentReadout({
     </>
   );
 }
+

@@ -58,7 +58,7 @@ function bake(actor,label){
  });review.push({label,meshes});
 }
 const l=await layer();
-for(const [name,support,window] of [['ground',0,terrain],['bedding',.41,{...terrain,humanTraces:{entries:[{id:'bed',kind:'Facility',facilityKind:'SleepingPlace',state:'Operational',gridX:64,gridY:64}]}}]]){
+for(const [name,support,window] of [['ground',0,terrain],['bedding',.14,{...terrain,humanTraces:{entries:[{id:'bed',kind:'Facility',facilityKind:'SleepingPlace',state:'Operational',gridX:64,gridY:64}]}}]]){
  test('native sleep enter/rest/wake stays above '+name,()=>{
   const r=resident(name);l.setResidents([r],window,0,0);const a=l.actors.get(name),initial=a.current.clone();
   for(let i=0;i<100;i++){l.update(1/60);assert(bodyBounds(a).min.y>=support-.005);assert.equal(a.active,'sleep');assert.equal(a.visual.rotation.z,0);if(i===5||i===99)bake(a,name+' sleep '+i);}
@@ -149,3 +149,4 @@ for(const both of [false,true]){
  });fallback.dispose();
 }
 console.log('Resident motion checks:',passed,'PASS');
+

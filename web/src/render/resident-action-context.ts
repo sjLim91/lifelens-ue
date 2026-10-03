@@ -186,6 +186,11 @@ export function residentActionCue(
   let action = '';
   switch (directive.kind) {
     case 'Physical':
+      if (directive.physicalGoal === 'Sleep' && phase === 'Interacting') {
+        if (directive.sleepContext === 'ExposedEmergency') return { text: '악천후 속 임시 취침 중', phase };
+        if (directive.sleepContext === 'Exposed') return { text: '야외 취침 중', phase };
+        if (directive.sleepContext === 'Protected') return { text: '수면 중', phase };
+      }
       if (directive.physicalGoal === 'Wash') {
         if (directive.directNaturalWaterSource) {
           return {
@@ -357,3 +362,4 @@ export function residentActionCue(
     phase,
   };
 }
+

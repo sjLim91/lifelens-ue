@@ -446,6 +446,7 @@ void appendResidentPresentationJson(
     out << "\"hasObjectTarget\":" << (presentation.hasObjectTarget ? "true" : "false") << ",";
     out << "\"objectId\":\"" << presentation.objectId << "\",";
     out << "\"objectKind\":\"" << objectKindName(presentation.objectKind) << "\",";
+    out << "\"sleepContext\":\"" << sleepContextName(presentation.sleepContext) << "\",";
     out << "\"emergencyFallback\":" << (presentation.emergencyFallback ? "true" : "false") << ",";
     out << "\"directNaturalWaterSource\":" << (presentation.directNaturalWaterSource ? "true" : "false") << ",";
     out << "\"designatedSanitationSite\":" << (presentation.designatedSanitationSite ? "true" : "false") << ",";
@@ -465,6 +466,25 @@ std::string civilizationWorldObservationJson(
     out << "{";
     out << "\"available\":true,";
     out << "\"minute\":" << world.minute << ",";
+    out << "\"era\":{\"currentEra\":{\"id\":\"" << world.era.id
+        << "\",\"ordinal\":" << world.era.ordinal << "},";
+    const auto appendEvidence=[&](const std::vector<CivilizationEraEvidence>& evidence){
+        out << "[";
+        for(std::size_t i=0;i<evidence.size();++i){
+            if(i>0) out << ",";
+            out << "{\"id\":\"" << evidence[i].id << "\",\"satisfied\":"
+                << (evidence[i].satisfied ? "true" : "false") << "}";
+        }
+        out << "]";
+    };
+    out << "\"evidence\":";
+    appendEvidence(world.era.evidence);
+    out << ",\"nextEra\":";
+    if(world.era.nextEra.empty()) out << "null";
+    else out << "\"" << world.era.nextEra << "\"";
+    out << ",\"nextEraRequirements\":";
+    appendEvidence(world.era.nextEraRequirements);
+    out << "},";
     out << "\"society\":{";
     out << "\"livingResidentCount\":" << society.livingResidentCount << ",";
     out << "\"specializedResidentCount\":" << society.specializedResidentCount << ",";
@@ -1829,3 +1849,4 @@ std::string WebClientBridge::terrainWindowJson(
 }
 
 } // namespace lifelens
+

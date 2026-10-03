@@ -10,6 +10,7 @@
 
 #include "EnvironmentalConsequences.h"
 #include "PhysiologyBalance.h"
+#include "SleepEnvironment.h"
 #include "Facility.h"
 #include "PrimitiveSanitation.h"
 #include "SettlementDemand.h"
@@ -223,7 +224,7 @@ inline double settlementShelterProtection01(
 {
     const ConstructedFacility* shelter=
         operationalSettlementFacilityNear(
-            world,FacilityKind::Shelter,pos,1);
+            world,FacilityKind::Shelter,pos,0);
     if(shelter==nullptr) return 0.0;
     return std::clamp(0.68*facilityEffectiveness01(*shelter),0.0,0.68);
 }
@@ -233,40 +234,23 @@ inline double sleepRecoveryPerMinuteAt(
     GridPos pos,
     const ConstructedFacility* facility=nullptr)
 {
-    const EnvironmentalConsequenceProfile consequence=
-        deriveEnvironmentalConsequences(
-            deriveDynamicEnvironment(
-                world.genesisIdentity(),
-                chunkCoordForGrid(pos),
-                world.minute));
-
-    const double environmentalStress=std::clamp(
-        0.40*consequence.wetStress01
-        +0.30*consequence.coldStress01
-        +0.20*consequence.heatStress01
-        +0.10*consequence.travelFriction01,
-        0.0,
-        1.0);
-
+    const DynamicEnvironmentObservation weather=deriveDynamicEnvironment(
+        world.genesisIdentity(),chunkCoordForGrid(pos),world.minute);
+    const EnvironmentalConsequenceProfile consequence=deriveEnvironmentalConsequences(weather);
+    // Protection belongs to the facility actually occupied, never its village
+    // or proximity. Callers supply a facility only after physical arrival.
+    const bool occupied=facility!=nullptr && facilityOperationalAndActive(*facility)
+        && facilityProvidesSleep(facility->kind)
+        && facility->pos.x==pos.x && facility->pos.y==pos.y;
+    const bool protectedSleep=occupied && facilityProvidesWeatherProtection(facility->kind);
+    const auto environment=evaluateSleepEnvironment(weather,consequence,protectedSleep);
     double baseRecovery=DefaultPhysiologyBalance.outdoorSleepRecoveryPerMinute;
-    double protection=settlementShelterProtection01(world,pos);
-    if(facility!=nullptr && facilityOperationalAndActive(*facility)
-       && facilityProvidesSleep(facility->kind)){
+    if(occupied && (protectedSleep || !environment.weatherProtectionPreferred)){
         baseRecovery=settlementSleepRecoveryPerTick(*facility);
-        if(facility->kind==FacilityKind::Shelter){
-            protection=std::max(
-                protection,
-                0.68*facilityEffectiveness01(*facility));
-        }
     }
-
-    // Sleeping in rain/cold/heat still helps, but much less. A nearby shelter
-    // absorbs most of that penalty without turning it into a free full reset.
-    const double exposedStress=
-        environmentalStress*(1.0-std::clamp(protection,0.0,0.85));
-    return std::max(
-        0.00095,
-        baseRecovery*(1.0-0.42*exposedStress));
+    // Exposed bedding in harsh weather has ground-emergency efficiency. Keep
+    // gross recovery >=75% so normal + environmental fatigue still falls.
+    return baseRecovery*environment.recoveryMultiplier01;
 }
 
 inline double settlementWorkSurfaceSkillBonus(
@@ -795,3 +779,4 @@ inline SettlementFacilityWorkResult workOnSettlementFacility(
 }
 
 } // namespace lifelens
+

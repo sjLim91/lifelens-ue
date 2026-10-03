@@ -1304,3 +1304,32 @@ button:disabled { opacity: .33; cursor: default; }
 .settlement-facts { display: grid; grid-template-columns: 5rem 1fr; gap: 10px; }
 .settlement-facts dt { color: #b6c0b0; }
 .settlement-facts dd { margin: 0; }
+
+
+/* Era is a Core observation. Modal/top-layer keeps it clear of seed chrome. */
+.world-overlay .era-badge {
+  pointer-events: auto; max-width: 100%; overflow-wrap: anywhere;
+  padding: .34rem .55rem; border: 1px solid rgba(125,151,129,.35);
+  border-radius: 6px; background: rgba(8,13,10,.85); color: #d9e5da;
+  font: inherit; font-size: .7rem; cursor: pointer; min-height: 32px;
+}
+.era-badge:focus-visible { outline: 2px solid #b6d6ba; outline-offset: 2px; }
+.era-dialog { pointer-events: auto; width: min(420px, calc(100vw - 24px));
+  max-height: min(80dvh, 680px); padding: 0; border: 1px solid #526a57;
+  border-radius: 16px; background: #111c15; color: #e0eae2; overflow: auto; }
+.era-dialog::backdrop { background: rgba(0,0,0,.48); }
+.era-dialog-content { padding: 20px; overflow-wrap: anywhere; }
+.era-dialog h2 { font-size: 1.05rem; margin: 0 0 12px; }
+.era-dialog h3 { font-size: .85rem; margin: 20px 0 10px; }
+.era-dialog p { font-size: .85rem; }
+.era-current { color: #b6d6ba; }
+.era-evidence { list-style: none; padding: 0; margin: 0; }
+.era-evidence li { display: flex; gap: 10px; padding: 6px 0; font-size: .8rem; }
+.era-evidence b { flex: 0 0 16px; color: #b6d6ba; }
+.era-close { float: right; min-height: 44px; padding: 8px 14px; }
+.era-note { color: #a3b6a7; line-height: 1.5; }
+@media (max-width: 767px) {
+  .world-overlay .era-badge { padding: .26rem .38rem; border-radius: 999px;
+    font-size: .56rem; min-height: 32px; }
+  .era-dialog { margin-bottom: max(12px, env(safe-area-inset-bottom)); }
+}

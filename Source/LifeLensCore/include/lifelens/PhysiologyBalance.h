@@ -34,7 +34,7 @@ struct PhysiologyBalance {
 
     // Gross recovery. Normal Need decay still runs while asleep.
     double outdoorSleepRecoveryPerMinute=0.00230;
-    double shelterSleepRecoveryBasePerMinute=0.00255;
+    double shelterSleepRecoveryBasePerMinute=0.00300;
     double shelterSleepRecoveryEffectivenessBonus=0.00020;
     double sleepingPlaceRecoveryBasePerMinute=0.00300;
     double sleepingPlaceRecoveryEffectivenessBonus=0.00020;
@@ -51,3 +51,4 @@ struct PhysiologyBalance {
 inline constexpr PhysiologyBalance DefaultPhysiologyBalance{};
 
 } // namespace lifelens
+
