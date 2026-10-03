@@ -12,7 +12,7 @@
 | Consequence | Web implemented baseline | Presentation boundary |
 |---|---|---|
 | Wet ground | 기존 terrain palette의 darkening + bounded roughness 감소; 바위·목재·석재 재질도 젖음 반영 | 기존 WorldScene의 Core wetness/precipitation mapping, 별도 drying timer 없음; grass는 Lambert 유지 |
-| Puddle | 관측된 지형 sampler의 낮고 평평한 후보, shared pooled ground-following patch | Water ResourceNode/음용/세척/navigation/save 아님; water·시설 footprint·steep/invalid terrain 제외; Core wetness로 opacity 감소 |
+| Puddle | 관측된 지형 sampler의 낮고 평평한 후보, shared pooled ground-following patch | Water ResourceNode/음용/세척/navigation/save 아님; water·시설 footprint·steep/invalid terrain 제외; Core wetness로 opacity 감소; current snow cover가 강하면 시각적으로 가림(동결 authority 없음) |
 | Repeated foot traffic | 기존 ObservedFootTraffic 위치·strength·fade에 wet mud tint/opacity/width/roughness 곱 적용 | session-local 관찰 메모리 그대로; telemetry gap/teleport 연결 금지; Core road 아님 |
 | Snow | 현재 Snow intensity·airTemperatureC·wetness로 terrain/rock/시설의 upward face 흰색 modifier | stateless ephemeral cover; refresh 즉시 재구성; Rain/warm/no snow이면 0; persistent depth/melt simulation 없음; water surface 재질 제외 |
 | HumanWaste | actual radius footprint, intensity 기반 mottled soil + amount 기반 작은 soil clusters | 하나의 기존 trace draw call; Core decay/containment를 그대로 따름; DugPit 이름으로 오염 제거하지 않음 |
@@ -29,14 +29,14 @@ Budget: 추가 최대 3 draw calls(puddle 1, scorch 1, smoke 1). Snow/wet 재질
 
 ## 목적
 
-이 문서는 LifeLens에서 **주민의 행동과 세계 변화가 실제 환경 상태를 만들고, 그 결과가 Unreal 그래픽으로 다시 보이는 과정**의 canonical 기준이다.
+이 문서는 LifeLens에서 **주민의 행동과 세계 변화가 실제 환경 상태를 만들고, 그 결과가 Web Observer 그래픽으로 다시 보이는 과정**의 canonical 기준이다.
 
 LifeLens의 환경은 정적인 배경이 아니다.
 주민이 먹고, 자고, 배변하고, 물을 사용하고, 자원을 채취하고, 불을 피우고, 길을 만들고, 시설을 짓고, 폐기물을 남기면 그 결과가 세계에 남고 다른 주민이 다시 그 환경을 경험해야 한다.
 
 핵심 루프:
 
-`Resident Action → Core/World Environmental Consequence → Saved Authoritative State → Unreal Visual Expression → Resident Perception/Exposure → Changed Decision/Behavior`
+`Resident Action → Core/World Environmental Consequence → Saved/Observed Authoritative State → Web Visual Expression → Resident Perception/Exposure → Changed Decision/Behavior`
 
 그래픽은 이 루프의 **표현 계층**이며 시뮬레이션 결과를 스스로 결정하지 않는다.
 
@@ -247,7 +247,7 @@ LifeLens의 환경은 정적인 배경이 아니다.
 
 ---
 
-## 구현 ownership
+## 구현 ownership — historical Unreal lane
 
 ### 쭌 / Core-World lane
 
@@ -310,12 +310,12 @@ Environmental Visual Feedback v1은 최소 다음을 만족해야 한다.
 
 세 문서의 authority boundary는 동일하다:
 
-**Core/World decides reality. Unreal presents reality. Residents perceive the same reality and act on it again.**
+**Core/World decides reality. Web presents reality. Residents perceive the same reality and act on it again.**
 
 
 ---
 
-## HumanWaste runtime presentation baseline — 2026-09-15
+## HumanWaste runtime presentation baseline — historical Unreal 2026-09-15
 
 PR #80 이후 HumanWaste 표현은 **site kind를 별도 시각 권위로 복제하지 않고 residue read DTO 자체**를 따른다.
 

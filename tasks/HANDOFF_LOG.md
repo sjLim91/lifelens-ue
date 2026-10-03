@@ -1088,3 +1088,16 @@
   - **C-S5 / C1-F Early Material Progression**.
   - first normalize furnace charge/output material identity; current furnace runtime is copper-specific.
   - then add Tin/Bronze and bronze tools through real ore, charcoal, furnace, knowledge and alloy prerequisites; no automatic Bronze Age gate.
+
+
+
+## 2026-10-03 — Web environmental consequence baseline / PR only
+
+- 작성자: Codex (integrated implementation).
+- 브랜치/PR: `work/web-environment-consequences-20261003`, [#615](https://github.com/sjLim91/lifelens-ue/pull/615). User forbids main merge/auto-merge.
+- Product HEAD `3cac0a9f5f29011efff21ec88cc4ae585edeb0c3`; [CI](https://github.com/sjLim91/lifelens-ue/actions/runs/37123316493) PASS. Scope: bounded Core-derived wet ground/puddles, observed traffic mud, current snow, residue detail, facility smoke/scorch/weathering. No Core/save/AI/Needs/era changes.
+- Regression and typecheck/build PASS; 390×844/1280×900 A~F actual WebGL primitive fixtures captured/reviewed. Max new pool draw calls 3; repeated refresh and disposal stable; errors 0. Actual mobile GPU FPS not claimed.
+- Failure/recovery: local proxy/dependency access failed and an extra-network tool request blocked for hours before user interruption. GitHub state was rechecked, connector branch checkpoints saved, dependencies recovered from CI artifact. Initial disposal test confused CJS/ESM constructor identity; corrected to the Three instance flag and verified.
+- 상대가 알아야 할 점: current climate authority header is SimulationClimate.h; residue HumanTrace DTO has amount/intensity/radius but no age/kind field. Do not add Web decay or infer water contamination. Existing #605/#611/#612 contracts preserved.
+- 충돌 가능: world-scene/facility/ground-detail/foot-traffic/human-trace/config and shared docs/state. New main changes require rebase/review, not stale wholesale merge.
+- Recovery: `tasks/ENVIRONMENT_CONSEQUENCE_HANDOFF.md`; complete PR body checkpoint: `tasks/ENVIRONMENT_CONSEQUENCE_PR_BODY.md`.

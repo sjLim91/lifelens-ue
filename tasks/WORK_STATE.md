@@ -1,10 +1,12 @@
-## 2026-10-03 ACTIVE — Web environmental consequences
+## 2026-10-03 READY_FOR_REVIEW — Web environmental consequences
 
-- Branch: `work/web-environment-consequences-20261003`; verified main `4f3715e8b0983e8109397ab9eeb2d18c55514470` at start and recovery.
-- User: finish implementation and PR only; main merge forbidden. No clone; GitHub connection + source snapshot.
-- Scope: Core-derived wet ground/puddles, existing observed traffic mud, stateless current snow, actual residue details, lit facility smoke/static scorch/weathering. No Core/save/AI/Needs changes.
-- Code and A~F mobile/desktop GPU fixture prepared; validation pending. Local network dependency installation unavailable, GitHub Actions will validate actual code.
-- Recovery: `tasks/ENVIRONMENT_CONSEQUENCE_HANDOFF.md`; verify actual branch/PR/Actions rather than assuming pending tool success.
+- PR: [#615](https://github.com/sjLim91/lifelens-ue/pull/615); branch `work/web-environment-consequences-20261003`. User requested PR only; **main merge/auto-merge forbidden**.
+- Start/recovery/final remote main verification: `4f3715e8b0983e8109397ab9eeb2d18c55514470`; no later main changes at verification.
+- Verified product HEAD: `3cac0a9f5f29011efff21ec88cc4ae585edeb0c3`; [environment CI](https://github.com/sjLim91/lifelens-ue/actions/runs/37123316493) PASS: typecheck/build, environmental 9, presentation 64, human-trace 11, weather 7, motion 15, primitive bedding/era; mobile/desktop WebGL 12 screenshots + combined rain/fire budget.
+- Local runtime resilience 18 and continuity 13 PASS. No Core/save/AI/Needs/progression changes; #605/#611/#612 contracts retained.
+- Added overlays: puddle ≤128 patches, scorch ≤64 instances, smoke ≤192 points; measured simultaneous maximum +3 draw calls. Repeated refresh keeps scene children/GPU geometry stable; shader/browser errors 0.
+- Docs-only closeout follows verified product HEAD; use product validation evidence rather than requiring repeated heavy compilation for text changes. Existing PR-triggered checks may rerun automatically.
+- Recovery: `tasks/ENVIRONMENT_CONSEQUENCE_HANDOFF.md`; PR body checkpoint: `tasks/ENVIRONMENT_CONSEQUENCE_PR_BODY.md`. Re-query actual main/PR/Actions before any follow-up. Device GPU FPS and optional shelter precipitation clipping remain outside this implementation.
 
 ## 2026-10-02 — Web 자연 자원 / 환경 통합 (PR #605 / HOLD)
 
