@@ -61,6 +61,17 @@ int main()
     assert(friendlyUnified.kind == UnifiedDecisionKind::Social);
     assert(friendlyUnified.social.intent == SocialIntent::Approach);
 
+    const UnifiedUtilityDecision friendlyPhysicalSocial=
+        choosePhysicalSocialUtilityDecision(
+            friendlyWorld,
+            friendlyWorld.characters[0],
+            friendlyRelationships);
+    assert(friendlyPhysicalSocial.kind==friendlyUnified.kind);
+    assert(friendlyPhysicalSocial.social.intent==friendlyUnified.social.intent);
+    assert(friendlyPhysicalSocial.social.target==friendlyUnified.social.target);
+    assert(friendlyPhysicalSocial.physicalGoal==friendlyUnified.physicalGoal);
+    assert(friendlyPhysicalSocial.utility==friendlyUnified.utility);
+
     // Urgent physical needs still override ordinary social desire.
     friendlyWorld.objects.push_back(makeFridge());
     friendlyWorld.characters[0].civilization.inventory.add({
@@ -130,6 +141,26 @@ int main()
             survivalWorld, survivalSelf, survivalPos);
     assert(localRetrieve.intent == CivilizationIntent::Retrieve);
     assert(localRetrieve.storage == localFood.id);
+
+    survivalWorld.characters={survivalSelf};
+    RelationshipBook survivalRelationships;
+    const UnifiedUtilityDecision urgentUnifiedEvenWhenRegularCivilizationDisabled=
+        chooseUnifiedUtilityDecisionAtPosition(
+            survivalWorld,
+            survivalWorld.characters.front(),
+            survivalRelationships,
+            survivalPos,
+            0.18,
+            2.0);
+    assert(
+        urgentUnifiedEvenWhenRegularCivilizationDisabled.kind
+        ==UnifiedDecisionKind::Civilization);
+    assert(
+        urgentUnifiedEvenWhenRegularCivilizationDisabled.civilization.intent
+        ==CivilizationIntent::Retrieve);
+    assert(
+        urgentUnifiedEvenWhenRegularCivilizationDisabled.civilization.storage
+        ==localFood.id);
 
     // Long-run depletion: the ordinary six-chunk frontier may already be
     // fully explored. Critical hunger must keep a survival frontier beyond
@@ -384,6 +415,15 @@ int main()
         strangerRelationships);
     assert(strangerDecision.kind == UnifiedDecisionKind::Physical);
     assert(strangerDecision.physicalGoal == Goal::Idle);
+    const UnifiedUtilityDecision strangerPhysicalSocial=
+        choosePhysicalSocialUtilityDecision(
+            strangerWorld,
+            strangerWorld.characters[0],
+            strangerRelationships);
+    assert(strangerPhysicalSocial.kind==strangerDecision.kind);
+    assert(strangerPhysicalSocial.physicalGoal==strangerDecision.physicalGoal);
+    assert(strangerPhysicalSocial.social.intent==strangerDecision.social.intent);
+    assert(strangerPhysicalSocial.utility==strangerDecision.utility);
 
     return 0;
 }
