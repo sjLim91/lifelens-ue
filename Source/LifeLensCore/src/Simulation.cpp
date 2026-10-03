@@ -1704,7 +1704,14 @@ void Simulation::beginPlan(Character& c,Runtime& r){
     r.socialIntent=SocialIntent::None;
     r.socialTarget=0;
 
-    Goal chosen=world_.minute<r.penaltyUntilMinute
+    // A failed affordance's retry cooldown must not forbid physical rest.
+    // Exhausted residents may sleep at their actual position during backoff;
+    // this neither retries that destination nor changes urgent provision order.
+    const bool emergencyRestDuringBackoff=!planningAllowed
+        && c.needs.sleep>=SleepEnvironmentContract::ExhaustedBackoffRestNeed;
+    Goal chosen=emergencyRestDuringBackoff
+        ? Goal::Sleep
+        : world_.minute<r.penaltyUntilMinute
         ? Goal::Idle
         : urgentPhysicalGoal!=Goal::Idle
             ? urgentPhysicalGoal
@@ -1721,7 +1728,11 @@ void Simulation::beginPlan(Character& c,Runtime& r){
         r.repeatCount=1;
     }
     clearNavigation(r);
-    r.goal=chosen; r.plan=buildPlan(world_,c,chosen,r.pos); r.actionIndex=0; r.announced=false;
+    r.goal=chosen;
+    r.plan=emergencyRestDuringBackoff
+        ? std::vector<Action>{{ActionType::EmergencyUse,0,emergencyUseDurationTicks(Goal::Sleep)}}
+        : buildPlan(world_,c,chosen,r.pos);
+    r.actionIndex=0; r.announced=false;
     if(r.plan.empty()){ failPlan(c,r); return; }
 
     if((chosen==Goal::Drink || chosen==Goal::Wash)
@@ -1761,8 +1772,8 @@ void Simulation::beginPlan(Character& c,Runtime& r){
     if(chosen==Goal::Sleep
        && r.plan.size()==1
        && r.plan.front().type==ActionType::EmergencyUse){
-        const ConstructedFacility* sleepFacility=
-            nearestAvailableOperationalSleepFacility(c.id,r.pos);
+        const ConstructedFacility* sleepFacility=emergencyRestDuringBackoff
+            ? nullptr : nearestAvailableOperationalSleepFacility(c.id,r.pos);
         if(sleepFacility!=nullptr
            && manhattan(sleepFacility->pos,r.pos)<=SettlementServiceRadiusGrid){
             r.navigationTarget=sleepFacility->pos;

@@ -35,17 +35,21 @@ jobs:
             web/tests/resident-motion/review/poses.json
   long-run:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - run: cmake -S Source/LifeLensCore -B build -DCMAKE_BUILD_TYPE=Release
       - run: cmake --build build -j2
       - run: ctest --test-dir build --output-on-failure
       - run: |
-          ./build/ll_balance_audit --days 100 --seed 874213954 --checkpoints 100 > candidate-874213954.log
-          ./build/ll_balance_audit --days 100 --seed 2 --checkpoints 100 > candidate-2.log
+          for seed in 874213954 874213955 2; do
+            ./build/ll_balance_audit --days 365 --seed "$seed" --checkpoints 100,365 > "candidate-$seed.log"
+          done
+          python Tools/verify_sleep_longrun.py candidate-*.log > sleep-longrun-metrics.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: weather-sleep-longrun
-          path: candidate-*.log
+          path: |
+            candidate-*.log
+            sleep-longrun-metrics.json

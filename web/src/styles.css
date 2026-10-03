@@ -1330,6 +1330,6 @@ button:disabled { opacity: .33; cursor: default; }
 .era-note { color: #a3b6a7; line-height: 1.5; }
 @media (max-width: 767px) {
   .world-overlay .era-badge { padding: .26rem .38rem; border-radius: 999px;
-    font-size: .56rem; min-height: 32px; }
+    font-size: .65rem; min-height: 44px; }
   .era-dialog { margin-bottom: max(12px, env(safe-area-inset-bottom)); }
 }

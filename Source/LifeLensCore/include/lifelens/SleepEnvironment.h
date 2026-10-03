@@ -9,6 +9,7 @@ namespace lifelens {
 struct SleepEnvironmentContract {
     static constexpr double ProtectionPreferredExposure = 0.35;
     static constexpr double EmergencyExposure = 0.60;
+    static constexpr double ExhaustedBackoffRestNeed = 0.98;
     static constexpr double MaximumRecoveryPenalty = 0.15;
     static constexpr double ProtectedResidualExposure = 0.15;
     static constexpr double ExposureTravelCost = 24.0;

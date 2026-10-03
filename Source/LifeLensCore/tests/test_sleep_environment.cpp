@@ -139,5 +139,25 @@ int main()
     emergency.step();
     assert(emergency.observeResidentPresentation(tired.id).sleepContext==SleepContext::ExposedEmergency);
     assert(tired.needs.sleep<1.0);
+    // Failed local self-care must not turn its retry cooldown into a ban on
+    // emergency rest. Reproduce the long-run saturated fatigue/bladder loop.
+    Simulation backoff(2); backoff.setupNewGame();
+    auto blocked=backoff.captureSnapshot();
+    blocked.world.facilities.clear(); blocked.world.objects.clear();
+    for(std::size_t i=1;i<blocked.world.characters.size();++i) blocked.world.characters[i].alive=false;
+    auto& blockedResident=blocked.world.characters.front();
+    blockedResident.needs={0.2,0.4,1.0,1.0,1.0};
+    auto& blockedRuntime=blocked.runtime.at(blockedResident.id);
+    blockedRuntime.goal=Goal::Idle; blockedRuntime.plan.clear(); blockedRuntime.actionIndex=0;
+    blockedRuntime.pendingContext.clear(); blockedRuntime.penaltyUntilMinute=blocked.world.minute+60;
+    const GridPos blockedPosition=blockedRuntime.pos;
+    assert(backoff.restoreSnapshot(blocked,&error));
+    backoff.step();
+    const auto restingDuringBackoff=backoff.observeResidentPresentation(blockedResident.id);
+    assert(restingDuringBackoff.physicalGoal==Goal::Sleep);
+    assert(restingDuringBackoff.phase==PresentationActionPhase::Interacting);
+    GridPos actual; assert(backoff.runtimePosition(blockedResident.id,actual));
+    assert(sameGridPos(actual,blockedPosition));
+    assert(backoff.world().characters.front().needs.sleep<1.0);
     std::cout<<"weather sleep selection, recovery, travel, interruption and emergency PASS\n";
 }
