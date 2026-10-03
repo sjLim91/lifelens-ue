@@ -1842,8 +1842,16 @@ void Simulation::beginPlan(Character& c,Runtime& r){
     }
 
     if(planningAllowed && urgentProvisionRequired
-       && !urgentSelfCareDominatesProvision
-       && tryCivilizationDecision(c,r)) return;
+       && !urgentSelfCareDominatesProvision){
+        UnifiedUtilityDecision urgentProvisionDecision;
+        urgentProvisionDecision.kind=UnifiedDecisionKind::Civilization;
+        urgentProvisionDecision.civilization=urgentProvision;
+        urgentProvisionDecision.utility=urgentProvision.utility;
+        if(tryCivilizationDecision(
+               c,r,&urgentProvisionDecision)){
+            return;
+        }
+    }
 
     // At the regular 15-minute context cadence, Civilization and Social used
     // to evaluate the exact same unified utility graph independently when the
