@@ -52,7 +52,7 @@ export function CivilizationEraBadge({ era }: { era?: CivilizationEraObservation
           <p>{formatCivilizationEra(era.nextEra)}</p>
           <h3>필요 조건</h3>
           <EvidenceList evidence={era.nextEraRequirements} />
-        </> : <p>현재 구현된 운영 단계의 마지막 단계입니다.</p>}
+        </> : <p>현재 단계의 운영 근거를 계속 관찰합니다.</p>}
         <p className="era-note">현재 실제 운영 상태를 요약합니다. 시설이나 능력을 잃으면 단계가 내려갈 수 있습니다.</p>
       </div>
     </dialog>

@@ -1044,10 +1044,9 @@ export class ResidentWorldLayer {
         && trace.gridY === resident.gridY
       ),
     );
-    if (sleepingPlace) {
-      return RESIDENT_PRESENTATION_CONTRACT
-        .sleepPoseSleepingPlaceSurfaceHeightWorldUnits;
-    }
+    const beddingSupport = sleepingPlace
+      ? RESIDENT_PRESENTATION_CONTRACT.sleepPoseSleepingPlaceSurfaceHeightWorldUnits
+      : 0;
 
     // Outdoor/shelter sleep needs slope-aware support. The authoritative root
     // remains on Core's exact grid cell; only the visual body is lifted enough
@@ -1095,7 +1094,7 @@ export class ResidentWorldLayer {
         highest = Math.max(highest, sampleWorldHeight(position.x + x, position.z + z));
       }
     }
-    return Math.max(0, highest - baseHeight);
+    return Math.max(beddingSupport, highest - baseHeight);
   }
 
   private syncWalkPlaybackRate(
@@ -1202,4 +1201,5 @@ export class ResidentWorldLayer {
     actor.active = desired;
   }
 }
+
 

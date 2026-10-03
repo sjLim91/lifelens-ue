@@ -1,3 +1,4 @@
+import { sleepContextActionText } from '../localization/sleep-context';
 import type {
   CivilizationDiscovery,
   CivilizationWorldPayload,
@@ -97,6 +98,7 @@ function activitySignature(resident: Resident): string {
     resident.activityTargetId ?? '',
     resident.physicalGoal ?? '',
     resident.socialIntent ?? '',
+    resident.presentation?.sleepContext ?? '',
   ].join('|');
 }
 
@@ -1440,7 +1442,7 @@ function activityEvent(
 
   const label = resident.activityLabel?.trim();
   if (!label) return null;
-  const localizedLabel = formatActivity(label);
+  const localizedLabel = sleepContextActionText(resident.presentation) ?? formatActivity(label);
 
   const target = resident.activityTargetName?.trim();
   return {
@@ -1638,3 +1640,4 @@ export function mergeObservationEvents(
 
   return merged;
 }
+

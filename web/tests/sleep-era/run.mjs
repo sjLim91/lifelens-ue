@@ -25,6 +25,9 @@ function compile(path){
   mkdirSync(dirname(target),{recursive:true}); writeFileSync(target,code); return target;
 }
 const source=async path=>import(pathToFileURL(compile(path)));
+const {sleepContextActionText}=await source('localization/sleep-context.ts');
+assert.equal(sleepContextActionText({active:true,kind:'Physical',phase:'Interacting',physicalGoal:'Sleep',sleepContext:'ExposedEmergency'}),'악천후 속 임시 취침 중');
+assert.equal(sleepContextActionText({active:true,kind:'Physical',phase:'Moving',physicalGoal:'Sleep',sleepContext:'Protected'}),null);
 const {FacilityLayer}=await source('render/facility-layer.ts');
 const {RESIDENT_PRESENTATION_CONTRACT:contract}=await source('runtime/lifelens-contract.ts');
 const {CivilizationEraBadge,formatCivilizationEra,formatEraEvidence}=await source('ui/civilization-era.tsx');

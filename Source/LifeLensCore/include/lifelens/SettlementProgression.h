@@ -249,7 +249,7 @@ inline double sleepRecoveryPerMinuteAt(
         baseRecovery=settlementSleepRecoveryPerTick(*facility);
     }
     // Exposed bedding in harsh weather has ground-emergency efficiency. Keep
-    // gross recovery >=75% so normal + environmental fatigue still falls.
+    // gross recovery >=85% so normal + environmental fatigue still falls.
     return baseRecovery*environment.recoveryMultiplier01;
 }
 

@@ -1450,15 +1450,20 @@ Simulation::nearestAvailableOperationalSleepFacility(
     const auto environment=evaluateSleepEnvironment(
         weather,deriveEnvironmentalConsequences(weather),false);
     const int budget=std::min(SettlementServiceRadiusGrid,sleepTravelBudgetCells(fatigue));
-    struct Candidate { const ConstructedFacility* facility; double cost; };
+    struct Candidate { const ConstructedFacility* facility; double cost; int travelLimit; };
     std::vector<Candidate> candidates;
     for(const auto& facility:world_.facilities){
         if(!sleepFacilityHasCapacityFor(requester,facility)) continue;
         const int distance=manhattan(facility.pos,from);
-        if(distance>budget) continue;
+        // Preserve the established calm-weather service radius. Bound travel
+        // for emergency exposure and protected destinations in harsh weather.
+        const int travelLimit=environment.exposedEmergencyOnly
+            || (environment.weatherProtectionPreferred && facilityProvidesWeatherProtection(facility.kind))
+            ? budget : SettlementServiceRadiusGrid;
+        if(distance>travelLimit) continue;
         candidates.push_back({&facility,sleepCandidateCost(environment,
             facilityProvidesWeatherProtection(facility.kind),distance,fatigue,
-            facilityEffectiveness01(facility))});
+            facilityEffectiveness01(facility)),travelLimit});
     }
     std::sort(candidates.begin(),candidates.end(),[](const Candidate& a,const Candidate& b){
         if(a.cost!=b.cost) return a.cost<b.cost;
@@ -1472,7 +1477,7 @@ Simulation::nearestAvailableOperationalSleepFacility(
     std::vector<GridPos> route;
     for(const Candidate& candidate:candidates){
         if(buildCoreGroundRoute(world_,from,candidate.facility->pos,0,route)
-           && route.size()<=static_cast<std::size_t>(budget)) return candidate.facility;
+           && route.size()<=static_cast<std::size_t>(candidate.travelLimit)) return candidate.facility;
     }
     return nullptr;
 }

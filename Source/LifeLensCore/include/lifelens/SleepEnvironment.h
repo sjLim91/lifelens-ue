@@ -9,7 +9,7 @@ namespace lifelens {
 struct SleepEnvironmentContract {
     static constexpr double ProtectionPreferredExposure = 0.35;
     static constexpr double EmergencyExposure = 0.60;
-    static constexpr double MaximumRecoveryPenalty = 0.25;
+    static constexpr double MaximumRecoveryPenalty = 0.15;
     static constexpr double ProtectedResidualExposure = 0.15;
     static constexpr double ExposureTravelCost = 24.0;
     static constexpr int ReplanIntervalMinutes = 15;
@@ -57,6 +57,9 @@ inline SleepEnvironmentEvaluation evaluateSleepEnvironment(
         && result.exposure01>=SleepEnvironmentContract::EmergencyExposure;
     const double residual=weatherProtected
         ? SleepEnvironmentContract::ProtectedResidualExposure : 1.0;
+    // Bound gross weather loss to the daily physiology budget. Emergency
+    // bedding also loses its comfort bonus, so protection retains a large net
+    // recovery advantage without requiring nearly every hour for outdoor rest.
     result.recoveryMultiplier01=1.0
         -SleepEnvironmentContract::MaximumRecoveryPenalty*result.exposure01*residual;
     return result;

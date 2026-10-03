@@ -111,7 +111,10 @@ int main()
 
     // Clear-to-storm transition: existing exposed interaction replans at a
     // bounded checkpoint and walks, then stays committed to the roof.
-    auto worsening=sim.captureSnapshot();
+    Simulation transitionSim(2); transitionSim.setupNewGame();
+    for(std::size_t i=1;i<transitionSim.world().characters.size();++i) transitionSim.world().characters[i].alive=false;
+    transitionSim.world().facilities={facility(99001,FacilityKind::SleepingPlace,bed),facility(99002,FacilityKind::Shelter,roof)};
+    auto worsening=transitionSim.captureSnapshot();
     worsening.world.characters.front().needs={0.01,0.01,0.9,0.01,0.01};
     auto& resting=worsening.runtime.at(id);
     resting.goal=Goal::Sleep; resting.plan={{ActionType::EmergencyUse,0,600}};
@@ -120,13 +123,13 @@ int main()
     resting.pendingContext.clear();
     worsening.world.minute=weatherMinute(worsening.world,bed,true);
     worsening.world.minute+=(15-worsening.world.minute%15)%15;
-    assert(sim.restoreSnapshot(worsening,&error));
-    sim.step();
-    auto transition=sim.observeResidentPresentation(id);
+    if(!transitionSim.restoreSnapshot(worsening,&error)){std::cerr<<error<<"\n";return 1;}
+    transitionSim.step();
+    auto transition=transitionSim.observeResidentPresentation(id);
     assert(transition.phase==PresentationActionPhase::Moving);
     assert(transition.targetGrid.x==roof.x && transition.targetGrid.y==roof.y);
-    for(int i=0;i<25;++i) sim.step();
-    assert(sim.observeResidentPresentation(id).sleepContext==SleepContext::Protected);
+    for(int i=0;i<25;++i) transitionSim.step();
+    assert(transitionSim.observeResidentPresentation(id).sleepContext==SleepContext::Protected);
 
     Simulation emergency(2); emergency.setupNewGame();
     emergency.world().characters.resize(1); emergency.world().facilities.clear();
