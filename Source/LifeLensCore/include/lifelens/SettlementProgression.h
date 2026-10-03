@@ -232,7 +232,8 @@ inline double settlementShelterProtection01(
 inline double sleepRecoveryPerMinuteAt(
     const World& world,
     GridPos pos,
-    const ConstructedFacility* facility=nullptr)
+    const ConstructedFacility* facility=nullptr,
+    SleepEnvironmentEvaluation* evaluation=nullptr)
 {
     const DynamicEnvironmentObservation weather=deriveDynamicEnvironment(
         world.genesisIdentity(),chunkCoordForGrid(pos),world.minute);
@@ -244,6 +245,7 @@ inline double sleepRecoveryPerMinuteAt(
         && facility->pos.x==pos.x && facility->pos.y==pos.y;
     const bool protectedSleep=occupied && facilityProvidesWeatherProtection(facility->kind);
     const auto environment=evaluateSleepEnvironment(weather,consequence,protectedSleep);
+    if(evaluation!=nullptr) *evaluation=environment;
     double baseRecovery=DefaultPhysiologyBalance.outdoorSleepRecoveryPerMinute;
     if(occupied && (protectedSleep || !environment.exposedEmergencyOnly)){
         baseRecovery=settlementSleepRecoveryPerTick(*facility);

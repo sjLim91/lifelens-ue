@@ -28,6 +28,7 @@
 #include "PrimitiveSanitation.h"
 #include "PresentationDirective.h"
 #include "SimulationSnapshot.h"
+#include "SimulationSleepDiagnostics.h"
 #include "SettlementProgression.h"
 #include "SocialCommunicationReadModel.h"
 #include "SocietyEconomy.h"
@@ -45,6 +46,12 @@ public:
     void setupNewGame();
     void step();
     void runMinutes(int minutes);
+    void enableSleepDiagnostics(bool enabled){
+        sleepDiagnosticsEnabled_=enabled;
+        sleepDiagnostics_.clear();
+    }
+    SleepRuntimeDiagnostic observeSleepRuntimeDiagnostic(CharacterId id) const;
+
     const SimulationRuleset& ruleset() const{return ruleset_;}
     void setExternalPhysicalExecution(bool enabled){ world_.externalPhysicalExecution=enabled; }
     bool externalPhysicalExecutionEnabled() const{return world_.externalPhysicalExecution;}
@@ -54,37 +61,8 @@ public:
         outPosition=it->second.pos;
         return true;
     }
-    bool recommendedOutdoorReliefPosition(CharacterId id,GridPos& outPosition) const {
-        const auto runtimeIt=runtime_.find(id);
-        if(runtimeIt==runtime_.end()) return false;
-        const Character* character=nullptr;
-        for(const auto& candidate:world_.characters){
-            if(candidate.id==id){ character=&candidate; break; }
-        }
-        if(character==nullptr || !character->alive) return false;
-        outPosition=chooseLowExposureOutdoorReliefPosition(
-            world_.seed,*character,world_.environmentalResidues,world_.minute,
-            runtimeIt->second.pos);
-        return true;
-    }
-    bool sanitationUseTarget(CharacterId id,SanitationUseTarget& outTarget) const {
-        const auto runtimeIt=runtime_.find(id);
-        if(runtimeIt==runtime_.end()) return false;
-        const Character* character=nullptr;
-        for(const auto& candidate:world_.characters){
-            if(candidate.id==id){ character=&candidate; break; }
-        }
-        if(character==nullptr || !character->alive) return false;
-        // A sanitation site only serves the resident's current lived
-        // area. A distant site must not become a world-global toilet target;
-        // outside the local service radius the resident uses a nearby
-        // low-exposure emergency position instead.
-        outTarget=resolveSanitationUseTarget(
-            world_.seed,*character,world_.environmentalResidues,
-            world_.primitiveSanitationSites,world_.minute,
-            runtimeIt->second.pos,SettlementServiceRadiusGrid);
-        return true;
-    }
+    bool recommendedOutdoorReliefPosition(CharacterId id,GridPos& outPosition) const;
+    bool sanitationUseTarget(CharacterId id,SanitationUseTarget& outTarget) const;
     bool settlementSleepTarget(
         CharacterId id,
         GridPos& outPosition,
@@ -237,7 +215,8 @@ private:
         const ConstructedFacility& facility) const;
     const ConstructedFacility* nearestAvailableOperationalSleepFacility(
         CharacterId requester,
-        GridPos from) const;
+        GridPos from,
+        SleepDiagnosticCounters* diagnostics=nullptr) const;
     struct Runtime {
         Goal goal=Goal::Idle;
         std::vector<Action> plan;
@@ -277,6 +256,10 @@ private:
         GridPos civilizationTargetPos{};
         std::uint64_t civilizationSanitationSiteId=0;
     };
+    bool sleepDiagnosticsEnabled_=false;
+    std::unordered_map<CharacterId,SleepDiagnosticCounters> sleepDiagnostics_;
+    void closeDiagnosticSleepSession(CharacterId id,double need,SleepDiagnosticEnd reason);
+    void recordDiagnosticSleepMinute(const Character& c,double recovery,const SleepEnvironmentEvaluation& environment,bool protectedSleep);
     const SimulationRuleset ruleset_;
     World world_;
     RelationshipBook relationships_;

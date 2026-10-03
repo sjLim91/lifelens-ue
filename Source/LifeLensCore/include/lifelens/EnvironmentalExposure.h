@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <functional>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -133,7 +134,8 @@ inline GridPos chooseLowExposureOutdoorReliefPosition(
     const Character& character,
     const EnvironmentalResidueField& field,
     int currentMinute,
-    GridPos referencePosition={})
+    GridPos referencePosition={},
+    const std::function<bool(GridPos)>& reachable={})
 {
     static constexpr std::array<GridPos,8> Directions={{
         {1,0},{1,1},{0,1},{-1,1},{-1,0},{-1,-1},{0,-1},{1,-1}
@@ -166,6 +168,10 @@ inline GridPos chooseLowExposureOutdoorReliefPosition(
 
             if(score+1.0e-9<bestScore
                || (std::abs(score-bestScore)<=1.0e-9 && stableOrder<bestOrder)){
+                // Contamination preference cannot nominate a destination the
+                // actor cannot physically reach. If all local alternatives fail,
+                // relief remains possible at the actor's actual position.
+                if(reachable && !reachable(candidate)){ ++stableOrder; continue; }
                 best=candidate;
                 bestScore=score;
                 bestOrder=stableOrder;
@@ -178,3 +184,4 @@ inline GridPos chooseLowExposureOutdoorReliefPosition(
 }
 
 } // namespace lifelens
+

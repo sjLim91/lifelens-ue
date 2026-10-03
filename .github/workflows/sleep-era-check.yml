@@ -4,6 +4,9 @@ on:
     paths:
       - 'Source/LifeLensCore/**'
       - 'web/**'
+      - 'Tools/verify_sleep_longrun.py'
+      - 'Tools/test_verify_sleep_longrun.py'
+      - 'tasks/WEATHER_SLEEP_ERA_LONGRUN.json'
       - '.github/workflows/sleep-era-check.yml'
   workflow_dispatch:
 jobs:
@@ -41,9 +44,10 @@ jobs:
       - run: cmake -S Source/LifeLensCore -B build -DCMAKE_BUILD_TYPE=Release
       - run: cmake --build build -j2
       - run: ctest --test-dir build --output-on-failure
+      - run: python Tools/test_verify_sleep_longrun.py
       - run: |
           for seed in 874213954 874213955 2; do
-            ./build/ll_balance_audit --days 365 --seed "$seed" --checkpoints 100,365 > "candidate-$seed.log"
+            ./build/ll_balance_audit --days 365 --seed "$seed" --checkpoints 100,365 --sleep-diagnostics > "candidate-$seed.log"
           done
           python Tools/verify_sleep_longrun.py candidate-*.log > sleep-longrun-metrics.json
       - uses: actions/upload-artifact@v4
