@@ -163,7 +163,7 @@ test('facility wet/snow preserves durability wear and restores dry; refresh/remo
     layer.setSurfaceWeather(1, .6, 4, 4); assert(worn[0].color.r < dry[0].r);
     layer.setCivilization(civ, structuredClone(t)); assert.equal(layer.group.children[0], structure);
     layer.setSurfaceWeather(0, 0, 4, 4); assert(worn.every((m, i) => m.color.equals(dry[i])));
-    let disposed = 0; structure.traverse(o => { if (o instanceof THREE.InstancedMesh) o.addEventListener('dispose', () => disposed++); });
+    let disposed = 0; structure.traverse(o => { if (o.isInstancedMesh) o.addEventListener('dispose', () => disposed++); });
     layer.setTerrain(terrain()); assert(disposed > 0); layer.dispose();
   } finally { if (oldDocument === undefined) delete globalThis.document; else globalThis.document = oldDocument; }
 });
