@@ -3,6 +3,8 @@ import type { HumanTrace, TerrainWindow } from '../runtime/core-types';
 import { WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
 import { visibleHumanTraces } from '../state/human-traces';
 import { createTerrainElevationSampler } from './terrain-geometry';
+import { WORLD_PRESENTATION } from './world-presentation-config';
+import { presentationHash01, clamp01 } from './environment-surface-presentation';
 
 // Surface marks plus a selected-facility halo. Facilities themselves are rendered
 // by FacilityLayer; unselected facilities must never fall back to placeholder rings.
@@ -16,20 +18,23 @@ export function buildHumanTraceGeometry(
   const triangleTraceIds: string[] = [];
   const sample = createTerrainElevationSampler(terrain);
   const { gridCellsPerChunk: span, worldUnitsPerChunk: size, elevationScale } = WORLD_GRID_CONTRACT;
-  const segments = 24;
+  const config = WORLD_PRESENTATION.residue;
+  const segments = config.segments;
   const displayTraces = traces.filter(
-    (trace) => trace.kind !== 'Facility' || trace.id === selectedId,
-  );
+    (trace) => (trace.kind !== 'Facility' || trace.id === selectedId)
+      && (trace.kind !== 'Residue' || (trace.amount > 0.01 && trace.intensity > 0.01)),
+  ).slice(0, config.maxResidueVisuals);
   for (const trace of displayTraces) {
     const selected = trace.id === selectedId;
     const resourceUse = trace.kind === 'ResourceUse'
       ? 1 - trace.quantity / trace.baselineQuantity : 0;
     const radius = trace.kind === 'Residue'
-      ? Math.min(1.3, 0.45 + trace.radiusTiles * size / span * 0.25)
+      ? trace.radiusTiles * size / span * config.footprintRadiusRatio
       : trace.kind === 'Facility' ? 1.2 : 0.65 + resourceUse * 0.5;
     const tint = new THREE.Color(selected ? 0xffe4a0
-      : trace.kind === 'Facility' ? 0x97c9c2 : trace.kind === 'Residue' ? 0x604532 : 0x927a48);
+      : trace.kind === 'Facility' ? 0x97c9c2 : trace.kind === 'Residue' ? config.soilColor : 0x927a48);
     const strength = trace.kind === 'Residue' ? trace.intensity : trace.kind === 'ResourceUse' ? resourceUse : 0.7;
+    if (trace.kind === 'Residue' && !selected) tint.lerp(new THREE.Color(config.detailColor), clamp01(trace.intensity) * 0.4);
     const cx = (trace.gridX / span - terrain.centerChunkX - 0.5) * size;
     const cz = (trace.gridY / span - terrain.centerChunkY - 0.5) * size;
     const start = positions.length / 3;
@@ -53,7 +58,11 @@ export function buildHumanTraceGeometry(
           x / size + terrain.centerChunkX - chunkX + 0.5,
           z / size + terrain.centerChunkY - chunkY + 0.5) * elevationScale;
         positions.push(x, height + 0.045, z);
-        colors.push(tint.r, tint.g, tint.b, alpha * (selected ? 1 : 0.4 + strength * 0.55));
+        // Core already decays intensity/amount. No additional client age/decay.
+        const opacity = trace.kind === 'Residue'
+          ? config.humanWasteOpacity * clamp01(strength) : 0.4 + strength * 0.55;
+        const mottle = trace.kind === 'Residue' ? 0.75 + presentationHash01(`${trace.id}:${ring}:${step}:soil`) * 0.25 : 1;
+        colors.push(tint.r * mottle, tint.g * mottle, tint.b * mottle, alpha * (selected ? 1 : opacity));
       }
     }
     for (let ring = 0; ring < 3; ring++) {
@@ -66,6 +75,32 @@ export function buildHumanTraceGeometry(
         // X/Z winding faces upward, including sloping/negative-coordinate terrain.
         indices.push(a, b, c, b, d, c);
         triangleTraceIds.push(trace.id, trace.id);
+      }
+    }
+    if (trace.kind === 'Residue') {
+      const count = Math.min(config.maxClustersPerResidue, Math.ceil(trace.amount / config.unitsPerCluster));
+      const detailTint = selected ? tint : new THREE.Color(config.detailColor);
+      for (let i = 0; i < count; i++) {
+        const token = `${terrain.worldSeed ?? '0'}:${trace.id}:cluster:${i}`;
+        const angle = presentationHash01(token) * Math.PI * 2;
+        const offset = radius * (0.12 + presentationHash01(token + ':offset') * 0.52);
+        const px = cx + Math.cos(angle) * offset, pz = cz + Math.sin(angle) * offset;
+        const detailRadius = radius * (0.08 + presentationHash01(token + ':size') * 0.1);
+        const start = positions.length / 3;
+        for (let j = 0; j <= 8; j++) {
+          const theta = (j - 1) / 8 * Math.PI * 2;
+          const r = j === 0 ? 0 : detailRadius * (0.8 + presentationHash01(token + ':' + j) * 0.2);
+          const x = px + Math.cos(theta) * r, z = pz + Math.sin(theta) * r;
+          const gx = x / size + terrain.centerChunkX + 0.5, gz = z / size + terrain.centerChunkY + 0.5;
+          const chunkX = Math.floor(gx), chunkY = Math.floor(gz);
+          positions.push(x, sample(chunkX, chunkY, gx - chunkX, gz - chunkY) * elevationScale + 0.046, z);
+          colors.push(detailTint.r, detailTint.g, detailTint.b,
+            j === 0 ? config.detailOpacity * clamp01(trace.intensity) : 0);
+        }
+        for (let j = 0; j < 8; j++) {
+          indices.push(start, start + 1 + (j + 1) % 8, start + 1 + j);
+          triangleTraceIds.push(trace.id);
+        }
       }
     }
   }
@@ -182,4 +217,5 @@ export class HumanTraceLayer {
     this.triangleTraceIds = [];
   }
 }
+
 

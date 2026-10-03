@@ -15,7 +15,7 @@ const modules = new Map();
 // water and weather. Only the unrelated asset/dressing layers are replaced.
 class AssetLayer {
   group = new THREE.Group();
-  setCivilization() {} setTerrain() {} setResidents() {} setWetness() {} update() {}
+  setCivilization() {} setTerrain() {} setResidents() {} setWetness() {} setSnowCoverage() {} update() {}
   setSimulationSpeed() {} setSelectedResident() {} dispose() {}
 }
 function load(path) {
@@ -618,4 +618,5 @@ terrainSeamChecks({ test, source, chunk, windowOf, withScene, near });
 
 console.log(`${passed} presentation regression checks passed; ${failed} failed`);
 if (failed) process.exitCode = 1;
+
 

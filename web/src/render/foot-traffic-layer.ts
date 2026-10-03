@@ -4,6 +4,7 @@ import { WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
 import { createAuthoritativeGridProjector } from './authoritative-spatial-target-layer';
 import { ObservedFootTraffic } from './observed-foot-traffic';
 import { WORLD_PRESENTATION } from './world-presentation-config';
+import { clamp01 } from './environment-surface-presentation';
 
 /** One pooled draw call; all marks are actual observed grid positions. */
 export class FootTrafficLayer {
@@ -12,18 +13,22 @@ export class FootTrafficLayer {
   private readonly geometry = new THREE.BufferGeometry();
   private readonly positions = new Float32Array(WORLD_PRESENTATION.paths.maxMarks * 6 * 3);
   private readonly colors = new Float32Array(WORLD_PRESENTATION.paths.maxMarks * 6 * 4);
-  private readonly material = new THREE.MeshBasicMaterial({
+  private readonly material = new THREE.MeshStandardMaterial({
+    roughness: WORLD_PRESENTATION.paths.dryRoughness, metalness: 0,
     vertexColors: true, transparent: true, depthWrite: false,
     polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1,
     side: THREE.DoubleSide,
   });
   private readonly mesh = new THREE.Mesh(this.geometry, this.material);
   private lastMinute = NaN;
+  private wetness = 0;
   private lastTerrain: TerrainWindow | null = null;
 
   constructor() {
     this.group.name = 'observed-foot-traffic';
     this.geometry.setAttribute('position', new THREE.BufferAttribute(this.positions, 3).setUsage(THREE.DynamicDrawUsage));
+    this.geometry.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(this.positions.length), 3));
+    for (let i = 1; i < this.positions.length; i += 3) this.geometry.attributes.normal.array[i] = 1;
     this.geometry.setAttribute('color', new THREE.BufferAttribute(this.colors, 4).setUsage(THREE.DynamicDrawUsage));
     this.geometry.setDrawRange(0, 0);
     this.mesh.frustumCulled = false;
@@ -35,13 +40,30 @@ export class FootTrafficLayer {
     if (minute === this.lastMinute && terrain === this.lastTerrain) return;
     this.lastMinute = minute; this.lastTerrain = terrain;
     this.history.observe(residents, terrain.worldSeed, minute);
+    this.redraw(terrain, minute);
+  }
+
+  setWetness(wetness: number): void {
+    const next = clamp01(wetness);
+    if (next === this.wetness) return;
+    this.wetness = next;
+    this.material.roughness = THREE.MathUtils.lerp(WORLD_PRESENTATION.paths.dryRoughness, WORLD_PRESENTATION.paths.wetRoughness, next);
+    // Redraw the same observed marks; do not observe again, add visits or alter decay.
+    if (this.lastTerrain) this.redraw(this.lastTerrain, this.lastMinute);
+  }
+
+  private redraw(terrain: TerrainWindow, minute: number): void {
     const projector = createAuthoritativeGridProjector(terrain);
-    const tint = new THREE.Color(WORLD_PRESENTATION.paths.color);
-    const width = WORLD_PRESENTATION.paths.widthGrid;
+    const config = WORLD_PRESENTATION.paths;
+    const dryTint = new THREE.Color(config.color), wetTint = new THREE.Color(config.wetMudColor);
     let vertex = 0;
     for (const mark of this.history.marks.values()) {
       if (!projector.containsGrid(mark.x, mark.y)) continue;
-      const opacity = this.history.opacity(mark, minute);
+      const strength = this.history.opacity(mark, minute);
+      const mud = this.wetness * clamp01(strength / config.maxOpacity);
+      const opacity = strength * (1 + mud * (config.wetMudOpacityMultiplier - 1));
+      const tint = dryTint.clone().lerp(wetTint, mud);
+      const width = config.widthGrid * (1 + mud * (config.wetMudWidthMultiplier - 1));
       // Narrow diamond at the visited cell, no fabricated segment between samples.
       const alongX = Math.cos(mark.angle), alongY = Math.sin(mark.angle);
       const corners = [[-0.5, 0], [0, width], [0.5, 0], [0, -width]];
@@ -70,3 +92,4 @@ export class FootTrafficLayer {
     this.geometry.dispose(); this.material.dispose(); this.group.clear();
   }
 }
+
