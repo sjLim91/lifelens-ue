@@ -55,16 +55,17 @@ for (let minute = 0; minute < 500; minute++) {
 const labels: Record<string, string> = {
   dry: 'A · 맑고 건조 / 관찰된 흙길', rain: 'B · 비와 젖은 땅 / 낮은 지형 puddle',
   mud: 'C · 비와 반복 보행 / 같은 관찰 흔적의 진흙 표현', snow: 'D · 차가운 눈 / 지면·바위·시설 윗면',
+  'rain-fire': 'Budget · rain + active fire',
   residue: 'E · 실제 residue DTO / 넓은 오염과 작은 containment', fire: 'F · active + lit FirePit/Furnace / smoke·scorch',
 };
 function renderCase(name: string) {
-  const rainy = name === 'rain' || name === 'mud', snowy = name === 'snow';
+  const rainy = name === 'rain' || name === 'mud' || name === 'rain-fire', snowy = name === 'snow';
   const environment: DynamicEnvironment = { available: true, precipitationType: snowy ? 'Snow' : rainy ? 'Rain' : 'None',
     summary: snowy ? 'Snow' : rainy ? 'Rain' : 'Clear', precipitationIntensity01: snowy || rainy ? 1 : 0,
     airTemperatureC: snowy ? -8 : 18, surfaceWetness01: rainy || snowy ? 1 : 0, windIntensity01: .6 };
   const wet = environment.surfaceWetness01!, snow = snowPresentationCoverage(environment);
   const entries = [fire('facility:shelter', 'Shelter', 2.2, -2.2, false),
-    fire('facility:fire', 'FirePit', 2, 1.8, name === 'fire'), fire('facility:furnace', 'Furnace', -2.2, 1.8, name === 'fire')];
+    fire('facility:fire', 'FirePit', 2, 1.8, name === 'fire' || name === 'rain-fire'), fire('facility:furnace', 'Furnace', -2.2, 1.8, name === 'fire' || name === 'rain-fire')];
   if (name === 'residue') entries.push(
     { id: 'residue:open', kind: 'Residue', gridX: 10, gridY: 17, sourceResidentId: 'fixture', amount: 12, intensity: .9, radiusTiles: 6 },
     { id: 'residue:contained', kind: 'Residue', gridX: 5, gridY: 22, sourceResidentId: 'fixture', amount: 12, intensity: .16, radiusTiles: 1 },

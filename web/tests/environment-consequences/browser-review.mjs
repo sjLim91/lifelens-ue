@@ -22,6 +22,10 @@ try {
       metrics.push({ viewport, ...result });
       await page.screenshot({ path: resolve(out, `${viewport.width}-${name}.png`) });
     }
+    const combined = await page.evaluate(() => window.environmentReview.renderCase('rain-fire'));
+    assert.equal(combined.additionalPoolDrawCalls, 3);
+    assert(combined.stableChildren && combined.stableGeometry);
+    metrics.push({ viewport, ...combined });
     await page.close();
   }
   assert.deepEqual(errors, [], 'browser/GPU shader errors');

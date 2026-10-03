@@ -2,6 +2,9 @@ name: Web Environmental Consequences
 on:
   push:
     branches: ['work/web-environment-consequences-*']
+    paths:
+      - 'web/**'
+      - '.github/workflows/environment-consequences-check.yml'
   pull_request:
     paths:
       - 'web/**'

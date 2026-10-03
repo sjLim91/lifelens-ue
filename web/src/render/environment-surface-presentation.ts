@@ -27,7 +27,12 @@ export function snowPresentationCoverage(environment: DynamicEnvironment | null)
   const config = WORLD_PRESENTATION.weather;
   const intensity = clamp01(environment.precipitationIntensity01);
   const cold = clamp01((config.snowWarmLimitC - Number(environment.airTemperatureC)) / config.snowColdRangeC);
-  return config.snowMaxCoverage * intensity * cold * (0.85 + clamp01(environment.surfaceWetness01) * 0.15);
+  if (intensity === 0 || cold === 0) return 0;
+  // A small visibility floor maps actual light snowfall into a readable dusting;
+  // it is conditional on positive observed Snow, never an accumulation quantity.
+  const visibleIntensity = THREE.MathUtils.lerp(config.snowVisibleIntensityFloor, 1, intensity);
+  const coldCoverage = THREE.MathUtils.lerp(config.snowColdCoverageFloor, 1, cold);
+  return config.snowMaxCoverage * visibleIntensity * coldCoverage * (0.85 + clamp01(environment.surfaceWetness01) * 0.15);
 }
 
 interface SurfaceState {

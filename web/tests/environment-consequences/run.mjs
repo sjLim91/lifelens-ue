@@ -118,6 +118,7 @@ test('mud changes only presentation of the same observed marks and keeps fade/te
 test('snow is stateless current cold Snow only; rain/warm/unavailable clear it and normals restrict sides', () => {
   const snow = { available: true, precipitationType: 'Snow', precipitationIntensity01: 1, airTemperatureC: -8, surfaceWetness01: 1 };
   assert(snowPresentationCoverage(snow) >= .5);
+  assert(snowPresentationCoverage({ ...snow, airTemperatureC: -1, precipitationIntensity01: .05 }) > .05);
   assert.equal(snowPresentationCoverage({ ...snow, precipitationType: 'Rain' }), 0);
   assert.equal(snowPresentationCoverage({ ...snow, airTemperatureC: 5 }), 0);
   assert.equal(snowPresentationCoverage({ ...snow, precipitationIntensity01: 0 }), 0);
