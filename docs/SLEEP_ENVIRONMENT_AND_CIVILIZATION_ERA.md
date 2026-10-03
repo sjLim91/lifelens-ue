@@ -16,7 +16,7 @@
 
 ## SleepingPlace 표현
 
-기존 두꺼운 wood base + 직사각 mattress + pillow block 세 mesh를 낮은 섬유 중앙 매트, 비정형 양쪽 풀 가장자리, 느슨한 풀 묶음, 얇은 branch 세 개의 일곱 primitive part로 교체한다. 외부 asset, 새 geometry 종류, 무료 시설, 시대별 자동 reskin은 없다. 기존 공유 geometry/material과 구조 cache를 사용한다. 교체/제거/전체 dispose 때 instance matrix buffer를 해제하고 공유 geometry/material은 기존 lifecycle을 유지한다. 같은 material/geometry별 InstancedMesh 세 개로 묶어 시설당 draw call은 기존과 같은 3으로 유지하며 실제 mobile GPU 측정은 별도 검증 대상이다.
+기존 두꺼운 wood base + 직사각 mattress + pillow block 세 mesh를 낮은 섬유 중앙 매트, 비정형 양쪽 풀 가장자리, 느슨한 풀 묶음, 얇은 branch 세 개의 일곱 primitive part로 교체한다. 외부 asset, 새 geometry 종류, 무료 시설, 시대별 자동 reskin은 없다. 기존 공유 geometry/material과 구조 cache를 사용한다. 교체/제거/전체 dispose 때 instance matrix buffer를 해제하고 공유 geometry/material은 기존 lifecycle을 유지한다. 같은 material/geometry별 InstancedMesh 세 개로 묶어 시설당 draw call은 기존과 같은 3으로 유지한다. 실제 mobile GPU 측정은 별도 검증 대상이다.
 
 중앙 매트 실제 top surface는 terrain 기준 **0.14 world units**이다. 시설 group의 terrain offset 0.025까지 포함한다. 수면 support constant도 0.14이다. #611 실제 UAL2 LayToIdle clip, skeleton calibration, endpoint fallback, slope support, snapshot refresh와 wake continuity 경로를 유지한다. Shelter 수면은 지면 support 경로를 유지한다.
 
@@ -62,7 +62,7 @@ DTO: `era.currentEra.{id,ordinal}`, `era.evidence[]`, `era.nextEra`, `era.nextEr
 
 | seed / 365일 | main 최장 연속 / 총합 / 생존 | 변경 최장 연속 / 총합 / 생존 |
 |---|---|---|
-| 874213954 | 432 / 30268 / 3 | 83270 / 427650 / 3 — 실패, 수정 중 |
+| 874213954 | 432 / 30268 / 3 | 671 / 142910 / 3 |
 | 874213955 | 293 / 4905 / 4 | 501 / 18999 / 4 |
 | 2 | 246 / 9339 / 4 | 278 / 1360 / 4 |
 
@@ -78,3 +78,5 @@ DTO: `era.currentEra.{id,ordinal}`, `era.evidence[]`, `era.nextEra`, `era.nextEr
 - 검증: CMakeLists.txt, test_sleep_environment.cpp, test_civilization_era.cpp, test_daily_physiology_budget.cpp, tests/resident-motion/run.mjs, tests/sleep-era/run.mjs, sleep-era-check.yml, verify_sleep_longrun.py.
 
 main 재확인 SHA는 여전히 66f623db9413ff626ec03dee433cec482c4e8efc. GitHub 연결로 동일 main tree 위에 변경을 commit했고 terminal clone/pull을 다시 시도하지 않았다. PR #612만 생성하며 merge/auto-merge는 실행하지 않는다.
+
+최종 local365 결과는 세 seed 모두 continuous-starvation guard PASS. 변경 전 중간 구현은 seed874213954에서83270분 연속 포화로 실패했으며 실패 계획의 backoff 응급 rest를 추가한 뒤671분으로 줄었다. main432분 대비 증가했으며 누적 resident-minutes는30268→142910으로 증가했다. seed874213955의 누적도4905→18999로 증가했다. 날씨를 반영한 현재 운영 상태의 trajectory 변화와 미해결 배변 affordance 실패 반복이 누적 피로 부담을 높인다. 연속 수만 분 포화 방지와 누적 부담 개선은 같은 지표가 아니며 총량이 개선됐다고 주장하지 않는다. 사용자 범위 밖의 배변/AI 전체 우선순위 재조정은 하지 않는다. raw 후보 로그와 JSON은 CI artifact에 보존하고 비교 요약은 tasks/WEATHER_SLEEP_ERA_LONGRUN.json에 저장한다. 최신 head의 remote365 gate 완료는 별도로 확인한다.
