@@ -22,11 +22,11 @@ export const WORLD_PRESENTATION = {
     wetRockDarkening: 0.22, dryRockRoughness: 0.94, wetRockRoughness: 0.52,
     wetWoodDarkening: 0.18, wetStoneDarkening: 0.22,
     wetGrassDarkening: 0.12, wetShrubDarkening: 0.1,
-    snowMaxCoverage: 0.72, snowColor: 0xe7edf0, snowRoughness: 0.93,
+    snowMaxCoverage: 0.5, snowColor: 0xe7edf0, snowRoughness: 0.93,
     snowWarmLimitC: 2, snowColdRangeC: 8,
     puddleMaxInstances: 128, puddleSamplesPerAxis: 3, puddleSegments: 16,
     puddleWetnessThreshold: 0.45, puddleMaxOpacity: 0.52,
-    puddleRadius: 0.7, puddleRoughness: 0.28, puddleColor: 0x52615f,
+    puddleRadius: 0.7, puddleRoughness: 0.28, puddleColor: 0x50584c,
     puddleMaxSlope: 0.12, puddleMinDepression: 0.005, surfaceLift: 0.035,
   },
   residue: {

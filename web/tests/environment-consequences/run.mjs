@@ -66,6 +66,9 @@ test('low flat basin candidates are deterministic, bounded and rebase with origi
   assert.deepEqual(puddleCandidates(structuredClone(t)), first);
   assert.deepEqual(puddleCandidates({ ...t, chunks: [...t.chunks].reverse() }), first);
   const changed = puddleCandidates({ ...t, worldSeed: 'different' }); assert.notDeepEqual(changed, first);
+  const rebased = puddleCandidates({ ...t, centerChunkX: 1, centerChunkY: -1 });
+  assert(first.some(p => rebased.some(q => Math.abs(q.x - p.x + grid.worldUnitsPerChunk) < 1e-8
+    && Math.abs(q.z - p.z - grid.worldUnitsPerChunk) < 1e-8 && Math.abs(q.y - p.y) < 1e-8)));
   assert.deepEqual(puddleCandidates({ ...t, available: false }), []);
   assert.deepEqual(puddleCandidates({ ...t, chunks: t.chunks.map(c => ({ ...c, elevation01: NaN })) }), []);
   const steep = { ...t, chunks: t.chunks.map(c => ({ ...c, elevation01: .48 + (c.x * c.x + c.y * c.y) * .08 })) };
@@ -84,11 +87,13 @@ test('puddles exclude visible water and entire facility footprints, dry hides al
   assert(layer.mesh.visible); assert(layer.material.opacity > 0);
   const version = layer.geometry.attributes.position.version;
   layer.setWetness(0); assert(!layer.mesh.visible);
+  layer.setWetness(1, config.weather.snowMaxCoverage); assert(!layer.mesh.visible);
   layer.setWetness(1); layer.setTerrain(structuredClone(t)); assert.equal(layer.geometry.attributes.position.version, version);
   layer.dispose();
 });
 test('mud changes only presentation of the same observed marks and keeps fade/teleport contract', () => {
   const t = terrain(), layer = new FootTrafficLayer();
+  assert.equal(layer.material.forceSinglePass, true);
   const resident = x => [{ id: 'walker', alive: true, hasPosition: true, gridX: x, gridY: 16 }];
   for (let minute = 0; minute < 24; minute++) {
     layer.history.observe(resident(16 + minute % 2), t.worldSeed, minute, minute * 100);
@@ -112,7 +117,7 @@ test('mud changes only presentation of the same observed marks and keeps fade/te
 });
 test('snow is stateless current cold Snow only; rain/warm/unavailable clear it and normals restrict sides', () => {
   const snow = { available: true, precipitationType: 'Snow', precipitationIntensity01: 1, airTemperatureC: -8, surfaceWetness01: 1 };
-  assert(snowPresentationCoverage(snow) > .5);
+  assert(snowPresentationCoverage(snow) >= .5);
   assert.equal(snowPresentationCoverage({ ...snow, precipitationType: 'Rain' }), 0);
   assert.equal(snowPresentationCoverage({ ...snow, airTemperatureC: 5 }), 0);
   assert.equal(snowPresentationCoverage({ ...snow, precipitationIntensity01: 0 }), 0);
@@ -122,7 +127,7 @@ test('snow is stateless current cold Snow only; rain/warm/unavailable clear it a
   material.onBeforeCompile(shader, null);
   assert(shader.fragmentShader.includes('smoothstep(0.35, 0.85, llUpNormal.y)'));
   assert(shader.vertexShader.includes('instanceMatrix * llPosition'));
-  modifier.setState({ snow: snowPresentationCoverage(snow), originX: 4, originZ: -4 }); assert(shader.uniforms.llSnow.value > .5);
+  modifier.setState({ snow: snowPresentationCoverage(snow), originX: 4, originZ: -4 }); assert(shader.uniforms.llSnow.value >= .5);
   modifier.setState({ snow: 0, originX: 4, originZ: -4 }); assert.equal(shader.uniforms.llSnow.value, 0);
   assert.deepEqual(shader.uniforms.llOrigin.value.toArray(), [4, -4]); material.dispose();
 });

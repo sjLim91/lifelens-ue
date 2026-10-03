@@ -17,7 +17,8 @@ try {
     await page.waitForFunction(() => window.environmentReview?.ready, { timeout: 30000 });
     for (const name of ['dry', 'rain', 'mud', 'snow', 'residue', 'fire']) {
       const result = await page.evaluate(name => window.environmentReview.renderCase(name), name);
-      assert(result.stableChildren); assert(result.puddles <= 128);
+      assert(result.stableChildren); assert(result.stableGeometry); assert(result.puddles <= 128);
+      assert(result.additionalPoolDrawCalls <= 3);
       metrics.push({ viewport, ...result });
       await page.screenshot({ path: resolve(out, `${viewport.width}-${name}.png`) });
     }

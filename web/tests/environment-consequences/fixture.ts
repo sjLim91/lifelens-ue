@@ -73,7 +73,7 @@ function renderCase(name: string) {
   ground.setTerrain(terrain); ground.setWetness(wet); ground.setSnowCoverage(snow, 4, 4);
   facilities.setTerrain(terrain); facilities.setSurfaceWeather(wet, snow, 4, 4);
   emissions.setTerrain(terrain); emissions.setEnvironment(environment); emissions.setSimulationMinute(500);
-  surface.setTerrain(terrain); surface.setWetness(wet);
+  surface.setTerrain(terrain); surface.setWetness(wet, snow);
   traces.setTerrain(terrain);
   traffic.observe([], terrain, 500); traffic.setWetness(wet);
   traffic.group.visible = name === 'dry' || name === 'mud';
@@ -82,11 +82,18 @@ function renderCase(name: string) {
   weather.setEnvironment(environment);
   // Stable diagnostic precipitation phase (existing pool, not a second system).
   renderer.render(scene, camera);
-  const count = scene.children.length;
+  const count = scene.children.length, geometryCount = renderer.info.memory.geometries;
   for (let i = 0; i < 5; i++) { ground.setTerrain({ ...terrain }); facilities.setTerrain({ ...terrain }); surface.setTerrain({ ...terrain }); emissions.setTerrain({ ...terrain }); }
   renderer.render(scene, camera);
+  const calls = renderer.info.render.calls;
+  const stableGeometry = renderer.info.memory.geometries === geometryCount;
+  surface.group.visible = emissions.group.visible = false;
+  renderer.render(scene, camera);
+  const withoutNewPools = renderer.info.render.calls;
+  surface.group.visible = emissions.group.visible = true;
+  renderer.render(scene, camera);
   document.querySelector('#caption')!.textContent = labels[name] + ' · read-only fixture';
-  return { case: name, drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles,
+  return { case: name, drawCalls: calls, withoutNewPools, additionalPoolDrawCalls: calls - withoutNewPools, stableGeometry, triangles: renderer.info.render.triangles,
     points: renderer.info.render.points, puddles: surface.candidateCount, snowCoverage: snow,
     stableChildren: scene.children.length === count, geometries: renderer.info.memory.geometries };
 }

@@ -38,8 +38,8 @@ export function puddleCandidates(terrain: TerrainWindow): PuddleCandidate[] {
       for (let iz = 0; iz < config.puddleSamplesPerAxis; iz++) {
         const token = `${terrain.worldSeed ?? '0'}:puddle:${chunk.x}:${chunk.y}:${ix}:${iz}`;
         const phase = presentationHash01(token);
-        const x = (chunk.x - terrain.centerChunkX - 0.5 + (ix + 0.35 + phase * 0.3) / config.puddleSamplesPerAxis) * size;
-        const z = (chunk.y - terrain.centerChunkY - 0.5 + (iz + 0.35 + presentationHash01(token + ':z') * 0.3) / config.puddleSamplesPerAxis) * size;
+        const x = (chunk.x - terrain.centerChunkX - 0.5 + (ix + 0.1 + phase * 0.8) / config.puddleSamplesPerAxis) * size;
+        const z = (chunk.y - terrain.centerChunkY - 0.5 + (iz + 0.1 + presentationHash01(token + ':z') * 0.8) / config.puddleSamplesPerAxis) * size;
         const y = height(x, z);
         if (y === null) continue;
         const radius = config.puddleRadius * (0.75 + phase * 0.5);
@@ -130,9 +130,11 @@ export class SurfaceConsequenceLayer {
     this.geometry.attributes.color.needsUpdate = true;
   }
 
-  setWetness(wetness: number): void {
+  setWetness(wetness: number, snowCoverage = 0): void {
     const config = WORLD_PRESENTATION.weather;
-    this.material.opacity = config.puddleMaxOpacity * clamp01((clamp01(wetness) - config.puddleWetnessThreshold) / (1 - config.puddleWetnessThreshold));
+    // Snow can visually obscure a cosmetic puddle; no Core freezing/melting state.
+    const exposed = 1 - clamp01(snowCoverage / config.snowMaxCoverage);
+    this.material.opacity = config.puddleMaxOpacity * exposed * clamp01((clamp01(wetness) - config.puddleWetnessThreshold) / (1 - config.puddleWetnessThreshold));
     this.mesh.visible = this.material.opacity > 0;
   }
 

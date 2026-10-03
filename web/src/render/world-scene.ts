@@ -192,7 +192,7 @@ export class WorldScene {
     this.updateTerrainWeather();
     this.groundDetailLayer.setWetness(this.surfaceWetness01);
     this.footTrafficLayer.setWetness(this.surfaceWetness01);
-    this.surfaceConsequenceLayer.setWetness(this.surfaceWetness01);
+    this.surfaceConsequenceLayer.setWetness(this.surfaceWetness01, this.snowCoverage);
     this.updateSurfaceSnow();
   }
 

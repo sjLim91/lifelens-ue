@@ -17,7 +17,7 @@ export class FootTrafficLayer {
     roughness: WORLD_PRESENTATION.paths.dryRoughness, metalness: 0,
     vertexColors: true, transparent: true, depthWrite: false,
     polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1,
-    side: THREE.DoubleSide,
+    side: THREE.DoubleSide, forceSinglePass: true,
   });
   private readonly mesh = new THREE.Mesh(this.geometry, this.material);
   private lastMinute = NaN;
