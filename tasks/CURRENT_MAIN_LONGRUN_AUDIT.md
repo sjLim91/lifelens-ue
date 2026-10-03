@@ -40,3 +40,11 @@
 - #540 위생 후보 실험 wholesale merge
 - 결과가 마음에 안 든다는 이유로 seed별 예외 하드코딩
 - 브라우저에서 Core 결과를 보정
+
+
+## R4 실행 메모 — 2026-10-03
+
+- 기준 main: `4f3715e8b0983e8109397ab9eeb2d18c55514470`
+- #612 악천후 수면/배변 reachability/시대 관찰까지 반영된 최신 main 재계측.
+- 2-seed 100/365/1000일에서 Needs 고착, 가족/인구, 문명 진행, chunk/snapshot/elapsed 성능을 다시 분류한다.
+- branch-only workflow trigger이며 main merge 대상이 아니다.
