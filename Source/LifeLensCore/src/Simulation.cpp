@@ -1663,14 +1663,25 @@ bool Simulation::trySocialDecision(Character& c,Runtime& r){
     if(!c.alive || lifeStageProfile(c.lifeStage).autonomy<0.35 || r.pendingContext.active()) return false;
     if(world_.minute<r.socialCooldownUntilMinute) return false;
 
-    const auto population=settlementPopulation();
-    const UnifiedUtilityDecision decision=world_.minute%15==0
-        ? chooseUnifiedUtilityDecisionAtPosition(
+    UnifiedUtilityDecision decision;
+    if(world_.minute%15==0){
+        const auto population=settlementPopulation();
+        decision=chooseUnifiedUtilityDecisionAtPosition(
             world_,c,relationships_,r.pos,0.18,0.14,&population,
-            &socialKnowledge_,&households_)
-        : chooseUnifiedUtilityDecisionAtPosition(
-            world_,c,relationships_,r.pos,0.18,2.0,&population,
             &socialKnowledge_,&households_);
+    }else{
+        // The off-cadence social probe deliberately cannot start ordinary
+        // civilization work. The old minCivilizationUtility=2.0 call still
+        // evaluated every resource/facility candidate even though a clamped
+        // [0,1] civilization utility could never win. Preserve the one
+        // exception first: an urgent missing provision suppresses social work.
+        if(urgentSurvivalProvisionDecisionAtPosition(
+               world_,c,r.pos).intent!=CivilizationIntent::None){
+            return false;
+        }
+        decision=choosePhysicalSocialUtilityDecision(
+            world_,c,relationships_,0.18);
+    }
     if(decision.kind!=UnifiedDecisionKind::Social || decision.social.intent==SocialIntent::None) return false;
 
     const Character* target=findCharacter(world_,decision.social.target);
