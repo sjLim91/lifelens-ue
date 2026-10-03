@@ -302,6 +302,9 @@ export class FacilityLayer {
       nextStructures.set(trace.id, { signature: structureSignature, group: structure });
     }
 
+    for (const [id, old] of this.structures) {
+      if (nextStructures.get(id)?.group !== old.group) this.disposeStructureInstances(old.group);
+    }
     this.structures.clear();
     for (const [id, entry] of nextStructures) this.structures.set(id, entry);
     this.group.visible = true;
@@ -324,6 +327,7 @@ export class FacilityLayer {
 
   dispose(): void {
     this.group.clear();
+    for (const entry of this.structures.values()) this.disposeStructureInstances(entry.group);
     for (const material of this.wornMaterials.values()) material.dispose();
     this.wornMaterials.clear();
     this.structures.clear();
@@ -720,6 +724,7 @@ export class FacilityLayer {
     trace: FacilityTrace,
     progress: number,
   ): void {
+    const firstPart = group.children.length;
     // Ground-level woven grass/fiber, with ragged edges and three branches.
     // Facility groups sit 0.025 above terrain; the occupied center therefore
     // meets the same support plane as the native LayToIdle calibration.
@@ -740,6 +745,27 @@ export class FacilityLayer {
         this.woodMaterial, [x, 0.05, z], [0.055, length, 0.055],
         [0, yaw, Math.PI / 2], 74 + i);
     }
+    // Seven primitive parts, three material/geometry batches: preserve the
+    // original bed's draw-call budget. Allocate only when this cache rebuilds.
+    const parts = group.children.slice(firstPart) as THREE.Mesh[];
+    for (const material of [this.beddingMaterial, this.thatchMaterial, this.woodMaterial]) {
+      const matching = parts.filter(part => part.material === material);
+      if (!matching.length) continue;
+      const batch = new THREE.InstancedMesh(matching[0].geometry, material, matching.length);
+      this.prepareMesh(batch, trace, 70 + group.children.length);
+      matching.forEach((part, index) => {
+        part.updateMatrix(); batch.setMatrixAt(index, part.matrix); group.remove(part);
+      });
+      batch.instanceMatrix.needsUpdate = true;
+      batch.computeBoundingBox(); batch.computeBoundingSphere();
+      group.add(batch);
+    }
+  }
+
+  private disposeStructureInstances(group: THREE.Group): void {
+    group.traverse(object => {
+      if (object instanceof THREE.InstancedMesh) object.dispose();
+    });
   }
 
   private buildShelter(

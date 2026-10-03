@@ -16,7 +16,7 @@
 
 ## SleepingPlace 표현
 
-기존 두꺼운 wood base + 직사각 mattress + pillow block 세 mesh를 낮은 섬유 중앙 매트, 비정형 양쪽 풀 가장자리, 느슨한 풀 묶음, 얇은 branch 세 개의 일곱 mesh로 교체한다. 외부 asset, 새 geometry 종류, 무료 시설, 시대별 자동 reskin은 없다. 기존 공유 geometry/material과 구조 cache를 사용한다. 시설당 mesh는 3→7로 증가하며 실제 mobile GPU 측정은 별도 검증 대상이다.
+기존 두꺼운 wood base + 직사각 mattress + pillow block 세 mesh를 낮은 섬유 중앙 매트, 비정형 양쪽 풀 가장자리, 느슨한 풀 묶음, 얇은 branch 세 개의 일곱 primitive part로 교체한다. 외부 asset, 새 geometry 종류, 무료 시설, 시대별 자동 reskin은 없다. 기존 공유 geometry/material과 구조 cache를 사용한다. 교체/제거/전체 dispose 때 instance matrix buffer를 해제하고 공유 geometry/material은 기존 lifecycle을 유지한다. 같은 material/geometry별 InstancedMesh 세 개로 묶어 시설당 draw call은 기존과 같은 3으로 유지하며 실제 mobile GPU 측정은 별도 검증 대상이다.
 
 중앙 매트 실제 top surface는 terrain 기준 **0.14 world units**이다. 시설 group의 terrain offset 0.025까지 포함한다. 수면 support constant도 0.14이다. #611 실제 UAL2 LayToIdle clip, skeleton calibration, endpoint fallback, slope support, snapshot refresh와 wake continuity 경로를 유지한다. Shelter 수면은 지면 support 경로를 유지한다.
 
@@ -68,7 +68,7 @@ DTO: `era.currentEra.{id,ordinal}`, `era.evidence[]`, `era.nextEra`, `era.nextEr
 
 `Tools/verify_sleep_longrun.py`는 완료된 365일 이상 로그에서 연속 sleep saturation이 10,000분 이상이면 실패시킨다. 이 threshold는 user가 금지한 수만 분 starvation을 검출하는 CI acceptance guard이며 Core gameplay 값이 아니다. CI는 세 seed의 원본 로그와 JSON metrics를 artifact로 보존한다.
 
-모바일 영향: sleeping place당 공유 geometry 2종, mesh 7개(기존 3개), sleep slope support는 snapshot 갱신 때 지면 sample 9개. Era registry는 Observer 갱신 때 한 번 평가하며 Web은 전달된 bounded 근거만 렌더한다. 모바일 badge는 44px touch target과 wrap, seed chip용 기존 right inset을 유지한다. 실제 기기 GPU/프레임 시간 및 before/after screenshot은 측정·촬영하지 않았고 성공으로 주장하지 않는다. Core/geometry/animation 검증이 실제 플레이 장면의 모든 시각 조건을 대신하지는 않는다.
+모바일 영향: sleeping place당 공유 geometry 2종, primitive part 7개를 InstancedMesh 3개로 묶어 기존과 같은 draw call 3개, sleep slope support는 snapshot 갱신 때 지면 sample 9개. Era registry는 Observer 갱신 때 한 번 평가하며 Web은 전달된 bounded 근거만 렌더한다. 모바일 badge는 44px touch target과 wrap, seed chip용 기존 right inset을 유지한다. 실제 기기 GPU/프레임 시간 및 before/after screenshot은 측정·촬영하지 않았고 성공으로 주장하지 않는다. Core/geometry/animation 검증이 실제 플레이 장면의 모든 시각 조건을 대신하지는 않는다.
 
 변경 경계와 파일:
 

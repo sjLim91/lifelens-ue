@@ -39,14 +39,19 @@ for(const name of ['beddingMaterial','woodMaterial','thatchMaterial']) layer[nam
 const group=new THREE.Group(); group.position.y=.025;
 layer.buildSleepingPlace(group,{id:'mat',kind:'Facility',facilityKind:'SleepingPlace',state:'Operational'},1);
 group.updateMatrixWorld(true);
-assert.equal(group.children.length,7);
+assert.equal(group.children.length,3);
+assert(group.children.every(mesh=>mesh instanceof THREE.InstancedMesh));
+assert.equal(group.children.reduce((sum,mesh)=>sum+mesh.count,0),7);
 const mat=group.children[0];
-assert(Math.abs(new THREE.Box3().setFromObject(mat).max.y-contract.sleepPoseSleepingPlaceSurfaceHeightWorldUnits)<1e-9);
+assert(Math.abs(new THREE.Box3().setFromObject(mat).max.y-contract.sleepPoseSleepingPlaceSurfaceHeightWorldUnits)<1e-7);
 assert(new THREE.Box3().setFromObject(group).max.y<=.18);
-assert.equal(group.children.filter(mesh=>mesh.geometry===layer.cylinderGeometry).length,3);
-assert.equal(group.children.filter(mesh=>mesh.scale.y>.10 && mesh.geometry===layer.boxGeometry).length,0);
+assert.equal(group.children.find(mesh=>mesh.geometry===layer.cylinderGeometry).count,3);
+const matrix=new THREE.Matrix4(), scale=new THREE.Vector3(), pos=new THREE.Vector3(), rotation=new THREE.Quaternion();
+for(const mesh of group.children.filter(mesh=>mesh.geometry===layer.boxGeometry)){
+  for(let i=0;i<mesh.count;i++){mesh.getMatrixAt(i,matrix);matrix.decompose(pos,rotation,scale);assert(scale.y<=.10);}
+}
 const frameCount=group.children.length;
-assert.equal(frameCount,7); // Bounded shared geometry; no per-frame additions.
+assert.equal(frameCount,3); // Bounded shared geometry; no per-frame additions.
 const evidence=[{id:'OperationalSleep',satisfied:true},{id:'OperationalPlot',satisfied:false}];
 for(const id of ['NaturalSurvival','EarlySettlement','AgrarianSettlement','CopperMetallurgy','BronzeTechnology']){
   const html=renderToStaticMarkup(React.createElement(CivilizationEraBadge,{
@@ -59,5 +64,7 @@ for(const id of ['NaturalSurvival','EarlySettlement','AgrarianSettlement','Coppe
 }
 assert.equal(formatEraEvidence('UnknownFutureEvidence'),'새로운 운영 근거');
 assert.equal(formatCivilizationEra('UnknownFutureEra'),'문명 단계 확인 중');
-writeFileSync(resolve(out,'metrics.json'),JSON.stringify({sleepingPlaceMeshes:7,sharedGeometryKinds:2,surfaceHeight:.14}));
+let disposed=0; for(const mesh of group.children) mesh.addEventListener('dispose',()=>disposed++);
+layer.disposeStructureInstances(group); assert.equal(disposed,3);
+writeFileSync(resolve(out,'metrics.json'),JSON.stringify({sleepingPlaceDrawCalls:3,sleepingPlaceParts:7,sharedGeometryKinds:2,surfaceHeight:.14}));
 console.log('Primitive mat surface, geometry budget, Korean era evidence and modal semantics PASS');
