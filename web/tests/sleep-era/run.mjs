@@ -18,10 +18,9 @@ function compile(path){
     compilerOptions:{module:ts.ModuleKind.ES2022,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX},
   }).outputText;
   code=code.replace(/(from\s+['"])(\.[^'"]+)(['"])/g,(_,a,p,b)=>{
-    const base=resolve(dirname(path),p);
+    const base=resolve(dirname(path),p).slice(resolve('.').length+1);
     const absolute=existsSync(resolve(root,'src',base+'.ts')) ? base+'.ts' : base+'.tsx';
-    const relative=absolute.slice(resolve('.').length+1);
-    compile(relative); return a+p+'.mjs'+b;
+    compile(absolute); return a+p+'.mjs'+b;
   });
   mkdirSync(dirname(target),{recursive:true}); writeFileSync(target,code); return target;
 }

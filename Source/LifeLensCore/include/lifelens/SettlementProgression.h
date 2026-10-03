@@ -245,7 +245,7 @@ inline double sleepRecoveryPerMinuteAt(
     const bool protectedSleep=occupied && facilityProvidesWeatherProtection(facility->kind);
     const auto environment=evaluateSleepEnvironment(weather,consequence,protectedSleep);
     double baseRecovery=DefaultPhysiologyBalance.outdoorSleepRecoveryPerMinute;
-    if(occupied && (protectedSleep || !environment.weatherProtectionPreferred)){
+    if(occupied && (protectedSleep || !environment.exposedEmergencyOnly)){
         baseRecovery=settlementSleepRecoveryPerTick(*facility);
     }
     // Exposed bedding in harsh weather has ground-emergency efficiency. Keep

@@ -14,8 +14,8 @@ struct SleepEnvironmentContract {
     static constexpr double ExposureTravelCost = 24.0;
     static constexpr int ReplanIntervalMinutes = 15;
     static constexpr double ReplanCostImprovement = 4.0;
-    static constexpr int MinimumTravelBudgetCells = 8;
-    static constexpr int MaximumTravelBudgetCells = 32;
+    static constexpr int MinimumTravelBudgetCells = 16;
+    static constexpr int MaximumTravelBudgetCells = 64;
 };
 
 enum class SleepContext { None, Protected, Exposed, ExposedEmergency };

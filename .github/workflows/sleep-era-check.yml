@@ -39,7 +39,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: cmake -S Source/LifeLensCore -B build -DCMAKE_BUILD_TYPE=Release
-      - run: cmake --build build --target ll_balance_audit -j2
+      - run: cmake --build build -j2
+      - run: ctest --test-dir build --output-on-failure
       - run: |
           ./build/ll_balance_audit --days 100 --seed 874213954 --checkpoints 100 > candidate-874213954.log
           ./build/ll_balance_audit --days 100 --seed 2 --checkpoints 100 > candidate-2.log

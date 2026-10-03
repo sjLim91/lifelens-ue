@@ -83,6 +83,51 @@ int main()
     world.characters.front().needs.thirst=1.0;
     sim.step(); assert(sim.observeResidentPresentation(id).physicalGoal!=Goal::Sleep);
 
+    // Full Shelter reserves all four slots: choose another usable roof.
+    Simulation capacity(2); capacity.setupNewGame();
+    auto crowded=capacity.captureSnapshot();
+    const auto requester=crowded.world.characters.front().id;
+    GridPos home=crowded.runtime.at(requester).pos;
+    GridPos firstRoof{home.x+3,home.y},secondRoof{home.x+4,home.y};
+    std::vector<GridPos> capacityRoute;
+    assert(buildCoreGroundRoute(crowded.world,home,secondRoof,0,capacityRoute));
+    crowded.world.facilities={facility(99201,FacilityKind::Shelter,firstRoof),
+        facility(99202,FacilityKind::Shelter,secondRoof)};
+    Character extra=crowded.world.characters.back(); extra.id=99999;
+    extra.civilization.character=extra.id; extra.name="CapacityFixture";
+    crowded.world.characters.push_back(extra);
+    crowded.runtime[extra.id]=crowded.runtime.at(requester);
+    for(std::size_t i=1;i<crowded.world.characters.size();++i){
+        auto& r=crowded.runtime.at(crowded.world.characters[i].id);
+        r.goal=Goal::Sleep; r.plan={{ActionType::EmergencyUse,0,600}}; r.actionIndex=0;
+        r.pos=firstRoof; r.navigationHasTarget=true; r.navigationTarget=firstRoof;
+        r.navigationArrived=true; r.pendingContext.clear();
+    }
+    crowded.world.characters.front().needs={0.01,0.01,1.0,0.01,0.01};
+    crowded.world.minute=weatherMinute(crowded.world,home,true);
+    std::string error;
+    assert(capacity.restoreSnapshot(crowded,&error));
+    assert(capacity.settlementSleepTarget(requester,target,targetId) && targetId==99202);
+
+    // Clear-to-storm transition: existing exposed interaction replans at a
+    // bounded checkpoint and walks, then stays committed to the roof.
+    auto worsening=sim.captureSnapshot();
+    worsening.world.characters.front().needs={0.01,0.01,0.9,0.01,0.01};
+    auto& resting=worsening.runtime.at(id);
+    resting.goal=Goal::Sleep; resting.plan={{ActionType::EmergencyUse,0,600}};
+    resting.actionIndex=0; resting.pos=bed; resting.navigationTarget=bed;
+    resting.navigationHasTarget=true; resting.navigationArrived=true;
+    resting.pendingContext.clear();
+    worsening.world.minute=weatherMinute(worsening.world,bed,true);
+    worsening.world.minute+=(15-worsening.world.minute%15)%15;
+    assert(sim.restoreSnapshot(worsening,&error));
+    sim.step();
+    auto transition=sim.observeResidentPresentation(id);
+    assert(transition.phase==PresentationActionPhase::Moving);
+    assert(transition.targetGrid.x==roof.x && transition.targetGrid.y==roof.y);
+    for(int i=0;i<25;++i) sim.step();
+    assert(sim.observeResidentPresentation(id).sleepContext==SleepContext::Protected);
+
     Simulation emergency(2); emergency.setupNewGame();
     emergency.world().characters.resize(1); emergency.world().facilities.clear();
     auto& tired=emergency.world().characters.front(); tired.needs={0.01,0.01,1.0,0.01,0.01};
