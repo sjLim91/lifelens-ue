@@ -1604,30 +1604,47 @@ Simulation::nearestAvailableOperationalSleepFacility(
     return nullptr;
 }
 
-bool Simulation::tryCivilizationDecision(Character& c,Runtime& r){
+bool Simulation::tryCivilizationDecision(
+    Character& c,
+    Runtime& r,
+    const UnifiedUtilityDecision* precomputed)
+{
     if(!c.alive || !lifeStageProfile(c.lifeStage).canWork || r.pendingContext.active()) return false;
 
-    const CivilizationUtilityDecision urgentProvision=
-        urgentSurvivalProvisionDecisionAtPosition(world_,c,r.pos);
-    const bool urgentProvisionRequired=
-        urgentProvision.intent!=CivilizationIntent::None;
-    if(!urgentProvisionRequired && world_.minute%15!=0) return false;
+    CivilizationUtilityDecision urgentProvision;
+    bool urgentProvisionRequired=false;
+    if(precomputed==nullptr){
+        urgentProvision=
+            urgentSurvivalProvisionDecisionAtPosition(world_,c,r.pos);
+        urgentProvisionRequired=
+            urgentProvision.intent!=CivilizationIntent::None;
+        if(!urgentProvisionRequired && world_.minute%15!=0) return false;
+    }
 
-    const auto population=settlementPopulation();
+    SettlementPopulation population;
+    bool havePopulation=false;
     UnifiedUtilityDecision decision;
     if(urgentProvisionRequired){
         decision.kind=UnifiedDecisionKind::Civilization;
         decision.civilization=urgentProvision;
         decision.utility=urgentProvision.utility;
+    }else if(precomputed!=nullptr){
+        decision=*precomputed;
     }else{
+        population=settlementPopulation();
+        havePopulation=true;
         decision=chooseUnifiedUtilityDecisionAtPosition(
             world_,c,relationships_,r.pos,0.18,0.14,&population,
             &socialKnowledge_,&households_);
-        if(decision.kind!=UnifiedDecisionKind::Civilization){
-            return false;
-        }
     }
-    if(decision.civilization.intent==CivilizationIntent::None) return false;
+    if(decision.kind!=UnifiedDecisionKind::Civilization
+       || decision.civilization.intent==CivilizationIntent::None){
+        return false;
+    }
+    if(!havePopulation){
+        population=settlementPopulation();
+        havePopulation=true;
+    }
 
     PendingContextAction pending;
     pending.token=issueContextActionToken();
@@ -1659,18 +1676,35 @@ bool Simulation::tryCivilizationDecision(Character& c,Runtime& r){
     return true;
 }
 
-bool Simulation::trySocialDecision(Character& c,Runtime& r){
+bool Simulation::trySocialDecision(
+    Character& c,
+    Runtime& r,
+    const UnifiedUtilityDecision* precomputed)
+{
     if(!c.alive || lifeStageProfile(c.lifeStage).autonomy<0.35 || r.pendingContext.active()) return false;
     if(world_.minute<r.socialCooldownUntilMinute) return false;
 
-    const auto population=settlementPopulation();
-    const UnifiedUtilityDecision decision=world_.minute%15==0
-        ? chooseUnifiedUtilityDecisionAtPosition(
+    UnifiedUtilityDecision decision;
+    if(precomputed!=nullptr){
+        decision=*precomputed;
+    }else if(world_.minute%15==0){
+        const auto population=settlementPopulation();
+        decision=chooseUnifiedUtilityDecisionAtPosition(
             world_,c,relationships_,r.pos,0.18,0.14,&population,
-            &socialKnowledge_,&households_)
-        : chooseUnifiedUtilityDecisionAtPosition(
-            world_,c,relationships_,r.pos,0.18,2.0,&population,
             &socialKnowledge_,&households_);
+    }else{
+        // The off-cadence social probe deliberately cannot start ordinary
+        // civilization work. The old minCivilizationUtility=2.0 call still
+        // evaluated every resource/facility candidate even though a clamped
+        // [0,1] civilization utility could never win. Preserve the one
+        // exception first: an urgent missing provision suppresses social work.
+        if(urgentSurvivalProvisionDecisionAtPosition(
+               world_,c,r.pos).intent!=CivilizationIntent::None){
+            return false;
+        }
+        decision=choosePhysicalSocialUtilityDecision(
+            world_,c,relationships_,0.18);
+    }
     if(decision.kind!=UnifiedDecisionKind::Social || decision.social.intent==SocialIntent::None) return false;
 
     const Character* target=findCharacter(world_,decision.social.target);
@@ -1808,8 +1842,33 @@ void Simulation::beginPlan(Character& c,Runtime& r){
     }
 
     if(planningAllowed && urgentProvisionRequired
-       && !urgentSelfCareDominatesProvision
-       && tryCivilizationDecision(c,r)) return;
+       && !urgentSelfCareDominatesProvision){
+        UnifiedUtilityDecision urgentProvisionDecision;
+        urgentProvisionDecision.kind=UnifiedDecisionKind::Civilization;
+        urgentProvisionDecision.civilization=urgentProvision;
+        urgentProvisionDecision.utility=urgentProvision.utility;
+        if(tryCivilizationDecision(
+               c,r,&urgentProvisionDecision)){
+            return;
+        }
+    }
+
+    // At the regular 15-minute context cadence, Civilization and Social used
+    // to evaluate the exact same unified utility graph independently when the
+    // first probe did not choose Civilization. Cache that pure result once.
+    UnifiedUtilityDecision cadenceDecision;
+    const UnifiedUtilityDecision* sharedCadenceDecision=nullptr;
+    if(planningAllowed
+       && !urgentProvisionRequired
+       && !criticalSurvivalPressure
+       && urgentPhysicalGoal==Goal::Idle
+       && world_.minute%15==0){
+        const auto population=settlementPopulation();
+        cadenceDecision=chooseUnifiedUtilityDecisionAtPosition(
+            world_,c,relationships_,r.pos,0.18,0.14,&population,
+            &socialKnowledge_,&households_);
+        sharedCadenceDecision=&cadenceDecision;
+    }
 
     // Survival needs that can be satisfied immediately pre-empt settlement
     // projects and social activity. If an urgent need cannot yet be satisfied,
@@ -1817,9 +1876,9 @@ void Simulation::beginPlan(Character& c,Runtime& r){
     if(planningAllowed
        && !criticalSurvivalPressure
        && urgentPhysicalGoal==Goal::Idle
-       && tryCivilizationDecision(c,r)) return;
+       && tryCivilizationDecision(c,r,sharedCadenceDecision)) return;
     if(planningAllowed && !hasUrgentPhysicalNeed
-       && trySocialDecision(c,r)) return;
+       && trySocialDecision(c,r,sharedCadenceDecision)) return;
 
     r.civilizationActive=false;
     r.socialActive=false;

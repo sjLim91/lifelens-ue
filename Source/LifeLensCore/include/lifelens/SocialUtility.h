@@ -802,6 +802,32 @@ inline CivilizationUtilityDecision urgentSurvivalProvisionGatherDecision(
         world,self,reference);
 }
 
+inline UnifiedUtilityDecision choosePhysicalSocialUtilityDecision(
+    const World& world,
+    const Character& self,
+    const RelationshipBook& relationships,
+    double minimumSocialUtility = 0.18)
+{
+    const auto physical=bestPhysicalUtility(world,self);
+    const SocialUtilityDecision social=
+        chooseSocialUtilityDecision(world,self,relationships);
+
+    UnifiedUtilityDecision decision;
+    decision.physicalGoal=physical.first;
+    decision.social=social;
+
+    if(social.intent!=SocialIntent::None
+       && social.utility>=minimumSocialUtility
+       && social.utility>physical.second*1.05){
+        decision.kind=UnifiedDecisionKind::Social;
+        decision.utility=social.utility;
+    }else{
+        decision.kind=UnifiedDecisionKind::Physical;
+        decision.utility=physical.second;
+    }
+    return decision;
+}
+
 inline UnifiedUtilityDecision chooseUnifiedUtilityDecisionAtPosition(
     const World& world,
     const Character& self,
@@ -813,20 +839,13 @@ inline UnifiedUtilityDecision chooseUnifiedUtilityDecisionAtPosition(
     const SocialKnowledgeBook* socialKnowledge=nullptr,
     const HouseholdBook* households=nullptr) {
 
-    const auto physical = bestPhysicalUtility(world, self);
-    const SocialUtilityDecision social = chooseSocialUtilityDecision(world, self, relationships);
-    const CivilizationUtilityDecision civilization =
-        chooseDispositionAwareCivilizationDecisionAtPosition(
-            world,self,authoritativePosition,population,
-            socialKnowledge,households);
+    UnifiedUtilityDecision decision=
+        choosePhysicalSocialUtilityDecision(
+            world,self,relationships,minimumSocialUtility);
+
     const CivilizationUtilityDecision survivalProvision =
         urgentSurvivalProvisionDecisionAtPosition(
             world,self,authoritativePosition);
-
-    UnifiedUtilityDecision decision;
-    decision.physicalGoal = physical.first;
-    decision.social = social;
-    decision.civilization = civilization;
 
     // A missing critical provision is part of survival, not optional progress.
     // Prefer Retrieve/Gather from known supply; if none exists, allow a real
@@ -839,17 +858,14 @@ inline UnifiedUtilityDecision chooseUnifiedUtilityDecisionAtPosition(
         return decision;
     }
 
-    // Preserve the pre-civilization Physical/Social winner first so existing
-    // behavior remains stable unless civilization is clearly more valuable.
-    if (social.intent != SocialIntent::None &&
-        social.utility >= minimumSocialUtility &&
-        social.utility > physical.second * 1.05) {
-        decision.kind = UnifiedDecisionKind::Social;
-        decision.utility = social.utility;
-    } else {
-        decision.kind = UnifiedDecisionKind::Physical;
-        decision.utility = physical.second;
-    }
+    // Regular civilization evaluation is materially more expensive than the
+    // physical/social arbitration above (resource/facility/settlement scans).
+    // It is only useful when it is actually allowed to compete.
+    const CivilizationUtilityDecision civilization =
+        chooseDispositionAwareCivilizationDecisionAtPosition(
+            world,self,authoritativePosition,population,
+            socialKnowledge,households);
+    decision.civilization = civilization;
 
     // Survival is still dominant. Civilization competes only while all Needs
     // are below the urgent threshold, and must beat the existing winner by a
