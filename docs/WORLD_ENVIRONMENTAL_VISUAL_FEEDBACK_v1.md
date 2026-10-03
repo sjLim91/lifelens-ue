@@ -1,15 +1,42 @@
 # LifeLens World Environmental Visual Feedback v1
 
+> **Active Web baseline — 2026-10-03:** 현재 제품은 `LifeLensCore → WASM → Web Observer`다. 아래 Unreal/HISM/Actor/ownership 설명은 보존된 역사 기록이며, active Web 구현 상태는 이 절을 따른다.
+
+## Web implemented baseline — environmental surface consequences
+
+- Authority: `SimulationClimate.h::DynamicEnvironmentObservation` → `WebClientBridge::dynamicEnvironmentJson` → `DynamicEnvironment` → `WorldScene.setEnvironment`.
+- `DynamicEnvironment.h`라는 헤더는 현재 main에 없다. 실제 강수/온도/젖음 authority는 `SimulationClimate.h`다.
+- `HumanTraceReadModel.h`는 `HumanWaste`만 Residue로 투영한다. Web DTO에는 `gridX/gridY`, `amount`, `intensity`, `radiusTiles`가 있으며 residue kind/age는 별도 필드로 전달되지 않는다. age를 추측하거나 별도 decay하지 않는다.
+- 시설의 `state`, `active`, `lit`은 같은 trace DTO를 사용한다. durability는 기존 `CivilizationWorldPayload.facilities` 상세 read model과 id/kind/위치 검증을 거쳐 사용한다.
+
+| Consequence | Web implemented baseline | Presentation boundary |
+|---|---|---|
+| Wet ground | 기존 terrain palette의 darkening + bounded roughness 감소; 바위·목재·석재 재질도 젖음 반영 | 기존 WorldScene의 Core wetness/precipitation mapping, 별도 drying timer 없음; grass는 Lambert 유지 |
+| Puddle | 관측된 지형 sampler의 낮고 평평한 후보, shared pooled ground-following patch | Water ResourceNode/음용/세척/navigation/save 아님; water·시설 footprint·steep/invalid terrain 제외; Core wetness로 opacity 감소; current snow cover가 강하면 시각적으로 가림(동결 authority 없음) |
+| Repeated foot traffic | 기존 ObservedFootTraffic 위치·strength·fade에 wet mud tint/opacity/width/roughness 곱 적용 | session-local 관찰 메모리 그대로; telemetry gap/teleport 연결 금지; Core road 아님 |
+| Snow | 현재 Snow intensity·airTemperatureC·wetness로 terrain/rock/시설의 upward face 흰색 modifier | stateless ephemeral cover; refresh 즉시 재구성; Rain/warm/no snow이면 0; persistent depth/melt simulation 없음; water surface 재질 제외 |
+| HumanWaste | actual radius footprint, intensity 기반 mottled soil + amount 기반 작은 soil clusters | 하나의 기존 trace draw call; Core decay/containment를 그대로 따름; DugPit 이름으로 오염 제거하지 않음 |
+| Fire smoke/scorch | Operational + active + lit FirePit/Furnace의 전역 smoke pool; operational/ruined fire footprint의 작은 scorch | 연료 추정·확산·burn history 저장 없음; wind intensity만 사용하고 방향은 deterministic cosmetic drift |
+| Facility weathering | 기존 durability/ruined geometry 유지; dry condition baseline에 wetness와 upper-face snow modifier | condition band cache 유지; 새 곰팡이/부패/damage authority 없음 |
+
+Budget: 추가 최대 3 draw calls(puddle 1, scorch 1, smoke 1). Snow/wet 재질은 추가 geometry/draw calls 없음. puddle 최대 128 patches(16 triangles/patch), scorch 최대 64 instances, smoke 최대 192 points(8/facility). Residue는 최대 64 traces, trace당 최대 8 soil clusters를 기존 shared geometry에 포함한다. FootTraffic은 기존 최대 512 marks/1 draw call이다. Terrain/dressing signature cache와 #605 NaturalResourceProjection은 유지한다. Geometry scan은 layout 변경 시에만, weather는 material/uniform 갱신, smoke는 bounded observer-minute buffer 갱신이다.
+
+검증 경로: `web/tests/environment-consequences/run.mjs`, `fixture.html`/`fixture.ts`, `browser-review.mjs`, `.github/workflows/environment-consequences-check.yml`. A~F read-only synthetic DTO fixture를 390×844와 1280×900에서 같은 camera/seed/minute로 렌더하고 GPU shader errors, scene children, draw calls/instance budget을 기록한다. Fixture는 실제 Core 시나리오 실행 결과나 실제 모바일 GPU 성능 측정으로 간주하지 않는다.
+
+이번 범위 밖: authoritative water-adjacent contamination DTO가 없어 shoreline discoloration을 추론하지 않는다. shelter precipitation clipping은 기존 camera-centered pool에 collision/raycast를 추가하지 않고 후속으로 남긴다. 장기 snow/scorch history·weather simulation·AI/Needs/progression 수정 없음. #605 resource projection, #611 resident motion, #612 sleep/bedding/era 계약 유지. 새 외부 asset 없음.
+
+---
+
 ## 목적
 
-이 문서는 LifeLens에서 **주민의 행동과 세계 변화가 실제 환경 상태를 만들고, 그 결과가 Unreal 그래픽으로 다시 보이는 과정**의 canonical 기준이다.
+이 문서는 LifeLens에서 **주민의 행동과 세계 변화가 실제 환경 상태를 만들고, 그 결과가 Web Observer 그래픽으로 다시 보이는 과정**의 canonical 기준이다.
 
 LifeLens의 환경은 정적인 배경이 아니다.
 주민이 먹고, 자고, 배변하고, 물을 사용하고, 자원을 채취하고, 불을 피우고, 길을 만들고, 시설을 짓고, 폐기물을 남기면 그 결과가 세계에 남고 다른 주민이 다시 그 환경을 경험해야 한다.
 
 핵심 루프:
 
-`Resident Action → Core/World Environmental Consequence → Saved Authoritative State → Unreal Visual Expression → Resident Perception/Exposure → Changed Decision/Behavior`
+`Resident Action → Core/World Environmental Consequence → Saved/Observed Authoritative State → Web Visual Expression → Resident Perception/Exposure → Changed Decision/Behavior`
 
 그래픽은 이 루프의 **표현 계층**이며 시뮬레이션 결과를 스스로 결정하지 않는다.
 
@@ -220,7 +247,7 @@ LifeLens의 환경은 정적인 배경이 아니다.
 
 ---
 
-## 구현 ownership
+## 구현 ownership — historical Unreal lane
 
 ### 쭌 / Core-World lane
 
@@ -267,10 +294,10 @@ Environmental Visual Feedback v1은 최소 다음을 만족해야 한다.
 3. sanitation problem recognition.
 4. primitive sanitation facility progression + visual construction stages.
 5. resource depletion/regrowth visual.
-6. fire/smoke/scorch consequence.
-7. repeated-foot-traffic trail formation.
-8. water/soil contamination presentation.
-9. weather-driven environment feedback.
+6. fire/smoke/scorch consequence — Web baseline implemented above; persistent burn/forest-fire authority remains future.
+7. repeated-foot-traffic trail formation — existing observer-local memory + wet mud baseline implemented; authoritative roads remain outside this pass.
+8. water/soil contamination presentation — HumanWaste soil baseline implemented; authoritative water observation still required for water discoloration.
+9. weather-driven environment feedback — Web wet/puddle/ephemeral snow/facility baseline implemented; historical Unreal implementations remain below.
 10. settlement/civilization growth visualization.
 
 ---
@@ -283,12 +310,12 @@ Environmental Visual Feedback v1은 최소 다음을 만족해야 한다.
 
 세 문서의 authority boundary는 동일하다:
 
-**Core/World decides reality. Unreal presents reality. Residents perceive the same reality and act on it again.**
+**Core/World decides reality. Web presents reality. Residents perceive the same reality and act on it again.**
 
 
 ---
 
-## HumanWaste runtime presentation baseline — 2026-09-15
+## HumanWaste runtime presentation baseline — historical Unreal 2026-09-15
 
 PR #80 이후 HumanWaste 표현은 **site kind를 별도 시각 권위로 복제하지 않고 residue read DTO 자체**를 따른다.
 
@@ -317,3 +344,4 @@ v1 런타임 baseline:
 - visualizer가 `deposit`, containment, hygiene burden, facility state를 직접 수정하지 않는다.
 - visual marker 수/크기를 simulation truth로 다시 읽지 않는다.
 - 128개 cap을 넘는 경우에도 Core의 `TotalResidues`는 그대로이며, presentation cap은 simulation 삭제를 의미하지 않는다.
+

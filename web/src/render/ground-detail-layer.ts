@@ -12,6 +12,7 @@ import { useMobileVegetationProfile } from './vegetation-profile';
 
 import { NaturalResourceProjection } from './natural-resource-projection';
 import { WORLD_PRESENTATION } from './world-presentation-config';
+import { SurfaceSnowModifier } from './environment-surface-presentation';
 
 const MAX_GRASS_TUFTS = 9000;
 const MAX_SHRUBS = 2600;
@@ -133,8 +134,10 @@ export class GroundDetailLayer {
   private readonly position = new THREE.Vector3();
   private readonly color = new THREE.Color();
   private terrainSignature = '';
+  private readonly snowModifier = new SurfaceSnowModifier();
 
   constructor() {
+    this.snowModifier.install(this.rockMaterial);
     for (const mesh of [this.grass, this.shrubs, this.rocks]) {
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       mesh.castShadow = false;
@@ -419,10 +422,15 @@ export class GroundDetailLayer {
 
   setWetness(wetness01: number): void {
     const wetness = clamp01(wetness01);
-    this.grassMaterial.color.setScalar(1 - wetness * 0.12);
-    this.shrubMaterial.color.setScalar(1 - wetness * 0.1);
-    this.rockMaterial.color.setScalar(1 - wetness * 0.22);
-    this.rockMaterial.roughness = Math.max(0.46, 0.94 - wetness * 0.42);
+    const config = WORLD_PRESENTATION.weather;
+    this.grassMaterial.color.setScalar(1 - wetness * config.wetGrassDarkening);
+    this.shrubMaterial.color.setScalar(1 - wetness * config.wetShrubDarkening);
+    this.rockMaterial.color.setScalar(1 - wetness * config.wetRockDarkening);
+    this.rockMaterial.roughness = THREE.MathUtils.lerp(config.dryRockRoughness, config.wetRockRoughness, wetness);
+  }
+
+  setSnowCoverage(snow: number, originX: number, originZ: number): void {
+    this.snowModifier.setState({ snow, originX, originZ });
   }
 
   dispose(): void {
@@ -497,4 +505,5 @@ export class GroundDetailLayer {
     mesh.computeBoundingSphere();
   }
 }
+
 

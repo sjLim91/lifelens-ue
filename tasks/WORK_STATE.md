@@ -1,3 +1,13 @@
+## 2026-10-03 READY_FOR_REVIEW — Web environmental consequences
+
+- PR: [#615](https://github.com/sjLim91/lifelens-ue/pull/615); branch `work/web-environment-consequences-20261003`. User requested PR only; **main merge/auto-merge forbidden**.
+- Start/recovery/final remote main verification: `4f3715e8b0983e8109397ab9eeb2d18c55514470`; no later main changes at verification.
+- Verified product HEAD: `3cac0a9f5f29011efff21ec88cc4ae585edeb0c3`; [environment CI](https://github.com/sjLim91/lifelens-ue/actions/runs/37123316493) PASS: typecheck/build, environmental 9, presentation 64, human-trace 11, weather 7, motion 15, primitive bedding/era; mobile/desktop WebGL 12 screenshots + combined rain/fire budget.
+- Local runtime resilience 18 and continuity 13 PASS. No Core/save/AI/Needs/progression changes; #605/#611/#612 contracts retained.
+- Added overlays: puddle ≤128 patches, scorch ≤64 instances, smoke ≤192 points; measured simultaneous maximum +3 draw calls. Repeated refresh keeps scene children/GPU geometry stable; shader/browser errors 0.
+- Docs-only closeout follows verified product HEAD; use product validation evidence rather than requiring repeated heavy compilation for text changes. Existing PR-triggered checks may rerun automatically.
+- Recovery: `tasks/ENVIRONMENT_CONSEQUENCE_HANDOFF.md`; PR body checkpoint: `tasks/ENVIRONMENT_CONSEQUENCE_PR_BODY.md`. Re-query actual main/PR/Actions before any follow-up. Device GPU FPS and optional shelter precipitation clipping remain outside this implementation.
+
 ## 2026-10-02 — Web 자연 자원 / 환경 통합 (PR #605 / HOLD)
 
 - PR: https://github.com/sjLim91/lifelens-ue/pull/605. 사용자 요청대로 PR만 생성하며 main merge 금지.
@@ -735,3 +745,4 @@ This lane is parallel to active World v2 work and must not fork simulation truth
 - Merged `d8fcd616a344833a0da13707c80be18d8c8638c4`: removed collar-like spherical hair proxies; actual skinned scalp coverage and darker eyes.
 - All three final-head checks pass, including 49 regression cases. Device visual acceptance remains pending; CPU model close-up is diagnostic only.
 - Checkpoint: `tasks/WEB_SCALP_HANDOFF_2026-09-25.md`.
+

@@ -5,6 +5,7 @@ import { storedGoodsPiles } from './stored-goods-presentation';
 import { RESIDENT_PRESENTATION_CONTRACT, WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
 import { visibleHumanTraces } from '../state/human-traces';
 import { createTerrainElevationSampler } from './terrain-geometry';
+import { SurfaceSnowModifier } from './environment-surface-presentation';
 
 type FacilityTrace = Extract<HumanTrace, { kind: 'Facility' }>;
 
@@ -163,6 +164,9 @@ export class FacilityLayer {
   private readonly facilitiesById = new Map<string, CivilizationWorldFacility>();
   private readonly storagesById = new Map<string, CivilizationWorldStorage>();
   private readonly wornMaterials = new Map<string, THREE.MeshStandardMaterial>();
+  private readonly snowModifier = new SurfaceSnowModifier();
+  private readonly surfaceMaterials = new Map<THREE.MeshStandardMaterial, { color: THREE.Color; roughness: number; darkening: number }>();
+  private wetness = 0;
   private readonly glowTexture = (() => {
     const size = WORLD_PRESENTATION.fire.textureSize;
     const pixels = new Uint8Array(size * size * 4);
@@ -200,6 +204,32 @@ export class FacilityLayer {
 
   constructor() {
     this.group.name = 'facilities';
+    const config = WORLD_PRESENTATION.weather;
+    for (const material of [this.woodMaterial, this.darkWoodMaterial, this.thatchMaterial, this.beddingMaterial]) {
+      this.registerSurfaceMaterial(material, config.wetWoodDarkening);
+    }
+    for (const material of [this.stoneMaterial, this.earthMaterial]) {
+      this.registerSurfaceMaterial(material, config.wetStoneDarkening);
+    }
+  }
+
+  private registerSurfaceMaterial(material: THREE.MeshStandardMaterial, darkening: number): void {
+    this.surfaceMaterials.set(material, { color: material.color.clone(), roughness: material.roughness, darkening });
+    this.snowModifier.install(material);
+    this.applySurfaceWeather(material);
+  }
+
+  private applySurfaceWeather(material: THREE.MeshStandardMaterial): void {
+    const baseline = this.surfaceMaterials.get(material);
+    if (!baseline) return;
+    material.color.copy(baseline.color).multiplyScalar(1 - this.wetness * baseline.darkening);
+    material.roughness = THREE.MathUtils.lerp(baseline.roughness, Math.max(0.6, baseline.roughness - 0.3), this.wetness);
+  }
+
+  setSurfaceWeather(wetness: number, snow: number, originX: number, originZ: number): void {
+    this.wetness = clamp01(wetness);
+    this.snowModifier.setState({ snow, originX, originZ });
+    for (const material of this.surfaceMaterials.keys()) this.applySurfaceWeather(material);
   }
 
   setTerrain(window: TerrainWindow): void {
@@ -239,6 +269,7 @@ export class FacilityLayer {
     this.group.clear();
     if (facilities.length === 0) {
       this.group.visible = false;
+      for (const entry of this.structures.values()) this.disposeStructureInstances(entry.group);
       this.structures.clear();
       return;
     }
@@ -330,6 +361,7 @@ export class FacilityLayer {
     for (const entry of this.structures.values()) this.disposeStructureInstances(entry.group);
     for (const material of this.wornMaterials.values()) material.dispose();
     this.wornMaterials.clear();
+    this.surfaceMaterials.clear();
     this.structures.clear();
     this.facilitiesById.clear(); this.storagesById.clear();
     this.glowMaterial.dispose();
@@ -389,7 +421,12 @@ export class FacilityLayer {
       let material = this.wornMaterials.get(key);
       if (!material) {
         material = original.clone();
+        const baseline = this.surfaceMaterials.get(original);
+        // Build condition from dry base, then apply weather. Avoid double darkening
+        // when a durability refresh occurs while the base material is already wet.
+        if (baseline) { material.color.copy(baseline.color); material.roughness = baseline.roughness; }
         material.color.lerp(new THREE.Color(WORLD_PRESENTATION.weatheredColor), wear * WORLD_PRESENTATION.wearTint);
+        if (baseline) this.registerSurfaceMaterial(material, baseline.darkening);
         this.wornMaterials.set(key, material);
       }
       object.material = material;
@@ -1187,5 +1224,6 @@ export class FacilityLayer {
     mesh.receiveShadow = true;
   }
 }
+
 
 

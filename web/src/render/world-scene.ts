@@ -29,6 +29,9 @@ import { createTerrainSurfaceSignature } from './terrain-surface';
 import { WeatherLayer } from './weather-layer';
 
 import { NaturalResourceProjectionCache } from './natural-resource-projection';
+import { SurfaceConsequenceLayer } from './surface-consequence-layer';
+import { FacilityEmissionLayer } from './facility-emission-layer';
+import { SurfaceSnowModifier, snowPresentationCoverage, applyGroundWetness } from './environment-surface-presentation';
 
 export interface WorldSceneCameraState {
   centerChunkX: number;
@@ -72,6 +75,12 @@ export class WorldScene {
   private readonly pointer = new THREE.Vector2();
   private readonly atmosphere: AtmosphereLayer;
   private surfaceWetness01 = 0;
+  private snowCoverage = 0;
+  private originX = 0;
+  private originZ = 0;
+  private readonly surfaceSnow = new SurfaceSnowModifier();
+  private readonly surfaceConsequenceLayer = new SurfaceConsequenceLayer();
+  private readonly facilityEmissionLayer = new FacilityEmissionLayer();
   private cameraInitialized = false;
   private terrainWorldSeed: string | undefined;
   private facilityDressingSignature = '';
@@ -101,6 +110,7 @@ export class WorldScene {
     this.scene.add(this.vegetationLayer.group);
     this.scene.add(this.residentLayer.group);
     this.scene.add(this.weatherLayer.group);
+    this.scene.add(this.surfaceConsequenceLayer.group, this.facilityEmissionLayer.group);
     this.atmosphere = new AtmosphereLayer(this.scene);
 
     this.camera.position.set(0, 160, 180);
@@ -145,9 +155,13 @@ export class WorldScene {
     if (this.footTrafficTerrain) this.footTrafficLayer.observe(this.footTrafficResidents, this.footTrafficTerrain, minute);
     this.atmosphere.setSimulationMinute(minute);
     this.waterLayer.setSimulationMinute(minute);
+    this.facilityEmissionLayer.setSimulationMinute(minute);
   }
 
   setEnvironment(environment: DynamicEnvironment | null): void {
+    if (environment?.available === false) environment = null;
+    this.snowCoverage = snowPresentationCoverage(environment);
+    this.facilityEmissionLayer.setEnvironment(environment);
     this.atmosphere.setEnvironment(environment);
     this.weatherLayer.setEnvironment(environment);
     this.waterLayer.setEnvironment(environment);
@@ -177,6 +191,9 @@ export class WorldScene {
     );
     this.updateTerrainWeather();
     this.groundDetailLayer.setWetness(this.surfaceWetness01);
+    this.footTrafficLayer.setWetness(this.surfaceWetness01);
+    this.surfaceConsequenceLayer.setWetness(this.surfaceWetness01, this.snowCoverage);
+    this.updateSurfaceSnow();
   }
 
   setSimulationSpeed(speed: number): void {
@@ -316,6 +333,8 @@ export class WorldScene {
     const facilitySignature = this.facilityTraceSignature(window);
     this.facilityLayer.setTerrain(window);
     this.humanTraceLayer.setDynamicTraces(window);
+    this.surfaceConsequenceLayer.setTerrain(window);
+    this.facilityEmissionLayer.setTerrain(window);
 
     // Trees/grass/rocks only need an expensive placement rebuild when the
     // actual facility footprint set changes. Ordinary residue/resource-use
@@ -336,6 +355,11 @@ export class WorldScene {
       this.cameraInitialized = false;
     }
     this.terrainWorldSeed = window.worldSeed;
+    this.originX = (window.centerChunkX + 0.5) * WORLD_GRID_CONTRACT.worldUnitsPerChunk;
+    this.originZ = (window.centerChunkY + 0.5) * WORLD_GRID_CONTRACT.worldUnitsPerChunk;
+    this.updateSurfaceSnow();
+    this.surfaceConsequenceLayer.setTerrain(window);
+    this.facilityEmissionLayer.setTerrain(window);
     const sampleElevation = createTerrainElevationSampler(window);
     const chunkSize = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
     this.sampleGroundHeight = (x, z) => {
@@ -418,6 +442,8 @@ export class WorldScene {
     this.vegetationLayer.dispose();
     this.residentLayer.dispose();
     this.weatherLayer.dispose();
+    this.surfaceConsequenceLayer.dispose();
+    this.facilityEmissionLayer.dispose();
     this.atmosphere.dispose();
   }
 
@@ -438,6 +464,7 @@ export class WorldScene {
       metalness: 0,
       vertexColors: true,
     });
+    this.surfaceSnow.install(material);
     this.applyTerrainWeather(material);
 
     const mesh = new THREE.Mesh(geometry, material);
@@ -460,6 +487,12 @@ export class WorldScene {
     mesh.scale.set(1, 1, 1);
   }
 
+  private updateSurfaceSnow(): void {
+    this.surfaceSnow.setState({ snow: this.snowCoverage, originX: this.originX, originZ: this.originZ });
+    this.groundDetailLayer.setSnowCoverage(this.snowCoverage, this.originX, this.originZ);
+    this.facilityLayer.setSurfaceWeather(this.surfaceWetness01, this.snowCoverage, this.originX, this.originZ);
+  }
+
   private updateTerrainWeather(): void {
     for (const entry of this.terrainMeshes.values()) {
       this.applyTerrainWeather(entry.mesh.material);
@@ -469,15 +502,9 @@ export class WorldScene {
   private applyTerrainWeather(
     material: THREE.MeshStandardMaterial,
   ): void {
-    const wetness = this.surfaceWetness01;
-    material.color
-      .setHex(0xffffff)
-      .multiplyScalar(1 - wetness * 0.3);
-    material.roughness = Math.max(
-      0.42,
-      0.92 - wetness * 0.46,
-    );
+    applyGroundWetness(material, this.surfaceWetness01);
   }
 
 }
+
 

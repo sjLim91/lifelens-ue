@@ -8,6 +8,9 @@ weather = (
 scene = (
     root / "web/src/render/world-scene.ts"
 ).read_text(encoding="utf-8")
+surface = (
+    root / "web/src/render/environment-surface-presentation.ts"
+).read_text(encoding="utf-8")
 atmosphere = (
     root / "web/src/render/atmosphere-layer.ts"
 ).read_text(encoding="utf-8")
@@ -45,10 +48,23 @@ for token in (
     "summaryFloor",
     "updateTerrainWeather",
     "applyTerrainWeather",
-    "material.roughness",
-    "multiplyScalar(1 - wetness * 0.3)",
+    "applyGroundWetness(material, this.surfaceWetness01)",
+    "snowPresentationCoverage",
+    "updateSurfaceSnow",
 ):
     assert token in scene, f"missing wet terrain presentation token: {token}"
+
+# Wet-surface material math was extracted from WorldScene so terrain, rocks and
+# facilities can share one presentation contract. Validate the helper itself
+# instead of requiring those implementation literals to stay in world-scene.ts.
+for token in (
+    "material.color.setScalar(1 - wet * config.wetGroundDarkening)",
+    "material.roughness",
+    "config.dryGroundRoughness",
+    "config.wetGroundRoughness",
+    "SurfaceSnowModifier",
+):
+    assert token in surface, f"missing shared surface weather token: {token}"
 
 for token in (
     "reportedPrecipitation",
