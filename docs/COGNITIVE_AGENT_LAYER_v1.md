@@ -234,7 +234,7 @@ A successful local model response is still presentation/runtime-side data with n
 authority to change Core state. COG-4 introduces the first validated strategic
 decision input after replay/persistence boundaries are ready.
 
-### COG-2 — 🟡 Core-owned read-only context bridge (#630)
+### COG-2 — 🟡 Core-owned read-only context bridge (#634)
 
 목표:
 - Core가 Personality / Emotion / Memory / Belief / Relationship의 bounded context를 직접 구성
@@ -242,7 +242,7 @@ decision input after replay/persistence boundaries are ready.
 - Web이 cognition truth를 재구성하지 않음
 - local model proposal은 아직 Simulation state를 변경하지 않음
 
-#630 exact-head CI는 green이지만 최신 main 동기화/재검증 후 merge한다.
+#634 exact-head CI는 green이지만 최신 main 동기화/재검증 후 merge한다.
 
 ### COG-3 — accepted cognition event persistence / deterministic replay
 
