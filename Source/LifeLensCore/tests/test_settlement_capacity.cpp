@@ -34,6 +34,27 @@ int main()
     assert(demand(FacilityKind::SleepingPlace,anchor).residents==4);
     assert(demand(FacilityKind::SleepingPlace,anchor).operationalCapacity==0);
 
+    // Reusing an already observed demand inside one pure foundation decision
+    // must be behavior-identical to the public wrappers that observe it again.
+    const SettlementFacilityDemand initialSleepDemand=
+        demand(FacilityKind::SleepingPlace,anchor);
+    assert(
+        settlementFacilityNeedPressureFromDemand(
+            world,actor,anchor,FacilityKind::SleepingPlace,initialSleepDemand)
+        ==settlementFacilityNeedPressure(
+            world,actor,anchor,FacilityKind::SleepingPlace,&population));
+    const auto uncachedInitialSite=chooseSettlementFacilitySite(
+        world,owner,FacilityKind::SleepingPlace,anchor,&population);
+    const auto cachedInitialSite=chooseSettlementFacilitySiteFromDemand(
+        world,owner,FacilityKind::SleepingPlace,anchor,
+        initialSleepDemand,&population);
+    assert(cachedInitialSite.available==uncachedInitialSite.available);
+    assert(cachedInitialSite.score==uncachedInitialSite.score);
+    if(cachedInitialSite.available){
+        assert(cachedInitialSite.pos.x==uncachedInitialSite.pos.x);
+        assert(cachedInitialSite.pos.y==uncachedInitialSite.pos.y);
+    }
+
     // Four real residents build four beds in sequence, with paid material/work.
     // A completed first bed must neither hide later projects nor end all demand.
     for(int built=0;built<4;++built){
