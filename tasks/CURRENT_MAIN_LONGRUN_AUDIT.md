@@ -1,3 +1,21 @@
+## 2026-10-04 R10 current-main reconciliation
+
+- #626/#635 premature split blocker: **NO LONGER REPRODUCING on current main**.
+- seed874 current main:
+  - d100 living4 settlements1 active1 chunks32.
+  - d365 living3 settlements3 active1 chunks53.
+  - d1000 living3 total5 birth1 married1 pregnancy1 settlements5 active1 chunks91.
+- seed424 current-main 365-day control:
+  - d100 living4 settlements1 active1 assigned4 chunks28.
+  - d365 living3 settlements1 active1 assigned3 chunks99.
+- #635 candidate rejected:
+  - seed424 d365 chunks141.
+  - seed874 d1000 living1 with no generation growth.
+- current trade evidence is now the next C6 blocker:
+  - seed874 d365 departures2 / exchanges0 / returns0.
+  - seed874 d1000 departures8 / exchanges0 / returns0.
+- exploration/chunk growth is a separate current-main debt and must not be conflated with premature settlement splitting.
+
 # Current-Main Long-Run Audit — 2026-10-04 Reconciled
 
 초기 감사 기준: `b277e091bc39d071ea30ba0d57281251da811dba`  

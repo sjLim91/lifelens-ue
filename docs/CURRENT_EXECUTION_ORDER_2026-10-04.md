@@ -1,390 +1,266 @@
 # LifeLens Current Execution Order — 2026-10-04
 
-기준 main: `fde409c8d148296b9e30b14944c1d4a6676fd387` (#631)
+기준 main: `49aaf6c2be943aeeb7b4552d7e2a787af00005a0` (#634)
 
-이 문서는 2026-10-04 기준 **현재 구현 상태와 다음 실행 순서의 canonical short-form**이다.
-과거 milestone 문서와 감사 문서에 남아 있는 오래된 "현재 상태"보다 이 문서와 실제 GitHub main/PR/Actions를 우선한다.
+이 문서는 2026-10-04 현재 구현/검증 상태와 다음 실행순서의 canonical short-form이다.
+실제 GitHub main / PR / exact-head Actions / 같은-head 장기감사 증거가 과거 문서보다 우선한다.
 
 ---
 
-## 1. 현재 제품 상태
+## 1. 현재 상태
 
-활성 제품 경로:
+- C1 정착/생존 기반: ✅
+- C3 개방형 문명 프레임워크: ✅
+- C4 건강/질병 기반: ✅ 기능 기반, 장기 인과 검증 진행
+- C5 교육/전문화/경제/기관: ✅
+- C6 이주/복수 정착지/교역: 🟡 closeout
+- C7 인구/정착지 성숙: ⏸ C6 closeout 전 시작 금지
+- COG-0 #628: ✅
+- COG-1 #629: ✅
+- COG-2 #634: ✅ Core-owned read-only cognition context
+- COG-3: 다음 cognition 단계 — accepted cognition persistence/replay
 
+현재 제품 경로:
 `LifeLensCore -> WASM -> React/TypeScript/Three.js Web Observer`
 
-현재 큰 단계:
+---
 
-- C1 정착/생존 기반: ✅ 완료
-- C2 장기실행/성능: 🟡 기반 개선 중
-- C3 개방형 문명 프레임워크: ✅ 완료
-- C4 건강/질병 기반: ✅ 기능 완료, 장기 생존 밸런스는 통합검증 중
-- C5 교육/전문화/경제/기관: ✅ 완료
-- C6 이주/복수 정착지/교역: 🟡 기능 기반 대부분 완료, closeout 검증 중
-- C7 인구/정착지 성숙: ⏸ C6/장기 생존 gate 전까지 시작 금지
-- Cognitive Agent: 🟡 COG-0/1 main 반영, COG-2 PR 진행
-- F1~F8 역사/산업/현대/미래문명 확장: ⏳ C7 이후
+## 2. 2026-10-04 완료
+
+### #633 — 다중 정착지 sanitation snapshot
+
+✅ 완료.
+
+- 복수 active sanitation site snapshot encode/decode 허용
+- byte-stable re-encode
+- deterministic continuation
+- exact-head Core/Preflight/WASM/Weather-Sleep-Era PASS
+
+### #634 — Cognitive COG-2
+
+✅ 완료.
+
+- Core가 Needs / Personality / Emotion / Memory / Belief / Relationship bounded context 구성
+- WASM/Web read-only bridge
+- malformed/old runtime fail-closed
+- 모델 결과는 아직 Simulation authority 아님
 
 ---
 
-## 2. 최근 main에 완료된 핵심
+## 3. premature founder split 재검증 결과
 
-### C6 / 장기 안정화
+과거 R9 seed 874213954에서:
 
-- #592 — 가구 단위 이주 + 정착지 쇠퇴
-- #594 — 정착지별 지식/기술 격차
-- #595 — 정착지별 자원/생산 전문화
-- #596 — 정착지 간 협력/긴장 관계
-- #613/#614/#617 — 주요 장기 성능 hot path 최적화
-- #620 — 실제 infrastructure footprint 기반 주민/교역 귀속
-- #622 — 원거리 탐색지 시설 증식/유령 정착지 억제
-- #623 — facility daisy-chain 기반 정착지 확장 차단
-- #625 — 다중 정착지 위생시설 생성/개량 지역화
+- day100 settlements=2
+- activeSettlements=2
+- migrationCandidates=0
 
-### Web 관찰성
+이 관찰되어 #626 계열 수정이 준비됐다.
 
-- #611 — 주민 행동별 모션/수면 전환
-- #615 — 날씨/보행/오염/불 환경 결과
-- #618 — 사회 사건/관계 변화
-- #619 — 시설 건설/마모/수리
-- #621 — 가족/임신/출산/성장/육아/생애주기
-- #624 — 채집/운반/저장/제작/건설/재배
-- #631 — 정착지/이주 압력/교역망 관찰 시각화
+그러나 **현재 main `49aaf6c2` 동일 seed/동일 조건 대조군에서는 원래 blocker가 재현되지 않았다.**
 
-### Cognitive Agent
+### current main — seed 874213954
 
-- #628 / COG-0 — typed CognitiveRequest/CognitiveProposal + fail-closed Core validation
-- #629 / COG-1 — 무료 로컬 endpoint adapter, JSON schema, bounded scheduler, timeout/stale response handling
+day100:
+- living=4
+- settlements=1
+- active=1
+- migrationCandidates=0
+- chunks=32
 
----
+day365:
+- living=3
+- settlements=3
+- **active=1**
+- migrationCandidates=0
+- chunks=53
 
-## 3. R9 장기실행에서 확인된 현재 사실
+day1000:
+- total=5
+- living=3
+- bornAfterStart=1
+- married=1
+- pregnancy=1
+- settlements=5
+- **active=1**
+- chunks=91
 
-검증 seed:
+추가 settlement cluster는 물리적 history로 남을 수 있으나 lived active settlement는 1개다.
 
-- `4242001`
-- `874213954`
+### current main — seed 4242001, 365-day control
 
-### 성능 개선
+day100:
+- living=4
+- settlements=1
+- active=1
+- residentsAssigned=4
+- migrationCandidates=0
+- chunks=28
 
-#623 이후 facility/chunk runaway는 크게 완화됐다.
+day365:
+- living=3
+- settlements=1
+- active=1
+- residentsAssigned=3
+- migrationCandidates=0
+- chunks=99
 
-seed 4242001:
-- day 365: living 4, facilities 21, chunks 4
-- day 1000: facilities 22, chunks 4
-- 1000일 wall clock 약 1분 35초
+따라서 #626/#635가 겨냥한 **day100 accidental active second settlement**는 current main에서 no-longer-reproducing으로 판정한다.
 
-기존 R8b의 같은 seed:
-- day 365 facilities 151 / chunks 240
-- day 1000 facilities 194 / chunks 281
-- 1000일 약 21분 42초
+### #635 판정
 
-따라서 **facility-chain runaway는 closeout 가능한 수준으로 개선**된 것으로 본다.
+❌ MERGE 금지 / CLOSED.
 
-### 아직 남은 구조 문제
+#635 후보는 원래 split을 줄였지만 current main보다 장기 결과를 악화시켰다.
 
-1. **조기 정착지 분할**
-   - seed 874213954 day 100:
-   - living 4
-   - settlements 2
-   - active settlements 2
-   - migrationCandidates 0
-   - 실제 이주 압력 없이 초기 4명이 두 정착지로 갈라질 수 있음.
+예:
+- seed424 day365 chunks: current main 99 vs #635 candidate 141
+- seed874 day1000 living: current main 3 vs #635 candidate 1
+- current main은 birth/marriage/pregnancy까지 진행, #635 candidate는 세대성장이 멈춤
 
-2. **교역 귀환 미완료**
-   - seed 874213954 day 365:
-   - tradeDepartures 8
-   - tradeExchanges 1
-   - tradeReturns 0
-   - 교환 자체는 실제로 발생하지만 return mission이 survival preemption 등으로 유실될 가능성이 있음.
-
-3. **1000일 장기 생존 실패**
-   - seed 4242001: total 5 / living 0
-   - seed 874213954: total 5 / living 0
-   - 사망의 주된 원인은 illness.
-   - 숫자 튜닝보다 contamination / sanitation / health / dependent care 원인 경로를 먼저 확인한다.
-
-4. **다중 위생시설 snapshot 정합성 — ✅ 해결 (#633)**
-   - #625 이후 합법적인 복수 settlement-local active sanitation site를 snapshot validator가 허용한다.
-   - 두 distant active site encode/decode, byte-stable re-encode, deterministic continuation 회귀가 exact-head에서 통과했다.
+따라서 stale blocker를 억지로 고치지 않는다.
 
 ---
 
-## 4. 현재 open PR
+## 4. 현재 별도 성능/탐험 관찰
 
-### #634 — Cognitive Core -> Web read-only request bridge
+current main에서도 chunk 수는 R9/#623 당시보다 증가한다.
 
-상태:
-- 기존 #630의 검증된 구현을 latest main@#633에서 필요한 코드/테스트만 재적용했다.
-- #631 Web presentation과 #633 sanitation snapshot 변경을 보존한다.
-- exact-head 재검증 후 merge한다.
+- seed424 day100 chunks=28
+- seed424 day365 chunks=99
+- seed874 day365 chunks=53
+- seed874 day1000 chunks=91
 
-우선순위: **P0 / 현재 첫 번째**
+이 값은 premature split blocker와 분리한다.
 
-이 PR까지 들어가도 모델 제안은 Simulation 행동에 영향을 주지 않는다.
+현재 사실:
+- migrationCandidates=0이어도 ordinary/critical resource exploration으로 chunk는 실제 materialize될 수 있음.
+- chunk는 lookahead가 아니라 주민이 실제 Explore target에 도착해 성공했을 때 생성됨.
+- ordinary exploration max radius는 6 chunks.
+- local resource sufficiency 평가는 3-chunk radius를 사용한다.
 
-### #626 — 초기 정착지 우연한 2인 분할 차단
-
-상태:
-- 로직 수정은 준비됨.
-- 표시된 Core 실패는 테스트 assertion 실패가 아니라 동일 SHA push 결과 대기 timeout.
-- 현재 main보다 많이 뒤에 있으므로 latest-main 재적용이 필수.
-- 머지 전 R10으로 실제 seed 874 day100 behavior 확인이 필요.
-
-우선순위: **P1 / #634 직후**
+따라서 탐험 범위/자원 판정권의 계약 불일치 가능성은 **별도 current-main C2/C6 성능 debt**로 추적한다.
+#635에 섞지 않는다.
 
 ---
 
-# 5. 고정 실행 순서
+## 5. 현재 최우선 blocker — inter-settlement trade mission completion
 
-이 순서를 임의로 바꾸지 않는다. 새 문제는 해당 단계 안에서 해결한다.
+current main seed 874213954:
 
-## STEP 1 — ✅ snapshot contract closeout 완료 (#633)
+day365:
+- tradeDepartures=2
+- tradeExchanges=0
+- tradeReturns=0
 
-- stale #627의 필요한 2-file diff만 latest main에 재적용.
-- exact-head Core / Preflight / WASM / Weather-Sleep-Era 전부 PASS.
-- merge: `74c372e6cc5506e57df46cbcf502cab2e630c623`.
-- 두 distant active sanitation site encode/decode, byte-stable re-encode, deterministic continuation 확인.
+day1000:
+- tradeDepartures=8
+- tradeExchanges=0
+- tradeReturns=0
 
----
+즉 현재 문제는 단순 return만이 아니라 **출발한 trade mission이 실제 exchange까지 안정적으로 완주하지 못하는 것**이다.
 
-## STEP 2 — #634 Cognitive read-only bridge closeout
+현재 Core 계약은:
 
-1. latest main으로 동기화
-2. #631 Web 변경 보존
-3. Core-owned bounded Personality/Emotion/Memory/Belief/Relationship context 확인
-4. optional old-runtime fallback 확인
-5. exact-head 전체 gate
-6. merge
+`departure -> destination -> exchange -> returning=true -> origin -> return complete`
 
-완료 조건:
-- local model adapter가 Web 추론으로 context를 재구성하지 않음
-- Core가 고른 read-only context를 받음
-- 아직 Simulation state mutation 없음
+를 의도한다.
 
----
+하지만 critical Hunger/Thirst preemption은 현재 runtime activity를 취소하면서
+`pendingContext.clear()`를 호출할 수 있다.
 
-## STEP 3 — #626 premature split closeout
+이 경우:
+- trade outbound mission
+- 또는 exchange 후 return obligation
 
-1. latest main에서 재적용
-2. targeted settlement-capacity tests
-3. exact-head Core gates
-4. **R10 two-seed 장기런 실행**
-5. seed 874213954 day100에서:
-   - migrationCandidates=0인데 accidental settlement 2가 생기지 않는지 확인
-6. facility/chunk/runtime가 #623 개선치를 회귀시키지 않는지 확인
-7. 검증 후 merge
+이 사라질 수 있다.
 
-중요:
-단순 2인 co-location만으로 empty frontier durable settlement bootstrap을 허용하지 않는다.
-실제 household/group commitment 또는 기존 lived infrastructure가 있어야 한다.
+### 수정 원칙
 
----
+- Hunger/Thirst 생존 우선은 절대 낮추지 않음
+- trader를 굶긴 채 mission 강행하지 않음
+- 생존행동 후 **미완료 trade journey를 resume**
+- dead/missing partner, invalid settlement, 실제 exchange 불가 등은 clean cancellation
+- trade mission이 accidental migration이 되지 않음
+- save/load와 deterministic replay 보존
+- 기존 runtime field를 억지로 재사용하는 hack 금지
 
-## STEP 4 — Trade return mission persistence
+### 완료조건
 
-현재 확인된 구조:
-
-`Trade exchange -> returning=true -> origin target`
-
-은 존재한다.
-
-그러나 critical Hunger/Thirst preemption이 runtime pendingContext를 clear하면
-**귀환 의무 자체가 사라질 수 있다.**
-
-수정 원칙:
-
-- survival preemption은 유지
-- trader가 굶거나 목마른데 강제로 귀환시키지 않음
-- survival 해결 후 **원래 return obligation을 resume**
-- trade가 accidental migration이 되지 않음
-- 저장/불러오기와 결정론을 깨지 않음
-- 임시 field hack으로 binary snapshot contract를 몰래 변경하지 않음
-
-완료 조건:
-- 실제 exchange 후 return observable
-- critical survival 중단 후 return resume
-- route failure/partner death 등 실제 실패 사유는 clean cancellation
-- targeted snapshot/replay test 포함
+- departure observable
+- destination 실제 이동
+- actual inventory exchange
+- survival preemption 발생 시 mission resume
+- physical return observable
+- save/load 중 mission continuity
+- deterministic replay
+- exact-head tests
+- same-seed long-run에서 departures/exchanges/returns 증거
 
 ---
 
-## STEP 5 — R10 current-main long-run gate
+## 6. 고정 실행 순서
 
-STEP 1~4가 main에 들어간 뒤 동일 seed로 다시 실행한다.
+### STEP 1 — ✅ #633 snapshot closeout
+완료.
 
-체크포인트:
-- 100일
-- 365일
-- 1000일
+### STEP 2 — ✅ #634 Cognitive COG-2
+완료.
 
-seed:
-- 4242001
-- 874213954
+### STEP 3 — ✅ premature split blocker 재검증
+- #626/#635 merge 없이 close
+- current main에서 원래 day100 active split no-repro 확인
 
-검증 우선순위:
+### STEP 4 — 🔴 현재: Trade mission completion/persistence
+1. outbound / exchange / return lifecycle 분해
+2. survival preemption에서 deferred mission 보존
+3. snapshot/replay 계약 설계
+4. targeted tests
+5. exact-head CI
+6. two-seed evidence
 
-1. crash / determinism / snapshot
-2. living population
-3. self-care completion
-4. family / pregnancy / birth
-5. settlement count / active settlement
-6. migration candidate -> actual household move
-7. trade departure / exchange / return
-8. facilities / chunks / runtime
-9. illness / contamination / dependent survival
+### STEP 5 — current-main exploration/chunk growth diagnosis
+- trade 수정과 별개로 ordinary/critical exploration materialization 계측
+- exploration count / chunk bbox / distance
+- local resource radius vs ordinary search radius 정합성
+- 숫자 임의 하향 금지
 
----
+### STEP 6 — current-main long-run health/family
+- seed874 current main은 day1000 living3 + birth/marriage/pregnancy까지 개선됨
+- seed424 current-main 1000일 결과로 health 결론 갱신
+- 필요한 경우 contamination / illness / dependent-care causal fix
 
-## STEP 6 — Health / long-run survival causal fix
+### STEP 7 — C6 canonical close
+다음이 모두 green일 때:
+- active settlement authority 안정
+- household migration 실제 이동
+- settlement-local sanitation/save 정상
+- real trade exchange + return 정상
+- long-run crash/timeout 없음
+- chunk/facility runaway 설명 및 허용범위 확정
+- 가족/인구 루프가 C7 검증을 수행할 만큼 유지
 
-R10에서도 1000일 population collapse가 반복될 때만 진행한다.
-
-먼저 측정:
-- contamination dose source
-- sanitation availability/use
-- natural-water exposure
-- pathogen load
-- illness onset/recovery
-- immunity/resilience
-- infant/child provisioning
-- caregiver interruption
-
-금지:
-- 사망확률 무작정 하향
-- seed별 예외
-- illness off
-- Web-side 보정
-
-완료 조건:
-원인이 실제 simulation causal loop 안에서 수정되고 동일 seed A/B로 개선이 설명 가능해야 한다.
+### STEP 8 — C7 Population / Settlement Maturation
+그 다음 시작.
 
 ---
 
-## STEP 7 — C6 canonical closeout
+## 7. Cognitive 병렬 순서
 
-다음이 모두 만족되면 C6를 닫는다.
+- COG-0 #628 ✅
+- COG-1 #629 ✅
+- COG-2 #634 ✅
+- COG-3 accepted cognition event persistence / deterministic replay
+- COG-4 validated strategic intent -> existing Utility/Civilization bias
+- COG-5 memory retrieval / reflection quality
+- COG-6 population cognition scaling
 
-- premature founder fragmentation 없음
-- household/group migration 실제 이동 유지
-- settlement decline/abandonment 정상
-- local sanitation independent
-- local knowledge/production specialization 정상
-- settlement group relations 정상
-- real inter-settlement exchange + physical return 정상
-- two-seed 1000-day run crash/timeout 없음
-- facility/chunk runaway 없음
-
-그 뒤 로드맵 상태를:
-
-`C6 ✅ Complete`
-
-로 변경한다.
+**COG-3 persistence/replay 전에 LLM 판단을 Simulation 행동 authority에 연결하지 않는다.**
 
 ---
 
-## STEP 8 — C7 Population / Settlement Maturation 시작
+## 8. 지금 당장 다음 작업
 
-C7 목표:
+`Trade mission completion/persistence -> exploration/chunk diagnosis -> current-main long-run health -> C6 close -> C7`
 
-`4 founders`
-→ `relationships / families`
-→ `households`
-→ `children`
-→ `larger labor + demand`
-→ `denser infrastructure`
-→ `mature first settlement`
-→ `carrying pressure`
-→ `household/group migration`
-→ `second settlement`
-
-주의:
-- birth rate를 인위적으로 높이는 단계가 아님
-- village level을 시간으로 unlock하지 않음
-- 실제 가족/자원/시설/물/위생/노동 압력에서 성장해야 함
-
----
-
-# 6. Cognitive Agent 병렬 순서
-
-C6/C7 critical path를 막지 않는 별도 lane으로 유지한다.
-
-## COG-0 — ✅ 완료 (#628)
-
-typed request/proposal + Core validation.
-
-## COG-1 — ✅ 완료 (#629)
-
-무료 local provider + bounded scheduler.
-
-## COG-2 — 🟡 #634
-
-Core-owned read-only context bridge.
-
-## COG-3 — accepted cognition event persistence / replay
-
-**행동에 영향을 주기 전에 반드시 먼저 한다.**
-
-저장할 최소 provenance:
-
-- actor
-- simulation minute
-- trigger
-- context fingerprint
-- provider/model identity
-- accepted typed intent
-- priority
-- target
-- rationale digest
-
-save/load 이후 이미 수락된 과거 판단을 다시 LLM에게 묻지 않는다.
-
-## COG-4 — validated strategic intent -> Utility/Civilization bias
-
-LLM이 action을 직접 실행하지 않는다.
-
-`Thought -> typed Intention -> Core validation -> existing Goal/Utility candidate`
-
-만 허용한다.
-
-## COG-5 — retrieval / reflection quality
-
-- 관련 Memory retrieval
-- Belief/Relationship context 품질
-- repeated failure reflection
-- personality별 전략 차이 평가
-
-## COG-6 — population scaling
-
-- bounded concurrency
-- dedupe
-- batching
-- cognition LOD
-- household/leader representative reasoning
-- 100/300/1000 resident cost validation
-
----
-
-# 7. 병렬 작업 원칙
-
-Codex/Web 시각화는 다음 조건에서 병렬 가능:
-
-- Core authority를 새로 만들지 않음
-- active Core PR 파일과 겹치지 않음
-- DTO truth만 소비
-- fake outcome/road/settlement/migration 없음
-
-Core closeout 중 Web 품질 개선은 가능하지만,
-C7 기능 추가나 새 문명 단계는 STEP 7 이전에 시작하지 않는다.
-
----
-
-# 8. 지금 당장 다음 작업
-
-**다음 실제 코드 작업은 #627 최신-main 재적용/검증이다.**
-
-그 뒤:
-
-`#634 -> #626 + R10 split check -> trade return -> full R10 -> health causal fix(if needed) -> C6 close -> C7`
-
-이 순서를 현재 canonical execution order로 고정한다.
+현재 실제 코드 작업은 **trade mission persistence**다.

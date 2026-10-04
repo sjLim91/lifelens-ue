@@ -1,3 +1,18 @@
+# 2026-10-04 Current-Main R10 Reconciliation
+
+> 아래 오래된 baseline/R9 본문은 역사 기록이다. 현재 판정은 이 섹션과
+> `docs/CURRENT_EXECUTION_ORDER_2026-10-04.md`를 우선한다.
+
+Current main: `49aaf6c2be943aeeb7b4552d7e2a787af00005a0`.
+
+- 과거 R9의 seed874 day100 active-settlement split은 current main에서 재현되지 않는다.
+- #626/#635는 merge 없이 closed.
+- seed874 current main day1000: living3 / birth1 / married1 / pregnancy1 / activeSettlements1.
+- seed424 current main day365: living3 / settlements1 / active1 / chunks99.
+- #635 후보는 current main보다 장기 생존/탐험 범위를 악화시켜 reject.
+- 현재 C6 blocker는 trade mission completion: departures는 있으나 exchanges/returns가 0.
+- chunk growth는 별도 exploration causality/scale debt로 추적한다.
+
 # 2026-10-04 Reconciliation Update
 
 > 아래 2026-10-02 본문은 최초 baseline 감사의 역사 기록으로 보존한다.
