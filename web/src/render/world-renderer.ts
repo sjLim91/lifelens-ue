@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type {
   CivilizationWorldPayload,
   DynamicEnvironment,
+  RecentSocialEventsPayload,
   Resident,
   TerrainWindow,
   WorldObjectsPayload,
@@ -62,6 +63,12 @@ export class WorldRenderer {
   setSimulationMinute(minute: number): void {
     this.world.setSimulationMinute(minute);
   }
+
+  setSocialEvents(payload: RecentSocialEventsPayload, minute: number): void {
+    this.world.setSocialEvents(payload, minute);
+  }
+
+  resetSocialEvents(): void { this.world.resetSocialEvents(); }
 
   setEnvironment(environment: DynamicEnvironment | null): void {
     this.world.setEnvironment(environment);

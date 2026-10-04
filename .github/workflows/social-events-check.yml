@@ -1,0 +1,43 @@
+name: Web Social Events
+on:
+  push:
+    branches: ['work/web-social-events-*']
+    paths: ['web/**', '.github/workflows/social-events-check.yml']
+  pull_request:
+    paths: ['web/**', '.github/workflows/social-events-check.yml']
+jobs:
+  presentation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --ignore-scripts --no-audit --no-fund
+        working-directory: web
+      - run: python Tools/prepare_web_character_assets.py
+      - run: npm run typecheck
+        working-directory: web
+      - name: Social event semantics replay budget and connector regression
+        run: node tests/social-events/run.mjs
+        working-directory: web
+      - name: All existing Web regression entrypoints
+        shell: bash
+        working-directory: web
+        run: |
+          set -euo pipefail
+          while IFS= read -r test; do
+            node "$test"
+          done < <(find tests -mindepth 2 -maxdepth 2 -name run.mjs ! -path 'tests/social-events/*' | sort)
+      - run: npm run build
+        working-directory: web
+      - run: npm install --no-save --ignore-scripts --no-audit --no-fund playwright && npx playwright install --with-deps chromium
+        working-directory: web
+      - run: node tests/social-events/browser-review.mjs
+        working-directory: web
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: social-events-review
+          path: web/tests/social-events/review/

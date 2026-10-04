@@ -35,6 +35,7 @@ import {
 import { createResidentMotionLibrary, residentGestureRate } from './resident-motion-library';
 import { calibrateResidentSleep, residentSleepFallbackClip, residentStandingFallbackClip, ResidentSleepMotion, type ResidentSleepCalibration } from './resident-sleep-motion';
 import { residentToWorldPosition } from './resident-world-coordinates';
+import type { SocialEventAnchor } from './social-event-presentation';
 
 const BASE_MODEL_COMMIT = 'ddd5fc34a445bcded3cf9836607aaeebc19a5c78';
 const BASE_MODEL_URL =
@@ -177,6 +178,7 @@ export class ResidentWorldLayer {
 
   private readonly loader = new GLTFLoader();
   private readonly actors = new Map<string, ResidentActor>();
+  private readonly eventResidentIds = new Set<string>();
   private readonly socialConnectors =
     new Map<string, ResidentSocialConnector>();
   private readonly selectionRing = new THREE.Mesh(
@@ -242,6 +244,13 @@ export class ResidentWorldLayer {
     }
 
     this.pendingResidents = residents;
+    this.eventResidentIds.clear();
+    for (const resident of residents) {
+      if (resident.alive !== false && resident.hasPosition
+        && Number.isFinite(resident.gridX) && Number.isFinite(resident.gridY)) {
+        this.eventResidentIds.add(resident.id);
+      }
+    }
     this.pendingTerrain = terrain;
     this.pendingCenterX = centerX;
     this.pendingCenterY = centerY;
@@ -390,6 +399,14 @@ export class ResidentWorldLayer {
     for (const resource of civilization.resources ?? []) this.interactionSites.set(`resource:${resource.id}`, resource);
     for (const facility of civilization.facilities ?? []) this.interactionSites.set(`facility:${facility.id}`, facility);
     for (const storage of civilization.storages ?? []) this.interactionSites.set(`storage:${storage.id}`, storage);
+  }
+
+  // Read the current interpolated actor position, never its future Core target.
+  // Return a copy so presentation snapshots cannot mutate resident movement.
+  socialEventAnchor(id: string): SocialEventAnchor | null {
+    const actor = this.actors.get(id);
+    if (!this.eventResidentIds.has(id) || !actor?.initialized || !actor.root.visible) return null;
+    return { x: actor.current.x, y: actor.current.y, z: actor.current.z };
   }
 
   setSimulationSpeed(speed: number): void {
@@ -548,6 +565,7 @@ export class ResidentWorldLayer {
 
   dispose(): void {
     this.disposed = true;
+    this.eventResidentIds.clear();
     for (const connector of this.socialConnectors.values()) {
       this.group.remove(connector.line);
       connector.line.geometry.dispose();

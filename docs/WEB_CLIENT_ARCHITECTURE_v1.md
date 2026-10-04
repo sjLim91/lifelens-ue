@@ -106,6 +106,41 @@ Presentation-only placeholders must never look like durable LifeLens truth.
 
 The Web client may reduce mesh density, vegetation density, shadows, materials, animation complexity and effect budgets. It may not make the logical world smaller or alter simulation outcomes to fit rendering performance.
 
+### Completed social events in the world scene
+
+Core social truth remains authoritative. Current `ResidentPresentationDirective`
+interaction connectors describe ongoing Social/Comfort/Repair/Teaching/Parenting;
+the separate `SocialEventLayer` presents only completed `RecentSocialEvent` types.
+`WorldSession.refresh().socialEvents` supplies both ObserverStore/Observation Feed
+and observer-engine → WorldRenderer → WorldScene after resident position updates.
+The Feed retains exact descriptions and directional relationship deltas.
+
+World cues map the nine exact types to outward ripple, directional help pulse,
+settling comfort arc, conflict zigzag, broken betrayal line with target aftermath,
+rejection approach/return chevron, apology reconnecting line, converging intimacy
+rings, and commitment double arc. These imply no marriage, item transfer or
+conflict resolution. Unknown enum values are safely skipped. Current Core
+`makeSocialCommunicationObservation` always exports `successful=true`; a future
+false value weakens/shortens the same type without inventing failure semantics.
+
+Observer-local memory stores at most 8 active cues and 128 seen event keys.
+Sequence strings retain full precision; a monotonic numeric high-water mark
+prevents replay after eviction. Zero/empty sequences use the Feed's
+minute/actor/target/type/where compatibility identity. Initial presentation admits
+at most 2 cues from a cadence-derived 48-minute window; stale history is consumed
+without replay. Each cue expires after 1.2/2/2.8 seconds plus up to 0.35 seconds
+for importance, using an injectable monotonic wall clock independent of speed
+and pause. Intensity controls scale/opacity; false success uses 40% opacity and
+70% lifetime. Admission prefers level, importance, then recency.
+
+Anchors snapshot living positioned actors' current interpolated render locations.
+Missing actors and pairs beyond 4.5 world units are skipped; deletion/death clears
+active cues. Camera-origin changes rebase snapshots without moving residents.
+Fast-forward clears active cues while preserving seen history; new worlds reset
+presentation memory. One fixed ribbon buffer/mesh, one material and at most one
+draw call cover the whole layer. Depth testing keeps cues integrated in the world.
+No cue state is saved, sent to Core, or used for AI/movement/relationship decisions.
+
 ## 9. Persistence
 
 Long-term Web persistence uses the same Core save codec:
