@@ -19,7 +19,7 @@ def block(text: str, start: str, end: str) -> str:
     return text[a:b]
 
 site_blocks = (
-    block(settlement, "inline SettlementFacilitySiteOpportunity chooseSettlementFacilitySite(", "inline ConstructedFacility* establishSettlementFacilityProject"),
+    block(settlement, "inline SettlementFacilitySiteOpportunity chooseSettlementFacilitySiteFromDemand(", "inline SettlementFacilitySiteOpportunity chooseSettlementFacilitySite("),
     block(storage, "inline PrimitiveStorageSiteOpportunity choosePrimitiveStorageSite(", "inline ConstructedFacility* establishPrimitiveStorageProject"),
     block(fire, "inline PrimitiveFirePitSiteOpportunity choosePrimitiveFirePitSite(", "inline int primitiveFirePitMissingMaterial"),
     block(smelting, "inline PrimitiveFurnaceSiteOpportunity choosePrimitiveFurnaceSite(", "inline bool primitiveFurnaceKnowledgeReady"),
@@ -36,7 +36,7 @@ for token in (
     "bestPrimitiveStorageConstructionDecision(\n            world,self,authoritativePosition)",
     "bestPrimitiveFirePitDecision(\n            world,self,authoritativePosition)",
     "bestPrimitiveFurnaceDecision(\n            world,self,authoritativePosition)",
-    "chooseSettlementFacilitySite(\n                    world,self.id,kind,authoritativePosition,population)",
+    "chooseSettlementFacilitySiteFromDemand(\n                    world,self.id,kind,authoritativePosition,demand,population)",
     "executeCivilizationDecisionAtPosition",
 ):
     assert token in decision, f"civilization activity-position chain missing: {token}"
