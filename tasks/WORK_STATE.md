@@ -3,24 +3,24 @@
 > 실제 GitHub `main` / PR / exact-head Actions가 최우선 truth다.
 > 다음 실행 순서의 canonical short-form은 `docs/CURRENT_EXECUTION_ORDER_2026-10-04.md`.
 
-- 기준 main: `fde409c8d148296b9e30b14944c1d4a6676fd387` (#631).
+- 기준 main: `74c372e6cc5506e57df46cbcf502cab2e630c623` (#633).
 - 활성 제품 경로: **LifeLensCore -> WASM -> React/TypeScript/Three.js Web Observer**.
 - C3/C4/C5 foundation은 닫혀 있고 C6는 기능 추가보다 **closeout 검증 단계**다.
 - C6의 group migration / settlement decline / local knowledge divergence / production specialization / settlement relations는 각각 #592/#594/#595/#596으로 이미 main에 통합됐다.
 - #623 이후 facility-chain runaway는 크게 완화됐다. seed 4242001의 1000일은 facilities 22 / chunks 4 / 약 1분35초로 개선됐다.
+- #633 ✅ 복수 정착지 sanitation snapshot 계약 정합성 closeout 완료.
 - 남은 C6 구조 blocker:
-  1. #627 — 복수 정착지 sanitation snapshot 계약 정합성.
-  2. #626 — migration pressure 없는 초기 2인 정착지 분할 억제.
-  3. 실제 trade exchange 후 return mission이 survival preemption으로 유실될 수 있는 문제.
-  4. 동일 두 seed 1000일에서 최종 population collapse / illness 우세 원인 재검증.
+  1. #626 — migration pressure 없는 초기 2인 정착지 분할 억제.
+  2. 실제 trade exchange 후 return mission이 survival preemption으로 유실될 수 있는 문제.
+  3. 동일 두 seed 1000일에서 최종 population collapse / illness 우세 원인 재검증.
 - Web 관찰성은 #611/#615/#618/#619/#621/#624/#631까지 통합되어 주민 행동, 환경 결과, 시설 변화, 생애주기, 생산물류, 정착지/이주압력/교역 관계를 Core truth에서 관찰할 수 있다.
 - Cognitive Agent:
   - #628 COG-0 ✅ typed request/proposal + fail-closed Core validation.
   - #629 COG-1 ✅ free-local provider + JSON schema + bounded scheduler.
-  - #634 COG-2 🟡 Core-owned read-only Personality/Emotion/Memory/Belief/Relationship context bridge. exact-head CI는 green이나 #631 이후 latest-main 재동기화 필요.
+  - #634 COG-2 🟡 Core-owned read-only Personality/Emotion/Memory/Belief/Relationship context bridge. latest main@#633 재적용 완료, exact-head 재검증 중.
 - C7 Population / Settlement Maturation은 아직 시작하지 않는다.
 - 고정 실행 순서:
-  `#627 -> #634 -> #626 + split R10 -> trade return persistence -> full R10 -> health causal fix(if needed) -> C6 close -> C7`.
+  `#634 -> #626 + split R10 -> trade return persistence -> full R10 -> health causal fix(if needed) -> C6 close -> C7`.
 - Cognitive 행동 연결은 accepted cognition event persistence/replay가 먼저 준비된 뒤에만 허용한다.
 
 ## 2026-10-03 READY_FOR_REVIEW — Web environmental consequences
