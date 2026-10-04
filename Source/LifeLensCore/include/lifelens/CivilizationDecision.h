@@ -2371,6 +2371,7 @@ inline bool autonomousSettlementInfrastructurePlanAllowed(
     int localLivingResidents=0;
     bool localHabitation=false;
     bool localActivityCore=false;
+    bool localInfrastructure=false;
     bool anyInfrastructure=false;
 
     for(const Character& resident:world.characters){
@@ -2393,6 +2394,7 @@ inline bool autonomousSettlementInfrastructurePlanAllowed(
             continue;
         }
 
+        localInfrastructure=true;
         if(facility.kind==FacilityKind::SleepingPlace
            || facility.kind==FacilityKind::Shelter){
             localHabitation=true;
@@ -2404,7 +2406,12 @@ inline bool autonomousSettlementInfrastructurePlanAllowed(
         }
     }
     for(const StorageSite& storage:world.storageSites){
-        if(storage.id!=0) anyInfrastructure=true;
+        if(storage.id==0) continue;
+        anyInfrastructure=true;
+        if(manhattan(storage.pos,authoritativePosition)
+           <=SettlementPlanningCoreRadiusGrid){
+            localInfrastructure=true;
+        }
     }
 
     // The first camp has no infrastructure yet and must remain able to bootstrap
@@ -2420,7 +2427,16 @@ inline bool autonomousSettlementInfrastructurePlanAllowed(
         return true;
     }
 
-    // Outside an established compact core, co-location alone is insufficient.
+    // A real local footprint may still be in its early one-facility bootstrap
+    // phase (for example the first bed before the first work surface). Two or
+    // more residents may expand/reoccupy that existing site. This does not
+    // authorize an empty frontier: the first durable facility there still
+    // requires the household commitment below.
+    if(localInfrastructure && localLivingResidents>=2){
+        return true;
+    }
+
+    // Outside an established local footprint, co-location alone is insufficient.
     // Require a complete autonomous household at the frontier so two unrelated
     // founders cannot accidentally split the initial settlement while gathering.
     return householdFrontierCommitmentAtPosition(
