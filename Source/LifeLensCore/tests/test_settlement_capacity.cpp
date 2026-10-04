@@ -234,8 +234,21 @@ int main()
     }
     assert(secondAutonomous!=0);
     roamingPopulation[secondAutonomous]=distant;
-    assert(autonomousSettlementInfrastructurePlanAllowed(
+
+    // Mere co-location is not migration authority. Two unrelated founders can
+    // gather/explore together without accidentally creating a second durable
+    // settlement before any migration pressure or household relocation exists.
+    assert(!autonomousSettlementInfrastructurePlanAllowed(
         world,distant,&roamingPopulation));
+
+    // Once those same residents are an actual household, their whole-household
+    // frontier co-location is a durable relocation commitment compatible with
+    // C6-D group migration. The Plan lane may now bootstrap their new camp.
+    HouseholdBook frontierHouseholds;
+    assert(frontierHouseholds.create(
+        7001,{roamingActor.id,secondAutonomous}));
+    assert(autonomousSettlementInfrastructurePlanAllowed(
+        world,distant,&roamingPopulation,&frontierHouseholds));
 
     // One resident at the real compact camp may still plan when the other
     // residents are temporarily away, provided the camp has both habitation
