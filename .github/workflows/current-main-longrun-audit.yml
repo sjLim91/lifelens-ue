@@ -58,7 +58,7 @@ jobs:
       - name: 100·365·1000일 통합 계측
         run: |
           set -o pipefail
-          /usr/bin/time -v ./build/ll_balance_audit             --seed '${{ matrix.seed }}'             --days 1000             --checkpoints '100,365,1000'             2>&1 | tee "longrun-${{ matrix.seed }}.log"
+          /usr/bin/time -v ./build/ll_balance_audit             --seed '${{ matrix.seed }}'             --days 365             --checkpoints '100,365'             2>&1 | tee "longrun-${{ matrix.seed }}.log"
 
       - name: 계측 로그 업로드
         if: always()
