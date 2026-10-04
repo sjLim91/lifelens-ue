@@ -2297,13 +2297,12 @@ inline bool settlementInfrastructureFacilityKind(FacilityKind kind)
     }
 }
 
-// Autonomous residents may extend infrastructure around an existing lived area,
-// and NEW GAME must be able to bootstrap its first site. Once durable
-// infrastructure exists elsewhere, however, a lone resident who merely happens
-// to be gathering/exploring at a distant position must not seed a new settlement
-// every time local facility demand is re-evaluated. A second autonomous resident
-// at the same frontier is the minimum observable commitment used by the runtime;
-// low-level site/project helpers remain capable of explicit C6 migration tests.
+// Durable settlement planning is intentionally narrower than ordinary facility
+// service. A camp may bootstrap where people actually co-locate, and an existing
+// compact lived core may expand while one resident is temporarily alone. An
+// arbitrary facility chain is not settlement authority: otherwise each new
+// facility becomes the stepping stone for the next one along an explorer route.
+// Low-level site/project helpers remain capable of explicit C6 migration tests.
 inline bool autonomousSettlementInfrastructurePlanAllowed(
     const World& world,
     GridPos authoritativePosition,
@@ -2311,45 +2310,47 @@ inline bool autonomousSettlementInfrastructurePlanAllowed(
 {
     if(population==nullptr) return true;
 
-    bool anyInfrastructure=false;
-    bool localInfrastructure=false;
-    for(const ConstructedFacility& facility:world.facilities){
-        if(facility.id==0 || facility.state==FacilityState::Ruined) continue;
-        anyInfrastructure=true;
-        if(manhattan(facility.pos,authoritativePosition)
-           <=SettlementServiceRadiusGrid){
-            localInfrastructure=true;
-            break;
-        }
-    }
-    if(!localInfrastructure){
-        for(const StorageSite& storage:world.storageSites){
-            if(storage.id==0) continue;
-            anyInfrastructure=true;
-            if(manhattan(storage.pos,authoritativePosition)
-               <=SettlementServiceRadiusGrid){
-                localInfrastructure=true;
-                break;
-            }
-        }
-    }
+    int localLivingResidents=0;
+    bool localHabitation=false;
+    bool localActivityCore=false;
 
-    if(localInfrastructure || !anyInfrastructure) return true;
-
-    int localAutonomousResidents=0;
     for(const Character& resident:world.characters){
-        if(!resident.alive || !lifeStageProfile(resident.lifeStage).canWork){
-            continue;
-        }
+        if(!resident.alive) continue;
         const auto location=population->find(resident.id);
         if(location==population->end()
            || manhattan(location->second,authoritativePosition)
-                >SettlementServiceRadiusGrid){
+                >SettlementPlanningCoreRadiusGrid){
             continue;
         }
-        if(++localAutonomousResidents>=2) return true;
+        ++localLivingResidents;
     }
-    return false;
+
+    for(const ConstructedFacility& facility:world.facilities){
+        if(!facilityOperationalAndActive(facility)
+           || manhattan(facility.pos,authoritativePosition)
+                >SettlementPlanningCoreRadiusGrid){
+            continue;
+        }
+
+        if(facility.kind==FacilityKind::SleepingPlace
+           || facility.kind==FacilityKind::Shelter){
+            localHabitation=true;
+        }
+        if(facility.kind==FacilityKind::PrimitiveStorage
+           || facility.kind==FacilityKind::WorkSurface
+           || facility.kind==FacilityKind::FirePit){
+            localActivityCore=true;
+        }
+    }
+
+    // Two co-located living residents are enough to establish or extend a
+    // frontier camp. A resident temporarily alone may still expand an existing
+    // compact lived core, but a lone explorer next to one daisy-chained facility
+    // cannot turn that facility into an endlessly advancing settlement anchor.
+    return localLivingResidents>=2
+        || (localLivingResidents>=1
+            && localHabitation
+            && localActivityCore);
 }
 
 inline bool civilizationDecisionOpensSettlementInfrastructure(
