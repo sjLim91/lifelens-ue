@@ -153,6 +153,30 @@ int main()
             modelWorld,&modelPopulation);
     CHECK(modelNetwork.activeSettlementCount==2);
 
+    // Trade lookup uses the same infrastructure service footprint as settlement
+    // assignment. A long connected cluster must not lose an endpoint resident
+    // merely because its display anchor lies farther than the service radius.
+    SettlementNetworkObservation elongatedNetwork;
+    SettlementClusterObservation elongatedCluster;
+    elongatedCluster.id=9001;
+    elongatedCluster.anchor={
+        SettlementServiceRadiusGrid*2,
+        0
+    };
+    elongatedCluster.active=true;
+    elongatedCluster.established=true;
+    for(int index=0;index<4;++index){
+        elongatedCluster.servicePositions.push_back(
+            {index*SettlementServiceRadiusGrid,0});
+    }
+    elongatedNetwork.settlements.push_back(elongatedCluster);
+    elongatedNetwork.settlementCount=1;
+    elongatedNetwork.activeSettlementCount=1;
+    const SettlementClusterObservation* endpointCluster=
+        settlementClusterForPosition(elongatedNetwork,{0,0});
+    CHECK(endpointCluster!=nullptr);
+    CHECK(endpointCluster->id==elongatedCluster.id);
+
     RelationshipBook modelRelationships;
     modelRelationships.getOrCreate(1,2).trust=0.95;
     modelRelationships.getOrCreate(2,1).trust=0.95;
