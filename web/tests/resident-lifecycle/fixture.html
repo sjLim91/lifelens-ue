@@ -11,10 +11,10 @@ const mode=new URL(location.href).searchParams.get('mode')??'generations';
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x59654f);
 const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(1);document.body.append(renderer.domElement);
 scene.add(new THREE.HemisphereLight(0xf4eedb,0x4d5841,2));const sun=new THREE.DirectionalLight(0xffefdb,3);sun.position.set(3,8,8);scene.add(sun);
-const ground=new THREE.Mesh(new THREE.PlaneGeometry(40,40),new THREE.MeshStandardMaterial({color:0x6c745b,roughness:1}));ground.rotation.x=-Math.PI/2;ground.position.y=-.01;scene.add(ground);
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(80,80),new THREE.MeshStandardMaterial({color:0x6c745b,roughness:1}));ground.rotation.x=-Math.PI/2;ground.position.y=-.01;scene.add(ground);
 const l=new ResidentWorldLayer();scene.add(l.group);const terrain={available:true,worldSeed:'life-fixture',centerChunkX:0,centerChunkY:0,chunks:[{x:0,y:0,elevation01:0,waterKind:'None'}]};
 for(let n=0;!l.ready&&n<600;n++)await new Promise(r=>setTimeout(r,10));if(!l.ready)throw Error('resident asset load failed');
-const r=(id,x,z,lifeStage='Adult',ageYears=30,extra={})=>({id,name:'',alive:true,hasPosition:true,gridX:(x/G.worldUnitsPerChunk+.5)*G.gridCellsPerChunk,gridY:(z/G.worldUnitsPerChunk+.5)*G.gridCellsPerChunk,sex:'Female',lifeStage,ageYears,lifeHistory:[],...extra});
+const r=(id,x,z,lifeStage='Adult',ageYears=30,extra={})=>({id,name:'',alive:true,hasPosition:true,gridX:(x/G.worldUnitsPerChunk+.5)*G.gridCellsPerChunk,gridY:(z/G.worldUnitsPerChunk+.5)*G.gridCellsPerChunk,sex:'Female',lifeStage,ageYears,lifeHistory:[],genetics:{heightPotential:.5,buildPotential:.5,faceShape:.5,skinTone:.5,hairPigment:.5},...extra});
 const shape=(stage)=>({role:'GestationalParent',stage});let residents=[];
 if(mode==='generations')residents=[r('baby',-2,-1,'Baby',.2),r('toddler',0,-1,'Toddler',3),r('child',2,-1,'Child',9),r('teen',-2,1,'Teen',16),r('adult',0,1),r('elder',2,1,'Elderly',78)];
 if(mode==='pregnancy'||mode==='pregnancy-sleep'){
@@ -25,17 +25,19 @@ if(mode==='pregnancy'||mode==='pregnancy-sleep'){
 }
 if(mode==='parenting'||mode==='parenting-moving')residents=[r('parent',-.55,0,'Adult',30,{presentation:{active:true,kind:'Parenting',phase:mode==='parenting'?'Interacting':'Moving',parentingAction:'Feed',targetResidentId:'child'}}),r('child',.55,0,'Toddler',3,{family:{parents:[{id:'parent'}]}}),r('grandparent',2,-1,'Elderly',78)];
 if(mode==='events'||mode==='coalescing'||mode.startsWith('event-'))residents=[r('parent',-.7,0,'Adult',30,{family:{children:[{id:'child'}]}}),r('partner',.7,0),r('child',-.1,1,'Baby',0,{family:{parents:[{id:'parent'},{id:'partner'}]}})];
+if(['generations','pregnancy','pregnancy-sleep'].includes(mode))residents.forEach((resident,i)=>{const mobile=innerWidth<500;const x=mobile?(i%2-.5)*2.6:(i%3-1)*2.2;const z=mobile?2-Math.floor(i/2)*2:1.5-Math.floor(i/3)*3;resident.gridX=(x/G.worldUnitsPerChunk+.5)*G.gridCellsPerChunk;resident.gridY=(z/G.worldUnitsPerChunk+.5)*G.gridCellsPerChunk;if(resident.presentation){resident.presentation.targetGridX=resident.gridX;resident.presentation.targetGridY=resident.gridY;}});
+const hideExistingText=()=>{for(const actor of l.actors.values())actor.actionCue.sprite.visible=false;};
 l.setResidents(residents,terrain,0,0);l.setSimulationSpeed(1);for(let n=0;n<90;n++)l.update(.02);
 // Face the fixed test camera, only in this synthetic read-only fixture.
-for(const actor of l.actors.values())actor.root.rotation.y=.28;
+if(mode.startsWith('pregnancy')||mode==='generations')for(const actor of l.actors.values())actor.root.rotation.y=mode.startsWith('pregnancy')?1.15:.28;
 let now=0;const life=new ResidentLifeEventLayer(id=>l.socialEventAnchor(id),()=>now);scene.add(life.group);const social=new SocialEventLayer(id=>l.socialEventAnchor(id),()=>now);scene.add(social.group);
 life.observe(residents,100);
 if(mode==='events'){residents[0].lifeHistory=[{type:'ChildBorn',minute:101,relatedCharacterIds:['child']}];residents[2].lifeHistory=[{type:'Birth',minute:101,relatedCharacterIds:['parent']}];life.observe(residents,101);}
 if(mode.startsWith('event-')){residents[0].lifeHistory=[{type:mode.slice(6),minute:101,relatedCharacterIds:['partner']}];life.observe(residents,101);}
 if(mode==='coalescing'){residents[0].lifeHistory=[{type:'Married',minute:101,relatedCharacterIds:['partner']}];life.observe(residents,101);social.observe({available:true,events:[{sequence:'1',actorId:'parent',targetId:'partner',type:'Commitment',minute:101,intensity:1,importance:1,presentationLevel:'Important',successful:true}]},101);}
-const aspect=innerWidth/innerHeight,extent=innerWidth<500?5.6:3.4;const camera=new THREE.OrthographicCamera(-extent*aspect,extent*aspect,extent,-extent,.1,100);camera.position.set(1,4,8);camera.lookAt(0,.7,0);
-now=1;life.update(camera,0);social.update(camera,life.presentation.majorPairs);renderer.render(scene,camera);
+const aspect=innerWidth/innerHeight,extent=innerWidth<500?6.4:3.8;const camera=new THREE.OrthographicCamera(-extent*aspect,extent*aspect,extent,-extent,.1,100);camera.position.set(1,6,8);camera.lookAt(0,.7,0);
+now=1;life.update(camera,0);social.update(camera,life.presentation.majorPairs);hideExistingText();renderer.render(scene,camera);
 const resources=()=>{const gs=new Set(),ms=new Set();scene.traverse(o=>{if(o.geometry)gs.add(o.geometry);if(o.material)for(const m of Array.isArray(o.material)?o.material:[o.material])ms.add(m)});return{calls:renderer.info.render.calls,geometries:renderer.info.memory.geometries,materials:ms.size,roots:l.actors.size,activeLife:life.presentation.activeCues.length,socialVertices:social.geometry.drawRange.count};};
-window.fixtureStats=resources();window.refresh100=()=>{const before=resources();for(let n=0;n<100;n++){l.setResidents(residents,terrain,0,0);l.update(.001);life.observe(residents,101);}renderer.render(scene,camera);return{before,after:resources()};};
-document.querySelector('header').textContent=({generations:'영아 · 유아 · 아동 · 청소년 · 성인 · 고령자',pregnancy:'임신 1기 · 2기 · 3기 · 출산 예정 · 완료 · 유전적 파트너',parenting:'실제 Feed Interacting · 살아 있는 대상 주민',events:'실제 ChildBorn + Birth · 실제 신생아 존재',coalescing:'Married + Commitment · 현장 cue 하나', 'pregnancy-sleep':'임신 상태와 실제 수면 pose', 'parenting-moving':'Parenting Moving · 기존 이동 표현'})[mode]??'읽기 전용 · exact 생애사건';window.fixtureReady=true;
+window.fixtureStats=resources();window.refresh100=()=>{const before=resources();for(let n=0;n<100;n++){l.setResidents(residents,terrain,0,0);l.update(.001);life.observe(residents,101);}hideExistingText();renderer.render(scene,camera);return{before,after:resources()};};
+document.querySelector('header').textContent=({generations:'영아 · 유아 · 아동 · 청소년 · 성인 · 고령자',pregnancy:'임신 1기 · 2기 · 3기 · 출산 예정 · 완료 · 유전적 파트너',parenting:'실제 먹이 주기 · 상호작용 중 · 살아 있는 대상 주민',events:'실제 출산 사건 · 실제 신생아 존재',coalescing:'결혼과 관계 약속 · 현장 효과 하나', 'pregnancy-sleep':'임신 상태와 실제 수면 자세', 'parenting-moving':'육아 대상에게 이동 중 · 기존 이동 표현'})[mode]??'읽기 전용 · 실제 생애사건';window.fixtureReady=true;
 </script></html>

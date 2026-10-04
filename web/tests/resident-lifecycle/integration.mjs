@@ -24,5 +24,13 @@ const shader={uniforms:{},vertexShader:'#include <begin_vertex>'};mesh.material.
 l.setResidents([{...pregnant,pregnancy:{role:'GeneticPartner',stage:'ThirdTrimester'}}],terrain,0,0);assert.equal(shader.uniforms.lifeBelly.value,0);assert.deepEqual(resources(),profileResources);
 l.setResidents([{...pregnant,pregnancy:{role:'GestationalParent',stage:'Completed'}}],terrain,0,0);assert.equal(shader.uniforms.lifeBelly.value,0);
 const sleep={active:true,kind:'Physical',phase:'Interacting',physicalGoal:'Sleep',hasTargetGrid:true,targetGridX:64,targetGridY:64};
-for(const stage of ['Baby','Toddler','Child','Adult','Elderly']){l.setResidents([resident('s',stage,{presentation:sleep,pregnancy:stage==='Adult'?pregnant.pregnancy:undefined})],terrain,0,0);for(let n=0;n<180;n++)l.update(.02);const a=l.actors.get('s');assert(a.sleepMotion.active);a.root.updateMatrixWorld(true);let min=Infinity;a.root.traverse(o=>{if(!o.isSkinnedMesh)return;const p=o.geometry.attributes.position,v=new THREE.Vector3();for(let i=0;i<p.count;i++){o.getVertexPosition(i,v);v.applyMatrix4(o.matrixWorld);min=Math.min(min,v.y);}});assert(min>=-.011,`${stage} body penetrates ground ${min}`);}
+for(const stage of ['Baby','Toddler','Child','Adult','Elderly']){l.setResidents([resident('s',stage,{presentation:sleep,pregnancy:stage==='Adult'?pregnant.pregnancy:undefined})],terrain,0,0);for(let n=0;n<180;n++)l.update(.02);const a=l.actors.get('s');assert(a.sleepMotion.active);a.root.updateMatrixWorld(true);let min=Infinity;a.root.traverse(o=>{if(!o.isSkinnedMesh)return;const p=o.geometry.attributes.position,v=new THREE.Vector3();for(let i=0;i<p.count;i++){const original=new THREE.Vector3().fromBufferAttribute(p,i);
+  const mask=o.geometry.attributes.lifeTorsoMask?.getX(i)??0;
+  if(mask>0 && stage==='Adult'){
+    const shader={uniforms:{},vertexShader:'#include <begin_vertex>'};o.material.onBeforeCompile(shader,{});
+    const displaced=original.clone().applyMatrix4(shader.uniforms.lifeToModel.value);
+    displaced.z+=shader.uniforms.lifeBelly.value*shader.uniforms.lifeUnitHeight.value*mask;
+    displaced.applyMatrix4(shader.uniforms.lifeFromModel.value);p.setXYZ(i,displaced.x,displaced.y,displaced.z);
+  }
+  o.getVertexPosition(i,v);p.setXYZ(i,original.x,original.y,original.z);v.applyMatrix4(o.matrixWorld);min=Math.min(min,v.y);}});assert(min>=-.011,`${stage} body penetrates ground ${min}`);}
 l.setSimulationSpeed(0);const frozen=l.actors.get('s').root.scale.clone();l.update(1);assert(l.actors.get('s').root.scale.equals(frozen));l.dispose();assert.equal(l.actors.size,0);console.log('Lifecycle real-model identity, pregnancy, pause and sleep PASS');
