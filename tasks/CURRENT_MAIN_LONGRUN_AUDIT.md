@@ -40,3 +40,12 @@
 - #540 위생 후보 실험 wholesale merge
 - 결과가 마음에 안 든다는 이유로 seed별 예외 하드코딩
 - 브라우저에서 Core 결과를 보정
+
+## R8b 실행 메모 — 2026-10-04
+
+- 기준: #622 corrected head `a178ef9595dc1a6844ea0b17260ffbc857fc6777`.
+- R8 최초 trigger는 test fixture가 `world.characters.push_back()` 이후 stale reference를 잡은 테스트 코드 결함이 발견되기 전 head였으므로 폐기한다.
+- production C6 변경은 동일하며, fixture는 authoritative vector에서 actor를 재획득하도록 수정했다.
+- R7 대비 동일한 100/365/1000일 A/B를 이 corrected head에서 다시 수행한다.
+- 핵심: 4242001 시설/청크/정착지 폭증 억제 및 1000일 완료, 874213954 ghost active settlement 제거, family/trade trajectory 확인.
+- 이 브랜치는 audit trigger 전용이며 main merge 대상이 아니다.
