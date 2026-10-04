@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cmath>
 
 #include "CivilizationDecision.h"
 #include "CivilizationSpatial.h"
@@ -55,6 +56,59 @@ struct TradeContextPayload {
     GridPos originPos{};
     bool returning=false;
 };
+
+
+struct TradeJourneyState {
+    bool active=false;
+    CharacterId partner=0;
+    double utility=0.0;
+    std::uint64_t originSettlement=0;
+    std::uint64_t destinationSettlement=0;
+    GridPos originPos{};
+    MaterialKind firstGives=MaterialKind::Unknown;
+    MaterialKind secondGives=MaterialKind::Unknown;
+    int quantityEach=0;
+    int legStartedMinute=-1;
+    bool returning=false;
+    bool exchanged=false;
+
+    void clear(){ *this=TradeJourneyState{}; }
+};
+
+inline bool validTradeJourneyState(const TradeJourneyState& journey)
+{
+    if(!journey.active) return true;
+    return journey.partner!=0
+        && std::isfinite(journey.utility)
+        && journey.utility>=0.0
+        && journey.utility<=1.0
+        && journey.originSettlement!=0
+        && journey.destinationSettlement!=0
+        && journey.originSettlement!=journey.destinationSettlement
+        && validMaterialKind(journey.firstGives)
+        && journey.firstGives!=MaterialKind::Unknown
+        && validMaterialKind(journey.secondGives)
+        && journey.secondGives!=MaterialKind::Unknown
+        && journey.firstGives!=journey.secondGives
+        && journey.quantityEach>0
+        && journey.legStartedMinute>=0
+        && (!journey.exchanged || journey.returning);
+}
+
+inline SocietyExchangePlan tradeJourneyExchangePlan(
+    CharacterId traveler,
+    const TradeJourneyState& journey)
+{
+    SocietyExchangePlan plan;
+    if(!journey.active || traveler==0) return plan;
+    plan.first=traveler;
+    plan.second=journey.partner;
+    plan.firstGives=journey.firstGives;
+    plan.secondGives=journey.secondGives;
+    plan.quantityEach=journey.quantityEach;
+    plan.score=journey.utility;
+    return plan;
+}
 
 // PendingContextAction predates inter-settlement trade and its binary layout is
 // already part of the save contract. Trade therefore uses the otherwise-idle
