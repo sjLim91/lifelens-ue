@@ -1,0 +1,34 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Facility lifecycle read-only fixture</title>
+<style>body{margin:0;background:#616b53;color:#e7eadb;font:12px sans-serif}header{position:absolute;top:8px;left:8px;right:8px;pointer-events:none}canvas{display:block}</style>
+<header id="legend"></header><script type="importmap">{"imports":{"three":"/node_modules/three/build/three.module.js"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import {FacilityLayer} from './review/src/render/facility-layer.mjs';
+import {WORLD_GRID_CONTRACT as G} from './review/src/runtime/lifelens-contract.mjs';
+const mode=new URL(location.href).searchParams.get('mode')??'construction';
+const kinds=['PrimitiveStorage','WorkSurface','SleepingPlace','Shelter'];
+const stages=mode==='construction'?[['Planned',0,0,1],['Planned',0,3,1],['UnderConstruction',0,10,1],['UnderConstruction',.15,10,1],['UnderConstruction',.45,10,1],['UnderConstruction',.75,10,1],['UnderConstruction',.95,10,1],['Operational',1,10,1]]:[['Operational',1,10,1],['Operational',1,10,.55],['Operational',1,10,.25],['Ruined',1,10,0],['Operational',1,10,.25]];
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x616b53);
+const layer=new FacilityLayer();scene.add(layer.group);
+const entries=[],facilities=[];let id=0;
+for(let row=0;row<kinds.length;row++)for(let col=0;col<stages.length;col++){
+ const [state,progress01,deliveredMaterialUnits,durability]=stages[col];id++;
+ const x=(col-(stages.length-1)/2)*4.8,z=(row-1.5)*5;
+ const gridX=(x/G.worldUnitsPerChunk+.5)*G.gridCellsPerChunk,gridY=(z/G.worldUnitsPerChunk+.5)*G.gridCellsPerChunk;
+ entries.push({id:`facility:${id}`,kind:'Facility',facilityKind:kinds[row],gridX,gridY,state,progress01,deliveredMaterialUnits,requiredMaterialUnits:10,active:state==='Operational',lit:false});
+ facilities.push({id:String(id),kind:kinds[row],gridX,gridY,state,constructionWork:progress01*10,workProgress:progress01,requiredMaterialUnits:10,deliveredMaterialUnits,durability,requirements:[{material:'Wood',required:6,delivered:deliveredMaterialUnits*.6},{material:'Fiber',required:4,delivered:deliveredMaterialUnits*.4}]});
+}
+const chunks=[];for(let x=-2;x<=2;x++)for(let y=-2;y<=2;y++)chunks.push({x,y,elevation01:0,waterKind:'None'});
+const terrain={available:true,worldSeed:'read-only-fixture',centerChunkX:0,centerChunkY:0,chunks,humanTraces:{available:true,entries}};
+layer.setCivilization({available:true,facilities},terrain);
+if(mode==='condition')layer.setResidents(kinds.map((_,row)=>({id:`r${row}`,alive:true,hasPosition:true,presentation:{active:true,kind:'Civilization',phase:'Interacting',facilityAction:'Repair',facilityId:String(row*stages.length+stages.length)}})));
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(60,50),new THREE.MeshStandardMaterial({color:0x616b53,roughness:1}));ground.rotation.x=-Math.PI/2;ground.position.y=-.015;scene.add(ground);
+scene.add(new THREE.HemisphereLight(0xe7eadb,0x6b5843,2));const sun=new THREE.DirectionalLight(0xffead0,3);sun.position.set(-8,18,12);scene.add(sun);
+const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(1);document.body.append(renderer.domElement);
+const aspect=innerWidth/innerHeight;const extent=innerWidth<500?23:15;const camera=new THREE.OrthographicCamera(-extent*aspect,extent*aspect,extent,-extent,.1,100);camera.position.set(5,24,22);camera.lookAt(0,0,0);
+// Portrait fixture presents columns as rows, keeping primitive details visible.
+if(innerWidth<500){layer.group.rotation.y=Math.PI/2;camera.position.set(0,30,17);camera.lookAt(0,0,0);}
+function render(){layer.update(.016);renderer.render(scene,camera);return{calls:renderer.info.render.calls,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,sites:layer.structures.size,children:layer.group.children.length};}
+window.fixtureStats=render();window.fixtureReady=true;window.refresh1000=()=>{const before=render();for(let i=0;i<1000;i++)layer.setCivilization({available:true,facilities},terrain);const after=render();return{before,after};};
+document.getElementById('legend').textContent=mode==='construction'?'Read-only • planned / 30% material / ready / work 15–45–75–95% / operational':'Read-only • fresh / worn 55% / severe 25% / ruined / exact Repair interaction';
+</script>

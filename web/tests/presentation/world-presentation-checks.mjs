@@ -190,7 +190,7 @@ export function worldPresentationChecks({ test, source, flatWindow }) {
   test('시설은 실제 저장량·내구도를 읽고 수리 시 원형을 회복한다', () => {
     const layer = new FacilityLayer();
     const window = terrain();
-    const detail = { id: '42', kind: 'PrimitiveStorage', gridX: 0, gridY: 0, durability: 1, linkedStorage: 'stock' };
+    const detail = { id: '42', kind: 'PrimitiveStorage', gridX: 0, gridY: 0, state: 'Operational', durability: 1, linkedStorage: 'stock' };
     const data = { available: true, facilities: [detail], storages: [{ id: 'stock', totalUnits: 12 }] };
     try {
       layer.setCivilization(data, window);
@@ -226,7 +226,7 @@ export function worldPresentationChecks({ test, source, flatWindow }) {
     const layer = new FacilityLayer();
     try {
       const window = terrain();
-      const data = { available: true, facilities: [{ id: '42', kind: 'PrimitiveStorage', gridX: 0, gridY: 0, durability: 1, linkedStorage: 'stock' }], storages: [{ id: 'stock', totalUnits: 4, inventory: [{ material: 'Wood', quantity: 4 }] }] };
+      const data = { available: true, facilities: [{ id: '42', kind: 'PrimitiveStorage', gridX: 0, gridY: 0, state: 'Operational', durability: 1, linkedStorage: 'stock' }], storages: [{ id: 'stock', totalUnits: 4, inventory: [{ material: 'Wood', quantity: 4 }] }] };
       layer.setCivilization(data, window);
       const actual = layer.group.children[0];
       layer.setCivilization({ ...data, settlements: [{ id: '84', lifecycle: 'Abandoned', dominantKind: 'Metallurgy', specialization01: 1 }] }, window);
@@ -241,12 +241,14 @@ export function worldPresentationChecks({ test, source, flatWindow }) {
     const layer = new FacilityLayer();
     try {
       const window = terrain();
-      const facility = { id: '42', kind: 'PrimitiveStorage', gridX: 0, gridY: 0, durability: 1, linkedStorage: 'stock' };
+      const facility = { id: '42', kind: 'PrimitiveStorage', gridX: 0, gridY: 0, state: 'Operational', durability: 1, linkedStorage: 'stock' };
       const data = { available: true, facilities: [facility], storages: [{ id: 'stock', totalUnits: 4, inventory: [{ material: 'Wood', quantity: 4 }] }] };
       layer.setCivilization(data, window);
       const old = layer.group.children[0];
+      const oldPile = old.children.find(child => child.userData.storedGoods);
       layer.setCivilization({ ...data, storages: [{ id: 'stock', totalUnits: 4, inventory: [{ material: 'Clay', quantity: 4 }] }] }, window);
-      assert.notEqual(layer.group.children[0], old);
+      assert.equal(layer.group.children[0], old, 'same facility id retains its site root');
+      assert.notEqual(old.children.find(child => child.userData.storedGoods), oldPile, 'changed inventory updates actual contents');
       assert.equal(layer.group.children[0].children.find(child => child.userData.storedGoods).userData.storedGoods.material, 'Clay');
       window.humanTraces.entries = [{ ...trace, state: 'Ruined' }];
       layer.setCivilization(data, window);
@@ -270,3 +272,4 @@ export function worldPresentationChecks({ test, source, flatWindow }) {
     } finally { layer.dispose(); }
   });
 }
+
