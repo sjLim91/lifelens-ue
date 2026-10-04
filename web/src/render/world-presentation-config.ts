@@ -32,9 +32,15 @@ export const WORLD_PRESENTATION = {
     activityHeight: 0.45, activityRadius: 0.2, activityOffset: 1.6,
     workColor: 0xbca789, repairColor: 0xdfcc94, activityOpacity: 0.6,
   },
-  settlement: { maxVisibleAnchors: 64, focusSegments: 48, focusRadiusGrid: 8,
-    hitRadiusGrid: 3, focusColor: 0xc5bf98, focusOpacity: 0.3, groundLift: 0.12,
-    maxRelationsInPopup: 6, maxRecentEvents: 3 },
+  settlement: { maxVisibleAnchors: 100, focusSegments: 48, focusRadiusGrid: 8,
+    hitRadiusGrid: 4.5, focusColor: 0xc5bf98, focusOpacity: 0.3, groundLift: 0.12,
+    maxRelationsInPopup: 6, maxRecentEvents: 3,
+    anchorSegments: 24, anchorRadiusGrid: 4, anchorOpacity: 0.5, inactiveStrength: 0.28,
+    maxVisibleRoutes: 100, routeSegments: 64, routeColor: 0xb9c5ac, routeOpacity: 0.44,
+    routeEvidenceScale: 8, routeBaseStrength: 0.45, routeEvidenceStrength: 0.55, routeDashFraction: 0.55,
+    anchorLodDistance: 80, anchorLodMaxScale: 3, anchorLodSteps: 8,
+    nearCameraDistance: 10, farCameraDistance: 36, nearOpacityScale: 0.65,
+    migrationColor: 0xc4b9a0, migrationOpacity: 0.5, migrationLengthGrid: 12, migrationSegments: 8 },
   shelter: { wallProgress: 0.9, sideX: 1.4, wallY: 1.15, wallThickness: 0.08, wallHeight: 2, wallDepth: 1.8 },
   cultivation: { rows: [-0.72, 0, 0.72], length: 3.2, ridgeHeight: 0.08, ridgeWidth: 0.1 },
   weatheredColor: 0x898574,
@@ -86,6 +92,7 @@ export const WORLD_PRESENTATION = {
     wetMudWidthMultiplier: 1.18, dryRoughness: 0.96, wetRoughness: 0.64,
   },
 } as const;
+
 
 
 
