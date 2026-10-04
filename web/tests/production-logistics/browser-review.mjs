@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
+import {source} from './compile.mjs';
+await source('render/facility-emission-layer.ts');
+await source('render/ground-detail-layer.ts');
 import {createServer} from 'node:http';
 import {readFileSync,mkdirSync,writeFileSync} from 'node:fs';
 import {resolve,extname} from 'node:path';
