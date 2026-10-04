@@ -92,6 +92,25 @@ bool validateSnapshot(const SimulationStateSnapshot& snapshot,std::string* error
         if(item.second.socialTarget!=0 && characterIds.count(item.second.socialTarget)==0)
             return fail("runtime social target is missing");
 
+        const TradeJourneyState& journey=item.second.tradeJourney;
+        if(journey.active){
+            if(!validTradeJourneyState(journey)
+               || journey.partner==item.first
+               || characterIds.count(journey.partner)==0
+               || journey.legStartedMinute>snapshot.world.minute){
+                return fail("runtime trade journey is invalid");
+            }
+            if(pending.active() && pending.kind==ContextActionKind::Trade){
+                const TradeContextPayload trade=tradeContextPayload(pending);
+                if(trade.partner!=journey.partner
+                   || trade.originSettlement!=journey.originSettlement
+                   || trade.destinationSettlement!=journey.destinationSettlement
+                   || trade.returning!=journey.returning){
+                    return fail("runtime trade pending context disagrees with journey");
+                }
+            }
+        }
+
         const PendingContextAction& pending=item.second.pendingContext;
         const bool tokenPresent=pending.token!=0;
         const bool kindPresent=pending.kind!=ContextActionKind::None;
@@ -253,6 +272,7 @@ SimulationStateSnapshot Simulation::captureSnapshot() const
         target.socialIntent=source.socialIntent;
         target.socialTarget=source.socialTarget;
         target.pendingContext=source.pendingContext;
+        target.tradeJourney=source.tradeJourney;
         target.navigationRoute=source.navigationRoute;
         target.navigationRouteIndex=source.navigationRouteIndex;
         target.navigationTarget=source.navigationTarget;
