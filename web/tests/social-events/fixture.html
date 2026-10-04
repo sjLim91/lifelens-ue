@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LifeLens social event read-only fixture</title>
+<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#536052}canvas{display:block;width:100%;height:100%}</style>
+<canvas id="world"></canvas>
+<script type="importmap">{"imports":{"three":"/node_modules/three/build/three.module.js"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { SocialEventLayer } from './review/src/render/social-event-layer.mjs';
+import { SOCIAL_EVENT_PRESENTATION_CONTRACT as C } from './review/src/runtime/lifelens-contract.mjs';
+// Synthetic DTOs never enter WorldSession/Core or the production observer.
+const params = new URLSearchParams(location.search);
+const renderer = new THREE.WebGLRenderer({canvas:document.querySelector('canvas'),antialias:true});
+renderer.setSize(innerWidth,innerHeight); renderer.setPixelRatio(1);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x536052);
+const camera = new THREE.PerspectiveCamera(42,innerWidth/innerHeight,.1,100);
+const distance = 180 / (params.get('zoom') === 'min' ? .55 : 6.4);
+camera.far = 1000; camera.updateProjectionMatrix();
+camera.position.set(Math.cos(-.68)*Math.cos(.67)*distance,Math.sin(.67)*distance,
+  Math.sin(-.68)*Math.cos(.67)*distance); camera.lookAt(0,.75,0);
+scene.add(new THREE.HemisphereLight(0xf5f2e0,0x293228,2));
+const light = new THREE.DirectionalLight(0xfff0d3,2); light.position.set(4,8,4); scene.add(light);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(100,100),new THREE.MeshStandardMaterial({color:0x69705a,roughness:1}));
+ground.rotation.x=-Math.PI/2; ground.position.y=-.01; scene.add(ground);
+const positions = new Map([['a',{x:-.8,y:0,z:0}],['b',{x:.8,y:0,z:0}]]);
+// Neutral resident-sized forms: no animation overrides, props or invented outcomes.
+for (const [id,p] of positions) {
+ const body = new THREE.Mesh(new THREE.CapsuleGeometry(.2,.72,4,8),new THREE.MeshStandardMaterial({color:id==='a'?0x7c8d8c:0xb6a894}));
+ body.position.set(p.x,.68,p.z); scene.add(body);
+ const head = new THREE.Mesh(new THREE.SphereGeometry(.14,12,8),new THREE.MeshStandardMaterial({color:0xb49379}));
+ head.position.set(p.x,1.35,p.z); scene.add(head);
+}
+let now=0;
+const layer = new SocialEventLayer(id=>positions.get(id)??null,()=>now); scene.add(layer.group);
+const type=params.get('type')??'Conflict', level=type==='PositiveInteraction'?'Everyday':
+ ['Help','Comfort','Apology'].includes(type)?'Meaningful':'Important';
+layer.observe({available:true,events:[{sequence:'1',actorId:'a',targetId:'b',type,
+ intensity:.85,importance:.8,minute:100,where:'fixture',presentationLevel:level,
+ successful:params.get('failed')!=='true'}]},100);
+const duration=layer.presentation.activeCues[0].visual.durationSeconds;
+window.renderProgress = progress => {
+ now=progress*duration; layer.update(camera); renderer.render(scene,camera);
+ return {calls:renderer.info.render.calls,geometries:renderer.info.memory.geometries,
+  cueChildren:layer.group.children.length,active:layer.presentation.activeCues.length};
+};
+window.fixtureReady=true; window.renderProgress(.55);
+</script>
+</html>

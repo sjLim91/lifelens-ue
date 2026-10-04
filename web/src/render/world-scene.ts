@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import type {
   CivilizationWorldPayload,
   DynamicEnvironment,
+  RecentSocialEventsPayload,
   Resident,
   TerrainChunk,
   TerrainWindow,
@@ -19,6 +20,7 @@ import { GroundDetailLayer } from './ground-detail-layer';
 import { FacilityLayer } from './facility-layer';
 import { HumanTraceLayer } from './human-trace-layer';
 import { ResidentWorldLayer } from './resident-world-layer';
+import { SocialEventLayer } from './social-event-layer';
 import {
   createTerrainElevationSampler,
   createTerrainGeometryBuilder,
@@ -70,6 +72,8 @@ export class WorldScene {
   private readonly waterLayer = new WaterLayer();
   private readonly vegetationLayer = new VegetationLayer();
   private readonly residentLayer = new ResidentWorldLayer();
+  private readonly socialEventLayer = new SocialEventLayer(id => this.residentLayer.socialEventAnchor(id));
+  private socialEventCenter: { x: number; y: number } | null = null;
   private readonly weatherLayer = new WeatherLayer();
   private readonly raycaster = new THREE.Raycaster();
   private readonly pointer = new THREE.Vector2();
@@ -109,6 +113,7 @@ export class WorldScene {
     this.scene.add(this.waterLayer.group);
     this.scene.add(this.vegetationLayer.group);
     this.scene.add(this.residentLayer.group);
+    this.scene.add(this.socialEventLayer.group);
     this.scene.add(this.weatherLayer.group);
     this.scene.add(this.surfaceConsequenceLayer.group, this.facilityEmissionLayer.group);
     this.atmosphere = new AtmosphereLayer(this.scene);
@@ -158,6 +163,12 @@ export class WorldScene {
     this.facilityEmissionLayer.setSimulationMinute(minute);
   }
 
+  setSocialEvents(payload: RecentSocialEventsPayload, minute: number): void {
+    this.socialEventLayer.observe(payload, minute);
+  }
+
+  resetSocialEvents(): void { this.socialEventLayer.reset(); }
+
   setEnvironment(environment: DynamicEnvironment | null): void {
     if (environment?.available === false) environment = null;
     this.snowCoverage = snowPresentationCoverage(environment);
@@ -201,7 +212,10 @@ export class WorldScene {
     this.footTrafficLayer.setSpeed(speed);
   }
 
-  breakFootTrafficContinuity(): void { this.footTrafficLayer.breakContinuity(); }
+  breakFootTrafficContinuity(): void {
+    this.footTrafficLayer.breakContinuity();
+    this.socialEventLayer.clearActive();
+  }
 
   pickResident(normalizedX: number, normalizedY: number): string | null {
     this.pointer.set(normalizedX, normalizedY);
@@ -265,6 +279,13 @@ export class WorldScene {
     centerX: number,
     centerY: number,
   ): void {
+    if (this.socialEventCenter) {
+      this.socialEventLayer.rebase(
+        (this.socialEventCenter.x - centerX) * WORLD_GRID_CONTRACT.worldUnitsPerChunk,
+        (this.socialEventCenter.y - centerY) * WORLD_GRID_CONTRACT.worldUnitsPerChunk,
+      );
+    }
+    this.socialEventCenter = { x: centerX, y: centerY };
     this.footTrafficResidents = residents;
     this.footTrafficTerrain = terrain;
     this.residentLayer.setResidents(
@@ -290,6 +311,7 @@ export class WorldScene {
     this.applyCamera(current);
 
     this.residentLayer.update(deltaSeconds);
+    this.socialEventLayer.update(this.camera);
     this.waterLayer.update(deltaSeconds);
     this.weatherLayer.update(deltaSeconds);
   }
@@ -353,6 +375,7 @@ export class WorldScene {
       && this.terrainWorldSeed !== window.worldSeed
     ) {
       this.cameraInitialized = false;
+      this.socialEventLayer.reset();
     }
     this.terrainWorldSeed = window.worldSeed;
     this.originX = (window.centerChunkX + 0.5) * WORLD_GRID_CONTRACT.worldUnitsPerChunk;
@@ -441,6 +464,7 @@ export class WorldScene {
     this.waterLayer.dispose();
     this.vegetationLayer.dispose();
     this.residentLayer.dispose();
+    this.socialEventLayer.dispose();
     this.weatherLayer.dispose();
     this.surfaceConsequenceLayer.dispose();
     this.facilityEmissionLayer.dispose();
@@ -506,5 +530,4 @@ export class WorldScene {
   }
 
 }
-
 

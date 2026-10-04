@@ -138,6 +138,51 @@ export const RESIDENT_PRESENTATION_CONTRACT = {
   modelForwardYawOffsetRadians: 0,
 } as const;
 
+// Observer-local completed-event cues. No values feed Core or persistence.
+export const SOCIAL_EVENT_PRESENTATION_CONTRACT = {
+  maxActiveCues: 8,
+  maxInitialCues: 2,
+  maxSeenEvents: 128,
+  pairMaxDistance: 4.5,
+  pairMinDistance: 0.08,
+  // At 4×, two 500ms refreshes span 48 simulation minutes. Allow that
+  // delivery interval, but never replay hours of history after boot/catch-up.
+  replayWindowMinutes: Math.ceil(
+    2 * SIMULATION_TIME_CONTRACT.refreshIntervalMs
+    * MAX_SIMULATION_SPEED_MULTIPLIER
+    / REAL_MS_PER_SIMULATION_MINUTE_AT_1X,
+  ),
+  everydayDurationSeconds: 1.2,
+  meaningfulDurationSeconds: 2,
+  importantDurationSeconds: 2.8,
+  importanceDurationSeconds: 0.35,
+  unsuccessfulOpacityMultiplier: 0.4,
+  unsuccessfulDurationMultiplier: 0.7,
+  minScale: 0.26,
+  maxScale: 0.5,
+  connectorHeight: 1.35,
+  arcLift: 0.42,
+  conflictAmplitude: 0.25,
+  strokeWidth: 0.045,
+  arrowLength: 0.22,
+  pulseSegments: 24,
+  segmentsPerCue: 64,
+  maxOpacity: 0.88,
+  minOpacity: 0.62,
+  renderOrder: 7,
+  colors: {
+    PositiveInteraction: RESIDENT_PRESENTATION_CONTRACT.socialConnectorDefaultColorHex,
+    Help: RESIDENT_PRESENTATION_CONTRACT.socialConnectorApproachColorHex,
+    Comfort: RESIDENT_PRESENTATION_CONTRACT.socialConnectorComfortColorHex,
+    Conflict: 0xd0a18a,
+    Betrayal: 0xb487a7,
+    Rejection: 0xc5a58e,
+    Apology: RESIDENT_PRESENTATION_CONTRACT.socialConnectorRepairColorHex,
+    Intimacy: 0xd2b7c9,
+    Commitment: 0xdfccac,
+  },
+} as const;
+
 export function residentPresentationMotionTimeScale(
   speed: number,
 ): number {
@@ -155,4 +200,3 @@ export function simulationTimeHint(): string {
     + '라이프렌즈 1일 · 시간 점프 없이 관찰 배속만 조절'
   );
 }
-

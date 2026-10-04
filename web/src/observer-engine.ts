@@ -258,6 +258,10 @@ export function startObserverEngine(): void {
     threeWorldRenderer?.setSimulationMinute(
       Number(snapshot.overview.minute) || 0,
     );
+    threeWorldRenderer?.setSocialEvents(
+      snapshot.socialEvents,
+      Number(snapshot.overview.minute) || 0,
+    );
     threeWorldRenderer?.setEnvironment(snapshot.environment);
     threeWorldRenderer?.setCamera({
       centerChunkX: centerX,
@@ -286,6 +290,7 @@ export function startObserverEngine(): void {
     characterLayer?.clearResidents();
     simulationClock?.resetAccumulator();
     observerStore.resetWorld();
+    threeWorldRenderer?.resetSocialEvents();
     threeWorldRenderer?.setSelectedResident(null);
     threeWorldRenderer?.setSelectedHumanTrace(null);
     refresh();
