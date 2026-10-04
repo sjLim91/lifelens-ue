@@ -15,20 +15,21 @@ const settlement=(id:string,x:number,z:number,extra={})=>({id,gridX:grid(x),grid
   operationalFacilityCount:2,plannedFacilityCount:1,storageSiteCount:1,active:true,established:true,...extra});
 let settlements=[settlement('2',-3,0),settlement('4',3,0)];
 if(['single','grown','migration','frontier'].includes(mode))settlements=[settlement('2',0,0,mode==='grown'?{residentCount:11,facilityCount:18,operationalFacilityCount:15,plannedFacilityCount:3,storageSiteCount:3}:{})];
-if(mode==='many')settlements=Array.from({length:10},(_,i)=>settlement(String(i+1),(i%5-2)*2.8,Math.floor(i/5)*3-1.5));
+if(mode==='many')settlements=Array.from({length:10},(_,i)=>settlement(String(i+1),(i%5-2)*6,Math.floor(i/5)*8-4));
 if(mode==='invalid')settlements=[settlement('',NaN,0)];
 const route=(id:string,a:any,b:any,active=true)=>({id,firstSettlement:a.id,secondSettlement:b.id,
   firstGridX:a.gridX,firstGridY:a.gridY,secondGridX:b.gridX,secondGridY:b.gridY,
   partnerCount:active?3:0,exchangeCount:active?8:0,distanceGrid:24,active});
 let routes=['active','inactive','popup','min','max'].includes(mode)?[route('2:4',settlements[0],settlements[1],mode!=='inactive')]:[];
-if(mode==='many')routes=settlements.slice(1).map((s,i)=>route(String(i),settlements[0],s));
+if(mode==='many')routes=settlements.slice(1).map((s,i)=>route(String(i+1),settlements[0],s));
 if(mode==='invalid')routes=[route('bad',settlements[0],{id:'missing',gridX:0,gridY:Infinity})];
 const facility=(id:string,kind:string,x:number,z:number)=>({id,kind,gridX:grid(x),gridY:grid(z),state:'Operational',active:true,lit:false,durability:1,workProgress:1,constructionWork:100,requiredWork:100,requiredMaterialUnits:8,deliveredMaterialUnits:8,requirements:[{material:'Wood',required:8,delivered:8}]});
 const facilities=mode==='invalid'?[]:settlements.flatMap((s,i)=>{
  const x=(s.gridX/32-.5)*8,z=(s.gridY/32-.5)*8;
  return [facility(`${i*3+1}`,'PrimitiveStorage',x-.7,z-.8),facility(`${i*3+2}`,'Shelter',x+.6,z-.8),facility(`${i*3+3}`,'WorkSurface',x,z+1.2)];
 });
-const residents=mode==='invalid'?[]:settlements.flatMap((s,i)=>Array.from({length:mode==='grown'?7:2},(_,j)=>({
+if(mode==='grown')for(let i=0;i<15;i++)facilities.push(facility(String(i+4),['SleepingPlace','WorkSurface','FirePit'][i%3],(i%5-2)*3,Math.floor(i/5)*3-5));
+const residents=mode==='invalid'?[]:settlements.flatMap((s,i)=>Array.from({length:mode==='grown'?11:2},(_,j)=>({
  id:`r${i}-${j}`,name:j?'수림':'가람',alive:true,hasPosition:true,gridX:s.gridX+(j%4-1)*2,gridY:s.gridY+8+Math.floor(j/4)*2,
  sex:j?'Female':'Male',lifeStage:'Adult',ageYears:30,lifeHistory:[],genetics:{heightPotential:.5,buildPotential:.5,faceShape:.5,skinTone:.5,hairPigment:.5},
  civilization:{inventory:[{item:'RawMaterial',material:'Wood',quantity:2}]},
@@ -44,7 +45,7 @@ refresh();
 for(let n=0;!(world as any).residentLayer.ready&&n<600;n++)await new Promise(r=>setTimeout(r,10));
 if(!(world as any).residentLayer.ready)throw Error('production resident GLB missing');
 refresh();world.setSimulationSpeed(1);world.setSimulationMinute(720);
-const state={centerChunkX:0,centerChunkY:0,zoom:mode==='min'?.55:6.4,angle:Math.PI/3,elevation:.85,panX:0,panZ:0};
+const state={centerChunkX:0,centerChunkY:0,zoom:mode==='min'?.55:mode==='many'?(innerWidth<500?2:4):mode==='grown'?(innerWidth<500?2.8:4.5):6.4,angle:Math.PI/3,elevation:.85,panX:0,panZ:0};
 world.setCamera(state);for(let i=0;i<100;i++)world.update(.02);
 const ui=createRoot(document.getElementById('ui')!);let selected:string|null=null;
 const drawUI=()=>ui.render(<><SettlementDetail snapshot={{selectedSettlementId:selected,civilization,observations:[]} as any}/>{['migration','frontier'].includes(mode)&&<div id="readout"><SelectedResidentReadout resident={residents[0] as any} residents={residents as any} onClear={()=>{world.setSelectedResident(null);ui.render(null);}}/></div>}</>);
@@ -54,6 +55,7 @@ if(['migration','frontier'].includes(mode))world.setSelectedResident(residents[0
 drawUI();
 const render=()=>{world.update(0);for(const a of (world as any).residentLayer.actors.values())a.actionCue.sprite.visible=false;renderer.render(world.scene,world.camera);};render();
 const overlay=(world as any).settlementFocusLayer;
-const stats=()=>{let objects=0;const materials=new Set();world.scene.traverse((o:any)=>{objects++;if(o.material)for(const m of Array.isArray(o.material)?o.material:[o.material])materials.add(m);});return {calls:renderer.info.render.calls,geometries:renderer.info.memory.geometries,materials:materials.size,objects,overlay:overlay.diagnostics};};
+overlay.group.visible=false;renderer.render(world.scene,world.camera);const baselineCalls=renderer.info.render.calls;overlay.group.visible=true;render();
+const stats=()=>{let objects=0;const materials=new Set();world.scene.traverse((o:any)=>{objects++;if(o.material)for(const m of Array.isArray(o.material)?o.material:[o.material])materials.add(m);});return {calls:renderer.info.render.calls,baselineCalls,overlayCalls:renderer.info.render.calls-baselineCalls,geometries:renderer.info.memory.geometries,materials:materials.size,objects,overlay:overlay.diagnostics};};
 (window as any).review={stats,refresh1000(){const before=stats(),ids=overlay.group.children.map((o:any)=>[o.uuid,o.geometry.uuid,o.material.uuid]);for(let i=0;i<1000;i++)overlay.setTargets(structuredClone(civilization),terrain);render();return{before,after:stats(),identity:JSON.stringify(ids)===JSON.stringify(overlay.group.children.map((o:any)=>[o.uuid,o.geometry.uuid,o.material.uuid]))};},anchor(){const s=settlements[0],p=new THREE.Vector3((s.gridX/32-.5)*8,0,(s.gridY/32-.5)*8).project(world.camera);return{x:(p.x+1)*innerWidth/2,y:(1-p.y)*innerHeight/2};},open(){observerActions.selectSettlement(settlements[0].id);},reset(){world.resetSocialEvents();render();return overlay.diagnostics;}};
 (window as any).fixtureReady=true;
