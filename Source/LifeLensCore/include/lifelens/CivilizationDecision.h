@@ -12,6 +12,7 @@
 #include "CivilizationSpatial.h"
 #include "CultivationProgression.h"
 #include "Facility.h"
+#include "Household.h"
 #include "PrimitiveFireProgression.h"
 #include "PrimitiveSanitation.h"
 #include "PrimitiveSmeltingProgression.h"
@@ -2297,22 +2298,81 @@ inline bool settlementInfrastructureFacilityKind(FacilityKind kind)
     }
 }
 
+inline const Character* settlementPlanningCharacter(
+    const World& world,
+    CharacterId id)
+{
+    for(const Character& resident:world.characters){
+        if(resident.id==id) return &resident;
+    }
+    return nullptr;
+}
+
+inline bool householdFrontierCommitmentAtPosition(
+    const World& world,
+    GridPos authoritativePosition,
+    const SettlementPopulation& population,
+    const HouseholdBook* households)
+{
+    if(households==nullptr) return false;
+
+    for(const Household& household:households->all()){
+        if(household.id==0 || household.members.size()<2) continue;
+
+        int livingMembers=0;
+        bool allLivingMembersLocal=true;
+        bool allLivingMembersAutonomous=true;
+        for(const HouseholdMember& member:household.members){
+            const Character* resident=
+                settlementPlanningCharacter(world,member.characterId);
+            if(resident==nullptr || !resident->alive) continue;
+            ++livingMembers;
+
+            // Mirrors the C6-D migration contract: households with a dependent
+            // cannot be treated as a frontier relocation group until Core owns
+            // an actual carry/accompany action for that dependent.
+            if(requiresDirectCare(resident->lifeStage)
+               || lifeStageProfile(resident->lifeStage).autonomy<0.35){
+                allLivingMembersAutonomous=false;
+            }
+
+            const auto position=population.find(resident->id);
+            if(position==population.end()
+               || manhattan(position->second,authoritativePosition)
+                    >SettlementPlanningCoreRadiusGrid){
+                allLivingMembersLocal=false;
+            }
+        }
+
+        if(livingMembers>=2
+           && allLivingMembersAutonomous
+           && allLivingMembersLocal){
+            return true;
+        }
+    }
+    return false;
+}
+
 // Durable settlement planning is intentionally narrower than ordinary facility
-// service. A camp may bootstrap where people actually co-locate, and an existing
-// compact lived core may expand while one resident is temporarily alone. An
-// arbitrary facility chain is not settlement authority: otherwise each new
-// facility becomes the stepping stone for the next one along an explorer route.
-// Low-level site/project helpers remain capable of explicit C6 migration tests.
+// service. NEW GAME may bootstrap where its founders actually co-locate. Once a
+// durable settlement exists, an unrelated pair of explorers is not migration
+// authority: a genuinely new frontier camp requires the same whole-household
+// co-location shape used by C6-D group migration. Existing compact lived cores
+// may still expand while one resident is temporarily alone. Low-level explicit
+// site/project APIs remain available for migration fixtures and authority tests.
 inline bool autonomousSettlementInfrastructurePlanAllowed(
     const World& world,
     GridPos authoritativePosition,
-    const SettlementPopulation* population)
+    const SettlementPopulation* population,
+    const HouseholdBook* households=nullptr)
 {
     if(population==nullptr) return true;
 
     int localLivingResidents=0;
     bool localHabitation=false;
     bool localActivityCore=false;
+    bool localInfrastructure=false;
+    bool anyInfrastructure=false;
 
     for(const Character& resident:world.characters){
         if(!resident.alive) continue;
@@ -2326,12 +2386,15 @@ inline bool autonomousSettlementInfrastructurePlanAllowed(
     }
 
     for(const ConstructedFacility& facility:world.facilities){
+        if(facility.id==0 || facility.state==FacilityState::Ruined) continue;
+        anyInfrastructure=true;
         if(!facilityOperationalAndActive(facility)
            || manhattan(facility.pos,authoritativePosition)
                 >SettlementPlanningCoreRadiusGrid){
             continue;
         }
 
+        localInfrastructure=true;
         if(facility.kind==FacilityKind::SleepingPlace
            || facility.kind==FacilityKind::Shelter){
             localHabitation=true;
@@ -2342,15 +2405,42 @@ inline bool autonomousSettlementInfrastructurePlanAllowed(
             localActivityCore=true;
         }
     }
+    for(const StorageSite& storage:world.storageSites){
+        if(storage.id==0) continue;
+        anyInfrastructure=true;
+        if(manhattan(storage.pos,authoritativePosition)
+           <=SettlementPlanningCoreRadiusGrid){
+            localInfrastructure=true;
+        }
+    }
 
-    // Two co-located living residents are enough to establish or extend a
-    // frontier camp. A resident temporarily alone may still expand an existing
-    // compact lived core, but a lone explorer next to one daisy-chained facility
-    // cannot turn that facility into an endlessly advancing settlement anchor.
-    return localLivingResidents>=2
-        || (localLivingResidents>=1
-            && localHabitation
-            && localActivityCore);
+    // The first camp has no infrastructure yet and must remain able to bootstrap
+    // from the initial co-located population.
+    if(!anyInfrastructure) return localLivingResidents>=2;
+
+    // One resident may maintain/extend a real compact lived core. This keeps a
+    // sole survivor or temporarily separated worker from being unable to replace
+    // essential local infrastructure.
+    if(localLivingResidents>=1
+       && localHabitation
+       && localActivityCore){
+        return true;
+    }
+
+    // A real local footprint may still be in its early one-facility bootstrap
+    // phase (for example the first bed before the first work surface). Two or
+    // more residents may expand/reoccupy that existing site. This does not
+    // authorize an empty frontier: the first durable facility there still
+    // requires the household commitment below.
+    if(localInfrastructure && localLivingResidents>=2){
+        return true;
+    }
+
+    // Outside an established local footprint, co-location alone is insufficient.
+    // Require a complete autonomous household at the frontier so two unrelated
+    // founders cannot accidentally split the initial settlement while gathering.
+    return householdFrontierCommitmentAtPosition(
+        world,authoritativePosition,*population,households);
 }
 
 inline bool civilizationDecisionOpensSettlementInfrastructure(
@@ -2365,13 +2455,14 @@ inline CivilizationUtilityDecision bestCraftDecisionAtPosition(
     const World& world,
     const Character& self,
     GridPos authoritativePosition,
-    const SettlementPopulation* population=nullptr)
+    const SettlementPopulation* population=nullptr,
+    const HouseholdBook* households=nullptr)
 {
     CivilizationUtilityDecision best;
     const GridPos sanitationReference=authoritativePosition;
     const bool infrastructurePlanAllowed=
         autonomousSettlementInfrastructurePlanAllowed(
-            world,authoritativePosition,population);
+            world,authoritativePosition,population,households);
     const auto considerCraft=[&](CivilizationUtilityDecision candidate){
         if(!infrastructurePlanAllowed
            && civilizationDecisionOpensSettlementInfrastructure(candidate)){
