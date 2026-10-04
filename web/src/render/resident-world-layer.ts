@@ -21,7 +21,8 @@ import {
   applyResidentMaterialVariant,
   createResidentAppearanceProfile,
 } from './resident-appearance';
-import { ResidentInventoryProps } from './resident-props';
+import { ResidentInventoryProps, ResidentPropResources } from './resident-props';
+import { ResidentProductionTargets } from './resident-production-context';
 import { residentActionCue } from './resident-action-context';
 import {
   residentSleepPostureActive,
@@ -204,6 +205,8 @@ export class ResidentWorldLayer {
   private sleepCalibration: ResidentSleepCalibration | null = null;
   private readonly movementDelta = new THREE.Vector3();
   private disposed = false;
+  private readonly propResources = new ResidentPropResources();
+  private readonly productionTargets = new ResidentProductionTargets();
   private readonly interactionSites = new Map<string, { gridX: number; gridY: number }>();
   private ready = false;
   private pendingResidents: Resident[] = [];
@@ -272,9 +275,12 @@ export class ResidentWorldLayer {
 
     for (const resident of residents) {
       if (
-        !resident.hasPosition
+        resident.alive === false
+        || !resident.hasPosition
         || resident.gridX === undefined
         || resident.gridY === undefined
+        || !Number.isFinite(resident.gridX)
+        || !Number.isFinite(resident.gridY)
       ) {
         continue;
       }
@@ -403,6 +409,7 @@ export class ResidentWorldLayer {
   }
 
   setCivilization(civilization: CivilizationWorldPayload): void {
+    this.productionTargets.setSnapshot(civilization);
     this.interactionSites.clear();
     if (!civilization.available) return;
     for (const resource of civilization.resources ?? []) this.interactionSites.set(`resource:${resource.id}`, resource);
@@ -559,6 +566,8 @@ export class ResidentWorldLayer {
       }
       const presentationMoving =
         moving || actor.walkGraceRemainingSeconds > 0;
+      actor.inventoryProps.setInteractionAllowed(actor.presentation?.kind !== 'Civilization'
+        || this.productionTargets.interacting(actor.presentation, actor.current.x, actor.current.z, this.pendingCenterX, this.pendingCenterY));
       actor.inventoryProps.setVisuallyMoving(presentationMoving);
       const sleeping = residentSleepPostureActive(
         actor.presentation,
@@ -588,7 +597,9 @@ export class ResidentWorldLayer {
   }
 
   dispose(): void {
+    if (this.disposed) return;
     this.disposed = true;
+    this.productionTargets.clear();
     this.eventResidentIds.clear();
     for (const connector of this.socialConnectors.values()) {
       this.group.remove(connector.line);
@@ -599,6 +610,7 @@ export class ResidentWorldLayer {
 
     for (const [id, actor] of this.actors) this.releaseActor(id, actor);
     this.actors.clear();
+    this.propResources.dispose();
     this.selectionRing.geometry.dispose();
     const selectionMaterial = this.selectionRing.material;
     if (!Array.isArray(selectionMaterial)) selectionMaterial.dispose();
@@ -942,7 +954,7 @@ export class ResidentWorldLayer {
     if (idle) idle.time = (appearance.seed % 997) / 997 * Math.max(.001, idle.getClip().duration);
     if (walk) walk.time = ((appearance.seed >>> 8) % 991) / 991 * Math.max(.001, walk.getClip().duration);
 
-    const inventoryProps = new ResidentInventoryProps(visual, model);
+    const inventoryProps = new ResidentInventoryProps(visual, model, this.propResources);
     inventoryProps.setInventory(resident.civilization?.inventory, resident.presentation);
     const actor: ResidentActor = {
       root,
@@ -1010,6 +1022,9 @@ export class ResidentWorldLayer {
     ) {
       return null;
     }
+
+    if (presentation.kind === 'Civilization'
+      && !this.productionTargets.interacting(presentation, actor.current.x, actor.current.z, this.pendingCenterX, this.pendingCenterY)) return null;
 
     let targetX: number | null = null;
     let targetZ: number | null = null;
@@ -1204,6 +1219,9 @@ export class ResidentWorldLayer {
       && actor.current.distanceTo(targetActor.current) <= 3,
     );
 
+    if (presentation?.kind === 'Civilization'
+      && !this.productionTargets.interacting(presentation, actor.current.x, actor.current.z, this.pendingCenterX, this.pendingCenterY)) return 'idle';
+
     const resolved = resolveResidentSemanticMotion(
       presentation,
       {
@@ -1257,6 +1275,7 @@ export class ResidentWorldLayer {
     actor.active = desired;
   }
 }
+
 
 
 

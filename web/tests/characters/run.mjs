@@ -147,20 +147,20 @@ try {
       assert.ok(size.x>0 && size.y>0 && size.z>0 && size.length()<.8,item);
     }
   });
-  test('inventory changes remove consumed props and release owned geometry',()=>{
+  test('inventory changes hide consumed props while pooled geometry remains stable',()=>{
     const visual=new THREE.Group(), model=new THREE.Group(),pelvis=new THREE.Bone();pelvis.name='pelvis';model.add(pelvis);visual.add(model);
     const props=new ResidentInventoryProps(visual,model);props.setInventory([{item:'DiggingStick',quantity:1}]);
     let disposed=0;props.root.traverse(o=>{if(o.isMesh)o.geometry.addEventListener('dispose',()=>disposed++);});
     pelvis.position.y=.5;props.update();assert.equal(props.root.position.y,.5);
-    props.setInventory([]);assert.equal(props.root.children.length,0);assert.ok(disposed>0);
+    const slots=[...props.root.children];props.setInventory([]);assert(!props.root.visible);assert.deepEqual(props.root.children,slots);assert.equal(disposed,0);props.dispose();assert.ok(disposed>0);props.dispose();
   });
   test('carry and pouring visuals require existing resources, never the future gather result',()=>{
     const inventory=[{item:'SimpleContainer',quantity:1},{item:'RawMaterial',material:'Water',quantity:1},{item:'RawMaterial',material:'Wood',quantity:2}];
     const moving={active:true,kind:'Civilization',phase:'Moving',facilityAction:'DeliverMaterial',civilizationMaterial:'Wood'};
     assert.equal(residentCarriedMaterial(inventory,moving),'Wood');
     assert.equal(residentCarriedMaterial([],moving),null);
-    assert.equal(residentCarriedMaterial(inventory,{...moving,facilityAction:'None',civilizationIntent:'Gather'}),null);
-    assert.equal(residentCarriedMaterial(inventory,{...moving,phase:'Interacting'}),null);
+    assert.equal(residentCarriedMaterial(inventory,{...moving,facilityAction:'None',civilizationIntent:'Gather'}),'Wood');
+    assert.equal(residentCarriedMaterial(inventory,{...moving,phase:'Interacting'}),'Wood');
     assert.equal(residentCarriedMaterial([{item:'RawMaterial',material:'Wood',quantity:3}],{active:true,kind:'Trade',phase:'Moving'}),'Wood');
     assert.equal(residentCarriedMaterial([],{active:true,kind:'Trade',phase:'Moving'}),null);
     const watering={active:true,kind:'Civilization',phase:'Interacting',facilityKind:'CultivatedPlot',facilityAction:'Water'};
@@ -171,4 +171,5 @@ try {
   });
   console.log(`${passed} character regression checks passed`);
 } finally { rmSync(directory,{recursive:true,force:true}); }
+
 

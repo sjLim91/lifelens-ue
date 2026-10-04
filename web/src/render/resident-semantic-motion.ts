@@ -1,4 +1,5 @@
 import type { ResidentPresentationDirective } from '../runtime/core-types';
+import { registeredProductionDirective } from './resident-production-context';
 import { PARENTING_ACTIONS } from './resident-life-presentation';
 
 export type ResidentSemanticMotion =
@@ -32,9 +33,7 @@ export function resolveResidentSemanticMotion(
   context: ResidentSemanticMotionContext,
 ): ResidentSemanticMotion {
   if (context.moving || (presentation?.active && presentation.phase === 'Moving')) {
-    if (presentation?.active && context.hasCarriedLoad === true
-      && (presentation.kind === 'Trade' || (presentation.kind === 'Civilization'
-        && (presentation.facilityAction === 'DeliverMaterial' || presentation.civilizationIntent === 'Store')))) return 'carry';
+    if (presentation?.active && context.hasCarriedLoad === true) return 'carry';
     return 'walk';
   }
   if (!presentation?.active || presentation.phase !== 'Interacting') return 'idle';
@@ -62,7 +61,9 @@ export function resolveResidentSemanticMotion(
         || presentation.hasTargetGrid === true)) return presentation.directNaturalWaterSource ? 'wash' : 'interact';
       return 'idle';
     case 'Civilization':
+      if (!registeredProductionDirective(presentation)) return 'idle';
       if (!presentation.hasTargetGrid) return 'idle';
+      if (presentation.facilityAction === 'Plan') return 'crouch';
       if (presentation.facilityKind === 'CultivatedPlot') {
         if (presentation.facilityAction === 'Plant') return 'plant';
         if (presentation.facilityAction === 'Water') return context.hasWaterContainer ? 'water' : 'interact';
@@ -83,7 +84,9 @@ export function resolveResidentSemanticMotion(
           case 'Clay': return 'gatherClay';
           case 'Fiber': return 'gatherFiber';
           case 'PlantFood': return 'harvest';
-          default: return 'interact';
+          case 'Water': return 'interact';
+          case 'IronOre': return 'gatherMineral';
+          default: return 'idle';
         }
       }
       if (presentation.civilizationIntent === 'Craft') return 'craft';
@@ -94,4 +97,5 @@ export function resolveResidentSemanticMotion(
     default: return 'idle';
   }
 }
+
 

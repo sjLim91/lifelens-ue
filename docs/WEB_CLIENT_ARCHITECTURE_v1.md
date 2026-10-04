@@ -273,3 +273,79 @@ facility lifecycle, weather, sleep and emissions retain their lanes. No lifecycl
 presentation state is saved or feeds Core/AI decisions. Permanent household links,
 automatic follow, ceremonies and parenting success effects are excluded because
 these are not current exact action/event presentation contracts.
+
+
+## Production/logistics world presentation
+
+Core alone owns gathering, item quantities, storage transfers, recipes, processing,
+construction, cultivation, and depletion. The Observer reads
+`Resident.civilization.inventory`, exact `ResidentPresentationDirective` fields,
+and `CivilizationWorldPayload.resources/storages/facilities`. The existing
+`WorldScene.setAuthoritativeSpatialTargets` → `ResidentWorldLayer.setCivilization`
+index precedes `setResidents`; no new API, simulation action, or save field is added.
+
+`ResidentProductionTargets` resolves resource/storage/facility IDs, registered
+intent/action/material/kind values, current site coordinates and phase. Resource
+access coordinates remain the movement locus; facing uses the actual source.
+A mismatched/missing/depleted target or a distant actor suppresses interaction
+motion and hand interaction cargo. Plan uses only its Core-authored prospective
+site. No nearest-building or nearby-resource inference is permitted. Dead or
+unpositioned/non-finite-position residents are hidden. Movement positions, arrival
+interpolation and speed remain the existing authoritative-position contract.
+
+`ResidentInventoryProps` extends the existing owned-item renderer. Positive finite
+RawMaterial quantities become small wood, mineral, fiber, food, hide, bone, or metal
+samples during observed movement; Water additionally requires an owned
+SimpleContainer. An action never creates its future output. During interaction,
+only actual delivery/deposit/plant/water/fuel/charge inputs may remain in hand;
+gather/retrieve/craft output appears only after a later positive inventory fact.
+Tools stay owned-item hip props; possession does not assert equipment or tool use.
+Unknown values, missing inventory and zero quantities fail closed. Inventory is
+from the detail snapshot (currently every fourth refresh), while directives are
+hot runtime data: presentation may lag factual consumption/collection until the
+next detail snapshot. It never predicts an inventory transition to hide that gap.
+
+Existing resource projection/vegetation reflects Core resource quantities, including
+IronOre through the existing mineral-rock projection; existing
+stored-goods piles reflect actual storage inventory; #619 construction and crop
+geometry reflects current trace facts. FirePit/Furnace additionally display small
+actual fuel/charcoal/charge/output buffer samples, only with an Operational trace
+and matching detailed facility state. Charge/output material uses the exact DTO
+material. Neutral fuel color does not assert a wood type. Existing flame/heat and
+#615 emissions remain the sole fire renderers; no recipe, success, consumption,
+output, growth, or completion is simulated here.
+
+Budget: one ResidentWorldLayer prop catalog has 56 shared geometries and one
+vertex-color material; each resident retains three owned-tool mesh slots and one
+hand-load slot. Quantities select at most three sample pieces, not quantity-counted
+objects. Refresh hides/rebinds existing slots, never creates/disposes per-item
+resources. Processing stock uses existing box/stone geometry, one shared material,
+two fixed InstancedMeshes (at most two extra draw calls), four samples per site,
+and a combined cap of 256. Facility roots/signatures and current 64-visible-trace
+budget remain unchanged. There is no event/history cache for logistics.
+
+Reset/missing facts hide cargo and clear current target maps. Facility reset sets
+instance counts to zero and clears selection owners. Chunk rebase transforms site
+instances and resident anchors using the existing terrain center; no stale-world
+coordinate history exists. Resident disposal first detaches prop roots, then releases
+the shared catalog once; FacilityLayer releases shared stock buffers/material once.
+Both disposal paths tolerate a second call. Pause freezes cosmetic motion through
+the existing speed contract. No gameplay feedback or serialized presentation state.
+
+Read-only production fixtures exercise gather/owned carry, deposit/retrieve,
+construction delivery/work, workbench crafting, fire/furnace buffers, cultivation,
+and missing/zero/unknown cases with the production GLB and rendering layers.
+Automatic tests cover Core enum parity, spatial fail-closed guards, 100/300 resident
+refresh identity, capped processing stocks, selection, rebase, reset and disposal.
+
+Storage observation cutaway hides only the solid container/canopy during a valid
+near-site Store/Retrieve interaction with the exact linked storage ID. Footings,
+posts, real stored-goods samples and resident coordinates stay intact. This is an
+Observer visibility aid, not a Core lid/open state. Missing/wrong/far/dead directives
+do not activate it; ending interaction restores both parts on the same facility
+root. It allocates no mesh, geometry, material, animation or gameplay state.
+
+WorkSurface keeps its existing parts/build order/footprint with a centrally
+configured lower vertical proportion so the existing standing craft hand motion
+is visible over the work plate. No resident offset, IK target, output item,
+construction progress, capacity, or facility state is created by this geometry.

@@ -11,7 +11,7 @@ export interface DressingCandidate {
 }
 const kinds: Record<string, DressingKind> = {
   Wood: 'trees', Fiber: 'grass', PlantFood: 'shrubs', Stone: 'rocks',
-  Flint: 'rocks', CopperOre: 'rocks', TinOre: 'rocks', Clay: 'rocks',
+  Flint: 'rocks', CopperOre: 'rocks', TinOre: 'rocks', IronOre: 'rocks', Clay: 'rocks',
 };
 const profile = WORLD_PRESENTATION.naturalResources;
 const size = WORLD_GRID_CONTRACT.worldUnitsPerChunk;
@@ -164,3 +164,4 @@ export class NaturalResourceProjectionCache {
     return this.value;
   }
 }
+
