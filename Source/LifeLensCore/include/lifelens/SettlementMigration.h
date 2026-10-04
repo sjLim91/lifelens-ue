@@ -246,8 +246,11 @@ inline void advanceAbandonedSettlementDecayOneHour(
     for(const SettlementLifecycleEntry& settlement:lifecycle.settlements){
         if(settlement.state!=SettlementLifecycleState::Declining) continue;
         for(ConstructedFacility& facility:world.facilities){
-            if(!facilityOperationalAndActive(facility)
-               || !facilitySupportsMaintenance(facility.kind)){
+            // Abandonment is environmental/structural decay, not the ordinary
+            // resident maintenance contract. Fire pits, storage, furnaces and
+            // cultivated plots must also stop remaining pristine forever after
+            // the settlement has no residents.
+            if(!facilityOperationalAndActive(facility)){
                 continue;
             }
             bool served=settlement.servicePositions.empty()
