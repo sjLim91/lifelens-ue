@@ -66,6 +66,142 @@ void appendDouble(std::ostringstream& out, double value)
     out << std::fixed << std::setprecision(6) << value;
 }
 
+
+bool parseCognitiveTriggerName(
+    const std::string& text,
+    CognitiveTriggerKind& outTrigger)
+{
+    if(text=="RepeatedFailure") outTrigger=CognitiveTriggerKind::RepeatedFailure;
+    else if(text=="ResourceScarcity") outTrigger=CognitiveTriggerKind::ResourceScarcity;
+    else if(text=="SocialConflict") outTrigger=CognitiveTriggerKind::SocialConflict;
+    else if(text=="MajorLifeEvent") outTrigger=CognitiveTriggerKind::MajorLifeEvent;
+    else if(text=="Discovery") outTrigger=CognitiveTriggerKind::Discovery;
+    else if(text=="MigrationPressure") outTrigger=CognitiveTriggerKind::MigrationPressure;
+    else if(text=="LeadershipDecision") outTrigger=CognitiveTriggerKind::LeadershipDecision;
+    else if(text=="Reflection") outTrigger=CognitiveTriggerKind::Reflection;
+    else {
+        outTrigger=CognitiveTriggerKind::None;
+        return false;
+    }
+    return true;
+}
+
+void appendCognitiveRequestJson(
+    std::ostringstream& out,
+    const CognitiveRequest& request)
+{
+    out << "{";
+    out << "\"actor\":\"" << request.actor << "\",";
+    out << "\"minute\":" << request.minute << ",";
+    out << "\"trigger\":\"" << cognitiveTriggerName(request.trigger) << "\",";
+
+    out << "\"needs\":{";
+    out << "\"hunger\":"; appendDouble(out,request.needs.hunger); out << ",";
+    out << "\"thirst\":"; appendDouble(out,request.needs.thirst); out << ",";
+    out << "\"sleep\":"; appendDouble(out,request.needs.sleep); out << ",";
+    out << "\"bladder\":"; appendDouble(out,request.needs.bladder); out << ",";
+    out << "\"hygiene\":"; appendDouble(out,request.needs.hygiene);
+    out << "},";
+
+    out << "\"personality\":{";
+    out << "\"introversion\":"; appendDouble(out,request.personality.introversion); out << ",";
+    out << "\"conscientiousness\":"; appendDouble(out,request.personality.conscientiousness); out << ",";
+    out << "\"openness\":"; appendDouble(out,request.personality.openness); out << ",";
+    out << "\"agreeableness\":"; appendDouble(out,request.personality.agreeableness); out << ",";
+    out << "\"emotionalStability\":"; appendDouble(out,request.personality.emotionalStability); out << ",";
+    out << "\"empathy\":"; appendDouble(out,request.personality.empathy); out << ",";
+    out << "\"impulsiveness\":"; appendDouble(out,request.personality.impulsiveness); out << ",";
+    out << "\"riskTolerance\":"; appendDouble(out,request.personality.riskTolerance); out << ",";
+    out << "\"ambition\":"; appendDouble(out,request.personality.ambition); out << ",";
+    out << "\"patience\":"; appendDouble(out,request.personality.patience); out << ",";
+    out << "\"sociability\":"; appendDouble(out,request.personality.sociability); out << ",";
+    out << "\"curiosity\":"; appendDouble(out,request.personality.curiosity); out << ",";
+    out << "\"orderliness\":"; appendDouble(out,request.personality.orderliness); out << ",";
+    out << "\"adaptability\":"; appendDouble(out,request.personality.adaptability);
+    out << "},";
+
+    out << "\"emotion\":{";
+    out << "\"joy\":"; appendDouble(out,request.emotion.joy); out << ",";
+    out << "\"sadness\":"; appendDouble(out,request.emotion.sadness); out << ",";
+    out << "\"anger\":"; appendDouble(out,request.emotion.anger); out << ",";
+    out << "\"fear\":"; appendDouble(out,request.emotion.fear); out << ",";
+    out << "\"embarrassment\":"; appendDouble(out,request.emotion.embarrassment); out << ",";
+    out << "\"pride\":"; appendDouble(out,request.emotion.pride); out << ",";
+    out << "\"jealousy\":"; appendDouble(out,request.emotion.jealousy); out << ",";
+    out << "\"affection\":"; appendDouble(out,request.emotion.affection); out << ",";
+    out << "\"anxiety\":"; appendDouble(out,request.emotion.anxiety); out << ",";
+    out << "\"relief\":"; appendDouble(out,request.emotion.relief); out << ",";
+    out << "\"grief\":"; appendDouble(out,request.emotion.grief); out << ",";
+    out << "\"valence\":"; appendDouble(out,request.emotion.valence); out << ",";
+    out << "\"arousal\":"; appendDouble(out,request.emotion.arousal);
+    out << "},";
+
+    out << "\"memories\":[";
+    bool first=true;
+    for(const CognitiveMemoryEvidence& memory:request.memories){
+        if(!first) out << ",";
+        first=false;
+        out << "{";
+        out << "\"who\":\"" << memory.who << "\",";
+        out << "\"minute\":" << memory.minute << ",";
+        out << "\"recallScore\":"; appendDouble(out,memory.recallScore); out << ",";
+        out << "\"confidence\":"; appendDouble(out,memory.confidence); out << ",";
+        out << "\"importance\":"; appendDouble(out,memory.importance); out << ",";
+        out << "\"emotionValence\":"; appendDouble(out,memory.emotionValence); out << ",";
+        out << "\"emotionIntensity\":"; appendDouble(out,memory.emotionIntensity); out << ",";
+        out << "\"what\":\"" << escapeJson(memory.what) << "\",";
+        out << "\"where\":\"" << escapeJson(memory.where) << "\",";
+        out << "\"tags\":[";
+        for(std::size_t i=0;i<memory.tags.size();++i){
+            if(i>0) out << ",";
+            out << "\"" << escapeJson(memory.tags[i]) << "\"";
+        }
+        out << "]}";
+    }
+    out << "],";
+
+    out << "\"beliefs\":[";
+    first=true;
+    for(const CognitiveBeliefEvidence& belief:request.beliefs){
+        if(!first) out << ",";
+        first=false;
+        out << "{";
+        out << "\"subject\":\"" << belief.subject << "\",";
+        out << "\"proposition\":\"" << escapeJson(belief.proposition) << "\",";
+        out << "\"stance\":"; appendDouble(out,belief.stance); out << ",";
+        out << "\"confidence\":"; appendDouble(out,belief.confidence); out << ",";
+        out << "\"lastUpdatedMinute\":" << belief.lastUpdatedMinute;
+        out << "}";
+    }
+    out << "],";
+
+    out << "\"relationships\":[";
+    first=true;
+    for(const CognitiveRelationshipEvidence& relationship:request.relationships){
+        if(!first) out << ",";
+        first=false;
+        out << "{";
+        out << "\"target\":\"" << relationship.target << "\",";
+        out << "\"socialBond\":"; appendDouble(out,relationship.socialBond); out << ",";
+        out << "\"affection\":"; appendDouble(out,relationship.affection); out << ",";
+        out << "\"trust\":"; appendDouble(out,relationship.trust); out << ",";
+        out << "\"respect\":"; appendDouble(out,relationship.respect); out << ",";
+        out << "\"conflict\":"; appendDouble(out,relationship.conflict); out << ",";
+        out << "\"fear\":"; appendDouble(out,relationship.fear); out << ",";
+        out << "\"grudge\":"; appendDouble(out,relationship.grudge);
+        out << "}";
+    }
+    out << "],";
+
+    out << "\"allowedIntents\":[";
+    for(std::size_t i=0;i<request.allowedIntents.size();++i){
+        if(i>0) out << ",";
+        out << "\"" << cognitiveIntentName(request.allowedIntents[i]) << "\"";
+    }
+    out << "]";
+    out << "}";
+}
+
 void appendHealthJson(std::ostringstream& out,const HealthState& health)
 {
     out << "{";
@@ -1576,6 +1712,30 @@ std::string WebClientBridge::residentsJson() const
         out << "}";
     }
     out << "]}";
+    return out.str();
+}
+
+std::string WebClientBridge::cognitiveRequestJson(
+    const std::string& residentIdText,
+    const std::string& triggerText) const
+{
+    if(!simulation_) return "null";
+
+    const CharacterId residentId=
+        static_cast<CharacterId>(parseUnsigned64(residentIdText,0));
+    CognitiveTriggerKind trigger=CognitiveTriggerKind::None;
+    if(residentId==0 || !parseCognitiveTriggerName(triggerText,trigger)){
+        return "null";
+    }
+
+    const CognitiveRequest request=
+        simulation_->observeCognitiveRequest(residentId,trigger);
+    if(request.actor==0 || request.trigger==CognitiveTriggerKind::None){
+        return "null";
+    }
+
+    std::ostringstream out;
+    appendCognitiveRequestJson(out,request);
     return out.str();
 }
 

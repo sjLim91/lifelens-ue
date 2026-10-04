@@ -103,7 +103,15 @@ try {
     assert.deepEqual(responses.readResidents(text({available:false})),{available:false,residents:[]});
   });
   // Exercise actual bridge methods with a fake ABI, not a second implementation.
-  const bridgeSource=readFileSync(join(root,'src/runtime/core-bridge.ts'),'utf8').replaceAll('import.meta.env.BASE_URL',"'./'");
+  // core-bridge now imports the shared cognition contract, so preserve that
+  // production dependency in this flat standalone-test compiler.
+  compile(
+    'cognitive-contract',
+    readFileSync(join(root,'src/cognition/cognitive-contract.ts'),'utf8'),
+  );
+  const bridgeSource=readFileSync(join(root,'src/runtime/core-bridge.ts'),'utf8')
+    .replaceAll('import.meta.env.BASE_URL',"'./'")
+    .replaceAll('../cognition/cognitive-contract','./cognitive-contract');
   const {LifeLensCoreBridge}=compile('core-bridge',bridgeSource);
   await test('bridge propagates corrupt overview instead of fabricating empty state', () => {
     const bridge=new LifeLensCoreBridge({worldOverviewJson:()=>'{'});
