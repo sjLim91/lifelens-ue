@@ -311,8 +311,14 @@ private:
     bool advanceNavigation(CharacterId moverId,Runtime& r,GridPos target,int arrivalRadius);
     bool advancePendingContext(Character& actor,Runtime& runtime);
     bool completeContextAction(Character& actor,Runtime& runtime,std::uint64_t token,GridPos resolvedPosition);
-    bool tryCivilizationDecision(Character& c,Runtime& r);
-    bool trySocialDecision(Character& c,Runtime& r);
+    bool tryCivilizationDecision(
+        Character& c,
+        Runtime& r,
+        const UnifiedUtilityDecision* precomputed=nullptr);
+    bool trySocialDecision(
+        Character& c,
+        Runtime& r,
+        const UnifiedUtilityDecision* precomputed=nullptr);
     void processCivilizationKnowledgeEvent(Character& actor,CivilizationEvent& event);
     void advanceCivilizationKnowledgeTeaching();
     void advanceSocietyExchange();
