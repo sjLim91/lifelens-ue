@@ -79,6 +79,7 @@ struct SleepWorldAudit {
 
 struct EventMetrics {
     std::uint64_t routeFailures=0;
+    std::array<std::uint64_t,9> exploreByMaterial{};
     std::uint64_t timeouts=0;
     std::uint64_t preemptions=0;
     std::uint64_t sleepInterruptions=0;
@@ -722,6 +723,15 @@ void emitCheckpoint(
         <<" tradeDepartures="<<events.tradeDepartures
         <<" tradeExchanges="<<events.tradeExchanges
         <<" tradeReturns="<<events.tradeReturns
+        <<" exploreWater="<<events.exploreByMaterial[0]
+        <<" exploreWood="<<events.exploreByMaterial[1]
+        <<" exploreStone="<<events.exploreByMaterial[2]
+        <<" exploreFlint="<<events.exploreByMaterial[3]
+        <<" exploreFiber="<<events.exploreByMaterial[4]
+        <<" exploreClay="<<events.exploreByMaterial[5]
+        <<" explorePlantFood="<<events.exploreByMaterial[6]
+        <<" exploreCopper="<<events.exploreByMaterial[7]
+        <<" exploreTin="<<events.exploreByMaterial[8]
         <<" deathsIllness="<<events.deathsIllness
         <<" deathsAccident="<<events.deathsAccident
         <<" deathsExposure="<<events.deathsExposure
@@ -874,6 +884,27 @@ int main(int argc,char** argv)
         }
         if(line.find(" -> Civilization ")!=std::string::npos){
             ++events.civilizationEvents;
+        }
+        const std::array<MaterialKind,9> explorationMaterials{{
+            MaterialKind::Water,
+            MaterialKind::Wood,
+            MaterialKind::Stone,
+            MaterialKind::Flint,
+            MaterialKind::Fiber,
+            MaterialKind::Clay,
+            MaterialKind::PlantFood,
+            MaterialKind::CopperOre,
+            MaterialKind::TinOre
+        }};
+        for(std::size_t materialIndex=0;
+            materialIndex<explorationMaterials.size();
+            ++materialIndex){
+            const std::string token=
+                std::string(" -> Civilization Explore frontier for ")
+                +materialName(explorationMaterials[materialIndex]);
+            if(line.find(token)!=std::string::npos){
+                ++events.exploreByMaterial[materialIndex];
+            }
         }
         if(line.find(" -> Approach ")!=std::string::npos
            || line.find(" -> Avoid ")!=std::string::npos
