@@ -1,3 +1,8 @@
+import {
+  parseCognitiveRequest,
+  type CognitiveRequestDto,
+  type CognitiveTrigger,
+} from '../cognition/cognitive-contract';
 import type {
   CivilizationWorldPayload,
   CoreModule,
@@ -156,6 +161,20 @@ export class LifeLensCoreBridge {
 
   residents(): ResidentsPayload {
     return readResidents(this.client.residentsJson());
+  }
+
+  cognitiveRequest(
+    residentId: string,
+    trigger: CognitiveTrigger,
+  ): CognitiveRequestDto | null {
+    if (typeof this.client.cognitiveRequestJson !== 'function') return null;
+    try {
+      return parseCognitiveRequest(
+        JSON.parse(this.client.cognitiveRequestJson(residentId, trigger)) as unknown,
+      );
+    } catch {
+      return null;
+    }
   }
 
   residentRuntime(): ResidentsPayload {
