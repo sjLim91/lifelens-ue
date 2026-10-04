@@ -40,3 +40,12 @@
 - #540 위생 후보 실험 wholesale merge
 - 결과가 마음에 안 든다는 이유로 seed별 예외 하드코딩
 - 브라우저에서 Core 결과를 보정
+
+
+## R5 실행 메모 — 2026-10-04
+
+- 기준 조합: main `23f2021657c1e037311b969f3ca7a67154b70bd5` + #614 latest-main 재적용 head `b57db7a67fdb1b9355655313d52f13796b1d95d4`.
+- 포함: #615 환경 시각화, #616 모바일 overlay 수정, #613 planning cadence 중복 제거, #614 migration resource 1-pass scan.
+- 목적: 2개 기준 seed의 100/365/1000일에서 행동/인구/문명 결과를 유지하면서 장기 CPU·RSS·snapshot 증가율이 실제로 개선되는지 확인.
+- 특히 seed 4242001의 materialized chunk/resource growth 구간에서 elapsed time을 이전 R2/R3와 비교한다.
+- 이 브랜치는 audit trigger 전용이며 main merge 대상이 아니다.
