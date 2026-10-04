@@ -40,3 +40,18 @@
 - #540 위생 후보 실험 wholesale merge
 - 결과가 마음에 안 든다는 이유로 seed별 예외 하드코딩
 - 브라우저에서 Core 결과를 보정
+
+
+## R6 실행 메모 — 2026-10-04
+
+- 기준 main: `9af1872212601e131cdac00a6321847ab36a1ec8`.
+- 포함: #613 planning cadence 중복 utility 제거, #614 migration resource 1-pass scan, #617 settlement demand 재사용, #618 social-event Web presentation.
+- 목적: 최신 main의 100/365/1000일 trajectory와 CPU/RSS/snapshot 증가율을 R5와 비교하고, C6 closeout 전에 population/family/trade/settlement starvation을 다시 분류.
+- 핵심 확인:
+  - 두 baseline seed에서 100/365 상태가 R5와 동일한지.
+  - #617 이후 elapsed time 추가 개선 폭.
+  - day1000 living/birth/pregnancy/household/couple 상태.
+  - trade departure/exchange/return이 실제로 완료되는지.
+  - 시설 수가 인구 대비 과잉 증가하는지.
+  - migration/settlement fragmentation 및 inactive/abandoned settlement 신호.
+- 이 브랜치는 audit trigger 전용이며 main merge 대상이 아니다.
