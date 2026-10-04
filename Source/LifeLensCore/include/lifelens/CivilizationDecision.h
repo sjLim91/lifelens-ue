@@ -1092,20 +1092,33 @@ inline CivilizationUtilityDecision bestResourceExplorationDecisionAtPosition(
         MaterialKind::TinOre
     };
 
-    for(const MaterialKind material:naturalMaterials){
-        const double pressure=civilizationResourceExplorationPressure(
-            world,self,material,authoritativePosition);
-        if(pressure<=0.0) continue;
+    GridPos ordinaryExplorationOrigin=authoritativePosition;
+    ordinaryResourceExplorationOrigin(
+        world,authoritativePosition,ordinaryExplorationOrigin);
 
-        const bool longRange=
+    for(const MaterialKind material:naturalMaterials){
+        const bool criticalExplore=
+            (material==MaterialKind::PlantFood
+             && self.needs.hunger>=CriticalSurvivalPreemptThreshold)
+            || (material==MaterialKind::Water
+                && self.needs.thirst>=CriticalSurvivalPreemptThreshold);
+        const bool migrationExplore=
             migrationPressureWarrantsLongRangeExploration(
                 migration,material);
+        const bool longRange=criticalExplore || migrationExplore;
+        const GridPos explorationOrigin=
+            longRange ? authoritativePosition : ordinaryExplorationOrigin;
+
+        const double pressure=civilizationResourceExplorationPressure(
+            world,self,material,explorationOrigin);
+        if(pressure<=0.0) continue;
+
         const ResourceExplorationOpportunity opportunity=
             longRange
                 ? chooseCriticalResourceExplorationOpportunity(
                     world,self.id,material,authoritativePosition)
                 : chooseResourceExplorationOpportunity(
-                    world,self.id,material,authoritativePosition);
+                    world,self.id,material,ordinaryExplorationOrigin);
         if(!opportunity.available) continue;
 
         const double preference=civilizationPreference(
