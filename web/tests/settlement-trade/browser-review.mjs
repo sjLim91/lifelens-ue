@@ -11,7 +11,7 @@ try{for(const [device,width,height] of [['mobile',390,844],['desktop',1280,900]]
  for(const mode of ['single','grown','two','active','inactive','migration','frontier','many','invalid','popup','min','max']){
   await page.goto(`${origin}tests/settlement-trade/fixture.html?mode=${mode}`);await page.waitForFunction(()=>window.fixtureReady);
   const result=await page.evaluate(()=>window.review.refresh1000());assert.deepEqual(result.before,result.after);assert(result.identity);
-  if(mode==='popup'){const p=await page.evaluate(()=>window.review.anchor());await page.mouse.click(p.x,p.y);await page.waitForSelector('dialog[open]');assert.match(await page.locator('dialog').innerText(),/인구/);await page.keyboard.press('Escape');await page.waitForSelector('dialog:not([open])');await page.evaluate(()=>window.review.open());await page.waitForSelector('dialog[open]');}
+  if(mode==='popup'){const p=await page.evaluate(()=>window.review.anchor());await page.mouse.click(p.x,p.y);await page.waitForSelector('dialog[open]');assert.match(await page.locator('dialog').innerText(),/인구/);await page.keyboard.press('Escape');await page.waitForSelector('dialog:not([open])',{state:'attached'});await page.evaluate(()=>window.review.open());await page.waitForSelector('dialog[open]');}
   await page.screenshot({path:resolve(out,`${device}-${mode}.png`)});results.push({device,mode,...result.after});
   if(mode==='invalid')assert.equal(result.after.overlay.anchors,0);
   if(mode==='frontier')assert(result.after.overlay.guideSegments>0);
