@@ -7,6 +7,7 @@ const {
 }=await source('cognition/cognitive-contract.ts');
 const {
   LocalCognitionProvider,
+  discoverLocalCognitionModels,
   isLoopbackCognitionUrl,
 }=await source('cognition/local-cognition-provider.ts');
 const {
@@ -69,6 +70,37 @@ await test('only loopback local endpoints are accepted',()=>{
 
   assert.throws(
     ()=>new LocalCognitionProvider({baseUrl:'https://api.openai.com',model:'x'}),
+    /loopback\/local/,
+  );
+});
+
+await test('loopback model discovery is bounded, unique and credential-free',async()=>{
+  let seen;
+  const models=await discoverLocalCognitionModels(
+    'http://localhost:8080',
+    new AbortController().signal,
+    async(url,init)=>{
+      seen={url:String(url),init};
+      return new Response(JSON.stringify({
+        data:[
+          {id:'qwen-local'},
+          {id:'qwen-local'},
+          {id:'small-reasoner'},
+          {id:''},
+          {},
+        ],
+      }),{status:200,headers:{'content-type':'application/json'}});
+    },
+  );
+  assert.deepEqual(models,['qwen-local','small-reasoner']);
+  assert.equal(seen.url,'http://localhost:8080/v1/models');
+  assert.equal(seen.init.method,'GET');
+  assert.equal(seen.init.headers.authorization,undefined);
+  await assert.rejects(
+    discoverLocalCognitionModels(
+      'https://example.com',
+      new AbortController().signal,
+    ),
     /loopback\/local/,
   );
 });
