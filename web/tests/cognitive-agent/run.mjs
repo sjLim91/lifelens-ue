@@ -4,6 +4,7 @@ import {source} from './compile.mjs';
 const {
   cognitiveProposalJsonSchema,
   parseCognitiveProposal,
+  parseCognitiveRequest,
 }=await source('cognition/cognitive-contract.ts');
 const {
   LocalCognitionProvider,
@@ -16,6 +17,9 @@ const {
 const {
   CognitionScheduler,
 }=await source('cognition/cognition-scheduler.ts');
+const {
+  LifeLensCoreBridge,
+}=await source('runtime/core-bridge.ts');
 
 let passed=0;
 async function test(name,fn){
@@ -102,6 +106,78 @@ await test('loopback model discovery is bounded, unique and credential-free',asy
       new AbortController().signal,
     ),
     /loopback\/local/,
+  );
+});
+
+await test('Core bridge reads optional cognitive ABI and fails closed on corrupt or old runtime',()=>{
+  const req=request('9',140,['ImproveFoodSecurity']);
+  const baseClient={
+    newGame:()=>true,
+    runMinutes:()=>{},
+    worldOverviewJson:()=>JSON.stringify({available:true,minute:140,livingResidents:1}),
+    residentsJson:()=>JSON.stringify({available:true,residents:[]}),
+    terrainWindowJson:()=>JSON.stringify({available:false,centerChunkX:0,centerChunkY:0,chunks:[]}),
+  };
+  const bridge=new LifeLensCoreBridge({
+    ...baseClient,
+    cognitiveRequestJson:(actor,trigger)=>{
+      assert.equal(actor,'9');
+      assert.equal(trigger,'Reflection');
+      return JSON.stringify({...req,trigger});
+    },
+  });
+  assert.deepEqual(bridge.cognitiveRequest('9','Reflection'),{
+    ...req,
+    trigger:'Reflection',
+  });
+
+  const corrupt=new LifeLensCoreBridge({
+    ...baseClient,
+    cognitiveRequestJson:()=>'{',
+  });
+  assert.equal(corrupt.cognitiveRequest('9','Reflection'),null);
+
+  const malformed=new LifeLensCoreBridge({
+    ...baseClient,
+    cognitiveRequestJson:()=>JSON.stringify({...req,minute:'140'}),
+  });
+  assert.equal(malformed.cognitiveRequest('9','Reflection'),null);
+
+  const oldRuntime=new LifeLensCoreBridge(baseClient);
+  assert.equal(oldRuntime.cognitiveRequest('9','Reflection'),null);
+});
+
+await test('Core request parser is bounded and rejects malformed runtime context',()=>{
+  const valid=request('1',100,['ImproveFoodSecurity']);
+  assert.deepEqual(parseCognitiveRequest(valid),valid);
+  assert.throws(
+    ()=>parseCognitiveRequest({...valid,minute:Number.NaN}),
+    /minute/,
+  );
+  assert.throws(
+    ()=>parseCognitiveRequest({...valid,trigger:'FutureTrigger'}),
+    /trigger/,
+  );
+  assert.throws(
+    ()=>parseCognitiveRequest({
+      ...valid,
+      allowedIntents:['FutureIntent'],
+    }),
+    /allowed intents/,
+  );
+  assert.throws(
+    ()=>parseCognitiveRequest({
+      ...valid,
+      memories:Array.from({length:33},()=>valid.memories[0]),
+    }),
+    /memories/,
+  );
+  assert.throws(
+    ()=>parseCognitiveRequest({
+      ...valid,
+      personality:{curiosity:Number.POSITIVE_INFINITY},
+    }),
+    /personality/,
   );
 });
 
