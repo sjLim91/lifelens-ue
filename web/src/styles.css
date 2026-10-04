@@ -36,7 +36,7 @@ button, input { font: inherit; }
 #worldCanvas:active { cursor: grabbing; }
 #threeWorldCanvas { position: absolute; z-index: 1; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; transition: opacity .18s ease; }
 #characterCanvas { position: absolute; z-index: 2; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; transition: opacity .18s ease; }
-.world-overlay { position: absolute; z-index: 4; top: 14px; left: 14px; display: flex; gap: .45rem; flex-wrap: wrap; pointer-events: none; }
+.world-overlay { position: absolute; z-index: 4; top: 14px; left: 14px; display: flex; align-items: flex-start; align-content: flex-start; gap: .45rem; flex-wrap: wrap; pointer-events: none; }
 .world-overlay span { padding: .34rem .55rem; border: 1px solid rgba(125, 151, 129, .25); border-radius: 6px; background: rgba(8, 13, 10, .78); color: #d9e5da; font-size: .7rem; }
 
 .observer { overflow-y: auto; border-left: 1px solid #243329; background: #0f1711; padding: 12px; }
@@ -1329,7 +1329,13 @@ button:disabled { opacity: .33; cursor: default; }
 .era-close { float: right; min-height: 44px; padding: 8px 14px; }
 .era-note { color: #a3b6a7; line-height: 1.5; }
 @media (max-width: 767px) {
-  .world-overlay .era-badge { padding: .26rem .38rem; border-radius: 999px;
-    font-size: .65rem; min-height: 44px; }
+  .world-overlay .era-badge {
+    align-self: flex-start;
+    padding: .26rem .38rem;
+    border-radius: 999px;
+    font-size: .56rem;
+    line-height: 1.1;
+    min-height: 0;
+  }
   .era-dialog { margin-bottom: max(12px, env(safe-area-inset-bottom)); }
 }
