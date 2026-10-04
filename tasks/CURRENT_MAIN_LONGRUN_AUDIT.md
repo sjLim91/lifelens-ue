@@ -100,7 +100,7 @@ day 1000:
 ## R10 실행 전 코드 순서
 
 1. #627 snapshot contract
-2. #630 Cognitive read-only bridge는 C6 behavior를 바꾸지 않으므로 병렬 closeout 가능
+2. #634 Cognitive read-only bridge는 C6 behavior를 바꾸지 않으므로 병렬 closeout 가능
 3. #626 premature split
 4. trade return mission persistence
 5. R10
