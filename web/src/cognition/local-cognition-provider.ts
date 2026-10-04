@@ -30,6 +30,53 @@ export function isLoopbackCognitionUrl(value: string): boolean {
   }
 }
 
+
+export async function discoverLocalCognitionModels(
+  baseUrl: string,
+  signal: AbortSignal,
+  fetcher: FetchLike = fetch,
+): Promise<string[]> {
+  if (!isLoopbackCognitionUrl(baseUrl)) {
+    throw new Error(
+      'LifeLens local model discovery accepts loopback/local endpoints only',
+    );
+  }
+  if (signal.aborted) return [];
+
+  const normalized = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+  const endpoint = new URL('v1/models', normalized).toString();
+  const response = await fetcher(endpoint, {
+    method: 'GET',
+    headers: {
+      'accept': 'application/json',
+    },
+    signal,
+  });
+
+  if (!response.ok) {
+    throw new Error(`local cognition model discovery HTTP ${response.status}`);
+  }
+
+  const payload = await response.json() as {
+    data?: Array<{ id?: unknown }>;
+  };
+  if (!Array.isArray(payload.data)) {
+    throw new Error('local cognition model discovery response is malformed');
+  }
+
+  const unique = new Set<string>();
+  for (const entry of payload.data) {
+    if (
+      typeof entry?.id === 'string'
+      && entry.id.trim().length > 0
+    ) {
+      unique.add(entry.id.trim());
+    }
+    if (unique.size >= 32) break;
+  }
+  return [...unique];
+}
+
 function chatCompletionsUrl(baseUrl: string): string {
   const normalized = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
   return new URL('v1/chat/completions', normalized).toString();
