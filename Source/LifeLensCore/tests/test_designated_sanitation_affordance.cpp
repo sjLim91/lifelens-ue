@@ -86,6 +86,59 @@ int main()
         world.primitiveSanitationSites,world.minute).established);
     assert(world.primitiveSanitationSites.size()==siteCountBefore);
 
+    // C6: sanitation construction is settlement-local. An existing site in one
+    // lived area must suppress duplicates there, but it must not globally lock
+    // every later settlement out of establishing its own local sanitation.
+    World multiSettlementWorld(8082);
+    multiSettlementWorld.minute=600;
+    Character firstBuilder=builder;
+    firstBuilder.id=21;
+    firstBuilder.civilization.character=firstBuilder.id;
+    Character remoteBuilder=builder;
+    remoteBuilder.id=22;
+    remoteBuilder.civilization.character=remoteBuilder.id;
+    const GridPos firstReference{0,0};
+    const GridPos remoteReference{
+        SettlementServiceRadiusGrid*4,
+        SettlementServiceRadiusGrid*2
+    };
+    const auto firstLocalSite=establishDesignatedSanitationArea(
+        multiSettlementWorld.seed,firstBuilder,
+        multiSettlementWorld.environmentalResidues,
+        multiSettlementWorld.primitiveSanitationSites,
+        multiSettlementWorld.minute,firstReference,
+        SettlementServiceRadiusGrid);
+    assert(firstLocalSite.established);
+    assert(!canEstablishDesignatedSanitationArea(
+        multiSettlementWorld.seed,firstBuilder,
+        multiSettlementWorld.environmentalResidues,
+        multiSettlementWorld.primitiveSanitationSites,
+        multiSettlementWorld.minute,firstReference,
+        SettlementServiceRadiusGrid));
+    assert(canEstablishDesignatedSanitationArea(
+        multiSettlementWorld.seed,remoteBuilder,
+        multiSettlementWorld.environmentalResidues,
+        multiSettlementWorld.primitiveSanitationSites,
+        multiSettlementWorld.minute,remoteReference,
+        SettlementServiceRadiusGrid));
+    const auto remoteLocalSite=establishDesignatedSanitationArea(
+        multiSettlementWorld.seed,remoteBuilder,
+        multiSettlementWorld.environmentalResidues,
+        multiSettlementWorld.primitiveSanitationSites,
+        multiSettlementWorld.minute,remoteReference,
+        SettlementServiceRadiusGrid);
+    assert(remoteLocalSite.established);
+    assert(remoteLocalSite.siteId!=firstLocalSite.siteId);
+    assert(multiSettlementWorld.primitiveSanitationSites.size()==2);
+    assert(manhattan(firstLocalSite.pos,remoteLocalSite.pos)>SettlementServiceRadiusGrid);
+    // Compatibility callers that do not provide a local radius retain the
+    // previous global-single-site contract.
+    assert(!canEstablishDesignatedSanitationArea(
+        multiSettlementWorld.seed,remoteBuilder,
+        multiSettlementWorld.environmentalResidues,
+        multiSettlementWorld.primitiveSanitationSites,
+        multiSettlementWorld.minute,remoteReference));
+
     Character unskilled;
     unskilled.id=12;
     unskilled.civilization.character=unskilled.id;
