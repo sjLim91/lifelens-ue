@@ -17,10 +17,10 @@
 - Cognitive Agent:
   - #628 COG-0 ✅ typed request/proposal + fail-closed Core validation.
   - #629 COG-1 ✅ free-local provider + JSON schema + bounded scheduler.
-  - #630 COG-2 🟡 Core-owned read-only Personality/Emotion/Memory/Belief/Relationship context bridge. exact-head CI는 green이나 #631 이후 latest-main 재동기화 필요.
+  - #634 COG-2 🟡 Core-owned read-only Personality/Emotion/Memory/Belief/Relationship context bridge. exact-head CI는 green이나 #631 이후 latest-main 재동기화 필요.
 - C7 Population / Settlement Maturation은 아직 시작하지 않는다.
 - 고정 실행 순서:
-  `#627 -> #630 -> #626 + split R10 -> trade return persistence -> full R10 -> health causal fix(if needed) -> C6 close -> C7`.
+  `#627 -> #634 -> #626 + split R10 -> trade return persistence -> full R10 -> health causal fix(if needed) -> C6 close -> C7`.
 - Cognitive 행동 연결은 accepted cognition event persistence/replay가 먼저 준비된 뒤에만 허용한다.
 
 ## 2026-10-03 READY_FOR_REVIEW — Web environmental consequences
