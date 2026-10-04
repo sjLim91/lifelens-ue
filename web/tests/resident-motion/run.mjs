@@ -82,7 +82,7 @@ test('sleep clearance survives phenotype/age extremes and sloping ground/bedding
  }
 });
 test('resource facing uses Core node center without moving from access cell',()=>{
- l.setCivilization({available:true,resources:[{id:'wood',gridX:80,gridY:64}]});
+ l.setCivilization({available:true,resources:[{id:'wood',gridX:80,gridY:64,hasAccessGrid:true,accessGridX:64,accessGridY:64,material:'Wood',quantity:10,maxQuantity:10}]});
  l.setResidents([resident('face',p({civilizationIntent:'Gather',civilizationMaterial:'Wood',civilizationResourceNode:'wood'}))],terrain,0,0);const a=l.actors.get('face'),before=a.current.clone();
  for(let i=0;i<30;i++)l.update(1/60);assert(Math.abs(a.root.rotation.y-Math.PI/2)<.01);assert(a.current.equals(before));
  a.presentation=p({hasTargetGrid:false});assert.equal(l.interactionTargetYaw(a),null);
@@ -100,7 +100,8 @@ test('social facing/connector cache follows the real partner and visible arrival
  a.target.x+=1;l.update(1/60);assert(![...l.socialConnectors.values()][0].line.visible);
 });
 test('water prop cannot pour before visual arrival',()=>{
- const r=resident('pour',p({facilityKind:'CultivatedPlot',facilityAction:'Water'}),{civilization:{inventory:[{item:'SimpleContainer',quantity:1},{item:'RawMaterial',material:'Water',quantity:1}]}});
+ l.setCivilization({available:true,facilities:[{id:'plot',kind:'CultivatedPlot',state:'Operational',active:true,gridX:80,gridY:64}]});
+ const r=resident('pour',p({facilityKind:'CultivatedPlot',facilityId:'plot',facilityAction:'Water',targetGridX:80}),{civilization:{inventory:[{item:'SimpleContainer',quantity:1},{item:'RawMaterial',material:'Water',quantity:1}]}});
  l.setResidents([r],terrain,0,0);l.setResidents([{...r,gridX:80}],terrain,0,0);l.update(1/60);const a=l.actors.get(r.id);assert(!a.inventoryProps.hasWaterContainer);assert.equal(a.active,'walk');
  a.current.copy(a.target);for(let i=0;i<30;i++)l.update(1/60);assert(a.inventoryProps.hasWaterContainer);assert.equal(a.active,'water');
 });
@@ -138,6 +139,7 @@ for(const [name,d] of [
  ['craft',p({civilizationIntent:'Craft'})],['experiment',p({civilizationIntent:'Experiment'})],['fuel',p({facilityAction:'Fuel'})],
  ['ignite',p({facilityAction:'Ignite'})],['teach',p({kind:'KnowledgeTeaching',targetResidentId:'partner'})],['comfort',p({kind:'Social',socialIntent:'Comfort',targetResidentId:'partner'})],['care',p({kind:'Parenting',parentingAction:'Feed',targetResidentId:'partner'})],
  ]){
+ if(d.kind==='Civilization'){if(d.civilizationIntent==='Gather'){d.civilizationResourceNode='review-node';l.setCivilization({available:true,resources:[{id:'review-node',gridX:66,gridY:64,hasAccessGrid:true,accessGridX:64,accessGridY:64,material:d.civilizationMaterial,quantity:10,maxQuantity:10}]});}else if(d.civilizationIntent!=='Experiment'){d.facilityId='review-facility';d.facilityKind=['Fuel','Ignite'].includes(d.facilityAction)?'FirePit':d.civilizationIntent==='Craft'?'WorkSurface':'Shelter';l.setCivilization({available:true,facilities:[{id:d.facilityId,kind:d.facilityKind,gridX:64,gridY:64,state:d.facilityAction==='Work'?'UnderConstruction':'Operational',active:true}]});}}
  l.setResidents([resident('review-'+name,d),resident('partner',null,{gridX:68})],terrain,0,0);for(let i=0;i<8;i++)l.update(1/60);bake(l.actors.get('review-'+name),name);
 }
 writeFileSync(resolve(out,'poses.json'),JSON.stringify(review));
@@ -152,4 +154,5 @@ for(const both of [false,true]){
  });fallback.dispose();
 }
 console.log('Resident motion checks:',passed,'PASS');
+
 

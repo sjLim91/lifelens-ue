@@ -7,6 +7,8 @@ import { visibleHumanTraces } from '../state/human-traces';
 import { createTerrainElevationSampler } from './terrain-geometry';
 import { SurfaceSnowModifier } from './environment-surface-presentation';
 
+import { facilityProductionStocks } from './facility-production-presentation';
+import { PRODUCTION_MATERIALS } from './production-material-presentation';
 import { deriveFacilityVisualState, constructionMaterialPiles, facilityPresentationTraces, facilityActivitySites, partReveal } from './facility-construction-presentation';
 type FacilityTrace = Extract<HumanTrace, { kind: 'Facility' }>;
 const CONSTRUCTION = WORLD_PRESENTATION.construction;
@@ -87,6 +89,7 @@ function constructionProgress(trace: FacilityTrace): number {
 
 export class FacilityLayer {
   readonly group = new THREE.Group();
+  private disposed = false;
 
   private readonly boxGeometry = new THREE.BoxGeometry(1, 1, 1);
   private readonly cylinderGeometry = new THREE.CylinderGeometry(
@@ -103,6 +106,16 @@ export class FacilityLayer {
   );
   private readonly stoneGeometry = new THREE.DodecahedronGeometry(0.5, 0);
   private readonly flameGeometry = new THREE.ConeGeometry(0.42, 0.95, 8);
+  private readonly productionMaterial = new THREE.MeshStandardMaterial({color:0xffffff,roughness:.85});
+  private readonly productionRocks = new THREE.InstancedMesh(this.stoneGeometry,this.productionMaterial,WORLD_PRESENTATION.production.maxProcessingStocks);
+  private readonly productionBars = new THREE.InstancedMesh(this.boxGeometry,this.productionMaterial,WORLD_PRESENTATION.production.maxProcessingStocks);
+  private readonly stockMatrix = new THREE.Matrix4();
+  private readonly stockPosition = new THREE.Vector3();
+  private readonly stockScale = new THREE.Vector3();
+  private readonly stockRotation = new THREE.Quaternion();
+  private readonly stockColor = new THREE.Color();
+  private readonly processingOwners = new Map<THREE.InstancedMesh,string[]>();
+
 
   private readonly woodMaterial = new THREE.MeshStandardMaterial({
     color: 0x745238,
@@ -248,6 +261,7 @@ export class FacilityLayer {
     return [trace.id, trace.gridX, trace.gridY, trace.facilityKind, trace.state,
       visual.visualProgress, visual.durabilityBand, trace.active, trace.lit,
       constructionMaterialPiles(trace, facility),
+      facility?.state === trace.state ? facilityProductionStocks(facility) : [],
       trace.cropPlanted, Math.round(clamp01(trace.cropGrowth01) * 100),
       Math.round(clamp01(trace.cropMoisture01) * 100), Math.round(clamp01(trace.cropCare01) * 100),
       trace.cropHarvestUnits, storedGoodsPiles(this.storagesById.get(facility?.linkedStorage ?? ''))];
@@ -266,7 +280,11 @@ export class FacilityLayer {
     this.activityGeometry.setAttribute('color', new THREE.BufferAttribute(this.activityColors, 3));
     this.activityLines.frustumCulled = false;
     this.activityLines.renderOrder = 2;
+    this.productionRocks.name='ObservedProcessingRocks';this.productionBars.name='ObservedProcessingBars';
+    this.productionRocks.frustumCulled=false;this.productionBars.frustumCulled=false;
+    this.productionRocks.count=0;this.productionBars.count=0;
     const config = WORLD_PRESENTATION.weather;
+    this.registerSurfaceMaterial(this.productionMaterial,config.wetStoneDarkening);
     for (const material of [this.woodMaterial, this.darkWoodMaterial, this.thatchMaterial, this.beddingMaterial]) {
       this.registerSurfaceMaterial(material, config.wetWoodDarkening);
     }
@@ -314,6 +332,7 @@ export class FacilityLayer {
       this.group.visible = false;
       for (const entry of this.structures.values()) this.disposeStructureInstances(entry.group);
       this.structures.clear();
+      this.productionRocks.count=0;this.productionBars.count=0;this.processingOwners.clear();
       return;
     }
 
@@ -372,6 +391,7 @@ export class FacilityLayer {
         constructionProgress(trace),
       );
       this.addStoredGoods(structure, trace);
+      structure.userData.productionStocks = facility?.state === trace.state ? facilityProductionStocks(facility) : [];
       this.applyCondition(structure, trace);
       this.group.add(structure);
       nextStructures.set(trace.id, { signature: structureSignature, group: structure });
@@ -382,6 +402,7 @@ export class FacilityLayer {
     }
     this.structures.clear();
     for (const [id, entry] of nextStructures) this.structures.set(id, entry);
+    this.updateProductionStocks();
     this.group.visible = true;
   }
 
@@ -389,6 +410,8 @@ export class FacilityLayer {
     if (!this.group.visible) return null;
     const hits = raycaster.intersectObjects(this.group.children, true);
     for (const hit of hits) {
+      const owners=this.processingOwners.get(hit.object as THREE.InstancedMesh);
+      if(owners && hit.instanceId !== undefined && owners[hit.instanceId])return owners[hit.instanceId];
       let current: THREE.Object3D | null = hit.object;
       while (current && current !== this.group) {
         if (typeof current.userData.traceId === 'string') {
@@ -401,7 +424,10 @@ export class FacilityLayer {
   }
 
   dispose(): void {
+    if(this.disposed)return;this.disposed=true;
+    this.productionRocks.dispose();this.productionBars.dispose();this.productionMaterial.dispose();
     this.activities.clear();
+    this.processingOwners.clear();
     this.activityGeometry.dispose();
     this.activityMaterial.dispose();
     this.group.clear();
@@ -452,6 +478,30 @@ export class FacilityLayer {
     }
   }
 
+  private updateProductionStocks(): void {
+    this.productionRocks.count=0;this.productionBars.count=0;
+    this.processingOwners.set(this.productionRocks,[]);this.processingOwners.set(this.productionBars,[]);
+    let count=0;const C=WORLD_PRESENTATION.production;
+    for(const {group} of this.structures.values()) {
+      const stocks=group.userData.productionStocks ?? [];group.updateMatrix();
+      for(const [i,stock] of stocks.entries()) {
+        if(count>=C.maxProcessingStocks)break;
+        const profile=PRODUCTION_MATERIALS[stock.material as keyof typeof PRODUCTION_MATERIALS];
+        if(stock.material !== 'Fuel' && !profile)continue;
+        const scale=C.processingPileSize*Math.cbrt(stock.fill);
+        this.stockPosition.set((i-(stocks.length-1)/2)*C.processingPileSpacing,scale/2,-1.1);
+        this.stockScale.setScalar(scale);this.stockMatrix.compose(this.stockPosition,this.stockRotation,this.stockScale).premultiply(group.matrix);
+        const batch=stock.material.endsWith('Metal') || stock.material === 'Bronze' ? this.productionBars : this.productionRocks;
+        batch.setMatrixAt(batch.count,this.stockMatrix);this.stockColor.setHex(profile?.color ?? PRODUCTION_MATERIALS.Wood.color);batch.setColorAt(batch.count,this.stockColor);
+        this.processingOwners.get(batch)!.push(group.userData.traceId);batch.count++;count++;
+      }
+    }
+    for(const batch of [this.productionRocks,this.productionBars]) {
+      batch.visible=batch.count>0;batch.instanceMatrix.needsUpdate=true;if(batch.instanceColor)batch.instanceColor.needsUpdate=true;
+      if(batch.count)this.group.add(batch);
+    }
+  }
+
   private applyCondition(group: THREE.Group, trace: FacilityTrace): void {
     const band = deriveFacilityVisualState(trace, this.facility(trace)).durabilityBand;
     const durability = band === 0 ? 1 : this.facility(trace)?.durability;
@@ -462,7 +512,7 @@ export class FacilityLayer {
     group.traverse(object => {
       if (!(object instanceof THREE.Mesh) || !(object.material instanceof THREE.MeshStandardMaterial)
         || object.material === this.flameMaterial || object.material === this.cropMaterial
-        || object.material === this.ripeCropMaterial || object.userData.storedGoods) return;
+        || object.material === this.ripeCropMaterial || object.userData.storedGoods || object.userData.productionStock) return;
       const original = object.material;
       const key = `${original.uuid}:${wear}`;
       let material = this.wornMaterials.get(key);
