@@ -97,6 +97,48 @@ inline PrimitiveSanitationSite* activePrimitiveSanitationSite(
     return best;
 }
 
+inline const PrimitiveSanitationSite* activePrimitiveSanitationSiteNear(
+    const std::vector<PrimitiveSanitationSite>& sites,
+    GridPos referencePosition,
+    int maxDistance)
+{
+    const PrimitiveSanitationSite* best=nullptr;
+    int bestDistance=std::numeric_limits<int>::max();
+    const int boundedMax=std::max(0,maxDistance);
+    for(const auto& site:sites){
+        if(!site.active || !validPrimitiveSanitationSiteKind(site.kind)) continue;
+        const int distance=manhattan(site.pos,referencePosition);
+        if(distance>boundedMax) continue;
+        if(best==nullptr || distance<bestDistance
+           || (distance==bestDistance && site.id<best->id)){
+            best=&site;
+            bestDistance=distance;
+        }
+    }
+    return best;
+}
+
+inline PrimitiveSanitationSite* activePrimitiveSanitationSiteNear(
+    std::vector<PrimitiveSanitationSite>& sites,
+    GridPos referencePosition,
+    int maxDistance)
+{
+    PrimitiveSanitationSite* best=nullptr;
+    int bestDistance=std::numeric_limits<int>::max();
+    const int boundedMax=std::max(0,maxDistance);
+    for(auto& site:sites){
+        if(!site.active || !validPrimitiveSanitationSiteKind(site.kind)) continue;
+        const int distance=manhattan(site.pos,referencePosition);
+        if(distance>boundedMax) continue;
+        if(best==nullptr || distance<bestDistance
+           || (distance==bestDistance && site.id<best->id)){
+            best=&site;
+            bestDistance=distance;
+        }
+    }
+    return best;
+}
+
 inline const PrimitiveSanitationSite* activeDesignatedSanitationSite(
     const std::vector<PrimitiveSanitationSite>& sites)
 {
@@ -175,11 +217,13 @@ inline bool canEstablishDesignatedSanitationArea(
     const EnvironmentalResidueField& field,
     const std::vector<PrimitiveSanitationSite>& sites,
     int currentMinute,
-    GridPos referencePosition={})
+    GridPos referencePosition={},
+    int maxExistingSiteDistance=std::numeric_limits<int>::max())
 {
     if(!character.civilization.knowledge.knowsAtLeast(
         TechniqueId::DesignatedSanitationArea,KnowledgeLevel::Reproducible)) return false;
-    if(activePrimitiveSanitationSite(sites)!=nullptr) return false;
+    if(activePrimitiveSanitationSiteNear(
+        sites,referencePosition,maxExistingSiteDistance)!=nullptr) return false;
     return evaluateDesignatedSanitationSiteCreationOpportunity(
         worldSeed,character,field,currentMinute,referencePosition).siteAvailable;
 }
@@ -196,11 +240,13 @@ inline PrimitiveSanitationSiteCreationResult establishDesignatedSanitationArea(
     const EnvironmentalResidueField& field,
     std::vector<PrimitiveSanitationSite>& sites,
     int currentMinute,
-    GridPos referencePosition={})
+    GridPos referencePosition={},
+    int maxExistingSiteDistance=std::numeric_limits<int>::max())
 {
     PrimitiveSanitationSiteCreationResult result;
     if(!canEstablishDesignatedSanitationArea(
-        worldSeed,character,field,sites,currentMinute,referencePosition)) return result;
+        worldSeed,character,field,sites,currentMinute,
+        referencePosition,maxExistingSiteDistance)) return result;
 
     const PrimitiveSanitationOpportunity opportunity=
         evaluateDesignatedSanitationSiteCreationOpportunity(
@@ -235,10 +281,13 @@ struct DugSanitationPitOpportunity {
 inline DugSanitationPitOpportunity evaluateDugSanitationPitOpportunity(
     const Character& character,
     const EnvironmentalResidueField& field,
-    const std::vector<PrimitiveSanitationSite>& sites)
+    const std::vector<PrimitiveSanitationSite>& sites,
+    GridPos referencePosition={},
+    int maxSiteDistance=std::numeric_limits<int>::max())
 {
     DugSanitationPitOpportunity result;
-    const PrimitiveSanitationSite* site=activePrimitiveSanitationSite(sites);
+    const PrimitiveSanitationSite* site=activePrimitiveSanitationSiteNear(
+        sites,referencePosition,maxSiteDistance);
     if(site==nullptr || site->kind!=PrimitiveSanitationSiteKind::DesignatedArea) return result;
     if(!character.civilization.knowledge.knowsAtLeast(
         TechniqueId::DesignatedSanitationArea,KnowledgeLevel::Reproducible)) return result;
@@ -256,9 +305,12 @@ inline DugSanitationPitOpportunity evaluateDugSanitationPitOpportunity(
 
 inline bool canWorkOnDugSanitationPit(
     const Character& character,
-    const std::vector<PrimitiveSanitationSite>& sites)
+    const std::vector<PrimitiveSanitationSite>& sites,
+    GridPos referencePosition={},
+    int maxSiteDistance=std::numeric_limits<int>::max())
 {
-    const PrimitiveSanitationSite* site=activePrimitiveSanitationSite(sites);
+    const PrimitiveSanitationSite* site=activePrimitiveSanitationSiteNear(
+        sites,referencePosition,maxSiteDistance);
     return site!=nullptr
         && site->kind==PrimitiveSanitationSiteKind::DesignatedArea
         && character.civilization.knowledge.knowsAtLeast(
@@ -296,12 +348,16 @@ inline DugSanitationPitWorkResult workOnDugSanitationPit(
     Character& character,
     EnvironmentalResidueField& field,
     std::vector<PrimitiveSanitationSite>& sites,
-    int currentMinute)
+    int currentMinute,
+    GridPos referencePosition={},
+    int maxSiteDistance=std::numeric_limits<int>::max())
 {
     DugSanitationPitWorkResult result;
-    if(!canWorkOnDugSanitationPit(character,sites)) return result;
+    if(!canWorkOnDugSanitationPit(
+        character,sites,referencePosition,maxSiteDistance)) return result;
 
-    PrimitiveSanitationSite* site=activePrimitiveSanitationSite(sites);
+    PrimitiveSanitationSite* site=activePrimitiveSanitationSiteNear(
+        sites,referencePosition,maxSiteDistance);
     if(site==nullptr || site->kind!=PrimitiveSanitationSiteKind::DesignatedArea) return result;
 
     result.worked=true;

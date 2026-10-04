@@ -255,5 +255,65 @@ int main()
     assert(restoredPit.improvedBy==actorId);
     assert(restoredPit.useCount==1);
 
+    // C6: pit improvement must also be local. Two settlements may each own a
+    // designated sanitation site, and a worker at the remote settlement must
+    // advance only that site's excavation rather than the first global site.
+    World localPitWorld(9401);
+    localPitWorld.minute=900;
+    Character firstPitBuilder=builder;
+    firstPitBuilder.id=31;
+    firstPitBuilder.civilization.character=firstPitBuilder.id;
+    firstPitBuilder.civilization.knowledge.learn(
+        TechniqueId::DugSanitationPit,KnowledgeLevel::Reproducible,0.95);
+    Character secondPitBuilder=firstPitBuilder;
+    secondPitBuilder.id=32;
+    secondPitBuilder.civilization.character=secondPitBuilder.id;
+    const GridPos firstPitReference{0,0};
+    const GridPos secondPitReference{
+        SettlementServiceRadiusGrid*4,
+        -SettlementServiceRadiusGrid*2
+    };
+    const auto firstDesignated=establishDesignatedSanitationArea(
+        localPitWorld.seed,firstPitBuilder,
+        localPitWorld.environmentalResidues,
+        localPitWorld.primitiveSanitationSites,
+        localPitWorld.minute,firstPitReference,
+        SettlementServiceRadiusGrid);
+    const auto secondDesignated=establishDesignatedSanitationArea(
+        localPitWorld.seed,secondPitBuilder,
+        localPitWorld.environmentalResidues,
+        localPitWorld.primitiveSanitationSites,
+        localPitWorld.minute,secondPitReference,
+        SettlementServiceRadiusGrid);
+    assert(firstDesignated.established);
+    assert(secondDesignated.established);
+    assert(localPitWorld.primitiveSanitationSites.size()==2);
+    assert(canWorkOnDugSanitationPit(
+        secondPitBuilder,localPitWorld.primitiveSanitationSites,
+        secondPitReference,SettlementServiceRadiusGrid));
+    const double firstBefore=
+        findPrimitiveSanitationSite(
+            localPitWorld.primitiveSanitationSites,
+            firstDesignated.siteId)->improvementWork;
+    const double secondBefore=
+        findPrimitiveSanitationSite(
+            localPitWorld.primitiveSanitationSites,
+            secondDesignated.siteId)->improvementWork;
+    const auto localWork=workOnDugSanitationPit(
+        secondPitBuilder,
+        localPitWorld.environmentalResidues,
+        localPitWorld.primitiveSanitationSites,
+        localPitWorld.minute,
+        secondPitReference,
+        SettlementServiceRadiusGrid);
+    assert(localWork.worked);
+    assert(localWork.siteId==secondDesignated.siteId);
+    assert(findPrimitiveSanitationSite(
+        localPitWorld.primitiveSanitationSites,
+        firstDesignated.siteId)->improvementWork==firstBefore);
+    assert(findPrimitiveSanitationSite(
+        localPitWorld.primitiveSanitationSites,
+        secondDesignated.siteId)->improvementWork>secondBefore);
+
     return 0;
 }
