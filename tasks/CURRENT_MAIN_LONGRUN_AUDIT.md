@@ -40,3 +40,20 @@
 - #540 위생 후보 실험 wholesale merge
 - 결과가 마음에 안 든다는 이유로 seed별 예외 하드코딩
 - 브라우저에서 Core 결과를 보정
+
+## R8 실행 메모 — 2026-10-04
+
+- 기준: #622 head `4a5438764cc41af0897ea07842ad713c5f8bcca9` (main `febe31ea7ea4e944584978d68d4490cb3deefca1` + lived-settlement sprawl/ghost-active/abandonment decay 수정).
+- R7 비교 핵심:
+  - 874213954 day365: settlements=1, active=1, residentsAssigned=3, facilities=117, chunks=97; day1000 totalResidents=5, living=0, settlements=11, active=11, facilities=118, elapsed=709835ms.
+  - 4242001 day365: living=4, settlements=12, active=8, residentsAssigned=4, facilities=197, storages=15, workSurfaces=53, sleepingPlaces=63, plots=34, chunks=241, elapsed=559258ms.
+  - 4242001은 30분 timeout으로 day1000 미완료.
+- R8 목적:
+  - 고립 탐색 주민이 새 durable infrastructure를 연쇄 계획하지 않는지.
+  - 실제 lived settlement / co-located autonomous frontier group의 건설은 유지되는지.
+  - 주민 0인 cluster가 active settlement로 남지 않는지.
+  - PrimitiveStorage/FirePit/Furnace/CultivatedPlot도 비거주 쇠퇴를 거쳐 ghost infrastructure가 줄어드는지.
+  - seed 4242001의 day365 facilities/chunks/settlements 폭증 및 1000일 runtime이 개선되는지.
+  - family/pregnancy/birth/social trajectory가 불필요하게 붕괴하지 않는지.
+  - trade departure/exchange/return이 장기적으로 실제 완료되는지.
+- 이 브랜치는 audit trigger 전용이며 main merge 대상이 아니다.
