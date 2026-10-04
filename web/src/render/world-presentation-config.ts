@@ -2,6 +2,17 @@ import { CORE_SIMULATION_MINUTES_PER_DAY } from '../runtime/generated-core-contr
 /** Presentation budgets and dimensions only; never simulation thresholds. */
 export const WORLD_PRESENTATION = {
   conditionBands: 8,
+  construction: {
+    progressSteps: 40, revealSpan: 0.18, finishingStart: 0.82,
+    earlyWorkEnd: 0.25, framingEnd: 0.65,
+    freshDurability: 0.75, wornDurability: 0.45, severeDurability: 0.2,
+    wearAmounts: [0, 0.3, 0.65, 0.95],
+    pileSlots: 4, pileSize: 0.48, pileSpacing: 0.36,
+    stakeHeight: 0.48, wearShapeLoss: 0.32, wearTilt: 0.22,
+    maxActiveSites: 8, activityPeriodSeconds: 1.6,
+    activityHeight: 0.45, activityRadius: 0.2, activityOffset: 1.6,
+    workColor: 0xbca789, repairColor: 0xdfcc94, activityOpacity: 0.6,
+  },
   settlement: { maxVisibleAnchors: 64, focusSegments: 48, focusRadiusGrid: 8,
     hitRadiusGrid: 3, focusColor: 0xc5bf98, focusOpacity: 0.3, groundLift: 0.12,
     maxRelationsInPopup: 6, maxRecentEvents: 3 },

@@ -209,6 +209,7 @@ export class WorldScene {
 
   setSimulationSpeed(speed: number): void {
     this.residentLayer.setSimulationSpeed(speed);
+    this.facilityLayer.setSimulationSpeed(speed);
     this.footTrafficLayer.setSpeed(speed);
   }
 
@@ -288,6 +289,7 @@ export class WorldScene {
     this.socialEventCenter = { x: centerX, y: centerY };
     this.footTrafficResidents = residents;
     this.footTrafficTerrain = terrain;
+    this.facilityLayer.setResidents(residents);
     this.residentLayer.setResidents(
       residents,
       terrain,
@@ -311,6 +313,7 @@ export class WorldScene {
     this.applyCamera(current);
 
     this.residentLayer.update(deltaSeconds);
+    this.facilityLayer.update(deltaSeconds, this.camera);
     this.socialEventLayer.update(this.camera);
     this.waterLayer.update(deltaSeconds);
     this.weatherLayer.update(deltaSeconds);
@@ -530,4 +533,5 @@ export class WorldScene {
   }
 
 }
+
 

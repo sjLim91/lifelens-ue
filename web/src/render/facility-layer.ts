@@ -1,13 +1,15 @@
 import { WORLD_PRESENTATION } from './world-presentation-config';
 import * as THREE from 'three';
-import type { CivilizationWorldPayload, CivilizationWorldFacility, CivilizationWorldStorage, HumanTrace, TerrainWindow } from '../runtime/core-types';
+import type { CivilizationWorldPayload, CivilizationWorldFacility, CivilizationWorldStorage, HumanTrace, TerrainWindow, Resident } from '../runtime/core-types';
 import { storedGoodsPiles } from './stored-goods-presentation';
 import { RESIDENT_PRESENTATION_CONTRACT, WORLD_GRID_CONTRACT } from '../runtime/lifelens-contract';
 import { visibleHumanTraces } from '../state/human-traces';
 import { createTerrainElevationSampler } from './terrain-geometry';
 import { SurfaceSnowModifier } from './environment-surface-presentation';
 
+import { deriveFacilityVisualState, constructionMaterialPiles, facilityPresentationTraces, facilityActivitySites, partReveal } from './facility-construction-presentation';
 type FacilityTrace = Extract<HumanTrace, { kind: 'Facility' }>;
+const CONSTRUCTION = WORLD_PRESENTATION.construction;
 
 export interface FacilityPresentationFootprint {
   traceId: string;
@@ -80,8 +82,7 @@ function hash01(value: string): number {
 function constructionProgress(trace: FacilityTrace): number {
   if (trace.state === 'Operational') return 1;
   if (trace.state === 'Ruined') return 1;
-  if (trace.state === 'Planned') return 0.04;
-  return clamp01(trace.progress01);
+  return Math.floor(clamp01(trace.progress01) * CONSTRUCTION.progressSteps) / CONSTRUCTION.progressSteps;
 }
 
 export class FacilityLayer {
@@ -157,6 +158,52 @@ export class FacilityLayer {
     metalness: 0,
   });
 
+  private readonly activityGeometry = new THREE.BufferGeometry();
+  private readonly activityPositions = new Float32Array(CONSTRUCTION.maxActiveSites * 4 * 3);
+  private readonly activityColors = new Float32Array(CONSTRUCTION.maxActiveSites * 4 * 3);
+  private readonly activityMaterial = new THREE.LineBasicMaterial({ vertexColors: true,
+    transparent: true, opacity: CONSTRUCTION.activityOpacity, depthWrite: false });
+  private readonly activityLines = new THREE.LineSegments(this.activityGeometry, this.activityMaterial);
+  private activities = new Map<string, 'Work' | 'Repair' | 'DeliverMaterial'>();
+  private readonly workCueColor = new THREE.Color(CONSTRUCTION.workColor);
+  private readonly repairCueColor = new THREE.Color(CONSTRUCTION.repairColor);
+  private activityTime = 0;
+  private paused = false;
+
+  setResidents(residents: Resident[]): void { this.activities = new Map([...facilityActivitySites(residents)]
+    .sort((a, b) => Number(b[1] === 'Repair') - Number(a[1] === 'Repair'))); }
+  setSimulationSpeed(speed: number): void { this.paused = speed <= 0; }
+  update(deltaSeconds: number, camera?: THREE.Camera): void {
+    if (!this.paused) this.activityTime += Math.min(0.1, Math.max(0, deltaSeconds));
+    let count = 0;
+    const phase = this.activityTime / CONSTRUCTION.activityPeriodSeconds * Math.PI * 2;
+    for (const [id, action] of this.activities) {
+      if (count >= CONSTRUCTION.maxActiveSites) break;
+      const site = this.structures.get(id)?.group;
+      if (!site || action === 'DeliverMaterial') continue;
+      const color = action === 'Repair' ? this.repairCueColor : this.workCueColor;
+      // Show the small work scratch beside the visible face, with depth testing
+      // intact. At the center it would be hidden by the actual roof/table.
+      const dx = camera ? camera.position.x - site.position.x : 0;
+      const dz = camera ? camera.position.z - site.position.z : 1;
+      const distance = Math.hypot(dx, dz) || 1;
+      const x = site.position.x + dx / distance * CONSTRUCTION.activityOffset;
+      const z = site.position.z + dz / distance * CONSTRUCTION.activityOffset;
+      const y = site.position.y + CONSTRUCTION.activityHeight;
+      const radius = CONSTRUCTION.activityRadius * (0.7 + Math.sin(phase + count) * 0.3);
+      const vertices = [x - radius, y, z, x, y + radius, z,
+        x, y + radius, z, x + radius, y, z];
+      this.activityPositions.set(vertices, count * 12);
+      for (let i = 0; i < 4; i++) color.toArray(this.activityColors, count * 12 + i * 3);
+      count++;
+    }
+    this.activityGeometry.setDrawRange(0, count * 4);
+    this.activityGeometry.attributes.position.needsUpdate = true;
+    this.activityGeometry.attributes.color.needsUpdate = true;
+    this.activityLines.visible = count > 0;
+    if (count > 0 && this.activityLines.parent !== this.group) this.group.add(this.activityLines);
+  }
+
   private signature = '';
   private civilizationWorldSeed: string | undefined;
   private readonly structures = new Map<string, { signature: string; group: THREE.Group }>();
@@ -195,6 +242,17 @@ export class FacilityLayer {
     this.setTerrain(terrain);
   }
 
+  private visualSignature(trace: FacilityTrace): unknown[] {
+    const facility = this.facility(trace);
+    const visual = deriveFacilityVisualState(trace, facility);
+    return [trace.id, trace.gridX, trace.gridY, trace.facilityKind, trace.state,
+      visual.visualProgress, visual.durabilityBand, trace.active, trace.lit,
+      constructionMaterialPiles(trace, facility),
+      trace.cropPlanted, Math.round(clamp01(trace.cropGrowth01) * 100),
+      Math.round(clamp01(trace.cropMoisture01) * 100), Math.round(clamp01(trace.cropCare01) * 100),
+      trace.cropHarvestUnits, storedGoodsPiles(this.storagesById.get(facility?.linkedStorage ?? ''))];
+  }
+
   private facility(trace: FacilityTrace): CivilizationWorldFacility | undefined {
     const facility = this.facilitiesById.get(trace.id);
     return facility && trace.gridX === facility.gridX && trace.gridY === facility.gridY
@@ -204,6 +262,10 @@ export class FacilityLayer {
 
   constructor() {
     this.group.name = 'facilities';
+    this.activityGeometry.setAttribute('position', new THREE.BufferAttribute(this.activityPositions, 3));
+    this.activityGeometry.setAttribute('color', new THREE.BufferAttribute(this.activityColors, 3));
+    this.activityLines.frustumCulled = false;
+    this.activityLines.renderOrder = 2;
     const config = WORLD_PRESENTATION.weather;
     for (const material of [this.woodMaterial, this.darkWoodMaterial, this.thatchMaterial, this.beddingMaterial]) {
       this.registerSurfaceMaterial(material, config.wetWoodDarkening);
@@ -236,32 +298,13 @@ export class FacilityLayer {
     if (window.worldSeed !== this.civilizationWorldSeed) {
       this.civilization = {}; this.facilitiesById.clear(); this.storagesById.clear();
     }
-    const facilities = visibleHumanTraces(window)
-      .filter((trace): trace is FacilityTrace => trace.kind === 'Facility');
+    const facilities = facilityPresentationTraces(window, this.civilization);
     const signature = JSON.stringify([
       window.worldSeed,
       window.centerChunkX,
       window.centerChunkY,
       window.chunks.map(chunk => [chunk.x, chunk.y, chunk.elevation01]),
-      facilities.map((trace) => [
-        this.facility(trace)?.durability,
-        this.storagesById.get(this.facility(trace)?.linkedStorage ?? ''),
-        trace.id,
-        trace.gridX,
-        trace.gridY,
-        trace.facilityKind,
-        trace.state,
-        Math.round(clamp01(trace.progress01) * 100),
-        trace.deliveredMaterialUnits,
-        trace.requiredMaterialUnits,
-        trace.active,
-        trace.lit,
-        trace.cropPlanted,
-        Math.round(clamp01(trace.cropGrowth01) * 100),
-        Math.round(clamp01(trace.cropMoisture01) * 100),
-        Math.round(clamp01(trace.cropCare01) * 100),
-        trace.cropHarvestUnits,
-      ]),
+      facilities.map(trace => this.visualSignature(trace)),
     ]);
     if (signature === this.signature) return;
     this.signature = signature;
@@ -305,8 +348,7 @@ export class FacilityLayer {
       ) * elevationScale;
 
       const facility = this.facility(trace);
-      const storage = this.storagesById.get(facility?.linkedStorage ?? '');
-      const structureSignature = JSON.stringify([window.worldSeed, trace, facility?.durability, storage]);
+      const structureSignature = JSON.stringify([window.worldSeed, this.visualSignature(trace)]);
       const cached = this.structures.get(trace.id);
       if (cached?.signature === structureSignature) {
         cached.group.position.set(worldX, groundY + 0.025, worldZ);
@@ -314,7 +356,9 @@ export class FacilityLayer {
         nextStructures.set(trace.id, cached);
         continue;
       }
-      const structure = new THREE.Group();
+      const structure = cached?.group ?? new THREE.Group();
+      if (cached) { this.disposeStructureInstances(structure); structure.clear(); }
+      structure.userData.visualState = deriveFacilityVisualState(trace, facility);
       structure.name = `facility-${trace.id}`;
       structure.userData.traceId = trace.id;
       structure.position.set(worldX, groundY + 0.025, worldZ);
@@ -357,6 +401,9 @@ export class FacilityLayer {
   }
 
   dispose(): void {
+    this.activities.clear();
+    this.activityGeometry.dispose();
+    this.activityMaterial.dispose();
     this.group.clear();
     for (const entry of this.structures.values()) this.disposeStructureInstances(entry.group);
     for (const material of this.wornMaterials.values()) material.dispose();
@@ -406,11 +453,11 @@ export class FacilityLayer {
   }
 
   private applyCondition(group: THREE.Group, trace: FacilityTrace): void {
-    const durability = this.facility(trace)?.durability;
+    const band = deriveFacilityVisualState(trace, this.facility(trace)).durabilityBand;
+    const durability = band === 0 ? 1 : this.facility(trace)?.durability;
     // Missing detail and mere inactivity are not evidence of decay.
     if (trace.state !== 'Operational' || !Number.isFinite(durability)) return;
-    const bands = WORLD_PRESENTATION.conditionBands;
-    const wear = Math.round((1 - clamp01(durability)) * bands) / bands;
+    const wear = CONSTRUCTION.wearAmounts[band];
     if (wear === 0) return;
     group.traverse(object => {
       if (!(object instanceof THREE.Mesh) || !(object.material instanceof THREE.MeshStandardMaterial)
@@ -431,7 +478,13 @@ export class FacilityLayer {
       }
       object.material = material;
       // Bounded weathering inside the current footprint; never move the facility.
-      object.rotation.z += wear * wear * WORLD_PRESENTATION.damageTilt
+      if (trace.facilityKind === 'SleepingPlace') return;
+      if (band >= 2 && object.position.y > 0.7) {
+        object.scale.y *= 1 - wear * CONSTRUCTION.wearShapeLoss;
+        if (object.scale.x > 1 && object.scale.z > 1) object.scale.z *= 1 - wear * CONSTRUCTION.wearShapeLoss;
+        object.position.y *= 1 - wear * 0.08;
+      }
+      object.rotation.z += wear * wear * CONSTRUCTION.wearTilt
         * (hash01(object.name) - 0.5);
     });
   }
@@ -454,10 +507,10 @@ export class FacilityLayer {
       return;
     }
 
-    if (progress < 0.18) {
-      this.addPlanStakes(group, trace);
-    } else if (trace.state === 'UnderConstruction') {
+    if (trace.state !== 'Operational') {
+      if (progress < CONSTRUCTION.earlyWorkEnd) this.addPlanStakes(group, trace);
       this.addMaterialPile(group, trace);
+      if (progress === 0) return;
     }
 
     switch (trace.facilityKind) {
@@ -492,56 +545,32 @@ export class FacilityLayer {
     group: THREE.Group,
     trace: FacilityTrace,
   ): void {
-    // Ruins remain authoritative historical traces, but must never read as a
-    // second operational bed/work surface/shelter on the observer screen.
-    this.addBox(
-      group,
-      trace,
-      this.darkWoodMaterial,
-      [-0.52, 0.11, -0.08],
-      [1.45, 0.16, 0.18],
-      [0.06, 0.54, 0.18],
-      900,
-    );
-    this.addBox(
-      group,
-      trace,
-      this.woodMaterial,
-      [0.46, 0.09, 0.28],
-      [1.05, 0.13, 0.16],
-      [-0.04, -0.72, -0.12],
-      901,
-    );
-    this.addBox(
-      group,
-      trace,
-      this.stoneMaterial,
-      [0.04, 0.08, -0.38],
-      [0.42, 0.18, 0.34],
-      [0.18, 0.18, 0.11],
-      902,
-    );
-
-    if (trace.facilityKind === 'SleepingPlace') {
-      this.addBox(
-        group,
-        trace,
-        this.beddingMaterial,
-        [0.18, 0.12, 0.04],
-        [0.78, 0.08, 0.42],
-        [0.08, -0.34, 0.16],
-        903,
-      );
-    } else if (trace.facilityKind === 'Shelter') {
-      this.addBox(
-        group,
-        trace,
-        this.thatchMaterial,
-        [-0.1, 0.17, 0.06],
-        [1.12, 0.09, 0.62],
-        [0.12, 0.28, -0.24],
-        904,
-      );
+    const stoneKind = ['FirePit', 'Furnace', 'CultivatedPlot'].includes(trace.facilityKind);
+    const material = stoneKind ? this.stoneMaterial : this.darkWoodMaterial;
+    const width = trace.facilityKind === 'Shelter' ? 2.7 : 1.7;
+    this.addBox(group, trace, material, [-0.35, 0.14, 0], [width, 0.22, 0.24],
+      [0.08, 0.3, 0.12], 900);
+    this.addBox(group, trace, material, [0.35, 0.12, 0.35], [1.1, 0.18, 0.3],
+      [0.12, -0.6, -0.18], 901);
+    if (trace.facilityKind === 'Shelter') {
+      this.addBox(group, trace, this.thatchMaterial, [0, 0.35, 0], [2.1, 0.16, 1.6],
+        [0.12, 0.18, -0.25], 904);
+      this.addCylinder(group, trace, this.woodMaterial, [-1.1, 0.65, -0.8],
+        [0.12, 1.2, 0.12], [0, 0, 0.35], 905);
+    } else if (trace.facilityKind === 'SleepingPlace') {
+      this.addBox(group, trace, this.beddingMaterial, [0, 0.1, 0], [1.7, 0.08, 0.6],
+        [0.08, -0.15, 0.12], 903);
+    } else if (trace.facilityKind === 'WorkSurface' || trace.facilityKind === 'PrimitiveStorage') {
+      this.addBox(group, trace, this.woodMaterial, [0, 0.35, 0], [1.8, 0.16, 1.2],
+        [0.3, 0.1, -0.25], 906);
+    } else if (trace.facilityKind === 'Furnace') {
+      this.addCylinder(group, trace, this.earthMaterial, [0, 0.4, 0], [0.7, 0.8, 0.7],
+        [0, 0, 0.25], 907);
+    } else if (trace.facilityKind === 'FirePit') {
+      for (let i = 0; i < 6; i++) this.addBox(group, trace, this.stoneMaterial,
+        [Math.cos(i) * 0.75, 0.08, Math.sin(i) * 0.75], [0.3, 0.16, 0.24], [0, i, 0], 910 + i);
+    } else if (trace.facilityKind === 'CultivatedPlot') {
+      this.addBox(group, trace, this.earthMaterial, [0, 0.025, 0], [2.3, 0.05, 1.9], [0, 0, 0], 920);
     }
   }
 
@@ -560,8 +589,8 @@ export class FacilityLayer {
         group,
         trace,
         this.woodMaterial,
-        [x, 0.24, z],
-        [0.08, 0.48, 0.08],
+        [x, CONSTRUCTION.stakeHeight / 2, z],
+        [0.08, CONSTRUCTION.stakeHeight, 0.08],
         [0, 0, 0],
         index,
       );
@@ -572,19 +601,20 @@ export class FacilityLayer {
     group: THREE.Group,
     trace: FacilityTrace,
   ): void {
-    const required = Math.max(1, Number(trace.requiredMaterialUnits) || 1);
-    const delivered = Math.max(0, Number(trace.deliveredMaterialUnits) || 0);
-    const count = Math.min(4, Math.ceil((delivered / required) * 4));
-    for (let index = 0; index < count; index += 1) {
-      this.addBox(
-        group,
-        trace,
-        this.woodMaterial,
-        [-1.55 + index * 0.34, 0.11 + index * 0.08, 1.25],
-        [0.52, 0.18, 0.22],
-        [0, 0.12 * (index % 2 ? 1 : -1), 0.06 * index],
-        90 + index,
-      );
+    const materials: Record<string, THREE.Material> = {
+      Wood: this.woodMaterial, Stone: this.stoneMaterial, Fiber: this.thatchMaterial,
+      Clay: this.earthMaterial,
+    };
+    // Uses only trace.deliveredMaterialUnits / trace.requiredMaterialUnits;
+    // no material is inferred from resident arrival or construction time.
+    const piles = constructionMaterialPiles(trace, this.facility(trace));
+    for (const [index, pile] of piles.entries()) {
+      const size = CONSTRUCTION.pileSize;
+      const height = size * pile.fill;
+      this.addBox(group, trace, materials[pile.material] ?? this.earthMaterial,
+        [-1.3 + index * CONSTRUCTION.pileSpacing, height / 2, 1.25],
+        [size * 0.85, height, size * 0.65], [0, 0.12 * index, 0], 90 + index);
+      group.children[group.children.length - 1].userData.constructionMaterial = pile;
     }
   }
 
@@ -597,7 +627,7 @@ export class FacilityLayer {
       group,
       trace,
       progress,
-      0.16,
+      0.06,
       this.darkWoodMaterial,
       [0, 0.12, 0],
       [2.4, 0.24, 1.65],
@@ -661,7 +691,7 @@ export class FacilityLayer {
         group,
         trace,
         progress,
-        0.12 + index * 0.025,
+        0.04 + index * 0.025,
         [
           Math.cos(angle) * 0.82,
           0.16,
@@ -725,7 +755,7 @@ export class FacilityLayer {
         group,
         trace,
         progress,
-        0.18 + index * 0.055,
+        0.06 + index * 0.04,
         this.woodMaterial,
         [x, 0.48, z],
         [0.09, 0.96, 0.09],
@@ -773,18 +803,24 @@ export class FacilityLayer {
     this.addBoxAtProgress(group, trace, progress, 0.58, this.beddingMaterial,
       [0.07, 0.06, 0.40], [2.32, 0.06, 0.23], [0, -0.035, 0], 72);
     // A loose fiber bundle merges with the mat edge; no raised pillow.
-    this.addBoxAtProgress(group, trace, progress, 0.70, this.thatchMaterial,
+    this.addBoxAtProgress(group, trace, progress, CONSTRUCTION.finishingStart, this.thatchMaterial,
       [-0.77, 0.075, -0.31], [0.65, 0.075, 0.23], [0, 0.16, 0], 73);
     for (const [i, [x, z, length, yaw]] of [
       [0, -0.51, 2.37, 0.03], [0.11, 0.52, 2.12, -0.06], [-1.12, 0.04, 0.82, Math.PI / 2],
     ].entries()) {
-      this.addCylinderAtProgress(group, trace, progress, 0.18 + i * 0.05,
+      this.addCylinderAtProgress(group, trace, progress, 0.06 + i * 0.04,
         this.woodMaterial, [x, 0.05, z], [0.055, length, 0.055],
         [0, yaw, Math.PI / 2], 74 + i);
     }
     // Seven primitive parts, three material/geometry batches: preserve the
     // original bed's draw-call budget. Allocate only when this cache rebuilds.
     const parts = group.children.slice(firstPart) as THREE.Mesh[];
+    const band = group.userData.visualState?.durabilityBand ?? 0;
+    if (band >= 2) for (const part of parts) {
+      if (part.name.endsWith('-70')) continue;
+      part.scale.x *= 1 - CONSTRUCTION.wearAmounts[band] * 0.25;
+      part.rotation.y += CONSTRUCTION.wearAmounts[band] * 0.18;
+    }
     for (const material of [this.beddingMaterial, this.thatchMaterial, this.woodMaterial]) {
       const matching = parts.filter(part => part.material === material);
       if (!matching.length) continue;
@@ -821,7 +857,7 @@ export class FacilityLayer {
         group,
         trace,
         progress,
-        0.16 + index * 0.055,
+        0.06 + index * 0.04,
         this.woodMaterial,
         [x, 1.35, z],
         [0.12, 2.7, 0.12],
@@ -972,7 +1008,7 @@ export class FacilityLayer {
       group,
       trace,
       progress,
-      0.22,
+      0.06,
       this.earthMaterial,
       [0, 0.07, 0],
       [3.5, 0.14, 2.45],
@@ -1063,7 +1099,7 @@ export class FacilityLayer {
         group,
         trace,
         progress,
-        0.2 + index * 0.08,
+        0.06 + index * 0.06,
         this.woodMaterial,
         [x, 0.7, z],
         [0.1, 1.4, 0.1],
@@ -1096,6 +1132,15 @@ export class FacilityLayer {
     slot: number,
   ): void {
     if (!this.shouldShowPart(trace, progress, threshold, slot)) return;
+    const reveal = trace.state === 'Ruined' ? 1 : partReveal(progress, threshold,
+      Math.min(1, threshold + CONSTRUCTION.revealSpan));
+    if (reveal <= 0) return;
+    // Upright pieces rise from their existing bottom, rather than floating
+    // around their finished center while work is still partial.
+    if (Math.abs(rotation[0]) + Math.abs(rotation[2]) < 0.1) {
+      position = [position[0], position[1] - scale[1] * (1 - reveal) / 2, position[2]];
+    }
+    scale = [scale[0] * reveal, scale[1] * reveal, scale[2] * reveal];
     this.addBox(
       group,
       trace,
@@ -1120,6 +1165,15 @@ export class FacilityLayer {
     tapered = false,
   ): void {
     if (!this.shouldShowPart(trace, progress, threshold, slot)) return;
+    const reveal = trace.state === 'Ruined' ? 1 : partReveal(progress, threshold,
+      Math.min(1, threshold + CONSTRUCTION.revealSpan));
+    if (reveal <= 0) return;
+    // Upright pieces rise from their existing bottom, rather than floating
+    // around their finished center while work is still partial.
+    if (Math.abs(rotation[0]) + Math.abs(rotation[2]) < 0.1) {
+      position = [position[0], position[1] - scale[1] * (1 - reveal) / 2, position[2]];
+    }
+    scale = [scale[0] * reveal, scale[1] * reveal, scale[2] * reveal];
     const mesh = new THREE.Mesh(
       tapered
         ? this.taperedCylinderGeometry
@@ -1144,6 +1198,15 @@ export class FacilityLayer {
     slot: number,
   ): void {
     if (!this.shouldShowPart(trace, progress, threshold, slot)) return;
+    const reveal = trace.state === 'Ruined' ? 1 : partReveal(progress, threshold,
+      Math.min(1, threshold + CONSTRUCTION.revealSpan));
+    if (reveal <= 0) return;
+    // Upright pieces rise from their existing bottom, rather than floating
+    // around their finished center while work is still partial.
+    if (Math.abs(rotation[0]) + Math.abs(rotation[2]) < 0.1) {
+      position = [position[0], position[1] - scale[1] * (1 - reveal) / 2, position[2]];
+    }
+    scale = [scale[0] * reveal, scale[1] * reveal, scale[2] * reveal];
     const mesh = new THREE.Mesh(
       this.stoneGeometry,
       this.stoneMaterial,
@@ -1195,7 +1258,7 @@ export class FacilityLayer {
     threshold: number,
     slot: number,
   ): boolean {
-    if (trace.state !== 'Ruined') return progress >= threshold;
+    if (trace.state !== 'Ruined') return progress > threshold;
     return slot % 4 !== 0;
   }
 
@@ -1224,6 +1287,7 @@ export class FacilityLayer {
     mesh.receiveShadow = true;
   }
 }
+
 
 
 

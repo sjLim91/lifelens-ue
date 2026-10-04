@@ -170,3 +170,52 @@ Web foundation is healthy when:
 5. terrain/hydrology presentation derives from Core truth.
 6. TypeScript and production Web build pass.
 7. the product remains functional without a paid backend.
+
+
+### Facility lifecycle scene presentation (2026-10-04)
+
+Core decides facility reality; Web only derives a visual phase. The current
+HumanTrace facility read model supplies state, work ratio, delivered totals,
+activation, fire and crop facts. CivilizationWorldFacility is joined by exact
+id, kind and grid position for durability, material requirements and linked
+storage. Both progress fields serialize constructionWork / requiredWork.
+The faster trace wins when detail lags. Typed material piles require matching
+state and matching required/delivered totals; otherwise their type stays generic.
+Unstarted Planned sites omitted from Core HumanTrace can be projected from actual
+civilization facilities inside observed chunks. They do not clear vegetation or
+create save state. Existing trace selection and footprint spacing stay intact.
+
+| Kind | Previous early/material appearance | Previous work 10 / 30 / 60 / 90% | Preserved operating facts |
+|---|---|---|---|
+| PrimitiveStorage | Stakes; early deliveries indistinct | Stakes / base+posts / body / cover | Linked stored goods |
+| FirePit | Stakes; early deliveries indistinct | Stakes / stones / fuel / full | Actual lit glow |
+| WorkSurface | Stakes; early deliveries indistinct | Stakes / legs / top / stone | Existing worker motion |
+| SleepingPlace | Stakes; early deliveries indistinct | Stakes / branches / mat+edges / full | Primitive mat, native sleep support |
+| Shelter | Stakes; early deliveries indistinct | Stakes / posts / frame+roof / walls | Existing roof/wall silhouette |
+| Furnace | Stakes; early deliveries indistinct | Stakes / lower / chamber / upper | Actual fire |
+| CultivatedPlot | Stakes; early deliveries indistinct | Stakes / soil / borders+ridges / full | Actual planted/growth/moisture/care/harvest |
+| Unknown | Stakes; early deliveries indistinct | Stakes / posts / posts / top | Safe primitive fallback |
+
+The renderer now shows delivered material independently of work, with no
+structure at zero work. Existing causal part thresholds use a bounded smooth
+reveal derived from actual progress, quantized to 40 presentation steps. It
+never advances work by elapsed time. Operational is confirmed only by Core.
+Durability bands (> .75, > .45, > .20, otherwise severe) reuse shared worn
+materials. Severe wear affects structural silhouette and mat edges, preserving
+occupied sleep support height. Kind-specific collapsed remnants retain the site.
+Same facility id keeps the same root object through construction, ruin and restore.
+No change within a visual progress/condition band rebuilds geometry.
+
+Actual Civilization Work/Repair Interacting directives, matched by facilityId,
+produce a small world scratch cue. Moving, proximity, DeliverMaterial arrival,
+repair start and inactivity cannot increase delivery/work/durability or restore
+a facility. Delivery and worker motion remain the existing resident presentation.
+Repair highlights the activity; geometry recovers only after factual state or
+condition changes. One fixed LineSegments geometry and material cover at most
+8 active sites (32 vertices, at most one extra draw call), paused with simulation.
+Shared primitive geometry and original per-facility construction meshes remain;
+SleepingPlace retains its three instance batches. Existing HumanTrace visibility
+budget remains 64 entries; a 150-facility input exercises that existing bound.
+Presentation caches and cosmetic phase live only in the Observer and never feed
+Core decisions or save authority. Social events, emissions, snow, wetness and
+crop/storage facts keep their existing lanes.

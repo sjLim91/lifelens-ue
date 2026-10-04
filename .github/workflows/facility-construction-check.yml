@@ -1,0 +1,44 @@
+name: Web Facility Construction
+on:
+  push:
+    branches: ['work/web-facility-construction-*']
+    paths: ['web/**', '.github/workflows/facility-construction-check.yml']
+  pull_request:
+    paths: ['web/**', '.github/workflows/facility-construction-check.yml']
+jobs:
+  presentation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --ignore-scripts --no-audit --no-fund
+        working-directory: web
+      - run: python Tools/prepare_web_character_assets.py
+      - run: npm run typecheck
+        working-directory: web
+      - name: Facility lifecycle authority, continuity and resource regression
+        run: node tests/facility-construction/run.mjs
+        working-directory: web
+      - name: All existing Web regression entrypoints
+        shell: bash
+        working-directory: web
+        run: |
+          set -euo pipefail
+          while IFS= read -r test; do
+            node "$test"
+          done < <(find tests -mindepth 2 -maxdepth 2 -name run.mjs ! -path 'tests/facility-construction/*' | sort)
+      - run: npm run build
+        working-directory: web
+      - run: npm install --no-save --ignore-scripts --no-audit --no-fund playwright && npx playwright install --with-deps chromium
+        working-directory: web
+      - run: node tests/facility-construction/browser-review.mjs
+        working-directory: web
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: facility-construction-review
+          path: web/tests/facility-construction/review/
+
