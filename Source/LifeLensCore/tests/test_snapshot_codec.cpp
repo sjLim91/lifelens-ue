@@ -68,6 +68,40 @@ int main()
     // This codec fixture must stay independent of whichever autonomous
     // sanitation project happened to progress during the 5,000-minute lead-in.
     source.world().primitiveSanitationSites.clear();
+
+    // C6 multi-settlement sanitation is legitimate save truth. Two distant
+    // active sites must round-trip together; the old world-global "one active
+    // sanitation site" validator would reject this valid multi-settlement state.
+    GridPos sanitationA{};
+    GridPos sanitationB{};
+    CHECK(source.runtimePosition(a.id,sanitationA));
+    CHECK(source.runtimePosition(b.id,sanitationB));
+    sanitationB.x+=SettlementServiceRadiusGrid*4;
+    source.world().primitiveSanitationSites.push_back({
+        7001,
+        PrimitiveSanitationSiteKind::DesignatedArea,
+        sanitationA,
+        a.id,
+        std::max(0,source.world().minute-20),
+        true,
+        3,
+        0.0,
+        0,
+        -1
+    });
+    source.world().primitiveSanitationSites.push_back({
+        7002,
+        PrimitiveSanitationSiteKind::DesignatedArea,
+        sanitationB,
+        b.id,
+        std::max(0,source.world().minute-10),
+        true,
+        1,
+        0.0,
+        0,
+        -1
+    });
+
     auto& facilities=source.world().facilities;
     facilities.erase(
         std::remove_if(facilities.begin(),facilities.end(),[](const ConstructedFacility& facility){
@@ -200,6 +234,11 @@ int main()
     CHECK(decodedFirePit->fuelUnits==2);
     CHECK(decodedFirePit->burnMinutesRemaining==savedBurnMinutes);
     CHECK(decodedFirePit->heatLevel==savedHeat);
+    CHECK(decoded.world.primitiveSanitationSites.size()==2);
+    CHECK(decoded.world.primitiveSanitationSites[0].active);
+    CHECK(decoded.world.primitiveSanitationSites[1].active);
+    CHECK(decoded.world.primitiveSanitationSites[0].id==7001);
+    CHECK(decoded.world.primitiveSanitationSites[1].id==7002);
 
     // Canonical codec contract: decode+encode must reproduce identical bytes.
     std::vector<std::uint8_t> reencoded;
