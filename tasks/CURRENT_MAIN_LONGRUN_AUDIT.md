@@ -1,7 +1,7 @@
 # Current-Main Long-Run Audit — 2026-10-04 Reconciled
 
 초기 감사 기준: `b277e091bc39d071ea30ba0d57281251da811dba`  
-현재 제품 기준: `fde409c8d148296b9e30b14944c1d4a6676fd387` (#631)
+현재 제품 기준: `74c372e6cc5506e57df46cbcf502cab2e630c623` (#633)
 
 이 체크리스트는 2026-10-02의 최초 감사 상태를 2026-10-04 R9 결과와 현재 C6 closeout 상태에 맞춰 갱신한다.
 
@@ -87,7 +87,7 @@ day 1000:
 
 ### 미해결 축
 
-- [ ] #627: 복수 active sanitation site가 snapshot roundtrip 가능한지 latest-main에서 확정
+- [x] #633: 복수 active sanitation site snapshot roundtrip / byte identity / deterministic continuation 확정
 - [ ] #626: migration candidate 0인데 초기 2정착지가 생기는 premature split 제거
 - [ ] trade exchange 후 physical return completion 보장
 - [ ] 1000일 illness-dominant population collapse 원인 분류/수정
@@ -99,8 +99,8 @@ day 1000:
 
 ## R10 실행 전 코드 순서
 
-1. #627 snapshot contract
-2. #634 Cognitive read-only bridge는 C6 behavior를 바꾸지 않으므로 병렬 closeout 가능
+1. #633 snapshot contract — ✅ 완료
+2. #634 Cognitive read-only bridge closeout
 3. #626 premature split
 4. trade return mission persistence
 5. R10
