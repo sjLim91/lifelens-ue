@@ -14,6 +14,11 @@ namespace lifelens {
 // facts to pick a physically plausible destination, but it must never inspect an
 // unmaterialized chunk's resource catalogue before a resident actually reaches
 // that frontier.
+inline constexpr int ResourceExplorationLocalRadiusChunks = 3;
+// Critical survival may exhaust a wider near-field before sparse long-range
+// probes. Ordinary exploration must stay inside the same radius that Core
+// defines as "local supply"; otherwise finding a resource cannot extinguish
+// the pressure that caused the search.
 inline constexpr int ResourceExplorationMaxRadiusChunks = 6;
 inline constexpr int ResourceExplorationDrySearchRadiusCells = 8;
 
@@ -162,14 +167,19 @@ inline bool chooseDryExplorationEntryPoint(
     return false;
 }
 
-inline ResourceExplorationOpportunity chooseResourceExplorationOpportunity(
+inline ResourceExplorationOpportunity chooseResourceExplorationOpportunityWithinRadius(
     const World& world,
     CharacterId actor,
     MaterialKind material,
-    GridPos authoritativePosition)
+    GridPos authoritativePosition,
+    int maximumRadiusChunks)
 {
     ResourceExplorationOpportunity best;
-    if(actor == 0 || !validNaturalResourceMaterial(material)) return best;
+    if(actor == 0
+       || !validNaturalResourceMaterial(material)
+       || maximumRadiusChunks<=0){
+        return best;
+    }
 
     const ChunkCoord center = chunkCoordForGrid(authoritativePosition);
 
@@ -177,7 +187,7 @@ inline ResourceExplorationOpportunity chooseResourceExplorationOpportunity(
     // observable terrain quality plus a stable actor/material preference. Do
     // not call deriveGeneratedNaturalChunk here: resources stay unknown until
     // arrival materializes the chunk.
-    for(int radius = 1; radius <= ResourceExplorationMaxRadiusChunks; ++radius){
+    for(int radius = 1; radius <= maximumRadiusChunks; ++radius){
         bool foundAtRadius = false;
         double bestScore = -std::numeric_limits<double>::infinity();
 
@@ -225,6 +235,20 @@ inline ResourceExplorationOpportunity chooseResourceExplorationOpportunity(
     return ResourceExplorationOpportunity{};
 }
 
+inline ResourceExplorationOpportunity chooseResourceExplorationOpportunity(
+    const World& world,
+    CharacterId actor,
+    MaterialKind material,
+    GridPos authoritativePosition)
+{
+    return chooseResourceExplorationOpportunityWithinRadius(
+        world,
+        actor,
+        material,
+        authoritativePosition,
+        ResourceExplorationLocalRadiusChunks);
+}
+
 
 inline ResourceExplorationOpportunity chooseCriticalResourceExplorationOpportunity(
     const World& world,
@@ -234,8 +258,9 @@ inline ResourceExplorationOpportunity chooseCriticalResourceExplorationOpportuni
 {
     // 가까운 일반 프런티어가 남아 있으면 기존 규칙을 그대로 사용한다.
     ResourceExplorationOpportunity local=
-        chooseResourceExplorationOpportunity(
-            world,actor,material,authoritativePosition);
+        chooseResourceExplorationOpportunityWithinRadius(
+            world,actor,material,authoritativePosition,
+            ResourceExplorationMaxRadiusChunks);
     if(local.available) return local;
     if(actor==0 || !validNaturalResourceMaterial(material)){
         return ResourceExplorationOpportunity{};
