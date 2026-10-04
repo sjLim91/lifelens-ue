@@ -825,6 +825,7 @@ export class FacilityLayer {
     trace: FacilityTrace,
     progress: number,
   ): void {
+    const firstPart = group.children.length;
     const legs = [
       [-0.84, -0.42],
       [0.84, -0.42],
@@ -865,6 +866,12 @@ export class FacilityLayer {
       [0, 0.4, 0],
       66,
     );
+    // Existing composition's working hands need a low primitive workbench.
+    // Keep the same footprint/build order; this is geometry, not work authority.
+    for (const part of group.children.slice(firstPart)) {
+      part.position.y *= WORLD_PRESENTATION.production.workSurfaceHeightRatio;
+      part.scale.y *= WORLD_PRESENTATION.production.workSurfaceHeightRatio;
+    }
   }
 
   private buildSleepingPlace(

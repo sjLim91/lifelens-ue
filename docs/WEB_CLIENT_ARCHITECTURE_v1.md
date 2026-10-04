@@ -344,3 +344,8 @@ posts, real stored-goods samples and resident coordinates stay intact. This is a
 Observer visibility aid, not a Core lid/open state. Missing/wrong/far/dead directives
 do not activate it; ending interaction restores both parts on the same facility
 root. It allocates no mesh, geometry, material, animation or gameplay state.
+
+WorkSurface keeps its existing parts/build order/footprint with a centrally
+configured lower vertical proportion so the existing standing craft hand motion
+is visible over the work plate. No resident offset, IK target, output item,
+construction progress, capacity, or facility state is created by this geometry.

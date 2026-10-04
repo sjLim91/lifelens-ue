@@ -74,7 +74,7 @@ export const WORLD_PRESENTATION = {
     colors: { Clay: 0x8d5f48, CopperOre: 0x8e684b, TinOre: 0x858a8c, IronOre: PRODUCTION_MATERIALS.IronOre.color, Flint: 0x4d514f },
   },
   production: { targetGridTolerance: 1.5, interactionDistance: 0.65,
-    gatherReachDistance: 4.1, maxEquipmentSlots: 3, loadScale: 1.15,
+    gatherReachDistance: 4.1, maxEquipmentSlots: 3, loadScale: 1.15, workSurfaceHeightRatio: .68,
     maxProcessingStocks: 256, processingSlots: 4, processingUnitsPerSlot: 4, processingSteps: 4,
     processingPileSize: 0.3, processingPileSpacing: 0.42 },
   load: { maxPieces: 3, spacing: 0.055 },
