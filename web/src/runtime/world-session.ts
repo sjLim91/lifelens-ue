@@ -1,4 +1,4 @@
-import { LifeLensCoreBridge } from './core-bridge';
+import type { LifeLensCoreBridge } from './core-bridge';
 import {
   OBSERVER_RUNTIME_CONTRACT,
   WORLD_GRID_CONTRACT,
@@ -12,7 +12,7 @@ import type {
   WorldObjectsPayload,
   WorldOverview,
 } from './core-types';
-import { ResidentContinuity } from './resident-continuity';
+import type { ResidentContinuity } from './resident-continuity';
 
 export interface WorldSessionSnapshot {
   overview: WorldOverview;
@@ -89,6 +89,11 @@ export class WorldSession {
   }
 
   forceWorldActivityRefresh(): void {
+    // Fast-forward captures must read resident history/family/inventory at the
+    // same boundary as world activity, even when resident identities are stable.
+    // Reset only the cadence: retain cached detail if Core is unavailable and
+    // retry on the next refresh without regenerating static terrain.
+    this.residentDetailRefreshCountdown = 0;
     this.worldActivityRefreshCountdown = 0;
   }
 
