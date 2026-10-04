@@ -123,7 +123,7 @@ seed 4242001:
 이유:
 현재 simulation authority가 허용하는 합법 상태를 snapshot validator가 거부할 수 있는 계약 불일치다.
 
-### #630 — Cognitive Core -> Web read-only request bridge
+### #634 — Cognitive Core -> Web read-only request bridge
 
 상태:
 - exact-head Core / WASM / Web / cognition / long regression 모두 PASS.
@@ -141,7 +141,7 @@ seed 4242001:
 - 현재 main보다 많이 뒤에 있으므로 latest-main 재적용이 필수.
 - 머지 전 R10으로 실제 seed 874 day100 behavior 확인이 필요.
 
-우선순위: **P1 / #627/#630 뒤**
+우선순위: **P1 / #627/#634 뒤**
 
 ---
 
@@ -164,7 +164,7 @@ seed 4242001:
 
 ---
 
-## STEP 2 — #630 Cognitive read-only bridge closeout
+## STEP 2 — #634 Cognitive read-only bridge closeout
 
 1. latest main으로 동기화
 2. #631 Web 변경 보존
@@ -333,7 +333,7 @@ typed request/proposal + Core validation.
 
 무료 local provider + bounded scheduler.
 
-## COG-2 — 🟡 #630
+## COG-2 — 🟡 #634
 
 Core-owned read-only context bridge.
 
@@ -401,6 +401,6 @@ C7 기능 추가나 새 문명 단계는 STEP 7 이전에 시작하지 않는다
 
 그 뒤:
 
-`#627 -> #630 -> #626 + R10 split check -> trade return -> full R10 -> health causal fix(if needed) -> C6 close -> C7`
+`#627 -> #634 -> #626 + R10 split check -> trade return -> full R10 -> health causal fix(if needed) -> C6 close -> C7`
 
 이 순서를 현재 canonical execution order로 고정한다.
