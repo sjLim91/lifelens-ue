@@ -1,3 +1,44 @@
+# 2026-10-04 Reconciliation Update
+
+> 아래 2026-10-02 본문은 최초 baseline 감사의 역사 기록으로 보존한다.
+> 현재 실행순서와 최신 판정은 `docs/CURRENT_EXECUTION_ORDER_2026-10-04.md` 및
+> `tasks/CURRENT_MAIN_LONGRUN_AUDIT.md`를 우선한다.
+
+현재 main 기준: `fde409c8d148296b9e30b14944c1d4a6676fd387` (#631)
+
+## R9 이후 달라진 핵심
+
+- #606/#600/#604 등 self-care/dependent-care 수정 이후 두 baseline seed 모두 day365까지 4명 생존이 확인됐다.
+- #623 이후 facility-chain runaway가 크게 줄었다.
+  - seed 4242001 day1000: facilities 22 / chunks 4 / 약 1분35초.
+  - 이전 R8b: facilities 194 / chunks 281 / 약 21분42초.
+- seed 4242001은 day365에 marriage + pregnancy가 확인됐다.
+- seed 874213954는 day365에 실제 trade departure 8 / exchange 1이 확인됐다.
+- 따라서 C6 기능 자체의 자연발생 가능성은 확인됐지만 closeout은 아직 아니다.
+
+## 최신 blocker
+
+1. seed 874213954 day100에서 migrationCandidates=0인데 settlements=2 / active=2.
+   - premature founder fragmentation.
+   - #626이 이 문제를 다룬다.
+
+2. seed 874213954 day365에서 trade departure 8 / exchange 1 / return 0.
+   - physical return mission robustness가 남았다.
+
+3. #625 이후 복수 정착지에 복수 sanitation site가 합법이지만
+   legacy snapshot validation과 계약이 맞지 않을 수 있다.
+   - #627이 이를 다룬다.
+
+4. 두 seed 모두 day1000에는 living=0.
+   - illness가 주된 사망 원인.
+   - mortality probability를 먼저 낮추지 않고 contamination / sanitation / health / dependent-care 인과를 재검증한다.
+
+## 최신 closeout 순서
+
+`#627 -> #630 -> #626 + split R10 -> trade return persistence -> full R10 -> health causal fix(if needed) -> C6 close -> C7`
+
+---
+
 # Current-Main Long-Run Audit — 2026-10-02
 
 기준 제품 main: `b277e091bc39d071ea30ba0d57281251da811dba`  
