@@ -104,32 +104,22 @@ seed 4242001:
    - 사망의 주된 원인은 illness.
    - 숫자 튜닝보다 contamination / sanitation / health / dependent care 원인 경로를 먼저 확인한다.
 
-4. **다중 위생시설 snapshot 정합성**
-   - #625로 복수 정착지에 복수 sanitation site가 정당해졌지만,
-   - 현재 snapshot validator의 legacy world-global active-site 제한을 제거하는 #627이 아직 open이다.
+4. **다중 위생시설 snapshot 정합성 — ✅ 해결 (#633)**
+   - #625 이후 합법적인 복수 settlement-local active sanitation site를 snapshot validator가 허용한다.
+   - 두 distant active site encode/decode, byte-stable re-encode, deterministic continuation 회귀가 exact-head에서 통과했다.
 
 ---
 
 ## 4. 현재 open PR
 
-### #627 — C6 다중 정착지 위생시설 저장 검증 허용
-
-상태:
-- 이전 head의 Core / Preflight / WASM / Weather-Sleep-Era는 모두 PASS.
-- 현재 main보다 뒤에 있으므로 latest-main 재적용/재검증 필요.
-
-우선순위: **P0 / 첫 번째**
-
-이유:
-현재 simulation authority가 허용하는 합법 상태를 snapshot validator가 거부할 수 있는 계약 불일치다.
-
 ### #634 — Cognitive Core -> Web read-only request bridge
 
 상태:
-- exact-head Core / WASM / Web / cognition / long regression 모두 PASS.
-- #631 이후 main drift가 있으므로 latest-main 동기화 후 다시 exact-head 검증한다.
+- 기존 #630의 검증된 구현을 latest main@#633에서 필요한 코드/테스트만 재적용했다.
+- #631 Web presentation과 #633 sanitation snapshot 변경을 보존한다.
+- exact-head 재검증 후 merge한다.
 
-우선순위: **P0.5 / #627 직후**
+우선순위: **P0 / 현재 첫 번째**
 
 이 PR까지 들어가도 모델 제안은 Simulation 행동에 영향을 주지 않는다.
 
@@ -141,7 +131,7 @@ seed 4242001:
 - 현재 main보다 많이 뒤에 있으므로 latest-main 재적용이 필수.
 - 머지 전 R10으로 실제 seed 874 day100 behavior 확인이 필요.
 
-우선순위: **P1 / #627/#634 뒤**
+우선순위: **P1 / #634 직후**
 
 ---
 
@@ -149,18 +139,12 @@ seed 4242001:
 
 이 순서를 임의로 바꾸지 않는다. 새 문제는 해당 단계 안에서 해결한다.
 
-## STEP 1 — #627 snapshot contract closeout
+## STEP 1 — ✅ snapshot contract closeout 완료 (#633)
 
-1. latest main에서 #627의 실제 필요한 2-file diff만 재적용
-2. Core snapshot roundtrip targeted test
-3. exact-head Core / Preflight / WASM / Weather-Sleep-Era
-4. green이면 merge
-5. main SHA 확인
-
-완료 조건:
-- 두 개 이상의 distant active sanitation site가 snapshot encode/decode 가능
-- byte-stable re-encode
-- deterministic continuation 유지
+- stale #627의 필요한 2-file diff만 latest main에 재적용.
+- exact-head Core / Preflight / WASM / Weather-Sleep-Era 전부 PASS.
+- merge: `74c372e6cc5506e57df46cbcf502cab2e630c623`.
+- 두 distant active sanitation site encode/decode, byte-stable re-encode, deterministic continuation 확인.
 
 ---
 
