@@ -61,7 +61,8 @@ inline const SettlementClusterObservation* settlementClusterForPosition(
     int bestDistance=SettlementServiceRadiusGrid+1;
     for(const SettlementClusterObservation& settlement:network.settlements){
         if(!settlement.active || !settlement.established) continue;
-        const int distance=manhattan(position,settlement.anchor);
+        const int distance=
+            settlementClusterServiceDistance(settlement,position);
         if(distance>SettlementServiceRadiusGrid) continue;
         if(best==nullptr || distance<bestDistance
            || (distance==bestDistance && settlement.id<best->id)){
@@ -133,8 +134,8 @@ inline int settlementMaterialUnits(
     }
     for(const StorageSite& storage:world.storageSites){
         if(storage.id==0
-           || manhattan(storage.pos,settlement->anchor)
-                >SettlementServiceRadiusGrid){
+           || !settlementClusterServesPosition(
+                *settlement,storage.pos)){
             continue;
         }
         total+=storage.inventory.count(ItemKind::RawMaterial,material);
@@ -187,8 +188,8 @@ inline int settlementMaterialDesiredUnits(
     for(const ConstructedFacility& facility:world.facilities){
         if(facility.state==FacilityState::Operational
            || facility.state==FacilityState::Ruined
-           || manhattan(facility.pos,settlement->anchor)
-                >SettlementServiceRadiusGrid){
+           || !settlementClusterServesPosition(
+                *settlement,facility.pos)){
             continue;
         }
         for(const FacilityMaterialRequirement& requirement:
