@@ -1,7 +1,25 @@
 import { CORE_SIMULATION_MINUTES_PER_DAY } from '../runtime/generated-core-contract';
+import { SOCIAL_EVENT_PRESENTATION_CONTRACT } from '../runtime/lifelens-contract';
 /** Presentation budgets and dimensions only; never simulation thresholds. */
 export const WORLD_PRESENTATION = {
   conditionBands: 8,
+  residentLife: {
+    scaleSettleSeconds: 0.9, elderLeanRadians: 0.055, parentingLeanRadians: 0.1,
+    childTouchRadius: 0.22, touchRadiusCap: 0.32,
+    headScale: { Baby: 1.3, Toddler: 1.18, Child: 1.08, Teen: 1.02, Adult: 1, Elderly: 1 },
+    bodyWidth: { Baby: 0.9, Toddler: 0.9, Child: 0.87, Teen: 0.95, Adult: 1, Elderly: 0.96 },
+    gait: { Baby: 0.4, Toddler: 1.15, Child: 1.1, Teen: 1.03, Adult: 1, Elderly: 0.88 },
+    belly: { FirstTrimester: 0, SecondTrimester: 0.035, ThirdTrimester: 0.065, Due: 0.075 },
+  },
+  lifeEvents: {
+    maxActive: 8, maxSeen: 128, maxResidentCursors: 384,
+    durationSeconds: 3.5, minorDurationSeconds: 2.2,
+    pairMaxDistance: 4.5, replayWindowMinutes: SOCIAL_EVENT_PRESENTATION_CONTRACT.replayWindowMinutes, coalesceMinuteWindow: 1,
+    segmentsPerCue: 48, ringSegments: 16, radius: 0.32, height: 0.28,
+    strokeWidth: 0.025, opacity: 0.65,
+    colors: { birth: 0xc6d9bd, growth: 0xc3caa4, pregnancy: 0xcbbba7,
+      relationship: 0xc6b8cb, separation: 0xac9d99, loss: 0x9aaba9, household: 0xb8baa0 },
+  },
   construction: {
     progressSteps: 40, revealSpan: 0.18, finishingStart: 0.82,
     earlyWorkEnd: 0.25, framingEnd: 0.65,
@@ -63,5 +81,6 @@ export const WORLD_PRESENTATION = {
     wetMudWidthMultiplier: 1.18, dryRoughness: 0.96, wetRoughness: 0.64,
   },
 } as const;
+
 
 

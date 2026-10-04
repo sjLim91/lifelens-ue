@@ -23,7 +23,7 @@ export function residentSocialCuePairs(
   residents: Resident[],
   maxPairs = 12,
 ): ResidentSocialCuePair[] {
-  const residentIds = new Set(residents.map((resident) => resident.id));
+  const residentIds = new Set(residents.filter(resident => resident.alive !== false && resident.hasPosition !== false).map((resident) => resident.id));
   const seenPairs = new Set<string>();
   const pairs: ResidentSocialCuePair[] = [];
 
@@ -32,7 +32,9 @@ export function residentSocialCuePairs(
 
     const presentation = resident.presentation;
     if (
-      !presentation?.active
+      resident.alive === false
+      || resident.hasPosition === false
+      || !presentation?.active
       || presentation.phase !== 'Interacting'
       || (
         presentation.kind !== 'Social'
@@ -84,3 +86,4 @@ export function residentSocialCuePairs(
 
   return pairs;
 }
+

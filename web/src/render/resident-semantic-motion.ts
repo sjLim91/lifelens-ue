@@ -1,4 +1,5 @@
 import type { ResidentPresentationDirective } from '../runtime/core-types';
+import { PARENTING_ACTIONS } from './resident-life-presentation';
 
 export type ResidentSemanticMotion =
   | 'idle' | 'walk' | 'carry' | 'sleep'
@@ -46,7 +47,7 @@ export function resolveResidentSemanticMotion(
       return 'talk';
     case 'KnowledgeTeaching': return context.nearbyResident ? 'teach' : 'idle';
     case 'Parenting':
-      if (!context.nearbyResident) return 'idle';
+      if (!context.nearbyResident || !PARENTING_ACTIONS.some(action => action === presentation.parentingAction)) return 'idle';
       if (presentation.parentingAction === 'Educate' || presentation.parentingAction === 'Discipline') return 'teach';
       if (presentation.parentingAction === 'Comfort' || presentation.parentingAction === 'PutToSleep') return 'comfort';
       if (presentation.parentingAction === 'Play') return 'talk';
@@ -93,3 +94,4 @@ export function resolveResidentSemanticMotion(
     default: return 'idle';
   }
 }
+

@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { lifePairKey } from './resident-life-presentation';
+import { WORLD_PRESENTATION } from './world-presentation-config';
 import type { RecentSocialEventsPayload } from '../runtime/core-types';
 import { SOCIAL_EVENT_PRESENTATION_CONTRACT as C } from '../runtime/lifelens-contract';
 import {
@@ -161,12 +163,15 @@ export class SocialEventLayer {
   }
   rebase(dx: number, dz: number): void { this.presentation.rebase(dx, dz); }
 
-  update(camera: THREE.Camera): void {
+  update(camera: THREE.Camera, lifePairs?: ReadonlyMap<string, number>): void {
     if (this.disposed) return;
     this.presentation.update(this.resolve);
     const now = this.presentation.now();
     let vertex = 0;
     for (const cue of this.presentation.activeCues) {
+      const lifeMinute = lifePairs?.get(lifePairKey(cue.actorId, cue.targetId));
+      if ((cue.visual.kind === 'Intimacy' || cue.visual.kind === 'Commitment')
+        && lifeMinute !== undefined && Math.abs(cue.minute - lifeMinute) <= WORLD_PRESENTATION.lifeEvents.coalesceMinuteWindow) continue;
       const progress = Math.max(0, Math.min(1, (now - cue.startedAtSeconds) / cue.visual.durationSeconds));
       const opacity = cue.visual.opacity * Math.min(1, progress * 8) * Math.min(1, (1 - progress) * 4);
       this.color.setHex(cue.visual.color);
@@ -203,3 +208,4 @@ export class SocialEventLayer {
     this.material.dispose();
   }
 }
+

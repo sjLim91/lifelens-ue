@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { Resident } from '../runtime/core-types';
+import { deriveResidentLifeVisualState } from './resident-life-presentation';
 
 export interface ResidentAppearanceProfile {
   seed: number;
@@ -84,6 +85,9 @@ function phenotype(value: number | undefined, fallback: number): number {
     ? THREE.MathUtils.clamp(value, 0, 1) : fallback;
 }
 
+function agedHairColor(color: number, elderly: boolean): number {
+  return elderly ? new THREE.Color(color).lerp(new THREE.Color(0xb4b1a6), 0.55).getHex() : color;
+}
 function pigmentColor(value: number, colors: readonly number[]): number {
   const position = value * (colors.length - 1);
   const index = Math.min(colors.length - 2, Math.floor(position));
@@ -94,13 +98,13 @@ function heightForResident(
   resident: Resident,
   seed: number,
 ): number {
-  const age = Number(resident.ageYears);
-  if (Number.isFinite(age)) {
-    if (age < 2) return 0.72 + phenotype(resident.genetics?.heightPotential, hash01(seed, 11)) * 0.18;
-    if (age < 6) return 0.94 + phenotype(resident.genetics?.heightPotential, hash01(seed, 13)) * 0.2;
-    if (age < 13) return 1.2 + phenotype(resident.genetics?.heightPotential, hash01(seed, 17)) * 0.28;
-    if (age < 18) return 1.48 + phenotype(resident.genetics?.heightPotential, hash01(seed, 19)) * 0.2;
-  }
+  const life = deriveResidentLifeVisualState(resident);
+  const age = life.age ?? 0;
+  const potential = phenotype(resident.genetics?.heightPotential, hash01(seed, 23));
+  if (life.stage === 'Baby') return 0.64 + potential * 0.18 + Math.min(2, age) * 0.025;
+  if (life.stage === 'Toddler') return 0.94 + potential * 0.2 + Math.max(0, Math.min(3, age - 2)) * 0.035;
+  if (life.stage === 'Child') return 1.2 + potential * 0.28 + Math.max(0, Math.min(8, age - 5)) * 0.012;
+  if (life.stage === 'Teen') return 1.48 + potential * 0.2 + Math.max(0, Math.min(5, age - 13)) * 0.01;
 
   const sexMean = resident.sex === 'Male'
     ? 1.72
@@ -123,6 +127,7 @@ export function createResidentAppearanceProfile(
   resident: Resident,
 ): ResidentAppearanceProfile {
   const seed = stableHash(resident.id);
+  const life = deriveResidentLifeVisualState(resident);
   const sexWidthBias = resident.sex === 'Male'
     ? 1.05
     : resident.sex === 'Female'
@@ -151,7 +156,7 @@ export function createResidentAppearanceProfile(
   return {
     seed,
     heightWorldUnits: heightForResident(resident, seed),
-    widthScale: sexWidthBias * widthVariation,
+    widthScale: sexWidthBias * widthVariation * life.bodyWidth,
     depthScale: depthVariation,
     garmentColor: GARMENT_PALETTE[garmentIndex],
     lowerGarmentColor: LOWER_GARMENT_PALETTE[lowerGarmentIndex],
@@ -165,14 +170,14 @@ export function createResidentAppearanceProfile(
       Math.floor(hash01(seed, 61) * 5)
     ],
     hairStyle: Math.floor(hash01(seed, 53) * 4),
-    hairColor: typeof resident.genetics?.hairPigment === 'number' && Number.isFinite(resident.genetics.hairPigment)
+    hairColor: agedHairColor(typeof resident.genetics?.hairPigment === 'number' && Number.isFinite(resident.genetics.hairPigment)
       ? pigmentColor(phenotype(resident.genetics.hairPigment, .5), [0xc6a064, 0x805631, 0x3b281c, 0x1c1a19])
-      : HAIR_PALETTE[hairIndex],
-    gaitRateBias: 0.94 + hash01(seed, 59) * 0.12,
+      : HAIR_PALETTE[hairIndex], life.stage === 'Elderly'),
+    gaitRateBias: (0.94 + hash01(seed, 59) * 0.12) * life.gaitBias,
     eyeColor: pigmentColor(phenotype(resident.genetics?.eyePigment, 1), [0x547d8c, 0x627255, 0x705336, 0x302720]),
     shoulderScale: resident.sex === 'Female' ? .92 : resident.sex === 'Male' ? 1.02 : 1,
     hipScale: resident.sex === 'Female' ? 1.07 : resident.sex === 'Male' ? .99 : 1,
-    headWidthScale: .94 + phenotype(resident.genetics?.faceShape, .5) * .12,
+    headWidthScale: (.94 + phenotype(resident.genetics?.faceShape, .5) * .12) * life.headScale,
   };
 }
 
@@ -416,3 +421,4 @@ function applyBodyColors(
   }
   mesh.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 }
+
