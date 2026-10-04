@@ -15,7 +15,7 @@ export function residentVisibleItems(inventory: ResidentCivilizationItem[] | und
     .filter(stack => Number.isFinite(stack.quantity) && (stack.quantity ?? 0) > 0)
     .map(stack => stack.item));
   // Bound draw calls and avoid a fan of every historic possession. Order is stable.
-  return DISPLAY_ITEMS.filter(item => held.has(item)).slice(0, 3);
+  return DISPLAY_ITEMS.filter(item => held.has(item)).slice(0, WORLD_PRESENTATION.production.maxEquipmentSlots);
 }
 
 /** Actual possession sample, never a promise of the directive's output/cargo. */

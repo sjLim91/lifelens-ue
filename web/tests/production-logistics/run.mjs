@@ -74,6 +74,14 @@ test('existing resource projection reflects Core depletion only, without a Web r
  assert.notEqual(a.treeSignature,b.treeSignature);assert.equal(resource.quantity,10);
  assert.equal(new NaturalResourceProjection({available:true,resources:[resource]},terrain).signature,a.signature);
 });
+test('actual IronOre uses the existing rock projection and disappears only at factual depletion',()=>{
+ const terrain={available:true,centerChunkX:0,centerChunkY:0,chunks:[{x:0,y:0}]};
+ const node={id:'iron',material:'IronOre',gridX:16,gridY:16,quantity:8,maxQuantity:8};
+ const before=new NaturalResourceProjection({available:true,resources:[node]},terrain);
+ const after=new NaturalResourceProjection({available:true,resources:[{...node,quantity:0}]},terrain);
+ assert(before.candidates('rocks',0,0,'fixture',[],8).some(v=>v.material==='IronOre'));
+ assert.equal(after.candidates('rocks',0,0,'fixture',[],8).length,0);
+});
 test('fixed prop slots + shared catalog keep 100/300 residents identities stable across 100 refreshes',()=>{
  const resources=new ResidentPropResources();const actors=[];
  for(let n=0;n<300;n++) {

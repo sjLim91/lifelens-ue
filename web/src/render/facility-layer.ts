@@ -9,6 +9,7 @@ import { SurfaceSnowModifier } from './environment-surface-presentation';
 
 import { facilityProductionStocks } from './facility-production-presentation';
 import { PRODUCTION_MATERIALS } from './production-material-presentation';
+import { ResidentProductionTargets } from './resident-production-context';
 import { deriveFacilityVisualState, constructionMaterialPiles, facilityPresentationTraces, facilityActivitySites, partReveal } from './facility-construction-presentation';
 type FacilityTrace = Extract<HumanTrace, { kind: 'Facility' }>;
 const CONSTRUCTION = WORLD_PRESENTATION.construction;
@@ -177,13 +178,28 @@ export class FacilityLayer {
   private readonly activityMaterial = new THREE.LineBasicMaterial({ vertexColors: true,
     transparent: true, opacity: CONSTRUCTION.activityOpacity, depthWrite: false });
   private readonly activityLines = new THREE.LineSegments(this.activityGeometry, this.activityMaterial);
+  private readonly productionTargets = new ResidentProductionTargets();
+  private readonly storageInteractions = new Set<string>();
+  private residents: Resident[] = [];
   private activities = new Map<string, 'Work' | 'Repair' | 'DeliverMaterial'>();
   private readonly workCueColor = new THREE.Color(CONSTRUCTION.workColor);
   private readonly repairCueColor = new THREE.Color(CONSTRUCTION.repairColor);
   private activityTime = 0;
   private paused = false;
 
-  setResidents(residents: Resident[]): void { this.activities = new Map([...facilityActivitySites(residents)]
+  setResidents(residents: Resident[]): void {
+    this.residents = residents; this.storageInteractions.clear();
+    const { gridCellsPerChunk: span, worldUnitsPerChunk: size } = WORLD_GRID_CONTRACT;
+    for (const r of residents) {
+      const p = r.presentation;
+      if (r.alive === false || !r.hasPosition || !Number.isFinite(r.gridX) || !Number.isFinite(r.gridY)
+        || !p || !['Store', 'Retrieve'].includes(p.civilizationIntent ?? '')) continue;
+      const target = this.productionTargets.resolve(p);
+      if (target?.kind === 'storage' && this.productionTargets.interacting(p,
+        (r.gridX! / span - .5) * size, (r.gridY! / span - .5) * size, 0, 0)) this.storageInteractions.add(target.id);
+    }
+    this.updateStorageCutaway();
+    this.activities = new Map([...facilityActivitySites(residents)]
     .sort((a, b) => Number(b[1] === 'Repair') - Number(a[1] === 'Repair'))); }
   setSimulationSpeed(speed: number): void { this.paused = speed <= 0; }
   update(deltaSeconds: number, camera?: THREE.Camera): void {
@@ -246,6 +262,7 @@ export class FacilityLayer {
   });
 
   setCivilization(civilization: CivilizationWorldPayload, terrain: TerrainWindow): void {
+    this.productionTargets.setSnapshot(civilization);
     this.civilizationWorldSeed = terrain.worldSeed;
     this.civilization = civilization.available === true ? civilization : {};
     this.facilitiesById.clear();
@@ -253,13 +270,14 @@ export class FacilityLayer {
     for (const entry of this.civilization.facilities ?? []) this.facilitiesById.set(`facility:${entry.id}`, entry);
     for (const entry of this.civilization.storages ?? []) this.storagesById.set(entry.id, entry);
     this.setTerrain(terrain);
+    this.setResidents(this.residents);
   }
 
   private visualSignature(trace: FacilityTrace): unknown[] {
     const facility = this.facility(trace);
     const visual = deriveFacilityVisualState(trace, facility);
     return [trace.id, trace.gridX, trace.gridY, trace.facilityKind, trace.state,
-      visual.visualProgress, visual.durabilityBand, trace.active, trace.lit,
+      visual.visualProgress, visual.durabilityBand, trace.active, trace.lit, facility?.linkedStorage,
       constructionMaterialPiles(trace, facility),
       facility?.state === trace.state ? facilityProductionStocks(facility) : [],
       trace.cropPlanted, Math.round(clamp01(trace.cropGrowth01) * 100),
@@ -315,6 +333,7 @@ export class FacilityLayer {
   setTerrain(window: TerrainWindow): void {
     if (window.worldSeed !== this.civilizationWorldSeed) {
       this.civilization = {}; this.facilitiesById.clear(); this.storagesById.clear();
+      this.productionTargets.clear(); this.storageInteractions.clear(); this.residents = [];
     }
     const facilities = facilityPresentationTraces(window, this.civilization);
     const signature = JSON.stringify([
@@ -391,6 +410,8 @@ export class FacilityLayer {
         constructionProgress(trace),
       );
       this.addStoredGoods(structure, trace);
+      structure.userData.storageId = trace.facilityKind === 'PrimitiveStorage' && trace.state === 'Operational'
+        && trace.active && facility?.state === trace.state ? facility.linkedStorage : undefined;
       structure.userData.productionStocks = facility?.state === trace.state ? facilityProductionStocks(facility) : [];
       this.applyCondition(structure, trace);
       this.group.add(structure);
@@ -403,6 +424,7 @@ export class FacilityLayer {
     this.structures.clear();
     for (const [id, entry] of nextStructures) this.structures.set(id, entry);
     this.updateProductionStocks();
+    this.updateStorageCutaway();
     this.group.visible = true;
   }
 
@@ -426,7 +448,7 @@ export class FacilityLayer {
   dispose(): void {
     if(this.disposed)return;this.disposed=true;
     this.productionRocks.dispose();this.productionBars.dispose();this.productionMaterial.dispose();
-    this.activities.clear();
+    this.activities.clear();this.residents=[];this.storageInteractions.clear();this.productionTargets.clear();
     this.processingOwners.clear();
     this.activityGeometry.dispose();
     this.activityMaterial.dispose();
@@ -475,6 +497,13 @@ export class FacilityLayer {
         [(i - (piles.length - 1) / 2) * config.width, 0.95 + height / 2, 0],
         [config.width * 0.85, height, config.depth], [0, 0, 0], 950 + i);
       group.children[group.children.length - 1].userData.storedGoods = pile;
+    }
+  }
+
+  private updateStorageCutaway(): void {
+    for (const { group } of this.structures.values()) {
+      const cutaway = this.storageInteractions.has(group.userData.storageId);
+      for (const part of group.children) if (part.userData.storageCutaway) part.visible = !cutaway;
     }
   }
 
@@ -705,6 +734,7 @@ export class FacilityLayer {
       );
     });
 
+    const cutawayStart = group.children.length;
     this.addBoxAtProgress(
       group,
       trace,
@@ -727,6 +757,7 @@ export class FacilityLayer {
       [0, 0, -0.05],
       31,
     );
+    for (const part of group.children.slice(cutawayStart)) part.userData.storageCutaway = true;
   }
 
   private buildFirePit(

@@ -1,3 +1,4 @@
+import { PRODUCTION_MATERIALS } from './production-material-presentation';
 import { CORE_SIMULATION_MINUTES_PER_DAY } from '../runtime/generated-core-contract';
 import { SOCIAL_EVENT_PRESENTATION_CONTRACT } from '../runtime/lifelens-contract';
 /** Presentation budgets and dimensions only; never simulation thresholds. */
@@ -70,7 +71,7 @@ export const WORLD_PRESENTATION = {
     innerRadiusRatio: 0.3, radiusSpreadRatio: 0.45, youngScale: 0.3,
     treeAccessClearanceWorldUnits: 0.9, groundAccessClearanceWorldUnits: 0.28,
     clayHeightRatio: 0.08, clayWidthMultiplier: 2.4,
-    colors: { Clay: 0x8d5f48, CopperOre: 0x8e684b, TinOre: 0x858a8c, Flint: 0x4d514f },
+    colors: { Clay: 0x8d5f48, CopperOre: 0x8e684b, TinOre: 0x858a8c, IronOre: PRODUCTION_MATERIALS.IronOre.color, Flint: 0x4d514f },
   },
   production: { targetGridTolerance: 1.5, interactionDistance: 0.65,
     gatherReachDistance: 4.1, maxEquipmentSlots: 3, loadScale: 1.15,

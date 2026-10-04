@@ -305,7 +305,8 @@ from the detail snapshot (currently every fourth refresh), while directives are
 hot runtime data: presentation may lag factual consumption/collection until the
 next detail snapshot. It never predicts an inventory transition to hide that gap.
 
-Existing resource projection/vegetation reflects Core resource quantities; existing
+Existing resource projection/vegetation reflects Core resource quantities, including
+IronOre through the existing mineral-rock projection; existing
 stored-goods piles reflect actual storage inventory; #619 construction and crop
 geometry reflects current trace facts. FirePit/Furnace additionally display small
 actual fuel/charcoal/charge/output buffer samples, only with an Operational trace
@@ -336,3 +337,10 @@ construction delivery/work, workbench crafting, fire/furnace buffers, cultivatio
 and missing/zero/unknown cases with the production GLB and rendering layers.
 Automatic tests cover Core enum parity, spatial fail-closed guards, 100/300 resident
 refresh identity, capped processing stocks, selection, rebase, reset and disposal.
+
+Storage observation cutaway hides only the solid container/canopy during a valid
+near-site Store/Retrieve interaction with the exact linked storage ID. Footings,
+posts, real stored-goods samples and resident coordinates stay intact. This is an
+Observer visibility aid, not a Core lid/open state. Missing/wrong/far/dead directives
+do not activate it; ending interaction restores both parts on the same facility
+root. It allocates no mesh, geometry, material, animation or gameplay state.

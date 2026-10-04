@@ -40,4 +40,12 @@ assert.deepEqual([...f.structures.values()].map(v=>v.group),structures);assert.e
 const owners=f.processingOwners.get(bars);assert(owners.length>0);assert.equal(f.pickTrace({intersectObjects:()=>[{object:bars,instanceId:0}]}),owners[0]);
 const moved={...terrain,centerChunkX:1};f.setCivilization({available:true,facilities:facts},moved);const matrix=new THREE.Matrix4();rocks.getMatrixAt(0,matrix);assert(matrix.elements[12]<-7);
 f.setCivilization({available:true,facilities:[]},{...terrain,humanTraces:{available:true,entries:[]}});assert.equal(rocks.count+bars.count,0);assert.equal(f.structures.size,0);assert.equal(f.processingOwners.size,0);
+const storage={...facts[0],id:'storage',kind:'PrimitiveStorage',linkedStorage:'stock'};
+const storeTerrain={...terrain,humanTraces:{entries:[{id:'facility:storage',kind:'Facility',facilityKind:'PrimitiveStorage',state:'Operational',active:true,gridX:16,gridY:16,progress01:1,requiredMaterialUnits:8,deliveredMaterialUnits:8}]}};
+f.setCivilization({available:true,facilities:[storage],storages:[{id:'stock',gridX:16,gridY:16,totalUnits:3,inventory:inventory('Wood')}]},storeTerrain);
+const site=f.structures.get('facility:storage').group,panels=site.children.filter(p=>p.userData.storageCutaway);assert.equal(panels.length,2);assert(panels.every(p=>p.visible));
+const deposit=r('store',{presentation:{...directive,phase:'Interacting',civilizationIntent:'Store',civilizationStorage:'stock'}});
+f.setResidents([deposit]);assert(panels.every(p=>!p.visible));
+for(const bad of [{...deposit,alive:false},{...deposit,hasPosition:false},{...deposit,gridX:30},{...deposit,presentation:{...deposit.presentation,civilizationStorage:'wrong'}},{...deposit,presentation:{...deposit.presentation,phase:'Moving'}}]){f.setResidents([bad]);assert(panels.every(p=>p.visible));}
+f.setResidents([deposit]);assert.equal(f.structures.get('facility:storage').group,site);f.setResidents([]);assert(panels.every(p=>p.visible));
 f.dispose();f.dispose();console.log('Facility processing pools, root continuity, selection, rebase, reset, double disposal PASS');
