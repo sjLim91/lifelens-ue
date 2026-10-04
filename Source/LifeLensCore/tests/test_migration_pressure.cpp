@@ -232,6 +232,83 @@ int main()
     CHECK(attachedPressure.pressure01<pressure.pressure01-0.12);
     CHECK(attachedPressure.resourceScarcity01>0.95);
 
+    // Ordinary exploration is settlement-relative. A resident who wandered far
+    // from an established camp without migration pressure must not use each new
+    // frontier chunk as the origin for another six-chunk expansion.
+    World anchored(606003);
+    anchored.characters.clear();
+    anchored.resourceNodes.clear();
+    anchored.storageSites.clear();
+    anchored.facilities.clear();
+    anchored.generatedNaturalChunks.clear();
+    Character anchoredResident=makeResident(1);
+    anchoredResident.needs.hunger=0.20;
+    anchoredResident.needs.thirst=0.45;
+    anchored.characters.push_back(anchoredResident);
+
+    ConstructedFacility camp;
+    camp.id=5001;
+    camp.kind=FacilityKind::SleepingPlace;
+    camp.state=FacilityState::Operational;
+    camp.active=true;
+    camp.durability=1.0;
+    camp.pos=anchor;
+    anchored.facilities.push_back(camp);
+
+    const GridPos remote{
+        anchor.x+WorldChunkSpanGridCells*20,
+        anchor.y
+    };
+    addResource(anchored,5101,MaterialKind::Water,32,{remote.x+2,remote.y});
+    addResource(anchored,5102,MaterialKind::PlantFood,32,{remote.x+3,remote.y});
+    addResource(anchored,5103,MaterialKind::Wood,24,{remote.x+4,remote.y});
+    addResource(anchored,5104,MaterialKind::Stone,20,{remote.x+5,remote.y});
+    addResource(anchored,5105,MaterialKind::Fiber,20,{remote.x+6,remote.y});
+    addResource(anchored,5106,MaterialKind::Clay,16,{remote.x+7,remote.y});
+
+    SettlementPopulation anchoredPopulation{{1,remote}};
+    const MigrationPressureObservation anchoredMigration=
+        observeMigrationPressure(
+            anchored,anchored.characters.front(),remote,&anchoredPopulation);
+    CHECK(!anchoredMigration.candidate);
+    CHECK(anchoredMigration.pressure01<MigrationLongRangeExploreThreshold);
+
+    GridPos ordinaryOrigin=remote;
+    CHECK(ordinaryResourceExplorationOrigin(
+        anchored,remote,ordinaryOrigin));
+    CHECK(ordinaryOrigin.x==anchor.x);
+    CHECK(ordinaryOrigin.y==anchor.y);
+
+    const CivilizationUtilityDecision anchoredExplore=
+        bestResourceExplorationDecisionAtPosition(
+            anchored,anchored.characters.front(),remote,&anchoredPopulation);
+    CHECK(anchoredExplore.intent==CivilizationIntent::Explore);
+
+    GridPos anchoredTarget{};
+    SanitationSiteId anchoredSanitation=0;
+    CHECK(resolveCivilizationContextTarget(
+        anchored,
+        anchored.characters.front(),
+        anchoredExplore,
+        remote,
+        anchoredTarget,
+        anchoredSanitation,
+        &anchoredPopulation));
+    CHECK(anchoredSanitation==0);
+
+    const ChunkCoord anchorChunk=chunkCoordForGrid(anchor);
+    const ChunkCoord remoteChunk=chunkCoordForGrid(remote);
+    const ChunkCoord anchoredTargetChunk=chunkCoordForGrid(anchoredTarget);
+    const int distanceFromCamp=std::max(
+        std::abs(anchoredTargetChunk.x-anchorChunk.x),
+        std::abs(anchoredTargetChunk.y-anchorChunk.y));
+    const int distanceFromRemote=std::max(
+        std::abs(anchoredTargetChunk.x-remoteChunk.x),
+        std::abs(anchoredTargetChunk.y-remoteChunk.y));
+    CHECK(distanceFromCamp>=1);
+    CHECK(distanceFromCamp<=ResourceExplorationMaxRadiusChunks);
+    CHECK(distanceFromRemote>ResourceExplorationMaxRadiusChunks);
+
     std::cout
         << "C6-A scarcity -> long-range exploration -> migration pressure passed\n";
     return 0;
