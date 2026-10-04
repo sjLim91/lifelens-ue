@@ -69,7 +69,6 @@ bool validateSnapshot(const SimulationStateSnapshot& snapshot,std::string* error
     }
 
     std::unordered_set<SanitationSiteId> sanitationSiteIds;
-    int activeSanitationSites=0;
     for(const auto& site:snapshot.world.primitiveSanitationSites){
         if(!validPrimitiveSanitationSite(site))
             return fail("snapshot contains invalid primitive sanitation site");
@@ -83,10 +82,7 @@ bool validateSnapshot(const SimulationStateSnapshot& snapshot,std::string* error
             return fail("primitive sanitation site improver is missing");
         if(site.improvedMinute>snapshot.world.minute)
             return fail("primitive sanitation site improvement minute is in the future");
-        if(site.active) ++activeSanitationSites;
     }
-    if(activeSanitationSites>1)
-        return fail("snapshot contains multiple active primitive sanitation sites");
 
     for(const auto& item:snapshot.runtime){
         if(characterIds.count(item.first)==0) return fail("runtime references missing character");
