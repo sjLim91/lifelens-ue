@@ -26,6 +26,10 @@ enum class CognitiveTriggerKind {
     Reflection
 };
 
+inline constexpr std::size_t DefaultCognitiveMemoryContextLimit=8;
+inline constexpr std::size_t DefaultCognitiveBeliefContextLimit=8;
+inline constexpr std::size_t DefaultCognitiveRelationshipContextLimit=8;
+
 enum class CognitiveIntentKind {
     None,
     ImproveFoodSecurity,
@@ -80,6 +84,26 @@ inline const char* cognitiveIntentName(CognitiveIntentKind intent)
         case CognitiveIntentKind::None:
         default: return "None";
     }
+}
+
+inline std::vector<CognitiveIntentKind> cognitiveStrategicIntentCatalog()
+{
+    return {
+        CognitiveIntentKind::ImproveFoodSecurity,
+        CognitiveIntentKind::ImproveWaterSecurity,
+        CognitiveIntentKind::ImproveShelter,
+        CognitiveIntentKind::ImproveSanitation,
+        CognitiveIntentKind::AcquireMaterials,
+        CognitiveIntentKind::CraftUsefulTools,
+        CognitiveIntentKind::ExpandCultivation,
+        CognitiveIntentKind::ExploreOpportunity,
+        CognitiveIntentKind::CooperateWithResident,
+        CognitiveIntentKind::ResolveConflict,
+        CognitiveIntentKind::TeachKnowledge,
+        CognitiveIntentKind::TradeWithResident,
+        CognitiveIntentKind::CareForDependent,
+        CognitiveIntentKind::MigrateHousehold
+    };
 }
 
 inline bool cognitiveIntentTargetsResident(CognitiveIntentKind intent)
