@@ -40,3 +40,17 @@
 - #540 위생 후보 실험 wholesale merge
 - 결과가 마음에 안 든다는 이유로 seed별 예외 하드코딩
 - 브라우저에서 Core 결과를 보정
+
+## R7 실행 메모 — 2026-10-04
+
+- 기준: #620 head `f74f7e31f9d03edb00d36f921bc13b89458494fc` (main `9af1872212601e131cdac00a6321847ab36a1ec8` + settlement service-footprint 수정).
+- 목적: R6에서 관측한 `residentsAssigned=0` 장기 구간이 centroid-anchor 오분류였는지 동일 seed 100/365/1000일 A/B로 검증.
+- 핵심 비교:
+  - seed 874213954 day365/day1000 `residentAssignedSettlementCount`
+  - seed 4242001 day365/day1000 `residentAssignedSettlementCount`
+  - settlement/active settlement 수와 facility 수가 R6 trajectory에서 불필요하게 바뀌지 않는지
+  - trade departure -> exchange -> return completion이 실제로 살아나는지
+  - abandoned/declining settlement decay가 elongated footprint 전체에 정상 적용되는지
+  - family/pregnancy/death trajectory에 비의도적 변화가 없는지
+  - elapsed/RSS/snapshot 비용 회귀가 없는지
+- 이 브랜치는 A/B audit trigger 전용이며 main merge 대상이 아니다.
