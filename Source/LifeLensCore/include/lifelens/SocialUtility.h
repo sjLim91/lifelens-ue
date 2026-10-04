@@ -534,7 +534,7 @@ inline CivilizationUtilityDecision chooseDispositionAwareCivilizationDecisionAtP
         applyTechnologyAdoptionUtility(
             world,self,
             bestCraftDecisionAtPosition(
-                world,self,authoritativePosition,population));
+                world,self,authoritativePosition,population,households));
     const bool settlementAuthorityActive=
         craft.intent==CivilizationIntent::Craft
         && craft.facilityAction!=FacilityBuildAction::None;
