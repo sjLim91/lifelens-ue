@@ -167,7 +167,7 @@ current settlement/population correctness gates.
 
 - **COG-0** — ✅ #628 typed Core request/proposal/fail-closed validation contract.
 - **COG-1** — ✅ #629 free-local Web adapter + deterministic fake reasoner + bounded scheduler/timeout/stale handling.
-- **COG-2** — 🟡 #630 Core-owned bounded read-only Personality/Emotion/Memory/Belief/Relationship bridge; latest-main closeout pending.
+- **COG-2** — 🟡 #634 Core-owned bounded read-only Personality/Emotion/Memory/Belief/Relationship bridge; latest-main closeout pending.
 - **COG-3** — accepted cognition event persistence + deterministic replay. **Must precede behavior influence.**
 - **COG-4** — validated strategic intent as bias/input to existing Utility/Civilization decisions.
 - **COG-5** — relevant memory retrieval / reflection quality and local-model evaluation.
@@ -738,7 +738,7 @@ Remaining canonical C6 closeout:
 
 Current fixed order:
 
-`#627 -> #630 -> #626 + split R10 -> trade return persistence -> full R10 -> health causal fix(if needed) -> C6 close -> C7`
+`#627 -> #634 -> #626 + split R10 -> trade return persistence -> full R10 -> health causal fix(if needed) -> C6 close -> C7`
 
 C7 feature expansion remains blocked until this closeout completes.
 
