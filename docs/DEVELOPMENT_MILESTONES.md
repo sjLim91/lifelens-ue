@@ -10,6 +10,7 @@
 - 지구/인간 확장 구조: `docs/EARTH_AND_HUMAN_FOUNDATION.md`
 - 시간/배속/환경 계약: `docs/TIME_AND_DYNAMIC_ENVIRONMENT.md`
 - 현재 실행 상태: `tasks/WORK_STATE.md`
+- 현재 고정 실행순서: `docs/CURRENT_EXECUTION_ORDER_2026-10-04.md`
 - ownership / locks / IR: `tasks/TEAM_BOARD.md`
 - 2026-09-17 통합감사: `docs/INTEGRATED_AUDIT_2026-09-17.md` — historical point-in-time evidence로 보존
 
@@ -164,13 +165,13 @@ making an LLM the simulation authority. COG foundation work may proceed alongsid
 C6/C7 when files/authority do not overlap, but runtime activation must not bypass the
 current settlement/population correctness gates.
 
-- **COG-0** — typed Core request/proposal/fail-closed validation contract.
-- **COG-1** — Web/host adapter + deterministic fake reasoner + timeout/stale response handling.
-- **COG-2** — free local inference prototype (WebGPU or local companion).
-- **COG-3** — bounded Memory/Belief/Relationship retrieval and reflection.
+- **COG-0** — ✅ #628 typed Core request/proposal/fail-closed validation contract.
+- **COG-1** — ✅ #629 free-local Web adapter + deterministic fake reasoner + bounded scheduler/timeout/stale handling.
+- **COG-2** — 🟡 #630 Core-owned bounded read-only Personality/Emotion/Memory/Belief/Relationship bridge; latest-main closeout pending.
+- **COG-3** — accepted cognition event persistence + deterministic replay. **Must precede behavior influence.**
 - **COG-4** — validated strategic intent as bias/input to existing Utility/Civilization decisions.
-- **COG-5** — population cognition scheduler, batching and cognition LOD.
-- **COG-6** — accepted cognition event persistence and deterministic replay.
+- **COG-5** — relevant memory retrieval / reflection quality and local-model evaluation.
+- **COG-6** — population cognition scheduler, batching and cognition LOD at 100/300/1000 residents.
 
 Hard rules:
 
@@ -694,7 +695,10 @@ No one real-world political/economic system is a mandatory endpoint.
 
 ## Milestone C6 — Migration / Multiple Settlements / Trade Networks
 
-Status: 🟡 **Foundation integrated (#584~#586), canonical closeout pending long-run validation and remaining group-level scope.**
+Status: 🟡 **Feature foundation substantially integrated; canonical closeout now blocked by a small set of structural long-run issues.**
+
+Canonical current order:
+`docs/CURRENT_EXECUTION_ORDER_2026-10-04.md`
 
 Integrated foundation:
 
@@ -704,33 +708,50 @@ Integrated foundation:
 - ✅ distant infrastructure can form independent settlement-local storage/fire/furnace authority.
 - ✅ facilities + storage + actual resident positions derive multiple settlement clusters.
 - ✅ reciprocal inter-settlement trade is based on complementary real surplus/deficit.
-- ✅ long-range trade uses actual resident travel, destination exchange, and physical return.
+- ✅ long-range trade uses actual resident travel, destination exchange and a Core-authored return phase.
 - ✅ repeated inter-settlement exchange facts derive persistent trade-route observation.
-- ✅ Web Observer exposes migration pressure, settlements and trade routes.
+- ✅ household/group migration + settlement decline foundation (#592).
+- ✅ settlement-local knowledge/capability divergence (#594).
+- ✅ settlement resource/production specialization (#595).
+- ✅ cooperation/strain/hostility relation foundation between settlement groups (#596).
+- ✅ actual infrastructure footprint attribution and ghost/daisy-chain growth suppression (#620/#622/#623).
+- ✅ settlement-local sanitation creation/improvement (#625).
+- ✅ Web Observer exposes migration pressure, settlements and trade routes; #631 adds in-world settlement/trade/frontier observation without fabricating outcomes.
+
+R9 long-run findings after #623:
+
+- seed 4242001 day365: living 4, marriage 1, pregnancy 1, settlements 1, facilities 21, chunks 4.
+- seed 4242001 day1000: facilities 22, chunks 4, about 1m35s wall clock.
+- this is a major improvement over R8b facilities 194 / chunks 281 / about 21m42s.
+- seed 874213954 day100: living 4 but settlements 2 / migrationCandidates 0.
+- seed 874213954 day365: tradeDepartures 8 / tradeExchanges 1 / tradeReturns 0.
+- both baseline seeds still reach living 0 by day1000, with illness the dominant death cause.
 
 Remaining canonical C6 closeout:
 
-- ⬜ household/group migration instead of only resident-level pressure/exploration.
-- ⬜ settlement abandonment / decline / reoccupation.
-- ⬜ stronger settlement-local knowledge/capability divergence.
-- ⬜ settlement resource/production specialization beyond exchange opportunity.
-- ⬜ cooperation/conflict foundations between settlement groups.
-- ⬜ weather/resource pressure validation across multiple long-run seeds.
-- ⬜ prove that early founders do not fragment into multiple weak settlements before the first community is viable.
+- ⬜ #627 — snapshot validation must accept legitimate multiple settlement-local active sanitation sites.
+- ⬜ #626 — prevent accidental early founder split when migration pressure/household commitment does not justify a frontier settlement.
+- ⬜ preserve inter-settlement **return obligation** across critical survival interruption; survival remains dominant, then return resumes.
+- ⬜ R10 same-seed 100/365/1000 validation after the above.
+- ⬜ if R10 still collapses, causally diagnose contamination / illness / dependent survival before changing mortality numbers.
+- ⬜ formally close C6 only after settlement/trade/snapshot/performance gates are green.
 
-Current gate:
-- `docs/SIMULATION_BALANCE_CONTRACT_V2.md`
-- `tasks/CURRENT_MAIN_LONGRUN_AUDIT.md`
-- 100 / 365 / 1000-day two-seed current-main audit before C7 feature expansion.
+Current fixed order:
+
+`#627 -> #630 -> #626 + split R10 -> trade return persistence -> full R10 -> health causal fix(if needed) -> C6 close -> C7`
+
+C7 feature expansion remains blocked until this closeout completes.
 
 ---
 
 ## Milestone C7 — Population / Settlement Maturation
 
-Status: ⏸ **Next after current-main long-run gate and C6 closeout classification.**
+Status: ⏸ **BLOCKED until the 2026-10-04 C6 closeout order and R10 gate are complete.**
 
 Goal:
 turn the initial four-person survival camp into a visibly lived, multi-generation settlement before large historical content expansion.
+
+Do not begin C7 feature expansion while #627/#626/trade-return/R10 remain open.
 
 Target causal chain:
 

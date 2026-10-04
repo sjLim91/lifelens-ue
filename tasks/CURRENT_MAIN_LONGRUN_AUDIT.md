@@ -1,42 +1,139 @@
-# Current-Main Long-Run Audit — 2026-10-02
+# Current-Main Long-Run Audit — 2026-10-04 Reconciled
 
-기준 main: `b277e091bc39d071ea30ba0d57281251da811dba`  
-브랜치: `audit/current-main-longrun-20261002`
+초기 감사 기준: `b277e091bc39d071ea30ba0d57281251da811dba`  
+현재 제품 기준: `fde409c8d148296b9e30b14944c1d4a6676fd387` (#631)
 
-## 이번 작업 범위
+이 체크리스트는 2026-10-02의 최초 감사 상태를 2026-10-04 R9 결과와 현재 C6 closeout 상태에 맞춰 갱신한다.
 
-- [x] stale #539/#540를 그대로 병합하지 않기로 확정
-- [x] #540에서 계측 아이디어만 선별
-- [x] 최신 PresentationActionKind / Health / Family / C6 계약에 맞춘 새 `ll_balance_audit` 작성
-- [x] 100/365/1000일을 한 번의 1000일 실행에서 checkpoint로 기록
-- [x] 2개 기준 seed 병렬 workflow 추가
-- [x] snapshot encoded size / runner RSS / elapsed time 기록
-- [x] C6 settlement / migration / trade 지표 추가
-- [x] 가족 / 인구 / 건강 지표 추가
-- [ ] audit harness compile
-- [ ] seed 874213954 — 100/365/1000일 완료
-- [ ] seed 4242001 — 100/365/1000일 완료
-- [ ] 두 seed 결과 비교
-- [ ] 구조적 starvation / 장기 고착 분류
-- [ ] 수정이 필요한 경우 causal cluster별 별도 PR 계획
-- [ ] C6 canonical closeout 여부 확정
-- [ ] C7 진입 여부 확정
+## 완료된 감사 기반
 
-## 분석 우선순위
+- [x] stale #539/#540 runtime patch wholesale merge 금지
+- [x] current contracts에 맞춘 `ll_balance_audit`
+- [x] 100 / 365 / 1000-day checkpoint
+- [x] seed 874213954 / 4242001
+- [x] snapshot bytes / RSS / elapsed
+- [x] settlement / migration / trade metrics
+- [x] family / population / health metrics
+- [x] R9 two-seed 1000-day run 완료
+- [x] #623 facility-chain runaway 개선 효과 확인
+- [x] day365 가족/임신이 실제로 진행 가능한 seed 확인
+- [x] 실제 inter-settlement exchange 증거 확인
+- [x] 현재 남은 causal blocker 분류
 
-1. crash / deterministic / snapshot 문제
-2. Hunger / Thirst / Sleep / Toilet / Hygiene 고착
-3. Social / Family starvation
-4. Cultivation / Civilization starvation
-5. 너무 이른 migration 또는 settlement fragmentation
-6. trade mission 고착 / 실제 교환 부재
-7. health feedback 이상
-8. population/chunk/snapshot 성능 증가율
+## R9 핵심 결과
+
+### seed 4242001
+
+day 100:
+- living 4
+- settlements 1
+- facilities 18
+- chunks 2
+
+day 365:
+- living 4
+- household 1
+- married 1
+- pregnancy 1
+- settlements 1
+- facilities 21
+- chunks 4
+
+day 1000:
+- total 5
+- living 0
+- facilities 22
+- chunks 4
+- illness deaths 4
+- deprivation death 1
+- wall clock 약 1분 35초
+
+### seed 874213954
+
+day 100:
+- living 4
+- settlements 2
+- active settlements 2
+- migrationCandidates 0
+- facilities 68
+- chunks 93
+
+day 365:
+- living 4
+- married 1
+- pregnancy 1
+- settlements 2
+- trade departures 8
+- trade exchanges 1
+- trade returns 0
+
+day 1000:
+- total 5
+- living 0
+- facilities 90
+- chunks 115
+- illness deaths 5
+- wall clock 약 16분 26초
+
+## 현재 판정
+
+### 해결된 축
+
+- [x] 100일 조기 대량사망은 baseline보다 크게 완화
+- [x] 성인 self-care가 가족/문명 루프를 365일까지 완전히 starvation시키지는 않음
+- [x] facility daisy-chain runaway는 크게 완화
+- [x] 가족 -> 결혼 -> 임신 -> 출산 가능성 확인
+- [x] 복수 정착지와 실제 exchange 가능성 확인
+
+### 미해결 축
+
+- [ ] #627: 복수 active sanitation site가 snapshot roundtrip 가능한지 latest-main에서 확정
+- [ ] #626: migration candidate 0인데 초기 2정착지가 생기는 premature split 제거
+- [ ] trade exchange 후 physical return completion 보장
+- [ ] 1000일 illness-dominant population collapse 원인 분류/수정
+- [ ] infant/dependent survival의 장기 수지 재검증
+- [ ] seed 874의 chunk/runtime 증가가 #626 이후 충분히 안정되는지 확인
+- [ ] R10 two-seed 100/365/1000 완료
+- [ ] C6 canonical closeout
+- [ ] C7 진입 승인
+
+## R10 실행 전 코드 순서
+
+1. #627 snapshot contract
+2. #630 Cognitive read-only bridge는 C6 behavior를 바꾸지 않으므로 병렬 closeout 가능
+3. #626 premature split
+4. trade return mission persistence
+5. R10
+
+## R10 분석 우선순위
+
+1. crash / determinism / snapshot
+2. population survival
+3. physical self-care completion
+4. family / pregnancy / birth / dependent care
+5. settlement count / active settlement / assigned residents
+6. migration candidate -> actual household relocation
+7. trade departure / exchange / return
+8. facility / chunk / runtime growth
+9. contamination / illness / recovery / mortality
+
+## C7 진입 조건
+
+다음이 모두 충족되기 전 C7 기능 확장을 시작하지 않는다.
+
+- 365일 생존/가족 루프가 구조적으로 유지
+- migration pressure 없는 accidental founder split 없음
+- household migration은 실제 이동으로 유지
+- inter-settlement trade는 exchange 후 physical return까지 완료
+- 1000일 crash/timeout 없음
+- facility/chunk runaway 없음
+- illness/dependent-care 문제는 causal explanation이 가능하고 치명적 collapse가 구조적으로 완화
+- save/load가 복수 settlement/sanitation 상태를 정상 보존
 
 ## 금지
 
-- 감사 PR에 임의의 밸런스 숫자 수정 섞기
-- #539 runtime patch wholesale merge
-- #540 위생 후보 실험 wholesale merge
-- 결과가 마음에 안 든다는 이유로 seed별 예외 하드코딩
-- 브라우저에서 Core 결과를 보정
+- 감사 결과를 맞추기 위한 seed별 예외
+- mortality 숫자부터 임의 하향
+- Web-side simulation correction
+- migration/settlement를 UI에서 생성
+- causality를 건너뛰는 fast-forward 보정
