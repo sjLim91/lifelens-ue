@@ -1,3 +1,15 @@
+## 2026-10-04 CURRENT — R10 current-main reconciliation
+
+- main: `49aaf6c2be943aeeb7b4552d7e2a787af00005a0` (#634).
+- #633 sanitation snapshot ✅, #634 COG-2 ✅.
+- #626/#635 premature founder split fix는 **merge 없이 close**. current main same-seed에서 원래 day100 active second-settlement blocker가 재현되지 않음.
+- current main seed874: day100 settlements1/active1; day1000 living3, birth1, married1, pregnancy1.
+- current main seed424 365-day control: day100 settlements1/active1/chunks28; day365 settlements1/active1/chunks99.
+- #635 candidate는 seed424 day365 chunks141, seed874 day1000 living1로 current main보다 악화되어 폐기.
+- 현재 P0: **inter-settlement trade mission completion/persistence**. current main seed874 day1000 departures8 / exchanges0 / returns0.
+- 그 다음: exploration/chunk growth diagnosis -> current-main health/family closeout -> C6 close -> C7.
+- canonical: `docs/CURRENT_EXECUTION_ORDER_2026-10-04.md`.
+
 ## 2026-10-04 CANONICAL CURRENT — C6 CLOSEOUT + COGNITIVE AGENT FOUNDATION
 
 > 실제 GitHub `main` / PR / exact-head Actions가 최우선 truth다.
