@@ -129,7 +129,10 @@ public:
         CharacterId id,
         CognitiveTriggerKind trigger) const {
         const Character* character=findObservedCharacter(world_,id);
-        if(character==nullptr || !character->alive) return CognitiveRequest{};
+        if(character==nullptr || !character->alive
+           || requiresDirectCare(character->lifeStage)){
+            return CognitiveRequest{};
+        }
         return buildCognitiveRequest(
             *character,
             relationships_,
