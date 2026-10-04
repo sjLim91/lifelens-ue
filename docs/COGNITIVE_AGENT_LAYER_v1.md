@@ -242,7 +242,7 @@ decision input after replay/persistence boundaries are ready.
 - Web이 cognition truth를 재구성하지 않음
 - local model proposal은 아직 Simulation state를 변경하지 않음
 
-#634 exact-head CI는 green이지만 최신 main 동기화/재검증 후 merge한다.
+#634는 latest main@#633에 재적용되었고 exact-head 재검증 후 merge한다.
 
 ### COG-3 — accepted cognition event persistence / deterministic replay
 
