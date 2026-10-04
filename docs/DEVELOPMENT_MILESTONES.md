@@ -729,7 +729,7 @@ R9 long-run findings after #623:
 
 Remaining canonical C6 closeout:
 
-- ⬜ #627 — snapshot validation must accept legitimate multiple settlement-local active sanitation sites.
+- ✅ #633 — snapshot validation accepts legitimate multiple settlement-local active sanitation sites with roundtrip/deterministic regression.
 - ⬜ #626 — prevent accidental early founder split when migration pressure/household commitment does not justify a frontier settlement.
 - ⬜ preserve inter-settlement **return obligation** across critical survival interruption; survival remains dominant, then return resumes.
 - ⬜ R10 same-seed 100/365/1000 validation after the above.
@@ -738,7 +738,7 @@ Remaining canonical C6 closeout:
 
 Current fixed order:
 
-`#627 -> #634 -> #626 + split R10 -> trade return persistence -> full R10 -> health causal fix(if needed) -> C6 close -> C7`
+`#634 -> #626 + split R10 -> trade return persistence -> full R10 -> health causal fix(if needed) -> C6 close -> C7`
 
 C7 feature expansion remains blocked until this closeout completes.
 
