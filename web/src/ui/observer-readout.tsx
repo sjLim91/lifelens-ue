@@ -240,7 +240,7 @@ export function SelectedResidentReadout({
   const migration=resident.migration;
   const showMigrationPressure=
     resident.alive === true && resident.hasPosition === true && migration !== undefined;
-    const migrationPercent = (value: number | undefined) => typeof value === 'number' && Number.isFinite(value)
+  const migrationPercent = (value: number | undefined) => typeof value === 'number' && Number.isFinite(value)
     ? formatPercent(value) : '—';
   const activityTarget = !resident.presentation?.active && resident.activityTargetName
     ? ` → ${resident.activityTargetName}`

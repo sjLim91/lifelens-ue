@@ -270,8 +270,7 @@ export function worldPresentationChecks({ test, source, flatWindow }) {
       assert.ok(geometry.drawRange.count > baseline);
       layer.select('4'); assert.equal(layer.group.children.length, 3);
       assert.equal(mesh.geometry, geometry); assert.equal(mesh.material, material);
-      layer.select(null); assert.equal(mesh.visible, true);
-      const baseline = geometry.drawRange.count;
+      layer.select(null); assert.equal(mesh.visible, true); assert.equal(geometry.drawRange.count, baseline);
       layer.select('2'); layer.setTargets({ available: false }, window); assert.equal(mesh.visible, false);
     } finally { layer.dispose(); }
   });
