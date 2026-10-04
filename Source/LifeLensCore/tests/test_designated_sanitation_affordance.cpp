@@ -98,7 +98,7 @@ int main()
     remoteBuilder.id=22;
     remoteBuilder.civilization.character=remoteBuilder.id;
     const GridPos firstReference{0,0};
-    const GridPos remoteReference{
+    const GridPos remoteSettlementReference{
         SettlementServiceRadiusGrid*4,
         SettlementServiceRadiusGrid*2
     };
@@ -119,13 +119,13 @@ int main()
         multiSettlementWorld.seed,remoteBuilder,
         multiSettlementWorld.environmentalResidues,
         multiSettlementWorld.primitiveSanitationSites,
-        multiSettlementWorld.minute,remoteReference,
+        multiSettlementWorld.minute,remoteSettlementReference,
         SettlementServiceRadiusGrid));
     const auto remoteLocalSite=establishDesignatedSanitationArea(
         multiSettlementWorld.seed,remoteBuilder,
         multiSettlementWorld.environmentalResidues,
         multiSettlementWorld.primitiveSanitationSites,
-        multiSettlementWorld.minute,remoteReference,
+        multiSettlementWorld.minute,remoteSettlementReference,
         SettlementServiceRadiusGrid);
     assert(remoteLocalSite.established);
     assert(remoteLocalSite.siteId!=firstLocalSite.siteId);
@@ -137,7 +137,7 @@ int main()
         multiSettlementWorld.seed,remoteBuilder,
         multiSettlementWorld.environmentalResidues,
         multiSettlementWorld.primitiveSanitationSites,
-        multiSettlementWorld.minute,remoteReference));
+        multiSettlementWorld.minute,remoteSettlementReference));
 
     Character unskilled;
     unskilled.id=12;
