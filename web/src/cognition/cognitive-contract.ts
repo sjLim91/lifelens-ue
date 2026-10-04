@@ -30,6 +30,9 @@ export const COGNITIVE_INTENTS = [
 
 export type CognitiveIntent = (typeof COGNITIVE_INTENTS)[number];
 
+
+export const MAX_COGNITIVE_CONTEXT_ENTRIES = 32 as const;
+
 export interface CognitiveMemoryDto {
   who: string;
   minute: number;
@@ -96,6 +99,102 @@ function record(value: unknown): Record<string, unknown> {
     throw new Error('cognitive proposal must be an object');
   }
   return value as Record<string, unknown>;
+}
+
+function finiteNumericRecord(
+  value: unknown,
+  label: string,
+): Record<string, number> {
+  const candidate = record(value);
+  const entries = Object.entries(candidate);
+  if (entries.length > MAX_COGNITIVE_CONTEXT_ENTRIES) {
+    throw new Error(`${label} is too large`);
+  }
+  for (const [, entry] of entries) {
+    if (typeof entry !== 'number' || !Number.isFinite(entry)) {
+      throw new Error(`${label} contains a non-finite value`);
+    }
+  }
+  return candidate as Record<string, number>;
+}
+
+export function parseCognitiveRequest(
+  value: unknown,
+): CognitiveRequestDto {
+  const candidate = record(value);
+  if (typeof candidate.actor !== 'string' || candidate.actor.length === 0) {
+    throw new Error('cognitive request actor is invalid');
+  }
+  if (
+    typeof candidate.minute !== 'number'
+    || !Number.isFinite(candidate.minute)
+    || candidate.minute < 0
+  ) {
+    throw new Error('cognitive request minute is invalid');
+  }
+  if (
+    typeof candidate.trigger !== 'string'
+    || !COGNITIVE_TRIGGERS.includes(candidate.trigger as CognitiveTrigger)
+  ) {
+    throw new Error('cognitive request trigger is invalid');
+  }
+
+  const needs = finiteNumericRecord(candidate.needs, 'cognitive request needs');
+  const personality = finiteNumericRecord(
+    candidate.personality,
+    'cognitive request personality',
+  );
+  const emotion = finiteNumericRecord(
+    candidate.emotion,
+    'cognitive request emotion',
+  );
+
+  const boundedArray = (entry: unknown, label: string): unknown[] => {
+    if (!Array.isArray(entry) || entry.length > MAX_COGNITIVE_CONTEXT_ENTRIES) {
+      throw new Error(`${label} is invalid or too large`);
+    }
+    for (const item of entry) record(item);
+    return entry;
+  };
+
+  const memories = boundedArray(
+    candidate.memories,
+    'cognitive request memories',
+  ) as unknown as CognitiveMemoryDto[];
+  const beliefs = boundedArray(
+    candidate.beliefs,
+    'cognitive request beliefs',
+  ) as unknown as CognitiveBeliefDto[];
+  const relationships = boundedArray(
+    candidate.relationships,
+    'cognitive request relationships',
+  ) as unknown as CognitiveRelationshipDto[];
+
+  if (
+    !Array.isArray(candidate.allowedIntents)
+    || candidate.allowedIntents.length > COGNITIVE_INTENTS.length
+    || candidate.allowedIntents.some(
+      (intent) => (
+        typeof intent !== 'string'
+        || !COGNITIVE_INTENTS.includes(intent as CognitiveIntent)
+      ),
+    )
+  ) {
+    throw new Error('cognitive request allowed intents are invalid');
+  }
+
+  return {
+    actor: candidate.actor,
+    minute: candidate.minute,
+    trigger: candidate.trigger as CognitiveTrigger,
+    needs,
+    personality,
+    emotion,
+    memories,
+    beliefs,
+    relationships,
+    allowedIntents: candidate.allowedIntents as CognitiveIntent[],
+  };
 }
 
 export function cognitiveIntentTargetsResident(
