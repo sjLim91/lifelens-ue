@@ -306,8 +306,38 @@ int main()
         std::abs(anchoredTargetChunk.x-remoteChunk.x),
         std::abs(anchoredTargetChunk.y-remoteChunk.y));
     CHECK(distanceFromCamp>=1);
-    CHECK(distanceFromCamp<=ResourceExplorationMaxRadiusChunks);
+    CHECK(distanceFromCamp<=ResourceExplorationLocalRadiusChunks);
     CHECK(distanceFromRemote>ResourceExplorationMaxRadiusChunks);
+
+    // Once every chunk in the Core-defined local supply radius is known,
+    // ordinary exploration is exhausted. It must not continue into radius 4-6,
+    // because resources there are deliberately non-local and belong to
+    // migration/critical long-range reasoning.
+    World localEnvelope(606004);
+    localEnvelope.characters.clear();
+    localEnvelope.resourceNodes.clear();
+    localEnvelope.generatedNaturalChunks.clear();
+    localEnvelope.characters.push_back(makeResident(1));
+    const ChunkCoord localCenter=chunkCoordForGrid(anchor);
+    for(int dx=-ResourceExplorationLocalRadiusChunks;
+        dx<=ResourceExplorationLocalRadiusChunks;
+        ++dx){
+        for(int dy=-ResourceExplorationLocalRadiusChunks;
+            dy<=ResourceExplorationLocalRadiusChunks;
+            ++dy){
+            localEnvelope.materializeNaturalChunk({
+                localCenter.x+dx,
+                localCenter.y+dy
+            });
+        }
+    }
+    const ResourceExplorationOpportunity exhaustedOrdinary=
+        chooseResourceExplorationOpportunity(
+            localEnvelope,
+            localEnvelope.characters.front().id,
+            MaterialKind::Stone,
+            anchor);
+    CHECK(!exhaustedOrdinary.available);
 
     std::cout
         << "C6-A scarcity -> long-range exploration -> migration pressure passed\n";
