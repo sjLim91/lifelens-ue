@@ -2400,7 +2400,8 @@ inline CivilizationUtilityDecision bestCraftDecisionAtPosition(
         TechniqueId::DesignatedSanitationArea,KnowledgeLevel::Reproducible)
        && canEstablishDesignatedSanitationArea(
            world.seed,self,world.environmentalResidues,
-           world.primitiveSanitationSites,world.minute,sanitationReference)){
+           world.primitiveSanitationSites,world.minute,sanitationReference,
+           SettlementServiceRadiusGrid)){
         CivilizationUtilityDecision sanitation;
         sanitation.intent=CivilizationIntent::Craft;
         sanitation.technique=TechniqueId::DesignatedSanitationArea;
@@ -2417,9 +2418,12 @@ inline CivilizationUtilityDecision bestCraftDecisionAtPosition(
         considerCivilizationDecision(best,sanitation);
     }
 
-    if(canWorkOnDugSanitationPit(self,world.primitiveSanitationSites)){
-        const PrimitiveSanitationSite* site=activePrimitiveSanitationSite(
-            world.primitiveSanitationSites);
+    if(canWorkOnDugSanitationPit(
+        self,world.primitiveSanitationSites,
+        sanitationReference,SettlementServiceRadiusGrid)){
+        const PrimitiveSanitationSite* site=activePrimitiveSanitationSiteNear(
+            world.primitiveSanitationSites,
+            sanitationReference,SettlementServiceRadiusGrid);
         if(site!=nullptr && site->kind==PrimitiveSanitationSiteKind::DesignatedArea){
             CivilizationUtilityDecision pit;
             pit.intent=CivilizationIntent::Craft;
@@ -3686,7 +3690,7 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
             if(decision.technique==TechniqueId::DesignatedSanitationArea){
                 const PrimitiveSanitationSiteCreationResult site=establishDesignatedSanitationArea(
                     world.seed,self,world.environmentalResidues,world.primitiveSanitationSites,
-                    world.minute,sanitationReference);
+                    world.minute,sanitationReference,SettlementServiceRadiusGrid);
                 if(!site.established) return result;
                 result.executed=true;
                 result.success=true;
@@ -3703,7 +3707,8 @@ inline CivilizationExecutionResult executeCivilizationDecisionAtPosition(
             }
             if(decision.technique==TechniqueId::DugSanitationPit){
                 const DugSanitationPitWorkResult work=workOnDugSanitationPit(
-                    self,world.environmentalResidues,world.primitiveSanitationSites,world.minute);
+                    self,world.environmentalResidues,world.primitiveSanitationSites,
+                    world.minute,sanitationReference,SettlementServiceRadiusGrid);
                 if(!work.worked) return result;
                 result.executed=true;
                 result.success=true;
