@@ -745,8 +745,8 @@ inline int localNaturalResourceUnits(
     MaterialKind material,
     GridPos authoritativePosition)
 {
-    constexpr int LocalRadiusChunks=3;
-    const int radius=WorldChunkSpanGridCells*LocalRadiusChunks;
+    const int radius=
+        WorldChunkSpanGridCells*ResourceExplorationLocalRadiusChunks;
     int total=0;
     for(const auto& node:world.resourceNodes){
         if(node.material!=material || node.quantity<=0) continue;
