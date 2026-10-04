@@ -1,3 +1,18 @@
+## R10-B exploration-anchor trigger — 2026-10-04
+
+- source product head: `95f6d2437859f27679870a52e113debf9f780667` (#635 candidate)
+- audit branch: `fix/p0-c6-r10-exploration-anchor-20261004`
+- reason: R10-A fixed seed874 premature split but regressed seed424 day365 chunks from 4 to 220.
+- change under test:
+  - ordinary non-migration Explore is anchored to nearest operational facility/storage.
+  - migration-pressure long-range Explore remains current-position based.
+  - critical survival long-range resolver remains unchanged.
+- acceptance focus:
+  - seed874 day100 settlements remains 1 while migrationCandidates=0.
+  - seed424 day365 chunks no longer shows runaway expansion; compare directly with R9=4 and R10-A=220.
+  - facilities/runtime must remain bounded enough to finish both 1000-day jobs.
+- this audit branch is evidence-only and must not be merged.
+
 # Current-Main Long-Run Audit — 2026-10-04 Reconciled
 
 초기 감사 기준: `b277e091bc39d071ea30ba0d57281251da811dba`  
