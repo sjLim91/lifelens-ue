@@ -1,7 +1,10 @@
-# Current-Main Long-Run Audit — 2026-10-02
+# Current-Main Long-Run Audit — R9 2026-10-04
 
-기준 main: `b277e091bc39d071ea30ba0d57281251da811dba`  
-브랜치: `audit/current-main-longrun-20261002`
+검증 head: `a209ca013561ad1a5ebf8c9285ebe9aa05e0fd6b` (#623 후보)  
+기준 main: `7560ea00ebd530d071d14134971b6b8b6030578a`  
+브랜치: `fix/p0-c6-longrun-r9-20261004`
+
+목적: compact lived-core planning gate가 R8b의 facility daisy-chain, generated chunk 증가, runtime 회귀를 실제 장기런에서 줄이는지 동일 seed로 검증.
 
 ## 이번 작업 범위
 
