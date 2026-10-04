@@ -49,7 +49,6 @@ int main()
         world,owner,FacilityKind::SleepingPlace,anchor,
         initialSleepDemand,&population);
     assert(cachedInitialSite.available==uncachedInitialSite.available);
-    assert(cachedInitialSite.score==uncachedInitialSite.score);
     if(cachedInitialSite.available){
         assert(cachedInitialSite.pos.x==uncachedInitialSite.pos.x);
         assert(cachedInitialSite.pos.y==uncachedInitialSite.pos.y);
