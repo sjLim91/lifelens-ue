@@ -210,19 +210,23 @@ int main()
     // or explore there, but the autonomous craft lane must not turn every such
     // stop into a new durable settlement. A co-located second autonomous
     // resident is enough to represent an actual frontier relocation group.
+    // push_back(newcomer) above may reallocate world.characters; reacquire the
+    // resident from the authoritative vector instead of retaining a stale ref.
+    Character& roamingActor=world.characters.front();
+    assert(roamingActor.id==owner);
     SettlementPopulation roamingPopulation=population;
-    roamingPopulation[actor.id]=distant;
+    roamingPopulation[roamingActor.id]=distant;
     assert(!autonomousSettlementInfrastructurePlanAllowed(
         world,distant,&roamingPopulation));
     const auto roamingCraft=
         bestCraftDecisionAtPosition(
-            world,actor,distant,&roamingPopulation);
+            world,roamingActor,distant,&roamingPopulation);
     assert(!civilizationDecisionOpensSettlementInfrastructure(
         roamingCraft));
 
     CharacterId secondAutonomous=0;
     for(const auto& resident:world.characters){
-        if(resident.id!=actor.id && resident.alive
+        if(resident.id!=roamingActor.id && resident.alive
            && lifeStageProfile(resident.lifeStage).canWork){
             secondAutonomous=resident.id;
             break;
