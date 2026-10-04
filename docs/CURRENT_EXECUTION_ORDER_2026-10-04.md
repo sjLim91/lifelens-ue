@@ -385,6 +385,6 @@ C7 기능 추가나 새 문명 단계는 STEP 7 이전에 시작하지 않는다
 
 그 뒤:
 
-`#627 -> #634 -> #626 + R10 split check -> trade return -> full R10 -> health causal fix(if needed) -> C6 close -> C7`
+`#634 -> #626 + R10 split check -> trade return -> full R10 -> health causal fix(if needed) -> C6 close -> C7`
 
 이 순서를 현재 canonical execution order로 고정한다.
