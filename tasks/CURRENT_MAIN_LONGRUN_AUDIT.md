@@ -1,7 +1,9 @@
-# Current-Main Long-Run Audit — 2026-10-02
+# Current-Main Long-Run Audit — R8 2026-10-04
 
-기준 main: `b277e091bc39d071ea30ba0d57281251da811dba`  
-브랜치: `audit/current-main-longrun-20261002`
+기준 main: `7560ea00ebd530d071d14134971b6b8b6030578a` (#621, #622 포함)  
+브랜치: `fix/p0-c6-longrun-r8-20261004`
+
+목적: #622의 원거리 시설 증식 억제, 빈 정착지 active 제외, 비거주 시설 쇠퇴 수정 후 동일 기준 seed 100/365/1000일 R8 재검증.
 
 ## 이번 작업 범위
 
@@ -13,10 +15,10 @@
 - [x] snapshot encoded size / runner RSS / elapsed time 기록
 - [x] C6 settlement / migration / trade 지표 추가
 - [x] 가족 / 인구 / 건강 지표 추가
-- [ ] audit harness compile
-- [ ] seed 874213954 — 100/365/1000일 완료
-- [ ] seed 4242001 — 100/365/1000일 완료
-- [ ] 두 seed 결과 비교
+- [ ] R8 audit harness compile
+- [ ] R8 seed 874213954 — 100/365/1000일 완료
+- [ ] R8 seed 4242001 — 100/365/1000일 완료
+- [ ] R8 두 seed 결과를 R7과 비교
 - [ ] 구조적 starvation / 장기 고착 분류
 - [ ] 수정이 필요한 경우 causal cluster별 별도 PR 계획
 - [ ] C6 canonical closeout 여부 확정
