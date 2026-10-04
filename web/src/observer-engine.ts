@@ -10,7 +10,7 @@ import {
 } from './runtime/lifelens-contract';
 import type { Resident, TerrainWindow } from './runtime/core-types';
 import { ResidentContinuity } from './runtime/resident-continuity';
-import { WorldSession } from './runtime/world-session';
+import { WorldSession, type WorldSessionSnapshot } from './runtime/world-session';
 import { observerActions } from './state/observer-actions';
 import type { ObservationEvent } from './state/observation-feed';
 import { observerStore } from './state/observer-store';
@@ -202,11 +202,11 @@ export function startObserverEngine(): void {
     });
   }
   
-  function refresh(): void {
-    if (!worldSession) return;
+  function refresh(requireFreshActivity = false): WorldSessionSnapshot | null {
+    if (!worldSession) return null;
   
     const queryStartedAt = performance.now();
-    const snapshot = worldSession.refresh();
+    const snapshot = worldSession.refresh(requireFreshActivity);
     centerX = snapshot.centerX;
     centerY = snapshot.centerY;
     followResidents = snapshot.followResidents;
@@ -273,6 +273,7 @@ export function startObserverEngine(): void {
       panZ: localPanZ,
     });
     drawWorld();
+    return snapshot;
   }
   
   function createWorld(seed: string): void {
@@ -432,12 +433,11 @@ export function startObserverEngine(): void {
     threeWorldRenderer?.breakFootTrafficContinuity();
 
     try {
-      worldSession.forceWorldActivityRefresh();
-      refresh();
-      const beforeSnapshot = observerStore.getSnapshot();
+      const beforeSnapshot = refresh(true);
+      if (!beforeSnapshot) throw new Error('고속 진행 전 세계 기록을 읽지 못했습니다.');
       const before = captureFastForwardState({
-        world: beforeSnapshot.world,
-        residents: beforeSnapshot.residents,
+        world: beforeSnapshot.overview,
+        residents: beforeSnapshot.residentDetails,
         civilization: beforeSnapshot.civilization,
         worldObjects: beforeSnapshot.worldObjects,
       });
@@ -456,15 +456,13 @@ export function startObserverEngine(): void {
         await yieldToBrowser();
       }
 
-      worldSession.forceWorldActivityRefresh();
       worldSession.recenterToResidents();
       threeWorldRenderer?.breakFootTrafficContinuity();
-      refresh();
-
-      const afterSnapshot = observerStore.getSnapshot();
+      const afterSnapshot = refresh(true);
+      if (!afterSnapshot) throw new Error('고속 진행 후 세계 기록을 읽지 못했습니다.');
       const after = captureFastForwardState({
-        world: afterSnapshot.world,
-        residents: afterSnapshot.residents,
+        world: afterSnapshot.overview,
+        residents: afterSnapshot.residentDetails,
         civilization: afterSnapshot.civilization,
         worldObjects: afterSnapshot.worldObjects,
       });

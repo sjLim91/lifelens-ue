@@ -17,6 +17,9 @@ import type { ResidentContinuity } from './resident-continuity';
 export interface WorldSessionSnapshot {
   overview: WorldOverview;
   residents: Resident[];
+  // Full Core records, including deceased residents, for explicit captures.
+  // The render-facing list above remains filtered by ResidentContinuity.
+  residentDetails: Resident[];
   terrain: TerrainWindow;
   terrainStaticChanged: boolean;
   environment: DynamicEnvironment;
@@ -108,8 +111,10 @@ export class WorldSession {
     this.recenterRequested = true;
   }
 
-  refresh(): WorldSessionSnapshot {
+  refresh(requireFreshActivity = false): WorldSessionSnapshot {
+    if (requireFreshActivity) this.forceWorldActivityRefresh();
     const overview = this.core.worldOverview();
+    let freshResidentDetails = false;
     let residentRuntimePayload = this.core.residentRuntime();
     if (residentRuntimePayload.available === false) {
       residentRuntimePayload = this.core.residents();
@@ -141,7 +146,20 @@ export class WorldSession {
         detailPayload.available !== false
         && Array.isArray(detailPayload.residents)
       ) {
+        if (requireFreshActivity) {
+          const livingDetails = detailPayload.residents.filter(
+            (resident) => resident.alive !== false,
+          ).length;
+          if (
+            livingDetails !== overview.livingResidents
+            || (overview.totalResidents !== undefined
+              && detailPayload.residents.length !== overview.totalResidents)
+          ) {
+            throw new Error('주민 상세 기록이 현재 인구와 일치하지 않아 고속 진행 요약을 만들 수 없습니다.');
+          }
+        }
         this.residentDetailSnapshot = detailPayload.residents;
+        freshResidentDetails = true;
         this.residentDetailRefreshCountdown = Math.max(
           0,
           OBSERVER_RUNTIME_CONTRACT.residentDetailRefreshEverySnapshots - 1,
@@ -149,6 +167,10 @@ export class WorldSession {
       }
     } else if (this.residentDetailRefreshCountdown > 0) {
       this.residentDetailRefreshCountdown -= 1;
+    }
+
+    if (requireFreshActivity && !freshResidentDetails) {
+      throw new Error('최신 주민 상세 기록을 읽지 못해 고속 진행 요약을 만들 수 없습니다.');
     }
 
     const detailsById = new Map(
@@ -316,9 +338,17 @@ export class WorldSession {
       this.worldActivityRefreshCountdown -= 1;
     }
 
+    if (requireFreshActivity && (
+      this.civilizationSnapshot.available !== true
+      || this.worldObjectsSnapshot.available !== true
+    )) {
+      throw new Error('최신 문명·시설 기록을 읽지 못해 고속 진행 요약을 만들 수 없습니다.');
+    }
+
     return {
       overview,
       residents,
+      residentDetails: this.residentDetailSnapshot,
       terrain,
       terrainStaticChanged,
       environment,

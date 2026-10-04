@@ -51,7 +51,10 @@ for token in (
     "FAST_FORWARD_CHUNK_MINUTES",
     "await yieldToBrowser();",
     "updateFastForwardProgress(completedMinutes)",
-    "worldSession.forceWorldActivityRefresh();",
+    "const beforeSnapshot = refresh(true);",
+    "const afterSnapshot = refresh(true);",
+    "residents: beforeSnapshot.residentDetails",
+    "residents: afterSnapshot.residentDetails",
     "worldSession.recenterToResidents();",
     "buildFastForwardSummary(requestedDays, before, after)",
     "simulationClock?.start();",
@@ -60,9 +63,9 @@ for token in (
 
 # Intermediate render/refresh must not occur inside the chunk loop.
 loop_start = engine.index("while (completedMinutes < totalMinutes)")
-loop_end = engine.index("worldSession.forceWorldActivityRefresh();", loop_start)
+loop_end = engine.index("worldSession.recenterToResidents();", loop_start)
 loop_body = engine[loop_start:loop_end]
-assert "refresh();" not in loop_body, (
+assert "refresh(" not in loop_body, (
     "fast-forward chunk loop must not render/refresh intermediate states"
 )
 assert "runMinutes(totalMinutes)" not in engine, (
