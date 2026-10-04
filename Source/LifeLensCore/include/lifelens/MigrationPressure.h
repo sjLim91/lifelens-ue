@@ -17,7 +17,8 @@ namespace lifelens {
 // It does not relocate a resident or create a settlement by itself. C6-B owns
 // the actual settlement split. This read model only answers: "is continuing to
 // serve this lived area becoming expensive enough that migration is plausible?"
-inline constexpr int MigrationLocalResourceRadiusChunks = 3;
+inline constexpr int MigrationLocalResourceRadiusChunks =
+    ResourceExplorationLocalRadiusChunks;
 inline constexpr int MigrationComfortTravelRadiusChunks = 2;
 inline constexpr int MigrationHighTravelRadiusChunks = 10;
 inline constexpr double MigrationCandidatePressureThreshold = 0.58;
