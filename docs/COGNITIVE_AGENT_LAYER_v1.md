@@ -232,9 +232,26 @@ A successful local model response is still presentation/runtime-side data with n
 authority to change Core state. COG-4 introduces the first validated strategic
 decision input after replay/persistence boundaries are ready.
 
-### COG-2
-무료 로컬 inference prototype.
-작은 local model부터 실제 Personality/Memory 기반 전략 선택 검증.
+### COG-2 — read-only Core→Web bridge foundation implemented
+Core now owns construction of bounded cognitive context and exposes it through
+the WASM/WebClientBridge as a read-only request.
+
+Implemented:
+- resident id + typed trigger -> Core CognitiveRequest
+- Core-selected Needs / Personality / Emotion
+- bounded salient Memory / Belief / Relationship evidence
+- Core strategic intent catalog
+- JSON ABI using string resident IDs
+- invalid resident/trigger/direct-care actor fail closed
+- Web bounded parser rejects malformed/oversized runtime context
+- optional ABI fallback for older runtimes
+
+The local provider can now consume actual Core-owned context without rebuilding
+Memory/Belief/Relationship selection rules in JavaScript.
+
+This stage still does **not** feed a model proposal back into Simulation.
+The next authority-changing step must add accepted-proposal persistence/replay
+before strategic bias affects Utility/Civilization decisions.
 
 ### COG-3
 Memory retrieval / Belief / Relationship context 고도화.
