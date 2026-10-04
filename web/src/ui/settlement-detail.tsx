@@ -1,3 +1,4 @@
+import { observedSettlements, observedTradeRoutes } from '../render/settlement-presentation';
 import { useEffect, useMemo, useRef } from 'react';
 import { observerActions } from '../state/observer-actions';
 import type { ObserverSnapshot } from '../state/observer-store';
@@ -9,7 +10,7 @@ import { formatMaterial } from './observer-format';
 export function SettlementDetail({ snapshot }: { snapshot: ObserverSnapshot }) {
   const ref = useRef<HTMLDialogElement>(null);
   const settlement = useMemo(() => snapshot.selectedSettlementId && snapshot.civilization.available === true
-    ? snapshot.civilization.settlements?.find(entry => entry.id === snapshot.selectedSettlementId) : undefined,
+    ? observedSettlements(snapshot.civilization).find(entry => entry.id === snapshot.selectedSettlementId) : undefined,
   [snapshot.civilization, snapshot.selectedSettlementId]);
   useEffect(() => {
     const dialog = ref.current;
@@ -19,7 +20,7 @@ export function SettlementDetail({ snapshot }: { snapshot: ObserverSnapshot }) {
   const close = () => observerActions.selectSettlement(null);
   const storage = useMemo(() => settlement && representativeStorage(settlement.id, snapshot.civilization),
     [settlement, snapshot.civilization]);
-  const routes = useMemo(() => settlement ? (snapshot.civilization.tradeRoutes ?? []).filter(route =>
+  const routes = useMemo(() => settlement ? observedTradeRoutes(snapshot.civilization).filter(route =>
     route.firstSettlement === settlement.id || route.secondSettlement === settlement.id)
     .slice(0, WORLD_PRESENTATION.settlement.maxRelationsInPopup) : [], [settlement, snapshot.civilization]);
   const events = useMemo(() => settlement ? snapshot.observations.filter(event =>
@@ -32,11 +33,11 @@ export function SettlementDetail({ snapshot }: { snapshot: ObserverSnapshot }) {
           <h2 id="settlement-title">{settlementLabel(settlement.id)}</h2>
           <button type="button" onClick={close} aria-label="정착지 정보 닫기">닫기</button>
         </div>
-        <p className="hint">실제 시설과 저장소를 중심으로 형성된 생활권입니다. 바닥의 은은한 표시는 생활권의 중심 위치입니다.</p>
+        <p className="hint">바닥의 얇은 원은 관찰용 중심 표시입니다. 교역 관계선은 실제 도로를 뜻하지 않습니다.</p>
         <dl className="settlement-facts">
           <dt>인구</dt><dd>{settlement.residentCount}명</dd>
-          <dt>정착 기반</dt><dd>{settlement.established ? '기반 형성' : '형성 중'}</dd>
-          <dt>활동</dt><dd>{settlement.active ? '주민·가동 시설·저장소 확인' : '현재 활동 없음'}</dd>
+          <dt>정착 기반</dt><dd>{settlement.established ? '확립됨' : '미확립'}</dd>
+          <dt>활동</dt><dd>{settlement.active ? '활성' : '비활성'}</dd>
           <dt>시설</dt><dd>{settlement.facilityCount}곳 · 가동 {settlement.operationalFacilityCount}곳 · 계획 {settlement.plannedFacilityCount}곳</dd>
           <dt>저장소</dt><dd>{settlement.storageSiteCount}곳</dd>
         </dl>
@@ -47,10 +48,10 @@ export function SettlementDetail({ snapshot }: { snapshot: ObserverSnapshot }) {
             <span key={item.material}>{formatMaterial(item.material)} <b>{item.quantity}개</b></span>)}</div>
         </section>}
         <section className="focused-life-section">
-          <h3>다른 생활권과의 교역</h3>
+          <h3>다른 정착지와의 교역</h3>
           {routes.length ? routes.map(route => {
             const other = route.firstSettlement === settlement.id ? route.secondSettlement : route.firstSettlement;
-            return <p key={route.id}>{settlementLabel(other)} · {route.active ? '교역 활성' : '교역 기록 있음'}
+            return <p key={route.id}>{settlementLabel(other)} · {route.active ? '활성' : '비활성'}
               {' · '}교환 {route.exchangeCount}회 · 거래 파트너 {route.partnerCount}쌍</p>;
           }) : <p className="hint">관측된 정착지 간 교역 기록이 없습니다.</p>}
         </section>
@@ -62,3 +63,4 @@ export function SettlementDetail({ snapshot }: { snapshot: ObserverSnapshot }) {
     </dialog>
   );
 }
+

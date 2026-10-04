@@ -349,3 +349,13 @@ WorkSurface keeps its existing parts/build order/footprint with a centrally
 configured lower vertical proportion so the existing standing craft hand motion
 is visible over the work plate. No resident offset, IK target, output item,
 construction progress, capacity, or facility state is created by this geometry.
+
+
+### 정착지·교역·이주 압력의 관찰 표시
+
+- `ObserverSnapshot.civilization` → 기존 `setAuthoritativeSpatialTargets` → `SettlementFocusLayer`가 정확한 `settlements` / `tradeRoutes`만 소비한다. 중심 원은 관찰용 anchor이며 영역 경계가 아니고, 점선은 교역 관계이며 도로가 아니다. 활성/비활성은 DTO의 `active`로만 구분한다. `established`나 인구·시설 수로 새로운 마을 단계를 만들지 않는다.
+- 기존 settlement picking / `SettlementDetail` dialog를 재사용한다. 주민·운영/계획 시설·저장소 수와 활성·확립 여부, 실제 교역 partner/exchange count를 한국어로 표시한다. invalid/missing/duplicate identity, 비유한 좌표, 잘못된 수량/endpoint ID는 fail closed한다.
+- 선택한 살아 있고 위치가 있는 주민의 `migration.candidate`와 `hasFrontierTarget`이 모두 참일 때만 짧은 frontier 방향 guide를 표시한다. 실제 렌더 actor 위치를 사용하며 이동을 수정하지 않는다. 압력은 이주 결정/완료가 아니다. 주민 패널은 자원 희소성·이동 부담·인구 압력·정착 애착·탐험 성향과 Core 거리만 보여준다.
+- 고정 `LineSegments` 배치 3개, geometry/material 각각 3개, 추가 texture 0개, 최대 3 draw calls. visible anchor ≤100, route ≤100 ×64 segments, 선택 주민 guide ≤8 segments. 중앙 `WORLD_PRESENTATION.settlement` 계약으로 제한한다. 원은 camera 거리별 제한된 LOD를 사용하고 가까이서는 덜 강조한다. static dashed 관계선은 pause/speed에 독립적으로 그대로 멈춰 있다.
+- refresh는 객체/버퍼 identity를 유지한다. terrain origin 변경 시 정확한 Core grid를 재투영하며, 새 게임/reset에서 선택·anchor·route·guide가 전부 초기화된다. dispose는 공유 배치를 한 번만 해제하며 두 번 호출해도 안전하다. history/save/AI로 feedback을 보내지 않는다.
+- CONTRACT GAP: 개별 시설 전체의 settlement membership, 개별 Trade 주민의 route ID/origin/destination, 실제 도로/경계, migration 완료/도착 사건 및 정착지 단계가 이 presentation 계약에 없다. 거리·시설 수·주민 움직임으로 추론하지 않는다. 기존 exact representative-node storage join과 #624의 실제 inventory/motion은 그대로 보존한다.

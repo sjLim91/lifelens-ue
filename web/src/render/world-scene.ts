@@ -71,6 +71,7 @@ export class WorldScene {
   private readonly facilityLayer = new FacilityLayer();
   private readonly lifeEventLayer = new ResidentLifeEventLayer(id => this.residentLayer.socialEventAnchor(id));
   private lifeResidents: Resident[] = [];
+  private selectedResidentId: string | null = null;
   private readonly humanTraceLayer = new HumanTraceLayer();
   private readonly waterLayer = new WaterLayer();
   private readonly vegetationLayer = new VegetationLayer();
@@ -172,7 +173,7 @@ export class WorldScene {
     this.socialEventLayer.observe(payload, minute);
   }
 
-  resetSocialEvents(): void { this.socialEventLayer.reset(); this.lifeEventLayer.reset(); this.lifeResidents = []; }
+  resetSocialEvents(): void { this.settlementFocusLayer.reset(); this.selectedResidentId = null; this.socialEventLayer.reset(); this.lifeEventLayer.reset(); this.lifeResidents = []; }
 
   setEnvironment(environment: DynamicEnvironment | null): void {
     if (environment?.available === false) environment = null;
@@ -232,7 +233,9 @@ export class WorldScene {
   }
 
   setSelectedResident(residentId: string | null): void {
+    this.selectedResidentId = residentId;
     this.residentLayer.setSelectedResident(residentId);
+    this.settlementFocusLayer.setSelectedResident(this.lifeResidents.find(entry => entry.id === residentId));
   }
 
   pickHumanTrace(normalizedX: number, normalizedY: number): string | null {
@@ -289,6 +292,7 @@ export class WorldScene {
   ): void {
     this.lifeEventLayer.captureDepartures(residents);
     this.lifeResidents = residents;
+    this.settlementFocusLayer.setSelectedResident(residents.find(entry => entry.id === this.selectedResidentId));
     if (this.socialEventCenter) {
       this.lifeEventLayer.rebase(
         (this.socialEventCenter.x - centerX) * WORLD_GRID_CONTRACT.worldUnitsPerChunk,
@@ -325,6 +329,8 @@ export class WorldScene {
     this.applyCamera(current);
 
     this.residentLayer.update(deltaSeconds);
+    this.settlementFocusLayer.update(this.camera, this.selectedResidentId
+      ? this.residentLayer.socialEventAnchor(this.selectedResidentId) : null);
     this.facilityLayer.update(deltaSeconds, this.camera);
     this.lifeEventLayer.update(this.camera, deltaSeconds);
     this.socialEventLayer.update(this.camera, this.lifeEventLayer.presentation.majorPairs);
@@ -391,6 +397,8 @@ export class WorldScene {
       && this.terrainWorldSeed !== window.worldSeed
     ) {
       this.cameraInitialized = false;
+      this.settlementFocusLayer.reset();
+      this.selectedResidentId = null;
       this.socialEventLayer.reset();
     }
     this.terrainWorldSeed = window.worldSeed;
@@ -547,6 +555,7 @@ export class WorldScene {
   }
 
 }
+
 
 
 

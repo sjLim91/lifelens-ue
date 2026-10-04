@@ -255,21 +255,25 @@ export function worldPresentationChecks({ test, source, flatWindow }) {
       assert.equal(layer.group.children[0].children.some(child => child.userData.storedGoods), false);
     } finally { layer.dispose(); }
   });
-  test('정착지 중심 강조는 선택 시 한 개만 표시하고 geometry·material을 재사용한다', () => {
+  test('정착지 중심은 평상시 표시하고 선택 강조 한 개와 고정 배치를 재사용한다', () => {
     const { SettlementFocusLayer } = source('render/settlement-focus-layer.ts');
     const layer = new SettlementFocusLayer();
     try {
       const window = flatWindow();
-      const data = { available: true, settlements: [{ id: '2', gridX: 0, gridY: 0 }, { id: '4', gridX: 8, gridY: 8 }] };
+      const facts = { residentCount: 4, facilityCount: 3, operationalFacilityCount: 2, plannedFacilityCount: 1, storageSiteCount: 1, active: true, established: true };
+      const data = { available: true, settlements: [{ ...facts, id: '2', gridX: 10, gridY: 10 }, { ...facts, id: '4', gridX: 20, gridY: 20 }] };
       layer.setTargets(data, window);
       const mesh = layer.group.children[0], geometry = mesh.geometry, material = mesh.material;
-      assert.equal(mesh.visible, false);
+      assert.equal(mesh.visible, true);
+      const baseline = geometry.drawRange.count;
       layer.select('2'); assert.equal(mesh.visible, true);
-      layer.select('4'); assert.equal(layer.group.children.length, 1);
+      assert.ok(geometry.drawRange.count > baseline);
+      layer.select('4'); assert.equal(layer.group.children.length, 3);
       assert.equal(mesh.geometry, geometry); assert.equal(mesh.material, material);
-      layer.select(null); assert.equal(mesh.visible, false);
+      layer.select(null); assert.equal(mesh.visible, true); assert.equal(geometry.drawRange.count, baseline);
       layer.select('2'); layer.setTargets({ available: false }, window); assert.equal(mesh.visible, false);
     } finally { layer.dispose(); }
   });
 }
+
 
