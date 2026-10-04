@@ -2281,6 +2281,85 @@ inline CivilizationUtilityDecision bestCultivationDecision(
     return best;
 }
 
+inline bool settlementInfrastructureFacilityKind(FacilityKind kind)
+{
+    switch(kind){
+        case FacilityKind::PrimitiveStorage:
+        case FacilityKind::FirePit:
+        case FacilityKind::WorkSurface:
+        case FacilityKind::SleepingPlace:
+        case FacilityKind::Shelter:
+        case FacilityKind::Furnace:
+        case FacilityKind::CultivatedPlot:
+            return true;
+        default:
+            return false;
+    }
+}
+
+// Autonomous residents may extend infrastructure around an existing lived area,
+// and NEW GAME must be able to bootstrap its first site. Once durable
+// infrastructure exists elsewhere, however, a lone resident who merely happens
+// to be gathering/exploring at a distant position must not seed a new settlement
+// every time local facility demand is re-evaluated. A second autonomous resident
+// at the same frontier is the minimum observable commitment used by the runtime;
+// low-level site/project helpers remain capable of explicit C6 migration tests.
+inline bool autonomousSettlementInfrastructurePlanAllowed(
+    const World& world,
+    GridPos authoritativePosition,
+    const SettlementPopulation* population)
+{
+    if(population==nullptr) return true;
+
+    bool anyInfrastructure=false;
+    bool localInfrastructure=false;
+    for(const ConstructedFacility& facility:world.facilities){
+        if(facility.id==0 || facility.state==FacilityState::Ruined) continue;
+        anyInfrastructure=true;
+        if(manhattan(facility.pos,authoritativePosition)
+           <=SettlementServiceRadiusGrid){
+            localInfrastructure=true;
+            break;
+        }
+    }
+    if(!localInfrastructure){
+        for(const StorageSite& storage:world.storageSites){
+            if(storage.id==0) continue;
+            anyInfrastructure=true;
+            if(manhattan(storage.pos,authoritativePosition)
+               <=SettlementServiceRadiusGrid){
+                localInfrastructure=true;
+                break;
+            }
+        }
+    }
+
+    if(localInfrastructure || !anyInfrastructure) return true;
+
+    int localAutonomousResidents=0;
+    for(const Character& resident:world.characters){
+        if(!resident.alive || !lifeStageProfile(resident.lifeStage).canWork){
+            continue;
+        }
+        const auto location=population->find(resident.id);
+        if(location==population->end()
+           || manhattan(location->second,authoritativePosition)
+                >SettlementServiceRadiusGrid){
+            continue;
+        }
+        if(++localAutonomousResidents>=2) return true;
+    }
+    return false;
+}
+
+inline bool civilizationDecisionOpensSettlementInfrastructure(
+    const CivilizationUtilityDecision& candidate)
+{
+    return candidate.intent==CivilizationIntent::Craft
+        && candidate.facilityAction==FacilityBuildAction::Plan
+        && settlementInfrastructureFacilityKind(candidate.facilityKind);
+}
+
 inline CivilizationUtilityDecision bestCraftDecisionAtPosition(
     const World& world,
     const Character& self,
@@ -2289,20 +2368,31 @@ inline CivilizationUtilityDecision bestCraftDecisionAtPosition(
 {
     CivilizationUtilityDecision best;
     const GridPos sanitationReference=authoritativePosition;
+    const bool infrastructurePlanAllowed=
+        autonomousSettlementInfrastructurePlanAllowed(
+            world,authoritativePosition,population);
+    const auto considerCraft=[&](CivilizationUtilityDecision candidate){
+        if(!infrastructurePlanAllowed
+           && civilizationDecisionOpensSettlementInfrastructure(candidate)){
+            return;
+        }
+        considerCivilizationDecision(best,candidate);
+    };
 
-    considerCivilizationDecision(
-        best,bestSettlementFoundationDecision(world,self,authoritativePosition,population));
-    considerCivilizationDecision(
-        best,bestPrimitiveStorageConstructionDecision(
+    considerCraft(
+        bestSettlementFoundationDecision(
+            world,self,authoritativePosition,population));
+    considerCraft(
+        bestPrimitiveStorageConstructionDecision(
             world,self,authoritativePosition));
-    considerCivilizationDecision(
-        best,bestPrimitiveFirePitDecision(
+    considerCraft(
+        bestPrimitiveFirePitDecision(
             world,self,authoritativePosition));
-    considerCivilizationDecision(
-        best,bestPrimitiveFurnaceDecision(
+    considerCraft(
+        bestPrimitiveFurnaceDecision(
             world,self,authoritativePosition));
-    considerCivilizationDecision(
-        best,bestCultivationDecision(
+    considerCraft(
+        bestCultivationDecision(
             world,self,authoritativePosition,population));
 
     if(self.civilization.knowledge.knowsAtLeast(

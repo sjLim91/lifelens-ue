@@ -33,6 +33,10 @@ int main()
     };
     assert(demand(FacilityKind::SleepingPlace,anchor).residents==4);
     assert(demand(FacilityKind::SleepingPlace,anchor).operationalCapacity==0);
+    // NEW GAME has no durable infrastructure yet, so the founders may
+    // bootstrap the first lived settlement.
+    assert(autonomousSettlementInfrastructurePlanAllowed(
+        world,anchor,&population));
 
     // Reusing an already observed demand inside one pure foundation decision
     // must be behavior-identical to the public wrappers that observe it again.
@@ -201,6 +205,38 @@ int main()
     world.characters.back().alive=false;
     assert(!demand(FacilityKind::SleepingPlace,anchor).canPlan());
     const GridPos distant{anchor.x+SettlementServiceRadiusGrid*4,anchor.y};
+
+    // A lone resident who is merely away from the lived settlement may gather
+    // or explore there, but the autonomous craft lane must not turn every such
+    // stop into a new durable settlement. A co-located second autonomous
+    // resident is enough to represent an actual frontier relocation group.
+    // push_back(newcomer) above may reallocate world.characters; reacquire the
+    // resident from the authoritative vector instead of retaining a stale ref.
+    Character& roamingActor=world.characters.front();
+    assert(roamingActor.id==owner);
+    SettlementPopulation roamingPopulation=population;
+    roamingPopulation[roamingActor.id]=distant;
+    assert(!autonomousSettlementInfrastructurePlanAllowed(
+        world,distant,&roamingPopulation));
+    const auto roamingCraft=
+        bestCraftDecisionAtPosition(
+            world,roamingActor,distant,&roamingPopulation);
+    assert(!civilizationDecisionOpensSettlementInfrastructure(
+        roamingCraft));
+
+    CharacterId secondAutonomous=0;
+    for(const auto& resident:world.characters){
+        if(resident.id!=roamingActor.id && resident.alive
+           && lifeStageProfile(resident.lifeStage).canWork){
+            secondAutonomous=resident.id;
+            break;
+        }
+    }
+    assert(secondAutonomous!=0);
+    roamingPopulation[secondAutonomous]=distant;
+    assert(autonomousSettlementInfrastructurePlanAllowed(
+        world,distant,&roamingPopulation));
+
     for(auto& location:population) location.second=distant;
     assert(demand(FacilityKind::SleepingPlace,anchor).residents==0);
     assert(demand(FacilityKind::SleepingPlace,distant).operationalCapacity==0);

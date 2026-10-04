@@ -163,6 +163,15 @@ int main()
     CHECK(lifecycle.decliningCount==1);
     CHECK(lifecycle.inhabitedCount==1);
 
+    // Physical infrastructure remains observable, but with authoritative
+    // population available an empty/declining cluster is not an "active
+    // settlement". Only the lived cluster counts as active.
+    const SettlementNetworkObservation declineNetwork=
+        observeSettlementNetwork(
+            declineWorld,&declinePopulation);
+    CHECK(declineNetwork.settlementCount==2);
+    CHECK(declineNetwork.activeSettlementCount==1);
+
     declineWorld.minute=60;
     const double emptyBefore=declineWorld.facilities[0].durability;
     const double inhabitedBefore=declineWorld.facilities[1].durability;
@@ -181,6 +190,43 @@ int main()
     lifecycle=observeSettlementLifecycle(
         declineWorld,declinePopulation);
     CHECK(lifecycle.abandonedCount==1);
+
+    // Abandonment decay is structural/environmental, not limited to the three
+    // facility kinds that have ordinary resident Repair actions. Empty fire,
+    // storage, furnace and cultivation infrastructure must also deteriorate.
+    World broadDecayWorld(606304);
+    broadDecayWorld.characters.clear();
+    broadDecayWorld.facilities.clear();
+    broadDecayWorld.storageSites.clear();
+    Character distantWitness=makeMigrant(30,"Witness");
+    broadDecayWorld.characters.push_back(distantWitness);
+    const GridPos abandonedAnchor{0,0};
+    const GridPos witnessPos{SettlementServiceRadiusGrid*5,0};
+    for(const auto kind:{
+            FacilityKind::PrimitiveStorage,
+            FacilityKind::FirePit,
+            FacilityKind::Furnace,
+            FacilityKind::CultivatedPlot}){
+        broadDecayWorld.facilities.push_back(
+            operationalFacility(
+                300+static_cast<FacilityId>(
+                    broadDecayWorld.facilities.size()),
+                kind,
+                abandonedAnchor,
+                1.0));
+    }
+    SettlementPopulation broadDecayPopulation{{distantWitness.id,witnessPos}};
+    broadDecayWorld.minute=60;
+    std::vector<double> broadBefore;
+    for(const auto& facility:broadDecayWorld.facilities){
+        broadBefore.push_back(facility.durability);
+    }
+    advanceAbandonedSettlementDecayOneHour(
+        broadDecayWorld,broadDecayPopulation);
+    CHECK(broadDecayWorld.facilities.size()==broadBefore.size());
+    for(std::size_t index=0;index<broadBefore.size();++index){
+        CHECK(broadDecayWorld.facilities[index].durability<broadBefore[index]);
+    }
 
     // Runtime integration: use the real Simulation world and its public
     // authority. Do not hand-edit world-generation snapshot internals merely

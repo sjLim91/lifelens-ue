@@ -238,9 +238,16 @@ inline SettlementNetworkObservation observeSettlementNetwork(
     }
 
     for(auto& cluster:result.settlements){
-        cluster.active=cluster.residentCount>0
-            || cluster.operationalFacilityCount>0
-            || cluster.storageSiteCount>0;
+        // With authoritative runtime population available, "active settlement"
+        // means a lived settlement. Empty infrastructure is still observable as
+        // established/declining/abandoned physical history, but must not remain
+        // an active town or participate in resident/trade selection forever.
+        cluster.active=population!=nullptr
+            ? cluster.residentCount>0
+            : (
+                cluster.operationalFacilityCount>0
+                || cluster.storageSiteCount>0
+            );
         if(cluster.active) ++result.activeSettlementCount;
     }
     result.settlementCount=static_cast<int>(result.settlements.size());
