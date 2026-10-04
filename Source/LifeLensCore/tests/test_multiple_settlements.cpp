@@ -184,6 +184,41 @@ int main()
     CHECK(sawFirst);
     CHECK(sawSecond);
 
+    // A connected settlement can grow into an elongated chain of infrastructure.
+    // Resident service is determined by the actual infrastructure footprint,
+    // not only by the arithmetic-mean display anchor. Otherwise a resident
+    // standing on an endpoint facility can become spuriously "unassigned".
+    World chainedWorld(606102);
+    chainedWorld.characters.clear();
+    chainedWorld.facilities.clear();
+    chainedWorld.storageSites.clear();
+    chainedWorld.resourceNodes.clear();
+    chainedWorld.primitiveSanitationSites.clear();
+    Character endpointResident=resident(10);
+    chainedWorld.characters.push_back(endpointResident);
+    for(int index=0;index<4;++index){
+        chainedWorld.facilities.push_back(operationalFacility(
+            100+index,
+            FacilityKind::WorkSurface,
+            {index*SettlementServiceRadiusGrid,0},
+            endpointResident.id));
+    }
+    SettlementPopulation chainedPopulation{
+        {endpointResident.id,{0,0}}
+    };
+    const SettlementNetworkObservation chainedNetwork=
+        observeSettlementNetwork(chainedWorld,&chainedPopulation);
+    CHECK(chainedNetwork.settlementCount==1);
+    CHECK(chainedNetwork.residentAssignedCount==1);
+    CHECK(chainedNetwork.settlements.size()==1);
+    CHECK(chainedNetwork.settlements.front().residentCount==1);
+    CHECK(chainedNetwork.settlements.front().servicePositions.size()==4);
+    CHECK(settlementClusterServiceDistance(
+        chainedNetwork.settlements.front(),{0,0})==0);
+    CHECK(manhattan(
+        chainedNetwork.settlements.front().anchor,{0,0})
+        >SettlementServiceRadiusGrid);
+
     std::cout
         << "C6-B local infrastructure and multiple settlements passed\n";
     return 0;

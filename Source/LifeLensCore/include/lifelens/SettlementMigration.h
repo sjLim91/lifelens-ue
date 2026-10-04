@@ -56,6 +56,7 @@ struct SettlementLifecycleEntry {
     int storageSiteCount=0;
     double vitality01=0.0;
     SettlementLifecycleState state=SettlementLifecycleState::Inhabited;
+    std::vector<GridPos> servicePositions;
 };
 
 struct SettlementLifecycleObservation {
@@ -200,6 +201,7 @@ inline SettlementLifecycleObservation observeSettlementLifecycle(
         entry.residentCount=cluster.residentCount;
         entry.operationalFacilityCount=cluster.operationalFacilityCount;
         entry.storageSiteCount=cluster.storageSiteCount;
+        entry.servicePositions=cluster.servicePositions;
 
         const int infrastructure=
             cluster.operationalFacilityCount+cluster.storageSiteCount;
@@ -245,11 +247,21 @@ inline void advanceAbandonedSettlementDecayOneHour(
         if(settlement.state!=SettlementLifecycleState::Declining) continue;
         for(ConstructedFacility& facility:world.facilities){
             if(!facilityOperationalAndActive(facility)
-               || !facilitySupportsMaintenance(facility.kind)
-               || manhattan(facility.pos,settlement.anchor)
-                    >SettlementServiceRadiusGrid){
+               || !facilitySupportsMaintenance(facility.kind)){
                 continue;
             }
+            bool served=settlement.servicePositions.empty()
+                ? manhattan(facility.pos,settlement.anchor)
+                    <=SettlementServiceRadiusGrid
+                : false;
+            for(const GridPos service: settlement.servicePositions){
+                if(manhattan(facility.pos,service)
+                   <=SettlementServiceRadiusGrid){
+                    served=true;
+                    break;
+                }
+            }
+            if(!served) continue;
             applyFacilityWear(facility,AbandonedSettlementHourlyWear);
         }
     }
