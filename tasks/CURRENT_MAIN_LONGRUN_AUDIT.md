@@ -1,3 +1,16 @@
+## R10-C current-main control — 2026-10-04
+
+- source product head: `49aaf6c2be943aeeb7b4552d7e2a787af00005a0` (current main before #635)
+- purpose: establish an apples-to-apples control for the same 2026-10-04 codebase.
+- seeds: 874213954, 4242001.
+- checkpoints: 100 / 365 / 1000 days.
+- compare against:
+  - R10-A #635 initial candidate `93358e5e`
+  - R10-B #635 exploration-anchor candidate `95f6d243`
+- key question:
+  - are high chunk counts caused by #635, or already present in current main after post-R9 changes?
+- this branch is evidence-only and must not be merged.
+
 # Current-Main Long-Run Audit — 2026-10-04 Reconciled
 
 초기 감사 기준: `b277e091bc39d071ea30ba0d57281251da811dba`  
