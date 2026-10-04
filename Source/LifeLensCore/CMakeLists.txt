@@ -67,6 +67,7 @@ lifelens_add_test(test_memory)
 lifelens_add_test(test_belief)
 
 lifelens_add_test(test_social_cognition)
+lifelens_add_test(test_cognitive_agent_contract)
 
 lifelens_add_test(test_social_utility)
 
