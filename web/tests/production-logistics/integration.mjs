@@ -33,7 +33,7 @@ l.setResidents([working],terrain,1,0);l.setSimulationSpeed(0);const p=actor.curr
 l.setSimulationSpeed(1);l.dispose();l.dispose();assert.equal(l.actors.size,0);
 const f=new FacilityLayer();
 const facts=Array.from({length:150},(_,i)=>({id:'f'+i,kind:'Furnace',gridX:16,gridY:16,state:'Operational',active:true,workProgress:1,durability:1,fuelUnits:4,charcoalUnits:3,oreUnits:2,metalUnits:1,furnaceChargeMaterial:'CopperOre',furnaceOutputMaterial:'CopperMetal'}));
-terrain.humanTraces={available:true,entries:facts.map(f=>({id:'facility:'+f.id,kind:'Facility',facilityKind:f.kind,gridX:f.gridX,gridY:f.gridY,state:f.state,progress01:1,active:true,lit:false}))};
+terrain.humanTraces={available:true,entries:facts.map(f=>({id:'facility:'+f.id,kind:'Facility',facilityKind:f.kind,gridX:f.gridX,gridY:f.gridY,state:f.state,progress01:1,active:true,lit:false,requiredMaterialUnits:8,deliveredMaterialUnits:8}))};
 f.setCivilization({available:true,facilities:facts},terrain);assert(f.productionRocks.count+f.productionBars.count<=256);const structures=[...f.structures.values()].map(v=>v.group),rocks=f.productionRocks,bars=f.productionBars,material=f.productionMaterial;
 for(let n=0;n<1000;n++)f.setCivilization({available:true,facilities:facts},terrain);
 assert.deepEqual([...f.structures.values()].map(v=>v.group),structures);assert.equal(f.productionRocks,rocks);assert.equal(f.productionBars,bars);assert.equal(f.productionMaterial,material);

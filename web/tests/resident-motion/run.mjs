@@ -102,7 +102,7 @@ test('social facing/connector cache follows the real partner and visible arrival
 test('water prop cannot pour before visual arrival',()=>{
  l.setCivilization({available:true,facilities:[{id:'plot',kind:'CultivatedPlot',state:'Operational',active:true,gridX:80,gridY:64}]});
  const r=resident('pour',p({facilityKind:'CultivatedPlot',facilityId:'plot',facilityAction:'Water',targetGridX:80}),{civilization:{inventory:[{item:'SimpleContainer',quantity:1},{item:'RawMaterial',material:'Water',quantity:1}]}});
- l.setResidents([r],terrain,0,0);l.setResidents([{...r,gridX:80}],terrain,0,0);l.update(1/60);const a=l.actors.get(r.id);assert(!a.inventoryProps.hasWaterContainer);assert.equal(a.active,'walk');
+ l.setResidents([r],terrain,0,0);l.setResidents([{...r,gridX:80}],terrain,0,0);l.update(1/60);const a=l.actors.get(r.id);assert(!a.inventoryProps.hasWaterContainer);assert(a.inventoryProps.hasCarriedLoad);assert.equal(a.active,'carry');
  a.current.copy(a.target);for(let i=0;i<30;i++)l.update(1/60);assert(a.inventoryProps.hasWaterContainer);assert.equal(a.active,'water');
 });
 test('heading reversal turns before translating backward; pause freezes sleep',()=>{
