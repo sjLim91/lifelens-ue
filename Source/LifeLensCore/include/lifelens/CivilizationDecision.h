@@ -1097,15 +1097,9 @@ inline CivilizationUtilityDecision bestResourceExplorationDecisionAtPosition(
         world,authoritativePosition,ordinaryExplorationOrigin);
 
     for(const MaterialKind material:naturalMaterials){
-        const bool criticalExplore=
-            (material==MaterialKind::PlantFood
-             && self.needs.hunger>=CriticalSurvivalPreemptThreshold)
-            || (material==MaterialKind::Water
-                && self.needs.thirst>=CriticalSurvivalPreemptThreshold);
-        const bool migrationExplore=
+        const bool longRange=
             migrationPressureWarrantsLongRangeExploration(
                 migration,material);
-        const bool longRange=criticalExplore || migrationExplore;
         const GridPos explorationOrigin=
             longRange ? authoritativePosition : ordinaryExplorationOrigin;
 
