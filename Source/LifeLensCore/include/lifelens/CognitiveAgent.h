@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "Character.h"
+#include "Parenting.h"
 #include "Relationship.h"
 #include "World.h"
 
