@@ -32,6 +32,9 @@ public:
     std::string worldOverviewJson() const;
     std::string residentRuntimeJson() const;
     std::string residentsJson() const;
+    std::string cognitiveRequestJson(
+        const std::string& residentIdText,
+        const std::string& triggerText) const;
     std::string dynamicEnvironmentJson(
         int centerChunkX,
         int centerChunkY) const;
