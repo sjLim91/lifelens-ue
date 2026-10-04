@@ -19,7 +19,7 @@ test('missing/empty/unavailable settlement truth',()=>{
   for(const p of [{},{available:true},{available:true,settlements:[]},{...payload,available:false}])assert.deepEqual(observedSettlements(p),[]);
 });
 test('invalid/duplicate ID, coordinate, facts fail closed',()=>{
-  for(const extra of [{id:undefined},{id:0},{id:''},{id:'0'},{gridX:NaN},{gridY:Infinity},{residentCount:-1},{facilityCount:'4'},{active:undefined}])
+  for(const extra of [{id:undefined},{id:0},{id:''},{id:'0'},{id:'bad'},{gridX:NaN},{gridY:Infinity},{residentCount:-1},{facilityCount:'4'},{active:undefined}])
     assert.equal(observedSettlements({available:true,settlements:[settlement('2',extra)]}).length,0);
   assert.equal(observedSettlements({...payload,settlements:[settlement(),settlement()]}).length,0);
 });

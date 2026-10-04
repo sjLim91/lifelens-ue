@@ -240,6 +240,8 @@ export function SelectedResidentReadout({
   const migration=resident.migration;
   const showMigrationPressure=
     resident.alive === true && resident.hasPosition === true && migration !== undefined;
+    const migrationPercent = (value: number | undefined) => typeof value === 'number' && Number.isFinite(value)
+    ? formatPercent(value) : '—';
   const activityTarget = !resident.presentation?.active && resident.activityTargetName
     ? ` → ${resident.activityTargetName}`
     : '';
@@ -272,22 +274,22 @@ export function SelectedResidentReadout({
           <p className="hint">이주 압력과 탐색 대상이며, 이주 결정이나 완료를 뜻하지 않습니다.</p>
           <div className="focused-life-chips">
             <span>
-              현재 압력 <b>{formatPercent(migration?.pressure01)}</b>
+              현재 압력 <b>{migrationPercent(migration?.pressure01)}</b>
             </span>
             <span>
               부족 자원 <b>{formatMaterial(migration?.bottleneckMaterial)}</b>
             </span>
             <span>
-              지역 희소성 <b>{formatPercent(migration?.resourceScarcity01)}</b>
+              지역 희소성 <b>{migrationPercent(migration?.resourceScarcity01)}</b>
             </span>
             <span>
-              이동 부담 <b>{formatPercent(migration?.travelBurden01)}</b>
+              이동 부담 <b>{migrationPercent(migration?.travelBurden01)}</b>
             </span>
             <span>
-              정착 애착 <b>{formatPercent(migration?.settlementAttachment01)}</b>
+              정착 애착 <b>{migrationPercent(migration?.settlementAttachment01)}</b>
             </span>
-            <span>인구 압력 <b>{formatPercent(migration?.populationPressure01)}</b></span>
-            <span>탐험 성향 <b>{formatPercent(migration?.explorationDisposition01)}</b></span>
+            <span>인구 압력 <b>{migrationPercent(migration?.populationPressure01)}</b></span>
+            <span>탐험 성향 <b>{migrationPercent(migration?.explorationDisposition01)}</b></span>
             {migration?.candidate
               ? <span className="life-event-chip">이주 압력 후보</span>
               : null}

@@ -13,7 +13,7 @@ function unique<T extends { id: string }>(entries: T[]): T[] {
 
 export function observedSettlements(payload: CivilizationWorldPayload): CivilizationSettlement[] {
   if (payload?.available !== true || !Array.isArray(payload.settlements)) return [];
-  return unique(payload.settlements).filter(entry => validId(entry.id)
+  return unique(payload.settlements).filter(entry => validId(entry.id) && /^[1-9]\d*$/.test(entry.id)
     && coordinate(entry.gridX) && coordinate(entry.gridY)
     && [entry.residentCount, entry.facilityCount, entry.operationalFacilityCount,
       entry.plannedFacilityCount, entry.storageSiteCount].every(count)
