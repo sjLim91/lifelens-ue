@@ -4,6 +4,7 @@ import {source} from './compile.mjs';
 const {
   cognitiveProposalJsonSchema,
   parseCognitiveProposal,
+  parseCognitiveRequest,
 }=await source('cognition/cognitive-contract.ts');
 const {
   LocalCognitionProvider,
@@ -102,6 +103,40 @@ await test('loopback model discovery is bounded, unique and credential-free',asy
       new AbortController().signal,
     ),
     /loopback\/local/,
+  );
+});
+
+await test('Core request parser is bounded and rejects malformed runtime context',()=>{
+  const valid=request('1',100,['ImproveFoodSecurity']);
+  assert.deepEqual(parseCognitiveRequest(valid),valid);
+  assert.throws(
+    ()=>parseCognitiveRequest({...valid,minute:Number.NaN}),
+    /minute/,
+  );
+  assert.throws(
+    ()=>parseCognitiveRequest({...valid,trigger:'FutureTrigger'}),
+    /trigger/,
+  );
+  assert.throws(
+    ()=>parseCognitiveRequest({
+      ...valid,
+      allowedIntents:['FutureIntent'],
+    }),
+    /allowed intents/,
+  );
+  assert.throws(
+    ()=>parseCognitiveRequest({
+      ...valid,
+      memories:Array.from({length:33},()=>valid.memories[0]),
+    }),
+    /memories/,
+  );
+  assert.throws(
+    ()=>parseCognitiveRequest({
+      ...valid,
+      personality:{curiosity:Number.POSITIVE_INFINITY},
+    }),
+    /personality/,
   );
 });
 
