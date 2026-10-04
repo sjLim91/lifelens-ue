@@ -654,8 +654,7 @@ inline int settlementContainerCapitalAtPosition(
     const World& world,
     const Character& self,
     GridPos authoritativePosition,
-    const SettlementPopulation* population=nullptr,
-    const HouseholdBook* households=nullptr)
+    const SettlementPopulation* population=nullptr)
 {
     int total=0;
     if(population!=nullptr){
@@ -2440,7 +2439,8 @@ inline CivilizationUtilityDecision bestCraftDecisionAtPosition(
     const World& world,
     const Character& self,
     GridPos authoritativePosition,
-    const SettlementPopulation* population=nullptr)
+    const SettlementPopulation* population=nullptr,
+    const HouseholdBook* households=nullptr)
 {
     CivilizationUtilityDecision best;
     const GridPos sanitationReference=authoritativePosition;
