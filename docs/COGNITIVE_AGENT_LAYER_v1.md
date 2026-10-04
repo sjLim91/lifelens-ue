@@ -185,8 +185,10 @@ LLM의 temperature를 0으로 만드는 것만으로 결정론을 보장한다�
 
 save/load 이후 이미 수락된 과거 결정을 다시 모델에 질의하지 않는다.
 
-COG-0은 아직 cognition을 Simulation 실행 루프에 연결하지 않으므로
-snapshot format은 변경하지 않는다.
+COG-0/1/2는 cognition을 Simulation 행동 authority에 연결하지 않으므로
+snapshot format을 변경하지 않는다.
+
+**COG-3의 persistence/replay contract가 준비되기 전에는 COG-4 행동 bias를 main에 연결하지 않는다.**
 
 ---
 
@@ -209,11 +211,11 @@ snapshot format은 변경하지 않는다.
 
 ## 9. 단계 계획
 
-### COG-0 — 현재
+### COG-0 — ✅ 완료 (#628)
 Core request/proposal/validation contract.
-실제 모델 호출 없음.
+모델의 free text는 simulation authority가 아니며 Core allowlist/validation을 통과해야 한다.
 
-### COG-1 — implemented foundation
+### COG-1 — ✅ 완료 (#629)
 Web cognition adapter + deterministic fake backend.
 
 Implemented contracts:
@@ -232,24 +234,59 @@ A successful local model response is still presentation/runtime-side data with n
 authority to change Core state. COG-4 introduces the first validated strategic
 decision input after replay/persistence boundaries are ready.
 
-### COG-2
-무료 로컬 inference prototype.
-작은 local model부터 실제 Personality/Memory 기반 전략 선택 검증.
+### COG-2 — 🟡 Core-owned read-only context bridge (#630)
 
-### COG-3
-Memory retrieval / Belief / Relationship context 고도화.
-상황별 관련 기억 검색과 reflection.
+목표:
+- Core가 Personality / Emotion / Memory / Belief / Relationship의 bounded context를 직접 구성
+- WASM/Web은 그 context를 읽기만 함
+- Web이 cognition truth를 재구성하지 않음
+- local model proposal은 아직 Simulation state를 변경하지 않음
 
-### COG-4
-Validated proposal을 기존 Utility/Civilization decision의 **전략 bias**로 연결.
-Core 실행 가능성 검증은 유지.
+#630 exact-head CI는 green이지만 최신 main 동기화/재검증 후 merge한다.
 
-### COG-5
-Population scheduler / cognition LOD / batching.
-100/300/1000 resident 비용 검증.
+### COG-3 — accepted cognition event persistence / deterministic replay
 
-### COG-6
-accepted cognition event persistence / deterministic replay.
+**행동 영향보다 먼저 구현한다.**
+
+최소 저장 provenance:
+- actor
+- simulation minute
+- trigger
+- context fingerprint
+- backend/model identity
+- accepted typed intent
+- priority
+- target
+- rationale digest
+
+save/load 이후 이미 수락된 과거 결정을 다시 모델에게 질의하지 않는다.
+
+### COG-4 — validated strategic intent -> existing Utility/Civilization bias
+
+모델은 action을 직접 실행하지 않는다.
+
+`Thought -> typed Intention -> Core validation -> existing Goal/Utility candidate`
+
+만 허용한다.
+
+Core의 실제 자원/기술/위치/관계 feasibility가 항상 최종 authority다.
+
+### COG-5 — retrieval / reflection quality
+
+- relevant Memory retrieval
+- Belief / Relationship context quality
+- repeated-failure reflection
+- personality별 장기전략 차이 검증
+- local model 품질/latency 비교
+
+### COG-6 — population cognition scaling
+
+- bounded concurrency
+- dedupe
+- batching
+- cognition LOD
+- household/leader representative reasoning
+- 100 / 300 / 1000 resident 비용 검증
 
 ---
 
