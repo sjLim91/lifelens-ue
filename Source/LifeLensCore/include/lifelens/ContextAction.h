@@ -250,12 +250,15 @@ inline bool resolveCivilizationContextTarget(
             const bool migrationExplore=
                 migrationPressureWarrantsLongRangeExploration(
                     migration,decision.material);
+            GridPos ordinaryExplorationOrigin=authoritativePosition;
+            ordinaryResourceExplorationOrigin(
+                world,authoritativePosition,ordinaryExplorationOrigin);
             const ResourceExplorationOpportunity opportunity=
                 (criticalExplore || migrationExplore)
                     ? chooseCriticalResourceExplorationOpportunity(
                         world,actor.id,decision.material,authoritativePosition)
                     : chooseResourceExplorationOpportunity(
-                        world,actor.id,decision.material,authoritativePosition);
+                        world,actor.id,decision.material,ordinaryExplorationOrigin);
             if(!opportunity.available) return false;
             outTarget=opportunity.target;
             return true;
