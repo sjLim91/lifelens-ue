@@ -24,6 +24,12 @@ inline int settlementPlanningCapacity(FacilityKind kind)
 }
 
 inline constexpr int SettlementServiceRadiusGrid = WorldChunkSpanGridCells * 2;
+// Durable settlement planning uses a tighter lived-core radius. If planning
+// references stay inside one core, their maximum mutual distance remains within
+// the ordinary service radius, so one camp cannot accidentally create duplicate
+// capacity simply because residents stand on opposite edges of a sprawling
+// infrastructure chain.
+inline constexpr int SettlementPlanningCoreRadiusGrid = WorldChunkSpanGridCells;
 
 struct SettlementFacilityDemand {
     int residents = 0;
