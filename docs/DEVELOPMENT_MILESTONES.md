@@ -154,6 +154,32 @@ Maps former F1~F8:
 
 **Important:** C/D/E/F are planning labels only, never simulation-time era gates.
 
+
+## Cognitive Agent parallel R&D lane — COG
+
+Canonical spec: `docs/COGNITIVE_AGENT_LAYER_v1.md`.
+
+The project now has a parallel cognition track for GPT-like resident reasoning without
+making an LLM the simulation authority. COG foundation work may proceed alongside
+C6/C7 when files/authority do not overlap, but runtime activation must not bypass the
+current settlement/population correctness gates.
+
+- **COG-0** — typed Core request/proposal/fail-closed validation contract.
+- **COG-1** — Web/host adapter + deterministic fake reasoner + timeout/stale response handling.
+- **COG-2** — free local inference prototype (WebGPU or local companion).
+- **COG-3** — bounded Memory/Belief/Relationship retrieval and reflection.
+- **COG-4** — validated strategic intent as bias/input to existing Utility/Civilization decisions.
+- **COG-5** — population cognition scheduler, batching and cognition LOD.
+- **COG-6** — accepted cognition event persistence and deterministic replay.
+
+Hard rules:
+
+- no paid API is required for the default product path.
+- immediate survival never waits for an LLM.
+- model free text is never executable authority.
+- Core supplies the allowed-intent set and validates every proposal.
+- missing/unavailable model falls back to existing Core AI with no simulation stall.
+
 ---
 
 # 4A. Earth & Human Foundation — CURRENT STRUCTURAL PRIORITY
