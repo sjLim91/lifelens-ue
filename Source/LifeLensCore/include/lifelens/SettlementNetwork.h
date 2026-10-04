@@ -24,7 +24,34 @@ struct SettlementClusterObservation {
     int storageSiteCount=0;
     bool active=false;
     bool established=false;
+    // Transient read-model footprint. A settlement may be elongated by a
+    // connected chain of facilities; residents/trade must be served by actual
+    // infrastructure, not only by the arithmetic-mean display anchor.
+    std::vector<GridPos> servicePositions;
 };
+
+inline int settlementClusterServiceDistance(
+    const SettlementClusterObservation& settlement,
+    GridPos position)
+{
+    if(settlement.servicePositions.empty()){
+        return manhattan(position,settlement.anchor);
+    }
+    int best=std::numeric_limits<int>::max();
+    for(const GridPos service: settlement.servicePositions){
+        best=std::min(best,manhattan(position,service));
+    }
+    return best;
+}
+
+inline bool settlementClusterServesPosition(
+    const SettlementClusterObservation& settlement,
+    GridPos position,
+    int maxDistance=SettlementServiceRadiusGrid)
+{
+    return settlementClusterServiceDistance(settlement,position)
+        <=std::max(0,maxDistance);
+}
 
 struct SettlementNetworkObservation {
     int settlementCount=0;
@@ -139,6 +166,7 @@ inline SettlementNetworkObservation observeSettlementNetwork(
         int operationalFacilityCount=0;
         int plannedFacilityCount=0;
         int storageSiteCount=0;
+        std::vector<GridPos> servicePositions;
     };
 
     std::unordered_map<std::size_t,Accumulator> groups;
@@ -149,6 +177,7 @@ inline SettlementNetworkObservation observeSettlementNetwork(
         group.x+=nodes[i].pos.x;
         group.y+=nodes[i].pos.y;
         ++group.nodes;
+        group.servicePositions.push_back(nodes[i].pos);
         if(nodes[i].kind==detail::SettlementNodeKind::Storage){
             ++group.storageSiteCount;
         }else{
@@ -171,6 +200,7 @@ inline SettlementNetworkObservation observeSettlementNetwork(
         cluster.operationalFacilityCount=group.operationalFacilityCount;
         cluster.plannedFacilityCount=group.plannedFacilityCount;
         cluster.storageSiteCount=group.storageSiteCount;
+        cluster.servicePositions=group.servicePositions;
         cluster.established=
             cluster.operationalFacilityCount>0
             || cluster.storageSiteCount>0;
@@ -191,7 +221,8 @@ inline SettlementNetworkObservation observeSettlementNetwork(
             SettlementClusterObservation* best=nullptr;
             int bestDistance=std::numeric_limits<int>::max();
             for(auto& cluster:result.settlements){
-                const int distance=manhattan(resident.second,cluster.anchor);
+                const int distance=
+                    settlementClusterServiceDistance(cluster,resident.second);
                 if(distance>SettlementServiceRadiusGrid) continue;
                 if(best==nullptr || distance<bestDistance
                    || (distance==bestDistance && cluster.id<best->id)){
