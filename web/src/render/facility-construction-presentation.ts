@@ -62,14 +62,18 @@ export function constructionMaterialPiles(trace: FacilityTrace, detail?: Civiliz
     .map(r => ({ material: r.material, units: Math.min(positive(r.delivered), positive(r.required)) }))
     .sort((a, b) => a.material.localeCompare(b.material))
     : [{ material: 'Unknown', units: Math.min(delivered, required) }];
+  let offset = 0;
+  const ranges = portions.map(portion => {
+    const start = offset; offset += portion.units;
+    return { start, end: offset, material: portion.material };
+  });
+  const total = Math.min(offset, required), unitsPerPile = required / C.pileSlots;
   const piles: ConstructionPile[] = [];
-  for (const portion of portions) {
-    let remaining = portion.units;
-    while (remaining > 0 && piles.length < C.pileSlots) {
-      const units = Math.min(remaining, required / C.pileSlots);
-      piles.push({ material: portion.material, fill: units / (required / C.pileSlots) });
-      remaining -= units;
-    }
+  for (let i = 0; i < C.pileSlots && i * unitsPerPile < total; i++) {
+    const start = i * unitsPerPile, end = Math.min(total, start + unitsPerPile);
+    const contents = ranges.filter(r => r.end > start && r.start < end);
+    piles.push({ material: contents.length === 1 ? contents[0].material : 'Unknown',
+      fill: (end - start) / unitsPerPile });
   }
   return piles;
 }

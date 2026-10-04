@@ -23,6 +23,8 @@ test('actual delivered volume, exact requirements and stale detail safe generic 
  for(const n of [0.01,3,10]) assert(Math.abs(H.constructionMaterialPiles(trace({deliveredMaterialUnits:n})).reduce((s,p)=>s+p.fill/4,0)-n/10)<1e-8);
  const t=trace({deliveredMaterialUnits:3}),d=detail({deliveredMaterialUnits:3,requirements:[{material:'Stone',required:10,delivered:3}]});
  assert(H.constructionMaterialPiles(t,d).every(p=>p.material==='Stone'));
+ const mixed=H.constructionMaterialPiles(trace({deliveredMaterialUnits:10}),detail({deliveredMaterialUnits:10,requirements:[{material:'Wood',required:6,delivered:6},{material:'Fiber',required:4,delivered:4}]}));
+ assert.equal(mixed.reduce((n,p)=>n+p.fill,0),4);assert(mixed.some(p=>p.material==='Wood'));assert(mixed.some(p=>p.material==='Fiber'));assert(mixed.some(p=>p.material==='Unknown'));
  assert(H.constructionMaterialPiles(t,detail()).every(p=>p.material==='Unknown'));
  assert.equal(H.deriveFacilityVisualState(trace({progress01:.75}),detail({workProgress:.1})).workProgress,.75);
 });
