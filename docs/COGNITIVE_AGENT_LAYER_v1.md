@@ -147,6 +147,23 @@ Critical survival은 LLM 결과를 기다리지 않는다.
 
 ---
 
+## 6A. Local provider security boundary
+
+The default Web adapter accepts only explicit loopback endpoints:
+`localhost`, `127.0.0.1`, or `::1` over HTTP/HTTPS.
+
+It does not attach an Authorization header and it rejects ordinary LAN/public
+hostnames. This keeps the default "free local" path from silently turning into a
+paid/cloud endpoint.
+
+The provider uses an OpenAI-compatible `/v1/chat/completions` request shape only
+as a transport convention. That does **not** make OpenAI or any cloud service a
+runtime dependency.
+
+The local model receives bounded factual context and is asked for one typed JSON
+proposal. It is explicitly told not to invent world facts and not to emit hidden
+chain-of-thought. Core validation remains mandatory before any future execution.
+
 ## 7. 결정론 / 저장
 
 LLM의 temperature를 0으로 만드는 것만으로 결정론을 보장한다고 가정하지 않는다.
@@ -196,9 +213,24 @@ snapshot format은 변경하지 않는다.
 Core request/proposal/validation contract.
 실제 모델 호출 없음.
 
-### COG-1
-Web/host cognition adapter + deterministic fake backend.
-JSON schema, timeout, queue, stale-response test.
+### COG-1 — implemented foundation
+Web cognition adapter + deterministic fake backend.
+
+Implemented contracts:
+- loopback-only OpenAI-compatible local provider
+- no Authorization/cloud credential path
+- dynamic JSON schema restricted to the Core-supplied allowed-intent list
+- bounded concurrency and bounded waiting queue
+- request timeout that still settles if a backend ignores AbortSignal
+- newer same-resident request invalidates an older late response
+- simulation-minute stale-response rejection
+- reset/dispose fail-closed behavior
+- deterministic fake provider for integration tests
+
+COG-1 is intentionally **not wired into Simulation decisions yet**.
+A successful local model response is still presentation/runtime-side data with no
+authority to change Core state. COG-4 introduces the first validated strategic
+decision input after replay/persistence boundaries are ready.
 
 ### COG-2
 무료 로컬 inference prototype.

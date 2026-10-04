@@ -1,0 +1,31 @@
+name: Web Cognitive Agent
+on:
+  push:
+    branches: ['work/cognitive-agent-*']
+    paths:
+      - 'web/src/cognition/**'
+      - 'web/tests/cognitive-agent/**'
+      - '.github/workflows/cognitive-agent-check.yml'
+  pull_request:
+    paths:
+      - 'web/src/cognition/**'
+      - 'web/tests/cognitive-agent/**'
+      - '.github/workflows/cognitive-agent-check.yml'
+jobs:
+  cognition:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --ignore-scripts --no-audit --no-fund
+        working-directory: web
+      - run: npm run typecheck
+        working-directory: web
+      - name: Local-only provider, schema, queue, timeout and stale-response regression
+        run: node tests/cognitive-agent/run.mjs
+        working-directory: web
+      - run: npm run build
+        working-directory: web
