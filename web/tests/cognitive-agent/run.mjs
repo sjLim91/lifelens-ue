@@ -147,7 +147,8 @@ await test('local provider sends schema-constrained request with no cloud auth h
     body.response_format.json_schema.schema.properties.intent.enum,
     ['ImproveFoodSecurity'],
   );
-  assert(!body.messages[0].content.includes('chain-of-thought.'));
+  assert(body.messages[0].content.includes('Do not provide hidden chain-of-thought.'));
+  assert(!body.messages[0].content.includes('show your chain of thought'));
 });
 
 await test('deterministic fake provider produces repeatable typed proposals',async()=>{
