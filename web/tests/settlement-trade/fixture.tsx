@@ -29,7 +29,7 @@ const facilities=mode==='invalid'?[]:settlements.flatMap((s,i)=>{
  return [facility(`${i*3+1}`,'PrimitiveStorage',x-.7,z-.8),facility(`${i*3+2}`,'Shelter',x+.6,z-.8),facility(`${i*3+3}`,'WorkSurface',x,z+1.2)];
 });
 const residents=mode==='invalid'?[]:settlements.flatMap((s,i)=>Array.from({length:mode==='grown'?7:2},(_,j)=>({
- id:`r${i}-${j}`,name:j?'수림':'가람',alive:true,hasPosition:true,gridX:s.gridX+(j%4-1)*2,gridY:s.gridY+3+Math.floor(j/4)*2,
+ id:`r${i}-${j}`,name:j?'수림':'가람',alive:true,hasPosition:true,gridX:s.gridX+(j%4-1)*2,gridY:s.gridY+8+Math.floor(j/4)*2,
  sex:j?'Female':'Male',lifeStage:'Adult',ageYears:30,lifeHistory:[],genetics:{heightPotential:.5,buildPotential:.5,faceShape:.5,skinTone:.5,hairPigment:.5},
  civilization:{inventory:[{item:'RawMaterial',material:'Wood',quantity:2}]},
  ...(i===0&&j===0&&['migration','frontier'].includes(mode)?{migration:{candidate:true,pressure01:.72,resourceScarcity01:.8,travelBurden01:.6,populationPressure01:.7,settlementAttachment01:.4,explorationDisposition01:.65,bottleneckMaterial:'Wood',hasFrontierTarget:mode==='frontier',frontierGridX:300,frontierGridY:30,frontierDistanceChunks:8}}:{}),
@@ -43,8 +43,8 @@ const refresh=()=>{world.setTerrain(terrain as any);world.setAuthoritativeSpatia
 refresh();
 for(let n=0;!(world as any).residentLayer.ready&&n<600;n++)await new Promise(r=>setTimeout(r,10));
 if(!(world as any).residentLayer.ready)throw Error('production resident GLB missing');
-refresh();world.setSimulationSpeed(1);
-const state={centerChunkX:0,centerChunkY:0,zoom:mode==='min'?.55:6.4,angle:0,elevation:1.05,panX:0,panZ:0};
+refresh();world.setSimulationSpeed(1);world.setSimulationMinute(720);
+const state={centerChunkX:0,centerChunkY:0,zoom:mode==='min'?.55:6.4,angle:Math.PI/3,elevation:.85,panX:0,panZ:0};
 world.setCamera(state);for(let i=0;i<100;i++)world.update(.02);
 const ui=createRoot(document.getElementById('ui')!);let selected:string|null=null;
 const drawUI=()=>ui.render(<><SettlementDetail snapshot={{selectedSettlementId:selected,civilization,observations:[]} as any}/>{['migration','frontier'].includes(mode)&&<div id="readout"><SelectedResidentReadout resident={residents[0] as any} residents={residents as any} onClear={()=>{world.setSelectedResident(null);ui.render(null);}}/></div>}</>);
