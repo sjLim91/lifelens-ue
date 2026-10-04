@@ -98,6 +98,9 @@ export class ResidentPropResources {
   private readonly geometries = new Map<string,THREE.BufferGeometry>();
   private disposed = false;
   constructor() {
+    this.empty.setAttribute('position', new THREE.Float32BufferAttribute([], 3));
+    this.empty.setAttribute('normal', new THREE.Float32BufferAttribute([], 3));
+    this.empty.setAttribute('color', new THREE.Float32BufferAttribute([], 3));
     for (const item of DISPLAY_ITEMS) this.geometries.set(item, this.merge(createResidentProp(item)));
     for (const [material,profile] of Object.entries(PRODUCTION_MATERIALS)) {
       for (let pieces=1;pieces<=WORLD_PRESENTATION.load.maxPieces;pieces++) {
