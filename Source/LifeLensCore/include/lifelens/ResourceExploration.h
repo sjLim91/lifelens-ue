@@ -32,6 +32,52 @@ struct ResourceExplorationOpportunity {
     double suitability = 0.0;
 };
 
+
+// Ordinary resource exploration is settlement-relative, not a walking frontier
+// chain. Once durable infrastructure exists, each newly reached chunk must not
+// become the next origin for another six-chunk search; otherwise a resident who
+// cannot establish a new camp can indefinitely materialize the world while
+// migration pressure remains low. Critical survival and explicit migration use
+// their own current-position long-range path and deliberately bypass this anchor.
+inline bool ordinaryResourceExplorationOrigin(
+    const World& world,
+    GridPos currentPosition,
+    GridPos& outOrigin)
+{
+    bool found=false;
+    int bestDistance=std::numeric_limits<int>::max();
+    GridPos best{};
+
+    const auto consider=[&](GridPos candidate){
+        const int distance=manhattan(currentPosition,candidate);
+        if(!found
+           || distance<bestDistance
+           || (
+                distance==bestDistance
+                && (
+                    candidate.x<best.x
+                    || (candidate.x==best.x && candidate.y<best.y)
+                )
+           )){
+            found=true;
+            bestDistance=distance;
+            best=candidate;
+        }
+    };
+
+    for(const ConstructedFacility& facility:world.facilities){
+        if(facility.id==0 || !facilityOperationalAndActive(facility)) continue;
+        consider(facility.pos);
+    }
+    for(const StorageSite& storage:world.storageSites){
+        if(storage.id==0) continue;
+        consider(storage.pos);
+    }
+
+    if(found) outOrigin=best;
+    return found;
+}
+
 inline double resourceExplorationPreference(
     const World& world,
     CharacterId actor,
