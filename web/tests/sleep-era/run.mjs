@@ -64,6 +64,15 @@ for(const id of ['NaturalSurvival','EarlySettlement','AgrarianSettlement','Coppe
 }
 assert.equal(formatEraEvidence('UnknownFutureEvidence'),'새로운 운영 근거');
 assert.equal(formatCivilizationEra('UnknownFutureEra'),'문명 단계 확인 중');
+
+const styles=readFileSync(resolve(root,'src/styles.css'),'utf8');
+assert(styles.includes('align-items: flex-start'));
+assert(styles.includes('align-content: flex-start'));
+const mobileEra=styles.match(/@media \(max-width: 767px\) \{[\s\S]*?\.world-overlay \.era-badge \{([\s\S]*?)\}[\s\S]*?\.era-dialog/);
+assert(mobileEra);
+assert(mobileEra[1].includes('min-height: 0'));
+assert(mobileEra[1].includes('font-size: .56rem'));
+assert(!mobileEra[1].includes('min-height: 44px'));
 let disposed=0; for(const mesh of group.children) mesh.addEventListener('dispose',()=>disposed++);
 layer.disposeStructureInstances(group); assert.equal(disposed,3);
 writeFileSync(resolve(out,'metrics.json'),JSON.stringify({sleepingPlaceDrawCalls:3,sleepingPlaceParts:7,sharedGeometryKinds:2,surfaceHeight:.14}));
