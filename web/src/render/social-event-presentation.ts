@@ -21,7 +21,7 @@ const clamp01 = (value: number): number => Number.isFinite(value)
 
 // Exact Core enum mapping; unknown future types are skipped.
 export function classifySocialEvent(event: RecentSocialEvent): SocialEventVisual | null {
-  if (!Object.hasOwn(C.colors, event.type)) return null;
+  if (!Object.prototype.hasOwnProperty.call(C.colors, event.type)) return null;
   const kind = event.type as SocialEventType;
   const level = levelRank[event.presentationLevel] ?? 0;
   const duration = [C.everydayDurationSeconds, C.meaningfulDurationSeconds,
