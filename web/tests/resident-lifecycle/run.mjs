@@ -86,4 +86,11 @@ test('Married/Commitment and Dating/Intimacy coalesce visuals only; unmatched so
 test('scale settles around feet pivot and freezes without mutation of Core facts',()=>{
  const root=new THREE.Group(),model=new THREE.Group(),shape=new ResidentLifeShape(root,model),r=resident();root.position.set(2,0,3);shape.setFacts(r,new THREE.Vector3(1,1,1),true);shape.setFacts({...r,lifeStage:'Child'},new THREE.Vector3(1.4,1.4,1.4));shape.updateScale(.1);assert(root.scale.y>1&&root.scale.y<1.4);const previous=root.scale.y;shape.updateScale(0);assert.equal(root.scale.y,previous);shape.updateScale(1);assert.equal(root.scale.y,1.4);assert.deepEqual(root.position.toArray(),[2,0,3]);assert.equal(r.lifeStage,'Adult');
 });
+test('late initial full observation is baseline, rather than old-event replay',()=>{
+ const t=timeline();t.observe([resident(),resident('b',{lifeHistory:undefined})],100);
+ t.observe([resident(),resident('b',{lifeHistory:[event('Married',100,['a'])]})],101);assert.equal(t.activeCues.length,0);
+ const t2=timeline();t2.observe([resident(),resident('b')],100);
+ t2.observe([resident('a',{lifeHistory:[event('Engaged',101,['b']),event('Married',101,['b'])]}),resident('b')],101);
+ assert.equal(t2.activeCues.length,1);assert.equal(t2.activeCues[0].type,'Married');
+});
 console.log(`Resident lifecycle: ${passed} tests passed`);

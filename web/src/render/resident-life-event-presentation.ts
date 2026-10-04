@@ -19,6 +19,8 @@ const valid = (p: SocialEventAnchor | null): p is SocialEventAnchor => !!p && [p
 const distance = (a: SocialEventAnchor, b: SocialEventAnchor) => Math.hypot(a.x-b.x, a.y-b.y, a.z-b.z);
 export class ResidentLifeEventPresentation {
   private initialized = false;
+  private presenceInitialized = false;
+  private readonly initialResidents = new Map<string, boolean>();
   private readonly cursors = new Map<string, HistoryCursor>();
   private readonly seen = new Set<string>();
   private readonly departures = new Map<string, SocialEventAnchor>();
@@ -46,6 +48,9 @@ export class ResidentLifeEventPresentation {
   }
   observe(residents: Resident[], minute: number): void {
     this.update();
+    for (const r of residents) if (!this.initialResidents.has(r.id)) this.initialResidents.set(r.id, !this.presenceInitialized);
+    if (residents.length) this.presenceInitialized = true;
+    while (this.initialResidents.size > C.maxResidentCursors) this.initialResidents.delete(this.initialResidents.keys().next().value!);
     if (!Number.isFinite(minute) || !residents.some(r => Array.isArray(r.lifeHistory))) return;
     const baseline = !this.initialized, byId = new Map(residents.map(r => [r.id,r]));
     const fresh: LifeCue[] = [];
@@ -66,7 +71,7 @@ export class ResidentLifeEventPresentation {
         this.remember(key);
         // Sliding/truncated history fails closed to events strictly newer than
         // its prior watermark. Full unchanged histories use O(1) cursors.
-        if (baseline || (!append && previous && time <= previous.minute)
+        if (baseline || (!previous && this.initialResidents.get(r.id) === true) || (!append && previous && time <= previous.minute)
           || !Number.isFinite(time) || time > minute || minute-time > C.replayWindowMinutes) continue;
         const cue = this.classify(r,e,byId);
         if (cue) fresh.push(cue);
@@ -77,7 +82,15 @@ export class ResidentLifeEventPresentation {
     while (this.cursors.size > C.maxResidentCursors) this.cursors.delete(this.cursors.keys().next().value!);
     this.initialized = true;
     const unique = new Map(this.cues.map(c => [c.key,c]));
-    for (const cue of fresh) if (!unique.has(cue.key)) unique.set(cue.key,cue);
+    for (const cue of fresh) {
+      if (cue.kind === 'relationship' && cue.targetId) {
+        const pair=lifePairKey(cue.actorId,cue.targetId);
+        const existing=[...unique.values()].find(c => c.kind === 'relationship' && c.targetId
+          && lifePairKey(c.actorId,c.targetId) === pair && Math.abs(c.minute-cue.minute) <= C.coalesceMinuteWindow);
+        if(existing) {if(existing.priority >= cue.priority) continue;unique.delete(existing.key);}
+      }
+      if (!unique.has(cue.key)) unique.set(cue.key,cue);
+    }
     this.cues = [...unique.values()].sort((a,b) => b.priority-a.priority || b.minute-a.minute || b.start-a.start).slice(0,C.maxActive);
     this.departures.clear();
   }
@@ -117,5 +130,5 @@ export class ResidentLifeEventPresentation {
     for (const c of this.cues) for (const p of [c.actor,c.target]) if (p) {p.x+=dx;p.z+=dz;}
   }
   clearActive(): void {this.cues=[];this.departures.clear();}
-  reset(): void {this.clearActive();this.seen.clear();this.cursors.clear();this.initialized=false;}
+  reset(): void {this.clearActive();this.seen.clear();this.cursors.clear();this.initialResidents.clear();this.presenceInitialized=false;this.initialized=false;}
 }

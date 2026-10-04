@@ -39,7 +39,7 @@ export class ResidentLifeShape {
         }
         o.geometry.setAttribute('lifeTorsoMask',new THREE.BufferAttribute(mask,1));
       }
-      const materials=Array.isArray(o.material)?o.material:[o.material];
+      const materials: THREE.Material[]=Array.isArray(o.material)?o.material:[o.material];
       for(const material of materials) {
         if(material.userData.lifeShapeInstalled)continue;
         material.userData.lifeShapeInstalled=true;
