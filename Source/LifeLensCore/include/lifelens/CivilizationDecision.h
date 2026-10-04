@@ -1491,17 +1491,14 @@ inline double settlementCraftDemandPressure(const Character& self)
         +0.18*clampCivilization01(self.civilization.craftingSkill));
 }
 
-inline double settlementFacilityNeedPressure(
+inline double settlementFacilityNeedPressureFromDemand(
     const World& world,
     const Character& self,
     GridPos authoritativePosition,
     FacilityKind kind,
-    const SettlementPopulation* population=nullptr)
+    const SettlementFacilityDemand& demand)
 {
-    if(!isSettlementFoundationFacility(kind)) return 0.0;
-    const auto demand=observeSettlementFacilityDemand(
-        world,self.id,kind,authoritativePosition,population);
-    if(!demand.unmet()) return 0.0;
+    if(!isSettlementFoundationFacility(kind) || !demand.unmet()) return 0.0;
 
     if(kind==FacilityKind::SleepingPlace){
         return clampCivilization01(
@@ -1542,6 +1539,20 @@ inline double settlementFacilityNeedPressure(
     }
 
     return 0.0;
+}
+
+inline double settlementFacilityNeedPressure(
+    const World& world,
+    const Character& self,
+    GridPos authoritativePosition,
+    FacilityKind kind,
+    const SettlementPopulation* population=nullptr)
+{
+    if(!isSettlementFoundationFacility(kind)) return 0.0;
+    const SettlementFacilityDemand demand=observeSettlementFacilityDemand(
+        world,self.id,kind,authoritativePosition,population);
+    return settlementFacilityNeedPressureFromDemand(
+        world,self,authoritativePosition,kind,demand);
 }
 
 inline CivilizationUtilityDecision bestSettlementFoundationDecision(
@@ -1641,8 +1652,8 @@ inline CivilizationUtilityDecision bestSettlementFoundationDecision(
             considerCivilizationDecision(best,repair);
         }
 
-        double pressure=settlementFacilityNeedPressure(
-            world,self,authoritativePosition,kind,population);
+        double pressure=settlementFacilityNeedPressureFromDemand(
+            world,self,authoritativePosition,kind,demand);
         if(project==nullptr && pressure<0.24 && !hasRestorableRuin) continue;
         if(project!=nullptr) pressure=std::max(pressure,0.46);
 
@@ -1659,8 +1670,8 @@ inline CivilizationUtilityDecision bestSettlementFoundationDecision(
             if(hasRestorableRuin) continue;
 
             const SettlementFacilitySiteOpportunity site=
-                chooseSettlementFacilitySite(
-                    world,self.id,kind,authoritativePosition,population);
+                chooseSettlementFacilitySiteFromDemand(
+                    world,self.id,kind,authoritativePosition,demand,population);
             if(!site.available) continue;
             candidate.facilityAction=FacilityBuildAction::Plan;
             candidate.hasFacilityTarget=true;

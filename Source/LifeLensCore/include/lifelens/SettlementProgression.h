@@ -636,17 +636,17 @@ inline double settlementTerrainHabitabilityScore(
     return score;
 }
 
-inline SettlementFacilitySiteOpportunity chooseSettlementFacilitySite(
+inline SettlementFacilitySiteOpportunity chooseSettlementFacilitySiteFromDemand(
     const World& world,
     CharacterId planner,
     FacilityKind kind,
     GridPos activityAnchor,
+    const SettlementFacilityDemand& activityDemand,
     const SettlementPopulation* population=nullptr)
 {
     SettlementFacilitySiteOpportunity result;
     if(planner==0 || !isSettlementFoundationFacility(kind)
-       || !observeSettlementFacilityDemand(
-           world,planner,kind,activityAnchor,population).canPlan()) return result;
+       || !activityDemand.canPlan()) return result;
 
     // NEW GAME spawn is only an entry coordinate. Settlement candidates emerge
     // around where the resident is actually acting now, then existing facilities
@@ -710,6 +710,21 @@ inline SettlementFacilitySiteOpportunity chooseSettlementFacilitySite(
         }
     }
     return result;
+}
+
+inline SettlementFacilitySiteOpportunity chooseSettlementFacilitySite(
+    const World& world,
+    CharacterId planner,
+    FacilityKind kind,
+    GridPos activityAnchor,
+    const SettlementPopulation* population=nullptr)
+{
+    SettlementFacilitySiteOpportunity result;
+    if(planner==0 || !isSettlementFoundationFacility(kind)) return result;
+    const SettlementFacilityDemand demand=observeSettlementFacilityDemand(
+        world,planner,kind,activityAnchor,population);
+    return chooseSettlementFacilitySiteFromDemand(
+        world,planner,kind,activityAnchor,demand,population);
 }
 
 inline ConstructedFacility* establishSettlementFacilityProject(
