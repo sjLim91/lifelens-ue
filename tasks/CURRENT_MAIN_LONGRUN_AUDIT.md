@@ -1,3 +1,16 @@
+## R10 execution trigger — 2026-10-04
+
+- source product head: `93358e5edf05b0ea936c4d41f690b55623d2b34c` (#635 candidate)
+- audit branch: `fix/p0-c6-r10-premature-split-20261004`
+- purpose: verify premature founder split fix before merge.
+- seeds: 874213954, 4242001.
+- checkpoints: 100 / 365 / 1000 days.
+- acceptance focus:
+  - seed 874213954 day100 must not create accidental second active settlement while migrationCandidates=0.
+  - seed 4242001 facilities/chunks/runtime must not regress from R9/#623 improvement.
+  - collect trade departure/exchange/return and health/mortality evidence for next closeout step.
+- this audit trigger branch is evidence-only and must not be merged.
+
 # Current-Main Long-Run Audit — 2026-10-04 Reconciled
 
 초기 감사 기준: `b277e091bc39d071ea30ba0d57281251da811dba`  
