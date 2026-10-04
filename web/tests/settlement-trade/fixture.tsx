@@ -16,20 +16,22 @@ const settlement=(id:string,x:number,z:number,extra={})=>({id,gridX:grid(x),grid
 let settlements=[settlement('2',-3,0),settlement('4',3,0)];
 if(['single','grown','migration','frontier'].includes(mode))settlements=[settlement('2',0,0,mode==='grown'?{residentCount:11,facilityCount:18,operationalFacilityCount:15,plannedFacilityCount:3,storageSiteCount:3}:{})];
 if(mode==='many')settlements=Array.from({length:10},(_,i)=>settlement(String(i+1),(i%5-2)*6,Math.floor(i/5)*8-4));
+if(mode.startsWith('budget-'))settlements=Array.from({length:Number(mode.slice(7))},(_,i)=>settlement(String(i+1),(i%10-4.5)*3,(Math.floor(i/10)-4.5)*3,{residentCount:0,facilityCount:0,operationalFacilityCount:0,plannedFacilityCount:0,storageSiteCount:0}));
 if(mode==='invalid')settlements=[settlement('',NaN,0)];
 const route=(id:string,a:any,b:any,active=true)=>({id,firstSettlement:a.id,secondSettlement:b.id,
   firstGridX:a.gridX,firstGridY:a.gridY,secondGridX:b.gridX,secondGridY:b.gridY,
   partnerCount:active?3:0,exchangeCount:active?8:0,distanceGrid:24,active});
 let routes=['active','inactive','popup','min','max'].includes(mode)?[route('2:4',settlements[0],settlements[1],mode!=='inactive')]:[];
 if(mode==='many')routes=settlements.slice(1).map((s,i)=>route(String(i+1),settlements[0],s));
+if(mode.startsWith('budget-')&&settlements.length>1)routes=Array.from({length:settlements.length===10?20:100},(_,i)=>route(String(i+1),settlements[i%settlements.length],settlements[(i+1)%settlements.length]));
 if(mode==='invalid')routes=[route('bad',settlements[0],{id:'missing',gridX:0,gridY:Infinity})];
 const facility=(id:string,kind:string,x:number,z:number)=>({id,kind,gridX:grid(x),gridY:grid(z),state:'Operational',active:true,lit:false,durability:1,workProgress:1,constructionWork:100,requiredWork:100,requiredMaterialUnits:8,deliveredMaterialUnits:8,requirements:[{material:'Wood',required:8,delivered:8}]});
-const facilities=mode==='invalid'?[]:settlements.flatMap((s,i)=>{
+const facilities=mode==='invalid'||mode.startsWith('budget-')?[]:settlements.flatMap((s,i)=>{
  const x=(s.gridX/32-.5)*8,z=(s.gridY/32-.5)*8;
  return [facility(`${i*3+1}`,'PrimitiveStorage',x-.7,z-.8),facility(`${i*3+2}`,'Shelter',x+.6,z-.8),facility(`${i*3+3}`,'WorkSurface',x,z+1.2)];
 });
 if(mode==='grown')for(let i=0;i<15;i++)facilities.push(facility(String(i+4),['SleepingPlace','WorkSurface','FirePit'][i%3],(i%5-2)*3,Math.floor(i/5)*3-5));
-const residents=mode==='invalid'?[]:settlements.flatMap((s,i)=>Array.from({length:mode==='grown'?11:2},(_,j)=>({
+const residents=mode==='invalid'||mode.startsWith('budget-')?[]:settlements.flatMap((s,i)=>Array.from({length:mode==='grown'?11:2},(_,j)=>({
  id:`r${i}-${j}`,name:j?'수림':'가람',alive:true,hasPosition:true,gridX:s.gridX+(j%4-1)*2,gridY:s.gridY+8+Math.floor(j/4)*2,
  sex:j?'Female':'Male',lifeStage:'Adult',ageYears:30,lifeHistory:[],genetics:{heightPotential:.5,buildPotential:.5,faceShape:.5,skinTone:.5,hairPigment:.5},
  civilization:{inventory:[{item:'RawMaterial',material:'Wood',quantity:2}]},
@@ -45,7 +47,7 @@ refresh();
 for(let n=0;!(world as any).residentLayer.ready&&n<600;n++)await new Promise(r=>setTimeout(r,10));
 if(!(world as any).residentLayer.ready)throw Error('production resident GLB missing');
 refresh();world.setSimulationSpeed(1);world.setSimulationMinute(720);
-const state={centerChunkX:0,centerChunkY:0,zoom:mode==='min'?.55:mode==='many'?(innerWidth<500?2:4):mode==='grown'?(innerWidth<500?2.8:4.5):6.4,angle:Math.PI/3,elevation:.85,panX:0,panZ:0};
+const state={centerChunkX:0,centerChunkY:0,zoom:mode==='min'?.55:(mode==='many'||mode.startsWith('budget-'))?(innerWidth<500?1.2:2.2):mode==='grown'?(innerWidth<500?2.8:4.5):6.4,angle:Math.PI/3,elevation:.85,panX:0,panZ:0};
 world.setCamera(state);for(let i=0;i<100;i++)world.update(.02);
 const ui=createRoot(document.getElementById('ui')!);let selected:string|null=null;
 const drawUI=()=>ui.render(<><SettlementDetail snapshot={{selectedSettlementId:selected,civilization,observations:[]} as any}/>{['migration','frontier'].includes(mode)&&<div id="readout"><SelectedResidentReadout resident={residents[0] as any} residents={residents as any} onClear={()=>{world.setSelectedResident(null);ui.render(null);}}/></div>}</>);
