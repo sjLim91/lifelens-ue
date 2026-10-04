@@ -52,6 +52,13 @@ if(mode==='fail-closed'){
  residents=[resident('missing',-1,1,undefined,p('Gather','None',0,0,{civilizationResourceNode:'missing',civilizationMaterial:'Wood'})),resident('zero',1,1,[material('Wood',0)],p('Store','None',0,0,{civilizationStorage:'missing',civilizationMaterial:'Wood'})),resident('unknown',-1,-1,[material('FutureMaterial')],p('FutureIntent','FutureAction',0,0)),resident('no-directive',1,-1,[])];
  residents.push({...resident('dead',0,0,[material('Wood')],p('Gather','None',0,0)),alive:false},{...resident('unpositioned',0,0,[material('Wood')],p('Gather','None',0,0)),hasPosition:false});
 }
+// Independent read-only post-transfer inputs, not a Web simulation of arrival.
+// The later DTO places departed residents outside the storage/workbench footprint.
+if(mode==='storage-after') {
+ resources.push({id:'next-food',material:'PlantFood',gridX:grid(0),gridY:grid(3),quantity:8,maxQuantity:8});
+ for(const [i,r] of residents.entries()) {r.gridX=grid(i?1:-1);r.gridY=grid(1.8);r.presentation=p('Gather','None',0,3,{phase:'Moving',civilizationResourceNode:'next-food',civilizationMaterial:'PlantFood'});}
+}
+if(mode==='craft-after') {residents[0].gridX=grid(-1);residents[0].gridY=grid(1.6);}
 const traces=facilities.map(f=>({id:'facility:'+f.id,kind:'Facility',facilityKind:f.kind,gridX:f.gridX,gridY:f.gridY,state:f.state,progress01:f.workProgress,deliveredMaterialUnits:f.deliveredMaterialUnits,requiredMaterialUnits:f.requiredMaterialUnits,active:f.active,lit:f.lit,cropPlanted:f.cropPlanted,cropGrowth01:f.cropGrowth01,cropMoisture01:f.cropMoisture01,cropCare01:f.cropCare01,cropHarvestUnits:f.cropHarvestUnits}));
 const terrain={available:true,worldSeed:'production-read-only',centerChunkX:0,centerChunkY:0,humanTraces:{available:true,entries:traces},chunks:Array.from({length:3},(_,i)=>({x:0,y:i-1,elevation01:0,waterKind:'None',grassCoverage01:0,shrubCoverage01:0,rockCoverage01:0}))};
 const world={available:true,facilities,storages,resources};const l=new ResidentWorldLayer(),f=new FacilityLayer(),emissions=new FacilityEmissionLayer(),dressing=new GroundDetailLayer();scene.add(l.group,f.group,emissions.group,dressing.group);
