@@ -237,6 +237,43 @@ int main()
     assert(autonomousSettlementInfrastructurePlanAllowed(
         world,distant,&roamingPopulation));
 
+    // One resident at the real compact camp may still plan when the other
+    // residents are temporarily away, provided the camp has both habitation
+    // and an everyday activity core.
+    const GridPos compactCore{anchor.x,anchor.y};
+    world.facilities.push_back(completedFixture(
+        900,FacilityKind::SleepingPlace,compactCore,owner,world.minute));
+    world.facilities.push_back(completedFixture(
+        901,FacilityKind::WorkSurface,
+        {compactCore.x+facilityMinimumCenterDistanceGrid(
+            FacilityKind::WorkSurface,FacilityKind::SleepingPlace),
+         compactCore.y},
+        owner,world.minute));
+    SettlementPopulation compactPopulation=population;
+    for(auto& location:compactPopulation) location.second=distant;
+    compactPopulation[roamingActor.id]=compactCore;
+    assert(autonomousSettlementInfrastructurePlanAllowed(
+        world,compactCore,&compactPopulation));
+
+    // A facility chain is not a lived core. Even though this fire pit is inside
+    // the broad service radius of the explorer, it must not authorize the next
+    // durable Plan while that explorer is alone.
+    const GridPos chainEdge{
+        compactCore.x+SettlementServiceRadiusGrid*3,
+        compactCore.y
+    };
+    world.facilities.push_back(completedFixture(
+        902,FacilityKind::FirePit,
+        {chainEdge.x-SettlementPlanningCoreRadiusGrid,chainEdge.y},
+        owner,world.minute));
+    SettlementPopulation chainPopulation=compactPopulation;
+    chainPopulation[roamingActor.id]=chainEdge;
+    assert(!autonomousSettlementInfrastructurePlanAllowed(
+        world,chainEdge,&chainPopulation));
+    const auto chainCraft=bestCraftDecisionAtPosition(
+        world,roamingActor,chainEdge,&chainPopulation);
+    assert(!civilizationDecisionOpensSettlementInfrastructure(chainCraft));
+
     for(auto& location:population) location.second=distant;
     assert(demand(FacilityKind::SleepingPlace,anchor).residents==0);
     assert(demand(FacilityKind::SleepingPlace,distant).operationalCapacity==0);
