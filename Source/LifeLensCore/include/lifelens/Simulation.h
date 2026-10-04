@@ -9,6 +9,7 @@
 #include "CivilizationActivityReadModel.h"
 #include "CivilizationKnowledgeTransmission.h"
 #include "CivilizationObserverReadModel.h"
+#include "CognitiveAgent.h"
 #include "ContextAction.h"
 #include "Death.h"
 #include "DecisionExecution.h"
@@ -124,6 +125,21 @@ public:
     FamilyObservation observeFamily(CharacterId id) const;
     WorldOverviewObservation observeWorldOverview() const;
     ResidentCivilizationActivityObservation observeResidentCivilizationActivity(CharacterId id) const;
+    CognitiveRequest observeCognitiveRequest(
+        CharacterId id,
+        CognitiveTriggerKind trigger) const {
+        const Character* character=findObservedCharacter(world_,id);
+        if(character==nullptr || !character->alive) return CognitiveRequest{};
+        return buildCognitiveRequest(
+            *character,
+            relationships_,
+            world_.minute,
+            trigger,
+            cognitiveStrategicIntentCatalog(),
+            DefaultCognitiveMemoryContextLimit,
+            DefaultCognitiveBeliefContextLimit,
+            DefaultCognitiveRelationshipContextLimit);
+    }
     MigrationPressureObservation observeResidentMigrationPressure(
         CharacterId id) const {
         const auto runtimeIt=runtime_.find(id);
