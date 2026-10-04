@@ -128,6 +128,7 @@ export class ResidentLifeEventPresentation {
   }
   rebase(dx: number, dz: number): void {
     for (const c of this.cues) for (const p of [c.actor,c.target]) if (p) {p.x+=dx;p.z+=dz;}
+    for (const p of this.departures.values()) {p.x+=dx;p.z+=dz;}
   }
   clearActive(): void {this.cues=[];this.departures.clear();}
   reset(): void {this.clearActive();this.seen.clear();this.cursors.clear();this.initialResidents.clear();this.presenceInitialized=false;this.initialized=false;}

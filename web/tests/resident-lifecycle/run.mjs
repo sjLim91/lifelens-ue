@@ -68,8 +68,8 @@ test('no inferred couple/pregnancy/birth event; distance and death clear living 
  anchors.delete('a');t.update();assert.equal(t.activeCues.length,0);anchors.set('a',{x:0,y:0,z:0});
 });
 test('anchors snapshot and rebase; Death uses prior rendered site, no dead partner line',()=>{
- const t=timeline();t.observe([resident()],100);t.captureDepartures([resident('a',{alive:false,lifeHistory:[event('Death')]})]);anchors.delete('a');t.observe([resident('a',{alive:false,lifeHistory:[event('Death')]})],101);
- assert.equal(t.activeCues.length,1);assert.equal(t.activeCues[0].target,undefined);t.rebase(-16,32);assert.equal(t.activeCues[0].actor.x,-16);now=4;t.update();assert.equal(t.activeCues.length,0);anchors.set('a',{x:0,y:0,z:0});
+ const t=timeline();t.observe([resident()],100);t.captureDepartures([resident('a',{alive:false,lifeHistory:[event('Death')]})]);t.rebase(8,-4);anchors.delete('a');t.observe([resident('a',{alive:false,lifeHistory:[event('Death')]})],101);
+ assert.equal(t.activeCues.length,1);assert.equal(t.activeCues[0].target,undefined);t.rebase(-16,32);assert.equal(t.activeCues[0].actor.x,-8);assert.equal(t.activeCues[0].actor.z,28);now=4;t.update();assert.equal(t.activeCues.length,0);anchors.set('a',{x:0,y:0,z:0});
 });
 test('GPU one fixed buffer/material, pause, 1000 refreshes, bounds and disposal',()=>{
  const l=new ResidentLifeEventLayer(resolve),camera=new THREE.PerspectiveCamera();camera.position.set(5,8,10);l.observe([resident()],100);const mesh=l.group.children[0],geo=mesh.geometry,mat=mesh.material;let gd=0,md=0;geo.addEventListener('dispose',()=>gd++);mat.addEventListener('dispose',()=>md++);
