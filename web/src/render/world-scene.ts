@@ -18,6 +18,7 @@ import { AtmosphereLayer } from './atmosphere-layer';
 import { AuthoritativeSpatialTargetLayer } from './authoritative-spatial-target-layer';
 import { GroundDetailLayer } from './ground-detail-layer';
 import { FacilityLayer } from './facility-layer';
+import { ResidentLifeEventLayer } from './resident-life-event-layer';
 import { HumanTraceLayer } from './human-trace-layer';
 import { ResidentWorldLayer } from './resident-world-layer';
 import { SocialEventLayer } from './social-event-layer';
@@ -68,6 +69,8 @@ export class WorldScene {
   private footTrafficResidents: Resident[] = [];
   private footTrafficTerrain: TerrainWindow | null = null;
   private readonly facilityLayer = new FacilityLayer();
+  private readonly lifeEventLayer = new ResidentLifeEventLayer(id => this.residentLayer.socialEventAnchor(id));
+  private lifeResidents: Resident[] = [];
   private readonly humanTraceLayer = new HumanTraceLayer();
   private readonly waterLayer = new WaterLayer();
   private readonly vegetationLayer = new VegetationLayer();
@@ -107,6 +110,7 @@ export class WorldScene {
     this.scene.add(this.groundDetailLayer.group);
     this.scene.add(this.authoritativeSpatialTargetLayer.group);
     this.scene.add(this.facilityLayer.group);
+    this.scene.add(this.lifeEventLayer.group);
     this.scene.add(this.footTrafficLayer.group);
     this.scene.add(this.settlementFocusLayer.group);
     this.scene.add(this.humanTraceLayer.group);
@@ -164,10 +168,11 @@ export class WorldScene {
   }
 
   setSocialEvents(payload: RecentSocialEventsPayload, minute: number): void {
+    this.lifeEventLayer.observe(this.lifeResidents, minute);
     this.socialEventLayer.observe(payload, minute);
   }
 
-  resetSocialEvents(): void { this.socialEventLayer.reset(); }
+  resetSocialEvents(): void { this.socialEventLayer.reset(); this.lifeEventLayer.reset(); this.lifeResidents = []; }
 
   setEnvironment(environment: DynamicEnvironment | null): void {
     if (environment?.available === false) environment = null;
@@ -210,12 +215,14 @@ export class WorldScene {
   setSimulationSpeed(speed: number): void {
     this.residentLayer.setSimulationSpeed(speed);
     this.facilityLayer.setSimulationSpeed(speed);
+    this.lifeEventLayer.setSimulationSpeed(speed);
     this.footTrafficLayer.setSpeed(speed);
   }
 
   breakFootTrafficContinuity(): void {
     this.footTrafficLayer.breakContinuity();
     this.socialEventLayer.clearActive();
+    this.lifeEventLayer.clearActive();
   }
 
   pickResident(normalizedX: number, normalizedY: number): string | null {
@@ -280,7 +287,12 @@ export class WorldScene {
     centerX: number,
     centerY: number,
   ): void {
+    this.lifeEventLayer.captureDepartures(residents);
+    this.lifeResidents = residents;
     if (this.socialEventCenter) {
+      this.lifeEventLayer.rebase(
+        (this.socialEventCenter.x - centerX) * WORLD_GRID_CONTRACT.worldUnitsPerChunk,
+        (this.socialEventCenter.y - centerY) * WORLD_GRID_CONTRACT.worldUnitsPerChunk);
       this.socialEventLayer.rebase(
         (this.socialEventCenter.x - centerX) * WORLD_GRID_CONTRACT.worldUnitsPerChunk,
         (this.socialEventCenter.y - centerY) * WORLD_GRID_CONTRACT.worldUnitsPerChunk,
@@ -314,7 +326,8 @@ export class WorldScene {
 
     this.residentLayer.update(deltaSeconds);
     this.facilityLayer.update(deltaSeconds, this.camera);
-    this.socialEventLayer.update(this.camera);
+    this.lifeEventLayer.update(this.camera, deltaSeconds);
+    this.socialEventLayer.update(this.camera, this.lifeEventLayer.presentation.majorPairs);
     this.waterLayer.update(deltaSeconds);
     this.weatherLayer.update(deltaSeconds);
   }
@@ -461,6 +474,7 @@ export class WorldScene {
     this.groundDetailLayer.dispose();
     this.authoritativeSpatialTargetLayer.dispose();
     this.facilityLayer.dispose();
+    this.lifeEventLayer.dispose();
     this.footTrafficLayer.dispose();
     this.settlementFocusLayer.dispose();
     this.humanTraceLayer.dispose();
@@ -533,5 +547,6 @@ export class WorldScene {
   }
 
 }
+
 
 

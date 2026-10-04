@@ -36,6 +36,9 @@ import { createResidentMotionLibrary, residentGestureRate } from './resident-mot
 import { calibrateResidentSleep, residentSleepFallbackClip, residentStandingFallbackClip, ResidentSleepMotion, type ResidentSleepCalibration } from './resident-sleep-motion';
 import { residentToWorldPosition } from './resident-world-coordinates';
 import type { SocialEventAnchor } from './social-event-presentation';
+import { deriveResidentLifeVisualState, parentingPresentationPair } from './resident-life-presentation';
+import { ResidentLifeShape } from './resident-life-shape';
+import { WORLD_PRESENTATION } from './world-presentation-config';
 
 const BASE_MODEL_COMMIT = 'ddd5fc34a445bcded3cf9836607aaeebc19a5c78';
 const BASE_MODEL_URL =
@@ -75,6 +78,9 @@ interface ResidentActor {
   model: THREE.Group;
   appearanceFacts: Resident;
   appearanceSignature: string;
+  lifeShape: ResidentLifeShape;
+  lifeStageVisual: string;
+  parentingTargetId: string;
   inventoryProps: ResidentInventoryProps;
   mixer: THREE.AnimationMixer;
   actions: Map<MotionName, THREE.AnimationAction>;
@@ -244,6 +250,7 @@ export class ResidentWorldLayer {
     }
 
     this.pendingResidents = residents;
+    const lifeResidentsById = new Map(residents.map(r => [r.id, r]));
     this.eventResidentIds.clear();
     for (const resident of residents) {
       if (resident.alive !== false && resident.hasPosition
@@ -296,6 +303,8 @@ export class ResidentWorldLayer {
       if (!position) continue;
 
       const actor = this.ensureActor(resident);
+      const parenting = parentingPresentationPair(resident, lifeResidentsById);
+      actor.parentingTargetId = parenting?.interacting ? parenting.targetId : '';
       const next = new THREE.Vector3(
         position.x,
         position.y,
@@ -433,7 +442,17 @@ export class ResidentWorldLayer {
       }
     }
 
-    return null;
+    // A small bounded world-space touch radius for children; actual mesh hits
+    // retain priority. Never make a large invisible collider over neighbours.
+    let best: { id: string; distance: number } | undefined;
+    for (const [id, actor] of this.actors) {
+      if (!actor.root.visible || !['Baby','Toddler','Child'].includes(actor.lifeStageVisual)) continue;
+      const center = actor.current.clone();center.y += actor.root.scale.y * 0.45;
+      const distance = raycaster.ray.distanceSqToPoint(center);
+      const radius = Math.min(WORLD_PRESENTATION.residentLife.touchRadiusCap, WORLD_PRESENTATION.residentLife.childTouchRadius);
+      if (distance <= radius*radius && (!best || distance < best.distance)) best = {id,distance};
+    }
+    return best?.id ?? null;
   }
 
   update(deltaSeconds: number): void {
@@ -447,6 +466,8 @@ export class ResidentWorldLayer {
 
     for (const actor of this.actors.values()) {
       if (!actor.root.visible) continue;
+      actor.lifeShape.updateScale(this.simulationSpeed > 0 ? dt : 0);
+      actor.lifeShape.beforeMotion();
 
       const delta = this.movementDelta.subVectors(actor.target, actor.current);
       const distance = delta.length();
@@ -556,6 +577,9 @@ export class ResidentWorldLayer {
         this.setAction(actor, presentationMoving);
         actor.mixer.update(motionDt);
       }
+      const child = actor.parentingTargetId ? this.actors.get(actor.parentingTargetId) : undefined;
+      actor.lifeShape.afterMotion(sleepHandled, Boolean(child?.root.visible && child.initialized
+        && actor.current.distanceTo(child.current) <= 3 && !presentationMoving));
       actor.inventoryProps.update();
     }
 
@@ -715,8 +739,8 @@ export class ResidentWorldLayer {
         continue;
       }
 
-      const sourceY = source.current.y + 1.18;
-      const targetY = target.current.y + 1.18;
+      const sourceY = source.current.y + (connector.kind === 'Parenting' ? source.root.scale.y * 0.6 : 1.18);
+      const targetY = target.current.y + (connector.kind === 'Parenting' ? target.root.scale.y * 0.6 : 1.18);
       const midpointLift = Math.min(
         0.42,
         0.18 + horizontalDistance * 0.08,
@@ -845,6 +869,11 @@ export class ResidentWorldLayer {
     }
   }
 
+  private materialAppearanceSignature(profile: ReturnType<typeof createResidentAppearanceProfile>): string {
+    const { heightWorldUnits: _height, widthScale: _width, depthScale: _depth, gaitRateBias: _gait, ...materials } = profile;
+    return JSON.stringify(materials);
+  }
+
   private ensureActor(resident: Resident): ResidentActor {
     const existing = this.actors.get(resident.id);
     if (existing) {
@@ -854,16 +883,21 @@ export class ResidentWorldLayer {
       const facts = { ...existing.appearanceFacts };
       if (resident.sex !== undefined) facts.sex = resident.sex;
       if (resident.ageYears !== undefined) facts.ageYears = resident.ageYears;
+      if (resident.lifeStage !== undefined) facts.lifeStage = resident.lifeStage;
+      facts.pregnancy = resident.pregnancy;
+      facts.alive = resident.alive;
       if (resident.genetics !== undefined) facts.genetics = { ...facts.genetics, ...resident.genetics };
       const appearance = createResidentAppearanceProfile(facts);
-      const signature = JSON.stringify(appearance);
+      const signature = this.materialAppearanceSignature(appearance);
       if (signature !== existing.appearanceSignature) {
         applyResidentMaterialVariant(existing.model, appearance);
-        existing.root.scale.set(appearance.heightWorldUnits * appearance.widthScale,
-          appearance.heightWorldUnits, appearance.heightWorldUnits * appearance.depthScale);
-        existing.gaitRateBias = appearance.gaitRateBias;
+        existing.lifeShape.install();
         existing.appearanceSignature = signature;
       }
+      existing.lifeShape.setFacts(facts, new THREE.Vector3(appearance.heightWorldUnits * appearance.widthScale,
+        appearance.heightWorldUnits, appearance.heightWorldUnits * appearance.depthScale));
+      existing.gaitRateBias = appearance.gaitRateBias;
+      existing.lifeStageVisual = deriveResidentLifeVisualState(facts).stage;
       existing.appearanceFacts = facts;
       // Missing inventory is unknown: do not leave an already-consumed tool visible.
       existing.inventoryProps.setInventory(resident.civilization?.inventory, resident.presentation);
@@ -891,6 +925,8 @@ export class ResidentWorldLayer {
       appearance.heightWorldUnits * appearance.depthScale,
     );
 
+    const lifeShape = new ResidentLifeShape(root, model);
+    lifeShape.install();lifeShape.setFacts(resident, root.scale.clone(), true);
     const mixer = new THREE.AnimationMixer(root);
     const actions = new Map<MotionName, THREE.AnimationAction>();
     for (const [motion, clip] of this.motionClips) {
@@ -913,7 +949,8 @@ export class ResidentWorldLayer {
       visual,
       model,
       appearanceFacts: resident,
-      appearanceSignature: JSON.stringify(appearance),
+      appearanceSignature: this.materialAppearanceSignature(appearance),
+      lifeShape, lifeStageVisual: deriveResidentLifeVisualState(resident).stage, parentingTargetId: '',
       inventoryProps,
       mixer,
       actions,
@@ -1196,6 +1233,7 @@ export class ResidentWorldLayer {
       )
       : this.restMotion(actor);
 
+    if (actor.lifeStageVisual === 'Baby' && (desired === 'walk' || desired === 'carry')) desired = 'idle';
     if (!this.actionFor(actor, desired)) {
       desired = moving && actor.actions.has('walk') ? 'walk' : 'idle';
     }
@@ -1219,5 +1257,6 @@ export class ResidentWorldLayer {
     actor.active = desired;
   }
 }
+
 
 

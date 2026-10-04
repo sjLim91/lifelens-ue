@@ -1,18 +1,29 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
-import { join } from 'node:path';
+import { mkdtempSync, readFileSync, writeFileSync, rmSync, mkdirSync } from 'node:fs';
+import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import * as THREE from 'three';
 import ts from 'typescript';
 const directory = mkdtempSync(fileURLToPath(new URL('./compiled-', import.meta.url)));
+const compiled = new Set();
+function compile(input) {
+  const target = join(directory, input.replace(/\.ts$/, '.mjs'));
+  if (compiled.has(input)) return target;
+  compiled.add(input);
+  let code = ts.transpileModule(readFileSync(new URL(`../../src/${input}`, import.meta.url), 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.ES2022, target: ts.ScriptTarget.ES2022 },
+  }).outputText;
+  code = code.replace(/(from\s+['"])(\.[^'"]+)(['"])/g, (_, start, dependency, end) => {
+    compile(join(dirname(input), dependency + '.ts'));
+    return start + dependency + '.mjs' + end;
+  });
+  mkdirSync(dirname(target), {recursive:true});writeFileSync(target, code);return target;
+}
+const source = input => import(pathToFileURL(compile(input)));
 let passed = 0;
 function test(name, fn) { fn(); passed++; console.log(`PASS ${name}`); }
 try {
-  const path = join(directory, 'appearance.mjs');
-  writeFileSync(path, ts.transpileModule(readFileSync(new URL('../../src/render/resident-appearance.ts', import.meta.url), 'utf8'), {
-    compilerOptions: { module: ts.ModuleKind.ES2022, target: ts.ScriptTarget.ES2022 },
-  }).outputText);
-  const { createResidentAppearanceProfile: profile, applyResidentMaterialVariant: material } = await import(pathToFileURL(path));
+  const { createResidentAppearanceProfile: profile, applyResidentMaterialVariant: material } = await source('render/resident-appearance.ts');
   test('1000 identities stay within valid palette, body and hair ranges', () => {
     const styles = new Set(), colors = new Set();
     for (let i = 0; i < 1000; i++) {
@@ -122,21 +133,7 @@ try {
     assert.equal(geometry.getAttribute('color'),undefined);
     assert.notEqual(mesh.geometry,geometry);
   });
-  const propPath=join(directory,'props.mjs');
-  for (const [input, output] of [
-    ['runtime/generated-core-contract.ts', 'generated-core-contract.mjs'],
-    ['render/world-presentation-config.ts', 'world-presentation-config.mjs'],
-  ]) {
-    const code = ts.transpileModule(readFileSync(new URL(`../../src/${input}`, import.meta.url), 'utf8'), {
-      compilerOptions: { module: ts.ModuleKind.ES2022, target: ts.ScriptTarget.ES2022 },
-    }).outputText.replace('../runtime/generated-core-contract', './generated-core-contract.mjs');
-    writeFileSync(join(directory, output), code);
-  }
-  writeFileSync(propPath,ts.transpileModule(readFileSync(new URL('../../src/render/resident-props.ts',import.meta.url),'utf8'),{
-    compilerOptions:{module:ts.ModuleKind.ES2022,target:ts.ScriptTarget.ES2022},
-  }).outputText);
-  writeFileSync(propPath, readFileSync(propPath, 'utf8').replace('./world-presentation-config', './world-presentation-config.mjs'));
-  const {residentVisibleItems,createResidentProp,ResidentInventoryProps,residentCarriedMaterial,residentPouringWater}=await import(pathToFileURL(propPath));
+  const {residentVisibleItems,createResidentProp,ResidentInventoryProps,residentCarriedMaterial,residentPouringWater}=await source('render/resident-props.ts');
   test('tools require actual positive inventory and have bounded stable selection',()=>{
     assert.deepEqual(residentVisibleItems(undefined),[]);
     assert.deepEqual(residentVisibleItems([{item:'DiggingStick',quantity:0},{item:'BronzeAxe',quantity:NaN}]),[]);
@@ -174,3 +171,4 @@ try {
   });
   console.log(`${passed} character regression checks passed`);
 } finally { rmSync(directory,{recursive:true,force:true}); }
+

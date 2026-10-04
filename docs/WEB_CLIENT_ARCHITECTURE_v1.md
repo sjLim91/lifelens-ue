@@ -219,3 +219,57 @@ budget remains 64 entries; a 150-facility input exercises that existing bound.
 Presentation caches and cosmetic phase live only in the Observer and never feed
 Core decisions or save authority. Social events, emissions, snow, wetness and
 crop/storage facts keep their existing lanes.
+
+
+### Resident lifecycle scene presentation
+
+Core decides life. Web derives silhouette, posture and bounded world cues from
+Resident DTOs; it never creates people, kinship, households, pregnancy or events.
+The existing age/genetics model is retained. Core Baby/Toddler/Child/Teen stages
+control juvenile silhouettes; YoungAdult/Adult/MiddleAge share the adult profile;
+Elderly uses a subtle spine lean, shorter animation cadence and softened scalp
+pigment. Unknown future stages stay neutral. Age only refines size; it never
+corrects an explicit stage. Same resident root persists and scale settles over
+0.9 observer seconds around the existing feet pivot, freezing on pause. Actual
+position interpolation, travel speed, targets and Core directives are unchanged.
+
+Pregnancy is a small torso deformation on existing skinned materials, selected
+only by pregnancy.role=GestationalParent and First/Second/ThirdTrimester or Due.
+First has no bump; Second/Third/Due use 0.035/0.065/0.075 of normalized body height.
+Completed, GeneticPartner and missing/unknown pregnancy remove it. The shader
+uses rest-model coordinates and a spine/pelvis mask, follows existing skinning,
+and allocates no pregnancy mesh/material. Existing phenotype geometry is only
+rebuilt when actual coloring/proportion facts change, not on height-only refresh.
+
+Parenting uses the exact current directive, actual living positioned target and
+actual Feed/PutToSleep/Bathe/ToiletAssist/Hold/Play/Educate/Discipline/Comfort/
+HealthCare action. Moving retains locomotion; Interacting retains the existing
+care/comfort/teach motion with a small spine inclination at close range. Parent
+and child connector heights follow their actual rendered stature. There is no
+Carry action in current Core; Hold does not attach or reposition the child.
+Child touch selection has a bounded 0.22-world-unit fallback; actual mesh hits
+retain priority. Baby locomotion remains neutral rather than adult walking while
+its real Core position still follows the existing renderer interpolation.
+
+lifeHistory flows with existing residents through WorldScene; the completed
+life-event layer is observed alongside social events after resident positioning.
+Initial supported history is a baseline, never replayed. Append cursors retain
+at most 384 residents, seen keys 128, active cues 8. Keys use resident id/type/
+minute/sorted related ids; reciprocal relationship and parent/child birth records
+coalesce by exact participants/site. Unchanged histories use constant-size
+cursors; truncated/sliding histories fail closed at the previous minute watermark.
+Old events outside the existing cadence-derived social replay window are skipped.
+Birth/ChildBorn require an actual living positioned Baby; ChildBorn additionally
+requires an exact parent/child family link. A missing child creates no fake mesh.
+Death can use the previous rendered site captured before the actual dead actor
+is hidden; bereavement is local and never joins to a deceased resident.
+
+Cues last 2.2 or 3.5 observer seconds, pause with presentation and have one fixed
+ribbon geometry/material/draw call. Missing actors clear living cues; chunk shifts
+rebase site snapshots; new-world/reset clears caches. Major relationship life
+cues suppress only same-pair, same-minute Intimacy/Commitment world ribbons.
+Social event memory and Observation Feed are untouched. Existing social actions,
+facility lifecycle, weather, sleep and emissions retain their lanes. No lifecycle
+presentation state is saved or feeds Core/AI decisions. Permanent household links,
+automatic follow, ceremonies and parenting success effects are excluded because
+these are not current exact action/event presentation contracts.
