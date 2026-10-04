@@ -26,15 +26,18 @@ try {
     let minute = 480;
     let history = [];
     let unavailable = false;
+    let dead = false;
+    let detailsEmpty = false;
+    let activityUnavailable = false;
     const calls = { detail: 0, terrain: 0, civilization: 0, objects: 0 };
-    const resident = () => ({ id: '18446744073709551615', name: '주민', alive: true, hasPosition: true, gridX: 0, gridY: 0 });
+    const resident = () => ({ id: '18446744073709551615', name: '주민', alive: !dead, hasPosition: !dead, gridX: 0, gridY: 0 });
     const core = {
-      worldOverview: () => ({ minute, livingResidents: 1 }),
+      worldOverview: () => ({ minute, totalResidents: 1, livingResidents: dead ? 0 : 1 }),
       residentRuntime: () => ({ available: true, residents: [resident()] }),
       residents: () => {
         calls.detail++;
         return unavailable ? { available: false, residents: [] } : {
-          available: true, residents: [{ ...resident(), lifeHistory: structuredClone(history) }],
+          available: true, residents: detailsEmpty ? [] : [{ ...resident(), lifeHistory: structuredClone(history) }],
         };
       },
       terrainWindow: () => {
@@ -46,7 +49,7 @@ try {
       recentSocialEvents: () => ({ available: true, events: [] }),
       civilizationWorldWindow: () => {
         calls.civilization++;
-        return { available: true, facilities: [], resources: [], storages: [], recentDiscoveries: [] };
+        return { available: !activityUnavailable, facilities: [], resources: [], storages: [], recentDiscoveries: [] };
       },
       worldObjects: () => {
         calls.objects++;
@@ -57,10 +60,16 @@ try {
         history = [{ type: 'Married', minute: minute - 60, relatedCharacterIds: ['2'] }];
       },
     };
-    return { session: new WorldSession(core, new ResidentContinuity()), calls, setUnavailable: value => { unavailable = value; } };
+    return {
+      session: new WorldSession(core, new ResidentContinuity()), calls,
+      setUnavailable: value => { unavailable = value; },
+      setDetailsEmpty: value => { detailsEmpty = value; },
+      setActivityUnavailable: value => { activityUnavailable = value; },
+      die: () => { dead = true; history = [{ type: 'Death', minute }]; },
+    };
   }
   function capture(snapshot) {
-    return captureFastForwardState({ ...snapshot, world: snapshot.overview });
+    return captureFastForwardState({ ...snapshot, world: snapshot.overview, residents: snapshot.residentDetails ?? snapshot.residents });
   }
 
   {
@@ -105,7 +114,60 @@ try {
     assert.equal(calls.detail, 3, 'an unavailable forced read retries on the next snapshot');
     assert.equal(recovered.residents[0].lifeHistory[0].type, 'Married');
   }
-  console.log('PASS world session: bounded cadence, fresh fast-forward history, terrain reuse, unavailable retry');
+  {
+    const { session, setUnavailable } = fixture();
+    session.refresh();
+    session.runMinutes(1440);
+    setUnavailable(true);
+    assert.throws(() => session.refresh(true), /주민 상세/,
+      'a required capture must reject cached history when fresh details are unavailable');
+    setUnavailable(false);
+    const recovered = session.refresh(true);
+    assert.equal(recovered.residentDetails[0].lifeHistory[0].type, 'Married');
+  }
+  {
+    const { session, setDetailsEmpty } = fixture();
+    session.refresh();
+    setDetailsEmpty(true);
+    assert.throws(() => session.refresh(true), /현재 인구/,
+      'an available but incomplete detail response cannot replace a required capture');
+    setDetailsEmpty(false);
+    assert.equal(session.refresh(true).residentDetails.length, 1);
+  }
+  {
+    const { session, setActivityUnavailable } = fixture();
+    session.refresh();
+    setActivityUnavailable(true);
+    assert.throws(() => session.refresh(true), /문명·시설/,
+      'unavailable world activity cannot masquerade as empty authoritative state');
+    setActivityUnavailable(false);
+    assert.equal(session.refresh(true).civilization.available, true);
+  }
+  {
+    const { session, die, calls } = fixture();
+    const before = capture(session.refresh(true));
+    session.runMinutes(1440);
+    die();
+    const snapshot = session.refresh(true);
+    assert.deepEqual(snapshot.residents, [], 'dead residents never return to the rendering list');
+    const after = capture(snapshot);
+    const summary = buildFastForwardSummary(1, before, after);
+    assert.deepEqual(summary.newlyDeceased, [{ id: '18446744073709551615', name: '주민' }]);
+    assert.equal(summary.lifeEvents[0].type, 'Death', 'extinction must retain exact Core death history');
+    assert.equal(calls.terrain, 1);
+    const unchanged = buildFastForwardSummary(1, after, capture(session.refresh(true)));
+    assert.deepEqual(unchanged.newlyDeceased, [], 'existing deaths must not be reported as new again');
+    assert.deepEqual(unchanged.lifeEvents, []);
+  }
+  {
+    const { session, die, setDetailsEmpty } = fixture();
+    session.refresh(true);
+    die();
+    setDetailsEmpty(true);
+    assert.throws(() => session.refresh(true), /현재 인구/,
+      'zero living residents does not permit missing deceased records');
+  }
+  console.log('PASS world session: bounded cadence, fresh history, death summary, terrain reuse, unavailable rejection/retry');
 } finally {
   rmSync(temporary, { recursive: true, force: true });
 }

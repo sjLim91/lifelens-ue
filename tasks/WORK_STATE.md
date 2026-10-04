@@ -1,12 +1,12 @@
-## 2026-10-04 WAITING_CI — Web 고속 진행 상세 관찰 정합성
+## 2026-10-04 WAITING_CI — Web 고속 진행 캡처 검증 / 사망 기록 보완
 
-- 기준 main: `c31ba9c72b4498fc3cec79e7724229d101cf01a4` (#636).
-- 별도 Web lane: `work/web-fast-forward-detail-refresh-20261004`; Core 교역/탐색/건강 closeout 순서는 그대로 유지한다.
-- 재현: 같은 주민 ID로 30일 고속 진행 후 Core에 추가된 Married 생애 기록이 결과 요약에서 누락됨.
-- 수정: 고속 진행 전후 forceWorldActivityRefresh가 주민 상세 cadence도 무효화하여 생애/가족/소지품을 새로 읽음. 평상시 4회 cadence와 정적 지형 캐시 유지.
-- 로컬: production WorldSession + FastForwardSummary 회귀를 수정 전 FAIL/수정 후 PASS 확인. unavailable 상세 응답 보존/재시도, normal cadence, terrain reuse 검증.
-- 로컬 Git 네트워크 연결 실패 후 추가 권한 대기에서 중단됨. GitHub 직접 연결 API로 변경을 업로드하고 PR-triggered CI로 전체 typecheck/build/runtime 검증.
-- 다음: 해당 브랜치 PR의 exact-head Actions 확인. 병합/Pages 배포 완료로 간주하지 않는다.
+- 기준 main: `7c2f4ecaaad6d64d71256f78f5b9512ffd4992f3` (#637). 이전 #637의 exact-head 10개 PR workflow 모두 PASS 및 실제 merge 확인.
+- 별도 Web lane: `work/web-fast-forward-capture-integrity-20261004`; Core 교역/탐색/건강 순서 유지.
+- 추가 분석: 상세 조회 unavailable/부분 누락 시 stale cache로 완료 요약 생성 가능. 화면용 living 주민 목록으로 요약을 만들어 deceased 이름/Death 기록 누락.
+- 수정: 고속 진행 전후 strict refresh로 현재 인구와 일치하는 fresh full resident details + available 문명/시설 응답을 요구. 실패 시 기존 error 경로로 종료; 계산된 Core 시간을 되돌리거나 다시 계산하지 않음.
+- 요약은 사망자를 포함한 Core 상세 기록을 사용하고 화면은 기존 ResidentContinuity 필터 유지. 평상시 detail cadence/지형 캐시 유지.
+- 로컬: 기존 실패 재현 후 strict unavailable/partial/zero-living missing-record 검증, 실제 Death 요약/재알림 억제, cadence/terrain 회귀 PASS. authoritative fast-forward validator PASS.
+- 다음: 후속 PR exact-head Preflight + Web Typecheck/build + Runtime Resilience 검증. 크론 추가 없음.
 
 ## 2026-10-04 CURRENT — R10 current-main reconciliation
 
