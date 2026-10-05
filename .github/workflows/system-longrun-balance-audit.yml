@@ -140,7 +140,7 @@ jobs:
         with:
           pattern: system-audit-seed-*
           path: combined
-          merge-multiple: true
+          merge-multiple: false
 
       - name: Seed 비교·통합 보고서 생성
         shell: bash
@@ -148,7 +148,7 @@ jobs:
           set -euo pipefail
           BASE_SHA="$(git merge-base HEAD origin/main)"
           python3 Tools/long_run_balance_audit.py report \
-            --logs combined/seed-*/audit.log \
+            --logs combined/system-audit-seed-*/audit.log \
             --out-dir aggregate-report \
             --base-sha "$BASE_SHA" \
             --head-sha "$GITHUB_SHA"
