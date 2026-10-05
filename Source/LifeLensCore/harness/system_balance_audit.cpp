@@ -529,7 +529,7 @@ void emitCheckpoint(Simulation&sim,std::uint64_t seed,int day,
     for(const auto&kv:rt.firstKnownMinute){
         const auto use=rt.firstUseMinute.find(kv.first);std::cout<<"AUDIT_KNOWLEDGE seed="<<seed<<" day="<<day<<" technique="<<static_cast<int>(kv.first)<<" discoveredMinute="<<kv.second<<" firstUseMinute="<<(use==rt.firstUseMinute.end()?-1:use->second)<<" lagMinutes="<<(use==rt.firstUseMinute.end()?-1:std::max(0,use->second-kv.second))<<"\n";
     }
-    std::cout<<"AUDIT_OBSERVABILITY seed="<<seed<<" day="<<day<<" migrationTime=event_or_assignment_only institutionEconomyTime=coordination_not_exclusive materialTradeTransfer=not_authoritatively_exposed spoilLoss=not_authoritatively_exposed"<<"\\n";
+    std::cout<<"AUDIT_OBSERVABILITY seed="<<seed<<" day="<<day<<" migrationTime=event_or_assignment_only institutionEconomyTime=coordination_not_exclusive materialTradeTransfer=not_authoritatively_exposed spoilLoss=not_authoritatively_exposed"<<"\n";
     std::cout<<"AUDIT_EVENTS seed="<<seed<<" day="<<day<<" preemptions="<<ev.preemptions<<" routeFailures="<<ev.routeFailures<<" timeouts="<<ev.timeouts
       <<" socialEvents="<<ev.socialEvents<<" civilizationEvents="<<ev.civilizationEvents<<" firstCritical="<<ev.firstCritical<<" firstIllness="<<ev.firstIllness
       <<" firstDeath="<<ev.firstDeath<<" firstBirth="<<ev.firstBirth<<" firstMarriage="<<ev.firstMarriage<<" firstPregnancy="<<ev.firstPregnancy
@@ -541,7 +541,7 @@ void emitCheckpoint(Simulation&sim,std::uint64_t seed,int day,
         for(std::size_t i=0;i<5;++i)std::cout<<"AUDIT_RESIDENT_NEED seed="<<seed<<" day="<<day<<" resident="<<kv.first<<" need="<<residentNeedNames[i]
           <<" avg="<<(a.observedMinutes?a.needSum[i]/a.observedMinutes:0.0)<<" p90="<<percentile(a.needHistogram[i],0.90)<<" p99="<<percentile(a.needHistogram[i],0.99)
           <<" urgentEntries="<<a.urgentEntries[i]<<" urgentMinutes="<<a.urgentMinutes[i]<<" criticalEntries="<<(i<2?a.criticalEntries[i]:0)<<" criticalMinutes="<<(i<2?a.criticalMinutes[i]:0)
-          <<" saturatedMinutes="<<a.saturatedMinutes[i]<<" travelDistance="<<a.travelDistance[i]<<"\\n";
+          <<" saturatedMinutes="<<a.saturatedMinutes[i]<<" travelDistance="<<a.travelDistance[i]<<"\n";
         std::cout<<"AUDIT_RESIDENT_TIME seed="<<seed<<" day="<<day<<" resident="<<kv.first<<" observedMinutes="<<a.observedMinutes;
         for(std::size_t i=0;i<a.time.size();++i)std::cout<<" "<<TimeBucketNames[i]<<"Min="<<a.time[i];
         std::cout<<"\n";
