@@ -373,4 +373,56 @@ await test('reset clears queued work and fail-closes subsequent stale completion
   scheduler.dispose();
 });
 
+await test('reset releases an abort-ignoring active slot without waiting for timeout',async()=>{
+  let calls=0;
+  let releaseOld;
+  const provider={name:'reset-hung',reason:req=>{
+    calls++;
+    return calls===1 ? new Promise(resolve=>{releaseOld=()=>resolve(proposal(req));}) : Promise.resolve(proposal(req));
+  }};
+  const scheduler=new CognitionScheduler(provider,()=>100,
+    {maxConcurrent:1,maxQueued:1,timeoutMs:1000,staleAfterSimulationMinutes:100});
+  const active=scheduler.submit(request('1',100));
+  const queued=scheduler.submit(request('2',100));
+  await new Promise(resolve=>setTimeout(resolve,0));
+  scheduler.reset();
+  assert.equal(await queued,null);
+  const cancelled=await Promise.race([active,new Promise(resolve=>setTimeout(()=>resolve('pending'),40))]);
+  assert.equal(cancelled,null,'reset must settle an active caller promptly');
+  assert.equal((await scheduler.submit(request('3',100))).actor,'3');
+  releaseOld();
+  assert.equal(calls,2,'late old completion must not restart cancelled queued work');
+  scheduler.dispose();
+});
+
+await test('dispose promptly settles an abort-ignoring provider and rejects new work',async()=>{
+  const scheduler=new CognitionScheduler({name:'hung',reason:()=>new Promise(()=>{})},()=>100,
+    {maxConcurrent:1,maxQueued:0,timeoutMs:1000,staleAfterSimulationMinutes:100});
+  const active=scheduler.submit(request());
+  scheduler.dispose();
+  assert.equal(await Promise.race([active,new Promise(resolve=>setTimeout(()=>resolve('pending'),40))]),null);
+  assert.equal(await scheduler.submit(request()),null);
+});
+
+await test('invalid or rewound simulation time fail-closes provider results',async()=>{
+  for(const now of [NaN,Infinity,99]){
+    const scheduler=new CognitionScheduler({name:'instant',reason:async req=>proposal(req)},()=>now,
+      {maxConcurrent:1,maxQueued:0,timeoutMs:100,staleAfterSimulationMinutes:100});
+    assert.equal(await scheduler.submit(request('1',100)),null);
+    scheduler.dispose();
+  }
+});
+
+await test('a throwing context reader settles null and leaves the scheduler usable',async()=>{
+  let fail=true;
+  const scheduler=new CognitionScheduler({name:'instant',reason:async req=>proposal(req)},()=>{
+    if(fail)throw Error('context unavailable');
+    return 100;
+  },{maxConcurrent:1,maxQueued:0,timeoutMs:100,staleAfterSimulationMinutes:100});
+  assert.equal(await scheduler.submit(request()),null);
+  fail=false;
+  assert.equal((await scheduler.submit(request('2',100))).actor,'2');
+  scheduler.dispose();
+});
+
 console.log(`Cognitive agent Web adapter: ${passed} tests passed`);

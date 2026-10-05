@@ -106,6 +106,11 @@ export class CognitionScheduler {
     this.activeControllers.add(controller);
 
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let onAbort: (() => void) | undefined;
+    const abortedResult = new Promise<null>((resolve) => {
+      onAbort = () => resolve(null);
+      controller.signal.addEventListener('abort', onAbort, { once: true });
+    });
     const providerResult = Promise.resolve()
       .then(() => this.provider.reason(item.request, controller.signal))
       .catch(() => null);
@@ -119,17 +124,18 @@ export class CognitionScheduler {
 
     let proposal: CognitiveProposalDto | null = null;
     try {
-      proposal = await Promise.race([providerResult, timeoutResult]);
+      proposal = await Promise.race([providerResult, timeoutResult, abortedResult]);
 
-      if (this.disposed) {
+      if (this.disposed || controller.signal.aborted) {
         proposal = null;
       } else if (this.latestByActor.get(item.request.actor) !== item.sequence) {
         proposal = null;
       } else {
         const now = this.simulationMinute();
         if (
-          Number.isFinite(now)
-          && now - item.request.minute
+          !Number.isFinite(now)
+          || now < item.request.minute
+          || now - item.request.minute
             > this.config.staleAfterSimulationMinutes
         ) {
           proposal = null;
@@ -145,8 +151,13 @@ export class CognitionScheduler {
       }
 
       item.resolve(proposal);
+    } catch {
+      // A failed context reader must settle the caller just like provider
+      // failure, and must not leak an unhandled execute() rejection.
+      item.resolve(null);
     } finally {
       if (timer !== undefined) clearTimeout(timer);
+      if (onAbort) controller.signal.removeEventListener('abort', onAbort);
       this.activeControllers.delete(controller);
       if (this.latestByActor.get(item.request.actor) === item.sequence) {
         this.latestByActor.delete(item.request.actor);
