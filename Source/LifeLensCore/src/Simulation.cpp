@@ -3458,20 +3458,21 @@ void Simulation::step(){
             beginPlan(c,r);
         }
 
-        if(!criticalPreempted
-           && r.tradeJourney.active
-           && !r.pendingContext.active()
-           && r.plan.empty()){
-            const double urgentNeed=std::max({
-                c.needs.hunger,
-                c.needs.thirst,
-                c.needs.sleep,
-                c.needs.bladder,
-                c.needs.hygiene
-            });
-            if(urgentNeed<ruleset_.utilityAI.urgentThreshold){
-                resumeTradeJourney(c,r);
-            }
+        const double journeyUrgentNeed=std::max({
+            c.needs.hunger,
+            c.needs.thirst,
+            c.needs.sleep,
+            c.needs.bladder,
+            c.needs.hygiene
+        });
+        const bool tradeJourneyReadyToResume=
+            !criticalPreempted
+            && r.tradeJourney.active
+            && !r.pendingContext.active()
+            && r.plan.empty()
+            && journeyUrgentNeed<ruleset_.utilityAI.urgentThreshold;
+        if(tradeJourneyReadyToResume){
+            resumeTradeJourney(c,r);
         }
 
         if(r.pendingContext.active()){
@@ -3526,6 +3527,8 @@ void Simulation::step(){
         }
         if(r.plan.empty()
            && !r.pendingContext.active()
+           && (!r.tradeJourney.active
+               || journeyUrgentNeed>=ruleset_.utilityAI.urgentThreshold)
            && world_.minute%5==0){
             beginPlan(c,r);
         }
