@@ -383,6 +383,7 @@ class ObserverStore {
       simulationSpeed: SIMULATION_TIME_CONTRACT.defaultSpeed,
       selectedResidentId: null,
       selectedHumanTraceId: null,
+      selectedSettlementId: null,
       focusedObservationId: null,
       observations: [],
       fastForward: INITIAL_FAST_FORWARD_STATE,
