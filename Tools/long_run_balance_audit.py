@@ -105,7 +105,7 @@ def derive(records: list[dict[str, Any]]) -> dict[str, Any]:
         findings.append(issue("P3","authoritative-observability-gaps",
             "일부 요구 지표는 현재 Core read-model이 minute/material 단위 authority를 직접 노출하지 않아 event/assignment evidence로만 측정",
             1,
-            "migration 전용 minute phase, material별 inter-settlement transfer, explicit spoil/loss event가 별도 authority DTO로 노출되지 않음",
+            "migration 전용 minute phase, material별 inter-settlement transfer, explicit spoil/loss 및 facility abandonment state가 별도 authority DTO로 노출되지 않음",
             "Web 추론이나 임의 계산으로 메우지 않는 것이 simulation truth 계약에 맞음",
             "진단 정밀도",seeds,"LifeLensCore observer/read-model layer","하","낮음"))
     extinct = [s for s in seeds if (s, max(days, default=0)) in checkpoints and int(checkpoints[(s,max(days))].get("living",0)) == 0]
@@ -144,6 +144,52 @@ def derive(records: list[dict[str, Any]]) -> dict[str, Any]:
             "출발한 trade mission의 exchange/return completion evidence 부족",
             "#642가 다루는 trade journey persistence 영역과 연관 가능하나 본 PR은 진단만 수행",
             "교역·정착지 노동력·가족 안정성",trade_stuck,"LifeLensCore trade journey authority (#642 lane)","중","높음"))
+
+    illness_without_care=[]
+    for s in seeds:
+        k=(s,max(days,default=0))
+        h=healths.get(k,{})
+        if int(h.get("deathsIllness",0) or 0)>0 and int(h.get("careEvents",0) or 0)==0:
+            illness_without_care.append(s)
+    if illness_without_care:
+        findings.append(issue("P1","illness-mortality-without-care",
+            "질병 사망이 발생했지만 HealthCare action evidence가 0",
+            {s:first_day([r for r in healths.values() if int(r["seed"])==s],lambda r:int(r.get("deathsIllness",0) or 0)>0) for s in illness_without_care},
+            "질병 진행 중 실제 caregiver HealthCare presentation이 관측되지 않음",
+            "caregiver 가용성·돌봄 선택·생존 선점·접근성 중 선행 병목을 causal chain으로 확인해야 함",
+            "건강·가족·노동력·세대교체",illness_without_care,"LifeLensCore health/parenting authority","중","높음"))
+
+    infrastructure_zero=[]
+    infrastructure_first={}
+    for s in seeds:
+        for d in days:
+            c=checkpoints.get((s,d),{}); fac=facilities.get((s,d),{})
+            if int(c.get("living",0) or 0)>0 and int(fac.get("total",0) or 0)>0 and int(fac.get("operational",0) or 0)==0:
+                infrastructure_zero.append(s); infrastructure_first[s]=d; break
+    infrastructure_zero=sorted(set(infrastructure_zero))
+    if infrastructure_zero:
+        findings.append(issue("P1","living-population-without-operational-facilities",
+            "생존 주민이 남아 있는 checkpoint에서 operational facility가 0",
+            infrastructure_first,
+            "건설된 시설의 내구/수리/재건 공급이 생활 인구보다 먼저 소진",
+            "수리 자원·노동시간·survival preemption·시설 선택의 선행 병목 확인 필요",
+            "생존·생산·위생·정착지",infrastructure_zero,"LifeLensCore facility/repair authority","중","높음"))
+
+    settlement_zero=[]
+    settlement_first={}
+    for s in seeds:
+        for d in days:
+            c=checkpoints.get((s,d),{}); st=settlements.get((s,d),{})
+            if int(c.get("living",0) or 0)>0 and int(st.get("settlements",0) or 0)>0 and int(st.get("activeSettlements",0) or 0)==0:
+                settlement_zero.append(s); settlement_first[s]=d; break
+    settlement_zero=sorted(set(settlement_zero))
+    if settlement_zero:
+        findings.append(issue("P1","living-population-without-active-settlement",
+            "생존 주민이 있으나 active settlement가 0인 checkpoint가 존재",
+            settlement_first,
+            "정착지 service footprint/시설 vitality가 생활 인구 유지보다 먼저 붕괴",
+            "시설 붕괴·이주 실패·자원 접근성의 선행 순서를 확인해야 함",
+            "정착·이주·교역·가족 안정성",settlement_zero,"LifeLensCore settlement/facility authority","중","높음"))
 
     chunk_waste=[]
     for s in seeds:
@@ -190,14 +236,16 @@ def derive(records: list[dict[str, Any]]) -> dict[str, Any]:
         rr=[r for r in resources if int(r.get("seed",-1))==s and int(r.get("day",-1))==max(days,default=0)]
         rr.sort(key=lambda r:(-int(r.get("shortageSampleMinutes",0)),str(r.get("material",""))))
         resource_summary[str(s)]=[{"material":r.get("material"),"shortageSampleMinutes":r.get("shortageSampleMinutes",0),
-                                  "accessibleWorld":r.get("accessibleWorld",0),"carried":r.get("carried",0),"stored":r.get("stored",0)}
+                                  "accessibleWorld":r.get("accessibleWorld",0),"carried":r.get("carried",0),"stored":r.get("stored",0),
+                                  "desiredUnits":r.get("desiredUnits",0),"societyAvailableUnits":r.get("societyAvailableUnits",0),
+                                  "deficitUnits":r.get("deficitUnits",0),"demand01":r.get("demand01",0)}
                                  for r in rr[:5]]
 
     timeline={}
     for s in seeds:
         ev=events.get((s,max(days,default=0)),{})
         tl=[]
-        mapping=[("firstCritical","critical survival preemption"),("firstChunkGrowth","chunk growth"),
+        mapping=[("firstCriticalNeed","first critical Hunger/Thirst"),("firstCriticalPreemption","critical survival preemption"),("firstChunkGrowth","chunk growth"),
                  ("firstSecondSettlement","second active settlement"),("firstIllness","illness"),
                  ("firstMarriage","marriage"),("firstPregnancy","pregnancy"),("firstBirth","birth"),
                  ("firstTradeDeparture","trade departure"),("firstTradeExchange","trade exchange"),
@@ -235,6 +283,7 @@ def md_table(headers: list[str], rows: list[list[Any]]) -> str:
 def render_markdown(records: list[dict[str, Any]], derived: dict[str, Any], base_sha: str="", head_sha: str="") -> str:
     cp=keyed(records,"AUDIT_CHECKPOINT");tm=keyed(records,"AUDIT_TIME");wd=keyed(records,"AUDIT_WORLD_GROWTH")
     st=keyed(records,"AUDIT_SETTLEMENT");hl=keyed(records,"AUDIT_HEALTH");cv=keyed(records,"AUDIT_CIVILIZATION");fc=keyed(records,"AUDIT_FACILITY")
+    survival_actions=by_kind(records,"AUDIT_SURVIVAL_ACTION")
     seeds=derived["seeds"];days=derived["checkpoints"];last=max(days,default=0)
     out=["# LifeLens 전 시스템 장기 밸런스 / 인과 감사","",
          f"- 기준 base: `{base_sha or '기록 없음'}`",f"- 감사 HEAD: `{head_sha or '기록 없음'}`",
@@ -262,40 +311,47 @@ def render_markdown(records: list[dict[str, Any]], derived: dict[str, Any], base
         if t: rows.append([s]+[round(float(t.get(n+"Pct",0)),2) for n in
              ["survival","gatherResource","storageLogistics","constructionRepair","productionCrafting","cultivation","social","datingFamily","parentingCare","teachingLearning","institutionEconomy","exploration","migration","trade","idleWaiting"]])
     out.append(md_table(["seed","survival","gather","storage","build/repair","production","cultivation","social","dating/family","care","teach","institution","explore","migration","trade","idle"],rows))
-    out+=["","## 4. Resource bottleneck",""]
+    out+=["","## 4. 생존 행동 세부 예산",""]
+    rows=[]
+    for s in seeds:
+        for r in survival_actions:
+            if int(r.get("seed",-1))==s and int(r.get("day",-1))==last:
+                rows.append([s,r.get("action"),r.get("starts"),r.get("completions"),r.get("minutes"),r.get("travelDistance"),round(float(r.get("avgTravelPerCompletion",0)),2)])
+    out.append(md_table(["seed","action","starts","completions","minutes","travel","avg travel/completion"],rows))
+    out+=["","## 5. Resource bottleneck",""]
     for s in seeds:
         items=derived["resourceBottlenecks"].get(str(s),[])
-        out.append(f"- seed {s}: "+(", ".join(f"{x['material']} shortageSample={x['shortageSampleMinutes']}min stock={x['accessibleWorld']+x['carried']+x['stored']}" for x in items) if items else "기록 없음"))
-    out+=["","## 5. Exploration / chunk growth",""]
+        out.append(f"- seed {s}: "+(", ".join(f"{x['material']} shortageSample={x['shortageSampleMinutes']}min demand={x['desiredUnits']} societyStock={x['societyAvailableUnits']} deficit={x['deficitUnits']} worldAccessible={x['accessibleWorld']}" for x in items) if items else "기록 없음"))
+    out+=["","## 6. Exploration / chunk growth",""]
     rows=[]
     for s in seeds:
         w=wd.get((s,last),{})
-        if w: rows.append([s,w.get("explorationAttempts"),w.get("explorationSuccess"),w.get("criticalExploration"),w.get("chunks"),w.get("usedChunks"),round(float(w.get("discoveryFollowupRate",0)),3),w.get("explorationMaxDistance")])
-    out.append(md_table(["seed","attempts","success","critical","chunks","used chunks","resource follow-up","max distance"],rows))
-    out+=["","## 6. Population / health",""]
+        if w: rows.append([s,w.get("explorationAttempts"),w.get("explorationSuccess"),w.get("criticalExploration"),w.get("ordinaryExploration"),w.get("chunks"),w.get("materializedAfterStart"),w.get("usedChunks"),round(float(w.get("discoveryFollowupRate",0)),3),w.get("explorationP95Distance"),w.get("explorationMaxDistance")])
+    out.append(md_table(["seed","attempts","success","critical","ordinary","chunks","new chunks","used chunks","resource follow-up","p95 distance","max distance"],rows))
+    out+=["","## 7. Population / health",""]
     rows=[]
     for s in seeds:
         c=cp.get((s,last),{});h=hl.get((s,last),{});dom=derived["dominantDeathCause"].get(str(s),{})
-        if c:rows.append([s,c.get("living"),c.get("births"),c.get("generationCount"),h.get("illnessIncidence"),h.get("recoveries"),dom.get("cause"),dom.get("count")])
-    out.append(md_table(["seed","living","births","generations","illness","recovery","dominant death","count"],rows))
-    out+=["","## 7. Knowledge / civilization dead-system",""]
+        if c:rows.append([s,c.get("living"),c.get("births"),c.get("generationCount"),h.get("illnessIncidence"),h.get("recoveries"),h.get("careEvents"),h.get("contaminationExposureResidents"),h.get("contaminatedWaterNodes"),dom.get("cause"),dom.get("count")])
+    out.append(md_table(["seed","living","births","generations","illness","recovery","care","exposed residents","contaminated water nodes","dominant death","count"],rows))
+    out+=["","## 8. Knowledge / civilization dead-system",""]
     rows=[]
     for s in seeds:
         c=cv.get((s,last),{})
-        if c:rows.append([s,c.get("knownTechniqueTypes"),c.get("usedKnowledge"),c.get("neverUsedKnowledge"),c.get("specializedResidents"),c.get("activeInstitutions"),c.get("durableRecords"),c.get("barterExchangeFacts")])
-    out.append(md_table(["seed","known","used","never used","specialized","institutions","records","barter facts"],rows))
-    out+=["","## 8. Facilities / performance",""]
+        if c:rows.append([s,c.get("knownTechniqueTypes"),c.get("usedKnowledge"),c.get("neverUsedKnowledge"),c.get("specializedResidents"),c.get("educators"),c.get("producers"),c.get("caregivers"),c.get("storekeepers"),c.get("activeInstitutions"),c.get("durableRecords"),c.get("barterExchangeFacts")])
+    out.append(md_table(["seed","known","used","never used","specialized","educators","producers","caregivers","storekeepers","institutions","records","barter facts"],rows))
+    out+=["","## 9. Facilities / performance",""]
     rows=[]
     for s in seeds:
         c=cp.get((s,last),{});f=fc.get((s,last),{})
         if c:rows.append([s,c.get("elapsedMs"),c.get("snapshotBytes"),c.get("resourceNodes"),c.get("chunks"),c.get("facilities"),f.get("unusedOperational"),round(float(f.get("unusedOperationalRatio",0)),3)])
     out.append(md_table(["seed","elapsed ms","snapshot bytes","resource nodes","chunks","facilities","unused op","unused ratio"],rows))
-    out+=["","## 9. Causal timeline",""]
+    out+=["","## 10. Causal timeline",""]
     for s in seeds:
         out.append(f"### seed {s}")
         tl=derived["causalTimeline"].get(str(s),[])
         out.extend([f"- day {x['day']}: {x['event']}" for x in tl] or ["- 기록된 causal milestone 없음"])
-    out+=["","## 10. 문제 분류 상세",""]
+    out+=["","## 11. 문제 분류 상세",""]
     for f in derived["findings"]:
         out += [f"### {f['severity']} — {f['code']}",
                 f"- 증상: {f['symptom']}",f"- 최초 발생: {f['firstObserved']}",
@@ -303,7 +359,7 @@ def render_markdown(records: list[dict[str, Any]], derived: dict[str, Any], base
                 f"- 영향 시스템: {f['affectedSystems']}",f"- 재현 seed: {f['seeds']}",
                 f"- authoritative layer: {f['authoritativeLayer']}",f"- 수정 난이도: {f['difficulty']}",
                 f"- 타 시스템 위험: {f['crossSystemRisk']}",""]
-    out+=["## 11. Regression 판정 원칙","",
+    out+=["## 12. Regression 판정 원칙","",
           "- 결정론 byte/metric mismatch, crash, 저장 불가 같은 계약 위반만 hard failure로 사용한다.",
           "- 사회시간 %, 출산 수, 시설 수, chunk 수 등에 임의의 '좋은 숫자'를 하드코딩하지 않는다.",
           "- 밸런스 이상은 seed/checkpoint 추세와 실제 event/state 순서를 근거로 분류한다.",""]
