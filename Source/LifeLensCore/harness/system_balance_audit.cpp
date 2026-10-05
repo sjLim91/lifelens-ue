@@ -421,7 +421,7 @@ void emitCheckpoint(Simulation&sim,std::uint64_t seed,int day,
         std::cout<<"AUDIT_NEED seed="<<seed<<" day="<<day<<" need="<<nn[i]<<" avg="<<(needObs[i]?needSum[i]/needObs[i]:0)
           <<" p50="<<percentile(hist[i],0.50)<<" p90="<<percentile(hist[i],0.90)<<" p95="<<percentile(hist[i],0.95)<<" p99="<<percentile(hist[i],0.99)
           <<" urgentEntries="<<entries[i]<<" urgentMinutes="<<urgent[i]<<" saturatedMinutes="<<sat[i]<<" travelDistance="<<travel[i]
-          <<" completions="<<completed[i]<<" avgTravelPerCompletion="<<(completed[i]?static_cast<double>(travel[i])/completed[i]:0.0)<<"\n";
+          <<" completions="<<ev.survivalCompletions[i]<<" avgTravelPerCompletion="<<(ev.survivalCompletions[i]?static_cast<double>(travel[i])/ev.survivalCompletions[i]:0.0)<<"\n";
     }
     for(std::size_t i=0;i<AuditedMaterials.size();++i){
         const auto m=AuditedMaterials[i];const auto&f=flows[i];
