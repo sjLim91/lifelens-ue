@@ -319,6 +319,7 @@ void observeCivilizationEvents(Simulation& sim,std::map<CharacterId,ResidentAudi
         if(p.kind==PresentationActionKind::Parenting&&p.parentingAction==ParentingAction::HealthCare&&p.targetResidentId!=0){
             auto it=residents.find(p.targetResidentId);if(it!=residents.end()&&it->second.firstCareMinute<0)it->second.firstCareMinute=minute;
         }
+        if(minute%60!=0) continue;
         const auto civ=sim.observeResidentCivilization(c.id);
         for(const auto&t:civ.techniques){
             if(t.technique!=TechniqueId::None&&!rt.firstKnownMinute.count(t.technique))rt.firstKnownMinute[t.technique]=t.learnedMinute>=0?t.learnedMinute:minute;
