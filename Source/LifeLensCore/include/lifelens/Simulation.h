@@ -251,6 +251,7 @@ private:
         SocialIntent socialIntent=SocialIntent::None;
         CharacterId socialTarget=0;
         PendingContextAction pendingContext{};
+        TradeJourneyState tradeJourney{};
 
         // Headless/Core-owned locomotion continuation state. Save/restore
         // persists this because route choice/index affects deterministic future
@@ -329,6 +330,15 @@ private:
     void clearNavigation(Runtime& r);
     bool advanceNavigation(CharacterId moverId,Runtime& r,GridPos target,int arrivalRadius);
     bool advancePendingContext(Character& actor,Runtime& runtime);
+    bool resumeTradeJourney(Character& actor,Runtime& runtime);
+    void transitionTradeJourneyToReturn(
+        Character& actor,
+        Runtime& runtime,
+        const char* reason);
+    void cancelTradeJourney(
+        Character& actor,
+        Runtime& runtime,
+        const char* reason);
     bool completeContextAction(Character& actor,Runtime& runtime,std::uint64_t token,GridPos resolvedPosition);
     bool tryCivilizationDecision(
         Character& c,
