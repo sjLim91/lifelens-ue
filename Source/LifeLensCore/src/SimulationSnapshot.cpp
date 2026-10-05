@@ -92,6 +92,28 @@ bool validateSnapshot(const SimulationStateSnapshot& snapshot,std::string* error
         if(item.second.socialTarget!=0 && characterIds.count(item.second.socialTarget)==0)
             return fail("runtime social target is missing");
 
+        const TradeJourneyState& journey=item.second.tradeJourney;
+        if(!validTradeJourneyState(journey))
+            return fail("runtime trade journey state is invalid");
+        if(journey.active){
+            if(journey.partner==item.first
+               || characterIds.count(journey.partner)==0)
+                return fail("runtime trade journey partner is invalid");
+            if(journey.legStartedMinute>snapshot.world.minute)
+                return fail("runtime trade journey minute is in the future");
+            const Character* actor=nullptr;
+            const Character* partner=nullptr;
+            for(const Character& candidate:snapshot.world.characters){
+                if(candidate.id==item.first) actor=&candidate;
+                if(candidate.id==journey.partner) partner=&candidate;
+            }
+            if(actor==nullptr || !actor->alive)
+                return fail("runtime trade journey actor is not living");
+            if(!journey.returning
+               && (partner==nullptr || !partner->alive))
+                return fail("runtime outbound trade journey partner is not living");
+        }
+
         const PendingContextAction& pending=item.second.pendingContext;
         const bool tokenPresent=pending.token!=0;
         const bool kindPresent=pending.kind!=ContextActionKind::None;
@@ -253,6 +275,7 @@ SimulationStateSnapshot Simulation::captureSnapshot() const
         target.socialIntent=source.socialIntent;
         target.socialTarget=source.socialTarget;
         target.pendingContext=source.pendingContext;
+        target.tradeJourney=source.tradeJourney;
         target.navigationRoute=source.navigationRoute;
         target.navigationRouteIndex=source.navigationRouteIndex;
         target.navigationTarget=source.navigationTarget;
@@ -292,6 +315,7 @@ bool Simulation::restoreSnapshot(const SimulationStateSnapshot& snapshot,std::st
         target.socialIntent=source.socialIntent;
         target.socialTarget=source.socialTarget;
         target.pendingContext=source.pendingContext;
+        target.tradeJourney=source.tradeJourney;
         target.navigationRoute=source.navigationRoute;
         target.navigationRouteIndex=source.navigationRouteIndex;
         target.navigationTarget=source.navigationTarget;
