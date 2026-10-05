@@ -613,7 +613,7 @@ void emitCheckpoint(Simulation&sim,std::uint64_t seed,int day,
     for(const auto&kv:rt.firstKnownMinute){
         const auto use=rt.firstUseMinute.find(kv.first);std::cout<<"AUDIT_KNOWLEDGE seed="<<seed<<" day="<<day<<" technique="<<static_cast<int>(kv.first)<<" discoveredMinute="<<kv.second<<" firstUseMinute="<<(use==rt.firstUseMinute.end()?-1:use->second)<<" lagMinutes="<<(use==rt.firstUseMinute.end()?-1:std::max(0,use->second-kv.second))<<"\n";
     }
-    std::cout<<"AUDIT_OBSERVABILITY seed="<<seed<<" day="<<day<<" migrationTime=event_or_assignment_only institutionEconomyTime=coordination_not_exclusive materialTradeTransfer=not_authoritatively_exposed spoilLoss=not_authoritatively_exposed facilityAbandonment=not_authoritatively_exposed migrationTime=event_or_assignment_only"<<"\n";
+    std::cout<<"AUDIT_OBSERVABILITY seed="<<seed<<" day="<<day<<" migrationTime=event_or_assignment_only institutionEconomyTime=coordination_not_exclusive materialTradeTransfer=not_authoritatively_exposed spoilLoss=not_authoritatively_exposed facilityAbandonment=not_authoritatively_exposed"<<"\n";
     std::cout<<"AUDIT_EVENTS seed="<<seed<<" day="<<day<<" preemptions="<<ev.preemptions<<" routeFailures="<<ev.routeFailures<<" timeouts="<<ev.timeouts
       <<" socialEvents="<<ev.socialEvents<<" civilizationEvents="<<ev.civilizationEvents<<" firstCriticalNeed="<<firstCriticalNeed
       <<" firstCriticalPreemption="<<ev.firstCritical<<" firstCritical="<<ev.firstCritical<<" firstIllness="<<ev.firstIllness
