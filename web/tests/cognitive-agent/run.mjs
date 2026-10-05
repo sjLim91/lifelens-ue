@@ -426,3 +426,5 @@ await test('a throwing context reader settles null and leaves the scheduler usab
 });
 
 console.log(`Cognitive agent Web adapter: ${passed} tests passed`);
+
+await import('./shadow.mjs');

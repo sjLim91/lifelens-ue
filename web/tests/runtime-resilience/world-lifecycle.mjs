@@ -60,6 +60,7 @@ try {
       characterLayer: null,
       simulationClock: clock,
       observerStore,
+      shadowObserver: { resetWorld() { calls.push('reset-shadow'); } },
       threeWorldRenderer: renderer,
       refresh: () => { calls.push('refresh'); },
     };
@@ -71,6 +72,7 @@ try {
   for (const speed of [0, 4]) {
     const f = fixture(speed);
     f.createWorld('42');
+    assert(f.calls.indexOf('reset-shadow') < f.calls.indexOf('refresh'), 'shadow observations must clear before new-world refresh');
     assert.equal(f.clock.speed, observerStore.getSnapshot().simulationSpeed, 'clock must match displayed new-world speed');
     assert.equal(f.renderer.speed, f.clock.speed, 'resident animation speed must match simulation');
     assert.equal(f.renderer.selectedSettlement, null);
@@ -84,3 +86,4 @@ try {
 } finally {
   rmSync(temporary, { recursive: true, force: true });
 }
+

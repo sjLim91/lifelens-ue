@@ -710,7 +710,7 @@ export default function App() {
 
   useEffect(() => {
     try {
-      startObserverEngine();
+      return startObserverEngine();
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.error('LifeLens observer engine startup failed', error);

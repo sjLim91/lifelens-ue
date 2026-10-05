@@ -851,3 +851,66 @@ export function formatBelief(value: string | undefined): string {
     `미등록 믿음(${text})`,
   );
 }
+
+export const KOREAN_SHADOW_LABELS = {
+  title: '고급 관찰 · 인지 에이전트',
+  description: '로컬 모델이 Core 문맥을 읽어 제안만 생성합니다. 실제 행동과 저장 데이터에는 적용하지 않습니다.',
+  endpoint: '로컬 서버 주소', model: '로컬 모델 이름',
+  enable: '관찰 켜기', disable: '관찰 끄기 · 요청 취소', automatic: '선택 주민 자동 관찰',
+  sample: '현재 문맥 관찰', resident: '주민', time: '관찰 시뮬레이션 시각',
+  currentAction: '현재 실제 행동', sampledAction: '관찰 당시 실제 행동',
+  intent: '제안 의도', target: '제안 대상', rationale: '판단 이유',
+  validation: '관찰용 계약 검증', validationNote: '스키마·허용 의도·살아 있는 대상 확인이며 Core 실행 승인이 아닙니다.',
+  reason: '처리 사유', personality: '성격', emotion: '감정', memory: '중요 기억',
+  belief: '중요 신념', relationship: '관계', needs: '현재 욕구',
+  empty: '관찰 결과가 없습니다.', none: '없음', unavailable: '문맥 확인 불가',
+  rationaleUnavailable: '한국어 판단 이유가 제공되지 않았습니다.',
+  history: '최근 관찰 기록', provider: '제공자', context: '사용한 Core 문맥',
+  budget: '최소 15초 간격 · 자동 관찰은 30분 진행 후 · 동시 1건 · 6초 제한 · 주민당 최근 3건',
+  minute: '분', unknown: '미등록 문맥', trust: '신뢰', affection: '애정', conflict: '갈등',
+} as const;
+const KOREAN_COGNITIVE_INTENT_LABELS: Record<string, string> = {
+  ImproveFoodSecurity: '식량 확보 개선', ImproveWaterSecurity: '물 확보 개선',
+  ImproveShelter: '주거 개선', ImproveSanitation: '위생 개선', AcquireMaterials: '재료 확보',
+  CraftUsefulTools: '유용한 도구 제작', ExpandCultivation: '경작 확대', ExploreOpportunity: '기회 탐색',
+  CooperateWithResident: '주민과 협력', ResolveConflict: '갈등 해결', TeachKnowledge: '지식 전수',
+  TradeWithResident: '주민과 교역', CareForDependent: '부양 대상 돌봄', MigrateHousehold: '가구 이주 검토',
+};
+const KOREAN_COGNITION_STATE_LABELS: Record<string, string> = {
+  disabled: '관찰 꺼짐', ready: '관찰 준비', pending: '로컬 모델 응답 대기',
+  configuration_error: '루프백 주소와 로컬 모델 이름을 확인하세요.', context_unavailable: 'Core 문맥을 읽을 수 없습니다.',
+  validated: '관찰용 검증 통과 · 실행 안 함', rejected: '거절', timeout: '응답 시간 초과',
+  error: '제공자 오류', cancelled: '요청 취소', stale: '시간이 지난 응답 폐기',
+  busy: '호출 한도 도달', unavailable: '제공자 결과 없음',
+  invalid_json: '잘못된 JSON', invalid_schema: '스키마 또는 허용 의도 불일치',
+  http_error: '로컬 서버 연결 오류', malformed_response: '잘못된 제공자 응답',
+  provider_error: '로컬 제공자 처리 실패', no_proposal: '제안 없음', context_error: '문맥 읽기 실패',
+  target_unavailable: '대상 주민이 없거나 사망함',
+};
+const KOREAN_COGNITIVE_CONTEXT_LABELS: Record<string, string> = {
+  hunger: '배고픔', thirst: '갈증', sleep: '수면', bladder: '배설', hygiene: '위생',
+  introversion: '내향성', conscientiousness: '성실성', openness: '개방성', agreeableness: '친화성',
+  emotionalStability: '정서 안정', empathy: '공감', impulsiveness: '충동성', riskTolerance: '위험 감수',
+  ambition: '야망', patience: '인내', sociability: '사교성', curiosity: '호기심', orderliness: '질서 선호', adaptability: '적응성',
+  joy: '기쁨', sadness: '슬픔', anger: '분노', fear: '두려움', embarrassment: '부끄러움', pride: '자부심',
+  jealousy: '질투', affection: '애정', anxiety: '불안', relief: '안도', grief: '애도',
+  valence: '감정 방향', arousal: '각성', intensity: '강도',
+};
+export function formatCognitiveIntent(value: string): string {
+  return translated('인지의도', value, KOREAN_COGNITIVE_INTENT_LABELS, KOREAN_SHADOW_LABELS.unknown);
+}
+export function formatCognitionState(value: string): string {
+  return translated('인지관찰', value, KOREAN_COGNITION_STATE_LABELS, KOREAN_SHADOW_LABELS.unknown);
+}
+export function formatCognitiveContext(value: string): string {
+  return translated('인지문맥', value, KOREAN_COGNITIVE_CONTEXT_LABELS, KOREAN_SHADOW_LABELS.unknown);
+}
+
+export function formatCognitiveProvider(value: string): string {
+  return translated('인지제공자', value, {
+    'local-openai-compatible': '무료 로컬 호환 모델',
+    'free-local-test': '무료 로컬 검증 제공자',
+    'free-local-fixture': '무료 로컬 검증 제공자',
+    'deterministic-free-local-fixture': '결정적 로컬 검증 제공자',
+  }, '로컬 제공자');
+}
